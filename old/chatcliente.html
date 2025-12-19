@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat Cliente</title>
+    <link rel="stylesheet" href="chatcliente.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+</head>
+<body>
+
+<h2>Chat do Cliente</h2>
+
+<div style="display:flex; gap:20px">
+
+    <!-- LISTA DE MODELOS -->
+    <div style="width:200px; border:1px solid #000">
+        <h4>Modelos</h4>
+        <ul id="listaModelos"></ul>
+    </div>
+
+    <!-- CHAT -->
+    <div style="flex:1">
+        <div>
+            <strong>Modelo:</strong>
+            <span id="modeloNome"></span>
+        </div>
+
+        <hr>
+
+        <div id="chatBox" style="border:1px solid #000; height:300px; overflow-y:auto;"></div>
+
+        <br>
+
+        <input id="msgInput">
+        <button id="sendBtn">Enviar</button>
+    </div>
+
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/header.js"></script>
+<script src="/chatcliente.js"></script>
+
+
+</body>
+</html>

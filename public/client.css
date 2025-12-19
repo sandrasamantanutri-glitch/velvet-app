@@ -1,0 +1,69 @@
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+* {
+  font-family: "Poppins", sans-serif;
+}
+
+
+/* FEED CENTRALIZADO */
+.modelGrid {
+    display: grid;
+
+    /* 🔥 4 MODELOS POR LINHA */
+    grid-template-columns: repeat(4, 1fr);
+
+    gap: 20px;                 /* espaço entre as imagens */
+    padding: 24px;
+
+    max-width: 1200px;         /* controla a largura total */
+    margin: 60px auto 0;       /* 🔥 espaço em cima + centralizado */
+
+    justify-content: center;
+}
+
+/* ITEM DA MODELO */
+.modelItem {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+    border-radius: 18px;
+    cursor: pointer;
+}
+
+/* IMAGEM */
+.modelItem img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* FORÇAR BOTÃO DE MENSAGENS PARA A DIREITA */
+#btnMensagens {
+    position: absolute;
+    right: 56px; 
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.headerCliente {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center; /* mantém o título centrado */
+}
+
+.header-right {
+    position: absolute;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+

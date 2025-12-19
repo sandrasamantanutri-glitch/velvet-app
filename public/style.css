@@ -1,0 +1,192 @@
+/* RESET */
+* {
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #f6f7fb;
+}
+
+/* =========================
+   CENTRALIZA A PÁGINA
+========================= */
+.page-wrapper {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;   /* horizontal */
+  align-items: center;       /* vertical */
+}
+
+/* =========================
+   LAYOUT PRINCIPAL
+========================= */
+.landing {
+  width: 1400px;             /* 🔑 ESSENCIAL */
+  max-width: 90%;
+  display: flex;
+  background: transparent;
+  flex-direction: row-reverse; /* 🔥 INVERTE */
+}
+
+/* =========================
+   CAPA
+========================= */
+.landing-cover {
+  flex: 1;
+  overflow: hidden;
+  border-radius: 24px 0 0 24px;
+}
+
+.landing-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* =========================
+   LOGIN (BARRA CINZA)
+========================= */
+.landing-login {
+  width: 420px;
+  background: #dbcafa;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin-left: 0px;         /* espaço real da capa */
+  margin-right: 60px;
+   border-radius: 24px;
+}
+
+/* LOGO */
+.logo {
+  width: 250px;
+  margin: -40px auto 40px;   /* sobe o logo */
+}
+
+/* =========================
+   BOTÕES
+========================= */
+.login-box {
+  width: 100%;
+}
+
+.btn {
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 12px;
+  border: none;
+  font-size: 16px;
+  font-weight: 500;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  margin-bottom: 16px;
+  transition: all 0.25s ease;
+}
+.login-box {
+  margin-top: -80px;  /* 🔼 sobe os botões */
+}
+
+.btn span {
+  font-size: 18px;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+}
+
+/* CRIADOR */
+.btn-creator {
+  background: #ffffff;
+  color: #7B2CFF;
+  box-shadow: 0 6px 18px rgba(37,99,235,0.15);
+}
+
+/* MEMBRO */
+.btn-member {
+  background: #ffffff;
+  color: #7B2CFF;
+  box-shadow: 0 6px 18px rgba(37,99,235,0.15); 
+}
+
+/* =========================
+   INPUTS
+========================= */
+.login-input {
+  margin-top: 10px;
+}
+
+.login-input input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  margin-bottom: 10px;
+  font-size: 15px;   
+}
+
+/* =========================
+   FOOTER
+========================= */
+.footer-links {
+  margin-top: 30px;
+  text-align: center;
+}
+
+.footer-links a {
+  font-size: 13px;
+  color: #7B2CFF;
+  text-decoration: none;
+  margin: 0 10px;
+}
+
+.footer-links a:hover {
+  text-decoration: underline;
+}
+
+/* =========================
+   UTILIDADES
+========================= */
+.hidden {
+  display: none;
+}
+
+/* =========================
+   RESPONSIVO
+========================= */
+@media (max-width: 900px) {
+  .landing {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .landing-cover {
+    display: none;
+  }
+
+  .landing-login {
+    width: 100%;
+    margin-left: 0;
+    border-radius: 24px;
+    
+  }
+}
+
+.landing-login {
+  text-align: center;
+  align-items: center;
+}
+
+.login-box,
+.login-input {
+  width: 100%;
+}
+
+.btn {
+  justify-content: center;
+  gap: 8px;
+}

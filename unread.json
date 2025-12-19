@@ -1,0 +1,12 @@
+{
+  "Fox": {},
+  "Leo": {},
+  "Simba": {},
+  "Joao": {
+    "Fox": true
+  },
+  "Fabio": {
+    "Fox": true
+  },
+  "Nicole": {}
+}

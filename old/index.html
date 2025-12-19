@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entrar</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f4f7;
+            margin: 0;
+            padding: 0;
+        }
+
+        .center {
+            width: 100%;
+            max-width: 400px;
+            margin: 80px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 14px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        input {
+            width: 90%;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            margin-top: 15px;
+            border-radius: 10px;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .btn-roxa {
+            background: #7B2CFF;
+            color: white;
+        }
+
+        .btn-rosa {
+            background: #FF4F9A;
+            color: white;
+        }
+
+        h2 {
+            font-weight: 700;
+            color: #333;
+        }
+    </style>
+</head>
+
+<body>
+<!-- LOGIN -->
+<div class="center">
+    <h2>Entrar na Plataforma</h2>
+
+    <button class="btn btn-roxa" onclick="selectRole('creator')">Sou Criadora</button>
+    <button class="btn btn-rosa" onclick="selectRole('client')">Sou Cliente</button>
+
+    <!-- LOGIN CRIADORA -->
+    <div id="creatorNameBox" class="hidden">
+        <input id="creatorName" placeholder="Nome da Criadora">
+        <button class="btn btn-roxa" onclick="enterCreator()">Entrar como Criadora</button>
+    </div>
+
+    <!-- LOGIN CLIENTE -->
+    <div id="clientNameBox" class="hidden">
+        <input id="clientName" placeholder="Seu nome">
+        <button class="btn btn-rosa" onclick="enterClient()">Entrar como Cliente</button>
+    </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="script.js"></script>
+
+</body>
+</html>

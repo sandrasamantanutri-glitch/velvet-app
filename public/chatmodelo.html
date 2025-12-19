@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Chat Modelo</title>
+
+  <link rel="stylesheet" href="chatmodelo.css">
+  <link rel="stylesheet" href="/header.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+<header class="app-header">
+  <div class="header-inner">
+
+    <img src="assets/velvet.png" class="logo-app" alt="Logo">
+
+    <div class="profile-menu-top">
+      <button id="btnMensagem">
+        <img src="assets/chat.png" alt="Chat">
+        <span id="badgeUnread" class="badge-unread hidden">0</span>
+      </button>
+
+      <button id="menuBtn" class="menu-btn">☰</button>
+      <div id="userMenu" class="menu-superior"></div>
+    </div>
+
+  </div>
+</header>
+
+<div class="pagina-chat">
+
+  <h2>Modelo: <span id="modeloNome"></span></h2>
+
+  <div class="chat-layout">
+
+    <!-- LISTA DE CLIENTES -->
+    <div class="lista-clientes painel">
+      <div class="painel-header">
+        <strong>Clientes</strong>
+      </div>
+      <ul id="listaClientes"></ul>
+    </div>
+
+    <!-- ÁREA DO CHAT -->
+    <div class="chat-area painel">
+
+      <div class="chat-header">
+        <strong>Conversando com:</strong>
+        <span id="clienteNome"></span>
+      </div>
+
+      <div id="chatBox"></div>
+
+      <div class="chat-input">
+        <!-- BOTÃO ENVIAR CONTEÚDO -->
+        <button id="btnEnviarConteudo" class="btn-conteudo">
+  Enviar conteúdo
+</button>
+
+        <input id="msgInput" placeholder="Escreva sua mensagem..." />
+        <button id="sendBtn">Enviar</button>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+
+<!-- POPUP DE CONTEÚDOS -->
+<div id="popupConteudos" class="hidden">
+
+  <div class="popup-box">
+    <h3>Enviar conteúdo</h3>
+
+    <!-- GRID DE MINIATURAS -->
+    <div id="previewConteudos" class="preview-grid"></div>
+
+    <!-- PREÇO -->
+    <div class="popup-preco">
+      <label>Preço (€)</label>
+      <input type="number" id="precoConteudo" value="0" min="0" />
+    </div>
+
+    <!-- AÇÕES -->
+    <div class="popup-actions">
+      <button class="btn-cancelar" onclick="fecharPopupConteudos()">Cancelar</button>
+      <button class="btn-enviar" onclick="confirmarEnvioConteudo()">Enviar</button>
+    </div>
+  </div>
+
+</div>
+
+
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/header.js"></script>
+<script src="/chatmodelo.js"></script>
+
+</body>
+</html>
