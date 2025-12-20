@@ -846,9 +846,10 @@ app.post("/api/vip/criar", async (req, res) => {
 // ===============================
 // START SERVER
 // ===============================
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT;
 
-app.listen(PORT, () => {
+server.listen(PORT, "0.0.0.0", () => {
   console.log("🚀 Servidor rodando na porta", PORT);
 });
+
 
