@@ -24,6 +24,11 @@ const UNREAD_FILE = "unread.json";
 const VIP_PRECO = 0.1;
 const valorVip = 0.1; // 💰 preço da subscrição VIP
 
+app.get("/", (req, res) => {
+  res.status(200).send("🚀 Velvet backend online");
+});
+
+
 const unreadMap = fs.existsSync(UNREAD_FILE)
 ? JSON.parse(fs.readFileSync(UNREAD_FILE, "utf8")) : {};
 
