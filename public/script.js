@@ -9,7 +9,7 @@ let clientCredits = 20;
 
 /* ===========================
    SELEÇÃO DE PAPEL (LOGIN)
-=========================== */
+=========================== 
 function selectRole(r) {
     // esconde os dois
     document.getElementById("creatorNameBox").classList.add("hidden");
@@ -24,42 +24,6 @@ function selectRole(r) {
         document.getElementById("clientNameBox").classList.remove("hidden");
     }
 }
-
-/* ===========================
-    LOGIN
-=========================== */
-function enterCreator() {
-    console.log("🔥 ENTER CREATOR FOI CHAMADO");
-
-    const name = document.getElementById("creatorName")?.value?.trim();
-    console.log("👉 Nome digitado:", name);
-
-    if (!name) {
-        alert("Digite seu nome!");
-        return;
-    }
-
-    localStorage.setItem("userRole", "modelo");
-    localStorage.setItem("modeloPerfil", name);
-
-    console.log("✅ userRole:", localStorage.getItem("userRole"));
-    console.log("✅ modeloPerfil:", localStorage.getItem("modeloPerfil"));
-
-    window.location.href = "profile.html";
-}
-
-
-function enterClient() {
-    const name = document.getElementById("clientName").value.trim();
-    if (!name) return alert("Digite seu nome!");
-
-    localStorage.setItem("userRole", "cliente");  // ✅ CONSISTENTE
-    localStorage.setItem("clientName", name);
-
-    window.location.href = "clientHome.html";
-}
-
-
 /* ===========================
     LISTA DE CLIENTES NA CRIADORA
 =========================== */

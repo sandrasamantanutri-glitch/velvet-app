@@ -11,6 +11,7 @@
 
 <body>
 
+
 <div class="page-wrapper">
 
   <div class="landing">
@@ -36,16 +37,58 @@
       </div>
 
       <!-- INPUTS -->
-      <div id="creatorNameBox" class="login-input hidden">
-        <input id="creatorName" placeholder="Digite seu nome de influencer">
-        <button class="btn btn-creator" onclick="enterCreator()">Entrar</button>
-      </div>
+<script>
+let selectedRole = null;
 
-      <div id="clientNameBox" class="login-input hidden">
-        <input id="clientName" placeholder="Digite seu nome de membro">
-        <button class="btn btn-member" onclick="enterClient()">Entrar</button>
-      </div>
+function selectRole(role) {
+  selectedRole = role;
 
+  // por enquanto, vamos direto ao login
+  login();
+}
+
+async function login() {
+  const email = prompt("Digite seu email:");
+  const senha = prompt("Digite sua senha:");
+
+  if (!email || !senha) {
+    alert("Email e senha obrigatórios");
+    return;
+  }
+
+  try {
+    const res = await fetch("/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ email, senha })
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+      alert(data.error || "Erro no login");
+      return;
+    }
+
+    // guarda autenticação
+    localStorage.setItem("auth_token", data.token);
+    localStorage.setItem("user_role", data.role);
+
+    // redireciona conforme role REAL do backend
+    if (data.role === "modelo") {
+      window.location.href = "/profile.html";
+    } else {
+      window.location.href = "/clientHome.html";
+    }
+
+  } catch (err) {
+    console.error(err);
+    alert("Erro ao conectar com o servidor");
+  }
+}
+</script>
       <div class="footer-links">
         <a href="#">Contato</a>
         <a href="#">Termos</a>

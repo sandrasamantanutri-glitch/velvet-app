@@ -2,6 +2,8 @@
 // ===============================
 // SERVER.JS – VERSÃO ESTÁVEL
 // ===============================
+const JWT_SECRET = "segredo_super_simples";
+const cors = require("cors");
 require("dotenv").config();
 const express = require("express");
 const chatsAtivos = {};
@@ -12,6 +14,7 @@ const http = require("http")
 const { Server } = require("socket.io");
 const fs = require("fs");
 const app = express();
+app.use(cors());
 const server = http.createServer(app);
 const io = new Server(server);
 app.use(express.json());
@@ -23,6 +26,7 @@ const onlineModelos = {};
 const UNREAD_FILE = "unread.json";
 const VIP_PRECO = 0.1;
 const valorVip = 0.1; // 💰 preço da subscrição VIP
+
 
 app.get("/", (req, res) => {
   res.status(200).send("🚀 Velvet backend online");
@@ -47,6 +51,112 @@ const mpClient = new MercadoPagoConfig({
 });
 
 const paymentClient = new Payment(mpClient);
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+
+// ===============================
+// 🔐 MIDDLEWARE DE AUTENTICAÇÃO
+// ===============================
+function auth(req, res, next) {
+  const header = req.headers.authorization;
+
+  if (!header) {
+    return res.status(401).json({ error: "Token ausente" });
+  }
+
+  const token = header.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ error: "Token inválido" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded; // { id, role }
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: "Token inválido ou expirado" });
+  }
+}
+
+// ===============================
+// 🔐 REGISTRO DE USUÁRIO
+// ===============================
+
+// arquivo simples para guardar usuários (TEMPORÁRIO)
+const USERS_FILE = path.join(__dirname, "users.json");
+
+function lerUsuarios() {
+  if (!fs.existsSync(USERS_FILE)) {
+    fs.writeFileSync(USERS_FILE, JSON.stringify([]));
+  }
+  return JSON.parse(fs.readFileSync(USERS_FILE, "utf8"));
+}
+
+function salvarUsuarios(users) {
+  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+}
+
+// 🔹 REGISTRO
+app.post("/auth/register", async (req, res) => {
+  console.log("🔔 /auth/register chamado");
+
+  const { email, senha, role } = req.body;
+
+  console.log("📩 BODY:", req.body);
+
+  return res.status(200).json({
+    success: true,
+    recebido: { email, role }
+  });
+});
+
+// ===============================
+// 🔐 LOGIN
+// ===============================
+app.post("/auth/login", async (req, res) => {
+  console.log("🔔 /auth/login chamado");
+
+  try {
+    const { email, senha } = req.body;
+    console.log("📩 BODY LOGIN:", req.body);
+
+    const users = lerUsuarios();
+    console.log("👥 USERS:", users);
+
+    const user = users.find(u => u.email === email);
+    if (!user) {
+      return res.status(401).json({ error: "Email inválido" });
+    }
+
+    const ok = await bcrypt.compare(senha, user.senha);
+    console.log("🔐 SENHA OK?", ok);
+
+    if (!ok) {
+      return res.status(401).json({ error: "Senha inválida" });
+    }
+
+    const token = jwt.sign(
+      { id: user.id, role: user.role },
+      JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    return res.json({
+      success: true,
+      token,
+      role: user.role
+    });
+
+  } catch (err) {
+    console.error("🔥 ERRO LOGIN:", err);
+    return res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+
+
+
+
 
 //blindagem vip
 
@@ -126,7 +236,7 @@ const uploadModelo = multer({ storage: storageModelo });
 // ===============================
 
 // 🔹 GET PERFIL COMPLETO
-app.get("/getPerfil/:modelo", (req, res) => {
+app.get("/getPerfil/:modelo", auth, (req, res) => {
     const modelo = req.params.modelo;
     const pasta = path.join(BASE_UPLOADS, modelo);
 
@@ -157,7 +267,7 @@ app.get("/api/modelo/:modelo/vips", (req, res) => {
 
 
 // 🔹 SALVAR BIO
-app.post("/saveBio", (req, res) => {
+app.post("/saveBio", auth, (req, res) => {
     const { bio, modelo } = req.body;
     if (!modelo) return res.status(400).json({ success: false });
 
@@ -255,14 +365,14 @@ const storageMidias = multer.diskStorage({
 const uploadMidia = multer({ storage: storageMidias });
 
 // 🔹 UPLOAD MÍDIA
-app.post("/uploadMidia", uploadMidia.single("midia"), (req, res) => {
+app.post("/uploadMidia", auth, upload.single("file"), (req, res) => {
     const modelo = req.query.modelo;
     const url = `/uploads/modelos/${modelo}/midias/${req.file.filename}`;
     res.json({ url });
 });
 
 // 🔹 GET MÍDIAS
-app.get("/getMidias/:modelo", (req, res) => {
+app.get("/getMidias/:modelo", auth, (req, res) => {
     const modelo = req.params.modelo;
     const pasta = path.join(BASE_UPLOADS, modelo, "midias");
 
@@ -286,7 +396,7 @@ app.post("/deleteMidia", (req, res) => {
 });
 
 //======================ATUALIZA FEED
-app.get("/getModelos", (req, res) => {
+app.get("/getModelos", auth, (req, res) => {
     const base = path.join(__dirname, "uploads", "modelos");
 
     if (!fs.existsSync(base)) {

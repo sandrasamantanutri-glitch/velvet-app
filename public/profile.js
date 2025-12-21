@@ -1,4 +1,11 @@
 
+const token = localStorage.getItem("auth_token");
+const role = localStorage.getItem("user_role");
+
+if (!token || role !== "modelo") {
+  window.location.href = "/index.html";
+}
+
 console.log("ANTES DE TUDO → modeloPerfil =", localStorage.getItem("modeloPerfil"));
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -22,22 +29,17 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function aplicarPermissoes() {
-    let role = localStorage.getItem("userRole");
+  const role = localStorage.getItem("user_role");
 
-    if (!role) {
-        console.warn("userRole não definido, assumindo cliente");
-        role = "cliente";
-    }
+  if (!role) return;
 
-    console.log("ROLE ATUAL:", role);
+  document.querySelectorAll(".only-modelo").forEach(el => {
+    el.style.display = role === "modelo" ? "" : "none";
+  });
 
-    document.querySelectorAll(".only-modelo").forEach(el => {
-        el.style.display = role === "modelo" ? "" : "none";
-    });
-
-    document.querySelectorAll(".only-cliente").forEach(el => {
-        el.style.display = role === "cliente" ? "" : "none";
-    });
+  document.querySelectorAll(".only-cliente").forEach(el => {
+    el.style.display = role === "cliente" ? "" : "none";
+  });
 }
 
 // MODELO ATUAL
@@ -51,7 +53,11 @@ function initPerfil(modelo) {
     const capaImg = document.getElementById("profileCapa");
 
 
-    fetch(`/getPerfil/${encodeURIComponent(modelo)}`)
+    fetch(`/getPerfil/${modelo}`, {
+  headers: {
+    Authorization: "Bearer " + localStorage.getItem("auth_token")
+  }
+})
         .then(res => res.json())
         .then(data => {
             if (avatarImg) {
@@ -110,10 +116,13 @@ function initBio(modelo) {
         }
 
         fetch("/saveBio", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ modelo, bio: novaBio })
-        })
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: "Bearer " + localStorage.getItem("auth_token")
+  },
+  body: JSON.stringify({ bio })
+})
         .then(res => res.json())
         .then(data => {
             if (data.success) {
@@ -128,7 +137,7 @@ function initBio(modelo) {
 function initFeed(modelo) {
     const inputMedia  = document.getElementById("inputMedia");
     const listaMidias = document.getElementById("listaMidias");
-    const userType = localStorage.getItem("userRole");
+    const userType = localStorage.getItem("user_role")
 
     if (!inputMedia || !listaMidias) {
         console.warn("Feed não encontrado nesta página");
@@ -141,7 +150,11 @@ function initFeed(modelo) {
     carregarMidias();
 
     function carregarMidias() {
-        fetch(`/getMidias/${encodeURIComponent(modelo)}`)
+        fetch(`/getMidias/${modelo}`, {
+  headers: {
+    Authorization: "Bearer " + localStorage.getItem("auth_token")
+  }
+})
             .then(res => res.json())
             .then(data => {
                 listaMidias.innerHTML = "";
@@ -161,10 +174,13 @@ function initFeed(modelo) {
         formData.append("midia", file);
         formData.append("modelo", modelo);
 
-        fetch(`/uploadMidia?modelo=${encodeURIComponent(modelo)}`, {
-            method: "POST",
-            body: formData
-        })
+        fetch("/uploadMidia", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer " + localStorage.getItem("auth_token")
+  },
+  body: formData
+})
         .then(res => res.json())
         .then(data => {
             adicionarMidia(data.url);
