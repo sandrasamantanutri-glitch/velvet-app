@@ -3,7 +3,8 @@ const token = localStorage.getItem("auth_token");
 const role = localStorage.getItem("user_role");
 
 if (!token || role !== "cliente") {
-  window.location.href = "/index.html";
+  window.location.replace("/index.html");
+  throw new Error("Acesso bloqueado");
 }
 // =========================================================
 // CLIENT HOME — FEED DE MODELOS (FETCH VERSION)

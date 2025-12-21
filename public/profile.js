@@ -1,9 +1,9 @@
-
 const token = localStorage.getItem("auth_token");
 const role = localStorage.getItem("user_role");
 
 if (!token || role !== "modelo") {
-  window.location.href = "/index.html";
+  window.location.replace("/index.html");
+  throw new Error("Acesso bloqueado");
 }
 
 console.log("ANTES DE TUDO → modeloPerfil =", localStorage.getItem("modeloPerfil"));
