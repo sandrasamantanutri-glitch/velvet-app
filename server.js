@@ -15,6 +15,7 @@ const http = require("http")
 const { Server } = require("socket.io");
 const fs = require("fs");
 const app = express();
+app.set("trust proxy", 1);
 const server = http.createServer(app);
 const io = new Server(server);
 app.use(express.json());
@@ -174,10 +175,12 @@ app.post("/auth/register", async (req, res) => {
 
     return res.json({ success: true });
 
-  } catch (err) {
-    console.error("🔥 ERRO REGISTER:", err);
-    return res.status(500).json({ error: "Erro interno" });
-  }
+  } 
+ catch (err) {
+  console.error("🔥 ERRO REGISTER:", err);
+  return res.status(500).json({ error: err.message });
+}
+
 });
 
 
@@ -218,10 +221,12 @@ app.post("/auth/login", async (req, res) => {
       role: user.role
     });
 
-  } catch (err) {
-    console.error("🔥 ERRO LOGIN:", err);
-    return res.status(500).json({ error: "Erro interno" });
-  }
+  } 
+  catch (err) {
+  console.error("🔥 ERRO LOGIN:", err);
+  return res.status(500).json({ error: err.message });
+}
+
 });
 
 
