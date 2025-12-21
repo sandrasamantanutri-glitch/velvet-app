@@ -38,66 +38,178 @@
 
       <!-- INPUTS -->
 <script>
-let selectedRole = null;
+let modalMode = "login"; // login | register
 
 function selectRole(role) {
-  selectedRole = role;
+  openLoginModal();
+}
 
-  // por enquanto, vamos direto ao login
-  login();
+function openLoginModal() {
+  modalMode = "login";
+  updateModal();
+  document.getElementById("loginModal").classList.remove("hidden");
+}
+
+function closeLoginModal() {
+  document.getElementById("loginModal").classList.add("hidden");
+}
+
+function switchToRegister() {
+  modalMode = "register";
+  updateModal();
+}
+
+function switchToLogin() {
+  modalMode = "login";
+  updateModal();
+}
+
+function updateModal() {
+  const title = document.getElementById("modalTitle");
+  const submit = document.getElementById("modalSubmit");
+  const roleSelect = document.getElementById("registerRole");
+  const switchLogin = document.getElementById("switchToLogin");
+  const switchRegister = document.querySelector(".modal-switch");
+
+  if (modalMode === "login") {
+    title.textContent = "Entrar no Velvet";
+    submit.textContent = "Entrar";
+    submit.onclick = login;
+    roleSelect.classList.add("hidden");
+    switchRegister.classList.remove("hidden");
+    switchLogin.classList.add("hidden");
+  } else {
+    title.textContent = "Criar conta no Velvet";
+    submit.textContent = "Criar conta";
+    submit.onclick = register;
+    roleSelect.classList.remove("hidden");
+    switchRegister.classList.add("hidden");
+    switchLogin.classList.remove("hidden");
+  }
 }
 
 async function login() {
-  const email = prompt("Digite seu email:");
-  const senha = prompt("Digite sua senha:");
+  const email = document.getElementById("loginEmail").value;
+  const senha = document.getElementById("loginSenha").value;
 
   if (!email || !senha) {
-    alert("Email e senha obrigatórios");
+    alert("Preencha email e senha");
     return;
   }
 
-  try {
-    const res = await fetch("/auth/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ email, senha })
-    });
+  const res = await fetch("/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, senha })
+  });
 
-    const data = await res.json();
+  const data = await res.json();
 
-    if (!data.success) {
-      alert(data.error || "Erro no login");
-      return;
-    }
+  if (!data.success) {
+    alert(data.error || "Erro no login");
+    return;
+  }
 
-    // guarda autenticação
-    localStorage.setItem("auth_token", data.token);
-    localStorage.setItem("user_role", data.role);
+  localStorage.setItem("auth_token", data.token);
+  localStorage.setItem("user_role", data.role);
 
-    // redireciona conforme role REAL do backend
-    if (data.role === "modelo") {
-      window.location.href = "/profile.html";
-    } else {
-      window.location.href = "/clientHome.html";
-    }
+  redirectUser(data.role);
+}
 
-  } catch (err) {
-    console.error(err);
-    alert("Erro ao conectar com o servidor");
+async function register() {
+  const email = document.getElementById("loginEmail").value;
+  const senha = document.getElementById("loginSenha").value;
+  const role = document.getElementById("registerRole").value;
+
+  console.log("REGISTER DEBUG:", { email, senha, role });
+
+  if (!email || !senha || !role) {
+    alert("Preencha todos os campos");
+    return;
+  }
+
+  const res = await fetch("/auth/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, senha, role })
+  });
+
+  const data = await res.json();
+
+  if (!data.success) {
+    alert(data.error || "Erro ao criar conta");
+    return;
+  }
+
+  // login automático após registro
+  await login();
+}
+
+function redirectUser(role) {
+  closeLoginModal();
+
+  if (role === "modelo") {
+    window.location.href = "/profile.html";
+  } else {
+    window.location.href = "/clientHome.html";
   }
 }
+
+function openRegisterFromFooter() {
+  modalMode = "register";
+  updateModal();
+  document.getElementById("loginModal").classList.remove("hidden");
+}
+
+function switchToRegister() {
+  modalMode = "register";
+  document.getElementById("registerRole").value = "";
+  updateModal();
+}
+
 </script>
+
       <div class="footer-links">
         <a href="#">Contato</a>
         <a href="#">Termos</a>
+        <a href="#" onclick="openRegisterFromFooter()">Criar conta</a>
       </div>
 
-    </div>
+<!-- LOGIN / REGISTER MODAL -->
+<div id="loginModal" class="modal hidden">
+  <div class="modal-overlay" onclick="closeLoginModal()"></div>
 
+  <div class="modal-box">
+    <h2 id="modalTitle">Entrar no Velvet</h2>
+
+    <input id="loginEmail" type="email" placeholder="Email">
+    <input id="loginSenha" type="password" placeholder="Senha">
+
+    <!-- REGISTRO -->
+    <select id="registerRole" class="hidden">
+      <option value="">Escolha o tipo de conta</option>
+      <option value="modelo">Sou Influencer</option>
+      <option value="cliente">Sou Membro</option>
+    </select>
+
+    <button id="modalSubmit" class="btn btn-primary" onclick="login()">
+      Entrar
+    </button>
+
+    <p class="modal-switch">
+      Não tem conta?
+      <span onclick="switchToRegister()">Criar conta</span>
+    </p>
+
+    <p class="modal-switch hidden" id="switchToLogin">
+      Já tem conta?
+      <span onclick="switchToLogin()">Entrar</span>
+    </p>
+
+    <button class="modal-close" onclick="closeLoginModal()">✕</button>
   </div>
-
 </div>
+
+
 </body>
 </html>

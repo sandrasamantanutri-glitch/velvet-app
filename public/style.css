@@ -190,3 +190,116 @@ body {
   justify-content: center;
   gap: 8px;
 }
+
+/* MODAL BASE */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+/* FUNDO */
+.modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+/* CAIXA */
+.modal-box {
+  position: relative;
+  width: 360px;
+  max-width: 90%;
+  margin: auto;
+  top: 50%;
+  transform: translateY(-50%);
+  background: white;
+  border-radius: 18px;
+  padding: 28px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: modalIn 0.25s ease;
+}
+
+.modal-box h2 {
+  margin: 0 0 6px;
+  text-align: center;
+  color: #7B2CFF;
+}
+
+/* INPUTS */
+.modal-box input {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  font-size: 15px;
+}
+
+/* BOTÃO */
+.modal-box .btn-primary {
+  background: linear-gradient(135deg, #7B2CFF, #9B5CFF);
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* FECHAR */
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+/* ANIMAÇÃO */
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: translateY(-45%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+}
+
+.modal-switch {
+  text-align: center;
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.modal-switch span {
+  color: #7B2CFF;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.modal-box select {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  font-size: 15px;
+}
+
+.footer-sep {
+  margin: 0 10px;
+  opacity: 0.4;
+}
+
+
+

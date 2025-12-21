@@ -2,9 +2,10 @@
 // ===============================
 // SERVER.JS – VERSÃO ESTÁVEL
 // ===============================
-const JWT_SECRET = "segredo_super_simples";
+require("dotenv").config();      // 🔑 PRIMEIRO
+const JWT_SECRET = process.env.JWT_SECRET;
+
 const cors = require("cors");
-require("dotenv").config();
 const express = require("express");
 const chatsAtivos = {};
 const unread = {};
@@ -14,7 +15,6 @@ const http = require("http")
 const { Server } = require("socket.io");
 const fs = require("fs");
 const app = express();
-app.use(cors());
 const server = http.createServer(app);
 const io = new Server(server);
 app.use(express.json());
@@ -26,9 +26,51 @@ const onlineModelos = {};
 const UNREAD_FILE = "unread.json";
 const VIP_PRECO = 0.1;
 const valorVip = 0.1; // 💰 preço da subscrição VIP
-const upload = multer({ dest: "uploads/" });
+
+const storageBasico = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/tmp");
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + "-" + file.originalname);
+  }
+});
 
 
+app.use(cors({
+  origin: ["https://velvet-app-production.up.railway.app/"],
+  credentials: true
+}));
+
+const upload = multer({
+  storage: storageBasico,
+  fileFilter: (req, file, cb) => {
+    const allowed = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "video/mp4"
+    ];
+
+    if (!allowed.includes(file.mimetype)) {
+      return cb(new Error("Tipo de arquivo não permitido"));
+    }
+
+    cb(null, true);
+  },
+  limits: {
+    fileSize: 20 * 1024 * 1024
+  }
+});
+
+const rateLimit = require("express-rate-limit");
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100
+});
+
+app.use("/auth", authLimiter);
 
 app.get("/", (req, res) => {
   res.status(200).send("🚀 Velvet backend online");
@@ -100,17 +142,44 @@ function salvarUsuarios(users) {
 
 // 🔹 REGISTRO
 app.post("/auth/register", async (req, res) => {
-  console.log("🔔 /auth/register chamado");
+  try {
+    console.log("🔔 /auth/register chamado");
 
-  const { email, senha, role } = req.body;
+    const { email, senha, role } = req.body;
 
-  console.log("📩 BODY:", req.body);
+    if (!email || !senha || !role) {
+      return res.status(400).json({ error: "Dados incompletos" });
+    }
 
-  return res.status(200).json({
-    success: true,
-    recebido: { email, role }
-  });
+    const users = lerUsuarios();
+
+    // 🔒 evita duplicado
+    if (users.find(u => u.email === email)) {
+      return res.status(409).json({ error: "Email já cadastrado" });
+    }
+
+    const hash = await bcrypt.hash(senha, 10);
+
+    const novoUser = {
+      id: Date.now().toString(),
+      email,
+      senha: hash,
+      role
+    };
+
+    users.push(novoUser);
+    salvarUsuarios(users);
+
+    console.log("✅ Usuário criado:", email);
+
+    return res.json({ success: true });
+
+  } catch (err) {
+    console.error("🔥 ERRO REGISTER:", err);
+    return res.status(500).json({ error: "Erro interno" });
+  }
 });
+
 
 // ===============================
 // 🔐 LOGIN
@@ -364,7 +433,26 @@ const storageMidias = multer.diskStorage({
     }
 });
 
-const uploadMidia = multer({ storage: storageMidias });
+const uploadMidia = multer({
+  storage: storageMidias,
+  fileFilter: (req, file, cb) => {
+    const allowed = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "video/mp4"
+    ];
+
+    if (!allowed.includes(file.mimetype)) {
+      return cb(new Error("Tipo de arquivo não permitido"));
+    }
+
+    cb(null, true);
+  },
+  limits: {
+    fileSize: 20 * 1024 * 1024
+  }
+});
 
 // 🔹 UPLOAD MÍDIA
 app.post("/uploadMidia", auth, uploadMidia.single("file"), (req, res) => {
@@ -554,169 +642,124 @@ function isConteudoPago(cliente, modelo, conteudoId) {
 // SOCKET.IO
 // ===============================
 io.on("connection", socket => {
-    console.log("🔥 Socket conectado:", socket.id);
+  console.log("🔥 Socket conectado:", socket.id);
 
-    // LOGIN CLIENTE
-    socket.on("loginCliente", cliente => {
-        socket.role = "cliente";
-        socket.cliente = cliente;
-        onlineClientes[cliente] = socket.id;
-    });
+  socket.authenticated = false;
 
-    // LOGIN MODELO
-    socket.on("loginModelo", modelo => {
-        socket.role = "modelo";
-        socket.modelo = modelo;
-        onlineModelos[modelo] = socket.id;
-        socket.emit("unreadUpdate", unreadMap[modelo] ?? {});
-    });
-
-    // ENTRAR NA SALA
-    socket.on("joinRoom", ({ cliente, modelo }) => {
-        const room = `${cliente}__${modelo}`;
-        socket.join(room);
-        const history = readMessages()
-  .filter(m => m.cliente === cliente && m.modelo === modelo)
-  .map(m => {
-    if (m.type === "conteudo") {
-      m.pago = isConteudoPago(cliente, modelo, m.id);
+  // 🔐 autenticação do socket
+  socket.on("auth", ({ token }) => {
+    try {
+      socket.user = jwt.verify(token, JWT_SECRET);
+      socket.authenticated = true;
+    } catch {
+      socket.disconnect();
     }
-    return m;
   });
 
-socket.emit("chatHistory", history);
-        if (socket.role === "cliente" && unreadMap[cliente]) {
-            delete unreadMap[cliente][modelo];
-            socket.emit("unreadUpdate", unreadMap[cliente]);
-        }
-    });
+  // login cliente
+socket.on("loginCliente", cliente => {
+  if (!socket.authenticated || socket.user.role !== "cliente") return;
 
-    socket.on("markAsRead", ({ cliente, modelo }) => {
-    if (unreadMap[modelo]) {
-        delete unreadMap[modelo][cliente];
+  socket.role = "cliente";
+  socket.cliente = cliente;
+  onlineClientes[cliente] = socket.id;
+});
 
-        fs.writeFileSync(UNREAD_FILE, JSON.stringify(unreadMap, null, 2));
-        
-        socket.emit("unreadUpdate", unreadMap[modelo]);
-    } });
+socket.on("loginModelo", modelo => {
+  if (!socket.authenticated || socket.user.role !== "modelo") return;
+
+  socket.role = "modelo";
+  socket.modelo = modelo;
+  onlineModelos[modelo] = socket.id;
+  socket.emit("unreadUpdate", unreadMap[modelo] ?? {});
+});
 
 
-    // ENVIAR MENSAGEM
-    socket.on("sendMessage", ({ cliente, modelo, from, text }) => {
+  // entrar na sala
+socket.on("joinRoom", ({ cliente, modelo }) => {
+  if (!socket.authenticated) return;
 
-        if (from === cliente && !verificarAssinatura(cliente, modelo)) {
-            socket.emit("errorMessage", "Apenas clientes VIP podem enviar mensagens.");
-            return;
-        }
+  if (
+    socket.role === "cliente" &&
+    socket.cliente !== cliente
+  ) return;
 
-        const room = `${cliente}__${modelo}`;
+  if (
+    socket.role === "modelo" &&
+    socket.modelo !== modelo
+  ) return;
 
-        const newMessage = {
-            cliente,
-            modelo,
-            from,
-            text,
-            timestamp: Date.now()
-        };
+    const room = getRoom(cliente, modelo);
+    socket.join(room);
 
-        const messages = readMessages();
-        messages.push(newMessage);
-        saveMessages(messages);
+    const history = readMessages()
+      .filter(m => m.cliente === cliente && m.modelo === modelo)
+      .map(m => ({
+        ...m,
+        pago: m.type === "conteudo"
+          ? isConteudoPago(cliente, modelo, m.id)
+          : true
+      }));
 
-        io.to(room).emit("newMessage", newMessage);
+    socket.emit("chatHistory", history);
 
-        // UNREAD
-        if (from === cliente) {
-            unreadMap[modelo] ??= {};
-            unreadMap[modelo][cliente] = true;
-            
-            fs.writeFileSync(UNREAD_FILE, JSON.stringify(unreadMap, null, 2));
+    if (socket.role === "cliente" && unreadMap[cliente]) {
+      delete unreadMap[cliente][modelo];
+      socket.emit("unreadUpdate", unreadMap[cliente]);
+    }
+  });
 
-            const sid = onlineModelos[modelo];
-            if (sid) io.to(sid).emit("unreadUpdate", unreadMap[modelo]);
-        }
+  // enviar mensagem
+  socket.on("sendMessage", ({ cliente, modelo, text }) => {
+    if (!socket.user) return;
 
-        if (from === modelo) {
-            unreadMap[cliente] ??= {};
-            unreadMap[cliente][modelo] = true;
-
-            const sid = onlineClientes[cliente];
-            if (sid) io.to(sid).emit("unreadUpdate", unreadMap[cliente]);
-        }
-    });
-
-socket.on("sendContent", ({ cliente, modelo, conteudoId, preco }) => {
-
-  // 🛑 SE JÁ FOI PAGO, ENVIA DIRETO DESBLOQUEADO
-  if (isConteudoPago(cliente, modelo, conteudoId)) {
-    console.log("⚠️ Conteúdo já pago, enviando desbloqueado");
-
-    const caminho = path.join(
-      __dirname,
-      "uploads",
-      "modelos",
-      modelo,
-      "conteudos",
-      conteudoId
-    );
-
-    if (!fs.existsSync(caminho)) {
-      console.error("Conteúdo não encontrado:", caminho);
-      return;
+    let from;
+    if (socket.role === "cliente") {
+      if (!verificarAssinatura(cliente, modelo)) {
+        socket.emit("errorMessage", "Apenas clientes VIP podem enviar mensagens.");
+        return;
+      }
+      from = cliente;
     }
 
-    const tipo = conteudoId.endsWith(".mp4") ? "video" : "imagem";
+    if (socket.role === "modelo") {
+      from = modelo;
+    }
 
-    const novo = {
-      type: "conteudo",
-      id: conteudoId,
-      arquivo: conteudoId,
-      tipo,
-      preco: 0,          // 🔑 SEMPRE ZERO
-      pago: true,        // 🔑 MARCA COMO PAGO
+    const newMessage = {
       cliente,
       modelo,
-      from: modelo,
+      from,
+      text,
       timestamp: Date.now()
     };
 
     const messages = readMessages();
-    messages.push(novo);
+    messages.push(newMessage);
     saveMessages(messages);
 
-    io.to(`${cliente}__${modelo}`).emit("newMessage", novo);
-    console.log("🔓 Conteúdo já pago enviado desbloqueado");
+    io.to(getRoom(cliente, modelo)).emit("newMessage", newMessage);
 
-    return; // ⛔ MUITO IMPORTANTE
-  }
+    // unread
+    if (from === cliente) {
+      unreadMap[modelo] ??= {};
+      unreadMap[modelo][cliente] = true;
+      fs.writeFileSync(UNREAD_FILE, JSON.stringify(unreadMap, null, 2));
+    }
 
-  // 🔒 CASO NORMAL → ENVIA BLOQUEADO
-  const tipo = conteudoId.endsWith(".mp4") ? "video" : "imagem";
-
-  const novo = {
-    type: "conteudo",
-    id: conteudoId,
-    arquivo: conteudoId,
-    tipo,
-    preco: preco ?? 0,
-    cliente,
-    modelo,
-    from: modelo,
-    timestamp: Date.now()
-  };
-
-  const messages = readMessages();
-  messages.push(novo);
-  saveMessages(messages);
-
-  io.to(`${cliente}__${modelo}`).emit("newMessage", novo);
-});
-
-  // DISCONNECT
-  socket.on("disconnect", () => {
-    console.log("❌ Socket desconectado:", socket.id);
+    if (from === modelo) {
+      unreadMap[cliente] ??= {};
+      unreadMap[cliente][modelo] = true;
+    }
   });
 
+  // disconnect
+  socket.on("disconnect", () => {
+    if (socket.modelo) delete unreadMap[socket.modelo];
+    if (socket.cliente) delete unreadMap[socket.cliente];
+    fs.writeFileSync(UNREAD_FILE, JSON.stringify(unreadMap, null, 2));
+    console.log("❌ Socket desconectado:", socket.id);
+  });
 });
 
 //-------------------------------------------------------------------------------------------- 
