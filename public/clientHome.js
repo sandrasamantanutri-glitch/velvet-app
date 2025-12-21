@@ -1,11 +1,15 @@
 
-const token = localStorage.getItem("auth_token");
-const role = localStorage.getItem("user_role");
+(function () {
+  const token = localStorage.getItem("auth_token");
+  const role = localStorage.getItem("user_role");
 
-if (!token || role !== "cliente") {
-  window.location.replace("/index.html");
-  throw new Error("Acesso bloqueado");
-}
+  if (!token || role !== "cliente") {
+    localStorage.clear();
+    window.location.replace("/index.html");
+    return;
+  }
+})();
+
 // =========================================================
 // CLIENT HOME — FEED DE MODELOS (FETCH VERSION)
 // =========================================================

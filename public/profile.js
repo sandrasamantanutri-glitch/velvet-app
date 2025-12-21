@@ -1,10 +1,14 @@
-const token = localStorage.getItem("auth_token");
-const role = localStorage.getItem("user_role");
+(function () {
+  const token = localStorage.getItem("auth_token");
+  const role = localStorage.getItem("user_role");
 
-if (!token || role !== "modelo") {
-  window.location.replace("/index.html");
-  throw new Error("Acesso bloqueado");
-}
+  if (!token || role !== "modelo") {
+    localStorage.clear();
+    window.location.replace("/index.html");
+    return;
+  }
+})();
+
 
 console.log("ANTES DE TUDO → modeloPerfil =", localStorage.getItem("modeloPerfil"));
 
