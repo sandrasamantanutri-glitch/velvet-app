@@ -6,10 +6,6 @@
     display: none !important;
 }
 
-.capaImg {
-  pointer-events: none;
-}
-
 /* ============================================
    BASE
 ============================================ */
@@ -532,3 +528,24 @@ body {
   font-weight: 600;
   cursor: pointer;
 }
+
+/* ===============================
+   CONTROLE POR ROLE
+=============================== */
+
+/* por padrão, esconde tudo */
+.only-modelo,
+.only-cliente {
+  display: none !important;
+}
+
+/* quando é modelo */
+body.role-modelo .only-modelo {
+  display: inline-flex !important;
+}
+
+/* quando é cliente */
+body.role-cliente .only-cliente {
+  display: inline-flex !important;
+}
+

@@ -1,4 +1,7 @@
-[
-  { "nome": "Fox", "avatar": "/assets/avatarDefault.png" },
-  { "nome": "Maria", "avatar": "/assets/avatarDefault.png" }
-]
+{
+  "1766322856704": {
+    "avatar": "https://res.cloudinary.com/dcvmofgnc/image/upload/v1766335513/velvet/1766322856704/avatar/tpkay40kchzvuxxzhdu9.jpg",
+    "capa": "https://res.cloudinary.com/dcvmofgnc/image/upload/v1766335558/velvet/1766322856704/capa/b3ztjo6sfoap2bkmx9zj.png",
+    "bio": "Oi, amor! Eu sou a FOX 🦊💗 Sempre por aqui pra conversar, rir e te fazer companhia.\nNão precisa ter vergonha… vem falar comigo!\nQue tal começarmos agora? Sempre carinhosa e atenciosa, tua FOX. 😘✨"
+  }
+}

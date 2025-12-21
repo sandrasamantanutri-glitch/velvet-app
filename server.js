@@ -4,6 +4,7 @@
 // ===============================
 require("dotenv").config();      // 🔑 PRIMEIRO
 const JWT_SECRET = process.env.JWT_SECRET;
+console.log("JWT_SECRET carregado?", JWT_SECRET);
 
 const cors = require("cors");
 const express = require("express");
@@ -28,41 +29,41 @@ const UNREAD_FILE = "unread.json";
 const VIP_PRECO = 0.1;
 const valorVip = 0.1; // 💰 preço da subscrição VIP
 
-const storageBasico = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/tmp");
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + "-" + file.originalname);
-  }
+const cloudinary = require("cloudinary").v2;
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+if (
+  !process.env.CLOUDINARY_CLOUD_NAME ||
+  !process.env.CLOUDINARY_API_KEY ||
+  !process.env.CLOUDINARY_API_SECRET
+) {
+  console.error("❌ CLOUDINARY ENV NÃO CONFIGURADO");
+  process.exit(1);
+}
+
+
+function onlyModelo(req, res, next) {
+  if (!req.user || req.user.role !== "modelo") {
+    return res.status(403).json({ error: "Apenas modelos podem fazer upload" });
+  }
+  next();
+}
 
 app.use(cors({
-  origin: ["https://velvet-app-production.up.railway.app/"],
+  origin: ["https://velvet-app-production.up.railway.app"],
   credentials: true
 }));
 
 const upload = multer({
-  storage: storageBasico,
-  fileFilter: (req, file, cb) => {
-    const allowed = [
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-      "video/mp4"
-    ];
-
-    if (!allowed.includes(file.mimetype)) {
-      return cb(new Error("Tipo de arquivo não permitido"));
-    }
-
-    cb(null, true);
-  },
-  limits: {
-    fileSize: 20 * 1024 * 1024
-  }
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
 });
+
 
 const rateLimit = require("express-rate-limit");
 
@@ -99,6 +100,7 @@ const jwt = require("jsonwebtoken");
 // ===============================
 // 🔐 MIDDLEWARE DE AUTENTICAÇÃO
 // ===============================
+const authMiddleware = auth;
 function auth(req, res, next) {
   const header = req.headers.authorization;
 
@@ -227,10 +229,6 @@ app.post("/auth/login", async (req, res) => {
 });
 
 
-
-
-
-
 //blindagem vip
 
 const SUBSCRIPTIONS_FILE = path.join(__dirname, "subscriptions.json");
@@ -260,76 +258,61 @@ function adicionarAssinatura(cliente, modelo) {
     salvarAssinaturas(subs);
   }
 }
-////BLINDAGEM UNREAD
-fs.writeFileSync(
-  "unread.json",
-  JSON.stringify(unreadMap, null, 2)
-);
 // ===============================
 // MIDDLEWARES
 // ===============================
 app.use(express.urlencoded({ extended: true }));
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use(express.static(__dirname));
 app.use(express.static(path.join(__dirname, "public")));
 
-// ===============================
-// PASTA BASE
-// ===============================
-const BASE_UPLOADS = path.join(__dirname, "uploads", "modelos");
-if (!fs.existsSync(BASE_UPLOADS)) fs.mkdirSync(BASE_UPLOADS, { recursive: true });
-
-// ===============================
-// MULTER (AVATAR + CAPA)
-// ===============================
-const storageModelo = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const modelo = req.body.modelo; // ✅ CORRETO
-    if (!modelo) return cb(new Error("Modelo não informado"));
-
-    const pastaModelo = path.join(BASE_UPLOADS, modelo);
-    if (!fs.existsSync(pastaModelo)) {
-      fs.mkdirSync(pastaModelo, { recursive: true });
-    }
-
-    cb(null, pastaModelo);
-  },
-  filename: (req, file, cb) => {
-    if (file.fieldname === "avatar") cb(null, "avatar.jpg");
-    else if (file.fieldname === "capa") cb(null, "capa.jpg");
-    else cb(null, file.originalname);
+app.get("/api/me", auth, (req, res) => {
+  if (req.user.role !== "modelo") {
+    return res.json(req.user);
   }
+
+  const modelos = lerModelos();
+  const dados = modelos[req.user.id] || {};
+
+  res.json({
+    id: req.user.id,
+    role: "modelo",
+    avatar: dados.avatar,
+    capa: dados.capa,
+    bio: dados.bio || "",
+    nome: dados.nome || "Modelo"
+  });
 });
 
 
-const uploadModelo = multer({ storage: storageModelo });
-
-// ===============================
-// ROTAS DE PERFIL
-// ===============================
-
-// 🔹 GET PERFIL COMPLETO
-app.get("/getPerfil/:modelo", auth, (req, res) => {
-    const modelo = req.params.modelo;
-    const pasta = path.join(BASE_UPLOADS, modelo);
-
-    const avatarPath = path.join(pasta, "avatar.jpg");
-    const capaPath   = path.join(pasta, "capa.jpg");
-    const bioPath    = path.join(pasta, "bio.txt");
-
-    res.json({
-        nome: modelo,
-        avatar: fs.existsSync(avatarPath)
-            ? `/uploads/modelos/${modelo}/avatar.jpg`
-            : "/assets/avatarDefault.png",
-        capa: fs.existsSync(capaPath)
-            ? `/uploads/modelos/${modelo}/capa.jpg`
-            : "/assets/capaDefault.jpg",
-        bio: fs.existsSync(bioPath)
-            ? fs.readFileSync(bioPath, "utf8")
-            : ""
-    });
+app.get("/api/feed/me", auth, (req, res) => {
+  const feed = readJSON(FEED_FILE, []).filter(
+    f => f.modeloId === req.user.id
+  );
+  res.json(feed);
 });
+
+//ROTA BIO
+app.post("/api/modelo/bio", auth, (req, res) => {
+  if (req.user.role !== "modelo") {
+    return res.status(403).json({ error: "Apenas modelos podem editar bio" });
+  }
+
+  const { bio } = req.body;
+
+  if (typeof bio !== "string") {
+    return res.status(400).json({ error: "Bio inválida" });
+  }
+
+  const modelos = lerModelos();
+
+  modelos[req.user.id] ??= {};
+  modelos[req.user.id].bio = bio;
+
+  salvarModelos(modelos);
+
+  res.json({ success: true });
+});
+
 
 //ROTA VIP
 app.get("/api/modelo/:modelo/vips", (req, res) => {
@@ -339,258 +322,115 @@ app.get("/api/modelo/:modelo/vips", (req, res) => {
 });
 
 
-// 🔹 SALVAR BIO
-app.post("/saveBio", auth, (req, res) => {
-    const { bio, modelo } = req.body;
-    if (!modelo) return res.status(400).json({ success: false });
-
-    const pasta = path.join(BASE_UPLOADS, modelo);
-    if (!fs.existsSync(pasta)) fs.mkdirSync(pasta, { recursive: true });
-
-    fs.writeFileSync(path.join(pasta, "bio.txt"), bio || "");
-    res.json({ success: true });
-});
-
 // ===============================
 // UPLOAD AVATAR E CAPA
 // ===============================
-const uploadAvatar = multer({ storage: multer.memoryStorage() });
 
-app.post("/uploadAvatar", uploadAvatar.single("avatar"), (req, res) => {
-  try {
-    const { modelo } = req.body;
+app.post(
+  "/uploadAvatar",
+  authMiddleware,
+  onlyModelo,
+  upload.single("avatar"),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "Arquivo não enviado" });
+      }
 
-    if (!modelo || !req.file) {
-      return res.status(400).json({ success: false });
+      const result = await new Promise((resolve, reject) => {
+        cloudinary.uploader.upload_stream(
+          {
+            folder: `velvet/${req.user.id}/avatar`,
+            transformation: [{ width: 400, height: 400, crop: "fill" }]
+          },
+          (err, result) => (err ? reject(err) : resolve(result))
+        ).end(req.file.buffer);
+      });
+      const modelos = lerModelos();
+
+modelos[req.user.id] ??= {};
+modelos[req.user.id].avatar = result.secure_url;
+
+salvarModelos(modelos);
+
+
+      // ✅ RESPONDE AO FRONT
+      res.json({ url: result.secure_url });
+
+    } catch (err) {
+      console.error("Erro upload avatar:", err);
+      res.status(500).json({ error: "Erro ao atualizar avatar" });
     }
-
-    const pastaModelo = path.join(__dirname, "uploads", "modelos", modelo);
-    if (!fs.existsSync(pastaModelo)) {
-      fs.mkdirSync(pastaModelo, { recursive: true });
-    }
-
-    const caminhoAvatar = path.join(pastaModelo, "avatar.jpg");
-    fs.writeFileSync(caminhoAvatar, req.file.buffer);
-
-    res.json({
-      success: true,
-      avatar: `/uploads/modelos/${modelo}/avatar.jpg`
-    });
-  } catch (err) {
-    console.error("❌ ERRO UPLOAD AVATAR:", err);
-    res.status(500).json({ success: false });
   }
-});
+);
 
-const uploadCapa = multer({ storage: multer.memoryStorage() });
-app.post("/uploadCapa", uploadCapa.single("capa"), (req, res) => {
-  try {
-    const { modelo } = req.body;
 
-    if (!modelo) {
-      return res.status(400).json({ success: false, error: "Modelo não enviado" });
+
+app.post(
+  "/uploadCapa",
+  authMiddleware,
+  onlyModelo,
+  upload.single("capa"),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "Arquivo não enviado" });
+      }
+
+      const result = await new Promise((resolve, reject) => {
+        cloudinary.uploader.upload_stream(
+          {
+            folder: `velvet/${req.user.id}/capa`,
+            transformation: [{ width: 1200, height: 400, crop: "fill" }]
+          },
+          (err, result) => (err ? reject(err) : resolve(result))
+        ).end(req.file.buffer);
+      });
+const modelos = lerModelos();
+
+modelos[req.user.id] ??= {};
+modelos[req.user.id].capa = result.secure_url;
+
+salvarModelos(modelos);
+
+      // ✅ RESPONDE AO FRONT
+      res.json({ url: result.secure_url });
+
+    } catch (err) {
+      console.error("Erro upload capa:", err);
+      res.status(500).json({ error: "Erro ao atualizar capa" });
     }
-
-    if (!req.file) {
-      return res.status(400).json({ success: false, error: "Arquivo não enviado" });
-    }
-
-    const pastaModelo = path.join(__dirname, "uploads", "modelos", modelo);
-
-    if (!fs.existsSync(pastaModelo)) {
-      fs.mkdirSync(pastaModelo, { recursive: true });
-    }
-
-    const caminhoCapa = path.join(pastaModelo, "capa.jpg");
-    fs.writeFileSync(caminhoCapa, req.file.buffer);
-
-    res.json({
-      success: true,
-      capa: `/uploads/modelos/${modelo}/capa.jpg`
-    });
-
-  } catch (err) {
-    console.error("❌ ERRO UPLOAD CAPA:", err);
-    res.status(500).json({ success: false, error: "Erro interno no servidor" });
   }
-});
-
-// ===============================
-// FEED – MÍDIAS
-// ===============================
-
-const storageMidias = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const modelo = req.query.modelo;
-        if (!modelo) return cb(new Error("Modelo não informado"));
-
-        const pasta = path.join(__dirname, "uploads", "modelos", modelo, "conteudos")
-
-        if (!fs.existsSync(pasta)) fs.mkdirSync(pasta, { recursive: true });
-        cb(null, pasta);
-    },
-    filename: (req, file, cb) => {
-        const nome = Date.now() + path.extname(file.originalname);
-        cb(null, nome);
-    }
-});
-
-const uploadMidia = multer({
-  storage: storageMidias,
-  fileFilter: (req, file, cb) => {
-    const allowed = [
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-      "video/mp4"
-    ];
-
-    if (!allowed.includes(file.mimetype)) {
-      return cb(new Error("Tipo de arquivo não permitido"));
-    }
-
-    cb(null, true);
-  },
-  limits: {
-    fileSize: 20 * 1024 * 1024
-  }
-});
-
-// 🔹 UPLOAD MÍDIA
-app.post("/uploadMidia", auth, uploadMidia.single("file"), (req, res) => {
-    const modelo = req.query.modelo;
-    const url = `/uploads/modelos/${modelo}/midias/${req.file.filename}`;
-    res.json({ url });
-});
-
-// 🔹 GET MÍDIAS
-app.get("/getMidias/:modelo", auth, (req, res) => {
-    const modelo = req.params.modelo;
-    const pasta = path.join(BASE_UPLOADS, modelo, "midias");
-
-    if (!fs.existsSync(pasta)) return res.json({ midias: [] });
-
-    const arquivos = fs.readdirSync(pasta).map(f => `/uploads/modelos/${modelo}/midias/${f}`);
-    res.json({ midias: arquivos });
-});
-
-// 🔹 DELETE MÍDIA
-app.post("/deleteMidia", (req, res) => {
-    const { url } = req.body;
-    if (!url) return res.json({ success: false });
-
-    const filePath = path.join(__dirname, url);
-    if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-        return res.json({ success: true });
-    }
-    res.json({ success: false });
-});
-
-//======================ATUALIZA FEED
-app.get("/getModelos", auth, (req, res) => {
-    const base = path.join(__dirname, "uploads", "modelos");
-
-    if (!fs.existsSync(base)) {
-        return res.json({ modelos: [] });
-    }
-
-    const modelos = fs.readdirSync(base)
-        .filter(nome => fs.statSync(path.join(base, nome)).isDirectory())
-        .map(nome => {
-            const avatarPath = path.join(base, nome, "avatar.jpg");
-
-            return {
-                nome,
-                avatar: fs.existsSync(avatarPath)
-                    ? `/uploads/modelos/${nome}/avatar.jpg`
-                    : "/assets/avatarDefault.png"
-            };
-        });
-
-    res.json({ modelos });
-});
-
-//========================================
-//ROTA CONTEUDOS
-//=========================================
-// LISTAR CONTEÚDOS
-app.get("/getConteudos", (req, res) => {
-const { modelo } = req.query;
-const pasta = path.join(__dirname, "uploads", "modelos", modelo, "conteudos");
-
-if (!fs.existsSync(pasta)) return res.json([]);
-
-
-const arquivos = fs.readdirSync(pasta).map(nome => {
-const ext = path.extname(nome);
-return {
-id: nome,
-tipo: ext === ".mp4" ? "video" : "imagem",
-url: `/uploads/modelos/${modelo}/conteudos/${nome}`
-};
-});
-
-
-res.json(arquivos);
-});
-
-
-// UPLOAD CONTEÚDO
-const uploadConteudo = multer({ storage: multer.diskStorage({
-destination: (req, file, cb) => {
-const pasta = path.join(__dirname, "uploads", "modelos", req.query.modelo, "conteudos");
-fs.mkdirSync(pasta, { recursive: true });
-cb(null, pasta);
-},
-filename: (req, file, cb) => {
-cb(null, Date.now() + path.extname(file.originalname));
-}
-})});
-
-
-app.post("/uploadConteudo", uploadConteudo.single("conteudo"), (req, res) => {
-  const modelo = req.query.modelo;
-  const preco = Number(req.body.preco || 0);
-
-  if (!modelo || !req.file) {
-    return res.status(400).json({ success: false });
-  }
-
-  const id = Date.now().toString();
-
-  const novo = {
-    id,
-    type: "conteudo",
-    cliente: null,          // ainda não foi enviado
-    modelo,
-    from: modelo,
-    arquivo: req.file.filename,
-    tipo: req.file.mimetype.startsWith("video") ? "video" : "imagem",
-    preco,
-    timestamp: Date.now()
-  };
-
-  const messages = readMessages();
-  messages.push(novo);
-  saveMessages(messages);
-
-  res.json({ success: true, id });
-});
-
-
-// APAGAR
-app.delete("/deleteConteudo", (req, res) => {
-const { modelo, id } = req.query;
-const caminho = path.join(__dirname, "uploads", "modelos", modelo, "conteudos")
-if (fs.existsSync(caminho)) fs.unlinkSync(caminho);
-res.json({ success: true });
-});
+);
 
 
 // ===============================
 // UTILITÁRIOS chat
 // ===============================
+const MODELOS_FILE = "modelos.json";
+
+function lerModelos() {
+  if (!fs.existsSync(MODELOS_FILE)) {
+    fs.writeFileSync(MODELOS_FILE, JSON.stringify({}));
+  }
+  return JSON.parse(fs.readFileSync(MODELOS_FILE, "utf8"));
+}
+
+function salvarModelos(data) {
+  fs.writeFileSync(MODELOS_FILE, JSON.stringify(data, null, 2));
+}
+
+const FEED_FILE = "feed.json";
+
+function readFeed() {
+  if (!fs.existsSync(FEED_FILE)) return [];
+  return JSON.parse(fs.readFileSync(FEED_FILE));
+}
+
+function saveFeed(feed) {
+  fs.writeFileSync(FEED_FILE, JSON.stringify(feed, null, 2));
+}
+
 function readMessages() {
     if (!fs.existsSync(messagesFile)) return [];
     return JSON.parse(fs.readFileSync(messagesFile, "utf8"));
@@ -675,8 +515,6 @@ socket.on("loginModelo", modelo => {
   onlineModelos[modelo] = socket.id;
   socket.emit("unreadUpdate", unreadMap[modelo] ?? {});
 });
-
-
   // entrar na sala
 socket.on("joinRoom", ({ cliente, modelo }) => {
   if (!socket.authenticated) return;
@@ -711,49 +549,48 @@ socket.on("joinRoom", ({ cliente, modelo }) => {
     }
   });
 
-  // enviar mensagem
   socket.on("sendMessage", ({ cliente, modelo, text }) => {
-    if (!socket.user) return;
+  if (!socket.user) return;
 
-    let from;
-    if (socket.role === "cliente") {
-      if (!verificarAssinatura(cliente, modelo)) {
-        socket.emit("errorMessage", "Apenas clientes VIP podem enviar mensagens.");
-        return;
-      }
-      from = cliente;
+  let from;
+
+  if (socket.role === "cliente") {
+    if (!verificarAssinatura(cliente, modelo)) {
+      socket.emit("errorMessage", "Apenas clientes VIP podem enviar mensagens.");
+      return;
     }
+    from = cliente;
+  }
 
-    if (socket.role === "modelo") {
-      from = modelo;
-    }
+  if (socket.role === "modelo") {
+    from = modelo;
+  }
 
-    const newMessage = {
-      cliente,
-      modelo,
-      from,
-      text,
-      timestamp: Date.now()
-    };
+  const newMessage = {
+    cliente,
+    modelo,
+    from,
+    text,
+    timestamp: Date.now()
+  };
 
-    const messages = readMessages();
-    messages.push(newMessage);
-    saveMessages(messages);
+  const messages = readMessages();
+  messages.push(newMessage);
+  saveMessages(messages);
 
-    io.to(getRoom(cliente, modelo)).emit("newMessage", newMessage);
+  io.to(getRoom(cliente, modelo)).emit("newMessage", newMessage);
 
-    // unread
-    if (from === cliente) {
-      unreadMap[modelo] ??= {};
-      unreadMap[modelo][cliente] = true;
-      fs.writeFileSync(UNREAD_FILE, JSON.stringify(unreadMap, null, 2));
-    }
+  // unread
+  if (from === cliente) {
+    unreadMap[modelo] ??= {};
+    unreadMap[modelo][cliente] = true;
+  }
 
-    if (from === modelo) {
-      unreadMap[cliente] ??= {};
-      unreadMap[cliente][modelo] = true;
-    }
-  });
+  if (from === modelo) {
+    unreadMap[cliente] ??= {};
+    unreadMap[cliente][modelo] = true;
+  }
+});
 
   // disconnect
   socket.on("disconnect", () => {
@@ -801,27 +638,6 @@ app.get("/api/modelo/:modelo/ultima-resposta", (req, res) => {
     }
 });
 
-
-app.get("/conteudo/abrir", (req, res) => {
-  const { modelo, conteudoId } = req.query;
-
-  if (!modelo || !conteudoId) {
-    return res.status(400).send("Dados inválidos");
-  }
-
-  const caminho = path.join(__dirname, "uploads", "modelos", modelo, "conteudos", conteudoId);
-
-  console.log("🔎 Tentando abrir:", caminho);
-
-
-  if (!fs.existsSync(caminho)) {
-    console.log("❌ NÃO EXISTE");
-    return res.status(404).send("Arquivo não encontrado");
-  }
-
-  console.log("✅ EXISTE");
-  res.sendFile(caminho);
-});
 
 
 //***************************************************************************************************************** */
@@ -1004,6 +820,45 @@ app.post("/api/vip/criar", async (req, res) => {
     res.status(500).json({ error: "Erro ao criar VIP" });
   }
 });
+
+app.post(
+  "/uploadMidia",
+  authMiddleware,
+  onlyModelo,
+  upload.single("midia"),
+  async (req, res) => {
+    try {
+      const result = await new Promise((resolve, reject) => {
+        cloudinary.uploader.upload_stream(
+          {
+            folder: `velvet/${req.user.id}/midias`,
+            resource_type: "auto"
+          },
+          (err, result) => (err ? reject(err) : resolve(result))
+        ).end(req.file.buffer);
+      });
+
+      // 🔑 SALVAR NO FEED (ANTES DE RESPONDER)
+      const feed = readFeed();
+      feed.push({
+        id: Date.now().toString(),
+        modeloId: req.user.id,
+        url: result.secure_url,
+        tipo: result.resource_type,
+        criadoEm: Date.now()
+      });
+      saveFeed(feed);
+
+      // ✅ SÓ AGORA RESPONDE
+      res.json({ url: result.secure_url });
+
+    } catch (err) {
+      console.error("Erro upload midia:", err);
+      res.status(500).json({ error: "Erro ao enviar mídia" });
+    }
+  }
+);
+
 
 // ===============================
 // START SERVER
