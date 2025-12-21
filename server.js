@@ -26,6 +26,8 @@ const onlineModelos = {};
 const UNREAD_FILE = "unread.json";
 const VIP_PRECO = 0.1;
 const valorVip = 0.1; // 💰 preço da subscrição VIP
+const upload = multer({ dest: "uploads/" });
+
 
 
 app.get("/", (req, res) => {
@@ -365,7 +367,7 @@ const storageMidias = multer.diskStorage({
 const uploadMidia = multer({ storage: storageMidias });
 
 // 🔹 UPLOAD MÍDIA
-app.post("/uploadMidia", auth, upload.single("file"), (req, res) => {
+app.post("/uploadMidia", auth, uploadMidia.single("file"), (req, res) => {
     const modelo = req.query.modelo;
     const url = `/uploads/modelos/${modelo}/midias/${req.file.filename}`;
     res.json({ url });
