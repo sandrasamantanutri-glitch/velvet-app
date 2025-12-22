@@ -249,66 +249,6 @@ const mpClient = new MercadoPagoConfig({
 
 const paymentClient = new Payment(mpClient);
 
-// ===============================
-// 🔐 REGISTRO DE USUÁRIO
-// ===============================
-
-// arquivo simples para guardar usuários (TEMPORÁRIO)
-const USERS_FILE = path.join(__dirname, "users.json");
-
-function lerUsuarios() {
-  if (!fs.existsSync(USERS_FILE)) {
-    fs.writeFileSync(USERS_FILE, JSON.stringify([]));
-  }
-  return JSON.parse(fs.readFileSync(USERS_FILE, "utf8"));
-}
-
-function salvarUsuarios(users) {
-  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-}
-
-// 🔹 REGISTRO
-app.post("/api/register", async (req, res) => {
-  try {
-    console.log("🔔 /api/register chamado");
-
-    const { email, senha, role } = req.body;
-
-    if (!email || !senha || !role) {
-      return res.status(400).json({ error: "Dados incompletos" });
-    }
-
-    const users = lerUsuarios();
-
-    // 🔒 evita duplicado
-    if (users.find(u => u.email === email)) {
-      return res.status(409).json({ error: "Email já cadastrado" });
-    }
-
-    const hash = await bcrypt.hash(senha, 10);
-
-    const novoUser = {
-      id: Date.now().toString(),
-      email,
-      senha: hash,
-      role
-    };
-
-    users.push(novoUser);
-    salvarUsuarios(users);
-
-    console.log("✅ Usuário criado:", email);
-
-    return res.json({ success: true });
-
-  } 
- catch (err) {
-  console.error("🔥 ERRO REGISTER:", err);
-  return res.status(500).json({ error: err.message });
-}
-
-});
-
 //blindagem vip
 
 const SUBSCRIPTIONS_FILE = path.join(__dirname, "subscriptions.json");
