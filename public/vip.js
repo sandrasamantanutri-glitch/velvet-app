@@ -1,9 +1,9 @@
 const socket = window.socket;
-Authorization: "Bearer " + window.authToken
+Authorization: "Bearer " + 
 
 fetch("/api/rota-protegida", {
   headers: {
-    "Authorization": "Bearer " + token
+    "Authorization": "Bearer " + localStorage.removeItem("token")
   }
 });
 

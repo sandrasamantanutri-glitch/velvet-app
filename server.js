@@ -457,29 +457,30 @@ app.post("/api/register", async (req, res) => {
 
 //END POINT DE LOGIN
 app.post("/api/login", async (req, res) => {
-  const { email, senha } = req.body;
+  try {
+    const { email, senha } = req.body;
 
-  const result = await db.query(
-    "SELECT * FROM users WHERE email = $1 AND is_active = true",
-    [email]
-  );
+    if (result.rowCount === 0)
+      return res.status(401).json({ erro: "Usuário não encontrado" });
 
-  if (result.rowCount === 0)
-    return res.status(401).json({ erro: "Usuário não encontrado" });
+    const user = result.rows[0];
 
-  const user = result.rows[0];
+    const ok = await bcrypt.compare(senha, user.password_hash);
+    if (!ok)
+      return res.status(401).json({ erro: "Senha inválida" });
 
-  const ok = await bcrypt.compare(senha, user.password_hash);
-  if (!ok)
-    return res.status(401).json({ erro: "Senha inválida" });
+    const token = jwt.sign(
+      { id: user.id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
 
-const token = jwt.sign(
-  { id: user.id, role: user.role },
-  process.env.JWT_SECRET,
-  { expiresIn: "7d" }
-);
+    res.json({ token, role: user.role });
 
-  res.json({ token, role: user.role });
+  } catch (err) {
+    console.error("🔥 ERRO LOGIN:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
 });
 
 

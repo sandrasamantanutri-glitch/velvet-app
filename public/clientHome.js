@@ -1,4 +1,4 @@
-Authorization: "Bearer " + window.authToken
+Authorization: "Bearer " + localStorage.removeItem("token");
 
 fetch("/api/rota-protegida", {
   headers: {
@@ -14,8 +14,8 @@ function logout() {
 
 
 (function () {
-  const token = localStorage.getItem("auth_token");
-  const role = localStorage.getItem("user_role");
+  const token = localStorage.getItem("token");
+  const role = localStorage.getItem("role");
 
   if (!token || role !== "cliente") {
     localStorage.clear();
@@ -42,7 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     fetch("/getModelos", {
   headers: {
-    Authorization: "Bearer " + localStorage.getItem("auth_token")
+    Authorization: "Bearer " + localStorage.getItem("token")
   }
 })
   .then(res => {
