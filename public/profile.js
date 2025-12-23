@@ -102,43 +102,34 @@ async function carregarPerfilPublico() {
   if (btnVip) btnVip.disabled = false;
 }
 
-const MP_PLAN_ID = "7262f8cc87cd454cadd52c2eb889ae83";
-
 const btnVip = document.getElementById("btnVip");
 
 if (btnVip) {
-  btnVip.addEventListener("click", () => {
+  btnVip.addEventListener("click", async () => {
     if (!modeloIdAtual) {
       alert("Modelo não identificada");
       return;
     }
 
-    const checkoutUrl =
-      `https://www.mercadopago.com.br/subscriptions/checkout` +
-      `?preapproval_plan_id=${MP_PLAN_ID}` +
-      `&external_reference=${localStorage.getItem("userId")}_${modeloIdAtual}`;
+    const res = await fetch("/api/vip/pix", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token
+      },
+      body: JSON.stringify({ modelo_id: modeloIdAtual })
+    });
 
-    window.location.href = checkoutUrl;
+    const data = await res.json();
+
+    if (data.pix) {
+      abrirModalPix(data.pix);
+    } else {
+      alert("Erro ao gerar pagamento VIP");
+    }
   });
 }
-btnVip.addEventListener("click", async () => {
-  const res = await fetch("/api/vip/pix", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + token
-    },
-    body: JSON.stringify({ modelo_id: modeloIdAtual })
-  });
 
-  const data = await res.json();
-
-  if (data.pix) {
-    abrirModalPix(data.pix); // QR + copia e cola
-  } else {
-    alert("Erro ao gerar pagamento VIP");
-  }
-});
 
 // ===============================
 // FEED
