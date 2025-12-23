@@ -96,12 +96,14 @@ async function carregarPerfilPublico() {
 
   modeloIdAtual = modelo.id;
   console.log("🧩 Modelo carregada:", modeloIdAtual);
+
+  aplicarPerfilNoDOM(modelo); // 🔥 ISSO ESTAVA FALTANDO
+
+  if (btnVip) btnVip.disabled = false;
 }
 
 
 const btnVip = document.getElementById("btnVip");
-if (btnVip) btnVip.disabled = true;
-
 if (btnVip) {
   btnVip.addEventListener("click", async () => {
     if (!modeloIdAtual) {
@@ -115,7 +117,7 @@ if (btnVip) {
       return;
     }
 
-    const res = await fetch("/api/vip/assinar", {
+    const res = await fetch("/api/vip/assinatura", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
