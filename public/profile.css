@@ -59,6 +59,16 @@ body {
     letter-spacing: 1px;
 }
 
+.profile-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 18px;
+  position: relative;
+}
+
+
  /* AVATAR CENTRAL */
 .avatar-area {
     width: 100%;
@@ -322,17 +332,31 @@ body {
 }
 
 .btnvoltar {
-  background: none;
-  border: none;
-  position: absolute;
-  top: 511px;
-  left: 150px;
+  background: #ffffff;
+  border: 2px solid #7B2CFF;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
   cursor: pointer;
+  transition: 0.2s ease;
 }
 
 .btnvoltar img {
-  width: 25px;
-  height: 25px;
+  width: 18px;
+  height: 18px;
+}
+
+.btnvoltar:hover {
+  background: #7B2CFF;
+}
+
+.btnvoltar:hover img {
+  filter: brightness(0) invert(1);
 }
 
 
