@@ -92,6 +92,8 @@ async function carregarPerfilPublico() {
 
   const modelo = await res.json();
 
+  console.log("🧪 OBJETO MODELO RECEBIDO:", modelo);
+
   modeloIdAtual = modelo.id;
   console.log("🧩 Modelo carregada:", modeloIdAtual);
 }
