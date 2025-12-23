@@ -20,6 +20,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const bioText        = document.getElementById("profileBio");
   const token = localStorage.getItem("token");
 
+  const nome = localStorage.getItem("modeloPerfil");
+  if (!nome) {
+  alert("Modelo não identificada");
+  throw new Error("modeloPerfil não encontrado");
+}
+
   if (!btnEditarBio || !popupBio) return;
 
   // abrir popup
