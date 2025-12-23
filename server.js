@@ -360,6 +360,7 @@ app.get("/api/modelo/publico/:nome", auth, async (req, res) => {
 
     const result = await db.query(`
       SELECT
+        m.user_id AS id,   -- 🔥 ESSENCIAL
         m.nome,
         m.avatar,
         m.capa,
