@@ -41,7 +41,19 @@ const listaMidias = document.getElementById("listaMidias");
 // ===============================
 // PERFIL BASE (FONTE DA VERDADE)
 // ===============================
+const token = localStorage.getItem("token");
+const role = localStorage.getItem("role");
+const modeloPublico = localStorage.getItem("modeloPerfil");
 
+let modo = "privado";
+
+if (role === "cliente" && modeloPublico) {
+  modo = "publico";
+}
+
+console.log("🧭 PROFILE MODO:", modo, "| role:", role);
+
+//PRIVADO
 async function carregarPerfil() {
   try {
     const token = localStorage.getItem("token");
@@ -59,33 +71,51 @@ async function carregarPerfil() {
     console.error("Erro ao carregar perfil:", err);
   }
 }
-
+//PUBLICO
 async function carregarPerfilPublico() {
   const nome = localStorage.getItem("modeloPerfil");
+  if (!nome) return;
 
   const res = await fetch(`/api/modelo/publico/${nome}`, {
     headers: { Authorization: "Bearer " + token }
   });
 
   const modelo = await res.json();
-  preencherPerfil(modelo, "publico");
+  aplicarPerfilNoDOM(modelo);
 }
 
-if (modo === "privado") {
-  carregarPerfil();
-} else {
-  carregarPerfilPublico();
+if (modo === "publico") {
+  document.getElementById("btnvoltar")?.addEventListener("click", () => {
+    localStorage.removeItem("modeloPerfil");
+  });
 }
 
 //CARREGA PERFIL/FEED
 
 document.addEventListener("DOMContentLoaded", () => {
-  carregarPerfil();
-  carregarFeed();
-});
 
-window.addEventListener("beforeunload", () => {
-  localStorage.removeItem("modeloPerfil");
+  // controla classes visuais
+  document.body.classList.remove("role-modelo", "role-cliente");
+
+  if (role === "modelo") {
+    document.body.classList.add("role-modelo");
+  }
+
+  if (role === "cliente") {
+    document.body.classList.add("role-cliente");
+  }
+
+  // 🔒 MODELO
+  if (modo === "privado") {
+    carregarPerfil();
+    carregarFeed(); // só modelo vê as próprias mídias
+  }
+
+  // 👀 CLIENTE
+  if (modo === "publico") {
+    carregarPerfilPublico();
+    // ❌ cliente NÃO chama carregarFeed()
+  }
 });
 
 //LOGOUT
