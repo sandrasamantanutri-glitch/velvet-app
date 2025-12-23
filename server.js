@@ -414,6 +414,36 @@ app.get("/api/modelo/publico/:nome", auth, async (req, res) => {
   }
 });
 
+// ===============================
+// 👀 FEED PÚBLICO DA MODELO (CLIENTE)
+// ===============================
+app.get("/api/modelo/:nome/feed", auth, async (req, res) => {
+  try {
+    if (req.user.role !== "cliente") {
+      return res.status(403).json({ error: "Apenas clientes" });
+    }
+
+    const { nome } = req.params;
+
+    const result = await db.query(`
+      SELECT
+        c.url,
+        c.tipo
+      FROM conteudos c
+      JOIN modelos m ON m.user_id = c.user_id
+      WHERE m.nome = $1
+      ORDER BY c.criado_em DESC
+    `, [nome]);
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error("Erro feed público:", err);
+    res.status(500).json([]);
+  }
+});
+
+
 
 
 

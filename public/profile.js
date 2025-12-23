@@ -119,6 +119,21 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+function carregarFeedPublico() {
+  const nome = localStorage.getItem("modeloPerfil");
+  if (!nome || !listaMidias) return;
+
+  fetch(`/api/modelo/${nome}/feed`, {
+    headers: { Authorization: "Bearer " + token }
+  })
+    .then(r => r.json())
+    .then(feed => {
+      listaMidias.innerHTML = "";
+      feed.forEach(item => adicionarMidia(item.url, false));
+    });
+}
+
+
 //LOGOUT
 function logout() {
   localStorage.removeItem("token");
