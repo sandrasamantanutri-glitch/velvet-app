@@ -9,10 +9,11 @@ document.addEventListener("DOMContentLoaded", () => {
   console.log("✅ Botão VIP encontrado");
 
  btnVip.addEventListener("click", async () => {
-  if (!modeloAtualId) {
-    alert("Modelo não identificada");
-    return;
-  }
+  if (!window.modeloAtualId) {
+  alert("Modelo não identificada");
+  return;
+}
+
 
   const res = await fetch("/api/vip/assinatura", {
     method: "POST",
@@ -21,9 +22,9 @@ document.addEventListener("DOMContentLoaded", () => {
       Authorization: "Bearer " + localStorage.getItem("token")
     },
     body: JSON.stringify({
-      modelo_id: modeloAtualId
-    })
-  });
+  modelo_id: window.modeloAtualId
+})
+});
 
   const data = await res.json();
   if (data.init_point) {

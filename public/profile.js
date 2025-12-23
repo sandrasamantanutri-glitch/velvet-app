@@ -16,7 +16,7 @@ if (!nome) {
 }
 
 // ID da modelo (vem do backend)
-let modeloAtualId = null;
+window.modeloAtualId = null;
 
 //ELEMENTOS BIO
 const btnSalvarBio = document.getElementById("btnSalvarBio");
@@ -93,7 +93,7 @@ async function carregarPerfilPublico() {
 
   const modelo = await res.json();
 
-  modeloAtualId = modelo.user_id; // 🔑 vem do banco
+  window.modeloAtualId = modelo.user_id;
 
   aplicarPerfilNoDOM(modelo);
 }
