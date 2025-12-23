@@ -331,12 +331,25 @@ app.get("/api/me", auth, (req, res) => {
 });
 
 
-app.get("/api/feed/me", auth, (req, res) => {
-  const feed = readJSON(FEED_FILE, []).filter(
-    f => f.modeloId === req.user.id
-  );
-  res.json(feed);
+app.get("/api/feed/me", auth, async (req, res) => {
+  try {
+    const result = await db.query(
+      `
+      SELECT id, url, tipo, criado_em
+      FROM midias
+      WHERE user_id = $1
+      ORDER BY criado_em DESC
+      `,
+      [req.user.id]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Erro carregar feed:", err);
+    res.status(500).json({ error: "Erro ao carregar feed" });
+  }
 });
+
 
 //ROTA USER
 app.post("/api/register", async (req, res) => {
@@ -1153,18 +1166,11 @@ app.post(
         ).end(req.file.buffer);
       });
 
-      // 🔑 SALVAR NO FEED (ANTES DE RESPONDER)
-      const feed = readFeed();
-      feed.push({
-        id: Date.now().toString(),
-        modeloId: req.user.id,
-        url: result.secure_url,
-        tipo: result.resource_type,
-        criadoEm: Date.now()
-      });
-      saveFeed(feed);
+      await db.query(
+        "INSERT INTO midias (user_id, url, tipo) VALUES ($1, $2, $3)",
+        [req.user.id, result.secure_url, result.resource_type]
+      );
 
-      // ✅ SÓ AGORA RESPONDE
       res.json({ url: result.secure_url });
 
     } catch (err) {
@@ -1173,6 +1179,7 @@ app.post(
     }
   }
 );
+
 
 app.get("/api/health/db", async (req, res) => {
   try {
