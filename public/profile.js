@@ -115,7 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // 👀 CLIENTE
   if (modo === "publico") {
     carregarPerfilPublico();
-    // ❌ cliente NÃO chama carregarFeed()
+    carregarFeedPublico();
   }
 });
 
