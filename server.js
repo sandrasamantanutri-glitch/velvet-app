@@ -845,8 +845,7 @@ app.get("/api/modelo/:modelo/ultima-resposta", (req, res) => {
 // ===============================
 
 // Buscar dados
-app.get(
-  "/api/modelo/dados",
+app.get("/api/modelo/dados",
   auth,
   auth,
   authModelo,
