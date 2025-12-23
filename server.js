@@ -285,7 +285,10 @@ app.use(express.static(path.join(__dirname, "public")));
 // ===============================
 // ATUALIZAR BIO DO MODELO
 // ===============================
-app.put("/api/modelo/bio", authModelo, (req, res) => {
+// ===============================
+// ATUALIZAR BIO DO MODELO (POSTGRES)
+// ===============================
+app.put("/api/modelo/bio", authModelo, async (req, res) => {
   try {
     const { bio } = req.body;
 
@@ -293,15 +296,12 @@ app.put("/api/modelo/bio", authModelo, (req, res) => {
       return res.status(400).json({ error: "Bio inválida" });
     }
 
-    const modelos = lerModelos();
+    await db.query(
+      "UPDATE public.modelos SET bio = $1 WHERE user_id = $2",
+      [bio, req.user.id]
+    );
 
-    // 🔑 CHAVE ÚNICA = user.id
-    modelos[req.user.id] ??= {};
-    modelos[req.user.id].bio = bio;
-
-    salvarModelos(modelos); // 🔥 ISSO É O QUE FAZ SALVAR
-
-    console.log("BIO SALVA:", req.user.id, bio);
+    console.log("BIO SALVA NO BANCO:", req.user.id);
 
     res.json({ success: true });
 
@@ -310,7 +310,6 @@ app.put("/api/modelo/bio", authModelo, (req, res) => {
     res.status(500).json({ error: "Erro interno" });
   }
 });
-
 
 
 app.get("/api/me", auth, (req, res) => {
