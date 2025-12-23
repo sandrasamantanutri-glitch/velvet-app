@@ -31,6 +31,7 @@ const onlineModelos = {};
 const UNREAD_FILE = "unread.json";
 const VIP_PRECO = 0.1;
 const valorVip = 0.1; // 💰 preço da subscrição VIP
+const authMiddleware = auth;
 
 const cloudinary = require("cloudinary").v2;
 
@@ -60,27 +61,21 @@ function authModelo(req, res, next) {
 // ===============================
 // 🔐 MIDDLEWARE DE AUTENTICAÇÃO
 // ===============================
-const authMiddleware = auth;
 function auth(req, res, next) {
-  const header = req.headers.authorization;
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ error: "Sem token" });
 
-  if (!header) {
-    return res.status(401).json({ error: "Token ausente" });
-  }
-
-  const token = header.split(" ")[1];
-  if (!token) {
-    return res.status(401).json({ error: "Token inválido" });
-  }
+  const token = authHeader.split(" ")[1];
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded; // { id, role }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
     next();
-  } catch (err) {
-    return res.status(401).json({ error: "Token inválido ou expirado" });
+  } catch {
+    return res.status(401).json({ error: "Token inválido" });
   }
 }
+
 
 
 function onlyModelo(req, res, next) {
@@ -108,23 +103,6 @@ const authLimiter = rateLimit({
   max: 100
 });
 
-app.get("/api/me", auth, (req, res) => {
-  res.json(req.user);
-});
-
-app.get("/api/modelo/me", authMiddleware, authModelo, (req, res) => {
-  const modelos = lerModelos();
-  const dados = modelos[req.user.id] || {};
-
-res.json({
-  id: req.user.id,
-  nome: dados.nome || "Modelo",
-  bio: dados.bio || "",
-  avatar: dados.avatar || "",
-  capa: dados.capa || ""
-});
-
-});
 // ===============================
 // 📦 CONTEÚDOS – MODELO (JWT)
 // ===============================
@@ -401,40 +379,39 @@ app.post("/api/login", async (req, res) => {
     const { email, senha } = req.body;
 
     if (!email || !senha) {
-      return res.status(400).json({ erro: "Email e senha obrigatórios" });
+      return res.status(400).json({ error: "Dados incompletos" });
     }
 
-    // 🔑 QUERY DEFINIDA CORRETAMENTE
     const result = await db.query(
       "SELECT id, email, password_hash, role FROM users WHERE email = $1",
       [email]
     );
 
-    if (result.rowCount === 0) {
-      return res.status(401).json({ erro: "Usuário não encontrado" });
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: "Usuário não encontrado" });
     }
 
     const user = result.rows[0];
 
-    const ok = await bcrypt.compare(senha, user.password_hash);
-    if (!ok) {
-      return res.status(401).json({ erro: "Senha inválida" });
+    const senhaOk = await bcrypt.compare(senha, user.password_hash);
+    if (!senhaOk) {
+      return res.status(401).json({ error: "Senha incorreta" });
     }
 
     const token = jwt.sign(
-      { id: user.id, role: user.role },
+      { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
-    return res.json({
+    res.json({
       token,
       role: user.role
     });
 
   } catch (err) {
     console.error("🔥 ERRO LOGIN:", err);
-    return res.status(500).json({ erro: "Erro interno no login" });
+    res.status(500).json({ error: "Erro interno no login" });
   }
 });
 

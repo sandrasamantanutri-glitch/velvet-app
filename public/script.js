@@ -1,8 +1,8 @@
 const socket = io();
 
 function logout() {
-  localStorage.removeItem("token");
-  localStorage.removeItem("role");
+  localStorage.setItem("token", data.token);
+  localStorage.setItem("role", data.role);
   window.location.href = "/";
 }
 
