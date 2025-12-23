@@ -18,6 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnFecharPopup = document.getElementById("btnFecharPopup");
   const bioInput       = document.getElementById("bioInput");
   const bioText        = document.getElementById("profileBio");
+  const token = localStorage.getItem("token");
 
   if (!btnEditarBio || !popupBio) return;
 
