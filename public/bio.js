@@ -43,3 +43,42 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
+// ===============================
+// SALVAR BIO (PRODUÇÃO OK)
+// ===============================
+if (btnSalvarBio && bioInput) {
+  btnSalvarBio.addEventListener("click", async () => {
+    const bio = bioInput.value.trim();
+    const token = localStorage.getItem("token");
+
+    if (!bio) {
+      alert("A bio não pode estar vazia");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/modelo/bio", {
+        method: "PUT", // 🔥 TEM QUE SER PUT
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token
+        },
+        body: JSON.stringify({ bio })
+      });
+
+      if (!res.ok) {
+        alert("Erro ao salvar biografia");
+        return;
+      }
+
+      if (profileBio) profileBio.textContent = bio;
+      alert("Biografia salva com sucesso!");
+    } catch (err) {
+      console.error("Erro salvar bio:", err);
+      alert("Erro de conexão");
+    }
+  });
+}
+
+
