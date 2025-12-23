@@ -353,6 +353,34 @@ app.get("/api/feed/me", auth, async (req, res) => {
   }
 });
 
+// ===============================
+// 🌟 FEED OFICIAL DE MODELOS (CLIENTE)
+// ===============================
+app.get("/api/feed/modelos", auth, async (req, res) => {
+  try {
+    if (req.user.role !== "cliente") {
+      return res.status(403).json({ error: "Apenas clientes" });
+    }
+
+    const result = await db.query(`
+      SELECT
+        m.user_id,
+        COALESCE(md.nome_exibicao, m.nome) AS nome,
+        m.avatar
+      FROM modelos m
+      JOIN modelos_dados md ON md.user_id = m.user_id
+      ORDER BY md.atualizado_em DESC
+    `);
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error("Erro feed modelos:", err);
+    res.status(500).json([]);
+  }
+});
+
+
 
 //ROTA USER
 app.post("/api/register", async (req, res) => {
