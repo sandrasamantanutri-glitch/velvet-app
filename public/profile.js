@@ -41,6 +41,7 @@ const listaMidias = document.getElementById("listaMidias");
 // ===============================
 // PERFIL BASE (FONTE DA VERDADE)
 // ===============================
+
 async function carregarPerfil() {
   try {
     const token = localStorage.getItem("token");
@@ -51,12 +52,6 @@ async function carregarPerfil() {
       }
     });
 
-    if (!res.ok) {
-      alert("Acesso negado");
-      window.location.href = "/";
-      return;
-    }
-
     const modelo = await res.json();
     aplicarPerfilNoDOM(modelo);
 
@@ -65,11 +60,32 @@ async function carregarPerfil() {
   }
 }
 
+async function carregarPerfilPublico() {
+  const nome = localStorage.getItem("modeloPerfil");
+
+  const res = await fetch(`/api/modelo/publico/${nome}`, {
+    headers: { Authorization: "Bearer " + token }
+  });
+
+  const modelo = await res.json();
+  preencherPerfil(modelo, "publico");
+}
+
+if (modo === "privado") {
+  carregarPerfil();
+} else {
+  carregarPerfilPublico();
+}
+
 //CARREGA PERFIL/FEED
 
 document.addEventListener("DOMContentLoaded", () => {
   carregarPerfil();
   carregarFeed();
+});
+
+window.addEventListener("beforeunload", () => {
+  localStorage.removeItem("modeloPerfil");
 });
 
 //LOGOUT
