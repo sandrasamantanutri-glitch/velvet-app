@@ -24,64 +24,57 @@ function logout() {
   }
 })();
 
-
-
-// =========================================================
-// CLIENT HOME — FEED DE MODELOS (FETCH VERSION)
-// =========================================================
-
-console.log("clientHome.js carregado");
-
 document.addEventListener("DOMContentLoaded", () => {
-    const lista = document.getElementById("listaModelos");
+  const lista = document.getElementById("listaModelos");
+  const token = localStorage.getItem("token");
 
-    if (!lista) {
-        console.error("listaModelos não encontrada");
-        return;
-    }
-
-    fetch("/getModelos", {
-  headers: {
-    Authorization: "Bearer " + localStorage.getItem("token")
+  if (!lista) {
+    console.error("listaModelos não encontrada");
+    return;
   }
-})
-  .then(res => {
-    if (!res.ok) {
-      throw new Error("Não autorizado ou erro no servidor");
+
+  fetch("/api/modelos", {
+    headers: {
+      Authorization: "Bearer " + token
     }
-    return res.json();
   })
-  .then(data => {
-    console.log("📥 Modelos recebidas:", data);
+    .then(res => {
+      if (!res.ok) throw new Error("Erro ao carregar feed");
+      return res.json();
+    })
+    .then(modelos => {
+      console.log("📥 Modelos:", modelos);
 
-    lista.innerHTML = "";
+      lista.innerHTML = "";
 
-    if (!data.modelos || data.modelos.length === 0) {
-      lista.innerHTML = "<p>Nenhuma modelo cadastrada</p>";
-      return;
-    }
+      if (!modelos || modelos.length === 0) {
+        lista.innerHTML = "<p>Nenhuma modelo disponível</p>";
+        return;
+      }
 
-    data.modelos.forEach(modelo => {
-      const card = document.createElement("div");
-      card.className = "modelItem";
+      modelos.forEach(modelo => {
+        const card = document.createElement("div");
+        card.className = "modelItem";
 
-      card.innerHTML = `
-        <img 
-          src="${modelo.avatar || "/assets/avatarDefault.png"}"
-          alt="${modelo.nome}">
-      `;
+        card.innerHTML = `
+          <img
+            src="${modelo.avatar || "/assets/avatarDefault.png"}"
+            alt="${modelo.nome_exibicao || modelo.nome}">
+        `;
 
-      card.addEventListener("click", () => {
-        console.log("FEED CLIQUE → modelo:", modelo.nome);
-        localStorage.setItem("modeloPerfil", modelo.nome);
-        window.location.href = "profile.html";
+        card.addEventListener("click", () => {
+          localStorage.setItem(
+            "modeloPerfil",
+            modelo.nome_exibicao || modelo.nome
+          );
+          window.location.href = "profile.html";
+        });
+
+        lista.appendChild(card);
       });
-
-      lista.appendChild(card);
+    })
+    .catch(err => {
+      console.error("Erro feed:", err);
+      lista.innerHTML = "<p>Erro ao carregar modelos</p>";
     });
-  })
-  .catch(err => {
-    console.error("Erro ao carregar modelos:", err);
-    lista.innerHTML = "<p>Erro ao carregar modelos</p>";
-  });
-})
+});

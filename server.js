@@ -477,6 +477,35 @@ app.get("/api/modelo/me", auth, async (req, res) => {
   }
 });
 
+// ===============================
+// 🌟 FEED PÚBLICO DE MODELOS (CLIENTE)
+// ===============================
+app.get("/api/modelos", auth, async (req, res) => {
+  try {
+    // 🔐 apenas clientes
+    if (req.user.role !== "cliente") {
+      return res.status(403).json({ error: "Acesso negado" });
+    }
+
+    const result = await db.query(`
+      SELECT
+        m.user_id,
+        m.nome AS nome,
+        m.avatar,
+        md.nome_exibicao
+      FROM modelos m
+      LEFT JOIN modelos_dados md ON md.user_id = m.user_id
+      ORDER BY m.id DESC
+    `);
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error("Erro feed modelos:", err);
+    res.status(500).json([]);
+  }
+});
+
 
 
 //ROTA VIP
