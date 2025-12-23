@@ -73,17 +73,22 @@ async function carregarPerfil() {
   }
 }
 //PUBLICO
-async function carregarPerfilPublico() {
-  const nome = localStorage.getItem("modeloPerfil");
-  if (!nome) return;
+let modeloAtualId = null;
 
+async function carregarPerfilPublico() {
   const res = await fetch(`/api/modelo/publico/${nome}`, {
-    headers: { Authorization: "Bearer " + localStorage.getItem("token") }
+    headers: {
+      Authorization: "Bearer " + localStorage.getItem("token")
+    }
   });
 
   const modelo = await res.json();
+
+  modeloAtualId = modelo.user_id; // 🔑 vem do banco
+
   aplicarPerfilNoDOM(modelo);
 }
+
 
 if (modo === "publico") {
   document.getElementById("btnvoltar")?.addEventListener("click", () => {
