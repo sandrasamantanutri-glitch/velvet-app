@@ -59,30 +59,6 @@ document.addEventListener("DOMContentLoaded", () => {
   socket.on("unreadUpdate", onUnreadUpdate);
 });
 
-
-// ===========================
-// SOCKET
-// ===========================
-
-socket.on("chatHistory", onChatHistory);
-socket.on("newMessage", onNewMessage);
-socket.on("unreadUpdate", onUnreadUpdate);
-
-socket.on("errorMessage", msg => {
-    alert(msg);
-});
-
-socket.on("connect", async () => {
-  await carregarCliente();
-
-  socket.emit("loginCliente", cliente);
-  carregarModelos();
-  pedirUnread();
-
-  const modeloSalvo = localStorage.getItem("chatModelo");
-  if (modeloSalvo) abrirChat(modeloSalvo);
-});
-
 // ===========================
 // HANDLERS
 // ===========================
