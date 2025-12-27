@@ -1578,7 +1578,7 @@ app.post("/api/vip/ativar", auth, async (req, res) => {
     await db.query(`
       INSERT INTO vip_assinaturas
         (cliente_id, modelo_id, status)
-      VALUES ($1,$2,'ativa'())
+      VALUES ($1,$2,'ativa)
     `, [req.user.id, modelo_id]);
 
     res.json({ success: true });
