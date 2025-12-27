@@ -13,7 +13,7 @@ const state = {
 const lista = document.getElementById("listaClientes");
 const chatBox = document.getElementById("chatBox");
 const clienteNome = document.getElementById("clienteNome");
-const input = document.getElementById("msgInput");
+const input = document.getElementById("messageInput");
 const sendBtn = document.getElementById("sendBtn");
 
 document.addEventListener("DOMContentLoaded", async () => {

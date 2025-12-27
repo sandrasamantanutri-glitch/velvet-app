@@ -13,7 +13,7 @@ const state = {
 const lista = document.getElementById("listaModelos");
 const chatBox = document.getElementById("chatBox");
 const modeloNome = document.getElementById("modeloNome");
-const input = document.getElementById("msgInput");
+const input = document.getElementById("messageInput");
 const sendBtn = document.getElementById("sendBtn");
 
 // 🔥 LISTENERS DO CHAT (ESTAVAM FALTANDO)
