@@ -1,12 +1,3 @@
-const io = new Server(server, {
-  cors: {
-    origin: "https://velvet-app-production.up.railway.app",
-    methods: ["GET", "POST"],
-    credentials: true
-  },
-  transports: ["websocket", "polling"]
-});
-
 // ===============================
 // SERVER.JS 
 // ===============================
@@ -62,6 +53,15 @@ app.use(cors({
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+});
+
+const io = new Server(server, {
+  cors: {
+    origin: "https://velvet-app-production.up.railway.app",
+    methods: ["GET", "POST"],
+    credentials: true
+  },
+  transports: ["websocket", "polling"]
 });
 
 // ===============================
