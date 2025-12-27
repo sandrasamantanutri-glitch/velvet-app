@@ -287,14 +287,16 @@ function salvarModelos(data) {
   fs.writeFileSync(MODELOS_FILE, JSON.stringify(data, null, 2));
 }
 
-async function salvarMensagemDB(msg) {
-  await db.query(
-    `
-    INSERT INTO messages (cliente_id, modelo_id, from_user_id, text)
+async function salvarMensagemDB({ clienteId, modeloId, fromUserId, text }) {
+  await db.query(`
+    INSERT INTO messages (cliente, modelo, from_user_id, text)
     VALUES ($1, $2, $3, $4)
-    `,
-    [msg.clienteId, msg.modeloId, msg.fromUserId, msg.text]
-  );
+  `, [
+    clienteId,
+    modeloId,
+    fromUserId,
+    text
+  ]);
 }
 
 async function buscarHistoricoDB(clienteId, modeloId) {
@@ -436,24 +438,20 @@ socket.on("joinRoom", async ({ clienteId, modeloId }) => {
 
   // 💬 enviar mensagem
 socket.on("sendMessage", async ({ clienteId, modeloId, text }) => {
-  if (!text) return;
-
-  const room = `chat_${clienteId}_${modeloId}`;
-  const fromUserId = socket.userId || clienteId;
-
-  console.log("💬 MSG:", room, text);
+  if (!clienteId || !modeloId || !socket.userId) {
+    console.error("❌ Dados ausentes", { clienteId, modeloId, userId: socket.userId });
+    return;
+  }
 
   await salvarMensagemDB({
     clienteId,
     modeloId,
-    fromUserId,
+    fromUserId: socket.userId, // ✅ CERTO
     text
   });
 
-  io.to(room).emit("newMessage", {
-    clienteId,
-    modeloId,
-    from: fromUserId,
+  io.to(`chat_${clienteId}_${modeloId}`).emit("newMessage", {
+    from: socket.userId, // ✅ CERTO
     text
   });
 });

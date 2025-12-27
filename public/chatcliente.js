@@ -145,7 +145,9 @@ function renderHistorico(msgs) {
 
 function renderMensagem(msg) {
   if (!state.modeloAtual) return;
-  if (Number(msg.modeloId) !== state.modeloAtual.id) return;
+
+  // aceita msg sem modeloId (tempo real)
+  if (msg.modeloId && Number(msg.modeloId) !== state.modeloAtual.id) return;
 
   const div = document.createElement("div");
   div.className =
@@ -155,3 +157,4 @@ function renderMensagem(msg) {
   chatBox.appendChild(div);
   chatBox.scrollTop = chatBox.scrollHeight;
 }
+
