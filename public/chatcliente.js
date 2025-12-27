@@ -27,6 +27,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   socket.on("chatHistory", renderHistorico);
   socket.on("newMessage", renderMensagem);
+
+  socket.on("loginCliente", async (cliente) => {
+  socket.role = "cliente";
+  socket.user = cliente;
+
+  const unreadModelos = await buscarUnreadCliente(cliente);
+  socket.emit("unreadUpdate", unreadModelos);
+  });
 });
 
 async function carregarCliente() {

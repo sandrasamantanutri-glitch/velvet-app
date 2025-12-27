@@ -5,17 +5,12 @@
 require("dotenv").config();      // 🔑 PRIMEIRO
 const JWT_SECRET = process.env.JWT_SECRET;
 console.log("JWT_SECRET carregado?", JWT_SECRET);
-
 const cors = require("cors");
 const express = require("express");
 const db = require("./db");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const chatsAtivos = {};
-const unread = {};
-const unreadMap = {};
 const path = require("path");
-const messagesFile = path.join(__dirname, "messages.json");
 const http = require("http")
 const { Server } = require("socket.io");
 const fs = require("fs");
@@ -30,9 +25,7 @@ app.use("/assets", express.static(path.join(__dirname, "assets")));
 const onlineClientes = {};
 const onlineModelos = {};
 const UNREAD_FILE = "unread.json";
-
 const cloudinary = require("cloudinary").v2;
-
 const { MercadoPagoConfig, PreApproval } = require("mercadopago");
 
 const mpClient = new MercadoPagoConfig({
@@ -40,7 +33,6 @@ const mpClient = new MercadoPagoConfig({
 });
 
 const preApprovalClient = new PreApproval(mpClient);
-
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -753,8 +745,82 @@ function lerModelos() {
 function salvarModelos(data) {
   fs.writeFileSync(MODELOS_FILE, JSON.stringify(data, null, 2));
 }
+//CHAT EM PGADMIN//************************************** */
+async function salvarMensagemDB(msg) {
+  await db.query(
+    `
+    INSERT INTO messages (cliente, modelo, from_user, text)
+    VALUES ($1, $2, $3, $4)
+    `,
+    [msg.cliente, msg.modelo, msg.from, msg.text]
+  );
+}
+
+async function buscarHistoricoDB(cliente, modelo) {
+  const result = await db.query(
+    `
+    SELECT cliente, modelo, from_user AS from, text, created_at
+    FROM messages
+    WHERE cliente = $1 AND modelo = $2
+    ORDER BY created_at ASC
+    `,
+    [cliente, modelo]
+  );
+
+  return result.rows;
+}
 
 const FEED_FILE = "feed.json";
+
+async function marcarUnread(cliente, modelo) {
+  await db.query(
+    `
+    INSERT INTO unread (cliente, modelo, has_unread)
+    VALUES ($1, $2, true)
+    ON CONFLICT (cliente, modelo)
+    DO UPDATE SET has_unread = true, updated_at = NOW()
+    `,
+    [cliente, modelo]
+  );
+}
+
+async function limparUnread(cliente, modelo) {
+  await db.query(
+    `
+    UPDATE unread
+    SET has_unread = false, updated_at = NOW()
+    WHERE cliente = $1 AND modelo = $2
+    `,
+    [cliente, modelo]
+  );
+}
+
+async function buscarUnreadCliente(cliente) {
+  const result = await db.query(
+    `
+    SELECT modelo
+    FROM unread
+    WHERE cliente = $1 AND has_unread = true
+    `,
+    [cliente]
+  );
+
+  return result.rows.map(r => r.modelo);
+}
+
+async function buscarUnreadModelo(modelo) {
+  const result = await db.query(
+    `
+    SELECT cliente
+    FROM unread
+    WHERE modelo = $1 AND has_unread = true
+    `,
+    [modelo]
+  );
+
+  return result.rows.map(r => r.cliente);
+}
+
 
 function readFeed() {
   if (!fs.existsSync(FEED_FILE)) return [];
@@ -763,15 +829,6 @@ function readFeed() {
 
 function saveFeed(feed) {
   fs.writeFileSync(FEED_FILE, JSON.stringify(feed, null, 2));
-}
-
-function readMessages() {
-    if (!fs.existsSync(messagesFile)) return [];
-    return JSON.parse(fs.readFileSync(messagesFile, "utf8"));
-}
-
-function saveMessages(messages) {
-    fs.writeFileSync(messagesFile, JSON.stringify(messages, null, 2));
 }
 
 
@@ -873,66 +930,64 @@ socket.on("loginModelo", modelo => {
   socket.emit("unreadUpdate", unreadMap[modelo] ?? {});
 });
   // entrar na sala
-socket.on("joinRoom", ({ cliente, modelo }) => {
-  const room = getRoom(cliente, modelo);
-  socket.join(room);
-  console.log("🔗 Entrou na sala:", room);
-  
+socket.on("joinRoom", async ({ cliente, modelo }) => {
   if (!socket.authenticated) return;
 
-  if (
-    socket.role === "cliente" &&
-    socket.cliente !== cliente
-  ) return;
+  const room = getRoom(cliente, modelo);
+  socket.join(room);
 
-  if (
-    socket.role === "modelo" &&
-    socket.modelo !== modelo
-  ) return;
+  // ✅ HISTÓRICO ÚNICO: POSTGRES
+  const historico = await buscarHistoricoDB(cliente, modelo);
+  socket.emit("chatHistory", historico);
 
-    const history = readMessages()
-      .filter(m => m.cliente === cliente && m.modelo === modelo)
-      .map(m => ({
-        ...m,
-        pago: m.type === "conteudo"
-          ? isConteudoPago(cliente, modelo, m.id)
-          : true
-      }));
+  if (socket.role === "cliente") {
+  await limparUnread(cliente, modelo);
+}
 
-    socket.emit("chatHistory", history);
+if (socket.role === "modelo") {
+  await limparUnread(cliente, modelo);
+}
 
-    if (socket.role === "cliente" && unreadMap[cliente]) {
-      delete unreadMap[cliente][modelo];
-      socket.emit("unreadUpdate", unreadMap[cliente]);
-    }
-  });
 
-socket.on("sendMessage", ({ cliente, modelo, text }) => {
+  // limpar unread
+  if (socket.role === "cliente" && unreadMap[cliente]) {
+    delete unreadMap[cliente][modelo];
+    socket.emit("unreadUpdate", unreadMap[cliente]);
+  }
+});
+
+
+socket.on("sendMessage", async ({ cliente, modelo, text }) => {
   if (!socket.role) return;
 
-  let from = socket.role === "cliente" ? cliente : modelo;
+  const from =
+    socket.role === "cliente" ? cliente :
+    socket.role === "modelo" ? modelo :
+    null;
+
   if (!from) return;
 
   const newMessage = {
     cliente,
     modelo,
     from,
-    text,
-    timestamp: Date.now()
+    text
   };
 
-  // ✅ SALVAR AQUI (ESSENCIAL)
-  const messages = readMessages();
-  messages.push(newMessage);
-  saveMessages(messages);
+  // ✅ SALVA APENAS NO POSTGRES
+  await salvarMensagemDB(newMessage);
 
-  console.log("📩 MENSAGEM SALVA:", newMessage);
+  if (socket.role === "cliente") {
+  await marcarUnread(cliente, modelo);
+}
+
+if (socket.role === "modelo") {
+  await marcarUnread(cliente, modelo);
+}
 
   const room = getRoom(cliente, modelo);
   io.to(room).emit("newMessage", newMessage);
 });
-
-
 
 async function excluirConteudo(req, res) {
   const { id } = req.params;
@@ -1035,31 +1090,6 @@ app.get("/api/cliente/modelos", auth, async (req, res) => {
     res.status(500).json([]);
   }
 });
-
-
-app.get("/api/modelo/:modelo/ultima-resposta", (req, res) => {
-    try {
-        const modelo = req.params.modelo;
-        const messages = readMessages();
-
-        const ultimas = {};
-
-        messages.forEach(m => {
-            if (m.modelo !== modelo) return;
-
-            // considera texto OU conteúdo enviado pela modelo
-            if (m.from === modelo) {
-                ultimas[m.cliente] = m.timestamp;
-            }
-        });
-
-        res.json(ultimas);
-    } catch (err) {
-        console.error("Erro ultima-resposta:", err);
-        res.status(500).json({});
-    }
-});
-
 // ===============================
 // 📄 DADOS DA MODELO
 // ===============================
@@ -1175,45 +1205,6 @@ app.delete(
   authModelo,
   excluirConteudo
 );
-
-
-// app.post("/api/pagamentos/criar", async (req, res) => {
-//   try {
-//     const { cliente, modelo, conteudoId, preco } = req.body;
-//     const valor = Number(preco);
-
-//     if (isNaN(valor) || valor <= 0) {
-//   return res.status(400).json({ error: "Preço inválido" });
-// }
-
-//     if (!cliente || !modelo || !conteudoId) {
-//       return res.status(400).json({ error: "Dados inválidos" });
-//     }
-
-//     const payment = await paymentClient.create({
-//       body: {
-//       transaction_amount: valor,
-//       description: `Conteúdo ${conteudoId}`,
-//       payment_method_id: "pix",
-//       payer: {
-//         email: "teste@teste.com"
-//       },
-//       external_reference: `${cliente}_${modelo}_${conteudoId}`,
-//       metadata: { cliente, modelo, conteudoId },
-//       notification_url:
-//         "https://nontemperamental-teresa-peaked.ngrok-free.dev/api/pagamentos/webhook"
-//     }
-//     });
-
-//     res.json({
-//       pix: payment.point_of_interaction.transaction_data
-//     });
-
-//   } catch (err) {
-//     console.error("Erro criar pagamento:", err);
-//     res.status(500).json({ error: "Erro ao criar pagamento" });
-//   }
-// });
 
 function desbloquearConteudo(cliente, modelo, conteudoId) {
   const compras = readCompras();
@@ -1353,69 +1344,6 @@ app.get("/api/modelo/ganhos", authModelo, async (req, res) => {
   );
 
   res.json(result.rows);
-});
-
-//RELATORIO VENDAS
-// ===============================
-// DASHBOARD DE GANHOS DA MODELO
-// ===============================
-app.get("/api/modelo/dashboard-ganhos", authModelo, async (req, res) => {
-  try {
-    const modeloId = req.user.id;
-
-    // TOTAL GERAL
-    const totalResult = await db.query(
-      `SELECT COALESCE(SUM(ganho_modelo), 0) AS total
-       FROM transactions
-       WHERE modelo_id = $1`,
-      [modeloId]
-    );
-
-    // GANHOS POR MÊS
-    const mensalResult = await db.query(
-      `SELECT
-         TO_CHAR(created_at, 'YYYY-MM') AS label,
-         SUM(ganho_modelo) AS total
-       FROM transactions
-       WHERE modelo_id = $1
-       GROUP BY label
-       ORDER BY label`,
-      [modeloId]
-    );
-
-    // GANHOS POR DIA
-    const diarioResult = await db.query(
-      `SELECT
-         TO_CHAR(created_at, 'YYYY-MM-DD') AS label,
-         SUM(ganho_modelo) AS total
-       FROM transactions
-       WHERE modelo_id = $1
-       GROUP BY label
-       ORDER BY label`,
-      [modeloId]
-    );
-
-    // SALDO DISPONÍVEL (sem chargeback)
-    const saldoResult = await db.query(
-      `SELECT COALESCE(SUM(ganho_modelo), 0) AS saldo
-       FROM transactions
-       WHERE modelo_id = $1
-       AND (chargeback_status IS NULL OR chargeback_status = '')`,
-      [modeloId]
-    );
-
-    res.json({
-      total: totalResult.rows[0].total,
-      mensal: mensalResult.rows,
-      diario: diarioResult.rows,
-      saldoDisponivel: saldoResult.rows[0].saldo,
-      proximoPagamento: "05-Jan-2026"
-    });
-
-  } catch (err) {
-    console.error("Erro dashboard ganhos:", err);
-    res.status(500).json({ error: "Erro ao carregar ganhos" });
-  }
 });
 
 // ===============================
