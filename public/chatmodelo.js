@@ -142,6 +142,11 @@ async function carregarClientesVip() {
     renderListaClientes();
 }
 
+state.clientes.forEach(c => {
+  socket.emit("joinRoom", { cliente: c.cliente, modelo });
+});
+
+
 async function carregarUltimasRespostas() {
     const res = await fetch(`/api/modelo/${modelo}/ultima-resposta`);
     state.ultimaResposta = await res.json();

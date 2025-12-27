@@ -776,8 +776,9 @@ function saveMessages(messages) {
 
 
 function getRoom(cliente, modelo) {
-    return `${cliente}__${modelo}`;
+  return `${cliente}__${modelo}`;
 }
+
 
 function readJSON(file, fallback = []) {
     try {
@@ -873,6 +874,10 @@ socket.on("loginModelo", modelo => {
 });
   // entrar na sala
 socket.on("joinRoom", ({ cliente, modelo }) => {
+  const room = getRoom(cliente, modelo);
+  socket.join(room);
+  console.log("🔗 Entrou na sala:", room);
+  
   if (!socket.authenticated) return;
 
   if (
@@ -884,9 +889,6 @@ socket.on("joinRoom", ({ cliente, modelo }) => {
     socket.role === "modelo" &&
     socket.modelo !== modelo
   ) return;
-
-    const room = getRoom(cliente, modelo);
-    socket.join(room);
 
     const history = readMessages()
       .filter(m => m.cliente === cliente && m.modelo === modelo)
@@ -905,19 +907,15 @@ socket.on("joinRoom", ({ cliente, modelo }) => {
     }
   });
 
- socket.on("sendMessage", ({ cliente, modelo, text }) => {
-  if (!socket.user) return;
+socket.on("sendMessage", ({ cliente, modelo, text }) => {
+  if (!socket.role) {
+    console.log("❌ sendMessage ignorado: socket sem role");
+    return;
+  }
 
   let from;
-
-  if (socket.role === "cliente") {
-    from = cliente;
-  }
-
-  if (socket.role === "modelo") {
-    from = modelo;
-  }
-
+  if (socket.role === "cliente") from = cliente;
+  if (socket.role === "modelo") from = modelo;
   if (!from) return;
 
   const newMessage = {
@@ -928,11 +926,10 @@ socket.on("joinRoom", ({ cliente, modelo }) => {
     timestamp: Date.now()
   };
 
-  const messages = readMessages();
-  messages.push(newMessage);
-  saveMessages(messages);
+  console.log("📩 NOVA MENSAGEM:", newMessage);
 
-  io.to(getRoom(cliente, modelo)).emit("newMessage", newMessage);
+  const room = `${cliente}__${modelo}`;
+  io.to(room).emit("newMessage", newMessage);
 
   // 🔔 unread
   if (from === cliente) {
