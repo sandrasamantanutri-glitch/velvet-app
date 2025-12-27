@@ -1,32 +1,21 @@
 // ===============================
-// CHAT MODELO — VERSÃO ESTÁVEL
+// CHAT MODELO — FINAL FUNCIONAL
 // ===============================
 
 const socket = window.socket;
 const modelo = localStorage.getItem("modeloPerfil");
-
-if (!modelo) {
-  alert("Modelo não identificada");
-  throw new Error("modeloPerfil ausente");
-}
 
 const state = {
   clientes: [],
   clienteAtual: null
 };
 
-// ===============================
-// DOM
-// ===============================
 const lista = document.getElementById("listaClientes");
 const chatBox = document.getElementById("chatBox");
 const clienteNome = document.getElementById("clienteNome");
 const input = document.getElementById("msgInput");
 const sendBtn = document.getElementById("sendBtn");
 
-// ===============================
-// INIT
-// ===============================
 document.addEventListener("DOMContentLoaded", async () => {
   socket.emit("auth", { token: localStorage.getItem("token") });
 
@@ -44,20 +33,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   socket.on("newMessage", renderMensagem);
 });
 
-// ===============================
-// CLIENTES VIP
-// ===============================
 async function carregarClientesVip() {
   const res = await fetch(`/api/modelo/${modelo}/vips`, {
     headers: { Authorization: "Bearer " + localStorage.getItem("token") }
   });
 
   const clientes = await res.json();
-  if (!Array.isArray(clientes)) return;
+  state.clientes = clientes.map(c => c.cliente);
 
-  state.clientes = clientes.map(c => c.cliente || c);
   lista.innerHTML = "";
-
   state.clientes.forEach(c => {
     const li = document.createElement("li");
     li.textContent = c;
@@ -66,9 +50,6 @@ async function carregarClientesVip() {
   });
 }
 
-// ===============================
-// CHAT
-// ===============================
 function abrirChat(cliente) {
   state.clienteAtual = cliente;
   clienteNome.textContent = cliente;
@@ -77,9 +58,6 @@ function abrirChat(cliente) {
   socket.emit("joinRoom", { cliente, modelo });
 }
 
-// ===============================
-// ENVIO
-// ===============================
 sendBtn.onclick = () => {
   if (!state.clienteAtual) return;
 
@@ -95,9 +73,6 @@ sendBtn.onclick = () => {
   input.value = "";
 };
 
-// ===============================
-// RENDER
-// ===============================
 function renderHistorico(msgs) {
   chatBox.innerHTML = "";
   msgs.forEach(renderMensagem);
@@ -110,5 +85,4 @@ function renderMensagem(msg) {
   div.className = msg.from === modelo ? "msg-modelo" : "msg-cliente";
   div.textContent = msg.text;
   chatBox.appendChild(div);
-  chatBox.scrollTop = chatBox.scrollHeight;
 }

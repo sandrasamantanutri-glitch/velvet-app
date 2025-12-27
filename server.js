@@ -908,14 +908,9 @@ socket.on("joinRoom", ({ cliente, modelo }) => {
   });
 
 socket.on("sendMessage", ({ cliente, modelo, text }) => {
-  if (!socket.role) {
-    console.log("❌ sendMessage ignorado: socket sem role");
-    return;
-  }
+  if (!socket.role) return;
 
-  let from;
-  if (socket.role === "cliente") from = cliente;
-  if (socket.role === "modelo") from = modelo;
+  let from = socket.role === "cliente" ? cliente : modelo;
   if (!from) return;
 
   const newMessage = {
@@ -926,24 +921,17 @@ socket.on("sendMessage", ({ cliente, modelo, text }) => {
     timestamp: Date.now()
   };
 
-  console.log("📩 NOVA MENSAGEM:", newMessage);
+  // ✅ SALVAR AQUI (ESSENCIAL)
+  const messages = readMessages();
+  messages.push(newMessage);
+  saveMessages(messages);
 
-  const room = `${cliente}__${modelo}`;
+  console.log("📩 MENSAGEM SALVA:", newMessage);
+
+  const room = getRoom(cliente, modelo);
   io.to(room).emit("newMessage", newMessage);
-
-  // 🔔 unread
-  if (from === cliente) {
-    unreadMap[modelo] ??= {};
-    unreadMap[modelo][cliente] = true;
-    io.to(onlineModelos[modelo]).emit("unreadUpdate", unreadMap[modelo]);
-  }
-
-  if (from === modelo) {
-    unreadMap[cliente] ??= {};
-    unreadMap[cliente][modelo] = true;
-    io.to(onlineClientes[cliente]).emit("unreadUpdate", unreadMap[cliente]);
-  }
 });
+
 
 
 async function excluirConteudo(req, res) {
