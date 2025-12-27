@@ -2,16 +2,16 @@
 // SERVER.JS 
 // ===============================
 require("dotenv").config();      // 🔑 PRIMEIRO
+const http = require("http");
+const { Server } = require("socket.io");
+const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET;
 console.log("JWT_SECRET carregado?", JWT_SECRET);
 const cors = require("cors");
 const express = require("express");
 const db = require("./db");
 const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
 const path = require("path");
-const http = require("http")
-const { Server } = require("socket.io");
 const fs = require("fs");
 const app = express();
 app.set("trust proxy", 1);
@@ -67,7 +67,7 @@ const io = new Server(server, {
 // ===============================
 //FUNCOES
 // ===============================
-async function marcarUnread(clienteId, modeloId) {
+async function marcarUnread(cliente_id, modelo_id) {
   await db.query(
     `
     INSERT INTO unread (cliente_id, modelo_id, has_unread)
@@ -75,41 +75,41 @@ async function marcarUnread(clienteId, modeloId) {
     ON CONFLICT (cliente_id, modelo_id)
     DO UPDATE SET has_unread = true
     `,
-    [clienteId, modeloId]
+    [cliente_id, modelo_id]
   );
 }
 
-async function limparUnread(clienteId, modeloId) {
+async function limparUnread(cliente_id, modelo_id) {
   await db.query(
     `
     UPDATE unread
     SET has_unread = false
     WHERE cliente_id = $1 AND modelo_id = $2
     `,
-    [clienteId, modeloId]
+    [cliente_id, modelo_id]
   );
 }
 
-async function buscarUnreadCliente(clienteId) {
+async function buscarUnreadCliente(cliente_id) {
   const result = await db.query(
     `
     SELECT modelo_id
     FROM unread
     WHERE cliente_id = $1 AND has_unread = true
     `,
-    [clienteId]
+    [cliente_id]
   );
   return result.rows.map(r => r.modelo_id);
 }
 
-async function buscarUnreadModelo(modeloId) {
+async function buscarUnreadModelo(modelo_id) {
   const result = await db.query(
     `
     SELECT cliente_id
     FROM unread
     WHERE modelo_id = $1 AND has_unread = true
     `,
-    [modeloId]
+    [modelo_id]
   );
   return result.rows.map(r => r.cliente_id);
 }
@@ -194,7 +194,7 @@ async function excluirConteudo(req, res) {
   }
 }
 
-async function clienteEhVip(clienteId, modeloId) {
+async function clienteEhVip(cliente_id, modelo_id) {
   const result = await db.query(
     `
     SELECT 1
@@ -202,7 +202,7 @@ async function clienteEhVip(clienteId, modeloId) {
     WHERE cliente_id = $1
       AND modelo_id = $2
     `,
-    [clienteId, modeloId]
+    [cliente_id, modelo_id]
   );
 
   return result.rowCount > 0;
@@ -221,7 +221,7 @@ function authModelo(req, res, next) {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // 🔥 GARANTA ISSO
-    if (decoded.role !== "modelo") {
+    if (decoded.role !== "modelo_id") {
       return res.status(403).json({ erro: "Apenas modelos" });
     }
 
@@ -248,7 +248,7 @@ function auth(req, res, next) {
 }
 
 function onlyModelo(req, res, next) {
-  if (!req.user || req.user.role !== "modelo") {
+  if (!req.user || req.user.role !== "modelo_id") {
     return res.status(403).json({ error: "Apenas modelos podem fazer upload" });
   }
   next();
@@ -267,10 +267,10 @@ function salvarConteudos(data) {
 }
 
 function listarConteudos(req, res) {
-  const modeloId = req.user.id;
+  const modelo_id = req.user.id;
 
   const conteudos = lerConteudos().filter(
-    c => c.modeloId === modeloId
+    c => c.modelo_id === modelo_id
   );
 
   res.json(conteudos);
@@ -287,25 +287,12 @@ function salvarModelos(data) {
   fs.writeFileSync(MODELOS_FILE, JSON.stringify(data, null, 2));
 }
 
-async function salvarMensagemDB({ clienteId, modeloId, fromUserId, text }) {
-  await db.query(`
-    INSERT INTO messages (cliente_id, modelo_id, from_user_id, text)
-    VALUES ($1, $2, $3, $4)
-  `, [
-    clienteId,
-    modeloId,
-    fromUserId,
-    text
-  ]);
-}
-
-
-async function buscarHistoricoDB(clienteId, modeloId) {
+async function buscarHistoricoDB(cliente_id, modelo_id) {
   const result = await db.query(
     `
     SELECT
-      cliente_id   AS "clienteId",
-      modelo_id    AS "modeloId",
+      cliente_id   AS "cliente_id",
+      modelo_id    AS "modelo_id",
       from_user_id AS "from",
       text,
       created_at
@@ -313,7 +300,7 @@ async function buscarHistoricoDB(clienteId, modeloId) {
     WHERE cliente_id = $1 AND modelo_id = $2
     ORDER BY created_at ASC
     `,
-    [clienteId, modeloId]
+    [cliente_id, modelo_id]
   );
 
   return result.rows;
@@ -328,8 +315,8 @@ function saveFeed(feed) {
   fs.writeFileSync(FEED_FILE, JSON.stringify(feed, null, 2));
 }
 
-function getRoom(clienteId, modeloId) {
-  return `chat_${clienteId}_${modeloId}`;
+function getRoom(cliente_id, modelo_id) {
+  return `chat_${cliente_id}_${modelo_id}`;
 }
 
 function readJSON(file, fallback = []) {
@@ -351,33 +338,33 @@ function saveCompras(data) {
   fs.writeFileSync(COMPRAS_FILE, JSON.stringify(data, null, 2));
 }
 
-function isConteudoPago(cliente, modelo, conteudoId) {
+function isConteudoPago(cliente_id, modelo_id, conteudoId) {
   const compras = readCompras();
   return compras.some(
     c =>
-      c.cliente === cliente &&
-      c.modelo === modelo &&
+      c.cliente_id=== cliente_id &&
+      c.modelo_id=== modelo_id &&
       c.conteudoId === conteudoId &&
       c.status === "pago"
   );
 }
 
-function desbloquearConteudo(cliente, modelo, conteudoId) {
+function desbloquearConteudo(cliente_id, modelo_id, conteudoId) {
   const compras = readCompras();
 
   // 🔒 evita duplicar compra
   const jaPago = compras.some(
     c =>
-      c.cliente === cliente &&
-      c.modelo === modelo &&
+      c.cliente_id=== cliente_id &&
+      c.modelo_id === modelo_id &&
       c.conteudoId === conteudoId &&
       c.status === "pago"
   );
 
   if (!jaPago) {
     compras.push({
-      cliente,
-      modelo,
+      cliente_id,
+      modelo_id,
       conteudoId,
       status: "pago",
       data: Date.now()
@@ -392,81 +379,96 @@ function desbloquearConteudo(cliente, modelo, conteudoId) {
 io.on("connection", socket => {
   console.log("🔥 Socket conectado:", socket.id);
 
-  socket.role = null;
-  socket.userId = null;
+  socket.user = null;
 
-  // 🔐 autenticação do socket
+  // ===============================
+  // 🔐 AUTENTICAÇÃO DO SOCKET
+  // ===============================
   socket.on("auth", ({ token }) => {
     try {
-      const user = jwt.verify(token, JWT_SECRET);
-      socket.role = user.role; // "cliente" | "modelo"
-      socket.userId = user.id;
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      socket.user = decoded;
+      console.log("🔐 Socket autenticado:", decoded.id, decoded.role);
     } catch (err) {
-      console.log("❌ Token inválido no socket");
+      console.log("❌ Token inválido");
       socket.disconnect();
     }
   });
 
-  // 👤 login cliente
-  socket.on("loginCliente", (clienteId) => {
-    socket.role = "cliente";
-    socket.userId = clienteId;
-    onlineClientes[clienteId] = socket.id;
-    console.log("🟢 Cliente online:", clienteId);
+  // ===============================
+  // 📥 ENTRAR NA SALA DO CHAT
+  // ===============================
+  socket.on("joinChat", ({ cliente_id, modelo_id }) => {
+    if (!cliente_id || !modelo_id) {
+      console.log("❌ joinChat inválido", { cliente_id, modelo_id });
+      return;
+    }
+
+    const room = `chat_${cliente_id}_${modelo_id}`;
+    socket.join(room);
+
+    console.log("🟪 Entrou na sala:", room, socket.id);
   });
 
-  // 👤 login modelo
-  socket.on("loginModelo", (modeloId) => {
-    socket.role = "modelo";
-    socket.userId = modeloId;
-    onlineModelos[modeloId] = socket.id;
-    console.log("🟣 Modelo online:", modeloId);
+  // ===============================
+  // 💬 ENVIAR MENSAGEM
+  // ===============================
+  socket.on("sendMessage", async ({ cliente_id, modelo_id, text }) => {
+    if (!cliente_id || !modelo_id || !text) {
+      console.log("❌ sendMessage inválido", { cliente_id, modelo_id, text });
+      return;
+    }
+
+    const room = `chat_${cliente_id}_${modelo_id}`;
+
+    try {
+      // 💾 SALVA NO BANCO
+      await db.query(
+        `INSERT INTO messages (cliente_id, modelo_id, text)
+         VALUES ($1, $2, $3)`,
+        [cliente_id, modelo_id, text]
+      );
+
+      console.log("💾 Mensagem salva:", room);
+
+      // 🔄 EMITE PRA AMBOS
+      io.to(room).emit("newMessage", {
+        cliente_id,
+        modelo_id,
+        text,
+        created_at: new Date()
+      });
+
+    } catch (err) {
+      console.error("🔥 ERRO AO SALVAR MENSAGEM:", err);
+    }
   });
 
-  // 🟪 entrar na sala
-socket.on("joinRoom", async ({ clienteId, modeloId }) => {
-  const room = `chat_${clienteId}_${modeloId}`;
-  socket.join(room);
+  // ===============================
+  // 📜 HISTÓRICO DO CHAT
+  // ===============================
+  socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
+      const result = await db.query(
+        `SELECT * FROM messages
+         WHERE cliente_id = $1 AND modelo_id= $2
+         ORDER BY created_at ASC`,
+        [cliente_id, modelo_id]
+      );
 
-  console.log("🟪 Entrou na sala:", room, socket.id);
+      socket.emit("chatHistory", result.rows);
+  });
 
-  const historico = await buscarHistoricoDB(clienteId, modeloId);
-  socket.emit("chatHistory", historico);
+ socket.on("disconnect", () => {
+  if (!socket.user) return;
 
-  await limparUnread(clienteId, modeloId);
-});
-
-
-  // 💬 enviar mensagem
-socket.on("sendMessage", async ({ clienteId, modeloId, text }) => {
-  if (!clienteId || !modeloId || !socket.userId) {
-    console.error("❌ Dados ausentes", { clienteId, modeloId, userId: socket.userId });
-    return;
+  if (socket.user.role === "cliente_id") {
+    delete onlineClientes[socket.user.id];
   }
 
-  await salvarMensagemDB({
-    clienteId,
-    modeloId,
-    fromUserId: socket.userId, // ✅ CERTO
-    text
-  });
-
-  io.to(`chat_${clienteId}_${modeloId}`).emit("newMessage", {
-    from: socket.userId, // ✅ CERTO
-    text
-  });
+  if (socket.user.role === "modelo_id") {
+    delete onlineModelos[socket.user.id];
+  }
 });
-
-  socket.on("disconnect", () => {
-    if (socket.role === "cliente") {
-      delete onlineClientes[socket.userId];
-      console.log("🔴 Cliente offline:", socket.userId);
-    }
-    if (socket.role === "modelo") {
-      delete onlineModelos[socket.userId];
-      console.log("🔴 Modelo offline:", socket.userId);
-    }
-  });
 });
 // ===============================
 //ROTA GET
@@ -532,7 +534,7 @@ app.get("/api/feed/me", auth, async (req, res) => {
 // 🌟 FEED OFICIAL DE MODELOS (CLIENTE)
 app.get("/api/feed/modelos", auth, async (req, res) => {
   try {
-    if (req.user.role !== "cliente") {
+    if (req.user.role !== "cliente_id") {
       return res.status(403).json({ error: "Apenas clientes" });
     }
 
@@ -557,7 +559,7 @@ app.get("/api/feed/modelos", auth, async (req, res) => {
 //ROTA CLIENTE PERFIL
 app.get("/api/modelo/publico/:nome", auth, async (req, res) => {
   try {
-    if (req.user.role !== "cliente") {
+    if (req.user.role !== "cliente_id") {
       return res.status(403).json({ error: "Apenas clientes" });
     }
 
@@ -590,7 +592,7 @@ app.get("/api/modelo/publico/:nome", auth, async (req, res) => {
 // 👀 FEED PÚBLICO DA MODELO (CLIENTE)
 app.get("/api/modelo/:nome/feed", auth, async (req, res) => {
   try {
-    if (req.user.role !== "cliente") {
+    if (req.user.role !== "cliente_id") {
       return res.status(403).json({ error: "Apenas clientes" });
     }
 
@@ -643,7 +645,7 @@ app.get("/api/modelo/me", auth, async (req, res) => {
 app.get("/api/modelos", auth, async (req, res) => {
   try {
     // 🔐 apenas clientes
-    if (req.user.role !== "cliente") {
+    if (req.user.role !== "cliente_id") {
       return res.status(403).json({ error: "Acesso negado" });
     }
 
@@ -669,7 +671,7 @@ app.get("/api/modelos", auth, async (req, res) => {
 // 📄 BUSCAR DADOS DO CLIENTE
 app.get("/api/cliente/dados", auth, async (req, res) => {
   try {
-    if (req.user.role !== "cliente") {
+    if (req.user.role !== "cliente_id") {
       return res.status(403).json({ error: "Apenas clientes" });
     }
 
@@ -688,7 +690,7 @@ app.get("/api/cliente/dados", auth, async (req, res) => {
 // 💬 MODELOS COM CHAT (CLIENTE)
 app.get("/api/cliente/modelos", auth, async (req, res) => {
   try {
-    if (req.user.role !== "cliente") {
+    if (req.user.role !== "cliente_id") {
       return res.status(403).json([]);
     }
 
@@ -744,13 +746,13 @@ app.get("/api/health/db", async (req, res) => {
 
 //GANHOS
 app.get("/api/modelo/ganhos", authModelo, async (req, res) => {
-  const modeloId = req.user.id;
+  const modelo_id = req.user.id;
 
   const result = await db.query(
     `SELECT * FROM transactions
      WHERE modelo_id = $1
      ORDER BY created_at DESC`,
-    [modeloId]
+    [modelo_id]
   );
 
   res.json(result.rows);
@@ -758,7 +760,7 @@ app.get("/api/modelo/ganhos", authModelo, async (req, res) => {
 
 // 👤 IDENTIDADE DO CLIENTE (JWT)
 app.get("/api/cliente/me", auth, async (req, res) => {
-  if (req.user.role !== "cliente") {
+  if (req.user.role !== "cliente_id") {
     return res.status(403).json({ error: "Apenas cliente" });
   }
 
@@ -774,21 +776,21 @@ app.get("/api/cliente/me", auth, async (req, res) => {
 });
 
 //ROTA LISTA VIP
-app.get("/api/vip/status/:modeloId", auth, async (req, res) => {
-  const clienteId = req.user.id;
-  const { modeloId } = req.params;
+app.get("/api/vip/status/:modelo_id", auth, async (req, res) => {
+  const cliente_id = req.user.id;
+  const { modelo_id } = req.params;
 
   const result = await db.query(
     `SELECT 1 FROM vip_assinaturas 
      WHERE cliente_id = $1 AND modelo_id = $2`,
-    [clienteId, modeloId]
+    [cliente_id, modelo_id]
   );
 
   res.json({ vip: result.rowCount > 0 });
 });
 
 app.get("/api/modelo/vips", auth, authModelo, async (req, res) => {
-  const modeloId = req.user.id;
+  const modelo_id = req.user.id;
 
   const result = await db.query(`
     SELECT c.nome AS cliente
@@ -796,7 +798,7 @@ app.get("/api/modelo/vips", auth, authModelo, async (req, res) => {
     JOIN clientes c ON c.user_id = v.cliente_id
     WHERE v.modelo_id = $1
     ORDER BY c.nome
-  `, [modeloId]);
+  `, [modelo_id]);
 
   res.json(result.rows);
 });
@@ -851,7 +853,7 @@ app.put("/api/modelo/bio", authModelo, async (req, res) => {
 // 📄 DADOS DO CLIENTE
 app.post("/api/cliente/dados", auth, async (req, res) => {
   try {
-    if (req.user.role !== "cliente") {
+    if (req.user.role !== "cliente_id") {
       return res.status(403).json({ error: "Apenas clientes" });
     }
 
@@ -907,7 +909,7 @@ app.post(
   upload.single("avatar"),
   async (req, res) => {
     try {
-      if (req.user.role !== "cliente") {
+      if (req.user.role !== "cliente_id") {
         return res.status(403).json({ error: "Apenas clientes" });
       }
 
@@ -955,7 +957,7 @@ app.post("/api/register", async (req, res) => {
 
     const userId = userResult.rows[0].id;
 
-    if (role === "modelo") {
+    if (role === "modelo_id") {
       const nomeModelo = nome || email.split("@")[0];
 
       await db.query(
@@ -966,7 +968,7 @@ app.post("/api/register", async (req, res) => {
 
     }
 
-    if (role === "cliente") {
+    if (role === "cliente_id") {
       await db.query(
   `INSERT INTO public.clientes (user_id, nome)
    VALUES ($1, $2)`,
@@ -1222,7 +1224,7 @@ app.post(
 // ⭐ VIP SIMPLES – ATIVAR NO CLICK
 app.post("/api/vip/ativar", auth, async (req, res) => {
   try {
-    if (req.user.role !== "cliente") {
+    if (req.user.role !== "cliente_id") {
       return res.status(403).json({ error: "Apenas clientes" });
     }
 

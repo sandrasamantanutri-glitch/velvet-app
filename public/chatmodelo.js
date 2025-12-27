@@ -1,176 +1,81 @@
 // ===============================
-// CHAT MODELO — VERSÃO CORRIGIDA
+// CHAT MODELO — FINAL
 // ===============================
 
 const socket = io({
-  transports: ["websocket", "polling"]
+  transports: ["websocket"]
 });
 
-let modelo = null;
+let modelo_id = null;
+let cliente_id = null;
 
-const state = {
-  clientes: [],              // [{ id, nome }]
-  clienteAtual: null         // { id, nome }
-};
-
-const listaClientes = document.getElementById("listaClientes");
-const chatBox = document.getElementById("chatBox");
-const clienteNomeEl = document.getElementById("clienteNome");
-const input = document.getElementById("messageInput");
-const sendBtn = document.getElementById("sendBtn");
-
-// ===============================
-// SOCKET
-// ===============================
-socket.on("connect", async () => {
-  console.log("🟣 Modelo conectado:", socket.id);
-
+// 🔐 SOCKET AUTH
+socket.on("connect", () => {
   socket.emit("auth", {
     token: localStorage.getItem("token")
   });
-
-  await carregarModelo();
-
-  // 🔐 IDENTIFICA O MODELO NO SERVER (CRÍTICO)
-  socket.emit("loginModelo", modelo.id);
-
-  restaurarChatAtivo();
 });
 
-// listeners fora do connect (evita duplicar)
-socket.on("chatHistory", renderHistorico);
-socket.on("newMessage", renderMensagem);
+// 📜 HISTÓRICO
+socket.on("chatHistory", mensagens => {
+  const chat = document.getElementById("chatBox");
+  chat.innerHTML = "";
 
-// ===============================
-// CARREGAR MODELO
-// ===============================
-async function carregarModelo() {
-  const res = await fetch("/api/modelo/me", {
-    headers: {
-      Authorization: "Bearer " + localStorage.getItem("token")
-    }
-  });
-
-  modelo = await res.json();
-}
-
-// ===============================
-// CARREGAR CLIENTES (VIP / CHAT)
-// ===============================
-async function carregarClientes() {
-  const res = await fetch("/api/modelo/clientes", {
-    headers: {
-      Authorization: "Bearer " + localStorage.getItem("token")
-    }
-  });
-
-  state.clientes = await res.json();
-  renderListaClientes();
-}
-
-function renderListaClientes() {
-  listaClientes.innerHTML = "";
-
-  state.clientes.forEach(c => {
-    const li = document.createElement("li");
-    li.textContent = c.nome;
-    li.onclick = () => abrirChat(c);
-    listaClientes.appendChild(li);
-  });
-}
-
-// ===============================
-// ABRIR CHAT
-// ===============================
-function abrirChat(cliente) {
-  state.clienteAtual = cliente;
-  clienteNomeEl.textContent = cliente.nome;
-  chatBox.innerHTML = "";
-
-  // 💾 salva chat ativo (F5-safe)
-  localStorage.setItem("chatAtivoModelo", JSON.stringify({
-    clienteId: cliente.id,
-    clienteNome: cliente.nome
-  }));
-
-  socket.emit("joinRoom", {
-    clienteId: cliente.id,
-    modeloId: modelo.id
-  });
-}
-
-// ===============================
-// RESTAURAR CHAT APÓS F5
-// ===============================
-function restaurarChatAtivo() {
-  const salvo = localStorage.getItem("chatAtivoModelo");
-  if (!salvo) return;
-
-  const { clienteId, clienteNome } = JSON.parse(salvo);
-
-  state.clienteAtual = {
-    id: clienteId,
-    nome: clienteNome
-  };
-
-  clienteNomeEl.textContent = clienteNome;
-
-  socket.emit("joinRoom", {
-    clienteId,
-    modeloId: modelo.id
-  });
-}
-
-// ===============================
-// ENVIAR MENSAGEM
-// ===============================
-sendBtn.addEventListener("click", enviarMensagem);
-input.addEventListener("keypress", e => {
-  if (e.key === "Enter") enviarMensagem();
+  mensagens.forEach(m => renderMensagem(m));
 });
 
-function enviarMensagem() {
-  if (!state.clienteAtual) return;
-
-  const text = input.value.trim();
-  if (!text) return;
-
-  input.value = "";
-
-  // render otimista
-  renderMensagem({
-    from: modelo.id,
-    text
-  });
-
-  socket.emit("sendMessage", {
-    clienteId: state.clienteAtual.id,
-    modeloId: modelo.id,
-    text
-  });
-}
-
-// ===============================
-// RENDER
-// ===============================
-function renderHistorico(msgs) {
-  chatBox.innerHTML = "";
-  msgs.forEach(renderMensagem);
-}
-
-function renderMensagem(msg) {
-  if (!state.clienteAtual) return;
-
-  const div = document.createElement("div");
-  div.className =
-    Number(msg.from) === modelo.id ? "msg-modelo" : "msg-cliente";
-
-  div.textContent = msg.text;
-  chatBox.appendChild(div);
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
+// 💬 NOVA MENSAGEM
+socket.on("newMessage", msg => {
+  renderMensagem(msg);
+});
 
 // ===============================
 // INIT
 // ===============================
-document.addEventListener("DOMContentLoaded", carregarClientes);
+document.addEventListener("DOMContentLoaded", async () => {
+  await carregarModelo();
+  await carregarClienteAtual();
+
+  socket.emit("joinChat", { cliente_id, modelo_id });
+  socket.emit("getHistory", { cliente_id, modelo_id });
+
+  document.getElementById("sendBtn").onclick = enviarMensagem;
+});
+
+// ===============================
+// FUNÇÕES
+// ===============================
+async function carregarModelo() {
+  const res = await fetch("/api/modelo/me", {
+    headers: { Authorization: "Bearer " + localStorage.getItem("token") }
+  });
+  const data = await res.json();
+  modelo_id = data.id;
+}
+
+function carregarClienteAtual() {
+  cliente_id = localStorage.getItem("clienteChatAtivo");
+}
+
+function enviarMensagem() {
+  const input = document.getElementById("messageInput");
+  const text = input.value.trim();
+  if (!text) return;
+
+  socket.emit("sendMessage", {
+    cliente_id,
+    modelo_id,
+    text
+  });
+
+  input.value = "";
+}
+
+function renderMensagem(msg) {
+  const chat = document.getElementById("chatBox");
+  const div = document.createElement("div");
+  div.className = "msg";
+  div.textContent = msg.text;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
