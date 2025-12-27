@@ -37,6 +37,18 @@ socket.on("connect", async () => {
   socket.emit("loginCliente", cliente.id);
 });
 
+  // 🔁 REABRE CHAT APÓS F5 (AQUI)
+  const chatSalvo = localStorage.getItem("chatAtivo");
+  if (chatSalvo) {
+    const { clienteId, modeloId, modeloNome } = JSON.parse(chatSalvo);
+
+    state.modeloAtual = { id: modeloId, nome: modeloNome };
+    document.getElementById("modeloNome").textContent = modeloNome;
+
+    socket.emit("joinRoom", { clienteId, modeloId });
+  }
+
+
 
 // CLIENTE
 async function carregarCliente() {
@@ -84,11 +96,20 @@ function abrirChat(modelo) {
   modeloNome.textContent = modelo.nome;
   chatBox.innerHTML = "";
 
+  // ✅ SALVA O CHAT ATIVO (AQUI)
+  localStorage.setItem("chatAtivo", JSON.stringify({
+    clienteId: cliente.id,
+    modeloId: modelo.id,
+    modeloNome: modelo.nome
+  }));
+
   socket.emit("joinRoom", {
     clienteId: cliente.id,
     modeloId: modelo.id
   });
 }
+
+
 
 // ENVIAR
 sendBtn.onclick = () => {
