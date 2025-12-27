@@ -13,6 +13,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const chatsAtivos = {};
 const unread = {};
+const unreadMap = {};
 const path = require("path");
 const messagesFile = path.join(__dirname, "messages.json");
 const http = require("http")
@@ -909,13 +910,13 @@ socket.on("joinRoom", ({ cliente, modelo }) => {
 
   let from;
 
-  if (socket.role === "cliente") {
-    if (!verificarAssinatura(cliente, modelo)) {
-      socket.emit("errorMessage", "Apenas clientes VIP podem enviar mensagens.");
-      return;
-    }
-    from = cliente;
-  }
+  // if (socket.role === "cliente") {
+  //   if (!verificarAssinatura(cliente, modelo)) {
+  //     socket.emit("errorMessage", "Apenas clientes VIP podem enviar mensagens.");
+  //     return;
+  //   }
+  //   from = cliente;
+  // }
 
   if (socket.role === "modelo") {
     from = modelo;
@@ -1190,43 +1191,43 @@ app.delete(
 );
 
 
-app.post("/api/pagamentos/criar", async (req, res) => {
-  try {
-    const { cliente, modelo, conteudoId, preco } = req.body;
-    const valor = Number(preco);
+// app.post("/api/pagamentos/criar", async (req, res) => {
+//   try {
+//     const { cliente, modelo, conteudoId, preco } = req.body;
+//     const valor = Number(preco);
 
-    if (isNaN(valor) || valor <= 0) {
-  return res.status(400).json({ error: "Preço inválido" });
-}
+//     if (isNaN(valor) || valor <= 0) {
+//   return res.status(400).json({ error: "Preço inválido" });
+// }
 
-    if (!cliente || !modelo || !conteudoId) {
-      return res.status(400).json({ error: "Dados inválidos" });
-    }
+//     if (!cliente || !modelo || !conteudoId) {
+//       return res.status(400).json({ error: "Dados inválidos" });
+//     }
 
-    const payment = await paymentClient.create({
-      body: {
-      transaction_amount: valor,
-      description: `Conteúdo ${conteudoId}`,
-      payment_method_id: "pix",
-      payer: {
-        email: "teste@teste.com"
-      },
-      external_reference: `${cliente}_${modelo}_${conteudoId}`,
-      metadata: { cliente, modelo, conteudoId },
-      notification_url:
-        "https://nontemperamental-teresa-peaked.ngrok-free.dev/api/pagamentos/webhook"
-    }
-    });
+//     const payment = await paymentClient.create({
+//       body: {
+//       transaction_amount: valor,
+//       description: `Conteúdo ${conteudoId}`,
+//       payment_method_id: "pix",
+//       payer: {
+//         email: "teste@teste.com"
+//       },
+//       external_reference: `${cliente}_${modelo}_${conteudoId}`,
+//       metadata: { cliente, modelo, conteudoId },
+//       notification_url:
+//         "https://nontemperamental-teresa-peaked.ngrok-free.dev/api/pagamentos/webhook"
+//     }
+//     });
 
-    res.json({
-      pix: payment.point_of_interaction.transaction_data
-    });
+//     res.json({
+//       pix: payment.point_of_interaction.transaction_data
+//     });
 
-  } catch (err) {
-    console.error("Erro criar pagamento:", err);
-    res.status(500).json({ error: "Erro ao criar pagamento" });
-  }
-});
+//   } catch (err) {
+//     console.error("Erro criar pagamento:", err);
+//     res.status(500).json({ error: "Erro ao criar pagamento" });
+//   }
+// });
 
 function desbloquearConteudo(cliente, modelo, conteudoId) {
   const compras = readCompras();
@@ -1263,51 +1264,51 @@ function desbloquearConteudo(cliente, modelo, conteudoId) {
 }
 
 
-app.post("/api/pagamentos/webhook", async (req, res) => {
-  try {
-    console.log("🔔 WEBHOOK RECEBIDO:", req.body);
+// app.post("/api/pagamentos/webhook", async (req, res) => {
+//   try {
+//     console.log("🔔 WEBHOOK RECEBIDO:", req.body);
 
-    const paymentId =
-      req.body?.data?.id ||
-      req.body?.resource;
+//     const paymentId =
+//       req.body?.data?.id ||
+//       req.body?.resource;
 
-    if (!paymentId) {
-      console.log("⚠️ Webhook sem paymentId");
-      return res.sendStatus(200);
-    }
+//     if (!paymentId) {
+//       console.log("⚠️ Webhook sem paymentId");
+//       return res.sendStatus(200);
+//     }
 
-    const payment = await paymentClient.get({ id: paymentId });
+//     const payment = await paymentClient.get({ id: paymentId });
 
-    console.log("💰 STATUS:", payment.status);
-    console.log("📦 METADATA:", payment.metadata);
+//     console.log("💰 STATUS:", payment.status);
+//     console.log("📦 METADATA:", payment.metadata);
 
-    if (payment.status !== "approved") {
-      return res.sendStatus(200);
-    }
-    const tipo = payment.metadata?.tipo;
+//     if (payment.status !== "approved") {
+//       return res.sendStatus(200);
+//     }
+//     const tipo = payment.metadata?.tipo;
 
-//CONTEUDO PAGO
-    const { cliente, modelo } = payment.metadata || {};
-    const conteudoId =
-      payment.metadata?.conteudoId ||
-      payment.metadata?.conteudo_id;
+// //CONTEUDO PAGO
+//     const { cliente, modelo } = payment.metadata || {};
+//     const conteudoId =
+//       payment.metadata?.conteudoId ||
+//       payment.metadata?.conteudo_id;
 
-    if (!cliente || !modelo || !conteudoId) {
-      console.log("❌ METADATA INCOMPLETA");
-      return res.sendStatus(200);
-    }
+//     if (!cliente || !modelo || !conteudoId) {
+//       console.log("❌ METADATA INCOMPLETA");
+//       return res.sendStatus(200);
+//     }
 
-    desbloquearConteudo(cliente, modelo, conteudoId);
+//     desbloquearConteudo(cliente, modelo, conteudoId);
 
-    console.log("🔓 CONTEÚDO DESBLOQUEADO");
+//     console.log("🔓 CONTEÚDO DESBLOQUEADO");
 
-    return res.sendStatus(200);
+//     return res.sendStatus(200);
 
-  } catch (err) {
-    console.error("🔥 ERRO WEBHOOK:", err);
-    return res.sendStatus(500);
-  }
-});
+//   } catch (err) {
+//     console.error("🔥 ERRO WEBHOOK:", err);
+//     return res.sendStatus(500);
+//   }
+// });
 
 
 app.post(
