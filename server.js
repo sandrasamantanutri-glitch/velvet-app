@@ -494,7 +494,7 @@ app.get("/api/conteudos", auth, authModelo, async (req, res) => {
 
 
 app.get("/api/me", auth, (req, res) => {
-  if (req.user.role !== "modelo") {
+  if (req.user.role !== "modelo_id") {
     return res.json(req.user);
   }
 
