@@ -31,14 +31,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   socket.on("chatHistory", renderHistorico);
   socket.on("newMessage", renderMensagem);
-
-  socket.on("loginModelo", async (modelo) => {
-  socket.role = "modelo";
-  socket.user = modelo;
-
-  const unreadClientes = await buscarUnreadModelo(modelo);
-  socket.emit("unreadUpdate", unreadClientes);
-});
 });
 
 async function carregarClientesVip() {

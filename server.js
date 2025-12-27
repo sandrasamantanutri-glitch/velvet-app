@@ -24,7 +24,6 @@ const multer = require("multer");
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 const onlineClientes = {};
 const onlineModelos = {};
-const UNREAD_FILE = "unread.json";
 const cloudinary = require("cloudinary").v2;
 const { MercadoPagoConfig, PreApproval } = require("mercadopago");
 
@@ -912,23 +911,28 @@ io.on("connection", socket => {
     }
   });
 
-  // login cliente
-socket.on("loginCliente", cliente => {
+ socket.on("loginCliente", async (cliente) => {
   if (!socket.authenticated || socket.user.role !== "cliente") return;
 
   socket.role = "cliente";
   socket.cliente = cliente;
   onlineClientes[cliente] = socket.id;
+
+  const unreadModelos = await buscarUnreadCliente(cliente);
+  socket.emit("unreadUpdate", unreadModelos);
 });
 
-socket.on("loginModelo", modelo => {
+socket.on("loginModelo", async (modelo) => {
   if (!socket.authenticated || socket.user.role !== "modelo") return;
 
   socket.role = "modelo";
   socket.modelo = modelo;
   onlineModelos[modelo] = socket.id;
-  socket.emit("unreadUpdate", unreadMap[modelo] ?? {});
+
+  const unreadClientes = await buscarUnreadModelo(modelo);
+  socket.emit("unreadUpdate", unreadClientes);
 });
+
   // entrar na sala
 socket.on("joinRoom", async ({ cliente, modelo }) => {
   if (!socket.authenticated) return;
@@ -943,17 +947,6 @@ socket.on("joinRoom", async ({ cliente, modelo }) => {
   if (socket.role === "cliente") {
   await limparUnread(cliente, modelo);
 }
-
-if (socket.role === "modelo") {
-  await limparUnread(cliente, modelo);
-}
-
-
-  // limpar unread
-  if (socket.role === "cliente" && unreadMap[cliente]) {
-    delete unreadMap[cliente][modelo];
-    socket.emit("unreadUpdate", unreadMap[cliente]);
-  }
 });
 
 
@@ -1052,15 +1045,6 @@ app.get(
     res.sendFile(path.join(__dirname, "public", "chatmodelo.html"));
   }
 );
-
-
-  // disconnect
-  socket.on("disconnect", () => {
-    if (socket.modelo) delete unreadMap[socket.modelo];
-    if (socket.cliente) delete unreadMap[socket.cliente];
-    fs.writeFileSync(UNREAD_FILE, JSON.stringify(unreadMap, null, 2));
-    console.log("❌ Socket desconectado:", socket.id);
-  });
 });
 
 //-------------------------------------------------------------------------------------------- 
