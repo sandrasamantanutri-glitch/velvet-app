@@ -20,6 +20,7 @@ const bioInput     = document.getElementById("bioInput");
 // ===============================
 // ESTADO GLOBAL
 // ===============================
+const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
 const modeloPublico = localStorage.getItem("modeloPerfil");
 let modeloIdAtual = null;
