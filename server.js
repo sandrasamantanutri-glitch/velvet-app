@@ -1,6 +1,5 @@
-
 // ===============================
-// SERVER.JS – VERSÃO ESTÁVEL
+// SERVER.JS 
 // ===============================
 require("dotenv").config();      // 🔑 PRIMEIRO
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -26,12 +25,11 @@ const onlineClientes = {};
 const onlineModelos = {};
 const cloudinary = require("cloudinary").v2;
 const { MercadoPagoConfig, PreApproval } = require("mercadopago");
-
-const mpClient = new MercadoPagoConfig({
-  accessToken: process.env.MP_ACCESS_TOKEN
-});
-
-const preApprovalClient = new PreApproval(mpClient);
+const CONTEUDOS_FILE = "conteudos.json";
+const MODELOS_FILE = "modelos.json";
+const COMPRAS_FILE = "compras.json";
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, "public")));
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -47,61 +45,6 @@ if (
   console.error("❌ CLOUDINARY ENV NÃO CONFIGURADO");
   process.exit(1);
 }
-function authModelo(req, res, next) {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader) {
-    return res.status(401).json({ erro: "Token ausente" });
-  }
-
-  const token = authHeader.split(" ")[1];
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // 🔥 GARANTA ISSO
-    if (decoded.role !== "modelo") {
-      return res.status(403).json({ erro: "Apenas modelos" });
-    }
-
-    req.user = decoded;
-    next();
-  } catch (err) {
-    return res.status(401).json({ erro: "Token inválido" });
-  }
-}
-
-
-
-
-///ROTA AUTENTIC
-
-// ===============================
-// 🔐 MIDDLEWARE DE AUTENTICAÇÃO
-// ===============================
-function auth(req, res, next) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) return res.status(401).json({ error: "Sem token" });
-
-  const token = authHeader.split(" ")[1];
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch {
-    return res.status(401).json({ error: "Token inválido" });
-  }
-}
-
-
-
-function onlyModelo(req, res, next) {
-  if (!req.user || req.user.role !== "modelo") {
-    return res.status(403).json({ error: "Apenas modelos podem fazer upload" });
-  }
-  next();
-}
 
 app.use(cors({
   origin: ["https://velvet-app-production.up.railway.app"],
@@ -113,43 +56,69 @@ const upload = multer({
   limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
 });
 
-
-const rateLimit = require("express-rate-limit");
-
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100
-});
-
 // ===============================
-// 📦 CONTEÚDOS – MODELO (JWT)
+//FUNCOES
 // ===============================
-
-const CONTEUDOS_FILE = "conteudos.json";
-
-function lerConteudos() {
-  if (!fs.existsSync(CONTEUDOS_FILE)) {
-    fs.writeFileSync(CONTEUDOS_FILE, JSON.stringify([]));
-  }
-  return JSON.parse(fs.readFileSync(CONTEUDOS_FILE, "utf8"));
+async function marcarUnread(clienteId, modeloId) {
+  await db.query(
+    `
+    INSERT INTO unread (cliente_id, modelo_id, has_unread)
+    VALUES ($1, $2, true)
+    ON CONFLICT (cliente_id, modelo_id)
+    DO UPDATE SET has_unread = true
+    `,
+    [clienteId, modeloId]
+  );
 }
 
-function salvarConteudos(data) {
-  fs.writeFileSync(CONTEUDOS_FILE, JSON.stringify(data, null, 2));
+async function limparUnread(clienteId, modeloId) {
+  await db.query(
+    `
+    UPDATE unread
+    SET has_unread = false
+    WHERE cliente_id = $1 AND modelo_id = $2
+    `,
+    [clienteId, modeloId]
+  );
 }
 
-// 📋 LISTAR CONTEÚDOS DA MODELO
-function listarConteudos(req, res) {
-  const modeloId = req.user.id;
+async function buscarUnreadCliente(clienteId) {
+  const result = await db.query(
+    `
+    SELECT modelo_id
+    FROM unread
+    WHERE cliente_id = $1 AND has_unread = true
+    `,
+    [clienteId]
+  );
+  return result.rows.map(r => r.modelo_id);
+}
 
-  const conteudos = lerConteudos().filter(
-    c => c.modeloId === modeloId
+async function buscarUnreadModelo(modeloId) {
+  const result = await db.query(
+    `
+    SELECT cliente_id
+    FROM unread
+    WHERE modelo_id = $1 AND has_unread = true
+    `,
+    [modeloId]
+  );
+  return result.rows.map(r => r.cliente_id);
+}
+// STOP SE NAO PREENCHER OS DADOS COMPLETOS
+async function authModeloCompleto(req, res, next) {
+  const result = await db.query(
+    "SELECT 1 FROM modelos_dados WHERE user_id = $1",
+    [req.user.id]
   );
 
-  res.json(conteudos);
+  if (result.rowCount === 0) {
+    return res.redirect("/dados-modelo.html");
+  }
+
+  next();
 }
 
-// 📤 UPLOAD DE CONTEÚDO
 async function uploadConteudo(req, res) {
   try {
     if (!req.file) {
@@ -231,43 +200,272 @@ async function clienteEhVip(clienteId, modeloId) {
   return result.rowCount > 0;
 }
 
+function authModelo(req, res, next) {
+  const authHeader = req.headers.authorization;
 
-// ===============================
-// MIDDLEWARES
-// ===============================
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static(__dirname));
-app.use(express.static(path.join(__dirname, "public")));
+  if (!authHeader) {
+    return res.status(401).json({ erro: "Token ausente" });
+  }
 
-// ===============================
-// ATUALIZAR BIO DO MODELO
-// ===============================
-// ===============================
-// ATUALIZAR BIO DO MODELO (POSTGRES)
-// ===============================
-app.put("/api/modelo/bio", authModelo, async (req, res) => {
+  const token = authHeader.split(" ")[1];
+
   try {
-    const { bio } = req.body;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    if (!bio || typeof bio !== "string") {
-      return res.status(400).json({ error: "Bio inválida" });
+    // 🔥 GARANTA ISSO
+    if (decoded.role !== "modelo") {
+      return res.status(403).json({ erro: "Apenas modelos" });
     }
 
-    await db.query(
-      "UPDATE public.modelos SET bio = $1 WHERE user_id = $2",
-      [bio, req.user.id]
-    );
-
-    console.log("BIO SALVA NO BANCO:", req.user.id);
-
-    res.json({ success: true });
-
+    req.user = decoded;
+    next();
   } catch (err) {
-    console.error("Erro ao salvar bio:", err);
-    res.status(500).json({ error: "Erro interno" });
+    return res.status(401).json({ erro: "Token inválido" });
   }
-});
+}
 
+function auth(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ error: "Sem token" });
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch {
+    return res.status(401).json({ error: "Token inválido" });
+  }
+}
+
+function onlyModelo(req, res, next) {
+  if (!req.user || req.user.role !== "modelo") {
+    return res.status(403).json({ error: "Apenas modelos podem fazer upload" });
+  }
+  next();
+}
+
+
+function lerConteudos() {
+  if (!fs.existsSync(CONTEUDOS_FILE)) {
+    fs.writeFileSync(CONTEUDOS_FILE, JSON.stringify([]));
+  }
+  return JSON.parse(fs.readFileSync(CONTEUDOS_FILE, "utf8"));
+}
+
+function salvarConteudos(data) {
+  fs.writeFileSync(CONTEUDOS_FILE, JSON.stringify(data, null, 2));
+}
+
+function listarConteudos(req, res) {
+  const modeloId = req.user.id;
+
+  const conteudos = lerConteudos().filter(
+    c => c.modeloId === modeloId
+  );
+
+  res.json(conteudos);
+}
+
+function lerModelos() {
+  if (!fs.existsSync(MODELOS_FILE)) {
+    fs.writeFileSync(MODELOS_FILE, JSON.stringify({}));
+  }
+  return JSON.parse(fs.readFileSync(MODELOS_FILE, "utf8"));
+}
+
+function salvarModelos(data) {
+  fs.writeFileSync(MODELOS_FILE, JSON.stringify(data, null, 2));
+}
+
+async function salvarMensagemDB(msg) {
+  await db.query(
+    `
+    INSERT INTO messages (cliente_id, modelo_id, from_user_id, text)
+    VALUES ($1, $2, $3, $4)
+    `,
+    [msg.clienteId, msg.modeloId, msg.fromUserId, msg.text]
+  );
+}
+
+async function buscarHistoricoDB(clienteId, modeloId) {
+  const result = await db.query(
+    `
+    SELECT
+      cliente_id   AS "clienteId",
+      modelo_id    AS "modeloId",
+      from_user_id AS "from",
+      text,
+      created_at
+    FROM messages
+    WHERE cliente_id = $1 AND modelo_id = $2
+    ORDER BY created_at ASC
+    `,
+    [clienteId, modeloId]
+  );
+
+  return result.rows;
+}
+
+function readFeed() {
+  if (!fs.existsSync(FEED_FILE)) return [];
+  return JSON.parse(fs.readFileSync(FEED_FILE));
+}
+
+function saveFeed(feed) {
+  fs.writeFileSync(FEED_FILE, JSON.stringify(feed, null, 2));
+}
+
+function getRoom(clienteId, modeloId) {
+  return `chat_${clienteId}_${modeloId}`;
+}
+
+function readJSON(file, fallback = []) {
+    try {
+        if (!fs.existsSync(file)) return fallback;
+        return JSON.parse(fs.readFileSync(file, "utf8"));
+    } catch (err) {
+        console.error("Erro ao ler JSON:", file, err);
+        return fallback;
+    }
+}
+
+function readCompras() {
+  if (!fs.existsSync(COMPRAS_FILE)) return [];
+  return JSON.parse(fs.readFileSync(COMPRAS_FILE, "utf8"));
+}
+
+function saveCompras(data) {
+  fs.writeFileSync(COMPRAS_FILE, JSON.stringify(data, null, 2));
+}
+
+function isConteudoPago(cliente, modelo, conteudoId) {
+  const compras = readCompras();
+  return compras.some(
+    c =>
+      c.cliente === cliente &&
+      c.modelo === modelo &&
+      c.conteudoId === conteudoId &&
+      c.status === "pago"
+  );
+}
+
+function desbloquearConteudo(cliente, modelo, conteudoId) {
+  const compras = readCompras();
+
+  // 🔒 evita duplicar compra
+  const jaPago = compras.some(
+    c =>
+      c.cliente === cliente &&
+      c.modelo === modelo &&
+      c.conteudoId === conteudoId &&
+      c.status === "pago"
+  );
+
+  if (!jaPago) {
+    compras.push({
+      cliente,
+      modelo,
+      conteudoId,
+      status: "pago",
+      data: Date.now()
+    });
+
+    saveCompras(compras);
+  }
+}
+// ===============================
+// SOCKET.IO – CHAT ESTÁVEL
+// ===============================
+io.on("connection", socket => {
+  console.log("🔥 Socket conectado:", socket.id);
+
+  socket.role = null;
+  socket.userId = null;
+
+  // 🔐 autenticação do socket
+  socket.on("auth", ({ token }) => {
+    try {
+      const user = jwt.verify(token, JWT_SECRET);
+      socket.role = user.role; // "cliente" | "modelo"
+      socket.userId = user.id;
+    } catch (err) {
+      console.log("❌ Token inválido no socket");
+      socket.disconnect();
+    }
+  });
+
+  // 👤 login cliente
+  socket.on("loginCliente", (clienteId) => {
+    socket.role = "cliente";
+    socket.userId = clienteId;
+    onlineClientes[clienteId] = socket.id;
+    console.log("🟢 Cliente online:", clienteId);
+  });
+
+  // 👤 login modelo
+  socket.on("loginModelo", (modeloId) => {
+    socket.role = "modelo";
+    socket.userId = modeloId;
+    onlineModelos[modeloId] = socket.id;
+    console.log("🟣 Modelo online:", modeloId);
+  });
+
+  // 🟪 entrar na sala
+  socket.on("joinRoom", async ({ clienteId, modeloId }) => {
+    if (!socket.role) return;
+
+    const room = `chat_${clienteId}_${modeloId}`;
+    socket.join(room);
+
+    const historico = await buscarHistoricoDB(clienteId, modeloId);
+    socket.emit("chatHistory", historico);
+
+    // limpar unread ao abrir o chat
+    await limparUnread(clienteId, modeloId);
+  });
+
+  // 💬 enviar mensagem
+  socket.on("sendMessage", async ({ clienteId, modeloId, text }) => {
+    if (!socket.role || !text) return;
+
+    const fromUserId = socket.userId;
+    const room = `chat_${clienteId}_${modeloId}`;
+
+    await salvarMensagemDB({
+      clienteId,
+      modeloId,
+      fromUserId,
+      text
+    });
+
+    // marcar unread para o outro lado
+    await marcarUnread(clienteId, modeloId);
+
+    io.to(room).emit("newMessage", {
+      clienteId,
+      modeloId,
+      from: fromUserId,
+      text,
+      createdAt: new Date()
+    });
+  });
+
+  socket.on("disconnect", () => {
+    if (socket.role === "cliente") {
+      delete onlineClientes[socket.userId];
+      console.log("🔴 Cliente offline:", socket.userId);
+    }
+    if (socket.role === "modelo") {
+      delete onlineModelos[socket.userId];
+      console.log("🔴 Modelo offline:", socket.userId);
+    }
+  });
+});
+// ===============================
+//ROTA GET
+// ===============================
 app.get("/api/conteudos", auth, authModelo, async (req, res) => {
   try {
     const result = await db.query(
@@ -326,9 +524,7 @@ app.get("/api/feed/me", auth, async (req, res) => {
   }
 });
 
-// ===============================
 // 🌟 FEED OFICIAL DE MODELOS (CLIENTE)
-// ===============================
 app.get("/api/feed/modelos", auth, async (req, res) => {
   try {
     if (req.user.role !== "cliente") {
@@ -354,9 +550,6 @@ app.get("/api/feed/modelos", auth, async (req, res) => {
 });
 
 //ROTA CLIENTE PERFIL
-// ===============================
-// 👀 PERFIL PÚBLICO DA MODELO (CLIENTE)
-// ===============================
 app.get("/api/modelo/publico/:nome", auth, async (req, res) => {
   try {
     if (req.user.role !== "cliente") {
@@ -388,9 +581,8 @@ app.get("/api/modelo/publico/:nome", auth, async (req, res) => {
   }
 });
 
-// ===============================
+
 // 👀 FEED PÚBLICO DA MODELO (CLIENTE)
-// ===============================
 app.get("/api/modelo/:nome/feed", auth, async (req, res) => {
   try {
     if (req.user.role !== "cliente") {
@@ -417,10 +609,241 @@ app.get("/api/modelo/:nome/feed", auth, async (req, res) => {
   }
 });
 
-//ROTA CLIENTE DADOS
+
+app.get("/api/modelo/me", auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const result = await db.query(
+      `SELECT m.*
+       FROM public.modelos m
+       WHERE m.user_id = $1`,
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ erro: "Modelo não encontrado" });
+    }
+
+    res.json(result.rows[0]);
+
+  } catch (err) {
+    console.error("ERRO /api/modelo/me:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+
+// 🌟 FEED PÚBLICO DE MODELOS (CLIENTE)
+app.get("/api/modelos", auth, async (req, res) => {
+  try {
+    // 🔐 apenas clientes
+    if (req.user.role !== "cliente") {
+      return res.status(403).json({ error: "Acesso negado" });
+    }
+
+    const result = await db.query(`
+      SELECT
+        m.user_id,
+        m.nome AS nome,
+        m.avatar,
+        md.nome_exibicao
+      FROM modelos m
+      LEFT JOIN modelos_dados md ON md.user_id = m.user_id
+      ORDER BY m.id DESC
+    `);
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error("Erro feed modelos:", err);
+    res.status(500).json([]);
+  }
+});
+
+// 📄 BUSCAR DADOS DO CLIENTE
+app.get("/api/cliente/dados", auth, async (req, res) => {
+  try {
+    if (req.user.role !== "cliente") {
+      return res.status(403).json({ error: "Apenas clientes" });
+    }
+
+    const result = await db.query(
+      "SELECT * FROM clientes_dados WHERE user_id = $1",
+      [req.user.id]
+    );
+
+    res.json(result.rows[0] || {});
+  } catch (err) {
+    console.error("Erro buscar dados cliente:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+// 💬 MODELOS COM CHAT (CLIENTE)
+app.get("/api/cliente/modelos", auth, async (req, res) => {
+  try {
+    if (req.user.role !== "cliente") {
+      return res.status(403).json([]);
+    }
+
+const result = await db.query(`
+  SELECT m.user_id AS id, m.nome
+  FROM vip_assinaturas v
+  JOIN modelos m ON m.user_id = v.modelo_id
+  WHERE v.cliente_id = $1
+  ORDER BY m.nome
+`, [req.user.id]);
+
+res.json(result.rows);
+
+
+  } catch (err) {
+    console.error("Erro modelos chat cliente:", err);
+    res.status(500).json([]);
+  }
+});
+
+// 📄 DADOS DA MODELO
+app.get("/api/modelo/dados",
+  auth,
+  auth,
+  authModelo,
+  async (req, res) => {
+    try {
+      const result = await db.query(
+        "SELECT * FROM modelos_dados WHERE user_id = $1",
+        [req.user.id]
+      );
+
+      res.json(result.rows[0] || {});
+    } catch (err) {
+      console.error("Erro buscar dados modelo:", err);
+      res.status(500).json({ error: "Erro interno" });
+    }
+  }
+);
+
+app.get("/api/health/db", async (req, res) => {
+  try {
+    const result = await db.query("SELECT 1 AS ok");
+    res.json({ status: "ok", db: result.rows[0] });
+  } catch (err) {
+    console.error("❌ DB ERROR:", err);
+    res.status(500).json({
+      status: "error",
+      message: err.message
+    });
+  }
+});
+
+//GANHOS
+app.get("/api/modelo/ganhos", authModelo, async (req, res) => {
+  const modeloId = req.user.id;
+
+  const result = await db.query(
+    `SELECT * FROM transactions
+     WHERE modelo_id = $1
+     ORDER BY created_at DESC`,
+    [modeloId]
+  );
+
+  res.json(result.rows);
+});
+
+// 👤 IDENTIDADE DO CLIENTE (JWT)
+app.get("/api/cliente/me", auth, async (req, res) => {
+  if (req.user.role !== "cliente") {
+    return res.status(403).json({ error: "Apenas cliente" });
+  }
+
+  const result = await db.query(
+    "SELECT nome FROM clientes WHERE user_id = $1",
+    [req.user.id]
+  );
+
+  res.json({
+    id: req.user.id,
+    nome: result.rows[0]?.nome
+  });
+});
+
+//ROTA LISTA VIP
+app.get("/api/vip/status/:modeloId", auth, async (req, res) => {
+  const clienteId = req.user.id;
+  const { modeloId } = req.params;
+
+  const result = await db.query(
+    `SELECT 1 FROM vip_assinaturas 
+     WHERE cliente_id = $1 AND modelo_id = $2`,
+    [clienteId, modeloId]
+  );
+
+  res.json({ vip: result.rowCount > 0 });
+});
+
+app.get("/api/modelo/vips", auth, authModelo, async (req, res) => {
+  const modeloId = req.user.id;
+
+  const result = await db.query(`
+    SELECT c.nome AS cliente
+    FROM vip_assinaturas v
+    JOIN clientes c ON c.user_id = v.cliente_id
+    WHERE v.modelo_id = $1
+    ORDER BY c.nome
+  `, [modeloId]);
+
+  res.json(result.rows);
+});
+
+app.get(
+  "/conteudos.html",
+  auth,
+  authModelo,
+  authModeloCompleto,
+  (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "conteudos.html"));
+  }
+);
+
+app.get(
+  "/chatmodelo.html",
+  auth,
+  authModelo,
+  authModeloCompleto,
+  (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "chatmodelo.html"));
+  }
+);
+
 // ===============================
+// ROTA POST
+// ===============================
+app.put("/api/modelo/bio", authModelo, async (req, res) => {
+  try {
+    const { bio } = req.body;
+
+    if (!bio || typeof bio !== "string") {
+      return res.status(400).json({ error: "Bio inválida" });
+    }
+
+    await db.query(
+      "UPDATE public.modelos SET bio = $1 WHERE user_id = $2",
+      [bio, req.user.id]
+    );
+
+    console.log("BIO SALVA NO BANCO:", req.user.id);
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("Erro ao salvar bio:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+
 // 📄 DADOS DO CLIENTE
-// ===============================
 app.post("/api/cliente/dados", auth, async (req, res) => {
   try {
     if (req.user.role !== "cliente") {
@@ -471,9 +894,8 @@ app.post("/api/cliente/dados", auth, async (req, res) => {
   }
 });
 
-// ===============================
+
 // 📸 AVATAR DO CLIENTE
-// ===============================
 app.post(
   "/api/cliente/avatar",
   auth,
@@ -608,62 +1030,7 @@ app.post("/api/login", async (req, res) => {
 });
 
 
-app.get("/api/modelo/me", auth, async (req, res) => {
-  try {
-    const userId = req.user.id;
-
-    const result = await db.query(
-      `SELECT m.*
-       FROM public.modelos m
-       WHERE m.user_id = $1`,
-      [userId]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ erro: "Modelo não encontrado" });
-    }
-
-    res.json(result.rows[0]);
-
-  } catch (err) {
-    console.error("ERRO /api/modelo/me:", err);
-    res.status(500).json({ erro: "Erro interno" });
-  }
-});
-
-// ===============================
-// 🌟 FEED PÚBLICO DE MODELOS (CLIENTE)
-// ===============================
-app.get("/api/modelos", auth, async (req, res) => {
-  try {
-    // 🔐 apenas clientes
-    if (req.user.role !== "cliente") {
-      return res.status(403).json({ error: "Acesso negado" });
-    }
-
-    const result = await db.query(`
-      SELECT
-        m.user_id,
-        m.nome AS nome,
-        m.avatar,
-        md.nome_exibicao
-      FROM modelos m
-      LEFT JOIN modelos_dados md ON md.user_id = m.user_id
-      ORDER BY m.id DESC
-    `);
-
-    res.json(result.rows);
-
-  } catch (err) {
-    console.error("Erro feed modelos:", err);
-    res.status(500).json([]);
-  }
-});
-
-// ===============================
 // UPLOAD AVATAR E CAPA
-// ===============================
-
 app.post(
   "/uploadAvatar",
   auth,
@@ -695,8 +1062,6 @@ app.post(
   }
 );
 
-
-
 app.post(
   "/uploadCapa",
   auth,
@@ -724,386 +1089,6 @@ app.post(
     } catch (err) {
       console.error("Erro upload capa:", err);
       res.status(500).json({ error: "Erro ao atualizar capa" });
-    }
-  }
-);
-
-
-// ===============================
-// UTILITÁRIOS chat
-// ===============================
-const MODELOS_FILE = "modelos.json";
-
-function lerModelos() {
-  if (!fs.existsSync(MODELOS_FILE)) {
-    fs.writeFileSync(MODELOS_FILE, JSON.stringify({}));
-  }
-  return JSON.parse(fs.readFileSync(MODELOS_FILE, "utf8"));
-}
-
-function salvarModelos(data) {
-  fs.writeFileSync(MODELOS_FILE, JSON.stringify(data, null, 2));
-}
-//CHAT EM PGADMIN//************************************** */
-async function salvarMensagemDB(msg) {
-  await db.query(
-    `
-    INSERT INTO messages (cliente_id, modelo_id, from_user_id, text)
-    VALUES ($1, $2, $3, $4)
-    `,
-    [msg.clienteId, msg.modeloId, msg.fromUserId, msg.text]
-  );
-}
-
-async function buscarHistoricoDB(clienteId, modeloId) {
-  const result = await db.query(
-    `
-    SELECT
-      cliente_id   AS "clienteId",
-      modelo_id    AS "modeloId",
-      from_user_id AS "from",
-      text,
-      created_at
-    FROM messages
-    WHERE cliente_id = $1 AND modelo_id = $2
-    ORDER BY created_at ASC
-    `,
-    [clienteId, modeloId]
-  );
-
-  return result.rows;
-}
-
-async function buscarHistoricoDB(clienteId, modeloId) {
-  const result = await db.query(
-    `
-    SELECT
-      cliente_id AS "clienteId",
-      modelo_id  AS "modeloId",
-      from_user  AS "from",
-      text,
-      created_at
-    FROM messages
-    WHERE cliente_id = $1 AND modelo_id = $2
-    ORDER BY created_at ASC
-    `,
-    [clienteId, modeloId]
-  );
-
-  return result.rows;
-}
-const FEED_FILE = "feed.json";
-
-async function marcarUnread(cliente, modelo) {
-  await db.query(
-    `
-    INSERT INTO unread (cliente, modelo, has_unread)
-    VALUES ($1, $2, true)
-    ON CONFLICT (cliente, modelo)
-    DO UPDATE SET has_unread = true, updated_at = NOW()
-    `,
-    [cliente, modelo]
-  );
-}
-
-async function limparUnread(cliente, modelo) {
-  await db.query(
-    `
-    UPDATE unread
-    SET has_unread = false, updated_at = NOW()
-    WHERE cliente = $1 AND modelo = $2
-    `,
-    [cliente, modelo]
-  );
-}
-
-async function buscarUnreadCliente(cliente) {
-  const result = await db.query(
-    `
-    SELECT modelo
-    FROM unread
-    WHERE cliente = $1 AND has_unread = true
-    `,
-    [cliente]
-  );
-
-  return result.rows.map(r => r.modelo);
-}
-
-async function buscarUnreadModelo(modelo) {
-  const result = await db.query(
-    `
-    SELECT cliente
-    FROM unread
-    WHERE modelo = $1 AND has_unread = true
-    `,
-    [modelo]
-  );
-
-  return result.rows.map(r => r.cliente);
-}
-
-
-function readFeed() {
-  if (!fs.existsSync(FEED_FILE)) return [];
-  return JSON.parse(fs.readFileSync(FEED_FILE));
-}
-
-function saveFeed(feed) {
-  fs.writeFileSync(FEED_FILE, JSON.stringify(feed, null, 2));
-}
-
-function getRoom(clienteId, modeloId) {
-  return `chat_${clienteId}_${modeloId}`;
-}
-
-
-
-
-function readJSON(file, fallback = []) {
-    try {
-        if (!fs.existsSync(file)) return fallback;
-        return JSON.parse(fs.readFileSync(file, "utf8"));
-    } catch (err) {
-        console.error("Erro ao ler JSON:", file, err);
-        return fallback;
-    }
-}
-
-const COMPRAS_FILE = "compras.json";
-
-function readCompras() {
-  if (!fs.existsSync(COMPRAS_FILE)) return [];
-  return JSON.parse(fs.readFileSync(COMPRAS_FILE, "utf8"));
-}
-
-function saveCompras(data) {
-  fs.writeFileSync(COMPRAS_FILE, JSON.stringify(data, null, 2));
-}
-
-function isConteudoPago(cliente, modelo, conteudoId) {
-  const compras = readCompras();
-  return compras.some(
-    c =>
-      c.cliente === cliente &&
-      c.modelo === modelo &&
-      c.conteudoId === conteudoId &&
-      c.status === "pago"
-  );
-}
-
-// ===============================
-// 📄 BUSCAR DADOS DO CLIENTE
-// ===============================
-app.get("/api/cliente/dados", auth, async (req, res) => {
-  try {
-    if (req.user.role !== "cliente") {
-      return res.status(403).json({ error: "Apenas clientes" });
-    }
-
-    const result = await db.query(
-      "SELECT * FROM clientes_dados WHERE user_id = $1",
-      [req.user.id]
-    );
-
-    res.json(result.rows[0] || {});
-  } catch (err) {
-    console.error("Erro buscar dados cliente:", err);
-    res.status(500).json({ error: "Erro interno" });
-  }
-});
-
-
-
-
-
-// ===============================
-// SOCKET.IO
-// ===============================
-io.on("connection", socket => {
-  console.log("🔥 Socket conectado:", socket.id);
-
-  socket.authenticated = false;
-
-  // 🔐 autenticação do socket
-  socket.on("auth", ({ token }) => {
-    try {
-      socket.user = jwt.verify(token, JWT_SECRET);
-      socket.authenticated = true;
-    } catch {
-      socket.disconnect();
-    }
-  });
-
- socket.on("loginCliente", async (cliente) => {
-  if (!socket.authenticated || socket.user.role !== "cliente") return;
-
-  socket.role = "cliente";
-  socket.cliente = cliente;
-  onlineClientes[cliente] = socket.id;
-
-  const unreadModelos = await buscarUnreadCliente(cliente);
-  socket.emit("unreadUpdate", unreadModelos);
-});
-
-socket.on("loginModelo", async (modelo) => {
-  if (!socket.authenticated || socket.user.role !== "modelo") return;
-
-  socket.role = "modelo";
-  socket.modelo = modelo;
-  onlineModelos[modelo] = socket.id;
-
-  const unreadClientes = await buscarUnreadModelo(modelo);
-  socket.emit("unreadUpdate", unreadClientes);
-});
-
-  // entrar na sala
-socket.on("joinRoom", async ({ clienteId, modeloId }) => {
-  if (!socket.role) return;
-
-  const room = getRoom(clienteId, modeloId);
-  socket.join(room);
-
-  const historico = await buscarHistoricoDB(clienteId, modeloId);
-  socket.emit("chatHistory", historico);
-});
-
-
-socket.on("sendMessage", async ({ clienteId, modeloId, text }) => {
-  if (!socket.role) return;
-
-  const fromUserId =
-    socket.role === "cliente" ? clienteId : modeloId;
-
-  await salvarMensagemDB({
-    clienteId,
-    modeloId,
-    fromUserId,
-    text
-  });
-
-  const room = getRoom(clienteId, modeloId);
-
-  io.to(room).emit("newMessage", {
-    clienteId,
-    modeloId,
-    from: fromUserId,
-    text
-  });
-});
-
-async function excluirConteudo(req, res) {
-  const { id } = req.params;
-  const modeloId = req.user.id;
-
-  let conteudos = lerConteudos();
-  const conteudo = conteudos.find(
-    c => c.id === id && c.modeloId === modeloId
-  );
-
-  if (!conteudo) {
-    return res.status(404).json({ error: "Conteúdo não encontrado" });
-  }
-
-  const publicId = conteudo.url
-    .split("/")
-    .slice(-2)
-    .join("/")
-    .replace(/\.[^/.]+$/, "");
-
-  await cloudinary.uploader.destroy(publicId);
-
-  conteudos = conteudos.filter(c => c.id !== id);
-  salvarConteudos(conteudos);
-
-  res.json({ success: true });
-}
-
-//STOP SE NAO PREENCHER OS DADOS COMPLETOS
-async function authModeloCompleto(req, res, next) {
-  const result = await db.query(
-    "SELECT 1 FROM modelos_dados WHERE user_id = $1",
-    [req.user.id]
-  );
-
-  if (result.rowCount === 0) {
-    return res.redirect("/dados-modelo.html");
-  }
-
-  next();
-}
-
-//PROTECAO CONTEUDOS E CHAT
-app.get(
-  "/conteudos.html",
-  auth,
-  auth,
-  authModelo,
-  authModeloCompleto,
-  (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "conteudos.html"));
-  }
-);
-
-app.get(
-  "/chatmodelo.html",
-  auth,
-  auth,
-  authModelo,
-  authModeloCompleto,
-  (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "chatmodelo.html"));
-  }
-);
-});
-
-//-------------------------------------------------------------------------------------------- 
-//ROTA LISTA VIP CLIENTES
-// ===============================
-// 💬 MODELOS COM CHAT (CLIENTE)
-// ===============================
-app.get("/api/cliente/modelos", auth, async (req, res) => {
-  try {
-    if (req.user.role !== "cliente") {
-      return res.status(403).json([]);
-    }
-
-const result = await db.query(`
-  SELECT m.user_id AS id, m.nome
-  FROM vip_assinaturas v
-  JOIN modelos m ON m.user_id = v.modelo_id
-  WHERE v.cliente_id = $1
-  ORDER BY m.nome
-`, [req.user.id]);
-
-res.json(result.rows);
-
-
-  } catch (err) {
-    console.error("Erro modelos chat cliente:", err);
-    res.status(500).json([]);
-  }
-});
-// ===============================
-// 📄 DADOS DA MODELO
-// ===============================
-
-// Buscar dados
-app.get("/api/modelo/dados",
-  auth,
-  auth,
-  authModelo,
-  async (req, res) => {
-    try {
-      const result = await db.query(
-        "SELECT * FROM modelos_dados WHERE user_id = $1",
-        [req.user.id]
-      );
-
-      res.json(result.rows[0] || {});
-    } catch (err) {
-      console.error("Erro buscar dados modelo:", err);
-      res.status(500).json({ error: "Erro interno" });
     }
   }
 );
@@ -1183,8 +1168,6 @@ app.post(
 );
 
 
-
-//***************************************************************************************************************** */
 app.post(
   "/api/conteudos/upload",
   auth,
@@ -1199,87 +1182,6 @@ app.delete(
   authModelo,
   excluirConteudo
 );
-
-function desbloquearConteudo(cliente, modelo, conteudoId) {
-  const compras = readCompras();
-
-  // 🔒 evita duplicar compra
-  const jaPago = compras.some(
-    c =>
-      c.cliente === cliente &&
-      c.modelo === modelo &&
-      c.conteudoId === conteudoId &&
-      c.status === "pago"
-  );
-
-  if (!jaPago) {
-    compras.push({
-      cliente,
-      modelo,
-      conteudoId,
-      status: "pago",
-      data: Date.now()
-    });
-
-    saveCompras(compras);
-  }
-
-  // 🔔 avisa em tempo real
-  io.to(`${cliente}__${modelo}`).emit("conteudoDesbloqueado", {
-    cliente,
-    modelo,
-    conteudoId
-  });
-
-  console.log("🔓 Conteúdo desbloqueado:", cliente, modelo, conteudoId);
-}
-
-
-// app.post("/api/pagamentos/webhook", async (req, res) => {
-//   try {
-//     console.log("🔔 WEBHOOK RECEBIDO:", req.body);
-
-//     const paymentId =
-//       req.body?.data?.id ||
-//       req.body?.resource;
-
-//     if (!paymentId) {
-//       console.log("⚠️ Webhook sem paymentId");
-//       return res.sendStatus(200);
-//     }
-
-//     const payment = await paymentClient.get({ id: paymentId });
-
-//     console.log("💰 STATUS:", payment.status);
-//     console.log("📦 METADATA:", payment.metadata);
-
-//     if (payment.status !== "approved") {
-//       return res.sendStatus(200);
-//     }
-//     const tipo = payment.metadata?.tipo;
-
-// //CONTEUDO PAGO
-//     const { cliente, modelo } = payment.metadata || {};
-//     const conteudoId =
-//       payment.metadata?.conteudoId ||
-//       payment.metadata?.conteudo_id;
-
-//     if (!cliente || !modelo || !conteudoId) {
-//       console.log("❌ METADATA INCOMPLETA");
-//       return res.sendStatus(200);
-//     }
-
-//     desbloquearConteudo(cliente, modelo, conteudoId);
-
-//     console.log("🔓 CONTEÚDO DESBLOQUEADO");
-
-//     return res.sendStatus(200);
-
-//   } catch (err) {
-//     console.error("🔥 ERRO WEBHOOK:", err);
-//     return res.sendStatus(500);
-//   }
-// });
 
 app.post(
   "/uploadMidia",
@@ -1312,37 +1214,7 @@ app.post(
   }
 );
 
-
-app.get("/api/health/db", async (req, res) => {
-  try {
-    const result = await db.query("SELECT 1 AS ok");
-    res.json({ status: "ok", db: result.rows[0] });
-  } catch (err) {
-    console.error("❌ DB ERROR:", err);
-    res.status(500).json({
-      status: "error",
-      message: err.message
-    });
-  }
-});
-
-//ganhos
-app.get("/api/modelo/ganhos", authModelo, async (req, res) => {
-  const modeloId = req.user.id;
-
-  const result = await db.query(
-    `SELECT * FROM transactions
-     WHERE modelo_id = $1
-     ORDER BY created_at DESC`,
-    [modeloId]
-  );
-
-  res.json(result.rows);
-});
-
-// ===============================
 // ⭐ VIP SIMPLES – ATIVAR NO CLICK
-// ===============================
 app.post("/api/vip/ativar", auth, async (req, res) => {
   try {
     if (req.user.role !== "cliente") {
@@ -1383,56 +1255,6 @@ app.post("/api/vip/ativar", auth, async (req, res) => {
     res.status(500).json({ error: "Erro interno" });
   }
 });
-
-// ===============================
-// 👤 IDENTIDADE DO CLIENTE (JWT)
-// ===============================
-app.get("/api/cliente/me", auth, async (req, res) => {
-  if (req.user.role !== "cliente") {
-    return res.status(403).json({ error: "Apenas cliente" });
-  }
-
-  const result = await db.query(
-    "SELECT nome FROM clientes WHERE user_id = $1",
-    [req.user.id]
-  );
-
-  res.json({
-    id: req.user.id,
-    nome: result.rows[0]?.nome
-  });
-});
-
-//ROTA LISTA VIP
-app.get("/api/vip/status/:modeloId", auth, async (req, res) => {
-  const clienteId = req.user.id;
-  const { modeloId } = req.params;
-
-  const result = await db.query(
-    `SELECT 1 FROM vip_assinaturas 
-     WHERE cliente_id = $1 AND modelo_id = $2`,
-    [clienteId, modeloId]
-  );
-
-  res.json({ vip: result.rowCount > 0 });
-});
-
-app.get("/api/modelo/vips", auth, authModelo, async (req, res) => {
-  const modeloId = req.user.id;
-
-  const result = await db.query(`
-    SELECT c.nome AS cliente
-    FROM vip_assinaturas v
-    JOIN clientes c ON c.user_id = v.cliente_id
-    WHERE v.modelo_id = $1
-    ORDER BY c.nome
-  `, [modeloId]);
-
-  res.json(result.rows);
-});
-
-
-
 // ===============================
 // START SERVER
 // ===============================
@@ -1441,5 +1263,3 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, "0.0.0.0", () => {
   console.log("🚀 Servidor rodando na porta", PORT);
 });
-
-
