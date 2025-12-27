@@ -1,3 +1,9 @@
+// 🔌 esperar socket global do header.js
+function obterSocket() {
+  if (!window.socket) return null;
+  return window.socket;
+}
+
 let cliente = null;
 
 // buscar identidade real
@@ -25,9 +31,47 @@ const chatBox = document.getElementById("chatBox");
 const lista = document.getElementById("listaModelos");
 const modeloNome = document.getElementById("modeloNome");
 
+document.addEventListener("DOMContentLoaded", () => {
+  const socket = obterSocket();
+
+  if (!socket) {
+    console.error("❌ Socket ainda não inicializado");
+    return;
+  }
+
+  // autentica socket
+  socket.emit("auth", { token: window.token });
+
+  socket.on("connect", async () => {
+    await carregarCliente();
+
+    socket.emit("loginCliente", cliente);
+    carregarModelos();
+    pedirUnread();
+
+    const modeloSalvo = localStorage.getItem("chatModelo");
+    if (modeloSalvo) abrirChat(modeloSalvo);
+  });
+
+  // listeners
+  socket.on("chatHistory", onChatHistory);
+  socket.on("newMessage", onNewMessage);
+  socket.on("unreadUpdate", onUnreadUpdate);
+});
+
+
 // ===========================
 // SOCKET
 // ===========================
+
+socket.on("chatHistory", onChatHistory);
+socket.on("newMessage", onNewMessage);
+socket.on("unreadUpdate", onUnreadUpdate);
+
+socket.on("errorMessage", msg => {
+    alert(msg);
+});
+
 socket.on("connect", async () => {
   await carregarCliente();
 
@@ -37,15 +81,6 @@ socket.on("connect", async () => {
 
   const modeloSalvo = localStorage.getItem("chatModelo");
   if (modeloSalvo) abrirChat(modeloSalvo);
-});
-
-
-socket.on("chatHistory", onChatHistory);
-socket.on("newMessage", onNewMessage);
-socket.on("unreadUpdate", onUnreadUpdate);
-
-socket.on("errorMessage", msg => {
-    alert(msg);
 });
 
 // ===========================
