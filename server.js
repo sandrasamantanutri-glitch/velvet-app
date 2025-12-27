@@ -1059,16 +1059,16 @@ app.get("/api/cliente/modelos", auth, async (req, res) => {
       return res.status(403).json([]);
     }
 
-    const result = await db.query(`
-      SELECT
-        m.nome
-      FROM vip_assinaturas v
-      JOIN modelos m ON m.user_id = v.modelo_id
-      WHERE v.cliente_id = $1
-      ORDER BY m.nome
-    `, [req.user.id]);
+const result = await db.query(`
+  SELECT m.user_id AS id, m.nome
+  FROM vip_assinaturas v
+  JOIN modelos m ON m.user_id = v.modelo_id
+  WHERE v.cliente_id = $1
+  ORDER BY m.nome
+`, [req.user.id]);
 
-    res.json(result.rows.map(r => r.nome));
+res.json(result.rows);
+
 
   } catch (err) {
     console.error("Erro modelos chat cliente:", err);
