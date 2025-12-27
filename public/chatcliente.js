@@ -1,11 +1,12 @@
 // ===============================
-// ESTADO GLOBAL
+// CHAT CLIENTE — VERSÃO ESTÁVEL
 // ===============================
+
 let cliente = null;
+const socket = window.socket;
 
 const state = {
   modelos: [],
-  unread: {},
   modeloAtual: null
 };
 
@@ -21,21 +22,19 @@ const sendBtn = document.getElementById("sendBtn");
 // ===============================
 // INIT
 // ===============================
-document.addEventListener("DOMContentLoaded", () => {
-  window.socket.emit("auth", { token: localStorage.getItem("token") });
+document.addEventListener("DOMContentLoaded", async () => {
+  socket.emit("auth", { token: localStorage.getItem("token") });
 
-  window.socket.on("connect", async () => {
+  socket.on("connect", async () => {
     await carregarCliente();
     await carregarModelos();
-    pedirUnread();
 
     const modeloSalvo = localStorage.getItem("chatModelo");
     if (modeloSalvo) abrirChat(modeloSalvo);
   });
 
-  window.socket.on("chatHistory", onChatHistory);
-  window.socket.on("newMessage", onNewMessage);
-  window.socket.on("unreadUpdate", onUnreadUpdate);
+  socket.on("chatHistory", renderHistorico);
+  socket.on("newMessage", renderMensagem);
 });
 
 // ===============================
@@ -45,13 +44,12 @@ async function carregarCliente() {
   const res = await fetch("/api/cliente/me", {
     headers: { Authorization: "Bearer " + localStorage.getItem("token") }
   });
-
   const data = await res.json();
   cliente = data.nome;
 }
 
 // ===============================
-// MODELOS (VIP)
+// MODELOS VIP
 // ===============================
 async function carregarModelos() {
   const res = await fetch("/api/cliente/modelos", {
@@ -59,28 +57,15 @@ async function carregarModelos() {
   });
 
   const modelos = await res.json();
-
-  if (!Array.isArray(modelos)) {
-    console.error("Modelos inválidos:", modelos);
-    return;
-  }
+  if (!Array.isArray(modelos)) return;
 
   state.modelos = modelos;
-  renderLista();
-}
-
-function renderLista() {
   lista.innerHTML = "";
 
-  state.modelos.forEach(nome => {
+  modelos.forEach(nome => {
     const li = document.createElement("li");
-    li.textContent = state.unread[nome] ? `${nome} (Não lida)` : nome;
-
-    li.onclick = () => {
-      abrirChat(nome);
-      limparUnread(nome);
-    };
-
+    li.textContent = nome;
+    li.onclick = () => abrirChat(nome);
     lista.appendChild(li);
   });
 }
@@ -94,17 +79,11 @@ function abrirChat(nomeModelo) {
   chatBox.innerHTML = "";
 
   localStorage.setItem("chatModelo", nomeModelo);
-  window.socket.emit("joinRoom", { cliente, modelo: nomeModelo });
-}
-
-function limparUnread(modelo) {
-  window.socket.emit("markAsRead", { cliente, modelo });
-  delete state.unread[modelo];
-  renderLista();
+  socket.emit("joinRoom", { cliente, modelo: nomeModelo });
 }
 
 // ===============================
-// MENSAGENS
+// ENVIO
 // ===============================
 sendBtn.onclick = () => {
   if (!state.modeloAtual) return;
@@ -112,38 +91,24 @@ sendBtn.onclick = () => {
   const text = input.value.trim();
   if (!text) return;
 
-  window.socket.emit("sendMessage", {
+  socket.emit("sendMessage", {
     cliente,
     modelo: state.modeloAtual,
-    from: cliente,
     text
   });
 
   input.value = "";
 };
 
-function onChatHistory(messages) {
-  chatBox.innerHTML = "";
-  messages.forEach(renderMessage);
-}
-
-function onNewMessage(msg) {
-  renderMessage(msg);
-}
-
-function onUnreadUpdate(map) {
-  state.unread = map || {};
-  renderLista();
-}
-
-function pedirUnread() {
-  window.socket.emit("getUnread", cliente);
-}
-
 // ===============================
 // RENDER
 // ===============================
-function renderMessage(msg) {
+function renderHistorico(msgs) {
+  chatBox.innerHTML = "";
+  msgs.forEach(renderMensagem);
+}
+
+function renderMensagem(msg) {
   const div = document.createElement("div");
   div.className = msg.from === cliente ? "msg-cliente" : "msg-modelo";
   div.textContent = msg.text;
