@@ -59,6 +59,32 @@ document.addEventListener("DOMContentLoaded", () => {
   socket.on("unreadUpdate", onUnreadUpdate);
 });
 
+socket.on("conteudoDesbloqueado", ({ conteudoId }) => {
+
+  const card = document.querySelector(
+    `.chat-conteudo .btn-desbloquear[data-id="${conteudoId}"]`
+  )?.closest(".chat-conteudo");
+
+  if (card) {
+    card.classList.remove("bloqueado");
+
+    const overlay = card.querySelector(".overlay-bloqueado");
+    if (overlay) overlay.remove();
+
+    const media = card.querySelector("img, video");
+    if (media) {
+      media.style.cursor = "pointer";
+      media.style.pointerEvents = "auto";
+
+      if (media.tagName === "VIDEO") {
+        media.controls = true;
+      }
+    }
+  }
+
+  fecharPopupPix();
+});
+
 // ===========================
 // HANDLERS
 // ===========================
@@ -413,48 +439,3 @@ chatBox.addEventListener("click", (e) => {
 
   pagarConteudo(conteudoId, preco);
 });
-
-
-socket.on("conteudoDesbloqueado", ({ conteudoId }) => {
-
-  const card = document.querySelector(
-    `.chat-conteudo .btn-desbloquear[data-id="${conteudoId}"]`
-  )?.closest(".chat-conteudo");
-
-  if (card) {
-    card.classList.remove("bloqueado");
-
-    const overlay = card.querySelector(".overlay-bloqueado");
-    if (overlay) overlay.remove();
-
-    // 🔑 CORRIGE O CURSOR DEFINITIVAMENTE
-    const media = card.querySelector("img, video");
-    if (media) {
-      media.style.cursor = "pointer";   // 👈 AQUI
-      media.style.pointerEvents = "auto";
-
-      if (media.tagName === "VIDEO") {
-        media.controls = true;
-      }
-    }
-  }
-
-  fecharPopupPix();
-});
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
