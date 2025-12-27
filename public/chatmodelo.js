@@ -73,6 +73,14 @@ sendBtn.onclick = () => {
   input.value = "";
 };
 
+// ⌨️ ENTER envia mensagem (Shift+Enter quebra linha)
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendBtn.onclick();
+  }
+});
+
 function renderHistorico(msgs) {
   chatBox.innerHTML = "";
   msgs.forEach(renderMensagem);
