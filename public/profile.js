@@ -146,6 +146,17 @@ if (btnVip) {
   });
 }
 
+// 🔐 verificar VIP persistido
+const vipRes = await fetch(`/api/vip/status/${modelo.id}`, {
+  headers: { Authorization: "Bearer " + token }
+});
+const vipData = await vipRes.json();
+
+if (vipData.vip && btnVip) {
+  btnVip.textContent = "VIP ativo 💜";
+  btnVip.disabled = true;
+}
+
 
 // ===============================
 // FEED

@@ -1310,7 +1310,6 @@ function desbloquearConteudo(cliente, modelo, conteudoId) {
 //   }
 // });
 
-
 app.post(
   "/uploadMidia",
   auth,
@@ -1495,6 +1494,21 @@ app.get("/api/cliente/me", auth, async (req, res) => {
     nome: result.rows[0]?.nome
   });
 });
+
+//ROTA LISTA VIP
+app.get("/api/vip/status/:modeloId", auth, async (req, res) => {
+  const clienteId = req.user.id;
+  const { modeloId } = req.params;
+
+  const result = await db.query(
+    `SELECT 1 FROM vip_assinaturas 
+     WHERE cliente_id = $1 AND modelo_id = $2`,
+    [clienteId, modeloId]
+  );
+
+  res.json({ vip: result.rowCount > 0 });
+});
+
 
 
 // ===============================
