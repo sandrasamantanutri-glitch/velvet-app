@@ -139,6 +139,11 @@ input.addEventListener("keydown", e => {
 
 // RENDER
 function renderHistorico(msgs) {
+  // 🔒 se já há mensagens no chat, não apaga
+  if (chatBox.children.length > 0) {
+    return;
+  }
+
   chatBox.innerHTML = "";
   msgs.forEach(renderMensagem);
 }
