@@ -1,9 +1,3 @@
-// garante socket global vindo do header.js
-const socket = window.socket;
-if (!socket) {
-  console.error("❌ Socket ainda não inicializado");
-  throw new Error("Socket não disponível");
-}
 let cliente = null;
 
 // buscar identidade real
