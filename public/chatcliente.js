@@ -26,18 +26,16 @@ socket.on("newMessage", renderMensagem);
 socket.on("connect", async () => {
   console.log("🟢 Socket conectado:", socket.id);
 
-  // 🔐 autentica DEPOIS de conectar
   socket.emit("auth", {
     token: localStorage.getItem("token")
   });
 
   await carregarCliente();
   await carregarModelos();
-  
-  socket.emit("loginCliente", cliente.id);
-});
 
-  // 🔁 REABRE CHAT APÓS F5 (AQUI)
+  socket.emit("loginCliente", cliente.id);
+
+  // ✅ AGORA SIM: reabrir chat após F5
   const chatSalvo = localStorage.getItem("chatAtivo");
   if (chatSalvo) {
     const { clienteId, modeloId, modeloNome } = JSON.parse(chatSalvo);
@@ -47,8 +45,7 @@ socket.on("connect", async () => {
 
     socket.emit("joinRoom", { clienteId, modeloId });
   }
-
-
+});
 
 // CLIENTE
 async function carregarCliente() {
@@ -108,8 +105,6 @@ function abrirChat(modelo) {
     modeloId: modelo.id
   });
 }
-
-
 
 // ENVIAR
 sendBtn.onclick = () => {
