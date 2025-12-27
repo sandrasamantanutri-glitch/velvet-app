@@ -68,6 +68,19 @@ socket.on("connect", async () => {
     renderListaClientes();
 });
 
+socket.on("connect", async () => {
+  socket.emit("loginModelo", modelo);
+
+  await carregarClientesVip();
+  await carregarUltimasRespostas();
+  renderListaClientes();
+
+  // 🔑 ENTRA EM TODAS AS SALAS DOS CLIENTES VIP
+  state.clientes.forEach(c => {
+    socket.emit("joinRoom", { cliente: c.cliente, modelo });
+  });
+});
+
 
 socket.on("chatHistory", onChatHistory);
 socket.on("newMessage", onNewMessage);

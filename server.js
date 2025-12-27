@@ -905,22 +905,20 @@ socket.on("joinRoom", ({ cliente, modelo }) => {
     }
   });
 
-  socket.on("sendMessage", ({ cliente, modelo, text }) => {
+ socket.on("sendMessage", ({ cliente, modelo, text }) => {
   if (!socket.user) return;
 
   let from;
 
-  // if (socket.role === "cliente") {
-  //   if (!verificarAssinatura(cliente, modelo)) {
-  //     socket.emit("errorMessage", "Apenas clientes VIP podem enviar mensagens.");
-  //     return;
-  //   }
-  //   from = cliente;
-  // }
+  if (socket.role === "cliente") {
+    from = cliente;
+  }
 
   if (socket.role === "modelo") {
     from = modelo;
   }
+
+  if (!from) return;
 
   const newMessage = {
     cliente,
@@ -936,17 +934,20 @@ socket.on("joinRoom", ({ cliente, modelo }) => {
 
   io.to(getRoom(cliente, modelo)).emit("newMessage", newMessage);
 
-  // unread
+  // 🔔 unread
   if (from === cliente) {
     unreadMap[modelo] ??= {};
     unreadMap[modelo][cliente] = true;
+    io.to(onlineModelos[modelo]).emit("unreadUpdate", unreadMap[modelo]);
   }
 
   if (from === modelo) {
     unreadMap[cliente] ??= {};
     unreadMap[cliente][modelo] = true;
+    io.to(onlineClientes[cliente]).emit("unreadUpdate", unreadMap[cliente]);
   }
 });
+
 
 async function excluirConteudo(req, res) {
   const { id } = req.params;
@@ -1509,6 +1510,20 @@ app.get("/api/vip/status/:modeloId", auth, async (req, res) => {
   res.json({ vip: result.rowCount > 0 });
 });
 
+app.get("/api/modelo/:modelo/vips", auth, authModelo, async (req, res) => {
+  const { modelo } = req.params;
+
+  const result = await db.query(`
+    SELECT c.nome AS cliente
+    FROM vip_assinaturas v
+    JOIN clientes c ON c.user_id = v.cliente_id
+    JOIN modelos m ON m.user_id = v.modelo_id
+    WHERE m.nome = $1
+    ORDER BY c.nome
+  `, [modelo]);
+
+  res.json(result.rows);
+});
 
 
 // ===============================
