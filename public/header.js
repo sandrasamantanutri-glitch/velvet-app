@@ -180,15 +180,6 @@ function logout() {
   localStorage.clear();
   location.href = "index.html";
 }
-// carregar valor salvo
-if (window.socket) {
-  window.socket.on("novaMensagem", (data) => {
-    console.log("📩 HEADER recebeu novaMensagem:", data);
 
-    const total = Number(localStorage.getItem("unreadTotal") || 0) + 1;
-    localStorage.setItem("unreadTotal", total);
-    atualizarBadge(total);
-  });
-}
 
 

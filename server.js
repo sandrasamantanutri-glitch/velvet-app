@@ -436,29 +436,28 @@ io.on("connection", socket => {
 
   // 💬 enviar mensagem
   socket.on("sendMessage", async ({ clienteId, modeloId, text }) => {
-    if (!socket.role || !text) return;
+  if (!text) return;
 
-    const fromUserId = socket.userId;
-    const room = `chat_${clienteId}_${modeloId}`;
+  const fromUserId = socket.userId || clienteId;
+  const room = `chat_${clienteId}_${modeloId}`;
 
-    await salvarMensagemDB({
-      clienteId,
-      modeloId,
-      fromUserId,
-      text
-    });
-
-    // marcar unread para o outro lado
-    await marcarUnread(clienteId, modeloId);
-
-    io.to(room).emit("newMessage", {
-      clienteId,
-      modeloId,
-      from: fromUserId,
-      text,
-      createdAt: new Date()
-    });
+  await salvarMensagemDB({
+    clienteId,
+    modeloId,
+    fromUserId,
+    text
   });
+
+  await marcarUnread(clienteId, modeloId);
+
+  io.to(room).emit("newMessage", {
+    clienteId,
+    modeloId,
+    from: fromUserId,
+    text,
+    createdAt: new Date()
+  });
+});
 
   socket.on("disconnect", () => {
     if (socket.role === "cliente") {
