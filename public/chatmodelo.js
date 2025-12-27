@@ -3,7 +3,7 @@
 // ===============================
 
 const socket = window.socket;
-const modelo = localStorage.getItem("modeloPerfil", nomeDaModelo);
+const modelo = localStorage.getItem("modeloPerfil");
 
 const state = {
   clientes: [],
@@ -35,10 +35,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 async function carregarClientesVip() {
-  const res = await fetch(`/api/modelo/${modelo}/vips`, {
-    headers: { Authorization: "Bearer " + localStorage.getItem("token") }
-  });
-
+const res = await fetch("/api/modelo/vips", {
+  headers: { Authorization: "Bearer " + localStorage.getItem("token") }
+});
   const clientes = await res.json();
   state.clientes = clientes.map(c => c.cliente);
   lista.innerHTML = "";
@@ -168,34 +167,3 @@ const ordenados = [...state.clientes].sort((a, b) => {
     lista.appendChild(li);
   });
 }
-
-
-///LOG
-async function carregarClientesVip() {
-  console.log("Modelo:", modelo);
-
-  const res = await fetch(`/api/modelo/${modelo}/vips`, {
-    headers: { Authorization: "Bearer " + localStorage.getItem("token") }
-  });
-
-  console.log("Status VIPs:", res.status);
-
-  const clientes = await res.json();
-  console.log("VIPs recebidos:", clientes);
-
-  state.clientes = clientes.map(c => c.cliente);
-
-  state.clientes.forEach(c => {
-    if (!clientesMeta[c]) {
-      clientesMeta[c] = {
-        novo: true,
-        naoLido: false,
-        ultimaMsgModeloEm: null
-      };
-    }
-  });
-
-  renderListaClientes();
-}
-
-

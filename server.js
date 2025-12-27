@@ -1407,20 +1407,20 @@ app.get("/api/vip/status/:modeloId", auth, async (req, res) => {
   res.json({ vip: result.rowCount > 0 });
 });
 
-app.get("/api/modelo/:modelo/vips", auth, authModelo, async (req, res) => {
-  const { modelo } = req.params;
+app.get("/api/modelo/vips", auth, authModelo, async (req, res) => {
+  const modeloId = req.user.id;
 
   const result = await db.query(`
     SELECT c.nome AS cliente
     FROM vip_assinaturas v
     JOIN clientes c ON c.user_id = v.cliente_id
-    JOIN modelos m ON m.user_id = v.modelo_id
-    WHERE m.nome = $1
+    WHERE v.modelo_id = $1
     ORDER BY c.nome
-  `, [modelo]);
+  `, [modeloId]);
 
   res.json(result.rows);
 });
+
 
 
 // ===============================
