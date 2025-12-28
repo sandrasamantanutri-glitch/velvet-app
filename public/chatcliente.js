@@ -90,15 +90,20 @@ async function carregarListaModelos() {
   }
 
   modelos.forEach(m => {
-    const li = document.createElement("li");
-    li.className = "chat-item";
-    li.textContent = m.nome;
-    li.dataset.modeloId = m.modelo_id;
+   const li = document.createElement("li");
+   li.className = "chat-item";
+   li.dataset.modeloId = m.modelo_id;
+   
+   li.innerHTML = `
+  <span class="nome">${m.nome}</span>
+  <span class="badge hidden">Não lida</span>
+  `;
 
     li.onclick = () => {
       modelo_id = m.modelo_id;
       chatAtivo = { cliente_id, modelo_id };
       li.classList.remove("nao-lida");
+      li.querySelector(".badge").classList.add("hidden");
 
       document.getElementById("modeloNome").innerText = m.nome;
 
@@ -116,8 +121,9 @@ const unreadIds = await unreadRes.json();
 
 document.querySelectorAll("#listaModelos li").forEach(li => {
   if (unreadIds.includes(Number(li.dataset.modeloId))) {
-    li.classList.add("nao-lida");
-  }
+  li.classList.add("nao-lida");
+  li.querySelector(".badge").classList.remove("hidden");
+}
 });
 
 }
@@ -167,11 +173,11 @@ function renderMensagem(msg) {
 }
 
 function marcarNaoLida(msg) {
-  const itens = document.querySelectorAll("#listaModelos li");
-
-  itens.forEach(li => {
+  document.querySelectorAll("#listaModelos li").forEach(li => {
     if (Number(li.dataset.modeloId) === msg.modelo_id) {
       li.classList.add("nao-lida");
+      li.querySelector(".badge").classList.remove("hidden");
     }
   });
 }
+

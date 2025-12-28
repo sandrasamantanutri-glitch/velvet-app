@@ -78,33 +78,42 @@ async function carregarListaClientes() {
   const clientes = await res.json();
   const lista = document.getElementById("listaClientes");
 
-  lista.innerHTML = "";
+  li.innerHTML = `
+  <span class="nome">${c.nome}</span>
+  <span class="badge hidden">Não lida</span>
+`;
 
   if (!clientes.length) {
     lista.innerHTML = "<li>Nenhum cliente VIP ainda.</li>";
     return;
   }
 
-  clientes.forEach(c => {
-    const li = document.createElement("li");
-    li.className = "chat-item";
-    li.textContent = c.nome;
-    li.dataset.clienteId = c.cliente_id;
+clientes.forEach(c => {
+  const li = document.createElement("li");
+  li.className = "chat-item";
+  li.dataset.clienteId = c.cliente_id;
 
-    li.onclick = () => {
-      cliente_id = c.cliente_id;
-      chatAtivo = { cliente_id, modelo_id };
-      li.classList.remove("nao-lida");
+  li.innerHTML = `
+    <span class="nome">${c.nome}</span>
+    <span class="badge hidden">Não lida</span>
+  `;
 
-      document.getElementById("clienteNome").innerText = c.nome;
+  li.onclick = () => {
+    cliente_id = c.cliente_id;
+    chatAtivo = { cliente_id, modelo_id };
 
-      const sala = `chat_${cliente_id}_${modelo_id}`;
-      socket.emit("joinChat", { sala });
-      socket.emit("getHistory", { cliente_id, modelo_id });
-    };
+    li.classList.remove("nao-lida");
+    li.querySelector(".badge").classList.add("hidden");
 
-    lista.appendChild(li);
-  });
+    document.getElementById("clienteNome").innerText = c.nome;
+
+    const sala = `chat_${cliente_id}_${modelo_id}`;
+    socket.emit("joinChat", { sala });
+    socket.emit("getHistory", { cliente_id, modelo_id });
+  };
+
+  lista.appendChild(li);
+});
 }
 async function carregarModelo() {
   const res = await fetch("/api/modelo/me", {
@@ -150,12 +159,12 @@ function renderMensagem(msg) {
 }
 
 function marcarNaoLida(msg) {
-  const itens = document.querySelectorAll("#listaClientes li");
-
-  itens.forEach(li => {
+  document.querySelectorAll("#listaClientes li").forEach(li => {
     if (Number(li.dataset.clienteId) === msg.cliente_id) {
       li.classList.add("nao-lida");
+      li.querySelector(".badge").classList.remove("hidden");
     }
   });
 }
+
 
