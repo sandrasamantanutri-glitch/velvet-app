@@ -5,9 +5,20 @@ if (!token) {
   window.location.href = "/index.html";
   throw new Error("Não autenticado");
 }
+const modo = role === "cliente" ? "publico" : "privado";
+
 // ===============================
 // ELEMENTOS DO PERFIL
 // ===============================
+let modelo_id = localStorage.getItem("modelo_id");
+
+// 🔒 Guard APENAS para perfil público
+if (modo === "publico" && (!modelo_id || modelo_id === "undefined")) {
+  alert("Modelo não identificada.");
+  window.location.href = "/clientHome.html";
+  throw new Error("modelo_id ausente no perfil público");
+}
+
 const avatarImg  = document.getElementById("profileAvatar");
 const capaImg    = document.getElementById("profileCapa");
 const nomeEl     = document.getElementById("profileName");
@@ -20,15 +31,6 @@ const btnChat = document.getElementById("btnChat");
 const btnVip  = document.getElementById("btnVip");
 const btnSalvarBio = document.getElementById("btnSalvarBio");
 const bioInput     = document.getElementById("bioInput");
-
-
-let modelo_id = localStorage.getItem("modelo_id");
-if (modo === "publico" && (!modelo_id || modelo_id === "undefined")) {
-    alert("Modelo não identificada.");
-    window.location.href = "/clientHome.html";
-    throw new Error("modelo_id ausente no perfil público");
-}
-
 
 // ===============================
 // INIT
