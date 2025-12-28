@@ -77,6 +77,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (e.key === "Enter") {
     enviarMensagem();
   }
+
+const btnConteudo = document.getElementById("btnEnviarConteudo");
+
+btnConteudo.onclick = () => {
+  abrirPopupConteudos();
+};
 });
 });
 
@@ -328,10 +334,10 @@ function formatarTempo(timestamp) {
   const d   = Math.floor(diff / 86400000);
 
   if (min < 1) return "agora";
-  if (min < 60) return `há ${min} min`;
-  if (h < 24) return `há ${h} h`;
+  if (min < 60) return `${min} min`;
+  if (h < 24) return `${h} h`;
   if (d === 1) return "ontem";
-  return `há ${d} dias`;
+  return `${d} dias`;
 }
 
 function organizarListaClientes() {
@@ -376,5 +382,78 @@ function atualizarBadgeComTempo(li) {
     }
   }
 }
+
+function abrirPopupConteudos() {
+  if (!cliente_id) {
+    alert("Selecione um cliente primeiro.");
+    return;
+  }
+
+  document.getElementById("popupConteudos").classList.remove("hidden");
+  carregarConteudosModelo();
+}
+
+function fecharPopupConteudos() {
+  document.getElementById("popupConteudos").classList.add("hidden");
+}
+
+async function carregarConteudosModelo() {
+  const grid = document.getElementById("previewConteudos");
+  grid.innerHTML = "";
+
+  const res = await fetch("/api/conteudos", {
+    headers: {
+      Authorization: "Bearer " + token
+    }
+  });
+
+  const conteudos = await res.json();
+
+  if (!conteudos.length) {
+    grid.innerHTML = "<p>Nenhum conteúdo disponível.</p>";
+    return;
+  }
+
+  conteudos.forEach(c => {
+    const div = document.createElement("div");
+    div.className = "preview-item";
+    div.dataset.conteudoId = c.id;
+
+    div.innerHTML = c.tipo === "video"
+      ? `<video src="${c.url}" muted></video>`
+      : `<img src="${c.url}" />`;
+
+    div.onclick = () => {
+      document
+        .querySelectorAll(".preview-item")
+        .forEach(i => i.classList.remove("selected"));
+
+      div.classList.add("selected");
+    };
+
+    grid.appendChild(div);
+  });
+}
+
+function confirmarEnvioConteudo() {
+  const selecionado = document.querySelector(".preview-item.selected");
+  if (!selecionado) {
+    alert("Selecione um conteúdo.");
+    return;
+  }
+
+  const preco = Number(document.getElementById("precoConteudo").value || 0);
+
+  socket.emit("sendConteudo", {
+    cliente_id,
+    modelo_id,
+    conteudo_id: selecionado.dataset.conteudoId,
+    preco
+  });
+
+  fecharPopupConteudos();
+}
+
+
 
 
