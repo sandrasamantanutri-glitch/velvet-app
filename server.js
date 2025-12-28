@@ -555,38 +555,6 @@ app.get("/api/feed/modelos", auth, async (req, res) => {
   }
 });
 
-//ROTA CLIENTE PERFIL
-app.get("/api/modelo/publico/:nome", auth, async (req, res) => {
-  try {
-    if (req.user.role !== "cliente") {
-      return res.status(403).json({ error: "Apenas clientes" });
-    }
-
-    const { nome } = req.params;
-
-    const result = await db.query(`
-      SELECT
-        m.user_id AS id,   -- 🔥 ESSENCIAL
-        m.nome,
-        m.avatar,
-        m.capa,
-        m.bio
-      FROM modelos m
-      WHERE m.nome = $1
-    `, [nome]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Modelo não encontrada" });
-    }
-
-    res.json(result.rows[0]);
-
-  } catch (err) {
-    console.error("Erro perfil público:", err);
-    res.status(500).json({ error: "Erro interno" });
-  }
-});
-
 
 // 👀 FEED PÚBLICO DA MODELO (CLIENTE)
 app.get("/api/modelo/:nome/feed", auth, async (req, res) => {
@@ -836,6 +804,38 @@ app.get("/api/modelo/publico/:id", async (req, res) => {
     }
 
     res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Erro perfil público:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+//ROTA CLIENTE PERFIL
+app.get("/api/modelo/publico/:nome", auth, async (req, res) => {
+  try {
+    if (req.user.role !== "cliente") {
+      return res.status(403).json({ error: "Apenas clientes" });
+    }
+
+    const { nome } = req.params;
+
+    const result = await db.query(`
+      SELECT
+        m.user_id AS id,   -- 🔥 ESSENCIAL
+        m.nome,
+        m.avatar,
+        m.capa,
+        m.bio
+      FROM modelos m
+      WHERE m.nome = $1
+    `, [nome]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Modelo não encontrada" });
+    }
+
+    res.json(result.rows[0]);
+
   } catch (err) {
     console.error("Erro perfil público:", err);
     res.status(500).json({ error: "Erro interno" });
