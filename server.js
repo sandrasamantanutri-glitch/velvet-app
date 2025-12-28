@@ -822,6 +822,26 @@ app.get(
   }
 );
 
+app.get("/api/modelo/publico/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await db.query(
+      "SELECT id, nome, bio, avatar, capa FROM modelos WHERE id = $1",
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Modelo não encontrada" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Erro perfil público:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
 // ===============================
 // ROTA POST
 // ===============================
