@@ -555,6 +555,34 @@ socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
   });
   
 });
+
+socket.on("mensagensLidas", async ({ cliente_id, modelo_id }) => {
+  try {
+    // marca como lidas APENAS mensagens da modelo para o cliente
+    await db.query(
+      `
+      UPDATE messages
+      SET lida = true
+      WHERE cliente_id = $1
+        AND modelo_id = $2
+        AND sender = 'modelo'
+        AND lida = false
+      `,
+      [cliente_id, modelo_id]
+    );
+
+    // 🔔 avisa a modelo em tempo real (✓✓)
+    const sid = onlineModelos[modelo_id];
+    if (sid) {
+      io.to(sid).emit("mensagensLidas", {
+        cliente_id
+      });
+    }
+  } catch (err) {
+    console.error("Erro ao marcar mensagens como lidas:", err);
+  }
+});
+
 // ===============================
 //ROTA GET
 // ===============================

@@ -58,6 +58,17 @@ socket.on("unreadUpdate", ({ cliente_id, modelo_id }) => {
   });
 });
 
+socket.on("chatHistory", mensagens => {
+  renderHistorico(mensagens);
+
+  // 🔔 avisa que o cliente leu as mensagens da modelo
+  socket.emit("mensagensLidas", {
+    cliente_id,
+    modelo_id
+  });
+});
+
+
 
 // ===============================
 // INIT

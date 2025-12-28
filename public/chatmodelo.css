@@ -194,9 +194,14 @@ html, body {
   background: rgba(0, 200, 83, 0.08);
 }
 
+.msg.modelo.lida {
+  opacity: 0.6;
+}
 
-
-
+.chat-item[data-status="visto"] .badge {
+  color: #4caf50;
+  font-weight: bold;
+}
 
 /* =========================
    CONTEÚDO IGUAL AO CLIENTE
