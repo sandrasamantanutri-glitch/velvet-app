@@ -318,8 +318,14 @@ html, body {
   width: 220px;
   height: 140px;
   border-radius: 16px;
-  background: linear-gradient(135deg, #2f2f2f, #4a4a4a);
   position: relative;
+  overflow: hidden;
+
+  background: linear-gradient(
+    135deg,
+    #f1eef8,
+    #e6e1f4
+  );
 
   display: flex;
   align-items: center;
@@ -327,29 +333,39 @@ html, body {
 
   font-size: 14px;
   font-weight: 600;
-  color: #fff;
+  color: #020216;
 }
 
-/* texto central */
-.chat-conteudo::before {
-  content: "Conteúdo bloqueado";
-  text-align: center;
-  opacity: 0.9;
+.chat-conteudo.bloqueado::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 16px;
 }
+
 
 /* preço */
 .valor-conteudo {
   position: absolute;
   bottom: 8px;
   right: 8px;
+  z-index: 2;
 
-  background: rgba(0,0,0,0.6);
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+
   padding: 4px 10px;
   border-radius: 12px;
 
   font-size: 12px;
   font-weight: 600;
 }
+
 
 /* alinhamento */
 .msg-cliente .chat-conteudo {
@@ -359,6 +375,17 @@ html, body {
 .msg-modelo .chat-conteudo {
   margin-right: auto;
 }
+
+.chat-conteudo .conteudo-msg {
+  position: relative;
+  z-index: 2;
+
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  text-align: center;
+}
+
 
 
 
