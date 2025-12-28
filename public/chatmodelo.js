@@ -466,8 +466,8 @@ function confirmarEnvioConteudo() {
 function abrirPreviewConteudo(url, tipo) {
   const popup = document.getElementById("popupConteudos");
 
-  // esconde o popup, mas NÃO destrói
-  if (popup) popup.style.display = "none";
+  // ❗ usa o MESMO sistema do resto da UI
+  if (popup) popup.classList.add("hidden");
 
   let modal = document.getElementById("previewModal");
 
@@ -494,8 +494,8 @@ function abrirPreviewConteudo(url, tipo) {
       video.pause();
       video.src = "";
 
-      // 🔥 VOLTA O POPUP AO ESTADO ANTERIOR
-      if (popup) popup.style.display = "block";
+      // 🔥 volta o popup SEM QUEBRAR layout
+      if (popup) popup.classList.remove("hidden");
     };
 
     modal.querySelector(".preview-backdrop").onclick = fechar;
@@ -523,6 +523,7 @@ function abrirPreviewConteudo(url, tipo) {
 
   modal.classList.add("open");
 }
+
 
 
 
