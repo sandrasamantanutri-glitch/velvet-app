@@ -183,6 +183,22 @@ function renderMensagem(msg) {
 
   // 📦 CONTEÚDO
   if (msg.tipo === "conteudo") {
+
+  // 🆓 CONTEÚDO GRATUITO
+  if (Number(msg.preco) === 0) {
+    div.innerHTML = `
+      <div class="chat-conteudo">
+        ${
+          msg.tipo_media === "video"
+            ? `<video src="${msg.url}" controls></video>`
+            : `<img src="${msg.url}" />`
+        }
+      </div>
+    `;
+  }
+
+  // 🔒 CONTEÚDO PAGO
+  else {
     div.innerHTML = `
       <div class="chat-conteudo bloqueado card-conteudo">
         <img src="/assets/lock.png" />
@@ -191,13 +207,9 @@ function renderMensagem(msg) {
       </div>
     `;
   }
-  else {
-    div.textContent = msg.text;
   }
-
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
 }
+
 
 function marcarNaoLida(msg) {
   document.querySelectorAll("#listaModelos li").forEach(li => {

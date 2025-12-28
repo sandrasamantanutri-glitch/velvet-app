@@ -323,8 +323,8 @@ html, body {
 
   /* textura suave fake (parece imagem borrada) */
   background:
-    radial-gradient(circle at 20% 30%, #cfc9df, transparent 40%),
-    radial-gradient(circle at 80% 70%, #bdb6d6, transparent 45%),
+    radial-gradient(circle at 20% 30%, #cfc9df, transparent 30%),
+    radial-gradient(circle at 80% 70%, #bdb6d6, transparent 35%),
     linear-gradient(135deg, #e9e6f2, #dcd6ec);
 
   display: flex;
