@@ -588,23 +588,52 @@ socket.on("mensagensLidas", async ({ cliente_id, modelo_id }) => {
   socket.on("sendConteudo", async ({ cliente_id, modelo_id, conteudo_id, preco }) => {
   if (!socket.user || socket.user.role !== "modelo") return;
 
+  if (!cliente_id || !modelo_id || !conteudo_id) return;
+
   const sala = `chat_${cliente_id}_${modelo_id}`;
 
-  // 🔔 envia como mensagem especial
-  io.to(sala).emit("newMessage", {
-    cliente_id,
-    modelo_id,
-    sender: "modelo",
-    tipo: "conteudo",
-    conteudo_id,
-    preco,
-    created_at: new Date()
+  try {
+    // 1️⃣ SALVAR NO HISTÓRICO (messages)
+    await db.query(
+      `
+      INSERT INTO messages
+        (cliente_id, modelo_id, sender, tipo, conteudo_id, preco)
+      VALUES ($1, $2, 'modelo', 'conteudo', $3, $4)
+      `,
+      [cliente_id, modelo_id, conteudo_id, preco]
+    );
+
+    // 2️⃣ MARCAR COMO NÃO LIDA PARA O CLIENTE
+    await db.query(
+      `
+      INSERT INTO unread (cliente_id, modelo_id, unread_for, has_unread)
+      VALUES ($1, $2, 'cliente', true)
+      ON CONFLICT (cliente_id, modelo_id)
+      DO UPDATE SET
+        unread_for = 'cliente',
+        has_unread = true
+      `,
+      [cliente_id, modelo_id]
+    );
+
+    // 3️⃣ EMITIR EM TEMPO REAL
+    io.to(sala).emit("newMessage", {
+      cliente_id,
+      modelo_id,
+      sender: "modelo",
+      tipo: "conteudo",
+      conteudo_id,
+      preco,
+      created_at: new Date()
+    });
+
+    console.log("📦 Conteúdo enviado e salvo:", conteudo_id);
+
+  } catch (err) {
+    console.error("❌ Erro ao enviar conteúdo:", err);
+  }
   });
-
-  // 🔴 aqui depois entra lógica de venda / pagamento
-});
-
-  
+ 
 });
 
 // ===============================

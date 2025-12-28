@@ -182,7 +182,20 @@ function renderMensagem(msg) {
     msg.sender === minhaRole ? "msg msg-cliente" : "msg msg-modelo";
 
   div.className = classe;
-  div.textContent = msg.text;
+
+  // 📦 CONTEÚDO
+  if (msg.tipo === "conteudo") {
+    div.innerHTML = `
+      <div class="chat-conteudo bloqueado">
+        <img src="/assets/lock.png" />
+        <div class="valor-conteudo">€ ${msg.preco}</div>
+        <div class="conteudo-msg">Conteúdo bloqueado</div>
+      </div>
+    `;
+  }
+  else {
+    div.textContent = msg.text;
+  }
 
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
