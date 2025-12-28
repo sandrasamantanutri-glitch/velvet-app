@@ -553,10 +553,8 @@ socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
     console.error("❌ Erro getHistory:", err);
   }
   });
-  
-});
 
-socket.on("mensagensLidas", async ({ cliente_id, modelo_id }) => {
+  socket.on("mensagensLidas", async ({ cliente_id, modelo_id }) => {
   try {
     // marca como lidas APENAS mensagens da modelo para o cliente
     await db.query(
@@ -581,6 +579,8 @@ socket.on("mensagensLidas", async ({ cliente_id, modelo_id }) => {
   } catch (err) {
     console.error("Erro ao marcar mensagens como lidas:", err);
   }
+  });
+  
 });
 
 // ===============================
