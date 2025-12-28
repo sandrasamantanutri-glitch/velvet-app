@@ -136,6 +136,8 @@ async function carregarCliente() {
 
   const data = await res.json();
   cliente_id = data.id;
+
+  socket.emit("loginCliente", cliente_id);
 }
 
 

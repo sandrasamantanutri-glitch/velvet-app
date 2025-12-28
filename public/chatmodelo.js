@@ -122,6 +122,8 @@ async function carregarModelo() {
 
   const data = await res.json();
   modelo_id = data.user_id ?? data.id;
+
+  socket.emit("loginModelo", modelo_id);
 }
 
 async function aplicarUnreadModelo() {
