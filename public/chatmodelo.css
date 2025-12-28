@@ -449,4 +449,16 @@ html, body {
   border: 2px solid #00c878;
 }
 
+.linha-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tempo {
+  font-size: 11px;
+  color: #999;
+}
+
+
 

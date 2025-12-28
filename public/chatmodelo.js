@@ -40,20 +40,22 @@ socket.on("newMessage", msg => {
     msg.modelo_id === chatAtivo.modelo_id
   ) {
     renderMensagem(msg);
+    atualizarStatusPorResponder([msg]); // 👈 ADICIONA ISTO
   }
 });
+
 
 socket.on("unreadUpdate", ({ cliente_id, modelo_id }) => {
   document.querySelectorAll("#listaClientes li").forEach(li => {
     if (Number(li.dataset.clienteId) === cliente_id) {
-      li.classList.add("nao-lida");
-
+      li.dataset.status = "nao-lida";
       const badge = li.querySelector(".badge");
       badge.innerText = "Não lida";
       badge.classList.remove("hidden");
+      
+      organizarListaClientes();
     }
   });
-
 });
 
 socket.on("novoAssinante", ({ cliente_id, nome }) => {
@@ -101,21 +103,37 @@ async function carregarListaClientes() {
     li.className = "chat-item";
     li.dataset.clienteId = c.cliente_id;
 
+    // ⏱ timestamp da última mensagem da MODELO
+    li.dataset.lastTime = c.ultima_msg_modelo_ts || 0;
+
+    // 📌 status inicial vindo do backend
+    // esperado: "novo" | "nao-lida" | "por-responder" | "normal"
+    li.dataset.status = c.status || "normal";
+
     li.innerHTML = `
       <span class="nome">${c.nome}</span>
       <span class="badge hidden">Não lida</span>
+      <span class="tempo"></span>
     `;
+
+    // 🔔 atualiza badge + tempo
+    atualizarBadgeComTempo(li);
 
     li.onclick = () => {
       cliente_id = c.cliente_id;
       chatAtivo = { cliente_id, modelo_id };
 
-const badge = li.querySelector(".badge");
-
-li.classList.remove("nao-lida");
-
-
       document.getElementById("clienteNome").innerText = c.nome;
+
+      // 🧹 limpar badge visual
+      const badge = li.querySelector(".badge");
+      badge.classList.add("hidden");
+
+      // 🔄 atualizar status local
+      li.dataset.status = "normal";
+
+      // 🔁 reordenar após mudança de status
+      organizarListaClientes();
 
       const sala = `chat_${cliente_id}_${modelo_id}`;
       socket.emit("joinChat", { sala });
@@ -124,6 +142,9 @@ li.classList.remove("nao-lida");
 
     lista.appendChild(li);
   });
+
+  // ✅ ordenar SOMENTE depois que todos os itens existirem
+  organizarListaClientes();
 }
 
 async function carregarModelo() {
@@ -146,10 +167,13 @@ async function aplicarUnreadModelo() {
 
   document.querySelectorAll("#listaClientes li").forEach(li => {
     if (unreadIds.includes(Number(li.dataset.clienteId))) {
-      li.classList.add("nao-lida");
-      li.querySelector(".badge").classList.remove("hidden");
+    li.dataset.status = "nao-lida";
+    const badge = li.querySelector(".badge");
+    badge.innerText = "Não lida";
+    badge.classList.remove("hidden");
     }
   });
+  organizarListaClientes();
 }
 
 function enviarMensagem() {
@@ -175,6 +199,13 @@ if (item) {
   badge.classList.add("hidden");
 }
 
+if (item) {
+  item.dataset.lastTime = Date.now();
+  item.dataset.status = "normal";
+  atualizarBadgeComTempo(item);
+  organizarListaClientes();
+}
+
   input.value = "";
 }
 
@@ -193,47 +224,49 @@ function renderMensagem(msg) {
   chat.scrollTop = chat.scrollHeight;
 }
 
-function marcarNaoLida(msg) {
-  document.querySelectorAll("#listaClientes li").forEach(li => {
-    if (Number(li.dataset.clienteId) === msg.cliente_id) {
-      li.classList.add("nao-lida");
-      li.querySelector(".badge").classList.remove("hidden");
-    }
-  });
-}
-
 function atualizarStatusPorResponder(mensagens) {
   if (!mensagens || mensagens.length === 0) return;
 
   const ultima = mensagens[mensagens.length - 1];
   const minhaRole = localStorage.getItem("role"); // cliente | modelo
 
-  const item = [...document.querySelectorAll(".chat-item")]
-    .find(li =>
-      minhaRole === "cliente"
-        ? Number(li.dataset.modeloId) === ultima.modelo_id
-        : Number(li.dataset.clienteId) === ultima.cliente_id
-    );
+  const item = [...document.querySelectorAll(".chat-item")].find(li =>
+    minhaRole === "cliente"
+      ? Number(li.dataset.modeloId) === ultima.modelo_id
+      : Number(li.dataset.clienteId) === ultima.cliente_id
+  );
 
   if (!item) return;
 
   const badge = item.querySelector(".badge");
+  let mudou = false;
 
-  // 🔹 se estava como "Novo", deixa o histórico decidir
-  if (badge.innerText === "Novo") {
-    badge.classList.add("hidden");
+  // 🚫 nunca sobrepor "novo" ou "nao-lida"
+  if (item.dataset.status === "novo" || item.dataset.status === "nao-lida") {
+    return;
   }
 
-  // ✅ última mensagem NÃO foi minha → por responder
+  // 📩 última mensagem NÃO foi minha → por responder
   if (ultima.sender !== minhaRole) {
-    badge.innerText = "Por responder";
-    badge.classList.remove("hidden");
-    item.classList.remove("nao-lida");
+    if (item.dataset.status !== "por-responder") {
+      item.dataset.status = "por-responder";
+      badge.innerText = "Por responder";
+      badge.classList.remove("hidden");
+      mudou = true;
+    }
   }
-  // ✅ última mensagem foi minha → limpa tudo
+  // ✅ última mensagem foi minha → volta ao normal
   else {
-    badge.classList.add("hidden");
-    item.classList.remove("nao-lida");
+    if (item.dataset.status !== "normal") {
+      item.dataset.status = "normal";
+      badge.classList.add("hidden");
+      mudou = true;
+    }
+  }
+
+  // 🔁 reorganiza só se algo mudou
+  if (mudou) {
+    organizarListaClientes();
   }
 }
 
@@ -246,12 +279,15 @@ function adicionarNovoClienteNaLista(cliente_id, nome) {
   if (existente) return;
 
   const li = document.createElement("li");
-  li.className = "chat-item novo nao-lida";
+  li.className = "chat-item";
   li.dataset.clienteId = cliente_id;
+  li.dataset.status = "novo";
+  li.dataset.lastTime = Date.now();
 
   li.innerHTML = `
     <span class="nome">${nome}</span>
     <span class="badge">Novo</span>
+    <span class="tempo">${formatarTempo(li.dataset.lastTime)}</span>
   `;
 
   li.onclick = () => {
@@ -260,10 +296,82 @@ function adicionarNovoClienteNaLista(cliente_id, nome) {
 
     document.getElementById("clienteNome").innerText = nome;
 
+    // 🧹 limpar badge e status
+    li.dataset.status = "normal";
+    const badge = li.querySelector(".badge");
+    badge.classList.add("hidden");
+
+    organizarListaClientes();
+
     const sala = `chat_${cliente_id}_${modelo_id}`;
     socket.emit("joinChat", { sala });
     socket.emit("getHistory", { cliente_id, modelo_id });
   };
 
+  // ➕ adiciona apenas UMA vez
   lista.prepend(li);
+
+  // 🔁 organiza depois de tudo pronto
+  organizarListaClientes();
 }
+
+
+function formatarTempo(timestamp) {
+  if (!timestamp || timestamp === "0") return "";
+
+  const diff = Date.now() - Number(timestamp);
+  const min = Math.floor(diff / 60000);
+  const h   = Math.floor(diff / 3600000);
+  const d   = Math.floor(diff / 86400000);
+
+  if (min < 1) return "agora";
+  if (min < 60) return `há ${min} min`;
+  if (h < 24) return `há ${h} h`;
+  if (d === 1) return "ontem";
+  return `há ${d} dias`;
+}
+
+function organizarListaClientes() {
+  const lista = document.getElementById("listaClientes");
+  const itens = [...lista.querySelectorAll(".chat-item")];
+
+  const prioridadeStatus = {
+    "novo": 1,
+    "nao-lida": 2,
+    "por-responder": 3,
+    "normal": 4
+  };
+
+  itens.sort((a, b) => {
+    const pa = prioridadeStatus[a.dataset.status] || 4;
+    const pb = prioridadeStatus[b.dataset.status] || 4;
+
+    // 1️⃣ prioridade por status
+    if (pa !== pb) return pa - pb;
+
+    // 2️⃣ se status igual → mais recente primeiro
+    const ta = Number(a.dataset.lastTime || 0);
+    const tb = Number(b.dataset.lastTime || 0);
+    return tb - ta;
+  });
+
+  itens.forEach(li => lista.appendChild(li));
+}
+
+function atualizarBadgeComTempo(li) {
+  const badge = li.querySelector(".badge");
+  if (!badge) return;
+
+  // só mostra tempo se NÃO for novo / não lida / por responder
+  if (li.dataset.status === "normal") {
+    const texto = formatarTempo(li.dataset.lastTime);
+    if (texto) {
+      badge.innerText = texto;
+      badge.classList.remove("hidden");
+    } else {
+      badge.classList.add("hidden");
+    }
+  }
+}
+
+
