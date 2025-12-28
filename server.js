@@ -584,6 +584,26 @@ socket.on("mensagensLidas", async ({ cliente_id, modelo_id }) => {
     console.error("Erro ao marcar mensagens como lidas:", err);
   }
   });
+
+  socket.on("sendConteudo", async ({ cliente_id, modelo_id, conteudo_id, preco }) => {
+  if (!socket.user || socket.user.role !== "modelo") return;
+
+  const sala = `chat_${cliente_id}_${modelo_id}`;
+
+  // 🔔 envia como mensagem especial
+  io.to(sala).emit("newMessage", {
+    cliente_id,
+    modelo_id,
+    sender: "modelo",
+    tipo: "conteudo",
+    conteudo_id,
+    preco,
+    created_at: new Date()
+  });
+
+  // 🔴 aqui depois entra lógica de venda / pagamento
+});
+
   
 });
 

@@ -221,16 +221,27 @@ function renderMensagem(msg) {
   const chat = document.getElementById("chatBox");
   const div = document.createElement("div");
 
-  const minhaRole = localStorage.getItem("role"); // 'cliente' ou 'modelo'
+  const minhaRole = localStorage.getItem("role");
   const classe =
     msg.sender === minhaRole ? "msg msg-cliente" : "msg msg-modelo";
 
   div.className = classe;
-  div.textContent = msg.text;
+
+  if (msg.tipo === "conteudo") {
+    div.innerHTML = `
+      <div class="chat-conteudo">
+        <img src="/assets/lock.png" />
+        <div class="valor-conteudo">€ ${msg.preco}</div>
+      </div>
+    `;
+  } else {
+    div.textContent = msg.text;
+  }
 
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
 }
+
 
 function atualizarStatusPorResponder(mensagens) {
   if (!mensagens || mensagens.length === 0) return;
