@@ -315,17 +315,17 @@ html, body {
 
 /* card base */
 .chat-conteudo {
-  width: 140px;
+  width: 220px;
   height: 140px;
   border-radius: 16px;
   position: relative;
   overflow: hidden;
 
-  /* textura suave fake (parece imagem borrada) */
+  /* textura base suave */
   background:
-    radial-gradient(circle at 20% 30%, #cfc9df, transparent 30%),
-    radial-gradient(circle at 80% 70%, #bdb6d6, transparent 35%),
-    linear-gradient(135deg, #e9e6f2, #dcd6ec);
+    radial-gradient(circle at 30% 30%, rgba(183, 160, 255, 0.45), transparent 35%),
+    radial-gradient(circle at 70% 70%, rgba(140, 108, 255, 0.35), transparent 40%),
+    linear-gradient(135deg, #f3f0ff, #e6e1ff);
 
   display: flex;
   align-items: center;
@@ -337,13 +337,17 @@ html, body {
   position: absolute;
   inset: 0;
 
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(14px) saturate(130%);
+  -webkit-backdrop-filter: blur(14px) saturate(130%);
 
-  background: rgba(255, 255, 255, 0.25);
+  background: linear-gradient(
+    135deg,
+    rgba(123, 44, 255, 0.25),
+    rgba(123, 44, 255, 0.12)
+  );
+
+  border-radius: 16px;
 }
-
-
 
 /* preço */
 .valor-conteudo {
@@ -352,24 +356,15 @@ html, body {
   right: 8px;
   z-index: 2;
 
-  background: rgba(0,0,0,0.45);
-  color: #fff;
+  background: rgba(123, 44, 255, 0.35);
+  backdrop-filter: blur(6px);
 
+  color: #fff;
   padding: 4px 10px;
-  border-radius: 12px;
+  border-radius: 999px;
 
   font-size: 12px;
   font-weight: 600;
-}
-
-
-/* alinhamento */
-.msg-cliente .chat-conteudo {
-  margin-left: auto;
-}
-
-.msg-modelo .chat-conteudo {
-  margin-right: auto;
 }
 
 .chat-conteudo .conteudo-msg {
@@ -379,9 +374,11 @@ html, body {
   font-size: 14px;
   font-weight: 600;
   color: #ffffff;
-  text-shadow: 0 2px 6px rgba(0,0,0,0.35);
-}
 
+  text-shadow:
+    0 2px 6px rgba(123, 44, 255, 0.45),
+    0 0 12px rgba(123, 44, 255, 0.35);
+}
 
 
 
