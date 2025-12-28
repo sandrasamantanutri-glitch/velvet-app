@@ -209,38 +209,6 @@ html, body {
   font-weight: bold;
 }
 
-/* =========================
-   CONTEÚDO IGUAL AO CLIENTE
-========================= */
-
-.chat-conteudo {
-  width: 70%;           /* ocupa o balão */
-  border-radius: 12px;
-  aspect-ratio: 1 / 1;   /* 🔥 ISSO resolve */
-  overflow: hidden;
-  box-shadow: 0 0 10px #7B2CFF;
-}
-.chat-conteudo img,
-.chat-conteudo video {
-  width: 100%;
-  aspect-ratio: 1 / 1;   /* 🔥 ISSO resolve */
-  object-fit: cover;
-  display: block;
-  border-radius: 10px;
-}
-
-/* =========================
-   VALOR DO CONTEÚDO (VISÃO MODELO)
-========================= */
-
-.valor-conteudo {
-  margin-top: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #7B2CFF;
-  text-align: center;
-}
-
 
 /* =========================
    FIX FINAL — CHAT INPUT
@@ -512,11 +480,6 @@ html, body {
   flex-direction: column;
 }
 
-.chat-conteudo.pago {
-  box-shadow: 0 0 12px rgba(0, 200, 120, 0.9);
-  border: 2px solid #00c878;
-}
-
 .linha-topo {
   display: flex;
   justify-content: space-between;
@@ -527,17 +490,59 @@ html, body {
   font-size: 11px;
   color: #999;
 }
+/* ===== CONTEÚDO NO CHAT DA MODELO ===== */
 
-
-.msg .chat-conteudo {
-  margin: 0;                
-  width: 160px;              
+.msg-modelo .chat-conteudo {
+  width: 160px;
+  border-radius: 12px;
+  background: #f0f0f0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  overflow: hidden;
 }
 
-/* cliente vê mais “premium” */
-.msg-cliente .chat-conteudo {
-  background: linear-gradient(135deg, #7B2CFF, #5D24BE);
+/* mídia */
+.chat-conteudo .conteudo-media img,
+.chat-conteudo .conteudo-media video {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
 }
+
+/* info abaixo da mídia */
+.chat-conteudo .conteudo-info {
+  padding: 6px;
+  text-align: center;
+  font-size: 12px;
+}
+
+/* estados */
+.chat-conteudo.nao-visto {
+  background: #e0e0e0;
+  opacity: 0.9;
+}
+
+.chat-conteudo.visto,
+.chat-conteudo.pago {
+  background: #e8fff3;
+  border: 2px solid #00c878;
+}
+
+/* status badge */
+.status-cliente {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+/* preço */
+.valor-conteudo {
+  font-size: 12px;
+  font-weight: 600;
+  color: #7B2CFF;
+}
+
 
 
 

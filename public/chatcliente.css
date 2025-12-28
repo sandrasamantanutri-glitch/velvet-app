@@ -332,6 +332,16 @@ html, body {
   justify-content: center;
 }
 
+.chat-conteudo img,
+.chat-conteudo video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;   /* 🔥 corta sem distorcer */
+  border-radius: 16px;
+  display: block;
+}
+
+
 .chat-conteudo.bloqueado::after {
   content: "";
   position: absolute;

@@ -223,43 +223,43 @@ function renderMensagem(msg) {
   div.className =
     msg.sender === "modelo" ? "msg msg-modelo" : "msg msg-cliente";
 
-  // 📦 CONTEÚDO ENVIADO PELA MODELO
-  if (msg.tipo === "conteudo") {
+if (msg.tipo === "conteudo") {
+  let statusClasse = "nao-visto";
+  let statusTexto  = "Não visto";
 
-    let statusClasse = "nao-visto";
-    let statusTexto  = "Não visto";
+  if (msg.pago) {
+    statusClasse = "pago";
+    statusTexto = "Pago";
+  } else if (msg.visto) {
+    statusClasse = "visto";
+    statusTexto = "Visto";
+  }
 
-    if (msg.pago) {
-      statusClasse = "pago";
-      statusTexto  = "Pago";
-    }
-    else if (msg.visto) {
-      statusClasse = "visto";
-      statusTexto  = "Visto";
-    }
-
-    div.innerHTML = `
-      <div class="chat-conteudo ${statusClasse}">
+  div.innerHTML = `
+    <div class="chat-conteudo ${statusClasse}">
+      <div class="conteudo-media">
         ${
           msg.tipo_media === "video"
             ? `<video src="${msg.url}" muted></video>`
             : `<img src="${msg.url}" />`
         }
+      </div>
 
+      <div class="conteudo-info">
         <span class="status-cliente">${statusTexto}</span>
         <div class="valor-conteudo">€ ${msg.preco}</div>
       </div>
+    </div>
     `;
-  }
-
-  // 💬 TEXTO NORMAL
-  else {
+   }
+    // 💬 TEXTO NORMAL
+    else {
     div.textContent = msg.text;
-  }
+    }
 
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
-}
+   chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+  }
 
 
 function atualizarStatusPorResponder(mensagens) {
