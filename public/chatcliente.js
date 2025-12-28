@@ -105,24 +105,21 @@ async function carregarListaModelos() {
   <span class="badge hidden">Não lida</span>
   `;
 
-    li.onclick = () => {
-  cliente_id = c.cliente_id;
+li.onclick = () => {
+  modelo_id = m.modelo_id;              // ✅ DEFINE O MODELO
   chatAtivo = { cliente_id, modelo_id };
 
-  document.getElementById("clienteNome").innerText = c.nome;
+  document.getElementById("clienteNome").innerText = m.nome;
 
-  // status volta ao normal
   li.dataset.status = "normal";
-
-  // 🔥 ATUALIZA O TEMPO (não esconde)
-  atualizarBadgeComTempo(li);
-
-  organizarListaClientes();
+  atualizarBadgeComTempo?.(li);
+  organizarListaClientes?.();
 
   const sala = `chat_${cliente_id}_${modelo_id}`;
   socket.emit("joinChat", { sala });
   socket.emit("getHistory", { cliente_id, modelo_id });
 };
+
     lista.appendChild(li);
   });
   const unreadRes = await fetch("/api/chat/unread/cliente", {
