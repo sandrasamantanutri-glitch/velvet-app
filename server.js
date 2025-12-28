@@ -553,10 +553,14 @@ socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
     console.error("❌ Erro getHistory:", err);
   }
   });
-
-  socket.on("mensagensLidas", async ({ cliente_id, modelo_id }) => {
+socket.on("mensagensLidas", async ({ cliente_id, modelo_id }) => {
   try {
-    // marca como lidas APENAS mensagens da modelo para o cliente
+    // 🔒 GARANTIA: só cliente pode marcar leitura
+    if (!socket.user || socket.user.role !== "cliente") {
+      return;
+    }
+
+    // marca como lidas APENAS mensagens da MODELO
     await db.query(
       `
       UPDATE messages
@@ -569,7 +573,7 @@ socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
       [cliente_id, modelo_id]
     );
 
-    // 🔔 avisa a modelo em tempo real (✓✓)
+    // 🔔 avisa a MODELO (✓✓)
     const sid = onlineModelos[modelo_id];
     if (sid) {
       io.to(sid).emit("mensagensLidas", {
