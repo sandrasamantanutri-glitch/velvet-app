@@ -27,7 +27,10 @@ socket.on("chatHistory", mensagens => {
   chat.innerHTML = "";
 
   mensagens.forEach(m => renderMensagem(m));
+
+  atualizarStatusPorResponder(mensagens);
 });
+
 
 // 💬 NOVA MENSAGEM
 socket.on("newMessage", msg => {
@@ -44,6 +47,9 @@ socket.on("unreadUpdate", ({ cliente_id, modelo_id }) => {
   document.querySelectorAll("#listaClientes li").forEach(li => {
     if (Number(li.dataset.clienteId) === cliente_id) {
       li.classList.add("nao-lida");
+
+      const badge = li.querySelector(".badge");
+      badge.innerText = "Não lida";
       li.querySelector(".badge").classList.remove("hidden");
     }
   });
@@ -101,8 +107,10 @@ async function carregarListaClientes() {
       cliente_id = c.cliente_id;
       chatAtivo = { cliente_id, modelo_id };
 
-      li.classList.remove("nao-lida");
-      li.querySelector(".badge").classList.add("hidden");
+const badge = li.querySelector(".badge");
+
+li.classList.remove("nao-lida");
+
 
       document.getElementById("clienteNome").innerText = c.nome;
 
@@ -156,6 +164,20 @@ function enviarMensagem() {
     text
   });
 
+  const item = [...document.querySelectorAll("#listaClientes li")]
+  .find(li => Number(li.dataset.clienteId) === cliente_id);
+
+if (item) {
+  item.querySelector(".badge").classList.add("hidden");
+}
+
+
+if (item) {
+  const badge = item.querySelector(".badge");
+  badge.classList.add("hidden");
+}
+
+
   input.value = "";
 }
 
@@ -183,6 +205,32 @@ function marcarNaoLida(msg) {
   });
 }
 
+function atualizarStatusPorResponder(mensagens) {
+  if (!mensagens || mensagens.length === 0) return;
 
+  const ultima = mensagens[mensagens.length - 1];
+  const minhaRole = localStorage.getItem("role"); // cliente | modelo
 
+  const item = [...document.querySelectorAll(".chat-item")]
+    .find(li =>
+      minhaRole === "cliente"
+        ? Number(li.dataset.modeloId) === ultima.modelo_id
+        : Number(li.dataset.clienteId) === ultima.cliente_id
+    );
 
+  if (!item) return;
+
+  const badge = item.querySelector(".badge");
+
+  // ✅ última mensagem NÃO foi minha → por responder
+  if (ultima.sender !== minhaRole) {
+    badge.innerText = "Por responder";
+    badge.classList.remove("hidden");
+    item.classList.remove("nao-lida");
+  }
+  // ✅ última mensagem foi minha → limpa tudo
+  else {
+    badge.classList.add("hidden");
+    item.classList.remove("nao-lida");
+  }
+}
