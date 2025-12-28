@@ -600,38 +600,41 @@ socket.on("mensagensLidas", async ({ cliente_id, modelo_id }) => {
       `,
       [cliente_id, modelo_id, conteudo_id, preco]
     );
+
+    // 2️⃣ busca conteúdo (SEGURANÇA)
     const conteudoResult = await db.query(
-  "SELECT url, tipo FROM conteudos WHERE id = $1",
-  [conteudo_id]
-);
+      "SELECT url, tipo FROM conteudos WHERE id = $1 AND user_id = $2",
+      [conteudo_id, modelo_id]
+    );
 
-const conteudo = conteudoResult.rows[0];
+    if (conteudoResult.rows.length === 0) {
+      console.warn("⚠️ Conteúdo não encontrado:", conteudo_id);
+      return;
+    }
 
-const payload = {
-  cliente_id,
-  modelo_id,
-  sender: "modelo",
-  tipo: "conteudo",
-  conteudo_id,
-  preco,
-  url: conteudo.url,
-  tipo_media: conteudo.tipo,
-  created_at: new Date()
-  };
-    // 2️⃣ envia para QUEM ESTÁ NA SALA
+    const conteudo = conteudoResult.rows[0];
+
+    const payload = {
+      cliente_id,
+      modelo_id,
+      sender: "modelo",
+      tipo: "conteudo",
+      conteudo_id,
+      preco,
+      url: conteudo.url,
+      tipo_media: conteudo.tipo,
+      created_at: new Date()
+    };
+
+    // 3️⃣ envia para sala
     io.to(sala).emit("newMessage", payload);
 
-    // 3️⃣ garante entrega à MODELO
+    // 4️⃣ garante entrega direta
     const sidModelo = onlineModelos[modelo_id];
-    if (sidModelo) {
-      io.to(sidModelo).emit("newMessage", payload);
-    }
+    if (sidModelo) io.to(sidModelo).emit("newMessage", payload);
 
-    // 4️⃣ garante entrega ao CLIENTE
     const sidCliente = onlineClientes[cliente_id];
-    if (sidCliente) {
-      io.to(sidCliente).emit("newMessage", payload);
-    }
+    if (sidCliente) io.to(sidCliente).emit("newMessage", payload);
 
     console.log("📦 Conteúdo entregue (sala + sockets)");
 
