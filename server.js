@@ -379,69 +379,62 @@ io.on("connection", socket => {
   console.log("🔥 Socket conectado:", socket.id);
 
   socket.user = null;
+// ===============================
+// 🔐 AUTENTICAÇÃO DO SOCKET
+// ===============================
+socket.on("auth", ({ token }) => {
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    socket.user = decoded;
+    console.log("🔐 Socket autenticado:", decoded.id, decoded.role);
+  } catch (err) {
+    console.log("❌ Token inválido");
+    socket.disconnect();
+  }
+});
 
-  // ===============================
-  // 🔐 AUTENTICAÇÃO DO SOCKET
-  // ===============================
-  socket.on("auth", ({ token }) => {
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      socket.user = decoded;
-      console.log("🔐 Socket autenticado:", decoded.id, decoded.role);
-    } catch (err) {
-      console.log("❌ Token inválido");
-      socket.disconnect();
-    }
-  });
+// ===============================
+// 📥 ENTRAR NA SALA DO CHAT
+// ===============================
+socket.on("joinChat", ({ sala }) => {
+  if (!sala) return;
+  socket.join(sala);
+  console.log("🟪 Entrou na sala:", sala);
+});
 
-  // ===============================
-  // 📥 ENTRAR NA SALA DO CHAT
-  // ===============================
-  socket.on("joinChat", ({ cliente_id, modelo_id }) => {
-    if (!cliente_id || !modelo_id) {
-      console.log("❌ joinChat inválido", { cliente_id, modelo_id });
-      return;
-    }
+// ===============================
+// 💬 ENVIAR MENSAGEM (ÚNICO)
+// ===============================
+socket.on("sendMessage", async ({ cliente_id, modelo_id, text }) => {
+  if (!cliente_id || !modelo_id || !text) {
+    console.log("❌ sendMessage inválido", { cliente_id, modelo_id, text });
+    return;
+  }
 
-    const room = `chat_${cliente_id}_${modelo_id}`;
-    socket.join(room);
+  const sala = `chat_${cliente_id}_${modelo_id}`;
 
-    console.log("🟪 Entrou na sala:", room, socket.id);
-  });
+  try {
+    // 💾 SALVA NO BANCO
+    await db.query(
+      `INSERT INTO messages (cliente_id, modelo_id, text)
+       VALUES ($1, $2, $3)`,
+      [cliente_id, modelo_id, text]
+    );
 
-  // ===============================
-  // 💬 ENVIAR MENSAGEM
-  // ===============================
-  socket.on("sendMessage", async ({ cliente_id, modelo_id, text }) => {
-    if (!cliente_id || !modelo_id || !text) {
-      console.log("❌ sendMessage inválido", { cliente_id, modelo_id, text });
-      return;
-    }
+    console.log("💾 Mensagem salva:", sala);
 
-    const room = `chat_${cliente_id}_${modelo_id}`;
+    // 🔄 EMITE PRA TODOS NA SALA
+    io.to(sala).emit("newMessage", {
+      cliente_id,
+      modelo_id,
+      text,
+      created_at: new Date()
+    });
 
-    try {
-      // 💾 SALVA NO BANCO
-      await db.query(
-        `INSERT INTO messages (cliente_id, modelo_id, text)
-         VALUES ($1, $2, $3)`,
-        [cliente_id, modelo_id, text]
-      );
-
-      console.log("💾 Mensagem salva:", room);
-
-      // 🔄 EMITE PRA AMBOS
-      io.to(room).emit("newMessage", {
-        cliente_id,
-        modelo_id,
-        text,
-        created_at: new Date()
-      });
-
-    } catch (err) {
-      console.error("🔥 ERRO AO SALVAR MENSAGEM:", err);
-    }
-  });
+  } catch (err) {
+    console.error("🔥 ERRO AO SALVAR MENSAGEM:", err);
+  }
+});
 
   // ===============================
   // 📜 HISTÓRICO DO CHAT
@@ -841,6 +834,56 @@ app.get("/api/modelo/publico/:nome", auth, async (req, res) => {
     res.status(500).json({ error: "Erro interno" });
   }
 });
+
+// ===============================
+// CHAT — LISTA PARA CLIENTE
+// ===============================
+app.get("/api/chat/cliente", authCliente, async (req, res) => {
+  try {
+    const clienteId = req.user.id;
+
+    const { rows } = await db.query(`
+      SELECT 
+        m.id   AS modelo_id,
+        m.nome,
+        m.avatar
+      FROM assinaturas a
+      JOIN modelos m ON m.id = a.modelo_id
+      WHERE a.cliente_id = $1
+        AND a.status = 'ativa'
+    `, [clienteId]);
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Erro chat cliente:", err);
+    res.status(500).json({ error: "Erro ao carregar chats" });
+  }
+});
+
+// ===============================
+// CHAT — LISTA PARA MODELO
+// ===============================
+app.get("/api/chat/modelo", authModelo, async (req, res) => {
+  try {
+    const modeloId = req.user.id;
+
+    const { rows } = await db.query(`
+      SELECT 
+        c.id   AS cliente_id,
+        c.nome
+      FROM assinaturas a
+      JOIN clientes c ON c.id = a.cliente_id
+      WHERE a.modelo_id = $1
+        AND a.status = 'ativa'
+    `, [modeloId]);
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Erro chat modelo:", err);
+    res.status(500).json({ error: "Erro ao carregar chats" });
+  }
+});
+
 
 // ===============================
 // ROTA POST

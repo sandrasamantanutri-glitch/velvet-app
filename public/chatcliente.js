@@ -43,7 +43,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   await carregarCliente();
   await carregarModelo();
 
-  socket.emit("joinChat", { cliente_id, modelo_id });
+  socket.emit("joinChat", {
+  sala: `chat_${cliente_id}_${modelo_id}`
+});
+
   socket.emit("getHistory", { cliente_id, modelo_id });
 
   const sendBtn = document.getElementById("sendBtn");
