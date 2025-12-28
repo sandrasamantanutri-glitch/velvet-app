@@ -427,6 +427,8 @@ socket.on("joinChat", ({ sala }) => {
 // 💬 ENVIAR MENSAGEM (ÚNICO)
 // ===============================
 socket.on("sendMessage", async ({ cliente_id, modelo_id, text }) => {
+ if (!socket.user) return;
+
   if (!cliente_id || !modelo_id || !text) {
     console.log("❌ sendMessage inválido", { cliente_id, modelo_id, text });
     return;
@@ -435,22 +437,21 @@ socket.on("sendMessage", async ({ cliente_id, modelo_id, text }) => {
   const sala = `chat_${cliente_id}_${modelo_id}`;
 
   try {
-    // 💾 SALVA NO BANCO
-    await db.query(
-      `INSERT INTO messages (cliente_id, modelo_id, text)
-       VALUES ($1, $2, $3)`,
-      [cliente_id, modelo_id, text]
-    );
+    const sender = socket.user.role; // 'cliente' ou 'modelo'
+await db.query(
+  `INSERT INTO messages (cliente_id, modelo_id, sender, text)
+   VALUES ($1, $2, $3, $4)`,
+  [cliente_id, modelo_id, sender, text]
+);
 
     console.log("💾 Mensagem salva:", sala);
-
-    // 🔄 EMITE PRA TODOS NA SALA
-    io.to(sala).emit("newMessage", {
-      cliente_id,
-      modelo_id,
-      text,
-      created_at: new Date()
-    });
+io.to(sala).emit("newMessage", {
+  cliente_id,
+  modelo_id,
+  sender,
+  text,
+  created_at: new Date()
+});
 
   } catch (err) {
     console.error("🔥 ERRO AO SALVAR MENSAGEM:", err);
