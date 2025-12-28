@@ -42,7 +42,7 @@ socket.on("newMessage", msg => {
 document.addEventListener("DOMContentLoaded", async () => {
   await carregarCliente();
   await carregarListaModelos();
-  
+
   const sendBtn = document.getElementById("sendBtn");
   const input   = document.getElementById("messageInput");
   sendBtn.onclick = enviarMensagem;
@@ -124,8 +124,14 @@ function enviarMensagem() {
 function renderMensagem(msg) {
   const chat = document.getElementById("chatBox");
   const div = document.createElement("div");
-  div.className = "msg";
+
+  const minhaRole = localStorage.getItem("role"); // 'cliente' ou 'modelo'
+  const classe =
+    msg.sender === minhaRole ? "msg msg-cliente" : "msg msg-modelo";
+
+  div.className = classe;
   div.textContent = msg.text;
+
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
 }

@@ -427,7 +427,13 @@ socket.on("joinChat", ({ sala }) => {
 // 💬 ENVIAR MENSAGEM (ÚNICO)
 // ===============================
 socket.on("sendMessage", async ({ cliente_id, modelo_id, text }) => {
- if (!socket.user) return;
+  if (!socket.user) {
+    console.log("❌ Socket sem usuário");
+    return;
+  }
+   // 🔒 AJUSTE 2 — SEGURANÇA REAL (COLOCA AQUI 👇)
+  if (socket.user.role === "cliente" && socket.user.id !== cliente_id) return;
+  if (socket.user.role === "modelo"  && socket.user.id !== modelo_id) return;
 
   if (!cliente_id || !modelo_id || !text) {
     console.log("❌ sendMessage inválido", { cliente_id, modelo_id, text });
