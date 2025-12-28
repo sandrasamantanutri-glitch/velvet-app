@@ -459,6 +459,10 @@ function confirmarEnvioConteudo() {
 }
 
 function abrirPreviewConteudo(url, tipo) {
+  // Fecha o popup de conteúdos
+  const popup = document.getElementById("popupConteudos");
+  if (popup) popup.style.display = "none";
+
   let modal = document.getElementById("previewModal");
 
   if (!modal) {
@@ -477,9 +481,15 @@ function abrirPreviewConteudo(url, tipo) {
 
     document.body.appendChild(modal);
 
-    modal.querySelector(".preview-backdrop").onclick =
-    modal.querySelector(".preview-close").onclick = () =>
+    const fechar = () => {
       modal.classList.remove("open");
+      const video = modal.querySelector("#previewVideo");
+      video.pause();
+      video.src = "";
+    };
+
+    modal.querySelector(".preview-backdrop").onclick = fechar;
+    modal.querySelector(".preview-close").onclick = fechar;
   }
 
   const img = modal.querySelector("#previewImg");
@@ -487,18 +497,23 @@ function abrirPreviewConteudo(url, tipo) {
 
   if (tipo === "video") {
     img.style.display = "none";
+
     video.style.display = "block";
     video.src = url;
+    video.currentTime = 0;
     video.play();
   } else {
     video.pause();
+    video.src = "";
     video.style.display = "none";
+
     img.style.display = "block";
     img.src = url;
   }
 
   modal.classList.add("open");
 }
+
 
 
 
