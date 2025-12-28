@@ -207,33 +207,11 @@ async function clienteEhVip(cliente_id, modelo_id) {
 
   return result.rowCount > 0;
 }
-
-function authModelo(req, res, next) {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader) {
-    return res.status(401).json({ erro: "Token ausente" });
-  }
-
-  const token = authHeader.split(" ")[1];
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    if (decoded.role !== "modelo") {
-      return res.status(403).json({ erro: "Apenas modelos" });
-    }
-
-    req.user = decoded;
-    next();
-  } catch (err) {
-    return res.status(401).json({ erro: "Token inválido" });
-  }
-}
-
 function auth(req, res, next) {
   const authHeader = req.headers.authorization;
-  if (!authHeader) return res.status(401).json({ error: "Sem token" });
+  if (!authHeader) {
+    return res.status(401).json({ error: "Token não fornecido" });
+  }
 
   const token = authHeader.split(" ")[1];
 
@@ -242,6 +220,49 @@ function auth(req, res, next) {
     req.user = decoded;
     next();
   } catch {
+    return res.status(401).json({ error: "Token inválido" });
+  }
+}
+
+function authCliente(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ error: "Token não fornecido" });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (decoded.role !== "cliente") {
+      return res.status(403).json({ error: "Acesso negado (não é cliente)" });
+    }
+
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: "Token inválido" });
+  }
+}
+function authModelo(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ error: "Token não fornecido" });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (decoded.role !== "modelo") {
+      return res.status(403).json({ error: "Acesso negado (não é modelo)" });
+    }
+
+    req.user = decoded;
+    next();
+  } catch (err) {
     return res.status(401).json({ error: "Token inválido" });
   }
 }
@@ -465,7 +486,7 @@ socket.on("sendMessage", async ({ cliente_id, modelo_id, text }) => {
 // ===============================
 //ROTA GET
 // ===============================
-app.get("/api/conteudos", auth, authModelo, async (req, res) => {
+app.get("/api/conteudos", authModelo, async (req, res) => {
   try {
     const result = await db.query(
       `
