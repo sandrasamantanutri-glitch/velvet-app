@@ -208,27 +208,6 @@ html, body {
   color: #fff;
   font-weight: bold;
 }
-
-/* =========================
-   CONTEÚDO IGUAL AO CLIENTE
-========================= */
-
-.chat-conteudo {
-  width: 70%;           /* ocupa o balão */
-  border-radius: 12px;
-  aspect-ratio: 1 / 1;   /* 🔥 ISSO resolve */
-  overflow: hidden;
-  box-shadow: 0 0 10px #7B2CFF;
-}
-.chat-conteudo img,
-.chat-conteudo video {
-  width: 100%;
-  aspect-ratio: 1 / 1;   /* 🔥 ISSO resolve */
-  object-fit: cover;
-  display: block;
-  border-radius: 10px;
-}
-
 /* =========================
    VALOR DO CONTEÚDO (VISÃO MODELO)
 ========================= */
@@ -528,22 +507,50 @@ html, body {
   color: #999;
 }
 
+/* =========================
+   ESTADOS DE CONTEÚDO — MODELO
+========================= */
 
-.msg .chat-conteudo {
-  margin: 0;                
-  width: 160px;              
-}
-
-/* cliente vê mais “premium” */
-.msg-cliente .chat-conteudo {
-  background: linear-gradient(135deg, #7B2CFF, #5D24BE);
-}
-
-/* modelo vê neutro */
+/* base */
 .msg-modelo .chat-conteudo {
-  background: #eceaf0;
-  box-shadow: 0 0 10px rgba(0,0,0,0.15);
+  width: 160px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #e5e5e5;          /* cinza padrão */
+  box-shadow: 0 0 8px rgba(0,0,0,0.15);
 }
+
+/* ❌ cliente NÃO comprou / NÃO viu */
+.chat-conteudo.nao-visto {
+  background: #e0e0e0;
+  border: 2px solid #cfcfcf;
+  box-shadow: none;
+  opacity: 0.9;
+}
+
+/* ✅ cliente COMPROU ou JÁ VIU */
+.chat-conteudo.visto,
+.chat-conteudo.pago {
+  background: #e8fff3;
+  border: 2px solid #00c878;
+  box-shadow: 0 0 12px rgba(0, 200, 120, 0.8);
+}
+
+/* badge opcional */
+.chat-conteudo .status-cliente {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+}
+
+
+
 
 
 

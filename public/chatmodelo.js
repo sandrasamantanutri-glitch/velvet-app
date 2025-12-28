@@ -216,22 +216,44 @@ if (item) {
 
 function renderMensagem(msg) {
   const chat = document.getElementById("chatBox");
+  if (!chat) return;
+
   const div = document.createElement("div");
 
-  const minhaRole = localStorage.getItem("role");
-  const classe =
-    msg.sender === minhaRole ? "msg msg-cliente" : "msg msg-modelo";
+  div.className =
+    msg.sender === "modelo" ? "msg msg-modelo" : "msg msg-cliente";
 
-  div.className = classe;
-
+  // 📦 CONTEÚDO ENVIADO PELA MODELO
   if (msg.tipo === "conteudo") {
+
+    let statusClasse = "nao-visto";
+    let statusTexto  = "Não visto";
+
+    if (msg.pago) {
+      statusClasse = "pago";
+      statusTexto  = "Pago";
+    }
+    else if (msg.visto) {
+      statusClasse = "visto";
+      statusTexto  = "Visto";
+    }
+
     div.innerHTML = `
-      <div class="chat-conteudo">
-        <img src="/assets/lock.png" />
+      <div class="chat-conteudo ${statusClasse}">
+        ${
+          msg.tipo_media === "video"
+            ? `<video src="${msg.url}" muted></video>`
+            : `<img src="${msg.url}" />`
+        }
+
+        <span class="status-cliente">${statusTexto}</span>
         <div class="valor-conteudo">€ ${msg.preco}</div>
       </div>
     `;
-  } else {
+  }
+
+  // 💬 TEXTO NORMAL
+  else {
     div.textContent = msg.text;
   }
 

@@ -614,17 +614,23 @@ socket.on("mensagensLidas", async ({ cliente_id, modelo_id }) => {
 
     const conteudo = conteudoResult.rows[0];
 
-    const payload = {
-      cliente_id,
-      modelo_id,
-      sender: "modelo",
-      tipo: "conteudo",
-      conteudo_id,
-      preco,
-      url: conteudo.url,
-      tipo_media: conteudo.tipo,
-      created_at: new Date()
-    };
+  const payload = {
+  cliente_id,
+  modelo_id,
+  sender: "modelo",
+  tipo: "conteudo",
+  conteudo_id,
+  preco,
+  url: conteudo.url,
+  tipo_media: conteudo.tipo,
+
+  // 🔥 ESTADOS DO CLIENTE (por enquanto fixos)
+  pago: false,
+  visto: false,
+
+  created_at: new Date()
+};
+
 
     // 3️⃣ envia para sala
     io.to(sala).emit("newMessage", payload);
