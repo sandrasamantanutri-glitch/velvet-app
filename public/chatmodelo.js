@@ -31,7 +31,11 @@ socket.on("chatHistory", mensagens => {
 
 // 💬 NOVA MENSAGEM
 socket.on("newMessage", msg => {
-  // se o chat ativo é esse → renderiza
+  const minhaRole = localStorage.getItem("role"); // 'modelo'
+
+  // mensagem da própria modelo → ignora
+  if (msg.sender === minhaRole) return;
+
   if (
     chatAtivo &&
     msg.cliente_id === chatAtivo.cliente_id &&
@@ -42,7 +46,6 @@ socket.on("newMessage", msg => {
     marcarNaoLida(msg);
   }
 });
-
 
 // ===============================
 // INIT
