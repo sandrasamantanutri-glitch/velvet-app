@@ -67,19 +67,6 @@ const io = new Server(server, {
 // ===============================
 //FUNCOES
 // ===============================
-async function marcarUnread(cliente_id, modelo_id) {
-   console.log("🔔 marcarUnread chamado:", cliente_id, modelo_id);
-  await db.query(
-    `
-    INSERT INTO unread (cliente_id, modelo_id, has_unread)
-    VALUES ($1, $2, true)
-    ON CONFLICT (cliente_id, modelo_id)
-    DO UPDATE SET has_unread = true
-    `,
-    [cliente_id, modelo_id]
-  );
-}
-
 async function limparUnread(cliente_id, modelo_id) {
   await db.query(
     `
@@ -451,37 +438,44 @@ socket.on("sendMessage", async ({ cliente_id, modelo_id, text }) => {
   const unreadFor = sender === "cliente" ? "modelo" : "cliente";
 
   try {
-    // 1️⃣ salva mensagem
-await db.query(
-  `
-  INSERT INTO unread (cliente_id, modelo_id, unread_for, has_unread)
-  VALUES ($1, $2, $3, true)
-  ON CONFLICT (cliente_id, modelo_id)
-  DO UPDATE SET
-    unread_for = EXCLUDED.unread_for,
-    has_unread = true
-  `,
-  [cliente_id, modelo_id, unreadFor]
-);
+  // 1️⃣ salva mensagem (HISTÓRICO)
+  await db.query(
+    `
+    INSERT INTO messages (cliente_id, modelo_id, sender, text)
+    VALUES ($1, $2, $3, $4)
+    `,
+    [cliente_id, modelo_id, sender, text]
+  );
 
-    // 2️⃣ marca como NÃO LIDA (persistente)
-    await marcarUnread(cliente_id, modelo_id);
+  // 2️⃣ marca NÃO LIDA para quem NÃO enviou
+  await db.query(
+    `
+    INSERT INTO unread (cliente_id, modelo_id, unread_for, has_unread)
+    VALUES ($1, $2, $3, true)
+    ON CONFLICT (cliente_id, modelo_id)
+    DO UPDATE SET
+      unread_for = EXCLUDED.unread_for,
+      has_unread = true
+    `,
+    [cliente_id, modelo_id, unreadFor]
+  );
 
-    // 3️⃣ envia evento em tempo real
-    io.to(sala).emit("newMessage", {
-      cliente_id,
-      modelo_id,
-      sender,
-      text,
-      created_at: new Date()
-    });
+  // 3️⃣ envia em tempo real
+  io.to(sala).emit("newMessage", {
+    cliente_id,
+    modelo_id,
+    sender,
+    text,
+    created_at: new Date()
+  });
 
-    console.log("💾 Mensagem salva e unread marcado:", sala);
+  console.log("💾 Mensagem salva e enviada:", sala);
 
-  } catch (err) {
-    console.error("🔥 ERRO AO SALVAR MENSAGEM:", err);
-  }
-});
+} 
+catch (err) {
+  console.error("🔥 ERRO AO SALVAR MENSAGEM:", err);
+}
+
 // ===============================
 // 📜 HISTÓRICO DO CHAT
 // ===============================
@@ -520,6 +514,7 @@ socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
     console.error("❌ Erro getHistory:", err);
   }
   });
+});
 });
 // ===============================
 //ROTA GET
