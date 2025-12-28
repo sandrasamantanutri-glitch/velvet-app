@@ -105,20 +105,19 @@ async function carregarListaModelos() {
   <span class="badge hidden">Não lida</span>
   `;
 
-li.onclick = () => {
-  modelo_id = m.modelo_id;              
-  chatAtivo = { cliente_id, modelo_id };
+    li.onclick = () => {
+      modelo_id = m.modelo_id;
+      chatAtivo = { cliente_id, modelo_id };
+      const badge = li.querySelector(".badge");
 
-  document.getElementById("modeloNome").innerText = m.nome;
+li.classList.remove("nao-lida");
 
-  li.dataset.status = "normal";
-  atualizarBadgeComTempo?.(li);
-  organizarListaClientes?.();
+      document.getElementById("modeloNome").innerText = m.nome;
 
-  const sala = `chat_${cliente_id}_${modelo_id}`;
-  socket.emit("joinChat", { sala });
-  socket.emit("getHistory", { cliente_id, modelo_id });
-};
+      const sala = `chat_${cliente_id}_${modelo_id}`;
+      socket.emit("joinChat", { sala });
+      socket.emit("getHistory", { cliente_id, modelo_id });
+    };
 
     lista.appendChild(li);
   });
@@ -192,58 +191,42 @@ function renderMensagem(msg) {
       : "msg msg-modelo";
 
   /* ===============================
-   📦 CONTEÚDO (IMAGEM / VÍDEO)
-=============================== */
-if (msg.tipo === "conteudo") {
+     📦 CONTEÚDO (IMAGEM / VÍDEO)
+  =============================== */
+  if (msg.tipo === "conteudo") {
 
-  // ✅ CONTEÚDO LIBERADO (GRÁTIS OU PAGO)
-  if ((msg.gratuito || Number(msg.preco) === 0 || msg.pago) && msg.url) {
+    if ((msg.gratuito || Number(msg.preco) === 0 || msg.pago) && msg.url) {
 
-    div.innerHTML = `
-      <div 
-        class="chat-conteudo livre" 
-        data-url="${msg.url}" 
-        data-tipo="${msg.tipo_media}"
-      >
-        ${
-          msg.tipo_media === "video"
-            ? `<video src="${msg.url}" muted></video>`
-            : `<img src="${msg.url}" />`
-        }
-      </div>
-    `;
-
-    const conteudoLivre = div.querySelector(".chat-conteudo.livre");
-
-    conteudoLivre.addEventListener("click", () => {
-      abrirConteudo(
-        conteudoLivre.dataset.url,
-        conteudoLivre.dataset.tipo
-      );
-    });
-
-  }
-
-  // 🔒 CONTEÚDO BLOQUEADO (PAGO)
-  else {
-
-    div.innerHTML = `
-      <div 
-        class="chat-conteudo bloqueado"
-        data-id="${msg.conteudo_id}"
-        data-preco="${msg.preco}"
-      >
-        <div class="blur-fundo"></div>
-
-        <div class="overlay-conteudo">
-          <img src="/assets/lock.png" class="lock-icon" />
-          <div class="valor-conteudo">R$ ${msg.preco}</div>
-          <div class="conteudo-msg">Desbloquear</div>
+      div.innerHTML = `
+        <div class="chat-conteudo livre">
+          ${
+            msg.tipo_media === "video"
+              ? `<video src="${msg.url}" controls playsinline></video>`
+              : `<img src="${msg.url}" />`
+          }
         </div>
-      </div>
-    `;
+      `;
+    }
+
+    // 🔒 BLOQUEADO (PAGO)
+    else {
+      div.innerHTML = `
+        <div 
+          class="chat-conteudo bloqueado"
+          data-id="${msg.conteudo_id}"
+          data-preco="${msg.preco}"
+        >
+          <div class="blur-fundo"></div>
+
+          <div class="overlay-conteudo">
+            <img src="/assets/lock.png" class="lock-icon" />
+            <div class="valor-conteudo">R$ ${msg.preco}</div>
+            <div class="conteudo-msg">Desbloquear</div>
+          </div>
+        </div>
+      `;
+    }
   }
-}
 
   /* ===============================
      💬 TEXTO NORMAL
