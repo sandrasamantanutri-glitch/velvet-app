@@ -384,6 +384,23 @@ html, body {
   box-shadow: 0 0 0 2px rgba(123,44,255,0.25);
 }
 
+.preview-item.selected::after {
+  content: "✓";
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  background: #7B2CFF;
+  color: #fff;
+  font-size: 14px;
+  font-weight: bold;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* MODAL PREVIEW */
 .preview-modal {
   position: fixed;
