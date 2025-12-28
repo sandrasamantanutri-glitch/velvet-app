@@ -535,16 +535,36 @@ socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
     );
 
     // 2️⃣ Busca histórico
-    const result = await db.query(
-      `
-      SELECT *
-      FROM messages
-      WHERE cliente_id = $1
-        AND modelo_id = $2
-      ORDER BY created_at ASC
-      `,
-      [cliente_id, modelo_id]
-    );
+const result = await db.query(
+  `
+  SELECT
+    m.id,
+    m.cliente_id,
+    m.modelo_id,
+    m.sender,
+    m.tipo,
+    m.text,
+    m.preco,
+    m.conteudo_id,
+    m.created_at,
+
+    c.url,
+    c.tipo AS tipo_media,
+
+    (m.preco = 0) AS gratuito,
+    (m.preco = 0) AS pago
+
+  FROM messages m
+  LEFT JOIN conteudos c
+    ON c.id = m.conteudo_id
+
+  WHERE m.cliente_id = $1
+    AND m.modelo_id = $2
+
+  ORDER BY m.created_at ASC
+  `,
+  [cliente_id, modelo_id]
+);
 
     // 3️⃣ Envia histórico ao front
     socket.emit("chatHistory", result.rows);
