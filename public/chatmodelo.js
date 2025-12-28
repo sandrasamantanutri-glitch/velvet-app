@@ -422,13 +422,18 @@ async function carregarConteudosModelo() {
       ? `<video src="${c.url}" muted></video>`
       : `<img src="${c.url}" />`;
 
-    div.onclick = () => {
-      document
-        .querySelectorAll(".preview-item")
-        .forEach(i => i.classList.remove("selected"));
+   div.onclick = () => {
+  document
+    .querySelectorAll(".preview-item")
+    .forEach(i => i.classList.remove("selected"));
 
-      div.classList.add("selected");
-    };
+  div.classList.add("selected");
+};
+
+// 🔍 DUPLO CLIQUE → abrir preview grande
+div.ondblclick = () => {
+  abrirPreviewConteudo(c.url, c.tipo);
+};
 
     grid.appendChild(div);
   });
