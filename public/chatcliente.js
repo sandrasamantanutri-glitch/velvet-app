@@ -15,6 +15,7 @@ const socket = io({
 
 let cliente_id = null;
 let modelo_id = null;
+let chatAtivo = null;
 
 // 🔐 SOCKET AUTH
 socket.on("connect", () => {
@@ -33,8 +34,18 @@ socket.on("chatHistory", mensagens => {
 
 // 💬 NOVA MENSAGEM
 socket.on("newMessage", msg => {
-  renderMensagem(msg);
+  // se o chat ativo é esse → renderiza
+  if (
+    chatAtivo &&
+    msg.cliente_id === chatAtivo.cliente_id &&
+    msg.modelo_id === chatAtivo.modelo_id
+  ) {
+    renderMensagem(msg);
+  } else {
+    marcarNaoLida(msg);
+  }
 });
+
 
 // ===============================
 // INIT
@@ -77,9 +88,12 @@ async function carregarListaModelos() {
     const li = document.createElement("li");
     li.className = "chat-item";
     li.textContent = m.nome;
+    li.dataset.modeloId = m.modelo_id;
 
     li.onclick = () => {
       modelo_id = m.modelo_id;
+      chatAtivo = { cliente_id, modelo_id };
+      li.classList.remove("nao-lida");
 
       document.getElementById("modeloNome").innerText = m.nome;
 
@@ -134,4 +148,14 @@ function renderMensagem(msg) {
 
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
+}
+
+function marcarNaoLida(msg) {
+  const itens = document.querySelectorAll("#listaModelos li");
+
+  itens.forEach(li => {
+    if (Number(li.dataset.modeloId) === msg.modelo_id) {
+      li.classList.add("nao-lida");
+    }
+  });
 }
