@@ -458,6 +458,49 @@ function confirmarEnvioConteudo() {
   fecharPopupConteudos();
 }
 
+function abrirPreviewConteudo(url, tipo) {
+  let modal = document.getElementById("previewModal");
+
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "previewModal";
+    modal.className = "preview-modal";
+
+    modal.innerHTML = `
+      <div class="preview-backdrop"></div>
+      <div class="preview-box">
+        <span class="preview-close">×</span>
+        <img id="previewImg" />
+        <video id="previewVideo" controls></video>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.querySelector(".preview-backdrop").onclick =
+    modal.querySelector(".preview-close").onclick = () =>
+      modal.classList.remove("open");
+  }
+
+  const img = modal.querySelector("#previewImg");
+  const video = modal.querySelector("#previewVideo");
+
+  if (tipo === "video") {
+    img.style.display = "none";
+    video.style.display = "block";
+    video.src = url;
+    video.play();
+  } else {
+    video.pause();
+    video.style.display = "none";
+    img.style.display = "block";
+    img.src = url;
+  }
+
+  modal.classList.add("open");
+}
+
+
 
 
 

@@ -384,6 +384,49 @@ html, body {
   box-shadow: 0 0 0 2px rgba(123,44,255,0.25);
 }
 
+/* MODAL PREVIEW */
+.preview-modal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  z-index: 9999;
+}
+
+.preview-modal.open {
+  display: block;
+}
+
+.preview-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+}
+
+.preview-box {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 90vw;
+  max-height: 90vh;
+  background: #fff;
+  border-radius: 14px;
+  padding: 10px;
+}
+
+.preview-box img,
+.preview-box video {
+  max-width: 100%;
+  max-height: 80vh;
+}
+
+.preview-close {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 22px;
+  cursor: pointer;
+}
 
 /* =========================
    PREÇO
