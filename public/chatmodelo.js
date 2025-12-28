@@ -47,8 +47,8 @@ socket.on("unreadUpdate", ({ cliente_id, modelo_id }) => {
       li.querySelector(".badge").classList.remove("hidden");
     }
   });
-});
 
+});
 
 // ===============================
 // INIT

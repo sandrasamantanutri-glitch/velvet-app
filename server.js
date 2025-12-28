@@ -392,9 +392,8 @@ io.on("connection", socket => {
   console.log("🔥 Socket conectado:", socket.id);
 
   socket.user = null;
-// ===============================
+
 // 🔐 AUTENTICAÇÃO DO SOCKET
-// ===============================
 socket.on("auth", ({ token }) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -406,18 +405,36 @@ socket.on("auth", ({ token }) => {
   }
 });
 
-// ===============================
+// 🔌 REGISTRO DE SOCKET ONLINE
+socket.on("loginCliente", (cliente_id) => {
+  onlineClientes[cliente_id] = socket.id;
+  console.log("🟢 Cliente online:", cliente_id, socket.id);
+});
+
+socket.on("loginModelo", (modelo_id) => {
+  onlineModelos[modelo_id] = socket.id;
+  console.log("🟣 Modelo online:", modelo_id, socket.id);
+});
+
+socket.on("disconnect", () => {
+  for (const [id, sid] of Object.entries(onlineClientes)) {
+    if (sid === socket.id) delete onlineClientes[id];
+  }
+  for (const [id, sid] of Object.entries(onlineModelos)) {
+    if (sid === socket.id) delete onlineModelos[id];
+  }
+});
+
 // 📥 ENTRAR NA SALA DO CHAT
-// ===============================
+
 socket.on("joinChat", ({ sala }) => {
   if (!sala) return;
   socket.join(sala);
   console.log("🟪 Entrou na sala:", sala);
 });
 
-// ===============================
+
 // 💬 ENVIAR MENSAGEM (ÚNICO)
-// ===============================
 socket.on("sendMessage", async ({ cliente_id, modelo_id, text }) => {
   if (!socket.user) {
     console.log("❌ Socket sem usuário");
@@ -499,9 +516,8 @@ catch (err) {
 }
 });
 
-// ===============================
+
 // 📜 HISTÓRICO DO CHAT
-// ===============================
 socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
   if (!socket.user) return;
 
@@ -537,6 +553,7 @@ socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
     console.error("❌ Erro getHistory:", err);
   }
   });
+  
 });
 // ===============================
 //ROTA GET
