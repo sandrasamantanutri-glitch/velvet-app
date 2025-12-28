@@ -612,9 +612,9 @@ socket.on("mensagensLidas", async ({ cliente_id, modelo_id }) => {
       return;
     }
 
-    const conteudo = conteudoResult.rows[0];
+    const gratuito = Number(preco) === 0;
 
-  const payload = {
+const payload = {
   cliente_id,
   modelo_id,
   sender: "modelo",
@@ -624,13 +624,12 @@ socket.on("mensagensLidas", async ({ cliente_id, modelo_id }) => {
   url: conteudo.url,
   tipo_media: conteudo.tipo,
 
-  // 🔥 ESTADOS DO CLIENTE (por enquanto fixos)
-  pago: false,
-  visto: false,
+  // 🔥 estado correto
+  pago: gratuito,
+  gratuito,
 
   created_at: new Date()
 };
-
 
     // 3️⃣ envia para sala
     io.to(sala).emit("newMessage", payload);

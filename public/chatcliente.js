@@ -195,8 +195,8 @@ function renderMensagem(msg) {
   =============================== */
   if (msg.tipo === "conteudo") {
 
-    // 🆓 GRATUITO
-    if (Number(msg.preco) === 0 && msg.url) {
+    if ((msg.gratuito || Number(msg.preco) === 0 || msg.pago) && msg.url) {
+
       div.innerHTML = `
         <div class="chat-conteudo livre">
           ${
