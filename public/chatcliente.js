@@ -34,23 +34,24 @@ socket.on("chatHistory", mensagens => {
 
 // 💬 NOVA MENSAGEM
 socket.on("newMessage", msg => {
-  const minhaRole = localStorage.getItem("role"); // cliente
-
-  // se a mensagem é do chat aberto → renderiza
   if (
     chatAtivo &&
     msg.cliente_id === chatAtivo.cliente_id &&
     msg.modelo_id === chatAtivo.modelo_id
   ) {
     renderMensagem(msg);
-    return;
-  }
-
-  // se veio da modelo e NÃO é o chat aberto → não lida
-  if (msg.sender !== minhaRole) {
-    marcarNaoLida(msg);
   }
 });
+
+socket.on("unreadUpdate", ({ cliente_id, modelo_id }) => {
+  document.querySelectorAll("#listaModelos li").forEach(li => {
+    if (Number(li.dataset.modeloId) === modelo_id) {
+      li.classList.add("nao-lida");
+      li.querySelector(".badge").classList.remove("hidden");
+    }
+  });
+});
+
 
 // ===============================
 // INIT
@@ -180,4 +181,17 @@ function marcarNaoLida(msg) {
     }
   });
 }
+
+function adicionarMensagemNoChat(msg) {
+  const chatBox = document.getElementById("chatBox");
+  if (!chatBox) return;
+
+  const div = document.createElement("div");
+  div.className = msg.sender === "cliente" ? "msg cliente" : "msg modelo";
+  div.innerText = msg.text;
+
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
 

@@ -31,20 +31,24 @@ socket.on("chatHistory", mensagens => {
 
 // 💬 NOVA MENSAGEM
 socket.on("newMessage", msg => {
-
-  // se é o chat aberto → renderiza
   if (
     chatAtivo &&
     msg.cliente_id === chatAtivo.cliente_id &&
     msg.modelo_id === chatAtivo.modelo_id
   ) {
     renderMensagem(msg);
-    return;
   }
-
-  // se NÃO é o chat ativo → marcar não lida
-  marcarNaoLida(msg);
 });
+
+socket.on("unreadUpdate", ({ cliente_id, modelo_id }) => {
+  document.querySelectorAll("#listaClientes li").forEach(li => {
+    if (Number(li.dataset.clienteId) === cliente_id) {
+      li.classList.add("nao-lida");
+      li.querySelector(".badge").classList.remove("hidden");
+    }
+  });
+});
+
 
 // ===============================
 // INIT
@@ -176,5 +180,7 @@ function marcarNaoLida(msg) {
     }
   });
 }
+
+
 
 
