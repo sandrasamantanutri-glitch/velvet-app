@@ -78,43 +78,41 @@ async function carregarListaClientes() {
   const clientes = await res.json();
   const lista = document.getElementById("listaClientes");
 
-  li.innerHTML = `
-  <span class="nome">${c.nome}</span>
-  <span class="badge hidden">Não lida</span>
-`;
+  lista.innerHTML = "";
 
   if (!clientes.length) {
     lista.innerHTML = "<li>Nenhum cliente VIP ainda.</li>";
     return;
   }
 
-clientes.forEach(c => {
-  const li = document.createElement("li");
-  li.className = "chat-item";
-  li.dataset.clienteId = c.cliente_id;
+  clientes.forEach(c => {
+    const li = document.createElement("li");
+    li.className = "chat-item";
+    li.dataset.clienteId = c.cliente_id;
 
-  li.innerHTML = `
-    <span class="nome">${c.nome}</span>
-    <span class="badge hidden">Não lida</span>
-  `;
+    li.innerHTML = `
+      <span class="nome">${c.nome}</span>
+      <span class="badge hidden">Não lida</span>
+    `;
 
-  li.onclick = () => {
-    cliente_id = c.cliente_id;
-    chatAtivo = { cliente_id, modelo_id };
+    li.onclick = () => {
+      cliente_id = c.cliente_id;
+      chatAtivo = { cliente_id, modelo_id };
 
-    li.classList.remove("nao-lida");
-    li.querySelector(".badge").classList.add("hidden");
+      li.classList.remove("nao-lida");
+      li.querySelector(".badge").classList.add("hidden");
 
-    document.getElementById("clienteNome").innerText = c.nome;
+      document.getElementById("clienteNome").innerText = c.nome;
 
-    const sala = `chat_${cliente_id}_${modelo_id}`;
-    socket.emit("joinChat", { sala });
-    socket.emit("getHistory", { cliente_id, modelo_id });
-  };
+      const sala = `chat_${cliente_id}_${modelo_id}`;
+      socket.emit("joinChat", { sala });
+      socket.emit("getHistory", { cliente_id, modelo_id });
+    };
 
-  lista.appendChild(li);
-});
+    lista.appendChild(li);
+  });
 }
+
 async function carregarModelo() {
   const res = await fetch("/api/modelo/me", {
     headers: { Authorization: "Bearer " + token }
