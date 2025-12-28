@@ -396,4 +396,37 @@ html, body {
   border-radius: 8px;
 }
 
+/* quando a mensagem contém conteúdo, remove padding do balão */
+.msg:has(.chat-conteudo) {
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.conteudo-msg {
+  display: none;
+}
+
+/* card segue alinhamento da mensagem */
+.msg-cliente .card-conteudo {
+  margin-left: auto;
+}
+
+.msg-modelo .card-conteudo {
+  margin-right: auto;
+}
+
+/* cliente vê mais “premium” */
+.msg-cliente .chat-conteudo {
+  background: linear-gradient(135deg, #7B2CFF, #5D24BE);
+}
+
+/* modelo vê neutro */
+.msg-modelo .chat-conteudo {
+  background: #eceaf0;
+  box-shadow: 0 0 10px rgba(0,0,0,0.15);
+}
+
+
+
 

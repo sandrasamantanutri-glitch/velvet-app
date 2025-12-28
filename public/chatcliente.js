@@ -184,7 +184,7 @@ function renderMensagem(msg) {
   // 📦 CONTEÚDO
   if (msg.tipo === "conteudo") {
     div.innerHTML = `
-      <div class="chat-conteudo bloqueado">
+      <div class="chat-conteudo bloqueado card-conteudo">
         <img src="/assets/lock.png" />
         <div class="valor-conteudo">€ ${msg.preco}</div>
         <div class="conteudo-msg">Conteúdo bloqueado</div>

@@ -534,6 +534,17 @@ html, body {
   width: 160px;              
 }
 
+/* cliente vê mais “premium” */
+.msg-cliente .chat-conteudo {
+  background: linear-gradient(135deg, #7B2CFF, #5D24BE);
+}
+
+/* modelo vê neutro */
+.msg-modelo .chat-conteudo {
+  background: #eceaf0;
+  box-shadow: 0 0 10px rgba(0,0,0,0.15);
+}
+
 
 
 
