@@ -290,3 +290,33 @@ function atualizarStatusPorResponder(mensagens) {
     item.classList.remove("nao-lida");
   }
 }
+
+function abrirConteudo(url, tipo) {
+  const modal = document.getElementById("modalConteudo");
+  const midia = document.getElementById("modalMidia");
+
+  midia.innerHTML =
+    tipo === "video"
+      ? `<video src="${url}" controls autoplay></video>`
+      : `<img src="${url}" />`;
+
+  modal.classList.remove("hidden");
+}
+
+function fecharConteudo() {
+  const modal = document.getElementById("modalConteudo");
+  const midia = document.getElementById("modalMidia");
+
+  modal.classList.add("hidden");
+  midia.innerHTML = "";
+}
+
+document.addEventListener("click", e => {
+  if (
+    e.target.classList.contains("modal-backdrop") ||
+    e.target.classList.contains("modal-fechar")
+  ) {
+    fecharConteudo();
+  }
+});
+

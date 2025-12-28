@@ -390,6 +390,67 @@ html, body {
     0 0 12px rgba(123, 44, 255, 0.35);
 }
 
+/* ===============================
+   MODAL DE CONTEÚDO (CLIENTE)
+================================ */
+
+.modal-conteudo {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-conteudo.hidden {
+  display: none;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(6px);
+}
+
+.modal-box {
+  position: relative;
+  z-index: 2;
+  max-width: 90vw;
+  max-height: 90vh;
+
+  background: #000;
+  border-radius: 18px;
+  padding: 12px;
+
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+
+.modal-box img,
+.modal-box video {
+  max-width: 80vw;
+  max-height: 80vh;
+  border-radius: 12px;
+  display: block;
+}
+
+.modal-fechar {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+
+  background: #7b2cff;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+
 
 
 
