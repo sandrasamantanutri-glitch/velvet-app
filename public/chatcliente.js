@@ -40,12 +40,7 @@ socket.on("newMessage", msg => {
 // INIT
 // ===============================
 document.addEventListener("DOMContentLoaded", async () => {
-  await carregarCliente();
-  await carregarModelo();
-
-  socket.emit("joinChat", {
-  sala: `chat_${cliente_id}_${modelo_id}`
-});
+  await carregarListaModelos();
 
   socket.emit("getHistory", { cliente_id, modelo_id });
 
@@ -64,29 +59,39 @@ document.addEventListener("DOMContentLoaded", async () => {
 // ===============================
 // FUNÇÕES
 // ===============================
-async function carregarCliente() {
-  const res = await fetch("/api/cliente/me", {
+async function carregarListaModelos() {
+  const res = await fetch("/api/chat/cliente", {
     headers: { Authorization: "Bearer " + token }
   });
 
-  if (!res.ok) {
-    alert("Sessão expirada");
-    window.location.href = "/index.html";
-    throw new Error("Cliente inválido");
+  const modelos = await res.json();
+  const lista = document.getElementById("listaModelos");
+
+  lista.innerHTML = "";
+
+  if (!modelos.length) {
+    lista.innerHTML = "<li>Você não tem modelos VIP.</li>";
+    return;
   }
 
-  const data = await res.json();
-  cliente_id = data.id;
-}
+  modelos.forEach(m => {
+    const li = document.createElement("li");
+    li.className = "chat-item";
+    li.textContent = m.nome;
 
-async function carregarModelo() {
-  modelo_id = localStorage.getItem("modelo_id");
+    li.onclick = () => {
+      modelo_id = m.modelo_id;
 
-  if (!modelo_id) {
-    alert("Modelo não identificada. Volte ao perfil.");
-    window.location.href = "/clientHome.html";
-    throw new Error("modelo_id ausente");
-  }
+      document.getElementById("chatTitulo").innerText =
+        "Conversando com: " + m.nome;
+
+      const sala = `chat_${cliente_id}_${modelo_id}`;
+      socket.emit("joinChat", { sala });
+      socket.emit("getHistory", { cliente_id, modelo_id });
+    };
+
+    lista.appendChild(li);
+  });
 }
 
 function enviarMensagem() {

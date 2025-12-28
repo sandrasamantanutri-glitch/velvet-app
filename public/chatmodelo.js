@@ -37,12 +37,8 @@ socket.on("newMessage", msg => {
 // INIT
 // ===============================
 document.addEventListener("DOMContentLoaded", async () => {
-  await carregarModelo();
-  await carregarClienteAtual();
-
-  socket.emit("joinChat", {
-  sala: `chat_${cliente_id}_${modelo_id}`
-});
+  await carregarListaClientes();
+  
   socket.emit("getHistory", { cliente_id, modelo_id });
 
   const sendBtn = document.getElementById("sendBtn");
@@ -59,29 +55,39 @@ document.addEventListener("DOMContentLoaded", async () => {
 // ===============================
 // FUNÇÕES
 // ===============================
-async function carregarModelo() {
-  const res = await fetch("/api/modelo/me", {
+async function carregarListaClientes() {
+  const res = await fetch("/api/chat/modelo", {
     headers: { Authorization: "Bearer " + token }
   });
 
-  if (!res.ok) {
-    alert("Sessão expirada");
-    window.location.href = "/index.html";
-    throw new Error("Modelo inválida");
+  const clientes = await res.json();
+  const lista = document.getElementById("listaClientes");
+
+  lista.innerHTML = "";
+
+  if (!clientes.length) {
+    lista.innerHTML = "<li>Nenhum cliente VIP ainda.</li>";
+    return;
   }
 
-  const data = await res.json();
-  modelo_id = data.id;
-}
+  clientes.forEach(c => {
+    const li = document.createElement("li");
+    li.className = "chat-item";
+    li.textContent = c.nome;
 
-function carregarClienteAtual() {
-  cliente_id = localStorage.getItem("cliente_id");
+    li.onclick = () => {
+      cliente_id = c.cliente_id;
 
-  if (!cliente_id) {
-    alert("Cliente não identificado. Selecione um chat.");
-    window.location.href = "/chatmodelo.html";
-    throw new Error("cliente_id ausente");
-  }
+      document.getElementById("chatTitulo").innerText =
+        "Conversando com: " + c.nome;
+
+      const sala = `chat_${cliente_id}_${modelo_id}`;
+      socket.emit("joinChat", { sala });
+      socket.emit("getHistory", { cliente_id, modelo_id });
+    };
+
+    lista.appendChild(li);
+  });
 }
 
 function enviarMensagem() {
