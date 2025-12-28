@@ -321,19 +321,15 @@ html, body {
   position: relative;
   overflow: hidden;
 
-  background: linear-gradient(
-    135deg,
-    #f1eef8,
-    #e6e1f4
-  );
+  /* textura suave fake (parece imagem borrada) */
+  background:
+    radial-gradient(circle at 20% 30%, #cfc9df, transparent 40%),
+    radial-gradient(circle at 80% 70%, #bdb6d6, transparent 45%),
+    linear-gradient(135deg, #e9e6f2, #dcd6ec);
 
   display: flex;
   align-items: center;
   justify-content: center;
-
-  font-size: 14px;
-  font-weight: 600;
-  color: #020216;
 }
 
 .chat-conteudo.bloqueado::after {
@@ -341,12 +337,12 @@ html, body {
   position: absolute;
   inset: 0;
 
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 
-  background: rgba(0, 0, 0, 0.25);
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.25);
 }
+
 
 
 /* preço */
@@ -356,7 +352,7 @@ html, body {
   right: 8px;
   z-index: 2;
 
-  background: rgba(0,0,0,0.55);
+  background: rgba(0,0,0,0.45);
   color: #fff;
 
   padding: 4px 10px;
@@ -382,9 +378,10 @@ html, body {
 
   font-size: 14px;
   font-weight: 600;
-  color: #fff;
-  text-align: center;
+  color: #ffffff;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.35);
 }
+
 
 
 
