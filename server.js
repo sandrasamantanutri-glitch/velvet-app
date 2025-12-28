@@ -458,7 +458,31 @@ socket.on("sendMessage", async ({ cliente_id, modelo_id, text }) => {
       has_unread = true
     `,
     [cliente_id, modelo_id, unreadFor]
-  );
+  );// 3️⃣ 🔔 AVISA EM TEMPO REAL QUEM FICOU COM "NÃO LIDA"
+
+// se a MODELO ficou com não lida
+if (unreadFor === "modelo") {
+  const sid = onlineModelos[modelo_id];
+  if (sid) {
+    io.to(sid).emit("unreadUpdate", {
+      cliente_id,
+      modelo_id,
+      unread: true
+    });
+  }
+}
+
+// se o CLIENTE ficou com não lida
+if (unreadFor === "cliente") {
+  const sid = onlineClientes[cliente_id];
+  if (sid) {
+    io.to(sid).emit("unreadUpdate", {
+      cliente_id,
+      modelo_id,
+      unread: true
+    });
+  }
+}
 
   // 3️⃣ envia em tempo real
   io.to(sala).emit("newMessage", {
@@ -468,9 +492,7 @@ socket.on("sendMessage", async ({ cliente_id, modelo_id, text }) => {
     text,
     created_at: new Date()
   });
-
   console.log("💾 Mensagem salva e enviada:", sala);
-
 } 
 catch (err) {
   console.error("🔥 ERRO AO SALVAR MENSAGEM:", err);
