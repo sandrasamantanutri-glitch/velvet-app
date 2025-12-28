@@ -34,15 +34,12 @@ socket.on("chatHistory", mensagens => {
 
 // 💬 NOVA MENSAGEM
 socket.on("newMessage", msg => {
-  if (
-    chatAtivo &&
-    msg.cliente_id === chatAtivo.cliente_id &&
-    msg.modelo_id === chatAtivo.modelo_id
-  ) {
+  if (msg.modelo_id === modelo_id) {
     renderMensagem(msg);
-    atualizarStatusPorResponder([msg]); // 👈 ADICIONA ISTO
+    atualizarStatusPorResponder([msg]);
   }
 });
+
 
 
 socket.on("unreadUpdate", ({ cliente_id, modelo_id }) => {

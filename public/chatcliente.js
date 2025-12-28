@@ -37,14 +37,12 @@ socket.on("chatHistory", mensagens => {
 
 // 💬 NOVA MENSAGEM
 socket.on("newMessage", msg => {
-  if (
-    chatAtivo &&
-    msg.cliente_id === chatAtivo.cliente_id &&
-    msg.modelo_id === chatAtivo.modelo_id
-  ) {
+  // sempre renderiza se for deste cliente
+  if (msg.cliente_id === cliente_id) {
     renderMensagem(msg);
   }
 });
+
 
 socket.on("unreadUpdate", ({ cliente_id, modelo_id }) => {
   document.querySelectorAll("#listaModelos li").forEach(li => {
