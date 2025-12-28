@@ -88,11 +88,13 @@ async function carregarPerfilPublico() {
   if (!res.ok) return;
 
   const modelo = await res.json();
+  localStorage.setItem("modelo_id", modelo.id);
+  modelo_id = modelo.id;
 
   aplicarPerfilNoDOM(modelo);
 
   // 🔐 VERIFICAR VIP (persistente)
-  const vipRes = await fetch(`/api/vip/status/${modelo.id}`, {
+  const vipRes = await fetch(`/api/vip/status/${modelo_id}`, {
     headers: { Authorization: "Bearer " + token }
   });
 
