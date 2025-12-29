@@ -217,12 +217,13 @@ html, body {
 }
 
 #messageInput {
-  flex: 1;
   height: 42px;
-
-  padding: 0 16px;
+  padding: 10px 16px;     /* 🔥 padding vertical */
+  line-height: 22px;     /* 🔥 controla o centro */
+  font-size: 13px;
+  resize: none;
+  flex: 1;
   border-radius: 22px;
-
   border: 1px solid #b9a9e6;
   font-size: 13px;
   outline: none;
@@ -256,7 +257,7 @@ html, body {
   transform: scale(0.96);
 }
 #chatBox {
-  padding: 10px 10px 80px; /* 🔥 espaço pro input */
+  padding: 10px;
 }
 
 /* =========================
