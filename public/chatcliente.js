@@ -50,9 +50,6 @@ socket.on("newMessage", msg => {
   }
 });
 
-
-
-
 socket.on("conteudoVisto", ({ message_id }) => {
   const el = document.querySelector(
     `.chat-conteudo[data-id="${message_id}"]`
@@ -417,6 +414,27 @@ document.addEventListener("click", e => {
     fecharConteudo();
   }
 });
+
+function organizarListaModelos() {
+  const lista = document.getElementById("listaModelos");
+  if (!lista) return;
+
+  const itens = [...lista.querySelectorAll("li")];
+
+  itens.sort((a, b) => {
+    const ta = Number(a.dataset.lastTime || 0);
+    const tb = Number(b.dataset.lastTime || 0);
+    return tb - ta; // mais recente primeiro
+  });
+
+  itens.forEach(li => lista.appendChild(li));
+}
+
+function organizarListaClientes() {
+  // cliente NÃO usa essa função
+  // deixamos vazia só pra não quebrar
+}
+
 
 setInterval(() => {
   document
