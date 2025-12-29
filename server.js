@@ -620,26 +620,21 @@ socket.on("conteudoVisto", async ({ message_id, cliente_id, modelo_id }) => {
   }
 });
 
- socket.on("sendConteudo", async ({ cliente_id, modelo_id, conteudo_id, preco }) => {
+socket.on("sendConteudo", async ({ cliente_id, modelo_id, conteudo_id, preco }) => {
   if (!socket.user || socket.user.role !== "modelo") return;
 
   const sala = `chat_${cliente_id}_${modelo_id}`;
 
   try {
-    // 1️⃣ BUSCA CONTEÚDO
     const conteudoResult = await db.query(
       "SELECT url, tipo FROM conteudos WHERE id = $1 AND user_id = $2",
       [conteudo_id, modelo_id]
     );
 
-    if (conteudoResult.rows.length === 0) {
-      console.warn("⚠️ Conteúdo não encontrado:", conteudo_id);
-      return;
-    }
+    if (!conteudoResult.rows.length) return;
 
     const conteudo = conteudoResult.rows[0];
 
-    // 2️⃣ SALVA MENSAGEM E RETORNA ID 🔥
     const insertResult = await db.query(
       `
       INSERT INTO messages
@@ -651,56 +646,42 @@ socket.on("conteudoVisto", async ({ message_id, cliente_id, modelo_id }) => {
     );
 
     const messageId = insertResult.rows[0].id;
-
     const gratuito = Number(preco) === 0;
 
-// 🔒 cliente só recebe URL se gratuito
-const payloadCliente = {
-  id: messageId,
-  cliente_id,
-  modelo_id,
-  sender: "modelo",
-  tipo: "conteudo",
-  conteudo_id,
-  preco,
-  url: gratuito ? conteudo.url : null, // 🔒 cliente
-  tipo_media: conteudo.tipo,
-  visto: false,
-  gratuito,
-  pago: false,
-  created_at: new Date()
-};
+    const payloadCliente = {
+      id: messageId,
+      cliente_id,
+      modelo_id,
+      sender: "modelo",
+      tipo: "conteudo",
+      conteudo_id,
+      preco,
+      gratuito,
+      pago: false,
+      visto: false,
+      created_at: new Date()
+    };
 
-const payloadModelo = {
-  id: messageId,
-  cliente_id,
-  modelo_id,
-  sender: "modelo",
-  tipo: "conteudo",
-  conteudo_id,
-  preco,
-  url: conteudo.url,          // 🔥 modelo SEMPRE vê
-  tipo_media: conteudo.tipo,
-  visto: false,
-  gratuito,
-  pago: false,
-  bloqueado: !gratuito,       // 🔥 flag clara
-  created_at: new Date()
-};
+    const payloadModelo = {
+      ...payloadCliente,
+      url: conteudo.url,
+      tipo_media: conteudo.tipo,
+      bloqueado: !gratuito
+    };
 
-io.to(sala).emit("newMessage", payloadCliente);
+    // 🔒 cliente
+    socket.to(sala).emit("newMessage", payloadCliente);
 
-const sidModelo = onlineModelos[modelo_id];
-if (sidModelo) {
-  io.to(sidModelo).emit("newMessage", payloadModelo);
-}
+    // 👩‍💻 modelo
+    io.to(socket.id).emit("newMessage", payloadModelo);
 
   } catch (err) {
     console.error("❌ Erro sendConteudo:", err);
   }
-  });
+ });
 
 });
+
 
 // ===============================
 //ROTA GET
