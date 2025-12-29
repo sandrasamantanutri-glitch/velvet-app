@@ -265,11 +265,19 @@ function renderMensagem(msg) {
       ? "msg msg-modelo"
       : "msg msg-cliente";
 
+  // ===============================
+  // ✉️ TEXTO
+  // ===============================
+  if (msg.tipo === "texto") {
+    div.innerText = msg.text;
+  }
+
+  // ===============================
+  // 📦 CONTEÚDO (imagem / vídeo)
+  // ===============================
   if (msg.tipo === "conteudo") {
 
-    // ===============================
     // 🔓 CONTEÚDO LIBERADO
-    // ===============================
     if (msg.url) {
       div.innerHTML = `
         <div class="chat-conteudo livre"
@@ -285,7 +293,6 @@ function renderMensagem(msg) {
       `;
 
       const conteudo = div.querySelector(".chat-conteudo.livre");
-
       conteudo.addEventListener("click", () => {
         abrirConteudo(
           conteudo.dataset.url,
@@ -301,24 +308,18 @@ function renderMensagem(msg) {
       });
 
     }
-
-    // ===============================
-    // 🔒 CONTEÚDO BLOQUEADO (NUNCA ABRE)
-    // ===============================
+    // 🔒 CONTEÚDO BLOQUEADO
     else {
       div.innerHTML = `
         <div class="chat-conteudo bloqueado"
              data-id="${msg.id}"
              data-preco="${msg.preco}">
-          
           <div class="blur-fundo"></div>
-
           <div class="overlay-conteudo">
             <img src="/assets/lock.png" class="lock-icon" />
             <div class="valor-conteudo">R$ ${msg.preco}</div>
             <div class="conteudo-msg">Conteúdo bloqueado</div>
           </div>
-
         </div>
       `;
     }
@@ -326,6 +327,7 @@ function renderMensagem(msg) {
 
   chat.appendChild(div);
 }
+
 
 function marcarNaoVisto(msg) {
   document.querySelectorAll("#listaModelos li").forEach(li => {
