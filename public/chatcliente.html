@@ -78,45 +78,29 @@ body {
 <h2 id="tituloConversas">
   <span id="clienteNomeTitulo"></span> – Suas Conversas
 </h2>
-
-
   <div class="chat-layout">
-    
     <div class="lista-modelos painel">
-  <div class="painel-header">
+       <div class="painel-header">
     <strong>Modelos</strong>
   </div>
   <ul id="listaModelos"></ul>
-  
 </div>
-<div class="chat-layout">
 
-  <div class="lista-modelos painel">
-    ...
+<div class="chat-header chat-topo">
+  <strong>Conversando com:</strong>
+
+  <div class="chat-identidade">
+    <img id="chatAvatar" class="chat-avatar" src="/assets/avatar-default.png" />
+    <span id="chatNome"></span>
   </div>
+</div>
 
-  <div class="chat-area painel">
-
-    <div class="chat-header chat-topo">
-      <strong>Conversando com:</strong>
-
-      <div class="chat-identidade">
-        <img id="chatAvatar" class="chat-avatar"
-             src="/assets/avatar-default.png" />
-        <span id="chatNome"></span>
+      <div id="chatBox"></div>
+      <div class="chat-input">
+      <textarea id="messageInput" placeholder="Digite sua mensagem..."></textarea>
+        <button id="sendBtn">Enviar</button>
       </div>
     </div>
-
-    <div id="chatBox"></div>
-
-    <div class="chat-input">
-      <textarea id="messageInput"
-        placeholder="Digite sua mensagem..."></textarea>
-      <button id="sendBtn">Enviar</button>
-    </div>
-
-  </div>
-
 </div>
 
 <div id="popupPix" class="popup hidden">
