@@ -221,12 +221,12 @@ html, body {
   padding: 10px 16px;     /* 🔥 padding vertical */
   line-height: 22px;     /* 🔥 controla o centro */
   font-size: 13px;
-  resize: none;
   flex: 1;
   border-radius: 22px;
   border: 1px solid #b9a9e6;
-  font-size: 13px;
   outline: none;
+  overflow: hidden;   /* 🚫 remove o scroll */
+  resize: none;   
 }
 
 #messageInput:focus {
