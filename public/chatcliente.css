@@ -93,7 +93,8 @@ html, body {
 #listaModelos li {
   padding: 8px 10px;
   margin-bottom: 6px;
-  color: #7B2CFF;
+  background: #7d52d3;
+  color: #fff;
   border-radius: 12px;
   cursor: pointer;
   font-size: 12px;

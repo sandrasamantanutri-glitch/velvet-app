@@ -76,7 +76,8 @@ html, body {
 #listaClientes li {
   padding: 8px 10px;
   margin-bottom: 6px;
-  color: #7B2CFF;
+  background: #7d52d3;
+  color: #fff;
   border-radius: 12px;
   cursor: pointer;
   font-size: 12px;
@@ -549,6 +550,17 @@ html, body {
   font-weight: 600;
   font-size: 14px;
   color: #7B2CFF;
+}
+
+/* ===============================
+   CONTEÚDO NÃO HERDA BALÃO DE TEXTO
+=============================== */
+
+.msg:has(.chat-conteudo) {
+  background: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  max-width: unset !important;
 }
 
 
