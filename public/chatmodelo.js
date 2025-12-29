@@ -343,6 +343,58 @@ function renderMensagem(msg) {
   div.className =
     msg.sender === "modelo" ? "msg msg-modelo" : "msg msg-cliente";
 
+/* ===============================
+   📦 PACOTE DE CONTEÚDO
+=============================== */
+if (msg.tipo === "pacote") {
+
+  // 👩‍💻 MODELO (preview)
+  if (msg.conteudos && Array.isArray(msg.conteudos)) {
+
+    div.innerHTML = `
+      <div class="pacote-conteudo modelo">
+        <div class="pacote-grid">
+          ${msg.conteudos.slice(0, 4).map(c => `
+            <div class="pacote-item">
+              ${
+                c.tipo === "video"
+                  ? `<video src="${c.url}" muted></video>`
+                  : `<img src="${c.url}" />`
+              }
+            </div>
+          `).join("")}
+        </div>
+
+        <div class="pacote-info">
+          <span class="pacote-label">
+            PACOTE · ${msg.conteudos.length} itens
+          </span>
+          <span class="pacote-preco">
+            R$ ${msg.preco}
+          </span>
+        </div>
+      </div>
+    `;
+
+  } 
+  // 👤 CLIENTE (bloqueado)
+  else {
+    div.innerHTML = `
+      <div class="pacote-conteudo cliente">
+        <div class="pacote-bloqueado">
+          <span class="pacote-label">
+            Pacote com ${msg.quantidade} conteúdos
+          </span>
+
+          <button class="btn-desbloquear">
+            Desbloquear · R$ ${msg.preco}
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+}
   /* ===============================
      📦 CONTEÚDO
   =============================== */

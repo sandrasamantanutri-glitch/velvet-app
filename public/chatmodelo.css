@@ -571,6 +571,81 @@ h2 #modeloNome {
   align-self: flex-end; /* modelo */
 }
 
+/* ===============================
+   📦 PACOTE DE CONTEÚDO
+=============================== */
+
+.pacote-conteudo {
+  width: 220px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #f4efff;
+  box-shadow: 0 6px 18px rgba(123,44,255,0.25);
+}
+
+/* GRID DE PREVIEW */
+.pacote-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+}
+
+.pacote-item img,
+.pacote-item video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* INFO */
+.pacote-info {
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pacote-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #7B2CFF;
+}
+
+.pacote-preco {
+  font-size: 12px;
+  font-weight: 700;
+  color: #5d24be;
+}
+
+/* CLIENTE BLOQUEADO */
+.pacote-conteudo.cliente {
+  background: linear-gradient(135deg, #e9e2ff, #d4c6ff);
+}
+
+.pacote-bloqueado {
+  height: 100%;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.pacote-bloqueado .btn-desbloquear {
+  background: linear-gradient(135deg, #7b2cff, #5d24be);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+
 
 
 
