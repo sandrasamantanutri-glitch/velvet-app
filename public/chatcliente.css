@@ -145,7 +145,7 @@ html, body {
 
 /* 🔮 MODELO */
 .msg-modelo {
-  align-self: flex-end;
+  align-self: flex-start;
   background: #eceaf0;
   color: #020216;
   margin: 6px 8px;
@@ -155,7 +155,7 @@ html, body {
 
 /* 💜 CLIENTE */
 .msg-cliente {
-  align-self: flex-start;
+  align-self: flex-end;
   background: linear-gradient(135deg, #7b2cff, #5d24be);
   color: #fff;
   margin: 6px 8px;

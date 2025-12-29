@@ -134,7 +134,7 @@ html, body {
   position: relative;
 }
 
-/* 🔮 MODELO (ESQUERDA) */
+/* 🔮 MODELO direita */
 .msg-modelo {
   align-self: flex-end;
   background: #eceaf0;
@@ -144,7 +144,7 @@ html, body {
   box-shadow: 0 2px 8px rgba(123,44,255,0.25);
 }
 
-/* 💜 CLIENTE (DIREITA) */
+/* 💜 CLIENTE esquerda */
 .msg-cliente {
   align-self: flex-start;
   background: linear-gradient(135deg, #7b2cff, #5d24be);
@@ -490,34 +490,35 @@ html, body {
   font-size: 11px;
   color: #999;
 }
-/* ===== CONTEÚDO NO CHAT DA MODELO ===== */
-
+/* ===== CONTEÚDO NO CHAT (MINIATURA) ===== */
 .chat-conteudo {
   border-radius: 14px;
   overflow: hidden;
+
+  /* 🔥 limita tamanho da bolha */
+  max-width: 220px;
 }
 
+/* container da mídia */
 .chat-conteudo .conteudo-media {
-  background: transparent;
+  width: 100%;
+  aspect-ratio: 4 / 4;   /* 🔥 formato vertical tipo stories */
+  overflow: hidden;
 }
 
+/* imagem / vídeo */
 .chat-conteudo .conteudo-media img,
 .chat-conteudo .conteudo-media video {
-  background: transparent;
-}
-
-
-/* info abaixo da mídia */
-.chat-conteudo .conteudo-info {
-  padding: 6px;
-  text-align: center;
-  font-size: 12px;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;     /* 🔥 vira thumbnail */
+  display: block;
 }
 
 /* estados */
 /* CINZA — não visto */
 .chat-conteudo.nao-visto {
-  background: #e0e0e0;
+  background: #a19f9f79;
 }
 
 /* VERDE — visto ou pago */
