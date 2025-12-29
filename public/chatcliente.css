@@ -378,37 +378,6 @@ html, body {
 }
 
 
-.chat-conteudo.bloqueado::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  backdrop-filter: blur(14px) saturate(130%);
-  -webkit-backdrop-filter: blur(14px) saturate(130%);
-  background: linear-gradient(
-    135deg,
-    rgba(123, 44, 255, 0.25),
-    rgba(123, 44, 255, 0.12)
-  );
-
-  border-radius: 16px;
-}
-
-/* 🚫 bloqueia interação real */
-.chat-conteudo.bloqueado {
-  pointer-events: none;
-  cursor: default;
-}
-
-
-.chat-conteudo.bloqueado {
-  pointer-events: none;
-}
-
-.chat-conteudo.bloqueado .overlay-conteudo {
-  pointer-events: auto; /* só o botão recebe clique */
-}
-
-
 /* preço */
 .valor-conteudo {
   position: absolute;
@@ -427,50 +396,6 @@ html, body {
   font-weight: 600;
 }
 
-/* overlay central elegante */
-.chat-conteudo.bloqueado .overlay-conteudo {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-
-  text-align: center;
-}
-
-/* texto BLOQUEADO */
-.chat-conteudo.bloqueado .conteudo-msg {
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
-
-  color: #ffffff;
-  background: rgba(123, 44, 255, 0.45);
-
-  padding: 6px 14px;
-  border-radius: 999px;
-
-  text-shadow: none;
-}
-
-/* preço como tag premium */
-.chat-conteudo.bloqueado .valor-conteudo {
-  position: static;
-
-  background: linear-gradient(135deg, #7B2CFF, #9D5CFF);
-  box-shadow: 0 4px 14px rgba(123,44,255,0.45);
-
-  padding: 6px 16px;
-  border-radius: 999px;
-
-  font-size: 13px;
-  font-weight: 600;
-}
 
 /* ===============================
    MODAL DE CONTEÚDO (CLIENTE)
@@ -567,6 +492,63 @@ html, body {
   font-size: 14px;
   color: #7B2CFF;
 }
+
+/* CARD BLOQUEADO LIMPO (CLIENTE) */
+.chat-conteudo.bloqueado.premium {
+  background: linear-gradient(135deg, #efe8ff, #d9ccff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* overlay central */
+.chat-conteudo.bloqueado.premium .overlay-conteudo {
+  position: absolute;
+  inset: 0;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* preço */
+.chat-conteudo.bloqueado.premium .valor-conteudo {
+  background: linear-gradient(135deg, #7B2CFF, #9D5CFF);
+  color: #fff;
+
+  padding: 6px 18px;
+  border-radius: 999px;
+
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* botão */
+.chat-conteudo.bloqueado.premium .btn-desbloquear {
+  background: #fff;
+  color: #7B2CFF;
+
+  border: none;
+  border-radius: 999px;
+  padding: 8px 20px;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+  transition: all .2s ease;
+}
+
+.chat-conteudo.bloqueado.premium .btn-desbloquear:hover {
+  background: #7B2CFF;
+  color: #fff;
+  transform: scale(1.05);
+}
+
+
+
 
 
 

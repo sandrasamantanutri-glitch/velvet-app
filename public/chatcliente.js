@@ -319,23 +319,30 @@ function renderMensagem(msg) {
     }
 
     // 🔒 CONTEÚDO BLOQUEADO
-    else {
+else {
+  div.innerHTML = `
+    <div class="chat-conteudo bloqueado premium"
+         data-id="${msg.id}"
+         data-preco="${msg.preco}">
 
-      div.innerHTML = `
-        <div class="chat-conteudo bloqueado"
-             data-id="${msg.id}"
-             data-preco="${msg.preco}">
-          <div class="blur-fundo"></div>
+      <div class="overlay-conteudo">
+        <div class="valor-conteudo">R$ ${msg.preco}</div>
 
-          <div class="overlay-conteudo">
-            <img src="/assets/lock.png" class="lock-icon" />
-            <div class="valor-conteudo">R$ ${msg.preco}</div>
-            <div class="conteudo-msg">Conteúdo bloqueado</div>
-          </div>
-        </div>
-      `;
-    }
+        <button class="btn-desbloquear">
+          Desbloquear
+        </button>
+      </div>
+    </div>
+  `;
+
+  const btn = div.querySelector(".btn-desbloquear");
+  btn.addEventListener("click", () => {
+    // aqui depois ligamos com o fluxo de compra
+    console.log("Desbloquear conteúdo", msg.id);
+  });
+}
   }
+
 
   // ✅ adiciona no chat
   chat.appendChild(div);
