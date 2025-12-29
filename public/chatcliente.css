@@ -193,51 +193,71 @@ html, body {
 
 
 /* =========================
-   INPUT DO CHAT
+   INPUT DO CHAT (FIXO EMBAIXO)
 ========================= */
 
 .chat-input {
+  position: sticky;
+  bottom: 0;
+
   display: flex;
   gap: 10px;
-  margin-top: 12px;
+  padding: 12px;
+
+  background: linear-gradient(
+    to top,
+    rgba(255,255,255,0.98),
+    rgba(255,255,255,0.92)
+  );
+
+  border-top: 1px solid #e2d9ff;
+  backdrop-filter: blur(6px);
+
   flex-shrink: 0;
 }
 
-#msgInput {
+#messageInput {
   flex: 1;
-  height: 38px;
-  padding: 0 14px;
-  border-radius: 18px;
+  height: 42px;
+
+  padding: 0 16px;
+  border-radius: 22px;
+
   border: 1px solid #b9a9e6;
   font-size: 13px;
   outline: none;
 }
 
-#msgInput:focus {
-  border-color: #5d24be;
-  box-shadow: 0 0 0 2px rgba(93,36,190,0.15);
+#messageInput:focus {
+  border-color: #7b2cff;
+  box-shadow: 0 0 0 2px rgba(123,44,255,0.15);
 }
 
 #sendBtn {
-  height: 38px;
-  padding: 0 18px;
-  border-radius: 18px;
+  height: 42px;
+  padding: 0 22px;
+
+  border-radius: 22px;
   border: none;
+
   background: linear-gradient(135deg, #7b2cff, #5d24be);
   color: #fff;
+
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
 }
 
 #sendBtn:hover {
-  opacity: 0.9;
+  opacity: 0.92;
 }
 
 #sendBtn:active {
   transform: scale(0.96);
 }
-
+#chatBox {
+  padding: 10px 10px 80px; /* 🔥 espaço pro input */
+}
 
 /* =========================
    HEADER PADRÃO DOS PAINÉIS
