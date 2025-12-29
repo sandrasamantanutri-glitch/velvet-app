@@ -610,41 +610,37 @@ socket.on("mensagensLidas", async ({ cliente_id, modelo_id }) => {
   // 👁️ CONTEÚDO VISTO PELO CLIENTE
 socket.on("conteudoVisto", async ({ message_id, cliente_id, modelo_id }) => {
   try {
-    if (!message_id || !cliente_id || !modelo_id) {
-      console.log("❌ conteudoVisto inválido", {
-        message_id, cliente_id, modelo_id
-      });
-      return;
-    }
+    if (!message_id || !modelo_id) return;
 
-    // marca a mensagem como vista
+    // 1️⃣ marca como visto no banco
     await db.query(
       `UPDATE messages SET visto = true WHERE id = $1`,
       [message_id]
     );
 
-    // avisa a MODELO em tempo real
-// envia direto para a modelo
-if (sidModelo) {
-  io.to(sidModelo).emit("conteudoVisto", {
-    message_id,
-    visto: true
-  });
-}
+    // 2️⃣ BUSCA O SOCKET DA MODELO (🔥 FALTAVA ISSO)
+    const sidModelo = onlineModelos[modelo_id];
 
-// 🔥 envia também para a sala do chat
-io.to(`chat_${cliente_id}_${modelo_id}`).emit("conteudoVisto", {
-  message_id,
-  visto: true
-});
+    // 3️⃣ avisa a modelo (tempo real)
+    if (sidModelo) {
+      io.to(sidModelo).emit("conteudoVisto", {
+        message_id,
+        visto: true
+      });
+    }
+
+    // 4️⃣ (opcional, mas recomendado) envia para a sala
+    io.to(`chat_${cliente_id}_${modelo_id}`).emit("conteudoVisto", {
+      message_id,
+      visto: true
+    });
 
     console.log("👁️ Conteúdo marcado como visto:", message_id);
 
   } catch (err) {
     console.error("Erro conteudoVisto:", err);
   }
-  });
-
+});
 
  socket.on("sendConteudo", async ({ cliente_id, modelo_id, conteudo_id, preco }) => {
   if (!socket.user || socket.user.role !== "modelo") return;
