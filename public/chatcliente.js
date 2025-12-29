@@ -15,7 +15,6 @@ const socket = io({
 let cliente_id = null;
 let modelo_id = null;
 let chatAtivo = null;
-const mensagensRenderizadas = new Set();
 
 // 🔐 SOCKET AUTH
 socket.on("connect", () => {
@@ -45,13 +44,14 @@ socket.on("newMessage", msg => {
   atualizarItemListaComNovaMensagem(msg);
 
   // 2️⃣ Se for o chat ativo, renderiza
-  if (
-    chatAtivo &&
-    msg.cliente_id === chatAtivo.cliente_id &&
-    msg.modelo_id === chatAtivo.modelo_id
+if (
+  chatAtivo &&
+  Number(msg.cliente_id) === Number(chatAtivo.cliente_id) &&
+  Number(msg.modelo_id) === Number(chatAtivo.modelo_id)
   ) {
-    renderMensagem(msg);
-  }
+  renderMensagem(msg);
+ }
+
 });
 
 socket.on("unreadUpdate", ({ cliente_id, modelo_id }) => {
