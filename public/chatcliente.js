@@ -265,67 +265,84 @@ function renderMensagem(msg) {
       ? "msg msg-modelo"
       : "msg msg-cliente";
 
-  // ===============================
-  // ✉️ TEXTO
-  // ===============================
+  /* ===============================
+     ✉️ TEXTO
+  =============================== */
   if (msg.tipo === "texto") {
     div.innerText = msg.text;
   }
-  if (msg.tipo === "conteudo") {
 
-  const liberado =
-    msg.gratuito === true ||
-    msg.pago === true ||
-    msg.visto === true;
+  /* ===============================
+     📦 CONTEÚDO
+  =============================== */
+  else if (msg.tipo === "conteudo") {
 
-  // 🔓 SÓ LIBERA SE A FLAG DISSER
-  if (liberado && msg.url) {
+    // 🔑 REGRA DE OURO:
+    // se TEM url → liberado
+    // se NÃO tem url → bloqueado
+    const liberado = !!msg.url;
 
-    div.innerHTML = `
-      <div class="chat-conteudo livre"
-           data-id="${msg.id}"
-           data-url="${msg.url}"
-           data-tipo="${msg.tipo_media}">
-        ${
-          msg.tipo_media === "video"
-            ? `<video src="${msg.url}" muted></video>`
-            : `<img src="${msg.url}" />`
-        }
-      </div>
-    `;
+    // 🔓 CONTEÚDO LIBERADO
+    if (liberado) {
 
-    const conteudo = div.querySelector(".chat-conteudo.livre");
-
-    conteudo.addEventListener("click", () => {
-      abrirConteudo(conteudo.dataset.url, conteudo.dataset.tipo);
-
-      socket.emit("conteudoVisto", {
-        message_id: msg.id,
-        cliente_id,
-        modelo_id,
-        conteudo_id: msg.conteudo_id
-      });
-    });
-
-  }
-  // 🔒 BLOQUEADO (SEMPRE)
-  else {
-
-    div.innerHTML = `
-      <div class="chat-conteudo bloqueado"
-           data-id="${msg.id}"
-           data-preco="${msg.preco}">
-        <div class="blur-fundo"></div>
-        <div class="overlay-conteudo">
-          <img src="/assets/lock.png" class="lock-icon" />
-          <div class="valor-conteudo">R$ ${msg.preco}</div>
-          <div class="conteudo-msg">Conteúdo bloqueado</div>
+      div.innerHTML = `
+        <div class="chat-conteudo livre"
+             data-id="${msg.id}"
+             data-url="${msg.url}"
+             data-tipo="${msg.tipo_media}">
+          ${
+            msg.tipo_media === "video"
+              ? `<video src="${msg.url}" muted></video>`
+              : `<img src="${msg.url}" />`
+          }
         </div>
-      </div>
-    `;
+      `;
+
+      const conteudo = div.querySelector(".chat-conteudo.livre");
+
+      if (conteudo) {
+        conteudo.addEventListener("click", () => {
+          abrirConteudo(
+            conteudo.dataset.url,
+            conteudo.dataset.tipo
+          );
+
+          // 👁️ marca como visto (sem texto visível)
+          socket.emit("conteudoVisto", {
+            message_id: msg.id,
+            cliente_id,
+            modelo_id,
+            conteudo_id: msg.conteudo_id
+          });
+        });
+      }
+
+    }
+
+    // 🔒 CONTEÚDO BLOQUEADO
+    else {
+
+      div.innerHTML = `
+        <div class="chat-conteudo bloqueado"
+             data-id="${msg.id}"
+             data-preco="${msg.preco}">
+          <div class="blur-fundo"></div>
+
+          <div class="overlay-conteudo">
+            <img src="/assets/lock.png" class="lock-icon" />
+            <div class="valor-conteudo">R$ ${msg.preco}</div>
+            <div class="conteudo-msg">Conteúdo bloqueado</div>
+          </div>
+        </div>
+      `;
+    }
   }
+
+  // ✅ adiciona no chat
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
 }
-}
+
   
 function marcarNaoVisto(msg) {
   document.querySelectorAll("#listaModelos li").forEach(li => {

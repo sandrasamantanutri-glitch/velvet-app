@@ -502,21 +502,28 @@ const messageId = result.rows[0].id;
     }
     
     // 4️⃣ ENVIA MENSAGEM EM TEMPO REAL (CHAT ABERTO)
- io.to(sala).emit("newMessage", {
+io.to(sala).emit("newMessage", {
   id: messageId,
   cliente_id,
   modelo_id,
   sender,
+  tipo: "texto",   // 🔥 ESSENCIAL
   text,
   created_at: new Date()
 });
 
-// 🔥 garante atualização imediata da modelo
 const sidModelo = onlineModelos[modelo_id];
 if (sidModelo) {
-  io.to(sidModelo).emit("newMessage", payload);
+  io.to(sidModelo).emit("newMessage", {
+    id: messageId,
+    cliente_id,
+    modelo_id,
+    sender,
+    tipo: "texto",
+    text,
+    created_at: new Date()
+  });
 }
-
 
  // 7️⃣ META UPDATE (status / horário)
  io.emit("chatMetaUpdate", {
