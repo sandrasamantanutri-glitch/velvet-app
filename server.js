@@ -1090,28 +1090,32 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
     const modeloId = req.user.id;
 
     const { rows } = await db.query(`
-      SELECT 
-        c.user_id AS cliente_id,
-        c.nome,
-        cd.avatar,
+SELECT 
+  c.user_id AS cliente_id,
+  c.nome,
+  cd.avatar,
 
-        -- última mensagem enviada pela modelo
-        MAX(m.created_at)
-          FILTER (WHERE m.sender = 'modelo')
-          AS ultima_msg_modelo_ts
+  MAX(m.created_at)
+    FILTER (WHERE m.sender = 'modelo')
+    AS ultima_msg_modelo_ts
 
-      FROM vip_assinaturas v
-      JOIN clientes c 
-        ON c.user_id = v.cliente_id
+FROM vip_assinaturas v
 
-      LEFT JOIN messages m 
-        ON m.cliente_id = c.user_id
-       AND m.modelo_id = $1
+JOIN clientes c 
+  ON c.user_id = v.cliente_id
 
-      WHERE v.modelo_id = $1
+LEFT JOIN clientes_dados cd       -- ✅ JOIN QUE FALTAVA
+  ON cd.user_id = c.user_id
 
-      GROUP BY c.user_id, c.nome
-      ORDER BY ultima_msg_modelo_ts DESC NULLS LAST
+LEFT JOIN messages m 
+  ON m.cliente_id = c.user_id
+ AND m.modelo_id = $1
+
+WHERE v.modelo_id = $1
+
+GROUP BY c.user_id, c.nome, cd.avatar   -- ✅ GROUP BY COMPLETO
+ORDER BY ultima_msg_modelo_ts DESC NULLS LAST
+
     `, [modeloId]);
 
     res.json(rows);
