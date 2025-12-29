@@ -251,7 +251,6 @@ if (item) {
 }
 
 function renderMensagem(msg) {
-  // 🔑 chave única anti-duplicação
   const msgKey = msg.id ?? `${msg.sender}-${msg.created_at}`;
   if (mensagensRenderizadas.has(msgKey)) return;
   mensagensRenderizadas.add(msgKey);
@@ -261,26 +260,22 @@ function renderMensagem(msg) {
 
   const div = document.createElement("div");
 
-  // 👉 alinhamento correto
   div.className =
     msg.sender === "modelo"
-      ? "msg msg-modelo"    // direita
-      : "msg msg-cliente";  // esquerda
+      ? "msg msg-modelo"
+      : "msg msg-cliente";
 
-  // ===============================
-  // 📦 CONTEÚDO (imagem / vídeo)
-  // ===============================
   if (msg.tipo === "conteudo") {
 
+    // ===============================
     // 🔓 CONTEÚDO LIBERADO
+    // ===============================
     if (msg.url) {
       div.innerHTML = `
-        <div
-          class="chat-conteudo livre"
-          data-id="${msg.id}"
-          data-url="${msg.url}"
-          data-tipo="${msg.tipo_media}"
-        >
+        <div class="chat-conteudo livre"
+             data-id="${msg.id}"
+             data-url="${msg.url}"
+             data-tipo="${msg.tipo_media}">
           ${
             msg.tipo_media === "video"
               ? `<video src="${msg.url}" muted></video>`
@@ -289,49 +284,46 @@ function renderMensagem(msg) {
         </div>
       `;
 
-      const conteudo = div.querySelector(".chat-conteudo");
+      const conteudo = div.querySelector(".chat-conteudo.livre");
 
-      if (conteudo) {
-        conteudo.addEventListener("click", () => {
+      conteudo.addEventListener("click", () => {
+        abrirConteudo(
+          conteudo.dataset.url,
+          conteudo.dataset.tipo
+        );
 
-          // 🔓 abrir mídia
-          abrirConteudo(
-            conteudo.dataset.url,
-            conteudo.dataset.tipo
-          );
-
-          // 👁️ marca como visto (UMA VEZ)
-          socket.emit("conteudoVisto", {
-            message_id: msg.id,
-            cliente_id,
-            modelo_id,
-            conteudo_id: msg.conteudo_id
-          });
+        socket.emit("conteudoVisto", {
+          message_id: msg.id,
+          cliente_id,
+          modelo_id,
+          conteudo_id: msg.conteudo_id
         });
-      }
+      });
 
     }
-    // 🔒 CONTEÚDO BLOQUEADO
+
+    // ===============================
+    // 🔒 CONTEÚDO BLOQUEADO (NUNCA ABRE)
+    // ===============================
     else {
       div.innerHTML = `
-        <div
-          class="chat-conteudo bloqueado"
-          data-id="${msg.id}"
-          data-preco="${msg.preco}"
-        >
+        <div class="chat-conteudo bloqueado"
+             data-id="${msg.id}"
+             data-preco="${msg.preco}">
+          
           <div class="blur-fundo"></div>
 
           <div class="overlay-conteudo">
             <img src="/assets/lock.png" class="lock-icon" />
             <div class="valor-conteudo">R$ ${msg.preco}</div>
-            <div class="conteudo-msg">Desbloquear</div>
+            <div class="conteudo-msg">Conteúdo bloqueado</div>
           </div>
+
         </div>
       `;
     }
   }
 
-  // ➕ adiciona no chat
   chat.appendChild(div);
 }
 

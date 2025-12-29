@@ -393,6 +393,22 @@ html, body {
   border-radius: 16px;
 }
 
+/* 🚫 bloqueia interação real */
+.chat-conteudo.bloqueado {
+  pointer-events: none;
+  cursor: default;
+}
+
+
+.chat-conteudo.bloqueado {
+  pointer-events: none;
+}
+
+.chat-conteudo.bloqueado .overlay-conteudo {
+  pointer-events: auto; /* só o botão recebe clique */
+}
+
+
 /* preço */
 .valor-conteudo {
   position: absolute;
