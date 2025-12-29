@@ -1,11 +1,10 @@
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
 
-if (!token || role !== "modelo") {
+if (!token) {
   window.location.href = "/index.html";
-  throw new Error("Acesso negado");
+  throw new Error("Sem token");
 }
-
 const socket = io({
   transports: ["websocket"]
 });

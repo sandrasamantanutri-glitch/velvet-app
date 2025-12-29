@@ -1,9 +1,18 @@
+// ===============================
+// AUTH GUARD
+// ===============================
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
 
 if (!token) {
   window.location.href = "/index.html";
-  throw new Error("Não autenticado");
+  throw new Error("Sem token");
+}
+
+
+function logout() {
+  localStorage.clear();
+  window.location.href = "/index.html";
 }
 const modo = role === "cliente" ? "publico" : "privado";
 

@@ -1,5 +1,19 @@
+// ===============================
+// AUTH GUARD — CLIENT HOME
+// ===============================
 const token = localStorage.getItem("token");
-if (!token) window.location.href = "/";
+const role  = localStorage.getItem("role");
+
+if (!token) {
+  window.location.href = "/index.html";
+  throw new Error("Sem token");
+}
+
+
+function logout() {
+  localStorage.clear();
+  window.location.href = "/index.html";
+}
 
 document.addEventListener("DOMContentLoaded", async () => {
   const form = document.getElementById("formDadosModelo");

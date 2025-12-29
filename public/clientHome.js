@@ -4,10 +4,11 @@
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
 
-if (!token || role !== "cliente") {
+if (!token) {
   window.location.href = "/index.html";
-  throw new Error("Acesso negado");
+  throw new Error("Sem token");
 }
+
 
 function logout() {
   localStorage.clear();

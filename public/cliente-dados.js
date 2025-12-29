@@ -1,3 +1,19 @@
+// ===============================
+// AUTH GUARD 
+// ===============================
+const token = localStorage.getItem("token");
+const role  = localStorage.getItem("role");
+
+if (!token) {
+  window.location.href = "/index.html";
+  throw new Error("Sem token");
+}
+
+function logout() {
+  localStorage.clear();
+  window.location.href = "/index.html";
+}
+
 async function carregarDadosCliente() {
   const res = await fetch("/api/cliente/dados", {
     headers: {
