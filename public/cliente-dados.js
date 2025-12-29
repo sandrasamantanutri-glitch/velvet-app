@@ -18,9 +18,9 @@ async function carregarDadosCliente() {
       : "";
   document.getElementById("pais").value = dados.pais || "";
 
-  document.getElementById("nomeCartao").value = dados.nome_cartao || "";
-  document.getElementById("ultimos4").value = dados.ultimos4_cartao || "";
-  document.getElementById("bandeira").value = dados.bandeira_cartao || "";
+  // document.getElementById("nomeCartao").value = dados.nome_cartao || "";
+  // document.getElementById("ultimos4").value = dados.ultimos4_cartao || "";
+  // document.getElementById("bandeira").value = dados.bandeira_cartao || "";
 
   if (dados.avatar) {
     document.getElementById("avatarPreview").src = dados.avatar;
@@ -52,9 +52,9 @@ form.addEventListener("submit", async (e) => {
     data_nascimento: document.getElementById("dataNascimento").value,
     pais: document.getElementById("pais").value,
 
-    nome_cartao: document.getElementById("nomeCartao").value,
-    ultimos4_cartao: document.getElementById("ultimos4").value,
-    bandeira_cartao: document.getElementById("bandeira").value
+    // nome_cartao: document.getElementById("nomeCartao").value,
+    // ultimos4_cartao: document.getElementById("ultimos4").value,
+    // bandeira_cartao: document.getElementById("bandeira").value
   };
 
   const res = await fetch("/api/cliente/dados", {
