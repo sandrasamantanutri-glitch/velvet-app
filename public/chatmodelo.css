@@ -1,212 +1,50 @@
-/* =========================
-   RESET / BASE
-========================= */
-* {
-  box-sizing: border-box;
-  font-family: 'Poppins', system-ui, sans-serif;
-}
+/* =========================================
+   CHATMODELO — OVERRIDES
+   Base: chatcliente.css
+========================================= */
 
-html, body {
-  height: 100%;
-  margin: 0;
-}
-
-/* =========================
-   VARIÁVEIS
-========================= */
-:root {
-  --velvet: #7B2CFF;
-  --velvet-soft: #9a85bf;
-  --verde-visto: #00c853;
-  --cinza-nao-visto: #e9eeec;
-}
-
-/* =========================
-   PÁGINA
-========================= */
-.pagina-chat {
-  height: 100%;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-}
-
-/* nome da modelo (h2) */
+/* 💜 Nome da modelo (h2) */
 .pagina-chat > h2 {
-  margin: 0 0 16px;
-  color: var(--velvet);
+  color: #7B2CFF;
   font-weight: 600;
 }
 
-/* =========================
-   LAYOUT
-========================= */
-.chat-layout {
-  flex: 1;
-  display: flex;
-  gap: 20px;
-  min-height: 0;
-}
-
-.painel {
-  background: #fff;
-  border-radius: 18px;
-  border: 1px solid #b9a9e6;
-  box-shadow: 0 6px 20px rgba(93,36,190,0.15);
-}
-
-/* =========================
-   LISTA DE CLIENTES
-========================= */
-.lista-clientes {
-  width: 220px;
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-}
-
+/* 📋 Título "Clientes" centralizado */
 .lista-clientes .painel-header strong {
   display: block;
   text-align: center;
-  color: var(--velvet);
-  font-weight: 600;
-  padding-bottom: 8px;
-  margin-bottom: 10px;
-  border-bottom: 1px solid #b9a9e6;
+  color: #7B2CFF;
 }
 
-#listaClientes {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.chat-item {
-  padding: 10px 14px;
-  border-radius: 12px;
-  background: var(--velvet-soft);
-  color: #fff;
-  margin-bottom: 6px;
-  cursor: pointer;
-
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.chat-item:hover {
-  background: #7d52d3;
-}
-
-.chat-item .nome {
-  flex: 1;
-}
-
-/* badge SEM fundo */
+/* 🔔 Badge sem fundo (lista clientes) */
 .chat-item .badge {
-  background: none;
-  color: var(--velvet);
-  font-weight: 600;
-  font-size: 11px;
-  padding: 0;
-  white-space: nowrap;
-}
-
-.chat-item .tempo {
-  font-size: 11px;
-  color: #eee;
-}
-
-/* =========================
-   ÁREA DO CHAT
-========================= */
-.chat-area {
-  flex: 1;
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-/* topo do chat */
-.chat-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-bottom: 8px;
-  margin-bottom: 8px;
-  border-bottom: 1px solid #b9a9e6;
-}
-
-.chat-header strong {
-  color: var(--velvet);
-}
-
-#clienteNome {
-  color: var(--velvet);
+  background: none !important;
+  padding: 0 !important;
+  color: #7B2CFF;
   font-weight: 600;
 }
 
-/* avatar */
-.chat-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid var(--velvet);
-}
+/* =========================================
+   📦 CONTEÚDO — ÚNICA EXCEÇÃO VISUAL
+========================================= */
 
-/* =========================
-   CHATBOX
-========================= */
-#chatBox {
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  padding: 10px;
-}
-
-/* =========================
-   MENSAGENS DE TEXTO
-========================= */
-.msg {
-  max-width: 70%;
-  padding: 8px 12px;
-  border-radius: 14px;
-  font-size: 13px;
-  width: fit-content;
-  margin: 6px 8px;
-}
-
-.msg-modelo {
-  align-self: flex-end;
-  background: var(--velvet-soft);
-  color: #fff;
-}
-
-.msg-cliente {
-  align-self: flex-start;
-  background: #7d52d3;
-  color: #fff;
-}
-
-/* =========================
-   📦 CONTEÚDO (SEM BALÃO)
-========================= */
+/* remove balão das mensagens de conteúdo */
 .msg:has(.chat-conteudo) {
   background: none !important;
   padding: 0 !important;
+  box-shadow: none !important;
+  max-width: unset !important;
 }
 
+/* card de conteúdo */
 .chat-conteudo {
-  width: 160px;
-  height: 160px;
+  width: 150px;
+  height: 150px;
   border-radius: 16px;
   overflow: hidden;
 }
 
-/* mídia */
+/* mídia preenche */
 .chat-conteudo img,
 .chat-conteudo video {
   width: 100%;
@@ -216,47 +54,9 @@ html, body {
 
 /* estados */
 .chat-conteudo.nao-visto {
-  box-shadow: 0 0 0 5px var(--cinza-nao-visto);
+  box-shadow: 0 0 0 4px #e9eeec;
 }
 
 .chat-conteudo.visto {
-  box-shadow: 0 0 0 5px var(--verde-visto);
-}
-
-/* alinhamento por role */
-.msg-modelo:has(.chat-conteudo) {
-  align-self: flex-end;
-}
-
-.msg-cliente:has(.chat-conteudo) {
-  align-self: flex-start;
-}
-
-/* =========================
-   INPUT DE MENSAGEM
-========================= */
-.chat-input {
-  display: flex;
-  gap: 10px;
-  margin-top: 8px;
-}
-
-#messageInput {
-  flex: 1;
-  height: 36px;
-  border-radius: 14px;
-  border: 1px solid #b9a9e6;
-  padding: 0 14px;
-  font-size: 13px;
-}
-
-#sendBtn,
-#btnEnviarConteudo {
-  height: 36px;
-  padding: 0 16px;
-  border-radius: 14px;
-  border: none;
-  background: linear-gradient(135deg, #7b2cff, #5d24be);
-  color: #fff;
-  cursor: pointer;
+  box-shadow: 0 0 0 4px #00c853;
 }
