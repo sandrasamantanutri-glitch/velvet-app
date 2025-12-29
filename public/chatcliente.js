@@ -40,17 +40,16 @@ socket.on("chatMetaUpdate", data => {
 
 // 💬 NOVA MENSAGEM
 socket.on("newMessage", msg => {
+
+  // atualiza lista SEMPRE
   atualizarItemListaComNovaMensagem(msg);
 
-  // renderiza se o chat aberto corresponde
-  if (
-    modelo_id &&
-    Number(msg.modelo_id) === Number(modelo_id) &&
-    Number(msg.cliente_id) === Number(cliente_id)
-  ) {
+  // 🔥 se for mensagem deste cliente, renderiza
+  if (Number(msg.cliente_id) === Number(cliente_id)) {
     renderMensagem(msg);
   }
 });
+
 
 
 
