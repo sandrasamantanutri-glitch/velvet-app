@@ -251,70 +251,72 @@ if (item) {
 }
 
 function renderMensagem(msg) {
-const msgKey = msg.id ?? `${msg.sender}-${msg.created_at}`;
-if (mensagensRenderizadas.has(msgKey)) return;
+  // 🔑 chave única anti-duplicação
+  const msgKey = msg.id ?? `${msg.sender}-${msg.created_at}`;
+  if (mensagensRenderizadas.has(msgKey)) return;
+  mensagensRenderizadas.add(msgKey);
 
-mensagensRenderizadas.add(msgKey);
-const chat = document.getElementById("chatBox");
+  const chat = document.getElementById("chatBox");
   if (!chat) return;
 
   const div = document.createElement("div");
 
-  const minhaRole = localStorage.getItem("role"); // "cliente" | "modelo"
+  // 👉 alinhamento correto
   div.className =
-  msg.sender === "modelo"
-    ? "msg msg-modelo"   // 👉 direita
-    : "msg msg-cliente"; // 👉 esquerda
+    msg.sender === "modelo"
+      ? "msg msg-modelo"    // direita
+      : "msg msg-cliente";  // esquerda
 
-  /* ===============================
-     📦 CONTEÚDO (IMAGEM / VÍDEO)
-  =============================== */
+  // ===============================
+  // 📦 CONTEÚDO (imagem / vídeo)
+  // ===============================
   if (msg.tipo === "conteudo") {
 
-    if ((msg.gratuito || Number(msg.preco) === 0 || msg.pago) && msg.url) {
-
+    // 🔓 CONTEÚDO LIBERADO
+    if (msg.url) {
       div.innerHTML = `
-      <div class="chat-conteudo livre"
-      data-id="${msg.id}"
-     data-url="${msg.url}"
-     data-tipo="${msg.tipo_media}">
-      ${
-      msg.tipo_media === "video"
-        ? `<video src="${msg.url}" muted></video>`
-        : `<img src="${msg.url}" />`
-      }
-      </div>
+        <div
+          class="chat-conteudo livre"
+          data-id="${msg.id}"
+          data-url="${msg.url}"
+          data-tipo="${msg.tipo_media}"
+        >
+          ${
+            msg.tipo_media === "video"
+              ? `<video src="${msg.url}" muted></video>`
+              : `<img src="${msg.url}" />`
+          }
+        </div>
       `;
+
+      const conteudo = div.querySelector(".chat-conteudo");
+
+      if (conteudo) {
+        conteudo.addEventListener("click", () => {
+
+          // 🔓 abrir mídia
+          abrirConteudo(
+            conteudo.dataset.url,
+            conteudo.dataset.tipo
+          );
+
+          // 👁️ marca como visto (UMA VEZ)
+          socket.emit("conteudoVisto", {
+            message_id: msg.id,
+            cliente_id,
+            modelo_id,
+            conteudo_id: msg.conteudo_id
+          });
+        });
+      }
+
     }
-const conteudo = div.querySelector(".chat-conteudo");
-
-if (conteudo) {
-  conteudo.addEventListener("click", () => {
-
-    // abre sempre
-    if (conteudo.dataset.url) {
-      abrirConteudo(
-        conteudo.dataset.url,
-        conteudo.dataset.tipo
-      );
-    }
-
-    // 🔔 SEMPRE marca como visto (pago OU gratuito)
-    socket.emit("conteudoVisto", {
-      message_id: msg.id,
-      cliente_id,
-      modelo_id,
-      conteudo_id: msg.conteudo_id
-    });
-  });
-}
-
-    // 🔒 BLOQUEADO (PAGO)
+    // 🔒 CONTEÚDO BLOQUEADO
     else {
       div.innerHTML = `
-        <div 
+        <div
           class="chat-conteudo bloqueado"
-          data-id="${msg.conteudo_id}"
+          data-id="${msg.id}"
           data-preco="${msg.preco}"
         >
           <div class="blur-fundo"></div>
@@ -329,16 +331,8 @@ if (conteudo) {
     }
   }
 
-  /* ===============================
-     💬 TEXTO NORMAL
-  =============================== */
-  else {
-    div.textContent = msg.text;
-  }
-
-  // ✅ ESSENCIAL: adiciona no chat
+  // ➕ adiciona no chat
   chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
 }
 
 function marcarNaoVisto(msg) {
