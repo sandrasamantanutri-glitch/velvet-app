@@ -550,6 +550,7 @@ const result = await db.query(
     m.text,
     m.preco,
     m.conteudo_id,
+    m.visto,  
     m.created_at,
 
     c.url,
@@ -646,9 +647,11 @@ const payload = {
   preco,
   url: conteudo.url,
   tipo_media: conteudo.tipo,
+  visto: false,
 
   gratuito,
   pago: !gratuito, // ✅ CORRETO
+  
 
   created_at: new Date()
 };
