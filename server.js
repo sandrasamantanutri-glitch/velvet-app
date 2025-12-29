@@ -574,7 +574,8 @@ const result = await db.query(
     c.tipo AS tipo_media,
 
     (m.preco = 0) AS gratuito,
-    (m.preco = 0) AS pago
+    (m.visto = true) AS pago
+
 
   FROM messages m
   LEFT JOIN conteudos c
