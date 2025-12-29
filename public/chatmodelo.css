@@ -60,3 +60,70 @@
 .chat-conteudo.visto {
   box-shadow: 0 0 0 4px #00c853;
 }
+
+/* =========================================
+   🔄 INVERTER LADOS NO CHAT DA MODELO
+   (base = chatcliente)
+========================================= */
+
+/* no chat da MODELO:
+   modelo → direita
+   cliente → esquerda
+*/
+
+.msg-modelo {
+  align-self: flex-end;
+}
+
+.msg-cliente {
+  align-self: flex-start;
+}
+/* ===============================
+   🎨 LISTA DE CLIENTES — HERDAR BASE
+=============================== */
+
+.lista-clientes {
+  background: #fff;
+}
+
+#listaClientes li,
+.chat-item {
+  background: #9a85bf;          /* mesmo roxo do cliente */
+  color: #fff;
+  border-radius: 14px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#listaClientes li:hover,
+.chat-item:hover {
+  background: #7d52d3;
+}
+
+/* ===============================
+   💜 BOTÃO "ENVIAR CONTEÚDO" — VELVET
+=============================== */
+
+#btnEnviarConteudo {
+  height: 42px;
+  padding: 0 18px;
+
+  border-radius: 22px;
+  border: none;
+
+  background: linear-gradient(135deg, #7B2CFF, #5d24be);
+  color: #fff;
+
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+#btnEnviarConteudo:hover {
+  opacity: 0.9;
+}
+
