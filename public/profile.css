@@ -54,11 +54,14 @@ body {
 
   pointer-events: none;
 }
-.headerCapa {
-  height: 38vh;
-  min-height: 260px;
-}
 
+.headerCapa {
+  width: 100%;
+  height: 28vh;      /* 👈 DIMINUI AQUI */
+  min-height: 200px; /* 👈 garante que não fique minúscula */
+  position: relative;
+  overflow: hidden;
+}
 
 
 /* ============================================
