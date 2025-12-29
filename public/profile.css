@@ -58,7 +58,7 @@ body {
 .headerCapa {
   width: 100%;
   height: 18vh;      /* 👈 DIMINUI AQUI */
-  min-height: 200px; /* 👈 garante que não fique minúscula */
+  min-height: 100px; /* 👈 garante que não fique minúscula */
   position: relative;
   overflow: hidden;
 }
