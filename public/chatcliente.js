@@ -276,11 +276,10 @@ function renderMensagem(msg) {
      📦 CONTEÚDO
   =============================== */
   else if (msg.tipo === "conteudo") {
-
-    // 🔑 REGRA DE OURO:
-    // se TEM url → liberado
-    // se NÃO tem url → bloqueado
-    const liberado = !!msg.url;
+  const liberado =
+  msg.gratuito === true ||
+  msg.pago === true ||
+  msg.visto === true;
 
     // 🔓 CONTEÚDO LIBERADO
     if (liberado) {
