@@ -42,18 +42,29 @@ socket.on("chatMetaUpdate", data => {
 socket.on("newMessage", msg => {
   atualizarItemListaComNovaMensagem(msg);
 
-  // 🔥 renderiza se for o chat atual OU se for minha mensagem
+  // renderiza se o chat aberto corresponde
   if (
-    msg.sender === "cliente" ||
-    (chatAtivo &&
-      Number(msg.cliente_id) === Number(chatAtivo.cliente_id) &&
-      Number(msg.modelo_id) === Number(chatAtivo.modelo_id))
+    modelo_id &&
+    Number(msg.modelo_id) === Number(modelo_id) &&
+    Number(msg.cliente_id) === Number(cliente_id)
   ) {
     renderMensagem(msg);
   }
 });
 
- socket.on("unreadUpdate", ({ cliente_id, modelo_id }) => {
+
+
+socket.on("conteudoVisto", ({ message_id }) => {
+  const el = document.querySelector(
+    `.chat-conteudo[data-id="${message_id}"]`
+  );
+  if (el) {
+    el.classList.add("visto");
+  }
+});
+
+
+socket.on("unreadUpdate", ({ cliente_id, modelo_id }) => {
   document.querySelectorAll("#listaModelos li").forEach(li => {
     if (Number(li.dataset.modeloId) === modelo_id) {
       li.classList.add("nao-lida");
@@ -63,16 +74,6 @@ socket.on("newMessage", msg => {
       li.querySelector(".badge").classList.remove("hidden");
     }
   });
-
-  socket.on("conteudoVisto", ({ message_id }) => {
-  const el = document.querySelector(
-    `.chat-conteudo[data-id="${message_id}"]`
-  );
-  if (el) {
-    el.classList.add("visto");
-  }
- });
-
 });
 
 
