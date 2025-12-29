@@ -167,7 +167,7 @@ function carregarFeed() {
     .then(feed => {
       if (!Array.isArray(feed)) return;
       listaMidias.innerHTML = "";
-      feed.forEach(item => adicionarMidia(item.url));
+      feed.forEach(item => adicionarMidia(item.id, item.url));
     });
 }
 
@@ -181,7 +181,7 @@ function carregarFeedPublico() {
     .then(feed => {
       if (!Array.isArray(feed)) return;
       listaMidias.innerHTML = "";
-      feed.forEach(item => adicionarMidia(item.url));
+      feed.forEach(item => adicionarMidia(item.id, item.url));
     });
 }
 
@@ -328,7 +328,7 @@ function iniciarUploads() {
 // ===============================
 // MIDIA
 // ===============================
-function adicionarMidia(url) {
+function adicionarMidia(id, url) {
   const card = document.createElement("div");
   card.className = "midiaCard";
 
@@ -338,15 +338,15 @@ function adicionarMidia(url) {
   const el = document.createElement(isVideo ? "video" : "img");
   el.src = url;
   el.className = "midiaThumb";
-
   if (isVideo) el.muted = true;
 
-  // 🔥 ABRIR MODAL AO CLICAR
-  el.addEventListener("click", () => abrirModalMidia(url, isVideo));
+  el.addEventListener("click", () =>
+    abrirModalMidia(url, isVideo)
+  );
 
   card.appendChild(el);
 
-  // 🗑 BOTÃO EXCLUIR (só modelo)
+  // 🗑 EXCLUIR (SÓ MODELO)
   if (role === "modelo") {
     const btnExcluir = document.createElement("button");
     btnExcluir.className = "btnExcluirMidia";
@@ -354,7 +354,7 @@ function adicionarMidia(url) {
 
     btnExcluir.onclick = e => {
       e.stopPropagation();
-      excluirMidia(url, card);
+      excluirMidia(id, card);
     };
 
     card.appendChild(btnExcluir);
@@ -393,16 +393,14 @@ document.getElementById("fecharModal")?.addEventListener("click", () => {
   modal.classList.add("hidden");
 });
 
-async function excluirMidia(url, card) {
+async function excluirMidia(id, card) {
   if (!confirm("Excluir esta mídia?")) return;
 
-  const res = await fetch("/api/conteudos/excluir", {
-    method: "POST",
+  const res = await fetch(`/api/conteudos/${id}`, {
+    method: "DELETE",
     headers: {
-      "Content-Type": "application/json",
       Authorization: "Bearer " + token
-    },
-    body: JSON.stringify({ url })
+    }
   });
 
   if (res.ok) {
@@ -411,7 +409,6 @@ async function excluirMidia(url, card) {
     alert("Erro ao excluir mídia");
   }
 }
-
 
 // ===============================
 // DOM PERFIL
