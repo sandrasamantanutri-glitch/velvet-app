@@ -57,7 +57,7 @@ body {
 
 .headerCapa {
   width: 100%;
-  height: 28vh;      /* 👈 DIMINUI AQUI */
+  height: 18vh;      /* 👈 DIMINUI AQUI */
   min-height: 200px; /* 👈 garante que não fique minúscula */
   position: relative;
   overflow: hidden;
@@ -104,14 +104,10 @@ body {
         }
 
         .avatar {
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
-            object-fit: cover;
-            background: white;
-            border: 4px solid #fff;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.25), 0 0 0 4px rgba(123,44,255,0.7);
-        }
+  border: 2px solid #fff;
+  box-shadow: 0 8px 22px rgba(218, 125, 228, 0.697);
+}
+
 
         /* Ícone pequeno */
         .btnTrocarAvatarIcon {
