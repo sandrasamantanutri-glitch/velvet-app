@@ -77,10 +77,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     enviarMensagem();
   }
   });
-});
-
+  
   // 🔥 AQUI — sempre ativo
   btnConteudo.onclick = abrirPopupConteudos;
+});
 
 // ===============================
 // FUNÇÕES
