@@ -359,9 +359,6 @@ function renderMensagem(msg) {
         </div>
 
         <div class="conteudo-info">
-          <span class="status-cliente">
-            ${msg.visto ? "Visto" : "Enviado"}
-          </span>
           <div class="valor-conteudo">
             R$ ${msg.preco ?? "0"}
           </div>
