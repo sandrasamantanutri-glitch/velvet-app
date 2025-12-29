@@ -213,7 +213,10 @@ const chat = document.getElementById("chatBox");
     if ((msg.gratuito || Number(msg.preco) === 0 || msg.pago) && msg.url) {
 
       div.innerHTML = `
-      <div class="chat-conteudo livre" data-url="${msg.url}" data-tipo="${msg.tipo_media}">
+      <div class="chat-conteudo livre"
+     data-id="${msg.conteudo_id}"
+     data-url="${msg.url}"
+     data-tipo="${msg.tipo_media}">
       ${
       msg.tipo_media === "video"
         ? `<video src="${msg.url}" muted></video>`
