@@ -321,7 +321,7 @@ function iniciarUploads() {
     });
 
     const data = await res.json();
-    if (data.url) adicionarMidia(data.url);
+    if (data.url) carregarFeed();
   });
 }
 
