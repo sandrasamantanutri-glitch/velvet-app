@@ -43,7 +43,7 @@
 .modelItem {
   position: relative;
   width: 100%;
-  aspect-ratio: 2 / 3;   /* mantém o formato tipo feed */
+  aspect-ratio: 2 / 2;   /* mantém o formato tipo feed */
   overflow: hidden;
   border-radius: 14px;
   cursor: pointer;
