@@ -492,7 +492,7 @@ html, body {
 /* container da mídia */
 .chat-conteudo .conteudo-media {
   width: 100%;
-  aspect-ratio: 4 / 4;   /* 🔥 formato vertical tipo stories */
+  aspect-ratio: 3 / 3;   /* 🔥 formato vertical tipo stories */
   overflow: hidden;
 }
 
@@ -516,7 +516,7 @@ html, body {
 .chat-conteudo.visto {
   filter: none !important;
   opacity: 1 !important;
-  box-shadow: 0 0 0 3px rgba(0, 200, 83, 0.8) !important;
+  box-shadow: 0 0 0 5px rgba(0, 200, 83, 0.8) !important;
 }
 
 /* preço */
