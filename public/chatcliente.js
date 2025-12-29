@@ -41,14 +41,18 @@ socket.on("chatMetaUpdate", data => {
 // 💬 NOVA MENSAGEM
 socket.on("newMessage", msg => {
 
-  // atualiza lista SEMPRE
-  atualizarItemListaComNovaMensagem(msg);
+  // 🔒 se a mensagem NÃO é deste chat, ignora
+  if (Number(msg.modelo_id) !== Number(modelo_id)) return;
 
-  // 🔥 se for mensagem deste cliente, renderiza
-  if (Number(msg.cliente_id) === Number(cliente_id)) {
-    renderMensagem(msg);
+  // ✅ renderiza sempre no chat aberto
+  renderMensagem(msg);
+
+  // ❗ SÓ marca "Não lida" se EU NÃO fui quem enviou
+  if (msg.sender !== "cliente") {
+    atualizarItemListaComNovaMensagem(msg);
   }
 });
+
 
 socket.on("conteudoVisto", ({ message_id }) => {
   const el = document.querySelector(
@@ -60,18 +64,21 @@ socket.on("conteudoVisto", ({ message_id }) => {
 });
 
 
-socket.on("unreadUpdate", ({ cliente_id, modelo_id }) => {
-  document.querySelectorAll("#listaModelos li").forEach(li => {
-    if (Number(li.dataset.modeloId) === modelo_id) {
-      li.classList.add("nao-lida");
+socket.on("unreadUpdate", ({ cliente_id, modelo_id, unread }) => {
 
-      const badge = li.querySelector(".badge");
-      badge.innerText = "Não lida";
-      li.querySelector(".badge").classList.remove("hidden");
-    }
-  });
+  if (!unread) return;
+
+  const li = [...document.querySelectorAll("#listaModelos li")]
+    .find(el => Number(el.dataset.modeloId) === modelo_id);
+
+  if (!li) return;
+
+  li.classList.add("nao-lida");
+
+  const badge = li.querySelector(".badge");
+  badge.innerText = "Não lida";
+  badge.classList.remove("hidden");
 });
-
 
 // ===============================
 // INIT
@@ -198,26 +205,25 @@ async function carregarCliente() {
 }
 
 function atualizarItemListaComNovaMensagem(msg) {
+
+  // 🚫 cliente NÃO marca Não lida para mensagens dele mesmo
+  if (msg.sender === "cliente") return;
+
   const li = [...document.querySelectorAll("#listaModelos li")]
     .find(el => Number(el.dataset.modeloId) === msg.modelo_id);
 
   if (!li) return;
 
-  // status
   li.dataset.status = "nao-lida";
 
-  // badge
   const badge = li.querySelector(".badge");
   badge.innerText = "Não lida";
   badge.classList.remove("hidden");
 
-  // horário
   li.dataset.lastTime = Date.now();
 
-  // reorder
   organizarListaModelos?.();
 }
-
 
 function enviarMensagem() {
   const input = document.getElementById("messageInput");

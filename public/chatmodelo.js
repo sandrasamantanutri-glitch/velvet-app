@@ -346,8 +346,9 @@ let statusClasse = msg.visto ? "visto" : "nao-visto";
 
   div.innerHTML = `
   <div
+<div
   class="chat-conteudo ${statusClasse}"
-  data-id="${msg.conteudo_id}">
+  data-id="${msg.id}">
       <div class="conteudo-media">
         ${
           msg.tipo_media === "video"
