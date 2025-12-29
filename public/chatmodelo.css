@@ -485,20 +485,29 @@ html, body {
   color: #999;
 }
 
+/* card */
 .chat-conteudo {
   width: 160px;
   height: 160px;
   border-radius: 16px;
+  overflow: hidden;
+  position: relative;
 }
 
 /* container da mídia */
 .chat-conteudo .conteudo-media {
   width: 100%;
-  aspect-ratio: 2 / 2;
-  overflow: hidden;
   height: 100%;
-  object-fit: cover; 
-  border-radius: 16px;
+  display: block;
+  overflow: hidden;
+}
+
+/* imagem e vídeo */
+.chat-conteudo img,
+.chat-conteudo video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;  
   display: block;
 }
 
@@ -549,23 +558,16 @@ html, body {
   color: #7B2CFF;
 }
 
-/* ===============================
-   CONTEÚDO NÃO HERDA BALÃO DE TEXTO
-=============================== */
-
-.msg:has(.chat-conteudo) {
-  background: none !important;
-  padding: 0 !important;
-  border-radius: 0 !important;
-  max-width: unset !important;
+/* conteúdo enviado PELA MODELO → direita */
+.msg-modelo:has(.chat-conteudo) {
+  align-self: flex-end;
+  margin-right: 8px;
 }
 
-.msg:has(.chat-conteudo) {
-  align-self: flex-start; /* modelo */
-}
-
+/* conteúdo enviado PELO CLIENTE → esquerda */
 .msg-cliente:has(.chat-conteudo) {
-  align-self: flex-end;   /* cliente */
+  align-self: flex-start;
+  margin-left: 8px;
 }
 
 /* ===============================
