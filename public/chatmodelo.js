@@ -331,34 +331,54 @@ if (item) {
   input.value = "";
 }
 
-if (msg.tipo === "conteudo") {
-  const bloqueado = msg.bloqueado === true;
-  const vendido   = msg.visto === true;
+function renderMensagem(msg) {
+  const chat = document.getElementById("chatBox");
+  if (!chat) return;
 
-  let classeEstado = "nao-visto";
-  if (vendido) classeEstado = "visto";
-  if (bloqueado && !vendido) classeEstado = "bloqueado";
+  const div = document.createElement("div");
 
-  div.innerHTML = `
-    <div class="chat-conteudo ${classeEstado}" data-id="${msg.id}">
-      <div class="conteudo-media">
-        ${
-          msg.tipo_media === "video"
-            ? `<video src="${msg.url}" muted></video>`
-            : `<img src="${msg.url}" />`
-        }
+  // alinhamento correto
+  div.className =
+    msg.sender === "modelo" ? "msg msg-modelo" : "msg msg-cliente";
+
+  /* ===============================
+     📦 CONTEÚDO
+  =============================== */
+  if (msg.tipo === "conteudo") {
+
+    // 🔓 MODELO SEMPRE VÊ
+    div.innerHTML = `
+      <div class="chat-conteudo ${msg.visto ? "visto" : "nao-visto"}"
+           data-id="${msg.id}">
+        <div class="conteudo-media">
+          ${
+            msg.tipo_media === "video"
+              ? `<video src="${msg.url}" muted></video>`
+              : `<img src="${msg.url}" />`
+          }
+        </div>
+
+        <div class="conteudo-info">
+          <span class="status-cliente">
+            ${msg.visto ? "Visto" : "Enviado"}
+          </span>
+          <div class="valor-conteudo">
+            R$ ${msg.preco ?? "0"}
+          </div>
+        </div>
       </div>
+    `;
+  }
 
-      <div class="conteudo-info">
-        ${
-          bloqueado && !vendido
-            ? `<span class="status-cliente">Bloqueado</span>`
-            : `<span class="status-cliente">Comprado</span>`
-        }
-        <div class="valor-conteudo">R$ ${msg.preco}</div>
-      </div>
-    </div>
-  `;
+  /* ===============================
+     💬 TEXTO NORMAL
+  =============================== */
+  else {
+    div.textContent = msg.text;
+  }
+
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
 }
 
 
