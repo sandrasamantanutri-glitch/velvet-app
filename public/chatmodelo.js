@@ -77,9 +77,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     enviarMensagem();
   }
   });
-  
-  // 🔥 AQUI — sempre ativo
-  btnConteudo.onclick = abrirPopupConteudos;
+   if (btnConteudo) {
+    btnConteudo.onclick = abrirPopupConteudos;
+  }
 });
 
 // ===============================
