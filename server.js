@@ -1127,6 +1127,38 @@ ORDER BY ultima_msg_modelo_ts DESC NULLS LAST
 });
 
 // ===============================
+// 📄 DADOS DE UM CLIENTE (por ID)
+// ===============================
+app.get("/api/cliente/:id", authModelo, async (req, res) => {
+  const clienteId = req.params.id;
+
+  try {
+    const result = await db.query(
+      `
+      SELECT
+        c.user_id,
+        c.nome,
+        cd.avatar
+      FROM clientes c
+      LEFT JOIN clientes_dados cd
+        ON cd.user_id = c.user_id
+      WHERE c.user_id = $1
+      `,
+      [clienteId]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ error: "Cliente não encontrado" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Erro ao buscar cliente:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+// ===============================
 // ROTA POST
 // ===============================
 app.put("/api/modelo/bio", authModelo, async (req, res) => {
