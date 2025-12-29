@@ -291,8 +291,17 @@ btnSalvarBio?.addEventListener("click", async () => {
     body: JSON.stringify({ bio })
   });
 
-  if (res.ok) profileBio.textContent = bio;
+  if (res.ok) {
+    profileBio.textContent = bio;
+
+    // ✅ FECHA O POPUP
+    const popupBio = document.getElementById("popupBio");
+    popupBio.classList.add("hidden");
+  } else {
+    alert("Erro ao salvar bio");
+  }
 });
+
 
 // ===============================
 // UPLOADS
