@@ -87,10 +87,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   sendBtn.onclick = enviarMensagem;
 
   input.addEventListener("keydown", e => {
-    if (e.key === "Enter") {
-      enviarMensagem();
-    }
-  });
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();   // 🔥 ISSO resolve a quebra de linha
+    enviarMensagem();
+  }
+});
 
   // 🔥 AQUI — sempre ativo
   btnConteudo.onclick = abrirPopupConteudos;
