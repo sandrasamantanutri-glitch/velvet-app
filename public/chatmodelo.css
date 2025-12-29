@@ -480,7 +480,7 @@ html, body {
   font-size: 11px;
   color: #999;
 }
-/* ===== CONTEÚDO NO CHAT (MINIATURA) ===== */
+
 .chat-conteudo {
   border-radius: 14px;
   overflow: hidden;
@@ -492,8 +492,12 @@ html, body {
 /* container da mídia */
 .chat-conteudo .conteudo-media {
   width: 100%;
-  aspect-ratio: 5 / 2;
+  aspect-ratio: 2 / 2;
   overflow: hidden;
+  height: 100%;
+  object-fit: cover; 
+  border-radius: 16px;
+  display: block;
 }
 
 /* imagem / vídeo */
@@ -501,7 +505,8 @@ html, body {
 .chat-conteudo .conteudo-media video {
   width: 100%;
   height: 100%;
-  object-fit: cover;     /* 🔥 vira thumbnail */
+  object-fit: cover; 
+  border-radius: 16px;
   display: block;
 }
 
@@ -522,7 +527,7 @@ html, body {
 /* preço */
 .valor-conteudo {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 600px;
   color: #7B2CFF;
 }
 

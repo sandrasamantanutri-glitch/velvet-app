@@ -383,10 +383,8 @@ html, body {
   content: "";
   position: absolute;
   inset: 0;
-
   backdrop-filter: blur(14px) saturate(130%);
   -webkit-backdrop-filter: blur(14px) saturate(130%);
-
   background: linear-gradient(
     135deg,
     rgba(123, 44, 255, 0.25),
