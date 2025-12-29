@@ -44,14 +44,10 @@ socket.on("conteudoVisto", ({ message_id }) => {
     `.chat-conteudo[data-id="${message_id}"]`
   );
 
-  if (el) {
-    el.classList.remove("nao-visto");
-    el.classList.add("visto");
-  }
-    forEach(el => {
-      el.classList.remove("nao-visto");
-      el.classList.add("visto");
-    });
+  if (!el) return;
+
+  el.classList.remove("nao-visto");
+  el.classList.add("visto");
 });
 
 
