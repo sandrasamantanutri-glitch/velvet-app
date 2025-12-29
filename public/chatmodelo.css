@@ -18,6 +18,11 @@ html, body {
    PÁGINA PRINCIPAL
 ========================= */
 
+:root {
+  --velvet-roxo: #7B2CFF;
+  --velvet-roxo-soft: #9a85bf;
+}
+
 .pagina-chat {
   height: 100%;
   padding: 16px;
@@ -562,6 +567,64 @@ html, body {
 .msg-cliente:has(.chat-conteudo) {
   align-self: flex-end;   /* cliente */
 }
+
+/* ===============================
+   🔹 LISTA DE CLIENTES — IGUAL CHATCLIENTE
+=============================== */
+
+/* Header do painel (Clientes) */
+.lista-clientes .painel-header {
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #b9a9e6; /* ✅ separador voltou */
+}
+
+/* Título "Clientes" */
+.lista-clientes .painel-header strong {
+  color: #7B2CFF;       /* 💜 roxo Velvet */
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* Itens da lista */
+#listaClientes li {
+  background: #9a85bf;
+  color: #fff;
+}
+
+/* Nome do cliente */
+#listaClientes li .nome {
+  color: #fff;          /* texto branco dentro do card */
+  font-weight: 500;
+}
+
+/* Badge */
+#listaClientes li .badge {
+  background: #7B2CFF;  /* 💜 Velvet */
+  color: #fff;
+}
+
+/* Hover igual chatcliente */
+#listaClientes li:hover {
+  background: #7d52d3;
+}
+
+.chat-header {
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #b9a9e6; /* separador do topo */
+}
+
+.chat-header strong {
+  color: #7B2CFF;
+  font-weight: 600;
+}
+
+#clienteNome {
+  color: #7B2CFF;
+  font-weight: 600;
+}
+
 
 
 
