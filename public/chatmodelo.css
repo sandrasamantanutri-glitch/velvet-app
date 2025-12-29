@@ -514,9 +514,9 @@ html, body {
 }
 
 .chat-conteudo.visto {
-  filter: none;
-  opacity: 1;
-  box-shadow: 0 0 0 2px rgba(0, 200, 83, 0.6);
+  filter: none !important;
+  opacity: 1 !important;
+  box-shadow: 0 0 0 3px rgba(0, 200, 83, 0.8) !important;
 }
 
 /* preço */

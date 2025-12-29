@@ -43,12 +43,16 @@ socket.on("conteudoVisto", ({ message_id }) => {
   const el = document.querySelector(
     `.chat-conteudo[data-id="${message_id}"]`
   );
-
   if (!el) return;
 
+  // remove qualquer estado anterior
   el.classList.remove("nao-visto");
+  el.classList.remove("bloqueado");
+
+  // aplica visto
   el.classList.add("visto");
 });
+
 
 
 socket.on("unreadUpdate", ({ cliente_id, modelo_id }) => {
