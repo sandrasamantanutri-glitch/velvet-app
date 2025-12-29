@@ -32,14 +32,33 @@ body {
 
 /* IMAGEM DA CAPA */
 .capaImg {
-    width: 100%;
-    height: 100%;
-    margin-top: 0px;
-    object-fit: cover;        /* 🔥 faz preencher tudo sem distorcer */
-    object-position: center;  /* centraliza a imagem */
-    display: block;
-    
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+
+  /* 🔥 foco mais baixo, mais elegante */
+  object-position: center 30%;
 }
+.headerCapa::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(0,0,0,0.25) 0%,
+      rgba(123,44,255,0.25) 55%,
+      rgba(123,44,255,0.55) 100%
+    );
+
+  pointer-events: none;
+}
+.headerCapa {
+  height: 38vh;
+  min-height: 260px;
+}
+
 
 
 /* ============================================
@@ -85,10 +104,10 @@ body {
             width: 150px;
             height: 150px;
             border-radius: 50%;
-            border: 3px solid #7B2CFF;
             object-fit: cover;
             background: white;
-            box-shadow: 0 0 10px rgba(123, 44, 255, 0.4);
+            border: 4px solid #fff;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25), 0 0 0 4px rgba(123,44,255,0.7);
         }
 
         /* Ícone pequeno */
@@ -233,7 +252,7 @@ body {
 
 .btnExcluirMidia { 
     margin-top: 5px; 
-    background: #4f3c6e; 
+    background: #7B2CFF;; 
     color: white; 
     border: none; 
     padding: 10px 10px; 
