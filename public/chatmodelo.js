@@ -105,7 +105,7 @@ async function carregarListaClientes() {
     li.dataset.clienteId = c.cliente_id;
 
     // ⏱ timestamp da última mensagem da MODELO
- li.dataset.lastTime = c.ultima_msg_modelo_ts
+li.dataset.lastTime = c.ultima_msg_modelo_ts
   ? new Date(c.ultima_msg_modelo_ts).getTime()
   : 0;
 
@@ -123,29 +123,33 @@ async function carregarListaClientes() {
     // 🔔 atualiza badge + tempo
     atualizarBadgeComTempo(li);
 
-    li.onclick = () => abrirChatCliente(c, li);
+    li.onclick = () => {
+      cliente_id = c.cliente_id;
+      chatAtivo = { cliente_id, modelo_id };
+
+      document.getElementById("clienteNome").innerText = c.nome;
+
+      // 🧹 limpar badge visual
+      const badge = li.querySelector(".badge");
+      badge.classList.add("hidden");
+
+      // 🔄 atualizar status local
+      li.dataset.status = "normal";
+
+      // 🔁 reordenar após mudança de status
+      organizarListaClientes();
+
+      const sala = `chat_${cliente_id}_${modelo_id}`;
+      socket.emit("joinChat", { sala });
+      socket.emit("getHistory", { cliente_id, modelo_id });
+    };
+
+    lista.appendChild(li);
   });
+
+  // ✅ ordenar SOMENTE depois que todos os itens existirem
+  organizarListaClientes();
 }
-
-function abrirChatCliente(cliente) {
-  cliente_id = cliente.cliente_id;
-  chatAtivo = { cliente_id, modelo_id };
-
-  // 🔹 nome
-  const nomeEl = document.getElementById("clienteNome");
-  if (nomeEl) nomeEl.innerText = cliente.nome;
-
-  // 🔹 avatar (Cloudinary)
-  const avatarEl = document.getElementById("chatAvatar");
-  if (avatarEl && cliente.avatar) {
-    avatarEl.src = cliente.avatar;
-  }
-
-  const sala = `chat_${cliente_id}_${modelo_id}`;
-  socket.emit("joinChat", { sala });
-  socket.emit("getHistory", { cliente_id, modelo_id });
-}
-
 
 async function carregarModelo() {
   const res = await fetch("/api/modelo/me", {
@@ -154,12 +158,10 @@ async function carregarModelo() {
 
   const data = await res.json();
   modelo_id = data.user_id ?? data.id;
-
   const nomeEl = document.getElementById("modeloNome");
   if (nomeEl) {
     nomeEl.innerText = data.nome || "Modelo";
   }
-
   socket.emit("loginModelo", modelo_id);
 }
 
@@ -347,7 +349,23 @@ function adicionarNovoClienteNaLista(cliente_id, nome) {
     <span class="tempo">${formatarTempo(li.dataset.lastTime)}</span>
   `;
 
-  li.onclick = () => abrirChatCliente(c, li);
+  li.onclick = () => {
+    cliente_id = Number(li.dataset.clienteId);
+    chatAtivo = { cliente_id, modelo_id };
+
+    document.getElementById("clienteNome").innerText = nome;
+
+    // 🧹 limpar badge e status
+    li.dataset.status = "normal";
+    const badge = li.querySelector(".badge");
+    badge.classList.add("hidden");
+
+    organizarListaClientes();
+
+    const sala = `chat_${cliente_id}_${modelo_id}`;
+    socket.emit("joinChat", { sala });
+    socket.emit("getHistory", { cliente_id, modelo_id });
+  };
 
   // ➕ adiciona apenas UMA vez
   lista.prepend(li);
