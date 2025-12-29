@@ -127,8 +127,7 @@ async function carregarListaModelos() {
       mensagensRenderizadas.clear();
       document.getElementById("chatBox").innerHTML = "";
       document.getElementById("chatNome").innerText = m.nome;
-      document.getElementById("chatAvatar").src =
-      m.avatar || "/assets/avatar-default.png";
+      document.getElementById("chatAvatar").src = m.avatar;
 
       li.querySelector(".badge")?.classList.add("hidden");
       li.classList.remove("nao-lida");

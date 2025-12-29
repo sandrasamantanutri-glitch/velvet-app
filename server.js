@@ -1093,6 +1093,7 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
       SELECT 
         c.user_id AS cliente_id,
         c.nome,
+        cd.avatar,
 
         -- última mensagem enviada pela modelo
         MAX(m.created_at)

@@ -127,10 +127,7 @@ li.dataset.lastTime = c.ultima_msg_modelo_ts
     li.onclick = () => {
       cliente_id = c.cliente_id;
       chatAtivo = { cliente_id, modelo_id };
-
-      document.getElementById("chatNome").innerText = c.nome;
-      document.getElementById("chatAvatar").src = c.avatar || "/assets/avatar-default.png";
-
+      document.getElementById("chatAvatar").src = c.avatar;
 
       // 🧹 limpar badge visual
       const badge = li.querySelector(".badge");

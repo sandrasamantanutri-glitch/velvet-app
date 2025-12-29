@@ -163,7 +163,7 @@ html, body {
 .msg-modelo {
   align-self: flex-start;
   background: #7d52d3;
-  color: #000;
+  color: #fff;
   margin: 6px 8px;
   border-bottom-left-radius: 4px;
   box-shadow: 0 2px 8px rgba(123,44,255,0.25);
@@ -173,7 +173,7 @@ html, body {
 .msg-cliente {
   align-self: flex-end;
   background: #9a85bf;
-  color: #000;
+  color: #fff;
   margin: 6px 8px;
   border-bottom-right-radius: 4px;
   box-shadow: 0 2px 10px rgba(123,44,255,0.45);
