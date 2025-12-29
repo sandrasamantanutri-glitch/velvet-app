@@ -486,6 +486,17 @@ html, body {
   border-radius: 16px;
 }
 
+/* container da mídia */
+.chat-conteudo .conteudo-media {
+  width: 100%;
+  aspect-ratio: 2 / 2;
+  overflow: hidden;
+  height: 100%;
+  object-fit: cover; 
+  border-radius: 16px;
+  display: block;
+}
+
 /* estados */
 
 .chat-conteudo.nao-visto {
