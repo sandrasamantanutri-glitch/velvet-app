@@ -679,6 +679,81 @@ socket.on("sendConteudo", async ({ cliente_id, modelo_id, conteudo_id, preco }) 
   }
  });
 
+ socket.on("sendPacoteConteudo", async ({ cliente_id, modelo_id, conteudos_ids, preco }) => {
+  if (!socket.user || socket.user.role !== "modelo") return;
+
+  const sala = `chat_${cliente_id}_${modelo_id}`;
+
+  try {
+    // 1️⃣ cria pacote
+    const pacoteResult = await db.query(
+      `
+      INSERT INTO conteudo_pacotes (modelo_id, cliente_id, preco)
+      VALUES ($1, $2, $3)
+      RETURNING id
+      `,
+      [modelo_id, cliente_id, preco]
+    );
+
+    const pacote_id = pacoteResult.rows[0].id;
+
+    // 2️⃣ vincula conteúdos
+    for (const conteudo_id of conteudos_ids) {
+      await db.query(
+        `
+        INSERT INTO conteudo_pacote_itens (pacote_id, conteudo_id)
+        VALUES ($1, $2)
+        `,
+        [pacote_id, conteudo_id]
+      );
+    }
+
+    // 3️⃣ cria mensagem ÚNICA no chat
+    const msgResult = await db.query(
+      `
+      INSERT INTO messages
+        (cliente_id, modelo_id, sender, tipo, preco, visto)
+      VALUES ($1, $2, 'modelo', 'pacote', $3, false)
+      RETURNING id
+      `,
+      [cliente_id, modelo_id, preco]
+    );
+
+    const messageId = msgResult.rows[0].id;
+
+    // 4️⃣ payload cliente (SEM URL)
+    socket.to(sala).emit("newMessage", {
+      id: messageId,
+      tipo: "pacote",
+      preco,
+      quantidade: conteudos_ids.length,
+      bloqueado: true
+    });
+
+    // 5️⃣ payload modelo (COM preview)
+    const conteudos = await db.query(
+      `
+      SELECT url, tipo
+      FROM conteudos
+      WHERE id = ANY($1)
+      `,
+      [conteudos_ids]
+    );
+
+    io.to(socket.id).emit("newMessage", {
+      id: messageId,
+      tipo: "pacote",
+      preco,
+      quantidade: conteudos_ids.length,
+      conteudos: conteudos.rows,
+      bloqueado: false
+    });
+
+  } catch (err) {
+    console.error("❌ Erro sendPacoteConteudo:", err);
+  }
+ });
+
 });
 
 

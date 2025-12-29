@@ -600,13 +600,15 @@ function confirmarEnvioConteudo() {
     document.getElementById("precoConteudo").value || 0
   );
 
-  selecionados.forEach(item => {
-    socket.emit("sendConteudo", {
-      cliente_id,
-      modelo_id,
-      conteudo_id: item.dataset.conteudoId,
-      preco
-    });
+  const conteudos_ids = selecionados.map(
+    item => Number(item.dataset.conteudoId)
+  );
+
+  socket.emit("sendPacoteConteudo", {
+    cliente_id,
+    modelo_id,
+    conteudos_ids,
+    preco
   });
 
   fecharPopupConteudos();
