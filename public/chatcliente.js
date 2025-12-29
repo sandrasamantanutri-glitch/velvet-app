@@ -15,6 +15,7 @@ const socket = io({
 let cliente_id = null;
 let modelo_id = null;
 let chatAtivo = null;
+const mensagensRenderizadas = new Set();
 
 // 🔐 SOCKET AUTH
 socket.on("connect", () => {
