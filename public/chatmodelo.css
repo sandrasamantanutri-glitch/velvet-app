@@ -534,6 +534,33 @@ html, body {
   color: #7B2CFF;
 }
 
+.chat-topo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chat-identidade {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #7B2CFF;
+}
+
+#chatNome {
+  font-weight: 600;
+  font-size: 14px;
+  color: #7B2CFF;
+}
+
+
 
 
 

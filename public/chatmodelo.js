@@ -128,7 +128,9 @@ li.dataset.lastTime = c.ultima_msg_modelo_ts
       cliente_id = c.cliente_id;
       chatAtivo = { cliente_id, modelo_id };
 
-      document.getElementById("clienteNome").innerText = c.nome;
+      document.getElementById("chatNome").innerText = c.nome;
+      document.getElementById("chatAvatar").src = c.avatar || "/assets/avatar-default.png";
+
 
       // 🧹 limpar badge visual
       const badge = li.querySelector(".badge");
