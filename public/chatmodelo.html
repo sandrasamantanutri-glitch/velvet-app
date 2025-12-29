@@ -35,39 +35,53 @@
 
   <div class="chat-layout">
 
-    <!-- LISTA DE CLIENTES -->
+    <!-- ===== LISTA DE CLIENTES ===== -->
     <div class="lista-clientes painel">
       <div class="painel-header">
         <strong>Clientes</strong>
       </div>
       <ul id="listaClientes"></ul>
     </div>
-    
-<div class="chat-topo">
-  <span>Conversando com:</span>
 
-  <img id="chatAvatar" src="https://velvet-app-production.up.railway.app/assets/avatarDefault.png"
-  class="chat-avatar"/>
-  <span id="clienteNome"></span>
-</div>
+    <!-- ===== ÁREA DO CHAT ===== -->
+    <div class="chat-area painel">
 
+      <!-- TOPO DO CHAT -->
+      <div class="chat-header chat-topo">
+        <strong>Conversando com:</strong>
+
+        <div class="chat-identidade">
+          <img
+            id="chatAvatar"
+            src="https://velvet-app-production.up.railway.app/assets/avatarDefault.png"
+            class="chat-avatar"
+            alt="Avatar"
+          />
+          <span id="clienteNome"></span>
+        </div>
+      </div>
+
+      <!-- MENSAGENS -->
       <div id="chatBox"></div>
 
+      <!-- INPUT -->
       <div class="chat-input">
-        <!-- BOTÃO ENVIAR CONTEÚDO -->
-        <button id="btnEnviarConteudo" class="btn-conteudo">
-  Enviar conteúdo
-</button>
 
-        <textarea id="messageInput" placeholder="Digite sua mensagem..."></textarea>
+        <button id="btnEnviarConteudo" class="btn-conteudo">
+          Enviar conteúdo
+        </button>
+
+        <textarea
+          id="messageInput"
+          placeholder="Digite sua mensagem..."
+        ></textarea>
+
         <button id="sendBtn">Enviar</button>
       </div>
 
     </div>
-
   </div>
 </div>
-
 
 <!-- POPUP DE CONTEÚDOS -->
 <div id="popupConteudos" class="hidden">
@@ -75,24 +89,18 @@
   <div class="popup-box">
     <h3>Enviar conteúdo</h3>
 
-    <!-- GRID DE MINIATURAS -->
     <div id="previewConteudos" class="preview-grid"></div>
 
-    <!-- PREÇO -->
     <div class="popup-preco">
       <label>Preço (€)</label>
       <input type="number" id="precoConteudo" value="0" min="0" />
     </div>
 
-    <!-- AÇÕES -->
     <div class="popup-actions">
       <button class="btn-cancelar" onclick="fecharPopupConteudos()">Cancelar</button>
       <button class="btn-enviar" onclick="confirmarEnvioConteudo()">Enviar</button>
     </div>
   </div>
-
-</div>
-
 
 </div>
 
