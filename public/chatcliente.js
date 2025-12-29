@@ -81,7 +81,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     e.preventDefault(); // 🚫 impede quebra de linha
     enviarMensagem();
   }
-});
+  });
+  const avatarEl = document.getElementById("chatAvatar");
+
+  avatarEl.onerror = () => {
+  avatarEl.src =
+    "https://velvet-app-production.up.railway.app/assets/avatarDefault.png";
+  };
+
 });
 
 
@@ -127,7 +134,9 @@ async function carregarListaModelos() {
       mensagensRenderizadas.clear();
       document.getElementById("chatBox").innerHTML = "";
       document.getElementById("chatNome").innerText = m.nome;
-      document.getElementById("chatAvatar").src = m.avatar;
+      if (m.avatar) {
+        document.getElementById("chatAvatar").src = m.avatar;
+      }
 
       li.querySelector(".badge")?.classList.add("hidden");
       li.classList.remove("nao-lida");
