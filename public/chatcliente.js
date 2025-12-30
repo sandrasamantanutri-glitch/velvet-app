@@ -276,7 +276,7 @@ function renderMensagem(msg) {
 =============================== */
 else if (msg.tipo === "pacote") {
 
-  const quantidade = msg.quantidade || 4; // fallback visual
+  const quantidade = msg.quantidade || 4;
 
   div.innerHTML = `
     <div class="chat-conteudo bloqueado premium pacote"
@@ -289,9 +289,13 @@ else if (msg.tipo === "pacote") {
           .join("")}
       </div>
 
-      <div class="overlay-conteudo">
+      <div class="overlay-conteudo pacote-overlay">
+        <button class="btn-desbloquear">
+          Desbloquear
+        </button>
+
         <div class="valor-conteudo">
-          Desbloquear · R$ ${msg.preco}
+          R$ ${Number(msg.preco).toFixed(2)}
         </div>
       </div>
 
