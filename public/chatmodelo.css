@@ -658,4 +658,31 @@ h2 #modeloNome {
   object-fit: cover !important;
   display: block;
 }
+/* =========================================
+   🔥 FIX FINAL — 1 MÍDIA PREENCHE 100%
+========================================= */
+
+/* REMOVE aspect-ratio herdado do grid */
+.chat-conteudo.premium .pacote-grid {
+  aspect-ratio: unset !important;
+}
+
+/* 🔥 CASO 1 MÍDIA → OCUPA TUDO */
+.chat-conteudo.premium[data-qtd="1"] .pacote-grid {
+  grid-template-columns: 1fr;
+}
+
+.chat-conteudo.premium[data-qtd="1"] .midia-item {
+  aspect-ratio: 1 / 1 !important;
+  width: 100%;
+  height: auto;
+}
+
+/* garante preenchimento total */
+.chat-conteudo.premium[data-qtd="1"] img,
+.chat-conteudo.premium[data-qtd="1"] video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
