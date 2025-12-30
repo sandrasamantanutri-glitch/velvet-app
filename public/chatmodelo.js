@@ -347,28 +347,30 @@ function renderMensagem(msg) {
   div.className =
     msg.sender === "modelo" ? "msg msg-modelo" : "msg msg-cliente";
 
- if (msg.tipo === "conteudo") {
-
-  const qtd = msg.quantidade ?? 1;
+if (msg.tipo === "conteudo" && Array.isArray(msg.midias)) {
 
   div.innerHTML = `
-    <div class="chat-conteudo visto"
+    <div class="chat-conteudo ${msg.pago ? "visto" : "bloqueado"}"
          data-id="${msg.id}">
-      <div style="
-        width: 150px;
-        height: 150px;
-        border-radius: 16px;
-        background: linear-gradient(135deg, #7b2cff, #9d5cff);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: 600;
-        font-size: 14px;
-        text-align: center;
-      ">
-        ${qtd} mídia${qtd > 1 ? "s" : ""}
+      <div class="pacote-grid">
+        ${msg.midias.map(m => `
+          <div class="midia-item">
+            ${
+              m.tipo_media === "video"
+                ? `<video src="${m.url}" muted></video>`
+                : `<img src="${m.url}" />`
+            }
+          </div>
+        `).join("")}
       </div>
+
+      ${
+        msg.preco > 0
+          ? `<div class="pacote-info">
+               ${msg.pago ? "🟢 Vendido" : "🔒 Bloqueado"} — R$ ${Number(msg.preco).toFixed(2)}
+             </div>`
+          : ""
+      }
     </div>
   `;
 }

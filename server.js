@@ -342,15 +342,29 @@ const messageId = result.rows[0].id;
     }
     
     // 4️⃣ ENVIA MENSAGEM EM TEMPO REAL (CHAT ABERTO)
+// 🔎 buscar URLs das mídias
+const midiasRes = await db.query(`
+  SELECT url, tipo AS tipo_media
+  FROM conteudos
+  WHERE id = ANY($1)
+`, [conteudos_ids]);
+
+const midias = midiasRes.rows;
+
+// 🔥 ENVIO REALTIME COMPLETO
 io.to(sala).emit("newMessage", {
-  id: messageId,
+  id: message_id,
   cliente_id,
   modelo_id,
-  sender,
-  tipo: "texto",   // 🔥 ESSENCIAL
-  text,
+  sender: "modelo",
+  tipo: "conteudo",
+  preco,
+  pago: false,
+  midias,                    // 🔥 AQUI
+  quantidade: midias.length,
   created_at: new Date()
 });
+
 
 const sidModelo = onlineModelos[modelo_id];
 if (sidModelo) {
@@ -383,69 +397,90 @@ socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
   if (!socket.user) return;
 
   try {
-    // 1️⃣ limpa não-visto
+    // 1️⃣ limpa NÃO LIDO apenas para quem está abrindo o chat
     await db.query(
       `
       UPDATE unread
       SET has_unread = false
       WHERE cliente_id = $1
         AND modelo_id = $2
+        AND role = $3
       `,
-      [cliente_id, modelo_id]
+      [
+        cliente_id,
+        modelo_id,
+        socket.user.role // 🔥 importantíssimo
+      ]
     );
 
-    // 2️⃣ busca histórico
+    // 2️⃣ busca histórico base
     const result = await db.query(
       `
       SELECT
-  m.id,
-  m.cliente_id,
-  m.modelo_id,
-  m.sender,
-  m.tipo,
-  m.preco,
-  m.visto,
-  m.created_at
-FROM messages m
-WHERE m.cliente_id = $1
-  AND m.modelo_id = $2
-ORDER BY m.created_at ASC
-
+        m.id,
+        m.cliente_id,
+        m.modelo_id,
+        m.sender,
+        m.tipo,
+        m.preco,
+        m.visto,
+        m.created_at
+      FROM messages m
+      WHERE m.cliente_id = $1
+        AND m.modelo_id = $2
+      ORDER BY m.created_at ASC
       `,
       [cliente_id, modelo_id]
     );
 
+    // 3️⃣ tratar mensagens de conteúdo / pacote
     for (const msg of result.rows) {
-  if (msg.tipo === "conteudo") {
-    const itens = await db.query(`
-      SELECT c.url, c.tipo
-      FROM messages_conteudos mc
-      JOIN conteudos c ON c.id = mc.conteudo_id
-      WHERE mc.message_id = $1
-    `, [msg.id]);
 
-    msg.quantidade = itens.rows.length;
+      if (msg.tipo !== "conteudo") continue;
 
-    if (socket.user.role === "modelo") {
-      msg.conteudos = itens.rows;
-    } else if (msg.preco === 0 || msg.visto === true) {
-      msg.conteudos = itens.rows;
-    } else {
-      msg.conteudos = null;
+      // 🔎 buscar mídias ligadas à mensagem
+      const midiasRes = await db.query(
+        `
+        SELECT
+          c.url,
+          c.tipo AS tipo_media
+        FROM messages_conteudos mc
+        JOIN conteudos c ON c.id = mc.conteudo_id
+        WHERE mc.message_id = $1
+        `,
+        [msg.id]
+      );
+
+      const midias = midiasRes.rows;
+
+      msg.quantidade = midias.length;
+
+      // 🔐 REGRAS DE VISUALIZAÇÃO
+      if (
+        socket.user.role === "cliente" &&
+        Number(msg.preco) > 0 &&
+        msg.visto !== true
+      ) {
+        // 🚫 cliente não liberado
+        msg.midias = [];
+        msg.bloqueado = true;
+      } else {
+        // ✅ modelo sempre vê tudo
+        // ✅ cliente vê se gratuito ou comprado
+        msg.midias = midias;
+        msg.bloqueado = false;
+      }
     }
 
-    msg.bloqueado = !(msg.preco === 0 || msg.visto === true);
-  }
-}
-    // 4️⃣ envia histórico
+    // 4️⃣ envia histórico SOMENTE para quem pediu
     socket.emit("chatHistory", result.rows);
 
   } catch (err) {
     console.error("❌ Erro getHistory:", err);
   }
-});
+ });
 
-socket.on("sendConteudo", async ({ cliente_id, modelo_id, conteudos_ids, preco }) => {
+ socket.on("sendConteudo", async ({ cliente_id, modelo_id, conteudos_ids, preco }) => {
   if (!socket.user || socket.user.role !== "modelo") return;
 
   if (!conteudos_ids || !conteudos_ids.length) return;
@@ -495,8 +530,7 @@ RETURNING id
   } catch (err) {
     console.error("❌ Erro sendConteudo:", err);
   }
-});
-
+ });
 
 });
 // ===============================
