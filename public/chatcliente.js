@@ -271,19 +271,48 @@ function renderMensagem(msg) {
   if (msg.tipo === "texto") {
     div.innerText = msg.text;
   }
-/* ===============================
-   📦 PACOTE (CLIENTE)
-=============================== */
-else if (msg.tipo === "pacote") {
 
-  const quantidade = msg.quantidade || 4;
-  const bloqueado = msg.bloqueado === true;
+  /* ===============================
+     📦 PACOTE
+  =============================== */
+  else if (msg.tipo === "pacote") {
 
-  // 🆓 PACOTE GRÁTIS / LIBERADO
-  if (!bloqueado) {
+    // 🛡️ FALLBACK DE SEGURANÇA (UI)
+    if (!msg.quantidade || msg.quantidade <= 0) {
+      msg.quantidade = 1;
+    }
+
+    const quantidade = msg.quantidade;
+    const bloqueado = msg.bloqueado === true;
+
+    // 🆓 PACOTE GRÁTIS / LIBERADO
+    if (!bloqueado) {
+      div.innerHTML = `
+        <div class="chat-conteudo livre premium pacote"
+             data-id="${msg.id}">
+
+          <div class="pacote-grid pacote-${quantidade}">
+            ${Array.from({ length: quantidade })
+              .map(() => `<div class="pacote-item"></div>`)
+              .join("")}
+          </div>
+
+          <div class="pacote-livre-label">
+            Pacote liberado · ${quantidade} conteúdos
+          </div>
+        </div>
+      `;
+
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+      return;
+    }
+
+    // 🔒 PACOTE BLOQUEADO
     div.innerHTML = `
-      <div class="chat-conteudo livre premium pacote"
-           data-id="${msg.id}">
+      <div class="chat-conteudo bloqueado premium pacote"
+           data-id="${msg.id}"
+           data-preco="${msg.preco}">
 
         <div class="pacote-grid pacote-${quantidade}">
           ${Array.from({ length: quantidade })
@@ -291,118 +320,24 @@ else if (msg.tipo === "pacote") {
             .join("")}
         </div>
 
-        <div class="pacote-livre-label">
-          Pacote liberado · ${quantidade} conteúdos
+        <div class="overlay-conteudo pacote-overlay">
+          <button class="btn-desbloquear">
+            <span class="btn-titulo">Desbloquear</span>
+            <span class="btn-sub">${quantidade} conteúdos</span>
+          </button>
+
+          <div class="valor-conteudo">
+            R$ ${Number(msg.preco).toFixed(2)}
+          </div>
         </div>
+
       </div>
     `;
 
-    return;
+    div.querySelector(".btn-desbloquear").onclick = () => {
+      console.log("Comprar pacote", msg.id);
+    };
   }
-
-  // 🔒 PACOTE BLOQUEADO
-  div.innerHTML = `
-    <div class="chat-conteudo bloqueado premium pacote"
-         data-id="${msg.id}"
-         data-preco="${msg.preco}">
-
-      <div class="pacote-grid pacote-${quantidade}">
-        ${Array.from({ length: quantidade })
-          .map(() => `<div class="pacote-item"></div>`)
-          .join("")}
-      </div>
-
-      <div class="overlay-conteudo pacote-overlay">
-        <button class="btn-desbloquear">
-          <span class="btn-titulo">Desbloquear</span>
-          <span class="btn-sub">${quantidade} conteúdos</span>
-        </button>
-
-        <div class="valor-conteudo">
-          R$ ${Number(msg.preco).toFixed(2)}
-        </div>
-      </div>
-
-    </div>
-  `;
-
-  div.querySelector(".btn-desbloquear").onclick = () => {
-    console.log("Comprar pacote", msg.id);
-  };
-}
-
-
-  /* ===============================
-     📦 CONTEÚDO
-  =============================== */
-  else if (msg.tipo === "conteudo") {
-  const liberado =
-  msg.gratuito === true ||
-  msg.pago === true ||
-  msg.visto === true;
-
-    // 🔓 CONTEÚDO LIBERADO
-    if (liberado) {
-
-      div.innerHTML = `
-        <div class="chat-conteudo livre"
-             data-id="${msg.id}"
-             data-url="${msg.url}"
-             data-tipo="${msg.tipo_media}">
-          ${
-            msg.tipo_media === "video"
-              ? `<video src="${msg.url}" muted></video>`
-              : `<img src="${msg.url}" />`
-          }
-        </div>
-      `;
-
-      const conteudo = div.querySelector(".chat-conteudo.livre");
-
-      if (conteudo) {
-        conteudo.addEventListener("click", () => {
-          abrirConteudo(
-            conteudo.dataset.url,
-            conteudo.dataset.tipo
-          );
-
-          // 👁️ marca como visto (sem texto visível)
-          socket.emit("conteudoVisto", {
-            message_id: msg.id,
-            cliente_id,
-            modelo_id,
-            conteudo_id: msg.conteudo_id
-          });
-        });
-      }
-
-    }
-
-    // 🔒 CONTEÚDO BLOQUEADO
-else {
-  div.innerHTML = `
-    <div class="chat-conteudo bloqueado premium"
-         data-id="${msg.id}"
-         data-preco="${msg.preco}">
-
-      <div class="overlay-conteudo">
-        <div class="valor-conteudo">R$ ${msg.preco}</div>
-
-        <button class="btn-desbloquear">
-          Desbloquear
-        </button>
-      </div>
-    </div>
-  `;
-
-  const btn = div.querySelector(".btn-desbloquear");
-  btn.addEventListener("click", () => {
-    // aqui depois ligamos com o fluxo de compra
-    console.log("Desbloquear conteúdo", msg.id);
-  });
-}
-  }
-
 
   // ✅ adiciona no chat
   chat.appendChild(div);

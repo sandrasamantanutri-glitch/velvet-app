@@ -601,13 +601,14 @@ socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
           SELECT c.url, c.tipo
           FROM conteudo_pacote_itens i
           JOIN conteudos c ON c.id = i.conteudo_id
-          WHERE i.pacote_id = $1
+          WHERE i.pacote_id = $1 [msg.pacote_id]
+
           `,
           [msg.id]
         );
 
-        msg.conteudos = itens.rows;
         msg.quantidade = itens.rows.length;
+        msg.bloqueado = !(msg.preco === 0);
       }
     }
     for (const msg of result.rows) {
@@ -720,11 +721,11 @@ socket.on("sendPacoteConteudo", async ({ cliente_id, modelo_id, conteudos_ids, p
     const msgResult = await db.query(
       `
       INSERT INTO messages
-        (cliente_id, modelo_id, sender, tipo, preco, visto)
-      VALUES ($1, $2, 'modelo', 'pacote', $3, false)
-      RETURNING id
+  (cliente_id, modelo_id, sender, tipo, preco, visto, pacote_id)
+VALUES ($1, $2, 'modelo', 'pacote', $3, false, $4)
+RETURNING id
       `,
-      [cliente_id, modelo_id, preco]
+      [cliente_id, modelo_id, preco, pacote_id]
     );
 
     const messageId = msgResult.rows[0].id;
