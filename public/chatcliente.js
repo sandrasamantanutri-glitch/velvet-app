@@ -277,7 +277,30 @@ function renderMensagem(msg) {
 else if (msg.tipo === "pacote") {
 
   const quantidade = msg.quantidade || 4;
+  const bloqueado = msg.bloqueado === true;
 
+  // 🆓 PACOTE GRÁTIS / LIBERADO
+  if (!bloqueado) {
+    div.innerHTML = `
+      <div class="chat-conteudo livre premium pacote"
+           data-id="${msg.id}">
+
+        <div class="pacote-grid pacote-${quantidade}">
+          ${Array.from({ length: quantidade })
+            .map(() => `<div class="pacote-item"></div>`)
+            .join("")}
+        </div>
+
+        <div class="pacote-livre-label">
+          Pacote liberado · ${quantidade} conteúdos
+        </div>
+      </div>
+    `;
+
+    return;
+  }
+
+  // 🔒 PACOTE BLOQUEADO
   div.innerHTML = `
     <div class="chat-conteudo bloqueado premium pacote"
          data-id="${msg.id}"
@@ -290,10 +313,11 @@ else if (msg.tipo === "pacote") {
       </div>
 
       <div class="overlay-conteudo pacote-overlay">
-<button class="btn-desbloquear">
-  <span class="btn-titulo">Desbloquear</span>
-  <span class="btn-sub">${msg.quantidade} conteúdos</span>
-</button>
+        <button class="btn-desbloquear">
+          <span class="btn-titulo">Desbloquear</span>
+          <span class="btn-sub">${quantidade} conteúdos</span>
+        </button>
+
         <div class="valor-conteudo">
           R$ ${Number(msg.preco).toFixed(2)}
         </div>
@@ -302,10 +326,11 @@ else if (msg.tipo === "pacote") {
     </div>
   `;
 
-  div.querySelector(".pacote").onclick = () => {
+  div.querySelector(".btn-desbloquear").onclick = () => {
     console.log("Comprar pacote", msg.id);
   };
 }
+
 
   /* ===============================
      📦 CONTEÚDO

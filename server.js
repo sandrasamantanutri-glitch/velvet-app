@@ -685,6 +685,9 @@ socket.on("sendPacoteConteudo", async ({ cliente_id, modelo_id, conteudos_ids, p
   const sala = `chat_${cliente_id}_${modelo_id}`;
 
   try {
+    // 🔑 regra do pacote grátis
+    const gratuito = Number(preco) === 0;
+
     // 1️⃣ cria pacote
     const pacoteResult = await db.query(
       `
@@ -733,7 +736,7 @@ socket.on("sendPacoteConteudo", async ({ cliente_id, modelo_id, conteudos_ids, p
 
     const conteudos = conteudosResult.rows;
 
-    // 🔒 CLIENTE (SEM PREVIEW)
+    // 🔒 / 🆓 CLIENTE (sem preview)
     socket.to(sala).emit("newMessage", {
       id: messageId,
       cliente_id,
@@ -742,11 +745,12 @@ socket.on("sendPacoteConteudo", async ({ cliente_id, modelo_id, conteudos_ids, p
       tipo: "pacote",
       preco,
       quantidade: conteudos_ids.length,
-      bloqueado: true,
+      bloqueado: !gratuito,   // 🔥 agora respeita pacote grátis
+      gratuito,               // opcional (útil pro front)
       created_at: new Date()
     });
 
-    // 👩‍💻 MODELO (COM PREVIEW)
+    // 👩‍💻 MODELO (com preview, sempre liberado)
     const sidModelo = onlineModelos[modelo_id];
     if (sidModelo) {
       io.to(sidModelo).emit("newMessage", {
@@ -757,8 +761,9 @@ socket.on("sendPacoteConteudo", async ({ cliente_id, modelo_id, conteudos_ids, p
         tipo: "pacote",
         preco,
         quantidade: conteudos.length,
-        conteudos,              // 🔥 agora vem
+        conteudos,              // 🔥 preview só para a modelo
         bloqueado: false,
+        gratuito,
         created_at: new Date()
       });
     }
@@ -767,7 +772,6 @@ socket.on("sendPacoteConteudo", async ({ cliente_id, modelo_id, conteudos_ids, p
     console.error("❌ Erro sendPacoteConteudo:", err);
   }
 });
-
 
 });
 // ===============================
