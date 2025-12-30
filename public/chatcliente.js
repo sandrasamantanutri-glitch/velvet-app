@@ -282,21 +282,24 @@ else if (msg.tipo === "pacote") {
   msg.qtd ??
   0;
 
-  div.innerHTML = `
-    <div class="pacotecliente">
+div.innerHTML = `
+  <div class="chat-conteudo bloqueado premium pacote"
+       data-id="${msg.id}"
+       data-preco="${msg.preco}">
 
-      <div class="pacote-fake-mosaic">
-        <div></div><div></div><div></div>
-        <div></div><div></div><div></div>
-      </div>
-
-        <button class="pacote-btn">
-          Desbloquear · R$ ${msg.preco}
-        </button>
-      </div>
-
+    <div class="pacote-fake-mosaic">
+      <div></div><div></div><div></div>
+      <div></div><div></div><div></div>
     </div>
-  `;
+
+    <div class="overlay-conteudo">
+      <div class="valor-conteudo">
+        Desbloquear · R$ ${msg.preco}
+      </div>
+    </div>
+
+  </div>
+`;
 
   const btn = div.querySelector(".pacote-btn");
   btn.onclick = () => {

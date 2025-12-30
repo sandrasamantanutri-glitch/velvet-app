@@ -636,6 +636,16 @@ html, body {
   );
 }
 
+.chat-conteudo.bloqueado.premium .valor-conteudo {
+  background: linear-gradient(135deg, #7B2CFF, #9D5CFF);
+  color: #fff;
+  padding: 8px 20px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+
 
 
 
