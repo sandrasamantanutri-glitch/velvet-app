@@ -601,38 +601,35 @@ h2 #modeloNome {
   align-self: flex-end; /* modelo */
 }
 /* =====================================================
-   🔥 CORREÇÃO DEFINITIVA – GRID DE MÍDIAS NO CHAT
-   - remove círculos
-   - preenche sempre o card
-   - cresce conforme quantidade
-   - bordas arredondadas (não redondas)
+   🔥 OVERRIDE FINAL – GRID QUADRADO VELVET (FORÇADO)
+   Resolve:
+   - bolinhas redondas ❌
+   - espaço vazio ❌
+   - não preencher card ❌
 ===================================================== */
 
-/* card NÃO pode ter tamanho fixo */
+/* força card correto */
 .chat-conteudo.premium {
-  width: auto;
-  height: auto;
+  width: auto !important;
+  height: auto !important;
   max-width: 260px;
-  padding: 10px;
 
+  padding: 10px;
   border-radius: 18px;
   overflow: hidden;
-
-  background: linear-gradient(135deg, #f3f0ff, #e8e1ff);
 }
 
-/* grid SEM aspect-ratio fixo */
+/* grid ocupa tudo */
 .chat-conteudo.premium .pacote-grid {
-  display: grid;
+  display: grid !important;
   grid-template-columns: repeat(2, 1fr);
   gap: 6px;
 
   width: 100%;
   height: auto;
-  padding: 0;
 }
 
-/* 5 ou mais mídias → 4 por linha */
+/* 5+ mídias → 4 por linha */
 .chat-conteudo.premium[data-qtd="5"] .pacote-grid,
 .chat-conteudo.premium[data-qtd="6"] .pacote-grid,
 .chat-conteudo.premium[data-qtd="7"] .pacote-grid,
@@ -642,23 +639,23 @@ h2 #modeloNome {
   grid-template-columns: repeat(4, 1fr);
 }
 
-/* cada mídia é SEMPRE um quadrado */
+/* 🔥 FORÇA QUADRADO (mata círculo) */
 .chat-conteudo.premium .midia-item {
-  width: 100%;
-  aspect-ratio: 1 / 1;
+  width: 100% !important;
+  aspect-ratio: 1 / 1 !important;
 
-  border-radius: 14px; /* 🔥 arredondado, não circular */
+  border-radius: 14px !important; /* arredondado, NÃO círculo */
   overflow: hidden;
 
   background: #e0e0e0;
 }
 
-/* imagem / vídeo preenche o quadrado */
+/* mídia preenche tudo */
 .chat-conteudo.premium .midia-item img,
 .chat-conteudo.premium .midia-item video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
   display: block;
 }
 
