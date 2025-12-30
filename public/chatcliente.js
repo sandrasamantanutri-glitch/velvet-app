@@ -276,35 +276,30 @@ function renderMensagem(msg) {
 =============================== */
 else if (msg.tipo === "pacote") {
 
-  const total =
-  msg.quantidade ??
-  msg.total ??
-  msg.qtd ??
-  0;
+  const quantidade = msg.quantidade || 4; // fallback visual
 
-div.innerHTML = `
-  <div class="chat-conteudo bloqueado premium pacote"
-       data-id="${msg.id}"
-       data-preco="${msg.preco}">
+  div.innerHTML = `
+    <div class="chat-conteudo bloqueado premium pacote"
+         data-id="${msg.id}"
+         data-preco="${msg.preco}">
 
-    <div class="pacote-fake-mosaic">
-      <div></div><div></div><div></div>
-      <div></div><div></div><div></div>
-    </div>
-
-    <div class="overlay-conteudo">
-      <div class="valor-conteudo">
-        Desbloquear · R$ ${msg.preco}
+      <div class="pacote-grid pacote-${quantidade}">
+        ${Array.from({ length: quantidade })
+          .map(() => `<div class="pacote-item"></div>`)
+          .join("")}
       </div>
+
+      <div class="overlay-conteudo">
+        <div class="valor-conteudo">
+          Desbloquear · R$ ${msg.preco}
+        </div>
+      </div>
+
     </div>
+  `;
 
-  </div>
-`;
-
-  const btn = div.querySelector(".pacote-btn");
-  btn.onclick = () => {
-    console.log("comprar pacote", msg.id);
-    // aqui entra o fluxo de pagamento
+  div.querySelector(".pacote").onclick = () => {
+    console.log("Comprar pacote", msg.id);
   };
 }
 
