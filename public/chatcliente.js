@@ -265,74 +265,64 @@ function renderMensagem(msg) {
       ? "msg msg-modelo"
       : "msg msg-cliente";
 
-  /* ===============================
-     ✉️ TEXTO
-  =============================== */
+  /* ✉️ TEXTO */
   if (msg.tipo === "texto") {
     div.innerText = msg.text;
   }
 
- /* ===============================
-   📦 CONTEÚDO (1 ou N mídias)
-=============================== */
-else if (msg.tipo === "conteudo") {
+  /* 📦 CONTEÚDO */
+  else if (msg.tipo === "conteudo") {
 
-  const liberado = !msg.bloqueado;
+    const liberado = !msg.bloqueado;
 
-  // 🔓 LIBERADO (gratuito ou comprado)
-  if (liberado && Array.isArray(msg.midias)) {
-    div.innerHTML = `
-      <div class="chat-conteudo livre premium"
-           data-id="${msg.id}">
-
-        <div class="pacote-grid">
-          ${msg.midias.map(m => `
-            <div class="midia-item"
-            onclick="abrirConteudo('${m.url}', '${m.tipo_media}', ${msg.id})">
-              ${
-                m.tipo_media === "video"
-                  ? `<video src="${m.url}" muted></video>`
-                  : `<img src="${m.url}" />`
-              }
-            </div>
-          `).join("")}
+    // 🔓 LIBERADO
+    if (liberado && Array.isArray(msg.midias)) {
+      div.innerHTML = `
+        <div class="chat-conteudo livre premium"
+             data-id="${msg.id}">
+          <div class="pacote-grid">
+            ${msg.midias.map(m => `
+              <div class="midia-item"
+                   onclick="abrirConteudo('${m.url}', '${m.tipo_media}', ${msg.id})">
+                ${
+                  m.tipo_media === "video"
+                    ? `<video src="${m.url}" muted></video>`
+                    : `<img src="${m.url}" />`
+                }
+              </div>
+            `).join("")}
+          </div>
         </div>
+      `;
+    }
 
-      </div>
-    `;
+    // 🔒 BLOQUEADO
+    else {
+      div.innerHTML = `
+        <div class="chat-conteudo bloqueado premium"
+             data-id="${msg.id}"
+             data-preco="${msg.preco}">
+          <div class="pacote-grid">
+            ${Array(msg.quantidade ?? 1).fill("").map(() =>
+              `<div class="midia-item placeholder"></div>`
+            ).join("")}
+          </div>
+
+          <div class="conteudo-info">
+            <span class="status-bloqueado">🔒 Bloqueado</span>
+            <span class="preco-bloqueado">
+              R$ ${Number(msg.preco).toFixed(2)}
+            </span>
+            <button class="btn-desbloquear">Desbloquear</button>
+          </div>
+        </div>
+      `;
+    }
   }
 
-  // 🔒 BLOQUEADO
-  else {
-    div.innerHTML = `
-      <div class="chat-conteudo bloqueado premium"
-           data-id="${msg.id}"
-           data-preco="${msg.preco}">
-
-        <div class="pacote-grid">
-          ${Array(msg.quantidade ?? 1).fill("").map(() =>
-            `<div class="midia-item placeholder"></div>`
-          ).join("")}
-        </div>
-
-        <!-- 🧾 INFO ABAIXO DA FOTO -->
-        <div class="conteudo-info">
-          <span class="status-bloqueado">🔒 Bloqueado</span>
-          <span class="preco-bloqueado">
-            R$ ${Number(msg.preco).toFixed(2)}
-          </span>
-          <button class="btn-desbloquear">Desbloquear</button>
-        </div>
-
-      </div>
-    `;
-  }
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
 }
-}
-
-/* ✅ adiciona no chat */
-chat.appendChild(div);
-chat.scrollTop = chat.scrollHeight;
 
   
 function marcarNaoVisto(msg) {

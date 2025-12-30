@@ -341,19 +341,6 @@ const messageId = result.rows[0].id;
       }
     }
 
- const sidModelo = onlineModelos[modelo_id];
-if (sidModelo) {
-  io.to(sidModelo).emit("newMessage", {
-    id: messageId,
-    cliente_id,
-    modelo_id,
-    sender,
-    tipo: "texto",
-    text,
-    created_at: new Date()
-  });
-}
-
  // 7️⃣ META UPDATE (status / horário)
  // 🔥 ENVIA PARA A SALA (CLIENTE + MODELO)
 io.to(sala).emit("newMessage", {
