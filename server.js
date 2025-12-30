@@ -392,7 +392,7 @@ socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
         AND modelo_id = $2
         AND unread_for = $3
       `,
-      [cliente_id, modelo_id, socket.user.role]
+      [cliente_id, modelo_id]
     );
 
     // 2️⃣ busca histórico
@@ -413,7 +413,7 @@ WHERE m.cliente_id = $1
 ORDER BY m.created_at ASC
 
       `,
-      [cliente_id, modelo_id, socket.user.role]
+      [cliente_id, modelo_id]
     );
 
     for (const msg of result.rows) {
