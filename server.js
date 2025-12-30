@@ -390,7 +390,6 @@ socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
       SET has_unread = false
       WHERE cliente_id = $1
         AND modelo_id = $2
-        AND unread_for = $3
       `,
       [cliente_id, modelo_id]
     );
