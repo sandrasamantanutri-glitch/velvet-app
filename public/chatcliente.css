@@ -600,6 +600,41 @@ html, body {
   font-weight: 700;
 }
 
+/* ===============================
+   📦 GRID DE MÍDIAS NO CHAT
+=============================== */
+
+.pacote-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* 🔥 4 por linha */
+  gap: 4px;
+
+  width: 100%;
+  height: 100%;
+  padding: 4px;
+  box-sizing: border-box;
+}
+
+/* cada miniatura */
+.pacote-grid .midia-item {
+  width: 100%;
+  aspect-ratio: 1 / 1;   /* quadrado */
+  overflow: hidden;
+  border-radius: 10px;
+  position: relative;
+  background: #eee;
+}
+
+/* imagem / vídeo */
+.pacote-grid .midia-item img,
+.pacote-grid .midia-item video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+
 
 
 
