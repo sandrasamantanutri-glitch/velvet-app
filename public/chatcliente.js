@@ -290,10 +290,10 @@ else if (msg.tipo === "pacote") {
       </div>
 
       <div class="overlay-conteudo pacote-overlay">
-        <button class="btn-desbloquear">
-          Desbloquear
-        </button>
-
+<button class="btn-desbloquear">
+  <span class="btn-titulo">Desbloquear</span>
+  <span class="btn-sub">${msg.quantidade} conteúdos</span>
+</button>
         <div class="valor-conteudo">
           R$ ${Number(msg.preco).toFixed(2)}
         </div>

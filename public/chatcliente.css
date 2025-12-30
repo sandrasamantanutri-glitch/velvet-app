@@ -306,6 +306,27 @@ html, body {
   box-shadow: 0 4px 12px rgba(123,44,255,0.45);
 }
 
+.btn-desbloquear {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-align: center;
+}
+
+.btn-desbloquear .btn-titulo {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.btn-desbloquear .btn-sub {
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+
 .popup {
   position: fixed;
   inset: 0;
