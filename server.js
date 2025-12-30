@@ -451,7 +451,6 @@ socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
   }
 }
 
-
     // 4️⃣ envia histórico
     socket.emit("chatHistory", result.rows);
 
@@ -460,65 +459,53 @@ socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
   }
 });
 
-socket.on("sendConteudo", async ({ cliente_id, modelo_id, conteudo_id, preco }) => {
+socket.on("sendConteudo", async ({ cliente_id, modelo_id, conteudos_ids, preco }) => {
   if (!socket.user || socket.user.role !== "modelo") return;
+
+  if (!conteudos_ids || !conteudos_ids.length) return;
 
   const sala = `chat_${cliente_id}_${modelo_id}`;
 
   try {
-    const conteudoResult = await db.query(
-      "SELECT url, tipo FROM conteudos WHERE id = $1 AND user_id = $2",
-      [conteudo_id, modelo_id]
-    );
-
-    if (!conteudoResult.rows.length) return;
-
-    const conteudo = conteudoResult.rows[0];
-
-    const insertResult = await db.query(
+    // 1️⃣ cria mensagem única
+    const msgRes = await db.query(
       `
-      INSERT INTO messages
-        (cliente_id, modelo_id, sender, tipo, conteudo_id, preco, visto)
-      VALUES ($1, $2, 'modelo', 'conteudo', $3, $4, false)
+      INSERT INTO messages (cliente_id, modelo_id, sender, tipo, created_at)
+      VALUES ($1, $2, 'modelo', 'conteudo', NOW())
       RETURNING id
       `,
-      [cliente_id, modelo_id, conteudo_id, preco]
+      [cliente_id, modelo_id]
     );
 
-    const messageId = insertResult.rows[0].id;
-    const gratuito = Number(preco) === 0;
+    const message_id = msgRes.rows[0].id;
 
-    const payloadCliente = {
-      id: messageId,
+    // 2️⃣ associa N conteúdos
+    for (const conteudo_id of conteudos_ids) {
+      await db.query(
+        `
+        INSERT INTO messages_conteudos (message_id, conteudo_id)
+        VALUES ($1, $2)
+        `,
+        [message_id, conteudo_id]
+      );
+    }
+
+    // 3️⃣ envia realtime (sem URLs para cliente)
+    io.to(sala).emit("newMessage", {
+      id: message_id,
       cliente_id,
       modelo_id,
       sender: "modelo",
       tipo: "conteudo",
-      conteudo_id,
-      preco,
-      gratuito,
-      pago: false,
-      visto: false,
+      quantidade: conteudos_ids.length,
       created_at: new Date()
-    };
-
-    const payloadModelo = {
-      ...payloadCliente,
-      url: conteudo.url,
-      tipo_media: conteudo.tipo,
-      bloqueado: !gratuito
-    };
-
-    // 🔒 cliente
-    socket.to(sala).emit("newMessage", payloadCliente);
-
-    // 👩‍💻 modelo
-    io.to(socket.id).emit("newMessage", payloadModelo);
+    });
 
   } catch (err) {
     console.error("❌ Erro sendConteudo:", err);
   }
- });
+});
+
 
 });
 // ===============================

@@ -614,9 +614,15 @@ function confirmarEnvioConteudo() {
   const sala = `chat_${cliente_id}_${modelo_id}`;
   socket.emit("joinChat", { sala });
 
+  socket.emit("sendConteudo", {
+    cliente_id,
+    modelo_id,
+    conteudos_ids,   // ← 1 ou vários
+    preco
+  });
+
   fecharPopupConteudos();
 }
-
 
 function abrirPreviewConteudo(url, tipo) {
   const popup = document.getElementById("popupConteudos");
