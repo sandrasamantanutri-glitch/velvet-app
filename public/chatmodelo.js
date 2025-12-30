@@ -33,12 +33,16 @@ socket.on("chatHistory", mensagens => {
 
 // 💬 NOVA MENSAGEM
 socket.on("newMessage", msg => {
-  if (!cliente_id) return;
-  if (Number(msg.cliente_id) !== Number(cliente_id)) return;
+  // 🔥 se ainda não escolheu cliente, ignora só mensagens que NÃO são da modelo
+  if (!cliente_id && msg.sender !== "modelo") return;
+
+  // 🔒 se tem cliente ativo, filtra normalmente
+  if (cliente_id && Number(msg.cliente_id) !== Number(cliente_id)) return;
 
   renderMensagem(msg);
   atualizarStatusPorResponder([msg]);
 });
+
 
 socket.on("conteudoVisto", ({ message_id }) => {
   const el = document.querySelector(
