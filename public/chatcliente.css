@@ -547,6 +547,71 @@ html, body {
   transform: scale(1.05);
 }
 
+/* ===============================
+   📦 PACOTE BACKSTAGE — CLIENTE
+=============================== */
+
+.pacote-backstage.cliente {
+  width: 240px;
+  height: 200px;
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  background: #ddd;
+}
+
+/* mosaico FAKE (placeholders) */
+.pacote-fake-mosaic {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: 70px;
+}
+
+.pacote-fake-mosaic div {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(200,200,200,0.8),
+      rgba(160,160,160,0.9)
+    );
+}
+
+/* overlay inferior */
+.pacote-backstage.cliente .pacote-overlay {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 12px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  background: linear-gradient(
+    to top,
+    rgba(0,0,0,0.85),
+    rgba(0,0,0,0)
+  );
+}
+
+.pacote-texto {
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* botão */
+.pacote-btn {
+  background: #7B2CFF;
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+
 
 
 

@@ -271,6 +271,40 @@ function renderMensagem(msg) {
   if (msg.tipo === "texto") {
     div.innerText = msg.text;
   }
+/* ===============================
+   📦 PACOTE (CLIENTE)
+=============================== */
+else if (msg.tipo === "pacote") {
+
+  const total = msg.quantidade;
+
+  div.innerHTML = `
+    <div class="pacote-backstage cliente">
+
+      <div class="pacote-fake-mosaic">
+        <div></div><div></div><div></div>
+        <div></div><div></div><div></div>
+      </div>
+
+      <div class="pacote-overlay">
+        <span class="pacote-texto">
+          desbloquear ${total} conteúdos
+        </span>
+
+        <button class="pacote-btn">
+          Desbloquear · R$ ${msg.preco}
+        </button>
+      </div>
+
+    </div>
+  `;
+
+  const btn = div.querySelector(".pacote-btn");
+  btn.onclick = () => {
+    console.log("comprar pacote", msg.id);
+    // aqui entra o fluxo de pagamento
+  };
+}
 
   /* ===============================
      📦 CONTEÚDO
