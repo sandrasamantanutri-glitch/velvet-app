@@ -610,6 +610,11 @@ socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
         msg.quantidade = itens.rows.length;
       }
     }
+    for (const msg of result.rows) {
+  if (msg.tipo === "pacote") {
+    msg.bloqueado = !(msg.preco === 0 || msg.gratuito === true);
+  }
+}
 
     // 4️⃣ envia histórico
     socket.emit("chatHistory", result.rows);
