@@ -598,10 +598,12 @@ html, body {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  background: 
-    radial-gradient(circle at 30% 30%, rgba(183, 160, 255, 0.45), transparent 35%),
-    radial-gradient(circle at 70% 70%, rgba(140, 108, 255, 0.35), transparent 40%),
-    linear-gradient(135deg, #f3f0ff, #e6e1ff);
+
+  background: linear-gradient(
+    135deg,
+    rgba(228, 205, 234, 0.851),
+    rgba(234, 230, 235, 0.689)
+  );
 }
 
 /* remove selo PACOTE antigo */
