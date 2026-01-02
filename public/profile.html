@@ -6,27 +6,24 @@
     <link rel="stylesheet" href="profile.css">
     <link rel="stylesheet" href="header.css">
 </head>
-
 <body data-page="profile">
-    <header class="app-header">
-  <div class="header-inner">
 
-    <img src="assets/velvet.png" class="logo-app" alt="Logo">
+  <!-- HEADER GLOBAL -->
+  <div id="header-container"></div>
 
-    <div class="profile-menu-top">
-      <button id="btnMensagem">
-        <img src="assets/chat.png" alt="Chat">
-        <span id="badgeUnread" class="badge-unread hidden">0</span>
-      </button>
-
-      <button id="menuBtn" class="menu-btn">☰</button>
-      <div id="userMenu" class="menu-superior"></div>
-    </div>
-
+  <!-- HEADER / CAPA -->
+  <div id="headerCapa" class="headerCapa">
+    <img id="profileCapa" src="/assets/capaDefault.jpg" class="capaImg">
+    <input type="file" id="inputCapa" accept="image/*" hidden>
   </div>
-</header>
 
-
+  <!-- AVATAR -->
+  <div class="avatar-area">
+    <div class="avatar-container">
+      <img id="profileAvatar" src="/assets/avatarDefault.png" class="avatar">
+      <input type="file" id="inputAvatar" accept="image/*" hidden>
+    </div>
+  </div>
 <style>
 /* ===== HEADER GLOBAL ===== */
 .app-header {
