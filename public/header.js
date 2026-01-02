@@ -32,16 +32,20 @@ function carregarHeader() {
 document.addEventListener("DOMContentLoaded", () => {
   initUsuario();
   carregarHeader();
+
+  // 🔔 unread global (cliente)
+  atualizarUnreadClienteHeader();
+  initHeaderSocket();
 });
+
 async function initUsuario() {
   const token = localStorage.getItem("token");
-
   if (!token) return;
 
   try {
     const res = await fetch("/api/me", {
       headers: {
-        Authorization: "Bearer " + localStorage.getItem("token")
+        Authorization: "Bearer " + token
       }
     });
 
@@ -49,19 +53,19 @@ async function initUsuario() {
 
     const user = await res.json();
 
-    // 🔑 guarda apenas para UX (não segurança)
+    // 🔑 guarda apenas para UX
     localStorage.setItem("role", user.role);
     localStorage.setItem("nome", user.nome);
 
-
-    console.log("✅ Usuário autenticado:", role);
+    console.log("✅ Usuário autenticado:", user.role);
 
   } catch (e) {
-  console.warn("Sessão inválida no header");
-  localStorage.removeItem("role");
-  localStorage.removeItem("nome");
+    console.warn("Sessão inválida no header");
+    localStorage.removeItem("role");
+    localStorage.removeItem("nome");
+  }
 }
-}
+
 
 // =========================================================
 // MENUS POR ROLE
@@ -188,6 +192,31 @@ function atualizarBadgeHeader(total) {
     badge.classList.remove("hidden");
   }
 }
+
+async function atualizarUnreadClienteHeader() {
+  const role = localStorage.getItem("role");
+  if (role !== "cliente") return;
+
+  const token = localStorage.getItem("token");
+  if (!token) return;
+
+  try {
+    const res = await fetch("/api/chat/unread/cliente", {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
+
+    if (!res.ok) return;
+
+    const unreadIds = await res.json();
+
+    atualizarBadgeHeader(unreadIds.length);
+  } catch (e) {
+    console.warn("Erro ao buscar unread cliente");
+  }
+}
+
 
 
 
