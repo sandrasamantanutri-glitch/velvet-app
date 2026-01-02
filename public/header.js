@@ -36,6 +36,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // 🔔 unread global (cliente)
   atualizarUnreadClienteHeader();
   initHeaderSocket();
+
+  initHeaderSocket();
+  initHeaderSocketModelo();
 });
 
 async function initUsuario() {
@@ -65,6 +68,7 @@ async function initUsuario() {
     localStorage.removeItem("nome");
   }
 }
+
 
 
 // =========================================================
@@ -193,6 +197,27 @@ function atualizarBadgeHeader(total) {
   }
 }
 
+function initHeaderSocketModelo() {
+  const token = localStorage.getItem("token");
+  const role = localStorage.getItem("role");
+
+  if (!token || role !== "modelo") return;
+
+  const socket = io({
+    transports: ["websocket"]
+  });
+
+  socket.on("connect", () => {
+    socket.emit("auth", { token });
+  });
+
+  // 🔔 qualquer mensagem nova para a modelo
+  socket.on("unreadUpdate", ({ modelo_id }) => {
+    atualizarUnreadModeloHeader();
+  });
+}
+
+
 async function atualizarUnreadClienteHeader() {
   const role = localStorage.getItem("role");
   if (role !== "cliente") return;
@@ -216,6 +241,32 @@ async function atualizarUnreadClienteHeader() {
     console.warn("Erro ao buscar unread cliente");
   }
 }
+
+async function atualizarUnreadModeloHeader() {
+  const role = localStorage.getItem("role");
+  if (role !== "modelo") return;
+
+  const token = localStorage.getItem("token");
+  if (!token) return;
+
+  try {
+    const res = await fetch("/api/chat/unread/modelo", {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
+
+    if (!res.ok) return;
+
+    const unreadIds = await res.json();
+
+    // unreadIds = [cliente_id, cliente_id, ...]
+    atualizarBadgeHeader(unreadIds.length);
+  } catch (e) {
+    console.warn("Erro ao buscar unread modelo");
+  }
+}
+
 
 
 
