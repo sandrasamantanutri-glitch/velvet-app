@@ -520,6 +520,10 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: auto !important;
+  height: auto !important;
+  max-width: 200px;
+
 }
 
 /* overlay central */
@@ -685,22 +689,3 @@ html, body {
   height: 100%;
   object-fit: cover;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
