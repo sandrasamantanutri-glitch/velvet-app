@@ -37,8 +37,6 @@ document.addEventListener("DOMContentLoaded", () => {
   atualizarUnreadClienteHeader();
   atualizarUnreadModeloHeader();
 
-  initHeaderSocket();
-
 });
 
 async function initUsuario() {
