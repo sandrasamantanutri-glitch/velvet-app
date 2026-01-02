@@ -309,13 +309,13 @@ html, body {
 /* ===============================
    🔒 CONTEÚDO BLOQUEADO
 =============================== */
-.chat-conteudo.bloqueado img,
-.chat-conteudo.bloqueado video {
+body.role-cliente .chat-conteudo.bloqueado img,
+body.role-cliente .chat-conteudo.bloqueado video {
   filter: blur(18px) brightness(.7);
   transform: scale(1.08);
 }
 
-.chat-conteudo.bloqueado::after {
+body.role-cliente .chat-conteudo.bloqueado::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -323,7 +323,7 @@ html, body {
   z-index: 2;
 }
 
-.chat-conteudo.bloqueado::before {
+body.role-cliente .chat-conteudo.bloqueado::before {
   content: "🔒";
   position: absolute;
   top: 50%;
@@ -333,7 +333,7 @@ html, body {
   z-index: 3;
 }
 
-.chat-conteudo.bloqueado * {
+body.role-cliente .chat-conteudo.bloqueado * {
   pointer-events: none;
 }
 
@@ -399,3 +399,18 @@ html, body {
 .btn-desbloquear:hover {
   transform: scale(1.05);
 }
+
+/* MODELO SEMPRE VÊ LIVRE */
+body.role-modelo .chat-conteudo.bloqueado {
+  filter: none;
+}
+
+body.role-modelo .chat-conteudo.bloqueado::before,
+body.role-modelo .chat-conteudo.bloqueado::after {
+  display: none;
+}
+
+body.role-modelo .chat-conteudo.bloqueado * {
+  pointer-events: auto;
+}
+
