@@ -75,7 +75,7 @@ async function initUsuario() {
 const menuCliente = `
   <div class="menu-header">Menu</div>
   <button onclick="location.href='clientHome.html'">Feed de Modelos</button>
-  <button onclick="location.href='chatcliente.html'">Mensagens</button>
+  <button onclick="location.href='chatcliente.html'">Chat</button>
   <button onclick="location.href='cliente-dados.html'">Meus Dados</button>
   <button class="logout-btn" onclick="logout()">Sair</button>
 `;

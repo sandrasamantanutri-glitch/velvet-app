@@ -516,23 +516,49 @@ html, body {
 
 /* CARD BLOQUEADO LIMPO (CLIENTE) */
 .chat-conteudo.bloqueado.premium {
-  background: linear-gradient(135deg, #efe8ff, #d9ccff);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: relative;
+  width: 150px;
+  height: 150px;
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
 }
 
-/* overlay central */
-.chat-conteudo.bloqueado.premium .overlay-conteudo {
+.chat-conteudo.bloqueado img,
+.chat-conteudo.bloqueado video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+
+  filter: blur(18px) brightness(0.7);
+  transform: scale(1.08);
+}
+
+/* overlay escuro */
+.chat-conteudo.bloqueado::after {
+  content: "";
   position: absolute;
   inset: 0;
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 2;
 }
+
+/* cadeado central */
+.chat-conteudo.bloqueado::before {
+  content: "🔒";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 32px;
+  z-index: 3;
+}
+
+/* impedir abrir */
+.chat-conteudo.bloqueado * {
+  pointer-events: none;
+}
+
 
 /* preço */
 .chat-conteudo.bloqueado.premium .valor-conteudo {
@@ -599,13 +625,6 @@ html, body {
 .preco-bloqueado {
   font-weight: 700;
 }
-/* =====================================================
-   🔥 OVERRIDE FINAL – GRID QUADRADO VELVET (FORÇADO)
-   Resolve:
-   - bolinhas redondas ❌
-   - espaço vazio ❌
-   - não preencher card ❌
-===================================================== */
 
 /* força card correto */
 .chat-conteudo.premium {

@@ -150,7 +150,7 @@ async function carregarListaModelos() {
   lista.innerHTML = "";
 
   if (!modelos.length) {
-    lista.innerHTML = "<li>Você não tem modelos VIP.</li>";
+    lista.innerHTML = "<li>Você não é VIP em nenhuma modelo.</li>";
     return;
   }
 
