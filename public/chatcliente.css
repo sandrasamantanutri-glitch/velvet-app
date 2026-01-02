@@ -281,10 +281,6 @@ html, body {
 /* ===============================
    📦 CARD BASE DE CONTEÚDO
 =============================== */
-body.role-cliente .msg:has(.chat-conteudo) {
-  align-self: flex-end;
-}
-
 .chat-conteudo {
   width: 150px;
   height: 150px;
@@ -337,7 +333,7 @@ body.role-cliente .chat-conteudo.bloqueado::before {
   z-index: 3;
 }
 
-body.role-cliente .chat-conteudo.bloqueado * {
+ body.role-cliente .chat-conteudo.bloqueado * {
   pointer-events: none;
 }
 
@@ -403,103 +399,3 @@ body.role-cliente .chat-conteudo.bloqueado * {
 .btn-desbloquear:hover {
   transform: scale(1.05);
 }
-
-.msg:has(.chat-conteudo) {
-  padding: 0;
-  background: none;
-  box-shadow: none;
-  max-width: unset;
-}
-
-/* =========================================
-   🔧 FIX ESTRUTURAL — CHAT CLIENTE
-   (igual ao chat da modelo)
-========================================= */
-
-.chat-conteudo {
-  max-width: 220px;
-  display: flex;
-  flex-direction: column;
-}
-
-/* tudo empilhado */
-.chat-conteudo > * {
-  width: 100%;
-}
-
-/* container da mídia */
-.chat-conteudo .conteudo-media,
-.chat-conteudo .pacote-grid {
-  width: 100%;
-  aspect-ratio: 2 / 2;
-  overflow: hidden;
-}
-
-/* imagem / vídeo */
-.chat-conteudo img,
-.chat-conteudo video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* ==================================================
-   🔥 PATCH DEFINITIVO — CHAT CLIENTE
-   Remove conflitos de tamanho fixo
-================================================== */
-
-/* ❌ REMOVE altura fixa quando é pacote */
-.chat-conteudo.premium {
-  height: auto !important;
-  align-items: stretch;
-  justify-content: flex-start;
-}
-
-/* 📦 área da mídia tem altura própria */
-.chat-conteudo .conteudo-media {
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  overflow: hidden;
-}
-
-/* 📦 grid nunca colapsa */
-.chat-conteudo .pacote-grid {
-  width: 100%;
-  height: 100%;
-}
-
-/* 📦 itens sempre visíveis */
-.chat-conteudo .midia-item {
-  width: 100%;
-  height: 100%;
-}
-
-/* ℹ️ info SEMPRE fora da área da mídia */
-.chat-conteudo .conteudo-info {
-  position: static;
-  margin-top: 8px;
-}
-
-/* ❌ NÃO centralizar conteúdo de pacote */
-.chat-conteudo.premium {
-  display: flex;
-  flex-direction: column;
-}
-
-
-
-
-/* MODELO SEMPRE VÊ LIVRE */
-body.role-modelo .chat-conteudo.bloqueado {
-  filter: none;
-}
-
-body.role-modelo .chat-conteudo.bloqueado::before,
-body.role-modelo .chat-conteudo.bloqueado::after {
-  display: none;
-}
-
-body.role-modelo .chat-conteudo.bloqueado * {
-  pointer-events: auto;
-}
-
