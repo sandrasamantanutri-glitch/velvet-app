@@ -48,17 +48,6 @@ html, body {
 }
 
 /* =========================
-   LAYOUT GERAL
-========================= */
-
-.chat-layout {
-  flex: 1;
-  display: flex;
-  gap: 20px;
-  min-height: 0;
-}
-
-/* =========================
    PAINEL PADRÃO
 ========================= */
 
@@ -124,6 +113,11 @@ html, body {
   margin-bottom: 8px;
   border-bottom: 1px solid #b9a9e6;
   flex-shrink: 0;
+}
+
+.chat-layout,
+.chat-area {
+  min-height: 0;
 }
 
 /* =========================
