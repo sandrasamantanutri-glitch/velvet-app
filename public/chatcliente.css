@@ -281,6 +281,10 @@ html, body {
 /* ===============================
    📦 CARD BASE DE CONTEÚDO
 =============================== */
+body.role-cliente .msg:has(.chat-conteudo) {
+  align-self: flex-end;
+}
+
 .chat-conteudo {
   width: 150px;
   height: 150px;
@@ -406,6 +410,39 @@ body.role-cliente .chat-conteudo.bloqueado * {
   box-shadow: none;
   max-width: unset;
 }
+
+/* =========================================
+   🔧 FIX ESTRUTURAL — CHAT CLIENTE
+   (igual ao chat da modelo)
+========================================= */
+
+.chat-conteudo {
+  max-width: 220px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* tudo empilhado */
+.chat-conteudo > * {
+  width: 100%;
+}
+
+/* container da mídia */
+.chat-conteudo .conteudo-media,
+.chat-conteudo .pacote-grid {
+  width: 100%;
+  aspect-ratio: 2 / 2;
+  overflow: hidden;
+}
+
+/* imagem / vídeo */
+.chat-conteudo img,
+.chat-conteudo video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 
 
 /* MODELO SEMPRE VÊ LIVRE */
