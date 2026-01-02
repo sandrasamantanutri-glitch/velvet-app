@@ -186,11 +186,29 @@ function switchToRegister() {
   updateModal();
 }
 
+  const modal = document.getElementById("ageModal");
+
+  if (!localStorage.getItem("ageConfirmed")) {
+    modal.classList.remove("hidden");
+  }
+
+  document.getElementById("ageYes").onclick = () => {
+    localStorage.setItem("ageConfirmed", "true");
+    modal.classList.add("hidden");
+  };
+
+  document.getElementById("ageNo").onclick = () => {
+    window.location.href = "https://google.com";
+  };
+
+
+
 </script>
 
       <div class="footer-links">
         <a href="#">Contato</a>
         <a href="#">Termos</a>
+        <a href="#">Privacidade</a>
         <a href="#" onclick="openRegisterFromFooter()">Criar conta</a>
       </div>
 
@@ -228,7 +246,23 @@ function switchToRegister() {
     <button class="modal-close" onclick="closeLoginModal()">✕</button>
   </div>
 </div>
+<div id="ageModal" class="age-modal hidden">
+  <div class="age-box">
+    <h2>Conteúdo adulto</h2>
+    <p>Você confirma que tem 18 anos ou mais?</p>
 
+    <div class="age-actions">
+      <button id="ageYes">Sim, tenho 18+</button>
+      <button id="ageNo">Não</button>
+    </div>
+
+    <p class="age-legal">
+      Ao continuar, você aceita os
+      <a href="/terms.html" target="_blank">Termos</a> e a
+      <a href="/privacy.html" target="_blank">Privacidade</a>.
+    </p>
+  </div>
+</div>
 
 </body>
 </html>

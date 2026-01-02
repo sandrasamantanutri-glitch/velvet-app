@@ -1,0 +1,28 @@
+body {
+  background: linear-gradient(135deg, #0d0d0f, #1a0f2e);
+  font-family: 'Poppins', sans-serif;
+  color: #fff;
+}
+
+.legal-container {
+  max-width: 900px;
+  margin: 60px auto;
+  padding: 40px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 20px;
+}
+
+h1 {
+  color: #7B2CFF;
+  margin-bottom: 20px;
+}
+
+h2 {
+  margin-top: 30px;
+  color: #c9b6ff;
+}
+
+p {
+  line-height: 1.6;
+  opacity: 0.9;
+}
