@@ -136,22 +136,29 @@ function ligarBotoesPerfilModelo() {
   const btnAvatar = document.getElementById("btnAlterarAvatar");
   const btnCapa   = document.getElementById("btnAlterarCapa");
 
-  btnAvatar?.addEventListener("click", () => {
-    const input = document.getElementById("inputAvatar");
-    if (!input) {
-      console.warn("❌ inputAvatar não encontrado");
-      return;
-    }
-    input.click();
+  // se não existe, sai (ex: menu cliente)
+  if (!btnAvatar || !btnCapa) return;
+
+  const role = localStorage.getItem("role");
+  const page = document.body.dataset.page; // "profile" ou undefined
+
+  // 🔒 regra principal
+  if (role !== "modelo" || page !== "profile") {
+    btnAvatar.style.display = "none";
+    btnCapa.style.display   = "none";
+    return;
+  }
+
+  // ✅ só aqui eles ficam visíveis e funcionais
+  btnAvatar.style.display = "block";
+  btnCapa.style.display   = "block";
+
+  btnAvatar.addEventListener("click", () => {
+    document.getElementById("inputAvatar")?.click();
   });
 
-  btnCapa?.addEventListener("click", () => {
-    const input = document.getElementById("inputCapa");
-    if (!input) {
-      console.warn("❌ inputCapa não encontrado");
-      return;
-    }
-    input.click();
+  btnCapa.addEventListener("click", () => {
+    document.getElementById("inputCapa")?.click();
   });
 }
 
