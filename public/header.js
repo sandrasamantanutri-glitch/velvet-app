@@ -1,40 +1,33 @@
 // ===============================
 // SOCKET GLOBAL (1x só)
 // ===============================
-function ligarBotoesPerfilModelo() {
-  const btnAvatar = document.getElementById("btnAlterarAvatar");
-  const btnCapa   = document.getElementById("btnAlterarCapa");
-
-  // 🔒 segurança
-  if (!btnAvatar || !btnCapa) return;
-
-  const role = localStorage.getItem("role");
-  const page = document.body.dataset.page; // "profile" ou undefined
-
-  // ❌ NÃO é perfil da modelo → esconder
-  if (role !== "modelo" || page !== "profile") {
-    btnAvatar.style.display = "none";
-    btnCapa.style.display   = "none";
+function carregarHeader() {
+  // evita duplicar
+  if (document.querySelector(".app-header")) {
+    montarMenuPorRole();
+    initHeaderMenu();
+    ligarBotoesPerfilModelo();
     return;
   }
 
-  // ✅ É perfil da própria modelo → ativar
-  btnAvatar.style.display = "block";
-  btnCapa.style.display   = "block";
+  const container = document.getElementById("header-container");
+  if (!container) {
+    console.warn("❌ header-container não encontrado");
+    return;
+  }
 
-  btnAvatar.addEventListener("click", () => {
-    const input = document.getElementById("inputAvatar");
-    if (!input) return;
-    input.click();
-  });
+  fetch("/header.html")
+    .then(res => res.text())
+    .then(html => {
+      container.insertAdjacentHTML("afterbegin", html);
 
-  btnCapa.addEventListener("click", () => {
-    const input = document.getElementById("inputCapa");
-    if (!input) return;
-    input.click();
-  });
+      // 🔑 AGORA os elementos existem
+      montarMenuPorRole();
+      initHeaderMenu();
+      ligarBotoesPerfilModelo(); 
+    })
+    .catch(err => console.error("Erro ao carregar header:", err));
 }
-
 
 document.addEventListener("DOMContentLoaded", () => {
   initUsuario();
