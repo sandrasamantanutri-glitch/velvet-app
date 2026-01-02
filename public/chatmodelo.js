@@ -70,6 +70,7 @@ socket.on("unreadUpdate", ({ cliente_id, modelo_id }) => {
       
       organizarListaClientes();
     }
+    contarChatsNaoLidosModelo();
   });
 });
 
@@ -142,6 +143,7 @@ async function carregarListaClientes() {
 
     // 🔔 aplica badge + tempo
     atualizarBadgeComTempo(li);
+    contarChatsNaoLidosModelo();
 
     // ===============================
     // 🖱️ CLICK NO CLIENTE
@@ -180,6 +182,7 @@ async function carregarListaClientes() {
       const sala = `chat_${cliente_id}_${modelo_id}`;
       socket.emit("joinChat", { sala });
       socket.emit("getHistory", { cliente_id, modelo_id });
+      setTimeout(contarChatsNaoLidosModelo, 50);
     };
 
     lista.appendChild(li);
@@ -711,4 +714,12 @@ function abrirPreviewConteudo(url, tipo) {
   }
 
   modal.classList.add("open");
+}
+
+function contarChatsNaoLidosModelo() {
+  const itens = document.querySelectorAll(
+    "#listaClientes li[data-status='nao-visto'], #listaClientes li[data-status='novo']"
+  );
+
+  atualizarBadgeHeader(itens.length);
 }

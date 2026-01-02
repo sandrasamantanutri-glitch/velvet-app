@@ -50,6 +50,7 @@ socket.on("newMessage", msg => {
   // ❗ SÓ marca "Não visto" se EU NÃO fui quem enviou
   if (msg.sender !== "cliente") {
     atualizarItemListaComNovaMensagem(msg);
+    contarChatsNaoLidosCliente();
   }
 });
 
@@ -185,6 +186,8 @@ async function carregarListaModelos() {
       const sala = `chat_${cliente_id}_${modelo_id}`;
       socket.emit("joinChat", { sala });
       socket.emit("getHistory", { cliente_id, modelo_id });
+
+      contarChatsNaoLidosCliente();
     };
 
     lista.appendChild(li);
@@ -437,6 +440,15 @@ function organizarListaClientes() {
   // cliente NÃO usa essa função
   // deixamos vazia só pra não quebrar
 }
+
+function contarChatsNaoLidosCliente() {
+  const itens = document.querySelectorAll(
+    "#listaModelos li.nao-visto, #listaModelos li[data-status='nao-visto']"
+  );
+
+  atualizarBadgeHeader(itens.length);
+}
+
 
 
 setInterval(() => {

@@ -173,6 +173,23 @@ function abrirConteudos() {
   window.location.href = "/conteudos.html";
 }
 
+// =========================================================
+// 🔔 BADGE GLOBAL DE MENSAGENS NÃO LIDAS
+// =========================================================
+function atualizarBadgeHeader(total) {
+  const badge = document.getElementById("badgeUnread");
+  if (!badge) return;
+
+  if (!total || total <= 0) {
+    badge.classList.add("hidden");
+    badge.innerText = "0";
+  } else {
+    badge.innerText = total > 9 ? "9+" : total;
+    badge.classList.remove("hidden");
+  }
+}
+
+
 
 // =========================================================
 // LOGOUT
