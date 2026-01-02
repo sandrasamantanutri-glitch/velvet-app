@@ -231,14 +231,6 @@ body {
     margin: 0;
 }
 
-.midiaThumb {
-    width: 100px;
-    height: 80px;
-    object-fit: cover;
-    border-radius: 12px;
-    margin: 10px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-}
 .midiaCard {
     background: #fff;
     border-radius: 14px;
@@ -619,6 +611,13 @@ body.role-cliente .only-cliente {
 /* =========================================
    🔒 MÍDIA BLOQUEADA (CLIENTE NÃO VIP)
 ========================================= */
+.midiaThumb {
+  width: 100%;
+  height: 250px;
+  object-fit: cover;
+  border-radius: 15px;
+}
+
 .midiaCard.bloqueada {
   position: relative;
   overflow: hidden;

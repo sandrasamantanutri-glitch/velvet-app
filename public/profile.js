@@ -191,12 +191,18 @@ function carregarFeedPublico() {
     headers: { Authorization: "Bearer " + token }
   })
     .then(r => r.json())
-    .then(feed => {
-      if (!Array.isArray(feed)) return;
+    .then(data => {
+      // 🔎 SUPORTE A QUALQUER FORMATO
+      const feed = Array.isArray(data) ? data : data.feed || data.midias || [];
+
       listaMidias.innerHTML = "";
-      feed.forEach(item => adicionarMidia(item.id, item.url));
+
+      feed.forEach(item => {
+        adicionarMidia(item.id, item.url);
+      });
     });
 }
+
 
 // ===============================
 // BIO
