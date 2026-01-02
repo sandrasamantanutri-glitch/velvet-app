@@ -65,12 +65,11 @@ socket.on("conteudoVisto", ({ message_id }) => {
 });
 
 
-socket.on("unreadUpdate", ({ cliente_id, modelo_id, unread }) => {
-
+socket.on("unreadUpdate", ({ modelo_id, unread }) => {
   if (!unread) return;
 
   const li = [...document.querySelectorAll("#listaModelos li")]
-    .find(el => Number(el.dataset.modeloId) === modelo_id);
+    .find(el => Number(el.dataset.modeloId) === Number(modelo_id));
 
   if (!li) return;
 
@@ -79,6 +78,9 @@ socket.on("unreadUpdate", ({ cliente_id, modelo_id, unread }) => {
   const badge = li.querySelector(".badge");
   badge.innerText = "Não visto";
   badge.classList.remove("hidden");
+
+  // 🔔 ATUALIZA HEADER
+  contarChatsNaoLidosCliente();
 });
 
 // ===============================
@@ -186,11 +188,10 @@ async function carregarListaModelos() {
       const sala = `chat_${cliente_id}_${modelo_id}`;
       socket.emit("joinChat", { sala });
       socket.emit("getHistory", { cliente_id, modelo_id });
-
-      contarChatsNaoLidosCliente();
     };
 
     lista.appendChild(li);
+    contarChatsNaoLidosCliente();
   });
 }
 
