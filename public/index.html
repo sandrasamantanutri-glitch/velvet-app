@@ -11,9 +11,7 @@
 
 <body>
 
-
 <div class="page-wrapper">
-
   <div class="landing">
 
     <!-- CAPA -->
@@ -27,190 +25,30 @@
       <img src="assets/velvet.png" class="logo" alt="Velvet">
 
       <div class="login-box">
-        <button class="btn btn-creator" onclick="selectRole('creator')">
-          Sou Influencer 
+        <button class="btn btn-creator" onclick="selectRole()">
+          Sou Influencer
         </button>
 
-        <button class="btn btn-member" onclick="selectRole('client')">
+        <button class="btn btn-member" onclick="selectRole()">
           Sou Membro
         </button>
       </div>
 
-      <!-- INPUTS -->
-<script>
-let modalMode = "login"; // login | register
-
-function selectRole(role) {
-  openLoginModal();
-}
-
-function openLoginModal() {
-  modalMode = "login";
-  updateModal();
-  document.getElementById("loginModal").classList.remove("hidden");
-}
-
-function closeLoginModal() {
-  document.getElementById("loginModal").classList.add("hidden");
-}
-
-function switchToRegister() {
-  modalMode = "register";
-  updateModal();
-}
-
-function switchToLogin() {
-  modalMode = "login";
-  updateModal();
-}
-
-function updateModal() {
-  const title = document.getElementById("modalTitle");
-  const submit = document.getElementById("modalSubmit");
-  const roleSelect = document.getElementById("registerRole");
-  const switchLogin = document.getElementById("switchToLogin");
-  const switchRegister = document.querySelector(".modal-switch");
-
-  if (modalMode === "login") {
-    title.textContent = "Entrar no Velvet";
-    submit.textContent = "Entrar";
-    submit.onclick = login;
-    roleSelect.classList.add("hidden");
-    switchRegister.classList.remove("hidden");
-    switchLogin.classList.add("hidden");
-  } else {
-    title.textContent = "Criar conta no Velvet";
-    submit.textContent = "Criar conta";
-    submit.onclick = register;
-    roleSelect.classList.remove("hidden");
-    switchRegister.classList.add("hidden");
-    switchLogin.classList.remove("hidden");
-  }
-}
-
-async function login() {
-  const email = document.getElementById("loginEmail").value.trim();
-  const senha = document.getElementById("loginSenha").value.trim();
-
-  if (!email || !senha) {
-    alert("Preencha email e senha");
-    return;
-  }
-
-  try {
-    const res = await fetch("/api/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ email, senha })
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      alert(data.erro || "Erro no login");
-      return;
-    }
-
-    // 🔐 SALVAR TOKEN
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("role", data.role);
-
-    // 🔁 REDIRECIONAR PELO ROLE
-    if (data.role === "modelo") {
-      window.location.href = "/profile.html";
-    } else if (data.role === "cliente") {
-      window.location.href = "/clientHome.html";
-    } else {
-      window.location.href = "/";
-    }
-
-  } catch (err) {
-    console.error(err);
-    alert("Erro de conexão com o servidor");
-  }
-}
-
-
-async function register() {
-  const email = document.getElementById("loginEmail").value;
-  const senha = document.getElementById("loginSenha").value;
-  const role = document.getElementById("registerRole").value;
-
-  console.log("REGISTER DEBUG:", { email, senha, role });
-
-  if (!email || !senha || !role) {
-    alert("Preencha todos os campos");
-    return;
-  }
-
-  const res = await fetch("/api/register", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, senha, role,
-       nome: email.split("@")[0]
-     })
-  });
-
-  const data = await res.json();
-
-if (!res.ok) {
-  alert(data.erro || "Erro ao criar conta");
-  return;
-}
-
-alert("Conta criada com sucesso! Agora faça login.");
-switchToLogin();
-}
-
-function redirectUser(role) {
-  closeLoginModal();
-
-  if (role === "modelo") {
-    window.location.href = "/profile.html";
-  } else {
-    window.location.href = "/clientHome.html";
-  }
-}
-
-function openRegisterFromFooter() {
-  modalMode = "register";
-  updateModal();
-  document.getElementById("loginModal").classList.remove("hidden");
-}
-
-function switchToRegister() {
-  modalMode = "register";
-  document.getElementById("registerRole").value = "";
-  updateModal();
-}
-
-  const modal = document.getElementById("ageModal");
-
-  if (!localStorage.getItem("ageConfirmed")) {
-    modal.classList.remove("hidden");
-  }
-
-  document.getElementById("ageYes").onclick = () => {
-    localStorage.setItem("ageConfirmed", "true");
-    modal.classList.add("hidden");
-  };
-
-  document.getElementById("ageNo").onclick = () => {
-    window.location.href = "https://google.com";
-  };
-
-
-
-</script>
-
       <div class="footer-links">
         <a href="#">Contato</a>
-        <a href="#">Termos</a>
-        <a href="#">Privacidade</a>
-        <a href="#" onclick="openRegisterFromFooter()">Criar conta</a>
+        <a href="#" onclick="openLegalModal(event, '/terms.html')">Termos de Uso</a>
+        <a href="#" onclick="openLegalModal(event, '/policies.html')">Políticas de Utilização</a>
+        <a href="#" onclick="openLegalModal(event, '/privacy.html')">Políticas de Privacidade</a>
       </div>
+
+      <div class="footer-linksC">
+        <a href="#" onclick="startRegister()">Criar conta</a>
+      </div>
+
+    </div> <!-- landing-login -->
+
+  </div> <!-- landing -->
+</div> <!-- page-wrapper -->
 
 <!-- LOGIN / REGISTER MODAL -->
 <div id="loginModal" class="modal hidden">
@@ -222,20 +60,19 @@ function switchToRegister() {
     <input id="loginEmail" type="email" placeholder="Email">
     <input id="loginSenha" type="password" placeholder="Senha">
 
-    <!-- REGISTRO -->
     <select id="registerRole" class="hidden">
       <option value="">Escolha o tipo de conta</option>
       <option value="modelo">Sou Influencer</option>
       <option value="cliente">Sou Membro</option>
     </select>
 
-    <button id="modalSubmit" class="btn btn-primary" onclick="login()">
+    <button id="modalSubmit" class="btn btn-primary">
       Entrar
     </button>
 
     <p class="modal-switch">
       Não tem conta?
-      <span onclick="switchToRegister()">Criar conta</span>
+      <span onclick="startRegister()">Criar conta</span>
     </p>
 
     <p class="modal-switch hidden" id="switchToLogin">
@@ -246,23 +83,42 @@ function switchToRegister() {
     <button class="modal-close" onclick="closeLoginModal()">✕</button>
   </div>
 </div>
-<div id="ageModal" class="age-modal hidden">
-  <div class="age-box">
-    <h2>Conteúdo adulto</h2>
-    <p>Você confirma que tem 18 anos ou mais?</p>
 
-    <div class="age-actions">
-      <button id="ageYes">Sim, tenho 18+</button>
-      <button id="ageNo">Não</button>
-    </div>
-
-    <p class="age-legal">
-      Ao continuar, você aceita os
-      <a href="/terms.html" target="_blank">Termos</a> e a
-      <a href="/privacy.html" target="_blank">Privacidade</a>.
-    </p>
+<!-- MODAL LEGAL -->
+<div id="legalModal" class="legal-modal hidden">
+  <div class="legal-overlay" onclick="closeLegalModal()"></div>
+  <div class="legal-box">
+    <button class="legal-close" onclick="closeLegalModal()">×</button>
+    <iframe id="modalFrame"></iframe>
   </div>
 </div>
 
+<!-- AGE GATE +18 -->
+<div id="ageModal" class="modal hidden">
+  <div class="modal-overlay"></div>
+
+  <div class="modal-box">
+    <h2>Conteúdo exclusivo para maiores de 18 anos</h2>
+
+    <p>
+      Ao continuar, você declara que possui <strong>18 anos ou mais</strong>
+      e concorda com os Termos e Políticas da Velvet.
+    </p>
+
+    <div style="display:flex; gap:12px; margin-top:20px;">
+      <button class="btn btn-primary" onclick="confirmAge(true)">
+        Sou maior de 18
+      </button>
+
+      <button class="btn btn-secondary" onclick="confirmAge(false)">
+        Sou menor
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- SCRIPT -->
+<script src="script.js" defer></script>
 </body>
 </html>

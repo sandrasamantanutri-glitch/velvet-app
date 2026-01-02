@@ -1,50 +1,99 @@
 // ===============================
-// LOGIN / REGISTER — INDEX
+// INDEX — SCRIPT LIMPO (VELVET)
 // ===============================
 
-// Se já estiver logado, redireciona
+// 🔁 REDIRECIONAMENTO SE LOGADO
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
 
 if (token && role) {
-  if (role === "modelo") {
-    window.location.href = "/profile.html";
-  } else if (role === "cliente") {
-    window.location.href = "/clientHome.html";
+  window.location.href =
+    role === "modelo" ? "/profile.html" : "/clientHome.html";
+}
+
+// ===============================
+// ESTADO GLOBAL
+// ===============================
+let modalMode = "login";          // login | register
+let pendingAction = null;         // login | register
+
+// ===============================
+// AGE GATE
+// ===============================
+function openAgeGate(action) {
+  pendingAction = action;
+
+  const confirmed = localStorage.getItem("ageConfirmed");
+  if (confirmed === "true") {
+    proceedAfterAge();
+    return;
   }
+
+  closeAllModals();
+  document.getElementById("ageModal")?.classList.remove("hidden");
 }
 
-// ===============================
-// MODAL STATE
-// ===============================
-let modalMode = "login"; // login | register
+function confirmAge(isAdult) {
+  if (!isAdult) {
+    alert("Você precisa ter 18 anos ou mais para acessar a Velvet.");
+    return;
+  }
+
+  localStorage.setItem("ageConfirmed", "true");
+  document.getElementById("ageModal")?.classList.add("hidden");
+  proceedAfterAge();
+}
+
+function proceedAfterAge() {
+  if (pendingAction === "login") {
+    openLoginModal();
+  }
+
+  if (pendingAction === "register") {
+    openLoginModal();
+    setRegisterMode();
+  }
+
+  pendingAction = null;
+}
+
+function closeAllModals() {
+  document.getElementById("loginModal")?.classList.add("hidden");
+  document.getElementById("legalModal")?.classList.add("hidden");
+  document.getElementById("ageModal")?.classList.add("hidden");
+}
+
 
 // ===============================
-// UI CONTROLS
+// MODAL LOGIN / REGISTER
 // ===============================
-function selectRole() {
+window.selectRole = function () {
   openLoginModal();
-}
+};
+
+window.startRegister = function () {
+  openAgeGate("register");
+};
 
 function openLoginModal() {
   modalMode = "login";
   updateModal();
-  document.getElementById("loginModal").classList.remove("hidden");
+  document.getElementById("loginModal")?.classList.remove("hidden");
 }
 
-function closeLoginModal() {
-  document.getElementById("loginModal").classList.add("hidden");
-}
+window.closeLoginModal = function () {
+  document.getElementById("loginModal")?.classList.add("hidden");
+};
 
-function switchToRegister() {
+function setRegisterMode() {
   modalMode = "register";
   updateModal();
 }
 
-function switchToLogin() {
+window.switchToLogin = function () {
   modalMode = "login";
   updateModal();
-}
+};
 
 function updateModal() {
   const title = document.getElementById("modalTitle");
@@ -74,93 +123,66 @@ function updateModal() {
 // LOGIN
 // ===============================
 async function login() {
-  const email = document.getElementById("loginEmail").value.trim();
-  const senha = document.getElementById("loginSenha").value.trim();
+  const email = loginEmail.value.trim();
+  const senha = loginSenha.value.trim();
 
   if (!email || !senha) {
     alert("Preencha email e senha");
     return;
   }
 
-  try {
-    const res = await fetch("/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, senha })
-    });
+  const res = await fetch("/api/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, senha, role })
+  });
 
-    const data = await res.json();
+  const data = await res.json();
+  if (!res.ok) return alert(data.erro);
 
-    if (!res.ok) {
-      alert(data.erro || "Erro no login");
-      return;
-    }
+  localStorage.setItem("token", data.token);
+  localStorage.setItem("role", data.role);
 
-    // 🔐 SALVAR SESSÃO
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("role", data.role);
-
-    // 🔁 REDIRECIONAR
-    if (data.role === "modelo") {
-      window.location.href = "/profile.html";
-    } else {
-      window.location.href = "/clientHome.html";
-    }
-
-  } catch (err) {
-    console.error(err);
-    alert("Erro de conexão com o servidor");
-  }
+  window.location.href =
+    data.role === "modelo" ? "/profile.html" : "/clientHome.html";
 }
 
 // ===============================
 // REGISTER
 // ===============================
 async function register() {
-  const email = document.getElementById("loginEmail").value.trim();
-  const senha = document.getElementById("loginSenha").value.trim();
-  const role  = document.getElementById("registerRole").value;
+  const email = loginEmail.value.trim();
+  const senha = loginSenha.value.trim();
+  const role  = registerRole.value;
 
   if (!email || !senha || !role) {
     alert("Preencha todos os campos");
     return;
   }
 
-  try {
-    const res = await fetch("/api/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email,
-        senha,
-        role,
-        nome: email.split("@")[0]
-      })
-    });
+  const res = await fetch("/api/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email,
+      senha,
+      role,
+      nome: email.split("@")[0],
+      ageConfirmed: true
+    })
+  });
 
-    const data = await res.json();
+  const data = await res.json();
+  if (!res.ok) return alert(data.erro);
 
-    if (!res.ok) {
-      alert(data.erro || "Erro ao criar conta");
-      return;
-    }
-
-    alert("Conta criada com sucesso! Agora faça login.");
-    switchToLogin();
-
-  } catch (err) {
-    console.error(err);
-    alert("Erro de conexão com o servidor");
-  }
+  alert("Conta criada com sucesso! Faça login.");
+  switchToLogin();
 }
 
-// ===============================
-// LOGOUT (caso reutilize)
-// ===============================
-function logout() {
-  localStorage.clear();
+
+window.logout = function () {
+  localStorage.removeItem("token");
+  localStorage.removeItem("role");
+  localStorage.removeItem("ageConfirmed"); // 🔞 força confirmar de novo
   window.location.href = "/index.html";
-}
-
-
-
+};

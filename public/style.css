@@ -9,6 +9,11 @@ body {
   background: #f6f7fb;
 }
 
+.hidden {
+  display: none !important;
+  pointer-events: none !important;
+}
+
 /* =========================
    CENTRALIZA A PÁGINA
 ========================= */
@@ -148,6 +153,21 @@ body {
   text-decoration: underline;
 }
 
+.footer-linksC {
+  margin-top: 30px;
+  text-align: center;
+}
+
+.footer-linksC a {
+  font-size: 13px;
+  color: #7B2CFF;
+  text-decoration: none;
+  margin: 0 10px;
+}
+
+.footer-linksC a:hover {
+  text-decoration: underline;
+}
 /* =========================
    UTILIDADES
 ========================= */
@@ -300,57 +320,51 @@ body {
   margin: 0 10px;
   opacity: 0.4;
 }
-
-.age-modal {
+/* MODAL LEGAL */
+.legal-modal {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.85);
+  background: rgba(0,0,0,0.6);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
+  z-index: 99999;
+}
+.legal-overlay {
+  position: absolute;
+  inset: 0;
 }
 
-.age-box {
-  background: #120c1f;
-  padding: 40px;
-  border-radius: 24px;
-  text-align: center;
-  max-width: 420px;
+.legal-modal.hidden {
+  display: none;
 }
 
-.age-box h2 {
-  color: #7B2CFF;
+.legal-box {
+  width: 90%;
+  max-width: 900px;
+  height: 80%;
+  background: #fff;
+  border-radius: 18px;
+  position: relative;
+  overflow: hidden;
 }
 
-.age-actions {
-  display: flex;
-  gap: 15px;
-  margin: 20px 0;
-}
-
-.age-actions button {
-  flex: 1;
-  padding: 12px;
-  border-radius: 12px;
+.legal-box iframe {
+  width: 100%;
+  height: 100%;
   border: none;
-  font-weight: 600;
+}
+
+.legal-close {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  font-size: 26px;
+  background: none;
+  border: none;
   cursor: pointer;
 }
 
-#ageYes {
-  background: #7B2CFF;
-  color: #fff;
-}
-
-#ageNo {
-  background: #444;
-  color: #fff;
-}
-
-.hidden {
-  display: none;
-}
 
 
 

@@ -1145,43 +1145,60 @@ app.post(
 //ROTA USER
 app.post("/api/register", async (req, res) => {
   try {
-    const { email, senha, role, nome } = req.body;
+    const { email, senha, role, nome, ageConfirmed } = req.body;
 
+    // 🔒 validação básica
     if (!email || !senha || !role) {
       return res.status(400).json({ erro: "Dados inválidos" });
     }
 
+    // 🔞 validação obrigatória +18
+    if (ageConfirmed !== true) {
+      return res.status(400).json({
+        erro: "Confirmação de idade obrigatória (+18)"
+      });
+    }
+
     const hash = await bcrypt.hash(senha, 10);
 
+    // 👤 cria usuário + salva declaração +18
     const userResult = await db.query(
-      `INSERT INTO public.users (email, password_hash, role)
-       VALUES ($1, $2, $3)
-       RETURNING id`,
+      `
+      INSERT INTO public.users
+        (email, password_hash, role, age_confirmed, age_confirmed_at)
+      VALUES
+        ($1, $2, $3, true, NOW())
+      RETURNING id
+      `,
       [email, hash, role]
     );
 
     const userId = userResult.rows[0].id;
 
+    // 👠 modelo
     if (role === "modelo") {
       const nomeModelo = nome || email.split("@")[0];
 
       await db.query(
-  `INSERT INTO public.modelos (user_id, nome)
-   VALUES ($1, $2)`,
-  [userId, nomeModelo]
-);
-
+        `
+        INSERT INTO public.modelos (user_id, nome)
+        VALUES ($1, $2)
+        `,
+        [userId, nomeModelo]
+      );
     }
 
+    // 👤 cliente
     if (role === "cliente") {
       await db.query(
-  `INSERT INTO public.clientes (user_id, nome)
-   VALUES ($1, $2)`,
-  [userId, nome || email.split("@")[0]]
-);
+        `
+        INSERT INTO public.clientes (user_id, nome)
+        VALUES ($1, $2)
+        `,
+        [userId, nome || email.split("@")[0]]
+      );
     }
 
-    // ✅ FINAL LIMPO
     return res.status(201).json({ sucesso: true });
 
   } catch (err) {
@@ -1195,6 +1212,7 @@ app.post("/api/register", async (req, res) => {
     return res.status(500).json({ erro: "Erro interno no servidor" });
   }
 });
+
 
 //END POINT DE LOGIN
 app.post("/api/login", async (req, res) => {
