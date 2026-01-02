@@ -72,9 +72,7 @@ function iniciarPerfil() {
 
   if (modo === "publico") {
     carregarPerfilPublico();
-  }
-  window.__CLIENTE_VIP__ = isVip;
-  carregarFeedPublico();
+}
 }
 
 async function carregarPerfil() {
@@ -104,25 +102,32 @@ async function carregarPerfilPublico() {
 
   aplicarPerfilNoDOM(modelo);
 
-  // 🔐 VERIFICAR VIP (persistente)
+  // 🔐 VERIFICAR VIP
   const vipRes = await fetch(`/api/vip/status/${modelo_id}`, {
     headers: { Authorization: "Bearer " + token }
   });
 
   let isVip = false;
 
- if (vipRes.ok) {
-  const vipData = await vipRes.json();
-  if (vipData.vip) {
-    isVip = true;
+  if (vipRes.ok) {
+    const vipData = await vipRes.json();
+    if (vipData.vip) {
+      isVip = true;
 
-    if (btnVip) {
-      btnVip.textContent = "VIP ativo 💜";
-      btnVip.disabled = true;
+      if (btnVip) {
+        btnVip.textContent = "VIP ativo 💜";
+        btnVip.disabled = true;
+      }
     }
   }
+
+  // ✅ 1️⃣ DEFINE VIP GLOBAL (ESSENCIAL)
+  window.__CLIENTE_VIP__ = isVip;
+
+  // ✅ 2️⃣ AGORA SIM carrega o feed
+  carregarFeedPublico();
 }
-}
+
 
 // ===============================
 // CHAT
@@ -348,15 +353,6 @@ function adicionarMidia(id, url) {
   el.className = "midiaThumb";
   if (isVideo) el.muted = true;
 
-  if (role === "modelo") {
-  const btnExcluir = document.createElement("button");
-  btnExcluir.className = "btnExcluirMidia";
-  btnExcluir.textContent = "Excluir";
-
-  btnExcluir.onclick = () => excluirMidia(id, card);
-  card.appendChild(btnExcluir);
-}
-
   // 🔒 BLOQUEIO PARA CLIENTE NÃO VIP
   if (role === "cliente" && !window.__CLIENTE_VIP__) {
     card.classList.add("bloqueada");
@@ -371,6 +367,14 @@ function adicionarMidia(id, url) {
   }
 
   card.appendChild(el);
+  if (role === "modelo") {
+  const btnExcluir = document.createElement("button");
+  btnExcluir.className = "btnExcluirMidia";
+  btnExcluir.textContent = "Excluir";
+
+  btnExcluir.onclick = () => excluirMidia(id, card);
+  card.appendChild(btnExcluir);
+}
   listaMidias.appendChild(card);
 }
 
