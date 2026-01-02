@@ -107,15 +107,21 @@ async function carregarPerfilPublico() {
     headers: { Authorization: "Bearer " + token }
   });
 
-  if (vipRes.ok) {
-    const vipData = await vipRes.json();
-    if (vipData.vip && btnVip) {
+  let isVip = false;
+
+ if (vipRes.ok) {
+  const vipData = await vipRes.json();
+  if (vipData.vip) {
+    isVip = true;
+
+    if (btnVip) {
       btnVip.textContent = "VIP ativo 💜";
       btnVip.disabled = true;
     }
   }
 }
 window.__CLIENTE_VIP__ = isVip;
+}
 
 // ===============================
 // CHAT
