@@ -3,6 +3,7 @@
 // ===============================
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
+window.__CLIENTE_VIP__ = false;
 
 if (!token) {
   window.location.href = "/index.html";
@@ -71,8 +72,9 @@ function iniciarPerfil() {
 
   if (modo === "publico") {
     carregarPerfilPublico();
-    carregarFeedPublico();
   }
+  window.__CLIENTE_VIP__ = isVip;
+  carregarFeedPublico();
 }
 
 async function carregarPerfil() {
@@ -120,7 +122,6 @@ async function carregarPerfilPublico() {
     }
   }
 }
-window.__CLIENTE_VIP__ = isVip;
 }
 
 // ===============================
@@ -346,6 +347,15 @@ function adicionarMidia(id, url) {
   el.src = url;
   el.className = "midiaThumb";
   if (isVideo) el.muted = true;
+
+  if (role === "modelo") {
+  const btnExcluir = document.createElement("button");
+  btnExcluir.className = "btnExcluirMidia";
+  btnExcluir.textContent = "Excluir";
+
+  btnExcluir.onclick = () => excluirMidia(id, card);
+  card.appendChild(btnExcluir);
+}
 
   // 🔒 BLOQUEIO PARA CLIENTE NÃO VIP
   if (role === "cliente" && !window.__CLIENTE_VIP__) {
