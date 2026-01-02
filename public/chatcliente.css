@@ -686,48 +686,23 @@ html, body {
   height: 100%;
   object-fit: cover;
 }
+/* ==================================================
+   🔥 CORREÇÃO DEFINITIVA DE LARGURA
+   bloqueado = largura exata da mídia
+================================================== */
 
-/* =========================================
-   🔒 PADRONIZA TAMANHO DO BLOQUEADO
-   info = largura da mídia
-========================================= */
-
-/* container da mensagem com conteúdo */
-.msg:has(.chat-conteudo) {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end; /* cliente */
-}
-
-/* mídia define a largura base */
+/* a mídia define o tamanho real */
 .chat-conteudo {
-  width: 180px;        /* 🔥 ajuste aqui se quiser maior/menor */
+  width: fit-content !important;
+  max-width: none !important;
 }
 
-/* info acompanha exatamente a mídia */
-.chat-conteudo + .conteudo-info,
+/* pacote NÃO limita largura */
+.chat-conteudo.premium {
+  max-width: none !important;
+}
+
+/* info herda exatamente a largura da mídia */
 .chat-conteudo .conteudo-info {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-/* card roxo do bloqueado */
-.conteudo-info {
-  margin-top: 8px;
-  padding: 10px 12px;
-
-  background: #ede4ff;
-  border-radius: 16px;
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
-/* botão não estica */
-.btn-desbloquear {
-  width: 100%;
-  max-width: 160px;
+  inline-size: 100%;
 }
