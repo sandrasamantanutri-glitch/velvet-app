@@ -7,7 +7,6 @@ function carregarHeader() {
     montarMenuPorRole();
     initHeaderMenu();
     ligarBotoesPerfilModelo();
-    ligarLogoHome(); 
     return;
   }
 
@@ -26,7 +25,6 @@ function carregarHeader() {
       montarMenuPorRole();
       initHeaderMenu();
       ligarBotoesPerfilModelo(); 
-      ligarLogoHome(); 
     })
     .catch(err => console.error("Erro ao carregar header:", err));
 }
@@ -140,26 +138,6 @@ function initHeaderMenu() {
   menu.addEventListener("click", e => {
     e.stopPropagation();
   });
-}
-
-function ligarLogoHome() {
-  const logo = document.querySelector(".logo-app");
-  if (!logo) return;
-
-  logo.style.cursor = "pointer";
-
-  logo.onclick = () => {
-    const role = localStorage.getItem("role");
-
-    if (role === "modelo") {
-      window.location.href = "profile.html";
-    } else if (role === "cliente") {
-      window.location.href = "clientHome.html";
-    } else {
-      // fallback seguro
-      window.location.href = "index.html";
-    }
-  };
 }
 
 
@@ -289,6 +267,25 @@ async function atualizarUnreadModeloHeader() {
     console.warn("Erro ao buscar unread modelo");
   }
 }
+
+// =========================================================
+// 🏠 LOGO → HOME POR ROLE (delegação global)
+// =========================================================
+document.addEventListener("click", (e) => {
+  const logo = e.target.closest(".logo-app");
+  if (!logo) return;
+
+  const role = localStorage.getItem("role");
+
+  if (role === "modelo") {
+    window.location.href = "/profile.html";
+  } else if (role === "cliente") {
+    window.location.href = "/clientHome.html";
+  } else {
+    window.location.href = "/index.html";
+  }
+});
+
 
 // =========================================================
 // LOGOUT
