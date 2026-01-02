@@ -22,12 +22,6 @@ const modo = role === "cliente" ? "publico" : "privado";
 // ===============================
 let modelo_id = localStorage.getItem("modelo_id");
 
-// 🔒 Guard APENAS para perfil público
-if (modo === "publico" && (!modelo_id || modelo_id === "undefined")) {
-  alert("Modelo não identificada.");
-  window.location.href = "/clientHome.html";
-  throw new Error("modelo_id ausente no perfil público");
-}
 
 const avatarImg  = document.getElementById("profileAvatar");
 const capaImg    = document.getElementById("profileCapa");
