@@ -29,6 +29,7 @@ const MODELOS_FILE = "modelos.json";
 const COMPRAS_FILE = "compras.json";
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
+const bodyParser = require("body-parser");
 const Stripe = require("stripe");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -1082,30 +1083,33 @@ app.post("/api/pagamento/criar", async (req, res) => {
   }
 });
 
-app.post("/webhook/stripe", bodyParser.raw({ type: "application/json" }), (req, res) => {
-  const sig = req.headers["stripe-signature"];
+app.post(
+  "/webhook/stripe",
+  express.raw({ type: "application/json" }),
+  (req, res) => {
+    const sig = req.headers["stripe-signature"];
+    let event;
 
-  let event;
-  try {
-    event = stripe.webhooks.constructEvent(
-      req.body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
-  } catch (err) {
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+    try {
+      event = stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
+    } catch (err) {
+      console.error("❌ Webhook inválido:", err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    if (event.type === "payment_intent.succeeded") {
+      const intent = event.data.object;
+      console.log("✅ Pagamento confirmado:", intent.id);
+    }
+
+    res.json({ received: true });
   }
+);
 
-  if (event.type === "payment_intent.succeeded") {
-    const intent = event.data.object;
-    const { tipo, referencia_id } = intent.metadata;
-
-    if (tipo === "conteudo") liberarConteudo(referencia_id);
-    if (tipo === "vip") ativarVIP(referencia_id);
-  }
-
-  res.json({ received: true });
-});
 
 
 //DADOS CLIENTE
