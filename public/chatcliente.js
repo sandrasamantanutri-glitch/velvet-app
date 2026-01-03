@@ -16,6 +16,7 @@ let cliente_id = null;
 let modelo_id = null;
 let chatAtivo = null;
 const mensagensRenderizadas = new Set();
+const stripe = Stripe("pk_live_xxxxx");
 
 // 🔐 SOCKET AUTH
 socket.on("connect", () => {
@@ -114,6 +115,32 @@ document.addEventListener("DOMContentLoaded", async () => {
 // ===============================
 // FUNÇÕES
 // ===============================
+
+async function pagar(valor, tipo, referencia_id) {
+  const res = await fetch("/api/pagamentos/criar", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ valor, tipo, referencia_id })
+  });
+
+  const { clientSecret } = await res.json();
+
+  const elements = stripe.elements({ clientSecret });
+  const paymentElement = elements.create("payment");
+  paymentElement.mount("#payment-element");
+
+  document.getElementById("confirmarPagamento").onclick = async () => {
+    const { error } = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: window.location.href
+      }
+    });
+
+    if (error) alert(error.message);
+  };
+}
+
 function atualizarListaComMeta({ cliente_id, modelo_id, sender, created_at }) {
   const minhaRole = localStorage.getItem("role");
 

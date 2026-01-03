@@ -29,6 +29,8 @@ const MODELOS_FILE = "modelos.json";
 const COMPRAS_FILE = "compras.json";
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
+const Stripe = require("stripe");
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -1055,7 +1057,58 @@ app.put("/api/modelo/bio", authModelo, async (req, res) => {
 });
 
 
-// 📄 DADOS DO CLIENTE
+//STRIPE
+app.post("/api/pagamento/criar", async (req, res) => {
+  try {
+    const { valor, descricao } = req.body;
+
+    if (!valor) {
+      return res.status(400).json({ erro: "Valor inválido" });
+    }
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(valor * 100), // centavos
+      currency: "brl",
+      payment_method_types: ["card", "pix"],
+      description: descricao || "Pagamento Velvet"
+    });
+
+    res.json({
+      clientSecret: paymentIntent.client_secret
+    });
+  } catch (err) {
+    console.error("❌ Stripe erro:", err);
+    res.status(500).json({ erro: "Erro ao criar pagamento" });
+  }
+});
+
+app.post("/webhook/stripe", bodyParser.raw({ type: "application/json" }), (req, res) => {
+  const sig = req.headers["stripe-signature"];
+
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(
+      req.body,
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
+  } catch (err) {
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  if (event.type === "payment_intent.succeeded") {
+    const intent = event.data.object;
+    const { tipo, referencia_id } = intent.metadata;
+
+    if (tipo === "conteudo") liberarConteudo(referencia_id);
+    if (tipo === "vip") ativarVIP(referencia_id);
+  }
+
+  res.json({ received: true });
+});
+
+
+//DADOS CLIENTE
 app.post("/api/cliente/dados", auth, async (req, res) => {
   try {
     if (req.user.role !== "cliente") {
