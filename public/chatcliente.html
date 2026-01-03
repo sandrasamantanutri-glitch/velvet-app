@@ -105,18 +105,23 @@
 <!-- ================= STRIPE ================= -->
 
 <div id="paymentModal" class="modal hidden">
+  <div class="modal-backdrop"></div>
+
   <div class="modal-box">
     <button class="modal-close" id="fecharPagamento">×</button>
 
     <h2>Desbloquear conteúdo</h2>
 
-    <div id="payment-element"></div>
+    <div id="payment-element-container">
+      <div id="payment-element"></div>
+    </div>
 
     <button id="confirmarPagamento" class="btn-primary">
       Confirmar pagamento
     </button>
   </div>
 </div>
+
 
 
 

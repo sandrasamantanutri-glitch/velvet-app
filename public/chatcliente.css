@@ -687,7 +687,43 @@ html, body {
   object-fit: cover;
 }
 
-/*modal pagamentos */
+/* MODAL BASE */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;          /* 🔥 MUITO IMPORTANTE */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* BACKDROP */
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+}
+
+/* CAIXA */
+.modal-box {
+  position: relative;
+  z-index: 10000;
+  background: #fff;
+  width: 420px;
+  max-width: 95%;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+/* STRIPE CONTAINER */
+#payment-element-container {
+  position: relative;
+  z-index: 10001;
+  margin-top: 16px;
+}
+
+/* ESCONDIDO */
 .modal.hidden {
   display: none;
 }
+
