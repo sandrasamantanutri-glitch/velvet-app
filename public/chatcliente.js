@@ -133,40 +133,6 @@ abrirPagamentoChat(preco, messageId);
 
 async function abrirPagamentoChat(valor, conteudoId) {
 
-  if (!valor) {
-    alert("Erro: valor inválido do conteúdo.");
-    return;
-  }
-
-  document.getElementById("paymentModal").classList.remove("hidden");
-
-  const res = await fetch("/api/pagamento/criar", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      valor: Number(valor),
-      descricao: `Conteúdo ${conteudoId}`
-    })
-  });
-
-  if (!res.ok) {
-    const erro = await res.json();
-    console.error("Erro pagamento:", erro);
-    alert("Erro ao iniciar pagamento");
-    return;
-  }
-
-  const { clientSecret } = await res.json();
-
-  elements = stripe.elements({ clientSecret });
-
-  const paymentElement = elements.create("payment");
-  paymentElement.mount("#payment-element");
-}
-
-
-async function abrirPagamentoChat(valor, conteudoId) {
-
   if (!valor || !conteudoId) {
     alert("Erro: dados inválidos do conteúdo.");
     return;
@@ -176,10 +142,13 @@ async function abrirPagamentoChat(valor, conteudoId) {
 
   const res = await fetch("/api/pagamento/criar", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + localStorage.getItem("token")
+    },
     body: JSON.stringify({
       valor: Number(valor),
-      message_id: conteudoId   // 🔥 ESSENCIAL
+      message_id: conteudoId
     })
   });
 
@@ -193,10 +162,10 @@ async function abrirPagamentoChat(valor, conteudoId) {
   const { clientSecret } = await res.json();
 
   elements = stripe.elements({ clientSecret });
-
   const paymentElement = elements.create("payment");
   paymentElement.mount("#payment-element");
 }
+
 
 
 
@@ -545,6 +514,18 @@ function contarChatsNaoLidosCliente() {
 
   atualizarBadgeHeader(itens.length);
 }
+document.getElementById("confirmarPagamento").onclick = async () => {
+  const { error } = await stripe.confirmPayment({
+    elements,
+    confirmParams: {
+      return_url: window.location.href
+    }
+  });
+
+  if (error) {
+    alert(error.message);
+  }
+};
 
 
 
