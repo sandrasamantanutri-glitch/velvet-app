@@ -729,7 +729,7 @@ function renderConteudosPopup(conteudos) {
 
     const div = document.createElement("div");
     div.className = "preview-item" + (jaVisto ? " visto" : "");
-    div.dataset.id = c.id;
+    div.dataset.conteudoId = c.id;
 
     div.innerHTML = `
       ${c.tipo === "video"
