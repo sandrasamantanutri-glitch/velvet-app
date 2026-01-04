@@ -33,15 +33,22 @@ socket.on("connect", () => {
 socket.on("chatHistory", mensagens => {
   const chat = document.getElementById("chatBox");
   chat.innerHTML = "";
-  if (m.tipo === "conteudo") {
-  if (m.visto === true || Number(m.preco) === 0) {
-    conteudosLiberados.add(Number(m.id));
-  }
-}
-  mensagens.forEach(m => renderMensagem(m));
+
+  mensagens.forEach(m => {
+
+    // 🔓 marca como liberado ao carregar histórico
+    if (m.tipo === "conteudo") {
+      if (m.visto === true || Number(m.preco) === 0) {
+        conteudosLiberados.add(Number(m.id));
+      }
+    }
+
+    renderMensagem(m);
+  });
 
   atualizarStatusPorResponder(mensagens);
 });
+
 
 socket.on("chatMetaUpdate", data => {
   atualizarListaComMeta(data);
