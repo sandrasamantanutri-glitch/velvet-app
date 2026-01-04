@@ -456,12 +456,16 @@ function abrirConteudo(url, tipo, messageId) {
   const modal = document.getElementById("modalConteudo");
   const midia = document.getElementById("modalMidia");
 
-  midia.innerHTML =
-    tipo === "video"
-      ? `<video src="${url}" controls autoplay></video>`
-      : `<img src="${url}" />`;
+  midiaBox.innerHTML = "";
+  midiaBox.className = "";
 
-  modal.classList.remove("hidden");
+  midiaBox.innerHTML = midias.map(m =>
+    m.tipo === "video"
+    ? `<video src="${m.url}" controls autoplay></video>`
+    : `<img src="${m.url}" />`
+).join("");
+
+modal.classList.remove("hidden");
 
   function atualizarBadgeComTempo(li) {
   // vazio por enquanto
