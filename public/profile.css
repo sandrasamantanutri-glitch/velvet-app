@@ -968,7 +968,11 @@ body.role-cliente .only-cliente {
   color: #7B2CFF;
 }
 
-.cartao-preco {
+.pix-preco {
+color: #7B2CFF !important;
+}
+
+.pix-title {
 color: #7B2CFF !important;
 }
 
