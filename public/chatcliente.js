@@ -250,15 +250,28 @@ async function pagarComPix() {
 
   const data = await res.json();
 
+  // 🔥 MOSTRA O VALOR NO POPUP
+  document.getElementById("pixValor").innerText =
+    "R$ " + Number(pagamentoAtual.valor).toFixed(2);
+
   document.getElementById("pixQr").src =
     "data:image/png;base64," + data.qrCode;
 
-  document.getElementById("pixCopia").value = data.copiaCola;
+  document.getElementById("pixCopia").value =
+    data.copiaCola;
 
   document
     .getElementById("popupPix")
     .classList.remove("hidden");
 }
+
+function copiarPix() {
+  const textarea = document.getElementById("pixCopia");
+  textarea.select();
+  document.execCommand("copy");
+  alert("Código Pix copiado!");
+}
+
 
 function fecharPopupPix() {
   document.getElementById("popupPix").classList.add("hidden");
