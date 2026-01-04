@@ -964,6 +964,14 @@ body.role-cliente .only-cliente {
    💜 BOTÃO CONFIRMAR VIP – VELVET
 ========================================= */
 
+.btn-pagamento pix {
+  color: #7B2CFF;
+}
+
+.cartao-preco {
+color: #7B2CFF !important;
+}
+
 #paymentModal .btn-confirmar-desbloqueio {
   display: block;
   margin: 24px auto 0; /* 👈 CENTRALIZA */
