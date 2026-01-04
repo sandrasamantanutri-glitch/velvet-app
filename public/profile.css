@@ -654,3 +654,44 @@ body.role-cliente .only-cliente {
   pointer-events: none;
 }
 
+/* ===============================
+   POPUP PIX – CENTRALIZADO
+=============================== */
+
+.popup-pix {
+  position: fixed;
+  inset: 0;
+  z-index: 999999; /* acima do header */
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.popup-pix.hidden {
+  display: none;
+}
+
+.popup-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+}
+
+.popup-box {
+  position: relative;
+  z-index: 1;
+
+  background: #fff;
+  border-radius: 18px;
+  padding: 30px;
+  width: 100%;
+  max-width: 380px;
+
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+
+  animation: popupFadeIn 0.25s ease;
+}
+
+
