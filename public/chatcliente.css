@@ -856,14 +856,14 @@ html, body {
 }
 
 .pix-preco {
-  font-size: 15px;
+  font-size: 16px;
   margin-bottom: 14px;
   color: #7B2CFF;
 }
 
 .pix-preco strong {
   color: #7B2CFF;
-  font-size: 18px;
+  font-size: 14px;
 }
 
 .pix-qr {
