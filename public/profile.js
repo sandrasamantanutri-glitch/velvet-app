@@ -237,30 +237,50 @@ async function pagarComCartao() {
 async function pagarComPix() {
   fecharEscolha();
 
-  const res = await fetch("/api/pagamento/vip/pix", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + localStorage.getItem("token")
-    },
-    body: JSON.stringify({
-      valor: pagamentoAtual.valor,
-      modelo_id: pagamentoAtual.modelo_id
-    })
-  });
-
-  const data = await res.json();
-
-  document.getElementById("pixValor").innerText =
-    "R$ " + Number(pagamentoAtual.valor).toFixed(2);
-
-  document.getElementById("pixQr").src =
-    "data:image/png;base64," + data.qrCode;
-
+  // 🔥 ABRE O POPUP IMEDIATAMENTE (igual chat)
   document
     .getElementById("popupPix")
     .classList.remove("hidden");
+
+  try {
+    const res = await fetch("/api/pagamento/vip/pix", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + localStorage.getItem("token")
+      },
+      body: JSON.stringify({
+        valor: pagamentoAtual.valor,
+        modelo_id: pagamentoAtual.modelo_id
+      })
+    });
+
+    if (!res.ok) {
+      throw new Error("Erro ao gerar Pix");
+    }
+
+    const data = await res.json();
+
+    document.getElementById("pixValor").innerText =
+      "R$ " + Number(pagamentoAtual.valor).toFixed(2);
+
+    document.getElementById("pixQr").src =
+      "data:image/png;base64," + data.qrCode;
+
+    document.getElementById("pixCopia").value =
+      data.copiaCola || "";
+
+  } catch (err) {
+    alert("Erro ao gerar pagamento Pix");
+    console.error(err);
+
+    // fecha se falhar
+    document
+      .getElementById("popupPix")
+      .classList.add("hidden");
+  }
 }
+
 
 
 // ===============================
