@@ -457,51 +457,9 @@ async function abrirConteudoSeguro(messageId) {
     const modal = document.getElementById("modalConteudo");
     const midiaBox = document.getElementById("modalMidia");
 
-    // 🔥 limpa qualquer lixo visual anterior
+    // limpa
     midiaBox.innerHTML = "";
-    midiaBox.className = "";
 
-    // 🔐 busca mídia segura no servercontent
-    const res = await fetch(
-      "/content/access?message_id=" + messageId,
-      {
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("token")
-        }
-      }
-    );
-
-    if (!res.ok) {
-      alert("Conteúdo não autorizado");
-      return;
-    }
-
-    const { midias } = await res.json();
-
-    // 🔥 insere mídia (igual feed)
-    midiaBox.innerHTML = midias.map(m =>
-      m.tipo === "video"
-        ? `<video src="${m.url}" controls autoplay></video>`
-        : `<img src="${m.url}" />`
-    ).join("");
-
-    modal.classList.remove("hidden");
-
-    // 👁️ marca como visto (verde na modelo)
-    socket.emit("marcarConteudoVisto", {
-      message_id: messageId,
-      cliente_id,
-      modelo_id
-    });
-
-  } catch (err) {
-    console.error("Erro ao abrir conteúdo:", err);
-    alert("Erro ao abrir conteúdo");
-  }
-}
-
-async function abrirConteudoSeguro(messageId) {
-  try {
     const res = await fetch(
       "/content/access?message_id=" + messageId,
       {
@@ -518,9 +476,7 @@ async function abrirConteudoSeguro(messageId) {
 
     const { midias } = await res.json();
 
-    const modal = document.getElementById("modalConteudo");
-    const midiaBox = document.getElementById("modalMidia");
-
+    // insere mídia (igual feed)
     midiaBox.innerHTML = midias.map(m =>
       m.tipo === "video"
         ? `<video src="${m.url}" controls autoplay></video>`
@@ -529,11 +485,19 @@ async function abrirConteudoSeguro(messageId) {
 
     modal.classList.remove("hidden");
 
+    // 👁️ marca como visto (fica verde para modelo)
+    socket.emit("marcarConteudoVisto", {
+      message_id: messageId,
+      cliente_id,
+      modelo_id
+    });
+
   } catch (err) {
-    console.error("Erro abrirConteudoSeguro:", err);
+    console.error("Erro ao abrir conteúdo:", err);
     alert("Erro ao abrir conteúdo");
   }
 }
+
 
 function fecharConteudo() {
   const modal = document.getElementById("modalConteudo");
