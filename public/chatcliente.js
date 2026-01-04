@@ -98,15 +98,17 @@ socket.on("conteudoVisto", async ({ message_id }) => {
 
 card.innerHTML = `
   <div class="pacote-grid">
-    ${midias.map(m => `
-      <div class="midia-item" onclick="abrirConteudoSeguro(${message_id})">
-        ${
-          m.tipo_media === "video"
-            ? `<video src="${m.url}" muted playsinline></video>`
-            : `<img src="${m.url}" />`
-        }
-      </div>
-    `).join("")}
+    ${midias.map((m, index) => `
+  <div class="midia-item"
+       onclick="abrirConteudoSeguro(${message_id}, ${index})">
+    ${
+      m.tipo_media === "video"
+        ? `<video src="${m.url}" muted playsinline></video>`
+        : `<img src="${m.url}" />`
+    }
+  </div>
+`).join("")}
+
   </div>
  `;
  card.classList.remove("bloqueado");
