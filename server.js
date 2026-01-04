@@ -1454,6 +1454,7 @@ app.post("/api/cliente/dados", auth, async (req, res) => {
 
 
 // 📸 AVATAR DO CLIENTE
+// 📸 AVATAR DO CLIENTE (UPSERT CORRETO)
 app.post(
   "/api/cliente/avatar",
   auth,
@@ -1474,9 +1475,17 @@ app.post(
         ).end(req.file.buffer);
       });
 
+      // 🔥 UPSERT (cria OU atualiza)
       await db.query(
-        "UPDATE clientes_dados SET avatar = $1 WHERE user_id = $2",
-        [result.secure_url, req.user.id]
+        `
+        INSERT INTO clientes_dados (user_id, avatar)
+        VALUES ($1, $2)
+        ON CONFLICT (user_id)
+        DO UPDATE SET
+          avatar = EXCLUDED.avatar,
+          atualizado_em = NOW()
+        `,
+        [req.user.id, result.secure_url]
       );
 
       res.json({ url: result.secure_url });
@@ -1487,6 +1496,7 @@ app.post(
     }
   }
 );
+
 
 
 //ROTA USER
