@@ -150,14 +150,47 @@ async function login() {
 // ===============================
 // REGISTER
 // ===============================
+// ===============================
+// REGISTER
+// ===============================
 function emailValido(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-if (!emailValido(email)) {
-  alert("Email inválido");
-  return;
+async function register() {
+  const email = loginEmail.value.trim();
+  const senha = loginSenha.value.trim();
+  const role  = registerRole.value;
+
+  if (!email || !senha || !role) {
+    alert("Preencha todos os campos");
+    return;
+  }
+
+  if (!emailValido(email)) {
+    alert("Email inválido");
+    return;
+  }
+
+  const res = await fetch("/api/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email,
+      senha,
+      role,
+      nome: email.split("@")[0],
+      ageConfirmed: true
+    })
+  });
+
+  const data = await res.json();
+  if (!res.ok) return alert(data.erro);
+
+  alert("Conta criada com sucesso! Faça login.");
+  switchToLogin();
 }
+
 
 async function register() {
   const email = loginEmail.value.trim();
