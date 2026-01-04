@@ -720,6 +720,8 @@ html, body {
   position: fixed;
   top: 20px;
   right: 30px;
+  z-index: 10000000;   /* 🔥 acima de tudo */
+  pointer-events: auto;
 
   background: none;
   border: none;
@@ -731,6 +733,19 @@ html, body {
 
 #modalConteudo .modal-close:hover {
   opacity: 0.7;
+}
+
+/* 🔥 REMOVE QUALQUER CAIXA BRANCA ANTIGA */
+#modalConteudo .modal-box,
+#modalConteudo .modalContentWrapper {
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+#modalConteudo {
+  padding: 0 !important;
 }
 
 
