@@ -837,9 +837,11 @@ body.role-cliente .only-cliente {
   padding: 20px;
   border-radius: 12px;
   width: 350px;
-  height: 350px;
+  height: 250px;
   max-width: 90%;
   text-align: center;
+  align-items: center;
+
   box-shadow: 0 20px 60px rgba(123, 44, 255, 0.35);
   animation: popupFadeIn 0.25s ease;
 }
