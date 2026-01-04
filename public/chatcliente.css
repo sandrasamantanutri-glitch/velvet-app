@@ -895,13 +895,13 @@ html, body {
   margin-top: 8px;
   margin-bottom: 14px;
   text-align: center;
-  font-size: 18px;
+  font-size: 16px;
   color: #7B2CFF;
 }
 
 .cartao-preco strong {
   color: #7B2CFF;
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -912,11 +912,41 @@ margin-bottom: 10px;
 text-align: center;
 }
 
-.pagarComCartao {
-  background: linear-gradient(135deg, #7B2CFF,#5D24BE );
+.btn-confirmar-desbloqueio {
+  display: block;              /* 🔥 permite centralizar */
+  margin: 20px auto 0;         /* 🔥 centralizado horizontal */
+
+  padding: 14px 28px;
+  min-width: 220px;
+
+  border: none;
+  border-radius: 999px;
+
+  background: linear-gradient(135deg, #7B2CFF, #5D24BE);
   color: #fff;
+
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(123,44,255,0.35);
+  transition: all 0.2s ease;
 }
 
+.btn-confirmar-desbloqueio:hover {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 12px 26px rgba(123,44,255,0.45);
+}
+
+.btn-confirmar-desbloqueio:active {
+  transform: scale(0.97);
+}
+
+.modal-box label {
+  color: #7B2CFF;
+  font-weight: 500;
+}
 
 
 
