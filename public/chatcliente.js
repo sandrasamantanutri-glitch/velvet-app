@@ -132,6 +132,7 @@ abrirPagamentoChat(preco, messageId);
 // ===============================
 
 async function abrirPagamentoChat(valor, conteudoId) {
+  pagamentoAtual.message_id = conteudoId;
 
   if (!valor || !conteudoId) {
     alert("Erro: dados inválidos do conteúdo.");
@@ -553,16 +554,26 @@ function contarChatsNaoLidosCliente() {
 
   atualizarBadgeHeader(itens.length);
 }
+
 document.getElementById("confirmarPagamento").onclick = async () => {
-  const { error } = await stripe.confirmPayment({
+  const { error, paymentIntent } = await stripe.confirmPayment({
     elements,
-    confirmParams: {
-      return_url: window.location.href
-    }
+    redirect: "if_required"
   });
 
   if (error) {
     alert(error.message);
+    return;
+  }
+
+  // 🔓 pagamento confirmado → abrir conteúdo
+  document.getElementById("paymentModal").classList.add("hidden");
+  document.getElementById("payment-element").innerHTML = "";
+
+  if (pagamentoAtual.message_id) {
+    abrirConteudoSeguro(pagamentoAtual.message_id);
+    pagamentoAtual = {};
   }
 };
+
 
