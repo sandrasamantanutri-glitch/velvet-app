@@ -16,6 +16,7 @@ let cliente_id = null;
 let modelo_id = null;
 let chatAtivo = null;
 const mensagensRenderizadas = new Set();
+const conteudosLiberados = new Set();
 let stripe;
 let elements;
 let pagamentoAtual = {};
@@ -62,6 +63,7 @@ socket.on("newMessage", msg => {
 socket.on("conteudoVisto", async ({ message_id }) => {
 
   console.log("🔓 Conteúdo liberado:", message_id);
+  conteudosLiberados.add(Number(message_id));
 
   /* ==========================
      🔒 FECHA POPUP PIX
@@ -457,7 +459,11 @@ function renderMensagem(msg) {
   /* 📦 CONTEÚDO */
   else if (msg.tipo === "conteudo") {
 
-    const liberado = msg.visto === true;
+    const liberado =
+  msg.visto === true ||
+  conteudosLiberados.has(Number(msg.id)) ||
+  Number(msg.preco) === 0;
+
 
     // 🔓 LIBERADO
   if (liberado && Array.isArray(msg.midias)) {
