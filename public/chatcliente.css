@@ -798,6 +798,10 @@ html, body {
 .titulo-roxo {
   color: #7B2CFF;
 }
+.modal-close {
+  background: #fff;;
+  color:#7B2CFF;
+}
 
 .btn-pagamento {
   width: 100%;
