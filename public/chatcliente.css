@@ -846,6 +846,7 @@ html, body {
   width: 340px;
   padding: 24px 20px;
   text-align: center;
+  margin-top: 40px;  
 }
 
 .pix-title {
@@ -857,7 +858,7 @@ html, body {
 .pix-preco {
   font-size: 15px;
   margin-bottom: 14px;
-  color: #444;
+  color: #7B2CFF;
 }
 
 .pix-preco strong {
