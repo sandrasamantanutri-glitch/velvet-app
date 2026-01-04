@@ -351,8 +351,12 @@ function renderMensagem(msg) {
   // alinhamento correto
   div.className =
     msg.sender === "modelo" ? "msg msg-modelo" : "msg msg-cliente";
-
-  if (msg.tipo === "conteudo" && Array.isArray(msg.midias)) {
+    
+    if (
+  msg.tipo === "conteudo" &&
+  Array.isArray(msg.midias) &&
+  msg.midias.length > 0
+ ) {
 
     div.innerHTML = `
 <div class="chat-conteudo premium ${msg.visto ? "visto" : "bloqueado"}"

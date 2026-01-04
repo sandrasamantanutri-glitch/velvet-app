@@ -542,6 +542,7 @@ if (conteudosFiltrados.length === 0) {
       sender: "modelo",
       tipo: "conteudo",
       preco,
+      visto: false,
       quantidade: midias.length,
       midias: midias,                 // 🔥 MODELO vê / CLIENTE será filtrado no front
       bloqueado: Number(preco) > 0,   // 🔒 cliente decide pelo bloqueado
