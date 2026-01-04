@@ -659,6 +659,17 @@ html, body {
   display: block;
 }
 
+.chat-conteudo {
+  display: flex;
+  flex-direction: column;   /* 🔥 mídia em cima, texto embaixo */
+  align-items: center;
+}
+
+.chat-conteudo .pacote-grid {
+  width: 100%;
+}
+
+
 /* =========================================
    🔥 FIX FINAL — 1 MÍDIA PREENCHE 100%
 ========================================= */
