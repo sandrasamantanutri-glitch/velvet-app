@@ -243,7 +243,7 @@ async function pagarComPix() {
     .classList.remove("hidden");
 
   try {
-    const res = await fetch("/api/pagamento/vip/pix", {
+    const res = await fetch("/api/pagamento/pix", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -526,3 +526,16 @@ function aplicarPerfilNoDOM(modelo) {
   if (modelo.avatar) avatarImg.src = modelo.avatar;
   if (modelo.capa) capaImg.src = modelo.capa;
 }
+
+function fecharPopupPix() {
+  document.getElementById("popupPix").classList.add("hidden");
+}
+
+function copiarPix() {
+  const textarea = document.getElementById("pixCopia");
+  textarea.select();
+  textarea.setSelectionRange(0, 99999);
+  document.execCommand("copy");
+  alert("Código Pix copiado!");
+}
+

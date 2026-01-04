@@ -1415,8 +1415,39 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
 });
 
 app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
-  // mesma lógica do pix de conteúdo
-  // metadata: tipo = vip
+  try {
+    const { valor, modelo_id } = req.body;
+
+    const mp = new MercadoPagoConfig({
+      accessToken: process.env.MERCADOPAGO_TOKEN
+    });
+
+    const payment = new Payment(mp);
+
+    const result = await payment.create({
+      body: {
+        transaction_amount: Number(valor),
+        description: "Assinatura VIP",
+        payment_method_id: "pix",
+        payer: {
+          email: req.user.email || "cliente@velvet.lat"
+        },
+        metadata: {
+          cliente_id: req.user.id,
+          modelo_id
+        }
+      }
+    });
+
+    res.json({
+      qrCode: result.point_of_interaction.transaction_data.qr_code_base64,
+      copiaCola: result.point_of_interaction.transaction_data.qr_code
+    });
+
+  } catch (err) {
+    console.error("Erro Pix VIP:", err);
+    res.status(500).json({ error: "Erro Pix VIP" });
+  }
 });
 
 
