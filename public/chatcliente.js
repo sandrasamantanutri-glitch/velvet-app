@@ -206,7 +206,7 @@ async function pagarComCartao() {
 
    document.getElementById("cartaoValor").innerText =
     "R$ " + Number(pagamentoAtual.valor).toFixed(2);
-    
+
   document
     .getElementById("paymentModal")
     .classList.remove("hidden");
@@ -570,52 +570,43 @@ function atualizarStatusPorResponder(mensagens) {
   }
 }
 
-async function abrirConteudoSeguro(messageId, index = 0) {
+async function abrirConteudoSegura(message_id) {
+  const modal = document.getElementById("modalConteudo");
+  const midiaBox = document.getElementById("modalMidia");
+
+  if (!modal || !midiaBox) {
+    console.error("❌ Modal de conteúdo não encontrado no DOM");
+    return;
+  }
+
+  modal.classList.remove("hidden");
+  midiaBox.innerHTML = "<p>Carregando...</p>";
+
   try {
-    const modal = document.getElementById("modalConteudo");
-    const midiaBox = document.getElementById("modalMidia");
-
-    midiaBox.innerHTML = "";
-
-    const res = await fetch(
-      "/content/access?message_id=" + messageId,
-      {
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("token")
-        }
+    const res = await fetch(`/api/chat/conteudo/${message_id}`, {
+      headers: {
+        Authorization: "Bearer " + localStorage.getItem("token")
       }
-    );
+    });
 
     if (!res.ok) {
-      alert("Conteúdo não autorizado ou expirado");
+      midiaBox.innerHTML = "<p>Erro ao carregar conteúdo.</p>";
       return;
     }
 
-    const { midias } = await res.json();
+    const midias = await res.json();
 
-    const midia = midias[index];
-    if (!midia) return;
-
-    midiaBox.innerHTML =
-      midia.tipo === "video"
-        ? `<video src="${midia.url}" controls autoplay></video>`
-        : `<img src="${midia.url}" />`;
-
-    modal.classList.remove("hidden");
-
-    // 👁️ marca como visto
-    socket.emit("marcarConteudoVisto", {
-      message_id: messageId,
-      cliente_id,
-      modelo_id
-    });
+    midiaBox.innerHTML = midias.map(m =>
+      m.tipo_media === "video"
+        ? `<video src="${m.url}" controls autoplay></video>`
+        : `<img src="${m.url}" />`
+    ).join("");
 
   } catch (err) {
-    console.error("Erro ao abrir conteúdo:", err);
-    alert("Erro ao abrir conteúdo");
+    console.error("Erro abrir conteúdo:", err);
+    midiaBox.innerHTML = "<p>Erro inesperado.</p>";
   }
 }
-
 
 
 function fecharConteudo() {
