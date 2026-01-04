@@ -20,7 +20,7 @@ const multer = require("multer");
 const onlineClientes = {};
 const onlineModelos = {};
 const cloudinary = require("cloudinary").v2;
-const { MercadoPagoConfig, PreApproval } = require("mercadopago");
+const { MercadoPagoConfig, Payment } = require("mercadopago");
 const CONTEUDOS_FILE = "conteudos.json";
 const MODELOS_FILE = "modelos.json";
 const COMPRAS_FILE = "compras.json";
@@ -28,6 +28,13 @@ const bodyParser = require("body-parser");
 const Stripe = require("stripe");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const contentRouter = require("./servercontent");
+app.use("/assets", express.static(path.join(__dirname, "assets")));
+app.use(express.static(path.join(__dirname, "public")));
+app.use("/content", contentRouter);
+app.use(cors({
+  origin: ["https://velvet-app-production.up.railway.app"],
+  credentials: true
+}));
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -1060,6 +1067,9 @@ app.put("/api/modelo/bio", authModelo, async (req, res) => {
 // ===============================
 // 💳 CRIAR PAGAMENTO STRIPE (CHAT)
 // ===============================
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 app.post(
   "/webhook/stripe",
   express.raw({ type: "application/json" }),
@@ -1128,24 +1138,11 @@ app.post(
   }
 );
 
-// ⚠️ JSON FIRST
-app.use("/assets", express.static(path.join(__dirname, "assets")));
-app.use(express.static(path.join(__dirname, "public")));
-app.use("/content", contentRouter);
-app.use(cors({
-  origin: ["https://velvet-app-production.up.railway.app"],
-  credentials: true
-}));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
 app.post("/webhook/mercadopago", async (req, res) => {
   try {
     console.log("🔥 WEBHOOK MP RECEBIDO");
-    console.log("Headers:", req.headers);
     console.log("Body:", req.body);
 
-    // 🛡️ proteção total
     if (!req.body || !req.body.data || !req.body.data.id) {
       console.log("⚠️ Webhook sem data.id");
       return res.sendStatus(200);
@@ -1193,7 +1190,6 @@ app.post("/webhook/mercadopago", async (req, res) => {
     }
 
     res.sendStatus(200);
-
   } catch (err) {
     console.error("❌ Webhook MP erro:", err);
     res.sendStatus(500);
@@ -1398,12 +1394,6 @@ app.post(
     }
   }
 );
-
-app.post("/webhook/mercadopago", (req, res) => {
-  console.log("🔥 WEBHOOK MERCADO PAGO RECEBIDO");
-  console.log(req.body);
-  res.sendStatus(200);
-});
 
 
 //ROTA USER
