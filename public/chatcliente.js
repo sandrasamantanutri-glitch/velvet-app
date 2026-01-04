@@ -452,31 +452,52 @@ function atualizarStatusPorResponder(mensagens) {
   }
 }
 
-function abrirConteudo(url, tipo, messageId) {
-  const modal = document.getElementById("modalConteudo");
-  const midia = document.getElementById("modalMidia");
+async function abrirConteudoSeguro(messageId) {
+  try {
+    const modal = document.getElementById("modalConteudo");
+    const midiaBox = document.getElementById("modalMidia");
 
-  midiaBox.innerHTML = "";
-  midiaBox.className = "";
+    // 🔥 limpa qualquer lixo visual anterior
+    midiaBox.innerHTML = "";
+    midiaBox.className = "";
 
-  midiaBox.innerHTML = midias.map(m =>
-    m.tipo === "video"
-    ? `<video src="${m.url}" controls autoplay></video>`
-    : `<img src="${m.url}" />`
-).join("");
+    // 🔐 busca mídia segura no servercontent
+    const res = await fetch(
+      "/content/access?message_id=" + messageId,
+      {
+        headers: {
+          Authorization: "Bearer " + localStorage.getItem("token")
+        }
+      }
+    );
 
-modal.classList.remove("hidden");
+    if (!res.ok) {
+      alert("Conteúdo não autorizado");
+      return;
+    }
 
-  function atualizarBadgeComTempo(li) {
-  // vazio por enquanto
-}
+    const { midias } = await res.json();
 
-  // 👁️ MARCA COMO VISTO (🔥 ISSO DEIXA VERDE NA MODELO)
-  socket.emit("marcarConteudoVisto", {
-    message_id: messageId,
-    cliente_id,
-    modelo_id
-  });
+    // 🔥 insere mídia (igual feed)
+    midiaBox.innerHTML = midias.map(m =>
+      m.tipo === "video"
+        ? `<video src="${m.url}" controls autoplay></video>`
+        : `<img src="${m.url}" />`
+    ).join("");
+
+    modal.classList.remove("hidden");
+
+    // 👁️ marca como visto (verde na modelo)
+    socket.emit("marcarConteudoVisto", {
+      message_id: messageId,
+      cliente_id,
+      modelo_id
+    });
+
+  } catch (err) {
+    console.error("Erro ao abrir conteúdo:", err);
+    alert("Erro ao abrir conteúdo");
+  }
 }
 
 async function abrirConteudoSeguro(messageId) {

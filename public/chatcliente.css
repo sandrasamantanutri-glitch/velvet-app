@@ -727,31 +727,57 @@ html, body {
   display: none;
 }
 
-/* ===============================
-   🔥 MODAL CHAT — ABERTURA BONITA
-================================ */
+/* =========================================
+   🔥 MODAL CHAT – IGUAL AO FEED
+========================================= */
 
-/* container da mídia */
-#modalMidia {
+#modalConteudo.modalMidia {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  z-index: 9999999;
+
   display: flex;
   align-items: center;
   justify-content: center;
-  max-width: 90vw;
-  max-height: 85vh;
 }
 
-/* imagem / vídeo no modal */
-#modalMidia img,
-#modalMidia video {
-  max-width: 90vw;
-  max-height: 85vh;
+#modalConteudo.hidden {
+  display: none;
+}
+
+#modalConteudo .modalContentWrapper {
+  max-width: 95vw;
+  max-height: 95vh;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#modalConteudo img,
+#modalConteudo video {
+  max-width: 95vw;
+  max-height: 95vh;
 
   width: auto;
   height: auto;
 
-  object-fit: contain; /* 🔥 igual feed */
-  border-radius: 18px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+  object-fit: contain;
+  border-radius: 12px;
+
+  box-shadow: none; /* 🔥 remove cartão */
+  background: transparent;
 }
+
+#modalConteudo .modalClose {
+  position: fixed;
+  top: 20px;
+  right: 30px;
+  font-size: 34px;
+  color: #fff;
+  cursor: pointer;
+}
+
 
 
