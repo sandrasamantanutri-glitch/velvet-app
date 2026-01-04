@@ -895,14 +895,26 @@ html, body {
   margin-top: 8px;
   margin-bottom: 14px;
   text-align: center;
-  font-size: 15px;
-  color: #555;
+  font-size: 18px;
+  color: #7B2CFF;
 }
 
 .cartao-preco strong {
   color: #7B2CFF;
   font-size: 18px;
   font-weight: 600;
+}
+
+.desbloq {
+color: #7B2CFF;
+font-weight: 600;
+margin-bottom: 10px;
+text-align: center;
+}
+
+.pagarComCartao {
+  background: linear-gradient(135deg, #7B2CFF,#5D24BE );
+  color: #fff;
 }
 
 
