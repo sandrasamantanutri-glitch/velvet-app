@@ -243,7 +243,7 @@ async function pagarComPix() {
     .classList.remove("hidden");
 
   try {
-    const res = await fetch("/api/pagamento/pix", {
+    const res = await fetch("/api/pagamento/vip/pix", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
