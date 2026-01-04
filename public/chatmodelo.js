@@ -150,6 +150,8 @@ async function carregarListaClientes() {
     // 🖱️ CLICK NO CLIENTE
     // ===============================
     li.onclick = async () => {
+      const avatarEl = document.getElementById("chatAvatar");
+      avatarEl.src = "/assets/avatar-default.png";
       cliente_id = c.cliente_id;
       chatAtivo = { cliente_id, modelo_id };
       await carregarConteudosVistos(cliente_id);
@@ -163,12 +165,10 @@ async function carregarListaClientes() {
         }
       });
 
-      if (res.ok) {
-        const dados = await res.json();
-        if (dados.avatar) {
-          document.getElementById("chatAvatar").src = dados.avatar;
-        }
-      }
+    if (res.ok) {
+  const dados = await res.json();
+  avatarEl.src = dados.avatar || "/assets/avatar-default.png";
+}
 
       // 🧹 limpar badge visual
       const badge = li.querySelector(".badge");
