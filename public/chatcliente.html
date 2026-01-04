@@ -84,21 +84,37 @@
 
 <!-- ================= POPUPS ================= -->
 
-<div id="popupPix" class="popup hidden">
-  <div class="popup-box">
-    <h3>Pagamento Pix</h3>
-    <img id="pixQr" />
-    <textarea id="pixCopia" readonly></textarea>
-    <button onclick="fecharPopupPix()">Fechar</button>
+<div id="popupPix" class="modal hidden">
+  <div class="modal-box pix-box">
+
+    <button class="modal-close" onclick="fecharPopupPix()">×</button>
+
+    <h2 class="pix-title">Pagamento Pix</h2>
+
+    <!-- 🔥 PREÇO -->
+    <div class="pix-preco">
+      Total a pagar:
+      <strong id="pixValor">R$ 0,00</strong>
+    </div>
+
+    <!-- QR CODE -->
+    <img id="pixQr" class="pix-qr" />
+
+    <!-- COPIA E COLA -->
+    <textarea
+      id="pixCopia"
+      class="pix-copia"
+      readonly
+    ></textarea>
+
+    <button class="pix-copiar"
+      onclick="copiarPix()">
+      Copiar código Pix
+    </button>
+
   </div>
 </div>
 
-<div id="modalConteudo" class="modalMidia hidden">
-  <div class="modalContentWrapper">
-    <div id="modalMidia"></div>
-  </div>
-  <div class="modalClose" onclick="fecharConteudo()">×</div>
-</div>
 
 
 <!-- ================= STRIPE ================= -->

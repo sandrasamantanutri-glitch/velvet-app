@@ -842,6 +842,55 @@ html, body {
   color: #fff;
 }
 
+.pix-box {
+  width: 340px;
+  padding: 24px 20px;
+  text-align: center;
+}
+
+.pix-title {
+  color: #7B2CFF;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.pix-preco {
+  font-size: 15px;
+  margin-bottom: 14px;
+  color: #444;
+}
+
+.pix-preco strong {
+  color: #7B2CFF;
+  font-size: 18px;
+}
+
+.pix-qr {
+  width: 220px;
+  height: 220px;
+  margin: 12px auto;
+  display: block;
+}
+
+.pix-copia {
+  width: 100%;
+  height: 70px;
+  margin-top: 10px;
+  resize: none;
+  font-size: 12px;
+}
+
+.pix-copiar {
+  margin-top: 10px;
+  background: #7B2CFF;
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  cursor: pointer;
+}
+
+
 
 
 
