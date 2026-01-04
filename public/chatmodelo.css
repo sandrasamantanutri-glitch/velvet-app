@@ -686,3 +686,25 @@ h2 #modeloNome {
   object-fit: cover;
 }
 
+/* 🔒 CONTEÚDO JÁ VISTO */
+.preview-item.visto {
+  filter: grayscale(100%) brightness(0.6);
+  cursor: not-allowed;
+  pointer-events: none;
+  position: relative;
+}
+
+/* badge */
+.preview-item .badge-visto {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 10px;
+}
+
+

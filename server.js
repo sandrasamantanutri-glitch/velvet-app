@@ -468,6 +468,21 @@ socket.on("sendConteudo", async ({ cliente_id, modelo_id, conteudos_ids, preco }
   const sala = `chat_${cliente_id}_${modelo_id}`;
 
   try {
+      // 🔒 AQUI — PROTEÇÃO ANTI-REENVIO (ANTES DE QUALQUER INSERT)
+    const jaVistos = await db.query(`
+      SELECT mc.conteudo_id
+      FROM messages m
+      JOIN messages_conteudos mc ON mc.message_id = m.id
+      WHERE m.modelo_id = $1
+        AND m.cliente_id = $2
+        AND m.visto = true
+        AND mc.conteudo_id = ANY($3)
+    `, [modelo_id, cliente_id, conteudos_ids]);
+
+    if (jaVistos.rows.length > 0) {
+      console.log("⛔ Conteúdo já visto — envio bloqueado");
+      return; // ⛔ NÃO ENVIA, NÃO COBRA, NÃO DUPLICA
+    }
     // 1️⃣ cria a mensagem principal (pacote)
     const msgRes = await db.query(
       `
@@ -1068,6 +1083,29 @@ app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
     res.status(500).json([]);
   }
 });
+
+// 🔒 CONTEÚDOS JÁ VISTOS POR CLIENTE (MODELO)
+app.get("/api/chat/conteudos-vistos/:cliente_id", authModelo, async (req, res) => {
+  const modelo_id  = req.user.id;
+  const cliente_id = Number(req.params.cliente_id);
+
+  try {
+    const result = await db.query(`
+      SELECT DISTINCT mc.conteudo_id
+      FROM messages m
+      JOIN messages_conteudos mc ON mc.message_id = m.id
+      WHERE m.modelo_id = $1
+        AND m.cliente_id = $2
+        AND m.visto = true
+    `, [modelo_id, cliente_id]);
+
+    res.json(result.rows.map(r => r.conteudo_id));
+  } catch (err) {
+    console.error("Erro buscar conteudos vistos:", err);
+    res.status(500).json([]);
+  }
+});
+
 
 
 // ===============================

@@ -12,6 +12,7 @@ const socket = io({
 let modelo_id = null;
 let cliente_id = null;
 let chatAtivo = null;
+let conteudosVistosCliente = new Set();
 
 // 🔐 SOCKET AUTH
 socket.on("connect", () => {
@@ -151,6 +152,7 @@ async function carregarListaClientes() {
     li.onclick = async () => {
       cliente_id = c.cliente_id;
       chatAtivo = { cliente_id, modelo_id };
+      await carregarConteudosVistos(cliente_id);
 
       document.getElementById("clienteNome").innerText = c.nome;
 
@@ -723,3 +725,42 @@ function contarChatsNaoLidosModelo() {
 
   atualizarBadgeHeader(itens.length);
 }
+
+async function carregarConteudosVistos(cliente_id) {
+  const res = await fetch(`/api/chat/conteudos-vistos/${cliente_id}`, {
+    headers: {
+      Authorization: "Bearer " + localStorage.getItem("token")
+    }
+  });
+
+  const ids = await res.json();
+  conteudosVistosCliente = new Set(ids);
+}
+
+function renderConteudosPopup(conteudos) {
+  const grid = document.querySelector(".preview-grid");
+  grid.innerHTML = "";
+
+  conteudos.forEach(c => {
+    const jaVisto = conteudosVistosCliente.has(c.id);
+
+    const div = document.createElement("div");
+    div.className = "preview-item" + (jaVisto ? " visto" : "");
+    div.dataset.id = c.id;
+
+    div.innerHTML = `
+      ${c.tipo === "video"
+        ? `<video src="${c.url}" muted></video>`
+        : `<img src="${c.url}">`
+      }
+      ${jaVisto ? `<span class="badge-visto">Visto</span>` : ""}
+    `;
+
+    if (!jaVisto) {
+      div.onclick = () => div.classList.toggle("selected");
+    }
+
+    grid.appendChild(div);
+  });
+}
+
