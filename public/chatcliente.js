@@ -96,15 +96,23 @@ socket.on("conteudoVisto", async ({ message_id }) => {
   card.classList.remove("bloqueado");
   card.classList.add("livre");
 
-  card.innerHTML = `
-    <div class="pacote-grid">
-      ${midias.map(m =>
-        m.tipo_media === "video"
-          ? `<video src="${m.url}" controls></video>`
-          : `<img src="${m.url}" />`
-      ).join("")}
-    </div>
-  `;
+card.innerHTML = `
+  <div class="pacote-grid">
+    ${midias.map(m => `
+      <div class="midia-item" onclick="abrirConteudoSeguro(${message_id})">
+        ${
+          m.tipo_media === "video"
+            ? `<video src="${m.url}" muted playsinline></video>`
+            : `<img src="${m.url}" />`
+        }
+      </div>
+    `).join("")}
+  </div>
+ `;
+ card.classList.remove("bloqueado");
+card.classList.add("livre");
+card.removeAttribute("data-preco");
+
 });
 
 socket.on("unreadUpdate", ({ modelo_id, unread }) => {

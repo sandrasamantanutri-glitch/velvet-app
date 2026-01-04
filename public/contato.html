@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <title>Contato • Velvet</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Fonte -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="contato.css" />
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="logo">Velvet</div>
+    <a href="index.html" class="voltar">← Voltar</a>
+  </header>
+
+  <!-- CONTEÚDO -->
+  <main class="container">
+
+    <h1>Fale Connosco</h1>
+    <p class="subtitle">
+      Tem alguma dúvida, sugestão ou precisa de ajuda?
+      Preencha o formulário abaixo 💜
+    </p>
+
+    <form id="contatoForm" class="form">
+
+      <div class="field">
+        <label>Nome</label>
+        <input type="text" name="nome" placeholder="Seu nome" required />
+      </div>
+
+      <div class="field">
+        <label>Email</label>
+        <input type="email" name="email" placeholder="seu@email.com" required />
+      </div>
+
+      <div class="field">
+        <label>Assunto</label>
+        <select name="assunto" required>
+          <option value="">Selecione</option>
+          <option value="duvida">Dúvida</option>
+          <option value="suporte">Suporte</option>
+          <option value="pagamento">Pagamentos</option>
+          <option value="sugestao">Sugestão</option>
+          <option value="outro">Outro</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Mensagem</label>
+        <textarea
+          name="mensagem"
+          rows="5"
+          placeholder="Escreva sua mensagem aqui..."
+          required
+        ></textarea>
+      </div>
+
+      <button type="submit" class="btn">
+        Enviar mensagem
+      </button>
+
+      <p id="status" class="status"></p>
+    </form>
+
+  </main>
+
+  <script src="contato.js"></script>
+</body>
+</html>
