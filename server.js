@@ -1454,7 +1454,6 @@ app.post("/api/cliente/dados", auth, async (req, res) => {
 
 
 // 📸 AVATAR DO CLIENTE
-// 📸 AVATAR DO CLIENTE (UPSERT CORRETO)
 app.post(
   "/api/cliente/avatar",
   auth,
@@ -1463,6 +1462,10 @@ app.post(
     try {
       if (req.user.role !== "cliente") {
         return res.status(403).json({ error: "Apenas clientes" });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ error: "Nenhum arquivo enviado" });
       }
 
       const result = await new Promise((resolve, reject) => {
@@ -1475,7 +1478,6 @@ app.post(
         ).end(req.file.buffer);
       });
 
-      // 🔥 UPSERT (cria OU atualiza)
       await db.query(
         `
         INSERT INTO clientes_dados (user_id, avatar)
@@ -1496,6 +1498,7 @@ app.post(
     }
   }
 );
+
 
 
 
