@@ -727,3 +727,31 @@ html, body {
   display: none;
 }
 
+/* ===============================
+   🔥 MODAL CHAT — ABERTURA BONITA
+================================ */
+
+/* container da mídia */
+#modalMidia {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 90vw;
+  max-height: 85vh;
+}
+
+/* imagem / vídeo no modal */
+#modalMidia img,
+#modalMidia video {
+  max-width: 90vw;
+  max-height: 85vh;
+
+  width: auto;
+  height: auto;
+
+  object-fit: contain; /* 🔥 igual feed */
+  border-radius: 18px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+}
+
+
