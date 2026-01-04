@@ -473,7 +473,6 @@ document.getElementById("fecharModal")?.addEventListener("click", () => {
   video.src = "";
   modal.classList.add("hidden");
 });
-
 document.getElementById("fecharPix")?.addEventListener("click", () => {
   document.getElementById("popupPix").classList.add("hidden");
   window.pagamentoAtual = {};
