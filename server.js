@@ -1136,6 +1136,52 @@ app.post(
   }
 );
 
+app.post("/webhook/mercadopago", async (req, res) => {
+  try {
+    const paymentId = req.body.data?.id;
+    if (!paymentId) return res.sendStatus(200);
+
+    const mp = new MercadoPagoConfig({
+      accessToken: process.env.MERCADOPAGO_TOKEN
+    });
+
+    const payment = new Payment(mp);
+    const result = await payment.get({ id: paymentId });
+
+    if (result.status === "approved") {
+      const { message_id, cliente_id } = result.metadata;
+
+      // 🔓 desbloqueia conteúdo
+      await db.query(
+        `
+        UPDATE messages
+        SET visto = true
+        WHERE id = $1 AND cliente_id = $2
+        `,
+        [message_id, cliente_id]
+      );
+
+      // 🔥 avisa chat em tempo real
+      const msg = await db.query(
+        `SELECT modelo_id FROM messages WHERE id = $1`,
+        [message_id]
+      );
+
+      if (msg.rowCount) {
+        const sala = `chat_${cliente_id}_${msg.rows[0].modelo_id}`;
+        io.to(sala).emit("conteudoVisto", { message_id });
+      }
+    }
+
+    res.sendStatus(200);
+
+  } catch (err) {
+    console.error("❌ Webhook MP erro:", err);
+    res.sendStatus(500);
+  }
+});
+
+
 // ⚠️ JSON FIRST
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -1339,6 +1385,13 @@ app.post(
     }
   }
 );
+
+app.post("/webhook/mercadopago", (req, res) => {
+  console.log("🔥 WEBHOOK MERCADO PAGO RECEBIDO");
+  console.log(req.body);
+  res.sendStatus(200);
+});
+
 
 //ROTA USER
 // função auxiliar (coloque fora da rota, no topo do server.js)
