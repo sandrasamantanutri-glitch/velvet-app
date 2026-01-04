@@ -60,14 +60,29 @@ socket.on("newMessage", msg => {
 
 
 socket.on("conteudoVisto", async ({ message_id }) => {
-  // 🔍 pega o card bloqueado
+
+  console.log("🔓 Conteúdo liberado:", message_id);
+
+  /* ==========================
+     🔒 FECHA POPUP PIX
+  ========================== */
+  if (
+    pagamentoAtual.message_id &&
+    Number(pagamentoAtual.message_id) === Number(message_id)
+  ) {
+    document.getElementById("popupPix").classList.add("hidden");
+    pagamentoAtual = {};
+  }
+
+  /* ==========================
+     🔄 ATUALIZA CARD NO CHAT
+  ========================== */
   const card = document.querySelector(
     `.chat-conteudo[data-id="${message_id}"]`
   );
 
   if (!card) return;
 
-  // 🔄 busca mídias reais
   const res = await fetch(`/api/chat/conteudo/${message_id}`, {
     headers: {
       Authorization: "Bearer " + localStorage.getItem("token")
@@ -78,25 +93,19 @@ socket.on("conteudoVisto", async ({ message_id }) => {
 
   const midias = await res.json();
 
-  // 🧱 reconstrói o HTML liberado
   card.classList.remove("bloqueado");
   card.classList.add("livre");
 
   card.innerHTML = `
-    <div class="conteudo-grid grid-${midias.length}">
-      ${midias
-        .map(m =>
-          m.tipo_media === "video"
-            ? `<video src="${m.url}" controls></video>`
-            : `<img src="${m.url}" />`
-        )
-        .join("")}
+    <div class="pacote-grid">
+      ${midias.map(m =>
+        m.tipo_media === "video"
+          ? `<video src="${m.url}" controls></video>`
+          : `<img src="${m.url}" />`
+      ).join("")}
     </div>
   `;
 });
-
-
-
 
 socket.on("unreadUpdate", ({ modelo_id, unread }) => {
   if (!unread) return;
@@ -240,6 +249,12 @@ async function pagarComPix() {
     .getElementById("popupPix")
     .classList.remove("hidden");
 }
+
+function fecharPopupPix() {
+  document.getElementById("popupPix").classList.add("hidden");
+  pagamentoAtual = {};
+}
+
 
 
 document.getElementById("fecharPagamento").onclick = () => {
