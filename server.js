@@ -619,6 +619,24 @@ app.get("/api/conteudos", authModelo, async (req, res) => {
   }
 });
 
+app.get("/api/vip/status/:modelo_id", authCliente, async (req, res) => {
+  const cliente_id = req.user.id;
+  const modelo_id = req.params.modelo_id;
+
+  const result = await db.query(
+    `
+    SELECT 1 FROM vip_subscriptions
+    WHERE cliente_id = $1
+      AND modelo_id = $2
+      AND ativo = true
+    `,
+    [cliente_id, modelo_id]
+  );
+
+  res.json({ vip: result.rowCount > 0 });
+});
+
+
 
 app.get("/api/me", auth, (req, res) => {
   if (req.user.role !== "modelo") {
@@ -1222,11 +1240,13 @@ app.post(
         } catch (err) {
           console.error("❌ Erro ao desbloquear conteúdo:", err);
         }
+        
       }
     }
 
     res.json({ received: true });
   }
+  
 );
 
 app.post("/webhook/mercadopago", async (req, res) => {
@@ -1251,12 +1271,47 @@ app.post("/webhook/mercadopago", async (req, res) => {
     console.log("💰 Status pagamento:", result.status);
 
     if (result.status === "approved") {
-      const { message_id, cliente_id } = result.metadata || {};
+      const { message_id, cliente_id, modelo_id } = result.metadata || {};
+      if (message_id && cliente_id) {
+  await db.query(
+    `
+    UPDATE messages
+    SET visto = true
+    WHERE id = $1 AND cliente_id = $2
+    `,
+    [message_id, cliente_id]
+  );
 
-      if (!message_id || !cliente_id) {
-        console.log("⚠️ Metadata incompleta");
-        return res.sendStatus(200);
-      }
+  const msg = await db.query(
+    `SELECT modelo_id FROM messages WHERE id = $1`,
+    [message_id]
+  );
+
+  if (msg.rowCount) {
+    const sala = `chat_${cliente_id}_${msg.rows[0].modelo_id}`;
+    io.to(sala).emit("conteudoVisto", { message_id });
+  }
+
+  console.log("✅ Conteúdo desbloqueado via Pix:", message_id);
+  return res.sendStatus(200);
+}
+
+/* ===============================
+   💜 VIP PAGO (PIX)
+=============================== */
+if (cliente_id && modelo_id) {
+  await db.query(
+    `
+    INSERT INTO vip_subscriptions (cliente_id, modelo_id, ativo)
+    VALUES ($1, $2, true)
+    ON CONFLICT DO NOTHING
+    `,
+    [cliente_id, modelo_id]
+  );
+
+  console.log("💜 VIP ativado via Pix:", cliente_id, modelo_id);
+  return res.sendStatus(200);
+}
 
       await db.query(
         `
