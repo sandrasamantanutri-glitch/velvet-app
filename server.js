@@ -1044,6 +1044,32 @@ app.get("/api/cliente/:id", authModelo, async (req, res) => {
   }
 });
 
+app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
+  const { message_id } = req.params;
+
+  try {
+    const result = await db.query(
+      `
+      SELECT
+        c.url,
+        c.tipo AS tipo_media
+      FROM messages_conteudos mc
+      JOIN conteudos c ON c.id = mc.conteudo_id
+      JOIN messages m ON m.id = mc.message_id
+      WHERE mc.message_id = $1
+        AND m.cliente_id = $2
+      `,
+      [message_id, req.user.id]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Erro buscar conteúdo liberado:", err);
+    res.status(500).json([]);
+  }
+});
+
+
 // ===============================
 // ROTA POST
 // ===============================

@@ -59,22 +59,42 @@ socket.on("newMessage", msg => {
 });
 
 
-socket.on("conteudoVisto", ({ message_id }) => {
-  // 🔓 marca visualmente como visto
-  const el = document.querySelector(
+socket.on("conteudoVisto", async ({ message_id }) => {
+  // 🔍 pega o card bloqueado
+  const card = document.querySelector(
     `.chat-conteudo[data-id="${message_id}"]`
   );
 
-  if (el) {
-    el.classList.add("visto");
-  }
+  if (!card) return;
 
-  // ✅ FECHA POPUP PIX SE FOR O PAGAMENTO ATUAL
-  if (pagamentoAtual.message_id == message_id) {
-    document.getElementById("popupPix").classList.add("hidden");
-    pagamentoAtual = {};
-  }
+  // 🔄 busca mídias reais
+  const res = await fetch(`/api/chat/conteudo/${message_id}`, {
+    headers: {
+      Authorization: "Bearer " + localStorage.getItem("token")
+    }
+  });
+
+  if (!res.ok) return;
+
+  const midias = await res.json();
+
+  // 🧱 reconstrói o HTML liberado
+  card.classList.remove("bloqueado");
+  card.classList.add("livre");
+
+  card.innerHTML = `
+    <div class="conteudo-grid grid-${midias.length}">
+      ${midias
+        .map(m =>
+          m.tipo_media === "video"
+            ? `<video src="${m.url}" controls></video>`
+            : `<img src="${m.url}" />`
+        )
+        .join("")}
+    </div>
+  `;
 });
+
 
 
 
