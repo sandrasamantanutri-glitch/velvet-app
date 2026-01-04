@@ -68,16 +68,11 @@ router.get("/access", authCliente, async (req, res) => {
   );
 
   // 3️⃣ gera URLs temporárias
-  const midias = midiasRes.rows.map(m => ({
-    tipo: m.tipo,
-    url: cloudinary.url(
-      m.url.split("/").slice(-1)[0],
-      {
-        secure: true,
-        expires_at: Math.floor(Date.now() / 1000) + 120
-      }
-    )
-  }));
+const midias = midiasRes.rows.map(m => ({
+  tipo: m.tipo,
+  url: m.url  
+}));
+
 
   res.json({ midias });
 });
