@@ -417,73 +417,6 @@ html, body {
   font-weight: 600;
 }
 
-
-/* ===============================
-   MODAL DE CONTEÚDO (CLIENTE)
-================================ */
-.modal-conteudo {
-  position: fixed;
-  inset: 0;
-  z-index: 99999;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  padding-top: 80px; /* 🔥 empurra para baixo do header */
-}
-
-
-.modal-conteudo.hidden {
-  display: none;
-}
-
-.modal-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,0.65);
-  backdrop-filter: blur(6px);
-}
-
-.modal-box {
-  position: relative;
-  z-index: 2;
-
-  max-width: 90vw;
-  max-height: 90vh;
-
-  background: transparent;   /* 🔥 remove o preto */
-  padding: 0;                /* 🔥 remove moldura */
-  border-radius: 18px;
-
-  box-shadow: 0 20px 60px rgba(93,36,190,0.45);
-}
-
-
-.modal-box img,
-.modal-box video {
-  max-width: 90vw;
-  max-height: 80vh;
-  border-radius: 16px;
-  display: block;
-}
-
-
-.modal-fechar {
-  position: absolute;
-  top: -12px;
-  right: -12px;
-
-  background: #7b2cff;
-  color: #fff;
-  border: none;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  cursor: pointer;
-  font-size: 16px;
-}
-
 .chat-conteudo.livre {
   cursor: pointer;
 }
@@ -742,7 +675,7 @@ html, body {
    🔥 MODAL CHAT – IGUAL AO FEED
 ========================================= */
 
-#modalConteudo.modalMidia {
+#modalConteudo {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.92);
@@ -757,7 +690,8 @@ html, body {
   display: none;
 }
 
-#modalConteudo .modalContentWrapper {
+/* container da mídia */
+#modalMidia {
   max-width: 95vw;
   max-height: 95vh;
 
@@ -777,49 +711,28 @@ html, body {
   object-fit: contain;
   border-radius: 12px;
 
-  box-shadow: none; /* 🔥 remove cartão */
+  box-shadow: none;
   background: transparent;
 }
 
-#modalConteudo .modalClose {
+/* botão fechar */
+#modalConteudo .modal-close {
   position: fixed;
   top: 20px;
   right: 30px;
+
+  background: none;
+  border: none;
+
   font-size: 34px;
   color: #fff;
   cursor: pointer;
 }
 
-.escolha-box {
-  width: 320px;
-  text-align: center;
-}
-
-.titulo-roxo {
-  color: #7B2CFF;
-}
-
-.modal-close {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-
-  background: transparent;   /* ❌ sem fundo */
-  border: none;              /* ❌ sem borda */
-  padding: 0;
-
-  font-size: 20px;
-  font-weight: 600;
-  line-height: 1;
-
-  color: #7B2CFF;            /* 💜 roxo Velvet */
-  cursor: pointer;
-}
-
-/* efeito hover (opcional, mas bonito) */
-.modal-close:hover {
+#modalConteudo .modal-close:hover {
   opacity: 0.7;
 }
+
 
 .btn-pagamento {
   width: 100%;
