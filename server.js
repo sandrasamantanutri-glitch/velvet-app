@@ -1059,38 +1059,11 @@ app.put("/api/modelo/bio", authModelo, async (req, res) => {
 
 
 //STRIPE
-app.post("/api/pagamento/criar", auth, async (req, res) => {
-  try {
-    const { valor, message_id } = req.body;
-
-    if (!valor || !message_id) {
-      return res.status(400).json({ erro: "Dados inválidos" });
-    }
-
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(Number(valor) * 100),
-      currency: "brl",
-      automatic_payment_methods: { enabled: true },
-
-      // 🔥 ESSENCIAL
-      metadata: {
-        message_id: String(message_id),
-        cliente_id: String(req.user.id)
-      }
-    });
-
-    res.json({ clientSecret: paymentIntent.client_secret });
-
-  } catch (err) {
-    console.error("❌ Stripe erro:", err);
-    res.status(500).json({ erro: "Erro ao criar pagamento" });
-  }
-});
-
 app.post(
   "/webhook/stripe",
   express.raw({ type: "application/json" }),
   async (req, res) => {
+
     const sig = req.headers["stripe-signature"];
     let event;
 
@@ -1102,10 +1075,10 @@ app.post(
       );
     } catch (err) {
       console.error("❌ Webhook inválido:", err.message);
-      return res.status(400).send(`Webhook Error`);
+      return res.status(400).send("Webhook Error");
     }
 
-    // 🔓 PAGAMENTO CONFIRMADO
+    // ✅ PAGAMENTO CONFIRMADO
     if (event.type === "payment_intent.succeeded") {
       const intent = event.data.object;
 
@@ -1114,7 +1087,7 @@ app.post(
 
       if (message_id && cliente_id) {
         try {
-          // 🔥 DESBLOQUEIA O CONTEÚDO
+          // 🔓 DESBLOQUEIA NO BANCO
           await db.query(
             `
             UPDATE messages
@@ -1125,7 +1098,25 @@ app.post(
             [message_id, cliente_id]
           );
 
-          console.log("🔓 Conteúdo desbloqueado:", message_id);
+          // 🔎 BUSCA MODELO DA MENSAGEM
+          const msgRes = await db.query(
+            `SELECT modelo_id FROM messages WHERE id = $1`,
+            [message_id]
+          );
+
+          const modelo_id = msgRes.rows[0]?.modelo_id;
+
+          if (modelo_id) {
+            const sala = `chat_${cliente_id}_${modelo_id}`;
+
+            // 🔥 AVISA CLIENTE + MODELO EM TEMPO REAL
+            io.to(sala).emit("conteudoVisto", {
+              message_id
+            });
+          }
+
+          console.log("🔓 Conteúdo desbloqueado em tempo real:", message_id);
+
         } catch (err) {
           console.error("❌ Erro ao desbloquear conteúdo:", err);
         }
@@ -1134,7 +1125,8 @@ app.post(
 
     res.json({ received: true });
   }
-)
+);
+
 
 //DADOS CLIENTE
 app.post("/api/cliente/dados", auth, async (req, res) => {
