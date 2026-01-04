@@ -156,6 +156,49 @@ body {
   </div>
 </div>
 
+<div id="escolhaPagamento" class="modal hidden">
+  <div class="modal-backdrop"></div>
+
+  <div class="modal-box escolha-box">
+    <button class="modal-close" onclick="fecharEscolha()">×</button>
+
+    <h2 class="titulo-roxo">Escolha a forma de ativar o VIP</h2>
+
+    <button class="btn-pagamento pix" onclick="pagarComPix()">
+      ⚡ Ativar VIP com Pix
+    </button>
+
+    <button class="btn-pagamento cartao" onclick="pagarComCartao()">
+      💳 Ativar VIP com Cartão
+    </button>
+  </div>
+</div>
+
+<div id="paymentModal" class="modal hidden">
+  <div class="modal-backdrop"></div>
+
+  <div class="modal-box">
+    <button class="modal-close" id="fecharPagamento">×</button>
+
+    <h2 class="desbloq">Ativar VIP</h2>
+
+    <div class="cartao-preco">
+      Total:
+      <strong id="cartaoValor">R$ 1,00</strong>
+    </div>
+
+    <div id="payment-element-container">
+      <div id="payment-element"></div>
+    </div>
+
+    <button class="btn-confirmar-desbloqueio">
+      Confirmar ativação VIP
+    </button>
+  </div>
+</div>
+
+
+
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/header.js"></script>

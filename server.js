@@ -1398,6 +1398,28 @@ app.post("/api/pagamento/pix", authCliente, async (req, res) => {
   }
 });
 
+app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
+  const { valor, modelo_id } = req.body;
+
+  const intent = await stripe.paymentIntents.create({
+    amount: Math.round(valor * 100),
+    currency: "brl",
+    metadata: {
+      tipo: "vip",
+      cliente_id: req.user.id,
+      modelo_id
+    }
+  });
+
+  res.json({ clientSecret: intent.client_secret });
+});
+
+app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
+  // mesma lógica do pix de conteúdo
+  // metadata: tipo = vip
+});
+
+
 
 
 

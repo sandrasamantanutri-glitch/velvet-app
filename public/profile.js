@@ -141,31 +141,25 @@ btnChat?.addEventListener("click", () => {
 // ===============================
 // VIP
 // ===============================
-btnVip?.addEventListener("click", async () => {
+btnVip?.addEventListener("click", () => {
   if (!modelo_id) {
     alert("Modelo não identificada");
     return;
   }
 
-  const res = await fetch("/api/vip/ativar", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + token
-    },
-    body: JSON.stringify({ modelo_id })
-  });
+  // 🔑 mesmo estado usado no chat
+  window.pagamentoAtual = {
+    tipo: "vip",
+    valor: 1.00,
+    modelo_id
+  };
 
-  const data = await res.json();
-
-  if (data.success) {
-    btnVip.textContent = "VIP ativo 💜";
-    btnVip.disabled = true;
-    alert("VIP ativado com sucesso!");
-  } else {
-    alert(data.error || "Erro ao ativar VIP");
-  }
+  // 🔓 abre o MESMO modal de escolha (Pix / Cartão)
+  document
+    .getElementById("escolhaPagamento")
+    .classList.remove("hidden");
 });
+
 
 // ===============================
 // FEED
@@ -201,6 +195,69 @@ function carregarFeedPublico() {
         adicionarMidia(item.id, item.url);
       });
     });
+}
+
+function fecharEscolha() {
+  document
+    .getElementById("escolhaPagamento")
+    .classList.add("hidden");
+}
+
+async function pagarComCartao() {
+  fecharEscolha();
+
+  document.getElementById("cartaoValor").innerText =
+    "R$ " + Number(pagamentoAtual.valor).toFixed(2);
+
+  document
+    .getElementById("paymentModal")
+    .classList.remove("hidden");
+
+  const res = await fetch("/api/pagamento/vip/cartao", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + localStorage.getItem("token")
+    },
+    body: JSON.stringify({
+      valor: pagamentoAtual.valor,
+      modelo_id: pagamentoAtual.modelo_id
+    })
+  });
+
+  const { clientSecret } = await res.json();
+
+  elements = stripe.elements({ clientSecret });
+  const paymentElement = elements.create("payment");
+  paymentElement.mount("#payment-element");
+}
+
+async function pagarComPix() {
+  fecharEscolha();
+
+  const res = await fetch("/api/pagamento/vip/pix", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + localStorage.getItem("token")
+    },
+    body: JSON.stringify({
+      valor: pagamentoAtual.valor,
+      modelo_id: pagamentoAtual.modelo_id
+    })
+  });
+
+  const data = await res.json();
+
+  document.getElementById("pixValor").innerText =
+    "R$ " + Number(pagamentoAtual.valor).toFixed(2);
+
+  document.getElementById("pixQr").src =
+    "data:image/png;base64," + data.qrCode;
+
+  document
+    .getElementById("popupPix")
+    .classList.remove("hidden");
 }
 
 
