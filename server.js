@@ -1128,52 +1128,6 @@ app.post(
   }
 );
 
-app.post("/webhook/mercadopago", async (req, res) => {
-  try {
-    const paymentId = req.body.data?.id;
-    if (!paymentId) return res.sendStatus(200);
-
-    const mp = new MercadoPagoConfig({
-      accessToken: process.env.MERCADOPAGO_TOKEN
-    });
-
-    const payment = new Payment(mp);
-    const result = await payment.get({ id: paymentId });
-
-    if (result.status === "approved") {
-      const { message_id, cliente_id } = result.metadata;
-
-      // 🔓 desbloqueia conteúdo
-      await db.query(
-        `
-        UPDATE messages
-        SET visto = true
-        WHERE id = $1 AND cliente_id = $2
-        `,
-        [message_id, cliente_id]
-      );
-
-      // 🔥 avisa chat em tempo real
-      const msg = await db.query(
-        `SELECT modelo_id FROM messages WHERE id = $1`,
-        [message_id]
-      );
-
-      if (msg.rowCount) {
-        const sala = `chat_${cliente_id}_${msg.rows[0].modelo_id}`;
-        io.to(sala).emit("conteudoVisto", { message_id });
-      }
-    }
-
-    res.sendStatus(200);
-
-  } catch (err) {
-    console.error("❌ Webhook MP erro:", err);
-    res.sendStatus(500);
-  }
-});
-
-
 // ⚠️ JSON FIRST
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
@@ -1185,6 +1139,66 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.post("/webhook/mercadopago", async (req, res) => {
+  try {
+    console.log("🔥 WEBHOOK MP RECEBIDO");
+    console.log("Headers:", req.headers);
+    console.log("Body:", req.body);
+
+    // 🛡️ proteção total
+    if (!req.body || !req.body.data || !req.body.data.id) {
+      console.log("⚠️ Webhook sem data.id");
+      return res.sendStatus(200);
+    }
+
+    const paymentId = req.body.data.id;
+
+    const mp = new MercadoPagoConfig({
+      accessToken: process.env.MERCADOPAGO_TOKEN
+    });
+
+    const payment = new Payment(mp);
+    const result = await payment.get({ id: paymentId });
+
+    console.log("💰 Status pagamento:", result.status);
+
+    if (result.status === "approved") {
+      const { message_id, cliente_id } = result.metadata || {};
+
+      if (!message_id || !cliente_id) {
+        console.log("⚠️ Metadata incompleta");
+        return res.sendStatus(200);
+      }
+
+      await db.query(
+        `
+        UPDATE messages
+        SET visto = true
+        WHERE id = $1 AND cliente_id = $2
+        `,
+        [message_id, cliente_id]
+      );
+
+      const msg = await db.query(
+        `SELECT modelo_id FROM messages WHERE id = $1`,
+        [message_id]
+      );
+
+      if (msg.rowCount) {
+        const sala = `chat_${cliente_id}_${msg.rows[0].modelo_id}`;
+        io.to(sala).emit("conteudoVisto", { message_id });
+      }
+
+      console.log("✅ Conteúdo desbloqueado via Pix:", message_id);
+    }
+
+    res.sendStatus(200);
+
+  } catch (err) {
+    console.error("❌ Webhook MP erro:", err);
+    res.sendStatus(500);
+  }
+});
 
 app.post("/api/pagamento/criar", authCliente, async (req, res) => {
   try {
