@@ -89,11 +89,11 @@
 
     <button class="modal-close" onclick="fecharPopupPix()">×</button>
 
-    <h2 class="pix-title">Pagamento Pix</h2>
+    <h2 class="pix-title">Desbloquear Conteúdo</h2>
 
     <!-- 🔥 PREÇO -->
     <div class="pix-preco">
-      Total a pagar:
+      Total:
       <strong id="pixValor">R$ 0,00</strong>
     </div>
 
@@ -125,14 +125,14 @@
   <div class="modal-box escolha-box">
     <button class="modal-close" onclick="fecharEscolha()">X</button>
 
-    <h2 class="titulo-roxo">Escolha a forma de pagamento</h2>
+    <h2 class="titulo-roxo">Escolha a forma de desbloqueio do conteúdo</h2>
 
     <button class="btn-pagamento pix" onclick="pagarComPix()">
-      ⚡ Pagar com Pix
+      ⚡ Desboquear com Pix
     </button>
 
     <button class="btn-pagamento cartao" onclick="pagarComCartao()">
-      💳 Pagar com Cartão
+      💳 Desbloquear com Cartão
     </button>
   </div>
 </div>
@@ -145,13 +145,17 @@
     <button class="modal-close" id="fecharPagamento">×</button>
 
     <h2>Desbloquear conteúdo</h2>
+    <div class="cartao-preco">
+  Total:
+  <strong id="cartaoValor">R$ 0,00</strong>
+</div>
 
     <div id="payment-element-container">
       <div id="payment-element"></div>
     </div>
 
     <button id="confirmarPagamento" class="btn-primary">
-      Confirmar pagamento
+      Confirmar desbloqueio
     </button>
   </div>
 </div>

@@ -891,6 +891,21 @@ html, body {
   cursor: pointer;
 }
 
+.cartao-preco {
+  margin-top: 8px;
+  margin-bottom: 14px;
+  text-align: center;
+  font-size: 15px;
+  color: #555;
+}
+
+.cartao-preco strong {
+  color: #7B2CFF;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+
 
 
 

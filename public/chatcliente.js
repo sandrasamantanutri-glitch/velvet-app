@@ -204,6 +204,9 @@ function fecharEscolha() {
 async function pagarComCartao() {
   fecharEscolha();
 
+   document.getElementById("cartaoValor").innerText =
+    "R$ " + Number(pagamentoAtual.valor).toFixed(2);
+    
   document
     .getElementById("paymentModal")
     .classList.remove("hidden");
