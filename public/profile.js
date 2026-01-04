@@ -52,6 +52,9 @@ document.addEventListener("DOMContentLoaded", () => {
   iniciarPerfil();
   iniciarUploads();
   iniciarBioPopup();
+  
+  document.getElementById("fecharPagamento")
+  ?.addEventListener("click", fecharPagamentoCartao);
 });
 
 // ===============================
@@ -538,4 +541,19 @@ function copiarPix() {
   document.execCommand("copy");
   alert("Código Pix copiado!");
 }
+
+function fecharPagamentoCartao() {
+  const modal = document.getElementById("paymentModal");
+  if (!modal) return;
+
+  modal.classList.add("hidden");
+
+  // limpa Stripe Elements (evita bug ao reabrir)
+  const container = document.getElementById("payment-element");
+  if (container) container.innerHTML = "";
+
+  elements = null;
+  window.pagamentoAtual = {};
+}
+
 
