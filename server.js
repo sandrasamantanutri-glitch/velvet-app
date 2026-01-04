@@ -805,11 +805,13 @@ app.get("/api/cliente/modelos", auth, async (req, res) => {
 
 const result = await db.query(`
   SELECT m.user_id AS id, m.nome
-  FROM vip_assinaturas v
+  FROM vip_subscriptions v
   JOIN modelos m ON m.user_id = v.modelo_id
   WHERE v.cliente_id = $1
+    AND v.ativo = true
   ORDER BY m.nome
 `, [req.user.id]);
+
 
 res.json(result.rows);
 
@@ -901,10 +903,16 @@ app.get("/api/vip/status/:modelo_id", auth, async (req, res) => {
   const { modelo_id } = req.params;
 
   const result = await db.query(
-    `SELECT 1 FROM vip_assinaturas 
-     WHERE cliente_id = $1 AND modelo_id = $2`,
-    [cliente_id, modelo_id]
-  );
+  `
+  SELECT 1
+  FROM vip_subscriptions
+  WHERE cliente_id = $1
+    AND modelo_id = $2
+    AND ativo = true
+  `,
+  [cliente_id, modelo_id]
+);
+
 
   res.json({ vip: result.rowCount > 0 });
 });
@@ -912,13 +920,18 @@ app.get("/api/vip/status/:modelo_id", auth, async (req, res) => {
 app.get("/api/modelo/vips", auth, authModelo, async (req, res) => {
   const modelo_id = req.user.id;
 
-  const result = await db.query(`
-    SELECT c.nome AS cliente
-    FROM vip_assinaturas v
-    JOIN clientes c ON c.user_id = v.cliente_id
-    WHERE v.modelo_id = $1
-    ORDER BY c.nome
-  `, [modelo_id]);
+  const result = await db.query(
+  `
+  SELECT c.nome AS cliente
+  FROM vip_subscriptions v
+  JOIN clientes c ON c.user_id = v.cliente_id
+  WHERE v.modelo_id = $1
+    AND v.ativo = true
+  ORDER BY c.nome
+  `,
+  [modelo_id]
+);
+
 
   res.json(result.rows);
 });
@@ -1007,9 +1020,10 @@ app.get("/api/chat/cliente", authCliente, async (req, res) => {
         m.user_id AS modelo_id,
         m.nome,
         m.avatar
-      FROM vip_assinaturas v
+      FROM vip_subscriptions v
       JOIN modelos m ON m.user_id = v.modelo_id
       WHERE v.cliente_id = $1
+        AND v.ativo = true
     `, [clienteId]);
 
     res.json(rows);
@@ -1018,6 +1032,7 @@ app.get("/api/chat/cliente", authCliente, async (req, res) => {
     res.status(500).json({ error: "Erro ao carregar chats" });
   }
 });
+
 
 
 /// ===============================
@@ -1037,12 +1052,12 @@ SELECT
     FILTER (WHERE m.sender = 'modelo')
     AS ultima_msg_modelo_ts
 
-FROM vip_assinaturas v
+FROM vip_subscriptions v
 
 JOIN clientes c 
   ON c.user_id = v.cliente_id
 
-LEFT JOIN clientes_dados cd       -- ✅ JOIN QUE FALTAVA
+LEFT JOIN clientes_dados cd
   ON cd.user_id = c.user_id
 
 LEFT JOIN messages m 
@@ -1050,9 +1065,11 @@ LEFT JOIN messages m
  AND m.modelo_id = $1
 
 WHERE v.modelo_id = $1
+  AND v.ativo = true
 
-GROUP BY c.user_id, c.nome, cd.avatar   -- ✅ GROUP BY COMPLETO
-ORDER BY ultima_msg_modelo_ts DESC NULLS LAST
+GROUP BY c.user_id, c.nome, cd.avatar
+ORDER BY ultima_msg_modelo_ts DESC NULLS LAST;
+
 
     `, [modeloId]);
 
@@ -2021,15 +2038,16 @@ app.post("/api/vip/ativar", auth, async (req, res) => {
     }
 
     // evita duplicar
-    const jaVip = await db.query(
-      `
-      SELECT 1
-      FROM vip_assinaturas
-      WHERE cliente_id = $1
-        AND modelo_id = $2
-      `,
-      [req.user.id, modelo_id]
-    );
+  const jaVip = await db.query(
+  `
+  SELECT 1
+  FROM vip_subscriptions
+  WHERE ativo = true
+    AND cliente_id = $1
+    AND modelo_id = $2
+  `,
+  [req.user.id, modelo_id]
+);
 
 if (jaVip.rowCount === 0) {
   await db.query(
