@@ -22,6 +22,7 @@ cloudinary.config({
 
 const cron = require("node-cron");
 
+
 cron.schedule("0 3 * * *", async () => {
   console.log("🔍 Verificando clientes com chargeback...");
 
@@ -263,8 +264,6 @@ const midias = midiasRes.rows.map(m => ({
 
   res.json({ midias });
 });
-
-module.exports = router;
 
 router.get("/api/transacoes", authMiddleware, async (req, res) => {
   const { mes, tipo, origem } = req.query;
@@ -925,6 +924,7 @@ router.get(
     res.json(rows);
   }
 );
+module.exports = router;
 
 
 
