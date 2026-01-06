@@ -1254,6 +1254,9 @@ app.post(
 );
 
 app.post("/webhook/mercadopago", async (req, res) => {
+  db.query("SELECT current_database(), inet_server_port()")
+  .then(r => console.log("🟢 DB DO SERVER:", r.rows[0]))
+  .catch(console.error);
   try {
     console.log("🔥 WEBHOOK MP RECEBIDO");
     console.log("Body:", req.body);
