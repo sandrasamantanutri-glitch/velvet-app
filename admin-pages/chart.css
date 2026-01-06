@@ -14,20 +14,21 @@
 .graficos-container {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 24px;
+  gap: 16px;
   margin-top: 30px;
 }
 
 .grafico-card {
   background: #fff;
   border-radius: 16px;
-  padding: 20px;
+  padding: 14px;     
+  border-radius: 14px;
   box-shadow: 0 10px 25px rgba(0,0,0,.06);
 }
 
 .grafico-card h3 {
   margin-bottom: 12px;
-  font-size: 16px;
+  font-size: 14px;
   color: #7B2CFF;
   font-weight: 600;
 }
@@ -283,6 +284,26 @@
   color: #fff;
   margin-left: 6px;
 }
+
+/* ============================= */
+/* AJUSTE DE TAMANHO DOS GRÁFICOS */
+/* ============================= */
+
+.grafico-card canvas {
+  max-height: 260px !important;
+}
+
+/* Gráfico anual ainda menor */
+.grafico-anual-container canvas {
+  max-height: 220px !important;
+}
+
+/* container específico do donut */
+.grafico-card.donut {
+  height: 300px;
+}
+
+
 
 
 

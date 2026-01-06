@@ -283,12 +283,19 @@ async function carregarGraficoAssinaturasMidias() {
         ]
       },
       options: {
-        plugins: {
-          legend: {
-            position: "bottom"
-          }
-        }
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: 'bottom',
+      labels: {
+        boxWidth: 12,
+        font: { size: 12 }
       }
+    }
+  }
+}
+
     }
   );
 }
