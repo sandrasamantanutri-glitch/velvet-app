@@ -92,9 +92,9 @@ async function carregarGraficoMensal() {
 // =====================================================
 let graficoAnual;
 async function carregarGraficoAnual() {
-  const ano = filtroAno.value;
 
-  const res = await authFetch(`/content/api/transacoes/resumo-anual?ano=${filtroAno.value}`);
+const ano = filtroAno.value;
+const res = await authFetch(`/content/api/transacoes/resumo-anual?ano=${ano}`);
   if (!res || !res.ok) return;
 
   const dados = await res.json();
