@@ -898,6 +898,36 @@ router.get(
     );
   }
 );
+
+// GET - Relatório de transações (ADM)
+router.get('/api/relatorios/transacoes', async (req, res) => {
+  try {
+    const query = `
+      SELECT
+        codigo               AS transacao_id,
+        tipo                 AS tipo_transacao,
+        cliente_id,
+        created_at           AS data_hora,
+        valor_bruto          AS preco,
+        velvet_fee           AS ganhos_velvet,
+        agency_fee           AS ganhos_agencia,
+        valor_modelo         AS ganhos_modelo
+      FROM transacoes
+      WHERE status = 'pago'
+      ORDER BY created_at DESC
+      LIMIT 500;
+    `;
+
+    const { rows } = await pool.query(query);
+
+    res.json(rows);
+
+  } catch (error) {
+    console.error('Erro ao buscar relatório de transações:', error);
+    res.status(500).json({ error: 'Erro ao carregar relatório' });
+  }
+});
+
 module.exports = router;
 
 
