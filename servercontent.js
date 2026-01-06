@@ -895,10 +895,11 @@ router.get(
   requireRole("modelo", "admin"),
   (req, res) => {
     res.sendFile(
-      path.join(__dirname, "modelo-pages", "relatorio.html")
+      path.join(__dirname, "admin-pages", "relatorio.html")
     );
   }
 );
+
 
 
 module.exports = router;
