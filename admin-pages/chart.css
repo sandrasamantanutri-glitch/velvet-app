@@ -1,5 +1,5 @@
 .graficos-container {
-  display: grid;
+  display: #ffffff83;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 24px;
   margin-top: 30px;
