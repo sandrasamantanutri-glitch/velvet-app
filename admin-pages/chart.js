@@ -28,13 +28,11 @@ const filtroMes = document.getElementById("filtroMes");
 // 📊 GRÁFICO DIÁRIO DO MÊS
 // =====================================================
 let graficoMensal;
-
 async function carregarGraficoMensal() {
-  const ano = filtroAno.value;
-  const mes = filtroMes.value;
+  const mes = filtroMes.value; // já vem 2025-12
 
   const res = await authFetch(
-    `/content/api/transacoes/diario?mes=${ano}-${mes}`
+    `/content/api/transacoes/diario?mes=${mes}`
   );
   if (!res || !res.ok) return;
 
@@ -50,13 +48,12 @@ async function carregarGraficoMensal() {
         labels: dados.map(d => d.dia),
         datasets: [{
           label: "Ganhos diários",
-          data: dados.map(d => Number(d.total))
+          data: dados.map(d => Number(d.total_modelo))
         }]
       }
     }
   );
 }
-
 
 // =====================================================
 // 📈 GRÁFICO ANUAL (GANHOS MENSAIS)
@@ -66,7 +63,7 @@ async function carregarGraficoAnual() {
   const ano = filtroAno.value;
 
   const res = await authFetch(
-    `/content/api/transacoes/resumo-mensal?ano=${ano}`
+    `/content/api/transacoes/resumo-anual?ano=${ano}`
   );
   if (!res || !res.ok) return;
 
@@ -79,11 +76,12 @@ async function carregarGraficoAnual() {
     {
       type: "line",
       data: {
-        labels: dados.map(d => d.mes),
+        labels: dados.map(d =>
+          new Date(d.mes).toISOString().slice(0, 7)
+        ),
         datasets: [{
           label: "Ganhos mensais",
-          data: dados.map(d => Number(d.total)),
-          tension: 0.3
+          data: dados.map(d => Number(d.total_modelo))
         }]
       }
     }
@@ -96,11 +94,13 @@ async function carregarGraficoAnual() {
 let graficoChargebacks;
 
 async function carregarGraficoChargebacks() {
-  const ano = filtroAno.value;
-  const mes = filtroMes.value;
+  const mes = filtroMes.value; // 2025-12
+
+  const inicio = `${mes}-01`;
+  const fim = `${mes}-31`;
 
   const res = await authFetch(
-    `/content/api/relatorios/chargebacks?mes=${ano}-${mes}`
+    `/content/api/relatorios/chargebacks?inicio=${inicio}&fim=${fim}`
   );
   if (!res || !res.ok) return;
 
@@ -113,9 +113,9 @@ async function carregarGraficoChargebacks() {
     {
       type: "doughnut",
       data: {
-        labels: dados.map(d => d.status),
+        labels: ["Chargebacks"],
         datasets: [{
-          data: dados.map(d => Number(d.total))
+          data: [dados.length]
         }]
       }
     }
