@@ -91,11 +91,18 @@ async function carregarGraficoMensal() {
 // 📈 GRÁFICO ANUAL (GANHOS MENSAIS)
 // =====================================================
 let graficoAnual;
-async function carregarGraficoAnual() {
 
-const ano = filtroAno.value;
-const res = await authFetch(`/content/api/transacoes/resumo-anual?ano=${ano}`);
-  if (!res || !res.ok) return;
+async function carregarGraficoAnual() {
+  const ano = filtroAno.value;
+
+  const res = await authFetch(
+    `/content/api/transacoes/resumo-anual?ano=${ano}`
+  );
+
+  if (!res || !res.ok) {
+    console.error("Erro ao carregar resumo anual");
+    return;
+  }
 
   const dados = await res.json();
 
@@ -104,19 +111,21 @@ const res = await authFetch(`/content/api/transacoes/resumo-anual?ano=${ano}`);
   graficoAnual = new Chart(
     document.getElementById("graficoAnual"),
     {
-      type: "line",
+      type: "bar", // 🔥 tipo fixo
       data: {
         labels: dados.map(d =>
           new Date(d.mes).toISOString().slice(0, 7)
         ),
         datasets: [{
           label: "Ganhos mensais",
-          data: dados.map(d => Number(d.total_modelo))
+          data: dados.map(d => Number(d.total_modelo)),
+          backgroundColor: "#7B2CFF"
         }]
       }
     }
   );
 }
+
 
 // =====================================================
 // ⚠️ GRÁFICO DE CHARGEBACKS
