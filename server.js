@@ -1147,6 +1147,12 @@ app.get("/api/chat/conteudos-vistos/:cliente_id", authModelo, async (req, res) =
   }
 });
 
+app.get("/modelo/relatorio", (req, res) => {
+  res.sendFile(
+    path.join(process.cwd(), "admin-pages", "relatorio.html")
+  );
+});
+
 
 
 // ===============================
