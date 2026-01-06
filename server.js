@@ -2131,9 +2131,6 @@ if (jaVip.rowCount === 0) {
 // START SERVER
 // ===============================
 
-require("./jobs/chargebackJob");
-require("./jobs/fechamentoMensalJob");
-
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, "0.0.0.0", () => {
