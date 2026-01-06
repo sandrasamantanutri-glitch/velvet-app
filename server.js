@@ -1285,6 +1285,54 @@ app.post("/webhook/mercadopago", async (req, res) => {
     `,
     [message_id, cliente_id]
   );
+  // 🔥 REGISTRO FINANCEIRO PIX (OBRIGATÓRIO)
+
+// busca dados do conteúdo
+const dadosMsg = await db.query(
+  "SELECT modelo_id, preco FROM messages WHERE id = $1",
+  [message_id]
+);
+
+if (!dadosMsg.rowCount) {
+  console.log("❌ Message não encontrada para transação:", message_id);
+  return res.sendStatus(200);
+}
+
+const modelo_id_real = dadosMsg.rows[0].modelo_id;
+const valor_bruto = Number(dadosMsg.rows[0].preco); // ex: 0.10
+
+// split 80 / 20
+const valor_modelo = Number((valor_bruto * 0.8).toFixed(2));
+const velvet_fee = Number((valor_bruto * 0.2).toFixed(2));
+
+// grava a venda no financeiro
+await db.query(
+  `
+  INSERT INTO transacoes (
+    codigo,
+    tipo,
+    modelo_id,
+    cliente_id,
+    message_id,
+    valor_bruto,
+    valor_modelo,
+    velvet_fee,
+    taxa_gateway,
+    origem_cliente,
+    status
+  )
+  VALUES ($1,'midia',$2,$3,$4,$5,$6,$7,0,'pix','normal')
+  `,
+  [
+    `pix_${paymentId}`,
+    modelo_id_real,
+    cliente_id,
+    message_id,
+    valor_bruto,
+    valor_modelo,
+    velvet_fee
+  ]
+);
 
   const msg = await db.query(
     `SELECT modelo_id FROM messages WHERE id = $1`,
