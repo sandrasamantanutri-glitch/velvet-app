@@ -889,6 +889,18 @@ router.get(
   }
 );
 
+router.get(
+  "/modelo/relatorio",
+  authMiddleware,
+  requireRole("modelo", "admin"),
+  (req, res) => {
+    res.sendFile(
+      path.join(__dirname, "modelo-pages", "relatorio.html")
+    );
+  }
+);
+
+
 module.exports = router;
 
 
