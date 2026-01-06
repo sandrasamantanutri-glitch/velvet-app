@@ -34,7 +34,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const contentRouter = require("./servercontent");
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
-app.use("/content", contentRouter);
+app.use("/admin", contentRouter);
 app.use(cors({
   origin: ["https://velvet-app-production.up.railway.app"],
   credentials: true
