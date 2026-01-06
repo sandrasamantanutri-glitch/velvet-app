@@ -8,7 +8,7 @@ function authFetch(url, options = {}) {
     return;
   }
 
-  return fetch(url, {
+  return authFetch(url, {
     ...options,
     headers: {
       ...(options.headers || {}),
@@ -19,7 +19,7 @@ function authFetch(url, options = {}) {
 
 
 async function carregarGraficoMensal(ano) {
-  const res = await fetch(`/api/transacoes/resumo-anual?ano=${ano}`);
+  const res = await authFetch(`/api/transacoes/resumo-anual?ano=${ano}`);
   const dados = await res.json();
 
   const labels = dados.map(d => 
@@ -51,7 +51,7 @@ async function carregarGraficoMensal(ano) {
 
 
 async function carregarGraficoTipos(mes) {
-  const res = await fetch(`/api/transacoes/resumo-mensal?mes=${mes}`);
+  const res = await authFetch(`/api/transacoes/resumo-mensal?mes=${mes}`);
   const d = await res.json();
 
   new Chart(document.getElementById("graficoTipos"), {
@@ -101,6 +101,7 @@ async function exportarExcel() {
 }
 
 
+
 async function exportarPDF() {
   const mes = document.getElementById("filtroMes").value;
 
@@ -127,10 +128,11 @@ async function exportarPDF() {
 }
 
 
+
 async function fecharMes() {
   if (!confirm("Tem certeza que deseja fechar este mês?")) return;
 
-  await authFetch("/api/admin/fechar-mes", {
+  await authauthFetch("/api/admin/fechar-mes", {
     method: "POST"
   });
 
@@ -140,7 +142,7 @@ async function fecharMes() {
 let graficoAnual;
 
 async function carregarGraficoAnualLinha(ano) {
-  const res = await fetch(`/api/transacoes/resumo-anual?ano=${ano}`);
+  const res = await authauthFetch(`/api/transacoes/resumo-anual?ano=${ano}`);
   const dados = await res.json();
 
   const labels = dados.map(d =>
@@ -176,7 +178,7 @@ async function carregarGraficoAnualLinha(ano) {
 }
 
 async function carregarGraficoAnualBarras(ano) {
-  const res = await fetch(`/api/transacoes/resumo-anual?ano=${ano}`);
+  const res = await authauthFetch(`/api/transacoes/resumo-anual?ano=${ano}`);
   const dados = await res.json();
 
   const labels = dados.map(d =>
@@ -214,7 +216,7 @@ async function carregarGraficoMensal() {
   const ano = filtroAno.value;
   const mes = filtroMes.value;
 
-  const res = await fetch(`/api/transacoes/diario?mes=${ano}-${mes}`);
+  const res = await authauthFetch(`/api/transacoes/diario?mes=${ano}-${mes}`);
   const dados = await res.json();
 
   const labels = dados.map(d =>
@@ -247,7 +249,7 @@ async function carregarGraficoMensal() {
 async function carregarGraficoAnual() {
   const ano = filtroAno.value;
 
-  const res = await fetch(`/api/transacoes/resumo-anual?ano=${ano}`);
+  const res = await authauthFetch(`/api/transacoes/resumo-anual?ano=${ano}`);
   const dados = await res.json();
 
   const labels = dados.map(d =>
@@ -280,7 +282,7 @@ async function carregarGraficoChargebacks() {
   const ano = filtroAno.value;
   const mes = filtroMes.value;
 
-  const res = await fetch(
+  const res = await authauthFetch(
     `/api/relatorios/chargebacks?inicio=${ano}-${mes}-01&fim=${ano}-${mes}-31`
   );
   const dados = await res.json();
@@ -312,7 +314,7 @@ async function carregarGraficoChargebacks() {
 let graficoMensalLinha;
 
 async function graficoDiario(ano, mes) {
-  const res = await fetch(`/api/transacoes/diario?mes=${ano}-${mes}`);
+  const res = await authauthFetch(`/api/transacoes/diario?mes=${ano}-${mes}`);
   const dados = await res.json();
 
   const labels = dados.map(d => new Date(d.dia).getDate());
@@ -342,7 +344,7 @@ async function graficoDiario(ano, mes) {
 let graficoMensalTipos;
 
 async function graficoTipos(mes) {
-  const res = await fetch(`/api/transacoes/resumo-mensal?mes=${mes}`);
+  const res = await authauthFetch(`/api/transacoes/resumo-mensal?mes=${mes}`);
   const d = await res.json();
 
   if (graficoMensalTipos) graficoMensalTipos.destroy();
@@ -371,7 +373,7 @@ async function graficoTipos(mes) {
 let graficoMensalChargebacks;
 
 async function graficoChargebacks(ano, mes) {
-  const res = await fetch(
+  const res = await authauthFetch(
     `/api/relatorios/chargebacks?inicio=${ano}-${mes}-01&fim=${ano}-${mes}-31`
   );
   const dados = await res.json();
@@ -438,7 +440,7 @@ document.addEventListener("DOMContentLoaded", carregarAlertas);
 
 
 async function carregarResumoAnual(ano) {
-  const res = await fetch(`/api/transacoes/resumo-anual?ano=${ano}`);
+  const res = await authFetch(`/api/transacoes/resumo-anual?ano=${ano}`);
   const dados = await res.json();
 
   let total = 0, assinaturas = 0, midias = 0, velvet = 0;

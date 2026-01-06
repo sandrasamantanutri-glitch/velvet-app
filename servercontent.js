@@ -111,14 +111,15 @@ function calcularValores({ valor_bruto, taxa_gateway, agency_fee, velvet_fee, st
   };
 }
 
-function requireRole(role) {
+function requireRole(...roles) {
   return (req, res, next) => {
-    if (req.user.role !== role) {
+    if (!roles.includes(req.user.role)) {
       return res.status(403).json({ erro: "Acesso negado" });
     }
     next();
   };
 }
+
 
 function calcularScoreRisco({
   totalLost,
@@ -304,36 +305,6 @@ router.get("/api/transacoes", authMiddleware, async (req, res) => {
 
   const result = await db.query(sql, values);
   res.json(result.rows);
-});
-
-router.get("/api/transacoes/resumo-mensal", authMiddleware, async (req, res) => {
-  const { mes } = req.query;
-  const { role, modelo_id } = req.user;
-
-  let where = `created_at BETWEEN $1 AND $2`;
-  let values = [`${mes}-01`, `${mes}-31`];
-
-  if (role === "modelo") {
-    values.push(modelo_id);
-    where += ` AND modelo_id = $${values.length}`;
-  }
-
-  const result = await db.query(
-    `
-    SELECT
-      SUM(valor_bruto) AS total_bruto,
-      SUM(taxa_gateway) AS total_taxas,
-      SUM(agency_fee) AS total_agency,
-      SUM(velvet_fee) AS total_velvet,
-      SUM(valor_modelo) AS total_modelo
-    FROM transacoes
-    WHERE ${where}
-      AND status = 'normal'
-    `,
-    values
-  );
-
-  res.json(result.rows[0]);
 });
 
 router.get("/api/transacoes/origem", authMiddleware, async (req, res) => {
