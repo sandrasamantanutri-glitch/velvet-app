@@ -62,9 +62,7 @@ let graficoAnual;
 async function carregarGraficoAnual() {
   const ano = filtroAno.value;
 
-  const res = await authFetch(
-    `/content/api/transacoes/resumo-anual?ano=${ano}`
-  );
+  const res = await authFetch(`/content/api/transacoes/resumo-anual?ano=${filtroAno.value}`);
   if (!res || !res.ok) return;
 
   const dados = await res.json();
@@ -94,14 +92,12 @@ async function carregarGraficoAnual() {
 let graficoChargebacks;
 
 async function carregarGraficoChargebacks() {
-  const mes = filtroMes.value; // 2025-12
+  const mes = filtroMes.value;
 
   const inicio = `${mes}-01`;
   const fim = `${mes}-31`;
 
-  const res = await authFetch(
-    `/content/api/relatorios/chargebacks?inicio=${inicio}&fim=${fim}`
-  );
+  const res = await authFetch(`/content/api/relatorios/chargebacks?inicio=${inicio}&fim=${fim}`);
   if (!res || !res.ok) return;
 
   const dados = await res.json();
@@ -150,9 +146,7 @@ async function exportarExcel() {
   const ano = filtroAno.value;
   const mes = filtroMes.value;
 
-  const res = await authFetch(
-    `/api/export/resumo-mensal/excel?mes=${ano}-${mes}`
-  );
+  const res = await authFetch(`/content/api/export/resumo-mensal/excel?mes=${mes}`);
   if (!res || !res.ok) return;
 
   const blob = await res.blob();
@@ -170,9 +164,7 @@ async function exportarPDF() {
   const ano = filtroAno.value;
   const mes = filtroMes.value;
 
-  const res = await authFetch(
-    `/api/export/resumo-mensal/pdf?mes=${ano}-${mes}`
-  );
+  const res = await aauthFetch(`/content/api/export/resumo-mensal/pdf?mes=${mes}`);
   if (!res || !res.ok) return;
 
   const blob = await res.blob();
