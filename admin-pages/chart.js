@@ -31,7 +31,7 @@ const filtroPeriodo = document.getElementById("filtroPeriodo");
 let graficoMensal;
 
 async function carregarGraficoMensal() {
-  const mes = filtroMes.value; // ex: 2025-12
+  const mes = filtroPeriodo.value; // ex: 2025-12
 
   const res = await authFetch(
     `/content/api/transacoes/diario?mes=${mes}`
@@ -61,6 +61,12 @@ async function carregarGraficoMensal() {
   );
 
   if (graficoMensal) graficoMensal.destroy();
+
+  if (!/^\d{4}-\d{2}$/.test(mes)) {
+  console.error("MÊS INVÁLIDO ENVIADO:", mes);
+  return;
+}
+
 
   graficoMensal = new Chart(
     document.getElementById("graficoMensal"),
@@ -118,7 +124,7 @@ async function carregarGraficoAnual() {
 let graficoChargebacks;
 
 async function carregarGraficoChargebacks() {
-  const mes = filtroMes.value;
+  const mes = filtroPeriodo.value;
 
   const inicio = `${mes}-01`;
   const fim = `${mes}-31`;
@@ -129,6 +135,12 @@ async function carregarGraficoChargebacks() {
   const dados = await res.json();
 
   if (graficoChargebacks) graficoChargebacks.destroy();
+
+  if (!/^\d{4}-\d{2}$/.test(mes)) {
+  console.error("MÊS INVÁLIDO ENVIADO:", mes);
+  return;
+}
+
 
   graficoChargebacks = new Chart(
     document.getElementById("graficoChargebacks"),
@@ -172,7 +184,7 @@ async function carregarAlertas() {
 // =====================================================
 async function exportarExcel() {
   const ano = filtroAno.value;
-  const mes = filtroMes.value;
+  const mes = filtroPeriodo.value;
 
   const res = await authFetch(`/content/api/export/resumo-mensal/excel?mes=${mes}`);
   if (!res || !res.ok) return;
@@ -186,11 +198,16 @@ async function exportarExcel() {
   a.click();
 
   URL.revokeObjectURL(url);
+
+  if (!/^\d{4}-\d{2}$/.test(mes)) {
+  console.error("MÊS INVÁLIDO ENVIADO:", mes);
+  return;
 }
+
 
 async function exportarPDF() {
   const ano = filtroAno.value;
-  const mes = filtroMes.value;
+  const mes = filtroPeriodo.value;
 
   const res = await authFetch(`/content/api/export/resumo-mensal/pdf?mes=${mes}`);
   if (!res || !res.ok) return;
@@ -204,6 +221,10 @@ async function exportarPDF() {
   a.click();
 
   URL.revokeObjectURL(url);
+
+  if (!/^\d{4}-\d{2}$/.test(mes)) {
+  console.error("MÊS INVÁLIDO ENVIADO:", mes);
+  return;
 }
 
 // =====================================================
