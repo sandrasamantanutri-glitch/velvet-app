@@ -273,7 +273,7 @@ const midias = midiasRes.rows.map(m => ({
 
 router.get("/api/transacoes", authMiddleware, async (req, res) => {
   const { mes, tipo, origem } = req.query;
-  const { role, modelo_id } = req.user;
+  const { role, id: modelo_id } = req.user;
 
   let where = [];
   let values = [];
@@ -327,7 +327,7 @@ router.get("/api/transacoes/origem", authMiddleware, async (req, res) => {
 
 router.get("/api/transacoes/diario", authMiddleware, async (req, res) => {
   const { mes } = req.query; // ex: 2026-01
-  const { role, modelo_id } = req.user;
+  const { role, id: modelo_id } = req.user;
 
   const inicio = `${mes}-01`;
   const fim = `${mes}-31`;
@@ -406,7 +406,7 @@ router.get(
 
 router.get("/api/transacoes/resumo-mensal", authMiddleware, async (req, res) => {
   const { mes } = req.query; // ex: 2025-12
-  const { role, modelo_id } = req.user;
+  const { role, id: modelo_id } = req.user;
 
   const dataBase = `${mes}-01`;
 
@@ -448,7 +448,7 @@ const ExcelJS = require("exceljs");
 
 router.get("/api/export/resumo-mensal/excel", authMiddleware, async (req, res) => {
   const { mes } = req.query;
-  const { role, modelo_id } = req.user;
+  const { role, id: modelo_id } = req.user;
 
   const dataBase = `${mes}-01`;
 
@@ -510,7 +510,7 @@ const PDFDocument = require("pdfkit");
 
 router.get("/api/export/resumo-mensal/pdf", authMiddleware, async (req, res) => {
   const { mes } = req.query;
-  const { role, modelo_id } = req.user;
+  const { role, id: modelo_id } = req.user;
 
   let values = [`${mes}-01`];
   let where = `
@@ -703,7 +703,7 @@ router.get(
 
 router.get("/api/transacoes/resumo-anual", authMiddleware, async (req, res) => {
   const { ano } = req.query; // ex: 2025
-  const { role, modelo_id } = req.user;
+  const { role, id: modelo_id } = req.user;
 
   const inicio = `${ano}-01-01`;
   const fim = `${Number(ano) + 1}-01-01`;
@@ -748,7 +748,7 @@ router.get("/api/transacoes/resumo-anual", authMiddleware, async (req, res) => {
 
 router.get("/api/export/resumo-anual/excel", authMiddleware, async (req, res) => {
   const { ano } = req.query;
-  const { role, modelo_id } = req.user;
+  const { role, id: modelo_id } = req.user;
 
   const inicio = `${ano}-01-01`;
   const fim = `${Number(ano) + 1}-01-01`;
@@ -810,7 +810,7 @@ router.get("/api/export/resumo-anual/excel", authMiddleware, async (req, res) =>
 
 router.get("/api/export/resumo-anual/pdf", authMiddleware, async (req, res) => {
   const { ano } = req.query;
-  const { role, modelo_id } = req.user;
+  const { role, id: modelo_id } = req.user;
 
   const inicio = `${ano}-01-01`;
   const fim = `${Number(ano) + 1}-01-01`;
