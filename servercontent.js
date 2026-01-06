@@ -221,6 +221,11 @@ router.post(
 
 
 //ROTAS GETSSSS/////////////////////
+router.get("/relatorios", (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "admin-pages", "chart.html")
+  );
+});
 // 🔐 ENDPOINT DE ACESSO AO CONTEÚDO
 router.get("/access", authCliente, async (req, res) => {
   const { message_id } = req.query;
