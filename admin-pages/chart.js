@@ -23,6 +23,7 @@ function authFetch(url, options = {}) {
 // =====================================================
 const filtroAno = document.getElementById("filtroAno");
 const filtroMes = document.getElementById("filtroMes");
+const filtroPeriodo = document.getElementById("filtroPeriodo");
 
 // =====================================================
 // 📊 GRÁFICO DIÁRIO DO MÊS
