@@ -1,3 +1,16 @@
+* {
+  box-sizing: border-box;
+  font-family: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont,
+               'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell,
+               'Helvetica Neue', Arial, sans-serif;
+}
+
+.title h3 {
+  font-size: 20px;
+  color: #7B2CFF;
+  font-weight: 600;
+  align-items: center;
+}
 .graficos-container {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
