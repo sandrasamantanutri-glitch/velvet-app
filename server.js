@@ -866,20 +866,6 @@ app.get("/api/chat/unread/modelo", authModelo, async (req, res) => {
 });
 
 
-//GANHOS
-app.get("/api/modelo/ganhos", authModelo, async (req, res) => {
-  const modelo_id = req.user.id;
-
-  const result = await db.query(
-    `SELECT * FROM transactions
-     WHERE modelo_id = $1
-     ORDER BY created_at DESC`,
-    [modelo_id]
-  );
-
-  res.json(result.rows);
-});
-
 // 👤 IDENTIDADE DO CLIENTE (JWT)
 app.get("/api/cliente/me", auth, async (req, res) => {
   if (req.user.role !== "cliente") {

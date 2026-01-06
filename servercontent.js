@@ -904,26 +904,34 @@ router.get("/api/export/resumo-anual/pdf", authMiddleware, async (req, res) => {
   doc.end();
 });
 
-router.get(
-  "/api/alertas/risco",
-  authMiddleware,
-  requireRole("admin", "modelo"),
-  async (req, res) => {
+// router.get(
+//   "/api/alertas/risco",
+//   authMiddleware,
+//   requireRole("admin", "modelo"),
+//   async (req, res) => {
 
-    const { rows } = await db.query(`
-      SELECT
-        cliente_id,
-        score,
-        nivel,
-        atualizado_em
-      FROM cliente_risco
-      WHERE nivel IN ('alto','critico')
-      ORDER BY score DESC
-    `);
+//     const { rows } = await db.query(`
+//       SELECT
+//         cliente_id,
+//         score,
+//         nivel,
+//         atualizado_em
+//       FROM cliente_risco
+//       WHERE nivel IN ('alto','critico')
+//       ORDER BY score DESC
+//     `);
 
-    res.json(rows);
-  }
-);
+//     res.json(rows);
+//   }
+// );
+
+///DEPOIS VOLTAR A ANTERIOR
+router.get("/relatorios", (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "admin-pages", "chart.html")
+  );
+});
+
 module.exports = router;
 
 

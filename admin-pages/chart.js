@@ -1,5 +1,23 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+function authFetch(url, options = {}) {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    window.location.href = "/login.html";
+    return;
+  }
+
+  return fetch(url, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      Authorization: "Bearer " + token
+    }
+  });
+}
+
+
 async function carregarGraficoMensal(ano) {
   const res = await fetch(`/api/transacoes/resumo-anual?ano=${ano}`);
   const dados = await res.json();
