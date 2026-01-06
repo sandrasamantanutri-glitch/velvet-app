@@ -28,15 +28,36 @@ const filtroMes = document.getElementById("filtroMes");
 // 📊 GRÁFICO DIÁRIO DO MÊS
 // =====================================================
 let graficoMensal;
+
 async function carregarGraficoMensal() {
-  const mes = filtroMes.value; // já vem 2025-12
+  const mes = filtroMes.value; // ex: 2025-12
 
   const res = await authFetch(
     `/content/api/transacoes/diario?mes=${mes}`
   );
-  if (!res || !res.ok) return;
+
+  if (!res || !res.ok) {
+    console.error("Erro ao buscar ganhos diários");
+    return;
+  }
 
   const dados = await res.json();
+  console.log("GANHOS DIARIOS:", dados);
+
+  // 🔴 se não houver dados, avisa
+  if (!Array.isArray(dados) || dados.length === 0) {
+    console.warn("Nenhum dado retornado para", mes);
+    return;
+  }
+
+  // 🔹 adapta aos nomes vindos do backend
+  const labels = dados.map(d =>
+    d.dia ?? d.dia_venda ?? d.data ?? ""
+  );
+
+  const valores = dados.map(d =>
+    Number(d.total ?? d.total_modelo ?? d.valor ?? 0)
+  );
 
   if (graficoMensal) graficoMensal.destroy();
 
@@ -45,15 +66,19 @@ async function carregarGraficoMensal() {
     {
       type: "bar",
       data: {
-        labels: dados.map(d => d.dia),
-        datasets: [{
-          label: "Ganhos diários",
-          data: dados.map(d => Number(d.total_modelo))
-        }]
+        labels,
+        datasets: [
+          {
+            label: "Ganhos diários",
+            data: valores,
+            backgroundColor: "#7B2CFF"
+          }
+        ]
       }
     }
   );
 }
+
 
 // =====================================================
 // 📈 GRÁFICO ANUAL (GANHOS MENSAIS)
