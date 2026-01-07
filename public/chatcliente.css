@@ -21,14 +21,14 @@ html, body {
    PÁGINA PRINCIPAL
 ========================= */
 .chat-header strong {
-  color: #1E1E26;               /* 💜 roxo Velvet */
+  color: #1E1E26;               
   font-weight: 600;
 }
 
 #tituloConversas {
   font-size: 20px;
   font-weight: 600;
-  color: #1E1E26;               /* 💜 roxo Velvet */
+  color: #1E1E26;               
 }
 
 #tituloConversas span {
@@ -94,7 +94,7 @@ html, body {
   padding: 8px 10px;
   margin-bottom: 6px;
   background: #C9C9C9;
-  color: #1E1E26;
+  color: #7B2CFF;
   border-radius: 12px;
   cursor: pointer;
   font-size: 12px;
@@ -291,7 +291,7 @@ html, body {
 
 /* botão */
 .btn-desbloquear {
-  background: linear-gradient(135deg, #7B2CFF, #9D5CFF);
+  background: linear-gradient(135deg, #7b2cff, #9E6BFF);
   color: #fff;
   border: none;
   border-radius: 20px;
@@ -470,7 +470,7 @@ html, body {
 
 /* preço */
 .chat-conteudo.bloqueado.premium .valor-conteudo {
-  background: linear-gradient(135deg, #7B2CFF, #9D5CFF);
+  background: linear-gradient(135deg, #7b2cff, #9E6BFF);
   color: #fff;
 
   padding: 6px 18px;
@@ -761,12 +761,12 @@ html, body {
 }
 
 .btn-pagamento.pix {
-  background: linear-gradient(135deg, #7B2CFF,#5D24BE );
+  background: linear-gradient(135deg, #7b2cff, #9E6BFF);
   color: #fff;
 }
 
 .btn-pagamento.cartao {
-  background: linear-gradient(135deg, #7B2CFF, #5D24BE);
+  background: linear-gradient(135deg, #7b2cff, #9E6BFF);
   color: #fff;
 }
 
@@ -850,7 +850,7 @@ text-align: center;
   border: none;
   border-radius: 999px;
 
-  background: linear-gradient(135deg, #7B2CFF, #5D24BE);
+  background: linear-gradient(135deg, #7b2cff, #9E6BFF);
   color: #fff;
 
   font-size: 15px;
@@ -882,7 +882,7 @@ text-align: center;
   bottom: 90px;
   left: 50%;
   transform: translateX(-50%);
-  background: linear-gradient(135deg, #7B2CFF, #5D24BE);
+  background: linear-gradient(135deg, #7b2cff, #9E6BFF);
   color: #fff;
   padding: 12px 20px;
   border-radius: 999px;
