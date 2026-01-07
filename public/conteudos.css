@@ -194,3 +194,82 @@ h1 {
     border-top: 1px solid #e5e5e5;
     margin: 30px 0;
 }
+
+
+
+/* =========================================
+   MOBILE AJUSTES
+========================================= */
+@media (max-width: 768px) {
+
+  /* TÍTULOS */
+  h1 {
+    font-size: 24px;
+    margin-bottom: 8px;
+  }
+
+  .section-desc {
+    font-size: 14px;
+    padding: 0 16px;
+  }
+
+  .section-subtitle {
+    font-size: 16px;
+    margin-top: 24px;
+  }
+
+  /* GRID CONTEÚDOS */
+  #listaConteudos {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 0 12px;
+  }
+
+  /* CARD */
+  .conteudo-card {
+    border-radius: 12px;
+  }
+
+  .conteudo-card img,
+  .conteudo-card video {
+    border-radius: 12px;
+  }
+
+  /* BOTÃO EXCLUIR — sempre visível no mobile */
+  .btn-excluir {
+    opacity: 1;
+    width: 30px;
+    height: 30px;
+    font-size: 16px;
+    top: 8px;
+    right: 8px;
+    background: rgba(0,0,0,0.7);
+  }
+
+  /* BOTÕES */
+  .btn-primary,
+  .btn-file {
+    font-size: 14px;
+    padding: 10px 18px;
+    border-radius: 22px;
+  }
+
+  /* UPLOAD */
+  .upload-box {
+    padding: 0 16px;
+  }
+
+  .file-name {
+    display: block;
+    margin: 8px 0 0;
+    font-size: 13px;
+  }
+
+  /* MODAL */
+  .modalClose {
+    top: 12px;
+    right: 16px;
+    font-size: 28px;
+  }
+}
+
