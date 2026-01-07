@@ -151,6 +151,15 @@ body.role-modelo {
   color: #C9C9C9;
 }
 
+
+.container-dados .label {
+  margin-top: 10px;
+  font-size: 13px;          /* 🔥 pequeno igual labels */
+  color: #1E1E26;
+  opacity: 0.75;            /* mais discreto */
+  line-height: 1.4;
+}
+
 /* =====================================================
    🔒 FIX DEFINITIVO DE FONTE – PAINEL
 ===================================================== */
