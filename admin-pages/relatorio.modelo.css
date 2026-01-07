@@ -128,6 +128,7 @@ body {
   display: flex;
   gap: 18px;
   flex-wrap: wrap;
+  text-align: center;
 }
 
 .link-card {

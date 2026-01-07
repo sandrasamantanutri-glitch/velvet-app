@@ -83,9 +83,9 @@ const menuCliente = `
 const menuModelo = `
 <div class="menu-header">Menu</div>
 
-<button onclick="location.href='profile.html'">Meu Perfil</button>
-<button onclick="abrirConteudos()">Conteúdos</button>    
-<button onclick="location.href='chatmodelo.html'">Chat</button>
+<button onclick="location.href='/profile.html'">Meu Perfil</button>
+<button onclick="abrirConteudos()">/Conteúdos</button>    
+<button onclick="location.href='/chatmodelo.html'">Chat</button>
 <button id="btnAlterarAvatar">Alterar foto do Perfil</button>
 <button id="btnAlterarCapa">Alterar Capa</button>
 <button onclick="abrirDados()">Meus Dados</button>
