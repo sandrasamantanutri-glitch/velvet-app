@@ -547,6 +547,7 @@ background: linear-gradient(135deg, #7b2cff, #9E6BFF);
   background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(8px);
   color: #7B2CFF;
+  border-radius: 8px;
 
   font-size: 12px;
   font-weight: 500;
