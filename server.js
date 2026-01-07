@@ -41,6 +41,19 @@ app.use(cors({
   credentials: true
 }));
 
+const rateLimit = require("express-rate-limit");
+
+// 🔒 Rate limit para autenticação (login / register)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 10, // 10 tentativas
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: "Muitas tentativas. Tente novamente em alguns minutos."
+  }
+});
+
 const servercontent = require("./servercontent");
 app.use("/", servercontent);
 
@@ -165,6 +178,21 @@ async function uploadConteudo(req, res) {
     res.status(500).json({ error: "Erro no upload" });
   }
 }
+
+async function webhookJaProcessado(gateway, eventId) {
+  const res = await db.query(
+    `
+    INSERT INTO webhook_events (gateway, event_id)
+    VALUES ($1, $2)
+    ON CONFLICT (gateway, event_id) DO NOTHING
+    RETURNING id
+    `,
+    [gateway, eventId]
+  );
+
+  return res.rowCount === 0; // true = já processado
+}
+
 
 function auth(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -569,33 +597,69 @@ if (conteudosFiltrados.length === 0) {
  });
 
  // 👁️ CLIENTE VISUALIZOU CONTEÚDO
-socket.on("marcarConteudoVisto", async ({ message_id, cliente_id, modelo_id }) => {
-  if (!socket.user || socket.user.role !== "cliente") return;
+socket.on("conteudoVisto", async ({ message_id }) => {
+  console.log("🔓 Conteúdo liberado:", message_id);
+  conteudosLiberados.add(Number(message_id));
 
-  try {
-    // 1️⃣ marca como visto no banco
-    await db.query(
-      `
-      UPDATE messages
-      SET visto = true
-      WHERE id = $1
-        AND cliente_id = $2
-        AND modelo_id = $3
-      `,
-      [message_id, cliente_id, modelo_id]
-    );
-
-    const sala = `chat_${cliente_id}_${modelo_id}`;
-
-    // 2️⃣ avisa MODELO em tempo real
-    io.to(sala).emit("conteudoVisto", {
-      message_id
-    });
-
-  } catch (err) {
-    console.error("❌ Erro marcarConteudoVisto:", err);
+  /* ==========================
+     🔒 FECHA POPUP PIX
+  ========================== */
+  if (
+    pagamentoAtual.message_id &&
+    Number(pagamentoAtual.message_id) === Number(message_id)
+  ) {
+    document.getElementById("popupPix")?.classList.add("hidden");
+    pagamentoAtual = {};
   }
- });
+
+  /* ==========================
+     🔄 ATUALIZA CARD NO CHAT
+  ========================== */
+  const card = document.querySelector(
+    `.chat-conteudo[data-id="${message_id}"]`
+  );
+
+  if (!card) return;
+
+  const res = await fetch(`/api/chat/conteudo/${message_id}`, {
+    headers: {
+      Authorization: "Bearer " + localStorage.getItem("token")
+    }
+  });
+
+  if (!res.ok) return;
+
+  const data = await res.json();
+  const midias = data.midias || [];
+
+  card.classList.remove("bloqueado");
+  card.classList.add("livre");
+  card.removeAttribute("data-preco");
+
+  card.innerHTML = `
+    <div class="pacote-grid">
+      ${midias.map((m, index) => `
+        <div class="midia-item"
+             onclick="abrirConteudoSeguro(${message_id}, ${index})">
+          ${
+            m.tipo === "video"
+              ? `<video src="${m.url}" muted playsinline></video>`
+              : `<img src="${m.url}" />`
+          }
+        </div>
+      `).join("")}
+    </div>
+  `;
+
+  /* ==========================
+     ✅ TOAST DE CONFIRMAÇÃO
+  ========================== */
+  const toast = document.getElementById("toastPagamento");
+  if (toast) {
+    toast.classList.remove("hidden");
+    setTimeout(() => toast.classList.add("hidden"), 3000);
+  }
+});
 
 
 });
@@ -1146,7 +1210,7 @@ app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
 app.get("/api/chat/conteudos-vistos/:cliente_id", authModelo, async (req, res) => {
   const modelo_id  = req.user.id;
   const cliente_id = Number(req.params.cliente_id);
-  
+
 if (!Number.isInteger(cliente_id) || cliente_id <= 0) {
   return res.status(400).json({ error: "cliente_id inválido" });
 }
@@ -1229,12 +1293,28 @@ app.post(
       return res.status(400).send("Webhook Error");
     }
 
+    // 🔒 IDOTEMPOTÊNCIA STRIPE (BLOQUEIA DUPLICADO)
+    try {
+      const jaProcessado = await webhookJaProcessado(
+        "stripe",
+        event.id
+      );
+
+      if (jaProcessado) {
+        console.log("⚠️ Webhook Stripe duplicado ignorado:", event.id);
+        return res.json({ received: true });
+      }
+    } catch (err) {
+      console.error("❌ Erro idempotência Stripe:", err);
+      return res.sendStatus(500);
+    }
+
     // ✅ PAGAMENTO CONFIRMADO
     if (event.type === "payment_intent.succeeded") {
       const intent = event.data.object;
 
-      const message_id = intent.metadata.message_id;
-      const cliente_id = intent.metadata.cliente_id;
+      const message_id = intent.metadata?.message_id;
+      const cliente_id = intent.metadata?.cliente_id;
 
       if (message_id && cliente_id) {
         try {
@@ -1266,23 +1346,21 @@ app.post(
             });
           }
 
-          console.log("🔓 Conteúdo desbloqueado em tempo real:", message_id);
+          console.log("🔓 Conteúdo desbloqueado via Stripe:", message_id);
 
         } catch (err) {
           console.error("❌ Erro ao desbloquear conteúdo:", err);
         }
-        
       }
     }
 
     res.json({ received: true });
   }
-  
 );
+
 
 app.post("/webhook/mercadopago", async (req, res) => {
 
-  // 🔒 PROTEÇÃO MÍNIMA DO WEBHOOK MP
   const signature =
     req.headers["x-signature"] ||
     req.headers["x-hub-signature"];
@@ -1292,21 +1370,27 @@ app.post("/webhook/mercadopago", async (req, res) => {
     return res.sendStatus(401);
   }
 
-  // 🔍 debug de ambiente (ok manter por enquanto)
-  db.query("SELECT current_database(), inet_server_port()")
-    .then(r => console.log("🟢 DB DO SERVER:", r.rows[0]))
-    .catch(console.error);
-
   try {
     console.log("🔥 WEBHOOK MP RECEBIDO");
     console.log("Body:", req.body);
 
-    if (!req.body || !req.body.data || !req.body.data.id) {
+    if (!req.body?.data?.id) {
       console.log("⚠️ Webhook sem data.id");
       return res.sendStatus(200);
     }
 
-    const paymentId = req.body.data.id;
+    const paymentId = String(req.body.data.id);
+
+    // 🔒 IDEMPOTÊNCIA
+    const jaProcessado = await webhookJaProcessado(
+      "mercadopago",
+      paymentId
+    );
+
+    if (jaProcessado) {
+      console.log("⚠️ Webhook MP duplicado ignorado:", paymentId);
+      return res.sendStatus(200);
+    }
 
     const mp = new MercadoPagoConfig({
       accessToken: process.env.MERCADOPAGO_TOKEN
@@ -1317,96 +1401,38 @@ app.post("/webhook/mercadopago", async (req, res) => {
 
     console.log("💰 Status pagamento:", result.status);
 
-    if (result.status === "approved") {
-      const { message_id, cliente_id, modelo_id } = result.metadata || {};
-      if (message_id && cliente_id) {
-  await db.query(
-    `
-    UPDATE messages
-    SET visto = true
-    WHERE id = $1 AND cliente_id = $2
-    `,
-    [message_id, cliente_id]
-  );
-  // 🔥 REGISTRO FINANCEIRO PIX (OBRIGATÓRIO)
+    if (result.status !== "approved") {
+      return res.sendStatus(200);
+    }
 
-// busca dados do conteúdo
-const dadosMsg = await db.query(
-  "SELECT modelo_id, preco FROM messages WHERE id = $1",
-  [message_id]
-);
+    const metadata = result.metadata || {};
+    const { tipo, message_id, cliente_id, modelo_id } = metadata;
 
-if (!dadosMsg.rowCount) {
-  console.log("❌ Message não encontrada para transação:", message_id);
-  return res.sendStatus(200);
-}
+    /* ===============================
+       🎬 VENDA DE MÍDIA
+    =============================== */
+    if (tipo === "midia") {
 
-const modelo_id_real = dadosMsg.rows[0].modelo_id;
-const valor_bruto = Number(dadosMsg.rows[0].preco); // ex: 0.10
+      if (!message_id || !cliente_id) {
+        console.log("⚠️ Metadata incompleta (midia):", metadata);
+        return res.sendStatus(200);
+      }
 
-// split 80 / 20
-const valor_modelo = Number((valor_bruto * 0.8).toFixed(2));
-const velvet_fee = Number((valor_bruto * 0.2).toFixed(2));
+      const msg = await db.query(
+        "SELECT modelo_id, preco FROM messages WHERE id = $1",
+        [message_id]
+      );
 
-// grava a venda no financeiro
-await db.query(
-  `
-  INSERT INTO transacoes (
-    codigo,
-    tipo,
-    modelo_id,
-    cliente_id,
-    message_id,
-    valor_bruto,
-    valor_modelo,
-    velvet_fee,
-    taxa_gateway,
-    origem_cliente,
-    status
-  )
-  VALUES ($1,'midia',$2,$3,$4,$5,$6,$7,0,'pix','normal')
-  `,
-  [
-    `pix_${paymentId}`,
-    modelo_id_real,
-    cliente_id,
-    message_id,
-    valor_bruto,
-    valor_modelo,
-    velvet_fee
-  ]
-);
+      if (!msg.rowCount) {
+        console.log("❌ Message não encontrada:", message_id);
+        return res.sendStatus(200);
+      }
 
-  const msg = await db.query(
-    `SELECT modelo_id FROM messages WHERE id = $1`,
-    [message_id]
-  );
+      const modelo = msg.rows[0].modelo_id;
+      const valor_bruto = Number(msg.rows[0].preco);
 
-  if (msg.rowCount) {
-    const sala = `chat_${cliente_id}_${msg.rows[0].modelo_id}`;
-    io.to(sala).emit("conteudoVisto", { message_id });
-  }
-
-  console.log("✅ Conteúdo desbloqueado via Pix:", message_id);
-  return res.sendStatus(200);
-}
-
-/* ===============================
-   💜 VIP PAGO (PIX)
-=============================== */
-if (cliente_id && modelo_id) {
-  await db.query(
-    `
-   INSERT INTO vip_assinaturas (cliente_id, modelo_id)
-   VALUES ($1, $2)
-   ON CONFLICT DO NOTHING
-    `,
-    [cliente_id, modelo_id]
-  );
-
-  console.log("💜 VIP ativado via Pix:", cliente_id, modelo_id);
-  return res.sendStatus(200);
-}
+      const valor_modelo = Number((valor_bruto * 0.8).toFixed(2));
+      const velvet_fee = Number((valor_bruto * 0.2).toFixed(2));
 
       await db.query(
         `
@@ -1417,42 +1443,86 @@ if (cliente_id && modelo_id) {
         [message_id, cliente_id]
       );
 
-      const msg = await db.query(
-        `SELECT modelo_id FROM messages WHERE id = $1`,
-        [message_id]
+      const codigoTransacao = `pix_${paymentId}`;
+
+      await db.query(
+        `
+        INSERT INTO transacoes (
+          codigo,
+          tipo,
+          modelo_id,
+          cliente_id,
+          message_id,
+          valor_bruto,
+          valor_modelo,
+          velvet_fee,
+          taxa_gateway,
+          origem_cliente,
+          status
+        )
+        VALUES ($1,'midia',$2,$3,$4,$5,$6,$7,0,'pix','normal')
+        ON CONFLICT (codigo) DO NOTHING
+        `,
+        [
+          codigoTransacao,
+          modelo,
+          cliente_id,
+          message_id,
+          valor_bruto,
+          valor_modelo,
+          velvet_fee
+        ]
       );
 
-      if (msg.rowCount) {
-        const sala = `chat_${cliente_id}_${msg.rows[0].modelo_id}`;
-        io.to(sala).emit("conteudoVisto", { message_id });
-      }
+      const sala = `chat_${cliente_id}_${modelo}`;
+      io.to(sala).emit("conteudoVisto", { message_id });
 
       console.log("✅ Conteúdo desbloqueado via Pix:", message_id);
     }
 
+    /* ===============================
+       💜 VIP PAGO
+    =============================== */
+    if (tipo === "vip") {
+
+      if (!cliente_id || !modelo_id) {
+        console.log("⚠️ Metadata incompleta (vip):", metadata);
+        return res.sendStatus(200);
+      }
+
+      await db.query(
+        `
+        INSERT INTO vip_assinaturas (cliente_id, modelo_id)
+        VALUES ($1, $2)
+        ON CONFLICT DO NOTHING
+        `,
+        [cliente_id, modelo_id]
+      );
+
+      console.log("💜 VIP ativado via Pix:", cliente_id, modelo_id);
+    }
+
     res.sendStatus(200);
+
   } catch (err) {
     console.error("❌ Webhook MP erro:", err);
     res.sendStatus(500);
   }
 });
 
+
 app.post("/api/pagamento/criar", authCliente, async (req, res) => {
   try {
-    const { valor, message_id } = req.body;
+    const { message_id } = req.body;
 
-    if (!valor || !message_id) {
+    if (!message_id) {
       return res.status(400).json({ erro: "Dados inválidos" });
     }
 
-    if (Number(valor) < 1) {
-      return res.status(400).json({ erro: "Valor mínimo é R$ 5,00" });
-    }
-
-    // 🔒 1️⃣ VERIFICAR SE JÁ FOI DESBLOQUEADO
-    const check = await db.query(
+    // 🔒 buscar preço REAL do conteúdo
+    const msgRes = await db.query(
       `
-      SELECT visto
+      SELECT preco, visto
       FROM messages
       WHERE id = $1
         AND cliente_id = $2
@@ -1460,19 +1530,23 @@ app.post("/api/pagamento/criar", authCliente, async (req, res) => {
       [message_id, req.user.id]
     );
 
-    if (check.rowCount === 0) {
+    if (!msgRes.rowCount) {
       return res.status(404).json({ erro: "Conteúdo não encontrado" });
     }
 
-    if (check.rows[0].visto === true) {
-      return res.status(400).json({
-        erro: "Conteúdo já desbloqueado"
-      });
+    if (msgRes.rows[0].visto === true) {
+      return res.status(400).json({ erro: "Conteúdo já desbloqueado" });
     }
 
-    // 💳 2️⃣ CRIAR PAYMENT INTENT
+    const valor = Number(msgRes.rows[0].preco);
+
+    if (isNaN(valor) || valor <= 0) {
+      return res.status(400).json({ erro: "Valor inválido" });
+    }
+
+    // 💳 criar payment intent com valor do banco
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(Number(valor) * 100),
+      amount: Math.round(valor * 100),
       currency: "brl",
       automatic_payment_methods: { enabled: true },
       metadata: {
@@ -1491,25 +1565,38 @@ app.post("/api/pagamento/criar", authCliente, async (req, res) => {
   }
 });
 
+
 app.post("/api/pagamento/pix", authCliente, async (req, res) => {
   try {
-    const { valor, message_id } = req.body;
+    const { message_id } = req.body;
 
-    if (!valor || !message_id) {
+    if (!message_id) {
       return res.status(400).json({ error: "Dados inválidos" });
     }
 
-    const check = await db.query(
+    // 🔒 buscar preço REAL do conteúdo
+    const msgRes = await db.query(
       `
-      SELECT visto
+      SELECT preco, visto
       FROM messages
-      WHERE id = $1 AND cliente_id = $2
+      WHERE id = $1
+        AND cliente_id = $2
       `,
       [message_id, req.user.id]
     );
 
-    if (!check.rowCount || check.rows[0].visto) {
+    if (!msgRes.rowCount) {
+      return res.status(404).json({ error: "Conteúdo não encontrado" });
+    }
+
+    if (msgRes.rows[0].visto === true) {
       return res.status(400).json({ error: "Conteúdo já liberado" });
+    }
+
+    const valor = Number(msgRes.rows[0].preco);
+
+    if (isNaN(valor) || valor <= 0) {
+      return res.status(400).json({ error: "Valor inválido" });
     }
 
     const mp = new MercadoPagoConfig({
@@ -1518,22 +1605,22 @@ app.post("/api/pagamento/pix", authCliente, async (req, res) => {
 
     const payment = new Payment(mp);
 
-    const paymentData = {
-      transaction_amount: Number(valor),
-      description: `Conteúdo ${message_id}`,
-      payment_method_id: "pix",
-      payer: {
-        email: req.user.email || "cliente@velvet.lat"
-      },
-      notification_url:
-        "https://velvet-app-production.up.railway.app/webhook/mercadopago",
-      metadata: {
-        message_id: String(message_id),
-        cliente_id: String(req.user.id)
+    const result = await payment.create({
+      body: {
+        transaction_amount: valor,
+        description: `Conteúdo ${message_id}`,
+        payment_method_id: "pix",
+        payer: {
+          email: req.user.email || "cliente@velvet.lat"
+        },
+        notification_url:
+          "https://velvet-app-production.up.railway.app/webhook/mercadopago",
+        metadata: {
+          message_id: String(message_id),
+          cliente_id: String(req.user.id)
+        }
       }
-    };
-
-    const result = await payment.create({ body: paymentData });
+    });
 
     const pixData = result.point_of_interaction.transaction_data;
 
@@ -1547,6 +1634,7 @@ app.post("/api/pagamento/pix", authCliente, async (req, res) => {
     res.status(500).json({ error: "Erro ao gerar Pix" });
   }
 });
+
 
 app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
   const { valor, modelo_id } = req.body;
@@ -1743,7 +1831,7 @@ function emailValido(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-app.post("/api/register", async (req, res) => {
+app.post("/api/register", authLimiter, async (req, res) => {
   try {
     const { email, senha, role, nome, ageConfirmed } = req.body;
 
@@ -1820,7 +1908,7 @@ app.post("/api/register", async (req, res) => {
 
 
 //END POINT DE LOGIN
-app.post("/api/login", async (req, res) => {
+app.post("/api/login", authLimiter, async (req, res) => {
   try {
     const { email, senha } = req.body;
 
@@ -2187,6 +2275,32 @@ if (jaVip.rowCount === 0) {
     res.status(500).json({ error: "Erro interno" });
   }
 });
+
+// ===============================
+// 🔥 MIDDLEWARE GLOBAL DE ERRO
+// ===============================
+app.use((err, req, res, next) => {
+  console.error("🔥 ERRO GLOBAL:", {
+    message: err.message,
+    stack: err.stack,
+    path: req.originalUrl,
+    method: req.method
+  });
+
+  res.status(500).json({
+    error: "Erro interno do servidor"
+  });
+});
+
+process.on("unhandledRejection", reason => {
+  console.error("❌ Unhandled Rejection:", reason);
+});
+
+process.on("uncaughtException", err => {
+  console.error("❌ Uncaught Exception:", err);
+});
+
+
 // ===============================
 // START SERVER
 // ===============================

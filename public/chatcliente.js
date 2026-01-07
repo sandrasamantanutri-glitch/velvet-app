@@ -124,6 +124,16 @@ card.innerHTML = `
 
   </div>
  `;
+ const toast = document.getElementById("toastPagamento");
+
+if (toast) {
+  toast.classList.remove("hidden");
+
+  setTimeout(() => {
+    toast.classList.add("hidden");
+  }, 3000);
+}
+
  card.classList.remove("bloqueado");
 card.classList.add("livre");
 card.removeAttribute("data-preco");

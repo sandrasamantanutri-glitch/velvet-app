@@ -271,34 +271,53 @@ router.get(
   authMiddleware,
   requireRole("admin", "modelo", "agente"),
   async (req, res) => {
-    const { mes, tipo, origem } = req.query;
-    // 🔒 VALIDAÇÃO DE QUERY (RELATÓRIO DE TRANSAÇÕES)
-
-// valida mês (YYYY-MM)
-if (mes && !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
-  return res.status(400).json({
-    error: "Formato de mês inválido (YYYY-MM)"
-  });
-}
-
-// valida tipo
-const tiposPermitidos = ["midia", "assinatura"];
-if (tipo && !tiposPermitidos.includes(tipo)) {
-  return res.status(400).json({
-    error: "Tipo inválido"
-  });
-}
-
-// valida origem (string curta)
-if (origem && typeof origem !== "string") {
-  return res.status(400).json({
-    error: "Origem inválida"
-  });
-}
+    const { mes, tipo, origem, modelo_id } = req.query;
     const { role, id } = req.user;
 
     let where = [];
     let values = [];
+
+    // 🔒 VALIDAÇÃO DE QUERY (RELATÓRIO DE TRANSAÇÕES)
+
+    // valida mês (YYYY-MM)
+    if (mes && !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
+      return res.status(400).json({
+        error: "Formato de mês inválido (YYYY-MM)"
+      });
+    }
+
+    // valida tipo
+    const tiposPermitidos = ["midia", "assinatura"];
+    if (tipo && !tiposPermitidos.includes(tipo)) {
+      return res.status(400).json({
+        error: "Tipo inválido"
+      });
+    }
+
+    // valida origem
+    if (origem && typeof origem !== "string") {
+      return res.status(400).json({
+        error: "Origem inválida"
+      });
+    }
+
+    // 🔒 FILTRO POR MODELO (APENAS ADMIN)
+    if (modelo_id) {
+      if (role !== "admin") {
+        return res.status(403).json({
+          error: "Filtro por modelo permitido apenas para admin"
+        });
+      }
+
+      if (!Number.isInteger(Number(modelo_id))) {
+        return res.status(400).json({
+          error: "modelo_id inválido"
+        });
+      }
+
+      values.push(Number(modelo_id));
+      where.push(`modelo_id = $${values.length}`);
+    }
 
     // MODELO → só vê suas próprias transações
     if (role === "modelo") {
@@ -311,8 +330,6 @@ if (origem && typeof origem !== "string") {
       values.push(id);
       where.push(`agente_id = $${values.length}`);
     }
-
-    // ADMIN → vê tudo (sem filtro extra)
 
     if (mes) {
       values.push(`${mes}-01`);
@@ -344,6 +361,7 @@ if (origem && typeof origem !== "string") {
   }
 );
 
+
 //ROTA DO LINK DE ACESSO A PLATAFORMA(CLIENTES INSTA TIKTOK)
 router.get(
   "/api/transacoes/origem",
@@ -370,9 +388,14 @@ router.get(
   requireRole("admin", "modelo", "agente"),
   async (req, res) => {
     const { mes } = req.query;
+
+    // 🔒 validação do mês
     if (!mes || !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
-  return res.status(400).json({ error: "Formato de mês inválido (YYYY-MM)" });
-     } 
+      return res.status(400).json({
+        error: "Formato de mês inválido (YYYY-MM)"
+      });
+    }
+
     const { role, id: modelo_id } = req.user;
 
     const inicio = `${mes}-01`;
@@ -385,6 +408,7 @@ router.get(
 
     let values = [inicio, fim];
 
+    // MODELO → só vê suas próprias transações
     if (role === "modelo") {
       values.push(modelo_id);
       where += ` AND modelo_id = $${values.length}`;
@@ -394,10 +418,13 @@ router.get(
       `
       SELECT
         DATE(created_at) AS dia,
-        SUM(valor_bruto) AS total_bruto,
-        SUM(taxa_gateway) AS total_taxas,
-        SUM(velvet_fee) AS total_velvet,
-        SUM(valor_modelo) AS total_modelo
+
+        COALESCE(SUM(CASE WHEN tipo = 'midia' THEN valor_modelo END),0)
+          AS ganhos_midias,
+
+        COALESCE(SUM(CASE WHEN tipo = 'assinatura' THEN valor_modelo END),0)
+          AS ganhos_assinaturas
+
       FROM transacoes
       WHERE ${where}
       GROUP BY dia
@@ -409,6 +436,7 @@ router.get(
     res.json(result.rows);
   }
 );
+
 
 
 router.get(
@@ -986,5 +1014,50 @@ router.get(
     );
   }
 );
+
+router.get(
+  "/api/transacoes/resumo-geral",
+  authMiddleware,
+  requireRole("modelo"),
+  async (req, res) => {
+
+    const modelo_id = req.user.id;
+
+    const result = await db.query(
+      `
+      SELECT
+        COALESCE(SUM(valor_modelo),0) AS total_geral,
+        COALESCE(SUM(CASE WHEN tipo = 'midia' THEN valor_modelo END),0)
+          AS total_midias,
+        COALESCE(SUM(CASE WHEN tipo = 'assinatura' THEN valor_modelo END),0)
+          AS total_assinaturas
+      FROM transacoes
+      WHERE status = 'normal'
+        AND modelo_id = $1
+      `,
+      [modelo_id]
+    );
+
+    res.json(result.rows[0]);
+  }
+);
+
+router.get(
+  "/api/modelos",
+  authMiddleware,
+  requireRole("admin"),
+  async (req, res) => {
+    const result = await db.query(`
+      SELECT id, nome
+      FROM modelos
+      WHERE ativo = true
+      ORDER BY nome
+    `);
+
+    res.json(result.rows);
+  }
+);
+
+
 
 module.exports = router;

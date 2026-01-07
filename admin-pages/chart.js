@@ -24,6 +24,8 @@ function authFetch(url, options = {}) {
 const filtroAno = document.getElementById("filtroAno");
 const filtroMes = document.getElementById("filtroMes");
 const filtroPeriodo = document.getElementById("filtroPeriodo");
+const filtroModelo = document.getElementById("filtroModelo");
+
 
 // =====================================================
 // 📊 GRÁFICO DIÁRIO DO MÊS
@@ -33,9 +35,14 @@ let graficoMensal;
 async function carregarGraficoMensal() {
   const mes = filtroPeriodo.value; // ex: 2025-12
 
-  const res = await authFetch(
-    `/content/api/transacoes/diario?mes=${mes}`
-  );
+let url = `/content/api/transacoes/diario?mes=${mes}`;
+
+if (filtroModelo.value) {
+  url += `&modelo_id=${filtroModelo.value}`;
+}
+
+const res = await authFetch(url);
+
 
   if (!res || !res.ok) {
     console.error("Erro ao buscar ganhos diários");
@@ -95,9 +102,18 @@ let graficoAnual;
 async function carregarGraficoAnual() {
   const ano = filtroAno.value;
 
-  const res = await authFetch(
-    `/content/api/transacoes/resumo-anual?ano=${ano}`
-  );
+  let url = `/content/api/transacoes/resumo-anual?ano=${ano}`;
+
+if (filtroModelo.value) {
+  url += `&modelo_id=${filtroModelo.value}`;
+}
+
+const res = await authFetch(url);
+
+
+  if (filtroModelo.value) {
+  url += `&modelo_id=${filtroModelo.value}`;
+}
 
   if (!res || !res.ok) {
     console.error("Erro ao carregar resumo anual");
@@ -317,10 +333,10 @@ async function carregarResumoModelo() {
   );
 
   document.getElementById("hojeMidias").innerText =
-    `$${Number(hojeData?.total_midias || 0).toFixed(2)}`;
+    `$${Number(hojeData?.ganhos_midias || 0).toFixed(2)}`;
 
   document.getElementById("hojeAssinaturas").innerText =
-    `$${Number(hojeData?.total_assinaturas || 0).toFixed(2)}`;
+    `$${Number(hojeData?.ganhos_assinaturas || 0).toFixed(2)}`;
 
   // 🔹 Acumulado do mês
   const resMes = await authFetch(
@@ -352,6 +368,21 @@ async function carregarResumoModelo() {
     `$${acumuladoAnterior.toFixed(2)}`;
 }
 
+async function carregarModelos() {
+  const res = await authFetch("/content/api/modelos");
+  if (!res || !res.ok) return;
+
+  const modelos = await res.json();
+
+  modelos.forEach(m => {
+    const opt = document.createElement("option");
+    opt.value = m.id;
+    opt.textContent = m.nome;
+    filtroModelo.appendChild(opt);
+  });
+}
+
+
 
 // =====================================================
 // 🚀 INICIALIZAÇÃO DA PÁGINA
@@ -374,6 +405,14 @@ document.addEventListener("DOMContentLoaded", () => {
   if (document.getElementById("graficoAssinaturasMidias")) {
     carregarGraficoAssinaturasMidias();
   }
+  
+  if (filtroModelo) {
+  filtroModelo.addEventListener("change", () => {
+    carregarGraficoMensal();
+    carregarGraficoAnual();
+    carregarGraficoAssinaturasMidias();
+  });
+}
 
   // 🔹 MODELO
   if (document.getElementById("hojeMidias")) {
