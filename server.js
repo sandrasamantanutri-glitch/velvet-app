@@ -2238,8 +2238,8 @@ app.post("/api/contato", async (req, res) => {
     // 📧 SMTP HOSTINGER (CORRETO)
 const transporter = nodemailer.createTransport({
   host: "smtp.hostinger.com",
-  port: 465,
-  secure: true, // SSL
+  port: 587,
+  secure: false, // SSL
   auth: {
     user: process.env.CONTACT_EMAIL,
     pass: process.env.CONTACT_EMAIL_PASS
