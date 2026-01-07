@@ -11,9 +11,9 @@
 <body class="role-modelo">
 
   <div class="container-dados">
-    <h1>🔐 Dados Essenciais da Conta</h1>
+    <h1>Suas Informações</h1>
     <p class="sub">
-      Estes dados são obrigatórios para segurança da conta e recebimento de ganhos.
+      Estes dados são obrigatórios para segurança da da sua conta e garantir seus recebimentos. 
     </p>
 
     <form id="formDadosModelo">
@@ -48,7 +48,7 @@
         ⚠️ Dados bancários serão solicitados futuramente para liberação de ganhos.
       </div>
 
-      <button type="submit">Salvar dados</button>
+      <button type="submit">Salvar</button>
 
       <p id="msgStatus" class="status"></p>
     </form>
@@ -110,13 +110,235 @@
     cursor: pointer;
 }
 
-/* ESPAÇO PARA O HEADER FIXO */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
+
+:root {
+  --font-primary: "Poppins", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, Arial, sans-serif;
+
+  /* Pesos */
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  /* Tamanhos */
+  --fs-h1: 44px;
+  --fs-h2: 32px;
+  --fs-body: 16px;
+}
+
 body {
-    margin: 0;
-    padding-top: 64px;
-    background: #fff;
+  font-family: var(--font-primary);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-regular);
+  color: #fff;
+  line-height: 1.6;
+}
+
+  h1 {
+      color: #7B2CFF;
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      color: #1E1E26;
+      font-size: 20px;
+      margin-top: 35px;
+    }
+
+p,
+.body-text {
+  font-size: var(--fs-body);
+  font-weight: var(--fw-regular);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* HEADER */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 30px;
+ background: linear-gradient(
+        to right,
+        #ffffff 0%,
+        #f2eaff 35%,
+        #7B2CFF 100%
+        ) !important;
+}
+
+.logo {
+  font-size: 22px;
+  font-weight: 600;
+  color: #7B2CFF;
+}
+
+.voltar {
+  color: #fff;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.voltar:hover {
+  color: #9E6BFF;
+}
+
+/* CONTAINER */
+.container {
+  max-width: 520px;
+  margin: 60px auto;
+  padding: 0 20px;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.subtitle {
+  text-align: center;
+  color: #1E1E26;
+  font-size: 14px;
+  margin-bottom: 30px;
+}
+
+/* FORM */
+.form {
+  background: rgba(255,255,255,0.06);
+  padding: 28px;
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
+
+.field {
+  margin-bottom: 16px;
+}
+
+label {
+  font-size: 13px;
+  color: #1E1E26;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 12px 14px;
+  margin-top: 6px;
+
+  font-family: "Poppins", sans-serif;
+  font-size: 14px;
+  color: #1E1E26;
+
+  border-radius: 10px;
+  border: 1.5px solid rgba(124, 58, 237, 0.5);
+
+  background: #fff;
+  outline: none;
+
+  box-sizing: border-box;
+  appearance: none; /* 🔑 MUITO importante pro select */
+}
+
+/* Altura padrão (Nome, Email, Assunto) */
+input,
+select {
+  height: 46px;
+}
+
+/* Textarea (Mensagem) */
+textarea {
+  min-height: 120px;
+  resize: none;
+}
+
+/* Placeholder */
+input::placeholder,
+textarea::placeholder {
+  color: #6b7280;
+}
+
+/* Foco */
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.25);
+}
+
+
+
+textarea {
+  resize: none;
+}
+
+/* BOTÃO */
+.btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(135deg, #7B2CFF, #9E6BFF);
+  color: #fff;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.btn:hover {
+  opacity: 0.9;
+}
+
+/* STATUS */
+.status {
+  margin-top: 14px;
+  font-size: 13px;
+  text-align: center;
+}
+    .footer {
+  margin-top: 60px;
+  padding: 20px;
+  background:none;
+  color: #1E1E26;
+  text-align: center;
+  font-size: 14px;
+}
+
+.footer-links {
+  margin-bottom: 10px;
+}
+
+.footer-links a {
+  color: #1E1E26;
+  margin: 0 10px;
+  text-decoration: none;
+}
+
+.footer-links a:hover {
+  color: #C9C9C9;
+  text-decoration: underline;
+}
+
+.footer-copy {
+  font-size: 12px;
+  color: #1E1E26;
 }
 </style>
+    <footer class="footer">
+  <div class="footer-links">
+    <a href="/terms.html">Termos de Uso</a>
+    <a href="/privacy.html">Política de Privacidade</a>
+    <a href="/policies.html">Política de Utilização</a>
+  </div>
+  <div class="footer-copy">
+    © 2026 Velvet. Todos os direitos reservados.
+  </div>
 <script src="/socket.io/socket.io.js"></script>
 <script src="/auth.js"></script>
 <script src="/header.js"></script>
