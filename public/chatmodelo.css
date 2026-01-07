@@ -35,7 +35,7 @@ h2 #modeloNome {
 }
 
 #clienteNome {
-  color: #E1E1E1; /* roxo Velvet */
+  color: #1E1E26;
   font-weight: 700;
 }
 
@@ -85,8 +85,8 @@ h2 #modeloNome {
 #listaClientes li {
   padding: 8px 10px;
   margin-bottom: 6px;
-  background: #C9C9C9;
-  color: #1E1E26;
+  background: #9E6BFF;
+  color: #fff;
   border-radius: 12px;
   cursor: pointer;
   font-size: 12px;
@@ -347,7 +347,7 @@ h2 #modeloNome {
 
 /* SELECIONADO */
 .preview-item.selected {
-  border-color: #7B2CFF;   /* roxo Velvet */
+  border-color: #1E1E26;   /* roxo Velvet */
   box-shadow: 0 0 0 2px rgba(123,44,255,0.25);
 }
 
