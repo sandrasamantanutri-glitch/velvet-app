@@ -321,8 +321,6 @@ h2 #modeloNome {
   display: grid;
   grid-template-columns: repeat(4, 1fr); /* 🔥 4 por linha */
   row-gap: 16px;
-  max-height: 300px;
-  overflow-y: auto;
   padding: 12px 4px;
 }
 
@@ -422,6 +420,16 @@ h2 #modeloNome {
 .preview-close {
   pointer-events: auto;
 }
+
+
+/* CONTAINER DE SCROLL DO POPUP */
+.preview-scroll {
+  flex: 1;
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
 
 /* =========================
    PREÇO
