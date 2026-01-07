@@ -195,3 +195,33 @@ textarea {
   font-size: 13px;
   text-align: center;
 }
+
+
+.footer {
+  margin-top: 60px;
+  padding: 20px;
+  background:none;
+  color: #aaa;
+  text-align: center;
+  font-size: 14px;
+}
+
+.footer-links {
+  margin-bottom: 10px;
+}
+
+.footer-links a {
+  color: #C9C9C9;
+  margin: 0 10px;
+  text-decoration: none;
+}
+
+.footer-links a:hover {
+  color: #C9C9C9;
+  text-decoration: underline;
+}
+
+.footer-copy {
+  font-size: 12px;
+  color: #C9C9C9;
+}
