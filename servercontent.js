@@ -993,15 +993,11 @@ router.get(
   }
 );
 
-router.get(
-  "/modelo/relatorio",
-  requireRole("modelo", "admin", "agente"),
-  (req, res) => {
-    res.sendFile(
-      path.join(process.cwd(), "admin-pages", "relatorio.html")
-    );
-  }
-);
+router.get("/modelo/relatorio", (req, res) => {
+  res.sendFile(
+    path.join(process.cwd(), "admin-pages", "relatorio.html")
+  );
+});
 
 
 router.get(
