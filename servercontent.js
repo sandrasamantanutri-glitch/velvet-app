@@ -995,7 +995,6 @@ router.get(
 
 router.get(
   "/modelo/relatorio",
-  authMiddleware,
   requireRole("modelo", "admin", "agente"),
   (req, res) => {
     res.sendFile(
@@ -1003,6 +1002,7 @@ router.get(
     );
   }
 );
+
 
 router.get(
   "/modelo/transacoes",
