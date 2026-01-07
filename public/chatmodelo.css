@@ -344,6 +344,9 @@ h2 #modeloNome {
   object-fit: cover;              /* visual bonito */
   object-position: center top;    /* 🔥 preserva rosto */
 }
+.preview-item img {
+  object-position: 50% 15%;
+}
 
 
 /* SELECIONADO */
