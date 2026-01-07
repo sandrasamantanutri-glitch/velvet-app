@@ -22,6 +22,8 @@ cloudinary.config({
 
 const cron = require("node-cron");
 
+const requireRole = require("./middleware/requireRole");
+
 
 cron.schedule("0 3 * * *", async () => {
   console.log("🔍 Verificando clientes com chargeback...");
@@ -110,16 +112,6 @@ function calcularValores({ valor_bruto, taxa_gateway, agency_fee, velvet_fee, st
       Number(velvet_fee)
   };
 }
-
-function requireRole(...roles) {
-  return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ erro: "Acesso negado" });
-    }
-    next();
-  };
-}
-
 
 function calcularScoreRisco({
   totalLost,
@@ -221,11 +213,16 @@ router.post(
 
 
 //ROTAS GETSSSS/////////////////////
-router.get("/relatorios", (req, res) => {
-  res.sendFile(
-    path.join(__dirname, "admin-pages", "chart.html")
-  );
-});
+router.get(
+  "/relatorios",
+  authMiddleware,
+  requireRole("admin"),
+  (req, res) => {
+    res.sendFile(
+      path.join(__dirname, "admin-pages", "chart.html")
+    );
+  }
+);
 // 🔐 ENDPOINT DE ACESSO AO CONTEÚDO
 router.get("/access", authCliente, async (req, res) => {
   const { message_id } = req.query;
@@ -271,102 +268,129 @@ const midias = midiasRes.rows.map(m => ({
   res.json({ midias });
 });
 
-router.get("/api/transacoes", authMiddleware, async (req, res) => {
-  const { mes, tipo, origem } = req.query;
-  const { role, id: modelo_id } = req.user;
+router.get(
+  "/api/transacoes",
+  authMiddleware,
+  requireRole("admin", "modelo", "agente"),
+  async (req, res) => {
+    const { mes, tipo, origem } = req.query;
+    const { role, id } = req.user;
 
-  let where = [];
-  let values = [];
+    let where = [];
+    let values = [];
 
-  if (role === "modelo") {
-    values.push(modelo_id);
-    where.push(`modelo_id = $${values.length}`);
+    // MODELO → só vê suas próprias transações
+    if (role === "modelo") {
+      values.push(id);
+      where.push(`modelo_id = $${values.length}`);
+    }
+
+    // AGENTE → só vê transações dos seus modelos
+    if (role === "agente") {
+      values.push(id);
+      where.push(`agente_id = $${values.length}`);
+    }
+
+    // ADMIN → vê tudo (sem filtro extra)
+
+    if (mes) {
+      values.push(`${mes}-01`);
+      where.push(`created_at >= $${values.length}`);
+
+      values.push(`${mes}-31`);
+      where.push(`created_at <= $${values.length}`);
+    }
+
+    if (tipo) {
+      values.push(tipo);
+      where.push(`tipo = $${values.length}`);
+    }
+
+    if (origem) {
+      values.push(origem);
+      where.push(`origem_cliente = $${values.length}`);
+    }
+
+    const sql = `
+      SELECT *
+      FROM transacoes
+      ${where.length ? "WHERE " + where.join(" AND ") : ""}
+      ORDER BY created_at DESC
+    `;
+
+    const result = await db.query(sql, values);
+    res.json(result.rows);
   }
+);
 
-  if (mes) {
-    values.push(`${mes}-01`);
-    where.push(`created_at >= $${values.length}`);
+//ROTA DO LINK DE ACESSO A PLATAFORMA(CLIENTES INSTA TIKTOK)
+router.get(
+  "/api/transacoes/origem",
+  authMiddleware,
+  requireRole("admin"),
+  async (req, res) => {
+    const result = await db.query(`
+      SELECT origem_cliente,
+             COUNT(*) AS clientes,
+             SUM(valor_bruto) AS total
+      FROM transacoes
+      WHERE status = 'normal'
+      GROUP BY origem_cliente
+    `);
 
-    values.push(`${mes}-31`);
-    where.push(`created_at <= $${values.length}`);
+    res.json(result.rows);
   }
+);
 
-  if (tipo) {
-    values.push(tipo);
-    where.push(`tipo = $${values.length}`);
+
+router.get(
+  "/api/transacoes/diario",
+  authMiddleware,
+  requireRole("admin", "modelo", "agente"),
+  async (req, res) => {
+    const { mes } = req.query; // ex: 2026-01
+    const { role, id: modelo_id } = req.user;
+
+    const inicio = `${mes}-01`;
+    const fim = `${mes}-31`;
+
+    let where = `
+      status = 'normal'
+      AND created_at BETWEEN $1 AND $2
+    `;
+
+    let values = [inicio, fim];
+
+    if (role === "modelo") {
+      values.push(modelo_id);
+      where += ` AND modelo_id = $${values.length}`;
+    }
+
+    const result = await db.query(
+      `
+      SELECT
+        DATE(created_at) AS dia,
+        SUM(valor_bruto) AS total_bruto,
+        SUM(taxa_gateway) AS total_taxas,
+        SUM(velvet_fee) AS total_velvet,
+        SUM(valor_modelo) AS total_modelo
+      FROM transacoes
+      WHERE ${where}
+      GROUP BY dia
+      ORDER BY dia
+      `,
+      values
+    );
+
+    res.json(result.rows);
   }
+);
 
-  if (origem) {
-    values.push(origem);
-    where.push(`origem_cliente = $${values.length}`);
-  }
-
-  const sql = `
-    SELECT *
-    FROM transacoes
-    ${where.length ? "WHERE " + where.join(" AND ") : ""}
-    ORDER BY created_at DESC
-  `;
-
-  const result = await db.query(sql, values);
-  res.json(result.rows);
-});
-
-router.get("/api/transacoes/origem", authMiddleware, async (req, res) => {
-  const result = await db.query(
-    `
-    SELECT origem_cliente, COUNT(*) AS clientes, SUM(valor_bruto) AS total
-    FROM transacoes
-    WHERE status = 'normal'
-    GROUP BY origem_cliente
-    `
-  );
-
-  res.json(result.rows);
-});
-
-router.get("/api/transacoes/diario", authMiddleware, async (req, res) => {
-  const { mes } = req.query; // ex: 2026-01
-  const { role, id: modelo_id } = req.user;
-
-  const inicio = `${mes}-01`;
-  const fim = `${mes}-31`;
-
-  let where = `
-    status = 'normal'
-    AND created_at BETWEEN $1 AND $2
-  `;
-
-  let values = [inicio, fim];
-
-  if (role === "modelo") {
-    values.push(modelo_id);
-    where += ` AND modelo_id = $${values.length}`;
-  }
-
-  const result = await db.query(
-    `
-    SELECT
-      DATE(created_at) AS dia,
-      SUM(valor_bruto) AS total_bruto,
-      SUM(taxa_gateway) AS total_taxas,
-      SUM(velvet_fee) AS total_velvet,
-      SUM(valor_modelo) AS total_modelo
-    FROM transacoes
-    WHERE ${where}
-    GROUP BY dia
-    ORDER BY dia
-    `,
-    values
-  );
-
-  res.json(result.rows);
-});
 
 router.get(
   "/api/relatorios/chargebacks",
   authMiddleware,
-  requireRole("admin", "modelo"),
+  requireRole("admin"),
   async (req, res) => {
 
     const { inicio, fim } = req.query;
@@ -404,171 +428,180 @@ router.get(
 );
 
 
-router.get("/api/transacoes/resumo-mensal", authMiddleware, async (req, res) => {
-  const { mes } = req.query; // ex: 2025-12
-  const { role, id: modelo_id } = req.user;
+router.get(
+  "/api/transacoes/resumo-mensal",
+  authMiddleware,
+  requireRole("admin", "modelo", "agente"),
+  async (req, res) => {
+    const { mes } = req.query; // ex: 2025-12
+    const { role, id: modelo_id } = req.user;
 
-  const dataBase = `${mes}-01`;
+    const dataBase = `${mes}-01`;
 
-  let values = [];
-  let where = `
-    status = 'normal'
-    AND created_at >= date_trunc('month', $1::date)
-    AND created_at <  date_trunc('month', $1::date) + interval '1 month'
-  `;
+    let values = [];
+    let where = `
+      status = 'normal'
+      AND created_at >= date_trunc('month', $1::date)
+      AND created_at <  date_trunc('month', $1::date) + interval '1 month'
+    `;
 
-  values.push(dataBase);
+    values.push(dataBase);
 
-  if (role === "modelo") {
-    values.push(modelo_id);
-    where += ` AND modelo_id = $${values.length}`;
+    if (role === "modelo") {
+      values.push(modelo_id);
+      where += ` AND modelo_id = $${values.length}`;
+    }
+
+    const result = await db.query(
+      `
+      SELECT
+        COALESCE(SUM(valor_bruto),0) AS total_bruto,
+        COALESCE(SUM(taxa_gateway),0) AS total_taxas,
+        COALESCE(SUM(agency_fee),0) AS total_agency,
+        COALESCE(SUM(velvet_fee),0) AS total_velvet,
+        COALESCE(SUM(valor_modelo),0) AS total_modelo,
+
+        COALESCE(SUM(CASE WHEN tipo = 'assinatura' THEN valor_bruto END),0) AS total_assinaturas,
+        COALESCE(SUM(CASE WHEN tipo = 'midia' THEN valor_bruto END),0) AS total_midias
+      FROM transacoes
+      WHERE ${where}
+      `,
+      values
+    );
+
+    res.json(result.rows[0]);
   }
+);
 
-  const result = await db.query(
-    `
-    SELECT
-      COALESCE(SUM(valor_bruto),0) AS total_bruto,
-      COALESCE(SUM(taxa_gateway),0) AS total_taxas,
-      COALESCE(SUM(agency_fee),0) AS total_agency,
-      COALESCE(SUM(velvet_fee),0) AS total_velvet,
-      COALESCE(SUM(valor_modelo),0) AS total_modelo,
-
-      COALESCE(SUM(CASE WHEN tipo = 'assinatura' THEN valor_bruto END),0) AS total_assinaturas,
-      COALESCE(SUM(CASE WHEN tipo = 'midia' THEN valor_bruto END),0) AS total_midias
-    FROM transacoes
-    WHERE ${where}
-    `,
-    values
-  );
-
-  res.json(result.rows[0]);
-});
 
 const ExcelJS = require("exceljs");
 
-router.get("/api/export/resumo-mensal/excel", authMiddleware, async (req, res) => {
-  const { mes } = req.query;
-  const { role, id: modelo_id } = req.user;
+router.get(
+  "/api/export/resumo-mensal/excel",
+  authMiddleware,
+  requireRole("admin"),
+  async (req, res) => {
+    const { mes } = req.query;
 
-  const dataBase = `${mes}-01`;
+    const dataBase = `${mes}-01`;
 
-  let values = [dataBase];
-  let where = `
-    status = 'normal'
-    AND created_at >= date_trunc('month', $1::date)
-    AND created_at < date_trunc('month', $1::date) + interval '1 month'
-  `;
+    const values = [dataBase];
 
-  if (role === "modelo") {
-    values.push(modelo_id);
-    where += ` AND modelo_id = $${values.length}`;
+    const where = `
+      status = 'normal'
+      AND created_at >= date_trunc('month', $1::date)
+      AND created_at < date_trunc('month', $1::date) + interval '1 month'
+    `;
+
+    const { rows } = await db.query(
+      `
+      SELECT
+        DATE(created_at) AS dia,
+        tipo,
+        valor_bruto,
+        valor_modelo,
+        velvet_fee
+      FROM transacoes
+      WHERE ${where}
+      ORDER BY created_at
+      `,
+      values
+    );
+
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Resumo Mensal");
+
+    sheet.columns = [
+      { header: "Dia", key: "dia" },
+      { header: "Tipo", key: "tipo" },
+      { header: "Valor Bruto", key: "valor_bruto" },
+      { header: "Ganhos Modelo", key: "valor_modelo" },
+      { header: "Ganhos Velvet", key: "velvet_fee" }
+    ];
+
+    rows.forEach(r => sheet.addRow(r));
+
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=resumo-${mes}.xlsx`
+    );
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
   }
-
-  const { rows } = await db.query(
-    `
-    SELECT
-      DATE(created_at) AS dia,
-      tipo,
-      valor_bruto,
-      valor_modelo,
-      velvet_fee
-    FROM transacoes
-    WHERE ${where}
-    ORDER BY created_at
-    `,
-    values
-  );
-
-  const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet("Resumo Mensal");
-
-  sheet.columns = [
-    { header: "Dia", key: "dia" },
-    { header: "Tipo", key: "tipo" },
-    { header: "Valor Bruto", key: "valor_bruto" },
-    { header: "Ganhos Modelo", key: "valor_modelo" },
-    { header: "Ganhos Velvet", key: "velvet_fee" }
-  ];
-
-  rows.forEach(r => sheet.addRow(r));
-
-  res.setHeader(
-    "Content-Disposition",
-    `attachment; filename=resumo-${mes}.xlsx`
-  );
-  res.setHeader(
-    "Content-Type",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-  );
-
-  await workbook.xlsx.write(res);
-  res.end();
-});
-
+);
 
 const PDFDocument = require("pdfkit");
 
-router.get("/api/export/resumo-mensal/pdf", authMiddleware, async (req, res) => {
-  const { mes } = req.query;
-  const { role, id: modelo_id } = req.user;
+router.get(
+  "/api/export/resumo-mensal/pdf",
+  authMiddleware,
+  requireRole("agente"),
+  async (req, res) => {
+    const { mes } = req.query;
+    const { id: agente_id } = req.user;
 
-  let values = [`${mes}-01`];
-  let where = `
-    status = 'normal'
-    AND created_at >= date_trunc('month', $1::date)
-    AND created_at < date_trunc('month', $1::date) + interval '1 month'
-  `;
+    let values = [`${mes}-01`, agente_id];
 
-  if (role === "modelo") {
-    values.push(modelo_id);
-    where += ` AND modelo_id = $${values.length}`;
+    const where = `
+      status = 'normal'
+      AND created_at >= date_trunc('month', $1::date)
+      AND created_at < date_trunc('month', $1::date) + interval '1 month'
+      AND agente_id = $2
+    `;
+
+    const { rows } = await db.query(
+      `
+      SELECT
+        codigo,
+        tipo,
+        valor_bruto,
+        valor_modelo,
+        created_at
+      FROM transacoes
+      WHERE ${where}
+      ORDER BY created_at
+      `,
+      values
+    );
+
+    const doc = new PDFDocument({ margin: 40 });
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=resumo-${mes}.pdf`
+    );
+
+    doc.pipe(res);
+
+    doc.fontSize(18).text(`Resumo Mensal - ${mes}`, { align: "center" });
+    doc.moveDown();
+
+    rows.forEach(t => {
+      doc
+        .fontSize(10)
+        .text(
+          `#${t.codigo} | ${t.tipo.toUpperCase()} | ${t.created_at
+            .toISOString()
+            .slice(0, 10)}`
+        )
+        .text(`Bruto: $${t.valor_bruto} | Modelo: $${t.valor_modelo}`)
+        .moveDown(0.5);
+    });
+
+    doc.end();
   }
-
-  const { rows } = await db.query(
-    `
-    SELECT
-      codigo,
-      tipo,
-      valor_bruto,
-      valor_modelo,
-      created_at
-    FROM transacoes
-    WHERE ${where}
-    ORDER BY created_at
-    `,
-    values
-  );
-
-  const doc = new PDFDocument({ margin: 40 });
-  res.setHeader("Content-Type", "application/pdf");
-  res.setHeader(
-    "Content-Disposition",
-    `attachment; filename=resumo-${mes}.pdf`
-  );
-
-  doc.pipe(res);
-
-  doc.fontSize(18).text(`Resumo Mensal - ${mes}`, { align: "center" });
-  doc.moveDown();
-
-  rows.forEach(t => {
-    doc
-      .fontSize(10)
-      .text(
-        `#${t.codigo} | ${t.tipo.toUpperCase()} | ${t.created_at.toISOString().slice(0,10)}`
-      )
-      .text(`Bruto: $${t.valor_bruto} | Modelo: $${t.valor_modelo}`)
-      .moveDown(0.5);
-  });
-
-  doc.end();
-});
+);
 
 
 router.get(
   "/api/export/chargebacks/excel",
   authMiddleware,
-  requireRole("admin", "modelo"),
+  requireRole("admin"),
   async (req, res) => {
 
     const { mes } = req.query;
@@ -627,7 +660,7 @@ router.get(
 router.get(
   "/api/export/chargebacks/pdf",
   authMiddleware,
-  requireRole("admin", "modelo"),
+  requireRole("admin"),
   async (req, res) => {
 
     const { mes } = req.query;
@@ -679,7 +712,7 @@ router.get(
 router.get(
   "/api/relatorios/alertas-chargeback",
   authMiddleware,
-  requireRole("admin", "modelo"),
+  requireRole("admin"),
   async (req, res) => {
 
     const { rows } = await db.query(
@@ -701,177 +734,183 @@ router.get(
   }
 );
 
-router.get("/api/transacoes/resumo-anual", authMiddleware, async (req, res) => {
-  const { ano } = req.query; // ex: 2025
-  const { role, id: modelo_id } = req.user;
+router.get(
+  "/api/transacoes/resumo-anual",
+  authMiddleware,
+  requireRole("admin", "modelo"),
+  async (req, res) => {
+    const { ano } = req.query; // ex: 2025
+    const { role, id: modelo_id } = req.user;
 
-  const inicio = `${ano}-01-01`;
-  const fim = `${Number(ano) + 1}-01-01`;
+    const inicio = `${ano}-01-01`;
+    const fim = `${Number(ano) + 1}-01-01`;
 
-  let values = [inicio, fim];
-  let where = `
-    status = 'normal'
-    AND created_at >= $1
-    AND created_at < $2
-  `;
+    let values = [inicio, fim];
+    let where = `
+      status = 'normal'
+      AND created_at >= $1
+      AND created_at < $2
+    `;
 
-  if (role === "modelo") {
-    values.push(modelo_id);
-    where += ` AND modelo_id = $${values.length}`;
+    if (role === "modelo") {
+      values.push(modelo_id);
+      where += ` AND modelo_id = $${values.length}`;
+    }
+
+    const result = await db.query(
+      `
+      SELECT
+        DATE_TRUNC('month', created_at) AS mes,
+
+        COALESCE(SUM(valor_bruto),0) AS total_bruto,
+        COALESCE(SUM(taxa_gateway),0) AS total_taxas,
+        COALESCE(SUM(agency_fee),0) AS total_agency,
+        COALESCE(SUM(velvet_fee),0) AS total_velvet,
+        COALESCE(SUM(valor_modelo),0) AS total_modelo,
+
+        COALESCE(SUM(CASE WHEN tipo='assinatura' THEN valor_bruto END),0) AS total_assinaturas,
+        COALESCE(SUM(CASE WHEN tipo='midia' THEN valor_bruto END),0) AS total_midias
+
+      FROM transacoes
+      WHERE ${where}
+      GROUP BY mes
+      ORDER BY mes
+      `,
+      values
+    );
+
+    res.json(result.rows);
   }
-
-  const result = await db.query(
-    `
-    SELECT
-      DATE_TRUNC('month', created_at) AS mes,
-
-      COALESCE(SUM(valor_bruto),0) AS total_bruto,
-      COALESCE(SUM(taxa_gateway),0) AS total_taxas,
-      COALESCE(SUM(agency_fee),0) AS total_agency,
-      COALESCE(SUM(velvet_fee),0) AS total_velvet,
-      COALESCE(SUM(valor_modelo),0) AS total_modelo,
-
-      COALESCE(SUM(CASE WHEN tipo='assinatura' THEN valor_bruto END),0) AS total_assinaturas,
-      COALESCE(SUM(CASE WHEN tipo='midia' THEN valor_bruto END),0) AS total_midias
-
-    FROM transacoes
-    WHERE ${where}
-    GROUP BY mes
-    ORDER BY mes
-    `,
-    values
-  );
-
-  res.json(result.rows);
-});
+);
 
 
-router.get("/api/export/resumo-anual/excel", authMiddleware, async (req, res) => {
-  const { ano } = req.query;
-  const { role, id: modelo_id } = req.user;
+router.get(
+  "/api/export/resumo-anual/excel",
+  authMiddleware,
+  requireRole("admin"),
+  async (req, res) => {
+    const { ano } = req.query;
 
-  const inicio = `${ano}-01-01`;
-  const fim = `${Number(ano) + 1}-01-01`;
+    const inicio = `${ano}-01-01`;
+    const fim = `${Number(ano) + 1}-01-01`;
 
-  let values = [inicio, fim];
-  let where = `
-    status = 'normal'
-    AND created_at >= $1
-    AND created_at < $2
-  `;
+    const values = [inicio, fim];
 
-  if (role === "modelo") {
-    values.push(modelo_id);
-    where += ` AND modelo_id = $${values.length}`;
+    const where = `
+      status = 'normal'
+      AND created_at >= $1
+      AND created_at < $2
+    `;
+
+    const { rows } = await db.query(
+      `
+      SELECT
+        TO_CHAR(created_at,'YYYY-MM') AS mes,
+        tipo,
+        valor_bruto,
+        valor_modelo,
+        velvet_fee
+      FROM transacoes
+      WHERE ${where}
+      ORDER BY created_at
+      `,
+      values
+    );
+
+    const ExcelJS = require("exceljs");
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet(`Resumo ${ano}`);
+
+    sheet.columns = [
+      { header: "Mês", key: "mes" },
+      { header: "Tipo", key: "tipo" },
+      { header: "Valor Bruto", key: "valor_bruto" },
+      { header: "Ganhos Modelo", key: "valor_modelo" },
+      { header: "Ganhos Velvet", key: "velvet_fee" }
+    ];
+
+    rows.forEach(r => sheet.addRow(r));
+
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=resumo-anual-${ano}.xlsx`
+    );
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
   }
-
-  const { rows } = await db.query(
-    `
-    SELECT
-      TO_CHAR(created_at,'YYYY-MM') AS mes,
-      tipo,
-      valor_bruto,
-      valor_modelo,
-      velvet_fee
-    FROM transacoes
-    WHERE ${where}
-    ORDER BY created_at
-    `,
-    values
-  );
-
-  const ExcelJS = require("exceljs");
-  const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet(`Resumo ${ano}`);
-
-  sheet.columns = [
-    { header: "Mês", key: "mes" },
-    { header: "Tipo", key: "tipo" },
-    { header: "Valor Bruto", key: "valor_bruto" },
-    { header: "Ganhos Modelo", key: "valor_modelo" },
-    { header: "Ganhos Velvet", key: "velvet_fee" }
-  ];
-
-  rows.forEach(r => sheet.addRow(r));
-
-  res.setHeader(
-    "Content-Disposition",
-    `attachment; filename=resumo-anual-${ano}.xlsx`
-  );
-  res.setHeader(
-    "Content-Type",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-  );
-
-  await workbook.xlsx.write(res);
-  res.end();
-});
+);
 
 
-router.get("/api/export/resumo-anual/pdf", authMiddleware, async (req, res) => {
-  const { ano } = req.query;
-  const { role, id: modelo_id } = req.user;
+router.get(
+  "/api/export/resumo-anual/pdf",
+  authMiddleware,
+  requireRole("admin"),
+  async (req, res) => {
+    const { ano } = req.query;
 
-  const inicio = `${ano}-01-01`;
-  const fim = `${Number(ano) + 1}-01-01`;
+    const inicio = `${ano}-01-01`;
+    const fim = `${Number(ano) + 1}-01-01`;
 
-  let values = [inicio, fim];
-  let where = `
-    status = 'normal'
-    AND created_at >= $1
-    AND created_at < $2
-  `;
+    const values = [inicio, fim];
 
-  if (role === "modelo") {
-    values.push(modelo_id);
-    where += ` AND modelo_id = $${values.length}`;
+    const where = `
+      status = 'normal'
+      AND created_at >= $1
+      AND created_at < $2
+    `;
+
+    const { rows } = await db.query(
+      `
+      SELECT
+        TO_CHAR(created_at,'YYYY-MM') AS mes,
+        SUM(valor_bruto) AS bruto,
+        SUM(valor_modelo) AS modelo,
+        SUM(velvet_fee) AS velvet
+      FROM transacoes
+      WHERE ${where}
+      GROUP BY mes
+      ORDER BY mes
+      `,
+      values
+    );
+
+    const PDFDocument = require("pdfkit");
+    const doc = new PDFDocument({ margin: 40 });
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=resumo-anual-${ano}.pdf`
+    );
+
+    doc.pipe(res);
+
+    doc.fontSize(18).text(`Resumo Anual - ${ano}`, { align: "center" });
+    doc.moveDown();
+
+    rows.forEach(m => {
+      doc
+        .fontSize(11)
+        .text(
+          `${m.mes} | Bruto: $${m.bruto} | Modelo: $${m.modelo} | Velvet: $${m.velvet}`
+        )
+        .moveDown(0.5);
+    });
+
+    doc.end();
   }
+);
 
-  const { rows } = await db.query(
-    `
-    SELECT
-      TO_CHAR(created_at,'YYYY-MM') AS mes,
-      SUM(valor_bruto) AS bruto,
-      SUM(valor_modelo) AS modelo,
-      SUM(velvet_fee) AS velvet
-    FROM transacoes
-    WHERE ${where}
-    GROUP BY mes
-    ORDER BY mes
-    `,
-    values
-  );
-
-  const PDFDocument = require("pdfkit");
-  const doc = new PDFDocument({ margin: 40 });
-
-  res.setHeader("Content-Type", "application/pdf");
-  res.setHeader(
-    "Content-Disposition",
-    `attachment; filename=resumo-anual-${ano}.pdf`
-  );
-
-  doc.pipe(res);
-
-  doc.fontSize(18).text(`Resumo Anual - ${ano}`, { align: "center" });
-  doc.moveDown();
-
-  rows.forEach(m => {
-    doc
-      .fontSize(11)
-      .text(
-        `${m.mes} | Bruto: $${m.bruto} | Modelo: $${m.modelo} | Velvet: $${m.velvet}`
-      )
-      .moveDown(0.5);
-  });
-
-  doc.end();
-});
 
 router.get(
   "/api/alertas/risco",
   authMiddleware,
-  requireRole("admin", "modelo"),
+  requireRole("admin"),
   async (req, res) => {
 
     const { rows } = await db.query(`
@@ -891,7 +930,7 @@ router.get(
 
 router.get(
   "/modelo/relatorio",
-  requireRole("modelo", "admin"),
+  requireRole("modelo", "admin", "agente"),
   (req, res) => {
     res.sendFile(
       path.join(process.cwd(), "admin-pages", "relatorio.html")
@@ -901,7 +940,7 @@ router.get(
 
 router.get(
   "/modelo/transacoes",
-  requireRole("modelo", "admin"),
+  requireRole("modelo", "admin", "agente"),
   (req, res) => {
     res.sendFile(
       path.join(process.cwd(), "transacoes", "transacoes.html")
@@ -910,6 +949,3 @@ router.get(
 );
 
 module.exports = router;
-
-
-

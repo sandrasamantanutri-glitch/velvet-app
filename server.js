@@ -44,6 +44,8 @@ app.use(cors({
 const servercontent = require("./servercontent");
 app.use("/", servercontent);
 
+const requireRole = require("./middleware/requireRole");
+
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -1794,7 +1796,7 @@ app.post("/api/login", async (req, res) => {
     role: user.role.toLowerCase() // 🔥 AQUI
   },
   process.env.JWT_SECRET,
-  { expiresIn: "7d" }
+  { expiresIn: "24h" }
 );
     res.json({
   token,
