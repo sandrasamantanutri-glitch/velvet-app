@@ -262,7 +262,7 @@ body {
 
 /* título mais delicado */
 .page-title {
-  color: #6f42d8;
+  color: #7B2CFF;
   font-weight: 600;
   letter-spacing: 0.4px;
 }
@@ -290,13 +290,13 @@ body {
 
 /* texto secundário mais leve */
 .card span {
-  color: #8b86a3;
+  color: #fff;
   font-weight: 500;
 }
 
 /* valores com menos agressividade */
 .card strong {
-  color: #3a2a6a;
+  color: #1E1E26;
   font-weight: 700;
 }
 
@@ -304,7 +304,7 @@ body {
 .highlight {
   background: linear-gradient(
     135deg,
-    #8f6bff,
+    #cabcf3,
     #b79cff
   );
   box-shadow:
@@ -318,7 +318,7 @@ body {
 }
 
 .total strong {
-  color: #6f42d8;
+  color: #1E1E26;
 }
 
 /* links soft */
@@ -330,7 +330,7 @@ body {
 
 .link-card {
   font-size: 15px;
-  color: #6f42d8;
+  color: #1E1E26;
   font-weight: 500;
 }
 
