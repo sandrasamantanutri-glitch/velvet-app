@@ -1807,46 +1807,47 @@ app.post("/api/pagamento/pix", authCliente, async (req, res) => {
 
 app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
   try {
+    const { modelo_id, valor } = req.body;
     const cliente_id = req.user.id;
-    const { modelo_id } = req.body;
 
-    if (!modelo_id) {
-      return res.status(400).json({ error: "modelo_id ausente" });
+    if (!modelo_id || !valor) {
+      return res.status(400).json({ error: "Dados inválidos" });
     }
 
-    // 🔒 VALOR FIXO VIP (TESTE)
-    const valor_base = 1.00;
+    const valorBase = Number(valor);
+    if (!Number.isFinite(valorBase) || valorBase <= 0) {
+      return res.status(400).json({ error: "Valor inválido" });
+    }
 
-    const taxa_transacao  = Number((valor_base * 0.10).toFixed(2));
-    const taxa_plataforma = Number((valor_base * 0.05).toFixed(2));
-    const valor_total = Number(
-      (valor_base + taxa_transacao + taxa_plataforma).toFixed(2)
-    );
+    const taxaGateway   = Number((valorBase * 0.10).toFixed(2));
+    const taxaPlataforma = Number((valorBase * 0.05).toFixed(2));
+    const total = Number((valorBase + taxaGateway + taxaPlataforma).toFixed(2));
 
-    const intent = await stripe.paymentIntents.create({
-      amount: Math.round(valor_total * 100), // centavos
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(total * 100),
       currency: "brl",
+      automatic_payment_methods: { enabled: true },
+
+      // 🔥🔥🔥 ISSO É O QUE ESTAVA FALTANDO 🔥🔥🔥
       metadata: {
         tipo: "vip",
         cliente_id: String(cliente_id),
         modelo_id: String(modelo_id),
-        valor_base: valor_base.toFixed(2)
+        valor_base: valorBase.toFixed(2),
+        taxa_gateway: taxaGateway.toFixed(2),
+        taxa_plataforma: taxaPlataforma.toFixed(2),
+        valor_total: total.toFixed(2)
       }
     });
 
-    res.json({
-      clientSecret: intent.client_secret,
-      valor_total,
-      valor_base,
-      taxa_transacao,
-      taxa_plataforma
-    });
+    res.json({ clientSecret: paymentIntent.client_secret });
 
   } catch (err) {
-    console.error("❌ Erro criar pagamento VIP cartão:", err);
-    res.status(500).json({ error: "Erro ao criar pagamento cartão VIP" });
+    console.error("❌ Erro criar pagamento VIP Stripe:", err);
+    res.status(500).json({ error: "Erro ao criar pagamento VIP" });
   }
 });
+
 
 
 app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
