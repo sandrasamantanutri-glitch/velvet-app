@@ -511,11 +511,15 @@ async function abrirPopupPix() {
     return;
   }
 
-  // 🔢 VALORES (ajuste depois se quiser)
+  // 🔢 VALOR BASE (APENAS PARA UI)
   const valorAssinatura = 20.00;
-  const taxaTransacao  = valorAssinatura * 0.10;
-  const taxaPlataforma = valorAssinatura * 0.05;
-  const valorTotal     = valorAssinatura + taxaTransacao + taxaPlataforma;
+
+  // 🔥 CÁLCULO APENAS VISUAL (BACKEND RECALCULA)
+  const taxaTransacao  = Number((valorAssinatura * 0.10).toFixed(2));
+  const taxaPlataforma = Number((valorAssinatura * 0.05).toFixed(2));
+  const valorTotal     = Number(
+    (valorAssinatura + taxaTransacao + taxaPlataforma).toFixed(2)
+  );
 
   // 🧾 PREENCHE UI
   document.getElementById("pixValorBase").innerText =
@@ -542,9 +546,7 @@ async function abrirPopupPix() {
     },
     body: JSON.stringify({
       modelo_id,
-      valor_assinatura: valorAssinatura,
-      taxa_transacao: taxaTransacao,
-      taxa_plataforma: taxaPlataforma
+      valor_assinatura: valorAssinatura // 👈 SÓ ISSO
     })
   });
 
@@ -556,14 +558,14 @@ async function abrirPopupPix() {
   }
 
   // 📲 MOSTRA PIX
-document.getElementById("pixQr").src =
-  "data:image/png;base64," + data.qr_code;
+  document.getElementById("pixQr").src =
+    "data:image/png;base64," + data.qr_code;
+
   document.getElementById("pixCopia").value = data.copia_cola;
 
-  // guarda id do pagamento (IMPORTANTE pro webhook)
+  // guarda id do pagamento
   window.__PIX_PAYMENT_ID__ = data.payment_id;
 }
-
 
 function copiarPix() {
   const textarea = document.getElementById("pixCopia");
@@ -597,24 +599,34 @@ socket.on("vipAtivado", ({ modelo_id: modeloVip }) => {
 async function pagarComCartao() {
   fecharEscolha();
 
+  // 🔢 VALOR BASE (ASSINATURA)
   const valorAssinatura = 1.00;
-  const taxaTransacao  = 1.00;
-  const taxaPlataforma = 0.50;
-  const valorTotal     = valorAssinatura + taxaTransacao + taxaPlataforma;
 
-  // UI
+  // 🔥 TAXAS PERCENTUAIS (CORRETO)
+  const taxaTransacao  = Number((valorAssinatura * 0.10).toFixed(2)); // 10%
+  const taxaPlataforma = Number((valorAssinatura * 0.05).toFixed(2)); // 5%
+
+  const valorTotal = Number(
+    (valorAssinatura + taxaTransacao + taxaPlataforma).toFixed(2)
+  );
+
+  // 🧾 UI
   document.getElementById("cartaoValorBase").innerText =
     valorBRL(valorAssinatura);
+
   document.getElementById("cartaoTaxaTransacao").innerText =
     valorBRL(taxaTransacao);
+
   document.getElementById("cartaoTaxaPlataforma").innerText =
     valorBRL(taxaPlataforma);
+
   document.getElementById("cartaoValorTotal").innerText =
     valorBRL(valorTotal);
 
+  // 🔓 ABRE MODAL
   document.getElementById("paymentModal").classList.remove("hidden");
 
-  // 🔥 cria PaymentIntent
+  // 🔥 CRIA PAYMENT INTENT
   const res = await fetch("/api/pagamento/vip/cartao", {
     method: "POST",
     headers: {
@@ -630,6 +642,7 @@ async function pagarComCartao() {
   });
 
   const data = await res.json();
+
   if (!res.ok) {
     alert(data.error || "Erro no pagamento");
     return;

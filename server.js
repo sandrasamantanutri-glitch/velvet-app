@@ -1777,27 +1777,29 @@ const transporter = nodemailer.createTransport({
 
 app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
   try {
-    const {
-      modelo_id,
-      valor_assinatura,
-      taxa_transacao,
-      taxa_plataforma
-    } = req.body;
+    const { modelo_id, valor_assinatura } = req.body;
 
     const cliente_id = req.user.id;
 
-    let valor_total = Number(
-  (
-    Number(valor_assinatura) +
-    Number(taxa_transacao) +
-    Number(taxa_plataforma)
-  ).toFixed(2)
-);
+    // 🔒 VALIDAÇÕES
+    const valorAssinatura = Number(valor_assinatura);
 
-// 🔒 Regra do MercadoPago PIX (BR)
-if (!valor_total || isNaN(valor_total) || valor_total < 1) {
-  valor_total = 1.00;
-}
+    if (!modelo_id || !valorAssinatura || valorAssinatura <= 0) {
+      return res.status(400).json({ error: "Dados inválidos" });
+    }
+
+    // 🔥 TAXAS OFICIAIS (BACKEND É A FONTE DA VERDADE)
+    const taxaTransacao  = Number((valorAssinatura * 0.10).toFixed(2)); // 10%
+    const taxaPlataforma = Number((valorAssinatura * 0.05).toFixed(2)); // 5%
+
+    let valorTotal = Number(
+      (valorAssinatura + taxaTransacao + taxaPlataforma).toFixed(2)
+    );
+
+    // 🔒 Regra MercadoPago PIX (mínimo R$1,00)
+    if (valorTotal < 1) {
+      valorTotal = 1.00;
+    }
 
     const mp = new MercadoPagoConfig({
       accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN
@@ -1807,19 +1809,19 @@ if (!valor_total || isNaN(valor_total) || valor_total < 1) {
 
     const pagamento = await payment.create({
       body: {
-        transaction_amount: Number(valor_total),
+        transaction_amount: valorTotal,
         description: "Assinatura VIP",
         payment_method_id: "pix",
         payer: {
-          email: "contato@velvep.lat",
+          email: "contato@velvet.lat"
         },
         metadata: {
           tipo: "vip",
           cliente_id,
           modelo_id,
-          valor_assinatura,
-          taxa_transacao,
-          taxa_plataforma
+          valor_assinatura: valorAssinatura,
+          taxa_transacao: taxaTransacao,
+          taxa_plataforma: taxaPlataforma
         }
       }
     });
@@ -1832,10 +1834,13 @@ if (!valor_total || isNaN(valor_total) || valor_total < 1) {
     });
 
   } catch (err) {
-    console.error("Erro PIX VIP:", err);
-    res.status(500).json({ error: "Erro ao gerar pagamento PIX" });
+    console.error("❌ Erro PIX VIP:", err);
+    return res.status(500).json({
+      error: "Erro ao gerar pagamento PIX"
+    });
   }
 });
+
 
 app.post("/webhook/mercadopago", async (req, res) => {
   try {
@@ -1945,25 +1950,27 @@ app.post("/webhook/stripe", express.raw({ type: "application/json" }), async (re
 
 app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
   try {
-    const {
-      modelo_id,
-      valor_assinatura,
-      taxa_transacao,
-      taxa_plataforma
-    } = req.body;
+    const { modelo_id, valor_assinatura } = req.body;
 
     const cliente_id = req.user.id;
 
-    let valor_total = Number(
-      (
-        Number(valor_assinatura) +
-        Number(taxa_transacao) +
-        Number(taxa_plataforma)
-      ).toFixed(2)
+    // 🔒 VALIDAÇÕES BÁSICAS
+    const valorAssinatura = Number(valor_assinatura);
+
+    if (!modelo_id || !valorAssinatura || valorAssinatura <= 0) {
+      return res.status(400).json({ error: "Dados inválidos" });
+    }
+
+    // 🔥 TAXAS OFICIAIS (BACKEND É A FONTE DA VERDADE)
+    const taxaTransacao  = Number((valorAssinatura * 0.10).toFixed(2)); // 10%
+    const taxaPlataforma = Number((valorAssinatura * 0.05).toFixed(2)); // 5%
+
+    const valorTotal = Number(
+      (valorAssinatura + taxaTransacao + taxaPlataforma).toFixed(2)
     );
 
-    // Stripe usa centavos
-    const amount = Math.round(valor_total * 100);
+    // Stripe trabalha em centavos
+    const amount = Math.round(valorTotal * 100);
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
@@ -1973,25 +1980,23 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
         tipo: "vip",
         cliente_id,
         modelo_id,
-        valor_assinatura,
-        taxa_transacao,
-        taxa_plataforma
+        valor_assinatura: valorAssinatura,
+        taxa_transacao: taxaTransacao,
+        taxa_plataforma: taxaPlataforma
       }
     });
 
-    res.json({
+    return res.json({
       clientSecret: paymentIntent.client_secret
     });
 
   } catch (err) {
     console.error("❌ Erro Stripe VIP:", err);
-    res.status(500).json({ error: "Erro ao criar pagamento com cartão" });
+    return res.status(500).json({
+      error: "Erro ao criar pagamento com cartão"
+    });
   }
 });
-
-
-
-
 
 
 
