@@ -1551,19 +1551,25 @@ app.post("/api/pagamento/pix", authCliente, async (req, res) => {
     const payment = new Payment(mp);
 
     const result = await payment.create({
-      body: {
-        transaction_amount: valor,
-        description: `Conteúdo ${message_id}`,
-        payment_method_id: "pix",
-        notification_url:
-          "https://velvet-app-production.up.railway.app/webhook/mercadopago",
-        metadata: {
-          tipo: "midia",
-          message_id: String(message_id),
-          cliente_id: String(req.user.id)
-        }
-      }
-    });
+  body: {
+    transaction_amount: valor,
+    description: `Conteúdo ${message_id}`,
+    payment_method_id: "pix",
+
+    payer: {
+      email: `cliente_${req.user.id}@velvet.lat`
+    },
+
+    notification_url:
+      "https://velvet-app-production.up.railway.app/webhook/mercadopago",
+
+    metadata: {
+      tipo: "midia",
+      message_id: String(message_id),
+      cliente_id: String(req.user.id)
+    }
+  }
+});
 
     const pixData = result.point_of_interaction.transaction_data;
 
