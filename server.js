@@ -642,6 +642,15 @@ app.get("/api/conteudos", authModelo, async (req, res) => {
   }
 });
 
+// ===============================
+// 💎 PREÇO FIXO DO VIP
+// ===============================
+app.get("/api/vip/preco", (req, res) => {
+  res.json({
+    valor: VIP_PRECO_FIXO
+  });
+});
+
 app.get("/api/vip/status/:modelo_id", authCliente, async (req, res) => {
   const cliente_id = req.user.id;
   const modelo_id = Number(req.params.modelo_id);
