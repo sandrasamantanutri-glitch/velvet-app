@@ -43,6 +43,8 @@ app.use(cors({
   credentials: true
 }));
 
+app.use(express.json());
+
 const rateLimit = require("express-rate-limit");
 
 // 🔒 Rate limit para autenticação (login / register)
