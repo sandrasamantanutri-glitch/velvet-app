@@ -35,7 +35,7 @@ const Stripe = require("stripe");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const contentRouter = require("./servercontent");
 const nodemailer = require("nodemailer");
-const VIP_PRECO_FIXO = 0.10;
+const VIP_PRECO_FIXO = 1.00;
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/admin", contentRouter);
@@ -1744,7 +1744,7 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
     }
 
     // 🔒 VALOR FIXO VIP (TESTE)
-    const valor_base = 0.10;
+    const valor_base = 1.00;
 
     const taxa_transacao  = Number((valor_base * 0.10).toFixed(2));
     const taxa_plataforma = Number((valor_base * 0.05).toFixed(2));
@@ -1788,7 +1788,7 @@ app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
     }
 
     // 🔒 VALOR FIXO DO VIP
-    const valor_base = 0.10;
+    const valor_base = 1.00;
 
     const taxa_transacao  = Number((valor_base * 0.10).toFixed(2));
     const taxa_plataforma = Number((valor_base * 0.05).toFixed(2));
