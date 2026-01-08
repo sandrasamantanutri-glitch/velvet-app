@@ -594,6 +594,78 @@ socket.on("vipAtivado", ({ modelo_id: modeloVip }) => {
   carregarFeedPublico();
 });
 
+async function pagarComCartao() {
+  fecharEscolha();
+
+  const valorAssinatura = 10.00;
+  const taxaTransacao  = 1.00;
+  const taxaPlataforma = 0.50;
+  const valorTotal     = valorAssinatura + taxaTransacao + taxaPlataforma;
+
+  // UI
+  document.getElementById("cartaoValorBase").innerText =
+    valorBRL(valorAssinatura);
+  document.getElementById("cartaoTaxaTransacao").innerText =
+    valorBRL(taxaTransacao);
+  document.getElementById("cartaoTaxaPlataforma").innerText =
+    valorBRL(taxaPlataforma);
+  document.getElementById("cartaoValorTotal").innerText =
+    valorBRL(valorTotal);
+
+  document.getElementById("paymentModal").classList.remove("hidden");
+
+  // 🔥 cria PaymentIntent
+  const res = await fetch("/api/pagamento/vip/cartao", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + token
+    },
+    body: JSON.stringify({
+      modelo_id,
+      valor_assinatura: valorAssinatura,
+      taxa_transacao: taxaTransacao,
+      taxa_plataforma: taxaPlataforma
+    })
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    alert(data.error || "Erro no pagamento");
+    return;
+  }
+
+  elements = stripe.elements({ clientSecret: data.clientSecret });
+
+  const paymentElement = elements.create("payment");
+  paymentElement.mount("#payment-element");
+}
+
+// ===============================
+// 💳 CONFIRMAR PAGAMENTO CARTÃO
+// ===============================
+document
+  .querySelector("#paymentModal .btn-confirmar-desbloqueio")
+  ?.addEventListener("click", async () => {
+
+    if (!elements) {
+      alert("Pagamento ainda não inicializado");
+      return;
+    }
+
+    const { error } = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: window.location.href // fallback se Stripe pedir redirect
+      }
+    });
+
+    if (error) {
+      alert(error.message);
+    }
+});
+
+
 
 function mostrarVipAtivadoPopup() {
   const popup = document.getElementById("popupVipAtivado");

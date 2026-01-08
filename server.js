@@ -1902,6 +1902,96 @@ if (socketId) {
   }
 });
 
+app.post("/webhook/stripe", express.raw({ type: "application/json" }), async (req, res) => {
+  const sig = req.headers["stripe-signature"];
+
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(
+      req.body,
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
+  } catch (err) {
+    console.error("❌ Webhook Stripe inválido:", err.message);
+    return res.status(400).send(`Webhook Error`);
+  }
+
+  if (event.type === "payment_intent.succeeded") {
+    const pi = event.data.object;
+
+    if (pi.metadata?.tipo === "vip") {
+      await ativarVipAssinatura({
+        cliente_id: pi.metadata.cliente_id,
+        modelo_id: pi.metadata.modelo_id,
+        valor_assinatura: pi.metadata.valor_assinatura,
+        taxa_transacao: pi.metadata.taxa_transacao,
+        taxa_plataforma: pi.metadata.taxa_plataforma
+      });
+
+      // 🔔 socket realtime
+      const sid = onlineClientes[pi.metadata.cliente_id];
+      if (sid) {
+        io.to(sid).emit("vipAtivado", {
+          modelo_id: pi.metadata.modelo_id
+        });
+      }
+    }
+  }
+
+  res.json({ received: true });
+});
+
+
+app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
+  try {
+    const {
+      modelo_id,
+      valor_assinatura,
+      taxa_transacao,
+      taxa_plataforma
+    } = req.body;
+
+    const cliente_id = req.user.id;
+
+    let valor_total = Number(
+      (
+        Number(valor_assinatura) +
+        Number(taxa_transacao) +
+        Number(taxa_plataforma)
+      ).toFixed(2)
+    );
+
+    // Stripe usa centavos
+    const amount = Math.round(valor_total * 100);
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount,
+      currency: "brl",
+      automatic_payment_methods: { enabled: true },
+      metadata: {
+        tipo: "vip",
+        cliente_id,
+        modelo_id,
+        valor_assinatura,
+        taxa_transacao,
+        taxa_plataforma
+      }
+    });
+
+    res.json({
+      clientSecret: paymentIntent.client_secret
+    });
+
+  } catch (err) {
+    console.error("❌ Erro Stripe VIP:", err);
+    res.status(500).json({ error: "Erro ao criar pagamento com cartão" });
+  }
+});
+
+
+
+
 
 
 
