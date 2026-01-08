@@ -536,7 +536,8 @@ async function abrirPopupPix() {
   }
 
   // 📲 MOSTRA PIX
-  document.getElementById("pixQr").src = data.qr_code;
+document.getElementById("pixQr").src =
+  "data:image/png;base64," + data.qr_code;
   document.getElementById("pixCopia").value = data.copia_cola;
 
   // guarda id do pagamento (IMPORTANTE pro webhook)
