@@ -38,9 +38,16 @@ async function carregarDadosCliente() {
   // document.getElementById("ultimos4").value = dados.ultimos4_cartao || "";
   // document.getElementById("bandeira").value = dados.bandeira_cartao || "";
 
-  if (dados.avatar) {
-    document.getElementById("avatarPreview").src = dados.avatar;
-  }
+  const avatar = document.getElementById("avatarPreview");
+
+if (dados.avatar) {
+  avatar.src = dados.avatar;
+}
+
+avatar.onerror = () => {
+  avatar.src = "/assets/avatarDefault.png";
+};
+
 }
 
 
