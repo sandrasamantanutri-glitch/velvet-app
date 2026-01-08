@@ -1544,14 +1544,6 @@ app.post("/api/pagamento/pix", authCliente, async (req, res) => {
 
     const valor = Number(msgRes.rows[0].preco);
 
-    const clienteRes = await db.query(
-      "SELECT email FROM clientes WHERE user_id = $1",
-      [req.user.id]
-    );
-
-    const emailCliente =
-      clienteRes.rows[0]?.email || "cliente@velvet.lat";
-
     const mp = new MercadoPagoConfig({
       accessToken: process.env.MERCADOPAGO_TOKEN
     });
@@ -1563,7 +1555,6 @@ app.post("/api/pagamento/pix", authCliente, async (req, res) => {
         transaction_amount: valor,
         description: `Conteúdo ${message_id}`,
         payment_method_id: "pix",
-        payer: { email: emailCliente },
         notification_url:
           "https://velvet-app-production.up.railway.app/webhook/mercadopago",
         metadata: {
