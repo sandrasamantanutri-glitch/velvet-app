@@ -1274,52 +1274,132 @@ app.post(
       return res.sendStatus(500);
     }
 
-// ✅ PAGAMENTO CONFIRMADO (STRIPE)
-if (event.type === "payment_intent.succeeded") {
+ // ✅ PAGAMENTO CONFIRMADO (STRIPE)
+ if (event.type === "payment_intent.succeeded") {
   const intent = event.data.object;
 
-  const message_id = intent.metadata?.message_id;
-  const cliente_id = intent.metadata?.cliente_id;
+  const tipo = intent.metadata?.tipo;
+  const cliente_id = Number(intent.metadata?.cliente_id);
 
-  if (message_id && cliente_id) {
+  /* ===============================
+     🎬 CONTEÚDO (STRIPE)
+  =============================== */
+  if (tipo === "midia") {
+    const message_id = Number(intent.metadata?.message_id);
+
+    if (message_id && cliente_id) {
+      try {
+        // 🔓 DESBLOQUEIA O CONTEÚDO
+        await db.query(
+          `
+          UPDATE messages
+          SET visto = true
+          WHERE id = $1
+            AND cliente_id = $2
+          `,
+          [message_id, cliente_id]
+        );
+
+        // 🔎 BUSCA DADOS DA MENSAGEM
+        const msgRes = await db.query(
+          `
+          SELECT modelo_id, preco
+          FROM messages
+          WHERE id = $1
+          `,
+          [message_id]
+        );
+
+        const modelo_id = Number(msgRes.rows[0]?.modelo_id);
+        const valor_bruto = Number(msgRes.rows[0]?.preco);
+
+        if (!modelo_id || isNaN(valor_bruto)) {
+          console.log("⚠️ Dados inválidos para mídia Stripe");
+          return;
+        }
+
+        // 💸 TAXAS
+        const taxa_gateway = Number((valor_bruto * 0.10).toFixed(2));
+        const velvet_fee   = Number((valor_bruto * 0.05).toFixed(2));
+        const valor_modelo = Number((valor_bruto - velvet_fee).toFixed(2));
+
+        const codigoTransacao = `stripe_${intent.id}`;
+
+        // 💾 REGISTRA TRANSAÇÃO
+        await db.query(
+          `
+          INSERT INTO transacoes (
+            codigo,
+            tipo,
+            modelo_id,
+            cliente_id,
+            message_id,
+            valor_bruto,
+            taxa_gateway,
+            velvet_fee,
+            valor_modelo,
+            origem_cliente,
+            status
+          )
+          VALUES (
+            $1,
+            'midia',
+            $2,
+            $3,
+            $4,
+            $5,
+            $6,
+            $7,
+            $8,
+            'cartao',
+            'normal'
+          )
+          ON CONFLICT (codigo) DO NOTHING
+          `,
+          [
+            codigoTransacao,
+            modelo_id,
+            cliente_id,
+            message_id,
+            valor_bruto,
+            taxa_gateway,
+            velvet_fee,
+            valor_modelo
+          ]
+        );
+
+        // 🔥 AVISO REALTIME
+        const sala = `chat_${cliente_id}_${modelo_id}`;
+        io.to(sala).emit("conteudoVisto", { message_id });
+
+        console.log("✅ Mídia Stripe registrada:", codigoTransacao);
+
+      } catch (err) {
+        console.error("❌ Erro Stripe (midia):", err);
+      }
+    }
+  }
+
+  /* ===============================
+     ⭐ VIP (STRIPE)
+  =============================== */
+  if (tipo === "vip") {
     try {
-      // 🔓 DESBLOQUEIA O CONTEÚDO
-      await db.query(
-        `
-        UPDATE messages
-        SET visto = true
-        WHERE id = $1
-          AND cliente_id = $2
-        `,
-        [message_id, cliente_id]
-      );
+      const modelo_id = Number(intent.metadata?.modelo_id);
 
-      // 🔎 BUSCA DADOS DA MENSAGEM
-      const msgRes = await db.query(
-        `
-        SELECT modelo_id, preco
-        FROM messages
-        WHERE id = $1
-        `,
-        [message_id]
-      );
+      if (!cliente_id || !modelo_id) {
+        console.log("⚠️ Metadata VIP incompleta:", intent.metadata);
+        return;
+      }
 
-      const modelo_id = msgRes.rows[0]?.modelo_id;
-      const valor_bruto = Number(msgRes.rows[0]?.preco);
+      const valor_bruto = VIP_PRECO_FIXO;
+      const taxa_gateway = Number((valor_bruto * 0.10).toFixed(2));
+      const velvet_fee   = Number((valor_bruto * 0.05).toFixed(2));
+      const valor_modelo = Number((valor_bruto - velvet_fee).toFixed(2));
 
-      // 💸 TAXAS (REGRA NOVA)
-      const taxa_gateway = Number((valor_bruto * 0.10).toFixed(2)); // 10%
-      const velvet_fee   = Number((valor_bruto * 0.05).toFixed(2)); // 5%
+      const codigoTransacao = `vip_stripe_${intent.id}`;
 
-      // 💰 GANHO DA MODELO (PREÇO SEM TAXA DA PLATAFORMA)
-      const valor_modelo = Number(
-        (valor_bruto - velvet_fee).toFixed(2)
-      );
-
-      // 🧾 CÓDIGO ÚNICO DA TRANSAÇÃO
-      const codigoTransacao = `stripe_${intent.id}`;
-
-      // 💾 REGISTRA NA TABELA TRANSACOES
+      // 💾 REGISTRA TRANSAÇÃO VIP
       await db.query(
         `
         INSERT INTO transacoes (
@@ -1327,7 +1407,6 @@ if (event.type === "payment_intent.succeeded") {
           tipo,
           modelo_id,
           cliente_id,
-          message_id,
           valor_bruto,
           taxa_gateway,
           velvet_fee,
@@ -1337,14 +1416,13 @@ if (event.type === "payment_intent.succeeded") {
         )
         VALUES (
           $1,
-          'midia',
+          'vip',
           $2,
           $3,
           $4,
           $5,
           $6,
           $7,
-          $8,
           'cartao',
           'normal'
         )
@@ -1354,7 +1432,6 @@ if (event.type === "payment_intent.succeeded") {
           codigoTransacao,
           modelo_id,
           cliente_id,
-          message_id,
           valor_bruto,
           taxa_gateway,
           velvet_fee,
@@ -1362,96 +1439,24 @@ if (event.type === "payment_intent.succeeded") {
         ]
       );
 
-      // 🔥 AVISA CLIENTE + MODELO EM TEMPO REAL
-      if (modelo_id) {
-        const sala = `chat_${cliente_id}_${modelo_id}`;
-        io.to(sala).emit("conteudoVisto", { message_id });
-      }
+      // 🔒 ATIVA VIP
+      await db.query(
+        `
+        INSERT INTO vip_subscriptions (cliente_id, modelo_id, ativo)
+        VALUES ($1, $2, true)
+        ON CONFLICT (cliente_id, modelo_id)
+        DO UPDATE SET ativo = true
+        `,
+        [cliente_id, modelo_id]
+      );
 
-      console.log("✅ Transação Stripe registrada:", codigoTransacao);
+      console.log("✅ VIP Stripe ativado:", cliente_id, modelo_id);
 
     } catch (err) {
-      console.error("❌ Erro no webhook Stripe:", err);
+      console.error("❌ Erro Stripe (VIP):", err);
     }
   }
-  // ⭐ VIP — PAGAMENTO CONFIRMADO (STRIPE)
-const tipo = intent.metadata?.tipo;
-
-if (tipo === "vip") {
-  try {
-    const cliente_id = intent.metadata?.cliente_id;
-    const modelo_id  = intent.metadata?.modelo_id;
-
-    if (!cliente_id || !modelo_id) {
-      console.log("⚠️ Metadata VIP incompleta:", intent.metadata);
-      return res.json({ received: true });
-    }
-
-    const valor_bruto = VIP_PRECO_FIXO;
-
-    const taxa_gateway = Number((valor_bruto * 0.10).toFixed(2));
-    const velvet_fee   = Number((valor_bruto * 0.05).toFixed(2));
-    const valor_modelo = Number((valor_bruto - velvet_fee).toFixed(2));
-
-    const codigoTransacao = `vip_stripe_${intent.id}`;
-
-    await db.query(
-      `
-      INSERT INTO transacoes (
-        codigo,
-        tipo,
-        modelo_id,
-        cliente_id,
-        valor_bruto,
-        taxa_gateway,
-        velvet_fee,
-        valor_modelo,
-        origem_cliente,
-        status
-      )
-      VALUES (
-        $1,
-        'vip',
-        $2,
-        $3,
-        $4,
-        $5,
-        $6,
-        $7,
-        'cartao',
-        'normal'
-      )
-      ON CONFLICT (codigo) DO NOTHING
-      `,
-      [
-        codigoTransacao,
-        modelo_id,
-        cliente_id,
-        valor_bruto,
-        taxa_gateway,
-        velvet_fee,
-        valor_modelo
-      ]
-    );
-
-    // 🔒 ativa VIP
-    await db.query(
-      `
-      INSERT INTO vip_subscriptions (cliente_id, modelo_id, ativo)
-      VALUES ($1, $2, true)
-      ON CONFLICT (cliente_id, modelo_id)
-      DO UPDATE SET ativo = true
-      `,
-      [cliente_id, modelo_id]
-    );
-
-    console.log("✅ VIP Stripe registrado e ativado");
-
-  } catch (err) {
-    console.error("❌ Erro VIP Stripe:", err);
-  }
-}
-}
+ }
 
  res.json({ received: true });
 });
