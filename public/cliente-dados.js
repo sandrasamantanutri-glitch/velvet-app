@@ -34,10 +34,6 @@ async function carregarDadosCliente() {
       : "";
   document.getElementById("pais").value = dados.pais || "";
 
-  // document.getElementById("nomeCartao").value = dados.nome_cartao || "";
-  // document.getElementById("ultimos4").value = dados.ultimos4_cartao || "";
-  // document.getElementById("bandeira").value = dados.bandeira_cartao || "";
-
   const avatar = document.getElementById("avatarPreview");
 
 if (dados.avatar) {
@@ -74,10 +70,6 @@ form.addEventListener("submit", async (e) => {
     nome_completo: document.getElementById("nomeCompleto").value,
     data_nascimento: document.getElementById("dataNascimento").value,
     pais: document.getElementById("pais").value,
-
-    // nome_cartao: document.getElementById("nomeCartao").value,
-    // ultimos4_cartao: document.getElementById("ultimos4").value,
-    // bandeira_cartao: document.getElementById("bandeira").value
   };
 
   const res = await fetch("/api/cliente/dados", {
@@ -90,8 +82,14 @@ form.addEventListener("submit", async (e) => {
   });
 
   if (res.ok) {
-    alert("Dados salvos com sucesso!");
-  } else {
+  localStorage.setItem(
+    "username",
+    document.getElementById("username").value
+  );
+
+  alert("Dados salvos com sucesso!");
+}
+ else {
     alert("Erro ao salvar dados");
   }
 });
@@ -120,7 +118,7 @@ if (inputAvatar) {
     if (data.url) {
       avatarPreview.src = data.url;
     } else {
-      alert("Erro ao atualizar foto, preencha seus dados primeiro");
+      alert("Erro ao atualizar foto, preencha suas informações primeiro");
     }
   });
 }

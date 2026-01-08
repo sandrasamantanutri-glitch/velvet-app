@@ -136,11 +136,13 @@ async function carregarListaClientes() {
     // esperado: "novo" | "nao-visto" | "por-responder" | "normal"
     li.dataset.status = c.status || "normal";
 
-    li.innerHTML = `
-      <span class="nome">${c.nome}</span>
-      <span class="badge hidden">Não visto</span>
-      <span class="tempo"></span>
-    `;
+    const nomeExibido = c.username || c.nome;
+
+li.innerHTML = `
+  <span class="nome">${nomeExibido}</span>
+  <span class="badge hidden">Não visto</span>
+  <span class="tempo"></span>
+`;
 
     // 🔔 aplica badge + tempo
     atualizarBadgeComTempo(li);
@@ -156,7 +158,9 @@ async function carregarListaClientes() {
       chatAtivo = { cliente_id, modelo_id };
       await carregarConteudosVistos(cliente_id);
 
-      document.getElementById("clienteNome").innerText = c.nome;
+      document.getElementById("clienteNome").innerText =
+  c.username || c.nome;
+
 
       // 🔥 buscar dados do cliente (avatar, etc.)
       const res = await fetch(`/api/cliente/${cliente_id}`, {
@@ -474,7 +478,9 @@ function adicionarNovoClienteNaLista(cliente_id, nome) {
   li.dataset.lastTime = Date.now();
 
   li.innerHTML = `
-    <span class="nome">${nome}</span>
+    const nomeExibido = c?.username || nome;
+    <span class="nome">${nomeExibido}</span>
+    
     <span class="badge">Novo</span>
     <span class="tempo">${formatarTempo(li.dataset.lastTime)}</span>
   `;
