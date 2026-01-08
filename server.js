@@ -14,8 +14,6 @@ const bcrypt = require("bcrypt");
 const path = require("path");
 const fs = require("fs");
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 app.use((req, res, next) => {
   console.log("➡️ REQ:", req.method, req.url);
   next();
@@ -1665,6 +1663,9 @@ console.log("✅ VIP PIX registrado em transacoes");
   }
 });
 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 
 app.post("/api/pagamento/criar", authCliente, async (req, res) => {
   try {
@@ -1695,13 +1696,13 @@ app.post("/api/pagamento/criar", authCliente, async (req, res) => {
 
     const precoBase = Number(msgRes.rows[0].preco);
 
-    if (isNaN(precoBase) || precoBase <= 0) {
+    if (!Number.isFinite(precoBase) || precoBase <= 0) {
       return res.status(400).json({ erro: "Valor inválido" });
     }
 
-    // 💸 TAXAS
-    const taxaTransacao  = precoBase * 0.10; // 10%
-    const taxaPlataforma = precoBase * 0.05; // 5%
+    // 💸 TAXAS (arredondadas)
+    const taxaTransacao  = Number((precoBase * 0.10).toFixed(2));
+    const taxaPlataforma = Number((precoBase * 0.05).toFixed(2));
 
     // 🔥 TOTAL FINAL
     const valorTotal = Number(
@@ -1710,10 +1711,11 @@ app.post("/api/pagamento/criar", authCliente, async (req, res) => {
 
     // 💳 STRIPE — cobra o TOTAL
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(valorTotal * 100), // centavos
+      amount: Math.round(valorTotal * 100),
       currency: "brl",
       automatic_payment_methods: { enabled: true },
       metadata: {
+        tipo: "midia", // 🔥 IMPORTANTE
         message_id: String(message_id),
         cliente_id: String(req.user.id),
         valor_base: precoBase.toFixed(2),
