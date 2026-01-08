@@ -53,6 +53,16 @@ document.addEventListener("DOMContentLoaded", () => {
   iniciarUploads();
   iniciarBioPopup();
 
+  document.getElementById("btnVipPix")?.addEventListener("click", () => {
+  fecharEscolha();
+  abrirPopupPix(); // sua função existente
+});
+
+document.getElementById("btnVipCartao")?.addEventListener("click", () => {
+  fecharEscolha();
+  pagarComCartao(); // sua função Stripe
+});
+
   document.getElementById("fecharPagamento")
   ?.addEventListener("click", fecharPagamentoCartao);
 });
