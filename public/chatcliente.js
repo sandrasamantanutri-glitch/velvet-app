@@ -539,8 +539,9 @@ function renderMensagem(msg) {
      data-qtd="${msg.quantidade ?? 1}">
           <div class="pacote-grid">
             ${Array(msg.quantidade ?? 1).fill("").map(() =>
-              `<div class="midia-item placeholder"></div>`
-            ).join("")}
+  `<div class="midia-item placeholder"
+       onclick="avisarConteudoBloqueado()"></div>`
+).join("")}
           </div>
 
          <div class="conteudo-info">
