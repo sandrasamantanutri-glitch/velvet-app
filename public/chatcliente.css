@@ -576,7 +576,7 @@ html, body {
   border-radius: 14px !important; /* arredondado, NÃO círculo */
   overflow: hidden;
 
-  background: #9E6BFF;
+  background: radial-gradient(circle at 30% 30%, rgba(183, 160, 255, 0.45), transparent 35%), radial-gradient(circle at 70% 70%, rgba(140, 108, 255, 0.35), transparent 40%), linear-gradient(135deg, #9E6BFF, #e6e1ff);;
 }
 
 /* mídia preenche tudo */
