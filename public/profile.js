@@ -96,9 +96,9 @@ document.getElementById("btnVipCartao")?.addEventListener("click", () => {
   localStorage.setItem("chat_modelo_id", modelo_id);
 
   // redireciona para o chat do cliente
-  window.location.href = "/chatCliente.html";
+  window.location.href = "/chatcliente.html";
 
-  
+
 });
 
 
