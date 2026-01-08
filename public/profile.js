@@ -140,32 +140,38 @@ async function carregarPerfilPublico() {
   carregarFeedPublico();
 }
 
-
-// ===============================
-// CHAT
-// ===============================
-btnChat?.addEventListener("click", () => {
-  localStorage.setItem("modelo_id", modelo_id);
-  window.location.href = "/chatcliente.html";
-});
-
-
 // ===============================
 // VIP
 // ===============================
-btnVip?.addEventListener("click", () => {
+btnVip?.addEventListener("click", async() => {
   if (!modelo_id) {
     alert("Modelo não identificada");
     return;
   }
 
-  // 🔑 mesmo estado usado no chat
+  let data;
+
+  try {
+    const res = await fetch("/api/vip/preco");
+    data = await res.json();
+  } catch (err) {
+    alert("Erro ao buscar valor do VIP");
+    return;
+  }
+
+  const valorVip = Number(data.valor);
+
+  if (!Number.isFinite(valorVip) || valorVip <= 0) {
+    alert("Valor do VIP inválido. Recarregue a página.");
+    return;
+  }
+
   window.pagamentoAtual = {
     tipo: "vip",
-    modelo_id
+    modelo_id,
+    valor: valorVip
   };
 
-  // 🔓 abre o MESMO modal de escolha (Pix / Cartão)
   document
     .getElementById("escolhaPagamento")
     .classList.remove("hidden");
