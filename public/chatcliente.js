@@ -657,3 +657,55 @@ document.getElementById("confirmarPagamento").onclick = async () => {
 };
 
 
+async function abrirPixConteudo(message_id, preco) {
+  if (!message_id || preco <= 0) {
+    alert("Conteúdo inválido");
+    return;
+  }
+
+  // 🔢 APENAS VISUAL
+  const taxaTransacao  = Number((preco * 0.10).toFixed(2));
+  const taxaPlataforma = Number((preco * 0.05).toFixed(2));
+  const valorTotal     = Number(
+    (preco + taxaTransacao + taxaPlataforma).toFixed(2)
+  );
+
+  // UI
+  document.getElementById("pixValorBase").innerText = valorBRL(preco);
+  document.getElementById("pixTaxaTransacao").innerText = valorBRL(taxaTransacao);
+  document.getElementById("pixTaxaPlataforma").innerText = valorBRL(taxaPlataforma);
+  document.getElementById("pixValorTotal").innerText = valorBRL(valorTotal);
+
+  document.getElementById("popupPix").classList.remove("hidden");
+
+  // 🔥 BACKEND
+  const res = await fetch("/api/pagamento/conteudo/pix", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + token
+    },
+    body: JSON.stringify({
+      message_id,
+      valor_base: preco
+    })
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    alert(data.error || "Erro ao gerar PIX");
+    return;
+  }
+
+  document.getElementById("pixQr").src =
+    "data:image/png;base64," + data.qr_code;
+
+  document.getElementById("pixCopia").value = data.copia_cola;
+
+  window.__PIX_PAYMENT_ID__ = data.payment_id;
+  window.__PIX_MESSAGE_ID__ = message_id;
+}
+
+
+

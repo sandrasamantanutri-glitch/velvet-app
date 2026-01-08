@@ -1883,9 +1883,7 @@ app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
 
 app.post("/webhook/mercadopago", async (req, res) => {
   try {
-    // MercadoPago envia o ID aqui
     const paymentId = req.body?.data?.id;
-
     if (!paymentId) {
       return res.sendStatus(200);
     }
@@ -1896,47 +1894,67 @@ app.post("/webhook/mercadopago", async (req, res) => {
 
     const payment = new Payment(mp);
 
-    // 🔎 BUSCA O PAGAMENTO REAL
     const pagamento = await payment.get({ id: paymentId });
 
-    // ⏳ Ainda não aprovado
+    // ⏳ Só processa se aprovado
     if (pagamento.status !== "approved") {
       return res.sendStatus(200);
     }
 
-    // 🔐 CONFERE SE É VIP
-    if (pagamento.metadata?.tipo !== "vip") {
-      return res.sendStatus(200);
+    const tipo = pagamento.metadata?.tipo;
+
+    /* =========================
+       🟪 VIP
+    ========================= */
+    if (tipo === "vip") {
+      const {
+        cliente_id,
+        modelo_id,
+        valor_assinatura,
+        taxa_transacao,
+        taxa_plataforma
+      } = pagamento.metadata;
+
+      await ativarVipAssinatura({
+        cliente_id,
+        modelo_id,
+        valor_assinatura,
+        taxa_transacao,
+        taxa_plataforma
+      });
+
+      const socketId = onlineClientes[cliente_id];
+      if (socketId) {
+        io.to(socketId).emit("vipAtivado", { modelo_id });
+      }
+
+      console.log("✅ VIP ATIVADO:", cliente_id, modelo_id);
     }
 
-    const {
-      cliente_id,
-      modelo_id,
-      valor_assinatura,
-      taxa_transacao,
-      taxa_plataforma
-    } = pagamento.metadata;
+    /* =========================
+       📦 CONTEÚDO
+    ========================= */
+    if (tipo === "conteudo") {
+      const {
+        message_id,
+        cliente_id
+      } = pagamento.metadata;
 
-    // 🔥 AQUI É O PONTO CRÍTICO 🔥
-    // 👉 ATIVA O VIP DE VERDADE
-    await ativarVipAssinatura({
-      cliente_id,
-      modelo_id,
-      valor_assinatura,
-      taxa_transacao,
-      taxa_plataforma
-    });
-    // 🔔 AVISA CLIENTE EM TEMPO REAL (VIP ATIVADO)
-const socketId = onlineClientes[cliente_id];
+      // 🔓 LIBERA O CONTEÚDO
+      await db.query(`
+        UPDATE messages
+        SET visto = true
+        WHERE id = $1
+          AND cliente_id = $2
+      `, [message_id, cliente_id]);
 
-if (socketId) {
-  io.to(socketId).emit("vipAtivado", {
-    modelo_id
-  });
-}
+      const socketId = onlineClientes[cliente_id];
+      if (socketId) {
+        io.to(socketId).emit("conteudoVisto", { message_id });
+      }
 
-
-    console.log("✅ VIP ATIVADO:", cliente_id, modelo_id);
+      console.log("📦 CONTEÚDO LIBERADO:", message_id);
+    }
 
     return res.sendStatus(200);
 
@@ -1945,6 +1963,7 @@ if (socketId) {
     return res.sendStatus(500);
   }
 });
+
 
 
 
@@ -1997,6 +2016,65 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
     });
   }
 });
+
+
+app.post("/api/pagamento/conteudo/pix", authCliente, async (req, res) => {
+  try {
+    const { message_id, valor_base } = req.body;
+    const cliente_id = req.user.id;
+
+    if (!message_id || !valor_base || valor_base <= 0) {
+      return res.status(400).json({ error: "Dados inválidos" });
+    }
+
+    // 🔥 REGRAS OFICIAIS
+    const taxa_transacao  = Number((valor_base * 0.10).toFixed(2));
+    const taxa_plataforma = Number((valor_base * 0.05).toFixed(2));
+
+    let valor_total = Number(
+      (valor_base + taxa_transacao + taxa_plataforma).toFixed(2)
+    );
+
+    // 🔒 REGRA MP PIX
+    if (valor_total < 1) valor_total = 1.00;
+
+    const mp = new MercadoPagoConfig({
+      accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN
+    });
+
+    const payment = new Payment(mp);
+
+    const pagamento = await payment.create({
+      body: {
+        transaction_amount: valor_total,
+        description: "Desbloqueio de conteúdo",
+        payment_method_id: "pix",
+        payer: {
+          email: "contato@velvet.lat"
+        },
+        metadata: {
+          tipo: "conteudo",
+          message_id,
+          cliente_id,
+          valor_base,
+          taxa_transacao,
+          taxa_plataforma
+        }
+      }
+    });
+
+    res.json({
+      qr_code: pagamento.point_of_interaction.transaction_data.qr_code_base64,
+      copia_cola: pagamento.point_of_interaction.transaction_data.qr_code,
+      payment_id: pagamento.id
+    });
+
+  } catch (err) {
+    console.error("Erro PIX Conteúdo:", err);
+    res.status(500).json({ error: "Erro ao gerar PIX" });
+  }
+});
+
 
 
 
