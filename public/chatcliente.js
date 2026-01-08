@@ -243,9 +243,6 @@ function fecharEscolha() {
 async function pagarComCartao() {
   fecharEscolha();
 
-   document.getElementById("cartaoValor").innerText =
-    "R$ " + Number(pagamentoAtual.valor).toFixed(2);
-
   document
     .getElementById("paymentModal")
     .classList.remove("hidden");
@@ -262,37 +259,46 @@ async function pagarComCartao() {
     })
   });
 
-  const { clientSecret } = await res.json();
+  const data = await res.json();
+
+  // 🔥 VALOR TOTAL (com taxas)
+  document.getElementById("cartaoValor").innerText =
+    Number(data.valor_total).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL"
+    });
+
+  const clientSecret = data.clientSecret;
 
   elements = stripe.elements({
-  clientSecret,
-  appearance: {
-    theme: "flat",
-    variables: {
-      colorPrimary: "#7B2CFF",        // 🔥 roxo Velvet
-      colorBackground: "#ffffff",
-      colorText: "#4a2bbf",
-      colorDanger: "#d9534f",
-
-      fontFamily: "Poppins, system-ui, sans-serif",
-      fontSizeBase: "14px",
-      borderRadius: "12px"
-    },
-    rules: {
-      ".Input": {
-        border: "1px solid #9E6BFF"
+    clientSecret,
+    appearance: {
+      theme: "flat",
+      variables: {
+        colorPrimary: "#7B2CFF",
+        colorBackground: "#ffffff",
+        colorText: "#4a2bbf",
+        colorDanger: "#d9534f",
+        fontFamily: "Poppins, system-ui, sans-serif",
+        fontSizeBase: "14px",
+        borderRadius: "12px"
       },
-      ".Input:focus": {
-        borderColor: "#7B2CFF",
-        boxShadow: "0 0 0 2px rgba(123,44,255,0.25)"
-      },
-      ".Label": {
-        color: "#7B2CFF",
-        fontWeight: "500"
+      rules: {
+        ".Input": {
+          border: "1px solid #9E6BFF"
+        },
+        ".Input:focus": {
+          borderColor: "#7B2CFF",
+          boxShadow: "0 0 0 2px rgba(123,44,255,0.25)"
+        },
+        ".Label": {
+          color: "#7B2CFF",
+          fontWeight: "500"
+        }
       }
     }
-  }
-});
+  });
+
   const paymentElement = elements.create("payment");
   paymentElement.mount("#payment-element");
 }
@@ -321,8 +327,11 @@ async function pagarComPix() {
   const data = await res.json();
 
   // 🔥 MOSTRA O VALOR NO POPUP
-  document.getElementById("pixValor").innerText =
-    "R$ " + Number(pagamentoAtual.valor).toFixed(2);
+document.getElementById("pixValor").innerText =
+  Number(data.valor_total).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  });
 
   document.getElementById("pixQr").src =
     "data:image/png;base64," + data.qrCode;

@@ -1474,7 +1474,7 @@ app.post("/api/pagamento/criar", authCliente, async (req, res) => {
       return res.status(400).json({ erro: "Dados inválidos" });
     }
 
-    // 🔒 buscar preço REAL do conteúdo
+    // 🔒 busca preço REAL no banco
     const msgRes = await db.query(
       `
       SELECT preco, visto
@@ -1493,25 +1493,39 @@ app.post("/api/pagamento/criar", authCliente, async (req, res) => {
       return res.status(400).json({ erro: "Conteúdo já desbloqueado" });
     }
 
-    const valor = Number(msgRes.rows[0].preco);
+    const precoBase = Number(msgRes.rows[0].preco);
 
-    if (isNaN(valor) || valor <= 0) {
+    if (isNaN(precoBase) || precoBase <= 0) {
       return res.status(400).json({ erro: "Valor inválido" });
     }
 
-    // 💳 criar payment intent com valor do banco
+    // 💸 TAXAS
+    const taxaTransacao  = precoBase * 0.10; // 10%
+    const taxaPlataforma = precoBase * 0.05; // 5%
+
+    // 🔥 TOTAL FINAL
+    const valorTotal = Number(
+      (precoBase + taxaTransacao + taxaPlataforma).toFixed(2)
+    );
+
+    // 💳 STRIPE — cobra o TOTAL
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(valor * 100),
+      amount: Math.round(valorTotal * 100), // centavos
       currency: "brl",
       automatic_payment_methods: { enabled: true },
       metadata: {
         message_id: String(message_id),
-        cliente_id: String(req.user.id)
+        cliente_id: String(req.user.id),
+        valor_base: precoBase.toFixed(2),
+        taxa_transacao: taxaTransacao.toFixed(2),
+        taxa_plataforma: taxaPlataforma.toFixed(2),
+        valor_total: valorTotal.toFixed(2)
       }
     });
 
     res.json({
-      clientSecret: paymentIntent.client_secret
+      clientSecret: paymentIntent.client_secret,
+      valor_total: valorTotal
     });
 
   } catch (err) {
@@ -1529,13 +1543,14 @@ app.post("/api/pagamento/pix", authCliente, async (req, res) => {
       return res.status(400).json({ error: "Dados inválidos" });
     }
 
-    if (!process.env.MERCADOPAGO_TOKEN) {
-      return res.status(500).json({ error: "Pix indisponível" });
-    }
-
+    // 🔒 Busca o preço REAL no banco
     const msgRes = await db.query(
-      `SELECT preco, visto FROM messages
-       WHERE id = $1 AND cliente_id = $2`,
+      `
+      SELECT preco, visto
+      FROM messages
+      WHERE id = $1
+        AND cliente_id = $2
+      `,
       [message_id, req.user.id]
     );
 
@@ -1544,50 +1559,62 @@ app.post("/api/pagamento/pix", authCliente, async (req, res) => {
     }
 
     if (msgRes.rows[0].visto === true) {
-      return res.status(400).json({ error: "Conteúdo já liberado" });
+      return res.status(400).json({ error: "Conteúdo já desbloqueado" });
     }
 
-    const valor = Number(msgRes.rows[0].preco);
+    const precoBase = Number(msgRes.rows[0].preco);
 
-    const mp = new MercadoPagoConfig({
-      accessToken: process.env.MERCADOPAGO_TOKEN
+    if (isNaN(precoBase) || precoBase <= 0) {
+      return res.status(400).json({ error: "Valor inválido" });
+    }
+
+    // 💸 TAXAS
+    const taxaTransacao  = precoBase * 0.10; // 10%
+    const taxaPlataforma = precoBase * 0.05; // 5%
+
+    // 🔥 TOTAL FINAL
+    const valorTotal = Number(
+      (precoBase + taxaTransacao + taxaPlataforma).toFixed(2)
+    );
+
+    // ⚡ MERCADO PAGO — PIX
+    const payment = new Payment(
+      new MercadoPagoConfig({
+        accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN
+      })
+    );
+
+    const pix = await payment.create({
+      body: {
+        transaction_amount: valorTotal,
+        description: `Conteúdo ${message_id}`,
+        payment_method_id: "pix",
+        payer: {
+          email: "cliente@velvet.lat" // pode manter assim por enquanto
+        },
+        metadata: {
+          message_id: String(message_id),
+          cliente_id: String(req.user.id),
+          valor_base: precoBase.toFixed(2),
+          taxa_transacao: taxaTransacao.toFixed(2),
+          taxa_plataforma: taxaPlataforma.toFixed(2),
+          valor_total: valorTotal.toFixed(2)
+        }
+      }
     });
 
-    const payment = new Payment(mp);
-
-    const result = await payment.create({
-  body: {
-    transaction_amount: valor,
-    description: `Conteúdo ${message_id}`,
-    payment_method_id: "pix",
-
-    payer: {
-      email: `cliente_${req.user.id}@velvet.lat`
-    },
-
-    notification_url:
-      "https://velvet-app-production.up.railway.app/webhook/mercadopago",
-
-    metadata: {
-      tipo: "midia",
-      message_id: String(message_id),
-      cliente_id: String(req.user.id)
-    }
-  }
-});
-
-    const pixData = result.point_of_interaction.transaction_data;
-
     res.json({
-      qrCode: pixData.qr_code_base64,
-      copiaCola: pixData.qr_code
+      qrCode: pix.point_of_interaction.transaction_data.qr_code_base64,
+      copiaCola: pix.point_of_interaction.transaction_data.qr_code,
+      valor_total: valorTotal
     });
 
   } catch (err) {
-    console.error("❌ Erro Pix Mercado Pago:", err);
+    console.error("❌ Erro gerar Pix:", err);
     res.status(500).json({ error: "Erro ao gerar Pix" });
   }
 });
+
 
 
 app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
