@@ -1265,7 +1265,6 @@ app.post(
       return res.sendStatus(500);
     }
 
-    // ✅ PAGAMENTO CONFIRMADO
 // ✅ PAGAMENTO CONFIRMADO (STRIPE)
 if (event.type === "payment_intent.succeeded") {
   const intent = event.data.object;
@@ -1366,7 +1365,84 @@ if (event.type === "payment_intent.succeeded") {
       console.error("❌ Erro no webhook Stripe:", err);
     }
   }
- }
+  // ⭐ VIP — PAGAMENTO CONFIRMADO (STRIPE)
+const tipo = intent.metadata?.tipo;
+
+if (tipo === "vip") {
+  try {
+    const cliente_id = intent.metadata?.cliente_id;
+    const modelo_id  = intent.metadata?.modelo_id;
+
+    if (!cliente_id || !modelo_id) {
+      console.log("⚠️ Metadata VIP incompleta:", intent.metadata);
+      return res.json({ received: true });
+    }
+
+    const valor_bruto = VIP_PRECO_FIXO;
+
+    const taxa_gateway = Number((valor_bruto * 0.10).toFixed(2));
+    const velvet_fee   = Number((valor_bruto * 0.05).toFixed(2));
+    const valor_modelo = Number((valor_bruto - velvet_fee).toFixed(2));
+
+    const codigoTransacao = `vip_stripe_${intent.id}`;
+
+    await db.query(
+      `
+      INSERT INTO transacoes (
+        codigo,
+        tipo,
+        modelo_id,
+        cliente_id,
+        valor_bruto,
+        taxa_gateway,
+        velvet_fee,
+        valor_modelo,
+        origem_cliente,
+        status
+      )
+      VALUES (
+        $1,
+        'vip',
+        $2,
+        $3,
+        $4,
+        $5,
+        $6,
+        $7,
+        'cartao',
+        'normal'
+      )
+      ON CONFLICT (codigo) DO NOTHING
+      `,
+      [
+        codigoTransacao,
+        modelo_id,
+        cliente_id,
+        valor_bruto,
+        taxa_gateway,
+        velvet_fee,
+        valor_modelo
+      ]
+    );
+
+    // 🔒 ativa VIP
+    await db.query(
+      `
+      INSERT INTO vip_subscriptions (cliente_id, modelo_id, ativo)
+      VALUES ($1, $2, true)
+      ON CONFLICT (cliente_id, modelo_id)
+      DO UPDATE SET ativo = true
+      `,
+      [cliente_id, modelo_id]
+    );
+
+    console.log("✅ VIP Stripe registrado e ativado");
+
+  } catch (err) {
+    console.error("❌ Erro VIP Stripe:", err);
+  }
+}
+}
 
  res.json({ received: true });
 });
@@ -1424,9 +1500,7 @@ app.post("/webhook/mercadopago", async (req, res) => {
     /* ===============================
        🎬 VENDA DE MÍDIA
     =============================== */
-/* ===============================
-   🎬 VENDA DE MÍDIA (PIX)
-=============================== */
+
 if (tipo === "midia") {
 
   if (!message_id || !cliente_id) {
