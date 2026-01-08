@@ -168,10 +168,14 @@ li.innerHTML = `
           Authorization: "Bearer " + localStorage.getItem("token")
         }
       });
-
-    if (res.ok) {
+      if (res.ok) {
   const dados = await res.json();
   avatarEl.src = dados.avatar || "/assets/avatar-default.png";
+
+  avatarEl.onclick = () => {
+    if (!dados.avatar) return;
+    abrirPreviewAvatar(dados.avatar);
+  };
 }
 
       // 🧹 limpar badge visual
@@ -750,4 +754,34 @@ function renderConteudosPopup(conteudos) {
     grid.appendChild(div);
   });
 }
+
+function abrirPreviewAvatar(url) {
+  let modal = document.getElementById("avatarPreviewModal");
+
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "avatarPreviewModal";
+    modal.className = "preview-modal open";
+
+    modal.innerHTML = `
+      <div class="preview-backdrop"></div>
+      <div class="preview-box">
+        <span class="preview-close">×</span>
+        <img id="avatarPreviewImg" />
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const fechar = () => modal.remove();
+    modal.querySelector(".preview-backdrop").onclick = fechar;
+    modal.querySelector(".preview-close").onclick = fechar;
+  }
+
+  const img = modal.querySelector("#avatarPreviewImg");
+  img.src = url;
+
+  modal.classList.add("open");
+}
+
 

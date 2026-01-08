@@ -718,4 +718,15 @@ background: linear-gradient(135deg, #7b2cff, #9E6BFF);
   border-radius: 10px;
 }
 
+.avatar-clicavel {
+  cursor: pointer;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.avatar-clicavel:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 0 3px rgba(123,44,255,.35);
+}
+
+
 
