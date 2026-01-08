@@ -1796,7 +1796,7 @@ app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
         description: "Assinatura VIP Velvet",
         payment_method_id: "pix",
         payer: {
-          email: "@contato@velvet.app",
+          email: "contato@velvet.lat"
         },
         metadata: {
           tipo: "vip",
