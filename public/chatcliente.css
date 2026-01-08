@@ -767,10 +767,9 @@ html, body {
 }
 
 .pix-box {
-  width: 340px;
-  padding: 24px 20px;
-  text-align: center;
-  margin-top: 40px;  
+  width: 100%;
+  max-width: 340px;
+  margin: 0 auto;
 }
 
 .pix-title {
@@ -791,11 +790,10 @@ html, body {
 }
 
 .pix-qr {
-  width: 220px;
-  height: 220px;
-  margin: 12px auto;
-  display: block;
+  width: min(220px, 70vw);
+  height: auto;
 }
+
 
 .pix-copia {
   width: 100%;
@@ -907,6 +905,57 @@ text-align: center;
   opacity: 0.7;
   transform: scale(1.1);
 }
+
+
+/* =========================
+   MODAL RESPONSIVO (FIX FINAL)
+========================= */
+
+.modal {
+  padding: 12px; /* respiro em telas pequenas */
+}
+
+.modal-box {
+  width: 100%;
+  max-width: 420px;
+
+  max-height: 90vh;           /* 🔥 nunca passa da tela */
+  overflow-y: auto;           /* 🔥 scroll interno */
+
+  padding: 20px;
+  border-radius: 16px;
+
+  display: flex;
+  flex-direction: column;
+}
+
+
+@media (max-width: 480px) {
+  .modal-box {
+    max-width: 100%;
+    max-height: 95vh;
+
+    padding: 16px;
+    border-radius: 14px;
+  }
+}
+
+.modal-box {
+  animation: modalIn 0.25s ease;
+}
+
+@keyframes modalIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+
 
 
 
