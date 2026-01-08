@@ -596,10 +596,17 @@ socket.on("vipAtivado", ({ modelo_id: modeloVip }) => {
 
 
 function mostrarVipAtivadoPopup() {
-  document
-    .getElementById("popupVipAtivado")
-    .classList.remove("hidden");
+  const popup = document.getElementById("popupVipAtivado");
+
+  if (!popup) {
+    console.warn("popupVipAtivado não encontrado no DOM");
+    alert("VIP ativado com sucesso!");
+    return;
+  }
+
+  popup.classList.remove("hidden");
 }
+
 
 function fecharVipAtivado() {
   document
