@@ -157,47 +157,33 @@ btnVip?.addEventListener("click", async () => {
       }
     });
 
+    if (!statusRes.ok) {
+      throw new Error("Falha ao verificar status VIP");
+    }
+
     const statusData = await statusRes.json();
 
     if (statusData.vip === true) {
       alert("💜 Você já é VIP desta modelo");
       return;
     }
+
+    // ✅ NÃO É VIP → ABRE POPUP DE ESCOLHA
+    const popup = document.getElementById("escolhaPagamento");
+    if (!popup) {
+      console.error("Popup de escolha de pagamento não encontrado");
+      alert("Erro interno. Recarregue a página.");
+      return;
+    }
+
+    popup.classList.remove("hidden");
+
   } catch (err) {
     console.error("Erro ao verificar status VIP:", err);
     alert("Erro ao verificar status VIP");
-    return;
   }
-
-  // 💎 BUSCA PREÇO DO VIP
-  let data;
-  try {
-    const res = await fetch("/api/vip/preco");
-    data = await res.json();
-  } catch (err) {
-    alert("Erro ao buscar valor do VIP");
-    return;
-  }
-
-  const valorVip = Number(data.valor);
-
-  if (!Number.isFinite(valorVip) || valorVip <= 0) {
-    alert("Valor do VIP inválido. Recarregue a página.");
-    return;
-  }
-
-  // 🔥 DEFINE PAGAMENTO ATUAL
-  window.pagamentoAtual = {
-    tipo: "vip",
-    modelo_id,
-    valor: valorVip
-  };
-
-  // 🪟 ABRE MODAL
-  document
-    .getElementById("escolhaPagamento")
-    .classList.remove("hidden");
 });
+
 
 
 // ===============================
