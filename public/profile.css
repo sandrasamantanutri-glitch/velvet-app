@@ -713,45 +713,22 @@ body.modal-open {
 
 
 /* =========================================
-   ⚡ POPUP PIX – VELVET (RESPONSIVO + HEADER SAFE)
+   ⚡ POPUP PIX – VELVET
 ========================================= */
 
-#popupPix {
-  /* compensa header fixo */
-  padding-top: calc(64px + 12px);
-  box-sizing: border-box;
-}
-
 #popupPix .modal-box {
-  position: relative;
-
-  background: #fff;
-  border-radius: 16px;
-
-  /* 🔥 largura responsiva */
-  width: min(420px, 92vw);
-
-  /* 🔥 altura segura (viewport - header) */
-  max-height: calc(100vh - 64px - 24px);
-
-  /* 🔥 padding inteligente */
-  padding: clamp(16px, 4vw, 24px);
-
-  /* 🔥 scroll interno se precisar */
-  overflow-y: auto;
-
   box-shadow: 0 20px 60px rgba(123, 44, 255, 0.35);
   animation: popupFadeIn 0.25s ease;
-  text-align: center;
 }
 
 #popupPix .modal-close {
   position: absolute;
-  top: 12px;
-  right: 14px;
+  top: 16px;
+  right: 18px;
 
   background: none;
   border: none;
+
   font-size: 26px;
   color: #7B2CFF;
   cursor: pointer;
@@ -761,21 +738,6 @@ body.modal-open {
   opacity: 0.7;
 }
 
-/* QR Code nunca estoura */
-#popupPix .pix-qr {
-  width: min(220px, 70vw);
-  height: auto;
-  margin: 12px auto;
-}
-
-/* área copia e cola controlada */
-#popupPix .pix-copia {
-  width: 100%;
-  max-height: 90px;
-  resize: none;
-}
-
-/* animação suave */
 @keyframes popupFadeIn {
   from {
     opacity: 0;
@@ -786,7 +748,6 @@ body.modal-open {
     transform: scale(1);
   }
 }
-
 
 /* =========================================
    💰 POPUP ESCOLHER PAGAMENTO
@@ -1082,26 +1043,6 @@ color: #7B2CFF !important;
   box-sizing: border-box;
 }
 
-.modal-box {
-  position: relative;
-  z-index: 100001 !important;
-
-  background: #fff;
-  border-radius: 16px;
-
-  width: min(420px, 92vw);
-
-  /* 🔥 altura segura */
-  max-height: calc(100vh - 64px - 24px);
-
-  padding: clamp(16px, 4vw, 24px);
-
-  overflow-y: auto;
-
-  box-shadow: 0 20px 60px rgba(123, 44, 255, 0.35);
-  animation: popupFadeIn 0.25s ease;
-}
-
 /* ===============================
    MODAL BASE (OVERLAY)
 =============================== */
@@ -1192,7 +1133,6 @@ color: #7B2CFF !important;
     transform: scale(1) translateY(0);
   }
 }
-
 
 
 
