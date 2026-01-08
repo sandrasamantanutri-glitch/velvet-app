@@ -126,14 +126,24 @@ app.post(
       return res.sendStatus(500);
     }
 
-    // ===============================
-    // ✅ PAGAMENTO CONFIRMADO
-    // ===============================
-    if (event.type === "payment_intent.succeeded") {
-      const intent = event.data.object;
+   // ===============================
+// ✅ PAGAMENTO CONFIRMADO (STRIPE)
+// ===============================
+if (
+  event.type === "payment_intent.succeeded" ||
+  event.type === "charge.succeeded"
+) {
 
-      const tipo = intent.metadata?.tipo;
-      const cliente_id = Number(intent.metadata?.cliente_id);
+  // 🔁 Normaliza o objeto
+  const intent =
+    event.type === "payment_intent.succeeded"
+      ? event.data.object
+      : await stripe.paymentIntents.retrieve(
+          event.data.object.payment_intent
+        );
+
+  const tipo = intent.metadata?.tipo;
+  const cliente_id = Number(intent.metadata?.cliente_id);
 
       /* ===============================
          🎬 CONTEÚDO (STRIPE)
