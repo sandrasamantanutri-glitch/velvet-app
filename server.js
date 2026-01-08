@@ -1680,7 +1680,7 @@ app.post("/api/pagamento/pix", authCliente, async (req, res) => {
         description: `Conteúdo ${message_id}`,
         payment_method_id: "pix",
         payer: {
-          email: emailCliente
+          email: "contato@velvet.lat"
         },
         metadata: {
           message_id: String(message_id),
