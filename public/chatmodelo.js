@@ -795,4 +795,23 @@ function abrirPreviewAvatar(url) {
   modal.classList.add("open");
 }
 
+// ===============================
+// ❌ FECHAR POPUP DE CONTEÚDOS
+// ===============================
+function fecharPopupConteudos() {
+  const popup = document.getElementById("popupConteudos");
+  if (!popup) return;
+
+  popup.classList.add("hidden");
+
+  // limpa seleção
+  document
+    .querySelectorAll(".preview-item.selected")
+    .forEach(el => el.classList.remove("selected"));
+
+  // reseta preço
+  const precoInput = document.getElementById("precoConteudo");
+  if (precoInput) precoInput.value = 0;
+}
+
 
