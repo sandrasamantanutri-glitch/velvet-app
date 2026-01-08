@@ -600,7 +600,7 @@ async function abrirPopupConteudos() {
   conteudos.forEach(c => {
     const item = document.createElement("div");
     item.className = "preview-item";
-    item.dataset.id = c.id;
+    item.dataset.conteudoId = c.id;
 
     if (c.tipo === "video") {
       item.innerHTML = `<video src="${c.url}" muted></video>`;
