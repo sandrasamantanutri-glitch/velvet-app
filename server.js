@@ -1735,33 +1735,45 @@ app.post("/api/pagamento/pix", authCliente, async (req, res) => {
 
 
 app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
-  const { valor, modelo_id } = req.body;
-
-  // 🔒 VALIDAÇÃO DE ENTRADA (OBRIGATÓRIA)
-  if (!valor || !modelo_id) {
-    return res.status(400).json({ error: "Dados inválidos" });
-  }
-
-  if (isNaN(Number(valor)) || Number(valor) <= 0) {
-    return res.status(400).json({ error: "Valor inválido" });
-  }
-
   try {
+    const cliente_id = req.user.id;
+    const { modelo_id } = req.body;
+
+    if (!modelo_id) {
+      return res.status(400).json({ error: "modelo_id ausente" });
+    }
+
+    // 🔒 VALOR FIXO VIP (TESTE)
+    const valor_base = 0.10;
+
+    const taxa_transacao  = Number((valor_base * 0.10).toFixed(2));
+    const taxa_plataforma = Number((valor_base * 0.05).toFixed(2));
+    const valor_total = Number(
+      (valor_base + taxa_transacao + taxa_plataforma).toFixed(2)
+    );
+
     const intent = await stripe.paymentIntents.create({
-      amount: Math.round(Number(valor) * 100),
+      amount: Math.round(valor_total * 100), // centavos
       currency: "brl",
       metadata: {
         tipo: "vip",
-        cliente_id: req.user.id,
-        modelo_id: String(modelo_id)
+        cliente_id: String(cliente_id),
+        modelo_id: String(modelo_id),
+        valor_base: valor_base.toFixed(2)
       }
     });
 
-    res.json({ clientSecret: intent.client_secret });
+    res.json({
+      clientSecret: intent.client_secret,
+      valor_total,
+      valor_base,
+      taxa_transacao,
+      taxa_plataforma
+    });
 
   } catch (err) {
-    console.error("Erro criar pagamento VIP cartão:", err);
-    res.status(500).json({ error: "Erro ao criar pagamento" });
+    console.error("❌ Erro criar pagamento VIP cartão:", err);
+    res.status(500).json({ error: "Erro ao criar pagamento cartão VIP" });
   }
 });
 
