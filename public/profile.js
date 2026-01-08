@@ -492,7 +492,7 @@ async function abrirPopupPix() {
   }
 
   // 🔢 VALORES (ajuste depois se quiser)
-  const valorAssinatura = 10.00;
+  const valorAssinatura = 0.10;
   const taxaTransacao  = valorAssinatura * 0.10;
   const taxaPlataforma = valorAssinatura * 0.05;
   const valorTotal     = valorAssinatura + taxaTransacao + taxaPlataforma;
