@@ -597,7 +597,7 @@ socket.on("vipAtivado", ({ modelo_id: modeloVip }) => {
 async function pagarComCartao() {
   fecharEscolha();
 
-  const valorAssinatura = 10.00;
+  const valorAssinatura = 1.00;
   const taxaTransacao  = 1.00;
   const taxaPlataforma = 0.50;
   const valorTotal     = valorAssinatura + taxaTransacao + taxaPlataforma;
