@@ -1001,12 +1001,14 @@ router.get("/modelo/relatorio", (req, res) => {
 
 
 router.get(
-  "/content/transacoes",
+  "/modelo/transacoes",
+  requireRole("modelo", "admin", "agente"),
+  (req, res) => {
     res.sendFile(
-      path.join(process.cwd(), "content", "transacoes.html")
-    )
+      path.join(process.cwd(), "transacoes", "transacoes.html")
+    );
+  }
 );
-
 
 router.get(
   "/api/transacoes/resumo-geral",
@@ -1051,6 +1053,15 @@ router.get(
   }
 );
 
+router.get(
+  "/content/transacoes",
+  requireRole("admin", "modelo", "agente"),
+  (req, res) => {
+    res.sendFile(
+      path.join(process.cwd(), "content", "transacoes.html")
+    );
+  }
+);
 
 
 
