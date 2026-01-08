@@ -1063,6 +1063,7 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
     const { rows } = await db.query(`
 SELECT 
   c.user_id AS cliente_id,
+  cd.username,
   c.nome,
   cd.avatar,
 
@@ -1085,7 +1086,7 @@ LEFT JOIN messages m
 WHERE v.modelo_id = $1
   AND v.ativo = true
 
-GROUP BY c.user_id, c.nome, cd.avatar
+GROUP BY c.user_id, cd.username, c.nome, cd.avatar
 ORDER BY ultima_msg_modelo_ts DESC NULLS LAST;
 
 
