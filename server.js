@@ -1644,9 +1644,6 @@ app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
         transaction_amount: Number(valor),
         description: "Assinatura VIP",
         payment_method_id: "pix",
-        payer: {
-          email: req.user.email || "cliente@velvet.lat"
-        },
         metadata: {
           cliente_id: String(req.user.id),
           modelo_id: String(modelo_id)
