@@ -786,14 +786,14 @@ body.modal-open {
   color: #7B2CFF;
 }
 
-.cartao-detalhes {
-font-size: 12px;
-  margin-bottom: 14px;
-  color: #7B2CFF;
-}
-
 #popupEscolhaPagamento .cartao-preco strong {
   font-weight: 700;
+}
+
+.cartao-detalhes {
+font-size: 12px;
+margin-bottom: 14px;
+  color: #7B2CFF;
 }
 
 /* botões IGUAIS ao chat */
