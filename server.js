@@ -94,6 +94,17 @@ const io = new Server(server, {
 // ===============================
 //FUNCOES
 // ===============================
+async function ativarVip({ cliente_id, modelo_id }) {
+  await db.query(`
+    INSERT INTO vip_subscriptions (cliente_id, modelo_id, ativo)
+    VALUES ($1, $2, true)
+    ON CONFLICT (cliente_id, modelo_id)
+    DO UPDATE SET
+      ativo = true,
+      updated_at = NOW()
+  `, [cliente_id, modelo_id]);
+}
+
 async function buscarUnreadCliente(cliente_id) {
   const result = await db.query(
     `
@@ -1635,6 +1646,17 @@ await db.query(`
 ]);
 
 console.log("✅ VIP PIX registrado em transacoes");
+await db.query(`
+  INSERT INTO vip_subscriptions (cliente_id, modelo_id, ativo)
+  VALUES ($1, $2, true)
+  ON CONFLICT (cliente_id, modelo_id)
+  DO UPDATE SET
+    ativo = true,
+    updated_at = NOW()
+`, [cliente_id, modelo_id]);
+
+console.log("✅ VIP PIX ativado:", cliente_id, modelo_id);
+
 
     res.sendStatus(200);
 
@@ -2425,65 +2447,6 @@ app.post(
     }
   }
 );
-
-// ⭐ VIP SIMPLES – ATIVAR NO CLICK
-app.post("/api/vip/ativar", auth, async (req, res) => {
-  try {
-    if (req.user.role !== "cliente") {
-      return res.status(403).json({ error: "Apenas clientes" });
-    }
-
-    const { modelo_id } = req.body;
-    if (!modelo_id) {
-      return res.status(400).json({ error: "Modelo invávisto" });
-    }
-
-    // evita duplicar
-  const jaVip = await db.query(
-  `
-  SELECT 1
-  FROM vip_subscriptions
-  WHERE ativo = true
-    AND cliente_id = $1
-    AND modelo_id = $2
-  `,
-  [req.user.id, modelo_id]
-);
-
-if (jaVip.rowCount === 0) {
-  await db.query(
-    `
-    INSERT INTO vip_assinaturas
-      (cliente_id, modelo_id)
-    VALUES ($1, $2)
-    `,
-    [req.user.id, modelo_id]
-  );
-
-  const clienteNomeResult = await db.query(
-    "SELECT nome FROM clientes WHERE user_id = $1",
-    [req.user.id]
-  );
-
-  const cliente_nome =
-    clienteNomeResult.rows[0]?.nome || "Novo cliente";
-
-  const sid = onlineModelos[modelo_id];
-  if (sid) {
-    io.to(sid).emit("novoAssinante", {
-      cliente_id: req.user.id,
-      nome: cliente_nome
-    });
-  }
-}
-
-    res.json({ success: true });
-
-  } catch (err) {
-    console.error("Erro VIP simples:", err);
-    res.status(500).json({ error: "Erro interno" });
-  }
-});
 
 app.post("/api/contato", async (req, res) => {
   try {

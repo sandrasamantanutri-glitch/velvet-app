@@ -371,7 +371,6 @@ async function pagarComPix() {
         Authorization: "Bearer " + localStorage.getItem("token")
       },
       body: JSON.stringify({
-        valor: pagamentoAtual.valor,
         modelo_id: pagamentoAtual.modelo_id
       })
     });
@@ -382,22 +381,18 @@ async function pagarComPix() {
 
     const data = await res.json();
 
-    // 🔥 CÁLCULOS (IGUAL AO CONTEÚDO)
+    // 🔥 CÁLCULOS
     const valorBase = Number(pagamentoAtual.valor);
     const taxaTransacao  = valorBase * 0.10;
     const taxaPlataforma = valorBase * 0.05;
     const valorTotal = valorBase + taxaTransacao + taxaPlataforma;
 
-    // 🧾 MOSTRA DETALHAMENTO
     document.getElementById("pixValorTotal").innerText =
       valorBRL(valorTotal);
-
     document.getElementById("pixValorBase").innerText =
       valorBRL(valorBase);
-
     document.getElementById("pixTaxaTransacao").innerText =
       valorBRL(taxaTransacao);
-
     document.getElementById("pixTaxaPlataforma").innerText =
       valorBRL(taxaPlataforma);
 
@@ -408,18 +403,17 @@ async function pagarComPix() {
     document.getElementById("pixCopia").value =
       data.copiaCola || "";
 
+    // ✅ SÓ AGORA inicia verificação VIP
     iniciarVerificacaoVip();
 
   } catch (err) {
-    alert("Erro ao gerar pagamento Pix");
     console.error(err);
+    alert("Erro ao gerar pagamento Pix");
 
     document
       .getElementById("popupPix")
       .classList.add("hidden");
   }
-
-  iniciarVerificacaoVip();
 }
 
 async function ativarVipNoFront() {
@@ -446,21 +440,36 @@ let vipCheckInterval = null;
 function iniciarVerificacaoVip() {
   if (vipCheckInterval) return;
 
+  const inicio = Date.now();
+
   vipCheckInterval = setInterval(async () => {
-    const res = await fetch(`/api/vip/status/${modelo_id}`, {
-      headers: { Authorization: "Bearer " + token }
-    });
-
-    if (!res.ok) return;
-
-    const data = await res.json();
-
-    if (data.vip) {
+    // ⏱️ timeout de 2 minutos
+    if (Date.now() - inicio > 120000) {
       clearInterval(vipCheckInterval);
       vipCheckInterval = null;
-      ativarVipNoFront();
+      alert("Pagamento ainda não confirmado. Se já pagou, aguarde alguns minutos.");
+      return;
     }
-  }, 4000); // a cada 4s
+
+    try {
+      const res = await fetch(`/api/vip/status/${modelo_id}`, {
+        headers: { Authorization: "Bearer " + token }
+      });
+
+      if (!res.ok) return;
+
+      const data = await res.json();
+
+      if (data.vip) {
+        clearInterval(vipCheckInterval);
+        vipCheckInterval = null;
+        ativarVipNoFront();
+      }
+    } catch (err) {
+      console.error("Erro ao verificar VIP:", err);
+    }
+
+  }, 4000);
 }
 
 
