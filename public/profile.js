@@ -80,6 +80,13 @@ function iniciarPerfil() {
 }
 }
 
+function valorBRL(valor) {
+  return Number(valor).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  });
+}
+
 async function carregarPerfil() {
   const res = await fetch("/api/modelo/me", {
     headers: { Authorization: "Bearer " + token }
@@ -318,7 +325,7 @@ async function pagarComPix() {
       .getElementById("popupPix")
       .classList.add("hidden");
   }
-  
+
   iniciarVerificacaoVip();
 }
 
