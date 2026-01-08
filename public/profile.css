@@ -713,22 +713,45 @@ body.modal-open {
 
 
 /* =========================================
-   ⚡ POPUP PIX – VELVET
+   ⚡ POPUP PIX – VELVET (RESPONSIVO + HEADER SAFE)
 ========================================= */
 
+#popupPix {
+  /* compensa header fixo */
+  padding-top: calc(64px + 12px);
+  box-sizing: border-box;
+}
+
 #popupPix .modal-box {
+  position: relative;
+
+  background: #fff;
+  border-radius: 16px;
+
+  /* 🔥 largura responsiva */
+  width: min(420px, 92vw);
+
+  /* 🔥 altura segura (viewport - header) */
+  max-height: calc(100vh - 64px - 24px);
+
+  /* 🔥 padding inteligente */
+  padding: clamp(16px, 4vw, 24px);
+
+  /* 🔥 scroll interno se precisar */
+  overflow-y: auto;
+
   box-shadow: 0 20px 60px rgba(123, 44, 255, 0.35);
   animation: popupFadeIn 0.25s ease;
+  text-align: center;
 }
 
 #popupPix .modal-close {
   position: absolute;
-  top: 16px;
-  right: 18px;
+  top: 12px;
+  right: 14px;
 
   background: none;
   border: none;
-
   font-size: 26px;
   color: #7B2CFF;
   cursor: pointer;
@@ -738,6 +761,21 @@ body.modal-open {
   opacity: 0.7;
 }
 
+/* QR Code nunca estoura */
+#popupPix .pix-qr {
+  width: min(220px, 70vw);
+  height: auto;
+  margin: 12px auto;
+}
+
+/* área copia e cola controlada */
+#popupPix .pix-copia {
+  width: 100%;
+  max-height: 90px;
+  resize: none;
+}
+
+/* animação suave */
 @keyframes popupFadeIn {
   from {
     opacity: 0;
@@ -748,6 +786,7 @@ body.modal-open {
     transform: scale(1);
   }
 }
+
 
 /* =========================================
    💰 POPUP ESCOLHER PAGAMENTO
@@ -1035,6 +1074,126 @@ color: #7B2CFF !important;
 #paymentModal .cartao-preco {
   text-align: center;
 }
+
+
+/* 🔒 Corrige conflito com header fixo */
+.modal {
+  padding-top: calc(64px + 12px); /* altura do header + respiro */
+  box-sizing: border-box;
+}
+
+.modal-box {
+  position: relative;
+  z-index: 100001 !important;
+
+  background: #fff;
+  border-radius: 16px;
+
+  width: min(420px, 92vw);
+
+  /* 🔥 altura segura */
+  max-height: calc(100vh - 64px - 24px);
+
+  padding: clamp(16px, 4vw, 24px);
+
+  overflow-y: auto;
+
+  box-shadow: 0 20px 60px rgba(123, 44, 255, 0.35);
+  animation: popupFadeIn 0.25s ease;
+}
+
+/* ===============================
+   MODAL BASE (OVERLAY)
+=============================== */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 10, 30, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(4px);
+}
+
+/* ESCONDER */
+.modal.hidden {
+  display: none;
+}
+
+/* ===============================
+   CAIXA DO MODAL
+=============================== */
+.modal-box {
+  background: #ffffff;
+  width: 100%;
+  max-width: 380px;
+  padding: 26px 22px;
+  border-radius: 18px;
+  text-align: center;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+  animation: velvetModalIn 0.25s ease;
+}
+
+/* ===============================
+   TÍTULO VELVET
+=============================== */
+.titulo-roxo {
+  color: #8b5cf6; /* roxo Velvet */
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+/* TEXTO */
+.modal-box p {
+  font-size: 15px;
+  color: #555;
+  margin-bottom: 22px;
+  line-height: 1.4;
+}
+
+/* ===============================
+   BOTÃO PADRÃO
+=============================== */
+.btn-pagamento {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* BOTÃO VELVET (PIX / VIP / OK) */
+.btn-pagamento.pix {
+  background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.35);
+}
+
+.btn-pagamento.pix:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(139, 92, 246, 0.45);
+}
+
+/* ===============================
+   ANIMAÇÃO
+=============================== */
+@keyframes velvetModalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+
 
 
 
