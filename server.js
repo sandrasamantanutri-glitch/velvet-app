@@ -924,25 +924,6 @@ app.get("/api/cliente/me", auth, async (req, res) => {
 
 
 //ROTA LISTA VIP
-app.get("/api/vip/status/:modelo_id", auth, async (req, res) => {
-  const cliente_id = req.user.id;
-  const { modelo_id } = req.params;
-
-  const result = await db.query(
-  `
-  SELECT 1
-  FROM vip_subscriptions
-  WHERE cliente_id = $1
-    AND modelo_id = $2
-    AND ativo = true
-  `,
-  [cliente_id, modelo_id]
-);
-
-
-  res.json({ vip: result.rowCount > 0 });
-});
-
 app.get("/api/modelo/vips", auth, authModelo, async (req, res) => {
   const modelo_id = req.user.id;
 
