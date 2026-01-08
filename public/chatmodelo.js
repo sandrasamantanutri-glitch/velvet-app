@@ -571,38 +571,49 @@ function atualizarBadgeComTempo(li) {
   }
 }
 
-function abrirPopupConteudos() {
-  if (!cliente_id) {
-    alert("Selecione um cliente primeiro.");
-    return;
-  }
-
+async function abrirPopupConteudos() {
   document.getElementById("popupConteudos").classList.remove("hidden");
-  carregarConteudosModelo();
-}
 
-function fecharPopupConteudos() {
-  document.getElementById("popupConteudos").classList.add("hidden");
-}
+  const grid = document.getElementById("previewConteudos");
+  grid.innerHTML = "Carregando...";
 
-async function carregarConteudosModelo() {
-  const res = await fetch("/api/conteudos", {
+  const res = await fetch("/content/api/feed/me", {
     headers: {
-      Authorization: "Bearer " + token
+      Authorization: "Bearer " + localStorage.getItem("token")
     }
   });
 
-  const conteudos = await res.json();
-
-  if (!conteudos.length) {
-    document.getElementById("previewConteudos").innerHTML =
-      "<p>Nenhum conteúdo disponível.</p>";
+  if (!res.ok) {
+    grid.innerHTML = "Erro ao carregar conteúdos";
     return;
   }
 
-  // 🔥 AQUI está a correção
-  renderConteudosPopup(conteudos);
+  const conteudos = await res.json();
+
+  if (!Array.isArray(conteudos) || conteudos.length === 0) {
+    grid.innerHTML = "<p>Nenhum conteúdo enviado ainda.</p>";
+    return;
+  }
+
+  grid.innerHTML = "";
+
+  conteudos.forEach(c => {
+    const item = document.createElement("div");
+    item.className = "preview-item";
+    item.dataset.id = c.id;
+
+    if (c.tipo === "video") {
+      item.innerHTML = `<video src="${c.url}" muted></video>`;
+    } else {
+      item.innerHTML = `<img src="${c.url}" />`;
+    }
+
+    item.onclick = () => item.classList.toggle("selected");
+
+    grid.appendChild(item);
+  });
 }
+
 
  
 function confirmarEnvioConteudo() {
