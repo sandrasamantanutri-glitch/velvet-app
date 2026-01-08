@@ -880,17 +880,18 @@ text-align: center;
 }
 
 .h2.titulo-roxo {
-  color: #7B2CFF; 
+  color: #7B2CFF !important;
   font-size: 12px;
-  text-align: center
+  text-align: center !important;
 }
 
 .modal-close {
   color: #7B2CFF; 
-  font-size: 12px;
+  font-size: 16px;
   position: absolute;
   top: 8px;
   right: 8px;
+  border: none;
 
 }
 
