@@ -153,9 +153,17 @@
     <button class="modal-close" id="fecharPagamento">×</button>
 
     <h2 class="desbloq"> Desbloquear conteúdo</h2>
-    <div class="cartao-preco">
-  Total:
-  <strong id="cartaoValor">R$ 0,00</strong>
+   <div class="cartao-preco">
+  <div class="cartao-total">
+    Total para Desbloquear:
+    <strong id="cartaoValorTotal">R$ 0,00</strong>
+  </div>
+
+  <div class="cartao-detalhes">
+    <div>Conteúdo: <span id="cartaoValorConteudo">R$ 0,00</span></div>
+    <div>Taxa de transação: <span id="cartaoTaxaTransacao">R$ 0,00</span></div>
+    <div>Taxa da plataforma: <span id="cartaoTaxaPlataforma">R$ 0,00</span></div>
+  </div>
 </div>
 
     <div id="payment-element-container">

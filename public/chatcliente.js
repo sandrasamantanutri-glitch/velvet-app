@@ -269,11 +269,23 @@ async function pagarComCartao() {
   const data = await res.json();
 
   // 🔥 VALOR TOTAL (com taxas)
-  document.getElementById("cartaoValor").innerText =
-    Number(data.valor_total).toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL"
-    });
+const valorBase = Number(pagamentoAtual.valor);
+const taxaTransacao  = valorBase * 0.10;
+const taxaPlataforma = valorBase * 0.05;
+const valorTotal = valorBase + taxaTransacao + taxaPlataforma;
+
+// 🧾 mostra no modal
+document.getElementById("cartaoValorTotal").innerText =
+  valorBRL(valorTotal);
+
+document.getElementById("cartaoValorConteudo").innerText =
+  valorBRL(valorBase);
+
+document.getElementById("cartaoTaxaTransacao").innerText =
+  valorBRL(taxaTransacao);
+
+document.getElementById("cartaoTaxaPlataforma").innerText =
+  valorBRL(taxaPlataforma);
 
   const clientSecret = data.clientSecret;
 
