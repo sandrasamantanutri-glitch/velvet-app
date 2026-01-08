@@ -87,19 +87,8 @@ document.getElementById("btnVipCartao")?.addEventListener("click", () => {
   ?.addEventListener("click", fecharPagamento);
   
   btnChat?.addEventListener("click", () => {
-  if (!modelo_id) {
-    alert("Modelo não identificada");
-    return;
-  }
-
-  // salva modelo para o chat
-  localStorage.setItem("chat_modelo_id", modelo_id);
-
-  // redireciona para o chat do cliente
   window.location.href = "/chatcliente.html";
-
-
-});
+ });
 
 
 
