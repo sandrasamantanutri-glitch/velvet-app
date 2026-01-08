@@ -47,11 +47,6 @@ html, body {
   flex-shrink: 0;
 }
 
-.h2.titulo-roxo {
-  color: #7B2CFF; 
-  font-size: 12px;
-  text-align: center
-}
 
 /* =========================
    LAYOUT GERAL
@@ -882,6 +877,21 @@ text-align: center;
 
   filter: blur(6px);
   opacity: 0.85;
+}
+
+.h2.titulo-roxo {
+  color: #7B2CFF; 
+  font-size: 12px;
+  text-align: center
+}
+
+.modal-close {
+  color: #7B2CFF; 
+  font-size: 12px;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+
 }
 
 
