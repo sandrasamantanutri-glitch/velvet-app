@@ -520,7 +520,7 @@ async function abrirPopupPix() {
   }
 
   // 🔢 VALOR BASE (APENAS PARA UI)
-  const valorAssinatura = 1.00;
+  const valorAssinatura = 20.00;
 
   // 🔥 CÁLCULO APENAS VISUAL (BACKEND RECALCULA)
   const taxaTransacao  = Number((valorAssinatura * 0.10).toFixed(2));
@@ -608,7 +608,7 @@ async function pagarComCartao() {
   fecharEscolha();
 
   // 🔢 VALOR BASE (ASSINATURA)
-  const valorAssinatura = 1.00;
+  const valorAssinatura = 20.00;
 
   // 🔥 TAXAS PERCENTUAIS (CORRETO)
   const taxaTransacao  = Number((valorAssinatura * 0.10).toFixed(2)); // 10%
