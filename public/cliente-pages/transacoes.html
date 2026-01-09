@@ -103,6 +103,140 @@ function emReais(valor) {
 
 carregarTransacoes();
 </script>
+<style>
+  /* ===============================
+   BASE
+================================ */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+  background: #f7f7fb;
+  color: #1f1f1f;
+}
+
+/* ===============================
+   CONTEÚDO
+================================ */
+h1 {
+  margin: 32px 16px 24px;
+  font-size: 26px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ===============================
+   LISTA
+================================ */
+#lista {
+  max-width: 720px;
+  margin: 0 auto 40px;
+  padding: 0 16px;
+}
+
+/* ===============================
+   CARD TRANSAÇÃO
+================================ */
+.transacao {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.transacao:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.08);
+}
+
+/* ===============================
+   LINHAS
+================================ */
+.linha {
+  font-size: 14px;
+  margin-bottom: 6px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.linha strong {
+  font-weight: 600;
+}
+
+/* ===============================
+   CABEÇALHO DA TRANSAÇÃO
+================================ */
+.transacao .linha:first-child {
+  font-size: 15px;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+/* ===============================
+   STATUS
+================================ */
+.transacao .linha strong {
+  text-transform: capitalize;
+}
+
+.transacao .linha:last-child {
+  margin-bottom: 0;
+}
+
+/* ===============================
+   RESPONSIVO
+================================ */
+@media (max-width: 480px) {
+  h1 {
+    font-size: 22px;
+  }
+
+  .transacao {
+    padding: 16px;
+  }
+
+  .linha {
+    font-size: 13px;
+  }
+}
+
+.footer {
+  margin-top: 60px;
+  padding: 20px;
+  background:none;
+  color: #ffff;
+  text-align: center;
+  font-size: 12px;
+}
+
+.footer-links {
+  margin-bottom: 10px;
+}
+
+.footer-links a {
+  color: #1E1E26;
+  margin: 0 10px;
+  text-decoration: none;
+}
+
+.footer-links a:hover {
+  color: #C9C9C9;
+  text-decoration: underline;
+}
+
+.footer-copy {
+  font-size: 12px;
+  color: #1E1E26;
+}
+
+
+</style>
 
     <footer class="footer">
   <div class="footer-links">
