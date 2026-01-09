@@ -2090,6 +2090,20 @@ if (tipo === "conteudo") {
 
   const valor_total = pagamento.transaction_amount;
 
+  // 1️⃣ Buscar o preço real do conteúdo
+  const precoResult = await db.query(`
+    SELECT preco
+    FROM messages
+    WHERE id = $1
+  `, [message_id]);
+
+  if (precoResult.rowCount === 0) {
+    throw new Error("Conteúdo não encontrado para calcular preço");
+  }
+
+  const preco = Number(precoResult.rows[0].preco);
+
+  // 2️⃣ Registrar pagamento do conteúdo (PIX)
   await db.query(
     `
     INSERT INTO conteudo_pacotes (
@@ -2114,7 +2128,7 @@ if (tipo === "conteudo") {
       message_id,
       cliente_id,
       modelo_id,
-      valor_base,
+      preco,          // ✅ CORRETO: usa o preço do banco
       valor_base,
       taxa_transacao,
       taxa_plataforma,
@@ -2123,6 +2137,7 @@ if (tipo === "conteudo") {
     ]
   );
 
+  // 3️⃣ Liberar conteúdo no chat
   await db.query(
     `
     UPDATE messages
