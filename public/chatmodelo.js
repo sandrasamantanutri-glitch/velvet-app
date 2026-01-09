@@ -636,19 +636,22 @@ function confirmarEnvioConteudo() {
   );
 
   const conteudos_ids = selecionados
-  .map(item => Number(item.dataset.conteudoId))
-  .filter(id => Number.isInteger(id) && id > 0);
+    .map(item => Number(item.dataset.conteudoId))
+    .filter(id => Number.isInteger(id) && id > 0);
 
-  // 🔥 GARANTE QUE A MODELO ESTÁ NA SALA
+  // 🔥 GARANTE JOIN NA SALA ATIVA
   const sala = `chat_${cliente_id}_${modelo_id}`;
   socket.emit("joinChat", { sala });
 
-  socket.emit("sendConteudo", {
-    cliente_id,
-    modelo_id,
-    conteudos_ids,   // ← 1 ou vários
-    preco
-  });
+  // 🔥 ENVIA UMA ÚNICA VEZ (após garantir o join)
+  setTimeout(() => {
+    socket.emit("sendConteudo", {
+      cliente_id,
+      modelo_id,
+      conteudos_ids,
+      preco
+    });
+  }, 50);
 
   fecharPopupConteudos();
 }
