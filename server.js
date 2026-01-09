@@ -878,7 +878,7 @@ app.get("/api/feed/me", auth, async (req, res) => {
     const result = await db.query(
       `
       SELECT id, url, tipo, criado_em
-      FROM midias
+      FROM conteudos
       WHERE user_id = $1
       ORDER BY criado_em DESC
       `,
