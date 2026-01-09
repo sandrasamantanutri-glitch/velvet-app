@@ -1948,6 +1948,17 @@ app.post("/webhook/mercadopago", async (req, res) => {
         return res.sendStatus(200);
       }
 
+      // 🛡️ PROTEÇÃO CONTRA DUPLICAÇÃO
+      const check = await db.query(
+        `SELECT visto FROM messages WHERE id = $1`,
+        [message_id]
+      );
+
+      if (check.rows[0]?.visto === true) {
+        console.log("ℹ️ Conteúdo já liberado:", message_id);
+        return res.sendStatus(200);
+      }
+
       // 🔓 marca como visto
       await db.query(
         `
@@ -1976,7 +1987,6 @@ app.post("/webhook/mercadopago", async (req, res) => {
     return res.sendStatus(500);
   }
 });
-
 
 
 app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
@@ -2032,62 +2042,59 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
 
 app.post("/api/pagamento/conteudo/pix", authCliente, async (req, res) => {
   try {
-    const { message_id, valor_base } = req.body;
-    const cliente_id = req.user.id;
+    const { message_id } = req.body;
 
-    if (!message_id || !valor_base || valor_base <= 0) {
-      return res.status(400).json({ error: "Dados inválidos" });
+    if (!message_id) {
+      return res.status(400).json({ error: "message_id inválido" });
     }
 
-    // 🔥 REGRAS OFICIAIS
-    const taxa_transacao  = Number((valor_base * 0.10).toFixed(2));
-    const taxa_plataforma = Number((valor_base * 0.05).toFixed(2));
+    // 🔎 busca preço real no banco
+    const result = await db.query(`
+      SELECT preco
+      FROM messages
+      WHERE id = $1
+        AND cliente_id = $2
+        AND tipo = 'conteudo'
+    `, [message_id, req.user.id]);
 
-    let valor_total = Number(
-      (valor_base + taxa_transacao + taxa_plataforma).toFixed(2)
-    );
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Conteúdo não encontrado" });
+    }
 
-    // 🔒 REGRA MP PIX
-    if (valor_total < 1) valor_total = 1.00;
+    const preco = Number(result.rows[0].preco);
 
-    const mp = new MercadoPagoConfig({
+    const taxaTransacao  = Number((preco * 0.10).toFixed(2));
+    const taxaPlataforma = Number((preco * 0.05).toFixed(2));
+
+    let valorTotal = preco + taxaTransacao + taxaPlataforma;
+    if (valorTotal < 1) valorTotal = 1;
+
+    const mpClient = new MercadoPagoConfig({
       accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN
     });
 
-    const payment = new Payment(mp);
+    const payment = new Payment(mpClient);
 
-    const pagamento = await payment.create({
+    const pix = await payment.create({
       body: {
-        transaction_amount: valor_total,
-        description: "Desbloqueio de conteúdo",
+        transaction_amount: valorTotal,
         payment_method_id: "pix",
-        payer: {
-          email: "contato@velvet.lat"
-        },
-        metadata: {
-          tipo: "conteudo",
-          message_id,
-          cliente_id,
-          valor_base,
-          taxa_transacao,
-          taxa_plataforma
-        }
+        description: `Conteúdo ${message_id}`,
+        external_reference: `conteudo_${message_id}`,
+        payer: { email: "cliente@velvet.lat" }
       }
     });
 
     res.json({
-      qr_code: pagamento.point_of_interaction.transaction_data.qr_code_base64,
-      copia_cola: pagamento.point_of_interaction.transaction_data.qr_code,
-      payment_id: pagamento.id
+      qr_code: pix.point_of_interaction.transaction_data.qr_code_base64,
+      copia_cola: pix.point_of_interaction.transaction_data.qr_code
     });
 
   } catch (err) {
-    console.error("Erro PIX Conteúdo:", err);
+    console.error("Erro PIX conteúdo:", err);
     res.status(500).json({ error: "Erro ao gerar PIX" });
   }
 });
-
-
 
 
 // ===============================
