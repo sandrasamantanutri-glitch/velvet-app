@@ -520,13 +520,13 @@ background: linear-gradient(135deg, #7b2cff, #9E6BFF);
   width: 100%;
 }
 
-/* container da mídia */
+/* container da mídia 
 .chat-conteudo .conteudo-media,
 .chat-conteudo .pacote-grid {
   width: 100%;
   aspect-ratio: 2 / 2;
   overflow: hidden;
-}
+}*/
 
 /* imagem / vídeo */
 .chat-conteudo img,
