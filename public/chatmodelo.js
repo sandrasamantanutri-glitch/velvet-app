@@ -597,21 +597,29 @@ async function abrirPopupConteudos() {
 
   grid.innerHTML = "";
 
-  conteudos.forEach(c => {
-    const item = document.createElement("div");
-    item.className = "preview-item";
-    item.dataset.conteudoId = c.id;
+ conteudos.forEach(c => {
+  const jaVisto = conteudosVistosCliente.has(c.id);
 
-    if (c.tipo === "video") {
-      item.innerHTML = `<video src="${c.url}" muted></video>`;
-    } else {
-      item.innerHTML = `<img src="${c.url}" />`;
+  const item = document.createElement("div");
+  item.className = "preview-item" + (jaVisto ? " visto" : "");
+  item.dataset.conteudoId = c.id;
+
+  item.innerHTML = `
+    ${c.tipo === "video"
+      ? `<video src="${c.url}" muted></video>`
+      : `<img src="${c.url}" />`
     }
+    ${jaVisto ? `<span class="badge-visto">Visto</span>` : ""}
+  `;
 
+  // 🔒 só permite selecionar se NÃO foi visto
+  if (!jaVisto) {
     item.onclick = () => item.classList.toggle("selected");
+  }
 
-    grid.appendChild(item);
-  });
+  grid.appendChild(item);
+});
+
 }
 
 
