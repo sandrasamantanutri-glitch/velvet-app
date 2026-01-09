@@ -135,13 +135,9 @@
 
     <h2 class="titulo-roxo">Escolha a forma de desbloqueio do conteúdo</h2>
 
-    <button
-  onclick="abrirPixConteudo(
-    pagamentoAtual.message_id,
-    Number(pagamentoAtual.valor)
-  )">
-  ⚡ Desbloquear com Pix
-</button>
+    <button class="btn-pagamento pix" onclick="pagarComPix()">
+      ⚡ Desboquear com Pix
+    </button>
 
     <button class="btn-pagamento cartao" onclick="pagarComCartao()">
       💳 Desbloquear com Cartão
