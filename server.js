@@ -1599,7 +1599,6 @@ app.post("/api/register", authLimiter, async (req, res) => {
 
     // 👤 cliente
     if (role === "cliente") {
-      const { src, ref } = req.body;
       await db.query(
         `
         INSERT INTO public.clientes (user_id, nome, origem_trafego, ref_modelo)
