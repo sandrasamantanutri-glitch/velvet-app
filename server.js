@@ -1359,6 +1359,27 @@ app.get(
   }
 );
 
+// 📦 CONTEÚDOS DA MODELO (PARA POPUP)
+app.get("/api/conteudos/me", authModelo, async (req, res) => {
+  try {
+    const result = await db.query(
+      `
+      SELECT id, url, tipo
+      FROM conteudos
+      WHERE user_id = $1
+      ORDER BY id DESC
+      `,
+      [req.user.id]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Erro carregar conteudos:", err);
+    res.status(500).json([]);
+  }
+});
+
+
 
 
 

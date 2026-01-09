@@ -577,7 +577,7 @@ async function abrirPopupConteudos() {
   const grid = document.getElementById("previewConteudos");
   grid.innerHTML = "Carregando...";
 
-  const res = await fetch("/api/feed/me", {
+  const res = await fetch("/api/conteudos/me", {
   headers: {
     Authorization: "Bearer " + localStorage.getItem("token")
   }
@@ -748,33 +748,6 @@ async function carregarConteudosVistos(cliente_id) {
 
   const ids = await res.json();
   conteudosVistosCliente = new Set(ids);
-}
-
-function renderConteudosPopup(conteudos) {
-  const grid = document.querySelector(".preview-grid");
-  grid.innerHTML = "";
-
-  conteudos.forEach(c => {
-    const jaVisto = conteudosVistosCliente.has(c.id);
-
-    const div = document.createElement("div");
-    div.className = "preview-item" + (jaVisto ? " visto" : "");
-    div.dataset.conteudoId = c.id;
-
-    div.innerHTML = `
-      ${c.tipo === "video"
-        ? `<video src="${c.url}" muted></video>`
-        : `<img src="${c.url}">`
-      }
-      ${jaVisto ? `<span class="badge-visto">Visto</span>` : ""}
-    `;
-
-    if (!jaVisto) {
-      div.onclick = () => div.classList.toggle("selected");
-    }
-
-    grid.appendChild(div);
-  });
 }
 
 function abrirPreviewAvatar(url) {
