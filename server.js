@@ -640,7 +640,7 @@ ORDER BY m.created_at ASC
   }
  });
 
- // 📦 ENVIO DE CONTEÚDO (1 ou N mídias) — BLOCO FINAL CORRIGIDO
+// 📦 ENVIO DE CONTEÚDO (1 ou N mídias) — BLOCO FINAL CORRETO
 socket.on("sendConteudo", async ({ cliente_id, modelo_id, conteudos_ids, preco }) => {
   try {
     // 🔒 valida socket
@@ -661,31 +661,6 @@ socket.on("sendConteudo", async ({ cliente_id, modelo_id, conteudos_ids, preco }
 
     const sala = `chat_${cliente_id}_${modelo_id}`;
 
-    // 🔒 remove conteúdos já vistos pelo cliente
-    const jaVistos = await db.query(
-      `
-      SELECT mc.conteudo_id
-      FROM messages m
-      JOIN messages_conteudos mc ON mc.message_id = m.id
-      WHERE m.modelo_id = $1
-        AND m.cliente_id = $2
-        AND m.visto = true
-        AND mc.conteudo_id = ANY($3)
-      `,
-      [modelo_id, cliente_id, conteudos_ids]
-    );
-
-    const vistosIds = jaVistos.rows.map(r => r.conteudo_id);
-
-    const conteudosFiltrados = conteudos_ids.filter(
-      id => !vistosIds.includes(id)
-    );
-
-    if (conteudosFiltrados.length === 0) {
-      console.log("⛔ Todos os conteúdos já foram vistos");
-      return;
-    }
-
     // 🔒 valida existência real no banco
     const validosRes = await db.query(
       `
@@ -693,7 +668,7 @@ socket.on("sendConteudo", async ({ cliente_id, modelo_id, conteudos_ids, preco }
       FROM conteudos
       WHERE id = ANY($1)
       `,
-      [conteudosFiltrados]
+      [conteudos_ids]
     );
 
     const idsValidos = validosRes.rows.map(r => r.id);
@@ -761,6 +736,7 @@ socket.on("sendConteudo", async ({ cliente_id, modelo_id, conteudos_ids, preco }
     console.error("❌ Erro sendConteudo:", err);
   }
 });
+
 
 
  // 👁️ CLIENTE VISUALIZOU CONTEÚDO
