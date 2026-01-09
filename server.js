@@ -576,20 +576,22 @@ socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
     // 2️⃣ busca histórico base
     const result = await db.query(
       `
- SELECT
+SELECT
   id,
   cliente_id,
   modelo_id,
   sender,
-  text,
-  tipo,
+
+  conteudo AS text,   -- ✅ só isso
+  tipo,               -- ✅ só uma vez
+
   preco,
   visto,
   quantidade,
   created_at
 FROM messages
 WHERE cliente_id = $1
-  AND modelo_id = $2
+  AND modelo_id  = $2
 ORDER BY created_at ASC;
       `,
       [cliente_id, modelo_id]
