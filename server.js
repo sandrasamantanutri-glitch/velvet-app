@@ -1549,7 +1549,7 @@ app.post(
 
 app.post("/api/register", authLimiter, async (req, res) => {
   try {
-    const { email, senha, role, nome, ageConfirmed } = req.body;
+    const { email, senha, role, nome, ageConfirmed, ref, src } = req.body;
 
     // 🔒 validação básica
     if (!email || !senha || !role) {
@@ -1599,12 +1599,14 @@ app.post("/api/register", authLimiter, async (req, res) => {
 
     // 👤 cliente
     if (role === "cliente") {
+      const { src, ref } = req.body;
       await db.query(
         `
-        INSERT INTO public.clientes (user_id, nome)
-        VALUES ($1, $2)
+        INSERT INTO public.clientes (user_id, nome, origem_trafego, ref_modelo)
+        VALUES ($1, $2, $3, $4)
         `,
-        [userId, nome || email.split("@")[0]]
+        [ 
+      userId, nome || email.split("@")[0], src || null, ref ? Number(ref) : null ]
       );
     }
 
