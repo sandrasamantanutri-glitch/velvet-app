@@ -2148,6 +2148,10 @@ if (tipo === "conteudo") {
     `,
     [message_id, cliente_id, modelo_id]
   );
+  const sala = `chat_${cliente_id}_${modelo_id}`;
+io.to(sala).emit("conteudoVisto", {
+  message_id: Number(message_id)
+});
 
   console.log("✅ CONTEÚDO PAGO (PIX) REGISTRADO:", message_id);
 }
