@@ -640,25 +640,30 @@ ORDER BY m.created_at ASC
   }
  });
 
- // 📦 ENVIO DE CONTEÚDO (1 ou N mídias)
+ // 📦 ENVIO DE CONTEÚDO (1 ou N mídias) — BLOCO FINAL CORRIGIDO
 socket.on("sendConteudo", async ({ cliente_id, modelo_id, conteudos_ids, preco }) => {
-  conteudos_ids = conteudos_ids.filter(
-  id => Number.isInteger(id) && id > 0
-);
-
-if (conteudos_ids.length === 0) {
-  console.log("⛔ Nenhum conteudo_id válido recebido");
-  return;
-}
-  if (!socket.user || socket.user.role !== "modelo") return;
-
-  if (!Array.isArray(conteudos_ids) || conteudos_ids.length === 0) return;
-
-  const sala = `chat_${cliente_id}_${modelo_id}`;
-
   try {
-      // 🔒 AQUI — PROTEÇÃO ANTI-REENVIO (ANTES DE QUALQUER INSERT)
-    const jaVistos = await db.query(`
+    // 🔒 valida socket
+    if (!socket.user || socket.user.role !== "modelo") return;
+
+    // 🔒 valida array
+    if (!Array.isArray(conteudos_ids)) return;
+
+    // 🔒 sanitiza ids
+    conteudos_ids = conteudos_ids.filter(
+      id => Number.isInteger(id) && id > 0
+    );
+
+    if (conteudos_ids.length === 0) {
+      console.log("⛔ Nenhum conteudo_id válido recebido");
+      return;
+    }
+
+    const sala = `chat_${cliente_id}_${modelo_id}`;
+
+    // 🔒 remove conteúdos já vistos pelo cliente
+    const jaVistos = await db.query(
+      `
       SELECT mc.conteudo_id
       FROM messages m
       JOIN messages_conteudos mc ON mc.message_id = m.id
@@ -666,23 +671,39 @@ if (conteudos_ids.length === 0) {
         AND m.cliente_id = $2
         AND m.visto = true
         AND mc.conteudo_id = ANY($3)
-    `, [modelo_id, cliente_id, conteudos_ids]);
+      `,
+      [modelo_id, cliente_id, conteudos_ids]
+    );
 
-    // pega ids já vistos
-const vistosIds = jaVistos.rows.map(r => r.conteudo_id);
+    const vistosIds = jaVistos.rows.map(r => r.conteudo_id);
 
-// remove só os já vistos
-const conteudosFiltrados = conteudos_ids.filter(
-  id => !vistosIds.includes(id)
-);
+    const conteudosFiltrados = conteudos_ids.filter(
+      id => !vistosIds.includes(id)
+    );
 
-// se não sobrar nada, não envia
-if (conteudosFiltrados.length === 0) {
-  console.log("⛔ Todos os conteúdos já foram vistos");
-  return;
-}
+    if (conteudosFiltrados.length === 0) {
+      console.log("⛔ Todos os conteúdos já foram vistos");
+      return;
+    }
 
-    // 1️⃣ cria a mensagem principal (pacote)
+    // 🔒 valida existência real no banco
+    const validosRes = await db.query(
+      `
+      SELECT id
+      FROM conteudos
+      WHERE id = ANY($1)
+      `,
+      [conteudosFiltrados]
+    );
+
+    const idsValidos = validosRes.rows.map(r => r.id);
+
+    if (idsValidos.length === 0) {
+      console.log("⛔ Nenhum conteudo_id existe no banco");
+      return;
+    }
+
+    // 1️⃣ cria mensagem principal
     const msgRes = await db.query(
       `
       INSERT INTO messages
@@ -696,8 +717,8 @@ if (conteudosFiltrados.length === 0) {
 
     const messageId = msgRes.rows[0].id;
 
-    // 2️⃣ associa todas as mídias à mensagem
-    for (const conteudo_id of conteudosFiltrados) {
+    // 2️⃣ associa mídias válidas
+    for (const conteudo_id of idsValidos) {
       await db.query(
         `
         INSERT INTO messages_conteudos (message_id, conteudo_id)
@@ -707,7 +728,7 @@ if (conteudosFiltrados.length === 0) {
       );
     }
 
-    // 3️⃣ busca URLs + tipo das mídias (🔥 ESSENCIAL)
+    // 3️⃣ busca mídias finais
     const midiasRes = await db.query(
       `
       SELECT
@@ -716,11 +737,12 @@ if (conteudosFiltrados.length === 0) {
       FROM conteudos c
       WHERE c.id = ANY($1)
       `,
-      [conteudosFiltrados]
+      [idsValidos]
     );
 
     const midias = midiasRes.rows;
 
+    // 4️⃣ envia para a sala (modelo + cliente)
     io.to(sala).emit("newMessage", {
       id: messageId,
       cliente_id,
@@ -730,15 +752,16 @@ if (conteudosFiltrados.length === 0) {
       preco,
       visto: false,
       quantidade: midias.length,
-      midias: midias,                 // 🔥 MODELO vê / CLIENTE será filtrado no front
-      bloqueado: Number(preco) > 0,   // 🔒 cliente decide pelo bloqueado
+      midias,
+      bloqueado: Number(preco) > 0,
       created_at: new Date()
     });
 
   } catch (err) {
     console.error("❌ Erro sendConteudo:", err);
   }
- });
+});
+
 
  // 👁️ CLIENTE VISUALIZOU CONTEÚDO
 socket.on("conteudoVisto", async ({ message_id }) => {
