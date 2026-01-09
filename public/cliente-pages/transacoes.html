@@ -11,6 +11,15 @@
 
 <BODY>
   <div id="header-container"></div>
+  <script>
+  fetch("/header.html")
+    .then(res => res.text())
+    .then(html => {
+      document.getElementById("header-container").innerHTML = html;
+    })
+    .catch(err => console.error("Erro ao carregar header:", err));
+</script>
+
   <h1>Minhas Transações</h1>
 <div id="lista">Carregando compras...</div>
 
