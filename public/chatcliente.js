@@ -663,8 +663,11 @@ document.getElementById("confirmarPagamento").onclick = async () => {
 // ===============================
 // ⚡ PAGAR COM PIX — CONTEÚDO
 // ===============================
-async function pagarComPix(message_id, preco) {
-  if (!Number(message_id) || Number(preco) <= 0) {
+async function pagarComPix() {
+  const message_id = Number(pagamentoAtual?.message_id);
+  const preco = Number(pagamentoAtual?.valor);
+
+  if (!message_id || preco <= 0) {
     alert("Conteúdo inválido");
     return;
   }
@@ -677,10 +680,17 @@ async function pagarComPix(message_id, preco) {
   );
 
   // UI
-  document.getElementById("pixValorBase").innerText = valorBRL(preco);
-  document.getElementById("pixTaxaTransacao").innerText = valorBRL(taxaTransacao);
-  document.getElementById("pixTaxaPlataforma").innerText = valorBRL(taxaPlataforma);
-  document.getElementById("pixValorTotal").innerText = valorBRL(valorTotal);
+  document.getElementById("pixValorConteudo").innerText =
+    valorBRL(preco);
+
+  document.getElementById("pixTaxaTransacao").innerText =
+    valorBRL(taxaTransacao);
+
+  document.getElementById("pixTaxaPlataforma").innerText =
+    valorBRL(taxaPlataforma);
+
+  document.getElementById("pixValorTotal").innerText =
+    valorBRL(valorTotal);
 
   document.getElementById("popupPix").classList.remove("hidden");
 
@@ -706,12 +716,11 @@ async function pagarComPix(message_id, preco) {
   document.getElementById("pixQr").src =
     "data:image/png;base64," + data.qr_code;
 
-  document.getElementById("pixCopia").value = data.copia_cola;
+  document.getElementById("pixCopia").value =
+    data.copia_cola;
 
-  // 🔐 controle interno (igual VIP)
-  pagamentoAtual = {
-    message_id
-  };
+  // mantém contexto
+  pagamentoAtual = { message_id, valor: preco };
 }
 
 
