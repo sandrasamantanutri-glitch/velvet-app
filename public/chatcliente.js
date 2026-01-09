@@ -660,7 +660,7 @@ document.getElementById("confirmarPagamento").onclick = async () => {
 // ===============================
 // ⚡ PIX — CONTEÚDO (BOTÃO)
 // ===============================
-function pagarComPixConteudo() {
+function pagarComPix() {
   // 1️⃣ fecha popup de escolha
   document
     .getElementById("escolhaPagamento")
