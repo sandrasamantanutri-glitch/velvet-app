@@ -1920,7 +1920,7 @@ app.post(
       });
 
       await db.query(
-        "INSERT INTO midias (user_id, url, tipo) VALUES ($1, $2, $3)",
+        "INSERT INTO conteudos (user_id, url, tipo) VALUES ($1, $2, $3)",
         [req.user.id, result.secure_url, result.resource_type]
       );
 
