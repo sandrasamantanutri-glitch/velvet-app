@@ -658,43 +658,51 @@ document.getElementById("confirmarPagamento").onclick = async () => {
 
 
 // ===============================
-// ⚡ PAGAR COM PIX — CONTEÚDO
+// ⚡ PIX — CONTEÚDO (BOTÃO)
 // ===============================
-// ===============================
-// ⚡ PAGAR COM PIX — CONTEÚDO
-// ===============================
-async function pagarComPix() {
-  const message_id = Number(pagamentoAtual?.message_id);
-  const preco = Number(pagamentoAtual?.valor);
+function pagarComPixConteudo() {
+  // 1️⃣ fecha popup de escolha
+  document
+    .getElementById("escolhaPagamento")
+    .classList.add("hidden");
 
+  // 2️⃣ valida dados salvos
+  if (
+    !pagamentoAtual ||
+    !pagamentoAtual.message_id ||
+    !pagamentoAtual.valor
+  ) {
+    alert("Conteúdo inválido");
+    return;
+  }
+
+  // 3️⃣ chama Pix com dados CORRETOS
+  abrirPixConteudo(
+    pagamentoAtual.message_id,
+    Number(pagamentoAtual.valor)
+  );
+}
+
+
+async function abrirPixConteudo(message_id, preco) {
   if (!message_id || preco <= 0) {
     alert("Conteúdo inválido");
     return;
   }
 
-  // 🔢 VISUAL (igual VIP)
   const taxaTransacao  = Number((preco * 0.10).toFixed(2));
   const taxaPlataforma = Number((preco * 0.05).toFixed(2));
   const valorTotal     = Number(
     (preco + taxaTransacao + taxaPlataforma).toFixed(2)
   );
 
-  // UI
-  document.getElementById("pixValorConteudo").innerText =
-    valorBRL(preco);
-
-  document.getElementById("pixTaxaTransacao").innerText =
-    valorBRL(taxaTransacao);
-
-  document.getElementById("pixTaxaPlataforma").innerText =
-    valorBRL(taxaPlataforma);
-
-  document.getElementById("pixValorTotal").innerText =
-    valorBRL(valorTotal);
+  document.getElementById("pixValorBase").innerText = valorBRL(preco);
+  document.getElementById("pixTaxaTransacao").innerText = valorBRL(taxaTransacao);
+  document.getElementById("pixTaxaPlataforma").innerText = valorBRL(taxaPlataforma);
+  document.getElementById("pixValorTotal").innerText = valorBRL(valorTotal);
 
   document.getElementById("popupPix").classList.remove("hidden");
 
-  // 🔥 BACKEND
   const res = await fetch("/api/pagamento/conteudo/pix", {
     method: "POST",
     headers: {
@@ -716,12 +724,10 @@ async function pagarComPix() {
   document.getElementById("pixQr").src =
     "data:image/png;base64," + data.qr_code;
 
-  document.getElementById("pixCopia").value =
-    data.copia_cola;
-
-  // mantém contexto
-  pagamentoAtual = { message_id, valor: preco };
+  document.getElementById("pixCopia").value = data.copia_cola;
 }
+
+
 
 
 
