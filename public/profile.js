@@ -476,10 +476,14 @@ document.getElementById("fecharModal")?.addEventListener("click", () => {
   video.src = "";
   modal.classList.add("hidden");
 });
-document.getElementById("fecharPix")?.addEventListener("click", () => {
-  document.getElementById("popupPix").classList.add("hidden");
-  window.pagamentoAtual = {};
+document.addEventListener("click", (e) => {
+  if (e.target.closest("#fecharPix")) {
+    const popup = document.getElementById("popupPix");
+    if (popup) popup.classList.add("hidden");
+    window.pagamentoAtual = {};
+  }
 });
+
 
 
 async function excluirMidia(id, card) {
