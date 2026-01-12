@@ -74,7 +74,7 @@ h1 {
 
 #listaConteudos {
   display: grid;
-  grid-template-columns: repeat(3, 1fr)!important;
+  grid-template-columns: repeat(auto-fit, 3, 1fr)!important;
   justify-content: center !important;
   gap: 16px;
   text-align: center;
