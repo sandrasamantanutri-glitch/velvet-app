@@ -314,7 +314,7 @@ document.addEventListener("click", (e) => {
 // =========================================================
 function logout() {
   localStorage.clear();
-  location.href = "index.html";
+  location.href = "www.velvet.lat/index.html";
 }
 
 
