@@ -37,6 +37,7 @@ const params = new URLSearchParams(window.location.search);
 let modelo_id = params.get("modelo");
 if (!modelo_id) {
   console.error("Modelo não identificada na URL");
+  return;
 }
 
 
