@@ -34,12 +34,8 @@ socket.on("chatHistory", mensagens => {
 
 // 💬 NOVA MENSAGEM
 socket.on("newMessage", msg => {
-  // 🔥 se ainda não escolheu cliente, ignora só mensagens que NÃO são da modelo
-  if (!cliente_id && msg.sender !== "modelo") return;
 
-  // 🔒 se tem cliente ativo, filtra normalmente
   if (cliente_id && Number(msg.cliente_id) !== Number(cliente_id)) return;
-
   renderMensagem(msg);
   atualizarStatusPorResponder([msg]);
 });
@@ -296,13 +292,18 @@ async function carregarModelo() {
   });
 
   const data = await res.json();
-  modelo_id = data.id;
+
+  // 🔒 GARANTIA ABSOLUTA: user_id > id
+  modelo_id = Number(data.user_id ?? data.id);
+
   const nomeEl = document.getElementById("modeloNome");
   if (nomeEl) {
     nomeEl.innerText = data.nome || "Modelo";
   }
+
   socket.emit("loginModelo", modelo_id);
 }
+
 
 async function aplicarUnreadModelo() {
   const res = await fetch("/api/chat/unread/modelo", {
