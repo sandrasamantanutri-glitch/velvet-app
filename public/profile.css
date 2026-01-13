@@ -556,6 +556,10 @@ body.role-cliente .only-cliente {
   display: inline-flex !important;
 }
 
+body:not(.role-modelo) .only-cliente {
+  display: inline-flex !important;
+}
+
 
 /* =========================================
    🔒 MÍDIA BLOQUEADA (CLIENTE NÃO VIP)

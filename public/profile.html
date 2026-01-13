@@ -239,6 +239,63 @@ body {
   </div>
 </div>
 
+<div id="loginModal" class="modal hidden">
+  <div class="modal-overlay" onclick="closeLoginModal()"></div>
+
+  <div class="modal-box">
+    <h2 id="modalTitle">Entrar</h2>
+
+    <input id="loginEmail" type="email" placeholder="Email">
+    <input id="loginSenha" type="password" placeholder="Senha">
+
+    <select id="registerRole" class="hidden">
+      <option value="">Escolha o tipo de conta</option>
+      <option value="modelo">Sou criador(a)</option>
+      <option value="cliente">Sou Membro</option>
+    </select>
+
+    <button id="modalSubmit" class="btn btn-primary">
+      Entrar
+    </button>
+
+    <p class="modal-switch">
+      Não tem conta?
+      <span onclick="startRegister()">Criar conta</span>
+    </p>
+
+    <p class="modal-switch hidden" id="switchToLogin">
+      Já tem conta?
+      <span onclick="switchToLogin()">Entrar</span>
+    </p>
+
+    <button class="modal-close" onclick="closeLoginModal()">✕</button>
+  </div>
+</div>
+
+
+<div id="ageModal" class="modal hidden">
+  <div class="modal-overlay"></div>
+
+  <div class="modal-box">
+    <h2>Plataforma exclusiva para maiores de 18 anos</h2>
+
+    <p>
+      Ao continuar, você declara que possui <strong>18 anos ou mais</strong>.
+    </p>
+
+    <div style="display:flex; gap:12px; margin-top:20px;">
+      <button class="btn btn-primary" onclick="confirmAge(true)">
+        Sou maior de 18
+      </button>
+
+      <button class="btn btn-secondary" onclick="confirmAge(false)">
+        Sou menor
+      </button>
+    </div>
+  </div>
+</div>
+
+
 
 
 
@@ -248,6 +305,7 @@ body {
 <script src="/header.js"></script>
 <script src="https://js.stripe.com/v3/"></script>
 <script src="/profile.js" defer ></script> 
+<script src="/script.js" defer></script>
 
 
 </body>
