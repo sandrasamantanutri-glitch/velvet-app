@@ -124,19 +124,19 @@
 <script>
   const params = new URLSearchParams(window.location.search);
 
-  const refParam = params.get("ref");
-const srcParam = params.get("src");
+  const ref = params.get("ref");
+  const src = params.get("src");
 
-if (refParam) localStorage.setItem("ref_modelo", refParam);
-if (srcParam) localStorage.setItem("origem_trafego", srcParam);
+  if (ref) localStorage.setItem("ref_modelo", ref);
+  if (src) localStorage.setItem("origem_trafego", src);
 
-if (refParam || srcParam) {
-  fetch("/api/track-acesso", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ref: refParam, src: srcParam })
-  });
-}
+  if (ref || src) {
+    fetch("/api/track-acesso", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ref, src })
+    });
+  }
 </script>
 
 
