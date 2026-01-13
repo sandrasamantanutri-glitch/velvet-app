@@ -1,6 +1,8 @@
 const params = new URLSearchParams(window.location.search);
 let modelo_id = Number(params.get("modelo"));
 const modeloIdParam = params.get("modelo");
+const token = localStorage.getItem("token");
+const role  = localStorage.getItem("role");
 const PERFIL_PUBLICO = !!modeloIdParam;
 const modo = modelo_id ? "publico" : "privado";
 const stripe = Stripe("pk_live_51SlJ2zJb9evIocfiAuPn5wzOJqWqn4e356uasq214hRTPsdQGawPec3iIcD43ufhBvjQYMLKmKRMKnjwmC88iIT1006lA5XqGE");
@@ -100,7 +102,7 @@ document.getElementById("btnVipCartao")?.addEventListener("click", () => {
   
 btnChat.onclick = () => {
   if (!token) {
-    openAgeGate("register")
+    abrirPopupLogin();
     return;
   }
 
@@ -111,17 +113,8 @@ btnChat.onclick = () => {
 
   window.location.href = "/chatcliente.html";
 };
-  if (!token) {
-    openAgeGate("register"); // 🔥 mesmo popup do index
-    return;
-  }
 
-  // cliente logado → pagamento
-  document
-    .getElementById("escolhaPagamento")
-    ?.classList.remove("hidden");
 });
-
 
 // ===============================
 // ROLE VISUAL
@@ -217,7 +210,7 @@ btnVip?.addEventListener("click", async () => {
 
   // 🔐 1️⃣ NÃO LOGADO → LOGIN
   if (!token) {
-    openAgeGate("register");
+    abrirPopupLogin();
     return;
   }
 
@@ -457,7 +450,7 @@ function adicionarMidia(id, url) {
 
     card.addEventListener("click", () => {
       if (!token) {
-        openAgeGate("register");
+        abrirPopupLogin();
       } else {
         abrirPopupVip();
       }
