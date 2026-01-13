@@ -31,19 +31,31 @@ function decodeJWT(token) {
 }
 
 function logout() {
-  localStorage.clear();
+  // 🔐 autenticação
+  localStorage.removeItem("token");
+  localStorage.removeItem("role");
   window.location.href = "/index.html";
 }
+
 const modo = role === "cliente" ? "publico" : "privado";
 
 // ===============================
 // ELEMENTOS DO PERFIL
 // ===============================
 const params = new URLSearchParams(window.location.search);
-let modelo_id = params.get("modelo");
-if (!modelo_id) {
-  console.error("Modelo não identificada na URL");
+let modelo_id = Number(params.get("modelo"));
+
+if (!modelo_id || isNaN(modelo_id)) {
+  console.error("❌ Modelo não identificada na URL");
+  document.body.innerHTML = `
+    <div style="padding:40px;text-align:center">
+      <h2>Perfil indisponível</h2>
+      <p>Este link não contém uma modelo válida.</p>
+    </div>
+  `;
+  throw new Error("modelo_id inválido");
 }
+
 
 
 const avatarImg  = document.getElementById("profileAvatar");
