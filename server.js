@@ -2313,7 +2313,7 @@ app.post(
       const paymentIntent = await stripe.paymentIntents.create({
         amount,
         currency: "brl",
-        payment_method_types: ["card"],
+        automatic_payment_methods: { enabled: true },
         metadata: {
           tipo: "conteudo",
           cliente_id: req.user.id,
