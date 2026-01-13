@@ -400,60 +400,52 @@ function adicionarMidia(id, url) {
   card.className = "midiaCard";
 
   const ext = url.split(".").pop().toLowerCase();
-  const isVideo = ["mp4","webm","ogg"].includes(ext);
+  const isVideo = ["mp4", "webm", "ogg"].includes(ext);
 
   const el = document.createElement(isVideo ? "video" : "img");
   el.src = url;
   el.className = "midiaThumb";
   if (isVideo) el.muted = true;
 
-  // 🔒 BLOQUEIO PARA CLIENTE NÃO VIP
-if (!token || !window.__CLIENTE_VIP__) {
-  card.classList.add("bloqueada");
-
-  card.addEventListener("click", () => {
-    if (!token) {
-      abrirPopupLogin();
-    } else {
-      abrirPopupVip();
-    }
-  });
-} else {
-  el.addEventListener("click", () =>
-    abrirModalMidia(url, isVideo)
-  );
-}
-
-card.appendChild(el);
-
-if (role === "modelo") {
-  const btnExcluir = document.createElement("button");
-  btnExcluir.className = "btnExcluirMidia";
-  btnExcluir.textContent = "Excluir";
-  btnExcluir.onclick = () => excluirMidia(id, card);
-  card.appendChild(btnExcluir);
-}
-listaMidias.appendChild(card);
-}
-
-function abrirModalMidia(url, isVideo) {
-  const modal = document.getElementById("modalMidia");
-  const img = document.getElementById("modalImg");
-  const video = document.getElementById("modalVideo");
-
-  img.style.display = "none";
-  video.style.display = "none";
-
-  if (isVideo) {
-    video.src = url;
-    video.style.display = "block";
-    video.play();
-  } else {
-    img.src = url;
-    img.style.display = "block";
+  // 🔓 MODELO — SEMPRE LIBERADO
+  if (role === "modelo") {
+    el.addEventListener("click", () =>
+      abrirModalMidia(url, isVideo)
+    );
   }
 
-  modal.classList.remove("hidden");
+  // 🔒 CLIENTE / VISITANTE
+  else if (!token || !window.__CLIENTE_VIP__) {
+    card.classList.add("bloqueada");
+
+    card.addEventListener("click", () => {
+      if (!token) {
+        abrirPopupLogin();
+      } else {
+        abrirPopupVip();
+      }
+    });
+  }
+
+  // 🔓 CLIENTE VIP
+  else {
+    el.addEventListener("click", () =>
+      abrirModalMidia(url, isVideo)
+    );
+  }
+
+  card.appendChild(el);
+
+  // 🗑 BOTÃO EXCLUIR (SÓ MODELO)
+  if (role === "modelo") {
+    const btnExcluir = document.createElement("button");
+    btnExcluir.className = "btnExcluirMidia";
+    btnExcluir.textContent = "Excluir";
+    btnExcluir.onclick = () => excluirMidia(id, card);
+    card.appendChild(btnExcluir);
+  }
+
+  listaMidias.appendChild(card);
 }
 
 // FECHAR MODAL
