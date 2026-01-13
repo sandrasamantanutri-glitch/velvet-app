@@ -703,7 +703,6 @@ function abrirPopupLogin() {
   modal.classList.remove("hidden");
 }
 
-
 // ===============================
 // 🖼️ MODAL DE MÍDIA (FEED)
 // ===============================
@@ -716,8 +715,8 @@ function abrirModalMidia(url, isVideo) {
     console.error("❌ modalMidia não encontrado no DOM");
     return;
   }
-}
-  // reseta
+
+  // 🔄 reset
   img.style.display = "none";
   video.style.display = "none";
   video.pause();
@@ -731,6 +730,10 @@ function abrirModalMidia(url, isVideo) {
     img.src = url;
     img.style.display = "block";
   }
+
+  modal.classList.remove("hidden");
+}
+
 
 
 
