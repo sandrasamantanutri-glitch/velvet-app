@@ -694,6 +694,16 @@ function fecharVipAtivado() {
     .classList.add("hidden");
 }
 
+function abrirPopupLogin() {
+  const modal = document.getElementById("loginModal");
+  if (!modal) {
+    console.warn("loginModal não encontrado");
+    return;
+  }
+  modal.classList.remove("hidden");
+}
+
+
 // ===============================
 // 🖼️ MODAL DE MÍDIA (FEED)
 // ===============================
@@ -706,17 +716,7 @@ function abrirModalMidia(url, isVideo) {
     console.error("❌ modalMidia não encontrado no DOM");
     return;
   }
-
-  function abrirPopupLogin() {
-  const modal = document.getElementById("loginModal");
-  if (!modal) {
-    console.warn("loginModal não encontrado");
-    return;
-  }
-  modal.classList.remove("hidden");
 }
-
-
   // reseta
   img.style.display = "none";
   video.style.display = "none";
@@ -731,9 +731,6 @@ function abrirModalMidia(url, isVideo) {
     img.src = url;
     img.style.display = "block";
   }
-
-  modal.classList.remove("hidden");
-}
 
 
 
