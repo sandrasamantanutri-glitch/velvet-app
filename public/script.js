@@ -146,22 +146,33 @@ async function login() {
   localStorage.setItem("token", data.token);
   localStorage.setItem("role", data.role);
 
-  if (data.role === "modelo") {
-  window.location.href = "/profile.html";
+if (data.role === "modelo") {
+  const res = await fetch("/api/modelo/me", {
+    headers: { Authorization: "Bearer " + data.token }
+  });
+
+  if (!res.ok) {
+    alert("Erro ao carregar perfil da modelo");
+    return;
+  }
+
+  const modelo = await res.json();
+
+  window.location.href = `/profile.html?modelo=${modelo.user_id}`;
   return;
 }
+
 // 🔥 CLIENTE
 const ref = localStorage.getItem("ref_modelo");
 
 if (ref) {
-  // simula clique no feed
-  localStorage.setItem("modelo_id", ref);
+  // redireciona corretamente para o perfil da modelo
+  window.location.href = `/profile.html?modelo=${ref}`;
   localStorage.removeItem("ref_modelo");
-
-  window.location.href = "/profile.html";
 } else {
   window.location.href = "/clientHome.html";
 }
+
 
 }
 // ===============================
