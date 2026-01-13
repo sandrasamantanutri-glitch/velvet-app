@@ -918,25 +918,29 @@ app.get("/api/feed/modelos", auth, async (req, res) => {
   }
 });
 
-app.get("/api/modelo/:id/feed", async (req, res) => {
+app.get("/api/modelo/:id/feed", auth, async (req, res) => {
   try {
+    if (req.user.role !== "cliente") {
+      return res.status(403).json([]);
+    }
+
     const { id } = req.params;
 
     const result = await db.query(`
       SELECT id, url, tipo
-      FROM conteudos
-      WHERE user_id = $1
-        AND tipo_conteudo = 'feed'
-      ORDER BY criado_em DESC
+FROM conteudos
+WHERE user_id = $1
+  AND tipo_conteudo = 'feed'
+ORDER BY criado_em DESC
     `, [id]);
 
     res.json(result.rows);
+
   } catch (err) {
-    console.error("Erro feed público:", err);
-    res.json([]);
+    console.error("Erro feed público da modelo:", err);
+    res.status(500).json([]);
   }
 });
-
 
 
 
@@ -1141,7 +1145,7 @@ app.get(
   }
 );
 
-app.get("/api/modelo/publico/:id", async (req, res) => {
+app.get("/api/modelo/publico/:id", auth, async (req, res) => {
   const modelo_id = Number(req.params.id);
 
   if (!Number.isInteger(modelo_id)) {
