@@ -508,6 +508,8 @@ function aplicarPerfilNoDOM(modelo) {
 }
 
 
+
+
 async function abrirPopupPix() {
   if (!modelo_id) {
     alert("Modelo não identificada");
@@ -701,38 +703,6 @@ function fecharVipAtivado() {
     .getElementById("popupVipAtivado")
     .classList.add("hidden");
 }
-
-// ===============================
-// 🖼️ MODAL DE MÍDIA (FEED)
-// ===============================
-function abrirModalMidia(url, isVideo) {
-  const modal = document.getElementById("modalMidia");
-  const img   = document.getElementById("modalImg");
-  const video = document.getElementById("modalVideo");
-
-  if (!modal) {
-    console.error("❌ modalMidia não encontrado no DOM");
-    return;
-  }
-
-  // reseta
-  img.style.display = "none";
-  video.style.display = "none";
-  video.pause();
-  video.src = "";
-
-  if (isVideo) {
-    video.src = url;
-    video.style.display = "block";
-    video.play();
-  } else {
-    img.src = url;
-    img.style.display = "block";
-  }
-
-  modal.classList.remove("hidden");
-}
-
 
 
 
