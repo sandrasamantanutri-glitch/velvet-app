@@ -734,10 +734,6 @@ function abrirModalMidia(url, isVideo) {
   modal.classList.remove("hidden");
 }
 
-window.closeLoginModal = function () {
-  document.getElementById("loginModal")?.classList.add("hidden");
-};
-
 
 
 
