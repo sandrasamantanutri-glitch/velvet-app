@@ -711,5 +711,18 @@ function fecharVipAtivado() {
     .classList.add("hidden");
 }
 
+function fecharPagamento() {
+  const modal = document.getElementById("paymentModal");
+  if (!modal) return;
+
+  modal.classList.add("hidden");
+
+  // 🔥 limpa Stripe Elements (evita bugs ao reabrir)
+  const paymentEl = document.getElementById("payment-element");
+  if (paymentEl) paymentEl.innerHTML = "";
+
+  elements = null;
+}
+
 
 
