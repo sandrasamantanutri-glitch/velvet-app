@@ -675,6 +675,8 @@ document
     }
 });
 
+
+
 function mostrarVipAtivadoPopup() {
   const popup = document.getElementById("popupVipAtivado");
 
@@ -706,16 +708,6 @@ function abrirModalMidia(url, isVideo) {
     console.error("❌ modalMidia não encontrado no DOM");
     return;
   }
-
-  function abrirPopupLogin() {
-  const modal = document.getElementById("loginModal");
-  if (!modal) {
-    console.warn("loginModal não encontrado");
-    return;
-  }
-  modal.classList.remove("hidden");
-}
-
 
   // reseta
   img.style.display = "none";
