@@ -1,32 +1,12 @@
-const params = new URLSearchParams(window.location.search);
-const modeloIdParam = params.get("modelo");
-
-const token = localStorage.getItem("token");
+// ===============================
+// AUTH GUARD
+// ===============================
 const role  = localStorage.getItem("role");
-
-const PERFIL_PUBLICO = !!modeloIdParam;
-
+const token = localStorage.getItem("token");
 const stripe = Stripe("pk_live_51SlJ2zJb9evIocfiAuPn5wzOJqWqn4e356uasq214hRTPsdQGawPec3iIcD43ufhBvjQYMLKmKRMKnjwmC88iIT1006lA5XqGE");
 let elements;
 window.__CLIENTE_VIP__ = false;
 const socket = io();
-
-// ===============================
-// 🚦 DECISÃO DE FLUXO
-// ===============================
-if (modelo_id) {
-  // 🔓 PERFIL PÚBLICO (cliente ou visitante)
-  carregarPerfilPublico();
-} 
-else if (token && role === "modelo") {
-  // 🔐 PERFIL DA MODELO LOGADA
-  carregarPerfilModeloLogada();
-} 
-else {
-  // fallback de segurança
-  console.warn("Nenhum perfil válido para carregar");
-}
-
 
 // autentica socket
 if (token) {
@@ -62,6 +42,7 @@ const modo = role === "cliente" ? "publico" : "privado";
 // ===============================
 // ELEMENTOS DO PERFIL
 // ===============================
+const params = new URLSearchParams(window.location.search);
 let modelo_id = Number(params.get("modelo"));
 
 if (!modelo_id || isNaN(modelo_id)) {
@@ -160,26 +141,17 @@ function valorBRL(valor) {
 
 async function carregarPerfil() {
   const res = await fetch("/api/modelo/me", {
-    headers: {
-      Authorization: "Bearer " + token
-    }
+    headers: { Authorization: "Bearer " + token }
   });
 
   if (!res.ok) return;
 
   const modelo = await res.json();
+  localStorage.setItem("modelo_id", modelo.id);
+  modelo_id = modelo.id;
+
   aplicarPerfilNoDOM(modelo);
-
-  const feedRes = await fetch("/api/feed/me", {
-    headers: {
-      Authorization: "Bearer " + token
-    }
-  });
-
-  const feed = feedRes.ok ? await feedRes.json() : [];
-  renderizarFeedModelo(feed);
 }
-
 
 async function carregarPerfilPublico() {
   const res = await fetch(`/api/modelo/publico/${modelo_id}`);
