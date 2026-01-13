@@ -2,7 +2,7 @@
 const express = require("express");
 const path = require("path");
 const jwt = require("jsonwebtoken");
-const authMiddleware = require("./middleware/auth");
+const authMiddleware = require("../middleware/auth");
 const db = require("./db");
 const cloudinary = require("cloudinary").v2;
 
