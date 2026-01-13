@@ -755,151 +755,23 @@ window.closeLoginModal = function () {
   document.getElementById("loginModal")?.classList.add("hidden");
 };
 
-// ===============================
-// REGISTER
-// ===============================
 
-function emailValido(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+function startRegister() {
+  document.getElementById("modalTitle").innerText = "Criar conta";
+  document.getElementById("registerRole").classList.remove("hidden");
+  document.getElementById("modalSubmit").innerText = "Criar conta";
+  document.querySelector(".modal-switch").classList.add("hidden");
+  document.getElementById("switchToLogin").classList.remove("hidden");
 }
 
-async function register() {
-  const email = loginEmail.value.trim();
-  const senha = loginSenha.value.trim();
-  const role  = registerRole.value;
-
-  if (!email || !senha || !role) {
-    alert("Preencha todos os campos");
-    return;
-  }
-
-  if (!emailValido(email)) {
-    alert("Email inválido");
-    return;
-  }
-
-  // 🔹 PEGA A ORIGEM DO CLIENTE (já salva no index.html)
-  const ref = localStorage.getItem("ref_modelo");
-  const src = localStorage.getItem("origem_trafego");
-
-  const res = await fetch("/api/register", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      email,
-      senha,
-      role,
-      nome: email.split("@")[0],
-      ageConfirmed: true,
-
-      // 🔥 AQUI ESTÁ O SEGREDO
-      ref,   // modelo que trouxe
-      src    // instagram / tiktok
-    })
-  });
-
-  const data = await res.json();
-  if (!res.ok) return alert(data.erro);
-
-  alert("Conta criada com sucesso! Faça login.");
-  switchToLogin();
+function switchToLogin() {
+  document.getElementById("modalTitle").innerText = "Entrar";
+  document.getElementById("registerRole").classList.add("hidden");
+  document.getElementById("modalSubmit").innerText = "Entrar";
+  document.querySelector(".modal-switch").classList.remove("hidden");
+  document.getElementById("switchToLogin").classList.add("hidden");
 }
 
-// ===============================
-// LOGIN
-// ===============================
-async function login() {
-  const email = loginEmail.value.trim();
-  const senha = loginSenha.value.trim();
-
-  if (!email || !senha) {
-    alert("Preencha email e senha");
-    return;
-  }
-
-  const res = await fetch("/api/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, senha })
-  });
-
-  const data = await res.json();
-  if (!res.ok) return alert(data.erro);
-
-  localStorage.setItem("token", data.token);
-  localStorage.setItem("role", data.role);
-
-if (data.role === "modelo") {
-  const res = await fetch("/api/modelo/me", {
-    headers: { Authorization: "Bearer " + data.token }
-  });
-
-  if (!res.ok) {
-    alert("Erro ao carregar perfil da modelo");
-    return;
-  }
-
-  const modelo = await res.json();
-
-  window.location.href = `/profile.html?modelo=${modelo.user_id}`;
-  return;
-}
-}
-
-// ===============================
-// MODAL LOGIN / REGISTER
-// ===============================
-window.selectRole = function () {
-  openLoginModal();
-};
-
-window.startRegister = function () {
-  openAgeGate("register");
-};
-
-function openLoginModal() {
-  modalMode = "login";
-  updateModal();
-  document.getElementById("loginModal")?.classList.remove("hidden");
-}
-
-window.closeLoginModal = function () {
-  document.getElementById("loginModal")?.classList.add("hidden");
-};
-
-function setRegisterMode() {
-  modalMode = "register";
-  updateModal();
-}
-
-window.switchToLogin = function () {
-  modalMode = "login";
-  updateModal();
-};
-
-function updateModal() {
-  const title = document.getElementById("modalTitle");
-  const submit = document.getElementById("modalSubmit");
-  const roleSelect = document.getElementById("registerRole");
-  const switchLogin = document.getElementById("switchToLogin");
-  const switchRegister = document.querySelector(".modal-switch");
-
-  if (modalMode === "login") {
-    title.textContent = "Entrar";
-    submit.textContent = "Entrar";
-    submit.onclick = login;
-    roleSelect.classList.add("hidden");
-    switchRegister.classList.remove("hidden");
-    switchLogin.classList.add("hidden");
-  } else {
-    title.textContent = "Criar Conta";
-    submit.textContent = "Criar conta";
-    submit.onclick = register;
-    roleSelect.classList.remove("hidden");
-    switchRegister.classList.add("hidden");
-    switchLogin.classList.remove("hidden");
-  }
-}
 
 
 
