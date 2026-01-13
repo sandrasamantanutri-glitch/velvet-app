@@ -62,15 +62,22 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
 
         card.addEventListener("click", () => {
-  const modeloId = modelo.id ?? modelo.user_id;
+          // 🔑 contrato de ID (backend antigo ou novo)
+          const modeloId = modelo.id ?? modelo.user_id;
 
-  if (!modeloId) {
-    console.error("❌ Modelo sem id:", modelo);
-    alert("Erro ao abrir perfil da modelo.");
-    return;
-  }
-  window.location.href = `/profile.html?modelo=${modeloId}`;
-});
+          if (!modeloId) {
+            console.error("❌ Modelo sem id:", modelo);
+            alert("Erro ao abrir perfil da modelo.");
+            return;
+          }
+
+          // 🔒 garante que nunca gravamos 'undefined'
+          localStorage.setItem("modelo_id", modeloId.toString());
+
+          window.location.href = "profile.html";
+        });
+
+        // ➕ adiciona o card ao DOM
         lista.appendChild(card);
       });
     })
