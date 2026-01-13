@@ -1,20 +1,14 @@
+// ===============================
+// INDEX — SCRIPT LIMPO (VELVET)
+// ===============================
+
+// 🔁 REDIRECIONAMENTO SE LOGADO
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
-const ref   = localStorage.getItem("ref_modelo");
 
 if (token && role) {
-
-  if (role === "modelo") {
-  }
-
-  else if (role === "cliente") {
-    if (ref) {
-      window.location.href = `/profile.html?modelo=${ref}`;
-      localStorage.removeItem("ref_modelo");
-    } else {
-      window.location.href = "/clientHome.html";
-    }
-  }
+  window.location.href =
+    role === "modelo" ? "/profile.html" : "/clientHome.html";
 }
 
 // ===============================
