@@ -1,17 +1,10 @@
 // ===============================
 // AUTH GUARD
 // ===============================
-const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
 const stripe = Stripe("pk_live_51SlJ2zJb9evIocfiAuPn5wzOJqWqn4e356uasq214hRTPsdQGawPec3iIcD43ufhBvjQYMLKmKRMKnjwmC88iIT1006lA5XqGE");
 let elements;
 window.__CLIENTE_VIP__ = false;
-
-if (!token) {
-  window.location.href = "/index.html";
-  throw new Error("Sem token");
-}
-
 const socket = io();
 
 // autentica socket
@@ -31,8 +24,6 @@ function decodeJWT(token) {
   }
 }
 
-
-
 function logout() {
   localStorage.clear();
   window.location.href = "/index.html";
@@ -42,14 +33,13 @@ const modo = role === "cliente" ? "publico" : "privado";
 // ===============================
 // ELEMENTOS DO PERFIL
 // ===============================
-let modelo_id = localStorage.getItem("modelo_id");
-
-// 🔒 Guard APENAS para perfil público
-if (modo === "publico" && (!modelo_id || modelo_id === "undefined")) {
-  alert("Modelo não identificada.");
-  window.location.href = "/clientHome.html";
-  throw new Error("modelo_id ausente no perfil público");
+const params = new URLSearchParams(window.location.search);
+let modelo_id = params.get("modelo");
+if (!modelo_id) {
+  console.error("Modelo não identificada na URL");
+  return;
 }
+
 
 const avatarImg  = document.getElementById("profileAvatar");
 const capaImg    = document.getElementById("profileCapa");
@@ -86,12 +76,19 @@ document.getElementById("btnVipCartao")?.addEventListener("click", () => {
   document.getElementById("fecharPagamento")
   ?.addEventListener("click", fecharPagamento);
   
-  btnChat?.addEventListener("click", () => {
+btnChat.onclick = () => {
+  if (!token) {
+    abrirPopupLogin();
+    return;
+  }
+
+  if (!window.__CLIENTE_VIP__) {
+    abrirPopupVip();
+    return;
+  }
+
   window.location.href = "/chatcliente.html";
- });
-
-
-
+};
 
 });
 
@@ -140,41 +137,33 @@ async function carregarPerfil() {
 }
 
 async function carregarPerfilPublico() {
-  const res = await fetch(`/api/modelo/publico/${modelo_id}`, {
-    headers: { Authorization: "Bearer " + token }
-  });
-
+  const res = await fetch(`/api/modelo/publico/${modelo_id}`);
   if (!res.ok) return;
 
   const modelo = await res.json();
-  localStorage.setItem("modelo_id", modelo.id);
-  modelo_id = modelo.id;
-
   aplicarPerfilNoDOM(modelo);
-
-  // 🔐 VERIFICAR VIP
-  const vipRes = await fetch(`/api/vip/status/${modelo_id}`, {
-    headers: { Authorization: "Bearer " + token }
-  });
 
   let isVip = false;
 
-  if (vipRes.ok) {
-    const vipData = await vipRes.json();
-    if (vipData.vip) {
-      isVip = true;
+  // 🔒 só verifica VIP se estiver logado
+  if (token) {
+    const vipRes = await fetch(`/api/vip/status/${modelo_id}`, {
+      headers: { Authorization: "Bearer " + token }
+    });
 
-      if (btnVip) {
+    if (vipRes.ok) {
+      const vipData = await vipRes.json();
+      isVip = vipData.vip === true;
+
+      if (isVip && btnVip) {
         btnVip.textContent = "VIP ativo";
         btnVip.disabled = true;
       }
     }
   }
 
-  // ✅ 1️⃣ DEFINE VIP GLOBAL (ESSENCIAL)
   window.__CLIENTE_VIP__ = isVip;
 
-  // ✅ 2️⃣ AGORA SIM carrega o feed
   carregarFeedPublico();
 }
 
@@ -182,47 +171,39 @@ async function carregarPerfilPublico() {
 // VIP
 // ===============================
 btnVip?.addEventListener("click", async () => {
-  if (!modelo_id) {
-    alert("Modelo não identificada");
+  if (!modelo_id) return;
+
+  // 🔐 1️⃣ NÃO LOGADO → LOGIN
+  if (!token) {
+    abrirPopupLogin();
     return;
   }
 
-  // 🔒 CHECA SE JÁ É VIP (UX — evita pagar 2x)
+  // 🔐 2️⃣ LOGADO, VERIFICA VIP
   try {
-    const statusRes = await fetch(`/api/vip/status/${modelo_id}`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`
-      }
+    const res = await fetch(`/api/vip/status/${modelo_id}`, {
+      headers: { Authorization: "Bearer " + token }
     });
 
-    if (!statusRes.ok) {
-      throw new Error("Falha ao verificar status VIP");
-    }
+    if (!res.ok) throw new Error();
 
-    const statusData = await statusRes.json();
+    const { vip } = await res.json();
 
-    if (statusData.vip === true) {
+    if (vip) {
       alert("💜 Você já é VIP desta modelo");
       return;
     }
 
-    // ✅ NÃO É VIP → ABRE POPUP DE ESCOLHA
-    const popup = document.getElementById("escolhaPagamento");
-    if (!popup) {
-      console.error("Popup de escolha de pagamento não encontrado");
-      alert("Erro interno. Recarregue a página.");
-      return;
-    }
-
-    popup.classList.remove("hidden");
+    // 🔓 3️⃣ LOGADO + NÃO VIP → PAGAMENTO
+    document
+      .getElementById("escolhaPagamento")
+      ?.classList.remove("hidden");
 
   } catch (err) {
-    console.error("Erro ao verificar status VIP:", err);
+    console.error("Erro VIP:", err);
     alert("Erro ao verificar status VIP");
   }
 });
-
-
 
 // ===============================
 // FEED
@@ -422,30 +403,33 @@ function adicionarMidia(id, url) {
   if (isVideo) el.muted = true;
 
   // 🔒 BLOQUEIO PARA CLIENTE NÃO VIP
-  if (role === "cliente" && !window.__CLIENTE_VIP__) {
-    card.classList.add("bloqueada");
+if (!token || !window.__CLIENTE_VIP__) {
+  card.classList.add("bloqueada");
 
-    card.addEventListener("click", () => {
-      alert("🔒 Conteúdo exclusivo para membros VIP");
-    });
-  } else {
-    el.addEventListener("click", () =>
-      abrirModalMidia(url, isVideo)
-    );
-  }
+  card.addEventListener("click", () => {
+    if (!token) {
+      abrirPopupLogin();
+    } else {
+      abrirPopupVip();
+    }
+  });
+} else {
+  el.addEventListener("click", () =>
+    abrirModalMidia(url, isVideo)
+  );
+}
 
-  card.appendChild(el);
-  if (role === "modelo") {
+card.appendChild(el);
+
+if (role === "modelo") {
   const btnExcluir = document.createElement("button");
   btnExcluir.className = "btnExcluirMidia";
   btnExcluir.textContent = "Excluir";
-
   btnExcluir.onclick = () => excluirMidia(id, card);
   card.appendChild(btnExcluir);
 }
-  listaMidias.appendChild(card);
+listaMidias.appendChild(card);
 }
-
 
 function abrirModalMidia(url, isVideo) {
   const modal = document.getElementById("modalMidia");
