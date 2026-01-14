@@ -1,0 +1,20 @@
+{
+  "name": "velvet-test",
+  "version": "1.0.0",
+  "description": "Backend Velvet - ambiente de teste",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "pg": "^8.11.5",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "stripe": "^14.21.0"
+  }
+}
