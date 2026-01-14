@@ -1121,56 +1121,63 @@ router.get("/api/cliente/transacoes", authCliente, async (req, res) => {
 //   }
 // });
 
-
 router.get("/api/modelo/financeiro", authModelo, async (req, res) => {
   const modelo_id = req.user.id;
 
   const result = await db.query(`
     SELECT
-      COALESCE(SUM(CASE 
-        WHEN tipo = 'midia'
-         AND DATE(created_at) = CURRENT_DATE
+      COALESCE(SUM(CASE WHEN tipo='conteudo'
+        AND DATE(created_at)=CURRENT_DATE
         THEN valor_modelo END),0) AS hoje_midias,
 
-      COALESCE(SUM(CASE 
-        WHEN tipo = 'assinatura'
-         AND DATE(created_at) = CURRENT_DATE
+      COALESCE(SUM(CASE WHEN tipo='assinatura'
+        AND DATE(created_at)=CURRENT_DATE
         THEN valor_modelo END),0) AS hoje_assinaturas,
 
-      COALESCE(SUM(CASE 
-        WHEN tipo = 'midia'
-         AND DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE)
+      COALESCE(SUM(CASE WHEN tipo='conteudo'
+        AND DATE_TRUNC('month', created_at)=DATE_TRUNC('month', CURRENT_DATE)
         THEN valor_modelo END),0) AS mes_midias,
 
-      COALESCE(SUM(CASE 
-        WHEN tipo = 'assinatura'
-         AND DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE)
+      COALESCE(SUM(CASE WHEN tipo='assinatura'
+        AND DATE_TRUNC('month', created_at)=DATE_TRUNC('month', CURRENT_DATE)
         THEN valor_modelo END),0) AS mes_assinaturas,
 
-      COALESCE(SUM(CASE WHEN tipo = 'midia' THEN valor_modelo END),0) AS total_midias,
-      COALESCE(SUM(CASE WHEN tipo = 'assinatura' THEN valor_modelo END),0) AS total_assinaturas
-    FROM transacoes
-    WHERE modelo_id = $1
-      AND status = 'normal'
+      COALESCE(SUM(CASE WHEN tipo='conteudo' THEN valor_modelo END),0) AS total_midias,
+      COALESCE(SUM(CASE WHEN tipo='assinatura' THEN valor_modelo END),0) AS total_assinaturas
+
+    FROM (
+      -- QUERY BASE DAS TRANSAÇÕES
+      SELECT
+        cp.id AS codigo,
+        'conteudo' AS tipo,
+        cp.modelo_id,
+        cp.pago_em AS created_at,
+        ROUND(cp.valor_base * 0.70, 2) AS valor_modelo
+      FROM conteudo_pacotes cp
+      WHERE cp.modelo_id = $1 AND cp.status='pago'
+
+      UNION ALL
+
+      SELECT
+        vs.id AS codigo,
+        'assinatura' AS tipo,
+        vs.modelo_id,
+        vs.created_at,
+        ROUND(vs.valor_assinatura * 0.70, 2) AS valor_modelo
+      FROM vip_subscriptions vs
+      WHERE vs.modelo_id = $1
+    ) t
   `, [modelo_id]);
 
   const r = result.rows[0];
 
   res.json({
-    hoje: {
-      midias: Number(r.hoje_midias),
-      assinaturas: Number(r.hoje_assinaturas)
-    },
-    mes: {
-      midias: Number(r.mes_midias),
-      assinaturas: Number(r.mes_assinaturas)
-    },
-    total: {
-      midias: Number(r.total_midias),
-      assinaturas: Number(r.total_assinaturas)
-    }
+    hoje: { midias: r.hoje_midias, assinaturas: r.hoje_assinaturas },
+    mes: { midias: r.mes_midias, assinaturas: r.mes_assinaturas },
+    total: { midias: r.total_midias, assinaturas: r.total_assinaturas }
   });
 });
+
 
 
 
