@@ -35,7 +35,7 @@ socket.on("chatHistory", mensagens => {
 // 💬 NOVA MENSAGEM
 socket.on("newMessage", msg => {
   // 🔥 se ainda não escolheu cliente, ignora só mensagens que NÃO são da modelo
-  if (!cliente_id && msg.sender !== "modelo") return;
+  if (cliente_id && Number(msg.cliente_id) !== Number(cliente_id)) return;
 
   // 🔒 se tem cliente ativo, filtra normalmente
   if (cliente_id && Number(msg.cliente_id) !== Number(cliente_id)) return;
@@ -296,7 +296,7 @@ async function carregarModelo() {
   });
 
   const data = await res.json();
-  modelo_id = data.id;
+  modelo_id = Number(data.user_id ?? data.id);
   const nomeEl = document.getElementById("modeloNome");
   if (nomeEl) {
     nomeEl.innerText = data.nome || "Modelo";
