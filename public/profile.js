@@ -99,11 +99,12 @@ document.getElementById("btnVipCartao")?.addEventListener("click", () => {
   ?.addEventListener("click", fecharPagamento);
   
   btnChat?.addEventListener("click", () => {
-  window.location.href = "/chatcliente.html";
- });
-
-
-
+  if (!role) {
+    abrirPopupVelvet({ tipo: "login" });
+  } else {
+    window.location.href = "/chatcliente.html";
+  }
+});
 
 });
 
@@ -433,13 +434,13 @@ function adicionarMidia(id, url) {
   if (deveBloquear) {
     card.classList.add("bloqueada");
 
-    card.addEventListener("click", () => {
-      if (!role) {
-        alert("🔐 Faça login para acessar este conteúdo");
-      } else {
-        alert("🔒 Conteúdo exclusivo para membros VIP");
-      }
-    });
+ card.addEventListener("click", () => {
+  if (!role) {
+    abrirPopupVelvet({ tipo: "login" });
+  } else {
+    abrirPopupVelvet({ tipo: "vip" });
+  }
+ });
   } else {
     el.addEventListener("click", () =>
       abrirModalMidia(url, isVideo)
@@ -721,6 +722,47 @@ function fecharVipAtivado() {
     .getElementById("popupVipAtivado")
     .classList.add("hidden");
 }
+
+// ===============================
+// 💜 POPUP VELVET ACESSO
+// ===============================
+function abrirPopupVelvet({ tipo }) {
+  const popup = document.getElementById("popupVelvetAcesso");
+  const texto = document.getElementById("popupVelvetTexto");
+  const btn   = document.getElementById("btnVelvetAcao");
+
+  if (!popup) return;
+
+  if (tipo === "login") {
+    texto.textContent =
+      "Entre ou crie sua conta para acessar este conteúdo 💜";
+    btn.textContent = "Entrar / Criar conta";
+    btn.onclick = () => {
+      window.location.href = "/index.html";
+    };
+  }
+
+  if (tipo === "vip") {
+    texto.textContent =
+      "Este conteúdo é exclusivo para membros VIP 💜";
+    btn.textContent = "Tornar-se VIP";
+    btn.onclick = () => {
+      popup.classList.add("hidden");
+      document.getElementById("escolhaPagamento")?.classList.remove("hidden");
+    };
+  }
+
+  popup.classList.remove("hidden");
+}
+
+// fechar clicando fora
+document
+  .getElementById("popupVelvetAcesso")
+  ?.addEventListener("click", (e) => {
+    if (e.target.id === "popupVelvetAcesso") {
+      e.currentTarget.classList.add("hidden");
+    }
+  });
 
 
 
