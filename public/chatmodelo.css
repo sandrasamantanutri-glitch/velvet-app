@@ -567,7 +567,6 @@ background: linear-gradient(135deg, #7b2cff, #9E6BFF);
   align-items: center;
   gap: 4px;
   background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(8px);
   color: #7B2CFF;
   border-radius: 8px;
 
