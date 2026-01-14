@@ -190,12 +190,14 @@ async function carregarPerfilPublico() {
 // VIP
 // ===============================
 btnVip?.addEventListener("click", async () => {
-  if (!modelo_id) {
-    alert("Modelo não identificada");
+
+  // 👀 VISITANTE → popup Velvet
+  if (!role) {
+    abrirPopupVelvet({ tipo: "login" });
     return;
   }
 
-  // 🔒 CHECA SE JÁ É VIP (UX — evita pagar 2x)
+  // 🔒 CLIENTE → verifica VIP
   try {
     const statusRes = await fetch(`/api/vip/status/${modelo_id}`, {
       headers: {
@@ -214,23 +216,16 @@ btnVip?.addEventListener("click", async () => {
       return;
     }
 
-    // ✅ NÃO É VIP → ABRE POPUP DE ESCOLHA
-    const popup = document.getElementById("escolhaPagamento");
-    if (!popup) {
-      console.error("Popup de escolha de pagamento não encontrado");
-      alert("Erro interno. Recarregue a página.");
-      return;
-    }
-
-    popup.classList.remove("hidden");
+    // ✅ NÃO É VIP → ABRE POPUP DE PAGAMENTO
+    document
+      .getElementById("escolhaPagamento")
+      ?.classList.remove("hidden");
 
   } catch (err) {
     console.error("Erro ao verificar status VIP:", err);
     alert("Erro ao verificar status VIP");
   }
 });
-
-
 
 // ===============================
 // FEED
@@ -735,7 +730,7 @@ function abrirPopupVelvet({ tipo }) {
 
   if (tipo === "login") {
     texto.textContent =
-      "Entre ou crie sua conta para acessar este conteúdo 💜";
+      "Entre ou crie sua conta para acessar este conteúdo";
     btn.textContent = "Entrar / Criar conta";
     btn.onclick = () => {
       window.location.href = "/index.html";
@@ -744,7 +739,7 @@ function abrirPopupVelvet({ tipo }) {
 
   if (tipo === "vip") {
     texto.textContent =
-      "Este conteúdo é exclusivo para membros VIP 💜";
+      "Este conteúdo é exclusivo para membros VIP";
     btn.textContent = "Tornar-se VIP";
     btn.onclick = () => {
       popup.classList.add("hidden");
