@@ -34,7 +34,9 @@ body {
 .capaImg {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;   /* 🔑 NÃO CORTA */
+}
+
 
   /* 🔥 foco mais baixo, mais elegante */
   object-position: center 30%;
@@ -107,8 +109,7 @@ body {
             width: 150px;
             height: 150px;
             border-radius: 50%;
-            object-fit: cover;
-            background: white;
+            object-fit: contain;   /* 🔑 NÃO CORTA */
             box-shadow: 0 10px 30px rgba(0,0,0,0.25), 0 0 0 4px rgba(123,44,255,0.7);
         }
 
@@ -190,10 +191,10 @@ body {
 .gallery-grid img,
 .gallery-grid video {
     width: 100%;
-    height: 250px;
-    object-fit: cover;
-    border-radius: 15px;
-    background: #f7f7f7;
+    height: 100%;
+  object-fit: contain;   /* 🔑 NÃO CORTA */
+  background: #000;      /* fundo elegante */
+  border-radius: 14px;
 }
 
 .vipBtn {
