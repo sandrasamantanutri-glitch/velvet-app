@@ -1145,10 +1145,10 @@ app.get(
   }
 );
 
-app.get("/api/modelo/publico/:id", auth, async (req, res) => {
+app.get("/api/modelo/publico/:id", async (req, res) => {
   const modelo_id = Number(req.params.id);
 
-  if (!Number.isInteger(modelo_id)) {
+if (!Number.isInteger(modelo_id) || modelo_id <= 0) {
     return res.status(400).json({ error: "modelo_id inválido" });
   }
 
