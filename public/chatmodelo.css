@@ -737,4 +737,15 @@ background: linear-gradient(135deg, #7b2cff, #9E6BFF);
 }
 
 
+/* 🔥 FIX PREVIEW AVATAR — sempre acima do header */
+#avatarPreviewModal {
+  z-index: 99999999 !important;
+}
+
+
+.preview-modal {
+  z-index: 99999999 !important;
+}
+
+
 
