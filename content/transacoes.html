@@ -25,7 +25,7 @@ async function carregarTransacoes() {
       return;
     }
 
-    const res = await fetch("/api/cliente/transacoes", {
+    const res = await fetch("/api/transacoes", {
       headers: {
         "Authorization": "Bearer " + token
       }
