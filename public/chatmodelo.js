@@ -372,10 +372,7 @@ function renderMensagem(msg) {
  ) {
 
     div.innerHTML = `
-<div class="chat-conteudo premium ${
-  isModelo ? "livre" : (msg.visto ? "visto" : "bloqueado")
-}"
-
+<div class="chat-conteudo premium ${msg.visto ? "visto" : "bloqueado"}"
      data-id="${msg.id}"
      data-qtd="${msg.quantidade ?? msg.midias.length}">
 
