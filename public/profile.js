@@ -427,19 +427,24 @@ function adicionarMidia(id, url) {
   el.className = "midiaThumb";
   if (isVideo) el.muted = true;
 
-  // 🔒 BLOQUEIO PARA CLIENTE NÃO VIP
-  if (role === "cliente" && !window.__CLIENTE_VIP__) {
+  const deveBloquear =
+    role !== "modelo" && window.__CLIENTE_VIP__ !== true;
+
+  if (deveBloquear) {
     card.classList.add("bloqueada");
 
     card.addEventListener("click", () => {
-      alert("🔒 Conteúdo exclusivo para membros VIP");
+      if (!role) {
+        alert("🔐 Faça login para acessar este conteúdo");
+      } else {
+        alert("🔒 Conteúdo exclusivo para membros VIP");
+      }
     });
   } else {
     el.addEventListener("click", () =>
       abrirModalMidia(url, isVideo)
     );
   }
-
   card.appendChild(el);
   if (role === "modelo") {
   const btnExcluir = document.createElement("button");
