@@ -17,33 +17,27 @@ async function carregarResumoModelo() {
 
     const data = await res.json();
 
-    // -------------------------------
-    // 🔹 HOJE
-    // -------------------------------
-    document.getElementById("hojeMidias").innerText =
-      `R$ ${Number(data.midias?.hoje || 0).toFixed(2)}`;
+   // HOJE
+document.getElementById("hojeMidias").innerText =
+  `R$ ${Number(data.hoje.midias || 0).toFixed(2)}`;
 
-    document.getElementById("hojeAssinaturas").innerText =
-      `R$ ${Number(data.assinaturas?.hoje || 0).toFixed(2)}`;
+document.getElementById("hojeAssinaturas").innerText =
+  `R$ ${Number(data.hoje.assinaturas || 0).toFixed(2)}`;
 
-    // -------------------------------
-    // 🔹 MÊS ATUAL
-    // -------------------------------
-    document.getElementById("mesMidias").innerText =
-      `R$ ${Number(data.midias?.mes || 0).toFixed(2)}`;
+// MÊS
+document.getElementById("mesMidias").innerText =
+  `R$ ${Number(data.mes.midias || 0).toFixed(2)}`;
 
-    document.getElementById("mesAssinaturas").innerText =
-      `R$ ${Number(data.assinaturas?.mes || 0).toFixed(2)}`;
+document.getElementById("mesAssinaturas").innerText =
+  `R$ ${Number(data.mes.assinaturas || 0).toFixed(2)}`;
 
-    // -------------------------------
-    // 🔹 ACUMULADO TOTAL
-    // -------------------------------
-    const acumulado =
-      Number(data.midias?.total || 0) +
-      Number(data.assinaturas?.total || 0);
+// ACUMULADO
+const acumulado =
+  Number(data.total.midias || 0) +
+  Number(data.total.assinaturas || 0);
 
-    document.getElementById("acumuladoAnterior").innerText =
-      `R$ ${acumulado.toFixed(2)}`;
+document.getElementById("acumuladoAnterior").innerText =
+  `R$ ${acumulado.toFixed(2)}`;
 
   } catch (err) {
     console.error("Erro carregarResumoModelo:", err);
