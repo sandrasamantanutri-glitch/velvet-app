@@ -187,17 +187,42 @@ async function carregarPerfilPublico() {
 
   aplicarPerfilNoDOM(modelo);
 
-  // VISITANTE NÃO É VIP
+  // ===============================
+// STATUS VIP (CLIENTE LOGADO)
+// ===============================
+if (role === "cliente") {
+  try {
+    const vipRes = await fetch(`/api/vip/status/${modelo_id}`, {
+      headers: {
+        Authorization: "Bearer " + localStorage.getItem("token")
+      }
+    });
+
+    if (vipRes.ok) {
+      const vipData = await vipRes.json();
+      window.__CLIENTE_VIP__ = vipData.vip === true;
+
+      if (window.__CLIENTE_VIP__) {
+        if (btnVip) {
+          btnVip.textContent = "VIP ativo";
+          btnVip.disabled = true;
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Erro ao verificar VIP:", err);
+    window.__CLIENTE_VIP__ = false;
+  }
+} else {
   window.__CLIENTE_VIP__ = false;
 
-  // Botão VIP sempre ativo para visitante
   if (btnVip) {
     btnVip.textContent = "Torne-se VIP";
     btnVip.disabled = false;
   }
+}
 
-  // Carrega feed (bloqueado pelo CSS/JS)
-  carregarFeedPublico();
+carregarFeedPublico();
 }
 
 // ===============================
