@@ -2205,7 +2205,7 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency: "brl",
-      automatic_payment_methods: { enabled: true },
+      payment_method_types: ["card"],
       metadata: {
         tipo: "vip",
         cliente_id,
@@ -2341,7 +2341,7 @@ app.post(
       const paymentIntent = await stripe.paymentIntents.create({
         amount,
         currency: "brl",
-        automatic_payment_methods: { enabled: true },
+        payment_method_types: ["card"],
         metadata: {
           tipo: "conteudo",
           cliente_id: req.user.id,
