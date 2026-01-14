@@ -34,9 +34,7 @@ body {
 .capaImg {
   width: 100%;
   height: 100%;
-  object-fit: contain;   /* 🔑 NÃO CORTA */
-}
-
+  object-fit: cover;
 
   /* 🔥 foco mais baixo, mais elegante */
   object-position: center 30%;
@@ -109,7 +107,8 @@ body {
             width: 150px;
             height: 150px;
             border-radius: 50%;
-            object-fit: contain;   /* 🔑 NÃO CORTA */
+            object-fit: cover;
+            background: white;
             box-shadow: 0 10px 30px rgba(0,0,0,0.25), 0 0 0 4px rgba(123,44,255,0.7);
         }
 
@@ -191,9 +190,9 @@ body {
 .gallery-grid img,
 .gallery-grid video {
     width: 100%;
-    height: 100%;
-  object-fit: contain;   /* 🔑 NÃO CORTA */
-  background: #000;      /* fundo elegante */
+    height: 50%;
+  object-fit: cover; 
+  background: #9E6BFF;   
   border-radius: 14px;
 }
 
