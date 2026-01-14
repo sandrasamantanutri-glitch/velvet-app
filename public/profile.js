@@ -17,15 +17,20 @@ const role  = localStorage.getItem("role");
 // 🔓 MODO PÚBLICO se veio por ?id=
 const modoPublico = !!modeloParam;
 
-// 🔐 BLOQUEIA apenas se NÃO for público e não tiver token
-if (!modoPublico && !token) {
-  window.location.href = "/index.html";
-  throw new Error("Sem token");
+if (role === "cliente" && !modoPublico) {
+  window.location.href = "/clientHome.html";
+  throw new Error("Cliente não pode acessar profile privado");
 }
+
+const modo = role === "modelo" && !modoPublico
+    ? "privado"
+    : "publico";
 
 let modelo_id = modeloParam
   ? Number(modeloParam)
-  : localStorage.getItem("modelo_id");
+  : role === "modelo"
+    ? localStorage.getItem("modelo_id")
+    : null;
 
 // autentica socket
 socket.emit("auth", { token });
@@ -50,7 +55,6 @@ function logout() {
   localStorage.clear();
   window.location.href = "/index.html";
 }
-const modo = modoPublico ? "publico" : "privado";
 
 // ===============================
 // ELEMENTOS DO PERFIL
@@ -129,15 +133,25 @@ function aplicarRoleNoBody() {
 // PERFIL
 // ===============================
 function iniciarPerfil() {
-  if (modo === "privado") {
+
+  // MODELO (perfil próprio)
+  if (modo === "privado" && role === "modelo") {
     carregarPerfil();
     carregarFeed();
+    return;
   }
 
-  if (modo === "publico") {
+  // CLIENTE ou VISITANTE (perfil público)
+  if (modo === "publico" && modelo_id) {
     carregarPerfilPublico();
+    return;
+  }
+
+  // fallback de segurança
+  console.warn("Perfil inválido, redirecionando");
+  window.location.href = "/index.html";
 }
-}
+
 
 function valorBRL(valor) {
   return Number(valor).toLocaleString("pt-BR", {
