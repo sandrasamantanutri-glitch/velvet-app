@@ -798,5 +798,22 @@ document
     }
   });
 
+  function fecharPagamento() {
+  const modal = document.getElementById("paymentModal");
+
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+
+  // limpeza de segurança
+  const paymentElement = document.getElementById("payment-element");
+  if (paymentElement) {
+    paymentElement.innerHTML = "";
+  }
+
+  elements = null;
+}
+
+
 
 
