@@ -272,92 +272,80 @@ router.get(
   authMiddleware,
   requireRole("admin", "modelo", "agente"),
   async (req, res) => {
-    const { mes, tipo, origem, modelo_id } = req.query;
-    // 🔒 VALIDAÇÃO DE QUERY (RELATÓRIO DE TRANSAÇÕES)
+    try {
+      const { mes, tipo, origem, modelo_id } = req.query;
+      const { role, id } = req.user;
 
-// valida mês (YYYY-MM)
-if (mes && !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
-  return res.status(400).json({
-    error: "Formato de mês inválido (YYYY-MM)"
-  });
-}
+      let where = [];
+      let values = [];
 
-// valida tipo
-const tiposPermitidos = ["midia", "assinatura"];
-if (tipo && !tiposPermitidos.includes(tipo)) {
-  return res.status(400).json({
-    error: "Tipo inválido"
-  });
-}
+      // 🔒 valida mês
+      if (mes && !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
+        return res.status(400).json({ error: "Formato de mês inválido" });
+      }
 
-// valida origem (string curta)
-if (origem && typeof origem !== "string") {
-  return res.status(400).json({
-    error: "Origem inválida"
-  });
-}
-if (modelo_id) {
-  if (role !== "admin") {
-    return res.status(403).json({
-      error: "Filtro por modelo permitido apenas para admin"
-    });
-  }
+      // 🔒 valida tipo
+      const tiposPermitidos = ["midia", "assinatura"];
+      if (tipo && !tiposPermitidos.includes(tipo)) {
+        return res.status(400).json({ error: "Tipo inválido" });
+      }
 
-  if (!Number.isInteger(Number(modelo_id))) {
-    return res.status(400).json({
-      error: "modelo_id inválido"
-    });
-  }
+      // 🔒 MODELO → só vê as próprias
+      if (role === "modelo") {
+        values.push(id);
+        where.push(`modelo_id = $${values.length}`);
+      }
 
-  values.push(Number(modelo_id));
-  where.push(`modelo_id = $${values.length}`);
-}
-    const { role, id } = req.user;
+      // 🔒 AGENTE → só vê dos seus modelos
+      if (role === "agente") {
+        values.push(id);
+        where.push(`agente_id = $${values.length}`);
+      }
 
-    let where = [];
-    let values = [];
+      // 🔒 ADMIN → pode filtrar por modelo
+      if (modelo_id) {
+        if (role !== "admin") {
+          return res.status(403).json({
+            error: "Filtro por modelo permitido apenas para admin"
+          });
+        }
 
-    // MODELO → só vê suas próprias transações
-    if (role === "modelo") {
-      values.push(id);
-      where.push(`modelo_id = $${values.length}`);
+        values.push(Number(modelo_id));
+        where.push(`modelo_id = $${values.length}`);
+      }
+
+      if (mes) {
+        values.push(`${mes}-01`);
+        where.push(`created_at >= $${values.length}`);
+
+        values.push(`${mes}-31`);
+        where.push(`created_at <= $${values.length}`);
+      }
+
+      if (tipo) {
+        values.push(tipo);
+        where.push(`tipo = $${values.length}`);
+      }
+
+      if (origem) {
+        values.push(origem);
+        where.push(`origem_cliente = $${values.length}`);
+      }
+
+      const sql = `
+        SELECT *
+        FROM transacoes
+        ${where.length ? "WHERE " + where.join(" AND ") : ""}
+        ORDER BY created_at DESC
+      `;
+
+      const result = await db.query(sql, values);
+      res.json(result.rows);
+
+    } catch (err) {
+      console.error("❌ Erro /api/transacoes:", err);
+      res.status(500).json([]);
     }
-
-    // AGENTE → só vê transações dos seus modelos
-    if (role === "agente") {
-      values.push(id);
-      where.push(`agente_id = $${values.length}`);
-    }
-
-    // ADMIN → vê tudo (sem filtro extra)
-
-    if (mes) {
-      values.push(`${mes}-01`);
-      where.push(`created_at >= $${values.length}`);
-
-      values.push(`${mes}-31`);
-      where.push(`created_at <= $${values.length}`);
-    }
-
-    if (tipo) {
-      values.push(tipo);
-      where.push(`tipo = $${values.length}`);
-    }
-
-    if (origem) {
-      values.push(origem);
-      where.push(`origem_cliente = $${values.length}`);
-    }
-
-    const sql = `
-      SELECT *
-      FROM transacoes
-      ${where.length ? "WHERE " + where.join(" AND ") : ""}
-      ORDER BY created_at DESC
-    `;
-
-    const result = await db.query(sql, values);
-    res.json(result.rows);
   }
 );
 
