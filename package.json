@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Backend Velvet - ambiente de teste",
   "main": "server.js",
-  "type": "module",
   "scripts": {
     "start": "node server.js"
   },
