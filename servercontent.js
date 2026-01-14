@@ -3,7 +3,7 @@ const authModelo = require("./middleware/authModelo");
 const express = require("express");
 const path = require("path");
 const jwt = require("jsonwebtoken");
-const authMiddleware = require("./middleware/authModelo");
+const authMiddleware = require("./middleware/auth");
 const db = require("./db");
 const cloudinary = require("cloudinary").v2;
 
@@ -279,57 +279,19 @@ router.get(
       let where = [];
       let values = [];
 
-      // 🔒 valida mês
-      if (mes && !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
-        return res.status(400).json({ error: "Formato de mês inválido" });
-      }
-
-      // 🔒 valida tipo
-      const tiposPermitidos = ["midia", "assinatura"];
-      if (tipo && !tiposPermitidos.includes(tipo)) {
-        return res.status(400).json({ error: "Tipo inválido" });
-      }
-
-      // 🔒 MODELO → só vê as próprias
       if (role === "modelo") {
         values.push(id);
         where.push(`modelo_id = $${values.length}`);
       }
 
-      // 🔒 AGENTE → só vê dos seus modelos
       if (role === "agente") {
         values.push(id);
         where.push(`agente_id = $${values.length}`);
       }
 
-      // 🔒 ADMIN → pode filtrar por modelo
-      if (modelo_id) {
-        if (role !== "admin") {
-          return res.status(403).json({
-            error: "Filtro por modelo permitido apenas para admin"
-          });
-        }
-
+      if (modelo_id && role === "admin") {
         values.push(Number(modelo_id));
         where.push(`modelo_id = $${values.length}`);
-      }
-
-      if (mes) {
-        values.push(`${mes}-01`);
-        where.push(`created_at >= $${values.length}`);
-
-        values.push(`${mes}-31`);
-        where.push(`created_at <= $${values.length}`);
-      }
-
-      if (tipo) {
-        values.push(tipo);
-        where.push(`tipo = $${values.length}`);
-      }
-
-      if (origem) {
-        values.push(origem);
-        where.push(`origem_cliente = $${values.length}`);
       }
 
       const sql = `
@@ -348,6 +310,7 @@ router.get(
     }
   }
 );
+
 
 //ROTA DO LINK DE ACESSO A PLATAFORMA(CLIENTES INSTA TIKTOK)
 router.get(
