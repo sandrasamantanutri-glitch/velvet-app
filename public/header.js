@@ -29,6 +29,15 @@ function carregarHeader() {
     .catch(err => console.error("Erro ao carregar header:", err));
 }
 
+const menuVisitante = `
+  <div class="menu-header">Bem-vinda à Velvet</div>
+
+  <button onclick="abrirPopupVelvet({ tipo: 'login' })">
+    Entrar / Criar conta
+  </button>
+`;
+
+
 document.addEventListener("DOMContentLoaded", () => {
   initUsuario();
   carregarHeader();
@@ -99,18 +108,21 @@ const menuModelo = `
 
 function montarMenuPorRole() {
   const role = localStorage.getItem("role");
+  const menu = document.getElementById("userMenu");
+  if (!menu) return;
 
-const menu = document.getElementById("userMenu");
-if (!menu) return;
+  if (role === "modelo") {
+    menu.innerHTML = menuModelo;
+  } 
+  else if (role === "cliente") {
+    menu.innerHTML = menuCliente;
+  } 
+  else {
+    // 👀 VISITANTE
+    menu.innerHTML = menuVisitante;
+  }
+}
 
-if (role === "modelo") {
-  menu.innerHTML = menuModelo;
-} else if (role === "cliente") {
-  menu.innerHTML = menuCliente;
-} else {
-  console.warn("❌ Role inválido:", role);
-}
-}
 
 function abrirDados() {
   window.location.href = "/dados-modelo.html";
@@ -128,10 +140,20 @@ function initHeaderMenu() {
     return;
   }
 
-  btn.addEventListener("click", e => {
-    e.stopPropagation();
-    menu.classList.toggle("open");
-  });
+btn.addEventListener("click", e => {
+  e.stopPropagation();
+
+  const role = localStorage.getItem("role");
+
+//  VISITANTE 
+  if (!role) {
+    abrirPopupVelvet({ tipo: "login" });
+    return;
+  }
+
+  menu.classList.toggle("open");
+});
+
 
   document.addEventListener("click", () => {
     menu.classList.remove("open");
@@ -302,11 +324,9 @@ document.addEventListener("click", (e) => {
   } else if (role === "modelo") {
     window.location.href = "/chatmodelo.html";
   } else {
-    window.location.href = "/index.html";
+    abrirPopupVelvet({ tipo: "login" });
   }
 });
-
-
 
 // =========================================================
 // LOGOUT

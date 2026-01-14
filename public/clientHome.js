@@ -71,10 +71,8 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
           }
 
-          // 🔒 garante que nunca gravamos 'undefined'
           localStorage.setItem("modelo_id", modeloId.toString());
-
-          window.location.href = "profile.html";
+          window.location.href = `profile.html?id=${modeloId}`;
         });
 
         // ➕ adiciona o card ao DOM

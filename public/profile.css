@@ -190,10 +190,10 @@ body {
 .gallery-grid img,
 .gallery-grid video {
     width: 100%;
-    height: 250px;
-    object-fit: cover;
-    border-radius: 15px;
-    background: #f7f7f7;
+    aspect-ratio: 1 / 1; 
+  object-fit: cover; 
+  background: #9E6BFF;   
+  border-radius: 14px;
 }
 
 .vipBtn {
@@ -562,7 +562,7 @@ body.role-cliente .only-cliente {
 ========================================= */
 .midiaThumb {
   width: 100%;
-  height: 250px;
+  height: 300px;
   object-fit: cover;
   border-radius: 15px;
 }
@@ -1133,6 +1133,16 @@ color: #7B2CFF !important;
     transform: scale(1) translateY(0);
   }
 }
+
+/* VISITANTE (perfil público) */
+body.role-publico .vipBtn {
+  display: inline-flex !important;
+}
+
+body.role-publico .btnChat {
+  display: inline-flex !important;
+}
+
 
 
 

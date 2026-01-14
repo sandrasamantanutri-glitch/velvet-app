@@ -1,18 +1,36 @@
 // ===============================
 // AUTH GUARD
 // ===============================
-const token = localStorage.getItem("token");
-const role  = localStorage.getItem("role");
+
 const stripe = Stripe("pk_live_51SlJ2zJb9evIocfiAuPn5wzOJqWqn4e356uasq214hRTPsdQGawPec3iIcD43ufhBvjQYMLKmKRMKnjwmC88iIT1006lA5XqGE");
 let elements;
 window.__CLIENTE_VIP__ = false;
 
-if (!token) {
-  window.location.href = "/index.html";
-  throw new Error("Sem token");
+const socket = io();
+
+const params = new URLSearchParams(window.location.search);
+const modeloParam = params.get("id");
+
+const token = localStorage.getItem("token");
+const role  = localStorage.getItem("role");
+
+// 🔓 MODO PÚBLICO se veio por ?id=
+const modoPublico = !!modeloParam;
+
+if (role === "cliente" && !modoPublico) {
+  window.location.href = "/clientHome.html";
+  throw new Error("Cliente não pode acessar profile privado");
 }
 
-const socket = io();
+const modo = role === "modelo" && !modoPublico
+    ? "privado"
+    : "publico";
+
+let modelo_id = modeloParam
+  ? Number(modeloParam)
+  : role === "modelo"
+    ? localStorage.getItem("modelo_id")
+    : null;
 
 // autentica socket
 socket.emit("auth", { token });
@@ -37,12 +55,10 @@ function logout() {
   localStorage.clear();
   window.location.href = "/index.html";
 }
-const modo = role === "cliente" ? "publico" : "privado";
 
 // ===============================
 // ELEMENTOS DO PERFIL
 // ===============================
-let modelo_id = localStorage.getItem("modelo_id");
 
 // 🔒 Guard APENAS para perfil público
 if (modo === "publico" && (!modelo_id || modelo_id === "undefined")) {
@@ -87,11 +103,12 @@ document.getElementById("btnVipCartao")?.addEventListener("click", () => {
   ?.addEventListener("click", fecharPagamento);
   
   btnChat?.addEventListener("click", () => {
-  window.location.href = "/chatcliente.html";
- });
-
-
-
+  if (!role) {
+    abrirPopupVelvet({ tipo: "login" });
+  } else {
+    window.location.href = "/chatcliente.html";
+  }
+});
 
 });
 
@@ -99,24 +116,42 @@ document.getElementById("btnVipCartao")?.addEventListener("click", () => {
 // ROLE VISUAL
 // ===============================
 function aplicarRoleNoBody() {
-  document.body.classList.remove("role-modelo", "role-cliente");
-  if (role === "modelo") document.body.classList.add("role-modelo");
-  if (role === "cliente") document.body.classList.add("role-cliente");
+  document.body.classList.remove("role-modelo", "role-cliente", "role-publico");
+  if (role === "modelo") {
+    document.body.classList.add("role-modelo");
+  } 
+  else if (role === "cliente") {
+    document.body.classList.add("role-cliente");
+  } 
+  else {
+    // VISITANTE
+    document.body.classList.add("role-publico");
+  }
 }
 
 // ===============================
 // PERFIL
 // ===============================
 function iniciarPerfil() {
-  if (modo === "privado") {
+
+  // MODELO (perfil próprio)
+  if (modo === "privado" && role === "modelo") {
     carregarPerfil();
     carregarFeed();
+    return;
   }
 
-  if (modo === "publico") {
+  // CLIENTE ou VISITANTE (perfil público)
+  if (modo === "publico" && modelo_id) {
     carregarPerfilPublico();
+    return;
+  }
+
+  // fallback de segurança
+  console.warn("Perfil inválido, redirecionando");
+  window.location.href = "/index.html";
 }
-}
+
 
 function valorBRL(valor) {
   return Number(valor).toLocaleString("pt-BR", {
@@ -140,54 +175,68 @@ async function carregarPerfil() {
 }
 
 async function carregarPerfilPublico() {
-  const res = await fetch(`/api/modelo/publico/${modelo_id}`, {
-    headers: { Authorization: "Bearer " + token }
-  });
+  // PERFIL PÚBLICO → SEM TOKEN
+  const res = await fetch(`/api/modelo/publico/${modelo_id}`);
 
-  if (!res.ok) return;
+  if (!res.ok) {
+    alert("Perfil não encontrado");
+    return;
+  }
 
   const modelo = await res.json();
-  localStorage.setItem("modelo_id", modelo.id);
-  modelo_id = modelo.id;
 
   aplicarPerfilNoDOM(modelo);
 
-  // 🔐 VERIFICAR VIP
-  const vipRes = await fetch(`/api/vip/status/${modelo_id}`, {
-    headers: { Authorization: "Bearer " + token }
-  });
+  // ===============================
+// STATUS VIP (CLIENTE LOGADO)
+// ===============================
+if (role === "cliente") {
+  try {
+    const vipRes = await fetch(`/api/vip/status/${modelo_id}`, {
+      headers: {
+        Authorization: "Bearer " + localStorage.getItem("token")
+      }
+    });
 
-  let isVip = false;
+    if (vipRes.ok) {
+      const vipData = await vipRes.json();
+      window.__CLIENTE_VIP__ = vipData.vip === true;
 
-  if (vipRes.ok) {
-    const vipData = await vipRes.json();
-    if (vipData.vip) {
-      isVip = true;
-
-      if (btnVip) {
-        btnVip.textContent = "VIP ativo";
-        btnVip.disabled = true;
+      if (window.__CLIENTE_VIP__) {
+        if (btnVip) {
+          btnVip.textContent = "VIP ativo";
+          btnVip.disabled = true;
+        }
       }
     }
+  } catch (err) {
+    console.error("Erro ao verificar VIP:", err);
+    window.__CLIENTE_VIP__ = false;
   }
+} else {
+  window.__CLIENTE_VIP__ = false;
 
-  // ✅ 1️⃣ DEFINE VIP GLOBAL (ESSENCIAL)
-  window.__CLIENTE_VIP__ = isVip;
+  if (btnVip) {
+    btnVip.textContent = "Torne-se VIP";
+    btnVip.disabled = false;
+  }
+}
 
-  // ✅ 2️⃣ AGORA SIM carrega o feed
-  carregarFeedPublico();
+carregarFeedPublico();
 }
 
 // ===============================
 // VIP
 // ===============================
 btnVip?.addEventListener("click", async () => {
-  if (!modelo_id) {
-    alert("Modelo não identificada");
+
+  // 👀 VISITANTE → popup Velvet
+  if (!role) {
+    abrirPopupVelvet({ tipo: "login" });
     return;
   }
 
-  // 🔒 CHECA SE JÁ É VIP (UX — evita pagar 2x)
+  // 🔒 CLIENTE → verifica VIP
   try {
     const statusRes = await fetch(`/api/vip/status/${modelo_id}`, {
       headers: {
@@ -206,23 +255,16 @@ btnVip?.addEventListener("click", async () => {
       return;
     }
 
-    // ✅ NÃO É VIP → ABRE POPUP DE ESCOLHA
-    const popup = document.getElementById("escolhaPagamento");
-    if (!popup) {
-      console.error("Popup de escolha de pagamento não encontrado");
-      alert("Erro interno. Recarregue a página.");
-      return;
-    }
-
-    popup.classList.remove("hidden");
+    // ✅ NÃO É VIP → ABRE POPUP DE PAGAMENTO
+    document
+      .getElementById("escolhaPagamento")
+      ?.classList.remove("hidden");
 
   } catch (err) {
     console.error("Erro ao verificar status VIP:", err);
     alert("Erro ao verificar status VIP");
   }
 });
-
-
 
 // ===============================
 // FEED
@@ -244,9 +286,8 @@ function carregarFeed() {
 function carregarFeedPublico() {
   if (!listaMidias) return;
 
-  fetch(`/api/modelo/${modelo_id}/feed`, {
-    headers: { Authorization: "Bearer " + token }
-  })
+  fetch(`/api/modelo/publico/${modelo_id}/feed`)
+
     .then(r => r.json())
     .then(data => {
       // 🔎 SUPORTE A QUALQUER FORMATO
@@ -421,19 +462,24 @@ function adicionarMidia(id, url) {
   el.className = "midiaThumb";
   if (isVideo) el.muted = true;
 
-  // 🔒 BLOQUEIO PARA CLIENTE NÃO VIP
-  if (role === "cliente" && !window.__CLIENTE_VIP__) {
+  const deveBloquear =
+    role !== "modelo" && window.__CLIENTE_VIP__ !== true;
+
+  if (deveBloquear) {
     card.classList.add("bloqueada");
 
-    card.addEventListener("click", () => {
-      alert("🔒 Conteúdo exclusivo para membros VIP");
-    });
+ card.addEventListener("click", () => {
+  if (!role) {
+    abrirPopupVelvet({ tipo: "login" });
+  } else {
+    abrirPopupVelvet({ tipo: "vip" });
+  }
+ });
   } else {
     el.addEventListener("click", () =>
       abrirModalMidia(url, isVideo)
     );
   }
-
   card.appendChild(el);
   if (role === "modelo") {
   const btnExcluir = document.createElement("button");
@@ -711,18 +757,46 @@ function fecharVipAtivado() {
     .classList.add("hidden");
 }
 
-function fecharPagamento() {
-  const modal = document.getElementById("paymentModal");
-  if (!modal) return;
+// ===============================
+// 💜 POPUP VELVET ACESSO
+// ===============================
+function abrirPopupVelvet({ tipo }) {
+  const popup = document.getElementById("popupVelvetAcesso");
+  const texto = document.getElementById("popupVelvetTexto");
+  const btn   = document.getElementById("btnVelvetAcao");
 
-  modal.classList.add("hidden");
+  if (!popup) return;
 
-  // 🔥 limpa Stripe Elements (evita bugs ao reabrir)
-  const paymentEl = document.getElementById("payment-element");
-  if (paymentEl) paymentEl.innerHTML = "";
+  if (tipo === "login") {
+    texto.textContent =
+      "Entre ou crie sua conta para acessar este conteúdo";
+    btn.textContent = "Entrar / Criar conta";
+    btn.onclick = () => {
+      window.location.href = "/index.html";
+    };
+  }
 
-  elements = null;
+  if (tipo === "vip") {
+    texto.textContent =
+      "Este conteúdo é exclusivo para membros VIP";
+    btn.textContent = "Tornar-se VIP";
+    btn.onclick = () => {
+      popup.classList.add("hidden");
+      document.getElementById("escolhaPagamento")?.classList.remove("hidden");
+    };
+  }
+
+  popup.classList.remove("hidden");
 }
+
+// fechar clicando fora
+document
+  .getElementById("popupVelvetAcesso")
+  ?.addEventListener("click", (e) => {
+    if (e.target.id === "popupVelvetAcesso") {
+      e.currentTarget.classList.add("hidden");
+    }
+  });
 
 
 
