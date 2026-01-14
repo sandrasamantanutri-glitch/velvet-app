@@ -93,12 +93,24 @@ h2 #modeloNome {
 #listaClientes li {
   padding: 8px 10px;
   margin-bottom: 6px;
-  background: #9E6BFF ;
+  background: #9E6BFF;
   color: #fff;
   border-radius: 12px;
   cursor: pointer;
   font-size: 12px;
   transition: 0.2s;
+
+  /* 🔥 ESSENCIAIS */
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+#listaClientes li span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 #listaClientes li:hover {
@@ -755,6 +767,12 @@ body.role-modelo .chat-conteudo * {
   filter: none !important;
   opacity: 1 !important;
   pointer-events: auto !important;
+}
+
+/* PAINEL DE ASSINANTES */
+.lista-clientes,
+#listaClientes {
+  overflow-x: hidden !important;
 }
 
 
