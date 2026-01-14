@@ -4,7 +4,7 @@
 
 async function carregarResumoModelo() {
   try {
-    const res = await fetch("/api/modelo/ganhos-resumo", {
+    const res = await fetch("/api/modelo/financeiro", {
       headers: {
         Authorization: "Bearer " + localStorage.getItem("token")
       }
