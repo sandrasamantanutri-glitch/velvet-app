@@ -1,18 +1,31 @@
 // ===============================
 // AUTH GUARD
 // ===============================
-const token = localStorage.getItem("token");
-const role  = localStorage.getItem("role");
+
 const stripe = Stripe("pk_live_51SlJ2zJb9evIocfiAuPn5wzOJqWqn4e356uasq214hRTPsdQGawPec3iIcD43ufhBvjQYMLKmKRMKnjwmC88iIT1006lA5XqGE");
 let elements;
 window.__CLIENTE_VIP__ = false;
 
-if (!token) {
+const socket = io();
+
+const params = new URLSearchParams(window.location.search);
+const modeloParam = params.get("id");
+
+const token = localStorage.getItem("token");
+const role  = localStorage.getItem("role");
+
+// 🔓 MODO PÚBLICO se veio por ?id=
+const modoPublico = !!modeloParam;
+
+// 🔐 BLOQUEIA apenas se NÃO for público e não tiver token
+if (!modoPublico && !token) {
   window.location.href = "/index.html";
   throw new Error("Sem token");
 }
 
-const socket = io();
+let modelo_id = modeloParam
+  ? Number(modeloParam)
+  : localStorage.getItem("modelo_id");
 
 // autentica socket
 socket.emit("auth", { token });
@@ -37,12 +50,11 @@ function logout() {
   localStorage.clear();
   window.location.href = "/index.html";
 }
-const modo = role === "cliente" ? "publico" : "privado";
+const modo = modoPublico ? "publico" : "privado";
 
 // ===============================
 // ELEMENTOS DO PERFIL
 // ===============================
-let modelo_id = localStorage.getItem("modelo_id");
 
 // 🔒 Guard APENAS para perfil público
 if (modo === "publico" && (!modelo_id || modelo_id === "undefined")) {
@@ -140,41 +152,28 @@ async function carregarPerfil() {
 }
 
 async function carregarPerfilPublico() {
-  const res = await fetch(`/api/modelo/publico/${modelo_id}`, {
-    headers: { Authorization: "Bearer " + token }
-  });
+  // PERFIL PÚBLICO → SEM TOKEN
+  const res = await fetch(`/api/modelo/publico/${modelo_id}`);
 
-  if (!res.ok) return;
+  if (!res.ok) {
+    alert("Perfil não encontrado");
+    return;
+  }
 
   const modelo = await res.json();
-  localStorage.setItem("modelo_id", modelo.id);
-  modelo_id = modelo.id;
 
   aplicarPerfilNoDOM(modelo);
 
-  // 🔐 VERIFICAR VIP
-  const vipRes = await fetch(`/api/vip/status/${modelo_id}`, {
-    headers: { Authorization: "Bearer " + token }
-  });
+  // VISITANTE NÃO É VIP
+  window.__CLIENTE_VIP__ = false;
 
-  let isVip = false;
-
-  if (vipRes.ok) {
-    const vipData = await vipRes.json();
-    if (vipData.vip) {
-      isVip = true;
-
-      if (btnVip) {
-        btnVip.textContent = "VIP ativo";
-        btnVip.disabled = true;
-      }
-    }
+  // Botão VIP sempre ativo para visitante
+  if (btnVip) {
+    btnVip.textContent = "Torne-se VIP";
+    btnVip.disabled = false;
   }
 
-  // ✅ 1️⃣ DEFINE VIP GLOBAL (ESSENCIAL)
-  window.__CLIENTE_VIP__ = isVip;
-
-  // ✅ 2️⃣ AGORA SIM carrega o feed
+  // Carrega feed (bloqueado pelo CSS/JS)
   carregarFeedPublico();
 }
 
