@@ -270,42 +270,51 @@ router.get("/access", authCliente, async (req, res) => {
 router.get(
   "/api/transacoes",
   authMiddleware,
-  requireRole("admin", "modelo", "agente"),
+  requireRole("modelo"),
   async (req, res) => {
     try {
-      const { mes, tipo, origem, modelo_id } = req.query;
-      const { role, id } = req.user;
-
-      let where = [];
-      let values = [];
-
-      if (role === "modelo") {
-        values.push(id);
-        where.push(`modelo_id = $${values.length}`);
-      }
-
-      if (role === "agente") {
-        values.push(id);
-        where.push(`agente_id = $${values.length}`);
-      }
-
-      if (modelo_id && role === "admin") {
-        values.push(Number(modelo_id));
-        where.push(`modelo_id = $${values.length}`);
-      }
+      const modelo_id = req.user.id;
 
       const sql = `
-        SELECT *
-        FROM transacoes
-        ${where.length ? "WHERE " + where.join(" AND ") : ""}
+        SELECT
+          cp.id,
+          'conteudo' AS tipo,
+          cp.cliente_id,
+          cp.modelo_id,
+          cp.valor_total AS valor,
+          cp.status,
+          cp.metodo_pagamento,
+          cp.pago_em AS created_at,
+          cp.message_id
+        FROM conteudo_pacotes cp
+        WHERE cp.modelo_id = $1
+
+        UNION ALL
+
+        SELECT
+          vs.id,
+          'assinatura' AS tipo,
+          vs.cliente_id,
+          vs.modelo_id,
+          vs.valor_total AS valor,
+          CASE
+            WHEN vs.ativo = true THEN 'ativa'
+            ELSE 'cancelada'
+          END AS status,
+          'recorrente' AS metodo_pagamento,
+          vs.created_at,
+          NULL AS message_id
+        FROM vip_subscriptions vs
+        WHERE vs.modelo_id = $1
+
         ORDER BY created_at DESC
       `;
 
-      const result = await db.query(sql, values);
+      const result = await db.query(sql, [modelo_id]);
       res.json(result.rows);
 
     } catch (err) {
-      console.error("❌ Erro /api/transacoes:", err);
+      console.error("❌ Erro /api/transacoes (modelo):", err);
       res.status(500).json([]);
     }
   }
