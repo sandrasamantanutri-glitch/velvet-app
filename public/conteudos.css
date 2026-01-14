@@ -75,11 +75,23 @@ h1 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 14px;
-  max-width: 1000px;
+  max-width: 100px;
   margin: 0 auto;
   padding: 0 16px;
 }
 
+.conteudo-card img,
+.conteudo-card video {
+  width: 100%;
+  aspect-ratio: 1 / 1 !important;
+  object-fit: cover !important;
+  background: #9E6BFF;   
+  border-radius: 14px;
+}
+
+.conteudo-card:hover {
+  box-shadow: 0 10px 26px rgba(123,44,255,0.18);
+}
 
 
 /* =========================
@@ -213,21 +225,6 @@ h1 {
     font-size: 16px;
     margin-top: 24px;
   }
-
-.conteudo-card img,
-.conteudo-card video {
-  width: 100%;
-  aspect-ratio: 1 / 1 !important;
-  object-fit: cover !important;
-  background: #9E6BFF;   
-  border-radius: 14px;
-}
-
-
-.conteudo-card:hover {
-  box-shadow: 0 10px 26px rgba(123,44,255,0.18);
-}
-
 
   /* BOTÃO EXCLUIR — sempre visível no mobile */
   .btn-excluir {
