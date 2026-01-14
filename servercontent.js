@@ -1116,7 +1116,7 @@ router.get("/api/cliente/transacoes", authCliente, async (req, res) => {
 });
 
 
-app.get("/api/modelo/ganhos-resumo", authModelo, async (req, res) => {
+router.get("/api/modelo/ganhos-resumo", authModelo, async (req, res) => {
   const modelo_id = req.user.id;
 
   try {
