@@ -7,107 +7,17 @@
 
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/header.css">
-
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      font-family: "Poppins", sans-serif;
-      background: #f7f7fb;
-      color: #1f1f1f;
-    }
-
-    h1 {
-      margin: 32px 16px 24px;
-      font-size: 26px;
-      font-weight: 600;
-      text-align: center;
-    }
-
-    #lista {
-      max-width: 720px;
-      margin: 0 auto 40px;
-      padding: 0 16px;
-    }
-
-    .transacao {
-      background: #ffffff;
-      border-radius: 14px;
-      padding: 18px 20px;
-      margin-bottom: 14px;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
-    }
-
-    .transacao:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.08);
-    }
-
-    .linha {
-      font-size: 14px;
-      margin-bottom: 6px;
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-
-    .linha strong {
-      font-weight: 600;
-    }
-
-    .linha.negativo {
-      color: #c0392b;
-      font-weight: 500;
-    }
-
-    @media (max-width: 480px) {
-      h1 {
-        font-size: 22px;
-      }
-
-      .transacao {
-        padding: 16px;
-      }
-
-      .linha {
-        font-size: 13px;
-      }
-    }
-
-    .footer {
-      margin-top: 60px;
-      padding: 20px;
-      text-align: center;
-      font-size: 12px;
-    }
-
-    .footer-links a {
-      color: #1E1E26;
-      margin: 0 10px;
-      text-decoration: none;
-    }
-
-    .footer-links a:hover {
-      text-decoration: underline;
-    }
-  </style>
 </head>
-<body>
 
-<div id="header-container"></div>
-
-<h1>Transações</h1>
-<div id="lista">Carregando transações...</div>
+<BODY>
+  <div id="header-container"></div>
+  <h1>Minhas Transações</h1>
+<div id="lista">Carregando compras...</div>
 
 <script>
 async function carregarTransacoes() {
   try {
     const token = localStorage.getItem("token");
-    const role  = localStorage.getItem("role");
 
     if (!token) {
       document.getElementById("lista").innerText =
@@ -115,15 +25,9 @@ async function carregarTransacoes() {
       return;
     }
 
-    if (!["admin", "modelo", "agente"].includes(role)) {
-      document.getElementById("lista").innerText =
-        "Acesso não autorizado.";
-      return;
-    }
-
-    const res = await fetch("/api/transacoes", {
+    const res = await fetch("/api/cliente/transacoes", {
       headers: {
-        Authorization: "Bearer " + token
+        "Authorization": "Bearer " + token
       }
     });
 
@@ -137,8 +41,8 @@ async function carregarTransacoes() {
     const lista = document.getElementById("lista");
     lista.innerHTML = "";
 
-    if (!Array.isArray(dados) || !dados.length) {
-      lista.innerText = "Nenhuma transação encontrada.";
+    if (!dados.length) {
+      lista.innerText = "Você ainda não realizou nenhuma compra.";
       return;
     }
 
@@ -148,44 +52,34 @@ async function carregarTransacoes() {
 
       div.innerHTML = `
         <div class="linha">
-          <strong>#${t.codigo || "—"}</strong>
-          ${(t.tipo || "").toUpperCase()}
+          <strong>
+  #${t.tipo === "conteudo" ? "C" : "A"}-${t.id}
+</strong>
+${t.tipo.toUpperCase()}
+
         </div>
 
         <div class="linha">
-          Cliente ID: ${t.cliente_id ?? "—"}
+          Data: ${new Date(t.created_at).toLocaleString()}
         </div>
 
         <div class="linha">
-          Data:
-          ${t.created_at ? new Date(t.created_at).toLocaleString() : "—"}
+          Valor pago: ${emReais(t.valor)}
         </div>
 
         <div class="linha">
-          Valor bruto: ${emReais(t.valor_bruto || 0)}
-        </div>
-
-        <div class="linha">
-          Taxa gateway: ${emReais(t.taxa_gateway || 0)}
-        </div>
-
-        <div class="linha">
-          Ganhos Velvet: ${emReais(t.velvet_fee || 0)}
-        </div>
-
-        <div class="linha">
-          Ganhos modelo: ${emReais(t.valor_modelo || 0)}
-        </div>
-
-        <div class="linha">
-          Origem: ${t.origem_cliente || "teste"}
+          Status: <strong>${t.status}</strong>
         </div>
 
         ${
-          t.status === "chargeback"
-            ? `<div class="linha negativo">
-                 Chargeback: ${t.chargeback_result || "—"}
-               </div>`
+          t.tipo === "conteudo"
+            ? `<div class="linha">Conteúdo ID: ${t.message_id}</div>`
+            : ""
+        }
+
+        ${
+          t.tipo === "assinatura"
+            ? `<div class="linha">Assinatura VIP</div>`
             : ""
         }
       `;
@@ -196,7 +90,7 @@ async function carregarTransacoes() {
   } catch (err) {
     console.error(err);
     document.getElementById("lista").innerText =
-      "Erro inesperado ao carregar.";
+      "Erro inesperado.";
   }
 }
 
@@ -209,8 +103,142 @@ function emReais(valor) {
 
 carregarTransacoes();
 </script>
+<style>
+  /* ===============================
+   BASE
+================================ */
+* {
+  box-sizing: border-box;
+}
 
-<footer class="footer">
+body {
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+  background: #f7f7fb;
+  color: #1f1f1f;
+}
+
+/* ===============================
+   CONTEÚDO
+================================ */
+h1 {
+  margin: 32px 16px 24px;
+  font-size: 26px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ===============================
+   LISTA
+================================ */
+#lista {
+  max-width: 720px;
+  margin: 0 auto 40px;
+  padding: 0 16px;
+}
+
+/* ===============================
+   CARD TRANSAÇÃO
+================================ */
+.transacao {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.transacao:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.08);
+}
+
+/* ===============================
+   LINHAS
+================================ */
+.linha {
+  font-size: 14px;
+  margin-bottom: 6px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.linha strong {
+  font-weight: 600;
+}
+
+/* ===============================
+   CABEÇALHO DA TRANSAÇÃO
+================================ */
+.transacao .linha:first-child {
+  font-size: 15px;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+/* ===============================
+   STATUS
+================================ */
+.transacao .linha strong {
+  text-transform: capitalize;
+}
+
+.transacao .linha:last-child {
+  margin-bottom: 0;
+}
+
+/* ===============================
+   RESPONSIVO
+================================ */
+@media (max-width: 480px) {
+  h1 {
+    font-size: 22px;
+  }
+
+  .transacao {
+    padding: 16px;
+  }
+
+  .linha {
+    font-size: 13px;
+  }
+}
+
+.footer {
+  margin-top: 60px;
+  padding: 20px;
+  background:none;
+  color: #ffff;
+  text-align: center;
+  font-size: 12px;
+}
+
+.footer-links {
+  margin-bottom: 10px;
+}
+
+.footer-links a {
+  color: #1E1E26;
+  margin: 0 10px;
+  text-decoration: none;
+}
+
+.footer-links a:hover {
+  color: #C9C9C9;
+  text-decoration: underline;
+}
+
+.footer-copy {
+  font-size: 12px;
+  color: #1E1E26;
+}
+
+
+</style>
+
+    <footer class="footer">
   <div class="footer-links">
     <a href="/terms.html">Termos de Uso</a>
     <a href="/privacy.html">Política de Privacidade</a>
@@ -219,10 +247,7 @@ carregarTransacoes();
   <div class="footer-copy">
     © 2026 Velvet. Todos os direitos reservados.
   </div>
-</footer>
 
-<script src="/header.js"></script>
-
+  <script src="/header.js"></script>
 </body>
 </html>
-
