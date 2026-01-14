@@ -569,7 +569,6 @@ background: linear-gradient(135deg, #7b2cff, #9E6BFF);
   background: rgba(255, 255, 255, 0.75);
   color: #7B2CFF;
   border-radius: 8px;
-
   font-size: 12px;
   font-weight: 500;
 }
@@ -745,6 +744,19 @@ background: linear-gradient(135deg, #7b2cff, #9E6BFF);
 .preview-modal {
   z-index: 99999999 !important;
 }
+
+
+/* =========================================
+   🔥 MODELO NUNCA VÊ CONTEÚDO BLOQUEADO
+========================================= */
+
+body.role-modelo .chat-conteudo,
+body.role-modelo .chat-conteudo * {
+  filter: none !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
 
 
 
