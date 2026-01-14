@@ -835,6 +835,18 @@ async function pagarComCartao() {
   document.getElementById("paymentModal").classList.remove("hidden");
 }
 
+function fecharPagamento() {
+  const modal = document.getElementById("paymentModal");
+  if (modal) modal.classList.add("hidden");
+
+  // limpa Stripe Elements
+  const el = document.getElementById("payment-element");
+  if (el) el.innerHTML = "";
+
+  elements = null;
+}
+
+
 
 
 
