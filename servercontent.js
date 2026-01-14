@@ -277,38 +277,37 @@ router.get(
 
       const sql = `
         SELECT
-          cp.id,
-          'conteudo' AS tipo,
+          cp.id                    AS codigo,
+          'conteudo'               AS tipo,
           cp.cliente_id,
-          cp.modelo_id,
+          cp.pago_em               AS created_at,
 
-          -- valor base informado - 30% Velvet
+          cp.valor_base            AS valor_bruto,
+          ROUND(cp.valor_base * 0.30, 2) AS velvet_fee,
           ROUND(cp.valor_base * 0.70, 2) AS valor_modelo,
 
           cp.status,
-          cp.metodo_pagamento,
-          cp.pago_em AS created_at,
           cp.message_id
         FROM conteudo_pacotes cp
         WHERE cp.modelo_id = $1
+          AND cp.status = 'pago'
 
         UNION ALL
 
         SELECT
-          vs.id,
-          'assinatura' AS tipo,
+          vs.id                    AS codigo,
+          'assinatura'             AS tipo,
           vs.cliente_id,
-          vs.modelo_id,
+          vs.created_at,
 
-          -- valor assinatura informado - 30% Velvet
+          vs.valor_assinatura      AS valor_bruto,
+          ROUND(vs.valor_assinatura * 0.30, 2) AS velvet_fee,
           ROUND(vs.valor_assinatura * 0.70, 2) AS valor_modelo,
 
           CASE
-            WHEN vs.ativo = true THEN 'ativa'
+            WHEN vs.ativo THEN 'ativa'
             ELSE 'cancelada'
           END AS status,
-          'recorrente' AS metodo_pagamento,
-          vs.created_at,
           NULL AS message_id
         FROM vip_subscriptions vs
         WHERE vs.modelo_id = $1
@@ -325,6 +324,7 @@ router.get(
     }
   }
 );
+
 
 
 
@@ -1084,42 +1084,94 @@ router.get("/api/cliente/transacoes", authCliente, async (req, res) => {
 });
 
 
-router.get("/api/modelo/ganhos-resumo", authModelo, async (req, res) => {
+// router.get("/api/modelo/ganhos-resumo", authModelo, async (req, res) => {
+//   const modelo_id = req.user.id;
+
+//   try {
+//     // 🔹 MIDIAS
+//     const midias = await db.query(`
+//       SELECT
+//         COALESCE(SUM(CASE WHEN DATE(pago_em) = CURRENT_DATE THEN valor_base END),0) AS hoje,
+//         COALESCE(SUM(CASE WHEN DATE_TRUNC('month', pago_em) = DATE_TRUNC('month', CURRENT_DATE) THEN valor_base END),0) AS mes,
+//         COALESCE(SUM(valor_base),0) AS total
+//       FROM conteudo_pacotes
+//       WHERE modelo_id = $1
+//         AND status = 'pago'
+//     `, [modelo_id]);
+
+//     // 🔹 ASSINATURAS
+//     const assinaturas = await db.query(`
+//       SELECT
+//         COALESCE(SUM(CASE WHEN DATE(created_at) = CURRENT_DATE THEN valor_assinatura END),0) AS hoje,
+//         COALESCE(SUM(CASE WHEN DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE) THEN valor_assinatura END),0) AS mes,
+//         COALESCE(SUM(valor_assinatura),0) AS total
+//       FROM vip_subscriptions
+//       WHERE modelo_id = $1
+//         AND ativo = true
+//     `, [modelo_id]);
+
+//     res.json({
+//       midias: midias.rows[0],
+//       assinaturas: assinaturas.rows[0]
+//     });
+
+//   } catch (err) {
+//     console.error("Erro ganhos-resumo:", err);
+//     res.status(500).json({ error: "Erro ao carregar ganhos" });
+//   }
+// });
+
+
+router.get("/api/modelo/financeiro", authModelo, async (req, res) => {
   const modelo_id = req.user.id;
 
-  try {
-    // 🔹 MIDIAS
-    const midias = await db.query(`
-      SELECT
-        COALESCE(SUM(CASE WHEN DATE(pago_em) = CURRENT_DATE THEN valor_base END),0) AS hoje,
-        COALESCE(SUM(CASE WHEN DATE_TRUNC('month', pago_em) = DATE_TRUNC('month', CURRENT_DATE) THEN valor_base END),0) AS mes,
-        COALESCE(SUM(valor_base),0) AS total
-      FROM conteudo_pacotes
-      WHERE modelo_id = $1
-        AND status = 'pago'
-    `, [modelo_id]);
+  const result = await db.query(`
+    SELECT
+      COALESCE(SUM(CASE 
+        WHEN tipo = 'midia'
+         AND DATE(created_at) = CURRENT_DATE
+        THEN valor_modelo END),0) AS hoje_midias,
 
-    // 🔹 ASSINATURAS
-    const assinaturas = await db.query(`
-      SELECT
-        COALESCE(SUM(CASE WHEN DATE(created_at) = CURRENT_DATE THEN valor_assinatura END),0) AS hoje,
-        COALESCE(SUM(CASE WHEN DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE) THEN valor_assinatura END),0) AS mes,
-        COALESCE(SUM(valor_assinatura),0) AS total
-      FROM vip_subscriptions
-      WHERE modelo_id = $1
-        AND ativo = true
-    `, [modelo_id]);
+      COALESCE(SUM(CASE 
+        WHEN tipo = 'assinatura'
+         AND DATE(created_at) = CURRENT_DATE
+        THEN valor_modelo END),0) AS hoje_assinaturas,
 
-    res.json({
-      midias: midias.rows[0],
-      assinaturas: assinaturas.rows[0]
-    });
+      COALESCE(SUM(CASE 
+        WHEN tipo = 'midia'
+         AND DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE)
+        THEN valor_modelo END),0) AS mes_midias,
 
-  } catch (err) {
-    console.error("Erro ganhos-resumo:", err);
-    res.status(500).json({ error: "Erro ao carregar ganhos" });
-  }
+      COALESCE(SUM(CASE 
+        WHEN tipo = 'assinatura'
+         AND DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE)
+        THEN valor_modelo END),0) AS mes_assinaturas,
+
+      COALESCE(SUM(CASE WHEN tipo = 'midia' THEN valor_modelo END),0) AS total_midias,
+      COALESCE(SUM(CASE WHEN tipo = 'assinatura' THEN valor_modelo END),0) AS total_assinaturas
+    FROM transacoes
+    WHERE modelo_id = $1
+      AND status = 'normal'
+  `, [modelo_id]);
+
+  const r = result.rows[0];
+
+  res.json({
+    hoje: {
+      midias: Number(r.hoje_midias),
+      assinaturas: Number(r.hoje_assinaturas)
+    },
+    mes: {
+      midias: Number(r.mes_midias),
+      assinaturas: Number(r.mes_assinaturas)
+    },
+    total: {
+      midias: Number(r.total_midias),
+      assinaturas: Number(r.total_assinaturas)
+    }
+  });
 });
+
 
 
 
