@@ -1,4 +1,5 @@
 // servercontent.js
+const authModelo = require("./middleware/authModelo");
 const express = require("express");
 const path = require("path");
 const jwt = require("jsonwebtoken");
@@ -269,96 +270,63 @@ router.get("/access", authCliente, async (req, res) => {
 router.get(
   "/api/transacoes",
   authMiddleware,
-  requireRole("admin", "modelo", "agente"),
+  requireRole("modelo"),
   async (req, res) => {
-    const { mes, tipo, origem, modelo_id } = req.query;
-    // 🔒 VALIDAÇÃO DE QUERY (RELATÓRIO DE TRANSAÇÕES)
+    try {
+      const modelo_id = req.user.id;
 
-// valida mês (YYYY-MM)
-if (mes && !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
-  return res.status(400).json({
-    error: "Formato de mês inválido (YYYY-MM)"
-  });
-}
+      const sql = `
+        SELECT
+          cp.id,
+          'conteudo' AS tipo,
+          cp.cliente_id,
+          cp.modelo_id,
 
-// valida tipo
-const tiposPermitidos = ["midia", "assinatura"];
-if (tipo && !tiposPermitidos.includes(tipo)) {
-  return res.status(400).json({
-    error: "Tipo inválido"
-  });
-}
+          -- valor base informado - 30% Velvet
+          ROUND(cp.valor_base * 0.70, 2) AS valor_modelo,
 
-// valida origem (string curta)
-if (origem && typeof origem !== "string") {
-  return res.status(400).json({
-    error: "Origem inválida"
-  });
-}
-if (modelo_id) {
-  if (role !== "admin") {
-    return res.status(403).json({
-      error: "Filtro por modelo permitido apenas para admin"
-    });
-  }
+          cp.status,
+          cp.metodo_pagamento,
+          cp.pago_em AS created_at,
+          cp.message_id
+        FROM conteudo_pacotes cp
+        WHERE cp.modelo_id = $1
 
-  if (!Number.isInteger(Number(modelo_id))) {
-    return res.status(400).json({
-      error: "modelo_id inválido"
-    });
-  }
+        UNION ALL
 
-  values.push(Number(modelo_id));
-  where.push(`modelo_id = $${values.length}`);
-}
-    const { role, id } = req.user;
+        SELECT
+          vs.id,
+          'assinatura' AS tipo,
+          vs.cliente_id,
+          vs.modelo_id,
 
-    let where = [];
-    let values = [];
+          -- valor assinatura informado - 30% Velvet
+          ROUND(vs.valor_assinatura * 0.70, 2) AS valor_modelo,
 
-    // MODELO → só vê suas próprias transações
-    if (role === "modelo") {
-      values.push(id);
-      where.push(`modelo_id = $${values.length}`);
+          CASE
+            WHEN vs.ativo = true THEN 'ativa'
+            ELSE 'cancelada'
+          END AS status,
+          'recorrente' AS metodo_pagamento,
+          vs.created_at,
+          NULL AS message_id
+        FROM vip_subscriptions vs
+        WHERE vs.modelo_id = $1
+
+        ORDER BY created_at DESC
+      `;
+
+      const result = await db.query(sql, [modelo_id]);
+      res.json(result.rows);
+
+    } catch (err) {
+      console.error("❌ Erro /api/transacoes (modelo):", err);
+      res.status(500).json([]);
     }
-
-    // AGENTE → só vê transações dos seus modelos
-    if (role === "agente") {
-      values.push(id);
-      where.push(`agente_id = $${values.length}`);
-    }
-
-    // ADMIN → vê tudo (sem filtro extra)
-
-    if (mes) {
-      values.push(`${mes}-01`);
-      where.push(`created_at >= $${values.length}`);
-
-      values.push(`${mes}-31`);
-      where.push(`created_at <= $${values.length}`);
-    }
-
-    if (tipo) {
-      values.push(tipo);
-      where.push(`tipo = $${values.length}`);
-    }
-
-    if (origem) {
-      values.push(origem);
-      where.push(`origem_cliente = $${values.length}`);
-    }
-
-    const sql = `
-      SELECT *
-      FROM transacoes
-      ${where.length ? "WHERE " + where.join(" AND ") : ""}
-      ORDER BY created_at DESC
-    `;
-
-    const result = await db.query(sql, values);
-    res.json(result.rows);
   }
 );
+
+
 
 //ROTA DO LINK DE ACESSO A PLATAFORMA(CLIENTES INSTA TIKTOK)
 router.get(
@@ -1114,6 +1082,45 @@ router.get("/api/cliente/transacoes", authCliente, async (req, res) => {
     res.status(500).json({ error: "Erro ao buscar histórico do cliente" });
   }
 });
+
+
+router.get("/api/modelo/ganhos-resumo", authModelo, async (req, res) => {
+  const modelo_id = req.user.id;
+
+  try {
+    // 🔹 MIDIAS
+    const midias = await db.query(`
+      SELECT
+        COALESCE(SUM(CASE WHEN DATE(pago_em) = CURRENT_DATE THEN valor_base END),0) AS hoje,
+        COALESCE(SUM(CASE WHEN DATE_TRUNC('month', pago_em) = DATE_TRUNC('month', CURRENT_DATE) THEN valor_base END),0) AS mes,
+        COALESCE(SUM(valor_base),0) AS total
+      FROM conteudo_pacotes
+      WHERE modelo_id = $1
+        AND status = 'pago'
+    `, [modelo_id]);
+
+    // 🔹 ASSINATURAS
+    const assinaturas = await db.query(`
+      SELECT
+        COALESCE(SUM(CASE WHEN DATE(created_at) = CURRENT_DATE THEN valor_assinatura END),0) AS hoje,
+        COALESCE(SUM(CASE WHEN DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE) THEN valor_assinatura END),0) AS mes,
+        COALESCE(SUM(valor_assinatura),0) AS total
+      FROM vip_subscriptions
+      WHERE modelo_id = $1
+        AND ativo = true
+    `, [modelo_id]);
+
+    res.json({
+      midias: midias.rows[0],
+      assinaturas: assinaturas.rows[0]
+    });
+
+  } catch (err) {
+    console.error("Erro ganhos-resumo:", err);
+    res.status(500).json({ error: "Erro ao carregar ganhos" });
+  }
+});
+
 
 
 
