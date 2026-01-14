@@ -7,143 +7,98 @@
 
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/header.css">
-</head>
 
-<div id="header-container"></div>
   <style>
-     /* ===============================
-   BASE
-================================ */
-* {
-  box-sizing: border-box;
-}
+    * {
+      box-sizing: border-box;
+    }
 
-body {
-  margin: 0;
-  font-family: "Poppins", sans-serif;
-  background: #f7f7fb;
-  color: #1f1f1f;
-}
+    body {
+      margin: 0;
+      font-family: "Poppins", sans-serif;
+      background: #f7f7fb;
+      color: #1f1f1f;
+    }
 
-/* ===============================
-   CONTEÚDO
-================================ */
-h1 {
-  margin: 32px 16px 24px;
-  font-size: 26px;
-  font-weight: 600;
-  text-align: center;
-}
+    h1 {
+      margin: 32px 16px 24px;
+      font-size: 26px;
+      font-weight: 600;
+      text-align: center;
+    }
 
-/* ===============================
-   LISTA
-================================ */
-#lista {
-  max-width: 720px;
-  margin: 0 auto 40px;
-  padding: 0 16px;
-}
+    #lista {
+      max-width: 720px;
+      margin: 0 auto 40px;
+      padding: 0 16px;
+    }
 
-/* ===============================
-   CARD TRANSAÇÃO
-================================ */
-.transacao {
-  background: #ffffff;
-  border-radius: 14px;
-  padding: 18px 20px;
-  margin-bottom: 14px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
+    .transacao {
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 18px 20px;
+      margin-bottom: 14px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
 
-.transacao:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.08);
-}
+    .transacao:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.08);
+    }
 
-/* ===============================
-   LINHAS
-================================ */
-.linha {
-  font-size: 14px;
-  margin-bottom: 6px;
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
+    .linha {
+      font-size: 14px;
+      margin-bottom: 6px;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
 
-.linha strong {
-  font-weight: 600;
-}
+    .linha strong {
+      font-weight: 600;
+    }
 
-/* ===============================
-   CABEÇALHO DA TRANSAÇÃO
-================================ */
-.transacao .linha:first-child {
-  font-size: 15px;
-  font-weight: 500;
-  margin-bottom: 10px;
-}
+    .linha.negativo {
+      color: #c0392b;
+      font-weight: 500;
+    }
 
-/* ===============================
-   STATUS
-================================ */
-.transacao .linha strong {
-  text-transform: capitalize;
-}
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 22px;
+      }
 
-.transacao .linha:last-child {
-  margin-bottom: 0;
-}
+      .transacao {
+        padding: 16px;
+      }
 
-/* ===============================
-   RESPONSIVO
-================================ */
-@media (max-width: 480px) {
-  h1 {
-    font-size: 22px;
-  }
+      .linha {
+        font-size: 13px;
+      }
+    }
 
-  .transacao {
-    padding: 16px;
-  }
+    .footer {
+      margin-top: 60px;
+      padding: 20px;
+      text-align: center;
+      font-size: 12px;
+    }
 
-  .linha {
-    font-size: 13px;
-  }
-}
+    .footer-links a {
+      color: #1E1E26;
+      margin: 0 10px;
+      text-decoration: none;
+    }
 
-.footer {
-  margin-top: 60px;
-  padding: 20px;
-  background:none;
-  color: #ffff;
-  text-align: center;
-  font-size: 12px;
-}
-
-.footer-links {
-  margin-bottom: 10px;
-}
-
-.footer-links a {
-  color: #1E1E26;
-  margin: 0 10px;
-  text-decoration: none;
-}
-
-.footer-links a:hover {
-  color: #C9C9C9;
-  text-decoration: underline;
-}
-
-.footer-copy {
-  font-size: 12px;
-  color: #1E1E26;
-}
+    .footer-links a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
+
+<div id="header-container"></div>
 
 <h1>Transações</h1>
 <div id="lista">Carregando transações...</div>
@@ -152,19 +107,25 @@ h1 {
 async function carregarTransacoes() {
   try {
     const token = localStorage.getItem("token");
+    const role  = localStorage.getItem("role");
 
-if (!token) {
-  document.getElementById("lista").innerText =
-    "Você não está logada.";
-  return;
-}
+    if (!token) {
+      document.getElementById("lista").innerText =
+        "Você não está logada.";
+      return;
+    }
 
-const res = await fetch("/api/transacoes", {
-  headers: {
-    "Authorization": "Bearer " + token
-  }
-});
+    if (!["admin", "modelo", "agente"].includes(role)) {
+      document.getElementById("lista").innerText =
+        "Acesso não autorizado.";
+      return;
+    }
 
+    const res = await fetch("/api/transacoes", {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
 
     if (!res.ok) {
       document.getElementById("lista").innerText =
@@ -176,54 +137,60 @@ const res = await fetch("/api/transacoes", {
     const lista = document.getElementById("lista");
     lista.innerHTML = "";
 
-    if (!dados.length) {
+    if (!Array.isArray(dados) || !dados.length) {
       lista.innerText = "Nenhuma transação encontrada.";
       return;
     }
 
-   dados.forEach(t => {
-  const div = document.createElement("div");
-  div.className = "transacao";
+    dados.forEach(t => {
+      const div = document.createElement("div");
+      div.className = "transacao";
 
-  div.innerHTML = `
-    <div class="linha">
-      <strong>#${t.codigo}</strong> ${t.tipo.toUpperCase()}
-    </div>
+      div.innerHTML = `
+        <div class="linha">
+          <strong>#${t.codigo || "—"}</strong>
+          ${(t.tipo || "").toUpperCase()}
+        </div>
 
-    <div class="linha">Cliente ID: ${t.cliente_id}</div>
+        <div class="linha">
+          Cliente ID: ${t.cliente_id ?? "—"}
+        </div>
 
-    <div class="linha">
-      Data da transação:
-      ${new Date(t.created_at).toLocaleString()}
-    </div>
+        <div class="linha">
+          Data:
+          ${t.created_at ? new Date(t.created_at).toLocaleString() : "—"}
+        </div>
 
-    <div class="linha">Preço: ${emReais(t.valor_bruto)}</div>
+        <div class="linha">
+          Valor bruto: ${emReais(t.valor_bruto || 0)}
+        </div>
 
-    <div class="linha">
-      Taxas do terminal: ${emReais(t.taxa_gateway)}
-    </div>
+        <div class="linha">
+          Taxa gateway: ${emReais(t.taxa_gateway || 0)}
+        </div>
 
-    <div class="linha">
-      Ganhos da Velvet:
-      <span class="${Number(t.velvet_fee) < 0 ? 'negativo' : ''}">
-        ${emReais(t.velvet_fee)}
-      </span>
-    </div>
+        <div class="linha">
+          Ganhos Velvet: ${emReais(t.velvet_fee || 0)}
+        </div>
 
-    <div class="linha">
-      Ganhos do modelo: ${emReais(t.valor_modelo)}
-    </div>
+        <div class="linha">
+          Ganhos modelo: ${emReais(t.valor_modelo || 0)}
+        </div>
 
-    ${
-      t.status === "chargeback"
-        ? `<div class="linha negativo">
-            Chargeback: ${t.chargeback_result || "—"}
-          </div>`
-        : ""
-    }
-  `;
+        <div class="linha">
+          Origem: ${t.origem_cliente || "teste"}
+        </div>
 
-  lista.appendChild(div);
+        ${
+          t.status === "chargeback"
+            ? `<div class="linha negativo">
+                 Chargeback: ${t.chargeback_result || "—"}
+               </div>`
+            : ""
+        }
+      `;
+
+      lista.appendChild(div);
     });
 
   } catch (err) {
@@ -242,7 +209,8 @@ function emReais(valor) {
 
 carregarTransacoes();
 </script>
-    <footer class="footer">
+
+<footer class="footer">
   <div class="footer-links">
     <a href="/terms.html">Termos de Uso</a>
     <a href="/privacy.html">Política de Privacidade</a>
@@ -251,7 +219,10 @@ carregarTransacoes();
   <div class="footer-copy">
     © 2026 Velvet. Todos os direitos reservados.
   </div>
+</footer>
 
-   <script src="/header.js"></script>
+<script src="/header.js"></script>
+
 </body>
 </html>
+
