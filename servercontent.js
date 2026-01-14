@@ -281,7 +281,10 @@ router.get(
           'conteudo' AS tipo,
           cp.cliente_id,
           cp.modelo_id,
-          cp.valor_total AS valor,
+
+          -- valor base informado - 30% Velvet
+          ROUND(cp.valor_base * 0.70, 2) AS valor_modelo,
+
           cp.status,
           cp.metodo_pagamento,
           cp.pago_em AS created_at,
@@ -296,7 +299,10 @@ router.get(
           'assinatura' AS tipo,
           vs.cliente_id,
           vs.modelo_id,
-          vs.valor_total AS valor,
+
+          -- valor assinatura informado - 30% Velvet
+          ROUND(vs.valor_assinatura * 0.70, 2) AS valor_modelo,
+
           CASE
             WHEN vs.ativo = true THEN 'ativa'
             ELSE 'cancelada'
@@ -319,6 +325,7 @@ router.get(
     }
   }
 );
+
 
 
 //ROTA DO LINK DE ACESSO A PLATAFORMA(CLIENTES INSTA TIKTOK)
