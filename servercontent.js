@@ -1116,45 +1116,6 @@ router.get("/api/cliente/transacoes", authCliente, async (req, res) => {
 });
 
 
-app.get("/api/modelo/ganhos-resumo", authModelo, async (req, res) => {
-  const modelo_id = req.user.id;
-
-  try {
-    // 🔹 MIDIAS
-    const midias = await db.query(`
-      SELECT
-        COALESCE(SUM(CASE WHEN DATE(pago_em) = CURRENT_DATE THEN valor_base END),0) AS hoje,
-        COALESCE(SUM(CASE WHEN DATE_TRUNC('month', pago_em) = DATE_TRUNC('month', CURRENT_DATE) THEN valor_base END),0) AS mes,
-        COALESCE(SUM(valor_base),0) AS total
-      FROM conteudo_pacotes
-      WHERE modelo_id = $1
-        AND status = 'pago'
-    `, [modelo_id]);
-
-    // 🔹 ASSINATURAS
-    const assinaturas = await db.query(`
-      SELECT
-        COALESCE(SUM(CASE WHEN DATE(created_at) = CURRENT_DATE THEN valor_assinatura END),0) AS hoje,
-        COALESCE(SUM(CASE WHEN DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE) THEN valor_assinatura END),0) AS mes,
-        COALESCE(SUM(valor_assinatura),0) AS total
-      FROM vip_subscriptions
-      WHERE modelo_id = $1
-        AND ativo = true
-    `, [modelo_id]);
-
-    res.json({
-      midias: midias.rows[0],
-      assinaturas: assinaturas.rows[0]
-    });
-
-  } catch (err) {
-    console.error("Erro ganhos-resumo:", err);
-    res.status(500).json({ error: "Erro ao carregar ganhos" });
-  }
-});
-
-
-
 
 
 
