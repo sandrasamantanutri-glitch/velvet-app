@@ -111,9 +111,17 @@ document.getElementById("btnVipCartao")?.addEventListener("click", () => {
 // ROLE VISUAL
 // ===============================
 function aplicarRoleNoBody() {
-  document.body.classList.remove("role-modelo", "role-cliente");
-  if (role === "modelo") document.body.classList.add("role-modelo");
-  if (role === "cliente") document.body.classList.add("role-cliente");
+  document.body.classList.remove("role-modelo", "role-cliente", "role-publico");
+  if (role === "modelo") {
+    document.body.classList.add("role-modelo");
+  } 
+  else if (role === "cliente") {
+    document.body.classList.add("role-cliente");
+  } 
+  else {
+    // VISITANTE
+    document.body.classList.add("role-publico");
+  }
 }
 
 // ===============================
@@ -243,9 +251,8 @@ function carregarFeed() {
 function carregarFeedPublico() {
   if (!listaMidias) return;
 
-  fetch(`/api/modelo/${modelo_id}/feed`, {
-    headers: { Authorization: "Bearer " + token }
-  })
+  fetch(`/api/modelo/publico/${modelo_id}/feed`)
+
     .then(r => r.json())
     .then(data => {
       // 🔎 SUPORTE A QUALQUER FORMATO

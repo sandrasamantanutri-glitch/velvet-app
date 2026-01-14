@@ -1134,6 +1134,16 @@ color: #7B2CFF !important;
   }
 }
 
+/* VISITANTE (perfil público) */
+body.role-publico .vipBtn {
+  display: inline-flex !important;
+}
+
+body.role-publico .btnChat {
+  display: inline-flex !important;
+}
+
+
 
 
 

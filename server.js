@@ -942,6 +942,30 @@ ORDER BY criado_em DESC
   }
 });
 
+app.get("/api/modelo/publico/:id/feed", async (req, res) => {
+  const modelo_id = Number(req.params.id);
+
+  if (!Number.isInteger(modelo_id) || modelo_id <= 0) {
+    return res.status(400).json([]);
+  }
+
+  try {
+    const result = await db.query(`
+      SELECT id, url, tipo
+      FROM conteudos
+      WHERE user_id = $1
+        AND tipo_conteudo = 'feed'
+      ORDER BY criado_em DESC
+    `, [modelo_id]);
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Erro feed público:", err);
+    res.status(500).json([]);
+  }
+});
+
+
 
 
 app.get("/api/modelo/me", auth, async (req, res) => {
