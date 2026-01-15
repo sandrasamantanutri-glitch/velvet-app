@@ -15,9 +15,6 @@ function logout() {
   window.location.href = "/index.html";
 }
 
-
-card.style.transform = "translateZ(0)";
-
 // ===============================
 // 📦 CONTEÚDOS — MODELO (LIMPO)
 // ===============================
