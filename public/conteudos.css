@@ -84,11 +84,12 @@ h1 {
 ====================================================== */
 #listaConteudos {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 14px;
   max-width: 1000px;
-  margin: 0 auto;
+  margin: 0 auto;        /* 🔑 centraliza o grid */
   padding: 0 16px;
+  justify-items: center; /* 🔑 centraliza os cards */
 }
 
 .conteudo-card {
