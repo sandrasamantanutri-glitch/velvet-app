@@ -18,10 +18,10 @@ let chatAtivo = null;
 const mensagensRenderizadas = new Set();
 const conteudosLiberados = new Set();
 let stripe;
-let elements = null;
+let elements;
 let paymentElement = null;
 let pagamentoAtual = {};
-stripe = Stripe("pk_live_51SlJ2zJb9evIocfiAuPn5wzOJqWqn4e356uasq214hRTPsdQGawPec3iIcD43ufhBvjQYMLKmKRMKnjwmC88iIT1006lA5XqGE");
+stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbzE");
 
 // 🔐 SOCKET AUTH
 socket.on("connect", () => {
