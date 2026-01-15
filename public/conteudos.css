@@ -1,7 +1,6 @@
-/* =========================
+/* ======================================================
    RESET / BASE
-========================= */
-
+====================================================== */
 * {
   box-sizing: border-box;
   font-family: "Poppins", sans-serif;
@@ -10,94 +9,123 @@
 body {
   margin: 0;
   background: #fff;
+  color: #333;
 }
 
-/* =========================
-   TEXTOS
-========================= */
-
-/* TÍTULO CONTEÚDOS EXCLUSIVOS */
+/* ======================================================
+   TÍTULOS E TEXTOS
+====================================================== */
 h1 {
   font-size: 36px;
   font-weight: 700;
   color: #7B2CFF;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   letter-spacing: -0.5px;
   text-align: center;
 }
+
 .section-desc {
-  margin-top: 6px;
+  max-width: 720px;
+  margin: 0 auto 24px;
+  font-size: 14px;
   color: #7B2CFF;
   text-align: center;
+  line-height: 1.4;
 }
 
 .section-subtitle {
   margin-top: 32px;
   font-size: 20px;
+  font-weight: 600;
   color: #7B2CFF;
   text-align: center;
 }
 
-/* =========================
+/* ======================================================
    UPLOAD
-========================= */
-
+====================================================== */
 .upload-box {
-  max-width: 1100px;
+  max-width: 1000px;
   margin: 0 auto;
+  padding: 0 16px;
   text-align: center;
 }
 
 .file-name {
-  font-size: 14px;
-  margin-left: 10px;
+  display: inline-block;
+  margin: 8px 0 0;
+  font-size: 13px;
   color: #7B2CFF;
 }
 
-/* =========================
+/* ======================================================
    BOTÕES
-========================= */
-
-.btn-primary {
+====================================================== */
+.btn-primary,
+.btn-file {
   background: linear-gradient(135deg, #7B2CFF, #4b1fb8);
   color: #fff;
   font-size: 13px;
   border: none;
-  padding: 8px 14px;
-  border-radius: 18px;
+  padding: 9px 16px;
+  border-radius: 20px;
   cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-/* =========================
-   GRID CONTEÚDOS (FIX)
-========================= */
+.btn-primary:hover,
+.btn-file:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(123,44,255,0.3);
+}
+
+/* ======================================================
+   GRID CONTEÚDOS (🔥 ESTÁVEL)
+====================================================== */
 #listaConteudos {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 14px;
   max-width: 1000px;
-  margin: 0 auto;
+  margin: 0 auto;        /* 🔑 centraliza o grid */
   padding: 0 16px;
+  justify-items: center; /* 🔑 centraliza os cards */
 }
 
-.conteudo-card img,
-.conteudo-card video {
+.conteudo-card {
+  position: relative;
   width: 100%;
-  aspect-ratio: 1 / 1 !important;
-  object-fit: cover !important;
-  background: #9E6BFF;   
+  aspect-ratio: 1 / 1;
   border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  background: #000;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .conteudo-card:hover {
-  box-shadow: 0 10px 26px rgba(123,44,255,0.18);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(123,44,255,0.18);
 }
 
+/* estado loading (resolve bug de renderização) */
+.conteudo-card.loading {
+  background: linear-gradient(135deg, #9E6BFF, #4b1fb8);
+}
 
-/* =========================
+/* mídia */
+.conteudo-card img,
+.conteudo-card video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ======================================================
    BOTÃO EXCLUIR
-========================= */
-
+====================================================== */
 .btn-excluir {
   position: absolute;
   top: 10px;
@@ -106,59 +134,42 @@ h1 {
   height: 34px;
   border-radius: 50%;
   border: none;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0,0,0,0.6);
   color: #fff;
   font-size: 18px;
   cursor: pointer;
   opacity: 0;
-  transition: all 0.25s ease;
   z-index: 2;
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
 }
 
 .conteudo-card:hover .btn-excluir {
   opacity: 1;
-  background: rgba(123, 44, 255, 0.85);
+  background: rgba(123,44,255,0.9);
 }
 
 .btn-excluir:hover {
   transform: scale(1.1);
 }
 
-.conteudo-card {
-  position: relative;
-  aspect-ratio: 1 / 1;
-  overflow: hidden;
-  border-radius: 14px;
-  background: #000;
-  cursor: pointer;
-
-  /* clean */
-  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
-}
-
-
-/* BOTÃO ESCOLHER FICHEIRO */
-.btn-file {
-  background: linear-gradient(135deg, #7B2CFF, #4b1fb8);
-  color: #fff;
-  font-size: 13px;
+/* ======================================================
+   SEPARADOR
+====================================================== */
+.separator {
   border: none;
-  padding: 8px 14px;
-  border-radius: 18px;
-  cursor: pointer;
+  border-top: 1px solid #e5e5e5;
+  margin: 30px auto;
+  max-width: 1000px;
 }
 
-.btn-file:hover {
-  background: #7B2CFF;
-  color: #fff;
-}
-
+/* ======================================================
+   MODAL MÍDIA
+====================================================== */
 .modalMidia {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.92);
+  background: rgba(0,0,0,0.92);
   z-index: 9999999;
-
   display: flex;
   align-items: center;
   justify-content: center;
@@ -180,53 +191,44 @@ h1 {
   max-width: 95vw;
   max-height: 95vh;
   object-fit: contain;
-  border-radius: 12px;
+  border-radius: 14px;
   background: #000;
 }
 
 .modalClose {
   position: fixed;
-  top: 20px;
-  right: 30px;
-  font-size: 34px;
+  top: 18px;
+  right: 22px;
+  font-size: 32px;
   color: #fff;
   cursor: pointer;
   z-index: 10000000;
 }
 
-/* ============================================
-   SEPARADOR
-============================================ */
-.separator {
-    border: none;
-    border-top: 1px solid #e5e5e5;
-    margin: 30px 0;
-}
-
-
-
-/* =========================================
-   MOBILE AJUSTES
-========================================= */
+/* ======================================================
+   MOBILE
+====================================================== */
 @media (max-width: 768px) {
 
-  /* TÍTULOS */
   h1 {
     font-size: 24px;
-    margin-bottom: 8px;
   }
 
   .section-desc {
-    font-size: 14px;
-    padding: 0 16px;
+    font-size: 13px;
+    padding: 0 12px;
   }
 
   .section-subtitle {
     font-size: 16px;
-    margin-top: 24px;
   }
 
-  /* BOTÃO EXCLUIR — sempre visível no mobile */
+  .btn-primary,
+  .btn-file {
+    font-size: 14px;
+    padding: 10px 18px;
+  }
+
   .btn-excluir {
     opacity: 1;
     width: 30px;
@@ -237,30 +239,9 @@ h1 {
     background: rgba(0,0,0,0.7);
   }
 
-  /* BOTÕES */
-  .btn-primary,
-  .btn-file {
-    font-size: 14px;
-    padding: 10px 18px;
-    border-radius: 22px;
-  }
-
-  /* UPLOAD */
-  .upload-box {
-    padding: 0 16px;
-  }
-
-  .file-name {
-    display: block;
-    margin: 8px 0 0;
-    font-size: 13px;
-  }
-
-  /* MODAL */
   .modalClose {
+    font-size: 26px;
     top: 12px;
-    right: 16px;
-    font-size: 28px;
+    right: 14px;
   }
 }
-

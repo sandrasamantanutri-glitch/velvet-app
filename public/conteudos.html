@@ -5,65 +5,49 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Conteúdos Exclusivos</title>
 
-
-<!-- Header global -->
 <link rel="stylesheet" href="/header.css" />
-
-<!-- Página Conteúdos -->
 <link rel="stylesheet" href="/conteudos.css" />
 </head>
 
 <body>
-<script>
-  if (!localStorage.getItem("token")) {
-    window.location.href = "/index.html";
-  }
-</script>
-
 
 <div id="header-container"></div>
 
-<!-- HEADER entra automaticamente via header.js -->
-
-
 <main class="profile-page">
-<section class="profile-content">
+  <section class="profile-content">
 
-<h1 class="section-title">Conteúdos Exclusivos</h1>
-<p class="section-desc">Gerencie e seus conteúdos exclusivos. Todo conteúdo desta pagina, o assinante só tem acesso, se for enviado via chat.</p>
+    <h1>Conteúdos Exclusivos</h1>
+    <p class="section-desc">
+      Conteúdos privados enviados apenas via chat para assinantes.
+    </p>
 
-<!-- Upload -->
-<div class="upload-box">
+    <div class="upload-box">
+      <input type="file" id="conteudoFile" accept="image/*,video/*" hidden />
+      <label for="conteudoFile" class="btn-file">Escolher ficheiro</label>
+      <span id="fileName" class="file-name">Nenhum ficheiro selecionado</span>
 
-  <!-- input real (escondido) -->
-  <input type="file" id="conteudoFile" accept="image/*,video/*" hidden />
-<label for="conteudoFile" class="btn-file">Escolher ficheiro</label>
-<span id="fileName" class="file-name">Nenhum ficheiro selecionado</span>
+      <button class="btn-primary" onclick="uploadConteudo()">
+        Enviar Conteúdo
+      </button>
+    </div>
 
-  <!-- botão enviar -->
-  <button class="btn-primary" onclick="uploadConteudo()"> Enviar Conteúdo</button>
+    <hr class="separator">
 
-</div>
+    <h2 class="section-subtitle">Meus Conteúdos</h2>
+    <div id="listaConteudos"></div>
 
-
-<hr class="separator">
-<!-- Lista -->
-<h2 class="section-subtitle">Meus Conteúdos</h2>
-<div id="listaConteudos" class="grid-conteudos"></div>
-</section>
+  </section>
 </main>
+
 <div id="modalMidia" class="modalMidia hidden">
   <span id="fecharModal" class="modalClose">×</span>
-
   <div class="modalContentWrapper">
     <img id="modalImg" class="modalMidiaContent" />
     <video id="modalVideo" class="modalMidiaContent" controls></video>
   </div>
 </div>
 
-<script src="/socket.io/socket.io.js"></script>
 <script src="/header.js"></script>
 <script src="/conteudos.js"></script>
-
 </body>
 </html>
