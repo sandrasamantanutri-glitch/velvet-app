@@ -52,10 +52,11 @@ async function carregarTransacoes() {
 
       div.innerHTML = `
         <div class="linha">
-          <strong>
-  #${t.tipo === "conteudo" ? "C" : "A"}-${t.id}
+<strong>
+  #${t.tipo === "conteudo" ? "C" : "A"}-${t.codigo}
 </strong>
-${t.tipo.toUpperCase()}
+${t.tipo === "conteudo" ? "Conteúdo" : "Assinatura"}
+
 
         </div>
 
@@ -64,7 +65,7 @@ ${t.tipo.toUpperCase()}
         </div>
 
         <div class="linha">
-          Valor recebido: ${emReais(t.valor_modelo)}
+          Valor: ${emReais(t.valor_modelo)}
         </div>
 
         <div class="linha">

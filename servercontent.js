@@ -276,41 +276,31 @@ router.get(
       const modelo_id = req.user.id;
 
       const sql = `
+        -- 📦 CONTEÚDOS
         SELECT
-          cp.id                    AS codigo,
-          'conteudo'               AS tipo,
-          cp.cliente_id,
-          cp.pago_em               AS created_at,
-
-          cp.valor_base            AS valor_bruto,
-          ROUND(cp.valor_base * 0.30, 2) AS velvet_fee,
-          ROUND(cp.valor_base * 0.70, 2) AS valor_modelo,
-
-          cp.status,
-          cp.message_id
+          cp.id              AS codigo,
+          'conteudo'         AS tipo,
+          cp.criado_em       AS created_at,
+          ROUND(cp.preco * 0.70, 2) AS valor,
+          cp.status          AS status,
+          cp.message_id      AS message_id
         FROM conteudo_pacotes cp
         WHERE cp.modelo_id = $1
           AND cp.status = 'pago'
 
         UNION ALL
 
+        -- ⭐ ASSINATURAS VIP
         SELECT
-          vs.id                    AS codigo,
-          'assinatura'             AS tipo,
-          vs.cliente_id,
-          vs.created_at,
-
-          vs.valor_assinatura      AS valor_bruto,
-          ROUND(vs.valor_assinatura * 0.30, 2) AS velvet_fee,
-          ROUND(vs.valor_assinatura * 0.70, 2) AS valor_modelo,
-
-          CASE
-            WHEN vs.ativo THEN 'ativa'
-            ELSE 'cancelada'
-          END AS status,
-          NULL AS message_id
+          vs.id              AS codigo,
+          'assinatura'       AS tipo,
+          vs.created_at      AS created_at,
+          ROUND(vs.valor_assinatura * 0.70, 2) AS valor,
+          'ativo'            AS status,
+          NULL               AS message_id
         FROM vip_subscriptions vs
         WHERE vs.modelo_id = $1
+          AND vs.ativo = true
 
         ORDER BY created_at DESC
       `;
@@ -319,13 +309,11 @@ router.get(
       res.json(result.rows);
 
     } catch (err) {
-      console.error("❌ Erro /api/transacoes (modelo):", err);
+      console.error("❌ Erro /api/transacoes:", err);
       res.status(500).json([]);
     }
   }
 );
-
-
 
 
 //ROTA DO LINK DE ACESSO A PLATAFORMA(CLIENTES INSTA TIKTOK)
