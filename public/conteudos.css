@@ -80,18 +80,38 @@ h1 {
   padding: 0 16px;
 }
 
+.conteudo-card {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: #000;
+}
+
 .conteudo-card img,
 .conteudo-card video {
   width: 100%;
-  height: 100%;          /* 🔑 ESSENCIAL */
+  height: 100%;
   object-fit: cover;
-  display: block;        /* 🔑 evita bug mobile */
-  border-radius: 14px;
-  background: #9E6BFF;
+  display: block;
 }
+
 
 .conteudo-card:hover {
   box-shadow: 0 10px 26px rgba(123,44,255,0.18);
+}
+
+.conteudo-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #9E6BFF, #4b1fb8);
+  z-index: 0;
+}
+
+.conteudo-card img {
+  position: relative;
+  z-index: 1;
 }
 
 
@@ -123,17 +143,6 @@ h1 {
 
 .btn-excluir:hover {
   transform: scale(1.1);
-}
-
-.conteudo-card {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  overflow: hidden;
-  border-radius: 14px;
-  background: #000;
-  cursor: pointer;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
 }
 
 

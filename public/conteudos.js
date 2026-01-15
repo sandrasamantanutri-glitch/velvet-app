@@ -15,6 +15,9 @@ function logout() {
   window.location.href = "/index.html";
 }
 
+
+card.style.transform = "translateZ(0)";
+
 // ===============================
 // 📦 CONTEÚDOS — MODELO (LIMPO)
 // ===============================
@@ -163,15 +166,20 @@ function abrirModalMidia(url, isVideo) {
 
   if (isVideo) {
     video.src = url;
-    video.style.display = "block";
-    video.play();
+    video.onloadeddata = () => {
+      video.style.display = "block";
+      video.play();
+    };
   } else {
     img.src = url;
-    img.style.display = "block";
+    img.onload = () => {
+      img.style.display = "block";
+    };
   }
 
   modal.classList.remove("hidden");
 }
+
 
 document.getElementById("fecharModal")?.addEventListener("click", () => {
   const modal = document.getElementById("modalMidia");
@@ -209,3 +217,4 @@ async function excluirConteudo(id) {
     alert("Erro ao excluir conteúdo");
   }
 }
+
