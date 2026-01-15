@@ -83,10 +83,11 @@ h1 {
 .conteudo-card img,
 .conteudo-card video {
   width: 100%;
-  aspect-ratio: 1 / 1 !important;
-  object-fit: cover !important;
-  background: #9E6BFF;   
+  height: 100%;          /* 🔑 ESSENCIAL */
+  object-fit: cover;
+  display: block;        /* 🔑 evita bug mobile */
   border-radius: 14px;
+  background: #9E6BFF;
 }
 
 .conteudo-card:hover {
@@ -126,13 +127,12 @@ h1 {
 
 .conteudo-card {
   position: relative;
+  width: 100%;
   aspect-ratio: 1 / 1;
   overflow: hidden;
   border-radius: 14px;
   background: #000;
   cursor: pointer;
-
-  /* clean */
   box-shadow: 0 6px 16px rgba(0,0,0,0.08);
 }
 
