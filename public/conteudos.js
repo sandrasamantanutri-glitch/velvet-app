@@ -163,20 +163,15 @@ function abrirModalMidia(url, isVideo) {
 
   if (isVideo) {
     video.src = url;
-    video.onloadeddata = () => {
-      video.style.display = "block";
-      video.play();
-    };
+    video.style.display = "block";
+    video.play();
   } else {
     img.src = url;
-    img.onload = () => {
-      img.style.display = "block";
-    };
+    img.style.display = "block";
   }
 
   modal.classList.remove("hidden");
 }
-
 
 document.getElementById("fecharModal")?.addEventListener("click", () => {
   const modal = document.getElementById("modalMidia");
@@ -214,4 +209,3 @@ async function excluirConteudo(id) {
     alert("Erro ao excluir conteúdo");
   }
 }
-
