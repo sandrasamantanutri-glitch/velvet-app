@@ -1189,10 +1189,18 @@ FROM (
   const r = result.rows[0];
 
   res.json({
-    hoje: { midias: r.hoje_midias, assinaturas: r.hoje_assinaturas },
-    mes: { midias: r.mes_midias, assinaturas: r.mes_assinaturas },
-    total: { midias: r.total_midias, assinaturas: r.total_assinaturas }
-  });
+  hoje: {
+    midias: r.hoje_midias,
+    assinaturas: r.hoje_assinaturas
+  },
+  mes: {
+    midias: r.mes_midias,
+    assinaturas: r.mes_assinaturas
+  },
+  total: {
+    acumulado_2026: r.acumulado_2026
+  }
+});
 });
 
 
