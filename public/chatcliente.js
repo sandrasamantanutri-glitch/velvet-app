@@ -18,7 +18,8 @@ let chatAtivo = null;
 const mensagensRenderizadas = new Set();
 const conteudosLiberados = new Set();
 let stripe;
-let elements;
+let elements = null;
+let paymentElement = null;
 let pagamentoAtual = {};
 stripe = Stripe("pk_live_51SlJ2zJb9evIocfiAuPn5wzOJqWqn4e356uasq214hRTPsdQGawPec3iIcD43ufhBvjQYMLKmKRMKnjwmC88iIT1006lA5XqGE");
 
@@ -806,12 +807,12 @@ async function pagarComCartao() {
   });
 
   const data = await res.json();
-  if (!res.ok) {
+  if (!res.ok || !data.clientSecret) {
     alert(data.error || "Erro no pagamento");
     return;
   }
 
-  // valores
+  // 💰 valores
   document.getElementById("cartaoValorConteudo").innerText =
     valorBRL(data.valor_base);
 
@@ -824,27 +825,78 @@ async function pagarComCartao() {
   document.getElementById("cartaoValorTotal").innerText =
     valorBRL(data.valor_total);
 
-  // Stripe Elements
+  // 🔥 LIMPA STRIPE ANTIGO (CRÍTICO)
+  if (paymentElement) {
+    paymentElement.unmount();
+    paymentElement = null;
+  }
+
+  document.getElementById("payment-element").innerHTML = "";
+
+  // 🔥 cria NOVO elements
   elements = stripe.elements({
     clientSecret: data.clientSecret
   });
 
-  const paymentElement = elements.create("payment");
+  paymentElement = elements.create("payment");
   paymentElement.mount("#payment-element");
 
   document.getElementById("paymentModal").classList.remove("hidden");
 }
 
-function fecharPagamento() {
-  const modal = document.getElementById("paymentModal");
-  if (modal) modal.classList.add("hidden");
+document.getElementById("confirmarPagamento").onclick = async () => {
+  if (!elements) {
+    alert("Pagamento não inicializado");
+    return;
+  }
 
-  // limpa Stripe Elements
-  const el = document.getElementById("payment-element");
-  if (el) el.innerHTML = "";
+  const { error } = await stripe.confirmPayment({
+    elements,
+    redirect: "if_required"
+  });
 
-  elements = null;
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  // ✅ sucesso
+  document.getElementById("paymentModal").classList.add("hidden");
+
+  if (paymentElement) {
+    paymentElement.unmount();
+    paymentElement = null;
+  }
+
+  document.getElementById("payment-element").innerHTML = "";
+
+  if (pagamentoAtual.message_id) {
+    abrirConteudoSeguro(pagamentoAtual.message_id);
+    pagamentoAtual = {};
+  }
+};
+
+
+function copiarPix() {
+  const textarea = document.getElementById("pixCopia");
+
+  if (!textarea || !textarea.value) {
+    alert("Código Pix indisponível");
+    return;
+  }
+
+  textarea.select();
+  textarea.setSelectionRange(0, 99999); // mobile
+
+  try {
+    document.execCommand("copy");
+    alert("Código Pix copiado com sucesso!");
+  } catch (err) {
+    console.error("Erro ao copiar Pix:", err);
+    alert("Não foi possível copiar o código Pix");
+  }
 }
+
 
 
 

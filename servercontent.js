@@ -276,41 +276,31 @@ router.get(
       const modelo_id = req.user.id;
 
       const sql = `
+        -- 📦 CONTEÚDOS
         SELECT
-          cp.id                    AS codigo,
-          'conteudo'               AS tipo,
-          cp.cliente_id,
-          cp.pago_em               AS created_at,
-
-          cp.valor_base            AS valor_bruto,
-          ROUND(cp.valor_base * 0.30, 2) AS velvet_fee,
-          ROUND(cp.valor_base * 0.70, 2) AS valor_modelo,
-
-          cp.status,
-          cp.message_id
+          cp.id              AS codigo,
+          'conteudo'         AS tipo,
+          cp.criado_em       AS created_at,
+          ROUND(cp.preco * 0.70, 2) AS valor,
+          cp.status          AS status,
+          cp.message_id      AS message_id
         FROM conteudo_pacotes cp
         WHERE cp.modelo_id = $1
           AND cp.status = 'pago'
 
         UNION ALL
 
+        -- ⭐ ASSINATURAS VIP
         SELECT
-          vs.id                    AS codigo,
-          'assinatura'             AS tipo,
-          vs.cliente_id,
-          vs.created_at,
-
-          vs.valor_assinatura      AS valor_bruto,
-          ROUND(vs.valor_assinatura * 0.30, 2) AS velvet_fee,
-          ROUND(vs.valor_assinatura * 0.70, 2) AS valor_modelo,
-
-          CASE
-            WHEN vs.ativo THEN 'ativa'
-            ELSE 'cancelada'
-          END AS status,
-          NULL AS message_id
+          vs.id              AS codigo,
+          'assinatura'       AS tipo,
+          vs.created_at      AS created_at,
+          ROUND(vs.valor_assinatura * 0.70, 2) AS valor,
+          'ativo'            AS status,
+          NULL               AS message_id
         FROM vip_subscriptions vs
         WHERE vs.modelo_id = $1
+          AND vs.ativo = true
 
         ORDER BY created_at DESC
       `;
@@ -319,13 +309,11 @@ router.get(
       res.json(result.rows);
 
     } catch (err) {
-      console.error("❌ Erro /api/transacoes (modelo):", err);
+      console.error("❌ Erro /api/transacoes:", err);
       res.status(500).json([]);
     }
   }
 );
-
-
 
 
 //ROTA DO LINK DE ACESSO A PLATAFORMA(CLIENTES INSTA TIKTOK)
@@ -1121,56 +1109,88 @@ router.get("/api/cliente/transacoes", authCliente, async (req, res) => {
 //   }
 // });
 
-
 router.get("/api/modelo/financeiro", authModelo, async (req, res) => {
   const modelo_id = req.user.id;
 
   const result = await db.query(`
     SELECT
-      COALESCE(SUM(CASE 
-        WHEN tipo = 'midia'
-         AND DATE(created_at) = CURRENT_DATE
-        THEN valor_modelo END),0) AS hoje_midias,
+  -- 🔹 HOJE
+  COALESCE(SUM(CASE
+    WHEN tipo = 'conteudo'
+     AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
+         = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+    THEN valor_modelo
+  END), 0) AS hoje_midias,
 
-      COALESCE(SUM(CASE 
-        WHEN tipo = 'assinatura'
-         AND DATE(created_at) = CURRENT_DATE
-        THEN valor_modelo END),0) AS hoje_assinaturas,
+  COALESCE(SUM(CASE
+    WHEN tipo = 'assinatura'
+     AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
+         = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+    THEN valor_modelo
+  END), 0) AS hoje_assinaturas,
 
-      COALESCE(SUM(CASE 
-        WHEN tipo = 'midia'
-         AND DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE)
-        THEN valor_modelo END),0) AS mes_midias,
+  -- 🔹 MÊS ATUAL
+  COALESCE(SUM(CASE
+    WHEN tipo = 'conteudo'
+     AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
+         = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+    THEN valor_modelo
+  END), 0) AS mes_midias,
 
-      COALESCE(SUM(CASE 
-        WHEN tipo = 'assinatura'
-         AND DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE)
-        THEN valor_modelo END),0) AS mes_assinaturas,
+  COALESCE(SUM(CASE
+    WHEN tipo = 'assinatura'
+     AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
+         = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+    THEN valor_modelo
+  END), 0) AS mes_assinaturas,
 
-      COALESCE(SUM(CASE WHEN tipo = 'midia' THEN valor_modelo END),0) AS total_midias,
-      COALESCE(SUM(CASE WHEN tipo = 'assinatura' THEN valor_modelo END),0) AS total_assinaturas
-    FROM transacoes
-    WHERE modelo_id = $1
-      AND status = 'normal'
+  -- 🔹 ACUMULADO 2026
+  COALESCE(SUM(CASE
+    WHEN EXTRACT(YEAR FROM created_at AT TIME ZONE 'America/Sao_Paulo') = 2026
+    THEN valor_modelo
+  END), 0) AS acumulado_2026
+
+FROM (
+  -- 📦 CONTEÚDOS
+  SELECT
+    cp.modelo_id,
+    cp.criado_em AS created_at,
+    'conteudo' AS tipo,
+    ROUND(cp.preco * 0.70, 2) AS valor_modelo
+  FROM conteudo_pacotes cp
+  WHERE cp.status = 'pago'
+    AND cp.modelo_id = $1
+
+  UNION ALL
+
+  -- ⭐ ASSINATURAS
+  SELECT
+    vs.modelo_id,
+    vs.created_at,
+    'assinatura' AS tipo,
+    ROUND(vs.valor_assinatura * 0.70, 2) AS valor_modelo
+  FROM vip_subscriptions vs
+  WHERE vs.modelo_id = $1
+) t;
   `, [modelo_id]);
 
   const r = result.rows[0];
 
   res.json({
-    hoje: {
-      midias: Number(r.hoje_midias),
-      assinaturas: Number(r.hoje_assinaturas)
-    },
-    mes: {
-      midias: Number(r.mes_midias),
-      assinaturas: Number(r.mes_assinaturas)
-    },
-    total: {
-      midias: Number(r.total_midias),
-      assinaturas: Number(r.total_assinaturas)
-    }
-  });
+  hoje: {
+    midias: r.hoje_midias,
+    assinaturas: r.hoje_assinaturas
+  },
+  mes: {
+    midias: r.mes_midias,
+    assinaturas: r.mes_assinaturas
+  },
+  total: {
+    acumulado_2026: r.acumulado_2026
+  }
 });
+});
+
 
 
 
