@@ -14,8 +14,8 @@ if (token && role) {
 // ===============================
 // ESTADO GLOBAL
 // ===============================
-let modalMode = "login";          // login | registe
-let pendingAction = null;         // login | register
+let modalMode = "login"; 
+let pendingAction = null; 
 
 // ===============================
 // AGE GATE
@@ -201,7 +201,6 @@ async function register() {
       nome: email.split("@")[0],
       ageConfirmed: true,
 
-      // 🔥 AQUI ESTÁ O SEGREDO
       ref,   // modelo que trouxe
       src    // instagram / tiktok
     })
@@ -220,7 +219,7 @@ async function register() {
 window.openLegalModal = function (event, url) {
   event.preventDefault();
 
-  closeAllModals(); // fecha login / age gate se abertos
+  closeAllModals();
 
   const modal = document.getElementById("legalModal");
   const iframe = document.getElementById("modalFrame");
@@ -247,6 +246,6 @@ window.closeLegalModal = function () {
 window.logout = function () {
   localStorage.removeItem("token");
   localStorage.removeItem("role");
-  localStorage.removeItem("ageConfirmed"); // 🔞 força confirmar de novo
-  window.location.href = "/index.html";
+  localStorage.removeItem("ageConfirmed"); 
+  window.location.href = "https://www.velvet.lat";
 };
