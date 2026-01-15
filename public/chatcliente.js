@@ -847,6 +847,40 @@ function fecharPagamento() {
 }
 
 
+function copiarPix() {
+  const input = document.getElementById("pixCopia");
+
+  if (!input || !input.value) {
+    alert("Código Pix indisponível");
+    return;
+  }
+
+  // método moderno
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(input.value)
+      .then(() => {
+        alert("Código Pix copiado!");
+      })
+      .catch(() => {
+        fallbackCopiarPix(input);
+      });
+  } else {
+    fallbackCopiarPix(input);
+  }
+}
+
+function fallbackCopiarPix(input) {
+  input.removeAttribute("readonly");
+  input.select();
+  input.setSelectionRange(0, 99999); // mobile
+  document.execCommand("copy");
+  input.setAttribute("readonly", true);
+
+  alert("Código Pix copiado!");
+}
+
+
+
 
 
 
