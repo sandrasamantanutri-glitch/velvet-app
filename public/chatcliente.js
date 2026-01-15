@@ -18,10 +18,9 @@ let chatAtivo = null;
 const mensagensRenderizadas = new Set();
 const conteudosLiberados = new Set();
 let stripe;
-let elements = null;
-let paymentElement = null;
+let elements;
 let pagamentoAtual = {};
-stripe = Stripe("pk_live_51SlJ2zJb9evIocfiAuPn5wzOJqWqn4e356uasq214hRTPsdQGawPec3iIcD43ufhBvjQYMLKmKRMKnjwmC88iIT1006lA5XqGE");
+stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
 
 // 🔐 SOCKET AUTH
 socket.on("connect", () => {
@@ -807,12 +806,12 @@ async function pagarComCartao() {
   });
 
   const data = await res.json();
-  if (!res.ok || !data.clientSecret) {
+  if (!res.ok) {
     alert(data.error || "Erro no pagamento");
     return;
   }
 
-  // 💰 valores
+  // valores
   document.getElementById("cartaoValorConteudo").innerText =
     valorBRL(data.valor_base);
 
@@ -825,76 +824,59 @@ async function pagarComCartao() {
   document.getElementById("cartaoValorTotal").innerText =
     valorBRL(data.valor_total);
 
-  // 🔥 LIMPA STRIPE ANTIGO (CRÍTICO)
-  if (paymentElement) {
-    paymentElement.unmount();
-    paymentElement = null;
-  }
-
-  document.getElementById("payment-element").innerHTML = "";
-
-  // 🔥 cria NOVO elements
+  // Stripe Elements
   elements = stripe.elements({
     clientSecret: data.clientSecret
   });
 
-  paymentElement = elements.create("payment");
+  const paymentElement = elements.create("payment");
   paymentElement.mount("#payment-element");
 
   document.getElementById("paymentModal").classList.remove("hidden");
 }
 
-document.getElementById("confirmarPagamento").onclick = async () => {
-  if (!elements) {
-    alert("Pagamento não inicializado");
-    return;
-  }
+function fecharPagamento() {
+  const modal = document.getElementById("paymentModal");
+  if (modal) modal.classList.add("hidden");
 
-  const { error } = await stripe.confirmPayment({
-    elements,
-    redirect: "if_required"
-  });
+  // limpa Stripe Elements
+  const el = document.getElementById("payment-element");
+  if (el) el.innerHTML = "";
 
-  if (error) {
-    alert(error.message);
-    return;
-  }
-
-  // ✅ sucesso
-  document.getElementById("paymentModal").classList.add("hidden");
-
-  if (paymentElement) {
-    paymentElement.unmount();
-    paymentElement = null;
-  }
-
-  document.getElementById("payment-element").innerHTML = "";
-
-  if (pagamentoAtual.message_id) {
-    abrirConteudoSeguro(pagamentoAtual.message_id);
-    pagamentoAtual = {};
-  }
-};
+  elements = null;
+}
 
 
 function copiarPix() {
-  const textarea = document.getElementById("pixCopia");
+  const input = document.getElementById("pixCopia");
 
-  if (!textarea || !textarea.value) {
+  if (!input || !input.value) {
     alert("Código Pix indisponível");
     return;
   }
 
-  textarea.select();
-  textarea.setSelectionRange(0, 99999); // mobile
-
-  try {
-    document.execCommand("copy");
-    alert("Código Pix copiado com sucesso!");
-  } catch (err) {
-    console.error("Erro ao copiar Pix:", err);
-    alert("Não foi possível copiar o código Pix");
+  // método moderno
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(input.value)
+      .then(() => {
+        alert("Código Pix copiado!");
+      })
+      .catch(() => {
+        fallbackCopiarPix(input);
+      });
+  } else {
+    fallbackCopiarPix(input);
   }
+}
+
+function fallbackCopiarPix(input) {
+  input.removeAttribute("readonly");
+  input.select();
+  input.setSelectionRange(0, 99999); // mobile
+  document.execCommand("copy");
+  input.setAttribute("readonly", true);
+
+  alert("Código Pix copiado!");
 }
 
 
