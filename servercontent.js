@@ -1126,47 +1126,64 @@ router.get("/api/modelo/financeiro", authModelo, async (req, res) => {
 
   const result = await db.query(`
     SELECT
-      COALESCE(SUM(CASE WHEN tipo='conteudo'
-        AND DATE(created_at)=CURRENT_DATE
-        THEN valor_modelo END),0) AS hoje_midias,
+  -- 🔹 HOJE
+  COALESCE(SUM(CASE
+    WHEN tipo = 'conteudo'
+     AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
+         = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+    THEN valor_modelo
+  END), 0) AS hoje_midias,
 
-      COALESCE(SUM(CASE WHEN tipo='assinatura'
-        AND DATE(created_at)=CURRENT_DATE
-        THEN valor_modelo END),0) AS hoje_assinaturas,
+  COALESCE(SUM(CASE
+    WHEN tipo = 'assinatura'
+     AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
+         = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+    THEN valor_modelo
+  END), 0) AS hoje_assinaturas,
 
-      COALESCE(SUM(CASE WHEN tipo='conteudo'
-        AND DATE_TRUNC('month', created_at)=DATE_TRUNC('month', CURRENT_DATE)
-        THEN valor_modelo END),0) AS mes_midias,
+  -- 🔹 MÊS ATUAL
+  COALESCE(SUM(CASE
+    WHEN tipo = 'conteudo'
+     AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
+         = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+    THEN valor_modelo
+  END), 0) AS mes_midias,
 
-      COALESCE(SUM(CASE WHEN tipo='assinatura'
-        AND DATE_TRUNC('month', created_at)=DATE_TRUNC('month', CURRENT_DATE)
-        THEN valor_modelo END),0) AS mes_assinaturas,
+  COALESCE(SUM(CASE
+    WHEN tipo = 'assinatura'
+     AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
+         = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+    THEN valor_modelo
+  END), 0) AS mes_assinaturas,
 
-      COALESCE(SUM(CASE WHEN tipo='conteudo' THEN valor_modelo END),0) AS total_midias,
-      COALESCE(SUM(CASE WHEN tipo='assinatura' THEN valor_modelo END),0) AS total_assinaturas
+  -- 🔹 ACUMULADO 2026
+  COALESCE(SUM(CASE
+    WHEN EXTRACT(YEAR FROM created_at AT TIME ZONE 'America/Sao_Paulo') = 2026
+    THEN valor_modelo
+  END), 0) AS acumulado_2026
 
-    FROM (
-      -- QUERY BASE DAS TRANSAÇÕES
-      SELECT
-        cp.id AS codigo,
-        'conteudo' AS tipo,
-        cp.modelo_id,
-        cp.pago_em AS created_at,
-        ROUND(cp.valor_base * 0.70, 2) AS valor_modelo
-      FROM conteudo_pacotes cp
-      WHERE cp.modelo_id = $1 AND cp.status='pago'
+FROM (
+  -- 📦 CONTEÚDOS
+  SELECT
+    cp.modelo_id,
+    cp.criado_em AS created_at,
+    'conteudo' AS tipo,
+    ROUND(cp.preco * 0.70, 2) AS valor_modelo
+  FROM conteudo_pacotes cp
+  WHERE cp.status = 'pago'
+    AND cp.modelo_id = $1
 
-      UNION ALL
+  UNION ALL
 
-      SELECT
-        vs.id AS codigo,
-        'assinatura' AS tipo,
-        vs.modelo_id,
-        vs.created_at,
-        ROUND(vs.valor_assinatura * 0.70, 2) AS valor_modelo
-      FROM vip_subscriptions vs
-      WHERE vs.modelo_id = $1
-    ) t
+  -- ⭐ ASSINATURAS
+  SELECT
+    vs.modelo_id,
+    vs.created_at,
+    'assinatura' AS tipo,
+    ROUND(vs.valor_assinatura * 0.70, 2) AS valor_modelo
+  FROM vip_subscriptions vs
+  WHERE vs.modelo_id = $1
+) t;
   `, [modelo_id]);
 
   const r = result.rows[0];

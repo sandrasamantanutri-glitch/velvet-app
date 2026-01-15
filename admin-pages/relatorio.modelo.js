@@ -37,7 +37,7 @@ const acumulado =
   Number(data.total.assinaturas || 0);
 
 document.getElementById("acumuladoAnterior").innerText =
-  `R$ ${acumulado.toFixed(2)}`;
+  `R$ ${Number(data.total.acumulado_2026 || 0).toFixed(2)}`;
 
   } catch (err) {
     console.error("Erro carregarResumoModelo:", err);
