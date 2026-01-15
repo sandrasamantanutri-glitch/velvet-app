@@ -816,10 +816,9 @@ async function pagarComCartao() {
     clientSecret: data.clientSecret
   });
 
+  document.getElementById("paymentModal").classList.remove("hidden");
   paymentElement = elements.create("payment");
   paymentElement.mount("#payment-element");
-
-  document.getElementById("paymentModal").classList.remove("hidden");
 }
 
 document.getElementById("confirmarPagamento").onclick = async () => {
