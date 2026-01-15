@@ -20,7 +20,7 @@ const conteudosLiberados = new Set();
 let stripe;
 let elements;
 let pagamentoAtual = {};
-stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
+stripe = Stripe("pk_live_51SlJ2zJb9evIocfiAuPn5wzOJqWqn4e356uasq214hRTPsdQGawPec3iIcD43ufhBvjQYMLKmKRMKnjwmC88iIT1006lA5XqGE");
 
 // 🔐 SOCKET AUTH
 socket.on("connect", () => {
@@ -845,6 +845,27 @@ function fecharPagamento() {
 
   elements = null;
 }
+
+function copiarPix() {
+  const textarea = document.getElementById("pixCopia");
+
+  if (!textarea || !textarea.value) {
+    alert("Código Pix indisponível");
+    return;
+  }
+
+  textarea.select();
+  textarea.setSelectionRange(0, 99999); // mobile
+
+  try {
+    document.execCommand("copy");
+    alert("Código Pix copiado com sucesso!");
+  } catch (err) {
+    console.error("Erro ao copiar Pix:", err);
+    alert("Não foi possível copiar o código Pix");
+  }
+}
+
 
 
 
