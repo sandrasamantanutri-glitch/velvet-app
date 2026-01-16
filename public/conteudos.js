@@ -94,56 +94,28 @@ async function uploadConteudo() {
 // ===============================
 // LISTAR CONTEÚDOS (PADRÃO PROFILE)
 // ===============================
-async function listarConteudos() {
-  const res = await fetch("/api/conteudos/me", {
-    headers: { Authorization: "Bearer " + token }
-  });
-
-  if (!res.ok) {
-    alert("Erro ao carregar conteúdos");
-    return;
-  }
-
-  const conteudos = await res.json();
-  lista.innerHTML = "";
-
-  if (!conteudos.length) {
-    lista.innerHTML = "<p>Nenhum conteúdo enviado ainda.</p>";
-    return;
-  }
-
-  conteudos.forEach(c => adicionarMidia(c));
-}
-
-// ===============================
-// ADICIONAR MÍDIA (IGUAL PROFILE)
-// ===============================
 function adicionarMidia(conteudo) {
-  const { id, url, tipo } = conteudo;
+  const { id, url } = conteudo;
 
   const card = document.createElement("div");
   card.className = "midiaCard";
 
- const ext = url.split(".").pop().toLowerCase();
+  const ext = url.split(".").pop().toLowerCase();
   const isVideo = ["mp4", "webm", "ogg", "mov"].includes(ext);
 
-  // 🔹 GRID SEMPRE USA IMAGEM
   const img = document.createElement("img");
   img.className = "midiaThumb";
 
   if (isVideo) {
-  // 🔥 thumbnail REAL do vídeo (Cloudinary)
-  img.src = url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
+    img.src = url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
+    img.onerror = () => {
+      img.src = "/assets/capaDefault.jpg";
+    };
+    card.classList.add("video");
+  } else {
+    img.src = url;
+  }
 
-  // fallback se algum vídeo MUITO antigo não gerar thumb
-  img.onerror = () => {
-    img.src = "/assets/capaDefault.jpg";
-  };
-
-  card.classList.add("video");
- } else {
-  img.src = url;
-}
   const btnExcluir = document.createElement("button");
   btnExcluir.className = "btn-excluir";
   btnExcluir.textContent = "✕";
@@ -151,9 +123,8 @@ function adicionarMidia(conteudo) {
     e.stopPropagation();
     excluirConteudo(id);
   };
-  
+
   card.appendChild(img);
-  card.appendChild(media);
   card.appendChild(btnExcluir);
   lista.appendChild(card);
 }
