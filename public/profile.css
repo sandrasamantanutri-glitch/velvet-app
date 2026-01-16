@@ -1128,19 +1128,6 @@ body.role-publico .btnChat {
 }
 
 
-.midiaCard.video::after {
-  content: "▶";
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 48px;
-  color: white;
-  background: rgba(0,0,0,0.2);
-}
-
-
 
 
 
