@@ -455,12 +455,25 @@ function adicionarMidia(id, url) {
   card.className = "midiaCard";
 
   const ext = url.split(".").pop().toLowerCase();
-  const isVideo = ["mp4","webm","ogg"].includes(ext);
+  const isVideo = ["mp4", "webm", "ogg", "mov"].includes(ext);
 
-  const el = document.createElement(isVideo ? "video" : "img");
-  el.src = url;
-  el.className = "midiaThumb";
-  if (isVideo) el.muted = true;
+  // 🔹 GRID SEMPRE USA IMAGEM
+  const img = document.createElement("img");
+  img.className = "midiaThumb";
+
+  if (isVideo) {
+  // 🔥 thumbnail REAL do vídeo (Cloudinary)
+  img.src = url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
+  img.onerror = () => {
+    img.src = "/assets/capaDefault.jpg";
+  };
+
+  card.classList.add("video");
+ } else {
+
+  img.src = url;
+}
+card.appendChild(img);
 
   const deveBloquear =
     role !== "modelo" && window.__CLIENTE_VIP__ !== true;
@@ -468,30 +481,34 @@ function adicionarMidia(id, url) {
   if (deveBloquear) {
     card.classList.add("bloqueada");
 
- card.addEventListener("click", () => {
-  if (!role) {
-    abrirPopupVelvet({ tipo: "login" });
+    card.onclick = () => {
+      if (!role) {
+        abrirPopupVelvet({ tipo: "login" });
+      } else {
+        abrirPopupVelvet({ tipo: "vip" });
+      }
+    };
   } else {
-    abrirPopupVelvet({ tipo: "vip" });
+    // 👉 clique abre modal
+    card.onclick = () => {
+      abrirModalMidia(url, isVideo);
+    };
   }
- });
-  } else {
-    el.addEventListener("click", () =>
-      abrirModalMidia(url, isVideo)
-    );
-  }
-  card.appendChild(el);
-  if (role === "modelo") {
+
+// ❌ botão excluir (só modelo)
+if (role === "modelo") {
   const btnExcluir = document.createElement("button");
   btnExcluir.className = "btnExcluirMidia";
   btnExcluir.textContent = "Excluir";
-
-  btnExcluir.onclick = () => excluirMidia(id, card);
+  btnExcluir.onclick = (e) => {
+    e.stopPropagation(); // 🔥 ESSENCIAL
+    excluirMidia(id, card);
+  };
   card.appendChild(btnExcluir);
 }
+
   listaMidias.appendChild(card);
 }
-
 
 function abrirModalMidia(url, isVideo) {
   const modal = document.getElementById("modalMidia");

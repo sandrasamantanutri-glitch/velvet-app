@@ -1,7 +1,6 @@
 /* =========================
    RESET / BASE
 ========================= */
-
 * {
   box-sizing: border-box;
   font-family: "Poppins", sans-serif;
@@ -13,22 +12,21 @@ body {
 }
 
 /* =========================
-   TEXTOS
+   TÍTULOS
 ========================= */
-
-/* TÍTULO CONTEÚDOS EXCLUSIVOS */
-h1 {
+h1.section-title {
   font-size: 36px;
   font-weight: 700;
   color: #7B2CFF;
-  margin-bottom: 12px;
-  letter-spacing: -0.5px;
   text-align: center;
+  margin-bottom: 10px;
 }
+
 .section-desc {
-  margin-top: 6px;
-  color: #7B2CFF;
   text-align: center;
+  color: #7B2CFF;
+  font-size: 14px;
+  margin-bottom: 24px;
 }
 
 .section-subtitle {
@@ -41,15 +39,14 @@ h1 {
 /* =========================
    UPLOAD
 ========================= */
-
 .upload-box {
   max-width: 1100px;
-  margin: 0 auto;
+  margin: 0 auto 20px;
   text-align: center;
 }
 
 .file-name {
-  font-size: 14px;
+  font-size: 13px;
   margin-left: 10px;
   color: #7B2CFF;
 }
@@ -57,102 +54,101 @@ h1 {
 /* =========================
    BOTÕES
 ========================= */
-
-.btn-primary {
+.btn-primary,
+.btn-file {
   background: linear-gradient(135deg, #7B2CFF, #4b1fb8);
   color: #fff;
   font-size: 13px;
   border: none;
-  padding: 8px 14px;
+  padding: 8px 16px;
   border-radius: 18px;
   cursor: pointer;
 }
 
+.btn-primary:hover,
+.btn-file:hover {
+  opacity: 0.9;
+}
+
 /* =========================
-   GRID CONTEÚDOS (FIX)
+   GRID DE CONTEÚDOS
+   (IGUAL AO PROFILE)
 ========================= */
 #listaConteudos {
+  max-width: 1100px;
+  margin: 30px auto;
+  padding: 0 20px;
+
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 0 16px;
+  gap: 20px;
 }
 
-.conteudo-card img,
-.conteudo-card video {
-  width: 100%;
-  aspect-ratio: 1 / 1 !important;
-  object-fit: cover !important;
-  background: #9E6BFF;   
+/* =========================
+   CARD PADRÃO
+========================= */
+.midiaCard {
+  position: relative;
+  background: #fff;
   border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.conteudo-card:hover {
-  box-shadow: 0 10px 26px rgba(123,44,255,0.18);
+.midiaCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(123,44,255,0.18);
 }
 
+/* =========================
+   MÍDIA (CHAVE PARA SAFARI)
+========================= */
+.midiaThumb {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  display: block;
+  background: #9E6BFF;
+}
 
 /* =========================
    BOTÃO EXCLUIR
 ========================= */
-
 .btn-excluir {
   position: absolute;
   top: 10px;
   right: 10px;
+
   width: 34px;
   height: 34px;
   border-radius: 50%;
   border: none;
-  background: rgba(0, 0, 0, 0.6);
+
+  background: rgba(0, 0, 0, 0.65);
   color: #fff;
   font-size: 18px;
+
   cursor: pointer;
   opacity: 0;
   transition: all 0.25s ease;
   z-index: 2;
 }
 
-.conteudo-card:hover .btn-excluir {
+.midiaCard:hover .btn-excluir {
   opacity: 1;
-  background: rgba(123, 44, 255, 0.85);
+  background: rgba(123, 44, 255, 0.9);
 }
 
 .btn-excluir:hover {
   transform: scale(1.1);
 }
 
-.conteudo-card {
-  position: relative;
-  aspect-ratio: 1 / 1;
-  overflow: hidden;
-  border-radius: 14px;
-  background: #000;
-  cursor: pointer;
-
-  /* clean */
-  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
-}
-
-
-/* BOTÃO ESCOLHER FICHEIRO */
-.btn-file {
-  background: linear-gradient(135deg, #7B2CFF, #4b1fb8);
-  color: #fff;
-  font-size: 13px;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 18px;
-  cursor: pointer;
-}
-
-.btn-file:hover {
-  background: #7B2CFF;
-  color: #fff;
-}
-
+/* =========================
+   MODAL DE MÍDIA
+========================= */
 .modalMidia {
   position: fixed;
   inset: 0;
@@ -184,6 +180,7 @@ h1 {
   background: #000;
 }
 
+/* botão fechar */
 .modalClose {
   position: fixed;
   top: 20px;
@@ -194,39 +191,38 @@ h1 {
   z-index: 10000000;
 }
 
-/* ============================================
+/* =========================
    SEPARADOR
-============================================ */
+========================= */
 .separator {
-    border: none;
-    border-top: 1px solid #e5e5e5;
-    margin: 30px 0;
+  border: none;
+  border-top: 1px solid #e5e5e5;
+  margin: 30px 0;
 }
 
-
-
-/* =========================================
-   MOBILE AJUSTES
-========================================= */
+/* =========================
+   MOBILE
+========================= */
 @media (max-width: 768px) {
 
-  /* TÍTULOS */
-  h1 {
+  h1.section-title {
     font-size: 24px;
-    margin-bottom: 8px;
   }
 
   .section-desc {
-    font-size: 14px;
+    font-size: 13px;
     padding: 0 16px;
   }
 
   .section-subtitle {
     font-size: 16px;
-    margin-top: 24px;
   }
 
-  /* BOTÃO EXCLUIR — sempre visível no mobile */
+  #listaConteudos {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+
   .btn-excluir {
     opacity: 1;
     width: 30px;
@@ -234,33 +230,34 @@ h1 {
     font-size: 16px;
     top: 8px;
     right: 8px;
-    background: rgba(0,0,0,0.7);
   }
+}
 
-  /* BOTÕES */
-  .btn-primary,
-  .btn-file {
-    font-size: 14px;
-    padding: 10px 18px;
-    border-radius: 22px;
-  }
+/* =========================
+   MOBILE — CENTRALIZAR UPLOAD
+========================= */
+@media (max-width: 768px) {
 
-  /* UPLOAD */
   .upload-box {
-    padding: 0 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .upload-box .btn-file,
+  .upload-box .btn-primary {
+    width: 100%;
+    max-width: 260px;
+    text-align: center;
   }
 
   .file-name {
-    display: block;
-    margin: 8px 0 0;
+    margin: 0;
     font-size: 13px;
-  }
-
-  /* MODAL */
-  .modalClose {
-    top: 12px;
-    right: 16px;
-    font-size: 28px;
+    text-align: center;
+    word-break: break-word;
+    max-width: 260px;
   }
 }
 

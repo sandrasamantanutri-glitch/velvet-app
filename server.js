@@ -1828,9 +1828,7 @@ app.post(
 // ===============================
 // 🗑 EXCLUIR CONTEÚDO (MODELO)
 // ===============================
-// ===============================
-// 🗑 EXCLUIR CONTEÚDO (MODELO)
-// ===============================
+
 app.delete(
   "/api/conteudos/:id",
   auth,
@@ -2392,10 +2390,6 @@ app.post("/api/track-acesso", async (req, res) => {
     res.status(500).json({ error: "Erro ao registrar acesso" });
   }
 });
-
-
-
-
 
 // ===============================
 // 🔥 MIDDLEWARE GLOBAL DE ERRO

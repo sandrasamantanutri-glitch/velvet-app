@@ -1,71 +1,108 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Conteúdos Exclusivos</title>
+  <meta charset="UTF-8" />
+  <title>Conteúdos Exclusivos | Velvet</title>
 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<!-- Header global -->
-<link rel="stylesheet" href="/header.css" />
+  <!-- Fonte -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
 
-<!-- Página Conteúdos -->
-<link rel="stylesheet" href="/conteudos.css" />
+  <!-- Header global -->
+  <link rel="stylesheet" href="/header.css" />
+
+  <!-- Página Conteúdos -->
+  <link rel="stylesheet" href="/conteudos.css" />
 </head>
 
 <body>
-<script>
-  if (!localStorage.getItem("token")) {
-    window.location.href = "/index.html";
-  }
-</script>
 
+  <!-- 🔒 PROTEÇÃO -->
+  <script>
+    if (!localStorage.getItem("token")) {
+      window.location.href = "/index.html";
+    }
+  </script>
 
-<div id="header-container"></div>
+  <!-- HEADER -->
+  <div id="header-container"></div>
 
-<!-- HEADER entra automaticamente via header.js -->
+  <!-- CONTEÚDO -->
+  <main class="profile-page">
+    <section class="profile-content">
 
+      <!-- TÍTULO -->
+      <h1 class="section-title">Conteúdos Exclusivos</h1>
+      <p class="section-desc">
+        Gerencie seus conteúdos exclusivos.  
+        Este conteúdo só é acessível quando enviado via chat.
+      </p>
 
-<main class="profile-page">
-<section class="profile-content">
+      <!-- UPLOAD -->
+      <div class="upload-box">
 
-<h1 class="section-title">Conteúdos Exclusivos</h1>
-<p class="section-desc">Gerencie e seus conteúdos exclusivos. Todo conteúdo desta pagina, o assinante só tem acesso, se for enviado via chat.</p>
+        <!-- input real -->
+        <input
+          type="file"
+          id="conteudoFile"
+          accept="image/*,video/*"
+          hidden
+        />
 
-<!-- Upload -->
-<div class="upload-box">
+        <label for="conteudoFile" class="btn-file">
+          Escolher ficheiro
+        </label>
 
-  <!-- input real (escondido) -->
-  <input type="file" id="conteudoFile" accept="image/*,video/*" hidden />
+        <span id="fileName" class="file-name">
+          Nenhum ficheiro selecionado
+        </span>
 
-<input type="file" id="conteudoFile" hidden>
-<label for="conteudoFile" class="btn-file">Escolher ficheiro</label>
-<span id="fileName" class="file-name">Nenhum ficheiro selecionado</span>
+        <button class="btn-primary" onclick="uploadConteudo()">
+          Enviar Conteúdo
+        </button>
 
-  <!-- botão enviar -->
-  <button class="btn-primary" onclick="uploadConteudo()"> Enviar Conteúdo</button>
+      </div>
 
-</div>
+      <hr class="separator" />
 
+      <!-- LISTA -->
+      <h2 class="section-subtitle">Meus Conteúdos</h2>
 
-<hr class="separator">
-<!-- Lista -->
-<h2 class="section-subtitle">Meus Conteúdos</h2>
-<div id="listaConteudos" class="grid-conteudos"></div>
-</section>
-</main>
-<div id="modalMidia" class="modalMidia hidden">
-  <span id="fecharModal" class="modalClose">×</span>
+      <!-- GRID (PADRÃO PROFILE) -->
+      <div id="listaConteudos"></div>
 
-  <div class="modalContentWrapper">
-    <img id="modalImg" class="modalMidiaContent" />
-    <video id="modalVideo" class="modalMidiaContent" controls></video>
+    </section>
+  </main>
+
+  <!-- ===============================
+       MODAL VISUALIZAÇÃO DE MÍDIA
+  ================================ -->
+  <div id="modalMidia" class="modalMidia hidden">
+    <span id="fecharModal" class="modalClose">&times;</span>
+
+    <div class="modalContentWrapper">
+      <img
+        id="modalImg"
+        class="modalMidiaContent"
+        style="display:none;"
+      />
+      <video
+        id="modalVideo"
+        class="modalMidiaContent"
+        controls
+        style="display:none;"
+      ></video>
+    </div>
   </div>
-</div>
 
-<script src="/socket.io/socket.io.js"></script>
-<script src="/header.js"></script>
-<script src="/conteudos.js"></script>
+  <!-- SCRIPTS -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/header.js"></script>
+  <script src="/conteudos.js"></script>
 
 </body>
 </html>

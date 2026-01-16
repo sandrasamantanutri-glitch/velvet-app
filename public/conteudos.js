@@ -1,5 +1,5 @@
 // ===============================
-// AUTH GUARD — CLIENT HOME
+// AUTH GUARD
 // ===============================
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
@@ -9,122 +9,102 @@ if (!token) {
   throw new Error("Sem token");
 }
 
-
-function logout() {
-  localStorage.clear();
-  window.location.href = "/index.html";
-}
+// ===============================
+// ESTADO
+// ===============================
+let modelo_id = null;
 
 // ===============================
-// 📦 CONTEÚDOS — MODELO (LIMPO)
+// DOM
 // ===============================
-
-// ---------- ESTADO ----------
-let modelo = null;
-
-// ---------- ELEMENTOS DOM ----------
-const fileInput = document.getElementById("conteudoFile");
+const fileInput    = document.getElementById("conteudoFile");
 const fileNameSpan = document.getElementById("fileName");
-const lista = document.getElementById("listaConteudos");
+const lista        = document.getElementById("listaConteudos");
 
-// ---------- INIT ----------
-document.addEventListener("DOMContentLoaded", init);
-
-async function init() {
+// ===============================
+// INIT
+// ===============================
+document.addEventListener("DOMContentLoaded", async () => {
   await carregarModelo();
-  listarConteudos();
   bindFileInput();
-}
+  listarConteudos();
+});
 
-// ---------- MODELO (via JWT) ----------
+// ===============================
+// MODELO (JWT)
+// ===============================
 async function carregarModelo() {
   const res = await fetch("/api/me", {
-    headers: {
-      Authorization: "Bearer " + localStorage.getItem("token")
-    }
+    headers: { Authorization: "Bearer " + token }
   });
 
   const user = await res.json();
+
   if (user.role !== "modelo") {
-  alert("Acesso restrito à modelo");
-  window.location.href = "/index.html";
-  throw new Error("Usuário não é modelo");
-}
-  modelo = user.id;
-console.log("📦 Conteúdos da modelo:", user.nome);
+    alert("Acesso restrito à modelo");
+    window.location.href = "/index.html";
+    throw new Error("Usuário não é modelo");
+  }
+
+  modelo_id = user.id;
 }
 
-// ---------- INPUT FILE ----------
+// ===============================
+// INPUT FILE
+// ===============================
 function bindFileInput() {
   fileInput.addEventListener("change", () => {
-    if (fileInput.files.length > 0) {
-      fileNameSpan.textContent = fileInput.files[0].name;
-    } else {
-      fileNameSpan.textContent = "Nenhum ficheiro selecionado";
-    }
+    fileNameSpan.textContent =
+      fileInput.files.length
+        ? fileInput.files[0].name
+        : "Nenhum ficheiro selecionado";
   });
 }
 
-// ---------- UPLOAD ----------
+// ===============================
+// UPLOAD
+// ===============================
 async function uploadConteudo() {
   const file = fileInput.files[0];
   if (!file) {
-    alert("Selecione um ficheiro primeiro");
+    alert("Selecione um ficheiro");
     return;
   }
 
   const fd = new FormData();
   fd.append("conteudo", file);
 
-  try {
-    const res = await fetch("/api/conteudos/upload", {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token")
-      },
-      body: fd
-    });
-
-    if (!res.ok) {
-      const txt = await res.text();
-      alert(txt || "Erro ao enviar conteúdo");
-      return;
-    }
-
-    const data = await res.json();
-    if (!data.success) {
-      alert("Erro ao enviar conteúdo");
-      return;
-    }
-
-    // ✅ reset UI
-    fileInput.value = "";
-    fileNameSpan.textContent = "Nenhum ficheiro selecionado";
-
-    // 🔄 recarrega lista
-    listarConteudos();
-
-  } catch (err) {
-    console.error("Erro uploadConteudo:", err);
-    alert("Erro ao enviar conteúdo");
-  }
-}
-
-async function listarConteudos() {
-  const res = await fetch("/api/conteudos/me", {
-    headers: {
-      Authorization: "Bearer " + localStorage.getItem("token")
-    }
+  const res = await fetch("/api/conteudos/upload", {
+    method: "POST",
+    headers: { Authorization: "Bearer " + token },
+    body: fd
   });
 
   if (!res.ok) {
-    const texto = await res.text();
-    alert(texto);
+    alert("Erro ao enviar conteúdo");
+    return;
+  }
+
+  fileInput.value = "";
+  fileNameSpan.textContent = "Nenhum ficheiro selecionado";
+
+  listarConteudos();
+}
+
+// ===============================
+// LISTAR CONTEÚDOS
+// ===============================
+async function listarConteudos() {
+  const res = await fetch("/api/conteudos/me", {
+    headers: { Authorization: "Bearer " + token }
+  });
+
+  if (!res.ok) {
+    alert("Erro ao carregar conteúdos");
     return;
   }
 
   const conteudos = await res.json();
-
   lista.innerHTML = "";
 
   if (!conteudos.length) {
@@ -132,30 +112,58 @@ async function listarConteudos() {
     return;
   }
 
-  conteudos.forEach(c => {
-    const card = document.createElement("div");
-    card.className = "conteudo-card";
-
-    const media =
-      c.tipo === "video"
-        ? `<video src="${c.url}" muted onclick="abrirModalMidia('${c.url}', true)"></video>`
-        : `<img src="${c.url}" onclick="abrirModalMidia('${c.url}', false)"/>`;
-
-    card.innerHTML = `
-      ${media}
-      <button class="btn-excluir"
-        onclick="event.stopPropagation(); excluirConteudo('${c.id}')">
-        ✕
-      </button>
-    `;
-
-    lista.appendChild(card);
-  });
+  conteudos.forEach(c => adicionarMidia(c));
 }
 
+// ===============================
+// ADICIONAR MÍDIA (IGUAL PROFILE)
+// ===============================
+function adicionarMidia(conteudo) {
+  const { id, url, tipo } = conteudo;
+  const isVideo = tipo === "video";
+
+  const card = document.createElement("div");
+  card.className = "midiaCard";
+
+  const img = document.createElement("img");
+  img.className = "midiaThumb";
+
+  if (isVideo) {
+    // 🎥 vídeo → thumbnail
+    img.src = url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
+    img.onerror = () => {
+      img.src = "/assets/capaDefault.jpg";
+    };
+  } else {
+    // 🖼️ imagem normal
+    img.src = url;
+  }
+
+  img.addEventListener("click", () => {
+    abrirModalMidia(url, isVideo);
+  });
+
+  const btnExcluir = document.createElement("button");
+  btnExcluir.className = "btn-excluir";
+  btnExcluir.textContent = "✕";
+  btnExcluir.onclick = (e) => {
+    e.stopPropagation();
+    excluirConteudo(id);
+  };
+
+  card.appendChild(img);
+  card.appendChild(btnExcluir);
+
+  // 🔥 ESTA LINHA ESTAVA FALTANDO
+  lista.appendChild(card);
+}
+
+// ===============================
+// MODAL
+// ===============================
 function abrirModalMidia(url, isVideo) {
   const modal = document.getElementById("modalMidia");
-  const img = document.getElementById("modalImg");
+  const img   = document.getElementById("modalImg");
   const video = document.getElementById("modalVideo");
 
   img.style.display = "none";
@@ -182,30 +190,20 @@ document.getElementById("fecharModal")?.addEventListener("click", () => {
   modal.classList.add("hidden");
 });
 
+// ===============================
+// EXCLUIR
+// ===============================
 async function excluirConteudo(id) {
-  if (!confirm("Tem certeza que deseja excluir este conteúdo?")) {
-    return;
-  }
+  if (!confirm("Excluir este conteúdo?")) return;
 
-  try {
-    const res = await fetch(`/api/conteudos/${id}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token")
-      }
-    });
+  const res = await fetch(`/api/conteudos/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: "Bearer " + token }
+  });
 
-    if (!res.ok) {
-      const txt = await res.text();
-      alert(txt || "Erro ao excluir conteúdo");
-      return;
-    }
-
-    // 🔄 atualiza lista
+  if (res.ok) {
     listarConteudos();
-
-  } catch (err) {
-    console.error("Erro excluirConteudo:", err);
+  } else {
     alert("Erro ao excluir conteúdo");
   }
 }
