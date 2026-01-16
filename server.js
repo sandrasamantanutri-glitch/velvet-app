@@ -1883,6 +1883,8 @@ app.delete(
   }
 );
 
+const gerarThumbnail = require("./gerarThumbnail");
+
 app.post(
   "/uploadMidia",
   auth,
@@ -1891,56 +1893,42 @@ app.post(
   async (req, res) => {
     try {
       const isVideo = req.file.mimetype.startsWith("video");
-
-      // 1️⃣ upload da mídia (imagem ou vídeo)
-      const mediaResult = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload_stream(
-          {
-            folder: `velvet/${req.user.id}/midias`,
-            resource_type: isVideo ? "video" : "image"
-          },
-          (err, result) => (err ? reject(err) : resolve(result))
-        ).end(req.file.buffer);
-      });
+      const filePath = req.file.path;
 
       let thumbUrl = null;
 
-      // 2️⃣ se for vídeo → gerar thumbnail
+      // 🔥 gera miniatura REAL
       if (isVideo) {
-        const thumbResult = await cloudinary.uploader.upload(
-          mediaResult.secure_url + ".jpg",
-          {
-            resource_type: "image",
-            folder: `velvet/${req.user.id}/thumbs`,
-            eager: [
-              {
-                width: 600,
-                height: 600,
-                crop: "fill",
-                start_offset: "1"
-              }
-            ]
-          }
-        );
+        const thumbPath = await gerarThumbnail(filePath);
 
-        thumbUrl = thumbResult.secure_url;
+        const thumbUpload = await cloudinary.uploader.upload(thumbPath, {
+          folder: `velvet/${req.user.id}/thumbs`,
+          resource_type: "image"
+        });
+
+        thumbUrl = thumbUpload.secure_url;
       }
 
-      // 3️⃣ salvar no banco
+      // upload da mídia original
+      const mediaUpload = await cloudinary.uploader.upload(filePath, {
+        folder: `velvet/${req.user.id}/midias`,
+        resource_type: isVideo ? "video" : "image"
+      });
+
+      // salva no banco
       await db.query(
         `INSERT INTO conteudos (user_id, url, tipo, thumb_url)
          VALUES ($1, $2, $3, $4)`,
         [
           req.user.id,
-          mediaResult.secure_url,
+          mediaUpload.secure_url,
           isVideo ? "video" : "image",
           thumbUrl
         ]
       );
 
-      // 4️⃣ retornar tudo
       res.json({
-        url: mediaResult.secure_url,
+        url: mediaUpload.secure_url,
         thumb_url: thumbUrl,
         tipo: isVideo ? "video" : "image"
       });
@@ -1951,7 +1939,6 @@ app.post(
     }
   }
 );
-
 
 app.post("/api/contato", async (req, res) => {
   try {
