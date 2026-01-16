@@ -174,8 +174,28 @@ async function carregarPerfil() {
   aplicarPerfilNoDOM(modelo);
 }
 
+function carregarFeedPublico() {
+  if (!listaMidias) return;
+
+  fetch(`/api/modelo/publico/${modelo_id}/feed`)
+    .then(r => r.json())
+    .then(data => {
+      const feed = Array.isArray(data)
+        ? data
+        : data.feed || data.midias || [];
+
+      listaMidias.innerHTML = "";
+
+      feed.forEach(item => {
+        adicionarMidia(item.id, item.url, item.tipo === "video");
+      });
+    })
+    .catch(err => {
+      console.error("Erro ao carregar feed:", err);
+    });
+}
+
 async function carregarPerfilPublico() {
-  // PERFIL PÚBLICO → SEM TOKEN
   const res = await fetch(`/api/modelo/publico/${modelo_id}`);
 
   if (!res.ok) {
@@ -184,45 +204,40 @@ async function carregarPerfilPublico() {
   }
 
   const modelo = await res.json();
-
   aplicarPerfilNoDOM(modelo);
 
-  // ===============================
-// STATUS VIP (CLIENTE LOGADO)
-// ===============================
-if (role === "cliente") {
-  try {
-    const vipRes = await fetch(`/api/vip/status/${modelo_id}`, {
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token")
-      }
-    });
+  if (role === "cliente") {
+    try {
+      const vipRes = await fetch(`/api/vip/status/${modelo_id}`, {
+        headers: {
+          Authorization: "Bearer " + localStorage.getItem("token")
+        }
+      });
 
-    if (vipRes.ok) {
-      const vipData = await vipRes.json();
-      window.__CLIENTE_VIP__ = vipData.vip === true;
+      if (vipRes.ok) {
+        const vipData = await vipRes.json();
+        window.__CLIENTE_VIP__ = vipData.vip === true;
 
-      if (window.__CLIENTE_VIP__) {
-        if (btnVip) {
+        if (window.__CLIENTE_VIP__ && btnVip) {
           btnVip.textContent = "VIP ativo";
           btnVip.disabled = true;
         }
       }
+    } catch (err) {
+      console.error("Erro ao verificar VIP:", err);
+      window.__CLIENTE_VIP__ = false;
     }
-  } catch (err) {
-    console.error("Erro ao verificar VIP:", err);
+  } else {
     window.__CLIENTE_VIP__ = false;
-  }
-} else {
-  window.__CLIENTE_VIP__ = false;
 
-  if (btnVip) {
-    btnVip.textContent = "Torne-se VIP";
-    btnVip.disabled = false;
+    if (btnVip) {
+      btnVip.textContent = "Torne-se VIP";
+      btnVip.disabled = false;
+    }
   }
-}
 
-carregarFeedPublico();
+  // 👇 CHAMA O FEED UMA ÚNICA VEZ
+  carregarFeedPublico();
 }
 
 // ===============================
@@ -265,41 +280,6 @@ btnVip?.addEventListener("click", async () => {
     alert("Erro ao verificar status VIP");
   }
 });
-
-// ===============================
-// FEED
-// ===============================
-function carregarFeed() {
-  if (!listaMidias) return;
-
-  fetch("/api/feed/me", {
-    headers: { Authorization: "Bearer " + token }
-  })
-    .then(r => r.json())
-    .then(feed => {
-      if (!Array.isArray(feed)) return;
-      listaMidias.innerHTML = "";
-      feed.forEach(item => adicionarMidia(item.id, item.url));
-    });
-}
-
-function carregarFeedPublico() {
-  if (!listaMidias) return;
-
-  fetch(`/api/modelo/publico/${modelo_id}/feed`)
-
-    .then(r => r.json())
-    .then(data => {
-      // 🔎 SUPORTE A QUALQUER FORMATO
-      const feed = Array.isArray(data) ? data : data.feed || data.midias || [];
-
-      listaMidias.innerHTML = "";
-
-      feed.forEach(item => {
-        adicionarMidia(item.id, item.url);
-      });
-    });
-}
 
 function fecharEscolha() {
   document
