@@ -450,23 +450,27 @@ function iniciarUploads() {
 // ===============================
 // MIDIA
 // ===============================
-function adicionarMidia(id, url, thumbUrl) {
+function adicionarMidia(id, url) {
   const card = document.createElement("div");
   card.className = "midiaCard";
 
   const ext = url.split(".").pop().toLowerCase();
-  const isVideo = ["mp4", "webm", "ogg"].includes(ext);
+  const isVideo = ["mp4", "webm", "ogg", "mov"].includes(ext);
 
   // 🔹 GRID SEMPRE USA IMAGEM
-  const el = document.createElement("img");
-  el.className = "midiaThumb";
+  const img = document.createElement("img");
+  img.className = "midiaThumb";
 
   if (isVideo) {
-    el.src = "/assets/video-thumb.jpg"; // thumbnail padrão
+    // 👉 vídeo aparece como FOTO no grid
+    img.src = "/assets/video-thumb.jpg"; // imagem fixa
     card.classList.add("video");
   } else {
-    el.src = url;
+    // 👉 imagem normal
+    img.src = url;
   }
+
+  card.appendChild(img);
 
   const deveBloquear =
     role !== "modelo" && window.__CLIENTE_VIP__ !== true;
@@ -474,35 +478,31 @@ function adicionarMidia(id, url, thumbUrl) {
   if (deveBloquear) {
     card.classList.add("bloqueada");
 
-    card.addEventListener("click", () => {
+    card.onclick = () => {
       if (!role) {
         abrirPopupVelvet({ tipo: "login" });
       } else {
         abrirPopupVelvet({ tipo: "vip" });
       }
-    });
-
+    };
   } else {
-    // ✅ clique SEMPRE no card
-    card.addEventListener("click", () => {
+    // 👉 clique abre modal
+    card.onclick = () => {
       abrirModalMidia(url, isVideo);
-    });
+    };
   }
 
-  card.appendChild(el);
-
+  // ❌ botão excluir (só modelo)
   if (role === "modelo") {
     const btnExcluir = document.createElement("button");
     btnExcluir.className = "btnExcluirMidia";
     btnExcluir.textContent = "Excluir";
-
     btnExcluir.onclick = () => excluirMidia(id, card);
     card.appendChild(btnExcluir);
   }
 
   listaMidias.appendChild(card);
 }
-
 
 function abrirModalMidia(url, isVideo) {
   const modal = document.getElementById("modalMidia");
