@@ -471,6 +471,9 @@ function adicionarMidia(id, url) {
   };
 
   card.classList.add("video");
+ } else {
+
+  img.src = url;
 }
 card.appendChild(img);
 
