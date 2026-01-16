@@ -124,16 +124,25 @@ function adicionarMidia(conteudo) {
 
   const card = document.createElement("div");
   card.className = "midiaCard";
+  const img = document.createElement("img");
+img.className = "midiaThumb";
 
-  const media = document.createElement(isVideo ? "video" : "img");
-  media.src = url;
-  media.className = "midiaThumb";
+if (isVideo) {
+  // 🎥 vídeo aparece como FOTO (thumbnail)
+  img.src = url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
 
-  if (isVideo) media.muted = true;
+  img.onerror = () => {
+    img.src = "/assets/capaDefault.jpg";
+  };
+} else {
+  // 🖼️ imagem normal
+  img.src = url;
+}
 
-  media.addEventListener("click", () =>
-    abrirModalMidia(url, isVideo)
-  );
+// clique abre modal
+img.addEventListener("click", () =>
+  abrirModalMidia(url, isVideo)
+);
 
   const btnExcluir = document.createElement("button");
   btnExcluir.className = "btn-excluir";
@@ -143,9 +152,8 @@ function adicionarMidia(conteudo) {
     excluirConteudo(id);
   };
 
-  card.appendChild(media);
+  card.appendChild(img);
   card.appendChild(btnExcluir);
-  lista.appendChild(card);
 }
 
 // ===============================
