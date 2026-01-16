@@ -94,27 +94,46 @@ async function uploadConteudo() {
 // ===============================
 // LISTAR CONTEÚDOS (PADRÃO PROFILE)
 // ===============================
+async function listarConteudos() {
+  const res = await fetch("/api/conteudos/me", {
+    headers: { Authorization: "Bearer " + token }
+  });
+
+  if (!res.ok) {
+    alert("Erro ao carregar conteúdos");
+    return;
+  }
+
+  const conteudos = await res.json();
+  lista.innerHTML = "";
+
+  if (!conteudos.length) {
+    lista.innerHTML = "<p>Nenhum conteúdo enviado ainda.</p>";
+    return;
+  }
+
+  conteudos.forEach(c => adicionarMidia(c));
+}
+
+// ===============================
+// ADICIONAR MÍDIA (IGUAL PROFILE)
+// ===============================
 function adicionarMidia(conteudo) {
-  const { id, url } = conteudo;
+  const { id, url, tipo } = conteudo;
+  const isVideo = tipo === "video";
 
   const card = document.createElement("div");
   card.className = "midiaCard";
 
-  const ext = url.split(".").pop().toLowerCase();
-  const isVideo = ["mp4", "webm", "ogg", "mov"].includes(ext);
+  const media = document.createElement(isVideo ? "video" : "img");
+  media.src = url;
+  media.className = "midiaThumb";
 
-  const img = document.createElement("img");
-  img.className = "midiaThumb";
+  if (isVideo) media.muted = true;
 
-  if (isVideo) {
-    img.src = url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
-    img.onerror = () => {
-      img.src = "/assets/capaDefault.jpg";
-    };
-    card.classList.add("video");
-  } else {
-    img.src = url;
-  }
+  media.addEventListener("click", () =>
+    abrirModalMidia(url, isVideo)
+  );
 
   const btnExcluir = document.createElement("button");
   btnExcluir.className = "btn-excluir";
@@ -124,7 +143,7 @@ function adicionarMidia(conteudo) {
     excluirConteudo(id);
   };
 
-  card.appendChild(img);
+  card.appendChild(media);
   card.appendChild(btnExcluir);
   lista.appendChild(card);
 }
