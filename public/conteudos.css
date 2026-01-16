@@ -232,3 +232,32 @@ h1.section-title {
     right: 8px;
   }
 }
+
+/* =========================
+   MOBILE — CENTRALIZAR UPLOAD
+========================= */
+@media (max-width: 768px) {
+
+  .upload-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .upload-box .btn-file,
+  .upload-box .btn-primary {
+    width: 100%;
+    max-width: 260px;
+    text-align: center;
+  }
+
+  .file-name {
+    margin: 0;
+    font-size: 13px;
+    text-align: center;
+    word-break: break-word;
+    max-width: 260px;
+  }
+}
+
