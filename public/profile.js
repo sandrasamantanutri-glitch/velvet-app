@@ -130,36 +130,8 @@ function aplicarRoleNoBody() {
 }
 
 // ===============================
-// FEED PRIVADO (MODELO)
+// PERFIL
 // ===============================
-function carregarFeed() {
-  if (!listaMidias) return;
-
-  fetch("/api/feed/me", {
-    headers: {
-      Authorization: "Bearer " + localStorage.getItem("token")
-    }
-  })
-    .then(r => r.json())
-    .then(feed => {
-      if (!Array.isArray(feed)) return;
-
-      listaMidias.innerHTML = "";
-
-      feed.forEach(item => {
-        adicionarMidia(
-          item.id,
-          item.url,
-          item.tipo === "video"
-        );
-      });
-    })
-    .catch(err => {
-      console.error("Erro ao carregar feed privado:", err);
-    });
-}
-
-
 function iniciarPerfil() {
 
   // MODELO (perfil próprio)
@@ -202,28 +174,8 @@ async function carregarPerfil() {
   aplicarPerfilNoDOM(modelo);
 }
 
-function carregarFeedPublico() {
-  if (!listaMidias) return;
-
-  fetch(`/api/modelo/publico/${modelo_id}/feed`)
-    .then(r => r.json())
-    .then(data => {
-      const feed = Array.isArray(data)
-        ? data
-        : data.feed || data.midias || [];
-
-      listaMidias.innerHTML = "";
-
-      feed.forEach(item => {
-        adicionarMidia(item.id, item.url, item.tipo === "video");
-      });
-    })
-    .catch(err => {
-      console.error("Erro ao carregar feed:", err);
-    });
-}
-
 async function carregarPerfilPublico() {
+  // PERFIL PÚBLICO → SEM TOKEN
   const res = await fetch(`/api/modelo/publico/${modelo_id}`);
 
   if (!res.ok) {
@@ -232,40 +184,45 @@ async function carregarPerfilPublico() {
   }
 
   const modelo = await res.json();
+
   aplicarPerfilNoDOM(modelo);
 
-  if (role === "cliente") {
-    try {
-      const vipRes = await fetch(`/api/vip/status/${modelo_id}`, {
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("token")
-        }
-      });
+  // ===============================
+// STATUS VIP (CLIENTE LOGADO)
+// ===============================
+if (role === "cliente") {
+  try {
+    const vipRes = await fetch(`/api/vip/status/${modelo_id}`, {
+      headers: {
+        Authorization: "Bearer " + localStorage.getItem("token")
+      }
+    });
 
-      if (vipRes.ok) {
-        const vipData = await vipRes.json();
-        window.__CLIENTE_VIP__ = vipData.vip === true;
+    if (vipRes.ok) {
+      const vipData = await vipRes.json();
+      window.__CLIENTE_VIP__ = vipData.vip === true;
 
-        if (window.__CLIENTE_VIP__ && btnVip) {
+      if (window.__CLIENTE_VIP__) {
+        if (btnVip) {
           btnVip.textContent = "VIP ativo";
           btnVip.disabled = true;
         }
       }
-    } catch (err) {
-      console.error("Erro ao verificar VIP:", err);
-      window.__CLIENTE_VIP__ = false;
     }
-  } else {
+  } catch (err) {
+    console.error("Erro ao verificar VIP:", err);
     window.__CLIENTE_VIP__ = false;
-
-    if (btnVip) {
-      btnVip.textContent = "Torne-se VIP";
-      btnVip.disabled = false;
-    }
   }
+} else {
+  window.__CLIENTE_VIP__ = false;
 
-  // 👇 CHAMA O FEED UMA ÚNICA VEZ
-  carregarFeedPublico();
+  if (btnVip) {
+    btnVip.textContent = "Torne-se VIP";
+    btnVip.disabled = false;
+  }
+}
+
+carregarFeedPublico();
 }
 
 // ===============================
@@ -308,6 +265,41 @@ btnVip?.addEventListener("click", async () => {
     alert("Erro ao verificar status VIP");
   }
 });
+
+// ===============================
+// FEED
+// ===============================
+function carregarFeed() {
+  if (!listaMidias) return;
+
+  fetch("/api/feed/me", {
+    headers: { Authorization: "Bearer " + token }
+  })
+    .then(r => r.json())
+    .then(feed => {
+      if (!Array.isArray(feed)) return;
+      listaMidias.innerHTML = "";
+      feed.forEach(item => adicionarMidia(item.id, item.url));
+    });
+}
+
+function carregarFeedPublico() {
+  if (!listaMidias) return;
+
+  fetch(`/api/modelo/publico/${modelo_id}/feed`)
+
+    .then(r => r.json())
+    .then(data => {
+      // 🔎 SUPORTE A QUALQUER FORMATO
+      const feed = Array.isArray(data) ? data : data.feed || data.midias || [];
+
+      listaMidias.innerHTML = "";
+
+      feed.forEach(item => {
+        adicionarMidia(item.id, item.url);
+      });
+    });
+}
 
 function fecharEscolha() {
   document
@@ -458,34 +450,23 @@ function iniciarUploads() {
 // ===============================
 // MIDIA
 // ===============================
-function adicionarMidia(id, url) {
+function adicionarMidia(id, url, thumbUrl) {
   const card = document.createElement("div");
   card.className = "midiaCard";
 
   const ext = url.split(".").pop().toLowerCase();
-  const isVideo = ["mp4","webm","ogg"].includes(ext);
+  const isVideo = ["mp4", "webm", "ogg"].includes(ext);
 
-  let el;
+  // 🔹 GRID SEMPRE USA IMAGEM
+  const el = document.createElement("img");
+  el.className = "midiaThumb";
 
-if (isVideo) {
-  el = document.createElement("video");
-  el.src = url;
-
-  // 🔑 CHAVES PARA SAFARI / MOBILE
-  el.muted = true;
-  el.playsInline = true;
-  el.preload = "metadata";
-  el.autoplay = true;
-  el.loop = true;
-
-  // força render
-  el.style.display = "block";
-} else {
-  el = document.createElement("img");
-  el.src = url;
-}
-
-el.className = "midiaThumb";
+  if (isVideo) {
+    el.src = "/assets/video-thumb.jpg"; // thumbnail padrão
+    card.classList.add("video");
+  } else {
+    el.src = url;
+  }
 
   const deveBloquear =
     role !== "modelo" && window.__CLIENTE_VIP__ !== true;
@@ -493,27 +474,32 @@ el.className = "midiaThumb";
   if (deveBloquear) {
     card.classList.add("bloqueada");
 
- card.addEventListener("click", () => {
-  if (!role) {
-    abrirPopupVelvet({ tipo: "login" });
-  } else {
-    abrirPopupVelvet({ tipo: "vip" });
-  }
- });
-  } else {
-    el.addEventListener("click", () =>
-      abrirModalMidia(url, isVideo)
-    );
-  }
-  card.appendChild(el);
-  if (role === "modelo") {
-  const btnExcluir = document.createElement("button");
-  btnExcluir.className = "btnExcluirMidia";
-  btnExcluir.textContent = "Excluir";
+    card.addEventListener("click", () => {
+      if (!role) {
+        abrirPopupVelvet({ tipo: "login" });
+      } else {
+        abrirPopupVelvet({ tipo: "vip" });
+      }
+    });
 
-  btnExcluir.onclick = () => excluirMidia(id, card);
-  card.appendChild(btnExcluir);
-}
+  } else {
+    // ✅ clique SEMPRE no card
+    card.addEventListener("click", () => {
+      abrirModalMidia(url, isVideo);
+    });
+  }
+
+  card.appendChild(el);
+
+  if (role === "modelo") {
+    const btnExcluir = document.createElement("button");
+    btnExcluir.className = "btnExcluirMidia";
+    btnExcluir.textContent = "Excluir";
+
+    btnExcluir.onclick = () => excluirMidia(id, card);
+    card.appendChild(btnExcluir);
+  }
+
   listaMidias.appendChild(card);
 }
 
