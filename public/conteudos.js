@@ -17,9 +17,9 @@ let modelo_id = null;
 // ===============================
 // DOM
 // ===============================
-const fileInput = document.getElementById("conteudoFile");
+const fileInput    = document.getElementById("conteudoFile");
 const fileNameSpan = document.getElementById("fileName");
-const lista = document.getElementById("listaConteudos");
+const lista        = document.getElementById("listaConteudos");
 
 // ===============================
 // INIT
@@ -92,7 +92,7 @@ async function uploadConteudo() {
 }
 
 // ===============================
-// LISTAR CONTEÚDOS (PADRÃO PROFILE)
+// LISTAR CONTEÚDOS
 // ===============================
 async function listarConteudos() {
   const res = await fetch("/api/conteudos/me", {
@@ -124,36 +124,38 @@ function adicionarMidia(conteudo) {
 
   const card = document.createElement("div");
   card.className = "midiaCard";
+
   const img = document.createElement("img");
-img.className = "midiaThumb";
+  img.className = "midiaThumb";
 
-if (isVideo) {
-  // 🎥 vídeo aparece como FOTO (thumbnail)
-  img.src = url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
+  if (isVideo) {
+    // 🎥 vídeo → thumbnail
+    img.src = url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
+    img.onerror = () => {
+      img.src = "/assets/capaDefault.jpg";
+    };
+  } else {
+    // 🖼️ imagem normal
+    img.src = url;
+  }
 
-  img.onerror = () => {
-    img.src = "/assets/capaDefault.jpg";
-  };
-} else {
-  // 🖼️ imagem normal
-  img.src = url;
-}
-
-// clique abre modal
-img.addEventListener("click", () =>
-  abrirModalMidia(url, isVideo)
-);
+  img.addEventListener("click", () => {
+    abrirModalMidia(url, isVideo);
+  });
 
   const btnExcluir = document.createElement("button");
   btnExcluir.className = "btn-excluir";
   btnExcluir.textContent = "✕";
-  btnExcluir.onclick = e => {
+  btnExcluir.onclick = (e) => {
     e.stopPropagation();
     excluirConteudo(id);
   };
 
   card.appendChild(img);
   card.appendChild(btnExcluir);
+
+  // 🔥 ESTA LINHA ESTAVA FALTANDO
+  lista.appendChild(card);
 }
 
 // ===============================
@@ -161,7 +163,7 @@ img.addEventListener("click", () =>
 // ===============================
 function abrirModalMidia(url, isVideo) {
   const modal = document.getElementById("modalMidia");
-  const img = document.getElementById("modalImg");
+  const img   = document.getElementById("modalImg");
   const video = document.getElementById("modalVideo");
 
   img.style.display = "none";
