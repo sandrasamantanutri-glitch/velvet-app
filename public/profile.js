@@ -465,10 +465,27 @@ function adicionarMidia(id, url) {
   const ext = url.split(".").pop().toLowerCase();
   const isVideo = ["mp4","webm","ogg"].includes(ext);
 
-  const el = document.createElement(isVideo ? "video" : "img");
+  let el;
+
+if (isVideo) {
+  el = document.createElement("video");
   el.src = url;
-  el.className = "midiaThumb";
-  if (isVideo) el.muted = true;
+
+  // 🔑 CHAVES PARA SAFARI / MOBILE
+  el.muted = true;
+  el.playsInline = true;
+  el.preload = "metadata";
+  el.autoplay = true;
+  el.loop = true;
+
+  // força render
+  el.style.display = "block";
+} else {
+  el = document.createElement("img");
+  el.src = url;
+}
+
+el.className = "midiaThumb";
 
   const deveBloquear =
     role !== "modelo" && window.__CLIENTE_VIP__ !== true;
