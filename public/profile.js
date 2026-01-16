@@ -279,8 +279,7 @@ function carregarFeed() {
     .then(feed => {
       if (!Array.isArray(feed)) return;
       listaMidias.innerHTML = "";
-      feed.forEach(item => adicionarMidia(item.id, item.url, item.thumb_url)
-);
+      feed.forEach(item => adicionarMidia(item.id, item.url));
     });
 }
 
@@ -296,9 +295,10 @@ function carregarFeedPublico() {
 
       listaMidias.innerHTML = "";
 
-      feed.forEach(item =>adicionarMidia(item.id, item.url, item.thumb_url)
-);
-});
+      feed.forEach(item => {
+        adicionarMidia(item.id, item.url);
+      });
+    });
 }
 
 function fecharEscolha() {
@@ -450,24 +450,17 @@ function iniciarUploads() {
 // ===============================
 // MIDIA
 // ===============================
-function adicionarMidia(id, url, thumbUrl) {
+function adicionarMidia(id, url) {
   const card = document.createElement("div");
   card.className = "midiaCard";
 
   const ext = url.split(".").pop().toLowerCase();
-  const isVideo = ["mp4", "webm", "ogg"].includes(ext);
+  const isVideo = ["mp4","webm","ogg"].includes(ext);
 
-  // 🔹 GRID SEMPRE USA IMAGEM
-  const el = document.createElement("img");
-  el.className = "midiaThumb";
-
-if (isVideo) {
-  el.src = thumbUrl || "/assets/video-thumb.jpg"; // fallback
-  card.classList.add("video");
-} else {
+  const el = document.createElement(isVideo ? "video" : "img");
   el.src = url;
-}
-
+  el.className = "midiaThumb";
+  if (isVideo) el.muted = true;
 
   const deveBloquear =
     role !== "modelo" && window.__CLIENTE_VIP__ !== true;
@@ -475,32 +468,27 @@ if (isVideo) {
   if (deveBloquear) {
     card.classList.add("bloqueada");
 
-    card.addEventListener("click", () => {
-      if (!role) {
-        abrirPopupVelvet({ tipo: "login" });
-      } else {
-        abrirPopupVelvet({ tipo: "vip" });
-      }
-    });
-
+ card.addEventListener("click", () => {
+  if (!role) {
+    abrirPopupVelvet({ tipo: "login" });
   } else {
-    // ✅ clique SEMPRE no card
-    card.addEventListener("click", () => {
-      abrirModalMidia(url, isVideo);
-    });
+    abrirPopupVelvet({ tipo: "vip" });
   }
-
+ });
+  } else {
+    el.addEventListener("click", () =>
+      abrirModalMidia(url, isVideo)
+    );
+  }
   card.appendChild(el);
-
   if (role === "modelo") {
-    const btnExcluir = document.createElement("button");
-    btnExcluir.className = "btnExcluirMidia";
-    btnExcluir.textContent = "Excluir";
+  const btnExcluir = document.createElement("button");
+  btnExcluir.className = "btnExcluirMidia";
+  btnExcluir.textContent = "Excluir";
 
-    btnExcluir.onclick = () => excluirMidia(id, card);
-    card.appendChild(btnExcluir);
-  }
-
+  btnExcluir.onclick = () => excluirMidia(id, card);
+  card.appendChild(btnExcluir);
+}
   listaMidias.appendChild(card);
 }
 
