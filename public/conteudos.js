@@ -2,6 +2,7 @@
 // AUTH GUARD
 // ===============================
 const token = localStorage.getItem("token");
+const role  = localStorage.getItem("role");
 
 if (!token) {
   window.location.href = "/index.html";
@@ -11,7 +12,7 @@ if (!token) {
 // ===============================
 // ESTADO
 // ===============================
-let modeloId = null;
+let modelo_id = null;
 
 // ===============================
 // DOM
@@ -23,16 +24,14 @@ const lista = document.getElementById("listaConteudos");
 // ===============================
 // INIT
 // ===============================
-document.addEventListener("DOMContentLoaded", init);
-
-async function init() {
+document.addEventListener("DOMContentLoaded", async () => {
   await carregarModelo();
   bindFileInput();
   listarConteudos();
-}
+});
 
 // ===============================
-// MODELO
+// MODELO (JWT)
 // ===============================
 async function carregarModelo() {
   const res = await fetch("/api/me", {
@@ -47,7 +46,7 @@ async function carregarModelo() {
     throw new Error("Usuário não é modelo");
   }
 
-  modeloId = user.id;
+  modelo_id = user.id;
 }
 
 // ===============================
@@ -55,9 +54,10 @@ async function carregarModelo() {
 // ===============================
 function bindFileInput() {
   fileInput.addEventListener("change", () => {
-    fileNameSpan.textContent = fileInput.files.length
-      ? fileInput.files[0].name
-      : "Nenhum ficheiro selecionado";
+    fileNameSpan.textContent =
+      fileInput.files.length
+        ? fileInput.files[0].name
+        : "Nenhum ficheiro selecionado";
   });
 }
 
@@ -66,7 +66,10 @@ function bindFileInput() {
 // ===============================
 async function uploadConteudo() {
   const file = fileInput.files[0];
-  if (!file) return alert("Selecione um ficheiro");
+  if (!file) {
+    alert("Selecione um ficheiro");
+    return;
+  }
 
   const fd = new FormData();
   fd.append("conteudo", file);
@@ -78,7 +81,7 @@ async function uploadConteudo() {
   });
 
   if (!res.ok) {
-    alert(await res.text());
+    alert("Erro ao enviar conteúdo");
     return;
   }
 
@@ -89,12 +92,17 @@ async function uploadConteudo() {
 }
 
 // ===============================
-// LISTAR CONTEÚDOS
+// LISTAR CONTEÚDOS (PADRÃO PROFILE)
 // ===============================
 async function listarConteudos() {
   const res = await fetch("/api/conteudos/me", {
     headers: { Authorization: "Bearer " + token }
   });
+
+  if (!res.ok) {
+    alert("Erro ao carregar conteúdos");
+    return;
+  }
 
   const conteudos = await res.json();
   lista.innerHTML = "";
@@ -104,41 +112,39 @@ async function listarConteudos() {
     return;
   }
 
-  conteudos.forEach(renderConteudoCard);
+  conteudos.forEach(c => adicionarMidia(c));
 }
 
 // ===============================
-// RENDER CARD (🔥 FIX PRINCIPAL)
+// ADICIONAR MÍDIA (IGUAL PROFILE)
 // ===============================
-function renderConteudoCard(c) {
+function adicionarMidia(conteudo) {
+  const { id, url, tipo } = conteudo;
+  const isVideo = tipo === "video";
+
   const card = document.createElement("div");
-  card.className = "conteudo-card loading";
+  card.className = "midiaCard";
 
-  let media;
+  const media = document.createElement(isVideo ? "video" : "img");
+  media.src = url;
+  media.className = "midiaThumb";
 
-  if (c.tipo === "video") {
-    media = document.createElement("video");
-    media.src = c.url;
-    media.muted = true;
-    media.onloadeddata = () => card.classList.remove("loading");
-    media.onclick = () => abrirModalMidia(c.url, true);
-  } else {
-    media = document.createElement("img");
-    media.src = c.url;
-    media.loading = "lazy";
-    media.onload = () => card.classList.remove("loading");
-    media.onclick = () => abrirModalMidia(c.url, false);
-  }
+  if (isVideo) media.muted = true;
 
-  const btn = document.createElement("button");
-  btn.className = "btn-excluir";
-  btn.textContent = "✕";
-  btn.onclick = (e) => {
+  media.addEventListener("click", () =>
+    abrirModalMidia(url, isVideo)
+  );
+
+  const btnExcluir = document.createElement("button");
+  btnExcluir.className = "btn-excluir";
+  btnExcluir.textContent = "✕";
+  btnExcluir.onclick = e => {
     e.stopPropagation();
-    excluirConteudo(c.id);
+    excluirConteudo(id);
   };
 
-  card.append(media, btn);
+  card.appendChild(media);
+  card.appendChild(btnExcluir);
   lista.appendChild(card);
 }
 
@@ -155,35 +161,39 @@ function abrirModalMidia(url, isVideo) {
 
   if (isVideo) {
     video.src = url;
-    video.onloadeddata = () => video.play();
     video.style.display = "block";
+    video.play();
   } else {
     img.src = url;
-    img.onload = () => (img.style.display = "block");
+    img.style.display = "block";
   }
 
   modal.classList.remove("hidden");
 }
 
-document.getElementById("fecharModal").onclick = () => {
+document.getElementById("fecharModal")?.addEventListener("click", () => {
   const modal = document.getElementById("modalMidia");
   const video = document.getElementById("modalVideo");
 
   video.pause();
   video.src = "";
   modal.classList.add("hidden");
-};
+});
 
 // ===============================
 // EXCLUIR
 // ===============================
 async function excluirConteudo(id) {
-  if (!confirm("Excluir conteúdo?")) return;
+  if (!confirm("Excluir este conteúdo?")) return;
 
-  await fetch(`/api/conteudos/${id}`, {
+  const res = await fetch(`/api/conteudos/${id}`, {
     method: "DELETE",
     headers: { Authorization: "Bearer " + token }
   });
 
-  listarConteudos();
+  if (res.ok) {
+    listarConteudos();
+  } else {
+    alert("Erro ao excluir conteúdo");
+  }
 }
