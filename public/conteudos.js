@@ -120,21 +120,30 @@ async function listarConteudos() {
 // ===============================
 function adicionarMidia(conteudo) {
   const { id, url, tipo } = conteudo;
-  const isVideo = tipo === "video";
 
   const card = document.createElement("div");
   card.className = "midiaCard";
 
-  const media = document.createElement(isVideo ? "video" : "img");
-  media.src = url;
-  media.className = "midiaThumb";
+ const ext = url.split(".").pop().toLowerCase();
+  const isVideo = ["mp4", "webm", "ogg", "mov"].includes(ext);
 
-  if (isVideo) media.muted = true;
+  // 🔹 GRID SEMPRE USA IMAGEM
+  const img = document.createElement("img");
+  img.className = "midiaThumb";
 
-  media.addEventListener("click", () =>
-    abrirModalMidia(url, isVideo)
-  );
+  if (isVideo) {
+  // 🔥 thumbnail REAL do vídeo (Cloudinary)
+  img.src = url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
 
+  // fallback se algum vídeo MUITO antigo não gerar thumb
+  img.onerror = () => {
+    img.src = "/assets/capaDefault.jpg";
+  };
+
+  card.classList.add("video");
+ } else {
+  img.src = url;
+}
   const btnExcluir = document.createElement("button");
   btnExcluir.className = "btn-excluir";
   btnExcluir.textContent = "✕";
@@ -142,7 +151,8 @@ function adicionarMidia(conteudo) {
     e.stopPropagation();
     excluirConteudo(id);
   };
-
+  
+  card.appendChild(img);
   card.appendChild(media);
   card.appendChild(btnExcluir);
   lista.appendChild(card);

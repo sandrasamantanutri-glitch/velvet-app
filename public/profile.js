@@ -497,14 +497,17 @@ card.appendChild(img);
     };
   }
 
-  // ❌ botão excluir (só modelo)
-  if (role === "modelo") {
-    const btnExcluir = document.createElement("button");
-    btnExcluir.className = "btnExcluirMidia";
-    btnExcluir.textContent = "Excluir";
-    btnExcluir.onclick = () => excluirMidia(id, card);
-    card.appendChild(btnExcluir);
-  }
+// ❌ botão excluir (só modelo)
+if (role === "modelo") {
+  const btnExcluir = document.createElement("button");
+  btnExcluir.className = "btnExcluirMidia";
+  btnExcluir.textContent = "Excluir";
+  btnExcluir.onclick = (e) => {
+    e.stopPropagation(); // 🔥 ESSENCIAL
+    excluirMidia(id, card);
+  };
+  card.appendChild(btnExcluir);
+}
 
   listaMidias.appendChild(card);
 }
