@@ -460,18 +460,17 @@ function adicionarMidia(id, url) {
   const el = document.createElement(isVideo ? "video" : "img");
   el.src = url;
   el.className = "midiaThumb";
-  if (isVideo) {
+if (isVideo) {
   el.muted = true;
   el.playsInline = true;
-  el.preload = "metadata";
+  el.preload = "auto"; // importante aqui
 
-  el.addEventListener("loadedmetadata", () => {
+  el.addEventListener("loadeddata", () => {
     try {
       el.currentTime = 0.01;
-    } catch (e) {}
+    } catch {}
   });
 }
-
   const deveBloquear =
     role !== "modelo" && window.__CLIENTE_VIP__ !== true;
 
