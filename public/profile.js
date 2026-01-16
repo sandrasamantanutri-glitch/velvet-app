@@ -462,15 +462,16 @@ function adicionarMidia(id, url) {
   img.className = "midiaThumb";
 
   if (isVideo) {
-    // 👉 vídeo aparece como FOTO no grid
-    img.src = "/assets/video-thumb.jpg"; // imagem fixa
-    card.classList.add("video");
-  } else {
-    // 👉 imagem normal
-    img.src = url;
-  }
+  // 🔥 thumbnail REAL do vídeo (Cloudinary)
+  img.src = url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
 
-  card.appendChild(img);
+  // fallback se algum vídeo MUITO antigo não gerar thumb
+  img.onerror = () => {
+    img.src = "/assets/capaDefault.jpg";
+  };
+
+  card.classList.add("video");
+}
 
   const deveBloquear =
     role !== "modelo" && window.__CLIENTE_VIP__ !== true;
