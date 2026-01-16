@@ -455,49 +455,51 @@ function adicionarMidia(id, url) {
   card.className = "midiaCard";
 
   const ext = url.split(".").pop().toLowerCase();
-  const isVideo = ["mp4","webm","ogg"].includes(ext);
+  const isVideo = ["mp4", "webm", "ogg"].includes(ext);
 
-  const el = document.createElement(isVideo ? "video" : "img");
-  el.src = url;
+  // 🔹 GRID SEMPRE USA IMAGEM
+  const el = document.createElement("img");
   el.className = "midiaThumb";
-if (isVideo) {
-  el.muted = true;
-  el.playsInline = true;
-  el.preload = "auto"; // importante aqui
 
-  el.addEventListener("loadeddata", () => {
-    try {
-      el.currentTime = 0.01;
-    } catch {}
-  });
-}
+  if (isVideo) {
+    el.src = "/assets/video-thumb.jpg"; // thumbnail padrão
+    card.classList.add("video");
+  } else {
+    el.src = url;
+  }
+
   const deveBloquear =
     role !== "modelo" && window.__CLIENTE_VIP__ !== true;
 
   if (deveBloquear) {
     card.classList.add("bloqueada");
 
- card.addEventListener("click", () => {
-  if (!role) {
-    abrirPopupVelvet({ tipo: "login" });
-  } else {
-    abrirPopupVelvet({ tipo: "vip" });
-  }
- });
-  } else {
-    el.addEventListener("click", () =>
-      abrirModalMidia(url, isVideo)
-    );
-  }
-  card.appendChild(el);
-  if (role === "modelo") {
-  const btnExcluir = document.createElement("button");
-  btnExcluir.className = "btnExcluirMidia";
-  btnExcluir.textContent = "Excluir";
+    card.addEventListener("click", () => {
+      if (!role) {
+        abrirPopupVelvet({ tipo: "login" });
+      } else {
+        abrirPopupVelvet({ tipo: "vip" });
+      }
+    });
 
-  btnExcluir.onclick = () => excluirMidia(id, card);
-  card.appendChild(btnExcluir);
-}
+  } else {
+    // ✅ clique SEMPRE no card
+    card.addEventListener("click", () => {
+      abrirModalMidia(url, isVideo);
+    });
+  }
+
+  card.appendChild(el);
+
+  if (role === "modelo") {
+    const btnExcluir = document.createElement("button");
+    btnExcluir.className = "btnExcluirMidia";
+    btnExcluir.textContent = "Excluir";
+
+    btnExcluir.onclick = () => excluirMidia(id, card);
+    card.appendChild(btnExcluir);
+  }
+
   listaMidias.appendChild(card);
 }
 
