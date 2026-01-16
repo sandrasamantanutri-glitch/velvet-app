@@ -1828,9 +1828,7 @@ app.post(
 // ===============================
 // 🗑 EXCLUIR CONTEÚDO (MODELO)
 // ===============================
-// ===============================
-// 🗑 EXCLUIR CONTEÚDO (MODELO)
-// ===============================
+
 app.delete(
   "/api/conteudos/:id",
   auth,
@@ -1885,7 +1883,6 @@ app.delete(
   }
 );
 
-
 app.post(
   "/uploadMidia",
   auth,
@@ -1893,22 +1890,60 @@ app.post(
   upload.single("midia"),
   async (req, res) => {
     try {
-      const result = await new Promise((resolve, reject) => {
+      const isVideo = req.file.mimetype.startsWith("video");
+
+      // 1️⃣ upload da mídia (imagem ou vídeo)
+      const mediaResult = await new Promise((resolve, reject) => {
         cloudinary.uploader.upload_stream(
           {
             folder: `velvet/${req.user.id}/midias`,
-            resource_type: "auto"
+            resource_type: isVideo ? "video" : "image"
           },
           (err, result) => (err ? reject(err) : resolve(result))
         ).end(req.file.buffer);
       });
 
+      let thumbUrl = null;
+
+      // 2️⃣ se for vídeo → gerar thumbnail
+      if (isVideo) {
+        const thumbResult = await cloudinary.uploader.upload(
+          mediaResult.secure_url + ".jpg",
+          {
+            resource_type: "image",
+            folder: `velvet/${req.user.id}/thumbs`,
+            eager: [
+              {
+                width: 600,
+                height: 600,
+                crop: "fill",
+                start_offset: "1"
+              }
+            ]
+          }
+        );
+
+        thumbUrl = thumbResult.secure_url;
+      }
+
+      // 3️⃣ salvar no banco
       await db.query(
-        "INSERT INTO conteudos (user_id, url, tipo) VALUES ($1, $2, $3)",
-        [req.user.id, result.secure_url, result.resource_type]
+        `INSERT INTO conteudos (user_id, url, tipo, thumb_url)
+         VALUES ($1, $2, $3, $4)`,
+        [
+          req.user.id,
+          mediaResult.secure_url,
+          isVideo ? "video" : "image",
+          thumbUrl
+        ]
       );
 
-      res.json({ url: result.secure_url });
+      // 4️⃣ retornar tudo
+      res.json({
+        url: mediaResult.secure_url,
+        thumb_url: thumbUrl,
+        tipo: isVideo ? "video" : "image"
+      });
 
     } catch (err) {
       console.error("Erro upload midia:", err);
@@ -1916,6 +1951,7 @@ app.post(
     }
   }
 );
+
 
 app.post("/api/contato", async (req, res) => {
   try {
@@ -2392,9 +2428,6 @@ app.post("/api/track-acesso", async (req, res) => {
     res.status(500).json({ error: "Erro ao registrar acesso" });
   }
 });
-
-
-
 
 
 // ===============================

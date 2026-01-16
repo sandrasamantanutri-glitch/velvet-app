@@ -450,7 +450,7 @@ function iniciarUploads() {
 // ===============================
 // MIDIA
 // ===============================
-function adicionarMidia(id, url) {
+function adicionarMidia(id, url, thumbUrl) {
   const card = document.createElement("div");
   card.className = "midiaCard";
 
@@ -460,13 +460,14 @@ function adicionarMidia(id, url) {
   // 🔹 GRID SEMPRE USA IMAGEM
   const el = document.createElement("img");
   el.className = "midiaThumb";
+  
+if (isVideo) {
+  el.src = thumbUrl || "/assets/video-thumb.jpg"; // fallback
+  card.classList.add("video");
+} else {
+  el.src = url;
+}
 
-  if (isVideo) {
-    el.src = "/assets/video-thumb.jpg"; // thumbnail padrão
-    card.classList.add("video");
-  } else {
-    el.src = url;
-  }
 
   const deveBloquear =
     role !== "modelo" && window.__CLIENTE_VIP__ !== true;
