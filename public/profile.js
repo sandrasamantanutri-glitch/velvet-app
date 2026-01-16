@@ -279,7 +279,8 @@ function carregarFeed() {
     .then(feed => {
       if (!Array.isArray(feed)) return;
       listaMidias.innerHTML = "";
-      feed.forEach(item => adicionarMidia(item.id, item.url));
+      feed.forEach(item => adicionarMidia(item.id, item.url, item.thumb_url)
+);
     });
 }
 
@@ -295,10 +296,9 @@ function carregarFeedPublico() {
 
       listaMidias.innerHTML = "";
 
-      feed.forEach(item => {
-        adicionarMidia(item.id, item.url);
-      });
-    });
+      feed.forEach(item =>adicionarMidia(item.id, item.url, item.thumb_url)
+);
+});
 }
 
 function fecharEscolha() {
@@ -460,7 +460,7 @@ function adicionarMidia(id, url, thumbUrl) {
   // 🔹 GRID SEMPRE USA IMAGEM
   const el = document.createElement("img");
   el.className = "midiaThumb";
-  
+
 if (isVideo) {
   el.src = thumbUrl || "/assets/video-thumb.jpg"; // fallback
   card.classList.add("video");
