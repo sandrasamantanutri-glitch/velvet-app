@@ -472,6 +472,7 @@ function adicionarMidia(id, url) {
 
   card.classList.add("video");
 }
+card.appendChild(img);
 
   const deveBloquear =
     role !== "modelo" && window.__CLIENTE_VIP__ !== true;
