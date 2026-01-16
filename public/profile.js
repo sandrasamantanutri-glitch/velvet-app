@@ -130,8 +130,36 @@ function aplicarRoleNoBody() {
 }
 
 // ===============================
-// PERFIL
+// FEED PRIVADO (MODELO)
 // ===============================
+function carregarFeed() {
+  if (!listaMidias) return;
+
+  fetch("/api/feed/me", {
+    headers: {
+      Authorization: "Bearer " + localStorage.getItem("token")
+    }
+  })
+    .then(r => r.json())
+    .then(feed => {
+      if (!Array.isArray(feed)) return;
+
+      listaMidias.innerHTML = "";
+
+      feed.forEach(item => {
+        adicionarMidia(
+          item.id,
+          item.url,
+          item.tipo === "video"
+        );
+      });
+    })
+    .catch(err => {
+      console.error("Erro ao carregar feed privado:", err);
+    });
+}
+
+
 function iniciarPerfil() {
 
   // MODELO (perfil próprio)
