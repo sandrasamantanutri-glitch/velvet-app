@@ -188,7 +188,7 @@ h2 #modeloNome {
 /* 🔔 BADGE BASE */
 .chat-item .badge {
   background: linear-gradient(135deg, #FF4ECD, #FF2E93);
-  align-self: flex-start;
+  align-self: center;
   white-space: nowrap;
   color: #fff;
   font-size: 10px;
