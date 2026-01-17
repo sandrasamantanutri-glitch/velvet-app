@@ -416,6 +416,63 @@ if (!valor_total || isNaN(valor_total) || valor_total < 1) {
       expiration_at
     ]
   );
+  // ===============================
+// 💬 MENSAGEM AUTOMÁTICA DE BOAS-VINDAS (PRODUÇÃO)
+// ===============================
+const existeMsg = await db.query(`
+  SELECT 1
+  FROM messages
+  WHERE cliente_id = $1
+    AND modelo_id = $2
+  LIMIT 1
+`, [cliente_id, modelo_id]);
+
+if (existeMsg.rowCount === 0) {
+
+  const textoBoasVindas = `Bem-vindo! Como você chama? ❤️‍🔥`;
+
+  const msgRes = await db.query(`
+    INSERT INTO messages
+      (cliente_id, modelo_id, sender, tipo, text, created_at)
+    VALUES
+      ($1, $2, 'modelo', 'texto', $3, NOW())
+    RETURNING *
+  `, [cliente_id, modelo_id, textoBoasVindas]);
+
+  const mensagem = msgRes.rows[0];
+
+  // 🔔 marca como não lida para o cliente
+  await db.query(`
+    INSERT INTO unread (cliente_id, modelo_id, unread_for, has_unread)
+    VALUES ($1, $2, 'cliente', true)
+    ON CONFLICT (cliente_id, modelo_id)
+    DO UPDATE SET has_unread = true
+  `, [cliente_id, modelo_id]);
+
+  // 🔥 envia em tempo real SE estiver online
+  const sidCliente = onlineClientes[cliente_id];
+  if (sidCliente) {
+    io.to(sidCliente).emit("newMessage", mensagem);
+  }
+}
+// ===============================
+// 🚨 AVISA A MODELO: NOVO VIP
+// ===============================
+const sidModelo = onlineModelos[modelo_id];
+if (sidModelo) {
+
+  const nomeRes = await db.query(
+    "SELECT nome FROM clientes WHERE user_id = $1",
+    [cliente_id]
+  );
+
+  const nomeCliente = nomeRes.rows[0]?.nome || "Novo VIP";
+
+  io.to(sidModelo).emit("novoAssinante", {
+    cliente_id,
+    nome: nomeCliente
+  });
+}
 }
 
 
@@ -1239,7 +1296,7 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
     const modeloId = req.user.id;
 
     const { rows } = await db.query(`
-SELECT 
+SELECT
   c.user_id AS cliente_id,
   cd.username,
   c.nome,
@@ -1247,17 +1304,17 @@ SELECT
 
   MAX(m.created_at)
     FILTER (WHERE m.sender = 'modelo')
-    AS ultima_msg_modelo_ts
+    AS ultima_msg_modelo_ts,
+
+  CASE
+    WHEN COUNT(m.id) = 0 THEN 'novo'
+    ELSE 'normal'
+  END AS status
 
 FROM vip_subscriptions v
-
-JOIN clientes c 
-  ON c.user_id = v.cliente_id
-
-LEFT JOIN clientes_dados cd
-  ON cd.user_id = c.user_id
-
-LEFT JOIN messages m 
+JOIN clientes c ON c.user_id = v.cliente_id
+LEFT JOIN clientes_dados cd ON cd.user_id = c.user_id
+LEFT JOIN messages m
   ON m.cliente_id = c.user_id
  AND m.modelo_id = $1
 
@@ -1265,9 +1322,11 @@ WHERE v.modelo_id = $1
   AND v.ativo = true
 
 GROUP BY c.user_id, cd.username, c.nome, cd.avatar
-ORDER BY ultima_msg_modelo_ts DESC NULLS LAST;
 
-
+ORDER BY
+  CASE WHEN COUNT(m.id) = 0 THEN 0 ELSE 1 END,
+  ultima_msg_modelo_ts DESC NULLS LAST;
+  
     `, [modeloId]);
 
     res.json(rows);

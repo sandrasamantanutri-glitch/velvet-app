@@ -180,32 +180,52 @@ h2 #modeloNome {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-direction: column;
+  gap: 4px;
   transition: background 0.2s;
 }
 
-/* BADGE */
+/* 🔔 BADGE BASE */
 .chat-item .badge {
-  background: transparent;
-  color: #fff;
-  margin-left: auto;    
+  background: linear-gradient(135deg, #FF4ECD, #FF2E93);
+  align-self: flex-start;
   white-space: nowrap;
-  font-size: 11px;
+  color: #fff;
+  font-size: 10px;
   padding: 2px 8px;
   border-radius: 12px;
-}
-.chat-item .nome {
-  flex: 1;             
-  text-align: left;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(255, 46, 147, 0.45);
 }
 
-.novo-badge {
-  background: #00c853;
-  color: #fff;
-  font-size: 11px;
-  padding: 3px 6px;
-  border-radius: 8px;
-  margin-left: 6px;
+/* 🆕 NOVO VIP */
+.chat-item[data-status="novo"] .badge {
+  background: linear-gradient(135deg, #00E676, #00C853);
+  box-shadow: 0 2px 8px rgba(0, 200, 83, 0.45);
 }
+
+/* 👀 NÃO VISTO */
+.chat-item[data-status="nao-visto"] .badge {
+  background: linear-gradient(135deg, #FF9100, #FF6D00);
+  box-shadow: 0 2px 8px rgba(255, 109, 0, 0.45);
+}
+
+/* 🕒 POR RESPONDER */
+.chat-item[data-status="por-responder"] .badge {
+  background: linear-gradient(135deg, #f04033, #f0c8c8);
+}
+
+.chat-item[data-status="novo"] .badge {
+  background: linear-gradient(135deg, #00E676, #00C853);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0,200,83,.45);
+}
+
+.chat-item[data-status="nao-visto"] .badge {
+  background: linear-gradient(135deg, #FF9100, #FF6D00);
+}
+
 
 .chat-item.novo {
   background: rgba(0, 200, 83, 0.08);
@@ -215,6 +235,17 @@ h2 #modeloNome {
   color: #fff;
   font-weight: bold;
 }
+
+.chat-item .tempo {
+  opacity: 0.8;
+  font-size: 11px;
+}
+
+.chat-item[data-status="novo"] .tempo {
+  opacity: 0.6;
+  font-style: italic;
+}
+
 
 
 /* =========================
@@ -756,6 +787,43 @@ body.role-modelo .chat-conteudo * {
   opacity: 1 !important;
   pointer-events: auto !important;
 }
+
+
+/* ===============================
+   🔥 FIX ALINHAMENTO LISTA CLIENTES
+=============================== */
+
+#listaClientes li,
+.chat-item {
+  text-align: left;          /* ❗ força alinhamento à esquerda */
+  align-items: stretch;     /* ❗ remove centralização vertical */
+}
+
+/* linha nome + tempo */
+.chat-item .linha-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;          /* ❗ garante esquerda */
+}
+
+/* nome sempre à esquerda */
+.chat-item .nome {
+  text-align: left;
+}
+
+/* tempo sempre à direita */
+.chat-item .tempo {
+  text-align: right;
+  margin-left: auto;
+}
+
+/* badge nunca centralizado */
+.chat-item .badge {
+  align-self: flex-start;    /* ❗ fica à esquerda */
+  margin-top: 4px;
+}
+
 
 
 
