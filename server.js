@@ -416,6 +416,63 @@ if (!valor_total || isNaN(valor_total) || valor_total < 1) {
       expiration_at
     ]
   );
+  // ===============================
+// 💬 MENSAGEM AUTOMÁTICA DE BOAS-VINDAS (PRODUÇÃO)
+// ===============================
+const existeMsg = await db.query(`
+  SELECT 1
+  FROM messages
+  WHERE cliente_id = $1
+    AND modelo_id = $2
+  LIMIT 1
+`, [cliente_id, modelo_id]);
+
+if (existeMsg.rowCount === 0) {
+
+  const textoBoasVindas = `Bem-vindo! Como você chama? ❤️‍🔥`;
+
+  const msgRes = await db.query(`
+    INSERT INTO messages
+      (cliente_id, modelo_id, sender, tipo, text, created_at)
+    VALUES
+      ($1, $2, 'modelo', 'texto', $3, NOW())
+    RETURNING *
+  `, [cliente_id, modelo_id, textoBoasVindas]);
+
+  const mensagem = msgRes.rows[0];
+
+  // 🔔 marca como não lida para o cliente
+  await db.query(`
+    INSERT INTO unread (cliente_id, modelo_id, unread_for, has_unread)
+    VALUES ($1, $2, 'cliente', true)
+    ON CONFLICT (cliente_id, modelo_id)
+    DO UPDATE SET has_unread = true
+  `, [cliente_id, modelo_id]);
+
+  // 🔥 envia em tempo real SE estiver online
+  const sidCliente = onlineClientes[cliente_id];
+  if (sidCliente) {
+    io.to(sidCliente).emit("newMessage", mensagem);
+  }
+}
+// ===============================
+// 🚨 AVISA A MODELO: NOVO VIP
+// ===============================
+const sidModelo = onlineModelos[modelo_id];
+if (sidModelo) {
+
+  const nomeRes = await db.query(
+    "SELECT nome FROM clientes WHERE user_id = $1",
+    [cliente_id]
+  );
+
+  const nomeCliente = nomeRes.rows[0]?.nome || "Novo VIP";
+
+  io.to(sidModelo).emit("novoAssinante", {
+    cliente_id,
+    nome: nomeCliente
+  });
+}
 }
 
 
@@ -462,57 +519,11 @@ socket.on("disconnect", () => {
 
 // 📥 ENTRAR NA SALA DO CHAT
 
-socket.on("joinChat", async ({ sala, cliente_id, modelo_id }) => {
+socket.on("joinChat", ({ sala }) => {
   if (!sala) return;
-
   socket.join(sala);
   console.log("🟪 Entrou na sala:", sala);
-
-  // 🔒 fallback: extrai ids da sala
-  if (!cliente_id || !modelo_id) {
-    const partes = sala.replace("chat_", "").split("_");
-    cliente_id = Number(partes[0]);
-    modelo_id  = Number(partes[1]);
-  }
-
-  if (!cliente_id || !modelo_id) return;
-
-  // ===============================
-  // 💬 MENSAGEM AUTOMÁTICA (1º CONTATO)
-  // ===============================
-  const existeMsg = await db.query(`
-    SELECT 1
-    FROM messages
-    WHERE cliente_id = $1
-      AND modelo_id = $2
-    LIMIT 1
-  `, [cliente_id, modelo_id]);
-
-  if (existeMsg.rowCount === 0) {
-
-    const texto = `Oi 💜 seja bem-vindo(a)!
-Fico feliz em ter você aqui ✨
-Me conta o que você gosta 😉`;
-
-    const { rows } = await db.query(`
-      INSERT INTO messages
-        (cliente_id, modelo_id, sender, tipo, text, created_at)
-      VALUES
-        ($1, $2, 'modelo', 'texto', $3, NOW())
-      RETURNING *
-    `, [cliente_id, modelo_id, texto]);
-
-    await db.query(`
-      INSERT INTO unread (cliente_id, modelo_id, unread_for, has_unread)
-      VALUES ($1, $2, 'cliente', true)
-      ON CONFLICT (cliente_id, modelo_id)
-      DO UPDATE SET has_unread = true
-    `, [cliente_id, modelo_id]);
-
-    io.to(sala).emit("newMessage", rows[0]);
-  }
 });
-
 
 // 💬 ENVIAR MENSAGEM (ÚNICO)
 socket.on("sendMessage", async ({ cliente_id, modelo_id, text }) => {
