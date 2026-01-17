@@ -187,32 +187,19 @@ async function carregarPerfilPublico() {
 
   aplicarPerfilNoDOM(modelo);
 
-  // ===============================
-// STATUS VIP (CLIENTE LOGADO)
+ // ===============================
+// STATUS VIP (MODO TESTE)
 // ===============================
 if (role === "cliente") {
-  try {
-    const vipRes = await fetch(`/api/vip/status/${modelo_id}`, {
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token")
-      }
-    });
 
-    if (vipRes.ok) {
-      const vipData = await vipRes.json();
-      window.__CLIENTE_VIP__ = vipData.vip === true;
+  // 🔥 FORÇAR VIP PARA TESTES
+  window.__CLIENTE_VIP__ = true;
 
-      if (window.__CLIENTE_VIP__) {
-        if (btnVip) {
-          btnVip.textContent = "VIP ativo";
-          btnVip.disabled = true;
-        }
-      }
-    }
-  } catch (err) {
-    console.error("Erro ao verificar VIP:", err);
-    window.__CLIENTE_VIP__ = false;
+  if (btnVip) {
+    btnVip.textContent = "VIP ativo (teste)";
+    btnVip.disabled = true;
   }
+
 } else {
   window.__CLIENTE_VIP__ = false;
 
@@ -221,7 +208,6 @@ if (role === "cliente") {
     btnVip.disabled = false;
   }
 }
-
 carregarFeedPublico();
 }
 
@@ -234,35 +220,6 @@ btnVip?.addEventListener("click", async () => {
   if (!role) {
     abrirPopupVelvet({ tipo: "login" });
     return;
-  }
-
-  // 🔒 CLIENTE → verifica VIP
-  try {
-    const statusRes = await fetch(`/api/vip/status/${modelo_id}`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`
-      }
-    });
-
-    if (!statusRes.ok) {
-      throw new Error("Falha ao verificar status VIP");
-    }
-
-    const statusData = await statusRes.json();
-
-    if (statusData.vip === true) {
-      alert("💜 Você já é VIP desta modelo");
-      return;
-    }
-
-    // ✅ NÃO É VIP → ABRE POPUP DE PAGAMENTO
-    document
-      .getElementById("escolhaPagamento")
-      ?.classList.remove("hidden");
-
-  } catch (err) {
-    console.error("Erro ao verificar status VIP:", err);
-    alert("Erro ao verificar status VIP");
   }
 });
 
@@ -464,8 +421,6 @@ function adicionarMidia(id, url) {
   if (isVideo) {
   // 🔥 thumbnail REAL do vídeo (Cloudinary)
   img.src = url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
-
-  // fallback se algum vídeo MUITO antigo não gerar thumb
   img.onerror = () => {
     img.src = "/assets/capaDefault.jpg";
   };
