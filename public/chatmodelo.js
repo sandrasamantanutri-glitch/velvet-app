@@ -144,17 +144,22 @@ function organizarListaClientes() {
   };
 
   itens.sort((a, b) => {
-    const pa = prioridadeStatus[a.dataset.status] || 4;
-    const pb = prioridadeStatus[b.dataset.status] || 4;
+  const pa = prioridadeStatus[a.dataset.status] || 4;
+  const pb = prioridadeStatus[b.dataset.status] || 4;
 
-    // 1️⃣ prioridade por status
-    if (pa !== pb) return pa - pb;
+  // 1️⃣ prioridade absoluta por status
+  if (pa !== pb) return pa - pb;
 
-    // 2️⃣ se status igual → mais recente primeiro
-    const ta = Number(a.dataset.lastTime || 0);
-    const tb = Number(b.dataset.lastTime || 0);
-    return tb - ta;
-  });
+  // 🔥 2️⃣ SE FOR "novo", mantém ordem de chegada (não mexe)
+  if (a.dataset.status === "novo" && b.dataset.status === "novo") {
+    return 0;
+  }
+
+  // 3️⃣ demais casos → mais recente primeiro
+  const ta = Number(a.dataset.lastTime || 0);
+  const tb = Number(b.dataset.lastTime || 0);
+  return tb - ta;
+});
 
   itens.forEach(li => lista.appendChild(li));
 }

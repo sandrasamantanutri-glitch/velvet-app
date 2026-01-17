@@ -183,38 +183,34 @@ h2 #modeloNome {
   transition: background 0.2s;
 }
 
-/* BADGE */
+/* 🔔 BADGE BASE */
 .chat-item .badge {
-  background: transparent;
+  background: linear-gradient(135deg, #FF4ECD, #FF2E93);
   color: #fff;
-  margin-left: auto;    
-  white-space: nowrap;
   font-size: 11px;
-  padding: 2px 8px;
+  padding: 3px 8px;
   border-radius: 12px;
-}
-.chat-item .nome {
-  flex: 1;             
-  text-align: left;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(255, 46, 147, 0.45);
 }
 
-.novo-badge {
-  background: #c8e9d6;
-  color: #fff;
-  font-size: 11px;
-  padding: 3px 6px;
-  border-radius: 8px;
-  margin-left: 6px;
+/* 🆕 NOVO VIP */
+.chat-item[data-status="novo"] .badge {
+  background: linear-gradient(135deg, #00E676, #00C853);
+  box-shadow: 0 2px 8px rgba(0, 200, 83, 0.45);
 }
 
-.chat-item.novo {
-  background: rgba(0, 200, 83, 0.08);
+/* 👀 NÃO VISTO */
+.chat-item[data-status="nao-visto"] .badge {
+  background: linear-gradient(135deg, #FF9100, #FF6D00);
+  box-shadow: 0 2px 8px rgba(255, 109, 0, 0.45);
 }
 
-.chat-item[data-status="visto"] .badge {
-  color: #fff;
-  font-weight: bold;
+/* 🕒 POR RESPONDER */
+.chat-item[data-status="por-responder"] .badge {
+  background: linear-gradient(135deg, #7B2CFF, #9E6BFF);
 }
+
 
 
 /* =========================
