@@ -1,14 +1,12 @@
 // ===============================
 // INDEX — SCRIPT LIMPO (VELVET)
 // ===============================
-
-// 🔁 REDIRECIONAMENTO SE LOGADO
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
 
 if (token && role) {
   window.location.href =
-    role === "modelo" ? "/profile.html" : "/clientHome.html";
+    role === "modelo" ? "modelo.html" : "cliente.html";
 }
 
 // ===============================
@@ -38,7 +36,7 @@ function confirmAge(isAdult) {
     alert("Você precisa ter 18 anos ou mais para acessar a Plataforma.");
     
     document.getElementById("ageModal")?.classList.add("hidden");
-    window.location.href = "/index.html";
+    window.location.href = "index.html";
     return;
   }
 
@@ -147,7 +145,7 @@ async function login() {
   localStorage.setItem("role", data.role);
 
   if (data.role === "modelo") {
-  window.location.href = "/profile.html";
+  window.location.href = "modelo.html";
   return;
 }
 // 🔥 CLIENTE
@@ -158,9 +156,9 @@ if (ref) {
   localStorage.setItem("modelo_id", ref);
   localStorage.removeItem("ref_modelo");
 
-  window.location.href = "/profile.html";
+  window.location.href = "modelo.html";
 } else {
-  window.location.href = "/clientHome.html";
+  window.location.href = "cliente.html";
 }
 
 }
