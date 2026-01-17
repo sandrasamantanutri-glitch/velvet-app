@@ -186,9 +186,12 @@ async function carregarListaClientes() {
     li.dataset.clienteId = c.cliente_id;
 
     // ⏱ timestamp da última mensagem da MODELO
-    li.dataset.lastTime = c.ultima_msg_modelo_ts
-      ? new Date(c.ultima_msg_modelo_ts).getTime()
-      : 0;
+li.dataset.lastTime =
+  c.status === "novo"
+    ? Date.now() + 1000 // 🔥 garante topo absoluto
+    : (c.ultima_msg_modelo_ts
+        ? new Date(c.ultima_msg_modelo_ts).getTime()
+        : 0);
     li.dataset.status = c.status || "normal";
 
     const nomeExibido = c.username || c.nome;
