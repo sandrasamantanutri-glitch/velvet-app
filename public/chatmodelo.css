@@ -180,15 +180,19 @@ h2 #modeloNome {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-direction: column;
+  gap: 4px;
   transition: background 0.2s;
 }
 
 /* 🔔 BADGE BASE */
 .chat-item .badge {
   background: linear-gradient(135deg, #FF4ECD, #FF2E93);
+  align-self: flex-start;
+  white-space: nowrap;
   color: #fff;
-  font-size: 11px;
-  padding: 3px 8px;
+  font-size: 10px;
+  padding: 2px 8px;
   border-radius: 12px;
   font-weight: 600;
   box-shadow: 0 2px 8px rgba(255, 46, 147, 0.45);
