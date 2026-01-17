@@ -192,12 +192,14 @@ async function carregarListaClientes() {
     li.dataset.status = c.status || "normal";
 
     const nomeExibido = c.username || c.nome;
-
 li.innerHTML = `
-  <span class="nome">${nomeExibido}</span>
-  <span class="badge hidden">Não visto</span>
-  <span class="tempo"></span>
+  <div class="linha-topo">
+    <span class="nome">${nomeExibido}</span>
+    <span class="tempo">${tempoTexto || ""}</span>
+  </div>
+  <span class="badge ${classeStatus}">${textoStatus || ""}</span>
 `;
+
 
     // 🔔 aplica badge + tempo
     atualizarBadgeComTempo(li);
@@ -488,11 +490,15 @@ function adicionarNovoClienteNaLista(cliente_id, nome) {
   li.dataset.status = "novo";
   li.dataset.lastTime = Date.now();
   const nomeExibido = nome;
-  li.innerHTML = `
-  <span class="nome">${nomeExibido}</span>
-  <span class="badge">Novo</span>
-  <span class="tempo">${formatarTempo(li.dataset.lastTime)}</span>
+li.innerHTML = `
+  <div class="linha-topo">
+    <span class="nome">${nomeExibido}</span>
+    <span class="tempo">${tempoTexto || ""}</span>
+  </div>
+  <span class="badge ${classeStatus}">${textoStatus || ""}</span>
 `;
+
+
 
   li.onclick = () => {
     cliente_id = Number(li.dataset.clienteId);

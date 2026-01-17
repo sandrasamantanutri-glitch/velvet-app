@@ -212,7 +212,7 @@ h2 #modeloNome {
 
 /* 🕒 POR RESPONDER */
 .chat-item[data-status="por-responder"] .badge {
-  background: linear-gradient(135deg, #ece099, #d4eb09);
+  background: linear-gradient(135deg, #f04033, #f0c8c8);
 }
 
 .chat-item[data-status="novo"] .badge {
@@ -235,6 +235,17 @@ h2 #modeloNome {
   color: #fff;
   font-weight: bold;
 }
+
+.chat-item .tempo {
+  opacity: 0.8;
+  font-size: 11px;
+}
+
+.chat-item[data-status="novo"] .tempo {
+  opacity: 0.6;
+  font-style: italic;
+}
+
 
 
 /* =========================
