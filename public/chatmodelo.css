@@ -212,7 +212,7 @@ h2 #modeloNome {
 
 /* 🕒 POR RESPONDER */
 .chat-item[data-status="por-responder"] .badge {
-  background: linear-gradient(135deg, #7B2CFF, #9E6BFF);
+  background: linear-gradient(135deg, #ece099, #d4eb09);
 }
 
 .chat-item[data-status="novo"] .badge {
