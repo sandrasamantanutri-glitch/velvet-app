@@ -463,10 +463,19 @@ socket.on("disconnect", () => {
 // 📥 ENTRAR NA SALA DO CHAT
 
 socket.on("joinChat", async ({ sala, cliente_id, modelo_id }) => {
-  if (!sala || !cliente_id || !modelo_id) return;
+  if (!sala) return;
 
   socket.join(sala);
   console.log("🟪 Entrou na sala:", sala);
+
+  // 🔒 fallback: extrai ids da sala
+  if (!cliente_id || !modelo_id) {
+    const partes = sala.replace("chat_", "").split("_");
+    cliente_id = Number(partes[0]);
+    modelo_id  = Number(partes[1]);
+  }
+
+  if (!cliente_id || !modelo_id) return;
 
   // ===============================
   // 💬 MENSAGEM AUTOMÁTICA (1º CONTATO)
@@ -481,21 +490,17 @@ socket.on("joinChat", async ({ sala, cliente_id, modelo_id }) => {
 
   if (existeMsg.rowCount === 0) {
 
-    const textoBoasVindas = `
-Oi 💜 seja bem-vindo(a)!
+    const texto = `Oi 💜 seja bem-vindo(a)!
 Fico feliz em ter você aqui ✨
-Me conta o que você gosta 😉
-`;
+Me conta o que você gosta 😉`;
 
-    const msgRes = await db.query(`
+    const { rows } = await db.query(`
       INSERT INTO messages
         (cliente_id, modelo_id, sender, tipo, text, created_at)
       VALUES
         ($1, $2, 'modelo', 'texto', $3, NOW())
       RETURNING *
-    `, [cliente_id, modelo_id, textoBoasVindas]);
-
-    const mensagem = msgRes.rows[0];
+    `, [cliente_id, modelo_id, texto]);
 
     await db.query(`
       INSERT INTO unread (cliente_id, modelo_id, unread_for, has_unread)
@@ -504,7 +509,7 @@ Me conta o que você gosta 😉
       DO UPDATE SET has_unread = true
     `, [cliente_id, modelo_id]);
 
-    io.to(sala).emit("newMessage", mensagem);
+    io.to(sala).emit("newMessage", rows[0]);
   }
 });
 
