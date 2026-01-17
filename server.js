@@ -366,23 +366,22 @@ async function ativarVipAssinatura({
   taxa_plataforma
 }) {
   let valor_total = Number(
-  (
-    Number(valor_assinatura) +
-    Number(taxa_transacao) +
-    Number(taxa_plataforma)
-  ).toFixed(2)
-);
+    (
+      Number(valor_assinatura) +
+      Number(taxa_transacao) +
+      Number(taxa_plataforma)
+    ).toFixed(2)
+  );
 
-// 🔒 Regra do MercadoPago PIX (BR)
-if (!valor_total || isNaN(valor_total) || valor_total < 1) {
-  valor_total = 1.00;
-}
+  // 🔒 Regra do MercadoPago PIX (BR)
+  if (!valor_total || isNaN(valor_total) || valor_total < 1) {
+    valor_total = 1.00;
+  }
 
   const expiration_at = new Date();
-  expiration_at.setDate(expiration_at.getDate() + 30); // VIP mensal
+  expiration_at.setDate(expiration_at.getDate() + 30);
 
-  await db.query(
-    `
+  await db.query(`
     INSERT INTO vip_subscriptions (
       cliente_id,
       modelo_id,
@@ -405,19 +404,58 @@ if (!valor_total || isNaN(valor_total) || valor_total < 1) {
       ativo            = true,
       updated_at       = NOW(),
       expiration_at    = EXCLUDED.expiration_at
-    `,
-    [
-      cliente_id,
-      modelo_id,
-      valor_assinatura,
-      taxa_transacao,
-      taxa_plataforma,
-      valor_total,
-      expiration_at
-    ]
-  );
-}
+  `, [
+    cliente_id,
+    modelo_id,
+    valor_assinatura,
+    taxa_transacao,
+    taxa_plataforma,
+    valor_total,
+    expiration_at
+  ]);
 
+  // ===============================
+  // 💬 MENSAGEM AUTOMÁTICA DE BOAS-VINDAS
+  // ===============================
+  const existeMsg = await db.query(`
+    SELECT 1
+    FROM messages
+    WHERE cliente_id = $1
+      AND modelo_id = $2
+    LIMIT 1
+  `, [cliente_id, modelo_id]);
+
+  if (existeMsg.rowCount === 0) {
+
+    const textoBoasVindas = `
+Oi 💜 seja bem-vindo(a)!
+Fico feliz em ter você aqui ✨
+Me conta o que você gosta 😉
+`;
+
+    const msgRes = await db.query(`
+      INSERT INTO messages
+        (cliente_id, modelo_id, sender, tipo, text, created_at)
+      VALUES
+        ($1, $2, 'modelo', 'texto', $3, NOW())
+      RETURNING *
+    `, [cliente_id, modelo_id, textoBoasVindas]);
+
+    const mensagem = msgRes.rows[0];
+
+    await db.query(`
+      INSERT INTO unread (cliente_id, modelo_id, unread_for, has_unread)
+      VALUES ($1, $2, 'cliente', true)
+      ON CONFLICT (cliente_id, modelo_id)
+      DO UPDATE SET
+        unread_for = 'cliente',
+        has_unread = true
+    `, [cliente_id, modelo_id]);
+
+    const sala = `chat_${cliente_id}_${modelo_id}`;
+    io.to(sala).emit("newMessage", mensagem);
+  }
+}
 
 
 // ===============================
