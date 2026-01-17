@@ -186,24 +186,18 @@ async function carregarListaClientes() {
     li.dataset.clienteId = c.cliente_id;
 
     // ⏱ timestamp da última mensagem da MODELO
-li.dataset.lastTime =
-  c.status === "novo"
-    ? Date.now() + 1000 // 🔥 garante topo absoluto
-    : (c.ultima_msg_modelo_ts
-        ? new Date(c.ultima_msg_modelo_ts).getTime()
-        : 0);
+    li.dataset.lastTime = c.ultima_msg_modelo_ts
+      ? new Date(c.ultima_msg_modelo_ts).getTime()
+      : 0;
     li.dataset.status = c.status || "normal";
 
     const nomeExibido = c.username || c.nome;
 
 li.innerHTML = `
-  <div class="linha-topo">
-    <span class="nome">${nomeExibido}</span>
-  <span class="tempo">${formatarTempo(li.dataset.lastTime)}</span>
-  </div>
-  <span class="badge hidden"></span>
+  <span class="nome">${nomeExibido}</span>
+  <span class="badge hidden">Não visto</span>
+  <span class="tempo"></span>
 `;
-
 
     // 🔔 aplica badge + tempo
     atualizarBadgeComTempo(li);
@@ -495,11 +489,9 @@ function adicionarNovoClienteNaLista(cliente_id, nome) {
   li.dataset.lastTime = Date.now();
   const nomeExibido = nome;
   li.innerHTML = `
-   <div class="linha-topo">
-    <span class="nome">${nomeExibido}</span>
+  <span class="nome">${nomeExibido}</span>
+  <span class="badge">Novo</span>
   <span class="tempo">${formatarTempo(li.dataset.lastTime)}</span>
-  </div>
-  <span class="badge hidden"></span>
 `;
 
   li.onclick = () => {
