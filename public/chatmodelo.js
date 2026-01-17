@@ -491,12 +491,10 @@ function adicionarNovoClienteNaLista(cliente_id, nome) {
   li.dataset.status = "novo";
   li.dataset.lastTime = Date.now();
   const nomeExibido = nome;
- li.innerHTML = `
-  <div class="linha-topo">
-    <span class="nome">${nomeExibido}</span>
-    <span class="tempo">${formatarTempo(li.dataset.lastTime)}</span>
-  </div>
+  li.innerHTML = `
+  <span class="nome">${nomeExibido}</span>
   <span class="badge">Novo</span>
+  <span class="tempo">${formatarTempo(li.dataset.lastTime)}</span>
 `;
 
   li.onclick = () => {
