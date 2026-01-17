@@ -195,12 +195,10 @@ async function carregarListaClientes() {
 li.innerHTML = `
   <div class="linha-topo">
     <span class="nome">${nomeExibido}</span>
-    <span class="tempo">${tempoTexto || ""}</span>
+    <span class="tempo"></span>
   </div>
-  <span class="badge ${classeStatus}">${textoStatus || ""}</span>
+  <span class="badge hidden"></span>
 `;
-
-
     // 🔔 aplica badge + tempo
     atualizarBadgeComTempo(li);
     contarChatsNaoLidosModelo();
@@ -493,12 +491,10 @@ function adicionarNovoClienteNaLista(cliente_id, nome) {
 li.innerHTML = `
   <div class="linha-topo">
     <span class="nome">${nomeExibido}</span>
-    <span class="tempo">${tempoTexto || ""}</span>
+    <span class="tempo">agora</span>
   </div>
-  <span class="badge ${classeStatus}">${textoStatus || ""}</span>
+  <span class="badge">Novo</span>
 `;
-
-
 
   li.onclick = () => {
     cliente_id = Number(li.dataset.clienteId);
