@@ -1247,7 +1247,12 @@ SELECT
 
   MAX(m.created_at)
     FILTER (WHERE m.sender = 'modelo')
-    AS ultima_msg_modelo_ts
+    AS ultima_msg_modelo_ts,
+
+  CASE
+    WHEN COUNT(m.id) = 0 THEN 'novo'
+    ELSE 'normal'
+  END AS status
 
 FROM vip_subscriptions v
 
@@ -1265,7 +1270,10 @@ WHERE v.modelo_id = $1
   AND v.ativo = true
 
 GROUP BY c.user_id, cd.username, c.nome, cd.avatar
-ORDER BY ultima_msg_modelo_ts DESC NULLS LAST;
+
+ORDER BY
+  CASE WHEN COUNT(m.id) = 0 THEN 0 ELSE 1 END,
+  ultima_msg_modelo_ts DESC NULLS LAST;
 
 
     `, [modeloId]);
