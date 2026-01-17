@@ -188,7 +188,7 @@ h2 #modeloNome {
 /* 🔔 BADGE BASE */
 .chat-item .badge {
   background: linear-gradient(135deg, #FF4ECD, #FF2E93);
-  align-self: center;
+  align-self: flex-start;
   white-space: nowrap;
   color: #fff;
   font-size: 10px;
@@ -202,17 +202,21 @@ h2 #modeloNome {
 .chat-item[data-status="novo"] .badge {
   background: linear-gradient(135deg, #00E676, #00C853);
   box-shadow: 0 2px 8px rgba(0, 200, 83, 0.45);
+  align-self: center;
 }
 
 /* 👀 NÃO VISTO */
 .chat-item[data-status="nao-visto"] .badge {
   background: linear-gradient(135deg, #FF9100, #FF6D00);
   box-shadow: 0 2px 8px rgba(255, 109, 0, 0.45);
+  align-self: center;
+  
 }
 
 /* 🕒 POR RESPONDER */
 .chat-item[data-status="por-responder"] .badge {
   background: linear-gradient(135deg, #ece099, #d4eb09);
+  align-self: center;
 }
 
 .chat-item[data-status="novo"] .badge {
@@ -220,10 +224,12 @@ h2 #modeloNome {
   color: #fff;
   font-weight: 600;
   box-shadow: 0 2px 8px rgba(0,200,83,.45);
+  align-self: center;
 }
 
 .chat-item[data-status="nao-visto"] .badge {
   background: linear-gradient(135deg, #FF9100, #FF6D00);
+  align-self: center;
 }
 
 
