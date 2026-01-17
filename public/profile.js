@@ -464,6 +464,8 @@ function adicionarMidia(id, url) {
   if (isVideo) {
   // 🔥 thumbnail REAL do vídeo (Cloudinary)
   img.src = url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
+
+  // fallback se algum vídeo MUITO antigo não gerar thumb
   img.onerror = () => {
     img.src = "/assets/capaDefault.jpg";
   };
