@@ -199,7 +199,7 @@ li.dataset.lastTime =
 li.innerHTML = `
   <div class="linha-topo">
     <span class="nome">${nomeExibido}</span>
-    <span class="tempo"></span>
+  <span class="tempo">${formatarTempo(li.dataset.lastTime)}</span>
   </div>
   <span class="badge hidden"></span>
 `;
