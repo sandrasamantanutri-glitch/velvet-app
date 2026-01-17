@@ -137,20 +137,26 @@ function organizarListaClientes() {
   const itens = [...lista.querySelectorAll(".chat-item")];
 
   const prioridadeStatus = {
-    "novo": 1,
-    "nao-visto": 2,
-    "por-responder": 3,
-    "normal": 4
+    "novo": 0,          // 🔥 absoluto
+    "nao-visto": 1,
+    "por-responder": 2,
+    "normal": 3
   };
 
   itens.sort((a, b) => {
-    const pa = prioridadeStatus[a.dataset.status] || 4;
-    const pb = prioridadeStatus[b.dataset.status] || 4;
+    const sa = a.dataset.status || "normal";
+    const sb = b.dataset.status || "normal";
+
+    const pa = prioridadeStatus[sa];
+    const pb = prioridadeStatus[sb];
 
     // 1️⃣ prioridade por status
     if (pa !== pb) return pa - pb;
 
-    // 2️⃣ se status igual → mais recente primeiro
+    // 2️⃣ se ambos forem "novo", NÃO mexe
+    if (sa === "novo" && sb === "novo") return 0;
+
+    // 3️⃣ ordenar por tempo
     const ta = Number(a.dataset.lastTime || 0);
     const tb = Number(b.dataset.lastTime || 0);
     return tb - ta;
@@ -158,7 +164,6 @@ function organizarListaClientes() {
 
   itens.forEach(li => lista.appendChild(li));
 }
-
 
 async function carregarListaClientes() {
   const res = await fetch("/api/chat/modelo", {
