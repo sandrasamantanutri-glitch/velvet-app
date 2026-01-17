@@ -184,9 +184,6 @@ async function carregarListaClientes() {
     li.dataset.lastTime = c.ultima_msg_modelo_ts
       ? new Date(c.ultima_msg_modelo_ts).getTime()
       : 0;
-
-    // 📌 status vindo do backend
-    // esperado: "novo" | "nao-visto" | "por-responder" | "normal"
     li.dataset.status = c.status || "normal";
 
     const nomeExibido = c.username || c.nome;
