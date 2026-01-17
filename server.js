@@ -366,22 +366,23 @@ async function ativarVipAssinatura({
   taxa_plataforma
 }) {
   let valor_total = Number(
-    (
-      Number(valor_assinatura) +
-      Number(taxa_transacao) +
-      Number(taxa_plataforma)
-    ).toFixed(2)
-  );
+  (
+    Number(valor_assinatura) +
+    Number(taxa_transacao) +
+    Number(taxa_plataforma)
+  ).toFixed(2)
+);
 
-  // 🔒 Regra do MercadoPago PIX (BR)
-  if (!valor_total || isNaN(valor_total) || valor_total < 1) {
-    valor_total = 1.00;
-  }
+// 🔒 Regra do MercadoPago PIX (BR)
+if (!valor_total || isNaN(valor_total) || valor_total < 1) {
+  valor_total = 1.00;
+}
 
   const expiration_at = new Date();
-  expiration_at.setDate(expiration_at.getDate() + 30);
+  expiration_at.setDate(expiration_at.getDate() + 30); // VIP mensal
 
-  await db.query(`
+  await db.query(
+    `
     INSERT INTO vip_subscriptions (
       cliente_id,
       modelo_id,
@@ -404,58 +405,19 @@ async function ativarVipAssinatura({
       ativo            = true,
       updated_at       = NOW(),
       expiration_at    = EXCLUDED.expiration_at
-  `, [
-    cliente_id,
-    modelo_id,
-    valor_assinatura,
-    taxa_transacao,
-    taxa_plataforma,
-    valor_total,
-    expiration_at
-  ]);
-
-  // ===============================
-  // 💬 MENSAGEM AUTOMÁTICA DE BOAS-VINDAS
-  // ===============================
-  const existeMsg = await db.query(`
-    SELECT 1
-    FROM messages
-    WHERE cliente_id = $1
-      AND modelo_id = $2
-    LIMIT 1
-  `, [cliente_id, modelo_id]);
-
-  if (existeMsg.rowCount === 0) {
-
-    const textoBoasVindas = `
-Oi 💜 seja bem-vindo(a)!
-Fico feliz em ter você aqui ✨
-Me conta o que você gosta 😉
-`;
-
-    const msgRes = await db.query(`
-      INSERT INTO messages
-        (cliente_id, modelo_id, sender, tipo, text, created_at)
-      VALUES
-        ($1, $2, 'modelo', 'texto', $3, NOW())
-      RETURNING *
-    `, [cliente_id, modelo_id, textoBoasVindas]);
-
-    const mensagem = msgRes.rows[0];
-
-    await db.query(`
-      INSERT INTO unread (cliente_id, modelo_id, unread_for, has_unread)
-      VALUES ($1, $2, 'cliente', true)
-      ON CONFLICT (cliente_id, modelo_id)
-      DO UPDATE SET
-        unread_for = 'cliente',
-        has_unread = true
-    `, [cliente_id, modelo_id]);
-
-    const sala = `chat_${cliente_id}_${modelo_id}`;
-    io.to(sala).emit("newMessage", mensagem);
-  }
+    `,
+    [
+      cliente_id,
+      modelo_id,
+      valor_assinatura,
+      taxa_transacao,
+      taxa_plataforma,
+      valor_total,
+      expiration_at
+    ]
+  );
 }
+
 
 
 // ===============================
@@ -500,11 +462,52 @@ socket.on("disconnect", () => {
 
 // 📥 ENTRAR NA SALA DO CHAT
 
-socket.on("joinChat", ({ sala }) => {
-  if (!sala) return;
+socket.on("joinChat", async ({ sala, cliente_id, modelo_id }) => {
+  if (!sala || !cliente_id || !modelo_id) return;
+
   socket.join(sala);
   console.log("🟪 Entrou na sala:", sala);
+
+  // ===============================
+  // 💬 MENSAGEM AUTOMÁTICA (1º CONTATO)
+  // ===============================
+  const existeMsg = await db.query(`
+    SELECT 1
+    FROM messages
+    WHERE cliente_id = $1
+      AND modelo_id = $2
+    LIMIT 1
+  `, [cliente_id, modelo_id]);
+
+  if (existeMsg.rowCount === 0) {
+
+    const textoBoasVindas = `
+Oi 💜 seja bem-vindo(a)!
+Fico feliz em ter você aqui ✨
+Me conta o que você gosta 😉
+`;
+
+    const msgRes = await db.query(`
+      INSERT INTO messages
+        (cliente_id, modelo_id, sender, tipo, text, created_at)
+      VALUES
+        ($1, $2, 'modelo', 'texto', $3, NOW())
+      RETURNING *
+    `, [cliente_id, modelo_id, textoBoasVindas]);
+
+    const mensagem = msgRes.rows[0];
+
+    await db.query(`
+      INSERT INTO unread (cliente_id, modelo_id, unread_for, has_unread)
+      VALUES ($1, $2, 'cliente', true)
+      ON CONFLICT (cliente_id, modelo_id)
+      DO UPDATE SET has_unread = true
+    `, [cliente_id, modelo_id]);
+
+    io.to(sala).emit("newMessage", mensagem);
+  }
 });
+
 
 // 💬 ENVIAR MENSAGEM (ÚNICO)
 socket.on("sendMessage", async ({ cliente_id, modelo_id, text }) => {
@@ -1285,12 +1288,7 @@ SELECT
 
   MAX(m.created_at)
     FILTER (WHERE m.sender = 'modelo')
-    AS ultima_msg_modelo_ts,
-
-  CASE
-    WHEN COUNT(m.id) = 0 THEN 'novo'
-    ELSE 'normal'
-  END AS status
+    AS ultima_msg_modelo_ts
 
 FROM vip_subscriptions v
 
@@ -1308,10 +1306,7 @@ WHERE v.modelo_id = $1
   AND v.ativo = true
 
 GROUP BY c.user_id, cd.username, c.nome, cd.avatar
-
-ORDER BY
-  CASE WHEN COUNT(m.id) = 0 THEN 0 ELSE 1 END,
-  ultima_msg_modelo_ts DESC NULLS LAST;
+ORDER BY ultima_msg_modelo_ts DESC NULLS LAST;
 
 
     `, [modeloId]);
