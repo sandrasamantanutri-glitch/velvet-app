@@ -23,7 +23,11 @@ const server = http.createServer(app);
 const multer = require("multer");
 const onlineClientes = {};
 const onlineModelos = {};
+
 const cloudinary = require("cloudinary").v2;
+const AWS = require("aws-sdk");
+const multerS3 = require("multer-s3");
+
 const { MercadoPagoConfig, Payment } = require("mercadopago");
 const CONTEUDOS_FILE = "conteudos.json";
 const MODELOS_FILE = "modelos.json";
@@ -41,6 +45,32 @@ app.use(cors({
   origin: ["https://velvet-app-production.up.railway.app"],
   credentials: true
 }));
+
+// ===============================
+// BACKBLAZE B2 (UPLOAD NOVO)
+// ===============================
+const s3 = new AWS.S3({
+  endpoint: process.env.B2_ENDPOINT,
+  accessKeyId: process.env.B2_KEY_ID,
+  secretAccessKey: process.env.B2_APP_KEY,
+  region: process.env.B2_REGION,
+  signatureVersion: "v4"
+});
+
+const uploadB2 = multer({
+  storage: multerS3({
+    s3,
+    bucket: process.env.B2_BUCKET,
+    acl: "public-read",
+    contentType: multerS3.AUTO_CONTENT_TYPE,
+    key: (req, file, cb) => {
+      const ext = file.originalname.split(".").pop();
+      const nome = `velvet/${req.user.id}/${Date.now()}.${ext}`;
+      cb(null, nome);
+    }
+  })
+});
+
 
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -1881,9 +1911,24 @@ app.post(
   "/api/conteudos/upload",
   auth,
   authModelo,
-  upload.single("conteudo"),
-  uploadConteudo
+  uploadB2.single("conteudo"),
+  async (req, res) => {
+    const tipo = req.file.mimetype.startsWith("video")
+      ? "video"
+      : "imagem";
+
+    await db.query(
+      `
+      INSERT INTO conteudos (user_id, url, tipo, tipo_conteudo)
+      VALUES ($1, $2, $3, 'venda')
+      `,
+      [req.user.id, req.file.location, tipo]
+    );
+
+    res.json({ success: true, url: req.file.location });
+  }
 );
+
 // ===============================
 // 🗑 EXCLUIR CONTEÚDO (MODELO)
 // ===============================
