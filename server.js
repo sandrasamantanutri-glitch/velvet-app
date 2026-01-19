@@ -43,6 +43,7 @@ const ffmpegPath = require("ffmpeg-static");
 ffmpeg.setFfmpegPath(ffmpegPath);
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
+app.use("/admin", express.static(path.join(__dirname, "admin-pages")));
 app.use(cors({
   origin: ["https://velvet-app-production.up.railway.app"],
   credentials: true
@@ -287,9 +288,6 @@ const authLimiter = rateLimit({
 });
 
 const servercontent = require("./servercontent");
-app.use("/", servercontent);
-// app.use("/admin", contentRouter);
-// app.use("/content", contentRouter);
 
 const requireRole = require("./middleware/requireRole");
 // ===============================
@@ -2622,6 +2620,10 @@ process.on("uncaughtException", err => {
   console.error("❌ Uncaught Exception:", err);
 });
 
+
+
+
+app.use("/", servercontent);
 
 // ===============================
 // START SERVER
