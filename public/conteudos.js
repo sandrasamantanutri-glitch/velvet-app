@@ -119,6 +119,7 @@ async function listarConteudos() {
 // ADICIONAR MÍDIA (IGUAL PROFILE)
 // ===============================
 function adicionarMidia(conteudo) {
+    console.log("🧪 CONTEÚDO:", conteudo);
   const { id, url, tipo, thumbnail_url } = conteudo;
   const isVideo = tipo === "video";
 
@@ -166,7 +167,6 @@ function getVideoThumbnail(url, thumbnail_url) {
   // 🚨 Fallback final
   return "/assets/capaDefault.jpg";
 }
-
 
 // ===============================
 // MODAL

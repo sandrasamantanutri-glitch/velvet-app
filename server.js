@@ -1515,11 +1515,15 @@ app.get("/api/conteudos/me", authModelo, async (req, res) => {
   try {
     const result = await db.query(
       `
-      SELECT id, url, tipo, thumbnail_url
-FROM conteudos
-WHERE user_id = $1
-  AND tipo_conteudo = 'venda'
-ORDER BY id DESC
+      SELECT
+        id,
+        url,
+        tipo,
+        thumbnail_url
+      FROM conteudos
+      WHERE user_id = $1
+        AND tipo_conteudo = 'venda'
+      ORDER BY id DESC
       `,
       [req.user.id]
     );
@@ -1530,8 +1534,6 @@ ORDER BY id DESC
     res.status(500).json([]);
   }
 });
-
-
 
 
 
