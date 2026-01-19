@@ -40,8 +40,6 @@ const nodemailer = require("nodemailer");
 
 const ffmpeg = require("fluent-ffmpeg");
 const ffmpegPath = require("ffmpeg-static");
-const fs = require("fs");
-const path = require("path");
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 
