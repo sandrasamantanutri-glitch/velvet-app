@@ -291,8 +291,10 @@ function carregarFeed() {
     .then(feed => {
       if (!Array.isArray(feed)) return;
       listaMidias.innerHTML = "";
-      feed.forEach(item => adicionarMidia(item.id, item.url));
-    });
+      feed.forEach(item =>
+  adicionarMidia(item.id, item.url, item.thumbnail_url)
+);
+})
 }
 
 function carregarFeedPublico() {
@@ -308,8 +310,8 @@ function carregarFeedPublico() {
       listaMidias.innerHTML = "";
 
       feed.forEach(item => {
-        adicionarMidia(item.id, item.url);
-      });
+  adicionarMidia(item.id, item.url, item.thumbnail_url);
+});
     });
 }
 
@@ -448,21 +450,27 @@ function iniciarUploads() {
     const fd = new FormData();
     fd.append("midia", file);
 
-    const res = await fetch("/uploadMidia", {
+    // 🔥 thumbnail real para vídeos
+    if (file.type.startsWith("video")) {
+      const thumbBlob = await gerarThumbnailVideo(file);
+      fd.append("thumbnail", thumbBlob, "thumb.jpg");
+    }
+
+    const res = await fetch("/api/feed/upload", {
       method: "POST",
       headers: { Authorization: "Bearer " + token },
       body: fd
     });
 
     const data = await res.json();
-    if (data.url) carregarFeed();
+    if (data.success) carregarFeed();
   });
 }
 
 /// ===============================
 // MIDIA
 // ===============================
-function adicionarMidia(id, url) {
+function adicionarMidia(id, url, thumbnail_url = null) {
   const card = document.createElement("div");
   card.className = "midiaCard";
 
@@ -473,13 +481,12 @@ function adicionarMidia(id, url) {
   const img = document.createElement("img");
   img.className = "midiaThumb";
 
-  if (isVideo) {
-    img.src = "/assets/capaVideo.png"; // 🎬 thumbnail padrão
-    card.classList.add("video");
-  } else {
-    img.src = url; // 🖼️ imagem normal
-  }
-
+if (isVideo) {
+  img.src = thumbnail_url || "/assets/capaVideo.png";
+  card.classList.add("video");
+} else {
+  img.src = url;
+}
   // fallback de segurança
   img.onerror = () => {
     img.src = "/assets/capaDefault.jpg";
@@ -841,6 +848,36 @@ document
 
   elements = null;
 }
+
+async function gerarThumbnailVideo(file) {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement("video");
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    video.src = URL.createObjectURL(file);
+    video.muted = true;
+    video.playsInline = true;
+
+    video.addEventListener("loadeddata", () => {
+      video.currentTime = 1;
+    });
+
+    video.addEventListener("seeked", () => {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0);
+
+      canvas.toBlob(blob => {
+        resolve(blob);
+        URL.revokeObjectURL(video.src);
+      }, "image/jpeg", 0.85);
+    });
+
+    video.addEventListener("error", reject);
+  });
+}
+
 
 
 
