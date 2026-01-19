@@ -513,7 +513,19 @@ if (sidModelo) {
 }
 }
 
-
+function gerarThumbnail(videoPath, thumbPath) {
+  return new Promise((resolve, reject) => {
+    ffmpeg(videoPath)
+      .on("end", resolve)
+      .on("error", reject)
+      .screenshots({
+        timestamps: ["00:00:01"],
+        filename: path.basename(thumbPath),
+        folder: path.dirname(thumbPath),
+        size: "640x?"
+      });
+  });
+}
 
 // ===============================
 // SOCKET.IO – CHAT ESTÁVEL
@@ -972,7 +984,7 @@ app.get("/api/feed/me", auth, async (req, res) => {
   try {
     const result = await db.query(
       `
-      SELECT id, url, tipo, criado_em
+      SELECT id, url, tipo, thumbnail_url, criado_em
 FROM conteudos
 WHERE user_id = $1
   AND tipo_conteudo = 'feed'
@@ -1022,7 +1034,7 @@ app.get("/api/modelo/:id/feed", auth, async (req, res) => {
     const { id } = req.params;
 
     const result = await db.query(`
-      SELECT id, url, tipo
+      SELECT id, url, tipo, thumbnail_url
 FROM conteudos
 WHERE user_id = $1
   AND tipo_conteudo = 'feed'
@@ -1046,7 +1058,7 @@ app.get("/api/modelo/publico/:id/feed", async (req, res) => {
 
   try {
     const result = await db.query(`
-      SELECT id, url, tipo
+      SELECT id, url, tipo, thumbnail_url
       FROM conteudos
       WHERE user_id = $1
         AND tipo_conteudo = 'feed'
@@ -1503,7 +1515,7 @@ app.get("/api/conteudos/me", authModelo, async (req, res) => {
   try {
     const result = await db.query(
       `
-      SELECT id, url, tipo
+      SELECT id, url, tipo, thumbnail_url
 FROM conteudos
 WHERE user_id = $1
   AND tipo_conteudo = 'venda'
@@ -1921,19 +1933,68 @@ app.post(
   authModelo,
   uploadB2.single("conteudo"),
   async (req, res) => {
-    const tipo = req.file.mimetype.startsWith("video")
-      ? "video"
-      : "imagem";
+    const isVideo = req.file.mimetype.startsWith("video");
+    let thumbnailUrl = null;
 
-    await db.query(
-      `
-      INSERT INTO conteudos (user_id, url, tipo, tipo_conteudo)
-      VALUES ($1, $2, $3, 'venda')
-      `,
-      [req.user.id, req.file.location, tipo]
-    );
+    try {
+      if (isVideo) {
+        const tempVideo = `/tmp/${Date.now()}-video.mp4`;
+        const tempThumb = `/tmp/${Date.now()}-thumb.jpg`;
 
-    res.json({ success: true, url: req.file.location });
+        // 1️⃣ baixar vídeo do B2
+        const key = decodeURIComponent(req.file.location.split(".com/")[1]);
+        const videoStream = s3.getObject({
+          Bucket: process.env.B2_BUCKET,
+          Key: key
+        }).createReadStream();
+
+        await new Promise((resolve, reject) => {
+          const write = fs.createWriteStream(tempVideo);
+          videoStream.pipe(write);
+          write.on("finish", resolve);
+          write.on("error", reject);
+        });
+
+        // 2️⃣ gerar thumbnail REAL
+        await gerarThumbnail(tempVideo, tempThumb);
+
+        // 3️⃣ subir thumbnail no B2
+        const thumbKey = `velvet/conteudos/${req.user.id}/thumb-${Date.now()}.jpg`;
+        const uploadThumb = await s3.upload({
+          Bucket: process.env.B2_BUCKET,
+          Key: thumbKey,
+          Body: fs.createReadStream(tempThumb),
+          ContentType: "image/jpeg",
+          ACL: "public-read"
+        }).promise();
+
+        thumbnailUrl = uploadThumb.Location;
+
+        fs.unlinkSync(tempVideo);
+        fs.unlinkSync(tempThumb);
+      }
+
+      const tipo = isVideo ? "video" : "imagem";
+
+      await db.query(
+        `
+        INSERT INTO conteudos
+          (user_id, url, tipo, tipo_conteudo, thumbnail_url)
+        VALUES ($1, $2, $3, 'venda', $4)
+        `,
+        [req.user.id, req.file.location, tipo, thumbnailUrl]
+      );
+
+      res.json({
+        success: true,
+        url: req.file.location,
+        thumbnail_url: thumbnailUrl
+      });
+
+    } catch (err) {
+      console.error("❌ Erro upload conteúdo com thumbnail:", err);
+      res.status(500).json({ error: "Erro ao processar vídeo" });
+    }
   }
 );
 

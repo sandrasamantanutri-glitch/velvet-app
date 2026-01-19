@@ -119,7 +119,7 @@ async function listarConteudos() {
 // ADICIONAR MÍDIA (IGUAL PROFILE)
 // ===============================
 function adicionarMidia(conteudo) {
-  const { id, url, tipo } = conteudo;
+  const { id, url, tipo, thumbnail_url } = conteudo;
   const isVideo = tipo === "video";
 
   const card = document.createElement("div");
@@ -129,19 +129,12 @@ function adicionarMidia(conteudo) {
   img.className = "midiaThumb";
 
   if (isVideo) {
-    // 🎥 vídeo → thumbnail
-    img.src = url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
-    img.onerror = () => {
-      img.src = "/assets/capaDefault.jpg";
-    };
+    img.src = getVideoThumbnail(url, thumbnail_url);
   } else {
-    // 🖼️ imagem normal
     img.src = url;
   }
 
-  img.addEventListener("click", () => {
-    abrirModalMidia(url, isVideo);
-  });
+  img.onclick = () => abrirModalMidia(url, isVideo);
 
   const btnExcluir = document.createElement("button");
   btnExcluir.className = "btn-excluir";
@@ -153,8 +146,6 @@ function adicionarMidia(conteudo) {
 
   card.appendChild(img);
   card.appendChild(btnExcluir);
-
-  // 🔥 ESTA LINHA ESTAVA FALTANDO
   lista.appendChild(card);
 }
 
