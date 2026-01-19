@@ -14,17 +14,29 @@ const modeloParam = params.get("id");
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
 
-// 🔓 MODO PÚBLICO se veio por ?id=
-const modoPublico = !!modeloParam;
+console.group("🛡️ DEBUG PERFIL");
+console.log("URL:", window.location.href);
+console.log("modeloParam (?id):", modeloParam);
+console.log("token existe?", !!token);
+console.log("role:", role);
+console.log("modelo_id LS:", localStorage.getItem("modelo_id"));
+console.groupEnd();
 
-if (role === "cliente" && !modoPublico) {
+
+
+//DEFINIÇÃO SEGURA DE MODO
+let modo = "publico";
+if (token && role === "modelo" && !modeloParam) {
+  modo = "privado";
+}
+
+if (role === "cliente" && modo === "privado") {
   window.location.href = "/clientHome.html";
   throw new Error("Cliente não pode acessar profile privado");
 }
-
-const modo = role === "modelo" && !modoPublico
-    ? "privado"
-    : "publico";
+if (modo === "publico") {
+  localStorage.removeItem("modelo_id");
+}
 
 let modelo_id = modeloParam
   ? Number(modeloParam)
@@ -53,7 +65,7 @@ function decodeJWT(token) {
 
 function logout() {
   localStorage.clear();
-  window.location.href = "/index.html";
+  window.location.href = "https://www.velvet.lat";
 }
 
 // ===============================
@@ -464,6 +476,8 @@ function adicionarMidia(id, url) {
   if (isVideo) {
   // 🔥 thumbnail REAL do vídeo (Cloudinary)
   img.src = url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
+
+  // fallback se algum vídeo MUITO antigo não gerar thumb
   img.onerror = () => {
     img.src = "/assets/capaDefault.jpg";
   };
