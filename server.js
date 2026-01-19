@@ -76,7 +76,7 @@ const uploadB2 = multer({
 });
 
 // ===============================
-// BACKBLAZE – CONTEÚDOS DE VENDA (COM THUMBNAIL)
+// BACKBLAZE – CONTEÚDOS DE VENDA (COM THUMBNAIL REAL)
 // ===============================
 app.post(
   "/api/conteudos/upload",
@@ -84,28 +84,16 @@ app.post(
   authModelo,
   uploadB2.single("conteudo"),
   async (req, res) => {
-    const isVideo = req.file.mimetype.startsWith("video");
-    let thumbnailUrl = null;
-
     try {
+      const isVideo = req.file.mimetype.startsWith("video");
+      let thumbnailUrl = null;
+
+      // 🔥 GERA THUMBNAIL SEM BAIXAR O VÍDEO
       if (isVideo) {
-        const tempVideo = `/tmp/${Date.now()}-video.mp4`;
-        const tempThumb = `/tmp/${Date.now()}-thumb.jpg`;
+        const tempThumb = `/tmp/thumb-${Date.now()}.jpg`;
 
-        const key = decodeURIComponent(req.file.location.split(".com/")[1]);
-        const videoStream = s3.getObject({
-          Bucket: process.env.B2_BUCKET,
-          Key: key
-        }).createReadStream();
-
-        await new Promise((resolve, reject) => {
-          const write = fs.createWriteStream(tempVideo);
-          videoStream.pipe(write);
-          write.on("finish", resolve);
-          write.on("error", reject);
-        });
-
-        await gerarThumbnail(tempVideo, tempThumb);
+        // FFmpeg lê direto da URL do Backblaze
+        await gerarThumbnail(req.file.location, tempThumb);
 
         const thumbKey = `velvet/conteudos/${req.user.id}/thumb-${Date.now()}.jpg`;
 
@@ -119,7 +107,7 @@ app.post(
 
         thumbnailUrl = uploadThumb.Location;
 
-        fs.unlinkSync(tempVideo);
+        // limpa apenas o JPG
         fs.unlinkSync(tempThumb);
       }
 
@@ -134,7 +122,13 @@ app.post(
         [req.user.id, req.file.location, tipo, thumbnailUrl]
       );
 
-      res.json({ success: true, url: req.file.location, thumbnail_url: thumbnailUrl });
+      console.log("📸 Thumbnail gerado:", thumbnailUrl);
+
+      res.json({
+        success: true,
+        url: req.file.location,
+        thumbnail_url: thumbnailUrl
+      });
 
     } catch (err) {
       console.error("❌ Erro upload conteúdo com thumbnail:", err);
@@ -590,6 +584,7 @@ function gerarThumbnail(videoPath, thumbPath) {
       });
   });
 }
+const { PassThrough } = require("stream");
 
 // ===============================
 // SOCKET.IO – CHAT ESTÁVEL
@@ -2052,12 +2047,6 @@ app.post(
 
     try {
       if (isVideo) {
-        // ===============================
-        // 1. Baixa vídeo temporariamente
-        // ===============================
-        const tempVideo = `/tmp/${Date.now()}-video.mp4`;
-        const tempThumb = `/tmp/${Date.now()}-thumb.jpg`;
-
         const videoStream = await s3.getObject({
           Bucket: process.env.B2_BUCKET,
           Key: decodeURIComponent(req.file.location.split(".com/")[1])
