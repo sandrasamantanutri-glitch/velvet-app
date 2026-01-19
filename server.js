@@ -48,8 +48,18 @@ app.use(cors({
   credentials: true
 }));
 
-// app.use("/admin", contentRouter);
-// app.use("/content", contentRouter);
+app.get("/admin/:arquivo", (req, res) => {
+  const arquivo = req.params.arquivo;
+
+  // só permite css e js
+  if (!arquivo.endsWith(".css") && !arquivo.endsWith(".js")) {
+    return res.status(404).end();
+  }
+
+  res.sendFile(
+    path.join(__dirname, "admin-pages", arquivo)
+  );
+});
 
 // ===============================
 // BACKBLAZE B2 (UPLOAD NOVO)
