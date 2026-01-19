@@ -568,6 +568,11 @@ function abrirModalMidia(url, isVideo) {
   img.style.display = "none";
   video.style.display = "none";
 
+  // 🔥 LIMPA ESTADO ANTERIOR
+  video.pause();
+  video.src = "";
+  img.src = "";
+
   if (isVideo) {
     video.src = url;
     video.style.display = "block";
@@ -581,20 +586,16 @@ function abrirModalMidia(url, isVideo) {
 }
 
 // FECHAR MODAL
-document.getElementById("fecharModal")?.addEventListener("click", () => {
+document.getElementById("fecharModal")?.addEventListener("click", (e) => {
+  e.stopPropagation(); // 🔥 MUITO IMPORTANTE
+
   const modal = document.getElementById("modalMidia");
   const video = document.getElementById("modalVideo");
 
   video.pause();
   video.src = "";
+
   modal.classList.add("hidden");
-});
-document.addEventListener("click", (e) => {
-  if (e.target.closest("#fecharPix")) {
-    const popup = document.getElementById("popupPix");
-    if (popup) popup.classList.add("hidden");
-    window.pagamentoAtual = {};
-  }
 });
 
 async function excluirMidia(id, card) {
@@ -624,9 +625,6 @@ function aplicarPerfilNoDOM(modelo) {
   if (modelo.avatar) avatarImg.src = modelo.avatar;
   if (modelo.capa) capaImg.src = modelo.capa;
 }
-
-
-
 
 async function abrirPopupPix() {
   if (!modelo_id) {
