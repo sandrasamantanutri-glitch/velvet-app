@@ -25,7 +25,6 @@ const cron = require("node-cron");
 
 const requireRole = require("./middleware/requireRole");
 
-
 cron.schedule("0 3 * * *", async () => {
   console.log("🔍 Verificando clientes com chargeback...");
 
@@ -344,37 +343,6 @@ router.post(
       console.error("❌ Erro ALLMESSAGE:", err);
       res.status(500).json({ error: "Erro ao enviar AllMessage" });
     }
-  }
-);
-
-
-
-//ROTAS GETSSSS/////////////////////
-//modelo ve modelo
-router.get(
-  "/api/modelos",
-  authMiddleware,
-  requireRole("admin", "modelo"),
-  async (req, res) => {
-    const { role, id: user_id } = req.user;
-
-    let sql = `
-      SELECT id, nome
-      FROM modelos
-      WHERE ativo = true
-    `;
-    let params = [];
-
-    // 🔒 MODELO só vê o modelo vinculado ao SEU user_id
-    if (role === "modelo") {
-      sql += " AND user_id = $1";
-      params.push(user_id);
-    }
-
-    sql += " ORDER BY nome";
-
-    const result = await db.query(sql, params);
-    res.json(result.rows);
   }
 );
 
@@ -1339,6 +1307,43 @@ FROM (
   }
 });
 });
+
+// ===============================
+// 📣 ALLMESSAGE - LISTAR MODELOS
+// ===============================
+router.get(
+  "/api/allmessage/modelos",
+  authMiddleware,
+  requireRole("admin", "modelo"),
+  async (req, res) => {
+    try {
+      const { role, id: user_id } = req.user;
+
+      let sql = `
+        SELECT id, nome
+        FROM modelos
+        WHERE ativo = true
+      `;
+      let params = [];
+
+      // 🔒 modelo só vê a própria
+      if (role === "modelo") {
+        sql += " AND user_id = $1";
+        params.push(user_id);
+      }
+
+      sql += " ORDER BY nome";
+
+      const result = await db.query(sql, params);
+      res.json(result.rows);
+
+    } catch (err) {
+      console.error("Erro ALLMESSAGE modelos:", err);
+      res.status(500).json([]);
+    }
+  }
+);
+
 
 
 

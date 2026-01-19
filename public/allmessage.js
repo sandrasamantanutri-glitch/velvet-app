@@ -24,7 +24,7 @@ let conteudosSelecionados = [];
 
 // 🔹 carregar modelos
 async function carregarModelos() {
-  const res = await fetch("/api/modelos", {
+const res = await fetch("/api/allmessage/modelos", {
     headers: { Authorization: "Bearer " + token }
   });
 
