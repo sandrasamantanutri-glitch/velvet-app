@@ -291,7 +291,7 @@ function carregarFeed() {
     .then(feed => {
       if (!Array.isArray(feed)) return;
       listaMidias.innerHTML = "";
-      feed.forEach(item => adicionarMidia(item.id, item.url));
+      feed.forEach(item => adicionarMidia(item));
     });
 }
 
@@ -436,40 +436,31 @@ btnSalvarBio?.addEventListener("click", async () => {
   }
 });
 
-
-// ===============================
-// UPLOADS
-// ===============================
 // ===============================
 // THUMBNAIL REAL DE VÍDEO (IGUAL CONTEÚDOS)
 // ===============================
-async function gerarThumbnailVideo(file) {
-  return new Promise((resolve, reject) => {
-    const video = document.createElement("video");
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
+function adicionarMidia(conteudo) {
+  const { id, url, tipo, thumbnail_url } = conteudo;
+  const isVideo = tipo === "video";
 
-    video.src = URL.createObjectURL(file);
-    video.muted = true;
-    video.playsInline = true;
+  const card = document.createElement("div");
+  card.className = "midiaCard";
 
-    video.addEventListener("loadeddata", () => {
-      video.currentTime = 1;
-    });
+  const img = document.createElement("img");
+  img.className = "midiaThumb";
 
-    video.addEventListener("seeked", () => {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0);
+  if (isVideo) {
+    img.src = getVideoThumbnail(url, thumbnail_url);
+    card.classList.add("video");
+  } else {
+    img.src = url;
+  }
 
-      canvas.toBlob(blob => {
-        resolve(blob);
-        URL.revokeObjectURL(video.src);
-      }, "image/jpeg", 0.85);
-    });
+  card.appendChild(img);
 
-    video.addEventListener("error", reject);
-  });
+  card.onclick = () => abrirModalMidia(url, isVideo);
+
+  listaMidias.appendChild(card);
 }
 
 function iniciarUploads() {
@@ -501,39 +492,31 @@ function iniciarUploads() {
 // ===============================
 // MIDIA
 // ===============================
-function adicionarMidia(id, url) {
+function adicionarMidia(conteudo) {
+  const { id, url, tipo, thumbnail_url } = conteudo;
+  const isVideo = tipo === "video";
+
   const card = document.createElement("div");
   card.className = "midiaCard";
 
-  const ext = url.split(".").pop().toLowerCase();
-  const isVideo = ["mp4", "webm", "ogg", "mov"].includes(ext);
-
-  // 🔹 GRID SEMPRE USA IMAGEM
   const img = document.createElement("img");
   img.className = "midiaThumb";
 
   if (isVideo) {
-  // 🔥 thumbnail REAL do vídeo (Cloudinary)
-  img.src = url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
+    img.src = getVideoThumbnail(url, thumbnail_url);
+    card.classList.add("video");
+  } else {
+    img.src = url;
+  }
 
-  // fallback se algum vídeo MUITO antigo não gerar thumb
-  img.onerror = () => {
-    img.src = "/assets/capaDefault.jpg";
-  };
+  card.appendChild(img);
 
-  card.classList.add("video");
- } else {
-
-  img.src = url;
-}
-card.appendChild(img);
-
+  // 🔒 bloqueio VIP (mantém sua lógica)
   const deveBloquear =
     role !== "modelo" && window.__CLIENTE_VIP__ !== true;
 
   if (deveBloquear) {
     card.classList.add("bloqueada");
-
     card.onclick = () => {
       if (!role) {
         abrirPopupVelvet({ tipo: "login" });
@@ -542,23 +525,20 @@ card.appendChild(img);
       }
     };
   } else {
-    // 👉 clique abre modal
-    card.onclick = () => {
-      abrirModalMidia(url, isVideo);
-    };
+    card.onclick = () => abrirModalMidia(url, isVideo);
   }
 
-// ❌ botão excluir (só modelo)
-if (role === "modelo") {
-  const btnExcluir = document.createElement("button");
-  btnExcluir.className = "btnExcluirMidia";
-  btnExcluir.textContent = "Excluir";
-  btnExcluir.onclick = (e) => {
-    e.stopPropagation(); // 🔥 ESSENCIAL
-    excluirMidia(id, card);
-  };
-  card.appendChild(btnExcluir);
-}
+  // ❌ excluir (só modelo)
+  if (role === "modelo") {
+    const btnExcluir = document.createElement("button");
+    btnExcluir.className = "btnExcluirMidia";
+    btnExcluir.textContent = "Excluir";
+    btnExcluir.onclick = (e) => {
+      e.stopPropagation();
+      excluirMidia(id, card);
+    };
+    card.appendChild(btnExcluir);
+  }
 
   listaMidias.appendChild(card);
 }
@@ -600,7 +580,15 @@ document.addEventListener("click", (e) => {
   }
 });
 
+function getVideoThumbnail(url, thumbnail_url) {
+  if (thumbnail_url) return thumbnail_url;
 
+  if (url.includes("cloudinary.com")) {
+    return url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
+  }
+
+  return "/assets/capaDefault.jpg";
+}
 
 async function excluirMidia(id, card) {
   if (!confirm("Excluir esta mídia?")) return;
