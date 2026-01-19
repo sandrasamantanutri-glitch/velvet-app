@@ -243,7 +243,7 @@ router.post(
 
       // 🔍 valida se a modelo existe
       const modeloRes = await db.query(
-        "SELECT id FROM modelos WHERE id = $1 AND ativo = true",
+        "SELECT id FROM modelos WHERE id = $1",
         [modelo_id]
       );
 
@@ -1322,7 +1322,6 @@ router.get(
       let sql = `
         SELECT id, nome
         FROM modelos
-        WHERE ativo = true
       `;
       let params = [];
 
