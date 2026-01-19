@@ -31,7 +31,7 @@ if (token && role === "modelo" && !modeloParam) {
 }
 
 if (role === "cliente" && modo === "privado") {
-  window.location.href = "/clientHome.html";
+  window.location.href = "https://www.velvet.lat";
   throw new Error("Cliente não pode acessar profile privado");
 }
 if (modo === "publico") {
@@ -308,7 +308,7 @@ function carregarFeedPublico() {
       listaMidias.innerHTML = "";
 
       feed.forEach(item => {
-        adicionarMidia(item.id, item.url);
+        adicionarMidia(item);
       });
     });
 }
@@ -436,33 +436,6 @@ btnSalvarBio?.addEventListener("click", async () => {
   }
 });
 
-// ===============================
-// THUMBNAIL REAL DE VÍDEO (IGUAL CONTEÚDOS)
-// ===============================
-function adicionarMidia(conteudo) {
-  const { id, url, tipo, thumbnail_url } = conteudo;
-  const isVideo = tipo === "video";
-
-  const card = document.createElement("div");
-  card.className = "midiaCard";
-
-  const img = document.createElement("img");
-  img.className = "midiaThumb";
-
-  if (isVideo) {
-    img.src = getVideoThumbnail(url, thumbnail_url);
-    card.classList.add("video");
-  } else {
-    img.src = url;
-  }
-
-  card.appendChild(img);
-
-  card.onclick = () => abrirModalMidia(url, isVideo);
-
-  listaMidias.appendChild(card);
-}
-
 function iniciarUploads() {
   inputMedia?.addEventListener("change", async () => {
     const file = inputMedia.files[0];
@@ -546,12 +519,17 @@ function adicionarMidia(conteudo) {
 function getVideoThumbnail(url, thumbnail_url) {
   if (thumbnail_url) return thumbnail_url;
 
-  if (url.includes("cloudinary.com")) {
+  if (url && url.includes("cloudinary.com")) {
     return url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
   }
 
+  // 🔒 BACKBLAZE OU QUALQUER OUTRO → fallback
   return "/assets/capaDefault.jpg";
 }
+
+img.onerror = () => {
+  img.src = "/assets/capaDefault.jpg";
+};
 
 async function gerarThumbnailVideo(file) {
   return new Promise((resolve, reject) => {
