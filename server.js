@@ -1943,7 +1943,7 @@ app.post(
         const tempVideo = `/tmp/${Date.now()}-video.mp4`;
         const tempThumb = `/tmp/${Date.now()}-thumb.jpg`;
 
-        // 1️⃣ baixar vídeo do B2
+        // 1️⃣ baixar vídeo do Backblaze
         const key = decodeURIComponent(req.file.location.split(".com/")[1]);
         const videoStream = s3.getObject({
           Bucket: process.env.B2_BUCKET,
@@ -1957,11 +1957,12 @@ app.post(
           write.on("error", reject);
         });
 
-        // 2️⃣ gerar thumbnail REAL
+        // 2️⃣ gerar thumbnail real
         await gerarThumbnail(tempVideo, tempThumb);
 
-        // 3️⃣ subir thumbnail no B2
+        // 3️⃣ subir thumbnail no Backblaze
         const thumbKey = `velvet/conteudos/${req.user.id}/thumb-${Date.now()}.jpg`;
+
         const uploadThumb = await s3.upload({
           Bucket: process.env.B2_BUCKET,
           Key: thumbKey,
