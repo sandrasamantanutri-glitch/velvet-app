@@ -546,10 +546,6 @@ function getVideoThumbnail(url, thumbnail_url) {
   return "/assets/capaDefault.jpg";
 }
 
-img.onerror = () => {
-  img.src = "/assets/capaDefault.jpg";
-};
-
 async function gerarThumbnailVideo(file) {
   return new Promise((resolve, reject) => {
     const video = document.createElement("video");
