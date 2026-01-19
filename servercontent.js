@@ -215,8 +215,8 @@ router.post(
 // ===============================
 router.post(
   "/api/allmessage",
-  authMiddleware,
-  requireRole("admin", "agente", "modelo"),
+  authMiddleware, // use o MESMO middleware que funcionou antes
+  requireRole("admin", "modelo"),
   async (req, res) => {
     try {
       const {
@@ -227,64 +227,43 @@ router.post(
         modo_teste
       } = req.body;
 
-      // 🔒 validações básicas
+      const { role, id: user_id } = req.user;
+
+      // 🔒 validações
       if (!modelo_id || !texto || !preco || !Array.isArray(conteudos)) {
-        return res.status(400).json({ error: "Dados incompletos" });
+        return res.status(400).json({ error: "Dados inválidos" });
       }
 
       if (conteudos.length === 0) {
         return res.status(400).json({ error: "Nenhum conteúdo selecionado" });
       }
 
-      // 🔒 MODELO só pode enviar da própria conta
-      if (req.user.role === "modelo" && Number(req.user.id) !== Number(modelo_id)) {
-        return res.status(403).json({ error: "Modelo inválida" });
+      // 🔒 modelo só pode enviar da própria conta
+      if (role === "modelo") {
+        const check = await db.query(
+          `SELECT 1 FROM modelos WHERE id = $1 AND user_id = $2`,
+          [modelo_id, user_id]
+        );
+
+        if (check.rowCount === 0) {
+          return res.status(403).json({ error: "Modelo inválida" });
+        }
       }
 
-      // 🔍 valida se a modelo existe
-      const modeloRes = await db.query(
-        "SELECT id FROM modelos WHERE id = $1",
-        [modelo_id]
-      );
-
-      if (modeloRes.rowCount === 0) {
-        return res.status(404).json({ error: "Modelo não encontrada" });
-      }
-
-      // 🔍 valida se TODOS os conteúdos pertencem à modelo
-      const validConteudos = await db.query(
-        `
-        SELECT id
-        FROM conteudos
-        WHERE id = ANY($1::int[])
-          AND user_id = $2
-          AND tipo_conteudo = 'venda'
-        `,
-        [conteudos, modelo_id]
-      );
-
-      if (validConteudos.rowCount !== conteudos.length) {
-        return res.status(403).json({
-          error: "Um ou mais conteúdos não pertencem à modelo"
-        });
-      }
-
-      // 🔍 busca assinantes ativos
-      let clientesQuery = `
+      // 🔍 buscar assinantes ativos
+      let vipQuery = `
         SELECT cliente_id
         FROM vip_subscriptions
         WHERE modelo_id = $1
           AND ativo = true
       `;
+      const vipParams = [modelo_id];
 
-      const clientesParams = [modelo_id];
-
-      // 🧪 modo teste → apenas 1 cliente
-      if (modo_teste === true || modo_teste === "true") {
-        clientesQuery += " LIMIT 1";
+      if (modo_teste === true) {
+        vipQuery += " LIMIT 1";
       }
 
-      const clientesRes = await db.query(clientesQuery, clientesParams);
+      const clientesRes = await db.query(vipQuery, vipParams);
 
       if (clientesRes.rowCount === 0) {
         return res.status(400).json({
@@ -292,8 +271,10 @@ router.post(
         });
       }
 
-      // 🔁 ENVIO INDIVIDUAL (BLINDADO)
-      for (const c of clientesRes.rows) {
+      // 🔁 envio individual
+      for (const row of clientesRes.rows) {
+        const cliente_id = row.cliente_id;
+
         // 1️⃣ cria mensagem
         const msgRes = await db.query(
           `
@@ -303,12 +284,12 @@ router.post(
             ($1,$2,$3,$4,false,false,'allmessage')
           RETURNING id
           `,
-          [modelo_id, c.cliente_id, texto, preco]
+          [modelo_id, cliente_id, texto, preco]
         );
 
         const message_id = msgRes.rows[0].id;
 
-        // 2️⃣ cria pacote de conteúdo (pendente)
+        // 2️⃣ cria pacote
         await db.query(
           `
           INSERT INTO conteudo_pacotes
@@ -316,10 +297,10 @@ router.post(
           VALUES
             ($1,$2,$3,'pendente',$4)
           `,
-          [c.cliente_id, modelo_id, preco, message_id]
+          [cliente_id, modelo_id, preco, message_id]
         );
 
-        // 3️⃣ vincula conteúdos à mensagem
+        // 3️⃣ vincula conteúdos
         for (const conteudo_id of conteudos) {
           await db.query(
             `
@@ -340,8 +321,8 @@ router.post(
       });
 
     } catch (err) {
-      console.error("❌ Erro ALLMESSAGE:", err);
-      res.status(500).json({ error: "Erro ao enviar AllMessage" });
+      console.error("❌ ERRO ALLMESSAGE ENVIO:", err);
+      res.status(500).json({ error: err.message });
     }
   }
 );
