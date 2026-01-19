@@ -1157,22 +1157,6 @@ router.get(
 //   }
 // );
 
-router.get(
-  "/api/modelos",
-  authMiddleware,
-  requireRole("admin"),
-  async (req, res) => {
-    const result = await db.query(`
-      SELECT id, nome
-      FROM modelos
-      WHERE ativo = true
-      ORDER BY nome
-    `);
-
-    res.json(result.rows);
-  }
-);
-
 router.get("/content/transacoes", (req, res) => {
   res.sendFile(
     path.join(process.cwd(), "content", "transacoes.html")
