@@ -130,4 +130,15 @@ async function enviar(modoTeste) {
 btnEnviar.onclick = () => enviar(false);
 btnTeste.onclick = () => enviar(true);
 
+modeloSelect.addEventListener("change", () => {
+  const id = modeloSelect.value;
+
+  if (!id) {
+    conteudosGrid.innerHTML = "<p>Selecione uma modelo</p>";
+    return;
+  }
+
+  carregarConteudos(id);
+});
+
 carregarModelos();
