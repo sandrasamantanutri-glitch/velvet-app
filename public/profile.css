@@ -307,17 +307,21 @@ body {
   border-radius: 12px;
 }
 
-/* botão fechar */
-.modalClose {
-  position: fixed;
-  top: 20px;
-  right: 30px;
-  font-size: 34px;
+.fecharModal {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  z-index: 10000; /* 🔥 MAIOR QUE TUDO */
+  background: #000;
   color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
   cursor: pointer;
-  z-index: 1000000;
+  font-size: 20px;
+  pointer-events: auto; /* 🔥 CRÍTICO */
 }
-
 
 .midiaThumb,
 .midiaThumb img,
