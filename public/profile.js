@@ -543,6 +543,16 @@ function adicionarMidia(conteudo) {
   listaMidias.appendChild(card);
 }
 
+function getVideoThumbnail(url, thumbnail_url) {
+  if (thumbnail_url) return thumbnail_url;
+
+  if (url.includes("cloudinary.com")) {
+    return url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
+  }
+
+  return "/assets/capaDefault.jpg";
+}
+
 function abrirModalMidia(url, isVideo) {
   const modal = document.getElementById("modalMidia");
   const img = document.getElementById("modalImg");
@@ -579,16 +589,6 @@ document.addEventListener("click", (e) => {
     window.pagamentoAtual = {};
   }
 });
-
-function getVideoThumbnail(url, thumbnail_url) {
-  if (thumbnail_url) return thumbnail_url;
-
-  if (url.includes("cloudinary.com")) {
-    return url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
-  }
-
-  return "/assets/capaDefault.jpg";
-}
 
 async function excluirMidia(id, card) {
   if (!confirm("Excluir esta mídia?")) return;
