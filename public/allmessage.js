@@ -1,12 +1,25 @@
+// ===============================
+// AUTH GUARD
+// ===============================
+const token = localStorage.getItem("token");
+const role  = localStorage.getItem("role");
+
+if (!token) {
+  window.location.href = "/index.html";
+  throw new Error("Sem token");
+}
+
+// ===============================
+// ESTADO
+// ===============================
+let modelo_id = null;
+
 const modeloSelect = document.getElementById("modeloSelect");
 const mensagemInput = document.getElementById("mensagem");
 const precoInput = document.getElementById("preco");
 const conteudosGrid = document.getElementById("conteudosGrid");
-
 const btnEnviar = document.getElementById("btnEnviar");
 const btnTeste = document.getElementById("btnTeste");
-
-const token = localStorage.getItem("token");
 let conteudosSelecionados = [];
 
 // 🔹 carregar modelos

@@ -5,9 +5,22 @@
   <title>Velvet | Envio de Mensagens - PPV</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="allmessage.css" />
+   <!-- Header global -->
+  <link rel="stylesheet" href="/header.css" />
+
 </head>
 
 <body>
+     <!-- 🔒 PROTEÇÃO -->
+  <script>
+    if (!localStorage.getItem("token")) {
+      window.location.href = "/index.html";
+    }
+  </script>
+
+  <!-- HEADER -->
+  <div id="header-container"></div>
+
 <div class="page-wrapper">
 
   <header class="topbar">
@@ -55,5 +68,6 @@
 </div>
 
 <script src="allmessage.js"></script>
+<script src="/header.js"></script>
 </body>
 </html>
