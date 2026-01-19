@@ -48,6 +48,9 @@ app.use(cors({
   credentials: true
 }));
 
+app.use("/admin", contentRouter);
+app.use("/content", contentRouter);
+
 // ===============================
 // BACKBLAZE B2 (UPLOAD NOVO)
 // ===============================
@@ -288,8 +291,6 @@ const authLimiter = rateLimit({
 
 const servercontent = require("./servercontent");
 app.use("/", servercontent);
-// app.use("/admin", contentRouter);
-// app.use("/content", contentRouter);
 
 const requireRole = require("./middleware/requireRole");
 // ===============================
