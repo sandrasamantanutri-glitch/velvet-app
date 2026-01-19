@@ -150,6 +150,25 @@ function adicionarMidia(conteudo) {
 }
 
 // ===============================
+// THUMBNAIL DE VÍDEO (LEGADO + NOVO)
+// ===============================
+function getVideoThumbnail(url, thumbnail_url) {
+  // 🆕 Novo padrão (Backblaze)
+  if (thumbnail_url) {
+    return thumbnail_url;
+  }
+
+  // 🧓 Legado Cloudinary
+  if (url && url.includes("cloudinary.com")) {
+    return url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
+  }
+
+  // 🚨 Fallback final
+  return "/assets/capaDefault.jpg";
+}
+
+
+// ===============================
 // MODAL
 // ===============================
 function abrirModalMidia(url, isVideo) {
