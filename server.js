@@ -23,7 +23,11 @@ const server = http.createServer(app);
 const multer = require("multer");
 const onlineClientes = {};
 const onlineModelos = {};
+
 const cloudinary = require("cloudinary").v2;
+const AWS = require("aws-sdk");
+const multerS3 = require("multer-s3");
+
 const { MercadoPagoConfig, Payment } = require("mercadopago");
 const CONTEUDOS_FILE = "conteudos.json";
 const MODELOS_FILE = "modelos.json";
@@ -31,19 +35,135 @@ const COMPRAS_FILE = "compras.json";
 const bodyParser = require("body-parser");
 const Stripe = require("stripe");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const contentRouter = require("./servercontent");
 const nodemailer = require("nodemailer");
+
+const ffmpeg = require("fluent-ffmpeg");
+const ffmpegPath = require("ffmpeg-static");
+
+ffmpeg.setFfmpegPath(ffmpegPath);
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
-app.use("/admin", contentRouter);
-app.use("/content", contentRouter);
 app.use(cors({
   origin: ["https://velvet-app-production.up.railway.app"],
   credentials: true
 }));
 
-app.use(express.static(path.join(__dirname, "public")));
+// ===============================
+// BACKBLAZE B2 (UPLOAD NOVO)
+// ===============================
+const s3 = new AWS.S3({
+  endpoint: new AWS.Endpoint(process.env.B2_ENDPOINT),
+  accessKeyId: process.env.B2_KEY_ID,
+  secretAccessKey: process.env.B2_APP_KEY,
+  region: process.env.B2_REGION,
+  signatureVersion: "v4",
+  s3ForcePathStyle: true
+});
 
+
+const uploadB2 = multer({
+  storage: multerS3({
+    s3,
+    bucket: process.env.B2_BUCKET,
+    acl: "public-read",
+    contentType: multerS3.AUTO_CONTENT_TYPE,
+    key: (req, file, cb) => {
+      const ext = file.originalname.split(".").pop();
+      const nome = `velvet/${req.user.id}/${Date.now()}.${ext}`;
+      cb(null, nome);
+    }
+  })
+});
+
+// ===============================
+// BACKBLAZE – CONTEÚDOS DE VENDA (COM THUMBNAIL REAL)
+// ===============================
+app.post(
+  "/api/conteudos/upload",
+  auth,
+  authModelo,
+  uploadB2.fields([
+    { name: "conteudo", maxCount: 1 },
+    { name: "thumbnail", maxCount: 1 }
+  ]),
+  async (req, res) => {
+    const file = req.files.conteudo?.[0];
+    const thumb = req.files.thumbnail?.[0];
+
+    if (!file) {
+      return res.status(400).json({ error: "Arquivo não enviado" });
+    }
+
+    const isVideo = file.mimetype.startsWith("video");
+    const thumbnailUrl = thumb?.location || null;
+
+    await db.query(
+      `
+      INSERT INTO conteudos
+        (user_id, url, tipo, tipo_conteudo, thumbnail_url)
+      VALUES ($1, $2, $3, 'venda', $4)
+      `,
+      [
+        req.user.id,
+        file.location,
+        isVideo ? "video" : "imagem",
+        thumbnailUrl
+      ]
+    );
+
+    res.json({
+      success: true,
+      url: file.location,
+      thumbnail_url: thumbnailUrl
+    });
+  }
+);
+
+// ===============================
+// FEED – UPLOAD NOVO (MESMO PIPELINE DE CONTEÚDOS)
+// ===============================
+app.post(
+  "/api/feed/upload",
+  auth,
+  authModelo,
+  uploadB2.fields([
+    { name: "midia", maxCount: 1 },
+    { name: "thumbnail", maxCount: 1 }
+  ]),
+  async (req, res) => {
+    const file = req.files.midia?.[0];
+    const thumb = req.files.thumbnail?.[0];
+
+    if (!file) {
+      return res.status(400).json({ error: "Arquivo não enviado" });
+    }
+
+    const isVideo = file.mimetype.startsWith("video");
+    const thumbnailUrl = thumb?.location || null;
+
+    await db.query(
+      `
+      INSERT INTO conteudos
+        (user_id, url, tipo, tipo_conteudo, thumbnail_url)
+      VALUES ($1, $2, $3, 'feed', $4)
+      `,
+      [
+        req.user.id,
+        file.location,
+        isVideo ? "video" : "imagem",
+        thumbnailUrl
+      ]
+    );
+
+    res.json({
+      success: true,
+      url: file.location,
+      thumbnail_url: thumbnailUrl
+    });
+  }
+);
+
+app.use(express.static(path.join(__dirname, "public")));
 app.post("/webhook/stripe", express.raw({ type: "application/json" }), async (req, res) => {
   const sig = req.headers["stripe-signature"];
 
@@ -168,9 +288,11 @@ const authLimiter = rateLimit({
 
 const servercontent = require("./servercontent");
 app.use("/", servercontent);
+// app.use("/admin", contentRouter);
+// app.use("/content", contentRouter);
 
 const requireRole = require("./middleware/requireRole");
-
+// ===============================
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -474,8 +596,6 @@ if (sidModelo) {
   });
 }
 }
-
-
 
 // ===============================
 // SOCKET.IO – CHAT ESTÁVEL
@@ -934,7 +1054,7 @@ app.get("/api/feed/me", auth, async (req, res) => {
   try {
     const result = await db.query(
       `
-      SELECT id, url, tipo, criado_em
+      SELECT id, url, tipo, thumbnail_url, criado_em
 FROM conteudos
 WHERE user_id = $1
   AND tipo_conteudo = 'feed'
@@ -984,7 +1104,7 @@ app.get("/api/modelo/:id/feed", auth, async (req, res) => {
     const { id } = req.params;
 
     const result = await db.query(`
-      SELECT id, url, tipo
+      SELECT id, url, tipo, thumbnail_url
 FROM conteudos
 WHERE user_id = $1
   AND tipo_conteudo = 'feed'
@@ -1008,7 +1128,7 @@ app.get("/api/modelo/publico/:id/feed", async (req, res) => {
 
   try {
     const result = await db.query(`
-      SELECT id, url, tipo
+      SELECT id, url, tipo, thumbnail_url
       FROM conteudos
       WHERE user_id = $1
         AND tipo_conteudo = 'feed'
@@ -1465,11 +1585,15 @@ app.get("/api/conteudos/me", authModelo, async (req, res) => {
   try {
     const result = await db.query(
       `
-      SELECT id, url, tipo
-FROM conteudos
-WHERE user_id = $1
-  AND tipo_conteudo = 'venda'
-ORDER BY id DESC
+      SELECT
+        id,
+        url,
+        tipo,
+        thumbnail_url
+      FROM conteudos
+      WHERE user_id = $1
+        AND tipo_conteudo = 'venda'
+      ORDER BY id DESC
       `,
       [req.user.id]
     );
@@ -1480,8 +1604,6 @@ ORDER BY id DESC
     res.status(500).json([]);
   }
 });
-
-
 
 
 
@@ -1876,18 +1998,11 @@ app.post(
   }
 );
 
-
-app.post(
-  "/api/conteudos/upload",
-  auth,
-  authModelo,
-  upload.single("conteudo"),
-  uploadConteudo
-);
 // ===============================
 // 🗑 EXCLUIR CONTEÚDO (MODELO)
 // ===============================
 
+// 🗑 EXCLUIR CONTEÚDO (MODELO)
 app.delete(
   "/api/conteudos/:id",
   auth,
@@ -1911,25 +2026,14 @@ app.delete(
 
       const url = result.rows[0].url;
 
-      // 🔥 tenta apagar no Cloudinary (não pode quebrar)
       try {
-        const publicId = url
-          .split("/")
-          .slice(-2)
-          .join("/")
-          .replace(/\.[^/.]+$/, "");
-
-        await cloudinary.uploader.destroy(publicId);
+        await excluirArquivoFisico(url);
       } catch (e) {
-        console.warn("⚠️ Falha ao apagar no Cloudinary, seguindo:", e.message);
+        console.warn("⚠️ Falha ao apagar arquivo físico:", e.message);
       }
 
-      // 🗑 apaga do banco (FONTE DA VERDADE)
       await db.query(
-        `
-        DELETE FROM conteudos
-        WHERE id = $1 AND user_id = $2
-        `,
+        `DELETE FROM conteudos WHERE id = $1 AND user_id = $2`,
         [id, req.user.id]
       );
 
@@ -1942,37 +2046,81 @@ app.delete(
   }
 );
 
-
 app.post(
   "/uploadMidia",
   auth,
   onlyModelo,
-  upload.single("midia"),
+  uploadB2.single("midia"),
   async (req, res) => {
+    const isVideo = req.file.mimetype.startsWith("video");
+
+    let thumbnailUrl = null;
+
     try {
-      const result = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload_stream(
-          {
-            folder: `velvet/${req.user.id}/midias`,
-            resource_type: "auto"
-          },
-          (err, result) => (err ? reject(err) : resolve(result))
-        ).end(req.file.buffer);
-      });
+      if (isVideo) {
+        const videoStream = await s3.getObject({
+          Bucket: process.env.B2_BUCKET,
+          Key: decodeURIComponent(req.file.location.split(".com/")[1])
+        }).createReadStream();
+
+        await new Promise((resolve, reject) => {
+          const write = fs.createWriteStream(tempVideo);
+          videoStream.pipe(write);
+          write.on("finish", resolve);
+          write.on("error", reject);
+        });
+
+        // ===============================
+        // 2. Gera thumbnail REAL
+        // ===============================
+        await gerarThumbnail(tempVideo, tempThumb);
+
+        // ===============================
+        // 3. Upload thumbnail no B2
+        // ===============================
+        const thumbKey = `velvet/feed/${req.user.id}/thumb-${Date.now()}.jpg`;
+
+        const thumbUpload = await s3.upload({
+          Bucket: process.env.B2_BUCKET,
+          Key: thumbKey,
+          Body: fs.createReadStream(tempThumb),
+          ContentType: "image/jpeg",
+          ACL: "public-read"
+        }).promise();
+
+        thumbnailUrl = thumbUpload.Location;
+
+        // limpeza
+        fs.unlinkSync(tempVideo);
+        fs.unlinkSync(tempThumb);
+      }
+
+      // ===============================
+      // 4. Salva no banco
+      // ===============================
+      const tipo = isVideo ? "video" : "imagem";
 
       await db.query(
-        "INSERT INTO conteudos (user_id, url, tipo) VALUES ($1, $2, $3)",
-        [req.user.id, result.secure_url, result.resource_type]
+        `
+        INSERT INTO conteudos (user_id, url, tipo, tipo_conteudo, thumbnail_url)
+        VALUES ($1, $2, $3, 'feed', $4)
+        `,
+        [req.user.id, req.file.location, tipo, thumbnailUrl]
       );
 
-      res.json({ url: result.secure_url });
+      res.json({
+        success: true,
+        url: req.file.location,
+        thumbnail_url: thumbnailUrl
+      });
 
     } catch (err) {
-      console.error("Erro upload midia:", err);
-      res.status(500).json({ error: "Erro ao enviar mídia" });
+      console.error("❌ Erro upload com thumbnail:", err);
+      res.status(500).json({ error: "Erro ao processar vídeo" });
     }
   }
 );
+
 
 app.post("/api/contato", async (req, res) => {
   try {

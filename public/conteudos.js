@@ -66,13 +66,15 @@ function bindFileInput() {
 // ===============================
 async function uploadConteudo() {
   const file = fileInput.files[0];
-  if (!file) {
-    alert("Selecione um ficheiro");
-    return;
-  }
+  if (!file) return;
 
   const fd = new FormData();
   fd.append("conteudo", file);
+
+  if (file.type.startsWith("video")) {
+    const thumbBlob = await gerarThumbnailVideo(file);
+    fd.append("thumbnail", thumbBlob, "thumb.jpg");
+  }
 
   const res = await fetch("/api/conteudos/upload", {
     method: "POST",
@@ -84,9 +86,6 @@ async function uploadConteudo() {
     alert("Erro ao enviar conteúdo");
     return;
   }
-
-  fileInput.value = "";
-  fileNameSpan.textContent = "Nenhum ficheiro selecionado";
 
   listarConteudos();
 }
@@ -119,7 +118,8 @@ async function listarConteudos() {
 // ADICIONAR MÍDIA (IGUAL PROFILE)
 // ===============================
 function adicionarMidia(conteudo) {
-  const { id, url, tipo } = conteudo;
+    console.log("🧪 CONTEÚDO:", conteudo);
+  const { id, url, tipo, thumbnail_url } = conteudo;
   const isVideo = tipo === "video";
 
   const card = document.createElement("div");
@@ -129,19 +129,13 @@ function adicionarMidia(conteudo) {
   img.className = "midiaThumb";
 
   if (isVideo) {
-    // 🎥 vídeo → thumbnail
-    img.src = url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
-    img.onerror = () => {
-      img.src = "/assets/capaDefault.jpg";
-    };
+    card.classList.add("video")
+    img.src = getVideoThumbnail(url, thumbnail_url);
   } else {
-    // 🖼️ imagem normal
     img.src = url;
   }
 
-  img.addEventListener("click", () => {
-    abrirModalMidia(url, isVideo);
-  });
+  img.onclick = () => abrirModalMidia(url, isVideo);
 
   const btnExcluir = document.createElement("button");
   btnExcluir.className = "btn-excluir";
@@ -153,9 +147,55 @@ function adicionarMidia(conteudo) {
 
   card.appendChild(img);
   card.appendChild(btnExcluir);
-
-  // 🔥 ESTA LINHA ESTAVA FALTANDO
   lista.appendChild(card);
+}
+
+// ===============================
+// THUMBNAIL DE VÍDEO (LEGADO + NOVO)
+// ===============================
+function getVideoThumbnail(url, thumbnail_url) {
+  // 🆕 Novo padrão (Backblaze)
+  if (thumbnail_url) {
+    return thumbnail_url;
+  }
+
+  // 🧓 Legado Cloudinary
+  if (url && url.includes("cloudinary.com")) {
+    return url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
+  }
+
+  // 🚨 Fallback final
+  return "/assets/capaDefault.jpg";
+}
+
+
+async function gerarThumbnailVideo(file) {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement("video");
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    video.src = URL.createObjectURL(file);
+    video.muted = true;
+    video.playsInline = true;
+
+    video.addEventListener("loadeddata", () => {
+      video.currentTime = 1;
+    });
+
+    video.addEventListener("seeked", () => {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0);
+
+      canvas.toBlob(blob => {
+        resolve(blob);
+        URL.revokeObjectURL(video.src);
+      }, "image/jpeg", 0.85);
+    });
+
+    video.addEventListener("error", reject);
+  });
 }
 
 // ===============================
@@ -207,3 +247,35 @@ async function excluirConteudo(id) {
     alert("Erro ao excluir conteúdo");
   }
 }
+
+function storageFromUrl(url) {
+  if (!url) return null;
+  if (url.includes("cloudinary.com")) return "cloudinary";
+  if (url.includes(process.env.B2_ENDPOINT)) return "backblaze";
+  return "desconhecido";
+}
+
+async function excluirArquivoFisico(url) {
+  const storage = storageFromUrl(url);
+
+  if (storage === "cloudinary") {
+    const publicId = url
+      .split("/")
+      .slice(-2)
+      .join("/")
+      .replace(/\.[^/.]+$/, "");
+
+    await cloudinary.uploader.destroy(publicId);
+  }
+
+  if (storage === "backblaze") {
+    const key = decodeURIComponent(url.split(".com/")[1]);
+
+    await s3.deleteObject({
+      Bucket: process.env.B2_BUCKET,
+      Key: key
+    }).promise();
+  }
+}
+
+
