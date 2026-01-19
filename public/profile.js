@@ -22,17 +22,21 @@ console.log("role:", role);
 console.log("modelo_id LS:", localStorage.getItem("modelo_id"));
 console.groupEnd();
 
-// 🔓 MODO PÚBLICO se veio por ?id=
-const modoPublico = !!modeloParam;
 
-if (role === "cliente" && !modoPublico) {
+
+//DEFINIÇÃO SEGURA DE MODO
+let modo = "publico";
+if (token && role === "modelo" && !modeloParam) {
+  modo = "privado";
+}
+
+if (role === "cliente" && modo === "privado") {
   window.location.href = "/clientHome.html";
   throw new Error("Cliente não pode acessar profile privado");
 }
-
-const modo = role === "modelo" && !modoPublico
-    ? "privado"
-    : "publico";
+if (modo === "publico") {
+  localStorage.removeItem("modelo_id");
+}
 
 let modelo_id = modeloParam
   ? Number(modeloParam)
