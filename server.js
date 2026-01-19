@@ -48,8 +48,8 @@ app.use(cors({
   credentials: true
 }));
 
-app.use("/admin", contentRouter);
-app.use("/content", contentRouter);
+// app.use("/admin", contentRouter);
+// app.use("/content", contentRouter);
 
 // ===============================
 // BACKBLAZE B2 (UPLOAD NOVO)
