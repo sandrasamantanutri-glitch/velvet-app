@@ -119,7 +119,7 @@ async function listarConteudos() {
 // ADICIONAR MÍDIA (IGUAL PROFILE)
 // ===============================
 function adicionarMidia(conteudo) {
-  const { id, url, tipo } = conteudo;
+  const { id, url, tipo, thumbnail_url } = conteudo;
   const isVideo = tipo === "video";
 
   const card = document.createElement("div");
@@ -132,7 +132,7 @@ function adicionarMidia(conteudo) {
     // 🎥 vídeo → thumbnail
     img.src = url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
     img.onerror = () => {
-      img.src = "/assets/capaDefault.jpg";
+      img.src = thumbnail_url || "/assets/capaVideo.png";
     };
   } else {
     // 🖼️ imagem normal
@@ -156,6 +156,21 @@ function adicionarMidia(conteudo) {
 
   // 🔥 ESTA LINHA ESTAVA FALTANDO
   lista.appendChild(card);
+}
+
+function gerarThumbnail(videoPath, thumbPath) {
+  return new Promise((resolve, reject) => {
+    ffmpeg(videoPath)
+      .screenshots({
+        count: 1,
+        timemarks: ["1"], // 1 segundo
+        filename: path.basename(thumbPath),
+        folder: path.dirname(thumbPath),
+        size: "640x?"
+      })
+      .on("end", resolve)
+      .on("error", reject);
+  });
 }
 
 // ===============================

@@ -37,6 +37,14 @@ const Stripe = require("stripe");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const contentRouter = require("./servercontent");
 const nodemailer = require("nodemailer");
+
+const ffmpeg = require("fluent-ffmpeg");
+const ffmpegPath = require("ffmpeg-static");
+const fs = require("fs");
+const path = require("path");
+
+ffmpeg.setFfmpegPath(ffmpegPath);
+
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/admin", contentRouter);
@@ -1994,32 +2002,83 @@ app.post(
   "/uploadMidia",
   auth,
   onlyModelo,
-  upload.single("midia"),
+  uploadB2.single("midia"),
   async (req, res) => {
+    const isVideo = req.file.mimetype.startsWith("video");
+
+    let thumbnailUrl = null;
+
     try {
-      const result = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload_stream(
-          {
-            folder: `velvet/${req.user.id}/midias`,
-            resource_type: "auto"
-          },
-          (err, result) => (err ? reject(err) : resolve(result))
-        ).end(req.file.buffer);
-      });
+      if (isVideo) {
+        // ===============================
+        // 1. Baixa vídeo temporariamente
+        // ===============================
+        const tempVideo = `/tmp/${Date.now()}-video.mp4`;
+        const tempThumb = `/tmp/${Date.now()}-thumb.jpg`;
+
+        const videoStream = await s3.getObject({
+          Bucket: process.env.B2_BUCKET,
+          Key: decodeURIComponent(req.file.location.split(".com/")[1])
+        }).createReadStream();
+
+        await new Promise((resolve, reject) => {
+          const write = fs.createWriteStream(tempVideo);
+          videoStream.pipe(write);
+          write.on("finish", resolve);
+          write.on("error", reject);
+        });
+
+        // ===============================
+        // 2. Gera thumbnail REAL
+        // ===============================
+        await gerarThumbnail(tempVideo, tempThumb);
+
+        // ===============================
+        // 3. Upload thumbnail no B2
+        // ===============================
+        const thumbKey = `velvet/feed/${req.user.id}/thumb-${Date.now()}.jpg`;
+
+        const thumbUpload = await s3.upload({
+          Bucket: process.env.B2_BUCKET,
+          Key: thumbKey,
+          Body: fs.createReadStream(tempThumb),
+          ContentType: "image/jpeg",
+          ACL: "public-read"
+        }).promise();
+
+        thumbnailUrl = thumbUpload.Location;
+
+        // limpeza
+        fs.unlinkSync(tempVideo);
+        fs.unlinkSync(tempThumb);
+      }
+
+      // ===============================
+      // 4. Salva no banco
+      // ===============================
+      const tipo = isVideo ? "video" : "imagem";
 
       await db.query(
-        "INSERT INTO conteudos (user_id, url, tipo) VALUES ($1, $2, $3)",
-        [req.user.id, result.secure_url, result.resource_type]
+        `
+        INSERT INTO conteudos (user_id, url, tipo, tipo_conteudo, thumbnail_url)
+        VALUES ($1, $2, $3, 'feed', $4)
+        `,
+        [req.user.id, req.file.location, tipo, thumbnailUrl]
       );
 
-      res.json({ url: result.secure_url });
+      res.json({
+        success: true,
+        url: req.file.location,
+        thumbnail_url: thumbnailUrl
+      });
 
     } catch (err) {
-      console.error("Erro upload midia:", err);
-      res.status(500).json({ error: "Erro ao enviar mídia" });
+      console.error("❌ Erro upload com thumbnail:", err);
+      res.status(500).json({ error: "Erro ao processar vídeo" });
     }
   }
 );
+
 
 app.post("/api/contato", async (req, res) => {
   try {
