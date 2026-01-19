@@ -356,7 +356,7 @@ router.get(
   authMiddleware,
   requireRole("admin", "modelo"),
   async (req, res) => {
-    const { role, id } = req.user;
+    const { role, id: user_id } = req.user;
 
     let sql = `
       SELECT id, nome
@@ -365,10 +365,10 @@ router.get(
     `;
     let params = [];
 
-    // 🔒 MODELO só vê a si mesma
+    // 🔒 MODELO só vê o modelo vinculado ao SEU user_id
     if (role === "modelo") {
-      sql += " AND id = $1";
-      params.push(id);
+      sql += " AND user_id = $1";
+      params.push(user_id);
     }
 
     sql += " ORDER BY nome";
@@ -377,6 +377,7 @@ router.get(
     res.json(result.rows);
   }
 );
+
 // PÁGINA DE RELATÓRIOS
 router.get(
   "/relatorios",
