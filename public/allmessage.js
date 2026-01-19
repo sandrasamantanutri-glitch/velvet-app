@@ -49,15 +49,23 @@ async function carregarConteudos(modelo_id) {
   conteudosGrid.innerHTML = "";
   conteudosSelecionados = [];
 
-  const res = await fetch(`/api/conteudos/modelo/${modelo_id}`, {
-    headers: { Authorization: "Bearer " + token }
+  const res = await fetch(`/api/allmessage/conteudos/${modelo_id}`, {
+    headers: {
+      Authorization: "Bearer " + token
+    }
   });
 
   if (!res.ok) {
-  conteudosGrid.innerHTML = "<p>Erro ao carregar conteúdos</p>";
-  return;
-}
+    conteudosGrid.innerHTML = "<p>Erro ao carregar conteúdos</p>";
+    return;
+  }
+
   const conteudos = await res.json();
+
+  if (conteudos.length === 0) {
+    conteudosGrid.innerHTML = "<p>Nenhum conteúdo disponível</p>";
+    return;
+  }
 
   conteudos.forEach(c => {
     const item = document.createElement("div");
@@ -81,12 +89,6 @@ async function carregarConteudos(modelo_id) {
     conteudosGrid.appendChild(item);
   });
 }
-
-modeloSelect.onchange = () => {
-  if (modeloSelect.value) {
-    carregarConteudos(modeloSelect.value);
-  }
-};
 
 // 🚀 envio
 async function enviar(modoTeste) {
