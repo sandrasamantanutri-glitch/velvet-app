@@ -290,16 +290,21 @@ const msgRes = await db.query(
         const message_id = msgRes.rows[0].id;
 
         // 2️⃣ cria pacote
-        await db.query(
-          `
-          INSERT INTO conteudo_pacotes
-            (cliente_id, modelo_id, valor_total, status, message_id)
-          VALUES
-            ($1,$2,$3,'pendente',$4)
-          `,
-          [cliente_id, modelo_id, preco, message_id]
-        );
-
+await db.query(
+  `
+  INSERT INTO conteudo_pacotes
+    (cliente_id, modelo_id, preco, valor_total, status, message_id)
+  VALUES
+    ($1,$2,$3,$4,'pendente',$5)
+  `,
+  [
+    cliente_id,
+    modelo_id,
+    preco,      // ← preço base
+    preco,      // ← valor_total (no AllMessage é o mesmo)
+    message_id
+  ]
+);
         // 3️⃣ vincula conteúdos
         for (const conteudo_id of conteudos) {
           await db.query(
