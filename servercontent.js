@@ -211,6 +211,142 @@ router.post(
   }
 );
 
+// ===============================
+// 📣 ALLMESSAGE - ENVIO EM MASSA
+// ===============================
+router.post(
+  "/api/allmessage",
+  authMiddleware,
+  requireRole("admin", "agente", "modelo"),
+  async (req, res) => {
+    try {
+      const {
+        modelo_id,
+        texto,
+        preco,
+        conteudos,
+        modo_teste
+      } = req.body;
+
+      // 🔒 validações básicas
+      if (!modelo_id || !texto || !preco || !Array.isArray(conteudos)) {
+        return res.status(400).json({ error: "Dados incompletos" });
+      }
+
+      if (conteudos.length === 0) {
+        return res.status(400).json({ error: "Nenhum conteúdo selecionado" });
+      }
+
+      // 🔒 MODELO só pode enviar da própria conta
+      if (req.user.role === "modelo" && Number(req.user.id) !== Number(modelo_id)) {
+        return res.status(403).json({ error: "Modelo inválida" });
+      }
+
+      // 🔍 valida se a modelo existe
+      const modeloRes = await db.query(
+        "SELECT id FROM modelos WHERE id = $1 AND ativo = true",
+        [modelo_id]
+      );
+
+      if (modeloRes.rowCount === 0) {
+        return res.status(404).json({ error: "Modelo não encontrada" });
+      }
+
+      // 🔍 valida se TODOS os conteúdos pertencem à modelo
+      const validConteudos = await db.query(
+        `
+        SELECT id
+        FROM conteudos
+        WHERE id = ANY($1::int[])
+          AND user_id = $2
+          AND tipo_conteudo = 'venda'
+        `,
+        [conteudos, modelo_id]
+      );
+
+      if (validConteudos.rowCount !== conteudos.length) {
+        return res.status(403).json({
+          error: "Um ou mais conteúdos não pertencem à modelo"
+        });
+      }
+
+      // 🔍 busca assinantes ativos
+      let clientesQuery = `
+        SELECT cliente_id
+        FROM vip_subscriptions
+        WHERE modelo_id = $1
+          AND ativo = true
+      `;
+
+      const clientesParams = [modelo_id];
+
+      // 🧪 modo teste → apenas 1 cliente
+      if (modo_teste === true || modo_teste === "true") {
+        clientesQuery += " LIMIT 1";
+      }
+
+      const clientesRes = await db.query(clientesQuery, clientesParams);
+
+      if (clientesRes.rowCount === 0) {
+        return res.status(400).json({
+          error: "Nenhum assinante ativo encontrado"
+        });
+      }
+
+      // 🔁 ENVIO INDIVIDUAL (BLINDADO)
+      for (const c of clientesRes.rows) {
+        // 1️⃣ cria mensagem
+        const msgRes = await db.query(
+          `
+          INSERT INTO messages
+            (modelo_id, cliente_id, texto, preco, pago, visto, tipo)
+          VALUES
+            ($1,$2,$3,$4,false,false,'allmessage')
+          RETURNING id
+          `,
+          [modelo_id, c.cliente_id, texto, preco]
+        );
+
+        const message_id = msgRes.rows[0].id;
+
+        // 2️⃣ cria pacote de conteúdo (pendente)
+        await db.query(
+          `
+          INSERT INTO conteudo_pacotes
+            (cliente_id, modelo_id, valor_total, status, message_id)
+          VALUES
+            ($1,$2,$3,'pendente',$4)
+          `,
+          [c.cliente_id, modelo_id, preco, message_id]
+        );
+
+        // 3️⃣ vincula conteúdos à mensagem
+        for (const conteudo_id of conteudos) {
+          await db.query(
+            `
+            INSERT INTO messages_conteudos
+              (message_id, conteudo_id)
+            VALUES
+              ($1,$2)
+            `,
+            [message_id, conteudo_id]
+          );
+        }
+      }
+
+      res.json({
+        ok: true,
+        enviados: clientesRes.rowCount,
+        modo_teste: !!modo_teste
+      });
+
+    } catch (err) {
+      console.error("❌ Erro ALLMESSAGE:", err);
+      res.status(500).json({ error: "Erro ao enviar AllMessage" });
+    }
+  }
+);
+
 
 
 //ROTAS GETSSSS/////////////////////
