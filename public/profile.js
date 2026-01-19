@@ -440,6 +440,38 @@ btnSalvarBio?.addEventListener("click", async () => {
 // ===============================
 // UPLOADS
 // ===============================
+// ===============================
+// THUMBNAIL REAL DE VÍDEO (IGUAL CONTEÚDOS)
+// ===============================
+async function gerarThumbnailVideo(file) {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement("video");
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    video.src = URL.createObjectURL(file);
+    video.muted = true;
+    video.playsInline = true;
+
+    video.addEventListener("loadeddata", () => {
+      video.currentTime = 1;
+    });
+
+    video.addEventListener("seeked", () => {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0);
+
+      canvas.toBlob(blob => {
+        resolve(blob);
+        URL.revokeObjectURL(video.src);
+      }, "image/jpeg", 0.85);
+    });
+
+    video.addEventListener("error", reject);
+  });
+}
+
 function iniciarUploads() {
   inputMedia?.addEventListener("change", async () => {
     const file = inputMedia.files[0];
@@ -448,7 +480,7 @@ function iniciarUploads() {
     const fd = new FormData();
     fd.append("midia", file);
      if (file.type.startsWith("video")) {
-    const thumbBlob = await gerarThumbnail(file);
+    const thumbBlob = await gerarThumbnailVideo(file);
     fd.append("thumbnail", thumbBlob, "thumb.jpg");
   }
   const res = await fetch("/api/feed/upload", {
