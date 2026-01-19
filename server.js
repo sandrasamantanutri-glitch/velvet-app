@@ -288,7 +288,6 @@ const authLimiter = rateLimit({
 });
 
 const servercontent = require("./servercontent");
-app.use("/", servercontent);
 
 const requireRole = require("./middleware/requireRole");
 // ===============================
@@ -2621,6 +2620,10 @@ process.on("uncaughtException", err => {
   console.error("❌ Uncaught Exception:", err);
 });
 
+
+
+
+app.use("/", servercontent);
 
 // ===============================
 // START SERVER
