@@ -448,7 +448,7 @@ function iniciarUploads() {
     const fd = new FormData();
     fd.append("midia", file);
      if (file.type.startsWith("video")) {
-    const thumbBlob = await gerarThumbnailVideo(file);
+    const thumbBlob = await gerarThumbnail(file);
     fd.append("thumbnail", thumbBlob, "thumb.jpg");
   }
   const res = await fetch("/api/feed/upload", {
