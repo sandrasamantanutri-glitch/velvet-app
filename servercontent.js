@@ -1322,6 +1322,7 @@ router.get(
       let sql = `
         SELECT id, nome
         FROM modelos
+        WHERE 1=1
       `;
       let params = [];
 
@@ -1337,18 +1338,11 @@ router.get(
       res.json(result.rows);
 
     } catch (err) {
-      console.error("Erro ALLMESSAGE modelos:", err);
-      res.status(500).json([]);
+      console.error("❌ Erro ALLMESSAGE modelos:", err.message);
+      res.status(500).json({ error: err.message });
     }
   }
 );
-
-
-
-
-
-
-
 
 
 module.exports = router;
