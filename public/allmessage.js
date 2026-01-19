@@ -1,85 +1,109 @@
+const modeloSelect = document.getElementById("modeloSelect");
 const mensagemInput = document.getElementById("mensagem");
 const precoInput = document.getElementById("preco");
-const midiasInput = document.getElementById("midias");
-const preview = document.getElementById("preview");
+const conteudosGrid = document.getElementById("conteudosGrid");
 
 const btnEnviar = document.getElementById("btnEnviar");
 const btnTeste = document.getElementById("btnTeste");
 
 const token = localStorage.getItem("token");
+let conteudosSelecionados = [];
 
-// 🔍 PREVIEW DE MIDIAS
-midiasInput.addEventListener("change", () => {
-  preview.innerHTML = "";
-
-  Array.from(midiasInput.files).forEach(file => {
-    const url = URL.createObjectURL(file);
-
-    if (file.type.startsWith("video")) {
-      const video = document.createElement("video");
-      video.src = url;
-      video.muted = true;
-      video.playsInline = true;
-      preview.appendChild(video);
-    } else {
-      const img = document.createElement("img");
-      img.src = url;
-      preview.appendChild(img);
-    }
+// 🔹 carregar modelos
+async function carregarModelos() {
+  const res = await fetch("/api/modelos", {
+    headers: { Authorization: "Bearer " + token }
   });
-});
 
-// 🚀 ENVIO
-async function enviarAllMessage(modoTeste = false) {
-  const texto = mensagemInput.value.trim();
-  const preco = Number(precoInput.value);
+  const modelos = await res.json();
 
-  if (!texto || !preco || preco < 1) {
-    alert("Preencha a mensagem e um preço válido.");
+  modeloSelect.innerHTML = `<option value="">Selecione</option>`;
+  modelos.forEach(m => {
+    const opt = document.createElement("option");
+    opt.value = m.id;
+    opt.textContent = m.nome;
+    modeloSelect.appendChild(opt);
+  });
+}
+
+// 🔹 carregar conteúdos da modelo
+async function carregarConteudos(modeloId) {
+  conteudosGrid.innerHTML = "";
+  conteudosSelecionados = [];
+
+  const res = await fetch(`/api/conteudos/modelo/${modeloId}`, {
+    headers: { Authorization: "Bearer " + token }
+  });
+
+  const conteudos = await res.json();
+
+  conteudos.forEach(c => {
+    const item = document.createElement("div");
+    item.className = "conteudo-item";
+
+    const img = document.createElement("img");
+    img.src = c.thumbnail_url || c.url;
+
+    item.appendChild(img);
+
+    item.onclick = () => {
+      item.classList.toggle("ativo");
+
+      if (conteudosSelecionados.includes(c.id)) {
+        conteudosSelecionados = conteudosSelecionados.filter(id => id !== c.id);
+      } else {
+        conteudosSelecionados.push(c.id);
+      }
+    };
+
+    conteudosGrid.appendChild(item);
+  });
+}
+
+modeloSelect.onchange = () => {
+  if (modeloSelect.value) {
+    carregarConteudos(modeloSelect.value);
+  }
+};
+
+// 🚀 envio
+async function enviar(modoTeste) {
+  if (!modeloSelect.value || !mensagemInput.value || !precoInput.value) {
+    alert("Preencha todos os campos.");
     return;
   }
 
-  const formData = new FormData();
-  formData.append("texto", texto);
-  formData.append("preco", preco);
-  formData.append("modo_teste", modoTeste);
+  if (conteudosSelecionados.length === 0) {
+    alert("Selecione ao menos um conteúdo.");
+    return;
+  }
 
-  Array.from(midiasInput.files).forEach(file => {
-    formData.append("midias", file);
+  const payload = {
+    modelo_id: modeloSelect.value,
+    texto: mensagemInput.value,
+    preco: precoInput.value,
+    conteudos: conteudosSelecionados,
+    modo_teste: modoTeste
+  };
+
+  const res = await fetch("/api/allmessage", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + token
+    },
+    body: JSON.stringify(payload)
   });
 
-  btnEnviar.disabled = true;
-  btnTeste.disabled = true;
-
-  try {
-    const res = await fetch("/api/allmessage", {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer " + token
-      },
-      body: formData
-    });
-
-    if (!res.ok) throw new Error("Erro ao enviar");
-
-    alert(modoTeste
-      ? "✅ AllMessage de teste enviado!"
-      : "✅ AllMessage enviado para todos os assinantes!"
-    );
-
-    mensagemInput.value = "";
-    precoInput.value = "";
-    midiasInput.value = "";
-    preview.innerHTML = "";
-
-  } catch (err) {
-    console.error(err);
-    alert("Erro ao enviar AllMessage.");
-  } finally {
-    btnEnviar.disabled = false;
-    btnTeste.disabled = false;
+  if (!res.ok) {
+    alert("Erro ao enviar AllMessage");
+    return;
   }
+
+  alert("✅ AllMessage enviado com sucesso");
 }
 
-btnEnviar.onclick = () => enviarAllMessage(false);
-btnTeste.onclick = () => enviarAllMessage(true);
+btnEnviar.onclick = () => enviar(false);
+btnTeste.onclick = () => enviar(true);
+
+carregarModelos();
