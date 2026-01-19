@@ -1251,7 +1251,7 @@ router.get("/api/modelo/financeiro", authModelo, async (req, res) => {
          = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
     THEN valor_modelo
   END), 0) AS hoje_assinaturas,
-
+  
   -- 🔹 MÊS ATUAL
   COALESCE(SUM(CASE
     WHEN tipo = 'conteudo'
@@ -1297,6 +1297,21 @@ FROM (
 ) t;
   `, [modelo_id]);
 
+const assinantes = await db.query(
+  `
+SELECT
+  COUNT(*) FILTER (WHERE ativo = true) AS total,
+  COUNT(*) FILTER (
+    WHERE ativo = true
+    AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
+        = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+  ) AS hoje
+FROM vip_subscriptions
+WHERE modelo_id = $1;
+  `,
+  [req.user.id]
+);
+
   const r = result.rows[0];
 
   res.json({
@@ -1310,6 +1325,10 @@ FROM (
   },
   total: {
     acumulado_2026: r.acumulado_2026
+  },
+  assinantes: {
+    total: Number(a.total || 0),
+    hoje: Number(a.hoje || 0)
   }
 });
 });
