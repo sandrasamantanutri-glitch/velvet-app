@@ -117,38 +117,8 @@ app.post(
     }
   }
 );
-const servercontent = require("./servercontent");
-app.use("/", servercontent);
-// ===============================
-// BACKBLAZE B2 (UPLOAD NOVO)
-// ===============================
-const s3 = new AWS.S3({
-  endpoint: new AWS.Endpoint(process.env.B2_ENDPOINT),
-  accessKeyId: process.env.B2_KEY_ID,
-  secretAccessKey: process.env.B2_APP_KEY,
-  region: process.env.B2_REGION,
-  signatureVersion: "v4",
-  s3ForcePathStyle: true
-});
-
-
-const uploadB2 = multer({
-  storage: multerS3({
-    s3,
-    bucket: process.env.B2_BUCKET,
-    acl: "public-read",
-    contentType: multerS3.AUTO_CONTENT_TYPE,
-    key: (req, file, cb) => {
-      const ext = file.originalname.split(".").pop();
-      const nome = `velvet/${req.user.id}/${Date.now()}.${ext}`;
-      cb(null, nome);
-    }
-  })
-});
-
 
 app.use(express.static(path.join(__dirname, "public")));
-
 app.post("/webhook/stripe", express.raw({ type: "application/json" }), async (req, res) => {
   const sig = req.headers["stripe-signature"];
 
@@ -276,6 +246,33 @@ app.use("/", servercontent);
 
 const requireRole = require("./middleware/requireRole");
 
+// ===============================
+// BACKBLAZE B2 (UPLOAD NOVO)
+// ===============================
+const s3 = new AWS.S3({
+  endpoint: new AWS.Endpoint(process.env.B2_ENDPOINT),
+  accessKeyId: process.env.B2_KEY_ID,
+  secretAccessKey: process.env.B2_APP_KEY,
+  region: process.env.B2_REGION,
+  signatureVersion: "v4",
+  s3ForcePathStyle: true
+});
+
+
+const uploadB2 = multer({
+  storage: multerS3({
+    s3,
+    bucket: process.env.B2_BUCKET,
+    acl: "public-read",
+    contentType: multerS3.AUTO_CONTENT_TYPE,
+    key: (req, file, cb) => {
+      const ext = file.originalname.split(".").pop();
+      const nome = `velvet/${req.user.id}/${Date.now()}.${ext}`;
+      cb(null, nome);
+    }
+  })
+});
+// ===============================
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
