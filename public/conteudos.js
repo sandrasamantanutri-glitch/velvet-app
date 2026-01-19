@@ -129,6 +129,7 @@ function adicionarMidia(conteudo) {
   img.className = "midiaThumb";
 
   if (isVideo) {
+    card.classList.add("video")
     img.src = getVideoThumbnail(url, thumbnail_url);
   } else {
     img.src = url;
