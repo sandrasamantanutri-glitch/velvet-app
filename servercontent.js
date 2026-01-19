@@ -278,10 +278,10 @@ router.post(
         // 1️⃣ cria mensagem
 const msgRes = await db.query(
   `
-  INSERT INTO messages
-    (modelo_id, cliente_id, text, sender, preco, visto, tipo)
-  VALUES
-    ($1,$2,$3,'modelo',$4,false,'allmessage')
+INSERT INTO messages
+  (modelo_id, cliente_id, text, sender, preco, visto, tipo)
+VALUES
+  ($1,$2,$3,'modelo',$4,false,'conteudo')
   RETURNING id
   `,
   [modelo_id, cliente_id, texto, preco]
