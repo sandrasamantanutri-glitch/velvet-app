@@ -43,8 +43,6 @@ const ffmpegPath = require("ffmpeg-static");
 ffmpeg.setFfmpegPath(ffmpegPath);
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
-app.use("/admin", contentRouter);
-app.use("/content", contentRouter);
 app.use(cors({
   origin: ["https://velvet-app-production.up.railway.app"],
   credentials: true
@@ -243,6 +241,8 @@ const authLimiter = rateLimit({
 
 const servercontent = require("./servercontent");
 app.use("/", servercontent);
+app.use("/admin", contentRouter);
+app.use("/content", contentRouter);
 
 const requireRole = require("./middleware/requireRole");
 
