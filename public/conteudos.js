@@ -128,16 +128,11 @@ function adicionarMidia(conteudo) {
   const img = document.createElement("img");
   img.className = "midiaThumb";
 
-  if (isVideo) {
-    // 🎥 vídeo → thumbnail
-    img.src = url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
-    img.onerror = () => {
-      img.src = thumbnail_url || "/assets/capaVideo.png";
-    };
-  } else {
-    // 🖼️ imagem normal
-    img.src = url;
-  }
+if (isVideo) {
+  img.src = thumbnail_url || "/assets/capaDefault.jpg";
+} else {
+  img.src = url;
+}
 
   img.addEventListener("click", () => {
     abrirModalMidia(url, isVideo);
