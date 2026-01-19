@@ -1914,7 +1914,7 @@ app.post(
   }
 );
 
-
+///////////////BACKBLAZE UPLOAD CONTEÚDOS (MODELO)///////////////////
 app.post(
   "/api/conteudos/upload",
   auth,
@@ -1941,6 +1941,7 @@ app.post(
 // 🗑 EXCLUIR CONTEÚDO (MODELO)
 // ===============================
 
+// 🗑 EXCLUIR CONTEÚDO (MODELO)
 app.delete(
   "/api/conteudos/:id",
   auth,
@@ -1964,25 +1965,14 @@ app.delete(
 
       const url = result.rows[0].url;
 
-      // 🔥 tenta apagar no Cloudinary (não pode quebrar)
       try {
-        const publicId = url
-          .split("/")
-          .slice(-2)
-          .join("/")
-          .replace(/\.[^/.]+$/, "");
-
-        await cloudinary.uploader.destroy(publicId);
+        await excluirArquivoFisico(url);
       } catch (e) {
-        console.warn("⚠️ Falha ao apagar no Cloudinary, seguindo:", e.message);
+        console.warn("⚠️ Falha ao apagar arquivo físico:", e.message);
       }
 
-      // 🗑 apaga do banco (FONTE DA VERDADE)
       await db.query(
-        `
-        DELETE FROM conteudos
-        WHERE id = $1 AND user_id = $2
-        `,
+        `DELETE FROM conteudos WHERE id = $1 AND user_id = $2`,
         [id, req.user.id]
       );
 
@@ -1994,7 +1984,6 @@ app.delete(
     }
   }
 );
-
 
 app.post(
   "/uploadMidia",

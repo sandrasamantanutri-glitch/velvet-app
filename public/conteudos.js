@@ -207,3 +207,35 @@ async function excluirConteudo(id) {
     alert("Erro ao excluir conteúdo");
   }
 }
+
+function storageFromUrl(url) {
+  if (!url) return null;
+  if (url.includes("cloudinary.com")) return "cloudinary";
+  if (url.includes(process.env.B2_ENDPOINT)) return "backblaze";
+  return "desconhecido";
+}
+
+async function excluirArquivoFisico(url) {
+  const storage = storageFromUrl(url);
+
+  if (storage === "cloudinary") {
+    const publicId = url
+      .split("/")
+      .slice(-2)
+      .join("/")
+      .replace(/\.[^/.]+$/, "");
+
+    await cloudinary.uploader.destroy(publicId);
+  }
+
+  if (storage === "backblaze") {
+    const key = decodeURIComponent(url.split(".com/")[1]);
+
+    await s3.deleteObject({
+      Bucket: process.env.B2_BUCKET,
+      Key: key
+    }).promise();
+  }
+}
+
+
