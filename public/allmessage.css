@@ -1,4 +1,9 @@
 :root {
+  --bg-main: #fff;
+  --bg-card: #9E6BFF;
+  --bg-input: #9E6BFF;
+  --border-soft: rgba(255,255,255,0.06);
+
   --pink-main: #7B2CFF;
   --pink-soft: #9E6BFF;
 
