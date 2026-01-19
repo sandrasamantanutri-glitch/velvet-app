@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Velvet • AllMessage</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" href="allmessage.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+<div class="page-wrapper">
+
+  <header class="topbar">
+    <h1>📣 AllMessage</h1>
+    <span>Mensagem para TODOS assinantes</span>
+  </header>
+
+  <main class="container">
+
+    <!-- TEXTO -->
+    <div class="card">
+      <label>Mensagem</label>
+      <textarea id="mensagem" placeholder="Escreva sua mensagem para todos os assinantes..."></textarea>
+    </div>
+
+    <!-- MIDIAS -->
+    <div class="card">
+      <label>Mídias (foto ou vídeo)</label>
+      <input type="file" id="midias" multiple accept="image/*,video/*" />
+      <div id="preview" class="preview"></div>
+    </div>
+
+    <!-- PREÇO -->
+    <div class="card">
+      <label>Preço (€)</label>
+      <input type="number" id="preco" step="0.01" min="1" placeholder="Ex: 9.99" />
+    </div>
+
+    <!-- AÇÕES -->
+    <div class="actions">
+      <button id="btnTeste" class="btn secondary">Enviar teste</button>
+      <button id="btnEnviar" class="btn primary">Enviar para todos</button>
+    </div>
+
+    <p class="alert">
+      ⚠️ O conteúdo só será liberado após o pagamento do cliente.
+    </p>
+
+  </main>
+
+</div>
+
+<script src="allmessage.js"></script>
+</body>
+</html>
