@@ -571,11 +571,24 @@ if (sidModelo) {
 }
 }
 
-function gerarThumbnail(videoPath, thumbPath) {
+function gerarThumbnail(videoSource, thumbPath) {
   return new Promise((resolve, reject) => {
-    ffmpeg(videoPath)
-      .on("end", resolve)
-      .on("error", reject)
+    ffmpeg(videoSource)
+      .inputOptions([
+        "-protocol_whitelist",
+        "file,http,https,tcp,tls"
+      ])
+      .on("start", cmd => {
+        console.log("🎬 FFmpeg cmd:", cmd);
+      })
+      .on("end", () => {
+        console.log("📸 Thumbnail criado:", thumbPath);
+        resolve();
+      })
+      .on("error", err => {
+        console.error("❌ FFmpeg erro:", err.message);
+        reject(err);
+      })
       .screenshots({
         timestamps: ["00:00:01"],
         filename: path.basename(thumbPath),
@@ -584,7 +597,7 @@ function gerarThumbnail(videoPath, thumbPath) {
       });
   });
 }
-const { PassThrough } = require("stream");
+
 
 // ===============================
 // SOCKET.IO – CHAT ESTÁVEL
