@@ -1,13 +1,8 @@
 :root {
-  --bg-main: #0b0b10;
-  --bg-card: #14141c;
-  --bg-input: #101018;
-  --border-soft: rgba(255,255,255,0.06);
+  --pink-main: #7B2CFF;
+  --pink-soft: #9E6BFF;
 
-  --pink-main: #ff2f92;
-  --pink-soft: #ff5db1;
-
-  --text-main: #ffffff;
+  --text-main: #1E1E26;
   --text-muted: rgba(255,255,255,0.6);
 }
 
@@ -133,7 +128,7 @@ input:focus {
 }
 
 .btn.secondary {
-  background: #1b1b26;
+  background: #1E1E26;
   color: var(--text-main);
 }
 
