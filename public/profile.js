@@ -65,7 +65,7 @@ function decodeJWT(token) {
 
 function logout() {
   localStorage.clear();
-  window.location.href = "/index.html";
+  window.location.href = "https://www.velvet.lat";
 }
 
 // ===============================
