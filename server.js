@@ -972,11 +972,11 @@ app.get("/api/feed/me", auth, async (req, res) => {
   try {
     const result = await db.query(
       `
-      SELECT id, url, tipo, thumbnail_url, criado_em
-      FROM conteudos
-      WHERE user_id = $1
-      AND tipo_conteudo = 'feed'
-      ORDER BY criado_em DESC
+      SELECT id, url, tipo, criado_em
+FROM conteudos
+WHERE user_id = $1
+  AND tipo_conteudo = 'feed'
+ORDER BY criado_em DESC
       `,
       [req.user.id]
     );
@@ -1022,7 +1022,7 @@ app.get("/api/modelo/:id/feed", auth, async (req, res) => {
     const { id } = req.params;
 
     const result = await db.query(`
-      SELECT id, url, tipo, thumbnail_url
+      SELECT id, url, tipo
 FROM conteudos
 WHERE user_id = $1
   AND tipo_conteudo = 'feed'
@@ -1046,7 +1046,7 @@ app.get("/api/modelo/publico/:id/feed", async (req, res) => {
 
   try {
     const result = await db.query(`
-      SELECT id, url, tipo, thumbnail_url
+      SELECT id, url, tipo
       FROM conteudos
       WHERE user_id = $1
         AND tipo_conteudo = 'feed'
@@ -1503,7 +1503,7 @@ app.get("/api/conteudos/me", authModelo, async (req, res) => {
   try {
     const result = await db.query(
       `
-      SELECT id, url, tipo, thumbnail_url
+      SELECT id, url, tipo
 FROM conteudos
 WHERE user_id = $1
   AND tipo_conteudo = 'venda'
