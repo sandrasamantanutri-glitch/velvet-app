@@ -131,15 +131,13 @@ body {
 <!-- ===============================
      MODAL DE VISUALIZAÇÃO DE MÍDIA
 =============================== -->
-<div id="modalMidia" class="hidden">
-  <div class="modal-content">
+<div id="modalMidia" class="modalMidia hidden">
+    <span id="fecharModal" class="modalClose">&times;</span>
 
-    <button id="fecharModal" aria-label="Fechar">✕</button>
-
-    <img id="modalImg" />
-    <video id="modalVideo" controls></video>
-
-  </div>
+    <div class="modalContentWrapper">
+        <img id="modalImg" class="modalMidiaContent" style="display:none;">
+        <video id="modalVideo" class="modalMidiaContent" controls style="display:none;"></video>
+    </div>
 </div>
 
 <!-- ===============================
