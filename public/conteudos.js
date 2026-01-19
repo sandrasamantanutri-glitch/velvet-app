@@ -119,7 +119,7 @@ async function listarConteudos() {
 // ADICIONAR MÍDIA (IGUAL PROFILE)
 // ===============================
 function adicionarMidia(conteudo) {
-  const { id, url, tipo, thumbnail_url } = conteudo;
+  const { id, url, tipo } = conteudo;
   const isVideo = tipo === "video";
 
   const card = document.createElement("div");
@@ -128,11 +128,16 @@ function adicionarMidia(conteudo) {
   const img = document.createElement("img");
   img.className = "midiaThumb";
 
-if (isVideo) {
-  img.src = thumbnail_url || "/assets/capaDefault.jpg";
-} else {
-  img.src = url;
-}
+  if (isVideo) {
+    // 🎥 vídeo → thumbnail
+    img.src = url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
+    img.onerror = () => {
+      img.src = "/assets/capaDefault.jpg";
+    };
+  } else {
+    // 🖼️ imagem normal
+    img.src = url;
+  }
 
   img.addEventListener("click", () => {
     abrirModalMidia(url, isVideo);
@@ -151,21 +156,6 @@ if (isVideo) {
 
   // 🔥 ESTA LINHA ESTAVA FALTANDO
   lista.appendChild(card);
-}
-
-function gerarThumbnail(videoPath, thumbPath) {
-  return new Promise((resolve, reject) => {
-    ffmpeg(videoPath)
-      .screenshots({
-        count: 1,
-        timemarks: ["1"], // 1 segundo
-        filename: path.basename(thumbPath),
-        folder: path.dirname(thumbPath),
-        size: "640x?"
-      })
-      .on("end", resolve)
-      .on("error", reject);
-  });
 }
 
 // ===============================
