@@ -268,8 +268,8 @@ const authLimiter = rateLimit({
 
 const servercontent = require("./servercontent");
 app.use("/", servercontent);
-app.use("/admin", contentRouter);
-app.use("/content", contentRouter);
+// app.use("/admin", contentRouter);
+// app.use("/content", contentRouter);
 
 const requireRole = require("./middleware/requireRole");
 // ===============================
