@@ -48,7 +48,8 @@ app.use("/admin", express.static(path.join(__dirname, "admin-pages")));
 const allowedOrigins = [
   "https://velvet.lat",
   "https://www.velvet.lat",
-  "https://app-production-e7e1.up.railway.app"
+  "https://app-production-e7e1.up.railway.app",
+  "https://velvet-test-production.up.railway.app"
 ];
 
 app.use(cors({
@@ -333,7 +334,8 @@ const io = new Server(server, {
     origin: [
       "https://velvet.lat",
       "https://www.velvet.lat",
-      "https://app-production-e7e1.up.railway.app"
+      "https://app-production-e7e1.up.railway.app",
+      "https://velvet-test-production.up.railway.app"
     ],
     methods: ["GET", "POST"],
     credentials: true
