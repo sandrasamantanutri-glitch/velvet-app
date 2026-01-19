@@ -44,10 +44,27 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/admin", express.static(path.join(__dirname, "admin-pages")));
+
+const allowedOrigins = [
+  "https://velvet.lat",
+  "https://www.velvet.lat",
+  "https://app-production-e7e1.up.railway.app",
+  "https://velvet-test-production.up.railway.app"
+];
+
 app.use(cors({
-  origin: ["https://velvet-app-production.up.railway.app"],
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // Postman, mobile, SW
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error("CORS bloqueado: " + origin));
+  },
   credentials: true
 }));
+
 
 // ===============================
 // BACKBLAZE B2 (UPLOAD NOVO)
@@ -314,7 +331,12 @@ const upload = multer({
 
 const io = new Server(server, {
   cors: {
-    origin: "https://velvet-app-production.up.railway.app",
+    origin: [
+      "https://velvet.lat",
+      "https://www.velvet.lat",
+      "https://app-production-e7e1.up.railway.app",
+      "https://velvet-test-production.up.railway.app"
+    ],
     methods: ["GET", "POST"],
     credentials: true
   },
