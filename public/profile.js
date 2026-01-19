@@ -459,7 +459,7 @@ function iniciarUploads() {
   });
 }
 
-// ===============================
+/// ===============================
 // MIDIA
 // ===============================
 function adicionarMidia(id, url) {
@@ -474,20 +474,18 @@ function adicionarMidia(id, url) {
   img.className = "midiaThumb";
 
   if (isVideo) {
-  // 🔥 thumbnail REAL do vídeo (Cloudinary)
-  img.src = url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
+    img.src = "/assets/capaVideo.png"; // 🎬 thumbnail padrão
+    card.classList.add("video");
+  } else {
+    img.src = url; // 🖼️ imagem normal
+  }
 
-  // fallback se algum vídeo MUITO antigo não gerar thumb
+  // fallback de segurança
   img.onerror = () => {
     img.src = "/assets/capaDefault.jpg";
   };
 
-  card.classList.add("video");
- } else {
-
-  img.src = url;
-}
-card.appendChild(img);
+  card.appendChild(img);
 
   const deveBloquear =
     role !== "modelo" && window.__CLIENTE_VIP__ !== true;
@@ -509,21 +507,20 @@ card.appendChild(img);
     };
   }
 
-// ❌ botão excluir (só modelo)
-if (role === "modelo") {
-  const btnExcluir = document.createElement("button");
-  btnExcluir.className = "btnExcluirMidia";
-  btnExcluir.textContent = "Excluir";
-  btnExcluir.onclick = (e) => {
-    e.stopPropagation(); // 🔥 ESSENCIAL
-    excluirMidia(id, card);
-  };
-  card.appendChild(btnExcluir);
-}
+  // ❌ botão excluir (só modelo)
+  if (role === "modelo") {
+    const btnExcluir = document.createElement("button");
+    btnExcluir.className = "btnExcluirMidia";
+    btnExcluir.textContent = "Excluir";
+    btnExcluir.onclick = (e) => {
+      e.stopPropagation(); // 🔥 ESSENCIAL
+      excluirMidia(id, card);
+    };
+    card.appendChild(btnExcluir);
+  }
 
   listaMidias.appendChild(card);
 }
-
 function abrirModalMidia(url, isVideo) {
   const modal = document.getElementById("modalMidia");
   const img = document.getElementById("modalImg");

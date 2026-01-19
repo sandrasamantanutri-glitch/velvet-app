@@ -73,6 +73,22 @@ const uploadB2 = multer({
   })
 });
 
+const uploadB2Profile = multer({
+  storage: multerS3({
+    s3,
+    bucket: process.env.B2_BUCKET,
+    acl: "public-read",
+    contentType: multerS3.AUTO_CONTENT_TYPE,
+    key: (req, file, cb) => {
+      const ext = file.originalname.split(".").pop();
+      const tipo = file.fieldname; // avatar | capa
+      const nome = `velvet/profile/${req.user.id}/${tipo}.${ext}`;
+      cb(null, nome);
+    }
+  })
+});
+
+
 
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -1514,12 +1530,33 @@ ORDER BY id DESC
 });
 
 
-
-
-
 // ===============================
 // ROTA POST
 // ===============================
+
+app.post(
+  "/api/conteudos/upload",
+  auth,
+  authModelo,
+  uploadB2.single("conteudo"),
+  async (req, res) => {
+    const tipo = req.file.mimetype.startsWith("video")
+      ? "video"
+      : "imagem";
+
+    await db.query(
+      `
+      INSERT INTO conteudos (user_id, url, tipo, tipo_conteudo)
+      VALUES ($1, $2, $3, 'venda')
+      `,
+      [req.user.id, req.file.location, tipo]
+    );
+
+    res.json({ success: true, url: req.file.location });
+  }
+);
+
+
 app.put("/api/modelo/bio", authModelo, async (req, res) => {
   try {
     const { bio } = req.body;
@@ -1599,7 +1636,7 @@ app.post("/api/cliente/dados", auth, async (req, res) => {
 app.post(
   "/api/cliente/avatar",
   auth,
-  upload.single("avatar"),
+  uploadB2Profile.single("avatar"),
   async (req, res) => {
     try {
       if (req.user.role !== "cliente") {
@@ -1610,43 +1647,39 @@ app.post(
         return res.status(400).json({ error: "Nenhum arquivo enviado" });
       }
 
-      // ☁️ upload no Cloudinary
-      const result = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload_stream(
-          {
-            folder: `velvet/clientes/${req.user.id}/avatar`,
-            transformation: [{ width: 400, height: 400, crop: "fill" }]
-          },
-          (err, result) => (err ? reject(err) : resolve(result))
-        ).end(req.file.buffer);
-      });
-
-      // 🔄 tenta atualizar avatar (perfil já existente)
       const update = await db.query(
         `
         UPDATE clientes_dados
         SET avatar = $1, atualizado_em = NOW()
         WHERE user_id = $2
         `,
-        [result.secure_url, req.user.id]
+        [req.file.location, req.user.id]
       );
 
-      // 🚫 se ainda não preencheu "Meus Dados"
       if (update.rowCount === 0) {
         return res.status(400).json({
-          error: "Preencha seus dados antes de adicionar uma foto de perfil."
+          error: "Preencha seus dados antes de adicionar avatar"
         });
       }
 
-      // ✅ sucesso
-      res.json({ url: result.secure_url });
+      return res.json({
+        success: true,
+        url: req.file.location
+      });
 
     } catch (err) {
-      console.error("Erro avatar cliente:", err);
-      res.status(500).json({ error: "Erro ao atualizar avatar" });
+      console.error("❌ Erro avatar cliente (B2):", {
+        user_id: req.user?.id,
+        error: err.message
+      });
+
+      return res.status(500).json({
+        error: "Erro ao atualizar avatar do cliente"
+      });
     }
   }
 );
+
 
 app.post("/api/register", authLimiter, async (req, res) => {
   try {
@@ -1776,29 +1809,32 @@ app.post(
   "/uploadAvatar",
   auth,
   onlyModelo,
-  upload.single("avatar"),
+  uploadB2Profile.single("avatar"),
   async (req, res) => {
     try {
-      const result = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload_stream(
-          {
-            folder: `velvet/${req.user.id}/avatar`,
-            transformation: [{ width: 400, height: 400, crop: "fill" }]
-          },
-          (err, result) => (err ? reject(err) : resolve(result))
-        ).end(req.file.buffer);
-      });
+      if (!req.file) {
+        return res.status(400).json({ error: "Nenhum arquivo enviado" });
+      }
 
       await db.query(
         "UPDATE public.modelos SET avatar = $1 WHERE user_id = $2",
-        [result.secure_url, req.user.id]
+        [req.file.location, req.user.id]
       );
 
-      res.json({ url: result.secure_url });
+      return res.json({
+        success: true,
+        url: req.file.location
+      });
 
     } catch (err) {
-      console.error("Erro upload avatar:", err);
-      res.status(500).json({ error: "Erro ao atualizar avatar" });
+      console.error("❌ Erro upload avatar (B2):", {
+        user_id: req.user?.id,
+        error: err.message
+      });
+
+      return res.status(500).json({
+        error: "Erro ao atualizar avatar"
+      });
     }
   }
 );
@@ -1807,29 +1843,32 @@ app.post(
   "/uploadCapa",
   auth,
   onlyModelo,
-  upload.single("capa"),
+  uploadB2Profile.single("capa"),
   async (req, res) => {
     try {
-      const result = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload_stream(
-          {
-            folder: `velvet/${req.user.id}/capa`,
-            transformation: [{ width: 1200, height: 400, crop: "fill" }]
-          },
-          (err, result) => (err ? reject(err) : resolve(result))
-        ).end(req.file.buffer);
-      });
+      if (!req.file) {
+        return res.status(400).json({ error: "Nenhum arquivo enviado" });
+      }
 
       await db.query(
         "UPDATE public.modelos SET capa = $1 WHERE user_id = $2",
-        [result.secure_url, req.user.id]
+        [req.file.location, req.user.id]
       );
 
-      res.json({ url: result.secure_url });
+      return res.json({
+        success: true,
+        url: req.file.location
+      });
 
     } catch (err) {
-      console.error("Erro upload capa:", err);
-      res.status(500).json({ error: "Erro ao atualizar capa" });
+      console.error("❌ Erro upload capa (B2):", {
+        user_id: req.user?.id,
+        error: err.message
+      });
+
+      return res.status(500).json({
+        error: "Erro ao atualizar capa"
+      });
     }
   }
 );
@@ -1907,34 +1946,6 @@ app.post(
     }
   }
 );
-
-
-app.post(
-  "/api/conteudos/upload",
-  auth,
-  authModelo,
-  uploadB2.single("conteudo"),
-  async (req, res) => {
-    const tipo = req.file.mimetype.startsWith("video")
-      ? "video"
-      : "imagem";
-
-    await db.query(
-      `
-      INSERT INTO conteudos (user_id, url, tipo, tipo_conteudo)
-      VALUES ($1, $2, $3, 'venda')
-      `,
-      [req.user.id, req.file.location, tipo]
-    );
-
-    res.json({ success: true, url: req.file.location });
-  }
-);
-
-// ===============================
-// 🗑 EXCLUIR CONTEÚDO (MODELO)
-// ===============================
-
 app.delete(
   "/api/conteudos/:id",
   auth,
@@ -1952,26 +1963,55 @@ app.delete(
         [id, req.user.id]
       );
 
-      if (result.rows.length === 0) {
+      if (result.rowCount === 0) {
         return res.status(404).json({ error: "Conteúdo não encontrado" });
       }
 
       const url = result.rows[0].url;
 
-      // 🔥 tenta apagar no Cloudinary (não pode quebrar)
+      // ===============================
+      // ☁️ APAGAR NO STORAGE (SE POSSÍVEL)
+      // ===============================
       try {
-        const publicId = url
-          .split("/")
-          .slice(-2)
-          .join("/")
-          .replace(/\.[^/.]+$/, "");
 
-        await cloudinary.uploader.destroy(publicId);
-      } catch (e) {
-        console.warn("⚠️ Falha ao apagar no Cloudinary, seguindo:", e.message);
+        // 🔹 BACKBLAZE B2 (S3)
+        if (url.includes("backblazeb2.com")) {
+          const key = decodeURIComponent(
+            url.split(".com/")[1]
+          );
+
+          await s3
+            .deleteObject({
+              Bucket: process.env.B2_BUCKET,
+              Key: key
+            })
+            .promise();
+
+          console.log("🗑 Apagado do Backblaze:", key);
+        }
+
+        // 🔹 CLOUDINARY (legado)
+        else if (url.includes("res.cloudinary.com")) {
+          const publicId = url
+            .split("/")
+            .slice(-2)
+            .join("/")
+            .replace(/\.[^/.]+$/, "");
+
+          await cloudinary.uploader.destroy(publicId);
+          console.log("🗑 Apagado do Cloudinary:", publicId);
+        }
+
+      } catch (storageErr) {
+        console.warn(
+          "⚠️ Falha ao apagar no storage (seguindo):",
+          storageErr.message
+        );
       }
 
-      // 🗑 apaga do banco (FONTE DA VERDADE)
+      // ===============================
+      // 🗑 APAGA DO BANCO (FONTE DA VERDADE)
+      // ===============================
       await db.query(
         `
         DELETE FROM conteudos
@@ -1980,43 +2020,53 @@ app.delete(
         [id, req.user.id]
       );
 
-      res.json({ success: true });
+      return res.json({ success: true });
 
     } catch (err) {
-      console.error("Erro ao excluir conteúdo:", err);
-      res.status(500).json({ error: "Erro interno" });
+      console.error("❌ Erro ao excluir conteúdo:", err);
+      return res.status(500).json({ error: "Erro interno" });
     }
   }
 );
-
 
 app.post(
   "/uploadMidia",
   auth,
   onlyModelo,
-  upload.single("midia"),
+  uploadB2.single("midia"),   // 🔥 BACKBLAZE
   async (req, res) => {
     try {
-      const result = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload_stream(
-          {
-            folder: `velvet/${req.user.id}/midias`,
-            resource_type: "auto"
-          },
-          (err, result) => (err ? reject(err) : resolve(result))
-        ).end(req.file.buffer);
-      });
+      if (!req.file) {
+        return res.status(400).json({ error: "Nenhum arquivo enviado" });
+      }
+
+      const tipo = req.file.mimetype.startsWith("video")
+        ? "video"
+        : "imagem";
 
       await db.query(
-        "INSERT INTO conteudos (user_id, url, tipo) VALUES ($1, $2, $3)",
-        [req.user.id, result.secure_url, result.resource_type]
+        `
+        INSERT INTO conteudos (user_id, url, tipo, tipo_conteudo)
+        VALUES ($1, $2, $3, 'feed')
+        `,
+        [req.user.id, req.file.location, tipo]
       );
 
-      res.json({ url: result.secure_url });
+      return res.json({
+        success: true,
+        url: req.file.location,
+        tipo
+      });
 
     } catch (err) {
-      console.error("Erro upload midia:", err);
-      res.status(500).json({ error: "Erro ao enviar mídia" });
+      console.error("❌ Erro upload midia FEED (B2):", {
+        user_id: req.user?.id,
+        error: err.message
+      });
+
+      return res.status(500).json({
+        error: "Erro ao enviar mídia"
+      });
     }
   }
 );
