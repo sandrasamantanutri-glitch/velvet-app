@@ -2593,7 +2593,10 @@ app.post(
   }
 );
 
-app.post("/api/track-acesso", async (req, res) => {
+app.post(
+  "/api/track-acesso",
+  express.json(), // 🔒 garante body
+  async (req, res) => {
   try {
     const { ref, src } = req.body;
 
