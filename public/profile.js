@@ -447,16 +447,23 @@ function iniciarUploads() {
 
     const fd = new FormData();
     fd.append("midia", file);
-
-    const res = await fetch("/uploadMidia", {
-      method: "POST",
-      headers: { Authorization: "Bearer " + token },
-      body: fd
-    });
-
-    const data = await res.json();
-    if (data.url) carregarFeed();
+     if (file.type.startsWith("video")) {
+    const thumbBlob = await gerarThumbnailVideo(file);
+    fd.append("thumbnail", thumbBlob, "thumb.jpg");
+  }
+  const res = await fetch("/api/feed/upload", {
+    method: "POST",
+    headers: { Authorization: "Bearer " + token },
+    body: fd
   });
+
+  if (!res.ok) {
+    alert("Erro ao enviar mídia");
+    return;
+  }
+
+  carregarFeed(); // recarrega feed normalmente
+});
 }
 
 // ===============================

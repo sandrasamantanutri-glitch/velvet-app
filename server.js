@@ -119,6 +119,50 @@ app.post(
   }
 );
 
+// ===============================
+// FEED – UPLOAD NOVO (MESMO PIPELINE DE CONTEÚDOS)
+// ===============================
+app.post(
+  "/api/feed/upload",
+  auth,
+  authModelo,
+  uploadB2.fields([
+    { name: "midia", maxCount: 1 },
+    { name: "thumbnail", maxCount: 1 }
+  ]),
+  async (req, res) => {
+    const file = req.files.midia?.[0];
+    const thumb = req.files.thumbnail?.[0];
+
+    if (!file) {
+      return res.status(400).json({ error: "Arquivo não enviado" });
+    }
+
+    const isVideo = file.mimetype.startsWith("video");
+    const thumbnailUrl = thumb?.location || null;
+
+    await db.query(
+      `
+      INSERT INTO conteudos
+        (user_id, url, tipo, tipo_conteudo, thumbnail_url)
+      VALUES ($1, $2, $3, 'feed', $4)
+      `,
+      [
+        req.user.id,
+        file.location,
+        isVideo ? "video" : "imagem",
+        thumbnailUrl
+      ]
+    );
+
+    res.json({
+      success: true,
+      url: file.location,
+      thumbnail_url: thumbnailUrl
+    });
+  }
+);
+
 app.use(express.static(path.join(__dirname, "public")));
 app.post("/webhook/stripe", express.raw({ type: "application/json" }), async (req, res) => {
   const sig = req.headers["stripe-signature"];
