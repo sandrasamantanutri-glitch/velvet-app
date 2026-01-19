@@ -271,53 +271,73 @@ router.post(
         });
       }
 
-      // 🔁 envio individual
-      for (const row of clientesRes.rows) {
-        const cliente_id = row.cliente_id;
+// 🔁 envio individual
+for (const row of clientesRes.rows) {
+  const cliente_id = row.cliente_id;
 
-        // 1️⃣ cria mensagem
-const msgRes = await db.query(
-  `
-INSERT INTO messages
-  (modelo_id, cliente_id, text, sender, preco, visto, tipo)
-VALUES
-  ($1,$2,$3,'modelo',$4,false,'conteudo')
-  RETURNING id
-  `,
-  [modelo_id, cliente_id, texto, preco]
-);
+  // ===============================
+  // 1️⃣ MENSAGEM DE TEXTO (NORMAL)
+  // ===============================
+  await db.query(
+    `
+    INSERT INTO messages
+      (modelo_id, cliente_id, text, sender, visto, tipo)
+    VALUES
+      ($1,$2,$3,'modelo',false,'texto')
+    `,
+    [modelo_id, cliente_id, texto]
+  );
 
-        const message_id = msgRes.rows[0].id;
+  // ===============================
+  // 2️⃣ MENSAGEM DE CONTEÚDO (PPV)
+  // ===============================
+  const msgRes = await db.query(
+    `
+    INSERT INTO messages
+      (modelo_id, cliente_id, text, sender, preco, visto, tipo)
+    VALUES
+      ($1,$2,'','modelo',$3,false,'conteudo')
+    RETURNING id
+    `,
+    [modelo_id, cliente_id, preco]
+  );
 
-        // 2️⃣ cria pacote
-await db.query(
-  `
-  INSERT INTO conteudo_pacotes
-    (cliente_id, modelo_id, preco, valor_total, status, message_id)
-  VALUES
-    ($1,$2,$3,$4,'pendente',$5)
-  `,
-  [
-    cliente_id,
-    modelo_id,
-    preco,      // ← preço base
-    preco,      // ← valor_total (no AllMessage é o mesmo)
-    message_id
-  ]
-);
-        // 3️⃣ vincula conteúdos
-        for (const conteudo_id of conteudos) {
-          await db.query(
-            `
-            INSERT INTO messages_conteudos
-              (message_id, conteudo_id)
-            VALUES
-              ($1,$2)
-            `,
-            [message_id, conteudo_id]
-          );
-        }
-      }
+  const message_id = msgRes.rows[0].id;
+
+  // ===============================
+  // 3️⃣ CRIAR PACOTE PPV
+  // ===============================
+  await db.query(
+    `
+    INSERT INTO conteudo_pacotes
+      (cliente_id, modelo_id, preco, valor_total, status, message_id)
+    VALUES
+      ($1,$2,$3,$4,'pendente',$5)
+    `,
+    [
+      cliente_id,
+      modelo_id,
+      preco,
+      preco,
+      message_id
+    ]
+  );
+
+  // ===============================
+  // 4️⃣ VINCULAR CONTEÚDOS
+  // ===============================
+  for (const conteudo_id of conteudos) {
+    await db.query(
+      `
+      INSERT INTO messages_conteudos
+        (message_id, conteudo_id)
+      VALUES
+        ($1,$2)
+      `,
+      [message_id, conteudo_id]
+    );
+  }
+}
 
       res.json({
         ok: true,
