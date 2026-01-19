@@ -122,6 +122,25 @@ document.getElementById("btnVipCartao")?.addEventListener("click", () => {
   }
 });
 
+// ===============================
+// FECHAR MODAL DE MÍDIA (X)
+// ===============================
+const modalMidia = document.getElementById("modalMidia");
+const fecharModal = document.getElementById("fecharModal");
+const modalVideo = document.getElementById("modalVideo");
+
+fecharModal?.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+
+  if (modalVideo) {
+    modalVideo.pause();
+    modalVideo.src = "";
+  }
+
+  modalMidia.classList.add("hidden");
+});
+
 });
 
 // ===============================
