@@ -128,15 +128,16 @@ function adicionarMidia(conteudo) {
   const img = document.createElement("img");
   img.className = "midiaThumb";
 
-if (isVideo) {
-  img.src = "/assets/capaVideo.png"; // 🎬 padrão Backblaze-safe
-} else {
-  img.src = url;
-}
-
-img.onerror = () => {
-  img.src = "/assets/capaDefault.jpg";
-};
+  if (isVideo) {
+    // 🎥 vídeo → thumbnail
+    img.src = url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
+    img.onerror = () => {
+      img.src = "/assets/capaDefault.jpg";
+    };
+  } else {
+    // 🖼️ imagem normal
+    img.src = url;
+  }
 
   img.addEventListener("click", () => {
     abrirModalMidia(url, isVideo);
