@@ -43,23 +43,11 @@ const ffmpegPath = require("ffmpeg-static");
 ffmpeg.setFfmpegPath(ffmpegPath);
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
+app.use("/admin", express.static(path.join(__dirname, "admin-pages")));
 app.use(cors({
   origin: ["https://velvet-app-production.up.railway.app"],
   credentials: true
 }));
-
-app.get("/admin/:arquivo", (req, res) => {
-  const arquivo = req.params.arquivo;
-
-  // só permite css e js
-  if (!arquivo.endsWith(".css") && !arquivo.endsWith(".js")) {
-    return res.status(404).end();
-  }
-
-  res.sendFile(
-    path.join(__dirname, "admin-pages", arquivo)
-  );
-});
 
 // ===============================
 // BACKBLAZE B2 (UPLOAD NOVO)
