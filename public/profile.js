@@ -533,6 +533,10 @@ function adicionarMidia(conteudo) {
   }
 
   listaMidias.appendChild(card);
+
+  img.onerror = () => {
+  img.src = "/assets/capaDefault.jpg";
+};
 }
 
 function getVideoThumbnail(url, thumbnail_url) {
@@ -545,10 +549,6 @@ function getVideoThumbnail(url, thumbnail_url) {
   // 🔒 BACKBLAZE OU QUALQUER OUTRO → fallback
   return "/assets/capaDefault.jpg";
 }
-
-img.onerror = () => {
-  img.src = "/assets/capaDefault.jpg";
-};
 
 async function gerarThumbnailVideo(file) {
   return new Promise((resolve, reject) => {
