@@ -15,6 +15,11 @@ async function carregarModelos() {
     headers: { Authorization: "Bearer " + token }
   });
 
+   if (!res.ok) {
+    alert("Erro ao carregar modelos");
+    return;
+  }
+
   const modelos = await res.json();
 
   modeloSelect.innerHTML = `<option value="">Selecione</option>`;
@@ -27,14 +32,18 @@ async function carregarModelos() {
 }
 
 // 🔹 carregar conteúdos da modelo
-async function carregarConteudos(modeloId) {
+async function carregarConteudos(modelo_id) {
   conteudosGrid.innerHTML = "";
   conteudosSelecionados = [];
 
-  const res = await fetch(`/api/conteudos/modelo/${modeloId}`, {
+  const res = await fetch(`/api/conteudos/modelo/${modelo_id}`, {
     headers: { Authorization: "Bearer " + token }
   });
 
+  if (!res.ok) {
+  conteudosGrid.innerHTML = "<p>Erro ao carregar conteúdos</p>";
+  return;
+}
   const conteudos = await res.json();
 
   conteudos.forEach(c => {

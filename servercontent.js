@@ -350,6 +350,34 @@ router.post(
 
 
 //ROTAS GETSSSS/////////////////////
+//modelo ve modelo
+router.get(
+  "/api/modelos",
+  authMiddleware,
+  requireRole("admin", "modelo"),
+  async (req, res) => {
+    const { role, id } = req.user;
+
+    let sql = `
+      SELECT id, nome
+      FROM modelos
+      WHERE ativo = true
+    `;
+    let params = [];
+
+    // 🔒 MODELO só vê a si mesma
+    if (role === "modelo") {
+      sql += " AND id = $1";
+      params.push(id);
+    }
+
+    sql += " ORDER BY nome";
+
+    const result = await db.query(sql, params);
+    res.json(result.rows);
+  }
+);
+// PÁGINA DE RELATÓRIOS
 router.get(
   "/relatorios",
   authMiddleware,
