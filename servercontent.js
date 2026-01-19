@@ -1313,6 +1313,7 @@ WHERE modelo_id = $1;
 );
 
   const r = result.rows[0];
+  const a = assinantes.rows[0];
 
   res.json({
   hoje: {
