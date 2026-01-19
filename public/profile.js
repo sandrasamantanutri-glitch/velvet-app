@@ -14,6 +14,14 @@ const modeloParam = params.get("id");
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
 
+console.group("🛡️ DEBUG PERFIL");
+console.log("URL:", window.location.href);
+console.log("modeloParam (?id):", modeloParam);
+console.log("token existe?", !!token);
+console.log("role:", role);
+console.log("modelo_id LS:", localStorage.getItem("modelo_id"));
+console.groupEnd();
+
 // 🔓 MODO PÚBLICO se veio por ?id=
 const modoPublico = !!modeloParam;
 
