@@ -82,58 +82,40 @@ app.post(
   "/api/conteudos/upload",
   auth,
   authModelo,
-  uploadB2.single("conteudo"),
+  uploadB2.fields([
+    { name: "conteudo", maxCount: 1 },
+    { name: "thumbnail", maxCount: 1 }
+  ]),
   async (req, res) => {
-    try {
-      const isVideo = req.file.mimetype.startsWith("video");
-      let thumbnailUrl = null;
+    const file = req.files.conteudo?.[0];
+    const thumb = req.files.thumbnail?.[0];
 
-      // 🔥 GERA THUMBNAIL SEM BAIXAR O VÍDEO
-      if (isVideo) {
-        const tempThumb = `/tmp/thumb-${Date.now()}.jpg`;
-
-        // FFmpeg lê direto da URL do Backblaze
-        await gerarThumbnail(req.file.location, tempThumb);
-
-        const thumbKey = `velvet/conteudos/${req.user.id}/thumb-${Date.now()}.jpg`;
-
-        const uploadThumb = await s3.upload({
-          Bucket: process.env.B2_BUCKET,
-          Key: thumbKey,
-          Body: fs.createReadStream(tempThumb),
-          ContentType: "image/jpeg",
-          ACL: "public-read"
-        }).promise();
-
-        thumbnailUrl = uploadThumb.Location;
-
-        // limpa apenas o JPG
-        fs.unlinkSync(tempThumb);
-      }
-
-      const tipo = isVideo ? "video" : "imagem";
-
-      await db.query(
-        `
-        INSERT INTO conteudos
-          (user_id, url, tipo, tipo_conteudo, thumbnail_url)
-        VALUES ($1, $2, $3, 'venda', $4)
-        `,
-        [req.user.id, req.file.location, tipo, thumbnailUrl]
-      );
-
-      console.log("📸 Thumbnail gerado:", thumbnailUrl);
-
-      res.json({
-        success: true,
-        url: req.file.location,
-        thumbnail_url: thumbnailUrl
-      });
-
-    } catch (err) {
-      console.error("❌ Erro upload conteúdo com thumbnail:", err);
-      res.status(500).json({ error: "Erro ao processar vídeo" });
+    if (!file) {
+      return res.status(400).json({ error: "Arquivo não enviado" });
     }
+
+    const isVideo = file.mimetype.startsWith("video");
+    const thumbnailUrl = thumb?.location || null;
+
+    await db.query(
+      `
+      INSERT INTO conteudos
+        (user_id, url, tipo, tipo_conteudo, thumbnail_url)
+      VALUES ($1, $2, $3, 'venda', $4)
+      `,
+      [
+        req.user.id,
+        file.location,
+        isVideo ? "video" : "imagem",
+        thumbnailUrl
+      ]
+    );
+
+    res.json({
+      success: true,
+      url: file.location,
+      thumbnail_url: thumbnailUrl
+    });
   }
 );
 
