@@ -35,14 +35,12 @@ const COMPRAS_FILE = "compras.json";
 const bodyParser = require("body-parser");
 const Stripe = require("stripe");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const contentRouter = require("./servercontent");
 const nodemailer = require("nodemailer");
 
 const ffmpeg = require("fluent-ffmpeg");
 const ffmpegPath = require("ffmpeg-static");
 
 ffmpeg.setFfmpegPath(ffmpegPath);
-
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/admin", contentRouter);
@@ -52,6 +50,75 @@ app.use(cors({
   credentials: true
 }));
 
+// ===============================
+// BACKBLAZE – CONTEÚDOS DE VENDA (COM THUMBNAIL)
+// ===============================
+app.post(
+  "/api/conteudos/upload",
+  auth,
+  authModelo,
+  uploadB2.single("conteudo"),
+  async (req, res) => {
+    const isVideo = req.file.mimetype.startsWith("video");
+    let thumbnailUrl = null;
+
+    try {
+      if (isVideo) {
+        const tempVideo = `/tmp/${Date.now()}-video.mp4`;
+        const tempThumb = `/tmp/${Date.now()}-thumb.jpg`;
+
+        const key = decodeURIComponent(req.file.location.split(".com/")[1]);
+        const videoStream = s3.getObject({
+          Bucket: process.env.B2_BUCKET,
+          Key: key
+        }).createReadStream();
+
+        await new Promise((resolve, reject) => {
+          const write = fs.createWriteStream(tempVideo);
+          videoStream.pipe(write);
+          write.on("finish", resolve);
+          write.on("error", reject);
+        });
+
+        await gerarThumbnail(tempVideo, tempThumb);
+
+        const thumbKey = `velvet/conteudos/${req.user.id}/thumb-${Date.now()}.jpg`;
+
+        const uploadThumb = await s3.upload({
+          Bucket: process.env.B2_BUCKET,
+          Key: thumbKey,
+          Body: fs.createReadStream(tempThumb),
+          ContentType: "image/jpeg",
+          ACL: "public-read"
+        }).promise();
+
+        thumbnailUrl = uploadThumb.Location;
+
+        fs.unlinkSync(tempVideo);
+        fs.unlinkSync(tempThumb);
+      }
+
+      const tipo = isVideo ? "video" : "imagem";
+
+      await db.query(
+        `
+        INSERT INTO conteudos
+          (user_id, url, tipo, tipo_conteudo, thumbnail_url)
+        VALUES ($1, $2, $3, 'venda', $4)
+        `,
+        [req.user.id, req.file.location, tipo, thumbnailUrl]
+      );
+
+      res.json({ success: true, url: req.file.location, thumbnail_url: thumbnailUrl });
+
+    } catch (err) {
+      console.error("❌ Erro upload conteúdo com thumbnail:", err);
+      res.status(500).json({ error: "Erro ao processar vídeo" });
+    }
+  }
+);
+const servercontent = require("./servercontent");
+app.use("/", servercontent);
 // ===============================
 // BACKBLAZE B2 (UPLOAD NOVO)
 // ===============================
@@ -1924,79 +1991,6 @@ app.post(
     } catch (err) {
       console.error("Erro salvar dados modelo:", err);
       res.status(500).json({ error: "Erro interno" });
-    }
-  }
-);
-
-///////////////BACKBLAZE UPLOAD CONTEÚDOS (MODELO)///////////////////
-app.post(
-  "/api/conteudos/upload",
-  auth,
-  authModelo,
-  uploadB2.single("conteudo"),
-  async (req, res) => {
-    const isVideo = req.file.mimetype.startsWith("video");
-    let thumbnailUrl = null;
-
-    try {
-      if (isVideo) {
-        const tempVideo = `/tmp/${Date.now()}-video.mp4`;
-        const tempThumb = `/tmp/${Date.now()}-thumb.jpg`;
-
-        // 1️⃣ baixar vídeo do Backblaze
-        const key = decodeURIComponent(req.file.location.split(".com/")[1]);
-        const videoStream = s3.getObject({
-          Bucket: process.env.B2_BUCKET,
-          Key: key
-        }).createReadStream();
-
-        await new Promise((resolve, reject) => {
-          const write = fs.createWriteStream(tempVideo);
-          videoStream.pipe(write);
-          write.on("finish", resolve);
-          write.on("error", reject);
-        });
-
-        // 2️⃣ gerar thumbnail real
-        await gerarThumbnail(tempVideo, tempThumb);
-
-        // 3️⃣ subir thumbnail no Backblaze
-        const thumbKey = `velvet/conteudos/${req.user.id}/thumb-${Date.now()}.jpg`;
-
-        const uploadThumb = await s3.upload({
-          Bucket: process.env.B2_BUCKET,
-          Key: thumbKey,
-          Body: fs.createReadStream(tempThumb),
-          ContentType: "image/jpeg",
-          ACL: "public-read"
-        }).promise();
-
-        thumbnailUrl = uploadThumb.Location;
-
-        fs.unlinkSync(tempVideo);
-        fs.unlinkSync(tempThumb);
-      }
-
-      const tipo = isVideo ? "video" : "imagem";
-
-      await db.query(
-        `
-        INSERT INTO conteudos
-          (user_id, url, tipo, tipo_conteudo, thumbnail_url)
-        VALUES ($1, $2, $3, 'venda', $4)
-        `,
-        [req.user.id, req.file.location, tipo, thumbnailUrl]
-      );
-
-      res.json({
-        success: true,
-        url: req.file.location,
-        thumbnail_url: thumbnailUrl
-      });
-
-    } catch (err) {
-      console.error("❌ Erro upload conteúdo com thumbnail:", err);
-      res.status(500).json({ error: "Erro ao processar vídeo" });
     }
   }
 );
