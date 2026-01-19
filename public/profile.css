@@ -315,7 +315,8 @@ body {
   font-size: 34px;
   color: #fff;
   cursor: pointer;
-  z-index: 1000000;
+  z-index: 10000000;
+  pointer-events: auto;
 }
 
 
