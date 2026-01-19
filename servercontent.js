@@ -25,7 +25,6 @@ const cron = require("node-cron");
 
 const requireRole = require("./middleware/requireRole");
 
-
 cron.schedule("0 3 * * *", async () => {
   console.log("🔍 Verificando clientes com chargeback...");
 
@@ -211,9 +210,149 @@ router.post(
   }
 );
 
+// ===============================
+// 📣 ALLMESSAGE - ENVIO EM MASSA
+// ===============================
+router.post(
+  "/api/allmessage",
+  authMiddleware, // use o MESMO middleware que funcionou antes
+  requireRole("admin", "modelo"),
+  async (req, res) => {
+    try {
+      const {
+        modelo_id,
+        texto,
+        preco,
+        conteudos,
+        modo_teste
+      } = req.body;
 
+      const { role, id: user_id } = req.user;
 
-//ROTAS GETSSSS/////////////////////
+      // 🔒 validações
+      if (!modelo_id || !texto || !preco || !Array.isArray(conteudos)) {
+        return res.status(400).json({ error: "Dados inválidos" });
+      }
+
+      if (conteudos.length === 0) {
+        return res.status(400).json({ error: "Nenhum conteúdo selecionado" });
+      }
+
+      // 🔒 modelo só pode enviar da própria conta
+      if (role === "modelo") {
+        const check = await db.query(
+          `SELECT 1 FROM modelos WHERE id = $1 AND user_id = $2`,
+          [modelo_id, user_id]
+        );
+
+        if (check.rowCount === 0) {
+          return res.status(403).json({ error: "Modelo inválida" });
+        }
+      }
+
+      // 🔍 buscar assinantes ativos
+      let vipQuery = `
+        SELECT cliente_id
+        FROM vip_subscriptions
+        WHERE modelo_id = $1
+          AND ativo = true
+      `;
+      const vipParams = [modelo_id];
+
+      if (modo_teste === true) {
+        vipQuery += " LIMIT 1";
+      }
+
+      const clientesRes = await db.query(vipQuery, vipParams);
+
+      if (clientesRes.rowCount === 0) {
+        return res.status(400).json({
+          error: "Nenhum assinante ativo encontrado"
+        });
+      }
+
+// 🔁 envio individual
+for (const row of clientesRes.rows) {
+  const cliente_id = row.cliente_id;
+
+  // ===============================
+  // 1️⃣ MENSAGEM DE TEXTO (NORMAL)
+  // ===============================
+  await db.query(
+    `
+    INSERT INTO messages
+      (modelo_id, cliente_id, text, sender, visto, tipo)
+    VALUES
+      ($1,$2,$3,'modelo',false,'texto')
+    `,
+    [modelo_id, cliente_id, texto]
+  );
+
+  // ===============================
+  // 2️⃣ MENSAGEM DE CONTEÚDO (PPV)
+  // ===============================
+  const msgRes = await db.query(
+    `
+    INSERT INTO messages
+      (modelo_id, cliente_id, text, sender, preco, visto, tipo)
+    VALUES
+      ($1,$2,'','modelo',$3,false,'conteudo')
+    RETURNING id
+    `,
+    [modelo_id, cliente_id, preco]
+  );
+
+  const message_id = msgRes.rows[0].id;
+
+  // ===============================
+  // 3️⃣ CRIAR PACOTE PPV
+  // ===============================
+  await db.query(
+    `
+    INSERT INTO conteudo_pacotes
+      (cliente_id, modelo_id, preco, valor_total, status, message_id)
+    VALUES
+      ($1,$2,$3,$4,'pendente',$5)
+    `,
+    [
+      cliente_id,
+      modelo_id,
+      preco,
+      preco,
+      message_id
+    ]
+  );
+
+  // ===============================
+  // 4️⃣ VINCULAR CONTEÚDOS
+  // ===============================
+  for (const conteudo_id of conteudos) {
+    await db.query(
+      `
+      INSERT INTO messages_conteudos
+        (message_id, conteudo_id)
+      VALUES
+        ($1,$2)
+      `,
+      [message_id, conteudo_id]
+    );
+  }
+}
+
+      res.json({
+        ok: true,
+        enviados: clientesRes.rowCount,
+        modo_teste: !!modo_teste
+      });
+
+    } catch (err) {
+      console.error("❌ ERRO ALLMESSAGE ENVIO:", err);
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
+
+// PÁGINA DE RELATÓRIOS
 router.get(
   "/relatorios",
   authMiddleware,
@@ -993,22 +1132,6 @@ router.get(
 //   }
 // );
 
-router.get(
-  "/api/modelos",
-  authMiddleware,
-  requireRole("admin"),
-  async (req, res) => {
-    const result = await db.query(`
-      SELECT id, nome
-      FROM modelos
-      WHERE ativo = true
-      ORDER BY nome
-    `);
-
-    res.json(result.rows);
-  }
-);
-
 router.get("/content/transacoes", (req, res) => {
   res.sendFile(
     path.join(process.cwd(), "content", "transacoes.html")
@@ -1128,7 +1251,7 @@ router.get("/api/modelo/financeiro", authModelo, async (req, res) => {
          = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
     THEN valor_modelo
   END), 0) AS hoje_assinaturas,
-
+  
   -- 🔹 MÊS ATUAL
   COALESCE(SUM(CASE
     WHEN tipo = 'conteudo'
@@ -1174,7 +1297,23 @@ FROM (
 ) t;
   `, [modelo_id]);
 
+const assinantes = await db.query(
+  `
+SELECT
+  COUNT(*) FILTER (WHERE ativo = true) AS total,
+  COUNT(*) FILTER (
+    WHERE ativo = true
+    AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
+        = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+  ) AS hoje
+FROM vip_subscriptions
+WHERE modelo_id = $1;
+  `,
+  [req.user.id]
+);
+
   const r = result.rows[0];
+  const a = assinantes.rows[0];
 
   res.json({
   hoje: {
@@ -1187,14 +1326,97 @@ FROM (
   },
   total: {
     acumulado_2026: r.acumulado_2026
+  },
+  assinantes: {
+    total: Number(a.total || 0),
+    hoje: Number(a.hoje || 0)
   }
 });
 });
 
+// ===============================
+// 📣 ALLMESSAGE - LISTAR MODELOS
+// ===============================
+router.get(
+  "/api/allmessage/modelos",
+  authMiddleware,
+  requireRole("admin", "modelo"),
+  async (req, res) => {
+    try {
+      const { role, id: user_id } = req.user;
 
+      let sql = `
+        SELECT id, nome
+        FROM modelos
+        WHERE 1=1
+      `;
+      let params = [];
 
+      // 🔒 modelo só vê a própria
+      if (role === "modelo") {
+        sql += " AND user_id = $1";
+        params.push(user_id);
+      }
 
+      sql += " ORDER BY nome";
 
+      const result = await db.query(sql, params);
+      res.json(result.rows);
+
+    } catch (err) {
+      console.error("❌ Erro ALLMESSAGE modelos:", err.message);
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
+
+// ===============================
+// 📣 ALLMESSAGE - CONTEÚDOS DA MODELO
+// ===============================
+router.get(
+  "/api/allmessage/conteudos/:modelo_id",
+  authMiddleware, // ou auth, use o MESMO que funcionou antes
+  requireRole("admin", "modelo"),
+  async (req, res) => {
+    try {
+      const { modelo_id } = req.params;
+      const { role, id: user_id } = req.user;
+
+      // 🔒 modelo só pode acessar os próprios conteúdos
+      if (role === "modelo") {
+        const check = await db.query(
+          `SELECT 1 FROM modelos WHERE id = $1 AND user_id = $2`,
+          [modelo_id, user_id]
+        );
+
+        if (check.rowCount === 0) {
+          return res.status(403).json([]);
+        }
+      }
+
+      const result = await db.query(
+        `
+        SELECT
+          id,
+          url,
+          tipo,
+          thumbnail_url
+        FROM conteudos
+        WHERE user_id = $1
+          AND tipo_conteudo = 'venda'
+        ORDER BY id DESC
+        `,
+        [modelo_id]
+      );
+
+      res.json(result.rows);
+
+    } catch (err) {
+      console.error("❌ Erro ALLMESSAGE conteudos:", err.message);
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
 
 
 

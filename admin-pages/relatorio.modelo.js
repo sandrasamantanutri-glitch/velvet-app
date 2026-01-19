@@ -24,6 +24,13 @@ document.getElementById("hojeMidias").innerText =
 document.getElementById("hojeAssinaturas").innerText =
   `R$ ${Number(data.hoje.assinaturas || 0).toFixed(2)}`;
 
+  // ASSINANTES
+document.getElementById("totalAssinantes").innerText =
+  data.assinantes?.total ?? 0;
+
+document.getElementById("assinantesHoje").innerText =
+  data.assinantes?.hoje ?? 0;
+
 // MÊS
 document.getElementById("mesMidias").innerText =
   `R$ ${Number(data.mes.midias || 0).toFixed(2)}`;
