@@ -1470,12 +1470,23 @@ SELECT
   c.nome,
   cd.avatar,
 
+  true AS vip,
+
   MAX(m.created_at)
     FILTER (WHERE m.sender = 'modelo')
     AS ultima_msg_modelo_ts,
 
+  MAX(m.created_at)
+    FILTER (WHERE m.sender = 'cliente')
+    AS ultima_msg_cliente_ts,
+
   CASE
     WHEN COUNT(m.id) = 0 THEN 'novo'
+    WHEN MAX(m.created_at)
+         FILTER (WHERE m.sender = 'cliente') >
+         MAX(m.created_at)
+         FILTER (WHERE m.sender = 'modelo')
+         THEN 'por-responder'
     ELSE 'normal'
   END AS status
 
@@ -1492,9 +1503,21 @@ WHERE v.modelo_id = $1
 GROUP BY c.user_id, cd.username, c.nome, cd.avatar
 
 ORDER BY
-  CASE WHEN COUNT(m.id) = 0 THEN 0 ELSE 1 END,
-  ultima_msg_modelo_ts DESC NULLS LAST;
-  
+  CASE
+    WHEN COUNT(m.id) = 0 THEN 0
+    WHEN MAX(m.created_at)
+         FILTER (WHERE m.sender = 'cliente') >
+         MAX(m.created_at)
+         FILTER (WHERE m.sender = 'modelo')
+         THEN 1
+    ELSE 2
+  END,
+  GREATEST(
+    MAX(m.created_at)
+      FILTER (WHERE m.sender = 'cliente'),
+    MAX(m.created_at)
+      FILTER (WHERE m.sender = 'modelo')
+  ) DESC NULLS LAST;
     `, [modeloId]);
 
     res.json(rows);

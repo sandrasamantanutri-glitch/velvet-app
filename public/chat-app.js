@@ -22,15 +22,22 @@ async function carregarConversas() {
   const lista = document.querySelector(".lista-conversas");
   lista.innerHTML = "";
 
-  if (!conversas.length) {
-    lista.innerHTML = "<p style='padding:16px'>Nenhuma conversa ainda</p>";
-    return;
-  }
+const filtradas = conversas.filter(c =>
+  c.vip === true ||               // 🔥 VIP sempre entra
+  c.ultima_msg_modelo_ts ||
+  c.ultima_msg_cliente_ts
+);
 
-  conversas.forEach(c => {
-    const item = criarItemConversa(c);
-    lista.appendChild(item);
-  });
+if (!filtradas.length) {
+  lista.innerHTML =
+    "<p style='padding:16px'>Nenhum assinante ainda</p>";
+  return;
+}
+
+filtradas.forEach(c => {
+  const item = criarItemConversa(c);
+  lista.appendChild(item);
+});
 
   organizarLista(lista);
 }
