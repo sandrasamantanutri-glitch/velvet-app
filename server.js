@@ -1061,6 +1061,22 @@ app.get("/api/vip/status/:modelo_id", authCliente, async (req, res) => {
   res.json({ vip: result.rowCount > 0 });
 });
 
+// ✅ NOVA — só para app / PWA
+app.get("/api/app/state-v2", auth, (req, res) => {
+  if (!req.user || !req.user.role) {
+    return res.status(401).json({ next: "logout" });
+  }
+
+  if (req.user.role === "modelo") {
+    return res.json({ next: "modelo" });
+  }
+
+  if (req.user.role === "cliente") {
+    return res.json({ next: "cliente" });
+  }
+
+  return res.json({ next: "logout" });
+});
 
 
 app.get("/api/me", auth, (req, res) => {
