@@ -434,6 +434,63 @@ body.modo-chat .lista-conversas {
   100% { background-position: -100% 0; }
 }
 
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #0e0e10;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont;
+}
+
+#app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.vip-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.vip-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-bottom: 1px solid #222;
+}
+
+.vip-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-size: cover;
+}
+
+.vip-info {
+  flex: 1;
+}
+
+.vip-name {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.vip-last {
+  font-size: 13px;
+  color: #888;
+}
+
+.msg {
+  max-width: 78%;
+  padding: 12px 14px;
+  border-radius: 16px;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+
 
 
 
