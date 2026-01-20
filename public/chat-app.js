@@ -82,6 +82,11 @@
     const nome = c.nome || c.username || "Cliente";
     const avatar = c.avatar || "/assets/avatarDefault.png";
 
+    // preview inteligente
+    const preview =
+      c.ultima_msg_texto ||
+      (c.vip ? "Novo assinante VIP 💜" : "Toque para abrir o chat");
+
     div.innerHTML = `
       <img class="avatar" src="${avatar}" />
 
