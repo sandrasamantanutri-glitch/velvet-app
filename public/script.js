@@ -19,6 +19,28 @@ if (isApp) {
   document.body.classList.add("is-app");
 }
 
+// ===============================
+// PWA INSTALL HANDLER (SEM DOM)
+// ===============================
+let deferredPrompt = null;
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  console.log("📲 PWA disponível para instalação");
+});
+
+// função global para disparar instalação
+window.installPWA = async function () {
+  if (!deferredPrompt) {
+    alert("Instalação indisponível neste dispositivo");
+    return;
+  }
+
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+};
 
 // ===============================
 // ESTADO GLOBAL
