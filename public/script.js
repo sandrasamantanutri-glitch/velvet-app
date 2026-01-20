@@ -274,6 +274,9 @@ window.closeLegalModal = function () {
 
 
 
+
+
+
 window.logout = function () {
   localStorage.removeItem("token");
   localStorage.removeItem("role");
