@@ -1908,7 +1908,6 @@ app.post("/api/login", authLimiter, async (req, res) => {
   }
 });
 
-
 // UPLOAD AVATAR E CAPA
 app.post(
   "/uploadAvatar",
