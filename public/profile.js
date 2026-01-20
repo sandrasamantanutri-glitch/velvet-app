@@ -11,9 +11,6 @@ const socket = io();
 const params = new URLSearchParams(window.location.search);
 const modeloParam = params.get("id");
 
-var token = localStorage.getItem("token");
-var role  = localStorage.getItem("role");
-
 console.group("🛡️ DEBUG PERFIL");
 console.log("URL:", window.location.href);
 console.log("modeloParam (?id):", modeloParam);
@@ -214,7 +211,8 @@ function valorBRL(valor) {
 
 async function carregarPerfil() {
   const res = await fetch("/api/modelo/me", {
-    headers: { Authorization: "Bearer " + token }
+    headers: { Authorization: "Bearer " + localStorage.getItem("token") }
+
   });
 
   if (!res.ok) return;
@@ -325,7 +323,7 @@ function carregarFeed() {
   if (!listaMidias) return;
 
   fetch("/api/feed/me", {
-    headers: { Authorization: "Bearer " + token }
+    headers: { Authorization: "Bearer " + localStorage.getItem("token") }
   })
     .then(r => r.json())
     .then(feed => {
