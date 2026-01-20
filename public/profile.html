@@ -73,6 +73,13 @@ body {
 }
 </style>
 
+<script>
+  const token = localStorage.getItem("token");
+  if (!token) {
+    window.location.replace("/index.html");
+  }
+</script>
+
 <!-- HEADER / CAPA -->
 <div id="headerCapa" class="headerCapa">
     <img id="profileCapa" src="/assets/capaDefault.jpg" class="capaImg">
@@ -100,6 +107,9 @@ body {
         <img src="assets/voltar.png" alt="voltar">
     </button>
         <button class="only-modelo" id="btnEditarBio">Editar Bio</button>
+        <button id="btnChatApp" style="display:none">
+  💬 Entrar no Chat
+</button>
         <button class="btnChat only-cliente" id="btnChat">Enviar Mensagem</button>
         <button class="vipBtn only-cliente" id="btnVip">Torne-se VIP</button>
     </div>
@@ -132,12 +142,14 @@ body {
      MODAL DE VISUALIZAÇÃO DE MÍDIA
 =============================== -->
 <div id="modalMidia" class="modalMidia hidden">
-   <span id="fecharModal" class="fecharModal">&times;</span>
+    <span id="fecharModal" class="modalClose">&times;</span>
+
     <div class="modalContentWrapper">
         <img id="modalImg" class="modalMidiaContent" style="display:none;">
         <video id="modalVideo" class="modalMidiaContent" controls style="display:none;"></video>
     </div>
 </div>
+
 
 <!-- ===============================
     POPUP PGTM VIP

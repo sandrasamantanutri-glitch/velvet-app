@@ -533,6 +533,10 @@ function adicionarMidia(conteudo) {
   }
 
   listaMidias.appendChild(card);
+
+  img.onerror = () => {
+  img.src = "/assets/capaDefault.jpg";
+};
 }
 
 function getVideoThumbnail(url, thumbnail_url) {
@@ -890,6 +894,32 @@ document
   }
 
   elements = null;
+
+  // ===============================
+// BOTÃO "ENTRAR NO CHAT" (SÓ NO APP)
+// ===============================
+
+// Detecta se está rodando como app (PWA)
+const isApp =
+  window.matchMedia("(display-mode: standalone)").matches ||
+  window.navigator.standalone === true;
+
+// Mostra o botão apenas no app
+if (isApp) {
+  const btn = document.getElementById("btnChatApp");
+  if (btn) {
+    btn.style.display = "block";
+  }
+}
+
+// Clique leva para o chat-app
+const btnChat = document.getElementById("btnChatApp");
+if (btnChat) {
+  btnChat.addEventListener("click", () => {
+    window.location.href = "/chat-app.html";
+  });
+}
+
 }
 
 
