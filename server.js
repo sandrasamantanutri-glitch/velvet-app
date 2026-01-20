@@ -1026,19 +1026,6 @@ socket.on("marcarConteudoVisto", async ({ message_id, cliente_id, modelo_id }) =
 // ===============================
 //ROTA GET
 // ===============================
-app.get("/api/app/state", auth, (req, res) => {
-  if (req.user.role === "modelo") {
-    return res.json({ next: "profile" });
-  }
-
-  if (req.user.role === "cliente") {
-    return res.json({ next: "clientHome" });
-  }
-
-  return res.json({ next: "index" });
-});
-
-
 app.get("/api/vip/status/:modelo_id", authCliente, async (req, res) => {
   const cliente_id = req.user.id;
   const modelo_id = Number(req.params.modelo_id);
