@@ -133,21 +133,52 @@ function renderMensagem(msg) {
   if (msg.tipo === "conteudo") {
     div.innerHTML = `
       <div class="chat-conteudo premium" data-id="${msg.id}">
-        <div class="pacote-grid">
-          ${msg.midias.map(m =>
-            m.tipo === "video"
-              ? `<video src="${m.url}" muted></video>`
-              : `<img src="${m.url}" />`
-          ).join("")}
+         <div class="pacote-grid">
+          ${(msg.midias || []).map(m => `
+            <div class="midia-item">
+              ${
+                (m.tipo_media || m.tipo) === "video"
+                  ? `
+                    <div class="midia-video">
+                      <img src="${m.thumbnail_url || m.thumb || m.url}" />
+                      <span class="video-icon">▶</span>
+                    </div>
+                  `
+                  : `<img src="${m.url}" />`
+              }
+            </div>
+          `).join("")}
         </div>
+
+        ${
+          msg.preco > 0
+            ? `
+              <div class="conteudo-info">
+                <span class="status-bloqueado">
+                  ${
+                    msg.visto
+                      ? `🟢 Vendido · ${msg.quantidade ?? msg.midias?.length ?? 0} mídia(s)`
+                      : `🔒 ${msg.quantidade ?? msg.midias?.length ?? 0} mídia(s)`
+                  }
+                </span>
+
+                <span class="preco-bloqueado">
+                  R$ ${Number(msg.preco).toFixed(2)}
+                </span>
+              </div>
+            `
+            : ""
+        }
+
       </div>
     `;
   } else {
-    div.textContent = msg.text;
+    // fallback seguro para mensagens normais
+    div.textContent = msg.texto || "";
   }
 
+  // ✅ ESSENCIAL — estava faltando
   chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
 }
 
 // ===============================
