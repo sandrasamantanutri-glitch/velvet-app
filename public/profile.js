@@ -120,6 +120,26 @@ document.getElementById("btnVipCartao")?.addEventListener("click", () => {
   } else {
     window.location.href = "/chatcliente.html";
   }
+
+  // ===============================
+// BOTÃO "ENTRAR NO CHAT" (SÓ NO APP)
+// ===============================
+
+const isApp =
+  window.matchMedia("(display-mode: standalone)").matches ||
+  window.navigator.standalone === true;
+
+if (isApp) {
+  const btnChatApp = document.getElementById("btnChatApp");
+  if (btnChatApp) {
+    btnChatApp.style.display = "block";
+
+    btnChatApp.addEventListener("click", () => {
+      window.location.href = "/chat-app/index.html";
+    });
+  }
+}
+
 });
 
 // ===============================
@@ -894,32 +914,6 @@ document
   }
 
   elements = null;
-
-  // ===============================
-// BOTÃO "ENTRAR NO CHAT" (SÓ NO APP)
-// ===============================
-
-// Detecta se está rodando como app (PWA)
-const isApp =
-  window.matchMedia("(display-mode: standalone)").matches ||
-  window.navigator.standalone === true;
-
-// Mostra o botão apenas no app
-if (isApp) {
-  const btn = document.getElementById("btnChatApp");
-  if (btn) {
-    btn.style.display = "block";
-  }
-}
-
-// Clique leva para o chat-app
-const btnChat = document.getElementById("btnChatApp");
-if (btnChat) {
-  btnChat.addEventListener("click", () => {
-    window.location.href = "/chat-app.html";
-  });
-}
-
 }
 
 
