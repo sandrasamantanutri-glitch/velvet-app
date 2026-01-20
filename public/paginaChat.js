@@ -3,12 +3,12 @@
 // ===============================
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role"); // deve ser "modelo"
-const cliente_id = Number(localStorage.getItem("chat_cliente_ativo"));
 
-if (!token || !cliente_id) {
-  window.location.href = "/chat-app.html";
-  throw new Error("Sessão inválida");
+if (!token) {
+  window.location.href = "/index.html";
+  throw new Error("Sem token");
 }
+const cliente_id = Number(localStorage.getItem("chat_cliente_ativo")) || null;
 
 const socket = io({
   transports: ["websocket"]
@@ -66,6 +66,11 @@ socket.on("conteudoVisto", ({ message_id }) => {
 // ===============================
 document.addEventListener("DOMContentLoaded", async () => {
   await carregarModelo();
+  if (!cliente_id) {
+    console.warn("⚠️ Cliente não definido ainda");
+    // opcional: mostrar mensagem na UI
+    return;
+  }
   await carregarCliente();
   await carregarConteudosVistos(cliente_id);
 
