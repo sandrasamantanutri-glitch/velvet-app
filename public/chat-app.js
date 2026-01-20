@@ -1,15 +1,3 @@
-// ===============================
-// CHAT APP — LISTA DE CONVERSAS
-// ===============================
-
-const token = localStorage.getItem("token");
-const role  = localStorage.getItem("role");
-
-if (!token || !role) {
-  window.location.href = "/index.html";
-  throw new Error("Sem sessão");
-}
-
 document.addEventListener("DOMContentLoaded", () => {
   carregarConversas();
 });
