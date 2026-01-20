@@ -217,3 +217,30 @@ body.modo-chat .lista-conversas {
   padding: 8px 12px;
 }
 
+
+/* =========================
+   CHAT — BALÕES
+========================= */
+.msg {
+  max-width: 70%;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.msg-modelo {
+  background: #7B2CFF;
+  color: #fff;
+  align-self: flex-end;
+  border-bottom-right-radius: 2px;
+}
+
+.msg-cliente {
+  background: #e6e6eb;
+  color: #222;
+  align-self: flex-start;
+  border-bottom-left-radius: 2px;
+}
+
+

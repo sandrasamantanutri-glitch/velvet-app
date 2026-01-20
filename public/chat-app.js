@@ -10,8 +10,6 @@
     return;
   }
 
-  let chatAtivo = null; // { cliente_id, nome, avatar }
-
   document.addEventListener("DOMContentLoaded", () => {
     carregarConversas();
   });
@@ -185,7 +183,8 @@ function abrirChat(c) {
   }
 
   // 🔁 abre o chat real
-  window.location.href = "/chatmodelo.html";
+  window.location.href = "/paginaChat.html";
 }
+
 
 })();
