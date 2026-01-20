@@ -163,13 +163,27 @@
   }
 
   // ===============================
-  // ABRIR CHAT (PRÓXIMO PASSO)
+  // ABRIR CHAT 
   // ===============================
-  function abrirChat(c) {
-    console.log("Abrir chat com:", c);
-
-    // por enquanto só log
-    // próximo passo: abrir sala correta
+function abrirChat(c) {
+  if (!c || !c.cliente_id) {
+    console.error("Cliente inválido:", c);
+    return;
   }
+
+  // 🔑 guarda o cliente ativo para o chatmodelo
+  localStorage.setItem("chat_cliente_ativo", c.cliente_id);
+
+  // opcional: guarda nome (UX)
+  if (c.nome || c.username) {
+    localStorage.setItem(
+      "chat_cliente_nome",
+      c.nome || c.username
+    );
+  }
+
+  // 🔁 abre o chat real
+  window.location.href = "/chatmodelo.html";
+}
 
 })();
