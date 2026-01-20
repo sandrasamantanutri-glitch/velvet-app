@@ -8,20 +8,21 @@
   <link rel="stylesheet" href="/chat-app.css">
 </head>
 
-<script>
-  const token = localStorage.getItem("token");
-  const clienteId = localStorage.getItem("chat_cliente_ativo");
-
-  if (!token || !clienteId) {
-    window.location.replace("/chat-app.html");
-  }
-</script>
-
 <body>
+
+  <!-- 🔐 GUARD DE SESSÃO -->
+  <script>
+    const token = localStorage.getItem("token");
+    const clienteId = localStorage.getItem("chat_cliente_ativo");
+
+    if (!token || !clienteId) {
+      window.location.replace("/chat-app.html");
+    }
+  </script>
 
   <!-- TOPO DO CHAT -->
   <header class="chat-topo">
-    <button onclick="voltar()">←</button>
+    <button id="btnVoltar">←</button>
     <img id="chatAvatar" class="chat-avatar" />
     <strong id="chatNome">Chat</strong>
   </header>
@@ -31,11 +32,13 @@
 
   <!-- INPUT -->
   <footer class="chat-input">
-    <input id="chatInput" placeholder="Mensagem..." />
-    <button onclick="enviarMensagem()">Enviar</button>
+    <input id="chatInput" placeholder="Mensagem..." autocomplete="off" />
+    <button id="chatEnviar">Enviar</button>
   </footer>
 
+  <!-- SOCKET + CHAT -->
   <script src="/socket.io/socket.io.js"></script>
   <script src="/paginaChat.js"></script>
+
 </body>
 </html>
