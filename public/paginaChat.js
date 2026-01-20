@@ -28,6 +28,7 @@ socket.on("connect", () => {
 // 📜 HISTÓRICO
 // ===============================
 socket.on("chatHistory", mensagens => {
+    console.log("📥 chatHistory recebido:", mensagens);
   const chat = document.getElementById("chatMensagens");
   if (!chat) return;
 
@@ -88,6 +89,7 @@ function entrarNoChat(cid) {
 
   const sala = `chat_${cliente_id}_${modelo_id}`;
   socket.emit("joinChat", { sala });
+  console.log("📤 getHistory", { cliente_id, modelo_id });
   socket.emit("getHistory", { cliente_id, modelo_id });
 }
 
@@ -96,8 +98,7 @@ function entrarNoChat(cid) {
 // ===============================
 function bindUI() {
   const input = document.getElementById("chatInput");
-  const btnEnviar = document.getElementById("btnEnviar");
-  const btnVoltar = document.getElementById("btnVoltar");
+  const btnEnviar = document.getElementById("chatEnviar");
 
   if (input) {
     input.addEventListener("keydown", e => {
@@ -109,7 +110,6 @@ function bindUI() {
   }
 
   if (btnEnviar) btnEnviar.onclick = enviarMensagem;
-  if (btnVoltar) btnVoltar.onclick = voltar;
 }
 
 // ===============================
@@ -171,7 +171,7 @@ function enviarMensagem() {
 // RENDER
 // ===============================
 function renderMensagem(msg) {
-  const chat = document.getElementById("chatMensagens");
+  const chat = document.getElementById("chat-mensagens");
   if (!chat) return;
 
   const div = document.createElement("div");
