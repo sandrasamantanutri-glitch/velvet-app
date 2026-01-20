@@ -4,10 +4,12 @@
   <meta charset="UTF-8" />
   <title>Velvet • Chats</title>
 
+  <!-- Fonte -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- CSS do App (vamos criar no próximo passo) -->
   <link rel="stylesheet" href="/chat-app.css">
 </head>
-
 <script>
   const token = localStorage.getItem("token");
   if (!token) {
@@ -22,28 +24,83 @@
     <h1>Chats</h1>
   </header>
 
-  <!-- 📱 TELA 1 — LISTA DE CONVERSAS -->
-  <main class="lista-conversas"></main>
+  <!-- 📱 LISTA DE CONVERSAS -->
+  <main class="lista-conversas">
 
-  <!-- 📱 TELA 2 — CHAT (WHATSAPP STYLE) -->
-  <section class="chat-tela hidden" id="chatTela">
+    <!-- ITEM -->
+    <div class="chat-item" data-status="nao-visto">
+      <img class="avatar" src="/assets/avatarDefault.png" />
 
-    <header class="chat-topo">
-      <button id="btnVoltar">←</button>
-      <img id="chatAvatar" class="chat-avatar" />
-      <strong id="chatNome"></strong>
-    </header>
+      <div class="info">
+        <div class="linha-topo">
+          <strong>Ana</strong>
+          <span class="hora">18:40</span>
+        </div>
 
-    <div id="chatMensagens" class="chat-mensagens"></div>
+        <div class="preview">
+          Você viu o conteúdo que te enviei?
+        </div>
+      </div>
 
-    <footer class="chat-input">
-      <input id="chatInput" placeholder="Mensagem..." />
-      <button id="chatEnviar">Enviar</button>
-    </footer>
+      <span class="badge">2</span>
+    </div>
 
-  </section>
+    <!-- ITEM -->
+    <div class="chat-item" data-status="por-responder">
+      <img class="avatar" src="/assets/avatarDefault.png" />
 
-  <script src="/chat-app.js"></script>
+      <div class="info">
+        <div class="linha-topo">
+          <strong>Bia</strong>
+          <span class="hora">ontem</span>
+        </div>
+
+        <div class="preview">
+          Obrigada 😍
+        </div>
+      </div>
+
+      <span class="badge">Por responder</span>
+    </div>
+
+    <!-- ITEM NORMAL -->
+    <div class="chat-item">
+      <img class="avatar" src="/assets/avatarDefault.png" />
+
+      <div class="info">
+        <div class="linha-topo">
+          <strong>Carla</strong>
+          <span class="hora">2 dias</span>
+        </div>
+
+        <div class="preview">
+          Conversa encerrada
+        </div>
+      </div>
+    </div>
+    <section class="chat-tela hidden" id="chatTela">
+
+  <!-- TOPO DO CHAT -->
+  <header class="chat-topo">
+    <button id="btnVoltar">←</button>
+
+    <img id="chatAvatar" class="chat-avatar" />
+    <strong id="chatNome"></strong>
+  </header>
+
+  <!-- MENSAGENS -->
+  <div id="chatMensagens" class="chat-mensagens"></div>
+
+  <!-- INPUT -->
+  <footer class="chat-input">
+    <input id="chatInput" placeholder="Mensagem..." />
+    <button id="chatEnviar">Enviar</button>
+  </footer>
+
+</section>
+
+
+  </main>
+<script src="/chat-app.js"></script>
 </body>
 </html>
-
