@@ -125,25 +125,58 @@ function enviarMensagem() {
 // ===============================
 function renderMensagem(msg) {
   const chat = document.getElementById("chatBox");
+  if (!chat) return;
 
   const div = document.createElement("div");
   div.className =
     msg.sender === "modelo" ? "msg msg-modelo" : "msg msg-cliente";
 
-  if (msg.tipo === "conteudo") {
+  // ===============================
+  // 📦 CONTEÚDO (IMAGEM / VÍDEO)
+  // ===============================
+  if (msg.tipo === "conteudo" && Array.isArray(msg.midias)) {
+
+    const midiasHTML = msg.midias.map(m => {
+      const url  = m.url || m.file_url || m.media_url;
+      const tipo = m.tipo_media || m.tipo;
+
+      if (!url) return "";
+
+      if (tipo === "video") {
+        return `
+          <div class="midia-item">
+            <video
+              src="${url}"
+              muted
+              playsinline
+              preload="metadata"
+              controls
+            ></video>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="midia-item">
+          <img src="${url}" />
+        </div>
+      `;
+    }).join("");
+
     div.innerHTML = `
       <div class="chat-conteudo premium" data-id="${msg.id}">
         <div class="pacote-grid">
-          ${msg.midias.map(m =>
-            m.tipo === "video"
-              ? `<video src="${m.url}" muted></video>`
-              : `<img src="${m.url}" />`
-          ).join("")}
+          ${midiasHTML}
         </div>
       </div>
     `;
-  } else {
-    div.textContent = msg.text;
+  }
+
+  // ===============================
+  // 💬 TEXTO NORMAL
+  // ===============================
+  else {
+    div.textContent = msg.text || "";
   }
 
   chat.appendChild(div);
