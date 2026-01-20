@@ -29,8 +29,6 @@ socket.on("connect", () => {
 // ===============================
 socket.on("chatHistory", mensagens => {
   const chat = document.getElementById("chatMensagens");
-
-  // 🔥 remove skeleton
   chat.innerHTML = "";
 
   mensagens.forEach(m => renderMensagem(m));
@@ -66,22 +64,17 @@ socket.on("conteudoVisto", ({ message_id }) => {
 // ===============================
 // INIT
 // ===============================
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  await carregarModelo();
+  await carregarCliente();
+  await carregarConteudosVistos(cliente_id);
 
-  // 🦴 Skeleton IMEDIATO
-  const chat = document.getElementById("chatMensagens");
-  chat.innerHTML = `
-    <div class="msg msg-cliente skeleton"></div>
-    <div class="msg msg-modelo skeleton"></div>
-    <div class="msg msg-cliente skeleton"></div>
-  `;
+  // 📡 entrar na sala
+  const sala = `chat_${cliente_id}_${modelo_id}`;
+  socket.emit("joinChat", { sala });
+  socket.emit("getHistory", { cliente_id, modelo_id });
 
-  // 🔄 dados paralelos
-  carregarModelo();
-  carregarCliente();
-  carregarConteudosVistos(cliente_id);
-
-  // ⌨️ ENTER envia
+  // ⌨️ envio por ENTER
   const input = document.getElementById("chatInput");
   input.addEventListener("keydown", e => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -90,11 +83,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  document.getElementById("btnVoltar").onclick = voltar;
-  document.getElementById("chatEnviar").onclick = enviarMensagem;
+  // 🔙 BOTÃO VOLTAR
+  const btnVoltar = document.getElementById("btnVoltar");
+  btnVoltar.onclick = voltar;
+
+  // ✉️ BOTÃO ENVIAR
+  const btnEnviar = document.getElementById("chatEnviar");
+  btnEnviar.onclick = enviarMensagem;
+
 });
-
-
 
 // ===============================
 // FUNÇÕES
@@ -109,14 +106,6 @@ async function carregarModelo() {
   modelo_id = Number(data.user_id ?? data.id);
 
   socket.emit("loginModelo", modelo_id);
-  
-  const sala = `chat_${cliente_id}_${modelo_id}`;
-  socket.emit("joinChat", { sala });
-  
-  socket.emit("getHistory", {
-    cliente_id,
-    modelo_id
-  });
 }
 
 async function carregarCliente() {
