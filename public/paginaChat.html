@@ -10,16 +10,6 @@
 
 <body>
 
-  <!-- 🔐 GUARD DE SESSÃO -->
-  <script>
-    const token = localStorage.getItem("token");
-    const clienteId = localStorage.getItem("chat_cliente_ativo");
-
-    if (!token || !clienteId) {
-      window.location.replace("/chat-app.html");
-    }
-  </script>
-
   <!-- TOPO DO CHAT -->
   <header class="chat-topo">
     <button id="btnVoltar">←</button>
