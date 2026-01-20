@@ -1026,36 +1026,16 @@ socket.on("marcarConteudoVisto", async ({ message_id, cliente_id, modelo_id }) =
 // ===============================
 //ROTA GET
 // ===============================
-
-app.get("/api/app/state", auth, async (req, res) => {
-  try {
-    // 👠 MODELO
-    if (req.user.role === "modelo") {
-      // verifica se a modelo existe de fato
-      const modelo = await db.query(
-        "SELECT 1 FROM modelos WHERE user_id = $1",
-        [req.user.id]
-      );
-
-      if (modelo.rowCount === 0) {
-        return res.json({ next: "dados-modelo" });
-      }
-
-      return res.json({ next: "profile" });
-    }
-
-    // 👤 CLIENTE
-    if (req.user.role === "cliente") {
-      return res.json({ next: "clientHome" });
-    }
-
-    // fallback
-    return res.json({ next: "index" });
-
-  } catch (err) {
-    console.error("❌ ERRO /api/app/state:", err);
-    return res.status(500).json({ next: "index" });
+app.get("/api/app/state", auth, (req, res) => {
+  if (req.user.role === "modelo") {
+    return res.json({ next: "profile" });
   }
+
+  if (req.user.role === "cliente") {
+    return res.json({ next: "clientHome" });
+  }
+
+  return res.json({ next: "index" });
 });
 
 
