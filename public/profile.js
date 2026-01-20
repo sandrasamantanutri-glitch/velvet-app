@@ -11,6 +11,9 @@ const socket = io();
 const params = new URLSearchParams(window.location.search);
 const modeloParam = params.get("id");
 
+const token = window.__AUTH__?.token || null;
+const role  = window.__AUTH__?.role  || null;
+
 console.group("🛡️ DEBUG PERFIL");
 console.log("URL:", window.location.href);
 console.log("modeloParam (?id):", modeloParam);
