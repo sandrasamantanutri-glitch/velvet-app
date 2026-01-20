@@ -280,29 +280,3 @@ window.logout = function () {
   localStorage.removeItem("ageConfirmed"); 
   window.location.href = "https://www.velvet.lat";
 };
-
-
-// ===============================
-// INSTALAÇÃO PWA (ANDROID / CHROME)
-// ===============================
-let deferredPrompt = null;
-
-// O navegador avisa que o app pode ser instalado
-window.addEventListener("beforeinstallprompt", function (e) {
-  e.preventDefault();
-  deferredPrompt = e;
-  console.log("📲 App disponível para instalar");
-});
-
-// Função chamada pelo botão
-function installPWA() {
-  if (!deferredPrompt) {
-    alert("Instalação indisponível neste dispositivo");
-    return;
-  }
-
-  deferredPrompt.prompt();
-  deferredPrompt.userChoice.then(function () {
-    deferredPrompt = null;
-  });
-}
