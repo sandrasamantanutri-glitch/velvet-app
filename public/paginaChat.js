@@ -22,11 +22,6 @@ let conteudosVistosCliente = new Set();
 // ===============================
 socket.on("connect", () => {
   socket.emit("auth", { token });
-
- socket.emit("getHistory", {
-    cliente_id,
-    modelo_id: null
-  });
 });
 
 // ===============================
@@ -117,6 +112,11 @@ async function carregarModelo() {
   
   const sala = `chat_${cliente_id}_${modelo_id}`;
   socket.emit("joinChat", { sala });
+  
+  socket.emit("getHistory", {
+    cliente_id,
+    modelo_id
+  });
 }
 
 async function carregarCliente() {
