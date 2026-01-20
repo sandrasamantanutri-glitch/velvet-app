@@ -11,8 +11,8 @@ const socket = io();
 const params = new URLSearchParams(window.location.search);
 const modeloParam = params.get("id");
 
-var token = localStorage.getItem("token");
-var role  = localStorage.getItem("role");
+const token = window.__AUTH__?.token || localStorage.getItem("token");
+const role  = window.__AUTH__?.role  || localStorage.getItem("role");
 
 console.group("🛡️ DEBUG PERFIL");
 console.log("URL:", window.location.href);
