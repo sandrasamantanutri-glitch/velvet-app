@@ -82,6 +82,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       enviarMensagem();
     }
   });
+
+  // 🔙 BOTÃO VOLTAR
+  const btnVoltar = document.getElementById("btnVoltar");
+  btnVoltar.onclick = voltar;
+
+  // ✉️ BOTÃO ENVIAR
+  const btnEnviar = document.getElementById("chatEnviar");
+  btnEnviar.onclick = enviarMensagem;
+
 });
 
 // ===============================
