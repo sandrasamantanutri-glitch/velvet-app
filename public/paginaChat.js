@@ -33,11 +33,18 @@ socket.on("chatHistory", mensagens => {
 
   mensagens.forEach(m => renderMensagem(m));
 
-  // 🔥 abriu o chat → marcar como lido globalmente
+ if (cliente_id && modelo_id) {
   socket.emit("chatOpened", {
     cliente_id,
     modelo_id
   });
+}
+});
+
+console.log("🧩 STATE:", {
+  socket: socket.connected,
+  cliente_id,
+  modelo_id
 });
 
 // ===============================
@@ -77,7 +84,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   // 📡 entrar na sala
   const sala = `chat_${cliente_id}_${modelo_id}`;
   socket.emit("joinChat", { sala });
+
+socket.once("joinedChat", () => {
   socket.emit("getHistory", { cliente_id, modelo_id });
+});
+
 
   // ⌨️ envio por ENTER
   const input = document.getElementById("chatInput");
