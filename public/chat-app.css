@@ -295,15 +295,15 @@ body.modo-chat .lista-conversas {
 }
 
 .msg-modelo {
-  background: #cebdf3;
-  color: #000;
+  background: #968bac;
+  color: #FFF;
   align-self: flex-end;
   border-bottom-right-radius: 4px;
 }
 
 .msg-cliente {
-  background: #b6a2e2; ;
-  color: #000;
+  background: #b29ae7; ;
+  color: #FFF;
   align-self: flex-start;
   border-bottom-left-radius: 4px;
 }

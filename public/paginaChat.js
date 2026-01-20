@@ -79,7 +79,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   socket.emit("joinChat", { sala });
   socket.emit("getHistory", { cliente_id, modelo_id });
 
-  // ⌨️ envio por ENTER
+   // ⌨️ ENTER
   const input = document.getElementById("chatInput");
   input.addEventListener("keydown", e => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -87,6 +87,17 @@ document.addEventListener("DOMContentLoaded", async () => {
       enviarMensagem();
     }
   });
+
+  // 🔘 BOTÃO ENVIAR (🔥 ISSO FALTAVA)
+  const btnEnviar = document.getElementById("btnEnviar");
+  if (btnEnviar) {
+    btnEnviar.onclick = enviarMensagem;
+  }
+
+  const btnVoltar = document.getElementById("btnVoltar");
+if (btnVoltar) {
+  btnVoltar.onclick = voltar;
+}
 });
 
 // ===============================
