@@ -49,7 +49,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 async function initUsuario() {
-  const token = localStorage.getItem("token");
+ let token = localStorage.getItem("token");
   if (!token) return;
 
   try {
@@ -223,7 +223,7 @@ function atualizarBadgeHeader(total) {
 }
 
 function initHeaderSocketModelo() {
-  const token = localStorage.getItem("token");
+let token = localStorage.getItem("token");
   const role = localStorage.getItem("role");
 
   if (!token || role !== "modelo") return;
@@ -247,7 +247,7 @@ async function atualizarUnreadClienteHeader() {
   const role = localStorage.getItem("role");
   if (role !== "cliente") return;
 
-  const token = localStorage.getItem("token");
+ let token = localStorage.getItem("token");
   if (!token) return;
 
   try {
@@ -271,7 +271,7 @@ async function atualizarUnreadModeloHeader() {
   const role = localStorage.getItem("role");
   if (role !== "modelo") return;
 
-  const token = localStorage.getItem("token");
+ let token = localStorage.getItem("token");
   if (!token) return;
 
   try {
