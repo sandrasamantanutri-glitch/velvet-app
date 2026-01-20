@@ -11,6 +11,19 @@ const socket = io();
 const params = new URLSearchParams(window.location.search);
 const modeloParam = params.get("id");
 
+const token = localStorage.getItem("token");
+const role  = localStorage.getItem("role");
+
+console.group("🛡️ DEBUG PERFIL");
+console.log("URL:", window.location.href);
+console.log("modeloParam (?id):", modeloParam);
+console.log("token existe?", !!token);
+console.log("role:", role);
+console.log("modelo_id LS:", localStorage.getItem("modelo_id"));
+console.groupEnd();
+
+
+
 //DEFINIÇÃO SEGURA DE MODO
 let modo = "publico";
 if (token && role === "modelo" && !modeloParam) {
@@ -47,8 +60,6 @@ function decodeJWT(token) {
     return null;
   }
 }
-
-
 
 function logout() {
   localStorage.clear();
