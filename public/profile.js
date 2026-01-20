@@ -11,8 +11,8 @@ const socket = io();
 const params = new URLSearchParams(window.location.search);
 const modeloParam = params.get("id");
 
-const token = window.__AUTH__?.token || localStorage.getItem("token");
-const role  = window.__AUTH__?.role  || localStorage.getItem("role");
+const token = localStorage.getItem("token");
+const role  = localStorage.getItem("role");
 
 console.group("🛡️ DEBUG PERFIL");
 console.log("URL:", window.location.href);
@@ -34,18 +34,15 @@ if (role === "cliente" && modo === "privado") {
   window.location.href = "https://www.velvet.lat";
   throw new Error("Cliente não pode acessar profile privado");
 }
-if (modo === "publico" && !modeloParam && role !== "modelo") {
-  // só limpa se NÃO houver referência válida
+if (modo === "publico") {
   localStorage.removeItem("modelo_id");
 }
 
-let modelo_id =
-  modeloParam
-    ? Number(modeloParam)
-    : role === "modelo"
-      ? Number(localStorage.getItem("modelo_id"))
-      : Number(localStorage.getItem("modelo_id")) || null;
-
+let modelo_id = modeloParam
+  ? Number(modeloParam)
+  : role === "modelo"
+    ? localStorage.getItem("modelo_id")
+    : null;
 
 // autentica socket
 socket.emit("auth", { token });
