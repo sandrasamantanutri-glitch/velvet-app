@@ -1,19 +1,21 @@
 {
   "name": "Velvet",
   "short_name": "Velvet",
-  "start_url": "/index.html",
+  "description": "Velvet • Conteúdos exclusivos",
+  "start_url": "/index.html?app=true",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#f6f7fb",
-  "theme_color": "#7B2CFF",
   "orientation": "portrait",
+  "background_color": "#7B2CFF",
+  "theme_color": "#7B2CFF",
   "icons": [
     {
-      "src": "/android-chrome-192x192.png",
+      "src": "/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/android-chrome-512x512.png",
+      "src": "/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
