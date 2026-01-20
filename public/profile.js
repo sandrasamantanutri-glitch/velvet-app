@@ -38,11 +38,7 @@ if (modo === "publico") {
   localStorage.removeItem("modelo_id");
 }
 
-let modelo_id = modeloParam
-  ? Number(modeloParam)
-  : role === "modelo"
-    ? localStorage.getItem("modelo_id")
-    : null;
+let modelo_id = modeloParam ? Number(modeloParam) : null;
 
 // autentica socket
 socket.emit("auth", { token });
@@ -73,10 +69,10 @@ function logout() {
 // ===============================
 
 // 🔒 Guard APENAS para perfil público
-if (modo === "publico" && (!modelo_id || modelo_id === "undefined")) {
+if (modo === "publico" && !modeloParam) {
   alert("Modelo não identificada.");
-  window.location.href = "/clientHome.html";
-  throw new Error("modelo_id ausente no perfil público");
+  window.location.href = "/index.html";
+  throw new Error("perfil público sem id");
 }
 
 const avatarImg  = document.getElementById("profileAvatar");
