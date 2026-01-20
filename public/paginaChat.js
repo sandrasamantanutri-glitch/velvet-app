@@ -22,6 +22,11 @@ let conteudosVistosCliente = new Set();
 // ===============================
 socket.on("connect", () => {
   socket.emit("auth", { token });
+
+ socket.emit("getHistory", {
+    cliente_id,
+    modelo_id: null
+  });
 });
 
 // ===============================
@@ -68,7 +73,7 @@ socket.on("conteudoVisto", ({ message_id }) => {
 // ===============================
 document.addEventListener("DOMContentLoaded", () => {
 
-  // 🦴 Skeleton IMEDIATO (primeira coisa)
+  // 🦴 Skeleton IMEDIATO
   const chat = document.getElementById("chatMensagens");
   chat.innerHTML = `
     <div class="msg msg-cliente skeleton"></div>
@@ -76,18 +81,12 @@ document.addEventListener("DOMContentLoaded", () => {
     <div class="msg msg-cliente skeleton"></div>
   `;
 
-  // 🔥 1️⃣ pede histórico imediatamente
-  socket.emit("getHistory", {
-    cliente_id,
-    modelo_id: null
-  });
-
-  // 🔄 2️⃣ carrega dados em paralelo (NÃO bloquear)
+  // 🔄 dados paralelos
   carregarModelo();
   carregarCliente();
   carregarConteudosVistos(cliente_id);
 
-  // ⌨️ envio por ENTER
+  // ⌨️ ENTER envia
   const input = document.getElementById("chatInput");
   input.addEventListener("keydown", e => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -96,12 +95,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // 🔙 BOTÃO VOLTAR
   document.getElementById("btnVoltar").onclick = voltar;
-
-  // ✉️ BOTÃO ENVIAR
   document.getElementById("chatEnviar").onclick = enviarMensagem;
 });
+
 
 
 // ===============================
