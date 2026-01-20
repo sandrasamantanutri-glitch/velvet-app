@@ -18,6 +18,7 @@ html, body {
    TOPO DO APP
 ========================= */
 .app-topo {
+  height: 56px;
   position: sticky;
   top: 0;
   z-index: 10;
@@ -35,12 +36,14 @@ html, body {
   color: #7B2CFF;
 }
 
-/* =========================
-   LISTA DE CONVERSAS
-========================= */
 .lista-conversas {
   display: flex;
   flex-direction: column;
+
+  padding-top: 8px;
+  padding-bottom: 16px;
+
+  min-height: calc(100vh - 56px); /* altura do header */
 }
 
 /* =========================
