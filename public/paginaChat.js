@@ -88,18 +88,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-    // 🔘 BOTÃO ENVIAR (🔥 ISSO FALTAVA)
-  const btnEnviar = document.getElementById("btnEnviar");
-  if (btnEnviar) {
-    btnEnviar.onclick = enviarMensagem;
-  }
-
-  const btnVoltar = document.getElementById("btnVoltar");
- if (btnVoltar) {
-  btnVoltar.onclick = voltar;
- }
-  
-
 });
 
 // ===============================
