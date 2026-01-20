@@ -11,6 +11,15 @@ if (token && role) {
     role === "modelo" ? "/profile.html" : "/clientHome.html";
 }
 
+const isApp =
+  window.matchMedia("(display-mode: standalone)").matches ||
+  window.navigator.standalone === true;
+
+if (isApp) {
+  document.body.classList.add("is-app");
+}
+
+
 // ===============================
 // ESTADO GLOBAL
 // ===============================

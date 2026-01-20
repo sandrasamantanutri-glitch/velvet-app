@@ -368,6 +368,13 @@ body {
   cursor: pointer;
 }
 
+/*APP*/
+
+body.is-app {
+  overscroll-behavior: none;
+}
+
+
 
 
 
