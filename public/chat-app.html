@@ -4,12 +4,10 @@
   <meta charset="UTF-8" />
   <title>Velvet • Chats</title>
 
-  <!-- Fonte -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-
-  <!-- CSS do App (vamos criar no próximo passo) -->
   <link rel="stylesheet" href="/chat-app.css">
 </head>
+
 <script>
   const token = localStorage.getItem("token");
   if (!token) {
@@ -24,62 +22,28 @@
     <h1>Chats</h1>
   </header>
 
-  <!-- 📱 LISTA DE CONVERSAS -->
-  <main class="lista-conversas">
+  <!-- 📱 TELA 1 — LISTA DE CONVERSAS -->
+  <main class="lista-conversas"></main>
 
-    <!-- ITEM -->
-    <div class="chat-item" data-status="nao-visto">
-      <img class="avatar" src="/assets/avatarDefault.png" />
+  <!-- 📱 TELA 2 — CHAT (WHATSAPP STYLE) -->
+  <section class="chat-tela hidden" id="chatTela">
 
-      <div class="info">
-        <div class="linha-topo">
-          <strong>Ana</strong>
-          <span class="hora">18:40</span>
-        </div>
+    <header class="chat-topo">
+      <button id="btnVoltar">←</button>
+      <img id="chatAvatar" class="chat-avatar" />
+      <strong id="chatNome"></strong>
+    </header>
 
-        <div class="preview">
-          Você viu o conteúdo que te enviei?
-        </div>
-      </div>
+    <div id="chatMensagens" class="chat-mensagens"></div>
 
-      <span class="badge">2</span>
-    </div>
+    <footer class="chat-input">
+      <input id="chatInput" placeholder="Mensagem..." />
+      <button id="chatEnviar">Enviar</button>
+    </footer>
 
-    <!-- ITEM -->
-    <div class="chat-item" data-status="por-responder">
-      <img class="avatar" src="/assets/avatarDefault.png" />
+  </section>
 
-      <div class="info">
-        <div class="linha-topo">
-          <strong>Bia</strong>
-          <span class="hora">ontem</span>
-        </div>
-
-        <div class="preview">
-          Obrigada 😍
-        </div>
-      </div>
-
-      <span class="badge">Por responder</span>
-    </div>
-
-    <!-- ITEM NORMAL -->
-    <div class="chat-item">
-      <img class="avatar" src="/assets/avatarDefault.png" />
-
-      <div class="info">
-        <div class="linha-topo">
-          <strong>Carla</strong>
-          <span class="hora">2 dias</span>
-        </div>
-
-        <div class="preview">
-          Conversa encerrada
-        </div>
-      </div>
-    </div>
-
-  </main>
-<script src="/chat-app.js"></script>
+  <script src="/chat-app.js"></script>
 </body>
 </html>
+

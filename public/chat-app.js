@@ -10,6 +10,8 @@
     return;
   }
 
+  let chatAtivo = null; // { cliente_id, nome, avatar }
+
   document.addEventListener("DOMContentLoaded", () => {
     carregarConversas();
   });
@@ -162,28 +164,47 @@
     return `${d} dias`;
   }
 
-  // ===============================
-  // ABRIR CHAT 
-  // ===============================
-function abrirChat(c) {
-  if (!c || !c.cliente_id) {
-    console.error("Cliente inválido:", c);
-    return;
-  }
+ function abrirChat(c) {
+  chatAtivo = {
+    cliente_id: c.cliente_id,
+    nome: c.nome || c.username || "Cliente",
+    avatar: c.avatar || "/assets/avatarDefault.png"
+  };
 
-  // 🔑 guarda o cliente ativo para o chatmodelo
-  localStorage.setItem("chat_cliente_ativo", c.cliente_id);
+  // troca telas
+  document.querySelector(".lista-conversas").classList.add("hidden");
+  document.getElementById("chatTela").classList.remove("hidden");
 
-  // opcional: guarda nome (UX)
-  if (c.nome || c.username) {
-    localStorage.setItem(
-      "chat_cliente_nome",
-      c.nome || c.username
-    );
-  }
+  // topo
+  document.getElementById("chatNome").innerText = chatAtivo.nome;
+  document.getElementById("chatAvatar").src = chatAtivo.avatar;
 
-  // 🔁 abre o chat real
-  window.location.href = "/chatmodelo.html";
+  // limpa mensagens
+  document.getElementById("chatMensagens").innerHTML = "";
+
+  // buscar histórico REAL
+  carregarHistoricoChat();
 }
+
+function renderMensagemApp(m) {
+  const box = document.getElementById("chatMensagens");
+
+  const div = document.createElement("div");
+  div.className =
+    m.sender === "modelo"
+      ? "msg msg-modelo"
+      : "msg msg-cliente";
+
+  div.innerText = m.text;
+
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+document.getElementById("btnVoltar").onclick = () => {
+  document.getElementById("chatTela").classList.add("hidden");
+  document.querySelector(".lista-conversas").classList.remove("hidden");
+};
+
 
 })();

@@ -161,3 +161,56 @@ html, body {
 body.modo-chat .lista-conversas {
   display: none;
 }
+
+
+.hidden {
+  display: none;
+}
+
+.chat-tela {
+  position: fixed;
+  inset: 0;
+  background: #f6f4ff;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-topo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: #fff;
+  border-bottom: 1px solid #eee;
+}
+
+.chat-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+}
+
+.chat-mensagens {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chat-input {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  background: #fff;
+  border-top: 1px solid #eee;
+}
+
+.chat-input input {
+  flex: 1;
+  border-radius: 14px;
+  border: 1px solid #ccc;
+  padding: 8px 12px;
+}
+
