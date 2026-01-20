@@ -135,7 +135,7 @@ if (isApp) {
     btnChatApp.style.display = "block";
 
     btnChatApp.addEventListener("click", () => {
-      window.location.href = "/chat-app.html";
+      window.location.href = "/chat-app/index.html";
     });
   }
 }
