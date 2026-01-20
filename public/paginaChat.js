@@ -83,6 +83,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
+  await carregarModelo();
+  await carregarCliente();
+  await carregarConteudosVistos(cliente_id);
+
   // 🔙 BOTÃO VOLTAR
   const btnVoltar = document.getElementById("btnVoltar");
   btnVoltar.onclick = voltar;
@@ -91,7 +95,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   const btnEnviar = document.getElementById("chatEnviar");
   btnEnviar.onclick = enviarMensagem;
 
+  
 });
+
 
 // ===============================
 // FUNÇÕES
