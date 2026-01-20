@@ -29,6 +29,8 @@ socket.on("connect", () => {
 // ===============================
 socket.on("chatHistory", mensagens => {
   const chat = document.getElementById("chatMensagens");
+
+  // 🔥 remove skeleton
   chat.innerHTML = "";
 
   mensagens.forEach(m => renderMensagem(m));
@@ -64,15 +66,26 @@ socket.on("conteudoVisto", ({ message_id }) => {
 // ===============================
 // INIT
 // ===============================
-document.addEventListener("DOMContentLoaded", async () => {
-  await carregarModelo();
-  await carregarCliente();
-  await carregarConteudosVistos(cliente_id);
+document.addEventListener("DOMContentLoaded", () => {
 
-  // 📡 entrar na sala
-  const sala = `chat_${cliente_id}_${modelo_id}`;
-  socket.emit("joinChat", { sala });
-  socket.emit("getHistory", { cliente_id, modelo_id });
+  // 🦴 Skeleton IMEDIATO (primeira coisa)
+  const chat = document.getElementById("chatMensagens");
+  chat.innerHTML = `
+    <div class="msg msg-cliente skeleton"></div>
+    <div class="msg msg-modelo skeleton"></div>
+    <div class="msg msg-cliente skeleton"></div>
+  `;
+
+  // 🔥 1️⃣ pede histórico imediatamente
+  socket.emit("getHistory", {
+    cliente_id,
+    modelo_id: null
+  });
+
+  // 🔄 2️⃣ carrega dados em paralelo (NÃO bloquear)
+  carregarModelo();
+  carregarCliente();
+  carregarConteudosVistos(cliente_id);
 
   // ⌨️ envio por ENTER
   const input = document.getElementById("chatInput");
@@ -84,14 +97,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // 🔙 BOTÃO VOLTAR
-  const btnVoltar = document.getElementById("btnVoltar");
-  btnVoltar.onclick = voltar;
+  document.getElementById("btnVoltar").onclick = voltar;
 
   // ✉️ BOTÃO ENVIAR
-  const btnEnviar = document.getElementById("chatEnviar");
-  btnEnviar.onclick = enviarMensagem;
-
+  document.getElementById("chatEnviar").onclick = enviarMensagem;
 });
+
 
 // ===============================
 // FUNÇÕES
@@ -106,6 +117,9 @@ async function carregarModelo() {
   modelo_id = Number(data.user_id ?? data.id);
 
   socket.emit("loginModelo", modelo_id);
+  
+  const sala = `chat_${cliente_id}_${modelo_id}`;
+  socket.emit("joinChat", { sala });
 }
 
 async function carregarCliente() {
