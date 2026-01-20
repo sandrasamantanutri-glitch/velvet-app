@@ -11,9 +11,6 @@ const socket = io();
 const params = new URLSearchParams(window.location.search);
 const modeloParam = params.get("id");
 
-const token = localStorage.getItem("token");
-const role  = localStorage.getItem("role");
-
 console.group("🛡️ DEBUG PERFIL");
 console.log("URL:", window.location.href);
 console.log("modeloParam (?id):", modeloParam);
@@ -34,15 +31,18 @@ if (role === "cliente" && modo === "privado") {
   window.location.href = "https://www.velvet.lat";
   throw new Error("Cliente não pode acessar profile privado");
 }
-if (modo === "publico") {
+if (modo === "publico" && !modeloParam && role !== "modelo") {
+  // só limpa se NÃO houver referência válida
   localStorage.removeItem("modelo_id");
 }
 
-let modelo_id = modeloParam
-  ? Number(modeloParam)
-  : role === "modelo"
-    ? localStorage.getItem("modelo_id")
-    : null;
+let modelo_id =
+  modeloParam
+    ? Number(modeloParam)
+    : role === "modelo"
+      ? Number(localStorage.getItem("modelo_id"))
+      : Number(localStorage.getItem("modelo_id")) || null;
+
 
 // autentica socket
 socket.emit("auth", { token });
@@ -60,8 +60,6 @@ function decodeJWT(token) {
     return null;
   }
 }
-
-
 
 function logout() {
   localStorage.clear();
@@ -120,6 +118,26 @@ document.getElementById("btnVipCartao")?.addEventListener("click", () => {
   } else {
     window.location.href = "/chatcliente.html";
   }
+
+  // ===============================
+// BOTÃO "ENTRAR NO CHAT" (SÓ NO APP)
+// ===============================
+
+const isApp =
+  window.matchMedia("(display-mode: standalone)").matches ||
+  window.navigator.standalone === true;
+
+if (isApp) {
+  const btnChatApp = document.getElementById("btnChatApp");
+  if (btnChatApp) {
+    btnChatApp.style.display = "block";
+
+    btnChatApp.addEventListener("click", () => {
+      window.location.href = "/chat-app.html";
+    });
+  }
+}
+
 });
 
 // ===============================
@@ -193,7 +211,8 @@ function valorBRL(valor) {
 
 async function carregarPerfil() {
   const res = await fetch("/api/modelo/me", {
-    headers: { Authorization: "Bearer " + token }
+    headers: { Authorization: "Bearer " + localStorage.getItem("token") }
+
   });
 
   if (!res.ok) return;
@@ -304,7 +323,7 @@ function carregarFeed() {
   if (!listaMidias) return;
 
   fetch("/api/feed/me", {
-    headers: { Authorization: "Bearer " + token }
+    headers: { Authorization: "Bearer " + localStorage.getItem("token") }
   })
     .then(r => r.json())
     .then(feed => {
