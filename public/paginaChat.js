@@ -2,20 +2,20 @@
 // CONTEXTO
 // ===============================
 const token = localStorage.getItem("token");
-const role  = localStorage.getItem("role"); // modelo
+const role  = localStorage.getItem("role"); // deve ser "modelo"
 
 if (!token) {
   window.location.href = "/index.html";
   throw new Error("Sem token");
 }
-
-let cliente_id = Number(localStorage.getItem("chat_cliente_ativo")) || null;
-let modelo_id  = null;
-let conteudosVistosCliente = new Set();
+const cliente_id = Number(localStorage.getItem("chat_cliente_ativo")) || null;
 
 const socket = io({
   transports: ["websocket"]
 });
+
+let modelo_id = null;
+let conteudosVistosCliente = new Set();
 
 // ===============================
 // 🔐 SOCKET AUTH
@@ -28,29 +28,28 @@ socket.on("connect", () => {
 // 📜 HISTÓRICO
 // ===============================
 socket.on("chatHistory", mensagens => {
-    console.log("📥 chatHistory recebido:", mensagens);
   const chat = document.getElementById("chatMensagens");
-  if (!chat) return;
-
   chat.innerHTML = "";
-  mensagens.forEach(renderMensagem);
 
-  if (cliente_id && modelo_id) {
-    socket.emit("chatOpened", { cliente_id, modelo_id });
-  }
+  mensagens.forEach(m => renderMensagem(m));
+
+  // 🔥 abriu o chat → marcar como lido globalmente
+  socket.emit("chatOpened", {
+    cliente_id,
+    modelo_id
+  });
 });
 
 // ===============================
-// 💬 NOVA MENSAGEM
+// 💬 NOVA MENSAGEM (REALTIME)
 // ===============================
 socket.on("newMessage", msg => {
-  if (!cliente_id) return;
-  if (Number(msg.cliente_id) !== Number(cliente_id)) return;
+  if (Number(msg.cliente_id) !== cliente_id) return;
   renderMensagem(msg);
 });
 
 // ===============================
-// 👁️ CONTEÚDO VISTO
+// 👁️ CONTEÚDO VISTO (SYNC TOTAL)
 // ===============================
 socket.on("conteudoVisto", ({ message_id }) => {
   const el = document.querySelector(
@@ -63,58 +62,32 @@ socket.on("conteudoVisto", ({ message_id }) => {
 });
 
 // ===============================
-// INIT (IGUAL AO CHATMODELO)
+// INIT
 // ===============================
 document.addEventListener("DOMContentLoaded", async () => {
   await carregarModelo();
-
-  if (!cliente_id) {
-    console.warn("⚠️ Nenhum cliente ativo");
-    return;
-  }
-
   await carregarCliente();
   await carregarConteudosVistos(cliente_id);
 
-  entrarNoChat(cliente_id);
-  bindUI();
+  // 📡 entrar na sala
+  const sala = `chat_${cliente_id}_${modelo_id}`;
+  socket.emit("joinChat", { sala });
+  socket.emit("getHistory", { cliente_id, modelo_id });
+
+  // ⌨️ envio por ENTER
+  const input = document.getElementById("chatInput");
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      enviarMensagem();
+    }
+  });
 });
 
 // ===============================
-// 🔁 FLUXO CENTRAL (COPIADO DO CHATMODELO)
+// FUNÇÕES
 // ===============================
-function entrarNoChat(cid) {
-  cliente_id = Number(cid);
-  localStorage.setItem("chat_cliente_ativo", cliente_id);
 
-  const sala = `chat_${cliente_id}_${modelo_id}`;
-  socket.emit("joinChat", { sala });
-  console.log("📤 getHistory", { cliente_id, modelo_id });
-  socket.emit("getHistory", { cliente_id, modelo_id });
-}
-
-// ===============================
-// UI
-// ===============================
-function bindUI() {
-  const input = document.getElementById("chatInput");
-  const btnEnviar = document.getElementById("chatEnviar");
-
-  if (input) {
-    input.addEventListener("keydown", e => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        enviarMensagem();
-      }
-    });
-  }
-
-  if (btnEnviar) btnEnviar.onclick = enviarMensagem;
-}
-
-// ===============================
-// API
-// ===============================
 async function carregarModelo() {
   const res = await fetch("/api/modelo/me", {
     headers: { Authorization: "Bearer " + token }
@@ -122,6 +95,7 @@ async function carregarModelo() {
 
   const data = await res.json();
   modelo_id = Number(data.user_id ?? data.id);
+
   socket.emit("loginModelo", modelo_id);
 }
 
@@ -150,12 +124,13 @@ async function carregarConteudosVistos(cliente_id) {
 }
 
 // ===============================
-// ENVIO
+// ✉️ ENVIAR TEXTO
 // ===============================
 function enviarMensagem() {
   const input = document.getElementById("chatInput");
   const text = input.value.trim();
   if (!text) return;
+
   if (!cliente_id || !modelo_id) return;
 
   socket.emit("sendMessage", {
@@ -168,38 +143,62 @@ function enviarMensagem() {
 }
 
 // ===============================
-// RENDER
+// 🎨 RENDER MENSAGEM (COPIADO DO MODELO)
 // ===============================
 function renderMensagem(msg) {
-  const chat = document.getElementById("chat-mensagens");
+  const chat = document.getElementById("chatMensagens");
   if (!chat) return;
 
   const div = document.createElement("div");
   div.className =
     msg.sender === "modelo" ? "msg msg-modelo" : "msg msg-cliente";
 
+  // 📦 CONTEÚDO
   if (
     msg.tipo === "conteudo" &&
     Array.isArray(msg.midias) &&
-    msg.midias.length
+    msg.midias.length > 0
   ) {
     div.innerHTML = `
-      <div class="chat-conteudo premium ${msg.visto ? "visto" : "bloqueado"}"
-           data-id="${msg.id}">
-        <div class="pacote-grid">
-          ${msg.midias.map(m => `
-            <div class="midia-item">
-              ${
-                (m.tipo_media || m.tipo) === "video"
-                  ? `<video src="${m.url}" muted></video>`
-                  : `<img src="${m.url}" />`
-              }
-            </div>
-          `).join("")}
-        </div>
+<div class="chat-conteudo premium ${msg.visto ? "visto" : "bloqueado"}"
+     data-id="${msg.id}">
+
+  <div class="pacote-grid">
+    ${msg.midias.map(m => `
+      <div class="midia-item">
+        ${
+          (m.tipo_media || m.tipo) === "video"
+            ? `<video src="${m.url}" muted></video>`
+            : `<img src="${m.url}" />`
+        }
       </div>
-    `;
-  } else {
+    `).join("")}
+  </div>
+
+  ${
+    msg.preco > 0
+      ? `
+      <div class="conteudo-info">
+        <span class="status-bloqueado">
+          ${
+            msg.visto
+              ? `🟢 Vendido`
+              : `🔒 ${msg.midias.length} mídia(s)`
+          }
+        </span>
+        <span class="preco-bloqueado">
+          R$ ${Number(msg.preco).toFixed(2)}
+        </span>
+      </div>
+      `
+      : ""
+  }
+
+</div>
+`;
+  }
+  // 💬 TEXTO NORMAL
+  else {
     div.textContent = msg.text;
   }
 
@@ -208,7 +207,7 @@ function renderMensagem(msg) {
 }
 
 // ===============================
-// VOLTAR
+// 🔙 VOLTAR
 // ===============================
 function voltar() {
   window.location.href = "/chat-app.html";
