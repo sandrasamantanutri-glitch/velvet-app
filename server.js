@@ -61,8 +61,20 @@ const transporter = nodemailer.createTransport({
   },
   tls: {
     rejectUnauthorized: false
+  },
+  connectionTimeout: 10_000, // ⏱️ 10s
+  greetingTimeout: 10_000,   // ⏱️ 10s
+  socketTimeout: 10_000      // ⏱️ 10s
+});
+transporter.verify((err, success) => {
+  if (err) {
+    console.error("❌ SMTP NÃO CONECTOU:", err);
+  } else {
+    console.log("✅ SMTP pronto para enviar emails");
   }
 });
+
+
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -2959,6 +2971,8 @@ setInterval(async () => {
 
 app.get("/api/test-email", async (req, res) => {
   try {
+    console.log("📨 Iniciando envio de email...");
+
     await transporter.sendMail({
       from: `"Velvet Teste" <${process.env.CONTACT_EMAIL}>`,
       to: process.env.CONTACT_EMAIL,
@@ -2966,11 +2980,15 @@ app.get("/api/test-email", async (req, res) => {
       html: "<h2>Email funcionando!</h2>"
     });
 
-    res.json({ ok: true });
+    console.log("✅ Email enviado com sucesso");
+    return res.json({ ok: true });
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("❌ ERRO EMAIL:", err);
+    return res.status(500).json({ error: err.message });
   }
 });
+
 
 app.use("/", servercontent);
 
