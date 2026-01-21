@@ -397,6 +397,7 @@ body {
 .modal-box.velvet .btn-primary {
   background: linear-gradient(135deg, #7B2CFF, #9B5CFF);
   border-radius: 16px;
+  margin-top: 16px;
 }
 
 .modal-box.velvet .btn-primary:hover {
