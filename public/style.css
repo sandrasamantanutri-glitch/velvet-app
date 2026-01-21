@@ -385,6 +385,7 @@ body {
 .modal-box.velvet input {
   border-radius: 14px;
   border: 1px solid #ddd;
+  gap: 16px;
 }
 
 .modal-box.velvet input:focus {
