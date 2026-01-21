@@ -50,18 +50,7 @@ const allowedOrigins = [
   "https://app-production-e7e1.up.railway.app",
   "https://velvet-test-production.up.railway.app"
 ];
-
-const transporter = nodemailer.createTransport({
-  host: "smtp.sendgrid.net",
-  port: 587,
-  secure: false,
-  auth: {
-    user: "apikey",                 // 🔑 FIXO
-    pass: process.env.SENDGRID_API_KEY
-  }
-});
-
-
+const sgMail = require("@sendgrid/mail");
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -2878,31 +2867,24 @@ app.post("/api/contato", async (req, res) => {
   try {
     const { nome, email, assunto, mensagem } = req.body;
 
-    // 🔒 validação básica
     if (!nome || !email || !assunto || !mensagem) {
       return res.status(400).json({ error: "Dados incompletos" });
     }
 
-    // ✉️ envio do email via SendGrid
-    await transporter.sendMail({
-      from: `"Contato Velvet" <${process.env.EMAIL_FROM}>`,
-      to: process.env.EMAIL_FROM, // recebe no email oficial
-      replyTo: email,             // permite responder ao usuário
-      subject: `[Contato] ${assunto}`,
-      html: `
-        <h3>Novo contato pelo site</h3>
-        <p><b>Nome:</b> ${nome}</p>
-        <p><b>Email:</b> ${email}</p>
-        <p><b>Assunto:</b> ${assunto}</p>
-        <p><b>Mensagem:</b></p>
-        <p>${mensagem}</p>
-      `
-    });
+    await sgMail.send({
+  to: email,
+  from: process.env.EMAIL_FROM,
+  subject: "Recuperação de senha – Velvet",
+  html: `
+    <p>Seu código é:</p>
+    <h2>${codigo}</h2>
+    <p>Expira em 15 minutos.</p>
+  `
+});
 
     return res.json({ success: true });
-
   } catch (err) {
-    console.error("❌ Erro contato:", err);
+    console.error("❌ Erro contato:", err.response?.body || err);
     return res.status(500).json({ error: "Erro ao enviar mensagem" });
   }
 });
@@ -2953,19 +2935,20 @@ setInterval(async () => {
 
 app.get("/api/test-email", async (req, res) => {
   try {
-    await transporter.sendMail({
-      from: `"Velvet" <${process.env.EMAIL_FROM}>`,
+    await sgMail.send({
       to: process.env.EMAIL_FROM,
-      subject: "🚀 Teste SendGrid - Velvet",
-      html: "<h2>SendGrid funcionando!</h2>"
+      from: process.env.EMAIL_FROM,
+      subject: "🚀 Teste SendGrid Web API - Velvet",
+      html: "<h2>Email enviado com sucesso!</h2>"
     });
 
     return res.json({ ok: true });
   } catch (err) {
-    console.error("❌ ERRO SENDGRID:", err);
-    return res.status(500).json({ error: err.message });
+    console.error("❌ ERRO SENDGRID API:", err.response?.body || err);
+    return res.status(500).json({ error: "Erro ao enviar email" });
   }
 });
+
 
 
 app.use("/", servercontent);
