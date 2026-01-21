@@ -2943,18 +2943,19 @@ setInterval(async () => {
 app.get("/api/test-email", async (req, res) => {
   try {
     await sgMail.send({
-        to: process.env.EMAIL_FROM,
-  from: process.env.EMAIL_FROM,
-  subject: `[Contato] ${assunto}`,
-  html: `...`
-});
+      to: process.env.EMAIL_FROM,
+      from: process.env.EMAIL_FROM,
+      subject: "🚀 Teste SendGrid",
+      html: "<h2>Email enviado com sucesso</h2>"
+    });
 
     return res.json({ ok: true });
-  } catch (err) {
-    console.error("❌ ERRO SENDGRID:", err.response?.body || err);
+  } catch (error) {
+    console.error("❌ ERRO SENDGRID:", error.response?.body || error);
     return res.status(500).json({ error: "Erro ao enviar email" });
   }
 });
+
 
 
 
