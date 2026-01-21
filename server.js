@@ -2163,7 +2163,6 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
   }
 
   const client = await db.connect();
-
   try {
     // 🔐 busca hash da senha
     const userRes = await client.query(
