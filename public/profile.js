@@ -92,12 +92,16 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btnVipPix")?.addEventListener("click", () => {
   fecharEscolha();
   abrirPopupPix(); // sua função existente
-});
+  });
 
-document.getElementById("btnVipCartao")?.addEventListener("click", () => {
-  fecharEscolha();
-  pagarComCartao(); // sua função Stripe
-});
+ document.getElementById("fecharPix")?.addEventListener("click", () => {
+ document.getElementById("popupPix")?.classList.add("hidden");
+ });
+
+ document.getElementById("btnVipCartao")?.addEventListener("click", () => {
+ fecharEscolha();
+ pagarComCartao(); // sua função Stripe
+ });
 
   btnChat?.addEventListener("click", () => {
   if (!role) {
