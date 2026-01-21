@@ -2303,9 +2303,6 @@ const transporter = nodemailer.createTransport({
   tls: {
     rejectUnauthorized: false
   },
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 10000
 });
 
     // ✉️ envio do email
@@ -2957,6 +2954,21 @@ setInterval(async () => {
   }
 }, 60 * 60 * 1000); // roda a cada 1 hora
 
+app.get("/api/test-email", async (req, res) => {
+  try {
+    await transporter.sendMail({
+      from: `"Velvet Teste" <${process.env.CONTACT_EMAIL}>`,
+      to: process.env.CONTACT_EMAIL, // envia pra você mesma
+      subject: "🚀 Teste de Email - Velvet",
+      html: "<h2>Email funcionando!</h2><p>SMTP OK 🎉</p>"
+    });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("❌ ERRO EMAIL:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 
 
