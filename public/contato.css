@@ -160,11 +160,11 @@ textarea:focus {
 }
 
 .status.success {
-  color: #7B2CFF;
+  color: #7B2CFF !important;
 }
 
 .status.error {
-  color: #a72727;
+  color: #a72727 !important;
 }
 
 

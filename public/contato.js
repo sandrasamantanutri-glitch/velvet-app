@@ -5,7 +5,7 @@ form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   status.textContent = "Enviando...";
-  status.style.color = "#cfc3ff";
+  status.style.color = "#7B2CFF";
 
   const data = Object.fromEntries(new FormData(form));
 
