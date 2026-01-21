@@ -36,8 +36,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (res.ok) {
       const dados = await res.json();
-
-      Object.keys(dados).forEach(campo => {
+      if (dados.id) {
+        gerarLinks(dados.id);
+      }
+      
+  Object.keys(dados).forEach(campo => {
   if (!form[campo] || dados[campo] === null) return;
 
   if (campo === "data_nascimento") {
@@ -101,3 +104,25 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 });
+
+function gerarLinks(modelo_id) {
+  const base = `https://www.velvet.lat/modelo/${modelo_id}`;
+
+  document.getElementById("linkInstagram").value =
+    `${base}?src=instagram`;
+
+  document.getElementById("linkTiktok").value =
+    `${base}?src=tiktok`;
+
+  document.getElementById("linkDireto").value =
+    base;
+}
+
+function copiarLink(id) {
+  const input = document.getElementById(id);
+  input.select();
+  input.setSelectionRange(0, 99999);
+  document.execCommand("copy");
+  alert("Link copiado!");
+}
+
