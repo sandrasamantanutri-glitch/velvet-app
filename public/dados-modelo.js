@@ -150,12 +150,16 @@ async function confirmarExclusaoConta() {
     });
 
     if (res.ok) {
-      localStorage.clear();
-      window.location.href = "/index.html";
+   localStorage.clear();
+   window.location.href = "/index.html";
     } else {
-      erro.textContent = "Senha incorreta.";
-      erro.classList.remove("hidden");
-    }
+   const data = await res.json().catch(() => ({}));
+
+   erro.textContent =
+    data.error || "Erro interno ao excluir conta.";
+   erro.classList.remove("hidden");
+  }
+
 
   } catch (err) {
     erro.textContent = "Erro de conexão.";

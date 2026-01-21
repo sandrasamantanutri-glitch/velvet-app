@@ -2167,7 +2167,7 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
   try {
     // 🔐 busca hash da senha
     const userRes = await client.query(
-      "SELECT senha FROM users WHERE id = $1",
+      "SELECT password_hash FROM users WHERE id = $1",
       [userId]
     );
 
