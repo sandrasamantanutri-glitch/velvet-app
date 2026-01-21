@@ -64,7 +64,7 @@ body.role-modelo {
 .container-dados .sub {
   text-align: center;
   color: #1E1E26;
-  font-size: 14px;
+  font-size: 16px;
   margin-bottom: 30px;
 }
 
@@ -222,14 +222,6 @@ html, body {
   font-weight: 600;
   color:#7B2CFF;
 }
-
-.container-dados .sub {
-  text-align: center !important;
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 16px;
-}
-
 .copy-field {
   display: flex;
   align-items: center;
