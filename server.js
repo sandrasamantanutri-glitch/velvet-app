@@ -2154,8 +2154,6 @@ app.delete(
 );
 
 //DELETAR CONTA
-const bcrypt = require("bcrypt");
-
 app.delete("/api/conta/excluir", auth, async (req, res) => {
   const userId = req.user.id;
   const senhaInformada = req.body.senha;
