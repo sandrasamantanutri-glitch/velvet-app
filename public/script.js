@@ -249,3 +249,86 @@ window.logout = function () {
   localStorage.removeItem("ageConfirmed"); 
   window.location.href = "https://www.velvet.lat";
 };
+
+// ===============================
+// ESQUECI MINHA SENHA – MODAL
+// ===============================
+
+function openForgot() {
+  closeAllModals();
+  document.getElementById("forgotModal").classList.remove("hidden");
+  document.getElementById("forgotStepEmail").classList.remove("hidden");
+  document.getElementById("forgotStepCode").classList.add("hidden");
+}
+
+function closeForgotModal() {
+  document.getElementById("forgotModal").classList.add("hidden");
+}
+
+// 1️⃣ envia código
+async function sendResetCode() {
+  const email = document.getElementById("forgotEmail").value.trim();
+  if (!email) {
+    alert("Digite seu email");
+    return;
+  }
+
+  await fetch("/api/password/forgot", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email })
+  });
+   // mostra aviso de spam
+  document.getElementById("forgotSpamHint").classList.remove("hidden");
+
+  // troca step
+  document.getElementById("forgotStepEmail").classList.add("hidden");
+  document.getElementById("forgotStepCode").classList.remove("hidden");
+}
+
+// 2️⃣ confirma código + nova senha
+async function confirmReset() {
+  const email = document.getElementById("forgotEmail").value.trim();
+  const codigo = document.getElementById("forgotCode").value.trim();
+  const novaSenha = document
+    .getElementById("forgotNewPassword")
+    .value.trim();
+  const confirmarSenha = document
+    .getElementById("forgotConfirmPassword")
+    .value.trim();
+
+  if (!codigo || !novaSenha || !confirmarSenha) {
+    alert("Preencha todos os campos");
+    return;
+  }
+
+  if (novaSenha !== confirmarSenha) {
+    alert("As senhas não coincidem");
+    return;
+  }
+
+  if (novaSenha.length < 6) {
+    alert("A senha deve ter pelo menos 6 caracteres");
+    return;
+  }
+
+  const res = await fetch("/api/password/reset", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, codigo, novaSenha })
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    alert(data.error || "Erro ao redefinir senha");
+    return;
+  }
+
+  alert("Senha alterada com sucesso! Faça login.");
+  closeForgotModal();
+  openLoginModal();
+}
+
+
+

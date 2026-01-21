@@ -17,14 +17,14 @@ form.addEventListener("submit", async (e) => {
     });
 
     if (!response.ok) throw new Error();
-
+    status.className = "status success";
     status.textContent = "Mensagem enviada com sucesso! Em breve vamos entrar em contato!";
-    status.style.color = "#7bffb3";
+
     form.reset();
 
   } catch {
+    status.className = "status error";
     status.textContent = "Erro ao enviar mensagem!! Tente novamente ou envie um email direto para: contato@velvet.lat";
-    status.style.color = "#ff7b7b";
   }
 });
 

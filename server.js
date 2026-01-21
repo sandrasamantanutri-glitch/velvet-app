@@ -14,6 +14,7 @@ const bcrypt = require("bcrypt");
 const path = require("path");
 const fs = require("fs");
 const app = express();
+const nodemailer = require("nodemailer");
 app.use((req, res, next) => {
   console.log("➡️ REQ:", req.method, req.url);
   next();
@@ -35,8 +36,6 @@ const COMPRAS_FILE = "compras.json";
 const bodyParser = require("body-parser");
 const Stripe = require("stripe");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const nodemailer = require("nodemailer");
-
 const ffmpeg = require("fluent-ffmpeg");
 const ffmpegPath = require("ffmpeg-static");
 
@@ -51,6 +50,8 @@ const allowedOrigins = [
   "https://app-production-e7e1.up.railway.app",
   "https://velvet-test-production.up.railway.app"
 ];
+const sgMail = require("@sendgrid/mail");
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -65,7 +66,6 @@ app.use(cors({
   credentials: true
 }));
 
-
 // ===============================
 // BACKBLAZE B2 (UPLOAD NOVO)
 // ===============================
@@ -77,7 +77,6 @@ const s3 = new AWS.S3({
   signatureVersion: "v4",
   s3ForcePathStyle: true
 });
-
 
 const uploadB2 = multer({
   storage: multerS3({
@@ -2281,59 +2280,6 @@ app.post(
   }
 );
 
-
-app.post("/api/contato", async (req, res) => {
-  try {
-    const { nome, email, assunto, mensagem } = req.body;
-
-    // 🔒 validação básica
-    if (!nome || !email || !assunto || !mensagem) {
-      return res.status(400).json({ error: "Dados incompletos" });
-    }
-
-    // 📧 SMTP HOSTINGER (CORRETO)
-const transporter = nodemailer.createTransport({
-  host: "smtp.hostinger.com",
-  port: 587,
-  secure: false, // SSL
-  auth: {
-    user: process.env.CONTACT_EMAIL,
-    pass: process.env.CONTACT_EMAIL_PASS
-  },
-  tls: {
-    rejectUnauthorized: false
-  },
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 10000
-});
-
-    // ✉️ envio do email
-    await transporter.sendMail({
-      from: `"Contato Velvet" <${process.env.CONTACT_EMAIL}>`,
-      to: "contato@velvet.lat",
-      replyTo: email,
-      subject: `[Contato] ${assunto}`,
-      html: `
-        <h3>Novo contato pelo site</h3>
-        <p><b>Nome:</b> ${nome}</p>
-        <p><b>Email:</b> ${email}</p>
-        <p><b>Assunto:</b> ${assunto}</p>
-        <p><b>Mensagem:</b></p>
-        <p>${mensagem}</p>
-      `
-    });
-
-    // ✅ resposta para o frontend
-    return res.json({ success: true });
-
-  } catch (err) {
-    console.error("Erro envio contato:", err);
-    return res.status(500).json({ error: "Erro ao enviar email" });
-  }
-});
-
-
 app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
   try {
     const { modelo_id, valor_assinatura } = req.body;
@@ -2372,7 +2318,7 @@ app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
         description: "Assinatura VIP",
         payment_method_id: "pix",
         payer: {
-          email: "contato@velvet.lat"
+          email: "contat@velvet.lat"
         },
         metadata: {
           tipo: "vip",
@@ -2828,6 +2774,154 @@ app.post("/api/vip/cancelar", authCliente, async (req, res) => {
   res.json({ ok: true });
 });
 
+//ESQUECI MINHA SENHA
+app.post("/api/password/forgot", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: "Email obrigatório" });
+    }
+
+    // 🔒 nunca revele se o email existe
+    const userRes = await db.query(
+      "SELECT id FROM users WHERE email = $1",
+      [email]
+    );
+
+    if (userRes.rowCount === 0) {
+      return res.json({ ok: true });
+    }
+
+    const userId = userRes.rows[0].id;
+
+    const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = new Date(Date.now() + 15 * 60 * 1000);
+
+    await db.query(
+      "INSERT INTO password_resets (user_id, codigo, expires_at) VALUES ($1, $2, $3)",
+      [userId, codigo, expires]
+    );
+
+    // 📧 ENVIO EMAIL (SENDGRID WEB API)
+    await sgMail.send({
+      to: email,                          // 🔴 email do usuário
+      from: process.env.EMAIL_FROM,       // 🔴 email da plataforma
+      subject: "Recuperação de senha – Velvet",
+      html: `
+        <p>Seu código de recuperação é:</p>
+        <h2>${codigo}</h2>
+        <p>Este código expira em 15 minutos.</p>
+      `
+    });
+
+    return res.json({ ok: true });
+
+  } catch (error) {
+    console.error("❌ ERRO PASSWORD FORGOT:", error.response?.body || error);
+    return res.status(500).json({ error: "Erro ao enviar código" });
+  }
+});
+
+//confirmar codigo e nova senha
+app.post("/api/password/reset", async (req, res) => {
+  try {
+    const { email, codigo, novaSenha } = req.body;
+
+    if (!email || !codigo || !novaSenha) {
+      return res.status(400).json({ error: "Dados incompletos" });
+    }
+
+    if (novaSenha.length < 6) {
+      return res.status(400).json({ error: "Senha muito curta" });
+    }
+
+    const userRes = await db.query(
+      "SELECT id FROM users WHERE email = $1",
+      [email]
+    );
+
+    if (userRes.rowCount === 0) {
+      return res.status(400).json({ error: "Código inválido" });
+    }
+
+    const userId = userRes.rows[0].id;
+
+    const resetRes = await db.query(`
+      SELECT id
+      FROM password_resets
+      WHERE user_id = $1
+        AND codigo = $2
+        AND usado = false
+        AND expires_at > NOW()
+      ORDER BY created_at DESC
+      LIMIT 1
+    `, [userId, codigo]);
+
+    if (resetRes.rowCount === 0) {
+      return res.status(400).json({ error: "Código inválido ou expirado" });
+    }
+
+    const senhaHash = await bcrypt.hash(novaSenha, 10);
+
+    await db.query(
+      "UPDATE users SET password_hash = $1 WHERE id = $2",
+      [senhaHash, userId]
+    );
+
+    await db.query(
+      "UPDATE password_resets SET usado = true WHERE id = $1",
+      [resetRes.rows[0].id]
+    );
+
+    return res.json({ success: true });
+
+  } catch (error) {
+    console.error("❌ ERRO PASSWORD RESET:", error);
+    return res.status(500).json({ error: "Erro ao redefinir senha" });
+  }
+});
+
+
+// ===============================
+// 📩 FALE CONOSCO / CONTATO
+// ===============================
+app.post("/api/contato", async (req, res) => {
+  try {
+    const { nome, email, assunto, mensagem } = req.body;
+
+    if (!nome || !email || !assunto || !mensagem) {
+      return res.status(400).json({ error: "Dados incompletos" });
+    }
+
+    await sgMail.send({
+      to: process.env.EMAIL_FROM,
+      from: process.env.EMAIL_FROM,
+      replyTo: email,
+      subject: `[Contato] ${assunto}`,
+      html: `
+        <h3>Novo contato pelo site</h3>
+        <p><b>Nome:</b> ${nome}</p>
+        <p><b>Email:</b> ${email}</p>
+        <p><b>Assunto:</b> ${assunto}</p>
+        <p><b>Mensagem:</b></p>
+        <p>${mensagem}</p>
+      `
+    });
+
+    return res.json({ success: true });
+
+  } catch (error) {
+    console.error("❌ Erro contato:", error.response?.body || error);
+    return res.status(500).json({ error: "Erro ao enviar mensagem" });
+  }
+});
+
+
+
+
+
+
 // ===============================
 // 🔥 MIDDLEWARE GLOBAL DE ERRO
 // ===============================
@@ -2867,9 +2961,6 @@ setInterval(async () => {
     console.error("Erro ao expirar VIPs:", err);
   }
 }, 60 * 60 * 1000); // roda a cada 1 hora
-
-
-
 
 app.use("/", servercontent);
 

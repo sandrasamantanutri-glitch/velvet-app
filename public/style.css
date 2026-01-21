@@ -160,8 +160,9 @@ body {
 }
 
 .footer-linksC a {
-  font-size: 13px;
+  font-size: 14px;
   color: #7B2CFF;
+  flex-direction: column;
   text-decoration: none;
   margin: 0 10px;
 }
@@ -367,6 +368,42 @@ body {
   border: none;
   cursor: pointer;
 }
+
+/* =========================
+   MODAL ESQUECI SENHA – VELVET
+========================= */
+
+.modal-box.velvet {
+  background: linear-gradient(180deg, #ffffff, #f4edff);
+}
+
+.modal-box.velvet h2 {
+  color: #7B2CFF;
+  font-weight: 600;
+}
+
+.modal-box.velvet input {
+  border-radius: 14px;
+  border: 1px solid #ddd;
+  margin-top: 16px;
+}
+
+.modal-box.velvet input:focus {
+  outline: none;
+  border-color: #7B2CFF;
+  box-shadow: 0 0 0 2px rgba(123,44,255,0.15);
+}
+
+.modal-box.velvet .btn-primary {
+  background: linear-gradient(135deg, #7B2CFF, #9B5CFF);
+  border-radius: 16px;
+  margin-top: 16px;
+}
+
+.modal-box.velvet .btn-primary:hover {
+  transform: translateY(-1px);
+}
+
 
 
 

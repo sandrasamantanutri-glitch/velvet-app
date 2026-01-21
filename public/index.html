@@ -46,12 +46,64 @@
 
       <div class="footer-linksC">
         <a href="#" onclick="startRegister()">Criar conta</a>
-      </div>
-
+        <a href="#" onclick="openForgot(); return false;">Esqueci minha senha</a>
+        </div>
+    
     </div> <!-- landing-login -->
+    </div> <!-- landing -->
+  </div>
+  <!-- MODAL ESQUECI SENHA -->
+<div id="forgotModal" class="modal hidden">
+  <div class="modal-overlay" onclick="closeForgotModal()"></div>
 
-  </div> <!-- landing -->
-</div> <!-- page-wrapper -->
+  <div class="modal-box velvet">
+    <h2 id="forgotTitle">Recuperar senha</h2>
+
+    <!-- STEP 1 -->
+    <div id="forgotStepEmail">
+      <input
+        id="forgotEmail"
+        type="email"
+        placeholder="Seu email cadastrado"
+      />
+
+      <button class="btn btn-primary" onclick="sendResetCode()">
+        Enviar código
+      </button>
+      <p id="forgotSpamHint" class="modal-switch hidden">
+  Se não encontrar o email, verifique o <strong>lixo eletrônico</strong> ou
+  <strong>spam</strong>.
+</p>
+
+      <p class="modal-switch">
+        Lembrou da senha?
+        <span onclick="closeForgotModal()">Voltar ao login</span>
+      </p>
+    </div>
+
+    <!-- STEP 2 -->
+    <div id="forgotStepCode" class="hidden">
+      <input
+        id="forgotCode"
+        type="text"
+        placeholder="Código de 6 dígitos"
+      />
+
+      <input
+        id="forgotNewPassword"
+        type="password"
+        placeholder="Nova senha"
+      />
+      <input id="forgotConfirmPassword" type="password" placeholder="Confirmar nova senha"/>
+
+      <button class="btn btn-primary" onclick="confirmReset()">
+        Alterar senha
+      </button>
+    </div>
+
+    <button class="modal-close" onclick="closeForgotModal()">✕</button>
+  </div>
+</div>
 
 <!-- LOGIN / REGISTER MODAL -->
 <div id="loginModal" class="modal hidden">
