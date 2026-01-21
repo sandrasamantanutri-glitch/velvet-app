@@ -2776,90 +2776,112 @@ app.post("/api/vip/cancelar", authCliente, async (req, res) => {
 
 //ESQUECI MINHA SENHA
 app.post("/api/password/forgot", async (req, res) => {
-  const { email } = req.body;
+  try {
+    const { email } = req.body;
 
-  const userRes = await db.query(
-    "SELECT id FROM users WHERE email = $1",
-    [email]
-  );
+    if (!email) {
+      return res.status(400).json({ error: "Email obrigatório" });
+    }
 
-  // 🔒 segurança: não revelar se existe ou não
-  if (userRes.rowCount === 0) {
+    // 🔒 nunca revele se o email existe
+    const userRes = await db.query(
+      "SELECT id FROM users WHERE email = $1",
+      [email]
+    );
+
+    if (userRes.rowCount === 0) {
+      return res.json({ ok: true });
+    }
+
+    const userId = userRes.rows[0].id;
+
+    const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = new Date(Date.now() + 15 * 60 * 1000);
+
+    await db.query(
+      "INSERT INTO password_resets (user_id, codigo, expires_at) VALUES ($1, $2, $3)",
+      [userId, codigo, expires]
+    );
+
+    // 📧 ENVIO EMAIL (SENDGRID WEB API)
+    await sgMail.send({
+      to: email,                          // 🔴 email do usuário
+      from: process.env.EMAIL_FROM,       // 🔴 email da plataforma
+      subject: "Recuperação de senha – Velvet",
+      html: `
+        <p>Seu código de recuperação é:</p>
+        <h2>${codigo}</h2>
+        <p>Este código expira em 15 minutos.</p>
+      `
+    });
+
     return res.json({ ok: true });
+
+  } catch (error) {
+    console.error("❌ ERRO PASSWORD FORGOT:", error.response?.body || error);
+    return res.status(500).json({ error: "Erro ao enviar código" });
   }
-
-  const userId = userRes.rows[0].id;
-
-  const codigo = Math.floor(100000 + Math.random() * 900000).toString();
-  const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 min
-
-  await db.query(`
-    INSERT INTO password_resets (user_id, codigo, expires_at)
-    VALUES ($1, $2, $3)
-  `, [userId, codigo, expires]);
-
-  // 📧 ENVIO EMAIL
-  await transporter.sendMail({
-    from: `"Velvet" <${process.env.CONTACT_EMAIL}>`,
-    to: email,
-    subject: "Recuperação de senha – Velvet",
-    html: `
-      <p>Seu código de recuperação é:</p>
-      <h2>${codigo}</h2>
-      <p>Este código expira em 15 minutos.</p>
-    `
-  });
-
-  res.json({ ok: true });
 });
 
 //confirmar codigo e nova senha
 app.post("/api/password/reset", async (req, res) => {
-  const { email, codigo, novaSenha } = req.body;
+  try {
+    const { email, codigo, novaSenha } = req.body;
 
-  if (!codigo || !novaSenha || novaSenha.length < 6) {
-    return res.status(400).json({ error: "Dados inválidos" });
+    if (!email || !codigo || !novaSenha) {
+      return res.status(400).json({ error: "Dados incompletos" });
+    }
+
+    if (novaSenha.length < 6) {
+      return res.status(400).json({ error: "Senha muito curta" });
+    }
+
+    const userRes = await db.query(
+      "SELECT id FROM users WHERE email = $1",
+      [email]
+    );
+
+    if (userRes.rowCount === 0) {
+      return res.status(400).json({ error: "Código inválido" });
+    }
+
+    const userId = userRes.rows[0].id;
+
+    const resetRes = await db.query(`
+      SELECT id
+      FROM password_resets
+      WHERE user_id = $1
+        AND codigo = $2
+        AND usado = false
+        AND expires_at > NOW()
+      ORDER BY created_at DESC
+      LIMIT 1
+    `, [userId, codigo]);
+
+    if (resetRes.rowCount === 0) {
+      return res.status(400).json({ error: "Código inválido ou expirado" });
+    }
+
+    const senhaHash = await bcrypt.hash(novaSenha, 10);
+
+    await db.query(
+      "UPDATE users SET password_hash = $1 WHERE id = $2",
+      [senhaHash, userId]
+    );
+
+    await db.query(
+      "UPDATE password_resets SET usado = true WHERE id = $1",
+      [resetRes.rows[0].id]
+    );
+
+    return res.json({ success: true });
+
+  } catch (error) {
+    console.error("❌ ERRO PASSWORD RESET:", error);
+    return res.status(500).json({ error: "Erro ao redefinir senha" });
   }
-
-  const userRes = await db.query(
-    "SELECT id FROM users WHERE email = $1",
-    [email]
-  );
-  if (userRes.rowCount === 0) {
-    return res.status(400).json({ error: "Código inválido" });
-  }
-
-  const userId = userRes.rows[0].id;
-
-  const resetRes = await db.query(`
-    SELECT id
-    FROM password_resets
-    WHERE user_id = $1
-      AND codigo = $2
-      AND usado = false
-      AND expires_at > NOW()
-    ORDER BY created_at DESC
-    LIMIT 1
-  `, [userId, codigo]);
-
-  if (resetRes.rowCount === 0) {
-    return res.status(400).json({ error: "Código inválido ou expirado" });
-  }
-
-  const senhaHash = await bcrypt.hash(novaSenha, 10);
-
-  await db.query(
-    "UPDATE users SET password_hash = $1 WHERE id = $2",
-    [senhaHash, userId]
-  );
-
-  await db.query(
-    "UPDATE password_resets SET usado = true WHERE id = $1",
-    [resetRes.rows[0].id]
-  );
-
-  res.json({ success: true });
 });
+
 
 // ===============================
 // 📩 FALE CONOSCO / CONTATO
@@ -2939,26 +2961,6 @@ setInterval(async () => {
     console.error("Erro ao expirar VIPs:", err);
   }
 }, 60 * 60 * 1000); // roda a cada 1 hora
-
-app.get("/api/test-email", async (req, res) => {
-  try {
-    await sgMail.send({
-      to: process.env.EMAIL_FROM,
-      from: process.env.EMAIL_FROM,
-      subject: "🚀 Teste SendGrid",
-      html: "<h2>Email enviado com sucesso</h2>"
-    });
-
-    return res.json({ ok: true });
-  } catch (error) {
-    console.error("❌ ERRO SENDGRID:", error.response?.body || error);
-    return res.status(500).json({ error: "Erro ao enviar email" });
-  }
-});
-
-
-
-
 
 app.use("/", servercontent);
 
