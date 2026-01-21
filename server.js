@@ -2174,7 +2174,7 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
       return res.status(404).json({ error: "Usuário não encontrado" });
     }
 
-    const senhaHash = userRes.rows[0].senha;
+    const senhaHash = userRes.rows[0].password_hash;
     const senhaOk = await bcrypt.compare(senhaInformada, senhaHash);
 
     if (!senhaOk) {
@@ -2188,8 +2188,8 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
     await client.query("DELETE FROM vip_subscriptions WHERE cliente_id = $1 OR modelo_id = $1", [userId]);
     await client.query("DELETE FROM conteudo_pacotes WHERE modelo_id = $1", [userId]);
     await client.query("DELETE FROM feed WHERE modelo_id = $1", [userId]);
-    await client.query("DELETE FROM modelos WHERE id = $1", [userId]);
-    await client.query("DELETE FROM clientes WHERE id = $1", [userId]);
+    await client.query("DELETE FROM modelos_dados WHERE user_id = $1", [userId]);
+    await client.query("DELETE FROM clientes_dados WHERE user_id = $1", [userId]);
     await client.query("DELETE FROM users WHERE id = $1", [userId]);
 
     await client.query("COMMIT");
