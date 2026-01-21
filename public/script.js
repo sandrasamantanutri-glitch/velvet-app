@@ -278,7 +278,10 @@ async function sendResetCode() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email })
   });
+   // mostra aviso de spam
+  document.getElementById("forgotSpamHint").classList.remove("hidden");
 
+  // troca step
   document.getElementById("forgotStepEmail").classList.add("hidden");
   document.getElementById("forgotStepCode").classList.remove("hidden");
 }
@@ -290,9 +293,22 @@ async function confirmReset() {
   const novaSenha = document
     .getElementById("forgotNewPassword")
     .value.trim();
+  const confirmarSenha = document
+    .getElementById("forgotConfirmPassword")
+    .value.trim();
 
-  if (!codigo || !novaSenha) {
+  if (!codigo || !novaSenha || !confirmarSenha) {
     alert("Preencha todos os campos");
+    return;
+  }
+
+  if (novaSenha !== confirmarSenha) {
+    alert("As senhas não coincidem");
+    return;
+  }
+
+  if (novaSenha.length < 6) {
+    alert("A senha deve ter pelo menos 6 caracteres");
     return;
   }
 
@@ -313,5 +329,6 @@ async function confirmReset() {
   closeForgotModal();
   openLoginModal();
 }
+
 
 

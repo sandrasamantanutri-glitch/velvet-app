@@ -70,6 +70,10 @@
       <button class="btn btn-primary" onclick="sendResetCode()">
         Enviar código
       </button>
+      <p id="forgotSpamHint" class="modal-switch hidden">
+  Se não encontrar o email, verifique o <strong>lixo eletrônico</strong> ou
+  <strong>spam</strong>.
+</p>
 
       <p class="modal-switch">
         Lembrou da senha?
@@ -90,6 +94,7 @@
         type="password"
         placeholder="Nova senha"
       />
+      <input id="forgotConfirmPassword" type="password" placeholder="Confirmar nova senha"/>
 
       <button class="btn btn-primary" onclick="confirmReset()">
         Alterar senha
