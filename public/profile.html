@@ -152,9 +152,9 @@ body {
     <button class="modal-close" onclick="fecharEscolha()">×</button>
 
     <h2 class="titulo-roxo">Torne-se VIP</h2>
-    <p class="vip-validade"> Assinatura válida por <strong>30 dias</strong>, contados a partir
+    <small class="vip-validade"> Assinatura válida por <strong>30 dias</strong>, contados a partir
     da confirmação do pagamento.
-    </p>
+    </small>
 
     <button class="btn-pagamento pix" onclick="abrirPopupPix()">
       ⚡ Ativar VIP com Pix
@@ -163,8 +163,10 @@ body {
     <button class="btn-pagamento cartao" onclick="pagarComCartao()">
       💳 Ativar VIP com Cartão
     </button>
+    <small class="vip-recorrencia">  Renovação automática. Cancelável a qualquer momento.
+    </small>
+   </div>
   </div>
-</div>
 
 <div id="paymentModal" class="modal hidden">
   <div class="modal-backdrop"></div>
