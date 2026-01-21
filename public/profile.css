@@ -1178,6 +1178,11 @@ body.role-publico .btnChat {
   line-height: 1.4;
 }
 
+#escolhaPagamento .modal-box {
+  position: relative;
+  z-index: 100002 !important;
+}
+
 
 
 
