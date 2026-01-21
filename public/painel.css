@@ -312,4 +312,148 @@ html, body {
 }
 
 
+/* ===============================
+ DANGER ZONE
+=============================== */
+
+.danger-zone {
+  margin-top: 40px;
+  text-align: center;
+}
+
+.btn-danger {
+  background: none;
+  color: #d93025;
+  border: 1.5px solid #d93025;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .2s ease;
+}
+
+.btn-danger:hover {
+  background: #d93025;
+  color: #fff;
+}
+
+/* ===============================
+ MODAL EXCLUIR CONTA
+=============================== */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+}
+
+.modal-box {
+  position: relative;
+  max-width: 420px;
+  margin: 15vh auto;
+  background: #fff;
+  padding: 24px;
+  border-radius: 16px;
+  text-align: center;
+}
+
+.modal-box h3 {
+  color: #d93025;
+  margin-bottom: 12px;
+}
+
+.modal-box p {
+  font-size: 14px;
+  color: #333;
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.btn-cancelar {
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  background: #eee;
+  cursor: pointer;
+}
+
+.btn-confirmar {
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  background: #d93025;
+  color: #fff;
+  cursor: pointer;
+}
+
+/* ===============================
+ CONFIRMAÇÃO POR SENHA
+=============================== */
+
+.label-danger {
+  display: block;
+  margin-top: 16px;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #d93025;
+}
+
+.input-danger {
+  display: block;
+  width: 100%;
+  max-width: 320px;      /* 🔑 limita largura */
+  margin: 0 auto;        /* 🔑 centraliza */
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1.5px solid #d93025;
+  font-size: 13px;
+}
+
+.input-danger:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(217,48,37,.25);
+}
+
+.erro-danger {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #d93025;
+}
+
+.hidden {
+  display: none;
+}
+
+/* ============================================
+   SEPARADOR
+============================================ */
+.separator {
+    border: none;
+    border-top: 1px solid #aaa8a8;
+    margin: 30px 0;
+}
+
+
+
+
+
 

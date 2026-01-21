@@ -126,3 +126,68 @@ function copiarLink(id) {
   alert("Link copiado!");
 }
 
+async function confirmarExclusaoConta() {
+  const token = localStorage.getItem("token");
+  const senha = document.getElementById("senhaConfirmacao").value;
+  const erro = document.getElementById("erroExclusao");
+
+  erro.classList.add("hidden");
+
+  if (!senha || senha.length < 4) {
+    erro.textContent = "Digite sua senha para continuar.";
+    erro.classList.remove("hidden");
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/conta/excluir", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token
+      },
+      body: JSON.stringify({ senha })
+    });
+
+    if (res.ok) {
+   localStorage.clear();
+   window.location.href = "/index.html";
+    } else {
+   const data = await res.json().catch(() => ({}));
+
+   erro.textContent =
+    data.error || "Erro interno ao excluir conta.";
+   erro.classList.remove("hidden");
+  }
+
+
+  } catch (err) {
+    erro.textContent = "Erro de conexão.";
+    erro.classList.remove("hidden");
+  }
+}
+
+function abrirConfirmacaoExclusao() {
+  const modal = document.getElementById("modalExcluirConta");
+  if (modal) {
+    modal.classList.remove("hidden");
+  }
+}
+
+function fecharModalExclusao() {
+  const modal = document.getElementById("modalExcluirConta");
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+
+  // limpa campo e erro ao fechar
+  const senhaInput = document.getElementById("senhaConfirmacao");
+  const erro = document.getElementById("erroExclusao");
+
+  if (senhaInput) senhaInput.value = "";
+  if (erro) erro.classList.add("hidden");
+}
+
+
+
+

@@ -2153,6 +2153,59 @@ app.delete(
   }
 );
 
+//DELETAR CONTA
+app.delete("/api/conta/excluir", auth, async (req, res) => {
+  const userId = req.user.id;
+  const senhaInformada = req.body.senha;
+
+  if (!senhaInformada) {
+    return res.status(400).json({ error: "Senha obrigatória" });
+  }
+
+  const client = await db.connect();
+  try {
+    // 🔐 busca hash da senha
+    const userRes = await client.query(
+      "SELECT password_hash FROM users WHERE id = $1",
+      [userId]
+    );
+
+    if (userRes.rowCount === 0) {
+      return res.status(404).json({ error: "Usuário não encontrado" });
+    }
+
+    const senhaHash = userRes.rows[0].password_hash;
+    const senhaOk = await bcrypt.compare(senhaInformada, senhaHash);
+
+    if (!senhaOk) {
+      return res.status(401).json({ error: "Senha inválida" });
+    }
+
+    await client.query("BEGIN");
+
+    // 🔥 A PARTIR DAQUI É EXCLUSÃO TOTAL (como antes)
+    await client.query("DELETE FROM messages WHERE cliente_id = $1 OR modelo_id = $1", [userId]);
+    await client.query("DELETE FROM vip_subscriptions WHERE cliente_id = $1 OR modelo_id = $1", [userId]);
+    await client.query("DELETE FROM conteudo_pacotes WHERE modelo_id = $1", [userId]);
+    await client.query("DELETE FROM modelos_dados WHERE user_id = $1", [userId]);
+    await client.query("DELETE FROM clientes_dados WHERE user_id = $1", [userId]);
+    await client.query("DELETE FROM users WHERE id = $1", [userId]);
+
+    await client.query("COMMIT");
+
+    res.json({ ok: true });
+
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("ERRO EXCLUIR CONTA:", err);
+    res.status(500).json({ error: "Erro ao excluir conta" });
+  } finally {
+    client.release();
+  }
+});
+
+
+
 app.post(
   "/uploadMidia",
   auth,

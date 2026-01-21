@@ -103,6 +103,53 @@ body {
   </form>
 
 </div>
+<hr class="separator">
+<div class="danger-zone">
+  <button class="btn-danger" onclick="abrirConfirmacaoExclusao()">
+    Excluir conta permanentemente
+  </button>
+</div>
+
+<div id="modalExcluirConta" class="modal hidden">
+  <div class="modal-overlay"></div>
+
+  <div class="modal-box">
+    <h3>Excluir conta permanentemente</h3>
+
+    <p>
+      Esta ação é <strong>irreversível</strong>.<br>
+      Todos os seus dados, conteúdos, mensagens e histórico
+      serão apagados permanentemente.
+    </p>
+
+    <label class="label-danger">
+      Digite sua senha para confirmar
+    </label>
+
+    <input
+      type="password"
+      id="senhaConfirmacao"
+      placeholder="Digite sua senha"
+      class="input-danger"
+    />
+
+    <p id="erroExclusao" class="erro-danger hidden">
+      Senha incorreta.
+    </p>
+
+    <div class="modal-actions">
+      <button class="btn-cancelar" onclick="fecharModalExclusao()">
+        Cancelar
+      </button>
+
+      <button class="btn-confirmar" onclick="confirmarExclusaoConta()">
+        Sim, excluir minha conta
+      </button>
+    </div>
+  </div>
+</div>
+
+
     <footer class="footer">
   <div class="footer-links">
     <a href="/terms.html">Termos de Uso</a>
@@ -112,6 +159,7 @@ body {
   <div class="footer-copy">
     © 2026 Velvet. Todos os direitos reservados.
   </div>
+
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/header.js"></script>
