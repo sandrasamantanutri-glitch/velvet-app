@@ -160,8 +160,9 @@ body {
 }
 
 .footer-linksC a {
-  font-size: 16px;
+  font-size: 14px;
   color: #7B2CFF;
+  flex-direction: column;
   text-decoration: none;
   margin: 0 10px;
 }
