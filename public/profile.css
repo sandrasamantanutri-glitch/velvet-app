@@ -1169,6 +1169,13 @@ body.role-publico .btnChat {
   pointer-events: none; /* não bloqueia clique */
 }
 
+.vip-validade {
+  font-size: 13px;
+  color: #7B2CFF;
+  text-align: center;
+  margin: 6px 0 14px;
+  line-height: 1.4;
+}
 
 
 
