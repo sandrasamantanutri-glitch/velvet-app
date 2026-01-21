@@ -51,6 +51,7 @@ const allowedOrigins = [
   "https://velvet-test-production.up.railway.app"
 ];
 const sgMail = require("@sendgrid/mail");
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -2936,18 +2937,20 @@ setInterval(async () => {
 app.get("/api/test-email", async (req, res) => {
   try {
     await sgMail.send({
-      to: process.env.EMAIL_FROM,
-      from: process.env.EMAIL_FROM,
-      subject: "🚀 Teste SendGrid Web API - Velvet",
-      html: "<h2>Email enviado com sucesso!</h2>"
-    });
+        to: process.env.EMAIL_FROM,
+  from: process.env.EMAIL_FROM,
+  replyTo: email,
+  subject: `[Contato] ${assunto}`,
+  html: `...`
+});
 
     return res.json({ ok: true });
   } catch (err) {
-    console.error("❌ ERRO SENDGRID API:", err.response?.body || err);
+    console.error("❌ ERRO SENDGRID:", err.response?.body || err);
     return res.status(500).json({ error: "Erro ao enviar email" });
   }
 });
+
 
 
 
