@@ -418,11 +418,14 @@ html, body {
 }
 
 .input-danger {
+  display: block;
   width: 100%;
-  padding: 8px; 
+  max-width: 320px;      /* 🔑 limita largura */
+  margin: 0 auto;        /* 🔑 centraliza */
+  padding: 8px 12px;
   border-radius: 10px;
   border: 1.5px solid #d93025;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .input-danger:focus {
