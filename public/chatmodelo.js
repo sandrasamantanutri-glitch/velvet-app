@@ -403,7 +403,6 @@ function renderMensagem(msg) {
                   : `🔒 ${msg.quantidade ?? msg.midias.length} mídia(s)`
               }
             </span>
-
             <span class="preco-bloqueado">
               R$ ${Number(msg.preco).toFixed(2)}
             </span>

@@ -308,15 +308,14 @@ body {
 }
 
 /* botão fechar */
-.fecharModal {
+.modalClose {
   position: fixed;
   top: 20px;
   right: 30px;
   font-size: 34px;
   color: #fff;
   cursor: pointer;
-  z-index: 10000000;
-  pointer-events: auto;
+  z-index: 1000000;
 }
 
 
@@ -1144,7 +1143,6 @@ body.role-publico .btnChat {
   display: inline-flex !important;
 }
 
-
 /* ===============================
    INDICADOR DE VÍDEO
    =============================== */
@@ -1170,7 +1168,6 @@ body.role-publico .btnChat {
   justify-content: center;
   pointer-events: none; /* não bloqueia clique */
 }
-
 
 
 

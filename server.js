@@ -518,7 +518,7 @@ async function ativarVipAssinatura({
 // 🔒 Regra do MercadoPago PIX (BR)
 if (!valor_total || isNaN(valor_total) || valor_total < 1) {
   valor_total = 1.00;
-}
+ }
 
   const expiration_at = new Date();
   expiration_at.setDate(expiration_at.getDate() + 30); // VIP mensal
@@ -546,8 +546,12 @@ if (!valor_total || isNaN(valor_total) || valor_total < 1) {
       valor_total      = EXCLUDED.valor_total,
       ativo            = true,
       updated_at       = NOW(),
-      expiration_at    = EXCLUDED.expiration_at
-    `,
+      expiration_at    = CASE
+      WHEN vip_subscriptions.expiration_at > NOW()
+      THEN vip_subscriptions.expiration_at + INTERVAL '30 days'
+      ELSE EXCLUDED.expiration_at
+      END
+      `,
     [
       cliente_id,
       modelo_id,
@@ -1026,19 +1030,6 @@ socket.on("marcarConteudoVisto", async ({ message_id, cliente_id, modelo_id }) =
 // ===============================
 //ROTA GET
 // ===============================
-app.get("/api/app/state", auth, (req, res) => {
-  if (req.user.role === "modelo") {
-    return res.json({ next: "profile" });
-  }
-
-  if (req.user.role === "cliente") {
-    return res.json({ next: "clientHome" });
-  }
-
-  return res.json({ next: "index" });
-});
-
-
 app.get("/api/vip/status/:modelo_id", authCliente, async (req, res) => {
   const cliente_id = req.user.id;
   const modelo_id = Number(req.params.modelo_id);
@@ -1050,15 +1041,21 @@ app.get("/api/vip/status/:modelo_id", authCliente, async (req, res) => {
 
   const result = await db.query(
     `
-    SELECT 1 FROM vip_subscriptions
-    WHERE cliente_id = $1
-      AND modelo_id = $2
-      AND ativo = true
+   SELECT expiration_at
+   FROM vip_subscriptions
+   WHERE cliente_id = $1
+   AND modelo_id = $2
+   AND ativo = true
+   AND expiration_at > NOW()
+   LIMIT 1
     `,
     [cliente_id, modelo_id]
-  );
+   );
 
-  res.json({ vip: result.rowCount > 0 });
+   res.json({
+   vip: result.rowCount > 0,
+   expiration_at: result.rows[0]?.expiration_at || null
+  });
 });
 
 // ✅ NOVA — só para app / PWA
@@ -1275,9 +1272,11 @@ const result = await db.query(`
   FROM vip_subscriptions v
   JOIN modelos m ON m.user_id = v.modelo_id
   WHERE v.cliente_id = $1
-    AND v.ativo = true
+  AND v.ativo = true
+  AND v.expiration_at > NOW()
   ORDER BY m.nome
-`, [req.user.id]);
+`, 
+[req.user.id]);
 
 
 res.json(result.rows);
@@ -1364,7 +1363,8 @@ app.get("/api/modelo/vips", auth, authModelo, async (req, res) => {
   FROM vip_subscriptions v
   JOIN clientes c ON c.user_id = v.cliente_id
   WHERE v.modelo_id = $1
-    AND v.ativo = true
+  AND v.ativo = true
+  AND v.expiration_at > NOW()
   ORDER BY c.nome
   `,
   [modelo_id]
@@ -1444,7 +1444,8 @@ app.get("/api/chat/cliente", authCliente, async (req, res) => {
       FROM vip_subscriptions v
       JOIN modelos m ON m.user_id = v.modelo_id
       WHERE v.cliente_id = $1
-        AND v.ativo = true
+      AND v.ativo = true
+      AND v.expiration_at > NOW()
     `, [clienteId]);
 
     res.json(rows);
@@ -1470,23 +1471,12 @@ SELECT
   c.nome,
   cd.avatar,
 
-  true AS vip,
-
   MAX(m.created_at)
     FILTER (WHERE m.sender = 'modelo')
     AS ultima_msg_modelo_ts,
 
-  MAX(m.created_at)
-    FILTER (WHERE m.sender = 'cliente')
-    AS ultima_msg_cliente_ts,
-
   CASE
     WHEN COUNT(m.id) = 0 THEN 'novo'
-    WHEN MAX(m.created_at)
-         FILTER (WHERE m.sender = 'cliente') >
-         MAX(m.created_at)
-         FILTER (WHERE m.sender = 'modelo')
-         THEN 'por-responder'
     ELSE 'normal'
   END AS status
 
@@ -1498,26 +1488,15 @@ LEFT JOIN messages m
  AND m.modelo_id = $1
 
 WHERE v.modelo_id = $1
-  AND v.ativo = true
+AND v.ativo = true
+AND v.expiration_at > NOW()
 
 GROUP BY c.user_id, cd.username, c.nome, cd.avatar
 
 ORDER BY
-  CASE
-    WHEN COUNT(m.id) = 0 THEN 0
-    WHEN MAX(m.created_at)
-         FILTER (WHERE m.sender = 'cliente') >
-         MAX(m.created_at)
-         FILTER (WHERE m.sender = 'modelo')
-         THEN 1
-    ELSE 2
-  END,
-  GREATEST(
-    MAX(m.created_at)
-      FILTER (WHERE m.sender = 'cliente'),
-    MAX(m.created_at)
-      FILTER (WHERE m.sender = 'modelo')
-  ) DESC NULLS LAST;
+  CASE WHEN COUNT(m.id) = 0 THEN 0 ELSE 1 END,
+  ultima_msg_modelo_ts DESC NULLS LAST;
+  
     `, [modeloId]);
 
     res.json(rows);
@@ -1930,6 +1909,7 @@ app.post("/api/login", authLimiter, async (req, res) => {
     res.status(500).json({ error: "Erro interno no login" });
   }
 });
+
 
 // UPLOAD AVATAR E CAPA
 app.post(
@@ -2694,6 +2674,22 @@ process.on("unhandledRejection", reason => {
 process.on("uncaughtException", err => {
   console.error("❌ Uncaught Exception:", err);
 });
+
+// ===============================
+// EXPIRA VIP
+// ===============================
+setInterval(async () => {
+  try {
+    await db.query(`
+      UPDATE vip_subscriptions
+      SET ativo = false
+      WHERE ativo = true
+        AND expiration_at <= NOW()
+    `);
+  } catch (err) {
+    console.error("Erro ao expirar VIPs:", err);
+  }
+}, 60 * 60 * 1000); // roda a cada 1 hora
 
 
 
