@@ -1171,16 +1171,19 @@ body.role-publico .btnChat {
 
 .modal-box .vip-validade {
   display: block;
-  font-size: 13px;
-  color: #7B2CFF !important;
+  font-size: 11px;
+  color: #777 !important;
   text-align: center;
   margin: 8px 0 16px;
   line-height: 1.4;
 }
 
-#escolhaPagamento .modal-box {
-  position: relative;
-  z-index: 100002 !important;
+.vip-recorrencia {
+  display: block;
+  font-size: 11px;
+  color: #777;
+  text-align: center;
+  margin-top: 6px;
 }
 
 

@@ -32,7 +32,7 @@ body.role-modelo {
 /* centralização igual <main class="container"> */
 .container-dados {
   max-width: 520px;
-  margin: 60px auto;
+  margin: 0 auto;
   padding: 0 20px;
 
   /* remove visual antigo */
@@ -64,13 +64,13 @@ body.role-modelo {
 .container-dados .sub {
   text-align: center;
   color: #1E1E26;
-  font-size: 14px;
+  font-size: 16px;
   margin-bottom: 30px;
 }
 
 /* labels */
 .container-dados label {
-  font-size: 13px;
+  font-size: 14px;
   color: #1E1E26;
 }
 
@@ -210,5 +210,106 @@ html, body {
   transform: translateY(-1px);
   box-shadow: 0 6px 14px rgba(123,44,255,.35);
 }
+
+/* ===============================
+ LINKS DO MEU PERFIL — VELVET
+=============================== */
+
+.container-dados h2 {
+  text-align: center !important;
+  margin-top: 30px;
+  font-size: 20px;
+  font-weight: 600;
+  color:#7B2CFF;
+}
+.copy-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.copy-field input {
+  flex: 1;
+  padding: 12px 14px;
+  font-size: 12px;
+  color: #111;
+  background: #f7f7f7;
+  border: 1px solid #e3e3e3;
+  border-radius: 10px;
+  outline: none;
+}
+
+/* botão copiar */
+.copy-field button {
+  padding: 8px 12px !important;   
+  font-size: 12px !important;
+  border-radius: 8px !important;
+  font-weight: 500;
+  background: linear-gradient(135deg, #7B2CFF, #9b6dff);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.copy-field button:hover {
+  background: #9b6dff;
+  transform: translateY(-1px);
+}
+
+.copy-field button:active {
+  transform: scale(0.96);
+}
+
+/* labels */
+.container-dados label {
+  display: block;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: #444;
+  margin-bottom: 6px;
+}
+
+/* mobile first */
+@media (max-width: 600px) {
+  .copy-field {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  @media (max-width: 600px) {
+  .copy-field button {
+    padding: 10px;
+    font-size: 12px;
+  }
+}
+}
+
+
+.copy-field button {
+  width: auto !important;        /* 🔑 CHAVE */
+  min-width: unset !important;
+  padding: 8px 12px !important;
+  font-size: 12px !important;
+  border-radius: 8px !important;
+}
+
+.copy-field {
+  display: flex;
+  align-items: center;
+}
+
+/* ===============================
+ FIX GLOBAL DE FONTE — PAINEL
+=============================== */
+
+/* texto padrão do painel */
+.container-dados {
+  font-size: 15px;
+}
+
 
 

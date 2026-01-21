@@ -48,10 +48,49 @@
       </div>
 
       <button type="submit">Salvar</button>
-
       <p id="msgStatus" class="status"></p>
     </form>
   </div>
+
+  <!-- ===============================
+  LINKS DO MEU PERFIL
+  =============================== -->
+  <div class="container-dados">
+
+   <h2>Links do meu perfil</h2>
+   <p class="sub">
+    Use estes links para divulgar seu perfil.  
+    Eles são gerados automaticamente para você.
+   </p>
+
+   <!-- Instagram -->
+   <label>Instagram</label>
+   <div class="copy-field">
+    <input type="text" id="linkInstagram" readonly />
+    <button type="button" onclick="copiarLink('linkInstagram')">
+      Copiar
+    </button>
+   </div>
+
+   <!-- TikTok -->
+   <label>TikTok</label>
+   <div class="copy-field">
+    <input type="text" id="linkTiktok" readonly />
+    <button type="button" onclick="copiarLink('linkTiktok')">
+      Copiar
+    </button>
+   </div>
+
+   <!-- Direto -->
+   <label>Link de Acesso Direto</label>
+   <div class="copy-field">
+    <input type="text" id="linkDireto" readonly />
+    <button type="button" onclick="copiarLink('linkDireto')">
+      Copiar
+    </button>
+   </div>
+  </div>
+
  <header class="app-header">
   <div class="header-inner">
 
@@ -66,9 +105,8 @@
       <button id="menuBtn" class="menu-btn">☰</button>
       <div id="userMenu" class="menu-superior"></div>
     </div>
-
   </div>
-</header>
+ </header>
 
     <footer class="footer">
   <div class="footer-links">

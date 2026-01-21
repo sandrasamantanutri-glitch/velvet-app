@@ -182,111 +182,168 @@ app.post(
 );
 
 app.use(express.static(path.join(__dirname, "public")));
-app.post("/webhook/stripe", express.raw({ type: "application/json" }), async (req, res) => {
-  const sig = req.headers["stripe-signature"];
+app.post(
+  "/webhook/stripe",
+  express.raw({ type: "application/json" }),
+  async (req, res) => {
+    const sig = req.headers["stripe-signature"];
 
-  let event;
-  try {
-    event = stripe.webhooks.constructEvent(
-      req.body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
-  } catch (err) {
-    console.error("❌ Webhook Stripe inválido:", err.message);
-    return res.status(400).send(`Webhook Error`);
-  }
+    let event;
+    try {
+      event = stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
+    } catch (err) {
+      console.error("❌ Webhook Stripe inválido:", err.message);
+      return res.status(400).send("Webhook Error");
+    }
 
-  if (event.type === "payment_intent.succeeded") {
-    const pi = event.data.object;
+    try {
+      // =====================================
+      // 💰 PAYMENT INTENT SUCCEEDED
+      // =====================================
+      if (event.type === "payment_intent.succeeded") {
+        const pi = event.data.object;
 
-if (pi.metadata?.tipo === "conteudo") {
-  const {
-    cliente_id,
-    modelo_id,
-    message_id,
-    valor_base,
-    taxa_transacao,
-    taxa_plataforma
-  } = pi.metadata;
+        // ===============================
+        // 📦 CONTEÚDO PPV
+        // ===============================
+        if (pi.metadata?.tipo === "conteudo") {
+          const {
+            cliente_id,
+            modelo_id,
+            message_id,
+            valor_base,
+            taxa_transacao,
+            taxa_plataforma
+          } = pi.metadata;
 
-  const valor_total = pi.amount / 100;
+          const valor_total = pi.amount / 100;
 
-  await db.query(
-    `
-    INSERT INTO conteudo_pacotes (
-      message_id,
-      cliente_id,
-      modelo_id,
-      preco,
-      valor_base,
-      taxa_transacao,
-      taxa_plataforma,
-      valor_total,
-      status,
-      payment_id,
-      metodo_pagamento,
-      pago_em
-    )
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'pago',$9,'cartao',NOW())
-    ON CONFLICT (message_id, cliente_id)
-    DO NOTHING
-    `,
-    [
-      message_id,
-      cliente_id,
-      modelo_id,
-      valor_base,
-      valor_base,
-      taxa_transacao,
-      taxa_plataforma,
-      valor_total,
-      pi.id
-    ]
-  );
+          await db.query(
+            `
+            INSERT INTO conteudo_pacotes (
+              message_id,
+              cliente_id,
+              modelo_id,
+              preco,
+              valor_base,
+              taxa_transacao,
+              taxa_plataforma,
+              valor_total,
+              status,
+              payment_id,
+              metodo_pagamento,
+              pago_em
+            )
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'pago',$9,'cartao',NOW())
+            ON CONFLICT (message_id, cliente_id)
+            DO NOTHING
+            `,
+            [
+              message_id,
+              cliente_id,
+              modelo_id,
+              valor_base, // preco
+              valor_base,
+              taxa_transacao,
+              taxa_plataforma,
+              valor_total,
+              pi.id
+            ]
+          );
 
-  await db.query(
-    `
-    UPDATE messages
-    SET visto = true
-    WHERE id = $1
-      AND cliente_id = $2
-      AND modelo_id = $3
-    `,
-    [message_id, cliente_id, modelo_id]
-  );
+          await db.query(
+            `
+            UPDATE messages
+            SET visto = true
+            WHERE id = $1
+              AND cliente_id = $2
+              AND modelo_id = $3
+            `,
+            [message_id, cliente_id, modelo_id]
+          );
 
-  console.log("✅ CONTEÚDO PAGO (CARTÃO) REGISTRADO:", message_id);
+          console.log("✅ CONTEÚDO PAGO (CARTÃO):", message_id);
 
-  const sala = `chat_${cliente_id}_${modelo_id}`;
-  io.to(sala).emit("conteudoVisto", {
-    message_id: Number(message_id)
-  });
-}
+          const sala = `chat_${cliente_id}_${modelo_id}`;
+          io.to(sala).emit("conteudoVisto", {
+            message_id: Number(message_id)
+          });
+        }
 
+        // ===============================
+        // ⭐ VIP — PRIMEIRO PAGAMENTO
+        // ===============================
+        if (pi.metadata?.tipo === "vip") {
+          await ativarVipAssinatura({
+            cliente_id: pi.metadata.cliente_id,
+            modelo_id: pi.metadata.modelo_id,
+            valor_assinatura: pi.metadata.valor_assinatura,
+            taxa_transacao: pi.metadata.taxa_transacao,
+            taxa_plataforma: pi.metadata.taxa_plataforma
+          });
 
-
-    if (pi.metadata?.tipo === "vip") {
-      await ativarVipAssinatura({
-        cliente_id: pi.metadata.cliente_id,
-        modelo_id: pi.metadata.modelo_id,
-        valor_assinatura: pi.metadata.valor_assinatura,
-        taxa_transacao: pi.metadata.taxa_transacao,
-        taxa_plataforma: pi.metadata.taxa_plataforma
-      });
-
-      // 🔔 socket realtime
-      const sid = onlineClientes[pi.metadata.cliente_id];
-      if (sid) {
-        io.to(sid).emit("vipAtivado", {
-          modelo_id: pi.metadata.modelo_id
-        });
+          // 🔔 realtime
+          const sid = onlineClientes[pi.metadata.cliente_id];
+          if (sid) {
+            io.to(sid).emit("vipAtivado", {
+              modelo_id: pi.metadata.modelo_id
+            });
+          }
+        }
       }
+
+      // =====================================
+      // 🔁 RENOVAÇÃO AUTOMÁTICA VIP
+      // =====================================
+      if (event.type === "invoice.payment_succeeded") {
+        const invoice = event.data.object;
+
+        if (!invoice.subscription) {
+          return res.json({ received: true });
+        }
+
+        const subscriptionId = invoice.subscription;
+
+        await db.query(
+          `
+          UPDATE vip_subscriptions
+          SET
+            expiration_at = CASE
+              WHEN expiration_at > NOW()
+              THEN expiration_at + INTERVAL '30 days'
+              ELSE NOW() + INTERVAL '30 days'
+            END,
+            ativo = true
+          WHERE stripe_subscription_id = $1
+          `,
+          [subscriptionId]
+        );
+
+        console.log("🔁 VIP renovado:", subscriptionId);
+      }
+
+      // =====================================
+      // ❌ FALHA NA RENOVAÇÃO VIP
+      // =====================================
+      if (event.type === "invoice.payment_failed") {
+        const invoice = event.data.object;
+        console.warn(
+          "❌ Falha na renovação VIP:",
+          invoice.subscription
+        );
+      }
+
+      res.json({ received: true });
+    } catch (err) {
+      console.error("🔥 ERRO WEBHOOK STRIPE:", err);
+      res.status(500).json({ error: "Webhook processing failed" });
     }
   }
-
-  res.json({ received: true });
-});
+);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -2649,6 +2706,73 @@ app.post(
     console.error("Erro track acesso:", err);
     res.status(500).json({ error: "Erro ao registrar acesso" });
   }
+});
+
+//RENOVAÇÃO VIP
+// POST /api/vip/cartao/assinatura
+app.post("/api/vip/cartao/assinatura", authCliente, async (req, res) => {
+  const { modelo_id } = req.body;
+  const cliente_id = req.user.id;
+
+  // 1) Criar (ou recuperar) customer
+  const customer = await stripe.customers.create({
+    metadata: { cliente_id }
+  });
+
+  // 2) Criar assinatura
+  const subscription = await stripe.subscriptions.create({
+    customer: customer.id,
+    items: [{ price: "price_1Ss0jzRtYLPrY4c3clhTxyWD" }],
+    payment_behavior: "default_incomplete",
+    expand: ["latest_invoice.payment_intent"],
+    metadata: { cliente_id, modelo_id }
+  });
+
+  // 3) Criar VIP inicial (30 dias)
+  await db.query(`
+    INSERT INTO vip_subscriptions (
+      cliente_id, modelo_id, ativo,
+      expiration_at, recorrente, stripe_subscription_id
+    ) VALUES (
+      $1, $2, true,
+      NOW() + INTERVAL '30 days',
+      true, $3
+    )
+    ON CONFLICT (cliente_id, modelo_id)
+    DO UPDATE SET
+      recorrente = true,
+      stripe_subscription_id = $3
+  `, [cliente_id, modelo_id, subscription.id]);
+
+  res.json({
+    clientSecret: subscription.latest_invoice.payment_intent.client_secret
+  });
+});
+
+// POST /api/vip/cancelar
+app.post("/api/vip/cancelar", authCliente, async (req, res) => {
+  const { modelo_id } = req.body;
+  const cliente_id = req.user.id;
+
+  const vip = await db.query(`
+    SELECT stripe_subscription_id
+    FROM vip_subscriptions
+    WHERE cliente_id = $1 AND modelo_id = $2 AND recorrente = true
+  `, [cliente_id, modelo_id]);
+
+  if (!vip.rowCount) {
+    return res.status(404).json({ error: "Assinatura não encontrada" });
+  }
+
+  await stripe.subscriptions.del(vip.rows[0].stripe_subscription_id);
+
+  await db.query(`
+    UPDATE vip_subscriptions
+    SET recorrente = false
+    WHERE cliente_id = $1 AND modelo_id = $2
+  `, [cliente_id, modelo_id]);
+
+  res.json({ ok: true });
 });
 
 // ===============================

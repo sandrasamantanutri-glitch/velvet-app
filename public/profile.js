@@ -92,12 +92,16 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btnVipPix")?.addEventListener("click", () => {
   fecharEscolha();
   abrirPopupPix(); // sua função existente
-});
+  });
 
-document.getElementById("btnVipCartao")?.addEventListener("click", () => {
-  fecharEscolha();
-  pagarComCartao(); // sua função Stripe
-});
+ document.getElementById("fecharPix")?.addEventListener("click", () => {
+ document.getElementById("popupPix")?.classList.add("hidden");
+ });
+
+ document.getElementById("btnVipCartao")?.addEventListener("click", () => {
+ fecharEscolha();
+ pagarComCartao(); // sua função Stripe
+ });
 
   btnChat?.addEventListener("click", () => {
   if (!role) {
@@ -770,11 +774,11 @@ async function pagarComCartao() {
       taxa_transacao: taxaTransacao,
       taxa_plataforma: taxaPlataforma
     })
-  });
+   });
 
-  const data = await res.json();
+   const data = await res.json();
 
-  if (!res.ok) {
+   if (!res.ok) {
     alert(data.error || "Erro no pagamento");
     return;
   }
@@ -785,10 +789,10 @@ async function pagarComCartao() {
   paymentElement.mount("#payment-element");
 }
 
-// ===============================
-// 💳 CONFIRMAR PAGAMENTO CARTÃO
-// ===============================
-document
+ // ===============================
+ // 💳 CONFIRMAR PAGAMENTO CARTÃO
+ // ===============================
+ document
   .querySelector("#paymentModal .btn-confirmar-desbloqueio")
   ?.addEventListener("click", async () => {
 
@@ -809,7 +813,37 @@ document
     }
 });
 
+async function pagarComCartaoRecorrente() {
+  fecharEscolha();
 
+  // 🔓 ABRE MODAL
+  document.getElementById("paymentModal").classList.remove("hidden");
+
+  // 🔁 CRIA ASSINATURA (NÃO payment intent)
+  const res = await fetch("/api/vip/cartao/assinatura", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + token
+    },
+    body: JSON.stringify({
+      modelo_id
+    })
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    alert(data.error || "Erro ao criar assinatura");
+    return;
+  }
+
+  // 🔐 USA O clientSecret DA ASSINATURA
+  elements = stripe.elements({ clientSecret: data.clientSecret });
+
+  const paymentElement = elements.create("payment");
+  paymentElement.mount("#payment-element");
+}
 
 function mostrarVipAtivadoPopup() {
   const popup = document.getElementById("popupVipAtivado");
