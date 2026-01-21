@@ -127,3 +127,42 @@ document.addEventListener("DOMContentLoaded", () => {
   carregarDadosCliente();
 });
 
+async function confirmarExclusaoConta() {
+  const token = localStorage.getItem("token");
+  const senha = document.getElementById("senhaConfirmacao").value;
+  const erro = document.getElementById("erroExclusao");
+
+  erro.classList.add("hidden");
+
+  if (!senha || senha.length < 4) {
+    erro.textContent = "Digite sua senha para continuar.";
+    erro.classList.remove("hidden");
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/conta/excluir", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token
+      },
+      body: JSON.stringify({ senha })
+    });
+
+    if (res.ok) {
+      localStorage.clear();
+      window.location.href = "/index.html";
+    } else {
+      erro.textContent = "Senha incorreta.";
+      erro.classList.remove("hidden");
+    }
+
+  } catch (err) {
+    erro.textContent = "Erro de conexão.";
+    erro.classList.remove("hidden");
+  }
+}
+
+
+
