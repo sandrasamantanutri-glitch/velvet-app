@@ -35,8 +35,6 @@ const COMPRAS_FILE = "compras.json";
 const bodyParser = require("body-parser");
 const Stripe = require("stripe");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const nodemailer = require("nodemailer");
-
 const ffmpeg = require("fluent-ffmpeg");
 const ffmpegPath = require("ffmpeg-static");
 
@@ -65,6 +63,7 @@ app.use(cors({
   credentials: true
 }));
 
+const nodemailer = require("nodemailer");
 app.post("/api/contato", async (req, res) => {
   try {
     const { nome, email, assunto, mensagem } = req.body;
