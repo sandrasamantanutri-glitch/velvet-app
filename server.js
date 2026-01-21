@@ -2184,7 +2184,7 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
     await client.query("BEGIN");
 
     // 🔥 A PARTIR DAQUI É EXCLUSÃO TOTAL (como antes)
-    await client.query("DELETE FROM messages WHERE sender_id = $1 OR receiver_id = $1", [userId]);
+    await client.query("DELETE FROM messages WHERE cliente_id = $1 OR modelo_id = $1", [userId]);
     await client.query("DELETE FROM vip_subscriptions WHERE cliente_id = $1 OR modelo_id = $1", [userId]);
     await client.query("DELETE FROM conteudo_pacotes WHERE modelo_id = $1", [userId]);
     await client.query("DELETE FROM feed WHERE modelo_id = $1", [userId]);
