@@ -52,22 +52,12 @@ const allowedOrigins = [
 ];
 
 const transporter = nodemailer.createTransport({
-  host: "smtp.hostinger.com",
-  port: 465,
-  secure: true, // TLS
+  host: "smtp.sendgrid.net",
+  port: 587,
+  secure: false,
   auth: {
-    user: process.env.CONTACT_EMAIL,
-    pass: process.env.CONTACT_EMAIL_PASS
-  },
-  connectionTimeout: 10_000, // ⏱️ 10s
-  greetingTimeout: 10_000,   // ⏱️ 10s
-  socketTimeout: 10_000      // ⏱️ 10s
-});
-transporter.verify((err, success) => {
-  if (err) {
-    console.error("❌ SMTP NÃO CONECTOU:", err);
-  } else {
-    console.log("✅ SMTP pronto para enviar emails");
+    user: "apikey",                 // 🔑 FIXO
+    pass: process.env.SENDGRID_API_KEY
   }
 });
 
@@ -2885,43 +2875,38 @@ app.post("/api/password/reset", async (req, res) => {
 // 📩 FALE CONOSCO / CONTATO
 // ===============================
 app.post("/api/contato", async (req, res) => {
-  const { nome, email, assunto, mensagem } = req.body;
-
-  // 🔒 validação básica
-  if (!nome || !email || !assunto || !mensagem) {
-    return res.status(400).json({
-      error: "Dados incompletos"
-    });
-  }
-
   try {
+    const { nome, email, assunto, mensagem } = req.body;
+
+    // 🔒 validação básica
+    if (!nome || !email || !assunto || !mensagem) {
+      return res.status(400).json({ error: "Dados incompletos" });
+    }
+
+    // ✉️ envio do email via SendGrid
     await transporter.sendMail({
-      from: `"Velvet • Contato" <${process.env.CONTACT_EMAIL}>`,
-      to: "contato@velvet.lat",
-      replyTo: email,
-      subject: `📩 Contato Velvet — ${assunto}`,
+      from: `"Contato Velvet" <${process.env.EMAIL_FROM}>`,
+      to: process.env.EMAIL_FROM, // recebe no email oficial
+      replyTo: email,             // permite responder ao usuário
+      subject: `[Contato] ${assunto}`,
       html: `
-        <div style="font-family: Arial, sans-serif; line-height:1.6">
-          <h2>Novo contato recebido</h2>
-          <p><strong>Nome:</strong> ${nome}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          <p><strong>Assunto:</strong> ${assunto}</p>
-          <hr/>
-          <p><strong>Mensagem:</strong></p>
-          <p>${mensagem.replace(/\n/g, "<br>")}</p>
-        </div>
+        <h3>Novo contato pelo site</h3>
+        <p><b>Nome:</b> ${nome}</p>
+        <p><b>Email:</b> ${email}</p>
+        <p><b>Assunto:</b> ${assunto}</p>
+        <p><b>Mensagem:</b></p>
+        <p>${mensagem}</p>
       `
     });
 
-    return res.json({ ok: true });
+    return res.json({ success: true });
 
   } catch (err) {
     console.error("❌ Erro contato:", err);
-    return res.status(500).json({
-      error: "Erro ao enviar mensagem"
-    });
+    return res.status(500).json({ error: "Erro ao enviar mensagem" });
   }
 });
+
 
 
 
@@ -2968,20 +2953,16 @@ setInterval(async () => {
 
 app.get("/api/test-email", async (req, res) => {
   try {
-    console.log("📨 Iniciando envio de email...");
-
     await transporter.sendMail({
-      from: `"Velvet Teste" <${process.env.CONTACT_EMAIL}>`,
-      to: process.env.CONTACT_EMAIL,
-      subject: "🚀 Teste de Email - Velvet",
-      html: "<h2>Email funcionando!</h2>"
+      from: `"Velvet" <${process.env.EMAIL_FROM}>`,
+      to: process.env.EMAIL_FROM,
+      subject: "🚀 Teste SendGrid - Velvet",
+      html: "<h2>SendGrid funcionando!</h2>"
     });
 
-    console.log("✅ Email enviado com sucesso");
     return res.json({ ok: true });
-
   } catch (err) {
-    console.error("❌ ERRO EMAIL:", err);
+    console.error("❌ ERRO SENDGRID:", err);
     return res.status(500).json({ error: err.message });
   }
 });
