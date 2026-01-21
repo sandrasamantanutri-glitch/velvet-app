@@ -14,16 +14,6 @@ const modeloParam = params.get("id");
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
 
-console.group("🛡️ DEBUG PERFIL");
-console.log("URL:", window.location.href);
-console.log("modeloParam (?id):", modeloParam);
-console.log("token existe?", !!token);
-console.log("role:", role);
-console.log("modelo_id LS:", localStorage.getItem("modelo_id"));
-console.groupEnd();
-
-
-
 //DEFINIÇÃO SEGURA DE MODO
 let modo = "publico";
 if (token && role === "modelo" && !modeloParam) {
@@ -60,8 +50,6 @@ function decodeJWT(token) {
     return null;
   }
 }
-
-
 
 function logout() {
   localStorage.clear();
@@ -111,15 +99,17 @@ document.getElementById("btnVipCartao")?.addEventListener("click", () => {
   pagarComCartao(); // sua função Stripe
 });
 
-  document.getElementById("fecharPagamento")
-  ?.addEventListener("click", fecharPagamento);
-  
   btnChat?.addEventListener("click", () => {
   if (!role) {
     abrirPopupVelvet({ tipo: "login" });
-  } else {
-    window.location.href = "/chatcliente.html";
+    return;
   }
+  if (!window.__CLIENTE_VIP__) {
+    abrirPopupVelvet({ tipo: "vip" });
+    return;
+  }
+  window.location.href = "/chatcliente.html";
+
 });
 
 // ===============================
@@ -233,18 +223,19 @@ if (role === "cliente") {
       const vipData = await vipRes.json();
       window.__CLIENTE_VIP__ = vipData.vip === true;
 
-      if (window.__CLIENTE_VIP__) {
-        if (btnVip) {
-          btnVip.textContent = "VIP ativo";
-          btnVip.disabled = true;
-        }
-      }
+     if (window.__CLIENTE_VIP__) {
+      btnVip.textContent = "VIP ativo";
+      btnVip.disabled = true;
+      btnChat?.classList.remove("hidden");
+    } else {
+      btnChat?.classList.add("hidden");
     }
+  }
   } catch (err) {
     console.error("Erro ao verificar VIP:", err);
     window.__CLIENTE_VIP__ = false;
   }
-} else {
+  } else {
   window.__CLIENTE_VIP__ = false;
 
   if (btnVip) {

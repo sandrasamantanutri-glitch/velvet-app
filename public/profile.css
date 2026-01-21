@@ -1169,6 +1169,19 @@ body.role-publico .btnChat {
   pointer-events: none; /* não bloqueia clique */
 }
 
+.modal-box .vip-validade {
+  display: block;
+  font-size: 13px;
+  color: #7B2CFF !important;
+  text-align: center;
+  margin: 8px 0 16px;
+  line-height: 1.4;
+}
+
+#escolhaPagamento .modal-box {
+  position: relative;
+  z-index: 100002 !important;
+}
 
 
 
