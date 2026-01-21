@@ -50,19 +50,6 @@ const allowedOrigins = [
   "https://velvet-test-production.up.railway.app"
 ];
 
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true); // Postman, mobile, SW
-
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-
-    return callback(new Error("CORS bloqueado: " + origin));
-  },
-  credentials: true
-}));
-
 const nodemailer = require("nodemailer");
 app.post("/api/contato", async (req, res) => {
   try {
@@ -74,7 +61,7 @@ app.post("/api/contato", async (req, res) => {
     }
 
     // 📧 SMTP HOSTINGER (CORRETO)
-const transporter = nodemailer.createTransport({
+ const transporter = nodemailer.createTransport({
   host: "smtp.hostinger.com",
   port: 587,
   secure: false, // SSL
@@ -85,7 +72,7 @@ const transporter = nodemailer.createTransport({
   tls: {
     rejectUnauthorized: false
   },
-});
+ });
 
     // ✉️ envio do email
     await transporter.sendMail({
@@ -111,6 +98,19 @@ const transporter = nodemailer.createTransport({
     return res.status(500).json({ error: "Erro ao enviar email" });
   }
 });
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // Postman, mobile, SW
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error("CORS bloqueado: " + origin));
+  },
+  credentials: true
+}));
 
 // ===============================
 // BACKBLAZE B2 (UPLOAD NOVO)
