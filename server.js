@@ -2873,22 +2873,28 @@ app.post("/api/contato", async (req, res) => {
     }
 
     await sgMail.send({
-  to: email,
-  from: process.env.EMAIL_FROM,
-  subject: "Recuperação de senha – Velvet",
-  html: `
-    <p>Seu código é:</p>
-    <h2>${codigo}</h2>
-    <p>Expira em 15 minutos.</p>
-  `
-});
+      to: process.env.EMAIL_FROM,
+      from: process.env.EMAIL_FROM,
+      replyTo: email,
+      subject: `[Contato] ${assunto}`,
+      html: `
+        <h3>Novo contato pelo site</h3>
+        <p><b>Nome:</b> ${nome}</p>
+        <p><b>Email:</b> ${email}</p>
+        <p><b>Assunto:</b> ${assunto}</p>
+        <p><b>Mensagem:</b></p>
+        <p>${mensagem}</p>
+      `
+    });
 
     return res.json({ success: true });
-  } catch (err) {
-    console.error("❌ Erro contato:", err.response?.body || err);
+
+  } catch (error) {
+    console.error("❌ Erro contato:", error.response?.body || error);
     return res.status(500).json({ error: "Erro ao enviar mensagem" });
   }
 });
+
 
 
 
