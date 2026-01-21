@@ -232,7 +232,7 @@ html, body {
 .copy-field input {
   flex: 1;
   padding: 12px 14px;
-  font-size: 16px;
+  font-size: 12px;
   color: #111;
   background: #f7f7f7;
   border: 1px solid #e3e3e3;
@@ -283,7 +283,7 @@ html, body {
   @media (max-width: 600px) {
   .copy-field button {
     padding: 10px;
-    font-size: 14px;
+    font-size: 12px;
   }
 }
 }
