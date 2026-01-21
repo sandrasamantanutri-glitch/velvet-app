@@ -419,7 +419,7 @@ html, body {
 
 .input-danger {
   width: 100%;
-  padding: 10px 10px; 
+  padding: 8px; 
   border-radius: 10px;
   border: 1.5px solid #d93025;
   font-size: 14px;
