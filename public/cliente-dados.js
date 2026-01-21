@@ -164,5 +164,27 @@ async function confirmarExclusaoConta() {
   }
 }
 
+function abrirConfirmacaoExclusao() {
+  const modal = document.getElementById("modalExcluirConta");
+  if (modal) {
+    modal.classList.remove("hidden");
+  }
+}
+
+function fecharModalExclusao() {
+  const modal = document.getElementById("modalExcluirConta");
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+
+  // limpa campo e erro ao fechar
+  const senhaInput = document.getElementById("senhaConfirmacao");
+  const erro = document.getElementById("erroExclusao");
+
+  if (senhaInput) senhaInput.value = "";
+  if (erro) erro.classList.add("hidden");
+}
+
+
 
 
