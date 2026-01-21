@@ -50,52 +50,16 @@ const allowedOrigins = [
   "https://velvet-test-production.up.railway.app"
 ];
 
-const nodemailer = require("nodemailer");
-app.post("/api/contato", async (req, res) => {
-  try {
-    const { nome, email, assunto, mensagem } = req.body;
-
-    // 🔒 validação básica
-    if (!nome || !email || !assunto || !mensagem) {
-      return res.status(400).json({ error: "Dados incompletos" });
-    }
-
-    // 📧 SMTP HOSTINGER (CORRETO)
- const transporter = nodemailer.createTransport({
+const transporter = nodemailer.createTransport({
   host: "smtp.hostinger.com",
   port: 587,
-  secure: false, // SSL
+  secure: false, // TLS
   auth: {
     user: process.env.CONTACT_EMAIL,
     pass: process.env.CONTACT_EMAIL_PASS
   },
   tls: {
     rejectUnauthorized: false
-  },
- });
-
-    // ✉️ envio do email
-    await transporter.sendMail({
-      from: `"Contato Velvet" <${process.env.CONTACT_EMAIL}>`,
-      to: "contato@velvet.lat",
-      replyTo: email,
-      subject: `[Contato] ${assunto}`,
-      html: `
-        <h3>Novo contato pelo site</h3>
-        <p><b>Nome:</b> ${nome}</p>
-        <p><b>Email:</b> ${email}</p>
-        <p><b>Assunto:</b> ${assunto}</p>
-        <p><b>Mensagem:</b></p>
-        <p>${mensagem}</p>
-      `
-    });
-
-    // ✅ resposta para o frontend
-    return res.json({ success: true });
-
-  } catch (err) {
-    console.error("Erro envio contato:", err);
-    return res.status(500).json({ error: "Erro ao enviar email" });
   }
 });
 
@@ -2364,7 +2328,7 @@ app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
         description: "Assinatura VIP",
         payment_method_id: "pix",
         payer: {
-          email: "contato@velvet.lat"
+          email: "contat@velvet.lat"
         },
         metadata: {
           tipo: "vip",
@@ -2907,6 +2871,49 @@ app.post("/api/password/reset", async (req, res) => {
   res.json({ success: true });
 });
 
+// ===============================
+// 📩 FALE CONOSCO / CONTATO
+// ===============================
+app.post("/api/contato", async (req, res) => {
+  const { nome, email, assunto, mensagem } = req.body;
+
+  // 🔒 validação básica
+  if (!nome || !email || !assunto || !mensagem) {
+    return res.status(400).json({
+      error: "Dados incompletos"
+    });
+  }
+
+  try {
+    await transporter.sendMail({
+      from: `"Velvet • Contato" <${process.env.CONTACT_EMAIL}>`,
+      to: "contato@velvet.lat",
+      replyTo: email,
+      subject: `📩 Contato Velvet — ${assunto}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; line-height:1.6">
+          <h2>Novo contato recebido</h2>
+          <p><strong>Nome:</strong> ${nome}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          <p><strong>Assunto:</strong> ${assunto}</p>
+          <hr/>
+          <p><strong>Mensagem:</strong></p>
+          <p>${mensagem.replace(/\n/g, "<br>")}</p>
+        </div>
+      `
+    });
+
+    return res.json({ ok: true });
+
+  } catch (err) {
+    console.error("❌ Erro contato:", err);
+    return res.status(500).json({
+      error: "Erro ao enviar mensagem"
+    });
+  }
+});
+
+
 
 
 // ===============================
@@ -2953,14 +2960,13 @@ app.get("/api/test-email", async (req, res) => {
   try {
     await transporter.sendMail({
       from: `"Velvet Teste" <${process.env.CONTACT_EMAIL}>`,
-      to: process.env.CONTACT_EMAIL, // envia pra você mesma
+      to: process.env.CONTACT_EMAIL,
       subject: "🚀 Teste de Email - Velvet",
-      html: "<h2>Email funcionando!</h2><p>SMTP OK 🎉</p>"
+      html: "<h2>Email funcionando!</h2>"
     });
 
     res.json({ ok: true });
   } catch (err) {
-    console.error("❌ ERRO EMAIL:", err);
     res.status(500).json({ error: err.message });
   }
 });
