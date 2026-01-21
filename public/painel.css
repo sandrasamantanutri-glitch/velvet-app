@@ -242,9 +242,9 @@ html, body {
 
 /* botão copiar */
 .copy-field button {
-  padding: 8px 12px;     /* 🔽 menor */
-  font-size: 12px;      /* 🔽 texto menor */
-  border-radius: 8px;   /* 🔽 menos “bloco” */
+  padding: 8px 12px !important;   
+  font-size: 12px !important;
+  border-radius: 8px !important;
   font-weight: 500;
   background: linear-gradient(135deg, #7B2CFF, #9b6dff);
   color: #fff;
