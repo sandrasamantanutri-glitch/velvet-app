@@ -53,8 +53,8 @@ const allowedOrigins = [
 
 const transporter = nodemailer.createTransport({
   host: "smtp.hostinger.com",
-  port: 587,
-  secure: false, // TLS
+  port: 465,
+  secure: true, // TLS
   auth: {
     user: process.env.CONTACT_EMAIL,
     pass: process.env.CONTACT_EMAIL_PASS
