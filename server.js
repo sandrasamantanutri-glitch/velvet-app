@@ -2939,7 +2939,6 @@ app.get("/api/test-email", async (req, res) => {
     await sgMail.send({
         to: process.env.EMAIL_FROM,
   from: process.env.EMAIL_FROM,
-  replyTo: email,
   subject: `[Contato] ${assunto}`,
   html: `...`
 });
