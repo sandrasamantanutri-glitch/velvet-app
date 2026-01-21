@@ -232,7 +232,7 @@ html, body {
 .copy-field input {
   flex: 1;
   padding: 12px 14px;
-  font-size: 14px;
+  font-size: 16px;
   color: #111;
   background: #f7f7f7;
   border: 1px solid #e3e3e3;
@@ -283,9 +283,23 @@ html, body {
   @media (max-width: 600px) {
   .copy-field button {
     padding: 10px;
-    font-size: 12px;
+    font-size: 14px;
   }
 }
+}
+
+
+.copy-field button {
+  width: auto !important;        /* 🔑 CHAVE */
+  min-width: unset !important;
+  padding: 8px 12px !important;
+  font-size: 12px !important;
+  border-radius: 8px !important;
+}
+
+.copy-field {
+  display: flex;
+  align-items: center;
 }
 
 
