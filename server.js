@@ -65,6 +65,53 @@ app.use(cors({
   credentials: true
 }));
 
+app.post("/api/contato", async (req, res) => {
+  try {
+    const { nome, email, assunto, mensagem } = req.body;
+
+    // 🔒 validação básica
+    if (!nome || !email || !assunto || !mensagem) {
+      return res.status(400).json({ error: "Dados incompletos" });
+    }
+
+    // 📧 SMTP HOSTINGER (CORRETO)
+const transporter = nodemailer.createTransport({
+  host: "smtp.hostinger.com",
+  port: 587,
+  secure: false, // SSL
+  auth: {
+    user: process.env.CONTACT_EMAIL,
+    pass: process.env.CONTACT_EMAIL_PASS
+  },
+  tls: {
+    rejectUnauthorized: false
+  },
+});
+
+    // ✉️ envio do email
+    await transporter.sendMail({
+      from: `"Contato Velvet" <${process.env.CONTACT_EMAIL}>`,
+      to: "contato@velvet.lat",
+      replyTo: email,
+      subject: `[Contato] ${assunto}`,
+      html: `
+        <h3>Novo contato pelo site</h3>
+        <p><b>Nome:</b> ${nome}</p>
+        <p><b>Email:</b> ${email}</p>
+        <p><b>Assunto:</b> ${assunto}</p>
+        <p><b>Mensagem:</b></p>
+        <p>${mensagem}</p>
+      `
+    });
+
+    // ✅ resposta para o frontend
+    return res.json({ success: true });
+
+  } catch (err) {
+    console.error("Erro envio contato:", err);
+    return res.status(500).json({ error: "Erro ao enviar email" });
+  }
+});
 
 // ===============================
 // BACKBLAZE B2 (UPLOAD NOVO)
@@ -77,7 +124,6 @@ const s3 = new AWS.S3({
   signatureVersion: "v4",
   s3ForcePathStyle: true
 });
-
 
 const uploadB2 = multer({
   storage: multerS3({
@@ -2280,56 +2326,6 @@ app.post(
     }
   }
 );
-
-
-app.post("/api/contato", async (req, res) => {
-  try {
-    const { nome, email, assunto, mensagem } = req.body;
-
-    // 🔒 validação básica
-    if (!nome || !email || !assunto || !mensagem) {
-      return res.status(400).json({ error: "Dados incompletos" });
-    }
-
-    // 📧 SMTP HOSTINGER (CORRETO)
-const transporter = nodemailer.createTransport({
-  host: "smtp.hostinger.com",
-  port: 587,
-  secure: false, // SSL
-  auth: {
-    user: process.env.CONTACT_EMAIL,
-    pass: process.env.CONTACT_EMAIL_PASS
-  },
-  tls: {
-    rejectUnauthorized: false
-  },
-});
-
-    // ✉️ envio do email
-    await transporter.sendMail({
-      from: `"Contato Velvet" <${process.env.CONTACT_EMAIL}>`,
-      to: "contato@velvet.lat",
-      replyTo: email,
-      subject: `[Contato] ${assunto}`,
-      html: `
-        <h3>Novo contato pelo site</h3>
-        <p><b>Nome:</b> ${nome}</p>
-        <p><b>Email:</b> ${email}</p>
-        <p><b>Assunto:</b> ${assunto}</p>
-        <p><b>Mensagem:</b></p>
-        <p>${mensagem}</p>
-      `
-    });
-
-    // ✅ resposta para o frontend
-    return res.json({ success: true });
-
-  } catch (err) {
-    console.error("Erro envio contato:", err);
-    return res.status(500).json({ error: "Erro ao enviar email" });
-  }
-});
-
 
 app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
   try {
