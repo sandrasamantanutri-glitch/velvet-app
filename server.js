@@ -1819,14 +1819,28 @@ app.get("/api/chats", auth, async (req, res) => {
 }
   const result = await db.query(query, params);
 
-const chats = result.rows.map(r => ({
-  chat_id: r.cliente_id,
-  name: r.other_name,
-  avatar: r.other_avatar ?? null,
-  last_message: r.last_message ?? "",
-  time: r.last_time,
-  unread: r.has_unread && r.unread_for === role ? 1 : 0
-}));
+const chats = result.rows.map(r => {
+  if (role === "modelo") {
+    return {
+      chat_id: r.cliente_id,          // ✅ cliente
+      name: r.other_name,
+      avatar: null,                   // modelo não busca avatar aqui
+      last_message: r.last_message ?? "",
+      time: r.last_time,
+      unread: r.has_unread && r.unread_for === "modelo" ? 1 : 0
+    };
+  }
+
+  // role === "cliente"
+  return {
+    chat_id: r.modelo_id,             // ✅ modelo
+    name: r.other_name,
+    avatar: r.other_avatar ?? null,   // ✅ existe só aqui
+    last_message: r.last_message ?? "",
+    time: r.last_time,
+    unread: r.has_unread && r.unread_for === "cliente" ? 1 : 0
+  };
+});
 res.json(chats);
 });
 
