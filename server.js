@@ -1711,6 +1711,99 @@ app.get("/api/conteudos/me", authModelo, async (req, res) => {
   }
 });
 
+// ===============================
+// LISTA DE CHATS APP (NOVA ROTA)
+// ===============================
+app.get("/api/chats", auth, async (req, res) => {
+  const userId = req.user.id;
+  const role = req.user.role;
+
+  let query;
+  let params = [userId];
+
+  if (role === "modelo") {
+    query = `
+      SELECT
+        m.cliente_id,
+        m.modelo_id,
+
+        MAX(m.created_at) AS last_time,
+
+        (
+          SELECT m2.text
+          FROM messages m2
+          WHERE m2.cliente_id = m.cliente_id
+            AND m2.modelo_id = m.modelo_id
+          ORDER BY m2.created_at DESC
+          LIMIT 1
+        ) AS last_message,
+
+        COALESCE(u.has_unread, false) AS has_unread,
+        u.unread_for
+
+      FROM messages m
+      LEFT JOIN unread u
+        ON u.cliente_id = m.cliente_id
+       AND u.modelo_id = m.modelo_id
+
+      WHERE m.modelo_id = $1
+      GROUP BY
+        m.cliente_id,
+        m.modelo_id,
+        u.has_unread,
+        u.unread_for
+      ORDER BY last_time DESC
+    `;
+  }
+
+  if (role === "cliente") {
+    query = `
+      SELECT
+        m.cliente_id,
+        m.modelo_id,
+
+        MAX(m.created_at) AS last_time,
+
+        (
+          SELECT m2.text
+          FROM messages m2
+          WHERE m2.cliente_id = m.cliente_id
+            AND m2.modelo_id = m.modelo_id
+          ORDER BY m2.created_at DESC
+          LIMIT 1
+        ) AS last_message,
+
+        COALESCE(u.has_unread, false) AS has_unread,
+        u.unread_for
+
+      FROM messages m
+      LEFT JOIN unread u
+        ON u.cliente_id = m.cliente_id
+       AND u.modelo_id = m.modelo_id
+
+      WHERE m.cliente_id = $1
+      GROUP BY
+        m.cliente_id,
+        m.modelo_id,
+        u.has_unread,
+        u.unread_for
+      ORDER BY last_time DESC
+    `;
+  }
+  const result = await db.query(query, params);
+
+const chats = result.rows.map(r => ({
+  cliente_id: r.cliente_id,
+  modelo_id: r.modelo_id,
+  last_message: r.last_message,
+  time: r.last_time, // pode ser ISO ou formatar depois
+  unread: r.has_unread && r.unread_for === role ? 1 : 0
+  }));
+ res.json(chats);
+});
+
+
+
 
 
 // ===============================
