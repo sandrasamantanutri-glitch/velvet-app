@@ -1727,107 +1727,106 @@ app.get("/api/chats", auth, async (req, res) => {
 
   if (role === "modelo") {
     query = `
-  SELECT
-    m.cliente_id,
-    m.modelo_id,
+    SELECT
+      c.user_id AS cliente_id,
+      c.nome    AS other_name,
 
-    u.id          AS other_id,
-    u.nome        AS other_name,
-    u.avatar_url AS other_avatar,
+      MAX(m.created_at) AS last_time,
 
-    MAX(m.created_at) AS last_time,
+      (
+        SELECT m2.text
+        FROM messages m2
+        WHERE m2.cliente_id = c.user_id
+          AND m2.modelo_id = $1
+        ORDER BY m2.created_at DESC
+        LIMIT 1
+      ) AS last_message,
 
-    (
-      SELECT m2.text
-      FROM messages m2
-      WHERE m2.cliente_id = m.cliente_id
-        AND m2.modelo_id = m.modelo_id
-      ORDER BY m2.created_at DESC
-      LIMIT 1
-    ) AS last_message,
+      COALESCE(u.has_unread, false) AS has_unread,
+      u.unread_for
 
-    COALESCE(u2.has_unread, false) AS has_unread,
-    u2.unread_for
+    FROM vip_subscriptions v
+    JOIN clientes c
+      ON c.user_id = v.cliente_id
 
-  FROM messages m
-  JOIN users u
-    ON u.id = m.cliente_id
+    LEFT JOIN messages m
+      ON m.cliente_id = c.user_id
+     AND m.modelo_id = $1
 
-  LEFT JOIN unread u2
-    ON u2.cliente_id = m.cliente_id
-   AND u2.modelo_id = m.modelo_id
+    LEFT JOIN unread u
+      ON u.cliente_id = c.user_id
+     AND u.modelo_id = $1
 
-  WHERE m.modelo_id = $1
+    WHERE v.modelo_id = $1
+      AND v.ativo = true
+      AND v.expiration_at > NOW()
 
-  GROUP BY
-    m.cliente_id,
-    m.modelo_id,
-    u.id,
-    u.nome,
-    u.avatar_url,
-    u2.has_unread,
-    u2.unread_for
+    GROUP BY
+      c.user_id,
+      c.nome,
+      u.has_unread,
+      u.unread_for
 
-  ORDER BY last_time DESC
-`;
+    ORDER BY last_time DESC NULLS LAST
+  `;
   }
 
   if (role === "cliente") {
     query = `
-  SELECT
-    m.cliente_id,
-    m.modelo_id,
+    SELECT
+      m.cliente_id,
+      m.modelo_id,
 
-    u.id          AS other_id,
-    u.nome        AS other_name,
-    u.avatar_url AS other_avatar,
+      mo.user_id AS other_id,
+      mo.nome    AS other_name,
+      mo.avatar  AS other_avatar,
 
-    MAX(m.created_at) AS last_time,
+      MAX(m.created_at) AS last_time,
 
-    (
-      SELECT m2.text
-      FROM messages m2
-      WHERE m2.cliente_id = m.cliente_id
-        AND m2.modelo_id = m.modelo_id
-      ORDER BY m2.created_at DESC
-      LIMIT 1
-    ) AS last_message,
+      (
+        SELECT m2.text
+        FROM messages m2
+        WHERE m2.cliente_id = m.cliente_id
+          AND m2.modelo_id = m.modelo_id
+        ORDER BY m2.created_at DESC
+        LIMIT 1
+      ) AS last_message,
 
-    COALESCE(u2.has_unread, false) AS has_unread,
-    u2.unread_for
+      COALESCE(u.has_unread, false) AS has_unread,
+      u.unread_for
 
-  FROM messages m
-  JOIN users u
-    ON u.id = m.modelo_id
+    FROM messages m
+    JOIN modelos mo
+      ON mo.user_id = m.modelo_id
 
-  LEFT JOIN unread u2
-    ON u2.cliente_id = m.cliente_id
-   AND u2.modelo_id = m.modelo_id
+    LEFT JOIN unread u
+      ON u.cliente_id = m.cliente_id
+     AND u.modelo_id = m.modelo_id
 
-  WHERE m.cliente_id = $1
+    WHERE m.cliente_id = $1
 
-  GROUP BY
-    m.cliente_id,
-    m.modelo_id,
-    u.id,
-    u.nome,
-    u.avatar_url,
-    u2.has_unread,
-    u2.unread_for
+    GROUP BY
+      m.cliente_id,
+      m.modelo_id,
+      mo.user_id,
+      mo.nome,
+      mo.avatar,
+      u.has_unread,
+      u.unread_for
 
-  ORDER BY last_time DESC
-`;
-  }
+    ORDER BY last_time DESC
+  `;
+}
   const result = await db.query(query, params);
 
 const chats = result.rows.map(r => ({
-  chat_id: r.other_id,
+  chat_id: r.cliente_id,
   name: r.other_name,
-  avatar: r.other_avatar,
-  last_message: r.last_message,
+  last_message: r.last_message ?? "",
   time: r.last_time,
   unread: r.has_unread && r.unread_for === role ? 1 : 0
 }));
+
 res.json(chats);
 });
 
