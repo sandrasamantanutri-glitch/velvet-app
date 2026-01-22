@@ -726,119 +726,105 @@ socket.on("joinChat", ({ sala }) => {
 });
 
 // 💬 ENVIAR MENSAGEM (ÚNICO)
-socket.on("sendMessage", async (data) => {
-  if (!socket.user) return;
-
-  const {
-    cliente_id,
-    modelo_id,
-    text,
-    tipo = "texto",
-    conteudos = [],
-    preco = 0
-  } = data;
-
+socket.on("sendMessage", async ({ cliente_id, modelo_id, text }) => {
+  if (!socket.user) {
+    console.log("❌ Socket sem usuário");
+    return;
+  }
+  
   // 🔒 segurança por role
   if (socket.user.role === "cliente" && socket.user.id !== cliente_id) return;
   if (socket.user.role === "modelo"  && socket.user.id !== modelo_id) return;
 
-  if (!cliente_id || !modelo_id) return;
+  if (!cliente_id || !modelo_id || !text) {
+    console.log("❌ sendMessage inválido", { cliente_id, modelo_id, text });
+    return;
+  }
 
   const sala = `chat_${cliente_id}_${modelo_id}`;
-  const sender = socket.user.role;
+  const sender = socket.user.role;               // "cliente" | "modelo"
   const unreadFor = sender === "cliente" ? "modelo" : "cliente";
 
   try {
-    // ===============================
-    // 🟢 TEXTO (FLUXO ANTIGO, IGUAL)
-    // ===============================
-    if (tipo === "texto") {
-      if (!text) return;
+    // 1️⃣ SALVA NO BANCO E RETORNA ID 🔥
+const result = await db.query(`
+  INSERT INTO messages
+    (cliente_id, modelo_id, sender, tipo, text)
+  VALUES ($1, $2, $3, 'texto', $4)
+  RETURNING id
+`, 
+[cliente_id, modelo_id, sender, text]);
 
-      const result = await db.query(`
-        INSERT INTO messages
-          (cliente_id, modelo_id, sender, tipo, text)
-        VALUES ($1, $2, $3, 'texto', $4)
-        RETURNING id, created_at
-      `, [cliente_id, modelo_id, sender, text]);
+const messageId = result.rows[0].id;
 
-      const messageId = result.rows[0].id;
-      const createdAt = result.rows[0].created_at;
+    // 2️⃣ MARCA COMO NÃO LIDA PARA QUEM NÃO ENVIOU
+    await db.query(
+      `
+      INSERT INTO unread (cliente_id, modelo_id, unread_for, has_unread)
+      VALUES ($1, $2, $3, true)
+      ON CONFLICT (cliente_id, modelo_id)
+      DO UPDATE SET
+        unread_for = EXCLUDED.unread_for,
+        has_unread = true
+      `,
+      [cliente_id, modelo_id, unreadFor]
+    );
 
-      await marcarUnread(cliente_id, modelo_id, unreadFor);
-
-      io.to(sala).emit("newMessage", {
-        id: messageId,
-        cliente_id,
-        modelo_id,
-        sender,
-        tipo: "texto",
-        text,
-        created_at: createdAt
-      });
-
-      atualizarListas(cliente_id, modelo_id, text, sender);
-      return;
+    // 3️⃣ AVISO DE NÃO LIDA (TEMPO REAL)
+    if (unreadFor === "modelo") {
+      const sidModelo = onlineModelos[modelo_id];
+      if (sidModelo) {
+        io.to(sidModelo).emit("unreadUpdate", {
+          cliente_id,
+          modelo_id,
+          unread: true
+        });
+      }
     }
 
-    // ===============================
-    // 🟣 CONTEÚDO (NOVO FLUXO)
-    // ===============================
-if (tipo === "conteudo" && conteudos.length > 0) {
+    if (unreadFor === "cliente") {
+      const sidCliente = onlineClientes[cliente_id];
+      if (sidCliente) {
+        io.to(sidCliente).emit("unreadUpdate", {
+          cliente_id,
+          modelo_id,
+          unread: true
+        });
+      }
+    }
 
-  const msgRes = await db.query(`
-    INSERT INTO messages
-      (cliente_id, modelo_id, sender, tipo, preco, visto)
-    VALUES ($1, $2, $3, 'conteudo', $4, false)
-    RETURNING id, created_at
-  `, [cliente_id, modelo_id, sender, preco]);
+ // 7️⃣ META UPDATE (status / horário)
+ // 🔥 ENVIA PARA A SALA (CLIENTE + MODELO)
+io.to(sala).emit("newMessage", {
+  id: messageId,
+  cliente_id,
+  modelo_id,
+  sender,
+  tipo: "texto",
+  text,
+  created_at: new Date()
+ });
+ io.to(`modelo_${modelo_id}`).emit("listUpdate");
+io.to(`cliente_${cliente_id}`).emit("listUpdate");
 
-  const messageId = msgRes.rows[0].id;
-  const createdAt = msgRes.rows[0].created_at;
-
-  // associa conteúdos
-  for (const cid of conteudos) {
-    await db.query(`
-      INSERT INTO messages_conteudos (message_id, conteudo_id)
-      VALUES ($1, $2)
-    `, [messageId, cid]);
-  }
-
-  // busca mídias completas (COM THUMB)
-  const midiasRes = await db.query(`
-    SELECT
-      c.url,
-      c.tipo AS tipo_media,
-      c.thumbnail_url
-    FROM conteudos c
-    WHERE c.id = ANY($1)
-  `, [conteudos]);
-
-  const midias = midiasRes.rows;
-
-  await marcarUnread(cliente_id, modelo_id, unreadFor);
-
-  io.to(sala).emit("newMessage", {
-    id: messageId,
-    cliente_id,
-    modelo_id,
-    sender,
-    tipo: "conteudo",
-    midias,
-    quantidade: midias.length,
-    preco,
-    visto: false,
-    created_at: createdAt
-  });
-
-  atualizarListas(cliente_id, modelo_id, "[Conteúdo]", sender);
-}
-
-  } catch (err) {
-    console.error("🔥 ERRO sendMessage:", err);
-  }
+io.to(`modelo_${modelo_id}`).emit("chatListUpdate", {
+  chat_id: cliente_id,
+  last_message: text,
+  last_time: new Date(),
+  unread_delta: sender === "cliente" ? 1 : 0
 });
 
+io.to(`cliente_${cliente_id}`).emit("chatListUpdate", {
+  chat_id: modelo_id,
+  last_message: text,
+  last_time: new Date(),
+  unread_delta: sender === "modelo" ? 1 : 0
+});
+
+  } catch (err) {
+    console.error("🔥 ERRO AO SALVAR MENSAGEM:", err);
+  }
+});
 
 // 📜 HISTÓRICO DO CHAT
 socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
