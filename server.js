@@ -784,38 +784,55 @@ socket.on("sendMessage", async (data) => {
     // ===============================
     // 🟣 CONTEÚDO (NOVO FLUXO)
     // ===============================
-    if (tipo === "conteudo" && conteudos.length > 0) {
-      const result = await db.query(`
-        INSERT INTO messages
-          (cliente_id, modelo_id, sender, tipo, preco)
-        VALUES ($1, $2, $3, 'conteudo', $4)
-        RETURNING id, created_at
-      `, [cliente_id, modelo_id, sender, preco]);
+if (tipo === "conteudo" && conteudos.length > 0) {
 
-      const messageId = result.rows[0].id;
-      const createdAt = result.rows[0].created_at;
+  const msgRes = await db.query(`
+    INSERT INTO messages
+      (cliente_id, modelo_id, sender, tipo, preco, visto)
+    VALUES ($1, $2, $3, 'conteudo', $4, false)
+    RETURNING id, created_at
+  `, [cliente_id, modelo_id, sender, preco]);
 
-      const r = await db.query(`
-        SELECT id, url, tipo, thumbnail_url
-        FROM conteudos
-        WHERE id = ANY($1)
-      `, [conteudos]);
+  const messageId = msgRes.rows[0].id;
+  const createdAt = msgRes.rows[0].created_at;
 
-      await marcarUnread(cliente_id, modelo_id, unreadFor);
+  // associa conteúdos
+  for (const cid of conteudos) {
+    await db.query(`
+      INSERT INTO messages_conteudos (message_id, conteudo_id)
+      VALUES ($1, $2)
+    `, [messageId, cid]);
+  }
 
-      io.to(sala).emit("newMessage", {
-        id: messageId,
-        cliente_id,
-        modelo_id,
-        sender,
-        tipo: "conteudo",
-        conteudos: r.rows,
-        preco,
-        created_at: createdAt
-      });
+  // busca mídias completas (COM THUMB)
+  const midiasRes = await db.query(`
+    SELECT
+      c.url,
+      c.tipo AS tipo_media,
+      c.thumbnail_url
+    FROM conteudos c
+    WHERE c.id = ANY($1)
+  `, [conteudos]);
 
-      atualizarListas(cliente_id, modelo_id, "📦 Conteúdo", sender);
-    }
+  const midias = midiasRes.rows;
+
+  await marcarUnread(cliente_id, modelo_id, unreadFor);
+
+  io.to(sala).emit("newMessage", {
+    id: messageId,
+    cliente_id,
+    modelo_id,
+    sender,
+    tipo: "conteudo",
+    midias,
+    quantidade: midias.length,
+    preco,
+    visto: false,
+    created_at: createdAt
+  });
+
+  atualizarListas(cliente_id, modelo_id, "[Conteúdo]", sender);
+}
 
   } catch (err) {
     console.error("🔥 ERRO sendMessage:", err);
