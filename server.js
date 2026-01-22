@@ -807,6 +807,20 @@ io.to(sala).emit("newMessage", {
  io.to(`modelo_${modelo_id}`).emit("listUpdate");
 io.to(`cliente_${cliente_id}`).emit("listUpdate");
 
+io.to(`modelo_${modelo_id}`).emit("chatListUpdate", {
+  chat_id: cliente_id,
+  last_message: text,
+  last_time: new Date(),
+  unread_delta: sender === "cliente" ? 1 : 0
+});
+
+io.to(`cliente_${cliente_id}`).emit("chatListUpdate", {
+  chat_id: modelo_id,
+  last_message: text,
+  last_time: new Date(),
+  unread_delta: sender === "modelo" ? 1 : 0
+});
+
   } catch (err) {
     console.error("🔥 ERRO AO SALVAR MENSAGEM:", err);
   }
@@ -833,6 +847,15 @@ socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
  );
  io.to(`modelo_${modelo_id}`).emit("listUpdate");
 io.to(`cliente_${cliente_id}`).emit("listUpdate");
+
+io.to(`modelo_${modelo_id}`).emit("chatListSeen", {
+  chat_id: cliente_id
+});
+
+io.to(`cliente_${cliente_id}`).emit("chatListSeen", {
+  chat_id: modelo_id
+});
+
 
     // 2️⃣ busca histórico base
     const result = await db.query(
@@ -904,6 +927,8 @@ ORDER BY created_at ASC;
     console.error("❌ Erro getHistory:", err);
   }
  });
+
+ 
 
 // 📦 ENVIO DE CONTEÚDO (1 ou N mídias) — BLOCO FINAL CORRETO
 socket.on("sendConteudo", async ({ cliente_id, modelo_id, conteudos_ids, preco }) => {
@@ -997,6 +1022,20 @@ socket.on("sendConteudo", async ({ cliente_id, modelo_id, conteudos_ids, preco }
       created_at: new Date()
     });
 
+    io.to(`modelo_${modelo_id}`).emit("chatListUpdate", {
+  chat_id: cliente_id,
+  last_message: "[Conteúdo]",
+  last_time: new Date(),
+  unread_delta: 0
+});
+
+io.to(`cliente_${cliente_id}`).emit("chatListUpdate", {
+  chat_id: modelo_id,
+  last_message: "[Conteúdo]",
+  last_time: new Date(),
+  unread_delta: 1
+});
+
   } catch (err) {
     console.error("❌ Erro sendConteudo:", err);
   }
@@ -1083,8 +1122,6 @@ socket.on("marcarConteudoVisto", async ({ message_id, cliente_id, modelo_id }) =
     console.error("❌ Erro marcarConteudoVisto:", err);
   }
 });
-
-
 
 });
 // ===============================
