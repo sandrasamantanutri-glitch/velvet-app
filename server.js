@@ -1821,13 +1821,12 @@ app.get("/api/chats", auth, async (req, res) => {
 
 const chats = result.rows.map(r => ({
   chat_id: r.cliente_id,
-  name: r.name,
-  avatar: r.avatar, // pode ser null
+  name: r.other_name,
+  avatar: r.other_avatar ?? null,
   last_message: r.last_message ?? "",
   time: r.last_time,
   unread: r.has_unread && r.unread_for === role ? 1 : 0
 }));
-
 res.json(chats);
 });
 
