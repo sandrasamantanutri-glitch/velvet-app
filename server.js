@@ -726,105 +726,102 @@ socket.on("joinChat", ({ sala }) => {
 });
 
 // 💬 ENVIAR MENSAGEM (ÚNICO)
-socket.on("sendMessage", async ({ cliente_id, modelo_id, text }) => {
-  if (!socket.user) {
-    console.log("❌ Socket sem usuário");
-    return;
-  }
-  
+socket.on("sendMessage", async (data) => {
+  if (!socket.user) return;
+
+  const {
+    cliente_id,
+    modelo_id,
+    text,
+    tipo = "texto",
+    conteudos = [],
+    preco = 0
+  } = data;
+
   // 🔒 segurança por role
   if (socket.user.role === "cliente" && socket.user.id !== cliente_id) return;
   if (socket.user.role === "modelo"  && socket.user.id !== modelo_id) return;
 
-  if (!cliente_id || !modelo_id || !text) {
-    console.log("❌ sendMessage inválido", { cliente_id, modelo_id, text });
-    return;
-  }
+  if (!cliente_id || !modelo_id) return;
 
   const sala = `chat_${cliente_id}_${modelo_id}`;
-  const sender = socket.user.role;               // "cliente" | "modelo"
+  const sender = socket.user.role;
   const unreadFor = sender === "cliente" ? "modelo" : "cliente";
 
   try {
-    // 1️⃣ SALVA NO BANCO E RETORNA ID 🔥
-const result = await db.query(`
-  INSERT INTO messages
-    (cliente_id, modelo_id, sender, tipo, text)
-  VALUES ($1, $2, $3, 'texto', $4)
-  RETURNING id
-`, 
-[cliente_id, modelo_id, sender, text]);
+    // ===============================
+    // 🟢 TEXTO (FLUXO ANTIGO, IGUAL)
+    // ===============================
+    if (tipo === "texto") {
+      if (!text) return;
 
-const messageId = result.rows[0].id;
+      const result = await db.query(`
+        INSERT INTO messages
+          (cliente_id, modelo_id, sender, tipo, text)
+        VALUES ($1, $2, $3, 'texto', $4)
+        RETURNING id, created_at
+      `, [cliente_id, modelo_id, sender, text]);
 
-    // 2️⃣ MARCA COMO NÃO LIDA PARA QUEM NÃO ENVIOU
-    await db.query(
-      `
-      INSERT INTO unread (cliente_id, modelo_id, unread_for, has_unread)
-      VALUES ($1, $2, $3, true)
-      ON CONFLICT (cliente_id, modelo_id)
-      DO UPDATE SET
-        unread_for = EXCLUDED.unread_for,
-        has_unread = true
-      `,
-      [cliente_id, modelo_id, unreadFor]
-    );
+      const messageId = result.rows[0].id;
+      const createdAt = result.rows[0].created_at;
 
-    // 3️⃣ AVISO DE NÃO LIDA (TEMPO REAL)
-    if (unreadFor === "modelo") {
-      const sidModelo = onlineModelos[modelo_id];
-      if (sidModelo) {
-        io.to(sidModelo).emit("unreadUpdate", {
-          cliente_id,
-          modelo_id,
-          unread: true
-        });
-      }
+      await marcarUnread(cliente_id, modelo_id, unreadFor);
+
+      io.to(sala).emit("newMessage", {
+        id: messageId,
+        cliente_id,
+        modelo_id,
+        sender,
+        tipo: "texto",
+        text,
+        created_at: createdAt
+      });
+
+      atualizarListas(cliente_id, modelo_id, text, sender);
+      return;
     }
 
-    if (unreadFor === "cliente") {
-      const sidCliente = onlineClientes[cliente_id];
-      if (sidCliente) {
-        io.to(sidCliente).emit("unreadUpdate", {
-          cliente_id,
-          modelo_id,
-          unread: true
-        });
-      }
+    // ===============================
+    // 🟣 CONTEÚDO (NOVO FLUXO)
+    // ===============================
+    if (tipo === "conteudo" && conteudos.length > 0) {
+      const result = await db.query(`
+        INSERT INTO messages
+          (cliente_id, modelo_id, sender, tipo, preco)
+        VALUES ($1, $2, $3, 'conteudo', $4)
+        RETURNING id, created_at
+      `, [cliente_id, modelo_id, sender, preco]);
+
+      const messageId = result.rows[0].id;
+      const createdAt = result.rows[0].created_at;
+
+      const r = await db.query(`
+        SELECT id, url, tipo, thumbnail_url
+        FROM conteudos
+        WHERE id = ANY($1)
+      `, [conteudos]);
+
+      await marcarUnread(cliente_id, modelo_id, unreadFor);
+
+      io.to(sala).emit("newMessage", {
+        id: messageId,
+        cliente_id,
+        modelo_id,
+        sender,
+        tipo: "conteudo",
+        conteudos: r.rows,
+        preco,
+        created_at: createdAt
+      });
+
+      atualizarListas(cliente_id, modelo_id, "📦 Conteúdo", sender);
     }
-
- // 7️⃣ META UPDATE (status / horário)
- // 🔥 ENVIA PARA A SALA (CLIENTE + MODELO)
-io.to(sala).emit("newMessage", {
-  id: messageId,
-  cliente_id,
-  modelo_id,
-  sender,
-  tipo: "texto",
-  text,
-  created_at: new Date()
- });
- io.to(`modelo_${modelo_id}`).emit("listUpdate");
-io.to(`cliente_${cliente_id}`).emit("listUpdate");
-
-io.to(`modelo_${modelo_id}`).emit("chatListUpdate", {
-  chat_id: cliente_id,
-  last_message: text,
-  last_time: new Date(),
-  unread_delta: sender === "cliente" ? 1 : 0
-});
-
-io.to(`cliente_${cliente_id}`).emit("chatListUpdate", {
-  chat_id: modelo_id,
-  last_message: text,
-  last_time: new Date(),
-  unread_delta: sender === "modelo" ? 1 : 0
-});
 
   } catch (err) {
-    console.error("🔥 ERRO AO SALVAR MENSAGEM:", err);
+    console.error("🔥 ERRO sendMessage:", err);
   }
 });
+
 
 // 📜 HISTÓRICO DO CHAT
 socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
