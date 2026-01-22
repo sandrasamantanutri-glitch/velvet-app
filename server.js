@@ -1821,7 +1821,8 @@ app.get("/api/chats", auth, async (req, res) => {
 
 const chats = result.rows.map(r => ({
   chat_id: r.cliente_id,
-  name: r.other_name,
+  name: r.other_name || r.cliente_nome,
+  avatar: r.avatar || null,
   last_message: r.last_message ?? "",
   time: r.last_time,
   unread: r.has_unread && r.unread_for === role ? 1 : 0
