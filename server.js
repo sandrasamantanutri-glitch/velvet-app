@@ -804,6 +804,8 @@ io.to(sala).emit("newMessage", {
   text,
   created_at: new Date()
  });
+ io.to(`modelo_${modelo_id}`).emit("listUpdate");
+io.to(`cliente_${cliente_id}`).emit("listUpdate");
 
   } catch (err) {
     console.error("🔥 ERRO AO SALVAR MENSAGEM:", err);
@@ -829,6 +831,8 @@ socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
     socket.user.role   // 'cliente' | 'modelo'
   ]
  );
+ io.to(`modelo_${modelo_id}`).emit("listUpdate");
+io.to(`cliente_${cliente_id}`).emit("listUpdate");
 
     // 2️⃣ busca histórico base
     const result = await db.query(
