@@ -1821,8 +1821,8 @@ app.get("/api/chats", auth, async (req, res) => {
 
 const chats = result.rows.map(r => ({
   chat_id: r.cliente_id,
-  name: r.other_name || r.cliente_nome,
-  avatar: r.avatar || null,
+  name: r.name,
+  avatar: r.avatar, // pode ser null
   last_message: r.last_message ?? "",
   time: r.last_time,
   unread: r.has_unread && r.unread_for === role ? 1 : 0
@@ -1830,6 +1830,40 @@ const chats = result.rows.map(r => ({
 
 res.json(chats);
 });
+
+// ===============================
+// CHAT — MENSAGENS (MODELO)
+// ===============================
+app.get("/api/chat/messages/:cliente_id", authModelo, async (req, res) => {
+  try {
+    const clienteId = req.params.cliente_id;
+    const modeloId = req.user.id;
+
+    const { rows } = await db.query(`
+      SELECT
+        id,
+        text,
+        sender,
+        created_at,
+        tipo,
+        conteudo_id,
+        preco,
+        visto,
+        lida
+      FROM messages
+      WHERE cliente_id = $1
+        AND modelo_id = $2
+      ORDER BY created_at ASC
+    `, [clienteId, modeloId]);
+
+    res.json(rows);
+
+  } catch (err) {
+    console.error("❌ Erro mensagens chat:", err);
+    res.status(500).json({ error: "Erro ao carregar mensagens" });
+  }
+});
+
 
 
 
