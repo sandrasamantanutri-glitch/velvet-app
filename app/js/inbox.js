@@ -70,36 +70,50 @@ async function carregarListaClientes() {
     div.onclick = () => abrirChat(c.cliente_id);
 
     div.innerHTML = `
-      <div class="avatar">
-        ${c.avatar ? `<img src="${c.avatar}" />` : ""}
+  <div class="avatar">
+    ${c.avatar ? `<img src="${c.avatar}" />` : ""}
+  </div>
+
+  <div class="chat-body">
+    
+    <!-- LINHA 1 -->
+    <div class="chat-top">
+      <span class="chat-name">
+        ${c.username || c.nome || "Cliente"}
+      </span>
+
+      <span class="chat-time">
+        ${formatarHora(c.ultima_mensagem_em)}
+      </span>
+    </div>
+
+    <!-- LINHA 2 -->
+    <div class="chat-bottom">
+      <span class="chat-last">
+        ${c.ultima_mensagem || ""}
+      </span>
+
+      <div class="chat-badges">
+        ${
+          c.nao_lidas > 1
+            ? `<span class="badge">${c.nao_lidas}</span>`
+            : c.nao_lidas === 1
+              ? `<span class="badge-dot"></span>`
+              : ""
+        }
+
+        ${
+          c.ultimo_sender === "cliente" &&
+          c.ultima_vista === true &&
+          c.nao_lidas === 0
+            ? `<span class="badge-reply">Necessita responder</span>`
+            : ""
+        }
       </div>
+    </div>
 
-      <div class="chat-body">
-        <div class="chat-top">
-          <strong>${c.username || c.nome || "Cliente"}</strong>
-         <span class="chat-time">
-  ${formatarHora(c.ultima_mensagem_em)}
-</span>
-
-        </div>
-
-        <div class="chat-last">
-          <span>${c.ultima_mensagem || ""}</span>
-${c.nao_lidas > 1
-  ? `<span class="badge">${c.nao_lidas}</span>`
-  : c.nao_lidas === 1
-    ? `<span class="badge-dot"></span>`
-    : ""
-}
-
-${c.ultimo_sender === "cliente" && c.ultima_vista === true
-  ? `<span class="badge-reply">Necessita responder</span>`
-  : ""
-}
-        </div>
-      </div>
-    `;
-
+  </div>
+`;
     inboxEl.appendChild(div);
   });
 }
