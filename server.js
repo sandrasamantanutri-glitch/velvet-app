@@ -1725,6 +1725,13 @@ app.get("/api/conteudos/me", authModelo, async (req, res) => {
   }
 });
 
+import path from "path";
+// ou: const path = require("path");
+
+app.get("/manifest.json", (req, res) => {
+  res.setHeader("Content-Type", "application/manifest+json");
+  res.sendFile(path.join(__dirname, "public/manifest.json"));
+});
 
 
 // ===============================
