@@ -30,24 +30,26 @@ if (isApp) {
 // ===============================
 // PWA INSTALL
 // ===============================
-let deferredPrompt = null;
+let deferredPrompt;
+const btnInstall = document.getElementById("btnInstallPWA");
 
+// captura evento do browser
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
   deferredPrompt = e;
-  console.log("📲 PWA disponível para instalação");
+  btnInstall.hidden = false;
 });
 
-window.installPWA = async function () {
-  if (!deferredPrompt) {
-    alert("Instalação indisponível neste dispositivo");
-    return;
-  }
+// clique no botão
+btnInstall?.addEventListener("click", async () => {
+  if (!deferredPrompt) return;
 
   deferredPrompt.prompt();
-  await deferredPrompt.userChoice;
+  const choice = await deferredPrompt.userChoice;
+
   deferredPrompt = null;
-};
+  btnInstall.hidden = true;
+});
 
 // ===============================
 // ESTADO GLOBAL
