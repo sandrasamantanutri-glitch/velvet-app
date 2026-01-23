@@ -2,11 +2,7 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
-  <title>Velvet · Conversas</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <button class="btn-logout" onclick="logout()" aria-label="Sair">
-  <img src="./assets/logout.png" alt="Sair" />
-  </button>
 
   <link rel="stylesheet" href="./css/inbox.css" />
 
@@ -17,8 +13,16 @@
   <meta name="theme-color" content="#7B2CFF" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-
 </head>
+
+<header class="topbar">
+  <h1>Conversas</h1>
+
+  <button class="btn-logout" onclick="logout()" aria-label="Sair">
+    <img src="./assets/logout.png" alt="Sair" />
+  </button>
+</header>
+
 
 <body>
   <div class="page-wrapper">
@@ -80,8 +84,7 @@
 
   <a
     href="https://velvet-test-production.up.railway.app/modelo/relatorio"
-    target="_blank"
-    class="nav-item"
+    target="_blank" rel="noopener noreferrer" class="nav-item"
   >
     <img src="./assets/ganhos.png" alt="Ganhos" />
     <span>Ganhos</span>
@@ -89,8 +92,7 @@
 
   <a
     href="https://velvet-test-production.up.railway.app/app/inbox.html"
-    target="_blank"
-    class="nav-item active"
+   target="_blank" rel="noopener noreferrer" class="nav-item active"
   >
     <img src="./assets/messages.png" alt="Messages" />
     <span>Messages</span>
@@ -98,8 +100,7 @@
 
   <a
     href="https://velvet-test-production.up.railway.app/profile.html"
-    target="_blank"
-    class="nav-item"
+    target="_blank" rel="noopener noreferrer" class="nav-item"
   >
     <img src="./assets/perfil.png" alt="Perfil" />
     <span>Perfil</span>
