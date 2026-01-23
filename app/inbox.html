@@ -5,40 +5,18 @@
   <title>Inbox</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <link rel="stylesheet" href="./css/app.css" />
+  <link rel="stylesheet" href="./css/inbox.css" />
 </head>
+
 <body class="app">
 
-  <header class="app-header">
-    <h1>Chats</h1>
-  </header>
+<header class="topbar">
+  <h1>Chats</h1>
+</header>
 
-  <main class="inbox">
-    <div class="chat-item" onclick="openChat(1)">
-      <img src="https://i.pravatar.cc/100?img=1" />
-      <div class="chat-info">
-        <strong>Cliente 1</strong>
-        <span>Última mensagem aqui</span>
-      </div>
-      <div class="chat-meta">
-        <small>18:30</small>
-        <span class="badge">2</span>
-      </div>
-    </div>
+<main id="inbox" class="inbox"></main>
 
-    <div class="chat-item" onclick="openChat(2)">
-      <img src="https://i.pravatar.cc/100?img=2" />
-      <div class="chat-info">
-        <strong>Cliente 2</strong>
-        <span>Oi linda 😍</span>
-      </div>
-      <div class="chat-meta">
-        <small>17:10</small>
-      </div>
-    </div>
-  </main>
-
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="./js/inbox.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="./js/inbox.js"></script>
 </body>
 </html>
