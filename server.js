@@ -7,7 +7,6 @@ const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET;
 console.log("JWT_SECRET carregado?", JWT_SECRET);
-const cors = require("cors");
 const express = require("express");
 const db = require("./db");
 const bcrypt = require("bcrypt");
@@ -30,7 +29,24 @@ app.use((req, res, next) => {
   next();
 });
 app.set("trust proxy", 1);
+
 const server = http.createServer(app);
+
+ const io = new Server(server, {
+  cors: {
+    origin: [
+      "https://velvet.lat",
+      "https://www.velvet.lat",
+      "https://app-production-e7e1.up.railway.app",
+      "https://velvet-test-production.up.railway.app",
+      "https://velvetapp-production.up.railway.app"
+    ],
+    methods: ["GET", "POST"],
+    credentials: true
+  },
+  transports: ["websocket", "polling"]
+ });
+ 
 const multer = require("multer");
 const onlineClientes = {};
 const onlineModelos = {};
@@ -55,10 +71,10 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/admin", express.static(path.join(__dirname, "admin-pages")));
 
 const allowedOrigins = [
-  "https://velvet.lat",
-  "https://www.velvet.lat",
-  "https://app-production-e7e1.up.railway.app",
-  "https://velvet-test-production.up.railway.app"
+  "http://localhost:3000",
+  "http://localhost:8080",
+  "https://velvet-test-production.up.railway.app",
+  "https://velvetapp-production.up.railway.app"
 ];
 const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
@@ -393,20 +409,6 @@ if (
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
-});
-
-const io = new Server(server, {
-  cors: {
-    origin: [
-      "https://velvet.lat",
-      "https://www.velvet.lat",
-      "https://app-production-e7e1.up.railway.app",
-      "https://velvet-test-production.up.railway.app"
-    ],
-    methods: ["GET", "POST"],
-    credentials: true
-  },
-  transports: ["websocket", "polling"]
 });
 
 // ===============================
@@ -1114,6 +1116,7 @@ socket.on("marcarConteudoVisto", async ({ message_id, cliente_id, modelo_id }) =
   } catch (err) {
     console.error("❌ Erro marcarConteudoVisto:", err);
   }
+ });
 
   //SOCKETS APP
   // 📥 SALA DA INBOX DO MODELO (NOVO)
@@ -1121,10 +1124,7 @@ socket.on("joinInbox", ({ modelo_id }) => {
   if (!modelo_id) return;
   socket.join(`inbox_${modelo_id}`);
   console.log("📥 Entrou na inbox do modelo", modelo_id);
-});
-
-});
-
+ });
 
 
 });
