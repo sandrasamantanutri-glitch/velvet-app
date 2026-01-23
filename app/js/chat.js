@@ -23,13 +23,6 @@ let cliente_id = null;
 let chatAtivo = null;
 let conteudosVistosCliente = new Set();
 
-// 🔐 SOCKET AUTH
-socket.on("connect", () => {
-  socket.emit("auth", {
-    token: localStorage.getItem("token")
-  });
-});
-
 // 📜 HISTÓRICO
 socket.on("chatHistory", mensagens => {
   const chat = document.getElementById("chatBox");
