@@ -106,7 +106,7 @@ socket.on("inboxMessage", () => {
 // HELPERS
 // ===============================
 function abrirChat(clienteId) {
-  location.href = `/app/chat.html?cliente=${clienteId}`;
+  window.location.href = `/app/chat.html?cliente=${clienteId}`;
 }
 
 function logout() {

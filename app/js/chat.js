@@ -37,6 +37,21 @@ socket.on("chatHistory", mensagens => {
 // INIT
 // ===============================
 document.addEventListener("DOMContentLoaded", async () => {
+    const res = await fetch("/api/me", {
+    headers: { Authorization: "Bearer " + token }
+  });
+
+  const me = await res.json();
+  modelo_id = me.id;
+
+  cliente_id = clienteId;
+
+  sala = `chat_${cliente_id}_${modelo_id}`;
+
+  socket.emit("joinChat", { sala });
+  socket.emit("getHistory", { cliente_id, modelo_id });
+
+  socket.emit("loginModelo", modelo_id);
 
   const sendBtn = document.getElementById("sendBtn");
   const input   = document.getElementById("messageInput");
