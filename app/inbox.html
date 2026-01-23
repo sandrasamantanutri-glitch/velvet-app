@@ -17,16 +17,21 @@
 </head>
 
 <body>
-  <div class="page-wrapper">
+<div class="page-wrapper">
 
-    <header class="topbar">
-      <h1>Conversas</h1>
-        <button class="btn-logout" onclick="logout()" aria-label="Sair">
-  <img src="./assets/logout.png" alt="Sair" />
-  </button>
-    </header>
+  <header class="topbar">
+    <h1>Conversas</h1>
+    <button class="btn-logout" onclick="logout()" aria-label="Sair">
+      <img src="./assets/logout.png" alt="Sair" />
+    </button>
+  </header>
 
-    <main id="inbox" class="inbox">
+  <!-- 🔥 CONTAINER DE SCROLL -->
+  <div class="content">
+    <main id="inbox" class="inbox"></main>
+  </div>
+</div>
+
       <!-- ITEM DO CHAT -->
       <!--
       Estados esperados (JS controla classes/labels):

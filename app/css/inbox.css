@@ -319,3 +319,88 @@ html, body {
   transform: scale(0.92);
 }
 
+/* ===============================
+   LAYOUT BASE (APP)
+================================ */
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden; /* 🔒 trava o body */
+}
+
+.page-wrapper {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #E1E1E1;
+}
+
+/* ===============================
+   HEADER FIXO
+================================ */
+.topbar {
+  flex-shrink: 0;
+
+  position: sticky;
+  top: 0;
+  z-index: 20;
+
+  height: 56px;
+  background: #E1E1E1;
+  border-bottom: 1px solid #C9C9C9;
+
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  padding-top: env(safe-area-inset-top);
+}
+
+@supports (-webkit-touch-callout: none) {
+  .topbar {
+    height: calc(56px + env(safe-area-inset-top));
+  }
+}
+
+.topbar h1 {
+  flex: 1;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1E1E26;
+}
+
+/* ===============================
+   FOOTER FIXO
+================================ */
+.footer-nav {
+  flex-shrink: 0;
+
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+
+  height: 64px;
+  background: #E1E1E1;
+  border-top: 1px solid #C9C9C9;
+
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ===============================
+   CONTEÚDO SCROLLÁVEL
+================================ */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* iOS smooth */
+  background: #fff;
+}
+
+.inbox {
+  padding-bottom: 8px; /* espaço interno */
+}
+
