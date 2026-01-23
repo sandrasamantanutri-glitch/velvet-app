@@ -1,16 +1,24 @@
 // ===============================
-// INDEX — SCRIPT LIMPO (VELVET)
+// INDEX — SCRIPT FINAL (VELVET)
 // ===============================
 
-// 🔁 REDIRECIONAMENTO SE LOGADO
+// ===============================
+// REDIRECIONAMENTO SE JÁ LOGADO
+// ===============================
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
 
 if (token && role) {
-  window.location.href =
-    role === "modelo" ? "/app/inbox.html";
+  if (role === "modelo") {
+    window.location.href = "/chat-app.html";
+  } else {
+    window.location.href = "/clientHome.html";
+  }
 }
 
+// ===============================
+// DETECTA APP / PWA
+// ===============================
 const isApp =
   window.matchMedia("(display-mode: standalone)").matches ||
   window.navigator.standalone === true;
@@ -20,7 +28,7 @@ if (isApp) {
 }
 
 // ===============================
-// PWA INSTALL HANDLER (SEM DOM)
+// PWA INSTALL
 // ===============================
 let deferredPrompt = null;
 
@@ -30,7 +38,6 @@ window.addEventListener("beforeinstallprompt", (e) => {
   console.log("📲 PWA disponível para instalação");
 });
 
-// função global para disparar instalação
 window.installPWA = async function () {
   if (!deferredPrompt) {
     alert("Instalação indisponível neste dispositivo");
@@ -45,11 +52,11 @@ window.installPWA = async function () {
 // ===============================
 // ESTADO GLOBAL
 // ===============================
-let modalMode = "login"; 
-let pendingAction = null; 
+let modalMode = "login";       // login | register
+let pendingAction = null;     // login | register
 
 // ===============================
-// AGE GATE
+// AGE GATE (+18)
 // ===============================
 function openAgeGate(action) {
   pendingAction = action;
@@ -64,11 +71,9 @@ function openAgeGate(action) {
   document.getElementById("ageModal")?.classList.remove("hidden");
 }
 
-function confirmAge(isAdult) {
+window.confirmAge = function (isAdult) {
   if (!isAdult) {
-    alert("Você precisa ter 18 anos ou mais para acessar a Plataforma.");
-    
-    document.getElementById("ageModal")?.classList.add("hidden");
+    alert("Você precisa ter 18 anos ou mais para acessar a plataforma.");
     window.location.href = "/index.html";
     return;
   }
@@ -76,7 +81,7 @@ function confirmAge(isAdult) {
   localStorage.setItem("ageConfirmed", "true");
   document.getElementById("ageModal")?.classList.add("hidden");
   proceedAfterAge();
-}
+};
 
 function proceedAfterAge() {
   if (pendingAction === "login") {
@@ -91,18 +96,20 @@ function proceedAfterAge() {
   pendingAction = null;
 }
 
+// ===============================
+// MODAIS (UTIL)
+// ===============================
 function closeAllModals() {
   document.getElementById("loginModal")?.classList.add("hidden");
   document.getElementById("legalModal")?.classList.add("hidden");
   document.getElementById("ageModal")?.classList.add("hidden");
 }
 
-
 // ===============================
-// MODAL LOGIN / REGISTER
+// LOGIN / REGISTER MODAL
 // ===============================
 window.selectRole = function () {
-  openLoginModal();
+  openAgeGate("login");
 };
 
 window.startRegister = function () {
@@ -130,25 +137,27 @@ window.switchToLogin = function () {
 };
 
 function updateModal() {
-  const title = document.getElementById("modalTitle");
-  const submit = document.getElementById("modalSubmit");
-  const roleSelect = document.getElementById("registerRole");
-  const switchLogin = document.getElementById("switchToLogin");
-  const switchRegister = document.querySelector(".modal-switch");
+  const title        = document.getElementById("modalTitle");
+  const submit       = document.getElementById("modalSubmit");
+  const roleSelect   = document.getElementById("registerRole");
+  const switchLogin  = document.getElementById("switchToLogin");
+  const switchReg    = document.querySelector(".modal-switch");
 
   if (modalMode === "login") {
     title.textContent = "Entrar";
     submit.textContent = "Entrar";
     submit.onclick = login;
+
     roleSelect.classList.add("hidden");
-    switchRegister.classList.remove("hidden");
+    switchReg.classList.remove("hidden");
     switchLogin.classList.add("hidden");
   } else {
     title.textContent = "Criar Conta";
     submit.textContent = "Criar conta";
     submit.onclick = register;
+
     roleSelect.classList.remove("hidden");
-    switchRegister.classList.add("hidden");
+    switchReg.classList.add("hidden");
     switchLogin.classList.remove("hidden");
   }
 }
@@ -172,33 +181,35 @@ async function login() {
   });
 
   const data = await res.json();
-  if (!res.ok) return alert(data.erro);
+  if (!res.ok) {
+    alert(data.erro || "Erro ao fazer login");
+    return;
+  }
 
   localStorage.setItem("token", data.token);
   localStorage.setItem("role", data.role);
 
+  // MODELO
   if (data.role === "modelo") {
-  window.location.href = "/chat-app.html";
-  return;
-}
-// 🔥 CLIENTE
-const ref = localStorage.getItem("ref_modelo");
+    window.location.href = "/chat-app.html";
+    return;
+  }
 
-if (ref) {
-  // simula clique no feed
-  localStorage.setItem("modelo_id", ref);
-  localStorage.removeItem("ref_modelo");
+  // CLIENTE
+  const ref = localStorage.getItem("ref_modelo");
 
-  window.location.href = "/profile.html";
-} else {
-  window.location.href = "/clientHome.html";
+  if (ref) {
+    localStorage.setItem("modelo_id", ref);
+    localStorage.removeItem("ref_modelo");
+    window.location.href = "/profile.html";
+  } else {
+    window.location.href = "/clientHome.html";
+  }
 }
 
-}
 // ===============================
 // REGISTER
 // ===============================
-
 function emailValido(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
@@ -218,7 +229,6 @@ async function register() {
     return;
   }
 
-  // 🔹 PEGA A ORIGEM DO CLIENTE (já salva no index.html)
   const ref = localStorage.getItem("ref_modelo");
   const src = localStorage.getItem("origem_trafego");
 
@@ -231,52 +241,51 @@ async function register() {
       role,
       nome: email.split("@")[0],
       ageConfirmed: true,
-
-      ref,   // modelo que trouxe
-      src    // instagram / tiktok
+      ref,
+      src
     })
   });
 
   const data = await res.json();
-  if (!res.ok) return alert(data.erro);
+  if (!res.ok) {
+    alert(data.erro || "Erro ao criar conta");
+    return;
+  }
 
   alert("Conta criada com sucesso! Faça login.");
   switchToLogin();
 }
 
 // ===============================
-// MODAL LEGAL (TERMOS / POLÍTICAS)
+// MODAL LEGAL
 // ===============================
 window.openLegalModal = function (event, url) {
   event.preventDefault();
-
   closeAllModals();
 
-  const modal = document.getElementById("legalModal");
+  const modal  = document.getElementById("legalModal");
   const iframe = document.getElementById("modalFrame");
 
-  if (!modal || !iframe) {
-    console.error("❌ Modal legal não encontrado no DOM");
-    return;
-  }
+  if (!modal || !iframe) return;
 
   iframe.src = url;
   modal.classList.remove("hidden");
 };
 
 window.closeLegalModal = function () {
-  const modal = document.getElementById("legalModal");
+  const modal  = document.getElementById("legalModal");
   const iframe = document.getElementById("modalFrame");
 
   if (iframe) iframe.src = "";
   if (modal) modal.classList.add("hidden");
 };
 
-
-
+// ===============================
+// LOGOUT (UTIL)
+// ===============================
 window.logout = function () {
   localStorage.removeItem("token");
   localStorage.removeItem("role");
-  localStorage.removeItem("ageConfirmed"); 
-  window.location.href = "./app/index.html";
+  localStorage.removeItem("ageConfirmed");
+  window.location.href = "/index.html";
 };

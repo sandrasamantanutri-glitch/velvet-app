@@ -1,4 +1,6 @@
-/* RESET */
+/* =========================
+   RESET
+========================= */
 * {
   box-sizing: border-box;
   font-family: "Poppins", sans-serif;
@@ -20,19 +22,18 @@ body {
 .page-wrapper {
   min-height: 100vh;
   display: flex;
-  justify-content: center;   /* horizontal */
-  align-items: center;       /* vertical */
+  justify-content: center;
+  align-items: center;
 }
 
 /* =========================
    LAYOUT PRINCIPAL
 ========================= */
 .landing {
-  width: 1400px;             /* 🔑 ESSENCIAL */
-  max-width: 90%;
+  width: 1400px;
+  max-width: 95%;
   display: flex;
-  background: transparent;
-  flex-direction: row-reverse; /* 🔥 INVERTE */
+  gap: 60px;
 }
 
 /* =========================
@@ -41,7 +42,7 @@ body {
 .landing-cover {
   flex: 1;
   overflow: hidden;
-  border-radius: 24px 0 0 24px;
+  border-radius: 24px;
 }
 
 .landing-cover img {
@@ -51,24 +52,23 @@ body {
 }
 
 /* =========================
-   LOGIN (BARRA CINZA)
+   LOGIN CARD
 ========================= */
 .landing-login {
   width: 420px;
   background: #dbcafa;
-  padding: 40px;
+  padding: 48px 40px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  margin-left: 0px;         /* espaço real da capa */
-  margin-right: 60px;
-   border-radius: 24px;
+  align-items: center;
+  border-radius: 24px;
 }
 
 /* LOGO */
 .logo {
-  width: 250px;
-  margin: -40px auto 40px;   /* sobe o logo */
+  width: 240px;
+  margin: 0 auto 32px;
 }
 
 /* =========================
@@ -82,152 +82,56 @@ body {
   width: 100%;
   padding: 14px 18px;
   border-radius: 12px;
+  background: #ffffff;
   color: #7B2CFF;
   border: none;
   font-size: 16px;
   font-weight: 500;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   cursor: pointer;
   margin-bottom: 16px;
   transition: all 0.25s ease;
 }
-.login-box {
-  margin-top: -80px;  /* 🔼 sobe os botões */
-}
-
-.btn span {
-  font-size: 18px;
-}
 
 .btn:hover {
   transform: translateY(-2px);
-}
-
-/* CRIADOR */
-.btn-creator {
-  background: #ffffff;
-  color: #7B2CFF;
   box-shadow: 0 6px 18px rgba(37,99,235,0.15);
 }
 
-/* MEMBRO */
-.btn-member {
-  background: #ffffff;
-  color: #7B2CFF;
-  box-shadow: 0 6px 18px rgba(37,99,235,0.15); 
-}
-
 /* =========================
-   INPUTS
+   FOOTER LINKS
 ========================= */
-.login-input {
-  margin-top: 10px;
-}
-
-.login-input input {
-  width: 100%;
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px solid #ccc;
-  margin-bottom: 10px;
-  font-size: 15px;   
-}
-
-/* =========================
-   FOOTER
-========================= */
-.footer-links {
-  margin-top: 30px;
-  text-align: center;
-}
-
-.footer-links a {
-  font-size: 13px;
-  color: #7B2CFF;
-  text-decoration: none;
-  margin: 0 10px;
-}
-
-.footer-links a:hover {
-  text-decoration: underline;
-}
-
+.footer-links,
 .footer-linksC {
-  margin-top: 30px;
+  margin-top: 28px;
   text-align: center;
 }
 
+.footer-links a,
 .footer-linksC a {
   font-size: 13px;
   color: #7B2CFF;
   text-decoration: none;
-  margin: 0 10px;
+  margin: 0 8px;
 }
 
+.footer-links a:hover,
 .footer-linksC a:hover {
   text-decoration: underline;
 }
-/* =========================
-   UTILIDADES
-========================= */
-.hidden {
-  display: none;
-}
 
 /* =========================
-   RESPONSIVO
+   MODAL BASE
 ========================= */
-@media (max-width: 900px) {
-  .landing {
-    flex-direction: column;
-    width: 100%;
-  }
-
-  .landing-cover {
-    display: none;
-  }
-
-  .landing-login {
-    width: 100%;
-    margin-left: 0;
-    border-radius: 24px;
-    
-  }
-}
-
-.landing-login {
-  text-align: center;
-  align-items: center;
-}
-
-.login-box,
-.login-input {
-  width: 100%;
-}
-
-.btn {
-  justify-content: center;
-  gap: 8px;
-}
-
-/* MODAL BASE */
 .modal {
   position: fixed;
   inset: 0;
   z-index: 9999;
 }
 
-.modal.hidden {
-  display: none;
-}
-
-/* FUNDO */
 .modal-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0,0,0,0.55);
   backdrop-filter: blur(4px);
 }
 
@@ -239,7 +143,7 @@ body {
   margin: auto;
   top: 50%;
   transform: translateY(-50%);
-  background: white;
+  background: #ffffff;
   border-radius: 18px;
   padding: 28px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.25);
@@ -252,23 +156,22 @@ body {
 
 .modal-box h2 {
   margin: 0 0 6px;
-  text-align: center;
   color: #7B2CFF;
 }
 
 /* INPUTS */
-.modal-box input {
+.modal-box input,
+.modal-box select {
   padding: 12px 14px;
   border-radius: 12px;
   border: 1px solid #ddd;
   font-size: 15px;
 }
 
-/* BOTÃO */
+/* BOTÃO PRINCIPAL */
 .modal-box .btn-primary {
   background: linear-gradient(135deg, #7B2CFF, #9B5CFF);
   color: white;
-  font-size: 14px;
   border: none;
   padding: 12px;
   border-radius: 14px;
@@ -288,20 +191,8 @@ body {
   opacity: 0.6;
 }
 
-/* ANIMAÇÃO */
-@keyframes modalIn {
-  from {
-    opacity: 0;
-    transform: translateY(-45%) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(-50%) scale(1);
-  }
-}
-
+/* SWITCH LOGIN */
 .modal-switch {
-  text-align: center;
   font-size: 14px;
   opacity: 0.8;
 }
@@ -312,18 +203,9 @@ body {
   font-weight: 600;
 }
 
-.modal-box select {
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid #ddd;
-  font-size: 15px;
-}
-
-.footer-sep {
-  margin: 0 10px;
-  opacity: 0.4;
-}
-/* MODAL LEGAL */
+/* =========================
+   MODAL LEGAL
+========================= */
 .legal-modal {
   position: fixed;
   inset: 0;
@@ -332,10 +214,6 @@ body {
   align-items: center;
   justify-content: center;
   z-index: 99999;
-}
-.legal-overlay {
-  position: absolute;
-  inset: 0;
 }
 
 .legal-modal.hidden {
@@ -346,7 +224,7 @@ body {
   width: 90%;
   max-width: 900px;
   height: 80%;
-  background: #fff;
+  background: #ffffff;
   border-radius: 18px;
   position: relative;
   overflow: hidden;
@@ -368,13 +246,42 @@ body {
   cursor: pointer;
 }
 
-/*APP*/
+/* =========================
+   ANIMAÇÃO
+========================= */
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: translateY(-45%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+}
 
+/* =========================
+   RESPONSIVO
+========================= */
+@media (max-width: 900px) {
+  .landing {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .landing-cover {
+    display: none;
+  }
+
+  .landing-login {
+    width: 100%;
+    padding: 40px 24px;
+  }
+}
+
+/* =========================
+   APP / PWA
+========================= */
 body.is-app {
   overscroll-behavior: none;
 }
-
-
-
-
-
