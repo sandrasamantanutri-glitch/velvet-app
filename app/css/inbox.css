@@ -112,3 +112,11 @@ body {
   align-items: center;
   justify-content: center;
 }
+
+/* =========================
+   APP / PWA
+========================= */
+body.is-app {
+  overscroll-behavior: none;
+}
+

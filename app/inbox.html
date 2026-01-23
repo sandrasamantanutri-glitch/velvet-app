@@ -1,20 +1,32 @@
-<div class="chat-item">
-  <div class="avatar">
-    <img src="avatar.jpg" />
-  </div>
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Inbox</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <div class="chat-content">
-    <div class="chat-header">
-      <span class="chat-name">Nome da Modelo</span>
-      <span class="chat-time">14:32</span>
-    </div>
+  <link rel="stylesheet" href="app/css/inbox.css" />
 
-    <div class="chat-footer">
-      <span class="chat-last">
-        Última mensagem enviada aqui...
-      </span>
-      <span class="badge">3</span>
-    </div>
-  </div>
-</div>
+  <!-- ICONS -->
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#7B2CFF" />
+</head>
+
+<body class="app">
+
+<header class="topbar">
+  <h1>Chats</h1>
+</header>
+
+<main id="inbox" class="inbox"></main>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="app/js/inbox.js"></script>
+</body>
+</html>
