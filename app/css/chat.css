@@ -1,172 +1,76 @@
 /* ===============================
-   BASE / APP
+   BOTÕES COM ÍCONES (PNG)
 ================================ */
-* {
-  box-sizing: border-box;
-}
 
-html, body {
-  height: 100%;
-  margin: 0;
-  overflow: hidden; /* 🔒 body não rola */
-  font-family: "Poppins", system-ui, -apple-system;
-  background: #E1E1E1;
-}
-
-/* ===============================
-   HEADER (FIXO)
-================================ */
-.chat-header {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-
-  height: 56px;
-  background: #E1E1E1;
-  border-bottom: 1px solid #C9C9C9;
-
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0 16px;
-  padding-top: env(safe-area-inset-top);
-}
-
-@supports (-webkit-touch-callout: none) {
-  .chat-header {
-    height: calc(56px + env(safe-area-inset-top));
-  }
-}
-
+/* botão voltar */
 .btn-back {
-  background: none;
-  border: none;
-  font-size: 26px;
-  color: #7B2CFF;
-  cursor: pointer;
-}
-
-.chat-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: #1E1E26;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* ===============================
-   MENSAGENS (ÚNICA ÁREA SCROLL)
-================================ */
-.chat-box {
-  height: calc(100vh - 112px); /* header + input */
-  background: #fff;
-
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* ===============================
-   BOLHAS DE MENSAGEM
-================================ */
-.msg {
-  max-width: 75%;
-  padding: 10px 14px;
-  border-radius: 14px;
-  font-size: 14px;
-  line-height: 1.4;
-  position: relative;
-}
-
-/* modelo */
-.msg.modelo {
-  align-self: flex-end;
-  background: #7B2CFF;
-  color: #fff;
-  border-bottom-right-radius: 4px;
-}
-
-/* cliente */
-.msg.cliente {
-  align-self: flex-start;
-  background: #F1F1F4;
-  color: #1E1E26;
-  border-bottom-left-radius: 4px;
-}
-
-/* hora */
-.msg-hora {
-  display: block;
-  margin-top: 4px;
-  font-size: 11px;
-  opacity: 0.6;
-  text-align: right;
-}
-
-.msg.cliente .msg-hora {
-  text-align: left;
-}
-
-/* ===============================
-   INPUT (FIXO)
-================================ */
-.chat-input {
-  position: sticky;
-  bottom: 0;
-  z-index: 20;
-
-  height: 56px;
-  background: #E1E1E1;
-  border-top: 1px solid #C9C9C9;
-
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px;
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-/* botão conteúdo (mantém o seu) */
-#btnEnviarConteudo {
-  background: #9E6BFF;
-  border: none;
-  color: #fff;
-  border-radius: 18px;
-  padding: 8px 12px;
-  font-size: 13px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.chat-input input {
-  flex: 1;
-  background: #fff;
-  border: 1px solid #C9C9C9;
-  border-radius: 20px;
-  padding: 10px 14px;
-  font-size: 14px;
-  outline: none;
-}
-
-.btn-enviar {
   background: transparent;
   border: none;
-  color: #7B2CFF;
-  font-size: 20px;
+  padding: 6px;
   cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* ===============================
-   POPUP DE CONTEÚDOS
-   (não quebra o existente)
-================================ */
-#popupConteudos {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
+.btn-back img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+/* botão mídia */
+.btn-midia,
+#btnEnviarConteudo {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+
+  background: #9E6BFF;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-midia img,
+#btnEnviarConteudo img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+/* botão enviar */
+.btn-enviar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-enviar img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+/* feedback de toque (app feel) */
+.btn-back:active,
+.btn-midia:active,
+#btnEnviarConteudo:active,
+.btn-enviar:active {
+  transform: scale(0.9);
+  opacity: 0.85;
 }
