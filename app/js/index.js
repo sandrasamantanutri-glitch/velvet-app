@@ -5,16 +5,16 @@
 // ===============================
 // REDIRECIONAMENTO SE JÁ LOGADO
 // ===============================
-const token = localStorage.getItem("token");
-const role  = localStorage.getItem("role");
+// const token = localStorage.getItem("token");
+// const role  = localStorage.getItem("role");
 
-// if (token && role) {
-//   if (role === "modelo") {
-//     window.location.href = "/app/inbox.html";
-//   } else {
-//     window.location.href = "/app/inbox.html";
-//   }
-// }
+// // if (token && role) {
+// //   if (role === "modelo") {
+// //     window.location.href = "/app/inbox.html";
+// //   } else {
+// //     window.location.href = "/app/inbox.html";
+// //   }
+// // }
 
 // ===============================
 // DETECTA APP / PWA
