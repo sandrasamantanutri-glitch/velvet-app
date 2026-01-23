@@ -117,7 +117,7 @@ function atualizarBadgeComTempo(li) {
 }
 
 function enviarMensagem() {
-  const input = document.getElementById("messageInput");
+  const input = document.getElementById("msgInput");
   const text = input.value.trim();
   if (!text) return;
 
