@@ -10,8 +10,11 @@ async function register() {
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ email, senha, role })
-    });
+      body: JSON.stringify({
+  email,
+  password: senha
+    })
+  });
 
     const data = await res.json();
 
@@ -28,8 +31,25 @@ async function register() {
 }
 
 async function login() {
-  const email = document.getElementById("email").value;
-  const senha = document.getElementById("senha").value;
+  const emailInput = document.getElementById("email");
+  const senhaInput = document.getElementById("senha");
+
+  if (!emailInput || !senhaInput) {
+    alert("Erro interno: campos de login não encontrados");
+    console.error("Inputs não encontrados:", {
+      email: emailInput,
+      senha: senhaInput
+    });
+    return;
+  }
+
+  const email = emailInput.value.trim();
+  const senha = senhaInput.value.trim();
+
+  if (!email || !senha) {
+    alert("Preencha email e senha");
+    return;
+  }
 
   try {
     const res = await fetch("/api/login", {
@@ -37,8 +57,11 @@ async function login() {
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ email, senha })
-    });
+      body: JSON.stringify({
+  email,
+  password: senha
+})
+  });
 
     const data = await res.json();
 
@@ -47,13 +70,10 @@ async function login() {
       return;
     }
 
-    // salvar sessão
     localStorage.setItem("token", data.token);
     localStorage.setItem("role", data.role);
 
     console.log("REDIRECT AGORA");
-
-    // 🚀 REDIRECIONAMENTO FORÇADO
     window.location.replace("/app/inbox.html");
 
   } catch (err) {
@@ -61,3 +81,4 @@ async function login() {
     alert("Erro de conexão");
   }
 }
+
