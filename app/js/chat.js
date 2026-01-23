@@ -361,3 +361,123 @@ function enviarConteudosSelecionados() {
 
   fecharPopupConteudos();
 }
+
+async function abrirPopupConteudos() {
+  document.getElementById("popupConteudos").classList.remove("hidden");
+
+  const grid = document.getElementById("previewConteudos");
+  grid.innerHTML = "Carregando...";
+
+  const res = await fetch("/api/conteudos/me", {
+    headers: {
+      Authorization: "Bearer " + localStorage.getItem("token")
+    }
+  });
+
+  if (!res.ok) {
+    grid.innerHTML = "Erro ao carregar conteúdos";
+    return;
+  }
+
+  const conteudos = await res.json();
+
+  if (!Array.isArray(conteudos) || conteudos.length === 0) {
+    grid.innerHTML = "<p>Nenhum conteúdo enviado ainda.</p>";
+    return;
+  }
+
+  grid.innerHTML = "";
+
+  conteudos.forEach(c => {
+    const jaVisto = conteudosVistosCliente.has(c.id);
+
+    const item = document.createElement("div");
+    item.className =
+      "preview-item" +
+      (jaVisto ? " visto desabilitado" : "");
+    item.dataset.conteudoId = c.id;
+
+    item.innerHTML = `
+      ${c.tipo === "video"
+        ? `<video src="${c.url}" muted></video>`
+        : `<img src="${c.url}" />`
+      }
+      ${jaVisto ? `<span class="badge-visto">Visto</span>` : ""}
+    `;
+
+    // 🚫 REGRA FINAL:
+    // conteúdo visto (pago OU grátis) NUNCA pode ser reenviado
+    if (jaVisto) {
+      item.onclick = () => {
+        alert("Este conteúdo já foi visto por este cliente e não pode ser reenviado.");
+      };
+    } else {
+      item.onclick = () => {
+        item.classList.toggle("selected");
+      };
+    }
+
+    grid.appendChild(item);
+  });
+}
+
+// ===============================
+// ❌ FECHAR POPUP DE CONTEÚDOS
+// ===============================
+function fecharPopupConteudos() {
+  const popup = document.getElementById("popupConteudos");
+  if (!popup) return;
+
+  popup.classList.add("hidden");
+
+  // limpa seleção
+  document
+    .querySelectorAll(".preview-item.selected")
+    .forEach(el => el.classList.remove("selected"));
+
+  // reseta preço
+  const precoInput = document.getElementById("precoConteudo");
+  if (precoInput) precoInput.value = 0;
+}
+
+function confirmarEnvioConteudo() {
+  if (!cliente_id || !modelo_id) {
+    alert("Selecione um cliente primeiro.");
+    return;
+  }
+
+  const selecionados = [
+    ...document.querySelectorAll(".preview-item.selected")
+  ];
+
+  if (!selecionados.length) {
+    alert("Selecione ao menos um conteúdo.");
+    return;
+  }
+
+  const preco = Number(
+    document.getElementById("precoConteudo").value || 0
+  );
+
+  const conteudos_ids = selecionados
+    .map(item => Number(item.dataset.conteudoId))
+    .filter(id => Number.isInteger(id) && id > 0);
+
+  // 🔥 GARANTE JOIN NA SALA ATIVA
+  const sala = `chat_${cliente_id}_${modelo_id}`;
+  socket.emit("joinChat", { sala });
+
+  // 🔥 ENVIA UMA ÚNICA VEZ (após garantir o join)
+  setTimeout(() => {
+    socket.emit("sendConteudo", {
+      cliente_id,
+      modelo_id,
+      conteudos_ids,
+      preco
+    });
+  }, 50);
+
+  fecharPopupConteudos();
+}
+
+

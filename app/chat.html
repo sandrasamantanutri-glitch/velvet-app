@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <link rel="stylesheet" href="./css/chat.css" />
+  <link rel="stylesheet" href="/chatmodelo.css">
 </head>
 
 <body class="chat-app">
@@ -18,7 +19,9 @@
 <main id="chatBox" class="chat-box"></main>
 
 <footer class="chat-input">
-  <button class="btn-conteudo" onclick="abrirPopupConteudos()">💜</button>
+ <button id="btnEnviarConteudo" onclick="abrirPopupConteudos()">
+  Enviar conteúdo
+</button>
 
   <input
     id="msgInput"
@@ -29,6 +32,30 @@
 
   <button class="btn-enviar" onclick="enviarMensagem()">➤</button>
 </footer>
+
+<!-- POPUP DE CONTEÚDOS -->
+<div id="popupConteudos" class="hidden">
+
+  <div class="popup-box">
+    <h3>Enviar conteúdo</h3>
+
+    <div class="preview-scroll">
+      <div id="previewConteudos" class="preview-grid"></div>
+    </div>
+
+    <div class="popup-preco">
+      <label>Preço (R$)</label>
+      <input type="number" id="precoConteudo" value="0" min="0" />
+    </div>
+
+    <div class="popup-actions">
+      <button class="btn-cancelar" onclick="fecharPopupConteudos()">Cancelar</button>
+      <button class="btn-enviar" onclick="confirmarEnvioConteudo()">Enviar</button>
+    </div>
+  </div>
+
+</div>
+
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="./js/chat.js"></script>
