@@ -1,7 +1,7 @@
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
 if (!token) {
-  window.location.href = "/index.html";
+  window.location.href = "app/index.html";
   throw new Error("Sem token");
 }
 const socket = io({
