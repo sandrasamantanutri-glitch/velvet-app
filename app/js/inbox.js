@@ -31,7 +31,7 @@ let modeloId = null;
 // ===============================
 async function initInbox() {
   try {
-    const res = await fetch("/api/auth/me", {
+    const res = await fetch("/api/me", {
       headers: {
         Authorization: "Bearer " + token
       }
