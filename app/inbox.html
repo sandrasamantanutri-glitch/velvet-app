@@ -2,30 +2,71 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
-  <title>Velvet- Conversas</title>
-  <!-- VIEWPORT -->
+  <title>Velvet · Conversas</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <link rel="stylesheet" href="./css/inbox.css" />
 
-  <!-- ICONS -->
   <link rel="icon" href="/favicon.ico" sizes="any" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
-  <!-- PWA -->
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#7B2CFF" />
 </head>
 
- <div class="page-wrapper">
-<header class="topbar">
-  <h1>Conversas</h1>
-</header>
-<main id="inbox" class="inbox"></main>
-</div>
-<script src="/socket.io/socket.io.js"></script>
-<script src="./js/inbox.js"></script>
+<body>
+  <div class="page-wrapper">
+
+    <header class="topbar">
+      <h1>Conversas</h1>
+    </header>
+
+    <main id="inbox" class="inbox">
+      <!-- ITEM DO CHAT -->
+      <!--
+      Estados esperados (JS controla classes/labels):
+
+      1) Cliente recebeu mensagem:
+         <span class="status status-sent">✓</span>
+
+      2) Cliente leu e não respondeu:
+         <span class="status status-read">✓✓</span>
+
+      3) Modelo entrou no chat, leu e não respondeu:
+         <span class="status status-reply">Necessita de resposta</span>
+
+      4) Modelo ainda não visualizou:
+         <span class="status status-unseen">Não visto</span>
+      -->
+
+      <!-- EXEMPLO ESTRUTURAL -->
+      <!--
+      <div class="chat-item">
+        <div class="avatar">
+          <img src="avatar.jpg" />
+        </div>
+
+        <div class="chat-body">
+          <div class="chat-top">
+            <span class="chat-name">Cliente</span>
+            <span class="chat-time">14:32</span>
+          </div>
+
+          <div class="chat-bottom">
+            <span class="chat-last">Última mensagem aqui…</span>
+
+            <div class="chat-status">
+              <span class="status status-read">✓✓</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      -->
+    </main>
+
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="./js/inbox.js"></script>
 </body>
 </html>

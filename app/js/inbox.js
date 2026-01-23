@@ -2,12 +2,10 @@
 // AUTH
 // ===============================
 const token = localStorage.getItem("token");
-if (!token) {
-  location.href = "/app/index.html";
-}
+if (!token) location.href = "/app/index.html";
 
 // ===============================
-// SOCKET (SÓ INBOX)
+// SOCKET (INBOX)
 // ===============================
 const socket = io("https://velvet-test-production.up.railway.app", {
   auth: { token: "Bearer " + token }
@@ -19,25 +17,19 @@ let modeloId = null;
 // ===============================
 // INIT
 // ===============================
-async function init() {
+(async function init() {
   const res = await fetch("/api/me", {
     headers: { Authorization: "Bearer " + token }
   });
-
   if (!res.ok) return logout();
 
   const me = await res.json();
   if (me.role !== "modelo") return logout();
 
   modeloId = me.id;
-
-  // entra SOMENTE na inbox
   socket.emit("joinInbox", { modelo_id: modeloId });
-
-  await carregarListaClientes();
-}
-
-init();
+  carregarListaClientes();
+})();
 
 // ===============================
 // FETCH INBOX
@@ -46,76 +38,67 @@ async function carregarListaClientes() {
   const res = await fetch("/api/chat/modelo", {
     headers: { Authorization: "Bearer " + token }
   });
-
-  if (!res.ok) {
-    console.error("Erro ao carregar inbox");
-    return;
-  }
+  if (!res.ok) return;
 
   const clientes = await res.json();
   inboxEl.innerHTML = "";
 
-  if (!Array.isArray(clientes) || clientes.length === 0) {
-    inboxEl.innerHTML = `
-      <div class="inbox-empty">
-        Nenhum cliente ainda.
-      </div>
-    `;
-    return;
-  }
-
   clientes.forEach(c => {
+    let statusHTML = "";
+
+    if (!c.modelo_visualizou) {
+      statusHTML = `<span class="status status-unseen">Não visto</span>`;
+    } else if (c.ultimo_sender === "modelo") {
+      statusHTML = c.cliente_leu
+        ? `<span class="status status-read">✓✓</span>`
+        : `<span class="status status-sent">✓</span>`;
+    } else if (c.ultimo_sender === "cliente" && c.modelo_visualizou && !c.modelo_respondeu) {
+      statusHTML = `<span class="status status-reply">Necessita de resposta</span>`;
+    }
+
     const div = document.createElement("div");
     div.className = "chat-item";
     div.onclick = () => abrirChat(c.cliente_id);
 
     div.innerHTML = `
-  <div class="avatar">
-    ${c.avatar ? `<img src="${c.avatar}" />` : ""}
-  </div>
+      <div class="avatar">
+        ${c.avatar ? `<img src="${c.avatar}" />` : ""}
+      </div>
 
- <div class="chat-top">
-  <span class="chat-name">
-    ${c.username || c.nome || "Cliente"}
-  </span>
+      <div class="chat-body">
+        <div class="chat-top">
+          <span class="chat-name">${c.username || "Cliente"}</span>
+          <span class="chat-time">${formatarTempo(c.ultima_mensagem_em)}</span>
+        </div>
 
-  <div class="chat-meta">
-    <span class="chat-time">
-      ${formatarHora(c.ultima_mensagem_em)}
-    </span>
-
-    ${
-      c.ultimo_sender === "cliente"
-        ? `<span class="chat-checks">
-            ${c.ultima_vista ? "✔✔" : "✔"}
-          </span>`
-        : ""
-    }
-  </div>
-</div>
-
-  </div>
-`;
+        <div class="chat-bottom">
+          <span class="chat-last">${c.ultima_mensagem || ""}</span>
+          <div class="chat-status">${statusHTML}</div>
+        </div>
+      </div>
+    `;
     inboxEl.appendChild(div);
   });
 }
 
-function formatarHora(data) {
+// ===============================
+// TEMPO
+// ===============================
+function formatarTempo(data) {
   if (!data) return "";
   const d = new Date(data);
-  return d.toLocaleTimeString("pt-BR", {
-    hour: "2-digit",
-    minute: "2-digit"
-  });
-}
+  const diff = Math.floor((Date.now() - d.getTime()) / 86400000);
 
+  if (diff === 0)
+    return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  if (diff === 1) return "1 dia";
+  return `${diff} dias`;
+}
 
 // ===============================
 // REALTIME
 // ===============================
-socket.on("inboxMessage", () => {
-  carregarListaClientes();
-});
+socket.on("inboxMessage", carregarListaClientes);
 
 // ===============================
 // HELPERS
