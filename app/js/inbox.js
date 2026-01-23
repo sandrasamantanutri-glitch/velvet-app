@@ -108,16 +108,6 @@ function formatarHora(data) {
   });
 }
 
-async function marcarComoLido(clienteId) {
-  await fetch(`/api/chat/marcar-lido/${clienteId}`, {
-    method: "POST",
-    headers: {
-      Authorization: "Bearer " + localStorage.getItem("token")
-    }
-  });
-}
-
-
 
 // ===============================
 // REALTIME

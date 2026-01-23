@@ -56,6 +56,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   sala = `chat_${cliente_id}_${modelo_id}`;
   socket.emit("joinChat", { sala });
   socket.emit("getHistory", { cliente_id, modelo_id });
+
+  // 🔥 AQUI — quando o chat ABRE
+  marcarComoLido(cliente_id);
+
   socket.emit("loginModelo", modelo_id);
 
   const input = document.getElementById("msgInput");
@@ -434,6 +438,20 @@ function formatarHora(data) {
     minute: "2-digit"
   });
 }
+
+async function marcarComoLido(clienteId) {
+  try {
+    await fetch(`/api/chat/marcar-lido/${clienteId}`, {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + localStorage.getItem("token")
+      }
+    });
+  } catch (err) {
+    console.error("Erro ao marcar como lido:", err);
+  }
+}
+
 
 
 
