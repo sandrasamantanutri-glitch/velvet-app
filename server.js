@@ -757,8 +757,8 @@ socket.on("sendMessage", async ({ cliente_id, modelo_id, text }) => {
     // 1️⃣ SALVA NO BANCO E RETORNA ID 🔥
 const result = await db.query(`
   INSERT INTO messages
-    (cliente_id, modelo_id, sender, tipo, text)
-  VALUES ($1, $2, $3, 'texto', $4)
+    (cliente_id, modelo_id, sender, tipo, text, visto)
+  VALUES ($1, $2, $3, 'texto', $4, false)
   RETURNING id
 `, 
 [cliente_id, modelo_id, sender, text]);
