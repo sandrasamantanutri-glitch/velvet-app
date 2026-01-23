@@ -15,7 +15,7 @@ const fs = require("fs");
 const app = express();
 const cors = require("cors");
 const chatRoutes = require("./routes/chat");
-
+app.use("/app", express.static("app"));
 app.use("/api/chat", chatRoutes);
 
 app.use(cors({

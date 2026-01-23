@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Chat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="stylesheet" href="/frontend/css/chat.css" />
+</head>
+<body class="chat-app">
+
+  <header class="chat-header">
+    <button onclick="voltar()">←</button>
+    <span id="chatNome">Chat</span>
+  </header>
+
+  <main id="chatBox" class="chat-box"></main>
+
+  <footer class="chat-input">
+    <input id="mensagem" placeholder="Escreva uma mensagem…" />
+    <button onclick="enviar()">Enviar</button>
+  </footer>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/frontend/js/chat.js"></script>
+</body>
+</html>
