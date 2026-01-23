@@ -19,9 +19,13 @@ if (window.__INBOX_INIT__) {
 // ===============================
 // 🔌 SOCKET (AUTENTICADO)
 // ===============================
+
 const socket = io("https://velvet-test-production.up.railway.app", {
-  auth: { token }
+  auth: {
+    token: "Bearer " + token
+  }
 });
+
 
 // ===============================
 let modeloId = null;
