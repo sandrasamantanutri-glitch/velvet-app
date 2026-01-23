@@ -54,16 +54,16 @@ html, body {
 }
 
 .btn-back img {
-  width: 28px;          /* 🔥 maior */
-  height: 28px;
+  width: 50px !important;
+  height: 50px I !important;
   object-fit: contain;
 }
 
 /* título do chat (TÍTULO REAL) */
 .chat-title {
-  font-size: 22px;      /* 🔥 tamanho de título */
+  font-size: 24px;      /* 🔥 tamanho de título */
   font-weight: 700;
-  color: #1E1E26;
+  color: #7B2CFF;
 
   white-space: nowrap;
   overflow: hidden;
@@ -128,11 +128,11 @@ html, body {
 
 /* botão enviar (MAIOR) */
 .btn-enviar {
-  width: 44px;
-  height: 44px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
 
-  background: transparent;
+  background: transparent !important;
   border: none;
   padding: 0;
   cursor: pointer;
@@ -146,6 +146,21 @@ html, body {
   width: 26px;
   height: 26px;
   object-fit: contain;
+}
+
+.btnEnviarConteudo {
+    width: 50px !important;
+    height: 50px !Important;
+    min-width: 80px;
+    border-radius: 12px;
+    padding: 0;
+    background: transparent !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(123, 44, 255, 0.35);
 }
 
 /* ===============================
@@ -225,4 +240,14 @@ html, body {
 
 .chat-input {
   border-top: 1px solid #C9C9C9 !important;
+}
+
+#msgInput {
+    flex: 1;
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 14px;
+    border: 1px solid #C9C9C9 !important;
+    font-size: 13px;
+    line-height: normal;
 }
