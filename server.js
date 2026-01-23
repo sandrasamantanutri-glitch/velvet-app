@@ -1539,34 +1539,51 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
 
     const { rows } = await db.query(`
       SELECT DISTINCT ON (c.user_id)
-        c.user_id AS cliente_id,
-        cd.username,
-        c.nome,
-        cd.avatar,
+  c.user_id AS cliente_id,
+  cd.username,
+  c.nome,
+  cd.avatar,
 
-        m.text AS ultima_mensagem,
-        m.created_at AS ultima_mensagem_em,
+  -- última mensagem
+  m.text AS ultima_mensagem,
+  m.created_at AS ultima_mensagem_em,
 
-        COALESCE(u.has_unread, false) AS nao_lidas
+  -- 🔥 quantidade real de não lidas
+  COUNT(m2.id) FILTER (
+    WHERE m2.visto = false
+      AND m2.sender = 'cliente'
+  ) AS nao_lidas
 
-      FROM vip_subscriptions v
-      JOIN clientes c ON c.user_id = v.cliente_id
-      LEFT JOIN clientes_dados cd ON cd.user_id = c.user_id
+FROM vip_subscriptions v
+JOIN clientes c ON c.user_id = v.cliente_id
+LEFT JOIN clientes_dados cd ON cd.user_id = c.user_id
 
-      LEFT JOIN messages m
-        ON m.cliente_id = c.user_id
-       AND m.modelo_id = $1
+-- ✅ join para pegar a ÚLTIMA mensagem
+LEFT JOIN messages m
+  ON m.cliente_id = c.user_id
+ AND m.modelo_id = $1
 
-      LEFT JOIN unread u
-        ON u.cliente_id = c.user_id
-       AND u.modelo_id = $1
-       AND u.unread_for = 'modelo'
+-- ✅ join EXCLUSIVO para contagem
+LEFT JOIN messages m2
+  ON m2.cliente_id = c.user_id
+ AND m2.modelo_id = $1
 
-      WHERE v.modelo_id = $1
-        AND v.ativo = true
-        AND v.expiration_at > NOW()
+WHERE v.modelo_id = $1
+  AND v.ativo = true
+  AND v.expiration_at > NOW()
 
-      ORDER BY c.user_id, m.created_at DESC NULLS LAST
+GROUP BY
+  c.user_id,
+  cd.username,
+  c.nome,
+  cd.avatar,
+  m.text,
+  m.created_at
+
+ORDER BY
+  c.user_id,
+  m.created_at DESC NULLS LAST;
+
     `, [modeloId]);
 
     res.json(rows);

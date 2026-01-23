@@ -77,17 +77,20 @@ async function carregarListaClientes() {
       <div class="chat-body">
         <div class="chat-top">
           <strong>${c.username || c.nome || "Cliente"}</strong>
-          <span class="chat-time"></span>
+         <span class="chat-time">
+  ${formatarHora(c.ultima_mensagem_em)}
+</span>
+
         </div>
 
         <div class="chat-last">
           <span>${c.ultima_mensagem || ""}</span>
-          ${
-            c.nao_lidas
-  ? `<span class="badge-dot"></span>`
-  : ""
-
-          }
+${c.nao_lidas > 1
+  ? `<span class="badge">${c.nao_lidas}</span>`
+  : c.nao_lidas === 1
+    ? `<span class="badge-dot"></span>`
+    : ""
+}
         </div>
       </div>
     `;
