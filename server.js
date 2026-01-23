@@ -726,6 +726,13 @@ socket.on("joinChat", ({ sala }) => {
   console.log("🟪 Entrou na sala:", sala);
 });
 
+socket.on("joinInbox", ({ modelo_id }) => {
+  if (!modelo_id) return;
+
+  socket.join(`inbox_modelo_${modelo_id}`);
+  console.log("📬 Inbox conectada:", `inbox_modelo_${modelo_id}`);
+});
+
 // 💬 ENVIAR MENSAGEM (ÚNICO)
 socket.on("sendMessage", async ({ cliente_id, modelo_id, text }) => {
   if (!socket.user) {
@@ -805,6 +812,14 @@ io.to(sala).emit("newMessage", {
   text,
   created_at: new Date()
  });
+
+ if (sender === "cliente") {
+  io.to(`inbox_modelo_${modelo_id}`).emit("inboxMessage", {
+    cliente_id,
+    text,
+    created_at: new Date()
+  });
+}
 
   } catch (err) {
     console.error("🔥 ERRO AO SALVAR MENSAGEM:", err);
