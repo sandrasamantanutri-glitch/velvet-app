@@ -1,12 +1,13 @@
 {
   "name": "Velvet",
   "short_name": "Velvet",
-  "start_url": "/index.html",
+  "description": "Velvet · Conversas e conteúdos exclusivos",
+  "start_url": "/app/inbox.html",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#7B2CFF",
-  "theme_color": "#7B2CFF",
   "orientation": "portrait",
+  "background_color": "#E1E1E1",
+  "theme_color": "#7B2CFF",
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -19,5 +20,4 @@
       "type": "image/png"
     }
   ]
-  
 }
