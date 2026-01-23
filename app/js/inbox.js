@@ -95,6 +95,16 @@ async function carregarListaClientes() {
   });
 }
 
+function formatarHora(data) {
+  if (!data) return "";
+  const d = new Date(data);
+  return d.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+
 // ===============================
 // REALTIME
 // ===============================
