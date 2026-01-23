@@ -817,14 +817,6 @@ io.to(sala).emit("newMessage", {
   }
 });
 
-io.to(`inbox_${modelo_id}`).emit("inboxMessage", {
-  cliente_id,
-  modelo_id,
-  text,
-  sender,
-  created_at: new Date()
-});
-
 
 // 📜 HISTÓRICO DO CHAT
 socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
@@ -1008,6 +1000,15 @@ socket.on("sendConteudo", async ({ cliente_id, modelo_id, conteudos_ids, preco }
       bloqueado: Number(preco) > 0,
       created_at: new Date()
     });
+
+    // 📥 AVISA A INBOX DO MODELO (WHATSAPP STYLE)
+io.to(`inbox_${modelo_id}`).emit("inboxMessage", {
+  cliente_id,
+  modelo_id,
+  text,
+  sender,
+  created_at: new Date()
+});
 
   } catch (err) {
     console.error("❌ Erro sendConteudo:", err);
