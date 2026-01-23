@@ -2,7 +2,7 @@
   "name": "Velvet",
   "short_name": "Velvet",
   "description": "Velvet · Conversas e conteúdos exclusivos",
-  "start_url": "/app/inbox.html",
+  "start_url": "/app/index.html",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
