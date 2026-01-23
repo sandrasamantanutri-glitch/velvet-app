@@ -396,8 +396,8 @@ html, body {
 .content {
   flex: 1;
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch; /* iOS smooth */
-  background: #fff;
+  -webkit-overflow-scrolling: touch;
+  background: #fff; /* 🔥 fundo branco do inbox */
 }
 
 .inbox {
