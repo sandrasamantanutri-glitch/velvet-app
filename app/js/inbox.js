@@ -76,8 +76,6 @@ li.innerHTML = `
   </div>
   <span class="badge hidden"></span>
 `;
-    // 🔔 aplica badge + tempo
-    atualizarBadgeComTempo(li);
     contarChatsNaoLidosModelo();
 
     // ===============================
