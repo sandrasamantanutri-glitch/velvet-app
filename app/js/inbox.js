@@ -46,14 +46,22 @@ async function carregarListaClientes() {
   clientes.forEach(c => {
     let statusHTML = "";
 
-    if (!c.modelo_visualizou) {
-      statusHTML = `<span class="status status-unseen">Não visto</span>`;
-    } else if (c.ultimo_sender === "modelo") {
-      statusHTML = c.cliente_leu
-        ? `<span class="status status-read">✓✓</span>`
-        : `<span class="status status-sent">✓</span>`;
-    } else if (c.ultimo_sender === "cliente" && c.modelo_visualizou && !c.modelo_respondeu) {
-      statusHTML = `<span class="status status-reply">Necessita de resposta</span>`;
+    // 🔴 última mensagem do CLIENTE
+    if (c.ultimo_sender === "cliente") {
+      if (c.visto === false) {
+        statusHTML = `<span class="status status-unseen">Não visto</span>`;
+      } else {
+        statusHTML = `<span class="status status-reply">Necessita de resposta</span>`;
+      }
+    }
+
+    // 🟢 última mensagem da MODELO
+    if (c.ultimo_sender === "modelo") {
+      if (c.lida === true) {
+        statusHTML = `<span class="status status-read">✓✓</span>`;
+      } else {
+        statusHTML = `<span class="status status-sent">✓</span>`;
+      }
     }
 
     const div = document.createElement("div");
@@ -67,7 +75,7 @@ async function carregarListaClientes() {
 
       <div class="chat-body">
         <div class="chat-top">
-          <span class="chat-name">${c.username || "Cliente"}</span>
+          <span class="chat-name">${c.username || c.nome || "Cliente"}</span>
           <span class="chat-time">${formatarTempo(c.ultima_mensagem_em)}</span>
         </div>
 
@@ -77,6 +85,7 @@ async function carregarListaClientes() {
         </div>
       </div>
     `;
+
     inboxEl.appendChild(div);
   });
 }
@@ -89,8 +98,13 @@ function formatarTempo(data) {
   const d = new Date(data);
   const diff = Math.floor((Date.now() - d.getTime()) / 86400000);
 
-  if (diff === 0)
-    return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  if (diff === 0) {
+    return d.toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  }
+
   if (diff === 1) return "1 dia";
   return `${diff} dias`;
 }
