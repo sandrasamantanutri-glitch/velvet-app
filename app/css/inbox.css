@@ -9,23 +9,19 @@ body {
   margin: 0;
   font-family: "Poppins", system-ui, -apple-system, BlinkMacSystemFont;
   background: #E1E1E1;
-  color: #1E1E26;
+  color: #7B2CFF;
 }
 
 .page-wrapper {
   max-width: 100%;
   min-height: 100vh;
 }
-
-/* ===============================
-   TOPO
-================================ */
 /* ===============================
    TOPO (PADRÃO RODAPÉ)
 ================================ */
 .topbar {
   height: 56px;
-  background: #fff;              /* igual ao footer */
+  background: #E1E1E1;              /* igual ao footer */
   color: #1E1E26;
   display: flex;
   align-items: center;
@@ -193,7 +189,7 @@ body {
   right: 0;
 
   height: 64px;
-  background: #fff;
+  background: #E1E1E1;
   border-top: 1px solid #C9C9C9;
 
   display: flex;
@@ -210,7 +206,7 @@ body {
   gap: 4px;
 
   font-size: 11px;
-  color: #9A9AA5;
+  color: #7B2CFF;
   text-decoration: none;
 }
 
