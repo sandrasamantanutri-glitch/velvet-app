@@ -77,8 +77,11 @@ async function carregarListaClientes() {
       <div class="chat-body">
         <div class="chat-top">
           <strong>${c.username || c.nome || "Cliente"}</strong>
-<span class="chat-time">${hora}</span>
-<span>${c.ultima_mensagem || "Nenhuma mensagem ainda"}</span>
+          <span class="chat-time"></span>
+        </div>
+
+        <div class="chat-last">
+          <span>${c.ultima_mensagem || ""}</span>
           ${
             c.nao_lidas > 0
               ? `<span class="badge">${c.nao_lidas}</span>`
