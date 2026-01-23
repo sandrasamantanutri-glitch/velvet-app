@@ -74,43 +74,25 @@ async function carregarListaClientes() {
     ${c.avatar ? `<img src="${c.avatar}" />` : ""}
   </div>
 
-  <div class="chat-body">
-    
-    <!-- LINHA 1 -->
-    <div class="chat-top">
-      <span class="chat-name">
-        ${c.username || c.nome || "Cliente"}
-      </span>
+ <div class="chat-top">
+  <span class="chat-name">
+    ${c.username || c.nome || "Cliente"}
+  </span>
 
-      <span class="chat-time">
-        ${formatarHora(c.ultima_mensagem_em)}
-      </span>
-    </div>
+  <div class="chat-meta">
+    <span class="chat-time">
+      ${formatarHora(c.ultima_mensagem_em)}
+    </span>
 
-    <!-- LINHA 2 -->
-    <div class="chat-bottom">
-      <span class="chat-last">
-        ${c.ultima_mensagem || ""}
-      </span>
-
-      <div class="chat-badges">
-        ${
-          c.nao_lidas > 1
-            ? `<span class="badge">${c.nao_lidas}</span>`
-            : c.nao_lidas === 1
-              ? `<span class="badge-dot"></span>`
-              : ""
-        }
-
-        ${
-          c.ultimo_sender === "cliente" &&
-          c.ultima_vista === true &&
-          c.nao_lidas === 0
-            ? `<span class="badge-reply">Necessita responder</span>`
-            : ""
-        }
-      </div>
-    </div>
+    ${
+      c.ultimo_sender === "cliente"
+        ? `<span class="chat-checks">
+            ${c.ultima_vista ? "✔✔" : "✔"}
+          </span>`
+        : ""
+    }
+  </div>
+</div>
 
   </div>
 `;
