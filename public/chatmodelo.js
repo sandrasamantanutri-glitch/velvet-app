@@ -107,7 +107,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     e.preventDefault();   // 🔥 ISSO resolve a quebra de linha
     enviarMensagem();
   }
-});
+ });
 
   // 🔥 AQUI — sempre ativo
   btnConteudo.onclick = abrirPopupConteudos;

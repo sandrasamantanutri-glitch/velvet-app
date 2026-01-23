@@ -42,59 +42,98 @@ init();
 // ===============================
 // FETCH INBOX
 // ===============================
-async function carregarInbox() {
+async function carregarListaClientes() {
   const res = await fetch("/api/chat/modelo", {
     headers: { Authorization: "Bearer " + token }
   });
 
-  if (!res.ok) {
-    console.error("Erro inbox:", res.status);
+  const clientes = await res.json();
+  const lista = document.getElementById("listaClientes");
+
+  lista.innerHTML = "";
+
+  if (!clientes.length) {
+    lista.innerHTML = "<li>Nenhum cliente VIP ainda.</li>";
     return;
   }
 
-  const chats = await res.json();
-  renderInbox(chats);
+  clientes.forEach(c => {
+    const li = document.createElement("li");
+    li.className = "chat-item";
+    li.dataset.clienteId = c.cliente_id;
+
+    // ⏱ timestamp da última mensagem da MODELO
+    li.dataset.lastTime = c.ultima_msg_modelo_ts
+      ? new Date(c.ultima_msg_modelo_ts).getTime()
+      : 0;
+    li.dataset.status = c.status || "normal";
+
+    const nomeExibido = c.username || c.nome;
+li.innerHTML = `
+  <div class="linha-topo">
+    <span class="nome">${nomeExibido}</span>
+    <span class="tempo"></span>
+  </div>
+  <span class="badge hidden"></span>
+`;
+    // 🔔 aplica badge + tempo
+    atualizarBadgeComTempo(li);
+    contarChatsNaoLidosModelo();
+
+    // ===============================
+    // 🖱️ CLICK NO CLIENTE
+    // ===============================
+    li.onclick = async () => {
+      const avatarEl = document.getElementById("chatAvatar");
+      avatarEl.src = "/assets/avatarDefault.png";
+      cliente_id = c.cliente_id;
+      localStorage.setItem("chat_cliente_ativo", cliente_id);
+      chatAtivo = { cliente_id, modelo_id };
+      await carregarConteudosVistos(cliente_id);
+      
+
+      document.getElementById("clienteNome").innerText =
+  c.username || c.nome;
+
+
+      // 🔥 buscar dados do cliente (avatar, etc.)
+      const res = await fetch(`/api/cliente/${cliente_id}`, {
+        headers: {
+          Authorization: "Bearer " + localStorage.getItem("token")
+        }
+      });
+      if (res.ok) {
+  const dados = await res.json();
+  avatarEl.src = dados.avatar || "/assets/avatarDefault.png";
+
+  avatarEl.onclick = () => {
+    if (!dados.avatar) return;
+    abrirPreviewAvatar(dados.avatar);
+  };
 }
 
-// ===============================
-// RENDER
-// ===============================
-function renderInbox(chats) {
-  inboxEl.innerHTML = "";
+      // 🧹 limpar badge visual
+      const badge = li.querySelector(".badge");
+      if (badge) badge.classList.add("hidden");
 
-  if (!Array.isArray(chats) || chats.length === 0) {
-    inboxEl.innerHTML = `
-      <div style="padding:16px;color:#aaa">
-        Nenhum cliente ainda.
-      </div>
-    `;
-    return;
-  }
+      // 🔄 atualizar status local
+      li.dataset.status = "normal";
 
-  chats.forEach(c => {
-    const div = document.createElement("div");
-    div.className = "chat-item";
-    div.onclick = () => abrirChat(c.cliente_id);
+      // 🔁 reordenar lista
+      organizarListaClientes();
 
-    div.innerHTML = `
-      <div class="avatar">
-        ${c.avatar ? `<img src="${c.avatar}" />` : ""}
-      </div>
+      // 📡 entrar no chat
+      const sala = `chat_${cliente_id}_${modelo_id}`;
+      socket.emit("joinChat", { sala });
+      socket.emit("getHistory", { cliente_id, modelo_id });
+      setTimeout(contarChatsNaoLidosModelo, 50);
+    };
 
-      <div class="chat-body">
-        <div class="chat-top">
-          <strong>${c.username || c.nome || "Cliente"}</strong>
-          <span class="chat-time"></span>
-        </div>
-
-        <div class="chat-last">
-          <span></span>
-        </div>
-      </div>
-    `;
-
-    inboxEl.appendChild(div);
+    lista.appendChild(li);
   });
+
+  // 🔁 ordena após carregar tudo
+  organizarListaClientes();
 }
 
 // ===============================
