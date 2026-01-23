@@ -802,7 +802,7 @@ const messageId = result.rows[0].id;
 
  // 7️⃣ META UPDATE (status / horário)
  // 🔥 ENVIA PARA A SALA (CLIENTE + MODELO)
-io.to(sala).emit("newMessage", {
+ io.to(sala).emit("newMessage", {
   id: messageId,
   cliente_id,
   modelo_id,
@@ -815,6 +815,15 @@ io.to(sala).emit("newMessage", {
   } catch (err) {
     console.error("🔥 ERRO AO SALVAR MENSAGEM:", err);
   }
+
+  io.to(`inbox_${modelo_id}`).emit("inboxMessage", {
+  cliente_id,
+  modelo_id,
+  text,
+  sender,
+  created_at: new Date()
+ });
+
 });
 
 
