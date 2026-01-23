@@ -34,7 +34,7 @@ async function init() {
   // entra SOMENTE na inbox
   socket.emit("joinInbox", { modelo_id: modeloId });
 
-  await carregarInbox();
+  await carregarListaClientes();
 }
 
 init();
@@ -48,7 +48,7 @@ async function carregarListaClientes() {
   });
 
   const clientes = await res.json();
-  const lista = document.getElementById("listaClientes");
+  const lista = inboxEl;
 
   lista.innerHTML = "";
 
@@ -140,7 +140,7 @@ li.innerHTML = `
 // REALTIME
 // ===============================
 socket.on("inboxMessage", () => {
-  carregarInbox(); // simples e estável
+  carregarListaClientes();
 });
 
 // ===============================
