@@ -725,6 +725,13 @@ socket.on("joinChat", ({ sala }) => {
   console.log("🟪 Entrou na sala:", sala);
 });
 
+socket.on("joinInbox", ({ modelo_id }) => {
+  if (!modelo_id) return;
+  socket.join(`inbox_${modelo_id}`);
+  console.log("📥 Entrou na inbox:", modelo_id);
+});
+
+
 // 💬 ENVIAR MENSAGEM (ÚNICO)
 socket.on("sendMessage", async ({ cliente_id, modelo_id, text }) => {
   if (!socket.user) {
@@ -804,27 +811,20 @@ io.to(sala).emit("newMessage", {
   text,
   created_at: new Date()
  });
- io.to(`modelo_${modelo_id}`).emit("listUpdate");
-io.to(`cliente_${cliente_id}`).emit("listUpdate");
-
-io.to(`modelo_${modelo_id}`).emit("chatListUpdate", {
-  chat_id: cliente_id,
-  last_message: text,
-  last_time: new Date(),
-  unread_delta: sender === "cliente" ? 1 : 0
-});
-
-io.to(`cliente_${cliente_id}`).emit("chatListUpdate", {
-  chat_id: modelo_id,
-  last_message: text,
-  last_time: new Date(),
-  unread_delta: sender === "modelo" ? 1 : 0
-});
 
   } catch (err) {
     console.error("🔥 ERRO AO SALVAR MENSAGEM:", err);
   }
 });
+
+io.to(`inbox_${modelo_id}`).emit("inboxMessage", {
+  cliente_id,
+  modelo_id,
+  text,
+  sender,
+  created_at: new Date()
+});
+
 
 // 📜 HISTÓRICO DO CHAT
 socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
@@ -845,17 +845,6 @@ socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
     socket.user.role   // 'cliente' | 'modelo'
   ]
  );
- io.to(`modelo_${modelo_id}`).emit("listUpdate");
-io.to(`cliente_${cliente_id}`).emit("listUpdate");
-
-io.to(`modelo_${modelo_id}`).emit("chatListSeen", {
-  chat_id: cliente_id
-});
-
-io.to(`cliente_${cliente_id}`).emit("chatListSeen", {
-  chat_id: modelo_id
-});
-
 
     // 2️⃣ busca histórico base
     const result = await db.query(
@@ -927,8 +916,6 @@ ORDER BY created_at ASC;
     console.error("❌ Erro getHistory:", err);
   }
  });
-
- 
 
 // 📦 ENVIO DE CONTEÚDO (1 ou N mídias) — BLOCO FINAL CORRETO
 socket.on("sendConteudo", async ({ cliente_id, modelo_id, conteudos_ids, preco }) => {
@@ -1022,20 +1009,6 @@ socket.on("sendConteudo", async ({ cliente_id, modelo_id, conteudos_ids, preco }
       created_at: new Date()
     });
 
-    io.to(`modelo_${modelo_id}`).emit("chatListUpdate", {
-  chat_id: cliente_id,
-  last_message: "[Conteúdo]",
-  last_time: new Date(),
-  unread_delta: 0
-});
-
-io.to(`cliente_${cliente_id}`).emit("chatListUpdate", {
-  chat_id: modelo_id,
-  last_message: "[Conteúdo]",
-  last_time: new Date(),
-  unread_delta: 1
-});
-
   } catch (err) {
     console.error("❌ Erro sendConteudo:", err);
   }
@@ -1121,7 +1094,18 @@ socket.on("marcarConteudoVisto", async ({ message_id, cliente_id, modelo_id }) =
   } catch (err) {
     console.error("❌ Erro marcarConteudoVisto:", err);
   }
+
+  //SOCKETS APP
+  // 📥 SALA DA INBOX DO MODELO (NOVO)
+socket.on("joinInbox", ({ modelo_id }) => {
+  if (!modelo_id) return;
+  socket.join(`inbox_${modelo_id}`);
+  console.log("📥 Entrou na inbox do modelo", modelo_id);
 });
+
+});
+
+
 
 });
 // ===============================
@@ -1751,175 +1735,6 @@ app.get("/api/conteudos/me", authModelo, async (req, res) => {
     res.status(500).json([]);
   }
 });
-
-// ===============================
-// LISTA DE CHATS APP (NOVA ROTA)
-// ===============================
-app.get("/api/chats", auth, async (req, res) => {
-  console.log("API /chats", {
-  userId: req.user.id,
-  role: req.user.role
-   });
-  const userId = req.user.id;
-  const role = req.user.role;
-
-  let query;
-  let params = [userId];
-
-  if (role === "modelo") {
-    query = `
-    SELECT
-      c.user_id AS cliente_id,
-      c.nome    AS other_name,
-
-      MAX(m.created_at) AS last_time,
-
-      (
-        SELECT m2.text
-        FROM messages m2
-        WHERE m2.cliente_id = c.user_id
-          AND m2.modelo_id = $1
-        ORDER BY m2.created_at DESC
-        LIMIT 1
-      ) AS last_message,
-
-      COALESCE(u.has_unread, false) AS has_unread,
-      u.unread_for
-
-    FROM vip_subscriptions v
-    JOIN clientes c
-      ON c.user_id = v.cliente_id
-
-    LEFT JOIN messages m
-      ON m.cliente_id = c.user_id
-     AND m.modelo_id = $1
-
-    LEFT JOIN unread u
-      ON u.cliente_id = c.user_id
-     AND u.modelo_id = $1
-
-    WHERE v.modelo_id = $1
-      AND v.ativo = true
-      AND v.expiration_at > NOW()
-
-    GROUP BY
-      c.user_id,
-      c.nome,
-      u.has_unread,
-      u.unread_for
-
-    ORDER BY last_time DESC NULLS LAST
-  `;
-  }
-
-  if (role === "cliente") {
-    query = `
-    SELECT
-      m.cliente_id,
-      m.modelo_id,
-
-      mo.user_id AS other_id,
-      mo.nome    AS other_name,
-      mo.avatar  AS other_avatar,
-
-      MAX(m.created_at) AS last_time,
-
-      (
-        SELECT m2.text
-        FROM messages m2
-        WHERE m2.cliente_id = m.cliente_id
-          AND m2.modelo_id = m.modelo_id
-        ORDER BY m2.created_at DESC
-        LIMIT 1
-      ) AS last_message,
-
-      COALESCE(u.has_unread, false) AS has_unread,
-      u.unread_for
-
-    FROM messages m
-    JOIN modelos mo
-      ON mo.user_id = m.modelo_id
-
-    LEFT JOIN unread u
-      ON u.cliente_id = m.cliente_id
-     AND u.modelo_id = m.modelo_id
-
-    WHERE m.cliente_id = $1
-
-    GROUP BY
-      m.cliente_id,
-      m.modelo_id,
-      mo.user_id,
-      mo.nome,
-      mo.avatar,
-      u.has_unread,
-      u.unread_for
-
-    ORDER BY last_time DESC
-  `;
-}
-  const result = await db.query(query, params);
-
-const chats = result.rows.map(r => {
-  if (role === "modelo") {
-    return {
-      chat_id: r.cliente_id,          // ✅ cliente
-      name: r.other_name,
-      avatar: null,                   // modelo não busca avatar aqui
-      last_message: r.last_message ?? "",
-      time: r.last_time,
-      unread: r.has_unread && r.unread_for === "modelo" ? 1 : 0
-    };
-  }
-
-  // role === "cliente"
-  return {
-    chat_id: r.modelo_id,             // ✅ modelo
-    name: r.other_name,
-    avatar: r.other_avatar ?? null,   // ✅ existe só aqui
-    last_message: r.last_message ?? "",
-    time: r.last_time,
-    unread: r.has_unread && r.unread_for === "cliente" ? 1 : 0
-  };
-});
-res.json(chats);
-});
-
-// ===============================
-// CHAT — MENSAGENS (MODELO)
-// ===============================
-app.get("/api/chat/messages/:cliente_id", authModelo, async (req, res) => {
-  try {
-    const clienteId = req.params.cliente_id;
-    const modeloId = req.user.id;
-
-    const { rows } = await db.query(`
-      SELECT
-        id,
-        text,
-        sender,
-        created_at,
-        tipo,
-        conteudo_id,
-        preco,
-        visto,
-        lida
-      FROM messages
-      WHERE cliente_id = $1
-        AND modelo_id = $2
-      ORDER BY created_at ASC
-    `, [clienteId, modeloId]);
-
-    res.json(rows);
-
-  } catch (err) {
-    console.error("❌ Erro mensagens chat:", err);
-    res.status(500).json({ error: "Erro ao carregar mensagens" });
-  }
-});
-
-
-
 
 
 
