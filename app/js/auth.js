@@ -1,7 +1,7 @@
 // AUTH
 async function register() {
   const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+  const senha = document.getElementById("senha").value;
   const role = document.getElementById("role").value;
 
   try {
@@ -10,7 +10,7 @@ async function register() {
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ email, password, role })
+      body: JSON.stringify({ email, senha, role })
     });
 
     const data = await res.json();
@@ -29,7 +29,7 @@ async function register() {
 
 async function login() {
   const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+  const senha = document.getElementById("senha").value;
 
   try {
     const res = await fetch("/api/login", {
@@ -37,7 +37,7 @@ async function login() {
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ email, senha })
     });
 
     const data = await res.json();

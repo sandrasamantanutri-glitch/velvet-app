@@ -15,15 +15,15 @@ router.get("/me", auth, (req, res) => {
 
 
 router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
+  const { email, senha } = req.body;
 
-  if (!email || !password) {
+  if (!email || !senha) {
     return res.status(400).json({ error: "Email e senha obrigatórios" });
   }
 
   try {
     const result = await db.query(
-      "SELECT id, password_hash, role FROM users WHERE email = $1",
+      "SELECT id, senha_hash, role FROM users WHERE email = $1",
       [email]
     );
 
@@ -33,7 +33,7 @@ router.post("/login", async (req, res) => {
 
     const user = result.rows[0];
 
-    const senhaOk = await bcrypt.compare(password, user.password_hash);
+    const senhaOk = await bcrypt.compare(senha, user.senha_hash);
     if (!senhaOk) {
       return res.status(401).json({ error: "Credenciais inválidas" });
     }
