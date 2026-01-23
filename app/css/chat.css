@@ -54,8 +54,8 @@ html, body {
 }
 
 .btn-back img {
-  width: 50px !important;
-  height: 50px I !important;
+  width: 44px !important;
+  height: 44px I !important;
   object-fit: contain;
 }
 
@@ -92,7 +92,7 @@ html, body {
 }
 
 /* botão mídia (MAIOR, SEM FUNDO EXTRA) */
-#btnEnviarConteudo {
+#btnEnviarConteudo1 {
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -107,9 +107,9 @@ html, body {
   justify-content: center;
 }
 
-#btnEnviarConteudo img {
-  width: 24px;
-  height: 24px;
+#btnEnviarConteudo1 img {
+  width: 50px;
+  height: 50px;
   object-fit: contain;
 }
 
@@ -127,7 +127,7 @@ html, body {
 }
 
 /* botão enviar (MAIOR) */
-.btn-enviar {
+.btn-enviar1 {
   width: 50px;
   height: 50px;
   border-radius: 50%;
@@ -142,13 +142,13 @@ html, body {
   justify-content: center;
 }
 
-.btn-enviar img {
-  width: 26px;
-  height: 26px;
+.btn-enviar1 img {
+  width: 50px;
+  height: 50px;
   object-fit: contain;
 }
 
-.btnEnviarConteudo {
+.btnEnviarConteudo1 {
     width: 50px !important;
     height: 50px !Important;
     min-width: 80px;
@@ -224,8 +224,8 @@ html, body {
    FEEDBACK TOQUE (APP FEEL)
 ================================ */
 .btn-back:active,
-#btnEnviarConteudo:active,
-.btn-enviar:active {
+#btnEnviarConteudo1:active,
+.btn-enviar1:active {
   transform: scale(0.92);
   opacity: 0.8;
 }
@@ -247,6 +247,7 @@ html, body {
     height: 36px;
     padding: 0 14px;
     border-radius: 14px;
+    background: #fff !important;
     border: 1px solid #C9C9C9 !important;
     font-size: 13px;
     line-height: normal;
