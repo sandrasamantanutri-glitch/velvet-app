@@ -1,6 +1,6 @@
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont;
+  font-family: system-ui, -apple-system;
   background: #0f0f14;
   color: #fff;
 }
@@ -27,7 +27,7 @@ body {
   cursor: pointer;
 }
 
-.chat-item:hover {
+.chat-item:active {
   background: #1a1a24;
 }
 
@@ -35,7 +35,7 @@ body {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: #333;
+  background: #2a2a35;
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -56,10 +56,6 @@ body {
   display: flex;
   justify-content: space-between;
   font-size: 14px;
-}
-
-.chat-top strong {
-  font-weight: 600;
 }
 
 .chat-time {

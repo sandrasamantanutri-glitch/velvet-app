@@ -1,13 +1,20 @@
+// ===============================
+// AUTH
+// ===============================
 const token = localStorage.getItem("token");
-if (!token) location.href = "/app/index.html";
+if (!token) {
+  location.href = "/app/index.html";
+}
 
-// 🔌 SOCKET
+// ===============================
+// SOCKET (SÓ INBOX)
+// ===============================
 const socket = io("https://velvet-test-production.up.railway.app", {
   auth: { token: "Bearer " + token }
 });
 
-let modeloId = null;
 const inboxEl = document.getElementById("inbox");
+let modeloId = null;
 
 // ===============================
 // INIT
@@ -24,20 +31,26 @@ async function init() {
 
   modeloId = me.id;
 
+  // entra SOMENTE na inbox
   socket.emit("joinInbox", { modelo_id: modeloId });
 
-  carregarInbox();
+  await carregarInbox();
 }
+
+init();
 
 // ===============================
 // FETCH INBOX
 // ===============================
 async function carregarInbox() {
-  const res = await fetch("/api/chat/inbox", {
+  const res = await fetch("/api/chat/modelo", {
     headers: { Authorization: "Bearer " + token }
   });
 
-  if (!res.ok) return;
+  if (!res.ok) {
+    console.error("Erro inbox:", res.status);
+    return;
+  }
 
   const chats = await res.json();
   renderInbox(chats);
@@ -49,33 +62,33 @@ async function carregarInbox() {
 function renderInbox(chats) {
   inboxEl.innerHTML = "";
 
-  chats.forEach(chat => {
+  if (!Array.isArray(chats) || chats.length === 0) {
+    inboxEl.innerHTML = `
+      <div style="padding:16px;color:#aaa">
+        Nenhum cliente ainda.
+      </div>
+    `;
+    return;
+  }
+
+  chats.forEach(c => {
     const div = document.createElement("div");
     div.className = "chat-item";
-    div.onclick = () => abrirChat(chat.cliente_id);
+    div.onclick = () => abrirChat(c.cliente_id);
 
     div.innerHTML = `
       <div class="avatar">
-        ${
-          chat.foto
-            ? `<img src="${chat.foto}" />`
-            : ``
-        }
+        ${c.avatar ? `<img src="${c.avatar}" />` : ""}
       </div>
 
       <div class="chat-body">
         <div class="chat-top">
-          <strong>${chat.nome || "Cliente"}</strong>
-          <span class="chat-time">${chat.hora || ""}</span>
+          <strong>${c.username || c.nome || "Cliente"}</strong>
+          <span class="chat-time"></span>
         </div>
 
         <div class="chat-last">
-          <span>${chat.ultima_mensagem || ""}</span>
-          ${
-            chat.nao_lidas > 0
-              ? `<span class="badge">${chat.nao_lidas}</span>`
-              : ""
-          }
+          <span></span>
         </div>
       </div>
     `;
@@ -88,7 +101,7 @@ function renderInbox(chats) {
 // REALTIME
 // ===============================
 socket.on("inboxMessage", () => {
-  carregarInbox(); // simples, robusto, sem bugs
+  carregarInbox(); // simples e estável
 });
 
 // ===============================
@@ -102,5 +115,3 @@ function logout() {
   localStorage.clear();
   location.href = "/app/index.html";
 }
-
-init();
