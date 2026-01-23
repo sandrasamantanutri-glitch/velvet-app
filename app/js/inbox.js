@@ -91,6 +91,11 @@ ${c.nao_lidas > 1
     ? `<span class="badge-dot"></span>`
     : ""
 }
+
+${c.ultimo_sender === "cliente" && c.ultima_vista === true
+  ? `<span class="badge-reply">Necessita responder</span>`
+  : ""
+}
         </div>
       </div>
     `;
