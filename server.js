@@ -14,6 +14,9 @@ const path = require("path");
 const fs = require("fs");
 const app = express();
 const cors = require("cors");
+const chatRoutes = require("./routes/chat");
+
+app.use("/api/chat", chatRoutes);
 
 app.use(cors({
   origin: [
@@ -46,7 +49,7 @@ const server = http.createServer(app);
   },
   transports: ["websocket", "polling"]
  });
- 
+
 const multer = require("multer");
 const onlineClientes = {};
 const onlineModelos = {};
