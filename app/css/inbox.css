@@ -20,16 +20,24 @@ body {
 /* ===============================
    TOPO
 ================================ */
+/* ===============================
+   TOPO (PADRÃO RODAPÉ)
+================================ */
 .topbar {
   height: 56px;
-  background: #7B2CFF;
-  color: #fff;
+  background: #fff;              /* igual ao footer */
+  color: #1E1E26;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+
   padding: 0 16px;
   font-size: 18px;
   font-weight: 600;
+
+  border-bottom: 1px solid #C9C9C9; /* mesma lógica do footer */
 }
+
 
 /* ===============================
    INBOX
