@@ -828,6 +828,7 @@ io.to(sala).emit("newMessage", {
 
 // 📜 HISTÓRICO DO CHAT
 socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
+  console.log("📜 getHistory:", { cliente_id, modelo_id });
   if (!socket.user) return;
 
   try {
