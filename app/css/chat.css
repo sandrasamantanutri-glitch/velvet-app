@@ -151,3 +151,21 @@ body {
 .preview-item:not(.desabilitado):hover {
   transform: scale(0.97);
 }
+
+.msg {
+  position: relative;
+}
+
+.msg-hora {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  opacity: 0.6;
+  text-align: right;
+}
+
+/* opcional: alinha conforme remetente */
+.msg-cliente .msg-hora {
+  text-align: left;
+}
+

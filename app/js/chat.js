@@ -205,8 +205,8 @@ function renderMensagem(msg) {
         `
         : ""
     }
-
   </div>
+  <span class="msg-hora">${formatarHora(msg.created_at)}</span>
 `;
   }
 
@@ -214,7 +214,10 @@ function renderMensagem(msg) {
      💬 TEXTO NORMAL
   =============================== */
   else {
-    div.textContent = msg.text;
+    div.innerHTML = `
+  <div class="msg-texto">${msg.text}</div>
+  <span class="msg-hora">${formatarHora(msg.created_at)}</span>
+`;
   }
 
   chat.appendChild(div);
@@ -420,6 +423,16 @@ async function carregarConteudosVistos(cliente_id) {
 
   const ids = await res.json();
   conteudosVistosCliente = new Set(ids);
+}
+
+function formatarHora(data) {
+  if (!data) return "";
+
+  const d = new Date(data);
+  return d.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
 }
 
 
