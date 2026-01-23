@@ -27,11 +27,20 @@ let conteudosVistosCliente = new Set();
 
 // 📜 HISTÓRICO
 socket.on("chatHistory", mensagens => {
-  const chat = document.getElementById("chatBox");
-  chat.innerHTML = "";
+  conteudosVistosCliente.clear();
 
+  mensagens.forEach(m => {
+    if (m.tipo === "conteudo" && m.visto === true) {
+      (m.midias || []).forEach(media => {
+        if (media.conteudo_id) {
+          conteudosVistosCliente.add(media.conteudo_id);
+        }
+      });
+    }
+  });
+
+  chatBox.innerHTML = "";
   mensagens.forEach(m => renderMensagem(m));
-  console.log("📜 HISTÓRICO RECEBIDO:", mensagens);
 });
 
 socket.on("newMessage", msg => {
@@ -479,5 +488,19 @@ function confirmarEnvioConteudo() {
 
   fecharPopupConteudos();
 }
+
+socket.on("conteudoVisto", ({ message_id }) => {
+  const el = document.querySelector(
+    `.chat-conteudo[data-id="${message_id}"]`
+  );
+  if (!el) return;
+
+  el.classList.remove("bloqueado");
+  el.classList.add("visto");
+
+  const status = el.querySelector(".status-bloqueado");
+  if (status) status.innerText = "🟢 Vendido";
+});
+
 
 
