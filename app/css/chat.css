@@ -151,9 +151,3 @@ body {
 .preview-item:not(.desabilitado):hover {
   transform: scale(0.97);
 }
-
-.popup-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.6);
-}
