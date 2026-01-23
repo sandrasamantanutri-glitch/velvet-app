@@ -146,3 +146,7 @@ function logout() {
   localStorage.clear();
   location.href = "/app/index.html";
 }
+
+window.addEventListener("focus", () => {
+  carregarListaClientes();
+});
