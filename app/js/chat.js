@@ -53,21 +53,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   socket.emit("loginModelo", modelo_id);
 
-  const sendBtn = document.getElementById("sendBtn");
-  const input   = document.getElementById("messageInput");
-  const btnConteudo = document.getElementById("btnEnviarConteudo");
+const input = document.getElementById("msgInput");
 
-  sendBtn.onclick = enviarMensagem;
-
-  input.addEventListener("keydown", e => {
+input.addEventListener("keydown", e => {
   if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();   // 🔥 ISSO resolve a quebra de linha
+    e.preventDefault();
     enviarMensagem();
   }
-});
+  });
 
-  // 🔥 AQUI — sempre ativo
-  btnConteudo.onclick = abrirPopupConteudos;
 });
 
 // ===============================
