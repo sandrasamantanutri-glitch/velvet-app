@@ -41,7 +41,7 @@ body {
 .inbox {
   display: flex;
   flex-direction: column;
-  background: #E1E1E1;
+  background: #fff;
 }
 
 /* ===============================
@@ -260,12 +260,30 @@ html, body {
 }
 
 /* ===============================
-   BOTÃO SAIR (TOPBAR)
+   TOPO (HEADER CORRIGIDO)
 ================================ */
 .topbar {
-  justify-content: space-between;
+  height: 56px;
+  background: #E1E1E1;;
+  border-bottom: 1px solid #C9C9C9;
+
+  display: flex;
+  align-items: center;
+
+  padding: 0 16px;
 }
 
+/* título NÃO pode empurrar o botão */
+.topbar h1 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+
+  flex: 1;               /* 🔑 isso resolve */
+  color: #1E1E26;
+}
+
+/* botão sai naturalmente à direita */
 .btn-logout {
   background: transparent;
   border: none;
@@ -276,15 +294,3 @@ html, body {
   align-items: center;
   justify-content: center;
 }
-
-.btn-logout img {
-  width: 22px;
-  height: 22px;
-  object-fit: contain;
-  opacity: 0.9;
-}
-
-.btn-logout:active img {
-  opacity: 0.6;
-}
-
