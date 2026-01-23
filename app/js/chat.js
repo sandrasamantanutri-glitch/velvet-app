@@ -33,6 +33,10 @@ socket.on("chatHistory", mensagens => {
   mensagens.forEach(m => renderMensagem(m));
   console.log("📜 HISTÓRICO RECEBIDO:", mensagens);
 });
+socket.on("newMessage", msg => {
+  // evita duplicar mensagens do histórico
+  renderMensagem(msg);
+});
 
 // ===============================
 // INIT
