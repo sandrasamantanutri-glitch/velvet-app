@@ -12,16 +12,29 @@
 <body class="chat-app">
 
 <header class="chat-header">
-  <button class="btn-back" onclick="history.back()">‹</button>
+  <!-- BOTÃO VOLTAR -->
+  <button class="btn-back" onclick="history.back()" aria-label="Voltar">
+    <img src="./assets/retorno.png" alt="Voltar" />
+  </button>
+
   <div class="chat-title" id="chatTitle">Chat</div>
 </header>
 
+<!-- ÁREA DE MENSAGENS -->
 <main id="chatBox" class="chat-box"></main>
 
+<!-- INPUT FIXO -->
 <footer class="chat-input">
- <button id="btnEnviarConteudo" onclick="abrirPopupConteudos()">
-  Enviar conteúdo
-</button>
+
+  <!-- BOTÃO MÍDIA -->
+  <button
+    id="btnEnviarConteudo"
+    class="btn-midia"
+    onclick="abrirPopupConteudos()"
+    aria-label="Enviar mídia"
+  >
+    <img src="./assets/midia.png" alt="Mídia" />
+  </button>
 
   <input
     id="msgInput"
@@ -30,7 +43,14 @@
     autocomplete="off"
   />
 
-  <button class="btn-enviar" onclick="enviarMensagem()">➤</button>
+  <!-- BOTÃO ENVIAR -->
+  <button
+    class="btn-enviar"
+    onclick="enviarMensagem()"
+    aria-label="Enviar mensagem"
+  >
+    <img src="./assets/enviar.png" alt="Enviar" />
+  </button>
 </footer>
 
 <!-- POPUP DE CONTEÚDOS -->
@@ -57,7 +77,6 @@
   </div>
 
 </div>
-
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="./js/chat.js"></script>
