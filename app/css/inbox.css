@@ -286,9 +286,6 @@ html, body {
 .topbar h1 {
   flex: 1;                          /* 🔑 empurra o botão */
   margin: 0;
-
-  font-size: 16px;
-  font-weight: 600;
   color: #1E1E26;
 
   white-space: nowrap;
@@ -364,7 +361,8 @@ html, body {
 .topbar h1 {
   flex: 1;
   margin: 0;
-  font-size: 16px;
+  font-size: 20px;      /* 🔥 tamanho de título */
+  font-weight: 700;     /* mais presença */
   font-weight: 600;
   color: #1E1E26;
 }
