@@ -27,21 +27,10 @@ let conteudosVistosCliente = new Set();
 
 // 📜 HISTÓRICO
 socket.on("chatHistory", mensagens => {
-  conteudosVistosCliente.clear();
-
-  mensagens.forEach(m => {
-    if (m.tipo === "conteudo" && m.visto === true) {
-      (m.midias || []).forEach(media => {
-        if (media.conteudo_id) {
-          conteudosVistosCliente.add(media.conteudo_id);
-        }
-      });
-    }
-  });
-
   chatBox.innerHTML = "";
   mensagens.forEach(m => renderMensagem(m));
 });
+
 
 socket.on("newMessage", msg => {
   if (msg.sender === "modelo") {
@@ -63,8 +52,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   modelo_id = me.id;
 
   cliente_id = clienteId;
-
-  await carregarConteudosVistos(cliente_id); // ✅ agora funciona
 
   sala = `chat_${cliente_id}_${modelo_id}`;
   socket.emit("joinChat", { sala });
@@ -293,6 +280,7 @@ function enviarConteudosSelecionados() {
 }
 
 async function abrirPopupConteudos() {
+  await carregarConteudosVistos(cliente_id);
   document.getElementById("popupConteudos").classList.remove("hidden");
 
   const grid = document.getElementById("previewConteudos");
