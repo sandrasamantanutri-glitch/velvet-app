@@ -27,10 +27,9 @@ let conteudosVistosCliente = new Set();
 socket.on("chatHistory", mensagens => {
   const chat = document.getElementById("chatBox");
   chat.innerHTML = "";
-
+  
   mensagens.forEach(m => renderMensagem(m));
-
-  atualizarStatusPorResponder(mensagens);
+  console.log("📜 HISTÓRICO RECEBIDO:", mensagens);
 });
 
 // ===============================
