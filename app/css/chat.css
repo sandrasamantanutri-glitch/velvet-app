@@ -95,6 +95,7 @@ html, body {
   width: 36px;
   height: 36px;
   border-radius: 50%;
+  background: transparent !Important;
   border: none;
   padding: 0;
   cursor: pointer;
@@ -125,7 +126,7 @@ html, body {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: transparent;
+  background: transparent !Important;
   border: none;
   padding: 0;
   cursor: pointer;
@@ -150,7 +151,7 @@ html, body {
   left: 0;
   right: 0;
 
-  background: #fff;
+  background: #E1E1E1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 
