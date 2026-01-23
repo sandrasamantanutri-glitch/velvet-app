@@ -173,3 +173,85 @@ body {
   border-radius: 12px;
   white-space: nowrap;
 }
+
+
+/* ===============================
+   FOOTER NAV
+================================ */
+.footer-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+
+  height: 64px;
+  background: #fff;
+  border-top: 1px solid #C9C9C9;
+
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+
+  z-index: 10;
+}
+
+.footer-nav .nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+
+  font-size: 11px;
+  color: #9A9AA5;
+  text-decoration: none;
+}
+
+.footer-nav .nav-item img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  opacity: 0.7;
+}
+
+.footer-nav .nav-item.active img {
+  opacity: 1;
+}
+
+
+.footer-nav .nav-item.active {
+  color: #7B2CFF;
+  font-weight: 600;
+}
+
+
+/* espaço extra para não cobrir a lista */
+.inbox {
+  padding-bottom: 72px;
+}
+
+/* ===============================
+   PWA FULLSCREEN SAFE AREA
+================================ */
+
+/* garante altura correta em fullscreen */
+html, body {
+  height: 100%;
+}
+
+/* evita corte em notch / gesture bar */
+.footer-nav {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* espaço extra no conteúdo para o footer */
+.inbox {
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
+}
+
+/* iOS standalone */
+@supports (-webkit-touch-callout: none) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
