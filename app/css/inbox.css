@@ -264,22 +264,19 @@ html, body {
 ================================ */
 .topbar {
   height: 56px;
-  background: #E1E1E1;;
+  background: #fff;
   border-bottom: 1px solid #C9C9C9;
 
   display: flex;
   align-items: center;
-
   padding: 0 16px;
 }
 
-/* título NÃO pode empurrar o botão */
 .topbar h1 {
+  flex: 1;               /* 🔑 mantém botão à direita */
+  margin: 0;
   font-size: 16px;
   font-weight: 600;
-  margin: 0;
-
-  flex: 1;               /* 🔑 isso resolve */
   color: #1E1E26;
 }
 
@@ -293,4 +290,77 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* ===============================
+   HEADER – APP / PWA SAFE
+================================ */
+.topbar {
+  position: sticky;                 /* comportamento de app */
+  top: 0;
+  z-index: 20;
+
+  height: 56px;
+  background: #fff;
+  border-bottom: 1px solid #C9C9C9;
+
+  display: flex;
+  align-items: center;
+
+  padding: 0 16px;
+  padding-top: env(safe-area-inset-top); /* notch iOS */
+
+  box-sizing: border-box;
+}
+
+/* evita que o notch empurre conteúdo */
+@supports (-webkit-touch-callout: none) {
+  .topbar {
+    height: calc(56px + env(safe-area-inset-top));
+  }
+}
+
+/* título */
+.topbar h1 {
+  flex: 1;
+  margin: 0;
+
+  font-size: 16px;
+  font-weight: 600;
+  color: #1E1E26;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* botão sair */
+.btn-logout {
+  background: transparent;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-logout img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  opacity: 0.9;
+}
+
+/* feedback de toque (app feel) */
+.btn-logout:active {
+  transform: scale(0.92);
+}
+
+/* ===============================
+   CONTEÚDO ABAIXO DO HEADER
+================================ */
+.inbox {
+  padding-top: 8px;
 }
