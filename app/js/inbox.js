@@ -92,13 +92,10 @@ ${c.nao_lidas > 1
     : ""
 }
 
-${c.ultimo_sender === "cliente" &&
-  c.ultima_vista === true &&
-  c.nao_lidas === 0
-    ? `<span class="badge-reply">Necessita responder</span>`
-    : ""
+${c.ultimo_sender === "cliente" && c.ultima_vista === true
+  ? `<span class="badge-reply">Necessita responder</span>`
+  : ""
 }
-
         </div>
       </div>
     `;
