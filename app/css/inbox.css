@@ -16,23 +16,6 @@ body {
   max-width: 100%;
   min-height: 100vh;
 }
-/* ===============================
-   TOPO (PADRÃO RODAPÉ)
-================================ */
-.topbar {
-  height: 56px;
-  background: #E1E1E1;              /* igual ao footer */
-  color: #1E1E26;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  padding: 0 16px;
-  font-size: 18px;
-  font-weight: 600;
-
-  border-bottom: 1px solid #C9C9C9; /* mesma lógica do footer */
-}
 
 
 /* ===============================
@@ -259,70 +242,49 @@ html, body {
   }
 }
 
-/* ===============================
-   TOPO (HEADER CORRIGIDO)
-================================ */
-.topbar {
-  height: 56px;
-  background: #fff;
-  border-bottom: 1px solid #C9C9C9;
-
-  display: flex;
-  align-items: center;
-  padding: 0 16px;
-}
-
-.topbar h1 {
-  flex: 1;               /* 🔑 mantém botão à direita */
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #1E1E26;
-}
-
-/* botão sai naturalmente à direita */
-.btn-logout {
-  background: transparent;
-  border: none;
-  padding: 6px;
-  cursor: pointer;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* feedback de toque (app feel) */
+.btn-logout:active {
+  transform: scale(0.92);
 }
 
 /* ===============================
-   HEADER – APP / PWA SAFE
+   CONTEÚDO ABAIXO DO HEADER
+================================ */
+
+.inbox {
+  padding-top: 8px;
+}
+
+/* ===============================
+   HEADER – APP / PWA FINAL
 ================================ */
 .topbar {
-  position: sticky;                 /* comportamento de app */
+  position: sticky;
   top: 0;
   z-index: 20;
 
   height: 56px;
-  background: #fff;
+  background: #E1E1E1;              /* igual footer */
   border-bottom: 1px solid #C9C9C9;
 
   display: flex;
   align-items: center;
 
   padding: 0 16px;
-  padding-top: env(safe-area-inset-top); /* notch iOS */
+  padding-top: env(safe-area-inset-top);
 
   box-sizing: border-box;
 }
 
-/* evita que o notch empurre conteúdo */
+/* iOS notch */
 @supports (-webkit-touch-callout: none) {
   .topbar {
     height: calc(56px + env(safe-area-inset-top));
   }
 }
 
-/* título */
 .topbar h1 {
-  flex: 1;
+  flex: 1;                          /* 🔑 empurra o botão */
   margin: 0;
 
   font-size: 16px;
@@ -353,14 +315,7 @@ html, body {
   opacity: 0.9;
 }
 
-/* feedback de toque (app feel) */
 .btn-logout:active {
   transform: scale(0.92);
 }
 
-/* ===============================
-   CONTEÚDO ABAIXO DO HEADER
-================================ */
-.inbox {
-  padding-top: 8px;
-}
