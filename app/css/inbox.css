@@ -286,7 +286,7 @@ html, body {
 .topbar h1 {
   flex: 1;                          /* 🔑 empurra o botão */
   margin: 0;
-  color: #1E1E26;
+  color: #7B2CFF;
 
   white-space: nowrap;
   overflow: hidden;
@@ -364,7 +364,7 @@ html, body {
   font-size: 20px;      /* 🔥 tamanho de título */
   font-weight: 700;     /* mais presença */
   font-weight: 600;
-  color: #1E1E26;
+  color: #7B2CFF;
 }
 
 /* ===============================
