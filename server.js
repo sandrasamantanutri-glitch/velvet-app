@@ -55,6 +55,10 @@ const allowedOrigins = [
 const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
+app.get("/app/index.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "app", "index.html"));
+});
+
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true); // Postman, mobile, SW
