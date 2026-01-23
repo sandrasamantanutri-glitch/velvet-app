@@ -1,146 +1,101 @@
-// ===============================
-// PARAMS E ELEMENTOS
-// ===============================
-const params = new URLSearchParams(window.location.search);
-const clienteId = params.get("cliente");
-
-const chatBox = document.getElementById("chatBox");
-const input = document.getElementById("mensagem");
 const token = localStorage.getItem("token");
+if (!token) location.href = "/app/index.html";
 
-if (!token || !clienteId) {
-  window.location.href = "/app/index.html";
-}
-
-// ===============================
-// SOCKET (AUTENTICADO)
-// ===============================
-const socket = io({
-  auth: { token },
-  transports: ["websocket", "polling"]
-});
+// params
+const params = new URLSearchParams(location.search);
+const clienteId = Number(params.get("cliente"));
 
 let modeloId = null;
+let sala = null;
+
+// socket
+const socket = io("https://velvet-test-production.up.railway.app", {
+  auth: { token: "Bearer " + token }
+});
+
+const chatBox = document.getElementById("chatBox");
+const input = document.getElementById("msgInput");
 
 // ===============================
 // INIT
 // ===============================
-async function initChat() {
-  // 🔐 pega modelo logado
-  const res = await fetch("/api/auth/me", {
-    headers: {
-      Authorization: "Bearer " + token
-    }
+async function init() {
+  const res = await fetch("/api/me", {
+    headers: { Authorization: "Bearer " + token }
   });
+
+  if (!res.ok) return logout();
 
   const me = await res.json();
   modeloId = me.id;
 
-  // 🔗 entra na sala correta
-  socket.emit("join", {
-    modelo_id: modeloId,
-    cliente_id: clienteId
-  });
+  sala = `chat_${clienteId}_${modeloId}`;
 
-  // 📥 carrega histórico inicial
-  await carregarChat();
+  socket.emit("joinChat", { sala });
+
+  socket.emit("getHistory", {
+    cliente_id: clienteId,
+    modelo_id: modeloId
+  });
 }
 
-initChat();
+init();
 
 // ===============================
-// SOCKET LISTENERS
+// HISTÓRICO
 // ===============================
-socket.on("message", msg => {
-  // só renderiza se for dessa conversa
-  if (msg.cliente_id != clienteId) return;
-
-  renderMessage(msg);
+socket.on("chatHistory", mensagens => {
+  chatBox.innerHTML = "";
+  mensagens.forEach(renderMsg);
+  scroll();
 });
 
 // ===============================
-// CARREGAR CHAT
+// NOVA MSG
 // ===============================
-async function carregarChat() {
-  const res = await fetch(`/api/chat/${clienteId}`, {
-    headers: {
-      Authorization: "Bearer " + token
-    }
-  });
-
-  const mensagens = await res.json();
-  chatBox.innerHTML = "";
-
-  mensagens.forEach(renderMessage);
-  scrollBottom();
-}
+socket.on("newMessage", msg => {
+  if (msg.cliente_id !== clienteId) return;
+  renderMsg(msg);
+  scroll();
+});
 
 // ===============================
-// ENVIAR MENSAGEM
+// ENVIAR
 // ===============================
-async function enviar() {
+function enviar() {
   const text = input.value.trim();
   if (!text) return;
 
-  // grava no backend
-  await fetch("https://velvet-test-production.up.railway.app/api/chat/send", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + token
-    },
-    body: JSON.stringify({
-      cliente_id: clienteId,
-      text,
-      sender: "modelo"
-    })
+  socket.emit("sendMessage", {
+    cliente_id: clienteId,
+    modelo_id: modeloId,
+    text
   });
 
   input.value = "";
 }
 
-// ===============================
-// ENTER PARA ENVIAR
-// ===============================
+// enter
 input.addEventListener("keydown", e => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    enviar();
-  }
+  if (e.key === "Enter") enviar();
 });
 
 // ===============================
 // RENDER
 // ===============================
-function renderMessage(m) {
+function renderMsg(msg) {
   const div = document.createElement("div");
-  div.className = `msg ${
-    m.sender === "modelo" ? "msg-modelo" : "msg-cliente"
-  }`;
-
-  let status = "";
-  if (m.sender === "modelo") {
-    if (m.visto) status = "✓✓ Lido";
-    else if (m.lida) status = "✓ Entregue";
-    else status = "✓ Enviado";
-  }
-
-  div.innerHTML = `
-    <span>${m.text}</span>
-    ${status ? `<small class="status">${status}</small>` : ""}
-  `;
-
+  div.className = `msg ${msg.sender}`;
+  div.textContent = msg.text;
   chatBox.appendChild(div);
-  scrollBottom();
 }
 
-function scrollBottom() {
+// ===============================
+function scroll() {
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// ===============================
-// VOLTAR
-// ===============================
-function voltar() {
-  window.location.href = "/frontend/inbox.html";
+function logout() {
+  localStorage.clear();
+  location.href = "/app/index.html";
 }

@@ -7,21 +7,27 @@
 
   <link rel="stylesheet" href="./css/chat.css" />
 </head>
+
 <body class="chat-app">
 
-  <header class="chat-header">
-    <button onclick="voltar()">←</button>
-    <span id="chatNome">Chat</span>
-  </header>
+<header class="chat-header">
+  <button class="btn-back" onclick="history.back()">‹</button>
+  <div class="chat-title" id="chatTitle">Chat</div>
+</header>
 
-  <main id="chatBox" class="chat-box"></main>
+<main id="chatBox" class="chat-box"></main>
 
-  <footer class="chat-input">
-    <input id="mensagem" placeholder="Escreva uma mensagem…" />
-    <button onclick="enviar()">Enviar</button>
-  </footer>
+<footer class="chat-input">
+  <input
+    id="msgInput"
+    type="text"
+    placeholder="Digite uma mensagem…"
+    autocomplete="off"
+  />
+  <button onclick="enviar()">➤</button>
+</footer>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="./js/chat.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="./js/chat.js"></script>
 </body>
 </html>

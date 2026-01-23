@@ -1,95 +1,74 @@
-.chat-app {
-  background: #E1E1E1;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI";
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system;
+  background: #0f0f14;
+  color: #fff;
 }
 
 .chat-header {
-  background: linear-gradient(135deg, #7B2CFF, #9E6BFF);
-  color: #fff;
-  padding: 14px;
+  height: 56px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  padding: 0 12px;
+  background: #14141b;
 }
 
-.chat-header button {
+.btn-back {
   background: none;
   border: none;
   color: #fff;
-  font-size: 18px;
+  font-size: 24px;
 }
 
 .chat-box {
-  flex: 1;
-  padding: 12px;
+  height: calc(100vh - 112px);
   overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .msg {
   max-width: 75%;
-  padding: 10px 12px;
-  border-radius: 16px;
-  margin-bottom: 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
   font-size: 14px;
+  line-height: 1.4;
 }
 
-.msg-cliente {
-  background: #fff;
-  align-self: flex-start;
-}
-
-.msg-modelo {
-  background: #7B2CFF;
-  color: #fff;
+.msg.modelo {
   align-self: flex-end;
+  background: #7b2cff;
+}
+
+.msg.cliente {
+  align-self: flex-start;
+  background: #1f1f29;
 }
 
 .chat-input {
+  height: 56px;
   display: flex;
-  padding: 10px;
-  border-top: 1px solid rgba(0,0,0,0.1);
+  gap: 8px;
+  padding: 8px;
+  background: #14141b;
 }
 
 .chat-input input {
   flex: 1;
-  padding: 10px;
   border-radius: 20px;
   border: none;
-  outline: none;
+  padding: 0 14px;
+  font-size: 14px;
 }
 
 .chat-input button {
-  margin-left: 8px;
-  background: #7B2CFF;
-  color: #fff;
+  width: 40px;
+  border-radius: 50%;
   border: none;
-  padding: 0 16px;
-  border-radius: 20px;
+  background: #7b2cff;
+  color: #fff;
+  font-size: 18px;
 }
-
-.msg small.status {
-  display: block;
-  font-size: 11px;
-  opacity: 0.6;
-  margin-top: 2px;
-  text-align: right;
-}
-
-.msg .status {
-  display: block;
-  font-size: 11px;
-  opacity: 0.6;
-  margin-top: 4px;
-  text-align: right;
-}
-
-.chat-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-
