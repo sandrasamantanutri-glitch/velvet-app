@@ -1,13 +1,12 @@
 {
   "name": "Velvet",
   "short_name": "Velvet",
-  "description": "Velvet • Conteúdos exclusivos",
-  "start_url": "/index.html?app=true",
+  "start_url": "/index.html",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
   "background_color": "#7B2CFF",
   "theme_color": "#7B2CFF",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "/icons/icon-192.png",
