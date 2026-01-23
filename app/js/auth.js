@@ -54,7 +54,7 @@ async function login() {
     console.log("REDIRECT AGORA");
 
     // 🚀 REDIRECIONAMENTO FORÇADO
-    window.location.replace("/frontend/inbox.html");
+    window.location.replace("/app/inbox.html");
 
   } catch (err) {
     console.error("ERRO LOGIN:", err);

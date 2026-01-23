@@ -9,7 +9,7 @@ const input = document.getElementById("mensagem");
 const token = localStorage.getItem("token");
 
 if (!token || !clienteId) {
-  window.location.href = "/frontend/index.html";
+  window.location.href = "/app/index.html";
 }
 
 // ===============================

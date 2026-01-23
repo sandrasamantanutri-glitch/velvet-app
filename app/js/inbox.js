@@ -4,7 +4,7 @@
 const token = localStorage.getItem("token");
 
 if (!token) {
-  window.location.href = "/frontend/index.html";
+  window.location.href = "/app/index.html";
 }
 
 // ===============================
@@ -196,7 +196,7 @@ let item = itens.find(div =>
 // 🔗 ABRIR CHAT
 // ===============================
 function openChat(clienteId) {
-  window.location.href = `/frontend/chat.html?cliente=${clienteId}`;
+  window.location.href = `/app/chat.html?cliente=${clienteId}`;
 }
 
 // ===============================
