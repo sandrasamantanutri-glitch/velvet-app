@@ -55,8 +55,7 @@ socket.on("newMessage", msg => {
 // INIT
 // ===============================
 document.addEventListener("DOMContentLoaded", async () => {
-  await carregarConteudosVistos(cliente_id);
-    const res = await fetch("/api/me", {
+  const res = await fetch("/api/me", {
     headers: { Authorization: "Bearer " + token }
   });
 
@@ -65,22 +64,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   cliente_id = clienteId;
 
-  sala = `chat_${cliente_id}_${modelo_id}`;
+  await carregarConteudosVistos(cliente_id); // ✅ agora funciona
 
+  sala = `chat_${cliente_id}_${modelo_id}`;
   socket.emit("joinChat", { sala });
   socket.emit("getHistory", { cliente_id, modelo_id });
-
   socket.emit("loginModelo", modelo_id);
 
-const input = document.getElementById("msgInput");
-
-input.addEventListener("keydown", e => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    enviarMensagem();
-  }
+  const input = document.getElementById("msgInput");
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      enviarMensagem();
+    }
   });
-
 });
 
 // ===============================
@@ -237,64 +234,6 @@ function renderMensagem(msg) {
   chat.scrollTop = chat.scrollHeight;
 }
 
-async function abrirPopupConteudos() {
-  document.getElementById("popupConteudos").classList.remove("hidden");
-
-  const grid = document.getElementById("previewConteudos");
-  grid.innerHTML = "Carregando...";
-
-  const res = await fetch("/api/conteudos/me", {
-    headers: {
-      Authorization: "Bearer " + localStorage.getItem("token")
-    }
-  });
-
-  if (!res.ok) {
-    grid.innerHTML = "Erro ao carregar conteúdos";
-    return;
-  }
-
-  const conteudos = await res.json();
-
-  if (!Array.isArray(conteudos) || conteudos.length === 0) {
-    grid.innerHTML = "<p>Nenhum conteúdo enviado ainda.</p>";
-    return;
-  }
-
-  grid.innerHTML = "";
-
-  conteudos.forEach(c => {
-    const jaVisto = conteudosVistosCliente.has(c.id);
-
-    const item = document.createElement("div");
-    item.className =
-      "preview-item" +
-      (jaVisto ? " visto desabilitado" : "");
-    item.dataset.conteudoId = c.id;
-
-    item.innerHTML = `
-      ${c.tipo === "video"
-        ? `<video src="${c.url}" muted></video>`
-        : `<img src="${c.url}" />`
-      }
-      ${jaVisto ? `<span class="badge-visto">Visto</span>` : ""}
-    `;
-
-    // 🚫 REGRA FINAL:
-    // conteúdo visto (pago OU grátis) NUNCA pode ser reenviado
-    if (jaVisto) {
-      item.onclick = () => {
-        alert("Este conteúdo já foi visto por este cliente e não pode ser reenviado.");
-      };
-    } else {
-      item.onclick = () => {
-        item.classList.toggle("selected");
-      };
-    }
-
-    grid.appendChild(item);
-  });
-}
 
 function abrirPreviewAvatar(url) {
   let modal = document.getElementById("avatarPreviewModal");
@@ -323,25 +262,6 @@ function abrirPreviewAvatar(url) {
   img.src = url;
 
   modal.classList.add("open");
-}
-
-// ===============================
-// ❌ FECHAR POPUP DE CONTEÚDOS
-// ===============================
-function fecharPopupConteudos() {
-  const popup = document.getElementById("popupConteudos");
-  if (!popup) return;
-
-  popup.classList.add("hidden");
-
-  // limpa seleção
-  document
-    .querySelectorAll(".preview-item.selected")
-    .forEach(el => el.classList.remove("selected"));
-
-  // reseta preço
-  const precoInput = document.getElementById("precoConteudo");
-  if (precoInput) precoInput.value = 0;
 }
 
 function enviarConteudosSelecionados() {

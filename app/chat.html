@@ -35,6 +35,8 @@
 
 <!-- POPUP DE CONTEÚDOS -->
 <div id="popupConteudos" class="hidden">
+  
+  <div class="popup-backdrop" onclick="fecharPopupConteudos()"></div>
 
   <div class="popup-box">
     <h3>Enviar conteúdo</h3>
@@ -53,9 +55,6 @@
       <button class="btn-enviar" onclick="confirmarEnvioConteudo()">Enviar</button>
     </div>
   </div>
-
-  <div class="chat-conteudo premium ${msg.visto ? "visto" : "bloqueado"}"
-     data-id="${msg.id}">
 
 </div>
 
