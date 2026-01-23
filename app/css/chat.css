@@ -72,3 +72,44 @@ body {
   color: #000;
   font-size: 18px;
 }
+
+
+.chat-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  background: #14141b;
+  border-top: 1px solid #1f1f29;
+}
+
+.chat-input input {
+  flex: 1;
+  background: #1e1e26;
+  border: none;
+  border-radius: 20px;
+  padding: 10px 14px;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+}
+
+.btn-conteudo {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: #7b2cff;
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.btn-enviar {
+  background: transparent;
+  border: none;
+  color: #9e6bff;
+  font-size: 18px;
+  cursor: pointer;
+}
+

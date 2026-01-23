@@ -33,9 +33,13 @@ socket.on("chatHistory", mensagens => {
   mensagens.forEach(m => renderMensagem(m));
   console.log("📜 HISTÓRICO RECEBIDO:", mensagens);
 });
+
 socket.on("newMessage", msg => {
-  // evita duplicar mensagens do histórico
-  renderMensagem(msg);
+  if (msg.sender === "modelo") {
+    renderMensagem(msg);
+  } else {
+    renderMensagem(msg);
+  }
 });
 
 // ===============================
@@ -328,4 +332,32 @@ function fecharPopupConteudos() {
   // reseta preço
   const precoInput = document.getElementById("precoConteudo");
   if (precoInput) precoInput.value = 0;
+}
+
+function enviarConteudosSelecionados() {
+  const selecionados = [
+    ...document.querySelectorAll(".preview-item.selected")
+  ];
+
+  if (selecionados.length === 0) {
+    alert("Selecione ao menos um conteúdo.");
+    return;
+  }
+
+  const conteudos_ids = selecionados.map(
+    el => Number(el.dataset.conteudoId)
+  );
+
+  const preco = Number(
+    document.getElementById("precoConteudo")?.value || 0
+  );
+
+  socket.emit("sendConteudo", {
+    cliente_id,
+    modelo_id,
+    conteudos_ids,
+    preco
+  });
+
+  fecharPopupConteudos();
 }
