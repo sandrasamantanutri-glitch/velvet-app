@@ -16,6 +16,7 @@ const fs = require("fs");
 const app = express();
 const nodemailer = require("nodemailer");
 app.use("/app", express.static("app"));
+app.use(express.static("public"));
 app.use((req, res, next) => {
   console.log("➡️ REQ:", req.method, req.url);
   next();
