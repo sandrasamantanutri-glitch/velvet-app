@@ -283,16 +283,6 @@ html, body {
   }
 }
 
-.topbar h1 {
-  flex: 1;                          /* 🔑 empurra o botão */
-  margin: 0;
-  color: #7B2CFF;
-
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 /* botão sair */
 .btn-logout {
   background: transparent;
@@ -361,11 +351,15 @@ html, body {
 .topbar h1 {
   flex: 1;
   margin: 0;
-  font-size: 20px;      /* 🔥 tamanho de título */
+  font-size: 24px;      /* 🔥 tamanho de título */
   font-weight: 700;     /* mais presença */
   font-weight: 600;
   color: #7B2CFF;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+
 
 /* ===============================
    FOOTER FIXO
