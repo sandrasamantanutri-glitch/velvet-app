@@ -10,9 +10,9 @@ const role  = localStorage.getItem("role");
 
 if (token && role) {
   if (role === "modelo") {
-    window.location.href = "/chat-app.html";
+    window.location.href = "/app/inbox.html";
   } else {
-    window.location.href = "/clientHome.html";
+    window.location.href = "/app/inbox.html";
   }
 }
 
@@ -191,7 +191,7 @@ async function login() {
 
   // MODELO
   if (data.role === "modelo") {
-    window.location.href = "/chat-app.html";
+    window.location.href = "/app/inbox.html";
     return;
   }
 
