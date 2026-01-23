@@ -124,3 +124,12 @@ body {
 }
 
 
+.badge-dot {
+  width: 10px;
+  height: 10px;
+  background: #7B2CFF;
+  border-radius: 50%;
+  margin-left: 8px;
+}
+
+

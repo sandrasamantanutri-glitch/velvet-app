@@ -83,9 +83,10 @@ async function carregarListaClientes() {
         <div class="chat-last">
           <span>${c.ultima_mensagem || ""}</span>
           ${
-            c.nao_lidas > 0
-              ? `<span class="badge">${c.nao_lidas}</span>`
-              : ""
+            c.nao_lidas
+  ? `<span class="badge-dot"></span>`
+  : ""
+
           }
         </div>
       </div>
