@@ -101,7 +101,7 @@ body {
 
 .chat-top strong {
   font-weight: 600;
-  color: #000
+  color: #000;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

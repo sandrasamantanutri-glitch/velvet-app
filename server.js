@@ -1522,38 +1522,35 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
     const modeloId = req.user.id;
 
     const { rows } = await db.query(`
-SELECT
-  c.user_id AS cliente_id,
-  cd.username,
-  c.nome,
-  cd.avatar,
+      SELECT DISTINCT ON (c.user_id)
+        c.user_id AS cliente_id,
+        cd.username,
+        c.nome,
+        cd.avatar,
 
-  MAX(m.created_at)
-    FILTER (WHERE m.sender = 'modelo')
-    AS ultima_msg_modelo_ts,
+        m.text AS ultima_mensagem,
+        m.created_at AS ultima_mensagem_em,
 
-  CASE
-    WHEN COUNT(m.id) = 0 THEN 'novo'
-    ELSE 'normal'
-  END AS status
+        COALESCE(u.has_unread, false) AS nao_lidas
 
-FROM vip_subscriptions v
-JOIN clientes c ON c.user_id = v.cliente_id
-LEFT JOIN clientes_dados cd ON cd.user_id = c.user_id
-LEFT JOIN messages m
-  ON m.cliente_id = c.user_id
- AND m.modelo_id = $1
+      FROM vip_subscriptions v
+      JOIN clientes c ON c.user_id = v.cliente_id
+      LEFT JOIN clientes_dados cd ON cd.user_id = c.user_id
 
-WHERE v.modelo_id = $1
-AND v.ativo = true
-AND v.expiration_at > NOW()
+      LEFT JOIN messages m
+        ON m.cliente_id = c.user_id
+       AND m.modelo_id = $1
 
-GROUP BY c.user_id, cd.username, c.nome, cd.avatar
+      LEFT JOIN unread u
+        ON u.cliente_id = c.user_id
+       AND u.modelo_id = $1
+       AND u.unread_for = 'modelo'
 
-ORDER BY
-  CASE WHEN COUNT(m.id) = 0 THEN 0 ELSE 1 END,
-  ultima_msg_modelo_ts DESC NULLS LAST;
-  
+      WHERE v.modelo_id = $1
+        AND v.ativo = true
+        AND v.expiration_at > NOW()
+
+      ORDER BY c.user_id, m.created_at DESC NULLS LAST
     `, [modeloId]);
 
     res.json(rows);
