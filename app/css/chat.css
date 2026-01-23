@@ -10,7 +10,7 @@ html, body {
   margin: 0;
   overflow: hidden;              /* 🔒 trava o body */
   font-family: "Poppins", system-ui, -apple-system;
-  background: #E1E1E1;
+  background: #fff;
 }
 
 /* ===============================
@@ -60,9 +60,9 @@ html, body {
 
 /* título */
 .chat-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: #1E1E26;
+  font-size: 20px !important;
+  font-weight: 700 !Important;
+  color: #7B2CFF;
 
   white-space: nowrap;
   overflow: hidden;
@@ -80,7 +80,7 @@ html, body {
   z-index: 30;
 
   height: 56px;
-  background: #E1E1E1;
+  background: #fff;
   border-top: 1px solid #C9C9C9;
 
   display: flex;
@@ -95,7 +95,6 @@ html, body {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: #9E6BFF;
   border: none;
   padding: 0;
   cursor: pointer;
