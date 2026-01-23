@@ -23,16 +23,20 @@ let sala = null;
 let modelo_id = null;
 let cliente_id = null;
 let chatAtivo = null;
-let clienteJaComprouConteudo = false;
+let conteudosVistosCliente = new Set();
 
 // 📜 HISTÓRICO
 socket.on("chatHistory", mensagens => {
-  let clienteJaComprouConteudo = false;
+  conteudosVistosCliente.clear();
 
   mensagens.forEach(m => {
-  if (m.tipo === "conteudo" && m.visto === true) {
-    clienteJaComprouConteudo = true;
-  }
+    if (m.tipo === "conteudo" && m.visto === true) {
+      (m.midias || []).forEach(media => {
+        if (media.conteudo_id) {
+          conteudosVistosCliente.add(media.conteudo_id);
+        }
+      });
+    }
   });
 
   chatBox.innerHTML = "";
@@ -51,6 +55,7 @@ socket.on("newMessage", msg => {
 // INIT
 // ===============================
 document.addEventListener("DOMContentLoaded", async () => {
+  await carregarConteudosVistos(cliente_id);
     const res = await fetch("/api/me", {
     headers: { Authorization: "Bearer " + token }
   });
@@ -232,6 +237,64 @@ function renderMensagem(msg) {
   chat.scrollTop = chat.scrollHeight;
 }
 
+async function abrirPopupConteudos() {
+  document.getElementById("popupConteudos").classList.remove("hidden");
+
+  const grid = document.getElementById("previewConteudos");
+  grid.innerHTML = "Carregando...";
+
+  const res = await fetch("/api/conteudos/me", {
+    headers: {
+      Authorization: "Bearer " + localStorage.getItem("token")
+    }
+  });
+
+  if (!res.ok) {
+    grid.innerHTML = "Erro ao carregar conteúdos";
+    return;
+  }
+
+  const conteudos = await res.json();
+
+  if (!Array.isArray(conteudos) || conteudos.length === 0) {
+    grid.innerHTML = "<p>Nenhum conteúdo enviado ainda.</p>";
+    return;
+  }
+
+  grid.innerHTML = "";
+
+  conteudos.forEach(c => {
+    const jaVisto = conteudosVistosCliente.has(c.id);
+
+    const item = document.createElement("div");
+    item.className =
+      "preview-item" +
+      (jaVisto ? " visto desabilitado" : "");
+    item.dataset.conteudoId = c.id;
+
+    item.innerHTML = `
+      ${c.tipo === "video"
+        ? `<video src="${c.url}" muted></video>`
+        : `<img src="${c.url}" />`
+      }
+      ${jaVisto ? `<span class="badge-visto">Visto</span>` : ""}
+    `;
+
+    // 🚫 REGRA FINAL:
+    // conteúdo visto (pago OU grátis) NUNCA pode ser reenviado
+    if (jaVisto) {
+      item.onclick = () => {
+        alert("Este conteúdo já foi visto por este cliente e não pode ser reenviado.");
+      };
+    } else {
+      item.onclick = () => {
+        item.classList.toggle("selected");
+      };
+    }
+
+    grid.appendChild(item);
+  });
+}
 
 function abrirPreviewAvatar(url) {
   let modal = document.getElementById("avatarPreviewModal");
@@ -336,7 +399,7 @@ async function abrirPopupConteudos() {
   grid.innerHTML = "";
 
   conteudos.forEach(c => {
-    const jaVisto = clienteJaComprouConteudo;
+    const jaVisto = conteudosVistosCliente.has(c.id);
 
     const item = document.createElement("div");
     item.className =
@@ -439,6 +502,18 @@ socket.on("conteudoVisto", ({ message_id }) => {
   const status = el.querySelector(".status-bloqueado");
   if (status) status.innerText = "🟢 Vendido";
 });
+
+async function carregarConteudosVistos(cliente_id) {
+  const res = await fetch(`/api/chat/conteudos-vistos/${cliente_id}`, {
+    headers: {
+      Authorization: "Bearer " + token
+    }
+  });
+
+  const ids = await res.json();
+  conteudosVistosCliente = new Set(ids);
+}
+
 
 
 
