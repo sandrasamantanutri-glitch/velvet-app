@@ -1,22 +1,20 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-  <meta charset="UTF-8" />
-  <title>Inbox</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+<div class="chat-item">
+  <div class="avatar">
+    <img src="avatar.jpg" />
+  </div>
 
-  <link rel="stylesheet" href="./css/inbox.css" />
-</head>
+  <div class="chat-content">
+    <div class="chat-header">
+      <span class="chat-name">Nome da Modelo</span>
+      <span class="chat-time">14:32</span>
+    </div>
 
-<body class="app">
+    <div class="chat-footer">
+      <span class="chat-last">
+        Última mensagem enviada aqui...
+      </span>
+      <span class="badge">3</span>
+    </div>
+  </div>
+</div>
 
-<header class="topbar">
-  <h1>Chats</h1>
-</header>
-
-<main id="inbox" class="inbox"></main>
-
-<script src="/socket.io/socket.io.js"></script>
-<script src="./js/inbox.js"></script>
-</body>
-</html>
