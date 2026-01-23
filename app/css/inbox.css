@@ -113,10 +113,14 @@ body {
   justify-content: center;
 }
 
-/* =========================
-   APP / PWA
-========================= */
-body.is-app {
-  overscroll-behavior: none;
+.view {
+  display: none;
+  height: calc(100vh - 56px);
+  overflow-y: auto;
 }
+
+.view.active {
+  display: block;
+}
+
 
