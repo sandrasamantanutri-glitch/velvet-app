@@ -2948,6 +2948,35 @@ app.post("/api/contato", async (req, res) => {
   }
 });
 
+app.post("/api/chat/marcar-lido/:cliente_id", authModelo, async (req, res) => {
+  const modelo_id = req.user.id;
+  const cliente_id = Number(req.params.cliente_id);
+
+  if (!Number.isInteger(cliente_id)) {
+    return res.status(400).json({ error: "cliente_id inválido" });
+  }
+
+  try {
+    await db.query(
+      `
+      UPDATE messages
+      SET visto = true
+      WHERE cliente_id = $1
+        AND modelo_id = $2
+        AND sender = 'cliente'
+        AND visto = false
+      `,
+      [cliente_id, modelo_id]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Erro marcar lido:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+
 
 
 
