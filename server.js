@@ -14,6 +14,16 @@ const bcrypt = require("bcrypt");
 const path = require("path");
 const fs = require("fs");
 const app = express();
+const cors = require("cors");
+
+app.use(cors({
+  origin: [
+    "https://velvetapp-production.up.railway.app",
+    "https://velvet-test-production.up.railway.app"
+  ],
+  credentials: true
+}));
+
 const nodemailer = require("nodemailer");
 app.use((req, res, next) => {
   console.log("➡️ REQ:", req.method, req.url);
