@@ -51,7 +51,8 @@ const allowedOrigins = [
   "https://www.velvet.lat",
   "https://app-production-e7e1.up.railway.app",
   "https://velvet-test-production.up.railway.app",
-  "https://velvet-test-production.up.railway.app/app"
+  "https://velvet-test-production.up.railway.app/app",
+   "https://www.velvet.lat/app/"
 ];
 const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
@@ -1733,11 +1734,8 @@ app.get("/api/conteudos/me", authModelo, async (req, res) => {
 
 
 app.get("/manifest.json", (req, res) => {
-  res.setHeader("Content-Type", "application/manifest+json");
-  res.sendFile(path.join(__dirname, "public/manifest.json"));
+  res.sendFile(path.join(__dirname, "manifest.json"));
 });
-
-
 
 // ===============================
 // ROTA POST
