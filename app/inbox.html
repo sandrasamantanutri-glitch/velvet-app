@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Velvet · Conversas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="./css/inbox.css" />
+
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#7B2CFF" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+</head>
+
+<body>
+<div class="page-wrapper">
+
+  <header class="topbar">
+    <h1>Conversas</h1>
+    <button class="btn-logout" onclick="logout()" aria-label="Sair">
+      <img src="./assets/logout.png" alt="Sair" />
+    </button>
+  </header>
+
+  <!-- 🔥 CONTAINER DE SCROLL -->
+  <div class="content">
+    <main id="inbox" class="inbox"></main>
+  </div>
+</div>
+
+      <!-- ITEM DO CHAT -->
+      <!--
+      Estados esperados (JS controla classes/labels):
+
+      1) Cliente recebeu mensagem:
+         <span class="status status-sent">✓</span>
+
+      2) Cliente leu e não respondeu:
+         <span class="status status-read">✓✓</span>
+
+      3) Modelo entrou no chat, leu e não respondeu:
+         <span class="status status-reply">Necessita de resposta</span>
+
+      4) Modelo ainda não visualizou:
+         <span class="status status-unseen">Não visto</span>
+      -->
+
+      <!-- EXEMPLO ESTRUTURAL -->
+      <!--
+      <div class="chat-item">
+        <div class="avatar">
+          <img src="avatar.jpg" />
+        </div>
+
+        <div class="chat-body">
+          <div class="chat-top">
+            <span class="chat-name">Cliente</span>
+            <span class="chat-time">14:32</span>
+          </div>
+
+          <div class="chat-bottom">
+            <span class="chat-last">Última mensagem aqui…</span>
+
+            <div class="chat-status">
+              <span class="status status-read">✓✓</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      -->
+    </main>
+
+  </div>
+
+  <footer class="footer-nav">
+  <a href="#" target="_blank" class="nav-item">
+    <img src="./assets/feed.png" alt="Feed" />
+    <span>Feed</span>
+  </a>
+
+  <a
+    href="https://velvet-test-production.up.railway.app/modelo/relatorio"
+    target="_blank" rel="noopener noreferrer" class="nav-item"
+  >
+    <img src="./assets/ganhos.png" alt="Ganhos" />
+    <span>Ganhos</span>
+  </a>
+
+  <a
+    href="https://velvet-test-production.up.railway.app/app/inbox.html"
+   target="_blank" rel="noopener noreferrer" class="nav-item active"
+  >
+    <img src="./assets/messages.png" alt="Messages" />
+    <span>Messages</span>
+  </a>
+
+  <a
+    href="https://velvet-test-production.up.railway.app/profile.html"
+    target="_blank" rel="noopener noreferrer" class="nav-item"
+  >
+    <img src="./assets/perfil.png" alt="Perfil" />
+    <span>Perfil</span>
+  </a>
+</footer>
+
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="./js/inbox.js"></script>
+</body>
+</html>

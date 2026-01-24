@@ -107,7 +107,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     e.preventDefault();   // 🔥 ISSO resolve a quebra de linha
     enviarMensagem();
   }
-});
+ });
 
   // 🔥 AQUI — sempre ativo
   btnConteudo.onclick = abrirPopupConteudos;
@@ -751,6 +751,47 @@ function fecharPopupConteudos() {
   // reseta preço
   const precoInput = document.getElementById("precoConteudo");
   if (precoInput) precoInput.value = 0;
+}
+
+
+async function carregarConteudosVistos(cliente_id) {
+  const res = await fetch(`/api/chat/conteudos-vistos/${cliente_id}`, {
+    headers: {
+      Authorization: "Bearer " + localStorage.getItem("token")
+    }
+  });
+
+  const ids = await res.json();
+  conteudosVistosCliente = new Set(ids);
+}
+
+function abrirPreviewAvatar(url) {
+  let modal = document.getElementById("avatarPreviewModal");
+
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "avatarPreviewModal";
+    modal.className = "preview-modal open";
+
+    modal.innerHTML = `
+      <div class="preview-backdrop"></div>
+      <div class="preview-box">
+        <span class="preview-close">×</span>
+        <img id="avatarPreviewImg" />
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const fechar = () => modal.remove();
+    modal.querySelector(".preview-backdrop").onclick = fechar;
+    modal.querySelector(".preview-close").onclick = fechar;
+  }
+
+  const img = modal.querySelector("#avatarPreviewImg");
+  img.src = url;
+
+  modal.classList.add("open");
 }
 
 

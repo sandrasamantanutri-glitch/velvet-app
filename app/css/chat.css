@@ -1,0 +1,254 @@
+/* ===============================
+   BASE / APP
+================================ */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden; /* body não rola */
+  font-family: "Poppins", system-ui, -apple-system;
+  background: #fff;
+}
+
+/* ===============================
+   HEADER FIXO (APP)
+================================ */
+.chat-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+
+  height: 64px;
+  background: #E1E1E1;
+  border-bottom: 1px solid #C9C9C9;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  padding-top: env(safe-area-inset-top);
+}
+
+/* safe-area iOS */
+@supports (-webkit-touch-callout: none) {
+  .chat-header {
+    height: calc(64px + env(safe-area-inset-top));
+  }
+}
+
+/* botão voltar (MAIOR) */
+.btn-back {
+  background: transparent;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-back img {
+  width: 44px !important;
+  height: 44px I !important;
+  object-fit: contain;
+}
+
+/* título do chat (TÍTULO REAL) */
+.chat-title {
+  font-size: 24px;      /* 🔥 tamanho de título */
+  font-weight: 700;
+  color: #7B2CFF;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===============================
+   INPUT FIXO (APP)
+================================ */
+.chat-input {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+
+  height: 64px;
+  background: #E1E1E1;                /* 🔥 igual header */
+  border-top: 1px solid #C9C9C9;      /* mesmo separador */
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* botão mídia (MAIOR, SEM FUNDO EXTRA) */
+#btnEnviarConteudo1 {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#btnEnviarConteudo1 img {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+}
+
+/* input de texto (SEM “tabela estranha”) */
+.chat-input input {
+  flex: 1;
+  background: #E1E1E1;     /* 🔥 igual header */
+  border: none;
+  border-radius: 20px;
+
+  padding: 10px 14px;
+  font-size: 15px;
+  outline: none;
+  color: #1E1E26;
+}
+
+/* botão enviar (MAIOR) */
+.btn-enviar1 {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+
+  background: transparent !important;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-enviar1 img {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+}
+
+.btnEnviarConteudo1 {
+    width: 50px !important;
+    height: 50px !Important;
+    min-width: 80px;
+    border-radius: 12px;
+    padding: 0;
+    background: transparent !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(123, 44, 255, 0.35);
+}
+
+/* ===============================
+   ÁREA DE MENSAGENS (SCROLL)
+================================ */
+.chat-box {
+  position: absolute;
+  top: calc(64px + env(safe-area-inset-top));
+  bottom: calc(64px + env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+
+  background: #fff;        /* 🔥 fundo branco */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ===============================
+   BOLHAS
+================================ */
+.msg {
+  max-width: 75%;
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.msg.modelo {
+  align-self: flex-end;
+  background: #7B2CFF;
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.msg.cliente {
+  align-self: flex-start;
+  background: #F1F1F4;
+  color: #1E1E26;
+  border-bottom-left-radius: 4px;
+}
+
+/* hora */
+.msg-hora {
+  margin-top: 4px;
+  font-size: 11px;
+  opacity: 0.6;
+  text-align: right;
+}
+
+.msg.cliente .msg-hora {
+  text-align: left;
+}
+
+/* ===============================
+   FEEDBACK TOQUE (APP FEEL)
+================================ */
+.btn-back:active,
+#btnEnviarConteudo1:active,
+.btn-enviar1:active {
+  transform: scale(0.92);
+  opacity: 0.8;
+}
+
+
+/* ===============================
+   SEPARADORES UNIFICADOS (FORÇA)
+================================ */
+.chat-header {
+  border-bottom: 1px solid #C9C9C9 !important;
+}
+
+.chat-input {
+  border-top: 1px solid #C9C9C9 !important;
+}
+
+#msgInput {
+    flex: 1;
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 14px;
+    background: #fff !important;
+    border: 1px solid #C9C9C9 !important;
+    font-size: 13px;
+    line-height: normal;
+}
