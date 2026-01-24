@@ -15,6 +15,8 @@ const path = require("path");
 const fs = require("fs");
 const app = express();
 const nodemailer = require("nodemailer");
+app.use("/app", express.static("app"));
+app.use(express.static("public"));
 app.use((req, res, next) => {
   console.log("➡️ REQ:", req.method, req.url);
   next();
@@ -43,15 +45,20 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/admin", express.static(path.join(__dirname, "admin-pages")));
+app.use("/icons", express.static(path.join(__dirname, "icons")));
 
 const allowedOrigins = [
-  "https://velvet.lat",
   "https://www.velvet.lat",
   "https://app-production-e7e1.up.railway.app",
-  "https://velvet-test-production.up.railway.app"
+  "https://velvet-test-production.up.railway.app",
+  "https://velvet-test-production.up.railway.app/app"
 ];
 const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+app.get("/app/index.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "app", "index.html"));
+});
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -725,6 +732,13 @@ socket.on("joinChat", ({ sala }) => {
   console.log("🟪 Entrou na sala:", sala);
 });
 
+socket.on("joinInbox", ({ modelo_id }) => {
+  if (!modelo_id) return;
+
+  socket.join(`inbox_modelo_${modelo_id}`);
+  console.log("📬 Inbox conectada:", `inbox_modelo_${modelo_id}`);
+});
+
 // 💬 ENVIAR MENSAGEM (ÚNICO)
 socket.on("sendMessage", async ({ cliente_id, modelo_id, text }) => {
   if (!socket.user) {
@@ -749,8 +763,8 @@ socket.on("sendMessage", async ({ cliente_id, modelo_id, text }) => {
     // 1️⃣ SALVA NO BANCO E RETORNA ID 🔥
 const result = await db.query(`
   INSERT INTO messages
-    (cliente_id, modelo_id, sender, tipo, text)
-  VALUES ($1, $2, $3, 'texto', $4)
+    (cliente_id, modelo_id, sender, tipo, text, visto)
+  VALUES ($1, $2, $3, 'texto', $4, false)
   RETURNING id
 `, 
 [cliente_id, modelo_id, sender, text]);
@@ -805,6 +819,14 @@ io.to(sala).emit("newMessage", {
   created_at: new Date()
  });
 
+ if (sender === "cliente") {
+  io.to(`inbox_modelo_${modelo_id}`).emit("inboxMessage", {
+    cliente_id,
+    text,
+    created_at: new Date()
+  });
+}
+
   } catch (err) {
     console.error("🔥 ERRO AO SALVAR MENSAGEM:", err);
   }
@@ -812,6 +834,7 @@ io.to(sala).emit("newMessage", {
 
 // 📜 HISTÓRICO DO CHAT
 socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
+  console.log("📜 getHistory:", { cliente_id, modelo_id });
   if (!socket.user) return;
 
   try {
@@ -1521,38 +1544,34 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
     const modeloId = req.user.id;
 
     const { rows } = await db.query(`
-SELECT
+  SELECT DISTINCT ON (c.user_id)
   c.user_id AS cliente_id,
   cd.username,
   c.nome,
   cd.avatar,
 
-  MAX(m.created_at)
-    FILTER (WHERE m.sender = 'modelo')
-    AS ultima_msg_modelo_ts,
-
-  CASE
-    WHEN COUNT(m.id) = 0 THEN 'novo'
-    ELSE 'normal'
-  END AS status
+  m.text       AS ultima_mensagem,
+  m.created_at AS ultima_mensagem_em,
+  m.sender     AS ultimo_sender,
+  m.visto,
+  m.lida
 
 FROM vip_subscriptions v
 JOIN clientes c ON c.user_id = v.cliente_id
 LEFT JOIN clientes_dados cd ON cd.user_id = c.user_id
+
 LEFT JOIN messages m
   ON m.cliente_id = c.user_id
- AND m.modelo_id = $1
+ AND m.modelo_id  = $1
 
 WHERE v.modelo_id = $1
-AND v.ativo = true
-AND v.expiration_at > NOW()
-
-GROUP BY c.user_id, cd.username, c.nome, cd.avatar
+  AND v.ativo = true
+  AND v.expiration_at > NOW()
 
 ORDER BY
-  CASE WHEN COUNT(m.id) = 0 THEN 0 ELSE 1 END,
-  ultima_msg_modelo_ts DESC NULLS LAST;
-  
+  c.user_id,
+  m.created_at DESC NULLS LAST;
+
     `, [modeloId]);
 
     res.json(rows);
@@ -1709,6 +1728,13 @@ app.get("/api/conteudos/me", authModelo, async (req, res) => {
     console.error("Erro carregar conteudos:", err);
     res.status(500).json([]);
   }
+});
+
+
+
+app.get("/manifest.json", (req, res) => {
+  res.setHeader("Content-Type", "application/manifest+json");
+  res.sendFile(path.join(__dirname, "public/manifest.json"));
 });
 
 
@@ -2916,6 +2942,35 @@ app.post("/api/contato", async (req, res) => {
     return res.status(500).json({ error: "Erro ao enviar mensagem" });
   }
 });
+
+app.post("/api/chat/marcar-lido/:cliente_id", authModelo, async (req, res) => {
+  const modelo_id = req.user.id;
+  const cliente_id = Number(req.params.cliente_id);
+
+  if (!Number.isInteger(cliente_id)) {
+    return res.status(400).json({ error: "cliente_id inválido" });
+  }
+
+  try {
+    await db.query(
+      `
+      UPDATE messages
+      SET visto = true
+      WHERE cliente_id = $1
+        AND modelo_id = $2
+        AND sender = 'cliente'
+        AND visto = false
+      `,
+      [cliente_id, modelo_id]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Erro marcar lido:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
 
 
 
