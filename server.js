@@ -853,6 +853,23 @@ socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
     socket.user.role   // 'cliente' | 'modelo'
   ]
  );
+   if (socket.user.role === "cliente") {
+    // marca mensagens da MODELO como lidas
+    await db.query(`
+      UPDATE messages
+      SET lida = true
+      WHERE cliente_id = $1
+        AND modelo_id = $2
+        AND sender = 'modelo'
+        AND lida = false
+    `, [cliente_id, modelo_id]);
+
+    // avisa a MODELO (recibo de leitura)
+    io.to(`inbox_modelo_${modelo_id}`).emit("mensagemLida", {
+      cliente_id,
+      modelo_id
+    });
+  }
 
     // 2️⃣ busca histórico base
     const result = await db.query(
