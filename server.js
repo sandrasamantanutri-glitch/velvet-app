@@ -45,12 +45,13 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/admin", express.static(path.join(__dirname, "admin-pages")));
+app.use("/icons", express.static(path.join(__dirname, "icons")));
 
 const allowedOrigins = [
-  "https://velvet.lat",
   "https://www.velvet.lat",
   "https://app-production-e7e1.up.railway.app",
-  "https://velvet-test-production.up.railway.app"
+  "https://velvet-test-production.up.railway.app",
+  "https://velvet-test-production.up.railway.app/app"
 ];
 const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
