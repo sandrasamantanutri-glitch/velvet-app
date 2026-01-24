@@ -15,8 +15,6 @@ const path = require("path");
 const fs = require("fs");
 const app = express();
 const nodemailer = require("nodemailer");
-app.use(authMiddleware);
-app.use("/api", ...);
 app.use("/app", express.static("app"));
 app.use(express.static("public"));
 app.use((req, res, next) => {
@@ -53,7 +51,8 @@ const allowedOrigins = [
   "https://www.velvet.lat",
   "https://app-production-e7e1.up.railway.app",
   "https://velvet-test-production.up.railway.app",
-  "https://velvet-test-production.up.railway.app/app"
+  "https://velvet-test-production.up.railway.app/app",
+   "https://www.velvet.lat/app/"
 ];
 const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
