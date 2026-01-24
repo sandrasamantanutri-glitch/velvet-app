@@ -15,6 +15,8 @@ const path = require("path");
 const fs = require("fs");
 const app = express();
 const nodemailer = require("nodemailer");
+app.use(authMiddleware);
+app.use("/api", ...);
 app.use("/app", express.static("app"));
 app.use(express.static("public"));
 app.use((req, res, next) => {
@@ -1733,11 +1735,8 @@ app.get("/api/conteudos/me", authModelo, async (req, res) => {
 
 
 app.get("/manifest.json", (req, res) => {
-  res.setHeader("Content-Type", "application/manifest+json");
-  res.sendFile(path.join(__dirname, "public/manifest.json"));
+  res.sendFile(path.join(__dirname, "manifest.json"));
 });
-
-
 
 // ===============================
 // ROTA POST
