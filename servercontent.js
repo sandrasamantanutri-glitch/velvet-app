@@ -868,40 +868,43 @@ WHERE modelo_id = $1;
 // ===============================
 // 📣 ALLMESSAGE - LISTAR MODELOS
 // ===============================
-router.get("/api/allmessage/modelos",
+// ===============================
+// 📣 ALLMESSAGE - LISTAR MODELOS (CORRIGIDO)
+// ===============================
+router.get(
+  "/api/allmessage/modelos",
   authMiddleware,
   requireRole("admin", "modelo"),
   async (req, res) => {
     try {
       const { role, id: user_id } = req.user;
 
-      let sql = `
-      SELECT
-      u.id AS id,
-      m.nome
-      FROM modelos m
-      JOIN users u ON u.id = m.user_id
-      ORDER BY m.nome;
+       let sql = `
+        SELECT
+          m.id        AS modelo_id,
+          m.nome      AS nome
+        FROM modelos m
       `;
       let params = [];
 
       // 🔒 modelo só vê a própria
       if (role === "modelo") {
-        sql += " AND user_id = $1";
+        sql += ` WHERE m.user_id = $1 `;
         params.push(user_id);
       }
 
-      sql += " ORDER BY nome";
+      sql += ` ORDER BY m.nome `;
 
       const result = await db.query(sql, params);
       res.json(result.rows);
 
     } catch (err) {
-      console.error("❌ Erro ALLMESSAGE modelos:", err.message);
-      res.status(500).json({ error: err.message });
+      console.error("❌ Erro ALLMESSAGE modelos:", err);
+      res.status(500).json({ error: "Erro ao listar modelos" });
     }
   }
 );
+
 
 // ===============================
 // 📣 ALLMESSAGE - CONTEÚDOS DA MODELO
@@ -998,134 +1001,210 @@ router.get("/api/relatorios/kpis-mensais",
 
 
 ////////////////////////////////////////// ADM ////////////////////////////////////////////////////
-router.get('/admin/relatorios/geral', authMiddleware, requireRole("admin"), async (req, res) => {
-  try {
-    const [
-      midiasDia,
-      assinaturasDia,
-      midiasMes,
-      assinaturasMes,
-      midiasAno,
-      assinaturasAno
-    ] = await Promise.all([
-      db.query(`
-        SELECT SUM(valor_total) AS total
-        FROM conteudo_pacotes
-        WHERE CAST(criado_em AS DATE) = CAST(GETDATE() AS DATE)
-      `),
-      db.query(`
-        SELECT SUM(valor_total) AS total
-        FROM vip_subscriptions
-        WHERE CAST(created_at AS DATE) = CAST(GETDATE() AS DATE)
-      `),
-      db.query(`
-        SELECT SUM(valor_total) AS total
-        FROM conteudo_pacotes
-        WHERE MONTH(criado_em) = MONTH(GETDATE())
-          AND YEAR(criado_em) = YEAR(GETDATE())
-      `),
-      db.query(`
-        SELECT SUM(valor_total) AS total
-        FROM vip_subscriptions
-        WHERE MONTH(created_at) = MONTH(GETDATE())
-          AND YEAR(created_at) = YEAR(GETDATE())
-      `),
-      db.query(`
-        SELECT SUM(valor_total) AS total
-        FROM conteudo_pacotes
-        WHERE YEAR(criado_em) = YEAR(GETDATE())
-      `),
-      db.query(`
-        SELECT SUM(valor_total) AS total
-        FROM vip_subscriptions
-        WHERE YEAR(created_at) = YEAR(GETDATE())
-      `)
-    ]);
+router.get(
+  '/admin/relatorios/geral',
+  authMiddleware,
+  requireRole("admin"),
+  async (req, res) => {
+    try {
+      const [
+        midiasDia,
+        assinaturasDia,
+        midiasMes,
+        assinaturasMes,
+        midiasAno,
+        assinaturasAno
+      ] = await Promise.all([
 
-    res.json({
-      dia: {
-        midias: midiasDia.recordset[0].total || 0,
-        assinaturas: assinaturasDia.recordset[0].total || 0
-      },
-      mes: {
-        midias: midiasMes.recordset[0].total || 0,
-        assinaturas: assinaturasMes.recordset[0].total || 0
-      },
-      ano: {
-        midias: midiasAno.recordset[0].total || 0,
-        assinaturas: assinaturasAno.recordset[0].total || 0
-      }
-    });
+        // 📦 MÍDIAS — HOJE
+        db.query(`
+          SELECT COALESCE(SUM(valor_total), 0) AS total
+          FROM conteudo_pacotes
+          WHERE DATE(criado_em) = CURRENT_DATE
+        `),
 
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erro ao gerar relatório' });
+        // ⭐ ASSINATURAS — HOJE
+        db.query(`
+          SELECT COALESCE(SUM(valor_total), 0) AS total
+          FROM vip_subscriptions
+          WHERE DATE(created_at) = CURRENT_DATE
+        `),
+
+        // 📦 MÍDIAS — MÊS ATUAL
+        db.query(`
+          SELECT COALESCE(SUM(valor_total), 0) AS total
+          FROM conteudo_pacotes
+          WHERE DATE_TRUNC('month', criado_em)
+                = DATE_TRUNC('month', NOW())
+        `),
+
+        // ⭐ ASSINATURAS — MÊS ATUAL
+        db.query(`
+          SELECT COALESCE(SUM(valor_total), 0) AS total
+          FROM vip_subscriptions
+          WHERE DATE_TRUNC('month', created_at)
+                = DATE_TRUNC('month', NOW())
+        `),
+
+        // 📦 MÍDIAS — ANO ATUAL
+        db.query(`
+          SELECT COALESCE(SUM(valor_total), 0) AS total
+          FROM conteudo_pacotes
+          WHERE EXTRACT(YEAR FROM criado_em)
+                = EXTRACT(YEAR FROM NOW())
+        `),
+
+        // ⭐ ASSINATURAS — ANO ATUAL
+        db.query(`
+          SELECT COALESCE(SUM(valor_total), 0) AS total
+          FROM vip_subscriptions
+          WHERE EXTRACT(YEAR FROM created_at)
+                = EXTRACT(YEAR FROM NOW())
+        `)
+      ]);
+
+      res.json({
+        dia: {
+          midias: Number(midiasDia.rows[0].total),
+          assinaturas: Number(assinaturasDia.rows[0].total)
+        },
+        mes: {
+          midias: Number(midiasMes.rows[0].total),
+          assinaturas: Number(assinaturasMes.rows[0].total)
+        },
+        ano: {
+          midias: Number(midiasAno.rows[0].total),
+          assinaturas: Number(assinaturasAno.rows[0].total)
+        }
+      });
+
+    } catch (err) {
+      console.error("❌ Erro relatório geral:", err);
+      res.status(500).json({ error: "Erro ao gerar relatório" });
+    }
   }
-});
+);
+
 
 // 📊 RELATÓRIO DIÁRIO (GRÁFICO 30 DIAS) - ADMIN ONLY
-router.get('/admin/relatorios/diario', authMiddleware, requireRole("admin"), async (req, res) => {
-  try {
-    const { mes } = req.query;
+router.get(
+  '/admin/relatorios/diario',
+  authMiddleware,
+  requireRole("admin"),
+  async (req, res) => {
+    try {
+      const { mes } = req.query;
 
-    // valida mês (opcional)
-    if (mes && !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
-      return res.status(400).json({
-        error: "Formato de mês inválido (YYYY-MM)"
-      });
+      // 🔒 valida mês (opcional)
+      if (mes && !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
+        return res.status(400).json({
+          error: "Formato de mês inválido (YYYY-MM)"
+        });
+      }
+
+      // 📅 intervalo correto do mês (Postgres)
+      const inicio = mes ? `${mes}-01` : null;
+      const fim = mes
+        ? `(${mes}-01)::date + INTERVAL '1 month'`
+        : null;
+
+      const query = `
+        SELECT
+          dia,
+          SUM(total) AS total
+        FROM (
+          -- 📦 MÍDIAS
+          SELECT
+            DATE(criado_em) AS dia,
+            valor_total AS total
+          FROM conteudo_pacotes
+          WHERE status = 'pago'
+            ${mes ? 'AND criado_em >= $1 AND criado_em < ($1::date + INTERVAL \'1 month\')' : ''}
+
+          UNION ALL
+
+          -- ⭐ ASSINATURAS
+          SELECT
+            DATE(created_at) AS dia,
+            valor_total AS total
+          FROM vip_subscriptions
+          WHERE ativo = true
+            ${mes ? 'AND created_at >= $1 AND created_at < ($1::date + INTERVAL \'1 month\')' : ''}
+        ) t
+        GROUP BY dia
+        ORDER BY dia ASC
+        LIMIT 31
+      `;
+
+      const params = mes ? [inicio] : [];
+
+      const result = await db.query(query, params);
+
+      // 🔁 formato exato que o JS espera
+      const resposta = result.rows.map(r => ({
+        dia: String(r.dia.getDate()).padStart(2, '0'),
+        total: Number(r.total)
+      }));
+
+      res.json(resposta);
+
+    } catch (err) {
+      console.error("❌ Erro relatório diário:", err);
+      res.status(500).json([]);
     }
-
-    const inicio = mes ? `${mes}-01` : null;
-    const fim = mes ? `${mes}-31` : null;
-
-    const query = `
-      SELECT
-        dia,
-        SUM(total) AS total
-      FROM (
-        -- 📦 MÍDIAS
-        SELECT
-          DATE(criado_em) AS dia,
-          valor_total AS total
-        FROM conteudo_pacotes
-        WHERE
-          status = 'pago'
-          ${mes ? 'AND criado_em BETWEEN $1 AND $2' : ''}
-
-        UNION ALL
-
-        -- ⭐ ASSINATURAS
-        SELECT
-          DATE(created_at) AS dia,
-          valor_total AS total
-        FROM vip_subscriptions
-        WHERE
-          ativo = true
-          ${mes ? 'AND created_at BETWEEN $1 AND $2' : ''}
-      ) t
-      GROUP BY dia
-      ORDER BY dia ASC
-      LIMIT 31
-    `;
-
-    const params = mes ? [inicio, fim] : [];
-
-    const result = await db.query(query, params);
-
-    // formata exatamente como o JS espera
-    const resposta = result.rows.map(r => ({
-      dia: String(new Date(r.dia).getDate()).padStart(2, '0'),
-      total: Number(r.total)
-    }));
-
-    res.json(resposta);
-
-  } catch (err) {
-    console.error("❌ Erro relatório diário:", err);
-    res.status(500).json([]);
   }
-});
+);
 
+router.get(
+  '/admin/relatorios/modelo',
+  authMiddleware,
+  requireRole("admin"),
+  async (req, res) => {
+    try {
+      const { modelo_id } = req.query;
+
+      if (!modelo_id) {
+        return res.status(400).json({ error: "modelo_id obrigatório" });
+      }
+
+      const resultados = await Promise.all([
+        // 💰 GANHOS — REGRA FINAL (55% MODELO / 45% VELVET)
+        db.query(`
+  SELECT
+    COALESCE(SUM(valor_total * 0.55), 0) AS ganhos_modelo,
+    COALESCE(SUM(valor_total * 0.45), 0) AS ganhos_velvet
+  FROM (
+    -- 📦 MÍDIAS
+    SELECT cp.valor_total
+    FROM conteudo_pacotes cp
+    WHERE cp.modelo_id = $1
+      AND cp.status = 'pago'
+
+    UNION ALL
+
+    -- ⭐ ASSINATURAS
+    SELECT vs.valor_total
+    FROM vip_subscriptions vs
+    WHERE vs.modelo_id = $1
+      AND vs.ativo = true
+  ) t
+`, [modelo_id]),
+      ]);
+
+      const ganhos = resultados[0];
+      const assinantes = resultados[1];
+
+      res.json({
+        ganhos: ganhos.rows[0],
+        assinantes: assinantes.rows[0]
+      });
+
+    } catch (err) {
+      console.error("❌ Erro relatório por modelo:", err);
+      res.status(500).json({ error: "Erro relatório modelo" });
+    }
+  }
+);
 
 
 

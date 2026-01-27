@@ -214,15 +214,21 @@ function renderMensagem(msg) {
 `;
   }
 
-  /* ===============================
-     💬 TEXTO NORMAL
-  =============================== */
-  else {
-    div.innerHTML = `
-  <div class="msg-texto">${msg.text}</div>
-  <span class="msg-hora">${formatarHora(msg.created_at)}</span>
-`;
-  }
+else {
+  div.innerHTML = `
+    <div class="msg-texto">${msg.text}</div>
+
+    ${msg.sender === "modelo" ? `
+      <button class="msg-menu"
+        onclick="abrirMenuMensagem(${msg.id}, '${msg.text.replace(/'/g, "\\'")}')">
+        ⋮
+      </button>
+    ` : ""}
+
+    <span class="msg-hora">${formatarHora(msg.created_at)}</span>
+  `;
+}
+
 
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
@@ -451,6 +457,47 @@ async function marcarComoLido(clienteId) {
     console.error("Erro ao marcar como lido:", err);
   }
 }
+
+let mensagemEditandoId = null;
+
+function abrirMenuMensagem(id, texto) {
+  mensagemEditandoId = id;
+  document.getElementById("editarTexto").value = texto;
+  document.getElementById("menuMensagem").classList.remove("hidden");
+}
+
+function fecharMenuMensagem() {
+  mensagemEditandoId = null;
+  document.getElementById("menuMensagem").classList.add("hidden");
+}
+
+function salvarEdicao() {
+  const novoTexto = document.getElementById("editarTexto").value;
+
+  if (!novoTexto.trim()) {
+    alert("Mensagem vazia não é permitida.");
+    return;
+  }
+
+  // 🔥 AQUI futuramente você chama o backend
+  socket.emit("editarMensagem", {
+    id: mensagemEditandoId,
+    text: novoTexto
+  });
+
+  fecharMenuMensagem();
+}
+
+function excluirMensagem() {
+  if (!confirm("Tem certeza que deseja excluir esta mensagem?")) return;
+
+  socket.emit("excluirMensagem", {
+    id: mensagemEditandoId
+  });
+
+  fecharMenuMensagem();
+}
+
 
 
 
