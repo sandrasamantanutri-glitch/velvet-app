@@ -9,6 +9,16 @@ if (!token) {
   throw new Error("Sem token");
 }
 
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const img = entry.target;
+      img.src = img.dataset.src;
+      observer.unobserve(img);
+    }
+  });
+}, { rootMargin: "200px" });
+
 // ===============================
 // ESTADO
 // ===============================
@@ -111,14 +121,17 @@ async function listarConteudos() {
     return;
   }
 
-  conteudos.forEach(c => adicionarMidia(c));
+  const isMobile = window.innerWidth < 768;
+const limite = isMobile ? 12 : conteudos.length;
+
+conteudos.slice(0, limite).forEach(c => adicionarMidia(c));
+
 }
 
 // ===============================
-// ADICIONAR MÍDIA (IGUAL PROFILE)
+// ADICIONAR MÍDIA (VERSÃO OTIMIZADA)
 // ===============================
 function adicionarMidia(conteudo) {
-    console.log("🧪 CONTEÚDO:", conteudo);
   const { id, url, tipo, thumbnail_url } = conteudo;
   const isVideo = tipo === "video";
 
@@ -128,12 +141,21 @@ function adicionarMidia(conteudo) {
   const img = document.createElement("img");
   img.className = "midiaThumb";
 
-  if (isVideo) {
-    card.classList.add("video")
-    img.src = getVideoThumbnail(url, thumbnail_url);
-  } else {
-    img.src = url;
-  }
+  // 🔥 otimizações mobile
+  img.loading = "lazy";
+  img.decoding = "async";
+
+  // placeholder imediato
+  img.src = "/assets/thumb-loading.jpg";
+
+  // src real
+  const realSrc = isVideo
+    ? getVideoThumbnail(url, thumbnail_url)
+    : url;
+
+  // lazy load real (só carrega quando aparecer)
+  img.dataset.src = realSrc;
+  observer.observe(img);
 
   img.onclick = () => abrirModalMidia(url, isVideo);
 
