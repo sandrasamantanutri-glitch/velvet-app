@@ -138,6 +138,10 @@ conteudos.slice(0, limite).forEach(c => adicionarMidia(c));
 // ===============================
 function adicionarMidia(conteudo) {
   const { id, url, tipo, thumbnail_url } = conteudo;
+   if (!thumbnail_url) {
+    console.warn("Conteúdo sem thumbnail:", conteudo);
+    return;
+  }
   const isVideo = tipo === "video";
 
   const card = document.createElement("div");
@@ -154,9 +158,7 @@ function adicionarMidia(conteudo) {
   img.src = "/assets/thumb-loading.jpg";
 
   // src real
-  const realSrc = isVideo
-    ? getVideoThumbnail(url, thumbnail_url)
-    : url;
+  const realSrc = thumbnail_url;
 
   // lazy load real (só carrega quando aparecer)
   img.dataset.src = realSrc;
