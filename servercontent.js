@@ -879,10 +879,10 @@ router.get(
     try {
       const { role, id: user_id } = req.user;
 
-      let sql = `
+       let sql = `
         SELECT
-          m.id AS id,
-          m.nome
+          m.id        AS modelo_id,
+          m.nome      AS nome
         FROM modelos m
       `;
       let params = [];

@@ -99,7 +99,7 @@ async function carregarModelos() {
 
   modelos.forEach(m => {
     const opt = document.createElement('option');
-    opt.value = m.id;
+    opt.value = m.modelo_id;
     opt.textContent = m.nome;
     selectModelo.appendChild(opt);
   });
