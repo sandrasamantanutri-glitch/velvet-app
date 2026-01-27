@@ -6,6 +6,10 @@ function authFetch(url) {
 
 const filtroPeriodo = document.getElementById("filtroPeriodo");
 const filtroModelo = document.getElementById("filtroModelo");
+let chartMensal;
+
+document.getElementById("kpiTotal").innerText =
+  `$${Number(k.ganhos_totais || 0).toFixed(2)}`;
 
 // =========================
 // MODELOS
@@ -47,25 +51,35 @@ async function carregarKPIs() {
 async function graficoMensal() {
   const mes = filtroPeriodo.value;
   const modelo = filtroModelo.value || "";
+
   const res = await authFetch(
     `/api/transacoes/diario?mes=${mes}&modelo_id=${modelo}`
   );
   const dados = await res.json();
 
-  new Chart(document.getElementById("graficoMensal"), {
-    type: "line",
-    data: {
-      labels: dados.map(d => d.dia),
-      datasets: [{
-        label: "Ganhos",
-        data: dados.map(d =>
-          Number(d.ganhos_midias) + Number(d.ganhos_assinaturas)
-        ),
-        borderColor: "#7B2CFF"
-      }]
+  if (chartMensal) {
+    chartMensal.destroy();
+  }
+
+  chartMensal = new Chart(
+    document.getElementById("graficoMensal"),
+    {
+      type: "line",
+      data: {
+        labels: dados.map(d => d.dia),
+        datasets: [{
+          label: "Ganhos",
+          data: dados.map(d =>
+            Number(d.ganhos_midias) + Number(d.ganhos_assinaturas)
+          ),
+          borderColor: "#7B2CFF",
+          tension: 0.3
+        }]
+      }
     }
-  });
+  );
 }
+
 
 // =========================
 // INIT

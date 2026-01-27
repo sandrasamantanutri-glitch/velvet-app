@@ -10,8 +10,7 @@ const cloudinary = require("cloudinary").v2;
 const router = express.Router();   // ⬅️ PRIMEIRO SEMPRE
 
 // 🔓 assets do admin (HTML/CSS/JS)
-router.use(
-  "/assets",
+router.use("/assets",
   express.static(path.join(__dirname, "admin-pages"))
 );
 
@@ -113,26 +112,6 @@ function calcularValores({ valor_bruto, taxa_gateway, agency_fee, velvet_fee, st
   };
 }
 
-function calcularScoreRisco({
-  totalLost,
-  totalWon,
-  valorTotal,
-  recentes30d,
-  reincidente
-}) {
-  let score = 0;
-
-  score += totalLost * 30;
-  score += totalWon * 10;
-  score += Math.floor(valorTotal / 5);
-
-  if (recentes30d) score += 15;
-  if (reincidente) score += 20;
-
-  return Math.min(score, 100);
-}
-
-
 //ROTASSSS POST ///////////////////
 router.post("/api/transacoes", authMiddleware, async (req, res) => {
   try {
@@ -187,8 +166,7 @@ router.post("/api/transacoes", authMiddleware, async (req, res) => {
   }
 });
 
-router.post(
-  "/api/transacoes/:id/chargeback",
+router.post("/api/transacoes/:id/chargeback",
   authMiddleware,
   requireRole("admin", "modelo"),
   async (req, res) => {
@@ -213,8 +191,7 @@ router.post(
 // ===============================
 // 📣 ALLMESSAGE - ENVIO EM MASSA
 // ===============================
-router.post(
-  "/api/allmessage",
+router.post("/api/allmessage",
   authMiddleware, // use o MESMO middleware que funcionou antes
   requireRole("admin", "modelo"),
   async (req, res) => {
@@ -353,8 +330,7 @@ for (const row of clientesRes.rows) {
 );
 
 // PÁGINA DE RELATÓRIOS
-router.get(
-  "/relatorios",
+router.get("/relatorios",
   authMiddleware,
   requireRole("admin"),
   (req, res) => {
@@ -406,8 +382,7 @@ router.get("/access", authCliente, async (req, res) => {
 });
 
 
-router.get(
-  "/api/transacoes",
+router.get("/api/transacoes",
   authMiddleware,
   requireRole("modelo"),
   async (req, res) => {
@@ -456,8 +431,7 @@ router.get(
 
 
 //ROTA DO LINK DE ACESSO A PLATAFORMA(CLIENTES INSTA TIKTOK)
-router.get(
-  "/api/transacoes/origem",
+router.get("/api/transacoes/origem",
   authMiddleware,
   requireRole("admin"),
   async (req, res) => {
@@ -475,8 +449,7 @@ router.get(
 );
 
 
-router.get(
-  "/api/transacoes/diario",
+router.get("/api/transacoes/diario",
   authMiddleware,
   requireRole("admin", "modelo", "agente"),
   async (req, res) => {
@@ -531,9 +504,7 @@ router.get(
 );
 
 
-
-router.get(
-  "/api/relatorios/chargebacks",
+router.get("/api/relatorios/chargebacks",
   authMiddleware,
   requireRole("admin"),
   async (req, res) => {
@@ -573,8 +544,7 @@ router.get(
 );
 
 
-router.get(
-  "/api/transacoes/resumo-mensal",
+router.get("/api/transacoes/resumo-mensal",
   authMiddleware,
   requireRole("admin", "modelo", "agente"),
   async (req, res) => {
@@ -621,256 +591,7 @@ router.get(
   }
 );
 
-
-const ExcelJS = require("exceljs");
-
-router.get(
-  "/api/export/resumo-mensal/excel",
-  authMiddleware,
-  requireRole("admin"),
-  async (req, res) => {
-    const { mes } = req.query;
-    if (!mes || !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
-  return res.status(400).json({ error: "Formato de mês inválido (YYYY-MM)" });
-}
-
-    const dataBase = `${mes}-01`;
-
-    const values = [dataBase];
-
-    const where = `
-      status = 'normal'
-      AND created_at >= date_trunc('month', $1::date)
-      AND created_at < date_trunc('month', $1::date) + interval '1 month'
-    `;
-
-    const { rows } = await db.query(
-      `
-      SELECT
-        DATE(created_at) AS dia,
-        tipo,
-        valor_bruto,
-        valor_modelo,
-        velvet_fee
-      FROM transacoes
-      WHERE ${where}
-      ORDER BY created_at
-      `,
-      values
-    );
-
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet("Resumo Mensal");
-
-    sheet.columns = [
-      { header: "Dia", key: "dia" },
-      { header: "Tipo", key: "tipo" },
-      { header: "Valor Bruto", key: "valor_bruto" },
-      { header: "Ganhos Modelo", key: "valor_modelo" },
-      { header: "Ganhos Velvet", key: "velvet_fee" }
-    ];
-
-    rows.forEach(r => sheet.addRow(r));
-
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=resumo-${mes}.xlsx`
-    );
-    res.setHeader(
-      "Content-Type",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    );
-
-    await workbook.xlsx.write(res);
-    res.end();
-  }
-);
-
-const PDFDocument = require("pdfkit");
-
-router.get(
-  "/api/export/resumo-mensal/pdf",
-  authMiddleware,
-  requireRole("agente"),
-  async (req, res) => {
-    const { mes } = req.query;
-    if (!mes || !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
-  return res.status(400).json({ error: "Formato de mês inválido (YYYY-MM)" });
-}
-    const { id: agente_id } = req.user;
-
-    let values = [`${mes}-01`, agente_id];
-
-    const where = `
-      status = 'normal'
-      AND created_at >= date_trunc('month', $1::date)
-      AND created_at < date_trunc('month', $1::date) + interval '1 month'
-      AND agente_id = $2
-    `;
-
-    const { rows } = await db.query(
-      `
-      SELECT
-        codigo,
-        tipo,
-        valor_bruto,
-        valor_modelo,
-        created_at
-      FROM transacoes
-      WHERE ${where}
-      ORDER BY created_at
-      `,
-      values
-    );
-
-    const doc = new PDFDocument({ margin: 40 });
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=resumo-${mes}.pdf`
-    );
-
-    doc.pipe(res);
-
-    doc.fontSize(18).text(`Resumo Mensal - ${mes}`, { align: "center" });
-    doc.moveDown();
-
-    rows.forEach(t => {
-      doc
-        .fontSize(10)
-        .text(
-          `#${t.codigo} | ${t.tipo.toUpperCase()} | ${t.created_at
-            .toISOString()
-            .slice(0, 10)}`
-        )
-        .text(`Bruto: $${t.valor_bruto} | Modelo: $${t.valor_modelo}`)
-        .moveDown(0.5);
-    });
-
-    doc.end();
-  }
-);
-
-
-router.get(
-  "/api/export/chargebacks/excel",
-  authMiddleware,
-  requireRole("admin"),
-  async (req, res) => {
-
-    const { mes } = req.query;
-    if (!mes || !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
-  return res.status(400).json({ error: "Formato de mês inválido (YYYY-MM)" });
-}
-
-    const { rows } = await db.query(
-      `
-      SELECT
-        codigo,
-        tipo,
-        cliente_id,
-        modelo_id,
-        valor_bruto,
-        chargeback_result,
-        origem_cliente,
-        created_at
-      FROM transacoes
-      WHERE status = 'chargeback'
-        AND created_at >= date_trunc('month', $1::date)
-        AND created_at < date_trunc('month', $1::date) + interval '1 month'
-      ORDER BY created_at DESC
-      `,
-      [`${mes}-01`]
-    );
-
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet("Chargebacks");
-
-    sheet.columns = [
-      { header: "Código", key: "codigo" },
-      { header: "Tipo", key: "tipo" },
-      { header: "Cliente ID", key: "cliente_id" },
-      { header: "Modelo ID", key: "modelo_id" },
-      { header: "Valor", key: "valor_bruto" },
-      { header: "Resultado", key: "chargeback_result" },
-      { header: "Origem", key: "origem_cliente" },
-      { header: "Data", key: "created_at" }
-    ];
-
-    rows.forEach(r => sheet.addRow(r));
-
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=chargebacks-${mes}.xlsx`
-    );
-    res.setHeader(
-      "Content-Type",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    );
-
-    await workbook.xlsx.write(res);
-    res.end();
-  }
-);
-
-
-router.get(
-  "/api/export/chargebacks/pdf",
-  authMiddleware,
-  requireRole("admin"),
-  async (req, res) => {
-
-    const { mes } = req.query;
-    if (!mes || !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
-  return res.status(400).json({ error: "Formato de mês inválido (YYYY-MM)" });
-}
-
-    const { rows } = await db.query(
-      `
-      SELECT
-        codigo,
-        tipo,
-        valor_bruto,
-        chargeback_result,
-        origem_cliente,
-        created_at
-      FROM transacoes
-      WHERE status = 'chargeback'
-        AND created_at >= date_trunc('month', $1::date)
-        AND created_at < date_trunc('month', $1::date) + interval '1 month'
-      ORDER BY created_at DESC
-      `,
-      [`${mes}-01`]
-    );
-
-    const doc = new PDFDocument({ margin: 40 });
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=chargebacks-${mes}.pdf`
-    );
-
-    doc.pipe(res);
-
-    doc.fontSize(18).text(`Chargebacks - ${mes}`, { align: "center" });
-    doc.moveDown();
-
-    rows.forEach(cb => {
-      doc
-        .fontSize(10)
-        .text(
-          `#${cb.codigo} | ${cb.tipo.toUpperCase()} | ${cb.chargeback_result.toUpperCase()}`
-        )
-        .text(`Valor: $${cb.valor_bruto} | Origem: ${cb.origem_cliente}`)
-        .moveDown(0.5);
-    });
-
-    doc.end();
-  }
-);
-
-router.get(
-  "/api/relatorios/alertas-chargeback",
+router.get("/api/relatorios/alertas-chargeback",
   authMiddleware,
   requireRole("admin"),
   async (req, res) => {
@@ -894,8 +615,7 @@ router.get(
   }
 );
 
-router.get(
-  "/api/transacoes/resumo-anual",
+router.get("/api/transacoes/resumo-anual",
   authMiddleware,
   requireRole("admin", "modelo"),
   async (req, res) => {
@@ -943,132 +663,7 @@ router.get(
   }
 );
 
-
-router.get(
-  "/api/export/resumo-anual/excel",
-  authMiddleware,
-  requireRole("admin"),
-  async (req, res) => {
-    const { ano } = req.query;
-
-    const inicio = `${ano}-01-01`;
-    const fim = `${Number(ano) + 1}-01-01`;
-
-    const values = [inicio, fim];
-
-    const where = `
-      status = 'normal'
-      AND created_at >= $1
-      AND created_at < $2
-    `;
-
-    const { rows } = await db.query(
-      `
-      SELECT
-        TO_CHAR(created_at,'YYYY-MM') AS mes,
-        tipo,
-        valor_bruto,
-        valor_modelo,
-        velvet_fee
-      FROM transacoes
-      WHERE ${where}
-      ORDER BY created_at
-      `,
-      values
-    );
-
-    const ExcelJS = require("exceljs");
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet(`Resumo ${ano}`);
-
-    sheet.columns = [
-      { header: "Mês", key: "mes" },
-      { header: "Tipo", key: "tipo" },
-      { header: "Valor Bruto", key: "valor_bruto" },
-      { header: "Ganhos Modelo", key: "valor_modelo" },
-      { header: "Ganhos Velvet", key: "velvet_fee" }
-    ];
-
-    rows.forEach(r => sheet.addRow(r));
-
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=resumo-anual-${ano}.xlsx`
-    );
-    res.setHeader(
-      "Content-Type",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    );
-
-    await workbook.xlsx.write(res);
-    res.end();
-  }
-);
-
-
-router.get(
-  "/api/export/resumo-anual/pdf",
-  authMiddleware,
-  requireRole("admin"),
-  async (req, res) => {
-    const { ano } = req.query;
-
-    const inicio = `${ano}-01-01`;
-    const fim = `${Number(ano) + 1}-01-01`;
-
-    const values = [inicio, fim];
-
-    const where = `
-      status = 'normal'
-      AND created_at >= $1
-      AND created_at < $2
-    `;
-
-    const { rows } = await db.query(
-      `
-      SELECT
-        TO_CHAR(created_at,'YYYY-MM') AS mes,
-        SUM(valor_bruto) AS bruto,
-        SUM(valor_modelo) AS modelo,
-        SUM(velvet_fee) AS velvet
-      FROM transacoes
-      WHERE ${where}
-      GROUP BY mes
-      ORDER BY mes
-      `,
-      values
-    );
-
-    const PDFDocument = require("pdfkit");
-    const doc = new PDFDocument({ margin: 40 });
-
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=resumo-anual-${ano}.pdf`
-    );
-
-    doc.pipe(res);
-
-    doc.fontSize(18).text(`Resumo Anual - ${ano}`, { align: "center" });
-    doc.moveDown();
-
-    rows.forEach(m => {
-      doc
-        .fontSize(11)
-        .text(
-          `${m.mes} | Bruto: $${m.bruto} | Modelo: $${m.modelo} | Velvet: $${m.velvet}`
-        )
-        .moveDown(0.5);
-    });
-
-    doc.end();
-  }
-);
-
-
-router.get(
-  "/api/alertas/risco",
+router.get("/api/alertas/risco",
   authMiddleware,
   requireRole("admin"),
   async (req, res) => {
@@ -1095,8 +690,7 @@ router.get("/modelo/relatorio", (req, res) => {
 });
 
 
-router.get(
-  "/modelo/transacoes",
+router.get("/modelo/transacoes",
   requireRole("modelo", "admin", "agente"),
   (req, res) => {
     res.sendFile(
@@ -1104,33 +698,6 @@ router.get(
     );
   }
 );
-
-// router.get(
-//   "/api/transacoes/resumo-geral",
-//   authMiddleware,
-//   requireRole("modelo"),
-//   async (req, res) => {
-
-//     const modelo_id = req.user.id;
-
-//     const result = await db.query(
-//       `
-//       SELECT
-//         COALESCE(SUM(valor_modelo),0) AS total_geral,
-//         COALESCE(SUM(CASE WHEN tipo = 'midia' THEN valor_modelo END),0)
-//           AS total_midias,
-//         COALESCE(SUM(CASE WHEN tipo = 'assinatura' THEN valor_modelo END),0)
-//           AS total_assinaturas
-//       FROM transacoes
-//       WHERE status = 'normal'
-//         AND modelo_id = $1
-//       `,
-//       [modelo_id]
-//     );
-
-//     res.json(result.rows[0]);
-//   }
-// );
 
 router.get("/content/transacoes", (req, res) => {
   res.sendFile(
@@ -1194,43 +761,6 @@ router.get("/api/cliente/transacoes", authCliente, async (req, res) => {
   }
 });
 
-
-// router.get("/api/modelo/ganhos-resumo", authModelo, async (req, res) => {
-//   const modelo_id = req.user.id;
-
-//   try {
-//     // 🔹 MIDIAS
-//     const midias = await db.query(`
-//       SELECT
-//         COALESCE(SUM(CASE WHEN DATE(pago_em) = CURRENT_DATE THEN valor_base END),0) AS hoje,
-//         COALESCE(SUM(CASE WHEN DATE_TRUNC('month', pago_em) = DATE_TRUNC('month', CURRENT_DATE) THEN valor_base END),0) AS mes,
-//         COALESCE(SUM(valor_base),0) AS total
-//       FROM conteudo_pacotes
-//       WHERE modelo_id = $1
-//         AND status = 'pago'
-//     `, [modelo_id]);
-
-//     // 🔹 ASSINATURAS
-//     const assinaturas = await db.query(`
-//       SELECT
-//         COALESCE(SUM(CASE WHEN DATE(created_at) = CURRENT_DATE THEN valor_assinatura END),0) AS hoje,
-//         COALESCE(SUM(CASE WHEN DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE) THEN valor_assinatura END),0) AS mes,
-//         COALESCE(SUM(valor_assinatura),0) AS total
-//       FROM vip_subscriptions
-//       WHERE modelo_id = $1
-//         AND ativo = true
-//     `, [modelo_id]);
-
-//     res.json({
-//       midias: midias.rows[0],
-//       assinaturas: assinaturas.rows[0]
-//     });
-
-//   } catch (err) {
-//     console.error("Erro ganhos-resumo:", err);
-//     res.status(500).json({ error: "Erro ao carregar ganhos" });
-//   }
-// });
 
 router.get("/api/modelo/financeiro", authModelo, async (req, res) => {
   const modelo_id = req.user.id;
@@ -1337,8 +867,7 @@ WHERE modelo_id = $1;
 // ===============================
 // 📣 ALLMESSAGE - LISTAR MODELOS
 // ===============================
-router.get(
-  "/api/allmessage/modelos",
+router.get("/api/allmessage/modelos",
   authMiddleware,
   requireRole("admin", "modelo"),
   async (req, res) => {
@@ -1373,8 +902,7 @@ router.get(
 // ===============================
 // 📣 ALLMESSAGE - CONTEÚDOS DA MODELO
 // ===============================
-router.get(
-  "/api/allmessage/conteudos/:modelo_id",
+router.get("/api/allmessage/conteudos/:modelo_id",
   authMiddleware, // ou auth, use o MESMO que funcionou antes
   requireRole("admin", "modelo"),
   async (req, res) => {
@@ -1418,35 +946,7 @@ router.get(
   }
 );
 
-// ===============================
-// 📋 LISTAR MODELOS (ADMIN)
-// ===============================
-router.get(
-  "/api/allmessage/modelos",
-  authMiddleware,
-  requireRole("admin"),
-  async (req, res) => {
-    try {
-      const { rows } = await db.query(`
-        SELECT
-          m.user_id AS id,
-          COALESCE(md.nome_exibicao, m.nome) AS nome
-        FROM modelos m
-        LEFT JOIN modelos_dados md
-          ON md.user_id = m.user_id
-        ORDER BY nome
-      `);
-
-      res.json(rows);
-    } catch (err) {
-      console.error("Erro listar modelos:", err);
-      res.status(500).json([]);
-    }
-  }
-);
-
-router.get(
-  "/api/relatorios/kpis-mensais",
+router.get("/api/relatorios/kpis-mensais",
   authMiddleware, // ⬅️ SEM requireRole restritivo
   async (req, res) => {
     try {
