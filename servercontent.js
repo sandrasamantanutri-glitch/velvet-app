@@ -998,7 +998,7 @@ router.get("/api/relatorios/kpis-mensais",
 
 
 ////////////////////////////////////////// ADM ////////////////////////////////////////////////////
-router.get('/admin/relatorios/geral', onlyAdmin, async (req, res) => {
+router.get('/admin/relatorios/geral', authMiddleware, requireRole("admin"), async (req, res) => {
   try {
     const [
       midiasDia,
