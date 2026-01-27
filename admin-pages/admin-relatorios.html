@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <title>Velvet • Relatórios</title>
+
+  <link rel="stylesheet" href="admin-relatorios.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <h1>Relatórios Gerais</h1>
+
+    <div class="filters">
+      <label>
+        Mês:
+        <input type="month" id="filtroMes">
+      </label>
+    </div>
+  </header>
+
+  <section class="cards">
+    <div class="card">
+      <span>Hoje</span>
+      <strong id="hojeTotal">€0,00</strong>
+    </div>
+
+    <div class="card">
+      <span>Mês</span>
+      <strong id="mesTotal">€0,00</strong>
+    </div>
+
+    <div class="card">
+      <span>Ano</span>
+      <strong id="anoTotal">€0,00</strong>
+    </div>
+  </section>
+
+  <section class="chart-box">
+    <h2>Faturamento diário (últimos 30 dias)</h2>
+    <canvas id="grafico30dias"></canvas>
+  </section>
+
+</div>
+
+<script src="admin-relatorios.js"></script>
+</body>
+</html>

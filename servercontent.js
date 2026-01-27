@@ -996,4 +996,72 @@ router.get("/api/relatorios/kpis-mensais",
 );
 
 
+////////////////////////////////////////// ADM ////////////////////////////////////////////////////
+router.get('/admin/relatorios/geral', onlyAdmin, async (req, res) => {
+  try {
+    const [
+      midiasDia,
+      assinaturasDia,
+      midiasMes,
+      assinaturasMes,
+      midiasAno,
+      assinaturasAno
+    ] = await Promise.all([
+      db.query(`
+        SELECT SUM(valor_total) AS total
+        FROM conteudo_pacotes
+        WHERE CAST(criado_em AS DATE) = CAST(GETDATE() AS DATE)
+      `),
+      db.query(`
+        SELECT SUM(valor_total) AS total
+        FROM vip_subscriptions
+        WHERE CAST(created_at AS DATE) = CAST(GETDATE() AS DATE)
+      `),
+      db.query(`
+        SELECT SUM(valor_total) AS total
+        FROM conteudo_pacotes
+        WHERE MONTH(criado_em) = MONTH(GETDATE())
+          AND YEAR(criado_em) = YEAR(GETDATE())
+      `),
+      db.query(`
+        SELECT SUM(valor_total) AS total
+        FROM vip_subscriptions
+        WHERE MONTH(created_at) = MONTH(GETDATE())
+          AND YEAR(created_at) = YEAR(GETDATE())
+      `),
+      db.query(`
+        SELECT SUM(valor_total) AS total
+        FROM conteudo_pacotes
+        WHERE YEAR(criado_em) = YEAR(GETDATE())
+      `),
+      db.query(`
+        SELECT SUM(valor_total) AS total
+        FROM vip_subscriptions
+        WHERE YEAR(created_at) = YEAR(GETDATE())
+      `)
+    ]);
+
+    res.json({
+      dia: {
+        midias: midiasDia.recordset[0].total || 0,
+        assinaturas: assinaturasDia.recordset[0].total || 0
+      },
+      mes: {
+        midias: midiasMes.recordset[0].total || 0,
+        assinaturas: assinaturasMes.recordset[0].total || 0
+      },
+      ano: {
+        midias: midiasAno.recordset[0].total || 0,
+        assinaturas: assinaturasAno.recordset[0].total || 0
+      }
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao gerar relatório' });
+  }
+});
+
+
+
 module.exports = router;
