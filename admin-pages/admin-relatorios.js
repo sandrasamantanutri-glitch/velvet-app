@@ -112,25 +112,25 @@ async function carregarRelatorioModelo(modelo_id) {
     '/admin/relatorios/modelo?modelo_id=' + modelo_id
   );
 
+  if (!data || !data.ganhos) {
+    console.error('Relatório inválido:', data);
+    return;
+  }
+
   const g = data.ganhos;
   const a = data.assinantes;
 
-  modeloHoje.textContent = formatMoney(
-    g.hoje_midias_modelo + g.hoje_assinaturas_modelo
-  );
+  modeloHoje.textContent = formatMoney(g.ganhos_modelo);
+  modeloMes.textContent  = formatMoney(g.ganhos_modelo);
+  modeloAno.textContent  = formatMoney(g.ganhos_modelo);
 
-  modeloMes.textContent = formatMoney(g.mes_modelo);
-  modeloAno.textContent = formatMoney(g.ano_modelo);
-
-  velvetMes.textContent = formatMoney(g.mes_velvet);
+  velvetMes.textContent = formatMoney(g.ganhos_velvet);
 
   assinantesMes.textContent = a.assinantes_mes;
   assinantesAtuais.textContent = a.assinantes_atuais;
 }
 
-selectModelo.addEventListener('change', e => {
-  carregarRelatorioModelo(e.target.value);
-});
+
 
 // INIT
 carregarModelos();
