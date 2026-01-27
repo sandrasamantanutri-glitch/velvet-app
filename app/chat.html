@@ -40,8 +40,7 @@
     id="msgInput"
     type="text"
     placeholder="Digite uma mensagem…"
-    autocomplete="off"
-  />
+    autocomplete="off"/>
 
   <!-- BOTÃO ENVIAR -->
   <button
@@ -77,6 +76,25 @@
   </div>
 
 </div>
+
+<!-- POPUP EDITAR / EXCLUIR MENSAGEM -->
+<div id="menuMensagem" class="hidden">
+  <div class="popup-backdrop" onclick="fecharMenuMensagem()"></div>
+
+  <div class="popup-box">
+    <h3>Mensagem</h3>
+
+    <!-- 🔥 ESSE TEXTAREA É O QUE ESTAVA FALTANDO -->
+    <textarea id="editarTexto" placeholder="Editar mensagem..."></textarea>
+
+    <div class="popup-actions">
+      <button onclick="salvarEdicao()">Salvar</button>
+      <button onclick="excluirMensagem()" style="color:red">Excluir</button>
+      <button onclick="fecharMenuMensagem()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="./js/chat.js"></script>
