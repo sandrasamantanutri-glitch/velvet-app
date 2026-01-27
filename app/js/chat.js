@@ -220,7 +220,7 @@ else {
 
     ${msg.sender === "modelo" ? `
       <button class="msg-menu"
-        onclick="abrirMenuMensagem(${msg.id}, '${msg.text.replace(/'/g, "\\'")}')">
+        onclick="abrirMenuMensagem(${msg.id}, ${JSON.stringify(msg.text || "")})">
         ⋮
       </button>
     ` : ""}
