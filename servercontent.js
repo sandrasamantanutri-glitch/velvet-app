@@ -1169,31 +1169,19 @@ router.get(
 
       const [resumo, assinantes] = await Promise.all([
 
-        // 💰 GANHOS (HOJE / MÊS / ANO)
+        // 💰 GANHOS
         db.query(`
           SELECT
-            -- 🔹 HOJE
+            -- HOJE
             COALESCE(SUM(CASE
-              WHEN origem = 'midia'
-               AND DATE(data) = CURRENT_DATE
-              THEN ganho_modelo END),0) AS hoje_midias_modelo,
+              WHEN DATE(data) = CURRENT_DATE
+              THEN ganho_modelo END),0) AS hoje_modelo,
 
             COALESCE(SUM(CASE
-              WHEN origem = 'assinatura'
-               AND DATE(data) = CURRENT_DATE
-              THEN ganho_modelo END),0) AS hoje_assinaturas_modelo,
+              WHEN DATE(data) = CURRENT_DATE
+              THEN ganho_velvet END),0) AS hoje_velvet,
 
-            COALESCE(SUM(CASE
-              WHEN origem = 'midia'
-               AND DATE(data) = CURRENT_DATE
-              THEN ganho_velvet END),0) AS hoje_midias_velvet,
-
-            COALESCE(SUM(CASE
-              WHEN origem = 'assinatura'
-               AND DATE(data) = CURRENT_DATE
-              THEN ganho_velvet END),0) AS hoje_assinaturas_velvet,
-
-            -- 🔹 MÊS
+            -- MÊS
             COALESCE(SUM(CASE
               WHEN DATE_TRUNC('month', data) = DATE_TRUNC('month', NOW())
               THEN ganho_modelo END),0) AS mes_modelo,
@@ -1202,7 +1190,7 @@ router.get(
               WHEN DATE_TRUNC('month', data) = DATE_TRUNC('month', NOW())
               THEN ganho_velvet END),0) AS mes_velvet,
 
-            -- 🔹 ANO
+            -- ANO
             COALESCE(SUM(CASE
               WHEN EXTRACT(YEAR FROM data) = EXTRACT(YEAR FROM NOW())
               THEN ganho_modelo END),0) AS ano_modelo,
@@ -1214,24 +1202,24 @@ router.get(
           FROM (
             -- 📦 MÍDIAS
             SELECT
-              criado_em AS data,
-              preco AS ganho_modelo,
-              (valor_total - preco) AS ganho_velvet,
-              'midia' AS origem
-            FROM conteudo_pacotes
-            WHERE modelo_id = $1
-              AND status = 'pago'
+              cp.criado_em AS data,
+              cp.preco AS ganho_modelo,
+              (cp.valor_total - cp.preco) AS ganho_velvet
+            FROM conteudo_pacotes cp
+            JOIN modelos m ON m.user_id = cp.modelo_id
+            WHERE m.id = $1
+              AND cp.status = 'pago'
 
             UNION ALL
 
             -- ⭐ ASSINATURAS
             SELECT
-              created_at AS data,
-              valor_assinatura AS ganho_modelo,
-              (valor_total - valor_assinatura) AS ganho_velvet,
-              'assinatura' AS origem
-            FROM vip_subscriptions
-            WHERE modelo_id = $1
+              vs.created_at AS data,
+              vs.valor_assinatura AS ganho_modelo,
+              (vs.valor_total - vs.valor_assinatura) AS ganho_velvet
+            FROM vip_subscriptions vs
+            JOIN modelos m ON m.user_id = vs.modelo_id
+            WHERE m.id = $1
           ) t
         `, [modelo_id]),
 
@@ -1239,13 +1227,14 @@ router.get(
         db.query(`
           SELECT
             COUNT(*) FILTER (
-              WHERE DATE_TRUNC('month', created_at)
+              WHERE DATE_TRUNC('month', vs.created_at)
                     = DATE_TRUNC('month', NOW())
             ) AS assinantes_mes,
 
-            COUNT(*) FILTER (WHERE ativo = true) AS assinantes_atuais
-          FROM vip_subscriptions
-          WHERE modelo_id = $1
+            COUNT(*) FILTER (WHERE vs.ativo = true) AS assinantes_atuais
+          FROM vip_subscriptions vs
+          JOIN modelos m ON m.user_id = vs.modelo_id
+          WHERE m.id = $1
         `, [modelo_id])
       ]);
 
