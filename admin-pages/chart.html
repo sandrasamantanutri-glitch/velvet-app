@@ -2,66 +2,48 @@
 <html lang="pt">
 <head>
   <meta charset="UTF-8">
-  <title>ADM</title>
+  <title>Relatórios</title>
   <link rel="stylesheet" href="/admin/assets/chart.css">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap">
+</head>
+<body>
 
- </head>
+<h2 class="title">Relatórios de Vendas</h2>
 
- <body>
-  <div class="title"><h3><strong></strong>Relatorios de vendas</h3></strong></h3>
-  </div>
+<div class="filtros-dashboard">
+  <select id="filtroPeriodo">
+    <option value="2026-01">Janeiro 2026</option>
+    <option value="2026-02">Fevereiro 2026</option>
+  </select>
 
- <section class="graficos-container">
+  <select id="filtroModelo">
+    <option value="">Todos os modelos</option>
+  </select>
+</div>
+
+<section class="cards-anual">
+  <div class="card"><span>Ganhos do mês</span><strong id="kpiTotal">$0</strong></div>
+  <div class="card"><span>Assinaturas</span><strong id="kpiAssinaturas">$0</strong></div>
+  <div class="card"><span>Média diária</span><strong id="kpiMedia">$0</strong></div>
+  <div class="card"><span>Assinantes</span><strong id="kpiAssinantes">0</strong></div>
+  <div class="card"><span>Chargebacks</span><strong id="kpiChargebacks">0</strong></div>
+</section>
+
+<section class="graficos-container">
   <div class="grafico-card">
-    <h3>Ganhos Mensais</h3>
+    <h3>Ganhos Diários</h3>
     <canvas id="graficoMensal"></canvas>
   </div>
 
- <div class="grafico-card donut">
+  <div class="grafico-card donut">
     <h3>Assinaturas vs Mídias</h3>
     <canvas id="graficoAssinaturasMidias"></canvas>
   </div>
 
-</section>
-
-<div class="acoes-relatorio">
-
-  <select id="filtroPeriodo">
-    <option value="2025-12">Dezembro 2025</option>
-    <option value="2026-01">Janeiro 2026</option>
-  </select>
-
-  <select id="filtroModelo">
-  <option value="">Todos os modelos</option>
-</select>
-
-  <button class="btn velvet" onclick="exportarExcel()">
-    📊 Exportar Excel
-  </button>
-
-  <button class="btn velvet-outline" onclick="exportarPDF()">
-    📄 Exportar PDF
-  </button>
-
-  <button class="btn danger" onclick="fecharMes()">
-    🔒 Fechar Mês
-  </button>
-
-</div>
-
-<section class="grafico-anual-container">
-
-  <div class="grafico-header">
-    <h2>Resumo Anual</h2>
-
-    <select id="filtroAno">
-      <option value="2025">2025</option>
-      <option value="2026" selected>2026</option>
-      <option value="2027">2027</option>
-    </select>
+  <div class="grafico-card donut danger">
+    <h3>Chargebacks</h3>
+    <canvas id="graficoChargebacks"></canvas>
   </div>
-
 </section>
 
 <div class="grafico-card">
@@ -69,86 +51,7 @@
   <canvas id="graficoAnual"></canvas>
 </div>
 
-<div class="grafico-card danger">
-  <h3>Chargebacks</h3>
-  <canvas id="graficoChargebacks"></canvas>
-</div>
-
-<section class="cards-anual">
-
-  <div class="card destaque">
-    <span>Total do Ano</span>
-    <strong id="anualTotal">$0.00</strong>
-  </div>
-
-  <div class="card">
-    <span>Assinaturas</span>
-    <strong id="anualAssinaturas">$0.00</strong>
-  </div>
-
-  <div class="card">
-    <span>Mídias</span>
-    <strong id="anualMidias">$0.00</strong>
-  </div>
-
-  <div class="card">
-    <span>Ganhos Velvet</span>
-    <strong id="anualVelvet">$0.00</strong>
-  </div>
-
-</section>
-
-<section class="alertas-container">
-
-  <h1 class="titulo-alertas">Alertas de Risco</h1>
-
-  <!-- CARDS -->
-  <div class="cards-alertas">
-
-    <div class="card-alerta critico">
-      <span>Críticos</span>
-      <strong id="alertaCritico">0</strong>
-    </div>
-
-    <div class="card-alerta alto">
-      <span>Alto Risco</span>
-      <strong id="alertaAlto">0</strong>
-    </div>
-
-    <div class="card-alerta medio">
-      <span>Médio Risco</span>
-      <strong id="alertaMedio">0</strong>
-    </div>
-
-    <div class="card-alerta total">
-      <span>Total Monitorados</span>
-      <strong id="alertaTotal">0</strong>
-    </div>
-
-  </div>
-
-  <!-- TABELA -->
-  <div class="tabela-alertas-box">
-    <table class="tabela-alertas">
-      <thead>
-        <tr>
-          <th>Cliente</th>
-          <th>Score</th>
-          <th>Nível</th>
-          <th>Última Atualização</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody id="tabelaAlertas">
-        <!-- JS -->
-      </tbody>
-    </table>
-  </div>
-
-  </section>
-
-</body>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="/admin/assets/chart.js"></script>
+</body>
 </html>
-
