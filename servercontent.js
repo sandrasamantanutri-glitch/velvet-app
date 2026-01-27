@@ -1167,45 +1167,51 @@ router.get(
         return res.status(400).json({ error: "modelo_id obrigatório" });
       }
 
-      const [resumo, assinantes] = await Promise.all([
+      const resultados = await Promise.all([
+        // 💰 GANHOS (55% MODELO / 45% VELVET)
+        db.query(`
+          SELECT
+            COALESCE(SUM(valor_total * 0.55), 0) AS ganhos_modelo,
+            COALESCE(SUM(valor_total * 0.45), 0) AS ganhos_velvet
+          FROM (
+            SELECT cp.valor_total
+            FROM conteudo_pacotes cp
+            JOIN modelos m ON m.user_id = cp.modelo_id
+            WHERE m.id = $1
+              AND cp.status = 'pago'
+              AND DATE_TRUNC('month', cp.criado_em)
+                    = DATE_TRUNC('month', NOW())
 
-        // 💰 GANHOS
-db.query(`
-  SELECT
-    -- MODELO
-    COALESCE(SUM(valor_total * 0.55), 0) AS ganhos_modelo,
+            UNION ALL
 
-    -- VELVET
-    COALESCE(SUM(valor_total * 0.45), 0) AS ganhos_velvet
+            SELECT vs.valor_total
+            FROM vip_subscriptions vs
+            JOIN modelos m ON m.user_id = vs.modelo_id
+            WHERE m.id = $1
+              AND DATE_TRUNC('month', vs.created_at)
+                    = DATE_TRUNC('month', NOW())
+          ) t
+        `, [modelo_id]),
 
-  FROM (
-    -- 📦 MÍDIAS
-    SELECT
-      cp.valor_total
-    FROM conteudo_pacotes cp
-    JOIN modelos m ON m.user_id = cp.modelo_id
-    WHERE m.id = $1
-      AND cp.status = 'pago'
-      AND DATE_TRUNC('month', cp.criado_em)
-            = DATE_TRUNC('month', NOW())
-
-    UNION ALL
-
-    -- ⭐ ASSINATURAS
-    SELECT
-      vs.valor_total
-    FROM vip_subscriptions vs
-    JOIN modelos m ON m.user_id = vs.modelo_id
-    WHERE m.id = $1
-      AND DATE_TRUNC('month', vs.created_at)
-            = DATE_TRUNC('month', NOW())
-  ) t;
-`, [modelo_id])
-
+        // 👥 ASSINANTES
+        db.query(`
+          SELECT
+            COUNT(*) FILTER (
+              WHERE DATE_TRUNC('month', vs.created_at)
+                    = DATE_TRUNC('month', NOW())
+            ) AS assinantes_mes,
+            COUNT(*) FILTER (WHERE vs.ativo = true) AS assinantes_atuais
+          FROM vip_subscriptions vs
+          JOIN modelos m ON m.user_id = vs.modelo_id
+          WHERE m.id = $1
+        `, [modelo_id])
       ]);
 
+      const ganhos = resultados[0];
+      const assinantes = resultados[1];
+
       res.json({
-        ganhos: resumo.rows[0],
+        ganhos: ganhos.rows[0],
         assinantes: assinantes.rows[0]
       });
 
@@ -1215,6 +1221,7 @@ db.query(`
     }
   }
 );
+
 
 
 
