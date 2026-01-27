@@ -221,10 +221,10 @@ else {
     ${msg.sender === "modelo" ? `
 <button
   class="msg-menu"
-  data-id="${msg.id}"
-  data-text="${(msg.text || "").replace(/"/g, "&quot;")}">
+  data-id="${msg.id}">
   ⋮
 </button>
+
     ` : ""}
 
     <span class="msg-hora">${formatarHora(msg.created_at)}</span>
@@ -233,15 +233,15 @@ else {
 
 
   chat.appendChild(div);
+chat.scrollTop = chat.scrollHeight;
 const btn = div.querySelector(".msg-menu");
 if (btn) {
   btn.addEventListener("click", () => {
-    const id = btn.dataset.id;
-    const texto = btn.dataset.text;
-    abrirMenuMensagem(id, texto);
+    console.log("CLIQUEI NO MENU", btn.dataset.id);
+    abrirMenuMensagem(btn.dataset.id);
   });
 }
-  chat.scrollTop = chat.scrollHeight;
+
 }
 
 
@@ -470,11 +470,18 @@ async function marcarComoLido(clienteId) {
 
 let mensagemEditandoId = null;
 
-function abrirMenuMensagem(id, texto) {
-  mensagemEditandoId = id;
-  document.getElementById("editarTexto").value = texto;
-  document.getElementById("menuMensagem").classList.remove("hidden");
+function abrirMenuMensagem(id) {
+  console.log("ABRINDO MENU DA MENSAGEM", id);
+
+  const menu = document.getElementById("menuMensagem");
+  if (!menu) {
+    alert("menuMensagem NÃO EXISTE no HTML");
+    return;
+  }
+
+  menu.classList.remove("hidden");
 }
+
 
 function fecharMenuMensagem() {
   mensagemEditandoId = null;
