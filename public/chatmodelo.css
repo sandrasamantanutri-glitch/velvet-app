@@ -824,6 +824,36 @@ body.role-modelo .chat-conteudo * {
   margin-top: 4px;
 }
 
+/* ===============================
+   MENU ⋮ DA MENSAGEM (MODELO)
+================================ */
+
+.msg {
+  position: relative;
+}
+
+.msg-menu {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+
+  background: transparent;
+  border: none;
+  padding: 4px;
+
+  font-size: 16px;
+  cursor: pointer;
+
+  color: rgba(255,255,255,0.5);
+  opacity: 0;
+  transition: opacity .2s ease;
+}
+
+.msg:hover .msg-menu {
+  opacity: 1;
+}
+
+
 
 
 
