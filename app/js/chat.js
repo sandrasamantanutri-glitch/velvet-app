@@ -219,10 +219,12 @@ else {
     <div class="msg-texto">${msg.text}</div>
 
     ${msg.sender === "modelo" ? `
-      <button class="msg-menu"
-        onclick="abrirMenuMensagem(${msg.id}, ${JSON.stringify(msg.text || "")})">
-        ⋮
-      </button>
+<button
+  class="msg-menu"
+  data-id="${msg.id}"
+  data-text="${(msg.text || "").replace(/"/g, "&quot;")}">
+  ⋮
+</button>
     ` : ""}
 
     <span class="msg-hora">${formatarHora(msg.created_at)}</span>
@@ -231,6 +233,14 @@ else {
 
 
   chat.appendChild(div);
+const btn = div.querySelector(".msg-menu");
+if (btn) {
+  btn.addEventListener("click", () => {
+    const id = btn.dataset.id;
+    const texto = btn.dataset.text;
+    abrirMenuMensagem(id, texto);
+  });
+}
   chat.scrollTop = chat.scrollHeight;
 }
 
