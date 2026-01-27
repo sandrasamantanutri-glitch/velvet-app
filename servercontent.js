@@ -1170,72 +1170,38 @@ router.get(
       const [resumo, assinantes] = await Promise.all([
 
         // 💰 GANHOS
-        db.query(`
-          SELECT
-            -- HOJE
-            COALESCE(SUM(CASE
-              WHEN DATE(data) = CURRENT_DATE
-              THEN ganho_modelo END),0) AS hoje_modelo,
+db.query(`
+  SELECT
+    -- MODELO
+    COALESCE(SUM(valor_total * 0.55), 0) AS ganhos_modelo,
 
-            COALESCE(SUM(CASE
-              WHEN DATE(data) = CURRENT_DATE
-              THEN ganho_velvet END),0) AS hoje_velvet,
+    -- VELVET
+    COALESCE(SUM(valor_total * 0.45), 0) AS ganhos_velvet
 
-            -- MÊS
-            COALESCE(SUM(CASE
-              WHEN DATE_TRUNC('month', data) = DATE_TRUNC('month', NOW())
-              THEN ganho_modelo END),0) AS mes_modelo,
+  FROM (
+    -- 📦 MÍDIAS
+    SELECT
+      cp.valor_total
+    FROM conteudo_pacotes cp
+    JOIN modelos m ON m.user_id = cp.modelo_id
+    WHERE m.id = $1
+      AND cp.status = 'pago'
+      AND DATE_TRUNC('month', cp.criado_em)
+            = DATE_TRUNC('month', NOW())
 
-            COALESCE(SUM(CASE
-              WHEN DATE_TRUNC('month', data) = DATE_TRUNC('month', NOW())
-              THEN ganho_velvet END),0) AS mes_velvet,
+    UNION ALL
 
-            -- ANO
-            COALESCE(SUM(CASE
-              WHEN EXTRACT(YEAR FROM data) = EXTRACT(YEAR FROM NOW())
-              THEN ganho_modelo END),0) AS ano_modelo,
+    -- ⭐ ASSINATURAS
+    SELECT
+      vs.valor_total
+    FROM vip_subscriptions vs
+    JOIN modelos m ON m.user_id = vs.modelo_id
+    WHERE m.id = $1
+      AND DATE_TRUNC('month', vs.created_at)
+            = DATE_TRUNC('month', NOW())
+  ) t;
+`, [modelo_id])
 
-            COALESCE(SUM(CASE
-              WHEN EXTRACT(YEAR FROM data) = EXTRACT(YEAR FROM NOW())
-              THEN ganho_velvet END),0) AS ano_velvet
-
-          FROM (
-            -- 📦 MÍDIAS
-            SELECT
-              cp.criado_em AS data,
-              cp.preco AS ganho_modelo,
-              (cp.valor_total - cp.preco) AS ganho_velvet
-            FROM conteudo_pacotes cp
-            JOIN modelos m ON m.user_id = cp.modelo_id
-            WHERE m.id = $1
-              AND cp.status = 'pago'
-
-            UNION ALL
-
-            -- ⭐ ASSINATURAS
-            SELECT
-              vs.created_at AS data,
-              vs.valor_assinatura AS ganho_modelo,
-              (vs.valor_total - vs.valor_assinatura) AS ganho_velvet
-            FROM vip_subscriptions vs
-            JOIN modelos m ON m.user_id = vs.modelo_id
-            WHERE m.id = $1
-          ) t
-        `, [modelo_id]),
-
-        // 👥 ASSINANTES
-        db.query(`
-          SELECT
-            COUNT(*) FILTER (
-              WHERE DATE_TRUNC('month', vs.created_at)
-                    = DATE_TRUNC('month', NOW())
-            ) AS assinantes_mes,
-
-            COUNT(*) FILTER (WHERE vs.ativo = true) AS assinantes_atuais
-          FROM vip_subscriptions vs
-          JOIN modelos m ON m.user_id = vs.modelo_id
-          WHERE m.id = $1
-        `, [modelo_id])
       ]);
 
       res.json({
