@@ -69,6 +69,34 @@ document.addEventListener("DOMContentLoaded", async () => {
       enviarMensagem();
     }
   });
+socket.on("mensagemEditada", ({ id, text }) => {
+  const msgEl = document
+    .querySelector(`.msg-menu[data-id="${id}"]`)
+    ?.closest(".msg");
+
+  if (!msgEl) return;
+
+  const textoDiv = msgEl.querySelector(".msg-texto");
+  if (textoDiv) {
+    textoDiv.innerText = text;
+  }
+});
+
+socket.on("mensagemExcluida", ({ id }) => {
+  const msgEl = document
+    .querySelector(`.msg-menu[data-id="${id}"]`)
+    ?.closest(".msg");
+
+  if (msgEl) {
+    msgEl.remove();
+  }
+});
+
+
+
+
+
+
 });
 
 // ===============================
@@ -221,10 +249,10 @@ else {
     ${msg.sender === "modelo" ? `
 <button
   class="msg-menu"
-  data-id="${msg.id}">
+  data-id="${msg.id}"
+  data-text="${encodeURIComponent(msg.text || "")}">
   ⋮
 </button>
-
     ` : ""}
 
     <span class="msg-hora">${formatarHora(msg.created_at)}</span>
@@ -238,7 +266,10 @@ const btn = div.querySelector(".msg-menu");
 if (btn) {
   btn.addEventListener("click", () => {
     console.log("CLIQUEI NO MENU", btn.dataset.id);
-    abrirMenuMensagem(btn.dataset.id);
+    abrirMenuMensagem(
+  btn.dataset.id,
+  decodeURIComponent(btn.dataset.text)
+);
   });
 }
 
@@ -469,34 +500,44 @@ async function marcarComoLido(clienteId) {
 }
 
 let mensagemEditandoId = null;
+let elementoMensagemEditando = null;
 
-function abrirMenuMensagem(id) {
-  console.log("ABRINDO MENU DA MENSAGEM", id);
+function abrirMenuMensagem(id, texto) {
+  mensagemEditandoId = id;
 
-  const menu = document.getElementById("menuMensagem");
-  if (!menu) {
-    alert("menuMensagem NÃO EXISTE no HTML");
-    return;
-  }
+  // acha a mensagem no DOM
+  elementoMensagemEditando = document.querySelector(
+    `.msg-menu[data-id="${id}"]`
+  )?.closest(".msg");
 
-  menu.classList.remove("hidden");
+  document.getElementById("editarTexto").value = texto || "";
+  document.getElementById("menuMensagem").classList.remove("hidden");
 }
 
 
 function fecharMenuMensagem() {
   mensagemEditandoId = null;
+  elementoMensagemEditando = null;
   document.getElementById("menuMensagem").classList.add("hidden");
 }
 
 function salvarEdicao() {
-  const novoTexto = document.getElementById("editarTexto").value;
+  const novoTexto = document.getElementById("editarTexto").value.trim();
 
-  if (!novoTexto.trim()) {
+  if (!novoTexto) {
     alert("Mensagem vazia não é permitida.");
     return;
   }
 
-  // 🔥 AQUI futuramente você chama o backend
+  // 🔥 atualiza na tela
+  if (elementoMensagemEditando) {
+    const textoDiv = elementoMensagemEditando.querySelector(".msg-texto");
+    if (textoDiv) {
+      textoDiv.innerText = novoTexto;
+    }
+  }
+
+  // (backend depois)
   socket.emit("editarMensagem", {
     id: mensagemEditandoId,
     text: novoTexto
@@ -508,12 +549,19 @@ function salvarEdicao() {
 function excluirMensagem() {
   if (!confirm("Tem certeza que deseja excluir esta mensagem?")) return;
 
+  // 🔥 remove da tela
+  if (elementoMensagemEditando) {
+    elementoMensagemEditando.remove();
+  }
+
+  // (backend depois)
   socket.emit("excluirMensagem", {
     id: mensagemEditandoId
   });
 
   fecharMenuMensagem();
 }
+
 
 
 
