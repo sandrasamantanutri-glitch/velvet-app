@@ -1084,67 +1084,73 @@ router.get(
 
 
 // 📊 RELATÓRIO DIÁRIO (GRÁFICO 30 DIAS) - ADMIN ONLY
-router.get('/admin/relatorios/diario', authMiddleware, requireRole("admin"), async (req, res) => {
-  try {
-    const { mes } = req.query;
+router.get(
+  '/admin/relatorios/diario',
+  authMiddleware,
+  requireRole("admin"),
+  async (req, res) => {
+    try {
+      const { mes } = req.query;
 
-    // valida mês (opcional)
-    if (mes && !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
-      return res.status(400).json({
-        error: "Formato de mês inválido (YYYY-MM)"
-      });
+      // 🔒 valida mês (opcional)
+      if (mes && !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
+        return res.status(400).json({
+          error: "Formato de mês inválido (YYYY-MM)"
+        });
+      }
+
+      // 📅 intervalo correto do mês (Postgres)
+      const inicio = mes ? `${mes}-01` : null;
+      const fim = mes
+        ? `(${mes}-01)::date + INTERVAL '1 month'`
+        : null;
+
+      const query = `
+        SELECT
+          dia,
+          SUM(total) AS total
+        FROM (
+          -- 📦 MÍDIAS
+          SELECT
+            DATE(criado_em) AS dia,
+            valor_total AS total
+          FROM conteudo_pacotes
+          WHERE status = 'pago'
+            ${mes ? 'AND criado_em >= $1 AND criado_em < ($1::date + INTERVAL \'1 month\')' : ''}
+
+          UNION ALL
+
+          -- ⭐ ASSINATURAS
+          SELECT
+            DATE(created_at) AS dia,
+            valor_total AS total
+          FROM vip_subscriptions
+          WHERE ativo = true
+            ${mes ? 'AND created_at >= $1 AND created_at < ($1::date + INTERVAL \'1 month\')' : ''}
+        ) t
+        GROUP BY dia
+        ORDER BY dia ASC
+        LIMIT 31
+      `;
+
+      const params = mes ? [inicio] : [];
+
+      const result = await db.query(query, params);
+
+      // 🔁 formato exato que o JS espera
+      const resposta = result.rows.map(r => ({
+        dia: String(r.dia.getDate()).padStart(2, '0'),
+        total: Number(r.total)
+      }));
+
+      res.json(resposta);
+
+    } catch (err) {
+      console.error("❌ Erro relatório diário:", err);
+      res.status(500).json([]);
     }
-
-    const inicio = mes ? `${mes}-01` : null;
-    const fim = mes ? `${mes}-31` : null;
-
-    const query = `
-      SELECT
-        dia,
-        SUM(total) AS total
-      FROM (
-        -- 📦 MÍDIAS
-        SELECT
-          DATE(criado_em) AS dia,
-          valor_total AS total
-        FROM conteudo_pacotes
-        WHERE
-          status = 'pago'
-          ${mes ? 'AND criado_em BETWEEN $1 AND $2' : ''}
-
-        UNION ALL
-
-        -- ⭐ ASSINATURAS
-        SELECT
-          DATE(created_at) AS dia,
-          valor_total AS total
-        FROM vip_subscriptions
-        WHERE
-          ativo = true
-          ${mes ? 'AND created_at BETWEEN $1 AND $2' : ''}
-      ) t
-      GROUP BY dia
-      ORDER BY dia ASC
-      LIMIT 31
-    `;
-
-    const params = mes ? [inicio, fim] : [];
-
-    const result = await db.query(query, params);
-
-    // formata exatamente como o JS espera
-    const resposta = result.rows.map(r => ({
-      dia: String(new Date(r.dia).getDate()).padStart(2, '0'),
-      total: Number(r.total)
-    }));
-
-    res.json(resposta);
-
-  } catch (err) {
-    console.error("❌ Erro relatório diário:", err);
-    res.status(500).json([]);
   }
-});
+);
 
 
 
