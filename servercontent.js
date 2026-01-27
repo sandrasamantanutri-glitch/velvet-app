@@ -868,7 +868,11 @@ WHERE modelo_id = $1;
 // ===============================
 // 📣 ALLMESSAGE - LISTAR MODELOS
 // ===============================
-router.get("/api/allmessage/modelos",
+// ===============================
+// 📣 ALLMESSAGE - LISTAR MODELOS (CORRIGIDO)
+// ===============================
+router.get(
+  "/api/allmessage/modelos",
   authMiddleware,
   requireRole("admin", "modelo"),
   async (req, res) => {
@@ -876,32 +880,31 @@ router.get("/api/allmessage/modelos",
       const { role, id: user_id } = req.user;
 
       let sql = `
-      SELECT
-      u.id AS id,
-      m.nome
-      FROM modelos m
-      JOIN users u ON u.id = m.user_id
-      ORDER BY m.nome;
+        SELECT
+          m.id AS id,
+          m.nome
+        FROM modelos m
       `;
       let params = [];
 
       // 🔒 modelo só vê a própria
       if (role === "modelo") {
-        sql += " AND user_id = $1";
+        sql += ` WHERE m.user_id = $1 `;
         params.push(user_id);
       }
 
-      sql += " ORDER BY nome";
+      sql += ` ORDER BY m.nome `;
 
       const result = await db.query(sql, params);
       res.json(result.rows);
 
     } catch (err) {
-      console.error("❌ Erro ALLMESSAGE modelos:", err.message);
-      res.status(500).json({ error: err.message });
+      console.error("❌ Erro ALLMESSAGE modelos:", err);
+      res.status(500).json({ error: "Erro ao listar modelos" });
     }
   }
 );
+
 
 // ===============================
 // 📣 ALLMESSAGE - CONTEÚDOS DA MODELO
