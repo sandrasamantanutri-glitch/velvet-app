@@ -330,6 +330,7 @@ for (const row of clientesRes.rows) {
 );
 
 // PÁGINA DE RELATÓRIOS
+
 router.get("/relatorios",
   authMiddleware,
   requireRole("admin"),
@@ -994,6 +995,138 @@ router.get("/api/relatorios/kpis-mensais",
     }
   }
 );
+
+
+////////////////////////////////////////// ADM ////////////////////////////////////////////////////
+router.get('/admin/relatorios/geral', onlyAdmin, async (req, res) => {
+  try {
+    const [
+      midiasDia,
+      assinaturasDia,
+      midiasMes,
+      assinaturasMes,
+      midiasAno,
+      assinaturasAno
+    ] = await Promise.all([
+      db.query(`
+        SELECT SUM(valor_total) AS total
+        FROM conteudo_pacotes
+        WHERE CAST(criado_em AS DATE) = CAST(GETDATE() AS DATE)
+      `),
+      db.query(`
+        SELECT SUM(valor_total) AS total
+        FROM vip_subscriptions
+        WHERE CAST(created_at AS DATE) = CAST(GETDATE() AS DATE)
+      `),
+      db.query(`
+        SELECT SUM(valor_total) AS total
+        FROM conteudo_pacotes
+        WHERE MONTH(criado_em) = MONTH(GETDATE())
+          AND YEAR(criado_em) = YEAR(GETDATE())
+      `),
+      db.query(`
+        SELECT SUM(valor_total) AS total
+        FROM vip_subscriptions
+        WHERE MONTH(created_at) = MONTH(GETDATE())
+          AND YEAR(created_at) = YEAR(GETDATE())
+      `),
+      db.query(`
+        SELECT SUM(valor_total) AS total
+        FROM conteudo_pacotes
+        WHERE YEAR(criado_em) = YEAR(GETDATE())
+      `),
+      db.query(`
+        SELECT SUM(valor_total) AS total
+        FROM vip_subscriptions
+        WHERE YEAR(created_at) = YEAR(GETDATE())
+      `)
+    ]);
+
+    res.json({
+      dia: {
+        midias: midiasDia.recordset[0].total || 0,
+        assinaturas: assinaturasDia.recordset[0].total || 0
+      },
+      mes: {
+        midias: midiasMes.recordset[0].total || 0,
+        assinaturas: assinaturasMes.recordset[0].total || 0
+      },
+      ano: {
+        midias: midiasAno.recordset[0].total || 0,
+        assinaturas: assinaturasAno.recordset[0].total || 0
+      }
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao gerar relatório' });
+  }
+});
+
+// 📊 RELATÓRIO DIÁRIO (GRÁFICO 30 DIAS) - ADMIN ONLY
+router.get('/admin/relatorios/diario', authMiddleware, requireRole("admin"), async (req, res) => {
+  try {
+    const { mes } = req.query;
+
+    // valida mês (opcional)
+    if (mes && !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
+      return res.status(400).json({
+        error: "Formato de mês inválido (YYYY-MM)"
+      });
+    }
+
+    const inicio = mes ? `${mes}-01` : null;
+    const fim = mes ? `${mes}-31` : null;
+
+    const query = `
+      SELECT
+        dia,
+        SUM(total) AS total
+      FROM (
+        -- 📦 MÍDIAS
+        SELECT
+          DATE(criado_em) AS dia,
+          valor_total AS total
+        FROM conteudo_pacotes
+        WHERE
+          status = 'pago'
+          ${mes ? 'AND criado_em BETWEEN $1 AND $2' : ''}
+
+        UNION ALL
+
+        -- ⭐ ASSINATURAS
+        SELECT
+          DATE(created_at) AS dia,
+          valor_total AS total
+        FROM vip_subscriptions
+        WHERE
+          ativo = true
+          ${mes ? 'AND created_at BETWEEN $1 AND $2' : ''}
+      ) t
+      GROUP BY dia
+      ORDER BY dia ASC
+      LIMIT 31
+    `;
+
+    const params = mes ? [inicio, fim] : [];
+
+    const result = await db.query(query, params);
+
+    // formata exatamente como o JS espera
+    const resposta = result.rows.map(r => ({
+      dia: String(new Date(r.dia).getDate()).padStart(2, '0'),
+      total: Number(r.total)
+    }));
+
+    res.json(resposta);
+
+  } catch (err) {
+    console.error("❌ Erro relatório diário:", err);
+    res.status(500).json([]);
+  }
+});
+
+
 
 
 module.exports = router;
