@@ -1170,36 +1170,25 @@ router.get(
       const resultados = await Promise.all([
         // 💰 GANHOS — REGRA FINAL (55% MODELO / 45% VELVET)
         db.query(`
-          SELECT
-            COALESCE(SUM(valor_total * 0.55), 0) AS ganhos_modelo,
-            COALESCE(SUM(valor_total * 0.45), 0) AS ganhos_velvet
-          FROM (
-            -- 📦 MÍDIAS
-            SELECT cp.valor_total
-            FROM conteudo_pacotes cp
-            WHERE cp.modelo_id = $1
-              AND cp.status = 'pago'
+  SELECT
+    COALESCE(SUM(valor_total * 0.55), 0) AS ganhos_modelo,
+    COALESCE(SUM(valor_total * 0.45), 0) AS ganhos_velvet
+  FROM (
+    -- 📦 MÍDIAS
+    SELECT cp.valor_total
+    FROM conteudo_pacotes cp
+    WHERE cp.modelo_id = $1
+      AND cp.status = 'pago'
 
-            UNION ALL
+    UNION ALL
 
-           -- ⭐ ASSINATURAS
-SELECT vs.valor_total
-FROM vip_subscriptions vs
-WHERE vs.modelo_id = $1
-  AND vs.ativo = true
-        `, [modelo_id]),   // 👈 VÍRGULA AQUI
-
-        // 👥 ASSINANTES
-        db.query(`
-          SELECT
-            COUNT(*) FILTER (
-              WHERE DATE_TRUNC('month', created_at)
-                    = DATE_TRUNC('month', NOW())
-            ) AS assinantes_mes,
-            COUNT(*) FILTER (WHERE ativo = true) AS assinantes_atuais
-          FROM vip_subscriptions
-          WHERE modelo_id = $1
-        `, [modelo_id])
+    -- ⭐ ASSINATURAS
+    SELECT vs.valor_total
+    FROM vip_subscriptions vs
+    WHERE vs.modelo_id = $1
+      AND vs.ativo = true
+  ) t
+`, [modelo_id]),
       ]);
 
       const ganhos = resultados[0];
