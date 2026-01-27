@@ -82,9 +82,14 @@ async function uploadConteudo() {
   fd.append("conteudo", file);
 
   if (file.type.startsWith("video")) {
-    const thumbBlob = await gerarThumbnailVideo(file);
-    fd.append("thumbnail", thumbBlob, "thumb.jpg");
-  }
+  const thumbBlob = await gerarThumbnailVideo(file);
+  fd.append("thumbnail", thumbBlob, "thumb.jpg");
+}
+
+if (file.type.startsWith("image")) {
+  const thumbBlob = await gerarThumbnailImagem(file);
+  fd.append("thumbnail", thumbBlob, "thumb.jpg");
+}
 
   const res = await fetch("/api/conteudos/upload", {
     method: "POST",
@@ -299,5 +304,41 @@ async function excluirArquivoFisico(url) {
     }).promise();
   }
 }
+
+async function gerarThumbnailImagem(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    img.onload = () => {
+      const size = 300;
+      canvas.width = size;
+      canvas.height = size;
+
+      const scale = Math.max(
+        size / img.width,
+        size / img.height
+      );
+
+      const w = img.width * scale;
+      const h = img.height * scale;
+      const x = (size - w) / 2;
+      const y = (size - h) / 2;
+
+      ctx.drawImage(img, x, y, w, h);
+
+      canvas.toBlob(
+        blob => resolve(blob),
+        "image/jpeg",
+        0.7 // 🔥 leve
+      );
+    };
+
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
+}
+
 
 
