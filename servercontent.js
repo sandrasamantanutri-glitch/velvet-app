@@ -1445,6 +1445,67 @@ router.get(
   }
 );
 
+// ===============================
+// 📊 KPIs MENSAIS (ADMIN)
+// ===============================
+router.get(
+  "/api/relatorios/kpis-mensais",
+  authMiddleware,
+  requireRole("admin"),
+  async (req, res) => {
+    try {
+      const { mes, modelo_id } = req.query;
+
+      if (!mes || !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
+        return res.status(400).json({ error: "Mês inválido" });
+      }
+
+      const inicio = `${mes}-01`;
+
+      let values = [inicio];
+      let whereModelo = "";
+
+      if (modelo_id) {
+        values.push(modelo_id);
+        whereModelo = `AND modelo_id = $${values.length}`;
+      }
+
+      const { rows } = await db.query(
+        `
+        SELECT
+          COALESCE(SUM(valor_modelo),0)                        AS ganhos_totais,
+          COALESCE(SUM(CASE WHEN tipo='assinatura'
+            THEN valor_modelo END),0)                          AS ganhos_assinaturas,
+
+          COUNT(DISTINCT DATE(created_at))                     AS dias_com_venda,
+
+          COUNT(DISTINCT cliente_id)
+            FILTER (WHERE tipo='assinatura')                   AS assinantes_mes,
+
+          COUNT(*) FILTER (WHERE status='chargeback')          AS chargebacks
+
+        FROM transacoes
+        WHERE created_at >= date_trunc('month', $1::date)
+          AND created_at <  date_trunc('month', $1::date) + interval '1 month'
+          ${whereModelo}
+        `,
+        values
+      );
+
+      res.json(rows[0]);
+    } catch (err) {
+      console.error("Erro KPIs mensais:", err);
+      res.status(500).json({
+        ganhos_totais: 0,
+        ganhos_assinaturas: 0,
+        dias_com_venda: 0,
+        assinantes_mes: 0,
+        chargebacks: 0
+      });
+    }
+  }
+);
+
 
 
 
