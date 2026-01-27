@@ -867,6 +867,43 @@ body.role-modelo .chat-conteudo * {
 }
 
 
+/* ===============================
+   POPUP EDITAR / EXCLUIR (OVERLAY)
+================================ */
+
+#menuMensagem {
+  position: fixed;          /* 🔥 tira do fluxo da página */
+  inset: 0;                 /* top:0 right:0 bottom:0 left:0 */
+  z-index: 99999;           /* 🔥 acima de tudo */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#menuMensagem.hidden {
+  display: none;
+}
+
+/* fundo escuro */
+#menuMensagem .popup-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+/* caixa do popup */
+#menuMensagem .popup-box {
+  position: relative;
+  background: #fff;
+  width: 90%;
+  max-width: 420px;
+  padding: 20px;
+  border-radius: 14px;
+  z-index: 1;
+}
+
+
+
 
 
 
