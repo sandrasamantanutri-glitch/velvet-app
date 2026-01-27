@@ -107,10 +107,30 @@ document.addEventListener("DOMContentLoaded", async () => {
     e.preventDefault();   // 🔥 ISSO resolve a quebra de linha
     enviarMensagem();
   }
-});
+ });
 
   // 🔥 AQUI — sempre ativo
   btnConteudo.onclick = abrirPopupConteudos;
+
+  socket.on("mensagemEditada", ({ id, text }) => {
+  const msgEl = document
+    .querySelector(`.msg-menu[data-id="${id}"]`)
+    ?.closest(".msg");
+
+  if (!msgEl) return;
+
+  const textoDiv = msgEl.querySelector(".msg-texto");
+  if (textoDiv) textoDiv.innerText = text;
+});
+
+socket.on("mensagemExcluida", ({ id }) => {
+  const msgEl = document
+    .querySelector(`.msg-menu[data-id="${id}"]`)
+    ?.closest(".msg");
+
+  if (msgEl) msgEl.remove();
+});
+
 });
 
 // ===============================
@@ -403,7 +423,6 @@ function renderMensagem(msg) {
                   : `🔒 ${msg.quantidade ?? msg.midias.length} mídia(s)`
               }
             </span>
-
             <span class="preco-bloqueado">
               R$ ${Number(msg.preco).toFixed(2)}
             </span>
@@ -419,14 +438,36 @@ function renderMensagem(msg) {
   /* ===============================
      💬 TEXTO NORMAL
   =============================== */
-  else {
-    div.textContent = msg.text;
-  }
+ else {
+  div.innerHTML = `
+    <div class="msg-texto">${msg.text || ""}</div>
+
+    ${msg.sender === "modelo" ? `
+      <button
+        class="msg-menu"
+        data-id="${msg.id}"
+        data-text="${encodeURIComponent(msg.text || "")}">
+        ⋮
+      </button>
+    ` : ""}
+
+    <span class="msg-hora">${formatarTempo(new Date(msg.created_at).getTime())}</span>
+  `;
+ }
 
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
+  const btn = div.querySelector(".msg-menu");
+ if (btn) {
+  btn.addEventListener("click", () => {
+    abrirMenuMensagem(
+      btn.dataset.id,
+      decodeURIComponent(btn.dataset.text)
+    );
+  });
 }
 
+}
 
 function atualizarStatusPorResponder(mensagens) {
   if (!mensagens || mensagens.length === 0) return;
@@ -753,5 +794,100 @@ function fecharPopupConteudos() {
   const precoInput = document.getElementById("precoConteudo");
   if (precoInput) precoInput.value = 0;
 }
+
+
+async function carregarConteudosVistos(cliente_id) {
+  const res = await fetch(`/api/chat/conteudos-vistos/${cliente_id}`, {
+    headers: {
+      Authorization: "Bearer " + localStorage.getItem("token")
+    }
+  });
+
+  const ids = await res.json();
+  conteudosVistosCliente = new Set(ids);
+}
+
+function abrirPreviewAvatar(url) {
+  let modal = document.getElementById("avatarPreviewModal");
+
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "avatarPreviewModal";
+    modal.className = "preview-modal open";
+
+    modal.innerHTML = `
+      <div class="preview-backdrop"></div>
+      <div class="preview-box">
+        <span class="preview-close">×</span>
+        <img id="avatarPreviewImg" />
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const fechar = () => modal.remove();
+    modal.querySelector(".preview-backdrop").onclick = fechar;
+    modal.querySelector(".preview-close").onclick = fechar;
+  }
+
+  const img = modal.querySelector("#avatarPreviewImg");
+  img.src = url;
+
+  modal.classList.add("open");
+}
+
+let mensagemEditandoId = null;
+let elementoMensagemEditando = null;
+
+function abrirMenuMensagem(id, texto) {
+  mensagemEditandoId = id;
+
+  elementoMensagemEditando = document
+    .querySelector(`.msg-menu[data-id="${id}"]`)
+    ?.closest(".msg");
+
+  document.getElementById("editarTexto").value = texto || "";
+  document.getElementById("menuMensagem").classList.remove("hidden");
+}
+
+function fecharMenuMensagem() {
+  mensagemEditandoId = null;
+  elementoMensagemEditando = null;
+  document.getElementById("menuMensagem").classList.add("hidden");
+}
+
+function salvarEdicao() {
+  const novoTexto = document.getElementById("editarTexto").value.trim();
+  if (!novoTexto) return alert("Mensagem vazia.");
+
+  // atualiza na tela
+  if (elementoMensagemEditando) {
+    const textoDiv = elementoMensagemEditando.querySelector(".msg-texto");
+    if (textoDiv) textoDiv.innerText = novoTexto;
+  }
+
+  // backend
+  socket.emit("editarMensagem", {
+    id: mensagemEditandoId,
+    text: novoTexto
+  });
+
+  fecharMenuMensagem();
+}
+
+function excluirMensagem() {
+  if (!confirm("Excluir mensagem?")) return;
+
+  if (elementoMensagemEditando) {
+    elementoMensagemEditando.remove();
+  }
+
+  socket.emit("excluirMensagem", {
+    id: mensagemEditandoId
+  });
+
+  fecharMenuMensagem();
+}
+
 
 

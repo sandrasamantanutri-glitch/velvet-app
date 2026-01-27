@@ -1121,6 +1121,48 @@ socket.on("marcarConteudoVisto", async ({ message_id, cliente_id, modelo_id }) =
   }
 });
 
+socket.on("editarMensagem", async ({ id, text }) => {
+  try {
+    if (!id || !text) return;
+
+    await db.query(
+      `
+      UPDATE messages
+      SET text = $1,
+          updated_at = NOW()
+      WHERE id = $2
+        AND sender = 'modelo'
+      `,
+      [text, id]
+    );
+
+    io.emit("mensagemEditada", {
+      id,
+      text
+    });
+  } catch (err) {
+    console.error("Erro ao editar mensagem:", err);
+  }
+});
+socket.on("excluirMensagem", async ({ id }) => {
+  try {
+    if (!id) return;
+
+    await db.query(
+      `
+      DELETE FROM messages
+      WHERE id = $1
+        AND sender = 'modelo'
+      `,
+      [id]
+    );
+
+    io.emit("mensagemExcluida", { id });
+  } catch (err) {
+    console.error("Erro ao excluir mensagem:", err);
+  }
+});
+
 
 
 });

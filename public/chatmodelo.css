@@ -824,6 +824,88 @@ body.role-modelo .chat-conteudo * {
   margin-top: 4px;
 }
 
+/* ===============================
+   MENU ⋮ DA MENSAGEM — FIX REAL
+================================ */
+
+.msg {
+  position: relative;
+  overflow: visible; /* 🔥 importante */
+  padding-right: 28px;
+}
+
+.msg-menu {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+
+  background: transparent;
+  border: none;
+  padding: 4px;
+
+  font-size: 16px;
+  cursor: pointer;
+
+  color: rgba(255,255,255,0.75);
+
+  opacity: 1 !important;      /* 🔥 força aparecer */
+  z-index: 10;                /* 🔥 fica acima da bolha */
+}
+
+/* opcional: efeito hover */
+.msg-menu:hover {
+  color: #fff;
+}
+
+
+/* ⏱ HORÁRIO DA MENSAGEM */
+.msg-hora {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  opacity: 0.7;
+  text-align: right;
+}
+
+
+/* ===============================
+   POPUP EDITAR / EXCLUIR (OVERLAY)
+================================ */
+
+#menuMensagem {
+  position: fixed;          /* 🔥 tira do fluxo da página */
+  inset: 0;                 /* top:0 right:0 bottom:0 left:0 */
+  z-index: 99999;           /* 🔥 acima de tudo */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#menuMensagem.hidden {
+  display: none;
+}
+
+/* fundo escuro */
+#menuMensagem .popup-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+/* caixa do popup */
+#menuMensagem .popup-box {
+  position: relative;
+  background: #fff;
+  width: 90%;
+  max-width: 420px;
+  padding: 20px;
+  border-radius: 14px;
+  z-index: 1;
+}
+
+
+
+
 
 
 

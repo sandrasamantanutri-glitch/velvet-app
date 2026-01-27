@@ -69,6 +69,34 @@ document.addEventListener("DOMContentLoaded", async () => {
       enviarMensagem();
     }
   });
+socket.on("mensagemEditada", ({ id, text }) => {
+  const msgEl = document
+    .querySelector(`.msg-menu[data-id="${id}"]`)
+    ?.closest(".msg");
+
+  if (!msgEl) return;
+
+  const textoDiv = msgEl.querySelector(".msg-texto");
+  if (textoDiv) {
+    textoDiv.innerText = text;
+  }
+});
+
+socket.on("mensagemExcluida", ({ id }) => {
+  const msgEl = document
+    .querySelector(`.msg-menu[data-id="${id}"]`)
+    ?.closest(".msg");
+
+  if (msgEl) {
+    msgEl.remove();
+  }
+});
+
+
+
+
+
+
 });
 
 // ===============================
@@ -214,18 +242,37 @@ function renderMensagem(msg) {
 `;
   }
 
-  /* ===============================
-     💬 TEXTO NORMAL
-  =============================== */
-  else {
-    div.innerHTML = `
-  <div class="msg-texto">${msg.text}</div>
-  <span class="msg-hora">${formatarHora(msg.created_at)}</span>
-`;
-  }
+else {
+  div.innerHTML = `
+    <div class="msg-texto">${msg.text}</div>
+
+    ${msg.sender === "modelo" ? `
+<button
+  class="msg-menu"
+  data-id="${msg.id}"
+  data-text="${encodeURIComponent(msg.text || "")}">
+  ⋮
+</button>
+    ` : ""}
+
+    <span class="msg-hora">${formatarHora(msg.created_at)}</span>
+  `;
+}
+
 
   chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
+chat.scrollTop = chat.scrollHeight;
+const btn = div.querySelector(".msg-menu");
+if (btn) {
+  btn.addEventListener("click", () => {
+    console.log("CLIQUEI NO MENU", btn.dataset.id);
+    abrirMenuMensagem(
+  btn.dataset.id,
+  decodeURIComponent(btn.dataset.text)
+);
+  });
+}
+
 }
 
 
@@ -451,6 +498,71 @@ async function marcarComoLido(clienteId) {
     console.error("Erro ao marcar como lido:", err);
   }
 }
+
+let mensagemEditandoId = null;
+let elementoMensagemEditando = null;
+
+function abrirMenuMensagem(id, texto) {
+  mensagemEditandoId = id;
+
+  // acha a mensagem no DOM
+  elementoMensagemEditando = document.querySelector(
+    `.msg-menu[data-id="${id}"]`
+  )?.closest(".msg");
+
+  document.getElementById("editarTexto").value = texto || "";
+  document.getElementById("menuMensagem").classList.remove("hidden");
+}
+
+
+function fecharMenuMensagem() {
+  mensagemEditandoId = null;
+  elementoMensagemEditando = null;
+  document.getElementById("menuMensagem").classList.add("hidden");
+}
+
+function salvarEdicao() {
+  const novoTexto = document.getElementById("editarTexto").value.trim();
+
+  if (!novoTexto) {
+    alert("Mensagem vazia não é permitida.");
+    return;
+  }
+
+  // 🔥 atualiza na tela
+  if (elementoMensagemEditando) {
+    const textoDiv = elementoMensagemEditando.querySelector(".msg-texto");
+    if (textoDiv) {
+      textoDiv.innerText = novoTexto;
+    }
+  }
+
+  // (backend depois)
+  socket.emit("editarMensagem", {
+    id: mensagemEditandoId,
+    text: novoTexto
+  });
+
+  fecharMenuMensagem();
+}
+
+function excluirMensagem() {
+  if (!confirm("Tem certeza que deseja excluir esta mensagem?")) return;
+
+  // 🔥 remove da tela
+  if (elementoMensagemEditando) {
+    elementoMensagemEditando.remove();
+  }
+
+  // (backend depois)
+  socket.emit("excluirMensagem", {
+    id: mensagemEditandoId
+  });
+
+  fecharMenuMensagem();
+}
+
+
 
 
 
