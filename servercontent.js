@@ -875,9 +875,12 @@ router.get("/api/allmessage/modelos",
       const { role, id: user_id } = req.user;
 
       let sql = `
-        SELECT id, nome
-        FROM modelos
-        WHERE 1=1
+      SELECT
+      u.id AS id,
+      m.nome
+      FROM modelos m
+      JOIN users u ON u.id = m.user_id
+      ORDER BY m.nome;
       `;
       let params = [];
 
