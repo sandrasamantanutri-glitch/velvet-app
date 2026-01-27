@@ -825,18 +825,18 @@ body.role-modelo .chat-conteudo * {
 }
 
 /* ===============================
-   MENU ⋮ DA MENSAGEM (MODELO)
+   MENU ⋮ DA MENSAGEM — FIX REAL
 ================================ */
 
 .msg {
   position: relative;
+  overflow: visible; /* 🔥 importante */
 }
 
-/* botão */
 .msg-menu {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: 4px;
+  right: 4px;
 
   background: transparent;
   border: none;
@@ -845,17 +845,27 @@ body.role-modelo .chat-conteudo * {
   font-size: 16px;
   cursor: pointer;
 
-  color: rgba(255,255,255,0.6);
+  color: rgba(255,255,255,0.75);
 
-  opacity: 0;
-  transition: opacity .2s ease;
+  opacity: 1 !important;      /* 🔥 força aparecer */
+  z-index: 10;                /* 🔥 fica acima da bolha */
 }
 
-/* aparece no hover OU quando recebe foco */
-.msg:hover .msg-menu,
-.msg:focus-within .msg-menu {
-  opacity: 1;
+/* opcional: efeito hover */
+.msg-menu:hover {
+  color: #fff;
 }
+
+
+/* ⏱ HORÁRIO DA MENSAGEM */
+.msg-hora {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  opacity: 0.7;
+  text-align: right;
+}
+
 
 
 
