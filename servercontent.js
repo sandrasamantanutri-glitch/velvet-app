@@ -1152,6 +1152,111 @@ router.get(
   }
 );
 
+router.get(
+  '/admin/relatorios/modelo',
+  authMiddleware,
+  requireRole("admin"),
+  async (req, res) => {
+    try {
+      const { modelo_id } = req.query;
+
+      if (!modelo_id) {
+        return res.status(400).json({ error: "modelo_id obrigatório" });
+      }
+
+      const [resumo, assinantes] = await Promise.all([
+
+        // 💰 GANHOS (HOJE / MÊS / ANO)
+        db.query(`
+          SELECT
+            -- 🔹 HOJE
+            COALESCE(SUM(CASE
+              WHEN origem = 'midia'
+               AND DATE(data) = CURRENT_DATE
+              THEN ganho_modelo END),0) AS hoje_midias_modelo,
+
+            COALESCE(SUM(CASE
+              WHEN origem = 'assinatura'
+               AND DATE(data) = CURRENT_DATE
+              THEN ganho_modelo END),0) AS hoje_assinaturas_modelo,
+
+            COALESCE(SUM(CASE
+              WHEN origem = 'midia'
+               AND DATE(data) = CURRENT_DATE
+              THEN ganho_velvet END),0) AS hoje_midias_velvet,
+
+            COALESCE(SUM(CASE
+              WHEN origem = 'assinatura'
+               AND DATE(data) = CURRENT_DATE
+              THEN ganho_velvet END),0) AS hoje_assinaturas_velvet,
+
+            -- 🔹 MÊS
+            COALESCE(SUM(CASE
+              WHEN DATE_TRUNC('month', data) = DATE_TRUNC('month', NOW())
+              THEN ganho_modelo END),0) AS mes_modelo,
+
+            COALESCE(SUM(CASE
+              WHEN DATE_TRUNC('month', data) = DATE_TRUNC('month', NOW())
+              THEN ganho_velvet END),0) AS mes_velvet,
+
+            -- 🔹 ANO
+            COALESCE(SUM(CASE
+              WHEN EXTRACT(YEAR FROM data) = EXTRACT(YEAR FROM NOW())
+              THEN ganho_modelo END),0) AS ano_modelo,
+
+            COALESCE(SUM(CASE
+              WHEN EXTRACT(YEAR FROM data) = EXTRACT(YEAR FROM NOW())
+              THEN ganho_velvet END),0) AS ano_velvet
+
+          FROM (
+            -- 📦 MÍDIAS
+            SELECT
+              criado_em AS data,
+              preco AS ganho_modelo,
+              (valor_total - preco) AS ganho_velvet,
+              'midia' AS origem
+            FROM conteudo_pacotes
+            WHERE modelo_id = $1
+              AND status = 'pago'
+
+            UNION ALL
+
+            -- ⭐ ASSINATURAS
+            SELECT
+              created_at AS data,
+              valor_assinatura AS ganho_modelo,
+              (valor_total - valor_assinatura) AS ganho_velvet,
+              'assinatura' AS origem
+            FROM vip_subscriptions
+            WHERE modelo_id = $1
+          ) t
+        `, [modelo_id]),
+
+        // 👥 ASSINANTES
+        db.query(`
+          SELECT
+            COUNT(*) FILTER (
+              WHERE DATE_TRUNC('month', created_at)
+                    = DATE_TRUNC('month', NOW())
+            ) AS assinantes_mes,
+
+            COUNT(*) FILTER (WHERE ativo = true) AS assinantes_atuais
+          FROM vip_subscriptions
+          WHERE modelo_id = $1
+        `, [modelo_id])
+      ]);
+
+      res.json({
+        ganhos: resumo.rows[0],
+        assinantes: assinantes.rows[0]
+      });
+
+    } catch (err) {
+      console.error("❌ Erro relatório por modelo:", err);
+      res.status(500).json({ error: "Erro relatório modelo" });
+    }
+  }
+);
 
 
 

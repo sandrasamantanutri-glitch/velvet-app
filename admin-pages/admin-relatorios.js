@@ -66,7 +66,7 @@ async function carregarGrafico(mesSelecionado = '') {
         data: {
           labels,
           datasets: [{
-            label: 'Faturamento (€)',
+            label: 'Faturamento (R$)',
             data: valores,
             tension: 0.4,
             fill: true
@@ -90,3 +90,48 @@ filtroMes.addEventListener('change', () => {
 // INIT
 carregarResumo();
 carregarGrafico();
+
+const selectModelo = document.getElementById('selectModelo');
+
+async function carregarModelos() {
+  const modelos = await fetchJSON('/api/allmessage/modelos');
+  selectModelo.innerHTML = '<option value="">Selecione a modelo</option>';
+
+  modelos.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m.id;
+    opt.textContent = m.nome;
+    selectModelo.appendChild(opt);
+  });
+}
+
+async function carregarRelatorioModelo(modelo_id) {
+  if (!modelo_id) return;
+
+  const data = await fetchJSON(
+    '/admin/relatorios/modelo?modelo_id=' + modelo_id
+  );
+
+  const g = data.ganhos;
+  const a = data.assinantes;
+
+  modeloHoje.textContent = formatMoney(
+    g.hoje_midias_modelo + g.hoje_assinaturas_modelo
+  );
+
+  modeloMes.textContent = formatMoney(g.mes_modelo);
+  modeloAno.textContent = formatMoney(g.ano_modelo);
+
+  velvetMes.textContent = formatMoney(g.mes_velvet);
+
+  assinantesMes.textContent = a.assinantes_mes;
+  assinantesAtuais.textContent = a.assinantes_atuais;
+}
+
+selectModelo.addEventListener('change', e => {
+  carregarRelatorioModelo(e.target.value);
+});
+
+// INIT
+carregarModelos();
+
