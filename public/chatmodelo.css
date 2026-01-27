@@ -831,6 +831,7 @@ body.role-modelo .chat-conteudo * {
 .msg {
   position: relative;
   overflow: visible; /* 🔥 importante */
+  padding-right: 28px;
 }
 
 .msg-menu {
