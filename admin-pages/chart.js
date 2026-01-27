@@ -8,9 +8,6 @@ const filtroPeriodo = document.getElementById("filtroPeriodo");
 const filtroModelo = document.getElementById("filtroModelo");
 let chartMensal;
 
-document.getElementById("kpiTotal").innerText =
-  `$${Number(k.ganhos_totais || 0).toFixed(2)}`;
-
 // =========================
 // MODELOS
 // =========================
