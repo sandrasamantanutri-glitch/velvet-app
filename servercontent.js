@@ -330,15 +330,15 @@ for (const row of clientesRes.rows) {
 );
 
 // PÁGINA DE RELATÓRIOS
-router.get("/relatorios",
+// 🔐 ENTRADA DO ADMIN → REDIRECIONA PARA RELATÓRIOS
+router.get('/admin',
   authMiddleware,
   requireRole("admin"),
   (req, res) => {
-    res.sendFile(
-      path.join(__dirname, "admin-pages", "chart.html")
-    );
+    res.redirect('/relatorios');
   }
 );
+
 // 🔐 ENDPOINT DE ACESSO AO CONTEÚDO
 router.get("/access", authCliente, async (req, res) => {
   const message_id = Number(req.query.message_id);
