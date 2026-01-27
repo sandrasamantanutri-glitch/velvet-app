@@ -1418,6 +1418,34 @@ router.get(
   }
 );
 
+// ===============================
+// 📋 LISTAR MODELOS (ADMIN)
+// ===============================
+router.get(
+  "/api/allmessage/modelos",
+  authMiddleware,
+  requireRole("admin"),
+  async (req, res) => {
+    try {
+      const { rows } = await db.query(`
+        SELECT
+          m.user_id AS id,
+          COALESCE(md.nome_exibicao, m.nome) AS nome
+        FROM modelos m
+        LEFT JOIN modelos_dados md
+          ON md.user_id = m.user_id
+        ORDER BY nome
+      `);
+
+      res.json(rows);
+    } catch (err) {
+      console.error("Erro listar modelos:", err);
+      res.status(500).json([]);
+    }
+  }
+);
+
+
 
 
 module.exports = router;
