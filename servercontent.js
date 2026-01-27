@@ -1182,11 +1182,11 @@ router.get(
 
             UNION ALL
 
-            -- ⭐ ASSINATURAS
-            SELECT vs.valor_total
-            FROM vip_subscriptions vs
-            WHERE vs.modelo_id = $1
-          ) t
+           -- ⭐ ASSINATURAS
+SELECT vs.valor_total
+FROM vip_subscriptions vs
+WHERE vs.modelo_id = $1
+  AND vs.ativo = true
         `, [modelo_id]),   // 👈 VÍRGULA AQUI
 
         // 👥 ASSINANTES

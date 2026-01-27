@@ -2,6 +2,15 @@ const hojeTotal = document.getElementById('hojeTotal');
 const mesTotal = document.getElementById('mesTotal');
 const anoTotal = document.getElementById('anoTotal');
 const filtroMes = document.getElementById('filtroMes');
+const modeloHoje = document.getElementById('modeloHoje');
+const modeloMes = document.getElementById('modeloMes');
+const modeloAno = document.getElementById('modeloAno');
+
+const velvetMes = document.getElementById('velvetMes');
+
+const assinantesMes = document.getElementById('assinantesMes');
+const assinantesAtuais = document.getElementById('assinantesAtuais');
+
 
 let chart;
 
