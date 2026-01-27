@@ -832,6 +832,7 @@ body.role-modelo .chat-conteudo * {
   position: relative;
 }
 
+/* botão */
 .msg-menu {
   position: absolute;
   top: 6px;
@@ -844,12 +845,15 @@ body.role-modelo .chat-conteudo * {
   font-size: 16px;
   cursor: pointer;
 
-  color: rgba(255,255,255,0.5);
+  color: rgba(255,255,255,0.6);
+
   opacity: 0;
   transition: opacity .2s ease;
 }
 
-.msg:hover .msg-menu {
+/* aparece no hover OU quando recebe foco */
+.msg:hover .msg-menu,
+.msg:focus-within .msg-menu {
   opacity: 1;
 }
 
