@@ -451,7 +451,7 @@ function renderMensagem(msg) {
       </button>
     ` : ""}
 
-    <span class="msg-hora">${formatarHora(msg.created_at)}</span>
+    <span class="msg-hora">${formatarTempo(new Date(msg.created_at).getTime())}</span>
   `;
  }
 
