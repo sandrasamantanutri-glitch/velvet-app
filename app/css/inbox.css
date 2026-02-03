@@ -17,13 +17,13 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 56px;           
+  height: 90px;           
   padding: 0 16px;       
   box-sizing: border-box;
 }
 
 .velvet-logo {
-  max-height: 34px;   
+  max-height: 150px;   
   width: auto;
   display: flex;
   align-items: center;
@@ -137,7 +137,7 @@ body {
 
 .chat-time {
   font-size: 12px;
-  color: #9A9AA5;
+  color: #C9C9C9;
   white-space: nowrap;
 }
 
@@ -154,7 +154,7 @@ body {
 .chat-last {
   flex: 1;
   font-size: 13px;
-  color: #6A6A75;
+  color: #C9C9C9;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -173,7 +173,7 @@ body {
 /* ✓ enviado */
 .status-sent {
   font-size: 14px;
-  color: #9A9AA5;
+  color: #C9C9C9;
   font-weight: 600;
 }
 
