@@ -279,8 +279,16 @@ function aplicarPerfilNoDOM(modelo) {
   nomeEl.textContent = modelo.nome || "";
   profileBio.textContent = modelo.bio || "";
 
-  avatarImg.src = modelo.avatar_url || "/assets/avatar.png";
-  capaImg.src   = modelo.capa_url   || "/assets/capa.png";
+  // 🔥 SUPORTA PERFIL PRIVADO E PÚBLICO
+  avatarImg.src =
+    modelo.avatar_url ||
+    modelo.avatar ||
+    "/assets/avatar.png";
+
+  capaImg.src =
+    modelo.capa_url ||
+    modelo.capa ||
+    "/assets/capa.png";
 
   if (modelo.cidade && modelo.estado) {
     textoLocal.textContent = `${modelo.cidade} - ${modelo.estado}`;
@@ -289,6 +297,7 @@ function aplicarPerfilNoDOM(modelo) {
     localEl.style.display = "none";
   }
 }
+
 
 async function abrirPopupPix() {
   if (!modelo_id) {
