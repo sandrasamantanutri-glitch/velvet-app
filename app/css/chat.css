@@ -14,7 +14,7 @@ body {
   overflow: hidden;
 }
 
-.hero {
+.chat-header {
   position: sticky;
   display: flex;
   align-items: center;
@@ -35,23 +35,23 @@ body {
   transform: translateY(-1px);
 }
 
-.hero-icons {
+.chat-header-icons {
   display: flex;
   align-items: center;
   gap: 24px;
 }
 
-.hero-icons img {
+.chat-header-icons img {
   width: 26px;
   height: 26px;
 }
 
-.hero-icons img:hover {
+.chat-header-icons img:hover {
   opacity: 1;
 }
 
 @media (max-width: 600px) {
-  .hero {
+  .chat-header {
     height: 90px;
     padding: 0 12px;
   }
@@ -61,7 +61,7 @@ body {
     height: 150px;
   }
 
-  .hero-icons img {
+  .chat-header-icons img {
     width: 22px;
     height: 22px;
   }
