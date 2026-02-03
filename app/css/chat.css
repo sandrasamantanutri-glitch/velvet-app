@@ -22,6 +22,7 @@ body {
   height: 90px;           
   padding: 0 16px;       
   box-sizing: border-box;
+  margin-bottom: 0px !important;
 }
 
 .velvet-logo {
@@ -112,8 +113,8 @@ body {
 
 /* botão mídia (MAIOR, SEM FUNDO EXTRA) */
 #btnEnviarConteudo1 {
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
 
   background: transparent;
@@ -127,8 +128,8 @@ body {
 }
 
 #btnEnviarConteudo1 img {
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   object-fit: contain;
 }
 
@@ -147,8 +148,8 @@ body {
 
 /* botão enviar (MAIOR) */
 .btn-enviar1 {
-  width: 34x;
-  height: 34px;
+  width: 30x;
+  height: 30px;
   border-radius: 50%;
 
   background: transparent !important;
@@ -162,8 +163,8 @@ body {
 }
 
 .btn-enviar1 img {
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   object-fit: contain;
 }
 
