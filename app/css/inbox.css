@@ -64,6 +64,28 @@ body {
     height: 22px;
   }
 }
+
+/* ===============================
+   SEPARADORES UNIFICADOS (FORÇA)
+================================ */
+.chat-header {
+  border-bottom: 1px solid #C9C9C9 !important;
+}
+
+.chat-input {
+  border-top: 1px solid #C9C9C9 !important;
+}
+
+#msgInput {
+    flex: 1;
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 14px;
+    background: #fff !important;
+    border: 1px solid #C9C9C9 !important;
+    font-size: 13px;
+    line-height: normal;
+}
 /* ===============================
    INBOX
 ================================ */
@@ -207,207 +229,11 @@ body {
   white-space: nowrap;
 }
 
-
-/* ===============================
-   FOOTER NAV
-================================ */
-.footer-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-
-  height: 64px;
-  background: #E1E1E1;
-  border-top: 1px solid #C9C9C9;
-
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-
-  z-index: 10;
-}
-
-.footer-nav .nav-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-
-  font-size: 11px;
-  color: #7B2CFF;
-  text-decoration: none;
-}
-
-.footer-nav .nav-item img {
-  width: 22px;
-  height: 22px;
-  object-fit: contain;
-  opacity: 0.7;
-}
-
-.footer-nav .nav-item.active img {
-  opacity: 1;
-}
-
-
-.footer-nav .nav-item.active {
-  color: #7B2CFF;
-  font-weight: 600;
-}
-
-
 /* espaço extra para não cobrir a lista */
 .inbox {
   padding-bottom: 72px;
 }
 
-/* ===============================
-   CONTEÚDO ABAIXO DO HEADER
-================================ */
-
 .inbox {
   padding-top: 8px;
 }
-
-/* ===============================
-   HEADER – APP / PWA FINAL
-================================ */
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-
-  height: 56px;
-  background: #E1E1E1;              /* igual footer */
-  border-bottom: 1px solid #C9C9C9;
-
-  display: flex;
-  align-items: center;
-
-  padding: 0 16px;
-  padding-top: env(safe-area-inset-top);
-
-  box-sizing: border-box;
-}
-
-/* iOS notch */
-@supports (-webkit-touch-callout: none) {
-  .topbar {
-    height: calc(56px + env(safe-area-inset-top));
-  }
-}
-
-/* botão sair */
-.btn-logout {
-  background: transparent;
-  border: none;
-  padding: 6px;
-  cursor: pointer;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.btn-logout img {
-  width: 22px;
-  height: 22px;
-  object-fit: contain;
-  opacity: 0.9;
-}
-
-.btn-logout:active {
-  transform: scale(0.92);
-}
-
-/* ===============================
-   LAYOUT BASE (APP)
-================================ */
-html, body {
-  height: 100%;
-  margin: 0;
-  overflow: hidden; /* 🔒 trava o body */
-}
-
-.page-wrapper {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background: #E1E1E1;
-}
-
-/* ===============================
-   HEADER FIXO
-================================ */
-.topbar {
-  flex-shrink: 0;
-
-  position: sticky;
-  top: 0;
-  z-index: 20;
-
-  height: 56px;
-  background: #E1E1E1;
-  border-bottom: 1px solid #C9C9C9;
-
-  display: flex;
-  align-items: center;
-  padding: 0 16px;
-  padding-top: env(safe-area-inset-top);
-}
-
-@supports (-webkit-touch-callout: none) {
-  .topbar {
-    height: calc(56px + env(safe-area-inset-top));
-  }
-}
-
-.topbar h1 {
-  flex: 1;
-  margin: 0;
-  font-size: 24px;      /* 🔥 tamanho de título */
-  font-weight: 700;     /* mais presença */
-  font-weight: 600;
-  color: #7B2CFF;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-
-/* ===============================
-   FOOTER FIXO
-================================ */
-.footer-nav {
-  flex-shrink: 0;
-
-  position: sticky;
-  bottom: 0;
-  z-index: 20;
-
-  height: 64px;
-  background: #E1E1E1;
-  border-top: 1px solid #C9C9C9;
-
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-/* ===============================
-   CONTEÚDO SCROLLÁVEL
-================================ */
-.content {
-  flex: 1;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  background: #fff; /* 🔥 fundo branco do inbox */
-}
-
-.inbox {
-  padding-bottom: 8px; /* espaço interno */
-}
-
