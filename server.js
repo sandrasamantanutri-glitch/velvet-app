@@ -1215,26 +1215,6 @@ app.get("/api/app/state-v2", auth, (req, res) => {
   return res.json({ next: "logout" });
 });
 
-
-app.get("/api/me", auth, (req, res) => {
-  if (req.user.role !== "modelo") {
-    return res.json(req.user);
-  }
-
-  const modelos = lerModelos();
-  const dados = modelos[req.user.id] || {};
-
-  res.json({
-    id: req.user.id,
-    role: "modelo",
-    avatar: dados.avatar,
-    capa: dados.capa,
-    bio: dados.bio || "",
-    nome: dados.nome || "Modelo"
-  });
-});
-
-
 app.get("/api/feed/me", auth, async (req, res) => {
   try {
     const result = await db.query(
@@ -1544,14 +1524,16 @@ if (!Number.isInteger(modelo_id) || modelo_id <= 0) {
   try {
     const result = await db.query(
       `
-      SELECT
-        m.user_id AS id,
-        m.nome,
-        m.bio,
-        m.avatar,
-        m.capa
-      FROM modelos m
-      WHERE m.user_id = $1
+          SELECT
+      user_id AS id,
+      nome,
+      bio,
+      avatar,
+      capa,
+      cidade,
+      estado
+     FROM modelos
+     WHERE user_id = $1
       `,
       [modelo_id]
     );

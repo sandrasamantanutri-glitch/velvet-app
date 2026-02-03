@@ -86,18 +86,18 @@ document.addEventListener("DOMContentLoaded", () => {
  pagarComCartao(); // sua função Stripe
  });
 
-  // btnChat?.addEventListener("click", () => {
-  // if (!role) {
-  //   abrirPopupVelvet({ tipo: "login" });
-  //   return;
-  // }
-  // if (!window.__CLIENTE_VIP__) {
-  //   abrirPopupVelvet({ tipo: "vip" });
-  //   return;
-  // }
-  // window.location.href = "/chatcliente.html";
+  btnChat?.addEventListener("click", () => {
+  if (!role) {
+    abrirPopupVelvet({ tipo: "login" });
+    return;
+  }
+  if (!window.__CLIENTE_VIP__) {
+    abrirPopupVelvet({ tipo: "vip" });
+    return;
+  }
+  window.location.href = "/chatcliente.html";
 
-// });
+});
 const modalMidia = document.getElementById("modalMidia");
 const fecharModal = document.getElementById("fecharModal");
 const modalVideo = document.getElementById("modalVideo");
