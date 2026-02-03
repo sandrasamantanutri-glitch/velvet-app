@@ -35,18 +35,18 @@ body {
   transform: translateY(-1px);
 }
 
-.chat-header-icons {
+.btn-voltar {
   display: flex;
   align-items: center;
   gap: 24px;
 }
 
-.chat-header-icons img {
+.btn-voltar img {
   width: 26px;
   height: 26px;
 }
 
-.chat-header-icons img:hover {
+.btn-voltar img:hover {
   opacity: 1;
 }
 
@@ -61,7 +61,7 @@ body {
     height: 150px;
   }
 
-  .chat-header-icons img {
+  .btn-voltar img {
     width: 22px;
     height: 22px;
   }
