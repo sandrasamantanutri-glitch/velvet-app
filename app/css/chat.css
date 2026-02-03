@@ -1,73 +1,68 @@
-/* ===============================
-   BASE / APP
-================================ */
-* {
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
+
+:root {
+  --font-primary: "Poppins", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background: #f1f1f1;
+  color: #7B2CFF;
+}
+
+.hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 90px;           
+  padding: 0 16px;       
   box-sizing: border-box;
 }
 
-html, body {
-  height: 100%;
-  margin: 0;
-  overflow: hidden; /* body não rola */
-  font-family: "Poppins", system-ui, -apple-system;
-  background: #fff;
-}
-
-/* ===============================
-   HEADER FIXO (APP)
-================================ */
-.chat-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 30;
-
-  height: 64px;
-  background: #E1E1E1;
-  border-bottom: 1px solid #C9C9C9;
-
+.velvet-logo {
+  max-height: 150px;   
+  width: auto;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 16px;
-  padding-top: env(safe-area-inset-top);
 }
 
-/* safe-area iOS */
-@supports (-webkit-touch-callout: none) {
-  .chat-header {
-    height: calc(64px + env(safe-area-inset-top));
+.velvet-logo {
+  transform: translateY(-1px);
+}
+
+.hero-icons {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.hero-icons img {
+  width: 26px;
+  height: 26px;
+}
+
+.hero-icons img:hover {
+  opacity: 1;
+}
+
+@media (max-width: 600px) {
+  .hero {
+    height: 90px;
+    padding: 0 12px;
   }
-}
 
-/* botão voltar (MAIOR) */
-.btn-back {
-  background: transparent;
-  border: none;
-  padding: 6px;
-  cursor: pointer;
+  .velvet-logo {
+    width: 120px;
+    height: 120px;
+  }
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.btn-back img {
-  width: 44px !important;
-  height: 44px I !important;
-  object-fit: contain;
-}
-
-/* título do chat (TÍTULO REAL) */
-.chat-title {
-  font-size: 24px;      /* 🔥 tamanho de título */
-  font-weight: 700;
-  color: #7B2CFF;
-
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  .hero-icons img {
+    width: 22px;
+    height: 22px;
+  }
 }
 
 /* ===============================
@@ -93,8 +88,8 @@ html, body {
 
 /* botão mídia (MAIOR, SEM FUNDO EXTRA) */
 #btnEnviarConteudo1 {
-  width: 44px;
-  height: 44px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
 
   background: transparent;
@@ -108,8 +103,8 @@ html, body {
 }
 
 #btnEnviarConteudo1 img {
-  width: 50px;
-  height: 50px;
+  width: 34px;
+  height: 34px;
   object-fit: contain;
 }
 
