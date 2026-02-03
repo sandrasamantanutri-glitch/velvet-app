@@ -50,12 +50,12 @@ body {
 
 @media (max-width: 600px) {
   .hero {
-    height: 48px;
+    height: 90px;
     padding: 0 12px;
   }
 
   .velvet-logo {
-    max-height: 28px;
+    max-height: 150px;
   }
 
   .hero-icons img {
