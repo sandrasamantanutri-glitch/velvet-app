@@ -66,6 +66,34 @@ body {
 }
 
 /* ===============================
+   HEADER – APP / PWA FINAL
+================================ */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+
+  height: 56px;
+  background: #E1E1E1;              /* igual footer */
+  border-bottom: 1px solid #C9C9C9;
+
+  display: flex;
+  align-items: center;
+
+  padding: 0 16px;
+  padding-top: env(safe-area-inset-top);
+
+  box-sizing: border-box;
+}
+
+/* iOS notch */
+@supports (-webkit-touch-callout: none) {
+  .topbar {
+    height: calc(56px + env(safe-area-inset-top));
+  }
+}
+
+/* ===============================
    INPUT FIXO (APP)
 ================================ */
 .chat-input {
