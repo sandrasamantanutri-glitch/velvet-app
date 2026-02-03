@@ -1,56 +1,81 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-BR">
+
 <head>
-  <meta charset="UTF-8" />
-  <title>Dados da Conta</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="/painel.css" />
-  <link rel="stylesheet" href="header.css">
+  <meta charset="UTF-8">
+   <title>Perfil | Velvet</title>
+  <link rel="stylesheet" href="/area.css">
 </head>
 
+<body>
+
+  <section class="hero">
+  <img src="/assets/velvet.png" alt="Velvet" class="velvet-logo">
+   <div class="hero-icons">
+    <a href="/feed.html" title="Feed"><img src="/assets/feed.png" alt="Feed"></a>
+    <a href="/chat.html" title="Chat"><img src="/assets/chat.png" alt="Chat"></a>
+    <a href="/perfil.html" title="Perfil"><img src="/assets/perfil.png" alt="Perfil"></a>
+  </div>
+</section>
+
+<section class="area-card">
+<div class="perfil-capa"> <img id="perfil-capa" src="/assets/capa.png" alt="Capa"/></div>
+<div class="perfil-avatar"> <img id="perfil-avatar" src="/assets/avatar.png" alt="Avatar"/></div>
+<div class="perfil-nome" id="perfil-nome"> Sandra</div>
+<div class="area-assinantes" id="perfil-assinantes">0 assinantes</div>
 <body class="role-modelo">
 
-  <div class="container-dados">
-    <h1>Suas Informações</h1>
-    <p class="sub">
-      Estes dados são obrigatórios para segurança da sua conta e garantir seus recebimentos. 
-    </p>
+<section class="area-section">
+ <h3 class="area-titulo">Informações de Usuário</h3>
+ <span>Mantenha suas informações em dia para uma melhor experiência na plataforma.</span>
 
-    <form id="formDadosModelo">
+ <form id="formDadosModelo">
 
-      <label>Nome de exibição (perfil)</label>
-      <input type="text" name="nome_exibicao" required />
+  <label>Seu nome de Usuário (seu @)*</label>
+  <input type="text" name="nome_exibicao" required />
 
-      <label>Nome completo</label>
-      <input type="text" name="nome_completo" required />
+  <label>Instagram</label>
+  <input type="text" name="instagram" placeholder="@seuinstagram" />
 
-      <label>Data de nascimento</label>
-      <input type="date" name="data_nascimento" required />
+  <label>TikTok</label>
+  <input type="text" name="tiktok" placeholder="@seutiktok" />
 
-      <label>Telefone</label>
-      <input type="text" name="telefone" required />
+  <label>Localização*</label>
+  <input type="text" name="Localização" placeholder="Local" />
 
-      <label>Endereço completo</label>
-      <textarea name="endereco" rows="3" required></textarea>
+  <label>Sua Bio*</label>
+  <input type="text" name="Bio" row="4" placeholder="Bio" />
+  <span>* Preenchimento Obrigatório</span>
+  <button type="submit">Salvar</button><p id="msgStatus" class="status"></p>
 
-      <label>País</label>
-      <input type="text" name="pais" required />
+  </form>
 
+  <form id="formDadosPessoais">
+  <span>Mantenha suas informações em dia para uma melhor experiência na plataforma.</span>
 
-      <label>Instagram</label>
-      <input type="text" name="instagram" placeholder="@seuinstagram" />
+  <label>Nome completo</label>
+  <input type="text" name="nome_completo" required />
 
-      <label>TikTok</label>
-      <input type="text" name="tiktok" placeholder="@seutiktok" />
+  <label>Data de nascimento</label>
+  <input type="date" name="data_nascimento" required />
 
-      <div class="label">
-      ⚠️ Dados bancários serão solicitados futuramente para liberação de ganhos.
-      </div>
+  <label>Telefone com DDD</label>
+  <input type="text" name="telefone" required />
 
-      <button type="submit">Salvar</button>
-      <p id="msgStatus" class="status"></p>
-    </form>
-  </div>
+  <label>Endereço</label>
+  <textarea name="endereco" required></textarea>
+
+  <label>Estado</label>
+  <textarea name="estado" required></textarea>
+
+  <label>Cidade</label>
+  <textarea name="cidade" required></textarea>
+
+  <label>País</label>
+  <input type="pais" name="pais" required />
+
+  </form>
+  </section>
 
   <!-- ===============================
   LINKS DO MEU PERFIL

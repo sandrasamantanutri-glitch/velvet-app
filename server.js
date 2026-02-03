@@ -1165,6 +1165,7 @@ socket.on("excluirMensagem", async ({ id }) => {
 
 
 
+
 });
 // ===============================
 //ROTA GET
@@ -3025,6 +3026,31 @@ app.post("/api/chat/marcar-lido/:cliente_id", authModelo, async (req, res) => {
   } catch (err) {
     console.error("Erro marcar lido:", err);
     res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+//ROTA DE VALIDAR DOCUMENTO
+app.post("/api/modelo/verificacao", async (req, res) => {
+  const { modelo_id, documento_tipo, documento_url, selfie_url } = req.body;
+
+  if (!modelo_id || !documento_tipo || !documento_url || !selfie_url) {
+    return res.status(400).json({ erro: "Dados incompletos" });
+  }
+
+  try {
+    await pool.query(
+      `
+      INSERT INTO modelos_verificacao
+      (modelo_id, documento_tipo, documento_url, selfie_url)
+      VALUES ($1, $2, $3, $4)
+      `,
+      [modelo_id, documento_tipo, documento_url, selfie_url]
+    );
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Erro verificação:", err);
+    res.status(500).json({ erro: "Erro ao enviar verificação" });
   }
 });
 

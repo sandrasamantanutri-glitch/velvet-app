@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+   <title>Perfil </title>
+  <link rel="stylesheet" href="/perfil.css">
+
+</head>
+
+<body>
+
+<section class="hero">
+  <img src="/assets/velvet.png" alt="Velvet" class="velvet-logo">
+
+  <div class="hero-icons">
+    <a href="/feed.html" title="Feed"><img src="/assets/feed.png" alt="Feed"></a>
+
+    <a href="/chat.html" title="Chat"><img src="/assets/chat.png" alt="Chat"></a>
+
+    <a href="/perfil.html" title="Perfil"><img src="/assets/perfil.png" alt="Perfil"></a>
+  </div>
+</section>
+
+
+<div class="perfil-card">
+<div class="perfil-capa"> <img id="perfil-capa" /></div>
+<div class="perfil-avatar"><img id="perfil-avatar" /></div>
+<div class="perfil-nome" id="perfil-nome"></div>
+<div class="perfil-bio" id="perfil-bio"></div>
+<div class="local-icons"><img src="/assets/local.png" alt="Local"> <span id="local-texto"></span></div>
+
+<div class="icon-group">
+  <img src="/assets/insta.png" alt="Instagram">
+  <img src="/assets/tiktok.png" alt="TikTok">
+</div>
+
+
+<div class="oferta-card" id="oferta-card">
+
+  <div class="oferta-titulo">
+    💎 Oferta Assinatura
+  </div>
+
+  <div class="oferta-botao-wrapper">
+    <span class="oferta-balao">Economize 20%</span>
+
+    <button class="oferta-botao" id="btn-assinar">
+      Assinar agora R$ <span id="preco-desconto"></span>
+    </button>
+  </div>
+
+  <div class="oferta-preco-original">
+    Preço original:
+    <span id="preco-original"></span>
+  </div>
+
+</div>
+
+<div class="midias-section">
+  <div class="midias-topo">
+   <a href="#" class= "btn-upload" title="upload"><img src="/assets/more.png" alt="Carregar Midias"></a>
+   <input type="file" id="inputUpload" accept="image/*,video/*"hidden/>
+
+   <div class="midias-tabs">
+    <button class="tab active" data-tab="free"> 🎁 Pra você</button>
+    <button class="tab" data-tab="paid">🔥 Especial</button>
+   </div>
+
+  </div>
+
+  <div class="midias-grid active" id="midias-free"></div>
+  <div class="midias-grid" id="midias-paid"></div>
+
+</div>
+
+
+<script src="perfil.js" defer></script>
+
+</body>
+</html>
