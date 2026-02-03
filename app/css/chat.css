@@ -98,7 +98,7 @@ body {
   z-index: 30;
 
   height: 64px;
-  background: #E1E1E1;                /* 🔥 igual header */
+  background: #f1f1f1;;                /* 🔥 igual header */
   border-top: 1px solid #C9C9C9;      /* mesmo separador */
 
   display: flex;
