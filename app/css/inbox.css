@@ -78,30 +78,30 @@ body {
 .hero {
   position: relative;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 6px 10px 10px; /* menos espaço em cima */
+  align-items: center;      /* 🔥 mesma linha vertical */
+  justify-content: space-between;
+  padding: 8px 16px;
 }
 
 .velvet-logo {
-  max-width: 280px;
-  margin-bottom: 8px;
+  max-width: 220px; /* pode ajustar */
   display: flex;
   align-items: center;
-  transform: translateY(-6px); /* sobe o logo */
+}
+
+.velvet-logo {
+  transform: translateY(-2px);
 }
 
 .hero-icons {
-  position: absolute;
-  top: 10px; /* antes era 16px */
-  right: 16px;
   display: flex;
-  gap: 32px; /* 50px estava muito largo */
+  align-items: center;
+  gap: 28px;
 }
 
 .hero-icons img {
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   opacity: 0.9;
   cursor: pointer;
 }
@@ -111,11 +111,20 @@ body {
 }
 
 @media (max-width: 600px) {
+  .velvet-logo {
+    max-width: 160px;
+  }
+
   .hero-icons img {
     width: 22px;
     height: 22px;
   }
+
+  .hero-icons {
+    gap: 18px;
+  }
 }
+
 /* ===============================
    INBOX
 ================================ */
