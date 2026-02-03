@@ -13,7 +13,7 @@ body {
 }
 
 .hero {
-  position: relative;
+  position: sticky;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -23,7 +23,7 @@ body {
 }
 
 .velvet-logo {
-  max-height: 150px;   
+  max-height: 180px;   
   width: auto;
   display: flex;
   align-items: center;
@@ -55,8 +55,8 @@ body {
   }
 
   .velvet-logo {
-    width: 120px;
-    height: 120px;
+    width: 150px;
+    height: 15px;
   }
 
   .hero-icons img {
