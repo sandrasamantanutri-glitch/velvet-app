@@ -15,32 +15,33 @@ body {
 .hero {
   position: relative;
   display: flex;
-  align-items: center;      /* 🔥 mesma linha vertical */
+  align-items: center;
   justify-content: space-between;
-  padding: 8px 16px;
+  height: 56px;           
+  padding: 0 16px;       
+  box-sizing: border-box;
 }
 
 .velvet-logo {
-  max-width: 220px; /* pode ajustar */
+  max-height: 34px;   
+  width: auto;
   display: flex;
   align-items: center;
 }
 
 .velvet-logo {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
 .hero-icons {
   display: flex;
   align-items: center;
-  gap: 28px;
+  gap: 24px;
 }
 
 .hero-icons img {
-  width: 36px;
-  height: 36px;
-  opacity: 0.9;
-  cursor: pointer;
+  width: 26px;
+  height: 26px;
 }
 
 .hero-icons img:hover {
@@ -48,20 +49,20 @@ body {
 }
 
 @media (max-width: 600px) {
+  .hero {
+    height: 48px;
+    padding: 0 12px;
+  }
+
   .velvet-logo {
-    max-width: 160px;
+    max-height: 28px;
   }
 
   .hero-icons img {
     width: 22px;
     height: 22px;
   }
-
-  .hero-icons {
-    gap: 18px;
-  }
 }
-
 /* ===============================
    INBOX
 ================================ */
