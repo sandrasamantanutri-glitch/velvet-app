@@ -21,7 +21,7 @@ if (token && role === "modelo" && !modeloParam) {
 }
 
 if (role === "cliente" && modo === "privado") {
-  window.location.href = "https://www.velvet.lat";
+  window.location.href = "#######################################";
   throw new Error("Cliente não pode acessar profile privado");
 }
 if (modo === "publico") {
@@ -112,9 +112,27 @@ fecharModal?.addEventListener("click", (e) => {
   }
 
   modalMidia.classList.add("hidden");
+  });
+
+  const btnUpload = document.querySelector(".btn-upload");
+  const inputUpload = document.getElementById("inputUpload");
+
+  if (!btnUpload || !inputUpload) return;
+
+  btnUpload.addEventListener("click", (e) => {
+    e.preventDefault(); // 🚫 impede reload
+    inputUpload.click(); // abre seletor
+  });
+
+  inputUpload.addEventListener("change", () => {
+    const file = inputUpload.files[0];
+    if (!file) return;
+
+    const url = URL.createObjectURL(file);
+    abrirPreviewUpload(file, url);
+  });
 });
 
-});
 
 // ===============================
 // ROLE VISUAL
@@ -253,12 +271,12 @@ function fecharEscolha() {
 // ===============================
 // DOM PERFIL
 // ===============================
-function aplicarPerfilNoDOM(modelo) {
-  nomeEl.textContent = modelo.nome;
-  profileBio.textContent = modelo.bio || "";
-  if (modelo.avatar) avatarImg.src = modelo.avatar;
-  if (modelo.capa) capaImg.src = modelo.capa;
-}
+// function aplicarPerfilNoDOM(modelo) {
+//   nomeEl.textContent = modelo.nome;
+//   profileBio.textContent = modelo.bio || "";
+//   if (modelo.avatar) avatarImg.src = modelo.avatar;
+//   if (modelo.capa) capaImg.src = modelo.capa;
+// }
 
 async function abrirPopupPix() {
   if (!modelo_id) {
@@ -541,39 +559,39 @@ document
   elements = null;
 }
 
-// fetch("/api/modelo/me")
-//   .then(res => {
-//     if (!res.ok) throw new Error("Não autenticada");
-//     return res.json();
-//   })
-//   .then(modelo => {
-//     userId = modelo.id;
+fetch("/api/modelo/me")
+  .then(res => {
+    if (!res.ok) throw new Error("Não autenticada");
+    return res.json();
+  })
+  .then(modelo => {
+    userId = modelo.id;
 
-//     document.getElementById("perfil-nome").textContent = modelo.nome;
-//     document.getElementById("perfil-bio").textContent = modelo.bio || "";
+    document.getElementById("perfil-nome").textContent = modelo.nome;
+    document.getElementById("perfil-bio").textContent = modelo.bio || "";
 
-//     document.getElementById("perfil-avatar").src =
-//       modelo.avatar_url || "/assets/avatar.png";
+    document.getElementById("perfil-avatar").src =
+      modelo.avatar_url || "/assets/avatar.png";
 
-//     document.getElementById("perfil-capa").src =
-//       modelo.capa_url || "/assets/capa.png";
+    document.getElementById("perfil-capa").src =
+      modelo.capa_url || "/assets/capa.png";
 
-//     const localEl = document.querySelector(".local-icons");
-//     const textoLocal = document.getElementById("local-texto");
+    const localEl = document.querySelector(".local-icons");
+    const textoLocal = document.getElementById("local-texto");
 
-//     if (modelo.cidade && modelo.estado) {
-//       textoLocal.textContent = `${modelo.cidade} - ${modelo.estado}`;
-//       localEl.style.display = "flex";
-//     } else {
-//       localEl.style.display = "none";
-//     }
+    if (modelo.cidade && modelo.estado) {
+      textoLocal.textContent = `${modelo.cidade} - ${modelo.estado}`;
+      localEl.style.display = "flex";
+    } else {
+      localEl.style.display = "none";
+    }
 
-//     // 🔥 só carrega mídias DEPOIS de saber quem é a modelo
-//     carregarConteudos("feed");
-//   })
-//   .catch(err => {
-//     console.error("Erro ao carregar perfil:", err);
-//   });
+    // 🔥 só carrega mídias DEPOIS de saber quem é a modelo
+    carregarConteudos("feed");
+  })
+  .catch(err => {
+    console.error("Erro ao carregar perfil:", err);
+  });
 
 const gridFree = document.getElementById("midias-free");
 const gridPaid = document.getElementById("midias-paid");
@@ -808,29 +826,6 @@ async function excluirMidia(id) {
     alert("Erro ao excluir mídia");
   }
 }
-
-//UPLOAD BUTTON //doms
-document.addEventListener("DOMContentLoaded", () => {
-  const btnUpload = document.querySelector(".btn-upload");
-  const inputUpload = document.getElementById("inputUpload");
-
-  if (!btnUpload || !inputUpload) return;
-
-  btnUpload.addEventListener("click", (e) => {
-    e.preventDefault(); // 🚫 impede reload
-    inputUpload.click(); // abre seletor
-  });
-
-  inputUpload.addEventListener("change", () => {
-    const file = inputUpload.files[0];
-    if (!file) return;
-
-    const url = URL.createObjectURL(file);
-    abrirPreviewUpload(file, url);
-  });
-});
-
-
 
 function abrirPreviewUpload(file, url) {
   const modal = document.createElement("div");
