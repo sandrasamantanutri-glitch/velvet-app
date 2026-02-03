@@ -541,39 +541,39 @@ document
   elements = null;
 }
 
-fetch("/api/modelo/me")
-  .then(res => {
-    if (!res.ok) throw new Error("Não autenticada");
-    return res.json();
-  })
-  .then(modelo => {
-    userId = modelo.id;
+// fetch("/api/modelo/me")
+//   .then(res => {
+//     if (!res.ok) throw new Error("Não autenticada");
+//     return res.json();
+//   })
+//   .then(modelo => {
+//     userId = modelo.id;
 
-    document.getElementById("perfil-nome").textContent = modelo.nome;
-    document.getElementById("perfil-bio").textContent = modelo.bio || "";
+//     document.getElementById("perfil-nome").textContent = modelo.nome;
+//     document.getElementById("perfil-bio").textContent = modelo.bio || "";
 
-    document.getElementById("perfil-avatar").src =
-      modelo.avatar_url || "/assets/avatar.png";
+//     document.getElementById("perfil-avatar").src =
+//       modelo.avatar_url || "/assets/avatar.png";
 
-    document.getElementById("perfil-capa").src =
-      modelo.capa_url || "/assets/capa.png";
+//     document.getElementById("perfil-capa").src =
+//       modelo.capa_url || "/assets/capa.png";
 
-    const localEl = document.querySelector(".local-icons");
-    const textoLocal = document.getElementById("local-texto");
+//     const localEl = document.querySelector(".local-icons");
+//     const textoLocal = document.getElementById("local-texto");
 
-    if (modelo.cidade && modelo.estado) {
-      textoLocal.textContent = `${modelo.cidade} - ${modelo.estado}`;
-      localEl.style.display = "flex";
-    } else {
-      localEl.style.display = "none";
-    }
+//     if (modelo.cidade && modelo.estado) {
+//       textoLocal.textContent = `${modelo.cidade} - ${modelo.estado}`;
+//       localEl.style.display = "flex";
+//     } else {
+//       localEl.style.display = "none";
+//     }
 
-    // 🔥 só carrega mídias DEPOIS de saber quem é a modelo
-    carregarConteudos("feed");
-  })
-  .catch(err => {
-    console.error("Erro ao carregar perfil:", err);
-  });
+//     // 🔥 só carrega mídias DEPOIS de saber quem é a modelo
+//     carregarConteudos("feed");
+//   })
+//   .catch(err => {
+//     console.error("Erro ao carregar perfil:", err);
+//   });
 
 const gridFree = document.getElementById("midias-free");
 const gridPaid = document.getElementById("midias-paid");
