@@ -86,18 +86,18 @@ document.addEventListener("DOMContentLoaded", () => {
  pagarComCartao(); // sua função Stripe
  });
 
-  btnChat?.addEventListener("click", () => {
-  if (!role) {
-    abrirPopupVelvet({ tipo: "login" });
-    return;
-  }
-  if (!window.__CLIENTE_VIP__) {
-    abrirPopupVelvet({ tipo: "vip" });
-    return;
-  }
-  window.location.href = "/chatcliente.html";
+  // btnChat?.addEventListener("click", () => {
+  // if (!role) {
+  //   abrirPopupVelvet({ tipo: "login" });
+  //   return;
+  // }
+  // if (!window.__CLIENTE_VIP__) {
+  //   abrirPopupVelvet({ tipo: "vip" });
+  //   return;
+  // }
+  // window.location.href = "/chatcliente.html";
 
-});
+// });
 const modalMidia = document.getElementById("modalMidia");
 const fecharModal = document.getElementById("fecharModal");
 const modalVideo = document.getElementById("modalVideo");
@@ -268,15 +268,27 @@ function fecharEscolha() {
     .classList.add("hidden");
 }
 
-// ===============================
-// DOM PERFIL
-// ===============================
-// function aplicarPerfilNoDOM(modelo) {
-//   nomeEl.textContent = modelo.nome;
-//   profileBio.textContent = modelo.bio || "";
-//   if (modelo.avatar) avatarImg.src = modelo.avatar;
-//   if (modelo.capa) capaImg.src = modelo.capa;
-// }
+function aplicarPerfilNoDOM(modelo) {
+  const nomeEl = document.getElementById("perfil-nome");
+  const profileBio = document.getElementById("perfil-bio");
+  const avatarImg = document.getElementById("perfil-avatar");
+  const capaImg = document.getElementById("perfil-capa");
+  const localEl = document.querySelector(".local-icons");
+  const textoLocal = document.getElementById("local-texto");
+
+  nomeEl.textContent = modelo.nome || "";
+  profileBio.textContent = modelo.bio || "";
+
+  avatarImg.src = modelo.avatar_url || "/assets/avatar.png";
+  capaImg.src   = modelo.capa_url   || "/assets/capa.png";
+
+  if (modelo.cidade && modelo.estado) {
+    textoLocal.textContent = `${modelo.cidade} - ${modelo.estado}`;
+    localEl.style.display = "flex";
+  } else {
+    localEl.style.display = "none";
+  }
+}
 
 async function abrirPopupPix() {
   if (!modelo_id) {
@@ -558,41 +570,6 @@ document
 
   elements = null;
 }
-
-fetch("/api/modelo/me")
-  .then(res => {
-    if (!res.ok) throw new Error("Não autenticada");
-    return res.json();
-  })
-  .then(modelo => {
-    userId = modelo.id;
-
-    document.getElementById("perfil-nome").textContent = modelo.nome;
-    document.getElementById("perfil-bio").textContent = modelo.bio || "";
-
-    document.getElementById("perfil-avatar").src =
-      modelo.avatar_url || "/assets/avatar.png";
-
-    document.getElementById("perfil-capa").src =
-      modelo.capa_url || "/assets/capa.png";
-
-    const localEl = document.querySelector(".local-icons");
-    const textoLocal = document.getElementById("local-texto");
-
-    if (modelo.cidade && modelo.estado) {
-      textoLocal.textContent = `${modelo.cidade} - ${modelo.estado}`;
-      localEl.style.display = "flex";
-    } else {
-      localEl.style.display = "none";
-    }
-
-    // 🔥 só carrega mídias DEPOIS de saber quem é a modelo
-    carregarConteudos("feed");
-  })
-  .catch(err => {
-    console.error("Erro ao carregar perfil:", err);
-  });
-
 const gridFree = document.getElementById("midias-free");
 const gridPaid = document.getElementById("midias-paid");
 const tabs = document.querySelectorAll(".midias-tabs .tab");
@@ -632,8 +609,8 @@ function carregarConteudos(tipoConteudo) {
   `;
 
   card.onclick = () => abrirModalVenda(c);
-}
-else {
+ }
+ else {
   card.innerHTML = `
   <div class="thumb-wrapper">
   <button class="btn-delete" title="Excluir">✕</button>
