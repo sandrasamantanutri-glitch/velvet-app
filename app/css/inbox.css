@@ -177,7 +177,7 @@ body {
 .chat-last {
   flex: 1;
   font-size: 13px;
-  color: #353541;
+  color: #323238;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
