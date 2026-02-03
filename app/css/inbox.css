@@ -263,37 +263,6 @@ body {
 }
 
 /* ===============================
-   PWA FULLSCREEN SAFE AREA
-================================ */
-
-/* garante altura correta em fullscreen */
-html, body {
-  height: 100%;
-}
-
-/* evita corte em notch / gesture bar */
-.footer-nav {
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-/* espaço extra no conteúdo para o footer */
-.inbox {
-  padding-bottom: calc(72px + env(safe-area-inset-bottom));
-}
-
-/* iOS standalone */
-@supports (-webkit-touch-callout: none) {
-  body {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-}
-
-/* feedback de toque (app feel) */
-.btn-logout:active {
-  transform: scale(0.92);
-}
-
-/* ===============================
    CONTEÚDO ABAIXO DO HEADER
 ================================ */
 
