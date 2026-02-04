@@ -7,55 +7,52 @@
   <link rel="stylesheet" href="/perfil.css">
 
 </head>
-
 <body>
+
 <header class="app-header">
   <div class="header-inner">
    <img src="/assets/velvet.png" alt="Velvet" class="velvet-logo">
    <a href="/feed.html" title="Feed"><img src="/assets/feed.png" alt="Feed"></a>
+   <a href="/chat.html" title="Chat"><img src="/assets/chat.png" alt="Chat"></a>
    <a href="/perfil.html" title="Perfil"><img src="/assets/perfil.png" alt="Perfil"></a>
    <button id="btnMensagem"><img src="assets/chat.png" alt="Chat"><span id="badgeUnread" class="badge-unread hidden">0</span></button>
+   <button id="menuBtn" class="menu-btn">☰</button>
+   <div id="userMenu" class="menu-superior"></div>
   </div>
 
 </header>
 
-<div id="headerCapa" class="headerCapa"></div>
-
 <div class="perfil-card">
-  
+
+  <!-- CAPA -->
   <div class="perfil-capa">
-    <img
-      id="profileCapa"
-      src="/assets/capa.png"
-      alt="Capa da modelo"
-    >
-    <input type="file" id="inputCapa" accept="image/*" hidden>
+    <img id="profileCapa" src="/assets/capa.png" alt="Capa da modelo">
   </div>
 
+  <!-- AVATAR -->
   <div class="perfil-avatar">
-    <img
-      id="profileAvatar"
-      src="/assets/avatar.png"
-      alt="Avatar da modelo"
-    >
-    <input type="file" id="inputAvatar" accept="image/*" hidden>
+    <img id="profileAvatar" src="/assets/avatar.png" alt="Avatar da modelo">
   </div>
 
+  <!-- NOME -->
   <div class="perfil-nome" id="profileName"></div>
+
+  <!-- BIO -->
   <div class="perfil-bio" id="profileBio"></div>
 
+  <!-- LOCAL -->
   <div class="local-icons">
     <img src="/assets/local.png" alt="Local">
     <span id="local-texto"></span>
   </div>
 
-</div>
+  <!-- REDES -->
+  <div class="icon-group">
+    <img src="/assets/insta.png" alt="Instagram">
+    <img src="/assets/tiktok.png" alt="TikTok">
+  </div>
 
-<div class="icon-group">
-  <img src="/assets/insta.png" alt="Instagram">
-  <img src="/assets/tiktok.png" alt="TikTok">
 </div>
-
 
 <div class="oferta-card" id="oferta-card">
 
@@ -90,7 +87,7 @@
 
   </div>
 
-  <div class="midias-grid active" id="midias-free"></div>
+  <div class="midias-grid active" id="listaMidias"></div>
   <div class="midias-grid" id="midias-paid"></div>
 
 </div>
