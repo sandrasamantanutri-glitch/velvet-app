@@ -104,24 +104,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
   btnAssinar.addEventListener("click", () => {
 
+  // ⏳ aguarda verificação VIP
   if (!window.__VIP_READY__) {
     alert("Aguarde um instante...");
     return;
   }
 
+  // 👀 visitante
   if (!role) {
     abrirPopupVelvet({ tipo: "login" });
     return;
   }
 
+  // 👤 cliente NÃO VIP → ABRE POPUP VIP
   if (role === "cliente" && window.__CLIENTE_VIP__ === false) {
     abrirPopupVelvet({ tipo: "vip" });
     return;
   }
 
+  // 💜 cliente VIP
   alert("Você já é VIP 💜");
 });
-
+ }
 
   document.getElementById("btnVipPix")?.addEventListener("click", () => {
     fecharEscolha();
