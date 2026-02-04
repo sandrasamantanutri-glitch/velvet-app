@@ -79,7 +79,7 @@ const btnChat = document.getElementById("btnChat");
 const btnVip  = document.getElementById("btnVip");
 const btnSalvarBio = document.getElementById("btnSalvarBio");
 const bioInput     = document.getElementById("bioInput");
-const localInput     = document.getElementById("localInput");
+const localEl = document.getElementById("local-texto");
 
 // ===============================
 // INIT
@@ -637,11 +637,34 @@ async function excluirMidia(id, card) {
 // DOM PERFIL
 // ===============================
 function aplicarPerfilNoDOM(modelo) {
-  nomeEl.textContent = modelo.nome;
+  nomeEl.textContent = modelo.nome || "";
   profileBio.textContent = modelo.bio || "";
-  if (modelo.avatar) avatarImg.src = modelo.avatar;
-  if (modelo.capa) capaImg.src = modelo.capa;
+
+  if (modelo.avatar) {
+    avatarImg.src = modelo.avatar;
+  }
+
+  if (modelo.capa) {
+    capaImg.src = modelo.capa;
+  }
+
+  // 📍 LOCAL (cidade / estado)
+  const localEl = document.getElementById("local-texto");
+
+  if (localEl) {
+    const local = [modelo.cidade, modelo.estado]
+      .filter(Boolean)
+      .join(" • ");
+
+    if (local) {
+      localEl.textContent = local;
+    } else {
+      // se não tiver local, esconde o bloco
+      localEl.parentElement.style.display = "none";
+    }
+  }
 }
+
 
 async function abrirPopupPix() {
   if (!modelo_id) {
