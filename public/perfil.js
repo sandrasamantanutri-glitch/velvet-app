@@ -142,40 +142,48 @@
   // ===============================
   function aplicarPerfilNoDOM(modelo) {
   if (dom.nome) {
-    dom.nome.textContent = modelo.nome?.trim() || "";
+    dom.nome.textContent = typeof modelo.nome === "string"
+      ? modelo.nome
+      : "";
   }
 
   if (dom.bio) {
-    dom.bio.textContent = modelo.bio?.trim() || "";
+    dom.bio.textContent = typeof modelo.bio === "string"
+      ? modelo.bio
+      : "";
   }
 
   if (dom.avatar) {
-    const avatar =
-      modelo.avatar && modelo.avatar.trim() !== ""
+    dom.avatar.src =
+      typeof modelo.avatar === "string" && modelo.avatar !== ""
         ? modelo.avatar
         : "/assets/avatar.png";
 
-    dom.avatar.src = avatar;
-    dom.avatar.onerror = () => dom.avatar.src = "/assets/avatar.png";
+    dom.avatar.onerror = () => {
+      dom.avatar.src = "/assets/avatar.png";
+    };
   }
 
   if (dom.capa) {
-    const capa =
-      modelo.capa && modelo.capa.trim() !== ""
+    dom.capa.src =
+      typeof modelo.capa === "string" && modelo.capa !== ""
         ? modelo.capa
         : "/assets/capa.png";
 
-    dom.capa.src = capa;
-    dom.capa.onerror = () => dom.capa.src = "/assets/capa.png";
+    dom.capa.onerror = () => {
+      dom.capa.src = "/assets/capa.png";
+    };
   }
 
   if (dom.local) {
+    const cidade = typeof modelo.cidade === "string" ? modelo.cidade : "";
+    const estado = typeof modelo.estado === "string" ? modelo.estado : "";
+
     dom.local.textContent =
-      [modelo.cidade, modelo.estado]
-        .filter(v => v && v.trim() !== "")
-        .join(" • ");
+      [cidade, estado].filter(Boolean).join(" • ");
   }
 }
+
   // ===============================
   // DEFAULTS (NUNCA QUEBRA)
   // ===============================
