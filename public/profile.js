@@ -124,17 +124,17 @@ document.addEventListener("DOMContentLoaded", () => {
     window.location.href = "/chatcliente.html";
   });
 
-  fecharModal?.addEventListener("click", (e) => {
-  e.preventDefault();
-  e.stopPropagation();
+//   fecharModal?.addEventListener("click", (e) => {
+//   e.preventDefault();
+//   e.stopPropagation();
 
-  if (modalVideo) {
-    modalVideo.pause();
-    modalVideo.src = "";
-  }
+//   if (modalVideo) {
+//     modalVideo.pause();
+//     modalVideo.src = "";
+//   }
 
-  modalMidia.classList.add("hidden");
- });
+//   modalMidia.classList.add("hidden");
+//  });
 
 });
 
