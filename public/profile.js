@@ -718,24 +718,22 @@ function adicionarMidia(conteudo) {
     card.appendChild(desc);
   }
 
-  // ===== CLICK =====
-  const deveBloquear =
-    role !== "modelo" && window.__CLIENTE_VIP__ !== true;
-
-  if (deveBloquear) {
-    card.classList.add("bloqueada");
-    card.onclick = () => {
-      abrirPopupVelvet({ tipo: role ? "vip" : "login" });
-    };
-  } else {
-    card.onclick = () => {
-      if (tipo_conteudo === "venda" && role !== "modelo") {
-        abrirModalVenda(conteudo);
-      } else {
-        abrirModalMidia(url, isVideo);
-      }
-    };
+ card.onclick = () => {
+  // modelo abre tudo direto
+  if (role === "modelo") {
+    abrirModalMidia(url, isVideo);
+    return;
   }
+
+  // especial (venda) → abre modal de venda
+  if (tipo_conteudo === "venda") {
+    abrirModalVenda(conteudo);
+    return;
+  }
+
+  // feed normal
+  abrirModalMidia(url, isVideo);
+};
 
   // 🗑️ EXCLUIR (MODELO)
   if (role === "modelo") {
