@@ -22,108 +22,108 @@
 <div class="perfil-capa"> <img id="perfil-capa" src="/assets/capa.png" alt="Capa"/></div>
 <div class="perfil-avatar"> <img id="perfil-avatar" src="/assets/avatar.png" alt="Avatar"/></div>
 <div class="perfil-nome" id="perfil-nome"> Sandra</div>
-<div class="area-assinantes" id="perfil-assinantes">0 assinantes</div>
 <body class="role-modelo">
+</section>
+
 
 <section class="area-section">
- <h3 class="area-titulo">Informações de Usuário</h3>
- <span>Mantenha suas informações em dia para uma melhor experiência na plataforma.</span>
+ <h3>Informações de Usuário</h3>
+ <form id="formDadosModelo" class="form-area">
 
- <form id="formDadosModelo">
+  <div class="form-grid">
+    <div class="form-group">
+      <label>Seu nome de Usuário (seu @)*</label>
+      <input type="text" name="nome_exibicao" placeholder="Como quer ser chamado(a) na plataforma" required>
+    </div>
 
-  <label>Seu nome de Usuário (seu @)*</label>
-  <input type="text" name="nome_exibicao" required />
+    <div class="form-group">
+      <label>Instagram</label>
+      <input type="text" name="instagram" placeholder="@seuinstagram">
+    </div>
 
-  <label>Instagram</label>
-  <input type="text" name="instagram" placeholder="@seuinstagram" />
+    <div class="form-group">
+      <label>TikTok</label>
+      <input type="text" name="tiktok" placeholder="@seutiktok">
+    </div>
 
-  <label>TikTok</label>
-  <input type="text" name="tiktok" placeholder="@seutiktok" />
+    <div class="form-group">
+      <label>Localização*</label>
+      <input type="text" name="localizacao" placeholder="Estado - Cidade">
+    </div>
 
-  <label>Localização*</label>
-  <input type="text" name="Localização" placeholder="Local" />
+    <div class="form-group full">
+      <label>Sua Bio*</label>
+      <textarea name="bio" rows="4" placeholder="Escreva sua biografia aqui!"></textarea>
+      <label>*Informações obrigatórias</label>
+    </div>
+    </div>
+    <button type="submit" class="btn-salvar">Salvar</button>
+   </form>
+</section>
 
-  <label>Sua Bio*</label>
-  <input type="text" name="Bio" row="4" placeholder="Bio" />
-  <span>* Preenchimento Obrigatório</span>
-  <button type="submit">Salvar</button><p id="msgStatus" class="status"></p>
 
-  </form>
+<hr class="separator">
 
-  <form id="formDadosPessoais">
-  <span>Mantenha suas informações em dia para uma melhor experiência na plataforma.</span>
+<section class="area-section">
+ <h3>Informações Pessoais</h3>
 
-  <label>Nome completo</label>
-  <input type="text" name="nome_completo" required />
+ <form id="formDadosPessoais" class="form-area">
 
-  <label>Data de nascimento</label>
-  <input type="date" name="data_nascimento" required />
+  <span class="form-info">
+    Mantenha suas informações em dia para uma melhor experiência na plataforma.
+  </span>
+  <div class="form-grid">
 
-  <label>Telefone com DDD</label>
-  <input type="text" name="telefone" required />
+    <div class="form-group full">
+      <label>Nome completo*</label>
+      <input type="text" name="nome_completo"  placeholder="Nome e Sobrenome" required>
+    </div>
 
-  <label>Endereço</label>
-  <textarea name="endereco" required></textarea>
+    <div class="form-group">
+      <label>Data de nascimento*</label>
+      <input type="date" name="data_nascimento" required>
+    </div>
 
-  <label>Estado</label>
-  <textarea name="estado" required></textarea>
+    <div class="form-group">
+      <label>Telefone com DDD*</label>
+      <input type="text" name="telefone" placeholder="(11) 99999-9999" required>
+    </div>
 
-  <label>Cidade</label>
-  <textarea name="cidade" required></textarea>
+    <div class="form-group full">
+      <label>Endereço</label>
+      <textarea name="endereco" rows="2"  placeholder="Rua, numero, bairro" required></textarea>
+    </div>
 
-  <label>País</label>
-  <input type="pais" name="pais" required />
+    <div class="form-group">
+      <label>Estado</label>
+      <input type="text" name="estado"required>
+    </div>
 
-  </form>
-  </section>
+    <div class="form-group">
+      <label>Cidade</label>
+      <input type="text" name="cidade" required>
+    </div>
 
-  <!-- ===============================
-  LINKS DO MEU PERFIL
-  =============================== -->
-  <div class="container-dados">
-
-   <h2>Links do meu perfil</h2>
-   <p class="sub">
-    Use estes links para divulgar seu perfil.  
-    Eles são gerados automaticamente para você.
-   </p>
-
-   <!-- Instagram -->
-   <label>Instagram</label>
-   <div class="copy-field">
-    <input type="text" id="linkInstagram" readonly />
-    <button type="button" onclick="copiarLink('linkInstagram')">
-      Copiar
-    </button>
-   </div>
-
-   <!-- TikTok -->
-   <label>TikTok</label>
-   <div class="copy-field">
-    <input type="text" id="linkTiktok" readonly />
-    <button type="button" onclick="copiarLink('linkTiktok')">
-      Copiar
-    </button>
-   </div>
-
-   <!-- Direto -->
-   <label>Link de Acesso Direto</label>
-   <div class="copy-field">
-    <input type="text" id="linkDireto" readonly />
-    <button type="button" onclick="copiarLink('linkDireto')">
-      Copiar
-    </button>
-   </div>
+    <div class="form-group full">
+      <label>País*</label>
+      <input type="text" name="pais" required>
+    <label>*Informações obrigatórias</label>
+    </div>
+  
   </div>
-  <hr class="separator">
-  <!-- EXCLUIR CONTA -->
- <div class="danger-zone">
-  <button class="btn-danger" onclick="abrirConfirmacaoExclusao()">
-    Excluir conta permanentemente
-  </button>
- </div>
+  <button type="submit" class="btn-salvar">Salvar</button>
 
-<div id="modalExcluirConta" class="modal hidden">
+</form>
+
+<hr class="separator">
+
+<section class="area-section">Excluir minha Conta</section>
+  <div class="danger-zone"><button class="btn-danger" onclick="abrirConfirmacaoExclusao()">
+    Excluir conta permanentemente</button>
+  </div>
+</section>
+
+  <!-- <div id="modalExcluirConta" class="modal hidden">
   <div class="modal-overlay"></div>
 
   <div class="modal-box">
@@ -158,29 +158,46 @@
       <button class="btn-confirmar" onclick="confirmarExclusaoConta()">
         Sim, excluir minha conta
       </button>
-    </div>
-  </div>
-</div>
+    </div> -->
 
+  <!-- ===============================
+  LINKS DO MEU PERFIL
+  ===============================
+  <div class="container-dados">
 
+   <h2>Links do meu perfil</h2>
+   <p class="sub">
+    Use estes links para divulgar seu perfil.  
+    Eles são gerados automaticamente para você.
+   </p>
 
+Instagram 
+   <label>Instagram</label>
+   <div class="copy-field">
+    <input type="text" id="linkInstagram" readonly />
+    <button type="button" onclick="copiarLink('linkInstagram')">
+      Copiar
+    </button>
+   </div>
 
- <header class="app-header">
-  <div class="header-inner">
+ TikTok 
+   <label>TikTok</label>
+   <div class="copy-field">
+    <input type="text" id="linkTiktok" readonly />
+    <button type="button" onclick="copiarLink('linkTiktok')">
+      Copiar
+    </button>
+   </div>
 
-    <img src="assets/velvet.png" class="logo-app" alt="Logo">
-
-    <div class="profile-menu-top">
-      <button id="btnMensagem">
-        <img src="assets/chat.png" alt="Chat">
-        <span id="badgeUnread" class="badge-unread hidden">0</span>
-      </button>
-
-      <button id="menuBtn" class="menu-btn">☰</button>
-      <div id="userMenu" class="menu-superior"></div>
-    </div>
-  </div>
- </header>
+   Direto 
+   <label>Link de Acesso Direto</label>
+   <div class="copy-field">
+    <input type="text" id="linkDireto" readonly />
+    <button type="button" onclick="copiarLink('linkDireto')">
+      Copiar
+    </button>
+   </div>
+  </div> --> 
 
     <footer class="footer">
   <div class="footer-links">
@@ -191,8 +208,10 @@
   <div class="footer-copy">
     © 2026 Velvet. Todos os direitos reservados.
   </div>
+
 <script src="/socket.io/socket.io.js"></script>
 <script src="/header.js"></script>
 <script src="/dados-modelo.js"></script>
+
 </body>
 </html>

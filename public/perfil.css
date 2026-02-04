@@ -76,7 +76,7 @@ body {
 /* AVATAR */
 .perfil-avatar {
   position: absolute;
-  top: 140px;
+  top: 10px;
   left: 16px;
   width: 95px;
   height: 95px;
