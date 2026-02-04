@@ -335,10 +335,20 @@ function diasRestantes(fim) {
 function renderOfertas() {
   lista.innerHTML = "";
 
+  const temOfertaAtiva = ofertasMock.some(o => o.ativa);
+  const btnCriar = document.getElementById("btnCriarOferta");
+
+  // controla botão criar oferta
+  if (btnCriar) {
+    btnCriar.style.display = temOfertaAtiva ? "none" : "block";
+  }
+
   ofertasMock
     .filter(o => (abaAtual === "ativas" ? o.ativa : !o.ativa))
     .forEach(o => {
       const dias = diasRestantes(o.fim);
+      const statusTexto = o.ativa ? "Oferta ativa" : "Oferta encerrada";
+      const statusClasse = o.ativa ? "status-ativa" : "status-inativa";
 
       const card = document.createElement("div");
       card.className = "oferta-card";
@@ -346,16 +356,20 @@ function renderOfertas() {
       card.innerHTML = `
         <div class="oferta-header">
           <h3>${o.nome}</h3>
-          <span>⌄</span>
+          <span class="toggle">⌄</span>
         </div>
 
-        <div class="status">
+        <div class="status ${statusClasse}">
           <span class="dot"></span>
-          Oferta ativa
+          ${statusTexto}
         </div>
 
         <div class="oferta-info">
-          Termina em ${dias} dias (${formatarData(o.fim)})
+          ${
+            o.ativa
+              ? `Termina em ${dias} dias (${formatarData(o.fim)})`
+              : `Encerrada em ${formatarData(o.fim)}`
+          }
         </div>
 
         <div class="valores-box">
@@ -377,29 +391,38 @@ function renderOfertas() {
           <div><span>Oferta:</span><span>Desconto na assinatura</span></div>
           <div><span>Início da campanha:</span><span>${formatarData(o.inicio)}</span></div>
           <div><span>Fim da campanha:</span><span>${formatarData(o.fim)}</span></div>
-          <div><span>Quantidade de participantes:</span><span>${o.usadas}/${o.limite}</span></div>
+          <div>
+            <span>Quantidade de participantes:</span>
+            <span>${o.usadas}/${o.limite}</span>
+          </div>
         </div>
 
-        <button class="btn-encerrar" onclick="encerrarOferta(${o.id})">
-          Encerrar oferta
-        </button>
+        ${
+          o.ativa
+            ? `<button class="btn-encerrar" onclick="encerrarOferta(${o.id})">
+                 Encerrar oferta
+               </button>`
+            : ""
+        }
       `;
 
       lista.appendChild(card);
     });
 }
 
+function encerrarOferta(id) {
+  const oferta = ofertasMock.find(o => o.id === id);
+  if (!oferta) return;
+
+  oferta.ativa = false;
+
+  renderOfertas();
+}
+
 function formatarData(data) {
   return new Date(data).toLocaleDateString("pt-BR");
 }
 
-function encerrarOferta(id) {
-  const oferta = ofertasMock.find(o => o.id === id);
-  if (oferta) {
-    oferta.ativa = false;
-    renderOfertas();
-  }
-}
 
 /* tabs */
 document.querySelectorAll(".tab").forEach(tab => {
@@ -412,5 +435,9 @@ document.querySelectorAll(".tab").forEach(tab => {
 });
 
 renderOfertas();
+
+function podeCriarOferta(ofertas) {
+  return !ofertas.some(o => o.ativa);
+}
 
 

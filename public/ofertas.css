@@ -336,3 +336,9 @@ body {
   font-weight: 500;
 }
 
+.aviso-oferta {
+  text-align: center;
+  font-size: 14px;
+  color: #888;
+  margin: 12px 0;
+}
