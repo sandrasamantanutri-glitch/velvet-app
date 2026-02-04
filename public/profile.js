@@ -1098,56 +1098,52 @@ function fecharVipAtivado() {
 // ===============================
 // 💜 POPUP VELVET ACESSO
 // ===============================
-function abrirPopupVelvet({ tipo }) {
-  const popup = document.getElementById("popupVelvetAcesso");
-  const texto = document.getElementById("popupVelvetTexto");
-  const btn   = document.getElementById("btnVelvetAcao");
 
-  if (!popup) return;
+const popupVelvet   = document.getElementById("popupVelvetAcesso");
+const popupTexto    = document.getElementById("popupVelvetTexto");
+const btnVelvetAcao = document.getElementById("btnVelvetAcao");
+const escolhaPagamento = document.getElementById("escolhaPagamento");
+
+
+function abrirPopupVelvet({ tipo }) {
+  if (!popupVelvet) return;
+
+  // reset básico
+  btnVelvetAcao.onclick = null;
 
   if (tipo === "login") {
-    texto.textContent =
+    popupTexto.textContent =
       "Entre ou crie sua conta para acessar este conteúdo";
-    btn.textContent = "Entrar / Criar conta";
-    btn.onclick = () => {
+
+    btnVelvetAcao.textContent = "Entrar / Criar conta";
+    btnVelvetAcao.onclick = () => {
       window.location.href = "/index.html";
     };
+  } 
+  else if (tipo === "vip") {
+    popupTexto.textContent =
+      "Assine o VIP para desbloquear este conteúdo exclusivo";
+
+    btnVelvetAcao.textContent = "Assinar VIP";
+    btnVelvetAcao.onclick = abrirEscolhaPagamento;
   }
 
-  if (tipo === "vip") {
-    btn.onclick = () => {
-      document.getElementById("escolhaPagamento")?.classList.remove("hidden");
-    };
-  }
-
-  popup.classList.remove("hidden");
+  popupVelvet.classList.remove("hidden");
 }
 
-// fechar clicando fora
-document
-  .getElementById("popupVelvetAcesso")
-  ?.addEventListener("click", (e) => {
-    if (e.target.id === "popupVelvetAcesso") {
-      e.currentTarget.classList.add("hidden");
-    }
-  });
+function abrirEscolhaPagamento() {
+  popupVelvet.classList.add("hidden");
+  escolhaPagamento?.classList.remove("hidden");
+}
 
-  function fecharPagamento() {
+function fecharPagamento() {
   const modal = document.getElementById("paymentModal");
+  if (modal) modal.classList.add("hidden");
 
-  if (modal) {
-    modal.classList.add("hidden");
-  }
-
-  // limpeza de segurança
+  // limpeza segura do Stripe
   const paymentElement = document.getElementById("payment-element");
-  if (paymentElement) {
-    paymentElement.innerHTML = "";
-  }
+  if (paymentElement) paymentElement.innerHTML = "";
 
   elements = null;
 }
-
-
-
 
