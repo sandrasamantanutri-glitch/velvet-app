@@ -125,10 +125,10 @@ body {
 .oferta-card {
   max-width: 420px;
   margin: 18px auto;
-  background: #C9C9C9;
+  background: #f1f1f1;
   border-radius: 18px;
   padding: 16px;
-  color: #1E1E26;
+  color: #7b2cff;
   position: relative;
 }
 
@@ -160,8 +160,8 @@ body {
   padding: 14px;
   font-size: 16px;
   font-weight: 700;
-  background: #fff;
-  color: #7b2cff;
+  background: #7b2cff;
+  color: #fff;
   cursor: pointer;
 }
 
@@ -189,7 +189,7 @@ body {
 }
 
 .btn-upload img {
-  width: 26px;
+  width: 24px;
 }
 
 /* TABS */
@@ -202,7 +202,7 @@ body {
   border: none;
   padding: 8px 14px;
   border-radius: 999px;
-  background: #E1E1E1;
+  background: #f1f1f1;
   font-size: 13px;
   cursor: pointer;
 }
