@@ -50,7 +50,6 @@ function renderOfertas() {
       card.innerHTML = `
         <div class="oferta-header">
           <h3>${o.nome}</h3>
-          <span>⌄</span>
         </div>
 
         <div class="status ${o.ativa ? "status-ativa" : "status-inativa"}">
