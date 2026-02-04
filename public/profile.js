@@ -516,7 +516,26 @@ function adicionarMidia(conteudo) {
   }
 
   // ❌ excluir (só modelo)
-  
+    // ❌ excluir (só modelo)
+  if (role === "modelo") {
+    const btnExcluir = document.createElement("button");
+    btnExcluir.className = "btnExcluirMidia";
+    btnExcluir.innerHTML = "✕";
+
+    btnExcluir.onclick = (e) => {
+      e.stopPropagation(); // não abre a mídia
+      excluirMidia(id, card);
+    };
+
+    card.appendChild(btnExcluir);
+  }
+
+  listaMidias.appendChild(card);
+
+  img.onerror = () => {
+    img.src = "/assets/capa.png";
+  };
+}
 
   listaMidias.appendChild(card);
 
