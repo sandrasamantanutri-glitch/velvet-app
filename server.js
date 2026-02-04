@@ -15,6 +15,10 @@ const path = require("path");
 const fs = require("fs");
 const app = express();
 const nodemailer = require("nodemailer");
+const os = require("os");
+const { exec } = require("child_process");
+const ffmpeg = require("fluent-ffmpeg");
+
 app.use("/app", express.static("app"));
 app.use(express.static("public"));
 app.use((req, res, next) => {
@@ -102,46 +106,113 @@ const uploadB2 = multer({
 
 app.use(express.static(path.join(__dirname, "public")));
 
+async function gerarThumbnailVideo(videoUrl) {
+  return new Promise((resolve, reject) => {
+    const tmpDir = os.tmpdir();
+    const videoPath = path.join(tmpDir, `video-${Date.now()}.mp4`);
+    const thumbPath = path.join(tmpDir, `thumb-${Date.now()}.jpg`);
+
+    // 1️⃣ baixa o vídeo temporariamente
+    exec(`curl -L "${videoUrl}" -o "${videoPath}"`, (err) => {
+      if (err) return reject(err);
+
+      // 2️⃣ captura frame com ffmpeg
+      ffmpeg(videoPath)
+        .screenshots({
+          timestamps: ["1"],
+          filename: path.basename(thumbPath),
+          folder: tmpDir,
+          size: "400x?"
+        })
+        .on("end", async () => {
+          try {
+            const buffer = fs.readFileSync(thumbPath);
+
+            // 3️⃣ upload da thumbnail para o Backblaze
+            const upload = await uploadThumbB2(buffer);
+
+            // limpa arquivos temporários
+            fs.unlinkSync(videoPath);
+            fs.unlinkSync(thumbPath);
+
+            resolve(upload);
+          } catch (e) {
+            reject(e);
+          }
+        })
+        .on("error", reject);
+    });
+  });
+}
+
+async function uploadThumbB2(buffer) {
+  const key = `thumbs/thumb-${Date.now()}.jpg`;
+
+  const result = await s3.upload({
+    Bucket: process.env.B2_BUCKET,
+    Key: key,
+    Body: buffer,
+    ContentType: "image/jpeg",
+    ACL: "public-read"
+  }).promise();
+
+  return result.Location;
+}
+
 //APP POST ROTAS ////
 app.post(
   "/api/upload",
   auth,
   authModelo,
-  uploadB2.single("file"), // 👈 AQUI define o campo
+  uploadB2.single("file"),
   async (req, res) => {
-    // 👇 AQUI É O req.file
-    console.log(req.file);
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "Arquivo não enviado" });
+      }
 
-    if (!req.file) {
-      return res.status(400).json({ error: "Arquivo não enviado" });
+      const isVideo = req.file.mimetype.startsWith("video");
+
+      const {
+        tipo_conteudo,
+        preco,
+        descricao
+      } = req.body;
+
+      let thumbnailUrl = null;
+
+      // 🔥 GERA THUMBNAIL SE FOR VÍDEO
+      if (isVideo) {
+        try {
+          thumbnailUrl = await gerarThumbnailVideo(req.file.location);
+        } catch (err) {
+          console.error("Erro ao gerar thumbnail:", err);
+        }
+      }
+
+      await db.query(
+        `
+        INSERT INTO conteudos
+        (user_id, url, tipo, tipo_conteudo, preco, descricao, thumbnail_url)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `,
+        [
+          req.user.id,
+          req.file.location,
+          isVideo ? "video" : "imagem",
+          tipo_conteudo || "feed",
+          preco || null,
+          descricao || null,
+          thumbnailUrl
+        ]
+      );
+
+      res.json({ success: true });
+
+    } catch (err) {
+      console.error("Erro /api/upload:", err);
+      res.status(500).json({ error: "Erro interno" });
     }
-
-    const isVideo = req.file.mimetype.startsWith("video");
-
-    const {
-      tipo_conteudo,
-      preco,
-      descricao
-    } = req.body;
-
-    await db.query(
-      `
-      INSERT INTO conteudos
-      (user_id, url, tipo, tipo_conteudo, preco, descricao, thumbnail_url)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      `,
-      [
-        req.user.id,
-        req.file.location,              // 👈 URL do arquivo
-        isVideo ? "video" : "imagem",
-        tipo_conteudo || "feed",
-        preco || null,
-        descricao || null,
-        null
-      ]
-    );
-
-    res.json({ success: true });
   }
 );
 
