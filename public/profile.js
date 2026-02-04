@@ -31,6 +31,11 @@ if (modo === "publico") {
   localStorage.removeItem("modelo_id");
 }
 
+  const ofertaCard = document.getElementById("oferta-card");
+  if (!role) {
+  ofertaCard.style.display = "block";
+}
+
 let modelo_id = modeloParam
   ? Number(modeloParam)
   : role === "modelo"
@@ -274,36 +279,36 @@ async function carregarPerfilPublico() {
 
   aplicarPerfilNoDOM(modelo);
 
-const ofertaCard = document.getElementById("oferta-card");
-
 if (role === "cliente") {
   try {
     const vipRes = await fetch(`/api/vip/status/${modelo_id}`, {
       headers: {
-        Authorization: "Bearer " + localStorage.getItem("token")
+        Authorization: "Bearer " + token
       }
     });
 
-    if (vipRes.ok) {
-      const vipData = await vipRes.json();
-      window.__CLIENTE_VIP__ = vipData.vip === true;
+    const vipData = vipRes.ok ? await vipRes.json() : { vip: false };
+    window.__CLIENTE_VIP__ = vipData.vip === true;
 
-      if (window.__CLIENTE_VIP__) {
-        // 🔥 CLIENTE VIP → some com a oferta
-        if (ofertaCard) {
-          ofertaCard.style.display = "none";
-        }
-
-        btnChat?.classList.remove("hidden");
-      } else {
-        // ❌ não VIP → mantém oferta
-        btnChat?.classList.add("hidden");
-      }
+    if (window.__CLIENTE_VIP__) {
+      // ❌ cliente VIP → NÃO mostra assinatura
+      ofertaCard.style.display = "none";
+      btnChat?.classList.remove("hidden");
+    } else {
+      // ✅ cliente NÃO VIP → mostra
+      ofertaCard.style.display = "block";
+      btnChat?.classList.add("hidden");
     }
   } catch (err) {
-    console.error("Erro ao verificar VIP:", err);
+    console.error("Erro VIP:", err);
     window.__CLIENTE_VIP__ = false;
+    ofertaCard.style.display = "block";
   }
+}
+
+// 🔹 MODELO
+if (role === "modelo") {
+  ofertaCard.style.display = "block";
 }
 
   // 🔥 OFERTA SÓ DEPOIS DE TUDO PRONTO
@@ -318,7 +323,6 @@ async function carregarOfertaAtiva() {
     return;
   }
 
-  const ofertaCard = document.getElementById("oferta-card");
   const precoDescontoEl = document.getElementById("preco-desconto");
   const precoOriginalEl = document.getElementById("preco-original");
 
@@ -344,17 +348,14 @@ async function carregarOfertaAtiva() {
 
     const oferta = data.oferta;
 
-    // 🔥 MOSTRA CARD
-    ofertaCard.style.display = "block";
-
     // badge
     const descontoEl = document.getElementById("oferta-desconto");
 
-if (descontoEl && oferta.desconto_percentual != null) {
-  descontoEl.textContent = `Economize ${oferta.desconto_percentual}%`;
-} else if (descontoEl) {
-  descontoEl.style.display = "none";
-}
+   if (descontoEl && oferta.desconto_percentual != null) {
+   descontoEl.textContent = `Economize ${oferta.desconto_percentual}%`;
+   } else if (descontoEl) {
+   descontoEl.style.display = "none";
+    }
     // preços formatados
     precoDescontoEl.textContent =
       valorBRL(Number(oferta.valor_promocional));
