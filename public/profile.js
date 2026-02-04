@@ -94,9 +94,29 @@ document.addEventListener("DOMContentLoaded", () => {
   aplicarRoleNoBody();
   iniciarPerfil();
 
-  // ===============================
-  // VIP PIX
-  // ===============================
+  const btnAssinar = document.getElementById("btn-assinar");
+
+  if (btnAssinar && !btnAssinar.dataset.bound) {
+  btnAssinar.dataset.bound = "true";
+
+  btnAssinar.addEventListener("click", () => {
+    // visitante
+    if (!role) {
+      abrirPopupVelvet({ tipo: "login" });
+      return;
+    }
+
+    // cliente não VIP
+    if (role === "cliente" && !window.__CLIENTE_VIP__) {
+      abrirPopupVelvet({ tipo: "vip" });
+      return;
+    }
+
+    // VIP já ativo
+    alert("Você já é VIP 💜");
+  });
+ }
+
   document.getElementById("btnVipPix")?.addEventListener("click", () => {
     fecharEscolha();
     abrirPopupPix();
@@ -106,9 +126,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("popupPix")?.classList.add("hidden");
   });
 
-  // ===============================
-  // VIP CARTÃO
-  // ===============================
+
   document.getElementById("btnVipCartao")?.addEventListener("click", () => {
     fecharEscolha();
     pagarComCartao();
@@ -171,10 +189,6 @@ document.querySelectorAll(".midias-tabs .tab").forEach(tab => {
     }
   });
 });
-
-
-
-
 
 
 // ===============================
