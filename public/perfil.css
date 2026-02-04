@@ -226,7 +226,7 @@ body {
 .midias-grid {
   display: none;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  gap: 10px;
   padding: 30px;
 }
 
@@ -405,8 +405,12 @@ body {
 
 .upload-especial.hidden {
   display: none;
-}
+  font-size: 24px;
+  font-weight: 600;
+  background: #fff;
+  border-radius: 12px;
 
+}
 .btn-confirmar {
   border: none;
   border-radius: 12px;
@@ -445,7 +449,7 @@ body {
   margin-top: 6px;
   padding: 0 4px;
 
-  font-size: 16px;
+  font-size: 24px;
   color: #1E1E26;
   text-align: center;
 
