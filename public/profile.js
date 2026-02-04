@@ -143,6 +143,36 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 
+// ===============================
+// TABS DE MÍDIA (FEED / ESPECIAL)
+// ===============================
+document.querySelectorAll(".midias-tabs .tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    // troca visual das abas
+    document
+      .querySelectorAll(".midias-tabs .tab")
+      .forEach(t => t.classList.remove("active"));
+
+    tab.classList.add("active");
+
+    // esconde todos os grids
+    document
+      .querySelectorAll(".midias-grid")
+      .forEach(g => g.classList.remove("active"));
+
+    const tipo = tab.dataset.tab;
+
+    if (tipo === "free") {
+      document.getElementById("listaMidias")?.classList.add("active");
+    }
+
+    if (tipo === "paid") {
+      document.getElementById("midias-paid")?.classList.add("active");
+    }
+  });
+});
+
+
 
 
 

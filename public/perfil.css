@@ -224,10 +224,14 @@ body {
 
 /* GRID */
 .midias-grid {
-  display: grid;
+  display: none;
   grid-template-columns: repeat(3, 1fr);
   gap: 6px;
   padding: 30px;
+}
+
+.midias-grid.active {
+  display: grid;
 }
 
 .midias-grid img {
