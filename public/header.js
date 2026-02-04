@@ -30,7 +30,7 @@ function carregarHeader() {
 }
 
 const menuVisitante = `
-  <div class="menu-header">Bem-vinda à Velvet</div>
+  <div class="menu-header">Bem-vindo à Velvet</div>
 
   <button onclick="abrirPopupVelvet({ tipo: 'login' })">
     Entrar / Criar conta
