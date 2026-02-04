@@ -433,6 +433,14 @@ function abrirModalVenda(c) {
 
 //1º FUNÇÃO
 function iniciarUploads() {
+  const file = inputUpload.files[0];
+ if (!file) return;
+
+ if (!validarMidia(file)) return;
+
+ const url = URL.createObjectURL(file);
+  abrirPreviewUpload(file, url);
+  
   if (!inputUpload) {
     console.warn("inputUpload não encontrado");
     return;
@@ -576,7 +584,6 @@ function esconderLoading() {
 async function enviarMidia(file, dados = {}) {
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("user_id", modelo_id); // ✅ corrigido
 
   if (dados.tipo_conteudo) {
     formData.append("tipo_conteudo", dados.tipo_conteudo);
@@ -587,10 +594,10 @@ async function enviarMidia(file, dados = {}) {
     formData.append("descricao", dados.descricao || "");
   }
 
-  const res = await fetch("/upload", {
-    method: "POST",
-    body: formData
-  });
+  const res = await fetch("/api/upload", {
+  method: "POST",
+  body: formData
+ });
 
   if (!res.ok) {
     throw new Error(await res.text());
