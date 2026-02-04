@@ -336,9 +336,13 @@ async function carregarOfertaAtiva() {
     ofertaCard.style.display = "block";
 
     // badge
-    document.querySelector(".oferta-balao").textContent =
-      `Economize ${oferta.desconto_percentual}%`;
+    const descontoEl = document.getElementById("oferta-desconto");
 
+if (descontoEl && oferta.desconto_percentual != null) {
+  descontoEl.textContent = `Economize ${oferta.desconto_percentual}%`;
+} else if (descontoEl) {
+  descontoEl.style.display = "none";
+}
     // preços formatados
     precoDescontoEl.textContent =
       valorBRL(Number(oferta.valor_promocional));

@@ -318,7 +318,7 @@ async function carregarOfertasDoBanco() {
       return;
     }
 
-    ofertas = await res.json(); // 🔥 AGORA VEM DO BANCO
+    ofertas = await res.json(); 
     carregarOfertasDoBanco();
 
   } catch (err) {
