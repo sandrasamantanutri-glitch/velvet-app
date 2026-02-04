@@ -458,6 +458,43 @@ body {
   white-space: nowrap;
 }
 
+/* ===============================
+   MODAL GLOBAL (VIP / PAGAMENTO)
+================================ */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal.hidden {
+  display: none !important;
+}
+
+.modal .modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.modal .modal-box {
+  position: relative;
+  z-index: 2;
+
+  max-width: 92vw;
+  max-height: 90vh;
+
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+}
+
+
 
 
 
