@@ -1,9 +1,10 @@
-
+const token = localStorage.getItem("token");
 let ofertas = [];
 let abaAtual = "ativas";
 
 const lista = document.getElementById("ofertasLista");
 const btnCriar = document.getElementById("btnCriarOferta");
+
 
 if (!lista) {
   console.error("Elemento #ofertasLista não encontrado");
