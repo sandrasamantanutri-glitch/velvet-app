@@ -104,42 +104,49 @@ const uploadB2 = multer({
 app.use(express.static(path.join(__dirname, "public")));
 
 async function gerarThumbnailVideo(videoUrl) {
-  return new Promise((resolve, reject) => {
-    const tmpDir = os.tmpdir();
-    const videoPath = path.join(tmpDir, `video-${Date.now()}.mp4`);
-    const thumbPath = path.join(tmpDir, `thumb-${Date.now()}.jpg`);
+  const tmpDir = os.tmpdir();
+  const videoPath = path.join(tmpDir, `video-${Date.now()}.mp4`);
+  const thumbPath = path.join(tmpDir, `thumb-${Date.now()}.jpg`);
 
-    // 1️⃣ baixa o vídeo temporariamente
-    exec(`curl -L "${videoUrl}" -o "${videoPath}"`, (err) => {
-      if (err) return reject(err);
+  // 1️⃣ BAIXA O VÍDEO (Node puro, sem curl)
+  const response = await fetch(videoUrl);
+  if (!response.ok) {
+    throw new Error("Falha ao baixar vídeo");
+  }
 
-      // 2️⃣ captura frame com ffmpeg
-      ffmpeg(videoPath)
-        .screenshots({
-          timestamps: ["1"],
-          filename: path.basename(thumbPath),
-          folder: tmpDir,
-          size: "400x?"
-        })
-        .on("end", async () => {
-          try {
-            const buffer = fs.readFileSync(thumbPath);
+  const buffer = Buffer.from(await response.arrayBuffer());
+  fs.writeFileSync(videoPath, buffer);
 
-            // 3️⃣ upload da thumbnail para o Backblaze
-            const upload = await uploadThumbB2(buffer);
-
-            // limpa arquivos temporários
-            fs.unlinkSync(videoPath);
-            fs.unlinkSync(thumbPath);
-
-            resolve(upload);
-          } catch (e) {
-            reject(e);
-          }
-        })
-        .on("error", reject);
-    });
+  // 2️⃣ GERA THUMB COM FFMPEG
+  await new Promise((resolve, reject) => {
+    ffmpeg(videoPath)
+      .screenshots({
+        timestamps: ["1"],
+        filename: path.basename(thumbPath),
+        folder: tmpDir,
+        size: "400x?"
+      })
+      .on("end", resolve)
+      .on("error", reject);
   });
+
+  // 3️⃣ UPLOAD DA THUMB PARA O BACKBLAZE (👇 ESTE TRECHO QUE VOCÊ PERGUNTOU)
+  const thumbBuffer = fs.readFileSync(thumbPath);
+
+  const upload = await s3.upload({
+    Bucket: process.env.B2_BUCKET,
+    Key: `thumbs/thumb-${Date.now()}.jpg`,
+    Body: thumbBuffer,
+    ContentType: "image/jpeg",
+    ACL: "public-read"
+  }).promise();
+
+  // 4️⃣ LIMPA ARQUIVOS TEMPORÁRIOS
+  fs.unlinkSync(videoPath);
+  fs.unlinkSync(thumbPath);
+
+  // 5️⃣ RETORNA URL DA THUMB
+  return upload.Location;
 }
 
 async function uploadThumbB2(buffer) {
@@ -169,7 +176,7 @@ app.post(
       }
 
       const isVideo = req.file.mimetype.startsWith("video");
-
+      
       const {
         tipo_conteudo,
         preco,
