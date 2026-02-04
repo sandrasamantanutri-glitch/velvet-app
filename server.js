@@ -1165,7 +1165,6 @@ socket.on("excluirMensagem", async ({ id }) => {
 
 
 
-
 });
 // ===============================
 //ROTA GET
@@ -1214,6 +1213,26 @@ app.get("/api/app/state-v2", auth, (req, res) => {
 
   return res.json({ next: "logout" });
 });
+
+
+app.get("/api/me", auth, (req, res) => {
+  if (req.user.role !== "modelo") {
+    return res.json(req.user);
+  }
+
+  const modelos = lerModelos();
+  const dados = modelos[req.user.id] || {};
+
+  res.json({
+    id: req.user.id,
+    role: "modelo",
+    avatar: dados.avatar,
+    capa: dados.capa,
+    bio: dados.bio || "",
+    nome: dados.nome || "Modelo"
+  });
+});
+
 
 app.get("/api/feed/me", auth, async (req, res) => {
   try {
@@ -1307,6 +1326,9 @@ app.get("/api/modelo/publico/:id/feed", async (req, res) => {
   }
 });
 
+
+
+
 app.get("/api/modelo/me", auth, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -1331,7 +1353,7 @@ app.get("/api/modelo/me", auth, async (req, res) => {
 });
 
 
-// FEED PÚBLICO DE MODELOS (CLIENTE)
+// 🌟 FEED PÚBLICO DE MODELOS (CLIENTE)
 app.get("/api/modelos", auth, async (req, res) => {
   try {
     // 🔐 apenas clientes
@@ -1341,16 +1363,13 @@ app.get("/api/modelos", auth, async (req, res) => {
 
     const result = await db.query(`
       SELECT
-        id AS modelo_id,
-        user_id,
-        nome,
-        avatar,
-        capa,
-        bio,
-        cidade,
-        estado
-      FROM modelos
-      ORDER BY id DESC
+        m.user_id,
+        m.nome AS nome,
+        m.avatar,
+        md.nome_exibicao
+      FROM modelos m
+      LEFT JOIN modelos_dados md ON md.user_id = m.user_id
+      ORDER BY m.id DESC
     `);
 
     res.json(result.rows);
@@ -1517,7 +1536,7 @@ app.get(
 app.get("/api/modelo/publico/:id", async (req, res) => {
   const modelo_id = Number(req.params.id);
 
-  if (!Number.isInteger(modelo_id) || modelo_id <= 0) {
+if (!Number.isInteger(modelo_id) || modelo_id <= 0) {
     return res.status(400).json({ error: "modelo_id inválido" });
   }
 
@@ -1525,16 +1544,13 @@ app.get("/api/modelo/publico/:id", async (req, res) => {
     const result = await db.query(
       `
       SELECT
-        id AS modelo_id,
-        user_id,
-        nome,
-        bio,
-        avatar,
-        capa,
-        cidade,
-        estado
-      FROM modelos
-      WHERE id = $1
+        m.user_id AS id,
+        m.nome,
+        m.bio,
+        m.avatar,
+        m.capa
+      FROM modelos m
+      WHERE m.user_id = $1
       `,
       [modelo_id]
     );
@@ -3009,31 +3025,6 @@ app.post("/api/chat/marcar-lido/:cliente_id", authModelo, async (req, res) => {
   } catch (err) {
     console.error("Erro marcar lido:", err);
     res.status(500).json({ error: "Erro interno" });
-  }
-});
-
-//ROTA DE VALIDAR DOCUMENTO
-app.post("/api/modelo/verificacao", async (req, res) => {
-  const { modelo_id, documento_tipo, documento_url, selfie_url } = req.body;
-
-  if (!modelo_id || !documento_tipo || !documento_url || !selfie_url) {
-    return res.status(400).json({ erro: "Dados incompletos" });
-  }
-
-  try {
-    await pool.query(
-      `
-      INSERT INTO modelos_verificacao
-      (modelo_id, documento_tipo, documento_url, selfie_url)
-      VALUES ($1, $2, $3, $4)
-      `,
-      [modelo_id, documento_tipo, documento_url, selfie_url]
-    );
-
-    res.json({ ok: true });
-  } catch (err) {
-    console.error("Erro verificação:", err);
-    res.status(500).json({ erro: "Erro ao enviar verificação" });
   }
 });
 
