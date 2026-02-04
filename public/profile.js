@@ -79,8 +79,13 @@ const btnVip  = document.getElementById("btnVip");
 const btnSalvarBio = document.getElementById("btnSalvarBio");
 const bioInput     = document.getElementById("bioInput");
 const localEl = document.getElementById("local-texto");
-const btnUpload = document.querySelector(".btn-upload");
 const inputUpload = document.getElementById("inputUpload");
+
+
+const btnUpload = document.querySelector(".btn-upload");
+if (role !== "modelo" || !token) {
+  btnUpload?.remove();
+}
 
 // ===============================
 // INIT
@@ -568,9 +573,9 @@ function esconderLoading() {
 async function enviarMidia(file, dados = {}) {
   const token = localStorage.getItem("token");
 
-  if (!token) {
-    alert("Sessão expirada. Faça login novamente.");
-    throw new Error("Token ausente");
+  if (!token || role !== "modelo") {
+    alert("Apenas modelos autenticadas podem enviar mídias.");
+    throw new Error("Upload não autorizado");
   }
 
   const formData = new FormData();
@@ -599,8 +604,6 @@ async function enviarMidia(file, dados = {}) {
 
   return res.json();
 }
-
-
 
 //3º Função
 function adicionarMidia(conteudo) {
