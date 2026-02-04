@@ -566,6 +566,13 @@ function esconderLoading() {
 
 //2º FUNÇÃO
 async function enviarMidia(file, dados = {}) {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    alert("Sessão expirada. Faça login novamente.");
+    throw new Error("Token ausente");
+  }
+
   const formData = new FormData();
   formData.append("file", file);
 
@@ -579,9 +586,12 @@ async function enviarMidia(file, dados = {}) {
   }
 
   const res = await fetch("/api/upload", {
-  method: "POST",
-  body: formData
- });
+    method: "POST",
+    headers: {
+      Authorization: "Bearer " + token
+    },
+    body: formData
+  });
 
   if (!res.ok) {
     throw new Error(await res.text());
@@ -589,6 +599,7 @@ async function enviarMidia(file, dados = {}) {
 
   return res.json();
 }
+
 
 
 //3º Função
