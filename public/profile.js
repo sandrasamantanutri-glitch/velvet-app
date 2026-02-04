@@ -401,8 +401,6 @@ inputCapa?.addEventListener("change", async () => {
 function abrirModalVenda(c) {
   const modal = document.createElement("div");
   modal.className = "modal-midia";
-  modal.addEventListener("click", e => e.stopPropagation());
-
   modal.innerHTML = `
     <div class="modal-backdrop"></div>
 
@@ -431,39 +429,6 @@ function abrirModalVenda(c) {
     inputUpload?.click();
   });
 
-//1º FUNÇÃO
-function iniciarUploads() {
-  const file = inputUpload.files[0];
- if (!file) return;
-
- if (!validarMidia(file)) return;
-
- const url = URL.createObjectURL(file);
-  abrirPreviewUpload(file, url);
-  
-  if (!inputUpload) {
-    console.warn("inputUpload não encontrado");
-    return;
-  }
-
-  inputUpload.addEventListener("change", (e) => {
-    e.preventDefault();
-
-    const file = inputUpload.files[0];
-    if (!file) return;
-
-    const url = URL.createObjectURL(file);
-
-    abrirPreviewUpload(file, url);
-
-    inputUpload.value = "";
-  });
-
-  if (role !== "modelo") {
-    document.querySelector(".btn-upload")?.remove();
-  }
-}
-
 function validarMidia(file) {
   const maxSize = 50 * 1024 * 1024; // 50MB
   if (file.size > maxSize) {
@@ -473,7 +438,7 @@ function validarMidia(file) {
   return true;
 }
 
-//2ºFUNÇÃO
+//1ºFUNÇÃO
 function abrirPreviewUpload(file, url) {
   const modal = document.createElement("div");
   modal.className = "modal-midia";
@@ -492,9 +457,9 @@ function abrirPreviewUpload(file, url) {
      <div class="upload-opcoes">
   <button class="upload-tab active" data-value="feed">🎁 Pra você</button>
   <button class="upload-tab" data-value="venda">🔥 Especial</button>
-</div>
+ </div>
 
-<input type="hidden" name="tipo_conteudo" value="feed">
+ <input type="hidden" name="tipo_conteudo" value="feed">
 
 
   <div class="upload-especial hidden">
@@ -547,6 +512,13 @@ function abrirPreviewUpload(file, url) {
     const tipoConteudo = hiddenTipo.value;
     const preco = modal.querySelector("#upload-preco")?.value;
     const descricao = modal.querySelector("#upload-descricao")?.value;
+    
+    if (tipoConteudo === "venda" && (!preco || Number(preco) <= 0)) {
+      alert("Informe um preço válido");
+      btnPublicar.disabled = false;
+      btnPublicar.textContent = "Publicar";
+      return;
+    }
 
     await enviarMidia(file, {
         tipo_conteudo: tipoConteudo,
@@ -580,7 +552,7 @@ function esconderLoading() {
   document.body.classList.remove("loading");
 }
 
-//3º FUNÇÃO
+//2º FUNÇÃO
 async function enviarMidia(file, dados = {}) {
   const formData = new FormData();
   formData.append("file", file);
@@ -607,7 +579,7 @@ async function enviarMidia(file, dados = {}) {
 }
 
 
-//4º Função
+//3º Função
 function adicionarMidia(conteudo) {
   const {
     id,
@@ -669,7 +641,7 @@ function adicionarMidia(conteudo) {
 }
 
 
-//5º FUNÇÃO
+//4º FUNÇÃO
 function getVideoThumbnail(url, thumbnail_url) {
   if (thumbnail_url) return thumbnail_url;
 
