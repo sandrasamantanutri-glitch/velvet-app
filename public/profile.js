@@ -642,15 +642,19 @@ function adicionarMidia(conteudo) {
     url,
     tipo,
     tipo_conteudo,
-    thumbnail_url
+    thumbnail_url,
+    preco,
+    descricao
   } = conteudo;
 
   const isVideo = tipo === "video";
 
-  if (!listaMidias) return;
-
   const card = document.createElement("div");
   card.className = "midiaCard";
+
+  // ===== WRAPPER DA MÍDIA =====
+  const mediaWrapper = document.createElement("div");
+  mediaWrapper.className = "midiaWrapper";
 
   const img = document.createElement("img");
   img.className = "midiaThumb";
@@ -658,26 +662,46 @@ function adicionarMidia(conteudo) {
     ? getVideoThumbnail(url, thumbnail_url)
     : url;
 
-  card.appendChild(img);
+  mediaWrapper.appendChild(img);
 
+  // 💰 PREÇO (SÓ ESPECIAL)
+  if (tipo_conteudo === "venda" && preco) {
+    const priceTag = document.createElement("div");
+    priceTag.className = "midia-preco";
+    priceTag.textContent = `R$ ${Number(preco).toFixed(2)}`;
+    mediaWrapper.appendChild(priceTag);
+  }
+
+  card.appendChild(mediaWrapper);
+
+  // 📝 DESCRIÇÃO (SÓ ESPECIAL)
+  if (tipo_conteudo === "venda" && descricao) {
+    const desc = document.createElement("div");
+    desc.className = "midia-descricao";
+    desc.textContent = descricao;
+    card.appendChild(desc);
+  }
+
+  // ===== CLICK =====
   const deveBloquear =
     role !== "modelo" && window.__CLIENTE_VIP__ !== true;
 
   if (deveBloquear) {
     card.classList.add("bloqueada");
-    card.addEventListener("click", () => {
+    card.onclick = () => {
       abrirPopupVelvet({ tipo: role ? "vip" : "login" });
-    });
+    };
   } else {
-    card.addEventListener("click", () => {
+    card.onclick = () => {
       if (tipo_conteudo === "venda" && role !== "modelo") {
         abrirModalVenda(conteudo);
       } else {
         abrirModalMidia(url, isVideo);
       }
-    });
+    };
   }
 
+  // 🗑️ EXCLUIR (MODELO)
   if (role === "modelo") {
     const btnExcluir = document.createElement("button");
     btnExcluir.className = "btnExcluirMidia";
@@ -693,14 +717,15 @@ function adicionarMidia(conteudo) {
     img.src = "/assets/capa.png";
   };
 
- const gridDestino =
-  tipo_conteudo === "venda"
-    ? document.getElementById("midias-paid")
-    : document.getElementById("listaMidias");
+  // ===== GRID DESTINO =====
+  const gridDestino =
+    tipo_conteudo === "venda"
+      ? document.getElementById("midias-paid")
+      : document.getElementById("listaMidias");
 
- gridDestino?.appendChild(card);
-
+  gridDestino?.appendChild(card);
 }
+
 
 
 //4º FUNÇÃO

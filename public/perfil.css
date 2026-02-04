@@ -418,5 +418,42 @@ body {
   cursor: pointer;
 }
 
+/* ===============================
+   CARD ESPECIAL
+================================ */
+
+.midiaWrapper {
+  position: relative;
+}
+
+.midia-preco {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+
+  background: rgba(123, 44, 255, 0.95);
+  color: #fff;
+
+  padding: 6px 10px;
+  border-radius: 999px;
+
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.midia-descricao {
+  margin-top: 6px;
+  padding: 0 4px;
+
+  font-size: 16px;
+  color: #1E1E26;
+  text-align: center;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
 
 
