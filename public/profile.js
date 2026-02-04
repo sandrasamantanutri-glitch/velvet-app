@@ -392,8 +392,6 @@ inputCapa?.addEventListener("change", async () => {
   }
 });
 
-
-
 // ===============================
 // MIDIA
 // ===============================
@@ -428,6 +426,22 @@ function abrirModalVenda(c) {
     inputUpload?.click();
   });
 
+  inputUpload?.addEventListener("change", () => {
+  const file = inputUpload.files[0];
+  if (!file) return;
+
+  if (!validarMidia(file)) {
+    inputUpload.value = "";
+    return;
+  }
+
+  const url = URL.createObjectURL(file);
+  abrirPreviewUpload(file, url);
+
+  inputUpload.value = "";
+});
+
+
 function validarMidia(file) {
   const maxSize = 50 * 1024 * 1024; // 50MB
   if (file.size > maxSize) {
@@ -441,7 +455,6 @@ function validarMidia(file) {
 function abrirPreviewUpload(file, url) {
   const modal = document.createElement("div");
   modal.className = "modal-midia";
-  modal.addEventListener("click", e => e.stopPropagation());
 
   modal.innerHTML = `
     <div class="modal-backdrop"></div>
