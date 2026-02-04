@@ -1307,9 +1307,6 @@ app.get("/api/modelo/publico/:id/feed", async (req, res) => {
   }
 });
 
-
-
-
 app.get("/api/modelo/me", auth, async (req, res) => {
   try {
     const userId = req.user.id;
