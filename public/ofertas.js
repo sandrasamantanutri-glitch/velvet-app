@@ -135,3 +135,159 @@ if (btnCriar) {
 }
 
 renderOfertas();
+
+function abrirModalCriarOferta() {
+  let etapa = 1;
+
+  const dados = {
+    nome: "",
+    limite: 0,
+    dias: 1,
+    desconto: 0,
+    mensagem: ""
+  };
+
+  const VALOR_BASE = 20;
+  const VALOR_MINIMO = 15;
+
+  const modal = document.createElement("div");
+  modal.className = "modal-overlay";
+
+  modal.innerHTML = `
+    <div class="modal-backdrop"></div>
+
+    <div class="modal-box wizard">
+      <div class="wizard-content"></div>
+
+      <div class="wizard-acoes">
+        <button class="btn-voltar" disabled>Voltar</button>
+        <button class="btn-avancar">Avançar</button>
+      </div>
+    </div>
+  `;
+
+  const content = modal.querySelector(".wizard-content");
+  const btnAvancar = modal.querySelector(".btn-avancar");
+  const btnVoltar = modal.querySelector(".btn-voltar");
+
+  modal.querySelector(".modal-backdrop").onclick = () => modal.remove();
+
+  function calcularValor() {
+    const v = VALOR_BASE * (1 - dados.desconto / 100);
+    return v < VALOR_MINIMO ? VALOR_MINIMO : v;
+  }
+
+  function render() {
+    btnVoltar.disabled = etapa === 1;
+
+    if (etapa === 1) {
+      content.innerHTML = `
+        <h3>Nome da oferta</h3>
+        <input id="nome" placeholder="Ex: Oferta especial">
+      `;
+    }
+
+    if (etapa === 2) {
+      content.innerHTML = `
+        <h3>Número máximo de assinaturas</h3>
+        <input id="limite" type="number" min="1" placeholder="Ex: 10">
+      `;
+    }
+
+    if (etapa === 3) {
+      const fim = new Date();
+      fim.setDate(fim.getDate() + dados.dias);
+
+      content.innerHTML = `
+        <h3>Quanto tempo ficará ativa</h3>
+        <input type="range" min="1" max="15" value="${dados.dias}" id="dias">
+        <p class="info">
+          Sua oferta ficará ativa até
+          <strong>${fim.toLocaleDateString("pt-BR")}</strong>
+        </p>
+      `;
+
+      content.querySelector("#dias").oninput = e => {
+        dados.dias = Number(e.target.value);
+        render();
+      };
+    }
+
+    if (etapa === 4) {
+      content.innerHTML = `
+        <h3>Desconto ideal da oferta</h3>
+
+        <div class="descontos">
+          ${[5,10,15,20].map(p => `
+            <button class="btn-desc ${dados.desconto === p ? "active" : ""}" data-p="${p}">
+              ${p}%
+            </button>
+          `).join("")}
+        </div>
+
+        <p class="info">
+          Desconto válido para 1 mês<br>
+          Valor mínimo: <strong>R$ 15,00</strong>
+        </p>
+
+        <div class="precos">
+          <div>Valor normal: <strong>R$ ${VALOR_BASE.toFixed(2)}</strong></div>
+          <div>Valor promocional:
+            <strong>R$ ${calcularValor().toFixed(2)}</strong>
+          </div>
+        </div>
+      `;
+
+      content.querySelectorAll(".btn-desc").forEach(btn => {
+        btn.onclick = () => {
+          dados.desconto = Number(btn.dataset.p);
+          render();
+        };
+      });
+    }
+
+    if (etapa === 5) {
+      content.innerHTML = `
+        <h3>Mensagem da oferta</h3>
+        <textarea id="msg" rows="4"
+          placeholder="Ex: Aproveite essa oferta exclusiva por tempo limitado">
+        </textarea>
+      `;
+    }
+
+    if (etapa === 6) {
+      content.innerHTML = `
+        <h3>🎉 Parabéns!</h3>
+        <p>Você criou sua oferta com sucesso.</p>
+      `;
+
+      btnAvancar.textContent = "Fechar";
+    }
+  }
+
+  btnAvancar.onclick = () => {
+    if (etapa === 1) dados.nome = content.querySelector("#nome").value;
+    if (etapa === 2) dados.limite = Number(content.querySelector("#limite").value);
+    if (etapa === 5) dados.mensagem = content.querySelector("#msg").value;
+
+    if (etapa < 6) {
+      etapa++;
+      render();
+    } else {
+      modal.remove();
+      console.log("OFERTA CRIADA:", dados);
+    }
+  };
+
+  btnVoltar.onclick = () => {
+    if (etapa > 1) {
+      etapa--;
+      btnAvancar.textContent = "Avançar";
+      render();
+    }
+  };
+
+  render();
+  document.body.appendChild(modal);
+}
+
