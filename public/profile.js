@@ -652,7 +652,7 @@ function aplicarPerfilNoDOM(modelo) {
   const localEl = document.getElementById("local-texto");
 
   if (localEl) {
-    const local = [modelo.cidade, modelo.estado]
+    const local = [modelo.local]
       .filter(Boolean)
       .join(" • ");
 
