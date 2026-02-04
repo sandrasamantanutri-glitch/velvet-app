@@ -1331,7 +1331,7 @@ app.get("/api/modelo/me", auth, async (req, res) => {
 });
 
 
-// 🌟 FEED PÚBLICO DE MODELOS (CLIENTE)
+// FEED PÚBLICO DE MODELOS (CLIENTE)
 app.get("/api/modelos", auth, async (req, res) => {
   try {
     // 🔐 apenas clientes
@@ -1341,13 +1341,16 @@ app.get("/api/modelos", auth, async (req, res) => {
 
     const result = await db.query(`
       SELECT
-        m.user_id,
-        m.nome AS nome,
-        m.avatar,
-        md.nome_exibicao
-      FROM modelos m
-      LEFT JOIN modelos_dados md ON md.user_id = m.user_id
-      ORDER BY m.id DESC
+        id AS modelo_id,
+        user_id,
+        nome,
+        avatar,
+        capa,
+        bio,
+        cidade,
+        estado
+      FROM modelos
+      ORDER BY id DESC
     `);
 
     res.json(result.rows);
@@ -1514,23 +1517,24 @@ app.get(
 app.get("/api/modelo/publico/:id", async (req, res) => {
   const modelo_id = Number(req.params.id);
 
-if (!Number.isInteger(modelo_id) || modelo_id <= 0) {
+  if (!Number.isInteger(modelo_id) || modelo_id <= 0) {
     return res.status(400).json({ error: "modelo_id inválido" });
   }
 
   try {
     const result = await db.query(
       `
-          SELECT
-      user_id AS id,
-      nome,
-      bio,
-      avatar,
-      capa,
-      cidade,
-      estado
-     FROM modelos
-     WHERE user_id = $1
+      SELECT
+        id AS modelo_id,
+        user_id,
+        nome,
+        bio,
+        avatar,
+        capa,
+        cidade,
+        estado
+      FROM modelos
+      WHERE id = $1
       `,
       [modelo_id]
     );
