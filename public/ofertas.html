@@ -1,3 +1,26 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+   <title>Perfil </title>
+  <link rel="stylesheet" href="/ofertas.css">
+
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-inner">
+   <img src="/assets/velvet.png" alt="Velvet" class="velvet-logo">
+   <a href="/feed.html" title="Feed"><img src="/assets/feed.png" alt="Feed"></a>
+   <a href="/perfil.html" title="Perfil"><img src="/assets/perfil.png" alt="Perfil"></a>
+   <button id="btnMensagem"><img src="assets/chat.png" alt="Chat"><span id="badgeUnread" class="badge-unread hidden">0</span></button>
+  </div>
+
+</header>
+
+<main>
+
 <div class="ofertas-page">
 
   <!-- HEADER -->
@@ -18,3 +41,12 @@
   </div>
 
 </div>
+
+</main>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/header.js"></script>
+<script src="/ofertas.js" defer></script>
+</body>
+</html>
+
