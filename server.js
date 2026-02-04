@@ -30,8 +30,6 @@ const server = http.createServer(app);
 const multer = require("multer");
 const onlineClientes = {};
 const onlineModelos = {};
-
-const cloudinary = require("cloudinary").v2;
 const AWS = require("aws-sdk");
 const multerS3 = require("multer-s3");
 
@@ -42,7 +40,6 @@ const COMPRAS_FILE = "compras.json";
 const bodyParser = require("body-parser");
 const Stripe = require("stripe");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const ffmpeg = require("fluent-ffmpeg");
 const ffmpegPath = require("ffmpeg-static");
 
 ffmpeg.setFfmpegPath(ffmpegPath);
@@ -397,24 +394,6 @@ const authLimiter = rateLimit({
 
 const servercontent = require("./servercontent");
 
-const requireRole = require("./middleware/requireRole");
-// ===============================
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-if (
-  !process.env.CLOUDINARY_CLOUD_NAME ||
-  !process.env.CLOUDINARY_API_KEY ||
-  !process.env.CLOUDINARY_API_SECRET
-) {
-  console.error("❌ CLOUDINARY ENV NÃO CONFIGURADO");
-  process.exit(1);
-}
-
-
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
@@ -482,38 +461,6 @@ async function authModeloCompleto(req, res, next) {
 
   next();
 }
-
-async function uploadConteudo(req, res) {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: "Arquivo não enviado" });
-    }
-
-    const result = await new Promise((resolve, reject) => {
-      cloudinary.uploader.upload_stream(
-        {
-          folder: `velvet/${req.user.id}/conteudos`,
-          resource_type: "auto"
-        },
-        (err, result) => (err ? reject(err) : resolve(result))
-      ).end(req.file.buffer);
-    });
-    await db.query(
-      `
-      INSERT INTO conteudos (user_id, url, tipo, tipo_conteudo)
-      VALUES ($1, $2, $3, 'venda')
-      `,
-      [req.user.id, result.secure_url, result.resource_type]
-    );
-
-    res.json({ success: true, url: result.secure_url });
-
-  } catch (err) {
-    console.error("Erro upload conteúdo:", err);
-    res.status(500).json({ error: "Erro no upload" });
-  }
-}
-
 
 function auth(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -2226,10 +2173,6 @@ app.post(
     }
   }
 );
-
-// ===============================
-// 🗑 EXCLUIR CONTEÚDO (MODELO)
-// ===============================
 
 // 🗑 EXCLUIR CONTEÚDO (MODELO)
 app.delete(
