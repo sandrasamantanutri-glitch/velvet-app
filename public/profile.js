@@ -252,10 +252,10 @@ async function carregarPerfilPublico() {
 
   aplicarPerfilNoDOM(modelo);
 
+    // ===============================
+  // STATUS VIP (CLIENTE LOGADO)
   // ===============================
-// STATUS VIP (CLIENTE LOGADO)
-// ===============================
-if (role === "cliente") {
+  if (role === "cliente") {
   try {
     const vipRes = await fetch(`/api/vip/status/${modelo_id}`, {
       headers: {
@@ -286,10 +286,49 @@ if (role === "cliente") {
     btnVip.textContent = "Torne-se VIP";
     btnVip.disabled = false;
   }
+ }
+ await carregarOfertaAtiva();
+  carregarFeedPublico();
 }
 
-carregarFeedPublico();
+async function carregarOfertaAtiva() {
+  const ofertaCard = document.getElementById("oferta-card");
+  if (!ofertaCard || !modelo_id) return;
+
+  try {
+    const res = await fetch(`/api/ofertas/ativa/${modelo_id}`);
+    if (!res.ok) {
+      ofertaCard.style.display = "none";
+      return;
+    }
+
+    const data = await res.json();
+
+    if (!data.ativa) {
+      ofertaCard.style.display = "none";
+      return;
+    }
+
+    const oferta = data.oferta;
+
+    // 🔥 preenche UI
+    ofertaCard.style.display = "block";
+
+    document.querySelector(".oferta-balao").textContent =
+      `Economize ${oferta.desconto_percentual}%`;
+
+    document.getElementById("preco-desconto").textContent =
+      Number(oferta.valor_promocional).toFixed(2);
+
+    document.getElementById("preco-original").textContent =
+      valorBRL(oferta.valor_base);
+
+  } catch (err) {
+    console.error("Erro ao carregar oferta:", err);
+    ofertaCard.style.display = "none";
+  }
 }
+
 
 // ===============================
 // VIP

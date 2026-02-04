@@ -1270,6 +1270,45 @@ app.get("/api/ofertas", auth, async (req, res) => {
   res.json(result.rows);
 });
 
+//ATIVAS
+app.get("/api/ofertas/ativa/:modeloId", async (req, res) => {
+  try {
+    const { modeloId } = req.params;
+
+    const result = await db.query(
+      `
+      SELECT
+        id,
+        nome,
+        desconto_percentual,
+        valor_base,
+        valor_promocional,
+        data_fim
+      FROM ofertas
+      WHERE modelo_id = $1
+        AND ativa = true
+        AND data_fim > NOW()
+      LIMIT 1
+      `,
+      [modeloId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ ativa: false });
+    }
+
+    res.json({
+      ativa: true,
+      oferta: result.rows[0]
+    });
+
+  } catch (err) {
+    console.error("Erro buscar oferta ativa:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+
 
 app.get("/api/vip/status/:modelo_id", authCliente, async (req, res) => {
   const cliente_id = req.user.id;
