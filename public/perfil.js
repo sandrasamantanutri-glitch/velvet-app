@@ -1,16 +1,13 @@
 // ===============================
 // AUTH GUARD
 // ===============================
-
 const stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
 let elements;
 window.__CLIENTE_VIP__ = false;
 
 const socket = io();
-
 const params = new URLSearchParams(window.location.search);
 const modeloParam = params.get("id");
-
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
 
@@ -21,7 +18,7 @@ if (token && role === "modelo" && !modeloParam) {
 }
 
 if (role === "cliente" && modo === "privado") {
-  window.location.href = "https://www.velvet.lat";
+  window.location.href = "##############################";
   throw new Error("Cliente não pode acessar profile privado");
 }
 if (modo === "publico") {
@@ -42,6 +39,14 @@ if (role === "cliente") {
   socket.emit("loginCliente", Number(decodeJWT(token).id));
 }
 
+// 🔒 Guard APENAS para perfil público
+if (modo === "publico" && (!modelo_id || modelo_id === "undefined")) {
+  alert("Modelo não identificada.");
+  window.location.href = "###########################";
+  throw new Error("modelo_id ausente no perfil público");
+}
+
+
 function decodeJWT(token) {
   try {
     const payload = token.split(".")[1];
@@ -53,45 +58,22 @@ function decodeJWT(token) {
 
 function logout() {
   localStorage.clear();
-  window.location.href = "https://www.velvet.lat";
+  window.location.href = "#########################";
 }
 
-// ===============================
-// ELEMENTOS DO PERFIL
-// ===============================
+const modalMidia = document.getElementById("modalMidia");
+const fecharModal = document.getElementById("fecharModal");
+const modalVideo = document.getElementById("modalVideo");
 
-// 🔒 Guard APENAS para perfil público
-if (modo === "publico" && (!modelo_id || modelo_id === "undefined")) {
-  alert("Modelo não identificada.");
-  window.location.href = "/clientHome.html";
-  throw new Error("modelo_id ausente no perfil público");
-}
 
-const avatarImg  = document.getElementById("profileAvatar");
-const capaImg    = document.getElementById("profileCapa");
-const nomeEl     = document.getElementById("profileName");
-const profileBio = document.getElementById("profileBio");
-const inputAvatar = document.getElementById("inputAvatar");
-const inputCapa   = document.getElementById("inputCapa");
-const inputMedia  = document.getElementById("inputMedia");
-const listaMidias = document.getElementById("listaMidias");
-const btnChat = document.getElementById("btnChat");
-const btnVip  = document.getElementById("btnVip");
-const btnSalvarBio = document.getElementById("btnSalvarBio");
-const bioInput     = document.getElementById("bioInput");
-
-// ===============================
 // INIT
-// ===============================
 document.addEventListener("DOMContentLoaded", () => {
   aplicarRoleNoBody();
-  iniciarPerfil();
   iniciarUploads();
-  iniciarBioPopup();
 
-  document.getElementById("btnVipPix")?.addEventListener("click", () => {
+ document.getElementById("btnVipPix")?.addEventListener("click", () => {
   fecharEscolha();
-  abrirPopupPix(); // sua função existente
+  abrirPopupPix();
   });
 
  document.getElementById("fecharPix")?.addEventListener("click", () => {
@@ -100,41 +82,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
  document.getElementById("btnVipCartao")?.addEventListener("click", () => {
  fecharEscolha();
- pagarComCartao(); // sua função Stripe
+ pagarComCartao();
  });
 
-  btnChat?.addEventListener("click", () => {
-  if (!role) {
-    abrirPopupVelvet({ tipo: "login" });
-    return;
-  }
-  if (!window.__CLIENTE_VIP__) {
-    abrirPopupVelvet({ tipo: "vip" });
-    return;
-  }
-  window.location.href = "/chatcliente.html";
+  
+
 
 });
 
-// ===============================
-// FECHAR MODAL DE MÍDIA (X)
-// ===============================
-const modalMidia = document.getElementById("modalMidia");
-const fecharModal = document.getElementById("fecharModal");
-const modalVideo = document.getElementById("modalVideo");
-
-fecharModal?.addEventListener("click", (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-
+fecharModal?.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation();
   if (modalVideo) {
     modalVideo.pause();
     modalVideo.src = "";
   }
-
   modalMidia.classList.add("hidden");
-});
-
 });
 
 // ===============================
@@ -149,7 +110,6 @@ function aplicarRoleNoBody() {
     document.body.classList.add("role-cliente");
   } 
   else {
-    // VISITANTE
     document.body.classList.add("role-publico");
   }
 }
@@ -159,7 +119,6 @@ function aplicarRoleNoBody() {
 // ===============================
 function iniciarPerfil() {
 
-  // MODELO (perfil próprio)
   if (modo === "privado" && role === "modelo") {
     carregarPerfil();
     carregarFeed();
@@ -175,14 +134,6 @@ function iniciarPerfil() {
   // fallback de segurança
   console.warn("Perfil inválido, redirecionando");
   window.location.href = "/index.html";
-}
-
-
-function valorBRL(valor) {
-  return Number(valor).toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL"
-  });
 }
 
 async function carregarPerfil() {
@@ -212,10 +163,7 @@ async function carregarPerfilPublico() {
 
   aplicarPerfilNoDOM(modelo);
 
-  // ===============================
-// STATUS VIP (CLIENTE LOGADO)
-// ===============================
-if (role === "cliente") {
+ if (role === "cliente") {
   try {
     const vipRes = await fetch(`/api/vip/status/${modelo_id}`, {
       headers: {
@@ -246,57 +194,26 @@ if (role === "cliente") {
     btnVip.textContent = "Torne-se VIP";
     btnVip.disabled = false;
   }
+ }
+
+ carregarFeedPublico();
 }
 
-carregarFeedPublico();
+
+function valorBRL(valor) {
+  return Number(valor).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  });
 }
-
-// ===============================
-// VIP
-// ===============================
-btnVip?.addEventListener("click", async () => {
-
-  // 👀 VISITANTE → popup Velvet
-  if (!role) {
-    abrirPopupVelvet({ tipo: "login" });
-    return;
-  }
-
-  // 🔒 CLIENTE → verifica VIP
-  try {
-    const statusRes = await fetch(`/api/vip/status/${modelo_id}`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`
-      }
-    });
-
-    if (!statusRes.ok) {
-      throw new Error("Falha ao verificar status VIP");
-    }
-
-    const statusData = await statusRes.json();
-
-    if (statusData.vip === true) {
-      alert("💜 Você já é VIP desta modelo");
-      return;
-    }
-
-    // ✅ NÃO É VIP → ABRE POPUP DE PAGAMENTO
-    document
-      .getElementById("escolhaPagamento")
-      ?.classList.remove("hidden");
-
-  } catch (err) {
-    console.error("Erro ao verificar status VIP:", err);
-    alert("Erro ao verificar status VIP");
-  }
-});
 
 // ===============================
 // FEED
 // ===============================
 function carregarFeed() {
-  if (!listaMidias) return;
+  const midiasFree = document.getElementById("midias-free");
+ const midiasPaid = document.getElementById("midias-paid");
+  if (!midiasFree || !midiasPaid) return;
 
   fetch("/api/feed/me", {
     headers: { Authorization: "Bearer " + token }
@@ -304,26 +221,46 @@ function carregarFeed() {
     .then(r => r.json())
     .then(feed => {
       if (!Array.isArray(feed)) return;
-      listaMidias.innerHTML = "";
-      feed.forEach(item => adicionarMidia(item));
+
+      midiasFree.innerHTML = "";
+      midiasPaid.innerHTML = "";
+
+      feed.forEach(item => {
+        if (item.tipo_conteudo === "paid") {
+          adicionarMidia(item, midiasPaid);
+        } else {
+          adicionarMidia(item, midiasFree);
+        }
+      });
     });
 }
 
 function carregarFeedPublico() {
-  if (!listaMidias) return;
+  if (!midiasFree || !midiasPaid) return;
+  if (!modelo_id) return;
 
   fetch(`/api/modelo/publico/${modelo_id}/feed`)
-
     .then(r => r.json())
     .then(data => {
       // 🔎 SUPORTE A QUALQUER FORMATO
-      const feed = Array.isArray(data) ? data : data.feed || data.midias || [];
+      const feed = Array.isArray(data)
+        ? data
+        : data.feed || data.midias || [];
 
-      listaMidias.innerHTML = "";
+      midiasFree.innerHTML = "";
+      midiasPaid.innerHTML = "";
 
       feed.forEach(item => {
-        adicionarMidia(item);
+        // público: especial continua bloqueado
+        if (item.tipo_conteudo === "paid") {
+          adicionarMidia(item, midiasPaid);
+        } else {
+          adicionarMidia(item, midiasFree);
+        }
       });
+    })
+    .catch(err => {
+      console.error("Erro ao carregar feed público:", err);
     });
 }
 
@@ -333,122 +270,137 @@ function fecharEscolha() {
     .classList.add("hidden");
 }
 
+
+// btnVip?.addEventListener("click", async () => {
+
+//   // 👀 VISITANTE → popup Velvet
+//   if (!role) {
+//     abrirPopupVelvet({ tipo: "login" });
+//     return;
+//   }
+
+//   // 🔒 CLIENTE → verifica VIP
+//   try {
+//     const statusRes = await fetch(`/api/vip/status/${modelo_id}`, {
+//       headers: {
+//         Authorization: `Bearer ${localStorage.getItem("token")}`
+//       }
+//     });
+
+//     if (!statusRes.ok) {
+//       throw new Error("Falha ao verificar status VIP");
+//     }
+
+//     const statusData = await statusRes.json();
+
+//     if (statusData.vip === true) {
+//       alert("💜 Você já é VIP desta modelo");
+//       return;
+//     }
+
+//     // ✅ NÃO É VIP → ABRE POPUP DE PAGAMENTO
+//     document
+//       .getElementById("escolhaPagamento")
+//       ?.classList.remove("hidden");
+
+//   } catch (err) {
+//     console.error("Erro ao verificar status VIP:", err);
+//     alert("Erro ao verificar status VIP");
+//   }
+// });
+
 // ===============================
 // BIO
-// ===============================
-function iniciarBioPopup() {
-  const btnEditarBio = document.getElementById("btnEditarBio");
-  const popupBio = document.getElementById("popupBio");
-  const btnFecharPopup = document.getElementById("btnFecharPopup");
+// // ===============================
+// function iniciarBioPopup() {
+//   const btnEditarBio = document.getElementById("btnEditarBio");
+//   const popupBio = document.getElementById("popupBio");
+//   const btnFecharPopup = document.getElementById("btnFecharPopup");
 
-  if (!btnEditarBio || !popupBio) return;
+//   if (!btnEditarBio || !popupBio) return;
 
-  btnEditarBio.onclick = () => {
-    bioInput.value = profileBio.textContent.trim();
-    popupBio.classList.remove("hidden");
-  };
+//   btnEditarBio.onclick = () => {
+//     bio.value = bio.textContent.trim();
+//     popupBio.classList.remove("hidden");
+//   };
 
-  btnFecharPopup.onclick = () => popupBio.classList.add("hidden");
-}
+//   btnFecharPopup.onclick = () => popupBio.classList.add("hidden");
+// }
 
-// ===============================
-// UPLOAD AVATAR
-// ===============================
-inputAvatar?.addEventListener("change", async () => {
-  const file = inputAvatar.files[0];
-  if (!file) return;
+// // ===============================
+// // UPLOAD AVATAR
+// // ===============================
+// inputAvatar?.addEventListener("change", async () => {
+//   const file = inputAvatar.files[0];
+//   if (!file) return;
 
-  const fd = new FormData();
-  fd.append("avatar", file);
+//   const fd = new FormData();
+//   fd.append("avatar", file);
 
-  const res = await fetch("/uploadAvatar", {
-    method: "POST",
-    headers: {
-      Authorization: "Bearer " + token
-    },
-    body: fd
-  });
+//   const res = await fetch("/uploadAvatar", {
+//     method: "POST",
+//     headers: {
+//       Authorization: "Bearer " + token
+//     },
+//     body: fd
+//   });
 
-  const data = await res.json();
+//   const data = await res.json();
 
-  if (data.url) {
-    avatarImg.src = data.url; // 🔥 atualiza na hora
-  } else {
-    alert("Erro ao atualizar avatar");
-  }
-});
+//   if (data.url) {
+//     avatar.src = data.url; // 🔥 atualiza na hora
+//   } else {
+//     alert("Erro ao atualizar avatar");
+//   }
+// });
 
-// ===============================
-// UPLOAD CAPA
-// ===============================
-inputCapa?.addEventListener("change", async () => {
-  const file = inputCapa.files[0];
-  if (!file) return;
+// // ===============================
+// // UPLOAD CAPA
+// // ===============================
+// capa?.addEventListener("change", async () => {
+//   const file = capa.files[0];
+//   if (!file) return;
 
-  const fd = new FormData();
-  fd.append("capa", file);
+//   const fd = new FormData();
+//   fd.append("capa", file);
 
-  const res = await fetch("/uploadCapa", {
-    method: "POST",
-    headers: {
-      Authorization: "Bearer " + token
-    },
-    body: fd
-  });
+//   const res = await fetch("/uploadCapa", {
+//     method: "POST",
+//     headers: {
+//       Authorization: "Bearer " + token
+//     },
+//     body: fd
+//   });
 
-  const data = await res.json();
+//   const data = await res.json();
 
-  if (data.url) {
-    capaImg.src = data.url; // 🔥 atualiza na hora
-  } else {
-    alert("Erro ao atualizar capa");
-  }
-});
+//   if (data.url) {
+//     capa.src = data.url; // 🔥 atualiza na hora
+//   } else {
+//     alert("Erro ao atualizar capa");
+//   }
+// });
 
-inputCapa?.addEventListener("change", async () => {
-    const file = inputCapa.files[0];
-    if (!file) return;
+// capa?.addEventListener("change", async () => {
+//     const file = capa.files[0];
+//     if (!file) return;
 
-    const fd = new FormData();
-    fd.append("capa", file);
+//     const fd = new FormData();
+//     fd.append("capa", file);
 
-    const res = await fetch("/uploadCapa", {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer " + token
-      },
-      body: fd
-    });
+//     const res = await fetch("/uploadCapa", {
+//       method: "POST",
+//       headers: {
+//         Authorization: "Bearer " + token
+//       },
+//       body: fd
+//     });
 
-    const data = await res.json();
-    if (data.url) {
-      capaImg.src = data.url; // 🔥 atualiza na hora
-    }
-  });
-
-btnSalvarBio?.addEventListener("click", async () => {
-  const bio = bioInput.value.trim();
-  if (!bio) return;
-
-  const res = await fetch("/api/modelo/bio", {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + token
-    },
-    body: JSON.stringify({ bio })
-  });
-
-  if (res.ok) {
-    profileBio.textContent = bio;
-
-    // ✅ FECHA O POPUP
-    const popupBio = document.getElementById("popupBio");
-    popupBio.classList.add("hidden");
-  } else {
-    alert("Erro ao salvar bio");
-  }
-});
+//     const data = await res.json();
+//     if (data.url) {
+//       capa.src = data.url; // 🔥 atualiza na hora
+//     }
+//   });
 
 function iniciarUploads() {
   inputMedia?.addEventListener("change", async () => {
@@ -527,7 +479,7 @@ function adicionarMidia(conteudo) {
     card.appendChild(btnExcluir);
   }
 
-  listaMidias.appendChild(card);
+  midias.appendChild(card);
 
   img.onerror = () => {
   img.src = "/assets/capaDefault.jpg";
@@ -633,11 +585,32 @@ async function excluirMidia(id, card) {
 // ===============================
 // DOM PERFIL
 // ===============================
+
 function aplicarPerfilNoDOM(modelo) {
-  nomeEl.textContent = modelo.nome;
-  profileBio.textContent = modelo.bio || "";
-  if (modelo.avatar) avatarImg.src = modelo.avatar;
-  if (modelo.capa) capaImg.src = modelo.capa;
+  const nomeEl = document.getElementById("perfil-nome");
+  const bioEl = document.getElementById("perfil-bio");
+  const avatarImg = document.getElementById("perfil-avatar");
+  const capaImg = document.getElementById("perfil-capa");
+
+
+  if (nomeEl) {
+    nomeEl.textContent = modelo.nome || " ";
+  }
+
+  if (bioEl) {
+    bioEl.textContent = modelo.bio || "";
+  }
+
+  if (avatarImg) {
+    avatarImg.src = modelo.avatar?.trim() || "/assets/avatar.png";
+    avatarImg.onerror = () => avatarImg.src = "/assets/avatar.png";
+  }
+
+  // CAPA
+  if (capaImg) {
+    capaImg.src = modelo.capa?.trim() || "/assets/capa.png";
+    capaImg.onerror = () => capaImg.src = "/assets/capa.png";
+  }
 }
 
 async function abrirPopupPix() {
@@ -646,60 +619,52 @@ async function abrirPopupPix() {
     return;
   }
 
-  // 🔢 VALOR BASE (APENAS PARA UI)
-  const valorAssinatura = 20.00;
+  //ASSINATURA
+//   const taxaTransacao  = Number((valorAssinatura * 0.10).toFixed(2));
+//   const taxaPlataforma = Number((valorAssinatura * 0.05).toFixed(2));
+//   const valorTotal     = Number((valorAssinatura + taxaTransacao + taxaPlataforma).toFixed(2)
+//   );
 
-  // 🔥 CÁLCULO APENAS VISUAL (BACKEND RECALCULA)
-  const taxaTransacao  = Number((valorAssinatura * 0.10).toFixed(2));
-  const taxaPlataforma = Number((valorAssinatura * 0.05).toFixed(2));
-  const valorTotal     = Number(
-    (valorAssinatura + taxaTransacao + taxaPlataforma).toFixed(2)
-  );
+//   document.getElementById("pixValorBase").innerText =
+//     valorBRL(valorAssinatura);
 
-  // 🧾 PREENCHE UI
-  document.getElementById("pixValorBase").innerText =
-    valorBRL(valorAssinatura);
+//   document.getElementById("pixTaxaTransacao").innerText =
+//     valorBRL(taxaTransacao);
 
-  document.getElementById("pixTaxaTransacao").innerText =
-    valorBRL(taxaTransacao);
+//   document.getElementById("pixTaxaPlataforma").innerText =
+//     valorBRL(taxaPlataforma);
 
-  document.getElementById("pixTaxaPlataforma").innerText =
-    valorBRL(taxaPlataforma);
+//   document.getElementById("pixValorTotal").innerText =
+//     valorBRL(valorTotal);
 
-  document.getElementById("pixValorTotal").innerText =
-    valorBRL(valorTotal);
+//   document.getElementById("popupPix").classList.remove("hidden");
 
-  // 🔓 ABRE POPUP
-  document.getElementById("popupPix").classList.remove("hidden");
+//   const res = await fetch("/api/pagamento/vip/pix", {
+//     method: "POST",
+//     headers: {
+//       "Content-Type": "application/json",
+//       Authorization: "Bearer " + token
+//     },
+//     body: JSON.stringify({
+//       modelo_id,
+//       valor_assinatura: valorAssinatura // 👈 SÓ ISSO
+//     })
+//   });
 
-  // 🔥 CRIA PIX NO BACKEND
-  const res = await fetch("/api/pagamento/vip/pix", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + token
-    },
-    body: JSON.stringify({
-      modelo_id,
-      valor_assinatura: valorAssinatura // 👈 SÓ ISSO
-    })
-  });
+//   const data = await res.json();
 
-  const data = await res.json();
+//   if (!res.ok) {
+//     alert(data.error || "Erro ao gerar PIX");
+//     return;
+//   }
 
-  if (!res.ok) {
-    alert(data.error || "Erro ao gerar PIX");
-    return;
-  }
+//   document.getElementById("pixQr").src =
+//     "data:image/png;base64," + data.qr_code;
 
-  // 📲 MOSTRA PIX
-  document.getElementById("pixQr").src =
-    "data:image/png;base64," + data.qr_code;
+//   document.getElementById("pixCopia").value = data.copia_cola;
 
-  document.getElementById("pixCopia").value = data.copia_cola;
-
-  // guarda id do pagamento
-  window.__PIX_PAYMENT_ID__ = data.payment_id;
+//   window.__PIX_PAYMENT_ID__ = data.payment_id;
+// 
 }
 
 function copiarPix() {
@@ -709,153 +674,151 @@ function copiarPix() {
   alert("Código Pix copiado 💜");
 }
 
-socket.on("vipAtivado", ({ modelo_id: modeloVip }) => {
-  if (Number(modeloVip) !== Number(modelo_id)) return;
+// socket.on("vipAtivado", ({ modelo_id: modeloVip }) => {
+//   if (Number(modeloVip) !== Number(modelo_id)) return;
 
-  // 🔒 fecha popup PIX
-  document.getElementById("popupPix")?.classList.add("hidden");
+//   // 🔒 fecha popup PIX
+//   document.getElementById("popupPix")?.classList.add("hidden");
 
-  // 🔔 popup simples de sucesso
-  mostrarVipAtivadoPopup();
+//   // 🔔 popup simples de sucesso
+//   mostrarVipAtivadoPopup();
 
-  // 🔥 atualiza estado local
-  window.__CLIENTE_VIP__ = true;
+//   // 🔥 atualiza estado local
+//   window.__CLIENTE_VIP__ = true;
 
-  // 🔘 botão vira VIP ativo
-  if (btnVip) {
-    btnVip.textContent = "VIP ativo";
-    btnVip.disabled = true;
-  }
+//   // 🔘 botão vira VIP ativo
+//   if (btnVip) {
+//     btnVip.textContent = "VIP ativo";
+//     btnVip.disabled = true;
+//   }
 
-  // 🔓 desbloqueia conteúdos
-  carregarFeedPublico();
-});
+//   // 🔓 desbloqueia conteúdos
+//   carregarFeedPublico();
+// });
 
-async function pagarComCartao() {
-  fecharEscolha();
+// async function pagarComCartao() {
+//   fecharEscolha();
 
-  // 🔢 VALOR BASE (ASSINATURA)
-  const valorAssinatura = 20.00;
+//   // 🔢 VALOR BASE (ASSINATURA)
+//   const valorAssinatura = 20.00;
 
-  // 🔥 TAXAS PERCENTUAIS (CORRETO)
-  const taxaTransacao  = Number((valorAssinatura * 0.10).toFixed(2)); // 10%
-  const taxaPlataforma = Number((valorAssinatura * 0.05).toFixed(2)); // 5%
+//   // 🔥 TAXAS PERCENTUAIS (CORRETO)
+//   const taxaTransacao  = Number((valorAssinatura * 0.10).toFixed(2)); // 10%
+//   const taxaPlataforma = Number((valorAssinatura * 0.05).toFixed(2)); // 5%
 
-  const valorTotal = Number(
-    (valorAssinatura + taxaTransacao + taxaPlataforma).toFixed(2)
-  );
+//   const valorTotal = Number(
+//     (valorAssinatura + taxaTransacao + taxaPlataforma).toFixed(2)
+//   );
 
-  // 🧾 UI
-  document.getElementById("cartaoValorBase").innerText =
-    valorBRL(valorAssinatura);
+  // document.getElementById("cartaoValorBase").innerText =
+  //   valorBRL(valorAssinatura);
 
-  document.getElementById("cartaoTaxaTransacao").innerText =
-    valorBRL(taxaTransacao);
+  // document.getElementById("cartaoTaxaTransacao").innerText =
+  //   valorBRL(taxaTransacao);
 
-  document.getElementById("cartaoTaxaPlataforma").innerText =
-    valorBRL(taxaPlataforma);
+  // document.getElementById("cartaoTaxaPlataforma").innerText =
+  //   valorBRL(taxaPlataforma);
 
-  document.getElementById("cartaoValorTotal").innerText =
-    valorBRL(valorTotal);
+  // document.getElementById("cartaoValorTotal").innerText =
+  //   valorBRL(valorTotal);
 
-  // 🔓 ABRE MODAL
-  document.getElementById("paymentModal").classList.remove("hidden");
+  // // 🔓 ABRE MODAL
+  // document.getElementById("paymentModal").classList.remove("hidden");
 
-  // 🔥 CRIA PAYMENT INTENT
-  const res = await fetch("/api/pagamento/vip/cartao", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + token
-    },
-    body: JSON.stringify({
-      modelo_id,
-      valor_assinatura: valorAssinatura,
-      taxa_transacao: taxaTransacao,
-      taxa_plataforma: taxaPlataforma
-    })
-   });
+  // // 🔥 CRIA PAYMENT INTENT
+  // const res = await fetch("/api/pagamento/vip/cartao", {
+  //   method: "POST",
+  //   headers: {
+  //     "Content-Type": "application/json",
+  //     Authorization: "Bearer " + token
+  //   },
+  //   body: JSON.stringify({
+  //     modelo_id,
+  //     valor_assinatura: valorAssinatura,
+  //     taxa_transacao: taxaTransacao,
+  //     taxa_plataforma: taxaPlataforma
+  //   })
+  //  });
 
-   const data = await res.json();
+  //  const data = await res.json();
 
-   if (!res.ok) {
-    alert(data.error || "Erro no pagamento");
-    return;
-  }
+  //  if (!res.ok) {
+  //   alert(data.error || "Erro no pagamento");
+  //   return;
+  // }
 
-  elements = stripe.elements({ clientSecret: data.clientSecret });
+  // elements = stripe.elements({ clientSecret: data.clientSecret });
 
-  const paymentElement = elements.create("payment");
-  paymentElement.mount("#payment-element");
-}
+  // const paymentElement = elements.create("payment");
+  // paymentElement.mount("#payment-element");
+//}
+//  // ===============================
+//  // 💳 CONFIRMAR PAGAMENTO CARTÃO
+//  // ===============================
+//  document
+//   .querySelector("#paymentModal .btn-confirmar-desbloqueio")
+//   ?.addEventListener("click", async () => {
 
- // ===============================
- // 💳 CONFIRMAR PAGAMENTO CARTÃO
- // ===============================
- document
-  .querySelector("#paymentModal .btn-confirmar-desbloqueio")
-  ?.addEventListener("click", async () => {
+//     if (!elements) {
+//       alert("Pagamento ainda não inicializado");
+//       return;
+//     }
 
-    if (!elements) {
-      alert("Pagamento ainda não inicializado");
-      return;
-    }
+//     const { error } = await stripe.confirmPayment({
+//       elements,
+//       confirmParams: {
+//         return_url: window.location.href // fallback se Stripe pedir redirect
+//       }
+//     });
 
-    const { error } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: window.location.href // fallback se Stripe pedir redirect
-      }
-    });
+//     if (error) {
+//       alert(error.message);
+//     }
+//});
 
-    if (error) {
-      alert(error.message);
-    }
-});
+// async function pagarComCartaoRecorrente() {
+//   fecharEscolha();
 
-async function pagarComCartaoRecorrente() {
-  fecharEscolha();
+//   // 🔓 ABRE MODAL
+//   document.getElementById("paymentModal").classList.remove("hidden");
 
-  // 🔓 ABRE MODAL
-  document.getElementById("paymentModal").classList.remove("hidden");
+//   // 🔁 CRIA ASSINATURA (NÃO payment intent)
+//   const res = await fetch("/api/vip/cartao/assinatura", {
+//     method: "POST",
+//     headers: {
+//       "Content-Type": "application/json",
+//       Authorization: "Bearer " + token
+//     },
+//     body: JSON.stringify({
+//       modelo_id
+//     })
+//   });
 
-  // 🔁 CRIA ASSINATURA (NÃO payment intent)
-  const res = await fetch("/api/vip/cartao/assinatura", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + token
-    },
-    body: JSON.stringify({
-      modelo_id
-    })
-  });
+//   const data = await res.json();
 
-  const data = await res.json();
+//   if (!res.ok) {
+//     alert(data.error || "Erro ao criar assinatura");
+//     return;
+//   }
 
-  if (!res.ok) {
-    alert(data.error || "Erro ao criar assinatura");
-    return;
-  }
+//   // 🔐 USA O clientSecret DA ASSINATURA
+//   elements = stripe.elements({ clientSecret: data.clientSecret });
 
-  // 🔐 USA O clientSecret DA ASSINATURA
-  elements = stripe.elements({ clientSecret: data.clientSecret });
+//   const paymentElement = elements.create("payment");
+//   paymentElement.mount("#payment-element");
+// }
 
-  const paymentElement = elements.create("payment");
-  paymentElement.mount("#payment-element");
-}
+// function mostrarVipAtivadoPopup() {
+//   const popup = document.getElementById("popupVipAtivado");
 
-function mostrarVipAtivadoPopup() {
-  const popup = document.getElementById("popupVipAtivado");
+//   if (!popup) {
+//     console.warn("popupVipAtivado não encontrado no DOM");
+//     alert("VIP ativado com sucesso!");
+//     return;
+//   }
 
-  if (!popup) {
-    console.warn("popupVipAtivado não encontrado no DOM");
-    alert("VIP ativado com sucesso!");
-    return;
-  }
-
-  popup.classList.remove("hidden");
-}
+//   popup.classList.remove("hidden");
+// }
 
 
 function fecharVipAtivado() {
@@ -864,9 +827,7 @@ function fecharVipAtivado() {
     .classList.add("hidden");
 }
 
-// ===============================
-// 💜 POPUP VELVET ACESSO
-// ===============================
+//💜 POPUP VELVET ACESSO para visitantes novos
 function abrirPopupVelvet({ tipo }) {
   const popup = document.getElementById("popupVelvetAcesso");
   const texto = document.getElementById("popupVelvetTexto");
@@ -920,7 +881,3 @@ document
 
   elements = null;
 }
-
-
-
-
