@@ -1,23 +1,5 @@
-/* ===============================
-   DADOS (mock por enquanto)
-=============================== */
 
-const token = localStorage.getItem("token");
-const ofertas = [
-  {
-    id: 1,
-    ativa: true,
-    nome: "Assinatura",
-    valor_original: 20,
-    desconto: 5,
-    valor_final: 19,
-    inicio: "2026-02-04",
-    fim: "2026-02-10",
-    limite: 10,
-    usadas: 0
-  }
-];
-
+let ofertas = [];
 let abaAtual = "ativas";
 
 const lista = document.getElementById("ofertasLista");
@@ -100,7 +82,7 @@ function encerrarOferta(id) {
   if (!oferta) return;
 
   oferta.ativa = false;
-  renderOfertas();
+  carregarOfertasDoBanco();
 }
 
 /* ===============================
@@ -124,7 +106,7 @@ document.querySelectorAll(".tab").forEach(tab => {
     document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
     tab.classList.add("active");
     abaAtual = tab.dataset.tab;
-    renderOfertas();
+    carregarOfertasDoBanco();
   };
 });
 
@@ -135,7 +117,7 @@ if (btnCriar) {
   btnCriar.onclick = abrirModalCriarOferta;
 }
 
-renderOfertas();
+carregarOfertasDoBanco();
 
 function abrirModalCriarOferta() {
   let etapa = 1;
@@ -301,9 +283,8 @@ function abrirModalCriarOferta() {
   alert(JSON.stringify(data));
   return;
 }
-      ofertas.unshift(data);
       modal.remove();
-      renderOfertas();
+      carregarOfertasDoBanco();
 
       alert("🎉 Oferta criada com sucesso!");
 
@@ -323,3 +304,25 @@ function abrirModalCriarOferta() {
   render();
   document.body.appendChild(modal);
 }
+
+async function carregarOfertasDoBanco() {
+  try {
+    const res = await fetch("/api/ofertas", {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
+
+    if (!res.ok) {
+      console.error("Erro ao buscar ofertas");
+      return;
+    }
+
+    ofertas = await res.json(); // 🔥 AGORA VEM DO BANCO
+    carregarOfertasDoBanco();
+
+  } catch (err) {
+    console.error("Erro carregar ofertas:", err);
+  }
+}
+
