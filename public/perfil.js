@@ -141,25 +141,41 @@
   // DOM PERFIL
   // ===============================
   function aplicarPerfilNoDOM(modelo) {
-    if (dom.nome)  dom.nome.textContent = modelo.nome || "";
-    if (dom.bio)   dom.bio.textContent  = modelo.bio  || "";
-
-    if (dom.avatar) {
-      dom.avatar.src = modelo.avatar || "/assets/avatar.png";
-      dom.avatar.onerror = () => dom.avatar.src = "/assets/avatar.png";
-    }
-
-    if (dom.capa) {
-      dom.capa.src = modelo.capa || "/assets/capa.png";
-      dom.capa.onerror = () => dom.capa.src = "/assets/capa.png";
-    }
-
-    if (dom.local) {
-      dom.local.textContent =
-        [modelo.cidade, modelo.estado].filter(Boolean).join(" • ");
-    }
+  if (dom.nome) {
+    dom.nome.textContent = modelo.nome?.trim() || "";
   }
 
+  if (dom.bio) {
+    dom.bio.textContent = modelo.bio?.trim() || "";
+  }
+
+  if (dom.avatar) {
+    const avatar =
+      modelo.avatar && modelo.avatar.trim() !== ""
+        ? modelo.avatar
+        : "/assets/avatar.png";
+
+    dom.avatar.src = avatar;
+    dom.avatar.onerror = () => dom.avatar.src = "/assets/avatar.png";
+  }
+
+  if (dom.capa) {
+    const capa =
+      modelo.capa && modelo.capa.trim() !== ""
+        ? modelo.capa
+        : "/assets/capa.png";
+
+    dom.capa.src = capa;
+    dom.capa.onerror = () => dom.capa.src = "/assets/capa.png";
+  }
+
+  if (dom.local) {
+    dom.local.textContent =
+      [modelo.cidade, modelo.estado]
+        .filter(v => v && v.trim() !== "")
+        .join(" • ");
+  }
+}
   // ===============================
   // DEFAULTS (NUNCA QUEBRA)
   // ===============================
