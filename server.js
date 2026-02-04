@@ -287,9 +287,10 @@ app.post("/api/ofertas", authModelo, async (req, res) => {
         valor_base,
         valor_promocional,
         data_fim,
-        mensagem
+        mensagem,
+        ativa
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,true)
       RETURNING *
       `,
       [
