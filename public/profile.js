@@ -197,18 +197,19 @@ function aplicarRoleNoBody() {
 // ===============================
 // PERFIL
 // ===============================
-function iniciarPerfil() {
+async function iniciarPerfil() {
 
   // MODELO (perfil próprio)
   if (modo === "privado" && role === "modelo") {
-    carregarPerfil();
+    await carregarPerfil();        // garante modelo_id
+    await carregarOfertaAtiva();   // oferta SEMPRE depois do modelo_id
     carregarFeed();
     return;
   }
 
   // CLIENTE ou VISITANTE (perfil público)
   if (modo === "publico" && modelo_id) {
-    carregarPerfilPublico();
+    await carregarPerfilPublico();
     return;
   }
 
@@ -233,14 +234,15 @@ async function carregarPerfil() {
   if (!res.ok) return;
 
   const modelo = await res.json();
-  localStorage.setItem("modelo_id", modelo.id);
-  modelo_id = modelo.id;
+
+  // 🔒 fonte única de verdade
+  modelo_id = Number(modelo.id);
+  localStorage.setItem("modelo_id", modelo_id);
 
   aplicarPerfilNoDOM(modelo);
 }
 
 async function carregarPerfilPublico() {
-  // PERFIL PÚBLICO → SEM TOKEN
   const res = await fetch(`/api/modelo/publico/${modelo_id}`);
 
   if (!res.ok) {
@@ -250,54 +252,66 @@ async function carregarPerfilPublico() {
 
   const modelo = await res.json();
 
+  // 🔒 garante modelo_id correto
+  if (modelo?.id) {
+    modelo_id = Number(modelo.id);
+  }
+
   aplicarPerfilNoDOM(modelo);
 
-    // ===============================
+  // ===============================
   // STATUS VIP (CLIENTE LOGADO)
   // ===============================
   if (role === "cliente") {
-  try {
-    const vipRes = await fetch(`/api/vip/status/${modelo_id}`, {
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token")
+    try {
+      const vipRes = await fetch(`/api/vip/status/${modelo_id}`, {
+        headers: {
+          Authorization: "Bearer " + localStorage.getItem("token")
+        }
+      });
+
+      if (vipRes.ok) {
+        const vipData = await vipRes.json();
+        window.__CLIENTE_VIP__ = vipData.vip === true;
+
+        if (window.__CLIENTE_VIP__) {
+          btnVip.textContent = "VIP ativo";
+          btnVip.disabled = true;
+          btnChat?.classList.remove("hidden");
+        } else {
+          btnChat?.classList.add("hidden");
+        }
       }
-    });
-
-    if (vipRes.ok) {
-      const vipData = await vipRes.json();
-      window.__CLIENTE_VIP__ = vipData.vip === true;
-
-     if (window.__CLIENTE_VIP__) {
-      btnVip.textContent = "VIP ativo";
-      btnVip.disabled = true;
-      btnChat?.classList.remove("hidden");
-    } else {
-      btnChat?.classList.add("hidden");
+    } catch (err) {
+      console.error("Erro ao verificar VIP:", err);
+      window.__CLIENTE_VIP__ = false;
+    }
+  } else {
+    window.__CLIENTE_VIP__ = false;
+    if (btnVip) {
+      btnVip.textContent = "Torne-se VIP";
+      btnVip.disabled = false;
     }
   }
-  } catch (err) {
-    console.error("Erro ao verificar VIP:", err);
-    window.__CLIENTE_VIP__ = false;
-  }
-  } else {
-  window.__CLIENTE_VIP__ = false;
 
-  if (btnVip) {
-    btnVip.textContent = "Torne-se VIP";
-    btnVip.disabled = false;
-  }
- }
- await carregarOfertaAtiva();
+  // 🔥 OFERTA SÓ DEPOIS DE TUDO PRONTO
+  await carregarOfertaAtiva();
   carregarFeedPublico();
 }
 
+
 async function carregarOfertaAtiva() {
+  if (!modelo_id || isNaN(Number(modelo_id))) {
+    console.warn("⏳ Oferta aguardando modelo_id válido");
+    return;
+  }
+
   const ofertaCard = document.getElementById("oferta-card");
   const precoDescontoEl = document.getElementById("preco-desconto");
   const precoOriginalEl = document.getElementById("preco-original");
 
-  if (!ofertaCard || !precoDescontoEl || !precoOriginalEl || !modelo_id) {
-    console.warn("Elementos da oferta não encontrados ou modelo_id inválido");
+  if (!ofertaCard || !precoDescontoEl || !precoOriginalEl) {
+    console.warn("Elementos da oferta não encontrados");
     return;
   }
 
@@ -318,14 +332,14 @@ async function carregarOfertaAtiva() {
 
     const oferta = data.oferta;
 
-    // 🔥 mostra card
+    // 🔥 MOSTRA CARD
     ofertaCard.style.display = "block";
 
     // badge
     document.querySelector(".oferta-balao").textContent =
       `Economize ${oferta.desconto_percentual}%`;
 
-    // preços (FORMATADOS)
+    // preços formatados
     precoDescontoEl.textContent =
       valorBRL(Number(oferta.valor_promocional));
 
@@ -337,47 +351,6 @@ async function carregarOfertaAtiva() {
     ofertaCard.style.display = "none";
   }
 }
-
-// ===============================
-// VIP
-// ===============================
-btnVip?.addEventListener("click", async () => {
-
-  // 👀 VISITANTE → popup Velvet
-  if (!role) {
-    abrirPopupVelvet({ tipo: "login" });
-    return;
-  }
-
-  // 🔒 CLIENTE → verifica VIP
-  try {
-    const statusRes = await fetch(`/api/vip/status/${modelo_id}`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`
-      }
-    });
-
-    if (!statusRes.ok) {
-      throw new Error("Falha ao verificar status VIP");
-    }
-
-    const statusData = await statusRes.json();
-
-    if (statusData.vip === true) {
-      alert("💜 Você já é VIP desta modelo");
-      return;
-    }
-
-    // ✅ NÃO É VIP → ABRE POPUP DE PAGAMENTO
-    document
-      .getElementById("escolhaPagamento")
-      ?.classList.remove("hidden");
-
-  } catch (err) {
-    console.error("Erro ao verificar status VIP:", err);
-    alert("Erro ao verificar status VIP");
-  }
-});
 
 // ===============================
 // FEED
