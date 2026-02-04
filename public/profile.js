@@ -293,10 +293,17 @@ async function carregarPerfilPublico() {
 
 async function carregarOfertaAtiva() {
   const ofertaCard = document.getElementById("oferta-card");
-  if (!ofertaCard || !modelo_id) return;
+  const precoDescontoEl = document.getElementById("preco-desconto");
+  const precoOriginalEl = document.getElementById("preco-original");
+
+  if (!ofertaCard || !precoDescontoEl || !precoOriginalEl || !modelo_id) {
+    console.warn("Elementos da oferta não encontrados ou modelo_id inválido");
+    return;
+  }
 
   try {
     const res = await fetch(`/api/ofertas/ativa/${modelo_id}`);
+
     if (!res.ok) {
       ofertaCard.style.display = "none";
       return;
@@ -304,31 +311,32 @@ async function carregarOfertaAtiva() {
 
     const data = await res.json();
 
-    if (!data.ativa) {
+    if (!data.ativa || !data.oferta) {
       ofertaCard.style.display = "none";
       return;
     }
 
     const oferta = data.oferta;
 
-    // 🔥 preenche UI
+    // 🔥 mostra card
     ofertaCard.style.display = "block";
 
+    // badge
     document.querySelector(".oferta-balao").textContent =
       `Economize ${oferta.desconto_percentual}%`;
 
-    document.getElementById("preco-desconto").textContent =
-      Number(oferta.valor_promocional).toFixed(2);
+    // preços (FORMATADOS)
+    precoDescontoEl.textContent =
+      valorBRL(Number(oferta.valor_promocional));
 
-    document.getElementById("preco-original").textContent =
-      valorBRL(oferta.valor_base);
+    precoOriginalEl.textContent =
+      valorBRL(Number(oferta.valor_base));
 
   } catch (err) {
     console.error("Erro ao carregar oferta:", err);
     ofertaCard.style.display = "none";
   }
 }
-
 
 // ===============================
 // VIP
