@@ -5,6 +5,7 @@
 //const stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
 let elements;
 window.__CLIENTE_VIP__ = false;
+window.__VIP_READY__ = false;
 
 const socket = io();
 
@@ -102,22 +103,25 @@ document.addEventListener("DOMContentLoaded", () => {
   btnAssinar.dataset.bound = "true";
 
   btnAssinar.addEventListener("click", () => {
-    // visitante
-    if (!role) {
-      abrirPopupVelvet({ tipo: "login" });
-      return;
-    }
 
-    // cliente não VIP
-    if (role === "cliente" && !window.__CLIENTE_VIP__) {
-      abrirPopupVelvet({ tipo: "vip" });
-      return;
-    }
+  if (!window.__VIP_READY__) {
+    alert("Aguarde um instante...");
+    return;
+  }
 
-    // VIP já ativo
-    alert("Você já é VIP 💜");
-  });
- }
+  if (!role) {
+    abrirPopupVelvet({ tipo: "login" });
+    return;
+  }
+
+  if (role === "cliente" && window.__CLIENTE_VIP__ === false) {
+    abrirPopupVelvet({ tipo: "vip" });
+    return;
+  }
+
+  alert("Você já é VIP 💜");
+});
+
 
   document.getElementById("btnVipPix")?.addEventListener("click", () => {
     fecharEscolha();
@@ -319,6 +323,7 @@ if (role === "modelo") {
   // 🔥 OFERTA SÓ DEPOIS DE TUDO PRONTO
   await carregarOfertaAtiva();
   carregarFeedPublico();
+  window.__VIP_READY__ = true;
 }
 
 
