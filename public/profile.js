@@ -87,7 +87,6 @@ const inputUpload = document.getElementById("inputUpload");
 document.addEventListener("DOMContentLoaded", () => {
   aplicarRoleNoBody();
   iniciarPerfil();
-  iniciarUploads();
 
   // ===============================
   // BOTÃO + UPLOAD
@@ -98,12 +97,6 @@ document.addEventListener("DOMContentLoaded", () => {
     e.preventDefault();
     inputUpload?.click();
   });
-
-  // FECHAR MODAL DE MÍDIA (X)
-// ===============================
-const modalMidia = document.getElementById("modalMidia");
-const fecharModal = document.getElementById("fecharModal");
-const modalVideo = document.getElementById("modalVideo");
 
   // ===============================
   // VIP PIX
@@ -408,51 +401,6 @@ inputCapa?.addEventListener("change", async () => {
   }
 });
 
-// inputCapa?.addEventListener("change", async () => {
-//     const file = inputCapa.files[0];
-//     if (!file) return;
-
-//     const fd = new FormData();
-//     fd.append("capa", file);
-
-//     const res = await fetch("/uploadCapa", {
-//       method: "POST",
-//       headers: {
-//         Authorization: "Bearer " + token
-//       },
-//       body: fd
-//     });
-
-//     const data = await res.json();
-//     if (data.url) {
-//       capaImg.src = data.url; // 🔥 atualiza na hora
-//     }
-//   });
-
-// btnSalvarBio?.addEventListener("click", async () => {
-//   const bio = bioInput.value.trim();
-//   if (!bio) return;
-
-//   const res = await fetch("/api/modelo/bio", {
-//     method: "PUT",
-//     headers: {
-//       "Content-Type": "application/json",
-//       Authorization: "Bearer " + token
-//     },
-//     body: JSON.stringify({ bio })
-//   });
-
-//   if (res.ok) {
-//     profileBio.textContent = bio;
-
-//     // ✅ FECHA O POPUP
-//     const popupBio = document.getElementById("popupBio");
-//     popupBio.classList.add("hidden");
-//   } else {
-//     alert("Erro ao salvar bio");
-//   }
-// });
-
 function iniciarUploads() {
   if (!inputUpload) {
     console.warn("inputUpload não encontrado");
@@ -588,7 +536,6 @@ function abrirPreviewUpload(file, url) {
         descricao
     });
 
-    const abaAtiva = document.querySelector(".midias-tabs .tab.active");
      if (role === "modelo") {
   carregarFeed();
 } else {
@@ -703,35 +650,6 @@ function getVideoThumbnail(url, thumbnail_url) {
 
   // 🔒 BACKBLAZE OU QUALQUER OUTRO → fallback
   return "/assets/capa.png";
-}
-
-async function gerarThumbnailVideo(file) {
-  return new Promise((resolve, reject) => {
-    const video = document.createElement("video");
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-
-    video.src = URL.createObjectURL(file);
-    video.muted = true;
-    video.playsInline = true;
-
-    video.addEventListener("loadeddata", () => {
-      video.currentTime = 1;
-    });
-
-    video.addEventListener("seeked", () => {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0);
-
-      canvas.toBlob(blob => {
-        resolve(blob);
-        URL.revokeObjectURL(video.src);
-      }, "image/jpeg", 0.85);
-    });
-
-    video.addEventListener("error", reject);
-  });
 }
 
 function abrirModalMidia(url, isVideo) {
