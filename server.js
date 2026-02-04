@@ -176,19 +176,20 @@ app.post(
       }
 
       const isVideo = req.file.mimetype.startsWith("video");
-      
+
       const {
         tipo_conteudo,
         preco,
         descricao
       } = req.body;
 
+      const publicUrl = `${process.env.B2_PUBLIC_URL}/${req.file.key}`;
       let thumbnailUrl = null;
 
       // 🔥 GERA THUMBNAIL SE FOR VÍDEO
       if (isVideo) {
         try {
-          thumbnailUrl = await gerarThumbnailVideo(req.file.location);
+          thumbnailUrl = await gerarThumbnailVideo(publicUrl);
         } catch (err) {
           console.error("Erro ao gerar thumbnail:", err);
         }
@@ -202,7 +203,7 @@ app.post(
         `,
         [
           req.user.id,
-          req.file.location,
+          publicUrl,
           isVideo ? "video" : "imagem",
           tipo_conteudo || "feed",
           preco || null,
