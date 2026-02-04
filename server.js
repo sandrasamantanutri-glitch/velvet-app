@@ -228,46 +228,36 @@ app.post(
 //OFERTAS
 app.post("/api/ofertas", authModelo, async (req, res) => {
   try {
-    const modeloId = req.user.modelo_id;
+    console.log("USER TOKEN:", req.user);
+    console.log("BODY:", req.body);
 
-    if (!modeloId) {
-  console.error("🔥 MODELO ID AUSENTE NO TOKEN:", req.user);
-  return res.status(401).json({
-    erro: "Token inválido: modelo_id ausente"
-  });
-}
+    const userId = req.user.id;
 
-    console.log("CRIANDO OFERTA PARA MODELO:", modeloId);
-     console.log("=== CRIAR OFERTA ===");
-  console.log("USER:", req.user);
-  console.log("BODY:", req.body);
-
-    const { nome, limite, dias, desconto, mensagem } = req.body;
-
-    if (!nome || limite <= 0 || dias <= 0 || desconto < 0) {
-      return res.status(400).json({ erro: "Dados incompletos" });
-    }
-
-    // 🔒 garante 1 oferta ativa por modelo
-    const ofertaAtiva = await db.query(
-      `
-      SELECT id
-      FROM ofertas
-      WHERE modelo_id = $1
-        AND ativa = true
-        AND data_fim > NOW()
-      LIMIT 1
-      `,
-      [modeloId]
+    const modeloRes = await db.query(
+      `SELECT id FROM modelos WHERE user_id = $1`,
+      [userId]
     );
 
-    if (ofertaAtiva.rows.length > 0) {
-      return res.status(400).json({
-        erro: "Você já possui uma oferta ativa"
+    if (modeloRes.rows.length === 0) {
+      return res.status(404).json({
+        erro: "Modelo não encontrado"
       });
     }
 
-    // valores
+    const modeloId = modeloRes.rows[0].id;
+
+    const {
+      nome,
+      limite,
+      dias,
+      desconto,
+      mensagem
+    } = req.body;
+
+    if (!nome || limite <= 0 || dias <= 0 || desconto === undefined) {
+      return res.status(400).json({ erro: "Dados inválidos" });
+    }
+
     const VALOR_BASE = 20;
     const VALOR_MINIMO = 15;
 
@@ -278,59 +268,49 @@ app.post("/api/ofertas", authModelo, async (req, res) => {
       valorPromocional = VALOR_MINIMO;
     }
 
-    // data fim
     const dataFim = new Date();
     dataFim.setDate(dataFim.getDate() + Number(dias));
 
-    // insert
     const result = await db.query(
       `
       INSERT INTO ofertas (
-    modelo_id,
-    nome,
-    limite_assinaturas,
-    assinaturas_usadas,
-    desconto_percentual,
-    valor_base,
-    valor_promocional,
-    data_inicio,
-    data_fim,
-    mensagem,
-    ativa
-  )
-  VALUES ($1,$2,$3,0,$4,$5,$6,NOW(),$7,$8,true)
-  RETURNING *
-     `,
-  [
-    modeloId,
-    nome,
-    limite,
-    desconto,
-    VALOR_BASE,
-    valorPromocional,
-    dataFim,
-    mensagem
-  ]
-);
+        modelo_id,
+        nome,
+        limite_assinaturas,
+        assinaturas_usadas,
+        desconto_percentual,
+        valor_base,
+        valor_promocional,
+        data_inicio,
+        data_fim,
+        mensagem,
+        ativa
+      )
+      VALUES ($1,$2,$3,0,$4,$5,$6,NOW(),$7,$8,true)
+      RETURNING *
+      `,
+      [
+        modeloId,
+        nome,
+        limite,
+        desconto,
+        VALOR_BASE,
+        valorPromocional,
+        dataFim,
+        mensagem
+      ]
+    );
 
     res.json(result.rows[0]);
 
   } catch (err) {
-    console.error("Erro ao criar oferta:", err);
-
-    // erro de índice único (1 oferta ativa)
-    if (err.code === "23505") {
-      return res.status(400).json({
-        erro: "Já existe uma oferta ativa"
-      });
-    }
-
+    console.error("🔥 ERRO AO CRIAR OFERTA 🔥");
+    console.error(err);
     res.status(500).json({
       erro: "Erro interno ao criar oferta"
     });
   }
 });
-
 
 app.post(
   "/webhook/stripe",
