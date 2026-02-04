@@ -1,6 +1,8 @@
 /* ===============================
    DADOS (mock por enquanto)
 =============================== */
+
+const token = localStorage.getItem("token");
 const ofertas = [
   {
     id: 1,
@@ -279,7 +281,6 @@ function abrirModalCriarOferta() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer " + token
         },
         body: JSON.stringify({
           nome: dados.nome,
