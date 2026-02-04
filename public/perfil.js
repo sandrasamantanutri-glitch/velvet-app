@@ -60,7 +60,8 @@ function logout() {
   localStorage.clear();
   window.location.href = "#########################";
 }
-
+const midiasFree = document.getElementById("midias-free");
+const midiasPaid = document.getElementById("midias-paid");
 const modalMidia = document.getElementById("modalMidia");
 const fecharModal = document.getElementById("fecharModal");
 const modalVideo = document.getElementById("modalVideo");
@@ -70,6 +71,7 @@ const modalVideo = document.getElementById("modalVideo");
 document.addEventListener("DOMContentLoaded", () => {
   aplicarRoleNoBody();
   iniciarUploads();
+  iniciarPerfil();
 
  document.getElementById("btnVipPix")?.addEventListener("click", () => {
   fecharEscolha();
@@ -210,8 +212,6 @@ function valorBRL(valor) {
 // FEED
 // ===============================
 function carregarFeed() {
-  const midiasFree = document.getElementById("midias-free");
- const midiasPaid = document.getElementById("midias-paid");
   if (!midiasFree || !midiasPaid) return;
 
   fetch("/api/feed/me", {
