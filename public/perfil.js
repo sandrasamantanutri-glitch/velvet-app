@@ -35,9 +35,13 @@ let modelo_id = modeloParam
 socket.emit("auth", { token });
 
 // registra cliente online
-if (role === "cliente") {
-  socket.emit("loginCliente", Number(decodeJWT(token).id));
+if (role === "cliente" && token) {
+  const decoded = decodeJWT(token);
+  if (decoded?.id) {
+    socket.emit("loginCliente", Number(decoded.id));
+  }
 }
+
 
 // 🔒 Guard APENAS para perfil público
 if (modo === "publico" && (!modelo_id || modelo_id === "undefined")) {
@@ -430,60 +434,60 @@ function iniciarUploads() {
 // ===============================
 // MIDIA
 // ===============================
-function adicionarMidia(conteudo) {
-  const { id, url, tipo, thumbnail_url } = conteudo;
-  const isVideo = tipo === "video";
+// function adicionarMidia(conteudo) {
+//   const { id, url, tipo, thumbnail_url } = conteudo;
+//   const isVideo = tipo === "video";
 
-  const card = document.createElement("div");
-  card.className = "midiaCard";
+//   const card = document.createElement("div");
+//   card.className = "midiaCard";
 
-  const img = document.createElement("img");
-  img.className = "midiaThumb";
+//   const img = document.createElement("img");
+//   img.className = "midiaThumb";
 
-  if (isVideo) {
-    img.src = getVideoThumbnail(url, thumbnail_url);
-    card.classList.add("video");
-  } else {
-    img.src = url;
-  }
+//   if (isVideo) {
+//     img.src = getVideoThumbnail(url, thumbnail_url);
+//     card.classList.add("video");
+//   } else {
+//     img.src = url;
+//   }
 
-  card.appendChild(img);
+//   card.appendChild(img);
 
-  // 🔒 bloqueio VIP (mantém sua lógica)
-  const deveBloquear =
-    role !== "modelo" && window.__CLIENTE_VIP__ !== true;
+//   // 🔒 bloqueio VIP (mantém sua lógica)
+//   const deveBloquear =
+//     role !== "modelo" && window.__CLIENTE_VIP__ !== true;
 
-  if (deveBloquear) {
-    card.classList.add("bloqueada");
-    card.onclick = () => {
-      if (!role) {
-        abrirPopupVelvet({ tipo: "login" });
-      } else {
-        abrirPopupVelvet({ tipo: "vip" });
-      }
-    };
-  } else {
-    card.onclick = () => abrirModalMidia(url, isVideo);
-  }
+//   if (deveBloquear) {
+//     card.classList.add("bloqueada");
+//     card.onclick = () => {
+//       if (!role) {
+//         abrirPopupVelvet({ tipo: "login" });
+//       } else {
+//         abrirPopupVelvet({ tipo: "vip" });
+//       }
+//     };
+//   } else {
+//     card.onclick = () => abrirModalMidia(url, isVideo);
+//   }
 
-  // ❌ excluir (só modelo)
-  if (role === "modelo") {
-    const btnExcluir = document.createElement("button");
-    btnExcluir.className = "btnExcluirMidia";
-    btnExcluir.textContent = "Excluir";
-    btnExcluir.onclick = (e) => {
-      e.stopPropagation();
-      excluirMidia(id, card);
-    };
-    card.appendChild(btnExcluir);
-  }
+//   // ❌ excluir (só modelo)
+//   if (role === "modelo") {
+//     const btnExcluir = document.createElement("button");
+//     btnExcluir.className = "btnExcluirMidia";
+//     btnExcluir.textContent = "Excluir";
+//     btnExcluir.onclick = (e) => {
+//       e.stopPropagation();
+//       excluirMidia(id, card);
+//     };
+//     card.appendChild(btnExcluir);
+//   }
 
-  midias.appendChild(card);
+//   midias.appendChild(card);
 
-  img.onerror = () => {
-  img.src = "/assets/capaDefault.jpg";
-};
-}
+//   img.onerror = () => {
+//   img.src = "/assets/capaDefault.jpg";
+// };
+// }
 
 function getVideoThumbnail(url, thumbnail_url) {
   if (thumbnail_url) return thumbnail_url;
