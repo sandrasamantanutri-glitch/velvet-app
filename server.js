@@ -225,21 +225,14 @@ app.post(
 //OFERTAS
 app.post("/api/ofertas", authModelo, async (req, res) => {
   try {
-    const modeloId = req.user.id;
+    const modeloId = req.user.userId; // <<< AQUI
 
-    const {
-      nome,
-      limite,
-      dias,
-      desconto,
-      mensagem
-    } = req.body;
+    console.log("CRIANDO OFERTA PARA MODELO:", modeloId);
 
-    // validações básicas
+    const { nome, limite, dias, desconto, mensagem } = req.body;
+
     if (!nome || !limite || !dias || !desconto) {
-      return res.status(400).json({
-        erro: "Dados incompletos"
-      });
+      return res.status(400).json({ erro: "Dados incompletos" });
     }
 
     // 🔒 garante 1 oferta ativa por modelo

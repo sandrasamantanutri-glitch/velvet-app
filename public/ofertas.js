@@ -270,11 +270,11 @@ function abrirModalCriarOferta() {
     if (etapa === 2) dados.limite = Number(content.querySelector("#limite").value);
     if (etapa === 5) dados.mensagem = content.querySelector("#msg").value;
 
-    if (etapa < 6) {
-      etapa++;
-      render();
-      return;
-    }
+    if (etapa < 5) {
+  etapa++;
+  render();
+  return;
+}
 
     try {
       const token = localStorage.getItem("token");
