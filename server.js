@@ -1462,10 +1462,16 @@ app.get("/api/modelo/publico/:id/feed", async (req, res) => {
 
   try {
     const result = await db.query(`
-      SELECT id, url, tipo, thumbnail_url
+      SELECT
+        id,
+        url,
+        tipo,
+        tipo_conteudo,
+        preco,
+        descricao,
+        thumbnail_url
       FROM conteudos
       WHERE user_id = $1
-        AND tipo_conteudo = 'feed'
       ORDER BY criado_em DESC
     `, [modelo_id]);
 
@@ -1475,6 +1481,7 @@ app.get("/api/modelo/publico/:id/feed", async (req, res) => {
     res.status(500).json([]);
   }
 });
+
 
 
 
