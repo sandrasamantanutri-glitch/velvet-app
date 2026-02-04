@@ -1193,23 +1193,33 @@ app.get("/api/me", auth, (req, res) => {
 
 app.get("/api/feed/me", auth, async (req, res) => {
   try {
+    if (req.user.role !== "modelo") {
+      return res.status(403).json([]);
+    }
+
     const result = await db.query(
       `
-      SELECT id, url, tipo, thumbnail_url, criado_em
-FROM conteudos
-WHERE user_id = $1
-  AND tipo_conteudo = 'feed'
-ORDER BY criado_em DESC
+      SELECT
+        id,
+        url,
+        tipo,
+        tipo_conteudo,
+        thumbnail_url,
+        criado_em
+      FROM conteudos
+      WHERE user_id = $1
+      ORDER BY criado_em DESC
       `,
       [req.user.id]
     );
 
     res.json(result.rows);
   } catch (err) {
-    console.error("Erro carregar feed:", err);
-    res.status(500).json({ error: "Erro ao carregar feed" });
+    console.error("Erro carregar feed modelo:", err);
+    res.status(500).json([]);
   }
 });
+
 
 // 🌟 FEED OFICIAL DE MODELOS (CLIENTE)
 app.get("/api/feed/modelos", auth, async (req, res) => {
