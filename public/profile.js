@@ -1115,9 +1115,6 @@ function abrirPopupVelvet({ tipo }) {
   }
 
   if (tipo === "vip") {
-    texto.textContent =
-      "Este conteúdo é exclusivo para membros VIP";
-    btn.textContent = "Tornar-se VIP";
     btn.onclick = () => {
       popup.classList.add("hidden");
       document.getElementById("escolhaPagamento")?.classList.remove("hidden");
