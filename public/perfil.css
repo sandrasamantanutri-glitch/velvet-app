@@ -140,7 +140,8 @@ body {
 
 .oferta-titulo {
   font-weight: 700;
-  margin-bottom: 20px;
+  margin-bottom: 28px;
+  font-size: 18px;
 }
 
 .oferta-botao-wrapper {
@@ -153,7 +154,7 @@ body {
   left: 12px;
   background: #1bd96a;
   color: #0a3d1f;
-  font-size: 18px;
+  font-size: 16px;
   padding: 4px 8px;
   border-radius: 10px;
   font-weight: 600;
