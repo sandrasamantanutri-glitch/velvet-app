@@ -1204,6 +1204,8 @@ app.get("/api/feed/me", auth, async (req, res) => {
         url,
         tipo,
         tipo_conteudo,
+        preco,
+        descricao,
         thumbnail_url,
         criado_em
       FROM conteudos
@@ -1219,7 +1221,6 @@ app.get("/api/feed/me", auth, async (req, res) => {
     res.status(500).json([]);
   }
 });
-
 
 // 🌟 FEED OFICIAL DE MODELOS (CLIENTE)
 app.get("/api/feed/modelos", auth, async (req, res) => {
