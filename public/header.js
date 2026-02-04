@@ -106,62 +106,8 @@ const menuModelo = `
 <button class="logout-btn" onclick="logout()">Sair</button>
 `;
 
-function montarMenuPorRole() {
-  const role = localStorage.getItem("role");
-  const menu = document.getElementById("userMenu");
-  if (!menu) return;
-
-  if (role === "modelo") {
-    menu.innerHTML = menuModelo;
-  } 
-  else if (role === "cliente") {
-    menu.innerHTML = menuCliente;
-  } 
-  else {
-    // 👀 VISITANTE
-    menu.innerHTML = menuVisitante;
-  }
-}
-
-
 function abrirDados() {
   window.location.href = "/dados-modelo.html";
-}
-
-// =========================================================
-// CONTROLE ABRIR / FECHAR MENU
-// =========================================================
-function initHeaderMenu() {
-  const btn = document.getElementById("menuBtn");
-  const menu = document.getElementById("userMenu");
-
-  if (!btn || !menu) {
-    console.warn("menuBtn ou userMenu não encontrado");
-    return;
-  }
-
-btn.addEventListener("click", e => {
-  e.stopPropagation();
-
-  const role = localStorage.getItem("role");
-
-//  VISITANTE 
-  if (!role) {
-    abrirPopupVelvet({ tipo: "login" });
-    return;
-  }
-
-  menu.classList.toggle("open");
-});
-
-
-  document.addEventListener("click", () => {
-    menu.classList.remove("open");
-  });
-
-  menu.addEventListener("click", e => {
-    e.stopPropagation();
-  });
 }
 
 
