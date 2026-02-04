@@ -1240,7 +1240,18 @@ socket.on("excluirMensagem", async ({ id }) => {
 //ROTA GET
 // ===============================
 //OFERTAS QUANDO ENCERRAR
-app.get("/api/ofertas", auth, async (req, res) => {
+app.get("/api/ofertas", authModelo, async (req, res) => {
+  const modeloRes = await db.query(
+    `SELECT id FROM modelos WHERE user_id = $1`,
+    [req.user.id]
+  );
+
+  if (modeloRes.rows.length === 0) {
+    return res.json([]);
+  }
+
+  const modeloId = modeloRes.rows[0].id;
+
   await db.query("SELECT encerrar_ofertas_expiradas()");
 
   const result = await db.query(
@@ -1250,11 +1261,12 @@ app.get("/api/ofertas", auth, async (req, res) => {
     WHERE modelo_id = $1
     ORDER BY created_at DESC
     `,
-    [req.user.id]
+    [modeloId]
   );
 
   res.json(result.rows);
 });
+
 
 //ATIVAS
 app.get("/api/ofertas/ativa/:modelo_id", async (req, res) => {

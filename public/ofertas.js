@@ -51,7 +51,7 @@ function renderOfertas() {
         </div>
 
         <div class="valores-box">
-          <div><span>Valor original</span><strong>R$ ${o.valor_original.toFixed(2)}</strong></div>
+          <div><span>Valor original</span><strong>R$ ${(o.valor_original || 0).toFixed(2)}</strong></div>
           <div class="desconto"><span>Desconto</span><strong>-${o.desconto}%</strong></div>
           <div><span>Valor final</span><strong>R$ ${o.valor_final.toFixed(2)}</strong></div>
         </div>
@@ -308,6 +308,9 @@ function abrirModalCriarOferta() {
 
 async function carregarOfertasDoBanco() {
   try {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
     const res = await fetch("/api/ofertas", {
       headers: {
         Authorization: "Bearer " + token
@@ -319,11 +322,25 @@ async function carregarOfertasDoBanco() {
       return;
     }
 
-    ofertas = await res.json(); 
-    carregarOfertasDoBanco();
+    const dados = await res.json();
 
+    ofertas = dados.map(o => ({
+      id: o.id,
+      nome: o.nome,
+      ativa: o.ativa,
+      inicio: o.data_inicio,
+      fim: o.data_fim,
+      valor_original: Number(o.valor_base),
+      valor_final: Number(o.valor_promocional),
+      desconto: Number(o.desconto_percentual),
+      limite: o.limite_assinaturas,
+      usadas: o.assinaturas_usadas
+    }));
+
+    renderOfertas();
   } catch (err) {
     console.error("Erro carregar ofertas:", err);
   }
 }
+
 
