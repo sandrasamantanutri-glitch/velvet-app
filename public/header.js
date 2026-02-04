@@ -4,7 +4,6 @@
 function carregarHeader() {
   // evita duplicar
   if (document.querySelector(".app-header")) {
-    initHeaderMenu();
     ligarBotoesPerfilModelo();
     return;
   }
@@ -19,9 +18,6 @@ function carregarHeader() {
     .then(res => res.text())
     .then(html => {
       container.insertAdjacentHTML("afterbegin", html);
-
-      // 🔑 AGORA os elementos existem
-      initHeaderMenu();
       ligarBotoesPerfilModelo(); 
     })
     .catch(err => console.error("Erro ao carregar header:", err));
