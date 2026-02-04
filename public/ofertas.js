@@ -178,6 +178,7 @@ function abrirModalCriarOferta() {
 
   function render() {
     btnVoltar.disabled = etapa === 1;
+    btnAvancar.textContent = etapa === 6 ? "Fechar" : "Avançar";
 
     if (etapa === 1) {
       content.innerHTML = `
@@ -259,12 +260,10 @@ function abrirModalCriarOferta() {
         <h3>🎉 Parabéns!</h3>
         <p>Você criou sua oferta com sucesso.</p>
       `;
-
-      btnAvancar.textContent = "Fechar";
     }
   }
 
-  btnAvancar.onclick = () => {
+  btnAvancar.onclick = async () => {
     if (etapa === 1) dados.nome = content.querySelector("#nome").value;
     if (etapa === 2) dados.limite = Number(content.querySelector("#limite").value);
     if (etapa === 5) dados.mensagem = content.querySelector("#msg").value;
@@ -272,16 +271,47 @@ function abrirModalCriarOferta() {
     if (etapa < 6) {
       etapa++;
       render();
-    } else {
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/ofertas", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token
+        },
+        body: JSON.stringify({
+          nome: dados.nome,
+          limite: dados.limite,
+          dias: dados.dias,
+          desconto: dados.desconto,
+          mensagem: dados.mensagem
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.erro || "Erro ao criar oferta");
+        return;
+      }
+
+      ofertas.unshift(data);
       modal.remove();
-      console.log("OFERTA CRIADA:", dados);
+      renderOfertas();
+
+      alert("🎉 Oferta criada com sucesso!");
+
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao salvar oferta");
     }
   };
 
   btnVoltar.onclick = () => {
     if (etapa > 1) {
       etapa--;
-      btnAvancar.textContent = "Avançar";
       render();
     }
   };
@@ -289,4 +319,3 @@ function abrirModalCriarOferta() {
   render();
   document.body.appendChild(modal);
 }
-

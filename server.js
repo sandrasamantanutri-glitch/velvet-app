@@ -235,17 +235,48 @@ app.post("/api/ofertas", auth, async (req, res) => {
       mensagem
     } = req.body;
 
+    // validações básicas
+    if (!nome || !limite || !dias || !desconto) {
+      return res.status(400).json({
+        erro: "Dados incompletos"
+      });
+    }
+
+    // 🔒 garante 1 oferta ativa por modelo
+    const ofertaAtiva = await db.query(
+      `
+      SELECT id
+      FROM ofertas
+      WHERE modelo_id = $1
+        AND ativa = true
+        AND data_fim > NOW()
+      LIMIT 1
+      `,
+      [modeloId]
+    );
+
+    if (ofertaAtiva.rows.length > 0) {
+      return res.status(400).json({
+        erro: "Você já possui uma oferta ativa"
+      });
+    }
+
+    // valores
     const VALOR_BASE = 20;
     const VALOR_MINIMO = 15;
 
-    const valorPromocional = Math.max(
-      VALOR_BASE * (1 - desconto / 100),
-      VALOR_MINIMO
-    );
+    let valorPromocional =
+      VALOR_BASE * (1 - desconto / 100);
 
+    if (valorPromocional < VALOR_MINIMO) {
+      valorPromocional = VALOR_MINIMO;
+    }
+
+    // data fim
     const dataFim = new Date();
-    dataFim.setDate(dataFim.getDate() + dias);
+    dataFim.setDate(dataFim.getDate() + Number(dias));
 
+    // insert
     const result = await db.query(
       `
       INSERT INTO ofertas (
@@ -276,13 +307,18 @@ app.post("/api/ofertas", auth, async (req, res) => {
     res.json(result.rows[0]);
 
   } catch (err) {
+    console.error("Erro ao criar oferta:", err);
+
+    // erro de índice único (1 oferta ativa)
     if (err.code === "23505") {
       return res.status(400).json({
-        erro: "Você já possui uma oferta ativa"
+        erro: "Já existe uma oferta ativa"
       });
     }
-    console.error(err);
-    res.status(500).json({ erro: "Erro interno" });
+
+    res.status(500).json({
+      erro: "Erro interno ao criar oferta"
+    });
   }
 });
 
