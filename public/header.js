@@ -104,37 +104,6 @@ function abrirDados() {
   window.location.href = "/dados-modelo.html";
 }
 
-
-function ligarBotoesPerfilModelo() {
-  const btnAvatar = document.getElementById("btnAlterarAvatar");
-  const btnCapa   = document.getElementById("btnAlterarCapa");
-
-  // se não existe, sai (ex: menu cliente)
-  if (!btnAvatar || !btnCapa) return;
-
-  const role = localStorage.getItem("role");
-  const page = document.body.dataset.page; // "profile" ou undefined
-
-  // 🔒 regra principal
-  if (role !== "modelo" || page !== "profile") {
-    btnAvatar.style.display = "none";
-    btnCapa.style.display   = "none";
-    return;
-  }
-
-  // ✅ só aqui eles ficam visíveis e funcionais
-  btnAvatar.style.display = "block";
-  btnCapa.style.display   = "block";
-
-  btnAvatar.addEventListener("click", () => {
-    document.getElementById("inputAvatar")?.click();
-  });
-
-  btnCapa.addEventListener("click", () => {
-    document.getElementById("inputCapa")?.click();
-  });
-}
-
 function abrirConteudos() {
   const role = localStorage.getItem("role");
 

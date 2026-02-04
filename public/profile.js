@@ -89,50 +89,59 @@ document.addEventListener("DOMContentLoaded", () => {
   iniciarPerfil();
   iniciarUploads();
 
-  document.getElementById("btnVipPix")?.addEventListener("click", () => {
-  fecharEscolha();
-  abrirPopupPix(); // sua função existente
+  // ===============================
+  // BOTÃO + UPLOAD
+  // ===============================
+  const btnUpload = document.querySelector(".btn-upload");
+  const inputUpload = document.getElementById("inputUpload");
+
+  btnUpload?.addEventListener("click", (e) => {
+    e.preventDefault();
+    inputUpload?.click();
   });
 
- document.getElementById("fecharPix")?.addEventListener("click", () => {
- document.getElementById("popupPix")?.classList.add("hidden");
- });
-
- document.getElementById("btnVipCartao")?.addEventListener("click", () => {
- fecharEscolha();
- pagarComCartao(); // sua função Stripe
- });
-
-  btnChat?.addEventListener("click", () => {
-  if (!role) {
-    abrirPopupVelvet({ tipo: "login" });
-    return;
-  }
-  if (!window.__CLIENTE_VIP__) {
-    abrirPopupVelvet({ tipo: "vip" });
-    return;
-  }
-  window.location.href = "/chatcliente.html";
-
-  const btnUpload = document.querySelector(".btn-upload");
- const inputUpload = document.getElementById("inputUpload");
-
- btnUpload?.addEventListener("click", (e) => {
-  e.preventDefault();
-  inputUpload.click();
- });
-
-});
-
-
-// ===============================
-// FECHAR MODAL DE MÍDIA (X)
+  // FECHAR MODAL DE MÍDIA (X)
 // ===============================
 const modalMidia = document.getElementById("modalMidia");
 const fecharModal = document.getElementById("fecharModal");
 const modalVideo = document.getElementById("modalVideo");
 
-fecharModal?.addEventListener("click", (e) => {
+  // ===============================
+  // VIP PIX
+  // ===============================
+  document.getElementById("btnVipPix")?.addEventListener("click", () => {
+    fecharEscolha();
+    abrirPopupPix();
+  });
+
+  document.getElementById("fecharPix")?.addEventListener("click", () => {
+    document.getElementById("popupPix")?.classList.add("hidden");
+  });
+
+  // ===============================
+  // VIP CARTÃO
+  // ===============================
+  document.getElementById("btnVipCartao")?.addEventListener("click", () => {
+    fecharEscolha();
+    pagarComCartao();
+  });
+
+  // ===============================
+  // CHAT
+  // ===============================
+  btnChat?.addEventListener("click", () => {
+    if (!role) {
+      abrirPopupVelvet({ tipo: "login" });
+      return;
+    }
+    if (!window.__CLIENTE_VIP__) {
+      abrirPopupVelvet({ tipo: "vip" });
+      return;
+    }
+    window.location.href = "/chatcliente.html";
+  });
+
+  fecharModal?.addEventListener("click", (e) => {
   e.preventDefault();
   e.stopPropagation();
 
@@ -142,9 +151,13 @@ fecharModal?.addEventListener("click", (e) => {
   }
 
   modalMidia.classList.add("hidden");
-});
+ });
 
 });
+
+
+
+
 
 // ===============================
 // ROLE VISUAL
