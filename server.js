@@ -1265,9 +1265,9 @@ app.get("/api/ofertas", auth, async (req, res) => {
 });
 
 //ATIVAS
-app.get("/api/ofertas/ativa/:modeloId", async (req, res) => {
+app.get("/api/ofertas/ativa/:modelo_id", async (req, res) => {
   try {
-    const { modeloId } = req.params;
+    const modeloId = Number(req.params.modelo_id);
 
     const result = await db.query(
       `
@@ -1288,7 +1288,7 @@ app.get("/api/ofertas/ativa/:modeloId", async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ ativa: false });
+      return res.json({ ativa: false });
     }
 
     res.json({
@@ -1301,7 +1301,6 @@ app.get("/api/ofertas/ativa/:modeloId", async (req, res) => {
     res.status(500).json({ erro: "Erro interno" });
   }
 });
-
 
 
 app.get("/api/vip/status/:modelo_id", authCliente, async (req, res) => {
