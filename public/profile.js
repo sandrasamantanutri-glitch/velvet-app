@@ -274,43 +274,37 @@ async function carregarPerfilPublico() {
 
   aplicarPerfilNoDOM(modelo);
 
-  // ===============================
-  // STATUS VIP (CLIENTE LOGADO)
-  // ===============================
-  if (role === "cliente") {
-    try {
-      const vipRes = await fetch(`/api/vip/status/${modelo_id}`, {
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("token")
-        }
-      });
+const ofertaCard = document.getElementById("oferta-card");
 
-      if (vipRes.ok) {
-        const vipData = await vipRes.json();
-        window.__CLIENTE_VIP__ = vipData.vip === true;
-
-        if (window.__CLIENTE_VIP__) {
-  if (btnAssinar) {
-    btnAssinar.textContent = "VIP ativo 💜";
-    btnAssinar.disabled = true;
-    btnAssinar.classList.add("vip-ativo");
-  }
-  btnChat?.classList.remove("hidden");
-} else {
-  btnChat?.classList.add("hidden");
-}
+if (role === "cliente") {
+  try {
+    const vipRes = await fetch(`/api/vip/status/${modelo_id}`, {
+      headers: {
+        Authorization: "Bearer " + localStorage.getItem("token")
       }
-    } catch (err) {
-      console.error("Erro ao verificar VIP:", err);
-      window.__CLIENTE_VIP__ = false;
+    });
+
+    if (vipRes.ok) {
+      const vipData = await vipRes.json();
+      window.__CLIENTE_VIP__ = vipData.vip === true;
+
+      if (window.__CLIENTE_VIP__) {
+        // 🔥 CLIENTE VIP → some com a oferta
+        if (ofertaCard) {
+          ofertaCard.style.display = "none";
+        }
+
+        btnChat?.classList.remove("hidden");
+      } else {
+        // ❌ não VIP → mantém oferta
+        btnChat?.classList.add("hidden");
+      }
     }
-  } else {
+  } catch (err) {
+    console.error("Erro ao verificar VIP:", err);
     window.__CLIENTE_VIP__ = false;
-    if (btnVip) {
-      btnVip.textContent = "Torne-se VIP";
-      btnVip.disabled = false;
-    }
   }
+}
 
   // 🔥 OFERTA SÓ DEPOIS DE TUDO PRONTO
   await carregarOfertaAtiva();
