@@ -516,7 +516,6 @@ function adicionarMidia(conteudo) {
   }
 
   // ❌ excluir (só modelo)
-    // ❌ excluir (só modelo)
   if (role === "modelo") {
     const btnExcluir = document.createElement("button");
     btnExcluir.className = "btnExcluirMidia";
@@ -535,13 +534,6 @@ function adicionarMidia(conteudo) {
   img.onerror = () => {
     img.src = "/assets/capa.png";
   };
-}
-
-  listaMidias.appendChild(card);
-
-  img.onerror = () => {
-  img.src = "/assets/capaDefault.jpg";
-};
 }
 
 function getVideoThumbnail(url, thumbnail_url) {
