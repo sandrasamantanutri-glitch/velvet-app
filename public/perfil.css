@@ -105,7 +105,7 @@ body {
 
 /* LOCAL */
 .local-icons {
-  padding: 30px 20px;
+  padding: 35px 20px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -114,7 +114,7 @@ body {
 }
 
 .local-icons img {
-  width: 30px;
+  width: 35px;
 }
 
 .icon-group {
@@ -133,7 +133,7 @@ body {
   margin: 18px auto;
   background: #f1f1f1;
   border-radius: 18px !Important;
-  padding: 16px;
+  padding: 20px;
   color: #1E1E26;
   position: relative;
 }
@@ -164,7 +164,7 @@ body {
   border: none;
   border-radius: 14px;
   padding: 14px;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
   background: #7b2cff;
   color: #fff;
