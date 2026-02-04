@@ -79,6 +79,7 @@ const btnChat = document.getElementById("btnChat");
 const btnVip  = document.getElementById("btnVip");
 const btnSalvarBio = document.getElementById("btnSalvarBio");
 const bioInput     = document.getElementById("bioInput");
+const localInput     = document.getElementById("localInput");
 
 // ===============================
 // INIT

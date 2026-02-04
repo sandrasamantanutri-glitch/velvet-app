@@ -1229,7 +1229,8 @@ app.get("/api/me", auth, (req, res) => {
     avatar: dados.avatar,
     capa: dados.capa,
     bio: dados.bio || "",
-    nome: dados.nome || "Modelo"
+    nome: dados.nome || "Modelo",
+    local: dados.nome || "",
   });
 });
 
@@ -1549,6 +1550,7 @@ if (!Number.isInteger(modelo_id) || modelo_id <= 0) {
         m.bio,
         m.avatar,
         m.capa
+        m.local
       FROM modelos m
       WHERE m.user_id = $1
       `,
