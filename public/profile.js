@@ -88,7 +88,6 @@ document.addEventListener("DOMContentLoaded", () => {
   aplicarRoleNoBody();
   iniciarPerfil();
   iniciarUploads();
-  iniciarBioPopup();
 
   document.getElementById("btnVipPix")?.addEventListener("click", () => {
   fecharEscolha();
@@ -115,7 +114,16 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   window.location.href = "/chatcliente.html";
 
+  const btnUpload = document.querySelector(".btn-upload");
+ const inputUpload = document.getElementById("inputUpload");
+
+ btnUpload?.addEventListener("click", (e) => {
+  e.preventDefault();
+  inputUpload.click();
+ });
+
 });
+
 
 // ===============================
 // FECHAR MODAL DE MÍDIA (X)
@@ -406,80 +414,228 @@ inputCapa?.addEventListener("change", async () => {
   }
 });
 
-inputCapa?.addEventListener("change", async () => {
-    const file = inputCapa.files[0];
-    if (!file) return;
+// inputCapa?.addEventListener("change", async () => {
+//     const file = inputCapa.files[0];
+//     if (!file) return;
 
-    const fd = new FormData();
-    fd.append("capa", file);
+//     const fd = new FormData();
+//     fd.append("capa", file);
 
-    const res = await fetch("/uploadCapa", {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer " + token
-      },
-      body: fd
-    });
+//     const res = await fetch("/uploadCapa", {
+//       method: "POST",
+//       headers: {
+//         Authorization: "Bearer " + token
+//       },
+//       body: fd
+//     });
 
-    const data = await res.json();
-    if (data.url) {
-      capaImg.src = data.url; // 🔥 atualiza na hora
-    }
-  });
+//     const data = await res.json();
+//     if (data.url) {
+//       capaImg.src = data.url; // 🔥 atualiza na hora
+//     }
+//   });
 
-btnSalvarBio?.addEventListener("click", async () => {
-  const bio = bioInput.value.trim();
-  if (!bio) return;
+// btnSalvarBio?.addEventListener("click", async () => {
+//   const bio = bioInput.value.trim();
+//   if (!bio) return;
 
-  const res = await fetch("/api/modelo/bio", {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + token
-    },
-    body: JSON.stringify({ bio })
-  });
+//   const res = await fetch("/api/modelo/bio", {
+//     method: "PUT",
+//     headers: {
+//       "Content-Type": "application/json",
+//       Authorization: "Bearer " + token
+//     },
+//     body: JSON.stringify({ bio })
+//   });
 
-  if (res.ok) {
-    profileBio.textContent = bio;
+//   if (res.ok) {
+//     profileBio.textContent = bio;
 
-    // ✅ FECHA O POPUP
-    const popupBio = document.getElementById("popupBio");
-    popupBio.classList.add("hidden");
-  } else {
-    alert("Erro ao salvar bio");
-  }
-});
+//     // ✅ FECHA O POPUP
+//     const popupBio = document.getElementById("popupBio");
+//     popupBio.classList.add("hidden");
+//   } else {
+//     alert("Erro ao salvar bio");
+//   }
+// });
 
 function iniciarUploads() {
-  inputMedia?.addEventListener("change", async () => {
-    const file = inputMedia.files[0];
+  if (!inputUpload) return;
+
+  inputUpload.addEventListener("change", () => {
+    const file = inputUpload.files[0];
     if (!file) return;
 
-    const fd = new FormData();
-    fd.append("midia", file);
-     if (file.type.startsWith("video")) {
-    const thumbBlob = await gerarThumbnailVideo(file);
-    fd.append("thumbnail", thumbBlob, "thumb.jpg");
-  }
-  const res = await fetch("/api/feed/upload", {
-    method: "POST",
-    headers: { Authorization: "Bearer " + token },
-    body: fd
+    const url = URL.createObjectURL(file);
+
+    abrirPreviewUpload(file, url);
+
+    inputUpload.value = "";
   });
-
-  if (!res.ok) {
-    alert("Erro ao enviar mídia");
-    return;
-  }
-
-  carregarFeed(); // recarrega feed normalmente
-});
+  
+  if (role !== "modelo") {
+  document.querySelector(".btn-upload")?.remove();
+ }
 }
+
 
 // ===============================
 // MIDIA
 // ===============================
+function abrirModalVenda(c) {
+  const modal = document.createElement("div");
+  modal.className = "modal-midia";
+  modal.addEventListener("click", e => e.stopPropagation());
+
+  modal.innerHTML = `
+    <div class="modal-backdrop"></div>
+
+    <div class="modal-conteudo venda-modal">
+      <img
+        src="${getVideoThumbnail(c.url, c.thumbnail_url)}"
+        class="midia-thumb"
+      >
+
+      <h3>Conteúdo Exclusivo</h3>
+      <p>${c.descricao || "Conteúdo exclusivo para desbloqueio"}</p>
+
+      <button class="btn-comprar">
+        Desbloquear por R$ ${Number(c.preco).toFixed(2)}
+      </button>
+    </div>
+  `;
+
+  modal.querySelector(".modal-backdrop").onclick = () => modal.remove();
+  document.body.appendChild(modal);
+}
+
+
+function abrirPreviewUpload(file, url) {
+  const modal = document.createElement("div");
+  modal.className = "modal-midia";
+  modal.addEventListener("click", e => e.stopPropagation());
+
+  modal.innerHTML = `
+    <div class="modal-backdrop"></div>
+    <div class="modal-conteudo upload-preview">
+      ${
+        file.type.startsWith("video")
+          ? `<video src="${url}" controls autoplay muted playsinline></video>`
+          : `<img src="${url}">`
+      }
+      <div class="upload-box">
+      <p class="upload-titulo">Escolha onde deseja adicionar a mídia:</p>
+     <div class="upload-opcoes">
+  <button class="upload-tab active" data-value="feed">🎁 Pra você</button>
+  <button class="upload-tab" data-value="venda">🔥 Especial</button>
+</div>
+
+<input type="hidden" name="tipo_conteudo" value="feed">
+
+
+  <div class="upload-especial hidden">
+    <input
+      type="number"
+      id="upload-preco"
+      placeholder="Preço (R$)"
+      min="0"
+      step="0.01"
+    >
+
+    <textarea
+      id="upload-descricao"
+      placeholder="Descrição do conteúdo"
+      rows="3"
+    ></textarea>
+  </div>
+
+  <button class="btn-confirmar">Publicar</button>
+   </div>
+  `;
+
+  const fecharModal = () => {
+    URL.revokeObjectURL(url);
+    modal.remove();
+  };
+
+  modal.querySelector(".modal-backdrop").onclick = fecharModal;
+
+  const tabs = modal.querySelectorAll(".upload-tab");
+  const hiddenTipo = modal.querySelector("input[name='tipo_conteudo']");
+  const boxEspecial = modal.querySelector(".upload-especial");
+
+  tabs.forEach(tab => {
+  tab.onclick = () => {
+     tabs.forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+
+     const valor = tab.dataset.value;
+    hiddenTipo.value = valor;
+     boxEspecial.classList.toggle("hidden", valor !== "venda");
+     };
+  });
+  const btnPublicar = modal.querySelector(".btn-confirmar");
+  btnPublicar.onclick = async () => {
+  btnPublicar.disabled = true;
+  btnPublicar.textContent = "Enviando...";
+  
+  try {
+    const tipoConteudo = hiddenTipo.value;
+    const preco = modal.querySelector("#upload-preco")?.value;
+    const descricao = modal.querySelector("#upload-descricao")?.value;
+
+    await enviarMidia(file, {
+        tipo_conteudo: tipoConteudo,
+        preco,
+        descricao
+    });
+
+    const abaAtiva = document.querySelector(".midias-tabs .tab.active");
+     if (role === "modelo") {
+  carregarFeed();
+} else {
+  carregarFeedPublico();
+}
+      
+    fecharModal();
+   } catch (err) {
+    console.error(err);
+    btnPublicar.disabled = false;
+    btnPublicar.textContent = "Publicar";
+    alert("Erro ao enviar mídia");
+    }
+  };
+  
+  document.body.appendChild(modal);
+}
+
+async function enviarMidia(file, dados = {}) {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("user_id", modelo_id); // ✅ corrigido
+
+  if (dados.tipo_conteudo) {
+    formData.append("tipo_conteudo", dados.tipo_conteudo);
+  }
+
+  if (dados.tipo_conteudo === "venda") {
+    formData.append("preco", dados.preco || 0);
+    formData.append("descricao", dados.descricao || "");
+  }
+
+  const res = await fetch("/upload", {
+    method: "POST",
+    body: formData
+  });
+
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+
+  return res.json();
+}
+
+
 function adicionarMidia(conteudo) {
   const { id, url, tipo, thumbnail_url } = conteudo;
   const isVideo = tipo === "video";
@@ -512,10 +668,13 @@ function adicionarMidia(conteudo) {
         abrirPopupVelvet({ tipo: "vip" });
       }
     };
+    } else {
+  if (conteudo.tipo_conteudo === "venda" && role !== "modelo") {
+    card.onclick = () => abrirModalVenda(conteudo);
   } else {
     card.onclick = () => abrirModalMidia(url, isVideo);
   }
-
+}
   // ❌ excluir (só modelo)
   if (role === "modelo") {
     const btnExcluir = document.createElement("button");

@@ -105,11 +105,11 @@ body {
 
 /* LOCAL */
 .local-icons {
-  padding: 35px 20px;
+  padding: 20px 20px;
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 18px;
+  font-size: 22px;
   color: #1E1E26;
 }
 
@@ -118,7 +118,7 @@ body {
 }
 
 .icon-group {
-  padding: 0 16px 30px;
+  padding: 0 30px 20px;
   display: flex;
   gap: 12px;
 }
