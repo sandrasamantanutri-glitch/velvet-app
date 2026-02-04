@@ -693,7 +693,13 @@ function adicionarMidia(conteudo) {
     img.src = "/assets/capa.png";
   };
 
-  listaMidias.appendChild(card);
+ const gridDestino =
+  tipo_conteudo === "venda"
+    ? document.getElementById("midias-paid")
+    : document.getElementById("listaMidias");
+
+ gridDestino?.appendChild(card);
+
 }
 
 
