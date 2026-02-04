@@ -68,7 +68,7 @@ body {
 /* CAPA */
 .perfil-capa img {
   width: 100%;
-  height: 160px;
+  height: 190px;
   object-fit: cover;
   background: linear-gradient(135deg, #9e6bff, #7b2cff);
 }
@@ -76,7 +76,7 @@ body {
 /* AVATAR */
 .perfil-avatar {
   position: absolute;
-  top: 120px;
+  top: 140px;
   left: 16px;
   width: 95px;
   height: 95px;
