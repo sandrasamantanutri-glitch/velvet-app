@@ -472,7 +472,7 @@ function iniciarUploads() {
 
     inputUpload.value = "";
   });
-  
+
   if (role !== "modelo") {
   document.querySelector(".btn-upload")?.remove();
  }
@@ -704,7 +704,7 @@ function getVideoThumbnail(url, thumbnail_url) {
   }
 
   // 🔒 BACKBLAZE OU QUALQUER OUTRO → fallback
-  return "/assets/capaDefault.jpg";
+  return "/assets/capa.png";
 }
 
 async function gerarThumbnailVideo(file) {

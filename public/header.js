@@ -4,7 +4,6 @@
 function carregarHeader() {
   // evita duplicar
   if (document.querySelector(".app-header")) {
-    montarMenuPorRole();
     initHeaderMenu();
     ligarBotoesPerfilModelo();
     return;
@@ -22,7 +21,6 @@ function carregarHeader() {
       container.insertAdjacentHTML("afterbegin", html);
 
       // 🔑 AGORA os elementos existem
-      montarMenuPorRole();
       initHeaderMenu();
       ligarBotoesPerfilModelo(); 
     })
