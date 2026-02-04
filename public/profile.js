@@ -79,6 +79,7 @@ const btnVip  = document.getElementById("btnVip");
 const btnSalvarBio = document.getElementById("btnSalvarBio");
 const bioInput     = document.getElementById("bioInput");
 const localEl = document.getElementById("local-texto");
+const inputUpload = document.getElementById("inputUpload");
 
 // ===============================
 // INIT
@@ -92,7 +93,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // BOTÃO + UPLOAD
   // ===============================
   const btnUpload = document.querySelector(".btn-upload");
-  const inputUpload = document.getElementById("inputUpload");
 
   btnUpload?.addEventListener("click", (e) => {
     e.preventDefault();
@@ -355,24 +355,6 @@ function fecharEscolha() {
 }
 
 // ===============================
-// BIO
-// ===============================
-function iniciarBioPopup() {
-  const btnEditarBio = document.getElementById("btnEditarBio");
-  const popupBio = document.getElementById("popupBio");
-  const btnFecharPopup = document.getElementById("btnFecharPopup");
-
-  if (!btnEditarBio || !popupBio) return;
-
-  btnEditarBio.onclick = () => {
-    bioInput.value = profileBio.textContent.trim();
-    popupBio.classList.remove("hidden");
-  };
-
-  btnFecharPopup.onclick = () => popupBio.classList.add("hidden");
-}
-
-// ===============================
 // UPLOAD AVATAR
 // ===============================
 inputAvatar?.addEventListener("change", async () => {
@@ -472,9 +454,14 @@ inputCapa?.addEventListener("change", async () => {
 // });
 
 function iniciarUploads() {
-  if (!inputUpload) return;
+  if (!inputUpload) {
+    console.warn("inputUpload não encontrado");
+    return;
+  }
 
-  inputUpload.addEventListener("change", () => {
+  inputUpload.addEventListener("change", (e) => {
+    e.preventDefault();
+
     const file = inputUpload.files[0];
     if (!file) return;
 
@@ -486,10 +473,9 @@ function iniciarUploads() {
   });
 
   if (role !== "modelo") {
-  document.querySelector(".btn-upload")?.remove();
- }
+    document.querySelector(".btn-upload")?.remove();
+  }
 }
-
 
 // ===============================
 // MIDIA
