@@ -20,25 +20,22 @@
 </header>
 
 <main>
-
-<div class="ofertas-page">
+<div class="ofertas-container">
 
   <!-- HEADER -->
-  <div class="ofertas-header">
+  <div class="ofertas-topo">
+    <button class="btn-voltar">←</button>
     <h2>Ofertas</h2>
-    <button class="btn-criar" id="btnCriarOferta">+ Criar oferta</button>
   </div>
 
   <!-- TABS -->
   <div class="ofertas-tabs">
-    <button class="tab active" data-tab="ativas">Ofertas ativas</button>
-    <button class="tab" data-tab="inativas">Ofertas inativas</button>
+    <button class="tab active" data-tab="ativas">Ativas</button>
+    <button class="tab" data-tab="inativas">Inativas</button>
   </div>
 
-  <!-- LISTA DE OFERTAS -->
-  <div class="ofertas-lista" id="listaOfertas">
-    <!-- cards via JS -->
-  </div>
+  <!-- LISTA -->
+  <div class="ofertas-lista" id="ofertasLista"></div>
 
 </div>
 

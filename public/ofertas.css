@@ -1,96 +1,185 @@
-.ofertas-page {
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.hidden {
+  display: none !important;
+}
+
+body {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background:#f1f1f1;
+  color: #7B2CFF;
+  padding-top: 64px; 
+}
+
+.app-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 64px;
+  background: #f1f1f1;
+  border-bottom: 1px solid #eee;
+  z-index: 1000;
+}
+
+.header-inner {
+  max-width: 1100px;
+  height: 100%;
+  margin: 0 auto;
+  padding: 0 16px;
+
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.velvet-logo {
+  height: 40px !Important;
+  margin-right: auto;
+}
+
+.header-inner img {
+  height: 30px;
+}
+
+.page-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px 16px 80px;
+}
+
+
+body {
+  background: #F7F3EF;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont;
+}
+
+.ofertas-container {
   padding: 16px;
 }
 
-.ofertas-header {
+/* topo */
+.ofertas-topo {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  gap: 12px;
 }
 
-.ofertas-header h2 {
-  font-size: 22px;
+.ofertas-topo h2 {
+  flex: 1;
+  text-align: center;
+  font-size: 20px;
 }
 
-.btn-criar {
-  background: #7B2CFF;
-  color: #fff;
+.btn-voltar {
+  background: none;
   border: none;
-  padding: 10px 14px;
-  border-radius: 10px;
-  font-size: 14px;
-  cursor: pointer;
+  font-size: 20px;
 }
 
+/* tabs */
 .ofertas-tabs {
   display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
+  margin-top: 16px;
+  border-bottom: 1px solid #ddd;
 }
 
 .ofertas-tabs .tab {
   flex: 1;
-  padding: 10px;
-  border-radius: 10px;
-  border: 1px solid #E6E6EA;
-  background: #fff;
-  cursor: pointer;
+  padding: 12px;
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: #999;
 }
 
 .ofertas-tabs .tab.active {
-  background: #7B2CFF;
-  color: #fff;
-  border-color: #7B2CFF;
+  color: #F28C38;
+  border-bottom: 3px solid #F28C38;
 }
 
-.ofertas-lista {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-/* CARD */
+/* card */
 .oferta-card {
-  border: 1px solid #E6E6EA;
+  background: #fff;
+  border-radius: 18px;
+  padding: 16px;
+  margin-top: 20px;
+}
+
+.oferta-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.oferta-header h3 {
+  margin: 0;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.status .dot {
+  width: 10px;
+  height: 10px;
+  background: #28a745;
+  border-radius: 50%;
+}
+
+.oferta-info {
+  margin-top: 8px;
+  color: #666;
+  font-size: 14px;
+}
+
+/* valores */
+.valores-box {
+  background: #F3EFEA;
   border-radius: 14px;
   padding: 14px;
-  background: #fff;
+  margin-top: 16px;
 }
 
-.oferta-card h4 {
-  margin: 0 0 6px;
-}
-
-.oferta-card .valor {
-  font-size: 20px;
-  font-weight: bold;
-  color: #7B2CFF;
-}
-
-.oferta-card .acoes {
-  margin-top: 10px;
+.valores-linha {
   display: flex;
-  gap: 8px;
+  justify-content: space-between;
+  margin-bottom: 6px;
 }
 
-.oferta-card button {
-  flex: 1;
-  padding: 8px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
+.desconto {
+  color: #F28C38;
 }
 
-.btn-desativar {
-  background: #eee;
+/* detalhes */
+.oferta-detalhes {
+  margin-top: 16px;
+  font-size: 14px;
 }
 
-.btn-ativar {
-  background: #7B2CFF;
-  color: #fff;
+.oferta-detalhes div {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
 }
 
+/* botão */
+.btn-encerrar {
+  margin-top: 16px;
+  width: 100%;
+  padding: 12px;
+  border-radius: 30px;
+  border: 1px solid #000;
+  background: none;
+  font-size: 16px;
+}
 
 .modal-overlay {
   position: fixed;
