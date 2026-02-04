@@ -78,12 +78,33 @@ function renderOfertas() {
 /* ===============================
    AÇÕES
 =============================== */
-function encerrarOferta(id) {
-  const oferta = ofertas.find(o => o.id === id);
-  if (!oferta) return;
+async function encerrarOferta(id) {
+  if (!confirm("Tem certeza que deseja encerrar esta oferta?")) return;
 
-  oferta.ativa = false;
-  carregarOfertasDoBanco();
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    const res = await fetch(`/api/ofertas/${id}/encerrar`, {
+      method: "PUT",
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.erro || "Erro ao encerrar oferta");
+      return;
+    }
+
+    carregarOfertasDoBanco();
+
+  } catch (err) {
+    console.error(err);
+    alert("Erro ao encerrar oferta");
+  }
 }
 
 /* ===============================

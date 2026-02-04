@@ -1950,6 +1950,52 @@ app.get("/manifest.json", (req, res) => {
 // ===============================
 // ROTA POST
 // ===============================
+app.put("/api/ofertas/:id/encerrar", authModelo, async (req, res) => {
+  try {
+    const ofertaId = Number(req.params.id);
+
+    if (!Number.isInteger(ofertaId)) {
+      return res.status(400).json({ erro: "ID inválido" });
+    }
+
+    // pega modelo_id corretamente
+    const modeloRes = await db.query(
+      `SELECT id FROM modelos WHERE user_id = $1`,
+      [req.user.id]
+    );
+
+    if (modeloRes.rows.length === 0) {
+      return res.status(403).json({ erro: "Modelo não encontrado" });
+    }
+
+    const modeloId = modeloRes.rows[0].id;
+
+    // encerra oferta
+    const result = await db.query(
+      `
+      UPDATE ofertas
+      SET ativa = false,
+          data_fim = NOW()
+      WHERE id = $1
+        AND modelo_id = $2
+        AND ativa = true
+      RETURNING *
+      `,
+      [ofertaId, modeloId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ erro: "Oferta não encontrada ou já encerrada" });
+    }
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("Erro encerrar oferta:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
 app.put("/api/modelo/bio", authModelo, async (req, res) => {
   try {
     const { bio } = req.body;
