@@ -1116,7 +1116,6 @@ function abrirPopupVelvet({ tipo }) {
 
   if (tipo === "vip") {
     btn.onclick = () => {
-      popup.classList.add("hidden");
       document.getElementById("escolhaPagamento")?.classList.remove("hidden");
     };
   }
