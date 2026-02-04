@@ -166,11 +166,10 @@ body {
 }
 
 .oferta-preco-original {
-    margin-top: 8px;
-    font-size: 12px;
-    opacity: 0.9;
-    position: relative;
-    left: 300px;
+  margin-top: 8px;
+  font-size: 12px;
+  opacity: 0.9;
+  text-align: right;
 }
 
 /* ===============================
@@ -258,6 +257,109 @@ body {
 
 .btnExcluirMidia:hover {
   background: #ff3b3b;
+  opacity: 1;
+}
+
+
+/* ===============================
+   MOBILE (até 480px)
+================================ */
+@media (max-width: 480px) {
+
+  body {
+    padding-top: 56px;
+  }
+
+  /* HEADER */
+  .app-header {
+    height: 56px;
+  }
+
+  .velvet-logo {
+    height: 34px !important;
+  }
+
+  .header-inner img {
+    height: 22px;
+  }
+
+  /* PERFIL */
+  .perfil-card {
+    margin: 12px;
+    border-radius: 16px;
+  }
+
+  .perfil-capa img {
+    height: 140px;
+  }
+
+  .perfil-avatar {
+    top: 100px;
+    left: 12px;
+    width: 80px;
+    height: 80px;
+  }
+
+  .perfil-nome {
+    margin-top: 52px;
+    font-size: 18px;
+  }
+
+  .perfil-bio {
+    font-size: 13px;
+  }
+
+  .local-icons {
+    font-size: 12px;
+  }
+
+  .icon-group img {
+    width: 20px;
+  }
+
+  /* OFERTA */
+  .oferta-card {
+    margin: 12px;
+    padding: 14px;
+  }
+
+  .oferta-botao {
+    padding: 12px;
+    font-size: 15px;
+  }
+
+  /* MÍDIAS */
+  .midias-section {
+    margin: 12px;
+  }
+
+  .midias-topo {
+    padding: 0 4px 8px;
+  }
+
+  .btn-upload img {
+    width: 22px;
+  }
+
+  .midias-tabs .tab {
+    padding: 7px 12px;
+    font-size: 12px;
+  }
+
+  .midias-grid {
+    gap: 4px;
+    padding: 4px;
+  }
+
+  /* BOTÃO EXCLUIR (DEDÃO FRIENDLY) */
+  .btnExcluirMidia {
+    width: 30px;
+    height: 30px;
+    font-size: 18px;
+  }
+}
+
+.role-modelo .btnExcluirMidia {
   opacity: 1;
 }
 
