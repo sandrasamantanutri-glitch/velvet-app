@@ -1,3 +1,11 @@
+const token = localStorage.getItem("token");
+const role  = localStorage.getItem("role");
+
+if (token && window.io) {
+  const socket = io();
+  socket.emit("auth", { token });
+}
+
 // ===============================
 // PERFIL.JS — VERSÃO BLINDADA
 // ===============================
