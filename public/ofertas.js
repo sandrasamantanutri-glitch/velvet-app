@@ -279,6 +279,7 @@ function abrirModalCriarOferta() {
     try {
       const res = await fetch("/api/ofertas", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
