@@ -164,6 +164,7 @@ async function uploadThumbB2(buffer) {
 }
 
 //APP POST ROTAS ////
+//MIDIAS
 app.post(
   "/api/upload",
   auth,
@@ -220,6 +221,71 @@ app.post(
     }
   }
 );
+
+//OFERTAS
+app.post("/api/ofertas", auth, async (req, res) => {
+  try {
+    const modeloId = req.user.id;
+
+    const {
+      nome,
+      limite,
+      dias,
+      desconto,
+      mensagem
+    } = req.body;
+
+    const VALOR_BASE = 20;
+    const VALOR_MINIMO = 15;
+
+    const valorPromocional = Math.max(
+      VALOR_BASE * (1 - desconto / 100),
+      VALOR_MINIMO
+    );
+
+    const dataFim = new Date();
+    dataFim.setDate(dataFim.getDate() + dias);
+
+    const result = await db.query(
+      `
+      INSERT INTO ofertas (
+        modelo_id,
+        nome,
+        limite_assinaturas,
+        desconto_percentual,
+        valor_base,
+        valor_promocional,
+        data_fim,
+        mensagem
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+      RETURNING *
+      `,
+      [
+        modeloId,
+        nome,
+        limite,
+        desconto,
+        VALOR_BASE,
+        valorPromocional,
+        dataFim,
+        mensagem
+      ]
+    );
+
+    res.json(result.rows[0]);
+
+  } catch (err) {
+    if (err.code === "23505") {
+      return res.status(400).json({
+        erro: "Você já possui uma oferta ativa"
+      });
+    }
+    console.error(err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
 
 app.post(
   "/webhook/stripe",
@@ -1151,6 +1217,24 @@ socket.on("excluirMensagem", async ({ id }) => {
 // ===============================
 //ROTA GET
 // ===============================
+//OFERTAS QUANDO ENCERRAR
+app.get("/api/ofertas", auth, async (req, res) => {
+  await db.query("SELECT encerrar_ofertas_expiradas()");
+
+  const result = await db.query(
+    `
+    SELECT *
+    FROM ofertas
+    WHERE modelo_id = $1
+    ORDER BY created_at DESC
+    `,
+    [req.user.id]
+  );
+
+  res.json(result.rows);
+});
+
+
 app.get("/api/vip/status/:modelo_id", authCliente, async (req, res) => {
   const cliente_id = req.user.id;
   const modelo_id = Number(req.params.modelo_id);
@@ -2989,6 +3073,22 @@ setInterval(async () => {
 }, 60 * 60 * 1000); // roda a cada 1 hora
 
 app.use("/", servercontent);
+
+//ENCERRAR OFERTA MANUALMENTE
+app.patch("/api/ofertas/:id/encerrar", auth, async (req, res) => {
+  const result = await db.query(
+    `
+    UPDATE ofertas
+    SET ativa = false
+    WHERE id = $1 AND modelo_id = $2
+    RETURNING *
+    `,
+    [req.params.id, req.user.id]
+  );
+
+  res.json(result.rows[0]);
+});
+
 
 // ===============================
 // START SERVER
