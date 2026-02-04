@@ -13,21 +13,43 @@
   <div class="header-inner">
    <img src="/assets/velvet.png" alt="Velvet" class="velvet-logo">
    <a href="/feed.html" title="Feed"><img src="/assets/feed.png" alt="Feed"></a>
-   <a href="/chat.html" title="Chat"><img src="/assets/chat.png" alt="Chat"></a>
    <a href="/perfil.html" title="Perfil"><img src="/assets/perfil.png" alt="Perfil"></a>
    <button id="btnMensagem"><img src="assets/chat.png" alt="Chat"><span id="badgeUnread" class="badge-unread hidden">0</span></button>
-   <button id="menuBtn" class="menu-btn">☰</button>
-   <div id="userMenu" class="menu-superior"></div>
   </div>
 
 </header>
 
+<div id="headerCapa" class="headerCapa"></div>
+
 <div class="perfil-card">
-<div class="perfil-capa"> <img id="capaImg" src="/assets/capa.png" alt="Capa da modelo"/></div>
-<div class="perfil-avatar"><img id="profileAvatar" src="/assets/avatar.png" alt="Avatar da modelo"/>
-<div class="perfil-nome" id="nomeEl"></div>
-<div class="perfil-bio" id="profileBio"></div>
-<div class="local-icons"><img src="/assets/local.png" alt="Local"> <span id="local-texto"></span></div>
+  
+  <div class="perfil-capa">
+    <img
+      id="profileCapa"
+      src="/assets/capa.png"
+      alt="Capa da modelo"
+    >
+    <input type="file" id="inputCapa" accept="image/*" hidden>
+  </div>
+
+  <div class="perfil-avatar">
+    <img
+      id="profileAvatar"
+      src="/assets/avatar.png"
+      alt="Avatar da modelo"
+    >
+    <input type="file" id="inputAvatar" accept="image/*" hidden>
+  </div>
+
+  <div class="perfil-nome" id="profileName"></div>
+  <div class="perfil-bio" id="profileBio"></div>
+
+  <div class="local-icons">
+    <img src="/assets/local.png" alt="Local">
+    <span id="local-texto"></span>
+  </div>
+
+</div>
 
 <div class="icon-group">
   <img src="/assets/insta.png" alt="Instagram">
