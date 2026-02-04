@@ -73,7 +73,6 @@ const nomeEl     = document.getElementById("profileName");
 const profileBio = document.getElementById("profileBio");
 const inputAvatar = document.getElementById("inputAvatar");
 const inputCapa   = document.getElementById("inputCapa");
-const inputMedia  = document.getElementById("inputMedia");
 const listaMidias = document.getElementById("listaMidias");
 const btnChat = document.getElementById("btnChat");
 const btnVip  = document.getElementById("btnVip");

@@ -60,23 +60,32 @@
   </div>
   </div>
 
- <div class="midias-section">
+<div class="midias-section">
+
   <div class="midias-topo">
-   <a href="#" class= "btn-upload" title="upload"><img src="/assets/more.png" alt="Carregar Midias"></a>
-   <input type="file" id="inputUpload" accept="image/*,video/*"hidden/>
+    <a href="#" class="btn-upload" title="upload">
+      <img src="/assets/more.png" alt="Carregar Midias">
+    </a>
 
-   <div class="midias-tabs">
-    <button class="tab active" data-tab="free"> 🎁 Pra você</button>
-    <button class="tab" data-tab="paid">🔥 Especial</button>
-   </div>
+    <input
+      type="file"
+      id="inputUpload"
+      accept="image/*,video/*"
+      hidden
+    />
 
+    <div class="midias-tabs">
+      <button class="tab active" data-tab="free">🎁 Pra você</button>
+      <button class="tab" data-tab="paid">🔥 Especial</button>
+    </div>
   </div>
-  </div>
 
+  <!-- 🔥 GRID TEM QUE ESTAR AQUI DENTRO -->
   <div class="midias-grid active" id="listaMidias"></div>
   <div class="midias-grid" id="midias-paid"></div>
 
 </div>
+
 </main>
 
 <script src="/socket.io/socket.io.js"></script>
