@@ -91,13 +91,13 @@ body {
 /* TEXTO PERFIL */
 .perfil-nome {
   margin-top: 56px;
-  padding: 0 16px;
+  padding: 0 30px;
   font-size: 20px;
   font-weight: 700;
 }
 
 .perfil-bio {
-  padding: 6px 16px 0;
+  padding: 6px 30px 0;
   font-size: 14px;
   color: #1E1E26;
   line-height: 1.4;
@@ -105,7 +105,7 @@ body {
 
 /* LOCAL */
 .local-icons {
-  padding: 10px 16px;
+  padding: 10px 30px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -118,7 +118,7 @@ body {
 }
 
 .icon-group {
-  padding: 0 16px 16px;
+  padding: 0 16px 30px;
   display: flex;
   gap: 12px;
 }
@@ -129,7 +129,7 @@ body {
 }
 
 .oferta-card {
-  max-width: 450px !Important;
+  max-width: 900px !Important;
   margin: 18px auto;
   background: #f1f1f1;
   border-radius: 18px !Important;
@@ -190,7 +190,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 8px 10px;
+  padding: 0 8px 30px;
 }
 
 .btn-upload img {
@@ -222,7 +222,7 @@ body {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 6px;
-  padding: 8px;
+  padding: 30px;
 }
 
 .midias-grid img {
