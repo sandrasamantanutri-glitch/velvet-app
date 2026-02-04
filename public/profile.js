@@ -79,6 +79,7 @@ const btnVip  = document.getElementById("btnVip");
 const btnSalvarBio = document.getElementById("btnSalvarBio");
 const bioInput     = document.getElementById("bioInput");
 const localEl = document.getElementById("local-texto");
+const btnUpload = document.querySelector(".btn-upload");
 const inputUpload = document.getElementById("inputUpload");
 
 // ===============================
@@ -87,16 +88,7 @@ const inputUpload = document.getElementById("inputUpload");
 document.addEventListener("DOMContentLoaded", () => {
   aplicarRoleNoBody();
   iniciarPerfil();
-
-  // ===============================
-  // BOTÃO + UPLOAD
-  // ===============================
-  const btnUpload = document.querySelector(".btn-upload");
-
-  btnUpload?.addEventListener("click", (e) => {
-    e.preventDefault();
-    inputUpload?.click();
-  });
+  iniciarUploads();
 
   // ===============================
   // VIP PIX
@@ -401,29 +393,7 @@ inputCapa?.addEventListener("change", async () => {
   }
 });
 
-function iniciarUploads() {
-  if (!inputUpload) {
-    console.warn("inputUpload não encontrado");
-    return;
-  }
 
-  inputUpload.addEventListener("change", (e) => {
-    e.preventDefault();
-
-    const file = inputUpload.files[0];
-    if (!file) return;
-
-    const url = URL.createObjectURL(file);
-
-    abrirPreviewUpload(file, url);
-
-    inputUpload.value = "";
-  });
-
-  if (role !== "modelo") {
-    document.querySelector(".btn-upload")?.remove();
-  }
-}
 
 // ===============================
 // MIDIA
@@ -455,7 +425,38 @@ function abrirModalVenda(c) {
   document.body.appendChild(modal);
 }
 
+//CARREGAR MIDIAS //
+  btnUpload?.addEventListener("click", (e) => {
+    e.preventDefault();
+    inputUpload?.click();
+  });
 
+//1º FUNÇÃO
+function iniciarUploads() {
+  if (!inputUpload) {
+    console.warn("inputUpload não encontrado");
+    return;
+  }
+
+  inputUpload.addEventListener("change", (e) => {
+    e.preventDefault();
+
+    const file = inputUpload.files[0];
+    if (!file) return;
+
+    const url = URL.createObjectURL(file);
+
+    abrirPreviewUpload(file, url);
+
+    inputUpload.value = "";
+  });
+
+  if (role !== "modelo") {
+    document.querySelector(".btn-upload")?.remove();
+  }
+}
+
+//2ºFUNÇÃO
 function abrirPreviewUpload(file, url) {
   const modal = document.createElement("div");
   modal.className = "modal-midia";
