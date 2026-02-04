@@ -31,11 +31,6 @@ if (modo === "publico") {
   localStorage.removeItem("modelo_id");
 }
 
-  const ofertaCard = document.getElementById("oferta-card");
-  if (!role) {
-  ofertaCard.style.display = "block";
-}
-
 let modelo_id = modeloParam
   ? Number(modeloParam)
   : role === "modelo"
@@ -279,12 +274,18 @@ async function carregarPerfilPublico() {
 
   aplicarPerfilNoDOM(modelo);
 
+const ofertaCard = document.getElementById("oferta-card");
+
+// 🔹 VISITANTE
+if (!role) {
+  ofertaCard.style.display = "block";
+}
+
+// 🔹 CLIENTE
 if (role === "cliente") {
   try {
     const vipRes = await fetch(`/api/vip/status/${modelo_id}`, {
-      headers: {
-        Authorization: "Bearer " + token
-      }
+      headers: { Authorization: "Bearer " + token }
     });
 
     const vipData = vipRes.ok ? await vipRes.json() : { vip: false };
@@ -304,6 +305,11 @@ if (role === "cliente") {
     window.__CLIENTE_VIP__ = false;
     ofertaCard.style.display = "block";
   }
+}
+
+// 🔹 MODELO
+if (role === "modelo") {
+  ofertaCard.style.display = "block";
 }
 
 // 🔹 MODELO
@@ -943,12 +949,6 @@ socket.on("vipAtivado", ({ modelo_id: modeloVip }) => {
 
   // 🔥 atualiza estado local
   window.__CLIENTE_VIP__ = true;
-
-  // 🔘 botão vira VIP ativo
-  if (btnVip) {
-    btnVip.textContent = "VIP ativo";
-    btnVip.disabled = true;
-  }
 
   // 🔓 desbloqueia conteúdos
   carregarFeedPublico();
