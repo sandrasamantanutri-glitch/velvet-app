@@ -230,6 +230,13 @@ app.post("/api/ofertas", authModelo, async (req, res) => {
   try {
     const modeloId = req.user.modelo_id;
 
+    if (!modeloId) {
+  console.error("🔥 MODELO ID AUSENTE NO TOKEN:", req.user);
+  return res.status(401).json({
+    erro: "Token inválido: modelo_id ausente"
+  });
+}
+
     console.log("CRIANDO OFERTA PARA MODELO:", modeloId);
      console.log("=== CRIAR OFERTA ===");
   console.log("USER:", req.user);
