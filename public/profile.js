@@ -88,7 +88,6 @@ const inputUpload = document.getElementById("inputUpload");
 document.addEventListener("DOMContentLoaded", () => {
   aplicarRoleNoBody();
   iniciarPerfil();
-  iniciarUploads();
 
   // ===============================
   // VIP PIX
