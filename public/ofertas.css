@@ -85,7 +85,7 @@ body {
 .ofertas-tabs {
   display: flex;
   margin-top: 16px;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid #f1f1f1;
 }
 
 .ofertas-tabs .tab {
@@ -94,12 +94,12 @@ body {
   background: none;
   border: none;
   font-size: 16px;
-  color: #999;
+  color: #C9C9C9;
 }
 
 .ofertas-tabs .tab.active {
-  color: #F28C38;
-  border-bottom: 3px solid #F28C38;
+  color: #7B2CFF;
+  border-bottom: 3px solid #f1f1f1;
 }
 
 /* card */
@@ -155,7 +155,7 @@ body {
 }
 
 .desconto {
-  color: #F28C38;
+  color: #28a745;
 }
 
 /* detalhes */
@@ -176,7 +176,7 @@ body {
   width: 100%;
   padding: 12px;
   border-radius: 30px;
-  border: 1px solid #000;
+  border: 1px solid #7B2CFF;;
   background: none;
   font-size: 16px;
 }
@@ -330,7 +330,7 @@ body {
   padding: 10px 18px;
   border-radius: 30px;
   border: none;
-  background: #F28C38;
+  background: #7B2CFF;;
   color: #fff;
   font-size: 15px;
   font-weight: 500;
