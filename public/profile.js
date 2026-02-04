@@ -516,16 +516,7 @@ function adicionarMidia(conteudo) {
   }
 
   // ❌ excluir (só modelo)
-  if (role === "modelo") {
-    const btnExcluir = document.createElement("button");
-    btnExcluir.className = "btnExcluirMidia";
-    btnExcluir.textContent = "Excluir";
-    btnExcluir.onclick = (e) => {
-      e.stopPropagation();
-      excluirMidia(id, card);
-    };
-    card.appendChild(btnExcluir);
-  }
+  
 
   listaMidias.appendChild(card);
 
