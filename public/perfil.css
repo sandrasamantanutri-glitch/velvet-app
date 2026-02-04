@@ -266,105 +266,47 @@ body {
   background: #ff3b3b;
   opacity: 1;
 }
-
-
-/* ===============================
-   MOBILE (até 480px)
-================================ */
-@media (max-width: 480px) {
-
-  body {
-    padding-top: 56px;
-  }
-
-  /* HEADER */
-  .app-header {
-    height: 56px;
-  }
-
-  .velvet-logo {
-    height: 34px !important;
-  }
-
-  .header-inner img {
-    height: 22px;
-  }
-
-  /* PERFIL */
-  .perfil-card {
-    margin: 12px;
-    border-radius: 16px;
-  }
-
-  .perfil-capa img {
-    height: 140px;
-  }
-
-  .perfil-avatar {
-    top: 100px;
-    left: 12px;
-    width: 80px;
-    height: 80px;
-  }
-
-  .perfil-nome {
-    margin-top: 52px;
-    font-size: 18px;
-  }
-
-  .perfil-bio {
-    font-size: 13px;
-  }
-
-  .local-icons {
-    font-size: 12px;
-  }
-
-  .icon-group img {
-    width: 20px;
-  }
-
-  /* OFERTA */
-  .oferta-card {
-    margin: 12px;
-    padding: 14px;
-  }
-
-  .oferta-botao {
+@media (max-width: 600px) {
+  .page-container {
     padding: 12px;
-    font-size: 15px;
   }
 
-  /* MÍDIAS */
+  .perfil-card,
+  .oferta-card,
   .midias-section {
-    margin: 12px;
+    max-width: 100%;
+    border-radius: 0;
+  }
+}
+
+@media (min-width: 900px) {
+
+  .profile-layout {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 32px;
+    align-items: start;
   }
 
-  .midias-topo {
-    padding: 0 4px 8px;
+  .perfil-card,
+  .oferta-card {
+    max-width: 100%;
   }
 
-  .btn-upload img {
-    width: 22px;
-  }
-
-  .midias-tabs .tab {
-    padding: 7px 12px;
-    font-size: 12px;
+  .midias-section {
+    max-width: 100%;
   }
 
   .midias-grid {
-    gap: 4px;
-    padding: 4px;
-  }
-
-  /* BOTÃO EXCLUIR (DEDÃO FRIENDLY) */
-  .btnExcluirMidia {
-    width: 30px;
-    height: 30px;
-    font-size: 18px;
+    grid-template-columns: repeat(4, 1fr);
   }
 }
+
+.btnExcluirMidia {
+  width: 30px;
+  height: 30px;
+  font-size: 18px;
+  }
 
 .role-modelo .btnExcluirMidia {
   opacity: 1;
