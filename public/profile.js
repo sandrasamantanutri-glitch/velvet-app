@@ -14,6 +14,9 @@ const modeloParam = params.get("id");
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
 
+
+  const btnAssinar = document.getElementById("btn-assinar");
+
 //DEFINIÇÃO SEGURA DE MODO
 let modo = "publico";
 if (token && role === "modelo" && !modeloParam) {
@@ -93,8 +96,6 @@ if (role !== "modelo" || !token) {
 document.addEventListener("DOMContentLoaded", () => {
   aplicarRoleNoBody();
   iniciarPerfil();
-
-  const btnAssinar = document.getElementById("btn-assinar");
 
   if (btnAssinar && !btnAssinar.dataset.bound) {
   btnAssinar.dataset.bound = "true";
@@ -289,12 +290,15 @@ async function carregarPerfilPublico() {
         window.__CLIENTE_VIP__ = vipData.vip === true;
 
         if (window.__CLIENTE_VIP__) {
-          btnVip.textContent = "VIP ativo";
-          btnVip.disabled = true;
-          btnChat?.classList.remove("hidden");
-        } else {
-          btnChat?.classList.add("hidden");
-        }
+  if (btnAssinar) {
+    btnAssinar.textContent = "VIP ativo 💜";
+    btnAssinar.disabled = true;
+    btnAssinar.classList.add("vip-ativo");
+  }
+  btnChat?.classList.remove("hidden");
+} else {
+  btnChat?.classList.add("hidden");
+}
       }
     } catch (err) {
       console.error("Erro ao verificar VIP:", err);
