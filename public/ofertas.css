@@ -319,3 +319,20 @@ body {
   padding: 0;
   font-size: 14px;
 }
+
+.ofertas-criar {
+  margin: 16px 0 8px;
+  display: flex;
+  justify-content: center;
+}
+
+.btn-criar-oferta {
+  padding: 10px 18px;
+  border-radius: 30px;
+  border: none;
+  background: #F28C38;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 500;
+}
+
