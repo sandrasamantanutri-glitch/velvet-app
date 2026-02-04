@@ -48,6 +48,9 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/admin", express.static(path.join(__dirname, "admin-pages")));
 app.use("/icons", express.static(path.join(__dirname, "icons")));
 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 const allowedOrigins = [
   "https://www.velvet.lat",
   "https://app-production-e7e1.up.railway.app",
@@ -225,13 +228,16 @@ app.post(
 //OFERTAS
 app.post("/api/ofertas", authModelo, async (req, res) => {
   try {
-    const modeloId = req.user.userId; // <<< AQUI
+    const modeloId = req.user.modelo_id;
 
     console.log("CRIANDO OFERTA PARA MODELO:", modeloId);
+     console.log("=== CRIAR OFERTA ===");
+  console.log("USER:", req.user);
+  console.log("BODY:", req.body);
 
     const { nome, limite, dias, desconto, mensagem } = req.body;
 
-    if (!nome || !limite || !dias || !desconto) {
+    if (!nome || limite <= 0 || dias <= 0 || desconto < 0) {
       return res.status(400).json({ erro: "Dados incompletos" });
     }
 
@@ -273,30 +279,32 @@ app.post("/api/ofertas", authModelo, async (req, res) => {
     const result = await db.query(
       `
       INSERT INTO ofertas (
-        modelo_id,
-        nome,
-        limite_assinaturas,
-        desconto_percentual,
-        valor_base,
-        valor_promocional,
-        data_fim,
-        mensagem,
-        ativa
-      )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,true)
-      RETURNING *
-      `,
-      [
-        modeloId,
-        nome,
-        limite,
-        desconto,
-        VALOR_BASE,
-        valorPromocional,
-        dataFim,
-        mensagem
-      ]
-    );
+    modelo_id,
+    nome,
+    limite_assinaturas,
+    assinaturas_usadas,
+    desconto_percentual,
+    valor_base,
+    valor_promocional,
+    data_inicio,
+    data_fim,
+    mensagem,
+    ativa
+  )
+  VALUES ($1,$2,$3,0,$4,$5,$6,NOW(),$7,$8,true)
+  RETURNING *
+     `,
+  [
+    modeloId,
+    nome,
+    limite,
+    desconto,
+    VALOR_BASE,
+    valorPromocional,
+    dataFim,
+    mensagem
+  ]
+);
 
     res.json(result.rows[0]);
 
@@ -479,9 +487,6 @@ app.post(
     }
   }
 );
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 const rateLimit = require("express-rate-limit");
 

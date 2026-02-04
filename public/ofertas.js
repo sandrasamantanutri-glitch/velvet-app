@@ -297,10 +297,10 @@ function abrirModalCriarOferta() {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.erro || "Erro ao criar oferta");
-        return;
-      }
-
+  console.error("ERRO BACKEND:", data);
+  alert(JSON.stringify(data));
+  return;
+}
       ofertas.unshift(data);
       modal.remove();
       renderOfertas();
