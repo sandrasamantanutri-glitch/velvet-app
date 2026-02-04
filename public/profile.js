@@ -456,6 +456,15 @@ function iniciarUploads() {
   }
 }
 
+function validarMidia(file) {
+  const maxSize = 50 * 1024 * 1024; // 50MB
+  if (file.size > maxSize) {
+    alert("Arquivo muito grande");
+    return false;
+  }
+  return true;
+}
+
 //2ºFUNÇÃO
 function abrirPreviewUpload(file, url) {
   const modal = document.createElement("div");
@@ -555,6 +564,15 @@ function abrirPreviewUpload(file, url) {
   document.body.appendChild(modal);
 }
 
+function mostrarLoading() {
+  document.body.classList.add("loading");
+}
+
+function esconderLoading() {
+  document.body.classList.remove("loading");
+}
+
+//3º FUNÇÃO
 async function enviarMidia(file, dados = {}) {
   const formData = new FormData();
   formData.append("file", file);
@@ -582,66 +600,69 @@ async function enviarMidia(file, dados = {}) {
 }
 
 
+//4º Função
 function adicionarMidia(conteudo) {
-  const { id, url, tipo, thumbnail_url } = conteudo;
+  const {
+    id,
+    url,
+    tipo,
+    tipo_conteudo,
+    thumbnail_url
+  } = conteudo;
+
   const isVideo = tipo === "video";
+
+  if (!listaMidias) return;
 
   const card = document.createElement("div");
   card.className = "midiaCard";
 
   const img = document.createElement("img");
   img.className = "midiaThumb";
-
-  if (isVideo) {
-    img.src = getVideoThumbnail(url, thumbnail_url);
-    card.classList.add("video");
-  } else {
-    img.src = url;
-  }
+  img.src = isVideo
+    ? getVideoThumbnail(url, thumbnail_url)
+    : url;
 
   card.appendChild(img);
 
-  // 🔒 bloqueio VIP (mantém sua lógica)
   const deveBloquear =
     role !== "modelo" && window.__CLIENTE_VIP__ !== true;
 
   if (deveBloquear) {
     card.classList.add("bloqueada");
-    card.onclick = () => {
-      if (!role) {
-        abrirPopupVelvet({ tipo: "login" });
-      } else {
-        abrirPopupVelvet({ tipo: "vip" });
-      }
-    };
-    } else {
-  if (conteudo.tipo_conteudo === "venda" && role !== "modelo") {
-    card.onclick = () => abrirModalVenda(conteudo);
+    card.addEventListener("click", () => {
+      abrirPopupVelvet({ tipo: role ? "vip" : "login" });
+    });
   } else {
-    card.onclick = () => abrirModalMidia(url, isVideo);
+    card.addEventListener("click", () => {
+      if (tipo_conteudo === "venda" && role !== "modelo") {
+        abrirModalVenda(conteudo);
+      } else {
+        abrirModalMidia(url, isVideo);
+      }
+    });
   }
-}
-  // ❌ excluir (só modelo)
+
   if (role === "modelo") {
     const btnExcluir = document.createElement("button");
     btnExcluir.className = "btnExcluirMidia";
-    btnExcluir.innerHTML = "✕";
-
+    btnExcluir.textContent = "✕";
     btnExcluir.onclick = (e) => {
-      e.stopPropagation(); // não abre a mídia
+      e.stopPropagation();
       excluirMidia(id, card);
     };
-
     card.appendChild(btnExcluir);
   }
-
-  listaMidias.appendChild(card);
 
   img.onerror = () => {
     img.src = "/assets/capa.png";
   };
+
+  listaMidias.appendChild(card);
 }
 
+
+//5º FUNÇÃO
 function getVideoThumbnail(url, thumbnail_url) {
   if (thumbnail_url) return thumbnail_url;
 
@@ -724,7 +745,6 @@ function aplicarPerfilNoDOM(modelo) {
     capaImg.src = modelo.capa;
   }
 
-  // 📍 LOCAL (cidade / estado)
   const localEl = document.getElementById("local-texto");
 
   if (localEl) {
