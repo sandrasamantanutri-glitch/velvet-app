@@ -223,7 +223,7 @@ app.post(
 );
 
 //OFERTAS
-app.post("/api/ofertas", auth, async (req, res) => {
+app.post("/api/ofertas", authModelo, async (req, res) => {
   try {
     const modeloId = req.user.id;
 
