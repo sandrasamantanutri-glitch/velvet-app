@@ -16,6 +16,7 @@ const role  = localStorage.getItem("role");
 
 
   const btnAssinar = document.getElementById("btn-assinar");
+  const ofertaCard = document.getElementById("oferta-card");
 
 //DEFINIÇÃO SEGURA DE MODO
 let modo = "publico";
@@ -273,8 +274,6 @@ async function carregarPerfilPublico() {
   }
 
   aplicarPerfilNoDOM(modelo);
-
-const ofertaCard = document.getElementById("oferta-card");
 
 // 🔹 VISITANTE
 if (!role) {
