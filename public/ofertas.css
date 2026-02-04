@@ -54,7 +54,7 @@ body {
 
 
 body {
-  background: #F7F3EF;
+  background: #f1f1f1;
   font-family: system-ui, -apple-system, BlinkMacSystemFont;
 }
 
@@ -85,7 +85,7 @@ body {
 .ofertas-tabs {
   display: flex;
   margin-top: 16px;
-  border-bottom: 1px solid #f1f1f1;
+  border-bottom: 1px solid #1E1E26;
 }
 
 .ofertas-tabs .tab {
@@ -94,7 +94,7 @@ body {
   background: none;
   border: none;
   font-size: 16px;
-  color: #C9C9C9;
+  color: #1E1E26;
 }
 
 .ofertas-tabs .tab.active {
@@ -179,6 +179,7 @@ body {
   border: 1px solid #7B2CFF;;
   background: none;
   font-size: 16px;
+  color: #7B2CFF;
 }
 
 .modal-overlay {
