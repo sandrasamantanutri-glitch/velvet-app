@@ -10,13 +10,10 @@
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background: #f6f6f9;
-  color: #1e1e26;
-  padding-top: 64px; /* espaço do header fixo */
+  color: #7B2CFF;
+  padding-top: 64px; 
 }
 
-/* ===============================
-   HEADER
-================================ */
 .app-header {
   position: fixed;
   top: 0;
@@ -40,12 +37,12 @@ body {
 }
 
 .velvet-logo {
-  height: 32px;
+  height: 40px !Important;
   margin-right: auto;
 }
 
 .header-inner img {
-  height: 26px;
+  height: 25px;
 }
 
 /* ===============================
@@ -74,8 +71,8 @@ body {
   position: absolute;
   top: 120px;
   left: 16px;
-  width: 84px;
-  height: 84px;
+  width: 95px;
+  height: 95px;
   background: #fff;
   border-radius: 50%;
   padding: 4px;
@@ -99,7 +96,7 @@ body {
 .perfil-bio {
   padding: 6px 16px 0;
   font-size: 14px;
-  color: #555;
+  color: #9E6BFF;
   line-height: 1.4;
 }
 
@@ -110,14 +107,13 @@ body {
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: #777;
+  color: #9E6BFF;
 }
 
 .local-icons img {
   width: 16px;
 }
 
-/* REDES */
 .icon-group {
   padding: 0 16px 16px;
   display: flex;
@@ -129,9 +125,6 @@ body {
   opacity: 0.85;
 }
 
-/* ===============================
-   OFERTA / ASSINATURA
-================================ */
 .oferta-card {
   max-width: 420px;
   margin: 18px auto;
@@ -144,7 +137,7 @@ body {
 
 .oferta-titulo {
   font-weight: 700;
-  margin-bottom: 10px;
+  margin-bottom: 20px;
 }
 
 .oferta-botao-wrapper {
@@ -179,6 +172,8 @@ body {
   margin-top: 8px;
   font-size: 12px;
   opacity: 0.9;
+  position: absolute;
+  left: -12px;
 }
 
 /* ===============================
