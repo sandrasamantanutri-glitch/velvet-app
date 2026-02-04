@@ -1686,7 +1686,7 @@ app.get(
 app.get("/api/modelo/publico/:id", async (req, res) => {
   const modelo_id = Number(req.params.id);
 
-if (!Number.isInteger(modelo_id) || modelo_id <= 0) {
+  if (!Number.isInteger(modelo_id) || modelo_id <= 0) {
     return res.status(400).json({ error: "modelo_id inválido" });
   }
 
@@ -1698,7 +1698,7 @@ if (!Number.isInteger(modelo_id) || modelo_id <= 0) {
         m.nome,
         m.bio,
         m.avatar,
-        m.capa
+        m.capa,
         m.local
       FROM modelos m
       WHERE m.user_id = $1
@@ -1717,7 +1717,6 @@ if (!Number.isInteger(modelo_id) || modelo_id <= 0) {
     res.status(500).json({ error: "Erro interno" });
   }
 });
-
 
 // ===============================
 // CHAT — LISTA PARA CLIENTE
