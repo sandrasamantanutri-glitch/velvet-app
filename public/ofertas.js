@@ -277,20 +277,22 @@ function abrirModalCriarOferta() {
     }
 
     try {
-      const res = await fetch("/api/ofertas", {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          nome: dados.nome,
-          limite: dados.limite,
-          dias: dados.dias,
-          desconto: dados.desconto,
-          mensagem: dados.mensagem
-        })
-      });
+      const token = localStorage.getItem("token");
+
+     const res = await fetch("/api/ofertas", {
+      method: "POST",
+      headers: {
+       "Content-Type": "application/json",
+       Authorization: "Bearer " + token
+      },
+     body: JSON.stringify({
+       nome: dados.nome,
+       limite: dados.limite,
+      dias: dados.dias,
+      desconto: dados.desconto,
+      mensagem: dados.mensagem
+       })
+     });
 
       const data = await res.json();
 
