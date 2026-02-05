@@ -63,7 +63,6 @@ const localEl = document.getElementById("local-texto");
 const inputUpload = document.getElementById("inputUpload");
 
 
-
 // ===============================
 // DOM
 // ===============================
@@ -207,12 +206,12 @@ async function iniciarPerfil() {
     return;
   }
 
-  // CLIENTE ou VISITANTE (perfil público)
-  if (modo === "publico" && modelo_id) {
-    await carregarPerfilPublico(); // dados públicos
-    await carregarOfertaAtiva();   // 🔥 FALTAVA ISSO
-    return;
-  }
+  // // CLIENTE ou VISITANTE (perfil público)
+  // if (modo === "publico" && modelo_id) {
+  //   await carregarPerfilPublico(); // dados públicos
+  //   await carregarOfertaAtiva();   // 🔥 FALTAVA ISSO
+  //   return;
+  // }
 
   // fallback de segurança
   console.warn("Perfil inválido, redirecionando");
