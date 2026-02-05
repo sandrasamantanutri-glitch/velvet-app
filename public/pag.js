@@ -42,32 +42,6 @@ if (formCartao) {
   });
 }
 
-abrirPopupPagamentoPixLoading();
-
-const data = await res.json();
-
-// elementos
-const qr = document.getElementById("pixQr");
-const codigo = document.getElementById("pixCodigo");
-const btnCopiar = document.querySelector("#conteudoPix .btn-secundario");
-
-// preenche dados
-qr.src = `data:image/png;base64,${data.qr_code}`;
-codigo.value = data.copia_cola;
-
-// mostra elementos
-qr.classList.remove("hidden");
-codigo.classList.remove("hidden");
-btnCopiar?.classList.remove("hidden");
-
-// estados
-document.getElementById("pixLoading")
-  ?.classList.add("hidden");
-
-document.getElementById("pixAguardando")
-  ?.classList.remove("hidden");
-
-
 function abrirPopupPagamento(dados) {
   const popup = document.getElementById("popupPagamentoVelvet");
   popup.classList.remove("hidden");
