@@ -97,56 +97,42 @@ document.addEventListener("DOMContentLoaded", () => {
   aplicarRoleNoBody();
   iniciarPerfil();
 
-  document.addEventListener("DOMContentLoaded", () => {
-  aplicarRoleNoBody();
-  iniciarPerfil();
-
   const btnAssinar = document.getElementById("btn-assinar");
 
   btnAssinar?.addEventListener("click", () => {
-    // visitante → força login
     if (!role) {
       window.location.href = "/index.html";
       return;
     }
 
-    // só cliente pode assinar
     if (role !== "cliente") return;
 
-    // 🔒 garantia extra
     if (!modelo_id || isNaN(Number(modelo_id))) {
-      console.warn("modelo_id inválido para assinatura VIP");
+      console.warn("modelo_id inválido");
       return;
     }
 
-    // 🔥 valor vindo da oferta ativa
     const precoTexto =
       document.getElementById("preco-desconto")?.textContent || "";
 
     const valorAssinatura = Number(
-      precoTexto
-        .replace(/[^\d,]/g, "")
-        .replace(",", ".")
+      precoTexto.replace(/[^\d,]/g, "").replace(",", ".")
     );
 
     if (!valorAssinatura || valorAssinatura <= 0) {
-      alert("Valor da assinatura inválido");
+      alert("Valor inválido");
       return;
     }
 
-    // 🔥 ABRE POPUP NOVO DE PAGAMENTO (VIP)
-    pagarComPix({
+    // 🔥 ABRE POPUP NOVO
+    abrirPopupPagamento({
       tipo: "vip",
       modelo_id,
       valor_assinatura: valorAssinatura
     });
-
-    // se quiser abrir já no popup com escolha Pix/Cartão,
-    // depois podemos trocar para uma função abrirPopupPagamento()
   });
 });
 
-});
 
 // ===============================
 // TABS DE MÍDIA (FEED / ESPECIAL)

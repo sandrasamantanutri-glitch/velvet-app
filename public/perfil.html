@@ -98,10 +98,42 @@
   </div>
 </div>
 
+<div id="popupPagamentoVelvet" class="velvet-modal hidden">
+  <div class="velvet-backdrop"></div>
+
+  <div class="velvet-box">
+    <button class="velvet-close" onclick="fecharPopupPagamento()">×</button>
+
+    <h2 class="velvet-title">Finalizar pagamento</h2>
+
+    <div class="velvet-tabs">
+      <button class="tab active" onclick="mostrarMetodo('pix')">⚡ Pix</button>
+      <button class="tab" onclick="mostrarMetodo('cartao')">💳 Cartão</button>
+    </div>
+
+    <!-- PIX -->
+    <div id="conteudoPix">
+      <div id="pixLoading">Gerando Pix...</div>
+      <img id="pixQr" />
+      <input id="pixCodigo" readonly />
+    </div>
+
+    <!-- CARTÃO -->
+    <div id="conteudoCartao" class="hidden">
+      <form id="formCartao">
+        <div id="card-element"></div>
+        <button type="submit">Confirmar pagamento</button>
+      </form>
+    </div>
+  </div>
+</div>
+
 </main>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/header.js"></script>
+<script src="/pag.js"></script>
 <script src="/profile.js" defer></script>
+
 </body>
 </html>
