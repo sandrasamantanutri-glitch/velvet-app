@@ -78,32 +78,32 @@ if (role !== "modelo" || !token) {
 // ===============================
 // INIT
 // ===============================
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   aplicarRoleNoBody();
-  iniciarPerfil();
 
- btnAssinar?.addEventListener("click", () => {
-  if (!role) return (window.location.href = "/index.html");
-  if (role !== "cliente") return;
+  await iniciarPerfil(); // 🔥 AGORA SIM
 
-  if (!OFERTA_ATUAL || !OFERTA_ATUAL.modelo_id) {
-    alert("Oferta ainda não carregada. Aguarde um instante.");
-    return;
-  }
+  btnAssinar?.addEventListener("click", () => {
+    if (!role) return (window.location.href = "/index.html");
+    if (role !== "cliente") return;
 
-  window.PAGAMENTO_TIPO_ATUAL = "vip";
-  window.MODELO_ID_ATUAL = OFERTA_ATUAL.modelo_id;
+    if (!OFERTA_ATUAL || !OFERTA_ATUAL.modelo_id) {
+      alert("Oferta ainda não carregada. Aguarde um instante.");
+      return;
+    }
 
-  preencherResumoVIP({
-    valorBase: OFERTA_ATUAL.valor_base,
-    desconto:
-      OFERTA_ATUAL.valor_base -
-      OFERTA_ATUAL.valor_promocional
+    window.PAGAMENTO_TIPO_ATUAL = "vip";
+    window.MODELO_ID_ATUAL = OFERTA_ATUAL.modelo_id;
+
+    preencherResumoVIP({
+      valorBase: OFERTA_ATUAL.valor_base,
+      desconto:
+        OFERTA_ATUAL.valor_base -
+        OFERTA_ATUAL.valor_promocional
+    });
+
+    pagarComPix({ tipo: "vip" });
   });
-
-  pagarComPix({ tipo: "vip" }); // pode até omitir modelo_id
-});
-
 });
 
 // ===============================
