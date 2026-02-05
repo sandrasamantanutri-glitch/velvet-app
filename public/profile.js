@@ -161,45 +161,45 @@ async function carregarFeedBase() {
   feed.forEach(adicionarMidia);
 }
 
-async function aplicarRegrasDeAcesso() {
+// async function aplicarRegrasDeAcesso() {
 
-  // MODELO
-  if (role === "modelo" && modo === "privado") {
-    ofertaCard.style.display = "block";
-    btnChat?.classList.remove("hidden");
-    liberarMidias?.();
-    return;
-  }
+//   // MODELO
+//   if (role === "modelo" && modo === "privado") {
+//     ofertaCard.style.display = "block";
+//     btnChat?.classList.remove("hidden");
+//     liberarMidias?.();
+//     return;
+//   }
 
-  // VISITANTE (sem login)
-  if (!role) {
-    ofertaCard.style.display = "block";
-    bloquearMidias?.("login");
-    return;
-  }
+//   // VISITANTE (sem login)
+//   if (!role) {
+//     ofertaCard.style.display = "block";
+//     bloquearMidias?.("login");
+//     return;
+//   }
 
-  // CLIENTE
-  if (role === "cliente") {
-    try {
-      const res = await fetch(`/api/vip/status/${modelo_id}`, {
-        headers: { Authorization: "Bearer " + token }
-      });
-      const { vip } = res.ok ? await res.json() : { vip: false };
+//   // CLIENTE
+//   if (role === "cliente") {
+//     try {
+//       const res = await fetch(`/api/vip/status/${modelo_id}`, {
+//         headers: { Authorization: "Bearer " + token }
+//       });
+//       const { vip } = res.ok ? await res.json() : { vip: false };
 
-      if (vip) {
-        ofertaCard.style.display = "none";
-        btnChat?.classList.remove("hidden");
-        liberarMidias?.();
-      } else {
-        ofertaCard.style.display = "block";
-        bloquearMidias?.("vip");
-      }
-    } catch {
-      ofertaCard.style.display = "block";
-      bloquearMidias?.("vip");
-    }
-  }
-}
+//       if (vip) {
+//         ofertaCard.style.display = "none";
+//         btnChat?.classList.remove("hidden");
+//         liberarMidias?.();
+//       } else {
+//         ofertaCard.style.display = "block";
+//         bloquearMidias?.("vip");
+//       }
+//     } catch {
+//       ofertaCard.style.display = "block";
+//       bloquearMidias?.("vip");
+//     }
+//   }
+// }
 
 async function iniciarPerfil() {
   try {
