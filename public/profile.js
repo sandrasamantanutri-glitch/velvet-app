@@ -33,12 +33,6 @@ if (!modeloParam && modo === "privado") {
   modelo_id = Number(localStorage.getItem("modelo_id"));
 }
 
-if (!modelo_id || isNaN(modelo_id)) {
-  console.error("modelo_id inválido:", modelo_id);
-  window.location.href = "/";
-  throw new Error("modelo_id inválido");
-}
-
 const ofertaCard = document.getElementById("oferta-card");
 const btnAssinar = document.getElementById("btn-assinar");
 if (btnAssinar) btnAssinar.disabled = true;
