@@ -254,8 +254,8 @@ app.post("/api/ofertas", authModelo, async (req, res) => {
       return res.status(400).json({ erro: "Dados inválidos" });
     }
 
-    const VALOR_BASE = Number(process.env.VALOR_BASE_VIP || 20);
-    const VALOR_MINIMO = Number(process.env.VALOR_MINIMO_VIP || 15);
+    const VALOR_BASE = Number(process.env.VALOR_BASE_VIP || 0);
+    const VALOR_MINIMO = Number(process.env.VALOR_MINIMO_VIP || 0);
 
     let valorPromocional =
       VALOR_BASE * (1 - desconto / 100);
