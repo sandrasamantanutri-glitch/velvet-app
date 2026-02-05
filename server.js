@@ -2620,15 +2620,6 @@ app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
       }
     });
 
-    // 💾 ATIVA VIP (BANCO)
-    await ativarVipAssinatura({
-      cliente_id,
-      modelo_id,
-      valor_assinatura: valorAssinatura,
-      taxa_transacao: taxaTransacao,
-      taxa_plataforma: taxaPlataforma
-    });
-
     // 🔁 RETORNO PARA O FRONT
     res.json({
       qr_code: pagamento.point_of_interaction.transaction_data.qr_code_base64,
