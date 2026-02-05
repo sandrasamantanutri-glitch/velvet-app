@@ -9,8 +9,8 @@ window.socket = io();
 // const token = localStorage.getItem("token");
 // const role  = localStorage.getItem("role");
 
-// const params = new URLSearchParams(window.location.search);
-// const modeloParam = params.get("id");
+const params = new URLSearchParams(window.location.search);
+const modeloParam = params.get("id");
 
 let modo = "publico";
 
@@ -20,8 +20,8 @@ let modo = "publico";
 
 let modelo_id = null;
 
-// if (modeloParam) { modelo_id = Number(modeloParam);
-// }
+if (modeloParam) { modelo_id = Number(modeloParam);
+}
 
 // if (!modeloParam && modo === "privado") {
 //   modelo_id = Number(localStorage.getItem("modelo_id"));
