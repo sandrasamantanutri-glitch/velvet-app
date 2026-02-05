@@ -305,6 +305,7 @@ app.post("/api/ofertas", authModelo, async (req, res) => {
   }
 });
 
+app.use(express.static(path.join(__dirname, "public")));
 app.post(
   "/webhook/stripe",
   express.raw({ type: "application/json" }),
@@ -468,6 +469,9 @@ app.post(
   }
 );
 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 const rateLimit = require("express-rate-limit");
 
 // 🔒 Rate limit para autenticação (login / register)
@@ -478,6 +482,57 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
   message: {
     error: "Muitas tentativas. Tente novamente em alguns minutos."
+  }
+});
+
+
+app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
+  try {
+    const { modelo_id, valor_assinatura } = req.body;
+
+    const cliente_id = req.user.id;
+
+    // 🔒 VALIDAÇÕES BÁSICAS
+    const valorAssinatura = Number(valor_assinatura);
+
+    if (!modelo_id || !valorAssinatura || valorAssinatura <= 0) {
+      return res.status(400).json({ error: "Dados inválidos" });
+    }
+
+    // 🔥 TAXAS OFICIAIS (BACKEND É A FONTE DA VERDADE)
+    const taxaTransacao  = Number((valorAssinatura * 0.10).toFixed(2)); // 10%
+    const taxaPlataforma = Number((valorAssinatura * 0.05).toFixed(2)); // 5%
+
+    const valorTotal = Number(
+      (valorAssinatura + taxaTransacao + taxaPlataforma).toFixed(2)
+    );
+
+    // Stripe trabalha em centavos
+    const amount = Math.round(valorTotal * 100);
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount,
+      currency: "brl",
+      payment_method_types: ["card"],
+      metadata: {
+        tipo: "vip",
+        cliente_id,
+        modelo_id,
+        valor_assinatura: valorAssinatura,
+        taxa_transacao: taxaTransacao,
+        taxa_plataforma: taxaPlataforma
+      }
+    });
+
+    return res.json({
+      clientSecret: paymentIntent.client_secret
+    });
+
+  } catch (err) {
+    console.error("❌ Erro Stripe VIP:", err);
+    return res.status(500).json({
+      error: "Erro ao criar pagamento com cartão"
+    });
   }
 });
 
@@ -2884,62 +2939,44 @@ app.post(
 
 //RENOVAÇÃO VIP
 // POST /api/vip/cartao/assinatura
-
 app.post("/api/vip/cartao/assinatura", authCliente, async (req, res) => {
-  try {
-    const { modelo_id } = req.body;
-    const cliente_id = req.user.id;
-    const email = req.user.email;
+  const { modelo_id } = req.body;
+  const cliente_id = req.user.id;
 
-    if (!modelo_id) {
-      return res.status(400).json({ error: "modelo_id inválido" });
-    }
+  // 1) Criar (ou recuperar) customer
+  const customer = await stripe.customers.create({
+    metadata: { cliente_id }
+  });
 
-    const customer = await stripe.customers.create({
-      email,
-      metadata: { cliente_id }
-    });
+  // 2) Criar assinatura
+  const subscription = await stripe.subscriptions.create({
+    customer: customer.id,
+    items: [{ price: "price_1Ss0jzRtYLPrY4c3clhTxyWD" }],
+    payment_behavior: "default_incomplete",
+    expand: ["latest_invoice.payment_intent"],
+    metadata: { cliente_id, modelo_id }
+  });
 
-    const subscription = await stripe.subscriptions.create({
-      customer: customer.id,
-      items: [{ price: process.env.STRIPE_PRICE_VIP }],
-      payment_behavior: "default_incomplete",
-      expand: [
-        "latest_invoice.payment_intent",
-        "pending_setup_intent"
-      ],
-      metadata: { cliente_id, modelo_id }
-    });
+  // 3) Criar VIP inicial (30 dias)
+  await db.query(`
+    INSERT INTO vip_subscriptions (
+      cliente_id, modelo_id, ativo,
+      expiration_at, recorrente, stripe_subscription_id
+    ) VALUES (
+      $1, $2, true,
+      NOW() + INTERVAL '30 days',
+      true, $3
+    )
+    ON CONFLICT (cliente_id, modelo_id)
+    DO UPDATE SET
+      recorrente = true,
+      stripe_subscription_id = $3
+  `, [cliente_id, modelo_id, subscription.id]);
 
-    const invoice = subscription.latest_invoice;
-   let clientSecret = null;
-let intentType = null;
-
-if (invoice?.payment_intent?.client_secret) {
-  clientSecret = invoice.payment_intent.client_secret;
-  intentType = "payment";
-} else if (subscription.pending_setup_intent) {
-  const setupIntent = await stripe.setupIntents.retrieve(
-    subscription.pending_setup_intent
-  );
-  clientSecret = setupIntent.client_secret;
-  intentType = "setup";
-}
-
-res.json({
-  clientSecret,
-  intentType
+  res.json({
+    clientSecret: subscription.latest_invoice.payment_intent.client_secret
+  });
 });
- 
-  } catch (err) {
-    console.error("🔥 ERRO STRIPE ASSINATURA VIP 🔥", err);
-    res.status(500).json({
-      error: "Erro ao iniciar pagamento VIP",
-      detalhe: err.message
-    });
-  }
-});
-
 
 // POST /api/vip/cancelar
 app.post("/api/vip/cancelar", authCliente, async (req, res) => {

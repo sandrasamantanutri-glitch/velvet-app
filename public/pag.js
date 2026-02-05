@@ -312,7 +312,7 @@ async function pagarComCartao({ tipo, message_id, modelo_id }) {
     }
 
     if (tipo === "vip") {
-       url = "/api/vip/cartao/assinatura";
+       url = "/api/pagamento/vip/cartao"
       body = { modelo_id };
     }
 
@@ -378,6 +378,32 @@ function pagamentoConfirmado() {
     fecharPopupPagamento();
   }, 1200);
 }
+
+async function confirmarPagamentoCartao() {
+  try {
+    const { error } = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: window.location.href
+      }
+    });
+
+    if (error) {
+      console.error("❌ Erro ao confirmar pagamento:", error);
+      alert(error.message || "Erro ao processar pagamento");
+      return;
+    }
+
+    // Se não houve erro imediato, o Stripe redireciona
+    // ou confirma automaticamente
+    pagamentoConfirmado();
+
+  } catch (err) {
+    console.error("❌ Erro inesperado:", err);
+    alert("Erro ao confirmar pagamento");
+  }
+}
+
 
 
 
