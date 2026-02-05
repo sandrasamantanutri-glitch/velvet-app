@@ -122,7 +122,7 @@ window.pagarComPix = async function ({
 
     if (tipo === "vip") {
       url = "/api/pagamento/vip/pix";
-      body = { modelo_id, valor_assinatura };
+      body = { modelo_id };
     }
 
     if (tipo === "conteudo") {
@@ -282,9 +282,9 @@ async function pagarComCartao({ tipo, message_id, modelo_id, valor_assinatura })
 
     // 💜 VIP avulso
     if (tipo === "vip") {
-      url = "/api/pagamento/vip/cartao";
-      body = { modelo_id, valor_assinatura };
-    }
+    url = "/api/pagamento/vip/cartao";
+    body = { modelo_id };
+}
 
     // ⚠️ VIP recorrente (OUTRO fluxo – não usar aqui ainda)
     // if (tipo === "vip_recorrente") {
@@ -323,16 +323,11 @@ async function pagarComCartao({ tipo, message_id, modelo_id, valor_assinatura })
 }
 
 window.iniciarCartao = function () {
-  console.log("💳 Iniciando pagamento com cartão");
-
-  // mostra visualmente o cartão
   mostrarMetodo("cartao");
 
-  // chama o backend / Stripe
   pagarComCartao({
-    tipo: window.PAGAMENTO_TIPO_ATUAL,      // "vip" ou "conteudo"
-    modelo_id: window.MODELO_ID_ATUAL,       // definido ao abrir popup
-    valor_assinatura: window.VALOR_VIP_ATUAL // só para VIP
+    tipo: window.PAGAMENTO_TIPO_ATUAL,
+    modelo_id: window.MODELO_ID_ATUAL
   });
 };
 

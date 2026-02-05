@@ -228,9 +228,6 @@ app.post(
 //OFERTAS
 app.post("/api/ofertas", authModelo, async (req, res) => {
   try {
-    console.log("USER TOKEN:", req.user);
-    console.log("BODY:", req.body);
-
     const userId = req.user.id;
 
     const modeloRes = await db.query(
@@ -239,27 +236,26 @@ app.post("/api/ofertas", authModelo, async (req, res) => {
     );
 
     if (modeloRes.rows.length === 0) {
-      return res.status(404).json({
-        erro: "Modelo não encontrado"
-      });
+      return res.status(404).json({ erro: "Modelo não encontrado" });
     }
 
     const modeloId = modeloRes.rows[0].id;
 
-    const {
-      nome,
-      limite,
-      dias,
-      desconto,
-      mensagem
-    } = req.body;
+    const { nome, limite, dias, desconto, mensagem } = req.body;
 
-    if (!nome || limite <= 0 || dias <= 0 || desconto === undefined) {
+    if (
+      !nome ||
+      limite <= 0 ||
+      dias <= 0 ||
+      desconto === undefined ||
+      desconto < 0 ||
+      desconto > 90
+    ) {
       return res.status(400).json({ erro: "Dados inválidos" });
     }
 
-    const VALOR_BASE = 20;
-    const VALOR_MINIMO = 15;
+    const VALOR_BASE = Number(process.env.VALOR_BASE_VIP || 20);
+    const VALOR_MINIMO = Number(process.env.VALOR_MINIMO_VIP || 15);
 
     let valorPromocional =
       VALOR_BASE * (1 - desconto / 100);
@@ -304,11 +300,8 @@ app.post("/api/ofertas", authModelo, async (req, res) => {
     res.json(result.rows[0]);
 
   } catch (err) {
-    console.error("🔥 ERRO AO CRIAR OFERTA 🔥");
-    console.error(err);
-    res.status(500).json({
-      erro: "Erro interno ao criar oferta"
-    });
+    console.error("🔥 ERRO AO CRIAR OFERTA 🔥", err);
+    res.status(500).json({ erro: "Erro interno ao criar oferta" });
   }
 });
 
@@ -2487,30 +2480,48 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
 
 app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
   try {
-    const { modelo_id, valor_assinatura } = req.body;
-
+    const { modelo_id } = req.body;
     const cliente_id = req.user.id;
 
-    // 🔒 VALIDAÇÕES
-    const valorAssinatura = Number(valor_assinatura);
-
-    if (!modelo_id || !valorAssinatura || valorAssinatura <= 0) {
-      return res.status(400).json({ error: "Dados inválidos" });
+    if (!modelo_id || isNaN(Number(modelo_id))) {
+      return res.status(400).json({ error: "modelo_id inválido" });
     }
 
-    // 🔥 TAXAS OFICIAIS (BACKEND É A FONTE DA VERDADE)
-    const taxaTransacao  = Number((valorAssinatura * 0.10).toFixed(2)); // 10%
-    const taxaPlataforma = Number((valorAssinatura * 0.05).toFixed(2)); // 5%
+    // 🔍 BUSCA OFERTA ATIVA (FONTE DA VERDADE)
+    const ofertaRes = await db.query(
+      `
+      SELECT valor_promocional
+      FROM ofertas
+      WHERE modelo_id = $1
+        AND ativa = true
+        AND NOW() BETWEEN data_inicio AND data_fim
+      LIMIT 1
+      `,
+      [modelo_id]
+    );
+
+    if (ofertaRes.rows.length === 0) {
+      return res.status(400).json({
+        error: "Oferta VIP indisponível"
+      });
+    }
+
+    const valorAssinatura = Number(ofertaRes.rows[0].valor_promocional);
+
+    // 🔒 TAXAS CALCULADAS NO BACKEND
+    const taxaTransacao  = Number((valorAssinatura * 0.10).toFixed(2));
+    const taxaPlataforma = Number((valorAssinatura * 0.05).toFixed(2));
 
     let valorTotal = Number(
       (valorAssinatura + taxaTransacao + taxaPlataforma).toFixed(2)
     );
 
-    // 🔒 Regra MercadoPago PIX (mínimo R$1,00)
-    if (valorTotal < 1) {
+    // 🔒 Regra MercadoPago PIX
+    if (!valorTotal || isNaN(valorTotal) || valorTotal < 1) {
       valorTotal = 1.00;
     }
 
+    // 💸 MERCADO PAGO
     const mp = new MercadoPagoConfig({
       accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN
     });
@@ -2523,7 +2534,7 @@ app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
         description: "Assinatura VIP",
         payment_method_id: "pix",
         payer: {
-          email: "contat@velvet.lat"
+          email: "contato@velvet.lat"
         },
         metadata: {
           tipo: "vip",
@@ -2536,20 +2547,28 @@ app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
       }
     });
 
-    return res.json({
+    // 💾 ATIVA VIP (BANCO)
+    await ativarVipAssinatura({
+      cliente_id,
+      modelo_id,
+      valor_assinatura: valorAssinatura,
+      taxa_transacao: taxaTransacao,
+      taxa_plataforma: taxaPlataforma
+    });
+
+    // 🔁 RETORNO PARA O FRONT
+    res.json({
       qr_code: pagamento.point_of_interaction.transaction_data.qr_code_base64,
       copia_cola:
-        pagamento.point_of_interaction.transaction_data.qr_code,
-      payment_id: pagamento.id
+        pagamento.point_of_interaction.transaction_data.qr_code
     });
 
   } catch (err) {
-    console.error("❌ Erro PIX VIP:", err);
-    return res.status(500).json({
-      error: "Erro ao gerar pagamento PIX"
-    });
+    console.error("🔥 ERRO PIX VIP:", err);
+    res.status(500).json({ error: "Erro ao gerar Pix VIP" });
   }
 });
+
 
 
 // ===============================
