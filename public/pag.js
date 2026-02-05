@@ -94,7 +94,6 @@ window.pagarComPix = async function ({
     const token = localStorage.getItem("token");
 
     abrirPopupPagamentoPixLoading();
-    mostrarMetodo("pix");
 
     let url = "";
     let body = {};
@@ -172,8 +171,7 @@ function copiarPix() {
 function abrirPopupPagamentoPixLoading() {
   const popup = document.getElementById("popupPagamentoVelvet");
   popup.classList.remove("hidden");
-
-  // ativa aba Pix
+  
   mostrarMetodo("pix");
 
   // estados iniciais

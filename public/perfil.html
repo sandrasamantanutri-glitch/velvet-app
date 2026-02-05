@@ -100,22 +100,6 @@
 </div>
 
 <div id="popupPagamentoVelvet" class="velvet-modal hidden">
-  <div class="velvet-backdrop"></div>
-
-  <div class="velvet-box">
-    <button class="velvet-close" onclick="fecharPopupPagamento()">×</button>
-
-    <h2 class="velvet-title">Finalizar pagamento</h2>
-
-    <div class="velvet-tabs">
-      <button class="tab active" onclick="mostrarMetodo('pix')">⚡ Pix</button>
-      <button class="tab" onclick="mostrarMetodo('cartao')">💳 Cartão</button>
-    </div>
-  </div>
-</div>
-
-<!-- POPUP PAGAMENTO VELVET -->
-<div id="popupPagamentoVelvet" class="velvet-modal hidden">
   <div class="velvet-backdrop" onclick="fecharPopupPagamento()"></div>
 
   <div class="velvet-box">
@@ -123,40 +107,27 @@
 
     <h2 class="velvet-title">Finalizar pagamento</h2>
 
-    <!-- Abas -->
     <div class="velvet-tabs">
-<button class="tab active" data-metodo="pix" onclick="mostrarMetodo('pix')">
-  ⚡ Pix
-</button>
-<button class="tab" data-metodo="cartao" onclick="mostrarMetodo('cartao')">
-  💳 Cartão
-</button>
-
+      <button class="tab active" data-metodo="pix"
+        onclick="mostrarMetodo('pix')">⚡ Pix</button>
+      <button class="tab" data-metodo="cartao"
+        onclick="mostrarMetodo('cartao')">💳 Cartão</button>
     </div>
 
     <div class="velvet-content">
 
       <!-- PIX -->
       <div id="conteudoPix" class="metodo">
-        <p class="info">Escaneie o QR Code ou copie o código Pix</p>
-
-        <!-- status -->
-        <div id="pixLoading" class="pix-loading">
-          <div class="spinner"></div>
-          <span>Gerando Pix…</span>
-        </div>
-
+        <div id="pixLoading" class="pix-loading hidden">⏳ Aguarde…</div>
         <div id="pixAguardando" class="pix-aguardando hidden">
-          ⏳ Aguardando pagamento Pix
+          Aguardando pagamento Pix
         </div>
-
         <div id="pixSucesso" class="pix-sucesso hidden">
           ✅ Pagamento confirmado!
         </div>
 
-        <img id="pixQr" class="pix-qr hidden" />
-        <input id="pixCodigo" type="text" readonly class="hidden" />
-
+        <img id="pixQr" class="pix-qr hidden">
+        <input id="pixCodigo" readonly class="hidden">
         <button class="btn-secundario hidden" onclick="copiarPix()">
           Copiar código Pix
         </button>
@@ -164,29 +135,22 @@
 
       <!-- CARTÃO -->
       <div id="conteudoCartao" class="metodo hidden">
-
-        <div id="cartaoLoading" class="cartao-loading">
-          <div class="spinner"></div>
-          <span>Preparando pagamento…</span>
-        </div>
-
+        <div id="cartaoLoading" class="hidden">Preparando pagamento…</div>
         <form id="formCartao" class="hidden">
           <div id="card-element"></div>
-
           <button type="submit" class="btn-principal">
             Confirmar pagamento
           </button>
         </form>
-
-        <div id="cartaoSucesso" class="cartao-sucesso hidden">
+        <div id="cartaoSucesso" class="hidden">
           ✅ Pagamento confirmado!
         </div>
-
       </div>
 
     </div>
   </div>
 </div>
+
 
 </main>
 
