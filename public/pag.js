@@ -312,7 +312,7 @@ async function pagarComCartao({ tipo, message_id, modelo_id }) {
     }
 
     if (tipo === "vip") {
-      url = "/api/pagamento/vip/cartao";
+       url = "/api/vip/cartao/assinatura";
       body = { modelo_id };
     }
 
