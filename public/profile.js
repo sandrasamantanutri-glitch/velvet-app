@@ -170,7 +170,7 @@ async function iniciarPerfil() {
     await carregarPerfilBase();   // sempre
     await carregarOfertaAtiva();  // sempre
     await carregarFeedBase();     // sempre
-    await aplicarRegrasDeAcesso();// decide acesso
+    // await aplicarRegrasDeAcesso();// decide acesso
   } catch (err) {
     console.error("Erro ao iniciar perfil:", err);
     window.location.href = "/index.html";
