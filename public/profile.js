@@ -12,13 +12,15 @@ const role  = localStorage.getItem("role");
 const params = new URLSearchParams(window.location.search);
 const modeloParam = params.get("id");
 
-if (!modeloParam && role !== "modelo") {
-  console.warn("Perfil público sem modelo_id");
-  window.location.href = "/clientHome.html";
-  throw new Error("modelo_id ausente no perfil público");
+let modo = "publico";
+if (!modeloParam && role === "modelo" && token) {
 }
 
-let modo = "publico";
+if (!modeloParam && !role) {
+  window.location.href = "/clientHome.html";
+  throw new Error("Visitante sem modelo_id");
+}
+
 if (role === "modelo" && token && !modeloParam) {
   modo = "privado";
 }
@@ -29,8 +31,7 @@ if (role === "cliente" && modo === "privado") {
 
 let modelo_id = null;
 
-if (modeloParam) {
-  modelo_id = Number(modeloParam);
+if (modeloParam) { modelo_id = Number(modeloParam);
 }
 
 if (!modeloParam && modo === "privado") {
