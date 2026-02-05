@@ -16,8 +16,8 @@ const ofertaCard = document.getElementById("oferta-card");
 const btnAssinar = document.getElementById("btn-assinar");
 if (btnAssinar) btnAssinar.disabled = true;
 
-// //DEFINIÇÃO SEGURA DE MODO
 // let modo = "publico";
+
 // if (token && role === "modelo" && !modeloParam) {
 //   modo = "privado";
 // }
@@ -25,9 +25,6 @@ if (btnAssinar) btnAssinar.disabled = true;
 // if (role === "cliente" && modo === "privado") {
 //   window.location.href = "https://www.velvet.lat";
 //   throw new Error("Cliente não pode acessar profile privado");
-// }
-// if (modo === "publico") {
-//   localStorage.removeItem("modelo_id");
 // }
 
 let modelo_id = modeloParam
