@@ -2,6 +2,7 @@
 window.__CLIENTE_VIP__ = false;
 window.__VIP_READY__ = false;
 
+let elements = null;
 let stripe = null;
 let cardElement;
 let clientSecretAtual = null;
@@ -233,6 +234,7 @@ function initStripe() {
 
 
 async function pagarComCartao({ tipo, message_id, modelo_id, valor_assinatura }) {
+    initStripe();
   try {
     const token = localStorage.getItem("token");
     mostrarMetodo("cartao");
@@ -293,6 +295,20 @@ async function pagarComCartao({ tipo, message_id, modelo_id, valor_assinatura })
     alert("Erro ao iniciar pagamento com cartão");
   }
 }
+
+window.iniciarCartao = function () {
+  console.log("💳 Iniciando pagamento com cartão");
+
+  // mostra visualmente o cartão
+  mostrarMetodo("cartao");
+
+  // chama o backend / Stripe
+  pagarComCartao({
+    tipo: window.PAGAMENTO_TIPO_ATUAL,      // "vip" ou "conteudo"
+    modelo_id: window.MODELO_ID_ATUAL,       // definido ao abrir popup
+    valor_assinatura: window.VALOR_VIP_ATUAL // só para VIP
+  });
+};
 
 function pagamentoConfirmado() {
   // Pix

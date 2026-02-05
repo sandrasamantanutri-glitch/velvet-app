@@ -1,7 +1,6 @@
 // ===============================
 // AUTH GUARD
 // ===============================
-let elements;
 window.__CLIENTE_VIP__ = false;
 window.__VIP_READY__ = false;
 
@@ -100,35 +99,46 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnAssinar = document.getElementById("btn-assinar");
 
   btnAssinar?.addEventListener("click", () => {
-    if (!role) {
-      window.location.href = "/index.html";
-      return;
-    }
+  if (!role) {
+    window.location.href = "/index.html";
+    return;
+  }
 
-    if (role !== "cliente") return;
+  if (role !== "cliente") return;
 
-    if (!modelo_id || isNaN(Number(modelo_id))) {
-      console.warn("modelo_id inválido");
-      return;
-    }
+  if (!modelo_id || isNaN(Number(modelo_id))) {
+    console.warn("modelo_id inválido");
+    return;
+  }
 
-    const precoTexto =
-      document.getElementById("preco-desconto")?.textContent || "";
+  const precoTexto =
+    document.getElementById("preco-desconto")?.textContent || "";
 
-    const valorAssinatura = Number(
-      precoTexto.replace(/[^\d,]/g, "").replace(",", ".")
-    );
+  const valorAssinatura = Number(
+    precoTexto.replace(/[^\d,]/g, "").replace(",", ".")
+  );
 
-    if (!valorAssinatura || valorAssinatura <= 0) {
-      alert("Valor inválido");
-      return;
-    }
-    pagarComPix({
-  tipo: "vip",
-  modelo_id,
-  valor_assinatura: valorAssinatura
-   });
+  if (!valorAssinatura || valorAssinatura <= 0) {
+    alert("Valor inválido");
+    return;
+  }
+
+  // 🔥 CONTEXTO DO PAGAMENTO (AQUI!)
+  window.PAGAMENTO_TIPO_ATUAL = "vip";
+  window.MODELO_ID_ATUAL = modelo_id;
+  window.VALOR_VIP_ATUAL = valorAssinatura;
+
+  // 🔥 ABRE POPUP + PREPARA PIX
+  abrirPopupPagamentoPixLoading();
+
+  // 🔥 INICIA PIX AUTOMATICAMENTE
+  pagarComPix({
+    tipo: "vip",
+    modelo_id,
+    valor_assinatura: valorAssinatura
   });
+});
+
 });
 
 
