@@ -1,3 +1,181 @@
+//MIL VERESOES CARREGAR PERFIL
+// 
+
+
+async function iniciarPerfil() {
+
+  // MODELO (perfil próprio)
+  if (modo === "privado" && role === "modelo") {
+    await carregarPerfil();        // garante modelo_id
+    await carregarOfertaAtiva();   // oferta
+    carregarFeed();
+    return;
+  }
+
+  // CLIENTE ou VISITANTE (perfil público)
+  if (modo === "publico" && modelo_id) {
+    await carregarPerfilPublico(); // dados públicos
+    await carregarOfertaAtiva();   // 🔥 FALTAVA ISSO
+    return;
+  }
+
+  // fallback de segurança
+  console.warn("Perfil inválido, redirecionando");
+  window.location.href = "/index.html";
+}
+
+
+
+
+async function carregarPerfil() {
+  const res = await fetch("/api/modelo/me", {
+    headers: { Authorization: "Bearer " + token }
+  });
+
+  if (!res.ok) return;
+
+  const modelo = await res.json();
+
+  // 🔒 fonte única de verdade
+  modelo_id = Number(modelo.id);
+  localStorage.setItem("modelo_id", modelo_id);
+
+  aplicarPerfilNoDOM(modelo);
+}
+
+async function carregarPerfilPublico() {
+  const res = await fetch(`/api/modelo/publico/${modelo_id}`);
+
+  if (!res.ok) {
+    alert("Perfil não encontrado");
+    return;
+  }
+
+  const modelo = await res.json();
+
+  // 🔒 garante modelo_id correto
+  if (modelo?.id) {
+    modelo_id = Number(modelo.id);
+  }
+
+  aplicarPerfilNoDOM(modelo);
+
+// 🔹 VISITANTE
+if (!role) {
+  ofertaCard.style.display = "block";
+}
+
+// 🔹 CLIENTE
+if (role === "cliente") {
+  try {
+    const vipRes = await fetch(`/api/vip/status/${modelo_id}`, {
+      headers: { Authorization: "Bearer " + token }
+    });
+
+    const vipData = vipRes.ok ? await vipRes.json() : { vip: false };
+    window.__CLIENTE_VIP__ = vipData.vip === true;
+
+    if (window.__CLIENTE_VIP__) {
+      // ❌ cliente VIP → NÃO mostra assinatura
+      ofertaCard.style.display = "none";
+      btnChat?.classList.remove("hidden");
+    } else {
+      // ✅ cliente NÃO VIP → mostra
+      ofertaCard.style.display = "block";
+      btnChat?.classList.add("hidden");
+    }
+  } catch (err) {
+    console.error("Erro VIP:", err);
+    window.__CLIENTE_VIP__ = false;
+    ofertaCard.style.display = "block";
+  }
+}
+
+// 🔹 MODELO
+if (role === "modelo") {
+  ofertaCard.style.display = "block";
+}
+
+// 🔹 MODELO
+if (role === "modelo") {
+  ofertaCard.style.display = "block";
+}
+
+  // 🔥 OFERTA SÓ DEPOIS DE TUDO PRONTO
+  await carregarOfertaAtiva();
+  carregarFeedPublico();
+  window.__VIP_READY__ = true;
+}
+
+// 🔒 oferta ativa vira fonte da verdade
+// 
+
+
+// ===============================
+// FEED
+// ===============================
+function carregarFeed() {
+  if (!listaMidias) return;
+
+  fetch("/api/feed/me", {
+    headers: { Authorization: "Bearer " + token }
+  })
+    .then(r => r.json())
+    .then(feed => {
+      if (!Array.isArray(feed)) return;
+      listaMidias.innerHTML = "";
+      feed.forEach(item => adicionarMidia(item));
+    });
+}
+
+function carregarFeedPublico() {
+  if (!listaMidias) return;
+
+  fetch(`/api/modelo/publico/${modelo_id}/feed`)
+
+    .then(r => r.json())
+    .then(data => {
+      // 🔎 SUPORTE A QUALQUER FORMATO
+      const feed = Array.isArray(data) ? data : data.feed || data.midias || [];
+
+      listaMidias.innerHTML = "";
+
+      feed.forEach(item => {
+        adicionarMidia(item);
+      });
+    });
+}
+
+function aplicarPerfilNoDOM(modelo) {
+  nomeEl.textContent = modelo.nome || "";
+  profileBio.textContent = modelo.bio || "";
+
+  if (modelo.avatar) {
+    avatarImg.src = modelo.avatar;
+  }
+
+  if (modelo.capa) {
+    capaImg.src = modelo.capa;
+  }
+
+  const localEl = document.getElementById("local-texto");
+
+  if (localEl) {
+    const local = [modelo.local]
+      .filter(Boolean)
+      .join(" • ");
+
+    if (local) {
+      localEl.textContent = local;
+    } else {
+      // se não tiver local, esconde o bloco
+      localEl.parentElement.style.display = "none";
+    }
+  }
+}
+
+
+
 // ===============================
 // AUTH GUARD
 // ===============================
