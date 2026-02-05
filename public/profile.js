@@ -38,11 +38,11 @@ let modelo_id = modeloParam
     : null;
 
 // autentica socket
-socket.emit("auth", { token });
+window.socket.emit("auth", { token });
 
 // registra cliente online
 if (role === "cliente") {
-  socket.emit("loginCliente", Number(decodeJWT(token).id));
+  window.socket.emit("loginCliente", Number(decodeJWT(token).id));
 }
 
 function decodeJWT(token) {
