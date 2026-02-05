@@ -1,0 +1,166 @@
+.velvet-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+}
+
+.hidden {
+  display: none;
+}
+
+.velvet-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.6);
+}
+
+.velvet-box {
+  position: relative;
+  background: #fff;
+  width: 92%;
+  max-width: 420px;
+  margin: 10vh auto;
+  border-radius: 18px;
+  padding: 20px;
+  z-index: 2;
+  animation: fadeUp .25s ease;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.velvet-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  border: none;
+  background: none;
+  font-size: 26px;
+  cursor: pointer;
+}
+
+.velvet-title {
+  text-align: center;
+  color: #7B2CFF;
+  margin-bottom: 16px;
+}
+
+.velvet-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.velvet-tabs .tab {
+  flex: 1;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  background: #f7f7f7;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.velvet-tabs .tab.active {
+  background: #7B2CFF;
+  color: #fff;
+  border-color: #7B2CFF;
+}
+
+.metodo {
+  text-align: center;
+}
+
+.info {
+  color: #555;
+  margin-bottom: 12px;
+}
+
+.pix-qr {
+  width: 200px;
+  margin: 10px auto;
+  display: block;
+}
+
+#pixCodigo {
+  width: 100%;
+  padding: 10px;
+  margin-top: 8px;
+}
+
+.btn-principal {
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  background: #7B2CFF;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.btn-secundario {
+  margin-top: 10px;
+  background: none;
+  border: 1px solid #7B2CFF;
+  color: #7B2CFF;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.pix-status {
+  margin-top: 14px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.pix-loading,
+.pix-aguardando,
+.pix-sucesso {
+  font-size: 14px;
+  color: #555;
+}
+
+.pix-sucesso {
+  color: #2ecc71;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  margin: 0 auto 6px;
+  border: 3px solid #ddd;
+  border-top-color: #7B2CFF;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+#card-element {
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  margin-bottom: 14px;
+}
+
+.cartao-status {
+  margin-top: 10px;
+  text-align: center;
+}
+
+.cartao-loading,
+.cartao-sucesso {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.cartao-sucesso {
+  color: #2ecc71;
+}

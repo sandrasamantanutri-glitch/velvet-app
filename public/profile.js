@@ -99,76 +99,6 @@ document.addEventListener("DOMContentLoaded", () => {
   aplicarRoleNoBody();
   iniciarPerfil();
 
-  if (btnAssinar && !btnAssinar.dataset.bound) {
-  btnAssinar.dataset.bound = "true";
-
-  btnAssinar.addEventListener("click", () => {
-
-  // ⏳ aguarda verificação VIP
-  if (!window.__VIP_READY__) {
-    alert("Aguarde um instante...");
-    return;
-  }
-
-  // 👀 visitante
-  if (!role) {
-    abrirPopupVelvet({ tipo: "login" });
-    return;
-  }
-
-  // 👤 cliente NÃO VIP → ABRE POPUP VIP
-  if (role === "cliente" && window.__CLIENTE_VIP__ === false) {
-    abrirPopupVelvet({ tipo: "vip" });
-    return;
-  }
-
-  // 💜 cliente VIP
-  alert("Você já é VIP 💜");
-});
- }
-
-  document.getElementById("btnVipPix")?.addEventListener("click", () => {
-    fecharEscolha();
-    abrirPopupPix();
-  });
-
-  document.getElementById("fecharPix")?.addEventListener("click", () => {
-    document.getElementById("popupPix")?.classList.add("hidden");
-  });
-
-
-  document.getElementById("btnVipCartao")?.addEventListener("click", () => {
-    fecharEscolha();
-    pagarComCartao();
-  });
-
-  // ===============================
-  // CHAT
-  // ===============================
-  btnChat?.addEventListener("click", () => {
-    if (!role) {
-      abrirPopupVelvet({ tipo: "login" });
-      return;
-    }
-    if (!window.__CLIENTE_VIP__) {
-      abrirPopupVelvet({ tipo: "vip" });
-      return;
-    }
-    window.location.href = "/chatcliente.html";
-  });
-
-//   fecharModal?.addEventListener("click", (e) => {
-//   e.preventDefault();
-//   e.stopPropagation();
-
-//   if (modalVideo) {
-//     modalVideo.pause();
-//     modalVideo.src = "";
-//   }
-
-//   modalMidia.classList.add("hidden");
-//  });
-
 });
 
 // ===============================
@@ -416,12 +346,6 @@ function carregarFeedPublico() {
         adicionarMidia(item);
       });
     });
-}
-
-function fecharEscolha() {
-  document
-    .getElementById("escolhaPagamento")
-    .classList.add("hidden");
 }
 
 // ===============================
@@ -876,174 +800,6 @@ function aplicarPerfilNoDOM(modelo) {
   }
 }
 
-
-async function abrirPopupPix() {
-  if (!modelo_id) {
-    alert("Modelo não identificada");
-    return;
-  }
-
-  // 🔢 VALOR BASE (APENAS PARA UI)
-  const valorAssinatura = 20.00;
-
-  // 🔥 CÁLCULO APENAS VISUAL (BACKEND RECALCULA)
-  const taxaTransacao  = Number((valorAssinatura * 0.10).toFixed(2));
-  const taxaPlataforma = Number((valorAssinatura * 0.05).toFixed(2));
-  const valorTotal     = Number(
-    (valorAssinatura + taxaTransacao + taxaPlataforma).toFixed(2)
-  );
-
-  // 🧾 PREENCHE UI
-  document.getElementById("pixValorBase").innerText =
-    valorBRL(valorAssinatura);
-
-  document.getElementById("pixTaxaTransacao").innerText =
-    valorBRL(taxaTransacao);
-
-  document.getElementById("pixTaxaPlataforma").innerText =
-    valorBRL(taxaPlataforma);
-
-  document.getElementById("pixValorTotal").innerText =
-    valorBRL(valorTotal);
-
-  // 🔓 ABRE POPUP
-  document.getElementById("popupPix").classList.remove("hidden");
-
-  // 🔥 CRIA PIX NO BACKEND
-  const res = await fetch("/api/pagamento/vip/pix", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + token
-    },
-    body: JSON.stringify({
-      modelo_id,
-      valor_assinatura: valorAssinatura // 👈 SÓ ISSO
-    })
-  });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    alert(data.error || "Erro ao gerar PIX");
-    return;
-  }
-
-  // 📲 MOSTRA PIX
-  document.getElementById("pixQr").src =
-    "data:image/png;base64," + data.qr_code;
-
-  document.getElementById("pixCopia").value = data.copia_cola;
-
-  // guarda id do pagamento
-  window.__PIX_PAYMENT_ID__ = data.payment_id;
-}
-
-function copiarPix() {
-  const textarea = document.getElementById("pixCopia");
-  textarea.select();
-  document.execCommand("copy");
-  alert("Código Pix copiado 💜");
-}
-
-socket.on("vipAtivado", ({ modelo_id: modeloVip }) => {
-  if (Number(modeloVip) !== Number(modelo_id)) return;
-
-  // 🔒 fecha popup PIX
-  document.getElementById("popupPix")?.classList.add("hidden");
-
-  // 🔔 popup simples de sucesso
-  mostrarVipAtivadoPopup();
-
-  // 🔥 atualiza estado local
-  window.__CLIENTE_VIP__ = true;
-
-  // 🔓 desbloqueia conteúdos
-  carregarFeedPublico();
-});
-
-async function pagarComCartao() {
-  fecharEscolha();
-
-  // 🔢 VALOR BASE (ASSINATURA)
-  const valorAssinatura = 20.00;
-
-  // 🔥 TAXAS PERCENTUAIS (CORRETO)
-  const taxaTransacao  = Number((valorAssinatura * 0.10).toFixed(2)); // 10%
-  const taxaPlataforma = Number((valorAssinatura * 0.05).toFixed(2)); // 5%
-
-  const valorTotal = Number(
-    (valorAssinatura + taxaTransacao + taxaPlataforma).toFixed(2)
-  );
-
-  // 🧾 UI
-  document.getElementById("cartaoValorBase").innerText =
-    valorBRL(valorAssinatura);
-
-  document.getElementById("cartaoTaxaTransacao").innerText =
-    valorBRL(taxaTransacao);
-
-  document.getElementById("cartaoTaxaPlataforma").innerText =
-    valorBRL(taxaPlataforma);
-
-  document.getElementById("cartaoValorTotal").innerText =
-    valorBRL(valorTotal);
-
-  // 🔓 ABRE MODAL
-  document.getElementById("paymentModal").classList.remove("hidden");
-
-  // 🔥 CRIA PAYMENT INTENT
-  const res = await fetch("/api/pagamento/vip/cartao", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + token
-    },
-    body: JSON.stringify({
-      modelo_id,
-      valor_assinatura: valorAssinatura,
-      taxa_transacao: taxaTransacao,
-      taxa_plataforma: taxaPlataforma
-    })
-   });
-
-   const data = await res.json();
-
-   if (!res.ok) {
-    alert(data.error || "Erro no pagamento");
-    return;
-  }
-
-  elements = stripe.elements({ clientSecret: data.clientSecret });
-
-  const paymentElement = elements.create("payment");
-  paymentElement.mount("#payment-element");
-}
-
- // ===============================
- // 💳 CONFIRMAR PAGAMENTO CARTÃO
- // ===============================
- document
-  .querySelector("#paymentModal .btn-confirmar-desbloqueio")
-  ?.addEventListener("click", async () => {
-
-    if (!elements) {
-      alert("Pagamento ainda não inicializado");
-      return;
-    }
-
-    const { error } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: window.location.href // fallback se Stripe pedir redirect
-      }
-    });
-
-    if (error) {
-      alert(error.message);
-    }
-});
-
 async function pagarComCartaoRecorrente() {
   fecharEscolha();
 
@@ -1076,74 +832,13 @@ async function pagarComCartaoRecorrente() {
   paymentElement.mount("#payment-element");
 }
 
-function mostrarVipAtivadoPopup() {
-  const popup = document.getElementById("popupVipAtivado");
+function atualizarUIVip(modelo_id) {
+  const btnVip = document.getElementById("btnVip");
 
-  if (!popup) {
-    console.warn("popupVipAtivado não encontrado no DOM");
-    alert("VIP ativado com sucesso!");
-    return;
-  }
+  if (!btnVip) return;
 
-  popup.classList.remove("hidden");
+  btnVip.textContent = "VIP ativo 💜";
+  btnVip.disabled = true;
 }
 
-
-function fecharVipAtivado() {
-  document
-    .getElementById("popupVipAtivado")
-    .classList.add("hidden");
-}
-
-// ===============================
-// 💜 POPUP VELVET ACESSO
-// ===============================
-
-const popupVelvet   = document.getElementById("popupVelvetAcesso");
-const popupTexto    = document.getElementById("popupVelvetTexto");
-const btnVelvetAcao = document.getElementById("btnVelvetAcao");
-const escolhaPagamento = document.getElementById("escolhaPagamento");
-
-
-function abrirPopupVelvet({ tipo }) {
-  if (!popupVelvet) return;
-
-  // reset básico
-  btnVelvetAcao.onclick = null;
-
-  if (tipo === "login") {
-    popupTexto.textContent =
-      "Entre ou crie sua conta para acessar este conteúdo";
-
-    btnVelvetAcao.textContent = "Entrar / Criar conta";
-    btnVelvetAcao.onclick = () => {
-      window.location.href = "/index.html";
-    };
-  } 
-  else if (tipo === "vip") {
-    popupTexto.textContent =
-      "Assine o VIP para desbloquear este conteúdo exclusivo";
-
-    btnVelvetAcao.textContent = "Assinar VIP";
-    btnVelvetAcao.onclick = abrirEscolhaPagamento;
-  }
-
-  popupVelvet.classList.remove("hidden");
-}
-
-function abrirEscolhaPagamento() {
-  popupVelvet.classList.add("hidden");
-  escolhaPagamento?.classList.remove("hidden");
-}
-
-function fecharPagamento() {
-  const modal = document.getElementById("paymentModal");
-  if (modal) modal.classList.add("hidden");
-
-  // limpeza segura do Stripe
-  const paymentElement = document.getElementById("payment-element");
-  if (paymentElement) paymentElement.innerHTML = "";
-
-  elements = null;
-}
 
