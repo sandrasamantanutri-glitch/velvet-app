@@ -6,53 +6,56 @@ window.__VIP_READY__ = false;
 
 window.socket = io();
 
+const token = localStorage.getItem("token");
+const role  = localStorage.getItem("role");
+
 const params = new URLSearchParams(window.location.search);
 const modeloParam = params.get("id");
 
-const token = localStorage.getItem("token");
-const role  = localStorage.getItem("role");
+if (!modeloParam && role !== "modelo") {
+  console.warn("Perfil público sem modelo_id");
+  window.location.href = "/clientHome.html";
+  throw new Error("modelo_id ausente no perfil público");
+}
+
+let modo = "publico";
+if (role === "modelo" && token && !modeloParam) {
+  modo = "privado";
+}
+if (role === "cliente" && modo === "privado") {
+  window.location.href = "/";
+  throw new Error("Cliente não pode acessar profile privado");
+}
+
+let modelo_id = null;
+
+if (modeloParam) {
+  modelo_id = Number(modeloParam);
+}
+
+if (!modeloParam && modo === "privado") {
+  modelo_id = Number(localStorage.getItem("modelo_id"));
+}
+
+if (!modelo_id || isNaN(modelo_id)) {
+  console.error("modelo_id inválido:", modelo_id);
+  window.location.href = "/";
+  throw new Error("modelo_id inválido");
+}
 
 const ofertaCard = document.getElementById("oferta-card");
 const btnAssinar = document.getElementById("btn-assinar");
 if (btnAssinar) btnAssinar.disabled = true;
 
-let modo = "publico";
+if (token) {
+  window.socket.emit("auth", { token });
 
-if (token && role === "modelo" && !modeloParam) {
-  modo = "privado";
-}
-
-if (role === "cliente" && modo === "privado") {
-  window.location.href = "https://www.velvet.lat";
-  throw new Error("Cliente não pode acessar profile privado");
-}
-
-let modelo_id = modeloParam
-  ? Number(modeloParam)
-  : role === "modelo"
-    ? localStorage.getItem("modelo_id")
-    : null;
-
-// autentica socket
-window.socket.emit("auth", { token });
-
-// registra cliente online
-if (role === "cliente") {
-  window.socket.emit("loginCliente", Number(decodeJWT(token).id));
-}
-
-function decodeJWT(token) {
-  try {
-    const payload = token.split(".")[1];
-    return JSON.parse(atob(payload));
-  } catch (e) {
-    return null;
+  if (role === "cliente") {
+    const payload = decodeJWT(token);
+    if (payload?.id) {
+      window.socket.emit("loginCliente", Number(payload.id));
+    }
   }
-}
-
-function logout() {
-  localStorage.clear();
-  window.location.href = "https://www.velvet.lat";
 }
 
 const avatarImg  = document.getElementById("profileAvatar");
@@ -69,7 +72,19 @@ const bioInput     = document.getElementById("bioInput");
 const localEl = document.getElementById("local-texto");
 const inputUpload = document.getElementById("inputUpload");
 
+function decodeJWT(token) {
+  try {
+    const payload = token.split(".")[1];
+    return JSON.parse(atob(payload));
+  } catch (e) {
+    return null;
+  }
+}
 
+function logout() {
+  localStorage.clear();
+  window.location.href = "https://www.velvet.lat";
+}
 const btnUpload = document.querySelector(".btn-upload");
 if (role !== "modelo" || !token) {
   btnUpload?.remove();
@@ -171,8 +186,6 @@ async function iniciarPerfil() {
     window.location.href = "/index.html";
   }
 }
-
-
 
 
 // ===============================
