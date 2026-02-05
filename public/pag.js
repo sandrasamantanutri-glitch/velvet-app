@@ -67,14 +67,12 @@ function fecharPopupPagamento() {
 
 
 function mostrarMetodo(tipo) {
-  // conteúdo
-  document.getElementById("conteudoPix")
-    .classList.toggle("hidden", tipo !== "pix");
+  const pix = document.getElementById("conteudoPix");
+  const cartao = document.getElementById("conteudoCartao");
 
-  document.getElementById("conteudoCartao")
-    .classList.toggle("hidden", tipo !== "cartao");
+  pix.classList.toggle("hidden", tipo !== "pix");
+  cartao.classList.toggle("hidden", tipo !== "cartao");
 
-  // abas
   document.querySelectorAll(".velvet-tabs .tab")
     .forEach(tab => {
       tab.classList.toggle(
@@ -82,14 +80,8 @@ function mostrarMetodo(tipo) {
         tab.dataset.metodo === tipo
       );
     });
-
-  // se escolher cartão, inicializa cartão
-  if (tipo === "cartao") {
-    // aqui você NÃO paga ainda
-    // só prepara o formulário
-    // pagarComCartao é chamado depois, no submit
-  }
 }
+
 
 
 window.pagarComPix = async function ({
@@ -102,6 +94,7 @@ window.pagarComPix = async function ({
     const token = localStorage.getItem("token");
 
     abrirPopupPagamentoPixLoading();
+    mostrarMetodo("pix");
 
     let url = "";
     let body = {};
