@@ -1,9 +1,7 @@
 //const stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
+const socket = io();
 window.__CLIENTE_VIP__ = false;
 window.__VIP_READY__ = false;
-
-const params = new URLSearchParams(window.location.search);
-const modeloParam = params.get("id");
 
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
