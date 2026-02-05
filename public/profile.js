@@ -138,7 +138,7 @@ async function aplicarRegrasDeAcesso() {
   // VISITANTE (sem login)
   if (!role) {
     ofertaCard.style.display = "block";
-    bloquearMidias?.("login");
+    //bloquearMidias?.("login");
     return;
   }
 
@@ -153,14 +153,14 @@ async function aplicarRegrasDeAcesso() {
       if (vip) {
         ofertaCard.style.display = "none";
         btnChat?.classList.remove("hidden");
-        liberarMidias?.();
+        //liberarMidias?.();
       } else {
         ofertaCard.style.display = "block";
-        bloquearMidias?.("vip");
+       // bloquearMidias?.("vip");
       }
     } catch {
       ofertaCard.style.display = "block";
-      bloquearMidias?.("vip");
+      //bloquearMidias?.("vip");
     }
   }
 }
