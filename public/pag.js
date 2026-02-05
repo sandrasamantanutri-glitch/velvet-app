@@ -21,10 +21,6 @@ function whenSocketReady(cb) {
   }, 50);
 }
 
-if (!window.socket) {
-  console.warn("Socket ainda não inicializado");
-}
-
 const formCartao = document.getElementById("formCartao");
 
 if (formCartao) {
