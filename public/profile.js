@@ -6,17 +6,17 @@
 
 window.socket = io();
 
-// const token = localStorage.getItem("token");
-// const role  = localStorage.getItem("role");
+const token = localStorage.getItem("token");
+const role  = localStorage.getItem("role");
 
 const params = new URLSearchParams(window.location.search);
 const modeloParam = params.get("id");
 
 let modo = "publico";
 
-// if (role === "modelo" && token && !modeloParam) {
-//   modo = "privado";
-// }
+if (role === "modelo" && token && !modeloParam) {
+  modo = "privado";
+}
 
 let modelo_id = null;
 
@@ -69,12 +69,8 @@ const inputUpload = document.getElementById("inputUpload");
 // ===============================
 
 document.addEventListener("DOMContentLoaded", async () => {
-  // aplicarRoleNoBody();
+  aplicarRoleNoBody();
   iniciarPerfil(); // 🔥 perfil + oferta + feed + regras
-  // } catch (err) {
-  //   console.error("Erro ao iniciar perfil:", err);
-  //   return;
-  // }
 
   // 🔔 clique do botão assinar (apenas dispara pagamento)
   btnAssinar?.addEventListener("click", () => {
