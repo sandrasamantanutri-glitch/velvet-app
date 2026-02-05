@@ -14,17 +14,6 @@ if (token && window.io) {
   "use strict";
 
   // ===============================
-  // ESTADO GLOBAL CONTROLADO
-  // ===============================
-  const state = {
-    token: localStorage.getItem("token"),
-    role: localStorage.getItem("role"),
-    modeloId: null,
-    modo: "publico",
-    vip: false
-  };
-
-  // ===============================
   // DOM CACHE (NUNCA null sem checar)
   // ===============================
   const dom = {};
