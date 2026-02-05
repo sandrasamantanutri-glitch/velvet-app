@@ -1,8 +1,8 @@
 // ===============================
 // AUTH GUARD
 // ===============================
-window.__CLIENTE_VIP__ = false;
-window.__VIP_READY__ = false;
+// window.__CLIENTE_VIP__ = false;
+// window.__VIP_READY__ = false;
 
 window.socket = io();
 
@@ -14,18 +14,18 @@ const modeloParam = params.get("id");
 
 let modo = "publico";
 
-if (role === "modelo" && token && !modeloParam) {
-  modo = "privado";
-}
+// if (role === "modelo" && token && !modeloParam) {
+//   modo = "privado";
+// }
 
 let modelo_id = null;
 
-if (modeloParam) { modelo_id = Number(modeloParam);
-}
+// if (modeloParam) { modelo_id = Number(modeloParam);
+// }
 
-if (!modeloParam && modo === "privado") {
-  modelo_id = Number(localStorage.getItem("modelo_id"));
-}
+// if (!modeloParam && modo === "privado") {
+//   modelo_id = Number(localStorage.getItem("modelo_id"));
+// }
 
 // if (!modelo_id || isNaN(modelo_id)) {
 //   console.error("modelo_id inválido:", modelo_id);
