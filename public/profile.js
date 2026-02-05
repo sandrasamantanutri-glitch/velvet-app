@@ -1,7 +1,6 @@
 // ===============================
 // AUTH GUARD
 // ===============================
-let elements;
 window.__CLIENTE_VIP__ = false;
 window.__VIP_READY__ = false;
 
