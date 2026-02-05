@@ -331,7 +331,7 @@ async function pagarComCartao({ tipo, message_id, modelo_id }) {
     }
 
     const data = await res.json();
-    clientSecretAtual = data.client_secret; // 🔥 FIX PRINCIPAL
+    clientSecretAtual = data.clientSecret;
 
     if (!clientSecretAtual) {
       throw new Error("client_secret inválido");
