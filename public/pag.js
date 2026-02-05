@@ -296,16 +296,6 @@ function pagamentoConfirmado() {
   }, 1200);
 }
 
-// 🔓 Conteúdo
-window.socket.on("conteudoVisto", ({ message_id }) => {
-  pagamentoConfirmado();
-});
-
-// 💜 VIP
-window.socket.on("vipAtivado", ({ modelo_id }) => {
-  pagamentoConfirmado();
-  atualizarUIVip?.(modelo_id);
-});
 
 
 
