@@ -93,22 +93,19 @@ if (role !== "modelo" || !token) {
 document.addEventListener("DOMContentLoaded", () => {
   aplicarRoleNoBody();
   iniciarPerfil();
-  const btnAssinar = document.getElementById("btn-assinar");
 
  btnAssinar?.addEventListener("click", () => {
   if (!role) return (window.location.href = "/index.html");
   if (role !== "cliente") return;
 
-  if (!OFERTA_ATUAL) {
-    alert("Oferta indisponível");
+  if (!OFERTA_ATUAL || !OFERTA_ATUAL.modelo_id) {
+    alert("Oferta ainda não carregada. Aguarde um instante.");
     return;
   }
 
-  // 🔥 contexto global (OBRIGATÓRIO)
   window.PAGAMENTO_TIPO_ATUAL = "vip";
   window.MODELO_ID_ATUAL = OFERTA_ATUAL.modelo_id;
 
-  // 🔍 resumo VISUAL (não interfere no pagamento)
   preencherResumoVIP({
     valorBase: OFERTA_ATUAL.valor_base,
     desconto:
@@ -116,11 +113,7 @@ document.addEventListener("DOMContentLoaded", () => {
       OFERTA_ATUAL.valor_promocional
   });
 
-  // 🚀 inicia Pix automaticamente (ele mesmo abre popup + loading)
-  pagarComPix({
-    tipo: "vip",
-    modelo_id: window.MODELO_ID_ATUAL
-  });
+  pagarComPix({ tipo: "vip" }); // pode até omitir modelo_id
 });
 
 });
@@ -347,6 +340,8 @@ async function carregarOfertaAtiva() {
       valorBRL(OFERTA_ATUAL.valor_base);
 
     ofertaCard.style.display = "block";
+    const btnAssinar = document.getElementById("btn-assinar");
+if (btnAssinar) btnAssinar.disabled = false;
 
   } catch (err) {
     console.error("Erro ao carregar oferta:", err);
