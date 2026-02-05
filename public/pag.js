@@ -139,7 +139,12 @@ window.pagarComPix = async function ({
       body: JSON.stringify(body)
     });
 
-    if (!res.ok) throw new Error("Erro Pix");
+    if (!res.ok) {
+  const erro = await res.text();
+  console.error("❌ Pix HTTP:", res.status, erro);
+  throw new Error(`Pix ${res.status}: ${erro}`);
+}
+
 
     const data = await res.json();
 
@@ -162,7 +167,7 @@ window.pagarComPix = async function ({
       ?.classList.remove("hidden");
 
   } catch (err) {
-  console.error("❌ Erro Pix:", err);
+  alert(err.message);
 
   // esconde loading
   document.getElementById("pixLoading")
