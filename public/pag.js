@@ -109,11 +109,24 @@ function mostrarMetodo(tipo) {
 window.pagarComPix = async function ({
   tipo,
   modelo_id,
-  valor_assinatura,
   message_id
 }) {
   try {
     const token = localStorage.getItem("token");
+
+    // 🔒 blindagens essenciais
+    if (!token) {
+      throw new Error("Sessão expirada. Faça login novamente.");
+    }
+
+    if (tipo === "vip") {
+      // garante modelo_id sempre válido
+      modelo_id = modelo_id || window.MODELO_ID_ATUAL;
+
+      if (!modelo_id || isNaN(Number(modelo_id))) {
+        throw new Error("modelo_id inválido (front)");
+      }
+    }
 
     abrirPopupPagamentoPixLoading();
 
@@ -126,9 +139,16 @@ window.pagarComPix = async function ({
     }
 
     if (tipo === "conteudo") {
+      if (!message_id) {
+        throw new Error("message_id inválido");
+      }
+
       url = "/api/pagamento/conteudo/pix";
       body = { message_id };
     }
+
+    // 🔎 LOG PARA DEBUG (pode remover depois)
+    console.log("🟣 Pix payload enviado:", body);
 
     const res = await fetch(url, {
       method: "POST",
@@ -140,18 +160,18 @@ window.pagarComPix = async function ({
     });
 
     if (!res.ok) {
-  const erro = await res.text();
-  console.error("❌ Pix HTTP:", res.status, erro);
-  throw new Error(`Pix ${res.status}: ${erro}`);
-}
-
+      const erro = await res.text();
+      console.error("❌ Pix HTTP:", res.status, erro);
+      throw new Error(`Pix ${res.status}: ${erro}`);
+    }
 
     const data = await res.json();
 
-    // mostra QR
+    // 🧾 mostra QR
     const qr = document.getElementById("pixQr");
     const codigo = document.getElementById("pixCodigo");
-    const btnCopiar = document.querySelector("#conteudoPix .btn-secundario");
+    const btnCopiar =
+      document.querySelector("#conteudoPix .btn-secundario");
 
     qr.src = `data:image/png;base64,${data.qr_code}`;
     codigo.value = data.copia_cola;
@@ -167,19 +187,18 @@ window.pagarComPix = async function ({
       ?.classList.remove("hidden");
 
   } catch (err) {
-  alert(err.message);
+    console.error("❌ Erro Pix FRONT:", err.message);
 
-  // esconde loading
-  document.getElementById("pixLoading")
-    ?.classList.add("hidden");
+    document.getElementById("pixLoading")
+      ?.classList.add("hidden");
 
-  // mostra estado de erro sem fechar popup
-  document.getElementById("pixAguardando")
-    ?.classList.add("hidden");
+    document.getElementById("pixAguardando")
+      ?.classList.add("hidden");
 
-  alert("Não foi possível gerar o Pix agora. Tente novamente.");
+    alert(err.message || "Erro ao gerar Pix. Tente novamente.");
   }
 };
+
 
 function copiarPix() {
   const input = document.getElementById("pixCodigo");

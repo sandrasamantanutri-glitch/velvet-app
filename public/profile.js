@@ -95,7 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
   iniciarPerfil();
   const btnAssinar = document.getElementById("btn-assinar");
 
-btnAssinar?.addEventListener("click", () => {
+ btnAssinar?.addEventListener("click", () => {
   if (!role) return (window.location.href = "/index.html");
   if (role !== "cliente") return;
 
@@ -104,11 +104,11 @@ btnAssinar?.addEventListener("click", () => {
     return;
   }
 
-  // 🔥 contexto do pagamento
+  // 🔥 contexto global (OBRIGATÓRIO)
   window.PAGAMENTO_TIPO_ATUAL = "vip";
   window.MODELO_ID_ATUAL = OFERTA_ATUAL.modelo_id;
 
-  // 🔥 resumo calculado a partir do BANCO
+  // 🔍 resumo VISUAL (não interfere no pagamento)
   preencherResumoVIP({
     valorBase: OFERTA_ATUAL.valor_base,
     desconto:
@@ -116,15 +116,10 @@ btnAssinar?.addEventListener("click", () => {
       OFERTA_ATUAL.valor_promocional
   });
 
-  // 🔥 abre popup existente
-  document
-    .getElementById("popupPagamentoVelvet")
-    .classList.remove("hidden");
-
-      pagarComPix({
+  // 🚀 inicia Pix automaticamente (ele mesmo abre popup + loading)
+  pagarComPix({
     tipo: "vip",
-    modelo_id: OFERTA_ATUAL.modelo_id,
-    valor_assinatura: OFERTA_ATUAL.valor_promocional
+    modelo_id: window.MODELO_ID_ATUAL
   });
 });
 
