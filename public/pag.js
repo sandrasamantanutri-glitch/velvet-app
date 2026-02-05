@@ -2,9 +2,6 @@
 window.__CLIENTE_VIP__ = false;
 window.__VIP_READY__ = false;
 
-const token = localStorage.getItem("token");
-const role  = localStorage.getItem("role");
-
 let cardElement;
 let clientSecretAtual = null;
 
