@@ -121,11 +121,10 @@ btnAssinar?.addEventListener("click", () => {
     .getElementById("popupPagamentoVelvet")
     .classList.remove("hidden");
 
-  // 🔥 inicia PIX com valor FINAL (já com taxa)
-  pagarComPix({
+      pagarComPix({
     tipo: "vip",
     modelo_id: OFERTA_ATUAL.modelo_id,
-    valor_assinatura: window.VALOR_VIP_ATUAL
+    valor_assinatura: OFERTA_ATUAL.valor_promocional
   });
 });
 
