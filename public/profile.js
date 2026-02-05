@@ -184,13 +184,11 @@ async function iniciarPerfil() {
 
 document.addEventListener("DOMContentLoaded", async () => {
   aplicarRoleNoBody();
-
-  try {
-    await iniciarPerfil(); // 🔥 perfil + oferta + feed + regras
-  } catch (err) {
-    console.error("Erro ao iniciar perfil:", err);
-    return;
-  }
+  iniciarPerfil(); // 🔥 perfil + oferta + feed + regras
+  // } catch (err) {
+  //   console.error("Erro ao iniciar perfil:", err);
+  //   return;
+  // }
 
   // 🔔 clique do botão assinar (apenas dispara pagamento)
   btnAssinar?.addEventListener("click", () => {
