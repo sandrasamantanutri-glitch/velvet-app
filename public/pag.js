@@ -118,7 +118,12 @@ function mostrarMetodo(tipo) {
 }
 
 
-async function pagarComPix({ tipo, modelo_id, valor_assinatura, message_id }) {
+window.pagarComPix = async function ({
+  tipo,
+  modelo_id,
+  valor_assinatura,
+  message_id
+}) {
   try {
     const token = localStorage.getItem("token");
 
@@ -150,26 +155,30 @@ async function pagarComPix({ tipo, modelo_id, valor_assinatura, message_id }) {
 
     const data = await res.json();
 
-    // 🔥 mostra QR
-    document.getElementById("pixQr").src =
-      `data:image/png;base64,${data.qr_code}`;
+    // mostra QR
+    const qr = document.getElementById("pixQr");
+    const codigo = document.getElementById("pixCodigo");
+    const btnCopiar = document.querySelector("#conteudoPix .btn-secundario");
 
-    document.getElementById("pixCodigo").value =
-      data.copia_cola;
+    qr.src = `data:image/png;base64,${data.qr_code}`;
+    codigo.value = data.copia_cola;
+
+    qr.classList.remove("hidden");
+    codigo.classList.remove("hidden");
+    btnCopiar?.classList.remove("hidden");
 
     document.getElementById("pixLoading")
-      .classList.add("hidden");
+      ?.classList.add("hidden");
 
     document.getElementById("pixAguardando")
-      .classList.remove("hidden");
+      ?.classList.remove("hidden");
 
   } catch (err) {
     console.error(err);
     alert("Erro ao gerar Pix");
     fecharPopupPagamento();
   }
-}
-
+};
 
 function abrirPopupPagamentoPix({ qr_base64, copia_cola }) {
   const popup = document.getElementById("popupPagamentoVelvet");
