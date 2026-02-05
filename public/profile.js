@@ -5,7 +5,7 @@ let elements;
 window.__CLIENTE_VIP__ = false;
 window.__VIP_READY__ = false;
 
-const socket = io();
+window.socket = io();
 
 const params = new URLSearchParams(window.location.search);
 const modeloParam = params.get("id");

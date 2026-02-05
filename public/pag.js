@@ -5,6 +5,10 @@ window.__VIP_READY__ = false;
 let cardElement;
 let clientSecretAtual = null;
 
+if (!window.socket) {
+  console.warn("Socket ainda não inicializado");
+}
+
 const formCartao = document.getElementById("formCartao");
 
 if (formCartao) {
@@ -23,6 +27,7 @@ if (formCartao) {
     // quem fecha é o SOCKET (webhook)
   });
 }
+
 
 function abrirPopupPagamento(dados) {
   const popup = document.getElementById("popupPagamentoVelvet");
@@ -158,7 +163,7 @@ function abrirPopupPagamentoPixLoading() {
   mostrarMetodo("pix");
 }
 
-socket.on("vipAtivado", ({ modelo_id }) => {
+window.socket.on("vipAtivado", ({ modelo_id }) => {
   document.getElementById("pixAguardando")
     .classList.add("hidden");
 
@@ -171,7 +176,7 @@ socket.on("vipAtivado", ({ modelo_id }) => {
   }, 1500);
 });
 
-socket.on("conteudoVisto", ({ message_id }) => {
+window.socket.on("conteudoVisto", ({ message_id }) => {
   // esconde estados Pix
   document.getElementById("pixLoading")?.classList.add("hidden");
   document.getElementById("pixAguardando")?.classList.add("hidden");
@@ -275,12 +280,12 @@ function pagamentoConfirmado() {
 }
 
 // 🔓 Conteúdo
-socket.on("conteudoVisto", ({ message_id }) => {
+window.socket.on("conteudoVisto", ({ message_id }) => {
   pagamentoConfirmado();
 });
 
 // 💜 VIP
-socket.on("vipAtivado", ({ modelo_id }) => {
+window.socket.on("vipAtivado", ({ modelo_id }) => {
   pagamentoConfirmado();
   atualizarUIVip?.(modelo_id);
 });
