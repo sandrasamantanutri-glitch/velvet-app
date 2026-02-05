@@ -1270,6 +1270,7 @@ app.get("/api/ofertas/ativa/:modelo_id", async (req, res) => {
       `
       SELECT
         id,
+        modelo_id,
         nome,
         desconto_percentual,
         valor_base,

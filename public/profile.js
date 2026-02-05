@@ -305,6 +305,7 @@ function valorBRL(valor) {
 let OFERTA_ATUAL = null;
 
 async function carregarOfertaAtiva() {
+  console.log("🧪 carregarOfertaAtiva chamado com modelo_id =", modelo_id);
   if (!modelo_id || isNaN(Number(modelo_id))) {
     console.warn("⏳ Oferta aguardando modelo_id válido");
     return;
