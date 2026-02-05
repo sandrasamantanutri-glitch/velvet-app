@@ -5,6 +5,20 @@ window.__VIP_READY__ = false;
 let cardElement;
 let clientSecretAtual = null;
 
+function whenSocketReady(cb) {
+  if (window.socket) {
+    cb(window.socket);
+    return;
+  }
+
+  const interval = setInterval(() => {
+    if (window.socket) {
+      clearInterval(interval);
+      cb(window.socket);
+    }
+  }, 50);
+}
+
 if (!window.socket) {
   console.warn("Socket ainda não inicializado");
 }
@@ -163,7 +177,9 @@ function abrirPopupPagamentoPixLoading() {
   mostrarMetodo("pix");
 }
 
-window.socket.on("vipAtivado", ({ modelo_id }) => {
+whenSocketReady((socket) => {
+
+socket.on("vipAtivado", ({ modelo_id }) => {
   document.getElementById("pixAguardando")
     .classList.add("hidden");
 
@@ -176,7 +192,7 @@ window.socket.on("vipAtivado", ({ modelo_id }) => {
   }, 1500);
 });
 
-window.socket.on("conteudoVisto", ({ message_id }) => {
+socket.on("conteudoVisto", ({ message_id }) => {
   // esconde estados Pix
   document.getElementById("pixLoading")?.classList.add("hidden");
   document.getElementById("pixAguardando")?.classList.add("hidden");
@@ -196,6 +212,7 @@ window.socket.on("conteudoVisto", ({ message_id }) => {
     fecharPopupPagamento();
   }, 1200);
 });
+})
 
 
 async function pagarComCartao({ tipo, message_id, modelo_id, valor_assinatura }) {
