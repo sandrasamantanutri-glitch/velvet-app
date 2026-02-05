@@ -2912,24 +2912,25 @@ app.post("/api/vip/cartao/assinatura", authCliente, async (req, res) => {
     });
 
     const invoice = subscription.latest_invoice;
+   let clientSecret = null;
+let intentType = null;
 
-    let clientSecret = null;
+if (invoice?.payment_intent?.client_secret) {
+  clientSecret = invoice.payment_intent.client_secret;
+  intentType = "payment";
+} else if (subscription.pending_setup_intent) {
+  const setupIntent = await stripe.setupIntents.retrieve(
+    subscription.pending_setup_intent
+  );
+  clientSecret = setupIntent.client_secret;
+  intentType = "setup";
+}
 
-    if (invoice?.payment_intent?.client_secret) {
-      clientSecret = invoice.payment_intent.client_secret;
-    } else if (subscription.pending_setup_intent) {
-      const setupIntent = await stripe.setupIntents.retrieve(
-        subscription.pending_setup_intent
-      );
-      clientSecret = setupIntent.client_secret;
-    }
-
-    if (!clientSecret) {
-      throw new Error("client_secret não disponível ainda");
-    }
-
-    res.json({ clientSecret });
-
+res.json({
+  clientSecret,
+  intentType
+});
+ 
   } catch (err) {
     console.error("🔥 ERRO STRIPE ASSINATURA VIP 🔥", err);
     res.status(500).json({
