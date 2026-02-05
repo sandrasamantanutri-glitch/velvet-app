@@ -1,8 +1,8 @@
 // ===============================
 // AUTH GUARD
 // ===============================
-// window.__CLIENTE_VIP__ = false;
-// window.__VIP_READY__ = false;
+window.__CLIENTE_VIP__ = false;
+window.__VIP_READY__ = false;
 
 window.socket = io();
 
@@ -37,16 +37,16 @@ const ofertaCard = document.getElementById("oferta-card");
 const btnAssinar = document.getElementById("btn-assinar");
 if (btnAssinar) btnAssinar.disabled = true;
 
-// if (token) {
-//   window.socket.emit("auth", { token });
+if (token) {
+  window.socket.emit("auth", { token });
 
-//   if (role === "cliente") {
-//     const payload = decodeJWT(token);
-//     if (payload?.id) {
-//       window.socket.emit("loginCliente", Number(payload.id));
-//     }
-//   }
-// }
+  if (role === "cliente") {
+    const payload = decodeJWT(token);
+    if (payload?.id) {
+      window.socket.emit("loginCliente", Number(payload.id));
+    }
+  }
+}
 
 const avatarImg  = document.getElementById("profileAvatar");
 const capaImg    = document.getElementById("profileCapa");
@@ -157,45 +157,45 @@ async function carregarFeedBase() {
   feed.forEach(adicionarMidia);
 }
 
-// async function aplicarRegrasDeAcesso() {
+async function aplicarRegrasDeAcesso() {
 
-//   // MODELO
-//   if (role === "modelo" && modo === "privado") {
-//     ofertaCard.style.display = "block";
-//     btnChat?.classList.remove("hidden");
-//     liberarMidias?.();
-//     return;
-//   }
+  // MODELO
+  if (role === "modelo" && modo === "privado") {
+    ofertaCard.style.display = "block";
+    btnChat?.classList.remove("hidden");
+    liberarMidias?.();
+    return;
+  }
 
-//   // VISITANTE (sem login)
-//   if (!role) {
-//     ofertaCard.style.display = "block";
-//     bloquearMidias?.("login");
-//     return;
-//   }
+  // VISITANTE (sem login)
+  if (!role) {
+    ofertaCard.style.display = "block";
+    bloquearMidias?.("login");
+    return;
+  }
 
-//   // CLIENTE
-//   if (role === "cliente") {
-//     try {
-//       const res = await fetch(`/api/vip/status/${modelo_id}`, {
-//         headers: { Authorization: "Bearer " + token }
-//       });
-//       const { vip } = res.ok ? await res.json() : { vip: false };
+  // CLIENTE
+  if (role === "cliente") {
+    try {
+      const res = await fetch(`/api/vip/status/${modelo_id}`, {
+        headers: { Authorization: "Bearer " + token }
+      });
+      const { vip } = res.ok ? await res.json() : { vip: false };
 
-//       if (vip) {
-//         ofertaCard.style.display = "none";
-//         btnChat?.classList.remove("hidden");
-//         liberarMidias?.();
-//       } else {
-//         ofertaCard.style.display = "block";
-//         bloquearMidias?.("vip");
-//       }
-//     } catch {
-//       ofertaCard.style.display = "block";
-//       bloquearMidias?.("vip");
-//     }
-//   }
-// }
+      if (vip) {
+        ofertaCard.style.display = "none";
+        btnChat?.classList.remove("hidden");
+        liberarMidias?.();
+      } else {
+        ofertaCard.style.display = "block";
+        bloquearMidias?.("vip");
+      }
+    } catch {
+      ofertaCard.style.display = "block";
+      bloquearMidias?.("vip");
+    }
+  }
+}
 
 async function iniciarPerfil() {
 
