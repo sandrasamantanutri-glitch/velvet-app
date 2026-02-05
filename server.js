@@ -2895,40 +2895,50 @@ app.post("/api/vip/cartao/assinatura", authCliente, async (req, res) => {
       return res.status(400).json({ error: "modelo_id inválido" });
     }
 
-    if (!process.env.STRIPE_PRICE_VIP) {
-      throw new Error("STRIPE_PRICE_VIP não configurado");
-    }
-
-    // 1️⃣ Criar customer
     const customer = await stripe.customers.create({
       email,
       metadata: { cliente_id }
     });
 
-    // 2️⃣ Criar assinatura (COM items válidos)
     const subscription = await stripe.subscriptions.create({
       customer: customer.id,
-      items: [
-        { price: process.env.STRIPE_PRICE_VIP }
-      ],
+      items: [{ price: process.env.STRIPE_PRICE_VIP }],
       payment_behavior: "default_incomplete",
-      expand: ["latest_invoice.payment_intent"],
+      expand: [
+        "latest_invoice.payment_intent",
+        "pending_setup_intent"
+      ],
       metadata: { cliente_id, modelo_id }
     });
 
-    res.json({
-      clientSecret: subscription.latest_invoice.payment_intent.client_secret
-    });
+    const invoice = subscription.latest_invoice;
+
+    let clientSecret = null;
+
+    if (invoice?.payment_intent?.client_secret) {
+      clientSecret = invoice.payment_intent.client_secret;
+    } else if (subscription.pending_setup_intent) {
+      const setupIntent = await stripe.setupIntents.retrieve(
+        subscription.pending_setup_intent
+      );
+      clientSecret = setupIntent.client_secret;
+    }
+
+    if (!clientSecret) {
+      throw new Error("client_secret não disponível ainda");
+    }
+
+    res.json({ clientSecret });
 
   } catch (err) {
-    console.error("🔥 ERRO STRIPE ASSINATURA VIP 🔥");
-    console.error(err);
+    console.error("🔥 ERRO STRIPE ASSINATURA VIP 🔥", err);
     res.status(500).json({
       error: "Erro ao iniciar pagamento VIP",
       detalhe: err.message
     });
   }
 });
+
 
 // POST /api/vip/cancelar
 app.post("/api/vip/cancelar", authCliente, async (req, res) => {
