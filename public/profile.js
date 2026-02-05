@@ -6,11 +6,11 @@
 
 window.socket = io();
 
-const token = localStorage.getItem("token");
-const role  = localStorage.getItem("role");
+// const token = localStorage.getItem("token");
+// const role  = localStorage.getItem("role");
 
-const params = new URLSearchParams(window.location.search);
-const modeloParam = params.get("id");
+// const params = new URLSearchParams(window.location.search);
+// const modeloParam = params.get("id");
 
 let modo = "publico";
 
@@ -37,16 +37,16 @@ const ofertaCard = document.getElementById("oferta-card");
 const btnAssinar = document.getElementById("btn-assinar");
 if (btnAssinar) btnAssinar.disabled = true;
 
-if (token) {
-  window.socket.emit("auth", { token });
+// if (token) {
+//   window.socket.emit("auth", { token });
 
-  if (role === "cliente") {
-    const payload = decodeJWT(token);
-    if (payload?.id) {
-      window.socket.emit("loginCliente", Number(payload.id));
-    }
-  }
-}
+//   if (role === "cliente") {
+//     const payload = decodeJWT(token);
+//     if (payload?.id) {
+//       window.socket.emit("loginCliente", Number(payload.id));
+//     }
+//   }
+// }
 
 const avatarImg  = document.getElementById("profileAvatar");
 const capaImg    = document.getElementById("profileCapa");
@@ -69,7 +69,7 @@ const inputUpload = document.getElementById("inputUpload");
 // ===============================
 
 document.addEventListener("DOMContentLoaded", async () => {
-  aplicarRoleNoBody();
+  // aplicarRoleNoBody();
   iniciarPerfil(); // 🔥 perfil + oferta + feed + regras
   // } catch (err) {
   //   console.error("Erro ao iniciar perfil:", err);
@@ -201,17 +201,17 @@ async function carregarFeedBase() {
 //   }
 // }
 
-async function iniciarPerfil() {
-  try {
-    await carregarPerfilBase();   // sempre
-    await carregarOfertaAtiva();  // sempre
-    await carregarFeedBase();     // sempre
-    // await aplicarRegrasDeAcesso();// decide acesso
-  } catch (err) {
-    console.error("Erro ao iniciar perfil:", err);
-    window.location.href = "/index.html";
-  }
-}
+// async function iniciarPerfil() {
+//   try {
+//     await carregarPerfilBase();   // sempre
+//     await carregarOfertaAtiva();  // sempre
+//     await carregarFeedBase();     // sempre
+//     // await aplicarRegrasDeAcesso();// decide acesso
+//   } catch (err) {
+//     console.error("Erro ao iniciar perfil:", err);
+//     window.location.href = "/index.html";
+//   }
+// }
 
 // ===============================
 // TABS DE MÍDIA (FEED / ESPECIAL)
@@ -247,22 +247,22 @@ document.querySelectorAll(".midias-tabs .tab").forEach(tab => {
   });
 });
 
-// ===============================
-// ROLE VISUAL
-// ===============================
-function aplicarRoleNoBody() {
-  document.body.classList.remove("role-modelo", "role-cliente", "role-publico");
-  if (role === "modelo") {
-    document.body.classList.add("role-modelo");
-  } 
-  else if (role === "cliente") {
-    document.body.classList.add("role-cliente");
-  } 
-  else {
-    // VISITANTE
-    document.body.classList.add("role-publico");
-  }
-}
+// // ===============================
+// // ROLE VISUAL
+// // ===============================
+// function aplicarRoleNoBody() {
+//   document.body.classList.remove("role-modelo", "role-cliente", "role-publico");
+//   if (role === "modelo") {
+//     document.body.classList.add("role-modelo");
+//   } 
+//   else if (role === "cliente") {
+//     document.body.classList.add("role-cliente");
+//   } 
+//   else {
+//     // VISITANTE
+//     document.body.classList.add("role-publico");
+//   }
+// }
 
 function valorBRL(valor) {
   return Number(valor).toLocaleString("pt-BR", {
