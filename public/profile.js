@@ -129,10 +129,7 @@ btnAssinar?.addEventListener("click", () => {
   });
 });
 
-
-
 });
-
 
 // ===============================
 // TABS DE MÍDIA (FEED / ESPECIAL)
