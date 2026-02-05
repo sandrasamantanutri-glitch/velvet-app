@@ -16,19 +16,19 @@ const ofertaCard = document.getElementById("oferta-card");
 const btnAssinar = document.getElementById("btn-assinar");
 if (btnAssinar) btnAssinar.disabled = true;
 
-//DEFINIÇÃO SEGURA DE MODO
-let modo = "publico";
-if (token && role === "modelo" && !modeloParam) {
-  modo = "privado";
-}
+// //DEFINIÇÃO SEGURA DE MODO
+// let modo = "publico";
+// if (token && role === "modelo" && !modeloParam) {
+//   modo = "privado";
+// }
 
-if (role === "cliente" && modo === "privado") {
-  window.location.href = "https://www.velvet.lat";
-  throw new Error("Cliente não pode acessar profile privado");
-}
-if (modo === "publico") {
-  localStorage.removeItem("modelo_id");
-}
+// if (role === "cliente" && modo === "privado") {
+//   window.location.href = "https://www.velvet.lat";
+//   throw new Error("Cliente não pode acessar profile privado");
+// }
+// if (modo === "publico") {
+//   localStorage.removeItem("modelo_id");
+// }
 
 let modelo_id = modeloParam
   ? Number(modeloParam)
@@ -56,17 +56,6 @@ function decodeJWT(token) {
 function logout() {
   localStorage.clear();
   window.location.href = "https://www.velvet.lat";
-}
-
-// ===============================
-// ELEMENTOS DO PERFIL
-// ===============================
-
-// 🔒 Guard APENAS para perfil público
-if (modo === "publico" && (!modelo_id || modelo_id === "undefined")) {
-  alert("Modelo não identificada.");
-  window.location.href = "/clientHome.html";
-  throw new Error("modelo_id ausente no perfil público");
 }
 
 const avatarImg  = document.getElementById("profileAvatar");
@@ -175,14 +164,15 @@ async function iniciarPerfil() {
   // MODELO (perfil próprio)
   if (modo === "privado" && role === "modelo") {
     await carregarPerfil();        // garante modelo_id
-    await carregarOfertaAtiva();   // oferta SEMPRE depois do modelo_id
+    await carregarOfertaAtiva();   // oferta
     carregarFeed();
     return;
   }
 
   // CLIENTE ou VISITANTE (perfil público)
   if (modo === "publico" && modelo_id) {
-    await carregarPerfilPublico();
+    await carregarPerfilPublico(); // dados públicos
+    await carregarOfertaAtiva();   // 🔥 FALTAVA ISSO
     return;
   }
 
@@ -190,6 +180,7 @@ async function iniciarPerfil() {
   console.warn("Perfil inválido, redirecionando");
   window.location.href = "/index.html";
 }
+
 
 
 function valorBRL(valor) {
