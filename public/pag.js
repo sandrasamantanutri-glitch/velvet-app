@@ -2,15 +2,12 @@
 window.__CLIENTE_VIP__ = false;
 window.__VIP_READY__ = false;
 
-const socket = io();
-
 const params = new URLSearchParams(window.location.search);
 const modeloParam = params.get("id");
 
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
 
-let elements;
 let cardElement;
 let clientSecretAtual = null;
 
