@@ -96,66 +96,35 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnAssinar = document.getElementById("btn-assinar");
 
 btnAssinar?.addEventListener("click", () => {
-  if (!role) {
-    window.location.href = "/index.html";
-    return;
-  }
-
+  if (!role) return (window.location.href = "/index.html");
   if (role !== "cliente") return;
 
-  if (!modelo_id || isNaN(Number(modelo_id))) {
-    console.warn("modelo_id inválido");
+  if (!OFERTA_ATUAL) {
+    alert("Oferta indisponível");
     return;
   }
 
-  // 🔹 VALOR COM DESCONTO (o que aparece no botão)
-  const precoTexto =
-    document.getElementById("preco-desconto")?.textContent || "";
-
-  const valorComDesconto = Number(
-    precoTexto.replace(/[^\d,]/g, "").replace(",", ".")
-  );
-
-  if (!valorComDesconto || valorComDesconto <= 0) {
-    alert("Valor inválido");
-    return;
-  }
-
-  // 🔹 VALOR ORIGINAL (do texto "Preço original")
-  const precoOriginalTexto =
-    document.getElementById("preco-original")?.textContent || "";
-
-  const valorOriginal = Number(
-    precoOriginalTexto.replace(/[^\d,]/g, "").replace(",", ".")
-  );
-
-  if (!valorOriginal || valorOriginal <= 0) {
-    alert("Preço original inválido");
-    return;
-  }
-
-  // 🔹 DESCONTO REAL
-  const valorDesconto = valorOriginal - valorComDesconto;
-
-  // 🔥 CONTEXTO DO PAGAMENTO
+  // 🔥 contexto do pagamento
   window.PAGAMENTO_TIPO_ATUAL = "vip";
-  window.MODELO_ID_ATUAL = modelo_id;
+  window.MODELO_ID_ATUAL = OFERTA_ATUAL.modelo_id;
 
-  // 🔥 PREENCHE RESUMO (DESCONTO + TAXA 15% + TOTAL)
+  // 🔥 resumo calculado a partir do BANCO
   preencherResumoVIP({
-    valorBase: valorOriginal,
-    desconto: valorDesconto
+    valorBase: OFERTA_ATUAL.valor_base,
+    desconto:
+      OFERTA_ATUAL.valor_base -
+      OFERTA_ATUAL.valor_promocional
   });
 
-  // 🔥 ABRE POPUP (mostra valores antes)
+  // 🔥 abre popup existente
   document
     .getElementById("popupPagamentoVelvet")
     .classList.remove("hidden");
 
-  // 🔥 INICIA PIX AUTOMATICAMENTE (COM VALOR FINAL!)
+  // 🔥 inicia PIX com valor FINAL (já com taxa)
   pagarComPix({
     tipo: "vip",
-    modelo_id,
+    modelo_id: OFERTA_ATUAL.modelo_id,
     valor_assinatura: window.VALOR_VIP_ATUAL
   });
 });
@@ -324,6 +293,8 @@ if (role === "modelo") {
   window.__VIP_READY__ = true;
 }
 
+// 🔒 oferta ativa vira fonte da verdade
+let OFERTA_ATUAL = null;
 
 async function carregarOfertaAtiva() {
   if (!modelo_id || isNaN(Number(modelo_id))) {
@@ -333,6 +304,7 @@ async function carregarOfertaAtiva() {
 
   const precoDescontoEl = document.getElementById("preco-desconto");
   const precoOriginalEl = document.getElementById("preco-original");
+  const descontoEl = document.getElementById("oferta-desconto");
 
   if (!ofertaCard || !precoDescontoEl || !precoOriginalEl) {
     console.warn("Elementos da oferta não encontrados");
@@ -344,6 +316,7 @@ async function carregarOfertaAtiva() {
 
     if (!res.ok) {
       ofertaCard.style.display = "none";
+      OFERTA_ATUAL = null;
       return;
     }
 
@@ -351,31 +324,46 @@ async function carregarOfertaAtiva() {
 
     if (!data.ativa || !data.oferta) {
       ofertaCard.style.display = "none";
+      OFERTA_ATUAL = null;
       return;
     }
 
     const oferta = data.oferta;
 
-    // badge
-    const descontoEl = document.getElementById("oferta-desconto");
+    // 🔥 salva a oferta globalmente (não usar DOM depois)
+    OFERTA_ATUAL = {
+      id: oferta.id,
+      modelo_id: oferta.modelo_id,
+      valor_base: Number(oferta.valor_base),
+      valor_promocional: Number(oferta.valor_promocional),
+      desconto_percentual: Number(oferta.desconto_percentual || 0)
+    };
 
-   if (descontoEl && oferta.desconto_percentual != null) {
-   descontoEl.textContent = `Economize ${oferta.desconto_percentual}%`;
-   } else if (descontoEl) {
-   descontoEl.style.display = "none";
+    // 🎯 badge de desconto
+    if (descontoEl && OFERTA_ATUAL.desconto_percentual > 0) {
+      descontoEl.textContent =
+        `Economize ${OFERTA_ATUAL.desconto_percentual}%`;
+      descontoEl.style.display = "inline-block";
+    } else if (descontoEl) {
+      descontoEl.style.display = "none";
     }
-    // preços formatados
+
+    // 💰 preços no layout
     precoDescontoEl.textContent =
-      valorBRL(Number(oferta.valor_promocional));
+      valorBRL(OFERTA_ATUAL.valor_promocional);
 
     precoOriginalEl.textContent =
-      valorBRL(Number(oferta.valor_base));
+      valorBRL(OFERTA_ATUAL.valor_base);
+
+    ofertaCard.style.display = "block";
 
   } catch (err) {
     console.error("Erro ao carregar oferta:", err);
     ofertaCard.style.display = "none";
+    OFERTA_ATUAL = null;
   }
 }
+
 
 // ===============================
 // FEED
