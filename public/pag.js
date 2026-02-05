@@ -68,18 +68,28 @@ function fecharPopupPagamento() {
 
 
 function mostrarMetodo(tipo) {
+  // conteúdo
   document.getElementById("conteudoPix")
     .classList.toggle("hidden", tipo !== "pix");
 
   document.getElementById("conteudoCartao")
     .classList.toggle("hidden", tipo !== "cartao");
 
+  // abas
   document.querySelectorAll(".velvet-tabs .tab")
-    .forEach(t => t.classList.remove("active"));
+    .forEach(tab => {
+      tab.classList.toggle(
+        "active",
+        tab.dataset.metodo === tipo
+      );
+    });
 
-  document
-    .querySelector(`.tab[onclick*="${tipo}"]`)
-    .classList.add("active");
+  // se escolher cartão, inicializa cartão
+  if (tipo === "cartao") {
+    // aqui você NÃO paga ainda
+    // só prepara o formulário
+    // pagarComCartao é chamado depois, no submit
+  }
 }
 
 

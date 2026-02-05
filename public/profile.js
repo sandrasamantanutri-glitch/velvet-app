@@ -123,13 +123,11 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("Valor inválido");
       return;
     }
-
-    // 🔥 ABRE POPUP NOVO
-    abrirPopupPagamento({
-      tipo: "vip",
-      modelo_id,
-      valor_assinatura: valorAssinatura
-    });
+    pagarComPix({
+  tipo: "vip",
+  modelo_id,
+  valor_assinatura: valorAssinatura
+   });
   });
 });
 
