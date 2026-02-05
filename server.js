@@ -2889,41 +2889,32 @@ app.post("/api/vip/cartao/assinatura", authCliente, async (req, res) => {
   try {
     const { modelo_id } = req.body;
     const cliente_id = req.user.id;
-    const email = req.user.email; // ⚠️ precisa existir
+    const email = req.user.email;
 
     if (!modelo_id) {
       return res.status(400).json({ error: "modelo_id inválido" });
     }
 
-    // 1️⃣ Criar ou reutilizar customer
+    if (!process.env.STRIPE_PRICE_VIP) {
+      throw new Error("STRIPE_PRICE_VIP não configurado");
+    }
+
+    // 1️⃣ Criar customer
     const customer = await stripe.customers.create({
       email,
       metadata: { cliente_id }
     });
 
-    // 2️⃣ Criar assinatura
+    // 2️⃣ Criar assinatura (COM items válidos)
     const subscription = await stripe.subscriptions.create({
       customer: customer.id,
-      items: [{ price: process.env.STRIPE_PRICE_VIP }],
+      items: [
+        { price: process.env.STRIPE_PRICE_VIP }
+      ],
       payment_behavior: "default_incomplete",
       expand: ["latest_invoice.payment_intent"],
       metadata: { cliente_id, modelo_id }
     });
-
-    // 3️⃣ Registrar VIP local (ativo após confirmação)
-    await db.query(`
-      INSERT INTO vip_subscriptions (
-        cliente_id,
-        modelo_id,
-        ativo,
-        recorrente,
-        stripe_subscription_id
-      ) VALUES ($1, $2, false, true, $3)
-      ON CONFLICT (cliente_id, modelo_id)
-      DO UPDATE SET
-        recorrente = true,
-        stripe_subscription_id = $3
-    `, [cliente_id, modelo_id, subscription.id]);
 
     res.json({
       clientSecret: subscription.latest_invoice.payment_intent.client_secret
@@ -2938,7 +2929,6 @@ app.post("/api/vip/cartao/assinatura", authCliente, async (req, res) => {
     });
   }
 });
-
 
 // POST /api/vip/cancelar
 app.post("/api/vip/cancelar", authCliente, async (req, res) => {
