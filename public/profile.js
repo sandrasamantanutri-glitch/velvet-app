@@ -171,10 +171,13 @@ async function iniciarPerfil() {
     await carregarOfertaAtiva();  // sempre
     await carregarFeedBase();     // sempre
     await aplicarRegrasDeAcesso();// decide acesso
-  } catch (err) {
-    console.error("Erro ao iniciar perfil:", err);
-    window.location.href = "/index.html";
   }
+ catch (err) {
+  console.error("🔥 ERRO REAL AO INICIAR PERFIL 🔥");
+  console.error(err);
+  console.trace();
+  alert(err.message || err);
+}
 }
 
 
