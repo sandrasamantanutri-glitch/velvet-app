@@ -2712,35 +2712,49 @@ io.to(sala).emit("conteudoVisto", {
   }
 });
 
-
 app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
   try {
-    const { modelo_id, valor_assinatura } = req.body;
-
+    const { modelo_id } = req.body;
     const cliente_id = req.user.id;
 
-    // 🔒 VALIDAÇÕES BÁSICAS
-    const valorAssinatura = Number(valor_assinatura);
-
-    if (!modelo_id || !valorAssinatura || valorAssinatura <= 0) {
-      return res.status(400).json({ error: "Dados inválidos" });
+    if (!modelo_id || isNaN(Number(modelo_id))) {
+      return res.status(400).json({ error: "modelo_id inválido" });
     }
 
-    // 🔥 TAXAS OFICIAIS (BACKEND É A FONTE DA VERDADE)
-    const taxaTransacao  = Number((valorAssinatura * 0.10).toFixed(2)); // 10%
-    const taxaPlataforma = Number((valorAssinatura * 0.05).toFixed(2)); // 5%
+    // 🔍 BUSCA OFERTA ATIVA
+    const ofertaRes = await db.query(
+      `
+      SELECT valor_promocional
+      FROM ofertas
+      WHERE modelo_id = $1
+        AND ativa = true
+        AND NOW() BETWEEN data_inicio AND data_fim
+      LIMIT 1
+      `,
+      [modelo_id]
+    );
+
+    if (ofertaRes.rows.length === 0) {
+      return res.status(400).json({
+        error: "Oferta VIP indisponível"
+      });
+    }
+
+    const valorAssinatura = Number(ofertaRes.rows[0].valor_promocional);
+
+    // 🔒 TAXAS NO BACKEND
+    const taxaTransacao  = Number((valorAssinatura * 0.10).toFixed(2));
+    const taxaPlataforma = Number((valorAssinatura * 0.05).toFixed(2));
 
     const valorTotal = Number(
       (valorAssinatura + taxaTransacao + taxaPlataforma).toFixed(2)
     );
 
-    // Stripe trabalha em centavos
-    const amount = Math.round(valorTotal * 100);
-
+    // 💳 STRIPE — PAYMENT INTENT
     const paymentIntent = await stripe.paymentIntents.create({
-      amount,
+      amount: Math.round(valorTotal * 100), // centavos
       currency: "brl",
-      payment_method_types: ["card"],
+      automatic_payment_methods: { enabled: true },
       metadata: {
         tipo: "vip",
         cliente_id,
@@ -2751,15 +2765,16 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
       }
     });
 
-    return res.json({
-      clientSecret: paymentIntent.client_secret
+    res.json({
+    clientSecretAtual : data.client_secret
     });
+    if (!clientSecretAtual) {
+  throw new Error("client_secret inválido");
+}
 
   } catch (err) {
-    console.error("❌ Erro Stripe VIP:", err);
-    return res.status(500).json({
-      error: "Erro ao criar pagamento com cartão"
-    });
+    console.error("🔥 ERRO CARTÃO VIP:", err);
+    res.status(500).json({ error: "Erro ao iniciar pagamento VIP" });
   }
 });
 

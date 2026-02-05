@@ -258,12 +258,20 @@ function initStripe() {
   return stripe;
 }
 
+async function pagarComCartao({ tipo, message_id, modelo_id }) {
+  initStripe();
 
-async function pagarComCartao({ tipo, message_id, modelo_id, valor_assinatura }) {
-    initStripe();
   try {
     const token = localStorage.getItem("token");
+
     mostrarMetodo("cartao");
+
+    // 🔄 limpa estado anterior
+    if (cardElement) {
+      cardElement.unmount();
+      cardElement = null;
+      elements = null;
+    }
 
     document.getElementById("cartaoLoading")
       .classList.remove("hidden");
@@ -274,23 +282,15 @@ async function pagarComCartao({ tipo, message_id, modelo_id, valor_assinatura })
     let url = "";
     let body = {};
 
-    // 🔓 CONTEÚDO
     if (tipo === "conteudo") {
       url = "/api/pagamento/conteudo/cartao";
       body = { message_id };
     }
 
-    // 💜 VIP avulso
     if (tipo === "vip") {
-    url = "/api/pagamento/vip/cartao";
-    body = { modelo_id };
-}
-
-    // ⚠️ VIP recorrente (OUTRO fluxo – não usar aqui ainda)
-    // if (tipo === "vip_recorrente") {
-    //   url = "/api/vip/cartao/assinatura";
-    //   body = { modelo_id };
-    // }
+      url = "/api/pagamento/vip/cartao";
+      body = { modelo_id };
+    }
 
     const res = await fetch(url, {
       method: "POST",
@@ -301,10 +301,17 @@ async function pagarComCartao({ tipo, message_id, modelo_id, valor_assinatura })
       body: JSON.stringify(body)
     });
 
-    if (!res.ok) throw new Error("Erro cartão");
+    if (!res.ok) {
+      const erro = await res.text();
+      throw new Error(`Erro cartão ${res.status}: ${erro}`);
+    }
 
     const data = await res.json();
-    clientSecretAtual = data.clientSecret;
+    clientSecretAtual = data.client_secret; // 🔥 FIX PRINCIPAL
+
+    if (!clientSecretAtual) {
+      throw new Error("client_secret inválido");
+    }
 
     elements = stripe.elements({ clientSecret: clientSecretAtual });
     cardElement = elements.create("payment");
@@ -332,7 +339,6 @@ window.iniciarCartao = function () {
 };
 
 function pagamentoConfirmado() {
-  // Pix
   document.getElementById("pixLoading")?.classList.add("hidden");
   document.getElementById("pixAguardando")?.classList.add("hidden");
 
