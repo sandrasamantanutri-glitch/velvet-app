@@ -14,11 +14,6 @@ const modeloParam = params.get("id");
 
 let modo = "publico";
 
-if (!modeloParam && !role) {
-  window.location.href = "/clientHome.html";
-  throw new Error("Visitante sem modelo_id");
-}
-
 if (role === "modelo" && token && !modeloParam) {
   modo = "privado";
 }
@@ -32,11 +27,11 @@ if (!modeloParam && modo === "privado") {
   modelo_id = Number(localStorage.getItem("modelo_id"));
 }
 
-if (!modelo_id || isNaN(modelo_id)) {
-  console.error("modelo_id inválido:", modelo_id);
-  window.location.href = "/";
-  throw new Error("modelo_id inválido");
-}
+// if (!modelo_id || isNaN(modelo_id)) {
+//   console.error("modelo_id inválido:", modelo_id);
+//   window.location.href = "/";
+//   throw new Error("modelo_id inválido");
+// }
 
 const ofertaCard = document.getElementById("oferta-card");
 const btnAssinar = document.getElementById("btn-assinar");
