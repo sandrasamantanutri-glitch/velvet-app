@@ -201,17 +201,27 @@ async function carregarFeedBase() {
 //   }
 // }
 
-// async function iniciarPerfil() {
-//   try {
-//     await carregarPerfilBase();   // sempre
-//     await carregarOfertaAtiva();  // sempre
-//     await carregarFeedBase();     // sempre
-//     // await aplicarRegrasDeAcesso();// decide acesso
-//   } catch (err) {
-//     console.error("Erro ao iniciar perfil:", err);
-//     window.location.href = "/index.html";
-//   }
-// }
+async function iniciarPerfil() {
+
+  // MODELO (perfil próprio)
+  if (modo === "privado" && role === "modelo") {
+    await carregarPerfil();        // garante modelo_id
+    await carregarOfertaAtiva();   // oferta
+    carregarFeed();
+    return;
+  }
+
+  // CLIENTE ou VISITANTE (perfil público)
+  if (modo === "publico" && modelo_id) {
+    await carregarPerfilPublico(); // dados públicos
+    await carregarOfertaAtiva();   // 🔥 FALTAVA ISSO
+    return;
+  }
+
+  // fallback de segurança
+  console.warn("Perfil inválido, redirecionando");
+  window.location.href = "/index.html";
+}
 
 // ===============================
 // TABS DE MÍDIA (FEED / ESPECIAL)
@@ -247,22 +257,22 @@ document.querySelectorAll(".midias-tabs .tab").forEach(tab => {
   });
 });
 
-// // ===============================
-// // ROLE VISUAL
-// // ===============================
-// function aplicarRoleNoBody() {
-//   document.body.classList.remove("role-modelo", "role-cliente", "role-publico");
-//   if (role === "modelo") {
-//     document.body.classList.add("role-modelo");
-//   } 
-//   else if (role === "cliente") {
-//     document.body.classList.add("role-cliente");
-//   } 
-//   else {
-//     // VISITANTE
-//     document.body.classList.add("role-publico");
-//   }
-// }
+// ===============================
+// ROLE VISUAL
+// ===============================
+function aplicarRoleNoBody() {
+  document.body.classList.remove("role-modelo", "role-cliente", "role-publico");
+  if (role === "modelo") {
+    document.body.classList.add("role-modelo");
+  } 
+  else if (role === "cliente") {
+    document.body.classList.add("role-cliente");
+  } 
+  else {
+    // VISITANTE
+    document.body.classList.add("role-publico");
+  }
+}
 
 function valorBRL(valor) {
   return Number(valor).toLocaleString("pt-BR", {
