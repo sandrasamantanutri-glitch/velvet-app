@@ -1,8 +1,8 @@
 // ===============================
 // AUTH GUARD
 // ===============================
-window.__CLIENTE_VIP__ = false;
-window.__VIP_READY__ = false;
+// window.__CLIENTE_VIP__ = false;
+// window.__VIP_READY__ = false;
 
 window.socket = io();
 
@@ -13,9 +13,15 @@ const params = new URLSearchParams(window.location.search);
 const modeloParam = params.get("id");
 
 let modo = "publico";
+if (!modeloParam && role === "modelo" && token) {
+}
 
 if (role === "modelo" && token && !modeloParam) {
   modo = "privado";
+}
+if (role === "cliente" && modo === "privado") {
+  window.location.href = "/";
+  throw new Error("Cliente não pode acessar profile privado");
 }
 
 let modelo_id = null;
@@ -23,15 +29,15 @@ let modelo_id = null;
 if (modeloParam) { modelo_id = Number(modeloParam);
 }
 
-// if (!modeloParam && modo === "privado") {
-//   modelo_id = Number(localStorage.getItem("modelo_id"));
-// }
+if (!modeloParam && modo === "privado") {
+  modelo_id = Number(localStorage.getItem("modelo_id"));
+}
 
-// if (!modelo_id || isNaN(modelo_id)) {
-//   console.error("modelo_id inválido:", modelo_id);
-//   window.location.href = "/";
-//   throw new Error("modelo_id inválido");
-// }
+if (!modelo_id || isNaN(modelo_id)) {
+  console.error("modelo_id inválido:", modelo_id);
+  window.location.href = "/";
+  throw new Error("modelo_id inválido");
+}
 
 const ofertaCard = document.getElementById("oferta-card");
 const btnAssinar = document.getElementById("btn-assinar");
@@ -61,37 +67,6 @@ const btnSalvarBio = document.getElementById("btnSalvarBio");
 const bioInput     = document.getElementById("bioInput");
 const localEl = document.getElementById("local-texto");
 const inputUpload = document.getElementById("inputUpload");
-
-
-// ===============================
-// DOM
-// ===============================
-
-document.addEventListener("DOMContentLoaded", async () => {
-  aplicarRoleNoBody();
-  iniciarPerfil(); // 🔥 perfil + oferta + feed + regras
-
-  // 🔔 clique do botão assinar (apenas dispara pagamento)
-  btnAssinar?.addEventListener("click", () => {
-    if (!OFERTA_ATUAL || !OFERTA_ATUAL.modelo_id) {
-      alert("Oferta ainda não carregada. Aguarde um instante.");
-      return;
-    }
-
-    window.PAGAMENTO_TIPO_ATUAL = "vip";
-    window.MODELO_ID_ATUAL = OFERTA_ATUAL.modelo_id;
-
-    preencherResumoVIP({
-      valorBase: OFERTA_ATUAL.valor_base,
-      desconto:
-        OFERTA_ATUAL.valor_base -
-        OFERTA_ATUAL.valor_promocional
-    });
-
-    pagarComPix({ tipo: "vip" });
-  });
-});
-
 
 function decodeJWT(token) {
   try {
@@ -197,26 +172,52 @@ async function aplicarRegrasDeAcesso() {
 }
 
 async function iniciarPerfil() {
+  try {
+    await carregarPerfilBase();   // sempre
+    await carregarOfertaAtiva();  // sempre
+    await carregarFeedBase();     // sempre
+    await aplicarRegrasDeAcesso();// decide acesso
+  } catch (err) {
+    console.error("Erro ao iniciar perfil:", err);
+    window.location.href = "/index.html";
+  }
+}
 
-  // MODELO (perfil próprio)
-  if (modo === "privado" && role === "modelo") {
-    await carregarPerfil();        // garante modelo_id
-    await carregarOfertaAtiva();   // oferta
-    carregarFeed();
+
+// ===============================
+// DOM
+// ===============================
+
+document.addEventListener("DOMContentLoaded", async () => {
+  aplicarRoleNoBody();
+
+  try {
+    await iniciarPerfil(); // 🔥 perfil + oferta + feed + regras
+  } catch (err) {
+    console.error("Erro ao iniciar perfil:", err);
     return;
   }
 
-  // // CLIENTE ou VISITANTE (perfil público)
-  // if (modo === "publico" && modelo_id) {
-  //   await carregarPerfilPublico(); // dados públicos
-  //   await carregarOfertaAtiva();   // 🔥 FALTAVA ISSO
-  //   return;
-  // }
+  // 🔔 clique do botão assinar (apenas dispara pagamento)
+  btnAssinar?.addEventListener("click", () => {
+    if (!OFERTA_ATUAL || !OFERTA_ATUAL.modelo_id) {
+      alert("Oferta ainda não carregada. Aguarde um instante.");
+      return;
+    }
 
-  // fallback de segurança
-  console.warn("Perfil inválido, redirecionando");
-  window.location.href = "/index.html";
-}
+    window.PAGAMENTO_TIPO_ATUAL = "vip";
+    window.MODELO_ID_ATUAL = OFERTA_ATUAL.modelo_id;
+
+    preencherResumoVIP({
+      valorBase: OFERTA_ATUAL.valor_base,
+      desconto:
+        OFERTA_ATUAL.valor_base -
+        OFERTA_ATUAL.valor_promocional
+    });
+
+    pagarComPix({ tipo: "vip" });
+  });
+});
 
 // ===============================
 // TABS DE MÍDIA (FEED / ESPECIAL)
