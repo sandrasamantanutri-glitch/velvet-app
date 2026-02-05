@@ -62,6 +62,42 @@ const bioInput     = document.getElementById("bioInput");
 const localEl = document.getElementById("local-texto");
 const inputUpload = document.getElementById("inputUpload");
 
+
+
+// ===============================
+// DOM
+// ===============================
+
+document.addEventListener("DOMContentLoaded", async () => {
+  aplicarRoleNoBody();
+  iniciarPerfil(); // 🔥 perfil + oferta + feed + regras
+  // } catch (err) {
+  //   console.error("Erro ao iniciar perfil:", err);
+  //   return;
+  // }
+
+  // 🔔 clique do botão assinar (apenas dispara pagamento)
+  btnAssinar?.addEventListener("click", () => {
+    if (!OFERTA_ATUAL || !OFERTA_ATUAL.modelo_id) {
+      alert("Oferta ainda não carregada. Aguarde um instante.");
+      return;
+    }
+
+    window.PAGAMENTO_TIPO_ATUAL = "vip";
+    window.MODELO_ID_ATUAL = OFERTA_ATUAL.modelo_id;
+
+    preencherResumoVIP({
+      valorBase: OFERTA_ATUAL.valor_base,
+      desconto:
+        OFERTA_ATUAL.valor_base -
+        OFERTA_ATUAL.valor_promocional
+    });
+
+    pagarComPix({ tipo: "vip" });
+  });
+});
+
+
 function decodeJWT(token) {
   try {
     const payload = token.split(".")[1];
@@ -176,40 +212,6 @@ async function iniciarPerfil() {
     window.location.href = "/index.html";
   }
 }
-
-
-// ===============================
-// DOM
-// ===============================
-
-document.addEventListener("DOMContentLoaded", async () => {
-  aplicarRoleNoBody();
-  iniciarPerfil(); // 🔥 perfil + oferta + feed + regras
-  // } catch (err) {
-  //   console.error("Erro ao iniciar perfil:", err);
-  //   return;
-  // }
-
-  // 🔔 clique do botão assinar (apenas dispara pagamento)
-  btnAssinar?.addEventListener("click", () => {
-    if (!OFERTA_ATUAL || !OFERTA_ATUAL.modelo_id) {
-      alert("Oferta ainda não carregada. Aguarde um instante.");
-      return;
-    }
-
-    window.PAGAMENTO_TIPO_ATUAL = "vip";
-    window.MODELO_ID_ATUAL = OFERTA_ATUAL.modelo_id;
-
-    preencherResumoVIP({
-      valorBase: OFERTA_ATUAL.valor_base,
-      desconto:
-        OFERTA_ATUAL.valor_base -
-        OFERTA_ATUAL.valor_promocional
-    });
-
-    pagarComPix({ tipo: "vip" });
-  });
-});
 
 // ===============================
 // TABS DE MÍDIA (FEED / ESPECIAL)
