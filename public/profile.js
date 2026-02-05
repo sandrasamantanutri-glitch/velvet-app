@@ -12,9 +12,7 @@ const modeloParam = params.get("id");
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
 
-
-  const btnAssinar = document.getElementById("btn-assinar");
-  const ofertaCard = document.getElementById("oferta-card");
+const ofertaCard = document.getElementById("oferta-card");
 
 //DEFINIÇÃO SEGURA DE MODO
 let modo = "publico";
@@ -95,10 +93,9 @@ if (role !== "modelo" || !token) {
 document.addEventListener("DOMContentLoaded", () => {
   aplicarRoleNoBody();
   iniciarPerfil();
-
   const btnAssinar = document.getElementById("btn-assinar");
 
-  btnAssinar?.addEventListener("click", () => {
+btnAssinar?.addEventListener("click", () => {
   if (!role) {
     window.location.href = "/index.html";
     return;
@@ -111,33 +108,59 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
+  // 🔹 VALOR COM DESCONTO (o que aparece no botão)
   const precoTexto =
     document.getElementById("preco-desconto")?.textContent || "";
 
-  const valorAssinatura = Number(
+  const valorComDesconto = Number(
     precoTexto.replace(/[^\d,]/g, "").replace(",", ".")
   );
 
-  if (!valorAssinatura || valorAssinatura <= 0) {
+  if (!valorComDesconto || valorComDesconto <= 0) {
     alert("Valor inválido");
     return;
   }
 
-  // 🔥 CONTEXTO DO PAGAMENTO (AQUI!)
+  // 🔹 VALOR ORIGINAL (do texto "Preço original")
+  const precoOriginalTexto =
+    document.getElementById("preco-original")?.textContent || "";
+
+  const valorOriginal = Number(
+    precoOriginalTexto.replace(/[^\d,]/g, "").replace(",", ".")
+  );
+
+  if (!valorOriginal || valorOriginal <= 0) {
+    alert("Preço original inválido");
+    return;
+  }
+
+  // 🔹 DESCONTO REAL
+  const valorDesconto = valorOriginal - valorComDesconto;
+
+  // 🔥 CONTEXTO DO PAGAMENTO
   window.PAGAMENTO_TIPO_ATUAL = "vip";
   window.MODELO_ID_ATUAL = modelo_id;
-  window.VALOR_VIP_ATUAL = valorAssinatura;
 
-  // 🔥 ABRE POPUP + PREPARA PIX
-  abrirPopupPagamentoPixLoading();
+  // 🔥 PREENCHE RESUMO (DESCONTO + TAXA 15% + TOTAL)
+  preencherResumoVIP({
+    valorBase: valorOriginal,
+    desconto: valorDesconto
+  });
 
-  // 🔥 INICIA PIX AUTOMATICAMENTE
+  // 🔥 ABRE POPUP (mostra valores antes)
+  document
+    .getElementById("popupPagamentoVelvet")
+    .classList.remove("hidden");
+
+  // 🔥 INICIA PIX AUTOMATICAMENTE (COM VALOR FINAL!)
   pagarComPix({
     tipo: "vip",
     modelo_id,
-    valor_assinatura: valorAssinatura
+    valor_assinatura: window.VALOR_VIP_ATUAL
   });
 });
+
+
 
 });
 

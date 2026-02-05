@@ -20,7 +20,7 @@ function whenSocketReady(cb) {
     }
   }, 50);
 }
-
+const TAXA_TRANSACAO = 0.15;
 const formCartao = document.getElementById("formCartao");
 
 if (formCartao) {
@@ -66,6 +66,28 @@ function fecharPopupPagamento() {
     cardElement = null;
   }
 }
+
+function preencherResumoVIP({ valorBase, desconto = 0 }) {
+  const valorComDesconto = valorBase - desconto;
+  const taxa = valorComDesconto * TAXA_TRANSACAO;
+  const total = valorComDesconto + taxa;
+
+  document.getElementById("vipValorBase").textContent =
+    valorBase.toFixed(2);
+
+  document.getElementById("vipDesconto").textContent =
+    desconto.toFixed(2);
+
+  document.getElementById("vipTaxa").textContent =
+    taxa.toFixed(2);
+
+  document.getElementById("vipTotal").textContent =
+    total.toFixed(2);
+
+  // 🔒 guarda para PIX / CARTÃO
+  window.VALOR_VIP_ATUAL = total;
+}
+
 
 
 function mostrarMetodo(tipo) {
