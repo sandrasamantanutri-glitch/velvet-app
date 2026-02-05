@@ -2639,6 +2639,8 @@ app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
 // WEBHOOK MERCADOPAGO
 // ===============================
 app.post("/webhook/mercadopago", async (req, res) => {
+  console.log("🔥 WEBHOOK MP RECEBIDO");
+console.log("BODY:", JSON.stringify(req.body, null, 2));
   try {
     const paymentId = req.body?.data?.id;
     if (!paymentId) return res.sendStatus(200);
@@ -2654,6 +2656,8 @@ app.post("/webhook/mercadopago", async (req, res) => {
     if (pagamento.status !== "approved") {
       return res.sendStatus(200);
     }
+    console.log("STATUS MP:", pagamento.status);
+console.log("METADATA MP:", pagamento.metadata);
 
     const tipo = pagamento.metadata?.tipo;
     if (!tipo) return res.sendStatus(200);

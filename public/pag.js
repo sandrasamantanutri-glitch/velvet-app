@@ -179,12 +179,58 @@ window.pagarComPix = async function ({
     qr.classList.remove("hidden");
     codigo.classList.remove("hidden");
     btnCopiar?.classList.remove("hidden");
+    // mostra QR e estado aguardando
+document.getElementById("pixLoading")?.classList.add("hidden");
+document.getElementById("pixAguardando")?.classList.remove("hidden");
 
-    document.getElementById("pixLoading")
-      ?.classList.add("hidden");
+// ===============================
+// 🔁 FALLBACK VIP (AQUI 👇)
+// ===============================
+if (tipo === "vip") {
 
-    document.getElementById("pixAguardando")
-      ?.classList.remove("hidden");
+  // limpa polling antigo (segurança)
+  window.__INTERVALO_VIP__ && clearInterval(window.__INTERVALO_VIP__);
+
+  window.__INTERVALO_VIP__ = setInterval(async () => {
+    try {
+
+      // popup foi fechado → para tudo
+      if (
+        document
+          .getElementById("popupPagamentoVelvet")
+          ?.classList.contains("hidden")
+      ) {
+        clearInterval(window.__INTERVALO_VIP__);
+        return;
+      }
+
+      const res = await fetch(`/api/vip/status/${window.MODELO_ID_ATUAL}`, {
+        headers: {
+          Authorization: "Bearer " + localStorage.getItem("token")
+        }
+      });
+
+      if (!res.ok) return;
+
+      const data = await res.json();
+
+      if (data.vip === true) {
+        clearInterval(window.__INTERVALO_VIP__);
+
+        document.getElementById("pixAguardando")?.classList.add("hidden");
+        document.getElementById("pixSucesso")?.classList.remove("hidden");
+
+        setTimeout(() => {
+          fecharPopupPagamento();
+          location.reload();
+        }, 1200);
+      }
+
+    } catch (err) {
+      console.error("Erro polling VIP:", err);
+    }
+  }, 3000);
+}
 
   } catch (err) {
     console.error("❌ Erro Pix FRONT:", err.message);
