@@ -13,8 +13,6 @@ const params = new URLSearchParams(window.location.search);
 const modeloParam = params.get("id");
 
 let modo = "publico";
-if (!modeloParam && role === "modelo" && token) {
-}
 
 if (!modeloParam && !role) {
   window.location.href = "/clientHome.html";
@@ -23,10 +21,6 @@ if (!modeloParam && !role) {
 
 if (role === "modelo" && token && !modeloParam) {
   modo = "privado";
-}
-if (role === "cliente" && modo === "privado") {
-  window.location.href = "/";
-  throw new Error("Cliente não pode acessar profile privado");
 }
 
 let modelo_id = null;
