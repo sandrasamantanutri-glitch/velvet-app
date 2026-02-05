@@ -16,16 +16,16 @@ const ofertaCard = document.getElementById("oferta-card");
 const btnAssinar = document.getElementById("btn-assinar");
 if (btnAssinar) btnAssinar.disabled = true;
 
-// let modo = "publico";
+let modo = "publico";
 
-// if (token && role === "modelo" && !modeloParam) {
-//   modo = "privado";
-// }
+if (token && role === "modelo" && !modeloParam) {
+  modo = "privado";
+}
 
-// if (role === "cliente" && modo === "privado") {
-//   window.location.href = "https://www.velvet.lat";
-//   throw new Error("Cliente não pode acessar profile privado");
-// }
+if (role === "cliente" && modo === "privado") {
+  window.location.href = "https://www.velvet.lat";
+  throw new Error("Cliente não pode acessar profile privado");
+}
 
 let modelo_id = modeloParam
   ? Number(modeloParam)
