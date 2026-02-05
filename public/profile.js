@@ -180,6 +180,34 @@ async function iniciarPerfil() {
 }
 }
 
+function aplicarPerfilNoDOM(modelo) {
+  nomeEl.textContent = modelo.nome || "";
+  profileBio.textContent = modelo.bio || "";
+
+  if (modelo.avatar) {
+    avatarImg.src = modelo.avatar;
+  }
+
+  if (modelo.capa) {
+    capaImg.src = modelo.capa;
+  }
+
+  const localEl = document.getElementById("local-texto");
+
+  if (localEl) {
+    const local = [modelo.local]
+      .filter(Boolean)
+      .join(" • ");
+
+    if (local) {
+      localEl.textContent = local;
+    } else {
+      // se não tiver local, esconde o bloco
+      localEl.parentElement.style.display = "none";
+    }
+  }
+}
+
 
 // ===============================
 // DOM
