@@ -55,18 +55,20 @@ async function initUsuario() {
 
     const user = await res.json();
 
-    // 🔑 guarda apenas para UX
-    localStorage.setItem("role", user.role);
-    localStorage.setItem("nome", user.nome);
+    // ⚠️ NÃO sobrescreve role
+    if (!localStorage.getItem("role")) {
+      localStorage.setItem("role", user.role);
+    }
 
-    console.log("✅ Usuário autenticado:", user.role);
+    localStorage.setItem("nome", user.nome);
 
   } catch (e) {
     console.warn("Sessão inválida no header");
-    localStorage.removeItem("role");
+    // ⚠️ NÃO limpa role aqui
     localStorage.removeItem("nome");
   }
 }
+
 
 
 
