@@ -13,6 +13,8 @@ const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
 
 const ofertaCard = document.getElementById("oferta-card");
+const btnAssinar = document.getElementById("btn-assinar");
+if (btnAssinar) btnAssinar.disabled = true;
 
 //DEFINIÇÃO SEGURA DE MODO
 let modo = "publico";
@@ -340,8 +342,8 @@ async function carregarOfertaAtiva() {
       valorBRL(OFERTA_ATUAL.valor_base);
 
     ofertaCard.style.display = "block";
-    const btnAssinar = document.getElementById("btn-assinar");
-if (btnAssinar) btnAssinar.disabled = false;
+    
+    if (btnAssinar) btnAssinar.disabled = false;
 
   } catch (err) {
     console.error("Erro ao carregar oferta:", err);
