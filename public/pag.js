@@ -162,9 +162,17 @@ window.pagarComPix = async function ({
       ?.classList.remove("hidden");
 
   } catch (err) {
-    console.error(err);
-    alert("Erro ao gerar Pix");
-    fecharPopupPagamento();
+  console.error("❌ Erro Pix:", err);
+
+  // esconde loading
+  document.getElementById("pixLoading")
+    ?.classList.add("hidden");
+
+  // mostra estado de erro sem fechar popup
+  document.getElementById("pixAguardando")
+    ?.classList.add("hidden");
+
+  alert("Não foi possível gerar o Pix agora. Tente novamente.");
   }
 };
 
