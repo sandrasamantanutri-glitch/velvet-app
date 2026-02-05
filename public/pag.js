@@ -1,7 +1,8 @@
-//const stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
+
 window.__CLIENTE_VIP__ = false;
 window.__VIP_READY__ = false;
 
+let stripe = null;
 let cardElement;
 let clientSecretAtual = null;
 
@@ -29,6 +30,11 @@ if (formCartao) {
   formCartao.addEventListener("submit", async (e) => {
     e.preventDefault();
 
+    if (!stripe || !elements) {
+      alert("Pagamento não inicializado");
+      return;
+    }
+
     const { error } = await stripe.confirmPayment({
       elements,
       redirect: "if_required"
@@ -37,10 +43,9 @@ if (formCartao) {
     if (error) {
       alert(error.message);
     }
-    // ⚠️ NÃO fecha popup aqui
-    // quem fecha é o SOCKET (webhook)
   });
 }
+
 
 function abrirPopupPagamento(dados) {
   const popup = document.getElementById("popupPagamentoVelvet");
@@ -81,8 +86,6 @@ function mostrarMetodo(tipo) {
       );
     });
 }
-
-
 
 window.pagarComPix = async function ({
   tipo,
@@ -146,24 +149,11 @@ window.pagarComPix = async function ({
   }
 };
 
-function abrirPopupPagamentoPix({ qr_base64, copia_cola }) {
-  const popup = document.getElementById("popupPagamentoVelvet");
-  popup.classList.remove("hidden");
-
-  const img = document.getElementById("pixQr");
-  const input = document.getElementById("pixCodigo");
-
-  img.src = `data:image/png;base64,${qr_base64}`;
-  input.value = copia_cola;
-
-  mostrarMetodo("pix");
-}
-
 function copiarPix() {
   const input = document.getElementById("pixCodigo");
   input.select();
   input.setSelectionRange(0, 99999);
-  document.execCommand("copy");
+  navigator.clipboard.writeText(input.value);
 
   alert("Código Pix copiado 💜");
 }
@@ -171,7 +161,7 @@ function copiarPix() {
 function abrirPopupPagamentoPixLoading() {
   const popup = document.getElementById("popupPagamentoVelvet");
   popup.classList.remove("hidden");
-  
+
   mostrarMetodo("pix");
 
   // estados iniciais
@@ -196,8 +186,6 @@ function abrirPopupPagamentoPixLoading() {
 
   btnCopiar?.classList.add("hidden");
 }
-
-
 
 whenSocketReady((socket) => {
 
@@ -235,6 +223,13 @@ socket.on("conteudoVisto", ({ message_id }) => {
   }, 1200);
 });
 })
+
+function initStripe() {
+  if (stripe) return stripe;
+
+  stripe = Stripe(window.STRIPE_PUBLIC_KEY);
+  return stripe;
+}
 
 
 async function pagarComCartao({ tipo, message_id, modelo_id, valor_assinatura }) {
@@ -298,7 +293,6 @@ async function pagarComCartao({ tipo, message_id, modelo_id, valor_assinatura })
     alert("Erro ao iniciar pagamento com cartão");
   }
 }
-
 
 function pagamentoConfirmado() {
   // Pix
