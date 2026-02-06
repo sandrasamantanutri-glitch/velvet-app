@@ -106,6 +106,28 @@ const uploadB2 = multer({
 
 app.use(express.static(path.join(__dirname, "public")));
 
+
+// 📦 FEED CANÔNICO (FONTE ÚNICA)
+async function buscarFeedCompletoPorUserId(user_id) {
+  const result = await db.query(`
+    SELECT
+      id,
+      url,
+      tipo,
+      tipo_conteudo,
+      preco,
+      descricao,
+      thumbnail_url,
+      criado_em
+    FROM conteudos
+    WHERE user_id = $1
+    ORDER BY criado_em DESC
+  `, [user_id]);
+
+  return result.rows;
+}
+
+
 async function gerarThumbnailVideo(videoUrl) {
   const tmpDir = os.tmpdir();
   const videoPath = path.join(tmpDir, `video-${Date.now()}.mp4`);
@@ -1445,25 +1467,9 @@ app.get("/api/feed/me", auth, async (req, res) => {
       return res.status(403).json([]);
     }
 
-    const result = await db.query(
-      `
-      SELECT
-        id,
-        url,
-        tipo,
-        tipo_conteudo,
-        preco,
-        descricao,
-        thumbnail_url,
-        criado_em
-      FROM conteudos
-      WHERE user_id = $1
-      ORDER BY criado_em DESC
-      `,
-      [req.user.id]
-    );
+    const feed = await buscarFeedCompletoPorUserId(req.user.id);
+    res.json(feed);
 
-    res.json(result.rows);
   } catch (err) {
     console.error("Erro carregar feed modelo:", err);
     res.status(500).json([]);
@@ -1527,30 +1533,14 @@ app.get("/api/modelo/publico/:id/feed", async (req, res) => {
   }
 
   try {
-    const result = await db.query(`
-      SELECT
-        id,
-        url,
-        tipo,
-        tipo_conteudo,
-        preco,
-        descricao,
-        thumbnail_url
-      FROM conteudos
-      WHERE user_id = $1
-      ORDER BY criado_em DESC
-    `, [modelo_id]);
+    const feed = await buscarFeedCompletoPorUserId(modelo_id);
+    res.json(feed);
 
-    res.json(result.rows);
   } catch (err) {
     console.error("Erro feed público:", err);
     res.status(500).json([]);
   }
 });
-
-
-
-
 
 app.get("/api/modelo/me", auth, async (req, res) => {
   try {
