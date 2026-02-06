@@ -89,8 +89,8 @@
 
 </div>
 
-<!-- MODAL VISUALIZAÇÃO MÍDIA -->
-<div id="modalMidia" class="modal-midia hidden">
+ <!-- MODAL VISUALIZAÇÃO MÍDIA -->
+ <div id="modalMidia" class="modal-midia hidden">
   <div class="modal-backdrop"></div>
 
   <div class="modal-conteudo">
@@ -99,7 +99,7 @@
     <img id="modalImg" style="display:none; max-width:100%;" />
     <video id="modalVideo" controls style="display:none; max-width:100%;"></video>
   </div>
-</div>
+ </div>
 
 <div id="popupPagamentoVelvet" class="velvet-modal hidden">
   <div class="velvet-backdrop" onclick="fecharPopupPagamento()"></div>
@@ -109,101 +109,65 @@
 
     <h2 class="velvet-title">Finalizar pagamento</h2>
 
+    <!-- ===============================
+         TABS (VIP)
+    ================================ -->
     <div class="velvet-tabs">
-      <button class="tab active" data-metodo="pix"
-        onclick="mostrarMetodo('pix')">⚡ Pix</button>
-        <button class="tab" data-metodo="cartao" onclick="iniciarCartao()">💳 Cartão</button>
+      <button class="tab active" data-metodo="pix" onclick="mostrarMetodo('pix')">
+        ⚡ Pix
+      </button>
+      <button class="tab" data-metodo="cartao" onclick="iniciarCartao()">
+        💳 Cartão
+      </button>
     </div>
 
-        <!-- ===============================
-     DETALHES DO PAGAMENTO VIP
-      ================================ -->
+    <!-- ===============================
+         DETALHES VIP
+    ================================ -->
+    <div class="vip-detalhes hidden">
+      <p class="vip-beneficios">
+        <strong>O pagamento VIP te permite:</strong><br>
+        Conversar com a criadora<br>
+        Acessar conteúdos do <strong>Pra você</strong><br>
+        Acesso parcial a conteúdos especiais<br>
+        Benefícios e promoções exclusivas
+      </p>
 
-     <div class="vip-detalhes">
-
-     <p class="vip-beneficios">
-    <strong>O pagamento VIP te permite:</strong><br>
-    Conversar com a criadora<br>
-    Acessar conteúdos do <strong>Pra você</strong><br>
-    Acesso parcial a conteúdos especiais<br>
-    Benefícios e promoções exclusivas
-  </p>
-
-  <div class="vip-valores">
-    <div class="linha">
-      <span>Valor da assinatura</span>
-      <span>R$ <span id="vipValorBase">0,00</span></span>
-    </div>
-
-    <div class="linha desconto">
-      <span>Desconto</span>
-      <span>– R$ <span id="vipDesconto">0,00</span></span>
-    </div>
-
-    <div class="linha">
-      <span>Taxa de transação (15%)</span>
-      <span>R$ <span id="vipTaxa">0,00</span></span>
-    </div>
-
-    <div class="linha total">
-      <span>Total</span>
-      <strong>R$ <span id="vipTotal">0,00</span></strong>
-    </div>
-  </div>
-
-  <small class="vip-info">
-    Assinatura VIP renovável com validade de <strong>1 mês</strong>.
-    Cancele quando quiser.<br><br>
-
-    Ao efetuar o pagamento, você confirma que está de acordo com os
-    <strong>Termos de Uso</strong> e <strong>Condições da Plataforma</strong>.<br><br>
-
-    Pagamentos realizados não são reembolsáveis.
-  </small>
-
-</div>
-
-
-    <div class="velvet-content">
-
-      <!-- PIX -->
-      <div id="conteudoPix" class="metodo">
-        <div id="pixLoading" class="pix-loading hidden">⏳ Aguarde…</div>
-        <div id="pixAguardando" class="pix-aguardando hidden">
-          Aguardando pagamento Pix
-        </div>
-        <div id="pixSucesso" class="pix-sucesso hidden">
-          ✅ Pagamento confirmado!
+      <div class="vip-valores">
+        <div class="linha">
+          <span>Valor da assinatura</span>
+          <span>R$ <span id="vipValorBase">0,00</span></span>
         </div>
 
-        <img id="pixQr" class="pix-qr hidden">
-        <input id="pixCodigo" readonly class="hidden">
-        <button class="btn-secundario hidden" onclick="copiarPix()">
-          Copiar código Pix
-        </button>
-      </div>
+        <div class="linha desconto">
+          <span>Desconto</span>
+          <span>– R$ <span id="vipDesconto">0,00</span></span>
+        </div>
 
-      <!-- CARTÃO -->
-      <div id="conteudoCartao" class="metodo hidden">
-        <div id="cartaoLoading" class="hidden">Preparando pagamento…</div>
-        <form id="formCartao" class="hidden">
-          <div id="card-element"></div>
-          <button type="submit" class="btn-principal">
-            Confirmar pagamento
-          </button>
-        </form>
-        <div id="cartaoSucesso" class="hidden">
-          ✅ Pagamento confirmado!
+        <div class="linha">
+          <span>Taxa de transação (15%)</span>
+          <span>R$ <span id="vipTaxa">0,00</span></span>
+        </div>
+
+        <div class="linha total">
+          <span>Total</span>
+          <strong>R$ <span id="vipTotal">0,00</span></strong>
         </div>
       </div>
 
+      <small class="vip-info">
+        Assinatura VIP renovável com validade de <strong>1 mês</strong>.
+        Cancele quando quiser.<br><br>
+        Ao efetuar o pagamento, você confirma que está de acordo com os
+        <strong>Termos de Uso</strong> e <strong>Condições da Plataforma</strong>.<br><br>
+        Pagamentos realizados não são reembolsáveis.
+      </small>
     </div>
-  </div>
-</div>
 
-
-    <div class="midia-detalhes">
-
+    <!-- ===============================
+         DETALHES MÍDIA
+    ================================ -->
+    <div class="midia-detalhes hidden">
       <p class="midia-info">
         <strong>O pagamento deste conteúdo permite:</strong><br>
         Visualizar este conteúdo exclusivo.<br><br>
@@ -238,14 +202,49 @@
         Ao efetuar o pagamento, você confirma que está de acordo com os
         <strong>Termos de Uso</strong> e
         <strong>Condições da Plataforma</strong>.<br><br>
-
         Conteúdos digitais são entregues imediatamente após a confirmação
         do pagamento e <strong>não são reembolsáveis</strong>.
       </small>
     </div>
+
+    <!-- ===============================
+         CONTEÚDO DE PAGAMENTO
+    ================================ -->
+    <div class="velvet-content">
+      <!-- PIX -->
+      <div id="conteudoPix" class="metodo">
+        <div id="pixLoading" class="pix-loading hidden">⏳ Aguarde…</div>
+        <div id="pixAguardando" class="pix-aguardando hidden">
+          Aguardando pagamento Pix
+        </div>
+        <div id="pixSucesso" class="pix-sucesso hidden">
+          ✅ Pagamento confirmado!
+        </div>
+
+        <img id="pixQr" class="pix-qr hidden">
+        <input id="pixCodigo" readonly class="hidden">
+        <button class="btn-secundario hidden" onclick="copiarPix()">
+          Copiar código Pix
+        </button>
+      </div>
+
+      <!-- CARTÃO -->
+      <div id="conteudoCartao" class="metodo hidden">
+        <div id="cartaoLoading" class="hidden">Preparando pagamento…</div>
+        <form id="formCartao" class="hidden">
+          <div id="card-element"></div>
+          <button type="submit" class="btn-principal">
+            Confirmar pagamento
+          </button>
+        </form>
+        <div id="cartaoSucesso" class="hidden">
+          ✅ Pagamento confirmado!
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
-
 
 <!-- MODAL LEGAL -->
 <div id="legalModal" class="legal-modal hidden">
