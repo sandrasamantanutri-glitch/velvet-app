@@ -66,6 +66,22 @@ function abrirPopupPagamento() {
 
 
   prepararPagamento();
+
+   setTimeout(() => {
+    if (window.PAGAMENTO_TIPO_ATUAL === "vip") {
+      pagarComPix({
+        tipo: "vip",
+        modelo_id: window.MODELO_ID_ATUAL
+      });
+    }
+
+    if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
+      pagarComPix({
+        tipo: "midia",
+        conteudo_id: window.MIDIA_VENDA_ATUAL?.conteudo_id
+      });
+    }
+  }, 0);
 }
 
 function prepararPagamento() {
