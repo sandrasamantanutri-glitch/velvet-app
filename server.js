@@ -2362,36 +2362,25 @@ app.post("/api/login", authLimiter, async (req, res) => {
 app.post(
   "/uploadAvatar",
   auth,
-  upload.single("avatar"),
+  onlyModelo,
+  uploadB2.single("avatar"),
   async (req, res) => {
-    console.log("🔥 AUTH DEBUG UPLOAD:", {
-  token_user_id: req.user.id,
-  role: req.user.role
-});
     try {
-      const result = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload_stream(
-          {
-            folder: `velvet/${req.user.id}/avatar`,
-            transformation: [{ width: 400, height: 400, crop: "fill" }]
-          },
-          (err, result) => (err ? reject(err) : resolve(result))
-        ).end(req.file.buffer);
-      });
+      if (!req.file) {
+        return res.status(400).json({ error: "Arquivo não enviado" });
+      }
+
+      const url = req.file.location;
 
       await db.query(
-        "UPDATE public.modelos SET avatar = $1 WHERE user_id = $2",
-        [result.secure_url, req.user.id]
+        "UPDATE modelos SET avatar = $1 WHERE user_id = $2",
+        [url, req.user.id]
       );
-      const check = await db.query(
-  "SELECT id, user_id FROM modelos WHERE user_id = $1",
-  [req.user.id]
-);
 
-      res.json({ url: result.secure_url });
+      res.json({ url });
 
     } catch (err) {
-      console.error("Erro upload avatar:", err);
+      console.error("Erro upload avatar B2:", err);
       res.status(500).json({ error: "Erro ao atualizar avatar" });
     }
   }
@@ -2400,42 +2389,30 @@ app.post(
 app.post(
   "/uploadCapa",
   auth,
-  upload.single("capa"),
+  onlyModelo,
+  uploadB2.single("capa"),
   async (req, res) => {
-
-    console.log("🔥 AUTH DEBUG UPLOAD:", {
-  token_user_id: req.user.id,
-  role: req.user.role
-});
-    
     try {
-      const result = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload_stream(
-          {
-            folder: `velvet/${req.user.id}/capa`,
-            transformation: [{ width: 1200, height: 400, crop: "fill" }]
-          },
-          (err, result) => (err ? reject(err) : resolve(result))
-        ).end(req.file.buffer);
-      });
+      if (!req.file) {
+        return res.status(400).json({ error: "Arquivo não enviado" });
+      }
+
+      const url = req.file.location;
 
       await db.query(
-        "UPDATE public.modelos SET capa = $1 WHERE user_id = $2",
-        [result.secure_url, req.user.id]
+        "UPDATE modelos SET capa = $1 WHERE user_id = $2",
+        [url, req.user.id]
       );
-      const check = await db.query(
-  "SELECT id, user_id FROM modelos WHERE user_id = $1",
-  [req.user.id]
-);
 
-      res.json({ url: result.secure_url });
+      res.json({ url });
 
     } catch (err) {
-      console.error("Erro upload capa:", err);
+      console.error("Erro upload capa B2:", err);
       res.status(500).json({ error: "Erro ao atualizar capa" });
     }
   }
 );
+
 
 // Salvar / atualizar dados
 app.post(
