@@ -112,18 +112,16 @@
     <div class="velvet-tabs">
       <button class="tab active" data-metodo="pix"
         onclick="mostrarMetodo('pix')">⚡ Pix</button>
-        <button class="tab" data-metodo="cartao"
-  onclick="iniciarCartao()">💳 Cartão</button>
-  <button class="btn-principal" onclick="confirmarPix()"> Gerar Pix</button>
+        <button class="tab" data-metodo="cartao" onclick="iniciarCartao()">💳 Cartão</button>
     </div>
-    
-    <!-- ===============================
- DETALHES DO PAGAMENTO VIP
-================================ -->
 
-<div class="vip-detalhes">
+        <!-- ===============================
+     DETALHES DO PAGAMENTO VIP
+      ================================ -->
 
-  <p class="vip-beneficios">
+     <div class="vip-detalhes">
+
+     <p class="vip-beneficios">
     <strong>O pagamento VIP te permite:</strong><br>
     Conversar com a criadora<br>
     Acessar conteúdos do <strong>Pra você</strong><br>
@@ -202,6 +200,30 @@
     </div>
   </div>
 </div>
+
+<div id="popupPagamentoCartaoMidia" class="modal hidden">
+  <div class="modal-backdrop" onclick="fecharPopupCartaoMidia()"></div>
+
+  <div class="modal-box">
+    <button class="modal-close" onclick="fecharPopupCartaoMidia()">×</button>
+
+    <h2>Desbloquear conteúdo</h2>
+
+    <div id="cartaoLoadingMidia">Preparando pagamento…</div>
+
+    <form id="formCartaoMidia" class="hidden">
+      <div id="card-element-midia"></div>
+      <button type="submit" class="btn-principal">
+        Confirmar pagamento
+      </button>
+    </form>
+
+    <div id="cartaoSucessoMidia" class="hidden">
+      ✅ Pagamento confirmado!
+    </div>
+  </div>
+</div>
+
 
 <!-- MODAL LEGAL -->
 <div id="legalModal" class="legal-modal hidden">

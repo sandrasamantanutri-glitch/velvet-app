@@ -818,7 +818,7 @@ function adicionarMidia(conteudo) {
       descricao
     };
 
-     abrirPopupPagamento(); // ✅ FUNÇÃO DO pag.js
+     abrirPopupPagamentoCartao();
     return;
   }
   // feed normal

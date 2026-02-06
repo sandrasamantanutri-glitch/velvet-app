@@ -51,10 +51,6 @@ function abrirPopupPagamento() {
     return;
   }
 
-  if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
-  mostrarMetodo("cartao");
-}
-
   // 🔓 abre o popup
   popup.classList.remove("hidden");
 
@@ -640,6 +636,51 @@ window.confirmarPix = function () {
     conteudo_id: window.MIDIA_VENDA_ATUAL?.conteudo_id
   });
 };
+
+
+function abrirPopupPagamentoCartao() {
+  const popup = document.getElementById("popupPagamentoCartaoMidia");
+  popup.classList.remove("hidden");
+
+  iniciarCartaoMidia();
+}
+
+window.fecharPopupCartaoMidia = function () {
+  document
+    .getElementById("popupPagamentoCartaoMidia")
+    ?.classList.add("hidden");
+};
+
+async function iniciarCartaoMidia() {
+  initStripe();
+
+  const token = localStorage.getItem("token");
+  if (!token) {
+    alert("Sessão expirada");
+    return;
+  }
+
+  const res = await fetch("/api/pagamento/midia/cartao", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + token
+    },
+    body: JSON.stringify({
+      conteudo_id: window.MIDIA_VENDA_ATUAL?.conteudo_id
+    })
+  });
+
+  const data = await res.json();
+
+  elements = stripe.elements({ clientSecret: data.clientSecret });
+  const card = elements.create("payment");
+  card.mount("#card-element-midia");
+
+  document.getElementById("cartaoLoadingMidia").classList.add("hidden");
+  document.getElementById("formCartaoMidia").classList.remove("hidden");
+}
+
 
 
 
