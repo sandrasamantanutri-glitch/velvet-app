@@ -237,6 +237,12 @@ window.pagarComPix = async function ({
     const data = await res.json();
 
     mostrarMetodo("pix");
+    console.log(
+  "Pix visível:",
+  !document
+    .getElementById("conteudoPix")
+    ?.classList.contains("hidden")
+ );
 
     // ===============================
     // 🧾 MOSTRAR QR
