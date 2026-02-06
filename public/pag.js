@@ -596,3 +596,27 @@ async function confirmarPagamentoCartao() {
 }
 
 
+window.fecharPopupPagamento = function () {
+  const popup = document.getElementById("popupPagamentoVelvet");
+  if (!popup) return;
+
+  // fecha popup
+  popup.classList.add("hidden");
+
+  // limpa estados PIX
+  document.getElementById("pixLoading")?.classList.add("hidden");
+  document.getElementById("pixAguardando")?.classList.add("hidden");
+  document.getElementById("pixSucesso")?.classList.add("hidden");
+
+  // limpa estados cartão
+  document.getElementById("cartaoLoading")?.classList.add("hidden");
+  document.getElementById("cartaoSucesso")?.classList.add("hidden");
+  document.getElementById("formCartao")?.classList.add("hidden");
+
+  // esconde conteúdos
+  document.getElementById("conteudoPix")?.classList.add("hidden");
+  document.getElementById("conteudoCartao")?.classList.add("hidden");
+};
+
+
+
