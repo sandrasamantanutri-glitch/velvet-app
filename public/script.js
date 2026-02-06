@@ -24,9 +24,8 @@ const ESTA_NO_INDEX =
   });
 }
 
-
-const ref = localStorage.getItem("ref_modelo");
-const src = localStorage.getItem("origem_trafego");
+const refModelo = localStorage.getItem("ref_modelo");
+const srcOrigem = localStorage.getItem("origem_trafego");
 
 // ===============================
 // ESTADO GLOBAL
