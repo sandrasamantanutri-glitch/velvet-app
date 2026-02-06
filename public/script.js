@@ -275,7 +275,7 @@ window.logout = function () {
   localStorage.removeItem("token");
   localStorage.removeItem("role");
   localStorage.removeItem("ageConfirmed"); 
-  window.location.href = "https://www.velvet.lat";
+  window.location.href = "/index.html";
 };
 
 // ===============================
