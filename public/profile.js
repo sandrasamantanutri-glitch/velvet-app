@@ -651,20 +651,19 @@ function abrirPreviewUpload(file, url) {
       btnPublicar.textContent = "Publicar";
       return;
     }
-
-    await enviarMidia(file, {
-        tipo_conteudo: tipoConteudo,
-        preco,
-        descricao
-    });
-
-     if (role === "modelo") {
-  carregarFeedBase();
-} else {
-  carregarFeedPublico();
+    const novaMidia = await enviarMidia(file, {
+  tipo_conteudo: tipoConteudo,
+  preco,
+  descricao
+});
+adicionarMidia(novaMidia);
+const grid = document.querySelector(".midias-grid.active");
+if (grid) {
+  grid.prepend(document.querySelector(".midiaCard:last-child"));
 }
-      
-    fecharModal();
+
+fecharModal();
+
    } catch (err) {
     console.error(err);
     btnPublicar.disabled = false;
