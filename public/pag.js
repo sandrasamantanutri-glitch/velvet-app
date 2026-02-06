@@ -678,13 +678,20 @@ async function iniciarCartaoMidia() {
   document.getElementById("midiaTotal").textContent =
     data.resumo.total.toFixed(2);
 
-  // 💳 Stripe
-  document.getElementById("card-element-midia").innerHTML = "";
+  // 💳 Stripe (usa os IDs REAIS do HTML)
+  const cardEl = document.getElementById("card-element");
+  if (!cardEl) {
+    console.error("❌ card-element não encontrado no DOM");
+    return;
+  }
+
+  cardEl.innerHTML = "";
 
   elements = stripe.elements({ clientSecret: data.clientSecret });
-  const card = elements.create("payment");
-  card.mount("#card-element-midia");
+  const payment = elements.create("payment");
+  payment.mount("#card-element");
 
-  document.getElementById("cartaoLoadingMidia").classList.add("hidden");
-  document.getElementById("formCartaoMidia").classList.remove("hidden");
+  document.getElementById("cartaoLoading")?.classList.add("hidden");
+  document.getElementById("formCartao")?.classList.remove("hidden");
 }
+
