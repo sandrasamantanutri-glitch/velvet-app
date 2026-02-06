@@ -357,6 +357,20 @@ document.addEventListener("DOMContentLoaded", async () => {
         ?.classList.add("active");
     }
   });
+  document.getElementById("btnLogout")?.addEventListener("click", (e) => {
+  e.preventDefault();
+
+
+  localStorage.removeItem("token");
+  localStorage.removeItem("role");
+  localStorage.removeItem("user");
+
+  // se você guarda mais coisas (ex: modelo_id)
+  localStorage.removeItem("modelo_id");
+
+  // redireciona
+  window.location.href = "/index.html";
+ });
 
   
 });
