@@ -249,7 +249,7 @@ const ESTA_NO_PERFIL = window.location.pathname.includes("perfil");
 if (ESTA_NO_PERFIL) {
   // 🔥 abre popup de pagamento (pag.js já está carregado)
   document
-    .getElementById("escolhaPagamento")
+    .getElementById("abrirPopupPagamento(dados)")
     ?.classList.remove("hidden");
 } else {
   // 🏠 index → vai para home do cliente
