@@ -825,7 +825,7 @@ if (deveBloquear) {
       descricao
     };
 
-     abrirPopupPagamentoCartao();
+     abrirPopupPagamento();
     return;
   }
   // feed normal
