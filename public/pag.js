@@ -150,10 +150,11 @@ function prepararPagamento() {
 
 
 function preencherResumoVIP({ valorBase, desconto = 0 }) {
-  const valorComDesconto = valorBase - desconto;
+  const taxaPerc =
+    typeof TAXA_TRANSACAO === "number" ? TAXA_TRANSACAO : 0.15;
 
-  // ⚠️ taxa apenas visual (backend recalcula)
-  const taxa = valorComDesconto * TAXA_TRANSACAO;
+  const valorComDesconto = valorBase - desconto;
+  const taxa = valorComDesconto * taxaPerc;
   const total = valorComDesconto + taxa;
 
   document.getElementById("vipValorBase").textContent =
@@ -174,15 +175,13 @@ function preencherResumoMidia({ valor, descricao }) {
   const taxa = valor * 0.15;
   const total = valor + taxa;
 
-  document.getElementById("vipValorBase").textContent =
+  document.getElementById("midiaValorBase").textContent =
     valor.toFixed(2).replace(".", ",");
 
-  document.getElementById("vipDesconto").textContent = "0,00";
-
-  document.getElementById("vipTaxa").textContent =
+  document.getElementById("midiaTaxa").textContent =
     taxa.toFixed(2).replace(".", ",");
 
-  document.getElementById("vipTotal").textContent =
+  document.getElementById("midiaTotal").textContent =
     total.toFixed(2).replace(".", ",");
 
   document.querySelector(".vip-beneficios").innerHTML = `
@@ -190,7 +189,6 @@ function preencherResumoMidia({ valor, descricao }) {
     ${descricao || "Acesso imediato após pagamento"}
   `;
 }
-
 
 function mostrarMetodo(tipo) {
   const pix = document.getElementById("conteudoPix");

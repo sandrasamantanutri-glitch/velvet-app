@@ -352,7 +352,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         OFERTA_ATUAL.valor_promocional
     });
 
-    pagarComPix({ tipo: "vip" });
+    abrirPopupPagamento();
   });
  });
 
