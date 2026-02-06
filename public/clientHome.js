@@ -5,7 +5,6 @@ const token = localStorage.getItem("token");
 
 if (!token) {
   window.location.href = "/index.html";
-  return;
 }
 
 fetch("/api/feed/modelos", {
@@ -78,7 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
           localStorage.setItem("modelo_id", modeloId.toString());
           window.location.href = `profile.html?id=${modeloId}`;
         });
-        
+
         lista.appendChild(card);
       });
     })
