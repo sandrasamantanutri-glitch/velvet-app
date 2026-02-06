@@ -3,13 +3,19 @@
 // ===============================
 console.log("🧠 SCRIPT.JS CARREGADO EM:", window.location.pathname);
 
-// 🔁 REDIRECIONAMENTO SE LOGADO
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
 
-if (token && role) { // * && * true
-  window.location.href =
-    role === "modelo" ? "/perfil.html" : "/error.html";
+const ESTA_NO_INDEX =
+  window.location.pathname === "/" ||
+  window.location.pathname.includes("index");
+
+if (ESTA_NO_INDEX && token && role) {
+  if (role === "modelo") {
+    window.location.href = "/perfil.html";
+  } else if (role === "cliente") {
+    window.location.href = "/clientHome.html";
+  }
 }
 
 const ref = localStorage.getItem("ref_modelo");
