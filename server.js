@@ -2668,10 +2668,13 @@ app.post("/api/pagamento/midia/cartao", authCliente, async (req, res) => {
 
   const { preco, modelo_id } = conteudoRes.rows[0];
 
-  // 2️⃣ taxas (backend decide)
-  const taxaTransacao  = Number((preco * 0.10).toFixed(2));
-  const taxaPlataforma = Number((preco * 0.05).toFixed(2));
-  const total = Number((preco + taxaTransacao + taxaPlataforma).toFixed(2));
+  const precoNum = Number(preco);
+
+// 2️⃣ taxas (backend decide)
+const taxaTransacao  = Number((precoNum * 0.10).toFixed(2));
+const taxaPlataforma = Number((precoNum * 0.05).toFixed(2));
+
+const total = Number( (precoNum + taxaTransacao + taxaPlataforma).toFixed(2));
 
   // 3️⃣ criar message técnico
   const msgRes = await db.query(`
