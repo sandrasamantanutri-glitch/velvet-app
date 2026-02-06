@@ -51,6 +51,10 @@ function abrirPopupPagamento() {
     return;
   }
 
+  if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
+  mostrarMetodo("cartao");
+}
+
   // 🔓 abre o popup
   popup.classList.remove("hidden");
 
@@ -72,13 +76,6 @@ function abrirPopupPagamento() {
       pagarComPix({
         tipo: "vip",
         modelo_id: window.MODELO_ID_ATUAL
-      });
-    }
-
-    if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
-      pagarComPix({
-        tipo: "midia",
-        conteudo_id: window.MIDIA_VENDA_ATUAL?.conteudo_id
       });
     }
   }, 0);
@@ -634,6 +631,16 @@ window.fecharPopupPagamento = function () {
   document.getElementById("conteudoPix")?.classList.add("hidden");
   document.getElementById("conteudoCartao")?.classList.add("hidden");
 };
+
+window.confirmarPix = function () {
+  if (window.PAGAMENTO_TIPO_ATUAL !== "midia") return;
+
+  pagarComPix({
+    tipo: "midia",
+    conteudo_id: window.MIDIA_VENDA_ATUAL?.conteudo_id
+  });
+};
+
 
 
 
