@@ -971,20 +971,20 @@ function atualizarUIVip(modelo_id) {
 
 // 💳 POPUP CARTÃO — MÍDIA
 window.abrirPopupPagamentoCartao = function () {
-  const popup = document.getElementById("popupPagamentoCartaoMidia");
+  const popup = document.getElementById("popupPagamentoCartao");
 
   if (!popup) {
-    console.error("popupPagamentoCartaoMidia não encontrado no DOM");
+    console.error("popupPagamentoCartao não encontrado no DOM");
     return;
   }
 
   popup.classList.remove("hidden");
 
-  iniciarCartaoMidia();
+  iniciarPopupPagamentoCartao();
 };
 
 window.fecharPopupPagamentoCartao = function () {
-  const popup = document.getElementById("popupPagamentoCartaoMidia");
+  const popup = document.getElementById("popupPagamentoCartao");
   if (!popup) return;
 
   popup.classList.add("hidden");
