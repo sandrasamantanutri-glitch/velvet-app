@@ -10,13 +10,20 @@ const ESTA_NO_INDEX =
   window.location.pathname === "/" ||
   window.location.pathname.includes("index");
 
-if (ESTA_NO_INDEX && token && role) {
-  if (role === "modelo") {
-    window.location.href = "/perfil.html";
-  } else if (role === "cliente") {
-    window.location.href = "/clientHome.html";
-  }
+  if (ESTA_NO_INDEX && token && role) {
+  fetch("/api/me", {
+    headers: { Authorization: "Bearer " + token }
+  })
+  .then(res => {
+    if (!res.ok) throw new Error();
+    if (role === "modelo") location.href = "/perfil.html";
+    if (role === "cliente") location.href = "/clientHome.html";
+  })
+  .catch(() => {
+    localStorage.clear(); // sessão inválida
+  });
 }
+
 
 const ref = localStorage.getItem("ref_modelo");
 const src = localStorage.getItem("origem_trafego");

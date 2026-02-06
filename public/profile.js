@@ -270,11 +270,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           OFERTA_ATUAL.valor_promocional
       });
 
-      pagarComPix({
-      tipo: "vip",
-      modelo_id: OFERTA_ATUAL.modelo_id,
-      valor_assinatura: OFERTA_ATUAL.valor_promocional
-    });
+      pagarComPix({ tipo: "vip" });
     }
   }
 
