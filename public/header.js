@@ -198,9 +198,9 @@ document.addEventListener("click", (e) => {
   const role = localStorage.getItem("role");
 
   if (role === "cliente") {
-    window.location.href = "/chatcliente.html";
+    window.location.href = "/inbox.html";
   } else if (role === "modelo") {
-    window.location.href = "/chatmodelo.html";
+    window.location.href = "/inbox.html";
   } else {
     abrirPopupVelvet({ tipo: "login" });
   }
