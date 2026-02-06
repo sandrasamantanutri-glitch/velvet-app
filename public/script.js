@@ -245,13 +245,13 @@ alert("Conta criada com sucesso!");
 
 const ESTA_NO_PERFIL = window.location.pathname.includes("perfil");
 if (ESTA_NO_PERFIL) {
-window.location.reload();
-}
-if (ref) {
+  // 🔔 sinaliza ação pós-registro
   localStorage.setItem("post_register_action", "open_payment");
-  window.location.href = `/perfil.html?id=${ref}`;
 
+  // 🔁 permanece no perfil
+  window.location.reload();
 } else {
+  // 🏠 só quem se cadastrou no index vai para home
   window.location.href = "/clientHome.html";
 }
 }
