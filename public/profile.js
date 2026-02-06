@@ -753,14 +753,32 @@ function adicionarMidia(conteudo) {
   // ===== WRAPPER DA MÍDIA =====
   const mediaWrapper = document.createElement("div");
   mediaWrapper.className = "midiaWrapper";
-
   const img = document.createElement("img");
-  img.className = "midiaThumb";
-  img.src = isVideo
-    ? getVideoThumbnail(url, thumbnail_url)
-    : url;
+img.className = "midiaThumb";
 
-  mediaWrapper.appendChild(img);
+// 🔹 mostra algo imediatamente
+if (isVideo) { // força reload da imagem recém enviada
+img.src = url + "?t=" + Date.now();
+}
+
+mediaWrapper.appendChild(img);
+
+// 🔁 tenta atualizar thumbnail depois de alguns segundos (VÍDEO)
+if (isVideo && !thumbnail_url) {
+  setTimeout(async () => {
+    try {
+      const res = await fetch(`/api/midia/${id}`);
+      if (!res.ok) return;
+
+      const atualizado = await res.json();
+      if (atualizado.thumbnail_url) {
+        img.src = atualizado.thumbnail_url + "?t=" + Date.now();
+      }
+    } catch (err) {
+      console.warn("Thumbnail ainda não pronta");
+    }
+  }, 3000);
+}
 
   // 💰 PREÇO (SÓ ESPECIAL)
   if (tipo_conteudo === "venda" && preco) {
