@@ -31,6 +31,7 @@ const menuVisitante = `
 
 
 document.addEventListener("DOMContentLoaded", () => {
+  
   initUsuario();
   carregarHeader();
 
@@ -41,6 +42,9 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 async function initUsuario() {
+    if (localStorage.getItem("post_register_action")) {
+    return;
+  }
   const token = localStorage.getItem("token");
   if (!token) return;
 

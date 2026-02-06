@@ -248,10 +248,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Erro ao iniciar perfil:", err);
     return;
   }
-
-  // ===============================
-  // AÇÃO PÓS-REGISTRO (AUTOMÁTICA)
-  // ===============================
+  // PÓS-REGISTRO AUTOMATICO
   const postRegisterAction =
     localStorage.getItem("post_register_action");
 
@@ -301,13 +298,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     pagarComPix({ tipo: "vip" });
   });
-});
+ });
 
-
-// ===============================
-// TABS DE MÍDIA (FEED / ESPECIAL)
-// ===============================
-document.querySelectorAll(".midias-tabs .tab").forEach(tab => {
+ // TABS DE MÍDIA (FEED / ESPECIAL)
+ // ===============================
+ document.querySelectorAll(".midias-tabs .tab").forEach(tab => {
   tab.addEventListener("click", () => {
 
     // troca visual das abas
@@ -336,6 +331,8 @@ document.querySelectorAll(".midias-tabs .tab").forEach(tab => {
         ?.classList.add("active");
     }
   });
+
+  
 });
 
 // ===============================
