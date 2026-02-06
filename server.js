@@ -2315,7 +2315,7 @@ app.post("/api/login", authLimiter, async (req, res) => {
   {
     id: user.id,
     email: user.email,
-    role: user.role.toLowerCase() // 🔥 AQUI
+    role: user.role.toLowerCase()
   },
   process.env.JWT_SECRET,
   { expiresIn: "24h" }

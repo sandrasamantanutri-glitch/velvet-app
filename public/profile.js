@@ -742,21 +742,30 @@ function adicionarMidia(conteudo) {
   }
 
  card.onclick = () => {
-  // modelo abre tudo direto
+   if (tipo_conteudo === "venda") {
+
   if (role === "modelo") {
     abrirModalMidia(url, isVideo);
     return;
   }
 
-  // especial (venda) → abre modal de venda
-  if (tipo_conteudo === "venda") {
-    abrirModalVenda(conteudo);
+   if (!role) {
+      exigirCadastro("Crie sua conta para acessar conteúdos exclusivos");
+      return;
+    }
+
+    window.PAGAMENTO_TIPO_ATUAL = "midia";
+    window.MODELO_ID_ATUAL = modelo_id;
+    window.CONTEUDO_VENDA_ATUAL = conteudo;
+  
+
+     abrirPopupPagamento(); // ✅ FUNÇÃO DO pag.js
     return;
   }
 
   // feed normal
   abrirModalMidia(url, isVideo);
-};
+ };
 
   // 🗑️ EXCLUIR (MODELO)
   if (role === "modelo") {
