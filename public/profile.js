@@ -21,7 +21,6 @@ if (role === "modelo" && token && !modeloParam) {
 }
 if (role === "cliente" && modo === "privado") {
   window.location.href = "/";
-  return;
 }
 
 let modelo_id = null;
