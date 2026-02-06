@@ -239,7 +239,6 @@ function aplicarPerfilNoDOM(modelo) {
 // ===============================
 // DOM
 // ===============================
-
 document.addEventListener("DOMContentLoaded", async () => {
   aplicarRoleNoBody();
 
@@ -250,12 +249,40 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  // 🔔 clique do botão assinar (apenas dispara pagamento)
-  btnAssinar?.addEventListener("click", () => {
-     if (!role) {
-    exigirCadastro();
-    return;
+  // ===============================
+  // AÇÃO PÓS-REGISTRO (AUTOMÁTICA)
+  // ===============================
+  const postRegisterAction =
+    localStorage.getItem("post_register_action");
+
+  if (postRegisterAction === "open_payment") {
+    localStorage.removeItem("post_register_action");
+
+    if (!OFERTA_ATUAL || !OFERTA_ATUAL.modelo_id) {
+      console.warn(
+        "⚠️ Oferta ainda não carregada para abrir pagamento automaticamente"
+      );
+    } else {
+      window.PAGAMENTO_TIPO_ATUAL = "vip";
+      window.MODELO_ID_ATUAL = OFERTA_ATUAL.modelo_id;
+
+      preencherResumoVIP({
+        valorBase: OFERTA_ATUAL.valor_base,
+        desconto:
+          OFERTA_ATUAL.valor_base -
+          OFERTA_ATUAL.valor_promocional
+      });
+
+      pagarComPix({ tipo: "vip" });
+    }
   }
+
+  // CLIQUE MANUAL NO BOTÃO ASSINAR
+  btnAssinar?.addEventListener("click", () => {
+    if (!role) {
+      exigirCadastro();
+      return;
+    }
 
     if (!OFERTA_ATUAL || !OFERTA_ATUAL.modelo_id) {
       alert("Oferta ainda não carregada. Aguarde um instante.");
@@ -275,6 +302,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     pagarComPix({ tipo: "vip" });
   });
 });
+
 
 // ===============================
 // TABS DE MÍDIA (FEED / ESPECIAL)

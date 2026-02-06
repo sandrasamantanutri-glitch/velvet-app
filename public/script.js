@@ -245,7 +245,8 @@ alert("Conta criada com sucesso!");
 
 const ESTA_NO_PERFIL = window.location.pathname.includes("perfil");
 if (ESTA_NO_PERFIL) {
-  window.location.reload();
+localStorage.setItem("post_register_action", "open_payment");
+window.location.reload();
 } else {
   window.location.href = "/clientHome.html";
 }
