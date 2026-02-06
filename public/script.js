@@ -6,9 +6,9 @@
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
 
-if (token && role) {
+if (token && role) { // * && * true
   window.location.href =
-    role === "modelo" ? "/profile.html" : "/clientHome.html";
+    role === "modelo" ? "/perfil.html" : "/clientHome.html";
 }
 
 // ===============================
