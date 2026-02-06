@@ -236,6 +236,8 @@ window.pagarComPix = async function ({
 
     const data = await res.json();
 
+    mostrarMetodo("pix");
+
     // ===============================
     // 🧾 MOSTRAR QR
     // ===============================
