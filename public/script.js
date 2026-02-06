@@ -1,6 +1,7 @@
 // ===============================
 // INDEX — SCRIPT LIMPO (VELVET)
 // ===============================
+console.log("🧠 SCRIPT.JS CARREGADO EM:", window.location.pathname);
 
 // 🔁 REDIRECIONAMENTO SE LOGADO
 const token = localStorage.getItem("token");
