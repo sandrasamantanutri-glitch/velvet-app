@@ -797,6 +797,13 @@ function adicionarMidia(conteudo) {
     card.appendChild(desc);
   }
 
+  const deveBloquear =
+  tipo_conteudo === "venda" &&
+  role !== "modelo";
+
+if (deveBloquear) {
+  card.classList.add("locked");
+}
  card.onclick = () => {
    if (tipo_conteudo === "venda") {
 
