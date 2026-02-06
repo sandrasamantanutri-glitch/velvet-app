@@ -35,7 +35,10 @@ const usuario = getUsuarioLogado();
 });
 
 async function carregarVipCountModelo(modelo_id) {
+  console.log("🔥 carregarVipCountModelo chamada com:", modelo_id);
+  
   const token = localStorage.getItem("token");
+  console.log("🔐 token existe?", !!token);
   if (!token || !modelo_id) {
     console.warn("VIP count: dados insuficientes");
     return;
