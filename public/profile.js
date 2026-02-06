@@ -194,8 +194,16 @@ async function carregarFeedBase() {
     const res = await fetch("/api/feed/me", {
       headers: { Authorization: "Bearer " + token }
     });
+
     const feed = await res.json();
-    listaMidias.innerHTML = "";
+
+    const gridFeed = document.getElementById("listaMidias");
+    const gridEspecial = document.getElementById("midias-paid");
+
+    // 🔥 LIMPA OS DOIS GRIDS
+    if (gridFeed) gridFeed.innerHTML = "";
+    if (gridEspecial) gridEspecial.innerHTML = "";
+
     feed.forEach(adicionarMidia);
     return;
   }
