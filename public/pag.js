@@ -54,57 +54,87 @@ function abrirPopupPagamento() {
   // 🔓 abre o popup
   popup.classList.remove("hidden");
 
-  // 🔄 limpa estados antigos de pagamento
+  // 🔄 limpa estados antigos
   document.getElementById("pixQr")?.classList.add("hidden");
   document.getElementById("pixCodigo")?.classList.add("hidden");
   document.getElementById("pixLoading")?.classList.add("hidden");
   document.getElementById("pixAguardando")?.classList.add("hidden");
   document.getElementById("pixSucesso")?.classList.add("hidden");
 
+  // ===============================
+  // 🔥 MÍDIA → SÓ CARTÃO
+  // ===============================
+  if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
+    document.getElementById("conteudoPix")?.classList.add("hidden");
+    document.getElementById("conteudoCartao")?.classList.remove("hidden");
+
+    // mostra bloco de mídia / esconde VIP
+    document.querySelector(".vip-detalhes")?.classList.add("hidden");
+    document.querySelector(".midia-detalhes")?.classList.remove("hidden");
+
+    iniciarCartaoMidia();
+    return;
+  }
+
+  // ===============================
+  // 💎 VIP → PIX (default) + CARTÃO
+  // ===============================
   document.getElementById("conteudoPix")?.classList.remove("hidden");
   document.getElementById("conteudoCartao")?.classList.add("hidden");
 
+  document.querySelector(".midia-detalhes")?.classList.add("hidden");
+  document.querySelector(".vip-detalhes")?.classList.remove("hidden");
 
   prepararPagamento();
 
-   setTimeout(() => {
-    if (window.PAGAMENTO_TIPO_ATUAL === "vip") {
-      pagarComPix({
-        tipo: "vip",
-        modelo_id: window.MODELO_ID_ATUAL
-      });
-    }
+  // Pix automático para VIP
+  setTimeout(() => {
+    pagarComPix({
+      tipo: "vip",
+      modelo_id: window.MODELO_ID_ATUAL
+    });
   }, 0);
 }
 
+
 function prepararPagamento() {
-  //VIP 
+
+  // 🔄 limpa resumos visuais antes de preencher
+  document.querySelector(".vip-detalhes")?.classList.add("hidden");
+  document.querySelector(".midia-detalhes")?.classList.add("hidden");
+
+  // ===============================
+  // 💎 VIP
+  // ===============================
   if (window.PAGAMENTO_TIPO_ATUAL === "vip") {
 
     if (!window.OFERTA_ATUAL) {
-      alert("Oferta VIP não carregada");
+      console.error("Oferta VIP não carregada");
       return;
     }
 
-    const valorBase = Number(OFERTA_ATUAL.valor_base);
+    const valorBase  = Number(OFERTA_ATUAL.valor_base);
     const valorPromo = Number(OFERTA_ATUAL.valor_promocional);
-    const desconto = valorBase - valorPromo;
+    const desconto   = valorBase - valorPromo;
 
     preencherResumoVIP({
       valorBase,
       desconto
     });
 
+    document.querySelector(".vip-detalhes")?.classList.remove("hidden");
     return;
   }
 
-  //MÍDIA
+  // ===============================
+  // 🔥 MÍDIA
+  // ===============================
   if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
 
     const midia = window.MIDIA_VENDA_ATUAL;
 
     if (!midia || !midia.preco) {
-      alert("Erro ao carregar valor da mídia");
+      console.error("MIDIA_VENDA_ATUAL inválida:", midia);
       return;
     }
 
@@ -113,9 +143,11 @@ function prepararPagamento() {
       descricao: midia.descricao
     });
 
+    document.querySelector(".midia-detalhes")?.classList.remove("hidden");
     return;
   }
 }
+
 
 function preencherResumoVIP({ valorBase, desconto = 0 }) {
   const valorComDesconto = valorBase - desconto;
@@ -165,10 +197,19 @@ function mostrarMetodo(tipo) {
   const cartao = document.getElementById("conteudoCartao");
   if (!pix || !cartao) return;
 
+  // 🔥 MÍDIA → sempre cartão
+  if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
+    pix.classList.add("hidden");
+    cartao.classList.remove("hidden");
+    return;
+  }
+
+  // 💎 VIP → Pix ou Cartão
   pix.classList.toggle("hidden", tipo !== "pix");
   cartao.classList.toggle("hidden", tipo !== "cartao");
 
-  document.querySelectorAll(".velvet-tabs .tab")
+  document
+    .querySelectorAll(".velvet-tabs .tab")
     .forEach(tab => {
       tab.classList.toggle(
         "active",
@@ -178,12 +219,14 @@ function mostrarMetodo(tipo) {
 }
 
 
-window.pagarComPix = async function ({
-  tipo,
-  modelo_id,
-  conteudo_id
- }) {
+
+window.pagarComPix = async function ({ tipo, modelo_id }) {
   try {
+    // 🔥 PIX É EXCLUSIVO PARA VIP
+    if (tipo !== "vip") {
+      throw new Error("Pagamento Pix disponível apenas para VIP");
+    }
+
     const token = localStorage.getItem("token");
     if (!token) {
       throw new Error("Sessão expirada. Faça login novamente.");
@@ -191,42 +234,13 @@ window.pagarComPix = async function ({
 
     abrirPopupPagamentoPixLoading();
 
-    let url = "";
-    let body = {};
-
-    // ===============================
-    // 💎 VIP
-    // ===============================
-    if (tipo === "vip") {
-      modelo_id = modelo_id || window.MODELO_ID_ATUAL;
-
-      if (!modelo_id || isNaN(Number(modelo_id))) {
-        throw new Error("modelo_id inválido");
-      }
-
-    }
-    if (tipo === "midia") {
-        throw new Error("Pagamento Pix não disponível para este conteúdo");
+    modelo_id = modelo_id || window.MODELO_ID_ATUAL;
+    if (!modelo_id || isNaN(Number(modelo_id))) {
+      throw new Error("modelo_id inválido");
     }
 
-    // ===============================
-    // 🔥 MÍDIA (VENDA)
-    // ===============================
-    if (tipo === "midia") {
-      conteudo_id =
-        conteudo_id || window.MIDIA_VENDA_ATUAL?.conteudo_id;
-
-      if (!conteudo_id) {
-        throw new Error("conteudo_id inválido");
-      }
-
-      url = "/api/pagamento/midia/pix";
-      body = { conteudo_id };
-    }
-
-    if (!url) {
-      throw new Error("Tipo de pagamento inválido");
-    }
+    const url = "/api/pagamento/vip/pix";
+    const body = { modelo_id };
 
     console.log("🟣 Pix payload enviado:", body);
 
@@ -246,13 +260,8 @@ window.pagarComPix = async function ({
 
     const data = await res.json();
 
+    // 💎 garante que estamos no modo Pix
     mostrarMetodo("pix");
-    console.log(
-  "Pix visível:",
-  !document
-    .getElementById("conteudoPix")
-    ?.classList.contains("hidden")
- );
 
     // ===============================
     // 🧾 MOSTRAR QR
@@ -273,57 +282,55 @@ window.pagarComPix = async function ({
     document.getElementById("pixAguardando")?.classList.remove("hidden");
 
     // ===============================
-    // 🔁 POLLING SOMENTE VIP
+    // 🔁 POLLING VIP
     // ===============================
-    if (tipo === "vip") {
-      window.__INTERVALO_VIP__ &&
-        clearInterval(window.__INTERVALO_VIP__);
+    window.__INTERVALO_VIP__ &&
+      clearInterval(window.__INTERVALO_VIP__);
 
-      window.__INTERVALO_VIP__ = setInterval(async () => {
-        try {
-          if (
-            document
-              .getElementById("popupPagamentoVelvet")
-              ?.classList.contains("hidden")
-          ) {
-            clearInterval(window.__INTERVALO_VIP__);
-            return;
-          }
-
-          const res = await fetch(
-            `/api/vip/status/${window.MODELO_ID_ATUAL}`,
-            {
-              headers: {
-                Authorization:
-                  "Bearer " + localStorage.getItem("token")
-              }
-            }
-          );
-
-          if (!res.ok) return;
-
-          const data = await res.json();
-
-          if (data.vip === true) {
-            clearInterval(window.__INTERVALO_VIP__);
-
-            document
-              .getElementById("pixAguardando")
-              ?.classList.add("hidden");
-            document
-              .getElementById("pixSucesso")
-              ?.classList.remove("hidden");
-
-            setTimeout(() => {
-              fecharPopupPagamento();
-              location.reload();
-            }, 1200);
-          }
-        } catch (err) {
-          console.error("Erro polling VIP:", err);
+    window.__INTERVALO_VIP__ = setInterval(async () => {
+      try {
+        if (
+          document
+            .getElementById("popupPagamentoVelvet")
+            ?.classList.contains("hidden")
+        ) {
+          clearInterval(window.__INTERVALO_VIP__);
+          return;
         }
-      }, 3000);
-    }
+
+        const res = await fetch(
+          `/api/vip/status/${window.MODELO_ID_ATUAL}`,
+          {
+            headers: {
+              Authorization:
+                "Bearer " + localStorage.getItem("token")
+            }
+          }
+        );
+
+        if (!res.ok) return;
+
+        const data = await res.json();
+
+        if (data.vip === true) {
+          clearInterval(window.__INTERVALO_VIP__);
+
+          document
+            .getElementById("pixAguardando")
+            ?.classList.add("hidden");
+          document
+            .getElementById("pixSucesso")
+            ?.classList.remove("hidden");
+
+          setTimeout(() => {
+            fecharPopupPagamento();
+            location.reload();
+          }, 1200);
+        }
+      } catch (err) {
+        console.error("Erro polling VIP:", err);
+      }
+    }, 3000);
 
   } catch (err) {
     console.error("❌ Erro Pix FRONT:", err.message);
@@ -336,6 +343,7 @@ window.pagarComPix = async function ({
     alert(err.message || "Erro ao gerar Pix. Tente novamente.");
   }
 };
+
 
 function copiarPix() {
   const input = document.getElementById("pixCodigo");
@@ -441,7 +449,12 @@ function initStripe() {
   return stripe;
 }
 
-async function pagarComCartao({ tipo, modelo_id, conteudo_id }) {
+async function pagarComCartao({ tipo, modelo_id }) {
+  if (tipo !== "vip") {
+    console.warn("pagarComCartao ignorado para tipo:", tipo);
+    return;
+  }
+
   initStripe();
 
   try {
@@ -537,32 +550,22 @@ async function pagarComCartao({ tipo, modelo_id, conteudo_id }) {
 }
 
 window.iniciarCartao = function () {
+  // 💎 CARTÃO É APENAS PARA VIP
+  if (window.PAGAMENTO_TIPO_ATUAL !== "vip") {
+    console.warn(
+      "iniciarCartao ignorado para tipo:",
+      window.PAGAMENTO_TIPO_ATUAL
+    );
+    return;
+  }
+
   mostrarMetodo("cartao");
 
-  // 💎 VIP
-  if (window.PAGAMENTO_TIPO_ATUAL === "vip") {
-    pagarComCartao({
-      tipo: "vip",
-      modelo_id: window.MODELO_ID_ATUAL
-    });
-    return;
-  }
-
-  // 🔥 MÍDIA (perfil)
-  if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
-    pagarComCartao({
-      tipo: "midia",
-      conteudo_id: window.MIDIA_VENDA_ATUAL?.conteudo_id
-    });
-    return;
-  }
-
-  console.error(
-    "Tipo de pagamento inválido:",
-    window.PAGAMENTO_TIPO_ATUAL
-  );
+  pagarComCartao({
+    tipo: "vip",
+    modelo_id: window.MODELO_ID_ATUAL
+  });
 };
-
 
 function pagamentoConfirmado() {
   document.getElementById("pixLoading")?.classList.add("hidden");

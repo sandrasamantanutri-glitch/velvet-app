@@ -968,38 +968,55 @@ function atualizarUIVip(modelo_id) {
   btnVip.disabled = true;
 }
 
-
-// 💳 POPUP CARTÃO — MÍDIA
-window.abrirPopupPagamentoCartao = function () {
-  const popup = document.getElementById("abrirPopupPagamentoCartao");
-
-  if (!popup) {
-    console.error("popupPagamentoCartao não encontrado no DOM");
-    return;
-  }
+window.abrirPopupPagamento = function () {
+  const popup = document.getElementById("popupPagamentoVelvet");
+  if (!popup) return;
 
   popup.classList.remove("hidden");
 
-  iniciarPopupPagamentoCartao();
+  // reset visual
+  document.querySelector(".vip-detalhes")?.classList.add("hidden");
+  document.querySelector(".midia-detalhes")?.classList.add("hidden");
+  document.querySelector(".velvet-tabs")?.classList.remove("hidden");
+  document.getElementById("conteudoPix")?.classList.remove("hidden");
+  document.getElementById("conteudoCartao")?.classList.add("hidden");
+
+  // ===============================
+  // 🔥 MÍDIA
+  // ===============================
+  if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
+    document.querySelector(".velvet-tabs")?.classList.add("hidden");
+    document.getElementById("conteudoPix")?.classList.add("hidden");
+    document.getElementById("conteudoCartao")?.classList.remove("hidden");
+
+    document.querySelector(".midia-detalhes")?.classList.remove("hidden");
+
+    iniciarCartaoMidia();
+    return;
+  }
+
+  // ===============================
+  // 💎 VIP
+  // ===============================
+  if (window.PAGAMENTO_TIPO_ATUAL === "vip") {
+    document.querySelector(".vip-detalhes")?.classList.remove("hidden");
+    mostrarMetodo("pix");
+    return;
+  }
 };
 
-window.fecharPopupPagamentoCartao = function () {
-  const popup = document.getElementById("fecharPopupPagamentoCartao");
+window.fecharPopupPagamento = function () {
+  const popup = document.getElementById("popupPagamentoVelvet");
   if (!popup) return;
 
   popup.classList.add("hidden");
 
-  // limpa estados visuais
-  document.getElementById("cartaoLoadingMidia")?.classList.remove("hidden");
-  document.getElementById("formCartaoMidia")?.classList.add("hidden");
-  document.getElementById("cartaoSucessoMidia")?.classList.add("hidden");
+  document.getElementById("pixLoading")?.classList.add("hidden");
+  document.getElementById("pixAguardando")?.classList.add("hidden");
+  document.getElementById("pixSucesso")?.classList.add("hidden");
 
-  // limpa Stripe (evita erro ao reabrir)
-  const cardEl = document.getElementById("card-element-midia");
-  if (cardEl) cardEl.innerHTML = "";
+  document.getElementById("cartaoLoading")?.classList.add("hidden");
+  document.getElementById("formCartao")?.classList.add("hidden");
+  document.getElementById("cartaoSucesso")?.classList.add("hidden");
 };
-
-
-
-
 
