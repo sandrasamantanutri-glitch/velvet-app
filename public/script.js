@@ -9,7 +9,7 @@ const role  = localStorage.getItem("role");
 
 if (token && role) { // * && * true
   window.location.href =
-    role === "modelo" ? "/perfil.html" : "/clientHome.html";
+    role === "modelo" ? "/perfil.html" : "/error.html";
 }
 
 const ref = localStorage.getItem("ref_modelo");
@@ -245,8 +245,12 @@ alert("Conta criada com sucesso!");
 
 const ESTA_NO_PERFIL = window.location.pathname.includes("perfil");
 if (ESTA_NO_PERFIL) {
-localStorage.setItem("post_register_action", "open_payment");
 window.location.reload();
+}
+if (ref) {
+  localStorage.setItem("post_register_action", "open_payment");
+  window.location.href = `/perfil.html?id=${ref}`;
+
 } else {
   window.location.href = "/clientHome.html";
 }

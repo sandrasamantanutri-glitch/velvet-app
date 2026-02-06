@@ -71,52 +71,6 @@ async function initUsuario() {
   }
 }
 
-
-
-
-// =========================================================
-// MENUS POR ROLE
-// =========================================================
-const menuCliente = `
-  <div class="menu-header">Menu</div>
-  <button onclick="location.href='/clientHome.html'">Feed de Modelos</button>
-  <button onclick="location.href='/chatcliente.html'">Chat</button>
-  <button onclick="location.href='/cliente-dados.html'">Meus Dados</button>
-   <button onclick="location.href='/cliente-pages/transacoes.html'">
-    Minhas Transações
-  </button>
-  <button class="logout-btn" onclick="logout()">Sair</button>
-`;
-
-const menuModelo = `
-<div class="menu-header">Menu</div>
-
-<button onclick="location.href='/profile.html'">Meu Perfil</button>
-<button onclick="abrirConteudos()">Conteúdos</button>    
-<button onclick="location.href='/chatmodelo.html'">Chat</button>
-<button id="btnAlterarAvatar">Alterar foto do Perfil</button>
-<button id="btnAlterarCapa">Alterar Capa</button>
-<button onclick="abrirDados()">Meus Dados</button>
-<button onclick="location.href='/modelo/relatorio'">Meus Ganhos</button>
-<hr class="menu-divider">
-<button class="logout-btn" onclick="logout()">Sair</button>
-`;
-
-function abrirDados() {
-  window.location.href = "/dados-modelo.html";
-}
-
-function abrirConteudos() {
-  const role = localStorage.getItem("role");
-
-  if (role !== "modelo") {
-    alert("Acesso restrito à modelo.");
-    return;
-  }
-
-  window.location.href = "/conteudos.html";
-}
-
 // =========================================================
 // 🔔 BADGE GLOBAL DE MENSAGENS NÃO LIDAS
 // =========================================================
