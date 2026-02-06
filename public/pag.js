@@ -211,8 +211,9 @@ window.pagarComPix = async function ({
         throw new Error("modelo_id inválido");
       }
 
-      url = "/api/pagamento/vip/pix";
-      body = { modelo_id };
+    }
+    if (tipo === "midia") {
+        throw new Error("Pagamento Pix não disponível para este conteúdo");
     }
 
     // ===============================
