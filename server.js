@@ -1547,12 +1547,16 @@ app.get("/api/modelo/me", auth, async (req, res) => {
     const userId = req.user.id;
 
     const result = await db.query(
-      `SELECT m.*
-       FROM public.modelos m
-       WHERE m.user_id = $1`,
-      [userId]
-    );
-
+      `SELECT
+    m.*,
+    md.instagram,
+    md.tiktok
+  FROM modelos m
+  LEFT JOIN modelos_dados md ON md.user_id = m.user_id
+  WHERE m.user_id = $1
+  `,
+  [userId]
+);
     if (result.rows.length === 0) {
       return res.status(404).json({ erro: "Modelo não encontrado" });
     }
@@ -1756,18 +1760,21 @@ app.get("/api/modelo/publico/:id", async (req, res) => {
   try {
     const result = await db.query(
       `
-      SELECT
-        m.user_id AS id,
-        m.nome,
-        m.bio,
-        m.avatar,
-        m.capa,
-        m.local
-      FROM modelos m
-      WHERE m.user_id = $1
-      `,
-      [modelo_id]
-    );
+       SELECT
+    m.user_id AS id,
+    m.nome,
+    m.bio,
+    m.avatar,
+    m.capa,
+    m.local,
+    md.instagram,
+    md.tiktok
+  FROM modelos m
+  LEFT JOIN modelos_dados md ON md.user_id = m.user_id
+  WHERE m.user_id = $1
+  `,
+  [modelo_id]
+);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Modelo não encontrada" });
@@ -2392,7 +2399,7 @@ app.post(
   authModelo,
   async (req, res) => {
     try {
-      const {
+        let {
         nome_exibicao,
         nome_completo,
         data_nascimento,
@@ -2402,6 +2409,10 @@ app.post(
         instagram,
         tiktok
       } = req.body;
+
+      // 🔥 NORMALIZA REDES SOCIAIS (AQUI!)
+      instagram = instagram?.replace("@", "").trim() || null;
+      tiktok = tiktok?.replace("@", "").trim() || null;
 
       if (
         !nome_exibicao ||

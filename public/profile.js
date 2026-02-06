@@ -296,6 +296,28 @@ function aplicarPerfilNoDOM(modelo) {
       localEl.parentElement.style.display = "none";
     }
   }
+  // ===============================
+// 🌐 REDES SOCIAIS
+// ===============================
+const igLink = document.getElementById("link-instagram");
+const ttLink = document.getElementById("link-tiktok");
+
+// Instagram
+if (modelo.instagram && igLink) {
+  igLink.href = `https://instagram.com/${modelo.instagram}`;
+  igLink.style.display = "inline-block";
+} else if (igLink) {
+  igLink.style.display = "none";
+}
+
+// TikTok
+if (modelo.tiktok && ttLink) {
+  ttLink.href = `https://www.tiktok.com/@${modelo.tiktok}`;
+  ttLink.style.display = "inline-block";
+} else if (ttLink) {
+  ttLink.style.display = "none";
+}
+
 }
 
 
