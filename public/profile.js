@@ -661,7 +661,7 @@ function abrirPreviewUpload(file, url) {
     });
 
      if (role === "modelo") {
-  carregarFeed();
+  carregarFeedBase();
 } else {
   carregarFeedPublico();
 }
