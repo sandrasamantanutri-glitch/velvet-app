@@ -962,5 +962,21 @@ function atualizarUIVip(modelo_id) {
 }
 
 
+// 💳 POPUP CARTÃO — MÍDIA
+window.abrirPopupPagamentoCartao = function () {
+  const popup = document.getElementById("popupPagamentoCartaoMidia");
+
+  if (!popup) {
+    console.error("popupPagamentoCartaoMidia não encontrado no DOM");
+    return;
+  }
+
+  popup.classList.remove("hidden");
+
+  iniciarCartaoMidia();
+};
+
+
+
 
 
