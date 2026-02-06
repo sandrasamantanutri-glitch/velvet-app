@@ -71,15 +71,13 @@ function decodeJWT(token) {
 }
 
 function exigirCadastro(motivo = "Para continuar, crie sua conta") {
+  console.error("openAgeGate não carregado");
   window.AUTH_MENSAGEM = motivo;
   openAgeGate("register");
 }
 
-function exigirCadastro() {
-  openAgeGate("register");
-}
-
 function exigirLogin() {
+  console.error("openAgeGate não carregado");
   openAgeGate("login");
 }
 
