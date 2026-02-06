@@ -1,15 +1,3 @@
-// ===============================
-// 🔐 AUTH GUARD - ÁREA DA MODELO
-// ===============================
-const token = localStorage.getItem("token");
-const role = localStorage.getItem("role");
-const modelo_id = localStorage.getItem("modelo_id");
-
-if (!token || role !== "modelo" || !modelo_id) {
-  // não autenticada → manda pro login
-  window.location.href = "/index.html";
-}
-
 
 // ===============================
 // 👩‍💼 ÁREA DA MODELO – VIP COUNT
