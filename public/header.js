@@ -67,8 +67,16 @@ async function initUsuario() {
     localStorage.setItem("nome", user.nome);
 
   } catch (e) {
-    console.warn("Sessão inválida no header");
+  console.warn("Sessão inválida no header");
+
+  // 🔥 limpa sessão quebrada
+  localStorage.clear();
+
+  // 🔁 redireciona com segurança
+  if (!window.location.pathname.includes("index")) {
+    window.location.href = "/index.html";
   }
+}
 }
 
 // =========================================================

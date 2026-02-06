@@ -2,17 +2,21 @@
 // AUTH GUARD — CLIENT HOME
 // ===============================
 const token = localStorage.getItem("token");
-const role  = localStorage.getItem("role");
 
 if (!token) {
   window.location.href = "/index.html";
-  throw new Error("Sem token");
+  return;
 }
 
+fetch("/api/feed/modelos", {
+  headers: {
+    Authorization: "Bearer " + token
+  }
+})
 
 function logout() {
   localStorage.clear();
-  window.location.href = "https://www.velvet.lat";
+  window.location.href = "/index.html";
 }
 
 document.addEventListener("DOMContentLoaded", () => {
