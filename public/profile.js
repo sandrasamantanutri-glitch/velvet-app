@@ -299,63 +299,34 @@ document.addEventListener("DOMContentLoaded", async () => {
   aplicarRoleNoBody();
 
   try {
-    await iniciarPerfil(); // 🔥 perfil + oferta + feed + regras
+    await iniciarPerfil();
   } catch (err) {
     console.error("Erro ao iniciar perfil:", err);
     return;
   }
-  // PÓS-REGISTRO AUTOMATICO
+
+  // PÓS-REGISTRO AUTOMÁTICO
   const postRegisterAction =
     localStorage.getItem("post_register_action");
 
   if (postRegisterAction === "open_payment") {
     localStorage.removeItem("post_register_action");
-
-    if (!OFERTA_ATUAL || !OFERTA_ATUAL.modelo_id) {
-      console.warn(
-        "⚠️ Oferta ainda não carregada para abrir pagamento automaticamente"
-      );
-    } else {
-      window.PAGAMENTO_TIPO_ATUAL = "vip";
-      window.MODELO_ID_ATUAL = OFERTA_ATUAL.modelo_id;
-
-      preencherResumoVIP({
-        valorBase: OFERTA_ATUAL.valor_base,
-        desconto:
-          OFERTA_ATUAL.valor_base -
-          OFERTA_ATUAL.valor_promocional
-      });
-
-      pagarComPix({ tipo: "vip" });
-    }
+    window.abrirFluxoVIP();
   }
 
   // CLIQUE MANUAL NO BOTÃO ASSINAR
   btnAssinar?.addEventListener("click", () => {
-    if (!role) {
-      exigirCadastro();
-      return;
-    }
-
-    if (!OFERTA_ATUAL || !OFERTA_ATUAL.modelo_id) {
-      alert("Oferta ainda não carregada. Aguarde um instante.");
-      return;
-    }
-
-    window.PAGAMENTO_TIPO_ATUAL = "vip";
-    window.MODELO_ID_ATUAL = OFERTA_ATUAL.modelo_id;
-
-    preencherResumoVIP({
-      valorBase: OFERTA_ATUAL.valor_base,
-      desconto:
-        OFERTA_ATUAL.valor_base -
-        OFERTA_ATUAL.valor_promocional
-    });
-
-    abrirPopupPagamento();
-    pagarComPix({ tipo: "vip" });
+    window.abrirFluxoVIP();
   });
- });
+
+  // LINK "assinar o perfil" DENTRO DO POPUP DE MÍDIA
+  document.addEventListener("click", (e) => {
+    if (e.target.closest(".link-assinar-vip")) {
+      e.preventDefault();
+      window.abrirFluxoVIP();
+    }
+  });
+});
 
  // TABS DE MÍDIA (FEED / ESPECIAL)
  // ===============================
