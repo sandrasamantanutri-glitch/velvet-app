@@ -20,7 +20,7 @@ let pendingAction = null;
 // ===============================
 // AGE GATE
 // ===============================
-function openAgeGate(action) {
+window.openAgeGate = function (action) {
   pendingAction = action;
 
   const confirmed = localStorage.getItem("ageConfirmed");
@@ -31,7 +31,7 @@ function openAgeGate(action) {
 
   closeAllModals();
   document.getElementById("ageModal")?.classList.remove("hidden");
-}
+};
 
 function confirmAge(isAdult) {
   if (!isAdult) {

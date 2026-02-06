@@ -67,20 +67,6 @@ function decodeJWT(token) {
   }
 }
 
-window.openAgeGate = function (action) {
-  pendingAction = action;
-
-  const confirmed = localStorage.getItem("ageConfirmed");
-  if (confirmed === "true") {
-    proceedAfterAge();
-    return;
-  }
-
-  closeAllModals();
-  document.getElementById("ageModal")?.classList.remove("hidden");
-};
-
-
 function exigirCadastro(motivo = "Para continuar, crie sua conta") {
   console.error("openAgeGate não carregado");
   window.AUTH_MENSAGEM = motivo;
