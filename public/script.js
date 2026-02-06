@@ -251,6 +251,7 @@ if (ESTA_NO_PERFIL) {
   document
     .getElementById("abrirPopupPagamento(dados)")
     ?.classList.remove("hidden");
+     console.error("não foi possivel abrir popup");
 } else {
   // 🏠 index → vai para home do cliente
   window.location.href = "/clientHome.html";
