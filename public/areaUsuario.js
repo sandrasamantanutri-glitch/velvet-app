@@ -107,6 +107,7 @@ const btnAvatar = document.getElementById("btnAvatar");
 const inputCapa = document.getElementById("inputCapa");
 const inputAvatar = document.getElementById("inputAvatar");
 const capaImg    = document.getElementById("profileCapa");
+const avatarImg  = document.getElementById("profileAvatar");
 
 // abrir seletor
 btnCapa?.addEventListener("click", () => inputCapa.click());
