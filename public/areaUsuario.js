@@ -16,6 +16,7 @@ function getUsuarioLogado() {
 // ===============================
 
 document.addEventListener("DOMContentLoaded", () => {
+carregarResumoModelo();
 const usuario = getUsuarioLogado();
 
   if (!usuario) {
@@ -162,4 +163,38 @@ inputAvatar?.addEventListener("change", async () => {
     alert("Erro ao atualizar avatar");
   }
 });
+
+async function carregarResumoModelo() {
+  try {
+    const res = await fetch("/api/modelo/financeiro", {
+      headers: {
+        Authorization: "Bearer " + localStorage.getItem("token")
+      }
+    });
+
+    if (!res.ok) {
+      console.error("Erro ao carregar ganhos da modelo");
+      return;
+    }
+
+    const data = await res.json();
+
+    const ganhosHoje =
+      Number(data.hoje.midias || 0) +
+      Number(data.hoje.assinaturas || 0);
+
+    const ganhosMes =
+      Number(data.mes.midias || 0) +
+      Number(data.mes.assinaturas || 0);
+
+    document.getElementById("areaUsuarioGanhosHoje").innerText =
+      `€ ${ganhosHoje.toFixed(2).replace(".", ",")}`;
+
+    document.getElementById("areaUsuarioGanhosMes").innerText =
+      `€ ${ganhosMes.toFixed(2).replace(".", ",")}`;
+
+  } catch (err) {
+    console.error("Erro carregarResumoModelo:", err);
+  }
+}
 
