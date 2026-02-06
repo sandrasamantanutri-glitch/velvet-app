@@ -353,6 +353,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     abrirPopupPagamento();
+    pagarComPix({ tipo: "vip" });
   });
  });
 
