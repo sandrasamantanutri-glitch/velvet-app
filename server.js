@@ -2364,6 +2364,10 @@ app.post(
   auth,
   upload.single("avatar"),
   async (req, res) => {
+    console.log("🔥 AUTH DEBUG UPLOAD:", {
+  token_user_id: req.user.id,
+  role: req.user.role
+});
     try {
       const result = await new Promise((resolve, reject) => {
         cloudinary.uploader.upload_stream(
@@ -2379,6 +2383,10 @@ app.post(
         "UPDATE public.modelos SET avatar = $1 WHERE user_id = $2",
         [result.secure_url, req.user.id]
       );
+      const check = await db.query(
+  "SELECT id, user_id FROM modelos WHERE user_id = $1",
+  [req.user.id]
+);
 
       res.json({ url: result.secure_url });
 
@@ -2394,6 +2402,12 @@ app.post(
   auth,
   upload.single("capa"),
   async (req, res) => {
+
+    console.log("🔥 AUTH DEBUG UPLOAD:", {
+  token_user_id: req.user.id,
+  role: req.user.role
+});
+    
     try {
       const result = await new Promise((resolve, reject) => {
         cloudinary.uploader.upload_stream(
@@ -2409,6 +2423,10 @@ app.post(
         "UPDATE public.modelos SET capa = $1 WHERE user_id = $2",
         [result.secure_url, req.user.id]
       );
+      const check = await db.query(
+  "SELECT id, user_id FROM modelos WHERE user_id = $1",
+  [req.user.id]
+);
 
       res.json({ url: result.secure_url });
 
