@@ -44,55 +44,117 @@ if (formCartao) {
 }
 
 
-function abrirPopupPagamento(dados) {
+function abrirPopupPagamento() {
   const popup = document.getElementById("popupPagamentoVelvet");
+  if (!popup) {
+    console.error("popupPagamentoVelvet não encontrado");
+    return;
+  }
+
+  // 🔓 abre o popup
   popup.classList.remove("hidden");
 
-  // PIX
-  document.getElementById("pixQr").src = dados.pix.qr;
-  document.getElementById("pixCodigo").value = dados.pix.codigo;
+  // 🔄 limpa estados antigos de pagamento
+  document.getElementById("pixQr")?.classList.add("hidden");
+  document.getElementById("pixCodigo")?.classList.add("hidden");
+  document.getElementById("pixLoading")?.classList.add("hidden");
+  document.getElementById("pixAguardando")?.classList.add("hidden");
+  document.getElementById("pixSucesso")?.classList.add("hidden");
 
-  // CARTÃO
-  // Aqui você pode inicializar Stripe / MP
-  // exemplo: initStripe(dados.cartao)
+  document.getElementById("conteudoPix")?.classList.remove("hidden");
+  document.getElementById("conteudoCartao")?.classList.add("hidden");
+
+
+  prepararPagamento();
 }
 
-function fecharPopupPagamento() {
-  document.getElementById("popupPagamentoVelvet")
-    .classList.add("hidden");
+function prepararPagamento() {
+  //VIP 
+  if (window.PAGAMENTO_TIPO_ATUAL === "vip") {
 
-  if (cardElement) {
-    cardElement.unmount();
-    cardElement = null;
+    if (!window.OFERTA_ATUAL) {
+      alert("Oferta VIP não carregada");
+      return;
+    }
+
+    const valorBase = Number(OFERTA_ATUAL.valor_base);
+    const valorPromo = Number(OFERTA_ATUAL.valor_promocional);
+    const desconto = valorBase - valorPromo;
+
+    preencherResumoVIP({
+      valorBase,
+      desconto
+    });
+
+    return;
+  }
+
+  //MÍDIA
+  if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
+
+    const midia = window.MIDIA_VENDA_ATUAL;
+
+    if (!midia || !midia.preco) {
+      alert("Erro ao carregar valor da mídia");
+      return;
+    }
+
+    preencherResumoMidia({
+      valor: Number(midia.preco),
+      descricao: midia.descricao
+    });
+
+    return;
   }
 }
 
 function preencherResumoVIP({ valorBase, desconto = 0 }) {
   const valorComDesconto = valorBase - desconto;
+
+  // ⚠️ taxa apenas visual (backend recalcula)
   const taxa = valorComDesconto * TAXA_TRANSACAO;
   const total = valorComDesconto + taxa;
 
   document.getElementById("vipValorBase").textContent =
-    valorBase.toFixed(2);
+    valorBase.toFixed(2).replace(".", ",");
 
   document.getElementById("vipDesconto").textContent =
-    desconto.toFixed(2);
+    desconto.toFixed(2).replace(".", ",");
 
   document.getElementById("vipTaxa").textContent =
-    taxa.toFixed(2);
+    taxa.toFixed(2).replace(".", ",");
 
   document.getElementById("vipTotal").textContent =
-    total.toFixed(2);
-
-  // 🔒 guarda para PIX / CARTÃO
-  window.VALOR_VIP_ATUAL = total;
+    total.toFixed(2).replace(".", ",");
 }
 
+function preencherResumoMidia({ valor, descricao }) {
+
+  const taxa = valor * 0.15;
+  const total = valor + taxa;
+
+  document.getElementById("vipValorBase").textContent =
+    valor.toFixed(2).replace(".", ",");
+
+  document.getElementById("vipDesconto").textContent = "0,00";
+
+  document.getElementById("vipTaxa").textContent =
+    taxa.toFixed(2).replace(".", ",");
+
+  document.getElementById("vipTotal").textContent =
+    total.toFixed(2).replace(".", ",");
+
+  document.querySelector(".vip-beneficios").innerHTML = `
+    <strong>Conteúdo exclusivo</strong><br>
+    ${descricao || "Acesso imediato após pagamento"}
+  `;
+}
 
 
 function mostrarMetodo(tipo) {
   const pix = document.getElementById("conteudoPix");
   const cartao = document.getElementById("conteudoCartao");
+  if (!pix || !cartao) return;
 
   pix.classList.toggle("hidden", tipo !== "pix");
   cartao.classList.toggle("hidden", tipo !== "cartao");
@@ -106,26 +168,16 @@ function mostrarMetodo(tipo) {
     });
 }
 
+
 window.pagarComPix = async function ({
   tipo,
   modelo_id,
-  message_id
-}) {
+  conteudo_id
+ }) {
   try {
     const token = localStorage.getItem("token");
-
-    // 🔒 blindagens essenciais
     if (!token) {
       throw new Error("Sessão expirada. Faça login novamente.");
-    }
-
-    if (tipo === "vip") {
-      // garante modelo_id sempre válido
-      modelo_id = modelo_id || window.MODELO_ID_ATUAL;
-
-      if (!modelo_id || isNaN(Number(modelo_id))) {
-        throw new Error("modelo_id inválido (front)");
-      }
     }
 
     abrirPopupPagamentoPixLoading();
@@ -133,21 +185,39 @@ window.pagarComPix = async function ({
     let url = "";
     let body = {};
 
+    // ===============================
+    // 💎 VIP
+    // ===============================
     if (tipo === "vip") {
+      modelo_id = modelo_id || window.MODELO_ID_ATUAL;
+
+      if (!modelo_id || isNaN(Number(modelo_id))) {
+        throw new Error("modelo_id inválido");
+      }
+
       url = "/api/pagamento/vip/pix";
       body = { modelo_id };
     }
 
-    if (tipo === "conteudo") {
-      if (!message_id) {
-        throw new Error("message_id inválido");
+    // ===============================
+    // 🔥 MÍDIA (VENDA)
+    // ===============================
+    if (tipo === "midia") {
+      conteudo_id =
+        conteudo_id || window.MIDIA_VENDA_ATUAL?.conteudo_id;
+
+      if (!conteudo_id) {
+        throw new Error("conteudo_id inválido");
       }
 
-      url = "/api/pagamento/conteudo/pix";
-      body = { message_id };
+      url = "/api/pagamento/midia/pix";
+      body = { conteudo_id };
     }
 
-    // 🔎 LOG PARA DEBUG (pode remover depois)
+    if (!url) {
+      throw new Error("Tipo de pagamento inválido");
+    }
+
     console.log("🟣 Pix payload enviado:", body);
 
     const res = await fetch(url, {
@@ -161,13 +231,14 @@ window.pagarComPix = async function ({
 
     if (!res.ok) {
       const erro = await res.text();
-      console.error("❌ Pix HTTP:", res.status, erro);
       throw new Error(`Pix ${res.status}: ${erro}`);
     }
 
     const data = await res.json();
 
-    // 🧾 mostra QR
+    // ===============================
+    // 🧾 MOSTRAR QR
+    // ===============================
     const qr = document.getElementById("pixQr");
     const codigo = document.getElementById("pixCodigo");
     const btnCopiar =
@@ -179,72 +250,74 @@ window.pagarComPix = async function ({
     qr.classList.remove("hidden");
     codigo.classList.remove("hidden");
     btnCopiar?.classList.remove("hidden");
-    // mostra QR e estado aguardando
-document.getElementById("pixLoading")?.classList.add("hidden");
-document.getElementById("pixAguardando")?.classList.remove("hidden");
 
-// ===============================
-// 🔁 FALLBACK VIP (AQUI 👇)
-// ===============================
-if (tipo === "vip") {
+    document.getElementById("pixLoading")?.classList.add("hidden");
+    document.getElementById("pixAguardando")?.classList.remove("hidden");
 
-  // limpa polling antigo (segurança)
-  window.__INTERVALO_VIP__ && clearInterval(window.__INTERVALO_VIP__);
-
-  window.__INTERVALO_VIP__ = setInterval(async () => {
-    try {
-
-      // popup foi fechado → para tudo
-      if (
-        document
-          .getElementById("popupPagamentoVelvet")
-          ?.classList.contains("hidden")
-      ) {
+    // ===============================
+    // 🔁 POLLING SOMENTE VIP
+    // ===============================
+    if (tipo === "vip") {
+      window.__INTERVALO_VIP__ &&
         clearInterval(window.__INTERVALO_VIP__);
-        return;
-      }
 
-      const res = await fetch(`/api/vip/status/${window.MODELO_ID_ATUAL}`, {
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("token")
+      window.__INTERVALO_VIP__ = setInterval(async () => {
+        try {
+          if (
+            document
+              .getElementById("popupPagamentoVelvet")
+              ?.classList.contains("hidden")
+          ) {
+            clearInterval(window.__INTERVALO_VIP__);
+            return;
+          }
+
+          const res = await fetch(
+            `/api/vip/status/${window.MODELO_ID_ATUAL}`,
+            {
+              headers: {
+                Authorization:
+                  "Bearer " + localStorage.getItem("token")
+              }
+            }
+          );
+
+          if (!res.ok) return;
+
+          const data = await res.json();
+
+          if (data.vip === true) {
+            clearInterval(window.__INTERVALO_VIP__);
+
+            document
+              .getElementById("pixAguardando")
+              ?.classList.add("hidden");
+            document
+              .getElementById("pixSucesso")
+              ?.classList.remove("hidden");
+
+            setTimeout(() => {
+              fecharPopupPagamento();
+              location.reload();
+            }, 1200);
+          }
+        } catch (err) {
+          console.error("Erro polling VIP:", err);
         }
-      });
-
-      if (!res.ok) return;
-
-      const data = await res.json();
-
-      if (data.vip === true) {
-        clearInterval(window.__INTERVALO_VIP__);
-
-        document.getElementById("pixAguardando")?.classList.add("hidden");
-        document.getElementById("pixSucesso")?.classList.remove("hidden");
-
-        setTimeout(() => {
-          fecharPopupPagamento();
-          location.reload();
-        }, 1200);
-      }
-
-    } catch (err) {
-      console.error("Erro polling VIP:", err);
+      }, 3000);
     }
-  }, 3000);
-}
 
   } catch (err) {
     console.error("❌ Erro Pix FRONT:", err.message);
 
     document.getElementById("pixLoading")
       ?.classList.add("hidden");
-
     document.getElementById("pixAguardando")
       ?.classList.add("hidden");
 
     alert(err.message || "Erro ao gerar Pix. Tente novamente.");
   }
 };
-
 
 function copiarPix() {
   const input = document.getElementById("pixCodigo");
@@ -297,29 +370,51 @@ socket.on("vipAtivado", ({ modelo_id }) => {
     fecharPopupPagamento();
     atualizarUIVip(modelo_id);
   }, 1500);
-});
+ });
 
-socket.on("conteudoVisto", ({ message_id }) => {
-  // esconde estados Pix
+ socket.on("conteudoVisto", async ({ message_id }) => {
+
+  // 🔒 UI de sucesso (igual você já tem)
   document.getElementById("pixLoading")?.classList.add("hidden");
   document.getElementById("pixAguardando")?.classList.add("hidden");
-
-  // esconde estados Cartão
   document.getElementById("cartaoLoading")?.classList.add("hidden");
   document.getElementById("formCartao")?.classList.add("hidden");
 
-  // mostra sucesso genérico
-  document.getElementById("pixSucesso")
-    ?.classList.remove("hidden");
+  document.getElementById("pixSucesso")?.classList.remove("hidden");
+  document.getElementById("cartaoSucesso")?.classList.remove("hidden");
 
-  document.getElementById("cartaoSucesso")
-    ?.classList.remove("hidden");
-
-  setTimeout(() => {
+  // ⏳ pequeno delay pra UX
+  setTimeout(async () => {
     fecharPopupPagamento();
+
+    // 🔥 BUSCA A MÍDIA LIBERADA
+    const res = await fetch(`/api/conteudo/liberado/${message_id}`, {
+      headers: {
+        Authorization: "Bearer " + localStorage.getItem("token")
+      }
+    });
+
+    if (!res.ok) return;
+
+    const midias = await res.json();
+
+    if (!midias.length) return;
+
+    const midia = midias[0];
+
+    // 🎬 ABRE AUTOMATICAMENTE
+    abrirModalMidia(
+      midia.url,
+      midia.tipo === "video"
+    );
+
   }, 1200);
+ });
+
 });
-})
+
+window.MIDIA_VENDA_ATUAL = null;
+
 
 function initStripe() {
   if (stripe) return stripe;
@@ -328,11 +423,12 @@ function initStripe() {
   return stripe;
 }
 
-async function pagarComCartao({ tipo, message_id, modelo_id }) {
+async function pagarComCartao({ tipo, modelo_id, conteudo_id }) {
   initStripe();
 
   try {
     const token = localStorage.getItem("token");
+    if (!token) throw new Error("Sessão expirada");
 
     mostrarMetodo("cartao");
 
@@ -344,22 +440,45 @@ async function pagarComCartao({ tipo, message_id, modelo_id }) {
     }
 
     document.getElementById("cartaoLoading")
-      .classList.remove("hidden");
+      ?.classList.remove("hidden");
 
     document.getElementById("formCartao")
-      .classList.add("hidden");
+      ?.classList.add("hidden");
 
     let url = "";
     let body = {};
 
-    if (tipo === "conteudo") {
-      url = "/api/pagamento/conteudo/cartao";
-      body = { message_id };
+    // ===============================
+    // 💎 VIP
+    // ===============================
+    if (tipo === "vip") {
+      modelo_id = modelo_id || window.MODELO_ID_ATUAL;
+
+      if (!modelo_id) {
+        throw new Error("modelo_id inválido");
+      }
+
+      url = "/api/pagamento/vip/cartao";
+      body = { modelo_id };
     }
 
-    if (tipo === "vip") {
-       url = "/api/pagamento/vip/cartao"
-      body = { modelo_id };
+    // ===============================
+    // 🔥 MÍDIA (perfil)
+    // ===============================
+    if (tipo === "midia") {
+      conteudo_id =
+        conteudo_id || window.MIDIA_VENDA_ATUAL?.conteudo_id;
+
+      if (!conteudo_id) {
+        throw new Error("conteudo_id inválido");
+      }
+
+      url = "/api/pagamento/midia/cartao";
+      body = { conteudo_id };
+    }
+
+    if (!url) {
+      throw new Error("Tipo de pagamento inválido");
     }
 
     const res = await fetch(url, {
@@ -377,10 +496,10 @@ async function pagarComCartao({ tipo, message_id, modelo_id }) {
     }
 
     const data = await res.json();
-    clientSecretAtual = data.clientSecret;
+    const clientSecretAtual = data.clientSecret;
 
     if (!clientSecretAtual) {
-      throw new Error("client_secret inválido");
+      throw new Error("clientSecret inválido");
     }
 
     elements = stripe.elements({ clientSecret: clientSecretAtual });
@@ -388,25 +507,44 @@ async function pagarComCartao({ tipo, message_id, modelo_id }) {
     cardElement.mount("#card-element");
 
     document.getElementById("cartaoLoading")
-      .classList.add("hidden");
+      ?.classList.add("hidden");
 
     document.getElementById("formCartao")
-      .classList.remove("hidden");
+      ?.classList.remove("hidden");
 
   } catch (err) {
     console.error("❌ Erro cartão:", err);
-    alert("Erro ao iniciar pagamento com cartão");
+    alert(err.message || "Erro ao iniciar pagamento com cartão");
   }
 }
 
 window.iniciarCartao = function () {
   mostrarMetodo("cartao");
 
-  pagarComCartao({
-    tipo: window.PAGAMENTO_TIPO_ATUAL,
-    modelo_id: window.MODELO_ID_ATUAL
-  });
+  // 💎 VIP
+  if (window.PAGAMENTO_TIPO_ATUAL === "vip") {
+    pagarComCartao({
+      tipo: "vip",
+      modelo_id: window.MODELO_ID_ATUAL
+    });
+    return;
+  }
+
+  // 🔥 MÍDIA (perfil)
+  if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
+    pagarComCartao({
+      tipo: "midia",
+      conteudo_id: window.MIDIA_VENDA_ATUAL?.conteudo_id
+    });
+    return;
+  }
+
+  console.error(
+    "Tipo de pagamento inválido:",
+    window.PAGAMENTO_TIPO_ATUAL
+  );
 };
+
 
 function pagamentoConfirmado() {
   document.getElementById("pixLoading")?.classList.add("hidden");
@@ -440,21 +578,13 @@ async function confirmarPagamentoCartao() {
       return;
     }
 
-    // Se não houve erro imediato, o Stripe redireciona
-    // ou confirma automaticamente
-    pagamentoConfirmado();
+    // ✅ NÃO confirma aqui
+    // O sucesso virá via webhook / socket / reload
 
   } catch (err) {
     console.error("❌ Erro inesperado:", err);
     alert("Erro ao confirmar pagamento");
   }
 }
-
-
-
-
-
-
-
 
 

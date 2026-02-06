@@ -78,6 +78,62 @@ const bioInput     = document.getElementById("bioInput");
 const localEl = document.getElementById("local-texto");
 const inputUpload = document.getElementById("inputUpload");
 
+// ===============================
+// 🔔 CONTEÚDO LIBERADO (PÓS-PAGAMENTO)
+// ===============================
+socket.on("conteudoVisto", async ({ message_id }) => {
+  try {
+    // 🔒 fecha popup de pagamento (se ainda estiver aberto)
+    fecharPopupPagamento?.();
+
+    // 🧠 se não sabemos qual mídia foi comprada, recarrega feed
+    if (!window.MIDIA_VENDA_ATUAL?.conteudo_id) {
+      await carregarFeedBase();
+      return;
+    }
+
+    const conteudo_id = window.MIDIA_VENDA_ATUAL.conteudo_id;
+
+    // 🔥 busca a mídia liberada no backend (segurança)
+    const res = await fetch(
+      `/api/conteudo/liberado/${message_id}`,
+      {
+        headers: {
+          Authorization: "Bearer " + localStorage.getItem("token")
+        }
+      }
+    );
+
+    if (!res.ok) {
+      console.warn("Conteúdo liberado, mas não foi possível buscar mídia");
+      await carregarFeedBase();
+      return;
+    }
+
+    const midias = await res.json();
+    if (!midias || !midias.length) return;
+
+    const midia = midias[0];
+
+    // 🎬 ABRE AUTOMATICAMENTE
+    abrirModalMidia(
+      midia.url,
+      midia.tipo === "video"
+    );
+
+    // 🧹 limpa estado
+    window.MIDIA_VENDA_ATUAL = null;
+
+    // 🔄 atualiza feed (pra não cobrar de novo)
+    await carregarFeedBase();
+
+  } catch (err) {
+    console.error("Erro ao liberar mídia:", err);
+  }
+});
+
+/////////////////////////////////
+
 function decodeJWT(token) {
   try {
     const payload = token.split(".")[1];
@@ -756,13 +812,15 @@ function adicionarMidia(conteudo) {
 
     window.PAGAMENTO_TIPO_ATUAL = "midia";
     window.MODELO_ID_ATUAL = modelo_id;
-    window.CONTEUDO_VENDA_ATUAL = conteudo;
-  
+     window.MIDIA_VENDA_ATUAL = {
+      conteudo_id: id,
+      preco: Number(preco),
+      descricao
+    };
 
      abrirPopupPagamento(); // ✅ FUNÇÃO DO pag.js
     return;
   }
-
   // feed normal
   abrirModalMidia(url, isVideo);
  };

@@ -2646,6 +2646,67 @@ app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
   }
 });
 
+app.post("/api/pagamento/midia/cartao", authCliente, async (req, res) => {
+  const { conteudo_id } = req.body;
+  const cliente_id = req.user.id;
+
+  if (!conteudo_id) {
+    return res.status(400).json({ error: "conteudo_id inválido" });
+  }
+
+  // 1️⃣ buscar conteúdo
+  const conteudoRes = await db.query(`
+    SELECT c.preco, c.user_id AS modelo_id
+    FROM conteudos c
+    WHERE c.id = $1
+      AND c.tipo_conteudo = 'venda'
+  `, [conteudo_id]);
+
+  if (conteudoRes.rowCount === 0) {
+    return res.status(404).json({ error: "Conteúdo não encontrado" });
+  }
+
+  const { preco, modelo_id } = conteudoRes.rows[0];
+
+  // 2️⃣ taxas (backend decide)
+  const taxaTransacao  = Number((preco * 0.10).toFixed(2));
+  const taxaPlataforma = Number((preco * 0.05).toFixed(2));
+  const total = Number((preco + taxaTransacao + taxaPlataforma).toFixed(2));
+
+  // 3️⃣ criar message técnico
+  const msgRes = await db.query(`
+    INSERT INTO messages
+      (cliente_id, modelo_id, sender, tipo, preco, visto)
+    VALUES
+      ($1,$2,'modelo','conteudo',$3,false)
+    RETURNING id
+  `, [cliente_id, modelo_id, preco]);
+
+  const message_id = msgRes.rows[0].id;
+
+  await db.query(`
+    INSERT INTO messages_conteudos (message_id, conteudo_id)
+    VALUES ($1,$2)
+  `, [message_id, conteudo_id]);
+
+  // 4️⃣ Stripe
+  const pi = await stripe.paymentIntents.create({
+    amount: Math.round(total * 100),
+    currency: "brl",
+    payment_method_types: ["card"],
+    metadata: {
+      tipo: "conteudo",
+      message_id,
+      cliente_id,
+      modelo_id,
+      valor_base: preco,
+      taxa_transacao: taxaTransacao,
+      taxa_plataforma: taxaPlataforma
+    }
+  });
+
+  res.json({ clientSecret: pi.client_secret });
+});
 
 
 // ===============================
