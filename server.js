@@ -1326,7 +1326,7 @@ socket.on("excluirMensagem", async ({ id }) => {
 // ===============================
 //ROTA GET
 // ===============================
-//CONTAGEM VIPS
+//CONTAGEMVIPS
 app.get("/api/modelo/:id/vip-count", async (req, res) => {
   const modelo_id = Number(req.params.id);
 
@@ -1341,7 +1341,7 @@ app.get("/api/modelo/:id/vip-count", async (req, res) => {
       FROM vip_subscriptions
       WHERE modelo_id = $1
         AND ativo = true
-        AND expira_em > NOW()
+        AND expiration_at > NOW()
       `,
       [modelo_id]
     );
@@ -1353,6 +1353,7 @@ app.get("/api/modelo/:id/vip-count", async (req, res) => {
     res.status(500).json({ total: 0 });
   }
 });
+
 
 //OFERTAS QUANDO ENCERRAR
 app.get("/api/ofertas", authModelo, async (req, res) => {
