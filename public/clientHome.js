@@ -78,13 +78,14 @@ document.addEventListener("DOMContentLoaded", () => {
           localStorage.setItem("modelo_id", modeloId.toString());
           window.location.href = `profile.html?id=${modeloId}`;
         });
-
-        // ➕ adiciona o card ao DOM
+        
         lista.appendChild(card);
       });
     })
     .catch(err => {
-      console.error("❌ Erro no feed de modelos:", err);
-      lista.innerHTML = "<p>Erro ao carregar modelos</p>";
-    });
+  console.error("Erro ao carregar feed de modelos:", err);
+  localStorage.clear();
+  window.location.href = "/index.html";
+});
+
 });
