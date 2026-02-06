@@ -2258,7 +2258,20 @@ app.post("/api/register", authLimiter, async (req, res) => {
       );
     }
 
-    return res.status(201).json({ sucesso: true });
+    const token = jwt.sign(
+  {
+    id: userId,
+    email,
+    role: role.toLowerCase()
+  },
+  process.env.JWT_SECRET,
+  { expiresIn: "24h" }
+);
+
+return res.status(201).json({
+  token,
+  role: role.toLowerCase()
+});
 
   } catch (err) {
     console.error("ERRO REGISTER:", err);
