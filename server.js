@@ -2707,58 +2707,17 @@ const total = Number( (precoNum + taxaTransacao + taxaPlataforma).toFixed(2));
       taxa_plataforma: taxaPlataforma
     }
   });
-
-  res.json({ clientSecret: pi.client_secret });
-});
-
-app.post("/api/pagamento/midia/pix", authCliente, async (req, res) => {
-  try {
-    const clienteId = req.user.id;
-    const { conteudo_id } = req.body;
-
-    if (!conteudo_id) {
-      return res.status(400).json({ erro: "conteudo_id obrigatório" });
-    }
-
-    // 🔎 busca conteúdo
-    const conteudoRes = await db.query(
-      `SELECT preco, modelo_id FROM conteudos WHERE id = $1`,
-      [conteudo_id]
-    );
-
-    if (conteudoRes.rows.length === 0) {
-      return res.status(404).json({ erro: "Conteúdo não encontrado" });
-    }
-
-    const { preco, modelo_id } = conteudoRes.rows[0];
-
-    // 🔢 converte numeric → number
-    const precoNum = Number(preco);
-
-    const taxaTransacao  = Number((precoNum * 0.10).toFixed(2));
-    const taxaPlataforma = Number((precoNum * 0.05).toFixed(2));
-    const total = Number(
-      (precoNum + taxaTransacao + taxaPlataforma).toFixed(2)
-    );
-
-    // 💜 cria Pix no provider (exemplo)
-    const pix = await criarPix({
-      valor: total,
-      descricao: `Conteúdo ${conteudo_id}`,
-      clienteId
-    });
-
-    // 🔥 retorna exatamente o que o FRONT espera
-    res.json({
-      qr_code: pix.qr_code_base64,
-      copia_cola: pix.qr_code
-    });
-
-  } catch (err) {
-    console.error("ERRO PIX MIDIA:", err);
-    res.status(500).json({ erro: "Erro ao gerar Pix da mídia" });
+  res.json({
+  clientSecret: pi.client_secret,
+  resumo: {
+    valor_base: precoNum,
+    taxa_transacao: taxaTransacao,
+    taxa_plataforma: taxaPlataforma,
+    total
   }
+  });
 });
+
 
 // ===============================
 // WEBHOOK MERCADOPAGO

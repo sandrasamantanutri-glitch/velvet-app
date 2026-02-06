@@ -638,19 +638,6 @@ window.confirmarPix = function () {
 };
 
 
-function abrirPopupPagamentoCartao() {
-  const popup = document.getElementById("popupPagamentoCartaoMidia");
-  popup.classList.remove("hidden");
-
-  iniciarCartaoMidia();
-}
-
-window.fecharPopupCartaoMidia = function () {
-  document
-    .getElementById("popupPagamentoCartaoMidia")
-    ?.classList.add("hidden");
-};
-
 async function iniciarCartaoMidia() {
   initStripe();
 
@@ -671,7 +658,25 @@ async function iniciarCartaoMidia() {
     })
   });
 
+  if (!res.ok) {
+    const erro = await res.text();
+    throw new Error(erro || "Erro ao iniciar pagamento");
+  }
+
   const data = await res.json();
+
+  // 🔎 resumo vindo do server
+  document.getElementById("midiaValorBase").textContent =
+    data.resumo.valor_base.toFixed(2);
+
+  document.getElementById("midiaTaxa").textContent =
+    (data.resumo.taxa_transacao + data.resumo.taxa_plataforma).toFixed(2);
+
+  document.getElementById("midiaTotal").textContent =
+    data.resumo.total.toFixed(2);
+
+  // 💳 Stripe
+  document.getElementById("card-element-midia").innerHTML = "";
 
   elements = stripe.elements({ clientSecret: data.clientSecret });
   const card = elements.create("payment");
@@ -680,8 +685,3 @@ async function iniciarCartaoMidia() {
   document.getElementById("cartaoLoadingMidia").classList.add("hidden");
   document.getElementById("formCartaoMidia").classList.remove("hidden");
 }
-
-
-
-
-
