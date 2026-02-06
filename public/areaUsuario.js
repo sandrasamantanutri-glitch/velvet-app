@@ -10,15 +10,12 @@ function getUsuarioLogado() {
   }
 }
 
-const modelo_id = localStorage.getItem("modelo_id");
-
 // ===============================
 // 👩‍💼 ÁREA DA MODELO – VIP COUNT
 // ===============================
 
 document.addEventListener("DOMContentLoaded", () => {
-  carregarVipCountModelo();
-    const usuario = getUsuarioLogado();
+const usuario = getUsuarioLogado();
 
   if (!usuario) {
     console.log("Visitante não logado");
@@ -37,9 +34,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-async function carregarVipCountModelo() {
+async function carregarVipCountModelo(modelo_id) {
+  const token = localStorage.getItem("token");
   if (!token || !modelo_id) {
-    console.warn("Modelo não autenticada");
+    console.warn("VIP count: dados insuficientes");
     return;
   }
 
@@ -50,17 +48,12 @@ async function carregarVipCountModelo() {
       }
     });
 
-    if (!res.ok) {
-      console.warn("Não foi possível carregar VIP count");
-      return;
-    }
+    if (!res.ok) return;
 
     const { total } = await res.json();
 
     const el = document.getElementById("vip-total");
-    if (el) {
-      el.textContent = total;
-    }
+    if (el) el.textContent = total;
 
   } catch (err) {
     console.error("Erro ao carregar VIP count:", err);
