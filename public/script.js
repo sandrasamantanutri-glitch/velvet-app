@@ -104,8 +104,8 @@ window.switchToLogin = function () {
 function updateModal() {
   const title = document.getElementById("modalTitle");
   const submit = document.getElementById("modalSubmit");
-  const roleSelect = document.getElementById("registerRole");
 
+  const roleSelect = document.getElementById("registerRole");
   const nome = document.getElementById("registerNome");
   const nascimento = document.getElementById("registerNascimento");
   const senhaConfirm = document.getElementById("registerSenhaConfirm");
@@ -118,18 +118,33 @@ function updateModal() {
     title.textContent = "Entrar";
     submit.textContent = "Entrar";
     submit.onclick = login;
+
+    // 🔒 esconder campos de registro
     roleSelect.classList.add("hidden");
+    nome.classList.add("hidden");
+    nascimento.classList.add("hidden");
+    senhaConfirm.classList.add("hidden");
+    legal.classList.add("hidden");
+
     switchRegister.classList.remove("hidden");
     switchLogin.classList.add("hidden");
+
   } else {
     title.textContent = "Criar Conta";
     submit.textContent = "Criar conta";
     submit.onclick = register;
+    // 🔓 mostrar campos de registro
     roleSelect.classList.remove("hidden");
+    nome.classList.remove("hidden");
+    nascimento.classList.remove("hidden");
+    senhaConfirm.classList.remove("hidden");
+    legal.classList.remove("hidden");
+
     switchRegister.classList.add("hidden");
     switchLogin.classList.remove("hidden");
   }
 }
+
 
 // ===============================
 // LOGIN
