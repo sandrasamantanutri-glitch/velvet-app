@@ -80,6 +80,8 @@ async function carregarAreaModelo(user_id) {
 
   // exemplo:
   document.getElementById("profileName").textContent = modelo.nome;
+  document.getElementById("profileAvatar").src = modelo.avatar;
+  
 
   // VIP count
   carregarVipCountModelo(modelo.id);
