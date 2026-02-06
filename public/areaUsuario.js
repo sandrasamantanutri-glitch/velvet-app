@@ -10,6 +10,8 @@ function getUsuarioLogado() {
   }
 }
 
+const modelo_id = localStorage.getItem("modelo_id");
+
 // ===============================
 // 👩‍💼 ÁREA DA MODELO – VIP COUNT
 // ===============================
@@ -36,9 +38,6 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 async function carregarVipCountModelo() {
-  const token = localStorage.getItem("token");
-  const modelo_id = localStorage.getItem("modelo_id");
-
   if (!token || !modelo_id) {
     console.warn("Modelo não autenticada");
     return;
