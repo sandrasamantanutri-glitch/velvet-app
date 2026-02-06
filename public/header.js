@@ -42,9 +42,14 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 async function initUsuario() {
-    if (localStorage.getItem("post_register_action")) {
-    return;
-  }
+  if (localStorage.getItem("post_register_action") === "just_registered") {
+  // libera depois da primeira carga
+  setTimeout(() => {
+    localStorage.removeItem("post_register_action");
+  }, 1000);
+  return;
+}
+
   const token = localStorage.getItem("token");
   if (!token) return;
 

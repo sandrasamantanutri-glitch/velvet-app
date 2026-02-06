@@ -256,16 +256,16 @@ if (data.role === "cliente" && data.cliente_id) {
 alert("Conta criada com sucesso!");
 
 const ESTA_NO_PERFIL = window.location.pathname.includes("perfil");
-if (ESTA_NO_PERFIL) {
-  // 🔔 sinaliza ação pós-registro
-  localStorage.setItem("post_register_action", "open_payment");
 
-  // 🔁 permanece no perfil
+if (ESTA_NO_PERFIL) {
+  localStorage.setItem("post_register_action", "open_payment");
   window.location.reload();
+
 } else {
-  // 🏠 só quem se cadastrou no index vai para home
+  localStorage.setItem("post_register_action", "just_registered");
   window.location.href = "/clientHome.html";
 }
+
 }
 
 // ===============================
