@@ -771,15 +771,15 @@ router.get("/api/modelo/financeiro", authModelo, async (req, res) => {
   -- 🔹 HOJE
   COALESCE(SUM(CASE
     WHEN tipo = 'conteudo'
-     AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
-         = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+     AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')::date
+         = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')::date
     THEN valor_modelo
   END), 0) AS hoje_midias,
 
   COALESCE(SUM(CASE
     WHEN tipo = 'assinatura'
-     AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
-         = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+     AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')::date
+         = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')::date
     THEN valor_modelo
   END), 0) AS hoje_assinaturas,
   

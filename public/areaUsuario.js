@@ -188,10 +188,10 @@ async function carregarResumoModelo() {
       Number(data.mes.assinaturas || 0);
 
     document.getElementById("areaUsuarioGanhosHoje").innerText =
-      `€ ${ganhosHoje.toFixed(2).replace(".", ",")}`;
+      `R$ ${ganhosHoje.toFixed(2).replace(".", ",")}`;
 
     document.getElementById("areaUsuarioGanhosMes").innerText =
-      `€ ${ganhosMes.toFixed(2).replace(".", ",")}`;
+      `R$ ${ganhosMes.toFixed(2).replace(".", ",")}`;
 
   } catch (err) {
     console.error("Erro carregarResumoModelo:", err);
