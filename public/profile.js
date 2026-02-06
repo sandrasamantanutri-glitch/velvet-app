@@ -976,6 +976,22 @@ window.abrirPopupPagamentoCartao = function () {
   iniciarCartaoMidia();
 };
 
+window.fecharPopupPagamentoCartao = function () {
+  const popup = document.getElementById("popupPagamentoCartaoMidia");
+  if (!popup) return;
+
+  popup.classList.add("hidden");
+
+  // limpa estados visuais
+  document.getElementById("cartaoLoadingMidia")?.classList.remove("hidden");
+  document.getElementById("formCartaoMidia")?.classList.add("hidden");
+  document.getElementById("cartaoSucessoMidia")?.classList.add("hidden");
+
+  // limpa Stripe (evita erro ao reabrir)
+  const cardEl = document.getElementById("card-element-midia");
+  if (cardEl) cardEl.innerHTML = "";
+};
+
 
 
 
