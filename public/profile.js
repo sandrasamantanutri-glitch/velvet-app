@@ -154,10 +154,6 @@ function exigirLogin() {
   openAgeGate("login");
 }
 
-function logout() {
-  localStorage.clear();
-  window.location.href = "https://www.velvet.lat";
-}
 const btnUpload = document.querySelector(".btn-upload");
 if (role !== "modelo" || !token) {
   btnUpload?.remove();

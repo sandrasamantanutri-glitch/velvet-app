@@ -10,6 +10,7 @@ function getUsuarioLogado() {
   }
 }
 
+ const token = localStorage.getItem("token");
 // ===============================
 // 👩‍💼 ÁREA DA MODELO – VIP COUNT
 // ===============================
@@ -144,24 +145,20 @@ inputAvatar?.addEventListener("change", async () => {
   const fd = new FormData();
   fd.append("avatar", file);
 
-  try {
-    const res = await fetch("/uploadAvatar", {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token")
-      },
-      body: fd
-    });
+  const res = await fetch("/uploadAvatar", {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer " + token
+    },
+    body: fd
+  });
 
-    const data = await res.json();
+  const data = await res.json();
 
-    if (data.url) {
-      document.getElementById("profileAvatar").src = data.url;
-    } else {
-      alert("Erro ao atualizar avatar");
-    }
-  } catch (err) {
-    console.error(err);
+  if (data.url) {
+    avatarImg.src = data.url; // 🔥 atualiza na hora
+  } else {
+    alert("Erro ao atualizar avatar");
   }
 });
 
