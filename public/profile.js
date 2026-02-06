@@ -299,40 +299,34 @@ document.addEventListener("DOMContentLoaded", async () => {
   aplicarRoleNoBody();
 
   try {
-    await iniciarPerfil(); // 🔥 perfil + oferta + feed + regras
-   } catch (err) {
+    await iniciarPerfil();
+  } catch (err) {
     console.error("Erro ao iniciar perfil:", err);
     return;
-   }
-   // PÓS-REGISTRO AUTOMATICO
-   const postRegisterAction = localStorage.getItem("post_register_action");
+  }
 
-   if (postRegisterAction === "open_payment") {
+  // PÓS-REGISTRO AUTOMÁTICO
+  const postRegisterAction =
+    localStorage.getItem("post_register_action");
+
+  if (postRegisterAction === "open_payment") {
     localStorage.removeItem("post_register_action");
-
-    if (!OFERTA_ATUAL || !OFERTA_ATUAL.modelo_id) {
-      console.warn(
-        "⚠️ Oferta ainda não carregada para abrir pagamento automaticamente"
-      );
-  } 
-      if (postRegisterAction === "open_payment") {
-        localStorage.removeItem("post_register_action");
-        window.abrirFluxoVIP();
-      }
+    window.abrirFluxoVIP();
   }
 
   // CLIQUE MANUAL NO BOTÃO ASSINAR
   btnAssinar?.addEventListener("click", () => {
-  window.abrirFluxoVIP();
-});
-document.addEventListener("click", (e) => {
-  if (e.target.closest(".link-assinar-vip")) {
-    e.preventDefault();
     window.abrirFluxoVIP();
-  }
-});
+  });
 
- });
+  // LINK "assinar o perfil" DENTRO DO POPUP DE MÍDIA
+  document.addEventListener("click", (e) => {
+    if (e.target.closest(".link-assinar-vip")) {
+      e.preventDefault();
+      window.abrirFluxoVIP();
+    }
+  });
+});
 
  // TABS DE MÍDIA (FEED / ESPECIAL)
  // ===============================
@@ -667,7 +661,7 @@ function abrirPreviewUpload(file, url) {
     });
 
      if (role === "modelo") {
-  carregarFeed();
+  carregarFeedBase();
 } else {
   carregarFeedPublico();
 }
