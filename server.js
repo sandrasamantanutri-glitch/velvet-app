@@ -121,7 +121,7 @@ async function buscarFeedCompletoPorUserId(user_id) {
       criado_em
     FROM conteudos
     WHERE user_id = $1
-    ORDER BY criado_em DESC
+    ORDER BY id DESC
   `, [user_id]);
 
   return result.rows;
