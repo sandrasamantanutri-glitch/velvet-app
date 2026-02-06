@@ -21,7 +21,7 @@ if (role === "modelo" && token && !modeloParam) {
 }
 if (role === "cliente" && modo === "privado") {
   window.location.href = "/";
-  throw new Error("Cliente não pode acessar profile privado");
+  return;
 }
 
 let modelo_id = null;
@@ -69,6 +69,19 @@ function decodeJWT(token) {
   } catch (e) {
     return null;
   }
+}
+
+function exigirCadastro(motivo = "Para continuar, crie sua conta") {
+  window.AUTH_MENSAGEM = motivo;
+  openAgeGate("register");
+}
+
+function exigirCadastro() {
+  openAgeGate("register");
+}
+
+function exigirLogin() {
+  openAgeGate("login");
 }
 
 function logout() {
@@ -225,6 +238,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // 🔔 clique do botão assinar (apenas dispara pagamento)
   btnAssinar?.addEventListener("click", () => {
+     if (!role) {
+    exigirCadastro();
+    return;
+  }
     if (!OFERTA_ATUAL || !OFERTA_ATUAL.modelo_id) {
       alert("Oferta ainda não carregada. Aguarde um instante.");
       return;

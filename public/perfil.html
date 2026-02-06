@@ -5,8 +5,8 @@
   <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1">
    <title>Perfil </title>
-  <link rel="stylesheet" href="/perfil.css">
-   <link rel="stylesheet" href="/pag.css">
+  <link rel="stylesheet" href="perfil.css">
+   <link rel="stylesheet" href="pag.css">
 
 </head>
 <body>
@@ -14,8 +14,8 @@
 <header class="app-header">
   <div class="header-inner">
    <img src="/assets/velvet.png" alt="Velvet" class="velvet-logo">
-   <a href="/feed.html" title="Feed"><img src="/assets/feed.png" alt="Feed"></a>
-   <a href="/perfil.html" title="Perfil"><img src="/assets/perfil.png" alt="Perfil"></a>
+   <a href="/feed.html" title="Feed"><img src="assets/feed.png" alt="Feed"></a>
+   <a href="/perfil.html" title="Perfil"><img src="assets/perfil.png" alt="Perfil"></a>
    <button id="btnMensagem"><img src="assets/chat.png" alt="Chat"><span id="badgeUnread" class="badge-unread hidden">0</span></button>
   </div>
 
@@ -25,23 +25,23 @@
 
 <div class="perfil-card">
   <div class="perfil-capa">
-    <img id="profileCapa" src="/assets/capa.png" alt="Capa da modelo">
+    <img id="profileCapa" src="assets/capa.png" alt="Capa da modelo">
   </div>
 
   <div class="perfil-avatar">
-    <img id="profileAvatar" src="/assets/avatar.png" alt="Avatar da modelo">
+    <img id="profileAvatar" src="assets/avatar.png" alt="Avatar da modelo">
   </div>
 
   <div class="perfil-nome" id="profileName"></div>
 
   <div class="perfil-bio" id="profileBio"></div>
 
-  <div class="local-icons"> <img src="/assets/local.png" alt="Local"><span id="local-texto"></span>
+  <div class="local-icons"> <img src="assets/local.png" alt="Local"><span id="local-texto"></span>
   </div>
 
   <div class="icon-group">
-    <img src="/assets/insta.png" alt="Instagram">
-    <img src="/assets/tiktok.png" alt="TikTok">
+    <img src="assets/insta.png" alt="Instagram">
+    <img src="assets/tiktok.png" alt="TikTok">
   </div>
   
   <div class="oferta-card" id="oferta-card">
@@ -66,7 +66,7 @@
 
   <div class="midias-topo">
     <a href="#" class="btn-upload" title="upload">
-      <img src="/assets/more.png" alt="Carregar Midias">
+      <img src="assets/more.png" alt="Carregar Midias">
     </a>
 
     <input
@@ -203,12 +203,13 @@
 
 </main>
 
-<script src="/socket.io/socket.io.js"></script>
-<script src="/header.js"></script>
+<script src="socket.io/socket.io.js"></script>
+<script src="header.js"></script>
 <script src="https://js.stripe.com/v3/"></script>
 <script>window.STRIPE_PUBLIC_KEY = "pk_test_51Spb5lRtYLPrY4c3mmlGZkiuTrQhpobiUYrB96H3uPwcbSTMosLNcMdGPz0m1mS9b8QWblGrc0xixNf0hzgybmqI00lrOyKEcQ";</script>
-<script src="/pag.js"></script>
-<script src="/profile.js"></script>
+<script src="pag.js"></script>
+<script src="profile.js"></script>
+
 
 </body>
 </html>
