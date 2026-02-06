@@ -214,6 +214,7 @@ async function aplicarRegrasDeAcesso() {
   if (role === "modelo" && modo === "privado") {
     ofertaCard.style.display = "block";
     btnChat?.classList.remove("hidden");
+    liberarMidias?.();
     return;
   }
 
@@ -235,6 +236,7 @@ async function aplicarRegrasDeAcesso() {
       if (vip) {
         ofertaCard.style.display = "none";
         btnChat?.classList.remove("hidden");
+        //liberarMidias?.();
       } else {
         ofertaCard.style.display = "block";
        // bloquearMidias?.("vip");
@@ -297,34 +299,40 @@ document.addEventListener("DOMContentLoaded", async () => {
   aplicarRoleNoBody();
 
   try {
-    await iniciarPerfil();
-  } catch (err) {
+    await iniciarPerfil(); // 🔥 perfil + oferta + feed + regras
+   } catch (err) {
     console.error("Erro ao iniciar perfil:", err);
     return;
-  }
+   }
+   // PÓS-REGISTRO AUTOMATICO
+   const postRegisterAction = localStorage.getItem("post_register_action");
 
-  // PÓS-REGISTRO AUTOMÁTICO
-  const postRegisterAction =
-    localStorage.getItem("post_register_action");
-
-  if (postRegisterAction === "open_payment") {
+   if (postRegisterAction === "open_payment") {
     localStorage.removeItem("post_register_action");
-    window.abrirFluxoVIP();
+
+    if (!OFERTA_ATUAL || !OFERTA_ATUAL.modelo_id) {
+      console.warn(
+        "⚠️ Oferta ainda não carregada para abrir pagamento automaticamente"
+      );
+  } 
+      if (postRegisterAction === "open_payment") {
+        localStorage.removeItem("post_register_action");
+        window.abrirFluxoVIP();
+      }
   }
 
   // CLIQUE MANUAL NO BOTÃO ASSINAR
   btnAssinar?.addEventListener("click", () => {
-    window.abrirFluxoVIP();
-  });
-
-  // LINK "assinar o perfil" DENTRO DO POPUP DE MÍDIA
-  document.addEventListener("click", (e) => {
-    if (e.target.closest(".link-assinar-vip")) {
-      e.preventDefault();
-      window.abrirFluxoVIP();
-    }
-  });
+  window.abrirFluxoVIP();
 });
+document.addEventListener("click", (e) => {
+  if (e.target.closest(".link-assinar-vip")) {
+    e.preventDefault();
+    window.abrirFluxoVIP();
+  }
+});
+
+ });
 
  // TABS DE MÍDIA (FEED / ESPECIAL)
  // ===============================
@@ -357,20 +365,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         ?.classList.add("active");
     }
   });
-  document.getElementById("btnLogout")?.addEventListener("click", (e) => {
-  e.preventDefault();
-
-
-  localStorage.removeItem("token");
-  localStorage.removeItem("role");
-  localStorage.removeItem("user");
-
-  // se você guarda mais coisas (ex: modelo_id)
-  localStorage.removeItem("modelo_id");
-
-  // redireciona
-  window.location.href = "/index.html";
- });
 
   
 });
@@ -665,19 +659,20 @@ function abrirPreviewUpload(file, url) {
       btnPublicar.textContent = "Publicar";
       return;
     }
-    const novaMidia = await enviarMidia(file, {
-  tipo_conteudo: tipoConteudo,
-  preco,
-  descricao
-});
-adicionarMidia(novaMidia);
-const grid = document.querySelector(".midias-grid.active");
-if (grid) {
-  grid.prepend(document.querySelector(".midiaCard:last-child"));
+
+    await enviarMidia(file, {
+        tipo_conteudo: tipoConteudo,
+        preco,
+        descricao
+    });
+
+     if (role === "modelo") {
+  carregarFeed();
+} else {
+  carregarFeedPublico();
 }
-
-fecharModal();
-
+      
+    fecharModal();
    } catch (err) {
     console.error(err);
     btnPublicar.disabled = false;
@@ -753,32 +748,14 @@ function adicionarMidia(conteudo) {
   // ===== WRAPPER DA MÍDIA =====
   const mediaWrapper = document.createElement("div");
   mediaWrapper.className = "midiaWrapper";
+
   const img = document.createElement("img");
-img.className = "midiaThumb";
+  img.className = "midiaThumb";
+  img.src = isVideo
+    ? getVideoThumbnail(url, thumbnail_url)
+    : url;
 
-// 🔹 mostra algo imediatamente
-if (isVideo) { // força reload da imagem recém enviada
-img.src = url + "?t=" + Date.now();
-}
-
-mediaWrapper.appendChild(img);
-
-// 🔁 tenta atualizar thumbnail depois de alguns segundos (VÍDEO)
-if (isVideo && !thumbnail_url) {
-  setTimeout(async () => {
-    try {
-      const res = await fetch(`/api/midia/${id}`);
-      if (!res.ok) return;
-
-      const atualizado = await res.json();
-      if (atualizado.thumbnail_url) {
-        img.src = atualizado.thumbnail_url + "?t=" + Date.now();
-      }
-    } catch (err) {
-      console.warn("Thumbnail ainda não pronta");
-    }
-  }, 3000);
-}
+  mediaWrapper.appendChild(img);
 
   // 💰 PREÇO (SÓ ESPECIAL)
   if (tipo_conteudo === "venda" && preco) {
