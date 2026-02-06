@@ -2361,7 +2361,6 @@ app.post("/api/login", authLimiter, async (req, res) => {
 app.post(
   "/uploadAvatar",
   auth,
-  onlyModelo,
   upload.single("avatar"),
   async (req, res) => {
     try {
@@ -2392,7 +2391,6 @@ app.post(
 app.post(
   "/uploadCapa",
   auth,
-  onlyModelo,
   upload.single("capa"),
   async (req, res) => {
     try {

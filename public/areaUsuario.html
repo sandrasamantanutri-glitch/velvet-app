@@ -13,13 +13,20 @@
  <div id="header-container"></div>
 
 <section class="area-card">
-    <div class="perfil-capa">
-    <img id="profileCapa" src="assets/capa.png" alt="Capa da modelo">
+<div class="perfil-capa">
+  <img id="profileCapa" src="assets/capa.png" alt="Capa do perfil">
+  <button class="btn-camera capa" id="btnCapa" title="Alterar capa">📷</button>
+  <input type="file" id="inputCapa" accept="image/*" hidden>
+</div>
+
   </div>
 
   <div class="perfil-avatar">
-    <img id="profileAvatar" src="assets/avatar.png" alt="Avatar da modelo">
+   <img id="profileAvatar" src="assets/avatar.png" alt="Foto de Perfil">
+  <button class="btn-camera avatar" id="btnAvatar" title="Alterar avatar">📷 </button>
+  <input type="file" id="inputAvatar" accept="image/*" hidden>
   </div>
+  
 <div class="perfil-nome" id="profileName"></div>
 <div class="area-assinantes" id="perfil-assinantes"><span id="vip-total">0 </span>assinantes VIP</div>
 

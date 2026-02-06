@@ -94,3 +94,74 @@ async function carregarAreaCliente(user_id) {
   console.log("Cliente logado:", cliente);
 }
 
+// ===============================
+// 📸 UPLOAD CAPA / AVATAR
+// ===============================
+
+const btnCapa = document.getElementById("btnCapa");
+const btnAvatar = document.getElementById("btnAvatar");
+const inputCapa = document.getElementById("inputCapa");
+const inputAvatar = document.getElementById("inputAvatar");
+
+// abrir seletor
+btnCapa?.addEventListener("click", () => inputCapa.click());
+btnAvatar?.addEventListener("click", () => inputAvatar.click());
+
+// upload CAPA
+inputCapa?.addEventListener("change", async () => {
+  const file = inputCapa.files[0];
+  if (!file) return;
+
+  const fd = new FormData();
+  fd.append("capa", file);
+
+  try {
+    const res = await fetch("/uploadCapa", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + localStorage.getItem("token")
+      },
+      body: fd
+    });
+
+    const data = await res.json();
+
+    if (data.url) {
+      document.getElementById("profileCapa").src = data.url;
+    } else {
+      alert("Erro ao atualizar capa");
+    }
+  } catch (err) {
+    console.error(err);
+  }
+});
+
+// upload AVATAR
+inputAvatar?.addEventListener("change", async () => {
+  const file = inputAvatar.files[0];
+  if (!file) return;
+
+  const fd = new FormData();
+  fd.append("avatar", file);
+
+  try {
+    const res = await fetch("/uploadAvatar", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + localStorage.getItem("token")
+      },
+      body: fd
+    });
+
+    const data = await res.json();
+
+    if (data.url) {
+      document.getElementById("profileAvatar").src = data.url;
+    } else {
+      alert("Erro ao atualizar avatar");
+    }
+  } catch (err) {
+    console.error(err);
+  }
+});
+
