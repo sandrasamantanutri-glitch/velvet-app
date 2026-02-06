@@ -243,17 +243,10 @@ if (data.role === "cliente" && data.cliente_id) {
 
 alert("Conta criada com sucesso!");
 
-// 📍 DECIDE O FLUXO PELO CONTEXTO
 const ESTA_NO_PERFIL = window.location.pathname.includes("perfil");
-
 if (ESTA_NO_PERFIL) {
-  // 🔥 abre popup de pagamento (pag.js já está carregado)
-  document
-    .getElementById("abrirPopupPagamento(dados)")
-    ?.classList.remove("hidden");
-     console.error("não foi possivel abrir popup");
+  window.location.reload();
 } else {
-  // 🏠 index → vai para home do cliente
   window.location.href = "/clientHome.html";
 }
 }

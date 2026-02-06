@@ -256,6 +256,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     exigirCadastro();
     return;
   }
+
     if (!OFERTA_ATUAL || !OFERTA_ATUAL.modelo_id) {
       alert("Oferta ainda não carregada. Aguarde um instante.");
       return;
