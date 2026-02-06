@@ -68,8 +68,6 @@ async function initUsuario() {
 
   } catch (e) {
     console.warn("Sessão inválida no header");
-    // ⚠️ NÃO limpa role aqui
-    localStorage.removeItem("nome");
   }
 }
 
