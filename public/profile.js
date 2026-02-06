@@ -214,7 +214,6 @@ async function aplicarRegrasDeAcesso() {
   if (role === "modelo" && modo === "privado") {
     ofertaCard.style.display = "block";
     btnChat?.classList.remove("hidden");
-    liberarMidias?.();
     return;
   }
 
@@ -662,10 +661,13 @@ function abrirPreviewUpload(file, url) {
 
      if (role === "modelo") {
   carregarFeedBase();
-} else {
-  carregarFeedPublico();
+ if (tipoConteudo === "venda") {
+    document.querySelector('[data-tab="paid"]')
+      ?.click();
+  } else {
+    document.querySelector('[data-tab="free"]')?.click();
+  }
 }
-      
     fecharModal();
    } catch (err) {
     console.error(err);
