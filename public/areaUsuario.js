@@ -36,7 +36,7 @@ const usuario = getUsuarioLogado();
 
 async function carregarVipCountModelo(modelo_id) {
   console.log("🔥 carregarVipCountModelo chamada com:", modelo_id);
-  
+
   const token = localStorage.getItem("token");
   console.log("🔐 token existe?", !!token);
   if (!token || !modelo_id) {
@@ -105,6 +105,7 @@ const btnCapa = document.getElementById("btnCapa");
 const btnAvatar = document.getElementById("btnAvatar");
 const inputCapa = document.getElementById("inputCapa");
 const inputAvatar = document.getElementById("inputAvatar");
+const capaImg    = document.getElementById("profileCapa");
 
 // abrir seletor
 btnCapa?.addEventListener("click", () => inputCapa.click());
@@ -118,24 +119,20 @@ inputCapa?.addEventListener("change", async () => {
   const fd = new FormData();
   fd.append("capa", file);
 
-  try {
-    const res = await fetch("/uploadCapa", {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token")
-      },
-      body: fd
-    });
+  const res = await fetch("/uploadCapa", {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer " + token
+    },
+    body: fd
+  });
 
-    const data = await res.json();
+  const data = await res.json();
 
-    if (data.url) {
-      document.getElementById("profileCapa").src = data.url;
-    } else {
-      alert("Erro ao atualizar capa");
-    }
-  } catch (err) {
-    console.error(err);
+  if (data.url) {
+    capaImg.src = data.url; // 🔥 atualiza na hora
+  } else {
+    alert("Erro ao atualizar capa");
   }
 });
 
