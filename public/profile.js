@@ -8,6 +8,26 @@ window.socket = io();
 
 const params = new URLSearchParams(window.location.search);
 const modeloParam = params.get("id");
+const refParam = params.get("ref") || params.get("id");
+const srcParam = params.get("src");
+
+// salva localmente (para usar no cadastro)
+if (refParam) localStorage.setItem("ref_modelo", refParam);
+if (srcParam) localStorage.setItem("origem_trafego", srcParam);
+
+// dispara tracking no backend (opcional, mas recomendado)
+if (refParam || srcParam) {
+  fetch("/api/track-acesso", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ref: refParam,
+      src: srcParam,
+      page: "perfil"
+    })
+  }).catch(() => {});
+}
+
 
 let modo = "publico";
 if (!modeloParam && role === "modelo" && token) {

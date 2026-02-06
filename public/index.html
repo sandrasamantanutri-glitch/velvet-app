@@ -187,8 +187,12 @@
     fetch("/api/track-acesso", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ref, src })
-    });
+      body: JSON.stringify({
+        ref,
+        src,
+        page: "index" // 👈 diferença aqui
+      })
+    }).catch(() => {});
   }
 </script>
 

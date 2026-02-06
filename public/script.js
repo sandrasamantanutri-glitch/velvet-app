@@ -11,13 +11,15 @@ if (token && role) { // * && * true
     role === "modelo" ? "/perfil.html" : "/clientHome.html";
 }
 
+const ref = localStorage.getItem("ref_modelo");
+const src = localStorage.getItem("origem_trafego");
+
 // ===============================
 // ESTADO GLOBAL
-// ===============================
+
 let modalMode = "login"; 
 let pendingAction = null; 
 
-// ===============================
 // AGE GATE
 // ===============================
 window.openAgeGate = function (action) {
@@ -102,6 +104,12 @@ function updateModal() {
   const title = document.getElementById("modalTitle");
   const submit = document.getElementById("modalSubmit");
   const roleSelect = document.getElementById("registerRole");
+
+  const nome = document.getElementById("registerNome");
+  const nascimento = document.getElementById("registerNascimento");
+  const senhaConfirm = document.getElementById("registerSenhaConfirm");
+  const legal = document.getElementById("registerLegal");
+
   const switchLogin = document.getElementById("switchToLogin");
   const switchRegister = document.querySelector(".modal-switch");
 
@@ -147,18 +155,16 @@ async function login() {
   localStorage.setItem("role", data.role);
 
   if (data.role === "modelo") {
-  window.location.href = "/profile.html";
+  window.location.href = "/perfil.html";
   return;
 }
 // 🔥 CLIENTE
-const ref = localStorage.getItem("ref_modelo");
-
 if (ref) {
   // simula clique no feed
   localStorage.setItem("modelo_id", ref);
   localStorage.removeItem("ref_modelo");
 
-  window.location.href = "/profile.html";
+  window.location.href = "/perfil.html";
 } else {
   window.location.href = "/clientHome.html";
 }
@@ -168,28 +174,28 @@ if (ref) {
 // REGISTER
 // ===============================
 
-function emailValido(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
 async function register() {
   const email = loginEmail.value.trim();
   const senha = loginSenha.value.trim();
-  const role  = registerRole.value;
+  const senhaConfirm = registerSenhaConfirm.value.trim();
+  const role = registerRole.value;
+  const nome = registerNome.value.trim();
+  const nascimento = registerNascimento.value;
 
-  if (!email || !senha || !role) {
+  if (!email || !senha || !senhaConfirm || !role || !nome || !nascimento) {
     alert("Preencha todos os campos");
     return;
   }
 
-  if (!emailValido(email)) {
-    alert("Email inválido");
+  if (senha !== senhaConfirm) {
+    alert("As senhas não coincidem");
     return;
   }
 
-  // 🔹 PEGA A ORIGEM DO CLIENTE (já salva no index.html)
-  const ref = localStorage.getItem("ref_modelo");
-  const src = localStorage.getItem("origem_trafego");
+  if (senha.length < 6) {
+    alert("A senha deve ter pelo menos 6 caracteres");
+    return;
+  }
 
   const res = await fetch("/api/register", {
     method: "POST",
@@ -198,19 +204,41 @@ async function register() {
       email,
       senha,
       role,
-      nome: email.split("@")[0],
-      ageConfirmed: true,
-
-      ref,   // modelo que trouxe
-      src    // instagram / tiktok
+      nome,
+      data_nascimento: nascimento,
+      ageConfirmed: true
     })
   });
 
   const data = await res.json();
-  if (!res.ok) return alert(data.erro);
+if (!res.ok) {
+  alert(data.erro || "Erro ao criar conta");
+  return;
+}
 
-  alert("Conta criada com sucesso! Faça login.");
-  switchToLogin();
+// 🔐 LOGIN AUTOMÁTICO APÓS REGISTRO
+localStorage.setItem("token", data.token);
+localStorage.setItem("role", data.role);
+
+// opcional, se backend já devolver
+if (data.role === "cliente" && data.cliente_id) {
+  localStorage.setItem("cliente_id", data.cliente_id);
+}
+
+alert("Conta criada com sucesso!");
+
+// 📍 DECIDE O FLUXO PELO CONTEXTO
+const ESTA_NO_PERFIL = window.location.pathname.includes("perfil");
+
+if (ESTA_NO_PERFIL) {
+  // 🔥 abre popup de pagamento (pag.js já está carregado)
+  document
+    .getElementById("escolhaPagamento")
+    ?.classList.remove("hidden");
+} else {
+  // 🏠 index → vai para home do cliente
+  window.location.href = "/clientHome.html";
+}
 }
 
 // ===============================
