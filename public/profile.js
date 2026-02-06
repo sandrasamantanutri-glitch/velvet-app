@@ -214,7 +214,6 @@ async function aplicarRegrasDeAcesso() {
   if (role === "modelo" && modo === "privado") {
     ofertaCard.style.display = "block";
     btnChat?.classList.remove("hidden");
-    liberarMidias?.();
     return;
   }
 
@@ -236,7 +235,6 @@ async function aplicarRegrasDeAcesso() {
       if (vip) {
         ofertaCard.style.display = "none";
         btnChat?.classList.remove("hidden");
-        //liberarMidias?.();
       } else {
         ofertaCard.style.display = "block";
        // bloquearMidias?.("vip");
