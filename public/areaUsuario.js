@@ -234,7 +234,8 @@ async function carregarDadosPessoais() {
   const form = document.getElementById("formDadosPessoais");
 
   form.nome_completo.value    = dados.nome_completo || "";
-  form.data_nascimento.value = dados.data_nascimento || "";
+  form.data_nascimento.value = dados.data_nascimento
+  ? dados.data_nascimento.split("T")[0]: "";
   form.telefone.value        = dados.telefone || "";
   form.endereco.value        = dados.endereco || "";
   form.estado.value          = dados.estado || "";
