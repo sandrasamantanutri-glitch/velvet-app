@@ -208,13 +208,27 @@ async function carregarAreaModelo(user_id) {
 async function carregarDadosPessoais() {
   if (!paginaTem("formDadosPessoais")) return;
 
-  const res = await fetch("/api/cliente/dados", {
+  const usuario = getUsuarioLogado();
+  if (!usuario) return;
+
+  let endpoint;
+
+   if (usuario.role === "cliente") { endpoint = "/api/cliente/dados";
+  } else if (usuario.role === "modelo") { endpoint = "/api/modelo/dados";
+  } else { 
+    return;
+  }
+
+  const res = await fetch(endpoint, {
     headers: {
       Authorization: "Bearer " + localStorage.getItem("token")
     }
   });
 
-  if (!res.ok) return;
+ if (!res.ok) {
+    console.warn("Não foi possível carregar dados pessoais");
+    return;
+  }
 
   const dados = await res.json();
   const form = document.getElementById("formDadosPessoais");
