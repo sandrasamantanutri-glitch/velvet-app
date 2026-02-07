@@ -2097,7 +2097,7 @@ app.put("/api/ofertas/:id/encerrar", authModelo, async (req, res) => {
 
 app.put("/api/modelo/me", auth, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const user_id = req.user.id;
     const { nome_exibicao, instagram, tiktok, local, bio } = req.body;
 
     // modelos
