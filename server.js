@@ -1578,6 +1578,7 @@ app.get("/api/feed/modelos", auth, async (req, res) => {
         m.nome_exibicao AS nome,
         m.avatar
       FROM modelos m
+      WHERE m.verificada = true
       ORDER BY m.created_at DESC
     `);
 
@@ -1588,6 +1589,7 @@ app.get("/api/feed/modelos", auth, async (req, res) => {
     res.status(500).json([]);
   }
 });
+
 
 
 app.get("/api/modelo/:id/feed", auth, async (req, res) => {
