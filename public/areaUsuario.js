@@ -40,6 +40,10 @@ function getUsuarioLogado() {
   return await res.json();
 }
 
+function paginaTem(id) {
+  return document.getElementById(id) !== null;
+}
+
 function preencherFormulario(formId, dados) {
   const form = document.getElementById(formId);
   if (!form || !dados) return;
@@ -186,8 +190,8 @@ async function carregarAreaModelo(user_id) {
   // ===============================
   // 📝 FORMULÁRIO (dados.html)
   // ===============================
+  const form = document.getElementById("formDadosModelo");
   if (paginaTem("formDadosModelo")) {
-    const form = document.getElementById("formDadosModelo");
     form.nome_exibicao.value = modelo.nome_exibicao || "";
     form.instagram.value    = modelo.instagram || "";
     form.tiktok.value       = modelo.tiktok || "";
