@@ -1639,7 +1639,7 @@ app.get("/api/modelo/me", auth, async (req, res) => {
       `
       SELECT
         m.*,
-        md.nome_exibicao,
+        m.nome_exibicao,
         md.instagram,
         md.tiktok
       FROM modelos m
@@ -1676,7 +1676,7 @@ app.get("/api/modelos", auth, async (req, res) => {
         m.user_id,
         m.nome AS nome,
         m.avatar,
-        md.nome_exibicao
+        m.nome_exibicao
       FROM modelos m
       LEFT JOIN modelos_dados md ON md.user_id = m.user_id
       ORDER BY m.id DESC
@@ -1877,7 +1877,7 @@ app.get("/api/modelo/publico/:id", async (req, res) => {
       `
       SELECT
         m.user_id AS id,
-        m.nome,
+        m.nome_exibicao,
         m.bio,
         m.avatar,
         m.capa,
@@ -1917,7 +1917,7 @@ app.get("/api/chat/cliente", authCliente, async (req, res) => {
     const { rows } = await db.query(`
       SELECT 
         m.user_id AS modelo_id,
-        m.nome,
+        m.nome_exibicao,
         m.avatar
       FROM vip_subscriptions v
       JOIN modelos m ON m.user_id = v.modelo_id
@@ -2177,7 +2177,7 @@ app.get(
           v.doc_tipo,
           v.status,
           v.created_at,
-          m.nome,
+          m.nome_exibicao,
           m.email
         FROM modelos_verificacao v
         JOIN modelos m ON m.user_id = v.modelo_id
@@ -2402,7 +2402,7 @@ app.put("/api/usuario/dados", auth, async (req, res) => {
     if (req.user.role === "modelo") {
   // 🔥 buscar nome_exibicao existente (obrigatório)
   const { rows } = await db.query(
-    "SELECT nome_exibicao FROM modelos_dados WHERE user_id = $1",
+    "SELECT nome_exibicao FROM modelos WHERE user_id = $1",
     [req.user.id]
   );
 
