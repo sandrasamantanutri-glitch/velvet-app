@@ -315,3 +315,38 @@ formPessoais?.addEventListener("submit", async (e) => {
   alert("Dados pessoais salvos com sucesso 💜");
 });
 
+const formModelo = document.getElementById("formDadosModelo");
+
+formModelo?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const dados = {
+    nome_exibicao: formModelo.nome_exibicao.value.trim(),
+    instagram: normalizarInstagram(formModelo.instagram.value),
+    tiktok: formModelo.tiktok.value.trim(),
+    local: formModelo.local.value.trim(),
+    bio: formModelo.bio.value.trim()
+  };
+
+  if (!dados.nome_exibicao) {
+    alert("O nome de exibição é obrigatório");
+    return;
+  }
+
+  const res = await fetch("/api/modelo/me", {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + localStorage.getItem("token")
+    },
+    body: JSON.stringify(dados)
+  });
+
+  if (!res.ok) {
+    alert("Erro ao salvar dados da modelo");
+    return;
+  }
+
+  alert("Dados da modelo salvos com sucesso 💜");
+});
+
