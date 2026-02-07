@@ -145,6 +145,11 @@ inputAvatar?.addEventListener("change", async () => {
 });
 
 async function carregarResumoModelo() {
+  const elHoje = document.getElementById("areaUsuarioGanhosHoje");
+  const elMes  = document.getElementById("areaUsuarioGanhosMes");
+
+  if (!elHoje && !elMes) return;
+
   try {
     const res = await fetch("/api/modelo/financeiro", {
       headers: {
@@ -152,10 +157,7 @@ async function carregarResumoModelo() {
       }
     });
 
-    if (!res.ok) {
-      console.error("Erro ao carregar ganhos da modelo");
-      return;
-    }
+    if (!res.ok) return;
 
     const data = await res.json();
 
@@ -167,11 +169,13 @@ async function carregarResumoModelo() {
       Number(data.mes.midias || 0) +
       Number(data.mes.assinaturas || 0);
 
-    document.getElementById("areaUsuarioGanhosHoje").innerText =
-      `R$ ${ganhosHoje.toFixed(2).replace(".", ",")}`;
+    if (elHoje) {
+      elHoje.innerText = `R$ ${ganhosHoje.toFixed(2).replace(".", ",")}`;
+    }
 
-    document.getElementById("areaUsuarioGanhosMes").innerText =
-      `R$ ${ganhosMes.toFixed(2).replace(".", ",")}`;
+    if (elMes) {
+      elMes.innerText = `R$ ${ganhosMes.toFixed(2).replace(".", ",")}`;
+    }
 
   } catch (err) {
     console.error("Erro carregarResumoModelo:", err);
