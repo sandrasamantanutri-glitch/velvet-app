@@ -2107,10 +2107,9 @@ app.put("/api/modelo/me", auth, async (req, res) => {
       SET local = $1, bio = $2
       WHERE user_id = $3
       `,
-      [local, bio, userId]
+      [local, bio, user_id]
     );
 
-    // modelos_dados (upsert)
     await db.query(
       `
       INSERT INTO modelos_dados (user_id, nome_exibicao, instagram, tiktok)
@@ -2121,7 +2120,7 @@ app.put("/api/modelo/me", auth, async (req, res) => {
         instagram = EXCLUDED.instagram,
         tiktok = EXCLUDED.tiktok
       `,
-      [userId, nome_exibicao, instagram, tiktok]
+      [user_id, nome_exibicao, instagram, tiktok]
     );
 
     res.json({ sucesso: true });
