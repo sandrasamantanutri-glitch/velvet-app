@@ -2095,28 +2095,43 @@ app.put("/api/ofertas/:id/encerrar", authModelo, async (req, res) => {
   }
 });
 
-app.put("/api/modelo/bio", authModelo, async (req, res) => {
+app.put("/api/modelo/me", auth, async (req, res) => {
   try {
-    const { bio } = req.body;
+    const userId = req.user.id;
+    const { nome_exibicao, instagram, tiktok, local, bio } = req.body;
 
-    if (!bio || typeof bio !== "string") {
-      return res.status(400).json({ error: "Bio invávisto" });
-    }
-
+    // modelos
     await db.query(
-      "UPDATE public.modelos SET bio = $1 WHERE user_id = $2",
-      [bio, req.user.id]
+      `
+      UPDATE modelos
+      SET local = $1, bio = $2
+      WHERE user_id = $3
+      `,
+      [local, bio, userId]
     );
 
-    console.log("BIO SALVA NO BANCO:", req.user.id);
+    // modelos_dados (upsert)
+    await db.query(
+      `
+      INSERT INTO modelos_dados (user_id, nome_exibicao, instagram, tiktok)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (user_id)
+      DO UPDATE SET
+        nome_exibicao = EXCLUDED.nome_exibicao,
+        instagram = EXCLUDED.instagram,
+        tiktok = EXCLUDED.tiktok
+      `,
+      [userId, nome_exibicao, instagram, tiktok]
+    );
 
-    res.json({ success: true });
+    res.json({ sucesso: true });
 
   } catch (err) {
-    console.error("Erro ao salvar bio:", err);
-    res.status(500).json({ error: "Erro interno" });
+    console.error("ERRO PUT /api/modelo/me:", err);
+    res.status(500).json({ erro: "Erro ao salvar dados" });
   }
 });
+
 
 //DADOS CLIENTE
 app.post("/api/cliente/dados", auth, async (req, res) => {
