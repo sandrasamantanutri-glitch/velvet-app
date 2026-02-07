@@ -18,6 +18,7 @@ const nodemailer = require("nodemailer");
 const os = require("os");
 const { exec } = require("child_process");
 const ffmpeg = require("fluent-ffmpeg");
+const authAdmin = require("./middlewares/authAdmin");
 
 app.use("/app", express.static("app"));
 app.use(express.static("public"));
@@ -60,10 +61,6 @@ const allowedOrigins = [
 ];
 const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
-app.get("/app/index.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "app", "index.html"));
-});
 
 app.use(cors({
   origin: function (origin, callback) {
