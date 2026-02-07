@@ -2238,31 +2238,46 @@ app.put("/api/usuario/dados", auth, async (req, res) => {
     } = req.body;
 
     if (req.user.role === "modelo") {
-      await db.query(`
-        INSERT INTO modelos_dados
-          (user_id, nome_completo, data_nascimento, telefone, endereco, estado, cidade, pais)
-        VALUES
-          ($1,$2,$3,$4,$5,$6,$7,$8)
-        ON CONFLICT (user_id)
-        DO UPDATE SET
-          nome_completo = EXCLUDED.nome_completo,
-          data_nascimento = EXCLUDED.data_nascimento,
-          telefone = EXCLUDED.telefone,
-          endereco = EXCLUDED.endereco,
-          estado = EXCLUDED.estado,
-          cidade = EXCLUDED.cidade,
-          pais = EXCLUDED.pais
-      `, [
-        req.user.id,
-        nome_completo?.trim() || null,
-        data_nascimento || null,
-        telefone?.trim() || null,
-        endereco?.trim() || null,
-        estado?.trim() || null,
-        cidade?.trim() || null,
-        pais?.trim() || null
-      ]);
-    }
+  // 🔥 buscar nome_exibicao existente (obrigatório)
+  const { rows } = await db.query(
+    "SELECT nome_exibicao FROM modelos_dados WHERE user_id = $1",
+    [req.user.id]
+  );
+
+  const nome_exibicao = rows[0]?.nome_exibicao;
+
+  if (!nome_exibicao) {
+    return res.status(400).json({
+      erro: "nome_exibicao obrigatório para atualizar dados do usuário"
+    });
+  }
+
+  await db.query(`
+    INSERT INTO modelos_dados
+      (user_id, nome_exibicao, nome_completo, data_nascimento, telefone, endereco, estado, cidade, pais)
+    VALUES
+      ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+    ON CONFLICT (user_id)
+    DO UPDATE SET
+      nome_completo = EXCLUDED.nome_completo,
+      data_nascimento = EXCLUDED.data_nascimento,
+      telefone = EXCLUDED.telefone,
+      endereco = EXCLUDED.endereco,
+      estado = EXCLUDED.estado,
+      cidade = EXCLUDED.cidade,
+      pais = EXCLUDED.pais
+  `, [
+    req.user.id,
+    nome_exibicao,             
+    nome_completo?.trim() || null,
+    data_nascimento || null,
+    telefone?.trim() || null,
+    endereco?.trim() || null,
+    estado?.trim() || null,
+    cidade?.trim() || null,
+    pais?.trim() || null
+  ]);
+}
 
     if (req.user.role === "cliente") {
       await db.query(`
