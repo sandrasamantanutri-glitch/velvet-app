@@ -328,6 +328,23 @@ const formPessoais = document.getElementById("formDadosPessoais");
 formPessoais?.addEventListener("submit", async (e) => {
   e.preventDefault();
 
+  const usuario = getUsuarioLogado();
+  if (!usuario) {
+    alert("Sessão expirada");
+    return;
+  }
+
+  let endpoint;
+
+  if (usuario.role === "cliente") {
+    endpoint = "/api/cliente/dados";
+  } else if (usuario.role === "modelo") {
+    endpoint = "/api/modelo/dados";
+  } else {
+    alert("Perfil inválido");
+    return;
+  }
+
   const dados = {
     nome_completo: formPessoais.nome_completo.value.trim(),
     data_nascimento: formPessoais.data_nascimento.value,
@@ -338,7 +355,7 @@ formPessoais?.addEventListener("submit", async (e) => {
     pais: formPessoais.pais.value.trim()
   };
 
-  const res = await fetch("/api/cliente/dados", {
+  const res = await fetch(endpoint, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
