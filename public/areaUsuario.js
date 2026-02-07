@@ -192,8 +192,7 @@ async function carregarAreaModelo(user_id) {
   if (!res.ok) return;
 
   const modelo = await res.json();
-
-  document.getElementById("profileName").textContent = modelo.nome;
+  
   document.getElementById("profileAvatar").src = modelo.avatar;
   document.getElementById("profileCapa").src = modelo.capa;
 
