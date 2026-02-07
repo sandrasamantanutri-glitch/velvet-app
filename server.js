@@ -1637,9 +1637,8 @@ app.get("/api/modelo/me", auth, async (req, res) => {
 
     const result = await db.query(
       `
-      SELECT
+       SELECT
         m.*,
-        m.nome_exibicao,
         md.instagram,
         md.tiktok
       FROM modelos m
