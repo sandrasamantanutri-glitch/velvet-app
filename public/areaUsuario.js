@@ -11,6 +11,46 @@ function getUsuarioLogado() {
 }
 
  const token = localStorage.getItem("token");
+
+ async function buscarDadosUsuario() {
+  const token = localStorage.getItem("token");
+  if (!token) return null;
+
+  const payload = JSON.parse(atob(token.split(".")[1]));
+  const role = payload.role;
+
+  let endpoint;
+
+  if (role === "modelo") {
+    endpoint = "/api/modelo/me";
+  } else if (role === "cliente") {
+    endpoint = "/api/cliente/dados";
+  } else {
+    return null;
+  }
+
+  const res = await fetch(endpoint, {
+    headers: {
+      Authorization: "Bearer " + token
+    }
+  });
+
+  if (!res.ok) return null;
+
+  return await res.json();
+}
+
+function preencherFormulario(formId, dados) {
+  const form = document.getElementById(formId);
+  if (!form || !dados) return;
+
+  Object.keys(dados).forEach((campo) => {
+    if (form[campo] !== undefined) {
+      form[campo].value = dados[campo] ?? "";
+    }
+  });
+}
+
 // ===============================
 // 👩‍💼 ÁREA DA MODELO – VIP COUNT
 // ===============================
@@ -34,6 +74,8 @@ const usuario = getUsuarioLogado();
   if (usuario.role === "cliente") {
     carregarAreaCliente(usuario.id);
   }
+
+   carregarDadosPessoais();
 });
 
 async function carregarResumoModelo() {
@@ -144,8 +186,8 @@ async function carregarAreaModelo(user_id) {
   // ===============================
   // 📝 FORMULÁRIO (dados.html)
   // ===============================
-  const form = document.getElementById("formDadosModelo");
-  if (form) {
+  if (paginaTem("formDadosModelo")) {
+    const form = document.getElementById("formDadosModelo");
     form.nome_exibicao.value = modelo.nome_exibicao || "";
     form.instagram.value    = modelo.instagram || "";
     form.tiktok.value       = modelo.tiktok || "";
@@ -156,10 +198,32 @@ async function carregarAreaModelo(user_id) {
   // ===============================
   // 👑 VIP COUNT
   // ===============================
-  if (typeof carregarVipCountModelo === "function") {
-    carregarVipCountModelo(modelo.user_id ?? modelo.id);
-  }
+  carregarVipCountModelo(modelo.user_id ?? modelo.id);
 }
+
+async function carregarDadosPessoais() {
+  if (!paginaTem("formDadosPessoais")) return;
+
+  const res = await fetch("/api/cliente/dados", {
+    headers: {
+      Authorization: "Bearer " + localStorage.getItem("token")
+    }
+  });
+
+  if (!res.ok) return;
+
+  const dados = await res.json();
+  const form = document.getElementById("formDadosPessoais");
+
+  form.nome_completo.value    = dados.nome_completo || "";
+  form.data_nascimento.value = dados.data_nascimento || "";
+  form.telefone.value        = dados.telefone || "";
+  form.endereco.value        = dados.endereco || "";
+  form.estado.value          = dados.estado || "";
+  form.cidade.value          = dados.cidade || "";
+  form.pais.value            = dados.pais || "";
+}
+
 
 const btnCapa = document.getElementById("btnCapa");
 const btnAvatar = document.getElementById("btnAvatar");
