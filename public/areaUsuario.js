@@ -65,26 +65,6 @@ async function carregarVipCountModelo(modelo_id) {
   }
 }
 
-async function carregarAreaModelo(user_id) {
-  const res = await fetch("/api/modelo/me", {
-    headers: {
-      Authorization: "Bearer " + localStorage.getItem("token")
-    }
-  });
-
-  if (!res.ok) return;
-
-  const modelo = await res.json();
-
-  // exemplo:
-  document.getElementById("profileName").textContent = modelo.nome;
-  document.getElementById("profileAvatar").src = modelo.avatar;
-  document.getElementById("profileCapa").src = modelo.capa;
-
-  // VIP count
-  carregarVipCountModelo(modelo.id);
-}
-
 async function carregarAreaCliente(user_id) {
   const res = await fetch("/api/cliente/me", {
     headers: {
@@ -196,5 +176,50 @@ async function carregarResumoModelo() {
   } catch (err) {
     console.error("Erro carregarResumoModelo:", err);
   }
+}
+
+async function carregarAreaModelo(user_id) {
+  const res = await fetch("/api/modelo/me", {
+    headers: {
+      Authorization: "Bearer " + localStorage.getItem("token")
+    }
+  });
+
+  if (!res.ok) return;
+
+  const modelo = await res.json();
+
+  document.getElementById("profileName").textContent = modelo.nome;
+  document.getElementById("profileAvatar").src = modelo.avatar;
+  document.getElementById("profileCapa").src = modelo.capa;
+
+  // ===============================
+  // PERFIL VISUAL
+  // ===============================
+  document.getElementById("profileName").textContent =
+    modelo.nome_exibicao || "";
+
+  if (modelo.avatar)
+    document.getElementById("profileAvatar").src = modelo.avatar;
+
+  if (modelo.capa)
+    document.getElementById("profileCapa").src = modelo.capa;
+
+  // ===============================
+  // FORMULÁRIO – DADOS DO USUÁRIO
+  // ===============================
+  const form = document.getElementById("formDadosModelo");
+  if (form) {
+    form.nome_exibicao.value = modelo.nome_exibicao || "";
+    form.instagram.value    = modelo.instagram || "";
+    form.tiktok.value       = modelo.tiktok || "";
+    form.localizacao.value  = modelo.localizacao || "";
+    form.bio.value          = modelo.bio || "";
+  }
+
+  // ===============================
+  // VIP COUNT
+  // ===============================
+  carregarVipCountModelo(modelo.user_id ?? modelo.id);
 }
 
