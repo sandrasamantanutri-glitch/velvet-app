@@ -75,36 +75,56 @@ async function carregarAreaModelo(user_id) {
   if (!res.ok) return;
 
   const modelo = await res.json();
+  console.log("Modelo logado:", modelo);
 
-  console.log("Cliente logado:", cliente);
+  // ===============================
+  // 📸 AVATAR / CAPA
+  // ===============================
+  const avatar = document.getElementById("profileAvatar");
+  if (avatar && modelo.avatar) avatar.src = modelo.avatar;
+
+  const capa = document.getElementById("profileCapa");
+  if (capa && modelo.capa) capa.src = modelo.capa;
+
+  // ===============================
+  // 👤 NOME VISUAL (só se existir)
+  // ===============================
+  const profileName = document.getElementById("profileName");
+  if (profileName) {
+    profileName.textContent = modelo.nome_exibicao || "";
+  }
+
+  // ===============================
+  // 📝 FORMULÁRIO (dados.html)
+  // ===============================
+  const form = document.getElementById("formDadosModelo");
+  if (form) {
+    form.nome_exibicao.value = modelo.nome_exibicao || "";
+    form.instagram.value    = modelo.instagram || "";
+    form.tiktok.value       = modelo.tiktok || "";
+    form.local.value        = modelo.local || "";
+    form.bio.value          = modelo.bio || "";
+  }
+
+  // ===============================
+  // 👑 VIP COUNT
+  // ===============================
+  if (typeof carregarVipCountModelo === "function") {
+    carregarVipCountModelo(modelo.user_id ?? modelo.id);
+  }
 }
 
-document.getElementById("profileAvatar").src = modelo.avatar;
-document.getElementById("profileCapa").src = modelo.capa;
+const btnCapa = document.getElementById("btnCapa");
+const btnAvatar = document.getElementById("btnAvatar");
+const inputCapa = document.getElementById("inputCapa");
+const inputAvatar = document.getElementById("inputAvatar");
+const capaImg = document.getElementById("profileCapa");
+const avatarImg = document.getElementById("profileAvatar");
 
-  document.getElementById("profileName").textContent =
-    modelo.nome_exibicao || "";
+btnCapa?.addEventListener("click", () => inputCapa.click());
+btnAvatar?.addEventListener("click", () => inputAvatar.click());
 
-  if (modelo.avatar)
-    document.getElementById("profileAvatar").src = modelo.avatar;
-
-  if (modelo.capa)
-    document.getElementById("profileCapa").src = modelo.capa;
-
-
- const btnCapa = document.getElementById("btnCapa");
- const btnAvatar = document.getElementById("btnAvatar");
- const inputCapa = document.getElementById("inputCapa");
- const inputAvatar = document.getElementById("inputAvatar");
- const capaImg    = document.getElementById("profileCapa");
- const avatarImg  = document.getElementById("profileAvatar");
-
- // abrir seletor
- btnCapa?.addEventListener("click", () => inputCapa.click());
- btnAvatar?.addEventListener("click", () => inputAvatar.click());
-
- // upload CAPA
- inputCapa?.addEventListener("change", async () => {
+inputCapa?.addEventListener("change", async () => {
   const file = inputCapa.files[0];
   if (!file) return;
 
@@ -113,23 +133,15 @@ document.getElementById("profileCapa").src = modelo.capa;
 
   const res = await fetch("/uploadCapa", {
     method: "POST",
-    headers: {
-      Authorization: "Bearer " + token
-    },
+    headers: { Authorization: "Bearer " + token },
     body: fd
   });
 
   const data = await res.json();
+  if (data.url) capaImg.src = data.url;
+});
 
-  if (data.url) {
-    capaImg.src = data.url; // 🔥 atualiza na hora
-  } else {
-    alert("Erro ao atualizar capa");
-  }
- });
-
- // upload AVATAR
- inputAvatar?.addEventListener("change", async () => {
+inputAvatar?.addEventListener("change", async () => {
   const file = inputAvatar.files[0];
   if (!file) return;
 
@@ -138,37 +150,18 @@ document.getElementById("profileCapa").src = modelo.capa;
 
   const res = await fetch("/uploadAvatar", {
     method: "POST",
-    headers: {
-      Authorization: "Bearer " + token
-    },
+    headers: { Authorization: "Bearer " + token },
     body: fd
   });
 
   const data = await res.json();
+  if (data.url) avatarImg.src = data.url;
+});
 
-  if (data.url) {
-    avatarImg.src = data.url; // 🔥 atualiza na hora
-  } else {
-    alert("Erro ao atualizar avatar");
-  }
+const formDadosModelo = document.getElementById("formDadosModelo");
 
-  const form = document.getElementById("formDadosModelo");
-  if (form) {
-    form.nome_exibicao.value = modelo.nome_exibicao || "";
-    form.instagram.value    = modelo.instagram || "";
-    form.tiktok.value       = modelo.tiktok || "";
-    form.local.value  = modelo.local || "";
-    form.bio.value          = modelo.bio || "";
-  }
-
-  formDadosModelo?.addEventListener("submit", async (e) => {
+formDadosModelo?.addEventListener("submit", async (e) => {
   e.preventDefault();
-
-  const token = localStorage.getItem("token");
-  if (!token) {
-    alert("Sessão expirada");
-    return;
-  }
 
   const dados = {
     nome_exibicao: formDadosModelo.nome_exibicao.value.trim(),
@@ -178,40 +171,28 @@ document.getElementById("profileCapa").src = modelo.capa;
     bio: formDadosModelo.bio.value.trim()
   };
 
-  try {
-    const res = await fetch("/api/modelo/me", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + token
-      },
-      body: JSON.stringify(dados)
-    });
-
-    const resp = await res.json();
-
-    if (!res.ok) {
-      alert(resp.erro || "Erro ao salvar dados");
-      return;
-    }
-
-    alert("Dados salvos com sucesso 💜");
-
-    // atualiza o nome no topo do perfil sem reload
-    const profileName = document.getElementById("profileName");
-    if (profileName && dados.nome_exibicao) {
-      profileName.textContent = dados.nome_exibicao;
-    }
-
-   } catch (err) {
-    console.error("Erro ao salvar dados:", err);
-    alert("Erro inesperado ao salvar");
-   }
+  const res = await fetch("/api/modelo/me", {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + localStorage.getItem("token")
+    },
+    body: JSON.stringify(dados)
   });
 
- carregarVipCountModelo(modelo.user_id ?? modelo.id);
+  if (!res.ok) {
+    alert("Erro ao salvar dados");
+    return;
+  }
 
+  alert("Dados salvos com sucesso 💜");
+
+  const profileName = document.getElementById("profileName");
+  if (profileName && dados.nome_exibicao) {
+    profileName.textContent = dados.nome_exibicao;
+  }
 });
+
 
 async function carregarResumoModelo() {
   const elHoje = document.getElementById("areaUsuarioGanhosHoje");
