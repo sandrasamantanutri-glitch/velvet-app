@@ -398,6 +398,24 @@
   cursor: pointer;
 }
 
+.btn-voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #7B2CFF;
+  font-size: 15px;
+  padding: 6px 0;
+}
+
+.btn-voltar img {
+  width: 18px;
+  height: 18px;
+}
+
+
 
 
 
