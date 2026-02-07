@@ -1326,13 +1326,23 @@ socket.on("excluirMensagem", async ({ id }) => {
 // ===============================
 //ROTA GET
 // ===============================
-//dados usuario
 app.get("/api/usuario/dados", auth, async (req, res) => {
   try {
-    const result = await db.query(
-      "SELECT * FROM clientes_dados WHERE user_id = $1",
-      [req.user.id]
-    );
+    let result;
+
+    if (req.user.role === "modelo") {
+      result = await db.query(
+        "SELECT * FROM modelos_dados WHERE user_id = $1",
+        [req.user.id]
+      );
+    } else if (req.user.role === "cliente") {
+      result = await db.query(
+        "SELECT * FROM clientes_dados WHERE user_id = $1",
+        [req.user.id]
+      );
+    } else {
+      return res.json({});
+    }
 
     res.json(result.rows[0] || {});
   } catch (err) {
@@ -2227,38 +2237,67 @@ app.put("/api/usuario/dados", auth, async (req, res) => {
       pais
     } = req.body;
 
-    await db.query(`
-      INSERT INTO clientes_dados
-        (user_id, nome_completo, data_nascimento, telefone, endereco, estado, cidade, pais)
-      VALUES
-        ($1,$2,$3,$4,$5,$6,$7,$8)
-      ON CONFLICT (user_id)
-      DO UPDATE SET
-        nome_completo = EXCLUDED.nome_completo,
-        data_nascimento = EXCLUDED.data_nascimento,
-        telefone = EXCLUDED.telefone,
-        endereco = EXCLUDED.endereco,
-        estado = EXCLUDED.estado,
-        cidade = EXCLUDED.cidade,
-        pais = EXCLUDED.pais
-    `, [
-      req.user.id,
-      nome_completo?.trim() || null,
-      data_nascimento || null,
-      telefone?.trim() || null,
-      endereco?.trim() || null,
-      estado?.trim() || null,
-      cidade?.trim() || null,
-      pais?.trim() || null
-    ]);
+    if (req.user.role === "modelo") {
+      await db.query(`
+        INSERT INTO modelos_dados
+          (user_id, nome_completo, data_nascimento, telefone, endereco, estado, cidade, pais)
+        VALUES
+          ($1,$2,$3,$4,$5,$6,$7,$8)
+        ON CONFLICT (user_id)
+        DO UPDATE SET
+          nome_completo = EXCLUDED.nome_completo,
+          data_nascimento = EXCLUDED.data_nascimento,
+          telefone = EXCLUDED.telefone,
+          endereco = EXCLUDED.endereco,
+          estado = EXCLUDED.estado,
+          cidade = EXCLUDED.cidade,
+          pais = EXCLUDED.pais
+      `, [
+        req.user.id,
+        nome_completo?.trim() || null,
+        data_nascimento || null,
+        telefone?.trim() || null,
+        endereco?.trim() || null,
+        estado?.trim() || null,
+        cidade?.trim() || null,
+        pais?.trim() || null
+      ]);
+    }
+
+    if (req.user.role === "cliente") {
+      await db.query(`
+        INSERT INTO clientes_dados
+          (user_id, nome_completo, data_nascimento, telefone, endereco, estado, cidade, pais)
+        VALUES
+          ($1,$2,$3,$4,$5,$6,$7,$8)
+        ON CONFLICT (user_id)
+        DO UPDATE SET
+          nome_completo = EXCLUDED.nome_completo,
+          data_nascimento = EXCLUDED.data_nascimento,
+          telefone = EXCLUDED.telefone,
+          endereco = EXCLUDED.endereco,
+          estado = EXCLUDED.estado,
+          cidade = EXCLUDED.cidade,
+          pais = EXCLUDED.pais
+      `, [
+        req.user.id,
+        nome_completo?.trim() || null,
+        data_nascimento || null,
+        telefone?.trim() || null,
+        endereco?.trim() || null,
+        estado?.trim() || null,
+        cidade?.trim() || null,
+        pais?.trim() || null
+      ]);
+    }
 
     res.json({ sucesso: true });
-
   } catch (err) {
     console.error("ERRO PUT /api/usuario/dados:", err);
     res.status(500).json({ erro: err.message });
   }
 });
+
 
 // AVATAR DO CLIENTE
 app.post(
