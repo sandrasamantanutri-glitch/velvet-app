@@ -2289,8 +2289,17 @@ app.put("/api/modelo/me", auth, async (req, res) => {
     const user_id = req.user.id;
     const { nome_exibicao, instagram, tiktok, local, bio } = req.body;
 
-       const localFinal = local?.trim() || null;
-       const bioFinal   = bio?.trim()   || null;
+    if (!nome_exibicao || !nome_exibicao.trim()) {
+      return res.status(400).json({
+        error: "nome_exibicao é obrigatório"
+      });
+    }
+
+    const nomeFinal  = nome_exibicao.trim();
+    const localFinal = local?.trim() || null;
+    const bioFinal   = bio?.trim()   || null;
+    const instaFinal = instagram?.trim() || null;
+    const tiktokFinal = tiktok?.trim() || null;
 
     // ===============================
     // MODELOS (fonte da verdade)
@@ -2299,11 +2308,12 @@ app.put("/api/modelo/me", auth, async (req, res) => {
       `
       UPDATE modelos
       SET
-        local = $1,
-        bio   = $2
-      WHERE user_id = $3
+        nome_exibicao = $1,
+        local = $2,
+        bio   = $3
+      WHERE user_id = $4
       `,
-      [localFinal, bioFinal, user_id]
+      [nomeFinal, localFinal, bioFinal, user_id]
     );
 
     // ===============================
@@ -2311,29 +2321,27 @@ app.put("/api/modelo/me", auth, async (req, res) => {
     // ===============================
     await db.query(
       `
-      INSERT INTO modelos_dados (user_id, nome_exibicao, instagram, tiktok)
-      VALUES ($1, $2, $3, $4)
+      INSERT INTO modelos_dados (user_id, instagram, tiktok)
+      VALUES ($1, $2, $3)
       ON CONFLICT (user_id)
       DO UPDATE SET
-        nome_exibicao = EXCLUDED.nome_exibicao,
         instagram = EXCLUDED.instagram,
         tiktok = EXCLUDED.tiktok
       `,
-       [
-        user_id,
-        nome_exibicao || null,
-        instagram || null,
-        tiktok || null
-      ]
+      [user_id, instaFinal, tiktokFinal]
     );
 
     res.json({ sucesso: true });
 
   } catch (err) {
     console.error("ERRO PUT /api/modelo/me:", err);
-    res.status(500).json({ erro: err.message, detalhe: err.detail });
+    res.status(500).json({
+      erro: "Erro ao salvar dados da modelo",
+      detalhe: err.message
+    });
   }
 });
+
 
 //DADOS CLIENTE
 app.post("/api/cliente/dados", auth, async (req, res) => {
