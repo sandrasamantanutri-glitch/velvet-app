@@ -101,6 +101,27 @@ const uploadB2 = multer({
   })
 });
 
+// ===============================
+// BACKBLAZE B2 (VERIFICAÇÃO - PRIVADO)
+// ===============================
+const uploadVerificacao = multer({
+  storage: multerS3({
+    s3,
+    bucket: process.env.B2_BUCKET_PRIVADO,
+    acl: "private",
+    contentType: multerS3.AUTO_CONTENT_TYPE,
+    key: (req, file, cb) => {
+      const ext = file.originalname.split(".").pop();
+      const nome = `verificacao/${req.user.id}/${Date.now()}-${file.fieldname}.${ext}`;
+      cb(null, nome);
+    }
+  }),
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB
+  }
+});
+
+
 app.use(express.static(path.join(__dirname, "public")));
 
 
@@ -3546,7 +3567,11 @@ app.post("/api/chat/marcar-lido/:cliente_id", authModelo, async (req, res) => {
 app.post(
   "/api/modelo/verificacao",
   authModelo,
-  upload.none(),
+  uploadVerificacao.fields([
+    { name: "doc_frente", maxCount: 1 },
+    { name: "doc_verso", maxCount: 1 },
+    { name: "selfie", maxCount: 1 }
+  ]),
   async (req, res) => {
     try {
       const modeloId = req.user.id;
@@ -3554,31 +3579,50 @@ app.post(
 
       if (!doc_tipo) {
         return res.status(400).json({
-          erro: "Tipo de documento é obrigatório"
+          erro: "Tipo de documento obrigatório"
         });
       }
 
+      if (!req.files?.doc_frente || !req.files?.selfie) {
+        return res.status(400).json({
+          erro: "Documento e selfie são obrigatórios"
+        });
+      }
+
+      const docFrenteUrl = req.files.doc_frente[0].key;
+      const docVersoUrl = req.files.doc_verso?.[0]?.key || null;
+      const selfieUrl = req.files.selfie[0].key;
+
       await db.query(
         `
-        INSERT INTO modelos_verificacao (modelo_id, doc_tipo, status)
-        VALUES ($1, $2, 'em_analise')
+        INSERT INTO modelos_verificacao
+        (modelo_id, doc_tipo, doc_frente_url, doc_verso_url, selfie_url, status)
+        VALUES ($1,$2,$3,$4,$5,'em_analise')
         ON CONFLICT (modelo_id)
         DO UPDATE SET
           doc_tipo = $2,
+          doc_frente_url = $3,
+          doc_verso_url = $4,
+          selfie_url = $5,
           status = 'em_analise',
           updated_at = NOW()
         `,
-        [modeloId, doc_tipo]
+        [
+          modeloId,
+          doc_tipo,
+          docFrenteUrl,
+          docVersoUrl,
+          selfieUrl
+        ]
       );
 
       res.json({ ok: true });
     } catch (err) {
-      console.error("❌ Erro envio verificação:", err);
+      console.error("❌ Erro upload verificação:", err);
       res.status(500).json({ erro: "Erro ao enviar documentos" });
     }
   }
 );
-
 
 
 // ===============================
