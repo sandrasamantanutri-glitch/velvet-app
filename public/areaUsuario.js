@@ -303,3 +303,35 @@ formDadosModelo?.addEventListener("submit", async (e) => {
     profileName.textContent = dados.nome_exibicao;
   }
 });
+
+const formPessoais = document.getElementById("formDadosPessoais");
+
+formPessoais?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const dados = {
+    nome_completo: formPessoais.nome_completo.value.trim(),
+    data_nascimento: formPessoais.data_nascimento.value,
+    telefone: formPessoais.telefone.value.trim(),
+    endereco: formPessoais.endereco.value.trim(),
+    estado: formPessoais.estado.value.trim(),
+    cidade: formPessoais.cidade.value.trim(),
+    pais: formPessoais.pais.value.trim()
+  };
+
+  const res = await fetch("/api/cliente/dados", {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + localStorage.getItem("token")
+    },
+    body: JSON.stringify(dados)
+  });
+
+  if (!res.ok) {
+    alert("Erro ao salvar dados pessoais");
+    return;
+  }
+
+  alert("Dados pessoais salvos com sucesso 💜");
+});

@@ -2200,6 +2200,55 @@ app.post("/api/cliente/dados", auth, async (req, res) => {
   }
 });
 
+app.put("/api/cliente/dados", auth, async (req, res) => {
+  try {
+    if (req.user.role !== "cliente") {
+      return res.status(403).json({ error: "Apenas clientes" });
+    }
+
+    const {
+      nome_completo,
+      data_nascimento,
+      telefone,
+      endereco,
+      estado,
+      cidade,
+      pais
+    } = req.body;
+
+    await db.query(`
+      INSERT INTO clientes_dados
+        (user_id, nome_completo, data_nascimento, telefone, endereco, estado, cidade, pais)
+      VALUES
+        ($1,$2,$3,$4,$5,$6,$7,$8)
+      ON CONFLICT (user_id)
+      DO UPDATE SET
+        nome_completo = EXCLUDED.nome_completo,
+        data_nascimento = EXCLUDED.data_nascimento,
+        telefone = EXCLUDED.telefone,
+        endereco = EXCLUDED.endereco,
+        estado = EXCLUDED.estado,
+        cidade = EXCLUDED.cidade,
+        pais = EXCLUDED.pais
+    `, [
+      req.user.id,
+      nome_completo || null,
+      data_nascimento || null,
+      telefone || null,
+      endereco || null,
+      estado || null,
+      cidade || null,
+      pais || null
+    ]);
+
+    res.json({ sucesso: true });
+
+  } catch (err) {
+    console.error("ERRO PUT /api/cliente/dados:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
 
 // AVATAR DO CLIENTE
 app.post(
