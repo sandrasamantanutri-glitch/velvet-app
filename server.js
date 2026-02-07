@@ -18,7 +18,7 @@ const nodemailer = require("nodemailer");
 const os = require("os");
 const { exec } = require("child_process");
 const ffmpeg = require("fluent-ffmpeg");
-const authAdmin = require("./middlewares/authAdmin");
+const authAdmin = require("./middleware/authAdmin");
 
 app.use("/app", express.static("app"));
 app.use(express.static("public"));
