@@ -1575,11 +1575,10 @@ app.get("/api/feed/modelos", auth, async (req, res) => {
     const result = await db.query(`
       SELECT
         m.user_id,
-        COALESCE(md.nome_exibicao, m.nome) AS nome,
+        m.nome_exibicao AS nome,
         m.avatar
       FROM modelos m
-      JOIN modelos_dados md ON md.user_id = m.user_id
-      ORDER BY md.atualizado_em DESC
+      ORDER BY m.created_at DESC
     `);
 
     res.json(result.rows);
@@ -1589,6 +1588,7 @@ app.get("/api/feed/modelos", auth, async (req, res) => {
     res.status(500).json([]);
   }
 });
+
 
 app.get("/api/modelo/:id/feed", auth, async (req, res) => {
   try {
@@ -2301,9 +2301,6 @@ app.put("/api/modelo/me", auth, async (req, res) => {
     const instaFinal = instagram?.trim() || null;
     const tiktokFinal = tiktok?.trim() || null;
 
-    // ===============================
-    // MODELOS (fonte da verdade)
-    // ===============================
     await db.query(
       `
       UPDATE modelos
