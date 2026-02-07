@@ -2168,6 +2168,7 @@ app.get(
 
 app.get(
   "/api/admin/verificacoes",
+  auth,
   authAdmin,
   async (req, res) => {
     try {
