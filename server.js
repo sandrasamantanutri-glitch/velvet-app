@@ -1576,17 +1576,20 @@ app.get("/api/modelo/me", auth, async (req, res) => {
     const userId = req.user.id;
 
     const result = await db.query(
-      `SELECT
-    m.*,
-    md.instagram,
-    md.tiktok,
-    md. nome_exibicao
-  FROM modelos m
-  LEFT JOIN modelos_dados md ON md.user_id = m.user_id
-  WHERE m.user_id = $1
-  `,
-  [userId]
-);
+      `
+      SELECT
+        m.*,
+        md.nome_exibicao,
+        md.instagram,
+        md.tiktok
+      FROM modelos m
+      LEFT JOIN modelos_dados md
+        ON md.user_id = m.user_id
+      WHERE m.user_id = $1
+      `,
+      [userId]
+    );
+
     if (result.rows.length === 0) {
       return res.status(404).json({ erro: "Modelo não encontrado" });
     }
@@ -1594,7 +1597,7 @@ app.get("/api/modelo/me", auth, async (req, res) => {
     res.json(result.rows[0]);
 
   } catch (err) {
-    console.error("ERRO /api/modelo/me:", err);
+    console.error("ERRO GET /api/modelo/me:", err);
     res.status(500).json({ erro: "Erro interno" });
   }
 });
@@ -2100,16 +2103,23 @@ app.put("/api/modelo/me", auth, async (req, res) => {
     const user_id = req.user.id;
     const { nome_exibicao, instagram, tiktok, local, bio } = req.body;
 
-    // modelos
+    // ===============================
+    // MODELOS (fonte da verdade)
+    // ===============================
     await db.query(
       `
       UPDATE modelos
-      SET local = $1, bio = $2
+      SET
+        local = $1,
+        bio   = $2
       WHERE user_id = $3
       `,
       [local, bio, user_id]
     );
 
+    // ===============================
+    // MODELOS_DADOS (extras)
+    // ===============================
     await db.query(
       `
       INSERT INTO modelos_dados (user_id, nome_exibicao, instagram, tiktok)
@@ -2130,7 +2140,6 @@ app.put("/api/modelo/me", auth, async (req, res) => {
     res.status(500).json({ erro: "Erro ao salvar dados" });
   }
 });
-
 
 //DADOS CLIENTE
 app.post("/api/cliente/dados", auth, async (req, res) => {
