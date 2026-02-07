@@ -101,6 +101,16 @@ const uploadB2 = multer({
   })
 });
 
+const s3Privado = new AWS.S3({
+  endpoint: new AWS.Endpoint(process.env.B2_ENDPOINT),
+  accessKeyId: process.env.B2_KEY_ID_PRIV,
+  secretAccessKey: process.env.B2_APP_KEY_PRIV,
+  region: process.env.B2_REGION,
+  signatureVersion: "v4",
+  s3ForcePathStyle: true
+});
+
+
 // ===============================
 // BACKBLAZE B2 (VERIFICAÇÃO - PRIVADO)
 // ===============================
