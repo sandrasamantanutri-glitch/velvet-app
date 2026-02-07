@@ -36,6 +36,53 @@ const usuario = getUsuarioLogado();
   }
 });
 
+async function carregarResumoModelo() {
+  const elHoje = document.getElementById("areaUsuarioGanhosHoje");
+  const elMes  = document.getElementById("areaUsuarioGanhosMes");
+
+  if (!elHoje && !elMes) return;
+
+  try {
+    const res = await fetch("/api/modelo/financeiro", {
+      headers: {
+        Authorization: "Bearer " + localStorage.getItem("token")
+      }
+    });
+
+    if (!res.ok) return;
+
+    const data = await res.json();
+
+    const ganhosHoje =
+      Number(data.hoje.midias || 0) +
+      Number(data.hoje.assinaturas || 0);
+
+    const ganhosMes =
+      Number(data.mes.midias || 0) +
+      Number(data.mes.assinaturas || 0);
+
+    if (elHoje) {
+      elHoje.innerText = `R$ ${ganhosHoje.toFixed(2).replace(".", ",")}`;
+    }
+
+    if (elMes) {
+      elMes.innerText = `R$ ${ganhosMes.toFixed(2).replace(".", ",")}`;
+    }
+
+  } catch (err) {
+    console.error("Erro carregarResumoModelo:", err);
+  }
+}
+
+function normalizarInstagram(username) {
+  if (!username) return null;
+
+  return username
+    .trim()
+    .replace(/^@/, "") // remove @ do início
+    .replace(/\s+/g, ""); // remove espaços
+}
+
 async function carregarVipCountModelo(modelo_id) {
   console.log("🔥 carregarVipCountModelo chamada com:", modelo_id);
 
@@ -192,52 +239,3 @@ formDadosModelo?.addEventListener("submit", async (e) => {
     profileName.textContent = dados.nome_exibicao;
   }
 });
-
-
-async function carregarResumoModelo() {
-  const elHoje = document.getElementById("areaUsuarioGanhosHoje");
-  const elMes  = document.getElementById("areaUsuarioGanhosMes");
-
-  if (!elHoje && !elMes) return;
-
-  try {
-    const res = await fetch("/api/modelo/financeiro", {
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token")
-      }
-    });
-
-    if (!res.ok) return;
-
-    const data = await res.json();
-
-    const ganhosHoje =
-      Number(data.hoje.midias || 0) +
-      Number(data.hoje.assinaturas || 0);
-
-    const ganhosMes =
-      Number(data.mes.midias || 0) +
-      Number(data.mes.assinaturas || 0);
-
-    if (elHoje) {
-      elHoje.innerText = `R$ ${ganhosHoje.toFixed(2).replace(".", ",")}`;
-    }
-
-    if (elMes) {
-      elMes.innerText = `R$ ${ganhosMes.toFixed(2).replace(".", ",")}`;
-    }
-
-  } catch (err) {
-    console.error("Erro carregarResumoModelo:", err);
-  }
-}
-
-function normalizarInstagram(username) {
-  if (!username) return null;
-
-  return username
-    .trim()
-    .replace(/^@/, "") // remove @ do início
-    .replace(/\s+/g, ""); // remove espaços
-}
-
