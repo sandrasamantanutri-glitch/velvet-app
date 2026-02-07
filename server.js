@@ -2168,8 +2168,6 @@ app.get(
 
 app.get(
   "/api/admin/verificacoes",
-  auth,
-  authAdmin,
   async (req, res) => {
     try {
       const result = await db.query(`
@@ -2197,7 +2195,6 @@ app.get(
 
 app.get(
   "/api/admin/verificacao/:id/documentos",
-  authAdmin,
   async (req, res) => {
     try {
       const { id } = req.params;
