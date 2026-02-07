@@ -1,14 +1,4 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const token = localStorage.getItem("token");
-  const role  = localStorage.getItem("role");
-
-  console.log("ADMIN CHECK:", { token, role });
-
-  if (!token || (role !== "admin" && role !== "cliente")) {
-  window.location.href = "/index.html";
-
-  }
-
   carregarVerificacoes();
 });
 
