@@ -1326,6 +1326,21 @@ socket.on("excluirMensagem", async ({ id }) => {
 // ===============================
 //ROTA GET
 // ===============================
+//dados usuario
+app.get("/api/usuario/dados", auth, async (req, res) => {
+  try {
+    const result = await db.query(
+      "SELECT * FROM clientes_dados WHERE user_id = $1",
+      [req.user.id]
+    );
+
+    res.json(result.rows[0] || {});
+  } catch (err) {
+    console.error("ERRO GET /api/usuario/dados:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
 //CONTAGEMVIPS
 app.get("/api/modelo/:id/vip-count", async (req, res) => {
   const modelo_id = Number(req.params.id);
@@ -2200,12 +2215,8 @@ app.post("/api/cliente/dados", auth, async (req, res) => {
   }
 });
 
-app.put("/api/modelo/dados", auth, async (req, res) => {
+app.put("/api/usuario/dados", auth, async (req, res) => {
   try {
-    if (req.user.role !== "modelo") {
-      return res.status(403).json({ erro: "Apenas modelos" });
-    }
-
     const {
       nome_completo,
       data_nascimento,
@@ -2232,73 +2243,22 @@ app.put("/api/modelo/dados", auth, async (req, res) => {
         pais = EXCLUDED.pais
     `, [
       req.user.id,
-      nome_completo || null,
+      nome_completo?.trim() || null,
       data_nascimento || null,
-      telefone || null,
-      endereco || null,
-      estado || null,
-      cidade || null,
-      pais || null
+      telefone?.trim() || null,
+      endereco?.trim() || null,
+      estado?.trim() || null,
+      cidade?.trim() || null,
+      pais?.trim() || null
     ]);
 
     res.json({ sucesso: true });
 
   } catch (err) {
-    console.error("ERRO PUT /api/modelo/dados:", err);
-    res.status(500).json({ erro: "Erro interno" });
+    console.error("ERRO PUT /api/usuario/dados:", err);
+    res.status(500).json({ erro: err.message });
   }
 });
-
-
-app.put("/api/cliente/dados", auth, async (req, res) => {
-  try {
-    if (req.user.role !== "cliente") {
-      return res.status(403).json({ error: "Apenas clientes" });
-    }
-
-    const {
-      nome_completo,
-      data_nascimento,
-      telefone,
-      endereco,
-      estado,
-      cidade,
-      pais
-    } = req.body;
-
-    await db.query(`
-      INSERT INTO clientes_dados
-        (user_id, nome_completo, data_nascimento, telefone, endereco, estado, cidade, pais)
-      VALUES
-        ($1,$2,$3,$4,$5,$6,$7,$8)
-      ON CONFLICT (user_id)
-      DO UPDATE SET
-        nome_completo = EXCLUDED.nome_completo,
-        data_nascimento = EXCLUDED.data_nascimento,
-        telefone = EXCLUDED.telefone,
-        endereco = EXCLUDED.endereco,
-        estado = EXCLUDED.estado,
-        cidade = EXCLUDED.cidade,
-        pais = EXCLUDED.pais
-    `, [
-      req.user.id,
-      nome_completo || null,
-      data_nascimento || null,
-      telefone || null,
-      endereco || null,
-      estado || null,
-      cidade || null,
-      pais || null
-    ]);
-
-    res.json({ sucesso: true });
-
-  } catch (err) {
-    console.error("ERRO PUT /api/cliente/dados:", err);
-    res.status(500).json({ error: "Erro interno" });
-  }
-});
-
 
 // AVATAR DO CLIENTE
 app.post(

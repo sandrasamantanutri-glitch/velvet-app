@@ -208,40 +208,30 @@ async function carregarAreaModelo(user_id) {
 async function carregarDadosPessoais() {
   if (!paginaTem("formDadosPessoais")) return;
 
-  const usuario = getUsuarioLogado();
-  if (!usuario) return;
-
-  let endpoint;
-
-   if (usuario.role === "cliente") { endpoint = "/api/cliente/dados";
-  } else if (usuario.role === "modelo") { endpoint = "/api/modelo/dados";
-  } else { 
-    return;
-  }
-
-  const res = await fetch(endpoint, {
+  const res = await fetch("/api/usuario/dados", {
     headers: {
       Authorization: "Bearer " + localStorage.getItem("token")
     }
   });
 
- if (!res.ok) {
-    console.warn("Não foi possível carregar dados pessoais");
-    return;
-  }
+  if (!res.ok) return;
 
   const dados = await res.json();
   const form = document.getElementById("formDadosPessoais");
 
-  form.nome_completo.value    = dados.nome_completo || "";
+  form.nome_completo.value = dados.nome_completo || "";
+
   form.data_nascimento.value = dados.data_nascimento
-  ? dados.data_nascimento.split("T")[0]: "";
-  form.telefone.value        = dados.telefone || "";
-  form.endereco.value        = dados.endereco || "";
-  form.estado.value          = dados.estado || "";
-  form.cidade.value          = dados.cidade || "";
-  form.pais.value            = dados.pais || "";
+    ? dados.data_nascimento.split("T")[0]
+    : "";
+
+  form.telefone.value = dados.telefone || "";
+  form.endereco.value = dados.endereco || "";
+  form.estado.value   = dados.estado || "";
+  form.cidade.value   = dados.cidade || "";
+  form.pais.value     = dados.pais || "";
 }
+
 
 
 const btnCapa = document.getElementById("btnCapa");
@@ -288,62 +278,10 @@ inputAvatar?.addEventListener("change", async () => {
   if (data.url) avatarImg.src = data.url;
 });
 
-const formDadosModelo = document.getElementById("formDadosModelo");
-
-formDadosModelo?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const dados = {
-    nome_exibicao: formDadosModelo.nome_exibicao.value.trim(),
-    instagram: formDadosModelo.instagram.value.trim(),
-    tiktok: formDadosModelo.tiktok.value.trim(),
-    local: formDadosModelo.local.value.trim(),
-    bio: formDadosModelo.bio.value.trim()
-  };
-
-  const res = await fetch("/api/modelo/me", {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + localStorage.getItem("token")
-    },
-    body: JSON.stringify(dados)
-  });
-
-  if (!res.ok) {
-    alert("Erro ao salvar dados");
-    return;
-  }
-
-  alert("Dados salvos com sucesso 💜");
-
-  const profileName = document.getElementById("profileName");
-  if (profileName && dados.nome_exibicao) {
-    profileName.textContent = dados.nome_exibicao;
-  }
-});
-
 const formPessoais = document.getElementById("formDadosPessoais");
 
 formPessoais?.addEventListener("submit", async (e) => {
   e.preventDefault();
-
-  const usuario = getUsuarioLogado();
-  if (!usuario) {
-    alert("Sessão expirada");
-    return;
-  }
-
-  let endpoint;
-
-  if (usuario.role === "cliente") {
-    endpoint = "/api/cliente/dados";
-  } else if (usuario.role === "modelo") {
-    endpoint = "/api/modelo/dados";
-  } else {
-    alert("Perfil inválido");
-    return;
-  }
 
   const dados = {
     nome_completo: formPessoais.nome_completo.value.trim(),
@@ -355,7 +293,7 @@ formPessoais?.addEventListener("submit", async (e) => {
     pais: formPessoais.pais.value.trim()
   };
 
-  const res = await fetch(endpoint, {
+  const res = await fetch("/api/usuario/dados", {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -371,3 +309,4 @@ formPessoais?.addEventListener("submit", async (e) => {
 
   alert("Dados pessoais salvos com sucesso 💜");
 });
+
