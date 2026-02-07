@@ -2126,7 +2126,7 @@ app.put("/api/modelo/me", auth, async (req, res) => {
     await db.query(
       `
       INSERT INTO modelos_dados (user_id, nome_exibicao, instagram, tiktok)
-      VALUES ($1, $2, $3, $4, $5)
+      VALUES ($1, $2, $3, $4)
       ON CONFLICT (user_id)
       DO UPDATE SET
         nome_exibicao = EXCLUDED.nome_exibicao,
