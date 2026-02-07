@@ -116,7 +116,7 @@ const uploadB2 = multer({
 const uploadVerificacao = multer({
   storage: multerS3({
     s3: s3Privado,
-    bucket: process.env.B2_BUCKET_PRIVADO,
+    bucket: process.env.B2_BUCKET_PRIVATE,
     acl: "private",
     contentType: multerS3.AUTO_CONTENT_TYPE,
     key: (req, file, cb) => {
