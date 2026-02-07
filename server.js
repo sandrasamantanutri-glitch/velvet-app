@@ -3546,6 +3546,7 @@ app.post("/api/chat/marcar-lido/:cliente_id", authModelo, async (req, res) => {
 app.post(
   "/api/modelo/verificacao",
   authModelo,
+  upload.none(),
   async (req, res) => {
     try {
       const modeloId = req.user.id;
