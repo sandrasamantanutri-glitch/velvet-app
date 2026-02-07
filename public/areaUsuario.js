@@ -281,4 +281,12 @@ formDadosModelo?.addEventListener("submit", async (e) => {
   }
 });
 
+function normalizarInstagram(username) {
+  if (!username) return null;
+
+  return username
+    .trim()
+    .replace(/^@/, "") // remove @ do início
+    .replace(/\s+/g, ""); // remove espaços
+}
 
