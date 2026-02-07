@@ -1,9 +1,17 @@
-const token = localStorage.getItem("token");
-const role  = localStorage.getItem("role");
+document.addEventListener("DOMContentLoaded", () => {
+  const token = localStorage.getItem("token");
+  const role  = localStorage.getItem("role");
 
-if (!token || role !== "admin") {
-  window.location.href = "/index.html";
-}
+  console.log("ADMIN CHECK:", { token, role });
+
+  if (!token || role !== "admin") {
+    window.location.href = "/index.html";
+    return;
+  }
+
+  carregarVerificacoes();
+});
+
 async function carregarVerificacoes() {
   const res = await fetch("/api/admin/verificacoes", {
     headers: {
