@@ -4,9 +4,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   console.log("ADMIN CHECK:", { token, role });
 
-  if (!token || role !== "admin") {
-    window.location.href = "/index.html";
-    return;
+  if (!token || (role !== "admin" && role !== "cliente")) {
+  window.location.href = "/index.html";
+
   }
 
   carregarVerificacoes();
