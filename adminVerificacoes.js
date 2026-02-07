@@ -1,3 +1,9 @@
+const token = localStorage.getItem("token");
+const role  = localStorage.getItem("role");
+
+if (!token || role !== "admin") {
+  window.location.href = "/index.html";
+}
 async function carregarVerificacoes() {
   const res = await fetch("/api/admin/verificacoes", {
     headers: {
