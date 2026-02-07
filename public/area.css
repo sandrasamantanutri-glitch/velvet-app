@@ -415,6 +415,124 @@
   height: 18px;
 }
 
+.area-banner {
+  margin: 20px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.area-banner img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+
+/* ===============================
+   VERIFICAÇÃO – ETAPAS
+=============================== */
+
+.verificacao-steps {
+  display: flex;
+  gap: 12px;
+  margin: 16px 0 24px;
+  flex-wrap: wrap;
+}
+
+.verificacao-steps .step {
+  font-size: 0.85rem;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #f1f1f5;
+  color: #666;
+  font-weight: 500;
+}
+
+/* etapa atual */
+.verificacao-steps .step.ativo {
+  background: #7b2cff;
+  color: #fff;
+}
+
+/* etapa concluída */
+.verificacao-steps .step.concluido {
+  background: #e7ddff;
+  color: #5b21b6;
+}
+
+/* ===============================
+   STATUS DE VERIFICAÇÃO
+=============================== */
+
+.status-verificacao {
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin: 16px 0 24px;
+  font-size: 0.9rem;
+}
+
+.status-verificacao strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.status-texto {
+  font-weight: 600;
+}
+
+/* descrição */
+.status-descricao {
+  margin-top: 6px;
+  color: #444;
+  line-height: 1.4;
+}
+
+.status-em-analise {
+  background: #fff7e6;
+  border: 1px solid #ffe1a3;
+}
+
+.status-em-analise .status-texto {
+  color: #b45309;
+}
+
+.status-aprovado {
+  background: #ecfdf3;
+  border: 1px solid #bbf7d0;
+}
+
+.status-aprovado .status-texto {
+  color: #047857;
+}
+
+.status-recusado {
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+}
+
+.status-recusado .status-texto {
+  color: #be123c;
+}
+
+.status-motivo {
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: #7f1d1d;
+}
+
+.status-bloqueado {
+  background: #f4f4f5;
+  border: 1px solid #d4d4d8;
+}
+
+.status-bloqueado .status-texto {
+  color: #18181b;
+}
+
+
+
+
+
 
 
 

@@ -1816,23 +1816,45 @@ app.get("/api/modelo/publico/:id", async (req, res) => {
   }
 
   try {
+    // 🔍 BUSCA STATUS DE VERIFICAÇÃO
+    const verificacao = await db.query(
+      `
+      SELECT status
+      FROM modelos_verificacao
+      WHERE modelo_id = $1
+      ORDER BY created_at DESC
+      LIMIT 1
+      `,
+      [modelo_id]
+    );
+
+    // 🔒 BLOQUEIO DE PERFIL PÚBLICO
+    if (
+      verificacao.rows.length === 0 ||
+      verificacao.rows[0].status !== "aprovado"
+    ) {
+      return res.status(403).json({
+        error: "Perfil ainda não verificado"
+      });
+    }
+
     const result = await db.query(
       `
-       SELECT
-    m.user_id AS id,
-    m.nome,
-    m.bio,
-    m.avatar,
-    m.capa,
-    m.local,
-    md.instagram,
-    md.tiktok
-  FROM modelos m
-  LEFT JOIN modelos_dados md ON md.user_id = m.user_id
-  WHERE m.user_id = $1
-  `,
-  [modelo_id]
-);
+      SELECT
+        m.user_id AS id,
+        m.nome,
+        m.bio,
+        m.avatar,
+        m.capa,
+        m.local,
+        md.instagram,
+        md.tiktok
+      FROM modelos m
+      LEFT JOIN modelos_dados md ON md.user_id = m.user_id
+      WHERE m.user_id = $1
+      `,
+      [modelo_id]
+    );
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Modelo não encontrada" });
@@ -2068,11 +2090,67 @@ app.get("/api/conteudos/me", authModelo, async (req, res) => {
   }
 });
 
+app.get(
+  "/api/modelo/verificacao/status",
+  authModelo,
+  async (req, res) => {
+    try {
+      const modeloId = req.user.id;
+
+      const result = await db.query(
+        `
+        SELECT status, motivo
+        FROM modelos_verificacao
+        WHERE modelo_id = $1
+        ORDER BY created_at DESC
+        LIMIT 1
+        `,
+        [modeloId]
+      );
+
+      // nunca enviou documentos
+      if (result.rows.length === 0) {
+        return res.json({
+          status: "pendente",
+          motivo: null
+        });
+      }
+
+      res.json(result.rows[0]);
+    } catch (err) {
+      console.error("Erro status verificação:", err);
+      res.status(500).json({
+        erro: "Erro ao buscar status da verificação"
+      });
+    }
+  }
+);
+
+app.get(
+  "/api/admin/verificacoes",
+  authAdmin,
+  async (req, res) => {
+    const result = await db.query(
+      `
+      SELECT v.id, v.status, v.created_at,
+             m.nome_exibicao, m.email
+      FROM modelos_verificacao v
+      JOIN modelos m ON m.id = v.modelo_id
+      WHERE v.status = 'em_analise'
+      ORDER BY v.created_at ASC
+      `
+    );
+
+    res.json(result.rows);
+  }
+);
+
 
 
 app.get("/manifest.json", (req, res) => {
   res.sendFile(path.join(__dirname, "manifest.json"));
 });
+
 
 // ===============================
 // ROTA POST
@@ -2312,6 +2390,35 @@ app.put("/api/usuario/dados", auth, async (req, res) => {
     res.status(500).json({ erro: err.message });
   }
 });
+
+app.put(
+  "/api/admin/verificacao/:id",
+  authAdmin,
+  async (req, res) => {
+    const { id } = req.params;
+    const { status, motivo } = req.body;
+
+    if (!["aprovado", "recusado", "bloqueado"].includes(status)) {
+      return res.status(400).json({
+        erro: "Status inválido"
+      });
+    }
+
+    await db.query(
+      `
+      UPDATE modelos_verificacao
+      SET status = $1,
+          motivo = $2,
+          updated_at = NOW()
+      WHERE id = $3
+      `,
+      [status, motivo || null, id]
+    );
+
+    res.json({ ok: true });
+  }
+);
+
 
 
 // AVATAR DO CLIENTE
@@ -3438,6 +3545,58 @@ app.post("/api/chat/marcar-lido/:cliente_id", authModelo, async (req, res) => {
     res.status(500).json({ error: "Erro interno" });
   }
 });
+
+app.post(
+  "/api/modelo/verificacao",
+  authModelo,
+  async (req, res) => {
+    try {
+      const modeloId = req.user.id;
+
+      // 🔒 trava se já estiver em análise ou aprovado
+      const statusAtual = await db.query(
+        `
+        SELECT status
+        FROM modelos_verificacao
+        WHERE modelo_id = $1
+        ORDER BY created_at DESC
+        LIMIT 1
+        `,
+        [modeloId]
+      );
+
+      if (
+        statusAtual.rows.length &&
+        ["em_analise", "aprovado"].includes(statusAtual.rows[0].status)
+      ) {
+        return res.status(403).json({
+          erro: "Verificação já em andamento ou concluída"
+        });
+      }
+
+      // aqui depois entram os arquivos (doc + selfie)
+      await db.query(
+        `
+        INSERT INTO modelos_verificacao
+        (modelo_id, status)
+        VALUES ($1, 'em_analise')
+        `,
+        [modeloId]
+      );
+
+      res.json({
+        ok: true,
+        status: "em_analise"
+      });
+    } catch (err) {
+      console.error("Erro envio verificação:", err);
+      res.status(500).json({
+        erro: "Erro ao enviar documentos"
+      });
+    }
+  }
+);
+
 
 
 
