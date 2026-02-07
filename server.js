@@ -1579,7 +1579,8 @@ app.get("/api/modelo/me", auth, async (req, res) => {
       `SELECT
     m.*,
     md.instagram,
-    md.tiktok
+    md.tiktok,
+    md. nome_exibicao
   FROM modelos m
   LEFT JOIN modelos_dados md ON md.user_id = m.user_id
   WHERE m.user_id = $1

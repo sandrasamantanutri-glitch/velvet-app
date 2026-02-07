@@ -217,7 +217,7 @@ async function carregarAreaModelo(user_id) {
     form.nome_exibicao.value = modelo.nome_exibicao || "";
     form.instagram.value    = modelo.instagram || "";
     form.tiktok.value       = modelo.tiktok || "";
-    form.localizacao.value  = modelo.localizacao || "";
+    form.local.value  = modelo.local || "";
     form.bio.value          = modelo.bio || "";
   }
 
