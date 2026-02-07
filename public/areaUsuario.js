@@ -227,3 +227,58 @@ async function carregarAreaModelo(user_id) {
   carregarVipCountModelo(modelo.user_id ?? modelo.id);
 }
 
+// ===============================
+// 💾 SALVAR DADOS DO MODELO
+// ===============================
+
+const formDadosModelo = document.getElementById("formDadosModelo");
+
+formDadosModelo?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const token = localStorage.getItem("token");
+  if (!token) {
+    alert("Sessão expirada");
+    return;
+  }
+
+  const dados = {
+    nome_exibicao: formDadosModelo.nome_exibicao.value.trim(),
+    instagram: formDadosModelo.instagram.value.trim(),
+    tiktok: formDadosModelo.tiktok.value.trim(),
+    local: formDadosModelo.localizacao.value.trim(),
+    bio: formDadosModelo.bio.value.trim()
+  };
+
+  try {
+    const res = await fetch("/api/modelo/me", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token
+      },
+      body: JSON.stringify(dados)
+    });
+
+    const resp = await res.json();
+
+    if (!res.ok) {
+      alert(resp.erro || "Erro ao salvar dados");
+      return;
+    }
+
+    alert("Dados salvos com sucesso 💜");
+
+    // atualiza o nome no topo do perfil sem reload
+    const profileName = document.getElementById("profileName");
+    if (profileName && dados.nome_exibicao) {
+      profileName.textContent = dados.nome_exibicao;
+    }
+
+  } catch (err) {
+    console.error("Erro ao salvar dados:", err);
+    alert("Erro inesperado ao salvar");
+  }
+});
+
+
