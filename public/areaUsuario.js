@@ -12,31 +12,32 @@ function getUsuarioLogado() {
 
  const token = localStorage.getItem("token");
 
- async function buscarDadosUsuario() {
+async function buscarDadosModelo() {
   const token = localStorage.getItem("token");
   if (!token) return null;
 
-  const payload = JSON.parse(atob(token.split(".")[1]));
-  const role = payload.role;
-
-  let endpoint;
-
-  if (role === "modelo") {
-    endpoint = "/api/modelo/me";
-  } else if (role === "cliente") {
-    endpoint = "/api/cliente/dados";
-  } else {
-    return null;
-  }
-
-  const res = await fetch(endpoint, {
+  const res = await fetch("/api/modelo/me", {
     headers: {
       Authorization: "Bearer " + token
     }
   });
 
   if (!res.ok) return null;
+  return await res.json();
+}
 
+// 🔹 dados pessoais da conta (qualquer role)
+async function buscarDadosPessoais() {
+  const token = localStorage.getItem("token");
+  if (!token) return null;
+
+  const res = await fetch("/api/usuario/dados", {
+    headers: {
+      Authorization: "Bearer " + token
+    }
+  });
+
+  if (!res.ok) return null;
   return await res.json();
 }
 
@@ -60,18 +61,11 @@ function preencherFormulario(formId, dados) {
 // ===============================
 
 document.addEventListener("DOMContentLoaded", () => {
-carregarResumoModelo();
-const usuario = getUsuarioLogado();
+   const usuario = getUsuarioLogado();
+  if (!usuario) return;
 
-  if (!usuario) {
-    console.log("Visitante não logado");
-    return;
-  }
-
-  console.log("Usuário logado:", usuario);
-
-  // 🔥 decide o que carregar
   if (usuario.role === "modelo") {
+    carregarResumoModelo();
     carregarAreaModelo(usuario.id);
   }
 
@@ -79,7 +73,11 @@ const usuario = getUsuarioLogado();
     carregarAreaCliente(usuario.id);
   }
 
-   carregarDadosPessoais();
+  if (!usuario) {
+    console.log("Visitante não logado");
+    return;
+  }
+  carregarDadosPessoais();
 });
 
 async function carregarResumoModelo() {
