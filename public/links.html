@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+   <title>Links do meu Perfil</title>
+  <link rel="stylesheet" href="/area.css">
+</head>
+
+<body>
+ <div id="header-container"></div>
+
+  <div class="container-dados">
+
+   <h2>Links do meu perfil</h2>
+   <p class="sub">
+    Use estes links para divulgar seu perfil.  
+    Eles são gerados automaticamente para você.
+   </p>
+
+Instagram 
+   <label>Instagram</label>
+   <div class="copy-field">
+    <input type="text" id="linkInstagram" readonly />
+    <button type="button" onclick="copiarLink('linkInstagram')">
+      Copiar
+    </button>
+   </div>
+
+ TikTok 
+   <label>TikTok</label>
+   <div class="copy-field">
+    <input type="text" id="linkTiktok" readonly />
+    <button type="button" onclick="copiarLink('linkTiktok')">
+      Copiar
+    </button>
+   </div>
+
+   Direto 
+   <label>Link de Acesso Direto</label>
+   <div class="copy-field">
+    <input type="text" id="linkDireto" readonly />
+    <button type="button" onclick="copiarLink('linkDireto')">
+      Copiar
+    </button>
+   </div>
+  </div>
+
+  <hr class="separator">
+
+
+    <footer class="footer">
+  <div class="footer-links">
+    <a href="/terms.html">Termos de Uso</a>
+    <a href="/privacy.html">Política de Privacidade</a>
+    <a href="/policies.html">Política de Utilização</a>
+  </div>
+  <div class="footer-copy">
+    © 2026 Velvet. Todos os direitos reservados.
+  </div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/header.js"></script>
+<script src="/dados.js"></script>
+
+</body>
+</html>

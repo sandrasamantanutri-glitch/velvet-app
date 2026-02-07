@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+   <title>Meus Dados de Usuário</title>
+  <link rel="stylesheet" href="/area.css">
+  <link rel="stylesheet" href="perfil.css">
+
+</head>
+
+<body>
+ <div id="header-container"></div>
+
+<section class="area-card">
+<div class="perfil-capa">
+  <img id="profileCapa" src="assets/capa.png" alt="Capa do perfil">
+  <button class="btn-camera capa" id="btnCapa" title="Alterar capa">📷</button>
+  <input type="file" id="inputCapa" accept="image/*" hidden>
+</div>
+
+  </div>
+
+  <div class="perfil-avatar">
+   <img id="profileAvatar" src="assets/avatar.png" alt="Foto de Perfil">
+  <button class="btn-camera avatar" id="btnAvatar" title="Alterar avatar">📷 </button>
+  <input type="file" id="inputAvatar" accept="image/*" hidden>
+  </div>
+
+<div class="perfil-nome" id="profileName"></div>
+
+<section class="area-section">
+ <h3>Meus Dados de Usuário</h3>
+ <form id="formDadosModelo" class="form-area">
+
+  <div class="form-grid">
+    <div class="form-group">
+      <label>Seu nome de Usuário (seu @ na plataforma)*</label>
+      <input type="text" name="nome_exibicao" placeholder="Como quer ser chamado(a) na plataforma" required>
+    </div>
+
+    <div class="form-group">
+      <label>Instagram</label>
+      <input type="text" name="instagram" placeholder="@seuinstagram">
+    </div>
+
+    <div class="form-group">
+      <label>TikTok</label>
+      <input type="text" name="tiktok" placeholder="@seutiktok">
+    </div>
+
+    <div class="form-group">
+      <label>Localização*</label>
+      <input type="text" name="localizacao" placeholder="Estado - Cidade">
+    </div>
+
+    <div class="form-group full">
+      <label>Sua Bio*</label>
+      <textarea name="bio" rows="4" placeholder="Escreva sua biografia aqui!"></textarea>
+      <label>*Informações obrigatórias</label>
+    </div>
+    </div>
+    <button type="submit" class="btn-salvar">Salvar</button>
+   </form>
+</section>
+
+
+<hr class="separator">
+
+
+    <footer class="footer">
+  <div class="footer-links">
+    <a href="/terms.html">Termos de Uso</a>
+    <a href="/privacy.html">Política de Privacidade</a>
+    <a href="/policies.html">Política de Utilização</a>
+  </div>
+  <div class="footer-copy">
+    © 2026 Velvet. Todos os direitos reservados.
+  </div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/header.js"></script>
+<script src="/areaUsuario.js"></script>
+
+</body>
+</html>
