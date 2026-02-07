@@ -215,6 +215,14 @@ async function uploadThumbB2(buffer) {
   return result.Location;
 }
 
+function gerarSignedUrl(key) {
+  return s3Privado.getSignedUrl("getObject", {
+    Bucket: process.env.B2_BUCKET_PRIVADO,
+    Key: key,
+    Expires: 60 * 5 // 5 minutos
+  });
+}
+
 //APP POST ROTAS ////
 //MIDIAS
 app.post(
@@ -1861,7 +1869,7 @@ app.get("/api/modelo/publico/:id", async (req, res) => {
       verificacao.rows[0].status !== "aprovado"
     ) {
       return res.status(403).json({
-        error: "Perfil ainda não verificado"
+        error: "Perfil indisponível no momento"
       });
     }
 
@@ -1878,7 +1886,11 @@ app.get("/api/modelo/publico/:id", async (req, res) => {
         md.tiktok
       FROM modelos m
       LEFT JOIN modelos_dados md ON md.user_id = m.user_id
+      JOIN modelos_verificacao v ON v.modelo_id = m.user_id
       WHERE m.user_id = $1
+      AND v.status = 'aprovado'
+      ORDER BY v.created_at DESC
+      LIMIT 1
       `,
       [modelo_id]
     );
@@ -2157,18 +2169,63 @@ app.get(
   "/api/admin/verificacoes",
   authAdmin,
   async (req, res) => {
-    const result = await db.query(
-      `
-      SELECT v.id, v.status, v.created_at,
-             m.nome_exibicao, m.email
-      FROM modelos_verificacao v
-      JOIN modelos m ON m.id = v.modelo_id
-      WHERE v.status = 'em_analise'
-      ORDER BY v.created_at ASC
-      `
-    );
+    try {
+      const result = await db.query(`
+        SELECT
+          v.id,
+          v.modelo_id,
+          v.doc_tipo,
+          v.status,
+          v.created_at,
+          m.nome,
+          m.email
+        FROM modelos_verificacao v
+        JOIN modelos m ON m.user_id = v.modelo_id
+        WHERE v.status = 'em_analise'
+        ORDER BY v.created_at ASC
+      `);
 
-    res.json(result.rows);
+      res.json(result.rows);
+    } catch (err) {
+      console.error("Erro listar verificações:", err);
+      res.status(500).json({ erro: "Erro ao listar verificações" });
+    }
+  }
+);
+
+app.get(
+  "/api/admin/verificacao/:id/documentos",
+  authAdmin,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const result = await db.query(
+        `
+        SELECT doc_frente_url, doc_verso_url, selfie_url
+        FROM modelos_verificacao
+        WHERE id = $1
+        `,
+        [id]
+      );
+
+      if (!result.rows.length) {
+        return res.status(404).json({ erro: "Verificação não encontrada" });
+      }
+
+      const row = result.rows[0];
+
+      res.json({
+        doc_frente: gerarSignedUrl(row.doc_frente_url),
+        doc_verso: row.doc_verso_url
+          ? gerarSignedUrl(row.doc_verso_url)
+          : null,
+        selfie: gerarSignedUrl(row.selfie_url)
+      });
+    } catch (err) {
+      console.error("Erro signed URL:", err);
+      res.status(500).json({ erro: "Erro ao gerar URLs" });
+    }
   }
 );
 
@@ -2422,27 +2479,31 @@ app.put(
   "/api/admin/verificacao/:id",
   authAdmin,
   async (req, res) => {
-    const { id } = req.params;
-    const { status, motivo } = req.body;
+    try {
+      const { id } = req.params;
+      const { status, motivo } = req.body;
 
-    if (!["aprovado", "recusado", "bloqueado"].includes(status)) {
-      return res.status(400).json({
-        erro: "Status inválido"
-      });
-    }
+      if (!["aprovado", "recusado"].includes(status)) {
+        return res.status(400).json({ erro: "Status inválido" });
+      }
 
-    await db.query(
-      `
-      UPDATE modelos_verificacao
-      SET status = $1,
+      await db.query(
+        `
+        UPDATE modelos_verificacao
+        SET
+          status = $1,
           motivo = $2,
           updated_at = NOW()
-      WHERE id = $3
-      `,
-      [status, motivo || null, id]
-    );
+        WHERE id = $3
+        `,
+        [status, motivo || null, id]
+      );
 
-    res.json({ ok: true });
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("Erro atualizar verificação:", err);
+      res.status(500).json({ erro: "Erro ao atualizar status" });
+    }
   }
 );
 
