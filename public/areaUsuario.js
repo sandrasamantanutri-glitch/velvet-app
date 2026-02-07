@@ -246,7 +246,7 @@ formDadosModelo?.addEventListener("submit", async (e) => {
     nome_exibicao: formDadosModelo.nome_exibicao.value.trim(),
     instagram: formDadosModelo.instagram.value.trim(),
     tiktok: formDadosModelo.tiktok.value.trim(),
-    local: formDadosModelo.localizacao.value.trim(),
+    local: formDadosModelo.local.value.trim(),
     bio: formDadosModelo.bio.value.trim()
   };
 
