@@ -115,92 +115,43 @@ async function carregarAreaModelo(user_id) {
 
   const modelo = await res.json();
 
-  document.getElementById("profileAvatar").src = modelo.avatar;
-  document.getElementById("profileCapa").src = modelo.capa;
+  // ===============================
+  // 📸 AVATAR / CAPA
+  // ===============================
+  const avatar = document.getElementById("profileAvatar");
+  if (avatar && modelo.avatar) avatar.src = modelo.avatar;
+
+  const capa = document.getElementById("profileCapa");
+  if (capa && modelo.capa) capa.src = modelo.capa;
 
   // ===============================
-  // PERFIL VISUAL
+  // 👤 NOME VISUAL (só onde existir)
   // ===============================
-  document.getElementById("profileName").textContent =
-    modelo.nome_exibicao || "";
-
-  if (modelo.avatar)
-    document.getElementById("profileAvatar").src = modelo.avatar;
-
-  if (modelo.capa)
-    document.getElementById("profileCapa").src = modelo.capa;
+  const profileName = document.getElementById("profileName");
+  if (profileName) {
+    profileName.textContent = modelo.nome_exibicao || "";
+  }
 
   // ===============================
-  // FORMULÁRIO – DADOS DO USUÁRIO
+  // 📝 FORMULÁRIO (só no dados.html)
   // ===============================
   const form = document.getElementById("formDadosModelo");
   if (form) {
     form.nome_exibicao.value = modelo.nome_exibicao || "";
     form.instagram.value    = modelo.instagram || "";
     form.tiktok.value       = modelo.tiktok || "";
-    form.local.value  = modelo.local || "";
+    form.local.value        = modelo.local || "";
     form.bio.value          = modelo.bio || "";
   }
 
   // ===============================
-  // VIP COUNT
+  // 👑 VIP COUNT
   // ===============================
-  carregarVipCountModelo(modelo.user_id ?? modelo.id);
+  if (typeof carregarVipCountModelo === "function") {
+    carregarVipCountModelo(modelo.user_id ?? modelo.id);
+  }
 }
 
-// ===============================
-// 💾 SALVAR DADOS DO MODELO
-// ===============================
-
-const formDadosModelo = document.getElementById("formDadosModelo");
-
-formDadosModelo?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const token = localStorage.getItem("token");
-  if (!token) {
-    alert("Sessão expirada");
-    return;
-  }
-
-  const dados = {
-    nome_exibicao: formDadosModelo.nome_exibicao.value.trim(),
-    instagram: formDadosModelo.instagram.value.trim(),
-    tiktok: formDadosModelo.tiktok.value.trim(),
-    local: formDadosModelo.local.value.trim(),
-    bio: formDadosModelo.bio.value.trim()
-  };
-
-  try {
-    const res = await fetch("/api/modelo/me", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + token
-      },
-      body: JSON.stringify(dados)
-    });
-
-    const resp = await res.json();
-
-    if (!res.ok) {
-      alert(resp.erro || "Erro ao salvar dados");
-      return;
-    }
-
-    alert("Dados salvos com sucesso 💜");
-
-    // atualiza o nome no topo do perfil sem reload
-    const profileName = document.getElementById("profileName");
-    if (profileName && dados.nome_exibicao) {
-      profileName.textContent = dados.nome_exibicao;
-    }
-
-  } catch (err) {
-    console.error("Erro ao salvar dados:", err);
-    alert("Erro inesperado ao salvar");
-  }
-});
 
 function normalizarInstagram(username) {
   if (!username) return null;
