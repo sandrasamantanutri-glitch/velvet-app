@@ -3549,55 +3549,34 @@ app.post(
   async (req, res) => {
     try {
       const modeloId = req.user.id;
+      const { doc_tipo } = req.body;
 
-      // 🔒 trava se já estiver em análise ou aprovado
-      const statusAtual = await db.query(
-        `
-        SELECT status
-        FROM modelos_verificacao
-        WHERE modelo_id = $1
-        ORDER BY created_at DESC
-        LIMIT 1
-        `,
-        [modeloId]
-      );
-
-      if (
-        statusAtual.rows.length &&
-        ["em_analise", "aprovado"].includes(statusAtual.rows[0].status)
-      ) {
-        return res.status(403).json({
-          erro: "Verificação já em andamento ou concluída"
+      if (!doc_tipo) {
+        return res.status(400).json({
+          erro: "Tipo de documento é obrigatório"
         });
       }
 
-      // aqui depois entram os arquivos (doc + selfie)
       await db.query(
         `
-        INSERT INTO modelos_verificacao
-        (modelo_id, status)
-        VALUES ($1, 'em_analise')
+        INSERT INTO modelos_verificacao (modelo_id, doc_tipo, status)
+        VALUES ($1, $2, 'em_analise')
+        ON CONFLICT (modelo_id)
+        DO UPDATE SET
+          doc_tipo = $2,
+          status = 'em_analise',
+          updated_at = NOW()
         `,
-        [modeloId]
+        [modeloId, doc_tipo]
       );
 
-      res.json({
-        ok: true,
-        status: "em_analise"
-      });
+      res.json({ ok: true });
     } catch (err) {
-      console.error("Erro envio verificação:", err);
-      res.status(500).json({
-        erro: "Erro ao enviar documentos"
-      });
+      console.error("❌ Erro envio verificação:", err);
+      res.status(500).json({ erro: "Erro ao enviar documentos" });
     }
   }
 );
-
-
-
-
-
 
 
 

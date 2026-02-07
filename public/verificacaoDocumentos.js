@@ -124,36 +124,27 @@ document.addEventListener("DOMContentLoaded", async () => {
   // ===============================
   // SUBMIT REAL (ainda sem upload)
   // ===============================
-  form?.addEventListener("submit", async (e) => {
+form?.addEventListener("submit", async (e) => {
   e.preventDefault();
 
+  const token = localStorage.getItem("token");
   const formData = new FormData(form);
 
-  try {
-    const res = await fetch("/api/modelo/verificacao", {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer " + token
-      },
-      body: formData
-    });
+  const res = await fetch("/api/modelo/verificacao", {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer " + token
+    },
+    body: formData
+  });
 
-    if (!res.ok) {
-      throw new Error("Falha no envio");
-    }
-
-    alert(
-      "Documentos enviados com sucesso. Agora eles entrarão em análise."
-    );
-
-    renderStatus({ status: "em_analise" });
-    controlarFormulario("em_analise");
-
-  } catch (err) {
-    console.error(err);
-    alert("Erro ao enviar documentos. Tente novamente.");
+  if (!res.ok) {
+    throw new Error("Falha no envio");
   }
- });
+
+  renderStatus({ status: "em_analise" });
+  controlarFormulario("em_analise");
+});
 
 
   // ===============================
