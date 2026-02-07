@@ -9,9 +9,19 @@ async function carregarVerificacoes() {
     }
   });
 
-  const dados = await res.json();
-  const container = document.getElementById("listaVerificacoes");
+  if (!res.ok) {
+    console.error("Erro ao buscar verificações");
+    return;
+  }
 
+  const dados = await res.json();
+
+  if (!Array.isArray(dados)) {
+    console.error("Resposta inesperada:", dados);
+    return;
+  }
+
+  const container = document.getElementById("listaVerificacoes");
   container.innerHTML = "";
 
   dados.forEach(v => {

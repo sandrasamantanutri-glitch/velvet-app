@@ -2172,17 +2172,14 @@ app.get(
     try {
       const result = await db.query(`
         SELECT
-          v.id,
-          v.modelo_id,
-          v.doc_tipo,
-          v.status,
-          v.created_at,
-          m.nome_exibicao,
-          m.email
-        FROM modelos_verificacao v
-        JOIN modelos m ON m.user_id = v.modelo_id
-        WHERE v.status = 'em_analise'
-        ORDER BY v.created_at ASC
+  m.user_id,
+  m.nome_exibicao,
+  m.avatar,
+  m.verificada,
+  m.created_at
+FROM modelos m
+WHERE m.verificada = false
+ORDER BY m.created_at ASC;
       `);
 
       res.json(result.rows);
