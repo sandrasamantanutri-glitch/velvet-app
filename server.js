@@ -2172,14 +2172,20 @@ app.get(
     try {
       const result = await db.query(`
         SELECT
-  m.user_id,
-  m.nome_exibicao,
-  m.avatar,
-  m.verificada,
-  m.created_at
-FROM modelos m
-WHERE m.verificada = false
-ORDER BY m.created_at ASC;
+          m.user_id,
+          m.nome_exibicao,
+          m.avatar,
+          m.verificada,
+          m.created_at,
+          CASE
+            WHEN mv.user_id IS NOT NULL THEN 'enviado'
+            ELSE 'não enviado'
+          END AS status_documento
+        FROM modelos m
+        LEFT JOIN modelos_verificacao mv
+          ON mv.user_id = m.user_id
+        WHERE m.verificada = false
+        ORDER BY m.created_at ASC;
       `);
 
       res.json(result.rows);
@@ -2189,6 +2195,7 @@ ORDER BY m.created_at ASC;
     }
   }
 );
+
 
 app.get(
   "/api/admin/verificacao/:user_id/documentos",
