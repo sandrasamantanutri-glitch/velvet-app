@@ -208,23 +208,30 @@ async function carregarAreaModelo(user_id) {
 async function carregarDadosPessoais() {
   if (!paginaTem("formDadosPessoais")) return;
 
+  const token = localStorage.getItem("token");
+  if (!token) {
+    console.warn("❌ Token ausente — usuário não autenticado");
+    return;
+  }
+
   const res = await fetch("/api/usuario/dados", {
     headers: {
-      Authorization: "Bearer " + localStorage.getItem("token")
+      Authorization: "Bearer " + token
     }
   });
 
-  if (!res.ok) return;
+  if (!res.ok) {
+    console.warn("Erro ao carregar dados pessoais:", res.status);
+    return;
+  }
 
   const dados = await res.json();
   const form = document.getElementById("formDadosPessoais");
 
   form.nome_completo.value = dados.nome_completo || "";
-
   form.data_nascimento.value = dados.data_nascimento
     ? dados.data_nascimento.split("T")[0]
     : "";
-
   form.telefone.value = dados.telefone || "";
   form.endereco.value = dados.endereco || "";
   form.estado.value   = dados.estado || "";
