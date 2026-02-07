@@ -2103,6 +2103,9 @@ app.put("/api/modelo/me", auth, async (req, res) => {
     const user_id = req.user.id;
     const { nome_exibicao, instagram, tiktok, local, bio } = req.body;
 
+       const localFinal = local?.trim() || null;
+       const bioFinal   = bio?.trim()   || null;
+
     // ===============================
     // MODELOS (fonte da verdade)
     // ===============================
@@ -2114,7 +2117,7 @@ app.put("/api/modelo/me", auth, async (req, res) => {
         bio   = $2
       WHERE user_id = $3
       `,
-      [local, bio, user_id]
+      [localFinal, bioFinal, user_id]
     );
 
     // ===============================
@@ -2130,14 +2133,19 @@ app.put("/api/modelo/me", auth, async (req, res) => {
         instagram = EXCLUDED.instagram,
         tiktok = EXCLUDED.tiktok
       `,
-      [user_id, nome_exibicao, instagram, tiktok]
+       [
+        user_id,
+        nome_exibicao || null,
+        instagram || null,
+        tiktok || null
+      ]
     );
 
     res.json({ sucesso: true });
 
   } catch (err) {
     console.error("ERRO PUT /api/modelo/me:", err);
-    res.status(500).json({ erro: "Erro ao salvar dados" });
+    res.status(500).json({ erro: err.message, detalhe: err.detail });
   }
 });
 
