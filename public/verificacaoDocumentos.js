@@ -130,7 +130,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const formData = new FormData(form);
 
   try {
-    const res = await fetch("/api/modelo/verificacao/documentos", {
+    const res = await fetch("/api/modelo/verificacao", {
       method: "POST",
       headers: {
         Authorization: "Bearer " + token
