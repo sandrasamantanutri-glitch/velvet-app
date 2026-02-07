@@ -7,8 +7,7 @@ const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
 
 if (window.location.pathname.startsWith("/admin")) {
-  console.log("⛔ script.js ignorado em páginas admin");
-  return;
+  console.log("🧠 SCRIPT.JS CARREGADO EM:", window.location.pathname);
 }
 
 const ESTA_NO_INDEX =
