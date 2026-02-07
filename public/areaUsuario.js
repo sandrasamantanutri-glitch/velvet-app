@@ -65,84 +65,6 @@ async function carregarVipCountModelo(modelo_id) {
   }
 }
 
-async function carregarAreaCliente(user_id) {
-  const res = await fetch("/api/cliente/me", {
-    headers: {
-      Authorization: "Bearer " + localStorage.getItem("token")
-    }
-  });
-
-  if (!res.ok) return;
-
-  const cliente = await res.json();
-
-  console.log("Cliente logado:", cliente);
-}
-
-// ===============================
-// 📸 UPLOAD CAPA / AVATAR
-// ===============================
-
-const btnCapa = document.getElementById("btnCapa");
-const btnAvatar = document.getElementById("btnAvatar");
-const inputCapa = document.getElementById("inputCapa");
-const inputAvatar = document.getElementById("inputAvatar");
-const capaImg    = document.getElementById("profileCapa");
-const avatarImg  = document.getElementById("profileAvatar");
-
-// abrir seletor
-btnCapa?.addEventListener("click", () => inputCapa.click());
-btnAvatar?.addEventListener("click", () => inputAvatar.click());
-
-// upload CAPA
-inputCapa?.addEventListener("change", async () => {
-  const file = inputCapa.files[0];
-  if (!file) return;
-
-  const fd = new FormData();
-  fd.append("capa", file);
-
-  const res = await fetch("/uploadCapa", {
-    method: "POST",
-    headers: {
-      Authorization: "Bearer " + token
-    },
-    body: fd
-  });
-
-  const data = await res.json();
-
-  if (data.url) {
-    capaImg.src = data.url; // 🔥 atualiza na hora
-  } else {
-    alert("Erro ao atualizar capa");
-  }
-});
-
-// upload AVATAR
-inputAvatar?.addEventListener("change", async () => {
-  const file = inputAvatar.files[0];
-  if (!file) return;
-
-  const fd = new FormData();
-  fd.append("avatar", file);
-
-  const res = await fetch("/uploadAvatar", {
-    method: "POST",
-    headers: {
-      Authorization: "Bearer " + token
-    },
-    body: fd
-  });
-
-  const data = await res.json();
-
-  if (data.url) {
-    avatarImg.src = data.url; // 🔥 atualiza na hora
-  } else {
-    alert("Erro ao atualizar avatar");
-  }
-});
 
 async function carregarResumoModelo() {
   const elHoje = document.getElementById("areaUsuarioGanhosHoje");
@@ -192,7 +114,7 @@ async function carregarAreaModelo(user_id) {
   if (!res.ok) return;
 
   const modelo = await res.json();
-  
+
   document.getElementById("profileAvatar").src = modelo.avatar;
   document.getElementById("profileCapa").src = modelo.capa;
 
