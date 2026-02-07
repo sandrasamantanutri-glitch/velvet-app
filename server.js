@@ -2191,7 +2191,7 @@ ORDER BY m.created_at ASC;
 );
 
 app.get(
-  "/api/admin/verificacao/:id/documentos",
+  "/api/admin/verificacao/:user_id/documentos",
   async (req, res) => {
     try {
       const { id } = req.params;

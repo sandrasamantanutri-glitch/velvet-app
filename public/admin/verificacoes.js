@@ -29,11 +29,11 @@ async function carregarVerificacoes() {
     div.className = "card-verificacao";
 
     div.innerHTML = `
-      <strong>${v.nome}</strong><br>
-      Documento: ${v.doc_tipo}<br>
-      <button onclick="verDocs(${v.id})">Ver documentos</button>
-      <button onclick="aprovar(${v.id})">Aprovar</button>
-      <button onclick="recusar(${v.id})">Recusar</button>
+    <strong>${v.nome_exibicao}</strong>
+    Documento: ${v.doc_tipo ?? "não enviado"}
+      <button onclick="verDocs(${v.user_id})">Ver documentos</button>
+      <button onclick="aprovar(${v.user_id})">Aprovar</button>
+      <button onclick="recusar(${v.user_id})">Recusar</button>
     `;
 
     container.appendChild(div);
