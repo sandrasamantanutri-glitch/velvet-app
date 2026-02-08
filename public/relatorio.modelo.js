@@ -223,6 +223,28 @@ function alteracaoBloqueada() {
   return dia >= 5 && dia <= 10;
 }
 
+function mostrarStatusDadosBancarios(status) {
+  const box = document.getElementById("statusDadosBancarios");
+  if (!box) return;
+
+  box.style.display = "block";
+  box.className = "status-box"; // reset
+
+  if (status === "pendente" || status === "alteracao_pendente") {
+    box.classList.add("status-pendente");
+    box.innerText = "Status: Pendente de aprovação";
+    return;
+  }
+
+  if (status === "aprovado") {
+    box.classList.add("status-aprovado");
+    box.innerText = "Status: Aprovado";
+    return;
+  }
+
+  box.style.display = "none";
+}
+
 let statusAtual = null;
 
 async function carregarDadosBancarios() {
@@ -239,6 +261,7 @@ async function carregarDadosBancarios() {
 
   // 🔹 guarda status global
   statusAtual = dados.status;
+  mostrarStatusDadosBancarios(dados.status);
 
   // 🔹 inputs
   const tipoRecebimento = document.getElementById("tipoRecebimento");
@@ -373,6 +396,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
 if (!form) {
   console.warn("Form de dados bancários não encontrado");
+  return;
+}
+if (dados.status === "pendente") {
+  bloquearFormulario(form);
+  btnAlterar.style.display = "none";
+  return;
+}
+
+if (dados.status === "alteracao_pendente") {
+  bloquearFormulario(form);
+  btnAlterar.style.display = "none";
+  return;
+}
+
+if (dados.status === "aprovado") {
+  bloquearFormulario(form);
+  btnAlterar.style.display = "inline-block";
   return;
 }
 

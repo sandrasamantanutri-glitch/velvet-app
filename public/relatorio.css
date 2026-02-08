@@ -491,3 +491,21 @@ body {
   border: 1px solid #ddd;
 }
 
+.status-box {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.status-pendente {
+  background: #fff7e6;
+  color: #9a6b00;
+}
+
+.status-aprovado {
+  background: #e9f9ef;
+  color: #1f7a3f;
+}
+
