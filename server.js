@@ -2451,7 +2451,19 @@ app.post("/api/cliente/dados", auth, async (req, res) => {
   }
 });
 
-if (req.user.role === "modelo") {
+app.put("/api/usuario/dados", auth, async (req, res) => {
+  try {
+    const {
+      nome_completo,
+      data_nascimento,
+      telefone,
+      endereco,
+      estado,
+      cidade,
+      pais
+    } = req.body;
+
+    if (req.user.role === "modelo") {
 
   // 🔒 VERIFICAR STATUS DA IDENTIDADE
   const verificacao = await db.query(`
@@ -2512,6 +2524,40 @@ if (req.user.role === "modelo") {
     pais?.trim() || null
   ]);
 }
+
+    if (req.user.role === "cliente") {
+      await db.query(`
+        INSERT INTO clientes_dados
+          (user_id, nome_completo, data_nascimento, telefone, endereco, estado, cidade, pais)
+        VALUES
+          ($1,$2,$3,$4,$5,$6,$7,$8)
+        ON CONFLICT (user_id)
+        DO UPDATE SET
+          nome_completo = EXCLUDED.nome_completo,
+          data_nascimento = EXCLUDED.data_nascimento,
+          telefone = EXCLUDED.telefone,
+          endereco = EXCLUDED.endereco,
+          estado = EXCLUDED.estado,
+          cidade = EXCLUDED.cidade,
+          pais = EXCLUDED.pais
+      `, [
+        req.user.id,
+        nome_completo?.trim() || null,
+        data_nascimento || null,
+        telefone?.trim() || null,
+        endereco?.trim() || null,
+        estado?.trim() || null,
+        cidade?.trim() || null,
+        pais?.trim() || null
+      ]);
+    }
+
+    res.json({ sucesso: true });
+  } catch (err) {
+    console.error("ERRO PUT /api/usuario/dados:", err);
+    res.status(500).json({ erro: err.message });
+  }
+});
 
 app.put(
   "/api/admin/verificacao/:id",
