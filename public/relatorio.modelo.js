@@ -147,7 +147,7 @@ async function carregarPagamentos() {
 
   const token = localStorage.getItem("token");
   if (!token) {
-    lista.innerHTML = "Você não está logada.";
+    lista.innerText = "Não autenticada.";
     return;
   }
 
@@ -158,38 +158,60 @@ async function carregarPagamentos() {
       }
     });
 
-    if (!res.ok) {
-      lista.innerHTML = "Erro ao carregar pagamentos.";
-      return;
-    }
-
     const dados = await res.json();
     lista.innerHTML = "";
 
     if (!dados.length) {
-      lista.innerHTML = "Nenhum pagamento encontrado.";
+      lista.innerText = "Nenhum pagamento encontrado.";
       return;
     }
 
     dados.forEach(p => {
-      const mes = new Date(p.mes).toLocaleDateString("pt-BR", {
-        month: "long",
-        year: "numeric"
-      });
+      const inicio = new Date(p.mes);
+      const fim = new Date(inicio);
+      fim.setMonth(fim.getMonth() + 1);
+      fim.setDate(fim.getDate() - 1);
+
+      const statusTexto = p.status === "pago" ? "Pago" : "Pendente";
+      const pagoEm = p.pago_em
+        ? new Date(p.pago_em).toLocaleDateString("pt-BR")
+        : "—";
 
       lista.innerHTML += `
         <div class="transacao">
-          <strong>${mes}</strong><br>
-          Mídias: ${emReais(p.total_midias)}<br>
-          Assinaturas: ${emReais(p.total_assinaturas)}<br>
-          <strong>Total: ${emReais(p.total_geral)}</strong>
+          <div class="linha">
+            <strong>Período:</strong>
+            ${inicio.toLocaleDateString("pt-BR")}
+            até
+            ${fim.toLocaleDateString("pt-BR")}
+          </div>
+
+          <div class="linha">
+            <strong>Status:</strong> ${statusTexto}
+          </div>
+
+          <div class="linha">
+            <strong>Pago em:</strong> ${pagoEm}
+          </div>
+
+          <div class="linha">
+            <strong>Mídias:</strong> R$ ${Number(p.total_midias).toFixed(2)}
+          </div>
+
+          <div class="linha">
+            <strong>Assinaturas:</strong> R$ ${Number(p.total_assinaturas).toFixed(2)}
+          </div>
+
+          <div class="linha">
+            <strong>Total:</strong> R$ ${Number(p.total_geral).toFixed(2)}
+          </div>
         </div>
       `;
     });
 
   } catch (err) {
     console.error(err);
-    lista.innerHTML = "Erro inesperado.";
+    lista.innerText = "Erro ao carregar pagamentos.";
   }
 }
 
