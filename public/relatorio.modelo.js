@@ -52,6 +52,32 @@ document.getElementById("acumuladoAnterior").innerText =
 }
 
 // ===============================
+// 🧭 CONTROLE DE TABS
+// ===============================
+document.querySelectorAll(".tab").forEach(btn => {
+  btn.addEventListener("click", () => {
+
+    // ativa tab
+    document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+
+    // mostra conteúdo
+    document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+    document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
+
+    // lazy load
+    if (btn.dataset.tab === "transacoes") {
+      carregarTransacoes?.();
+    }
+
+    if (btn.dataset.tab === "pagamentos") {
+      carregarPagamentos?.();
+    }
+  });
+});
+
+
+// ===============================
 // 🚀 INIT
 // ===============================
 document.addEventListener("DOMContentLoaded", () => {

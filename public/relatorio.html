@@ -3,8 +3,8 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Meus Assinantes</title>
-  <link rel="stylesheet" href="/relatorio.modelo.css">
+  <title>Meus Ganhos</title>
+  <link rel="stylesheet" href="/relatorio.css">
   <link rel="stylesheet" href="/area.css">
 </head>
 
@@ -15,8 +15,14 @@
  <section class="area-card">
     <button type="button" class="btn-voltar" onclick="history.back()"> <img src="/assets/voltar.png" alt="Voltar"> </button>
 
-   <h3>Meus Assinantes VIP</h3>
+   <h3>Meus Ganhos</h3>
+   <div class="tabs">
+  <button class="tab active" data-tab="ganhos">Ganhos</button>
+  <button class="tab" data-tab="pagamentos">Pagamentos</button>
+  <button class="tab" data-tab="transacoes">Transações</button>
+   </div>
 
+  <section id="tab-ganhos" class="tab-content active">
  <main class="container">
   <span class="page-title">Meus Ganhos</span>
 
@@ -34,7 +40,7 @@
   </section>
 
   <!-- ASSINANTES -->
-<section class="cards-row">
+ <section class="cards-row">
   <div class="card">
     <span>Assinantes · Total</span>
     <strong id="totalAssinantes">0</strong>
@@ -44,10 +50,10 @@
     <span>Assinantes · Hoje</span>
     <strong id="assinantesHoje">0</strong>
   </div>
-</section>
+ </section>
 
-  <!-- GANHOS DO MÊS -->
-  <section class="cards-row">
+   <!-- GANHOS DO MÊS -->
+   <section class="cards-row">
     <div class="card">
       <span>Mês atual · Mídias</span>
       <strong id="mesMidias">R$0.00</strong>
@@ -57,44 +63,45 @@
       <span>Mês atual · Assinaturas</span>
       <strong id="mesAssinaturas">R$0.00</strong>
     </div>
-  </section>
+   </section>
 
-  <!-- ACUMULADO -->
-  <section class="cards-row single">
+   <!-- ACUMULADO -->
+   <section class="cards-row single">
     <div class="card total">
       <span>Acumulados de 2026</span>
       <strong id="acumuladoAnterior">R$0.00</strong>
     </div>
+   </section>
   </section>
 
-  <!-- LINKS ABAIXO DOS CARDS -->
-<div class="links-abaixo-cards">
-  <a href="/transacoes" class="link-card">
-    Transações
-  </a>
+  <section id="tab-pagamentos" class="tab-content">
+  <h4>Relatório de Pagamentos</h4>
+  <div id="listaPagamentos">Carregando pagamentos...</div>
+ </section>
 
-  <span class="link-card disabled">
-    Meus pagamentos <small>(Breve)</small>
-  </span>
+ <section id="tab-transacoes" class="tab-content">
+  <h4>Transações</h4>
+  <div id="listaTransacoes">Carregando transações...</div>
+ </section>
 
-  <span class="link-card disabled">
-    Links de rastreamento <small>(Breve)</small>
-  </span>
-</div>
+ </section>
 
-    <footer class="footer">
-  <div class="footer-links">
-    <a href="/terms.html">Termos de Uso</a>
-    <a href="/privacy.html">Política de Privacidade</a>
-    <a href="/policies.html">Política de Utilização</a>
-  </div>
-  <div class="footer-copy">
-    © 2026 Velvet. Todos os direitos reservados.
-  </div>
+ <hr class="separator">
+
+  <footer class="footer">
+   <div class="footer-links">
+      <a href="/terms.html" target="_blank" rel="noopener noreferrer">Termos de Uso</a>
+     <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Política de Privacidade</a>
+      <a href="/policies.html">Política de Utilização</a>
+    </div>
+   <div class="footer-copy"> © 2026 Velvet. Todos os direitos reservados.</div>
+  </footer>
+
 </main>
 
 <script src="/relatorio.modelo.js"></script>
 <script src="/header.js"></script>
+
 </body>
 </html>
 
