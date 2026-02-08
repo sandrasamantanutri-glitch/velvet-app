@@ -307,8 +307,9 @@ if (dados.status === "pendente" || dados.status === "alteracao_pendente") {
   if (alteracaoBloqueada()) {
   btnAlterar.style.display = "none";
   mostrarAviso("Alterações de dados bancários estão temporariamente bloqueadas devido ao período de pagamento.");
-}
-
+}else {
+    liberarFormulario(form);
+  }
 }
 
 function mostrarAviso(texto) {
@@ -322,6 +323,19 @@ function mostrarAviso(texto) {
     .getElementById("tab-dados-bancarios")
     .prepend(aviso);
 }
+
+function bloquearFormulario(form) {
+  form.querySelectorAll("input, select").forEach(el => {
+    el.disabled = true;
+  });
+}
+
+function liberarFormulario(form) {
+  form.querySelectorAll("input, select").forEach(el => {
+    el.disabled = false;
+  });
+}
+
 
 let paginaAtualTransacoes = 1;
 
@@ -337,7 +351,10 @@ document.addEventListener("DOMContentLoaded", () => {
       document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
 
       btn.classList.add("active");
-      document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
+      const tabContent = document.getElementById(`tab-${btn.dataset.tab}`);
+      if (tabContent) {
+        tabContent.classList.add("active");
+      }
 
       if (btn.dataset.tab === "transacoes") carregarTransacoes(1);
       if (btn.dataset.tab === "pagamentos") carregarPagamentos();
