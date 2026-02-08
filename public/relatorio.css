@@ -469,3 +469,25 @@ body {
   font-weight: 600;
 }
 
+
+#tab-dados-bancarios form {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+#tab-dados-bancarios label {
+  font-size: 13px;
+  margin-top: 10px;
+  display: block;
+}
+
+#tab-dados-bancarios input,
+#tab-dados-bancarios select,
+#tab-dados-bancarios textarea {
+  width: 100%;
+  padding: 10px;
+  margin-top: 6px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+}
+

@@ -215,6 +215,110 @@ async function carregarPagamentos() {
   }
 }
 
+function alteracaoBloqueada() {
+  const hoje = new Date();
+  const dia = hoje.getDate();
+
+  // bloqueia do dia 5 até o dia do pagamento (10)
+  return dia >= 5 && dia <= 10;
+}
+
+function bloquearFormulario() {
+  document
+    .querySelectorAll("#formDadosBancarios input, select, textarea")
+    .forEach(el => el.disabled = true);
+
+  document.getElementById("btnAlterarDados").style.display = "inline-block";
+}
+
+let statusAtual = null;
+
+async function carregarDadosBancarios() {
+  const token = localStorage.getItem("token");
+  const res = await fetch("/api/modelo/dados-bancarios", {
+    headers: { Authorization: "Bearer " + token }
+  });
+
+  if (!res.ok) return;
+
+  const dados = await res.json();
+  if (!dados) return;
+
+  // 🔹 guarda status global
+  statusAtual = dados.status;
+
+  // 🔹 inputs
+  const tipoRecebimento = document.getElementById("tipoRecebimento");
+  const titularNome = document.getElementById("titularNome");
+  const titularDocumento = document.getElementById("titularDocumento");
+  const confirmarTitular = document.getElementById("confirmarTitular");
+
+  const pixCampos = document.getElementById("pixCampos");
+  const pixTipo = document.getElementById("pixTipo");
+  const pixChave = document.getElementById("pixChave");
+
+  const transferenciaCampos = document.getElementById("transferenciaCampos");
+  const banco = document.getElementById("banco");
+  const agencia = document.getElementById("agencia");
+  const conta = document.getElementById("conta");
+  const contaTipo = document.getElementById("contaTipo");
+
+  const btnAlterar = document.getElementById("btnAlterarDados");
+
+  // 🔹 preencher campos comuns
+  tipoRecebimento.value = dados.tipo;
+  titularNome.value = dados.titular_nome;
+  titularDocumento.value = dados.titular_documento;
+  confirmarTitular.checked = true;
+
+  // 🔹 PIX
+  if (dados.tipo === "pix") {
+    pixCampos.style.display = "block";
+    transferenciaCampos.style.display = "none";
+    pixTipo.value = dados.pix_tipo;
+    pixChave.value = dados.pix_chave;
+  }
+
+  // 🔹 TRANSFERÊNCIA
+  if (dados.tipo === "transferencia") {
+    transferenciaCampos.style.display = "block";
+    pixCampos.style.display = "none";
+    banco.value = dados.banco;
+    agencia.value = dados.agencia;
+    conta.value = dados.conta;
+    contaTipo.value = dados.conta_tipo;
+  }
+
+  // 🔒 CONTROLE DE ESTADO
+  if (dados.status === "aprovado") {
+    bloquearFormulario();
+    btnAlterar.style.display = "inline-block";
+  }
+
+  if (dados.status === "pendente") {
+    bloquearFormulario();
+    btnAlterar.style.display = "none";
+  }
+
+  if (dados.status === "alteracao_pendente") {
+    bloquearFormulario();
+    btnAlterar.style.display = "none";
+    mostrarAviso("Alteração enviada. Aguardando aprovação.");
+  }
+}
+
+function mostrarAviso(texto) {
+  const aviso = document.createElement("div");
+  aviso.className = "card";
+  aviso.style.background = "#fff7e6";
+  aviso.style.marginBottom = "16px";
+  aviso.innerText = texto;
+
+  document
+    .getElementById("tab-dados-bancarios")
+    .prepend(aviso);
+}
+
 
 // ===============================
 // 🚀 INIT
@@ -233,4 +337,77 @@ document.addEventListener("DOMContentLoaded", () => {
       if (btn.dataset.tab === "pagamentos") carregarPagamentos();
     });
   });
+
+  const tipo = document.getElementById("tipoRecebimento");
+const pix = document.getElementById("pixCampos");
+const transf = document.getElementById("transferenciaCampos");
+
+tipo?.addEventListener("change", () => {
+  pix.style.display = tipo.value === "pix" ? "block" : "none";
+  transf.style.display = tipo.value === "transferencia" ? "block" : "none";
+});
+
+document.getElementById("btnAlterarDados")?.addEventListener("click", () => {
+  document
+    .querySelectorAll("#formDadosBancarios input, select, textarea")
+    .forEach(el => el.disabled = false);
+
+  document.getElementById("justificativaBox").style.display = "block";
+});
+
+document.getElementById("formDadosBancarios")
+  ?.addEventListener("submit", async e => {
+    e.preventDefault();
+
+    const payload = {
+      tipo: tipoRecebimento.value,
+      pix_tipo: pixTipo.value,
+      pix_chave: pixChave.value,
+      banco: banco.value,
+      agencia: agencia.value,
+      conta: conta.value,
+      conta_tipo: contaTipo.value,
+      titular_nome: titularNome.value,
+      titular_documento: titularDocumento.value,
+      confirmado_titular: confirmarTitular.checked
+    };
+
+    const res = await fetch("/api/modelo/dados-bancarios", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + localStorage.getItem("token")
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const r = await res.json();
+    if (!res.ok) {
+      alert(r.error);
+      return;
+    }
+
+    alert("Dados enviados para validação");
+    bloquearFormulario();
+  });
+
+  form.addEventListener("submit", async e => {
+  e.preventDefault();
+
+  const endpoint =
+    statusAtual === "aprovado"
+      ? "/api/modelo/dados-bancarios/alterar"
+      : "/api/modelo/dados-bancarios";
+
+  await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + localStorage.getItem("token")
+    },
+    body: JSON.stringify(payload)
+  });
+});
+
+
 });

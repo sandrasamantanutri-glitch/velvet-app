@@ -113,6 +113,130 @@ function calcularValores({ valor_bruto, taxa_gateway, agency_fee, velvet_fee, st
 }
 
 //ROTASSSS POST ///////////////////
+router.post("/api/modelo/dados-bancarios", authModelo, async (req, res) => {
+  if (!podeAlterarDadosBancarios()) {
+    return res.status(403).json({
+      error: "Alterações bloqueadas no período de pagamento"
+    });
+  }
+
+  const {
+    tipo,
+    pix_tipo,
+    pix_chave,
+    banco,
+    agencia,
+    conta,
+    conta_tipo,
+    titular_nome,
+    titular_documento,
+    confirmado_titular
+  } = req.body;
+
+  if (!confirmado_titular) {
+    return res.status(400).json({
+      error: "Confirmação de titularidade obrigatória"
+    });
+  }
+
+  await db.query(`
+    INSERT INTO modelo_dados_bancarios (
+      modelo_id, tipo,
+      pix_tipo, pix_chave,
+      banco, agencia, conta, conta_tipo,
+      titular_nome, titular_documento,
+      confirmado_titular, status
+    )
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,true,'pendente')
+
+    ON CONFLICT (modelo_id)
+    DO UPDATE SET
+      tipo = EXCLUDED.tipo,
+      pix_tipo = EXCLUDED.pix_tipo,
+      pix_chave = EXCLUDED.pix_chave,
+      banco = EXCLUDED.banco,
+      agencia = EXCLUDED.agencia,
+      conta = EXCLUDED.conta,
+      conta_tipo = EXCLUDED.conta_tipo,
+      titular_nome = EXCLUDED.titular_nome,
+      titular_documento = EXCLUDED.titular_documento,
+      status = 'alteracao_pendente',
+      atualizado_em = NOW()
+  `, [
+    req.user.id,
+    tipo,
+    pix_tipo,
+    pix_chave,
+    banco,
+    agencia,
+    conta,
+    conta_tipo,
+    titular_nome,
+    titular_documento
+  ]);
+
+  res.json({ ok: true });
+});
+
+router.post("/api/modelo/dados-bancarios/alterar", authModelo, async (req, res) => {
+  if (!podeAlterarDadosBancarios()) {
+    return res.status(403).json({
+      error: "Alterações bloqueadas no período de pagamento"
+    });
+  }
+
+  const {
+    justificativa,
+    tipo,
+    pix_tipo,
+    pix_chave,
+    banco,
+    agencia,
+    conta,
+    conta_tipo,
+    titular_nome,
+    titular_documento
+  } = req.body;
+
+  if (!justificativa) {
+    return res.status(400).json({
+      error: "Justificativa obrigatória"
+    });
+  }
+
+  await db.query(`
+    UPDATE modelo_dados_bancarios
+    SET
+      tipo = $1,
+      pix_tipo = $2,
+      pix_chave = $3,
+      banco = $4,
+      agencia = $5,
+      conta = $6,
+      conta_tipo = $7,
+      titular_nome = $8,
+      titular_documento = $9,
+      justificativa = $10,
+      status = 'alteracao_pendente',
+      atualizado_em = NOW()
+    WHERE modelo_id = $11
+  `, [
+    tipo,
+    pix_tipo,
+    pix_chave,
+    banco,
+    agencia,
+    conta,
+    conta_tipo,
+    titular_nome,
+    titular_documento,
+    justificativa,
+    req.user.id
+  ]);
+
+  res.json({ ok: true });
+});
+
 router.post(
   "/api/admin/pagamentos/:id/pagar",
   authMiddleware,
@@ -1300,6 +1424,25 @@ router.get(
     }
   }
 );
+
+router.get("/api/modelo/dados-bancarios", authModelo, async (req, res) => {
+  const result = await db.query(
+    `SELECT * FROM modelo_dados_bancarios WHERE modelo_id = $1`,
+    [req.user.id]
+  );
+
+  res.json(result.rows[0] || null);
+});
+
+router.get("/api/modelo/dados-bancarios", authModelo, async (req, res) => {
+  const result = await db.query(
+    `SELECT * FROM modelo_dados_bancarios WHERE modelo_id = $1`,
+    [req.user.id]
+  );
+
+  res.json(result.rows[0] || null);
+});
+
 
 
 

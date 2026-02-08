@@ -20,7 +20,9 @@
   <button class="tab active" data-tab="ganhos">Ganhos</button>
   <button class="tab" data-tab="pagamentos">Pagamentos</button>
   <button class="tab" data-tab="transacoes">Transações</button>
-   </div>
+  <button class="tab" data-tab="dados-bancarios">Dados Bancários</button>
+</div>
+
 
   <section id="tab-ganhos" class="tab-content active">
  <main class="container">
@@ -87,6 +89,86 @@
 
   <!-- PAGINAÇÃO -->
   <div id="paginacaoTransacoes" class="paginacao"></div>
+</section>
+
+<section id="tab-dados-bancarios" class="tab-content">
+
+  <h4>Dados Bancários para Pagamento</h4>
+
+  <form id="formDadosBancarios" class="card">
+
+    <!-- TIPO -->
+    <div class="linha">
+      <strong>Tipo de recebimento</strong>
+    </div>
+
+    <select id="tipoRecebimento" required>
+      <option value="">Selecione</option>
+      <option value="pix">PIX</option>
+      <option value="transferencia">Transferência bancária</option>
+    </select>
+
+    <!-- PIX -->
+    <div id="pixCampos" style="display:none;">
+      <label>Tipo de chave PIX</label>
+      <select id="pixTipo">
+        <option value="cpf">CPF</option>
+        <option value="email">E-mail</option>
+        <option value="telefone">Telefone</option>
+        <option value="aleatoria">Chave aleatória</option>
+      </select>
+
+      <label>Chave PIX</label>
+      <input type="text" id="pixChave">
+    </div>
+
+    <!-- TRANSFERÊNCIA -->
+    <div id="transferenciaCampos" style="display:none;">
+      <label>Banco</label>
+      <input type="text" id="banco">
+
+      <label>Agência</label>
+      <input type="text" id="agencia">
+
+      <label>Conta</label>
+      <input type="text" id="conta">
+
+      <label>Tipo de conta</label>
+      <select id="contaTipo">
+        <option value="corrente">Corrente</option>
+        <option value="poupanca">Poupança</option>
+      </select>
+    </div>
+
+    <!-- TITULAR -->
+    <label>Nome do titular</label>
+    <input type="text" id="titularNome" required>
+
+    <label>Documento do titular (CPF)</label>
+    <input type="text" id="titularDocumento" required>
+
+    <!-- CONFIRMAÇÃO -->
+    <label style="margin-top:12px;">
+      <input type="checkbox" id="confirmarTitular" required>
+      Confirmo que sou titular da conta informada
+    </label>
+
+    <!-- JUSTIFICATIVA (só aparece ao alterar) -->
+    <div id="justificativaBox" style="display:none;">
+      <label>Justificativa da alteração</label>
+      <textarea id="justificativa"></textarea>
+    </div>
+
+    <!-- BOTÕES -->
+    <div style="margin-top:20px;">
+      <button type="submit" class="tab active">Salvar dados</button>
+      <button type="button" id="btnAlterarDados" class="tab" style="display:none;">
+        Alterar dados
+      </button>
+    </div>
+
+  </form>
+
 </section>
 
 
