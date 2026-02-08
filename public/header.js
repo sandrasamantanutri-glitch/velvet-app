@@ -207,12 +207,19 @@ document.addEventListener("click", (e) => {
 });
 
 // =========================================================
-// LOGOUT
+// LOGOUT 
 // =========================================================
-function logout() {
-  localStorage.clear();
-  location.href = "index.html";
-}
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("#btnLogout");
+  if (!btn) return;
 
+  e.preventDefault();
+
+  // limpa tudo da sessão
+  localStorage.clear();
+
+  // vai para o index
+  window.location.href = "/index.html";
+});
 
 
