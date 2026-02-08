@@ -230,12 +230,6 @@ function mostrarStatusDadosBancarios(status) {
   box.style.display = "block";
   box.className = "status-box"; // reset
 
-  if (status === "pendente" || status === "alteracao_pendente") {
-    box.classList.add("status-pendente");
-    box.innerText = "Status: Pendente de aprovação";
-    return;
-  }
-
   if (status === "aprovado") {
     box.classList.add("status-aprovado");
     box.innerText = "Status: Aprovado";
