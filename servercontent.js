@@ -112,13 +112,24 @@ function calcularValores({ valor_bruto, taxa_gateway, agency_fee, velvet_fee, st
   };
 }
 
+async function podeAlterarDadosBancarios(modeloId) {
+  const { rows } = await db.query(`
+    SELECT em_pagamento
+    FROM modelos
+    WHERE user_id = $1
+  `, [modeloId]);
+
+  return rows.length && rows[0].em_pagamento === false;
+}
+
+
 //ROTASSSS POST ///////////////////
 router.post("/api/modelo/dados-bancarios", authModelo, async (req, res) => {
-  if (!podeAlterarDadosBancarios()) {
-    return res.status(403).json({
-      error: "Alterações bloqueadas no período de pagamento"
-    });
-  }
+ if (!(await podeAlterarDadosBancarios(req.user.id))) {
+  return res.status(403).json({
+    error: "Alterações bloqueadas no período de pagamento"
+  });
+}
 
   const {
     tipo,
@@ -179,11 +190,11 @@ router.post("/api/modelo/dados-bancarios", authModelo, async (req, res) => {
 });
 
 router.post("/api/modelo/dados-bancarios/alterar", authModelo, async (req, res) => {
-  if (!podeAlterarDadosBancarios()) {
-    return res.status(403).json({
-      error: "Alterações bloqueadas no período de pagamento"
-    });
-  }
+  if (!(await podeAlterarDadosBancarios(req.user.id))) {
+  return res.status(403).json({
+    error: "Alterações bloqueadas no período de pagamento"
+  });
+}
 
   const {
     justificativa,
