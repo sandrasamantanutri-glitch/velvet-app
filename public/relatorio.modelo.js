@@ -227,9 +227,8 @@ function bloquearFormulario() {
   document
     .querySelectorAll("#formDadosBancarios input, select, textarea")
     .forEach(el => el.disabled = true);
-
-  document.getElementById("btnAlterarDados").style.display = "inline-block";
 }
+
 
 let statusAtual = null;
 
@@ -291,14 +290,14 @@ async function carregarDadosBancarios() {
 
   // 🔒 CONTROLE DE ESTADO
   if (dados.status === "aprovado") {
-    bloquearFormulario();
-    btnAlterar.style.display = "inline-block";
-  }
+  bloquearFormulario();
+  btnAlterar.style.display = "inline-block";
+}
 
-  if (dados.status === "pendente") {
-    bloquearFormulario();
-    btnAlterar.style.display = "none";
-  }
+if (dados.status === "pendente" || dados.status === "alteracao_pendente") {
+  bloquearFormulario();
+  btnAlterar.style.display = "none";
+}
 
   if (dados.status === "alteracao_pendente") {
     bloquearFormulario();
