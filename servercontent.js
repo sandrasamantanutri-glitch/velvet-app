@@ -115,7 +115,7 @@ function calcularValores({ valor_bruto, taxa_gateway, agency_fee, velvet_fee, st
 //ROTASSSS POST ///////////////////
 router.post(
   "/api/admin/pagamentos/:id/pagar",
-  authAdmin,
+  auth,
   async (req, res) => {
     const { id } = req.params;
 
@@ -136,7 +136,7 @@ router.post(
 
 router.post(
   "/api/admin/fechar-pagamentos-modelo/:modeloId",
-  authAdmin,
+  auth,
   async (req, res) => {
     const { modeloId } = req.params;
 

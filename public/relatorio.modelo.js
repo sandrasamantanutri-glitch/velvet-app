@@ -51,110 +51,59 @@ document.getElementById("acumuladoAnterior").innerText =
   }
 }
 
-// ===============================
-// 🧭 CONTROLE DE TABS
-// ===============================
-document.querySelectorAll(".tab").forEach(btn => {
-  btn.addEventListener("click", () => {
-
-    // ativa visual
-    document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
-    document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
-
-    btn.classList.add("active");
-    document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
-
-    // 🔥 CHAMA A FUNÇÃO AQUI
-    if (btn.dataset.tab === "transacoes") {
-      carregarTransacoes();
-    }
-
-      if (btn.dataset.tab === "pagamentos") {
-      carregarPagamentos();
-      }
-  });
-});
-
-
 async function carregarTransacoes() {
+  const lista = document.getElementById("listaTransacoes");
+
+  // 🛑 GUARDA DE SEGURANÇA
+  if (!lista) {
+    console.warn("listaTransacoes não existe nesta página");
+    return;
+  }
+
+  lista.innerHTML = "Carregando transações...";
+
+  const token = localStorage.getItem("token");
+  if (!token) {
+    lista.innerText = "Você não está logada.";
+    return;
+  }
+
   try {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      document.getElementById("lista").innerText =
-        "Você não está logada.";
-      return;
-    }
-
     const res = await fetch("/api/transacoes", {
       headers: {
-        "Authorization": "Bearer " + token
+        Authorization: "Bearer " + token
       }
     });
 
     if (!res.ok) {
-      document.getElementById("lista").innerText =
-        "Erro ao carregar transações.";
+      lista.innerText = "Erro ao carregar transações.";
       return;
     }
 
     const dados = await res.json();
-    const lista = document.getElementById("lista");
     lista.innerHTML = "";
 
     if (!dados.length) {
-      lista.innerText = "Você ainda não realizou nenhuma compra.";
+      lista.innerText = "Nenhuma transação encontrada.";
       return;
     }
 
     dados.forEach(t => {
-      const div = document.createElement("div");
-      div.className = "transacao";
-
-      div.innerHTML = `
-        <div class="linha">
-<strong>
-  #${t.tipo === "conteudo" ? "C" : "A"}-${t.codigo}
-</strong>
-${t.tipo === "conteudo" ? "Conteúdo" : "Assinatura"}
-
-
-        </div>
-
-        <div class="linha">
-          Data: ${new Date(t.created_at).toLocaleString()}
-        </div>
-
-        <div class="linha">
+      lista.innerHTML += `
+        <div class="transacao">
+          <strong>#${t.codigo}</strong> · ${t.tipo}<br>
+          ${new Date(t.created_at).toLocaleDateString("pt-BR")}<br>
           Valor: ${emReais(t.valor)}
         </div>
-
-        <div class="linha">
-          Status: <strong>${t.status}</strong>
-        </div>
-
-        ${
-          t.tipo === "conteudo"
-            ? `<div class="linha">Conteúdo ID: ${t.message_id}</div>`
-            : ""
-        }
-
-        ${
-          t.tipo === "assinatura"
-            ? `<div class="linha">Assinatura VIP</div>`
-            : ""
-        }
       `;
-
-      lista.appendChild(div);
     });
 
   } catch (err) {
     console.error(err);
-    document.getElementById("lista").innerText =
-      "Erro inesperado.";
+    lista.innerText = "Erro inesperado.";
   }
 }
+
 
 function emReais(valor) {
   return Number(valor).toLocaleString("pt-BR", {
@@ -162,8 +111,6 @@ function emReais(valor) {
     currency: "BRL"
   });
 }
-
-carregarTransacoes();
 
 async function carregarPagamentos() {
   const lista = document.getElementById("listaPagamentos");
@@ -225,4 +172,19 @@ async function carregarPagamentos() {
 // ===============================
 document.addEventListener("DOMContentLoaded", () => {
   carregarResumoModelo();
+  document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll(".tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+
+      btn.classList.add("active");
+      document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
+
+      if (btn.dataset.tab === "transacoes") carregarTransacoes();
+      if (btn.dataset.tab === "pagamentos") carregarPagamentos();
+    });
+  });
+});
+
 });
