@@ -113,6 +113,39 @@ function calcularValores({ valor_bruto, taxa_gateway, agency_fee, velvet_fee, st
 }
 
 //ROTASSSS POST ///////////////////
+router.post(
+  "/api/admin/pagamentos/:id/pagar",
+  authAdmin,
+  async (req, res) => {
+    const { id } = req.params;
+
+    await db.query(
+      `
+      UPDATE modelo_pagamentos
+      SET
+        status = 'pago',
+        pago_em = NOW()
+      WHERE id = $1
+      `,
+      [id]
+    );
+
+    res.json({ ok: true });
+  }
+);
+
+router.post(
+  "/api/admin/fechar-pagamentos-modelo/:modeloId",
+  authAdmin,
+  async (req, res) => {
+    const { modeloId } = req.params;
+
+    await db.query(`/* SQL acima */`, [modeloId]);
+
+    res.json({ ok: true });
+  }
+);
+
 router.post("/api/transacoes", authMiddleware, async (req, res) => {
   try {
     const {
@@ -429,6 +462,26 @@ router.get("/api/transacoes",
     }
   }
 );
+
+router.get("/api/modelo/pagamentos", authModelo, async (req, res) => {
+  const result = await db.query(
+    `
+    SELECT
+      mes,
+      total_midias,
+      total_assinaturas,
+      total_geral,
+      status,
+      pago_em
+    FROM modelo_pagamentos
+    WHERE modelo_id = $1
+    ORDER BY mes DESC
+    `,
+    [req.user.id]
+  );
+
+  res.json(result.rows);
+});
 
 
 //ROTA DO LINK DE ACESSO A PLATAFORMA(CLIENTES INSTA TIKTOK)

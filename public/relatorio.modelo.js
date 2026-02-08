@@ -57,24 +57,24 @@ document.getElementById("acumuladoAnterior").innerText =
 document.querySelectorAll(".tab").forEach(btn => {
   btn.addEventListener("click", () => {
 
-    // ativa tab
+    // ativa visual
     document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-
-    // mostra conteúdo
     document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+
+    btn.classList.add("active");
     document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
 
-    // lazy load
+    // 🔥 CHAMA A FUNÇÃO AQUI
     if (btn.dataset.tab === "transacoes") {
-      carregarTransacoes?.();
+      carregarTransacoes();
     }
 
-    if (btn.dataset.tab === "pagamentos") {
-      carregarPagamentos?.();
-    }
+      if (btn.dataset.tab === "pagamentos") {
+      carregarPagamentos();
+      }
   });
 });
+
 
 async function carregarTransacoes() {
   try {
@@ -164,6 +164,60 @@ function emReais(valor) {
 }
 
 carregarTransacoes();
+
+async function carregarPagamentos() {
+  const lista = document.getElementById("listaPagamentos");
+  if (!lista) return;
+
+  lista.innerHTML = "Carregando pagamentos...";
+
+  const token = localStorage.getItem("token");
+  if (!token) {
+    lista.innerHTML = "Você não está logada.";
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/modelo/pagamentos", {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
+
+    if (!res.ok) {
+      lista.innerHTML = "Erro ao carregar pagamentos.";
+      return;
+    }
+
+    const dados = await res.json();
+    lista.innerHTML = "";
+
+    if (!dados.length) {
+      lista.innerHTML = "Nenhum pagamento encontrado.";
+      return;
+    }
+
+    dados.forEach(p => {
+      const mes = new Date(p.mes).toLocaleDateString("pt-BR", {
+        month: "long",
+        year: "numeric"
+      });
+
+      lista.innerHTML += `
+        <div class="transacao">
+          <strong>${mes}</strong><br>
+          Mídias: ${emReais(p.total_midias)}<br>
+          Assinaturas: ${emReais(p.total_assinaturas)}<br>
+          <strong>Total: ${emReais(p.total_geral)}</strong>
+        </div>
+      `;
+    });
+
+  } catch (err) {
+    console.error(err);
+    lista.innerHTML = "Erro inesperado.";
+  }
+}
 
 
 // ===============================
