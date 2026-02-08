@@ -2263,7 +2263,7 @@ FROM vip_subscriptions v
 JOIN clientes c
   ON c.id = v.cliente_id
 
-LEFT JOIN conteudos_pacotes cp
+LEFT JOIN conteudo_pacotes cp
   ON cp.cliente_id = c.id
  AND cp.modelo_id  = v.modelo_id
 
