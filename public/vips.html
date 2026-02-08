@@ -3,18 +3,39 @@
 
 <head>
   <meta charset="UTF-8">
-   <title>Meus Dados de Usuário</title>
+   <title>Meus Assinantes</title>
   <link rel="stylesheet" href="/area.css">
 </head>
 
 <body>
+
  <div id="header-container"></div>
 
+ <section class="area-card">
+    <button type="button" class="btn-voltar" onclick="history.back()"> <img src="/assets/voltar.png" alt="Voltar"> </button>
 
+   <h3>Meus Assinantes VIP</h3>
+   <div class="table-wrapper">
+      <table class="table"> 
+       <thead> 
+         <tr>
+         <th>Assinante</th>
+         <th>Status VIP</th>
+         <th>Expira em</th>
+         <th>Última renovação</th>
+         <th>Assinaturas</th>
+         <th>Mídias</th>
+         <th>Total</th>
+         </tr>
+        </thead>
 
+       <tbody id="listaAssinantes"> <tr> <td colspan="7">Carregando...</td></tr></tbody>
+      </table>
+    </div>
+    
+  </section>
 
  <hr class="separator">
-
 
     <footer class="footer">
   <div class="footer-links">

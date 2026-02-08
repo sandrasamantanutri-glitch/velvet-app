@@ -2232,6 +2232,62 @@ app.get(
   }
 );
 
+app.get("/api/modelo/assinantes", authModelo, async (req, res) => {
+  try {
+    const modeloId = req.user.id;
+
+    const result = await db.query(
+      `SELECT
+  c.id    AS cliente_id,
+  c.nome  AS nome_cliente,
+
+  v.ativo,
+  v.expiration_at,
+  v.updated_at AS ultima_renovacao,
+
+  -- total líquido gasto em VIP (70%)
+  COALESCE(
+    SUM(
+      DISTINCT (v.valor_assinatura * 0.7)
+    ),
+    0
+  ) AS total_assinaturas,
+
+  -- total líquido gasto em conteúdos (70%)
+  COALESCE(
+    SUM(cp.preco * 0.7),
+    0
+  ) AS total_midias
+
+FROM vip_subscriptions v
+JOIN clientes c
+  ON c.id = v.cliente_id
+
+LEFT JOIN conteudos_pacotes cp
+  ON cp.cliente_id = c.id
+ AND cp.modelo_id  = v.modelo_id
+
+WHERE v.modelo_id = $1
+
+GROUP BY
+  c.id,
+  c.nome,
+  v.ativo,
+  v.expiration_at,
+  v.updated_at
+
+ORDER BY v.expiration_at DESC;
+`,
+      [modeloId]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Erro listar assinantes:", err);
+    res.status(500).json({ erro: "Erro ao listar assinantes" });
+  }
+});
+
 
 
 app.get("/manifest.json", (req, res) => {

@@ -80,6 +80,79 @@ document.addEventListener("DOMContentLoaded", () => {
   carregarDadosPessoais();
 });
 
+// =========================================================
+// 👥 LISTA DE ASSINANTES DA MODELO
+// =========================================================
+document.addEventListener("DOMContentLoaded", () => {
+  // só roda se a página tiver a tabela
+  if (!document.getElementById("listaAssinantes")) return;
+
+  const usuario = getUsuarioLogado();
+  if (!usuario || usuario.role !== "modelo") return;
+
+  carregarAssinantes();
+});
+
+async function carregarAssinantes() {
+  const token = localStorage.getItem("token");
+  if (!token) return;
+
+  const tbody = document.getElementById("listaAssinantes");
+  if (!tbody) return;
+
+  try {
+    const res = await fetch("/api/modelo/assinantes", {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
+
+    if (!res.ok) throw new Error("Erro ao buscar assinantes");
+
+    const assinantes = await res.json();
+    tbody.innerHTML = "";
+
+    if (assinantes.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7">Nenhum assinante encontrado</td>
+        </tr>
+      `;
+      return;
+    }
+
+    assinantes.forEach(a => {
+      const total =
+        Number(a.total_assinaturas) + Number(a.total_midias);
+
+      tbody.innerHTML += `
+        <tr>
+          <td>${a.nome_cliente}</td>
+          <td class="${a.ativo ? "status-ativo" : "status-inativo"}">
+            ${a.ativo ? "Ativo" : "Inativo"}
+          </td>
+          <td>${formatarData(a.expiration_at)}</td>
+          <td>${formatarData(a.ultima_renovacao)}</td>
+          <td>R$ ${Number(a.total_assinaturas).toFixed(2)}</td>
+          <td>R$ ${Number(a.total_midias).toFixed(2)}</td>
+          <td><strong>R$ ${total.toFixed(2)}</strong></td>
+        </tr>
+      `;
+    });
+  } catch (err) {
+    console.error("Erro carregar assinantes:", err);
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7">Erro ao carregar assinantes</td>
+      </tr>
+    `;
+  }
+}
+
+function formatarData(data) {
+  if (!data) return "-";
+  return new Date(data).toLocaleDateString("pt-BR");
+}
 async function carregarResumoModelo() {
   const elHoje = document.getElementById("areaUsuarioGanhosHoje");
   const elMes  = document.getElementById("areaUsuarioGanhosMes");
