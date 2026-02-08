@@ -343,10 +343,13 @@ function mostrarAviso(texto) {
 }
 
 function liberarFormulario(form) {
-  form.querySelectorAll("input, select").forEach(el => {
+  if (!form) return;
+
+  form.querySelectorAll("input, select, textarea").forEach(el => {
     el.disabled = false;
   });
 }
+
 
 function bloquearFormulario(form) {
   if (!form) return;
@@ -440,8 +443,14 @@ if (statusAtual === "aprovado") {
   if (statusAtual !== "aprovado") return;
 
   liberarFormulario(form);
+  const justificativaBox = document.getElementById("justificativaBox");
+  const justificativa = document.getElementById("justificativa");
+
+  justificativaBox.style.display = "block";
+  justificativa.disabled = false;
+  justificativa.focus();
   document.getElementById("justificativaBox").style.display = "block";
-});
+ });
 
 
   // 📤 SUBMIT ÚNICO
