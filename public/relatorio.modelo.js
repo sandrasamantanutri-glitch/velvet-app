@@ -76,6 +76,95 @@ document.querySelectorAll(".tab").forEach(btn => {
   });
 });
 
+async function carregarTransacoes() {
+  try {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      document.getElementById("lista").innerText =
+        "Você não está logada.";
+      return;
+    }
+
+    const res = await fetch("/api/transacoes", {
+      headers: {
+        "Authorization": "Bearer " + token
+      }
+    });
+
+    if (!res.ok) {
+      document.getElementById("lista").innerText =
+        "Erro ao carregar transações.";
+      return;
+    }
+
+    const dados = await res.json();
+    const lista = document.getElementById("lista");
+    lista.innerHTML = "";
+
+    if (!dados.length) {
+      lista.innerText = "Você ainda não realizou nenhuma compra.";
+      return;
+    }
+
+    dados.forEach(t => {
+      const div = document.createElement("div");
+      div.className = "transacao";
+
+      div.innerHTML = `
+        <div class="linha">
+<strong>
+  #${t.tipo === "conteudo" ? "C" : "A"}-${t.codigo}
+</strong>
+${t.tipo === "conteudo" ? "Conteúdo" : "Assinatura"}
+
+
+        </div>
+
+        <div class="linha">
+          Data: ${new Date(t.created_at).toLocaleString()}
+        </div>
+
+        <div class="linha">
+          Valor: ${emReais(t.valor)}
+        </div>
+
+        <div class="linha">
+          Status: <strong>${t.status}</strong>
+        </div>
+
+        ${
+          t.tipo === "conteudo"
+            ? `<div class="linha">Conteúdo ID: ${t.message_id}</div>`
+            : ""
+        }
+
+        ${
+          t.tipo === "assinatura"
+            ? `<div class="linha">Assinatura VIP</div>`
+            : ""
+        }
+      `;
+
+      lista.appendChild(div);
+    });
+
+  } catch (err) {
+    console.error(err);
+    document.getElementById("lista").innerText =
+      "Erro inesperado.";
+  }
+}
+
+function emReais(valor) {
+  return Number(valor).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  });
+}
+
+carregarTransacoes();
+
 
 // ===============================
 // 🚀 INIT
