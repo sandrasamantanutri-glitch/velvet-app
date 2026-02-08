@@ -65,12 +65,11 @@
       <button type="submit" class="btn-salvar">
        Salvar e continuar
       </button>
-    
+      <b></b>
     </form>
 
     <p class="form-alert">
-     ⏳ Após salvar, deve enviar seus documentos na etapa 2 (abaixo) e sua conta entrará em processo de verificação. O perfil público e a monetização só são liberados após aprovação.
-    </p>
+     ⏳ Após salvar, deve enviar seus documentos na etapa 2 (abaixo) e sua conta entrará em processo de verificação. O perfil público e a monetização só são liberados após aprovação.</p>
   </section>
 
   <section class="area-card">
@@ -127,30 +126,24 @@
       
       </form>
     </div>
-  </section>
 
- <section class="area-card">
    <hr class="separator">
       <section class="area-section">Excluir minha Conta</section>
       <div class="danger-zone"><button class="btn-danger" onclick="abrirConfirmacaoExclusao()">
        Excluir conta permanentemente</button>
       </div>
-    </section>
-    
-    <div id="modalExcluirConta" class="modal hidden"><div class="modal-overlay"></div>
+     <div id="modalExcluirConta" class="modal hidden"><div class="modal-overlay"></div>
       <div class="modal-box"><h3>Excluir conta permanentemente</h3><p>Esta ação é <strong>irreversível</strong>.
        <br>Todos os seus dados, conteúdos, mensagens e históricoserão apagados permanentemente.</p>
        <label class="label-danger">Digite sua senha para confirmar</label>
        <input type="password" id="senhaConfirmacao" placeholder="Digite sua senha" class="input-danger"/>
        <p id="erroExclusao" class="erro-danger hidden"> Senha incorreta.</p>
       </div>
-    </div>
-
    <div class="modal-actions">
      <button class="btn-cancelar" onclick="fecharModalExclusao()"> Cancelar </button>
      <button class="btn-confirmar" onclick="confirmarExclusaoConta()"> Sim, excluir minha conta </button>
    </div>
-  
+    </div>
   </section>
 
  <hr class="separator">
