@@ -2451,19 +2451,26 @@ app.post("/api/cliente/dados", auth, async (req, res) => {
   }
 });
 
-app.put("/api/usuario/dados", auth, async (req, res) => {
-  try {
-    const {
-      nome_completo,
-      data_nascimento,
-      telefone,
-      endereco,
-      estado,
-      cidade,
-      pais
-    } = req.body;
+if (req.user.role === "modelo") {
 
-    if (req.user.role === "modelo") {
+  // 🔒 VERIFICAR STATUS DA IDENTIDADE
+  const verificacao = await db.query(`
+    SELECT status
+    FROM modelos_verificacao
+    WHERE modelo_id = $1
+    ORDER BY created_at DESC
+    LIMIT 1
+  `, [req.user.id]);
+
+  if (
+    verificacao.rows.length &&
+    verificacao.rows[0].status === "aprovado"
+  ) {
+    return res.status(403).json({
+      erro: "Dados pessoais já aprovados e não podem ser alterados"
+    });
+  }
+
   // 🔥 buscar nome_exibicao existente (obrigatório)
   const { rows } = await db.query(
     "SELECT nome_exibicao FROM modelos WHERE user_id = $1",
@@ -2478,6 +2485,7 @@ app.put("/api/usuario/dados", auth, async (req, res) => {
     });
   }
 
+  // ✅ segue com INSERT / UPDATE
   await db.query(`
     INSERT INTO modelos_dados
       (user_id, nome_exibicao, nome_completo, data_nascimento, telefone, endereco, estado, cidade, pais)
@@ -2494,7 +2502,7 @@ app.put("/api/usuario/dados", auth, async (req, res) => {
       pais = EXCLUDED.pais
   `, [
     req.user.id,
-    nome_exibicao,             
+    nome_exibicao,
     nome_completo?.trim() || null,
     data_nascimento || null,
     telefone?.trim() || null,
@@ -2504,40 +2512,6 @@ app.put("/api/usuario/dados", auth, async (req, res) => {
     pais?.trim() || null
   ]);
 }
-
-    if (req.user.role === "cliente") {
-      await db.query(`
-        INSERT INTO clientes_dados
-          (user_id, nome_completo, data_nascimento, telefone, endereco, estado, cidade, pais)
-        VALUES
-          ($1,$2,$3,$4,$5,$6,$7,$8)
-        ON CONFLICT (user_id)
-        DO UPDATE SET
-          nome_completo = EXCLUDED.nome_completo,
-          data_nascimento = EXCLUDED.data_nascimento,
-          telefone = EXCLUDED.telefone,
-          endereco = EXCLUDED.endereco,
-          estado = EXCLUDED.estado,
-          cidade = EXCLUDED.cidade,
-          pais = EXCLUDED.pais
-      `, [
-        req.user.id,
-        nome_completo?.trim() || null,
-        data_nascimento || null,
-        telefone?.trim() || null,
-        endereco?.trim() || null,
-        estado?.trim() || null,
-        cidade?.trim() || null,
-        pais?.trim() || null
-      ]);
-    }
-
-    res.json({ sucesso: true });
-  } catch (err) {
-    console.error("ERRO PUT /api/usuario/dados:", err);
-    res.status(500).json({ erro: err.message });
-  }
-});
 
 app.put(
   "/api/admin/verificacao/:id",

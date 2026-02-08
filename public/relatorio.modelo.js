@@ -366,6 +366,47 @@ function bloquearFormulario(form) {
   });
 }
 
+async function carregarDadosPessoais() {
+  const res = await fetch("/api/modelo/dados-pessoais", {
+    headers: {
+      Authorization: "Bearer " + localStorage.getItem("token")
+    }
+  });
+
+  if (!res.ok) return;
+
+  const dados = await res.json();
+
+  const form = document.getElementById("formDadosPessoais");
+  if (!form) return;
+
+  // preencher campos
+  form.nome_completo.value = dados.nome_completo;
+  form.telefone.value = dados.telefone;
+  form.data_nascimento.value = dados.data_nascimento;
+  // etc…
+
+  // 🔒 BLOQUEIO DEFINITIVO APÓS APROVAÇÃO
+  if (dados.status === "aprovado") {
+    bloquearFormulario(form);
+    mostrarStatusVerificacao("aprovado");
+      document.querySelector(".btn-salvar")?.remove();
+  }
+}
+
+function mostrarStatusVerificacao(status) {
+  const box = document.getElementById("statusVerificacao");
+  if (!box) return;
+
+  box.style.display = "block";
+  box.className = "status-box";
+
+  if (status === "aprovado") {
+    box.classList.add("status-aprovado");
+    box.innerText = "Dados pessoais aprovados. Alterações não são permitidas.";
+  }
+}
+
 
 let paginaAtualTransacoes = 1;
 
