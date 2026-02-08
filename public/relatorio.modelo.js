@@ -365,7 +365,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ===============================
   // TABS
   // ===============================
-  document.querySelectorAll(".tab").forEach(btn => {
+  document.querySelectorAll(".tabs .tab").forEach(btn => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
       document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
@@ -436,12 +436,13 @@ if (statusAtual === "aprovado") {
   });
 
   // ✏️ botão alterar
-btnAlterar.addEventListener("click", () => {
+  btnAlterar?.addEventListener("click", () => {
   if (statusAtual !== "aprovado") return;
 
   liberarFormulario(form);
   document.getElementById("justificativaBox").style.display = "block";
 });
+
 
   // 📤 SUBMIT ÚNICO
   form.addEventListener("submit", async e => {
