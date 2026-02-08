@@ -88,36 +88,6 @@ function mostrarStatusVerificacao(status) {
   }
 }
 
-async function carregarDadosPessoais() {
-  const res = await fetch("/api/usuario/dados", {
-    headers: {
-      Authorization: "Bearer " + localStorage.getItem("token")
-    }
-  });
-
-  if (!res.ok) return;
-
-  const dados = await res.json();
-
-  const form = document.getElementById("formDadosPessoais");
-  if (!form) return;
-
-  // preencher campos
-  form.nome_completo.value = dados.nome_completo || "";
-  form.telefone.value = dados.telefone || "";
-  // etc…
-
-  // 🔒 SE APROVADO → BLOQUEIA
-  if (dados.status === "aprovado") {
-    bloquearFormulario(form);
-    mostrarStatusVerificacao("aprovado");
-
-    // esconde botão salvar
-    document.querySelector(".btn-salvar")?.remove();
-  }
-}
-
-
 // ===============================
 // 👩‍💼 ÁREA DA MODELO – VIP COUNT
 // ===============================
@@ -362,8 +332,6 @@ async function carregarAreaModelo(user_id) {
   // ===============================
   carregarVipCountModelo(modelo.user_id ?? modelo.id);
 
-  carregarVipCountModelo(modelo.user_id ?? modelo.id);
-
  // 🔗 LINKS DO PERFIL
  if (document.getElementById("linkInstagram")) {
   gerarLinks(modelo.user_id ?? modelo.id);
@@ -375,10 +343,7 @@ async function carregarDadosPessoais() {
   if (!paginaTem("formDadosPessoais")) return;
 
   const token = localStorage.getItem("token");
-  if (!token) {
-    console.warn("❌ Token ausente — usuário não autenticado");
-    return;
-  }
+  if (!token) return;
 
   const res = await fetch("/api/usuario/dados", {
     headers: {
@@ -386,14 +351,13 @@ async function carregarDadosPessoais() {
     }
   });
 
-  if (!res.ok) {
-    console.warn("Erro ao carregar dados pessoais:", res.status);
-    return;
-  }
+  if (!res.ok) return;
 
   const dados = await res.json();
   const form = document.getElementById("formDadosPessoais");
+  if (!form) return;
 
+  // preencher campos
   form.nome_completo.value = dados.nome_completo || "";
   form.data_nascimento.value = dados.data_nascimento
     ? dados.data_nascimento.split("T")[0]
@@ -403,6 +367,13 @@ async function carregarDadosPessoais() {
   form.estado.value   = dados.estado || "";
   form.cidade.value   = dados.cidade || "";
   form.pais.value     = dados.pais || "";
+
+  // 🔒 BLOQUEIO DEFINITIVO SE APROVADO
+  if (dados.status === "aprovado") {
+    bloquearFormulario(form);
+    mostrarStatusVerificacao("aprovado");
+    document.querySelector(".btn-salvar")?.remove();
+  }
 }
 
 
@@ -475,10 +446,17 @@ formPessoais?.addEventListener("submit", async (e) => {
     body: JSON.stringify(dados)
   });
 
-  if (!res.ok) {
-    alert("Erro ao salvar dados pessoais");
-    return;
-  }
+if (res.status === 403) {
+  alert("Seus dados pessoais já foram aprovados e não podem ser alterados.");
+  bloquearFormulario(formPessoais);
+  mostrarStatusVerificacao("aprovado");
+  return;
+}
+
+if (!res.ok) {
+  alert("Erro ao salvar dados pessoais");
+  return;
+}
 
   alert("Dados pessoais salvos com sucesso 💜");
 });
