@@ -1,19 +1,23 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
-  <title>Meus Ganhos | Velvet</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/admin/relatorio.modelo.css">
-  <link rel="stylesheet" href="/header.css">
+  <title>Meus Assinantes</title>
+  <link rel="stylesheet" href="/relatorio.modelo.css">
+  <link rel="stylesheet" href="/area.css">
 </head>
 
 <body>
-<div id="header-container"></div>
 
-<main class="container">
+ <div id="header-container"></div>
+
+ <section class="area-card">
+    <button type="button" class="btn-voltar" onclick="history.back()"> <img src="/assets/voltar.png" alt="Voltar"> </button>
+
+   <h3>Meus Assinantes VIP</h3>
+
+ <main class="container">
   <span class="page-title">Meus Ganhos</span>
 
   <!-- GANHOS HOJE -->
@@ -65,7 +69,7 @@
 
   <!-- LINKS ABAIXO DOS CARDS -->
 <div class="links-abaixo-cards">
-  <a href="/content/transacoes" class="link-card">
+  <a href="/transacoes" class="link-card">
     Transações
   </a>
 
