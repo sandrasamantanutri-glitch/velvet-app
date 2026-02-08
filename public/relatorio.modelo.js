@@ -50,9 +50,9 @@ document.getElementById("acumuladoAnterior").innerText =
     console.error("Erro carregarResumoModelo:", err);
   }
 }
-
-async function carregarTransacoes() {
+async function carregarTransacoes(pagina = 1) {
   const lista = document.getElementById("listaTransacoes");
+  const paginacao = document.getElementById("paginacaoTransacoes");
 
   // 🛑 GUARDA DE SEGURANÇA
   if (!lista) {
@@ -61,6 +61,7 @@ async function carregarTransacoes() {
   }
 
   lista.innerHTML = "Carregando transações...";
+  if (paginacao) paginacao.innerHTML = "";
 
   const token = localStorage.getItem("token");
   if (!token) {
@@ -69,7 +70,7 @@ async function carregarTransacoes() {
   }
 
   try {
-    const res = await fetch("/api/transacoes", {
+    const res = await fetch(`/api/transacoes?page=${pagina}`, {
       headers: {
         Authorization: "Bearer " + token
       }
@@ -80,13 +81,17 @@ async function carregarTransacoes() {
       return;
     }
 
-    const dados = await res.json();
+    const data = await res.json();
+    const dados = data.registros;
+
     lista.innerHTML = "";
 
     if (!dados.length) {
       lista.innerText = "Nenhuma transação encontrada.";
       return;
     }
+
+    paginaAtualTransacoes = data.paginaAtual;
 
     dados.forEach(t => {
       lista.innerHTML += `
@@ -98,9 +103,31 @@ async function carregarTransacoes() {
       `;
     });
 
+    // 🔢 PAGINAÇÃO
+    if (paginacao && data.totalPaginas > 1) {
+      renderizarPaginacaoTransacoes(data.totalPaginas);
+    }
+
   } catch (err) {
     console.error(err);
     lista.innerText = "Erro inesperado.";
+  }
+}
+
+function renderizarPaginacaoTransacoes(totalPaginas) {
+  const paginacao = document.getElementById("paginacaoTransacoes");
+  if (!paginacao) return;
+
+  paginacao.innerHTML = "";
+
+  for (let i = 1; i <= totalPaginas; i++) {
+    paginacao.innerHTML += `
+      <button
+        class="pagina ${i === paginaAtualTransacoes ? "ativa" : ""}"
+        onclick="carregarTransacoes(${i})">
+        ${i}
+      </button>
+    `;
   }
 }
 
@@ -180,7 +207,7 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.classList.add("active");
       document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
 
-      if (btn.dataset.tab === "transacoes") carregarTransacoes();
+      if (btn.dataset.tab === "transacoes") carregarTransacoes(1);
       if (btn.dataset.tab === "pagamentos") carregarPagamentos();
     });
   });

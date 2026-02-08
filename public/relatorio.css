@@ -448,3 +448,24 @@ body {
   color: #1E1E26;
 }
 
+#paginacaoTransacoes {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+#paginacaoTransacoes .pagina {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background: #eee;
+}
+
+#paginacaoTransacoes .pagina.ativa {
+  background: #7b2cff;
+  color: #fff;
+  font-weight: 600;
+}
+
