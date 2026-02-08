@@ -173,11 +173,10 @@ function gerarLinks(modelo_id) {
 
 function copiarLink(id) {
   const input = document.getElementById(id);
-  input.select();
-  input.setSelectionRange(0, 99999);
-  document.execCommand("copy");
+  navigator.clipboard.writeText(input.value);
   alert("Link copiado!");
 }
+
 
 async function carregarResumoModelo() {
   const elHoje = document.getElementById("areaUsuarioGanhosHoje");
@@ -300,6 +299,14 @@ async function carregarAreaModelo(user_id) {
   // 👑 VIP COUNT
   // ===============================
   carregarVipCountModelo(modelo.user_id ?? modelo.id);
+
+  carregarVipCountModelo(modelo.user_id ?? modelo.id);
+
+ // 🔗 LINKS DO PERFIL
+ if (document.getElementById("linkInstagram")) {
+  gerarLinks(modelo.user_id ?? modelo.id);
+ }
+
 }
 
 async function carregarDadosPessoais() {
