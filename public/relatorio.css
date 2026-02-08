@@ -286,6 +286,10 @@ body {
   color: #7B2CFF;
 }
 
+.card.total.mes-atual {
+  background: linear-gradient(135deg, #b79cff, #cabcf3);
+}
+
 /* links soft */
 .links-abaixo-cards {
   margin-top: 36px;

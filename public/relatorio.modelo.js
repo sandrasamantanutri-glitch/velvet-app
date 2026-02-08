@@ -38,6 +38,13 @@ document.getElementById("mesMidias").innerText =
 document.getElementById("mesAssinaturas").innerText =
   `R$ ${Number(data.mes.assinaturas || 0).toFixed(2)}`;
 
+ const totalMesAtual =
+  Number(data.mes.midias || 0) +
+  Number(data.mes.assinaturas || 0);
+
+  document.getElementById("totalMesAtual").innerText =
+  `R$ ${totalMesAtual.toFixed(2)}`;
+
 // ACUMULADO
 const acumulado =
   Number(data.total.midias || 0) +
