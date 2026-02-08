@@ -304,6 +304,11 @@ if (dados.status === "pendente" || dados.status === "alteracao_pendente") {
     btnAlterar.style.display = "none";
     mostrarAviso("Alteração enviada. Aguardando aprovação.");
   }
+  if (alteracaoBloqueada()) {
+  btnAlterar.style.display = "none";
+  mostrarAviso("Alterações de dados bancários estão temporariamente bloqueadas devido ao período de pagamento.");
+}
+
 }
 
 function mostrarAviso(texto) {
@@ -402,6 +407,11 @@ document.addEventListener("DOMContentLoaded", () => {
       confirmado_titular: confirmarTitular.checked,
       justificativa: justificativa?.value || null
     };
+
+    if (statusAtual === "aprovado" && !justificativa.value.trim()) {
+  alert("Informe a justificativa para alteração dos dados.");
+  return;
+}
 
     const res = await fetch(endpoint, {
       method: "POST",
