@@ -112,15 +112,18 @@ function calcularValores({ valor_bruto, taxa_gateway, agency_fee, velvet_fee, st
   };
 }
 
-async function podeAlterarDadosBancarios(modeloId) {
-  const { rows } = await db.query(`
-    SELECT em_pagamento
-    FROM modelos
-    WHERE user_id = $1
-  `, [modeloId]);
+function podeAlterarDadosBancarios() {
+  const hoje = new Date();
+  const dia = hoje.getDate();
 
-  return rows.length && rows[0].em_pagamento === false;
+  // bloqueia do dia 5 até o dia 10 (pagamento)
+  if (dia >= 5 && dia <= 10) {
+    return false;
+  }
+
+  return true;
 }
+
 
 
 //ROTASSSS POST ///////////////////
@@ -214,7 +217,6 @@ router.post("/api/modelo/dados-bancarios/alterar", authModelo, async (req, res) 
       error: "Justificativa obrigatória"
     });
   }
-
   await db.query(`
     UPDATE modelo_dados_bancarios
     SET
