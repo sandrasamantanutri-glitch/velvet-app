@@ -116,15 +116,13 @@ function podeAlterarDadosBancarios() {
   const hoje = new Date();
   const dia = hoje.getDate();
 
-  // bloqueia do dia 5 até o dia 10 (pagamento)
-  if (dia >= 5 && dia <= 10) {
+  // bloqueia de 25 até 5
+  if (dia >= 25 || dia <= 5) {
     return false;
   }
 
   return true;
 }
-
-
 
 //ROTASSSS POST ///////////////////
 router.post("/api/modelo/dados-bancarios", authModelo, async (req, res) => {
