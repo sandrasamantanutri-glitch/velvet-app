@@ -319,12 +319,14 @@ function mostrarAviso(texto) {
     .prepend(aviso);
 }
 
+let paginaAtualTransacoes = 1;
 
-// ===============================
-// 🚀 INIT
-// ===============================
 document.addEventListener("DOMContentLoaded", () => {
   carregarResumoModelo();
+
+  // ===============================
+  // TABS
+  // ===============================
   document.querySelectorAll(".tab").forEach(btn => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
@@ -335,29 +337,58 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (btn.dataset.tab === "transacoes") carregarTransacoes(1);
       if (btn.dataset.tab === "pagamentos") carregarPagamentos();
+      if (btn.dataset.tab === "dados-bancarios") carregarDadosBancarios();
     });
   });
 
-  const tipo = document.getElementById("tipoRecebimento");
-const pix = document.getElementById("pixCampos");
-const transf = document.getElementById("transferenciaCampos");
+  // ===============================
+  // FORM DADOS BANCÁRIOS
+  // ===============================
+  const form = document.getElementById("formDadosBancarios");
+  if (!form) return;
 
-tipo?.addEventListener("change", () => {
-  pix.style.display = tipo.value === "pix" ? "block" : "none";
-  transf.style.display = tipo.value === "transferencia" ? "block" : "none";
-});
+  const tipoRecebimento = document.getElementById("tipoRecebimento");
+  const pixCampos = document.getElementById("pixCampos");
+  const pixTipo = document.getElementById("pixTipo");
+  const pixChave = document.getElementById("pixChave");
 
-document.getElementById("btnAlterarDados")?.addEventListener("click", () => {
-  document
-    .querySelectorAll("#formDadosBancarios input, select, textarea")
-    .forEach(el => el.disabled = false);
+  const transferenciaCampos = document.getElementById("transferenciaCampos");
+  const banco = document.getElementById("banco");
+  const agencia = document.getElementById("agencia");
+  const conta = document.getElementById("conta");
+  const contaTipo = document.getElementById("contaTipo");
 
-  document.getElementById("justificativaBox").style.display = "block";
-});
+  const titularNome = document.getElementById("titularNome");
+  const titularDocumento = document.getElementById("titularDocumento");
+  const confirmarTitular = document.getElementById("confirmarTitular");
+  const justificativa = document.getElementById("justificativa");
 
-document.getElementById("formDadosBancarios")
-  ?.addEventListener("submit", async e => {
+  const btnAlterar = document.getElementById("btnAlterarDados");
+
+  // 🔁 troca de tipo
+  tipoRecebimento.addEventListener("change", () => {
+    pixCampos.style.display = tipoRecebimento.value === "pix" ? "block" : "none";
+    transferenciaCampos.style.display =
+      tipoRecebimento.value === "transferencia" ? "block" : "none";
+  });
+
+  // ✏️ botão alterar
+  btnAlterar?.addEventListener("click", () => {
+    document
+      .querySelectorAll("#formDadosBancarios input, select, textarea")
+      .forEach(el => el.disabled = false);
+
+    document.getElementById("justificativaBox").style.display = "block";
+  });
+
+  // 📤 SUBMIT ÚNICO
+  form.addEventListener("submit", async e => {
     e.preventDefault();
+
+    const endpoint =
+      statusAtual === "aprovado"
+        ? "/api/modelo/dados-bancarios/alterar"
+        : "/api/modelo/dados-bancarios";
 
     const payload = {
       tipo: tipoRecebimento.value,
@@ -369,10 +400,11 @@ document.getElementById("formDadosBancarios")
       conta_tipo: contaTipo.value,
       titular_nome: titularNome.value,
       titular_documento: titularDocumento.value,
-      confirmado_titular: confirmarTitular.checked
+      confirmado_titular: confirmarTitular.checked,
+      justificativa: justificativa?.value || null
     };
 
-    const res = await fetch("/api/modelo/dados-bancarios", {
+    const res = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -390,24 +422,5 @@ document.getElementById("formDadosBancarios")
     alert("Dados enviados para validação");
     bloquearFormulario();
   });
-
-  form.addEventListener("submit", async e => {
-  e.preventDefault();
-
-  const endpoint =
-    statusAtual === "aprovado"
-      ? "/api/modelo/dados-bancarios/alterar"
-      : "/api/modelo/dados-bancarios";
-
-  await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + localStorage.getItem("token")
-    },
-    body: JSON.stringify(payload)
-  });
 });
 
-
-});
