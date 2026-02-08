@@ -223,13 +223,6 @@ function alteracaoBloqueada() {
   return dia >= 5 && dia <= 10;
 }
 
-function bloquearFormulario() {
-  document
-    .querySelectorAll("#formDadosBancarios input, select, textarea")
-    .forEach(el => el.disabled = true);
-}
-
-
 let statusAtual = null;
 
 async function carregarDadosBancarios() {
@@ -291,26 +284,33 @@ async function carregarDadosBancarios() {
 
   // 🔒 CONTROLE DE ESTADO
   if (dados.status === "aprovado") {
-  bloquearFormulario();
+  bloquearFormulario(document.getElementById("formDadosBancarios"));
   btnAlterar.style.display = "inline-block";
+  return;
 }
 
-if (dados.status === "pendente" || dados.status === "alteracao_pendente") {
-  bloquearFormulario();
+if (dados.status === "pendente") {
+  bloquearFormulario(document.getElementById("formDadosBancarios"));
   btnAlterar.style.display = "none";
+  mostrarAviso("Dados bancários enviados. Pendente de aprovação.");
+  return;
 }
 
   if (dados.status === "alteracao_pendente") {
-    bloquearFormulario();
-    btnAlterar.style.display = "none";
-    mostrarAviso("Alteração enviada. Aguardando aprovação.");
-  }
-  if (alteracaoBloqueada()) {
+  bloquearFormulario(document.getElementById("formDadosBancarios"));
   btnAlterar.style.display = "none";
-  mostrarAviso("Alterações de dados bancários estão temporariamente bloqueadas devido ao período de pagamento.");
-}else {
-    liberarFormulario(form);
-  }
+  mostrarAviso("Alteração enviada. Aguardando aprovação.");
+  return;
+}
+ if (alteracaoBloqueada()) {
+  bloquearFormulario(document.getElementById("formDadosBancarios"));
+  btnAlterar.style.display = "none";
+  mostrarAviso(
+    "Alterações de dados bancários estão temporariamente bloqueadas devido ao período de pagamento."
+  );
+  return;
+}
+  liberarFormulario(document.getElementById("formDadosBancarios"));
 }
 
 function mostrarAviso(texto) {
@@ -375,7 +375,6 @@ if (!form) {
   console.warn("Form de dados bancários não encontrado");
   return;
 }
-bloquearFormulario(form);
 
   const tipoRecebimento = document.getElementById("tipoRecebimento");
   const pixCampos = document.getElementById("pixCampos");
