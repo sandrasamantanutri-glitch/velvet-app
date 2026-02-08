@@ -233,6 +233,7 @@ function bloquearFormulario() {
 let statusAtual = null;
 
 async function carregarDadosBancarios() {
+  console.log("Form:", document.getElementById("formDadosBancarios"));
   const token = localStorage.getItem("token");
   const res = await fetch("/api/modelo/dados-bancarios", {
     headers: { Authorization: "Bearer " + token }
@@ -324,15 +325,17 @@ function mostrarAviso(texto) {
     .prepend(aviso);
 }
 
-function bloquearFormulario(form) {
-  form.querySelectorAll("input, select").forEach(el => {
-    el.disabled = true;
-  });
-}
-
 function liberarFormulario(form) {
   form.querySelectorAll("input, select").forEach(el => {
     el.disabled = false;
+  });
+}
+
+function bloquearFormulario(form) {
+  if (!form) return;
+
+  form.querySelectorAll("input, select, textarea").forEach(el => {
+    el.disabled = true;
   });
 }
 
@@ -365,8 +368,14 @@ document.addEventListener("DOMContentLoaded", () => {
   // ===============================
   // FORM DADOS BANCÁRIOS
   // ===============================
+
   const form = document.getElementById("formDadosBancarios");
-  if (!form) return;
+
+if (!form) {
+  console.warn("Form de dados bancários não encontrado");
+  return;
+}
+bloquearFormulario(form);
 
   const tipoRecebimento = document.getElementById("tipoRecebimento");
   const pixCampos = document.getElementById("pixCampos");
