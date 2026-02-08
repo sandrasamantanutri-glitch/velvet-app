@@ -172,7 +172,6 @@ async function carregarPagamentos() {
 // ===============================
 document.addEventListener("DOMContentLoaded", () => {
   carregarResumoModelo();
-  document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll(".tab").forEach(btn => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
@@ -185,6 +184,4 @@ document.addEventListener("DOMContentLoaded", () => {
       if (btn.dataset.tab === "pagamentos") carregarPagamentos();
     });
   });
-});
-
 });
