@@ -127,15 +127,15 @@ async function carregarAssinantes() {
 
       tbody.innerHTML += `
         <tr>
-          <td>${a.nome_cliente}</td>
-          <td class="${a.ativo ? "status-ativo" : "status-inativo"}">
-            ${a.ativo ? "Ativo" : "Inativo"}
-          </td>
+        <td class="assinante-nome">${a.nome_cliente}</td>
+        <td><span class="badge ${a.ativo ? "badge-ativo" : "badge-inativo"}">
+        ${a.ativo ? "Ativo" : "Inativo"}</span>
+        </td>
           <td>${formatarData(a.expiration_at)}</td>
           <td>${formatarData(a.ultima_renovacao)}</td>
           <td>R$ ${Number(a.total_assinaturas).toFixed(2)}</td>
           <td>R$ ${Number(a.total_midias).toFixed(2)}</td>
-          <td><strong>R$ ${total.toFixed(2)}</strong></td>
+         <td class="total-geral">R$ ${total.toFixed(2)}</td>
         </tr>
       `;
     });
@@ -151,8 +151,13 @@ async function carregarAssinantes() {
 
 function formatarData(data) {
   if (!data) return "-";
-  return new Date(data).toLocaleDateString("pt-BR");
+  return new Date(data).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  });
 }
+
 async function carregarResumoModelo() {
   const elHoje = document.getElementById("areaUsuarioGanhosHoje");
   const elMes  = document.getElementById("areaUsuarioGanhosMes");
