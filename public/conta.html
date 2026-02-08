@@ -10,265 +10,164 @@
 <body>
  <div id="header-container"></div>
 
-<section class="area-card">
-  <button type="button" class="btn-voltar" onclick="history.back()">
-    <img src="/assets/voltar.png" alt="Voltar">
-  </button>
-
-  <h3>Dados Pessoais para Verificação</h3>
-
-  <!-- INDICADOR DE ETAPAS -->
-  <div class="verificacao-steps">
-    <span class="step ativo">1. Dados pessoais</span>
-    <span class="step">2. Documentos</span>
-  </div>
-  <div id="statusContainer"></div>
-
-  <form id="formDadosPessoais" class="form-area">
-
-    <span class="form-info">
-      Para liberar a monetização e iniciar o processo de verificação da sua conta,
-      precisamos confirmar seus dados pessoais.
-
-      <br><br>
-      🔒 Essas informações são confidenciais, usadas apenas para verificação de identidade
-      e processamento de pagamentos.
-
-      <br><br>
-      ⚠️ O preenchimento deste formulário não libera automaticamente o perfil público.
-      Após esta etapa, você será orientada a enviar seus documentos de identificação.
-    </span>
-
-    <div class="form-grid">
-
-      <div class="form-group full">
-        <label>Nome completo*</label>
-        <input
-          type="text"
-          name="nome_completo"
-          placeholder="Nome e Sobrenome"
-          required
-        >
-      </div>
-
-      <div class="form-group">
-        <label>Data de nascimento*</label>
-        <input
-          type="date"
-          name="data_nascimento"
-          required
-        >
-      </div>
-
-      <div class="form-group">
-        <label>Telefone com DDD*</label>
-        <input
-          type="tel"
-          name="telefone"
-          placeholder="(11) 99999-9999"
-          required
-        >
-      </div>
-
-      <div class="form-group full">
-        <label>Endereço*</label>
-        <textarea
-          name="endereco"
-          rows="2"
-          placeholder="Rua, número, bairro"
-          required
-        ></textarea>
-      </div>
-
-      <div class="form-group">
-        <label>Estado*</label>
-        <input type="text" name="estado" required>
-      </div>
-
-      <div class="form-group">
-        <label>Cidade*</label>
-        <input type="text" name="cidade" required>
-      </div>
-
-      <div class="form-group full">
-        <label>País*</label>
-        <input type="text" name="pais" required>
-        <small>*Informações obrigatórias</small>
-      </div>
-
-    </div>
-
-    <button type="submit" class="btn-salvar">
-      Salvar e continuar
+ <section class="area-card">
+    <button type="button" class="btn-voltar" onclick="history.back()">
+      <img src="/assets/voltar.png" alt="Voltar">
     </button>
 
-  </form>
+   <h3>Dados Pessoais para Verificação</h3>
 
-  <p class="form-alert">
-    ⏳ Após salvar, sua conta entrará em processo de verificação.
-    O perfil público e a monetização só são liberados após aprovação.
-  </p>
+    <div class="verificacao-steps">
+     <span class="step ativo">1. Dados pessoais</span>
+     <span class="step">2. Documentos</span>
+    </div>
 
-  <h3>Verificação de Identidade</h3>
+    <form id="formDadosPessoais" class="form-area">
+      <span class="form-info">
+       Para liberar a monetização e iniciar o processo de verificação da sua conta,
+       precisamos confirmar seus dados pessoais.
+       <br><br>
+       🔒 Essas informações são confidenciais, usadas apenas para verificação de identidade
+       e processamento de pagamentos.
+       <br><br>
+       ⚠️ O preenchimento deste formulário não libera automaticamente o perfil público.
+       Após esta etapa, você será orientada a enviar seus documentos de identificação.
+      </span>
 
-  <!-- INDICADOR DE ETAPAS -->
-  <div class="verificacao-steps">
-    <span class="step concluido">1. Dados pessoais</span>
+      <div class="form-grid">
+        <div class="form-group full"><label>Nome completo*</label><input type="text" name="nome_completo" placeholder="Nome e Sobrenome" required>
+      </div>
 
-    <span class="step ativo">2. Documentos</span>
-    <span class="form-info">
-    Para proteger você e a plataforma, precisamos confirmar sua identidade
-    com um documento oficial válido.
+      <div class="form-group">
+        <label>Data de nascimento*</label><input type="date" name="data_nascimento" required>
+      </div>
 
-    <br><br>
-    🔒 Seus documentos são analisados de forma confidencial e
-    <strong>nunca</strong> ficam visíveis para outros usuários.
-  </span>
+      <div class="form-group">
+        <label>Telefone com DDD*</label> <input type="tel" name="telefone" placeholder="(11) 99999-9999" required>
+      </div>
 
-  <p class="status-descricao">
-    Recebemos seus documentos e eles estão sendo analisados pela nossa equipe.
-    Você será notificada assim que o processo for concluído.
-  </p>
- </div>
+      <div class="form-group full"> 
+        <label>Endereço*</label> <textarea name="endereco" rows="2" placeholder="Rua, número e bairro"required></textarea>
+      </div>
 
-  <form id="formDocumentos" class="form-area" enctype="multipart/form-data">
+      <div class="form-group">
+        <label>Estado*</label> <input type="text" name="estado" required>
+      </div>
 
-    <div class="form-grid">
+      <div class="form-group">
+        <label>Cidade*</label> <input type="text" name="cidade" required>
+      </div>
 
       <div class="form-group full">
-        <label>Tipo de documento*</label>
-        <select name="doc_tipo" required>
-          <option value="">Selecione</option>
+        <label>País*</label> <input type="text" name="pais" required> <small>*Informações obrigatórias</small>
+      </div>
+      
+      <button type="submit" class="btn-salvar">
+       Salvar e continuar
+      </button>
+    
+    </form>
+
+    <p class="form-alert">
+     ⏳ Após salvar, deve enviar seus documentos na etapa 2 (abaixo) e sua conta entrará em processo de verificação. O perfil público e a monetização só são liberados após aprovação.
+    </p>
+
+    <div class="verificacao-steps">
+     <span class="step concluido">1. Dados pessoais</span>
+     <span class="step ativo">2. Documentos</span>
+
+     <h3>Verificação de Identidade</h3>
+
+     <span class="form-info">
+       <div id="statusContainer"></div>
+       Para proteger você e a plataforma, precisamos confirmar sua identidade com um documento oficial válido.
+       <br><br>
+      🔒 Seus documentos são analisados de forma confidencial e <strong>nunca</strong> ficam visíveis para outros usuários.
+     </span>
+
+      <p class="status-descricao">
+       Recebemos seus documentos e eles estão sendo analisados pela nossa equipe. Você será notificada assim que o processo for concluído.
+      </p>
+      
+      <form id="formDocumentos" class="form-area" enctype="multipart/form-data">
+        <div class="form-group full">
+         <label>Tipo de documento*</label> <select name="doc_tipo" required> <option value="">Selecione</option>
           <option value="rg">RG</option>
           <option value="cnh">CNH</option>
           <option value="passaporte">Passaporte</option>
-        </select>
-      </div>
+        </div>
 
-      <div class="form-group full">
-        <label>Documento (frente)*</label>
-        <input
-          type="file"
-          name="doc_frente"
-          accept="image/*,.pdf"
-          required
-        >
-        <small>Envie uma foto nítida e legível</small>
-      </div>
+       <div class="form-group full">
+         <label>Documento (frente)*</label>
+         <input type="file" name="doc_frente" accept="image/*,.pdf"  required>
+         <small>Envie uma foto nítida e legível</small>
+       </div>
 
-      <div class="form-group full">
-        <label>Documento (verso)</label>
-        <input
-          type="file"
-          name="doc_verso"
-          accept="image/*,.pdf"
-        >
-        <small>Obrigatório apenas se houver informações no verso</small>
-      </div>
+       <div class="form-group full">
+         <label>Documento (verso)</label>
+         <input type="file" name="doc_verso" accept="image/*,.pdf">
+         <small>Obrigatório apenas se houver informações no verso</small>
+       </div>
 
-      <div class="form-group full">
-        <label>Selfie segurando o documento*</label>
-        <input
-          type="file"
-          name="selfie"
-          accept="image/*"
-          required
-        >
-        <small>
-          Mostre claramente seu rosto e o documento.
-          Não utilize óculos escuros ou filtros.
-        </small>
-      </div>
+       <div class="form-group full">
+         <label>Selfie segurando o documento*</label> <input type="file" name="selfie" accept="image/*" required>
+         <small> Mostre claramente seu rosto e o documento. Não utilize óculos escuros ou filtros.</small>
+       </div>
 
-      <div class="form-group full check-group">
-        <input type="checkbox" id="confirmacao" required>
-        <label for="confirmacao">
-          Declaro que sou a pessoa do documento enviado,
-          sou maior de 18 anos e autorizo a verificação da minha identidade.
-        </label>
-      </div>
-
+       <div class="form-group full check-group">
+         <input type="checkbox" id="confirmacao" required>
+         <label for="confirmacao"> Declaro que sou a pessoa do documento enviado,sou maior de 18 anos e autorizo a verificação da minha identidade.</label>
+       </div>
+       
+       <button type="submit" class="btn-salvar"> Enviar documentos para análise </button>
+      </form>
+      <p class="form-alert"> ⏳ Após o envio, seus documentos serão analisados pela nossa equipe. Esse processo pode levar até <strong>48 horas</strong>.</p>
     </div>
-
-    <button type="submit" class="btn-salvar">
-      Enviar documentos para análise
-    </button>
-
-  </form>
-
-  <p class="form-alert">
-    ⏳ Após o envio, seus documentos serão analisados pela nossa equipe.
-    Esse processo pode levar até <strong>48 horas</strong>.
-  </p>
-
+ </section>
 
  <hr class="separator">
 
  <section class="area-section">Excluir minha Conta</section>
-  <div class="danger-zone"><button class="btn-danger" onclick="abrirConfirmacaoExclusao()">
-    Excluir conta permanentemente</button>
-  </div>
- </section>
-
-</section>
-
-  <div id="modalExcluirConta" class="modal hidden">
-  <div class="modal-overlay"></div>
-
-  <div class="modal-box">
-    <h3>Excluir conta permanentemente</h3>
-
-    <p>
-      Esta ação é <strong>irreversível</strong>.<br>
-      Todos os seus dados, conteúdos, mensagens e histórico
-      serão apagados permanentemente.
-    </p>
-
-    <label class="label-danger">
-      Digite sua senha para confirmar
-    </label>
-
-    <input
-      type="password"
-      id="senhaConfirmacao"
-      placeholder="Digite sua senha"
-      class="input-danger"
-    />
-
-    <p id="erroExclusao" class="erro-danger hidden">
-      Senha incorreta.
-    </p>
-
-    <div class="modal-actions">
-      <button class="btn-cancelar" onclick="fecharModalExclusao()">
-        Cancelar
-      </button>
-
-      <button class="btn-confirmar" onclick="confirmarExclusaoConta()">
-        Sim, excluir minha conta
-      </button>
+     <div class="danger-zone"><button class="btn-danger" onclick="abrirConfirmacaoExclusao()">
+     Excluir conta permanentemente</button>
     </div>
+  </section>
 
-      <hr class="separator">
+ <div id="modalExcluirConta" class="modal hidden"><div class="modal-overlay"></div>
+   <div class="modal-box"><h3>Excluir conta permanentemente</h3><p>Esta ação é <strong>irreversível</strong>.
+     <br>Todos os seus dados, conteúdos, mensagens e históricoserão apagados permanentemente.</p>
+     <label class="label-danger">Digite sua senha para confirmar</label>
+     <input type="password" id="senhaConfirmacao" placeholder="Digite sua senha" class="input-danger"/>
+     <p id="erroExclusao" class="erro-danger hidden"> Senha incorreta.</p>
+   </div>
 
+   <div class="modal-actions">
+     <button class="btn-cancelar" onclick="fecharModalExclusao()"> Cancelar </button>
+     <button class="btn-confirmar" onclick="confirmarExclusaoConta()"> Sim, excluir minha conta </button>
+   </div>
 
-    <footer class="footer">
-  <div class="footer-links">
-    <a href="/terms.html">Termos de Uso</a>
-    <a href="/privacy.html">Política de Privacidade</a>
-    <a href="/policies.html">Política de Utilização</a>
   </div>
-  <div class="footer-copy">
+
+ <hr class="separator">
+
+ <footer class="footer">
+    <div class="footer-links">
+     <a href="/terms.html">Termos de Uso</a>
+     <a href="/privacy.html">Política de Privacidade</a>
+     <a href="/policies.html">Política de Utilização</a>
+   </div>
+
+   <div class="footer-copy">
     © 2026 Velvet. Todos os direitos reservados.
-  </div>
- </footer>
+   </div>
+  
+  </footer>
 
-
-
-<script src="/socket.io/socket.io.js"></script>
-<script src="/header.js"></script>
-<script src="/areaUsuario.js"></script>
-<script src="/verificacaoDocumentos.js"></script>
+ <script src="/socket.io/socket.io.js"></script>
+ <script src="/header.js"></script>
+ <script src="/areaUsuario.js"></script>
+ <script src="/verificacaoDocumentos.js"></script>
 
 </body>
+
 </html>
