@@ -395,23 +395,6 @@ if (!form) {
   console.warn("Form de dados bancários não encontrado");
   return;
 }
-if (statusAtual === "pendente") {
-  bloquearFormulario(form);
-  btnAlterar.style.display = "none";
-  return;
-}
-
-if (statusAtual === "alteracao_pendente") {
-  bloquearFormulario(form);
-  btnAlterar.style.display = "none";
-  return;
-}
-
-if (statusAtual === "aprovado") {
-  bloquearFormulario(form);
-  btnAlterar.style.display = "inline-block";
-  return;
-}
 
   const tipoRecebimento = document.getElementById("tipoRecebimento");
   const pixCampos = document.getElementById("pixCampos");
@@ -497,7 +480,26 @@ if (statusAtual === "aprovado") {
     }
 
     alert("Dados enviados para validação");
-    bloquearFormulario();
+
+// 🔄 atualiza estado local
+statusAtual =
+  statusAtual === "aprovado"
+    ? "alteracao_pendente"
+    : "pendente";
+
+// 🔒 bloqueia novamente
+bloquearFormulario(form);
+
+// 🟡 atualiza status visual
+mostrarStatusDadosBancarios(statusAtual);
+
+// 🧹 esconde justificativa
+const justificativaBox = document.getElementById("justificativaBox");
+if (justificativaBox) justificativaBox.style.display = "none";
+
+// 🔁 recarrega dados (opcional, mas recomendado)
+await carregarDadosBancarios();
+
   });
 });
 
