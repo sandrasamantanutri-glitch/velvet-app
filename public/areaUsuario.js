@@ -56,6 +56,68 @@ function preencherFormulario(formId, dados) {
   });
 }
 
+function bloquearFormulario(form) {
+  if (!form) return;
+
+  form.querySelectorAll("input, select, textarea").forEach(el => {
+    el.disabled = true;
+  });
+}
+
+function mostrarStatusVerificacao(status) {
+  const box = document.getElementById("statusVerificacao");
+  if (!box) return;
+
+  box.style.display = "block";
+  box.className = "status-box";
+
+  if (status === "aprovado") {
+    box.classList.add("status-aprovado");
+    box.innerText =
+      "Dados pessoais aprovados. Alterações não são permitidas.";
+  }
+
+  if (status === "em_analise") {
+    box.innerText =
+      "Seus dados estão em análise.";
+  }
+
+  if (status === "rejeitado") {
+    box.innerText =
+      "Dados rejeitados. Corrija as informações e envie novamente.";
+  }
+}
+
+async function carregarDadosPessoais() {
+  const res = await fetch("/api/usuario/dados", {
+    headers: {
+      Authorization: "Bearer " + localStorage.getItem("token")
+    }
+  });
+
+  if (!res.ok) return;
+
+  const dados = await res.json();
+
+  const form = document.getElementById("formDadosPessoais");
+  if (!form) return;
+
+  // preencher campos
+  form.nome_completo.value = dados.nome_completo || "";
+  form.telefone.value = dados.telefone || "";
+  // etc…
+
+  // 🔒 SE APROVADO → BLOQUEIA
+  if (dados.status === "aprovado") {
+    bloquearFormulario(form);
+    mostrarStatusVerificacao("aprovado");
+
+    // esconde botão salvar
+    document.querySelector(".btn-salvar")?.remove();
+  }
+}
+
+
 // ===============================
 // 👩‍💼 ÁREA DA MODELO – VIP COUNT
 // ===============================
