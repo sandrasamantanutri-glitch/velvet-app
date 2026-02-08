@@ -159,13 +159,13 @@ function formatarData(data) {
 }
 
 function gerarLinks(modelo_id) {
-  const base = `https://www.velvet.lat/modelo/${modelo_id}`;
+  const base = `https://www.velvet.lat/perfil.html?id=${modelo_id}`;
 
   document.getElementById("linkInstagram").value =
-    `${base}?src=instagram`;
+    `${base}&src=instagram`;
 
   document.getElementById("linkTiktok").value =
-    `${base}?src=tiktok`;
+    `${base}&src=tiktok`;
 
   document.getElementById("linkDireto").value =
     base;
