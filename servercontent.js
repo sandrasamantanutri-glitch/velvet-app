@@ -868,9 +868,6 @@ WHERE modelo_id = $1;
 // ===============================
 // 📣 ALLMESSAGE - LISTAR MODELOS
 // ===============================
-// ===============================
-// 📣 ALLMESSAGE - LISTAR MODELOS (CORRIGIDO)
-// ===============================
 router.get(
   "/api/allmessage/modelos",
   authMiddleware,
