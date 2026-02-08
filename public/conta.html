@@ -21,7 +21,6 @@
   <div class="verificacao-steps">
     <span class="step ativo">1. Dados pessoais</span>
     <span class="step">2. Documentos</span>
-    <span class="step">3. Análise</span>
   </div>
   <div id="statusContainer"></div>
 
@@ -110,10 +109,6 @@
     O perfil público e a monetização só são liberados após aprovação.
   </p>
 </section>
-<section class="area-card">
-  <button type="button" class="btn-voltar" onclick="history.back()">
-    <img src="/assets/voltar.png" alt="Voltar">
-  </button>
 
   <h3>Verificação de Identidade</h3>
 
@@ -122,6 +117,14 @@
     <span class="step concluido">1. Dados pessoais</span>
 
     <span class="step ativo">2. Documentos</span>
+    <span class="form-info">
+    Para proteger você e a plataforma, precisamos confirmar sua identidade
+    com um documento oficial válido.
+
+    <br><br>
+    🔒 Seus documentos são analisados de forma confidencial e
+    <strong>nunca</strong> ficam visíveis para outros usuários.
+  </span>
 
     <div class="status-verificacao status-em-analise">
   <strong>Status da verificação:</strong>
@@ -132,18 +135,6 @@
     Você será notificada assim que o processo for concluído.
   </p>
 </div>
-
-    <span class="step">3. Análise</span>
-  </div>
-
-  <span class="form-info">
-    Para proteger você e a plataforma, precisamos confirmar sua identidade
-    com um documento oficial válido.
-
-    <br><br>
-    🔒 Seus documentos são analisados de forma confidencial e
-    <strong>nunca</strong> ficam visíveis para outros usuários.
-  </span>
 
   <form id="formDocumentos" class="form-area" enctype="multipart/form-data">
 
@@ -209,57 +200,12 @@
     </button>
 
   </form>
-<!-- 
+
   <p class="form-alert">
     ⏳ Após o envio, seus documentos serão analisados pela nossa equipe.
     Esse processo pode levar até <strong>48 horas</strong>.
   </p>
 </section>
-
-<div class="status-verificacao status-em-analise">
-  <strong>Status da verificação:</strong>
-  <span class="status-texto">Em análise</span>
-  <p class="status-descricao">
-    Seus documentos foram recebidos e estão em análise.
-    Esse processo pode levar até 48 horas.
-  </p>
-</div>
-
-<div class="status-verificacao status-aprovado">
-  <strong>Status da verificação:</strong>
-  <span class="status-texto">Aprovada</span>
-  <p class="status-descricao">
-    Sua identidade foi verificada com sucesso.
-    Seu perfil público e a monetização já estão liberados.
-  </p>
-</div>
-
-<div class="status-verificacao status-recusado">
-  <strong>Status da verificação:</strong>
-  <span class="status-texto">Recusada</span>
-  <p class="status-descricao">
-    Não foi possível validar seus documentos.
-    Verifique as instruções e envie novamente.
-  </p>
-
-  <p class="status-motivo">
-    Motivo: Documento ilegível ou selfie incompatível.
-  </p>
-</div>
-
-<div class="status-verificacao status-recusado">
-  <strong>Status da verificação:</strong>
-  <span class="status-texto">Recusada</span>
-  <p class="status-descricao">
-    Não foi possível validar seus documentos.
-    Verifique as instruções e envie novamente.
-  </p>
-
-  <p class="status-motivo">
-    Motivo: Documento ilegível ou selfie incompatível.
-  </p>
-</div> -->
-
 
 <section class="area-section">Excluir minha Conta</section>
   <div class="danger-zone"><button class="btn-danger" onclick="abrirConfirmacaoExclusao()">
