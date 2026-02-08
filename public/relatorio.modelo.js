@@ -300,7 +300,7 @@ async function carregarDadosBancarios() {
   }
 
   // 🔒 CONTROLE DE ESTADO
-  if (dados.status === "aprovado") {
+  if (statusAtual === "aprovado") {
   bloquearFormulario(document.getElementById("formDadosBancarios"));
   btnAlterar.style.display = "inline-block";
   return;
@@ -404,7 +404,7 @@ if (dados.status === "alteracao_pendente") {
   return;
 }
 
-if (dados.status === "aprovado") {
+if (statusAtual === "aprovado") {
   bloquearFormulario(form);
   btnAlterar.style.display = "inline-block";
   return;
@@ -436,13 +436,12 @@ if (dados.status === "aprovado") {
   });
 
   // ✏️ botão alterar
-  btnAlterar?.addEventListener("click", () => {
-    document
-      .querySelectorAll("#formDadosBancarios input, select, textarea")
-      .forEach(el => el.disabled = false);
+btnAlterar.addEventListener("click", () => {
+  if (statusAtual !== "aprovado") return;
 
-    document.getElementById("justificativaBox").style.display = "block";
-  });
+  liberarFormulario(form);
+  document.getElementById("justificativaBox").style.display = "block";
+});
 
   // 📤 SUBMIT ÚNICO
   form.addEventListener("submit", async e => {
