@@ -105,25 +105,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 });
 
-function gerarLinks(modelo_id) {
-  const base = `https://www.velvet.lat/modelo/${modelo_id}`;
 
-  document.getElementById("linkInstagram").value =
-    `${base}?src=instagram`;
-
-  document.getElementById("linkTiktok").value =
-    `${base}?src=tiktok`;
-
-  document.getElementById("linkDireto").value =
-    base;
-}
-
-function copiarLink(id) {
-  const input = document.getElementById(id);
-  input.select();
-  input.setSelectionRange(0, 99999);
-  document.execCommand("copy");
-  alert("Link copiado!");
-}
 
 a
