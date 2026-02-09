@@ -9,7 +9,10 @@ const socket = io({
   transports: ["websocket"]
 });
 
-socket.emit("auth", { token });
+socket.on("connect", () => {
+  socket.emit("auth", { token });
+});
+
 
 const params = new URLSearchParams(location.search);
 const modeloId = Number(params.get("modelo_id"));
@@ -87,10 +90,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   // 🔥 entra na sala
   sala = `chat_${modelo_id}_${cliente_id}`;
   socket.emit("joinChat", { sala });
-  socket.emit("getHistory", { modelo_id, cliente_id });
-
-  // 🔌 login realtime correto
   socket.emit("loginCliente", cliente_id);
+  socket.emit("getHistory", { modelo_id, cliente_id });
 
   // ENTER envia
   const input = document.getElementById("msgInput");
@@ -240,6 +241,10 @@ if (item) {
 }
 
 function renderMensagem(msg) {
+  
+  if (mensagensRenderizadas.has(msg.id)) return;
+  mensagensRenderizadas.add(msg.id);
+  
   const chat = document.getElementById("chatBox");
   if (!chat) return;
 
