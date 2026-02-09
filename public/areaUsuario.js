@@ -354,6 +354,7 @@ async function carregarDadosPessoais() {
   if (!res.ok) return;
 
   const dados = await res.json();
+  aplicarVisibilidadePorStatus(dados.status);
   const form = document.getElementById("formDadosPessoais");
   if (!form) return;
 
@@ -376,6 +377,20 @@ async function carregarDadosPessoais() {
   }
 }
 
+function aplicarVisibilidadePorStatus(status) {
+  const elementosParaOcultar = [
+    document.getElementById("infoDadosPessoais"),
+    document.getElementById("alertEtapa1"),
+    document.getElementById("infoDocumentos"),
+    document.getElementById("descricaoAnalise")
+  ];
+
+  if (status === "aprovado") {
+    elementosParaOcultar.forEach(el => {
+      if (el) el.style.display = "none";
+    });
+  }
+}
 
 
 const btnCapa = document.getElementById("btnCapa");
