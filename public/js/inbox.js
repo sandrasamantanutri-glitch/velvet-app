@@ -31,6 +31,8 @@ let modeloId = null;
   sala: `inbox_modelo_${modeloId}`
 });
  socket.on("inboxMessage", carregarListaClientes);
+
+ await carregarListaClientes();
 })();
 
 // ===============================
@@ -148,11 +150,6 @@ function formatarTempo(data) {
   if (diff === 1) return "1 dia";
   return `${diff} dias`;
 }
-
-// ===============================
-// REALTIME
-// ===============================
-socket.on("inboxMessage", carregarListaClientes);
 
 // ===============================
 // HELPERS
