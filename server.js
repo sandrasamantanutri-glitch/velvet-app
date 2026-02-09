@@ -897,24 +897,9 @@ socket.on("auth", ({ token }) => {
   }
 });
 
-// 🔌 REGISTRO DE SOCKET ONLINE
-socket.on("loginCliente", (cliente_id) => {
-  onlineClientes[cliente_id] = socket.id;
-  console.log("🟢 Cliente online:", cliente_id, socket.id);
-});
-
 socket.on("loginModelo", (modelo_id) => {
   onlineModelos[modelo_id] = socket.id;
   console.log("🟣 Modelo online:", modelo_id, socket.id);
-});
-
-socket.on("disconnect", () => {
-  for (const [id, sid] of Object.entries(onlineClientes)) {
-    if (sid === socket.id) delete onlineClientes[id];
-  }
-  for (const [id, sid] of Object.entries(onlineModelos)) {
-    if (sid === socket.id) delete onlineModelos[id];
-  }
 });
 
 // 📥 ENTRAR NA SALA DO CHAT

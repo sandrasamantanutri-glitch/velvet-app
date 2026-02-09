@@ -75,9 +75,8 @@ input.addEventListener("keydown", e => {
   }
 });
 
-// ===============================
-// DIGITANDO… (WhatsApp style)
-// ===============================
+
+// DIGITANDO
 let digitandoTimeout = null;
 
 input.addEventListener("input", () => {
@@ -90,7 +89,6 @@ input.addEventListener("input", () => {
     modelo_id
   });
 
-  // debounce: se parar de digitar
   clearTimeout(digitandoTimeout);
   digitandoTimeout = setTimeout(() => {
     socket.emit("parouDigitando", {
@@ -641,13 +639,12 @@ async function carregarInfoCliente(clienteId) {
     }
 
     if (nome) {
-      nome.innerText = cliente.nome || "Cliente";
-    }
-
+  nome.innerText = cliente.username || "Cliente";
+}
     if (status) {
       if (cliente.online) {
         status.innerText = "online";
-        status.style.color = "#25D366"; // verde zap
+        status.style.color = "#25D366";
       } else if (cliente.last_seen) {
         status.innerText = `visto por último ${formatarTempo(cliente.last_seen)}`;
       } else {
