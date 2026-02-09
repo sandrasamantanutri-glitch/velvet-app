@@ -1,19 +1,46 @@
-body {
-  margin: 0;
-  height: 100vh;
-  overflow: hidden; /* ok manter */
+
+
+/* ===============================
+   SEPARADORES UNIFICADOS (FORÇA)
+================================ */
+.chat-header {
+  border-bottom: 1px solid #C9C9C9 !important;
 }
 
-/* HEADER FIXO */
-.chat-header {
+.chat-input {
+  border-top: 1px solid #C9C9C9 !important;
+}
+
+#msgInput {
+    flex: 1;
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 14px;
+    background: #fff !important;
+    border: 1px solid #C9C9C9 !important;
+    font-size: 13px;
+    line-height: normal;
+}
+
+/* ===============================
+   INPUT FIXO (APP)
+================================ */
+.chat-input {
   position: fixed;
-  top: 0;
+  bottom: 0;
   left: 0;
   right: 0;
-  height: 90px;
-  z-index: 50;
-  background: #f1f1f1;
-  border-bottom: 1px solid #C9C9C9;
+  z-index: 30;
+
+  height: 64px;
+  background: #f1f1f1;;                /* 🔥 igual header */
+  border-top: 1px solid #C9C9C9;      /* mesmo separador */
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* botão mídia (MAIOR, SEM FUNDO EXTRA) */
@@ -36,6 +63,19 @@ body {
   width: 30px;
   height: 30px;
   object-fit: contain;
+}
+
+/* input de texto (SEM “tabela estranha”) */
+.chat-input input {
+  flex: 1;
+  background: #E1E1E1;     /* 🔥 igual header */
+  border: none;
+  border-radius: 20px;
+
+  padding: 10px 14px;
+  font-size: 15px;
+  outline: none;
+  color: #1E1E26;
 }
 
 /* botão enviar (MAIOR) */
