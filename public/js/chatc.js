@@ -88,7 +88,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   await carregarInfoModelo(modelo_id);
 
   // 🔥 entra na sala
- sala = `chat_${cliente_id}_${modelo_id}`;
+  sala = `chat_${modelo_id}_${cliente_id}`;
   socket.emit("joinChat", { sala });
   socket.emit("getHistory", { modelo_id, cliente_id });
 
