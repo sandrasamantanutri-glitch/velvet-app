@@ -66,12 +66,12 @@ modelos.forEach(c => {
 
   div.innerHTML = `
     <div class="avatar">
-      ${modelo.avatar ? `<img src="${modelo.avatar}" />` : ""}
+      ${modelos.avatar ? `<img src="${modelos.avatar}" />` : ""}
     </div>
 
     <div class="chat-body">
       <div class="chat-top">
-        <span class="chat-name">${modelo.username || modelo.nome || "Modelo"}</span>
+        <span class="chat-name">${modelos.username || modelos.nome || "Modelo"}</span>
         <span class="chat-time">${formatarTempo(c.ultima_mensagem_em)}</span>
       </div>
 
