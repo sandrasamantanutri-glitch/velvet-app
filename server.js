@@ -1366,32 +1366,45 @@ socket.on("excluirMensagem", async ({ id }) => {
     });
   });
 
-  io.on("connection", socket => {
-
   // CLIENTE ONLINE
   socket.on("loginCliente", async (cliente_id) => {
-    socket.cliente_id = cliente_id;
+  socket.cliente_id = cliente_id;
+  onlineClientes[cliente_id] = socket.id;
 
-    // marca online (last_seen = NULL significa online)
+  console.log("🟢 Cliente online:", cliente_id, socket.id);
+
+  try {
     await db.query(
       `UPDATE clientes SET last_seen = NULL WHERE user_id = $1`,
       [cliente_id]
     );
-  });
-
-  // CLIENTE OFFLINE
-  socket.on("disconnect", async () => {
-    if (!socket.cliente_id) return;
-
-    await db.query(
-      `UPDATE clientes SET last_seen = NOW() WHERE user_id = $1`,
-      [socket.cliente_id]
-    );
-  });
-
+  } catch (err) {
+    console.error("Erro atualizar last_seen (online):", err);
+  }
 });
 
 
+  // CLIENTE OFFLINE
+socket.on("disconnect", async () => {
+  console.log("🔴 Socket desconectado:", socket.id);
+
+  if (socket.cliente_id) {
+    try {
+      await db.query(
+        `UPDATE clientes SET last_seen = NOW() WHERE user_id = $1`,
+        [socket.cliente_id]
+      );
+    } catch (err) {
+      console.error("Erro atualizar last_seen (offline):", err);
+    }
+
+    delete onlineClientes[socket.cliente_id];
+  }
+
+  if (socket.modelo_id) {
+    delete onlineModelos[socket.modelo_id];
+  }
+});
 
 
 });
