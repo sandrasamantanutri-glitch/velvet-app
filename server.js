@@ -904,9 +904,10 @@ socket.on("loginModelo", (modelo_id) => {
 
 // 📥 ENTRAR NA SALA DO CHAT
 
-socket.on("joinChat", ({ sala }) => {
+socket.on("joinChat", ({ sala }, cb) => {
   if (!sala) return;
   socket.join(sala);
+  cb?.();
   console.log("🟪 Entrou na sala:", sala);
 });
 
