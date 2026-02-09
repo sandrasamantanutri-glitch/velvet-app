@@ -65,21 +65,20 @@ socket.on("newMessage", msg => {
 // INIT
 // ===============================
 document.addEventListener("DOMContentLoaded", async () => {
-  const res = await fetch("/api/me", {
-    headers: { Authorization: "Bearer " + token }
-  });
+  const res = await fetch("/api/me");
+const me = await res.json();
 
-  if (me.role !== "cliente") {
+// valida cliente
+if (me.role !== "cliente") {
   alert("Acesso inválido");
   history.back();
   return;
 }
 
-modelo_id = modeloIdFromUrl;
+// AGORA SIM pode usar
 cliente_id = me.id;
+modelo_id = modeloIdFromUrl;
 
-
-  const me = await res.json();
   await carregarInfoCliente(cliente_id);
 
   sala = `chat_${cliente_id}_${modelo_id}`;
