@@ -89,3 +89,28 @@ body {
 .hidden {
   display: none;
 }
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+}
+
+.modal-box {
+  position: relative;
+  background: #1a1a22;
+  width: 320px;
+  margin: 15vh auto;
+  padding: 20px;
+  border-radius: 12px;
+}

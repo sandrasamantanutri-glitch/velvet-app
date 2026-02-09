@@ -15,7 +15,7 @@
      <button type="button" class="btn-voltar" onclick="history.back()">
       <img src="/assets/voltar.png" alt="Voltar">
      </button>
-     
+
     <h1>Meus conteúdos à venda</h1>
     <button id="btnNovoConteudo" class="btn-principal">
       + Novo conteúdo
@@ -31,6 +31,28 @@
     </div>
 
   </section>
+
+  <div id="modalNovoConteudo" class="modal hidden">
+  <div class="modal-backdrop"></div>
+
+  <div class="modal-box">
+    <h2>Novo conteúdo</h2>
+
+    <input type="file" id="fileConteudo" />
+    
+    <select id="tipoConteudo">
+      <option value="imagem">Imagem</option>
+      <option value="video">Vídeo</option>
+    </select>
+
+    <button id="btnEnviarConteudo" class="btn-principal">
+      Enviar
+    </button>
+
+    <button id="btnFecharModal">Cancelar</button>
+  </div>
+</div>
+
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/header.js"></script>

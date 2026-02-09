@@ -11,7 +11,87 @@ if (!token) {
 
 document.addEventListener("DOMContentLoaded", () => {
   carregarConteudos();
+
+   const btnNovo = document.getElementById("btnNovoConteudo");
+  const modal = document.getElementById("modalNovoConteudo");
+  const btnFechar = document.getElementById("btnFecharModal");
+
+  if (btnNovo) {
+    btnNovo.addEventListener("click", () => {
+      modal.classList.remove("hidden");
+    });
+  }
+
+  if (btnFechar) {
+    btnFechar.addEventListener("click", () => {
+      modal.classList.add("hidden");
+    });
+  }
+
+   if (btnEnviar) {
+    btnEnviar.addEventListener("click", async () => {
+      const fileInput = document.getElementById("fileConteudo");
+      const tipoSelect = document.getElementById("tipoConteudo");
+
+      const file = fileInput.files[0];
+      const tipo = tipoSelect.value;
+
+      if (!file) {
+        alert("Selecione um arquivo");
+        return;
+      }
+
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("Sessão expirada");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("tipo", tipo);
+      formData.append("tipo_conteudo", "venda");
+
+      try {
+        btnEnviar.disabled = true;
+        btnEnviar.textContent = "Enviando...";
+
+        const res = await fetch("/api/conteudos", {
+          method: "POST",
+          headers: {
+            Authorization: "Bearer " + token
+          },
+          body: formData
+        });
+
+        if (!res.ok) {
+          const erro = await res.text();
+          throw new Error(erro || "Erro ao enviar conteúdo");
+        }
+
+        // ✅ sucesso
+        fecharModalNovoConteudo();
+        await carregarConteudos();
+
+        // reset
+        fileInput.value = "";
+        tipoSelect.value = "imagem";
+
+      } catch (err) {
+        console.error("Erro upload:", err.message);
+        alert("Erro ao enviar conteúdo");
+      } finally {
+        btnEnviar.disabled = false;
+        btnEnviar.textContent = "Enviar";
+      }
+    });
+  }
 });
+
+function fecharModalNovoConteudo() {
+  const modal = document.getElementById("modalNovoConteudo");
+  if (modal) modal.classList.add("hidden");
+}
 
 async function carregarConteudos() {
   const token = localStorage.getItem("token");
@@ -71,22 +151,11 @@ function criarCardConteudo(conteudo) {
   const info = document.createElement("div");
   info.className = "card-info";
 
-  const titulo = document.createElement("h3");
-  titulo.textContent = conteudo.titulo || "Conteúdo sem título";
-
-  const preco = document.createElement("div");
-  preco.className = "card-preco";
-  preco.textContent = `R$ ${Number(conteudo.preco).toFixed(2)}`;
-
-  info.appendChild(titulo);
-  info.appendChild(preco);
-
   card.appendChild(thumb);
   card.appendChild(info);
 
   card.addEventListener("click", () => {
     console.log("Abrir conteúdo:", conteudo.id);
-    // depois: abrir modal / editar / detalhes
   });
 
   return card;
