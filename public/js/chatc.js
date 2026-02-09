@@ -58,7 +58,7 @@ socket.on("chatHistory", mensagens => {
     chat.scrollTop = chat.scrollHeight;
   });
 
-ultimoTimestamp = mensagens[0].created_at;
+ltimoTimestamp = mensagens[0].created_at;
 });
 
 socket.on("newMessage", msg => {
