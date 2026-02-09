@@ -156,9 +156,8 @@ function renderizarSelecionados() {
 async function enviar(modoTeste) {
   const modelo_id = document.getElementById("modeloSelect").value;
   const texto = document.getElementById("mensagem").value.trim();
-  const preco = Number(document.getElementById("preco").value);
+  const preco = Number(document.getElementById("preco").value || 0);
 
-  // 🔥 pega conteúdos selecionados no popup
   const conteudos = Array.from(
     document.querySelectorAll(".preview-item.selected")
   ).map(el => Number(el.dataset.conteudoId));
@@ -168,19 +167,9 @@ async function enviar(modoTeste) {
     return;
   }
 
-  if (!preco || preco <= 0) {
-    alert("Informe um preço válido");
-    return;
-  }
-
-  if (conteudos.length === 0) {
-    alert("Selecione ao menos uma mídia");
-    return;
-  }
-
   if (!modoTeste) {
     const ok = confirm(
-      "Enviar esta mensagem PPV para TODOS os assinantes VIP?"
+      "Enviar esta mensagem para TODOS os assinantes VIP?"
     );
     if (!ok) return;
   }
@@ -188,8 +177,8 @@ async function enviar(modoTeste) {
   const payload = {
     modelo_id,
     texto,
-    preco,
-    conteudos,
+    preco,        // pode ser 0
+    conteudos,    // pode ser []
     modo_teste: modoTeste
   };
 
@@ -205,15 +194,17 @@ async function enviar(modoTeste) {
   const data = await res.json();
 
   if (!res.ok) {
-    alert(data.error || "Erro ao enviar PPV");
+    alert(data.error || "Erro ao enviar mensagem");
     return;
   }
 
   alert(
     modoTeste
       ? "Mensagem enviada com sucesso 💜"
-      : `PPV enviado para ${data.enviados} assinantes 💜`
+      : `Mensagem enviada para ${data.enviados} assinantes 💜`
   );
+
+  window.location.reload();
 }
 
 function confirmarConteudosSelecionados() {

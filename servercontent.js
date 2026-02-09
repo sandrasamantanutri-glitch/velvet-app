@@ -359,8 +359,9 @@ router.post("/api/transacoes/:id/chargeback",
 // ===============================
 // 📣 ALLMESSAGE - ENVIO EM MASSA
 // ===============================
-router.post("/api/allmessage",
-  authMiddleware, // use o MESMO middleware que funcionou antes
+router.post(
+  "/api/allmessage",
+  authMiddleware,
   requireRole("admin", "modelo"),
   async (req, res) => {
     try {
@@ -374,26 +375,31 @@ router.post("/api/allmessage",
 
       const { role, id: user_id } = req.user;
 
-      // 🔒 validações
-      if (!modelo_id || !texto || !preco || !Array.isArray(conteudos)) {
+      // ===============================
+      // 🔒 VALIDAÇÕES BÁSICAS
+      // ===============================
+      if (!modelo_id || !texto) {
         return res.status(400).json({ error: "Dados inválidos" });
       }
 
-      if (conteudos.length === 0) {
-        return res.status(400).json({ error: "Nenhum conteúdo selecionado" });
-      }
+      const temConteudo =
+        Array.isArray(conteudos) && conteudos.length > 0;
+
+      const precoFinal = Number(preco) || 0;
 
       // 🔒 modelo só pode enviar da própria conta
       if (role === "modelo" && Number(modelo_id) !== user_id) {
-  return res.status(403).json({ error: "Modelo inválida" });
-}
+        return res.status(403).json({ error: "Modelo inválida" });
+      }
 
-      // 🔍 buscar assinantes ativos
+      // ===============================
+      // 🔍 BUSCAR ASSINANTES ATIVOS
+      // ===============================
       let vipQuery = `
         SELECT cliente_id
         FROM vip_subscriptions
         WHERE modelo_id = $1
-        AND ativo = true
+          AND ativo = true
       `;
       const vipParams = [modelo_id];
 
@@ -409,74 +415,73 @@ router.post("/api/allmessage",
         });
       }
 
-// 🔁 envio individual
-for (const row of clientesRes.rows) {
-  const cliente_id = row.cliente_id;
+      // ===============================
+      // 🔁 ENVIO INDIVIDUAL
+      // ===============================
+      for (const row of clientesRes.rows) {
+        const cliente_id = row.cliente_id;
 
-  // ===============================
-  // 1️⃣ MENSAGEM DE TEXTO (NORMAL)
-  // ===============================
-  await db.query(
-    `
-    INSERT INTO messages
-      (modelo_id, cliente_id, text, sender, visto, tipo)
-    VALUES
-      ($1,$2,$3,'modelo',false,'texto')
-    `,
-    [modelo_id, cliente_id, texto]
-  );
+        // 1️⃣ MENSAGEM DE TEXTO (SEMPRE)
+        await db.query(
+          `
+          INSERT INTO messages
+            (modelo_id, cliente_id, text, sender, visto, tipo)
+          VALUES
+            ($1, $2, $3, 'modelo', false, 'texto')
+          `,
+          [modelo_id, cliente_id, texto]
+        );
 
-  // ===============================
-  // 2️⃣ MENSAGEM DE CONTEÚDO (PPV)
-  // ===============================
-  const msgRes = await db.query(
-    `
-    INSERT INTO messages
-      (modelo_id, cliente_id, text, sender, preco, visto, tipo)
-    VALUES
-      ($1,$2,'','modelo',$3,false,'conteudo')
-    RETURNING id
-    `,
-    [modelo_id, cliente_id, preco]
-  );
+        // 2️⃣ CONTEÚDO (GRÁTIS OU PAGO)
+        if (temConteudo) {
+          const msgRes = await db.query(
+            `
+            INSERT INTO messages
+              (modelo_id, cliente_id, text, sender, preco, visto, tipo)
+            VALUES
+              ($1, $2, '', 'modelo', $3, false, 'conteudo')
+            RETURNING id
+            `,
+            [modelo_id, cliente_id, precoFinal]
+          );
 
-  const message_id = msgRes.rows[0].id;
+          const message_id = msgRes.rows[0].id;
 
-  // ===============================
-  // 3️⃣ CRIAR PACOTE PPV
-  // ===============================
-  await db.query(
-    `
-    INSERT INTO conteudo_pacotes
-      (cliente_id, modelo_id, preco, valor_total, status, message_id)
-    VALUES
-      ($1,$2,$3,$4,'pendente',$5)
-    `,
-    [
-      cliente_id,
-      modelo_id,
-      preco,
-      preco,
-      message_id
-    ]
-  );
+          // 3️⃣ PACOTE DE CONTEÚDO (preço pode ser 0)
+          await db.query(
+            `
+            INSERT INTO conteudo_pacotes
+              (cliente_id, modelo_id, preco, valor_total, status, message_id)
+            VALUES
+              ($1, $2, $3, $4, 'pendente', $5)
+            `,
+            [
+              cliente_id,
+              modelo_id,
+              precoFinal,
+              precoFinal,
+              message_id
+            ]
+          );
 
-  // ===============================
-  // 4️⃣ VINCULAR CONTEÚDOS
-  // ===============================
-  for (const conteudo_id of conteudos) {
-    await db.query(
-      `
-      INSERT INTO messages_conteudos
-        (message_id, conteudo_id)
-      VALUES
-        ($1,$2)
-      `,
-      [message_id, conteudo_id]
-    );
-  }
-}
+          // 4️⃣ VINCULAR CONTEÚDOS
+          for (const conteudo_id of conteudos) {
+            await db.query(
+              `
+              INSERT INTO messages_conteudos
+                (message_id, conteudo_id)
+              VALUES
+                ($1, $2)
+              `,
+              [message_id, conteudo_id]
+            );
+          }
+        }
+      }
 
+      // ===============================
+      // ✅ RESPOSTA FINAL
+      // ===============================
       res.json({
         ok: true,
         enviados: clientesRes.rowCount,
