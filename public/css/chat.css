@@ -16,17 +16,24 @@ body {
   border-bottom: 1px solid #C9C9C9;
 }
 
-/* INPUT FIXO */
 .chat-input {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
+
   height: 64px;
-  z-index: 50;
+  padding: 0 12px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
   background: #f1f1f1;
   border-top: 1px solid #C9C9C9;
+  z-index: 50;
 }
+
 
 /* ÁREA DE MENSAGENS (ÚNICA COM SCROLL) */
 .chat-box {
@@ -48,15 +55,19 @@ body {
 }
 
 #msgInput {
-    flex: 1;
-    height: 36px;
-    padding: 0 14px;
-    border-radius: 14px;
-    background: #fff !important;
-    border: 1px solid #C9C9C9 !important;
-    font-size: 13px;
-    line-height: normal;
+  flex: 1;
+  height: 38px;
+
+  padding: 0 14px;
+  border-radius: 18px;
+
+  border: 1px solid #C9C9C9;
+  background: #fff;
+
+  font-size: 14px;
+  outline: none;
 }
+
 
 /* botão mídia (MAIOR, SEM FUNDO EXTRA) */
 #btnEnviarConteudo1 {
@@ -100,26 +111,6 @@ body {
   width: 30px;
   height: 30px;
   object-fit: contain;
-}
-
-/* ===============================
-   ÁREA DE MENSAGENS (SCROLL)
-================================ */
-.chat-box {
-  position: flex;
-  top: calc(64px + env(safe-area-inset-top));
-  bottom: calc(64px + env(safe-area-inset-bottom));
-  left: 0;
-  right: 0;
-
-  background: #fff;        /* 🔥 fundo branco */
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
 }
 
 /* ===============================
