@@ -14,6 +14,11 @@ socket.emit("auth", { token });
 const params = new URLSearchParams(location.search);
 const modeloId = Number(params.get("modelo_id"));
 
+if (!modeloId) {
+  alert("Modelo inválido");
+  history.back();
+  throw new Error("modelo_id ausente");
+}
 const chatBox = document.getElementById("chatBox");
 
 chatBox.addEventListener("scroll", () => {
@@ -60,41 +65,44 @@ socket.on("newMessage", msg => {
 // INIT
 // ===============================
 document.addEventListener("DOMContentLoaded", async () => {
-  const res = await fetch("/api/cliente/me");
-const me = await res.json();
+  // 🔐 valida cliente
+  const res = await fetch("/api/cliente/me", {
+    headers: { Authorization: "Bearer " + token }
+  });
 
-// valida cliente
-if (me.role !== "cliente") {
-  alert("Acesso inválido");
-  history.back();
-  return;
-}
+  if (!res.ok) {
+    alert("Sessão expirada");
+    window.location.href = "/index.html";
+    return;
+  }
 
-cliente_id = me.id;
+  const me = await res.json();
+  cliente_id = me.id;
 
-
+  // 🔥 carrega dados da modelo
   await carregarInfoModelo(modelo_id);
 
+  // 🔥 entra na sala
   sala = `chat_${modelo_id}_${cliente_id}`;
   socket.emit("joinChat", { sala });
   socket.emit("getHistory", { modelo_id, cliente_id });
 
-  // 🔥 AQUI — quando o chat ABRE
-  marcarComoLido(modelo_id);
+  // 🔔 marca como lido (cliente)
+  marcarComoLido(cliente_id);
 
-  socket.emit("loginModelo", modelo_id);
+  // 🔌 login realtime correto
   socket.emit("loginCliente", cliente_id);
 
-
+  // ENTER envia
   const input = document.getElementById("msgInput");
-
-// ENTER envia mensagem
-input.addEventListener("keydown", e => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    enviarMensagem();
-  }
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      enviarMensagem();
+    }
+  });
 });
+
 
 socket.on("mensagemEditada", ({ id, text }) => {
   const msgEl = document
@@ -117,13 +125,11 @@ socket.on("mensagemExcluida", ({ id }) => {
   if (msgEl) {
     msgEl.remove();
   }
+
+
+  
 });
 
-
-
-
-
-});
 
 // ===============================
 // FUNÇÕES
