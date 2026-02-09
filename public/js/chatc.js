@@ -19,6 +19,9 @@ if (!modeloId) {
   history.back();
   throw new Error("modelo_id ausente");
 }
+
+let modelo_id = modeloId; // 🔥 ESSENCIAL
+
 const chatBox = document.getElementById("chatBox");
 
 chatBox.addEventListener("scroll", () => {
@@ -32,7 +35,6 @@ const input = document.getElementById("msgInput");
 
 clienteId=null;
 let sala = null;
-let modelo_id = null;
 let cliente_id = null;
 let chatAtivo = null;
 let conteudosVistosModelo = new Set();
@@ -87,8 +89,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   socket.emit("joinChat", { sala });
   socket.emit("getHistory", { modelo_id, cliente_id });
 
-  // 🔔 marca como lido (cliente)
-  marcarComoLido(cliente_id);
+  // 🔔 marca como lido modelo
+  marcarComoLido(modelo_id);
 
   // 🔌 login realtime correto
   socket.emit("loginCliente", cliente_id);
@@ -127,7 +129,7 @@ socket.on("mensagemExcluida", ({ id }) => {
   }
 
 
-  
+
 });
 
 
