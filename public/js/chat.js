@@ -15,6 +15,14 @@ const params = new URLSearchParams(location.search);
 const clienteId = Number(params.get("cliente"));
 
 const chatBox = document.getElementById("chatBox");
+
+chatBox.addEventListener("scroll", () => {
+  if (chatBox.scrollTop === 0 && !carregandoHistorico) {
+    carregarMensagensAntigas();
+  }
+});
+
+
 const input = document.getElementById("msgInput");
 
 
@@ -24,14 +32,17 @@ let modelo_id = null;
 let cliente_id = null;
 let chatAtivo = null;
 let conteudosVistosCliente = new Set();
+let carregandoHistorico = false;
+let ultimoTimestamp = null;
 
 // 📜 HISTÓRICO
 socket.on("chatHistory", mensagens => {
-  chatBox.innerHTML = "";
+  if (!mensagens.length) return;
   mensagens.forEach(m => renderMensagem(m));
-  scrollChatParaBaixo();
-
+  ultimoTimestamp = mensagens[0].created_at;
+  scrollChatParaBaixoSeguro();
 });
+
 
 
 socket.on("newMessage", msg => {
@@ -108,6 +119,39 @@ socket.on("mensagemExcluida", ({ id }) => {
 // ===============================
 // FUNÇÕES
 // ===============================
+
+async function carregarMensagensAntigas() {
+  carregandoHistorico = true;
+
+  const alturaAntes = chatBox.scrollHeight;
+
+  socket.emit("getHistory", {
+    cliente_id,
+    modelo_id,
+    before: ultimoTimestamp
+  });
+
+  socket.once("chatHistory", mensagens => {
+    if (!mensagens.length) {
+      carregandoHistorico = false;
+      return;
+    }
+
+    mensagens.forEach(m => {
+      const el = criarMensagemElemento(m);
+      chatBox.prepend(el);
+    });
+
+    ultimoTimestamp = mensagens[0].created_at;
+
+    // manter posição do scroll
+    const alturaDepois = chatBox.scrollHeight;
+    chatBox.scrollTop = alturaDepois - alturaAntes;
+
+    carregandoHistorico = false;
+  });
+}
+
 
 function scrollChatParaBaixoSeguro() {
   const chatBox = document.getElementById("chatBox");
