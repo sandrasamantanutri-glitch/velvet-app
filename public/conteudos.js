@@ -125,10 +125,7 @@ async function listarConteudos() {
     lista.innerHTML = "<p>Nenhum conteúdo enviado ainda.</p>";
     return;
   }
-
-  const isMobile = window.innerWidth < 768;
-const limite = isMobile ? 12 : conteudos.length;
-
+const limite = conteudos.length;
 conteudos.slice(0, limite).forEach(c => adicionarMidia(c));
 
 }

@@ -1828,7 +1828,6 @@ app.get(
   "/conteudos.html",
   auth,
   authModelo,
-  authModeloCompleto,
   (req, res) => {
     res.sendFile(path.join(__dirname, "public", "conteudos.html"));
   }
@@ -1838,7 +1837,6 @@ app.get(
   "/chatmodelo.html",
   auth,
   authModelo,
-  authModeloCompleto,
   (req, res) => {
     res.sendFile(path.join(__dirname, "public", "chatmodelo.html"));
   }
