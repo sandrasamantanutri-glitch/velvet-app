@@ -75,23 +75,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     headers: { Authorization: "Bearer " + token }
   });
 
-  if (!res.ok) {
-    alert("Sessão expirada");
-    window.location.href = "/index.html";
-    return;
-  }
-
   const me = await res.json();
   cliente_id = me.id;
 
-  // 🔥 carrega dados da modelo
   await carregarInfoModelo(modelo_id);
-
-  // 🔥 entra na sala
-  sala = `chat_${cliente_id}_${modelo_id}`;
-  socket.emit("joinChat", { sala });
-  socket.emit("loginCliente", cliente_id);
-  socket.emit("getHistory", { modelo_id, cliente_id });
 
   // ENTER envia
   const input = document.getElementById("msgInput");
@@ -102,6 +89,22 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 });
+
+socket.on("authOk", () => {
+  // agora o socket está autenticado
+
+  sala = `chat_${cliente_id}_${modelo_id}`;
+
+  socket.emit("joinChat", { sala });
+  socket.emit("loginCliente", cliente_id);
+
+  // AGORA SIM pede o histórico
+  socket.emit("getHistory", {
+    cliente_id,
+    modelo_id
+  });
+});
+
 
 
 socket.on("mensagemEditada", ({ id, text }) => {

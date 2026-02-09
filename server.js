@@ -890,12 +890,14 @@ socket.on("auth", ({ token }) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     socket.user = decoded;
+
+    socket.emit("authOk"); // 👈 AVISA O CLIENTE
     console.log("🔐 Socket autenticado:", decoded.id, decoded.role);
   } catch (err) {
-    console.log("❌ Token inválido");
     socket.disconnect();
   }
 });
+
 
 socket.on("loginModelo", (modelo_id) => {
   onlineModelos[modelo_id] = socket.id;
