@@ -48,18 +48,18 @@ socket.on("chatHistory", mensagens => {
   const chat = document.getElementById("chatBox");
   if (!chat || !mensagens.length) return;
 
+  // 🧹 limpa antes
   chat.innerHTML = "";
-  mensagensRenderizadas.clear(); // 🔥 LIMPA CONTROLE
 
   mensagens.forEach(m => renderMensagem(m));
 
+  // 🔥 força scroll pro final
   requestAnimationFrame(() => {
     chat.scrollTop = chat.scrollHeight;
   });
 
-  ultimoTimestamp = mensagens[mensagens.length - 1].created_at;
+ultimoTimestamp = mensagens[0].created_at;
 });
-
 
 socket.on("newMessage", msg => {
  renderMensagem(msg);
@@ -88,12 +88,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   await carregarInfoModelo(modelo_id);
 
   // 🔥 entra na sala
-sala = `chat_${cliente_id}_${modelo_id}`;
+  sala = `chat_${modelo_id}_${cliente_id}`;
   socket.emit("joinChat", { sala });
   socket.emit("getHistory", { modelo_id, cliente_id });
 
   // 🔌 login realtime correto
   socket.emit("loginCliente", cliente_id);
+  socket.emit("loginModelo", modelo_id);
 
   // ENTER envia
 
@@ -513,7 +514,7 @@ function confirmarEnvioConteudo() {
     .filter(id => Number.isInteger(id) && id > 0);
 
   // 🔥 GARANTE JOIN NA SALA ATIVA
-  const sala = `chat_${cliente_id}_${modelo_id}`;
+  const sala = `chat_${modelo_id}_${cliente_id}`;
   socket.emit("joinChat", { sala });
 
   // 🔥 ENVIA UMA ÚNICA VEZ (após garantir o join)
