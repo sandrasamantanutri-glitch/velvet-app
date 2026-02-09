@@ -84,6 +84,34 @@
   font-size: 15px;
 }
 
+.paginacao {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.paginacao button {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.paginacao button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+#paginaAtual {
+  font-weight: 600;
+  color: #7B2CFF;
+}
+
+
 /* ===============================
    RESPONSIVO
 ================================ */
@@ -99,3 +127,5 @@
     font-size: 14px;
   }
 }
+
+

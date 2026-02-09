@@ -125,6 +125,10 @@ document.addEventListener("DOMContentLoaded", () => {
   carregarAssinantes();
 });
 
+let assinantesCache = [];
+let paginaAtual = 1;
+const LIMITE_POR_PAGINA = 10;
+
 async function carregarAssinantes() {
   const token = localStorage.getItem("token");
   if (!token) return;
@@ -141,36 +145,12 @@ async function carregarAssinantes() {
 
     if (!res.ok) throw new Error("Erro ao buscar assinantes");
 
-    const assinantes = await res.json();
-    tbody.innerHTML = "";
+    assinantesCache = await res.json();
+    paginaAtual = 1;
 
-    if (assinantes.length === 0) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="7">Nenhum assinante encontrado</td>
-        </tr>
-      `;
-      return;
-    }
+    renderizarPagina();
+    configurarBotoes();
 
-    assinantes.forEach(a => {
-      const total =
-        Number(a.total_assinaturas) + Number(a.total_midias);
-
-      tbody.innerHTML += `
-        <tr>
-        <td class="assinante-nome">${a.nome_cliente}</td>
-        <td><span class="badge ${a.ativo ? "badge-ativo" : "badge-inativo"}">
-        ${a.ativo ? "Ativo" : "Inativo"}</span>
-        </td>
-          <td>${formatarData(a.expiration_at)}</td>
-          <td>${formatarData(a.ultima_renovacao)}</td>
-          <td>R$ ${Number(a.total_assinaturas).toFixed(2)}</td>
-          <td>R$ ${Number(a.total_midias).toFixed(2)}</td>
-         <td class="total-geral">R$ ${total.toFixed(2)}</td>
-        </tr>
-      `;
-    });
   } catch (err) {
     console.error("Erro carregar assinantes:", err);
     tbody.innerHTML = `
@@ -179,6 +159,83 @@ async function carregarAssinantes() {
       </tr>
     `;
   }
+}
+
+function renderizarPagina() {
+  const tbody = document.getElementById("listaAssinantes");
+  const inicio = (paginaAtual - 1) * LIMITE_POR_PAGINA;
+  const fim = inicio + LIMITE_POR_PAGINA;
+
+  const pagina = assinantesCache.slice(inicio, fim);
+
+  tbody.innerHTML = "";
+
+  if (pagina.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7">Nenhum assinante encontrado</td>
+      </tr>
+    `;
+    return;
+  }
+
+  pagina.forEach(a => {
+    const total =
+      Number(a.total_assinaturas) + Number(a.total_midias);
+
+    tbody.innerHTML += `
+      <tr>
+        <td class="assinante-nome">${a.nome_cliente}</td>
+        <td>
+          <span class="badge ${a.ativo ? "badge-ativo" : "badge-inativo"}">
+            ${a.ativo ? "Ativo" : "Inativo"}
+          </span>
+        </td>
+        <td>${formatarData(a.expiration_at)}</td>
+        <td>${formatarData(a.ultima_renovacao)}</td>
+        <td>R$ ${Number(a.total_assinaturas).toFixed(2)}</td>
+        <td>R$ ${Number(a.total_midias).toFixed(2)}</td>
+        <td class="total-geral">R$ ${total.toFixed(2)}</td>
+      </tr>
+    `;
+  });
+
+  atualizarPaginacao();
+}
+
+function configurarBotoes() {
+  document.getElementById("btnAnterior")?.addEventListener("click", () => {
+    if (paginaAtual > 1) {
+      paginaAtual--;
+      renderizarPagina();
+    }
+  });
+
+  document.getElementById("btnProximo")?.addEventListener("click", () => {
+    const totalPaginas = Math.ceil(
+      assinantesCache.length / LIMITE_POR_PAGINA
+    );
+
+    if (paginaAtual < totalPaginas) {
+      paginaAtual++;
+      renderizarPagina();
+    }
+  });
+}
+
+function atualizarPaginacao() {
+  const totalPaginas = Math.ceil(
+    assinantesCache.length / LIMITE_POR_PAGINA
+  );
+
+  document.getElementById("paginaAtual").textContent =
+    `${paginaAtual} / ${totalPaginas}`;
+
+  document.getElementById("btnAnterior").disabled =
+    paginaAtual === 1;
+
+  document.getElementById("btnProximo").disabled =
+    paginaAtual === totalPaginas;
 }
 
 function formatarData(data) {
