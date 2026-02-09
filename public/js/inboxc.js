@@ -27,65 +27,76 @@ async function carregarListaModelos() {
   if (!res.ok) return;
 
   const modelos = await res.json();
-// 🔥 ORDENA ANTES DE RENDERIZAR
-modelos.sort((a, b) => {
-  const pa = prioridadeChat(a);
-  const pb = prioridadeChat(b);
 
-  if (pa !== pb) return pa - pb;
+  // 🔥 ordena antes de renderizar
+  modelos.sort((a, b) => {
+    const pa = prioridadeChat(a);
+    const pb = prioridadeChat(b);
+    if (pa !== pb) return pa - pb;
+    return new Date(b.ultima_mensagem_em) - new Date(a.ultima_mensagem_em);
+  });
 
-  // desempate: conversa mais recente primeiro
-  return new Date(b.ultima_mensagem_em) - new Date(a.ultima_mensagem_em);
-});
+  inboxEl.innerHTML = "";
 
-inboxEl.innerHTML = "";
+  modelos.forEach(c => {
+    let statusHTML = "";
 
-modelos.forEach(c => {
-  let statusHTML = "";
-
-  if (c.ultimo_sender === "cliente") {
-    if (c.visto === false) {
-      statusHTML = `<span class="status status-unseen">Não lido</span>`;
-    } else {
-      statusHTML = `<span class="status status-reply">Por responder</span>`;
+    // 🔵 última mensagem da MODELO
+    if (c.ultimo_sender === "modelo") {
+      if (c.visto === false) {
+        statusHTML = `<span class="status status-unseen">Novo</span>`;
+      } else {
+        statusHTML = `<span class="status status-read">✓✓</span>`;
+      }
     }
-  }
 
-  // 🟢 última mensagem da MODELO
-  if (modelos.ultimo_sender === "modelo") {
-    if (modelos.lida === true) {
-      statusHTML = `<span class="status status-read">✓✓</span>`;
-    } else {
-      statusHTML = `<span class="status status-sent">✓</span>`;
+    // 🟣 última mensagem do CLIENTE
+    if (c.ultimo_sender === "cliente") {
+      if (c.lida === false) {
+        statusHTML = `<span class="status status-unseen">Não lido</span>`;
+      } else {
+        statusHTML = `<span class="status status-reply">Por responder</span>`;
+      }
     }
-  }
 
-  const div = document.createElement("div");
-  div.className = "chat-item";
-  div.onclick = () => abrirChat(modelos.modelo_id);
+    const div = document.createElement("div");
+    div.className = "chat-item";
+    div.onclick = () => abrirChat(c.modelo_id);
 
-  div.innerHTML = `
-    <div class="avatar">
-      ${modelos.avatar ? `<img src="${modelos.avatar}" />` : ""}
-    </div>
-
-    <div class="chat-body">
-      <div class="chat-top">
-        <span class="chat-name">${modelos.username || modelos.nome || "Modelo"}</span>
-        <span class="chat-time">${formatarTempo(modelos.ultima_mensagem_em)}</span>
+    div.innerHTML = `
+      <div class="avatar">
+        ${
+          c.avatar
+            ? `<img src="${c.avatar}" />`
+            : `<div class="avatar-placeholder"></div>`
+        }
       </div>
 
-      <div class="chat-bottom">
-        <span class="chat-last">${modelos.ultima_mensagem || ""}</span>
-        <div class="chat-status">${statusHTML}</div>
+      <div class="chat-body">
+        <div class="chat-top">
+          <span class="chat-name">
+            ${c.username || c.nome || "Modelo"}
+          </span>
+          <span class="chat-time">
+            ${formatarTempo(c.ultima_mensagem_em)}
+          </span>
+        </div>
+
+        <div class="chat-bottom">
+          <span class="chat-last">
+            ${c.ultima_mensagem || "Nenhuma mensagem ainda"}
+          </span>
+          <div class="chat-status">
+            ${statusHTML}
+          </div>
+        </div>
       </div>
-    </div>
-  `;
+    `;
 
-  inboxEl.appendChild(div);
-});
-
+    inboxEl.appendChild(div);
+  });
 }
+
 
 function prioridadeChat(c) {
   // 1️⃣ NOVO (modelo enviou e não foi visto)

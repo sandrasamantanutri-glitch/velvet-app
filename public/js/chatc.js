@@ -12,7 +12,7 @@ const socket = io({
 socket.emit("auth", { token });
 
 const params = new URLSearchParams(location.search);
-const modeloId = Number(params.get("modelo"));
+const modeloId = Number(params.get("modelo_id"));
 
 const chatBox = document.getElementById("chatBox");
 
