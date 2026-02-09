@@ -1366,6 +1366,32 @@ socket.on("excluirMensagem", async ({ id }) => {
     });
   });
 
+  io.on("connection", socket => {
+
+  // CLIENTE ONLINE
+  socket.on("loginCliente", async (cliente_id) => {
+    socket.cliente_id = cliente_id;
+
+    // marca online (last_seen = NULL significa online)
+    await db.query(
+      `UPDATE clientes SET last_seen = NULL WHERE user_id = $1`,
+      [cliente_id]
+    );
+  });
+
+  // CLIENTE OFFLINE
+  socket.on("disconnect", async () => {
+    if (!socket.cliente_id) return;
+
+    await db.query(
+      `UPDATE clientes SET last_seen = NOW() WHERE user_id = $1`,
+      [socket.cliente_id]
+    );
+  });
+
+});
+
+
 
 
 });
