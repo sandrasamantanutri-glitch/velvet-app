@@ -30,18 +30,15 @@ document.addEventListener("DOMContentLoaded", () => {
    if (btnEnviar) {
     btnEnviar.addEventListener("click", async () => {
       const fileInput = document.getElementById("fileConteudo");
-      const tipoSelect = document.getElementById("tipoConteudo");
 
       const file = fileInput.files[0];
-      const tipo = tipoSelect.value;
 
       if (!file) {
         alert("Selecione um arquivo");
         return;
       }
-const formData = new FormData();
+      const formData = new FormData();
       formData.append("file", file);
-      formData.append("tipo", tipo);
       formData.append("tipo_conteudo", "venda");
 
       try {

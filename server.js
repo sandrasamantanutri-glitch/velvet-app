@@ -3820,7 +3820,7 @@ app.post(
   authModelo,
   uploadB2.single("file"),
   async (req, res) => {
-    const modelo_id = req.user.id;
+    const user_id = req.user.id;
     const { tipo, tipo_conteudo } = req.body;
 
     if (!req.file) {
@@ -3842,7 +3842,7 @@ app.post(
       const result = await db.query(
         `
         INSERT INTO conteudos (
-          modelo_id,
+          user_id,
           tipo,
           tipo_conteudo,
           url,
@@ -3851,15 +3851,15 @@ app.post(
         VALUES ($1, $2, $3, $4, $5)
         RETURNING
           id,
-          modelo_id,
+          user_id,
           tipo,
           tipo_conteudo,
           url,
           thumbnail_url,
-          created_at
+          criado_em
         `,
         [
-          modelo_id,
+          user_id,
           tipo,
           tipo_conteudo,
           url,
