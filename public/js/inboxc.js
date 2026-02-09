@@ -12,11 +12,6 @@ const socket = io("https://velvet-test-production.up.railway.app", {
 
 const inboxEl = document.getElementById("inbox");
 
-document.addEventListener("DOMContentLoaded", () => {
-  carregarListaModelos();
-});
-
-
 // ===============================
 // FETCH INBOX
 // ===============================
@@ -40,12 +35,11 @@ async function carregarListaModelos() {
 
   modelos.forEach(c => {
     let statusHTML = "";
-
-  if (c.sender === "modelo" && c.lida === false) {
+    if (c.sender === "modelo" && c.lida === false) {
   statusHTML = `<span class="status status-unseen">Não lido</span>`;
-  } else {
-        statusHTML = `<span class="status status-reply">Por responder</span>`;
-      }
+} else if (c.sender === "cliente") {
+  statusHTML = `<span class="status status-read">✓✓</span>`;
+}
 
     const div = document.createElement("div");
     div.className = "chat-item";
@@ -85,21 +79,21 @@ async function carregarListaModelos() {
 
 function prioridadeChat(c) {
   // 1️⃣ NOVO (modelo enviou e não foi visto)
-  if (c.ultimo_sender === "modelo" && c.visto === false && c.aberto === false) {
+  if (c.sender === "modelo" && c.lida === false) {
     return 1;
   }
 
   // 2️⃣ Não lidas (modelo enviou e ainda não viu)
-  if (c.ultimo_sender === "modelo" && c.visto === false) {
+  if (c.sender === "modelo" && c.lida === false) {
     return 2;
   }
 
   // 3️⃣ Por responder (modelo enviou, você viu)
-  if (c.ultimo_sender === "modelo" && c.visto === true) {
+  if (c.sender === "modelo" && c.lida === true) {
     return 3;
   }
 
-  if (c.ultimo_sender === "cliente" && c.lida === true) {
+  if (c.sender === "cliente" && c.lida === true) {
     return 4;
   }
 
@@ -127,16 +121,26 @@ function formatarTempo(data) {
   if (diff === 1) return "1 dia";
   return `${diff} dias`;
 }
+let clienteId = null;
 
-// ===============================
-// REALTIME
-// ===============================
+async function initClienteInbox() {
+  const res = await fetch("/api/cliente/me", {
+    headers: { Authorization: "Bearer " + token }
+  });
 
-socket.emit("joinInbox", {
-  sala: `inbox_cliente_${cliente_id}`
-});
+  if (!res.ok) return logout();
 
-socket.on("inboxMessage", carregarListaModelos);
+  const me = await res.json();
+  clienteId = me.id;
+
+  socket.emit("joinInbox", {
+    sala: `inbox_cliente_${clienteId}`
+  });
+
+  carregarListaModelos();
+}
+
+document.addEventListener("DOMContentLoaded", initClienteInbox);
 
 
 // ===============================

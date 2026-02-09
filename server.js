@@ -910,11 +910,10 @@ socket.on("joinChat", ({ sala }) => {
   console.log("🟪 Entrou na sala:", sala);
 });
 
-socket.on("joinInbox", ({ modelo_id }) => {
-  if (!modelo_id) return;
-
-  socket.join(`inbox_modelo_${modelo_id}`);
-  console.log("📬 Inbox conectada:", `inbox_modelo_${modelo_id}`);
+socket.on("joinInbox", ({ sala }) => {
+  if (!sala) return;
+  socket.join(sala);
+  console.log("📬 Inbox conectada:", sala);
 });
 
 // 💬 ENVIAR MENSAGEM (ÚNICO)
