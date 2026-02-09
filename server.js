@@ -1415,7 +1415,7 @@ app.get(
     const result = await db.query(`
       SELECT
         id,
-        nome_exibicao
+        nome_exibicao,
         user_id,
         avatar,
         last_seen
