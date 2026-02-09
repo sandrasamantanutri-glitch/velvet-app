@@ -629,16 +629,16 @@ async function carregarInfoModelo(modeloId) {
 
     const modelo = await res.json();
 
-    const avatar = document.getElementById("chatmodeloAvatar");
-    const nome = document.getElementById("chatmodeloNome");
-    const status = document.getElementById("chatmodeloStatus");
+const avatar = document.getElementById("chatModeloAvatar");
+const nome   = document.getElementById("chatModeloNome");
+const status = document.getElementById("chatModeloStatus");
 
     if (avatar) {
       avatar.src = modelo.avatar || "/assets/avatar.png";
     }
 
     if (nome) {
-      nome.innerText = modelo.username || "Modelo";
+      nome.innerText = modelo.nome_exibicao || "Modelo";
     }
 
     if (status) {
