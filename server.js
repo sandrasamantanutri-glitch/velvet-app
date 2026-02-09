@@ -2430,20 +2430,20 @@ app.put("/api/conteudos/:id", authModelo, async (req, res) => {
         url = $2,
         thumbnail_url = $3
       WHERE id = $4
-        AND modelo_id = $5
+        AND user_id = $5
       RETURNING
         id,
         tipo,
         url,
         thumbnail_url,
-        modelo_id
+        user_id
       `,
-      [tipo, url, thumbnail_url || null, conteudo_id, modelo_id]
+      [tipo, url, thumbnail_url || null, conteudo_id, user_id]
     );
 
     if (result.rows.length === 0) {
       return res.status(404).json({
-        error: "Conteúdo não encontrado ou não pertence ao modelo"
+        error: "Conteúdo não encontrado"
       });
     }
 
