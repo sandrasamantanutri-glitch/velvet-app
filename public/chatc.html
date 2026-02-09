@@ -35,10 +35,8 @@
   <!-- BOTÃO MÍDIA -->
   <button
     id="btnEnviarConteudo1"
-    class="btn-midia"
-    onclick="abrirPopupConteudos()"
-    aria-label="Enviar mídia"
-  >
+    class="btn-midia"  onclick="avisoMidiaEmBreve()"
+  aria-label="Enviar mídia">
     <img src="/assets/midia.png" alt="Mídia" />
   </button>
 
@@ -99,6 +97,20 @@
     </div>
   </div>
 </div>
+
+<div id="popupMidiaEmBreve" class="hidden">
+  <div class="popup-backdrop" onclick="fecharPopupMidia()"></div>
+
+  <div class="popup-box">
+    <h3>Em breve ✨</h3>
+    <p>Em breve será possível enviar mídias pelo chat.</p>
+
+    <button class="btn-fechar" onclick="fecharPopupMidia()">
+      Entendi
+    </button>
+  </div>
+</div>
+
 
 
 <script src="/socket.io/socket.io.js"></script>

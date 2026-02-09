@@ -147,6 +147,22 @@ function scrollParaFinal() {
   });
 }
 
+function avisoMidiaEmBreve() {
+  alert("🚧 Em breve será possível enviar mídias! =)");
+}
+
+function avisoMidiaEmBreve() {
+  document
+    .getElementById("popupMidiaEmBreve")
+    .classList.remove("hidden");
+}
+
+function fecharPopupMidia() {
+  document
+    .getElementById("popupMidiaEmBreve")
+    .classList.add("hidden");
+}
+
 
 function formatarTempo(timestamp) {
   if (!timestamp || timestamp === "0") return "agora";

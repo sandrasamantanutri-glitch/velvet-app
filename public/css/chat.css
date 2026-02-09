@@ -281,3 +281,46 @@ body {
 }
 
 
+#popupMidiaEmBreve {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+}
+
+#popupMidiaEmBreve.hidden {
+  display: none;
+}
+
+#popupMidiaEmBreve .popup-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+}
+
+#popupMidiaEmBreve .popup-box {
+  background: #fff;
+  width: 90%;
+  max-width: 360px;
+  margin: 40% auto;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+}
+
+#popupMidiaEmBreve p {
+  margin: 12px 0 20px;
+  font-size: 14px;
+  color: #444;
+}
+
+#popupMidiaEmBreve .btn-fechar {
+  background: #7B2CFF;
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+
+
