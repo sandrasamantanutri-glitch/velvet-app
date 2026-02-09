@@ -38,9 +38,7 @@ socket.on("newMessage", msg => {
   if (msg.sender === "modelo") {
     renderMensagem(msg);
     scrollChatParaBaixo();
-  } else {
-    renderMensagem(msg);
-  }
+  } 
 });
 
 // ===============================
@@ -111,11 +109,14 @@ socket.on("mensagemExcluida", ({ id }) => {
 // FUNÇÕES
 // ===============================
 
-  function scrollChatParaBaixo() {
+function scrollChatParaBaixoSeguro() {
   const chatBox = document.getElementById("chatBox");
   if (!chatBox) return;
 
-  chatBox.scrollTop = chatBox.scrollHeight;
+  // espera imagens e vídeos ajustarem altura
+  setTimeout(() => {
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }, 50);
 }
 
 function formatarTempo(timestamp) {
@@ -284,10 +285,7 @@ else {
     <span class="msg-hora">${formatarHora(msg.created_at)}</span>
   `;
 }
-
-
   chat.appendChild(div);
-chat.scrollTop = chat.scrollHeight;
 const btn = div.querySelector(".msg-menu");
 if (btn) {
   btn.addEventListener("click", () => {
