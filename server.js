@@ -1956,10 +1956,12 @@ app.get("/api/chat/cliente/:id", authModelo, async (req, res) => {
       `
       SELECT
         c.user_id AS id,
-        c.nome,
-        c.avatar,
+        cd.username,
+        cd.avatar,
         c.last_seen
       FROM clientes c
+      JOIN clientes_dados cd
+        ON cd.user_id = c.user_id
       WHERE c.user_id = $1
       `,
       [cliente_id]
@@ -1975,7 +1977,6 @@ app.get("/api/chat/cliente/:id", authModelo, async (req, res) => {
     res.status(500).json({ error: "Erro ao carregar cliente" });
   }
 });
-
 
 /// ===============================
 // CHAT — LISTA PARA MODELO
