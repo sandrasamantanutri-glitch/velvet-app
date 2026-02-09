@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.warn("Usuário não autenticado");
     return;
   }
+
   // ===============================
   // BUSCAR STATUS NO BACKEND
   // ===============================
@@ -145,21 +146,17 @@ form?.addEventListener("submit", async (e) => {
   controlarFormulario("em_analise");
 });
 
-try {
-  const verificacao = await buscarStatusVerificacao();
 
-  // 🔒 CONTA JÁ APROVADA → NÃO RENDERIZA NADA
-  if (verificacao.status === "aprovado") {
-    return;
+  // ===============================
+  // INIT
+  // ===============================
+  try {
+    const verificacao = await buscarStatusVerificacao();
+    renderStatus(verificacao);
+    controlarFormulario(verificacao.status);
+  } catch (err) {
+    console.error(err);
   }
-
-  renderStatus(verificacao);
-  controlarFormulario(verificacao.status);
-
-} catch (err) {
-  console.error(err);
-}
-
 });
 
 function abrirConfirmacaoExclusao() {
