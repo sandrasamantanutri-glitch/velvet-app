@@ -77,8 +77,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   marcarComoLido(cliente_id);
 
   socket.emit("loginModelo", modelo_id);
-  socket.emit("loginCliente", cliente_id);
-
 
   const input = document.getElementById("msgInput");
 
