@@ -133,7 +133,7 @@ function formatarTempo(data) {
 // ===============================
 
 socket.emit("joinInbox", {
-  sala: `inbox_cliente_${cliente_id}`
+  sala: `inbox_cliente_${clienteId}`
 });
 
 socket.on("inboxMessage", carregarListaModelos);
