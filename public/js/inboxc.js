@@ -28,69 +28,59 @@ let pagamentoAtual = {};
 // ===============================
 // FETCH INBOX
 // ===============================
-async function carregarListaClientes() {
+async function carregarListaModelos() {
   const res = await fetch("/api/chat/cliente", {
     headers: { Authorization: "Bearer " + token }
   });
-  if (!res.ok) return;
 
-  const clientes = await res.json();
-// 🔥 ORDENA ANTES DE RENDERIZAR
-clientes.sort((a, b) => {
-  const pa = prioridadeChat(a);
-  const pb = prioridadeChat(b);
+  const modelos = await res.json();
+  const lista = document.getElementById("listaModelos");
+  lista.innerHTML = "";
 
-  if (pa !== pb) return pa - pb;
-
-  return new Date(b.ultima_mensagem_em) - new Date(a.ultima_mensagem_em);
-});
-
-inboxEl.innerHTML = "";
-
-clientes.forEach(c => {
-  let statusHTML = "";
-
-  if (c.ultimo_sender === "modelo") {
-    if (c.visto === false) {
-      statusHTML = `<span class="status status-unseen">Não lido</span>`;
-    } else {
-      statusHTML = `<span class="status status-reply">Por responder</span>`;
-    }
+  if (!modelos.length) {
+    lista.innerHTML = "<li>Você não é VIP em nenhuma modelo.</li>";
+    return;
   }
 
-  if (c.ultimo_sender === "cliente") {
-    if (c.lida === true) {
-      statusHTML = `<span class="status status-read">✓✓</span>`;
-    } else {
-      statusHTML = `<span class="status status-sent">✓</span>`;
-    }
-  }
+  const unreadRes = await fetch("/api/chat/unread/cliente", {
+    headers: { Authorization: "Bearer " + token }
+  });
+  const unreadIds = await unreadRes.json();
 
-  const div = document.createElement("div");
-  div.className = "chat-item";
-  div.onclick = () => abrirChat(c.cliente_id);
+  modelos.forEach(m => {
+    const li = document.createElement("li");
+    li.className = "chat-item";
+    li.dataset.modeloId = m.modelo_id;
 
-  div.innerHTML = `
-    <div class="avatar">
-      ${c.avatar ? `<img src="${c.avatar}" />` : ""}
-    </div>
+    const temNaoVisto = unreadIds.includes(m.modelo_id);
 
-    <div class="chat-body">
-      <div class="chat-top">
-        <span class="chat-name">${mensagensRenderizadas.modelo_id || mensagensRenderizadas.modelo_id || "Modelo"}</span>
-        <span class="chat-time">${formatarTempo(c.ultima_mensagem_em)}</span>
-      </div>
+    li.innerHTML = `
+      <span class="nome">${m.nome}</span>
+      <span class="badge ${temNaoVisto ? "" : "hidden"}">Não visto</span>
+    `;
 
-      <div class="chat-bottom">
-        <span class="chat-last">${c.ultima_mensagem || ""}</span>
-        <div class="chat-status">${statusHTML}</div>
-      </div>
-    </div>
-  `;
+    li.onclick = () => {
+      modelo_id = m.modelo_id;
+      chatAtivo = { cliente_id, modelo_id };
 
-  inboxEl.appendChild(div);
-});
+      mensagensRenderizadas.clear();
+      document.getElementById("chatBox").innerHTML = "";
+      document.getElementById("chatNome").innerText = m.nome;
+      if (m.avatar) {
+        document.getElementById("chatAvatar").src = m.avatar;
+      }
 
+      li.querySelector(".badge")?.classList.add("hidden");
+      li.classList.remove("nao-visto");
+
+      const sala = `chat_${cliente_id}_${modelo_id}`;
+      socket.emit("joinChat", { sala });
+      socket.emit("getHistory", { cliente_id, modelo_id });
+    };
+
+    lista.appendChild(li);
+    contarChatsNaoLidosCliente();
+  });
 }
 
 
