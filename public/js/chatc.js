@@ -63,6 +63,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   const res = await fetch("/api/me", {
     headers: { Authorization: "Bearer " + token }
   });
+  
+  if (me.role !== "cliente") {
+  alert("Acesso inválido");
+  history.back();
+  return;
+}
+
 
   const me = await res.json();
   modelo_id = me.id;
