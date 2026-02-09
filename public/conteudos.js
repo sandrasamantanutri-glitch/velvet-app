@@ -130,6 +130,20 @@ function renderizarConteudos(conteudos) {
   img.className = "card-thumb";
   img.src = c.thumbnail_url || c.url;
 
+  card.appendChild(img);
+
+  // ▶ OVERLAY PARA VÍDEO
+  if (c.tipo === "video") {
+    const overlay = document.createElement("div");
+    overlay.className = "play-overlay";
+
+    const icon = document.createElement("span");
+    icon.textContent = "▶";
+
+    overlay.appendChild(icon);
+    card.appendChild(overlay);
+  }
+
   // ❌ BOTÃO EXCLUIR
   const btnExcluir = document.createElement("button");
   btnExcluir.className = "btn-excluir";
@@ -144,16 +158,15 @@ function renderizarConteudos(conteudos) {
     await excluirConteudo(c.id);
   });
 
-  // abrir viewer ao clicar no card
+  // clique no card abre viewer
   card.addEventListener("click", () => {
     abrirViewer(c);
   });
 
-  card.appendChild(img);
   card.appendChild(btnExcluir);
   grid.appendChild(card);
 });
-}
+} 
 
 function fecharModalNovoConteudo() {
   const modal = document.getElementById("modalNovoConteudo");
