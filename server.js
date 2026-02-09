@@ -1940,27 +1940,39 @@ app.get("/api/modelo/publico/:id", async (req, res) => {
 // CHAT — LISTA PARA CLIENTE
 // ===============================
 app.get("/api/chat/cliente", authCliente, async (req, res) => {
-  try {
-    const clienteId = req.user.id;
+  const cliente_id = req.user.id;
 
-    const { rows } = await db.query(`
-      SELECT 
-        m.user_id AS modelo_id,
-        m.nome_exibicao,
-        m.avatar
-      FROM vip_subscriptions v
-      JOIN modelos m ON m.user_id = v.modelo_id
-      WHERE v.cliente_id = $1
+  const { rows } = await db.query(`
+    SELECT
+      m.user_id AS modelo_id,
+      m.nome_exibicao,
+      m.avatar,
+
+      msg.text        AS ultima_mensagem,
+      msg.created_at  AS ultima_mensagem_em,
+      msg.lida,
+      msg.sender
+
+    FROM vip_subscriptions v
+    JOIN modelos m ON m.user_id = v.modelo_id
+
+    LEFT JOIN LATERAL (
+      SELECT text, created_at, lida, sender
+      FROM messages
+      WHERE messages.cliente_id = v.cliente_id
+        AND messages.modelo_id  = v.modelo_id
+      ORDER BY created_at DESC
+      LIMIT 1
+    ) msg ON true
+
+    WHERE v.cliente_id = $1
       AND v.ativo = true
       AND v.expiration_at > NOW()
-    `, [clienteId]);
+  `, [cliente_id]);
 
-    res.json(rows);
-  } catch (err) {
-    console.error("Erro chat cliente:", err);
-    res.status(500).json({ error: "Erro ao carregar chats" });
-  }
+  res.json(rows);
 });
+
 
 /// ===============================
 // CHAT — LISTA PARA MODELO
