@@ -40,34 +40,21 @@ let sala = null;
 let cliente_id = null;
 let chatAtivo = null;
 let conteudosVistosModelo = new Set();
-let carregandoHistorico = false;
-let ultimoTimestamp = null;
 
 // 📜 HISTÓRICO
 socket.on("chatHistory", mensagens => {
   const chat = document.getElementById("chatBox");
-  if (!chat) return;
-
   chat.innerHTML = "";
-
-  if (!Array.isArray(mensagens) || mensagens.length === 0) {
-    chat.innerHTML = `
-      <div class="chat-vazio">
-        Nenhuma mensagem ainda
-      </div>
-    `;
-    return;
-  }
 
   mensagens.forEach(m => renderMensagem(m));
 
+  // 🔥 força scroll pro final
   requestAnimationFrame(() => {
     chat.scrollTop = chat.scrollHeight;
   });
 
-  ultimoTimestamp = mensagens[0]?.created_at || null;
+  ultimoTimestamp = mensagens[0].created_at;
 });
-
 
 socket.on("newMessage", msg => {
  renderMensagem(msg);
