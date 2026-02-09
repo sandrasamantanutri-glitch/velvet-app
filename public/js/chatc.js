@@ -609,13 +609,16 @@ function excluirMensagem() {
 
 async function carregarInfoModelo(modeloId) {
   try {
-    const res = await fetch(`/api/cliente/${modeloId}`, {
+    const res = await fetch(`/api/modelo/chat/${modeloId}`, {
       headers: {
-        Authorization: "Bearer " + token
+        Authorization: "Bearer " + localStorage.getItem("token")
       }
     });
 
-    if (!res.ok) return;
+    if (!res.ok) {
+      console.warn("Não foi possível carregar informações da modelo");
+      return;
+    }
 
     const modelo = await res.json();
 
@@ -628,15 +631,16 @@ async function carregarInfoModelo(modeloId) {
     }
 
     if (nome) {
-  nome.innerText = modelo.username || "Modelo";
-}
-if (status) {
-  if (modelo.last_seen) {
-    status.innerText = `visto por último: ${formatarTempo(modelo.last_seen)}`;
-  } else {
-    status.innerText = "visto por último: agora";
-  }
-}
+      nome.innerText = modelo.username || "Modelo";
+    }
+
+    if (status) {
+      if (modelo.last_seen) {
+        status.innerText = `visto por último: ${formatarTempo(modelo.last_seen)}`;
+      } else {
+        status.innerText = "visto por último: agora";
+      }
+    }
 
   } catch (err) {
     console.error("Erro carregar modelo:", err);

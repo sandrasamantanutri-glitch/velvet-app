@@ -1366,6 +1366,30 @@ socket.on("excluirMensagem", async ({ id }) => {
 // ===============================
 //ROTA GET
 // ===============================
+app.get(
+  "/api/modelo/chat/:id",
+  auth, // cliente OU modelo
+  async (req, res) => {
+    const modelo_id = Number(req.params.id);
+
+    const result = await db.query(`
+      SELECT
+        id,
+        username,
+        avatar,
+        last_seen
+      FROM modelos
+      WHERE id = $1
+    `, [modelo_id]);
+
+    if (!result.rows.length) {
+      return res.status(404).json({ error: "Modelo não encontrado" });
+    }
+
+    res.json(result.rows[0]);
+  }
+);
+
 app.get("/api/usuario/dados", auth, async (req, res) => {
   try {
     let result;
