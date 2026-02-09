@@ -1454,7 +1454,7 @@ router.get("/api/modelo/dados-bancarios", authModelo, async (req, res) => {
   res.json(result.rows[0] || null);
 });
 
-router.get("/modelo/conteudos", auth, onlyModelo, async (req, res) => {
+router.get("/modelo/conteudos", authMiddleware, authModelo, async (req, res) => {
   const modelo_id = req.user.id;
 
   const result = await db.query(
