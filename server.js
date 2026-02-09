@@ -2109,7 +2109,7 @@ app.get("/api/conteudos", authModelo, async (req, res) => {
   const { venda } = req.query;
 
   try {
-    let where = "c.modelo_id = $1";
+    let where = "c.user_id = $1";
     const params = [modelo_id];
 
     if (venda === "true") {
@@ -2120,7 +2120,7 @@ app.get("/api/conteudos", authModelo, async (req, res) => {
       `
       SELECT
         c.id,
-        c.modelo_id,
+        c.user_id,
         c.tipo,
         c.tipo_conteudo,
         c.url,
