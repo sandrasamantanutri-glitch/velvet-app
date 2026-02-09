@@ -431,9 +431,6 @@ async function abrirPopupConteudos() {
   });
 }
 
-// ===============================
-// ❌ FECHAR POPUP DE CONTEÚDOS
-// ===============================
 function fecharPopupConteudos() {
   const popup = document.getElementById("popupConteudos");
   if (!popup) return;
