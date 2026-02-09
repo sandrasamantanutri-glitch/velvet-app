@@ -131,14 +131,30 @@ async function initClienteInbox() {
   const me = await res.json();
   clienteId = me.id;
 
-  socket.emit("joinInbox", {
-    sala: `inbox_cliente_${clienteId}`
+  function entrarInbox() {
+    socket.emit("joinInbox", {
+      sala: `inbox_cliente_${clienteId}`
+    });
+  }
+
+  // registra listeners ANTES
+  socket.on("connect", entrarInbox);
+
+  socket.on("inboxMessage", () => {
+    carregarListaModelos();
   });
 
+  // se já estiver conectado, entra agora
+  if (socket.connected) {
+    entrarInbox();
+  }
+
+  // primeira carga
   carregarListaModelos();
 }
 
 document.addEventListener("DOMContentLoaded", initClienteInbox);
+
 
 
 // ===============================
