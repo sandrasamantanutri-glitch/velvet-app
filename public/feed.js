@@ -7,12 +7,6 @@ if (!token) {
   window.location.href = "/index.html";
 }
 
-fetch("/api/feed/modelos", {
-  headers: {
-    Authorization: "Bearer " + token
-  }
-})
-
 function logout() {
   localStorage.clear();
   window.location.href = "/index.html";
