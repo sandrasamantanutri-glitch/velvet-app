@@ -122,33 +122,6 @@ socket.on("mensagemExcluida", ({ id }) => {
   }
 });
 
-socket.on("clienteDigitando", ({ cliente_id: id }) => {
-  if (id !== cliente_id) return;
-
-  const status = document.getElementById("chatClienteStatus");
-  if (!status) return;
-
-  status.innerText = "digitando…";
-  status.style.color = "#25D366"; // verde zap
-});
-
-socket.on("clienteParouDigitando", ({ cliente_id: id, last_seen }) => {
-  if (id !== cliente_id) return;
-
-  const status = document.getElementById("chatClienteStatus");
-  if (!status) return;
-
-  status.style.color = "#6f6f6f";
-
-  if (last_seen) {
-    status.innerText = `visto por último ${formatarTempo(last_seen)}`;
-  } else {
-    status.innerText = "online";
-  }
-});
-
-
-
 
 
 
@@ -641,16 +614,13 @@ async function carregarInfoCliente(clienteId) {
     if (nome) {
   nome.innerText = cliente.username || "Cliente";
 }
-    if (status) {
-      if (cliente.online) {
-        status.innerText = "online";
-        status.style.color = "#25D366";
-      } else if (cliente.last_seen) {
-        status.innerText = `visto por último ${formatarTempo(cliente.last_seen)}`;
-      } else {
-        status.innerText = "offline";
-      }
-    }
+if (status) {
+  if (cliente.last_seen) {
+    status.innerText = `visto por último: ${formatarTempo(cliente.last_seen)}`;
+  } else {
+    status.innerText = "visto por último: agora";
+  }
+}
 
   } catch (err) {
     console.error("Erro carregar cliente:", err);
