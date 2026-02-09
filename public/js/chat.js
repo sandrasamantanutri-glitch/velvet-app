@@ -29,12 +29,15 @@ let conteudosVistosCliente = new Set();
 socket.on("chatHistory", mensagens => {
   chatBox.innerHTML = "";
   mensagens.forEach(m => renderMensagem(m));
+  scrollChatParaBaixo();
+
 });
 
 
 socket.on("newMessage", msg => {
   if (msg.sender === "modelo") {
     renderMensagem(msg);
+    scrollChatParaBaixo();
   } else {
     renderMensagem(msg);
   }
@@ -107,6 +110,13 @@ socket.on("mensagemExcluida", ({ id }) => {
 // ===============================
 // FUNÇÕES
 // ===============================
+
+  function scrollChatParaBaixo() {
+  const chatBox = document.getElementById("chatBox");
+  if (!chatBox) return;
+
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
 
 function formatarTempo(timestamp) {
   if (!timestamp || timestamp === "0") return "agora";
@@ -194,6 +204,7 @@ if (item) {
   item.dataset.status = "normal";
   atualizarBadgeComTempo(item);
   organizarListaClientes();
+  scrollChatParaBaixo();
 }
 
   input.value = "";
