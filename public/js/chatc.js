@@ -89,9 +89,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   socket.emit("joinChat", { sala });
   socket.emit("getHistory", { modelo_id, cliente_id });
 
-  // 🔔 marca como lido modelo
-  marcarComoLido(modelo_id);
-
   // 🔌 login realtime correto
   socket.emit("loginCliente", cliente_id);
 
