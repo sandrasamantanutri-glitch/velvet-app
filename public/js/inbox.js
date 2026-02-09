@@ -2,7 +2,7 @@
 // AUTH
 // ===============================
 const token = localStorage.getItem("token");
-if (!token) location.href = "/app/index.html";
+if (!token) location.href = "/index.html";
 
 // ===============================
 // SOCKET (INBOX)
@@ -156,10 +156,10 @@ socket.on("inboxMessage", carregarListaClientes);
 // HELPERS
 // ===============================
 function abrirChat(clienteId) {
-  window.location.href = `/app/chat.html?cliente=${clienteId}`;
+  window.location.href = `/chat.html?cliente=${clienteId}`;
 }
 
 function logout() {
   localStorage.clear();
-  location.href = "/app/index.html";
+  location.href = "/index.html";
 }
