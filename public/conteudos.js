@@ -39,7 +39,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("tipo_conteudo", "venda");
 
       try {
         btnEnviar.disabled = true;

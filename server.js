@@ -3821,7 +3821,7 @@ app.post(
   uploadB2.single("file"),
   async (req, res) => {
     const user_id = req.user.id;
-    const { tipo, tipo_conteudo } = req.body;
+    const { tipo } = req.body;
 
     if (!req.file) {
       return res.status(400).json({
@@ -3829,9 +3829,9 @@ app.post(
       });
     }
 
-    if (!tipo || !tipo_conteudo) {
+    if (!tipo) {
       return res.status(400).json({
-        error: "Campos obrigatórios: tipo e tipo_conteudo"
+        error: "Campo obrigatório: tipo"
       });
     }
 
@@ -3848,7 +3848,7 @@ app.post(
           url,
           thumbnail_url
         )
-        VALUES ($1, $2, $3, $4, $5)
+        VALUES ($1, $2, 'venda', $3, $4)
         RETURNING
           id,
           user_id,
@@ -3861,7 +3861,6 @@ app.post(
         [
           user_id,
           tipo,
-          tipo_conteudo,
           url,
           thumbnail_url
         ]
@@ -3871,11 +3870,12 @@ app.post(
     } catch (err) {
       console.error("Erro ao carregar conteúdo:", err);
       res.status(500).json({
-        error: "Erro ao carregarconteúdo"
+        error: "Erro ao carregar conteúdo"
       });
     }
   }
 );
+
 
 
 
