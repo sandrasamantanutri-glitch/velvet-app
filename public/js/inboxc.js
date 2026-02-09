@@ -10,6 +10,13 @@ const socket = io("https://velvet-test-production.up.railway.app", {
   auth: { token: "Bearer " + token }
 });
 
+// 🔔 REALTIME INBOX CLIENTE (GLOBAL)
+socket.on("inboxMessage", (data) => {
+  console.log("📩 inboxMessage recebido:", data);
+  carregarListaModelos();
+});
+
+
 const inboxEl = document.getElementById("inbox");
 
 // ===============================
@@ -139,10 +146,6 @@ async function initClienteInbox() {
 
   // registra listeners ANTES
   socket.on("connect", entrarInbox);
-
-  socket.on("inboxMessage", () => {
-    carregarListaModelos();
-  });
 
   // se já estiver conectado, entra agora
   if (socket.connected) {
