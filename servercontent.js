@@ -399,7 +399,7 @@ router.post("/api/allmessage",
       let vipQuery = `
         SELECT cliente_id
         FROM vip_subscriptions
-        WHERE modelo_id = $1
+        WHERE user_id = $1
           AND ativo = true
       `;
       const vipParams = [modelo_id];
@@ -1164,7 +1164,7 @@ router.get("/api/allmessage/conteudos/:modelo_id",
           url,
           thumbnail_url AS thumbnail
         FROM conteudos
-        WHERE modelo_id = $1
+        WHERE user_id = $1
           AND tipo_conteudo = 'venda'
         ORDER BY id DESC
         `,
@@ -1458,7 +1458,7 @@ router.get("/modelo/conteudos", authMiddleware, authModelo, async (req, res) => 
     `
     SELECT id, url, thumbnail
     FROM conteudos
-    WHERE modelo_id = $1
+    WHERE user_id = $1
     ORDER BY created_at DESC
     `,
     [modelo_id]
