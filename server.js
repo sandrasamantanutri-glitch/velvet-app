@@ -2125,10 +2125,10 @@ app.get("/api/conteudos", authModelo, async (req, res) => {
         c.tipo_conteudo,
         c.url,
         c.thumbnail_url,
-        c.created_at
+        c.criado_em
       FROM conteudos c
       WHERE ${where}
-      ORDER BY c.created_at DESC
+      ORDER BY c.criado_em DESC
       `,
       params
     );
