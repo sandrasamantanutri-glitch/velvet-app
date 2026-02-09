@@ -64,12 +64,41 @@ document.addEventListener("DOMContentLoaded", async () => {
   socket.emit("loginModelo", modelo_id);
 
   const input = document.getElementById("msgInput");
-  input.addEventListener("keydown", e => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      enviarMensagem();
-    }
+
+// ENTER envia mensagem
+input.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    enviarMensagem();
+  }
+});
+
+// ===============================
+// DIGITANDO… (WhatsApp style)
+// ===============================
+let digitandoTimeout = null;
+
+input.addEventListener("input", () => {
+  if (!cliente_id || !modelo_id) return;
+
+  // avisa que está digitando
+  socket.emit("digitando", {
+    sala,
+    cliente_id,
+    modelo_id
   });
+
+  // debounce: se parar de digitar
+  clearTimeout(digitandoTimeout);
+  digitandoTimeout = setTimeout(() => {
+    socket.emit("parouDigitando", {
+      sala,
+      cliente_id,
+      modelo_id
+    });
+  }, 1500);
+});
+
 socket.on("mensagemEditada", ({ id, text }) => {
   const msgEl = document
     .querySelector(`.msg-menu[data-id="${id}"]`)
@@ -92,6 +121,32 @@ socket.on("mensagemExcluida", ({ id }) => {
     msgEl.remove();
   }
 });
+
+socket.on("clienteDigitando", ({ cliente_id: id }) => {
+  if (id !== cliente_id) return;
+
+  const status = document.getElementById("chatClienteStatus");
+  if (!status) return;
+
+  status.innerText = "digitando…";
+  status.style.color = "#25D366"; // verde zap
+});
+
+socket.on("clienteParouDigitando", ({ cliente_id: id, last_seen }) => {
+  if (id !== cliente_id) return;
+
+  const status = document.getElementById("chatClienteStatus");
+  if (!status) return;
+
+  status.style.color = "#6f6f6f";
+
+  if (last_seen) {
+    status.innerText = `visto por último ${formatarTempo(last_seen)}`;
+  } else {
+    status.innerText = "online";
+  }
+});
+
 
 
 

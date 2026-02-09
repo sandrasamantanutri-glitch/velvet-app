@@ -1355,6 +1355,17 @@ socket.on("excluirMensagem", async ({ id }) => {
   }
 });
 
+  socket.on("digitando", ({ sala, cliente_id, modelo_id }) => {
+    socket.to(sala).emit("clienteDigitando", { cliente_id });
+  });
+
+  socket.on("parouDigitando", ({ sala, cliente_id, modelo_id }) => {
+    socket.to(sala).emit("clienteParouDigitando", {
+      cliente_id,
+      last_seen: Date.now()
+    });
+  });
+
 
 
 });
