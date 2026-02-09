@@ -1,34 +1,25 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
+
 <head>
-  <meta charset="UTF-8" />
-  <title>Conversas</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="./css/inbox.css" />
-
-  <link rel="icon" href="/favicon.ico" sizes="any" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-
-  <link rel="manifest" href="/manifest.json" />
-  <meta name="theme-color" content="#7B2CFF" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-
+  <meta charset="UTF-8">
+   <title>Conversas</title>
+  <link rel="stylesheet" href="/app/inbox.css">
+    <link rel="stylesheet" href="./area.css">
 </head>
 
 <body>
-  <section class="hero">
-    <a href="/feed.html"><img src="/assets/velvet.png" alt="Velvet" class="velvet-logo">
-    <div class="hero-icons">
-    <a href="/feed.html" title="Feed"><img src="./assets/feed.png" alt="Feed"></a>
-    <a href="/inbox.html" title="Chat"><img src="./assets/chat.png" alt="Chat"></a>
-    <a href="/perfil.html" title="Perfil"><img src="./assets/perfil.png" alt="Perfil"></a>
-    </div>
-  </section>
+ <div id="header-container"></div>
+
+ <section class="area-card">
+    <button type="button" class="btn-voltar" onclick="history.back()">
+      <img src="/assets/voltar.png" alt="Voltar">
+    </button>
+
+   <h3>Conversas</h3>
 
   <div class="content">
     <main id="inbox" class="inbox"></main>
-
       <!-- ITEM DO CHAT -->
       <!--
       Estados esperados (JS controla classes/labels):
