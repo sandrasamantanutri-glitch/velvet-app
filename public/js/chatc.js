@@ -33,11 +33,12 @@ chatBox.addEventListener("scroll", () => {
 
 const input = document.getElementById("msgInput");
 
-clienteId=null;
 let sala = null;
 let cliente_id = null;
 let chatAtivo = null;
 let conteudosVistosModelo = new Set();
+let carregandoHistorico = false;
+let ultimoTimestamp = null;
 
 // 📜 HISTÓRICO
 socket.on("chatHistory", mensagens => {
@@ -54,7 +55,7 @@ socket.on("chatHistory", mensagens => {
     chat.scrollTop = chat.scrollHeight;
   });
 
-  ultimoTimestamp = mensagens[0].created_at;
+ ultimoTimestamp = mensagens[mensagens.length - 1].created_at;
 });
 
 socket.on("newMessage", msg => {
@@ -526,8 +527,8 @@ async function carregarConteudosVistos(modelo_id) {
 
 function formatarHora(data) {
   if (!data) return "";
-
   const d = new Date(data);
+  if (isNaN(d)) return "";
   return d.toLocaleTimeString("pt-BR", {
     hour: "2-digit",
     minute: "2-digit"
