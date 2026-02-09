@@ -2104,7 +2104,7 @@ app.get(
 );
 
 // 📦 CONTEÚDOS DA MODELO (PARA POPUP)
-aapp.get("/api/conteudos", authModelo, async (req, res) => {
+app.get("/api/conteudos", authModelo, async (req, res) => {
   const modelo_id = req.user.id;
   const { venda } = req.query;
 
