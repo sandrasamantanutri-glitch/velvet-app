@@ -1165,9 +1165,9 @@ router.get("/api/allmessage/conteudos/:modelo_id",
           id,
           url,
           tipo,
-          thumbnail_url
+          thumbnail_url AS thumbnail,
         FROM conteudos
-        WHERE user_id = $1
+        WHERE modelo_id = $1
           AND tipo_conteudo = 'venda'
         ORDER BY id DESC
         `,
@@ -1453,6 +1453,23 @@ router.get("/api/modelo/dados-bancarios", authModelo, async (req, res) => {
 
   res.json(result.rows[0] || null);
 });
+
+router.get("/modelo/conteudos", auth, onlyModelo, async (req, res) => {
+  const modelo_id = req.user.id;
+
+  const result = await db.query(
+    `
+    SELECT id, url, thumbnail
+    FROM conteudos
+    WHERE modelo_id = $1
+    ORDER BY created_at DESC
+    `,
+    [modelo_id]
+  );
+
+  res.json(result.rows);
+});
+
 
 
 
