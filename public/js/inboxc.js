@@ -10,6 +10,12 @@ const socket = io("https://velvet-test-production.up.railway.app", {
   auth: { token: "Bearer " + token }
 });
 
+const inboxEl = document.getElementById("inbox");
+
+document.addEventListener("DOMContentLoaded", () => {
+  carregarListaClientes();
+});
+
 
 // ===============================
 // FETCH INBOX
@@ -57,7 +63,7 @@ clientes.forEach(c => {
 
   const div = document.createElement("div");
   div.className = "chat-item";
-  div.onclick = () => abrirChat(c.modelo_idid);
+  div.onclick = () => abrirChat(c.modelo_id);
 
   div.innerHTML = `
     <div class="avatar">
