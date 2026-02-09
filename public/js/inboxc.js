@@ -62,36 +62,37 @@ async function carregarListaModelos() {
     const div = document.createElement("div");
     div.className = "chat-item";
     div.onclick = () => abrirChat(c.modelo_id);
-
     div.innerHTML = `
-      <div class="avatar">
-        ${
-          c.avatar
-            ? `<img src="${c.avatar}" />`
-            : `<div class="avatar-placeholder"></div>`
-        }
+  <div class="avatar">
+    ${
+      c.avatar
+        ? `<img src="${c.avatar}" />`
+        : `<div class="avatar-placeholder"></div>`
+    }
+  </div>
+
+  <div class="chat-body">
+    <div class="chat-top">
+      <span class="chat-name">
+        ${c.nome_exibicao || "Modelo"}
+      </span>
+
+      <span class="chat-time">
+        ${c.ultima_mensagem_em ? formatarTempo(c.ultima_mensagem_em) : ""}
+      </span>
+    </div>
+
+    <div class="chat-bottom">
+      <span class="chat-last">
+        Nenhuma mensagem ainda
+      </span>
+
+      <div class="chat-status">
+        ${statusHTML}
       </div>
-
-      <div class="chat-body">
-        <div class="chat-top">
-        <span class="chat-name">
-  ${c.nome_exibicao || "Modelo"}
-</span>
-
-<span class="chat-time">
-  ${c.ultima_mensagem_em ? formatarTempo(c.ultima_mensagem_em) : ""}
-</span>
-
-<span class="chat-last">
-  Nenhuma mensagem ainda
-</span>
-
-          <div class="chat-status">
-            ${statusHTML}
-          </div>
-        </div>
-      </div>
-    `;
+    </div>
+  </div>
+`;
 
     inboxEl.appendChild(div);
   });
