@@ -155,8 +155,8 @@ socket.on("inboxMessage", carregarListaClientes);
 // ===============================
 // HELPERS
 // ===============================
-function abrirChat(clienteId) {
-  window.location.href = `/chat.html?cliente=${clienteId}`;
+function abrirChat(modeloId) {
+  window.location.href = `/chat.html?chat_id=${modeloId}`;
 }
 
 function logout() {
