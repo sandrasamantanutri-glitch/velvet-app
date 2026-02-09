@@ -6,14 +6,14 @@ if (!token) {
   throw new Error("Sem token");
 }
 
+const socket = io({
+  transports: ["websocket"]
+});
+
 socket.on("connect", () => {
   socket.emit("auth", {
     token: localStorage.getItem("token")
   });
-});
-
-const socket = io({
-  transports: ["websocket"]
 });
 
 let cliente_id = null;
