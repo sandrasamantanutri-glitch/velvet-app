@@ -1,24 +1,21 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-  <meta charset="UTF-8" />
-  <title>Velvet | Envio de Mensagens - PPV</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="allmessage.css" />
-   <!-- Header global -->
-  <link rel="stylesheet" href="/header.css" />
+  <meta charset="UTF-8">
+   <title>Mensagem para Assinantes</title>
+  <link rel="stylesheet" href="/area.css">
 </head>
 
 <body>
-     <!-- 🔒 PROTEÇÃO -->
-  <script>
-    if (!localStorage.getItem("token")) {
-      window.location.href = "/index.html";
-    }
-  </script>
+ <div id="header-container"></div>
 
-  <!-- HEADER -->
-  <div id="header-container"></div>
+ <section class="area-card">
+    <button type="button" class="btn-voltar" onclick="history.back()">
+      <img src="/assets/voltar.png" alt="Voltar">
+    </button>
+
+   <h3>mensagem em Massa</h3>
 
 <div class="page-wrapper">
 
