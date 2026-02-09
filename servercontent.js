@@ -1140,22 +1140,20 @@ router.get(
 // 📣 ALLMESSAGE - CONTEÚDOS DA MODELO
 // ===============================
 router.get("/api/allmessage/conteudos/:modelo_id",
-  authMiddleware, // ou auth, use o MESMO que funcionou antes
+  authMiddleware,
   requireRole("admin", "modelo"),
   async (req, res) => {
     try {
       const { modelo_id } = req.params;
       const { role, id: user_id } = req.user;
 
-      // 🔒 modelo só pode acessar os próprios conteúdos
       if (role === "modelo") {
         const check = await db.query(
           `SELECT 1 FROM modelos WHERE id = $1 AND user_id = $2`,
           [modelo_id, user_id]
         );
-
         if (check.rowCount === 0) {
-          return res.status(403).json([]);
+          return res.json([]); // ⚠️ sempre array
         }
       }
 
@@ -1164,8 +1162,7 @@ router.get("/api/allmessage/conteudos/:modelo_id",
         SELECT
           id,
           url,
-          tipo,
-          thumbnail_url AS thumbnail,
+          thumbnail_url AS thumbnail
         FROM conteudos
         WHERE modelo_id = $1
           AND tipo_conteudo = 'venda'
@@ -1174,11 +1171,11 @@ router.get("/api/allmessage/conteudos/:modelo_id",
         [modelo_id]
       );
 
-      res.json(result.rows);
+      res.json(result.rows); // ✅ SEMPRE array
 
     } catch (err) {
-      console.error("❌ Erro ALLMESSAGE conteudos:", err.message);
-      res.status(500).json({ error: err.message });
+      console.error("❌ Erro ALLMESSAGE conteudos:", err);
+      res.json([]); // ⚠️ NUNCA retornar objeto
     }
   }
 );

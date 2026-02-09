@@ -64,6 +64,12 @@ async function carregarConteudos() {
   );
 
   const conteudos = await res.json();
+
+if (!Array.isArray(conteudos)) {
+  console.warn("Resposta inesperada:", conteudos);
+  return;
+}
+
   const grid = document.getElementById("conteudosGrid");
 
   grid.innerHTML = "";
