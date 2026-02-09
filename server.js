@@ -985,8 +985,8 @@ const messageId = result.rows[0].id;
       }
     }
 
- // 7️⃣ META UPDATE (status / horário)
  // 🔥 ENVIA PARA A SALA (CLIENTE + MODELO)
+// 🔥 AVISA CHAT (ambos na sala)
 io.to(sala).emit("newMessage", {
   id: messageId,
   cliente_id,
@@ -995,17 +995,27 @@ io.to(sala).emit("newMessage", {
   tipo: "texto",
   text,
   created_at: new Date()
- });
+});
 
- if (sender === "cliente") {
-  io.to(`inbox_modelo_${modelo_id}`).emit("inboxMessage", {
-    cliente_id,
-    text,
-    created_at: new Date()
-  });
-}
+// 🔔 AVISA INBOX DO MODELO
+io.to(`inbox_modelo_${modelo_id}`).emit("inboxMessage", {
+  cliente_id,
+  modelo_id,
+  sender,
+  text,
+  created_at: new Date()
+});
 
-  } catch (err) {
+// 🔔 AVISA INBOX DO CLIENTE
+io.to(`inbox_cliente_${cliente_id}`).emit("inboxMessage", {
+  cliente_id,
+  modelo_id,
+  sender,
+  text,
+  created_at: new Date()
+});
+
+} catch (err) {
     console.error("🔥 ERRO AO SALVAR MENSAGEM:", err);
   }
 });
@@ -1196,20 +1206,46 @@ socket.on("sendConteudo", async ({ cliente_id, modelo_id, conteudos_ids, preco }
 
     const midias = midiasRes.rows;
 
-    // 4️⃣ envia para a sala (modelo + cliente)
-    io.to(sala).emit("newMessage", {
-      id: messageId,
-      cliente_id,
-      modelo_id,
-      sender: "modelo",
-      tipo: "conteudo",
-      preco,
-      visto: false,
-      quantidade: midias.length,
-      midias,
-      bloqueado: Number(preco) > 0,
-      created_at: new Date()
-    });
+// 🔥 CHAT (modelo + cliente)
+io.to(sala).emit("newMessage", {
+  id: messageId,
+  cliente_id,
+  modelo_id,
+  sender: "modelo",
+  tipo: "conteudo",
+  preco,
+  visto: false,
+  quantidade: midias.length,
+  midias,
+  bloqueado: Number(preco) > 0,
+  created_at: new Date()
+});
+
+// 🔔 INBOX DA MODELO
+io.to(`inbox_modelo_${modelo_id}`).emit("inboxMessage", {
+  cliente_id,
+  modelo_id,
+  sender: "modelo",
+  tipo: "conteudo",
+  textoPreview:
+    Number(preco) > 0
+      ? `📦 Conteúdo pago (${midias.length})`
+      : `📦 Conteúdo (${midias.length})`,
+  created_at: new Date()
+});
+
+// 🔔 INBOX DO CLIENTE
+io.to(`inbox_cliente_${cliente_id}`).emit("inboxMessage", {
+  cliente_id,
+  modelo_id,
+  sender: "modelo",
+  tipo: "conteudo",
+  textoPreview:
+    Number(preco) > 0
+      ? `📦 Conteúdo pago (${midias.length})`
+      : `📦 Conteúdo (${midias.length})`,
+  created_at: new Date()
+});
 
   } catch (err) {
     console.error("❌ Erro sendConteudo:", err);

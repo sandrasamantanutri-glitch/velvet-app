@@ -27,8 +27,10 @@ let modeloId = null;
   if (me.role !== "modelo") return logout();
 
   modeloId = me.id;
-  socket.emit("joinInbox", { modelo_id: modeloId });
-  carregarListaClientes();
+  socket.emit("joinInbox", {
+  sala: `inbox_modelo_${modelo_id}`
+});
+ socket.on("inboxMessage", carregarListaClientes);
 })();
 
 // ===============================

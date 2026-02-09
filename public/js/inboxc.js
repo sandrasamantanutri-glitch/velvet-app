@@ -131,7 +131,13 @@ function formatarTempo(data) {
 // ===============================
 // REALTIME
 // ===============================
+
+socket.emit("joinInbox", {
+  sala: `inbox_cliente_${cliente_id}`
+});
+
 socket.on("inboxMessage", carregarListaModelos);
+
 
 // ===============================
 // HELPERS

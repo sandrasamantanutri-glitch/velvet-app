@@ -51,9 +51,8 @@ socket.on("chatHistory", mensagens => {
 });
 
 socket.on("newMessage", msg => {
-  if (msg.sender === "modelo") {
-    renderMensagem(msg);
-  } 
+ renderMensagem(msg);
+  scrollParaFinal();
 });
 
 // ===============================
@@ -193,14 +192,19 @@ function atualizarBadgeComTempo(li) {
 }
 
 function enviarMensagem() {
-  const input = document.getElementById("msgInput");
-  const text = input.value.trim();
+ const text = input.value.trim();
   if (!text) return;
 
-  if (!cliente_id || !modelo_id) {
-  alert("Erro de sessão. Recarregue a página.");
-  return;
-}
+  const msgLocal = {
+    id: "temp-" + Date.now(),
+    sender: "modelo",
+    text,
+    created_at: Date.now()
+  };
+
+  renderMensagem(msgLocal);
+  scrollParaFinal();
+
   socket.emit("sendMessage", {
     cliente_id,
     modelo_id,
