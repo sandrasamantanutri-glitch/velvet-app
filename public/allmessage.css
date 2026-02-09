@@ -196,6 +196,12 @@ textarea {
   font-size: 14px;
 }
 
+.btn-voltar {
+  background: none;
+  border: none;
+  font-size: 20px;
+}
+
 /* ===============================
    AÇÕES DO MODAL
 ================================ */

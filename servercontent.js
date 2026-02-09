@@ -384,16 +384,9 @@ router.post("/api/allmessage",
       }
 
       // 🔒 modelo só pode enviar da própria conta
-      if (role === "modelo") {
-        const check = await db.query(
-          `SELECT 1 FROM modelos WHERE id = $1 AND user_id = $2`,
-          [modelo_id, user_id]
-        );
-
-        if (check.rowCount === 0) {
-          return res.status(403).json({ error: "Modelo inválida" });
-        }
-      }
+      if (role === "modelo" && Number(modelo_id) !== user_id) {
+  return res.status(403).json({ error: "Modelo inválida" });
+}
 
       // 🔍 buscar assinantes ativos
       let vipQuery = `
