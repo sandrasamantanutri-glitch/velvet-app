@@ -14,21 +14,65 @@ document.addEventListener("DOMContentLoaded", async () => {
     ?.addEventListener("click", () => enviar(false));
 });
 
-function abrirPopupConteudos() {
-  document
-    .getElementById("popupConteudos")
-    .classList.remove("hidden");
+async function abrirPopupConteudos() {
+  const popup = document.getElementById("popupConteudos");
+  popup.classList.remove("hidden");
 
-  carregarConteudos();
+  const grid = document.getElementById("previewConteudos");
+  grid.innerHTML = "Carregando...";
+
+  const token = localStorage.getItem("token");
+
+  // ⚠️ NO PPV usamos USER_ID da modelo (não modelos.id)
+  const modeloUserId = document.getElementById("modeloSelect").value;
+
+  const res = await fetch(
+    `/api/allmessage/conteudos/${modeloUserId}`,
+    {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    }
+  );
+
+  if (!res.ok) {
+    grid.innerHTML = "Erro ao carregar conteúdos";
+    return;
+  }
+
+  const conteudos = await res.json();
+
+  if (!Array.isArray(conteudos) || conteudos.length === 0) {
+    grid.innerHTML = "<p>Nenhum conteúdo de venda disponível.</p>";
+    return;
+  }
+
+  grid.innerHTML = "";
+
+  conteudos.forEach(c => {
+    const item = document.createElement("div");
+    item.className = "preview-item";
+    item.dataset.conteudoId = c.id;
+
+    item.innerHTML = `
+      <img src="${c.thumbnail || c.url}" />
+    `;
+
+    item.onclick = () => {
+      item.classList.toggle("selected");
+    };
+
+    grid.appendChild(item);
+  });
 }
 
 function fecharPopupConteudos() {
-  document
-    .getElementById("popupConteudos")
-    .classList.add("hidden");
+  const popup = document.getElementById("popupConteudos");
+  if (!popup) return;
 
-  renderizarSelecionados();
+  popup.classList.add("hidden");
 }
+
 
 // ===============================
 // MODELO LOGADO
