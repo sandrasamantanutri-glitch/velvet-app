@@ -74,18 +74,18 @@ async function carregarListaModelos() {
 
       <div class="chat-body">
         <div class="chat-top">
-          <span class="chat-name">
-            ${c.username || c.nome || "Modelo"}
-          </span>
-          <span class="chat-time">
-            ${formatarTempo(c.ultima_mensagem_em)}
-          </span>
-        </div>
+        <span class="chat-name">
+  ${c.nome_exibicao || "Modelo"}
+</span>
 
-        <div class="chat-bottom">
-          <span class="chat-last">
-            ${c.ultima_mensagem || "Nenhuma mensagem ainda"}
-          </span>
+<span class="chat-time">
+  ${c.ultima_mensagem_em ? formatarTempo(c.ultima_mensagem_em) : ""}
+</span>
+
+<span class="chat-last">
+  Nenhuma mensagem ainda
+</span>
+
           <div class="chat-status">
             ${statusHTML}
           </div>
