@@ -1,108 +1,53 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-  <meta charset="UTF-8" />
-  <title>Conteúdos Exclusivos | Velvet</title>
-
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- Fonte -->
-  <link
-    href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
-    rel="stylesheet"
-  />
-
-  <!-- Header global -->
-  <link rel="stylesheet" href="/header.css" />
-
-  <!-- Página Conteúdos -->
-  <link rel="stylesheet" href="/conteudos.css" />
+  <meta charset="UTF-8">
+   <title>Conteúdos Privados</title>
+   <link rel="stylesheet" href="/conteudos.css">
+  <link rel="stylesheet" href="/area.css">
 </head>
 
 <body>
+ <div id="header-container"></div>
 
-  <!-- 🔒 PROTEÇÃO -->
-  <script>
-    if (!localStorage.getItem("token")) {
-      window.location.href = "/index.html";
-    }
-  </script>
+ <section class="area-card">
+     <button type="button" class="btn-voltar" onclick="history.back()">
+      <img src="/assets/voltar.png" alt="Voltar">
+     </button>
 
-  <!-- HEADER -->
-  <div id="header-container"></div>
+      <h3>Meus Conteúdos Privados</h3>
+      <p class="section-desc"> Gerencie seus conteúdos exclusivos. Este conteúdo só é acessível quando enviado via chat.</p>
 
-  <!-- CONTEÚDO -->
-  <main class="profile-page">
-    <section class="profile-content">
-
-      <!-- TÍTULO -->
-      <h1 class="section-title">Conteúdos Exclusivos</h1>
-      <p class="section-desc">
-        Gerencie seus conteúdos exclusivos.  
-        Este conteúdo só é acessível quando enviado via chat.
-      </p>
-
-      <!-- UPLOAD -->
       <div class="upload-box">
-
-        <!-- input real -->
-        <input
-          type="file"
-          id="conteudoFile"
-          accept="image/*,video/*"
-          hidden
-        />
-
-        <label for="conteudoFile" class="btn-file">
-          Escolher ficheiro
-        </label>
-
-        <span id="fileName" class="file-name">
-          Nenhum ficheiro selecionado
-        </span>
-
-        <button class="btn-primary" onclick="uploadConteudo()">
-          Enviar Conteúdo
-        </button>
-
+        <input type="file" id="conteudoFile" accept="image/*,video/*" hidden/>
+        <label for="conteudoFile" class="btn-file">Escolher midia</label>
+        <span id="fileName" class="file-name">Nenhuma midia selecionada</span>
+        <button class="btn-primary" onclick="uploadConteudo()">Enviar Conteúdo</button>
       </div>
 
       <hr class="separator" />
 
-      <!-- LISTA -->
       <h2 class="section-subtitle">Meus Conteúdos</h2>
-
-      <!-- GRID (PADRÃO PROFILE) -->
       <div id="listaConteudos"></div>
 
     </section>
-  </main>
-
-  <!-- ===============================
-       MODAL VISUALIZAÇÃO DE MÍDIA
-  ================================ -->
-  <div id="modalMidia" class="modalMidia hidden">
+ 
+   <div id="modalMidia" class="modalMidia hidden">
     <span id="fecharModal" class="modalClose">&times;</span>
-
     <div class="modalContentWrapper">
-      <img
-        id="modalImg"
-        class="modalMidiaContent"
-        style="display:none;"
-      />
-      <video
-        id="modalVideo"
-        class="modalMidiaContent"
-        controls
-        style="display:none;"
-      ></video>
+      <img id="modalImg" class="modalMidiaContent" style="display:none;"/>
+      <video id="modalVideo" class="modalMidiaContent" controls style="display:none;"></video>
     </div>
-  </div>
+   </div>
 
-  <!-- SCRIPTS -->
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="/header.js"></script>
-  <script src="/conteudos.js"></script>
+
+  </section>
+
+  
+<script src="/socket.io/socket.io.js"></script>
+<script src="/header.js"></script>
+<script src="/conteudos.js"></script>
 
 </body>
 </html>
