@@ -28,50 +28,52 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
    if (btnEnviar) {
-    btnEnviar.addEventListener("click", async () => {
-      const fileInput = document.getElementById("fileConteudo");
+  btnEnviar.addEventListener("click", async () => {
+    const fileInput = document.getElementById("fileConteudo");
+    const file = fileInput.files[0];
 
-      const file = fileInput.files[0];
+    if (!file) {
+      alert("Selecione um arquivo");
+      return;
+    }
 
-      if (!file) {
-        alert("Selecione um arquivo");
-        return;
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      btnEnviar.disabled = true;
+      btnEnviar.textContent = "Enviando...";
+
+      const res = await fetch("/api/conteudos", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + token
+        },
+        body: formData
+      });
+
+      if (!res.ok) {
+        const erro = await res.text();
+        throw new Error(erro || "Erro ao enviar conteúdo");
       }
-      const formData = new FormData();
-      formData.append("file", file);
 
-      try {
-        btnEnviar.disabled = true;
-        btnEnviar.textContent = "Enviando...";
+      // ✅ sucesso
+      fecharModalNovoConteudo();
+      await carregarConteudos();
 
-        const res = await fetch("/api/conteudos", {
-          method: "POST",
-          headers: {
-            Authorization: "Bearer " + token
-          },
-          body: formData
-        });
+      // reset input
+      fileInput.value = "";
 
-        if (!res.ok) {
-          const erro = await res.text();
-          throw new Error(erro || "Erro ao enviar conteúdo");
-        }
+    } catch (err) {
+      console.error("Erro upload:", err.message);
+      alert("Erro ao enviar conteúdo");
+    } finally {
+      btnEnviar.disabled = false;
+      btnEnviar.textContent = "Enviar";
+    }
+  });
+}
 
-        fecharModalNovoConteudo();
-        await carregarConteudos();
-
-        fileInput.value = "";
-        tipoSelect.value = "imagem";
-
-      } catch (err) {
-        console.error("Erro upload:", err.message);
-        alert("Erro ao enviar conteúdo");
-      } finally {
-        btnEnviar.disabled = false;
-        btnEnviar.textContent = "Enviar";
-      }
-    });
-  }
 });
 
 async function carregarConteudos() {

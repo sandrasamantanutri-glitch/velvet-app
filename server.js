@@ -3821,7 +3821,6 @@ app.post(
   uploadB2.single("file"),
   async (req, res) => {
     const user_id = req.user.id;
-    const { tipo } = req.body;
 
     if (!req.file) {
       return res.status(400).json({
@@ -3829,15 +3828,22 @@ app.post(
       });
     }
 
-    if (!tipo) {
-      return res.status(400).json({
-        error: "Campo obrigatório: tipo"
-      });
-    }
-
     try {
+      const { mimetype } = req.file;
+
+      let tipo;
+      if (mimetype.startsWith("image/")) {
+        tipo = "imagem";
+      } else if (mimetype.startsWith("video/")) {
+        tipo = "video";
+      } else {
+        return res.status(400).json({
+          error: "Tipo de arquivo não suportado"
+        });
+      }
+
       const url = req.file.location;
-      const thumbnail_url = req.body.thumbnail_url || null;
+      const thumbnail_url = null; // vídeo → gerar depois
 
       const result = await db.query(
         `
@@ -3867,6 +3873,7 @@ app.post(
       );
 
       res.json(result.rows[0]);
+
     } catch (err) {
       console.error("Erro ao carregar conteúdo:", err);
       res.status(500).json({
@@ -3875,9 +3882,6 @@ app.post(
     }
   }
 );
-
-
-
 
 // ===============================
 // 🔥 MIDDLEWARE GLOBAL DE ERRO
