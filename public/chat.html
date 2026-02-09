@@ -1,20 +1,20 @@
 <!DOCTYPE html>
-<html lang="pt-br">
-<head>
-  <meta charset="UTF-8" />
-  <title>Chat</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+<html lang="pt-BR">
 
-  <link rel="stylesheet" href="./css/chat.css" />
+<head>
+  <meta charset="UTF-8">
+   <title>Chat</title>
+  <link rel="stylesheet" href="/css/chat.css">
   <link rel="stylesheet" href="/chatmodelo.css">
+    <link rel="stylesheet" href="/area.css">
 </head>
 
 <body>
- <header class="chat-header">
-    <img src="/assets/velvet.png" alt="Velvet" class="velvet-logo">
-    <button class= "btn-voltar" onclick="history.back()"><img src="./assets/voltar.png" alt="Voltar"></a>
-    </div>
-  </header>
+ <div id="header-container"></div>
+
+    <button type="button" class="btn-voltar" onclick="history.back()">
+      <img src="/assets/voltar.png" alt="Voltar">
+    </button>
 
 <!-- ÁREA DE MENSAGENS -->
 <main id="chatBox" class="chat-box"></main>
@@ -29,7 +29,7 @@
     onclick="abrirPopupConteudos()"
     aria-label="Enviar mídia"
   >
-    <img src="./assets/midia.png" alt="Mídia" />
+    <img src="/assets/midia.png" alt="Mídia" />
   </button>
 
   <input
@@ -44,7 +44,7 @@
     onclick="enviarMensagem()"
     aria-label="Enviar mensagem"
   >
-    <img src="./assets/enviar.png" alt="Enviar" />
+    <img src="/assets/enviar.png" alt="Enviar" />
   </button>
 </footer>
 
@@ -73,14 +73,12 @@
 
 </div>
 
-<!-- POPUP EDITAR / EXCLUIR MENSAGEM -->
 <div id="menuMensagem" class="hidden">
   <div class="popup-backdrop" onclick="fecharMenuMensagem()"></div>
 
   <div class="popup-box">
     <h3>Mensagem</h3>
 
-    <!-- 🔥 ESSE TEXTAREA É O QUE ESTAVA FALTANDO -->
     <textarea id="editarTexto" placeholder="Editar mensagem..."></textarea>
 
     <div class="popup-actions">
@@ -93,6 +91,6 @@
 
 
 <script src="/socket.io/socket.io.js"></script>
-<script src="./js/chat.js"></script>
+<script src="/js/chat.js"></script>
 </body>
 </html>
