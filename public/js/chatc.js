@@ -10,9 +10,14 @@ const socket = io({
 
 socket.emit("auth", { token });
 
-// params
 const params = new URLSearchParams(location.search);
-const clienteId = Number(params.get("cliente"));
+const modeloIdFromUrl = Number(params.get("chat_id"));
+
+if (!modeloIdFromUrl || isNaN(modeloIdFromUrl)) {
+  alert("Chat inválido");
+  history.back();
+  throw new Error("modelo_id inválido");
+}
 
 const chatBox = document.getElementById("chatBox");
 
@@ -63,18 +68,18 @@ document.addEventListener("DOMContentLoaded", async () => {
   const res = await fetch("/api/me", {
     headers: { Authorization: "Bearer " + token }
   });
-  
+
   if (me.role !== "cliente") {
   alert("Acesso inválido");
   history.back();
   return;
 }
 
+modelo_id = modeloIdFromUrl;
+cliente_id = me.id;
+
 
   const me = await res.json();
-  modelo_id = me.id;
-
-  cliente_id = clienteId;
   await carregarInfoCliente(cliente_id);
 
   sala = `chat_${cliente_id}_${modelo_id}`;
