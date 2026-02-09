@@ -41,23 +41,11 @@ async function carregarListaModelos() {
   modelos.forEach(c => {
     let statusHTML = "";
 
-    // 🔵 última mensagem da MODELO
-    if (c.ultimo_sender === "modelo") {
-      if (c.visto === false) {
-        statusHTML = `<span class="status status-unseen">Novo</span>`;
-      } else {
-        statusHTML = `<span class="status status-read">✓✓</span>`;
-      }
-    }
-
-    // 🟣 última mensagem do CLIENTE
-    if (c.ultimo_sender === "cliente") {
-      if (c.lida === false) {
-        statusHTML = `<span class="status status-unseen">Não lido</span>`;
-      } else {
+  if (c.sender === "modelo" && c.lida === false) {
+  statusHTML = `<span class="status status-unseen">Não lido</span>`;
+  } else {
         statusHTML = `<span class="status status-reply">Por responder</span>`;
       }
-    }
 
     const div = document.createElement("div");
     div.className = "chat-item";
@@ -82,13 +70,9 @@ async function carregarListaModelos() {
       </span>
     </div>
 
-    <div class="chat-bottom">
-      <span class="chat-last">
-        Nenhuma mensagem ainda
-      </span>
-
-      <div class="chat-status">
-        ${statusHTML}
+      <div class="chat-bottom">
+        <span class="chat-last">${c.ultima_mensagem || ""}</span>
+        <div class="chat-status">${statusHTML}</div>
       </div>
     </div>
   </div>
