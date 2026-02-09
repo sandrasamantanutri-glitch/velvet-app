@@ -31,15 +31,12 @@ let modelo_id = null;
 let cliente_id = null;
 let chatAtivo = null;
 let conteudosVistosCliente = new Set();
-let carregandoHistorico = false;
-let ultimoTimestamp = null;
 
 // 📜 HISTÓRICO
 socket.on("chatHistory", mensagens => {
   if (!mensagens.length) return;
   mensagens.forEach(m => renderMensagem(m));
   ultimoTimestamp = mensagens[0].created_at;
-  scrollChatParaBaixoSeguro();
 });
 
 
@@ -47,7 +44,6 @@ socket.on("chatHistory", mensagens => {
 socket.on("newMessage", msg => {
   if (msg.sender === "modelo") {
     renderMensagem(msg);
-    scrollChatParaBaixo();
   } 
 });
 
@@ -118,16 +114,6 @@ socket.on("mensagemExcluida", ({ id }) => {
 // ===============================
 // FUNÇÕES
 // ===============================
-
-function scrollChatParaBaixoSeguro() {
-  const chatBox = document.getElementById("chatBox");
-  if (!chatBox) return;
-
-  // espera imagens e vídeos ajustarem altura
-  setTimeout(() => {
-    chatBox.scrollTop = chatBox.scrollHeight;
-  }, 50);
-}
 
 function formatarTempo(timestamp) {
   if (!timestamp || timestamp === "0") return "agora";
@@ -215,7 +201,6 @@ if (item) {
   item.dataset.status = "normal";
   atualizarBadgeComTempo(item);
   organizarListaClientes();
-  scrollChatParaBaixo();
 }
 
   input.value = "";
@@ -296,6 +281,7 @@ else {
   `;
 }
   chat.appendChild(div);
+   chat.scrollTop = chat.scrollHeight;
 const btn = div.querySelector(".msg-menu");
 if (btn) {
   btn.addEventListener("click", () => {
