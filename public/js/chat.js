@@ -202,9 +202,6 @@ function enviarMensagem() {
     created_at: Date.now()
   };
 
-  renderMensagem(msgLocal);
-  scrollParaFinal();
-
   socket.emit("sendMessage", {
     cliente_id,
     modelo_id,
