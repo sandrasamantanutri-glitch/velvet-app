@@ -58,7 +58,7 @@ socket.on("chatHistory", mensagens => {
     chat.scrollTop = chat.scrollHeight;
   });
 
- ultimoTimestamp = mensagens[mensagens.length - 1].created_at;
+ltimoTimestamp = mensagens[0].created_at;
 });
 
 socket.on("newMessage", msg => {
@@ -90,10 +90,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   // 🔥 entra na sala
   sala = `chat_${modelo_id}_${cliente_id}`;
   socket.emit("joinChat", { sala });
-  socket.emit("loginCliente", cliente_id);
   socket.emit("getHistory", { modelo_id, cliente_id });
 
+  // 🔌 login realtime correto
+  socket.emit("loginCliente", cliente_id);
+  socket.emit("loginModelo", modelo_id);
+
   // ENTER envia
+
   const input = document.getElementById("msgInput");
   input.addEventListener("keydown", e => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -214,11 +218,9 @@ function enviarMensagem() {
     created_at: Date.now()
   };
 
-  renderMensagem(msgLocal);
-  scrollParaFinal();
   socket.emit("sendMessage", {
-    cliente_id,
     modelo_id,
+    cliente_id,
     text
   });
 
@@ -241,10 +243,6 @@ if (item) {
 }
 
 function renderMensagem(msg) {
-  
-  if (mensagensRenderizadas.has(msg.id)) return;
-  mensagensRenderizadas.add(msg.id);
-  
   const chat = document.getElementById("chatBox");
   if (!chat) return;
 
