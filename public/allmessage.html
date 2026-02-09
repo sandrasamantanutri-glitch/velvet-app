@@ -39,10 +39,20 @@
     </div>
 
     <!-- CONTEÚDOS -->
-    <div class="card">
-      <label>Conteúdos da modelo</label>
-      <div id="conteudosGrid" class="preview"></div>
-    </div>
+<div class="card">
+  <label>Conteúdos da modelo</label>
+
+  <button
+    type="button"
+    class="btn secondary"
+    id="btnAbrirConteudos"
+  >
+    Selecionar mídias
+  </button>
+
+  <div id="conteudosSelecionados" class="preview"></div>
+</div>
+
 
     <!-- PREÇO -->
     <div class="card">
@@ -52,16 +62,28 @@
 
     <!-- AÇÕES -->
     <div class="actions">
-      <button id="btnTeste" class="btn secondary">Enviar teste</button>
       <button id="btnEnviar" class="btn">Enviar para todos</button>
     </div>
 
-    <p class="alert">
-      ⚠️ Será enviado apenas para assinantes da modelo selecionada.
-    </p>
-
   </main>
 </div>
+
+<div id="popupConteudos" class="modal hidden">
+  <div class="modal-backdrop"></div>
+
+  <div class="modal-box modal-scroll">
+    <h3>Selecionar conteúdos</h3>
+
+    <div id="conteudosGrid" class="grid-conteudos"></div>
+
+    <div class="modal-actions">
+      <button class="btn secondary" id="btnFecharConteudos">
+        Fechar
+      </button>
+    </div>
+  </div>
+</div>
+
 
 <script src="allmessage.js"></script>
 <script src="/header.js"></script>

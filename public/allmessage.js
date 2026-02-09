@@ -1,15 +1,34 @@
-document.addEventListener("DOMContentLoaded", () => {
-  carregarModelo();
-  carregarConteudos();
+document.addEventListener("DOMContentLoaded", async () => {
+  await carregarModelo();
+
+  document
+    .getElementById("btnAbrirConteudos")
+    ?.addEventListener("click", abrirPopupConteudos);
+
+  document
+    .getElementById("btnFecharConteudos")
+    ?.addEventListener("click", fecharPopupConteudos);
 
   document
     .getElementById("btnEnviar")
     ?.addEventListener("click", () => enviar(false));
-
-  document
-    .getElementById("btnTeste")
-    ?.addEventListener("click", () => enviar(true));
 });
+
+function abrirPopupConteudos() {
+  document
+    .getElementById("popupConteudos")
+    .classList.remove("hidden");
+
+  carregarConteudos();
+}
+
+function fecharPopupConteudos() {
+  document
+    .getElementById("popupConteudos")
+    .classList.add("hidden");
+
+  renderizarSelecionados();
+}
 
 // ===============================
 // MODELO LOGADO
@@ -21,12 +40,9 @@ async function carregarModelo() {
     headers: { Authorization: "Bearer " + token }
   });
 
-  if (!res.ok) return;
-
   const modelo = await res.json();
 
-  const select = document.getElementById("modeloSelect");
-  select.innerHTML = `
+  document.getElementById("modeloSelect").innerHTML = `
     <option value="${modelo.id}">
       ${modelo.nome_exibicao || "Modelo"}
     </option>
@@ -38,35 +54,19 @@ async function carregarModelo() {
 // ===============================
 async function carregarConteudos() {
   const token = localStorage.getItem("token");
-  const modeloSelect = document.getElementById("modeloSelect");
-  const modelo_id = modeloSelect.value;
-
-  if (!modelo_id) return;
+  const modelo_id = document.getElementById("modeloSelect").value;
 
   const res = await fetch(
     `/api/allmessage/conteudos/${modelo_id}`,
     {
-      headers: {
-        Authorization: "Bearer " + token
-      }
+      headers: { Authorization: "Bearer " + token }
     }
   );
-
-  if (!res.ok) {
-    console.warn("Nenhum conteúdo encontrado");
-    return;
-  }
 
   const conteudos = await res.json();
   const grid = document.getElementById("conteudosGrid");
 
   grid.innerHTML = "";
-
-  if (conteudos.length === 0) {
-    grid.innerHTML =
-      "<p style='opacity:.6'>Nenhum conteúdo disponível</p>";
-    return;
-  }
 
   conteudos.forEach(c => {
     const item = document.createElement("label");
@@ -74,13 +74,28 @@ async function carregarConteudos() {
 
     item.innerHTML = `
       <input type="checkbox" value="${c.id}">
-      <img
-        src="${c.thumbnail || c.url}"
-        alt="conteúdo"
-      />
+      <img src="${c.thumbnail || c.url}">
     `;
 
     grid.appendChild(item);
+  });
+}
+
+// ===============================
+// MOSTRAR SELECIONADOS
+// ===============================
+function renderizarSelecionados() {
+  const container = document.getElementById("conteudosSelecionados");
+
+  const selecionados = Array.from(
+    document.querySelectorAll("#conteudosGrid input:checked")
+  );
+
+  container.innerHTML = "";
+
+  selecionados.forEach(input => {
+    const img = input.nextElementSibling.cloneNode();
+    container.appendChild(img);
   });
 }
 
