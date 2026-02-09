@@ -28,6 +28,75 @@ let pagamentoAtual = {};
 // ===============================
 // FETCH INBOX
 // ===============================
+async function carregarListaModelos() {
+  const res = await fetch("/api/chat/cliente", {
+    headers: { Authorization: "Bearer " + token }
+  });
+
+  const modelos = await res.json();
+  const lista = document.getElementById("listaModelos");
+  lista.innerHTML = "";
+
+  if (!modelos.length) {
+    lista.innerHTML = "<li>Você não é VIP em nenhuma modelo.</li>";
+    return;
+  }
+
+  const unreadRes = await fetch("/api/chat/unread/cliente", {
+    headers: { Authorization: "Bearer " + token }
+  });
+  const unreadIds = await unreadRes.json();
+
+  modelos.forEach(m => {
+    const li = document.createElement("li");
+    li.className = "chat-item";
+    li.dataset.modeloId = m.modelo_id;
+
+    const temNaoVisto = unreadIds.includes(m.modelo_id);
+
+    li.innerHTML = `
+      <span class="nome">${m.nome}</span>
+      <span class="badge ${temNaoVisto ? "" : "hidden"}">Não visto</span>
+    `;
+
+    li.onclick = () => {
+      modelo_id = m.modelo_id;
+      chatAtivo = { cliente_id, modelo_id };
+
+      mensagensRenderizadas.clear();
+      document.getElementById("chatBox").innerHTML = "";
+      document.getElementById("chatNome").innerText = m.nome;
+      if (m.avatar) {
+        document.getElementById("chatAvatar").src = m.avatar;
+      }
+
+      li.querySelector(".badge")?.classList.add("hidden");
+      li.classList.remove("nao-visto");
+
+      const sala = `chat_${cliente_id}_${modelo_id}`;
+      socket.emit("joinChat", { sala });
+      socket.emit("getHistory", { cliente_id, modelo_id });
+    };
+
+    lista.appendChild(li);
+    contarChatsNaoLidosCliente();
+  });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 function prioridadeChat(c) {
   // 1️⃣ NOVO (cliente enviou e não foi visto)
