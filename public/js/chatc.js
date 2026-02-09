@@ -242,15 +242,9 @@ if (item) {
   input.value = "";
 }
 
-const mensagensRenderizadas = new Set();
-
 function renderMensagem(msg) {
   const chat = document.getElementById("chatBox");
-  if (!chat || !msg) return;
-
-  // 🔒 evita render duplicado (local + socket)
-  if (msg.id && mensagensRenderizadas.has(msg.id)) return;
-  if (msg.id) mensagensRenderizadas.add(msg.id);
+  if (!chat) return;
 
   const div = document.createElement("div");
 
@@ -258,92 +252,84 @@ function renderMensagem(msg) {
   div.className =
     msg.sender === "cliente" ? "msg msg-cliente" : "msg msg-modelo";
 
-  // ===============================
-  // CONTEÚDO (PACOTE DE MÍDIAS)
-  // ===============================
-  if (
-    msg.tipo === "conteudo" &&
-    Array.isArray(msg.midias) &&
-    msg.midias.length > 0
-  ) {
-    div.innerHTML = `
-      <div class="chat-conteudo premium ${msg.visto ? "visto" : "bloqueado"}"
-           data-id="${msg.id}"
-           data-qtd="${msg.quantidade ?? msg.midias.length}">
+    if (
+  msg.tipo === "conteudo" &&
+  Array.isArray(msg.midias) &&
+  msg.midias.length > 0
+ ) {
 
-        <div class="pacote-grid">
-          ${msg.midias.map(m => `
-            <div class="midia-item">
-              ${
-                (m.tipo_media || m.tipo) === "video"
-                  ? `<video src="${m.url}" muted></video>`
-                  : `<img src="${m.url}" />`
-              }
-            </div>
-          `).join("")}
+    div.innerHTML = `
+<div class="chat-conteudo premium ${msg.visto ? "visto" : "bloqueado"}"
+     data-id="${msg.id}"
+     data-qtd="${msg.quantidade ?? msg.midias.length}">
+
+    <!-- 📸 MÍDIA -->
+    <div class="pacote-grid">
+      ${msg.midias.map(m => `
+        <div class="midia-item">
+          ${
+            (m.tipo_media || m.tipo) === "video"
+  ? `<video src="${m.url}" muted></video>`
+  : `<img src="${m.url}" />`
+          }
         </div>
+      `).join("")}
+    </div>
 
-        ${
-          msg.preco > 0
-            ? `
-              <div class="conteudo-info">
-                <span class="status-bloqueado">
-                  ${
-                    msg.visto
-                      ? `🟢 Vendido · ${msg.quantidade ?? msg.midias.length} mídia(s)`
-                      : `🔒 ${msg.quantidade ?? msg.midias.length} mídia(s)`
-                  }
-                </span>
-                <span class="preco-bloqueado">
-                  R$ ${Number(msg.preco).toFixed(2)}
-                </span>
-              </div>
-            `
-            : ""
-        }
-      </div>
-
-      <span class="msg-hora">${formatarHora(msg.created_at)}</span>
-    `;
+    <!-- 🧾 INFO ABAIXO -->
+    ${
+      msg.preco > 0
+        ? `
+          <div class="conteudo-info">
+            <span class="status-bloqueado">
+              ${
+                msg.visto
+                  ? `🟢 Vendido · ${msg.quantidade ?? msg.midias.length} mídia(s)`
+                  : `🔒 ${msg.quantidade ?? msg.midias.length} mídia(s)`
+              }
+            </span>
+            <span class="preco-bloqueado">
+              R$ ${Number(msg.preco).toFixed(2)}
+            </span>
+          </div>
+        `
+        : ""
+    }
+  </div>
+  <span class="msg-hora">${formatarHora(msg.created_at)}</span>
+`;
   }
 
-  // ===============================
-  // TEXTO NORMAL
-  // ===============================
-  else {
-    div.innerHTML = `
-      <div class="msg-texto">${msg.text ?? ""}</div>
+else {
+  div.innerHTML = `
+    <div class="msg-texto">${msg.text}</div>
 
-      ${
-        msg.sender === "modelo"
-          ? `
-            <button
-              class="msg-menu"
-              data-id="${msg.id}"
-              data-text="${encodeURIComponent(msg.text || "")}">
-              ⋮
-            </button>
-          `
-          : ""
-      }
+    ${msg.sender === "modelo" ? `
+<button
+  class="msg-menu"
+  data-id="${msg.id}"
+  data-text="${encodeURIComponent(msg.text || "")}">
+  ⋮
+</button>
+    ` : ""}
 
-      <span class="msg-hora">${formatarHora(msg.created_at)}</span>
-    `;
-  }
-
-  chat.appendChild(div);
-
-  // menu ⋮
-  const btn = div.querySelector(".msg-menu");
-  if (btn) {
-    btn.addEventListener("click", () => {
-      abrirMenuMensagem(
-        btn.dataset.id,
-        decodeURIComponent(btn.dataset.text || "")
-      );
-    });
-  }
+    <span class="msg-hora">${formatarHora(msg.created_at)}</span>
+  `;
 }
+  chat.appendChild(div);
+const btn = div.querySelector(".msg-menu");
+if (btn) {
+  btn.addEventListener("click", () => {
+    console.log("CLIQUEI NO MENU", btn.dataset.id);
+    abrirMenuMensagem(
+  btn.dataset.id,
+  decodeURIComponent(btn.dataset.text)
+);
+  });
+}
+
+}
+
 
 function abrirPreviewAvatar(url) {
   let modal = document.getElementById("avatarPreviewModal");
