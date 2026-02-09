@@ -43,7 +43,7 @@ inboxEl.innerHTML = "";
 modelos.forEach(c => {
   let statusHTML = "";
 
-  if (c.ultimo_sender === "modelo") {
+  if (c.ultimo_sender === "cliente") {
     if (c.visto === false) {
       statusHTML = `<span class="status status-unseen">Não lido</span>`;
     } else {
@@ -52,8 +52,8 @@ modelos.forEach(c => {
   }
 
   // 🟢 última mensagem da MODELO
-  if (c.ultimo_sender === "modelo") {
-    if (c.lida === true) {
+  if (modelos.ultimo_sender === "modelo") {
+    if (modelos.lida === true) {
       statusHTML = `<span class="status status-read">✓✓</span>`;
     } else {
       statusHTML = `<span class="status status-sent">✓</span>`;
@@ -62,7 +62,7 @@ modelos.forEach(c => {
 
   const div = document.createElement("div");
   div.className = "chat-item";
-  div.onclick = () => abrirChat(c.modelo_id);
+  div.onclick = () => abrirChat(modelos.modelo_id);
 
   div.innerHTML = `
     <div class="avatar">
@@ -72,11 +72,11 @@ modelos.forEach(c => {
     <div class="chat-body">
       <div class="chat-top">
         <span class="chat-name">${modelos.username || modelos.nome || "Modelo"}</span>
-        <span class="chat-time">${formatarTempo(c.ultima_mensagem_em)}</span>
+        <span class="chat-time">${formatarTempo(modelos.ultima_mensagem_em)}</span>
       </div>
 
       <div class="chat-bottom">
-        <span class="chat-last">${c.ultima_mensagem || ""}</span>
+        <span class="chat-last">${modelos.ultima_mensagem || ""}</span>
         <div class="chat-status">${statusHTML}</div>
       </div>
     </div>
