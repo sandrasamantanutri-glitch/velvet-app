@@ -1,27 +1,27 @@
 // ===============================
 // INDEX — SCRIPT LIMPO (VELVET)
 // ===============================
-console.log("🧠 SCRIPT.JS CARREGADO EM:", window.location.pathname);
-
 const token = localStorage.getItem("token");
-const role  = localStorage.getItem("role");
 
 const ESTA_NO_INDEX =
   window.location.pathname === "/" ||
   window.location.pathname.includes("index");
 
-  if (ESTA_NO_INDEX && token && role) {
+if (ESTA_NO_INDEX && !token) {
+  window.location.href = "/index.html";
+}
+
+if (ESTA_NO_INDEX && token) {
   fetch("/api/me", {
     headers: { Authorization: "Bearer " + token }
   })
-  .then(res => {
-    if (!res.ok) throw new Error();
-    if (role === "modelo") location.href = "/perfil.html";
-    if (role === "cliente") location.href = "/clientHome.html";
-  })
-  .catch(() => {
-    localStorage.clear(); // sessão inválida
-  });
+    .then(res => {
+      if (!res.ok) throw new Error("Sessão inválida");
+    })
+    .catch(() => {
+      localStorage.clear();
+      window.location.href = "/index.html";
+    });
 }
 
 const refModelo = localStorage.getItem("ref_modelo");
