@@ -199,3 +199,28 @@ input:focus {
   border-color: #7b2cff; /* roxo velvet */
 }
 
+
+.conteudo-item {
+  display: inline-flex;
+  flex-direction: column;
+  cursor: pointer;
+  margin: 6px;
+}
+
+.conteudo-item input {
+  display: none;
+}
+
+.conteudo-item img {
+  width: 90px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid transparent;
+}
+
+.conteudo-item input:checked + img {
+  border-color: #7B2CFF;
+}
+
+

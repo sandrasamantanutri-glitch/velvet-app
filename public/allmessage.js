@@ -38,26 +38,49 @@ async function carregarModelo() {
 // ===============================
 async function carregarConteudos() {
   const token = localStorage.getItem("token");
+  const modeloSelect = document.getElementById("modeloSelect");
+  const modelo_id = modeloSelect.value;
 
-  const res = await fetch("/api/modelo/conteudos", {
-    headers: { Authorization: "Bearer " + token }
-  });
+  if (!modelo_id) return;
 
-  if (!res.ok) return;
+  const res = await fetch(
+    `/api/allmessage/conteudos/${modelo_id}`,
+    {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    }
+  );
+
+  if (!res.ok) {
+    console.warn("Nenhum conteúdo encontrado");
+    return;
+  }
 
   const conteudos = await res.json();
   const grid = document.getElementById("conteudosGrid");
 
   grid.innerHTML = "";
 
+  if (conteudos.length === 0) {
+    grid.innerHTML =
+      "<p style='opacity:.6'>Nenhum conteúdo disponível</p>";
+    return;
+  }
+
   conteudos.forEach(c => {
-    const div = document.createElement("label");
-    div.className = "conteudo-item";
-    div.innerHTML = `
+    const item = document.createElement("label");
+    item.className = "conteudo-item";
+
+    item.innerHTML = `
       <input type="checkbox" value="${c.id}">
-      <img src="${c.thumbnail || c.url}" />
+      <img
+        src="${c.thumbnail || c.url}"
+        alt="conteúdo"
+      />
     `;
-    grid.appendChild(div);
+
+    grid.appendChild(item);
   });
 }
 
