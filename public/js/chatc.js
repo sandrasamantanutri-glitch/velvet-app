@@ -26,6 +26,7 @@ if (!modeloId) {
 let modelo_id = modeloId; // 🔥 ESSENCIAL
 
 const chatBox = document.getElementById("chatBox");
+const mensagensRenderizadas = new Set();
 
 chatBox.addEventListener("scroll", () => {
   if (chatBox.scrollTop === 0 && !carregandoHistorico) {
@@ -87,7 +88,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   await carregarInfoModelo(modelo_id);
 
   // 🔥 entra na sala
-  sala = `chat_${modelo_id}_${cliente_id}`;
+  sala = `chat_${cliente_id}_${modelo_id}`;
   socket.emit("joinChat", { sala });
   socket.emit("loginCliente", cliente_id);
   socket.emit("getHistory", { modelo_id, cliente_id });
@@ -213,8 +214,6 @@ function enviarMensagem() {
     created_at: Date.now()
   };
 
-  renderMensagem(msgLocal);
-  scrollParaFinal();
   socket.emit("sendMessage", {
     cliente_id,
     modelo_id,

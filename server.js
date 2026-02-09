@@ -1055,6 +1055,11 @@ socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
       cliente_id,
       modelo_id
     });
+
+     io.to(`inbox_cliente_${cliente_id}`).emit("inboxMessage", {
+    cliente_id,
+    modelo_id
+    });
   }
 
     // 2️⃣ busca histórico base

@@ -23,59 +23,62 @@ async function carregarListaModelos() {
 
   const modelos = await res.json();
 
-  // 🔥 ordena antes de renderizar
   modelos.sort((a, b) => {
     const pa = prioridadeChat(a);
     const pb = prioridadeChat(b);
     if (pa !== pb) return pa - pb;
-    return new Date(b.ultima_mensagem_em) - new Date(a.ultima_mensagem_em);
+
+    const da = a.ultima_mensagem_em ? new Date(a.ultima_mensagem_em) : 0;
+    const db = b.ultima_mensagem_em ? new Date(b.ultima_mensagem_em) : 0;
+
+    return db - da;
   });
 
   inboxEl.innerHTML = "";
 
   modelos.forEach(c => {
     let statusHTML = "";
+
     if (c.sender === "modelo" && c.lida === false) {
-  statusHTML = `<span class="status status-unseen">Não lido</span>`;
-} else if (c.sender === "cliente") {
-  statusHTML = `<span class="status status-read">✓✓</span>`;
-}
+      statusHTML = `<span class="status status-unseen">Não lido</span>`;
+    } else if (c.sender === "cliente") {
+      statusHTML = `<span class="status status-read">✓✓</span>`;
+    }
 
     const div = document.createElement("div");
     div.className = "chat-item";
     div.onclick = () => abrirChat(c.modelo_id);
+
     div.innerHTML = `
-  <div class="avatar">
-    ${
-      c.avatar
-        ? `<img src="${c.avatar}" />`
-        : `<div class="avatar-placeholder"></div>`
-    }
-  </div>
-
-  <div class="chat-body">
-    <div class="chat-top">
-      <span class="chat-name">
-        ${c.nome_exibicao || "Modelo"}
-      </span>
-
-      <span class="chat-time">
-        ${c.ultima_mensagem_em ? formatarTempo(c.ultima_mensagem_em) : ""}
-      </span>
-    </div>
-
-      <div class="chat-bottom">
-        <span class="chat-last">${c.ultima_mensagem || ""}</span>
-        <div class="chat-status">${statusHTML}</div>
+      <div class="avatar">
+        ${
+          c.avatar
+            ? `<img src="${c.avatar}" />`
+            : `<div class="avatar-placeholder"></div>`
+        }
       </div>
-    </div>
-  </div>
-`;
+
+      <div class="chat-body">
+        <div class="chat-top">
+          <span class="chat-name">
+            ${c.nome_exibicao || "Modelo"}
+          </span>
+
+          <span class="chat-time">
+            ${c.ultima_mensagem_em ? formatarTempo(c.ultima_mensagem_em) : ""}
+          </span>
+        </div>
+
+        <div class="chat-bottom">
+          <span class="chat-last">${c.ultima_mensagem || ""}</span>
+          <div class="chat-status">${statusHTML}</div>
+        </div>
+      </div>
+    `;
 
     inboxEl.appendChild(div);
   });
 }
-
 
 function prioridadeChat(c) {
   // 1️⃣ NOVO (modelo enviou e não foi visto)
