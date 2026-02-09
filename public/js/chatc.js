@@ -9,21 +9,10 @@ const socket = io({
   transports: ["websocket"]
 });
 
-socket.on("connect", () => {
-  socket.emit("auth", {
-    token: localStorage.getItem("token")
-  });
-});
-
+socket.emit("auth", { token });
 
 const params = new URLSearchParams(location.search);
-const modeloIdFromUrl = Number(params.get("chat_id"));
-
-if (!modeloIdFromUrl || isNaN(modeloIdFromUrl)) {
-  alert("Chat inválido");
-  history.back();
-  throw new Error("modelo_id inválido");
-}
+const modeloId = Number(params.get("modelo"));
 
 const chatBox = document.getElementById("chatBox");
 
@@ -33,10 +22,10 @@ chatBox.addEventListener("scroll", () => {
   }
 });
 
+
 const input = document.getElementById("msgInput");
 
-
-let modeloId = null;
+clienteId=null;
 let sala = null;
 let modelo_id = null;
 let cliente_id = null;
@@ -226,7 +215,7 @@ function enviarMensagem() {
   });
 
   const item = [...document.querySelectorAll("#listaClientes li")]
-  .find(li => Number(li.dataset.clienteId) === cliente_id);
+  .find(li => Number(li.dataset.modeloId) === cliente_id);
 
 if (item) {
   const badge = item.querySelector(".badge");
@@ -539,9 +528,9 @@ function formatarHora(data) {
   });
 }
 
-async function marcarComoLido(clienteId) {
+async function marcarComoLido(modeloId) {
   try {
-    await fetch(`/api/chat/marcar-lido/${clienteId}`, {
+    await fetch(`/api/chat/marcar-lido/${modeloId}`, {
       method: "POST",
       headers: {
         Authorization: "Bearer " + localStorage.getItem("token")
@@ -615,9 +604,9 @@ function excluirMensagem() {
   fecharMenuMensagem();
 }
 
-async function carregarInfoCliente(clienteId) {
+async function carregarInfoCliente(modeloId) {
   try {
-    const res = await fetch(`/api/cliente/${clienteId}`, {
+    const res = await fetch(`/api/cliente/${modeloId}`, {
       headers: {
         Authorization: "Bearer " + token
       }
