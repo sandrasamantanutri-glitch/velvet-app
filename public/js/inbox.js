@@ -28,7 +28,7 @@ let modeloId = null;
 
   modeloId = me.id;
   socket.emit("joinInbox", {
-  sala: `inbox_modelo_${modelo_id}`
+  sala: `inbox_modelo_${modeloId}`
 });
  socket.on("inboxMessage", carregarListaClientes);
 })();
