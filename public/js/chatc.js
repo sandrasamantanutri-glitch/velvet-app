@@ -88,9 +88,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   await carregarInfoModelo(modelo_id);
 
   // 🔥 entra na sala
- sala = `chat_${cliente_id}_${modelo_id}`;
+  sala = `chat_${cliente_id}_${modelo_id}`;
   socket.emit("joinChat", { sala });
-  socket.emit("getHistory", { modelo_id, cliente_id });
+  socket.emit("getHistory", { cliente_id, modelo_id });
 
   // 🔌 login realtime correto
   socket.emit("loginCliente", cliente_id);
