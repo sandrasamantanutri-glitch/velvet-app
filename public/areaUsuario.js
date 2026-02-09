@@ -354,7 +354,6 @@ async function carregarDadosPessoais() {
   if (!res.ok) return;
 
   const dados = await res.json();
-  aplicarVisibilidadePorStatus(dados.status);
   const form = document.getElementById("formDadosPessoais");
   if (!form) return;
 
@@ -373,53 +372,10 @@ async function carregarDadosPessoais() {
   if (dados.status === "aprovado") {
     bloquearFormulario(form);
     mostrarStatusVerificacao("aprovado");
-    aplicarUIContaAprovada();
     document.querySelector(".btn-salvar")?.remove();
   }
 }
 
-function aplicarVisibilidadePorStatus(status) {
-  if (status !== "aprovado") return;
-
-  const ids = [
-    "infoDadosPessoais",
-    "alertDadosPessoais",
-    "infoDocumentos",
-    "descricaoAnalise",
-    "alertDocumentos",
-    "statusContainer"
-  ];
-
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = "none";
-  });
-}
-
-function aplicarUIContaAprovada() {
-  document.body.dataset.contaAprovada = "true";
-
-  const ids = [
-    "infoDadosPessoais",
-    "alertDadosPessoais",
-    "infoDocumentos",
-    "descricaoAnalise",
-    "alertDocumentos",
-    "statusContainer"
-  ];
-
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = "none";
-  });
-
-  const formPessoais = document.getElementById("formDadosPessoais");
-  if (formPessoais) bloquearFormulario(formPessoais);
-
-  document.querySelectorAll(".btn-salvar").forEach(btn => btn.remove());
-
-  mostrarStatusVerificacao("aprovado");
-}
 
 const btnCapa = document.getElementById("btnCapa");
 const btnAvatar = document.getElementById("btnAvatar");
