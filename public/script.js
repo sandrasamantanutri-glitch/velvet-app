@@ -1,26 +1,24 @@
 // ===============================
-// INDEX — SCRIPT LIMPO (VELVET)
-// ===============================
+// INDEX — VELVET
 const token = localStorage.getItem("token");
 
 const ESTA_NO_INDEX =
   window.location.pathname === "/" ||
   window.location.pathname.includes("index");
 
-if (ESTA_NO_INDEX && !token) {
-  window.location.href = "/index.html";
-}
-
+// apenas valida sessão
 if (ESTA_NO_INDEX && token) {
   fetch("/api/me", {
     headers: { Authorization: "Bearer " + token }
   })
     .then(res => {
-      if (!res.ok) throw new Error("Sessão inválida");
+      if (!res.ok) {
+        // token inválido → limpa e segue como visitante
+        localStorage.clear();
+      }
     })
     .catch(() => {
       localStorage.clear();
-      window.location.href = "/index.html";
     });
 }
 
@@ -33,8 +31,8 @@ const srcOrigem = localStorage.getItem("origem_trafego");
 let modalMode = "login"; 
 let pendingAction = null; 
 
-// AGE GATE
 // ===============================
+// AGE GATE
 window.openAgeGate = function (action) {
   pendingAction = action;
 
@@ -83,8 +81,7 @@ function closeAllModals() {
 
 
 // ===============================
-// MODAL LOGIN / REGISTER
-// ===============================
+// LOGIN / REGISTER
 window.selectRole = function () {
   openLoginModal();
 };
@@ -160,7 +157,6 @@ function updateModal() {
 
 // ===============================
 // LOGIN
-// ===============================
 async function login() {
   const email = loginEmail.value.trim();
   const senha = loginSenha.value.trim();
@@ -200,8 +196,6 @@ if (ref) {
 }
 // ===============================
 // REGISTER
-// ===============================
-
 async function register() {
   const email = loginEmail.value.trim();
   const senha = loginSenha.value.trim();
@@ -243,12 +237,11 @@ if (!res.ok) {
   alert(data.erro || "Erro ao criar conta");
   return;
 }
-
-// 🔐 LOGIN AUTOMÁTICO APÓS REGISTRO
+// ===============================
+// LOGIN AUTOMÁTICO APÓS REGISTRO
 localStorage.setItem("token", data.token);
 localStorage.setItem("role", data.role);
 
-// opcional, se backend já devolver
 if (data.role === "cliente" && data.cliente_id) {
   localStorage.setItem("cliente_id", data.cliente_id);
 }
