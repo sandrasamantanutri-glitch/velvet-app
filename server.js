@@ -1932,6 +1932,38 @@ app.get("/api/chat/cliente", authCliente, async (req, res) => {
   }
 });
 
+//STATUS CLIENTE CHAT  AVATAR
+app.get("/api/chat/cliente/:id", authModelo, async (req, res) => {
+  const cliente_id = Number(req.params.id);
+
+  if (!Number.isInteger(cliente_id) || cliente_id <= 0) {
+    return res.status(400).json({ error: "cliente_id inválido" });
+  }
+
+  try {
+    const { rows } = await db.query(
+      `
+      SELECT
+        c.user_id AS id,
+        c.nome,
+        c.avatar,
+        c.last_seen
+      FROM clientes c
+      WHERE c.user_id = $1
+      `,
+      [cliente_id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Cliente não encontrado" });
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Erro header chat cliente:", err);
+    res.status(500).json({ error: "Erro ao carregar cliente" });
+  }
+});
 
 
 /// ===============================

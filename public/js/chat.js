@@ -52,6 +52,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   modelo_id = me.id;
 
   cliente_id = clienteId;
+  await carregarInfoCliente(cliente_id);
 
   sala = `chat_${cliente_id}_${modelo_id}`;
   socket.emit("joinChat", { sala });
@@ -561,6 +562,47 @@ function excluirMensagem() {
 
   fecharMenuMensagem();
 }
+
+async function carregarInfoCliente(clienteId) {
+  try {
+    const res = await fetch(`/api/chat/cliente/${clienteId}`, {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
+
+    if (!res.ok) return;
+
+    const cliente = await res.json();
+
+    const avatar = document.getElementById("chatClienteAvatar");
+    const nome = document.getElementById("chatClienteNome");
+    const status = document.getElementById("chatClienteStatus");
+
+    if (avatar) {
+      avatar.src = cliente.avatar || "/assets/avatar-default.png";
+    }
+
+    if (nome) {
+      nome.innerText = cliente.nome || "Cliente";
+    }
+
+    if (status) {
+      if (cliente.online) {
+        status.innerText = "online";
+        status.style.color = "#25D366"; // verde zap
+      } else if (cliente.last_seen) {
+        status.innerText = `visto por último ${formatarTempo(cliente.last_seen)}`;
+      } else {
+        status.innerText = "offline";
+      }
+    }
+
+  } catch (err) {
+    console.error("Erro carregar cliente:", err);
+  }
+}
+
 
 
 
