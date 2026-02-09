@@ -2029,12 +2029,11 @@ SELECT DISTINCT ON (c.user_id)
   m.sender     AS ultimo_sender,
 
   COALESCE(m.visto, false) AS visto,
-  COALESCE(m.lida, false)  AS lida,
+  COALESCE(m.lida, false)  AS lida
 
 FROM vip_subscriptions v
 JOIN clientes c ON c.user_id = v.cliente_id
 LEFT JOIN clientes_dados cd ON cd.user_id = c.user_id
-
 LEFT JOIN messages m
   ON m.cliente_id = c.user_id
  AND m.modelo_id  = $1
@@ -2046,6 +2045,7 @@ WHERE v.modelo_id = $1
 ORDER BY
   c.user_id,
   m.created_at DESC NULLS LAST;
+
 
     `, [modeloId]);
 
