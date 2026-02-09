@@ -41,7 +41,7 @@ let modeloId = null;
 
 function prioridadeChat(c) {
   // 1️⃣ NOVO (cliente enviou e não foi visto)
-  if (c.ultimo_sender === "cliente" && c.visto === false && c.aberto === false) {
+  if (c.ultimo_sender === "cliente" && c.visto === false) {
     return 1;
   }
 

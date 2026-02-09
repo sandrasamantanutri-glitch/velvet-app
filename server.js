@@ -2018,7 +2018,7 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
     const modeloId = req.user.id;
 
     const { rows } = await db.query(`
-  SELECT DISTINCT ON (c.user_id)
+SELECT DISTINCT ON (c.user_id)
   c.user_id AS cliente_id,
   cd.username,
   c.nome,
@@ -2027,8 +2027,9 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
   m.text       AS ultima_mensagem,
   m.created_at AS ultima_mensagem_em,
   m.sender     AS ultimo_sender,
-  m.visto,
-  m.lida
+
+  COALESCE(m.visto, false) AS visto,
+  COALESCE(m.lida, false)  AS lida,
 
 FROM vip_subscriptions v
 JOIN clientes c ON c.user_id = v.cliente_id
