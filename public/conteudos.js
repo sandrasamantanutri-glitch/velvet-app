@@ -74,6 +74,21 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 }
 
+const btnFecharViewer = document.getElementById("btnFecharViewer");
+const modalViewer = document.getElementById("modalVisualizarConteudo");
+
+if (btnFecharViewer) {
+  btnFecharViewer.addEventListener("click", fecharViewer);
+}
+
+if (modalViewer) {
+  modalViewer.addEventListener("click", (e) => {
+    if (e.target.classList.contains("modal-backdrop")) {
+      fecharViewer();
+    }
+  });
+}
+
 });
 
 async function carregarConteudos() {
@@ -108,19 +123,91 @@ function renderizarConteudos(conteudos) {
   vazio.classList.add("hidden");
 
   conteudos.forEach(c => {
-    const card = document.createElement("div");
-    card.className = "card-conteudo";
+  const card = document.createElement("div");
+  card.className = "card-conteudo";
 
-    const img = document.createElement("img");
-    img.className = "card-thumb";
-    img.src = c.thumbnail_url || c.url;
+  const img = document.createElement("img");
+  img.className = "card-thumb";
+  img.src = c.thumbnail_url || c.url;
 
-    card.appendChild(img);
-    grid.appendChild(card);
+  // ❌ BOTÃO EXCLUIR
+  const btnExcluir = document.createElement("button");
+  btnExcluir.className = "btn-excluir";
+  btnExcluir.innerHTML = "×";
+
+  btnExcluir.addEventListener("click", async (e) => {
+    e.stopPropagation(); // ⛔ não abre o viewer
+
+    const ok = confirm("Deseja excluir este conteúdo?");
+    if (!ok) return;
+
+    await excluirConteudo(c.id);
   });
+
+  // abrir viewer ao clicar no card
+  card.addEventListener("click", () => {
+    abrirViewer(c);
+  });
+
+  card.appendChild(img);
+  card.appendChild(btnExcluir);
+  grid.appendChild(card);
+});
 }
 
 function fecharModalNovoConteudo() {
   const modal = document.getElementById("modalNovoConteudo");
   if (modal) modal.classList.add("hidden");
+}
+
+function abrirViewer(conteudo) {
+  const modal = document.getElementById("modalVisualizarConteudo");
+  const viewer = document.getElementById("viewerConteudo");
+
+  viewer.innerHTML = "";
+
+  if (conteudo.tipo === "video") {
+    const video = document.createElement("video");
+    video.src = conteudo.url;
+    video.controls = true;
+    video.autoplay = true;
+    viewer.appendChild(video);
+  } else {
+    const img = document.createElement("img");
+    img.src = conteudo.url;
+    viewer.appendChild(img);
+  }
+
+  modal.classList.remove("hidden");
+}
+
+function fecharViewer() {
+  const modal = document.getElementById("modalVisualizarConteudo");
+  const viewer = document.getElementById("viewerConteudo");
+
+  viewer.innerHTML = "";
+  modal.classList.add("hidden");
+}
+
+async function excluirConteudo(conteudoId) {
+  try {
+    const res = await fetch(`/api/conteudos/${conteudoId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
+
+    if (!res.ok) {
+      const erro = await res.text();
+      throw new Error(erro || "Erro ao excluir conteúdo");
+    }
+
+    // recarrega lista
+    await carregarConteudos();
+
+  } catch (err) {
+    console.error("Erro ao excluir:", err.message);
+    alert("Erro ao excluir conteúdo");
+  }
 }

@@ -37,19 +37,22 @@
 
   <div class="modal-box">
     <h2>Novo conteúdo</h2>
-
     <input type="file" id="fileConteudo" />
-    
-    <select id="tipoConteudo">
-      <option value="imagem">Imagem</option>
-      <option value="video">Vídeo</option>
-    </select>
-
     <button id="btnEnviarConteudo" class="btn-principal">
       Enviar
     </button>
 
     <button id="btnFecharModal">Cancelar</button>
+  </div>
+</div>
+
+<div id="modalVisualizarConteudo" class="modal hidden">
+  <div class="modal-backdrop"></div>
+
+  <div class="modal-box modal-viewer">
+    <button class="modal-close" id="btnFecharViewer">×</button>
+
+    <div id="viewerConteudo"></div>
   </div>
 </div>
 

@@ -114,3 +114,56 @@ body {
   padding: 20px;
   border-radius: 12px;
 }
+
+.modal-viewer {
+  width: 90%;
+  max-width: 720px;
+  max-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#viewerConteudo img,
+#viewerConteudo video {
+  max-width: 100%;
+  max-height: 70vh;
+  border-radius: 8px;
+}
+
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.card-conteudo {
+  position: relative;
+}
+
+.btn-excluir {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+
+.btn-excluir:hover {
+  background: rgba(255, 0, 0, 0.8);
+}
