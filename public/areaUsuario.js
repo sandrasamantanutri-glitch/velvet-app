@@ -397,6 +397,8 @@ function aplicarVisibilidadePorStatus(status) {
 }
 
 function aplicarUIContaAprovada() {
+  document.body.dataset.contaAprovada = "true";
+
   const ids = [
     "infoDadosPessoais",
     "alertDadosPessoais",
@@ -411,7 +413,6 @@ function aplicarUIContaAprovada() {
     if (el) el.style.display = "none";
   });
 
-  // bloqueia formulários
   const formPessoais = document.getElementById("formDadosPessoais");
   if (formPessoais) bloquearFormulario(formPessoais);
 
@@ -419,8 +420,6 @@ function aplicarUIContaAprovada() {
 
   mostrarStatusVerificacao("aprovado");
 }
-
-
 
 const btnCapa = document.getElementById("btnCapa");
 const btnAvatar = document.getElementById("btnAvatar");
