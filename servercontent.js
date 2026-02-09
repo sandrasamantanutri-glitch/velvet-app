@@ -392,7 +392,7 @@ router.post("/api/allmessage",
       let vipQuery = `
         SELECT cliente_id
         FROM vip_subscriptions
-        WHERE cliente_id = $1
+        WHERE modelo_id = $1
         AND ativo = true
       `;
       const vipParams = [modelo_id];
