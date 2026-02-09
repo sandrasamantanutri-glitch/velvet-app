@@ -75,30 +75,6 @@ input.addEventListener("keydown", e => {
   }
 });
 
-
-// DIGITANDO
-let digitandoTimeout = null;
-
-input.addEventListener("input", () => {
-  if (!cliente_id || !modelo_id) return;
-
-  // avisa que está digitando
-  socket.emit("digitando", {
-    sala,
-    cliente_id,
-    modelo_id
-  });
-
-  clearTimeout(digitandoTimeout);
-  digitandoTimeout = setTimeout(() => {
-    socket.emit("parouDigitando", {
-      sala,
-      cliente_id,
-      modelo_id
-    });
-  }, 1500);
-});
-
 socket.on("mensagemEditada", ({ id, text }) => {
   const msgEl = document
     .querySelector(`.msg-menu[data-id="${id}"]`)
@@ -133,19 +109,29 @@ socket.on("mensagemExcluida", ({ id }) => {
 // ===============================
 
 function formatarTempo(timestamp) {
-  if (!timestamp || timestamp === "0") return "";
+  if (!timestamp || timestamp === "0") return "agora";
 
-  const diff = Date.now() - Number(timestamp);
+  // aceita número OU string ISO
+  const time =
+    typeof timestamp === "number"
+      ? timestamp
+      : new Date(timestamp).getTime();
+
+  if (isNaN(time)) return "agora";
+
+  const diff = Date.now() - time;
+
   const min = Math.floor(diff / 60000);
   const h   = Math.floor(diff / 3600000);
   const d   = Math.floor(diff / 86400000);
 
   if (min < 1) return "agora";
-  if (min < 60) return `${min} min`;
-  if (h < 24) return `${h} h`;
+  if (min < 60) return `há ${min} min`;
+  if (h < 24) return `há ${h} h`;
   if (d === 1) return "ontem";
-  return `${d} dias`;
+  return `há ${d} dias`;
 }
+
 
 
 function atualizarBadgeComTempo(li) {
