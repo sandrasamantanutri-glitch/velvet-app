@@ -58,7 +58,7 @@ socket.on("chatHistory", mensagens => {
     chat.scrollTop = chat.scrollHeight;
   });
 
-  ultimoTimestamp = mensagens[0].created_at;
+ultimoTimestamp = mensagens[0].created_at;
 });
 
 socket.on("newMessage", msg => {
@@ -94,7 +94,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // 🔌 login realtime correto
   socket.emit("loginCliente", cliente_id);
-
+  socket.emit("loginModelo", modelo_id);
 
   // ENTER envia
 
