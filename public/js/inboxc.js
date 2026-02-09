@@ -5,6 +5,13 @@ if (!token) {
   window.location.href = "/index.html";
   throw new Error("Sem token");
 }
+
+socket.on("connect", () => {
+  socket.emit("auth", {
+    token: localStorage.getItem("token")
+  });
+});
+
 const socket = io({
   transports: ["websocket"]
 });
