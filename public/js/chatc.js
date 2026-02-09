@@ -211,6 +211,7 @@ function enviarMensagem() {
   const text = input.value.trim();
   if (!text) return;
 
+  // 🔥 mensagem local (aparece na hora)
   const msgLocal = {
     id: "temp-" + Date.now(),
     sender: "cliente",
@@ -218,33 +219,50 @@ function enviarMensagem() {
     created_at: Date.now()
   };
 
+  // renderiza imediatamente
+  renderMensagem(msgLocal);
+  scrollParaFinal();
+
+  // envia pro backend
   socket.emit("sendMessage", {
     modelo_id,
     cliente_id,
     text
   });
 
+  // 🔔 atualiza lista lateral (se existir)
   const item = [...document.querySelectorAll("#listaModelos li")]
-  .find(li => Number(li.dataset.modeloId) === modelo_id);
+    .find(li => Number(li.dataset.modeloId) === modelo_id);
 
-if (item) {
-  const badge = item.querySelector(".badge");
-  badge.classList.add("hidden");
-}
+  if (item) {
+    const badge = item.querySelector(".badge");
+    if (badge) badge.classList.add("hidden");
 
-if (item) {
-  item.dataset.lastTime = Date.now();
-  item.dataset.status = "normal";
-  atualizarBadgeComTempo(item);
-  organizarListaModelos();
-}
+    item.dataset.lastTime = Date.now();
+    item.dataset.status = "normal";
 
+    if (typeof atualizarBadgeComTempo === "function") {
+      atualizarBadgeComTempo(item);
+    }
+
+    if (typeof organizarListaModelos === "function") {
+      organizarListaModelos();
+    }
+  }
+
+  // limpa input
   input.value = "";
 }
 
+const mensagensRenderizadas = new Set();
+
 function renderMensagem(msg) {
   const chat = document.getElementById("chatBox");
-  if (!chat) return;
+  if (!chat || !msg) return;
+
+  // 🔒 evita render duplicado (local + socket)
+  if (msg.id && mensagensRenderizadas.has(msg.id)) return;
+  if (msg.id) mensagensRenderizadas.add(msg.id);
 
   const div = document.createElement("div");
 
@@ -252,84 +270,92 @@ function renderMensagem(msg) {
   div.className =
     msg.sender === "cliente" ? "msg msg-cliente" : "msg msg-modelo";
 
-    if (
-  msg.tipo === "conteudo" &&
-  Array.isArray(msg.midias) &&
-  msg.midias.length > 0
- ) {
-
+  // ===============================
+  // CONTEÚDO (PACOTE DE MÍDIAS)
+  // ===============================
+  if (
+    msg.tipo === "conteudo" &&
+    Array.isArray(msg.midias) &&
+    msg.midias.length > 0
+  ) {
     div.innerHTML = `
-<div class="chat-conteudo premium ${msg.visto ? "visto" : "bloqueado"}"
-     data-id="${msg.id}"
-     data-qtd="${msg.quantidade ?? msg.midias.length}">
+      <div class="chat-conteudo premium ${msg.visto ? "visto" : "bloqueado"}"
+           data-id="${msg.id}"
+           data-qtd="${msg.quantidade ?? msg.midias.length}">
 
-    <!-- 📸 MÍDIA -->
-    <div class="pacote-grid">
-      ${msg.midias.map(m => `
-        <div class="midia-item">
-          ${
-            (m.tipo_media || m.tipo) === "video"
-  ? `<video src="${m.url}" muted></video>`
-  : `<img src="${m.url}" />`
-          }
-        </div>
-      `).join("")}
-    </div>
-
-    <!-- 🧾 INFO ABAIXO -->
-    ${
-      msg.preco > 0
-        ? `
-          <div class="conteudo-info">
-            <span class="status-bloqueado">
+        <div class="pacote-grid">
+          ${msg.midias.map(m => `
+            <div class="midia-item">
               ${
-                msg.visto
-                  ? `🟢 Vendido · ${msg.quantidade ?? msg.midias.length} mídia(s)`
-                  : `🔒 ${msg.quantidade ?? msg.midias.length} mídia(s)`
+                (m.tipo_media || m.tipo) === "video"
+                  ? `<video src="${m.url}" muted></video>`
+                  : `<img src="${m.url}" />`
               }
-            </span>
-            <span class="preco-bloqueado">
-              R$ ${Number(msg.preco).toFixed(2)}
-            </span>
-          </div>
-        `
-        : ""
-    }
-  </div>
-  <span class="msg-hora">${formatarHora(msg.created_at)}</span>
-`;
+            </div>
+          `).join("")}
+        </div>
+
+        ${
+          msg.preco > 0
+            ? `
+              <div class="conteudo-info">
+                <span class="status-bloqueado">
+                  ${
+                    msg.visto
+                      ? `🟢 Vendido · ${msg.quantidade ?? msg.midias.length} mídia(s)`
+                      : `🔒 ${msg.quantidade ?? msg.midias.length} mídia(s)`
+                  }
+                </span>
+                <span class="preco-bloqueado">
+                  R$ ${Number(msg.preco).toFixed(2)}
+                </span>
+              </div>
+            `
+            : ""
+        }
+      </div>
+
+      <span class="msg-hora">${formatarHora(msg.created_at)}</span>
+    `;
   }
 
-else {
-  div.innerHTML = `
-    <div class="msg-texto">${msg.text}</div>
+  // ===============================
+  // TEXTO NORMAL
+  // ===============================
+  else {
+    div.innerHTML = `
+      <div class="msg-texto">${msg.text ?? ""}</div>
 
-    ${msg.sender === "modelo" ? `
-<button
-  class="msg-menu"
-  data-id="${msg.id}"
-  data-text="${encodeURIComponent(msg.text || "")}">
-  ⋮
-</button>
-    ` : ""}
+      ${
+        msg.sender === "modelo"
+          ? `
+            <button
+              class="msg-menu"
+              data-id="${msg.id}"
+              data-text="${encodeURIComponent(msg.text || "")}">
+              ⋮
+            </button>
+          `
+          : ""
+      }
 
-    <span class="msg-hora">${formatarHora(msg.created_at)}</span>
-  `;
-}
+      <span class="msg-hora">${formatarHora(msg.created_at)}</span>
+    `;
+  }
+
   chat.appendChild(div);
-const btn = div.querySelector(".msg-menu");
-if (btn) {
-  btn.addEventListener("click", () => {
-    console.log("CLIQUEI NO MENU", btn.dataset.id);
-    abrirMenuMensagem(
-  btn.dataset.id,
-  decodeURIComponent(btn.dataset.text)
-);
-  });
-}
 
+  // menu ⋮
+  const btn = div.querySelector(".msg-menu");
+  if (btn) {
+    btn.addEventListener("click", () => {
+      abrirMenuMensagem(
+        btn.dataset.id,
+        decodeURIComponent(btn.dataset.text || "")
+      );
+    });
+  }
 }
-
 
 function abrirPreviewAvatar(url) {
   let modal = document.getElementById("avatarPreviewModal");
