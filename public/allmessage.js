@@ -18,7 +18,7 @@ async function abrirPopupConteudos() {
   const popup = document.getElementById("popupConteudos");
   popup.classList.remove("hidden");
 
-  const grid = document.getElementById("previewConteudos");
+  const grid = document.getElementById("conteudosGrid");
   grid.innerHTML = "Carregando...";
 
   const token = localStorage.getItem("token");
