@@ -132,9 +132,7 @@ html, body {
   min-height: 0;
 }
 
-/* =========================
-   CHATBOX (SCROLL REAL)
-========================= */
+
 
 #chatBox {
   min-height: 0;
@@ -145,9 +143,6 @@ html, body {
   flex-direction: column;
 }
 
-/* =========================
-   MENSAGENS (WHATSAPP STYLE)
-========================= */
 
 .msg {
   max-width: 70%;
@@ -160,7 +155,6 @@ html, body {
   position: relative;
 }
 
-/* 🔮 MODELO */
 .msg-modelo {
   align-self: flex-start;
   background: #7B2CFF;
@@ -170,7 +164,7 @@ html, body {
   box-shadow: 0 2px 8px rgba(123,44,255,0.25);
 }
 
-/* 💜 CLIENTE */
+
 .msg-cliente {
   align-self: flex-end;
   background: #9E6BFF;
@@ -189,7 +183,6 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  transition: background 0.2s;
 }
 
 /* NÃO LIDA */
@@ -204,50 +197,6 @@ html, body {
   font-size: 11px;
   padding: 2px 8px;
   border-radius: 12px;
-}
-
-
-
-/* =========================
-   INPUT DO CHAT (FIXO EMBAIXO)
-========================= */
-
-.chat-input {
-  position: sticky;
-  bottom: 0;
-
-  display: flex;
-  gap: 10px;
-  padding: 12px;
-
-  background: linear-gradient(
-    to top,
-    rgba(255,255,255,0.98),
-    rgba(255,255,255,0.92)
-  );
-
-  border-top: 1px solid #e2d9ff;
-  backdrop-filter: blur(6px);
-
-  flex-shrink: 0;
-}
-
-#messageInput {
-  height: 42px;
-  padding: 10px 16px;     /* 🔥 padding vertical */
-  line-height: 22px;     /* 🔥 controla o centro */
-  font-size: 13px;
-  flex: 1;
-  border-radius: 22px;
-  border: 1px solid #9E6BFF;
-  outline: none;
-  overflow: hidden;   /* 🚫 remove o scroll */
-  resize: none;   
-}
-
-#messageInput:focus {
-  border-color: #7b2cff;
-  box-shadow: 0 0 0 2px rgba(123,44,255,0.15);
 }
 
 #sendBtn {
