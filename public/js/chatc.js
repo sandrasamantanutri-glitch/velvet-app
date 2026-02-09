@@ -67,6 +67,7 @@ socket.on("newMessage", msg => {
 document.addEventListener("DOMContentLoaded", async () => {
   const res = await fetch("/api/me");
 const me = await res.json();
+console.log("ME NO CHAT CLIENTE:", me);
 
 // valida cliente
 if (me.role !== "cliente") {
