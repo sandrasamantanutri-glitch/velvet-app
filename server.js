@@ -1969,41 +1969,6 @@ app.get("/api/chat/cliente", authCliente, async (req, res) => {
   }
 });
 
-//STATUS CLIENTE CHAT  AVATAR
-app.get("/api/chat/cliente/:id", authModelo, async (req, res) => {
-  const cliente_id = Number(req.params.id);
-
-  if (!Number.isInteger(cliente_id) || cliente_id <= 0) {
-    return res.status(400).json({ error: "cliente_id inválido" });
-  }
-
-  try {
-    const { rows } = await db.query(
-      `
-      SELECT
-        c.user_id AS id,
-        cd.username,
-        cd.avatar,
-        c.last_seen
-      FROM clientes c
-      JOIN clientes_dados cd
-        ON cd.user_id = c.user_id
-      WHERE c.user_id = $1
-      `,
-      [cliente_id]
-    );
-
-    if (rows.length === 0) {
-      return res.status(404).json({ error: "Cliente não encontrado" });
-    }
-
-    res.json(rows[0]);
-  } catch (err) {
-    console.error("Erro header chat cliente:", err);
-    res.status(500).json({ error: "Erro ao carregar cliente" });
-  }
-});
-
 /// ===============================
 // CHAT — LISTA PARA MODELO
 // ===============================
@@ -2061,8 +2026,9 @@ app.get("/api/cliente/:id", authModelo, async (req, res) => {
       `
       SELECT
         c.user_id,
-        c.nome,
-        cd.avatar
+        cd.username,
+        cd.avatar,
+        c.last_seen
       FROM clientes c
       LEFT JOIN clientes_dados cd
         ON cd.user_id = c.user_id

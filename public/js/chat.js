@@ -1,7 +1,7 @@
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
 if (!token) {
-  window.location.href = "app/index.html";
+  window.location.href = "/index.html";
   throw new Error("Sem token");
 }
 const socket = io({
@@ -620,7 +620,7 @@ function excluirMensagem() {
 
 async function carregarInfoCliente(clienteId) {
   try {
-    const res = await fetch(`/api/chat/cliente/${clienteId}`, {
+    const res = await fetch(`/api/cliente/${clienteId}`, {
       headers: {
         Authorization: "Bearer " + token
       }
@@ -635,7 +635,7 @@ async function carregarInfoCliente(clienteId) {
     const status = document.getElementById("chatClienteStatus");
 
     if (avatar) {
-      avatar.src = cliente.avatar || "/assets/avatar-default.png";
+      avatar.src = cliente.avatar || "/assets/avatar.png";
     }
 
     if (nome) {
