@@ -34,12 +34,21 @@ let conteudosVistosCliente = new Set();
 
 // 📜 HISTÓRICO
 socket.on("chatHistory", mensagens => {
-  if (!mensagens.length) return;
+  const chat = document.getElementById("chatBox");
+  if (!chat || !mensagens.length) return;
+
+  // 🧹 limpa antes
+  chat.innerHTML = "";
+
   mensagens.forEach(m => renderMensagem(m));
+
+  // 🔥 força scroll pro final
+  requestAnimationFrame(() => {
+    chat.scrollTop = chat.scrollHeight;
+  });
+
   ultimoTimestamp = mensagens[0].created_at;
 });
-
-
 
 socket.on("newMessage", msg => {
   if (msg.sender === "modelo") {
@@ -281,7 +290,6 @@ else {
   `;
 }
   chat.appendChild(div);
-   chat.scrollTop = chat.scrollHeight;
 const btn = div.querySelector(".msg-menu");
 if (btn) {
   btn.addEventListener("click", () => {
