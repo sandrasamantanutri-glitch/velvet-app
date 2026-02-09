@@ -81,27 +81,22 @@ async function carregarListaModelos() {
 }
 
 function prioridadeChat(c) {
-  // 1️⃣ NOVO (modelo enviou e não foi visto)
+  // 1️⃣ novo não lido
   if (c.sender === "modelo" && c.lida === false) {
     return 1;
   }
 
-  // 2️⃣ Não lidas (modelo enviou e ainda não viu)
-  if (c.sender === "modelo" && c.lida === false) {
+  // 2️⃣ modelo falou e você já leu
+  if (c.sender === "modelo" && c.lida === true) {
     return 2;
   }
 
-  // 3️⃣ Por responder (modelo enviou, você viu)
-  if (c.sender === "modelo" && c.lida === true) {
+  // 3️⃣ você falou por último
+  if (c.sender === "cliente") {
     return 3;
   }
 
-  if (c.sender === "cliente" && c.lida === true) {
-    return 4;
-  }
-
-  // 5️⃣ Demais
-  return 5;
+  return 4;
 }
 
 
