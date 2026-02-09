@@ -13,22 +13,22 @@ const socket = io("https://velvet-test-production.up.railway.app", {
 const inboxEl = document.getElementById("inbox");
 
 document.addEventListener("DOMContentLoaded", () => {
-  carregarListaClientes();
+  carregarListaModelos();
 });
 
 
 // ===============================
 // FETCH INBOX
 // ===============================
-async function carregarListaClientes() {
-  const res = await fetch("/api/chat/cliente", {
+async function carregarListaModelos() {
+  const res = await fetch("/api/chat/modelo", {
     headers: { Authorization: "Bearer " + token }
   });
   if (!res.ok) return;
 
-  const clientes = await res.json();
+  const modelos = await res.json();
 // 🔥 ORDENA ANTES DE RENDERIZAR
-clientes.sort((a, b) => {
+modelos.sort((a, b) => {
   const pa = prioridadeChat(a);
   const pb = prioridadeChat(b);
 
@@ -40,11 +40,10 @@ clientes.sort((a, b) => {
 
 inboxEl.innerHTML = "";
 
-clientes.forEach(c => {
+modelos.forEach(c => {
   let statusHTML = "";
 
-  // 🔴 última mensagem do CLIENTE
-  if (c.ultimo_sender === "cliente") {
+  if (c.ultimo_sender === "modelo") {
     if (c.visto === false) {
       statusHTML = `<span class="status status-unseen">Não lido</span>`;
     } else {
@@ -67,12 +66,12 @@ clientes.forEach(c => {
 
   div.innerHTML = `
     <div class="avatar">
-      ${c.avatar ? `<img src="${c.avatar}" />` : ""}
+      ${m.avatar ? `<img src="${m.avatar}" />` : ""}
     </div>
 
     <div class="chat-body">
       <div class="chat-top">
-        <span class="chat-name">${c.username || c.nome || "Cliente"}</span>
+        <span class="chat-name">${m.username || m.nome || "Modelo"}</span>
         <span class="chat-time">${formatarTempo(c.ultima_mensagem_em)}</span>
       </div>
 
@@ -102,23 +101,22 @@ clientes.forEach(c => {
 
 
 function prioridadeChat(c) {
-  // 1️⃣ NOVO (cliente enviou e não foi visto)
-  if (c.ultimo_sender === "cliente" && c.visto === false && c.aberto === false) {
+  // 1️⃣ NOVO (modelo enviou e não foi visto)
+  if (c.ultimo_sender === "modelo" && c.visto === false && c.aberto === false) {
     return 1;
   }
 
-  // 2️⃣ Não lidas (cliente enviou e ainda não viu)
-  if (c.ultimo_sender === "cliente" && c.visto === false) {
+  // 2️⃣ Não lidas (modelo enviou e ainda não viu)
+  if (c.ultimo_sender === "modelo" && c.visto === false) {
     return 2;
   }
 
-  // 3️⃣ Por responder (cliente enviou, você viu)
-  if (c.ultimo_sender === "cliente" && c.visto === true) {
+  // 3️⃣ Por responder (modelo enviou, você viu)
+  if (c.ultimo_sender === "modelo" && c.visto === true) {
     return 3;
   }
 
-  // 4️⃣ Visto pelo cliente (última mensagem foi sua e ele leu)
-  if (c.ultimo_sender === "modelo" && c.lida === true) {
+  if (c.ultimo_sender === "cliente" && c.lida === true) {
     return 4;
   }
 
@@ -150,7 +148,7 @@ function formatarTempo(data) {
 // ===============================
 // REALTIME
 // ===============================
-socket.on("inboxMessage", carregarListaClientes);
+socket.on("inboxMessage", carregarListaModelos);
 
 // ===============================
 // HELPERS

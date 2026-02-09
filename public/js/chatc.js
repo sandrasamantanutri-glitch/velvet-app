@@ -30,7 +30,7 @@ let sala = null;
 let modelo_id = null;
 let cliente_id = null;
 let chatAtivo = null;
-let conteudosVistosCliente = new Set();
+let conteudosVistosModelo = new Set();
 
 // 📜 HISTÓRICO
 socket.on("chatHistory", mensagens => {
@@ -62,7 +62,6 @@ socket.on("newMessage", msg => {
 document.addEventListener("DOMContentLoaded", async () => {
   const res = await fetch("/api/me");
 const me = await res.json();
-console.log("ME NO CHAT CLIENTE:", me);
 
 // valida cliente
 if (me.role !== "cliente") {
@@ -73,16 +72,16 @@ if (me.role !== "cliente") {
 
 // AGORA SIM pode usar
 cliente_id = me.id;
-modelo_id = modeloIdFromUrl;
 
-  await carregarInfoCliente(cliente_id);
 
-  sala = `chat_${cliente_id}_${modelo_id}`;
+  await carregarInfoModelo(modelo_id);
+
+  sala = `chat_${modelo_id}_${cliente_id}`;
   socket.emit("joinChat", { sala });
-  socket.emit("getHistory", { cliente_id, modelo_id });
+  socket.emit("getHistory", { modelo_id, cliente_id });
 
   // 🔥 AQUI — quando o chat ABRE
-  marcarComoLido(cliente_id);
+  marcarComoLido(modelo_id);
 
   socket.emit("loginModelo", modelo_id);
   socket.emit("loginCliente", cliente_id);
@@ -204,7 +203,7 @@ function enviarMensagem() {
   const text = input.value.trim();
   if (!text) return;
 
-  if (!cliente_id || !modelo_id) {
+  if (!modelo_id || !cliente_id) {
   alert("Erro de sessão. Recarregue a página.");
   return;
 }
@@ -214,8 +213,8 @@ function enviarMensagem() {
     text
   });
 
-  const item = [...document.querySelectorAll("#listaClientes li")]
-  .find(li => Number(li.dataset.modeloId) === cliente_id);
+  const item = [...document.querySelectorAll("#listaModelos li")]
+  .find(li => Number(li.dataset.modeloId) === modelo_id);
 
 if (item) {
   const badge = item.querySelector(".badge");
@@ -226,7 +225,7 @@ if (item) {
   item.dataset.lastTime = Date.now();
   item.dataset.status = "normal";
   atualizarBadgeComTempo(item);
-  organizarListaClientes();
+  organizarListaModelos();
 }
 
   input.value = "";
@@ -240,7 +239,7 @@ function renderMensagem(msg) {
 
   // alinhamento correto
   div.className =
-    msg.sender === "modelo" ? "msg msg-modelo" : "msg msg-cliente";
+    msg.sender === "cliente" ? "msg msg-cliente" : "msg msg-modelo";
 
     if (
   msg.tipo === "conteudo" &&
@@ -379,7 +378,7 @@ function enviarConteudosSelecionados() {
 }
 
 async function abrirPopupConteudos() {
-  await carregarConteudosVistos(cliente_id);
+  await carregarConteudosVistos(modelo_id);
   document.getElementById("popupConteudos").classList.remove("hidden");
 
   const grid = document.getElementById("previewConteudos");
@@ -406,7 +405,7 @@ async function abrirPopupConteudos() {
   grid.innerHTML = "";
 
   conteudos.forEach(c => {
-    const jaVisto = conteudosVistosCliente.has(c.id);
+    const jaVisto = conteudosVistosModelo.has(c.id);
 
     const item = document.createElement("div");
     item.className =
@@ -426,7 +425,7 @@ async function abrirPopupConteudos() {
     // conteúdo visto (pago OU grátis) NUNCA pode ser reenviado
     if (jaVisto) {
       item.onclick = () => {
-        alert("Este conteúdo já foi visto por este cliente e não pode ser reenviado.");
+        alert("Este conteúdo já foi visto por esta modelo e não pode ser reenviado.");
       };
     } else {
       item.onclick = () => {
@@ -455,7 +454,7 @@ function fecharPopupConteudos() {
 }
 
 function confirmarEnvioConteudo() {
-  if (!cliente_id || !modelo_id) {
+  if (!modelo_id || !cliente_id) {
     alert("Selecione um cliente primeiro.");
     return;
   }
@@ -478,7 +477,7 @@ function confirmarEnvioConteudo() {
     .filter(id => Number.isInteger(id) && id > 0);
 
   // 🔥 GARANTE JOIN NA SALA ATIVA
-  const sala = `chat_${cliente_id}_${modelo_id}`;
+  const sala = `chat_${modelo_id}_${cliente_id}`;
   socket.emit("joinChat", { sala });
 
   // 🔥 ENVIA UMA ÚNICA VEZ (após garantir o join)
@@ -507,15 +506,15 @@ socket.on("conteudoVisto", ({ message_id }) => {
   if (status) status.innerText = "🟢 Vendido";
 });
 
-async function carregarConteudosVistos(cliente_id) {
-  const res = await fetch(`/api/chat/conteudos-vistos/${cliente_id}`, {
+async function carregarConteudosVistos(modelo_id) {
+  const res = await fetch(`/api/chat/conteudos-vistos/${modelo_id}`, {
     headers: {
       Authorization: "Bearer " + token
     }
   });
 
   const ids = await res.json();
-  conteudosVistosCliente = new Set(ids);
+  conteudosVistosModelo = new Set(ids);
 }
 
 function formatarHora(data) {
@@ -528,9 +527,9 @@ function formatarHora(data) {
   });
 }
 
-async function marcarComoLido(modeloId) {
+async function marcarComoLido(clienteId) {
   try {
-    await fetch(`/api/chat/marcar-lido/${modeloId}`, {
+    await fetch(`/api/chat/marcar-lido/${clienteId}`, {
       method: "POST",
       headers: {
         Authorization: "Bearer " + localStorage.getItem("token")
@@ -604,7 +603,7 @@ function excluirMensagem() {
   fecharMenuMensagem();
 }
 
-async function carregarInfoCliente(modeloId) {
+async function carregarInfoModelo(modeloId) {
   try {
     const res = await fetch(`/api/cliente/${modeloId}`, {
       headers: {
@@ -614,29 +613,29 @@ async function carregarInfoCliente(modeloId) {
 
     if (!res.ok) return;
 
-    const cliente = await res.json();
+    const modelo = await res.json();
 
-    const avatar = document.getElementById("chatClienteAvatar");
-    const nome = document.getElementById("chatClienteNome");
-    const status = document.getElementById("chatClienteStatus");
+    const avatar = document.getElementById("chatmodeloAvatar");
+    const nome = document.getElementById("chatmodeloNome");
+    const status = document.getElementById("chatmodeloStatus");
 
     if (avatar) {
-      avatar.src = cliente.avatar || "/assets/avatar.png";
+      avatar.src = modelo.avatar || "/assets/avatar.png";
     }
 
     if (nome) {
-  nome.innerText = cliente.username || "Cliente";
+  nome.innerText = modelo.username || "Modelo";
 }
 if (status) {
-  if (cliente.last_seen) {
-    status.innerText = `visto por último: ${formatarTempo(cliente.last_seen)}`;
+  if (modelo.last_seen) {
+    status.innerText = `visto por último: ${formatarTempo(modelo.last_seen)}`;
   } else {
     status.innerText = "visto por último: agora";
   }
 }
 
   } catch (err) {
-    console.error("Erro carregar cliente:", err);
+    console.error("Erro carregar modelo:", err);
   }
 }
 
