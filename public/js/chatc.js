@@ -4,11 +4,17 @@ if (!token) {
   window.location.href = "/index.html";
   throw new Error("Sem token");
 }
+
 const socket = io({
   transports: ["websocket"]
 });
 
-socket.emit("auth", { token });
+socket.on("connect", () => {
+  socket.emit("auth", {
+    token: localStorage.getItem("token")
+  });
+});
+
 
 const params = new URLSearchParams(location.search);
 const modeloIdFromUrl = Number(params.get("chat_id"));
