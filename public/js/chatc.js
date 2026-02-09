@@ -46,26 +46,20 @@ let ultimoTimestamp = null;
 // 📜 HISTÓRICO
 socket.on("chatHistory", mensagens => {
   const chat = document.getElementById("chatBox");
-  if (!chat) return;
+  if (!chat || !mensagens.length) return;
 
+  // 🧹 limpa antes
   chat.innerHTML = "";
-  mensagensRenderizadas.clear();
-
-  if (!Array.isArray(mensagens) || mensagens.length === 0) {
-    console.warn("Histórico vazio");
-    return;
-  }
 
   mensagens.forEach(m => renderMensagem(m));
 
+  // 🔥 força scroll pro final
   requestAnimationFrame(() => {
     chat.scrollTop = chat.scrollHeight;
   });
 
-  ultimoTimestamp = mensagens[mensagens.length - 1].created_at;
+ultimoTimestamp = mensagens[0].created_at;
 });
-
-
 
 socket.on("newMessage", msg => {
  renderMensagem(msg);
@@ -94,12 +88,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   await carregarInfoModelo(modelo_id);
 
   // 🔥 entra na sala
-sala = `chat_${cliente_id}_${modelo_id}`;
+  sala = `chat_${modelo_id}_${cliente_id}`;
   socket.emit("joinChat", { sala });
   socket.emit("getHistory", { modelo_id, cliente_id });
 
   // 🔌 login realtime correto
   socket.emit("loginCliente", cliente_id);
+  socket.emit("loginModelo", modelo_id);
 
   // ENTER envia
 
@@ -216,7 +211,6 @@ function enviarMensagem() {
   const text = input.value.trim();
   if (!text) return;
 
-  // 🔥 mensagem local (aparece na hora)
   const msgLocal = {
     id: "temp-" + Date.now(),
     sender: "cliente",
@@ -224,38 +218,27 @@ function enviarMensagem() {
     created_at: Date.now()
   };
 
-  // renderiza imediatamente
-  renderMensagem(msgLocal);
-  scrollParaFinal();
-
-  // envia pro backend
   socket.emit("sendMessage", {
     modelo_id,
     cliente_id,
     text
   });
 
-  // 🔔 atualiza lista lateral (se existir)
   const item = [...document.querySelectorAll("#listaModelos li")]
-    .find(li => Number(li.dataset.modeloId) === modelo_id);
+  .find(li => Number(li.dataset.modeloId) === modelo_id);
 
-  if (item) {
-    const badge = item.querySelector(".badge");
-    if (badge) badge.classList.add("hidden");
+if (item) {
+  const badge = item.querySelector(".badge");
+  badge.classList.add("hidden");
+}
 
-    item.dataset.lastTime = Date.now();
-    item.dataset.status = "normal";
+if (item) {
+  item.dataset.lastTime = Date.now();
+  item.dataset.status = "normal";
+  atualizarBadgeComTempo(item);
+  organizarListaModelos();
+}
 
-    if (typeof atualizarBadgeComTempo === "function") {
-      atualizarBadgeComTempo(item);
-    }
-
-    if (typeof organizarListaModelos === "function") {
-      organizarListaModelos();
-    }
-  }
-
-  // limpa input
   input.value = "";
 }
 
@@ -265,15 +248,13 @@ function renderMensagem(msg) {
   const chat = document.getElementById("chatBox");
   if (!chat || !msg) return;
 
-  const isTemp = String(msg.id).startsWith("temp-");
-
-  // 🔒 só bloqueia duplicado se NÃO for temporária
-  if (!isTemp && mensagensRenderizadas.has(msg.id)) return;
-  if (!isTemp) mensagensRenderizadas.add(msg.id);
+  // 🔒 evita render duplicado (local + socket)
+  if (msg.id && mensagensRenderizadas.has(msg.id)) return;
+  if (msg.id) mensagensRenderizadas.add(msg.id);
 
   const div = document.createElement("div");
-  div.dataset.msgId = msg.id;
 
+  // alinhamento correto
   div.className =
     msg.sender === "cliente" ? "msg msg-cliente" : "msg msg-modelo";
 
@@ -521,7 +502,7 @@ function confirmarEnvioConteudo() {
     .filter(id => Number.isInteger(id) && id > 0);
 
   // 🔥 GARANTE JOIN NA SALA ATIVA
-  const sala = `chat_${cliente_id}_${modelo_id}`;
+  const sala = `chat_${modelo_id}_${cliente_id}`;
   socket.emit("joinChat", { sala });
 
   // 🔥 ENVIA UMA ÚNICA VEZ (após garantir o join)
