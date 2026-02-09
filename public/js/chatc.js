@@ -70,7 +70,6 @@ if (me.role !== "cliente") {
   return;
 }
 
-// AGORA SIM pode usar
 cliente_id = me.id;
 
 

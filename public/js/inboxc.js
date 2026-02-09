@@ -21,7 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // FETCH INBOX
 // ===============================
 async function carregarListaModelos() {
-  const res = await fetch("/api/chat/modelo", {
+  const res = await fetch("/api/chat/cliente", {
     headers: { Authorization: "Bearer " + token }
   });
   if (!res.ok) return;
@@ -86,19 +86,6 @@ modelos.forEach(c => {
 });
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 function prioridadeChat(c) {
   // 1️⃣ NOVO (modelo enviou e não foi visto)
