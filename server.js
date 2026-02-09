@@ -2972,21 +2972,24 @@ app.post(
 
 // 🗑 EXCLUIR CONTEÚDO (MODELO)
 app.delete("/api/conteudos/:id", authModelo, async (req, res) => {
-  const modelo_id = req.user.id;
-  const conteudo_id = req.params.id;
+  const user_id = req.user.id;
+  const conteudo_id = Number(req.params.id);
 
   try {
     const result = await db.query(
       `
       DELETE FROM conteudos
-      WHERE id = $1 AND modelo_id = $2
+      WHERE id = $1
+        AND user_id = $2
       RETURNING id
       `,
-      [conteudo_id, modelo_id]
+      [conteudo_id, user_id]
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Conteúdo não encontrado" });
+      return res.status(404).json({
+        error: "Conteúdo não encontrado ou não pertence ao modelo"
+      });
     }
 
     res.json({ success: true });
@@ -2995,6 +2998,7 @@ app.delete("/api/conteudos/:id", authModelo, async (req, res) => {
     res.status(500).json({ error: "Erro ao apagar conteúdo" });
   }
 });
+
 
 
 //DELETAR CONTA
