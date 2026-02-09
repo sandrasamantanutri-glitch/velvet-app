@@ -1010,85 +1010,79 @@ io.to(sala).emit("newMessage", {
   }
 });
 
-socket.on("getHistory", async ({ cliente_id, modelo_id, before }) => {
+// 📜 HISTÓRICO DO CHAT
+socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
+  console.log("📜 getHistory:", { cliente_id, modelo_id });
   if (!socket.user) return;
 
   try {
-    // 1️⃣ limpar unread (só na primeira carga)
-    if (!before) {
-      await db.query(
-        `
-        UPDATE unread
-        SET has_unread = false
-        WHERE cliente_id = $1
-          AND modelo_id = $2
-          AND unread_for = $3
-        `,
-        [cliente_id, modelo_id, socket.user.role]
-      );
+    // 1️⃣ limpa NÃO LIDO apenas para quem está abrindo o chat
+    await db.query(
+   `UPDATE unread
+   SET has_unread = false
+   WHERE cliente_id = $1
+    AND modelo_id = $2
+    AND unread_for = $3
+   `,
+   [
+    cliente_id,
+    modelo_id,
+    socket.user.role   // 'cliente' | 'modelo'
+  ]
+ );
+   if (socket.user.role === "cliente") {
+    // marca mensagens da MODELO como lidas
+    await db.query(`
+      UPDATE messages
+      SET lida = true
+      WHERE cliente_id = $1
+        AND modelo_id = $2
+        AND sender = 'modelo'
+        AND lida = false
+    `, [cliente_id, modelo_id]);
 
-      if (socket.user.role === "cliente") {
-        await db.query(
-          `
-          UPDATE messages
-          SET lida = true
-          WHERE cliente_id = $1
-            AND modelo_id = $2
-            AND sender = 'modelo'
-            AND lida = false
-          `,
-          [cliente_id, modelo_id]
-        );
+    // avisa a MODELO (recibo de leitura)
+    io.to(`inbox_modelo_${modelo_id}`).emit("mensagemLida", {
+      cliente_id,
+      modelo_id
+    });
+  }
 
-        io.to(`inbox_modelo_${modelo_id}`).emit("mensagemLida", {
-          cliente_id,
-          modelo_id
-        });
-      }
-    }
-
-    // 2️⃣ histórico paginado
-    const params = [cliente_id, modelo_id];
-    let where = "";
-
-    if (before) {
-      where = "AND created_at < $3";
-      params.push(before);
-    }
-
+    // 2️⃣ busca histórico base
     const result = await db.query(
       `
-      SELECT
-        id,
-        cliente_id,
-        modelo_id,
-        sender,
-        text,
-        tipo,
-        preco,
-        visto,
-        conteudo_id,
-        pacote_id,
-        created_at
-      FROM messages
-      WHERE cliente_id = $1
-        AND modelo_id  = $2
-        ${where}
-      ORDER BY created_at DESC
-      LIMIT 30
+SELECT
+  id,
+  cliente_id,
+  modelo_id,
+  sender,
+  text,          -- ✅ EXISTE
+  tipo,          -- texto | conteudo
+  preco,
+  visto,
+  conteudo_id,
+  pacote_id,
+  created_at
+FROM messages
+WHERE cliente_id = $1
+  AND modelo_id  = $2
+ORDER BY created_at ASC;
+
       `,
-      params
+      [cliente_id, modelo_id]
     );
 
-    const mensagens = result.rows.reverse(); // volta para ordem visual
+    // 3️⃣ tratar mensagens de conteúdo / pacote
+    for (const msg of result.rows) {
 
-    // 3️⃣ tratar mensagens de conteúdo
-    for (const msg of mensagens) {
       if (msg.tipo !== "conteudo") continue;
 
+      // 🔎 buscar mídias ligadas à mensagem
       const midiasRes = await db.query(
         `
-        SELECT c.url, c.tipo AS tipo_media
+        SELECT
+          c.url,
+          c.tipo AS tipo_media
         FROM messages_conteudos mc
         JOIN conteudos c ON c.id = mc.conteudo_id
         WHERE mc.message_id = $1
@@ -1097,29 +1091,33 @@ socket.on("getHistory", async ({ cliente_id, modelo_id, before }) => {
       );
 
       const midias = midiasRes.rows;
+
       msg.quantidade = midias.length;
 
+      // 🔐 REGRAS DE VISUALIZAÇÃO
       if (
         socket.user.role === "cliente" &&
         Number(msg.preco) > 0 &&
         msg.visto !== true
       ) {
+        // 🚫 cliente não liberado
         msg.midias = [];
         msg.bloqueado = true;
       } else {
+        // ✅ modelo sempre vê tudo
+        // ✅ cliente vê se gratuito ou comprado
         msg.midias = midias;
         msg.bloqueado = false;
       }
     }
 
-    // 4️⃣ envia somente para quem pediu
-    socket.emit("chatHistory", mensagens);
+    // 4️⃣ envia histórico SOMENTE para quem pediu
+    socket.emit("chatHistory", result.rows);
 
   } catch (err) {
     console.error("❌ Erro getHistory:", err);
   }
-});
-
+ });
 
 // 📦 ENVIO DE CONTEÚDO (1 ou N mídias) — BLOCO FINAL CORRETO
 socket.on("sendConteudo", async ({ cliente_id, modelo_id, conteudos_ids, preco }) => {
