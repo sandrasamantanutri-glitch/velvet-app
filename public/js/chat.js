@@ -17,18 +17,14 @@ const clienteId = Number(params.get("cliente"));
 const chatBox = document.getElementById("chatBox");
 
 chatBox.addEventListener("scroll", () => {
-  if (!chatInicializado) return; 
-
   if (chatBox.scrollTop === 0 && !carregandoHistorico) {
     carregarMensagensAntigas();
   }
 });
 
-
-
 const input = document.getElementById("msgInput");
 
-let chatInicializado = false;
+
 let modeloId = null;
 let sala = null;
 let modelo_id = null;
@@ -44,7 +40,6 @@ socket.on("chatHistory", mensagens => {
   mensagens.forEach(m => renderMensagem(m));
   ultimoTimestamp = mensagens[0].created_at;
   scrollChatParaBaixoSeguro();
-  chatInicializado = true;
 });
 
 
@@ -124,39 +119,15 @@ socket.on("mensagemExcluida", ({ id }) => {
 // FUNÇÕES
 // ===============================
 
-async function carregarMensagensAntigas() {
-  carregandoHistorico = true;
-
-  const alturaAntes = chatBox.scrollHeight;
-
-  socket.emit("getHistory", {
-    cliente_id,
-    modelo_id,
-    before: ultimoTimestamp
-  });
-
-    mensagens.forEach(m => {
-      const el = criarMensagemElemento(m);
-      chatBox.prepend(el);
-    });
-
-    ultimoTimestamp = mensagens[0].created_at;
-
-    // manter posição do scroll
-    const alturaDepois = chatBox.scrollHeight;
-    chatBox.scrollTop = alturaDepois - alturaAntes;
-
-    carregandoHistorico = false;
-}
-
 function scrollChatParaBaixoSeguro() {
+  const chatBox = document.getElementById("chatBox");
   if (!chatBox) return;
 
+  // espera imagens e vídeos ajustarem altura
   setTimeout(() => {
     chatBox.scrollTop = chatBox.scrollHeight;
-  }, 100);
+  }, 50);
 }
-
 
 function formatarTempo(timestamp) {
   if (!timestamp || timestamp === "0") return "agora";
