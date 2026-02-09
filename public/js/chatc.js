@@ -626,9 +626,9 @@ async function carregarInfoModelo(modeloId) {
 
     const modelo = await res.json();
 
-    const avatar = document.getElementById("chatmodeloAvatar");
-    const nome = document.getElementById("chatmodeloNome");
-    const status = document.getElementById("chatmodeloStatus");
+    const avatar = document.getElementById("chatModeloAvatar");
+    const nome   = document.getElementById("chatModeloNome");
+    const status = document.getElementById("chatModeloStatus");
 
     if (avatar) {
       avatar.src = modelo.avatar || "/assets/avatar.png";
@@ -639,11 +639,9 @@ async function carregarInfoModelo(modeloId) {
     }
 
     if (status) {
-      if (modelo.last_seen) {
-        status.innerText = `visto por último: ${formatarTempo(modelo.last_seen)}`;
-      } else {
-        status.innerText = "visto por último: agora";
-      }
+      status.innerText = modelo.last_seen
+        ? `visto por último: ${formatarTempo(modelo.last_seen)}`
+        : "visto por último: agora";
     }
 
   } catch (err) {
