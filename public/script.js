@@ -190,7 +190,7 @@ if (ref) {
 
   window.location.href = "/perfil.html";
 } else {
-  window.location.href = "/clientHome.html";
+  window.location.href = "/feed.html";
 }
 
 }
@@ -256,7 +256,7 @@ if (ESTA_NO_PERFIL) {
 
 } else {
   localStorage.setItem("post_register_action", "just_registered");
-  window.location.href = "/clientHome.html";
+  window.location.href = "/feed.html";
 }
 
 }
