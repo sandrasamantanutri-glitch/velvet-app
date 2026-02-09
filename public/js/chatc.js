@@ -46,15 +46,10 @@ let ultimoTimestamp = null;
 // 📜 HISTÓRICO
 socket.on("chatHistory", mensagens => {
   const chat = document.getElementById("chatBox");
-  if (!chat) return;
+  if (!chat || !mensagens.length) return;
 
   chat.innerHTML = "";
-  mensagensRenderizadas.clear();
-
-  if (!Array.isArray(mensagens) || mensagens.length === 0) {
-    console.warn("Histórico vazio");
-    return;
-  }
+  mensagensRenderizadas.clear(); // 🔥 LIMPA CONTROLE
 
   mensagens.forEach(m => renderMensagem(m));
 
@@ -64,7 +59,6 @@ socket.on("chatHistory", mensagens => {
 
   ultimoTimestamp = mensagens[mensagens.length - 1].created_at;
 });
-
 
 
 socket.on("newMessage", msg => {
@@ -265,15 +259,13 @@ function renderMensagem(msg) {
   const chat = document.getElementById("chatBox");
   if (!chat || !msg) return;
 
-  const isTemp = String(msg.id).startsWith("temp-");
-
-  // 🔒 só bloqueia duplicado se NÃO for temporária
-  if (!isTemp && mensagensRenderizadas.has(msg.id)) return;
-  if (!isTemp) mensagensRenderizadas.add(msg.id);
+  // 🔒 evita render duplicado (local + socket)
+  if (msg.id && mensagensRenderizadas.has(msg.id)) return;
+  if (msg.id) mensagensRenderizadas.add(msg.id);
 
   const div = document.createElement("div");
-  div.dataset.msgId = msg.id;
 
+  // alinhamento correto
   div.className =
     msg.sender === "cliente" ? "msg msg-cliente" : "msg msg-modelo";
 
