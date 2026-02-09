@@ -49,7 +49,7 @@
       </div>
 
       <div class="form-group full"> 
-        <label>Endereço*</label> <textarea name="endereco" rows="2" placeholder="Rua, número e bairro"required></textarea>
+        <label>Endereço*</label> <textarea name="endereco" rows="2" placeholder="Rua, número e bairro" required></textarea>
       </div>
 
       <div class="form-group">
@@ -82,12 +82,12 @@
 
      <h3>Verificação de Identidade</h3>
 
-     <span class="form-info">
+    <div class="form-info">
        <div id="statusContainer"></div>
        Para proteger você e a plataforma, precisamos confirmar sua identidade com um documento oficial válido.
        <br><br>
       🔒 Seus documentos são analisados de forma confidencial e <strong>nunca</strong> ficam visíveis para outros usuários.
-     </span>
+    </div>
 
       <p class="status-descricao">
        Recebemos seus documentos e eles estão sendo analisados pela nossa equipe. Você será notificada assim que o processo for concluído.
@@ -95,10 +95,12 @@
       
       <form id="formDocumentos" class="form-area" enctype="multipart/form-data">
         <div class="form-group full">
-         <label>Tipo de documento*</label> <select name="doc_tipo" required> <option value="">Selecione</option>
+         <label>Tipo de documento*</label> 
+         <select name="doc_tipo" required> <option value="">Selecione</option>
           <option value="rg">RG</option>
           <option value="cnh">CNH</option>
           <option value="passaporte">Passaporte</option>
+          </select>
         </div>
 
        <div class="form-group full">
@@ -129,24 +131,46 @@
       </form>
     </div>
   </section>
-  
-  <section class="area-section">Excluir minha Conta</section>
-    <div class="danger-zone"><button class="btn-danger" onclick="abrirConfirmacaoExclusao()">
-      Excluir conta permanentemente</button>
-    </div>
-    <div id="modalExcluirConta" class="modal hidden"><div class="modal-overlay"></div>
-    <div class="modal-box"><h3>Excluir conta permanentemente</h3><p>Esta ação é <strong>irreversível</strong>.
-      <br>Todos os seus dados, conteúdos, mensagens e históricoserão apagados permanentemente.</p>
-      <label class="label-danger">Digite sua senha para confirmar</label>
-      <input type="password" id="senhaConfirmacao" placeholder="Digite sua senha" class="input-danger"/>
-      <p id="erroExclusao" class="erro-danger hidden"> Senha incorreta.</p>
-     <div class="modal-actions">
-     <button class="btn-cancelar" onclick="fecharModalExclusao()"> Cancelar </button>
-     <button class="btn-confirmar" onclick="confirmarExclusaoConta()"> Sim, excluir minha conta </button>
-   </div>
-   <
 
-  </section>
+  <section class="area-section">
+  Excluir minha Conta
+
+  <div class="danger-zone">
+    <button class="btn-danger" onclick="abrirConfirmacaoExclusao()">
+      Excluir conta permanentemente
+    </button>
+  </div>
+
+  <div id="modalExcluirConta" class="modal hidden">
+    <div class="modal-overlay"></div>
+
+    <div class="modal-box">
+      <h3>Excluir conta permanentemente</h3>
+
+      <p>
+        Esta ação é <strong>irreversível</strong>.<br>
+        Todos os seus dados, conteúdos, mensagens e histórico serão apagados permanentemente.
+      </p>
+
+      <label class="label-danger">Digite sua senha para confirmar</label>
+      <input
+        type="password"
+        id="senhaConfirmacao"
+        placeholder="Digite sua senha"
+        class="input-danger"
+      />
+
+      <p id="erroExclusao" class="erro-danger hidden">Senha incorreta.</p>
+
+      <div class="modal-actions">
+        <button class="btn-cancelar" onclick="fecharModalExclusao()">Cancelar</button>
+        <button class="btn-confirmar" onclick="confirmarExclusaoConta()">
+          Sim, excluir minha conta
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
 
  <hr class="separator">
 
