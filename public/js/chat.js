@@ -378,7 +378,7 @@ async function abrirPopupConteudos() {
   const grid = document.getElementById("previewConteudos");
   grid.innerHTML = "Carregando...";
 
-  const res = await fetch("/api/conteudos/me", {
+  const res = await fetch("/api/conteudos", {
     headers: {
       Authorization: "Bearer " + localStorage.getItem("token")
     }
