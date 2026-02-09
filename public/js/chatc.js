@@ -46,28 +46,20 @@ let ultimoTimestamp = null;
 // 📜 HISTÓRICO
 socket.on("chatHistory", mensagens => {
   const chat = document.getElementById("chatBox");
-  if (!chat) return;
+  if (!chat || !mensagens.length) return;
 
+  // 🧹 limpa antes
   chat.innerHTML = "";
-
-  if (!Array.isArray(mensagens) || mensagens.length === 0) {
-    chat.innerHTML = `
-      <div class="chat-vazio">
-        Nenhuma mensagem ainda
-      </div>
-    `;
-    return;
-  }
 
   mensagens.forEach(m => renderMensagem(m));
 
+  // 🔥 força scroll pro final
   requestAnimationFrame(() => {
     chat.scrollTop = chat.scrollHeight;
   });
 
-  ultimoTimestamp = mensagens[0]?.created_at || null;
+  ultimoTimestamp = mensagens[0].created_at;
 });
-
 
 socket.on("newMessage", msg => {
  renderMensagem(msg);
