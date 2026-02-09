@@ -5,9 +5,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     .getElementById("btnAbrirConteudos")
     ?.addEventListener("click", abrirPopupConteudos);
 
-  document
-    .getElementById("btnFecharConteudos")
-    ?.addEventListener("click", fecharPopupConteudos);
+    document
+  .getElementById("btnConfirmarConteudos")
+  ?.addEventListener("click", confirmarConteudosSelecionados);
+
+document
+  .getElementById("btnFecharConteudos")
+  ?.addEventListener("click", fecharPopupConteudos);
+
 
   document
     .getElementById("btnEnviar")
@@ -72,7 +77,6 @@ function fecharPopupConteudos() {
 
   popup.classList.add("hidden");
 }
-
 
 // ===============================
 // MODELO LOGADO
@@ -149,19 +153,16 @@ function renderizarSelecionados() {
   });
 }
 
-// ===============================
-// ENVIO (TESTE OU REAL)
-// ===============================
 async function enviar(modoTeste) {
   const modelo_id = document.getElementById("modeloSelect").value;
   const texto = document.getElementById("mensagem").value.trim();
   const preco = Number(document.getElementById("preco").value);
 
+  // 🔥 pega conteúdos selecionados no popup
   const conteudos = Array.from(
-    document.querySelectorAll("#conteudosGrid input:checked")
-  ).map(i => Number(i.value));
+    document.querySelectorAll(".preview-item.selected")
+  ).map(el => Number(el.dataset.conteudoId));
 
-  // 🔒 validações front
   if (!texto) {
     alert("Digite a mensagem");
     return;
@@ -173,7 +174,7 @@ async function enviar(modoTeste) {
   }
 
   if (conteudos.length === 0) {
-    alert("Selecione ao menos um conteúdo");
+    alert("Selecione ao menos uma mídia");
     return;
   }
 
@@ -210,7 +211,34 @@ async function enviar(modoTeste) {
 
   alert(
     modoTeste
-      ? "Mensagem de teste enviada com sucesso 💜"
+      ? "Mensagem enviada com sucesso 💜"
       : `PPV enviado para ${data.enviados} assinantes 💜`
   );
 }
+
+function confirmarConteudosSelecionados() {
+  const selecionados = Array.from(
+    document.querySelectorAll(".preview-item.selected")
+  );
+
+  const container = document.getElementById("conteudosSelecionados");
+  container.innerHTML = "";
+
+  if (selecionados.length === 0) {
+    container.innerHTML =
+      "<span style='opacity:.6'>Nenhuma mídia selecionada</span>";
+  }
+
+  selecionados.forEach(item => {
+    const img = item.querySelector("img, video").cloneNode(true);
+    img.style.width = "70px";
+    img.style.height = "90px";
+    img.style.objectFit = "cover";
+    img.style.borderRadius = "8px";
+    img.style.border = "2px solid #7B2CFF";
+    container.appendChild(img);
+  });
+
+  fecharPopupConteudos();
+}
+
