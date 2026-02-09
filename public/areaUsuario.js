@@ -373,6 +373,7 @@ async function carregarDadosPessoais() {
   if (dados.status === "aprovado") {
     bloquearFormulario(form);
     mostrarStatusVerificacao("aprovado");
+    aplicarUIContaAprovada();
     document.querySelector(".btn-salvar")?.remove();
   }
 }
@@ -393,6 +394,30 @@ function aplicarVisibilidadePorStatus(status) {
     const el = document.getElementById(id);
     if (el) el.style.display = "none";
   });
+}
+
+function aplicarUIContaAprovada() {
+  const ids = [
+    "infoDadosPessoais",
+    "alertDadosPessoais",
+    "infoDocumentos",
+    "descricaoAnalise",
+    "alertDocumentos",
+    "statusContainer"
+  ];
+
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = "none";
+  });
+
+  // bloqueia formulários
+  const formPessoais = document.getElementById("formDadosPessoais");
+  if (formPessoais) bloquearFormulario(formPessoais);
+
+  document.querySelectorAll(".btn-salvar").forEach(btn => btn.remove());
+
+  mostrarStatusVerificacao("aprovado");
 }
 
 
