@@ -17,7 +17,7 @@ body {
   right: 0;
 
   height: 64px;
-  z-index: 100; /* 🔥 acima do chat */
+  z-index: 50;
 
   display: flex;
   align-items: center;
@@ -27,7 +27,6 @@ body {
   background: #f1f1f1;
   border-bottom: 1px solid #C9C9C9;
 }
-
 
 /* ===============================
    INPUT (FIXO)
@@ -55,12 +54,10 @@ body {
 ================================ */
 .chat-box {
   position: fixed;
-  top: 64px;
-  bottom: 64px;
+  top: 64px;      /* altura do header */
+  bottom: 64px;   /* altura do input */
   left: 0;
   right: 0;
-
-  z-index: 10; /* 🔥 IMPORTANTE */
 
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
