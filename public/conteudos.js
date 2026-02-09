@@ -9,335 +9,85 @@ if (!token) {
   throw new Error("Sem token");
 }
 
-const observer = new IntersectionObserver(entries => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      const img = entry.target;
-      img.src = img.dataset.src;
-      observer.unobserve(img);
+document.addEventListener("DOMContentLoaded", () => {
+  carregarConteudos();
+});
+
+async function carregarConteudos() {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    alert("Sessão expirada");
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/conteudos?venda=true", {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
+
+    if (!res.ok) {
+      throw new Error("Erro ao carregar conteúdos");
     }
-  });
-}, { rootMargin: "200px" });
 
-// ===============================
-// ESTADO
-// ===============================
-let modelo_id = null;
+    const conteudos = await res.json();
+    renderizarConteudos(conteudos);
 
-// ===============================
-// DOM
-// ===============================
-const fileInput    = document.getElementById("conteudoFile");
-const fileNameSpan = document.getElementById("fileName");
-const lista        = document.getElementById("listaConteudos");
-
-// ===============================
-// INIT
-// ===============================
-document.addEventListener("DOMContentLoaded", async () => {
-  await carregarModelo();
-  bindFileInput();
-  listarConteudos();
-});
-
-// ===============================
-// MODELO (JWT)
-// ===============================
-async function carregarModelo() {
-  const res = await fetch("/api/me", {
-    headers: { Authorization: "Bearer " + token }
-  });
-
-  const user = await res.json();
-
-  if (user.role !== "modelo") {
-    alert("Acesso restrito à modelo");
-    window.location.href = "/index.html";
-    throw new Error("Usuário não é modelo");
+  } catch (err) {
+    console.error("Erro:", err.message);
   }
-
-  modelo_id = user.id;
 }
 
-// ===============================
-// INPUT FILE
-// ===============================
-function bindFileInput() {
-  fileInput.addEventListener("change", () => {
-    fileNameSpan.textContent =
-      fileInput.files.length
-        ? fileInput.files[0].name
-        : "Nenhum ficheiro selecionado";
-  });
-}
+function renderizarConteudos(conteudos) {
+  const grid = document.getElementById("conteudosGrid");
+  const vazio = document.getElementById("conteudosVazio");
 
-// ===============================
-// UPLOAD
-// ===============================
-async function uploadConteudo() {
-  const file = fileInput.files[0];
-  if (!file) return;
+  grid.innerHTML = "";
 
-  const fd = new FormData();
-  fd.append("conteudo", file);
-
-  if (file.type.startsWith("video")) {
-  const thumbBlob = await gerarThumbnailVideo(file);
-  fd.append("thumbnail", thumbBlob, "thumb.jpg");
-}
-
-if (file.type.startsWith("image")) {
-  const thumbBlob = await gerarThumbnailImagem(file);
-  fd.append("thumbnail", thumbBlob, "thumb.jpg");
-}
-
-  const res = await fetch("/api/conteudos/upload", {
-    method: "POST",
-    headers: { Authorization: "Bearer " + token },
-    body: fd
-  });
-
-  if (!res.ok) {
-    alert("Erro ao enviar conteúdo");
+  if (!conteudos || conteudos.length === 0) {
+    vazio.classList.remove("hidden");
     return;
   }
 
-  listarConteudos();
-}
+  vazio.classList.add("hidden");
 
-// ===============================
-// LISTAR CONTEÚDOS
-// ===============================
-async function listarConteudos() {
-  const res = await fetch("/api/conteudos/me", {
-    headers: { Authorization: "Bearer " + token }
+  conteudos.forEach(conteudo => {
+    const card = criarCardConteudo(conteudo);
+    grid.appendChild(card);
   });
-
-  if (!res.ok) {
-    alert("Erro ao carregar conteúdos");
-    return;
-  }
-
-  const conteudos = await res.json();
-  lista.innerHTML = "";
-
-  if (!conteudos.length) {
-    lista.innerHTML = "<p>Nenhum conteúdo enviado ainda.</p>";
-    return;
-  }
-const limite = conteudos.length;
-conteudos.slice(0, limite).forEach(c => adicionarMidia(c));
-
 }
 
-// ===============================
-// ADICIONAR MÍDIA (VERSÃO OTIMIZADA)
-// ===============================
-function adicionarMidia(conteudo) {
-  const { id, url, tipo, thumbnail_url } = conteudo;
-   if (!thumbnail_url) {
-    console.warn("Conteúdo sem thumbnail:", conteudo);
-    return;
-  }
-  const isVideo = tipo === "video";
-
+function criarCardConteudo(conteudo) {
   const card = document.createElement("div");
-  card.className = "midiaCard";
+  card.className = "card-conteudo";
 
-  const img = document.createElement("img");
-  img.className = "midiaThumb";
+  const thumb = document.createElement("img");
+  thumb.className = "card-thumb";
+  thumb.src = conteudo.thumbnail_url || conteudo.url;
+  thumb.alt = conteudo.titulo || "Conteúdo";
 
-  // 🔥 otimizações mobile
-  img.loading = "lazy";
-  img.decoding = "async";
+  const info = document.createElement("div");
+  info.className = "card-info";
 
-  // placeholder imediato
-  img.src = "/assets/thumb-loading.jpg";
+  const titulo = document.createElement("h3");
+  titulo.textContent = conteudo.titulo || "Conteúdo sem título";
 
-  // src real
-  const realSrc = thumbnail_url;
+  const preco = document.createElement("div");
+  preco.className = "card-preco";
+  preco.textContent = `R$ ${Number(conteudo.preco).toFixed(2)}`;
 
-  // lazy load real (só carrega quando aparecer)
-  img.dataset.src = realSrc;
-  observer.observe(img);
+  info.appendChild(titulo);
+  info.appendChild(preco);
 
-  img.onclick = () => abrirModalMidia(url, isVideo);
+  card.appendChild(thumb);
+  card.appendChild(info);
 
-  const btnExcluir = document.createElement("button");
-  btnExcluir.className = "btn-excluir";
-  btnExcluir.textContent = "✕";
-  btnExcluir.onclick = (e) => {
-    e.stopPropagation();
-    excluirConteudo(id);
-  };
-
-  card.appendChild(img);
-  card.appendChild(btnExcluir);
-  lista.appendChild(card);
-}
-
-// ===============================
-// THUMBNAIL DE VÍDEO (LEGADO + NOVO)
-// ===============================
-function getVideoThumbnail(url, thumbnail_url) {
-  // 🆕 Novo padrão (Backblaze)
-  if (thumbnail_url) {
-    return thumbnail_url;
-  }
-
-  // 🧓 Legado Cloudinary
-  if (url && url.includes("cloudinary.com")) {
-    return url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
-  }
-
-  // 🚨 Fallback final
-  return "/assets/capaDefault.jpg";
-}
-
-
-async function gerarThumbnailVideo(file) {
-  return new Promise((resolve, reject) => {
-    const video = document.createElement("video");
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-
-    video.src = URL.createObjectURL(file);
-    video.muted = true;
-    video.playsInline = true;
-
-    video.addEventListener("loadeddata", () => {
-      video.currentTime = 1;
-    });
-
-    video.addEventListener("seeked", () => {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0);
-
-      canvas.toBlob(blob => {
-        resolve(blob);
-        URL.revokeObjectURL(video.src);
-      }, "image/jpeg", 0.85);
-    });
-
-    video.addEventListener("error", reject);
-  });
-}
-
-// ===============================
-// MODAL
-// ===============================
-function abrirModalMidia(url, isVideo) {
-  const modal = document.getElementById("modalMidia");
-  const img   = document.getElementById("modalImg");
-  const video = document.getElementById("modalVideo");
-
-  img.style.display = "none";
-  video.style.display = "none";
-
-  if (isVideo) {
-    video.src = url;
-    video.style.display = "block";
-    video.play();
-  } else {
-    img.src = url;
-    img.style.display = "block";
-  }
-
-  modal.classList.remove("hidden");
-}
-
-document.getElementById("fecharModal")?.addEventListener("click", () => {
-  const modal = document.getElementById("modalMidia");
-  const video = document.getElementById("modalVideo");
-
-  video.pause();
-  video.src = "";
-  modal.classList.add("hidden");
-});
-
-// ===============================
-// EXCLUIR
-// ===============================
-async function excluirConteudo(id) {
-  if (!confirm("Excluir este conteúdo?")) return;
-
-  const res = await fetch(`/api/conteudos/${id}`, {
-    method: "DELETE",
-    headers: { Authorization: "Bearer " + token }
+  card.addEventListener("click", () => {
+    console.log("Abrir conteúdo:", conteudo.id);
+    // depois: abrir modal / editar / detalhes
   });
 
-  if (res.ok) {
-    listarConteudos();
-  } else {
-    alert("Erro ao excluir conteúdo");
-  }
+  return card;
 }
-
-function storageFromUrl(url) {
-  if (!url) return null;
-  if (url.includes("cloudinary.com")) return "cloudinary";
-  if (url.includes(process.env.B2_ENDPOINT)) return "backblaze";
-  return "desconhecido";
-}
-
-async function excluirArquivoFisico(url) {
-  const storage = storageFromUrl(url);
-
-  if (storage === "cloudinary") {
-    const publicId = url
-      .split("/")
-      .slice(-2)
-      .join("/")
-      .replace(/\.[^/.]+$/, "");
-
-    await cloudinary.uploader.destroy(publicId);
-  }
-
-  if (storage === "backblaze") {
-    const key = decodeURIComponent(url.split(".com/")[1]);
-
-    await s3.deleteObject({
-      Bucket: process.env.B2_BUCKET,
-      Key: key
-    }).promise();
-  }
-}
-
-async function gerarThumbnailImagem(file) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-
-    img.onload = () => {
-      const size = 300;
-      canvas.width = size;
-      canvas.height = size;
-
-      const scale = Math.max(
-        size / img.width,
-        size / img.height
-      );
-
-      const w = img.width * scale;
-      const h = img.height * scale;
-      const x = (size - w) / 2;
-      const y = (size - h) / 2;
-
-      ctx.drawImage(img, x, y, w, h);
-
-      canvas.toBlob(
-        blob => resolve(blob),
-        "image/jpeg",
-        0.7 // 🔥 leve
-      );
-    };
-
-    img.onerror = reject;
-    img.src = URL.createObjectURL(file);
-  });
-}
-
-
-

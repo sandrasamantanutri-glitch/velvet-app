@@ -1,289 +1,91 @@
-/* =========================
-   RESET / BASE
-========================= */
 * {
   box-sizing: border-box;
-  font-family: "Poppins", sans-serif;
 }
 
 body {
   margin: 0;
-  background: #fff;
+  padding: 24px;
+  font-family: "Poppins", sans-serif;
+  background: #0e0e12;
+  color: #fff;
 }
 
-/* =========================
-   TÍTULOS
-========================= */
-h1.section-title {
-  font-size: 36px;
-  font-weight: 700;
-  color: #7B2CFF;
-  text-align: center;
-  margin-bottom: 10px;
-}
+/* ================= TOPO ================= */
 
-.section-desc {
-  text-align: center;
-  color: #7B2CFF;
-  font-size: 14px;
+.topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 24px;
 }
 
-.section-subtitle {
-  margin-top: 32px;
-  font-size: 20px;
-  color: #7B2CFF;
-  text-align: center;
+.topo h1 {
+  font-size: 22px;
+  font-weight: 600;
 }
 
-/* =========================
-   UPLOAD
-========================= */
-.upload-box {
-  max-width: 1100px;
-  margin: 0 auto 20px;
-  text-align: center;
-}
-
-.file-name {
-  font-size: 13px;
-  margin-left: 10px;
-  color: #7B2CFF;
-}
-
-/* =========================
-   BOTÕES
-========================= */
-.btn-primary,
-.btn-file {
-  background: linear-gradient(135deg, #7B2CFF, #4b1fb8);
-  color: #fff;
-  font-size: 13px;
+.btn-principal {
+  background: linear-gradient(135deg, #7b2cff, #9e6bff);
   border: none;
-  padding: 8px 16px;
-  border-radius: 18px;
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 8px;
   cursor: pointer;
+  font-weight: 500;
 }
 
-.btn-primary:hover,
-.btn-file:hover {
-  opacity: 0.9;
-}
+/* ================= GRID ================= */
 
-/* =========================
-   GRID DE CONTEÚDOS
-   (IGUAL AO PROFILE)
-========================= */
-#listaConteudos {
-  max-width: 1100px;
-  margin: 30px auto;
-  padding: 0 20px;
-
+.grid-conteudos {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
 }
 
-/* =========================
-   CARD PADRÃO
-========================= */
-.midiaCard {
-  position: relative;
-  background: #fff;
-  border-radius: 14px;
+/* ================= CARD ================= */
+
+.card-conteudo {
+  background: #1a1a22;
+  border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
-
-  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s;
 }
 
-.midiaCard:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 28px rgba(123,44,255,0.18);
+.card-conteudo:hover {
+  transform: translateY(-4px);
 }
 
-/* =========================
-   MÍDIA (CHAVE PARA SAFARI)
-========================= */
-.midiaThumb {
+.card-thumb {
   width: 100%;
-  aspect-ratio: 1 / 1;
+  height: 180px;
   object-fit: cover;
   display: block;
-  background: #9E6BFF;
 }
 
-/* =========================
-   BOTÃO EXCLUIR
-========================= */
-.btn-excluir {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: none;
-
-  background: rgba(0, 0, 0, 0.65);
-  color: #fff;
-  font-size: 18px;
-
-  cursor: pointer;
-  opacity: 0;
-  transition: all 0.25s ease;
-  z-index: 2;
+.card-info {
+  padding: 12px;
 }
 
-.midiaCard:hover .btn-excluir {
-  opacity: 1;
-  background: rgba(123, 44, 255, 0.9);
+.card-info h3 {
+  font-size: 15px;
+  margin: 0 0 6px;
 }
 
-.btn-excluir:hover {
-  transform: scale(1.1);
+.card-preco {
+  font-size: 14px;
+  font-weight: 600;
+  color: #9e6bff;
 }
 
-/* =========================
-   MODAL DE MÍDIA
-========================= */
-.modalMidia {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.92);
-  z-index: 9999999;
+/* ================= VAZIO ================= */
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.estado-vazio {
+  text-align: center;
+  margin-top: 60px;
+  opacity: 0.7;
 }
 
-.modalMidia.hidden {
+.hidden {
   display: none;
 }
-
-.modalContentWrapper {
-  max-width: 95vw;
-  max-height: 95vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.modalMidiaContent {
-  max-width: 95vw;
-  max-height: 95vh;
-  object-fit: contain;
-  border-radius: 12px;
-  background: #000;
-}
-
-/* botão fechar */
-.modalClose {
-  position: fixed;
-  top: 20px;
-  right: 30px;
-  font-size: 34px;
-  color: #fff;
-  cursor: pointer;
-  z-index: 10000000;
-}
-
-/* =========================
-   SEPARADOR
-========================= */
-.separator {
-  border: none;
-  border-top: 1px solid #e5e5e5;
-  margin: 30px 0;
-}
-
-/* =========================
-   MOBILE
-========================= */
-@media (max-width: 768px) {
-
-  h1.section-title {
-    font-size: 24px;
-  }
-
-  .section-desc {
-    font-size: 13px;
-    padding: 0 16px;
-  }
-
-  .section-subtitle {
-    font-size: 16px;
-  }
-
-  #listaConteudos {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 14px;
-  }
-
-  .btn-excluir {
-    opacity: 1;
-    width: 30px;
-    height: 30px;
-    font-size: 16px;
-    top: 8px;
-    right: 8px;
-  }
-}
-
-/* =========================
-   MOBILE — CENTRALIZAR UPLOAD
-========================= */
-@media (max-width: 768px) {
-
-  .upload-box {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .upload-box .btn-file,
-  .upload-box .btn-primary {
-    width: 100%;
-    max-width: 260px;
-    text-align: center;
-  }
-
-  .file-name {
-    margin: 0;
-    font-size: 13px;
-    text-align: center;
-    word-break: break-word;
-    max-width: 260px;
-  }
-}
-
-/* ===============================
-   INDICADOR DE VÍDEO
-   =============================== */
-
-.midiaCard {
-  position: relative;
-}
-
-.midiaCard.video::after {
-  content: "▶";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 42px;
-  color: white;
-  background: rgba(0, 0, 0, 0.55);
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none; /* não bloqueia clique */
-}
-

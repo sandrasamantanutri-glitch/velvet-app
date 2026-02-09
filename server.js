@@ -224,7 +224,7 @@ function gerarSignedUrl(key) {
 }
 
 //APP POST ROTAS ////
-//MIDIAS
+//MIDIAS DO FEED
 app.post(
   "/api/upload",
   auth,
@@ -2104,27 +2104,39 @@ app.get(
 );
 
 // 📦 CONTEÚDOS DA MODELO (PARA POPUP)
-app.get("/api/conteudos/me", authModelo, async (req, res) => {
+aapp.get("/api/conteudos", authModelo, async (req, res) => {
+  const modelo_id = req.user.id;
+  const { venda } = req.query;
+
   try {
+    let where = "c.modelo_id = $1";
+    const params = [modelo_id];
+
+    if (venda === "true") {
+      where += " AND c.tipo_conteudo = 'venda'";
+    }
+
     const result = await db.query(
       `
       SELECT
-        id,
-        url,
-        tipo,
-        thumbnail_url
-      FROM conteudos
-      WHERE user_id = $1
-        AND tipo_conteudo = 'venda'
-      ORDER BY id DESC
+        c.id,
+        c.modelo_id,
+        c.tipo,
+        c.tipo_conteudo,
+        c.url,
+        c.thumbnail_url,
+        c.created_at
+      FROM conteudos c
+      WHERE ${where}
+      ORDER BY c.created_at DESC
       `,
-      [req.user.id]
+      params
     );
 
     res.json(result.rows);
   } catch (err) {
-    console.error("Erro carregar conteudos:", err);
-    res.status(500).json([]);
+    console.error("Erro listar conteúdos:", err);
+    res.status(500).json({ error: "Erro ao listar conteúdos" });
   }
 });
 
@@ -2397,6 +2409,50 @@ app.put("/api/modelo/me", auth, async (req, res) => {
   }
 });
 
+app.put("/api/conteudos/:id", authModelo, async (req, res) => {
+  const modelo_id = req.user.id;
+  const conteudo_id = Number(req.params.id);
+
+  const { tipo, url, thumbnail_url } = req.body;
+
+  if (!tipo || !url) {
+    return res.status(400).json({
+      error: "Campos obrigatórios: tipo e url"
+    });
+  }
+
+  try {
+    const result = await db.query(
+      `
+      UPDATE conteudos
+      SET
+        tipo = $1,
+        url = $2,
+        thumbnail_url = $3
+      WHERE id = $4
+        AND modelo_id = $5
+      RETURNING
+        id,
+        tipo,
+        url,
+        thumbnail_url,
+        modelo_id
+      `,
+      [tipo, url, thumbnail_url || null, conteudo_id, modelo_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        error: "Conteúdo não encontrado ou não pertence ao modelo"
+      });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Erro editar conteúdo:", err);
+    res.status(500).json({ error: "Erro ao editar conteúdo" });
+  }
+});
 
 //DADOS CLIENTE
 app.post("/api/cliente/dados", auth, async (req, res) => {
@@ -2915,48 +2971,31 @@ app.post(
 );
 
 // 🗑 EXCLUIR CONTEÚDO (MODELO)
-app.delete(
-  "/api/conteudos/:id",
-  auth,
-  authModelo,
-  async (req, res) => {
-    const { id } = req.params;
+app.delete("/api/conteudos/:id", authModelo, async (req, res) => {
+  const modelo_id = req.user.id;
+  const conteudo_id = req.params.id;
 
-    try {
-      const result = await db.query(
-        `
-        SELECT url
-        FROM conteudos
-        WHERE id = $1 AND user_id = $2
-        `,
-        [id, req.user.id]
-      );
+  try {
+    const result = await db.query(
+      `
+      DELETE FROM conteudos
+      WHERE id = $1 AND modelo_id = $2
+      RETURNING id
+      `,
+      [conteudo_id, modelo_id]
+    );
 
-      if (result.rows.length === 0) {
-        return res.status(404).json({ error: "Conteúdo não encontrado" });
-      }
-
-      const url = result.rows[0].url;
-
-      try {
-        await excluirArquivoFisico(url);
-      } catch (e) {
-        console.warn("⚠️ Falha ao apagar arquivo físico:", e.message);
-      }
-
-      await db.query(
-        `DELETE FROM conteudos WHERE id = $1 AND user_id = $2`,
-        [id, req.user.id]
-      );
-
-      res.json({ success: true });
-
-    } catch (err) {
-      console.error("Erro ao excluir conteúdo:", err);
-      res.status(500).json({ error: "Erro interno" });
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Conteúdo não encontrado" });
     }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Erro apagar conteúdo:", err);
+    res.status(500).json({ error: "Erro ao apagar conteúdo" });
   }
-);
+});
+
 
 //DELETAR CONTA
 app.delete("/api/conta/excluir", auth, async (req, res) => {
@@ -3775,6 +3814,69 @@ app.post(
     }
   }
 );
+
+app.post(
+  "/api/conteudos",
+  authModelo,
+  uploadB2.single("file"),
+  async (req, res) => {
+    const modelo_id = req.user.id;
+    const { tipo, tipo_conteudo } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({
+        error: "Arquivo obrigatório"
+      });
+    }
+
+    if (!tipo || !tipo_conteudo) {
+      return res.status(400).json({
+        error: "Campos obrigatórios: tipo e tipo_conteudo"
+      });
+    }
+
+    try {
+      const url = req.file.location;
+      const thumbnail_url = req.body.thumbnail_url || null;
+
+      const result = await db.query(
+        `
+        INSERT INTO conteudos (
+          modelo_id,
+          tipo,
+          tipo_conteudo,
+          url,
+          thumbnail_url
+        )
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING
+          id,
+          modelo_id,
+          tipo,
+          tipo_conteudo,
+          url,
+          thumbnail_url,
+          created_at
+        `,
+        [
+          modelo_id,
+          tipo,
+          tipo_conteudo,
+          url,
+          thumbnail_url
+        ]
+      );
+
+      res.json(result.rows[0]);
+    } catch (err) {
+      console.error("Erro ao carregar conteúdo:", err);
+      res.status(500).json({
+        error: "Erro ao carregarconteúdo"
+      });
+    }
+  }
+);
+
 
 
 // ===============================

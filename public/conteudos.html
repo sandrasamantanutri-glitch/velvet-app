@@ -15,32 +15,20 @@
      <button type="button" class="btn-voltar" onclick="history.back()">
       <img src="/assets/voltar.png" alt="Voltar">
      </button>
+     
+    <h1>Meus conteúdos à venda</h1>
+    <button id="btnNovoConteudo" class="btn-principal">
+      + Novo conteúdo
+    </button>
 
-      <h3>Meus Conteúdos Privados</h3>
-      <p class="section-desc"> Gerencie seus conteúdos exclusivos. Este conteúdo só é acessível quando enviado via chat.</p>
 
-      <div class="upload-box">
-        <input type="file" id="conteudoFile" accept="image/*,video/*" hidden/>
-        <label for="conteudoFile" class="btn-file">Escolher midia</label>
-        <span id="fileName" class="file-name">Nenhuma midia selecionada</span>
-        <button class="btn-primary" onclick="uploadConteudo()">Enviar Conteúdo</button>
-      </div>
-
-      <hr class="separator" />
-
-      <h2 class="section-subtitle">Midias</h2>
-      <div id="listaConteudos"></div>
-
-    </section>
- 
-   <div id="modalMidia" class="modalMidia hidden">
-    <span id="fecharModal" class="modalClose">&times;</span>
-    <div class="modalContentWrapper">
-      <img id="modalImg" class="modalMidiaContent" style="display:none;"/>
-      <video id="modalVideo" class="modalMidiaContent" controls style="display:none;"></video>
+    <div id="conteudosGrid" class="grid-conteudos">
+      <!-- cards entram aqui -->
     </div>
-   </div>
 
+    <div id="conteudosVazio" class="estado-vazio hidden">
+      <p>Você ainda não tem conteúdos à venda.</p>
+    </div>
 
   </section>
 
