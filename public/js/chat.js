@@ -124,6 +124,16 @@ socket.on("mensagemExcluida", ({ id }) => {
 // FUNÇÕES
 // ===============================
 
+function scrollParaFinal() {
+  const chat = document.getElementById("chatBox");
+  if (!chat) return;
+
+  requestAnimationFrame(() => {
+    chat.scrollTop = chat.scrollHeight;
+  });
+}
+
+
 function formatarTempo(timestamp) {
   if (!timestamp || timestamp === "0") return "agora";
 
