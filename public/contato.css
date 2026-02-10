@@ -194,3 +194,22 @@ textarea {
   font-size: 13px;
   text-align: center;
 }
+
+.footer {
+  max-width: 900px;
+  margin: 40px auto 30px;
+  text-align: center;
+  opacity: .6;
+  font-size: 13px;
+}
+
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 8px;
+}
+
+.footer-links a:hover {
+  color: #9e6bff;
+}
