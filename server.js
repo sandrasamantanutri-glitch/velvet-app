@@ -1464,6 +1464,55 @@ app.get("/api/usuario/dados", auth, async (req, res) => {
   }
 });
 
+app.get("/api/usuario/perfil", auth, async (req, res) => {
+  try {
+    if (req.user.role === "modelo") {
+      const result = await db.query(
+        `
+        SELECT
+          m.nome_exibicao,
+          m.local,
+          m.bio,
+          md.instagram,
+          md.tiktok
+        FROM modelos m
+        LEFT JOIN modelos_dados md
+          ON md.user_id = m.user_id
+        WHERE m.user_id = $1
+        `,
+        [req.user.id]
+      );
+
+      return res.json(result.rows[0] || {});
+    }
+
+    if (req.user.role === "cliente") {
+      const result = await db.query(
+        `
+        SELECT
+          username,
+          instagram,
+          tiktok,
+          local,
+          bio
+        FROM clientes_dados
+        WHERE user_id = $1
+        `,
+        [req.user.id]
+      );
+
+      return res.json(result.rows[0] || {});
+    }
+
+    res.status(403).json({ erro: "Role inválida" });
+
+  } catch (err) {
+    console.error("ERRO GET /api/usuario/perfil:", err);
+    res.status(500).json({ erro: "Erro ao buscar perfil" });
+  }
+});
+
+
 //CONTAGEMVIPS
 app.get("/api/modelo/:id/vip-count", async (req, res) => {
   const modelo_id = Number(req.params.id);
@@ -2436,6 +2485,84 @@ app.put("/api/modelo/me", auth, async (req, res) => {
     });
   }
 });
+
+app.put("/api/usuario/perfil", auth, async (req, res) => {
+  const { nome_exibicao, instagram, tiktok, local, bio } = req.body;
+
+  try {
+    if (req.user.role === "modelo") {
+
+      // 1️⃣ atualiza dados que ficam em MODELOS
+      await db.query(
+        `
+        UPDATE modelos
+        SET
+          nome_exibicao = $1,
+          local = $2,
+          bio = $3
+        WHERE user_id = $4
+        `,
+        [
+          nome_exibicao?.trim() || null,
+          local?.trim() || null,
+          bio?.trim() || null,
+          req.user.id
+        ]
+      );
+
+      // 2️⃣ atualiza dados que ficam em MODELOS_DADOS
+      await db.query(
+        `
+        INSERT INTO modelos_dados (user_id, instagram, tiktok)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (user_id)
+        DO UPDATE SET
+          instagram = EXCLUDED.instagram,
+          tiktok = EXCLUDED.tiktok
+        `,
+        [
+          req.user.id,
+          instagram?.trim() || null,
+          tiktok?.trim() || null
+        ]
+      );
+
+      return res.json({ sucesso: true });
+    }
+
+    if (req.user.role === "cliente") {
+      await db.query(
+        `
+        UPDATE clientes_dados
+        SET
+          username = $1,
+          instagram = $2,
+          tiktok = $3,
+          local = $4,
+          bio = $5
+        WHERE user_id = $6
+        `,
+        [
+          username?.trim() || null,
+          instagram?.trim() || null,
+          tiktok?.trim() || null,
+          local?.trim() || null,
+          bio?.trim() || null,
+          req.user.id
+        ]
+      );
+
+      return res.json({ sucesso: true });
+    }
+
+    return res.status(403).json({ erro: "Role inválida" });
+
+  } catch (err) {
+    console.error("ERRO PUT /api/usuario/perfil:", err);
+    res.status(500).json({ erro: "Erro ao salvar perfil" });
+  }
+});
+
 
 app.put("/api/conteudos/:id", authModelo, async (req, res) => {
   const modelo_id = req.user.id;
