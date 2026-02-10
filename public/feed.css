@@ -26,7 +26,7 @@ body {
    TÍTULO
 ================================ */
 .area-card h3 {
-  font-size: 20px;
+  font-size: 50px;
   font-weight: 600;
   margin-bottom: 16px;
   display: flex;
@@ -91,39 +91,6 @@ body {
   opacity: 1;
 }
 
-
-/* ===============================
-   FEED MOBILE – 3 COLUNAS (PESSOAS)
-================================ */
-
-@media (max-width: 768px) {
-
-  .area-card {
-    padding: 0 10px 32px;
-  }
-
-  /* 🔥 3 colunas fixas */
-  #listaModelos {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-  }
-
-  /* Cards mais altos (rosto visível) */
-  .modelItem {
-    border-radius: 14px;
-  }
-
-  .modelItem img {
-    height: 160px;        /* 👈 ESSENCIAL */
-    object-fit: cover;
-  }
-
-  /* Remove hover no mobile */
-  .modelItem:hover {
-    transform: none;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
-  }
-}
 /* ===============================
    GRID BASE (MOBILE FIRST)
 ================================ */
