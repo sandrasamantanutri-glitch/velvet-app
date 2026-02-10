@@ -172,20 +172,16 @@ body.role-cliente .area-saldos {
 }
 
 .midias-topo {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  justify-content: space-between;
-  padding: 30px 50px 0px;
+  padding: 30px 24px 0;
 }
 
-.btn-upload img {
-  width: 28px;
-}
-
-/* TABS */
 .midias-tabs {
   display: flex;
-  gap: 8px;
+  justify-content: center;
+  gap: 10px;
 }
 
 .midias-tabs .tab {
@@ -195,6 +191,16 @@ body.role-cliente .area-saldos {
   background: #f1f1f1;
   font-size: 20px;
   cursor: pointer;
+}
+
+.btn-upload {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #f1f1f1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .midias-tabs .tab.active {
