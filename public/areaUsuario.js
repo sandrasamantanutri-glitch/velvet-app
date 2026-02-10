@@ -563,7 +563,7 @@ formModelo?.addEventListener("submit", async (e) => {
     return;
   }
 
-  const res = await fetch("/api/modelo/me", {
+  const res = await fetch("/api/usuario/perfil", {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -573,10 +573,10 @@ formModelo?.addEventListener("submit", async (e) => {
   });
 
   if (!res.ok) {
-    alert("Erro ao salvar dados da modelo");
+    alert("Erro ao salvar dados");
     return;
   }
 
-  alert("Dados da modelo salvos com sucesso 💜");
+  alert("Dados salvos com sucesso");
 });
 
