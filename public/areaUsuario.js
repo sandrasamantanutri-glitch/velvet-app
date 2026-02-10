@@ -138,14 +138,19 @@ async function carregarAssinantes() {
 
 async function carregarPerfilBase(usuario) {
   const token = localStorage.getItem("token");
-  if (!token) return;
+  if (!token || !usuario?.role) return;
 
-  const res = await fetch("/api/usuario/perfil", {
+  const endpoint =
+    usuario.role === "modelo"
+      ? "/api/modelo/me"
+      : "/api/cliente/me";
+
+  const res = await fetch(endpoint, {
     headers: { Authorization: "Bearer " + token }
   });
 
   if (!res.ok) {
-    console.error("Erro ao carregar perfil base:", res.status);
+    console.error("Erro ao carregar perfil:", res.status);
     return;
   }
 
@@ -153,22 +158,20 @@ async function carregarPerfilBase(usuario) {
 
   // 📸 AVATAR
   const avatar = document.getElementById("profileAvatar");
-  if (avatar && perfil.avatar) {
-    avatar.src = perfil.avatar;
-  }
+  if (avatar && perfil.avatar) avatar.src = perfil.avatar;
 
   // 🖼️ CAPA
   const capa = document.getElementById("profileCapa");
-  if (capa && perfil.capa) {
-    capa.src = perfil.capa;
-  }
+  if (capa && perfil.capa) capa.src = perfil.capa;
 
-  // 👤 NOME PÚBLICO
+  // 👤 NOME
   const profileName = document.getElementById("profileName");
   if (profileName) {
-    profileName.textContent = perfil.nome_exibicao || "";
+    profileName.textContent =
+      perfil.nome_exibicao || perfil.username || "";
   }
 }
+
 
 function renderizarPagina() {
   const tbody = document.getElementById("listaAssinantes");
