@@ -457,6 +457,70 @@ body.role-cliente .area-saldos {
 }
 
 
+/* ===============================
+   MODAIS – MOBILE
+================================ */
+@media (max-width: 768px) {
+
+  /* container do modal */
+  .modal,
+  .modal-midia {
+    align-items: flex-end; /* cola embaixo */
+  }
+
+  /* caixa do modal */
+  .modal .modal-box,
+  .modal-conteudo {
+    width: 100%;
+    max-width: 100%;
+    max-height: 90vh;
+
+    border-radius: 18px 18px 0 0;
+    padding: 20px 16px 24px;
+
+    animation: slideUp 0.25s ease-out;
+  }
+
+  /* mídia (imagem/vídeo) */
+  .modal-conteudo img,
+  .modal-conteudo video {
+    max-height: 45vh;
+    border-radius: 12px;
+  }
+
+  /* textos mais confortáveis */
+  .modal-conteudo h2,
+  .modal-conteudo h3 {
+    font-size: 20px;
+  }
+
+  .modal-conteudo p {
+    font-size: 16px;
+    line-height: 1.4;
+  }
+
+  /* botões grandes (dedão-friendly) */
+  .modal-conteudo button,
+  .btn-confirmar {
+    width: 100%;
+    padding: 14px;
+    font-size: 18px;
+    border-radius: 14px;
+  }
+}
+
+/* animação */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+
+
 
 
 
