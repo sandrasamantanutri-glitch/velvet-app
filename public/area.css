@@ -75,6 +75,7 @@ body.role-cliente .area-saldos {
 ================================ */
 .perfil-avatar {
   position: absolute;
+  top: 160px;
   left: 30px;
   bottom: -45px;
   width: 120px;
@@ -117,15 +118,15 @@ body.role-cliente .area-saldos {
    INFO PERFIL
 ================================ */
 .perfil-nome {
-  margin: 65px 30px 5px 170px;
+  margin: 30px 30px 5px 400px;
   font-size: 22px;
   font-weight: 600;
   color: #9e6bff;
 }
 
 .area-assinantes {
-  margin-left: 170px;
-  font-size: 14px;
+  margin-left: 40px;
+  font-size: 18px;
   opacity: .85;
 }
 
@@ -158,12 +159,15 @@ body.role-cliente .area-saldos {
   font-size: 20px;
   opacity: .7;
   color: #fff;
+  line-height: 1.2;
 }
 
 .saldo-valor {
   font-size: 18px;
   font-weight: 600;
   color: #fff;
+  display: block;
+  line-height: 1.2;
 }
 
 /* ===============================
@@ -304,6 +308,6 @@ body.role-cliente .area-saldos {
   }
 
   .area-saldos {
-    padding-top: 15px;
+    padding-top: 20px;
   }
 }
