@@ -94,13 +94,13 @@ body {
 /* ===============================
    ESTADOS
 ================================ */
-/* #listaModelos p {
+#listaModelos p {
   grid-column: 1 / -1;
   text-align: center;
   padding: 40px 0;
   color: #777;
   font-size: 14px;
-} */
+}
 
 /* ===============================
    FEED MOBILE FIRST – SMARTPHONE
@@ -124,7 +124,7 @@ body {
 
   /* GRID MOBILE */
   #listaModelos {
-    grid-template-columns: repeat(3, 1fr); /* 👈 2 colunas */
+    grid-template-columns: repeat(2, 1fr); /* 👈 2 colunas */
     gap: 12px;
   }
 
@@ -150,7 +150,7 @@ body {
 
 @media (max-width: 420px) {
   #listaModelos {
-    grid-template-columns: 3fr; /* 👈 1 coluna */
+    grid-template-columns: 1fr; /* 👈 1 coluna */
   }
 
   .modelItem img {
