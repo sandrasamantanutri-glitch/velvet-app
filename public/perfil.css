@@ -40,7 +40,7 @@ body.role-cliente .area-saldos {
 
 .perfil-capa {
   position: relative;
-  height: 220px;
+  height: 200px;
   overflow: hidden;
 }
 
@@ -71,7 +71,7 @@ body.role-cliente .area-saldos {
 
 .perfil-bio {
   padding: 80px 30px 0;
-  font-size: 24px;
+  font-size: 22px;
   color: #1E1E26;
   line-height: 1.4;
 }
