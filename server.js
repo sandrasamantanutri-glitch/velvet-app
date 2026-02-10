@@ -2507,37 +2507,83 @@ app.put("/api/conteudos/:id", authModelo, async (req, res) => {
 app.put("/api/usuario/perfil", auth, async (req, res) => {
   try {
     const {
-      nome_exibicao,
+      nome_exibicao, // front usa SEMPRE este nome
       instagram,
       tiktok,
       local,
       bio
     } = req.body;
 
-    // helper: só atualiza se veio valor
-    const setIf = (campo, valor) =>
-      valor !== undefined ? valor : null;
+    // ===============================
+    // 👤 CLIENTE
+    // ===============================
+    if (req.user.role === "cliente") {
 
+      // 1️⃣ garante que a linha exista (nome_completo é NOT NULL)
+      const existe = await db.query(
+        `SELECT 1 FROM clientes_dados WHERE user_id = $1`,
+        [req.user.id]
+      );
+
+      if (existe.rows.length === 0) {
+        await db.query(
+          `
+          INSERT INTO clientes_dados (user_id, nome_completo)
+          VALUES ($1, (SELECT nome FROM clientes WHERE user_id = $1))
+          `,
+          [req.user.id]
+        );
+      }
+
+      // 2️⃣ UPDATE incremental (só o que vier muda)
+      await db.query(
+        `
+        UPDATE clientes_dados
+        SET
+          username     = COALESCE($1, username),   -- nome_exibicao → username
+          instagram    = COALESCE($2, instagram),
+          tiktok       = COALESCE($3, tiktok),
+          local        = COALESCE($4, local),
+          bio          = COALESCE($5, bio),
+          atualizado_em = NOW()
+        WHERE user_id = $6
+        `,
+        [
+          nome_exibicao ?? null,
+          instagram ?? null,
+          tiktok ?? null,
+          local ?? null,
+          bio ?? null,
+          req.user.id
+        ]
+      );
+    }
+
+    // ===============================
+    // 👠 MODELO
+    // ===============================
     if (req.user.role === "modelo") {
-      // 1️⃣ MODELOS (tabela principal)
+
+      // 1️⃣ tabela principal
       await db.query(
         `
         UPDATE modelos
         SET
           nome_exibicao = COALESCE($1, nome_exibicao),
           local         = COALESCE($2, local),
-          bio           = COALESCE($3, bio)
+          bio           = COALESCE($3, bio),
+          updated_at    = NOW()
         WHERE user_id = $4
         `,
         [
-          setIf("nome_exibicao", nome_exibicao),
-          setIf("local", local),
-          setIf("bio", bio),
+          nome_exibicao ?? null,
+          local ?? null,
+          bio ?? null,
           req.user.id
         ]
       );
 
-      // 2️⃣ MODELOS_DADOS (instagram / tiktok)
+      // 2️⃣ instagram / tiktok (tabela auxiliar)
       await db.query(
         `
         INSERT INTO modelos_dados (user_id, instagram, tiktok)
@@ -2545,51 +2591,13 @@ app.put("/api/usuario/perfil", auth, async (req, res) => {
         ON CONFLICT (user_id) DO UPDATE
         SET
           instagram = COALESCE(EXCLUDED.instagram, modelos_dados.instagram),
-          tiktok    = COALESCE(EXCLUDED.tiktok, modelos_dados.tiktok)
+          tiktok    = COALESCE(EXCLUDED.tiktok, modelos_dados.tiktok),
+          updated_at = NOW()
         `,
         [
           req.user.id,
-          setIf("instagram", instagram),
-          setIf("tiktok", tiktok)
-        ]
-      );
-    }
-
-    if (req.user.role === "cliente") {
-      // 1️⃣ CLIENTES (nome base, se existir)
-      if (nome_exibicao !== undefined) {
-        await db.query(
-          `
-          UPDATE clientes
-          SET nome = COALESCE($1, nome)
-          WHERE user_id = $2
-          `,
-          [nome_exibicao, req.user.id]
-        );
-      }
-
-      // 2️⃣ CLIENTES_DADOS (perfil)
-      await db.query(
-        `
-        INSERT INTO clientes_dados
-          (user_id, username, instagram, tiktok, local, bio)
-        VALUES
-          ($1, $2, $3, $4, $5, $6)
-        ON CONFLICT (user_id) DO UPDATE
-        SET
-          username  = COALESCE(EXCLUDED.username, clientes_dados.username),
-          instagram = COALESCE(EXCLUDED.instagram, clientes_dados.instagram),
-          tiktok    = COALESCE(EXCLUDED.tiktok, clientes_dados.tiktok),
-          local     = COALESCE(EXCLUDED.local, clientes_dados.local),
-          bio       = COALESCE(EXCLUDED.bio, clientes_dados.bio)
-        `,
-        [
-          req.user.id,
-          setIf("nome_exibicao", nome_exibicao),
-          setIf("instagram", instagram),
-          setIf("tiktok", tiktok),
-          setIf("local", local),
-          setIf("bio", bio)
+          instagram ?? null,
+          tiktok ?? null
         ]
       );
     }
