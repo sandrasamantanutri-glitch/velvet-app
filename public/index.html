@@ -55,7 +55,7 @@
 <div id="forgotModal" class="modal hidden">
   <div class="modal-overlay" onclick="closeForgotModal()"></div>
 
-  <div class="modal-box velvet">
+  <div class="modal-box">
     <h2 id="forgotTitle">Recuperar senha</h2>
 
     <!-- STEP 1 -->
@@ -69,12 +69,12 @@
       <button class="btn btn-primary" onclick="sendResetCode()">
         Enviar código
       </button>
-      <p id="forgotSpamHint" class="modal-switch hidden">
+      <p id="forgotSpamHint" class="modal hidden">
   Se não encontrar o email, verifique o <strong>lixo eletrônico</strong> ou
   <strong>spam</strong>.
 </p>
 
-      <p class="modal-switch">
+      <p class="modal">
         Lembrou da senha?
         <span onclick="closeForgotModal()">Voltar ao login</span>
       </p>
