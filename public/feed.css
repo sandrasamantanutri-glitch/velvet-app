@@ -91,29 +91,121 @@ body {
   opacity: 1;
 }
 
+
 /* ===============================
-   ESTADOS
+   FEED MOBILE – 3 COLUNAS (PESSOAS)
 ================================ */
-#listaModelos p {
-  grid-column: 1 / -1;
-  text-align: center;
-  padding: 40px 0;
-  color: #777;
-  font-size: 14px;
+
+@media (max-width: 768px) {
+
+  .area-card {
+    padding: 0 10px 32px;
+  }
+
+  /* 🔥 3 colunas fixas */
+  #listaModelos {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  /* Cards mais altos (rosto visível) */
+  .modelItem {
+    border-radius: 14px;
+  }
+
+  .modelItem img {
+    height: 160px;        /* 👈 ESSENCIAL */
+    object-fit: cover;
+  }
+
+  /* Remove hover no mobile */
+  .modelItem:hover {
+    transform: none;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  }
+}
+/* ===============================
+   GRID BASE (MOBILE FIRST)
+================================ */
+
+#listaModelos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* mobile default */
+  gap: 12px;
 }
 
+/* Cards */
+.modelItem {
+  position: relative;
+  background: #fff;
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+}
+
+/* Imagem – proporção humana */
+.modelItem img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
+}
+
+/* ===============================
+   MOBILE MUITO PEQUENO
+================================ */
+
+@media (max-width: 380px) {
+  #listaModelos {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .modelItem img {
+    height: 190px;
+  }
+}
+
+/* ===============================
+   TABLET
+================================ */
+
 @media (min-width: 768px) {
-  .area-card h3 {
-    font-size: 22px;
+  #listaModelos {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+
+  .modelItem img {
+    height: 180px;
+  }
+}
+
+/* ===============================
+   DESKTOP
+================================ */
+
+@media (min-width: 1024px) {
+  #listaModelos {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+  }
+
+  .modelItem img {
+    height: 200px;
+  }
+}
+
+/* ===============================
+   DESKTOP GRANDE
+================================ */
+
+@media (min-width: 1440px) {
+  #listaModelos {
+    grid-template-columns: repeat(6, 1fr);
   }
 
   .modelItem img {
     height: 220px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .modelItem img {
-    height: 240px;
   }
 }
