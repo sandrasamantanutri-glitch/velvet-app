@@ -29,11 +29,11 @@
 
       <div class="login-box">
         <button class="btn btn-Login" onclick="selectRole()">
-          Faça seu Login
+          Entrar
         </button>
 
         <button class="btn btn-cadastro" onclick="startRegister()">
-          Cadastre-se
+          Criar Conta
         </button>
       </div>
 
@@ -120,6 +120,11 @@
 
   <div class="modal-box">
     <h2 id="modalTitle">Entrar</h2>
+
+    <p class="modal-switch">
+      Não tem conta?
+      <span onclick="startRegister()">Criar conta</span>
+    </p>
 
     <!-- CAMPOS COMUNS -->
     <input id="loginEmail" type="email" placeholder="Email">
