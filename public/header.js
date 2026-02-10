@@ -28,27 +28,7 @@ const menuVisitante = `
   </button>
 `;
 
-
-document.addEventListener("DOMContentLoaded", () => {
-  
-  initUsuario();
-  carregarHeader();
-
-  // 🔔 unread global (cliente)
-  atualizarUnreadClienteHeader();
-  atualizarUnreadModeloHeader();
-
-});
-
 async function initUsuario() {
-  if (localStorage.getItem("post_register_action") === "just_registered") {
-  // libera depois da primeira carga
-  setTimeout(() => {
-    localStorage.removeItem("post_register_action");
-  }, 1000);
-  return;
-}
-
   const token = localStorage.getItem("token");
   if (!token) return;
 
@@ -63,23 +43,26 @@ async function initUsuario() {
 
     const user = await res.json();
 
-    if (!localStorage.getItem("role")) {
-      localStorage.setItem("role", user.role);
-    }
-
+    // 🔑 SEMPRE atualiza
+    localStorage.setItem("role", user.role);
     localStorage.setItem("nome", user.nome);
 
+    // limpa flag pós-registro sem afetar lógica
+    if (localStorage.getItem("post_register_action") === "just_registered") {
+      setTimeout(() => {
+        localStorage.removeItem("post_register_action");
+      }, 1000);
+    }
+
   } catch (e) {
-  console.warn("Sessão inválida no header");
+    console.warn("Sessão inválida no header");
 
-  // limpa sessão quebrada
-  localStorage.clear();
+    localStorage.clear();
 
-  // redireciona com segurança
-  if (!window.location.pathname.includes("index")) {
-    window.location.href = "/index.html";
+    if (!window.location.pathname.includes("index")) {
+      window.location.href = "/index.html";
+    }
   }
-}
 }
 
 // =========================================================
@@ -166,6 +149,17 @@ async function atualizarUnreadModeloHeader() {
     console.warn("Erro ao buscar unread modelo");
   }
 }
+// =========================================================
+// INIT HEADER (ORDEM CORRETA)
+
+document.addEventListener("DOMContentLoaded", async () => {
+  await initUsuario();        // 🔑 garante role atualizado
+  carregarHeader();           // 🔥 carrega menu certo
+
+  atualizarUnreadClienteHeader();
+  atualizarUnreadModeloHeader();
+  initHeaderSocketModelo();
+});
 
 // =========================================================
 // LOGO → HOME POR ROLE
