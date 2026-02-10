@@ -1487,23 +1487,47 @@ app.get("/api/usuario/perfil", auth, async (req, res) => {
     }
 
     if (req.user.role === "cliente") {
-      const result = await db.query(
-        `
-        SELECT
-          nome_exibicao,
-          instagram,
-          tiktok,
-          local,
-          bio
-        FROM clientes_dados
-        WHERE user_id = $1
-        `,
-        [req.user.id]
-      );
 
-      return res.json(result.rows[0] || {});
-    }
+  // 1️⃣ tenta buscar
+  let result = await db.query(
+    `
+    SELECT
+      nome_exibicao,
+      instagram,
+      tiktok,
+      local,
+      bio
+    FROM clientes_dados
+    WHERE user_id = $1
+    `,
+    [req.user.id]
+  );
 
+  // 2️⃣ se não existir, cria registro base
+  if (result.rows.length === 0) {
+    await db.query(
+      `INSERT INTO clientes_dados (user_id) VALUES ($1)`,
+      [req.user.id]
+    );
+
+    // 3️⃣ busca novamente
+    result = await db.query(
+      `
+      SELECT
+        nome_exibicao,
+        instagram,
+        tiktok,
+        local,
+        bio
+      FROM clientes_dados
+      WHERE user_id = $1
+      `,
+      [req.user.id]
+    );
+  }
+
+  return res.json(result.rows[0] || {});
+}
     res.status(403).json({ erro: "Role inválida" });
 
   } catch (err) {
