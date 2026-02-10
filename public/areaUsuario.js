@@ -88,12 +88,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const usuario = getUsuarioLogado();
   if (!usuario) return;
 
-  aplicarRoleUI(usuario.role);
+  // 🔑 define role no body
+  document.body.classList.add(`role-${usuario.role}`);
+
   carregarPerfilBase(usuario);
   carregarDadosUsuario();
 
   if (usuario.role === "modelo") {
-    // 🔓 mostra UI exclusiva da modelo
+    // mostra tudo que é da modelo
     document
       .querySelectorAll(".only-modelo")
       .forEach(el => el.style.display = "block");
@@ -105,14 +107,8 @@ document.addEventListener("DOMContentLoaded", () => {
       carregarAssinantes();
     }
   }
-
-  // 🔒 blindagem extra (opcional, mas recomendada)
-  if (usuario.role === "cliente") {
-    document
-      .querySelectorAll(".only-modelo")
-      .forEach(el => el.remove());
-  }
 });
+
 
 
 let assinantesCache = [];
