@@ -182,7 +182,7 @@ async function carregarFeedBase() {
 
   // MODELO
   if (modo === "privado" && role === "modelo") {
-    const res = await fetch("/api/feed/me", {
+    const res = await fetch("/api/modelo/me", {
       headers: { Authorization: "Bearer " + token }
     });
 
