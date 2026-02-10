@@ -51,7 +51,7 @@
     </div> <!-- landing-login -->
     </div> <!-- landing -->
   </div>
-  <!-- MODAL ESQUECI SENHA -->
+ <!-- MODAL ESQUECI SENHA -->
 <div id="forgotModal" class="modal hidden">
   <div class="modal-overlay" onclick="closeForgotModal()"></div>
 
@@ -69,12 +69,13 @@
       <button class="btn btn-primary" onclick="sendResetCode()">
         Enviar código
       </button>
-      <p id="forgotSpamHint" class="modal hidden">
-  Se não encontrar o email, verifique o <strong>lixo eletrônico</strong> ou
-  <strong>spam</strong>.
-</p>
 
-      <p class="modal">
+      <p id="forgotSpamHint" class="modal-hint hidden">
+        Se não encontrar o email, verifique o
+        <strong>lixo eletrônico</strong> ou <strong>spam</strong>.
+      </p>
+
+      <p class="modal-switch">
         Lembrou da senha?
         <span onclick="closeForgotModal()">Voltar ao login</span>
       </p>
@@ -93,7 +94,12 @@
         type="password"
         placeholder="Nova senha"
       />
-      <input id="forgotConfirmPassword" type="password" placeholder="Confirmar nova senha"/>
+
+      <input
+        id="forgotConfirmPassword"
+        type="password"
+        placeholder="Confirmar nova senha"
+      />
 
       <button class="btn btn-primary" onclick="confirmReset()">
         Alterar senha
