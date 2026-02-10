@@ -73,27 +73,38 @@ function mostrarStatusVerificacao(status) {
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  const usuario = getUsuarioLogado();
-  if (!usuario) return;
+document.addEventListener("DOMContentLoaded", async () => {
+  const token = localStorage.getItem("token");
+  if (!token) return;
 
-  // role no body (CSS)
-  document.body.classList.add(`role-${usuario.role}`);
+  const res = await fetch("/api/me", {
+    headers: {
+      Authorization: "Bearer " + token
+    }
+  });
+
+  if (!res.ok) return;
+
+  const user = await res.json();
+
+  // 🔒 role REAL e confiável
+  document.body.classList.add(`role-${user.role}`);
 
   // PERFIL VISUAL
-  carregarPerfilBase(usuario);
+  carregarPerfilBase(user);
   carregarDadosUsuario();
 
-  // MODELO
-  if (usuario.role === "modelo") {
+  // SOMENTE MODELO
+  if (user.role === "modelo") {
     carregarResumoModelo();
-    carregarAreaModelo(usuario.id);
+    carregarAreaModelo(user.id);
 
     if (document.getElementById("listaAssinantes")) {
       carregarAssinantes();
     }
   }
 });
+
 
 let assinantesCache = [];
 let paginaAtual = 1;
