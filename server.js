@@ -1821,14 +1821,17 @@ app.get("/api/cliente/me", auth, async (req, res) => {
   }
 
   const result = await db.query(`
-    SELECT
-      c.user_id AS id,
-      cd.username,
-      c.nome
-    FROM clientes c
-    LEFT JOIN clientes_dados cd
-      ON cd.user_id = c.user_id
-    WHERE c.user_id = $1
+  SELECT
+  c.user_id AS id,
+  cd.username,
+  c.nome,
+  cd.avatar,
+  cd.capa
+FROM clientes c
+LEFT JOIN clientes_dados cd
+  ON cd.user_id = c.user_id
+WHERE c.user_id = $1
+
   `, [req.user.id]);
 
   res.json(result.rows[0]);
