@@ -9,9 +9,9 @@ body {
 /* seção */
 .area-card {
   max-width: 1200px;
-  margin: 0 auto;
-  padding: 24px;
+  margin-bottom: 24px;
   background: #fff;
+  border-radius: 18px;
 }
 
 .area-card h3 {
