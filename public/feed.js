@@ -47,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       modelos.forEach(modelo => {
         const card = document.createElement("div");
-        card.className = "modelItem";
+        card.className = "modelo-card";
 
         card.innerHTML = `
           <img src="${modelo.avatar || "/assets/avatar.png"}">
