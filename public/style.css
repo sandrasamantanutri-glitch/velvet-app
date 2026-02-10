@@ -10,8 +10,8 @@ body {
 }
 
 .hidden {
-  display: none !important;
-  pointer-events: none !important;
+  display: none;
+  pointer-events: none;
 }
 
 body.modal-open {
@@ -204,7 +204,7 @@ body.modal-open {
   z-index: 9999;
   display: flex;              /* 🔑 FALTAVA ISTO */
   align-items: center;        /* 🔑 vertical */
-  justify-content: center !important;  /* 🔑 horizontal */
+  justify-content: center; 
   padding: 16px;
 }
 
@@ -257,7 +257,7 @@ body.modal-open {
   border-radius: 14px;
   font-weight: 600;
   cursor: pointer;
-  margin-top: 6px;
+  margin-top: 10px;
 }
 
 /* FECHAR */
@@ -276,6 +276,7 @@ body.modal-open {
   text-align: center;
   font-size: 14px;
   opacity: 0.8;
+  margin-top: 8px;
 }
 
 .modal-switch span {
@@ -474,7 +475,6 @@ body.modal-open {
     overflow-y: auto;
     background: #fff;
     gap: 14px;
-    justify-content: center !important;
     
   }
 }
