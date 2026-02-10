@@ -8,10 +8,10 @@
 }
 
 body {
-  font-family: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  background: #0e0e12;
-  color: #fff;
-  min-height: 100vh;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background:#f1f1f1;
+  color: #7B2CFF;
+  padding-top: 64px; 
 }
 
 a {
@@ -42,10 +42,10 @@ body.role-cliente .area-saldos {
 .area-card {
   max-width: 900px;
   margin: 90px auto 30px;
-  background: #16161d;
+  background: #fff;
   border-radius: 18px;
   overflow: hidden;
-  box-shadow: 0 10px 40px rgba(0,0,0,.4);
+  box-shadow: linear-gradient(135deg, #9e6bff, #7b2cff);
   position: relative;
 }
 
@@ -85,7 +85,7 @@ body.role-cliente .area-saldos {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  border: 5px solid #16161d;
+  border: 5px linear-gradient(135deg, #9e6bff, #7b2cff);
   object-fit: cover;
 }
 
@@ -99,7 +99,7 @@ body.role-cliente .area-saldos {
    BOTÃO CAMERA
 ================================ */
 .btn-camera {
-  background: rgba(0,0,0,.6);
+  background: linear-gradient(135deg, #9e6bff, #7b2cff);
   border: none;
   color: #fff;
   font-size: 16px;
@@ -120,6 +120,7 @@ body.role-cliente .area-saldos {
   margin: 65px 30px 5px 170px;
   font-size: 22px;
   font-weight: 600;
+  color: #9e6bff;
 }
 
 .area-assinantes {
@@ -129,7 +130,7 @@ body.role-cliente .area-saldos {
 }
 
 .area-assinantes span {
-  color: #9e6bff;
+  color: #1E1E26;
   font-weight: 600;
 }
 
@@ -138,29 +139,31 @@ body.role-cliente .area-saldos {
 ================================ */
 .area-saldos {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 2fr));
   gap: 15px;
   padding: 25px 30px 30px;
 }
 
 .saldo-box {
-  background: linear-gradient(135deg, #1e1e28, #191923);
+  background: linear-gradient(135deg, #9e6bff, #7b2cff);
   border-radius: 14px;
   padding: 18px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  color: #fff;
 }
 
 .saldo-titulo {
-  font-size: 13px;
+  font-size: 20px;
   opacity: .7;
+  color: #fff;
 }
 
 .saldo-valor {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
-  color: #9e6bff;
+  color: #fff;
 }
 
 /* ===============================
@@ -169,14 +172,14 @@ body.role-cliente .area-saldos {
 .area-section {
   max-width: 900px;
   margin: 25px auto;
-  background: #16161d;
+  background: #fff;
   border-radius: 18px;
   padding: 25px;
-  box-shadow: 0 10px 40px rgba(0,0,0,.35);
+  box-shadow: linear-gradient(135deg, #9e6bff, #7b2cff);
 }
 
 .area-titulo {
-  font-size: 20px;
+  font-size: 30px;
   margin-bottom: 18px;
 }
 
@@ -187,18 +190,21 @@ body.role-cliente .area-saldos {
   margin-bottom: 20px;
   border-radius: 14px;
   overflow: hidden;
+  display: flex;
+  justify-content: center;
 }
 
 .area-banner img {
-  width: 100%;
+  width: 50%;
   object-fit: cover;
+
 }
 
 /* ===============================
    ITENS (LINKS)
 ================================ */
 .area-item {
-  background: #1e1e28;
+  background: #f1f1f1;
   border-radius: 14px;
   padding: 15px 18px;
   margin-bottom: 12px;
@@ -206,23 +212,25 @@ body.role-cliente .area-saldos {
   flex-direction: column;
   gap: 4px;
   transition: .25s;
+  justify-content: space-evenly;
+
 }
 
 .area-item strong {
-  font-size: 15px;
+  font-size: 20px;
+  color:#7b2cff;
 }
 
 .area-item span {
-  font-size: 13px;
+  font-size: 16px;
   opacity: .7;
 }
 
 .area-item:hover {
-  background: #242433;
+  background: #9e6bff;
   transform: translateY(-2px);
 }
 
-/* destaque */
 .area-item.destaque {
   background: linear-gradient(135deg, #7b2cff, #9e6bff);
 }
@@ -233,11 +241,12 @@ body.role-cliente .area-saldos {
 
 /* sair */
 .area-item.sair {
-  background: #2a1215;
+  background:#f1f1f1;;
+  text-align: center;
 }
 
 .area-item.sair:hover {
-  background: #3a161b;
+  background: #7b2cff;
 }
 
 /* ===============================
@@ -245,7 +254,13 @@ body.role-cliente .area-saldos {
 ================================ */
 .area-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 2fr));
+  gap: 15px;
+}
+
+.area-grid-usuario {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 2fr));
   gap: 15px;
 }
 
