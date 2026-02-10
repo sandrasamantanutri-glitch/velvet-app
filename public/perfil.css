@@ -181,14 +181,13 @@ body.role-cliente .area-saldos {
 .midias-tabs {
   display: flex;
   justify-content: center;
-  gap: 80px;
+  gap: 10px;
 }
 
 .midias-tabs .tab {
   border: none;
   padding: 8px 14px;
   border-radius: 999px;
-  background: #f1f1f1;
   font-size: 20px;
   cursor: pointer;
 }
