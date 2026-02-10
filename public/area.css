@@ -4,6 +4,44 @@
   --font-primary: "Poppins", system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", Roboto, Arial, sans-serif;
 }
+
+/* ===============================
+   MODO CLIENTE (quando não há área do criador)
+=============================== */
+
+/* se NÃO existir nenhuma only-modelo visível */
+body:not(:has(.only-modelo[style*="display: block"])) 
+.area-section:first-of-type {
+
+  margin: 16px;
+}
+
+/* cards em coluna única */
+body:not(:has(.only-modelo[style*="display: block"])) 
+.area-section:first-of-type {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* cards mais compactos */
+body:not(:has(.only-modelo[style*="display: block"])) 
+.area-section:first-of-type .area-item {
+  padding: 16px;
+}
+
+/* tipografia mais equilibrada */
+body:not(:has(.only-modelo[style*="display: block"])) 
+.area-section:first-of-type .area-item strong {
+  font-size: 20px;
+}
+
+body:not(:has(.only-modelo[style*="display: block"])) 
+.area-section:first-of-type .area-item span {
+  font-size: 14px;
+  line-height: 1.3;
+}
+
 .cards {
   position: relative;
   border-radius: 20px;
