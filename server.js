@@ -2887,12 +2887,11 @@ app.post(
       else if (req.user.role === "cliente") {
         await db.query(
           `
-          INSERT INTO clientes_dados (user_id, avatar)
-          VALUES ($1, $2)
-          ON CONFLICT (user_id)
-          DO UPDATE SET avatar = EXCLUDED.avatar
+          UPDATE clientes_dados
+            SET avatar = $1, atualizado_em = NOW()
+            WHERE user_id = $2
           `,
-          [userId, url]
+          [url, userId]
         );
       } 
       else {
@@ -2934,7 +2933,7 @@ app.post(
             SET capa = $1, atualizado_em = NOW()
             WHERE user_id = $2
           `,
-          [userId, url]
+          [url, userId]
         );
       } 
       else {
