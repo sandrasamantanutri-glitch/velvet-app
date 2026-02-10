@@ -126,38 +126,40 @@
     </p>
 
     <!-- CAMPOS COMUNS -->
-     <label for="loginEmail">Email</label>
+    <label for="loginEmail">Email</label>
     <input id="loginEmail" type="email" placeholder="Email">
+
     <label for="loginSenha">Senha</label>
     <input id="loginSenha" type="password" placeholder="Senha">
 
-<div class="field hidden" id="fieldRegister"></div>
+    <!-- REGISTRO -->
     <div class="field hidden" id="fieldSenha">
-    <label for="registerSenhaConfirm">Repita a sua senha</label>
-    <input id="registerSenhaConfirm" type="password">
+      <label for="registerSenhaConfirm">Repita a sua senha</label>
+      <input id="registerSenhaConfirm" type="password">
     </div>
+
     <div class="field hidden" id="fieldNome">
-    <label for="registerNome">Nome Completo</label>
-    <input id="registerNome" type="text">
+      <label for="registerNome">Nome Completo</label>
+      <input id="registerNome" type="text">
     </div>
+
     <div class="field hidden" id="fieldNascimento">
-    <label for="registerNascimento">Data de Nascimento</label>
-    <input id="registerNascimento" type="date">
+      <label for="registerNascimento">Data de Nascimento</label>
+      <input id="registerNascimento" type="date">
     </div>
-    <div class="field hidden" id="fieldRegister">
-    <select id="registerRole">
-      <option value="cliente">Quero ser Membro</option>
-      <option value="modelo">Quero criar Conteúdo</option>
-    </select>
+
+    <div class="field hidden" id="fieldRole">
+      <select id="registerRole">
+        <option value="cliente">Quero ser Membro</option>
+        <option value="modelo">Quero criar Conteúdo</option>
+      </select>
     </div>
-  </div>
 
     <!-- TEXTO LEGAL -->
-    <p id="registerLegal" class="modal hidden">
+    <p id="registerLegal" class="hidden">
       Ao criar meu registro, declaro ter mais de
       <strong>18 anos</strong> e estar de acordo com os
-      <a href="/terms.html" target="_blank">Termos e Condições de Uso</a>
-      da plataforma.
+      <a href="/terms.html" target="_blank">Termos e Condições de Uso</a>.
     </p>
 
     <button id="modalSubmit" class="btn btn-primary">

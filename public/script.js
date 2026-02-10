@@ -120,7 +120,7 @@ function updateModal() {
     "fieldSenha",
     "fieldNome",
     "fieldNascimento",
-    "fieldRegister"
+    "fieldLegal"
   ];
 
   if (modalMode === "login") {
