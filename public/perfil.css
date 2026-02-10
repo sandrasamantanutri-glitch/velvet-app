@@ -76,33 +76,6 @@ body {
   background: linear-gradient(135deg, #9e6bff, #7b2cff);
 }
 
-/* AVATAR */
-.perfil-avatar {
-  position: absolute;
-  top: 150px;
-  left: 16px;
-  width: 95px;
-  height: 95px;
-  background: #fff;
-  border-radius: 50%;
-  padding: 4px;
-}
-
-.perfil-avatar img {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-/* TEXTO PERFIL */
-.perfil-nome {
-  margin-top: 56px;
-  padding: 0 30px;
-  font-size: 28px;
-  font-weight: 700;
-}
-
 .perfil-bio {
   padding: 6px 30px 0;
   font-size: 24px;
