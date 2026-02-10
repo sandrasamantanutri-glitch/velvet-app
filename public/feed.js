@@ -15,7 +15,7 @@ function logout() {
 document.addEventListener("DOMContentLoaded", () => {
   const lista = document.getElementById("listaModelos");
 
-  // 🔕 não é página de feed → sai sem erro
+  // não é página de feed → sai sem erro
   if (!lista) {
     console.log("ℹ️ feed.js carregado fora do feed");
     return;
@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const token = localStorage.getItem("token");
 
-  // 🔒 se não tiver token, apenas mostra feed vazio ou CTA
+  // se não tiver token, apenas mostra feed vazio ou CTA
   if (!token) {
     lista.innerHTML = "<p>Entre para ver as modelos disponíveis.</p>";
     return;
@@ -70,7 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }
 
           localStorage.setItem("modelo_id", modeloId.toString());
-          window.location.href = `index.html?id=${modeloId}`;
+          window.location.href = `perfil.html?id=${modeloId}`;
         });
 
         lista.appendChild(card);
