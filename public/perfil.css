@@ -382,8 +382,8 @@ body.role-cliente .area-saldos {
   bottom: 8px;
   right: 8px;
 
-  background: rgba(123, 44, 255, 0.95);
-  color: #fff;
+  background: #fff;
+  color: #7b2cff;;
 
   padding: 6px 10px;
   border-radius: 999px;
