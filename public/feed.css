@@ -9,14 +9,17 @@ body {
 
 
 /* seção */
-.area-card {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 24px 24px 32px;
+.perfil-card {
+  max-width: 420px;
+  margin-bottom: 24px;
   background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  overflow: hidden;
+  position: relative;
 }
 
-.area-card h3 {
+.perfil-card h3 {
   font-size: 50px;
   font-weight: 600;
   color: #6d28ff;
