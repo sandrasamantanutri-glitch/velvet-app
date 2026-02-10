@@ -375,3 +375,122 @@ body.modal-open {
 .modal-box.velvet .btn-primary:hover {
   transform: translateY(-1px);
 }
+
+/* =========================
+   MOBILE FIRST – TELEMÓVEL
+========================= */
+@media (max-width: 768px) {
+
+  /* -------- BASE -------- */
+  html, body {
+    height: 100%;
+  }
+
+  body {
+    background: #f6f7fb;
+    overflow-x: hidden;
+  }
+
+  /* -------- LANDING / ENTRADA -------- */
+  .page-wrapper {
+    min-height: 100vh;
+    padding: 0;
+    align-items: stretch;
+  }
+
+  .landing {
+    width: 100%;
+    max-width: none;
+    height: 100vh;
+    flex-direction: column;
+  }
+
+  /* remove capa no mobile */
+  .landing-cover {
+    display: none;
+  }
+
+  .landing-login {
+    width: 100%;
+    height: 100vh;
+    margin: 0;
+    padding: 32px 24px;
+    border-radius: 0; /* 🔑 tela cheia */
+    justify-content: center;
+  }
+
+  /* LOGO */
+  .logo {
+    width: 180px;
+    margin: 40px auto 40px;
+  }
+
+  /* BOTÕES */
+  .login-box {
+    margin-top: 0;
+  }
+
+  .btn {
+    padding: 16px;
+    font-size: 16px;
+    border-radius: 14px;
+  }
+
+  /* FOOTER */
+  .footer-links,
+  .footer-linksC {
+    margin-top: 32px;
+  }
+
+  .footer-links a,
+  .footer-linksC a {
+    display: block;
+    margin: 8px 0;
+  }
+
+  /* -------- MODAIS (BOTTOM SHEET) -------- */
+  .modal {
+    align-items: flex-end; /* 🔑 modal sobe de baixo */
+    padding: 0;
+  }
+
+  .modal-box {
+    width: 100%;
+    max-width: 100%;
+    max-height: 85vh;
+    border-radius: 20px 20px 0 0;
+    padding: 24px 20px;
+    overflow-y: auto;
+  }
+
+  /* inputs maiores (evita zoom iOS) */
+  .modal-box input,
+  .modal-box select {
+    font-size: 16px;
+    padding: 14px;
+  }
+
+  /* botão principal maior */
+  .modal-box .btn-primary {
+    padding: 14px;
+    font-size: 15px;
+    border-radius: 16px;
+  }
+
+  /* botão fechar mais acessível */
+  .modal-close {
+    top: 10px;
+    right: 16px;
+    font-size: 24px;
+  }
+
+  /* -------- MODAL LEGAL -------- */
+  .legal-box {
+    width: 100%;
+    height: 100vh;
+    max-width: none;
+    border-radius: 0;
+  }
+}
+
+
