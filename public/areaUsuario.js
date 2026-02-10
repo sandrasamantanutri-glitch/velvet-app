@@ -96,13 +96,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const usuario = getUsuarioLogado();
   if (!usuario) return;
 
-  // 🔹 dados pessoais (cliente + modelo)
-  carregarDadosPessoais();
-
-  // 🔹 perfil base (avatar / capa)
+  // 🔹 avatar, capa, nome
   carregarPerfilBase(usuario);
 
-  // 🔹 somente modelo
+  // 🔹 TODOS os dados do formulário (cliente ou modelo)
+  carregarDadosUsuario();
+
+  // 🔹 extras visuais do painel de modelo (não afeta o form)
   if (usuario.role === "modelo") {
     carregarResumoModelo();
     carregarAreaModelo(usuario.id);
@@ -112,8 +112,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 });
-
-
 
 
 let assinantesCache = [];
@@ -423,6 +421,31 @@ async function carregarAreaModelo(user_id) {
  }
 
 }
+
+async function carregarDadosUsuario() {
+  const token = localStorage.getItem("token");
+  if (!token) return;
+
+  const res = await fetch("/api/usuario/perfil", {
+    headers: {
+      Authorization: "Bearer " + token
+    }
+  });
+
+  if (!res.ok) return;
+
+  const dados = await res.json();
+
+  const form = document.getElementById("formDadosUsuario");
+  if (!form) return;
+
+  Object.keys(dados).forEach(campo => {
+    if (form[campo] !== undefined) {
+      form[campo].value = dados[campo] ?? "";
+    }
+  });
+}
+
 
 async function carregarDadosPessoais() {
   if (!paginaTem("formDadosPessoais")) return;
