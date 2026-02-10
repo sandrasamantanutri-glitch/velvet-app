@@ -14,10 +14,6 @@ body {
   pointer-events: none !important;
 }
 
-body.modal-open {
-  overflow: hidden;
-}
-
 /* =========================
    CENTRALIZA A PÁGINA
 ========================= */
