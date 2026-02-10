@@ -14,6 +14,10 @@ body {
   pointer-events: none !important;
 }
 
+body.modal-open {
+  overflow: hidden;
+}
+
 /* =========================
    CENTRALIZA A PÁGINA
 ========================= */
@@ -191,31 +195,24 @@ body {
 }
 
 /* MODAL BASE */
-.modal {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px; /* respiro nas bordas */
-}
-
-
 .modal.hidden {
   display: none;
 }
 
-/* FUNDO */
-.modal-overlay {
-  position: absolute;
+.modal {
+  position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(4px);
+  z-index: 9999;
+}
+
+.modal-overlay {
+  z-index: 1;
 }
 
 /* CAIXA */
 .modal-box {
+  position: relative;
+  z-index: 2; /* 🔑 fica acima do overlay */
   width: 100%;
   max-width: 420px;
   max-height: 90vh;          /* 🔑 evita cortar */
