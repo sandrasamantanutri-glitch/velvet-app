@@ -535,6 +535,155 @@
 }
 
 
+/* ============================================
+   PERFIL – CAPA + AVATAR
+============================================ */
+
+.perfil-capa {
+  width: 100%;
+  height: 160px;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 48px;
+}
+
+.perfil-capa img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.perfil-avatar {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  margin: -64px auto 8px;
+  border-radius: 50%;
+  background: #fff;
+  padding: 4px;
+}
+
+.perfil-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #fff;
+}
+
+/* ============================================
+   NOME + VIP
+============================================ */
+
+.perfil-nome {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 600;
+  margin-top: 8px;
+  color: #1E1E26;
+}
+
+.area-assinantes {
+  text-align: center;
+  margin-top: 4px;
+  font-size: 14px;
+  color: #6A6A75;
+}
+
+.area-assinantes span {
+  font-weight: 600;
+  color: #7B2CFF;
+}
+
+/* ============================================
+   ÁREA SECTION PADRÃO
+============================================ */
+
+.area-section {
+  margin: 20px 16px;
+}
+
+.area-titulo {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #1E1E26;
+}
+
+/* ============================================
+   LINKS / ITENS
+============================================ */
+
+.area-item {
+  display: block;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.area-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+}
+
+/* sair */
+.area-item.sair {
+  border-color: #F1DADA;
+  background: #FFF5F5;
+}
+
+.area-item.sair:hover {
+  box-shadow: 0 6px 18px rgba(214,48,49,0.15);
+}
+
+/* ============================================
+   GRID – CRIADOR
+============================================ */
+
+.area-grid {
+  background: transparent;
+  margin: 0;
+  padding: 0;
+}
+
+/* ============================================
+   RESPONSIVO – DESKTOP
+============================================ */
+
+@media (min-width: 768px) {
+  .area-card {
+    max-width: 720px;
+    margin: 24px auto;
+  }
+
+  .area-section {
+    max-width: 720px;
+    margin: 24px auto;
+  }
+
+  .area-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .area-item strong {
+    font-size: 18px;
+  }
+
+  .area-item span {
+    font-size: 14px;
+  }
+
+  .perfil-capa {
+    height: 220px;
+  }
+
+  .perfil-avatar {
+    width: 112px;
+    height: 112px;
+    margin-top: -72px;
+  }
+}
+
+
+
 
 
 
