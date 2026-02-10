@@ -2931,7 +2931,7 @@ app.post(
         await db.query(
           `
             UPDATE clientes_dados
-  SET capa = $1, updated_at = NOW()
+  SET capa = $1, atualizado_em = NOW()
   WHERE user_id = $2
           `,
           [userId, url]
