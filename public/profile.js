@@ -178,34 +178,36 @@ async function carregarPerfilBase() {
 
 
 async function carregarFeedBase() {
-  if (!listaMidias) return;
+  if (!listaMidias || !modelo_id) return;
 
-  // MODELO
-  if (modo === "privado" && role === "modelo") {
-    const res = await fetch("/api/modelo/me", {
-      headers: { Authorization: "Bearer " + token }
-    });
+  const res = await fetch(`/api/modelo/publico/${modelo_id}/feed`, {
+    headers: token
+      ? { Authorization: "Bearer " + token }
+      : {}
+  });
 
-    const feed = await res.json();
-
-    const gridFeed = document.getElementById("listaMidias");
-    const gridEspecial = document.getElementById("midias-paid");
-
-    // 🔥 LIMPA OS DOIS GRIDS
-    if (gridFeed) gridFeed.innerHTML = "";
-    if (gridEspecial) gridEspecial.innerHTML = "";
-
-    feed.forEach(adicionarMidia);
+  if (!res.ok) {
+    console.error("Erro ao carregar feed");
     return;
   }
 
-  // PÚBLICO
-  const res = await fetch(`/api/modelo/publico/${modelo_id}/feed`);
   const data = await res.json();
-  const feed = Array.isArray(data) ? data : data.feed || [];
-  listaMidias.innerHTML = "";
+
+  const feed = Array.isArray(data)
+    ? data
+    : Array.isArray(data.feed)
+      ? data.feed
+      : [];
+
+  const gridFeed = document.getElementById("listaMidias");
+  const gridEspecial = document.getElementById("midias-paid");
+
+  if (gridFeed) gridFeed.innerHTML = "";
+  if (gridEspecial) gridEspecial.innerHTML = "";
+
   feed.forEach(adicionarMidia);
 }
+
 
 async function aplicarRegrasDeAcesso() {
 
