@@ -93,8 +93,11 @@ function mostrarStatusVerificacao(status) {
 // ===============================
 
 document.addEventListener("DOMContentLoaded", () => {
-   const usuario = getUsuarioLogado();
-  if (!usuario) return;
+  const usuario = getUsuarioLogado();
+  if (!usuario) {
+    console.log("Visitante não logado");
+    return;
+  }
 
   if (usuario.role === "modelo") {
     carregarResumoModelo();
@@ -102,15 +105,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (usuario.role === "cliente") {
-    carregarAreaCliente(usuario.id);
+    carregarPerfilBase();
   }
 
-  if (!usuario) {
-    console.log("Visitante não logado");
-    return;
-  }
   carregarDadosPessoais();
 });
+
 
 // =========================================================
 // 👥 LISTA DE ASSINANTES DA MODELO
