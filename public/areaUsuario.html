@@ -32,15 +32,19 @@
 </div>
 
   <!-- SALDOS -->
-<div class="area-saldos only-modelo">
-    <div class="saldo-box">
-      <span class="saldo-titulo">Ganhos de Hoje</span><strong class="saldo-valor" id="areaUsuarioGanhosHoje">R$ 0,00</strong>
-    </div>
-
-    <div class="saldo-box">
-      <span class="saldo-titulo">Ganhos do Mês</span><strong class="saldo-valor" id="areaUsuarioGanhosMes">R$ 0,00</strong>
-    </div>
+<div class="area-saldos">
+  <!-- visível só para modelo -->
+  <div class="saldo-box only-modelo">
+    <span class="saldo-titulo">Ganhos de Hoje</span>
+    <strong class="saldo-valor" id="areaUsuarioGanhosHoje">R$ 0,00</strong>
   </div>
+
+  <!-- visível só para modelo (mensal) -->
+  <div class="saldo-box only-modelo only-mes">
+    <span class="saldo-titulo">Ganhos do Mês</span>
+    <strong class="saldo-valor" id="areaUsuarioGanhosMes">R$ 0,00</strong>
+  </div>
+</div>
 
 </section>
 
