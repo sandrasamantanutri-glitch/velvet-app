@@ -473,6 +473,8 @@ body.modal-open {
     padding: 24px 20px;
     overflow-y: auto;
     background: #fff;
+    gap: 14px;
+    
   }
 }
 
