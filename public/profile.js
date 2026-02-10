@@ -152,6 +152,11 @@ if (role !== "modelo" || !token) {
   btnUpload?.remove();
 }
 
+function closeLegalModal() {
+  document.getElementById("legalModal")?.classList.add("hidden");
+}
+
+
 async function carregarPerfilBase() {
   // 🔐 PERFIL PRÓPRIO (CLIENTE OU MODELO)
   if (modo === "privado") {
