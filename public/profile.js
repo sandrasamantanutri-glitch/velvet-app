@@ -160,7 +160,7 @@ function closeLegalModal() {
 async function carregarPerfilBase() {
   // 🔐 PERFIL PRÓPRIO (CLIENTE OU MODELO)
   if (modo === "privado") {
-    const res = await fetch("/api/modelo/me", {
+    const res = await fetch("/api/usuario/perfil", {
       headers: { Authorization: "Bearer " + token }
     });
 

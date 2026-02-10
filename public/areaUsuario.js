@@ -1,5 +1,6 @@
+const token = localStorage.getItem("token");
+
 function getUsuarioLogado() {
-  const token = localStorage.getItem("token");
   if (!token) return null;
 
   try {
@@ -10,10 +11,9 @@ function getUsuarioLogado() {
   }
 }
 
- const token = localStorage.getItem("token");
+ 
 
 async function buscarDadosPessoais() {
-  const token = localStorage.getItem("token");
   if (!token) return null;
 
   const res = await fetch("/api/usuario/perfil", {
