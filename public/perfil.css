@@ -1,3 +1,6 @@
+#header-container {
+  min-height: 64px; 
+}
 * {
   box-sizing: border-box;
   margin: 0;

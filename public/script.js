@@ -161,6 +161,7 @@ async function login() {
   const email = loginEmail.value.trim();
   const senha = loginSenha.value.trim();
 
+  // validação básica
   if (!email || !senha) {
     alert("Preencha email e senha");
     return;
@@ -173,27 +174,18 @@ async function login() {
   });
 
   const data = await res.json();
-  if (!res.ok) return alert(data.erro);
+
+  if (!res.ok) {
+    alert(data.erro || "Login e/ou senha inválidos");
+    return;
+  }
 
   localStorage.setItem("token", data.token);
   localStorage.setItem("role", data.role);
 
-  if (data.role === "modelo") {
-  window.location.href = "/perfil.html";
-  return;
-}
-// 🔥 CLIENTE
-if (ref) {
-  // simula clique no feed
-  localStorage.setItem("modelo_id", ref);
-  localStorage.removeItem("ref_modelo");
-
-  window.location.href = "/perfil.html";
-} else {
   window.location.href = "/feed.html";
 }
 
-}
 // ===============================
 // REGISTER
 async function register() {
@@ -204,6 +196,9 @@ async function register() {
   const nome = registerNome.value.trim();
   const nascimento = registerNascimento.value;
 
+  // ===============================
+  // VALIDAÇÕES
+  // ===============================
   if (!email || !senha || !senhaConfirm || !role || !nome || !nascimento) {
     alert("Preencha todos os campos");
     return;
@@ -219,6 +214,9 @@ async function register() {
     return;
   }
 
+  // ===============================
+  // REGISTER
+  // ===============================
   const res = await fetch("/api/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -233,33 +231,34 @@ async function register() {
   });
 
   const data = await res.json();
-if (!res.ok) {
-  alert(data.erro || "Erro ao criar conta");
-  return;
-}
-// ===============================
-// LOGIN AUTOMÁTICO APÓS REGISTRO
-localStorage.setItem("token", data.token);
-localStorage.setItem("role", data.role);
 
-if (data.role === "cliente" && data.cliente_id) {
-  localStorage.setItem("cliente_id", data.cliente_id);
-}
+  if (!res.ok) {
+    alert(data.erro || "Erro ao criar conta");
+    return;
+  }
 
-alert("Conta criada com sucesso!");
+  // ===============================
+  // LOGIN AUTOMÁTICO
+  // (backend deve retornar token e role)
+  // ===============================
+  if (!data.token || !data.role) {
+    alert("Conta criada, mas falha ao iniciar sessão automaticamente");
+    return;
+  }
 
-const ESTA_NO_PERFIL = window.location.pathname.includes("perfil");
+  localStorage.setItem("token", data.token);
+  localStorage.setItem("role", data.role);
 
-if (ESTA_NO_PERFIL) {
-  localStorage.setItem("post_register_action", "open_payment");
-  window.location.reload();
+  if (data.cliente_id) {
+    localStorage.setItem("cliente_id", data.cliente_id);
+  }
 
-} else {
-  localStorage.setItem("post_register_action", "just_registered");
+  // ===============================
+  // REDIRECIONA PARA O FEED
+  // ===============================
   window.location.href = "/feed.html";
 }
 
-}
 
 // ===============================
 // MODAL LEGAL (TERMOS / POLÍTICAS)

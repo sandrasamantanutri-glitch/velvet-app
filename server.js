@@ -2788,17 +2788,14 @@ app.post("/api/register", authLimiter, async (req, res) => {
   try {
     const { email, senha, role, nome, ageConfirmed, ref, src } = req.body;
 
-    // 🔒 validação básica
     if (!email || !senha || !role) {
       return res.status(400).json({ erro: "Dados inválidos" });
     }
 
-    // 📧 validação de email (CORREÇÃO)
     if (!emailValido(email)) {
       return res.status(400).json({ erro: "Email inválido" });
     }
 
-    // 🔞 validação obrigatória +18
     if (ageConfirmed !== true) {
       return res.status(400).json({
         erro: "Confirmação de idade obrigatória (+18)"
@@ -2807,7 +2804,6 @@ app.post("/api/register", authLimiter, async (req, res) => {
 
     const hash = await bcrypt.hash(senha, 10);
 
-    // 👤 cria usuário + salva declaração +18
     const userResult = await db.query(
       `
       INSERT INTO public.users
@@ -2821,50 +2817,56 @@ app.post("/api/register", authLimiter, async (req, res) => {
 
     const userId = userResult.rows[0].id;
 
+    let clienteId = null;
+
     // 👠 modelo
     if (role === "modelo") {
       const nomeModelo = nome || email.split("@")[0];
 
       await db.query(
-        `
-        INSERT INTO public.modelos (user_id, nome)
-        VALUES ($1, $2)
-        `,
+        `INSERT INTO public.modelos (user_id, nome) VALUES ($1, $2)`,
         [userId, nomeModelo]
       );
     }
 
     // 👤 cliente
     if (role === "cliente") {
-      await db.query(
+      const clienteResult = await db.query(
         `
         INSERT INTO public.clientes (user_id, nome, origem_trafego, ref_modelo)
         VALUES ($1, $2, $3, $4)
+        RETURNING id
         `,
-        [ 
-      userId, nome || email.split("@")[0], src || null, ref ? Number(ref) : null ]
+        [
+          userId,
+          nome || email.split("@")[0],
+          src || null,
+          ref ? Number(ref) : null
+        ]
       );
+
+      clienteId = clienteResult.rows[0].id;
     }
 
     const token = jwt.sign(
-  {
-    id: userId,
-    email,
-    role: role.toLowerCase()
-  },
-  process.env.JWT_SECRET,
-  { expiresIn: "24h" }
-);
+      {
+        id: userId,
+        email,
+        role: role.toLowerCase()
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "24h" }
+    );
 
-return res.status(201).json({
-  token,
-  role: role.toLowerCase()
-});
+    return res.status(201).json({
+      token,
+      role: role.toLowerCase(),
+      cliente_id: clienteId // 👈 agora o front recebe
+    });
 
   } catch (err) {
     console.error("ERRO REGISTER:", err);
 
-    // email duplicado
     if (err.code === "23505") {
       return res.status(409).json({ erro: "Email já registado" });
     }

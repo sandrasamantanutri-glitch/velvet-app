@@ -1,9 +1,3 @@
-// ===============================
-// AUTH GUARD
-// ===============================
-// window.__CLIENTE_VIP__ = false;
-// window.__VIP_READY__ = false;
-
 window.socket = io();
 
 const role = localStorage.getItem("role");
@@ -12,11 +6,10 @@ const modeloParam = params.get("id");
 const refParam = params.get("ref") || params.get("id");
 const srcParam = params.get("src");
 
-// salva localmente (para usar no cadastro)
+
 if (refParam) localStorage.setItem("ref_modelo", refParam);
 if (srcParam) localStorage.setItem("origem_trafego", srcParam);
 
-// dispara tracking no backend (opcional, mas recomendado)
 if (refParam || srcParam) {
   fetch("/api/track-acesso", {
     method: "POST",
