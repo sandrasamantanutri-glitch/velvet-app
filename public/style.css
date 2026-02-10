@@ -204,7 +204,7 @@ body.modal-open {
   z-index: 9999;
   display: flex;              /* 🔑 FALTAVA ISTO */
   align-items: center;        /* 🔑 vertical */
-  justify-content: center;    /* 🔑 horizontal */
+  justify-content: center !important;  /* 🔑 horizontal */
   padding: 16px;
 }
 
@@ -474,6 +474,7 @@ body.modal-open {
     overflow-y: auto;
     background: #fff;
     gap: 14px;
+    justify-content: center !important;
     
   }
 }
