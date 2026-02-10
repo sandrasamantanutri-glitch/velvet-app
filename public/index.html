@@ -47,7 +47,6 @@
       <div class="footer-linksC">
         <a href="#" onclick="startRegister()">Criar conta</a><br>
         <a href="#" onclick="openForgot(); return false;">Esqueci minha senha</a><br>
-        <a href="/app/" style="color:#dbcafa;">APP 🟣click</a>
         </div>
     
     </div> <!-- landing-login -->
@@ -126,8 +125,12 @@
     <input id="loginEmail" type="email" placeholder="Email">
 
     <input id="loginSenha" type="password" placeholder="Senha">
-
-    <!-- CAMPOS APENAS REGISTRO -->
+        <input
+      id="registerSenhaConfirm"
+      class="hidden"
+      type="password"
+      placeholder="Repetir senha"
+    >
     <input
       id="registerNome"
       class="hidden"
@@ -140,13 +143,6 @@
       class="hidden"
       type="date"
       placeholder="Data de nascimento"
-    >
-
-    <input
-      id="registerSenhaConfirm"
-      class="hidden"
-      type="password"
-      placeholder="Repetir senha"
     >
 
     <select id="registerRole" class="hidden">
@@ -203,8 +199,6 @@
     </div>
   </div>
 </div>
-
-<!-- tracking origem -->
 <script>
   const params = new URLSearchParams(window.location.search);
 
@@ -221,14 +215,12 @@
       body: JSON.stringify({
         ref,
         src,
-        page: "index" // 👈 diferença aqui
+        page: "index" 
       })
     }).catch(() => {});
   }
 </script>
 
-
-<!-- SCRIPT -->
 <script src="/script.js"></script>
 </body>
 </html>

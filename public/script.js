@@ -113,13 +113,11 @@ window.switchToLogin = function () {
 function updateModal() {
   const title = document.getElementById("modalTitle");
   const submit = document.getElementById("modalSubmit");
-
+ const senhaConfirm = document.getElementById("registerSenhaConfirm");
   const roleSelect = document.getElementById("registerRole");
   const nome = document.getElementById("registerNome");
   const nascimento = document.getElementById("registerNascimento");
-  const senhaConfirm = document.getElementById("registerSenhaConfirm");
   const legal = document.getElementById("registerLegal");
-
   const switchLogin = document.getElementById("switchToLogin");
   const switchRegister = document.querySelector(".modal-switch");
 
@@ -142,6 +140,7 @@ function updateModal() {
     title.textContent = "Criar Conta";
     submit.textContent = "Criar conta";
     submit.onclick = register;
+
     // 🔓 mostrar campos de registro
     roleSelect.classList.remove("hidden");
     nome.classList.remove("hidden");
@@ -196,15 +195,7 @@ async function register() {
   const nome = registerNome.value.trim();
   const nascimento = registerNascimento.value;
 
-  // ===============================
-  // VALIDAÇÕES
-  // ===============================
-  if (!email || !senha || !senhaConfirm || !role || !nome || !nascimento) {
-    alert("Preencha todos os campos");
-    return;
-  }
-
-  if (senha !== senhaConfirm) {
+    if (senha !== senhaConfirm) {
     alert("As senhas não coincidem");
     return;
   }
@@ -214,9 +205,11 @@ async function register() {
     return;
   }
 
-  // ===============================
-  // REGISTER
-  // ===============================
+  if (!email || !senha || !senhaConfirm || !role || !nome || !nascimento) {
+    alert("Preencha todos os campos");
+    return;
+  }
+
   const res = await fetch("/api/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -237,10 +230,6 @@ async function register() {
     return;
   }
 
-  // ===============================
-  // LOGIN AUTOMÁTICO
-  // (backend deve retornar token e role)
-  // ===============================
   if (!data.token || !data.role) {
     alert("Conta criada, mas falha ao iniciar sessão automaticamente");
     return;
@@ -253,16 +242,12 @@ async function register() {
     localStorage.setItem("cliente_id", data.cliente_id);
   }
 
-  // ===============================
-  // REDIRECIONA PARA O FEED
-  // ===============================
   window.location.href = "/feed.html";
 }
 
 
 // ===============================
 // MODAL LEGAL (TERMOS / POLÍTICAS)
-// ===============================
 window.openLegalModal = function (event, url) {
   event.preventDefault();
 
@@ -299,8 +284,6 @@ window.logout = function () {
 
 // ===============================
 // ESQUECI MINHA SENHA – MODAL
-// ===============================
-
 function openForgot() {
   closeAllModals();
   document.getElementById("forgotModal").classList.remove("hidden");
@@ -312,7 +295,6 @@ function closeForgotModal() {
   document.getElementById("forgotModal").classList.add("hidden");
 }
 
-// 1️⃣ envia código
 async function sendResetCode() {
   const email = document.getElementById("forgotEmail").value.trim();
   if (!email) {
@@ -325,15 +307,12 @@ async function sendResetCode() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email })
   });
-   // mostra aviso de spam
-  document.getElementById("forgotSpamHint").classList.remove("hidden");
 
-  // troca step
+  document.getElementById("forgotSpamHint").classList.remove("hidden");
   document.getElementById("forgotStepEmail").classList.add("hidden");
   document.getElementById("forgotStepCode").classList.remove("hidden");
 }
 
-// 2️⃣ confirma código + nova senha
 async function confirmReset() {
   const email = document.getElementById("forgotEmail").value.trim();
   const codigo = document.getElementById("forgotCode").value.trim();
