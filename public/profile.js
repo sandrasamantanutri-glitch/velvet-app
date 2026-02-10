@@ -267,7 +267,7 @@ async function iniciarPerfil() {
 }
 
 function aplicarPerfilNoDOM(modelo) {
-  nomeEl.textContent = modelo.nome || "";
+  nomeEl.textContent = modelo.nome_exibicao || "";
   profileBio.textContent = modelo.bio || "";
 
   if (modelo.avatar) {
