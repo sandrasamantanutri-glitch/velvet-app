@@ -246,6 +246,10 @@ async function aplicarRegrasDeAcesso() {
   }
 }
 
+window.closeLegalModal ||= function () {
+  document.getElementById("legalModal")?.classList.add("hidden");
+};
+
 async function iniciarPerfil() {
   try {
     await carregarPerfilBase();   // sempre
