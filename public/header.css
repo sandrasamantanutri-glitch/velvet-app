@@ -32,12 +32,12 @@ body {
 .header-inner {
   max-width: 1100px;
   height: 100%;
-  margin: 0 auto;
+  margin: 30px 40px auto;
   padding: 0 16px;
 
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 40px;
 }
 
 .velvet-logo {
@@ -46,7 +46,7 @@ body {
 }
 
 .header-inner img {
-  height: 30px;
+  height: 40px;
 }
 
 .page-container {
