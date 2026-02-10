@@ -534,31 +534,6 @@
   color: #18181b;
 }
 
-/* ===============================
-   AJUSTES VISUAIS PARA CLIENTE
-=============================== */
-
-body.role-cliente .area-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-body.role-cliente .area-item {
-  padding: 16px;
-}
-
-body.role-cliente .area-item strong {
-  font-size: 20px;
-}
-
-body.role-cliente .area-item span {
-  font-size: 14px;
-  line-height: 1.3;
-}
-
-
-
 
 
 
