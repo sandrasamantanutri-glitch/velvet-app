@@ -14,16 +14,18 @@ function logout() {
 
 document.addEventListener("DOMContentLoaded", () => {
   const lista = document.getElementById("listaModelos");
-  const token = localStorage.getItem("token");
 
+  // 🔕 não é página de feed → sai sem erro
   if (!lista) {
-    console.error("❌ listaModelos não encontrada no DOM");
+    console.log("ℹ️ feed.js carregado fora do feed");
     return;
   }
 
+  const token = localStorage.getItem("token");
+
+  // 🔒 se não tiver token, apenas mostra feed vazio ou CTA
   if (!token) {
-    console.error("❌ Token ausente");
-    window.location.href = "/index.html";
+    lista.innerHTML = "<p>Entre para ver as modelos disponíveis.</p>";
     return;
   }
 
@@ -54,12 +56,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         card.innerHTML = `
           <img
-            src="${modelo.avatar || "/assets/avatarDefault.png"}"
+            src="${modelo.avatar || "/assets/avatar.png"}"
             alt="${modelo.nome || "Modelo"}">
         `;
 
         card.addEventListener("click", () => {
-          // 🔑 contrato de ID (backend antigo ou novo)
           const modeloId = modelo.id ?? modelo.user_id;
 
           if (!modeloId) {
@@ -69,16 +70,15 @@ document.addEventListener("DOMContentLoaded", () => {
           }
 
           localStorage.setItem("modelo_id", modeloId.toString());
-          window.location.href = `profile.html?id=${modeloId}`;
+          window.location.href = `index.html?id=${modeloId}`;
         });
 
         lista.appendChild(card);
       });
     })
     .catch(err => {
-  console.error("Erro ao carregar feed de modelos:", err);
-  localStorage.clear();
-  window.location.href = "/index.html";
-});
-
+      console.error("Erro ao carregar feed de modelos:", err);
+      lista.innerHTML =
+        "<p>Não foi possível carregar o feed no momento.</p>";
+    });
 });

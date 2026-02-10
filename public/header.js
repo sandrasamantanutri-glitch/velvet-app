@@ -1,6 +1,5 @@
 // ===============================
-// SOCKET GLOBAL (1x só)
-// ===============================
+// SOCKET GLOBAL
 function carregarHeader() {
   // evita duplicar
   if (document.querySelector(".app-header")) {
@@ -73,10 +72,10 @@ async function initUsuario() {
   } catch (e) {
   console.warn("Sessão inválida no header");
 
-  // 🔥 limpa sessão quebrada
+  // limpa sessão quebrada
   localStorage.clear();
 
-  // 🔁 redireciona com segurança
+  // redireciona com segurança
   if (!window.location.pathname.includes("index")) {
     window.location.href = "/index.html";
   }
@@ -112,7 +111,7 @@ function initHeaderSocketModelo() {
     socket.emit("auth", { token });
   });
 
-  // 🔔 qualquer mensagem nova para a modelo
+  // mensagem nova para a modelo
   socket.on("unreadUpdate", ({ modelo_id }) => {
     atualizarUnreadModeloHeader();
   });
@@ -161,7 +160,7 @@ async function atualizarUnreadModeloHeader() {
 
     const unreadIds = await res.json();
 
-    // unreadIds = [cliente_id, cliente_id, ...]
+    // unreadIds 
     atualizarBadgeHeader(unreadIds.length);
   } catch (e) {
     console.warn("Erro ao buscar unread modelo");
@@ -169,7 +168,7 @@ async function atualizarUnreadModeloHeader() {
 }
 
 // =========================================================
-// LOGO → HOME POR ROLE (delegação global)
+// LOGO → HOME POR ROLE
 
 document.addEventListener("click", (e) => {
   const logo = e.target.closest(".logo-app");
