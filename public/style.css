@@ -68,7 +68,7 @@ body {
 /* LOGO */
 .logo {
   width: 250px;
-  margin: -40px auto 40px;   /* sobe o logo */
+  margin: 20px auto 150px;  
 }
 
 /* =========================
@@ -404,7 +404,75 @@ body {
   transform: translateY(-1px);
 }
 
+/* =========================
+   MOBILE (AJUSTE FINO)
+========================= */
+@media (max-width: 768px) {
 
+  body {
+    background: #f6f7fb;
+  }
+
+  .page-wrapper {
+    min-height: auto;
+    padding: 20px;
+    align-items: flex-start;
+  }
+
+  .landing {
+    width: 100%;
+    max-width: 420px;
+    flex-direction: column;
+  }
+
+  /* remove a capa totalmente */
+  .landing-cover {
+    display: none;
+  }
+
+  .landing-login {
+    width: 100%;
+    margin: 0;
+    padding: 32px 24px;
+    border-radius: 20px;
+  }
+
+  /* logo */
+  .logo {
+    width: 180px;
+    margin: 50px auto 50px;
+  }
+
+  /* botões */
+  .login-box {
+    margin-top: 0;
+  }
+
+  .btn {
+    font-size: 16px;
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  /* inputs */
+  .login-input input {
+    font-size: 16px; /* evita zoom no iOS */
+    padding: 14px;
+  }
+
+  /* footer */
+  .footer-links,
+  .footer-linksC {
+    margin-top: 34px;
+    font-size: 13px;
+  }
+
+  .footer-links a,
+  .footer-linksC a {
+    display: block;
+    margin: 6px 0;
+  }
+}
 
 
 
