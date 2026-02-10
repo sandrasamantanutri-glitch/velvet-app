@@ -116,15 +116,22 @@ function updateModal() {
   const switchLogin = document.getElementById("switchToLogin");
   const switchRegister = document.querySelector(".modal-switch");
 
-  const fieldRegister = document.getElementById("fieldRegister");
+  const registerFields = [
+    "fieldSenha",
+    "fieldNome",
+    "fieldNascimento",
+    "fieldRegister"
+  ];
 
   if (modalMode === "login") {
     title.textContent = "Entrar";
     submit.textContent = "Entrar";
     submit.onclick = login;
 
-    // 🔒 esconder campos de registo
-    fieldRegister?.classList.add("hidden");
+    // 🔒 esconder TODOS os campos de registo
+    registerFields.forEach(id =>
+      document.getElementById(id)?.classList.add("hidden")
+    );
 
     switchRegister.classList.remove("hidden");
     switchLogin.classList.add("hidden");
@@ -134,8 +141,10 @@ function updateModal() {
     submit.textContent = "Criar conta";
     submit.onclick = register;
 
-    // 🔓 mostrar campos de registo
-    fieldRegister?.classList.remove("hidden");
+    // 🔓 mostrar TODOS os campos de registo
+    registerFields.forEach(id =>
+      document.getElementById(id)?.classList.remove("hidden")
+    );
 
     switchRegister.classList.add("hidden");
     switchLogin.classList.remove("hidden");
