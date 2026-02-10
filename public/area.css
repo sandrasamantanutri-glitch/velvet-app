@@ -24,6 +24,10 @@ img {
   display: block;
 }
 
+.only-modelo {
+  display: none;
+}
+
 /* ===============================
    CONTAINER PRINCIPAL
 ================================ */
