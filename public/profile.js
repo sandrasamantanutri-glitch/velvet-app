@@ -207,6 +207,7 @@ async function carregarFeedBase() {
   feed.forEach(adicionarMidia);
 }
 
+
 async function aplicarRegrasDeAcesso() {
 
   // MODELO
@@ -266,7 +267,7 @@ async function iniciarPerfil() {
 }
 
 function aplicarPerfilNoDOM(modelo) {
-  nomeEl.textContent = modelo.nome_exibicao || "";
+  nomeEl.textContent = modelo.nome || "";
   profileBio.textContent = modelo.bio || "";
 
   if (modelo.avatar) {
