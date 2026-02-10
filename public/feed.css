@@ -1,43 +1,39 @@
-
- body {
-  background: #0e0e11;
-  font-family: "Poppins", system-ui, sans-serif;
-  color: #fff;
+body {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background:#f1f1f1;
+  color: #1E1E26;
+  padding-top: 64px; 
 }
 
-/* container */
+
+/* seção */
 .area-card {
-  max-width: 1280px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 24px;
+  background: #fff;
 }
 
 .area-card h3 {
-  font-size: 1.5rem;
-  margin-bottom: 20px;
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: #6d28ff;
+  margin-bottom: 24px;
 }
 
 /* grid */
 #listaModelos {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
+  gap: 22px;
 }
 
 /* card */
 .modelo-card {
-  position: relative;
+  background: #f3f3f3;
   border-radius: 18px;
   overflow: hidden;
-  height: 420px; /* 🔑 vertical fixo */
-  background: #111;
-  cursor: pointer;
-  transition: transform 0.35s ease, box-shadow 0.35s ease;
-}
-
-.modelo-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  aspect-ratio: 1 / 1; /* 🔑 quadrado elegante */
 }
 
 /* imagem */
@@ -45,57 +41,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.6s ease;
-}
-
-.modelo-card:hover img {
-  transform: scale(1.08);
-}
-
-/* overlay escuro */
-.modelo-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to top,
-    rgba(0, 0, 0, 0.85),
-    rgba(0, 0, 0, 0.25),
-    transparent
-  );
-}
-
-/* info */
-.modelo-info {
-  position: absolute;
-  bottom: 16px;
-  left: 16px;
-  right: 16px;
-  z-index: 2;
-}
-
-.modelo-info h4 {
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-
-.modelo-info p {
-  font-size: 0.85rem;
-  opacity: 0.85;
-}
-
-/* badge */
-.badge {
-  position: absolute;
-  top: 14px;
-  left: 14px;
-  z-index: 2;
-  background: linear-gradient(135deg, #9b6bff, #7b2cff);
-  padding: 6px 10px;
-  font-size: 0.7rem;
-  border-radius: 999px;
-  font-weight: 600;
+  display: block;
 }
 
 /* responsivo */
@@ -103,18 +49,10 @@
   #listaModelos {
     grid-template-columns: repeat(2, 1fr);
   }
-
-  .modelo-card {
-    height: 380px;
-  }
 }
 
 @media (max-width: 600px) {
   #listaModelos {
     grid-template-columns: 1fr;
-  }
-
-  .modelo-card {
-    height: 440px;
   }
 }
