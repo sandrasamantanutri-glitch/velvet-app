@@ -73,32 +73,21 @@ function mostrarStatusVerificacao(status) {
   }
 }
 
-function aplicarRoleUI(role) {
-  if (role === "modelo") {
-    document.querySelectorAll(".only-modelo")
-      .forEach(el => el.style.display = "block");
-  } else {
-    document.querySelectorAll(".only-modelo")
-      .forEach(el => el.remove());
-  }
-}
-
-
 document.addEventListener("DOMContentLoaded", () => {
   const usuario = getUsuarioLogado();
   if (!usuario) return;
 
-  // 🔑 define role no body
+  // role no body (CSS)
   document.body.classList.add(`role-${usuario.role}`);
 
+  // PERFIL VISUAL
   carregarPerfilBase(usuario);
   carregarDadosUsuario();
 
+  // MODELO
   if (usuario.role === "modelo") {
-    // mostra tudo que é da modelo
-    document
-      .querySelectorAll(".only-modelo")
-      .forEach(el => el.style.display = "block");
+    document.querySelectorAll(".only-modelo")
+      .forEach(el => el.style.display = "");
 
     carregarResumoModelo();
     carregarAreaModelo(usuario.id);
@@ -108,8 +97,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 });
-
-
 
 let assinantesCache = [];
 let paginaAtual = 1;
