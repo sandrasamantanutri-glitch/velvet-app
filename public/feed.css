@@ -30,16 +30,3 @@ body {
   object-fit: cover;
   display: block;
 }
-
-/* responsivo */
-@media (max-width: 900px) {
-  #listaModelos {
-    grid-template-columns: repeat(1, 1fr);
-  }
-}
-
-@media (max-width: 600px) {
-  #listaModelos {
-    grid-template-columns: 1fr;
-  }
-}
