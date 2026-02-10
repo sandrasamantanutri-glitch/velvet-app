@@ -157,7 +157,6 @@ function updateModal() {
   }
 }
 
-
 // ===============================
 // LOGIN
 async function login() {

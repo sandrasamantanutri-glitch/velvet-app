@@ -120,11 +120,6 @@
   <div class="modal-box">
     <h2 id="modalTitle">Entrar</h2>
 
-    <p class="modal-hidden">
-      Não tem conta?
-      <span onclick="startRegister()">Criar conta</span>
-    </p>
-
     <!-- CAMPOS COMUNS -->
     <label for="loginEmail">Email</label>
     <input id="loginEmail" type="email" placeholder="Email">
@@ -169,6 +164,10 @@
     <p class="modal-switch hidden" id="switchToLogin">
       Já tem conta?
       <span onclick="switchToLogin()">Entrar</span>
+    </p>
+    <p class="modal-switch hidden" id="switchToLogin">
+      Não tem conta??
+      <span onclick="startRegister()">Criar conta</span>
     </p>
 
     <button class="modal-close" onclick="closeLoginModal()">✕</button>
