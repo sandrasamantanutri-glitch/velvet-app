@@ -15,17 +15,16 @@ function logout() {
 document.addEventListener("DOMContentLoaded", () => {
   const lista = document.getElementById("listaModelos");
 
-  // não é página de feed → sai sem erro
   if (!lista) {
-    console.log("ℹ️ feed.js carregado fora do feed");
+    console.error("❌ listaModelos não encontrada no index.html");
     return;
   }
 
   const token = localStorage.getItem("token");
 
-  // se não tiver token, apenas mostra feed vazio ou CTA
   if (!token) {
-    lista.innerHTML = "<p>Entre para ver as modelos disponíveis.</p>";
+    lista.innerHTML =
+      "<p>Entre para ver as modelos disponíveis.</p>";
     return;
   }
 
@@ -35,17 +34,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   })
     .then(res => {
-      if (!res.ok) {
-        throw new Error("Erro ao carregar feed de modelos");
-      }
+      if (!res.ok) throw new Error();
       return res.json();
     })
     .then(modelos => {
-      console.log("📥 Modelos recebidos:", modelos);
-
       lista.innerHTML = "";
 
-      if (!Array.isArray(modelos) || modelos.length === 0) {
+      if (!modelos.length) {
         lista.innerHTML = "<p>Nenhuma modelo disponível</p>";
         return;
       }
@@ -55,30 +50,22 @@ document.addEventListener("DOMContentLoaded", () => {
         card.className = "modelItem";
 
         card.innerHTML = `
-          <img
-            src="${modelo.avatar || "/assets/avatar.png"}"
-            alt="${modelo.nome || "Modelo"}">
+          <img src="${modelo.avatar || "/assets/avatar.png"}">
         `;
 
-        card.addEventListener("click", () => {
-          const modeloId = modelo.id ?? modelo.user_id;
+        card.onclick = () => {
+          const id = modelo.id ?? modelo.user_id;
+          if (!id) return;
 
-          if (!modeloId) {
-            console.error("❌ Modelo sem id:", modelo);
-            alert("Erro ao abrir perfil da modelo.");
-            return;
-          }
-
-          localStorage.setItem("modelo_id", modeloId.toString());
-          window.location.href = `perfil.html?id=${modeloId}`;
-        });
+          localStorage.setItem("modelo_id", id);
+          window.location.href = `perfil.html?id=${id}`;
+        };
 
         lista.appendChild(card);
       });
     })
-    .catch(err => {
-      console.error("Erro ao carregar feed de modelos:", err);
+    .catch(() => {
       lista.innerHTML =
-        "<p>Não foi possível carregar o feed no momento.</p>";
+        "<p>Erro ao carregar o feed.</p>";
     });
 });
