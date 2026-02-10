@@ -1,118 +1,111 @@
-/* ===============================
-   RESET BÁSICO
-================================ */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+
+ body {
+  background: #0e0e11;
+  font-family: "Poppins", system-ui, sans-serif;
+  color: #fff;
 }
 
-  body {
-  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background:#f1f1f1;
-  color: #1E1E26;
-  padding-top: 64px; 
-}
-
-/* ===============================
-   ÁREA DO FEED
-================================ */
+/* container */
 .area-card {
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 24px 16px 40px;
-  background: #fff;
+  padding: 24px;
 }
 
 .area-card h3 {
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   margin-bottom: 20px;
-  font-weight: 600;
 }
 
-/* ===============================
-   GRID DO FEED
-================================ */
+/* grid */
 #listaModelos {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 22px;
+  gap: 24px;
 }
 
-/* ===============================
-   CARD DO MODELO
-================================ */
+/* card */
 .modelo-card {
-  background: #f1f1f1;
-  border-radius: 16px;
+  position: relative;
+  border-radius: 18px;
   overflow: hidden;
+  height: 420px; /* 🔑 vertical fixo */
+  background: #111;
   cursor: pointer;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-  box-shadow: 0 6px 20px linear-gradient(135deg, #9b6bff, #7b2cff);
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
 }
 
 .modelo-card:hover {
   transform: translateY(-6px);
-  box-shadow: linear-gradient(135deg, #9b6bff, #7b2cff);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
 }
 
-/* ===============================
-   IMAGEM (VERTICAL)
-================================ */
-.modelo-card .thumb {
-  width: 100%;
-  aspect-ratio: 3 / 4; /* 🔑 deixa o card mais vertical */
-  overflow: hidden;
-  position: relative;
-}
-
-.modelo-card .thumb img {
+/* imagem */
+.modelo-card img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
+  transition: transform 0.6s ease;
 }
 
-/* ===============================
-   INFO DO CARD
-================================ */
+.modelo-card:hover img {
+  transform: scale(1.08);
+}
+
+/* overlay escuro */
+.modelo-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.85),
+    rgba(0, 0, 0, 0.25),
+    transparent
+  );
+}
+
+/* info */
 .modelo-info {
-  padding: 14px;
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  z-index: 2;
 }
 
 .modelo-info h4 {
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 600;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .modelo-info p {
   font-size: 0.85rem;
-  opacity: 0.75;
-  line-height: 1.3;
+  opacity: 0.85;
 }
 
-/* ===============================
-   BADGE (EX: VIP / ONLINE)
-================================ */
+/* badge */
 .badge {
   position: absolute;
-  top: 10px;
-  left: 10px;
+  top: 14px;
+  left: 14px;
+  z-index: 2;
   background: linear-gradient(135deg, #9b6bff, #7b2cff);
-  color: #fff;
+  padding: 6px 10px;
   font-size: 0.7rem;
-  padding: 4px 8px;
   border-radius: 999px;
   font-weight: 600;
 }
 
-/* ===============================
-   RESPONSIVO
-================================ */
+/* responsivo */
 @media (max-width: 900px) {
   #listaModelos {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .modelo-card {
+    height: 380px;
   }
 }
 
@@ -121,7 +114,7 @@
     grid-template-columns: 1fr;
   }
 
-  .area-card h3 {
-    font-size: 1.2rem;
+  .modelo-card {
+    height: 440px;
   }
 }
