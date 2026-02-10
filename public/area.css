@@ -185,6 +185,8 @@ body.role-cliente .area-saldos {
 .area-titulo {
   font-size: 30px;
   margin-bottom: 18px;
+  display: block;
+
 }
 
 /* ===============================
@@ -260,6 +262,7 @@ body.role-cliente .area-saldos {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 2fr));
   gap: 15px;
+  display: block;
 }
 
 .area-grid-usuario {
