@@ -73,22 +73,31 @@ function mostrarStatusVerificacao(status) {
   }
 }
 
-// ===============================
-// 👩‍💼 ÁREA DA MODELO – VIP COUNT
-// ===============================
+function aplicarRoleUI(role) {
+  if (role === "modelo") {
+    document.querySelectorAll(".only-modelo")
+      .forEach(el => el.style.display = "block");
+  } else {
+    document.querySelectorAll(".only-modelo")
+      .forEach(el => el.remove());
+  }
+}
+
 
 document.addEventListener("DOMContentLoaded", () => {
   const usuario = getUsuarioLogado();
   if (!usuario) return;
 
-  // UI base (avatar, capa, nome do topo)
+  aplicarRoleUI(usuario.role);
   carregarPerfilBase(usuario);
-
-  // 🔹 ÚNICO ponto que preenche o formulário de dados.html
   carregarDadosUsuario();
 
-  // extras visuais do painel da modelo (NÃO tocam no form)
   if (usuario.role === "modelo") {
+    // 🔓 mostra UI exclusiva da modelo
+    document
+      .querySelectorAll(".only-modelo")
+      .forEach(el => el.style.display = "block");
+
     carregarResumoModelo();
     carregarAreaModelo(usuario.id);
 
@@ -96,8 +105,14 @@ document.addEventListener("DOMContentLoaded", () => {
       carregarAssinantes();
     }
   }
-});
 
+  // 🔒 blindagem extra (opcional, mas recomendada)
+  if (usuario.role === "cliente") {
+    document
+      .querySelectorAll(".only-modelo")
+      .forEach(el => el.remove());
+  }
+});
 
 
 let assinantesCache = [];
