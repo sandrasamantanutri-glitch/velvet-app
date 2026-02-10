@@ -31,6 +31,12 @@ const srcOrigem = localStorage.getItem("origem_trafego");
 let modalMode = "login"; 
 let pendingAction = null; 
 
+document.addEventListener("DOMContentLoaded", () => {
+  if (!localStorage.getItem("ageConfirmed")) {
+    openAgeGate();
+  }
+});
+
 // ===============================
 // AGE GATE
 window.openAgeGate = function (action) {
@@ -120,7 +126,7 @@ function updateModal() {
     "fieldSenha",
     "fieldNome",
     "fieldNascimento",
-    "fieldLegal"
+    "fieldPerfil"
   ];
 
   if (modalMode === "login") {
