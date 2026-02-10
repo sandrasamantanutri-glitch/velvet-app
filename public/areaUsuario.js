@@ -31,7 +31,7 @@ async function buscarDadosPessoais() {
   const token = localStorage.getItem("token");
   if (!token) return null;
 
-  const res = await fetch("/api/usuario/dados", {
+  const res = await fetch("/api/usuario/perfil", {
     headers: {
       Authorization: "Bearer " + token
     }
