@@ -554,38 +554,38 @@ if (!res.ok) {
   alert("Dados pessoais salvos com sucesso");
 });
 
-// const formModelo = document.getElementById("formDadosUsuario");
+const formModelo = document.getElementById("formDadosUsuario");
 
-// formModelo?.addEventListener("submit", async (e) => {
-//   e.preventDefault();
+formModelo?.addEventListener("submit", async (e) => {
+  e.preventDefault();
 
-//   const dados = {
-//     nome_exibicao: formModelo.nome_exibicao.value.trim(),
-//     instagram: normalizarInstagram(formModelo.instagram.value),
-//     tiktok: formModelo.tiktok.value.trim(),
-//     local: formModelo.local.value.trim(),
-//     bio: formModelo.bio.value.trim()
-//   };
+  const dados = {
+    nome_exibicao: formModelo.nome_exibicao.value.trim(),
+    instagram: normalizarInstagram(formModelo.instagram.value),
+    tiktok: formModelo.tiktok.value.trim(),
+    local: formModelo.local.value.trim(),
+    bio: formModelo.bio.value.trim()
+  };
 
-//   if (!dados.nome_exibicao) {
-//     alert("O nome de exibição é obrigatório");
-//     return;
-//   }
+  if (!dados.nome_exibicao) {
+    alert("O nome de exibição é obrigatório");
+    return;
+  }
 
-//   const res = await fetch("/api/usuario/perfil", {
-//     method: "PUT",
-//     headers: {
-//       "Content-Type": "application/json",
-//       Authorization: "Bearer " + localStorage.getItem("token")
-//     },
-//     body: JSON.stringify(dados)
-//   });
+  const res = await fetch("/api/usuario/perfil", {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + localStorage.getItem("token")
+    },
+    body: JSON.stringify(dados)
+  });
 
-//   if (!res.ok) {
-//     alert("Erro ao salvar dados");
-//     return;
-//   }
+  if (!res.ok) {
+    alert("Erro ao salvar dados");
+    return;
+  }
 
-//   alert("Dados salvos com sucesso");
-// });
+  alert("Dados salvos com sucesso");
+});
 
