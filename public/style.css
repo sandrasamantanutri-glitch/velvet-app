@@ -202,6 +202,10 @@ body.modal-open {
   position: fixed;
   inset: 0;
   z-index: 9999;
+  display: flex;              /* 🔑 FALTAVA ISTO */
+  align-items: center;        /* 🔑 vertical */
+  justify-content: center;    /* 🔑 horizontal */
+  padding: 16px;
 }
 
 .modal-overlay {
