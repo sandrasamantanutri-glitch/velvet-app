@@ -32,7 +32,6 @@ body {
 .header-inner {
   max-width: 1100px;
   height: 100%;
-  margin: 30px 0px auto;
   padding: 0 0px;
 
   display: flex;
