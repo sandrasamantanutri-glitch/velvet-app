@@ -2930,10 +2930,9 @@ app.post(
       else if (req.user.role === "cliente") {
         await db.query(
           `
-          INSERT INTO clientes_dados (user_id, capa)
-          VALUES ($1, $2)
-          ON CONFLICT (user_id)
-          DO UPDATE SET capa = EXCLUDED.capa
+            UPDATE clientes_dados
+  SET capa = $1, updated_at = NOW()
+  WHERE user_id = $2
           `,
           [userId, url]
         );
