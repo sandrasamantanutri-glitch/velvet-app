@@ -28,6 +28,16 @@ body.role-cliente .area-saldos {
   display: none !important;
 }
 
+.perfil-card {
+  max-width: 1100px;
+  margin: 90px auto 30px;
+  background: #fff;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: linear-gradient(135deg, #9e6bff, #7b2cff);
+  position: relative;
+}
+
 .perfil-capa {
   position: relative;
   height: 220px;
@@ -101,7 +111,7 @@ body.role-cliente .area-saldos {
 .oferta-card {
   max-width: 900px !Important;
   margin: 18px auto;
-  background: #f1f1f1;
+  background: #fff;
   border-radius: 18px !Important;
   padding: 20px;
   color: #1E1E26;
