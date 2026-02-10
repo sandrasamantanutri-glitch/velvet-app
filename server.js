@@ -1487,7 +1487,7 @@ app.get("/api/usuario/perfil", auth, async (req, res) => {
   result = await db.query(
     `
     SELECT
-      cd.username   AS nome_exibicao,
+      cd.username,
       cd.instagram,
       cd.tiktok,
       cd.local,
