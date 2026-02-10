@@ -25,23 +25,22 @@ if (refParam || srcParam) {
 
 let modo = "publico";
 
-// MEU PRÓPRIO PERFIL
+// 🔐 MEU PRÓPRIO PERFIL (cliente OU modelo)
 if (token && !modeloParam) {
   modo = "privado";
 }
 
 let modelo_id = null;
 
-// PERFIL PÚBLICO
+// 🌍 PERFIL PÚBLICO (?id=123)
 if (modeloParam) {
   modelo_id = Number(modeloParam);
 }
 
-// PERFIL PRÓPRIO
+// 🔐 PERFIL PRÓPRIO
 if (modo === "privado") {
   modelo_id = Number(localStorage.getItem("modelo_id"));
 }
-
 
 const ofertaCard = document.getElementById("oferta-card");
 const btnAssinar = document.getElementById("btn-assinar");
@@ -154,7 +153,7 @@ if (role !== "modelo" || !token) {
 }
 
 async function carregarPerfilBase() {
-  // PERFIL PRÓPRIO (CLIENTE OU MODELO)
+  // 🔐 PERFIL PRÓPRIO (CLIENTE OU MODELO)
   if (modo === "privado") {
     const res = await fetch("/api/modelo/me", {
       headers: { Authorization: "Bearer " + token }
@@ -168,7 +167,7 @@ async function carregarPerfilBase() {
     return;
   }
 
-  // PERFIL PÚBLICO
+  // 🌍 PERFIL PÚBLICO
   const res = await fetch(`/api/modelo/publico/${modelo_id}`);
   if (!res.ok) throw new Error("Perfil público não encontrado");
 
