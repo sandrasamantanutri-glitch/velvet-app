@@ -24,24 +24,24 @@ if (refParam || srcParam) {
 
 
 let modo = "publico";
-if (!modeloParam && role === "modelo" && token) {
-}
 
-if (role === "modelo" && token && !modeloParam) {
+// MEU PRÓPRIO PERFIL
+if (token && !modeloParam) {
   modo = "privado";
-}
-if (role === "cliente" && modo === "privado") {
-  window.location.href = "/";
 }
 
 let modelo_id = null;
 
-if (modeloParam) { modelo_id = Number(modeloParam);
+// PERFIL PÚBLICO
+if (modeloParam) {
+  modelo_id = Number(modeloParam);
 }
 
-if (!modeloParam && modo === "privado") {
+// PERFIL PRÓPRIO
+if (modo === "privado") {
   modelo_id = Number(localStorage.getItem("modelo_id"));
 }
+
 
 const ofertaCard = document.getElementById("oferta-card");
 const btnAssinar = document.getElementById("btn-assinar");
@@ -154,20 +154,21 @@ if (role !== "modelo" || !token) {
 }
 
 async function carregarPerfilBase() {
-  // MODELO (perfil próprio)
-  if (modo === "privado" && role === "modelo") {
+  // PERFIL PRÓPRIO (CLIENTE OU MODELO)
+  if (modo === "privado") {
     const res = await fetch("/api/modelo/me", {
       headers: { Authorization: "Bearer " + token }
     });
-    if (!res.ok) throw new Error("Modelo não encontrado");
 
-    const modelo = await res.json();
-    modelo_id = Number(modelo.id);
-    aplicarPerfilNoDOM(modelo);
+    if (!res.ok) throw new Error("Perfil não encontrado");
+
+    const perfil = await res.json();
+    modelo_id = Number(perfil.id);
+    aplicarPerfilNoDOM(perfil);
     return;
   }
 
-  // PERFIL PÚBLICO (cliente / visitante / vip)
+  // PERFIL PÚBLICO
   const res = await fetch(`/api/modelo/publico/${modelo_id}`);
   if (!res.ok) throw new Error("Perfil público não encontrado");
 
@@ -175,6 +176,7 @@ async function carregarPerfilBase() {
   modelo_id = Number(modelo.id);
   aplicarPerfilNoDOM(modelo);
 }
+
 
 async function carregarFeedBase() {
   if (!listaMidias) return;
