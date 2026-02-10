@@ -152,28 +152,40 @@ if (role !== "modelo" || !token) {
   btnUpload?.remove();
 }
 
-async function carregarPerfilBase() {
-  // 🔐 PERFIL PRÓPRIO (CLIENTE OU MODELO)
-  if (modo === "privado") {
-    const res = await fetch("/api/modelo/me", {
-      headers: { Authorization: "Bearer " + token }
-    });
+async function carregarPerfilBase(usuario) {
+  const token = localStorage.getItem("token");
+  if (!token || !usuario?.role) return;
 
-    if (!res.ok) throw new Error("Perfil não encontrado");
+  const endpoint =
+    usuario.role === "modelo"
+      ? "/api/modelo/me"
+      : "/api/cliente/me";
 
-    const perfil = await res.json();
-    modelo_id = Number(perfil.id);
-    aplicarPerfilNoDOM(perfil);
+  const res = await fetch(endpoint, {
+    headers: { Authorization: "Bearer " + token }
+  });
+
+  if (!res.ok) {
+    console.error("Erro ao carregar perfil:", res.status);
     return;
   }
 
-  // 🌍 PERFIL PÚBLICO
-  const res = await fetch(`/api/modelo/publico/${modelo_id}`);
-  if (!res.ok) throw new Error("Perfil público não encontrado");
+  const perfil = await res.json();
 
-  const modelo = await res.json();
-  modelo_id = Number(modelo.id);
-  aplicarPerfilNoDOM(modelo);
+  // 📸 AVATAR
+  const avatar = document.getElementById("profileAvatar");
+  if (avatar && perfil.avatar) avatar.src = perfil.avatar;
+
+  // 🖼️ CAPA
+  const capa = document.getElementById("profileCapa");
+  if (capa && perfil.capa) capa.src = perfil.capa;
+
+  // 👤 NOME
+  const profileName = document.getElementById("profileName");
+  if (profileName) {
+    profileName.textContent =
+      perfil.nome_exibicao || perfil.username || "";
+  }
 }
 
 
