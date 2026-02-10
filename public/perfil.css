@@ -390,7 +390,7 @@ body.role-cliente .area-saldos {
   margin-top: 6px;
   padding: 0 4px;
 
-  font-size: 24px;
+  font-size: 12px;
   color: #1E1E26;
   text-align: center;
 
@@ -455,6 +455,85 @@ body.role-cliente .area-saldos {
 
 .midiaCard.locked .midiaThumb {
   filter: blur(4px);
+}
+
+/* ===============================
+   INPUTS – MODAL UPLOAD
+================================ */
+
+.modal-conteudo input[type="text"],
+.modal-conteudo input[type="number"],
+.modal-conteudo textarea {
+  width: 100%;
+  border: none;
+  border-radius: 14px;
+
+  padding: 12px 14px;
+  font-size: 16px;
+
+  background: #f1f1f1;
+  color: #1E1E26;
+
+  outline: none;
+  box-sizing: border-box;
+}
+
+/* textarea mais elegante */
+.modal-conteudo textarea {
+  resize: none;
+  min-height: 80px;
+}
+
+/* placeholder */
+.modal-conteudo input::placeholder,
+.modal-conteudo textarea::placeholder {
+  color: #9a9a9a;
+  font-size: 15px;
+}
+
+/* foco (toque / clique) */
+.modal-conteudo input:focus,
+.modal-conteudo textarea:focus {
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(123, 44, 255, 0.35);
+}
+
+/* espaçamento entre campos */
+.upload-especial input,
+.upload-especial textarea {
+  margin-top: 10px;
+}
+
+#fecharModal,
+.velvet-close,
+.legal-close,
+.modal-close {
+   position: absolute;
+  top: 12px;
+  right: 12px;
+
+  width: 36px;
+  height: 36px;
+
+  border: none;
+  border-radius: 50%;
+
+  background: rgba(255,255,255,0.9);
+  color: #1E1E26;
+
+  font-size: 20px;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  box-shadow: 0 6px 14px rgba(0,0,0,0.15);
+}
+
+.btn-fechar-modal:hover {
+  background: #7b2cff;
+  color: #fff;
 }
 
 
