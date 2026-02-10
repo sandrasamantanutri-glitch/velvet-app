@@ -1622,24 +1622,26 @@ app.get("/api/me", auth, (req, res) => {
 });
 
 
-// 🌍 FEED GLOBAL (CLIENTE + MODELO)
-app.get("/api/feed", auth, async (req, res) => {
+// 🌟 FEED SIMPLES DE MODELOS (LOGADO)
+app.get("/api/feed/modelos", auth, async (req, res) => {
   try {
-    // roles permitidos
-    if (!["cliente", "modelo"].includes(req.user.role)) {
-      return res.status(403).json([]);
-    }
+    const result = await db.query(`
+      SELECT
+        m.user_id,
+        m.nome_exibicao AS nome,
+        m.avatar
+      FROM modelos m
+      WHERE m.verificada = true
+      ORDER BY m.created_at DESC
+    `);
 
-    const feed = await buscarFeedCompletoPorUserId(req.user.id);
-    res.json(feed);
+    res.json(result.rows);
 
   } catch (err) {
-    console.error("Erro carregar feed:", err);
+    console.error("Erro feed modelos:", err);
     res.status(500).json([]);
   }
 });
-
-
 
 
 app.get("/api/modelo/:id/feed", auth, async (req, res) => {

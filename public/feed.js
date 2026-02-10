@@ -28,7 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  fetch("/api/feed", {
+  fetch("/api/feed/modelos", {
     headers: {
       Authorization: "Bearer " + token
     }
