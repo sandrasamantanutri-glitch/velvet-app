@@ -7,6 +7,13 @@ body {
   width: 100%;
 }
 
+.area-card h3 {
+  font-size: 3rem;     
+  font-weight: 700;
+  color: #6d28ff;
+  margin-bottom: 24px;
+}
+
 /* grid */
 #listaModelos {
   display: grid;
