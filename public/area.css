@@ -10,7 +10,7 @@
 body {
   font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background:#f1f1f1;
-  color: #7B2CFF;
+  color: #C9C9C9;
   padding-top: 64px; 
 }
 
@@ -131,7 +131,7 @@ body.role-cliente .area-saldos {
 }
 
 .area-assinantes span {
-  color: #1E1E26;
+  color: #C9C9C9;
   font-weight: 600;
 }
 
@@ -222,7 +222,7 @@ body.role-cliente .area-saldos {
 
 .area-item strong {
   font-size: 20px;
-  color:#7b2cff;
+  color:#1E1E26;
 }
 
 .area-item span {
