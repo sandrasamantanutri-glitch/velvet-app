@@ -1405,9 +1405,6 @@ socket.on("excluirMensagem", async ({ id }) => {
   }
 });
 
-
-
-
 });
 
 
@@ -1466,8 +1463,10 @@ app.get("/api/usuario/dados", auth, async (req, res) => {
 
 app.get("/api/usuario/perfil", auth, async (req, res) => {
   try {
+    let result;
+
     if (req.user.role === "modelo") {
-      const result = await db.query(
+      result = await db.query(
         `
         SELECT
           m.nome_exibicao,
@@ -1482,59 +1481,47 @@ app.get("/api/usuario/perfil", auth, async (req, res) => {
         `,
         [req.user.id]
       );
-
-      return res.json(result.rows[0] || {});
     }
 
     if (req.user.role === "cliente") {
+      result = await db.query(
+        `
+        SELECT
+          COALESCE(cd.username, c.nome) AS nome_exibicao,
+          cd.instagram,
+          cd.tiktok,
+          cd.local,
+          cd.bio
+        FROM clientes c
+        LEFT JOIN clientes_dados cd
+          ON cd.user_id = c.user_id
+        WHERE c.user_id = $1
+        `,
+        [req.user.id]
+      );
+    }
 
-  // 1️⃣ tenta buscar
-  let result = await db.query(
-    `
-    SELECT
-      nome_exibicao,
-      instagram,
-      tiktok,
-      local,
-      bio
-    FROM clientes_dados
-    WHERE user_id = $1
-    `,
-    [req.user.id]
-  );
+    if (!result) {
+      return res.status(403).json({});
+    }
 
-  // 2️⃣ se não existir, cria registro base
-  if (result.rows.length === 0) {
-    await db.query(
-      `INSERT INTO clientes_dados (user_id) VALUES ($1)`,
-      [req.user.id]
-    );
+    // 🔒 contrato fixo (garante todas as chaves)
+    const perfil = result.rows[0] || {};
 
-    // 3️⃣ busca novamente
-    result = await db.query(
-      `
-      SELECT
-        nome_exibicao,
-        instagram,
-        tiktok,
-        local,
-        bio
-      FROM clientes_dados
-      WHERE user_id = $1
-      `,
-      [req.user.id]
-    );
-  }
-
-  return res.json(result.rows[0] || {});
-}
-    res.status(403).json({ erro: "Role inválida" });
+    res.json({
+      nome_exibicao: perfil.nome_exibicao || "",
+      instagram: perfil.instagram || "",
+      tiktok: perfil.tiktok || "",
+      local: perfil.local || "",
+      bio: perfil.bio || ""
+    });
 
   } catch (err) {
     console.error("ERRO GET /api/usuario/perfil:", err);
     res.status(500).json({ erro: "Erro ao buscar perfil" });
   }
 });
+
 
 
 //CONTAGEMVIPS
@@ -1796,25 +1783,6 @@ app.get("/api/modelos", auth, async (req, res) => {
 });
 
 
-// BUSCAR DADOS DO CLIENTE
-app.get("/api/cliente/dados", auth, async (req, res) => {
-  try {
-    if (req.user.role !== "cliente") {
-      return res.status(403).json({ error: "Apenas clientes" });
-    }
-
-    const result = await db.query(
-      "SELECT * FROM clientes_dados WHERE user_id = $1",
-      [req.user.id]
-    );
-
-    res.json(result.rows[0] || {});
-  } catch (err) {
-    console.error("Erro buscar dados cliente:", err);
-    res.status(500).json({ error: "Erro interno" });
-  }
-});
-
 // MODELOS COM CHAT (CLIENTE)
 app.get("/api/cliente/modelos", auth, async (req, res) => {
   try {
@@ -1842,26 +1810,6 @@ res.json(result.rows);
     res.status(500).json([]);
   }
 });
-
-// 📄 DADOS DA MODELO
-app.get("/api/modelo/dados",
-  auth,
-  auth,
-  authModelo,
-  async (req, res) => {
-    try {
-      const result = await db.query(
-        "SELECT * FROM modelos_dados WHERE user_id = $1",
-        [req.user.id]
-      );
-
-      res.json(result.rows[0] || {});
-    } catch (err) {
-      console.error("Erro buscar dados modelo:", err);
-      res.status(500).json({ error: "Erro interno" });
-    }
-  }
-);
 
 app.get("/api/health/db", async (req, res) => {
   try {
@@ -2510,83 +2458,6 @@ app.put("/api/modelo/me", auth, async (req, res) => {
   }
 });
 
-app.put("/api/usuario/perfil", auth, async (req, res) => {
-  const { nome_exibicao, instagram, tiktok, local, bio } = req.body;
-
-  try {
-    if (req.user.role === "modelo") {
-
-      // 1️⃣ atualiza dados que ficam em MODELOS
-      await db.query(
-        `
-        UPDATE modelos
-        SET
-          nome_exibicao = $1,
-          local = $2,
-          bio = $3
-        WHERE user_id = $4
-        `,
-        [
-          nome_exibicao?.trim() || null,
-          local?.trim() || null,
-          bio?.trim() || null,
-          req.user.id
-        ]
-      );
-
-      // 2️⃣ atualiza dados que ficam em MODELOS_DADOS
-      await db.query(
-        `
-        INSERT INTO modelos_dados (user_id, instagram, tiktok)
-        VALUES ($1, $2, $3)
-        ON CONFLICT (user_id)
-        DO UPDATE SET
-          instagram = EXCLUDED.instagram,
-          tiktok = EXCLUDED.tiktok
-        `,
-        [
-          req.user.id,
-          instagram?.trim() || null,
-          tiktok?.trim() || null
-        ]
-      );
-
-      return res.json({ sucesso: true });
-    }
-
-    if (req.user.role === "cliente") {
-      await db.query(
-        `
-        UPDATE clientes_dados
-        SET
-          nome_exibicao = $1,
-          instagram = $2,
-          tiktok = $3,
-          local = $4,
-          bio = $5
-        WHERE user_id = $6
-        `,
-        [
-          nome_exibicao?.trim() || null,
-          instagram?.trim() || null,
-          tiktok?.trim() || null,
-          local?.trim() || null,
-          bio?.trim() || null,
-          req.user.id
-        ]
-      );
-
-      return res.json({ sucesso: true });
-    }
-
-    return res.status(403).json({ erro: "Role inválida" });
-
-  } catch (err) {
-    console.error("ERRO PUT /api/usuario/perfil:", err);
-    res.status(500).json({ erro: "Erro ao salvar perfil" });
-  }
-});
-
 
 app.put("/api/conteudos/:id", authModelo, async (req, res) => {
   const modelo_id = req.user.id;
@@ -2632,6 +2503,105 @@ app.put("/api/conteudos/:id", authModelo, async (req, res) => {
     res.status(500).json({ error: "Erro ao editar conteúdo" });
   }
 });
+
+app.put("/api/usuario/perfil", auth, async (req, res) => {
+  try {
+    const {
+      nome_exibicao,
+      instagram,
+      tiktok,
+      local,
+      bio
+    } = req.body;
+
+    // helper: só atualiza se veio valor
+    const setIf = (campo, valor) =>
+      valor !== undefined ? valor : null;
+
+    if (req.user.role === "modelo") {
+      // 1️⃣ MODELOS (tabela principal)
+      await db.query(
+        `
+        UPDATE modelos
+        SET
+          nome_exibicao = COALESCE($1, nome_exibicao),
+          local         = COALESCE($2, local),
+          bio           = COALESCE($3, bio)
+        WHERE user_id = $4
+        `,
+        [
+          setIf("nome_exibicao", nome_exibicao),
+          setIf("local", local),
+          setIf("bio", bio),
+          req.user.id
+        ]
+      );
+
+      // 2️⃣ MODELOS_DADOS (instagram / tiktok)
+      await db.query(
+        `
+        INSERT INTO modelos_dados (user_id, instagram, tiktok)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (user_id) DO UPDATE
+        SET
+          instagram = COALESCE(EXCLUDED.instagram, modelos_dados.instagram),
+          tiktok    = COALESCE(EXCLUDED.tiktok, modelos_dados.tiktok)
+        `,
+        [
+          req.user.id,
+          setIf("instagram", instagram),
+          setIf("tiktok", tiktok)
+        ]
+      );
+    }
+
+    if (req.user.role === "cliente") {
+      // 1️⃣ CLIENTES (nome base, se existir)
+      if (nome_exibicao !== undefined) {
+        await db.query(
+          `
+          UPDATE clientes
+          SET nome = COALESCE($1, nome)
+          WHERE user_id = $2
+          `,
+          [nome_exibicao, req.user.id]
+        );
+      }
+
+      // 2️⃣ CLIENTES_DADOS (perfil)
+      await db.query(
+        `
+        INSERT INTO clientes_dados
+          (user_id, username, instagram, tiktok, local, bio)
+        VALUES
+          ($1, $2, $3, $4, $5, $6)
+        ON CONFLICT (user_id) DO UPDATE
+        SET
+          username  = COALESCE(EXCLUDED.username, clientes_dados.username),
+          instagram = COALESCE(EXCLUDED.instagram, clientes_dados.instagram),
+          tiktok    = COALESCE(EXCLUDED.tiktok, clientes_dados.tiktok),
+          local     = COALESCE(EXCLUDED.local, clientes_dados.local),
+          bio       = COALESCE(EXCLUDED.bio, clientes_dados.bio)
+        `,
+        [
+          req.user.id,
+          setIf("nome_exibicao", nome_exibicao),
+          setIf("instagram", instagram),
+          setIf("tiktok", tiktok),
+          setIf("local", local),
+          setIf("bio", bio)
+        ]
+      );
+    }
+
+    return res.json({ ok: true });
+
+  } catch (err) {
+    console.error("ERRO PUT /api/usuario/perfil:", err);
+    res.status(500).json({ erro: "Erro ao salvar perfil" });
+  }
+});
+
 
 //DADOS CLIENTE
 app.post("/api/cliente/dados", auth, async (req, res) => {

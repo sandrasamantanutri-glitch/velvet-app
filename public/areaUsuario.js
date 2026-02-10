@@ -12,21 +12,6 @@ function getUsuarioLogado() {
 
  const token = localStorage.getItem("token");
 
-async function buscarDadosModelo() {
-  const token = localStorage.getItem("token");
-  if (!token) return null;
-
-  const res = await fetch("/api/modelo/me", {
-    headers: {
-      Authorization: "Bearer " + token
-    }
-  });
-
-  if (!res.ok) return null;
-  return await res.json();
-}
-
-// 🔹 dados pessoais da conta (qualquer role)
 async function buscarDadosPessoais() {
   const token = localStorage.getItem("token");
   if (!token) return null;
@@ -96,13 +81,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const usuario = getUsuarioLogado();
   if (!usuario) return;
 
-  // 🔹 avatar, capa, nome
+  // UI base (avatar, capa, nome do topo)
   carregarPerfilBase(usuario);
 
-  // 🔹 TODOS os dados do formulário (cliente ou modelo)
+  // 🔹 ÚNICO ponto que preenche o formulário de dados.html
   carregarDadosUsuario();
 
-  // 🔹 extras visuais do painel de modelo (não afeta o form)
+  // extras visuais do painel da modelo (NÃO tocam no form)
   if (usuario.role === "modelo") {
     carregarResumoModelo();
     carregarAreaModelo(usuario.id);
@@ -112,6 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 });
+
 
 
 let assinantesCache = [];
@@ -401,14 +387,14 @@ async function carregarAreaModelo(user_id) {
   // ===============================
   // 📝 FORMULÁRIO (dados.html)
   // ===============================
-  const form = document.getElementById("formDadosModelo");
-  if (paginaTem("formDadosModelo")) {
-    form.nome_exibicao.value = modelo.nome_exibicao || "";
-    form.instagram.value    = modelo.instagram || "";
-    form.tiktok.value       = modelo.tiktok || "";
-    form.local.value        = modelo.local || "";
-    form.bio.value          = modelo.bio || "";
-  }
+  // const form = document.getElementById("formDadosModelo");
+  // if (paginaTem("formDadosModelo")) {
+  //   form.nome_exibicao.value = modelo.nome_exibicao || "";
+  //   form.instagram.value    = modelo.instagram || "";
+  //   form.tiktok.value       = modelo.tiktok || "";
+  //   form.local.value        = modelo.local || "";
+  //   form.bio.value          = modelo.bio || "";
+  // }
 
   // ===============================
   // 👑 VIP COUNT
@@ -565,41 +551,41 @@ if (!res.ok) {
   return;
 }
 
-  alert("Dados pessoais salvos com sucesso 💜");
+  alert("Dados pessoais salvos com sucesso");
 });
 
-const formModelo = document.getElementById("formDadosModelo");
+// const formModelo = document.getElementById("formDadosUsuario");
 
-formModelo?.addEventListener("submit", async (e) => {
-  e.preventDefault();
+// formModelo?.addEventListener("submit", async (e) => {
+//   e.preventDefault();
 
-  const dados = {
-    nome_exibicao: formModelo.nome_exibicao.value.trim(),
-    instagram: normalizarInstagram(formModelo.instagram.value),
-    tiktok: formModelo.tiktok.value.trim(),
-    local: formModelo.local.value.trim(),
-    bio: formModelo.bio.value.trim()
-  };
+//   const dados = {
+//     nome_exibicao: formModelo.nome_exibicao.value.trim(),
+//     instagram: normalizarInstagram(formModelo.instagram.value),
+//     tiktok: formModelo.tiktok.value.trim(),
+//     local: formModelo.local.value.trim(),
+//     bio: formModelo.bio.value.trim()
+//   };
 
-  if (!dados.nome_exibicao) {
-    alert("O nome de exibição é obrigatório");
-    return;
-  }
+//   if (!dados.nome_exibicao) {
+//     alert("O nome de exibição é obrigatório");
+//     return;
+//   }
 
-  const res = await fetch("/api/usuario/perfil", {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + localStorage.getItem("token")
-    },
-    body: JSON.stringify(dados)
-  });
+//   const res = await fetch("/api/usuario/perfil", {
+//     method: "PUT",
+//     headers: {
+//       "Content-Type": "application/json",
+//       Authorization: "Bearer " + localStorage.getItem("token")
+//     },
+//     body: JSON.stringify(dados)
+//   });
 
-  if (!res.ok) {
-    alert("Erro ao salvar dados");
-    return;
-  }
+//   if (!res.ok) {
+//     alert("Erro ao salvar dados");
+//     return;
+//   }
 
-  alert("Dados salvos com sucesso");
-});
+//   alert("Dados salvos com sucesso");
+// });
 
