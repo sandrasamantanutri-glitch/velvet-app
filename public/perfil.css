@@ -211,7 +211,7 @@ body.role-cliente .area-saldos {
 .midias-grid {
   display: none;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  gap: 20px;
   padding: 30px;
 }
 
@@ -453,12 +453,7 @@ body.role-cliente .area-saldos {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(123, 44, 255, 0.85),
-    rgba(158, 107, 255, 0.85)
-  );
-  border-radius: 12px;
+  border-radius: 2px;
   z-index: 1;
 }
 /* ===============================
@@ -569,7 +564,7 @@ body.role-cliente .area-saldos {
 
 /* prefixo visual R$ (opcional, só visual) */
 #upload-preco::placeholder {
-  color: #7b2cff;
+  color: #fff;
   font-weight: 500;
 }
 
