@@ -38,14 +38,14 @@ body {
   padding: 0 16px;
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 40px;
 }
 
 .velvet-logo {
-  height: 80px !Important;
+  height: 60px !Important;
   margin-right: auto;
 }
 
 .header-inner img {
-  height: 60px;
+  height: 55px;
 }
