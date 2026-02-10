@@ -440,23 +440,6 @@ body.modal-open {
     display: block;
     margin: 8px 0;
   }
-
-  /* -------- MODAIS (BOTTOM SHEET) -------- */
-  .modal {
-    align-items: flex-end; /* 🔑 modal sobe de baixo */
-    padding: 0;
-    justify-content: center;
-  }
-
-  .modal-box {
-    width: 100%;
-    max-width: 100%;
-    max-height: 85vh;
-    border-radius: 20px 20px 0 0;
-    padding: 24px 20px;
-    overflow-y: auto;
-  }
-
   /* inputs maiores (evita zoom iOS) */
   .modal-box input,
   .modal-box select {
@@ -485,6 +468,24 @@ body.modal-open {
     max-width: none;
     border-radius: 0;
   }
+
+  .modal {
+    display: flex;
+    align-items: center;      /* 🔑 centraliza vertical */
+    justify-content: center;  /* 🔑 centraliza horizontal */
+    padding: 16px;
+  }
+
+  .modal-box {
+    width: 100%;
+    max-width: 420px;         /* 🔑 largura controlada */
+    max-height: 90vh;         /* não corta */
+    border-radius: 18px;
+    padding: 24px 20px;
+    overflow-y: auto;
+    background: #fff;
+  }
 }
+
 
 
