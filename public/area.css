@@ -1,17 +1,18 @@
-/* ===============================
-   RESET + BASE
-================================ */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
 body {
   font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background:#f1f1f1;
   color: #1E1E26;
-  padding-top: none; 
+   margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+.area-card h3 {
+  font-size: 3rem;     
+  font-weight: 700;
+  color: #6d28ff;
+  margin-bottom: 24px;
+  padding-top: 60px;
 }
 
 a {
