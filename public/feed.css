@@ -7,25 +7,6 @@ body {
   width: 100%;
 }
 
-
-/* seção */
-.perfil-card {
-  max-width: 420px;
-  margin-bottom: 24px;
-  background: #fff;
-  border-radius: 18px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-  overflow: hidden;
-  position: relative;
-}
-
-.perfil-card h3 {
-  font-size: 50px;
-  font-weight: 600;
-  color: #6d28ff;
-  margin-bottom: 24px;
-}
-
 /* grid */
 #listaModelos {
   display: grid;
