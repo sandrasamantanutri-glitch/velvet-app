@@ -1622,9 +1622,11 @@ app.get("/api/me", auth, (req, res) => {
 });
 
 
-app.get("/api/feed/me", auth, async (req, res) => {
+// 🌍 FEED GLOBAL (CLIENTE + MODELO)
+app.get("/api/feed", auth, async (req, res) => {
   try {
-    if (req.user.role !== "modelo") {
+    // roles permitidos
+    if (!["cliente", "modelo"].includes(req.user.role)) {
       return res.status(403).json([]);
     }
 
@@ -1632,35 +1634,11 @@ app.get("/api/feed/me", auth, async (req, res) => {
     res.json(feed);
 
   } catch (err) {
-    console.error("Erro carregar feed modelo:", err);
+    console.error("Erro carregar feed:", err);
     res.status(500).json([]);
   }
 });
 
-// 🌟 FEED OFICIAL DE MODELOS (CLIENTE)
-app.get("/api/feed/modelos", auth, async (req, res) => {
-  try {
-    if (req.user.role !== "cliente") {
-      return res.status(403).json({ error: "Apenas clientes" });
-    }
-
-    const result = await db.query(`
-      SELECT
-        m.user_id,
-        m.nome_exibicao AS nome,
-        m.avatar
-      FROM modelos m
-      WHERE m.verificada = true
-      ORDER BY m.created_at DESC
-    `);
-
-    res.json(result.rows);
-
-  } catch (err) {
-    console.error("Erro feed modelos:", err);
-    res.status(500).json([]);
-  }
-});
 
 
 
