@@ -116,14 +116,19 @@ document.addEventListener("DOMContentLoaded", () => {
 // 👥 LISTA DE ASSINANTES DA MODELO
 // =========================================================
 document.addEventListener("DOMContentLoaded", () => {
-  // só roda se a página tiver a tabela
-  if (!document.getElementById("listaAssinantes")) return;
-
   const usuario = getUsuarioLogado();
-  if (!usuario || usuario.role !== "modelo") return;
+  if (!usuario) return;
 
-  carregarAssinantes();
+  // 🔹 PERFIL BASE (cliente e modelo)
+  carregarPerfilBase(usuario);
+
+  // 🔹 BLOCO EXCLUSIVO DO MODELO
+  const listaAssinantes = document.getElementById("listaAssinantes");
+  if (usuario.role === "modelo" && listaAssinantes) {
+    carregarAssinantes();
+  }
 });
+
 
 let assinantesCache = [];
 let paginaAtual = 1;
@@ -161,19 +166,22 @@ async function carregarAssinantes() {
   }
 }
 
-async function carregarPerfilBase() {
+async function carregarPerfilBase(usuario) {
   const token = localStorage.getItem("token");
 
-  const res = await fetch(
+  const endpoint =
     usuario.role === "modelo"
       ? "/api/modelo/me"
-      : "/api/cliente/me",
-    {
-      headers: { Authorization: "Bearer " + token }
-    }
-  );
+      : "/api/cliente/me";
 
-  if (!res.ok) throw new Error("Perfil não encontrado");
+  const res = await fetch(endpoint, {
+    headers: { Authorization: "Bearer " + token }
+  });
+
+  if (!res.ok) {
+    console.error("Erro ao carregar perfil:", res.status);
+    return;
+  }
 
   const perfil = await res.json();
   aplicarPerfilNoDOM(perfil);
