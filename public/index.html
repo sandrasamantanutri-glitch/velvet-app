@@ -53,13 +53,11 @@
   </div>
  </div>
 
- <!-- MODAL ESQUECI SENHA -->
+   <!-- MODAL ESQUECI SENHA -->
 <div id="forgotModal" class="modal hidden">
   <div class="modal-overlay" onclick="closeForgotModal()"></div>
 
-  <div class="modal-box">
-    <button class="modal-close" onclick="closeForgotModal()">✕</button>
-
+  <div class="modal-box velvet">
     <h2 id="forgotTitle">Recuperar senha</h2>
 
     <!-- STEP 1 -->
@@ -73,11 +71,10 @@
       <button class="btn btn-primary" onclick="sendResetCode()">
         Enviar código
       </button>
-
-      <p id="forgotSpamHint" class="modal-hint hidden">
-        Se não encontrar o email, verifique o
-        <strong>lixo eletrônico</strong> ou <strong>spam</strong>.
-      </p>
+      <p id="forgotSpamHint" class="modal-switch hidden">
+  Se não encontrar o email, verifique o <strong>lixo eletrônico</strong> ou
+  <strong>spam</strong>.
+</p>
 
       <p class="modal-switch">
         Lembrou da senha?
@@ -98,21 +95,16 @@
         type="password"
         placeholder="Nova senha"
       />
-
-      <input
-        id="forgotConfirmPassword"
-        type="password"
-        placeholder="Confirmar nova senha"
-      />
+      <input id="forgotConfirmPassword" type="password" placeholder="Confirmar nova senha"/>
 
       <button class="btn btn-primary" onclick="confirmReset()">
         Alterar senha
       </button>
     </div>
+
+    <button class="modal-close" onclick="closeForgotModal()">✕</button>
   </div>
 </div>
-
-
 
  <!-- MODAL LEGAL -->
  <div id="legalModal" class="modal hidden">
