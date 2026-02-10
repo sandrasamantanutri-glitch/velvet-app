@@ -1,72 +1,127 @@
-body {
+/* ===============================
+   RESET BÁSICO
+================================ */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+  body {
   font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background:#f1f1f1;
   color: #1E1E26;
   padding-top: 64px; 
 }
 
-.feedTitle {
-  max-width: 1200px;
-  margin: 32px auto 0;
-  padding: 0 24px;
-
-  font-size: 28px;
-  font-weight: 600;
-  color: #7B2CFF; /* roxo Velvet */
-}
-
+/* ===============================
+   ÁREA DO FEED
+================================ */
 .area-card {
-  max-width: 420px;
-  margin-bottom: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 16px 40px;
   background: #fff;
-  border-radius: 18px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+
+.area-card h3 {
+  font-size: 1.4rem;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+/* ===============================
+   GRID DO FEED
+================================ */
+#listaModelos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+}
+
+/* ===============================
+   CARD DO MODELO
+================================ */
+.modelo-card {
+  background: #f1f1f1;
+  border-radius: 16px;
   overflow: hidden;
-  position: relative;
-}
-
-/* FEED CENTRALIZADO */
-.modelGrid {
-    display: grid;
-
-    /* 🔥 4 MODELOS POR LINHA */
-    grid-template-columns: repeat(3, 1fr);
-
-    gap: 14px;                 /* espaço entre as imagens */
-    padding: 24px;
-
-    max-width: 1000px;         /* controla a largura total */
-    margin: 60px auto 0;       /* 🔥 espaço em cima + centralizado */
-
-    justify-content: center;
-}
-
-.modelItem:hover {
-  transform: scale(1.03);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-}
-
-.modelItem {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 2 / 2;   /* mantém o formato tipo feed */
-  overflow: hidden;
-  border-radius: 14px;
   cursor: pointer;
-
-  background: #eee; /* fallback enquanto carrega */
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  box-shadow: 0 6px 20px linear-gradient(135deg, #9b6bff, #7b2cff);
 }
 
-.modelItem img {
-  position: absolute;
-  top: 0;
-  left: 0;
+.modelo-card:hover {
+  transform: translateY(-6px);
+  box-shadow: linear-gradient(135deg, #9b6bff, #7b2cff);
+}
 
+/* ===============================
+   IMAGEM (VERTICAL)
+================================ */
+.modelo-card .thumb {
+  width: 100%;
+  aspect-ratio: 3 / 4; /* 🔑 deixa o card mais vertical */
+  overflow: hidden;
+  position: relative;
+}
+
+.modelo-card .thumb img {
   width: 100%;
   height: 100%;
-
-  object-fit: cover;   /* 🔥 preenche sem distorcer */
-  object-position: center;
-
+  object-fit: cover;
   display: block;
+}
+
+/* ===============================
+   INFO DO CARD
+================================ */
+.modelo-info {
+  padding: 14px;
+}
+
+.modelo-info h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.modelo-info p {
+  font-size: 0.85rem;
+  opacity: 0.75;
+  line-height: 1.3;
+}
+
+/* ===============================
+   BADGE (EX: VIP / ONLINE)
+================================ */
+.badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: linear-gradient(135deg, #9b6bff, #7b2cff);
+  color: #fff;
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+/* ===============================
+   RESPONSIVO
+================================ */
+@media (max-width: 900px) {
+  #listaModelos {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  #listaModelos {
+    grid-template-columns: 1fr;
+  }
+
+  .area-card h3 {
+    font-size: 1.2rem;
+  }
 }
