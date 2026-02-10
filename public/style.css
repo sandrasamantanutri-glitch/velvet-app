@@ -235,6 +235,7 @@ body.modal-open {
   margin: 0 0 6px;
   text-align: center;
   color: #7B2CFF;
+  gap: 14px;
 }
 
 /* INPUTS */
@@ -243,6 +244,7 @@ body.modal-open {
   border-radius: 12px;
   border: 1px solid #ddd;
   font-size: 15px;
+  box-sizing: border-box;
 }
 
 /* BOTÃO */
@@ -255,6 +257,7 @@ body.modal-open {
   border-radius: 14px;
   font-weight: 600;
   cursor: pointer;
+  margin-top: 6px;
 }
 
 /* FECHAR */
