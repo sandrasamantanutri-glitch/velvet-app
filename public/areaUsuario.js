@@ -161,6 +161,27 @@ async function carregarAssinantes() {
   }
 }
 
+async function carregarPerfilBase() {
+  // PERFIL PRÓPRIO (CLIENTE OU MODELO)
+  if (modo === "privado") {
+    const res = await fetch(
+      usuario.role === "modelo"
+        ? "/api/modelo/me"
+        : "/api/cliente/me",
+      {
+        headers: { Authorization: "Bearer " + token }
+      }
+    );
+
+    if (!res.ok) throw new Error("Perfil não encontrado");
+
+    const perfil = await res.json();
+    aplicarPerfilNoDOM(perfil);
+    return;
+  }
+}
+
+
 function renderizarPagina() {
   const tbody = document.getElementById("listaAssinantes");
   const inicio = (paginaAtual - 1) * LIMITE_POR_PAGINA;
