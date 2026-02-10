@@ -9,6 +9,17 @@ body {
   padding-top: 64px;
 }
 
+.area-card {
+  max-width: 1100px;
+  margin: 90px auto 30px;
+  background: #fff;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: linear-gradient(135deg, #9e6bff, #7b2cff);
+  position: relative;
+}
+
+
 .app-header {
   position: fixed;
   top: 0;
@@ -31,32 +42,10 @@ body {
 }
 
 .velvet-logo {
-  height: 60px !Important;
+  height: 80px !Important;
   margin-right: auto;
 }
 
 .header-inner img {
-  height: 40px;
-}
-
-#badgeUnread {
-  position: absolute;
-  top: 14px;
-  right: 16px;
-  min-width: 8px;
-  height: 8px;
-  padding: 0 6px;
-  background: #ff3b3b;
-  color: #fff;
-  font-size: 10px;
-  font-weight: 600;
-  border-radius: 999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 20;
-}
-
-#badgeUnread.hidden {
-  display: none;
+  height: 60px;
 }
