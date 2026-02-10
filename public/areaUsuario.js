@@ -94,40 +94,24 @@ function mostrarStatusVerificacao(status) {
 
 document.addEventListener("DOMContentLoaded", () => {
   const usuario = getUsuarioLogado();
-  if (!usuario) {
-    console.log("Visitante não logado");
-    return;
-  }
-
-  if (usuario.role === "modelo") {
-    carregarResumoModelo();
-    carregarAreaModelo(usuario.id);
-  }
-
-  if (usuario.role === "cliente") {
-    carregarPerfilBase();
-  }
-
-  carregarDadosPessoais();
-});
-
-
-// =========================================================
-// 👥 LISTA DE ASSINANTES DA MODELO
-// =========================================================
-document.addEventListener("DOMContentLoaded", () => {
-  const usuario = getUsuarioLogado();
   if (!usuario) return;
 
   // 🔹 PERFIL BASE (cliente e modelo)
   carregarPerfilBase(usuario);
 
   // 🔹 BLOCO EXCLUSIVO DO MODELO
-  const listaAssinantes = document.getElementById("listaAssinantes");
-  if (usuario.role === "modelo" && listaAssinantes) {
-    carregarAssinantes();
+  if (usuario.role === "modelo") {
+    carregarResumoModelo();
+    carregarAreaModelo(usuario.id);
+
+    if (document.getElementById("listaAssinantes")) {
+      carregarAssinantes();
+    }
   }
+
+  carregarDadosPessoais();
 });
+
 
 
 let assinantesCache = [];
@@ -168,6 +152,7 @@ async function carregarAssinantes() {
 
 async function carregarPerfilBase(usuario) {
   const token = localStorage.getItem("token");
+  if (!token || !usuario?.role) return;
 
   const endpoint =
     usuario.role === "modelo"
@@ -184,7 +169,21 @@ async function carregarPerfilBase(usuario) {
   }
 
   const perfil = await res.json();
-  aplicarPerfilNoDOM(perfil);
+
+  // 📸 AVATAR
+  const avatar = document.getElementById("profileAvatar");
+  if (avatar && perfil.avatar) avatar.src = perfil.avatar;
+
+  // 🖼️ CAPA
+  const capa = document.getElementById("profileCapa");
+  if (capa && perfil.capa) capa.src = perfil.capa;
+
+  // 👤 NOME
+  const profileName = document.getElementById("profileName");
+  if (profileName) {
+    profileName.textContent =
+      perfil.nome_exibicao || perfil.nome || "";
+  }
 }
 
 
