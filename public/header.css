@@ -31,8 +31,12 @@ body {
 }
 
 .velvet-logo {
-  height: 60px !important;
+  height: 60px !Important;
   margin-right: auto;
+}
+
+.header-inner img {
+  height: 40px;
 }
 
 #badgeUnread {
