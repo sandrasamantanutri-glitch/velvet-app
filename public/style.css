@@ -299,17 +299,6 @@ body.modal-open {
   text-align: center;
 }
 
-#forgotStepEmail,
-#forgotStepCode {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.footer-sep {
-  margin: 0 10px;
-  opacity: 0.4;
-}
 /* MODAL LEGAL */
 .legal-modal {
   position: fixed;
