@@ -445,6 +445,7 @@ body.modal-open {
   .modal {
     align-items: flex-end; /* 🔑 modal sobe de baixo */
     padding: 0;
+    justify-content: center;
   }
 
   .modal-box {
