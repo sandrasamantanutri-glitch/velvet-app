@@ -64,7 +64,6 @@ async function initUsuario() {
 
     const user = await res.json();
 
-    // ⚠️ NÃO sobrescreve role
     if (!localStorage.getItem("role")) {
       localStorage.setItem("role", user.role);
     }
@@ -85,8 +84,7 @@ async function initUsuario() {
 }
 
 // =========================================================
-// 🔔 BADGE GLOBAL DE MENSAGENS NÃO LIDAS
-// =========================================================
+//BADGE GLOBAL DE MENSAGENS NÃO LIDAS
 function atualizarBadgeHeader(total) {
   const badge = document.getElementById("badgeUnread");
   if (!badge) return;
@@ -171,8 +169,8 @@ async function atualizarUnreadModeloHeader() {
 }
 
 // =========================================================
-// 🏠 LOGO → HOME POR ROLE (delegação global)
-// =========================================================
+// LOGO → HOME POR ROLE (delegação global)
+
 document.addEventListener("click", (e) => {
   const logo = e.target.closest(".logo-app");
   if (!logo) return;
@@ -180,35 +178,16 @@ document.addEventListener("click", (e) => {
   const role = localStorage.getItem("role");
 
   if (role === "modelo") {
-    window.location.href = "/profile.html";
+    window.location.href = "/feed.html";
   } else if (role === "cliente") {
-    window.location.href = "/clientHome.html";
+    window.location.href = "/feed.html";
   } else {
     window.location.href = "/index.html";
   }
 });
 
 // =========================================================
-// 💬 BOTÃO DE MENSAGENS → CHAT POR ROLE
-// =========================================================
-document.addEventListener("click", (e) => {
-  const btn = e.target.closest("#btnMensagem");
-  if (!btn) return;
-
-  const role = localStorage.getItem("role");
-
-  if (role === "cliente") {
-    window.location.href = "/inbox.html";
-  } else if (role === "modelo") {
-    window.location.href = "/inbox.html";
-  } else {
-    abrirPopupVelvet({ tipo: "login" });
-  }
-});
-
-// =========================================================
 // LOGOUT 
-// =========================================================
 document.addEventListener("click", (e) => {
   const btn = e.target.closest("#btnLogout");
   if (!btn) return;
