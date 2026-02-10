@@ -49,13 +49,17 @@
       </div>
     
     </div> <!-- landing-login -->
-    </div> <!-- landing -->
+
   </div>
+ </div>
+
  <!-- MODAL ESQUECI SENHA -->
 <div id="forgotModal" class="modal hidden">
   <div class="modal-overlay" onclick="closeForgotModal()"></div>
 
   <div class="modal-box">
+    <button class="modal-close" onclick="closeForgotModal()">✕</button>
+
     <h2 id="forgotTitle">Recuperar senha</h2>
 
     <!-- STEP 1 -->
@@ -105,19 +109,19 @@
         Alterar senha
       </button>
     </div>
-
-    <button class="modal-close" onclick="closeForgotModal()">✕</button>
   </div>
 </div>
 
-<!-- MODAL LEGAL -->
-<div id="legalModal" class="modal hidden">
+
+
+ <!-- MODAL LEGAL -->
+ <div id="legalModal" class="modal hidden">
   <div class="modal-overlay" onclick="closeLegalModal()"></div>
   <div class="modal-box">
     <button class="legal-close" onclick="closeLegalModal()">×</button>
     <iframe id="modalFrame"></iframe>
   </div>
-</div>
+ </div>
 
 <!-- LOGIN / REGISTER MODAL -->
 <div id="loginModal" class="modal hidden">
