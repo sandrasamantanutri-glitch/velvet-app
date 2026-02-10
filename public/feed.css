@@ -12,6 +12,7 @@ body {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 22px;
+  padding: 22px; 
 }
 
 /* card */
