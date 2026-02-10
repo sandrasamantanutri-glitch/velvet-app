@@ -465,7 +465,8 @@ body.role-cliente .area-saldos {
   /* container do modal */
   .modal,
   .modal-midia {
-    align-items: flex-end; /* cola embaixo */
+    align-items: center;     
+    justify-content: center;
   }
 
   /* caixa do modal */

@@ -212,9 +212,16 @@ async function aplicarRegrasDeAcesso() {
 
   // MODELO
   if (role === "modelo" && modo === "privado") {
-    ofertaCard.style.display = "block";
-    btnChat?.classList.remove("hidden");
-    return;
+  ofertaCard.style.display = "block";
+  btnChat?.classList.remove("hidden");
+
+  if (btnAssinar) {
+    btnAssinar.disabled = true;
+    btnAssinar.textContent = "Este é o seu perfil";
+    btnAssinar.style.cursor = "not-allowed";
+  }
+
+  return;
   }
 
   // VISITANTE (sem login)
