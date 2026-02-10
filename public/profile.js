@@ -217,7 +217,6 @@ async function aplicarRegrasDeAcesso() {
 
   if (btnAssinar) {
     btnAssinar.disabled = true;
-    btnAssinar.textContent = "Este é o seu perfil";
     btnAssinar.style.cursor = "not-allowed";
   }
 
