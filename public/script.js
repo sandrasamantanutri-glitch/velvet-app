@@ -31,12 +31,6 @@ const srcOrigem = localStorage.getItem("origem_trafego");
 let modalMode = "login"; 
 let pendingAction = null; 
 
-document.addEventListener("DOMContentLoaded", () => {
-  if (!localStorage.getItem("ageConfirmed")) {
-    openAgeGate();
-  }
-});
-
 // ===============================
 // AGE GATE
 window.openAgeGate = function (action) {
@@ -82,7 +76,6 @@ function proceedAfterAge() {
 function closeAllModals() {
   document.getElementById("loginModal")?.classList.add("hidden");
   document.getElementById("legalModal")?.classList.add("hidden");
-  document.getElementById("ageModal")?.classList.add("hidden");
 }
 
 
@@ -93,6 +86,7 @@ window.selectRole = function () {
 };
 
 window.startRegister = function () {
+  localStorage.removeItem("ageConfirmed");
   openAgeGate("register");
 };
 
@@ -108,6 +102,7 @@ window.closeLoginModal = function () {
 
 function setRegisterMode() {
   modalMode = "register";
+  localStorage.removeItem("ageConfirmed");
   updateModal();
 }
 
@@ -281,7 +276,6 @@ window.closeLegalModal = function () {
 window.logout = function () {
   localStorage.removeItem("token");
   localStorage.removeItem("role");
-  localStorage.removeItem("ageConfirmed"); 
   window.location.href = "/index.html";
 };
 
