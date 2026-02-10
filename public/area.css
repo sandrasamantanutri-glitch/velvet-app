@@ -28,6 +28,10 @@ img {
   display: none;
 }
 
+body.role-modelo .only-modelo {
+  display: block;
+}
+
 /* ===============================
    CONTAINER PRINCIPAL
 ================================ */

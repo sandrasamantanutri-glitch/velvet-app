@@ -86,9 +86,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // MODELO
   if (usuario.role === "modelo") {
-    document.querySelectorAll(".only-modelo")
-      .forEach(el => el.style.display = "");
-
     carregarResumoModelo();
     carregarAreaModelo(usuario.id);
 
