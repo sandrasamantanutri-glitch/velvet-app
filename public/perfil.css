@@ -181,7 +181,7 @@ body.role-cliente .area-saldos {
 .midias-tabs {
   display: flex;
   justify-content: center;
-  gap: 10px;
+  gap: 80px;
 }
 
 .midias-tabs .tab {
@@ -211,7 +211,7 @@ body.role-cliente .area-saldos {
 /* GRID */
 .midias-grid {
   display: none;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
   padding: 30px;
 }
