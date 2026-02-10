@@ -372,6 +372,17 @@ body.modal-open {
   transform: translateY(-1px);
 }
 
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field.hidden {
+  display: none;
+}
+
+
 /* =========================
    MOBILE FIRST – TELEMÓVEL
 ========================= */
