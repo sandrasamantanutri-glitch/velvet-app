@@ -1,5 +1,5 @@
 /* ===============================
-   RESET
+   RESET BÁSICO
 ================================ */
 * {
   margin: 0;
@@ -7,17 +7,14 @@
   box-sizing: border-box;
 }
 
-/* ===============================
-   BASE
-================================ */
 body {
   font-family: "Poppins", system-ui, -apple-system, sans-serif;
-  background: #f1f1f1;
-  color: #1E1E26;
+  background: #f7f7fb;
+  color: #222;
 }
 
 /* ===============================
-   CONTAINER
+   CONTAINER PRINCIPAL
 ================================ */
 .area-card {
   max-width: 1200px;
@@ -38,16 +35,16 @@ body {
 }
 
 /* ===============================
-   GRID – MOBILE FIRST
+   GRID DE MODELOS
 ================================ */
 #listaModelos {
   display: grid;
-  grid-template-columns: repeat(3, 1fr); /* mobile */
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 14px;
 }
 
 /* ===============================
-   CARD
+   CARD DE MODELO
 ================================ */
 .modelItem {
   position: relative;
@@ -55,7 +52,13 @@ body {
   border-radius: 14px;
   overflow: hidden;
   cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+}
+
+.modelItem:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
 }
 
 /* ===============================
@@ -63,13 +66,13 @@ body {
 ================================ */
 .modelItem img {
   width: 100%;
-  height: 160px;
+  height: 200px;
   object-fit: cover;
   display: block;
 }
 
 /* ===============================
-   OVERLAY (futuro)
+   OVERLAY (opcional futuro)
 ================================ */
 .modelItem::after {
   content: "";
@@ -84,70 +87,33 @@ body {
   transition: opacity 0.2s ease;
 }
 
-/* ===============================
-   MOBILE MUITO PEQUENO
-================================ */
-@media (max-width: 380px) {
-  #listaModelos {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .modelItem img {
-    height: 190px;
-  }
+.modelItem:hover::after {
+  opacity: 1;
 }
 
 /* ===============================
-   TABLET
+   ESTADOS
 ================================ */
+#listaModelos p {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px 0;
+  color: #777;
+  font-size: 14px;
+}
+
 @media (min-width: 768px) {
   .area-card h3 {
     font-size: 22px;
   }
 
-  #listaModelos {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
-  }
-
-  .modelItem img {
-    height: 180px;
-  }
-}
-
-/* ===============================
-   DESKTOP
-================================ */
-@media (min-width: 1024px) {
-  #listaModelos {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-  }
-
-  .modelItem img {
-    height: 200px;
-  }
-
-  /* hover só no desktop */
-  .modelItem:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
-  }
-
-  .modelItem:hover::after {
-    opacity: 1;
-  }
-}
-
-/* ===============================
-   DESKTOP GRANDE
-================================ */
-@media (min-width: 1440px) {
-  #listaModelos {
-    grid-template-columns: repeat(4, 1fr);
-  }
-
   .modelItem img {
     height: 220px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .modelItem img {
+    height: 240px;
   }
 }
