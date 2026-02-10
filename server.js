@@ -1490,7 +1490,7 @@ app.get("/api/usuario/perfil", auth, async (req, res) => {
       const result = await db.query(
         `
         SELECT
-          username,
+          nome_exibicao,
           instagram,
           tiktok,
           local,
@@ -2535,7 +2535,7 @@ app.put("/api/usuario/perfil", auth, async (req, res) => {
         `
         UPDATE clientes_dados
         SET
-          username = $1,
+          nome_exibicao = $1,
           instagram = $2,
           tiktok = $3,
           local = $4,
@@ -2543,7 +2543,7 @@ app.put("/api/usuario/perfil", auth, async (req, res) => {
         WHERE user_id = $6
         `,
         [
-          username?.trim() || null,
+          nome_exibicao?.trim() || null,
           instagram?.trim() || null,
           tiktok?.trim() || null,
           local?.trim() || null,
