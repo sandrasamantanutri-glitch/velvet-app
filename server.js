@@ -1484,22 +1484,20 @@ app.get("/api/usuario/perfil", auth, async (req, res) => {
     }
 
     if (req.user.role === "cliente") {
-      result = await db.query(
-        `
-        SELECT
-          COALESCE(cd.username, c.nome) AS nome_exibicao,
-          cd.instagram,
-          cd.tiktok,
-          cd.local,
-          cd.bio
-        FROM clientes c
-        LEFT JOIN clientes_dados cd
-          ON cd.user_id = c.user_id
-        WHERE c.user_id = $1
-        `,
-        [req.user.id]
-      );
-    }
+  result = await db.query(
+    `
+    SELECT
+      cd.username   AS nome_exibicao,
+      cd.instagram,
+      cd.tiktok,
+      cd.local,
+      cd.bio
+    FROM clientes_dados cd
+    WHERE cd.user_id = $1
+    `,
+    [req.user.id]
+  );
+}
 
     if (!result) {
       return res.status(403).json({});
