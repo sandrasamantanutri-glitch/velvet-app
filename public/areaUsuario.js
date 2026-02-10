@@ -162,23 +162,21 @@ async function carregarAssinantes() {
 }
 
 async function carregarPerfilBase() {
-  // PERFIL PRÓPRIO (CLIENTE OU MODELO)
-  if (modo === "privado") {
-    const res = await fetch(
-      usuario.role === "modelo"
-        ? "/api/modelo/me"
-        : "/api/cliente/me",
-      {
-        headers: { Authorization: "Bearer " + token }
-      }
-    );
+  const token = localStorage.getItem("token");
 
-    if (!res.ok) throw new Error("Perfil não encontrado");
+  const res = await fetch(
+    usuario.role === "modelo"
+      ? "/api/modelo/me"
+      : "/api/cliente/me",
+    {
+      headers: { Authorization: "Bearer " + token }
+    }
+  );
 
-    const perfil = await res.json();
-    aplicarPerfilNoDOM(perfil);
-    return;
-  }
+  if (!res.ok) throw new Error("Perfil não encontrado");
+
+  const perfil = await res.json();
+  aplicarPerfilNoDOM(perfil);
 }
 
 
