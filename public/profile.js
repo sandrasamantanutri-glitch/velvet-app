@@ -6,6 +6,7 @@
 
 window.socket = io();
 
+const role = localStorage.getItem("role");
 const params = new URLSearchParams(window.location.search);
 const modeloParam = params.get("id");
 const refParam = params.get("ref") || params.get("id");
