@@ -96,10 +96,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const usuario = getUsuarioLogado();
   if (!usuario) return;
 
-  // 🔹 PERFIL BASE (cliente e modelo)
+  // 🔹 dados pessoais (cliente + modelo)
+  carregarDadosPessoais();
+
+  // 🔹 perfil base (avatar / capa)
   carregarPerfilBase(usuario);
 
-  // 🔹 BLOCO EXCLUSIVO DO MODELO
+  // 🔹 somente modelo
   if (usuario.role === "modelo") {
     carregarResumoModelo();
     carregarAreaModelo(usuario.id);
@@ -108,9 +111,8 @@ document.addEventListener("DOMContentLoaded", () => {
       carregarAssinantes();
     }
   }
-
-  carregarDadosPessoais();
 });
+
 
 
 
