@@ -24,19 +24,18 @@ body.modal-open {
 .page-wrapper {
   min-height: 100vh;
   display: flex;
-  justify-content: center;   /* horizontal */
-  align-items: center;       /* vertical */
+  justify-content: center;
+  align-items: stretch; /* 🔑 não encolhe */
 }
 
 /* =========================
    LAYOUT PRINCIPAL
 ========================= */
 .landing {
-  width: 1400px;             /* 🔑 ESSENCIAL */
-  max-width: 100%;
+  width: 100%;
+  max-width: 1400px;
   display: flex;
-  background: transparent;
-  flex-direction: row-reverse; /* 🔥 INVERTE */
+  flex-direction: row-reverse;
 }
 
 /* =========================
