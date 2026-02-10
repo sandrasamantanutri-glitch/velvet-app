@@ -1621,53 +1621,7 @@ app.get("/api/me", auth, (req, res) => {
   });
 });
 
-
-// 🌟 FEED SIMPLES DE MODELOS (LOGADO)
-app.get("/api/feed/modelos", auth, async (req, res) => {
-  try {
-    const result = await db.query(`
-      SELECT
-        m.user_id,
-        m.nome_exibicao AS nome,
-        m.avatar
-      FROM modelos m
-      WHERE m.verificada = true
-      ORDER BY m.created_at DESC
-    `);
-
-    res.json(result.rows);
-
-  } catch (err) {
-    console.error("Erro feed modelos:", err);
-    res.status(500).json([]);
-  }
-});
-
-
-app.get("/api/modelo/:id/feed", auth, async (req, res) => {
-  try {
-    if (req.user.role !== "cliente") {
-      return res.status(403).json([]);
-    }
-
-    const { id } = req.params;
-
-    const result = await db.query(`
-      SELECT id, url, tipo, thumbnail_url
-FROM conteudos
-WHERE user_id = $1
-  AND tipo_conteudo = 'feed'
-ORDER BY criado_em DESC
-    `, [id]);
-
-    res.json(result.rows);
-
-  } catch (err) {
-    console.error("Erro feed público da modelo:", err);
-    res.status(500).json([]);
-  }
-});
-
+// FEED PÚBLICO DA MODELO (SÓ SE VALIDADA)
 app.get("/api/modelo/publico/:id/feed", async (req, res) => {
   const modelo_id = Number(req.params.id);
 
@@ -1676,6 +1630,19 @@ app.get("/api/modelo/publico/:id/feed", async (req, res) => {
   }
 
   try {
+    // 🔒 garante validação
+    const verificado = await db.query(`
+      SELECT 1
+      FROM modelos_verificacao
+      WHERE modelo_id = $1
+        AND status = 'aprovado'
+      LIMIT 1
+    `, [modelo_id]);
+
+    if (!verificado.rows.length) {
+      return res.status(403).json([]);
+    }
+
     const feed = await buscarFeedCompletoPorUserId(modelo_id);
     res.json(feed);
 
@@ -1685,54 +1652,60 @@ app.get("/api/modelo/publico/:id/feed", async (req, res) => {
   }
 });
 
+
+// PERFIL USUARIO (CLT,MODELO)
 app.get("/api/modelo/me", auth, async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const result = await db.query(
-      `
-       SELECT
-        m.*,
+    const result = await db.query(`
+      SELECT
+        m.user_id AS id,
+        m.nome_exibicao,
+        m.bio,
+        m.avatar,
+        m.capa,
+        m.local,
+        m.verificada,
         md.instagram,
         md.tiktok
       FROM modelos m
       LEFT JOIN modelos_dados md
         ON md.user_id = m.user_id
       WHERE m.user_id = $1
-      `,
-      [userId]
-    );
+    `, [userId]);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ erro: "Modelo não encontrado" });
+    if (!result.rows.length) {
+      return res.status(404).json({
+        error: "Perfil não encontrado"
+      });
     }
 
     res.json(result.rows[0]);
 
   } catch (err) {
-    console.error("ERRO GET /api/modelo/me:", err);
-    res.status(500).json({ erro: "Erro interno" });
+    console.error("Erro /api/modelo/me:", err);
+    res.status(500).json({ error: "Erro interno" });
   }
 });
 
-
-// 🌟 FEED PÚBLICO DE MODELOS (CLIENTE)
+// 🌟 FEED GLOBAL DE MODELOS (SÓ VALIDADOS)
 app.get("/api/modelos", auth, async (req, res) => {
   try {
-    // 🔐 apenas clientes
-    if (req.user.role !== "cliente") {
-      return res.status(403).json({ error: "Acesso negado" });
+    if (!["cliente", "modelo"].includes(req.user.role)) {
+      return res.status(403).json([]);
     }
 
     const result = await db.query(`
       SELECT
         m.user_id,
-        m.nome AS nome,
-        m.avatar,
-        m.nome_exibicao
+        m.nome_exibicao,
+        m.avatar
       FROM modelos m
-      LEFT JOIN modelos_dados md ON md.user_id = m.user_id
-      ORDER BY m.id DESC
+      JOIN modelos_verificacao v
+        ON v.modelo_id = m.user_id
+      WHERE v.status = 'aprovado'
+      ORDER BY v.created_at DESC
     `);
 
     res.json(result.rows);
@@ -1742,6 +1715,7 @@ app.get("/api/modelos", auth, async (req, res) => {
     res.status(500).json([]);
   }
 });
+
 
 // BUSCAR DADOS DO CLIENTE
 app.get("/api/cliente/dados", auth, async (req, res) => {
@@ -1894,6 +1868,7 @@ app.get(
   }
 );
 
+// 🌍 PERFIL PÚBLICO
 app.get("/api/modelo/publico/:id", async (req, res) => {
   const modelo_id = Number(req.params.id);
 
@@ -1902,30 +1877,7 @@ app.get("/api/modelo/publico/:id", async (req, res) => {
   }
 
   try {
-    // 🔍 BUSCA STATUS DE VERIFICAÇÃO
-    const verificacao = await db.query(
-      `
-      SELECT status
-      FROM modelos_verificacao
-      WHERE modelo_id = $1
-      ORDER BY created_at DESC
-      LIMIT 1
-      `,
-      [modelo_id]
-    );
-
-    // 🔒 BLOQUEIO DE PERFIL PÚBLICO
-    if (
-      verificacao.rows.length === 0 ||
-      verificacao.rows[0].status !== "aprovado"
-    ) {
-      return res.status(403).json({
-        error: "Perfil indisponível no momento"
-      });
-    }
-
-    const result = await db.query(
-      `
+    const result = await db.query(`
       SELECT
         m.user_id AS id,
         m.nome_exibicao,
@@ -1936,18 +1888,20 @@ app.get("/api/modelo/publico/:id", async (req, res) => {
         md.instagram,
         md.tiktok
       FROM modelos m
-      LEFT JOIN modelos_dados md ON md.user_id = m.user_id
-      JOIN modelos_verificacao v ON v.modelo_id = m.user_id
+      JOIN modelos_verificacao v
+        ON v.modelo_id = m.user_id
+      LEFT JOIN modelos_dados md
+        ON md.user_id = m.user_id
       WHERE m.user_id = $1
-      AND v.status = 'aprovado'
+        AND v.status = 'aprovado'
       ORDER BY v.created_at DESC
       LIMIT 1
-      `,
-      [modelo_id]
-    );
+    `, [modelo_id]);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Modelo não encontrada" });
+    if (!result.rows.length) {
+      return res.status(403).json({
+        error: "Perfil indisponível no momento"
+      });
     }
 
     res.json(result.rows[0]);
@@ -1957,6 +1911,7 @@ app.get("/api/modelo/publico/:id", async (req, res) => {
     res.status(500).json({ error: "Erro interno" });
   }
 });
+
 
 // ===============================
 // CHAT — LISTA PARA CLIENTE
