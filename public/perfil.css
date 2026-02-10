@@ -536,6 +536,69 @@ body.role-cliente .area-saldos {
   color: #fff;
 }
 
+/* ===============================
+   MODAL UPLOAD – PREÇO & DESCRIÇÃO
+================================ */
+
+.upload-especial {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* CAMPO PREÇO */
+#upload-preco {
+  width: 100%;
+  border: none;
+  border-radius: 14px;
+
+  padding: 12px 14px;
+  font-size: 18px;
+  font-weight: 600;
+
+  background: #f1f1f1;
+  color: #1E1E26;
+
+  outline: none;
+}
+
+/* prefixo visual R$ (opcional, só visual) */
+#upload-preco::placeholder {
+  color: #7b2cff;
+  font-weight: 500;
+}
+
+/* DESCRIÇÃO */
+#upload-descricao {
+  width: 100%;
+  border: none;
+  border-radius: 14px;
+
+  padding: 12px 14px;
+  font-size: 16px;
+  line-height: 1.4;
+
+  background: #f1f1f1;
+  color: #1E1E26;
+
+  resize: none;
+  min-height: 90px;
+
+  outline: none;
+}
+
+/* FOCO (toque / clique) */
+#upload-preco:focus,
+#upload-descricao:focus {
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(123, 44, 255, 0.35);
+}
+
+/* PLACEHOLDER */
+#upload-descricao::placeholder {
+  color: #9a9a9a;
+}
 
 /* ===============================
    MODAIS – MOBILE
