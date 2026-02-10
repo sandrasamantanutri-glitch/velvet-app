@@ -39,7 +39,7 @@ body {
 ================================ */
 #listaModelos {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(140px, 3fr));
   gap: 14px;
 }
 
@@ -102,18 +102,58 @@ body {
   font-size: 14px;
 }
 
-@media (min-width: 768px) {
+/* ===============================
+   FEED MOBILE FIRST – SMARTPHONE
+================================ */
+
+@media (max-width: 768px) {
+
+  body {
+    background: #f5f6fa;
+  }
+
+  .area-card {
+    margin: 12px auto;
+    padding: 0 12px 32px;
+  }
+
   .area-card h3 {
-    font-size: 22px;
+    font-size: 18px;
+    margin-bottom: 14px;
+  }
+
+  /* GRID MOBILE */
+  #listaModelos {
+    grid-template-columns: repeat(2, 1fr); /* 👈 2 colunas */
+    gap: 12px;
+  }
+
+  /* CARD */
+  .modelItem {
+    border-radius: 16px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  }
+
+  .modelItem:active {
+    transform: scale(0.98); /* feedback de toque */
+  }
+
+  /* IMAGEM MOBILE */
+  .modelItem img {
+    height: 180px; /* mais “quadrado” no mobile */
+  }
+}
+
+/* ===============================
+   TELAS MUITO PEQUENAS
+================================ */
+
+@media (max-width: 420px) {
+  #listaModelos {
+    grid-template-columns: 1fr; /* 👈 1 coluna */
   }
 
   .modelItem img {
     height: 220px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .modelItem img {
-    height: 240px;
   }
 }
