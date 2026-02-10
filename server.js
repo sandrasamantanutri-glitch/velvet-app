@@ -104,8 +104,14 @@ const uploadB2 = multer({
     contentType: multerS3.AUTO_CONTENT_TYPE,
     key: (req, file, cb) => {
       const ext = file.originalname.split(".").pop();
-      const nome = `velvet/${req.user.id}/${Date.now()}.${ext}`;
-      cb(null, nome);
+
+      // 👇 AQUI entra a regra
+      const pasta =
+        req.user.role === "modelo" ? "modelos" : "clientes";
+
+      const caminho = `velvet/${pasta}/${req.user.id}/${Date.now()}.${ext}`;
+
+      cb(null, caminho);
     }
   })
 });
@@ -2856,12 +2862,9 @@ app.post("/api/login", authLimiter, async (req, res) => {
   }
 });
 
-
-// UPLOAD AVATAR E CAPA
 app.post(
   "/uploadAvatar",
   auth,
-  onlyModelo,
   uploadB2.single("avatar"),
   async (req, res) => {
     try {
@@ -2870,16 +2873,33 @@ app.post(
       }
 
       const url = req.file.location;
+      const userId = req.user.id;
 
-      await db.query(
-        "UPDATE modelos SET avatar = $1 WHERE user_id = $2",
-        [url, req.user.id]
-      );
+      if (req.user.role === "modelo") {
+        await db.query(
+          "UPDATE modelos SET avatar = $1 WHERE user_id = $2",
+          [url, userId]
+        );
+      } 
+      else if (req.user.role === "cliente") {
+        await db.query(
+          `
+          INSERT INTO clientes_dados (user_id, avatar)
+          VALUES ($1, $2)
+          ON CONFLICT (user_id)
+          DO UPDATE SET avatar = EXCLUDED.avatar
+          `,
+          [userId, url]
+        );
+      } 
+      else {
+        return res.status(403).json({ error: "Role inválida" });
+      }
 
       res.json({ url });
 
     } catch (err) {
-      console.error("Erro upload avatar B2:", err);
+      console.error("Erro upload avatar:", err);
       res.status(500).json({ error: "Erro ao atualizar avatar" });
     }
   }
@@ -2888,7 +2908,6 @@ app.post(
 app.post(
   "/uploadCapa",
   auth,
-  onlyModelo,
   uploadB2.single("capa"),
   async (req, res) => {
     try {
@@ -2897,20 +2916,38 @@ app.post(
       }
 
       const url = req.file.location;
+      const userId = req.user.id;
 
-      await db.query(
-        "UPDATE modelos SET capa = $1 WHERE user_id = $2",
-        [url, req.user.id]
-      );
+      if (req.user.role === "modelo") {
+        await db.query(
+          "UPDATE modelos SET capa = $1 WHERE user_id = $2",
+          [url, userId]
+        );
+      } 
+      else if (req.user.role === "cliente") {
+        await db.query(
+          `
+          INSERT INTO clientes_dados (user_id, capa)
+          VALUES ($1, $2)
+          ON CONFLICT (user_id)
+          DO UPDATE SET capa = EXCLUDED.capa
+          `,
+          [userId, url]
+        );
+      } 
+      else {
+        return res.status(403).json({ error: "Role inválida" });
+      }
 
       res.json({ url });
 
     } catch (err) {
-      console.error("Erro upload capa B2:", err);
+      console.error("Erro upload capa:", err);
       res.status(500).json({ error: "Erro ao atualizar capa" });
     }
   }
 );
+
 
 
 // Salvar / atualizar dados
