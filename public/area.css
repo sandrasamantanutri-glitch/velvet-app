@@ -32,6 +32,10 @@ body.role-modelo .only-modelo {
   display: block;
 }
 
+body.role-cliente .area-saldos {
+  display: none !important;
+}
+
 /* ===============================
    CONTAINER PRINCIPAL
 ================================ */
