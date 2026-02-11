@@ -10,7 +10,6 @@ const socket = io({
 
 socket.emit("auth", { token });
 
-// params
 const params = new URLSearchParams(location.search);
 const clienteId = Number(params.get("clienteId"));
 
@@ -23,7 +22,6 @@ chatBox.addEventListener("scroll", () => {
 });
 
 const input = document.getElementById("msgInput");
-
 
 let modeloId = null;
 let sala = null;
@@ -594,7 +592,7 @@ function excluirMensagem() {
 
 async function carregarInfoCliente(clienteId) {
   try {
-    const res = await fetch(`/api/cliente/chat/${clienteId}`, {
+    const res = await fetch(`/api/chat/cliente/${clienteId}`, {
       headers: {
         Authorization: "Bearer " + token
       }
