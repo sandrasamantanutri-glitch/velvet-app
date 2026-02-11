@@ -172,6 +172,21 @@ O processo de análise pode levar até <strong>48 horas</strong>, dependendo do 
    <div class="footer-copy"> © 2026 Velvet. Todos os direitos reservados.</div>
   </footer>
 
+    <script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    alert("Para ter acesso a essa página deve fazer seu login ou seu cadastro.");
+
+    window.location.href = "/index.html";
+    return;
+  }
+
+});
+</script>
+
  <script src="/socket.io/socket.io.js"></script>
  <script src="/header.js"></script>
  <script src="/areaUsuario.js"></script>
