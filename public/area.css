@@ -209,6 +209,7 @@ body.role-cliente .area-saldos {
   background: #f1f1f1;
   border-radius: 14px;
   padding: 15px 18px;
+  margin-bottom: 12px;
   display: flex;
   flex-direction: column;
   gap: 4px;
