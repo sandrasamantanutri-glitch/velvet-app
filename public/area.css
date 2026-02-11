@@ -263,14 +263,6 @@ body.role-cliente .area-saldos {
     left: 50%;
     transform: translateX(-50%);
   }
-
-  .perfil-nome,
-  .area-assinantes {
-    margin-left: 0;
-    text-align: center;
-    margin-top: 80px;
-  }
-
   .area-saldos {
     padding-top: 20px;
   }
