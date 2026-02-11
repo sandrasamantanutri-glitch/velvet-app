@@ -1994,7 +1994,7 @@ app.get("/api/chat/cliente", authCliente, async (req, res) => {
 // ===============================
 app.get("/api/chat/modelo", authModelo, async (req, res) => {
   try {
-    const modeloId = req.user.id;
+    const modelo_id = req.user.id;
 
     const { rows } = await db.query(`
 SELECT DISTINCT ON (c.user_id)

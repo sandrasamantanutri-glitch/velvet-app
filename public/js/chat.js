@@ -514,9 +514,9 @@ function formatarHora(data) {
   });
 }
 
-async function marcarComoLido(clienteId) {
+async function marcarComoLido(cliente_id) {
   try {
-    await fetch(`/api/chat/marcar-lido/${clienteId}`, {
+    await fetch(`/api/chat/marcar-lido/${cliente_id}`, {
       method: "POST",
       headers: {
         Authorization: "Bearer " + localStorage.getItem("token")
@@ -590,9 +590,9 @@ function excluirMensagem() {
   fecharMenuMensagem();
 }
 
-async function carregarInfoCliente(clienteId) {
+async function carregarInfoCliente(cliente_id) {
   try {
-    const res = await fetch(`/api/chat/cliente/${clienteId}`, {
+    const res = await fetch(`/api/chat/cliente/${cliente_id}`, {
       headers: {
         Authorization: "Bearer " + token
       }
