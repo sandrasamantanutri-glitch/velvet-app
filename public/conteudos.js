@@ -230,33 +230,3 @@ async function excluirConteudo(conteudoId) {
   }
 }
 
-async function gerarThumbnailVideo(videoUrl) {
-  const tmpDir = os.tmpdir();
-  const thumbPath = path.join(tmpDir, `thumb-${Date.now()}.jpg`);
-
-  await new Promise((resolve, reject) => {
-    ffmpeg(videoUrl) // 👈 usa direto a URL
-      .screenshots({
-        timestamps: ["1"],
-        filename: path.basename(thumbPath),
-        folder: tmpDir,
-        size: "400x?"
-      })
-      .on("end", resolve)
-      .on("error", reject);
-  });
-
-  const thumbBuffer = fs.readFileSync(thumbPath);
-
-  const upload = await s3.upload({
-    Bucket: process.env.B2_BUCKET,
-    Key: `thumbs/thumb-${Date.now()}.jpg`,
-    Body: thumbBuffer,
-    ContentType: "image/jpeg",
-    ACL: "public-read"
-  }).promise();
-
-  fs.unlinkSync(thumbPath);
-
-  return upload.Location;
-}
