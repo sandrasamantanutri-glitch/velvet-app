@@ -4,21 +4,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-   <title>Minhas Informações | Velvet</title>
+   <title>Area de Usuário</title>
   <link rel="stylesheet" href="area.css"> 
 
 </head>
 
 <body>
  <div id="header-container"></div>
+ <main class="page-container">
 
 <section class="area-card">
 <div class="perfil-capa">
   <img id="profileCapa" src="assets/capa.png" alt="Capa do perfil">
   <button class="btn-camera capa" id="btnCapa" title="Alterar capa">📷</button>
   <input type="file" id="inputCapa" accept="image/*" hidden>
-</div>
-
   </div>
 
   <div class="perfil-avatar">
@@ -27,13 +26,12 @@
   <input type="file" id="inputAvatar" accept="image/*" hidden>
   </div>
 
-<div class="perfil-nome" id="profileName"></div>
-<div class="area-assinantes only-modelo" id="perfil-assinantes">
-  <span id="vip-total">0</span> assinantes VIP
-</div>
+  <div class="perfil-nome" id="profileName"></div>
+  <div class="area-assinantes only-modelo" id="perfil-assinantes">
+  <span id="vip-total"></span> assinantes VIP
+  </div>
 
-  <!-- SALDOS -->
-<div class="area-saldos">
+ <div class="area-saldos">
   <!-- visível só para modelo -->
   <div class="saldo-box only-modelo">
     <span class="saldo-titulo">Ganhos de Hoje</span>
@@ -45,7 +43,7 @@
     <span class="saldo-titulo">Ganhos do Mês</span>
     <strong class="saldo-valor" id="areaUsuarioGanhosMes">R$ 0,00</strong>
   </div>
-</div>
+  </div>
 
 </section>
 
@@ -77,6 +75,8 @@
     </div>
   </section>
   </section>
+
+ </main>
 
   <footer class="footer">
   <div class="footer-links">
