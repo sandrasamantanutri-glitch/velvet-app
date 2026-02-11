@@ -223,7 +223,6 @@ window.pagarComPix = async function ({ tipo, modelo_id }) {
       throw new Error("Pagamento Pix disponível apenas para VIP");
     }
 
-    const token = localStorage.getItem("token");
     if (!token) {
       throw new Error("Sessão expirada. Faça login novamente.");
     }
@@ -454,7 +453,6 @@ async function pagarComCartao({ tipo, modelo_id }) {
   initStripe();
 
   try {
-    const token = localStorage.getItem("token");
     if (!token) throw new Error("Sessão expirada");
 
     mostrarMetodo("cartao");
@@ -639,8 +637,6 @@ window.confirmarPix = function () {
 
 async function iniciarCartaoMidia() {
   initStripe();
-
-  const token = localStorage.getItem("token");
   if (!token) {
     alert("Sessão expirada");
     return;
