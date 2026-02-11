@@ -237,6 +237,7 @@ body {
   text-align: center;
   opacity: .6;
   font-size: 13px;
+  text-decoration: none;
 }
 
 .footer-links {
@@ -246,10 +247,12 @@ body {
   margin-bottom: 8px;
 }
 
-.footer-links a:hover {
-  color: #9e6bff;
-}
+.footer-links a {
+  color: #1E1E26;
+  text-decoration: none !important;
+  border-bottom: none;
 
+}
 
 
 /* ===============================
@@ -266,7 +269,7 @@ body {
   }
 
   .btn-voltar {
-    top: 60px;
+    top: 65px;
     left: 15px;
   }
 
