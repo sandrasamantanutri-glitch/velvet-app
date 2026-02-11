@@ -19,7 +19,7 @@
 
     <h1>Meus conteúdos à venda</h1>
     <button id="btnNovoConteudo" class="btn-principal">
-      + Novo conteúdo
+      Adicionar novo conteúdo
     </button>
 
 
@@ -38,7 +38,13 @@
 
   <div class="modal-box">
     <h2>Novo conteúdo</h2>
-    <input type="file" id="fileConteudo" />
+    <div class="file-upload">
+  <input type="file" id="fileConteudo" hidden>
+  <label for="fileConteudo" class="btn-file">
+    📁 Escolher mídia
+  </label>
+  <span id="fileName">Nenhuma mídia selecionada</span>
+</div>
     <button id="btnEnviarConteudo" class="btn-principal">
       Enviar
     </button>

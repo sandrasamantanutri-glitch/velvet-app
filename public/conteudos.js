@@ -17,78 +17,91 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnFechar = document.getElementById("btnFecharModal");
   const btnEnviar = document.getElementById("btnEnviarConteudo");
 
+  // 🔥 NOVO — mostrar nome do ficheiro
+  const fileInput = document.getElementById("fileConteudo");
+  const fileName = document.getElementById("fileName");
+
+  if (fileInput) {
+    fileInput.addEventListener("change", () => {
+      if (fileInput.files.length > 0) {
+        fileName.textContent = fileInput.files[0].name;
+      } else {
+        fileName.textContent = "Nenhum ficheiro selecionado";
+      }
+    });
+  }
+
   if (btnNovo) {
     btnNovo.addEventListener("click", () => {
       modal.classList.remove("hidden");
     });
   }
 
-   if (btnFechar) {
+  if (btnFechar) {
     btnFechar.addEventListener("click", fecharModalNovoConteudo);
   }
 
-   if (btnEnviar) {
-  btnEnviar.addEventListener("click", async () => {
-    const fileInput = document.getElementById("fileConteudo");
-    const file = fileInput.files[0];
+  if (btnEnviar) {
+    btnEnviar.addEventListener("click", async () => {
 
-    if (!file) {
-      alert("Selecione um arquivo");
-      return;
-    }
+      const file = fileInput.files[0];
 
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      btnEnviar.disabled = true;
-      btnEnviar.textContent = "Enviando...";
-
-      const res = await fetch("/api/conteudos", {
-        method: "POST",
-        headers: {
-          Authorization: "Bearer " + token
-        },
-        body: formData
-      });
-
-      if (!res.ok) {
-        const erro = await res.text();
-        throw new Error(erro || "Erro ao enviar conteúdo");
+      if (!file) {
+        alert("Selecione um arquivo");
+        return;
       }
 
-      // ✅ sucesso
-      fecharModalNovoConteudo();
-      await carregarConteudos();
+      const formData = new FormData();
+      formData.append("file", file);
 
-      // reset input
-      fileInput.value = "";
+      try {
+        btnEnviar.disabled = true;
+        btnEnviar.textContent = "Enviando...";
 
-    } catch (err) {
-      console.error("Erro upload:", err.message);
-      alert("Erro ao enviar conteúdo");
-    } finally {
-      btnEnviar.disabled = false;
-      btnEnviar.textContent = "Enviar";
-    }
-  });
-}
+        const res = await fetch("/api/conteudos", {
+          method: "POST",
+          headers: {
+            Authorization: "Bearer " + token
+          },
+          body: formData
+        });
 
-const btnFecharViewer = document.getElementById("btnFecharViewer");
-const modalViewer = document.getElementById("modalVisualizarConteudo");
+        if (!res.ok) {
+          const erro = await res.text();
+          throw new Error(erro || "Erro ao enviar conteúdo");
+        }
 
-if (btnFecharViewer) {
-  btnFecharViewer.addEventListener("click", fecharViewer);
-}
+        fecharModalNovoConteudo();
+        await carregarConteudos();
 
-if (modalViewer) {
-  modalViewer.addEventListener("click", (e) => {
-    if (e.target.classList.contains("modal-backdrop")) {
-      fecharViewer();
-    }
-  });
-}
+        // 🔥 reset visual
+        fileInput.value = "";
+        fileName.textContent = "Nenhum ficheiro selecionado";
 
+      } catch (err) {
+        console.error("Erro upload:", err.message);
+        alert("Erro ao enviar conteúdo");
+      } finally {
+        btnEnviar.disabled = false;
+        btnEnviar.textContent = "Enviar";
+      }
+    });
+  }
+
+  const btnFecharViewer = document.getElementById("btnFecharViewer");
+  const modalViewer = document.getElementById("modalVisualizarConteudo");
+
+  if (btnFecharViewer) {
+    btnFecharViewer.addEventListener("click", fecharViewer);
+  }
+
+  if (modalViewer) {
+    modalViewer.addEventListener("click", (e) => {
+      if (e.target.classList.contains("modal-backdrop")) {
+        fecharViewer();
+      }
+    });
+  }
 });
 
 async function carregarConteudos() {

@@ -287,3 +287,31 @@ body {
   aspect-ratio: 16 / 9;
   overflow: hidden;
 }
+
+.file-upload {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 15px 0;
+}
+
+.btn-file {
+  background: linear-gradient(135deg, #7B2CFF, #9E6BFF);
+  color: white;
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: 0.3s ease;
+}
+
+.btn-file:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+
+#fileName {
+  font-size: 14px;
+  color: #555;
+}
