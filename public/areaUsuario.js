@@ -483,6 +483,11 @@ async function carregarDadosPessoais() {
   if (!res.ok) return;
 
   const dados = await res.json();
+  if (dados.status === "aprovado") {
+  const banner = document.getElementById("areaBanner");
+  if (banner) banner.style.display = "none";
+}
+
   const form = document.getElementById("formDadosPessoais");
   if (!form) return;
 
