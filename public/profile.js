@@ -185,7 +185,7 @@ async function carregarPerfilBase() {
     return;
   }
 
-  🌍 PERFIL PÚBLICO
+  //PERFIL PÚBLICO
   const res = await fetch(`/api/modelo/publico/${modelo_id}`);
   if (!res.ok) throw new Error("Perfil público não encontrado");
 
