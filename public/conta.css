@@ -141,7 +141,7 @@ body {
 }
 
 .form-group label {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   opacity: .75;
 }
@@ -221,7 +221,7 @@ body {
   display: flex;
   align-items: flx-start;
   gap: 12px;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.5;
   margin-top: 15px;
 }
@@ -419,7 +419,7 @@ body {
 .erro-danger {
   margin-top: 10px;
   font-size: 13px;
-  color: #ff4d4f;
+  color: #7b2cff;
 }
 
 /* ===============================

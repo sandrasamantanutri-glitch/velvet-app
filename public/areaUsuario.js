@@ -93,6 +93,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // PERFIL VISUAL
   carregarPerfilBase(user);
   carregarDadosUsuario();
+  carregarDadosPessoais();
 
   // SOMENTE MODELO
   if (user.role === "modelo") {
