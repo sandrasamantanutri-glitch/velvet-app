@@ -258,19 +258,18 @@ h2 #modeloNome {
   align-items: center;
   gap: 10px;
   width: 100%;
+  font-size: 16px;
 }
 
 /* INPUT */
 #msgInput {
   flex: 1;
-  height: 36px;                 /* 🔥 mesma altura do botão */
+  height: 36px;                 
   padding: 0 14px;
-
-  border-radius: 14px;          /* 🔥 igual chatcliente */
+  border-radius: 14px;          
   border: 1px solid #9E6BFF;
-
   font-size: 16px;
-  line-height: normal;          /* 🔥 remove efeito cápsula */
+  line-height: normal;         
 }
 
 /* BOTÃO 📦 */

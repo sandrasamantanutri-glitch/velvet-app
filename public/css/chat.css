@@ -6,6 +6,8 @@
 }
 
 body {
+  height: 100%;
+  overflow: hidden;
   margin: 0;
   font-family: 'Inter', sans-serif;
   background: #f1f1f1;
@@ -69,14 +71,12 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-
   height: 90px;
   padding: 0 12px;
-
   display: flex;
   align-items: center;
   gap: 20px;
-
+  font-size: 16px;
   background: #f1f1f1;
   border-top: 1px solid #C9C9C9;
   z-index: 50;
@@ -141,7 +141,7 @@ body {
 
 /* botão enviar (MAIOR) */
 .btn-enviar1 {
-  width: 40x;
+  width: 40px;
   height: 40px;
   border-radius: 50%;
 
@@ -416,6 +416,8 @@ body {
     height: 70px;
     padding: 0 10px;
     gap: 12px;
+    font-size: 16px;
+
   }
 
   #msgInput {
