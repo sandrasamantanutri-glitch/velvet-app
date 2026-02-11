@@ -2736,15 +2736,6 @@ app.put("/api/usuario/dados", auth, async (req, res) => {
       cidade?.trim() || null,
       pais?.trim() || null
     ]);
-
-    // 🆕 Se nunca entrou em análise, cria registro
-    if (!verificacao.rows.length) {
-      await db.query(`
-        INSERT INTO modelos_verificacao (modelo_id, status, created_at)
-        VALUES ($1, 'em_analise', NOW())
-      `, [userId]);
-    }
-
     res.json({ sucesso: true });
 
   } catch (err) {
