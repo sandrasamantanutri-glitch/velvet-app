@@ -122,6 +122,7 @@ body {
   margin: 15vh auto;
   padding: 20px;
   border-radius: 12px;
+  gap: 18px !important;
 }
 
 .modal-viewer {
