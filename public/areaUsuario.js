@@ -483,9 +483,11 @@ async function carregarDadosPessoais() {
   if (!res.ok) return;
 
   const dados = await res.json();
-  if (dados.status === "aprovado") {
-  const banner = document.getElementById("areaBanner");
-  if (banner) banner.style.display = "none";
+  if (
+  user?.role === "modelo" &&
+  dados.status === "aprovado"
+) {
+  document.getElementById("areaBanner")?.classList.add("hidden");
 }
 
   const form = document.getElementById("formDadosPessoais");
