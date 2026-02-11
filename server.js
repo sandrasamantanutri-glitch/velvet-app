@@ -1151,19 +1151,29 @@ ORDER BY created_at ASC;
 
       msg.quantidade = midias.length;
 
-      // 🔐 REGRAS DE VISUALIZAÇÃO
-      if (
-  socket.user.role === "cliente" &&
-  Number(msg.preco) > 0 &&
-  msg.visto !== true
-) {
-  // 🔒 cliente ainda não pagou
-  msg.midias = midias;      // 🔥 NÃO ESCONDE MAIS
-  msg.bloqueado = true;
+// 🔐 REGRA REAL DE PAGAMENTO
+if (Number(msg.preco) > 0) {
+
+  const pagoRes = await db.query(`
+    SELECT 1
+    FROM conteudo_pacotes
+    WHERE message_id = $1
+      AND cliente_id = $2
+      AND status = 'pago'
+    LIMIT 1
+  `, [msg.id, cliente_id]);
+
+  const pago = pagoRes.rowCount > 0;
+
+  msg.visto = pago;
+  msg.bloqueado = !pago;
+
 } else {
-  msg.midias = midias;
+  msg.visto = true;
   msg.bloqueado = false;
 }
+
+msg.midias = midias;
     }
 
     // 4️⃣ envia histórico SOMENTE para quem pediu
