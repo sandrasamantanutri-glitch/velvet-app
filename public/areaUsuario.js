@@ -472,6 +472,12 @@ async function carregarDadosPessoais() {
   form.estado.value   = dados.estado || "";
   form.cidade.value   = dados.cidade || "";
   form.pais.value     = dados.pais || "";
+
+   if (dados.status === "aprovado") {
+    bloquearFormulario(form);
+    mostrarStatusVerificacao("aprovado");
+    document.querySelector(".btn-salvar")?.remove();
+  }
 }
 
 
