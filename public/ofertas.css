@@ -75,11 +75,6 @@ body {
   font-size: 20px;
 }
 
-.btn-voltar {
-  background: none;
-  border: none;
-  font-size: 20px;
-}
 
 /* tabs */
 .ofertas-tabs {
@@ -464,4 +459,27 @@ body {
 .btn-plano-salvar:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 18px rgba(123, 44, 255, 0.3);
+}
+
+.btn-voltar {
+  position:relative;
+  left: 40px;
+  border: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.btn-voltar img {
+  width: 30px;
+}
+
+.btn-voltar:hover {
+  transform: scale(1.08);
 }

@@ -3,19 +3,20 @@
 
 <head>
   <meta charset="UTF-8">
-   <title>Perfil </title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+   <title>Conteúdos Privados</title>
   <link rel="stylesheet" href="/ofertas.css">
 
 </head>
 <body>
+ <div id="header-container"></div>
 
-<header class="app-header">
-  <div class="header-inner">
-   <img src="/assets/velvet.png" alt="Velvet" class="velvet-logo">
-   <a href="/feed.html" title="Feed"><img src="/assets/feed.png" alt="Feed"></a>
-   <a href="/perfil.html" title="Perfil"><img src="/assets/perfil.png" alt="Perfil"></a>
-   <button id="btnMensagem"><img src="assets/chat.png" alt="Chat"><span id="badgeUnread" class="badge-unread hidden">0</span></button>
-  </div>
+    <section class="area-card">
+     <button type="button" class="btn-voltar" onclick="history.back()">
+      <img src="/assets/voltar.png" alt="Voltar">
+     </button>
+
+    <h3>Meus conteúdos à venda</h3>
 
 </header>
 
@@ -24,7 +25,6 @@
 
   <!-- HEADER -->
   <div class="ofertas-topo">
-    <button class="btn-voltar">←</button>
     <h2>Ofertas</h2>
   </div>
 
