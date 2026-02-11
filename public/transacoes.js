@@ -1,4 +1,6 @@
 let todasTransacoes = [];
+let paginaAtual = 1;
+const itensPorPagina = 10;
 
 document.addEventListener("DOMContentLoaded", async () => {
   await carregarTransacoes();
@@ -54,15 +56,21 @@ function aplicarFiltros() {
 // ================================
 function renderTransacoes(transacoes) {
   const lista = document.getElementById("listaTransacoes");
+  const paginacao = document.getElementById("paginacao");
 
   if (!transacoes.length) {
     lista.innerHTML = "Nenhuma transação encontrada.";
+    paginacao.innerHTML = "";
     return;
   }
 
   lista.innerHTML = "";
 
-  transacoes.forEach(t => {
+  const inicio = (paginaAtual - 1) * itensPorPagina;
+  const fim = inicio + itensPorPagina;
+  const paginaItems = transacoes.slice(inicio, fim);
+
+  paginaItems.forEach(t => {
     const card = document.createElement("div");
     card.className = "transacao-card";
 
@@ -91,6 +99,31 @@ function renderTransacoes(transacoes) {
 
     lista.appendChild(card);
   });
+
+  gerarPaginacao(transacoes.length);
+}
+
+function gerarPaginacao(totalItens) {
+  const paginacao = document.getElementById("paginacao");
+  paginacao.innerHTML = "";
+
+  const totalPaginas = Math.ceil(totalItens / itensPorPagina);
+
+  for (let i = 1; i <= totalPaginas; i++) {
+    const btn = document.createElement("button");
+    btn.textContent = i;
+
+    if (i === paginaAtual) {
+      btn.classList.add("ativa");
+    }
+
+    btn.addEventListener("click", () => {
+      paginaAtual = i;
+      renderTransacoes(todasTransacoes);
+    });
+
+    paginacao.appendChild(btn);
+  }
 }
 
 // ================================
