@@ -39,7 +39,13 @@ if (modeloParam) {
 
 // SALVA USUARIO LOGADO EM LOCALSTORAGE
 if (modo === "privado") {
-  modelo_id = Number(localStorage.getItem("modelo_id"));
+  const storedId = localStorage.getItem("modelo_id");
+
+  if (storedId && !isNaN(Number(storedId))) {
+    modelo_id = Number(storedId);
+  } else {
+    console.warn("modelo_id não encontrado no localStorage");
+  }
 }
 
 // ASSINATURAS/OFERTAS ///////
