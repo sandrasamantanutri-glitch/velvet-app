@@ -593,7 +593,7 @@ function excluirMensagem() {
 
 async function carregarInfoCliente(cliente_id) {
   try {
-    const res = await fetch(`/api/chat/cliente/${cliente_id}`, {
+    const res = await fetch(`/api/chat/cliente_id/${cliente_id}`, {
       headers: {
         Authorization: "Bearer " + token
       }
