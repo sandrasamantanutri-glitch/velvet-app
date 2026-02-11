@@ -1,0 +1,74 @@
+.lista-transacoes {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.transacao-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.transacao-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.transacao-tipo {
+  font-weight: 600;
+  color: #1E1E26;
+}
+
+.transacao-data {
+  font-size: 13px;
+  color: #777;
+}
+
+.transacao-valor {
+  font-weight: 700;
+  color: #7B2CFF;
+}
+
+.transacao-status {
+  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+.status-pago {
+  background: #E6F8ED;
+  color: #1E9E4A;
+}
+
+.status-pendente {
+  background: #FFF4E6;
+  color: #E67E22;
+}
+
+.status-reclamado {
+  background: #FDECEA;
+  color: #E74C3C;
+}
+
+.btn-reclamar {
+  margin-top: 8px;
+  background: transparent;
+  border: 1px solid #E74C3C;
+  color: #E74C3C;
+  padding: 6px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.btn-reclamar:hover {
+  background: #E74C3C;
+  color: #fff;
+}

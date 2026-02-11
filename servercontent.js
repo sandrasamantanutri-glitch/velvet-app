@@ -506,6 +506,59 @@ router.get("/relatorios",
     );
   }
 );
+
+router.get("/api/transacoes_cliente", auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const role = req.user.role;
+
+    let vipQuery;
+    let conteudoQuery;
+
+    if (role === "cliente") {
+
+      vipQuery = await db.query(`
+        SELECT
+          id,
+          'assinatura' AS tipo,
+          valor_total AS valor,
+          CASE 
+            WHEN ativo = true THEN 'pago'
+            ELSE 'inativo'
+          END AS status,
+          created_at
+        FROM vip_subscriptions
+        WHERE cliente_id = $1
+      `, [userId]);
+
+      conteudoQuery = await db.query(`
+        SELECT
+          id,
+          'midia' AS tipo,
+          valor_total AS valor,
+          status,
+          criado_em AS created_at
+        FROM conteudo_pacotes
+        WHERE cliente_id = $1
+      `, [userId]);
+
+    } else {
+      return res.status(403).json({ error: "Apenas cliente pode acessar" });
+    }
+
+    const transacoes = [
+      ...vipQuery.rows,
+      ...conteudoQuery.rows
+    ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    res.json(transacoes);
+
+  } catch (err) {
+    console.error("Erro buscar transações cliente:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
 // 🔐 ENDPOINT DE ACESSO AO CONTEÚDO
 router.get("/access", authCliente, async (req, res) => {
   const message_id = Number(req.query.message_id);

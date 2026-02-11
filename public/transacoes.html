@@ -1,40 +1,44 @@
-<!DOCTYPE html>
 <html lang="pt-BR">
 
 <head>
   <meta charset="UTF-8">
-  <title>Transações</title>
+   <title>Extrato de gastos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/area.css">
+  <link rel="stylesheet" href="/transacoes.css">
 </head>
 
 <body>
-
  <div id="header-container"></div>
 
  <section class="area-card">
-    <button type="button" class="btn-voltar" onclick="history.back()"> <img src="/assets/voltar.png" alt="Voltar"> </button>
 
-   <h3>Transações</h3>
+  <button type="button" class="btn-voltar" onclick="history.back()"> <img src="/assets/voltar.png" alt="Voltar"> </button>
 
- <main class="container">
-  <span class="page-title">Transações</span>
+ <h3>Transações</h3>
+  <div class="filtros">
+    <select id="filtroTipo">
+      <option value="">Todos</option>
+      <option value="assinatura">Assinaturas</option>
+      <option value="midia">Mídias</option>
+    </select>
 
-<div id="lista">Carregando compras...</div>
-
-<script>
-
-</script>
-<style>
-
-    <footer class="footer">
-  <div class="footer-links">
-    <a href="/terms.html">Termos de Uso</a>
-    <a href="/privacy.html">Política de Privacidade</a>
-    <a href="/policies.html">Política de Utilização</a>
-  </div>
-  <div class="footer-copy">
-    © 2026 Velvet. Todos os direitos reservados.
+    <select id="filtroStatus">
+      <option value="">Todos status</option>
+      <option value="pago">Pago</option>
+      <option value="pendente">Pendente</option>
+      <option value="reclamado">Reclamado</option>
+    </select>
   </div>
 
-  <script src="/header.js"></script>
+  <div id="listaTransacoes" class="lista-transacoes">
+    Carregando transações...
+  </div>
+
+</section>
+
+<script src="/transacoes.js"></script>
+<script src="/header.js"></script>
+
 </body>
 </html>
