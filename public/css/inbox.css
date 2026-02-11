@@ -12,57 +12,45 @@ body {
   color: #7B2CFF;
 }
 
-.hero {
-  position: sticky;
+.area-card {
+  max-width: 900px;
+  margin: 90px auto 40px;
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  position: relative;
+}
+
+.area-card h3 {
+  font-size: 26px;
+  text-align: center;
+  margin: 30px 0 10px;
+  font-weight: 700;
+  color: #1E1E26;
+}
+
+.btn-voltar {
+  position:relative;
+  left: 40px;
+  border: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: none;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  height: 90px;           
-  padding: 0 16px;       
-  box-sizing: border-box;
+  justify-content: center;
+  cursor: pointer;
+  transition: 0.2s ease;
 }
 
-.velvet-logo {
-  max-height: 180px;   
-  width: auto;
-  display: flex;
-  align-items: center;
+.btn-voltar img {
+  width: 30px;
 }
 
-.velvet-logo {
-  transform: translateY(-1px);
-}
-
-.hero-icons {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
-
-.hero-icons img {
-  width: 26px;
-  height: 26px;
-}
-
-.hero-icons img:hover {
-  opacity: 1;
-}
-
-@media (max-width: 600px) {
-  .hero {
-    height: 90px;
-    padding: 0 12px;
-  }
-
-  .velvet-logo {
-    width: 150px;
-    height: 150px;
-  }
-
-  .hero-icons img {
-    width: 22px;
-    height: 22px;
-  }
+.btn-voltar:hover {
+  transform: scale(1.08);
 }
 
 /* ===============================
