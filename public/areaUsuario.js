@@ -44,10 +44,14 @@ function preencherFormulario(formId, dados) {
 function bloquearFormulario(form) {
   if (!form) return;
 
-  form.querySelectorAll("input, select, textarea").forEach(el => {
+  form.querySelectorAll("input, select, textarea, button").forEach(el => {
     el.disabled = true;
   });
+
+  form.style.pointerEvents = "none";
+  form.style.opacity = "0.6";
 }
+
 
 function mostrarStatusVerificacao(status) {
   const box = document.getElementById("statusVerificacao");
@@ -468,13 +472,6 @@ async function carregarDadosPessoais() {
   form.estado.value   = dados.estado || "";
   form.cidade.value   = dados.cidade || "";
   form.pais.value     = dados.pais || "";
-
-  // 🔒 BLOQUEIO DEFINITIVO SE APROVADO
-  if (dados.status === "aprovado") {
-    bloquearFormulario(form);
-    mostrarStatusVerificacao("aprovado");
-    document.querySelector(".btn-salvar")?.remove();
-  }
 }
 
 
