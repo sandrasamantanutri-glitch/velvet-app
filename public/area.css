@@ -141,9 +141,10 @@ body.role-cliente .area-saldos {
 /*SALDOS */
 .area-saldos {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 15px;
   padding: 25px 30px 30px;
+  text-align: center;
 }
 
 .saldo-box {
@@ -185,6 +186,7 @@ body.role-cliente .area-saldos {
   font-size: 30px;
   margin-bottom: 18px;
   display: block;
+  text-align: center;
 
 }
 
@@ -198,7 +200,7 @@ body.role-cliente .area-saldos {
 }
 
 .area-banner img {
-  width: 50%;
+  width: 100%;
   object-fit: cover;
 
 }
