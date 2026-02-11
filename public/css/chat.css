@@ -370,5 +370,86 @@ body {
   cursor: pointer;
 }
 
+/* ===============================
+   MOBILE OTIMIZADO
+================================ */
+@media (max-width: 768px) {
+
+  body {
+    background: #fff;
+  }
+
+  .area-card {
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+
+  /* Header mais compacto */
+  .chat-topo {
+    height: 60px;
+    padding: 0 10px;
+  }
+
+  .chat-avatar {
+    width: 36px;
+    height: 36px;
+  }
+
+  .chat-nome {
+    font-size: 15px;
+  }
+
+  .chat-status {
+    font-size: 12px;
+  }
+
+  /* Área de mensagens ajustada */
+  .chat-box {
+    top: 60px;       /* altura real do header */
+    bottom: 70px;    /* altura real do input */
+    padding: 10px;
+  }
+
+  /* Input fixo mais compacto */
+  .chat-input {
+    height: 70px;
+    padding: 0 10px;
+    gap: 12px;
+  }
+
+  #msgInput {
+    height: 46px;
+    font-size: 16px; /* 🔥 impede zoom no iPhone */
+    border-radius: 20px;
+  }
+
+  /* Botões menores mas equilibrados */
+  #btnEnviarConteudo1,
+  .btn-enviar1 {
+    width: 36px;
+    height: 36px;
+  }
+
+  #btnEnviarConteudo1 img,
+  .btn-enviar1 img {
+    width: 30px;
+    height: 30px;
+  }
+
+  /* Bolhas mais confortáveis */
+  .msg {
+    max-width: 85%;
+    font-size: 15px;
+    padding: 10px 14px;
+  }
+
+  .msg-hora {
+    font-size: 11px;
+  }
+
+}
+
+
 
 
