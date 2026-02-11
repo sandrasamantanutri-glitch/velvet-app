@@ -990,26 +990,16 @@ window.abrirPopupPagamento = function () {
   // ===============================
   // 🔥 MÍDIA
   // ===============================
-// ===============================
-// 🔥 MÍDIA (SÓ CARTÃO)
-// ===============================
-if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
-  // esconde abas Pix / Cartão
-  document.querySelector(".velvet-tabs")?.classList.add("hidden");
+  if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
+    document.querySelector(".velvet-tabs")?.classList.add("hidden");
+    document.getElementById("conteudoPix")?.classList.add("hidden");
+    document.getElementById("conteudoCartao")?.classList.remove("hidden");
 
-  // garante que Pix NÃO aparece
-  document.getElementById("conteudoPix")?.classList.add("hidden");
+    document.querySelector(".midia-detalhes")?.classList.remove("hidden");
 
-  // mostra cartão direto
-  document.getElementById("conteudoCartao")?.classList.remove("hidden");
-
-  // mostra detalhes da mídia
-  document.querySelector(".midia-detalhes")?.classList.remove("hidden");
-
-  iniciarCartaoMidia();
-  return;
-}
-
+    iniciarCartaoMidia();
+    return;
+  }
 
   // ===============================
   // 💎 VIP
