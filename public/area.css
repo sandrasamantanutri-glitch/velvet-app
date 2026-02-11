@@ -39,6 +39,8 @@ body.role-cliente .area-saldos {
   overflow: hidden;
   box-shadow: linear-gradient(135deg, #9e6bff, #7b2cff);
   position: relative;
+  padding: 0 20px 40px !important;
+
 }
 
 /* CAPA*/
