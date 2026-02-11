@@ -2363,6 +2363,28 @@ ORDER BY v.expiration_at DESC;
   }
 });
 
+app.get("/api/chat/cliente/:id", auth, async (req, res) => {
+  const cliente_id = Number(req.params.id);
+
+  const result = await db.query(`
+    SELECT
+      c.user_id AS id,
+      cd.username,
+      cd.avatar,
+      c.nome,
+      c.last_seen
+    FROM clientes c
+    LEFT JOIN clientes_dados cd
+      ON cd.user_id = c.user_id
+    WHERE c.user_id = $1
+  `, [cliente_id]);
+
+  if (!result.rows.length) {
+    return res.status(404).json({ error: "Cliente não encontrado" });
+  }
+
+  res.json(result.rows[0]);
+});
 
 
 app.get("/manifest.json", (req, res) => {
