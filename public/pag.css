@@ -167,3 +167,7 @@
 .cartao-sucesso {
   color: #2ecc71;
 }
+
+#popupPagamentoVelvet {
+  z-index: 9999999 !important;
+}

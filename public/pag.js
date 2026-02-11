@@ -7,7 +7,6 @@ let elements = null;
 let stripe = null;
 let cardElement;
 let clientSecretAtual = null;
-let __POPUP_ABERTO__ = false;
 
 function whenSocketReady(cb) {
   if (window.socket) {
@@ -47,7 +46,6 @@ if (formCartao) {
 
 
 function abrirPopupPagamento() {
-    if (__POPUP_ABERTO__) return;
   const popup = document.getElementById("popupPagamentoVelvet");
   if (!popup) {
     console.error("popupPagamentoVelvet não encontrado");
