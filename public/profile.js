@@ -24,24 +24,25 @@ if (refParam || srcParam) {
 
 
 let modo = "publico";
+let modelo_id = null;
 
-// 🔐 MEU PRÓPRIO PERFIL (cliente OU modelo)
+// VISUALIZACAO MEU PERFIL
 if (token && !modeloParam) {
   modo = "privado";
 }
 
-let modelo_id = null;
 
-// 🌍 PERFIL PÚBLICO (?id=123)
+// PERFIL PÚBLICO PARAM=ID NA URL
 if (modeloParam) {
   modelo_id = Number(modeloParam);
 }
 
-// 🔐 PERFIL PRÓPRIO
+// SALVA USUARIO LOGADO EM LOCALSTORAGE
 if (modo === "privado") {
   modelo_id = Number(localStorage.getItem("modelo_id"));
 }
 
+// ASSINATURAS/OFERTAS ///////
 const ofertaCard = document.getElementById("oferta-card");
 const btnAssinar = document.getElementById("btn-assinar");
 if (btnAssinar) btnAssinar.disabled = true;
@@ -57,6 +58,8 @@ if (token) {
   }
 }
 
+/////PERFIL ///
+
 const avatarImg  = document.getElementById("profileAvatar");
 const capaImg    = document.getElementById("profileCapa");
 const nomeEl     = document.getElementById("profileName");
@@ -64,16 +67,39 @@ const profileBio = document.getElementById("profileBio");
 const inputAvatar = document.getElementById("inputAvatar");
 const inputCapa   = document.getElementById("inputCapa");
 const listaMidias = document.getElementById("listaMidias");
-const btnChat = document.getElementById("btnChat");
 const btnVip  = document.getElementById("btnVip");
 const btnSalvarBio = document.getElementById("btnSalvarBio");
 const bioInput     = document.getElementById("bioInput");
 const localEl = document.getElementById("local-texto");
 const inputUpload = document.getElementById("inputUpload");
 
-// ===============================
-// 🔔 CONTEÚDO LIBERADO (PÓS-PAGAMENTO)
-// ===============================
+//BTN DE UPLOAD
+const btnUpload = document.querySelector(".btn-upload");
+if (role !== "modelo" || !token) {
+  btnUpload?.remove();
+}
+
+//🌐 REDES SOCIAIS ////
+const igLink = document.getElementById("link-instagram");
+const ttLink = document.getElementById("link-tiktok");
+
+// Instagram
+if (modelo.instagram && igLink) {
+  igLink.href = `https://instagram.com/${modelo.instagram}`;
+  igLink.style.display = "inline-block";
+} else if (igLink) {
+  igLink.style.display = "none";
+}
+
+// TikTok
+if (modelo.tiktok && ttLink) {
+  ttLink.href = `https://www.tiktok.com/@${modelo.tiktok}`;
+  ttLink.style.display = "inline-block";
+} else if (ttLink) {
+  ttLink.style.display = "none";
+}
+
+//  CONTEÚDO LIBERADO (PÓS-PAGAMENTO)/////
 socket.on("conteudoVisto", async ({ message_id }) => {
   try {
     // 🔒 fecha popup de pagamento (se ainda estiver aberto)
@@ -85,9 +111,8 @@ socket.on("conteudoVisto", async ({ message_id }) => {
       return;
     }
 
+    // busca a mídia liberada no backend (segurança)
     const conteudo_id = window.MIDIA_VENDA_ATUAL.conteudo_id;
-
-    // 🔥 busca a mídia liberada no backend (segurança)
     const res = await fetch(
       `/api/conteudo/liberado/${message_id}`,
       {
@@ -108,25 +133,23 @@ socket.on("conteudoVisto", async ({ message_id }) => {
 
     const midia = midias[0];
 
-    // 🎬 ABRE AUTOMATICAMENTE
+    // ABRE AUTOMATICAMENTE
     abrirModalMidia(
       midia.url,
       midia.tipo === "video"
     );
 
-    // 🧹 limpa estado
+    //limpa estado
     window.MIDIA_VENDA_ATUAL = null;
 
     // 🔄 atualiza feed (pra não cobrar de novo)
     await carregarFeedBase();
-
   } catch (err) {
     console.error("Erro ao liberar mídia:", err);
   }
 });
 
-/////////////////////////////////
-
+///////////////////////////////// FUNCOES ///////////////////////////////////
 function decodeJWT(token) {
   try {
     const payload = token.split(".")[1];
@@ -136,45 +159,40 @@ function decodeJWT(token) {
   }
 }
 
-function exigirCadastro(motivo = "Para continuar, crie sua conta") {
-  console.log("🔥 exigirCadastro chamado");
-  window.AUTH_MENSAGEM = motivo;
-  openAgeGate("register");
-}
+// function exigirCadastro(motivo = "Para continuar, crie sua conta") {
+//   console.log("🔥 exigirCadastro chamado");
+//   window.AUTH_MENSAGEM = motivo;
+//   openAgeGate("register");
+// }
 
-function exigirLogin() {
-  console.error("openAgeGate não carregado");
-  openAgeGate("login");
-}
+// function exigirLogin() {
+//   console.error("openAgeGate não carregado");
+//   openAgeGate("login");
+// }
 
-const btnUpload = document.querySelector(".btn-upload");
-if (role !== "modelo" || !token) {
-  btnUpload?.remove();
-}
+// async function carregarPerfilBase() {
+//   // 🔐 PERFIL PRÓPRIO (CLIENTE OU MODELO)
+//   if (modo === "privado") {
+//     const res = await fetch("/api/modelo/me", {
+//       headers: { Authorization: "Bearer " + token }
+//     });
 
-async function carregarPerfilBase() {
-  // 🔐 PERFIL PRÓPRIO (CLIENTE OU MODELO)
-  if (modo === "privado") {
-    const res = await fetch("/api/modelo/me", {
-      headers: { Authorization: "Bearer " + token }
-    });
+//     if (!res.ok) throw new Error("Perfil não encontrado");
 
-    if (!res.ok) throw new Error("Perfil não encontrado");
-
-    const perfil = await res.json();
-    modelo_id = Number(perfil.id);
-    aplicarPerfilNoDOM(perfil);
-    return;
-  }
+//     const perfil = await res.json();
+//     modelo_id = Number(perfil.id);
+//     aplicarPerfilNoDOM(perfil);
+//     return;
+//   }
 
   // 🌍 PERFIL PÚBLICO
-  const res = await fetch(`/api/modelo/publico/${modelo_id}`);
-  if (!res.ok) throw new Error("Perfil público não encontrado");
+//   const res = await fetch(`/api/modelo/publico/${modelo_id}`);
+//   if (!res.ok) throw new Error("Perfil público não encontrado");
 
-  const modelo = await res.json();
-  modelo_id = Number(modelo.id);
-  aplicarPerfilNoDOM(modelo);
-}
+//   const modelo = await res.json();
+//   modelo_id = Number(modelo.id);
+//   aplicarPerfilNoDOM(modelo);
+// }
 
 
 async function carregarFeedBase() {
@@ -223,7 +241,7 @@ async function aplicarRegrasDeAcesso() {
   return;
   }
 
-  // VISITANTE (sem login)
+  // VISITANTE
   if (!role) {
     ofertaCard.style.display = "block";
     //bloquearMidias?.("login");
@@ -241,100 +259,71 @@ async function aplicarRegrasDeAcesso() {
       if (vip) {
         ofertaCard.style.display = "none";
         btnChat?.classList.remove("hidden");
-        //liberarMidias?.();
+
       } else {
         ofertaCard.style.display = "block";
-       // bloquearMidias?.("vip");
       }
     } catch {
       ofertaCard.style.display = "block";
-      //bloquearMidias?.("vip");
     }
   }
 }
 
-window.closeLegalModal ||= function () {
-  document.getElementById("legalModal")?.classList.add("hidden");
-};
+// async function iniciarPerfil() {
+//   try {
+//     await carregarPerfilBase();   // sempre
+//     await carregarOfertaAtiva();  // sempre
+//     await carregarFeedBase();     // sempre
+//     await aplicarRegrasDeAcesso();// decide acesso
+//   }
+//  catch (err) {
+//   console.error("🔥 ERRO REAL AO INICIAR PERFIL 🔥");
+//   console.error(err);
+//   console.trace();
+//   alert(err.message || err);
+//  }
+// }
 
-async function iniciarPerfil() {
-  try {
-    await carregarPerfilBase();   // sempre
-    await carregarOfertaAtiva();  // sempre
-    await carregarFeedBase();     // sempre
-    await aplicarRegrasDeAcesso();// decide acesso
-  }
- catch (err) {
-  console.error("🔥 ERRO REAL AO INICIAR PERFIL 🔥");
-  console.error(err);
-  console.trace();
-  alert(err.message || err);
-}
-}
+// function aplicarPerfilNoDOM(modelo) {
+//   nomeEl.textContent = modelo.nome_exibicao || "";
+//   profileBio.textContent = modelo.bio || "";
 
-function aplicarPerfilNoDOM(modelo) {
-  nomeEl.textContent = modelo.nome_exibicao || "";
-  profileBio.textContent = modelo.bio || "";
+//   if (modelo.avatar) {
+//     avatarImg.src = modelo.avatar;
+//   }
 
-  if (modelo.avatar) {
-    avatarImg.src = modelo.avatar;
-  }
+//   if (modelo.capa) {
+//     capaImg.src = modelo.capa;
+//   }
 
-  if (modelo.capa) {
-    capaImg.src = modelo.capa;
-  }
+//   const localEl = document.getElementById("local-texto");
 
-  const localEl = document.getElementById("local-texto");
+//   if (localEl) {
+//     const local = [modelo.local]
+//       .filter(Boolean)
+//       .join(" • ");
 
-  if (localEl) {
-    const local = [modelo.local]
-      .filter(Boolean)
-      .join(" • ");
-
-    if (local) {
-      localEl.textContent = local;
-    } else {
-      // se não tiver local, esconde o bloco
-      localEl.parentElement.style.display = "none";
-    }
-  }
-  // ===============================
-// 🌐 REDES SOCIAIS
-// ===============================
-const igLink = document.getElementById("link-instagram");
-const ttLink = document.getElementById("link-tiktok");
-
-// Instagram
-if (modelo.instagram && igLink) {
-  igLink.href = `https://instagram.com/${modelo.instagram}`;
-  igLink.style.display = "inline-block";
-} else if (igLink) {
-  igLink.style.display = "none";
-}
-
-// TikTok
-if (modelo.tiktok && ttLink) {
-  ttLink.href = `https://www.tiktok.com/@${modelo.tiktok}`;
-  ttLink.style.display = "inline-block";
-} else if (ttLink) {
-  ttLink.style.display = "none";
-}
-
-}
-
+//     if (local) {
+//       localEl.textContent = local;
+//     } else {
+//       // se não tiver local, esconde o bloco
+//       localEl.parentElement.style.display = "none";
+//     }
+//   }
+// }
 
 // ===============================
 // DOM
 // ===============================
 document.addEventListener("DOMContentLoaded", async () => {
-  aplicarRoleNoBody();
+  // aplicarRoleNoBody();
 
-  try {
-    await iniciarPerfil();
-  } catch (err) {
-    console.error("Erro ao iniciar perfil:", err);
-    return;
-  }
+  // try {
+  //   await iniciarPerfil();
+  // } catch (err) {
+  //   console.error("Erro ao iniciar perfil:", err);
+  //   return;
+  // }
 
   // PÓS-REGISTRO AUTOMÁTICO
   const postRegisterAction =
@@ -359,8 +348,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 });
 
- // TABS DE MÍDIA (FEED / ESPECIAL)
- // ===============================
+ // TABS DE MÍDIA (FEED / ESPECIAL) //
+
  document.querySelectorAll(".midias-tabs .tab").forEach(tab => {
   tab.addEventListener("click", () => {
 
@@ -397,29 +386,29 @@ document.addEventListener("DOMContentLoaded", async () => {
 // ===============================
 // ROLE VISUAL
 // ===============================
-function aplicarRoleNoBody() {
-  document.body.classList.remove("role-modelo", "role-cliente", "role-publico");
-  if (role === "modelo") {
-    document.body.classList.add("role-modelo");
-  } 
-  else if (role === "cliente") {
-    document.body.classList.add("role-cliente");
-  } 
-  else {
-    // VISITANTE
-    document.body.classList.add("role-publico");
-  }
-}
+// function aplicarRoleNoBody() {
+//   document.body.classList.remove("role-modelo", "role-cliente", "role-publico");
+//   if (role === "modelo") {
+//     document.body.classList.add("role-modelo");
+//   } 
+//   else if (role === "cliente") {
+//     document.body.classList.add("role-cliente");
+//   } 
+//   else {
+//     // VISITANTE
+//     document.body.classList.add("role-publico");
+//   }
+// }
 
-function valorBRL(valor) {
-  return Number(valor).toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL"
-  });
-}
+// function valorBRL(valor) {
+//   return Number(valor).toLocaleString("pt-BR", {
+//     style: "currency",
+//     currency: "BRL"
+//   });
+// }
+
 
 let OFERTA_ATUAL = null;
-
 async function carregarOfertaAtiva() {
   console.log("🧪 carregarOfertaAtiva chamado com modelo_id =", modelo_id);
   if (!modelo_id || isNaN(Number(modelo_id))) {
@@ -455,7 +444,7 @@ async function carregarOfertaAtiva() {
 
     const oferta = data.oferta;
 
-    // 🔥 salva a oferta globalmente (não usar DOM depois)
+    // salva a oferta globalmente (não usar DOM depois)
     OFERTA_ATUAL = {
       id: oferta.id,
       modelo_id: oferta.modelo_id,
@@ -464,7 +453,7 @@ async function carregarOfertaAtiva() {
       desconto_percentual: Number(oferta.desconto_percentual || 0)
     };
 
-    // 🎯 badge de desconto
+    // badge de desconto
     if (descontoEl && OFERTA_ATUAL.desconto_percentual > 0) {
       descontoEl.textContent =
         `Economize ${OFERTA_ATUAL.desconto_percentual}%`;
@@ -473,7 +462,7 @@ async function carregarOfertaAtiva() {
       descontoEl.style.display = "none";
     }
 
-    // 💰 preços no layout
+    // preços no layout
     precoDescontoEl.textContent =
       valorBRL(OFERTA_ATUAL.valor_promocional);
 
@@ -491,9 +480,7 @@ async function carregarOfertaAtiva() {
   }
 }
 
-// ===============================
 // UPLOAD AVATAR
-// ===============================
 inputAvatar?.addEventListener("change", async () => {
   const file = inputAvatar.files[0];
   if (!file) return;
@@ -518,9 +505,7 @@ inputAvatar?.addEventListener("change", async () => {
   }
 });
 
-// ===============================
 // UPLOAD CAPA
-// ===============================
 inputCapa?.addEventListener("change", async () => {
   const file = inputCapa.files[0];
   if (!file) return;
@@ -548,30 +533,30 @@ inputCapa?.addEventListener("change", async () => {
 // ===============================
 // MIDIA
 // ===============================
-function abrirModalVenda(c) {
-  const modal = document.createElement("div");
-  modal.className = "modal-midia";
-  modal.innerHTML = `
-    <div class="modal-backdrop"></div>
+// function abrirModalVenda(c) {
+//   const modal = document.createElement("div");
+//   modal.className = "modal-midia";
+//   modal.innerHTML = `
+//     <div class="modal-backdrop"></div>
 
-    <div class="modal-conteudo venda-modal">
-      <img
-        src="${getVideoThumbnail(c.url, c.thumbnail_url)}"
-        class="midia-thumb"
-      >
+//     <div class="modal-conteudo venda-modal">
+//       <img
+//         src="${getVideoThumbnail(c.url, c.thumbnail_url)}"
+//         class="midia-thumb"
+//       >
 
-      <h3>Conteúdo Exclusivo</h3>
-      <p>${c.descricao || "Conteúdo exclusivo para desbloqueio"}</p>
+//       <h3>Conteúdo Exclusivo</h3>
+//       <p>${c.descricao || "Conteúdo exclusivo para desbloqueio"}</p>
 
-      <button class="btn-comprar">
-        Desbloquear por R$ ${Number(c.preco).toFixed(2)}
-      </button>
-    </div>
-  `;
+//       <button class="btn-comprar">
+//         Desbloquear por R$ ${Number(c.preco).toFixed(2)}
+//       </button>
+//     </div>
+//   `;
 
-  modal.querySelector(".modal-backdrop").onclick = () => modal.remove();
-  document.body.appendChild(modal);
-}
+//   modal.querySelector(".modal-backdrop").onclick = () => modal.remove();
+//   document.body.appendChild(modal);
+// }
 
 //CARREGAR MIDIAS //
   btnUpload?.addEventListener("click", (e) => {
@@ -773,7 +758,7 @@ function adicionarMidia(conteudo) {
   const card = document.createElement("div");
   card.className = "midiaCard";
 
-  // ===== WRAPPER DA MÍDIA =====
+  // WRAPPER DA MÍDIA
   const mediaWrapper = document.createElement("div");
   mediaWrapper.className = "midiaWrapper";
 
@@ -785,7 +770,7 @@ function adicionarMidia(conteudo) {
 
   mediaWrapper.appendChild(img);
 
-  // 💰 PREÇO (SÓ ESPECIAL)
+  // PREÇO (SÓ ESPECIAL)
   if (tipo_conteudo === "venda" && preco) {
     const priceTag = document.createElement("div");
     priceTag.className = "midia-preco";
@@ -795,7 +780,7 @@ function adicionarMidia(conteudo) {
 
   card.appendChild(mediaWrapper);
 
-  // 📝 DESCRIÇÃO (SÓ ESPECIAL)
+  // DESCRIÇÃO (SÓ ESPECIAL)
   if (tipo_conteudo === "venda" && descricao) {
     const desc = document.createElement("div");
     desc.className = "midia-descricao";
@@ -838,7 +823,7 @@ if (deveBloquear) {
   abrirModalMidia(url, isVideo);
  };
 
-  // 🗑️ EXCLUIR (MODELO)
+  // EXCLUIR (MODELO)
   if (role === "modelo") {
     const btnExcluir = document.createElement("button");
     btnExcluir.className = "btnExcluirMidia";
@@ -854,7 +839,7 @@ if (deveBloquear) {
     img.src = "/assets/capa.png";
   };
 
-  // ===== GRID DESTINO =====
+  // GRID DESTINO 
   const gridDestino =
     tipo_conteudo === "venda"
       ? document.getElementById("midias-paid")
@@ -862,8 +847,6 @@ if (deveBloquear) {
 
   gridDestino?.appendChild(card);
 }
-
-
 
 //4º FUNÇÃO
 function getVideoThumbnail(url, thumbnail_url) {
@@ -873,7 +856,7 @@ function getVideoThumbnail(url, thumbnail_url) {
     return url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
   }
 
-  // 🔒 BACKBLAZE OU QUALQUER OUTRO → fallback
+  // BACKBLAZE OU QUALQUER OUTRO → fallback
   return "/assets/capa.png";
 }
 
@@ -885,7 +868,7 @@ function abrirModalMidia(url, isVideo) {
   img.style.display = "none";
   video.style.display = "none";
 
-  // 🔥 LIMPA ESTADO ANTERIOR
+  // LIMPA ESTADO ANTERIOR
   video.pause();
   video.src = "";
   img.src = "";
@@ -904,7 +887,7 @@ function abrirModalMidia(url, isVideo) {
 
 // FECHAR MODAL
 document.getElementById("fecharModal")?.addEventListener("click", (e) => {
-  e.stopPropagation(); // 🔥 MUITO IMPORTANTE
+  e.stopPropagation(); 
 
   const modal = document.getElementById("modalMidia");
   const video = document.getElementById("modalVideo");
@@ -933,37 +916,37 @@ async function excluirMidia(id, card) {
   }
 }
 
-async function pagarComCartaoRecorrente() {
-  fecharEscolha();
+// async function pagarComCartaoRecorrente() {
+//   fecharEscolha();
 
-  // 🔓 ABRE MODAL
-  document.getElementById("paymentModal").classList.remove("hidden");
+//   // 🔓 ABRE MODAL
+//   document.getElementById("paymentModal").classList.remove("hidden");
 
-  // 🔁 CRIA ASSINATURA (NÃO payment intent)
-  const res = await fetch("/api/vip/cartao/assinatura", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + token
-    },
-    body: JSON.stringify({
-      modelo_id
-    })
-  });
+//   // 🔁 CRIA ASSINATURA (NÃO payment intent)
+//   const res = await fetch("/api/vip/cartao/assinatura", {
+//     method: "POST",
+//     headers: {
+//       "Content-Type": "application/json",
+//       Authorization: "Bearer " + token
+//     },
+//     body: JSON.stringify({
+//       modelo_id
+//     })
+//   });
 
-  const data = await res.json();
+//   const data = await res.json();
 
-  if (!res.ok) {
-    alert(data.error || "Erro ao criar assinatura");
-    return;
-  }
+//   if (!res.ok) {
+//     alert(data.error || "Erro ao criar assinatura");
+//     return;
+//   }
 
-  // 🔐 USA O clientSecret DA ASSINATURA
-  elements = stripe.elements({ clientSecret: data.clientSecret });
+//   // 🔐 USA O clientSecret DA ASSINATURA
+//   elements = stripe.elements({ clientSecret: data.clientSecret });
 
-  const paymentElement = elements.create("payment");
-  paymentElement.mount("#payment-element");
-}
+//   const paymentElement = elements.create("payment");
+//   paymentElement.mount("#payment-element");
+// }
 
 function atualizarUIVip(modelo_id) {
   const btnVip = document.getElementById("btnVip");
@@ -974,55 +957,55 @@ function atualizarUIVip(modelo_id) {
   btnVip.disabled = true;
 }
 
-window.abrirPopupPagamento = function () {
-  const popup = document.getElementById("popupPagamentoVelvet");
-  if (!popup) return;
+// window.abrirPopupPagamento = function () {
+//   const popup = document.getElementById("popupPagamentoVelvet");
+//   if (!popup) return;
 
-  popup.classList.remove("hidden");
+//   popup.classList.remove("hidden");
 
-  // reset visual
-  document.querySelector(".vip-detalhes")?.classList.add("hidden");
-  document.querySelector(".midia-detalhes")?.classList.add("hidden");
-  document.querySelector(".velvet-tabs")?.classList.remove("hidden");
-  document.getElementById("conteudoPix")?.classList.remove("hidden");
-  document.getElementById("conteudoCartao")?.classList.add("hidden");
+//   // reset visual
+//   document.querySelector(".vip-detalhes")?.classList.add("hidden");
+//   document.querySelector(".midia-detalhes")?.classList.add("hidden");
+//   document.querySelector(".velvet-tabs")?.classList.remove("hidden");
+//   document.getElementById("conteudoPix")?.classList.remove("hidden");
+//   document.getElementById("conteudoCartao")?.classList.add("hidden");
 
-  // ===============================
-  // 🔥 MÍDIA
-  // ===============================
-  if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
-    document.querySelector(".velvet-tabs")?.classList.add("hidden");
-    document.getElementById("conteudoPix")?.classList.add("hidden");
-    document.getElementById("conteudoCartao")?.classList.remove("hidden");
+//   // ===============================
+//   // 🔥 MÍDIA
+//   // ===============================
+//   if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
+//     document.querySelector(".velvet-tabs")?.classList.add("hidden");
+//     document.getElementById("conteudoPix")?.classList.add("hidden");
+//     document.getElementById("conteudoCartao")?.classList.remove("hidden");
 
-    document.querySelector(".midia-detalhes")?.classList.remove("hidden");
+//     document.querySelector(".midia-detalhes")?.classList.remove("hidden");
 
-    iniciarCartaoMidia();
-    return;
-  }
+//     iniciarCartaoMidia();
+//     return;
+//   }
 
   // ===============================
   // 💎 VIP
   // ===============================
-  if (window.PAGAMENTO_TIPO_ATUAL === "vip") {
-    document.querySelector(".vip-detalhes")?.classList.remove("hidden");
-    mostrarMetodo("pix");
-    return;
-  }
-};
+//   if (window.PAGAMENTO_TIPO_ATUAL === "vip") {
+//     document.querySelector(".vip-detalhes")?.classList.remove("hidden");
+//     mostrarMetodo("pix");
+//     return;
+//   }
+// };
 
-window.fecharPopupPagamento = function () {
-  const popup = document.getElementById("popupPagamentoVelvet");
-  if (!popup) return;
+// window.fecharPopupPagamento = function () {
+//   const popup = document.getElementById("popupPagamentoVelvet");
+//   if (!popup) return;
 
-  popup.classList.add("hidden");
+//   popup.classList.add("hidden");
 
-  document.getElementById("pixLoading")?.classList.add("hidden");
-  document.getElementById("pixAguardando")?.classList.add("hidden");
-  document.getElementById("pixSucesso")?.classList.add("hidden");
+//   document.getElementById("pixLoading")?.classList.add("hidden");
+//   document.getElementById("pixAguardando")?.classList.add("hidden");
+//   document.getElementById("pixSucesso")?.classList.add("hidden");
 
-  document.getElementById("cartaoLoading")?.classList.add("hidden");
-  document.getElementById("formCartao")?.classList.add("hidden");
-  document.getElementById("cartaoSucesso")?.classList.add("hidden");
-};
+//   document.getElementById("cartaoLoading")?.classList.add("hidden");
+//   document.getElementById("formCartao")?.classList.add("hidden");
+//   document.getElementById("cartaoSucesso")?.classList.add("hidden");
+// };
 
