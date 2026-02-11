@@ -16,6 +16,12 @@ img {
   display: block;
 }
 
+.page-container {
+  max-width: 1200px;
+  margin: 90px auto 60px;
+  padding: 0 40px;
+}
+
 .area-card h3 {
   font-size: 3rem;     
   font-weight: 700;
@@ -28,8 +34,8 @@ img {
 #listaModelos {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 50px;
-  padding: 50px; 
+  gap: 40px;
+  padding: 40px; 
 }
 
 /* card */
