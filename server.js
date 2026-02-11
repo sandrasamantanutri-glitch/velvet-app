@@ -2026,7 +2026,7 @@ ORDER BY
   m.created_at DESC NULLS LAST;
 
 
-    `, [modeloId]);
+    `, [modelo_id]);
 
     res.json(rows);
 
