@@ -220,6 +220,44 @@ if (item) {
   input.value = "";
 }
 
+function abrirPreviewConteudo(midias) {
+  let modal = document.getElementById("previewConteudoModal");
+
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "previewConteudoModal";
+    modal.className = "preview-modal";
+
+    modal.innerHTML = `
+      <div class="preview-backdrop"></div>
+      <div class="preview-box">
+        <span class="preview-close">×</span>
+        <div class="preview-grid"></div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.querySelector(".preview-backdrop").onclick = () => modal.remove();
+    modal.querySelector(".preview-close").onclick = () => modal.remove();
+  }
+
+  const grid = modal.querySelector(".preview-grid");
+  grid.innerHTML = "";
+
+  midias.forEach(m => {
+    const el = document.createElement("div");
+
+    if ((m.tipo_media || m.tipo) === "video") {
+      el.innerHTML = `<video src="${m.url}" controls autoplay></video>`;
+    } else {
+      el.innerHTML = `<img src="${m.url}" />`;
+    }
+
+    grid.appendChild(el);
+  });
+}
+
 function renderMensagem(msg) {
   const chat = document.getElementById("chatBox");
   if (!chat) return;
@@ -304,8 +342,17 @@ const btn = div.querySelector(".msg-menu");
   decodeURIComponent(btn.dataset.text)
  );
   });
- }
- }
+}
+  // 🔥 PERMITIR MODELO ABRIR A PRÓPRIA MÍDIA
+if (role === "modelo") {
+  const conteudo = div.querySelector(".chat-conteudo");
+  if (conteudo) {
+    conteudo.addEventListener("click", () => {
+      abrirPreviewConteudo(msg.midias);
+    });
+  }
+}
+}
 
 
 function abrirPreviewAvatar(url) {

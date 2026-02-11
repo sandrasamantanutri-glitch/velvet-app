@@ -453,6 +453,47 @@ body {
 
 }
 
+.preview-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+}
+
+.preview-box {
+  position: relative;
+  z-index: 2;
+  max-width: 90vw;
+  max-height: 90vh;
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.preview-grid img,
+.preview-grid video {
+  max-width: 100%;
+  margin-bottom: 15px;
+  border-radius: 12px;
+}
+
+.preview-close {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  font-size: 24px;
+  cursor: pointer;
+}
+
 
 
 
