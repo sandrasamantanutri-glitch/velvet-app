@@ -6,7 +6,7 @@
 }
 
 .transacao-card {
-  background: #fff;
+  background: #f1f1f1;
   border-radius: 16px;
   padding: 16px;
   box-shadow: 0 6px 20px rgba(0,0,0,0.06);
@@ -78,8 +78,7 @@
 ================================ */
 .btn-voltar {
   position:relative;
-  top: 70px;
-  left: 40px;
+  left: 30px;
   border: none;
   width: 42px;
   height: 42px;
