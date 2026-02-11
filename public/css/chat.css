@@ -48,6 +48,7 @@ body {
 
 .btn-voltar img {
   width: 30px;
+  background: none;
 }
 
 .btn-voltar:hover {
