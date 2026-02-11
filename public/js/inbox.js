@@ -150,7 +150,7 @@ function formatarTempo(data) {
 // HELPERS
 // ===============================
 function abrirChat(clienteId) {
-  window.location.href = `/chat.html?cliente=${clienteId}`;
+  window.location.href = `/chat.html?cliente_id=${cliente_id}`;
 }
 
 function logout() {
