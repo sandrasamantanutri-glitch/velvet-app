@@ -199,6 +199,8 @@ body.role-cliente .area-saldos {
   overflow: hidden;
   display: flex;
   justify-content: center;
+  width: 100%;
+  margin-bottom: 20px;
 }
 
 .area-banner img {
