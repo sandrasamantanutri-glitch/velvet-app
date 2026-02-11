@@ -306,3 +306,34 @@ body.role-cliente .area-saldos {
     padding-top: 20px;
   }
 }
+
+/* ===============================
+   MOBILE – 1 MENU POR LINHA
+================================ */
+@media (max-width: 768px) {
+
+  /* grids principais */
+  .area-grid,
+  .area-grid-usuario {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* itens ocupam largura total */
+  .area-item {
+    width: 100%;
+  }
+
+  /* melhora toque no mobile */
+  .area-item {
+    padding: 18px 16px;
+  }
+
+  .area-item strong {
+    font-size: 18px;
+  }
+
+  .area-item span {
+    font-size: 15px;
+  }
+}
+
