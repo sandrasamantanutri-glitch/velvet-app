@@ -1453,15 +1453,27 @@ app.get("/api/modelo/planos/me", auth, async (req, res) => {
       return res.status(403).json({ erro: "Apenas modelo" });
     }
 
-    const plano = await db.query(
-      "SELECT * FROM modelos_planos WHERE modelo_id = $1",
+    // 🔥 Buscar modelo_id real
+    const modeloRes = await db.query(
+      `SELECT id FROM modelos WHERE user_id = $1`,
       [req.user.id]
+    );
+
+    if (!modeloRes.rows.length) {
+      return res.status(404).json({ erro: "Modelo não encontrado" });
+    }
+
+    const modeloId = modeloRes.rows[0].id;
+
+    const plano = await db.query(
+      `SELECT * FROM modelos_planos WHERE modelo_id = $1`,
+      [modeloId]
     );
 
     res.json(plano.rows[0] || null);
 
   } catch (err) {
-    console.error(err);
+    console.error("Erro buscar plano:", err);
     res.status(500).json({ erro: "Erro ao buscar plano" });
   }
 });
@@ -2470,11 +2482,24 @@ app.put("/api/modelo/planos", auth, async (req, res) => {
       return res.status(400).json({ erro: "Desconto inválido" });
     }
 
+    // 🔥 1️⃣ Buscar modelo_id real
+    const modeloRes = await db.query(
+      `SELECT id FROM modelos WHERE user_id = $1`,
+      [req.user.id]
+    );
+
+    if (!modeloRes.rows.length) {
+      return res.status(404).json({ erro: "Modelo não encontrado" });
+    }
+
+    const modeloId = modeloRes.rows[0].id;
+
     const valorTrimestral = (mensal * 3) * (1 - desconto / 100);
 
+    // 🔥 2️⃣ Verificar se já existe plano
     const existe = await db.query(
-      "SELECT modelo_id FROM modelos_planos WHERE modelo_id = $1",
-      [req.user.id]
+      `SELECT modelo_id FROM modelos_planos WHERE modelo_id = $1`,
+      [modeloId]
     );
 
     if (existe.rows.length > 0) {
@@ -2485,19 +2510,19 @@ app.put("/api/modelo/planos", auth, async (req, res) => {
             valor_trimestral = $3,
             updated_at = NOW()
         WHERE modelo_id = $4
-      `, [mensal, desconto, valorTrimestral, req.user.id]);
+      `, [mensal, desconto, valorTrimestral, modeloId]);
     } else {
       await db.query(`
         INSERT INTO modelos_planos
         (modelo_id, valor_mensal, desconto_trimestral, valor_trimestral)
         VALUES ($1, $2, $3, $4)
-      `, [req.user.id, mensal, desconto, valorTrimestral]);
+      `, [modeloId, mensal, desconto, valorTrimestral]);
     }
 
     res.json({ sucesso: true });
 
   } catch (err) {
-    console.error(err);
+    console.error("Erro salvar plano:", err);
     res.status(500).json({ erro: "Erro ao salvar plano" });
   }
 });

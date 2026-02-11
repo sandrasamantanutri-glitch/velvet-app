@@ -438,45 +438,57 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   if (btnSalvar) {
-    btnSalvar.addEventListener("click", async () => {
+  btnSalvar.addEventListener("click", async () => {
 
-      const mensal = parseFloat(mensalInput.value);
-      const desconto = parseFloat(descontoTriInput.value) || 0;
+    const mensal = parseFloat(mensalInput.value);
+    const desconto = parseFloat(descontoTriInput.value) || 0;
 
-      if (isNaN(mensal) || mensal < 20) {
-        alert("Valor mínimo mensal é R$ 20");
+    if (isNaN(mensal) || mensal < 20) {
+      alert("Valor mínimo mensal é R$ 20");
+      return;
+    }
+
+    btnSalvar.disabled = true;
+    btnSalvar.textContent = "Salvando...";
+
+    try {
+      const res = await fetch("/api/modelo/planos", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + localStorage.getItem("token")
+        },
+        body: JSON.stringify({
+          valor_mensal: mensal,
+          desconto_trimestral: desconto
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.erro);
+        btnSalvar.disabled = false;
+        btnSalvar.textContent = "Salvar Plano";
         return;
       }
 
-      try {
-        const res = await fetch("/api/modelo/planos", {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: "Bearer " + localStorage.getItem("token")
-          },
-          body: JSON.stringify({
-            valor_mensal: mensal,
-            desconto_trimestral: desconto
-          })
-        });
+      btnSalvar.textContent = "Salvo ✓";
 
-        const data = await res.json();
+      setTimeout(() => {
+        btnSalvar.disabled = false;
+        btnSalvar.textContent = "Salvar Plano";
+      }, 1500);
 
-        if (!res.ok) {
-          alert(data.erro);
-          return;
-        }
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao salvar plano");
+      btnSalvar.disabled = false;
+      btnSalvar.textContent = "Salvar Plano";
+    }
 
-        alert("Plano salvo com sucesso 💜");
-
-      } catch (err) {
-        console.error(err);
-        alert("Erro ao salvar plano");
-      }
-
-    });
-  }
+  });
+}
 
   async function carregarPlano() {
     try {
