@@ -1454,7 +1454,7 @@ app.get("/api/usuario/dados", auth, async (req, res) => {
     FROM modelos_dados md
     WHERE md.user_id = $1
   `, [req.user.id]);
-  
+
 } else if (req.user.role === "cliente") {
       result = await db.query(
         "SELECT * FROM clientes_dados WHERE user_id = $1",
@@ -2199,10 +2199,10 @@ app.get("/api/conteudos", authModelo, async (req, res) => {
 
 app.get(
   "/api/modelo/verificacao/status",
-  authModelo,
+  auth,  // ← corrigido aqui
   async (req, res) => {
     try {
-      const modeloId = req.user.id;
+      const userId = req.user.id;
 
       const result = await db.query(
         `
@@ -2212,10 +2212,9 @@ app.get(
         ORDER BY created_at DESC
         LIMIT 1
         `,
-        [modeloId]
+        [userId]
       );
 
-      // nunca enviou documentos
       if (result.rows.length === 0) {
         return res.json({
           status: "pendente",
@@ -2224,6 +2223,7 @@ app.get(
       }
 
       res.json(result.rows[0]);
+
     } catch (err) {
       console.error("Erro status verificação:", err);
       res.status(500).json({
@@ -2233,8 +2233,10 @@ app.get(
   }
 );
 
+
 app.get(
   "/api/admin/verificacoes",
+  authAdmin,
   async (req, res) => {
     try {
       const result = await db.query(`
@@ -2242,20 +2244,20 @@ app.get(
           m.user_id,
           m.nome_exibicao,
           m.avatar,
-          m.verificada,
           m.created_at,
           CASE
-            WHEN mv.user_id IS NOT NULL THEN 'enviado'
+            WHEN mv.modelo_id IS NOT NULL THEN 'enviado'
             ELSE 'não enviado'
           END AS status_documento
         FROM modelos m
         LEFT JOIN modelos_verificacao mv
-          ON mv.user_id = m.user_id
+          ON mv.modelo_id = m.user_id
         WHERE m.verificada = false
         ORDER BY m.created_at ASC;
       `);
 
       res.json(result.rows);
+
     } catch (err) {
       console.error("Erro listar verificações:", err);
       res.status(500).json({ erro: "Erro ao listar verificações" });
@@ -2265,7 +2267,8 @@ app.get(
 
 
 app.get(
-  "/api/admin/verificacao/:user_id/documentos",
+  "/api/admin/verificacao/:id/documentos",
+  authAdmin,
   async (req, res) => {
     try {
       const { id } = req.params;
@@ -2280,7 +2283,9 @@ app.get(
       );
 
       if (!result.rows.length) {
-        return res.status(404).json({ erro: "Verificação não encontrada" });
+        return res.status(404).json({
+          erro: "Verificação não encontrada"
+        });
       }
 
       const row = result.rows[0];
@@ -2292,9 +2297,12 @@ app.get(
           : null,
         selfie: gerarSignedUrl(row.selfie_url)
       });
+
     } catch (err) {
       console.error("Erro signed URL:", err);
-      res.status(500).json({ erro: "Erro ao gerar URLs" });
+      res.status(500).json({
+        erro: "Erro ao gerar URLs"
+      });
     }
   }
 );
@@ -2682,101 +2690,78 @@ app.put("/api/usuario/dados", auth, async (req, res) => {
       pais
     } = req.body;
 
-    if (req.user.role === "modelo") {
+    const userId = req.user.id;
 
-  // 🔒 VERIFICAR STATUS DA IDENTIDADE
-  const verificacao = await db.query(`
-    SELECT status
-    FROM modelos_verificacao
-    WHERE modelo_id = $1
-    ORDER BY created_at DESC
-    LIMIT 1
-  `, [req.user.id]);
+    // 🔒 Verifica status atual
+    const verificacao = await db.query(`
+      SELECT status
+      FROM modelos_verificacao
+      WHERE modelo_id = $1
+      ORDER BY created_at DESC
+      LIMIT 1
+    `, [userId]);
 
-  if (
-    verificacao.rows.length &&
-    verificacao.rows[0].status === "aprovado"
-  ) {
-    return res.status(403).json({
-      erro: "Dados pessoais já aprovados e não podem ser alterados"
-    });
-  }
+    if (
+      verificacao.rows.length &&
+      verificacao.rows[0].status === "aprovado"
+    ) {
+      return res.status(403).json({
+        erro: "Dados pessoais já aprovados e não podem ser alterados"
+      });
+    }
 
-  // 🔥 buscar nome_exibicao existente (obrigatório)
-  const { rows } = await db.query(
-    "SELECT nome_exibicao FROM modelos WHERE user_id = $1",
-    [req.user.id]
-  );
+    // 🔎 Buscar nome_exibicao se já existir
+    const modelo = await db.query(
+      "SELECT nome_exibicao FROM modelos WHERE user_id = $1",
+      [userId]
+    );
 
-  const nome_exibicao = rows[0]?.nome_exibicao;
+    const nome_exibicao = modelo.rows[0]?.nome_exibicao || null;
 
-  if (!nome_exibicao) {
-    return res.status(400).json({
-      erro: "nome_exibicao obrigatório para atualizar dados do usuário"
-    });
-  }
+    // ✅ Inserir ou atualizar dados de MODELO (mesmo sendo cliente)
+    await db.query(`
+      INSERT INTO modelos_dados
+        (user_id, nome_exibicao, nome_completo, data_nascimento, telefone, endereco, estado, cidade, pais, atualizado_em)
+      VALUES
+        ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW())
+      ON CONFLICT (user_id)
+      DO UPDATE SET
+        nome_completo = EXCLUDED.nome_completo,
+        data_nascimento = EXCLUDED.data_nascimento,
+        telefone = EXCLUDED.telefone,
+        endereco = EXCLUDED.endereco,
+        estado = EXCLUDED.estado,
+        cidade = EXCLUDED.cidade,
+        pais = EXCLUDED.pais,
+        atualizado_em = NOW()
+    `, [
+      userId,
+      nome_exibicao,
+      nome_completo?.trim() || null,
+      data_nascimento || null,
+      telefone?.trim() || null,
+      endereco?.trim() || null,
+      estado?.trim() || null,
+      cidade?.trim() || null,
+      pais?.trim() || null
+    ]);
 
-  // ✅ segue com INSERT / UPDATE
-  await db.query(`
-    INSERT INTO modelos_dados
-      (user_id, nome_exibicao, nome_completo, data_nascimento, telefone, endereco, estado, cidade, pais)
-    VALUES
-      ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-    ON CONFLICT (user_id)
-    DO UPDATE SET
-      nome_completo = EXCLUDED.nome_completo,
-      data_nascimento = EXCLUDED.data_nascimento,
-      telefone = EXCLUDED.telefone,
-      endereco = EXCLUDED.endereco,
-      estado = EXCLUDED.estado,
-      cidade = EXCLUDED.cidade,
-      pais = EXCLUDED.pais
-  `, [
-    req.user.id,
-    nome_exibicao,
-    nome_completo?.trim() || null,
-    data_nascimento || null,
-    telefone?.trim() || null,
-    endereco?.trim() || null,
-    estado?.trim() || null,
-    cidade?.trim() || null,
-    pais?.trim() || null
-  ]);
-}
-
-    if (req.user.role === "cliente") {
+    // 🆕 Se nunca entrou em análise, cria registro
+    if (!verificacao.rows.length) {
       await db.query(`
-        INSERT INTO clientes_dados
-          (user_id, nome_completo, data_nascimento, telefone, endereco, estado, cidade, pais)
-        VALUES
-          ($1,$2,$3,$4,$5,$6,$7,$8)
-        ON CONFLICT (user_id)
-        DO UPDATE SET
-          nome_completo = EXCLUDED.nome_completo,
-          data_nascimento = EXCLUDED.data_nascimento,
-          telefone = EXCLUDED.telefone,
-          endereco = EXCLUDED.endereco,
-          estado = EXCLUDED.estado,
-          cidade = EXCLUDED.cidade,
-          pais = EXCLUDED.pais
-      `, [
-        req.user.id,
-        nome_completo?.trim() || null,
-        data_nascimento || null,
-        telefone?.trim() || null,
-        endereco?.trim() || null,
-        estado?.trim() || null,
-        cidade?.trim() || null,
-        pais?.trim() || null
-      ]);
+        INSERT INTO modelos_verificacao (modelo_id, status, created_at)
+        VALUES ($1, 'em_analise', NOW())
+      `, [userId]);
     }
 
     res.json({ sucesso: true });
+
   } catch (err) {
     console.error("ERRO PUT /api/usuario/dados:", err);
     res.status(500).json({ erro: err.message });
   }
 });
+
 
 app.put(
   "/api/admin/verificacao/:id",
@@ -2790,6 +2775,19 @@ app.put(
         return res.status(400).json({ erro: "Status inválido" });
       }
 
+      // 🔎 Descobrir qual usuário está sendo aprovado
+      const verificacao = await db.query(
+        `SELECT modelo_id FROM modelos_verificacao WHERE id = $1`,
+        [id]
+      );
+
+      if (!verificacao.rows.length) {
+        return res.status(404).json({ erro: "Verificação não encontrada" });
+      }
+
+      const userId = verificacao.rows[0].modelo_id;
+
+      // ✅ Atualiza status da verificação
       await db.query(
         `
         UPDATE modelos_verificacao
@@ -2802,14 +2800,29 @@ app.put(
         [status, motivo || null, id]
       );
 
+      // 🚀 Se aprovado → promover para modelo
+      if (status === "aprovado") {
+        await db.query(
+          `UPDATE users SET role = 'modelo' WHERE id = $1`,
+          [userId]
+        );
+
+        // opcional: criar registro na tabela modelos se não existir
+        await db.query(`
+          INSERT INTO modelos (user_id)
+          VALUES ($1)
+          ON CONFLICT (user_id) DO NOTHING
+        `, [userId]);
+      }
+
       res.json({ ok: true });
+
     } catch (err) {
       console.error("Erro atualizar verificação:", err);
       res.status(500).json({ erro: "Erro ao atualizar status" });
     }
   }
 );
-
 
 
 // AVATAR DO CLIENTE
@@ -3957,7 +3970,7 @@ app.post("/api/chat/marcar-lido/:cliente_id", authModelo, async (req, res) => {
 
 app.post(
   "/api/modelo/verificacao",
-  authModelo,
+  auth,   // ← mudou aqui
   uploadVerificacao.fields([
     { name: "doc_frente", maxCount: 1 },
     { name: "doc_verso", maxCount: 1 },
@@ -3965,7 +3978,7 @@ app.post(
   ]),
   async (req, res) => {
     try {
-      const modeloId = req.user.id;
+      const userId = req.user.id;
       const { doc_tipo } = req.body;
 
       if (!doc_tipo) {
@@ -3987,19 +4000,19 @@ app.post(
       await db.query(
         `
         INSERT INTO modelos_verificacao
-        (modelo_id, doc_tipo, doc_frente_url, doc_verso_url, selfie_url, status)
-        VALUES ($1,$2,$3,$4,$5,'em_analise')
+        (modelo_id, doc_tipo, doc_frente_url, doc_verso_url, selfie_url, status, created_at)
+        VALUES ($1,$2,$3,$4,$5,'em_analise', NOW())
         ON CONFLICT (modelo_id)
         DO UPDATE SET
-          doc_tipo = $2,
-          doc_frente_url = $3,
-          doc_verso_url = $4,
-          selfie_url = $5,
+          doc_tipo = EXCLUDED.doc_tipo,
+          doc_frente_url = EXCLUDED.doc_frente_url,
+          doc_verso_url = EXCLUDED.doc_verso_url,
+          selfie_url = EXCLUDED.selfie_url,
           status = 'em_analise',
           updated_at = NOW()
         `,
         [
-          modeloId,
+          userId,
           doc_tipo,
           docFrenteUrl,
           docVersoUrl,
@@ -4008,12 +4021,14 @@ app.post(
       );
 
       res.json({ ok: true });
+
     } catch (err) {
       console.error("❌ Erro upload verificação:", err);
       res.status(500).json({ erro: "Erro ao enviar documentos" });
     }
   }
 );
+
 
 app.post(
   "/api/conteudos",
