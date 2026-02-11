@@ -2570,7 +2570,7 @@ app.put("/api/usuario/perfil", auth, async (req, res) => {
           nome_exibicao = COALESCE($1, nome_exibicao),
           local         = COALESCE($2, local),
           bio           = COALESCE($3, bio),
-          updated_at    = NOW()
+          atualizado_em    = NOW()
         WHERE user_id = $4
         `,
         [
@@ -2590,7 +2590,7 @@ app.put("/api/usuario/perfil", auth, async (req, res) => {
         SET
           instagram = COALESCE(EXCLUDED.instagram, modelos_dados.instagram),
           tiktok    = COALESCE(EXCLUDED.tiktok, modelos_dados.tiktok),
-          updated_at = NOW()
+          atualizado_em = NOW()
         `,
         [
           req.user.id,
