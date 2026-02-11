@@ -282,3 +282,8 @@ body {
   display: block;
   aspect-ratio: 16 / 9; /* 👈 trava proporção */
 }
+
+.card-conteudo {
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+}
