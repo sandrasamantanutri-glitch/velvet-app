@@ -22,7 +22,7 @@ async function carregarTransacoes() {
   });
 
   if (!res.ok) {
-    lista.innerHTML = "Erro ao carregar transações.";
+    lista.innerHTML = "Erro ao carregar transações. No momento, apenas clientes podem processar pagamentos.";
     return;
   }
 
