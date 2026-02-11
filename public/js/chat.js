@@ -15,7 +15,7 @@ let sala = null;
 let modelo_id = null;
 let chatAtivo = null;
 let conteudosVistosCliente = new Set();
-let cliente_id=null
+let cliente_id= null
 
 const params = new URLSearchParams(location.search);
 cliente_id = Number(params.get("cliente_id"));

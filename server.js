@@ -2363,7 +2363,7 @@ ORDER BY v.expiration_at DESC;
   }
 });
 
-app.get("/api/chat/cliente/:id", auth, async (req, res) => {
+app.get("/api/chat/cliente_id/:id", auth, async (req, res) => {
   const cliente_id = Number(req.params.id);
 
   const result = await db.query(`
