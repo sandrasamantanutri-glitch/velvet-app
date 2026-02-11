@@ -1441,11 +1441,21 @@ app.get("/api/usuario/dados", auth, async (req, res) => {
     let result;
 
     if (req.user.role === "modelo") {
-      result = await db.query(
-        "SELECT * FROM modelos_dados WHERE user_id = $1",
-        [req.user.id]
-      );
-    } else if (req.user.role === "cliente") {
+  result = await db.query(`
+    SELECT 
+      md.*,
+      (
+        SELECT v.status
+        FROM modelos_verificacao v
+        WHERE v.modelo_id = md.user_id
+        ORDER BY v.created_at DESC
+        LIMIT 1
+      ) AS status
+    FROM modelos_dados md
+    WHERE md.user_id = $1
+  `, [req.user.id]);
+  
+} else if (req.user.role === "cliente") {
       result = await db.query(
         "SELECT * FROM clientes_dados WHERE user_id = $1",
         [req.user.id]
