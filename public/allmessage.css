@@ -196,11 +196,33 @@ textarea {
   font-size: 14px;
 }
 
+/* ===============================
+   BOTÃO VOLTAR
+================================ */
 .btn-voltar {
-  background: none;
+  position:relative;
+  top: 70px;
+  left: 40px;
   border: none;
-  font-size: 20px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: 0.2s ease;
 }
+
+.btn-voltar img {
+  width: 30px;
+}
+
+.btn-voltar:hover {
+  transform: scale(1.08);
+}
+
 
 /* ===============================
    AÇÕES DO MODAL
