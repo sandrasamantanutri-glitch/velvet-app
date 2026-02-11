@@ -170,29 +170,29 @@ function decodeJWT(token) {
 //   openAgeGate("login");
 // }
 
-// async function carregarPerfilBase() {
-//   // 🔐 PERFIL PRÓPRIO (CLIENTE OU MODELO)
-//   if (modo === "privado") {
-//     const res = await fetch("/api/modelo/me", {
-//       headers: { Authorization: "Bearer " + token }
-//     });
+async function carregarPerfilBase() {
+  // 🔐 PERFIL PRÓPRIO (CLIENTE OU MODELO)
+  if (modo === "privado") {
+    const res = await fetch("/api/modelo/me", {
+      headers: { Authorization: "Bearer " + token }
+    });
 
-//     if (!res.ok) throw new Error("Perfil não encontrado");
+    if (!res.ok) throw new Error("Perfil não encontrado");
 
-//     const perfil = await res.json();
-//     modelo_id = Number(perfil.id);
-//     aplicarPerfilNoDOM(perfil);
-//     return;
-//   }
+    const perfil = await res.json();
+    modelo_id = Number(perfil.id);
+    aplicarPerfilNoDOM(perfil);
+    return;
+  }
 
-  // 🌍 PERFIL PÚBLICO
-//   const res = await fetch(`/api/modelo/publico/${modelo_id}`);
-//   if (!res.ok) throw new Error("Perfil público não encontrado");
+  🌍 PERFIL PÚBLICO
+  const res = await fetch(`/api/modelo/publico/${modelo_id}`);
+  if (!res.ok) throw new Error("Perfil público não encontrado");
 
-//   const modelo = await res.json();
-//   modelo_id = Number(modelo.id);
-//   aplicarPerfilNoDOM(modelo);
-// }
+  const modelo = await res.json();
+  modelo_id = Number(modelo.id);
+  aplicarPerfilNoDOM(modelo);
+}
 
 
 async function carregarFeedBase() {
