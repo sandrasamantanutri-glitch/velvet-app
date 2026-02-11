@@ -662,94 +662,10 @@ body.role-cliente .area-saldos {
   }
 }
 
-/* ===============================
-   POPUP PIX – MOBILE
-================================ */
-@media (max-width: 768px) {
 
-  /* container geral */
-  .velvet-modal {
-    align-items: center;     
-    justify-content: center;
-  }
 
-  /* caixa do popup */
-  .velvet-box {
-    width: 100%;
-    max-width: 100%;
-    max-height: 92vh;
 
-    border-radius: 20px 20px 0 0;
-    padding: 20px 16px 24px;
 
-    animation: slideUp 0.25s ease-out;
-  }
 
-  /* título */
-  .velvet-title {
-    text-align: center;
-    font-size: 20px;
-    margin-bottom: 12px;
-  }
 
-  /* abas Pix / Cartão */
-  .velvet-tabs {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
 
-  .velvet-tabs .tab {
-    flex: 1;
-    font-size: 16px;
-    padding: 12px;
-    border-radius: 999px;
-  }
-
-  /* ===============================
-     PIX
-  ================================ */
-
-  #conteudoPix {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-  }
-
-  /* QR Code */
-  .pix-qr {
-    width: 220px;
-    height: 220px;
-    max-width: 70vw;
-    border-radius: 16px;
-    background: #fff;
-  }
-
-  /* código Pix */
-  #pixCodigo {
-    width: 100%;
-    font-size: 14px;
-    padding: 12px;
-    border-radius: 12px;
-    background: #f1f1f1;
-    text-align: center;
-  }
-
-  /* botão copiar */
-  .btn-secundario {
-    width: 100%;
-    padding: 14px;
-    font-size: 18px;
-    border-radius: 14px;
-  }
-
-  /* estados */
-  .pix-loading,
-  .pix-aguardando,
-  .pix-sucesso {
-    font-size: 16px;
-    text-align: center;
-  }
-}
