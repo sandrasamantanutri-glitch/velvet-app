@@ -37,17 +37,6 @@ if (modeloParam) {
   modelo_id = Number(modeloParam);
 }
 
-// SALVA USUARIO LOGADO EM LOCALSTORAGE
-if (modo === "privado") {
-  const storedId = localStorage.getItem("modelo_id");
-
-  if (storedId && !isNaN(Number(storedId))) {
-    modelo_id = Number(storedId);
-  } else {
-    console.warn("modelo_id não encontrado no localStorage");
-  }
-}
-
 // ASSINATURAS/OFERTAS ///////
 const ofertaCard = document.getElementById("oferta-card");
 const btnAssinar = document.getElementById("btn-assinar");
