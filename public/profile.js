@@ -1,5 +1,5 @@
 window.socket = io();
-const token = localStorage.getItem("token");
+localStorage.getItem("token")
 const role = localStorage.getItem("role");
 const params = new URLSearchParams(window.location.search);
 const modeloParam = params.get("id");
