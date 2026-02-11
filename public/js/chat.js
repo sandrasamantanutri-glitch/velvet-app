@@ -516,7 +516,7 @@ function formatarHora(data) {
 
 async function marcarComoLido(cliente_id) {
   try {
-    await fetch(`/api/chat/marcar-lido/${cliente_id}`, {
+    fetch(`/api/chat/modelo/marcar-lido/${cliente_id}`, {
       method: "POST",
       headers: {
         Authorization: "Bearer " + localStorage.getItem("token")

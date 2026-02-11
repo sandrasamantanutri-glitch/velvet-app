@@ -3944,7 +3944,7 @@ app.post("/api/contato", async (req, res) => {
   }
 });
 
-app.post("/api/chat/marcar-lido/:cliente_id", authModelo, async (req, res) => {
+app.post("/api/chat/modelo/marcar-lido/:cliente_id", authModelo, async (req, res) => {
   const modelo_id = req.user.id;
   const cliente_id = Number(req.params.cliente_id);
 
@@ -3972,7 +3972,7 @@ app.post("/api/chat/marcar-lido/:cliente_id", authModelo, async (req, res) => {
   }
 });
 
-app.post("/api/chat/marcar-lido/:modelo_id", authCliente, async (req, res) => {
+app.post("/api/chat/cliente/marcar-lido/:modelo_id", authCliente, async (req, res) => {
   const cliente_id = req.user.id;
   const modelo_id = Number(req.params.modelo_id);
 
