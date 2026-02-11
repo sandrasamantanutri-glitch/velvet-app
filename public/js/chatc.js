@@ -245,53 +245,56 @@ function renderMensagem(msg) {
   div.className =
     msg.sender === "cliente" ? "msg msg-cliente" : "msg msg-modelo";
 
-     if (
-  msg.tipo === "conteudo" &&
-  Array.isArray(msg.midias) &&
-  msg.midias.length > 0
- ) {
-      div.innerHTML = `
-<div class="chat-conteudo premium ${
-  Number(msg.preco) > 0 && !msg.visto ? "bloqueado" : "visto"}"
-     data-id="${msg.id}"
-     data-qtd="${msg.quantidade ?? msg.midias.length}">
+    if (msg.tipo === "conteudo") {
 
-    <!-- 📸 MÍDIA -->
-    <div class="pacote-grid">
-      ${msg.midias.map(m => `
-        <div class="midia-item">
-          ${
-            (m.tipo_media || m.tipo) === "video"
-  ? `<video src="${m.url}" muted></video>`
-  : `<img src="${m.url}" />`
-          }
-        </div>
-      `).join("")}
+  const bloqueado = msg.bloqueado === true;
+
+  div.innerHTML = `
+    <div class="chat-conteudo premium ${bloqueado ? "bloqueado" : "visto"}"
+         data-id="${msg.id}"
+         data-preco="${msg.preco}"
+         data-qtd="${msg.quantidade ?? 1}">
+
+      ${
+        bloqueado
+          ? `
+            <div class="conteudo-info">
+              <span class="status-bloqueado">
+                🔒 ${msg.quantidade ?? 1} mídia(s)
+              </span>
+
+              <span class="preco-bloqueado">
+                R$ ${Number(msg.preco).toFixed(2)}
+              </span>
+
+              <button class="btn-desbloquear"
+                      data-preco="${msg.preco}"
+                      data-message-id="${msg.id}">
+                Desbloquear
+              </button>
+            </div>
+          `
+          : `
+            <div class="pacote-grid">
+              ${(msg.midias || []).map((m, index) => `
+                <div class="midia-item"
+                     onclick="abrirPreviewMidia(msg.midias[${index}])">
+                  ${
+                    (m.tipo_media || m.tipo) === "video"
+                      ? `<video src="${m.url}" muted playsinline></video>`
+                      : `<img src="${m.url}" />`
+                  }
+                </div>
+              `).join("")}
+            </div>
+          `
+      }
+
     </div>
 
-    <!-- 🧾 INFO ABAIXO -->
-    ${
-      msg.preco > 0
-        ? `
-          <div class="conteudo-info">
-            <span class="status-bloqueado">
-              ${
-                msg.visto
-                  ? `🟢 Vendido · ${msg.quantidade ?? msg.midias.length} mídia(s)`
-                  : `🔒 ${msg.quantidade ?? msg.midias.length} mídia(s)`
-              }
-            </span>
-            <span class="preco-bloqueado">
-              R$ ${Number(msg.preco).toFixed(2)}
-            </span>
-          </div>
-        `
-        : ""
-    }
-  </div>
-  <span class="msg-hora">${formatarHora(msg.created_at)}</span>
-`;
-  }
+    <span class="msg-hora">${formatarHora(msg.created_at)}</span>
+  `;
+}
 
 else {
   div.innerHTML = `
@@ -310,41 +313,7 @@ else {
   `;
 }
   chat.appendChild(div);
-if (role === "cliente" && msg.tipo === "conteudo") {
 
-  const conteudo = div.querySelector(".chat-conteudo");
-  if (!conteudo) return;
-
-  const midiasEls = div.querySelectorAll(".midia-item");
-
-  midiasEls.forEach((el, index) => {
-
-    el.style.cursor = "pointer";
-
-    el.addEventListener("click", (e) => {
-      e.stopPropagation();
-
-      // 🔒 SE TEM PREÇO E NÃO FOI VISTO
-      console.log("PRECO:", msg.preco, "VISTO:", msg.visto);
-      if (msg.bloqueado === true) {
-        window.MIDIA_VENDA_ATUAL = {
-  conteudo_id: msg.id,
-  preco: msg.preco,
-  descricao: "Conteúdo exclusivo"
-};
-
-window.PAGAMENTO_TIPO_ATUAL = "midia";
-
-abrirPopupPagamento();
-        return;
-      }
-
-      // ✅ GRATUITO OU JÁ PAGO
-      abrirPreviewMidia(msg.midias[index]);
-    });
-
-  });
-}
 const btn = div.querySelector(".msg-menu");
 if (btn) {
   btn.addEventListener("click", () => {
@@ -716,3 +685,18 @@ async function carregarInfoModelo(modelo_id) {
     console.error("Erro carregar modelo:", err);
   }
 }
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".btn-desbloquear");
+  if (!btn) return;
+
+  window.MIDIA_VENDA_ATUAL = {
+    conteudo_id: btn.dataset.messageId,
+    preco: btn.dataset.preco,
+    descricao: "Conteúdo exclusivo"
+  };
+
+  window.PAGAMENTO_TIPO_ATUAL = "midia";
+
+  abrirPopupPagamento();
+});
