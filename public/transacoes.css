@@ -156,6 +156,35 @@
 }
 
 .area-card {
-    margin: 10px auto 10px !important;
-    padding: 0 20px 40px I !important;
+  max-width: 900px Im !important;
+    margin: 40px auto !important;
+    padding: 0 20px 40px !important;
+}
+
+.paginacao {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 30px;
+}
+
+.paginacao button {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid #7B2CFF;
+  background: white;
+  color: #7B2CFF;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.paginacao button:hover {
+  background: #EFE8FF;
+}
+
+.paginacao button.ativa {
+  background: #7B2CFF;
+  color: white;
 }
