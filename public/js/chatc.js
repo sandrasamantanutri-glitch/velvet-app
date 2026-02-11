@@ -326,7 +326,7 @@ if (role === "cliente" && msg.tipo === "conteudo") {
 
       // 🔒 SE TEM PREÇO E NÃO FOI VISTO
       console.log("PRECO:", msg.preco, "VISTO:", msg.visto);
-      if (Number(msg.preco) > 0 && !msg.visto) {
+      if (msg.bloqueado === true) {
         window.MIDIA_VENDA_ATUAL = {
   conteudo_id: msg.id,
   preco: msg.preco,
