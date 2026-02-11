@@ -47,31 +47,17 @@
   color: #7B2CFF;
 }
 
-.status-pendente {
-  background: #FFF4E6;
-  color: #E67E22;
-}
-
-.status-reclamado {
-  background: #FDECEA;
-  color: #E74C3C;
-}
-
 .btn-reclamar {
   margin-top: 8px;
   background: transparent;
-  border: 1px solid #E74C3C;
-  color: #E74C3C;
+  border: 1px solid #7B2CFF;
+  color: #7B2CFF;
   padding: 6px 12px;
   border-radius: 10px;
   cursor: pointer;
   font-size: 13px;
 }
 
-.btn-reclamar:hover {
-  background: #E74C3C;
-  color: #fff;
-}
 
 .area-card h3 {
   font-size: 32px;
@@ -169,3 +155,6 @@
   }
 }
 
+.area-card {
+    background: #f1f1f1 !important;
+}
