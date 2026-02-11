@@ -217,6 +217,14 @@ body.role-cliente .area-saldos {
   transition: .25s;
   justify-content: space-evenly;
 
+  max-width: 1100px;
+    margin: 90px auto 30px;
+    background: #fff;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: linear-gradient(135deg, #9e6bff, #7b2cff);
+    position: relative;
+
 }
 
 .area-item strong {
@@ -263,13 +271,10 @@ body.role-cliente .area-saldos {
 }
 
 .area-grid-usuario {
- .area-grid-usuario {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(auto, 1fr));
   gap: 12px;
   padding: 24px; 
-}
-
 }
 
 /* ===============================
