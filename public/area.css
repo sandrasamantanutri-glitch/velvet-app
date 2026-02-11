@@ -178,7 +178,7 @@ body.role-cliente .area-saldos {
   margin: 20px auto 60px;
   background: #fff;
   border-radius: 18px;
-  padding: 25px;
+  padding: 30px 30px 30px;
   box-shadow: linear-gradient(135deg, #9e6bff, #7b2cff);
 }
 
@@ -265,7 +265,6 @@ body.role-cliente .area-saldos {
 .area-grid-usuario {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(auto, 1fr));
-  gap: 15px;
 }
 
 /* ===============================
