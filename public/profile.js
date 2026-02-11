@@ -141,41 +141,36 @@ function decodeJWT(token) {
 
 
 //PERFIL ///
-async function carregarPerfilBase(usuario) {
-  const token = localStorage.getItem("token");
-  if (!token || !usuario?.role) return;
+async function carregarPerfilBase() {
 
-  const endpoint =
-    usuario.role === "modelo"
-      ? "/api/modelo/me"
-      : "/api/cliente/me";
+  // 🔐 PERFIL PRIVADO
+  if (modo === "privado") {
+    const res = await fetch("/api/modelo/me", {
+      headers: { Authorization: "Bearer " + token }
+    });
 
-  const res = await fetch(endpoint, {
-    headers: { Authorization: "Bearer " + token }
-  });
+    if (!res.ok) throw new Error("Perfil não encontrado");
 
-  if (!res.ok) {
-    console.error("Erro ao carregar perfil:", res.status);
+    const perfil = await res.json();
+    modelo_id = Number(perfil.id);
+    aplicarPerfilNoDOM(perfil);
     return;
   }
 
-  const perfil = await res.json();
-
-  // 📸 AVATAR
-  const avatar = document.getElementById("profileAvatar");
-  if (avatar && perfil.avatar) avatar.src = perfil.avatar;
-
-  // 🖼️ CAPA
-  const capa = document.getElementById("profileCapa");
-  if (capa && perfil.capa) capa.src = perfil.capa;
-
-  // 👤 NOME
-  const profileName = document.getElementById("profileName");
-  if (profileName) {
-    profileName.textContent =
-      perfil.nome_exibicao || perfil.username || "";
+  // 🌍 PERFIL PÚBLICO
+  if (!modelo_id || isNaN(Number(modelo_id))) {
+    console.warn("modelo_id inválido:", modelo_id);
+    return;
   }
+
+  const res = await fetch(`/api/modelo/publico/${modelo_id}`);
+  if (!res.ok) throw new Error("Perfil público não encontrado");
+
+  const modelo = await res.json();
+  modelo_id = Number(modelo.id);
+  aplicarPerfilNoDOM(modelo);
 }
+
 
 //ESPECIAL E PRA VOCE //
 async function carregarFeedBase() {
