@@ -6,6 +6,15 @@ body {
   padding: 0;
   width: 100%;
 }
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
 
 .area-card h3 {
   font-size: 3rem;     
