@@ -6,6 +6,7 @@ let elements = null;
 let stripe = null;
 let cardElement;
 let clientSecretAtual = null;
+let __POPUP_ABERTO__ = false;
 
 function whenSocketReady(cb) {
   if (window.socket) {
@@ -45,25 +46,23 @@ if (formCartao) {
 
 
 function abrirPopupPagamento() {
+    if (__POPUP_ABERTO__) return;
   const popup = document.getElementById("popupPagamentoVelvet");
   if (!popup) {
     console.error("popupPagamentoVelvet não encontrado");
-    return;
+    if (!popup) return;
   }
 
-  // 🔓 abre o popup
   popup.classList.remove("hidden");
 
-  // 🔄 limpa estados antigos
   document.getElementById("pixQr")?.classList.add("hidden");
   document.getElementById("pixCodigo")?.classList.add("hidden");
   document.getElementById("pixLoading")?.classList.add("hidden");
   document.getElementById("pixAguardando")?.classList.add("hidden");
   document.getElementById("pixSucesso")?.classList.add("hidden");
 
-  // ===============================
-  // 🔥 MÍDIA → SÓ CARTÃO
-  // ===============================
+
+  //MÍDIA → SÓ CARTÃO
   if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
     document.getElementById("conteudoPix")?.classList.add("hidden");
     document.getElementById("conteudoCartao")?.classList.remove("hidden");
@@ -76,9 +75,8 @@ function abrirPopupPagamento() {
     return;
   }
 
-  // ===============================
-  // 💎 VIP → PIX (default) + CARTÃO
-  // ===============================
+
+  //  VIP → PIX (default) + CARTÃO
   document.getElementById("conteudoPix")?.classList.remove("hidden");
   document.getElementById("conteudoCartao")?.classList.add("hidden");
 
@@ -88,12 +86,12 @@ function abrirPopupPagamento() {
   prepararPagamento();
 
   // Pix automático para VIP
-  setTimeout(() => {
-    pagarComPix({
-      tipo: "vip",
-      modelo_id: window.MODELO_ID_ATUAL
-    });
-  }, 0);
+//   setTimeout(() => {
+//     pagarComPix({
+//       tipo: "vip",
+//       modelo_id: window.MODELO_ID_ATUAL
+//     });
+//   }, 0);
 }
 
 
