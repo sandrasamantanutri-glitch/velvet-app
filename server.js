@@ -293,6 +293,7 @@ app.post("/api/ofertas", authModelo, async (req, res) => {
   try {
     const userId = req.user.id;
 
+    // 1️⃣ Buscar modelo
     const modeloRes = await db.query(
       `SELECT id FROM modelos WHERE user_id = $1`,
       [userId]
@@ -304,6 +305,22 @@ app.post("/api/ofertas", authModelo, async (req, res) => {
 
     const modeloId = modeloRes.rows[0].id;
 
+    // 2️⃣ Buscar plano real do modelo
+    const planoRes = await db.query(
+      `SELECT valor_mensal FROM modelos_planos WHERE modelo_id = $1`,
+      [modeloId] // se sua FK usa user_id
+    );
+
+    if (planoRes.rows.length === 0) {
+      return res.status(400).json({
+        erro: "Defina primeiro o plano de assinatura."
+      });
+    }
+
+    const VALOR_BASE = Number(planoRes.rows[0].valor_mensal);
+    const VALOR_MINIMO = VALOR_BASE * 0.5; // mínimo 50%
+
+    // 3️⃣ Dados do body
     const { nome, limite, dias, desconto, mensagem } = req.body;
 
     if (
@@ -312,14 +329,12 @@ app.post("/api/ofertas", authModelo, async (req, res) => {
       dias <= 0 ||
       desconto === undefined ||
       desconto < 0 ||
-      desconto > 90
+      desconto > 50
     ) {
       return res.status(400).json({ erro: "Dados inválidos" });
     }
 
-    const VALOR_BASE = Number(process.env.VALOR_BASE_VIP || 0);
-    const VALOR_MINIMO = Number(process.env.VALOR_MINIMO_VIP || 0);
-
+    // 4️⃣ Calcular valor promocional
     let valorPromocional =
       VALOR_BASE * (1 - desconto / 100);
 
@@ -330,6 +345,7 @@ app.post("/api/ofertas", authModelo, async (req, res) => {
     const dataFim = new Date();
     dataFim.setDate(dataFim.getDate() + Number(dias));
 
+    // 5️⃣ Inserir oferta
     const result = await db.query(
       `
       INSERT INTO ofertas (
@@ -557,24 +573,43 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
     if (!modelo_id) {
       return res.status(400).json({ error: "modelo_id inválido" });
     }
+    // 1️⃣ Verificar oferta ativa
+const ofertaRes = await db.query(`
+  SELECT valor_promocional
+  FROM ofertas
+  WHERE modelo_id = $1
+    AND ativa = true
+    AND NOW() BETWEEN data_inicio AND data_fim
+  LIMIT 1
+`, [modelo_id]);
 
-    // 🔍 BUSCAR OFERTA ATIVA (FONTE DA VERDADE)
-    const ofertaRes = await db.query(`
-      SELECT valor_promocional
-      FROM ofertas
-      WHERE modelo_id = $1
-        AND ativa = true
-        AND NOW() BETWEEN data_inicio AND data_fim
-      LIMIT 1
-    `, [modelo_id]);
+let valorAssinatura;
 
-    if (ofertaRes.rows.length === 0) {
-      return res.status(400).json({
-        error: "Oferta VIP indisponível"
-      });
-    }
+// 2️⃣ Se tiver oferta ativa usa ela
+if (ofertaRes.rows.length > 0) {
+  valorAssinatura = Number(ofertaRes.rows[0].valor_promocional);
+} else {
 
-    const valorAssinatura = Number(ofertaRes.rows[0].valor_promocional);
+  // 3️⃣ Se não tiver oferta, buscar plano normal
+  const planoRes = await db.query(`
+    SELECT valor_mensal
+    FROM modelos_planos
+    WHERE modelo_id = $1
+  `, [modelo_id]);
+
+  if (planoRes.rows.length === 0) {
+    return res.status(400).json({
+      error: "Plano VIP não definido"
+    });
+  }
+
+  valorAssinatura = Number(planoRes.rows[0].valor_mensal);
+  if (!valorAssinatura || valorAssinatura <= 0) {
+  return res.status(400).json({
+    error: "Valor inválido para assinatura"
+  });
+}
+}
 
     // 🔥 TAXAS (BACKEND)
     const taxaTransacao  = Number((valorAssinatura * 0.10).toFixed(2)); // 10%
@@ -1411,6 +1446,26 @@ socket.on("excluirMensagem", async ({ id }) => {
 // ===============================
 //ROTA GET
 // ===============================
+//VALOR ASISNATURA
+app.get("/api/modelo/planos/me", auth, async (req, res) => {
+  try {
+    if (req.user.role !== "modelo") {
+      return res.status(403).json({ erro: "Apenas modelo" });
+    }
+
+    const plano = await db.query(
+      "SELECT * FROM modelos_planos WHERE modelo_id = $1",
+      [req.user.id]
+    );
+
+    res.json(plano.rows[0] || null);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ erro: "Erro ao buscar plano" });
+  }
+});
+
 app.get(
   "/api/modelo/chat/:id",
   auth, // cliente OU modelo
@@ -2395,6 +2450,58 @@ app.get("/manifest.json", (req, res) => {
 // ===============================
 // ROTA POST
 // ===============================
+
+app.put("/api/modelo/planos", auth, async (req, res) => {
+  try {
+    if (req.user.role !== "modelo") {
+      return res.status(403).json({ erro: "Apenas modelo" });
+    }
+
+    const { valor_mensal, desconto_trimestral } = req.body;
+
+    const mensal = Number(valor_mensal);
+    const desconto = Number(desconto_trimestral) || 0;
+
+    if (!mensal || mensal < 20) {
+      return res.status(400).json({ erro: "Valor mínimo R$ 20" });
+    }
+
+    if (desconto < 0 || desconto > 30) {
+      return res.status(400).json({ erro: "Desconto inválido" });
+    }
+
+    const valorTrimestral = (mensal * 3) * (1 - desconto / 100);
+
+    const existe = await db.query(
+      "SELECT modelo_id FROM modelos_planos WHERE modelo_id = $1",
+      [req.user.id]
+    );
+
+    if (existe.rows.length > 0) {
+      await db.query(`
+        UPDATE modelos_planos
+        SET valor_mensal = $1,
+            desconto_trimestral = $2,
+            valor_trimestral = $3,
+            updated_at = NOW()
+        WHERE modelo_id = $4
+      `, [mensal, desconto, valorTrimestral, req.user.id]);
+    } else {
+      await db.query(`
+        INSERT INTO modelos_planos
+        (modelo_id, valor_mensal, desconto_trimestral, valor_trimestral)
+        VALUES ($1, $2, $3, $4)
+      `, [req.user.id, mensal, desconto, valorTrimestral]);
+    }
+
+    res.json({ sucesso: true });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ erro: "Erro ao salvar plano" });
+  }
+});
+
 app.put("/api/ofertas/:id/encerrar", authModelo, async (req, res) => {
   try {
     const ofertaId = Number(req.params.id);
@@ -3274,28 +3381,65 @@ app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
       return res.status(400).json({ error: "modelo_id inválido" });
     }
 
-    // 🔍 BUSCA OFERTA ATIVA (FONTE DA VERDADE)
-    const ofertaRes = await db.query(
-      `
+    /* ===============================
+       1️⃣ VERIFICAR VIP ATIVO
+    =============================== */
+    const vipAtivo = await db.query(`
+      SELECT 1
+      FROM vip_subscriptions
+      WHERE cliente_id = $1
+        AND modelo_id = $2
+        AND expira_em > NOW()
+      LIMIT 1
+    `, [cliente_id, modelo_id]);
+
+    if (vipAtivo.rows.length > 0) {
+      return res.status(400).json({
+        error: "Você já é VIP deste modelo."
+      });
+    }
+
+    /* ===============================
+       2️⃣ BUSCAR OFERTA OU PLANO
+    =============================== */
+    const ofertaRes = await db.query(`
       SELECT valor_promocional
       FROM ofertas
       WHERE modelo_id = $1
         AND ativa = true
         AND NOW() BETWEEN data_inicio AND data_fim
       LIMIT 1
-      `,
-      [modelo_id]
-    );
+    `, [modelo_id]);
 
-    if (ofertaRes.rows.length === 0) {
+    let valorAssinatura;
+
+    if (ofertaRes.rows.length > 0) {
+      valorAssinatura = Number(ofertaRes.rows[0].valor_promocional);
+    } else {
+      const planoRes = await db.query(`
+        SELECT valor_mensal
+        FROM modelos_planos
+        WHERE modelo_id = $1
+      `, [modelo_id]);
+
+      if (planoRes.rows.length === 0) {
+        return res.status(400).json({
+          error: "Plano VIP não definido"
+        });
+      }
+
+      valorAssinatura = Number(planoRes.rows[0].valor_mensal);
+    }
+
+    if (!valorAssinatura || valorAssinatura <= 0) {
       return res.status(400).json({
-        error: "Oferta VIP indisponível"
+        error: "Valor inválido para assinatura"
       });
     }
 
-    const valorAssinatura = Number(ofertaRes.rows[0].valor_promocional);
-
-    // 🔒 TAXAS CALCULADAS NO BACKEND
+    /* ===============================
+       3️⃣ TAXAS
+    =============================== */
     const taxaTransacao  = Number((valorAssinatura * 0.10).toFixed(2));
     const taxaPlataforma = Number((valorAssinatura * 0.05).toFixed(2));
 
@@ -3303,12 +3447,24 @@ app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
       (valorAssinatura + taxaTransacao + taxaPlataforma).toFixed(2)
     );
 
-    // 🔒 Regra MercadoPago PIX
     if (!valorTotal || isNaN(valorTotal) || valorTotal < 1) {
       valorTotal = 1.00;
     }
 
-    // 💸 MERCADO PAGO
+    /* ===============================
+       4️⃣ BUSCAR EMAIL REAL DO CLIENTE
+    =============================== */
+    const clienteRes = await db.query(
+      `SELECT email FROM users WHERE id = $1`,
+      [cliente_id]
+    );
+
+    const emailCliente =
+      clienteRes.rows[0]?.email || "contato@velvet.lat";
+
+    /* ===============================
+       5️⃣ CRIAR PIX MERCADO PAGO
+    =============================== */
     const mp = new MercadoPagoConfig({
       accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN
     });
@@ -3321,7 +3477,7 @@ app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
         description: "Assinatura VIP",
         payment_method_id: "pix",
         payer: {
-          email: "contato@velvet.lat"
+          email: emailCliente
         },
         metadata: {
           tipo: "vip",
@@ -3334,16 +3490,40 @@ app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
       }
     });
 
-    // 🔁 RETORNO PARA O FRONT
+    /* ===============================
+       6️⃣ SALVAR PAGAMENTO PENDENTE
+    =============================== */
+    await db.query(`
+      INSERT INTO pagamentos_pix (
+        cliente_id,
+        modelo_id,
+        valor_total,
+        status,
+        mp_payment_id
+      )
+      VALUES ($1,$2,$3,'pendente',$4)
+    `, [
+      cliente_id,
+      modelo_id,
+      valorTotal,
+      pagamento.id
+    ]);
+
+    /* ===============================
+       7️⃣ RETORNAR QR CODE
+    =============================== */
     res.json({
-      qr_code: pagamento.point_of_interaction.transaction_data.qr_code_base64,
+      qr_code:
+        pagamento.point_of_interaction.transaction_data.qr_code_base64,
       copia_cola:
         pagamento.point_of_interaction.transaction_data.qr_code
     });
 
   } catch (err) {
     console.error("🔥 ERRO PIX VIP:", err);
-    res.status(500).json({ error: "Erro ao gerar Pix VIP" });
+    res.status(500).json({
+      error: "Erro ao gerar Pix VIP"
+    });
   }
 });
 
@@ -3450,31 +3630,45 @@ console.log("METADATA MP:", pagamento.metadata);
     // ===============================
     // 🔥 VIP
     // ===============================
-    if (tipo === "vip") {
-      const {
-        cliente_id,
-        modelo_id,
-        valor_assinatura,
-        taxa_transacao,
-        taxa_plataforma
-      } = pagamento.metadata;
+if (tipo === "vip") {
 
-      await ativarVipAssinatura({
-        cliente_id,
-        modelo_id,
-        valor_assinatura,
-        taxa_transacao,
-        taxa_plataforma
-      });
+  const {
+    cliente_id,
+    modelo_id,
+    valor_assinatura,
+    taxa_transacao,
+    taxa_plataforma
+  } = pagamento.metadata;
 
-      // realtime
-      const socketId = onlineClientes[cliente_id];
-      if (socketId) {
-        io.to(socketId).emit("vipAtivado", { modelo_id });
-      }
+  // 🔒 Evitar duplicação
+  const jaPago = await db.query(`
+    SELECT 1
+    FROM pagamentos_pix
+    WHERE mp_payment_id = $1
+      AND status = 'pago'
+    LIMIT 1
+  `, [paymentId]);
 
-      console.log("✅ VIP ATIVADO:", cliente_id, modelo_id);
-    }
+  if (jaPago.rows.length > 0) {
+    return res.sendStatus(200);
+  }
+
+  await ativarVipAssinatura({
+    cliente_id,
+    modelo_id,
+    valor_assinatura,
+    taxa_transacao,
+    taxa_plataforma
+  });
+
+  await db.query(`
+    UPDATE pagamentos_pix
+    SET status = 'pago'
+    WHERE mp_payment_id = $1
+  `, [paymentId]);
+
+  console.log("✅ VIP ATIVADO:", cliente_id, modelo_id);
+}
 
     // ===============================
     // 🔓 CONTEÚDO

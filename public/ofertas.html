@@ -45,6 +45,41 @@
 
 </div>
 
+<div class="form-group">
+  <label for="assinaturaMensal">
+    Assinatura mensal <span style="color:red">*</span>
+  </label>
+
+  <div class="input-preco">
+    <span class="moeda">R$</span>
+    <input 
+      type="number"
+      id="assinaturaMensal"
+      min="20"
+      step="0.01"
+      placeholder="20.00"
+      required
+    >
+  </div>
+
+  <small class="info-preco">
+    Valor mínimo permitido: R$ 20,00
+  </small>
+</div>
+
+<div class="form-group">
+  <label for="descontoTrimestral">Desconto trimestral (%)</label>
+  <input type="number" id="descontoTrimestral" min="0" max="50" step="1" value="0">
+</div>
+
+<div class="form-group">
+  <label>Assinatura trimestral</label>
+  <div class="input-preco">
+    <span class="moeda">R$</span>
+    <input type="text" id="assinaturaTrimestral" readonly>
+  </div>
+</div>
+
 </main>
 
 <script src="/socket.io/socket.io.js"></script>

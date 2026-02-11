@@ -346,3 +346,33 @@ body {
   color: #888;
   margin: 12px 0;
 }
+
+.input-preco {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #E6E6EA;
+  border-radius: 14px;
+  padding: 12px 14px;
+  gap: 8px;
+}
+
+.input-preco .moeda {
+  font-weight: 600;
+  color: #7B2CFF;
+  font-size: 16px;
+}
+
+.input-preco input {
+  border: none;
+  outline: none;
+  flex: 1;
+  font-size: 16px;
+}
+
+.info-preco {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  color: #666;
+}

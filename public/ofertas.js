@@ -141,7 +141,29 @@ if (btnCriar) {
 
 carregarOfertasDoBanco();
 
-function abrirModalCriarOferta() {
+async function abrirModalCriarOferta() {
+
+  const resPlano = await fetch("/api/modelo/planos/me", {
+    headers: {
+      Authorization: "Bearer " + localStorage.getItem("token")
+    }
+  });
+
+  if (!resPlano.ok) {
+  alert("Erro ao buscar plano.");
+  return;
+}
+
+  const plano = await resPlano.json();
+
+  if (!plano || !plano.valor_mensal) {
+    alert("Defina primeiro o valor da assinatura mensal.");
+    return;
+  }
+
+  const VALOR_BASE = Number(plano.valor_mensal);
+  const VALOR_MINIMO = VALOR_BASE * 0.5; // mínimo 50% do plano
+
   let etapa = 1;
 
   const dados = {
@@ -151,9 +173,6 @@ function abrirModalCriarOferta() {
     desconto: 0,
     mensagem: ""
   };
-
-  const VALOR_BASE = 20;
-  const VALOR_MINIMO = 15;
 
   const modal = document.createElement("div");
   modal.className = "modal-overlay";
@@ -177,10 +196,10 @@ function abrirModalCriarOferta() {
 
   modal.querySelector(".modal-backdrop").onclick = () => modal.remove();
 
-  function calcularValor() {
-    const v = VALOR_BASE * (1 - dados.desconto / 100);
-    return v < VALOR_MINIMO ? VALOR_MINIMO : v;
-  }
+ function calcularValor() {
+  const v = VALOR_BASE * (1 - dados.desconto / 100);
+  return v < VALOR_MINIMO ? VALOR_MINIMO : v;
+}
 
   function render() {
     btnVoltar.disabled = etapa === 1;
@@ -364,4 +383,122 @@ async function carregarOfertasDoBanco() {
   }
 }
 
+function validarAssinatura() {
+  const input = document.getElementById("assinaturaMensal");
+  const valor = parseFloat(input.value);
 
+  if (isNaN(valor) || valor < 20) {
+    alert("O valor mínimo da assinatura é R$ 20,00");
+    input.focus();
+    return false;
+  }
+
+  return true;
+}
+
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  const mensalInput = document.getElementById("assinaturaMensal");
+  const descontoTriInput = document.getElementById("descontoTrimestral");
+  const trimestralInput = document.getElementById("assinaturaTrimestral");
+  const btnSalvar = document.getElementById("salvarPlanos");
+
+  if (!mensalInput || !descontoTriInput || !trimestralInput) return;
+
+  function calcularTrimestral() {
+    const mensal = parseFloat(mensalInput.value);
+    let desconto = parseFloat(descontoTriInput.value) || 0;
+
+    if (desconto > 30) {
+      desconto = 30;
+      descontoTriInput.value = 30;
+    }
+
+    if (isNaN(mensal) || mensal < 20) {
+      trimestralInput.value = "0.00";
+      return;
+    }
+
+    const valorBase = mensal * 3;
+    const valorFinal = valorBase * (1 - desconto / 100);
+
+    trimestralInput.value = valorFinal.toFixed(2);
+  }
+
+  mensalInput.addEventListener("input", calcularTrimestral);
+  descontoTriInput.addEventListener("input", calcularTrimestral);
+
+  mensalInput.addEventListener("blur", () => {
+    const valor = parseFloat(mensalInput.value);
+    if (isNaN(valor) || valor < 20) {
+      mensalInput.value = 20;
+      calcularTrimestral();
+    }
+  });
+
+  if (btnSalvar) {
+    btnSalvar.addEventListener("click", async () => {
+
+      const mensal = parseFloat(mensalInput.value);
+      const desconto = parseFloat(descontoTriInput.value) || 0;
+
+      if (isNaN(mensal) || mensal < 20) {
+        alert("Valor mínimo mensal é R$ 20");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/modelo/planos", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + localStorage.getItem("token")
+          },
+          body: JSON.stringify({
+            valor_mensal: mensal,
+            desconto_trimestral: desconto
+          })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          alert(data.erro);
+          return;
+        }
+
+        alert("Plano salvo com sucesso 💜");
+
+      } catch (err) {
+        console.error(err);
+        alert("Erro ao salvar plano");
+      }
+
+    });
+  }
+
+  async function carregarPlano() {
+    try {
+      const res = await fetch("/api/modelo/planos/me", {
+        headers: {
+          Authorization: "Bearer " + localStorage.getItem("token")
+        }
+      });
+
+      const plano = await res.json();
+      if (!plano) return;
+
+      mensalInput.value = plano.valor_mensal;
+      descontoTriInput.value = plano.desconto_trimestral;
+
+      calcularTrimestral();
+
+    } catch (err) {
+      console.error("Erro ao carregar plano", err);
+    }
+  }
+
+  carregarPlano();
+
+});
