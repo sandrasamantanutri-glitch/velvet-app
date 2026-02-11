@@ -348,6 +348,39 @@ if (btn) {
 }
 }
 
+function abrirPreviewMidia(midia) {
+  let modal = document.getElementById("previewMidiaModal");
+
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "previewMidiaModal";
+    modal.className = "preview-modal";
+
+    modal.innerHTML = `
+      <div class="preview-backdrop"></div>
+      <div class="preview-box">
+        <span class="preview-close">×</span>
+        <div class="preview-content"></div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const fechar = () => modal.remove();
+    modal.querySelector(".preview-backdrop").onclick = fechar;
+    modal.querySelector(".preview-close").onclick = fechar;
+  }
+
+  const content = modal.querySelector(".preview-content");
+  content.innerHTML = "";
+
+  if ((midia.tipo_media || midia.tipo) === "video") {
+    content.innerHTML = `<video src="${midia.url}" controls autoplay></video>`;
+  } else {
+    content.innerHTML = `<img src="${midia.url}" />`;
+  }
+}
+
 function abrirPreviewAvatar(url) {
   let modal = document.getElementById("avatarPreviewModal");
 
