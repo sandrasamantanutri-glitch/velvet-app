@@ -4076,7 +4076,7 @@ app.post(
     }
 
     try {
-      const { mimetype } = req.file;
+      const { mimetype, location } = req.file;
 
       let tipo;
       if (mimetype.startsWith("image/")) {
@@ -4089,8 +4089,17 @@ app.post(
         });
       }
 
-      const url = req.file.location;
-      const thumbnail_url = null; // vídeo → gerar depois
+      const url = location;
+      let thumbnail_url = null;
+
+      // 🔥 GERA THUMB SE FOR VÍDEO
+      if (tipo === "video") {
+        try {
+          thumbnail_url = await gerarThumbnailVideo(url);
+        } catch (err) {
+          console.error("Erro ao gerar thumbnail:", err);
+        }
+      }
 
       const result = await db.query(
         `
