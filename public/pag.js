@@ -1,3 +1,4 @@
+localStorage.getItem("token")
 
 window.__CLIENTE_VIP__ = false;
 window.__VIP_READY__ = false;

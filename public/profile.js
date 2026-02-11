@@ -59,7 +59,7 @@ if (token) {
 }
 
 /////PERFIL ///
-
+const btnUpload = document.querySelector(".btn-upload");
 const avatarImg  = document.getElementById("profileAvatar");
 const capaImg    = document.getElementById("profileCapa");
 const nomeEl     = document.getElementById("profileName");
@@ -381,26 +381,26 @@ document.addEventListener("DOMContentLoaded", async () => {
 // ===============================
 // ROLE VISUAL
 // ===============================
-// function aplicarRoleNoBody() {
-//   document.body.classList.remove("role-modelo", "role-cliente", "role-publico");
-//   if (role === "modelo") {
-//     document.body.classList.add("role-modelo");
-//   } 
-//   else if (role === "cliente") {
-//     document.body.classList.add("role-cliente");
-//   } 
-//   else {
-//     // VISITANTE
-//     document.body.classList.add("role-publico");
-//   }
-// }
+function aplicarRoleNoBody() {
+  document.body.classList.remove("role-modelo", "role-cliente", "role-publico");
+  if (role === "modelo") {
+    document.body.classList.add("role-modelo");
+  } 
+  else if (role === "cliente") {
+    document.body.classList.add("role-cliente");
+  } 
+  else {
+    // VISITANTE
+    document.body.classList.add("role-publico");
+  }
+}
 
-// function valorBRL(valor) {
-//   return Number(valor).toLocaleString("pt-BR", {
-//     style: "currency",
-//     currency: "BRL"
-//   });
-// }
+function valorBRL(valor) {
+  return Number(valor).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  });
+}
 
 
 let OFERTA_ATUAL = null;
@@ -1004,7 +1004,6 @@ function atualizarUIVip(modelo_id) {
 
 
 //BTN DE UPLOAD
-const btnUpload = document.querySelector(".btn-upload");
 if (role !== "modelo" || !token) {
   btnUpload?.remove();
 }
