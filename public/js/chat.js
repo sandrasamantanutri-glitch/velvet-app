@@ -270,7 +270,7 @@ function renderMensagem(msg) {
 
     div.innerHTML = `
 <div class="chat-conteudo premium ${
-  role === "modelo"
+  msg.sender === "modelo"
     ? "visto"
     : (Number(msg.preco) > 0 && !msg.visto ? "bloqueado" : "visto")
 }"
