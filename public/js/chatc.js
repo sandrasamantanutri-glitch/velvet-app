@@ -78,7 +78,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   marcarComoLido(modelo_id);
 
-  ocket.emit("loginCliente", cliente_id);
+  socket.emit("loginCliente", cliente_id);
   socket.emit("loginModelo", modelo_id);
 
  const input = document.getElementById("msgInput");
@@ -606,7 +606,7 @@ function excluirMensagem() {
 
 async function carregarInfoModelo(modeloId) {
   try {
-    const res = await fetch(`/api/chat/modelo/${modeloId}`, {
+    const res = await fetch(`/api/modelo/chat/${modeloId}`, {
       headers: {
         Authorization: "Bearer " + token
       }
