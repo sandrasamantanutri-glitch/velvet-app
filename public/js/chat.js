@@ -66,7 +66,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   const me = await res.json();
   modelo_id = me.id;
 
-  cliente_id = clienteId;
   await carregarInfoCliente(cliente_id);
 
   sala = `chat_${cliente_id}_${modelo_id}`;
