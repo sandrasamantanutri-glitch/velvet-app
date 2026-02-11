@@ -465,7 +465,7 @@ body {
 .preview-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.85);
+  background: rgba(0,0,0,0.9);
 }
 
 .preview-box {
@@ -473,25 +473,27 @@ body {
   z-index: 2;
   max-width: 90vw;
   max-height: 90vh;
-  background: #fff;
-  border-radius: 16px;
-  padding: 20px;
-  overflow-y: auto;
 }
 
-.preview-grid img,
-.preview-grid video {
-  max-width: 100%;
-  margin-bottom: 15px;
-  border-radius: 12px;
+.preview-content img,
+.preview-content video {
+  max-width: 90vw;
+  max-height: 85vh;
+  border-radius: 16px;
 }
 
 .preview-close {
   position: absolute;
-  top: 10px;
-  right: 14px;
-  font-size: 24px;
+  top: -40px;
+  right: 0;
+  font-size: 28px;
+  color: #fff;
   cursor: pointer;
+}
+
+.midia-item:hover {
+  transform: scale(1.03);
+  transition: 0.2s ease;
 }
 
 

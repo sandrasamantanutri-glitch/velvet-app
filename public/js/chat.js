@@ -220,7 +220,7 @@ if (item) {
   input.value = "";
 }
 
-function abrirPreviewConteudo(midias) {
+function abrirPreviewMidia(midia) {
   let modal = document.getElementById("previewConteudoModal");
 
   if (!modal) {
@@ -245,17 +245,11 @@ function abrirPreviewConteudo(midias) {
   const grid = modal.querySelector(".preview-grid");
   grid.innerHTML = "";
 
-  midias.forEach(m => {
-    const el = document.createElement("div");
-
-    if ((m.tipo_media || m.tipo) === "video") {
-      el.innerHTML = `<video src="${m.url}" controls autoplay></video>`;
-    } else {
-      el.innerHTML = `<img src="${m.url}" />`;
-    }
-
-    grid.appendChild(el);
-  });
+  if ((midia.tipo_media || midia.tipo) === "video") {
+    grid.innerHTML = `<video src="${midia.url}" controls autoplay></video>`;
+  } else {
+    grid.innerHTML = `<img src="${midia.url}" />`;
+  }
 }
 
 function renderMensagem(msg) {
@@ -343,14 +337,19 @@ const btn = div.querySelector(".msg-menu");
  );
   });
 }
-  // 🔥 PERMITIR MODELO ABRIR A PRÓPRIA MÍDIA
-if (role === "modelo") {
-  const conteudo = div.querySelector(".chat-conteudo");
-  if (conteudo) {
-    conteudo.addEventListener("click", () => {
-      abrirPreviewConteudo(msg.midias);
+  // 🔥 PERMITIR MODELO ABRIR CADA MÍDIA INDIVIDUALMENTE
+if (role === "modelo" && msg.tipo === "conteudo" && msg.midias) {
+
+  const midiasEls = div.querySelectorAll(".midia-item");
+
+  midiasEls.forEach((el, index) => {
+    el.style.cursor = "pointer";
+
+    el.addEventListener("click", (e) => {
+      e.stopPropagation(); // evita conflito com outros cliques
+      abrirPreviewMidia(msg.midias[index]);
     });
-  }
+  });
 }
 }
 
