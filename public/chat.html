@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
    <title>Chat</title>
-  <link rel="stylesheet" href="/css/chat.css">
+  <link rel="stylesheet" href="css/chat.css">
   <link rel="stylesheet" href="/chatmodelo.css">
 </head>
 
@@ -17,7 +17,7 @@
   </button>
 
   <div class="chat-cliente-info">
-    <img id="chatClienteAvatar"class="chat-avatar"src="/assets/avatar.png"alt="Avatar cliente"/>
+    <img id="chatClienteAvatar" class="chat-avatar" src="/assets/avatar.png" alt="Avatar cliente" />
     <div class="chat-cliente-texto">
       <div id="chatClienteNome" class="chat-nome">Cliente</div>
       <div id="chatClienteStatus" class="chat-status">carregando…</div>
@@ -27,12 +27,10 @@
 
 
 <!-- ÁREA DE MENSAGENS -->
-<main id="chatBox" class="chat-box">
+<main id="chatBox" class="chat-box"></main>
 
 <!-- INPUT FIXO -->
 <footer class="chat-input">
-
-  <!-- BOTÃO MÍDIA -->
   <button
     id="btnEnviarConteudo1"
     class="btn-midia"
@@ -48,7 +46,6 @@
     placeholder="Digite uma mensagem..."
     autocomplete="off"/>
 
-  <!-- BOTÃO ENVIAR -->
   <button
     class="btn-enviar1"
     onclick="enviarMensagem()"
@@ -58,11 +55,8 @@
   </button>
 </footer>
 
-<!-- POPUP DE CONTEÚDOS -->
 <div id="popupConteudos" class="hidden">
-  
   <div class="popup-backdrop" onclick="fecharPopupConteudos()"></div>
-
   <div class="popup-box">
     <h3>Enviar conteúdo</h3>
 
@@ -99,7 +93,7 @@
   </div>
 </div>
 
-</main>
+
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/js/chat.js"></script>
