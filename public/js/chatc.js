@@ -11,9 +11,17 @@ const socket = io({
 
   socket.emit("auth", { token });
 
+let modelo_id=null
+clienteId=null;
+let sala = null;
+let cliente_id = null;
+let chatAtivo = null;
+const mensagensRenderizadas = new Set();
+// let conteudosVistosModelo = new Set();
+
 
 const params = new URLSearchParams(location.search);
-const modeloId = Number(params.get("modelo_id"));
+modelo_id = Number(params.get("modelo_id"));
 
 const chatBox = document.getElementById("chatBox");
 
@@ -24,14 +32,6 @@ chatBox.addEventListener("scroll", () => {
 });
 
 const input = document.getElementById("msgInput");
-
-clienteId=null;
-let modelo_id = modeloId; // 🔥 ESSENCIAL
-let sala = null;
-let cliente_id = null;
-let chatAtivo = null;
-const mensagensRenderizadas = new Set();
-// let conteudosVistosModelo = new Set();
 
 
 // 📜 HISTÓRICO

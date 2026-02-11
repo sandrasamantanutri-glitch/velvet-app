@@ -10,8 +10,15 @@ const socket = io({
 
 socket.emit("auth", { token });
 
+let modeloId = null;
+let sala = null;
+let modelo_id = null;
+let chatAtivo = null;
+let conteudosVistosCliente = new Set();
+let cliente_id=null
+
 const params = new URLSearchParams(location.search);
-const clienteId = Number(params.get("clienteId"));
+cliente_id = Number(params.get("cliente_id"));
 
 const chatBox = document.getElementById("chatBox");
 
@@ -23,12 +30,7 @@ chatBox.addEventListener("scroll", () => {
 
 const input = document.getElementById("msgInput");
 
-let modeloId = null;
-let sala = null;
-let modelo_id = null;
-let cliente_id = null;
-let chatAtivo = null;
-let conteudosVistosCliente = new Set();
+
 
 // 📜 HISTÓRICO
 socket.on("chatHistory", mensagens => {
