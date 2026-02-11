@@ -28,8 +28,8 @@ img {
 #listaModelos {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 22px;
-  padding: 22px; 
+  gap: 50px;
+  padding: 50px; 
 }
 
 /* card */
