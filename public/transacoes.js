@@ -1,4 +1,3 @@
-// 🔥 variável global
 let todasTransacoes = [];
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -6,10 +5,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   document
     .getElementById("filtroTipo")
-    .addEventListener("change", aplicarFiltros);
-
-  document
-    .getElementById("filtroStatus")
     .addEventListener("change", aplicarFiltros);
 });
 
@@ -37,26 +32,17 @@ async function carregarTransacoes() {
 }
 
 // ================================
-// FILTROS
+// FILTRO APENAS POR TIPO
 // ================================
 function aplicarFiltros() {
   const tipoSelecionado =
     document.getElementById("filtroTipo").value;
-
-  const statusSelecionado =
-    document.getElementById("filtroStatus").value;
 
   let filtradas = todasTransacoes;
 
   if (tipoSelecionado) {
     filtradas = filtradas.filter(t =>
       t.tipo === tipoSelecionado
-    );
-  }
-
-  if (statusSelecionado) {
-    filtradas = filtradas.filter(t =>
-      t.status === statusSelecionado
     );
   }
 
@@ -96,18 +82,10 @@ function renderTransacoes(transacoes) {
           R$ ${Number(t.valor).toFixed(2)}
         </div>
 
-        ${
-          t.status !== "pago"
-            ? `<button class="btn-reclamar"
-                onclick="reclamar(${t.id}, '${t.tipo}')">
-                Reclamar pagamento
-              </button>`
-            : ""
-        }
-      </div>
-
-      <div class="transacao-status status-${t.status}">
-        ${t.status.toUpperCase()}
+        <button class="btn-reclamar"
+          onclick="reclamar(${t.id}, '${t.tipo}')">
+          Reclamar pagamento
+        </button>
       </div>
     `;
 
