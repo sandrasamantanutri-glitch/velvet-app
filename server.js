@@ -2710,20 +2710,12 @@ app.put("/api/usuario/dados", auth, async (req, res) => {
       });
     }
 
-    // 🔎 Buscar nome_exibicao se já existir
-    const modelo = await db.query(
-      "SELECT nome_exibicao FROM modelos WHERE user_id = $1",
-      [userId]
-    );
-
-    const nome_exibicao = modelo.rows[0]?.nome_exibicao || null;
-
     // ✅ Inserir ou atualizar dados de MODELO (mesmo sendo cliente)
     await db.query(`
       INSERT INTO modelos_dados
-        (user_id, nome_exibicao, nome_completo, data_nascimento, telefone, endereco, estado, cidade, pais, atualizado_em)
+        (user_id, nome_completo, data_nascimento, telefone, endereco, estado, cidade, pais, atualizado_em)
       VALUES
-        ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW())
+        ($1,$2,$3,$4,$5,$6,$7,$8,NOW())
       ON CONFLICT (user_id)
       DO UPDATE SET
         nome_completo = EXCLUDED.nome_completo,
@@ -2736,7 +2728,6 @@ app.put("/api/usuario/dados", auth, async (req, res) => {
         atualizado_em = NOW()
     `, [
       userId,
-      nome_exibicao,
       nome_completo?.trim() || null,
       data_nascimento || null,
       telefone?.trim() || null,
