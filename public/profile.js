@@ -144,6 +144,8 @@ function decodeJWT(token) {
 //   openAgeGate("login");
 // }
 
+
+//PERFIL ///
 async function carregarPerfilBase() {
 
   if (!modelo_id || isNaN(Number(modelo_id))) {
@@ -172,6 +174,7 @@ async function carregarPerfilBase() {
   aplicarPerfilNoDOM(modelo);
 }
 
+//ESPECIAL E PRA VOCE //
 async function carregarFeedBase() {
   if (!listaMidias || !modelo_id) return;
 
@@ -208,7 +211,6 @@ async function aplicarRegrasDeAcesso() {
   // MODELO
   if (role === "modelo" && modo === "privado") {
   ofertaCard.style.display = "block";
-  btnChat?.classList.remove("hidden");
 
   if (btnAssinar) {
     btnAssinar.disabled = true;
@@ -235,7 +237,6 @@ async function aplicarRegrasDeAcesso() {
 
       if (vip) {
         ofertaCard.style.display = "none";
-        btnChat?.classList.remove("hidden");
 
       } else {
         ofertaCard.style.display = "block";
