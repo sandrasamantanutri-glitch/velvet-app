@@ -259,12 +259,13 @@ h2 #modeloNome {
   gap: 10px;
   width: 100%;
   font-size: 16px;
+  height: 90px;
 }
 
 /* INPUT */
 #msgInput {
   flex: 1;
-  height: 36px;                 
+  height: 40px;                 
   padding: 0 14px;
   border-radius: 14px;          
   border: 1px solid #9E6BFF;
@@ -274,8 +275,8 @@ h2 #modeloNome {
 
 /* BOTÃO 📦 */
 #btnEnviarConteudo {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   min-width: 80px;
 
   border-radius: 12px;          /* 🔥 NÃO oval */
@@ -296,9 +297,9 @@ h2 #modeloNome {
 
 /* BOTÃO ENVIAR */
 #sendBtn {
-  height: 36px;
+  height: 40px;
+  width: 40px;
   padding: 0 18px;
-
   border-radius: 14px;          /* 🔥 igual input */
   border: none;
 
