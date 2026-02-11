@@ -77,6 +77,30 @@ function mostrarStatusVerificacao(status) {
   }
 }
 
+async function irParaInbox() {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    window.location.href = "/index.html";
+    return;
+  }
+
+  const res = await fetch("/api/me", {
+    headers: {
+      Authorization: "Bearer " + token
+    }
+  });
+
+  if (!res.ok) return;
+
+  const user = await res.json();
+
+  if (user.role === "modelo") {
+    window.location.href = "/inbox.html";
+  } else {
+    window.location.href = "/inboxc.html";
+  }
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   const token = localStorage.getItem("token");
   if (!token) return;
