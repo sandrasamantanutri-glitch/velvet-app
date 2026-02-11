@@ -24,7 +24,12 @@ async function carregarTransacoes() {
   });
 
   if (!res.ok) {
-    lista.innerHTML = "Erro ao carregar transações. No momento, apenas clientes podem processar pagamentos.";
+    lista.innerHTML = `
+  <div class="erro-transacoes">
+    Erro ao carregar transações.<br>
+    No momento, apenas clientes podem processar pagamentos.
+  </div>
+`;
     return;
   }
 

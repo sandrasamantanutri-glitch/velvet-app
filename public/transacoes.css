@@ -188,3 +188,11 @@
   background: #7B2CFF;
   color: white;
 }
+
+.erro-transacoes {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6f6f6f;
+  font-size: 15px;
+  line-height: 1.6;
+}
