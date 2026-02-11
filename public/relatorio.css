@@ -513,3 +513,30 @@ body {
   color: #1f7a3f;
 }
 
+/* ===============================
+   BOTÃO VOLTAR
+================================ */
+.btn-voltar {
+  position:relative;
+  top: 70px;
+  left: 40px;
+  border: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.btn-voltar img {
+  width: 30px;
+}
+
+.btn-voltar:hover {
+  transform: scale(1.08);
+}
+
