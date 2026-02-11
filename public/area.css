@@ -313,11 +313,6 @@ body.role-cliente .area-saldos {
     grid-template-columns: 1fr !important;
   }
 
-  /* itens ocupam largura total */
-  .area-item {
-    width: 100%;
-  }
-
   /* melhora toque no mobile */
   .area-item {
     padding: 18px 16px;
