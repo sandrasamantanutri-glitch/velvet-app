@@ -37,7 +37,7 @@
 
   <div class="form-grid">
     <div class="form-group">
-      <label>Seu nome de Usuário (seu @ na plataforma)*</label>
+      <label>Como quer ser chamado *</label>
       <input type="text" name="nome_exibicao" placeholder="Como quer ser chamado(a) na plataforma" required>
     </div>
 
@@ -77,6 +77,21 @@
     </div>
    <div class="footer-copy"> © 2026 Velvet. Todos os direitos reservados.</div>
   </footer>
+
+  <script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    alert("Para ter acesso a essa página deve fazer seu login ou seu cadastro.");
+
+    window.location.href = "/index.html";
+    return;
+  }
+
+});
+</script>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/header.js"></script>
