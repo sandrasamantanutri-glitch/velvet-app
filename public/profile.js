@@ -145,7 +145,12 @@ function decodeJWT(token) {
 // }
 
 async function carregarPerfilBase() {
-  // 🔐 PERFIL PRÓPRIO (CLIENTE OU MODELO)
+
+  if (!modelo_id || isNaN(Number(modelo_id))) {
+    console.warn("modelo_id inválido:", modelo_id);
+    return;
+  }
+
   if (modo === "privado") {
     const res = await fetch("/api/modelo/me", {
       headers: { Authorization: "Bearer " + token }
@@ -159,7 +164,6 @@ async function carregarPerfilBase() {
     return;
   }
 
-  //PERFIL PÚBLICO
   const res = await fetch(`/api/modelo/publico/${modelo_id}`);
   if (!res.ok) throw new Error("Perfil público não encontrado");
 
@@ -167,7 +171,6 @@ async function carregarPerfilBase() {
   modelo_id = Number(modelo.id);
   aplicarPerfilNoDOM(modelo);
 }
-
 
 async function carregarFeedBase() {
   if (!listaMidias || !modelo_id) return;
@@ -245,10 +248,10 @@ async function aplicarRegrasDeAcesso() {
 
 async function iniciarPerfil() {
   try {
-    await carregarPerfilBase();   // sempre
-    await carregarOfertaAtiva();  // sempre
-    await carregarFeedBase();     // sempre
-    await aplicarRegrasDeAcesso();// decide acesso
+    await carregarPerfilBase();   
+    await carregarOfertaAtiva();  
+    await carregarFeedBase();     
+    await aplicarRegrasDeAcesso();
   }
  catch (err) {
   console.error("🔥 ERRO REAL AO INICIAR PERFIL 🔥");
