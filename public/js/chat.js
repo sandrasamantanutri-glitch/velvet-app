@@ -269,7 +269,11 @@ function renderMensagem(msg) {
  ) {
 
     div.innerHTML = `
-<div class="chat-conteudo premium ${msg.visto ? "visto" : "bloqueado"}"
+<div class="chat-conteudo premium ${
+  role === "modelo"
+    ? "visto"
+    : (Number(msg.preco) > 0 && !msg.visto ? "bloqueado" : "visto")
+}"
      data-id="${msg.id}"
      data-qtd="${msg.quantidade ?? msg.midias.length}">
 
