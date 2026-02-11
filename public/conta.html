@@ -3,8 +3,9 @@
 
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
    <title>Meus Dados Pessoais</title>
-  <link rel="stylesheet" href="/area.css">
+  <link rel="stylesheet" href="conta.css">
 </head>
 
 <body>
@@ -57,31 +58,31 @@
       <div class="form-group full">
         <label>País*</label> <input type="text" name="pais" required> <small>*Informações obrigatórias</small>
       </div>
-      
+      </div>
       <button type="submit" class="btn-salvar">
        Salvar e continuar
       </button>
-      <b></b>
+      <br><br>
+     <span class="form-info" id="infoDados"> ⏳ Após salvar, envie seus documentos na etapa 2 e sua conta entra em processo de verificação. O perfil público e a monetização são liberados após aprovação.</span>
     </form>
-     ⏳ Após salvar, envie seus documentos na etapa 2 e sua conta entra em processo de verificação. O perfil público e a monetização são liberados após aprovação.
+  
   </section>
 
   <section class="area-card">
 
+    <h3>Verificação de Identidade</h3>
     <div class="verificacao-steps">
-     <span class="step concluido">1. Dados pessoais</span>
-     <span class="step ativo">2. Documentos</span>
-
-     <h3>Verificação de Identidade</h3>
+   <span class="step concluido">1. Dados pessoais</span>
+   <span class="step ativo">2. Documentos</span>
+</div>
 
      <div class="form-info" id="infoDocumentos">
-  <div id="statusContainer"></div>
-
-  Para proteger você e a plataforma, confirmamos sua identidade com um documento oficial válido. Seus documentos são analisados de forma confidencial e <strong>nunca</strong> ficam visíveis para outros usuários.
+  <div id="statusContainer">Para proteger você e a plataforma, confirmamos sua identidade com um documento oficial válido. Seus documentos são analisados de forma confidencial e <strong>nunca</strong> ficam visíveis para outros usuários.
+  </div>
 </div>
 
 <p class="status-descricao" id="descricaoAnalise">
-O processo de analise pode levar até <strong>48 horas</strong>, dependendo do volume de solicitações.
+O processo de análise pode levar até <strong>48 horas</strong>, dependendo do volume de solicitações.
 </p> 
       <form id="formDocumentos" class="form-area" enctype="multipart/form-data">
         <div class="form-group full">
@@ -111,8 +112,7 @@ O processo de analise pode levar até <strong>48 horas</strong>, dependendo do v
        </div>
 
        <div class="form-group full check-group">
-         <input type="checkbox" id="confirmacao" required>
-         <label for="confirmacao"> Declaro que sou a pessoa do documento enviado,sou maior de 18 anos e autorizo a verificação da minha identidade.</label>
+       <input type="checkbox" id="confirmacao" name="confirmacao" required> <label for="confirmacao"> Declaro que sou a pessoa do documento enviado, sou maior de 18 anos e autorizo a verificação da minha identidade.</label>
        </div>
        
        <button type="submit" class="btn-salvar"> Enviar documentos para análise </button>
@@ -121,9 +121,10 @@ O processo de analise pode levar até <strong>48 horas</strong>, dependendo do v
   </section>
 
   <section class="area-section">
-  Excluir minha Conta
+
 
   <div class="danger-zone">
+      <h4>Excluir minha Conta</h4>
     <button class="btn-danger" onclick="abrirConfirmacaoExclusao()">
       Excluir conta permanentemente
     </button>
