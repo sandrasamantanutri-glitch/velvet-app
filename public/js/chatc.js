@@ -325,6 +325,7 @@ if (role === "cliente" && msg.tipo === "conteudo") {
       e.stopPropagation();
 
       // 🔒 SE TEM PREÇO E NÃO FOI VISTO
+      console.log("PRECO:", msg.preco, "VISTO:", msg.visto);
       if (Number(msg.preco) > 0 && !msg.visto) {
         window.MIDIA_VENDA_ATUAL = {
   conteudo_id: msg.id,
