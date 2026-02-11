@@ -243,20 +243,20 @@ async function aplicarRegrasDeAcesso() {
   }
 }
 
-// async function iniciarPerfil() {
-//   try {
-//     await carregarPerfilBase();   // sempre
-//     await carregarOfertaAtiva();  // sempre
-//     await carregarFeedBase();     // sempre
-//     await aplicarRegrasDeAcesso();// decide acesso
-//   }
-//  catch (err) {
-//   console.error("🔥 ERRO REAL AO INICIAR PERFIL 🔥");
-//   console.error(err);
-//   console.trace();
-//   alert(err.message || err);
-//  }
-// }
+async function iniciarPerfil() {
+  try {
+    await carregarPerfilBase();   // sempre
+    await carregarOfertaAtiva();  // sempre
+    await carregarFeedBase();     // sempre
+    await aplicarRegrasDeAcesso();// decide acesso
+  }
+ catch (err) {
+  console.error("🔥 ERRO REAL AO INICIAR PERFIL 🔥");
+  console.error(err);
+  console.trace();
+  alert(err.message || err);
+ }
+}
 
 function aplicarPerfilNoDOM(modelo) {
   nomeEl.textContent = modelo.nome_exibicao || "";
