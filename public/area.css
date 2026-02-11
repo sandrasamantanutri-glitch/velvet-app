@@ -178,7 +178,6 @@ body.role-cliente .area-saldos {
   margin: 20px auto 60px;
   background: #fff;
   border-radius: 18px;
-  padding: 30px 30px 30px;
   box-shadow: linear-gradient(135deg, #9e6bff, #7b2cff);
 }
 
@@ -310,11 +309,6 @@ body.role-cliente .area-saldos {
   .area-grid,
   .area-grid-usuario {
     grid-template-columns: 1fr !important;
-  }
-
-  /* itens ocupam largura total */
-  .area-item {
-    width: 100%;
   }
 
   /* melhora toque no mobile */
