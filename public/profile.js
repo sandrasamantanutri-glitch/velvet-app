@@ -702,8 +702,6 @@ function esconderLoading() {
 
 //2º FUNÇÃO
 async function enviarMidia(file, dados = {}) {
-  const token = localStorage.getItem("token");
-
   if (!token || role !== "modelo") {
     alert("Apenas modelos autenticadas podem enviar mídias.");
     throw new Error("Upload não autorizado");
