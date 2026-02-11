@@ -1,5 +1,5 @@
 window.socket = io();
-
+const token = localStorage.getItem("token");
 const role = localStorage.getItem("role");
 const params = new URLSearchParams(window.location.search);
 const modeloParam = params.get("id");
@@ -72,32 +72,6 @@ const btnSalvarBio = document.getElementById("btnSalvarBio");
 const bioInput     = document.getElementById("bioInput");
 const localEl = document.getElementById("local-texto");
 const inputUpload = document.getElementById("inputUpload");
-
-//BTN DE UPLOAD
-const btnUpload = document.querySelector(".btn-upload");
-if (role !== "modelo" || !token) {
-  btnUpload?.remove();
-}
-
-//🌐 REDES SOCIAIS ////
-const igLink = document.getElementById("link-instagram");
-const ttLink = document.getElementById("link-tiktok");
-
-// Instagram
-if (modelo.instagram && igLink) {
-  igLink.href = `https://instagram.com/${modelo.instagram}`;
-  igLink.style.display = "inline-block";
-} else if (igLink) {
-  igLink.style.display = "none";
-}
-
-// TikTok
-if (modelo.tiktok && ttLink) {
-  ttLink.href = `https://www.tiktok.com/@${modelo.tiktok}`;
-  ttLink.style.display = "inline-block";
-} else if (ttLink) {
-  ttLink.style.display = "none";
-}
 
 //  CONTEÚDO LIBERADO (PÓS-PAGAMENTO)/////
 socket.on("conteudoVisto", async ({ message_id }) => {
@@ -284,46 +258,66 @@ async function aplicarRegrasDeAcesso() {
 //  }
 // }
 
-// function aplicarPerfilNoDOM(modelo) {
-//   nomeEl.textContent = modelo.nome_exibicao || "";
-//   profileBio.textContent = modelo.bio || "";
+function aplicarPerfilNoDOM(modelo) {
+  nomeEl.textContent = modelo.nome_exibicao || "";
+  profileBio.textContent = modelo.bio || "";
 
-//   if (modelo.avatar) {
-//     avatarImg.src = modelo.avatar;
-//   }
+  if (modelo.avatar) {
+    avatarImg.src = modelo.avatar;
+  }
 
-//   if (modelo.capa) {
-//     capaImg.src = modelo.capa;
-//   }
+  if (modelo.capa) {
+    capaImg.src = modelo.capa;
+  }
 
-//   const localEl = document.getElementById("local-texto");
+  const localEl = document.getElementById("local-texto");
 
-//   if (localEl) {
-//     const local = [modelo.local]
-//       .filter(Boolean)
-//       .join(" • ");
+  if (localEl) {
+    const local = [modelo.local]
+      .filter(Boolean)
+      .join(" • ");
 
-//     if (local) {
-//       localEl.textContent = local;
-//     } else {
-//       // se não tiver local, esconde o bloco
-//       localEl.parentElement.style.display = "none";
-//     }
-//   }
-// }
+    if (local) {
+      localEl.textContent = local;
+    } else {
+      // se não tiver local, esconde o bloco
+      localEl.parentElement.style.display = "none";
+    }
+  }
+
+//🌐 REDES SOCIAIS ////
+const igLink = document.getElementById("link-instagram");
+const ttLink = document.getElementById("link-tiktok");
+
+// Instagram
+if (modelo.instagram && igLink) {
+  igLink.href = `https://instagram.com/${modelo.instagram}`;
+  igLink.style.display = "inline-block";
+} else if (igLink) {
+  igLink.style.display = "none";
+}
+
+// TikTok
+if (modelo.tiktok && ttLink) {
+  ttLink.href = `https://www.tiktok.com/@${modelo.tiktok}`;
+  ttLink.style.display = "inline-block";
+} else if (ttLink) {
+  ttLink.style.display = "none";
+}
+}
 
 // ===============================
 // DOM
 // ===============================
 document.addEventListener("DOMContentLoaded", async () => {
-  // aplicarRoleNoBody();
+  aplicarRoleNoBody();
 
-  // try {
-  //   await iniciarPerfil();
-  // } catch (err) {
-  //   console.error("Erro ao iniciar perfil:", err);
-  //   return;
-  // }
+  try {
+    await iniciarPerfil();
+  } catch (err) {
+    console.error("Erro ao iniciar perfil:", err);
+    return;
+  }
 
   // PÓS-REGISTRO AUTOMÁTICO
   const postRegisterAction =
@@ -346,6 +340,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       window.abrirFluxoVIP();
     }
   });
+
 });
 
  // TABS DE MÍDIA (FEED / ESPECIAL) //
@@ -1008,4 +1003,11 @@ function atualizarUIVip(modelo_id) {
 //   document.getElementById("formCartao")?.classList.add("hidden");
 //   document.getElementById("cartaoSucesso")?.classList.add("hidden");
 // };
+
+
+//BTN DE UPLOAD
+const btnUpload = document.querySelector(".btn-upload");
+if (role !== "modelo" || !token) {
+  btnUpload?.remove();
+}
 
