@@ -9,24 +9,13 @@ const socket = io({
   transports: ["websocket"]
 });
 
-socket.on("connect", () => {
   socket.emit("auth", { token });
-});
 
 
 const params = new URLSearchParams(location.search);
 const modeloId = Number(params.get("modelo_id"));
 
-if (!modeloId) {
-  alert("Modelo inválido");
-  history.back();
-  throw new Error("modelo_id ausente");
-}
-
-let modelo_id = modeloId; // 🔥 ESSENCIAL
-
 const chatBox = document.getElementById("chatBox");
-const mensagensRenderizadas = new Set();
 
 chatBox.addEventListener("scroll", () => {
   if (chatBox.scrollTop === 0 && !carregandoHistorico) {
@@ -34,14 +23,16 @@ chatBox.addEventListener("scroll", () => {
   }
 });
 
-
 const input = document.getElementById("msgInput");
 
 clienteId=null;
+let modelo_id = modeloId; // 🔥 ESSENCIAL
 let sala = null;
 let cliente_id = null;
 let chatAtivo = null;
-let conteudosVistosModelo = new Set();
+const mensagensRenderizadas = new Set();
+// let conteudosVistosModelo = new Set();
+
 
 // 📜 HISTÓRICO
 socket.on("chatHistory", mensagens => {
@@ -78,36 +69,29 @@ document.addEventListener("DOMContentLoaded", async () => {
   const me = await res.json();
   cliente_id = me.id;
 
+  cliente_id=clienteId
   await carregarInfoModelo(modelo_id);
 
+  sala = `chat_${cliente_id}_${modelo_id}`;
+  socket.emit("joinChat", { sala });
+  socket.emit("getHistory", { cliente_id, modelo_id });
+
+  marcarComoLido(modelo_id);
+
+  ocket.emit("loginCliente", cliente_id);
+  socket.emit("loginModelo", modelo_id);
+
+ const input = document.getElementById("msgInput");
+
   // ENTER envia
-  const input = document.getElementById("msgInput");
   input.addEventListener("keydown", e => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       enviarMensagem();
     }
   });
-});
 
-socket.on("authOk", () => {
-  // agora o socket está autenticado
-
-  sala = `chat_${cliente_id}_${modelo_id}`;
-
-  socket.emit("joinChat", { sala });
-  socket.emit("loginCliente", cliente_id);
-
-  // AGORA SIM pede o histórico
-  socket.emit("getHistory", {
-    cliente_id,
-    modelo_id
-  });
-});
-
-
-
-socket.on("mensagemEditada", ({ id, text }) => {
+  socket.on("mensagemEditada", ({ id, text }) => {
   const msgEl = document
     .querySelector(`.msg-menu[data-id="${id}"]`)
     ?.closest(".msg");
@@ -118,9 +102,9 @@ socket.on("mensagemEditada", ({ id, text }) => {
   if (textoDiv) {
     textoDiv.innerText = text;
   }
-});
+ });
 
-socket.on("mensagemExcluida", ({ id }) => {
+ socket.on("mensagemExcluida", ({ id }) => {
   const msgEl = document
     .querySelector(`.msg-menu[data-id="${id}"]`)
     ?.closest(".msg");
@@ -128,11 +112,9 @@ socket.on("mensagemExcluida", ({ id }) => {
   if (msgEl) {
     msgEl.remove();
   }
-
-
+ });
 
 });
-
 
 // ===============================
 // FUNÇÕES
@@ -148,13 +130,10 @@ function scrollParaFinal() {
 }
 
 function avisoMidiaEmBreve() {
-  alert("🚧 Em breve será possível enviar mídias! =)");
-}
-
-function avisoMidiaEmBreve() {
-  document
+   document
     .getElementById("popupMidiaEmBreve")
     .classList.remove("hidden");
+  alert("🚧 Em breve será possível enviar mídias! =)");
 }
 
 function fecharPopupMidia() {
@@ -188,8 +167,6 @@ function formatarTempo(timestamp) {
   return `há ${d} dias`;
 }
 
-
-
 function atualizarBadgeComTempo(li) {
   const badge = li.querySelector(".badge");
   const tempo = li.querySelector(".tempo");
@@ -221,6 +198,7 @@ function atualizarBadgeComTempo(li) {
     tempo.innerText = lastTime > 0 ? formatarTempo(lastTime) : "";
   }
 }
+
 
 function enviarMensagem() {
   const text = input.value.trim();
@@ -257,27 +235,23 @@ if (item) {
   input.value = "";
 }
 
+
 function renderMensagem(msg) {
-  
-  if (mensagensRenderizadas.has(msg.id)) return;
-  mensagensRenderizadas.add(msg.id);
-  
   const chat = document.getElementById("chatBox");
   if (!chat) return;
 
   const div = document.createElement("div");
-
-  // alinhamento correto
+  
+    // alinhamento correto
   div.className =
     msg.sender === "cliente" ? "msg msg-cliente" : "msg msg-modelo";
 
-    if (
+     if (
   msg.tipo === "conteudo" &&
   Array.isArray(msg.midias) &&
   msg.midias.length > 0
  ) {
-
-    div.innerHTML = `
+      div.innerHTML = `
 <div class="chat-conteudo premium ${msg.visto ? "visto" : "bloqueado"}"
      data-id="${msg.id}"
      data-qtd="${msg.quantidade ?? msg.midias.length}">
@@ -346,9 +320,7 @@ if (btn) {
 );
   });
 }
-
 }
-
 
 function abrirPreviewAvatar(url) {
   let modal = document.getElementById("avatarPreviewModal");
@@ -557,9 +529,9 @@ function formatarHora(data) {
   });
 }
 
-async function marcarComoLido(clienteId) {
+async function marcarComoLido(modeloId) {
   try {
-    await fetch(`/api/chat/marcar-lido/${clienteId}`, {
+    await fetch(`/api/chat/marcar-lido/${modeloId}`, {
       method: "POST",
       headers: {
         Authorization: "Bearer " + localStorage.getItem("token")
@@ -584,7 +556,6 @@ function abrirMenuMensagem(id, texto) {
   document.getElementById("editarTexto").value = texto || "";
   document.getElementById("menuMensagem").classList.remove("hidden");
 }
-
 
 function fecharMenuMensagem() {
   mensagemEditandoId = null;
@@ -637,20 +608,16 @@ async function carregarInfoModelo(modeloId) {
   try {
     const res = await fetch(`/api/modelo/chat/${modeloId}`, {
       headers: {
-        Authorization: "Bearer " + localStorage.getItem("token")
+        Authorization: "Bearer " + token
       }
     });
 
-    if (!res.ok) {
-      console.warn("Não foi possível carregar informações da modelo");
-      return;
-    }
+    if (!res.ok) return;
 
     const modelo = await res.json();
-
-const avatar = document.getElementById("chatModeloAvatar");
-const nome   = document.getElementById("chatModeloNome");
-const status = document.getElementById("chatModeloStatus");
+    const avatar = document.getElementById("chatModeloAvatar");
+    const nome   = document.getElementById("chatModeloNome");
+    const status = document.getElementById("chatModeloStatus");
 
     if (avatar) {
       avatar.src = modelo.avatar || "/assets/avatar.png";
@@ -672,11 +639,3 @@ const status = document.getElementById("chatModeloStatus");
     console.error("Erro carregar modelo:", err);
   }
 }
-
-
-
-
-
-
-
-

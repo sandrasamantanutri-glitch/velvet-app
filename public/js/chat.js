@@ -12,7 +12,7 @@ socket.emit("auth", { token });
 
 // params
 const params = new URLSearchParams(location.search);
-const clienteId = Number(params.get("cliente"));
+const clienteId = Number(params.get("clienteId"));
 
 const chatBox = document.getElementById("chatBox");
 
@@ -82,15 +82,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const input = document.getElementById("msgInput");
 
-// ENTER envia mensagem
-input.addEventListener("keydown", e => {
+ // ENTER envia mensagem
+ input.addEventListener("keydown", e => {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
     enviarMensagem();
   }
-});
+ });
 
-socket.on("mensagemEditada", ({ id, text }) => {
+ socket.on("mensagemEditada", ({ id, text }) => {
   const msgEl = document
     .querySelector(`.msg-menu[data-id="${id}"]`)
     ?.closest(".msg");
@@ -101,9 +101,9 @@ socket.on("mensagemEditada", ({ id, text }) => {
   if (textoDiv) {
     textoDiv.innerText = text;
   }
-});
+ });
 
-socket.on("mensagemExcluida", ({ id }) => {
+ socket.on("mensagemExcluida", ({ id }) => {
   const msgEl = document
     .querySelector(`.msg-menu[data-id="${id}"]`)
     ?.closest(".msg");
@@ -111,11 +111,7 @@ socket.on("mensagemExcluida", ({ id }) => {
   if (msgEl) {
     msgEl.remove();
   }
-});
-
-
-
-
+ });
 
 });
 
@@ -131,7 +127,6 @@ function scrollParaFinal() {
     chat.scrollTop = chat.scrollHeight;
   });
 }
-
 
 function formatarTempo(timestamp) {
   if (!timestamp || timestamp === "0") return "agora";
@@ -302,17 +297,16 @@ else {
 }
   chat.appendChild(div);
 const btn = div.querySelector(".msg-menu");
-if (btn) {
+ if (btn) {
   btn.addEventListener("click", () => {
     console.log("CLIQUEI NO MENU", btn.dataset.id);
     abrirMenuMensagem(
   btn.dataset.id,
   decodeURIComponent(btn.dataset.text)
-);
+ );
   });
-}
-
-}
+ }
+ }
 
 
 function abrirPreviewAvatar(url) {
@@ -600,7 +594,7 @@ function excluirMensagem() {
 
 async function carregarInfoCliente(clienteId) {
   try {
-    const res = await fetch(`/api/cliente/${clienteId}`, {
+    const res = await fetch(`/api/cliente/chat/${clienteId}`, {
       headers: {
         Authorization: "Bearer " + token
       }
@@ -633,11 +627,5 @@ if (status) {
     console.error("Erro carregar cliente:", err);
   }
 }
-
-
-
-
-
-
 
 
