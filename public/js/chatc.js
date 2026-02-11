@@ -251,7 +251,8 @@ function renderMensagem(msg) {
   msg.midias.length > 0
  ) {
       div.innerHTML = `
-<div class="chat-conteudo premium ${msg.visto ? "visto" : "bloqueado"}"
+<div class="chat-conteudo premium ${
+  Number(msg.preco) > 0 && !msg.visto ? "bloqueado" : "visto"}"
      data-id="${msg.id}"
      data-qtd="${msg.quantidade ?? msg.midias.length}">
 
@@ -309,6 +310,32 @@ else {
   `;
 }
   chat.appendChild(div);
+if (role === "cliente" && msg.tipo === "conteudo") {
+
+  const conteudo = div.querySelector(".chat-conteudo");
+  if (!conteudo) return;
+
+  const midiasEls = div.querySelectorAll(".midia-item");
+
+  midiasEls.forEach((el, index) => {
+
+    el.style.cursor = "pointer";
+
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+
+      // 🔒 SE TEM PREÇO E NÃO FOI VISTO
+      if (Number(msg.preco) > 0 && !msg.visto) {
+        abrirModalPagamentoMidia(msg);
+        return;
+      }
+
+      // ✅ GRATUITO OU JÁ PAGO
+      abrirPreviewMidia(msg.midias[index]);
+    });
+
+  });
+}
 const btn = div.querySelector(".msg-menu");
 if (btn) {
   btn.addEventListener("click", () => {
@@ -495,16 +522,25 @@ function confirmarEnvioConteudo() {
 }
 
 socket.on("conteudoVisto", ({ message_id }) => {
+
   const el = document.querySelector(
     `.chat-conteudo[data-id="${message_id}"]`
   );
+
   if (!el) return;
 
+  // 🔓 Remove bloqueio visual
   el.classList.remove("bloqueado");
   el.classList.add("visto");
 
+  // 🔥 Remove overlay automático se existir
+  const overlay = el.querySelector(".conteudo-info");
+  if (overlay) overlay.remove();
+
+  // 🔥 Atualiza texto se ainda existir
   const status = el.querySelector(".status-bloqueado");
   if (status) status.innerText = "🟢 Vendido";
+
 });
 
 async function carregarConteudosVistos(modelo_id) {

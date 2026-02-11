@@ -1153,19 +1153,17 @@ ORDER BY created_at ASC;
 
       // 🔐 REGRAS DE VISUALIZAÇÃO
       if (
-        socket.user.role === "cliente" &&
-        Number(msg.preco) > 0 &&
-        msg.visto !== true
-      ) {
-        // 🚫 cliente não liberado
-        msg.midias = [];
-        msg.bloqueado = true;
-      } else {
-        // ✅ modelo sempre vê tudo
-        // ✅ cliente vê se gratuito ou comprado
-        msg.midias = midias;
-        msg.bloqueado = false;
-      }
+  socket.user.role === "cliente" &&
+  Number(msg.preco) > 0 &&
+  msg.visto !== true
+) {
+  // 🔒 cliente ainda não pagou
+  msg.midias = midias;      // 🔥 NÃO ESCONDE MAIS
+  msg.bloqueado = true;
+} else {
+  msg.midias = midias;
+  msg.bloqueado = false;
+}
     }
 
     // 4️⃣ envia histórico SOMENTE para quem pediu
