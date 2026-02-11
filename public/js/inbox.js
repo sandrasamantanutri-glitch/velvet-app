@@ -45,23 +45,18 @@ function prioridadeChat(c) {
     return 1;
   }
 
-  // 2️⃣ Não lidas (cliente enviou e ainda não viu)
-  if (c.ultimo_sender === "cliente" && c.visto === false) {
-    return 2;
-  }
-
   // 3️⃣ Por responder (cliente enviou, você viu)
   if (c.ultimo_sender === "cliente" && c.visto === true) {
-    return 3;
+    return 2;
   }
 
   // 4️⃣ Visto pelo cliente (última mensagem foi sua e ele leu)
   if (c.ultimo_sender === "modelo" && c.lida === true) {
-    return 4;
+    return 3;
   }
 
   // 5️⃣ Demais
-  return 5;
+  return 4;
 }
 
 async function carregarListaClientes() {
