@@ -326,7 +326,15 @@ if (role === "cliente" && msg.tipo === "conteudo") {
 
       // 🔒 SE TEM PREÇO E NÃO FOI VISTO
       if (Number(msg.preco) > 0 && !msg.visto) {
-        abrirModalPagamentoMidia(msg);
+        window.MIDIA_VENDA_ATUAL = {
+  conteudo_id: msg.id,
+  preco: msg.preco,
+  descricao: "Conteúdo exclusivo"
+};
+
+window.PAGAMENTO_TIPO_ATUAL = "midia";
+
+abrirPopupPagamento();
         return;
       }
 

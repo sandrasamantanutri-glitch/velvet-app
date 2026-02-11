@@ -7,6 +7,7 @@
    <title>Chat</title>
   <link rel="stylesheet" href="/css/chat.css">
   <link rel="stylesheet" href="/chatcliente.css">
+  <link rel="stylesheet" href="/pag.css">
 </head>
 
 <body>
@@ -106,8 +107,52 @@
   </div>
 </div>
 
+<!-- ===============================
+     POPUP PAGAMENTO VELVET
+================================ -->
+<div id="popupPagamentoVelvet" class="velvet-modal hidden">
+
+  <div class="velvet-backdrop" onclick="fecharPopupPagamento()"></div>
+
+  <div class="velvet-box">
+
+    <button class="velvet-close" onclick="fecharPopupPagamento()">×</button>
+
+    <h2 class="velvet-title">Pagamento</h2>
+
+    <!-- ===== RESUMO MÍDIA ===== -->
+    <div class="midia-detalhes hidden">
+      <p><strong>Valor:</strong> R$ <span id="midiaValorBase">0,00</span></p>
+      <p><strong>Taxa:</strong> R$ <span id="midiaTaxa">0,00</span></p>
+      <p><strong>Total:</strong> R$ <span id="midiaTotal">0,00</span></p>
+    </div>
+
+    <!-- ===== CARTÃO ===== -->
+    <div id="conteudoCartao" class="hidden">
+      <div id="card-element"></div>
+
+      <div id="cartaoLoading" class="cartao-status hidden">
+        Processando...
+      </div>
+
+      <form id="formCartao" class="hidden">
+        <button type="submit" class="btn-principal">
+          Confirmar pagamento
+        </button>
+      </form>
+
+      <div id="cartaoSucesso" class="cartao-status hidden">
+        Pagamento confirmado 💜
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <script src="/socket.io/socket.io.js"></script>
-<script src="/js/chatc.js"></script>
+<script src="https://js.stripe.com/v3/"></script>
 <script src="/header.js"></script>
+<script src="/pag.js" defer></script>
+<script src="/js/chatc.js"></script>
 </body>
 </html>
