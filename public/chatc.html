@@ -27,12 +27,9 @@
 
 
 <div class="chat-container">
-<main id="chatBox" class="chat-box">
+<main id="chatBox" class="chat-box"></main>
 
-<!-- INPUT FIXO -->
 <footer class="chat-input">
-
-  <!-- BOTÃO MÍDIA -->
   <button
     id="btnEnviarConteudo1"
     class="btn-midia"  onclick="avisoMidiaEmBreve()"
@@ -46,7 +43,6 @@
     placeholder="Digite uma mensagem..."
     autocomplete="off"/>
 
-  <!-- BOTÃO ENVIAR -->
   <button
     class="btn-enviar1"
     onclick="enviarMensagem()"
@@ -57,7 +53,6 @@
 </footer>
 </div>
 
-<!-- POPUP DE CONTEÚDOS -->
 <div id="popupConteudos" class="hidden">
   
   <div class="popup-backdrop" onclick="fecharPopupConteudos()"></div>
@@ -110,10 +105,6 @@
     </button>
   </div>
 </div>
-
-</main>
-
-
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/js/chatc.js"></script>
