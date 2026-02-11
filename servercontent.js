@@ -507,7 +507,7 @@ router.get("/relatorios",
   }
 );
 
-router.get("/api/transacoes_cliente", auth, async (req, res) => {
+router.get("/api/transacoes_cliente", authCliente, async (req, res) => {
   try {
     const userId = req.user.id;
     const role = req.user.role;
