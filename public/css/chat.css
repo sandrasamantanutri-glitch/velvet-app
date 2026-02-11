@@ -397,7 +397,7 @@ body {
   }
 
   .chat-nome {
-    font-size: 15px;
+    font-size: 14px;
   }
 
   .chat-status {
@@ -406,8 +406,8 @@ body {
 
   /* Área de mensagens ajustada */
   .chat-box {
-    top: 60px;       /* altura real do header */
-    bottom: 70px;    /* altura real do input */
+    top: 130px;       /* altura real do header */
+    bottom: 91px;    /* altura real do input */
     padding: 10px;
   }
 
