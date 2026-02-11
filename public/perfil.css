@@ -753,30 +753,3 @@ body.role-cliente .area-saldos {
     text-align: center;
   }
 }
-
-.velvet-title {
-  font-size: 22px;
-  font-weight: 700;
-  text-align: center;
-  color: #7b2cff;
-}
-
-.vip-detalhes p,
-.midia-detalhes p {
-  font-size: 15px;
-  line-height: 1.5;
-  color: #1E1E26;
-}
-
-.midia-detalhes {
-  background: #f7f3ff;
-  padding: 12px;
-  border-radius: 12px;
-}
-
-
-
-
-
-
-
