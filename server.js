@@ -3113,17 +3113,20 @@ if (role === "modelo") {
 // 👤 CLIENTE
 // ===============================
 if (role === "cliente") {
+  const nomePublico = nome_completo.split(" ")[0];
 
   // 🔹 inserir na tabela clientes (SEM username)
   const clienteResult = await db.query(
     `
     INSERT INTO public.clientes
-    (user_id, origem_trafego, ref_modelo)
-    VALUES ($1, $2, $3)
+    (user_id, nome, origem_trafego, ref_modelo)
+    VALUES ($1, $2, $3, $4)
     RETURNING id
     `,
     [
+      nomePublico, 
       userId,
+      nome,
       src || null,
       ref ? Number(ref) : null
     ]
@@ -3140,7 +3143,7 @@ if (role === "cliente") {
     `,
     [
       userId,
-      nome,
+      nomePublico,
       nome_completo,
       data_nascimento
     ]
