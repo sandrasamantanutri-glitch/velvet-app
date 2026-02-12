@@ -151,8 +151,9 @@ if (avatarEl) {
     if (!btn) return;
 
     const preco = btn.dataset.preco;
-    const conteudoId = btn.dataset.conteudoId;
-    abrirPagamentoChat(preco, conteudoId);
+    const messageId = btn.dataset.messageId;
+
+    abrirPagamentoChat(preco, messageId);
   });
 
 });
@@ -381,14 +382,13 @@ function fecharPagamento() {
   elements = null;
 }
 
-function abrirPagamentoChat(preco, conteudoId) {
+function abrirPagamentoChat(preco, messageId) {
   window.PAGAMENTO_TIPO_ATUAL = "midia";
-
   window.MIDIA_VENDA_ATUAL = {
-    conteudo_id: Number(conteudoId),
+    message_id: messageId,
+    conteudo_id: msg.conteudo_id,
     preco: Number(preco),
     descricao: "Conteúdo exclusivo no chat"
   };
-
   abrirPopupPagamento();
 }
