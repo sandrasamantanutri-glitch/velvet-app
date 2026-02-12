@@ -49,10 +49,4 @@ body {
   height: 30px;
 }
 
-.header-inner img {
-  width: 30px;
-  height: 30px;
-  object-fit: contain;
-  display: block;
-}
 
