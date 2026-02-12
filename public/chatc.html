@@ -12,24 +12,21 @@
 <body class="role-cliente">
 
   <div id="header-container"></div>
+<header class="chat-topo">
+  <button type="button" class="btn-voltar" onclick="history.back()">
+    <img src="/assets/voltar.png" alt="Voltar">
+  </button>
+
+  <div class="chat-cliente-info">
+    <img id="chatClienteAvatar" class="chat-avatar" src="/assets/avatar.png" alt="Avatar cliente" />
+    <div class="chat-cliente-texto">
+      <div id="chatClienteNome" class="chat-nome">Cliente</div>
+      <div id="chatClienteStatus" class="chat-status">carregando…</div>
+    </div>
+  </div>
+</header>
 
   <div class="chat-area painel">
-
-    <!-- HEADER -->
-    <div class="chat-header">
-      <button type="button" class="btn-voltar" onclick="history.back()">
-        <img src="/assets/voltar.png" alt="Voltar">
-      </button>
-
-      <div class="chat-identidade">
-        <img id="chatAvatar"
-             class="chat-avatar"
-             src="/assets/avatar.png"
-             alt="Avatar" />
-        <span id="chatNome"></span>
-      </div>
-    </div>
-
     <!-- 🔥 CHAT BOX DENTRO DA ÁREA -->
     <div id="chatBox" class="chat-box"></div>
 
