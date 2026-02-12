@@ -2273,110 +2273,89 @@ app.get("/api/conteudos", authModelo, async (req, res) => {
 });
 
 app.get(
-  "/api/modelo/verificacao/status",
-  auth,  // ← corrigido aqui
+  "/api/verificacao/status",
+  auth,
   async (req, res) => {
     try {
+
       const userId = req.user.id;
+      const role = req.user.role;
 
-      const result = await db.query(
-        `
-        SELECT status, motivo
-        FROM modelos_verificacao
-        WHERE modelo_id = $1
-        ORDER BY created_at DESC
-        LIMIT 1
-        `,
-        [userId]
-      );
+      // ===============================
+      // 👠 MODELO
+      // ===============================
+      if (role === "modelo") {
 
-      if (result.rows.length === 0) {
-        return res.json({
-          status: "pendente",
-          motivo: null
-        });
+        const modeloRes = await db.query(
+          `SELECT id FROM modelos WHERE user_id = $1`,
+          [userId]
+        );
+
+        if (!modeloRes.rows.length) {
+          return res.json({ status: "pendente", motivo: null });
+        }
+
+        const modeloId = modeloRes.rows[0].id;
+
+        const result = await db.query(
+          `
+          SELECT status, motivo
+          FROM modelos_verificacao
+          WHERE modelo_id = $1
+          ORDER BY created_at DESC
+          LIMIT 1
+          `,
+          [modeloId]
+        );
+
+        if (!result.rows.length) {
+          return res.json({ status: "pendente", motivo: null });
+        }
+
+        return res.json(result.rows[0]);
       }
 
-      res.json(result.rows[0]);
+      // ===============================
+      // 👤 CLIENTE
+      // ===============================
+      if (role === "cliente") {
+
+        const clienteRes = await db.query(
+          `SELECT id FROM clientes WHERE user_id = $1`,
+          [userId]
+        );
+
+        if (!clienteRes.rows.length) {
+          return res.json({ status: "pendente", motivo: null });
+        }
+
+        const clienteId = clienteRes.rows[0].id;
+
+        const result = await db.query(
+          `
+          SELECT status, motivo
+          FROM clientes_verificacao
+          WHERE cliente_id = $1
+          ORDER BY created_at DESC
+          LIMIT 1
+          `,
+          [clienteId]
+        );
+
+        if (!result.rows.length) {
+          return res.json({ status: "pendente", motivo: null });
+        }
+
+        return res.json(result.rows[0]);
+      }
+
+      // fallback
+      return res.json({ status: "pendente", motivo: null });
 
     } catch (err) {
       console.error("Erro status verificação:", err);
       res.status(500).json({
         erro: "Erro ao buscar status da verificação"
-      });
-    }
-  }
-);
-
-
-app.get(
-  "/api/admin/verificacoes",
-  authAdmin,
-  async (req, res) => {
-    try {
-      const result = await db.query(`
-        SELECT
-          m.user_id,
-          m.nome_exibicao,
-          m.avatar,
-          m.created_at,
-          CASE
-            WHEN mv.modelo_id IS NOT NULL THEN 'enviado'
-            ELSE 'não enviado'
-          END AS status_documento
-        FROM modelos m
-        LEFT JOIN modelos_verificacao mv
-          ON mv.modelo_id = m.user_id
-        WHERE m.verificada = false
-        ORDER BY m.created_at ASC;
-      `);
-
-      res.json(result.rows);
-
-    } catch (err) {
-      console.error("Erro listar verificações:", err);
-      res.status(500).json({ erro: "Erro ao listar verificações" });
-    }
-  }
-);
-
-
-app.get(
-  "/api/admin/verificacao/:id/documentos",
-  authAdmin,
-  async (req, res) => {
-    try {
-      const { id } = req.params;
-
-      const result = await db.query(
-        `
-        SELECT doc_frente_url, doc_verso_url, selfie_url
-        FROM modelos_verificacao
-        WHERE id = $1
-        `,
-        [id]
-      );
-
-      if (!result.rows.length) {
-        return res.status(404).json({
-          erro: "Verificação não encontrada"
-        });
-      }
-
-      const row = result.rows[0];
-
-      res.json({
-        doc_frente: gerarSignedUrl(row.doc_frente_url),
-        doc_verso: row.doc_verso_url
-          ? gerarSignedUrl(row.doc_verso_url)
-          : null,
-        selfie: gerarSignedUrl(row.selfie_url)
-      });
-
-    } catch (err) {
-      console.error("Erro signed URL:", err);
-      res.status(500).json({
-        erro: "Erro ao gerar URLs"
       });
     }
   }
