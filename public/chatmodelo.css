@@ -904,7 +904,46 @@ body.role-modelo .chat-conteudo * {
 }
 
 
+/* =========================================
+   🔥 FIX FINAL SCROLL – NÃO COMER HEADER
+========================================= */
 
+html, body {
+  height: 100% !important;
+  overflow: hidden !important; /* impede scroll do body */
+}
+
+.chat-topo {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 64px;          /* 🔥 altura real do header */
+  z-index: 1000;
+}
+
+.chat-input {
+  position: fixed !important;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;          /* 🔥 altura real do input */
+  z-index: 1000;
+}
+
+#chatBox,
+.chat-box {
+  position: fixed !important;
+  top: 64px !important;      /* igual header */
+  bottom: 80px !important;   /* igual input */
+  left: 0;
+  right: 0;
+
+  overflow-y: auto !important;
+  padding: 16px;
+
+  background: #fff;
+}
 
 
 
