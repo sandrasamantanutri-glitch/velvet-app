@@ -38,19 +38,16 @@
   <div class="chat-area painel">
 
     <div id="chatBox"></div>
-   <input
-    id="msgInput"
-    type="text"
-    placeholder="Digite uma mensagem..."
-    autocomplete="off"/>
 
-   <button
-    class="btn-enviar1"
-    onclick="enviarMensagem()"
-    aria-label="Enviar mensagem"
-   >
-    <img src="/assets/enviar.png" alt="Enviar" />
-   </button>
+    <div class="msgInput">
+      <textarea
+        id="messageInput"
+        placeholder="Digite sua mensagem..."
+      ></textarea>
+
+      <button id="sendBtn">Enviar</button>
+    </div>
+
   </div>
 <!-- ================= POPUPS ================= -->
 
