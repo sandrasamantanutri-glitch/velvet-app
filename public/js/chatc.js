@@ -152,7 +152,6 @@ if (avatarEl) {
 
     const preco = btn.dataset.preco;
     const conteudoId = btn.dataset.conteudoId;
-     console.log("conteudoId recebido:", conteudoId); // 🔥 ADICIONA ISSO
     abrirPagamentoChat(preco, conteudoId);
   });
 
