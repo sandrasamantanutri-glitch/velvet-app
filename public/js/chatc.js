@@ -286,7 +286,7 @@ function renderMensagem(msg) {
   if (!chat) return;
 
   const div = document.createElement("div");
-  div.className =
+div.className =
   msg.sender === "modelo"
     ? "msg modelo"
     : "msg cliente";
