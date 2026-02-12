@@ -508,6 +508,7 @@ body {
 }
 
 .chat-conteudo.bloqueado::after {
+  pointer-events: none;
   content: "🔒 Clique para desbloquear";
   position: absolute;
   inset: 0;
