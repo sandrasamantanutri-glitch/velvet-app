@@ -118,6 +118,20 @@ document.addEventListener("DOMContentLoaded", async () => {
   // 🔒 role REAL e confiável
   document.body.classList.add(`role-${user.role}`);
 
+   if (user.role === "modelo") {
+    const resDados = await fetch("/api/usuario/dados", {
+      headers: { Authorization: "Bearer " + token }
+    });
+
+    if (resDados.ok) {
+      const dados = await resDados.json();
+
+      if (dados.status === "aprovado") {
+        document.getElementById("areaBanner")?.classList.add("hidden");
+      }
+    }
+  }
+
   // PERFIL VISUAL
   carregarPerfilBase(user);
   carregarDadosUsuario();
