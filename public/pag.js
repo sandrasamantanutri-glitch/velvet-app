@@ -45,7 +45,7 @@ if (formCartao) {
 }
 
 
-window.abrirPopupPagamento = function () {
+function abrirPopupPagamento() {
   const popup = document.getElementById("popupPagamentoVelvet");
   if (!popup) {
     console.error("popupPagamentoVelvet não encontrado");

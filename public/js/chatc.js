@@ -17,6 +17,7 @@ socket.emit("auth", { token });
 let cliente_id = null;
 let modelo_id = null;
 const conteudosLiberados = new Set();
+let elements;
 let pagamentoAtual = {};
 
 // 📜 HISTÓRICO
