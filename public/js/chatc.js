@@ -12,6 +12,8 @@ const socket = io({
   transports: ["websocket"]
 });
 
+socket.emit("auth", { token });
+
 let cliente_id = null;
 let modelo_id = null;
 const conteudosLiberados = new Set();
@@ -19,13 +21,6 @@ const conteudosLiberados = new Set();
 let elements;
 let pagamentoAtual = {};
 // stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
-
-// 🔐 SOCKET AUTH
-socket.on("connect", () => {
-  socket.emit("auth", {
-    token: localStorage.getItem("token")
-  });
-});
 
 // 📜 HISTÓRICO
 socket.on("chatHistory", mensagens => {
