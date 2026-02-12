@@ -3124,9 +3124,8 @@ if (role === "cliente") {
     RETURNING id
     `,
     [
-      nomePublico, 
       userId,
-      nome,
+      nomePublico, 
       src || null,
       ref ? Number(ref) : null
     ]
