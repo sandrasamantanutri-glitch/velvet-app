@@ -277,8 +277,7 @@ function renderMensagem(msg) {
           : `
             <div class="pacote-grid">
               ${(msg.midias || []).map((m, index) => `
-                <div class="midia-item"
-                     onclick="abrirPreviewMidia(msg.midias[${index}])">
+                <div class="midia-item" data-index="${index}">
                   ${
                     (m.tipo_media || m.tipo) === "video"
                       ? `<video src="${m.url}" muted playsinline></video>`
@@ -313,6 +312,17 @@ else {
   `;
 }
   chat.appendChild(div);
+  if (msg.tipo === "conteudo" && !msg.bloqueado) {
+  const itens = div.querySelectorAll(".midia-item");
+
+  itens.forEach(item => {
+    const index = Number(item.dataset.index);
+
+    item.addEventListener("click", () => {
+      abrirPreviewMidia(msg.midias[index]);
+    });
+  });
+}
 
 const btn = div.querySelector(".msg-menu");
 if (btn) {
