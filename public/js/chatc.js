@@ -297,7 +297,7 @@ function renderMensagem(msg) {
           <div class="pacote-grid">
             ${Array(msg.quantidade ?? 1).fill("").map(() =>
   `<div class="midia-item placeholder"
-       onclick="abrirPagamentoChat(${msg.preco}, ${msg.id})"></div>`
+       onclick="avisarConteudoBloqueado()"></div>`
 ).join("")}
           </div>
 
