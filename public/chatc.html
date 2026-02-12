@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="/chatcliente.css">
   <link rel="stylesheet" href="/header.css">
 
-<body class="role-cliente">
+<body>
 
   <div id="header-container"></div>
 <header class="chat-topo">
@@ -26,18 +26,28 @@
   </div>
 </header>
 
-  <div class="chat-area painel">
-    <!-- 🔥 CHAT BOX DENTRO DA ÁREA -->
-    <div id="chatBox" class="chat-box"></div>
+ <!-- ÁREA DE MENSAGENS -->
+<main id="chatBox" class="chat-box"></main>
 
-    <!-- INPUT -->
-    <div class="btn-enviar1">
-      <textarea id="messageInput"
-                placeholder="Digite sua mensagem..."></textarea>
-      <button id="sendBtn"><img src="/assets/enviar.png" alt="Enviar" /></button>
-    </div>
+<!-- INPUT FIXO -->
+<footer class="chat-input">
 
-  </div>
+  <textarea
+    id="messageInput"
+    placeholder="Digite uma mensagem..."
+    autocomplete="off">
+  </textarea>
+
+  <button
+    id="sendBtn"
+    class="btn-enviar1"
+    aria-label="Enviar mensagem"
+  >
+    <img src="/assets/enviar.png" alt="Enviar" />
+  </button>
+
+</footer>
+
 <!-- ================= POPUPS ================= -->
 
 <div id="popupPix" class="modal hidden">
