@@ -248,11 +248,13 @@ async function carregarInfoModelo(modelo_id) {
    if (avatar) {
   avatar.style.cursor = "pointer";
 
-  avatar.addEventListener("click", () => {
-    if (cliente.avatar) {
-      abrirPreviewAvatar(cliente.avatar);
-    }
-  });
+avatar.addEventListener("click", () => {
+  const url = avatar.src;
+
+  if (url && !url.includes("avatar.png")) {
+    abrirPreviewAvatar(url);
+  }
+});
 }
 
     if (nome) {
