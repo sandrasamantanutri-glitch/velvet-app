@@ -354,11 +354,6 @@ html, body {
   display: block;
 }
 
-.chat-conteudo {
-  width: 150px;
-  height: auto;              /* 🔥 remove altura fixa */
-  min-height: 150px;
-}
 
 .chat-conteudo .pacote-grid {
   width: 100%;
