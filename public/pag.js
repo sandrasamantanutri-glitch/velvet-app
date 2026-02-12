@@ -326,71 +326,70 @@ btnCopiar?.classList.remove("hidden");
 
     document.getElementById("pixLoading")?.classList.add("hidden");
     document.getElementById("pixAguardando")?.classList.remove("hidden");
+
     // ===============================
-// 🔁 POLLING (APENAS VIP)
-// ===============================
-if (tipo === "vip" && window.MODELO_ID_ATUAL) {
-
-  const modeloIdAtual = window.MODELO_ID_ATUAL;
-
-  window.__INTERVALO_VIP__ &&
-    clearInterval(window.__INTERVALO_VIP__);
-
-  window.__INTERVALO_VIP__ = setInterval(async () => {
-
-    const popup = document.getElementById("popupPagamentoVelvet");
-
-    if (!popup || popup.classList.contains("hidden")) {
+    // 🔁 POLLING VIP
+    // ===============================
+    window.__INTERVALO_VIP__ &&
       clearInterval(window.__INTERVALO_VIP__);
-      return;
-    }
 
-    const res = await fetch(
-      `/api/vip/status/${modeloIdAtual}`,
-      {
-        headers: {
-          Authorization:
-            "Bearer " + localStorage.getItem("token")
+    window.__INTERVALO_VIP__ = setInterval(async () => {
+      try {
+        if (
+          document
+            .getElementById("popupPagamentoVelvet")
+            ?.classList.contains("hidden")
+        ) {
+          clearInterval(window.__INTERVALO_VIP__);
+          return;
         }
+
+        const res = await fetch(
+          `/api/vip/status/${window.MODELO_ID_ATUAL}`,
+          {
+            headers: {
+              Authorization:
+                "Bearer " + localStorage.getItem("token")
+            }
+          }
+        );
+
+        if (!res.ok) return;
+
+        const data = await res.json();
+
+        if (data.vip === true) {
+          clearInterval(window.__INTERVALO_VIP__);
+
+          document
+            .getElementById("pixAguardando")
+            ?.classList.add("hidden");
+          document
+            .getElementById("pixSucesso")
+            ?.classList.remove("hidden");
+
+          setTimeout(() => {
+            fecharPopupPagamento();
+            location.reload();
+          }, 1200);
+        }
+      } catch (err) {
+        console.error("Erro polling VIP:", err);
       }
-    );
-
-    if (!res.ok) return;
-
-    const status = await res.json();
-
-    if (status.vip === true) {
-
-      clearInterval(window.__INTERVALO_VIP__);
-
-      document
-        .getElementById("pixAguardando")
-        ?.classList.add("hidden");
-
-      document
-        .getElementById("pixSucesso")
-        ?.classList.remove("hidden");
-
-      setTimeout(() => {
-        fecharPopupPagamento();
-        location.reload();
-      }, 1200);
-    }
- }, 3000);
-}
+    }, 3000);
 
   } catch (err) {
     console.error("❌ Erro Pix FRONT:", err.message);
 
     document.getElementById("pixLoading")
       ?.classList.add("hidden");
-
     document.getElementById("pixAguardando")
       ?.classList.add("hidden");
 
     alert(err.message || "Erro ao gerar Pix. Tente novamente.");
   }
 };
+
 
 function copiarPix() {
   const input = document.getElementById("pixCodigo");
