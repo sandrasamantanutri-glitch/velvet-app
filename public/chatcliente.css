@@ -432,19 +432,13 @@ html, body {
 }
 
 /* botão */
-.chat-conteudo.bloqueado.premium .btn-desbloquear {
-  background: #7B2CFF;
-  color: #fff;
-
-  border: none;
+.chat-conteudo.bloqueado .btn-desbloquear {
+  background: linear-gradient(135deg, #7b2cff, #9E6BFF);
   border-radius: 999px;
-  padding: 8px 20px;
-
+  padding: 8px 18px;
   font-size: 13px;
   font-weight: 600;
-
-  cursor: pointer;
-  transition: all .2s ease;
+  box-shadow: 0 6px 14px rgba(123,44,255,0.35);
 }
 
 .chat-conteudo.bloqueado.premium .btn-desbloquear:hover {
@@ -462,27 +456,25 @@ html, body {
   transition: 0.2s ease;
 }
 
-/* info abaixo da mídia */
 .conteudo-info {
-  padding: 8px 6px;
+  padding: 10px 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  text-align: center;   
-  gap: 4px;
-  color: #7B2CFF;
-  font-size: 12px;
-  font-weight: 500;
+  gap: 6px;
+  text-align: center;
 }
 
-/* texto bloqueado */
 .status-bloqueado {
-  opacity: 0.9;
+  font-size: 12px;
+  color: #7B2CFF;
+  opacity: 0.8;
 }
 
-/* preço */
 .preco-bloqueado {
+  font-size: 15px;
   font-weight: 700;
+  color: #7B2CFF;
 }
 /* =====================================================
    🔥 OVERRIDE FINAL – GRID QUADRADO VELVET (FORÇADO)
