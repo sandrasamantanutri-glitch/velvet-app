@@ -1844,18 +1844,23 @@ app.get("/api/modelos", auth, async (req, res) => {
     if (!["cliente", "modelo"].includes(req.user.role)) {
       return res.status(403).json([]);
     }
-
     const result = await db.query(`
-      SELECT
-        m.user_id,
-        m.nome_exibicao,
-        m.avatar
-      FROM modelos m
-      JOIN modelos_verificacao v
-        ON v.modelo_id = m.user_id
-      WHERE v.status = 'aprovado'
-      ORDER BY v.created_at DESC
-    `);
+  SELECT
+  m.user_id,
+  m.nome_exibicao,
+  m.avatar
+FROM modelos m
+JOIN LATERAL (
+  SELECT status
+  FROM modelos_verificacao
+  WHERE modelo_id = m.id
+  ORDER BY created_at DESC
+  LIMIT 1
+) v ON true
+WHERE v.status = 'aprovado'
+ORDER BY m.id DESC;
+`);
+
 
     res.json(result.rows);
 
