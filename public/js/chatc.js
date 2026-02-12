@@ -371,27 +371,6 @@ document.addEventListener("click", e => {
 });
 
 
-document.getElementById("confirmarPagamento").onclick = async () => {
-  const { error, paymentIntent } = await stripe.confirmPayment({
-    elements,
-    redirect: "if_required"
-  });
-
-  if (error) {
-    alert(error.message);
-    return;
-  }
-
-  // 🔓 pagamento confirmado → abrir conteúdo
-  document.getElementById("paymentModal").classList.add("hidden");
-  document.getElementById("payment-element").innerHTML = "";
-
-  if (pagamentoAtual.message_id) {
-    abrirConteudoSeguro(pagamentoAtual.message_id);
-    pagamentoAtual = {};
-  }
-};
-
 function fecharPagamento() {
   const modal = document.getElementById("paymentModal");
   if (modal) modal.classList.add("hidden");
