@@ -89,11 +89,13 @@ document.addEventListener("click", (e) => {
 // 📜 HISTÓRICO
 socket.on("chatHistory", mensagens => {
   const chat = document.getElementById("chatBox");
+  if (!chat) return;
+
   chat.innerHTML = "";
 
   mensagens.forEach(m => {
 
-    // 🔓 marca como liberado ao carregar histórico
+    // 🔓 marca como liberado
     if (m.tipo === "conteudo") {
       if (m.visto === true || Number(m.preco) === 0) {
         conteudosLiberados.add(Number(m.id));
@@ -103,6 +105,10 @@ socket.on("chatHistory", mensagens => {
     renderMensagem(m);
   });
 
+  // 🔥 força scroll para o final
+  requestAnimationFrame(() => {
+    chat.scrollTop = chat.scrollHeight;
+  });
 });
 
 // 💬 NOVA MENSAGEM
@@ -110,6 +116,8 @@ socket.on("newMessage", msg => {
   if (Number(msg.modelo_id) !== Number(modelo_id)) return;
 
   renderMensagem(msg);
+
+  scrollParaFinal(); // 🔥 aqui dentro
 });
 
 
@@ -359,6 +367,14 @@ else {
 }
 
 
+function scrollParaFinal() {
+  const chat = document.getElementById("chatBox");
+  if (!chat) return;
+
+  requestAnimationFrame(() => {
+    chat.scrollTop = chat.scrollHeight;
+  });
+}
 
 async function abrirConteudoSeguro(message_id, index = 0) {
   const modal = document.getElementById("modalConteudo");
