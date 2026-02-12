@@ -395,10 +395,9 @@ html, body {
 /* força card correto */
 .chat-conteudo.premium {
   width: 150px !important;
-  height: auto !important;
+  height: 150px !important;
   max-width: 150px;
-
-  padding: 10px;
+  padding: 20px;
   border-radius: 18px;
   overflow: hidden;
 }
