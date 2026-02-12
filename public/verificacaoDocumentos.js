@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // BUSCAR STATUS NO BACKEND
   // ===============================
   async function buscarStatusVerificacao() {
-    const res = await fetch("/api/modelo/verificacao/status", {
+    const res = await fetch("/api/verificacao/status", {
       headers: {
         Authorization: "Bearer " + token
       }
@@ -130,7 +130,7 @@ form?.addEventListener("submit", async (e) => {
   const token = localStorage.getItem("token");
   const formData = new FormData(form);
 
-  const res = await fetch("/api/modelo/verificacao", {
+  const res = await fetch("/api/verificacao", {
     method: "POST",
     headers: {
       Authorization: "Bearer " + token
