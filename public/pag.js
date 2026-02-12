@@ -68,42 +68,29 @@ const popup = document.getElementById("popupPagamentoVelvet");
   // ===============================
   // 🔥 MÍDIA
   // ===============================
-  if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
+if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
 
-    document.querySelector(".vip-detalhes")?.classList.add("hidden");
-    document.querySelector(".midia-detalhes")?.classList.remove("hidden");
-
-    prepararPagamento();
-
-    // 🔵 PERFIL → só cartão
-    if (window.PAGAMENTO_ORIGEM === "perfil") {
-
-      document.getElementById("conteudoPix")?.classList.add("hidden");
-      document.getElementById("conteudoCartao")?.classList.remove("hidden");
-
-      iniciarCartaoMidia();
-      return;
-    }
-
-    // 🟣 CHAT → Pix padrão + cartão disponível
-// 🟣 CHAT → Pix padrão
-if (window.PAGAMENTO_ORIGEM === "chat") {
-
+  document.querySelector(".vip-detalhes")?.classList.add("hidden");
   document.querySelector(".midia-detalhes")?.classList.remove("hidden");
 
-  document.getElementById("conteudoPix")?.classList.remove("hidden");
-  document.getElementById("conteudoCartao")?.classList.add("hidden");
+  prepararPagamento();
 
-  setTimeout(() => {
-    pagarComPix({
-      tipo: "midia",
-      conteudo_id: window.MIDIA_VENDA_ATUAL?.conteudo_id
-    });
-  }, 0);
-
-  return;
-}
+  // 🔵 PERFIL → só cartão
+  if (window.PAGAMENTO_ORIGEM === "perfil") {
+    document.getElementById("conteudoPix")?.classList.add("hidden");
+    document.getElementById("conteudoCartao")?.classList.remove("hidden");
+    iniciarCartaoMidia();
+    return;
   }
+
+  // 🟣 CHAT → Pix padrão
+  if (window.PAGAMENTO_ORIGEM === "chat") {
+    document.getElementById("conteudoPix")?.classList.remove("hidden");
+    document.getElementById("conteudoCartao")?.classList.add("hidden");
+    return;
+  }
+
+} else if (window.PAGAMENTO_TIPO_ATUAL === "vip") {
 
   // ===============================
   // 💎 VIP
@@ -116,15 +103,8 @@ if (window.PAGAMENTO_ORIGEM === "chat") {
 
   prepararPagamento();
 
-  // Pix automático para VIP
-  setTimeout(() => {
-    pagarComPix({
-      tipo: "vip",
-      modelo_id: window.MODELO_ID_ATUAL
-    });
-  }, 0);
-};
-
+}
+}
 
 function prepararPagamento() {
 
@@ -772,5 +752,15 @@ window.abrirFluxoVIP = function () {
   abrirPopupPagamento();
   pagarComPix({ tipo: "vip" });
 };
+
+
+
+
+
+
+// ===============================
+// RESET GLOBAL DE SEGURANÇA
+// ===============================
+window.PAGAMENTO_TIPO_ATUAL = null;
 
 
