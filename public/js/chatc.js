@@ -16,10 +16,10 @@ let modelo_id = null;
 let chatAtivo = null;
 const mensagensRenderizadas = new Set();
 const conteudosLiberados = new Set();
-let stripe;
 let elements;
 let pagamentoAtual = {};
 // 🔐 SOCKET AUTH
+
 socket.on("connect", () => {
   socket.emit("auth", {
     token: localStorage.getItem("token")
