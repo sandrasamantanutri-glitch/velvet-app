@@ -277,7 +277,8 @@ function renderMensagem(msg) {
           : `
             <div class="pacote-grid">
               ${(msg.midias || []).map((m, index) => `
-                <div class="midia-item" data-index="${index}">
+                <div class="midia-item"
+                     onclick="abrirConteudoSeguro(${msg.id}, ${index})"
                   ${
                     (m.tipo_media || m.tipo) === "video"
                       ? `<video src="${m.url}" muted playsinline></video>`
@@ -312,17 +313,6 @@ else {
   `;
 }
   chat.appendChild(div);
-  if (msg.tipo === "conteudo" && !msg.bloqueado) {
-  const itens = div.querySelectorAll(".midia-item");
-
-  itens.forEach(item => {
-    const index = Number(item.dataset.index);
-
-    item.addEventListener("click", () => {
-      abrirPreviewMidia(msg.midias[index]);
-    });
-  });
-}
 
 const btn = div.querySelector(".msg-menu");
 if (btn) {
@@ -335,6 +325,57 @@ if (btn) {
   });
 }
 }
+
+async function abrirConteudoSeguro(message_id, index = 0) {
+  const modal = document.getElementById("modalConteudo");
+  const midiaBox = document.getElementById("modalMidia");
+  
+  conteudosLiberados.add(Number(message_id));
+  socket.emit("marcarConteudoVisto", {
+  message_id,
+  cliente_id,
+  modelo_id
+ });
+
+  if (!modal || !midiaBox) {
+    console.error("❌ Modal de conteúdo não encontrado no DOM");
+    return;
+  }
+
+  modal.classList.remove("hidden");
+  midiaBox.innerHTML = "<p>Carregando...</p>";
+
+  try {
+    const res = await fetch(`/api/chat/conteudo/${message_id}`, {
+      headers: {
+        Authorization: "Bearer " + localStorage.getItem("token")
+      }
+    });
+
+    if (!res.ok) {
+      midiaBox.innerHTML = "<p>Erro ao carregar conteúdo.</p>";
+      return;
+    }
+
+    const midias = await res.json();
+    const midia = midias[index];
+
+    if (!midia) {
+  midiaBox.innerHTML = "<p>Erro ao abrir mídia.</p>";
+  return;
+}
+
+     midiaBox.innerHTML =
+      (midia.tipo_media || midia.tipo) === "video"
+        ? `<video src="${midia.url}" controls autoplay></video>`
+        : `<img src="${midia.url}" />`;
+
+  } catch (err) {
+    console.error("Erro abrir conteúdo:", err);
+    midiaBox.innerHTML = "<p>Erro inesperado.</p>";
+  }
+}
+
 
 function abrirPreviewMidia(midia) {
   let modal = document.getElementById("previewMidiaModal");
