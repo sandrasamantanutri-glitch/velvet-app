@@ -67,14 +67,6 @@ html, body {
   background: #7B2CFF;
 }
 
-/* HEADER DO CHAT */
-.chat-header {
-  padding-bottom: 8px;
-  margin-bottom: 8px;
-  border-bottom: 1px solid #9E6BFF;
-  flex-shrink: 0;
-}
-
 .msg {
   max-width: 70%;
   padding: 8px 12px;
