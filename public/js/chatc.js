@@ -14,7 +14,6 @@ const socket = io({
 
 let cliente_id = null;
 let modelo_id = null;
-const mensagensRenderizadas = new Set();
 const conteudosLiberados = new Set();
 // let stripe;
 let elements;
