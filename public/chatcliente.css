@@ -238,13 +238,11 @@ html, body {
   max-width: unset;
 }
 
-/* card base */
 .chat-conteudo {
   width: 150px;
-  height: 150px;
-  border-radius: 16px;
-  position: relative;
-  overflow: hidden;
+  height: auto;              /* 🔥 remove altura fixa */
+  min-height: 150px;
+
 
   /* textura base suave */
   background:
@@ -388,12 +386,10 @@ html, body {
 
 /* força card correto */
 .chat-conteudo.premium {
-  width: 150px !important;
-  height: 150px !important;
-  max-width: 150px;
-  padding: 20px;
-  border-radius: 18px;
-  overflow: hidden;
+  width: 150px;
+  height: auto;              /* 🔥 deixa crescer */
+  min-height: 150px;         /* mantém tamanho mínimo */
+  padding: 16px;
 }
 
 /* grid ocupa tudo */
@@ -433,12 +429,6 @@ html, body {
   height: 100% !important;
   object-fit: cover !important;
   display: block;
-}
-
-.chat-conteudo {
-  display: flex;
-  flex-direction: column;   /* 🔥 mídia em cima, texto embaixo */
-  align-items: center;
 }
 
 .chat-conteudo .pacote-grid {
