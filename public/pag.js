@@ -400,23 +400,17 @@ function copiarPix() {
 }
 
 window.abrirPopupPagamentoPixLoading = function () {
-
-  if (!window.PAGAMENTO_TIPO_ATUAL) {
-    console.warn("Tentativa de abrir popup sem tipo definido");
-    return;
-  }
-
   const popup = document.getElementById("popupPagamentoVelvet");
-  if (!popup) return;
-
   popup.classList.remove("hidden");
 
   mostrarMetodo("pix");
 
+  // estados iniciais
   document.getElementById("pixLoading")?.classList.remove("hidden");
   document.getElementById("pixAguardando")?.classList.add("hidden");
   document.getElementById("pixSucesso")?.classList.add("hidden");
 
+  // limpa dados antigos
   const qr = document.getElementById("pixQr");
   const codigo = document.getElementById("pixCodigo");
   const btnCopiar = document.querySelector("#conteudoPix .btn-secundario");
@@ -432,7 +426,7 @@ window.abrirPopupPagamentoPixLoading = function () {
   }
 
   btnCopiar?.classList.add("hidden");
-};
+}
 
 whenSocketReady((socket) => {
 
