@@ -46,3 +46,8 @@ img {
   object-fit: cover;
   display: block;
 }
+
+body {
+  visibility: visible;
+}
+
