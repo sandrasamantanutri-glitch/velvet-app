@@ -9,45 +9,6 @@ html, body {
   overflow: auto; 
 }
 
-
-* {
-  box-sizing: border-box;
-  font-family: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont,
-               'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell,
-               'Helvetica Neue', Arial, sans-serif;
-}
-
-/* =========================
-   PÁGINA PRINCIPAL
-========================= */
-.chat-header strong {
-  color: #7B2CFF;             
-  font-weight: 600;
-}
-
-#tituloConversas {
-  font-size: 20px;
-  font-weight: 600;
-  color: #7B2CFF;             
-}
-
-#tituloConversas span {
-  font-weight: 700;
-}
-
-.pagina-chat {
-  height: 100%;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-}
-
-.pagina-chat > h2 {
-  margin: 0 0 16px;
-  flex-shrink: 0;
-}
-
-
 /* =========================
    LAYOUT GERAL
 ========================= */
@@ -348,25 +309,6 @@ html, body {
   gap: 10px;
 }
 
-.chat-identidade {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.chat-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #7B2CFF;
-}
-
-#chatNome {
-  font-weight: 600;
-  font-size: 14px;
-  color: #7B2CFF;
-}
 
 /* CARD BLOQUEADO LIMPO (CLIENTE) */
 .chat-conteudo.bloqueado.premium {
