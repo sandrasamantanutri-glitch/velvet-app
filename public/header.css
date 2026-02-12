@@ -49,4 +49,8 @@ body {
   height: 30px;
 }
 
+body {
+  visibility: visible;
+}
+
 
