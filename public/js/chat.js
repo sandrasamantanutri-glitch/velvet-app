@@ -678,8 +678,14 @@ async function carregarInfoCliente(cliente_id) {
     const status = document.getElementById("chatClienteStatus");
 
     if (avatar) {
-      avatar.src = cliente.avatar || "/assets/avatar.png";
+  avatar.style.cursor = "pointer";
+
+  avatar.addEventListener("click", () => {
+    if (cliente.avatar) {
+      abrirPreviewAvatar(cliente.avatar);
     }
+  });
+}
 
     if (nome) {
   nome.innerText = cliente.username || "Cliente";

@@ -245,9 +245,15 @@ async function carregarInfoModelo(modelo_id) {
     const nome   = document.getElementById("chatClienteNome");
     const status = document.getElementById("chatClienteStatus");
 
-    if (avatar) {
-      avatar.src = modelo.avatar || "/assets/avatar.png";
+   if (avatar) {
+  avatar.style.cursor = "pointer";
+
+  avatar.addEventListener("click", () => {
+    if (cliente.avatar) {
+      abrirPreviewAvatar(cliente.avatar);
     }
+  });
+}
 
     if (nome) {
       nome.innerText = modelo.nome_exibicao || "Modelo";
@@ -262,6 +268,35 @@ async function carregarInfoModelo(modelo_id) {
   } catch (err) {
     console.error("Erro carregar modelo:", err);
   }
+}
+
+function abrirPreviewAvatar(url) {
+  let modal = document.getElementById("avatarPreviewModal");
+
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "avatarPreviewModal";
+    modal.className = "preview-modal open";
+
+    modal.innerHTML = `
+      <div class="preview-backdrop"></div>
+      <div class="preview-box">
+        <span class="preview-close">×</span>
+        <img id="avatarPreviewImg" />
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const fechar = () => modal.remove();
+    modal.querySelector(".preview-backdrop").onclick = fechar;
+    modal.querySelector(".preview-close").onclick = fechar;
+  }
+
+  const img = modal.querySelector("#avatarPreviewImg");
+  img.src = url;
+
+  modal.classList.add("open");
 }
 
 function enviarMensagem() {
