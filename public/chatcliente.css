@@ -394,9 +394,9 @@ html, body {
 
 /* força card correto */
 .chat-conteudo.premium {
-  width: 200px !important;
+  width: 150px !important;
   height: auto !important;
-  max-width: 500px;
+  max-width: 150px;
 
   padding: 10px;
   border-radius: 18px;
@@ -727,8 +727,6 @@ text-align: center;
 }
 
 .chat-conteudo.bloqueado .midia-item {
-  background: radial-gradient(circle at 30% 30%, rgba(183, 160, 255, 0.45), transparent 35%), radial-gradient(circle at 70% 70%, rgba(140, 108, 255, 0.35), transparent 40%), linear-gradient(135deg, #9E6BFF);
-
   filter: blur(6px);
   opacity: 0.85;
 }
