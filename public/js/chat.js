@@ -669,13 +669,11 @@ async function carregarInfoCliente(cliente_id) {
     if (avatar) {
   avatar.style.cursor = "pointer";
 
-avatar.addEventListener("click", () => {
-  const url = avatar.src;
-
-  if (url && !url.includes("avatar.png")) {
-    abrirPreviewAvatar(url);
-  }
-});
+  avatar.addEventListener("click", () => {
+    if (cliente.avatar) {
+      abrirPreviewAvatar(cliente.avatar);
+    }
+  });
 }
 
     if (nome) {
