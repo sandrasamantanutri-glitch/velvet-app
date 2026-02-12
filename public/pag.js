@@ -225,14 +225,6 @@ function mostrarMetodo(tipo) {
   const cartao = document.getElementById("conteudoCartao");
   if (!pix || !cartao) return;
 
-  // 🔥 MÍDIA → sempre cartão
-  if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
-    pix.classList.add("hidden");
-    cartao.classList.remove("hidden");
-    return;
-  }
-
-  // 💎 VIP → Pix ou Cartão
   pix.classList.toggle("hidden", tipo !== "pix");
   cartao.classList.toggle("hidden", tipo !== "cartao");
 
