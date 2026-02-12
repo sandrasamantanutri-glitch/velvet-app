@@ -270,7 +270,7 @@ function renderMensagem(msg) {
           <div class="pacote-grid">
             ${Array(msg.quantidade ?? 1).fill("").map(() =>
   `<div class="midia-item placeholder"
-       onclick="abrirPagamentoChat(${msg.preco}, ${msg.id})"></div>`
+       onclick="abrirPagamentoChat(${msg.preco}, ${msg.conteudo_id})"></div>`
 ).join("")}
           </div>
 
@@ -285,7 +285,7 @@ function renderMensagem(msg) {
 
 <button class="btn-desbloquear"
   data-preco="${msg.preco}"
-  data-message-id="${msg.id}">
+  data-conteudo-id="${msg.conteudo_id}">
   Desbloquear
 </button>
 </div>
@@ -386,7 +386,7 @@ function abrirPagamentoChat(preco, messageId) {
   window.PAGAMENTO_TIPO_ATUAL = "midia";
   window.MIDIA_VENDA_ATUAL = {
     message_id: messageId,
-    conteudo_id: messageId,
+    conteudo_id: msg.conteudo_id,
     preco: Number(preco),
     descricao: "Conteúdo exclusivo no chat"
   };
