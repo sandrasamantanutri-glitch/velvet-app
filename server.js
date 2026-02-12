@@ -1996,7 +1996,7 @@ app.get("/api/modelo/publico/:id", async (req, res) => {
 
   try {
     const result = await db.query(`
-      SELECT
+       SELECT
         m.user_id AS id,
         m.nome_exibicao,
         m.bio,
@@ -2007,14 +2007,14 @@ app.get("/api/modelo/publico/:id", async (req, res) => {
         md.tiktok
       FROM modelos m
       JOIN modelos_verificacao v
-        ON v.modelo_id = m.user_id
+        ON v.modelo_id = m.id  -- ✅ CORRETO AGORA
       LEFT JOIN modelos_dados md
         ON md.user_id = m.user_id
       WHERE m.user_id = $1
         AND v.status = 'aprovado'
       ORDER BY v.created_at DESC
       LIMIT 1
-    `, [modelo_id]);
+    `, [modelo_user_id]);
 
     if (!result.rows.length) {
       return res.status(403).json({
