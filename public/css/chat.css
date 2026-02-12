@@ -587,3 +587,15 @@ html, body {
   background: #fff;
 }
 
+
+/* 🔒 Blur só para cliente */
+.role-cliente .chat-conteudo.bloqueado .midia-item img,
+.role-cliente .chat-conteudo.bloqueado .midia-item video {
+  filter: blur(12px) brightness(0.4);
+}
+
+/* 🔥 Modelo NUNCA tem blur */
+.role-modelo .chat-conteudo .midia-item img,
+.role-modelo .chat-conteudo .midia-item video {
+  filter: none !important;
+}
