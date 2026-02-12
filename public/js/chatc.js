@@ -16,10 +16,10 @@ let cliente_id = null;
 let modelo_id = null;
 const mensagensRenderizadas = new Set();
 const conteudosLiberados = new Set();
-let stripe;
+// let stripe;
 let elements;
 let pagamentoAtual = {};
-stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
+// stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
 
 // 🔐 SOCKET AUTH
 socket.on("connect", () => {
