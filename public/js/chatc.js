@@ -200,44 +200,43 @@ function fecharEscolha() {
     .classList.add("hidden");
 }
 
-async function carregarCliente() {
-  const res = await fetch("/api/cliente/me", {
-    headers: { Authorization: "Bearer " + token }
-  });
+async function carregarInfoModelo(modelo_id) {
+  try {
+    const res = await fetch(`api/modelo/chat/:id/${modelo_id}`, {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
 
-  const data = await res.json();
-  cliente_id = data.id;
+    if (!res.ok) return;
 
- document.getElementById("clienteNomeTitulo").innerText =
-  data.username || data.nome;
+    const cliente = await res.json();
 
-  socket.emit("loginCliente", cliente_id);
+    const avatar = document.getElementById("chatModeloAvatar");
+    const nome = document.getElementById("chatModeloNome");
+    const status = document.getElementById("chatModeloStatus");
+
+    if (avatar) {
+      avatar.src = cliente.avatar || "/assets/avatar.png";
+    }
+
+    if (nome) {
+  nome.innerText = modelo.nome_exibicao || "Modelo";
+}
+if (status) {
+  if (modelo.last_seen) {
+    status.innerText = `visto por último: ${formatarTempo(modelo.last_seen)}`;
+  } else {
+    status.innerText = "visto por último: agora";
+  }
 }
 
-function enviarMensagem() {
-  const input = document.getElementById("messageInput");
-  const text = input.value.trim();
-  if (!text) return;
-
-  if (!modelo_id) {
-  alert("Selecione uma modelo para conversar.");
-  return;
+  } catch (err) {
+    console.error("Erro carregar modelo:", err);
+  }
 }
 
-// ❌ erro real de sessão
-if (!cliente_id) {
-  alert("Erro de sessão. Recarregue a página.");
-  return;
-}
 
-  socket.emit("sendMessage", {
-    cliente_id,
-    modelo_id,
-    text
-  });
-
-  input.value = "";
-}
 
 function renderMensagem(msg) {
   const chat = document.getElementById("chatBox");
