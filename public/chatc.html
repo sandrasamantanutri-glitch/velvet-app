@@ -8,7 +8,6 @@
 <link rel="stylesheet" href="/chatcliente.css">
 <link rel="stylesheet" href="/css/chat.css">
 <link rel="stylesheet" href="/header.css">
-<link rel="stylesheet" href="/pag.css">
 </head>
 
 <body class="role-cliente">
@@ -55,45 +54,97 @@
   </div>
 <!-- ================= POPUPS ================= -->
 
-<div id="popupPagamentoVelvet" class="velvet-modal hidden">
+<div id="popupPix" class="modal hidden">
+  <div class="modal-box pix-box">
 
-  <div class="velvet-backdrop" onclick="fecharPopupPagamento()"></div>
+    <button class="modal-close" onclick="fecharPopupPix()">×</button>
 
-  <div class="velvet-box">
+    <h2 class="pix-title">Desbloquear Conteúdo</h2>
 
-    <button class="velvet-close"
-      onclick="fecharPopupPagamento()">×</button>
+    <!-- 🔥 PREÇO -->
+<div class="pix-preco">
+  <div class="pix-total">
+    Total para Desbloquear:
+    <strong id="pixValorTotal">R$ 0,00</strong>
+  </div>
 
-    <h3 class="velvet-title">Desbloquear conteúdo</h3>
+  <div class="pix-detalhes">
+    <div>Conteúdo: <span id="pixValorBase">R$ 0,00</span></div>
+    <div>Taxa de transação: <span id="pixTaxaTransacao">R$ 0,00</span></div>
+    <div>Taxa da plataforma: <span id="pixTaxaPlataforma">R$ 0,00</span></div>
+  </div>
+</div>
 
-    <!-- 🔥 RESUMO MÍDIA -->
-    <div class="midia-detalhes">
-      <p>Conteúdo: R$ <span id="midiaValorBase">0,00</span></p>
-      <p>Taxa: R$ <span id="midiaTaxa">0,00</span></p>
-      <p><strong>Total: R$ <span id="midiaTotal">0,00</span></strong></p>
+    <!-- QR CODE -->
+    <img id="pixQr" class="pix-qr" />
+
+    <!-- COPIA E COLA -->
+    <textarea
+      id="pixCopia"
+      class="pix-copia"
+      readonly
+    ></textarea>
+
+    <button class="pix-copiar"
+      onclick="copiarPix()">
+      Copiar código Pix
+    </button>
+
+  </div>
+</div>
+
+
+<!-- ================= STRIPE ================= -->
+ <!-- ESCOLHA DO MÉTODO -->
+<div id="escolhaPagamento" class="modal hidden">
+  <div class="modal-backdrop"></div>
+
+  <div class="modal-box escolha-box">
+    <button class="modal-close" onclick="fecharEscolha()">×</button>
+
+    <h2 class="titulo-roxo">Escolha a forma de desbloqueio do conteúdo</h2>
+
+    <button class="btn-pagamento pix" onclick="pagarComPix()">
+      ⚡ Desboquear com Pix
+    </button>
+
+    <button class="btn-pagamento cartao" onclick="pagarComCartao()">
+      💳 Desbloquear com Cartão
+    </button>
+  </div>
+</div>
+
+<div id="paymentModal" class="modal hidden">
+  <div class="modal-backdrop"></div>
+
+  <div class="modal-box">
+    <button
+  class="modal-close"
+  id="fecharPagamento"
+  onclick="fecharPagamento()"
+>×</button>
+
+    <h2 class="desbloq"> Desbloquear conteúdo</h2>
+   <div class="cartao-preco">
+  <div class="cartao-total">
+    Total para Desbloquear:
+    <strong id="cartaoValorTotal">R$ 0,00</strong>
+  </div>
+
+  <div class="cartao-detalhes">
+    <div>Conteúdo: <span id="cartaoValorConteudo">R$ 0,00</span></div>
+    <div>Taxa de transação: <span id="cartaoTaxaTransacao">R$ 0,00</span></div>
+    <div>Taxa da plataforma: <span id="cartaoTaxaPlataforma">R$ 0,00</span></div>
+  </div>
+</div>
+
+    <div id="payment-element-container">
+      <div id="payment-element"></div>
     </div>
 
-    <!-- 💳 CARTÃO -->
-    <div id="conteudoCartao">
-
-      <div id="cartaoLoading">
-        Carregando pagamento...
-      </div>
-
-      <form id="formCartao" class="hidden">
-        <div id="card-element"></div>
-
-        <button class="btn-principal" type="submit">
-          Confirmar desbloqueio
-        </button>
-      </form>
-
-      <div id="cartaoSucesso" class="hidden">
-        Pagamento confirmado 💜
-      </div>
-
-    </div>
-
+    <button id="confirmarPagamento" class="btn-confirmar-desbloqueio">
+      Confirmar desbloqueio
+    </button>
   </div>
 </div>
 
@@ -106,8 +157,7 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/header.js"></script>
-<script src="https://js.stripe.com/v3/"></script>
- <script src="/pag.js" defer></script>
+<!-- <script src="https://js.stripe.com/v3/"></script> -->
 <script src="js/chatc.js"></script>
 
 </body>
