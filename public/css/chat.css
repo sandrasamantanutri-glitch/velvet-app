@@ -166,20 +166,6 @@ body, html {
   line-height: 1.4;
 }
 
-.msg.modelo {
-  align-self: flex-end;
-  background: #7B2CFF;
-  color: #fff;
-  border-bottom-right-radius: 4px;
-}
-
-.msg.cliente {
-  align-self: flex-start;
-  background: #F1F1F4;
-  color: #1E1E26;
-  border-bottom-left-radius: 4px;
-}
-
 /* hora */
 .msg-hora {
   margin-top: 4px;
