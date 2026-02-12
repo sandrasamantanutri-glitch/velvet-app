@@ -259,7 +259,7 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id }) {
     }
 
     abrirPopupPagamentoPixLoading();
-    
+
     if (tipo === "vip") {
   modelo_id = modelo_id || window.MODELO_ID_ATUAL;
 
@@ -307,18 +307,22 @@ if (tipo === "midia") {
 
     // ===============================
     // 🧾 MOSTRAR QR
-    // ===============================
     const qr = document.getElementById("pixQr");
-    const codigo = document.getElementById("pixCodigo");
-    const btnCopiar =
-      document.querySelector("#conteudoPix .btn-secundario");
+const codigo = document.getElementById("pixCodigo");
+const btnCopiar =
+  document.querySelector("#conteudoPix .btn-secundario");
 
-    qr.src = `data:image/png;base64,${data.qr_code}`;
-    codigo.value = data.copia_cola;
+if (!qr || !codigo) {
+  console.error("❌ Elementos Pix não encontrados no DOM");
+  return;
+}
 
-    qr.classList.remove("hidden");
-    codigo.classList.remove("hidden");
-    btnCopiar?.classList.remove("hidden");
+qr.src = `data:image/png;base64,${data.qr_code}`;
+codigo.value = data.copia_cola;
+
+qr.classList.remove("hidden");
+codigo.classList.remove("hidden");
+btnCopiar?.classList.remove("hidden");
 
     document.getElementById("pixLoading")?.classList.add("hidden");
     document.getElementById("pixAguardando")?.classList.remove("hidden");

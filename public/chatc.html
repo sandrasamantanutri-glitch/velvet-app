@@ -54,15 +54,13 @@
    </button>
   </div>
 <!-- ================= POPUPS ================= -->
-
 <div id="popupPagamentoVelvet" class="velvet-modal hidden">
 
   <div class="velvet-backdrop" onclick="fecharPopupPagamento()"></div>
 
   <div class="velvet-box">
 
-    <button class="velvet-close"
-      onclick="fecharPopupPagamento()">×</button>
+    <button class="velvet-close" onclick="fecharPopupPagamento()">×</button>
 
     <h3 class="velvet-title">Desbloquear conteúdo</h3>
 
@@ -73,8 +71,33 @@
       <p><strong>Total: R$ <span id="midiaTotal">0,00</span></strong></p>
     </div>
 
+    <!-- 🟣 PIX -->
+    <div id="conteudoPix" class="hidden">
+
+      <div id="pixLoading" class="hidden">
+        Gerando Pix...
+      </div>
+
+      <img id="pixQr" class="hidden" />
+
+      <input id="pixCodigo" readonly class="hidden" />
+
+      <button class="btn-secundario hidden" onclick="copiarPix()">
+        Copiar código Pix
+      </button>
+
+      <div id="pixAguardando" class="hidden">
+        Aguardando pagamento...
+      </div>
+
+      <div id="pixSucesso" class="hidden">
+        Pagamento confirmado 💜
+      </div>
+
+    </div>
+
     <!-- 💳 CARTÃO -->
-    <div id="conteudoCartao">
+    <div id="conteudoCartao" class="hidden">
 
       <div id="cartaoLoading">
         Carregando pagamento...
