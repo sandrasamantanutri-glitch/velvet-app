@@ -480,12 +480,16 @@ body, html {
 }
 
 .chat-conteudo.bloqueado::after {
-  content: "";
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.55);
-  border-radius: 16px;
-  z-index: 1;              /* 🔥 fica atrás */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: white;
+  background: rgba(0,0,0,0.6);
+  border-radius: 12px;
+  pointer-events: none; 
 }
 
 .chat-conteudo.bloqueado {
@@ -540,22 +544,3 @@ body, html {
 }
 
 
-.chat-conteudo.bloqueado::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,0.55);
-  border-radius: 16px;
-  z-index: 1;              /* 🔥 fica atrás */
-}
-
-
-
-.conteudo-info {
-  width: 100%;              /* 🔥 ocupa largura total do card */
-  display: flex;
-  flex-direction: column;
-  align-items: center;      /* centraliza horizontal */
-  justify-content: center;
-  text-align: center;       /* centraliza texto */
-}
