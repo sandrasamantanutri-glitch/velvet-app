@@ -549,6 +549,8 @@ body, html {
   z-index: 1;              /* 🔥 fica atrás */
 }
 
+
+
 .conteudo-info {
   width: 100%;              /* 🔥 ocupa largura total do card */
   display: flex;
