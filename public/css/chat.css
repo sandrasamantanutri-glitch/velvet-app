@@ -508,7 +508,6 @@ body {
 }
 
 .chat-conteudo.bloqueado::after {
-  content: "🔒 Clique para desbloquear";
   position: absolute;
   inset: 0;
   display: flex;
@@ -562,7 +561,6 @@ body {
   pointer-events: none;
 }
 
-/* 🔥 botão acima do overlay */
 .btn-desbloquear {
   position: relative;
   z-index: 2;
