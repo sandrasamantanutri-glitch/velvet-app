@@ -2,33 +2,20 @@
 <html lang="pt">
 <head>
   <meta charset="UTF-8">
-  <title>Chat Cliente</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chat</title>
 
 <link rel="stylesheet" href="/chatcliente.css">
-  <link rel="stylesheet" href="/header.css">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/chat.css">
+<link rel="stylesheet" href="/header.css">
 </head>
 
+
 <body class="role-cliente">
-
-<!-- ================= HEADER GLOBAL ================= -->
-<header class="app-header">
-  <div class="header-inner">
-
-    <img src="assets/velvet.png" class="logo-app" alt="Logo">
-
-    <div class="profile-menu-top">
-      <button id="btnMensagem">
-        <img src="assets/chat.png" alt="Chat">
-        <span id="badgeUnread" class="badge-unread hidden">0</span>
-      </button>
-
-      <button id="menuBtn" class="menu-btn">☰</button>
-      <div id="userMenu" class="menu-superior"></div>
-    </div>
-
-  </div>
-</header>
+  <div id="header-container"></div>
+  <header class="chat-topo"> <button type="button" class="btn-voltar" onclick="history.back()">
+  <img src="/assets/voltar.png" alt="Voltar"></button>
+  
     <!-- ===== ÁREA DO CHAT ===== -->
     <div class="chat-area painel">
       <!-- MENSAGENS -->
