@@ -14,7 +14,6 @@ const socket = io({
 
 let cliente_id = null;
 let modelo_id = null;
-let chatAtivo = null;
 const mensagensRenderizadas = new Set();
 const conteudosLiberados = new Set();
 let stripe;
@@ -46,28 +45,13 @@ socket.on("chatHistory", mensagens => {
     renderMensagem(m);
   });
 
-  atualizarStatusPorResponder(mensagens);
-});
-
-
-socket.on("chatMetaUpdate", data => {
-  atualizarListaComMeta(data);
 });
 
 // 💬 NOVA MENSAGEM
 socket.on("newMessage", msg => {
-
-  // 🔒 se a mensagem NÃO é deste chat, ignora
   if (Number(msg.modelo_id) !== Number(modelo_id)) return;
 
-  // ✅ renderiza sempre no chat aberto
   renderMensagem(msg);
-
-  // ❗ SÓ marca "Não visto" se EU NÃO fui quem enviou
-  if (msg.sender !== "cliente") {
-    atualizarItemListaComNovaMensagem(msg);
-    contarChatsNaoLidosCliente();
-  }
 });
 
 
@@ -78,9 +62,6 @@ socket.on("conteudoVisto", async ({ message_id }) => {
 
   fecharPopupPix();
 
-  /* ==========================
-     🔄 ATUALIZA CARD NO CHAT
-  ========================== */
   const card = document.querySelector(
     `.chat-conteudo[data-id="${message_id}"]`
   );
@@ -131,94 +112,72 @@ card.removeAttribute("data-preco");
 
 });
 
-socket.on("unreadUpdate", ({ modelo_id, unread }) => {
-  if (!unread) return;
-
-  const li = [...document.querySelectorAll("#listaModelos li")]
-    .find(el => Number(el.dataset.modeloId) === Number(modelo_id));
-
-  if (!li) return;
-
-  li.classList.add("nao-visto");
-
-  const badge = li.querySelector(".badge");
-  badge.innerText = "Não visto";
-  badge.classList.remove("hidden");
-
-  // 🔔 ATUALIZA HEADER
-  contarChatsNaoLidosCliente();
-});
 
 function fecharPopupPix() {
   const popup = document.getElementById("popupPix");
   if (popup) popup.classList.add("hidden");
-
-  // limpa estado de pagamento
   pagamentoAtual = {};
 }
-
-
 
 
 // ===============================
 // INIT
 // ===============================
 document.addEventListener("DOMContentLoaded", async () => {
+
+  // 🔐 carrega cliente
   await carregarCliente();
-  await carregarListaModelos();
 
-  const vipModelo = localStorage.getItem("vip_modelo_id");
+  // 🔥 pega modelo pela URL
+  const params = new URLSearchParams(window.location.search);
+  modelo_id = Number(params.get("modelo"));
 
-if (vipModelo) {
-  localStorage.removeItem("vip_modelo_id");
+  if (!modelo_id) {
+    alert("Modelo inválida.");
+    return;
+  }
 
-  // força reload da lista VIP
-  await carregarListaModelos();
+  // 🔌 entra direto na sala
+  const sala = `chat_${cliente_id}_${modelo_id}`;
+  socket.emit("joinChat", { sala });
+  socket.emit("getHistory", { cliente_id, modelo_id });
 
-  // abre automaticamente o chat da modelo VIP
-  const li = [...document.querySelectorAll("#listaModelos li")]
-    .find(el => Number(el.dataset.modeloId) === Number(vipModelo));
-
-  if (li) li.click();
-}
-
-
+  // 📨 botão enviar
   const sendBtn = document.getElementById("sendBtn");
   const input   = document.getElementById("messageInput");
+
   sendBtn.onclick = enviarMensagem;
 
- input.addEventListener("keydown", e => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault(); // 🚫 impede quebra de linha
-    enviarMensagem();
-  }
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      enviarMensagem();
+    }
   });
-  const avatarEl = document.getElementById("chatAvatar");
 
+  // 🖼️ avatar fallback
+  const avatarEl = document.getElementById("chatAvatar");
   avatarEl.onerror = () => {
-  avatarEl.src =
-    "https://velvet-app-production.up.railway.app/assets/avatarDefault.png";
+    avatarEl.src =
+      "/assets/avatar.png";
   };
 
+  // 💳 botão desbloquear (delegação)
   document.addEventListener("click", (e) => {
-  const btn = e.target.closest(".btn-desbloquear");
-  if (!btn) return;
+    const btn = e.target.closest(".btn-desbloquear");
+    if (!btn) return;
 
- const preco = btn.dataset.preco;
- const messageId = btn.dataset.messageId;
-console.log("DEBUG pagamento:", preco, messageId);
-abrirPagamentoChat(preco, messageId);
+    const preco = btn.dataset.preco;
+    const messageId = btn.dataset.messageId;
 
- });
-
+    abrirPagamentoChat(preco, messageId);
+  });
 
 });
 
 
-
 // ===============================
 // FUNÇÕES
-// ===============================
 // 💰 FORMATA VALORES EM REAL (R$)
 function valorBRL(valor) {
   return Number(valor).toLocaleString("pt-BR", {
@@ -249,88 +208,6 @@ function fecharEscolha() {
     .classList.add("hidden");
 }
 
-
-function atualizarListaComMeta({ cliente_id, modelo_id, sender, created_at }) {
-  const minhaRole = localStorage.getItem("role");
-
-  const li = [...document.querySelectorAll(".chat-item")]
-    .find(el =>
-      minhaRole === "cliente"
-        ? Number(el.dataset.modeloId) === modelo_id
-        : Number(el.dataset.clienteId) === cliente_id
-    );
-
-  if (!li) return;
-
-  // horário
-  li.dataset.lastTime = new Date(created_at).getTime();
-
-  // status
-  if (sender !== minhaRole) {
-    li.dataset.status = "por-responder";
-    li.querySelector(".badge").innerText = "Por responder";
-    li.querySelector(".badge").classList.remove("hidden");
-  }
-
-  organizarListaClientes?.();
-  organizarListaModelos?.();
-}
-
-async function carregarListaModelos() {
-  const res = await fetch("/api/chat/cliente", {
-    headers: { Authorization: "Bearer " + token }
-  });
-
-  const modelos = await res.json();
-  const lista = document.getElementById("listaModelos");
-  lista.innerHTML = "";
-
-  if (!modelos.length) {
-    lista.innerHTML = "<li>Você não é VIP em nenhuma modelo.</li>";
-    return;
-  }
-
-  const unreadRes = await fetch("/api/chat/unread/cliente", {
-    headers: { Authorization: "Bearer " + token }
-  });
-  const unreadIds = await unreadRes.json();
-
-  modelos.forEach(m => {
-    const li = document.createElement("li");
-    li.className = "chat-item";
-    li.dataset.modeloId = m.modelo_id;
-
-    const temNaoVisto = unreadIds.includes(m.modelo_id);
-
-    li.innerHTML = `
-      <span class="nome">${m.nome}</span>
-      <span class="badge ${temNaoVisto ? "" : "hidden"}">Não visto</span>
-    `;
-
-    li.onclick = () => {
-      modelo_id = m.modelo_id;
-      chatAtivo = { cliente_id, modelo_id };
-
-      mensagensRenderizadas.clear();
-      document.getElementById("chatBox").innerHTML = "";
-      document.getElementById("chatNome").innerText = m.nome;
-      if (m.avatar) {
-        document.getElementById("chatAvatar").src = m.avatar;
-      }
-
-      li.querySelector(".badge")?.classList.add("hidden");
-      li.classList.remove("nao-visto");
-
-      const sala = `chat_${cliente_id}_${modelo_id}`;
-      socket.emit("joinChat", { sala });
-      socket.emit("getHistory", { cliente_id, modelo_id });
-    };
-
-    lista.appendChild(li);
-    contarChatsNaoLidosCliente();
-  });
-}
-
 async function carregarCliente() {
   const res = await fetch("/api/cliente/me", {
     headers: { Authorization: "Bearer " + token }
@@ -343,27 +220,6 @@ async function carregarCliente() {
   data.username || data.nome;
 
   socket.emit("loginCliente", cliente_id);
-}
-
-function atualizarItemListaComNovaMensagem(msg) {
-
-  // 🚫 cliente NÃO marca Não visto para mensagens dele mesmo
-  if (msg.sender === "cliente") return;
-
-  const li = [...document.querySelectorAll("#listaModelos li")]
-    .find(el => Number(el.dataset.modeloId) === msg.modelo_id);
-
-  if (!li) return;
-
-  li.dataset.status = "nao-visto";
-
-  const badge = li.querySelector(".badge");
-  badge.innerText = "Não visto";
-  badge.classList.remove("hidden");
-
-  li.dataset.lastTime = Date.now();
-
-  organizarListaModelos?.();
 }
 
 function enviarMensagem() {
@@ -388,12 +244,6 @@ if (!cliente_id) {
     text
   });
 
-  const item = [...document.querySelectorAll("#listaModelos li")]
-  .find(li => Number(li.dataset.modeloId) === modelo_id);
-
-if (item) {
-  item.querySelector(".badge").classList.add("hidden");
-}
   input.value = "";
 }
 
@@ -490,59 +340,6 @@ function avisarConteudoBloqueado() {
   alert("Você precisa desbloquear a mídia para ver o conteúdo.");
 }
 
-
-  
-function marcarNaoVisto(msg) {
-  document.querySelectorAll("#listaModelos li").forEach(li => {
-    if (Number(li.dataset.modeloId) === msg.modelo_id) {
-      li.classList.add("nao-visto");
-      li.querySelector(".badge").classList.remove("hidden");
-    }
-  });
-}
-
-function adicionarMensagemNoChat(msg) {
-  const chatBox = document.getElementById("chatBox");
-  if (!chatBox) return;
-
-  const div = document.createElement("div");
-  div.className = msg.sender === "cliente" ? "msg cliente" : "msg modelo";
-  div.innerText = msg.text;
-
-  chatBox.appendChild(div);
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-function atualizarStatusPorResponder(mensagens) {
-  if (!mensagens || mensagens.length === 0) return;
-
-  const ultima = mensagens[mensagens.length - 1];
-  const minhaRole = localStorage.getItem("role"); // cliente | modelo
-
-  const item = [...document.querySelectorAll(".chat-item")]
-    .find(li =>
-      minhaRole === "cliente"
-        ? Number(li.dataset.modeloId) === ultima.modelo_id
-        : Number(li.dataset.clienteId) === ultima.cliente_id
-    );
-
-  if (!item) return;
-
-  const badge = item.querySelector(".badge");
-
-  // ✅ última mensagem NÃO foi minha → por responder
-  if (ultima.sender !== minhaRole) {
-    badge.innerText = "Por responder";
-    badge.classList.remove("hidden");
-    item.classList.remove("nao-visto");
-  }
-  // ✅ última mensagem foi minha → limpa tudo
-  else {
-    badge.classList.add("hidden");
-    item.classList.remove("nao-visto");
-  }
-}
-
 async function abrirConteudoSeguro(message_id, index = 0) {
   const modal = document.getElementById("modalConteudo");
   const midiaBox = document.getElementById("modalMidia");
@@ -611,31 +408,6 @@ document.addEventListener("click", e => {
   }
 });
 
-function organizarListaModelos() {
-  const lista = document.getElementById("listaModelos");
-  if (!lista) return;
-
-  const itens = [...lista.querySelectorAll("li")];
-
-  itens.sort((a, b) => {
-    const ta = Number(a.dataset.lastTime || 0);
-    const tb = Number(b.dataset.lastTime || 0);
-    return tb - ta; 
-  });
-
-  itens.forEach(li => lista.appendChild(li));
-}
-
-function organizarListaClientes() {
-}
-
-function contarChatsNaoLidosCliente() {
-  const itens = document.querySelectorAll(
-    "#listaModelos li.nao-visto, #listaModelos li[data-status='nao-visto']"
-  );
-
-  atualizarBadgeHeader(itens.length);
-}
 
 document.getElementById("confirmarPagamento").onclick = async () => {
   const { error, paymentIntent } = await stripe.confirmPayment({
@@ -661,7 +433,6 @@ document.getElementById("confirmarPagamento").onclick = async () => {
 
 // ===============================
 // ⚡ PIX — CONTEÚDO (BOTÃO)
-// ===============================
 function pagarComPix() {
   // 1️⃣ fecha popup de escolha
   document
@@ -878,11 +649,3 @@ function fallbackCopiarPix(input) {
 
   alert("Código Pix copiado!");
 }
-
-
-
-
-
-
-
-
