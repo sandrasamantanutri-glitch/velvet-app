@@ -474,6 +474,8 @@ async function carregarDadosPessoais() {
   const token = localStorage.getItem("token");
   if (!token) return;
 
+   const usuario = getUsuarioLogado();
+
   const res = await fetch("/api/usuario/dados", {
     headers: {
       Authorization: "Bearer " + token
@@ -483,8 +485,9 @@ async function carregarDadosPessoais() {
   if (!res.ok) return;
 
   const dados = await res.json();
-  if (
-  user?.role === "modelo" &&
+ 
+if (
+  usuario?.role === "modelo" &&
   dados.status === "aprovado"
 ) {
   document.getElementById("areaBanner")?.classList.add("hidden");
