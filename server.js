@@ -3108,9 +3108,9 @@ app.post("/api/register", authLimiter, async (req, res) => {
       const nomeModelo = nome || email.split("@")[0];
 
       await db.query(
-        `INSERT INTO public.modelos (user_id, nome)
-         VALUES ($1, $2)`,
-        [userId, nomeModelo]
+        `INSERT INTO public.modelos (user_id)
+         VALUES ($1)`,
+        [userId]
       );
 
       await db.query(
@@ -3128,13 +3128,12 @@ app.post("/api/register", authLimiter, async (req, res) => {
       const clienteResult = await db.query(
         `
         INSERT INTO public.clientes
-        (user_id, nome, origem_trafego, ref_modelo)
-        VALUES ($1, $2, $3, $4)
+        (user_id, origem_trafego, ref_modelo)
+        VALUES ($1, $2, $3)
         RETURNING id
         `,
         [
           userId,
-          nome || email.split("@")[0],
           src || null,
           ref ? Number(ref) : null
         ]
