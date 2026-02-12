@@ -106,19 +106,6 @@ html, body {
   background: #7B2CFF;
 }
 
-/* =========================
-   ÁREA DO CHAT
-========================= */
-
-.chat-area {
-  flex: 1;
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  overflow: visible; 
-  min-height: 0;
-}
-
 /* HEADER DO CHAT */
 .chat-header {
   padding-bottom: 8px;
@@ -126,23 +113,6 @@ html, body {
   border-bottom: 1px solid #9E6BFF;
   flex-shrink: 0;
 }
-
-.chat-layout,
-.chat-area {
-  min-height: 0;
-}
-
-
-
-#chatBox {
-  min-height: 0;
-  overflow-y: auto;
-  padding: 10px;
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-}
-
 
 .msg {
   max-width: 70%;
