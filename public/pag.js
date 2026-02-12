@@ -84,21 +84,23 @@ window.abrirPopupPagamento = function () {
     }
 
     // 🟣 CHAT → Pix padrão + cartão disponível
-    if (window.PAGAMENTO_ORIGEM === "chat") {
+// 🟣 CHAT → Pix padrão
+if (window.PAGAMENTO_ORIGEM === "chat") {
 
-      document.getElementById("conteudoPix")?.classList.remove("hidden");
-      document.getElementById("conteudoCartao")?.classList.add("hidden");
+  document.querySelector(".midia-detalhes")?.classList.remove("hidden");
 
-      // abre Pix automaticamente
-      setTimeout(() => {
-        pagarComPix({
-          tipo: "midia",
-          conteudo_id: window.MIDIA_VENDA_ATUAL?.conteudo_id
-        });
-      }, 0);
+  document.getElementById("conteudoPix")?.classList.remove("hidden");
+  document.getElementById("conteudoCartao")?.classList.add("hidden");
 
-      return;
-    }
+  setTimeout(() => {
+    pagarComPix({
+      tipo: "midia",
+      conteudo_id: window.MIDIA_VENDA_ATUAL?.conteudo_id
+    });
+  }, 0);
+
+  return;
+}
   }
 
   // ===============================
