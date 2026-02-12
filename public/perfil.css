@@ -534,33 +534,6 @@ body.role-cliente .area-saldos {
   color: #fff;
 }
 
-.perfil-completo-wrapper {
-  display: flex;
-  justify-content: center;
-  margin: 20px 0 10px;
-}
-
-.btn-perfil-completo {
-  display: inline-block;
-  padding: 12px 28px;
-  border-radius: 999px;
-  font-size: 16px;
-  font-weight: 600;
-  text-align: center;
-
-  background: linear-gradient(135deg, #9e6bff, #7b2cff);
-  color: #fff;
-
-  transition: all 0.3s ease;
-  box-shadow: 0 8px 18px rgba(123, 44, 255, 0.25);
-}
-
-.btn-perfil-completo:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 24px rgba(123, 44, 255, 0.35);
-}
-
-
 
 
 
