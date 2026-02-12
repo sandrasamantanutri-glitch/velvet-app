@@ -1,62 +1,88 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
-
+<html lang="pt">
 <head>
   <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-   <title>Chat</title>
-  <link rel="stylesheet" href="/css/chat.css">
-  <link rel="stylesheet" href="/chatcliente.css">
-  <link rel="stylesheet" href="/pag.css">
+  <title>Chat Cliente</title>
+
+<link rel="stylesheet" href="/chatcliente.css">
+  <link rel="stylesheet" href="/header.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
-<body>
- <div id="header-container"></div>
-<header class="chat-topo">
-  <button type="button" class="btn-voltar" onclick="history.back()">
-    <img src="/assets/voltar.png" alt="Voltar">
-  </button>
+<body class="role-cliente">
 
-  <div class="chat-cliente-info">
-    <img id="chatModeloAvatar"class="chat-avatar"src="/assets/avatar.png"alt="Avatar modelo"/>
-    <div class="chat-cliente-texto">
-      <div id="chatModeloNome" class="chat-nome">Modelo</div>
-      <div id="chatModeloStatus" class="chat-status">carregando…</div>
+<!-- ================= HEADER GLOBAL ================= -->
+<header class="app-header">
+  <div class="header-inner">
+
+    <img src="assets/velvet.png" class="logo-app" alt="Logo">
+
+    <div class="profile-menu-top">
+      <button id="btnMensagem">
+        <img src="assets/chat.png" alt="Chat">
+        <span id="badgeUnread" class="badge-unread hidden">0</span>
+      </button>
+
+      <button id="menuBtn" class="menu-btn">☰</button>
+      <div id="userMenu" class="menu-superior"></div>
     </div>
+
   </div>
 </header>
 
+<!-- ================= PÁGINA CHAT ================= -->
+<div class="pagina-chat">
 
-<div class="chat-container">
-<main id="chatBox" class="chat-box"></main>
+  <!-- TÍTULO -->
+  <h2 id="tituloConversas">
+    <span id="clienteNomeTitulo"></span>
+  </h2>
 
-<footer class="chat-input">
-  <button
-    id="btnEnviarConteudo1"
-    class="btn-midia"  onclick="avisoMidiaEmBreve()"
-  aria-label="Enviar mídia">
-    <img src="/assets/midia.png" alt="Mídia" />
-  </button>
+  <div class="chat-layout">
 
-  <input id="messageInput" type="text" placeholder="Digite uma mensagem..." autocomplete="off"/>
-  <button id="sendBtn" class="btn-enviar1" onclick="enviarMensagem()" aria-label="Enviar mensagem">
-  <img src="/assets/enviar.png" alt="Enviar" /></button>
+    <!-- ===== LISTA DE MODELOS ===== -->
+    <div class="lista-modelos painel">
+      <div class="painel-header">
+        <strong>Modelos</strong>
+      </div>
+      <ul id="listaModelos"></ul>
+    </div>
 
-</footer>
-</div>
+    <!-- ===== ÁREA DO CHAT ===== -->
+    <div class="chat-area painel">
 
-<div id="popupMidiaEmBreve" class="hidden">
-  <div class="popup-backdrop" onclick="fecharPopupMidia()"></div>
+      <!-- TOPO DO CHAT -->
+      <div class="chat-header chat-topo">
+        <strong>Conversando com:</strong>
 
-  <div class="popup-box">
-    <h3>Em breve ✨</h3>
-    <p>Em breve será possível enviar mídias pelo chat.</p>
+        <div class="chat-identidade">
+          <img
+            id="chatAvatar"
+            class="chat-avatar"
+            src="https://velvet-app-production.up.railway.app/assets/avatarDefault.png"
+            alt="Avatar"
+          />
+          <span id="chatNome"></span>
+        </div>
+      </div>
 
-    <button class="btn-fechar" onclick="fecharPopupMidia()">
-      Entendi
-    </button>
+      <!-- MENSAGENS -->
+      <div id="chatBox"></div>
+
+      <!-- INPUT -->
+      <div class="chat-input">
+        <textarea
+          id="messageInput"
+          placeholder="Digite sua mensagem..."
+        ></textarea>
+        <button id="sendBtn">Enviar</button>
+      </div>
+
+    </div>
   </div>
 </div>
+
+<!-- ================= POPUPS ================= -->
 
 <div id="popupPix" class="modal hidden">
   <div class="modal-box pix-box">
@@ -158,10 +184,12 @@
   <button class="modal-close" onclick="fecharConteudo()">×</button>
   <div id="modalMidia"></div>
 
+<!-- ================= SCRIPTS ================= -->
 <script src="/socket.io/socket.io.js"></script>
-<!-- <script src="https://js.stripe.com/v3/"></script> -->
 <script src="/header.js"></script>
-<!-- <script src="/pag.js" defer></script> -->
-<script src="/js/chatc.js"></script>
+<script src="https://js.stripe.com/v3/"></script>
+<script src="/chatcliente.js"></script>
+
+
 </body>
 </html>

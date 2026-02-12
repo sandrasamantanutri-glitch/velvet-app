@@ -1,73 +1,56 @@
+// ===============================
+// AUTH GUARD — CHAT CLIENTE
+// ===============================
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
+
 if (!token) {
   window.location.href = "/index.html";
   throw new Error("Sem token");
 }
-
 const socket = io({
   transports: ["websocket"]
 });
-
-  socket.emit("auth", { token });
 
 let cliente_id = null;
 let modelo_id = null;
 let chatAtivo = null;
 const mensagensRenderizadas = new Set();
 const conteudosLiberados = new Set();
+let stripe;
 let elements;
 let pagamentoAtual = {};
-// 🔐 SOCKET AUTH
+stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
 
+// 🔐 SOCKET AUTH
 socket.on("connect", () => {
   socket.emit("auth", {
     token: localStorage.getItem("token")
   });
 });
 
-const params = new URLSearchParams(location.search);
-modelo_id = Number(params.get("modelo_id"));
-
-const chatBox = document.getElementById("chatBox");
-
-chatBox.addEventListener("scroll", () => {
-  if (chatBox.scrollTop === 0 && !carregandoHistorico) {
-    carregarMensagensAntigas();
-  }
-});
-
-const input = document.getElementById("msgInput");
-
-
 // 📜 HISTÓRICO
 socket.on("chatHistory", mensagens => {
   const chat = document.getElementById("chatBox");
-  if (!chat || !mensagens.length) return;
-
-  // 🧹 limpa antes
   chat.innerHTML = "";
 
   mensagens.forEach(m => {
-     if (m.tipo === "conteudo") {
+
+    // 🔓 marca como liberado ao carregar histórico
+    if (m.tipo === "conteudo") {
       if (m.visto === true || Number(m.preco) === 0) {
         conteudosLiberados.add(Number(m.id));
       }
     }
+
     renderMensagem(m);
   });
 
   atualizarStatusPorResponder(mensagens);
 });
 
-// // 🔥 força scroll pro final
-  // requestAnimationFrame(() => {
-  //   chat.scrollTop = chat.scrollHeight;
-  // });
 
-  // ultimoTimestamp = mensagens[0].created_at;
-
-  socket.on("chatMetaUpdate", data => {
+socket.on("chatMetaUpdate", data => {
   atualizarListaComMeta(data);
 });
 
@@ -86,6 +69,7 @@ socket.on("newMessage", msg => {
     contarChatsNaoLidosCliente();
   }
 });
+
 
 socket.on("conteudoVisto", async ({ message_id }) => {
 
@@ -165,37 +149,56 @@ socket.on("unreadUpdate", ({ modelo_id, unread }) => {
   contarChatsNaoLidosCliente();
 });
 
+function fecharPopupPix() {
+  const popup = document.getElementById("popupPix");
+  if (popup) popup.classList.add("hidden");
+
+  // limpa estado de pagamento
+  pagamentoAtual = {};
+}
+
+
+
 
 // ===============================
 // INIT
 // ===============================
 document.addEventListener("DOMContentLoaded", async () => {
-  // 🔐 valida cliente
-  const res = await fetch("/api/cliente/me", {
-    headers: { Authorization: "Bearer " + token }
-  });
+  await carregarCliente();
+  await carregarListaModelos();
 
-  const me = await res.json();
-  cliente_id = me.id;
+  const vipModelo = localStorage.getItem("vip_modelo_id");
 
-  await carregarInfoModelo(modelo_id);
+if (vipModelo) {
+  localStorage.removeItem("vip_modelo_id");
+
+  // força reload da lista VIP
+  await carregarListaModelos();
+
+  // abre automaticamente o chat da modelo VIP
+  const li = [...document.querySelectorAll("#listaModelos li")]
+    .find(el => Number(el.dataset.modeloId) === Number(vipModelo));
+
+  if (li) li.click();
+}
+
 
   const sendBtn = document.getElementById("sendBtn");
   const input   = document.getElementById("messageInput");
   sendBtn.onclick = enviarMensagem;
 
-   input.addEventListener("keydown", e => {
+ input.addEventListener("keydown", e => {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault(); // 🚫 impede quebra de linha
     enviarMensagem();
   }
   });
-  // const avatarEl = document.getElementById("chatAvatar");
+  const avatarEl = document.getElementById("chatAvatar");
 
-  //   avatarEl.onerror = () => {
-  // avatarEl.src =
-  //   "/assets/avatar.png";
-  // };
+  avatarEl.onerror = () => {
+  avatarEl.src =
+    "https://velvet-app-production.up.railway.app/assets/avatarDefault.png";
+  };
 
   document.addEventListener("click", (e) => {
   const btn = e.target.closest(".btn-desbloquear");
@@ -208,19 +211,21 @@ abrirPagamentoChat(preco, messageId);
 
  });
 
- socket.emit("loginCliente", cliente_id);
-  socket.emit("loginModelo", modelo_id);
-
-  sala = `chat_${cliente_id}_${modelo_id}`;
-  socket.emit("joinChat", { sala });
-  socket.emit("getHistory", { cliente_id, modelo_id });
-
 
 });
+
+
 
 // ===============================
 // FUNÇÕES
 // ===============================
+// 💰 FORMATA VALORES EM REAL (R$)
+function valorBRL(valor) {
+  return Number(valor).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  });
+}
 
 async function abrirPagamentoChat(valor, conteudoId) {
   pagamentoAtual = {
@@ -238,26 +243,92 @@ async function abrirPagamentoChat(valor, conteudoId) {
     .classList.remove("hidden");
 }
 
-function scrollParaFinal() {
-  const chat = document.getElementById("chatBox");
-  if (!chat) return;
-
-  requestAnimationFrame(() => {
-    chat.scrollTop = chat.scrollHeight;
-  });
-}
-
-function avisoMidiaEmBreve() {
-   document
-    .getElementById("popupMidiaEmBreve")
-    .classList.remove("hidden");
-  alert("🚧 Em breve será possível enviar mídias! =)");
-}
-
 function fecharEscolha() {
   document
     .getElementById("escolhaPagamento")
     .classList.add("hidden");
+}
+
+
+function atualizarListaComMeta({ cliente_id, modelo_id, sender, created_at }) {
+  const minhaRole = localStorage.getItem("role");
+
+  const li = [...document.querySelectorAll(".chat-item")]
+    .find(el =>
+      minhaRole === "cliente"
+        ? Number(el.dataset.modeloId) === modelo_id
+        : Number(el.dataset.clienteId) === cliente_id
+    );
+
+  if (!li) return;
+
+  // horário
+  li.dataset.lastTime = new Date(created_at).getTime();
+
+  // status
+  if (sender !== minhaRole) {
+    li.dataset.status = "por-responder";
+    li.querySelector(".badge").innerText = "Por responder";
+    li.querySelector(".badge").classList.remove("hidden");
+  }
+
+  organizarListaClientes?.();
+  organizarListaModelos?.();
+}
+
+async function carregarListaModelos() {
+  const res = await fetch("/api/chat/cliente", {
+    headers: { Authorization: "Bearer " + token }
+  });
+
+  const modelos = await res.json();
+  const lista = document.getElementById("listaModelos");
+  lista.innerHTML = "";
+
+  if (!modelos.length) {
+    lista.innerHTML = "<li>Você não é VIP em nenhuma modelo.</li>";
+    return;
+  }
+
+  const unreadRes = await fetch("/api/chat/unread/cliente", {
+    headers: { Authorization: "Bearer " + token }
+  });
+  const unreadIds = await unreadRes.json();
+
+  modelos.forEach(m => {
+    const li = document.createElement("li");
+    li.className = "chat-item";
+    li.dataset.modeloId = m.modelo_id;
+
+    const temNaoVisto = unreadIds.includes(m.modelo_id);
+
+    li.innerHTML = `
+      <span class="nome">${m.nome}</span>
+      <span class="badge ${temNaoVisto ? "" : "hidden"}">Não visto</span>
+    `;
+
+    li.onclick = () => {
+      modelo_id = m.modelo_id;
+      chatAtivo = { cliente_id, modelo_id };
+
+      mensagensRenderizadas.clear();
+      document.getElementById("chatBox").innerHTML = "";
+      document.getElementById("chatNome").innerText = m.nome;
+      if (m.avatar) {
+        document.getElementById("chatAvatar").src = m.avatar;
+      }
+
+      li.querySelector(".badge")?.classList.add("hidden");
+      li.classList.remove("nao-visto");
+
+      const sala = `chat_${cliente_id}_${modelo_id}`;
+      socket.emit("joinChat", { sala });
+      socket.emit("getHistory", { cliente_id, modelo_id });
+    };
+
+    lista.appendChild(li);
+    contarChatsNaoLidosCliente();
+  });
 }
 
 async function carregarCliente() {
@@ -419,6 +490,8 @@ function avisarConteudoBloqueado() {
   alert("Você precisa desbloquear a mídia para ver o conteúdo.");
 }
 
+
+  
 function marcarNaoVisto(msg) {
   document.querySelectorAll("#listaModelos li").forEach(li => {
     if (Number(li.dataset.modeloId) === msg.modelo_id) {
@@ -520,6 +593,7 @@ async function abrirConteudoSeguro(message_id, index = 0) {
   }
 }
 
+
 function fecharConteudo() {
   const modal = document.getElementById("modalConteudo");
   const midia = document.getElementById("modalMidia");
@@ -536,6 +610,32 @@ document.addEventListener("click", e => {
     fecharConteudo();
   }
 });
+
+function organizarListaModelos() {
+  const lista = document.getElementById("listaModelos");
+  if (!lista) return;
+
+  const itens = [...lista.querySelectorAll("li")];
+
+  itens.sort((a, b) => {
+    const ta = Number(a.dataset.lastTime || 0);
+    const tb = Number(b.dataset.lastTime || 0);
+    return tb - ta; 
+  });
+
+  itens.forEach(li => lista.appendChild(li));
+}
+
+function organizarListaClientes() {
+}
+
+function contarChatsNaoLidosCliente() {
+  const itens = document.querySelectorAll(
+    "#listaModelos li.nao-visto, #listaModelos li[data-status='nao-visto']"
+  );
+
+  atualizarBadgeHeader(itens.length);
+}
 
 document.getElementById("confirmarPagamento").onclick = async () => {
   const { error, paymentIntent } = await stripe.confirmPayment({
@@ -557,6 +657,7 @@ document.getElementById("confirmarPagamento").onclick = async () => {
     pagamentoAtual = {};
   }
 };
+
 
 // ===============================
 // ⚡ PIX — CONTEÚDO (BOTÃO)
@@ -778,178 +879,10 @@ function fallbackCopiarPix(input) {
   alert("Código Pix copiado!");
 }
 
-function formatarTempo(timestamp) {
-  if (!timestamp || timestamp === "0") return "agora";
 
-  // aceita número OU string ISO
-  const time =
-    typeof timestamp === "number"
-      ? timestamp
-      : new Date(timestamp).getTime();
 
-  if (isNaN(time)) return "agora";
 
-  const diff = Date.now() - time;
 
-  const min = Math.floor(diff / 60000);
-  const h   = Math.floor(diff / 3600000);
-  const d   = Math.floor(diff / 86400000);
 
-  if (min < 1) return "agora";
-  if (min < 60) return `há ${min} min`;
-  if (h < 24) return `há ${h} h`;
-  if (d === 1) return "ontem";
-  return `há ${d} dias`;
-}
 
-function atualizarBadgeComTempo(li) {
-  const badge = li.querySelector(".badge");
-  const tempo = li.querySelector(".tempo");
 
-  const status = li.dataset.status;
-  const lastTime = Number(li.dataset.lastTime || 0);
-
-  // 🔔 BADGE
-  if (badge) {
-    if (status === "novo") {
-      badge.innerText = "Novo";
-      badge.classList.remove("hidden");
-    }
-    else if (status === "nao-visto") {
-      badge.innerText = "Não visto";
-      badge.classList.remove("hidden");
-    }
-    else if (status === "por-responder") {
-      badge.innerText = "Por responder";
-      badge.classList.remove("hidden");
-    }
-    else {
-      badge.classList.add("hidden");
-    }
-  }
-
-  // ⏱ TEMPO
-  if (tempo) {
-    tempo.innerText = lastTime > 0 ? formatarTempo(lastTime) : "";
-  }
-}
-
-// function abrirPreviewMidia(midia) {
-//   let modal = document.getElementById("previewMidiaModal");
-
-//   if (!modal) {
-//     modal = document.createElement("div");
-//     modal.id = "previewMidiaModal";
-//     modal.className = "preview-modal";
-
-//     modal.innerHTML = `
-//       <div class="preview-backdrop"></div>
-//       <div class="preview-box">
-//         <span class="preview-close">×</span>
-//         <div class="preview-content"></div>
-//       </div>
-//     `;
-
-//     document.body.appendChild(modal);
-
-//     const fechar = () => modal.remove();
-//     modal.querySelector(".preview-backdrop").onclick = fechar;
-//     modal.querySelector(".preview-close").onclick = fechar;
-//   }
-
-//   const content = modal.querySelector(".preview-content");
-//   content.innerHTML = "";
-
-//   if ((midia.tipo_media || midia.tipo) === "video") {
-//     content.innerHTML = `<video src="${midia.url}" controls autoplay></video>`;
-//   } else {
-//     content.innerHTML = `<img src="${midia.url}" />`;
-//   }
-// }
-
-function abrirPreviewAvatar(url) {
-  let modal = document.getElementById("avatarPreviewModal");
-
-  if (!modal) {
-    modal = document.createElement("div");
-    modal.id = "avatarPreviewModal";
-    modal.className = "preview-modal open";
-
-    modal.innerHTML = `
-      <div class="preview-backdrop"></div>
-      <div class="preview-box">
-        <span class="preview-close">×</span>
-        <img id="avatarPreviewImg" />
-      </div>
-    `;
-
-    document.body.appendChild(modal);
-
-    const fechar = () => modal.remove();
-    modal.querySelector(".preview-backdrop").onclick = fechar;
-    modal.querySelector(".preview-close").onclick = fechar;
-  }
-
-  const img = modal.querySelector("#avatarPreviewImg");
-  img.src = url;
-
-  modal.classList.add("open");
-}
-function formatarHora(data) {
-  if (!data) return "";
-
-  const d = new Date(data);
-  return d.toLocaleTimeString("pt-BR", {
-    hour: "2-digit",
-    minute: "2-digit"
-  });
-}
-
-async function marcarComoLido(modelo_id) {
-  try {
-    fetch(`/api/chat/cliente/marcar-lido/${modelo_id}`, {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token")
-      }
-    });
-  } catch (err) {
-    console.error("Erro ao marcar como lido:", err);
-  }
-}
-
-async function carregarInfoModelo(modelo_id) {
-  try {
-    const res = await fetch(`/api/modelo/chat/${modelo_id}`, {
-      headers: {
-        Authorization: "Bearer " + token
-      }
-    });
-
-    if (!res.ok) return;
-
-    const modelo = await res.json();
-    const avatar = document.getElementById("chatModeloAvatar");
-    const nome   = document.getElementById("chatModeloNome");
-    const status = document.getElementById("chatModeloStatus");
-
-    if (avatar) {
-      avatar.src = modelo.avatar || "/assets/avatar.png";
-    }
-
-    if (nome) {
-      nome.innerText = modelo.nome_exibicao || "Modelo";
-    }
-
-    if (status) {
-      if (modelo.last_seen) {
-        status.innerText = `visto por último: ${formatarTempo(modelo.last_seen)}`;
-      } else {
-        status.innerText = "visto por último: agora";
-      }
-    }
-
-  } catch (err) {
-    console.error("Erro carregar modelo:", err);
-  }
-}
