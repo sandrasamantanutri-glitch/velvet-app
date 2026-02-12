@@ -13,39 +13,34 @@
 
   <div id="header-container"></div>
 
-  <!-- ===== ÁREA DO CHAT ===== -->
   <div class="chat-area painel">
 
-    <!-- TOPO DO CHAT -->
+    <!-- HEADER -->
     <div class="chat-header">
-
       <button type="button" class="btn-voltar" onclick="history.back()">
         <img src="/assets/voltar.png" alt="Voltar">
       </button>
 
       <div class="chat-identidade">
-        <img
-          id="chatAvatar"
-          class="chat-avatar"
-          src="/assets/avatar.png"
-          alt="Avatar"
-        />
+        <img id="chatAvatar"
+             class="chat-avatar"
+             src="/assets/avatar.png"
+             alt="Avatar" />
         <span id="chatNome"></span>
       </div>
-
     </div>
-  </div>
 
-    <!-- MENSAGENS -->
-    <div id="chatBox"></div>
+    <!-- 🔥 CHAT BOX DENTRO DA ÁREA -->
+    <div id="chatBox" class="chat-box"></div>
+
     <!-- INPUT -->
     <div class="chat-input">
-      <textarea
-        id="messageInput"
-        placeholder="Digite sua mensagem..."
-      ></textarea>
+      <textarea id="messageInput"
+                placeholder="Digite sua mensagem..."></textarea>
       <button id="sendBtn">Enviar</button>
     </div>
+
+  </div>
 <!-- ================= POPUPS ================= -->
 
 <div id="popupPix" class="modal hidden">
