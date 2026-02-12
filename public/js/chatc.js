@@ -23,6 +23,47 @@ let pagamentoAtual = {};
 // stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
 
 
+
+document.addEventListener("DOMContentLoaded", async () => {
+
+  // 🔥 pega modelo da URL
+  const params = new URLSearchParams(window.location.search);
+  modelo_id = Number(params.get("modelo_id"));
+
+  if (!modelo_id) {
+    alert("Modelo inválida.");
+    return;
+  }
+
+  // 🔐 carregar cliente primeiro
+  await carregarCliente();   // <-- ESSA LINHA FALTAVA
+
+  // 👩 carregar info da modelo
+  await carregarInfoModelo(modelo_id);
+
+  // 🔌 agora sim cria sala correta
+  const sala = `chat_${cliente_id}_${modelo_id}`;
+  socket.emit("joinChat", { sala });
+  socket.emit("getHistory", { cliente_id, modelo_id });
+
+  const sendBtn = document.getElementById("sendBtn");
+  const input   = document.getElementById("messageInput");
+
+  if (sendBtn) {
+    sendBtn.onclick = enviarMensagem;
+  }
+
+  if (input) {
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        enviarMensagem();
+      }
+    });
+  }
+
+});
+
 // 📜 HISTÓRICO
 socket.on("chatHistory", mensagens => {
   const chat = document.getElementById("chatBox");
@@ -202,7 +243,7 @@ function fecharEscolha() {
 
 async function carregarInfoModelo(modelo_id) {
   try {
-    const res = await fetch(`api/modelo/chat/:id/${modelo_id}`, {
+    const res = await fetch(`/api/modelo/chat/${modelo_id}`, {
       headers: {
         Authorization: "Bearer " + token
       }
@@ -210,32 +251,46 @@ async function carregarInfoModelo(modelo_id) {
 
     if (!res.ok) return;
 
-    const cliente = await res.json();
+    const modelo = await res.json();
 
     const avatar = document.getElementById("chatModeloAvatar");
     const nome = document.getElementById("chatModeloNome");
     const status = document.getElementById("chatModeloStatus");
 
     if (avatar) {
-      avatar.src = cliente.avatar || "/assets/avatar.png";
+      avatar.src = modelo.avatar || "/assets/avatar.png";
     }
 
     if (nome) {
-  nome.innerText = modelo.nome_exibicao || "Modelo";
-}
-if (status) {
-  if (modelo.last_seen) {
-    status.innerText = `visto por último: ${formatarTempo(modelo.last_seen)}`;
-  } else {
-    status.innerText = "visto por último: agora";
-  }
-}
+      nome.innerText = modelo.nome_exibicao || "Modelo";
+    }
+
+    if (status) {
+      if (modelo.last_seen) {
+        status.innerText = "visto por último: " + modelo.last_seen;
+      } else {
+        status.innerText = "visto por último: agora";
+      }
+    }
 
   } catch (err) {
     console.error("Erro carregar modelo:", err);
   }
 }
 
+function enviarMensagem() {
+  const input = document.getElementById("messageInput");
+  const text = input?.value.trim();
+  if (!text) return;
+
+  socket.emit("sendMessage", {
+    cliente_id,
+    modelo_id,
+    text
+  });
+
+  input.value = "";
+}
 
 
 function renderMensagem(msg) {
