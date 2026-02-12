@@ -190,12 +190,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     enviarMensagem();
   }
   });
-  const avatarEl = document.getElementById("chatAvatar");
+  // const avatarEl = document.getElementById("chatAvatar");
 
-    avatarEl.onerror = () => {
-  avatarEl.src =
-    "/assets/avatar.png";
-  };
+  //   avatarEl.onerror = () => {
+  // avatarEl.src =
+  //   "/assets/avatar.png";
+  // };
 
   document.addEventListener("click", (e) => {
   const btn = e.target.closest(".btn-desbloquear");
