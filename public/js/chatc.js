@@ -62,6 +62,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
+  document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".btn-desbloquear");
+  if (!btn) return;
+
+  const preco = btn.dataset.preco;
+  const messageId = btn.dataset.messageId;
+
+  console.log("Botão clicado", preco, messageId);
+
+  abrirPagamentoChat(preco, messageId);
+});
+
 });
 
 // 📜 HISTÓRICO
