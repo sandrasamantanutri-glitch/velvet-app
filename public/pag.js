@@ -181,13 +181,10 @@ function preencherResumoMidia({ valor, descricao }) {
   document.getElementById("midiaTotal").textContent =
     total.toFixed(2).replace(".", ",");
 
-const beneficios = document.querySelector(".vip-beneficios");
-if (beneficios) {
-  beneficios.innerHTML = `
+  document.querySelector(".vip-beneficios").innerHTML = `
     <strong>Conteúdo exclusivo</strong><br>
     ${descricao || "Acesso imediato após pagamento"}
   `;
-}
 }
 
 function mostrarMetodo(tipo) {
@@ -446,7 +443,7 @@ function initStripe() {
   return stripe;
 }
 
-window.pagarComCartao = async function ({ tipo, modelo_id }) {
+async function pagarComCartao({ tipo, modelo_id }) {
   if (tipo !== "vip") {
     console.warn("pagarComCartao ignorado para tipo:", tipo);
     return;
@@ -563,7 +560,7 @@ window.iniciarCartao = function () {
   });
 };
 
-window.pagamentoConfirmado = function () {
+function pagamentoConfirmado() {
   document.getElementById("pixLoading")?.classList.add("hidden");
   document.getElementById("pixAguardando")?.classList.add("hidden");
 
@@ -580,7 +577,7 @@ window.pagamentoConfirmado = function () {
   }, 1200);
 }
 
-window.confirmarPagamentoCartao = async function () {
+async function confirmarPagamentoCartao() {
   try {
     const { error } = await stripe.confirmPayment({
       elements,
@@ -637,7 +634,7 @@ window.confirmarPix = function () {
 };
 
 
-window.iniciarCartaoMidia = async function () {
+async function iniciarCartaoMidia() {
   initStripe();
   if (!token) {
     alert("Sessão expirada");
