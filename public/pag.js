@@ -249,6 +249,7 @@ function mostrarMetodo(tipo) {
 
 
 window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id }) {
+  console.log("🚀 pagarComPix chamado", tipo);
   try {
 
     // 🔥 Permitir Pix para VIP e para MÍDIA no CHAT
@@ -259,8 +260,6 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id }) {
     if (!token) {
       throw new Error("Sessão expirada. Faça login novamente.");
     }
-
-    abrirPopupPagamentoPixLoading();
 
     if (tipo === "vip") {
   modelo_id = modelo_id || window.MODELO_ID_ATUAL;
@@ -287,6 +286,9 @@ if (tipo === "midia") {
 }
 
     console.log("🟣 Pix payload enviado:", body);
+    document.getElementById("pixLoading")?.classList.remove("hidden");
+document.getElementById("pixAguardando")?.classList.add("hidden");
+document.getElementById("pixSucesso")?.classList.add("hidden");
 
     const res = await fetch(url, {
       method: "POST",
