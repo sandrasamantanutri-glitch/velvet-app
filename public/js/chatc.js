@@ -737,6 +737,16 @@ async function carregarInfoModelo(modelo_id) {
   }
 }
 
+function fecharConteudo() {
+  const modal = document.getElementById("modalConteudo");
+  const midia = document.getElementById("modalMidia");
+
+  if (!modal || !midia) return;
+
+  modal.classList.add("hidden");
+  midia.innerHTML = "";
+}
+
 document.addEventListener("click", (e) => {
   const btn = e.target.closest(".btn-desbloquear");
   if (!btn) return;
@@ -751,3 +761,4 @@ document.addEventListener("click", (e) => {
 
   abrirPopupPagamento();
 });
+
