@@ -653,8 +653,8 @@ window.iniciarCartaoMidia = async function () {
       Authorization: "Bearer " + token
     },
     body: JSON.stringify({
-   conteudo_id: window.MIDIA_VENDA_ATUAL?.conteudo_id
-})
+       message_id: window.MIDIA_VENDA_ATUAL?.message_id
+    })
   });
 
   if (!res.ok) {
