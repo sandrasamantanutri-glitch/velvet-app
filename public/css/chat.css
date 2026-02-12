@@ -544,7 +544,6 @@ body, html {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.55);
   border-radius: 16px;
   z-index: 1;              /* 🔥 fica atrás */
 }
