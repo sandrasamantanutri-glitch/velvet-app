@@ -496,30 +496,12 @@ body {
   transition: 0.2s ease;
 }
 
-.chat-conteudo.bloqueado .midia-item img,
-.chat-conteudo.bloqueado .midia-item video {
-  filter: blur(25px) brightness(0.1);
-  pointer-events: none;
-}
-
 .chat-conteudo.bloqueado {
-  position: relative;
   cursor: pointer;
+  transition: transform .2s ease;
 }
 
-.chat-conteudo.bloqueado::after {
-  pointer-events: none;
-  content: "🔒 Clique para desbloquear";
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  color: white;
-  background: rgba(0,0,0,0.6);
-  border-radius: 12px;
+.chat-conteudo.bloqueado:hover {
+  transform: scale(1.03);
 }
-
-
 
