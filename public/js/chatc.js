@@ -405,12 +405,23 @@ function fecharPagamento() {
 }
 
 function abrirPagamentoChat(preco, messageId) {
+
+  if (!window.role) {
+    exigirCadastro("Crie sua conta para desbloquear 💜");
+    return;
+  }
+
+  // 🔥 Define como pagamento de mídia
   window.PAGAMENTO_TIPO_ATUAL = "midia";
+
+  // 🔥 Define mídia atual
   window.MIDIA_VENDA_ATUAL = {
     message_id: messageId,
-    conteudo_id: messageId,
+    conteudo_id: messageId, // ⚠️ se for diferente me fala
     preco: Number(preco),
     descricao: "Conteúdo exclusivo no chat"
   };
+
+  // 💜 Abre popup oficial
   abrirPopupPagamento();
 }
