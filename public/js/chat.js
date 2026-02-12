@@ -220,35 +220,24 @@ if (item) {
   input.value = "";
 }
 
-function abrirPreviewMidia(midia) {
-  let modal = document.getElementById("previewConteudoModal");
+async function abrirPreviewMidiaDireto(messageId, index) {
+  try {
+    const res = await fetch(`/api/chat/conteudo/${messageId}`, {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
 
-  if (!modal) {
-    modal = document.createElement("div");
-    modal.id = "previewConteudoModal";
-    modal.className = "preview-modal";
+    if (!res.ok) return;
 
-    modal.innerHTML = `
-      <div class="preview-backdrop"></div>
-      <div class="preview-box">
-        <span class="preview-close">×</span>
-        <div class="preview-grid"></div>
-      </div>
-    `;
+    const midias = await res.json();
 
-    document.body.appendChild(modal);
+    if (midias[index]) {
+      abrirPreviewMidia(midias[index]);
+    }
 
-    modal.querySelector(".preview-backdrop").onclick = () => modal.remove();
-    modal.querySelector(".preview-close").onclick = () => modal.remove();
-  }
-
-  const grid = modal.querySelector(".preview-grid");
-  grid.innerHTML = "";
-
-  if ((midia.tipo_media || midia.tipo) === "video") {
-    grid.innerHTML = `<video src="${midia.url}" controls autoplay></video>`;
-  } else {
-    grid.innerHTML = `<img src="${midia.url}" />`;
+  } catch (err) {
+    console.error("Erro abrir mídia:", err);
   }
 }
 
@@ -350,7 +339,7 @@ if (role === "modelo" && msg.tipo === "conteudo") {
 
       // 🔥 Se já tem midias no objeto, usa direto
       if (msg.midias && msg.midias[index]) {
-        abrirPreviewMidia(msg.midias[index]);
+        abrirPreviewMidiaDireto(msg.id, index);
         return;
       }
 
@@ -366,7 +355,7 @@ if (role === "modelo" && msg.tipo === "conteudo") {
 
         const midias = await res.json();
         if (midias[index]) {
-          abrirPreviewMidia(midias[index]);
+          abrirPreviewMidiaDireto(msg.id, index);
         }
 
       } catch (err) {
