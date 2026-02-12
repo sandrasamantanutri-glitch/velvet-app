@@ -12,21 +12,16 @@ const socket = io({
   transports: ["websocket"]
 });
 
+socket.emit("auth", { token });
+
 let cliente_id = null;
 let modelo_id = null;
-const mensagensRenderizadas = new Set();
 const conteudosLiberados = new Set();
-let stripe;
+// let stripe;
 let elements;
 let pagamentoAtual = {};
-stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
+// stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
 
-// 🔐 SOCKET AUTH
-socket.on("connect", () => {
-  socket.emit("auth", {
-    token: localStorage.getItem("token")
-  });
-});
 
 // 📜 HISTÓRICO
 socket.on("chatHistory", mensagens => {
@@ -130,8 +125,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // 🔥 pega modelo pela URL
   const params = new URLSearchParams(window.location.search);
-  modelo_id = Number(params.get("modelo"));
-
+   modelo_id = Number(params.get("modelo_id"));
   if (!modelo_id) {
     alert("Modelo inválida.");
     return;
@@ -155,12 +149,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // 🖼️ avatar fallback
   const avatarEl = document.getElementById("chatAvatar");
-  avatarEl.onerror = () => {
-    avatarEl.src =
-      "/assets/avatar.png";
-  };
+if (avatarEl) {
+  avatarEl.src = "/assets/avatar.png";
+  }
 
   // 💳 botão desbloquear (delegação)
   document.addEventListener("click", (e) => {
@@ -248,10 +240,6 @@ if (!cliente_id) {
 }
 
 function renderMensagem(msg) {
-  const msgKey = msg.id ?? `${msg.sender}-${msg.created_at}`;
-  if (mensagensRenderizadas.has(msgKey)) return;
-  mensagensRenderizadas.add(msgKey);
-
   const chat = document.getElementById("chatBox");
   if (!chat) return;
 
