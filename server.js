@@ -1138,9 +1138,8 @@ ORDER BY created_at ASC;
       const midiasRes = await db.query(
         `
         SELECT
-  c.id AS conteudo_id,
-  c.url,
-  c.tipo AS tipo_media
+          c.url,
+          c.tipo AS tipo_media
         FROM messages_conteudos mc
         JOIN conteudos c ON c.id = mc.conteudo_id
         WHERE mc.message_id = $1
@@ -1149,9 +1148,6 @@ ORDER BY created_at ASC;
       );
 
       const midias = midiasRes.rows;
-      if (midias.length > 0) {
-  msg.conteudo_id = midias[0].conteudo_id;
-}
 
       msg.quantidade = midias.length;
 
