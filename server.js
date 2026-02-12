@@ -3024,14 +3024,33 @@ app.post(
 
 app.post("/api/register", authLimiter, async (req, res) => {
   try {
-    const { email, senha, role, nome, ageConfirmed, ref, src } = req.body;
+    const {
+      email,
+      senha,
+      role,
+      nome,
+      nome_completo,
+      data_nascimento,
+      ageConfirmed,
+      ref,
+      src
+    } = req.body;
 
-    if (!email || !senha || !role) {
-      return res.status(400).json({ erro: "Dados inválidos" });
+    // ===============================
+    // 🔒 VALIDAÇÕES BÁSICAS
+    // ===============================
+    if (!email || !senha || !role || !nome_completo || !data_nascimento) {
+      return res.status(400).json({
+        erro: "Todos os campos obrigatórios devem ser preenchidos"
+      });
     }
 
     if (!emailValido(email)) {
       return res.status(400).json({ erro: "Email inválido" });
+    }
+
+    if (!["modelo", "cliente"].includes(role)) {
+      return res.status(400).json({ erro: "Tipo de conta inválido" });
     }
 
     if (ageConfirmed !== true) {
@@ -3040,6 +3059,31 @@ app.post("/api/register", authLimiter, async (req, res) => {
       });
     }
 
+    // ===============================
+    // 🔥 VALIDAÇÃO REAL DE IDADE
+    // ===============================
+    const nascimento = new Date(data_nascimento);
+    const hoje = new Date();
+
+    let idade = hoje.getFullYear() - nascimento.getFullYear();
+    const mesDiff = hoje.getMonth() - nascimento.getMonth();
+
+    if (
+      mesDiff < 0 ||
+      (mesDiff === 0 && hoje.getDate() < nascimento.getDate())
+    ) {
+      idade--;
+    }
+
+    if (idade < 18) {
+      return res.status(400).json({
+        erro: "É necessário ter 18 anos ou mais para se registrar"
+      });
+    }
+
+    // ===============================
+    // 🔐 CRIAR USER
+    // ===============================
     const hash = await bcrypt.hash(senha, 10);
 
     const userResult = await db.query(
@@ -3057,21 +3101,34 @@ app.post("/api/register", authLimiter, async (req, res) => {
 
     let clienteId = null;
 
-    // 👠 modelo
+    // ===============================
+    // 👠 MODELO
+    // ===============================
     if (role === "modelo") {
       const nomeModelo = nome || email.split("@")[0];
 
       await db.query(
-        `INSERT INTO public.modelos (user_id, nome) VALUES ($1, $2)`,
+        `INSERT INTO public.modelos (user_id, nome)
+         VALUES ($1, $2)`,
         [userId, nomeModelo]
+      );
+
+      await db.query(
+        `INSERT INTO public.modelos_dados
+         (user_id, nome_completo, data_nascimento)
+         VALUES ($1, $2, $3)`,
+        [userId, nome_completo, data_nascimento]
       );
     }
 
-    // 👤 cliente
+    // ===============================
+    // 👤 CLIENTE
+    // ===============================
     if (role === "cliente") {
       const clienteResult = await db.query(
         `
-        INSERT INTO public.clientes (user_id, nome, origem_trafego, ref_modelo)
+        INSERT INTO public.clientes
+        (user_id, nome, origem_trafego, ref_modelo)
         VALUES ($1, $2, $3, $4)
         RETURNING id
         `,
@@ -3084,13 +3141,23 @@ app.post("/api/register", authLimiter, async (req, res) => {
       );
 
       clienteId = clienteResult.rows[0].id;
+
+      await db.query(
+        `INSERT INTO public.clientes_dados
+         (user_id, nome_completo, data_nascimento)
+         VALUES ($1, $2, $3)`,
+        [userId, nome_completo, data_nascimento]
+      );
     }
 
+    // ===============================
+    // 🎟 GERAR TOKEN
+    // ===============================
     const token = jwt.sign(
       {
         id: userId,
         email,
-        role: role.toLowerCase()
+        role
       },
       process.env.JWT_SECRET,
       { expiresIn: "24h" }
@@ -3098,20 +3165,23 @@ app.post("/api/register", authLimiter, async (req, res) => {
 
     return res.status(201).json({
       token,
-      role: role.toLowerCase(),
-      cliente_id: clienteId // 👈 agora o front recebe
+      role,
+      cliente_id: clienteId
     });
 
   } catch (err) {
     console.error("ERRO REGISTER:", err);
 
     if (err.code === "23505") {
-      return res.status(409).json({ erro: "Email já registado" });
+      return res.status(409).json({ erro: "Email já registrado" });
     }
 
-    return res.status(500).json({ erro: "Erro interno no servidor" });
+    return res.status(500).json({
+      erro: "Erro interno no servidor"
+    });
   }
 });
+
 
 
 //END POINT DE LOGIN

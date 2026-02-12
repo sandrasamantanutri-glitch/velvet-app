@@ -193,7 +193,7 @@ async function register() {
   const nome = registerNome.value.trim();
   const nascimento = registerNascimento.value;
 
-    if (senha !== senhaConfirm) {
+  if (senha !== senhaConfirm) {
     alert("As senhas não coincidem");
     return;
   }
@@ -216,6 +216,7 @@ async function register() {
       senha,
       role,
       nome,
+      nome_completo: nome,
       data_nascimento: nascimento,
       ageConfirmed: true
     })
@@ -225,11 +226,6 @@ async function register() {
 
   if (!res.ok) {
     alert(data.erro || "Erro ao criar conta");
-    return;
-  }
-
-  if (!data.token || !data.role) {
-    alert("Conta criada, mas falha ao iniciar sessão automaticamente");
     return;
   }
 
