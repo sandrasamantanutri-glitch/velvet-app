@@ -262,11 +262,7 @@ function renderMensagem(msg) {
   div.className =
     msg.sender === "modelo" ? "msg msg-modelo" : "msg msg-cliente";
 
-    if (
-  msg.tipo === "conteudo" &&
-  Array.isArray(msg.midias) &&
-  msg.midias.length > 0
- ) {
+if (msg.tipo === "conteudo") {
 
     div.innerHTML = `
 <div class="chat-conteudo premium ${
