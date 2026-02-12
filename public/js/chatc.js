@@ -216,9 +216,6 @@ async function carregarCliente() {
   const data = await res.json();
   cliente_id = data.id;
 
- document.getElementById("clienteNomeTitulo").innerText =
-  data.username || data.nome;
-
   socket.emit("loginCliente", cliente_id);
 }
 
