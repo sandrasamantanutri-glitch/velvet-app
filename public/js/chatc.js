@@ -62,16 +62,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  document.addEventListener("click", (e) => {
+document.addEventListener("click", (e) => {
+
+  // 🔘 Clique no botão
   const btn = e.target.closest(".btn-desbloquear");
-  if (!btn) return;
+  if (btn) {
+    e.stopPropagation(); // impede duplicação
+    const preco = btn.dataset.preco;
+    const messageId = btn.dataset.messageId;
+    abrirPagamentoChat(preco, messageId);
+    return;
+  }
 
-  const preco = btn.dataset.preco;
-  const messageId = btn.dataset.messageId;
+  // 🟪 Clique no card inteiro
+  const card = e.target.closest(".chat-conteudo.bloqueado");
+  if (card) {
+    const preco = card.dataset.preco;
+    const messageId = card.dataset.id;
+    abrirPagamentoChat(preco, messageId);
+  }
 
-  console.log("Botão clicado", preco, messageId);
-
-  abrirPagamentoChat(preco, messageId);
 });
 
 });

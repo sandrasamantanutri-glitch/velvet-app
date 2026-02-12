@@ -548,5 +548,25 @@ body {
   transform: scale(1.08);
 }
 
+.chat-conteudo.bloqueado {
+  position: relative;
+  cursor: pointer;
+}
+
+.chat-conteudo.bloqueado::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+/* 🔥 botão acima do overlay */
+.btn-desbloquear {
+  position: relative;
+  z-index: 2;
+}
+
 
 
