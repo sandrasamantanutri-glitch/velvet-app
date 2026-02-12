@@ -168,60 +168,6 @@ function fecharPopupPix() {
   pagamentoAtual = {};
 }
 
-
-// ===============================
-// INIT
-// ===============================
-document.addEventListener("DOMContentLoaded", async () => {
-
-  // 🔐 carrega cliente
-  await carregarInfoModelo();
-
-  // 🔥 pega modelo pela URL
-  const params = new URLSearchParams(window.location.search);
-   modelo_id = Number(params.get("modelo_id"));
-  if (!modelo_id) {
-    alert("Modelo inválida.");
-    return;
-  }
-
-  // 🔌 entra direto na sala
-  const sala = `chat_${cliente_id}_${modelo_id}`;
-  socket.emit("joinChat", { sala });
-  socket.emit("getHistory", { cliente_id, modelo_id });
-
-  // 📨 botão enviar
-  const sendBtn = document.getElementById("sendBtn");
-  const input   = document.getElementById("messageInput");
-
-  sendBtn.onclick = enviarMensagem;
-
-  input.addEventListener("keydown", e => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      enviarMensagem();
-    }
-  });
-
-  const avatarEl = document.getElementById("chatAvatar");
-if (avatarEl) {
-  avatarEl.src = "/assets/avatar.png";
-  }
-
-  // 💳 botão desbloquear (delegação)
-  document.addEventListener("click", (e) => {
-    const btn = e.target.closest(".btn-desbloquear");
-    if (!btn) return;
-
-    const preco = btn.dataset.preco;
-    const messageId = btn.dataset.messageId;
-
-    abrirPagamentoChat(preco, messageId);
-  });
-
-});
-
-
 // ===============================
 // FUNÇÕES
 // 💰 FORMATA VALORES EM REAL (R$)
