@@ -65,17 +65,13 @@ const popup = document.getElementById("popupPagamentoVelvet");
   document.getElementById("pixAguardando")?.classList.add("hidden");
   document.getElementById("pixSucesso")?.classList.add("hidden");
 
-  // ===============================
-  // 🔥 MÍDIA
-  // ===============================
-if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
+  if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
 
   document.querySelector(".vip-detalhes")?.classList.add("hidden");
   document.querySelector(".midia-detalhes")?.classList.remove("hidden");
 
   prepararPagamento();
 
-  // 🔵 PERFIL → só cartão
   if (window.PAGAMENTO_ORIGEM === "perfil") {
     document.getElementById("conteudoPix")?.classList.add("hidden");
     document.getElementById("conteudoCartao")?.classList.remove("hidden");
@@ -83,18 +79,17 @@ if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
     return;
   }
 
-  // 🟣 CHAT → Pix padrão
   if (window.PAGAMENTO_ORIGEM === "chat") {
     document.getElementById("conteudoPix")?.classList.remove("hidden");
     document.getElementById("conteudoCartao")?.classList.add("hidden");
     return;
   }
 
-} else if (window.PAGAMENTO_TIPO_ATUAL === "vip") {
+  return;
+}
 
-  // ===============================
-  // 💎 VIP
-  // ===============================
+if (window.PAGAMENTO_TIPO_ATUAL === "vip") {
+
   document.getElementById("conteudoPix")?.classList.remove("hidden");
   document.getElementById("conteudoCartao")?.classList.add("hidden");
 
@@ -102,7 +97,6 @@ if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
   document.querySelector(".vip-detalhes")?.classList.remove("hidden");
 
   prepararPagamento();
-
 }
 }
 
