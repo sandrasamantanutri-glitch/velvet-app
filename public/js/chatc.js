@@ -124,22 +124,20 @@ document.addEventListener("DOMContentLoaded", async () => {
   socket.emit("joinChat", { sala });
   socket.emit("getHistory", { cliente_id, modelo_id });
 
- // 📨 botão enviar
-const sendBtn = document.getElementById("sendBtn");
-const input   = document.getElementById("messageInput");
+  // 📨 botão enviar
+  const sendBtn = document.getElementById("sendBtn");
+  const input   = document.getElementById("messageInput");
 
-if (sendBtn) {
+ if (sendBtn) {
   sendBtn.onclick = enviarMensagem;
 }
 
-if (input) {
   input.addEventListener("keydown", e => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       enviarMensagem();
     }
   });
-}
 
 const avatarEl = document.getElementById("chatAvatar");
 
