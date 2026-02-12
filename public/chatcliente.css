@@ -304,83 +304,6 @@ html, body {
   
 }
 
-/* overlay central */
-.chat-conteudo.bloqueado.premium .overlay-conteudo {
-  position: absolute;
-  inset: 0;
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-}
-
-/* preço */
-.chat-conteudo.bloqueado.premium .valor-conteudo {
-  background: linear-gradient(135deg, #7b2cff, #9E6BFF);
-  color: #fff;
-
-  padding: 6px 18px;
-  border-radius: 999px;
-
-  font-size: 14px;
-  font-weight: 600;
-}
-
-/* botão */
-.chat-conteudo.bloqueado.premium .btn-desbloquear {
-  background: #7B2CFF;
-  color: #fff;
-
-  border: none;
-  border-radius: 999px;
-  padding: 8px 20px;
-
-  font-size: 13px;
-  font-weight: 600;
-
-  cursor: pointer;
-  transition: all .2s ease;
-}
-
-.chat-conteudo.bloqueado.premium .btn-desbloquear:hover {
-  background: #7B2CFF;
-  color: #fff;
-  transform: scale(1.05);
-}
-
-.midia-item {
-  cursor: pointer;
-}
-
-.midia-item:hover {
-  transform: scale(1.03);
-  transition: 0.2s ease;
-}
-
-/* info abaixo da mídia */
-.conteudo-info {
-  padding: 8px 6px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;   
-  gap: 4px;
-  color: #7B2CFF;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-/* texto bloqueado */
-.status-bloqueado {
-  opacity: 0.9;
-}
-
-/* preço */
-.preco-bloqueado {
-  font-weight: 700;
-}
 /* =====================================================
    🔥 OVERRIDE FINAL – GRID QUADRADO VELVET (FORÇADO)
 ===================================================== */
@@ -431,11 +354,6 @@ html, body {
   display: block;
 }
 
-.chat-conteudo {
-  width: 150px;
-  height: auto;              /* 🔥 remove altura fixa */
-  min-height: 150px;
-}
 
 .chat-conteudo .pacote-grid {
   width: 100%;
