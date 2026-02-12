@@ -47,10 +47,12 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 window.abrirPopupPagamento = function () {
-
-  const popup = document.getElementById("popupPagamentoVelvet");
+  if (!window.PAGAMENTO_TIPO_ATUAL) {
+  console.warn("Tipo de pagamento não definido.");
+  return;
+}
+const popup = document.getElementById("popupPagamentoVelvet");
   if (!popup) {
-    console.error("popupPagamentoVelvet não encontrado");
     return;
   }
 
