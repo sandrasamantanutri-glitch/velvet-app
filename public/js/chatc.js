@@ -16,7 +16,7 @@ clienteId=null;
 let sala = null;
 let cliente_id = null;
 let chatAtivo = null;
-const mensagensRenderizadas = new Set();
+const conteudosLiberados = new Set();
 // let conteudosVistosModelo = new Set();
 
 
