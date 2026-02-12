@@ -3100,26 +3100,32 @@ app.post("/api/register", authLimiter, async (req, res) => {
     const userId = userResult.rows[0].id;
 
     let clienteId = null;
-
     // ===============================
-    // 👠 MODELO
-    // ===============================
-    if (role === "modelo") {
-      const nomeModelo = nome || email.split("@")[0];
+// 👠 MODELO
+// ===============================
+let modeloId = null;
 
-      await db.query(
-        `INSERT INTO public.modelos (user_id)
-         VALUES ($1)`,
-        [userId]
-      );
+if (role === "modelo") {
 
-      await db.query(
-        `INSERT INTO public.modelos_dados
-         (user_id, nome_completo, data_nascimento)
-         VALUES ($1, $2, $3)`,
-        [userId, nome_completo, data_nascimento]
-      );
-    }
+  // 🔥 cria registro base e pega o ID REAL
+  const modeloResult = await db.query(
+    `INSERT INTO public.modelos (user_id)
+     VALUES ($1)
+     RETURNING id`,
+    [userId]
+  );
+
+  modeloId = modeloResult.rows[0].id;
+
+  // dados pessoais
+  await db.query(
+    `INSERT INTO public.modelos_dados
+     (user_id, nome_completo, data_nascimento)
+     VALUES ($1, $2, $3)`,
+    [userId, nome_completo, data_nascimento]
+  );
+}
+
 
     // ===============================
     // 👤 CLIENTE
@@ -4298,8 +4304,8 @@ app.post("/api/chat/cliente/marcar-lido/:modelo_id", authCliente, async (req, re
 });
 
 app.post(
-  "/api/modelo/verificacao",
-  auth,   // ← mudou aqui
+  "/api/verificacao",
+  auth,
   uploadVerificacao.fields([
     { name: "doc_frente", maxCount: 1 },
     { name: "doc_verso", maxCount: 1 },
@@ -4307,7 +4313,9 @@ app.post(
   ]),
   async (req, res) => {
     try {
+
       const userId = req.user.id;
+      const role = req.user.role;
       const { doc_tipo } = req.body;
 
       if (!doc_tipo) {
@@ -4326,28 +4334,85 @@ app.post(
       const docVersoUrl = req.files.doc_verso?.[0]?.key || null;
       const selfieUrl = req.files.selfie[0].key;
 
-      await db.query(
-        `
-        INSERT INTO modelos_verificacao
-        (modelo_id, doc_tipo, doc_frente_url, doc_verso_url, selfie_url, status, created_at)
-        VALUES ($1,$2,$3,$4,$5,'em_analise', NOW())
-        ON CONFLICT (modelo_id)
-        DO UPDATE SET
-          doc_tipo = EXCLUDED.doc_tipo,
-          doc_frente_url = EXCLUDED.doc_frente_url,
-          doc_verso_url = EXCLUDED.doc_verso_url,
-          selfie_url = EXCLUDED.selfie_url,
-          status = 'em_analise',
-          updated_at = NOW()
-        `,
-        [
-          userId,
-          doc_tipo,
-          docFrenteUrl,
-          docVersoUrl,
-          selfieUrl
-        ]
-      );
+      // ===============================
+      // 👠 MODELO
+      // ===============================
+      if (role === "modelo") {
+
+        const modeloRes = await db.query(
+          `SELECT id FROM modelos WHERE user_id = $1`,
+          [userId]
+        );
+
+        if (!modeloRes.rows.length) {
+          return res.status(400).json({ erro: "Modelo não encontrado" });
+        }
+
+        const modeloId = modeloRes.rows[0].id;
+
+        await db.query(
+          `
+          INSERT INTO modelos_verificacao
+          (modelo_id, doc_tipo, doc_frente_url, doc_verso_url, selfie_url, status, created_at)
+          VALUES ($1,$2,$3,$4,$5,'em_analise', NOW())
+          ON CONFLICT (modelo_id)
+          DO UPDATE SET
+            doc_tipo = EXCLUDED.doc_tipo,
+            doc_frente_url = EXCLUDED.doc_frente_url,
+            doc_verso_url = EXCLUDED.doc_verso_url,
+            selfie_url = EXCLUDED.selfie_url,
+            status = 'em_analise',
+            updated_at = NOW()
+          `,
+          [
+            modeloId,
+            doc_tipo,
+            docFrenteUrl,
+            docVersoUrl,
+            selfieUrl
+          ]
+        );
+      }
+
+      // ===============================
+      // 👤 CLIENTE
+      // ===============================
+      if (role === "cliente") {
+
+        const clienteRes = await db.query(
+          `SELECT id FROM clientes WHERE user_id = $1`,
+          [userId]
+        );
+
+        if (!clienteRes.rows.length) {
+          return res.status(400).json({ erro: "Cliente não encontrado" });
+        }
+
+        const clienteId = clienteRes.rows[0].id;
+
+        await db.query(
+          `
+          INSERT INTO clientes_verificacao
+          (cliente_id, doc_tipo, doc_frente_url, doc_verso_url, selfie_url, status, created_at)
+          VALUES ($1,$2,$3,$4,$5,'em_analise', NOW())
+          ON CONFLICT (cliente_id)
+          DO UPDATE SET
+            doc_tipo = EXCLUDED.doc_tipo,
+            doc_frente_url = EXCLUDED.doc_frente_url,
+            doc_verso_url = EXCLUDED.doc_verso_url,
+            selfie_url = EXCLUDED.selfie_url,
+            status = 'em_analise',
+            updated_at = NOW()
+          `,
+          [
+            clienteId,
+            doc_tipo,
+            docFrenteUrl,
+            docVersoUrl,
+            selfieUrl
+          ]
+        );
+      }
 
       res.json({ ok: true });
 
