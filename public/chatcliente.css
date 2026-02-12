@@ -385,14 +385,11 @@ html, body {
    🔥 OVERRIDE FINAL – GRID QUADRADO VELVET (FORÇADO)
 ===================================================== */
 
-/* força card correto */
 .chat-conteudo.premium {
-  width: 150px !important;
-  height: 150px !important;
-  max-width: 150px;
-  padding: 20px;
-  border-radius: 18px;
-  overflow: hidden;
+  width: 150px;
+  height: auto;              /* 🔥 deixa crescer */
+  min-height: 150px;         /* mantém tamanho mínimo */
+  padding: 16px;
 }
 
 /* grid ocupa tudo */
@@ -435,9 +432,9 @@ html, body {
 }
 
 .chat-conteudo {
-  display: flex;
-  flex-direction: column;   /* 🔥 mídia em cima, texto embaixo */
-  align-items: center;
+  width: 150px;
+  height: auto;              /* 🔥 remove altura fixa */
+  min-height: 150px;
 }
 
 .chat-conteudo .pacote-grid {
@@ -867,6 +864,10 @@ text-align: center;
   width: 40px;
   height: 40px;
   object-fit: contain;
+}
+
+.chat-conteudo .midia-item {
+  aspect-ratio: 1 / 1;
 }
 
 
