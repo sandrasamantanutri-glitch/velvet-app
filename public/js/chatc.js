@@ -278,7 +278,7 @@ function renderMensagem(msg) {
             <div class="pacote-grid">
               ${(msg.midias || []).map((m, index) => `
                 <div class="midia-item"
-                     onclick="abrirConteudoSeguro(${msg.id}, ${index})"
+                     onclick="abrirConteudoSeguro(${msg.id}, ${index})">
                   ${
                     (m.tipo_media || m.tipo) === "video"
                       ? `<video src="${m.url}" muted playsinline></video>`
