@@ -3128,13 +3128,13 @@ app.post("/api/register", authLimiter, async (req, res) => {
       const clienteResult = await db.query(
         `
         INSERT INTO public.clientes
-        (user_id, nome, origem_trafego, ref_modelo)
+        (user_id, username, origem_trafego, ref_modelo)
         VALUES ($1, $2, $3, $4)
         RETURNING id
         `,
         [
           userId,
-          nome_completo,
+          nome,
           src || null,
           ref ? Number(ref) : null
         ]
