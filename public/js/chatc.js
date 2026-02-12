@@ -130,7 +130,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // 🔥 pega modelo pela URL
   const params = new URLSearchParams(window.location.search);
-  modelo_id = Number(params.get("modelo_id"));
+  modelo_id = Number(params.get("modelo"));
 
   if (!modelo_id) {
     alert("Modelo inválida.");
