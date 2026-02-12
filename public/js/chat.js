@@ -342,16 +342,40 @@ const btn = div.querySelector(".msg-menu");
   });
 }
   // 🔥 PERMITIR MODELO ABRIR CADA MÍDIA INDIVIDUALMENTE
-if (role === "modelo" && msg.tipo === "conteudo" && msg.midias) {
+if (role === "modelo" && msg.tipo === "conteudo") {
 
   const midiasEls = div.querySelectorAll(".midia-item");
 
   midiasEls.forEach((el, index) => {
     el.style.cursor = "pointer";
 
-    el.addEventListener("click", (e) => {
-      e.stopPropagation(); // evita conflito com outros cliques
-      abrirPreviewMidia(msg.midias[index]);
+    el.addEventListener("click", async (e) => {
+      e.stopPropagation();
+
+      // 🔥 Se já tem midias no objeto, usa direto
+      if (msg.midias && msg.midias[index]) {
+        abrirPreviewMidia(msg.midias[index]);
+        return;
+      }
+
+      // 🔥 Se não tem, busca do servidor
+      try {
+        const res = await fetch(`/api/chat/conteudo/${msg.id}`, {
+          headers: {
+            Authorization: "Bearer " + token
+          }
+        });
+
+        if (!res.ok) return;
+
+        const midias = await res.json();
+        if (midias[index]) {
+          abrirPreviewMidia(midias[index]);
+        }
+
+      } catch (err) {
+        console.error("Erro abrir mídia:", err);
+      }
     });
   });
 }
