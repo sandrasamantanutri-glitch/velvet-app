@@ -383,7 +383,9 @@ function fecharPagamento() {
 }
 
 function abrirPagamentoChat(preco, conteudoId) {
+
   window.PAGAMENTO_TIPO_ATUAL = "midia";
+  window.PAGAMENTO_ORIGEM = "chat"; // 🔥 IMPORTANTE
 
   window.MIDIA_VENDA_ATUAL = {
     conteudo_id: Number(conteudoId),

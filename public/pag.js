@@ -46,38 +46,64 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-
 window.abrirPopupPagamento = function () {
+
   const popup = document.getElementById("popupPagamentoVelvet");
   if (!popup) {
     console.error("popupPagamentoVelvet não encontrado");
-    if (!popup) return;
+    return;
   }
 
   popup.classList.remove("hidden");
 
+  // 🔄 Reset visual Pix
   document.getElementById("pixQr")?.classList.add("hidden");
   document.getElementById("pixCodigo")?.classList.add("hidden");
   document.getElementById("pixLoading")?.classList.add("hidden");
   document.getElementById("pixAguardando")?.classList.add("hidden");
   document.getElementById("pixSucesso")?.classList.add("hidden");
 
-
-  //MÍDIA → SÓ CARTÃO
+  // ===============================
+  // 🔥 MÍDIA
+  // ===============================
   if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
-    document.getElementById("conteudoPix")?.classList.add("hidden");
-    document.getElementById("conteudoCartao")?.classList.remove("hidden");
 
-    // mostra bloco de mídia / esconde VIP
     document.querySelector(".vip-detalhes")?.classList.add("hidden");
     document.querySelector(".midia-detalhes")?.classList.remove("hidden");
 
-    iniciarCartaoMidia();
-    return;
+    prepararPagamento();
+
+    // 🔵 PERFIL → só cartão
+    if (window.PAGAMENTO_ORIGEM === "perfil") {
+
+      document.getElementById("conteudoPix")?.classList.add("hidden");
+      document.getElementById("conteudoCartao")?.classList.remove("hidden");
+
+      iniciarCartaoMidia();
+      return;
+    }
+
+    // 🟣 CHAT → Pix padrão + cartão disponível
+    if (window.PAGAMENTO_ORIGEM === "chat") {
+
+      document.getElementById("conteudoPix")?.classList.remove("hidden");
+      document.getElementById("conteudoCartao")?.classList.add("hidden");
+
+      // abre Pix automaticamente
+      setTimeout(() => {
+        pagarComPix({
+          tipo: "midia",
+          conteudo_id: window.MIDIA_VENDA_ATUAL?.conteudo_id
+        });
+      }, 0);
+
+      return;
+    }
   }
 
-
-  //  VIP → PIX (default) + CARTÃO
+  // ===============================
+  // 💎 VIP
+  // ===============================
   document.getElementById("conteudoPix")?.classList.remove("hidden");
   document.getElementById("conteudoCartao")?.classList.add("hidden");
 
@@ -87,13 +113,13 @@ window.abrirPopupPagamento = function () {
   prepararPagamento();
 
   // Pix automático para VIP
-//   setTimeout(() => {
-//     pagarComPix({
-//       tipo: "vip",
-//       modelo_id: window.MODELO_ID_ATUAL
-//     });
-//   }, 0);
-}
+  setTimeout(() => {
+    pagarComPix({
+      tipo: "vip",
+      modelo_id: window.MODELO_ID_ATUAL
+    });
+  }, 0);
+};
 
 
 function prepararPagamento() {
