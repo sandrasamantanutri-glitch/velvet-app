@@ -27,8 +27,6 @@ html, body {
 .painel {
   background: #fff;
   border-radius: 18px;
-  border: 1px solid #9E6BFF;
-  box-shadow: 0 6px 20px rgba(93,36,190,0.15);
 }
 
 /* =========================

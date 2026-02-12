@@ -554,24 +554,4 @@ body, html {
   outline: none;
 }
 
-.chat-input button {
-  height: 46px;
-  padding: 0 20px;
-
-  border-radius: 24px;
-  border: none;
-
-  background: linear-gradient(135deg, #7B2CFF, #9E6BFF);
-  color: white;
-  font-weight: 600;
-
-  cursor: pointer;
-  transition: 0.2s ease;
-}
-
-.chat-input button:hover {
-  transform: scale(1.05);
-}
-
-
 
