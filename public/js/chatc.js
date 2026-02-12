@@ -128,7 +128,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   const sendBtn = document.getElementById("sendBtn");
   const input   = document.getElementById("messageInput");
 
+ if (sendBtn) {
   sendBtn.onclick = enviarMensagem;
+}
 
   input.addEventListener("keydown", e => {
     if (e.key === "Enter" && !e.shiftKey) {
