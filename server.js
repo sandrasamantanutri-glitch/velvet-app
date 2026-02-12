@@ -3919,7 +3919,7 @@ app.post(
       });
 
       res.json({
-        clientSecretAtual : data.clientSecret,
+        clientSecret: paymentIntent.client_secret,
         valor_base: valorBase,
         taxa_transacao: taxaTransacao,
         taxa_plataforma: taxaPlataforma,
