@@ -3125,36 +3125,43 @@ if (role === "modelo") {
     [userId, nome_completo, data_nascimento]
   );
 }
+// ===============================
+// 👤 CLIENTE
+// ===============================
+if (role === "cliente") {
 
+  // 🔹 inserir na tabela clientes (SEM username)
+  const clienteResult = await db.query(
+    `
+    INSERT INTO public.clientes
+    (user_id, origem_trafego, ref_modelo)
+    VALUES ($1, $2, $3)
+    RETURNING id
+    `,
+    [
+      userId,
+      src || null,
+      ref ? Number(ref) : null
+    ]
+  );
 
-    // ===============================
-    // 👤 CLIENTE
-    // ===============================
-    if (role === "cliente") {
-      const clienteResult = await db.query(
-        `
-        INSERT INTO public.clientes
-        (user_id, username, origem_trafego, ref_modelo)
-        VALUES ($1, $2, $3, $4)
-        RETURNING id
-        `,
-        [
-          userId,
-          nome,
-          src || null,
-          ref ? Number(ref) : null
-        ]
-      );
+  clienteId = clienteResult.rows[0].id;
 
-      clienteId = clienteResult.rows[0].id;
-
-      await db.query(
-        `INSERT INTO public.clientes_dados
-         (user_id, nome_completo, data_nascimento)
-         VALUES ($1, $2, $3)`,
-        [userId, nome_completo, data_nascimento]
-      );
-    }
+  // 🔹 inserir username na tabela correta
+  await db.query(
+    `
+    INSERT INTO public.clientes_dados
+    (user_id, username, nome_completo, data_nascimento)
+    VALUES ($1, $2, $3, $4)
+    `,
+    [
+      userId,
+      nome,
+      nome_completo,
+      data_nascimento
+    ]
+  );
+}
 
     // ===============================
     // 🎟 GERAR TOKEN
