@@ -155,12 +155,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // 🖼️ avatar fallback
-  const avatarEl = document.getElementById("chatAvatar");
+const avatarEl = document.getElementById("chatAvatar");
+
+if (avatarEl) {
   avatarEl.onerror = () => {
-    avatarEl.src =
-      "/assets/avatar.png";
+    avatarEl.src = "/assets/avatar.png";
   };
+}
 
   // 💳 botão desbloquear (delegação)
   document.addEventListener("click", (e) => {
