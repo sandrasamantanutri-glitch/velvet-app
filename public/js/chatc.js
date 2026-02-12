@@ -121,7 +121,7 @@ function fecharPopupPix() {
 document.addEventListener("DOMContentLoaded", async () => {
 
   // 🔐 carrega cliente
-  await carregarCliente();
+  await carregarInfoModelo();
 
   // 🔥 pega modelo pela URL
   const params = new URLSearchParams(window.location.search);
