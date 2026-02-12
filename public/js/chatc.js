@@ -322,19 +322,18 @@ function renderMensagem(msg) {
 }
 
     // 🔒 BLOQUEADO
-    else {
-      div.innerHTML = `
-        <div class="chat-conteudo bloqueado premium"
-     data-id="${msg.id}"
-     data-preco="${msg.preco}"
-     data-qtd="${msg.quantidade ?? 1}">
-          <div class="pacote-grid">
-            ${Array(msg.quantidade ?? 1).fill("").map(() =>
-  `<div class="midia-item placeholder"
-       onclick="avisarConteudoBloqueado()"></div>`
-).join("")}
-          </div>
+else {
+  div.innerHTML = `
+    <div class="chat-conteudo bloqueado premium"
+         data-id="${msg.id}"
+         data-preco="${msg.preco}"
+         data-qtd="${msg.quantidade ?? 1}">
 
+      <div class="pacote-grid">
+        ${Array(msg.quantidade ?? 1).fill("").map(() =>
+          `<div class="midia-item placeholder"></div>`
+        ).join("")}
+      </div>
          <div class="conteudo-info">
   <span class="status-bloqueado">
     ${msg.quantidade ?? 1} mídia(s)
@@ -359,9 +358,7 @@ function renderMensagem(msg) {
   chat.scrollTop = chat.scrollHeight;
 }
 
-function avisarConteudoBloqueado() {
-  alert("Você precisa desbloquear a mídia para ver o conteúdo.");
-}
+
 
 async function abrirConteudoSeguro(message_id, index = 0) {
   const modal = document.getElementById("modalConteudo");
