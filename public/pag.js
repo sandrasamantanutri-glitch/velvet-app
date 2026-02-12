@@ -348,7 +348,7 @@ function copiarPix() {
   alert("Código Pix copiado 💜");
 }
 
-window.abrirPopupPagamentoPixLoading = function () {
+function abrirPopupPagamentoPixLoading() {
   const popup = document.getElementById("popupPagamentoVelvet");
   popup.classList.remove("hidden");
 
