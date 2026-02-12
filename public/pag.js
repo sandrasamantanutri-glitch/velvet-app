@@ -246,11 +246,12 @@ function mostrarMetodo(tipo) {
 
 
 
-window.pagarComPix = async function ({ tipo, modelo_id }) {
+window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id }) {
   try {
-    // 🔥 PIX É EXCLUSIVO PARA VIP
-    if (tipo !== "vip") {
-      throw new Error("Pagamento Pix disponível apenas para VIP");
+
+    // 🔥 Permitir Pix para VIP e para MÍDIA no CHAT
+    if (tipo !== "vip" && tipo !== "midia") {
+      throw new Error("Tipo inválido para Pix");
     }
 
     if (!token) {
@@ -264,8 +265,21 @@ window.pagarComPix = async function ({ tipo, modelo_id }) {
       throw new Error("modelo_id inválido");
     }
 
-    const url = "/api/pagamento/vip/pix";
-    const body = { modelo_id };
+    let url = "";
+let body = {};
+
+if (tipo === "vip") {
+  url = "/api/pagamento/vip/pix";
+  body = { modelo_id: modelo_id || window.MODELO_ID_ATUAL };
+}
+
+if (tipo === "midia") {
+  url = "/api/pagamento/conteudo/pix";
+
+  body = {
+    message_id: window.MIDIA_VENDA_ATUAL?.message_id
+  };
+}
 
     console.log("🟣 Pix payload enviado:", body);
 
