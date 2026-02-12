@@ -10,30 +10,45 @@
 <link rel="stylesheet" href="/header.css">
 </head>
 
-
 <body class="role-cliente">
+
+  <!-- HEADER GLOBAL -->
   <div id="header-container"></div>
-  <header class="chat-topo"> <button type="button" class="btn-voltar" onclick="history.back()">
-  <img src="/assets/voltar.png" alt="Voltar"></button>
-  
-    <!-- ===== ÁREA DO CHAT ===== -->
-    <div class="chat-area painel">
-      <!-- MENSAGENS -->
-      <div id="chatBox"></div>
 
-      <!-- INPUT -->
-      <div class="chat-input">
-        <textarea
-          id="messageInput"
-          placeholder="Digite sua mensagem..."
-        ></textarea>
-        <button id="sendBtn">Enviar</button>
+  <!-- HEADER DO CHAT -->
+  <header class="chat-topo">
+    <button type="button" class="btn-voltar" onclick="history.back()">
+      <img src="/assets/voltar.png" alt="Voltar">
+    </button>
+
+    <div class="chat-cliente-info">
+      <img id="chatClienteAvatar"
+           class="chat-avatar"
+           src="/assets/avatar.png"
+           alt="Avatar cliente" />
+
+      <div class="chat-cliente-texto">
+        <div id="chatClienteNome" class="chat-nome">Cliente</div>
+        <div id="chatClienteStatus" class="chat-status">carregando…</div>
       </div>
-
     </div>
-  </div>
-</div>
+  </header>
 
+  <!-- ÁREA DO CHAT -->
+  <div class="chat-area painel">
+
+    <div id="chatBox"></div>
+
+    <div class="chat-input">
+      <textarea
+        id="messageInput"
+        placeholder="Digite sua mensagem..."
+      ></textarea>
+
+      <button id="sendBtn">Enviar</button>
+    </div>
+
+  </div>
 <!-- ================= POPUPS ================= -->
 
 <div id="popupPix" class="modal hidden">
@@ -74,7 +89,6 @@
 
   </div>
 </div>
-
 
 
 <!-- ================= STRIPE ================= -->
@@ -137,12 +151,11 @@
   <div id="modalMidia"></div>
   </div>
 
-<!-- ================= SCRIPTS ================= -->
+
 <script src="/socket.io/socket.io.js"></script>
 <script src="/header.js"></script>
 <!-- <script src="https://js.stripe.com/v3/"></script> -->
 <script src="js/chatc.js"></script>
-
 
 </body>
 </html>
