@@ -246,6 +246,9 @@ if (!cliente_id) {
 }
 
 function renderMensagem(msg) {
+  const msgKey = msg.id ?? `${msg.sender}-${msg.created_at}`;
+  if (mensagensRenderizadas.has(msgKey)) return;
+  mensagensRenderizadas.add(msgKey);
 
   const chat = document.getElementById("chatBox");
   if (!chat) return;
