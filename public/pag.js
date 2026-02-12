@@ -259,14 +259,11 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id }) {
     }
 
     abrirPopupPagamentoPixLoading();
-    
-    if (tipo === "vip") {
-  modelo_id = modelo_id || window.MODELO_ID_ATUAL;
 
-  if (!modelo_id || isNaN(Number(modelo_id))) {
-    throw new Error("modelo_id inválido");
-  }
-}
+    modelo_id = modelo_id || window.MODELO_ID_ATUAL;
+    if (!modelo_id || isNaN(Number(modelo_id))) {
+      throw new Error("modelo_id inválido");
+    }
 
     let url = "";
 let body = {};
