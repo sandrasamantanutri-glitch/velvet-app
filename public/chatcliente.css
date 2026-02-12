@@ -78,7 +78,7 @@ html, body {
   position: relative;
 }
 
-.msg-modelo {
+.msg.modelo {
   align-self: flex-start;
   background: #7B2CFF;
   color: #fff;
@@ -88,7 +88,7 @@ html, body {
 }
 
 
-.msg-cliente {
+.msg.cliente {
   align-self: flex-end;
   background: #9E6BFF;
   color: #fff;

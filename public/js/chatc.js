@@ -286,11 +286,10 @@ function renderMensagem(msg) {
   if (!chat) return;
 
   const div = document.createElement("div");
-
   div.className =
-    msg.sender === "modelo"
-      ? "msg msg-modelo"
-      : "msg msg-cliente";
+  msg.sender === "modelo"
+    ? "msg modelo"
+    : "msg cliente";
 
   /* ✉️ TEXTO */
   if (msg.tipo === "texto") {
