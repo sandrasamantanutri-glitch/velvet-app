@@ -152,9 +152,8 @@ if (avatarEl) {
 
     const preco = btn.dataset.preco;
     const conteudoId = btn.dataset.conteudoId;
-    const messageId = btn.dataset.messageId;
      console.log("conteudoId recebido:", conteudoId); // 🔥 ADICIONA ISSO
-    abrirPagamentoChat(preco, conteudoId, messageId);
+    abrirPagamentoChat(preco, conteudoId);
   });
 
 });
@@ -286,8 +285,7 @@ function renderMensagem(msg) {
 
 <button class="btn-desbloquear"
   data-preco="${msg.preco}"
-  data-conteudo-id="${msg.conteudo_id}"
-  data-message-id="${msg.id}">
+  data-conteudo-id="${msg.conteudo_id}">
   Desbloquear
 </button>
 </div>
@@ -384,17 +382,16 @@ function fecharPagamento() {
   elements = null;
 }
 
-function abrirPagamentoChat(preco, conteudoId, messageId) {
+function abrirPagamentoChat(preco, conteudoId) {
 
   window.PAGAMENTO_TIPO_ATUAL = "midia";
-  window.PAGAMENTO_ORIGEM = "chat";
+  window.PAGAMENTO_ORIGEM = "chat"; // 🔥 IMPORTANTE
 
   window.MIDIA_VENDA_ATUAL = {
-  conteudo_id: Number(conteudoId),
-  message_id: Number(messageId),   // 🔥 ESSENCIAL
-  preco: Number(preco),
-  descricao: "Conteúdo exclusivo no chat"
-};
+    conteudo_id: Number(conteudoId),
+    preco: Number(preco),
+    descricao: "Conteúdo exclusivo no chat"
+  };
 
   abrirPopupPagamento();
 }
