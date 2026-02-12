@@ -148,6 +148,19 @@ card.removeAttribute("data-preco");
 
 });
 
+async function carregarCliente() {
+  const res = await fetch("/api/cliente/me", {
+    headers: { Authorization: "Bearer " + token }
+  });
+
+  if (!res.ok) return;
+
+  const data = await res.json();
+  cliente_id = data.id;
+
+  socket.emit("loginCliente", cliente_id);
+}
+
 
 function fecharPopupPix() {
   const popup = document.getElementById("popupPix");
