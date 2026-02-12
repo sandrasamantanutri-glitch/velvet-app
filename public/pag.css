@@ -171,17 +171,3 @@
 #popupPagamentoVelvet {
   z-index: 9999999 !important;
 }
-
-#pixCodigo {
-  width: 100%;
-  max-width: 320px;
-  padding: 8px;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-  font-size: 12px;
-  word-break: break-all;
-}
-
-#conteudoPix .btn-secundario {
-  max-width: 320px;
-}
