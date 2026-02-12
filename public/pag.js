@@ -22,29 +22,27 @@ function whenSocketReady(cb) {
   }, 50);
 }
 const TAXA_TRANSACAO = 0.15;
-document.addEventListener("DOMContentLoaded", () => {
-  const formCartao = document.getElementById("formCartao");
+const formCartao = document.getElementById("formCartao");
 
-  if (formCartao) {
-    formCartao.addEventListener("submit", async (e) => {
-      e.preventDefault();
+if (formCartao) {
+  formCartao.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-      if (!stripe || !elements) {
-        alert("Pagamento não inicializado");
-        return;
-      }
+    if (!stripe || !elements) {
+      alert("Pagamento não inicializado");
+      return;
+    }
 
-      const { error } = await stripe.confirmPayment({
-        elements,
-        redirect: "if_required"
-      });
-
-      if (error) {
-        alert(error.message);
-      }
+    const { error } = await stripe.confirmPayment({
+      elements,
+      redirect: "if_required"
     });
-  }
-});
+
+    if (error) {
+      alert(error.message);
+    }
+  });
+}
 
 
 window.abrirPopupPagamento = function () {

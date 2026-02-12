@@ -8,7 +8,7 @@ if (!token) {
   window.location.href = "/index.html";
   throw new Error("Sem token");
 }
-window.socket = io({
+const socket = io({
   transports: ["websocket"]
 });
 
