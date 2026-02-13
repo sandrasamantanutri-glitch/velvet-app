@@ -213,7 +213,7 @@ function mostrarMetodo(tipo) {
   }
 
   document.querySelector(".velvet-tabs")?.classList.remove("hidden");
-  pix.classList.toggle("hidden", tipo !== "pix");
+ pix.classList.toggle("hidden", tipo !== "pix");
   cartao.classList.toggle("hidden", tipo !== "cartao");
 
   document
@@ -224,14 +224,15 @@ function mostrarMetodo(tipo) {
         tab.dataset.metodo === tipo
       );
     });
-      if (tipo === "cartao") {
+
+  if (tipo === "cartao") {
     pagarComCartao({
-      tipo: window.PAGAMENTO_TIPO_ATUAL,
+      tipo: "vip",
       modelo_id: window.MODELO_ID_ATUAL
     });
   }
 
-  if (tipo === "pix" && window.PAGAMENTO_TIPO_ATUAL === "vip") {
+  if (tipo === "pix") {
     pagarComPix({
       tipo: "vip",
       modelo_id: window.MODELO_ID_ATUAL
@@ -279,9 +280,6 @@ window.pagarComPix = async function ({ tipo, modelo_id }) {
     }
 
     const data = await res.json();
-
-    // 💎 garante que estamos no modo Pix
-    mostrarMetodo("pix");
 
     // ===============================
     // 🧾 MOSTRAR QR
