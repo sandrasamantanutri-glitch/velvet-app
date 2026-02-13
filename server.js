@@ -2014,7 +2014,7 @@ app.get("/api/modelo/publico/:id", async (req, res) => {
         AND v.status = 'aprovado'
       ORDER BY v.created_at DESC
       LIMIT 1
-    `, [modelo_user_id]);
+    `, [modelo_id]);
 
     if (!result.rows.length) {
       return res.status(403).json({
