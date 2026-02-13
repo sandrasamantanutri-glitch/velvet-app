@@ -104,6 +104,15 @@ prepararPagamento();
       modelo_id: window.MODELO_ID_ATUAL
     });
   }, 0);
+
+  // 🔥 Registrar cliques nas abas sempre que abrir popup
+document.querySelectorAll(".velvet-tabs .tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    const metodo = tab.dataset.metodo;
+    mostrarMetodo(metodo);
+  });
+});
+
 }
 
 
