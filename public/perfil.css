@@ -172,9 +172,9 @@ body.role-cliente .area-saldos {
 }
 
 .midias-topo {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  justify-content: space-between;
   padding: 30px 24px 0;
 }
 
@@ -203,6 +203,7 @@ body.role-cliente .area-saldos {
 .midias-tabs .tab.active {
   background: #7b2cff;
   color: #fff;
+
 }
 
 /* GRID */
@@ -580,9 +581,14 @@ body.role-cliente .area-saldos {
 
 /* ATIVO */
 .upload-tab.active {
-  background: linear-gradient(135deg, #9e6bff, #7b2cff);
   color: #fff;
-  box-shadow: 0 8px 20px rgba(123, 44, 255, 0.35);
+  border: none;
+  border-radius: 14px;
+  padding: 14px;
+  font-size: 18px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #9e6bff, #7b2cff);
+  cursor: pointer;
 }
 
 /* Animação leve ao clicar */
