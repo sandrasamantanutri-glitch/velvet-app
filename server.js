@@ -1811,13 +1811,16 @@ app.get("/api/modelo/publico/:id/feed", async (req, res) => {
     const feedCompleto = await buscarFeedCompletoPorUserId(modelo_id);
 
     // 🧠 DONA DO PERFIL → tudo
-    if (
-      usuario &&
-      usuario.role === "modelo" &&
-      usuario.id === modelo_id
-    ) {
-      return res.json(feedCompleto);
-    }
+if (usuario?.role === "modelo") {
+  const dono = await db.query(
+    `SELECT 1 FROM modelos WHERE id = $1 AND user_id = $2`,
+    [modelo_id, usuario.id]
+  );
+
+  if (dono.rows.length) {
+    return res.json(feedCompleto);
+  }
+}
 
     // 🧠 CLIENTE VIP → tudo
     if (usuario?.role === "cliente") {
@@ -1843,7 +1846,7 @@ app.get("/api/modelo/publico/:id/feed", async (req, res) => {
 
 
 
-// PERFIL USUARIO (CLT,MODELO)
+// PERFIL USUARIO (CLT,MODELO) //***********check******* */
 app.get("/api/modelo/me", auth, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -2027,7 +2030,7 @@ app.get(
   }
 );
 
-// 🌍 PERFIL PÚBLICO
+// 🌍 PERFIL PÚBLICO //*********CHECK******* */
 app.get("/api/modelo/publico/:id", async (req, res) => {
   const modelo_id = Number(req.params.id);
 
@@ -2048,14 +2051,18 @@ app.get("/api/modelo/publico/:id", async (req, res) => {
         md.instagram,
         md.tiktok
       FROM modelos m
-      JOIN modelos_verificacao v
-        ON v.modelo_id = m.id  
-      LEFT JOIN modelos_dados md
-        ON md.user_id = m.user_id
-      WHERE m.id = $1
-        AND v.status = 'aprovado'
-      ORDER BY v.criado_em DESC
-      LIMIT 1
+      JOIN LATERAL (
+  SELECT status
+  FROM modelos_verificacao
+  WHERE modelo_id = m.id
+  ORDER BY criado_em DESC
+  LIMIT 1
+) v ON true
+LEFT JOIN modelos_dados md
+  ON md.user_id = m.user_id
+WHERE m.id = $1
+  AND v.status = 'aprovado'
+LIMIT 1;
     `, [modelo_id]);
 
     if (!result.rows.length) {
