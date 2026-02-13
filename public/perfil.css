@@ -577,6 +577,12 @@ body.role-cliente .area-saldos {
 /* Hover suave */
 .upload-tab:hover {
   background: #e6e6ff;
+  border: none;
+  border-radius: 14px;
+  padding: 14px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 /* ATIVO */
