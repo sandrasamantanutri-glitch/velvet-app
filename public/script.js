@@ -34,6 +34,15 @@ let pendingAction = null;
 // ===============================
 // AGE GATE
 window.openAgeGate = function (action) {
+
+  // 🔥 LOGIN NÃO PASSA PELO AGE GATE
+  if (action === "login") {
+    closeAllModals();
+    document.getElementById("loginModal")?.classList.remove("hidden");
+    return;
+  }
+
+  // 🔐 REGISTRO PASSA PELO AGE GATE
   pendingAction = action;
 
   const confirmed = localStorage.getItem("ageConfirmed");
@@ -45,6 +54,7 @@ window.openAgeGate = function (action) {
   closeAllModals();
   document.getElementById("ageModal")?.classList.remove("hidden");
 };
+
 
 function confirmAge(isAdult) {
   if (!isAdult) {
