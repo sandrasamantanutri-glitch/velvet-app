@@ -376,8 +376,6 @@ function abrirPopupPagamentoPixLoading() {
   const popup = document.getElementById("popupPagamentoVelvet");
   popup.classList.remove("hidden");
 
-  mostrarMetodo("pix");
-
   // estados iniciais
   document.getElementById("pixLoading")?.classList.remove("hidden");
   document.getElementById("pixAguardando")?.classList.add("hidden");
