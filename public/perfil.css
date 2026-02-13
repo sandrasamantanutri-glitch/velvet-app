@@ -351,6 +351,13 @@ body.role-cliente .area-saldos {
   cursor: pointer;
 }
 
+.modal-conteudo {
+  background: #ffffff;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.35);
+  border-radius: 20px;
+}
+
+
 /* ===============================
    CARD ESPECIAL
 ================================ */
