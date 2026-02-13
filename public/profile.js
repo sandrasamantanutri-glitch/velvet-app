@@ -982,6 +982,28 @@ function abrirModalMidia(url, isVideo) {
   modal.classList.remove("hidden");
 }
 
+window.abrirFluxoVIP = function () {
+
+  const tokenAtual = localStorage.getItem("token");
+  const roleAtual = localStorage.getItem("role");
+
+  if (!tokenAtual) {
+    abrirPopupLoginObrigatorio();
+    return;
+  }
+
+  if (roleAtual !== "cliente") {
+    alert("Apenas membros podem assinar.");
+    return;
+  }
+
+  window.PAGAMENTO_TIPO_ATUAL = "vip";
+  window.MODELO_ID_ATUAL = modelo_id;
+
+  abrirPopupPagamento();
+};
+
+
 // FECHAR MODAL
 document.getElementById("fecharModal")?.addEventListener("click", (e) => {
   e.stopPropagation(); 
@@ -1012,6 +1034,7 @@ async function excluirMidia(id, card) {
     alert("Erro ao excluir mídia");
   }
 }
+
 
 // async function pagarComCartaoRecorrente() {
 //   fecharEscolha();
