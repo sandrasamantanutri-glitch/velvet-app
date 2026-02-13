@@ -154,11 +154,16 @@ async function buscarFeedCompletoPorUserId(user_id) {
       criado_em
     FROM conteudos
     WHERE user_id = $1
+      AND (
+        tipo_conteudo != 'venda'
+        OR (tipo_conteudo = 'venda' AND COALESCE(preco, 0) > 0)
+      )
     ORDER BY id DESC
   `, [user_id]);
 
   return result.rows;
 }
+
 
 
 async function gerarThumbnailVideo(videoUrl) {
