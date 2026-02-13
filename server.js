@@ -3496,7 +3496,7 @@ app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
       FROM vip_subscriptions
       WHERE cliente_id = $1
         AND modelo_id = $2
-        AND expira_em > NOW()
+        AND expiration_at > NOW()
       LIMIT 1
     `, [cliente_id, modelo_id]);
 
