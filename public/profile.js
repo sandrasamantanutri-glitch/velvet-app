@@ -890,12 +890,21 @@ function adicionarMidia(conteudo) {
     card.appendChild(desc);
   }
 
+const payload = token ? decodeJWT(token) : null;
+const usuarioId = payload?.id;
+
+const donaDoPerfil =
+  role === "modelo" &&
+  usuarioId &&
+  usuarioId === modelo_id;
+
 const deveBloquear =
-  role !== "modelo" &&
+  !donaDoPerfil &&
   (
     tipo_conteudo === "venda" ||
     !window.__CLIENTE_VIP__
   );
+
 
 if (deveBloquear) {
   card.classList.add("locked");
@@ -904,7 +913,7 @@ if (deveBloquear) {
  card.onclick = () => {
 
   // 👩‍🎤 MODELO vê tudo
-  if (role === "modelo") {
+ if (donaDoPerfil) {
     abrirModalMidia(url, isVideo);
     return;
   }
@@ -943,16 +952,18 @@ if (deveBloquear) {
 
 
   // EXCLUIR (MODELO)
-  if (role === "modelo") {
-    const btnExcluir = document.createElement("button");
-    btnExcluir.className = "btnExcluirMidia";
-    btnExcluir.textContent = "✕";
-    btnExcluir.onclick = (e) => {
-      e.stopPropagation();
-      excluirMidia(id, card);
-    };
-    card.appendChild(btnExcluir);
-  }
+ // EXCLUIR (APENAS DONA DO PERFIL)
+if (donaDoPerfil) {
+  const btnExcluir = document.createElement("button");
+  btnExcluir.className = "btnExcluirMidia";
+  btnExcluir.textContent = "✕";
+  btnExcluir.onclick = (e) => {
+    e.stopPropagation();
+    excluirMidia(id, card);
+  };
+  card.appendChild(btnExcluir);
+}
+
 
   img.onerror = () => {
     img.src = "/assets/capa.png";
