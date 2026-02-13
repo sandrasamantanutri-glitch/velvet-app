@@ -2017,7 +2017,7 @@ app.get("/api/modelo/publico/:id", async (req, res) => {
         ON md.user_id = m.user_id
       WHERE m.user_id = $1
         AND v.status = 'aprovado'
-      ORDER BY v.created_at DESC
+      ORDER BY v.criado_em DESC
       LIMIT 1
     `, [modelo_id]);
 
