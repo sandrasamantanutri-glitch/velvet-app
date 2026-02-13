@@ -2310,10 +2310,10 @@ app.get(
 
         const result = await db.query(
           `
-          SELECT status, motivo
+          SELECT status, motivo_rejeicao
           FROM modelos_verificacao
           WHERE modelo_id = $1
-          ORDER BY created_at DESC
+          ORDER BY criado_em DESC
           LIMIT 1
           `,
           [modeloId]
@@ -2344,10 +2344,10 @@ app.get(
 
         const result = await db.query(
           `
-          SELECT status, motivo
+          SELECT status, motivo_rejeicao
           FROM clientes_verificacao
           WHERE cliente_id = $1
-          ORDER BY created_at DESC
+          ORDER BY criado_em DESC
           LIMIT 1
           `,
           [clienteId]
