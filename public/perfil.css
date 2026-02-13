@@ -11,9 +11,10 @@ a {
   color: inherit;
 }
 
-img {
+.btn-mais img {
   max-width: 100%;
   display: block;
+  width: 30px;
 }
 
 .only-modelo {
