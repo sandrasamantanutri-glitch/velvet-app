@@ -551,6 +551,18 @@ body.role-cliente .area-saldos {
   }
 }
 
+@media (max-width: 768px) {
+
+  .modal-conteudo,
+  .modal .modal-box {
+    max-width: 95vw;
+    max-height: 90vh;
+    padding: 18px;
+  }
+
+}
+
+
 
 
 
