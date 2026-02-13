@@ -225,7 +225,7 @@ body.role-cliente .area-saldos {
 /* GRID */
 .midias-grid {
   display: none;
-  grid-template-columns: repeat(1, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 30px;
   padding: 30px;
 }
@@ -236,15 +236,12 @@ body.role-cliente .area-saldos {
 
 .midias-grid img {
   width: 100%;
-  aspect-ratio: 1 / 1;
   object-fit: cover;
   border-radius: 10px;
 }
 
-/* BOTÃO EXCLUIR MÍDIA */
-.midiaCard {
-  position: relative;
-}
+
+
 
 .btnExcluirMidia {
   position: absolute;
@@ -374,6 +371,27 @@ body.role-cliente .area-saldos {
   border-radius: 2px;
   z-index: 1;
 }
+
+.midiaCard {
+  display: flex;
+  flex-direction: column;
+}
+
+.midiaWrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1; /* 🔥 força quadrado */
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.midiaWrapper img,
+.midiaWrapper video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 /* ===============================
    INPUTS – MODAL UPLOAD
 ================================ */
