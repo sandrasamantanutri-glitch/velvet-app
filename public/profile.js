@@ -652,6 +652,7 @@ function abrirPreviewUpload(file, url) {
   });
   const btnPublicar = modal.querySelector(".btn-confirmar");
   btnPublicar.onclick = async () => {
+      console.log("FILE:", file);
   btnPublicar.disabled = true;
   btnPublicar.textContent = "Enviando...";
   
