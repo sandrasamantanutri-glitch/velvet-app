@@ -708,36 +708,5 @@ async function iniciarCartaoMidia() {
   document.getElementById("formCartao")?.classList.remove("hidden");
 }
 
-window.abrirFluxoVIP = function () {
-  fecharPopupPagamento?.();
-  document.getElementById("modalMidia")?.classList.add("hidden");
-  
-  const roleAtual = localStorage.getItem("role");
-
-  if (!roleAtual) {
-    exigirCadastro(
-      "Crie sua conta para assinar o perfil e acessar tudo 💜"
-    );
-    return;
-  }
-
-  if (!window.OFERTA_ATUAL || !window.OFERTA_ATUAL.modelo_id) {
-    alert("Oferta VIP ainda não carregada. Aguarde um instante.");
-    return;
-  }
-
-  window.PAGAMENTO_TIPO_ATUAL = "vip";
-  window.MODELO_ID_ATUAL = window.OFERTA_ATUAL.modelo_id;
-
-  preencherResumoVIP({
-    valorBase: window.OFERTA_ATUAL.valor_base,
-    desconto:
-      window.OFERTA_ATUAL.valor_base -
-      window.OFERTA_ATUAL.valor_promocional
-  });
-
-  abrirPopupPagamento();
-  pagarComPix({ tipo: "vip" });
-};
 
 

@@ -985,24 +985,35 @@ function abrirModalMidia(url, isVideo) {
 }
 
 window.abrirFluxoVIP = function () {
-
-  const tokenAtual = localStorage.getItem("token");
+  fecharPopupPagamento?.();
+  document.getElementById("modalMidia")?.classList.add("hidden");
+  
   const roleAtual = localStorage.getItem("role");
 
-  if (!tokenAtual) {
-    abrirPopupLoginObrigatorio();
+  if (!roleAtual) {
+    exigirCadastro(
+      "Crie sua conta para assinar o perfil e acessar tudo 💜"
+    );
     return;
   }
 
-  if (roleAtual !== "cliente") {
-    alert("Apenas membros podem assinar.");
+  if (!window.OFERTA_ATUAL || !window.OFERTA_ATUAL.modelo_id) {
+    alert("Oferta VIP ainda não carregada. Aguarde um instante.");
     return;
   }
 
   window.PAGAMENTO_TIPO_ATUAL = "vip";
-  window.MODELO_ID_ATUAL = modelo_id;
+  window.MODELO_ID_ATUAL = window.OFERTA_ATUAL.modelo_id;
+
+  preencherResumoVIP({
+    valorBase: window.OFERTA_ATUAL.valor_base,
+    desconto:
+      window.OFERTA_ATUAL.valor_base -
+      window.OFERTA_ATUAL.valor_promocional
+  });
 
   abrirPopupPagamento();
+  pagarComPix({ tipo: "vip" });
 };
 
 
