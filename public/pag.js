@@ -222,9 +222,8 @@ function mostrarMetodo(tipo) {
   }
 
   document.querySelector(".velvet-tabs")?.classList.remove("hidden");
- pix.classList.toggle("hidden", tipo !== "pix");
-  cartao.classList.toggle("hidden", tipo !== "cartao");
-
+pix.style.display = tipo === "pix" ? "block" : "none";
+cartao.style.display = tipo === "cartao" ? "block" : "none";
   document
     .querySelectorAll(".velvet-tabs .tab")
     .forEach(tab => {
