@@ -698,6 +698,9 @@ btnPublicar.onclick = async (e) => {
   };
   
   document.body.appendChild(modal);
+  console.log("Modal adicionado:", modal);
+console.log("Botão encontrado:", modal.querySelector(".btn-confirmar"));
+
 }
 
 function mostrarLoading() {
