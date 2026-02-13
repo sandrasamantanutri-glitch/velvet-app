@@ -128,16 +128,16 @@ function decodeJWT(token) {
   }
 }
 
-// function exigirCadastro(motivo = "Para continuar, crie sua conta") {
-//   console.log("🔥 exigirCadastro chamado");
-//   window.AUTH_MENSAGEM = motivo;
-//   openAgeGate("register");
-// }
+function exigirCadastro(motivo = "Para continuar, crie sua conta") {
+  console.log("🔥 exigirCadastro chamado");
+  window.AUTH_MENSAGEM = motivo;
+  openAgeGate("register");
+}
 
-// function exigirLogin() {
-//   console.error("openAgeGate não carregado");
-//   openAgeGate("login");
-// }
+function exigirLogin() {
+  console.error("openAgeGate não carregado");
+  openAgeGate("login");
+}
 
 
 //PERFIL ///
