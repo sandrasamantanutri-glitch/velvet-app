@@ -189,6 +189,7 @@ async function login() {
 
   localStorage.setItem("token", data.token);
   localStorage.setItem("role", data.role);
+  localStorage.setItem("ageConfirmed", "true");
 
   window.location.href = "/feed.html";
 }
@@ -241,6 +242,7 @@ async function register() {
 
   localStorage.setItem("token", data.token);
   localStorage.setItem("role", data.role);
+  localStorage.setItem("ageConfirmed", "true");
 
   if (data.cliente_id) {
     localStorage.setItem("cliente_id", data.cliente_id);
