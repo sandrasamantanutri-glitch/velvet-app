@@ -623,8 +623,8 @@ function abrirPopupLoginObrigatorio() {
       <p>É necessário estar logado para esta ação.</p>
 
       <div class="login-acoes">
-        <button class="btn-login">Fazer login</button>
-        <button class="btn-register">Registar</button>
+        <button class="btn-login">Ja tenho conta</button>
+        <button class="btn-register">Não tenho conta</button>
       </div>
     </div>
   `;
@@ -632,6 +632,7 @@ function abrirPopupLoginObrigatorio() {
   modal.querySelector(".modal-backdrop").onclick = () => modal.remove();
 
   modal.querySelector(".btn-login").onclick = () => {
+    console.log("CLIQUE LOGIN");
     modal.remove();
     openAgeGate("login");
   };
