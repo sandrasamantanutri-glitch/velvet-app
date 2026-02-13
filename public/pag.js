@@ -231,6 +231,13 @@ function mostrarMetodo(tipo) {
       modelo_id: window.MODELO_ID_ATUAL
     });
   }
+
+   if (tipo === "cartao") {
+    pagarComCartao({
+      tipo: "vip",
+      modelo_id: window.MODELO_ID_ATUAL
+    });
+  }
 }
 
 
