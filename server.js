@@ -1528,7 +1528,7 @@ app.get("/api/usuario/dados", auth, async (req, res) => {
         SELECT v.status
         FROM modelos_verificacao v
         WHERE v.modelo_id = md.user_id
-        ORDER BY v.created_at DESC
+        ORDER BY v.criado_em DESC
         LIMIT 1
       ) AS status
     FROM modelos_dados md
