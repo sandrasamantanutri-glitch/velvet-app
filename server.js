@@ -3612,7 +3612,7 @@ app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
     `, [
       cliente_id,
       modelo_id,
-      valor,
+      valorTotal,
       pagamento.id
     ]);
 
