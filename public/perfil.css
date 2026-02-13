@@ -222,25 +222,6 @@ body.role-cliente .area-saldos {
 }
 
 
-/* GRID */
-.midias-grid {
-  display: none;
-  grid-template-columns: repeat(1, 1fr);
-  gap: 30px;
-  padding: 30px;
-}
-
-.midias-grid.active {
-  display: grid;
-}
-
-.midias-grid img {
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  object-fit: cover;
-  border-radius: 10px;
-}
-
 /* BOTÃO EXCLUIR MÍDIA */
 .midiaCard {
   position: relative;
