@@ -2007,7 +2007,7 @@ app.get("/api/modelo/publico/:id", async (req, res) => {
         md.tiktok
       FROM modelos m
       JOIN modelos_verificacao v
-        ON v.modelo_id = m.id  -- ✅ CORRETO AGORA
+        ON v.modelo_id = m.id  
       LEFT JOIN modelos_dados md
         ON md.user_id = m.user_id
       WHERE m.user_id = $1

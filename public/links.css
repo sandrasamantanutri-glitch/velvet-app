@@ -27,26 +27,7 @@
   line-height: 1.5;
 }
 
-/* Botão voltar */
-.btn-voltar {
-  position: absolute;
-  left: 20px;
-  top: 20px;
-  border: none;
-  background: #f3f3f7;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
-.btn-voltar img {
-  width: 18px;
-  opacity: 0.7;
-}
 
 /* Labels */
 .area-card label {
