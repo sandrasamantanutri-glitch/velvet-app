@@ -1013,7 +1013,6 @@ window.abrirFluxoVIP = function () {
   });
 
   abrirPopupPagamento();
-  pagarComPix({ tipo: "vip" });
 };
 
 
