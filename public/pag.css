@@ -20,14 +20,20 @@
 .velvet-box {
   position: relative;
   background: #fff;
+
   width: 92%;
   max-width: 420px;
-  margin: 10vh auto;
+  max-height: 90vh;      /* 🔥 limita altura */
+  
   border-radius: 18px;
   padding: 20px;
+
   z-index: 2;
   animation: fadeUp .25s ease;
+
+  overflow-y: auto;      /* 🔥 scroll interno se precisar */
 }
+
 
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(20px); }
@@ -170,4 +176,26 @@
 
 #popupPagamentoVelvet {
   z-index: 9999999 !important;
+}
+
+
+@media (max-width: 480px) {
+
+  .velvet-box {
+    width: 95%;
+    max-width: 95%;
+    max-height: 95vh;
+    border-radius: 16px;
+    padding: 18px;
+  }
+
+  .velvet-title {
+    font-size: 18px;
+  }
+
+  .btn-principal {
+    font-size: 15px;
+    padding: 14px;
+  }
+
 }
