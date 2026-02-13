@@ -209,7 +209,7 @@ body.role-cliente .area-saldos {
 .midias-grid {
   display: none;
   grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
+  gap: 30px;
   padding: 30px;
 }
 
@@ -296,7 +296,7 @@ body.role-cliente .area-saldos {
   margin-top: 6px;
   padding: 0 4px;
 
-  font-size: 12px;
+  font-size: 18px;
   color: #1E1E26;
   text-align: center;
 
