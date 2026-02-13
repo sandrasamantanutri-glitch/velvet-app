@@ -1,5 +1,7 @@
 // ===============================
 // INDEX — VELVET
+console.log("PROFILE JS VERSÃO NOVA 12345");
+
 window.token = localStorage.getItem("token");
 
 const ESTA_NO_INDEX =
