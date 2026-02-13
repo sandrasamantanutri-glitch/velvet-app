@@ -228,7 +228,7 @@ async function uploadThumbB2(buffer) {
 
 function gerarSignedUrl(key) {
   return s3Privado.getSignedUrl("getObject", {
-    Bucket: process.env.B2_BUCKET_PRIVADO,
+    Bucket: process.env.B2_BUCKET_PRIVATE,
     Key: key,
     Expires: 60 * 5 // 5 minutos
   });
