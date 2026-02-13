@@ -4352,7 +4352,7 @@ app.post(
         await db.query(
           `
           INSERT INTO modelos_verificacao
-          (modelo_id, documento_tipo, doc_frente_url, doc_verso_url, selfie_url, status, created_at)
+          (modelo_id, documento_tipo, doc_frente_url, doc_verso_url, selfie_url, status, criado_em)
           VALUES ($1,$2,$3,$4,$5,'em_analise', NOW())
           ON CONFLICT (modelo_id)
           DO UPDATE SET
@@ -4392,7 +4392,7 @@ app.post(
         await db.query(
           `
           INSERT INTO clientes_verificacao
-          (cliente_id, documento_tipo, doc_frente_url, doc_verso_url, selfie_url, status, created_at)
+          (cliente_id, documento_tipo, doc_frente_url, doc_verso_url, selfie_url, status, criado_em)
           VALUES ($1,$2,$3,$4,$5,'em_analise', NOW())
           ON CONFLICT (cliente_id)
           DO UPDATE SET
