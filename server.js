@@ -2002,7 +2002,8 @@ app.get("/api/modelo/publico/:id", async (req, res) => {
   try {
     const result = await db.query(`
        SELECT
-        m.user_id AS id,
+        m.id, 
+        m.user_id,
         m.nome_exibicao,
         m.bio,
         m.avatar,
