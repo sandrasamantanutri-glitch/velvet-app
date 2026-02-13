@@ -224,7 +224,6 @@ body.role-cliente .area-saldos {
 
 /* GRID */
 .midias-grid {
-  display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 30px;
   padding: 30px;
@@ -232,17 +231,16 @@ body.role-cliente .area-saldos {
 
 .midias-grid.active {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+   grid-template-columns: repeat(3, 1fr);
   gap: 30px;
   padding: 30px;
 }
 
 .midias-grid img {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 30px;
-  padding: 30px;
-
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 10px;
 }
 
 /* BOTÃO EXCLUIR MÍDIA */
@@ -544,11 +542,6 @@ body.role-cliente .area-saldos {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .midias-grid.active {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-
   .modal-midia .modal-conteudo img,
   .modal-midia .modal-conteudo video {
     max-height: 50vh;
@@ -560,6 +553,13 @@ body.role-cliente .area-saldos {
   }
 
 }
+
+@media (max-width: 480px) {
+  .midias-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ===============================
    BOTÕES PRA VOCÊ / ESPECIAL
 ================================ */
