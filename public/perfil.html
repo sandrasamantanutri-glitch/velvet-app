@@ -244,6 +244,17 @@
 
 </main>
 
+<div id="auth-modals-container"></div>
+
+<script>
+fetch("/modals-auth.html")
+  .then(res => res.text())
+  .then(html => {
+    document.getElementById("auth-modals-container").innerHTML = html;
+  });
+</script>
+
+
 <script src="socket.io/socket.io.js"></script>
 <script src="header.js"></script>
 <script src="https://js.stripe.com/v3/"></script>
