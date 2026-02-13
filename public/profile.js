@@ -594,6 +594,8 @@ function abrirPreviewUpload(file, url) {
   modal.innerHTML = `
     <div class="modal-backdrop"></div>
     <div class="modal-conteudo upload-preview">
+  <button type="button" class="modal-close-upload">✕</button>
+
       ${
         file.type.startsWith("video")
           ? `<video src="${url}" controls autoplay muted playsinline></video>`

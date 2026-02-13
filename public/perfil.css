@@ -549,6 +549,37 @@ body.role-cliente .area-saldos {
   animation: modalFade 0.25s ease;
 }
 
+.modal-close-upload {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+
+  width: 36px;
+  height: 36px;
+
+  border: none;
+  border-radius: 50%;
+
+  background: rgba(255,255,255,0.95);
+  color: #1E1E26;
+
+  font-size: 20px;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  box-shadow: 0 6px 14px rgba(0,0,0,0.15);
+  z-index: 5;
+}
+
+.modal-close-upload:hover {
+  background: #7b2cff;
+  color: #fff;
+}
+
+
 /* animação suave */
 @keyframes modalFade {
   from {
