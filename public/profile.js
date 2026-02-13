@@ -229,11 +229,12 @@ async function aplicarRegrasDeAcesso() {
   }
 
   // VISITANTE
-  if (!role) {
-    ofertaCard.style.display = "block";
-    //bloquearMidias?.("login");
-    return;
-  }
+if (!role) {
+  ofertaCard.style.display = "block";
+  window.__CLIENTE_VIP__ = false;
+  return;
+}
+
 
   // CLIENTE
   if (role === "cliente") {
@@ -243,12 +244,13 @@ async function aplicarRegrasDeAcesso() {
       });
       const { vip } = res.ok ? await res.json() : { vip: false };
 
-      if (vip) {
-        ofertaCard.style.display = "none";
-
-      } else {
-        ofertaCard.style.display = "block";
-      }
+     if (vip) {
+  ofertaCard.style.display = "none";
+  window.__CLIENTE_VIP__ = true;  
+} else {
+  ofertaCard.style.display = "block";
+  window.__CLIENTE_VIP__ = false;  
+}
     } catch {
       ofertaCard.style.display = "block";
     }
@@ -887,26 +889,38 @@ function adicionarMidia(conteudo) {
     card.appendChild(desc);
   }
 
-  const deveBloquear =
-  tipo_conteudo === "venda" &&
-  role !== "modelo";
+const deveBloquear =
+  role !== "modelo" &&
+  !window.__CLIENTE_VIP__;
 
 if (deveBloquear) {
   card.classList.add("locked");
 }
- card.onclick = () => {
-   if (tipo_conteudo === "venda") {
 
-  if (role === "modelo") {
+ card.onclick = () => {
+   if (role === "modelo") {
     abrirModalMidia(url, isVideo);
     return;
   }
 
+  // 🔒 VISITANTE
   if (!token) {
+    abrirPopupLoginObrigatorio();
+    return;
+  }
+
+  // 🔒 CLIENTE NÃO VIP (bloqueia feed normal)
+  if (!window.__CLIENTE_VIP__) {
+    window.abrirFluxoVIP();
+    return;
+  }
+
+   if (!token) {
   abrirPopupLoginObrigatorio();
   return;
-}
+   }
 
+   if (tipo_conteudo === "venda") {
     window.PAGAMENTO_TIPO_ATUAL = "midia";
     window.MODELO_ID_ATUAL = modelo_id;
      window.MIDIA_VENDA_ATUAL = {
