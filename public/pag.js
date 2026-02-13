@@ -224,6 +224,19 @@ function mostrarMetodo(tipo) {
         tab.dataset.metodo === tipo
       );
     });
+      if (tipo === "cartao") {
+    pagarComCartao({
+      tipo: window.PAGAMENTO_TIPO_ATUAL,
+      modelo_id: window.MODELO_ID_ATUAL
+    });
+  }
+
+  if (tipo === "pix" && window.PAGAMENTO_TIPO_ATUAL === "vip") {
+    pagarComPix({
+      tipo: "vip",
+      modelo_id: window.MODELO_ID_ATUAL
+    });
+  }
 }
 
 
@@ -702,8 +715,10 @@ async function iniciarCartaoMidia() {
 window.abrirFluxoVIP = function () {
   fecharPopupPagamento?.();
   document.getElementById("modalMidia")?.classList.add("hidden");
+  
+  const roleAtual = localStorage.getItem("role");
 
-  if (!window.role) {
+  if (!roleAtual) {
     exigirCadastro(
       "Crie sua conta para assinar o perfil e acessar tudo 💜"
     );
