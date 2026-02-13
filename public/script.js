@@ -1,6 +1,6 @@
 // ===============================
 // INDEX — VELVET
-const token = localStorage.getItem("token");
+window.token = localStorage.getItem("token");
 
 const ESTA_NO_INDEX =
   window.location.pathname === "/" ||
