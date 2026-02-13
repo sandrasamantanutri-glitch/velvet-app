@@ -2928,7 +2928,7 @@ app.put(
         SET
           status = $1,
           motivo = $2,
-          updated_at = NOW()
+          atualizado_em = NOW()
         WHERE id = $3
         `,
         [status, motivo || null, id]
@@ -4401,7 +4401,7 @@ app.post(
             doc_verso_url = EXCLUDED.doc_verso_url,
             selfie_url = EXCLUDED.selfie_url,
             status = 'em_analise',
-            updated_at = NOW()
+            atualizado_em = NOW()
           `,
           [
             clienteId,
