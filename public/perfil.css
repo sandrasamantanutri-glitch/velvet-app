@@ -278,11 +278,14 @@ body.role-cliente .area-saldos {
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 1000;
 }
 
 .modal-backdrop {
   position: absolute;
   inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 1; 
 }
 
 /* preview da mídia */
@@ -348,6 +351,8 @@ body.role-cliente .area-saldos {
   background: #7b2cff;
   color: #fff;
   cursor: pointer;
+  position: relative;
+  z-index: 3;
 }
 
 .modal-conteudo {
