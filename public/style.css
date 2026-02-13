@@ -10,8 +10,12 @@ body {
 }
 
 .hidden {
-  display: none !important;
-  pointer-events: none !important;
+  display: none;
+  pointer-events: none;
+}
+
+body.modal-open {
+  overflow: hidden;
 }
 
 /* =========================
@@ -20,19 +24,18 @@ body {
 .page-wrapper {
   min-height: 100vh;
   display: flex;
-  justify-content: center;   /* horizontal */
-  align-items: center;       /* vertical */
+  justify-content: center;
+  align-items:center;
 }
 
 /* =========================
    LAYOUT PRINCIPAL
 ========================= */
 .landing {
-  width: 1400px;             /* 🔑 ESSENCIAL */
-  max-width: 90%;
+  width: 100%;
+  max-width: 1400px;
   display: flex;
-  background: transparent;
-  flex-direction: row-reverse; /* 🔥 INVERTE */
+  flex-direction: row-reverse;
 }
 
 /* =========================
@@ -68,7 +71,7 @@ body {
 /* LOGO */
 .logo {
   width: 250px;
-  margin: -40px auto 40px;   /* sobe o logo */
+  margin: 20px auto 150px;  
 }
 
 /* =========================
@@ -107,14 +110,14 @@ body {
 
 /* CRIADOR */
 .btn-creator {
-  background: #ffffff;
+  background: #fff;
   color: #7B2CFF;
   box-shadow: 0 6px 18px rgba(37,99,235,0.15);
 }
 
 /* MEMBRO */
 .btn-member {
-  background: #ffffff;
+  background: #fff;
   color: #7B2CFF;
   box-shadow: 0 6px 18px rgba(37,99,235,0.15); 
 }
@@ -130,7 +133,7 @@ body {
   width: 100%;
   padding: 12px;
   border-radius: 10px;
-  border: 1px solid #ccc;
+  border: 1px solid;
   margin-bottom: 10px;
   font-size: 15px;   
 }
@@ -170,33 +173,10 @@ body {
 .footer-linksC a:hover {
   text-decoration: underline;
 }
-/* =========================
-   UTILIDADES
-========================= */
 .hidden {
   display: none;
 }
 
-/* =========================
-   RESPONSIVO
-========================= */
-@media (max-width: 900px) {
-  .landing {
-    flex-direction: column;
-    width: 100%;
-  }
-
-  .landing-cover {
-    display: none;
-  }
-
-  .landing-login {
-    width: 100%;
-    margin-left: 0;
-    border-radius: 24px;
-    
-  }
-}
 
 .landing-login {
   text-align: center;
@@ -214,47 +194,48 @@ body {
 }
 
 /* MODAL BASE */
-.modal {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-}
-
 .modal.hidden {
   display: none;
 }
 
-/* FUNDO */
-.modal-overlay {
-  position: absolute;
+.modal {
+  position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;              /* 🔑 FALTAVA ISTO */
+  align-items: center;        /* 🔑 vertical */
+  justify-content: center; 
+  padding: 16px;
+}
+
+.modal-overlay {
+  z-index: 1;
 }
 
 /* CAIXA */
 .modal-box {
   position: relative;
-  width: 360px;
-  max-width: 90%;
-  margin: auto;
-  top: 50%;
-  transform: translateY(-50%);
+  z-index: 2; /* 🔑 fica acima do overlay */
+  width: 100%;
+  max-width: 420px;
+  max-height: 90vh;          /* 🔑 evita cortar */
+  overflow-y: auto;          /* 🔑 permite scroll */
   background: white;
   border-radius: 18px;
-  padding: 28px;
+  padding: 24px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.25);
   display: flex;
   flex-direction: column;
   gap: 14px;
   animation: modalIn 0.25s ease;
-  text-align: center;
 }
+
 
 .modal-box h2 {
   margin: 0 0 6px;
   text-align: center;
   color: #7B2CFF;
+  gap: 14px;
 }
 
 /* INPUTS */
@@ -263,6 +244,7 @@ body {
   border-radius: 12px;
   border: 1px solid #ddd;
   font-size: 15px;
+  box-sizing: border-box;
 }
 
 /* BOTÃO */
@@ -275,6 +257,7 @@ body {
   border-radius: 14px;
   font-weight: 600;
   cursor: pointer;
+  margin-top: 10px;
 }
 
 /* FECHAR */
@@ -289,22 +272,11 @@ body {
   opacity: 0.6;
 }
 
-/* ANIMAÇÃO */
-@keyframes modalIn {
-  from {
-    opacity: 0;
-    transform: translateY(-45%) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(-50%) scale(1);
-  }
-}
-
 .modal-switch {
   text-align: center;
   font-size: 14px;
   opacity: 0.8;
+  margin-top: 8px;
 }
 
 .modal-switch span {
@@ -320,10 +292,13 @@ body {
   font-size: 15px;
 }
 
-.footer-sep {
-  margin: 0 10px;
-  opacity: 0.4;
+.modal-hint {
+  margin-top: 12px;
+  font-size: 12px;
+  color: #666;
+  text-align: center;
 }
+
 /* MODAL LEGAL */
 .legal-modal {
   position: fixed;
@@ -332,7 +307,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 99999;
+  z-index: 999999;
 }
 .legal-overlay {
   position: absolute;
@@ -367,6 +342,16 @@ body {
   background: none;
   border: none;
   cursor: pointer;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field.hidden {
+  display: none;
 }
 
 /* =========================
@@ -405,6 +390,125 @@ body {
 }
 
 
+/* =========================
+   MOBILE FIRST – TELEMÓVEL
+========================= */
+@media (max-width: 768px) {
+
+  /* -------- BASE -------- */
+  html, body {
+    height: 100%;
+  }
+
+  body {
+    background: #f6f7fb;
+    overflow-x: hidden;
+  }
+
+  /* -------- LANDING / ENTRADA -------- */
+  .page-wrapper {
+    min-height: 100vh;
+    padding: 0;
+    align-items: stretch;
+  }
+
+  .landing {
+    width: 100%;
+    max-width: none;
+    height: 100vh;
+    flex-direction: column;
+  }
+
+  /* remove capa no mobile */
+  .landing-cover {
+    display: none;
+  }
+
+  .landing-login {
+    width: 100%;
+    height: 100vh;
+    margin: 0;
+    padding: 32px 24px;
+    border-radius: 0; /* 🔑 tela cheia */
+    justify-content: center;
+  }
+
+  /* LOGO */
+  .logo {
+    width: 180px;
+    margin: 40px auto 40px;
+  }
+
+  /* BOTÕES */
+  .login-box {
+    margin-top: 0;
+  }
+
+  .btn {
+    padding: 16px;
+    font-size: 16px;
+    border-radius: 14px;
+  }
+
+  /* FOOTER */
+  .footer-links,
+  .footer-linksC {
+    margin-top: 32px;
+  }
+
+  .footer-links a,
+  .footer-linksC a {
+    display: block;
+    margin: 8px 0;
+  }
+  /* inputs maiores (evita zoom iOS) */
+  .modal-box input,
+  .modal-box select {
+    font-size: 16px;
+    padding: 14px;
+  }
+
+  /* botão principal maior */
+  .modal-box .btn-primary {
+    padding: 14px;
+    font-size: 15px;
+    border-radius: 16px;
+  }
+
+  /* botão fechar mais acessível */
+  .modal-close {
+    top: 10px;
+    right: 16px;
+    font-size: 24px;
+  }
+
+  /* -------- MODAL LEGAL -------- */
+  .legal-box {
+    width: 100%;
+    height: 100vh;
+    max-width: none;
+    border-radius: 0;
+  }
+
+  .modal {
+    display: flex;
+    align-items: center;      /* 🔑 centraliza vertical */
+    justify-content: center;  /* 🔑 centraliza horizontal */
+    padding: 16px;
+  }
+
+  .modal-box {
+    width: 100%;
+    max-width: 420px;         /* 🔑 largura controlada */
+    max-height: 90vh;         /* não corta */
+    border-radius: 18px;
+    padding: 24px 20px;
+    overflow-y: auto;
+    background: #fff;
+    gap: 14px;
+    
+  }
+}
 
 
 

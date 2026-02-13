@@ -1,12 +1,8 @@
 // ===============================
-// SOCKET GLOBAL (1x só)
-// ===============================
+// SOCKET GLOBAL
 function carregarHeader() {
   // evita duplicar
   if (document.querySelector(".app-header")) {
-    montarMenuPorRole();
-    initHeaderMenu();
-    ligarBotoesPerfilModelo();
     return;
   }
 
@@ -20,33 +16,17 @@ function carregarHeader() {
     .then(res => res.text())
     .then(html => {
       container.insertAdjacentHTML("afterbegin", html);
-
-      // 🔑 AGORA os elementos existem
-      montarMenuPorRole();
-      initHeaderMenu();
-      ligarBotoesPerfilModelo(); 
     })
     .catch(err => console.error("Erro ao carregar header:", err));
 }
 
 const menuVisitante = `
-  <div class="menu-header">Bem-vinda à Velvet</div>
+  <div class="menu-header">Bem-vindo à Velvet</div>
 
   <button onclick="abrirPopupVelvet({ tipo: 'login' })">
     Entrar / Criar conta
   </button>
 `;
-
-
-document.addEventListener("DOMContentLoaded", () => {
-  initUsuario();
-  carregarHeader();
-
-  // 🔔 unread global (cliente)
-  atualizarUnreadClienteHeader();
-  atualizarUnreadModeloHeader();
-
-});
 
 async function initUsuario() {
   const token = localStorage.getItem("token");
@@ -63,152 +43,30 @@ async function initUsuario() {
 
     const user = await res.json();
 
-    // 🔑 guarda apenas para UX
+    // 🔑 SEMPRE atualiza
     localStorage.setItem("role", user.role);
     localStorage.setItem("nome", user.nome);
 
-    console.log("✅ Usuário autenticado:", user.role);
+    // limpa flag pós-registro sem afetar lógica
+    if (localStorage.getItem("post_register_action") === "just_registered") {
+      setTimeout(() => {
+        localStorage.removeItem("post_register_action");
+      }, 1000);
+    }
 
   } catch (e) {
     console.warn("Sessão inválida no header");
-    localStorage.removeItem("role");
-    localStorage.removeItem("nome");
+
+    localStorage.clear();
+
+    if (!window.location.pathname.includes("index")) {
+      window.location.href = "/index.html";
+    }
   }
 }
 
-
-
 // =========================================================
-// MENUS POR ROLE
-// =========================================================
-const menuCliente = `
-  <div class="menu-header">Menu</div>
-  <button onclick="location.href='/clientHome.html'">Feed de Modelos</button>
-  <button onclick="location.href='/chatcliente.html'">Chat</button>
-  <button onclick="location.href='/cliente-dados.html'">Meus Dados</button>
-   <button onclick="location.href='/cliente-pages/transacoes.html'">
-    Minhas Transações
-  </button>
-  <button class="logout-btn" onclick="logout()">Sair</button>
-`;
-
-const menuModelo = `
-<div class="menu-header">Menu</div>
-
-<button onclick="location.href='/profile.html'">Meu Perfil</button>
-<button onclick="abrirConteudos()">Conteúdos</button>    
-<button onclick="location.href='/chatmodelo.html'">Chat</button>
-<button id="btnAlterarAvatar">Alterar foto do Perfil</button>
-<button id="btnAlterarCapa">Alterar Capa</button>
-<button onclick="abrirDados()">Meus Dados</button>
-<button onclick="location.href='/modelo/relatorio'">Meus Ganhos</button>
-<hr class="menu-divider">
-<button class="logout-btn" onclick="logout()">Sair</button>
-`;
-
-function montarMenuPorRole() {
-  const role = localStorage.getItem("role");
-  const menu = document.getElementById("userMenu");
-  if (!menu) return;
-
-  if (role === "modelo") {
-    menu.innerHTML = menuModelo;
-  } 
-  else if (role === "cliente") {
-    menu.innerHTML = menuCliente;
-  } 
-  else {
-    // 👀 VISITANTE
-    menu.innerHTML = menuVisitante;
-  }
-}
-
-
-function abrirDados() {
-  window.location.href = "/dados-modelo.html";
-}
-
-// =========================================================
-// CONTROLE ABRIR / FECHAR MENU
-// =========================================================
-function initHeaderMenu() {
-  const btn = document.getElementById("menuBtn");
-  const menu = document.getElementById("userMenu");
-
-  if (!btn || !menu) {
-    console.warn("menuBtn ou userMenu não encontrado");
-    return;
-  }
-
-btn.addEventListener("click", e => {
-  e.stopPropagation();
-
-  const role = localStorage.getItem("role");
-
-//  VISITANTE 
-  if (!role) {
-    abrirPopupVelvet({ tipo: "login" });
-    return;
-  }
-
-  menu.classList.toggle("open");
-});
-
-
-  document.addEventListener("click", () => {
-    menu.classList.remove("open");
-  });
-
-  menu.addEventListener("click", e => {
-    e.stopPropagation();
-  });
-}
-
-
-function ligarBotoesPerfilModelo() {
-  const btnAvatar = document.getElementById("btnAlterarAvatar");
-  const btnCapa   = document.getElementById("btnAlterarCapa");
-
-  // se não existe, sai (ex: menu cliente)
-  if (!btnAvatar || !btnCapa) return;
-
-  const role = localStorage.getItem("role");
-  const page = document.body.dataset.page; // "profile" ou undefined
-
-  // 🔒 regra principal
-  if (role !== "modelo" || page !== "profile") {
-    btnAvatar.style.display = "none";
-    btnCapa.style.display   = "none";
-    return;
-  }
-
-  // ✅ só aqui eles ficam visíveis e funcionais
-  btnAvatar.style.display = "block";
-  btnCapa.style.display   = "block";
-
-  btnAvatar.addEventListener("click", () => {
-    document.getElementById("inputAvatar")?.click();
-  });
-
-  btnCapa.addEventListener("click", () => {
-    document.getElementById("inputCapa")?.click();
-  });
-}
-
-function abrirConteudos() {
-  const role = localStorage.getItem("role");
-
-  if (role !== "modelo") {
-    alert("Acesso restrito à modelo.");
-    return;
-  }
-
-  window.location.href = "/conteudos.html";
-}
-
-// =========================================================
-// 🔔 BADGE GLOBAL DE MENSAGENS NÃO LIDAS
-// =========================================================
+//BADGE GLOBAL DE MENSAGENS NÃO LIDAS
 function atualizarBadgeHeader(total) {
   const badge = document.getElementById("badgeUnread");
   if (!badge) return;
@@ -236,7 +94,7 @@ function initHeaderSocketModelo() {
     socket.emit("auth", { token });
   });
 
-  // 🔔 qualquer mensagem nova para a modelo
+  // mensagem nova para a modelo
   socket.on("unreadUpdate", ({ modelo_id }) => {
     atualizarUnreadModeloHeader();
   });
@@ -285,16 +143,27 @@ async function atualizarUnreadModeloHeader() {
 
     const unreadIds = await res.json();
 
-    // unreadIds = [cliente_id, cliente_id, ...]
+    // unreadIds 
     atualizarBadgeHeader(unreadIds.length);
   } catch (e) {
     console.warn("Erro ao buscar unread modelo");
   }
 }
+// =========================================================
+// INIT HEADER (ORDEM CORRETA)
+
+document.addEventListener("DOMContentLoaded", async () => {
+  await initUsuario();        // 🔑 garante role atualizado
+  carregarHeader();           // 🔥 carrega menu certo
+
+  atualizarUnreadClienteHeader();
+  atualizarUnreadModeloHeader();
+  initHeaderSocketModelo();
+});
 
 // =========================================================
-// 🏠 LOGO → HOME POR ROLE (delegação global)
-// =========================================================
+// LOGO → HOME POR ROLE
+
 document.addEventListener("click", (e) => {
   const logo = e.target.closest(".logo-app");
   if (!logo) return;
@@ -302,38 +171,52 @@ document.addEventListener("click", (e) => {
   const role = localStorage.getItem("role");
 
   if (role === "modelo") {
-    window.location.href = "/profile.html";
+    window.location.href = "/feed.html";
   } else if (role === "cliente") {
-    window.location.href = "/clientHome.html";
+    window.location.href = "/feed.html";
   } else {
     window.location.href = "/index.html";
   }
 });
 
 // =========================================================
-// 💬 BOTÃO DE MENSAGENS → CHAT POR ROLE
-// =========================================================
+// LOGOUT 
 document.addEventListener("click", (e) => {
-  const btn = e.target.closest("#btnMensagem");
+  const btn = e.target.closest("#btnLogout");
   if (!btn) return;
 
-  const role = localStorage.getItem("role");
+  e.preventDefault();
 
-  if (role === "cliente") {
-    window.location.href = "/chatcliente.html";
-  } else if (role === "modelo") {
-    window.location.href = "/chatmodelo.html";
-  } else {
-    abrirPopupVelvet({ tipo: "login" });
-  }
+  // limpa tudo da sessão
+  localStorage.clear();
+
+  // vai para o index
+  window.location.href = "/index.html";
 });
 
-// =========================================================
-// LOGOUT
-// =========================================================
-function logout() {
-  localStorage.clear();
-  location.href = "index.html";
+
+async function irParaInbox() {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    window.location.href = "/index.html";
+    return;
+  }
+
+  const res = await fetch("/api/me", {
+    headers: {
+      Authorization: "Bearer " + token
+    }
+  });
+
+  if (!res.ok) return;
+
+  const user = await res.json();
+
+  if (user.role === "modelo") {
+    window.location.href = "/inbox.html";
+  } else {
+    window.location.href = "/inboxc.html";
+  }
 }
 
 

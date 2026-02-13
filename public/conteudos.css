@@ -1,289 +1,317 @@
-/* =========================
-   RESET / BASE
-========================= */
+body {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background:#f1f1f1;
+  color: #1E1E26;
+   margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
 * {
   box-sizing: border-box;
-  font-family: "Poppins", sans-serif;
 }
 
 body {
   margin: 0;
-  background: #fff;
+  padding: 24px;
+  font-family: "Poppins", sans-serif;
+  background: #0e0e12;
+  color: #fff;
 }
 
-/* =========================
-   TÍTULOS
-========================= */
-h1.section-title {
-  font-size: 36px;
-  font-weight: 700;
-  color: #7B2CFF;
-  text-align: center;
-  margin-bottom: 10px;
-}
+/* ================= TOPO ================= */
 
-.section-desc {
-  text-align: center;
-  color: #7B2CFF;
-  font-size: 14px;
+.topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 24px;
 }
 
-.section-subtitle {
-  margin-top: 32px;
-  font-size: 20px;
-  color: #7B2CFF;
-  text-align: center;
+.topo h1 {
+  font-size: 22px;
+  font-weight: 600;
 }
 
-/* =========================
-   UPLOAD
-========================= */
-.upload-box {
-  max-width: 1100px;
-  margin: 0 auto 20px;
-  text-align: center;
-}
-
-.file-name {
-  font-size: 13px;
-  margin-left: 10px;
-  color: #7B2CFF;
-}
-
-/* =========================
-   BOTÕES
-========================= */
-.btn-primary,
-.btn-file {
-  background: linear-gradient(135deg, #7B2CFF, #4b1fb8);
-  color: #fff;
-  font-size: 13px;
+.btn-principal {
+  background: linear-gradient(135deg, #7b2cff, #9e6bff);
   border: none;
-  padding: 8px 16px;
-  border-radius: 18px;
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 8px;
   cursor: pointer;
+  font-weight: 500;
 }
 
-.btn-primary:hover,
-.btn-file:hover {
-  opacity: 0.9;
-}
+/* ================= GRID ================= */
 
-/* =========================
-   GRID DE CONTEÚDOS
-   (IGUAL AO PROFILE)
-========================= */
-#listaConteudos {
-  max-width: 1100px;
-  margin: 30px auto;
-  padding: 0 20px;
-
+.grid-conteudos {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
 }
 
-/* =========================
-   CARD PADRÃO
-========================= */
-.midiaCard {
-  position: relative;
-  background: #fff;
-  border-radius: 14px;
+/* ================= CARD ================= */
+
+.card-conteudo {
+  background: #1a1a22;
+  border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
-
-  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s;
 }
 
-.midiaCard:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 28px rgba(123,44,255,0.18);
+.card-conteudo:hover {
+  transform: translateY(-4px);
 }
 
-/* =========================
-   MÍDIA (CHAVE PARA SAFARI)
-========================= */
-.midiaThumb {
+.card-thumb {
   width: 100%;
-  aspect-ratio: 1 / 1;
+  height: 180px;
   object-fit: cover;
   display: block;
-  background: #9E6BFF;
 }
 
-/* =========================
-   BOTÃO EXCLUIR
-========================= */
-.btn-excluir {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: none;
-
-  background: rgba(0, 0, 0, 0.65);
-  color: #fff;
-  font-size: 18px;
-
-  cursor: pointer;
-  opacity: 0;
-  transition: all 0.25s ease;
-  z-index: 2;
+.card-info {
+  padding: 12px;
 }
 
-.midiaCard:hover .btn-excluir {
-  opacity: 1;
-  background: rgba(123, 44, 255, 0.9);
+.card-info h3 {
+  font-size: 15px;
+  margin: 0 0 6px;
 }
 
-.btn-excluir:hover {
-  transform: scale(1.1);
+.card-preco {
+  font-size: 14px;
+  font-weight: 600;
+  color: #9e6bff;
 }
 
-/* =========================
-   MODAL DE MÍDIA
-========================= */
-.modalMidia {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.92);
-  z-index: 9999999;
-
+.modal-viewer {
+  width: 90%;
+  max-width: 720px;
+  max-height: 80vh;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.modalMidia.hidden {
+#viewerConteudo img,
+#viewerConteudo video {
+  max-width: 100%;
+  max-height: 70vh;
+  border-radius: 8px;
+}
+
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+/* ================= MODAL CLARO ================= */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal.hidden {
   display: none;
 }
 
-.modalContentWrapper {
-  max-width: 95vw;
-  max-height: 95vh;
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25); /* leve, não escuro */
+}
+
+/* CAIXA DO MODAL */
+.modal-box {
+  position: relative;
+  z-index: 2;
+
+  width: 420px;
+  max-width: 92%;
+  padding: 30px;
+  border-radius: 22px;
+
+  background: #ffffff;
+  color: #1E1E26;
+
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.15);
+
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.modalMidiaContent {
-  max-width: 95vw;
-  max-height: 95vh;
-  object-fit: contain;
-  border-radius: 12px;
-  background: #000;
-}
-
-/* botão fechar */
-.modalClose {
-  position: fixed;
-  top: 20px;
-  right: 30px;
-  font-size: 34px;
-  color: #fff;
-  cursor: pointer;
-  z-index: 10000000;
-}
-
-/* =========================
-   SEPARADOR
-========================= */
-.separator {
+.btn-principal {
+  background: linear-gradient(135deg, #7b2cff, #9e6bff);
   border: none;
-  border-top: 1px solid #e5e5e5;
-  margin: 30px 0;
+  color: #fff;
+  padding: 12px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
 }
 
-/* =========================
-   MOBILE
-========================= */
-@media (max-width: 768px) {
-
-  h1.section-title {
-    font-size: 24px;
-  }
-
-  .section-desc {
-    font-size: 13px;
-    padding: 0 16px;
-  }
-
-  .section-subtitle {
-    font-size: 16px;
-  }
-
-  #listaConteudos {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 14px;
-  }
-
-  .btn-excluir {
-    opacity: 1;
-    width: 30px;
-    height: 30px;
-    font-size: 16px;
-    top: 8px;
-    right: 8px;
-  }
+.btn-principal:hover {
+  transform: translateY(-2px);
 }
 
-/* =========================
-   MOBILE — CENTRALIZAR UPLOAD
-========================= */
-@media (max-width: 768px) {
-
-  .upload-box {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .upload-box .btn-file,
-  .upload-box .btn-primary {
-    width: 100%;
-    max-width: 260px;
-    text-align: center;
-  }
-
-  .file-name {
-    margin: 0;
-    font-size: 13px;
-    text-align: center;
-    word-break: break-word;
-    max-width: 260px;
-  }
+#btnFecharModal {
+  background: #f1f1f5;
+  border: none;
+  padding: 12px;
+  border-radius: 12px;
+  cursor: pointer;
 }
 
-/* ===============================
-   INDICADOR DE VÍDEO
-   =============================== */
-
-.midiaCard {
+.card-conteudo {
   position: relative;
 }
 
-.midiaCard.video::after {
-  content: "▶";
+.btn-excluir {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 42px;
-  color: white;
-  background: rgba(0, 0, 0, 0.55);
-  width: 64px;
-  height: 64px;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  pointer-events: none; /* não bloqueia clique */
+  z-index: 5;
 }
 
+.btn-excluir:hover {
+  background: rgba(255, 0, 0, 0.8);
+}
+
+.play-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none; /* 👈 não interfere no clique */
+}
+
+.play-overlay span {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===============================
+   BOTÃO VOLTAR
+================================ */
+.btn-voltar {
+  position:relative;
+  left: 30px;
+  border: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.btn-voltar img {
+  width: 30px;
+}
+
+.btn-voltar:hover {
+  transform: scale(1.08);
+}
+
+.btn-novo-conteudo {
+  margin-bottom: 24px;
+}
+
+.lista-conteudos {
+  display: grid;
+  gap: 18px;
+}
+
+.topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px; 
+}
+
+.grid-conteudos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px; 
+  margin-top: 10px; 
+}
+
+.card-thumb {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  display: block;
+  aspect-ratio: 16 / 9; /* 👈 trava proporção */
+}
+
+.card-conteudo {
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+}
+
+.file-upload {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 15px 0;
+}
+
+.btn-file {
+  background: linear-gradient(135deg, #7B2CFF, #9E6BFF);
+  color: white;
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: 0.3s ease;
+}
+
+.btn-file:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+
+#fileName {
+  font-size: 14px;
+  color: #555;
+}

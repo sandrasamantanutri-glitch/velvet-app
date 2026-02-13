@@ -1,37 +1,25 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
+
 <head>
-  <meta charset="UTF-8" />
-  <title>Velvet · Conversas</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="./css/inbox.css" />
-
-  <link rel="icon" href="/favicon.ico" sizes="any" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-
-  <link rel="manifest" href="/manifest.json" />
-  <meta name="theme-color" content="#7B2CFF" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-
+  <meta charset="UTF-8">
+   <title>Conversas</title>
+  <link rel="stylesheet" href="/app/css/inbox.css">
+    <link rel="stylesheet" href="./area.css">
 </head>
 
 <body>
-<div class="page-wrapper">
+ <div id="header-container"></div>
 
-  <header class="topbar">
-    <h1>Conversas</h1>
-    <button class="btn-logout" onclick="logout()" aria-label="Sair">
-      <img src="./assets/logout.png" alt="Sair" />
+ <section class="area-card">
+    <button type="button" class="btn-voltar" onclick="history.back()">
+      <img src="/assets/voltar.png" alt="Voltar">
     </button>
-  </header>
 
-  <!-- 🔥 CONTAINER DE SCROLL -->
+   <h3>Conversas</h3>
+
   <div class="content">
     <main id="inbox" class="inbox"></main>
-  </div>
-</div>
-
       <!-- ITEM DO CHAT -->
       <!--
       Estados esperados (JS controla classes/labels):
@@ -76,39 +64,8 @@
 
   </div>
 
-  <footer class="footer-nav">
-  <a href="#" target="_blank" class="nav-item">
-    <img src="./assets/feed.png" alt="Feed" />
-    <span>Feed</span>
-  </a>
-
-  <a
-    href="https://velvet.lat/modelo/relatorio"
-    target="_blank" rel="noopener noreferrer" class="nav-item"
-  >
-    <img src="./assets/ganhos.png" alt="Ganhos" />
-    <span>Ganhos</span>
-  </a>
-
-  <a
-    href="https://www.velvet.lat/app/inbox.html"
-   target="_blank" rel="noopener noreferrer" class="nav-item active"
-  >
-    <img src="./assets/messages.png" alt="Messages" />
-    <span>Messages</span>
-  </a>
-
-  <a
-    href="https://www.velvet.lat/profile.html"
-    target="_blank" rel="noopener noreferrer" class="nav-item"
-  >
-    <img src="./assets/perfil.png" alt="Perfil" />
-    <span>Perfil</span>
-  </a>
-</footer>
-
-
   <script src="/socket.io/socket.io.js"></script>
-  <script src="./js/inbox.js"></script>
+  <script src="/app/js/inbox.js"></script>
+  <script src="./header.js"></script>
 </body>
 </html>

@@ -112,7 +112,175 @@ function calcularValores({ valor_bruto, taxa_gateway, agency_fee, velvet_fee, st
   };
 }
 
+function podeAlterarDadosBancarios() {
+  const hoje = new Date();
+  const dia = hoje.getDate();
+
+  // bloqueia de 25 até 5
+  if (dia >= 25 || dia <= 5) {
+    return false;
+  }
+
+  return true;
+}
+
 //ROTASSSS POST ///////////////////
+router.post("/api/modelo/dados-bancarios", authModelo, async (req, res) => {
+ if (!(await podeAlterarDadosBancarios(req.user.id))) {
+  return res.status(403).json({
+    error: "Alterações bloqueadas no período de pagamento"
+  });
+}
+
+  const {
+    tipo,
+    pix_tipo,
+    pix_chave,
+    banco,
+    agencia,
+    conta,
+    conta_tipo,
+    titular_nome,
+    titular_documento,
+    confirmado_titular
+  } = req.body;
+
+  if (!confirmado_titular) {
+    return res.status(400).json({
+      error: "Confirmação de titularidade obrigatória"
+    });
+  }
+
+  await db.query(`
+    INSERT INTO modelo_dados_bancarios (
+      modelo_id, tipo,
+      pix_tipo, pix_chave,
+      banco, agencia, conta, conta_tipo,
+      titular_nome, titular_documento,
+      confirmado_titular, status
+    )
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,true,'pendente')
+
+    ON CONFLICT (modelo_id)
+    DO UPDATE SET
+      tipo = EXCLUDED.tipo,
+      pix_tipo = EXCLUDED.pix_tipo,
+      pix_chave = EXCLUDED.pix_chave,
+      banco = EXCLUDED.banco,
+      agencia = EXCLUDED.agencia,
+      conta = EXCLUDED.conta,
+      conta_tipo = EXCLUDED.conta_tipo,
+      titular_nome = EXCLUDED.titular_nome,
+      titular_documento = EXCLUDED.titular_documento,
+      status = 'alteracao_pendente',
+      atualizado_em = NOW()
+  `, [
+    req.user.id,
+    tipo,
+    pix_tipo,
+    pix_chave,
+    banco,
+    agencia,
+    conta,
+    conta_tipo,
+    titular_nome,
+    titular_documento
+  ]);
+
+  res.json({ ok: true });
+});
+
+router.post("/api/modelo/dados-bancarios/alterar", authModelo, async (req, res) => {
+  if (!(await podeAlterarDadosBancarios(req.user.id))) {
+  return res.status(403).json({
+    error: "Alterações bloqueadas no período de pagamento"
+  });
+}
+
+  const {
+    justificativa,
+    tipo,
+    pix_tipo,
+    pix_chave,
+    banco,
+    agencia,
+    conta,
+    conta_tipo,
+    titular_nome,
+    titular_documento
+  } = req.body;
+
+  if (!justificativa) {
+    return res.status(400).json({
+      error: "Justificativa obrigatória"
+    });
+  }
+  await db.query(`
+    UPDATE modelo_dados_bancarios
+    SET
+      tipo = $1,
+      pix_tipo = $2,
+      pix_chave = $3,
+      banco = $4,
+      agencia = $5,
+      conta = $6,
+      conta_tipo = $7,
+      titular_nome = $8,
+      titular_documento = $9,
+      justificativa = $10,
+      status = 'alteracao_pendente',
+      atualizado_em = NOW()
+    WHERE modelo_id = $11
+  `, [
+    tipo,
+    pix_tipo,
+    pix_chave,
+    banco,
+    agencia,
+    conta,
+    conta_tipo,
+    titular_nome,
+    titular_documento,
+    justificativa,
+    req.user.id
+  ]);
+
+  res.json({ ok: true });
+});
+
+router.post(
+  "/api/admin/pagamentos/:id/pagar",
+  authMiddleware,
+  async (req, res) => {
+    const { id } = req.params;
+
+    await db.query(
+      `
+      UPDATE modelo_pagamentos
+      SET
+        status = 'pago',
+        pago_em = NOW()
+      WHERE id = $1
+      `,
+      [id]
+    );
+
+    res.json({ ok: true });
+  }
+);
+
+router.post(
+  "/api/admin/fechar-pagamentos-modelo/:modeloId",
+  authMiddleware,
+  async (req, res) => {
+    const { modeloId } = req.params;
+
+    await db.query(`/* SQL acima */`, [modeloId]);
+
+    res.json({ ok: true });
+  }
+);
+
 router.post("/api/transacoes", authMiddleware, async (req, res) => {
   try {
     const {
@@ -191,8 +359,9 @@ router.post("/api/transacoes/:id/chargeback",
 // ===============================
 // 📣 ALLMESSAGE - ENVIO EM MASSA
 // ===============================
-router.post("/api/allmessage",
-  authMiddleware, // use o MESMO middleware que funcionou antes
+router.post(
+  "/api/allmessage",
+  authMiddleware,
   requireRole("admin", "modelo"),
   async (req, res) => {
     try {
@@ -206,28 +375,26 @@ router.post("/api/allmessage",
 
       const { role, id: user_id } = req.user;
 
-      // 🔒 validações
-      if (!modelo_id || !texto || !preco || !Array.isArray(conteudos)) {
+      // ===============================
+      // 🔒 VALIDAÇÕES BÁSICAS
+      // ===============================
+      if (!modelo_id || !texto) {
         return res.status(400).json({ error: "Dados inválidos" });
       }
 
-      if (conteudos.length === 0) {
-        return res.status(400).json({ error: "Nenhum conteúdo selecionado" });
-      }
+      const temConteudo =
+        Array.isArray(conteudos) && conteudos.length > 0;
+
+      const precoFinal = Number(preco) || 0;
 
       // 🔒 modelo só pode enviar da própria conta
-      if (role === "modelo") {
-        const check = await db.query(
-          `SELECT 1 FROM modelos WHERE id = $1 AND user_id = $2`,
-          [modelo_id, user_id]
-        );
-
-        if (check.rowCount === 0) {
-          return res.status(403).json({ error: "Modelo inválida" });
-        }
+      if (role === "modelo" && Number(modelo_id) !== user_id) {
+        return res.status(403).json({ error: "Modelo inválida" });
       }
 
-      // 🔍 buscar assinantes ativos
+      // ===============================
+      // 🔍 BUSCAR ASSINANTES ATIVOS
+      // ===============================
       let vipQuery = `
         SELECT cliente_id
         FROM vip_subscriptions
@@ -248,74 +415,73 @@ router.post("/api/allmessage",
         });
       }
 
-// 🔁 envio individual
-for (const row of clientesRes.rows) {
-  const cliente_id = row.cliente_id;
+      // ===============================
+      // 🔁 ENVIO INDIVIDUAL
+      // ===============================
+      for (const row of clientesRes.rows) {
+        const cliente_id = row.cliente_id;
 
-  // ===============================
-  // 1️⃣ MENSAGEM DE TEXTO (NORMAL)
-  // ===============================
-  await db.query(
-    `
-    INSERT INTO messages
-      (modelo_id, cliente_id, text, sender, visto, tipo)
-    VALUES
-      ($1,$2,$3,'modelo',false,'texto')
-    `,
-    [modelo_id, cliente_id, texto]
-  );
+        // 1️⃣ MENSAGEM DE TEXTO (SEMPRE)
+        await db.query(
+          `
+          INSERT INTO messages
+            (modelo_id, cliente_id, text, sender, visto, tipo)
+          VALUES
+            ($1, $2, $3, 'modelo', false, 'texto')
+          `,
+          [modelo_id, cliente_id, texto]
+        );
 
-  // ===============================
-  // 2️⃣ MENSAGEM DE CONTEÚDO (PPV)
-  // ===============================
-  const msgRes = await db.query(
-    `
-    INSERT INTO messages
-      (modelo_id, cliente_id, text, sender, preco, visto, tipo)
-    VALUES
-      ($1,$2,'','modelo',$3,false,'conteudo')
-    RETURNING id
-    `,
-    [modelo_id, cliente_id, preco]
-  );
+        // 2️⃣ CONTEÚDO (GRÁTIS OU PAGO)
+        if (temConteudo) {
+          const msgRes = await db.query(
+            `
+            INSERT INTO messages
+              (modelo_id, cliente_id, text, sender, preco, visto, tipo)
+            VALUES
+              ($1, $2, '', 'modelo', $3, false, 'conteudo')
+            RETURNING id
+            `,
+            [modelo_id, cliente_id, precoFinal]
+          );
 
-  const message_id = msgRes.rows[0].id;
+          const message_id = msgRes.rows[0].id;
 
-  // ===============================
-  // 3️⃣ CRIAR PACOTE PPV
-  // ===============================
-  await db.query(
-    `
-    INSERT INTO conteudo_pacotes
-      (cliente_id, modelo_id, preco, valor_total, status, message_id)
-    VALUES
-      ($1,$2,$3,$4,'pendente',$5)
-    `,
-    [
-      cliente_id,
-      modelo_id,
-      preco,
-      preco,
-      message_id
-    ]
-  );
+          // 3️⃣ PACOTE DE CONTEÚDO (preço pode ser 0)
+          await db.query(
+            `
+            INSERT INTO conteudo_pacotes
+              (cliente_id, modelo_id, preco, valor_total, status, message_id)
+            VALUES
+              ($1, $2, $3, $4, 'pendente', $5)
+            `,
+            [
+              cliente_id,
+              modelo_id,
+              precoFinal,
+              precoFinal,
+              message_id
+            ]
+          );
 
-  // ===============================
-  // 4️⃣ VINCULAR CONTEÚDOS
-  // ===============================
-  for (const conteudo_id of conteudos) {
-    await db.query(
-      `
-      INSERT INTO messages_conteudos
-        (message_id, conteudo_id)
-      VALUES
-        ($1,$2)
-      `,
-      [message_id, conteudo_id]
-    );
-  }
-}
+          // 4️⃣ VINCULAR CONTEÚDOS
+          for (const conteudo_id of conteudos) {
+            await db.query(
+              `
+              INSERT INTO messages_conteudos
+                (message_id, conteudo_id)
+              VALUES
+                ($1, $2)
+              `,
+              [message_id, conteudo_id]
+            );
+          }
+        }
+      }
 
+      // ===============================
+      // ✅ RESPOSTA FINAL
+      // ===============================
       res.json({
         ok: true,
         enviados: clientesRes.rowCount,
@@ -340,6 +506,59 @@ router.get("/relatorios",
     );
   }
 );
+
+router.get("/api/transacoes_cliente", authCliente, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const role = req.user.role;
+
+    let vipQuery;
+    let conteudoQuery;
+
+    if (role === "cliente") {
+
+      vipQuery = await db.query(`
+        SELECT
+          id,
+          'assinatura' AS tipo,
+          valor_total AS valor,
+          CASE 
+            WHEN ativo = true THEN 'pago'
+            ELSE 'inativo'
+          END AS status,
+          created_at
+        FROM vip_subscriptions
+        WHERE cliente_id = $1
+      `, [userId]);
+
+      conteudoQuery = await db.query(`
+        SELECT
+          id,
+          'midia' AS tipo,
+          valor_total AS valor,
+          status,
+          criado_em AS created_at
+        FROM conteudo_pacotes
+        WHERE cliente_id = $1
+      `, [userId]);
+
+    } else {
+      return res.status(403).json({ error: "Apenas cliente pode acessar" });
+    }
+
+    const transacoes = [
+      ...vipQuery.rows,
+      ...conteudoQuery.rows
+    ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    res.json(transacoes);
+
+  } catch (err) {
+    console.error("Erro buscar transações cliente:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
 // 🔐 ENDPOINT DE ACESSO AO CONTEÚDO
 router.get("/access", authCliente, async (req, res) => {
   const message_id = Number(req.query.message_id);
@@ -383,52 +602,117 @@ router.get("/access", authCliente, async (req, res) => {
 });
 
 
-router.get("/api/transacoes",
+router.get(
+  "/api/transacoes",
   authMiddleware,
   requireRole("modelo"),
   async (req, res) => {
     try {
       const modelo_id = req.user.id;
 
+      const page = parseInt(req.query.page) || 1;
+      const limit = 10;
+      const offset = (page - 1) * limit;
+
+      // ===============================
+      // QUERY PRINCIPAL (PAGINADA)
+      // ===============================
       const sql = `
-        -- 📦 CONTEÚDOS
-        SELECT
-          cp.id              AS codigo,
-          'conteudo'         AS tipo,
-          cp.criado_em       AS created_at,
-          ROUND(cp.preco * 0.70, 2) AS valor,
-          cp.status          AS status,
-          cp.message_id      AS message_id
-        FROM conteudo_pacotes cp
-        WHERE cp.modelo_id = $1
-          AND cp.status = 'pago'
+        SELECT *
+        FROM (
+          -- 📦 CONTEÚDOS
+          SELECT
+            cp.id              AS codigo,
+            'conteudo'         AS tipo,
+            cp.criado_em       AS created_at,
+            ROUND(cp.preco * 0.70, 2) AS valor,
+            cp.status          AS status,
+            cp.message_id      AS message_id
+          FROM conteudo_pacotes cp
+          WHERE cp.modelo_id = $1
+            AND cp.status = 'pago'
 
-        UNION ALL
+          UNION ALL
 
-        -- ⭐ ASSINATURAS VIP
-        SELECT
-          vs.id              AS codigo,
-          'assinatura'       AS tipo,
-          vs.created_at      AS created_at,
-          ROUND(vs.valor_assinatura * 0.70, 2) AS valor,
-          'ativo'            AS status,
-          NULL               AS message_id
-        FROM vip_subscriptions vs
-        WHERE vs.modelo_id = $1
-          AND vs.ativo = true
-
+          -- ⭐ ASSINATURAS VIP
+          SELECT
+            vs.id              AS codigo,
+            'assinatura'       AS tipo,
+            vs.created_at      AS created_at,
+            ROUND(vs.valor_assinatura * 0.70, 2) AS valor,
+            'ativo'            AS status,
+            NULL               AS message_id
+          FROM vip_subscriptions vs
+          WHERE vs.modelo_id = $1
+            AND vs.ativo = true
+        ) transacoes
         ORDER BY created_at DESC
+        LIMIT $2 OFFSET $3
       `;
 
-      const result = await db.query(sql, [modelo_id]);
-      res.json(result.rows);
+      // ===============================
+      // TOTAL DE REGISTROS
+      // ===============================
+      const countSql = `
+        SELECT COUNT(*) FROM (
+          SELECT 1
+          FROM conteudo_pacotes
+          WHERE modelo_id = $1 AND status = 'pago'
+
+          UNION ALL
+
+          SELECT 1
+          FROM vip_subscriptions
+          WHERE modelo_id = $1 AND ativo = true
+        ) total
+      `;
+
+      const [dados, total] = await Promise.all([
+        db.query(sql, [modelo_id, limit, offset]),
+        db.query(countSql, [modelo_id])
+      ]);
+
+      const totalRegistros = parseInt(total.rows[0].count);
+      const totalPaginas = Math.ceil(totalRegistros / limit);
+
+      res.json({
+        registros: dados.rows,
+        paginaAtual: page,
+        totalPaginas,
+        totalRegistros
+      });
 
     } catch (err) {
       console.error("❌ Erro /api/transacoes:", err);
-      res.status(500).json([]);
+      res.status(500).json({
+        registros: [],
+        paginaAtual: 1,
+        totalPaginas: 1,
+        totalRegistros: 0
+      });
     }
   }
 );
+
+router.get("/api/modelo/pagamentos", authModelo, async (req, res) => {
+  const result = await db.query(
+    `
+    SELECT
+      mes,
+      total_midias,
+      total_assinaturas,
+      total_geral,
+      status,
+      pago_em
+    FROM modelo_pagamentos
+    WHERE modelo_id = $1
+    ORDER BY mes DESC
+    `,
+    [req.user.id]
+  );
+
+  res.json(result.rows);
+});
 
 
 //ROTA DO LINK DE ACESSO A PLATAFORMA(CLIENTES INSTA TIKTOK)
@@ -771,15 +1055,15 @@ router.get("/api/modelo/financeiro", authModelo, async (req, res) => {
   -- 🔹 HOJE
   COALESCE(SUM(CASE
     WHEN tipo = 'conteudo'
-     AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
-         = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+     AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')::date
+         = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')::date
     THEN valor_modelo
   END), 0) AS hoje_midias,
 
   COALESCE(SUM(CASE
     WHEN tipo = 'assinatura'
-     AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
-         = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+     AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')::date
+         = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')::date
     THEN valor_modelo
   END), 0) AS hoje_assinaturas,
   
@@ -868,9 +1152,6 @@ WHERE modelo_id = $1;
 // ===============================
 // 📣 ALLMESSAGE - LISTAR MODELOS
 // ===============================
-// ===============================
-// 📣 ALLMESSAGE - LISTAR MODELOS (CORRIGIDO)
-// ===============================
 router.get(
   "/api/allmessage/modelos",
   authMiddleware,
@@ -910,22 +1191,20 @@ router.get(
 // 📣 ALLMESSAGE - CONTEÚDOS DA MODELO
 // ===============================
 router.get("/api/allmessage/conteudos/:modelo_id",
-  authMiddleware, // ou auth, use o MESMO que funcionou antes
+  authMiddleware,
   requireRole("admin", "modelo"),
   async (req, res) => {
     try {
       const { modelo_id } = req.params;
       const { role, id: user_id } = req.user;
 
-      // 🔒 modelo só pode acessar os próprios conteúdos
       if (role === "modelo") {
         const check = await db.query(
           `SELECT 1 FROM modelos WHERE id = $1 AND user_id = $2`,
           [modelo_id, user_id]
         );
-
         if (check.rowCount === 0) {
-          return res.status(403).json([]);
+          return res.json([]); // ⚠️ sempre array
         }
       }
 
@@ -934,8 +1213,7 @@ router.get("/api/allmessage/conteudos/:modelo_id",
         SELECT
           id,
           url,
-          tipo,
-          thumbnail_url
+          thumbnail_url AS thumbnail
         FROM conteudos
         WHERE user_id = $1
           AND tipo_conteudo = 'venda'
@@ -944,11 +1222,11 @@ router.get("/api/allmessage/conteudos/:modelo_id",
         [modelo_id]
       );
 
-      res.json(result.rows);
+      res.json(result.rows); // ✅ SEMPRE array
 
     } catch (err) {
-      console.error("❌ Erro ALLMESSAGE conteudos:", err.message);
-      res.status(500).json({ error: err.message });
+      console.error("❌ Erro ALLMESSAGE conteudos:", err);
+      res.json([]); // ⚠️ NUNCA retornar objeto
     }
   }
 );
@@ -1205,6 +1483,42 @@ router.get(
     }
   }
 );
+
+router.get("/api/modelo/dados-bancarios", authModelo, async (req, res) => {
+  const result = await db.query(
+    `SELECT * FROM modelo_dados_bancarios WHERE modelo_id = $1`,
+    [req.user.id]
+  );
+
+  res.json(result.rows[0] || null);
+});
+
+router.get("/api/modelo/dados-bancarios", authModelo, async (req, res) => {
+  const result = await db.query(
+    `SELECT * FROM modelo_dados_bancarios WHERE modelo_id = $1`,
+    [req.user.id]
+  );
+
+  res.json(result.rows[0] || null);
+});
+
+router.get("/modelo/conteudos", authMiddleware, authModelo, async (req, res) => {
+  const modelo_id = req.user.id;
+
+  const result = await db.query(
+    `
+    SELECT id, url, thumbnail
+    FROM conteudos
+    WHERE user_id = $1
+    ORDER BY created_at DESC
+    `,
+    [modelo_id]
+  );
+
+  res.json(result.rows);
+});
+
+
 
 
 
