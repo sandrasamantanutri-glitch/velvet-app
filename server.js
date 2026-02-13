@@ -2032,9 +2032,9 @@ app.get(
 
 // 🌍 PERFIL PÚBLICO //*********CHECK******* */
 app.get("/api/modelo/publico/:id", async (req, res) => {
-  const modelo_id = Number(req.params.id);
+  const user_id = Number(req.params.id);
 
-  if (!Number.isInteger(modelo_id) || modelo_id <= 0) {
+  if (!Number.isInteger(user_id) || user_id <= 0) {
     return res.status(400).json({ error: "modelo_id inválido" });
   }
 
