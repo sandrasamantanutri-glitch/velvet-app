@@ -3604,7 +3604,7 @@ app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
       INSERT INTO pagamentos_pix (
         cliente_id,
         modelo_id,
-        valor_total,
+        valor,
         status,
         mp_payment_id
       )
@@ -3612,7 +3612,7 @@ app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
     `, [
       cliente_id,
       modelo_id,
-      valorTotal,
+      valor,
       pagamento.id
     ]);
 
