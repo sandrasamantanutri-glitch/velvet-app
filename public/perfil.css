@@ -286,22 +286,6 @@ body.role-cliente .area-saldos {
   background: rgba(0, 0, 0, 0.65);
 }
 
-.modal-conteudo {
-  position: relative;
-  z-index: 2;
-
-  max-width: 92vw;
-  max-height: 90vh;
-
-  background: #fff;
-  border-radius: 16px;
-  padding: 16px;
-
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
 /* preview da mídia */
 .modal-conteudo img,
 .modal-conteudo video {
@@ -532,6 +516,39 @@ body.role-cliente .area-saldos {
 .btn-fechar-modal:hover {
   background: #7b2cff;
   color: #fff;
+}
+
+/* =====================================
+   MODAIS – RESPONSIVO PORTÁTEIS
+===================================== */
+
+.modal-conteudo,
+.modal .modal-box {
+
+  width: 100%;
+  max-width: 600px;           /* limite ideal para portátil */
+  max-height: 85vh;
+
+  margin: 20px;
+  padding: 24px;
+
+  overflow-y: auto;           /* scroll interno elegante */
+
+  border-radius: 18px;
+
+  animation: modalFade 0.25s ease;
+}
+
+/* animação suave */
+@keyframes modalFade {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 
