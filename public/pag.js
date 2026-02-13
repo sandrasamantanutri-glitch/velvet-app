@@ -193,14 +193,14 @@ function mostrarMetodo(tipo) {
   const cartao = document.getElementById("conteudoCartao");
   if (!pix || !cartao) return;
 
-  // 🔥 MÍDIA → sempre cartão
-  if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
-    pix.classList.add("hidden");
+ if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
+ document.querySelector(".velvet-tabs")?.classList.add("hidden");
+  pix.classList.add("hidden");
     cartao.classList.remove("hidden");
     return;
   }
 
-  // 💎 VIP → Pix ou Cartão
+  document.querySelector(".velvet-tabs")?.classList.remove("hidden");
   pix.classList.toggle("hidden", tipo !== "pix");
   cartao.classList.toggle("hidden", tipo !== "cartao");
 
