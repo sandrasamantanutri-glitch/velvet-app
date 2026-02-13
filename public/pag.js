@@ -547,6 +547,8 @@ async function pagarComCartao({ tipo, modelo_id }) {
     }
 
     elements = stripe.elements({ clientSecret: clientSecretAtual });
+    const cardEl = document.getElementById("card-element");
+    cardEl.innerHTML = ""; 
     cardElement = elements.create("payment");
     cardElement.mount("#card-element");
 
