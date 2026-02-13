@@ -242,25 +242,21 @@ body.role-cliente .area-saldos {
 }
 
 
-
-
 .btnExcluirMidia {
   position: absolute;
   top: 6px;
   right: 6px;
 
-  width: 30px;
-  height: 30px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
 
   border: none;
   background: linear-gradient(135deg, #9e6bff, #7b2cff);
   color: #fff;
-
   font-size: 18px;
   font-weight: 600;
   cursor: pointer;
-
   display: flex;
   align-items: center;
   justify-content: center;
@@ -373,8 +369,7 @@ body.role-cliente .area-saldos {
 }
 
 .midiaCard {
-  display: flex;
-  flex-direction: column;
+  position: relative; /* 🔥 obrigatório */
 }
 
 .midiaWrapper {
