@@ -475,6 +475,8 @@ async function carregarOfertaAtiva() {
       desconto_percentual: Number(oferta.desconto_percentual || 0)
     };
 
+    window.OFERTA_ATUAL = OFERTA_ATUAL;
+    
     // badge de desconto
     if (descontoEl && OFERTA_ATUAL.desconto_percentual > 0) {
       descontoEl.textContent =
