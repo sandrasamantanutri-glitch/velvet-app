@@ -64,9 +64,21 @@ function abrirPopupPagamento() {
   //MÍDIA → SÓ CARTÃO
 if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
 
-  document.querySelector(".velvet-tabs")?.classList.add("hidden");
-  document.getElementById("conteudoPix")?.classList.add("hidden");
-  document.getElementById("conteudoCartao")?.classList.remove("hidden");
+  // 🔥 ESCONDE COMPLETAMENTE O BLOCO DE MÉTODOS
+  const tabsContainer = document.querySelector(".velvet-tabs");
+  if (tabsContainer) {
+    tabsContainer.style.display = "none";
+  }
+
+  // 🔥 GARANTE QUE PIX NUNCA APAREÇA
+  const pix = document.getElementById("conteudoPix");
+  if (pix) pix.style.display = "none";
+
+  // 🔥 MOSTRA CARTÃO
+  const cartao = document.getElementById("conteudoCartao");
+  if (cartao) cartao.style.display = "block";
+
+  // 🔥 Detalhes
   document.querySelector(".vip-detalhes")?.classList.add("hidden");
   document.querySelector(".midia-detalhes")?.classList.remove("hidden");
 
@@ -74,15 +86,15 @@ if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
   return;
 }
 
-  //  VIP → PIX (default) + CARTÃO
-  // VIP
-document.querySelector(".velvet-tabs")?.classList.remove("hidden");
+//vip
 
-document.getElementById("conteudoPix")?.classList.remove("hidden");
-document.getElementById("conteudoCartao")?.classList.add("hidden");
+const tabsContainer = document.querySelector(".velvet-tabs");
+if (tabsContainer) {
+  tabsContainer.style.display = "flex";
+}
 
-document.querySelector(".midia-detalhes")?.classList.add("hidden");
-document.querySelector(".vip-detalhes")?.classList.remove("hidden");
+document.getElementById("conteudoPix").style.display = "block";
+document.getElementById("conteudoCartao").style.display = "none";
 
 prepararPagamento();
   //Pix automático para VIP
