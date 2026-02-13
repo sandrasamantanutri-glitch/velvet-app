@@ -2849,7 +2849,7 @@ app.put("/api/usuario/dados", auth, async (req, res) => {
       SELECT status
       FROM modelos_verificacao
       WHERE modelo_id = $1
-      ORDER BY created_at DESC
+      ORDER BY criado_em_at DESC
       LIMIT 1
     `, [userId]);
 
