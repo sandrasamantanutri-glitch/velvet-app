@@ -900,10 +900,10 @@ if (deveBloquear) {
     return;
   }
 
-   if (!role) {
-      exigirCadastro("Crie sua conta para acessar conteúdos exclusivos");
-      return;
-    }
+  if (!token) {
+  abrirPopupLoginObrigatorio();
+  return;
+}
 
     window.PAGAMENTO_TIPO_ATUAL = "midia";
     window.MODELO_ID_ATUAL = modelo_id;
