@@ -2060,10 +2060,10 @@ app.get("/api/modelo/publico/:id", async (req, res) => {
 ) v ON true
 LEFT JOIN modelos_dados md
   ON md.user_id = m.user_id
-WHERE m.id = $1
+WHERE m.user_id = $1
   AND v.status = 'aprovado'
 LIMIT 1;
-    `, [modelo_id]);
+    `, [user_id]);
 
     if (!result.rows.length) {
       return res.status(403).json({

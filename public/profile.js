@@ -950,8 +950,6 @@ if (deveBloquear) {
   abrirModalMidia(url, isVideo);
 };
 
-
-  // EXCLUIR (MODELO)
  // EXCLUIR (APENAS DONA DO PERFIL)
 if (donaDoPerfil) {
   const btnExcluir = document.createElement("button");
