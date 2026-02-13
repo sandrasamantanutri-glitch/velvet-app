@@ -29,17 +29,13 @@
 
       <div class="login-box">
         <button class="btn btn-Login" onclick="selectRole()">
-          ENTRAR
+          Faça seu Login
         </button>
 
         <button class="btn btn-cadastro" onclick="startRegister()">
-          Criar Conta
+          Cadastre-se
         </button>
       </div>
-
-       <div class="footer-linksC">
-        <a href="#" onclick="openForgot(); return false;">Esqueci minha senha</a><br>
-        </div>
 
       <div class="footer-links">
         <a href="contato.html">Contato</a>
@@ -47,13 +43,17 @@
         <a href="#" onclick="openLegalModal(event, '/policies.html')">Políticas de Utilização</a>
         <a href="#" onclick="openLegalModal(event, '/privacy.html')">Políticas de Privacidade</a>
       </div>
+
+      <div class="footer-linksC">
+        <a href="#" onclick="startRegister()">Criar conta</a><br>
+        <a href="#" onclick="openForgot(); return false;">Esqueci minha senha</a><br>
+        <a href="/app/" style="color:#dbcafa;"> 🟣APP click</a>
+        </div>
     
     </div> <!-- landing-login -->
-
+    </div> <!-- landing -->
   </div>
- </div>
-
-   <!-- MODAL ESQUECI SENHA -->
+  <!-- MODAL ESQUECI SENHA -->
 <div id="forgotModal" class="modal hidden">
   <div class="modal-overlay" onclick="closeForgotModal()"></div>
 
@@ -106,15 +106,6 @@
   </div>
 </div>
 
- <!-- MODAL LEGAL -->
- <div id="legalModal" class="modal hidden">
-  <div class="modal-overlay" onclick="closeLegalModal()"></div>
-  <div class="modal-box">
-    <button class="legal-close" onclick="closeLegalModal()">×</button>
-    <iframe id="modalFrame"></iframe>
-  </div>
- </div>
-
 <!-- LOGIN / REGISTER MODAL -->
 <div id="loginModal" class="modal hidden">
   <div class="modal-overlay" onclick="closeLoginModal()"></div>
@@ -122,57 +113,39 @@
   <div class="modal-box">
     <h2 id="modalTitle">Entrar</h2>
 
-    <!-- CAMPOS COMUNS -->
-    <label for="loginEmail">Email</label>
     <input id="loginEmail" type="email" placeholder="Email">
-
-    <label for="loginSenha">Senha</label>
     <input id="loginSenha" type="password" placeholder="Senha">
 
-    <!-- REGISTRO -->
-    <div class="field hidden" id="fieldSenha">
-      <label for="registerSenhaConfirm">Repita a sua senha</label>
-      <input id="registerSenhaConfirm" type="password">
-    </div>
-
-    <div class="field hidden" id="fieldNome">
-      <label for="registerNome">Nome Completo</label>
-      <input id="registerNome" type="text">
-    </div>
-
-    <div class="field hidden" id="fieldNascimento">
-      <label for="registerNascimento">Data de Nascimento</label>
-      <input id="registerNascimento" type="date">
-    </div>
-
-    <div class="field hidden" id="fieldPerfil">
-      <select id="registerRole">
-        <option value="cliente">Quero ser membro</option>
-        <option value="modelo">Quero criar conteúdo</option>
-      </select>
-    </div>
-
-    <!-- TEXTO LEGAL -->
-    <p id="registerLegal" class="field hidden">
-      Ao criar meu registro, declaro ter mais de
-      <strong>18 anos</strong> e estar de acordo com os
-      <a href="/terms.html" target="_blank">Termos e Condições de Uso</a>.
-    </p>
+    <select id="registerRole" class="hidden">
+      <option value="">Escolha o tipo de conta</option>
+      <option value="cliente">Quero ser Membro</option>
+      <option value="modelo">Quero criar Conteúdo</option>
+    </select>
 
     <button id="modalSubmit" class="btn btn-primary">
       Entrar
     </button>
 
+    <p class="modal-switch">
+      Não tem conta?
+      <span onclick="startRegister()">Criar conta</span>
+    </p>
+
     <p class="modal-switch hidden" id="switchToLogin">
       Já tem conta?
       <span onclick="switchToLogin()">Entrar</span>
     </p>
-    <p class="modal-switch hidden" id="switchToLogin">
-      Não tem conta??
-      <span onclick="startRegister()">Criar conta</span>
-    </p>
 
     <button class="modal-close" onclick="closeLoginModal()">✕</button>
+  </div>
+</div>
+
+<!-- MODAL LEGAL -->
+<div id="legalModal" class="legal-modal hidden">
+  <div class="legal-overlay" onclick="closeLegalModal()"></div>
+  <div class="legal-box">
+    <button class="legal-close" onclick="closeLegalModal()">×</button>
+    <iframe id="modalFrame"></iframe>
   </div>
 </div>
 
@@ -199,6 +172,8 @@
     </div>
   </div>
 </div>
+
+<!-- tracking origem -->
 <script>
   const params = new URLSearchParams(window.location.search);
 
@@ -212,15 +187,13 @@
     fetch("/api/track-acesso", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ref,
-        src,
-        page: "index" 
-      })
-    }).catch(() => {});
+      body: JSON.stringify({ ref, src })
+    });
   }
 </script>
 
-<script src="/script.js"></script>
+
+<!-- SCRIPT -->
+<script src="script.js" defer></script>
 </body>
 </html>

@@ -1,56 +1,232 @@
-#header-container {
-  min-height: 64px;
-}
+:root {
+  --font-primary: "Poppins", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, Arial, sans-serif;
 
+  /* Pesos */
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  /* Tamanhos */
+  --fs-h1: 44px;
+  --fs-h2: 32px;
+  --fs-body: 16px;
+}
 body {
-  font-family: 'Poppins', system-ui, sans-serif;
-  background: #f1f1f1;
-  color: #1E1E26;
+    margin: 0;
+    padding-top: 64px; /* espaço para o header fixo */
+    background: #fff;
 }
 
-.area-card {
-  max-width: 1100px;
-  margin: 90px auto 30px;
-  background: #fff;
-  border-radius: 18px;
-  overflow: hidden;
-  box-shadow: linear-gradient(135deg, #9e6bff, #7b2cff);
+.app-header {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+
+    width: 100% !important;
+    height: 64px !important;
+
+    background: linear-gradient(
+        to right,
+        #ffffff 0%,
+        #f2eaff 35%,
+        #7B2CFF 100%
+    ) !important;
+
+    display: flex !important;
+    align-items: center !important;
+
+    z-index: 100000 !important; /* 🔥 MAIOR POSSÍVEL */
+    isolation: isolate;             /* 🔒 cria novo stacking context */
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+}
+
+.logo-app {
+    height: 120px !important;     /* cabe dentro do header */
+    max-height: 120px;
+    pointer-events: auto; 
+    cursor: pointer;
+}
+
+
+/* ============================================
+   MENU SUPERIOR (IGUAL AO DA MODELO)
+============================================ */
+
+.menu-superior {
+    position: absolute;
+    top: 64px;
+    right: 0;
+    width: 220px;
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.18);
+    overflow: hidden;
+    z-index: 9999;
+    padding: 0;
+
+    /* 🔥 ISSO ESCONDE O TEXTO */
+    display: none;
+}
+
+.menu-superior.open {
+    display: block;
+}
+
+/* ===============================
+   BOTÕES DO MENU
+================================ */
+
+.menu-superior button {
+    background: #ffffff;
+    color: #3a2064;
+    border: none;
+    width: 100%;
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s ease, padding-left 0.2s ease;
+}
+
+/* hover */
+.menu-superior button:hover {
+    background: #f2eaff;
+    padding-left: 20px;
+}
+
+/* botão sair */
+.logout-btn {
+    color: #c0392b;
+    font-weight: 600;
+}
+
+.logout-btn:hover {
+    background: #fdeaea;
+}
+
+
+/* HEADER DO MENU */
+.menu-header {
+    background: linear-gradient(135deg, #7B2CFF, #9E6BFF);
+    color: #ffffff;
+    padding: 14px 18px;
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
+}
+
+
+/* DIVISOR */
+.menu-divider {
+    border: none;
+    border-top: 1px solid #ece6ff;
+    margin: 6px 0;
+}
+
+
+/* BOTÃO ☰ */
+.menu-btn {
+    background: none;
+    border: none;
+    color: #FFFFFF;
+    font-size: 26px;
+    cursor: pointer;
+}
+
+
+/* POSIÇÃO DO BOTÃO */
+.profile-menu-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* ESTRUTURA INTERNA DO HEADER */
+.header-inner {
+    width: 100%;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    position: relative;
+}
+
+/* GARANTE QUE O HEADER É A REFERÊNCIA */
+.app-header {
+    position: fixed;
+}
+
+/* BOTÕES VISÍVEIS */
+.icone-mensagem img {
+    width: 26px;
+    height: 26px;
+    display: block;
+}
+
+/* ===============================
+   BOTÃO CHAT – CORRETO E LIMPO
+================================ */
+
+#btnMensagem {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ÍCONE DO CHAT */
+#btnMensagem img {
+    width: 18px;
+    height: 18px;
+    display: block;
+}
+
+/* HOVER SUAVE */
+#btnMensagem:hover {
+    opacity: 0.8;
+}
+
+/*CHAT AUTENTIC */
+.btn-chat {
   position: relative;
 }
 
-
-.app-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 64px;
-  background: #f1f1f1;
-  border-bottom: 1px solid #eee;
-  z-index: 1000;
+.btn-chat {
+  position: relative;
 }
 
-.header-inner {
-  max-width: 1100px;
-  height: 100%;
-  margin: 0 auto;
-  padding: 0 16px;
+#badgeUnread {
+  position: absolute;
+  top: 20px;
+  right: 50px;
+
+  min-width: 8px;
+  height: 8px;
+  padding: 0 6px;
+
+  color: #ffffff;            /* 🔤 número branco */
+
+  font-size: 10px;
+  font-weight: 600;
+
+  border-radius: 999px;
   display: flex;
   align-items: center;
-  gap: 30px;
+  justify-content: center;
+
+  z-index: 20;
 }
 
-.velvet-logo {
-  height: 40px !Important;
-  margin-right: auto;
+.hidden {
+  display: none;
 }
-
-.header-inner img {
-  height: 30px;
-}
-
-body {
-  visibility: visible;
-}
-
 

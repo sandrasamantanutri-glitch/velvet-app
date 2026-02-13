@@ -1,91 +1,23 @@
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
-
-:root {
-  --font-primary: "Poppins", system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, Arial, sans-serif;
+/* ===============================
+   BASE
+================================ */
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  font-family: 'Inter', sans-serif;
-  background: #f1f1f1;
+  font-family: "Poppins", system-ui, -apple-system, BlinkMacSystemFont;
+  background: #E1E1E1;
   color: #7B2CFF;
 }
 
-.hero {
-  position: sticky;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 90px;           
-  padding: 0 16px;       
-  box-sizing: border-box;
+.page-wrapper {
+  max-width: 100%;
+  min-height: 100vh;
 }
 
-.velvet-logo {
-  max-height: 180px;   
-  width: auto;
-  display: flex;
-  align-items: center;
-}
 
-.velvet-logo {
-  transform: translateY(-1px);
-}
-
-.hero-icons {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
-
-.hero-icons img {
-  width: 26px;
-  height: 26px;
-}
-
-.hero-icons img:hover {
-  opacity: 1;
-}
-
-@media (max-width: 600px) {
-  .hero {
-    height: 90px;
-    padding: 0 12px;
-  }
-
-  .velvet-logo {
-    width: 150px;
-    height: 150px;
-  }
-
-  .hero-icons img {
-    width: 22px;
-    height: 22px;
-  }
-}
-
-/* ===============================
-   SEPARADORES UNIFICADOS (FORÇA)
-================================ */
-.chat-header {
-  border-bottom: 1px solid #C9C9C9 !important;
-}
-
-.chat-input {
-  border-top: 1px solid #C9C9C9 !important;
-}
-
-#msgInput {
-    flex: 1;
-    height: 36px;
-    padding: 0 14px;
-    border-radius: 14px;
-    background: #fff !important;
-    border: 1px solid #C9C9C9 !important;
-    font-size: 13px;
-    line-height: normal;
-}
 /* ===============================
    INBOX
 ================================ */
@@ -160,7 +92,7 @@ body {
 
 .chat-time {
   font-size: 12px;
-  color: #C9C9C9;
+  color: #9A9AA5;
   white-space: nowrap;
 }
 
@@ -177,7 +109,7 @@ body {
 .chat-last {
   flex: 1;
   font-size: 13px;
-  color: #5a5a64;
+  color: #6A6A75;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -196,7 +128,7 @@ body {
 /* ✓ enviado */
 .status-sent {
   font-size: 14px;
-  color: #C9C9C9;
+  color: #9A9AA5;
   font-weight: 600;
 }
 
@@ -229,11 +161,238 @@ body {
   white-space: nowrap;
 }
 
+
+/* ===============================
+   FOOTER NAV
+================================ */
+.footer-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+
+  height: 64px;
+  background: #E1E1E1;
+  border-top: 1px solid #C9C9C9;
+
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+
+  z-index: 10;
+}
+
+.footer-nav .nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+
+  font-size: 11px;
+  color: #7B2CFF;
+  text-decoration: none;
+}
+
+.footer-nav .nav-item img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  opacity: 0.7;
+}
+
+.footer-nav .nav-item.active img {
+  opacity: 1;
+}
+
+
+.footer-nav .nav-item.active {
+  color: #7B2CFF;
+  font-weight: 600;
+}
+
+
 /* espaço extra para não cobrir a lista */
 .inbox {
   padding-bottom: 72px;
 }
 
+/* ===============================
+   PWA FULLSCREEN SAFE AREA
+================================ */
+
+/* garante altura correta em fullscreen */
+html, body {
+  height: 100%;
+}
+
+/* evita corte em notch / gesture bar */
+.footer-nav {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* espaço extra no conteúdo para o footer */
+.inbox {
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
+}
+
+/* iOS standalone */
+@supports (-webkit-touch-callout: none) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* feedback de toque (app feel) */
+.btn-logout:active {
+  transform: scale(0.92);
+}
+
+/* ===============================
+   CONTEÚDO ABAIXO DO HEADER
+================================ */
+
 .inbox {
   padding-top: 8px;
 }
+
+/* ===============================
+   HEADER – APP / PWA FINAL
+================================ */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+
+  height: 56px;
+  background: #E1E1E1;              /* igual footer */
+  border-bottom: 1px solid #C9C9C9;
+
+  display: flex;
+  align-items: center;
+
+  padding: 0 16px;
+  padding-top: env(safe-area-inset-top);
+
+  box-sizing: border-box;
+}
+
+/* iOS notch */
+@supports (-webkit-touch-callout: none) {
+  .topbar {
+    height: calc(56px + env(safe-area-inset-top));
+  }
+}
+
+/* botão sair */
+.btn-logout {
+  background: transparent;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-logout img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  opacity: 0.9;
+}
+
+.btn-logout:active {
+  transform: scale(0.92);
+}
+
+/* ===============================
+   LAYOUT BASE (APP)
+================================ */
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden; /* 🔒 trava o body */
+}
+
+.page-wrapper {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #E1E1E1;
+}
+
+/* ===============================
+   HEADER FIXO
+================================ */
+.topbar {
+  flex-shrink: 0;
+
+  position: sticky;
+  top: 0;
+  z-index: 20;
+
+  height: 56px;
+  background: #E1E1E1;
+  border-bottom: 1px solid #C9C9C9;
+
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  padding-top: env(safe-area-inset-top);
+}
+
+@supports (-webkit-touch-callout: none) {
+  .topbar {
+    height: calc(56px + env(safe-area-inset-top));
+  }
+}
+
+.topbar h1 {
+  flex: 1;
+  margin: 0;
+  font-size: 24px;      /* 🔥 tamanho de título */
+  font-weight: 700;     /* mais presença */
+  font-weight: 600;
+  color: #7B2CFF;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* ===============================
+   FOOTER FIXO
+================================ */
+.footer-nav {
+  flex-shrink: 0;
+
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+
+  height: 64px;
+  background: #E1E1E1;
+  border-top: 1px solid #C9C9C9;
+
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ===============================
+   CONTEÚDO SCROLLÁVEL
+================================ */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #fff; /* 🔥 fundo branco do inbox */
+}
+
+.inbox {
+  padding-bottom: 8px; /* espaço interno */
+}
+

@@ -1,48 +1,26 @@
 // ===============================
-// INDEX — VELVET
-window.token = localStorage.getItem("token");
+// INDEX — SCRIPT LIMPO (VELVET)
+// ===============================
 
-const ESTA_NO_INDEX =
-  window.location.pathname === "/" ||
-  window.location.pathname.includes("index");
+// 🔁 REDIRECIONAMENTO SE LOGADO
+const token = localStorage.getItem("token");
+const role  = localStorage.getItem("role");
 
-// apenas valida sessão
-if (ESTA_NO_INDEX && token) {
-  fetch("/api/me", {
-    headers: { Authorization: "Bearer " + token }
-  })
-    .then(res => {
-      if (!res.ok) {
-        // token inválido → limpa e segue como visitante
-        localStorage.clear();
-      }
-    })
-    .catch(() => {
-      localStorage.clear();
-    });
+if (token && role) {
+  window.location.href =
+    role === "modelo" ? "/profile.html" : "/clientHome.html";
 }
-
-const refModelo = localStorage.getItem("ref_modelo");
-const srcOrigem = localStorage.getItem("origem_trafego");
 
 // ===============================
 // ESTADO GLOBAL
-
+// ===============================
 let modalMode = "login"; 
 let pendingAction = null; 
 
 // ===============================
 // AGE GATE
-window.openAgeGate = function (action) {
-
-  // 🔥 LOGIN NÃO PASSA PELO AGE GATE
-  if (action === "login") {
-    closeAllModals();
-    document.getElementById("loginModal")?.classList.remove("hidden");
-    return;
-  }
-
-  // 🔐 REGISTRO PASSA PELO AGE GATE
+// ===============================
+function openAgeGate(action) {
   pendingAction = action;
 
   const confirmed = localStorage.getItem("ageConfirmed");
@@ -53,8 +31,7 @@ window.openAgeGate = function (action) {
 
   closeAllModals();
   document.getElementById("ageModal")?.classList.remove("hidden");
-};
-
+}
 
 function confirmAge(isAdult) {
   if (!isAdult) {
@@ -86,17 +63,18 @@ function proceedAfterAge() {
 function closeAllModals() {
   document.getElementById("loginModal")?.classList.add("hidden");
   document.getElementById("legalModal")?.classList.add("hidden");
+  document.getElementById("ageModal")?.classList.add("hidden");
 }
 
 
 // ===============================
-// LOGIN / REGISTER
+// MODAL LOGIN / REGISTER
+// ===============================
 window.selectRole = function () {
   openLoginModal();
 };
 
 window.startRegister = function () {
-  localStorage.removeItem("ageConfirmed");
   openAgeGate("register");
 };
 
@@ -112,7 +90,6 @@ window.closeLoginModal = function () {
 
 function setRegisterMode() {
   modalMode = "register";
-  localStorage.removeItem("ageConfirmed");
   updateModal();
 }
 
@@ -124,39 +101,22 @@ window.switchToLogin = function () {
 function updateModal() {
   const title = document.getElementById("modalTitle");
   const submit = document.getElementById("modalSubmit");
+  const roleSelect = document.getElementById("registerRole");
   const switchLogin = document.getElementById("switchToLogin");
   const switchRegister = document.querySelector(".modal-switch");
-
-  const registerFields = [
-    "fieldSenha",
-    "fieldNome",
-    "fieldNascimento",
-    "fieldPerfil"
-  ];
 
   if (modalMode === "login") {
     title.textContent = "Entrar";
     submit.textContent = "Entrar";
     submit.onclick = login;
-
-    // 🔒 esconder TODOS os campos de registo
-    registerFields.forEach(id =>
-      document.getElementById(id)?.classList.add("hidden")
-    );
-
+    roleSelect.classList.add("hidden");
     switchRegister.classList.remove("hidden");
     switchLogin.classList.add("hidden");
-
   } else {
     title.textContent = "Criar Conta";
     submit.textContent = "Criar conta";
     submit.onclick = register;
-
-    // 🔓 mostrar TODOS os campos de registo
-    registerFields.forEach(id =>
-      document.getElementById(id)?.classList.remove("hidden")
-    );
-
+    roleSelect.classList.remove("hidden");
     switchRegister.classList.add("hidden");
     switchLogin.classList.remove("hidden");
   }
@@ -164,11 +124,11 @@ function updateModal() {
 
 // ===============================
 // LOGIN
+// ===============================
 async function login() {
   const email = loginEmail.value.trim();
   const senha = loginSenha.value.trim();
 
-  // validação básica
   if (!email || !senha) {
     alert("Preencha email e senha");
     return;
@@ -181,43 +141,55 @@ async function login() {
   });
 
   const data = await res.json();
-
-  if (!res.ok) {
-    alert(data.erro || "Login e/ou senha inválidos");
-    return;
-  }
+  if (!res.ok) return alert(data.erro);
 
   localStorage.setItem("token", data.token);
   localStorage.setItem("role", data.role);
-  localStorage.setItem("ageConfirmed", "true");
 
-  window.location.href = "/feed.html";
+  if (data.role === "modelo") {
+  window.location.href = "/profile.html";
+  return;
+}
+// 🔥 CLIENTE
+const ref = localStorage.getItem("ref_modelo");
+
+if (ref) {
+  // simula clique no feed
+  localStorage.setItem("modelo_id", ref);
+  localStorage.removeItem("ref_modelo");
+
+  window.location.href = "/profile.html";
+} else {
+  window.location.href = "/clientHome.html";
 }
 
+}
 // ===============================
 // REGISTER
+// ===============================
+
+function emailValido(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 async function register() {
   const email = loginEmail.value.trim();
   const senha = loginSenha.value.trim();
-  const senhaConfirm = registerSenhaConfirm.value.trim();
-  const role = registerRole.value;
-  const nome = registerNome.value.trim();
-  const nascimento = registerNascimento.value;
+  const role  = registerRole.value;
 
-  if (senha !== senhaConfirm) {
-    alert("As senhas não coincidem");
-    return;
-  }
-
-  if (senha.length < 6) {
-    alert("A senha deve ter pelo menos 6 caracteres");
-    return;
-  }
-
-  if (!email || !senha || !senhaConfirm || !role || !nome || !nascimento) {
+  if (!email || !senha || !role) {
     alert("Preencha todos os campos");
     return;
   }
+
+  if (!emailValido(email)) {
+    alert("Email inválido");
+    return;
+  }
+
+  // 🔹 PEGA A ORIGEM DO CLIENTE (já salva no index.html)
+  const ref = localStorage.getItem("ref_modelo");
+  const src = localStorage.getItem("origem_trafego");
 
   const res = await fetch("/api/register", {
     method: "POST",
@@ -226,34 +198,24 @@ async function register() {
       email,
       senha,
       role,
-      nome,
-      nome_completo: nome,
-      data_nascimento: nascimento,
-      ageConfirmed: true
+      nome: email.split("@")[0],
+      ageConfirmed: true,
+
+      ref,   // modelo que trouxe
+      src    // instagram / tiktok
     })
   });
 
   const data = await res.json();
+  if (!res.ok) return alert(data.erro);
 
-  if (!res.ok) {
-    alert(data.erro || "Erro ao criar conta");
-    return;
-  }
-
-  localStorage.setItem("token", data.token);
-  localStorage.setItem("role", data.role);
-  localStorage.setItem("ageConfirmed", "true");
-
-  if (data.cliente_id) {
-    localStorage.setItem("cliente_id", data.cliente_id);
-  }
-
-  window.location.href = "/feed.html";
+  alert("Conta criada com sucesso! Faça login.");
+  switchToLogin();
 }
-
 
 // ===============================
 // MODAL LEGAL (TERMOS / POLÍTICAS)
+// ===============================
 window.openLegalModal = function (event, url) {
   event.preventDefault();
 
@@ -284,11 +246,14 @@ window.closeLegalModal = function () {
 window.logout = function () {
   localStorage.removeItem("token");
   localStorage.removeItem("role");
-  window.location.href = "/index.html";
+  localStorage.removeItem("ageConfirmed"); 
+  window.location.href = "https://www.velvet.lat";
 };
 
 // ===============================
 // ESQUECI MINHA SENHA – MODAL
+// ===============================
+
 function openForgot() {
   closeAllModals();
   document.getElementById("forgotModal").classList.remove("hidden");
@@ -300,6 +265,7 @@ function closeForgotModal() {
   document.getElementById("forgotModal").classList.add("hidden");
 }
 
+// 1️⃣ envia código
 async function sendResetCode() {
   const email = document.getElementById("forgotEmail").value.trim();
   if (!email) {
@@ -312,12 +278,15 @@ async function sendResetCode() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email })
   });
-
+   // mostra aviso de spam
   document.getElementById("forgotSpamHint").classList.remove("hidden");
+
+  // troca step
   document.getElementById("forgotStepEmail").classList.add("hidden");
   document.getElementById("forgotStepCode").classList.remove("hidden");
 }
 
+// 2️⃣ confirma código + nova senha
 async function confirmReset() {
   const email = document.getElementById("forgotEmail").value.trim();
   const codigo = document.getElementById("forgotCode").value.trim();

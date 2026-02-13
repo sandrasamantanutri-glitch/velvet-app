@@ -105,6 +105,89 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 });
 
+function gerarLinks(modelo_id) {
+  const base = `https://www.velvet.lat/modelo/${modelo_id}`;
+
+  document.getElementById("linkInstagram").value =
+    `${base}?src=instagram`;
+
+  document.getElementById("linkTiktok").value =
+    `${base}?src=tiktok`;
+
+  document.getElementById("linkDireto").value =
+    base;
+}
+
+function copiarLink(id) {
+  const input = document.getElementById(id);
+  input.select();
+  input.setSelectionRange(0, 99999);
+  document.execCommand("copy");
+  alert("Link copiado!");
+}
+
+async function confirmarExclusaoConta() {
+  const token = localStorage.getItem("token");
+  const senha = document.getElementById("senhaConfirmacao").value;
+  const erro = document.getElementById("erroExclusao");
+
+  erro.classList.add("hidden");
+
+  if (!senha || senha.length < 4) {
+    erro.textContent = "Digite sua senha para continuar.";
+    erro.classList.remove("hidden");
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/conta/excluir", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token
+      },
+      body: JSON.stringify({ senha })
+    });
+
+    if (res.ok) {
+   localStorage.clear();
+   window.location.href = "/index.html";
+    } else {
+   const data = await res.json().catch(() => ({}));
+
+   erro.textContent =
+    data.error || "Erro interno ao excluir conta.";
+   erro.classList.remove("hidden");
+  }
 
 
-a
+  } catch (err) {
+    erro.textContent = "Erro de conexão.";
+    erro.classList.remove("hidden");
+  }
+}
+
+function abrirConfirmacaoExclusao() {
+  const modal = document.getElementById("modalExcluirConta");
+  if (modal) {
+    modal.classList.remove("hidden");
+  }
+}
+
+function fecharModalExclusao() {
+  const modal = document.getElementById("modalExcluirConta");
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+
+  // limpa campo e erro ao fechar
+  const senhaInput = document.getElementById("senhaConfirmacao");
+  const erro = document.getElementById("erroExclusao");
+
+  if (senhaInput) senhaInput.value = "";
+  if (erro) erro.classList.add("hidden");
+}
+
+
+
+
