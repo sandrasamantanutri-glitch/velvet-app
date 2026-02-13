@@ -225,13 +225,6 @@ function mostrarMetodo(tipo) {
       );
     });
 
-  if (tipo === "cartao") {
-    pagarComCartao({
-      tipo: "vip",
-      modelo_id: window.MODELO_ID_ATUAL
-    });
-  }
-
   if (tipo === "pix") {
     pagarComPix({
       tipo: "vip",
