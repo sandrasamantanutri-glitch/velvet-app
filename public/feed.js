@@ -54,11 +54,11 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
 
         card.onclick = () => {
-          const id = modelo.id ?? modelo.user_id;
+          const id = modelo.user_id;
           if (!id) return;
 
-          localStorage.setItem("modelo_id", id);
-          window.location.href = `perfil.html?id=${id}`;
+          localStorage.setItem("modelo_id",  modelo.user_id);
+          window.location.href = `perfil.html?id=${modelo.user_id}`;
         };
 
         lista.appendChild(card);
