@@ -54,7 +54,7 @@ if (token) {
 }
 
 /////PERFIL ///
-const btnUpload = document.querySelector(".btn-upload");
+const btnUpload = document.querySelector(".btn-mais");
 const avatarImg  = document.getElementById("profileAvatar");
 const capaImg    = document.getElementById("profileCapa");
 const nomeEl     = document.getElementById("profileName");
