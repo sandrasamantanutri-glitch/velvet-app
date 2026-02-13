@@ -22,6 +22,7 @@ if (refParam || srcParam) {
   }).catch(() => {});
 }
 
+window.__CLIENTE_VIP__ = false;
 
 let modo = "publico";
 let modelo_id = null;
@@ -891,14 +892,19 @@ function adicionarMidia(conteudo) {
 
 const deveBloquear =
   role !== "modelo" &&
-  !window.__CLIENTE_VIP__;
+  (
+    tipo_conteudo === "venda" ||
+    !window.__CLIENTE_VIP__
+  );
 
 if (deveBloquear) {
   card.classList.add("locked");
 }
 
  card.onclick = () => {
-   if (role === "modelo") {
+
+  // 👩‍🎤 MODELO vê tudo
+  if (role === "modelo") {
     abrirModalMidia(url, isVideo);
     return;
   }
@@ -909,32 +915,32 @@ if (deveBloquear) {
     return;
   }
 
-  // 🔒 CLIENTE NÃO VIP (bloqueia feed normal)
-  if (!window.__CLIENTE_VIP__) {
-    window.abrirFluxoVIP();
-    return;
-  }
+  // 🔥 CONTEÚDO ESPECIAL (sempre pago à parte)
+  if (tipo_conteudo === "venda") {
 
-   if (!token) {
-  abrirPopupLoginObrigatorio();
-  return;
-   }
-
-   if (tipo_conteudo === "venda") {
     window.PAGAMENTO_TIPO_ATUAL = "midia";
     window.MODELO_ID_ATUAL = modelo_id;
-     window.MIDIA_VENDA_ATUAL = {
+
+    window.MIDIA_VENDA_ATUAL = {
       conteudo_id: id,
       preco: Number(preco),
       descricao
     };
 
-     abrirPopupPagamento();
+    abrirPopupPagamento();
     return;
   }
-  // feed normal
+
+  // 💎 FEED NORMAL
+  if (!window.__CLIENTE_VIP__) {
+    window.abrirFluxoVIP();
+    return;
+  }
+
+  // 🔓 VIP
   abrirModalMidia(url, isVideo);
- };
+};
+
 
   // EXCLUIR (MODELO)
   if (role === "modelo") {
