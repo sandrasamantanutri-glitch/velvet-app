@@ -1799,7 +1799,7 @@ app.get("/api/modelo/publico/:id/feed", async (req, res) => {
 
     // 🔒 2️⃣ Validar último status aprovado
     const verificado = await db.query(`
-      SELECT 1
+      SELECT status
       FROM modelos_verificacao
       WHERE modelo_id = $1
       ORDER BY criado_em DESC
