@@ -224,16 +224,14 @@ body.role-cliente .area-saldos {
 
 /* GRID */
 .midias-grid {
-  grid-template-columns: repeat(3, 1fr);
+  display: none;
+  grid-template-columns: repeat(1, 1fr);
   gap: 30px;
   padding: 30px;
 }
 
 .midias-grid.active {
   display: grid;
-   grid-template-columns: repeat(3, 1fr);
-  gap: 30px;
-  padding: 30px;
 }
 
 .midias-grid img {
@@ -754,14 +752,6 @@ body.role-cliente .area-saldos {
   color: #fff;
   box-shadow: 0 8px 20px rgba(123,44,255,0.35);
 }
-
-.btn-mais {
-  background: transparent;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-}
-
 
 
 
