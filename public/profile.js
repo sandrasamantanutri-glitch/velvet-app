@@ -625,7 +625,7 @@ function abrirPreviewUpload(file, url) {
     ></textarea>
   </div>
 
-  <button class="btn-confirmar">Publicar</button>
+  <button type="button" class="btn-confirmar">Publicar</button>
    </div>
   `;
 
@@ -651,10 +651,15 @@ function abrirPreviewUpload(file, url) {
      };
   });
   const btnPublicar = modal.querySelector(".btn-confirmar");
-  btnPublicar.onclick = async () => {
-      console.log("FILE:", file);
+btnPublicar.onclick = async (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+
+  console.log("FILE:", file);
+
   btnPublicar.disabled = true;
   btnPublicar.textContent = "Enviando...";
+
   
   try {
     const tipoConteudo = hiddenTipo.value;
