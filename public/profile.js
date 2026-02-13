@@ -200,7 +200,17 @@ async function carregarFeedBase() {
   if (gridFeed) gridFeed.innerHTML = "";
   if (gridEspecial) gridEspecial.innerHTML = "";
 
-  feed.forEach(adicionarMidia);
+  feed.forEach(conteudo => {
+  if (
+    conteudo.tipo_conteudo === "venda" &&
+    (!conteudo.preco || Number(conteudo.preco) <= 0)
+  ) {
+    return; // não renderiza na aba Especial
+  }
+
+  adicionarMidia(conteudo);
+});
+
 }
 
 
@@ -875,18 +885,14 @@ if (deveBloquear) {
   img.onerror = () => {
     img.src = "/assets/capa.png";
   };
-const valor = Number(preco);
 
-if (tipo_conteudo === "venda") {
+  // GRID DESTINO 
+  const gridDestino =
+    tipo_conteudo === "venda"
+      ? document.getElementById("midias-paid")
+      : document.getElementById("listaMidias");
 
-  if (valor > 0) {
-    document.getElementById("midias-paid")?.appendChild(card);
-  }
-  return;
-}
-
-document.getElementById("listaMidias")?.appendChild(card);
-
+  gridDestino?.appendChild(card);
 }
 
 //4º FUNÇÃO
