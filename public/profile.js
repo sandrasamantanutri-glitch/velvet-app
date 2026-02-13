@@ -877,19 +877,16 @@ if (deveBloquear) {
   };
 const valor = Number(preco);
 
-// Se for venda com preço inválido → NÃO adiciona na grid especial
-if (tipo_conteudo === "venda" && (!valor || valor <= 0)) {
-  return; // apenas ignora essa mídia
+if (tipo_conteudo === "venda") {
+
+  if (valor > 0) {
+    document.getElementById("midias-paid")?.appendChild(card);
+  }
+  return;
 }
 
-// Se for venda válida → Especial
-if (tipo_conteudo === "venda" && valor > 0) {
-  document.getElementById("midias-paid")?.appendChild(card);
-}
-// Caso contrário → Feed
-else {
-  document.getElementById("listaMidias")?.appendChild(card);
-}
+document.getElementById("listaMidias")?.appendChild(card);
+
 }
 
 //4º FUNÇÃO
