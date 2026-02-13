@@ -1775,57 +1775,62 @@ app.get("/api/me", auth, (req, res) => {
   });
 });
 
-// FEED PÚBLICO DA MODELO (SÓ SE VALIDADA)
+// FEED PÚBLICO DA MODELO (SÓ SE VALIDADA) //***CHECK **** */
 app.get("/api/modelo/publico/:id/feed", async (req, res) => {
-  const modelo_id = Number(req.params.id);
+  const user_id = Number(req.params.id);
 
-  if (!Number.isInteger(modelo_id) || modelo_id <= 0) {
+  if (!Number.isInteger(user_id) || user_id <= 0) {
     return res.status(400).json([]);
   }
 
   try {
-    // 🔒 valida modelo aprovado
+
+    // 🔎 1️⃣ Descobrir o modelos.id correspondente
+    const modeloRes = await db.query(
+      `SELECT id FROM modelos WHERE user_id = $1 LIMIT 1`,
+      [user_id]
+    );
+
+    if (!modeloRes.rows.length) {
+      return res.status(404).json([]);
+    }
+
+    const modelo_id = modeloRes.rows[0].id;
+
+    // 🔒 2️⃣ Validar último status aprovado
     const verificado = await db.query(`
       SELECT 1
       FROM modelos_verificacao
       WHERE modelo_id = $1
-        AND status = 'aprovado'
+      ORDER BY criado_em DESC
       LIMIT 1
     `, [modelo_id]);
 
-    if (!verificado.rows.length) {
+    if (!verificado.rows.length || verificado.rows[0].status !== 'aprovado') {
       return res.status(403).json([]);
     }
 
     let usuario = null;
 
-    // tenta extrair usuário se houver token
     const authHeader = req.headers.authorization;
     if (authHeader?.startsWith("Bearer ")) {
       try {
         const token = authHeader.split(" ")[1];
-        usuario = verificarJWT(token); // usa sua função real
+        usuario = verificarJWT(token);
       } catch {}
     }
 
-    const feedCompleto = await buscarFeedCompletoPorUserId(modelo_id);
+    // 🔎 3️⃣ Buscar feed pelo user_id (padrão novo)
+    const feedCompleto = await buscarFeedCompletoPorUserId(user_id);
 
-    // 🧠 DONA DO PERFIL → tudo
-if (usuario?.role === "modelo") {
-  const dono = await db.query(
-    `SELECT 1 FROM modelos WHERE id = $1 AND user_id = $2`,
-    [modelo_id, usuario.id]
-  );
+    // 🧠 DONA DO PERFIL
+    if (usuario?.role === "modelo" && usuario.id === user_id) {
+      return res.json(feedCompleto);
+    }
 
-  if (dono.rows.length) {
-    return res.json(feedCompleto);
-  }
-}
-
-    // 🧠 CLIENTE VIP → tudo
+    // 🧠 CLIENTE VIP
     if (usuario?.role === "cliente") {
-      const vip = await verificarVip(usuario.id, modelo_id); // sua função real
-
+      const vip = await verificarVip(usuario.id, user_id);
       if (vip) {
         return res.json(feedCompleto);
       }
