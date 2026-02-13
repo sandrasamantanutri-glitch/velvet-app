@@ -62,35 +62,36 @@ function abrirPopupPagamento() {
 
 
   //MÍDIA → SÓ CARTÃO
-  if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
-    document.getElementById("conteudoPix")?.classList.add("hidden");
-    document.getElementById("conteudoCartao")?.classList.remove("hidden");
+if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
 
-    // mostra bloco de mídia / esconde VIP
-    document.querySelector(".vip-detalhes")?.classList.add("hidden");
-    document.querySelector(".midia-detalhes")?.classList.remove("hidden");
+  document.querySelector(".velvet-tabs")?.classList.add("hidden");
+  document.getElementById("conteudoPix")?.classList.add("hidden");
+  document.getElementById("conteudoCartao")?.classList.remove("hidden");
+  document.querySelector(".vip-detalhes")?.classList.add("hidden");
+  document.querySelector(".midia-detalhes")?.classList.remove("hidden");
 
-    iniciarCartaoMidia();
-    return;
-  }
-
+  iniciarCartaoMidia();
+  return;
+}
 
   //  VIP → PIX (default) + CARTÃO
-  document.getElementById("conteudoPix")?.classList.remove("hidden");
-  document.getElementById("conteudoCartao")?.classList.add("hidden");
+  // VIP
+document.querySelector(".velvet-tabs")?.classList.remove("hidden");
 
-  document.querySelector(".midia-detalhes")?.classList.add("hidden");
-  document.querySelector(".vip-detalhes")?.classList.remove("hidden");
+document.getElementById("conteudoPix")?.classList.remove("hidden");
+document.getElementById("conteudoCartao")?.classList.add("hidden");
 
-  prepararPagamento();
+document.querySelector(".midia-detalhes")?.classList.add("hidden");
+document.querySelector(".vip-detalhes")?.classList.remove("hidden");
 
-  // Pix automático para VIP
-//   setTimeout(() => {
-//     pagarComPix({
-//       tipo: "vip",
-//       modelo_id: window.MODELO_ID_ATUAL
-//     });
-//   }, 0);
+prepararPagamento();
+  //Pix automático para VIP
+  setTimeout(() => {
+    pagarComPix({
+      tipo: "vip",
+      modelo_id: window.MODELO_ID_ATUAL
+    });
+  }, 0);
 }
 
 
