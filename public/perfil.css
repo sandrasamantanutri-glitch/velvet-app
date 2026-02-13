@@ -527,17 +527,62 @@ body.role-cliente .area-saldos {
     max-height: 50vh;
   }
 
-  .upload-tab {
-    font-size: 16px;
-    padding: 8px;
-  }
-
   .btn-confirmar {
     font-size: 16px;
     padding: 12px;
   }
 
 }
+
+/* ===============================
+   BOTÕES PRA VOCÊ / ESPECIAL
+================================ */
+
+.upload-opcoes {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.upload-tab {
+  flex: 1;
+
+  border: none;
+  border-radius: 14px;
+  padding: 12px 14px;
+
+  font-size: 16px;
+  font-weight: 600;
+
+  background: #f1f1f5;
+  color: #5a5a6e;
+
+  cursor: pointer;
+  transition: all 0.25s ease;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Hover suave */
+.upload-tab:hover {
+  background: #e6e6ff;
+}
+
+/* ATIVO */
+.upload-tab.active {
+  background: linear-gradient(135deg, #9e6bff, #7b2cff);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(123, 44, 255, 0.35);
+}
+
+/* Animação leve ao clicar */
+.upload-tab:active {
+  transform: scale(0.97);
+}
+
 
 
 
