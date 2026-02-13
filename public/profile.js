@@ -341,17 +341,32 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // CLIQUE MANUAL NO BOTÃO ASSINAR
-  btnAssinar?.addEventListener("click", () => {
-    window.abrirFluxoVIP();
-  });
+btnAssinar?.addEventListener("click", () => {
+  const tokenAtual = localStorage.getItem("token");
+  // 🔒 NÃO LOGADO
+  if (!tokenAtual) {
+    abrirPopupLoginObrigatorio();
+    return;
+  }
+  // ✅ LOGADO
+  window.abrirFluxoVIP();
+});
 
-  // LINK "assinar o perfil" DENTRO DO POPUP DE MÍDIA
-  document.addEventListener("click", (e) => {
-    if (e.target.closest(".link-assinar-vip")) {
-      e.preventDefault();
-      window.abrirFluxoVIP();
+document.addEventListener("click", (e) => {
+  if (e.target.closest(".link-assinar-vip")) {
+    e.preventDefault();
+
+    const tokenAtual = localStorage.getItem("token");
+
+    if (!tokenAtual) {
+      abrirPopupLoginObrigatorio();
+      return;
     }
-  });
+
+    window.abrirFluxoVIP();
+  }
+});
+
 
 });
 
@@ -595,6 +610,40 @@ function validarMidia(file) {
   }
   return true;
 }
+
+function abrirPopupLoginObrigatorio() {
+
+  const modal = document.createElement("div");
+  modal.className = "modal-login-obrigatorio";
+
+  modal.innerHTML = `
+    <div class="modal-backdrop"></div>
+    <div class="modal-box-login">
+      <h3>🔒 Acesso necessário</h3>
+      <p>É necessário estar logado para esta ação.</p>
+
+      <div class="login-acoes">
+        <button class="btn-login">Fazer login</button>
+        <button class="btn-register">Registar</button>
+      </div>
+    </div>
+  `;
+
+  modal.querySelector(".modal-backdrop").onclick = () => modal.remove();
+
+  modal.querySelector(".btn-login").onclick = () => {
+    modal.remove();
+    openAgeGate("login");
+  };
+
+  modal.querySelector(".btn-register").onclick = () => {
+    modal.remove();
+    openAgeGate("register");
+  };
+
+  document.body.appendChild(modal);
+}
+
 
 //1ºFUNÇÃO
 function abrirPreviewUpload(file, url) {
