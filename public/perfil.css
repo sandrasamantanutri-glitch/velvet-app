@@ -208,7 +208,7 @@ body.role-cliente .area-saldos {
 /* GRID */
 .midias-grid {
   display: none;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(1, 1fr);
   gap: 30px;
   padding: 30px;
 }
@@ -519,6 +519,9 @@ body.role-cliente .area-saldos {
     padding: 18px;
     border-radius: 18px;
   }
+   .midias-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 
   .modal-midia .modal-conteudo img,
   .modal-midia .modal-conteudo video {
@@ -530,6 +533,12 @@ body.role-cliente .area-saldos {
     padding: 12px;
   }
 
+}
+
+@media (max-width: 480px) {
+  .midias-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ===============================
