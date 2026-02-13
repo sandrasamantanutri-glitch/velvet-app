@@ -884,6 +884,63 @@ body.role-cliente .area-saldos {
 }
 
 
+/* ===============================
+   BLOQUEIO VIP PREMIUM
+================================ */
+
+.midiaCard.locked {
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.midiaCard.locked .midiaThumb {
+  filter: blur(10px) brightness(0.25);
+  transform: scale(1.05);
+  transition: all 0.4s ease;
+}
+
+/* OVERLAY ESCURO */
+.midiaCard.locked::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0,0,0,0.35),
+    rgba(0,0,0,0.6)
+  );
+  z-index: 2;
+}
+
+/* TEXTO VIP */
+.midiaCard.locked::before {
+  content: "💎 Exclusivo para Assinantes VIP";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  
+  background: linear-gradient(135deg, #9e6bff, #7b2cff);
+  color: #fff;
+
+  padding: 10px 16px;
+  border-radius: 999px;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  z-index: 3;
+  white-space: nowrap;
+
+  box-shadow: 0 8px 25px rgba(123,44,255,0.45);
+}
+
+/* Hover elegante */
+.midiaCard.locked:hover .midiaThumb {
+  filter: blur(6px) brightness(0.35);
+  transform: scale(1.08);
+}
 
 
 

@@ -260,9 +260,9 @@ if (!role) {
 async function iniciarPerfil() {
   try {
     await carregarPerfilBase();   
-    await carregarOfertaAtiva();  
-    await carregarFeedBase();     
+    await carregarOfertaAtiva();      
     await aplicarRegrasDeAcesso();
+    await carregarFeedBase(); 
   }
  catch (err) {
   console.error("🔥 ERRO REAL AO INICIAR PERFIL 🔥");
