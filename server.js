@@ -4361,7 +4361,7 @@ app.post(
             doc_verso_url = EXCLUDED.doc_verso_url,
             selfie_url = EXCLUDED.selfie_url,
             status = 'em_analise',
-            updated_at = NOW()
+            atualizado_em = NOW()
           `,
           [
             modeloId,
