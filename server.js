@@ -4315,9 +4315,9 @@ app.post(
 
       const userId = req.user.id;
       const role = req.user.role;
-      const { doc_tipo } = req.body;
+      const { documento_tipo } = req.body;
 
-      if (!doc_tipo) {
+      if (!documento_tipo) {
         return res.status(400).json({
           erro: "Tipo de documento obrigatório"
         });
@@ -4352,11 +4352,11 @@ app.post(
         await db.query(
           `
           INSERT INTO modelos_verificacao
-          (modelo_id, doc_tipo, doc_frente_url, doc_verso_url, selfie_url, status, created_at)
+          (modelo_id, documento_tipo, doc_frente_url, doc_verso_url, selfie_url, status, created_at)
           VALUES ($1,$2,$3,$4,$5,'em_analise', NOW())
           ON CONFLICT (modelo_id)
           DO UPDATE SET
-            doc_tipo = EXCLUDED.doc_tipo,
+            documento_tipo = EXCLUDED.documento_tipo,
             doc_frente_url = EXCLUDED.doc_frente_url,
             doc_verso_url = EXCLUDED.doc_verso_url,
             selfie_url = EXCLUDED.selfie_url,
@@ -4365,7 +4365,7 @@ app.post(
           `,
           [
             modeloId,
-            doc_tipo,
+            documento_tipo,
             docFrenteUrl,
             docVersoUrl,
             selfieUrl
@@ -4392,11 +4392,11 @@ app.post(
         await db.query(
           `
           INSERT INTO clientes_verificacao
-          (cliente_id, doc_tipo, doc_frente_url, doc_verso_url, selfie_url, status, created_at)
+          (cliente_id, documento_tipo, doc_frente_url, doc_verso_url, selfie_url, status, created_at)
           VALUES ($1,$2,$3,$4,$5,'em_analise', NOW())
           ON CONFLICT (cliente_id)
           DO UPDATE SET
-            doc_tipo = EXCLUDED.doc_tipo,
+            documento_tipo = EXCLUDED.documento_tipo,
             doc_frente_url = EXCLUDED.doc_frente_url,
             doc_verso_url = EXCLUDED.doc_verso_url,
             selfie_url = EXCLUDED.selfie_url,
@@ -4405,7 +4405,7 @@ app.post(
           `,
           [
             clienteId,
-            doc_tipo,
+            documento_tipo,
             docFrenteUrl,
             docVersoUrl,
             selfieUrl
