@@ -172,9 +172,9 @@ body.role-cliente .area-saldos {
 }
 
 .midias-topo {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 30px 24px 0;
 }
 
