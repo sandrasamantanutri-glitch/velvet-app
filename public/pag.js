@@ -476,8 +476,6 @@ async function pagarComCartao({ tipo, modelo_id }) {
   try {
     if (!token) throw new Error("Sessão expirada");
 
-    mostrarMetodo("cartao");
-
     // 🔄 limpa estado anterior
     if (cardElement) {
       cardElement.unmount();
