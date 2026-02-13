@@ -599,108 +599,112 @@ function abrirPreviewUpload(file, url) {
           ? `<video src="${url}" controls autoplay muted playsinline></video>`
           : `<img src="${url}">`
       }
+
       <div class="upload-box">
-      <p class="upload-titulo">Escolha onde deseja adicionar a mídia:</p>
-     <div class="upload-opcoes">
-  <button class="upload-tab active" data-value="feed">🎁 Pra você</button>
-  <button class="upload-tab" data-value="venda">🔥 Especial</button>
- </div>
+        <p class="upload-titulo">Escolha onde deseja adicionar a mídia:</p>
 
- <input type="hidden" name="tipo_conteudo" value="feed">
+        <div class="upload-opcoes">
+          <button type="button" class="upload-tab active" data-value="feed">🎁 Pra você</button>
+          <button type="button" class="upload-tab" data-value="venda">🔥 Especial</button>
+        </div>
 
+        <input type="hidden" name="tipo_conteudo" value="feed">
 
-  <div class="upload-especial hidden">
-    <input
-      type="number"
-      id="upload-preco"
-      placeholder="Preço (R$)"
-      min="0"
-      step="0.01"
-    >
+        <div class="upload-especial hidden">
+          <input
+            type="number"
+            id="upload-preco"
+            placeholder="Preço (R$)"
+            min="0"
+            step="0.01"
+          >
+          <textarea
+            id="upload-descricao"
+            placeholder="Descrição do conteúdo"
+            rows="3"
+          ></textarea>
+        </div>
 
-    <textarea
-      id="upload-descricao"
-      placeholder="Descrição do conteúdo"
-      rows="3"
-    ></textarea>
-  </div>
-
-  <button type="button" class="btn-confirmar">Publicar</button>
-   </div>
+        <button type="button" class="btn-confirmar">Publicar</button>
+      </div>
+    </div>
   `;
+
+  // 🔹 Adiciona primeiro ao DOM
+  document.body.appendChild(modal);
 
   const fecharModal = () => {
     URL.revokeObjectURL(url);
     modal.remove();
   };
 
-  modal.querySelector(".modal-backdrop").onclick = fecharModal;
+  modal.querySelector(".modal-backdrop")
+    .addEventListener("click", fecharModal);
 
   const tabs = modal.querySelectorAll(".upload-tab");
   const hiddenTipo = modal.querySelector("input[name='tipo_conteudo']");
   const boxEspecial = modal.querySelector(".upload-especial");
 
   tabs.forEach(tab => {
-  tab.onclick = () => {
-     tabs.forEach(t => t.classList.remove("active"));
-    tab.classList.add("active");
+    tab.addEventListener("click", () => {
+      tabs.forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
 
-     const valor = tab.dataset.value;
-    hiddenTipo.value = valor;
-     boxEspecial.classList.toggle("hidden", valor !== "venda");
-     };
+      const valor = tab.dataset.value;
+      hiddenTipo.value = valor;
+      boxEspecial.classList.toggle("hidden", valor !== "venda");
+    });
   });
+
   const btnPublicar = modal.querySelector(".btn-confirmar");
-btnPublicar.onclick = async (e) => {
-  e.preventDefault();
-  e.stopPropagation();
 
-  console.log("FILE:", file);
+  btnPublicar.addEventListener("click", async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
 
-  btnPublicar.disabled = true;
-  btnPublicar.textContent = "Enviando...";
+    console.log("CLIQUE OK");
+    console.log("FILE:", file);
 
-  
-  try {
-    const tipoConteudo = hiddenTipo.value;
-    const preco = modal.querySelector("#upload-preco")?.value;
-    const descricao = modal.querySelector("#upload-descricao")?.value;
-    
-    if (tipoConteudo === "venda" && (!preco || Number(preco) <= 0)) {
-      alert("Informe um preço válido");
-      btnPublicar.disabled = false;
-      btnPublicar.textContent = "Publicar";
-      return;
-    }
+    btnPublicar.disabled = true;
+    btnPublicar.textContent = "Enviando...";
 
-    await enviarMidia(file, {
+    try {
+      const tipoConteudo = hiddenTipo.value;
+      const preco = modal.querySelector("#upload-preco")?.value;
+      const descricao = modal.querySelector("#upload-descricao")?.value;
+
+      if (tipoConteudo === "venda" && (!preco || Number(preco) <= 0)) {
+        alert("Informe um preço válido");
+        btnPublicar.disabled = false;
+        btnPublicar.textContent = "Publicar";
+        return;
+      }
+
+      await enviarMidia(file, {
         tipo_conteudo: tipoConteudo,
         preco,
         descricao
-    });
+      });
 
-     if (role === "modelo") {
-  carregarFeedBase();
- if (tipoConteudo === "venda") {
-    document.querySelector('[data-tab="paid"]')
-      ?.click();
-  } else {
-    document.querySelector('[data-tab="free"]')?.click();
-  }
-}
-    fecharModal();
-   } catch (err) {
-    console.error(err);
-    btnPublicar.disabled = false;
-    btnPublicar.textContent = "Publicar";
-    alert("Erro ao enviar mídia");
+      if (role === "modelo") {
+        await carregarFeedBase();
+
+        if (tipoConteudo === "venda") {
+          document.querySelector('[data-tab="paid"]')?.click();
+        } else {
+          document.querySelector('[data-tab="free"]')?.click();
+        }
+      }
+
+      fecharModal();
+
+    } catch (err) {
+      console.error("Erro no upload:", err);
+      btnPublicar.disabled = false;
+      btnPublicar.textContent = "Publicar";
+      alert("Erro ao enviar mídia");
     }
-  };
-  
-  document.body.appendChild(modal);
-  console.log("Modal adicionado:", modal);
-console.log("Botão encontrado:", modal.querySelector(".btn-confirmar"));
-
+  });
 }
 
 function mostrarLoading() {
@@ -713,8 +717,16 @@ function esconderLoading() {
 
 //2º FUNÇÃO
 async function enviarMidia(file, dados = {}) {
+  console.log("=== ENVIAR MIDIA CHAMADO ===");
+  console.log("Token:", token);
+  console.log("Role:", role);
+  console.log("File recebido:", file);
+
+  if (!file) {
+    throw new Error("Arquivo não recebido");
+  }
+
   if (!token || role !== "modelo") {
-    alert("Apenas modelos autenticadas podem enviar mídias.");
     throw new Error("Upload não autorizado");
   }
 
@@ -730,6 +742,8 @@ async function enviarMidia(file, dados = {}) {
     formData.append("descricao", dados.descricao || "");
   }
 
+  console.log("Enviando para /api/upload ...");
+
   const res = await fetch("/api/upload", {
     method: "POST",
     headers: {
@@ -738,12 +752,22 @@ async function enviarMidia(file, dados = {}) {
     body: formData
   });
 
+  console.log("Status da resposta:", res.status);
+
+  const texto = await res.text();
+  console.log("Resposta do servidor:", texto);
+
   if (!res.ok) {
-    throw new Error(await res.text());
+    throw new Error(texto);
   }
 
-  return res.json();
+  try {
+    return JSON.parse(texto);
+  } catch {
+    return texto;
+  }
 }
+
 
 //3º Função
 function adicionarMidia(conteudo) {
