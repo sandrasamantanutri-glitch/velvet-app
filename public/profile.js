@@ -643,9 +643,6 @@ function abrirPreviewUpload(file, url) {
   modal.querySelector(".modal-backdrop")
     .addEventListener("click", fecharModal);
 
-    modal.querySelector(".modal-backdrop")
-  .addEventListener("click", fecharModal);
-
 modal.querySelector(".modal-close-upload")
   ?.addEventListener("click", (e) => {
     e.stopPropagation();
