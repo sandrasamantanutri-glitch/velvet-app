@@ -1894,7 +1894,7 @@ FROM modelos m
 JOIN LATERAL (
   SELECT status
   FROM modelos_verificacao
-  WHERE modelo_id = m.user_id
+  WHERE modelo_id = m.id
   ORDER BY created_at DESC
   LIMIT 1
 ) v ON true
