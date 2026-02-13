@@ -1784,7 +1784,7 @@ app.get("/api/modelo/publico/:id/feed", async (req, res) => {
   }
 
   try {
-    // 🔒 garante validação
+    // 🔒 valida modelo aprovado
     const verificado = await db.query(`
       SELECT 1
       FROM modelos_verificacao
@@ -1797,14 +1797,50 @@ app.get("/api/modelo/publico/:id/feed", async (req, res) => {
       return res.status(403).json([]);
     }
 
-    const feed = await buscarFeedCompletoPorUserId(modelo_id);
-    res.json(feed);
+    let usuario = null;
+
+    // tenta extrair usuário se houver token
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith("Bearer ")) {
+      try {
+        const token = authHeader.split(" ")[1];
+        usuario = verificarJWT(token); // usa sua função real
+      } catch {}
+    }
+
+    const feedCompleto = await buscarFeedCompletoPorUserId(modelo_id);
+
+    // 🧠 DONA DO PERFIL → tudo
+    if (
+      usuario &&
+      usuario.role === "modelo" &&
+      usuario.id === modelo_id
+    ) {
+      return res.json(feedCompleto);
+    }
+
+    // 🧠 CLIENTE VIP → tudo
+    if (usuario?.role === "cliente") {
+      const vip = await verificarVip(usuario.id, modelo_id); // sua função real
+
+      if (vip) {
+        return res.json(feedCompleto);
+      }
+    }
+
+    // 🔒 TODOS OS OUTROS → só free
+    const apenasFree = feedCompleto.filter(
+      c => c.tipo_conteudo !== "venda"
+    );
+
+    return res.json(apenasFree);
 
   } catch (err) {
     console.error("Erro feed público:", err);
     res.status(500).json([]);
   }
 });
+
 
 
 // PERFIL USUARIO (CLT,MODELO)
