@@ -2015,7 +2015,7 @@ app.get("/api/modelo/publico/:id", async (req, res) => {
         ON v.modelo_id = m.id  
       LEFT JOIN modelos_dados md
         ON md.user_id = m.user_id
-      WHERE m.user_id = $1
+      WHERE m.id = $1
         AND v.status = 'aprovado'
       ORDER BY v.criado_em DESC
       LIMIT 1
