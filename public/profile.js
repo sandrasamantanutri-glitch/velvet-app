@@ -875,14 +875,21 @@ if (deveBloquear) {
   img.onerror = () => {
     img.src = "/assets/capa.png";
   };
+const valor = Number(preco);
 
-  // GRID DESTINO 
-  const gridDestino =
-    tipo_conteudo === "venda"
-      ? document.getElementById("midias-paid")
-      : document.getElementById("listaMidias");
+// Se for venda com preço inválido → NÃO adiciona na grid especial
+if (tipo_conteudo === "venda" && (!valor || valor <= 0)) {
+  return; // apenas ignora essa mídia
+}
 
-  gridDestino?.appendChild(card);
+// Se for venda válida → Especial
+if (tipo_conteudo === "venda" && valor > 0) {
+  document.getElementById("midias-paid")?.appendChild(card);
+}
+// Caso contrário → Feed
+else {
+  document.getElementById("listaMidias")?.appendChild(card);
+}
 }
 
 //4º FUNÇÃO
