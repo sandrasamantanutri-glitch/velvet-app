@@ -5,9 +5,10 @@ if (!token) {
   throw new Error("Sem token");
 }
 const socket = io({
-  transports: ["websocket"],
-  auth: { token: "Bearer " + token }
+  transports: ["websocket"]
 });
+
+socket.emit("auth", { token });
 
 
 let modeloId = null;
