@@ -53,39 +53,26 @@ document.addEventListener("DOMContentLoaded", () => {
           <img src="${modelo.avatar || "/assets/avatar.png"}">
         `;
 
-card.onclick = () => {
-  const id = Number(modelo.id)
-  if (!id) return;
+        card.onclick = () => {
+          const modeloIdCard = Number(modelo.id);
+          if (!modeloIdCard) return;
 
-  const role = localStorage.getItem("role");
+          const role = localStorage.getItem("role");
+          const modeloLogado = Number(localStorage.getItem("modelo_id") || 0);
 
-  const userLogado   = Number(localStorage.getItem("user_id"));
-  const modeloLogado = Number(localStorage.getItem("modelo_id"));
+          if (role === "modelo" && modeloLogado === modeloIdCard) {
+            window.location.href = "perfil.html";
+            return;
+          }
 
-  console.log("userLogado:", userLogado);
-  console.log("modeloLogado:", modeloLogado);
-  console.log("card user_id:", id);
+          window.location.href = `perfil.html?id=${modeloIdCard}`;
+        };
 
-  // 👑 Se for modelo e for o próprio perfil
-  if (
-    role === "modelo" &&
-    (
-      userLogado === id ||     // caso esteja salvando user_id
-      modeloLogado === id      // caso esteja salvando modelo_id
-    )
-  ) {
-    window.location.href = "perfil.html";
-    return;
-  }
-
-  // 👀 qualquer outro caso
-  window.location.href = `perfil.html?id=${id}`;
-};
         lista.appendChild(card);
       });
     })
-    .catch(() => {
-      lista.innerHTML =
-        "<p>Erro ao carregar o feed.</p>";
+    .catch(err => {
+      console.error("Erro ao carregar modelos:", err);
+      lista.innerHTML = "<p>Erro ao carregar modelos.</p>";
     });
 });
