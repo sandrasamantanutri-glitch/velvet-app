@@ -185,11 +185,12 @@ async function carregarFeedBase() {
 console.log("ID recebido:", user_id);
   if (!listaMidias || !user_id) return;
 
-  const res = await fetch(`/api/modelo/publico/${user_id}/feed`, {
-    headers: token
-      ? { Authorization: "Bearer " + token }
-      : {}
-  });
+const tokenAtual = localStorage.getItem("token");
+const res = await fetch(`/api/modelo/publico/${user_id}/feed`, {
+  headers: {
+    Authorization: "Bearer " + tokenAtual
+  }
+});
 
   if (!res.ok) {
     console.error("Erro ao carregar feed");
