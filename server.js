@@ -320,21 +320,6 @@ app.use(cors({
 
 
 // 📦 FEED CANÔNICO (FONTE ÚNICA)
-async function buscarFeedCompletoPorUserId(user_id) {
-  console.log("🔥 TESTE FORÇADO 🔥");
-
-  const result = await db.query(`
-    SELECT *
-    FROM conteudos
-    WHERE user_id = $1
-    ORDER BY id DESC
-  `, [user_id]);
-
-  console.log("RESULTADO REAL:", result.rows);
-
-  return result.rows;
-}
-
 // async function buscarFeedCompletoPorUserId(user_id) {
 //   const result = await db.query(`
 //     SELECT
@@ -357,6 +342,21 @@ async function buscarFeedCompletoPorUserId(user_id) {
 
 //   return result.rows;
 // }
+
+async function buscarFeedCompletoPorUserId(user_id) {
+
+  const result = await db.query(`
+    SELECT id, tipo_conteudo, preco
+    FROM conteudos
+    WHERE user_id = $1
+    ORDER BY id DESC
+  `, [user_id]);
+
+  console.log("🔥 RESULTADO SQL BRUTO:", result.rows);
+
+  return result.rows;
+}
+
 
 
 
