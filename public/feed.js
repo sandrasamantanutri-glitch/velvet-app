@@ -54,27 +54,23 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
 
         // 🔹 Clique no card
-        card.onclick = () => {
-          // 🔹 ID do modelo (user_id ou fallback para id)
-          const id = Number(modelo.user_id || modelo.id || modelo.modelo_id);
-          if (!id) return;
+card.onclick = () => {
+  const id = Number(modelo.id || modelo.modelo_id);
+  if (!id) return;
 
-          const role = localStorage.getItem("role");
-          const userLogado = Number(localStorage.getItem("user_id"));
-          const modeloLogado = Number(localStorage.getItem("modelo_id"));
+  const role = localStorage.getItem("role");
+  const modeloLogado = Number(localStorage.getItem("modelo_id"));
 
-          // 🔹 Próprio perfil (modelo logado)
-          if (
-            role === "modelo" &&
-            (userLogado === id || modeloLogado === id)
-          ) {
-            window.location.href = "perfil.html";
-            return;
-          }
+  // Próprio perfil
+  if (role === "modelo" && modeloLogado === id) {
+    window.location.href = "perfil.html";
+    return;
+  }
 
-          // 🔹 Perfil de outro modelo
-          window.location.href = `perfil.html?id=${id}`;
-        };
+  // Perfil de outro modelo
+  window.location.href = `perfil.html?id=${id}`;
+};
+
 
         lista.appendChild(card);
       });
