@@ -1,127 +1,169 @@
+// ===============================
+// 🔐 AUTENTICAÇÃO
+// ===============================
+
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
+
 if (!token) {
   window.location.href = "/index.html";
   throw new Error("Sem token");
 }
+
 const socket = io({
   transports: ["websocket"]
 });
 
+// envia token para o backend validar
 socket.emit("auth", { token });
 
+// quando servidor confirmar autenticação
+socket.on("authOk", () => {
+  console.log("🔐 Socket autenticado");
 
-let modeloId = null;
-let sala = null;
-let modelo_id = null;
-let chatAtivo = null;
-let conteudosVistosCliente = new Set();
-let cliente_id= null
+  if (role === "cliente") {
+    socket.emit("loginCliente");
+  }
 
-const params = new URLSearchParams(location.search);
-cliente_id = Number(params.get("cliente_id"));
-
-const chatBox = document.getElementById("chatBox");
-
-chatBox.addEventListener("scroll", () => {
-  if (chatBox.scrollTop === 0 && !carregandoHistorico) {
-    carregarMensagensAntigas();
+  if (role === "modelo") {
+    socket.emit("loginModelo");
   }
 });
 
+// ===============================
+// 📌 VARIÁVEIS GLOBAIS DO CHAT
+// ===============================
+
+let sala = null;
+let modelo_id = null;
+let cliente_id = null;
+let chatAtivo = null;
+let conteudosVistosCliente = new Set();
+let carregandoHistorico = false;
+
+// ===============================
+// 📎 PARAMETROS URL
+// ===============================
+
+const params = new URLSearchParams(location.search);
+
+if (role === "modelo") {
+  cliente_id = Number(params.get("cliente_id"));
+
+  if (!Number.isInteger(cliente_id) || cliente_id <= 0) {
+    console.warn("cliente_id inválido na URL");
+    cliente_id = null;
+  }
+}
+
+// ===============================
+// 📦 ELEMENTOS DOM
+// ===============================
+
+const chatBox = document.getElementById("chatBox");
 const input = document.getElementById("msgInput");
 
+// ===============================
+// ⬆️ SCROLL PARA CARREGAR MAIS
+// ===============================
+
+if (chatBox) {
+  chatBox.addEventListener("scroll", () => {
+    if (chatBox.scrollTop === 0 && !carregandoHistorico) {
+      carregarMensagensAntigas();
+    }
+  });
+}
 
 
 // 📜 HISTÓRICO
 socket.on("chatHistory", mensagens => {
   const chat = document.getElementById("chatBox");
-  if (!chat || !mensagens.length) return;
+  if (!chat || !Array.isArray(mensagens)) return;
 
-  // 🧹 limpa antes
   chat.innerHTML = "";
 
   mensagens.forEach(m => renderMensagem(m));
 
-  // 🔥 força scroll pro final
   requestAnimationFrame(() => {
     chat.scrollTop = chat.scrollHeight;
   });
 
-  ultimoTimestamp = mensagens[0].created_at;
+  // pega a mais recente
+  if (mensagens.length > 0) {
+    ultimoTimestamp = mensagens[mensagens.length - 1].created_at;
+  }
 });
 
 socket.on("newMessage", msg => {
- renderMensagem(msg);
+  renderMensagem(msg);
   scrollParaFinal();
 });
+
 
 // ===============================
 // INIT
 // ===============================
 document.addEventListener("DOMContentLoaded", async () => {
+
   const res = await fetch("/api/modelo/me", {
     headers: { Authorization: "Bearer " + token }
   });
 
-const modelo = await res.json();
-modelo_id = modelo.modelo_id;  
-const user_id = modelo.user_id; 
+  const modelo = await res.json();
 
-socket.emit("loginModelo", user_id);
+  modelo_id = modelo.modelo_id;
 
-
-   if (!modelo_id) {
+  if (!modelo_id) {
     console.error("modelo_id indefinido");
     return;
   }
 
+  // 🔥 loginModelo já é emitido após authOk no socket
+  // NÃO repetir aqui
+
   await carregarInfoCliente(cliente_id);
 
   sala = `chat_${cliente_id}_${modelo_id}`;
-  socket.emit("joinChat", { sala });
+
+  // ✅ Enviar formato correto
+  socket.emit("joinChat", { cliente_id, modelo_id });
+
   socket.emit("getHistory", { cliente_id, modelo_id });
 
-  // 🔥 AQUI — quando o chat ABRE
   marcarComoLido(cliente_id);
-
-  socket.emit("loginModelo", modelo_id);
-  socket.emit("loginCliente", cliente_id);
-
 
   const input = document.getElementById("msgInput");
 
- // ENTER envia mensagem
- input.addEventListener("keydown", e => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    enviarMensagem();
-  }
-  socket.emit("loginModelo", user_id);
- });
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      enviarMensagem();
+    }
+  });
 
- socket.on("mensagemEditada", ({ id, text }) => {
-  const msgEl = document
-    .querySelector(`.msg-menu[data-id="${id}"]`)
-    ?.closest(".msg");
+  socket.on("mensagemEditada", ({ id, text }) => {
+    const msgEl = document
+      .querySelector(`.msg-menu[data-id="${id}"]`)
+      ?.closest(".msg");
 
-  if (!msgEl) return;
+    if (!msgEl) return;
 
-  const textoDiv = msgEl.querySelector(".msg-texto");
-  if (textoDiv) {
-    textoDiv.innerText = text;
-  }
- });
+    const textoDiv = msgEl.querySelector(".msg-texto");
+    if (textoDiv) {
+      textoDiv.innerText = text;
+    }
+  });
 
- socket.on("mensagemExcluida", ({ id }) => {
-  const msgEl = document
-    .querySelector(`.msg-menu[data-id="${id}"]`)
-    ?.closest(".msg");
+  socket.on("mensagemExcluida", ({ id }) => {
+    const msgEl = document
+      .querySelector(`.msg-menu[data-id="${id}"]`)
+      ?.closest(".msg");
 
-  if (msgEl) {
-    msgEl.remove();
-  }
- });
+    if (msgEl) {
+      msgEl.remove();
+    }
+  });
 
 });
 
@@ -231,26 +273,35 @@ if (item) {
   input.value = "";
 }
 
-async function abrirPreviewMidiaDireto(messageId, index) {
+function abrirPreviewMidiaDireto(message, index) {
   try {
-    const res = await fetch(`/api/chat/conteudo/${messageId}`, {
-      headers: {
-        Authorization: "Bearer " + token
+    if (!message) return;
+
+    // 🔒 Só funciona para mensagens de conteúdo
+    if (message.tipo !== "conteudo") return;
+
+    // 🔒 Verifica se existe array de mídias
+    if (!Array.isArray(message.midias)) return;
+
+    const midia = message.midias[index];
+    if (!midia) return;
+
+    // 🔒 Se estiver bloqueado (conteúdo pago não comprado)
+    if (message.bloqueado) {
+      if (typeof abrirFluxoPagamentoConteudo === "function") {
+        abrirFluxoPagamentoConteudo(message);
       }
-    });
-
-    if (!res.ok) return;
-
-    const midias = await res.json();
-
-    if (midias[index]) {
-      abrirPreviewMidia(midias[index]);
+      return;
     }
 
+    // ✅ Abrir preview normalmente
+    abrirPreviewMidia(midia);
+
   } catch (err) {
-    console.error("Erro abrir mídia:", err);
+    console.error("Erro ao abrir preview:", err);
   }
 }
+
 
 function renderMensagem(msg) {
   const chat = document.getElementById("chatBox");
@@ -258,133 +309,121 @@ function renderMensagem(msg) {
 
   const div = document.createElement("div");
 
-  // alinhamento correto
   div.className =
     msg.sender === "modelo" ? "msg msg-modelo" : "msg msg-cliente";
 
-if (msg.tipo === "conteudo") {
+  // ===============================
+  // 📦 MENSAGEM DE CONTEÚDO
+  // ===============================
+  if (msg.tipo === "conteudo") {
+
+    const quantidade = msg.quantidade ?? (msg.midias?.length || 0);
+    const bloqueado = Number(msg.preco) > 0 && !msg.visto;
 
     div.innerHTML = `
-<div class="chat-conteudo premium ${
-  Number(msg.preco) > 0 && !msg.visto
-    ? "bloqueado"
-    : "visto"
-}"
-     data-id="${msg.id}"
-     data-qtd="${msg.quantidade ?? msg.midias.length}">
+      <div class="chat-conteudo premium ${bloqueado ? "bloqueado" : "visto"}"
+           data-id="${msg.id}"
+           data-qtd="${quantidade}">
 
-    <!-- 📸 MÍDIA -->
-    <div class="pacote-grid">
-      ${msg.midias.map(m => `
-        <div class="midia-item">
-          ${
-            (m.tipo_media || m.tipo) === "video"
-  ? `<video src="${m.url}" muted></video>`
-  : `<img src="${m.url}" />`
-          }
-        </div>
-      `).join("")}
-    </div>
-
-    <!-- 🧾 INFO ABAIXO -->
-    ${
-      msg.preco > 0
-        ? `
-          <div class="conteudo-info">
-            <span class="status-bloqueado">
+        <div class="pacote-grid">
+          ${(msg.midias || []).map((m) => `
+            <div class="midia-item">
               ${
-                msg.visto
-                  ? `🟢 Vendido · ${msg.quantidade ?? msg.midias.length} mídia(s)`
-                  : `🔒 ${msg.quantidade ?? msg.midias.length} mídia(s)`
+                (m.tipo_media || m.tipo) === "video"
+                  ? `<video src="${m.url}" muted></video>`
+                  : `<img src="${m.url}" />`
               }
-            </span>
-            <span class="preco-bloqueado">
-              R$ ${Number(msg.preco).toFixed(2)}
-            </span>
-          </div>
-        `
-        : ""
-    }
-  </div>
-  <span class="msg-hora">${formatarHora(msg.created_at)}</span>
-`;
-  }
+            </div>
+          `).join("")}
+        </div>
 
-else {
-  div.innerHTML = `
-    <div class="msg-texto">${msg.text}</div>
+        ${
+          msg.preco > 0
+            ? `
+            <div class="conteudo-info">
+              <span class="status-bloqueado">
+                ${
+                  msg.visto
+                    ? `🟢 Vendido · ${quantidade} mídia(s)`
+                    : `🔒 ${quantidade} mídia(s)`
+                }
+              </span>
+              <span class="preco-bloqueado">
+                R$ ${Number(msg.preco).toFixed(2)}
+              </span>
+            </div>
+          `
+            : ""
+        }
+      </div>
+      <span class="msg-hora">${formatarHora(msg.created_at)}</span>
+    `;
 
-    ${msg.sender === "modelo" ? `
-<button
-  class="msg-menu"
-  data-id="${msg.id}"
-  data-text="${encodeURIComponent(msg.text || "")}">
-  ⋮
-</button>
-    ` : ""}
+    // 🔥 ABRIR PREVIEW (SEM FETCH, SEM ROTA EXTRA)
+    const midiasEls = div.querySelectorAll(".midia-item");
 
-    <span class="msg-hora">${formatarHora(msg.created_at)}</span>
-  `;
-}
-  chat.appendChild(div);
-const btn = div.querySelector(".msg-menu");
- if (btn) {
-  btn.addEventListener("click", () => {
-    console.log("CLIQUEI NO MENU", btn.dataset.id);
-    abrirMenuMensagem(
-  btn.dataset.id,
-  decodeURIComponent(btn.dataset.text)
- );
-  });
-}
-  // 🔥 PERMITIR MODELO ABRIR CADA MÍDIA INDIVIDUALMENTE
-if (role === "modelo" && msg.tipo === "conteudo") {
+    midiasEls.forEach((el, index) => {
+      el.style.cursor = "pointer";
 
-  const midiasEls = div.querySelectorAll(".midia-item");
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
 
-  midiasEls.forEach((el, index) => {
-    el.style.cursor = "pointer";
-
-    el.addEventListener("click", async (e) => {
-      e.stopPropagation();
-
-      // 🔥 Se já tem midias no objeto, usa direto
-      if (msg.midias && msg.midias[index]) {
-        abrirPreviewMidiaDireto(msg.id, index);
-        return;
-      }
-
-      // 🔥 Se não tem, busca do servidor
-      try {
-        const res = await fetch(`/api/chat/conteudo/${msg.id}`, {
-          headers: {
-            Authorization: "Bearer " + token
+        // 🔒 Se bloqueado, pode abrir fluxo pagamento
+        if (bloqueado) {
+          if (typeof abrirFluxoPagamentoConteudo === "function") {
+            abrirFluxoPagamentoConteudo(msg);
           }
-        });
-
-        if (!res.ok) return;
-
-        const midias = await res.json();
-        if (midias[index]) {
-          abrirPreviewMidiaDireto(msg.id, index);
+          return;
         }
 
-      } catch (err) {
-        console.error("Erro abrir mídia:", err);
-      }
+        abrirPreviewMidiaDireto(msg, index);
+      });
     });
-  });
-}
+  }
+
+  // ===============================
+  // 💬 MENSAGEM DE TEXTO
+  // ===============================
+  else {
+    div.innerHTML = `
+      <div class="msg-texto">${msg.text}</div>
+
+      ${msg.sender === "modelo" ? `
+        <button
+          class="msg-menu"
+          data-id="${msg.id}"
+          data-text="${encodeURIComponent(msg.text || "")}">
+          ⋮
+        </button>
+      ` : ""}
+
+      <span class="msg-hora">${formatarHora(msg.created_at)}</span>
+    `;
+
+    const btn = div.querySelector(".msg-menu");
+    if (btn) {
+      btn.addEventListener("click", () => {
+        abrirMenuMensagem(
+          btn.dataset.id,
+          decodeURIComponent(btn.dataset.text)
+        );
+      });
+    }
+  }
+
+  chat.appendChild(div);
 }
 
 
 function abrirPreviewAvatar(url) {
+  if (!url || typeof url !== "string") return;
+
   let modal = document.getElementById("avatarPreviewModal");
 
   if (!modal) {
     modal = document.createElement("div");
     modal.id = "avatarPreviewModal";
-    modal.className = "preview-modal open";
+    modal.className = "preview-modal";
 
     modal.innerHTML = `
       <div class="preview-backdrop"></div>
@@ -396,18 +435,42 @@ function abrirPreviewAvatar(url) {
 
     document.body.appendChild(modal);
 
-    const fechar = () => modal.remove();
+    const fechar = () => {
+      modal.classList.remove("open");
+      setTimeout(() => modal.remove(), 200); // tempo para animação
+      document.removeEventListener("keydown", escListener);
+    };
+
+    const escListener = (e) => {
+      if (e.key === "Escape") fechar();
+    };
+
     modal.querySelector(".preview-backdrop").onclick = fechar;
     modal.querySelector(".preview-close").onclick = fechar;
+
+    document.addEventListener("keydown", escListener);
   }
 
   const img = modal.querySelector("#avatarPreviewImg");
+
+  // 🔒 Evita mostrar imagem quebrada
+  img.onerror = () => {
+    console.warn("Erro ao carregar avatar preview");
+    modal.remove();
+  };
+
   img.src = url;
 
-  modal.classList.add("open");
+  // 🔥 Abrir
+  requestAnimationFrame(() => {
+    modal.classList.add("open");
+  });
 }
 
+
 function enviarConteudosSelecionados() {
+  if (!window.socket) return;
+
   const selecionados = [
     ...document.querySelectorAll(".preview-item.selected")
   ];
@@ -417,13 +480,35 @@ function enviarConteudosSelecionados() {
     return;
   }
 
-  const conteudos_ids = selecionados.map(
-    el => Number(el.dataset.conteudoId)
-  );
+  // 🔒 Sanitizar IDs
+  const conteudos_ids = selecionados
+    .map(el => Number(el.dataset.conteudoId))
+    .filter(id => Number.isInteger(id) && id > 0);
 
-  const preco = Number(
+  if (conteudos_ids.length === 0) {
+    alert("Conteúdos inválidos.");
+    return;
+  }
+
+  // 🔒 Sanitizar preço
+  let preco = Number(
     document.getElementById("precoConteudo")?.value || 0
   );
+
+  if (!Number.isFinite(preco) || preco < 0) {
+    preco = 0;
+  }
+
+  preco = Number(preco.toFixed(2));
+
+  // 🔒 Garantir IDs globais válidos
+  if (
+    !Number.isInteger(cliente_id) ||
+    !Number.isInteger(modelo_id)
+  ) {
+    console.error("cliente_id ou modelo_id inválido");
+    return;
+  }
 
   socket.emit("sendConteudo", {
     cliente_id,
@@ -435,64 +520,93 @@ function enviarConteudosSelecionados() {
   fecharPopupConteudos();
 }
 
+
 async function abrirPopupConteudos() {
-  await carregarConteudosVistos(cliente_id);
-  document.getElementById("popupConteudos").classList.remove("hidden");
+  try {
+    if (!Number.isInteger(cliente_id)) return;
 
-  const grid = document.getElementById("previewConteudos");
-  grid.innerHTML = "Carregando...";
+    const popup = document.getElementById("popupConteudos");
+    const grid = document.getElementById("previewConteudos");
 
-  const res = await fetch("/api/conteudos", {
-    headers: {
-      Authorization: "Bearer " + localStorage.getItem("token")
+    if (!popup || !grid) return;
+
+    popup.classList.remove("hidden");
+    grid.innerHTML = "Carregando...";
+
+    // 🔒 Garantir que o Set existe
+    if (!window.conteudosVistosCliente) {
+      window.conteudosVistosCliente = new Set();
     }
-  });
 
-  if (!res.ok) {
-    grid.innerHTML = "Erro ao carregar conteúdos";
-    return;
-  }
+    // 🔥 Atualiza conteúdos já vistos pelo cliente
+    await carregarConteudosVistos(cliente_id);
 
-  const conteudos = await res.json();
+    const token = localStorage.getItem("token");
+    if (!token) {
+      grid.innerHTML = "Sessão expirada.";
+      return;
+    }
 
-  if (!Array.isArray(conteudos) || conteudos.length === 0) {
-    grid.innerHTML = "<p>Nenhum conteúdo enviado ainda.</p>";
-    return;
-  }
-
-  grid.innerHTML = "";
-
-  conteudos.forEach(c => {
-    const jaVisto = conteudosVistosCliente.has(c.id);
-
-    const item = document.createElement("div");
-    item.className =
-      "preview-item" +
-      (jaVisto ? " visto desabilitado" : "");
-    item.dataset.conteudoId = c.id;
-
-    item.innerHTML = `
-      ${c.tipo === "video"
-        ? `<video src="${c.url}" muted></video>`
-        : `<img src="${c.url}" />`
+    const res = await fetch("/api/conteudos", {
+      headers: {
+        Authorization: "Bearer " + token
       }
-      ${jaVisto ? `<span class="badge-visto">Visto</span>` : ""}
-    `;
+    });
 
-    // 🚫 REGRA FINAL:
-    // conteúdo visto (pago OU grátis) NUNCA pode ser reenviado
-    if (jaVisto) {
-      item.onclick = () => {
-        alert("Este conteúdo já foi visto por este cliente e não pode ser reenviado.");
-      };
-    } else {
-      item.onclick = () => {
-        item.classList.toggle("selected");
-      };
+    if (!res.ok) {
+      grid.innerHTML = "Erro ao carregar conteúdos.";
+      return;
     }
 
-    grid.appendChild(item);
-  });
+    const conteudos = await res.json();
+
+    if (!Array.isArray(conteudos) || conteudos.length === 0) {
+      grid.innerHTML = "<p>Nenhum conteúdo enviado ainda.</p>";
+      return;
+    }
+
+    grid.innerHTML = "";
+
+    conteudos.forEach(c => {
+      if (!c?.id || !c?.url) return;
+
+      const jaVisto = window.conteudosVistosCliente.has(c.id);
+
+      const item = document.createElement("div");
+      item.className =
+        "preview-item" +
+        (jaVisto ? " visto desabilitado" : "");
+
+      item.dataset.conteudoId = c.id;
+
+      item.innerHTML = `
+        ${
+          c.tipo === "video"
+            ? `<video src="${c.url}" muted playsinline></video>`
+            : `<img src="${c.url}" loading="lazy" />`
+        }
+        ${jaVisto ? `<span class="badge-visto">Visto</span>` : ""}
+      `;
+
+      // 🚫 Nunca permitir reenviar conteúdo já visto
+      if (jaVisto) {
+        item.addEventListener("click", () => {
+          alert("Este conteúdo já foi visto por este cliente e não pode ser reenviado.");
+        });
+      } else {
+        item.addEventListener("click", () => {
+          item.classList.toggle("selected");
+        });
+      }
+
+      grid.appendChild(item);
+    });
+
+  } catch (err) {
+    console.error("Erro abrirPopupConteudos:", err);
+    const grid = document.getElementById("previewConteudos");
+    if (grid) grid.innerHTML = "Erro inesperado.";
+  }
 }
 
 function fecharPopupConteudos() {
@@ -512,49 +626,70 @@ function fecharPopupConteudos() {
 }
 
 function confirmarEnvioConteudo() {
-  if (!cliente_id || !modelo_id) {
-    alert("Selecione um cliente primeiro.");
-    return;
+  try {
+    // 🔒 Validar IDs globais
+    if (!Number.isInteger(cliente_id) || !Number.isInteger(modelo_id)) {
+      alert("Selecione um cliente válido primeiro.");
+      return;
+    }
+
+    const selecionados = [
+      ...document.querySelectorAll(".preview-item.selected")
+    ];
+
+    if (!selecionados.length) {
+      alert("Selecione ao menos um conteúdo.");
+      return;
+    }
+
+    // 🔒 Sanitizar IDs dos conteúdos
+    const conteudos_ids = selecionados
+      .map(item => Number(item.dataset.conteudoId))
+      .filter(id => Number.isInteger(id) && id > 0);
+
+    if (!conteudos_ids.length) {
+      alert("Conteúdos inválidos.");
+      return;
+    }
+
+    // 🔒 Sanitizar preço
+    let preco = Number(document.getElementById("precoConteudo")?.value || 0);
+    if (!Number.isFinite(preco) || preco < 0) preco = 0;
+    preco = Number(preco.toFixed(2));
+
+    // 🔥 Garantir que socket existe
+    if (!window.socket) {
+      console.error("Socket não conectado!");
+      return;
+    }
+
+    // 🔥 Garantir join na sala antes de enviar
+    socket.emit("joinChat", { cliente_id, modelo_id });
+
+    // 🔥 Delay mínimo para join
+    setTimeout(() => {
+      socket.emit("sendConteudo", {
+        cliente_id,
+        modelo_id,
+        conteudos_ids,
+        preco
+      });
+    }, 50);
+
+    // 🔄 Fechar popup
+    fecharPopupConteudos();
+
+  } catch (err) {
+    console.error("Erro confirmar envio de conteúdo:", err);
   }
-
-  const selecionados = [
-    ...document.querySelectorAll(".preview-item.selected")
-  ];
-
-  if (!selecionados.length) {
-    alert("Selecione ao menos um conteúdo.");
-    return;
-  }
-
-  const preco = Number(
-    document.getElementById("precoConteudo").value || 0
-  );
-
-  const conteudos_ids = selecionados
-    .map(item => Number(item.dataset.conteudoId))
-    .filter(id => Number.isInteger(id) && id > 0);
-
-  // 🔥 GARANTE JOIN NA SALA ATIVA
-  const sala = `chat_${cliente_id}_${modelo_id}`;
-  socket.emit("joinChat", { sala });
-
-  // 🔥 ENVIA UMA ÚNICA VEZ (após garantir o join)
-  setTimeout(() => {
-    socket.emit("sendConteudo", {
-      cliente_id,
-      modelo_id,
-      conteudos_ids,
-      preco
-    });
-  }, 50);
-
-  fecharPopupConteudos();
 }
 
+// 🔔 Atualiza a mensagem de conteúdo quando cliente já viu
 socket.on("conteudoVisto", ({ message_id }) => {
-  const el = document.querySelector(
-    `.chat-conteudo[data-id="${message_id}"]`
-  );
+  if (!message_id) return;
+
+  // 🔒 Garantir que o seletor funcione mesmo com string/number
+  const el = document.querySelector(`.chat-conteudo[data-id="${message_id}"]`);
   if (!el) return;
 
   el.classList.remove("bloqueado");
@@ -564,15 +699,37 @@ socket.on("conteudoVisto", ({ message_id }) => {
   if (status) status.innerText = "🟢 Vendido";
 });
 
+// 🔄 Carrega os conteúdos já vistos pelo cliente
 async function carregarConteudosVistos(cliente_id) {
-  const res = await fetch(`/api/chat/conteudos-vistos/${cliente_id}`, {
-    headers: {
-      Authorization: "Bearer " + token
-    }
-  });
+  if (!Number.isInteger(cliente_id)) return;
 
-  const ids = await res.json();
-  conteudosVistosCliente = new Set(ids);
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    const res = await fetch(`/api/chat/conteudos-vistos/${cliente_id}`, {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
+
+    if (!res.ok) {
+      console.warn("Falha ao buscar conteúdos vistos:", res.status);
+      conteudosVistosCliente = new Set();
+      return;
+    }
+
+    const ids = await res.json();
+
+    // 🔒 Sempre cria Set para evitar erro no frontend
+    conteudosVistosCliente = new Set(
+      Array.isArray(ids) ? ids.map(id => Number(id)).filter(id => Number.isInteger(id)) : []
+    );
+
+  } catch (err) {
+    console.error("Erro carregarConteudosVistos:", err);
+    conteudosVistosCliente = new Set();
+  }
 }
 
 function formatarHora(data) {
@@ -585,50 +742,107 @@ function formatarHora(data) {
   });
 }
 
+// 🔒 Marca todas as mensagens de um cliente como lidas pelo modelo
 async function marcarComoLido(cliente_id) {
   try {
-    fetch(`/api/chat/modelo/marcar-lido/${cliente_id}`, {
+    if (!Number.isInteger(cliente_id)) {
+      console.warn("cliente_id inválido:", cliente_id);
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.warn("Token não encontrado para marcar como lido");
+      return;
+    }
+
+    const res = await fetch(`/api/chat/modelo/marcar-lido/${cliente_id}`, {
       method: "POST",
       headers: {
-        Authorization: "Bearer " + localStorage.getItem("token")
+        Authorization: "Bearer " + token
       }
     });
+
+    if (!res.ok) {
+      console.error("Falha ao marcar mensagens como lidas:", res.status);
+    } else {
+      console.log("Mensagens marcadas como lidas para cliente_id:", cliente_id);
+    }
+
   } catch (err) {
     console.error("Erro ao marcar como lido:", err);
   }
 }
 
+// ===============================
+// Variáveis globais para edição de mensagem
+// ===============================
 let mensagemEditandoId = null;
 let elementoMensagemEditando = null;
 
+
 function abrirMenuMensagem(id, texto) {
+  if (!id) {
+    console.warn("ID da mensagem inválido:", id);
+    return;
+  }
+
   mensagemEditandoId = id;
 
-  // acha a mensagem no DOM
-  elementoMensagemEditando = document.querySelector(
-    `.msg-menu[data-id="${id}"]`
-  )?.closest(".msg");
+  // 🔒 Acha a mensagem no DOM de forma segura
+  const btnMenu = document.querySelector(`.msg-menu[data-id="${id}"]`);
+  if (!btnMenu) {
+    console.warn("Botão de menu da mensagem não encontrado:", id);
+    elementoMensagemEditando = null;
+  } else {
+    elementoMensagemEditando = btnMenu.closest(".msg") || null;
+  }
 
-  document.getElementById("editarTexto").value = texto || "";
-  document.getElementById("menuMensagem").classList.remove("hidden");
+  // 🔒 Preenche input de edição se existir
+  const inputEditar = document.getElementById("editarTexto");
+  if (inputEditar) {
+    inputEditar.value = texto || "";
+  }
+
+  // 🔒 Mostra menu apenas se existir
+  const menu = document.getElementById("menuMensagem");
+  if (menu) {
+    menu.classList.remove("hidden");
+  }
 }
+
 
 
 function fecharMenuMensagem() {
+  // 🔒 Resetar variáveis globais
   mensagemEditandoId = null;
   elementoMensagemEditando = null;
-  document.getElementById("menuMensagem").classList.add("hidden");
+
+  // 🔒 Fechar menu apenas se existir
+  const menu = document.getElementById("menuMensagem");
+  if (menu) {
+    menu.classList.add("hidden");
+  }
 }
 
+
 function salvarEdicao() {
-  const novoTexto = document.getElementById("editarTexto").value.trim();
+  const inputEditar = document.getElementById("editarTexto");
+  if (!inputEditar) return;
+
+  const novoTexto = inputEditar.value.trim();
 
   if (!novoTexto) {
     alert("Mensagem vazia não é permitida.");
     return;
   }
 
-  // 🔥 atualiza na tela
+  if (!mensagemEditandoId) {
+    console.warn("Nenhuma mensagem selecionada para edição.");
+    return;
+  }
+
+  // 🔥 Atualiza o DOM localmente
   if (elementoMensagemEditando) {
     const textoDiv = elementoMensagemEditando.querySelector(".msg-texto");
     if (textoDiv) {
@@ -636,40 +850,71 @@ function salvarEdicao() {
     }
   }
 
-  // (backend depois)
-  socket.emit("editarMensagem", {
-    id: mensagemEditandoId,
-    text: novoTexto
-  });
+  // 🔒 Emite para o backend apenas se ID válido
+  if (window.socket && socket.connected) {
+    socket.emit("editarMensagem", {
+      id: mensagemEditandoId,
+      text: novoTexto
+    });
+  } else {
+    console.warn("Socket não conectado. Edição não enviada.");
+  }
 
+  // 🔄 Fecha menu de edição
   fecharMenuMensagem();
 }
 
 function excluirMensagem() {
+  if (!mensagemEditandoId) {
+    console.warn("Nenhuma mensagem selecionada para exclusão.");
+    return;
+  }
+
   if (!confirm("Tem certeza que deseja excluir esta mensagem?")) return;
 
-  // 🔥 remove da tela
+  // 🔥 Remove do DOM
   if (elementoMensagemEditando) {
     elementoMensagemEditando.remove();
   }
 
-  // (backend depois)
-  socket.emit("excluirMensagem", {
-    id: mensagemEditandoId
-  });
+  // 🔒 Emite para o backend apenas se socket conectado
+  if (window.socket && socket.connected) {
+    socket.emit("excluirMensagem", {
+      id: mensagemEditandoId
+    });
+  } else {
+    console.warn("Socket não conectado. Exclusão não enviada.");
+  }
 
+  // 🔄 Fecha menu
   fecharMenuMensagem();
 }
 
+
 async function carregarInfoCliente(cliente_id) {
   try {
-    const res = await fetch(`/api/chat/cliente_id/${cliente_id}`, {
+    if (!Number.isInteger(cliente_id)) {
+      console.warn("cliente_id inválido:", cliente_id);
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.warn("Token não encontrado.");
+      return;
+    }
+
+    // 🔒 Rota real do server
+    const res = await fetch(`/api/cliente/me`, {
       headers: {
         Authorization: "Bearer " + token
       }
     });
 
-    if (!res.ok) return;
+    if (!res.ok) {
+      console.warn("Falha ao buscar info do cliente:", res.status);
+      return;
+    }
 
     const cliente = await res.json();
 
@@ -678,29 +923,30 @@ async function carregarInfoCliente(cliente_id) {
     const status = document.getElementById("chatClienteStatus");
 
     if (avatar) {
-  avatar.style.cursor = "pointer";
+      avatar.style.cursor = "pointer";
 
-  avatar.addEventListener("click", () => {
-    if (cliente.avatar) {
-      abrirPreviewAvatar(cliente.avatar);
+      // 🔄 remove listener antigo
+      avatar.replaceWith(avatar.cloneNode(true));
+      const novoAvatar = document.getElementById("chatClienteAvatar");
+      
+      if (cliente.avatar) {
+        novoAvatar.addEventListener("click", () => abrirPreviewAvatar(cliente.avatar));
+      }
     }
-  });
-}
 
     if (nome) {
-  nome.innerText = cliente.username || "Cliente";
-}
-if (status) {
-  if (cliente.last_seen) {
-    status.innerText = `visto por último: ${formatarTempo(cliente.last_seen)}`;
-  } else {
-    status.innerText = "visto por último: agora";
-  }
-}
+      nome.innerText = cliente.username || cliente.nome || "Cliente";
+    }
+
+    if (status) {
+      if (cliente.last_seen) {
+        status.innerText = `visto por último: ${formatarTempo(cliente.last_seen)}`;
+      } else {
+        status.innerText = "visto por último: agora";
+      }
+    }
 
   } catch (err) {
     console.error("Erro carregar cliente:", err);
   }
 }
-
-

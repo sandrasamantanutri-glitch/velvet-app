@@ -1,5 +1,6 @@
 // servercontent.js
 const authModelo = require("./middleware/authModelo");
+const authCliente = require("./middleware/authCliente");
 const express = require("express");
 const path = require("path");
 const jwt = require("jsonwebtoken");
@@ -73,26 +74,6 @@ cron.schedule("0 3 * * *", async () => {
   }
 });
 
-
-// 🔐 auth cliente (igual ao server principal)
-function authCliente(req, res, next) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) return res.status(401).json({ error: "Sem token" });
-
-  try {
-    const token = authHeader.split(" ")[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    if (decoded.role !== "cliente") {
-      return res.status(403).json({ error: "Apenas cliente" });
-    }
-
-    req.user = decoded;
-    next();
-  } catch {
-    return res.status(401).json({ error: "Token inválido" });
-  }
-}
 
 //RELATORIO FINANCEIROS
 
@@ -1493,14 +1474,6 @@ router.get("/api/modelo/dados-bancarios", authModelo, async (req, res) => {
   res.json(result.rows[0] || null);
 });
 
-router.get("/api/modelo/dados-bancarios", authModelo, async (req, res) => {
-  const result = await db.query(
-    `SELECT * FROM modelo_dados_bancarios WHERE modelo_id = $1`,
-    [req.user.id]
-  );
-
-  res.json(result.rows[0] || null);
-});
 
 router.get("/modelo/conteudos", authMiddleware, authModelo, async (req, res) => {
   const modelo_id = req.user.id;
