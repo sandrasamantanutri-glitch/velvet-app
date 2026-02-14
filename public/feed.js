@@ -53,7 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <img src="${modelo.avatar || "/assets/avatar.png"}" alt="${modelo.nome_exibicao || "Modelo"}">
         `;
     card.onclick = () => {
-          window.location.href = `perfil.html?modelo_id=${id}`;
+          window.location.href = `perfil.html?modelo_id=${modelo.id}`;
         };
 
         lista.appendChild(card);
