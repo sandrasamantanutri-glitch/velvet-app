@@ -433,7 +433,7 @@ const ehDona =
   if (ehCliente || (ehModelo && modo === "publico")) {
 
     try {
-      const res = await fetch(`/api/vip/status/${windows.MODELO_ID_ATUAL}`, {
+      const res = await fetch(`/api/vip/status/${window.MODELO_ID_ATUAL}`, {
         headers: {
           Authorization: "Bearer " + tokenAtual
         }
