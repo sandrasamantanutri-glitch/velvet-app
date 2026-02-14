@@ -52,13 +52,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const ffmpegPath = require("ffmpeg-static");
 
 ffmpeg.setFfmpegPath(ffmpegPath);
-app.use("/assets", express.static(path.join(__dirname, "assets")));
-app.use(express.static(path.join(__dirname, "public")));
-app.use("/admin", express.static(path.join(__dirname, "admin-pages")));
-app.use("/icons", express.static(path.join(__dirname, "icons")));
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 const allowedOrigins = [
   "https://www.velvet.lat",
@@ -144,9 +137,189 @@ const uploadVerificacao = multer({
   }
 });
 
+app.post(
+  "/webhook/stripe",
+   express.raw({ type: "*/*" }),
+  async (req, res) => {
+     console.log("Tipo do body:", req.body.constructor.name);
+    const sig = req.headers["stripe-signature"];
 
+    let event;
+    try {
+      event = stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
+    } catch (err) {
+      console.error("❌ Webhook Stripe inválido:", err.message);
+      return res.status(400).send("Webhook Error");
+    }
+    console.log("🔔 Webhook recebido:", event.type);
+
+    try {
+      // =====================================
+      // 💰 PAYMENT INTENT SUCCEEDED
+      // =====================================
+      if (event.type === "payment_intent.succeeded") {
+        const pi = event.data.object;
+
+        // ===============================
+        // 📦 CONTEÚDO PPV
+        // ===============================
+        if (pi.metadata?.tipo === "conteudo") {
+          const {
+            cliente_id,
+            modelo_id,
+            message_id,
+            valor_base,
+            taxa_transacao,
+            taxa_plataforma
+          } = pi.metadata;
+
+          const valor_total = pi.amount / 100;
+
+          await db.query(
+            `
+            INSERT INTO conteudo_pacotes (
+              message_id,
+              cliente_id,
+              modelo_id,
+              preco,
+              valor_base,
+              taxa_transacao,
+              taxa_plataforma,
+              valor_total,
+              status,
+              payment_id,
+              metodo_pagamento,
+              pago_em
+            )
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'pago',$9,'cartao',NOW())
+            ON CONFLICT (message_id, cliente_id)
+            DO NOTHING
+            `,
+            [
+              message_id,
+              cliente_id,
+              modelo_id,
+              valor_base, // preco
+              valor_base,
+              taxa_transacao,
+              taxa_plataforma,
+              valor_total,
+              pi.id
+            ]
+          );
+
+          await db.query(
+            `
+            UPDATE messages
+            SET visto = true
+            WHERE id = $1
+              AND cliente_id = $2
+              AND modelo_id = $3
+            `,
+            [message_id, cliente_id, modelo_id]
+          );
+
+          console.log("✅ CONTEÚDO PAGO (CARTÃO):", message_id);
+
+          const sala = `chat_${cliente_id}_${modelo_id}`;
+          io.to(sala).emit("conteudoVisto", {
+            message_id: Number(message_id)
+          });
+        }
+
+        // ===============================
+        // ⭐ VIP — PRIMEIRO PAGAMENTO
+        // ===============================
+        if (pi.metadata?.tipo === "vip") {
+          await ativarVipAssinatura({
+            cliente_id: pi.metadata.cliente_id,
+            modelo_id: pi.metadata.modelo_id,
+            valor_assinatura: pi.metadata.valor_assinatura,
+            taxa_transacao: pi.metadata.taxa_transacao,
+            taxa_plataforma: pi.metadata.taxa_plataforma
+          });
+
+          // 🔔 realtime
+          const sid = onlineClientes[pi.metadata.cliente_id];
+          if (sid) {
+            io.to(sid).emit("vipAtivado", {
+              modelo_id: pi.metadata.modelo_id
+            });
+          }
+        }
+      }
+
+      // =====================================
+      // 🔁 RENOVAÇÃO AUTOMÁTICA VIP
+      // =====================================
+      if (event.type === "invoice.payment_succeeded") {
+        const invoice = event.data.object;
+
+        if (!invoice.subscription) {
+          return res.json({ received: true });
+        }
+
+        const subscriptionId = invoice.subscription;
+
+        await db.query(
+          `
+          UPDATE vip_subscriptions
+          SET
+            expiration_at = CASE
+              WHEN expiration_at > NOW()
+              THEN expiration_at + INTERVAL '30 days'
+              ELSE NOW() + INTERVAL '30 days'
+            END,
+            ativo = true
+          WHERE stripe_subscription_id = $1
+          `,
+          [subscriptionId]
+        );
+
+        console.log("🔁 VIP renovado:", subscriptionId);
+      }
+
+      // =====================================
+      // ❌ FALHA NA RENOVAÇÃO VIP
+      // =====================================
+      if (event.type === "invoice.payment_failed") {
+        const invoice = event.data.object;
+        console.warn(
+          "❌ Falha na renovação VIP:",
+          invoice.subscription
+        );
+      }
+
+      res.json({ received: true });
+    } catch (err) {
+      console.error("🔥 ERRO WEBHOOK STRIPE:", err);
+      res.status(500).json({ error: "Webhook processing failed" });
+    }
+  }
+);
+
+app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
+app.use("/admin", express.static(path.join(__dirname, "admin-pages")));
+app.use("/icons", express.static(path.join(__dirname, "icons")));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+const rateLimit = require("express-rate-limit");
 
+// 🔒 Rate limit para autenticação (login / register)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 10, // 10 tentativas
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: "Muitas tentativas. Tente novamente em alguns minutos."
+  }
+});
 
 // 📦 FEED CANÔNICO (FONTE ÚNICA)
 async function buscarFeedCompletoPorUserId(user_id) {
@@ -397,187 +570,6 @@ app.post("/api/ofertas", authModelo, async (req, res) => {
   }
 });
 
-app.use(express.static(path.join(__dirname, "public")));
-app.post(
-  "/webhook/stripe",
-   express.raw({ type: "*/*" }),
-  async (req, res) => {
-     console.log("Tipo do body:", req.body.constructor.name);
-    const sig = req.headers["stripe-signature"];
-
-    let event;
-    try {
-      event = stripe.webhooks.constructEvent(
-        req.body,
-        sig,
-        process.env.STRIPE_WEBHOOK_SECRET
-      );
-    } catch (err) {
-      console.error("❌ Webhook Stripe inválido:", err.message);
-      return res.status(400).send("Webhook Error");
-    }
-    console.log("🔔 Webhook recebido:", event.type);
-
-    try {
-      // =====================================
-      // 💰 PAYMENT INTENT SUCCEEDED
-      // =====================================
-      if (event.type === "payment_intent.succeeded") {
-        const pi = event.data.object;
-
-        // ===============================
-        // 📦 CONTEÚDO PPV
-        // ===============================
-        if (pi.metadata?.tipo === "conteudo") {
-          const {
-            cliente_id,
-            modelo_id,
-            message_id,
-            valor_base,
-            taxa_transacao,
-            taxa_plataforma
-          } = pi.metadata;
-
-          const valor_total = pi.amount / 100;
-
-          await db.query(
-            `
-            INSERT INTO conteudo_pacotes (
-              message_id,
-              cliente_id,
-              modelo_id,
-              preco,
-              valor_base,
-              taxa_transacao,
-              taxa_plataforma,
-              valor_total,
-              status,
-              payment_id,
-              metodo_pagamento,
-              pago_em
-            )
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'pago',$9,'cartao',NOW())
-            ON CONFLICT (message_id, cliente_id)
-            DO NOTHING
-            `,
-            [
-              message_id,
-              cliente_id,
-              modelo_id,
-              valor_base, // preco
-              valor_base,
-              taxa_transacao,
-              taxa_plataforma,
-              valor_total,
-              pi.id
-            ]
-          );
-
-          await db.query(
-            `
-            UPDATE messages
-            SET visto = true
-            WHERE id = $1
-              AND cliente_id = $2
-              AND modelo_id = $3
-            `,
-            [message_id, cliente_id, modelo_id]
-          );
-
-          console.log("✅ CONTEÚDO PAGO (CARTÃO):", message_id);
-
-          const sala = `chat_${cliente_id}_${modelo_id}`;
-          io.to(sala).emit("conteudoVisto", {
-            message_id: Number(message_id)
-          });
-        }
-
-        // ===============================
-        // ⭐ VIP — PRIMEIRO PAGAMENTO
-        // ===============================
-        if (pi.metadata?.tipo === "vip") {
-          await ativarVipAssinatura({
-            cliente_id: pi.metadata.cliente_id,
-            modelo_id: pi.metadata.modelo_id,
-            valor_assinatura: pi.metadata.valor_assinatura,
-            taxa_transacao: pi.metadata.taxa_transacao,
-            taxa_plataforma: pi.metadata.taxa_plataforma
-          });
-
-          // 🔔 realtime
-          const sid = onlineClientes[pi.metadata.cliente_id];
-          if (sid) {
-            io.to(sid).emit("vipAtivado", {
-              modelo_id: pi.metadata.modelo_id
-            });
-          }
-        }
-      }
-
-      // =====================================
-      // 🔁 RENOVAÇÃO AUTOMÁTICA VIP
-      // =====================================
-      if (event.type === "invoice.payment_succeeded") {
-        const invoice = event.data.object;
-
-        if (!invoice.subscription) {
-          return res.json({ received: true });
-        }
-
-        const subscriptionId = invoice.subscription;
-
-        await db.query(
-          `
-          UPDATE vip_subscriptions
-          SET
-            expiration_at = CASE
-              WHEN expiration_at > NOW()
-              THEN expiration_at + INTERVAL '30 days'
-              ELSE NOW() + INTERVAL '30 days'
-            END,
-            ativo = true
-          WHERE stripe_subscription_id = $1
-          `,
-          [subscriptionId]
-        );
-
-        console.log("🔁 VIP renovado:", subscriptionId);
-      }
-
-      // =====================================
-      // ❌ FALHA NA RENOVAÇÃO VIP
-      // =====================================
-      if (event.type === "invoice.payment_failed") {
-        const invoice = event.data.object;
-        console.warn(
-          "❌ Falha na renovação VIP:",
-          invoice.subscription
-        );
-      }
-
-      res.json({ received: true });
-    } catch (err) {
-      console.error("🔥 ERRO WEBHOOK STRIPE:", err);
-      res.status(500).json({ error: "Webhook processing failed" });
-    }
-  }
-);
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-const rateLimit = require("express-rate-limit");
-
-// 🔒 Rate limit para autenticação (login / register)
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 10, // 10 tentativas
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    error: "Muitas tentativas. Tente novamente em alguns minutos."
-  }
-});
 
 
 app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
