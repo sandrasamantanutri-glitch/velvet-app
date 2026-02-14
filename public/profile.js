@@ -168,13 +168,13 @@ async function carregarPerfilBase() {
   if (!res.ok) throw new Error("Perfil público não encontrado");
 
   const modelo = await res.json();
-  modelo_id = Number(modelo.user_id);
+  modelo_id = Number(modelo.id);
   aplicarPerfilNoDOM(modelo);
 }
 
 
 //ESPECIAL E PRA VOCE //
-async function carregarFeedBase(isVip = false) {
+async function carregarFeedBase() {
   if (!listaMidias || !modelo_id) return;
 
   const res = await fetch(`/api/modelo/publico/${modelo_id}/feed`, {
@@ -201,16 +201,17 @@ async function carregarFeedBase(isVip = false) {
   if (gridFeed) gridFeed.innerHTML = "";
   if (gridEspecial) gridEspecial.innerHTML = "";
 
-feed.forEach(conteudo => {
+  feed.forEach(conteudo => {
   if (
     conteudo.tipo_conteudo === "venda" &&
     (!conteudo.preco || Number(conteudo.preco) <= 0)
   ) {
-    return;
+    return; // não renderiza na aba Especial
   }
 
-  adicionarMidia(conteudo, isVip);
+  adicionarMidia(conteudo);
 });
+
 }
 
 
@@ -225,14 +226,14 @@ async function aplicarRegrasDeAcesso() {
     btnAssinar.style.cursor = "not-allowed";
   }
 
-  return false;
+  return;
   }
 
   // VISITANTE
 if (!role) {
   ofertaCard.style.display = "block";
   window.__CLIENTE_VIP__ = false;
-  return false;
+  return;
 }
 
 
@@ -244,35 +245,25 @@ if (!role) {
       });
       const { vip } = res.ok ? await res.json() : { vip: false };
 
-      if (vip) {
-  window.__CLIENTE_VIP__ = true;
+     if (vip) {
   ofertaCard.style.display = "none";
-  atualizarUIVip(modelo_id);
-  return true;
+  window.__CLIENTE_VIP__ = true;  
 } else {
-  window.__CLIENTE_VIP__ = false;
   ofertaCard.style.display = "block";
-  return false;
+  window.__CLIENTE_VIP__ = false;  
 }
-
     } catch {
       ofertaCard.style.display = "block";
-      return false;
     }
   }
-
-  return false;
 }
 
 async function iniciarPerfil() {
   try {
     await carregarPerfilBase();   
-const vip = await aplicarRegrasDeAcesso();
-await carregarOfertaAtiva(vip);      
-await carregarFeedBase(vip);
-
-
-
+    await carregarOfertaAtiva();      
+    await aplicarRegrasDeAcesso();
+    await carregarFeedBase(); 
   }
  catch (err) {
   console.error("🔥 ERRO REAL AO INICIAR PERFIL 🔥");
@@ -443,7 +434,7 @@ function valorBRL(valor) {
 
 
 let OFERTA_ATUAL = null;
-async function carregarOfertaAtiva(isVip = false) {
+async function carregarOfertaAtiva() {
   console.log("🧪 carregarOfertaAtiva chamado com modelo_id =", modelo_id);
   if (!modelo_id || isNaN(Number(modelo_id))) {
     console.warn("⏳ Oferta aguardando modelo_id válido");
@@ -505,14 +496,9 @@ async function carregarOfertaAtiva(isVip = false) {
     precoOriginalEl.textContent =
       valorBRL(OFERTA_ATUAL.valor_base);
 
-      if (!isVip) {
-  ofertaCard.style.display = "block";
-}
-
+    ofertaCard.style.display = "block";
     
-if (btnAssinar && !isVip) {
-  btnAssinar.disabled = false;
-}
+    if (btnAssinar) btnAssinar.disabled = false;
 
   } catch (err) {
     console.error("Erro ao carregar oferta:", err);
@@ -858,7 +844,7 @@ async function enviarMidia(file, dados = {}) {
 
 
 //3º Função
-function adicionarMidia(conteudo, isVip = false) {
+function adicionarMidia(conteudo) {
   const {
     id,
     url,
@@ -904,21 +890,12 @@ function adicionarMidia(conteudo, isVip = false) {
     card.appendChild(desc);
   }
 
-const payload = token ? decodeJWT(token) : null;
-const usuarioId = payload?.id;
-
-const donaDoPerfil =
-  role === "modelo" &&
-  usuarioId &&
-  usuarioId === modelo_id;
-
 const deveBloquear =
-  !donaDoPerfil &&
+  role !== "modelo" &&
   (
     tipo_conteudo === "venda" ||
-    !isVip
+    !window.__CLIENTE_VIP__
   );
-
 
 if (deveBloquear) {
   card.classList.add("locked");
@@ -927,7 +904,7 @@ if (deveBloquear) {
  card.onclick = () => {
 
   // 👩‍🎤 MODELO vê tudo
- if (donaDoPerfil) {
+  if (role === "modelo") {
     abrirModalMidia(url, isVideo);
     return;
   }
@@ -955,7 +932,7 @@ if (deveBloquear) {
   }
 
   // 💎 FEED NORMAL
- if (!isVip) {
+  if (!window.__CLIENTE_VIP__) {
     window.abrirFluxoVIP();
     return;
   }
@@ -964,18 +941,18 @@ if (deveBloquear) {
   abrirModalMidia(url, isVideo);
 };
 
- // EXCLUIR (APENAS DONA DO PERFIL)
-if (donaDoPerfil) {
-  const btnExcluir = document.createElement("button");
-  btnExcluir.className = "btnExcluirMidia";
-  btnExcluir.textContent = "✕";
-  btnExcluir.onclick = (e) => {
-    e.stopPropagation();
-    excluirMidia(id, card);
-  };
-  card.appendChild(btnExcluir);
-}
 
+  // EXCLUIR (MODELO)
+  if (role === "modelo") {
+    const btnExcluir = document.createElement("button");
+    btnExcluir.className = "btnExcluirMidia";
+    btnExcluir.textContent = "✕";
+    btnExcluir.onclick = (e) => {
+      e.stopPropagation();
+      excluirMidia(id, card);
+    };
+    card.appendChild(btnExcluir);
+  }
 
   img.onerror = () => {
     img.src = "/assets/capa.png";
@@ -1189,7 +1166,4 @@ function atualizarUIVip(modelo_id) {
 if (role !== "modelo" || !token) {
   btnUpload?.remove();
 }
-
-
-
 
