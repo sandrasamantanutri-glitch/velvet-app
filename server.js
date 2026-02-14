@@ -1856,7 +1856,7 @@ app.get("/api/modelo/publico/:id/feed", async (req, res) => {
 
     // 🧠 CLIENTE VIP
     if (usuario?.role === "cliente") {
-      const vip = await verificarVip(usuario.id, user_id);
+      const vip = await verificarVip(usuario.id, modelo_id);
       if (vip) {
         return res.json(feedCompleto);
       }
