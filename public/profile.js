@@ -27,6 +27,7 @@ window.__CLIENTE_VIP__ = false;
 let modo = "publico";
 let user_id = null;
 
+
 // VISUALIZACAO MEU PERFIL
 if (tokenAtual && !modeloParam) {
   modo = "privado";
@@ -432,7 +433,7 @@ const ehDona =
   if (ehCliente || (ehModelo && modo === "publico")) {
 
     try {
-      const res = await fetch(`/api/vip/status/${modelo_id}`, {
+      const res = await fetch(`/api/vip/status/${windows.MODELO_ID_ATUAL}`, {
         headers: {
           Authorization: "Bearer " + tokenAtual
         }
