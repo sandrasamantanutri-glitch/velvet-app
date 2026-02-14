@@ -1,5 +1,6 @@
 window.socket = io();
-const token = window.token;
+const tokenAtual = localStorage.getItem("token");
+const roleAtual = localStorage.getItem("role");
 const role = localStorage.getItem("role");
 const params = new URLSearchParams(window.location.search);
 const modeloParam = params.get("id");
@@ -28,7 +29,7 @@ let modo = "publico";
 let user_id = null;
 
 // VISUALIZACAO MEU PERFIL
-if (token && !modeloParam) {
+if (tokenAtual && !modeloParam) {
   modo = "privado";
 }
 
@@ -41,18 +42,27 @@ if (modeloParam) {
 // ASSINATURAS/OFERTAS ///////
 const ofertaCard = document.getElementById("oferta-card");
 const btnAssinar = document.getElementById("btn-assinar");
-if (btnAssinar) btnAssinar.disabled = true;
 
-if (token) {
-  window.socket.emit("auth", { token });
+if (btnAssinar) {
+  btnAssinar.disabled = true;
+}
 
-  if (role === "cliente") {
-    const payload = decodeJWT(token);
-    if (payload?.id) {
-      window.socket.emit("loginCliente", Number(payload.id));
-    }
+function autenticarSocket() {
+  const tokenAtual = localStorage.getItem("token");
+  if (!tokenAtual || !window.socket) return;
+
+  window.socket.emit("auth", { token: tokenAtual });
+
+  const roleAtual = localStorage.getItem("role");
+  if (roleAtual === "cliente") {
+    window.socket.emit("loginCliente");
   }
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+  autenticarSocket();
+});
+
 
 /////PERFIL ///
 const btnUpload = document.querySelector(".btn-mais");
@@ -82,15 +92,20 @@ socket.on("conteudoVisto", async ({ message_id }) => {
     }
 
     // busca a mídia liberada no backend (segurança)
-    const conteudo_id = window.MIDIA_VENDA_ATUAL.conteudo_id;
-    const res = await fetch(
-      `/api/conteudo/liberado/${message_id}`,
-      {
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("token")
-        }
-      }
-    );
+    const conteudo_id = window.MIDIA_VENDA_ATUAL?.conteudo_id;
+if (!conteudo_id) return;
+
+const tokenAtual = localStorage.getItem("token");
+if (!tokenAtual) return;
+
+const res = await fetch(
+  `/api/conteudo/liberado/${conteudo_id}`,
+  {
+    headers: {
+      Authorization: "Bearer " + tokenAtual
+    }
+  }
+);
 
     if (!res.ok) {
       console.warn("Conteúdo liberado, mas não foi possível buscar mídia");
@@ -120,15 +135,6 @@ socket.on("conteudoVisto", async ({ message_id }) => {
 });
 
 ///////////////////////////////// FUNCOES ///////////////////////////////////
-function decodeJWT(token) {
-  try {
-    const payload = token.split(".")[1];
-    return JSON.parse(atob(payload));
-  } catch (e) {
-    return null;
-  }
-}
-
 function exigirCadastro(motivo = "Para continuar, crie sua conta") {
   console.log("🔥 exigirCadastro chamado");
   window.AUTH_MENSAGEM = motivo;
@@ -143,54 +149,74 @@ function exigirLogin() {
 
 //PERFIL ///
 async function carregarPerfilBase() {
+  try {
+    const tokenAtual = localStorage.getItem("token");
 
-  // 🔐 PERFIL PRIVADO
-  if (modo === "privado") {
-    const res = await fetch("/api/modelo/me", {
-      headers: { Authorization: "Bearer " + token }
-    });
+    // ===============================
+    // 🔐 PERFIL PRIVADO (dona logada)
+    // ===============================
+    if (modo === "privado") {
 
-    if (!res.ok) throw new Error("Perfil não encontrado");
+      if (!tokenAtual) {
+        throw new Error("Token não encontrado para perfil privado");
+      }
 
-    const perfil = await res.json();
+      const res = await fetch("/api/modelo/me", {
+        headers: {
+          Authorization: "Bearer " + tokenAtual
+        }
+      });
 
-    user_id = Number(perfil.user_id);
-window.MODELO_ID_ATUAL = Number(perfil.modelo_id);
+      if (!res.ok) {
+        throw new Error("Perfil privado não encontrado");
+      }
 
-    aplicarPerfilNoDOM(perfil);
-    return;
+      const perfil = await res.json();
+
+      user_id = Number(perfil.user_id);
+      window.MODELO_ID_ATUAL = Number(perfil.modelo_id);
+
+      aplicarPerfilNoDOM(perfil);
+      return;
+    }
+
+    // ===============================
+    // 🌍 PERFIL PÚBLICO
+    // ===============================
+    if (!user_id || isNaN(Number(user_id))) {
+      console.warn("user_id inválido:", user_id);
+      return;
+    }
+
+    const res = await fetch(`/api/modelo/publico/${user_id}`);
+    if (!res.ok) {
+      throw new Error("Perfil público não encontrado");
+    }
+
+    const modelo = await res.json();
+
+    user_id = Number(modelo.user_id);
+    window.MODELO_ID_ATUAL = Number(modelo.id);
+
+    aplicarPerfilNoDOM(modelo);
+
+  } catch (err) {
+    console.error("Erro ao carregar perfil base:", err);
   }
-
-  // 🌍 PERFIL PÚBLICO
-  if (!user_id || isNaN(Number(user_id))) {
-    console.warn("user_id inválido:", user_id);
-    return;
-  }
-
-  const res = await fetch(`/api/modelo/publico/${user_id}`);
-  if (!res.ok) throw new Error("Perfil público não encontrado");
-
-  const modelo = await res.json();
-
-  user_id = Number(modelo.user_id);   // users.id
-  window.MODELO_ID_ATUAL = modelo.id; // modelos.id  🔥 AQUI
-
-  aplicarPerfilNoDOM(modelo);
 }
 
 
-
-//ESPECIAL E PRA VOCE //
 async function carregarFeedBase() {
-console.log("ID recebido:", user_id);
+
   if (!listaMidias || !user_id) return;
 
-const tokenAtual = localStorage.getItem("token");
-const res = await fetch(`/api/modelo/publico/${user_id}/feed`, {
-  headers: {
-    Authorization: "Bearer " + tokenAtual
-  }
-});
+  const tokenAtual = localStorage.getItem("token");
+
+  const res = await fetch(`/api/modelo/publico/${user_id}/feed`, {
+    headers: tokenAtual
+      ? { Authorization: "Bearer " + tokenAtual }
+      : {}
+  });
 
   if (!res.ok) {
     console.error("Erro ao carregar feed");
@@ -210,134 +236,358 @@ const res = await fetch(`/api/modelo/publico/${user_id}/feed`, {
   if (gridFeed) gridFeed.innerHTML = "";
   if (gridEspecial) gridEspecial.innerHTML = "";
 
+  const ehDona =
+    role === "modelo" &&
+    modo === "privado";
+
+  const ehVip =
+    window.__CLIENTE_VIP__ === true;
+
   feed.forEach(conteudo => {
-  if (
-    conteudo.tipo_conteudo === "venda" &&
-    (!conteudo.preco || Number(conteudo.preco) <= 0)
-  ) {
-    return; // não renderiza na aba Especial
+
+    if (
+      conteudo.tipo_conteudo === "venda" &&
+      (!conteudo.preco || Number(conteudo.preco) <= 0)
+    ) {
+      return;
+    }
+
+    adicionarMidia(conteudo, {
+      ehDona,
+      ehVip
+    });
+
+  });
+
+}
+function adicionarMidia(conteudo, contexto) {
+
+  const { ehDona, ehVip } = contexto;
+
+  const {
+    id,
+    url,
+    tipo,
+    tipo_conteudo,
+    thumbnail_url,
+    preco,
+    descricao
+  } = conteudo;
+
+  const isVenda = tipo_conteudo === "venda";
+  const isVideo = tipo === "video";
+
+  const card = document.createElement("div");
+  card.className = "midiaCard";
+
+  // ===============================
+  // 🎨 WRAPPER VISUAL
+  // ===============================
+
+  const mediaWrapper = document.createElement("div");
+  mediaWrapper.className = "midiaWrapper";
+
+  const img = document.createElement("img");
+  img.className = "midiaThumb";
+  img.src = isVideo
+    ? getVideoThumbnail(url, thumbnail_url)
+    : url;
+
+  img.onerror = () => {
+    img.src = "/assets/capa.png";
+  };
+
+  mediaWrapper.appendChild(img);
+
+  // PREÇO (SÓ ESPECIAL)
+  if (isVenda && preco) {
+    const priceTag = document.createElement("div");
+    priceTag.className = "midia-preco";
+    priceTag.textContent = `R$ ${Number(preco).toFixed(2)}`;
+    mediaWrapper.appendChild(priceTag);
   }
 
-  adicionarMidia(conteudo);
-});
+  card.appendChild(mediaWrapper);
 
+  // DESCRIÇÃO (SÓ ESPECIAL)
+  if (isVenda && descricao) {
+    const desc = document.createElement("div");
+    desc.className = "midia-descricao";
+    desc.textContent = descricao;
+    card.appendChild(desc);
+  }
+
+  // ===============================
+  // 🔒 DEFINIR BLOQUEIO
+  // ===============================
+
+  let bloqueado = false;
+
+  if (!ehDona) {
+    if (isVenda) bloqueado = true;
+    if (!isVenda && !ehVip) bloqueado = true;
+  }
+
+  if (bloqueado) {
+    card.classList.add("locked");
+  }
+
+  // ===============================
+  // 🔥 BOTÃO EXCLUIR (SÓ DONA)
+  // ===============================
+
+  if (ehDona) {
+    const btnExcluir = document.createElement("button");
+    btnExcluir.className = "btnExcluirMidia";
+    btnExcluir.textContent = "✕";
+
+    btnExcluir.onclick = (e) => {
+      e.stopPropagation();
+      excluirMidia(id, card);
+    };
+
+    card.appendChild(btnExcluir);
+  }
+
+  // ===============================
+  // 🖱️ COMPORTAMENTO DE CLIQUE
+  // ===============================
+
+  card.onclick = () => {
+
+    if (ehDona) {
+      abrirModalMidia(url, isVideo);
+      return;
+    }
+
+    if (isVenda) {
+      abrirPopupPagamentoVenda(conteudo);
+      return;
+    }
+
+    if (!ehVip) {
+      abrirFluxoVIP();
+      return;
+    }
+
+    abrirModalMidia(url, isVideo);
+  };
+
+  // ===============================
+  // 📦 GRID DESTINO
+  // ===============================
+
+  const gridDestino =
+    isVenda
+      ? document.getElementById("midias-paid")
+      : document.getElementById("listaMidias");
+
+  gridDestino?.appendChild(card);
 }
 
 
 async function aplicarRegrasDeAcesso() {
 
-  // MODELO
-  if (role === "modelo" && modo === "privado") {
-  ofertaCard.style.display = "block";
+  const tokenAtual = localStorage.getItem("token");
 
-  if (btnAssinar) {
-    btnAssinar.disabled = true;
-    btnAssinar.style.cursor = "not-allowed";
-  }
-
-  return;
-  }
-
-  // VISITANTE
-if (!role) {
-  ofertaCard.style.display = "block";
+  // Estado padrão
   window.__CLIENTE_VIP__ = false;
-  return;
-}
 
+  const ehModelo = role === "modelo";
+  const ehCliente = role === "cliente";
+  const ehDona = ehModelo && modo === "privado";
 
-  // CLIENTE
-  if (role === "cliente") {
+  // ===============================
+  // 🟣 MODELO DONA DO PERFIL
+  // ===============================
+  if (ehDona) {
+
+    window.__CLIENTE_VIP__ = false;
+
+    if (ofertaCard) ofertaCard.style.display = "block";
+
+    if (btnAssinar) {
+      btnAssinar.disabled = true;
+      btnAssinar.style.cursor = "not-allowed";
+      btnAssinar.textContent = "Seu perfil";
+    }
+
+    return;
+  }
+
+  // ===============================
+  // 👀 VISITANTE
+  // ===============================
+  if (!tokenAtual) {
+    if (ofertaCard) ofertaCard.style.display = "block";
+    return;
+  }
+
+  // ===============================
+  // 🔵 CLIENTE OU MODELO (vendo outro perfil)
+  // ===============================
+  if (ehCliente || (ehModelo && modo === "publico")) {
+
     try {
       const res = await fetch(`/api/vip/status/${MODELO_ID_ATUAL}`, {
-        headers: { Authorization: "Bearer " + token }
+        headers: {
+          Authorization: "Bearer " + tokenAtual
+        }
       });
+
       const { vip } = res.ok ? await res.json() : { vip: false };
 
       if (vip) {
-  window.__CLIENTE_VIP__ = true;
 
-  atualizarUIVip();          // 🔥 atualiza botão
-  ofertaCard.style.display = "none";
+        window.__CLIENTE_VIP__ = true;
 
-} else {
-  window.__CLIENTE_VIP__ = false;
+        if (btnAssinar) {
+          btnAssinar.disabled = true;
+          btnAssinar.textContent = "VIP ativo 💜";
+        }
 
-  ofertaCard.style.display = "block";
-}
-    } catch {
-      ofertaCard.style.display = "block";
+        if (ofertaCard) {
+          ofertaCard.style.display = "none";
+        }
+
+      } else {
+
+        window.__CLIENTE_VIP__ = false;
+
+        if (btnAssinar) {
+          btnAssinar.disabled = false;
+          btnAssinar.textContent = "Assinar VIP";
+        }
+
+        if (ofertaCard) {
+          ofertaCard.style.display = "block";
+        }
+
+      }
+
+    } catch (err) {
+      console.error("Erro ao verificar VIP:", err);
+
+      window.__CLIENTE_VIP__ = false;
+
+      if (ofertaCard) {
+        ofertaCard.style.display = "block";
+      }
     }
+
   }
 }
+
+//////////////////////////////////////////////////////
 
 async function iniciarPerfil() {
+
   try {
+
+    // ===============================
+    // 1️⃣ CARREGAR PERFIL BASE
+    // ===============================
+
     await carregarPerfilBase();
-    await aplicarRegrasDeAcesso();   
-    await carregarOfertaAtiva();      
-    await carregarFeedBase(); 
+
+    if (!user_id || !window.MODELO_ID_ATUAL) {
+      throw new Error("IDs do perfil não definidos corretamente");
+    }
+
+    // ===============================
+    // 2️⃣ APLICAR REGRAS DE ACESSO
+    // ===============================
+
+    await aplicarRegrasDeAcesso();
+
+    // ===============================
+    // 3️⃣ CARREGAR OFERTA
+    // ===============================
+
+    await carregarOfertaAtiva();
+
+    // ===============================
+    // 4️⃣ CARREGAR FEED
+    // ===============================
+
+    await carregarFeedBase();
+
+  } catch (err) {
+
+    console.error("🔥 ERRO AO INICIAR PERFIL 🔥");
+    console.error(err);
+
+    // fallback visual mínimo
+    if (document.getElementById("listaMidias")) {
+      document.getElementById("listaMidias").innerHTML =
+        "<p style='padding:20px;text-align:center;'>Erro ao carregar perfil.</p>";
+    }
+
   }
- catch (err) {
-  console.error("🔥 ERRO REAL AO INICIAR PERFIL 🔥");
-  console.error(err);
-  console.trace();
-  alert(err.message || err);
- }
+
 }
 
+
 function aplicarPerfilNoDOM(modelo) {
-  nomeEl.textContent = modelo.nome_exibicao || "";
-  profileBio.textContent = modelo.bio || "";
 
-  if (modelo.avatar) {
-    avatarImg.src = modelo.avatar;
-  }
+  if (nomeEl)
+    nomeEl.textContent = modelo.nome_exibicao || "";
 
-  if (modelo.capa) {
-    capaImg.src = modelo.capa;
-  }
+  if (profileBio)
+    profileBio.textContent = modelo.bio || "";
+
+  if (avatarImg)
+    avatarImg.src = modelo.avatar || "/assets/avatar.png";
+
+  if (capaImg)
+    capaImg.src = modelo.capa || "/assets/capa.png";
 
   const localEl = document.getElementById("local-texto");
 
-  if (localEl) {
+  if (localEl && localEl.parentElement) {
     const local = [modelo.local]
       .filter(Boolean)
       .join(" • ");
 
-    if (local) {
-      localEl.textContent = local;
+    localEl.textContent = local || "";
+    localEl.parentElement.style.display = local ? "" : "none";
+  }
+
+  // ===============================
+  // 🌐 REDES SOCIAIS
+  // ===============================
+
+  const igLink = document.getElementById("link-instagram");
+  const ttLink = document.getElementById("link-tiktok");
+
+  // Instagram
+  if (igLink) {
+    const igUser = modelo.instagram?.replace("@", "");
+    if (igUser) {
+      igLink.href = `https://instagram.com/${igUser}`;
+      igLink.style.display = "inline-block";
     } else {
-      // se não tiver local, esconde o bloco
-      localEl.parentElement.style.display = "none";
+      igLink.style.display = "none";
     }
   }
 
-//🌐 REDES SOCIAIS ////
-const igLink = document.getElementById("link-instagram");
-const ttLink = document.getElementById("link-tiktok");
-
-// Instagram
-if (modelo.instagram && igLink) {
-  igLink.href = `https://instagram.com/${modelo.instagram}`;
-  igLink.style.display = "inline-block";
-} else if (igLink) {
-  igLink.style.display = "none";
-}
-
-// TikTok
-if (modelo.tiktok && ttLink) {
-  ttLink.href = `https://www.tiktok.com/@${modelo.tiktok}`;
-  ttLink.style.display = "inline-block";
-} else if (ttLink) {
-  ttLink.style.display = "none";
-}
+  // TikTok
+  if (ttLink) {
+    const ttUser = modelo.tiktok?.replace("@", "");
+    if (ttUser) {
+      ttLink.href = `https://www.tiktok.com/@${ttUser}`;
+      ttLink.style.display = "inline-block";
+    } else {
+      ttLink.style.display = "none";
+    }
+  }
 }
 
 // ===============================
 // DOM
 // ===============================
 document.addEventListener("DOMContentLoaded", async () => {
+
   aplicarRoleNoBody();
 
   try {
@@ -347,95 +597,113 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  // PÓS-REGISTRO AUTOMÁTICO
-  const postRegisterAction =
-    localStorage.getItem("post_register_action");
+  if (roleAtual !== "modelo" || !tokenAtual) {
+    btnUpload?.remove();
+  }
+
+  // ===============================
+  // 🔄 PÓS-REGISTRO
+  // ===============================
+
+  const postRegisterAction = localStorage.getItem("post_register_action");
 
   if (postRegisterAction === "open_payment") {
     localStorage.removeItem("post_register_action");
     window.abrirFluxoVIP();
   }
 
-  // CLIQUE MANUAL NO BOTÃO ASSINAR
+  // ===============================
+  // 🎯 BOTÃO ASSINAR
+  // ===============================
+
+  // ===============================
+// 🎯 BOTÃO ASSINAR
+// ===============================
+
 btnAssinar?.addEventListener("click", () => {
+
   const tokenAtual = localStorage.getItem("token");
-  // 🔒 NÃO LOGADO
+
   if (!tokenAtual) {
     abrirPopupLoginObrigatorio();
     return;
   }
-  // ✅ LOGADO
+
   window.abrirFluxoVIP();
 });
 
+
+// ===============================
+// 🔗 LINKS VIP DINÂMICOS
+// ===============================
+
 document.addEventListener("click", (e) => {
-  if (e.target.closest(".link-assinar-vip")) {
-    e.preventDefault();
 
-    const tokenAtual = localStorage.getItem("token");
+  const linkVip = e.target.closest(".link-assinar-vip");
+  if (!linkVip) return;
 
-    if (!tokenAtual) {
-      abrirPopupLoginObrigatorio();
-      return;
-    }
+  e.preventDefault();
 
-    window.abrirFluxoVIP();
+  const tokenAtual = localStorage.getItem("token");
+
+  if (!tokenAtual) {
+    abrirPopupLoginObrigatorio();
+    return;
   }
+
+  window.abrirFluxoVIP();
 });
 
+  // ===============================
+  // 🗂 TABS DE MÍDIA
+  // ===============================
 
-});
+  const tabs = document.querySelectorAll(".midias-tabs .tab");
 
- // TABS DE MÍDIA (FEED / ESPECIAL) //
+  tabs.forEach(tab => {
 
- document.querySelectorAll(".midias-tabs .tab").forEach(tab => {
-  tab.addEventListener("click", () => {
+    tab.addEventListener("click", () => {
 
-    // troca visual das abas
-    document
-      .querySelectorAll(".midias-tabs .tab")
-      .forEach(t => t.classList.remove("active"));
+      tabs.forEach(t => t.classList.remove("active"));
 
-    tab.classList.add("active");
-
-    // esconde todos os grids
-    document
-      .querySelectorAll(".midias-grid")
-      .forEach(g => g.classList.remove("active"));
-
-    const tipo = tab.dataset.tab;
-
-    if (tipo === "free") {
       document
-        .getElementById("listaMidias")
-        ?.classList.add("active");
-    }
+        .querySelectorAll(".midias-grid")
+        .forEach(g => g.classList.remove("active"));
 
-    if (tipo === "paid") {
-      document
-        .getElementById("midias-paid")
-        ?.classList.add("active");
-    }
+      tab.classList.add("active");
+
+      const tipo = tab.dataset.tab;
+
+      if (tipo === "free") {
+        document.getElementById("listaMidias")
+          ?.classList.add("active");
+      }
+
+      if (tipo === "paid") {
+        document.getElementById("midias-paid")
+          ?.classList.add("active");
+      }
+
+    });
+
   });
 
-  
 });
 
 // ===============================
 // ROLE VISUAL
 // ===============================
 function aplicarRoleNoBody() {
-  document.body.classList.remove("role-modelo", "role-cliente", "role-publico");
-  if (role === "modelo") {
-    document.body.classList.add("role-modelo");
-  } 
-  else if (role === "cliente") {
-    document.body.classList.add("role-cliente");
-  } 
-  else {
-    // VISITANTE
-    document.body.classList.add("role-publico");
-  }
+  const body = document.body;
+  body.classList.remove("role-modelo", "role-cliente", "role-publico");
+
+  const roleClass = role === "modelo"
+    ? "role-modelo"
+    : role === "cliente"
+      ? "role-cliente"
+      : "role-publico";
+
+  body.classList.add(roleClass);
 }
 
 function valorBRL(valor) {
@@ -520,55 +788,91 @@ OFERTA_ATUAL = {
   }
 }
 
-// UPLOAD AVATAR
+// ===============================
+// 🖼 UPLOAD AVATAR
+// ===============================
+
 inputAvatar?.addEventListener("change", async () => {
-  const file = inputAvatar.files[0];
+
+  const file = inputAvatar.files?.[0];
   if (!file) return;
+
+  const tokenAtual = localStorage.getItem("token");
+  if (!tokenAtual) {
+    abrirPopupLoginObrigatorio();
+    return;
+  }
 
   const fd = new FormData();
   fd.append("avatar", file);
 
-  const res = await fetch("/uploadAvatar", {
-    method: "POST",
-    headers: {
-      Authorization: "Bearer " + token
-    },
-    body: fd
-  });
+  try {
+    const res = await fetch("/uploadAvatar", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + tokenAtual
+      },
+      body: fd
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  if (data.url) {
-    avatarImg.src = data.url; // 🔥 atualiza na hora
-  } else {
-    alert("Erro ao atualizar avatar");
+    if (data.url && avatarImg) {
+      avatarImg.src = data.url;
+    } else {
+      alert("Erro ao atualizar avatar");
+    }
+
+  } catch (err) {
+    console.error("Erro upload avatar:", err);
+    alert("Erro ao enviar avatar");
   }
+
 });
 
-// UPLOAD CAPA
+
+// ===============================
+// 🖼 UPLOAD CAPA
+// ===============================
+
 inputCapa?.addEventListener("change", async () => {
-  const file = inputCapa.files[0];
+
+  const file = inputCapa.files?.[0];
   if (!file) return;
+
+  const tokenAtual = localStorage.getItem("token");
+  if (!tokenAtual) {
+    abrirPopupLoginObrigatorio();
+    return;
+  }
 
   const fd = new FormData();
   fd.append("capa", file);
 
-  const res = await fetch("/uploadCapa", {
-    method: "POST",
-    headers: {
-      Authorization: "Bearer " + token
-    },
-    body: fd
-  });
+  try {
+    const res = await fetch("/uploadCapa", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + tokenAtual
+      },
+      body: fd
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  if (data.url) {
-    capaImg.src = data.url; // 🔥 atualiza na hora
-  } else {
-    alert("Erro ao atualizar capa");
+    if (data.url && capaImg) {
+      capaImg.src = data.url;
+    } else {
+      alert("Erro ao atualizar capa");
+    }
+
+  } catch (err) {
+    console.error("Erro upload capa:", err);
+    alert("Erro ao enviar capa");
   }
+
 });
+
 
 // ===============================
 // MIDIA
@@ -804,16 +1108,21 @@ function esconderLoading() {
 
 //2º FUNÇÃO
 async function enviarMidia(file, dados = {}) {
+
   console.log("=== ENVIAR MIDIA CHAMADO ===");
-  console.log("Token:", token);
-  console.log("Role:", role);
+
+  const tokenAtual = localStorage.getItem("token");
+  const roleAtual = localStorage.getItem("role");
+
+  console.log("Token existe?", !!tokenAtual);
+  console.log("Role:", roleAtual);
   console.log("File recebido:", file);
 
   if (!file) {
     throw new Error("Arquivo não recebido");
   }
 
-  if (!token || role !== "modelo") {
+  if (!tokenAtual || roleAtual !== "modelo") {
     throw new Error("Upload não autorizado");
   }
 
@@ -834,7 +1143,7 @@ async function enviarMidia(file, dados = {}) {
   const res = await fetch("/api/upload", {
     method: "POST",
     headers: {
-      Authorization: "Bearer " + token
+      Authorization: "Bearer " + tokenAtual
     },
     body: formData
   });
@@ -856,131 +1165,6 @@ async function enviarMidia(file, dados = {}) {
 }
 
 
-//3º Função
-function adicionarMidia(conteudo) {
-  const {
-    id,
-    url,
-    tipo,
-    tipo_conteudo,
-    thumbnail_url,
-    preco,
-    descricao
-  } = conteudo;
-
-  const isVideo = tipo === "video";
-
-  const card = document.createElement("div");
-  card.className = "midiaCard";
-
-  // WRAPPER DA MÍDIA
-  const mediaWrapper = document.createElement("div");
-  mediaWrapper.className = "midiaWrapper";
-
-  const img = document.createElement("img");
-  img.className = "midiaThumb";
-  img.src = isVideo
-    ? getVideoThumbnail(url, thumbnail_url)
-    : url;
-
-  mediaWrapper.appendChild(img);
-
-  // PREÇO (SÓ ESPECIAL)
-  if (tipo_conteudo === "venda" && preco) {
-    const priceTag = document.createElement("div");
-    priceTag.className = "midia-preco";
-    priceTag.textContent = `R$ ${Number(preco).toFixed(2)}`;
-    mediaWrapper.appendChild(priceTag);
-  }
-
-  card.appendChild(mediaWrapper);
-
-  // DESCRIÇÃO (SÓ ESPECIAL)
-  if (tipo_conteudo === "venda" && descricao) {
-    const desc = document.createElement("div");
-    desc.className = "midia-descricao";
-    desc.textContent = descricao;
-    card.appendChild(desc);
-  }
-
-const deveBloquear =
-  role !== "modelo" &&
-  (
-    tipo_conteudo === "venda" ||
-    !window.__CLIENTE_VIP__
-  );
-
-if (deveBloquear) {
-  card.classList.add("locked");
-}
-
- card.onclick = () => {
-
-  // 👩‍🎤 MODELO vê tudo
-  if (role === "modelo") {
-    abrirModalMidia(url, isVideo);
-    return;
-  }
-
-  // 🔒 VISITANTE
-  if (!token) {
-    abrirPopupLoginObrigatorio();
-    return;
-  }
-
-  // 🔥 CONTEÚDO ESPECIAL (sempre pago à parte)
-  if (tipo_conteudo === "venda") {
-
-    window.PAGAMENTO_TIPO_ATUAL = "midia";
-    window.MODELO_ID_ATUAL = modelo_id;
-
-    window.MIDIA_VENDA_ATUAL = {
-      conteudo_id: id,
-      preco: Number(preco),
-      descricao
-    };
-
-    abrirPopupPagamento();
-    return;
-  }
-
-  // 💎 FEED NORMAL
-  if (!window.__CLIENTE_VIP__) {
-    window.abrirFluxoVIP();
-    return;
-  }
-
-  // 🔓 VIP
-  abrirModalMidia(url, isVideo);
-};
-
-
-  // EXCLUIR (MODELO)
-  if (role === "modelo") {
-    const btnExcluir = document.createElement("button");
-    btnExcluir.className = "btnExcluirMidia";
-    btnExcluir.textContent = "✕";
-    btnExcluir.onclick = (e) => {
-      e.stopPropagation();
-      excluirMidia(id, card);
-    };
-    card.appendChild(btnExcluir);
-  }
-
-  img.onerror = () => {
-    img.src = "/assets/capa.png";
-  };
-
-  // GRID DESTINO 
-  const gridDestino =
-    tipo_conteudo === "venda"
-      ? document.getElementById("midias-paid")
-      : document.getElementById("listaMidias");
-
-  gridDestino?.appendChild(card);
-}
-
-//4º FUNÇÃO
 function getVideoThumbnail(url, thumbnail_url) {
   if (thumbnail_url) return thumbnail_url;
 
@@ -1063,22 +1247,39 @@ document.getElementById("fecharModal")?.addEventListener("click", (e) => {
 });
 
 async function excluirMidia(id, card) {
+
   if (!confirm("Excluir esta mídia?")) return;
 
-  const res = await fetch(`/api/conteudos/${id}`, {
+  const tokenAtual = localStorage.getItem("token");
+  const roleAtual = localStorage.getItem("role");
 
+  if (!tokenAtual || roleAtual !== "modelo") {
+    alert("Ação não autorizada");
+    return;
+  }
+
+  const res = await fetch(`/api/conteudos/${id}`, {
     method: "DELETE",
     headers: {
-      Authorization: "Bearer " + token
+      Authorization: "Bearer " + tokenAtual
     }
   });
 
   if (res.ok) {
-    card.remove();
+    card?.remove();
   } else {
     alert("Erro ao excluir mídia");
   }
 }
+
+function atualizarUIVip() {
+  if (btnAssinar) {
+    btnAssinar.textContent = "VIP ativo 💜";
+    btnAssinar.disabled = true;
+  }
+}
+
+
 
 
 // async function pagarComCartaoRecorrente() {
@@ -1092,7 +1293,7 @@ async function excluirMidia(id, card) {
 //     method: "POST",
 //     headers: {
 //       "Content-Type": "application/json",
-//       Authorization: "Bearer " + token
+//       Authorization: "Bearer " + tokenAtual
 //     },
 //     body: JSON.stringify({
 //       modelo_id
@@ -1113,12 +1314,6 @@ async function excluirMidia(id, card) {
 //   paymentElement.mount("#payment-element");
 // }
 
-function atualizarUIVip() {
-  if (btnAssinar) {
-    btnAssinar.textContent = "VIP ativo 💜";
-    btnAssinar.disabled = true;
-  }
-}
 
 // window.abrirPopupPagamento = function () {
 //   const popup = document.getElementById("popupPagamentoVelvet");
@@ -1173,8 +1368,4 @@ function atualizarUIVip() {
 // };
 
 
-//BTN DE UPLOAD
-if (role !== "modelo" || !token) {
-  btnUpload?.remove();
-}
 
