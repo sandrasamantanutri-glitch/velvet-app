@@ -471,13 +471,13 @@ async function carregarOfertaAtiva() {
     const oferta = data.oferta;
 
     // salva a oferta globalmente (não usar DOM depois)
-    OFERTA_ATUAL = {
-      id: oferta.id,
-      user_id: oferta.user_id,
-      valor_base: Number(oferta.valor_base),
-      valor_promocional: Number(oferta.valor_promocional),
-      desconto_percentual: Number(oferta.desconto_percentual || 0)
-    };
+OFERTA_ATUAL = {
+  id: oferta.id,
+  modelo_id: oferta.modelo_id,   // 🔥 ADICIONE ISSO
+  valor_base: Number(oferta.valor_base),
+  valor_promocional: Number(oferta.valor_promocional),
+  desconto_percentual: Number(oferta.desconto_percentual || 0)
+};
 
     window.OFERTA_ATUAL = OFERTA_ATUAL;
     
