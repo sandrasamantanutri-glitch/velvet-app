@@ -2154,38 +2154,51 @@ app.get("/api/chat/cliente", authCliente, async (req, res) => {
 // ===============================
 app.get("/api/chat/modelo", authModelo, async (req, res) => {
   try {
-    const modelo_id = req.user.id;
 
+    // 🔹 1️⃣ ID do usuário autenticado (tabela users)
+    const userId = req.user.id;
+
+    // 🔹 2️⃣ Buscar o ID real da tabela modelos
+    const modeloRes = await db.query(
+      "SELECT id FROM modelos WHERE user_id = $1",
+      [userId]
+    );
+
+    if (modeloRes.rows.length === 0) {
+      return res.status(404).json({ error: "Modelo não encontrado" });
+    }
+
+    const modelo_id = modeloRes.rows[0].id;
+
+    // 🔹 3️⃣ Buscar clientes VIP ativos
     const { rows } = await db.query(`
-SELECT DISTINCT ON (c.user_id)
-  c.user_id AS cliente_id,
-  cd.username,
-  c.nome,
-  cd.avatar,
+      SELECT DISTINCT ON (c.user_id)
+        c.user_id AS cliente_id,
+        cd.username,
+        c.nome,
+        cd.avatar,
 
-  m.text       AS ultima_mensagem,
-  m.created_at AS ultima_mensagem_em,
-  m.sender     AS ultimo_sender,
+        m.text       AS ultima_mensagem,
+        m.created_at AS ultima_mensagem_em,
+        m.sender     AS ultimo_sender,
 
-  COALESCE(m.visto, false) AS visto,
-  COALESCE(m.lida, false)  AS lida
+        COALESCE(m.visto, false) AS visto,
+        COALESCE(m.lida, false)  AS lida
 
-FROM vip_subscriptions v
-JOIN clientes c ON c.user_id = v.cliente_id
-LEFT JOIN clientes_dados cd ON cd.user_id = c.user_id
-LEFT JOIN messages m
-  ON m.cliente_id = c.user_id
- AND m.modelo_id  = $1
+      FROM vip_subscriptions v
+      JOIN clientes c ON c.user_id = v.cliente_id
+      LEFT JOIN clientes_dados cd ON cd.user_id = c.user_id
+      LEFT JOIN messages m
+        ON m.cliente_id = c.user_id
+       AND m.modelo_id  = $1
 
-WHERE v.modelo_id = $1
-  AND v.ativo = true
-  AND v.expiration_at > NOW()
+      WHERE v.modelo_id = $1
+        AND v.ativo = true
+        AND v.expiration_at > NOW()
 
-ORDER BY
-  c.user_id,
-  m.created_at DESC NULLS LAST;
-
-
+      ORDER BY
+        c.user_id,
+        m.created_at DESC NULLS LAST;
     `, [modelo_id]);
 
     res.json(rows);
@@ -2195,6 +2208,7 @@ ORDER BY
     res.status(500).json({ error: "Erro ao buscar chats" });
   }
 });
+
 
 // ===============================
 // 📄 DADOS DE UM CLIENTE (por ID)
