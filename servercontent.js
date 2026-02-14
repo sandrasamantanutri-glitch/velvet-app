@@ -3,6 +3,8 @@ const express = require("express");
 const path = require("path");
 const jwt = require("jsonwebtoken");
 const authMiddleware = require("./middleware/auth");
+const authCliente = require("./middleware/authCliente");
+const authModelo = require("./middleware/authModelo");
 const db = require("./db");
 const cloudinary = require("cloudinary").v2;
 
