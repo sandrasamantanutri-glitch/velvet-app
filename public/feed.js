@@ -53,26 +53,28 @@ document.addEventListener("DOMContentLoaded", () => {
           <img src="${modelo.avatar || "/assets/avatar.png"}">
         `;
 
-        card.onclick = () => {
-          const modeloIdCard = Number(modelo.id);
-          if (!modeloIdCard) return;
+card.onclick = () => {
+  const modeloIdCard = Number(modelo.id);
+  if (!modeloIdCard) return;
 
-          const role = localStorage.getItem("role");
-          const modeloLogado = Number(localStorage.getItem("modelo_id") || 0);
+  const role = localStorage.getItem("role");
+  const modeloLogado = Number(localStorage.getItem("modelo_id"));
 
-          if (role === "modelo" && modeloLogado === modeloIdCard) {
-            window.location.href = "perfil.html";
-            return;
-          }
+  // 👑 Se for modelo e for o próprio perfil
+  if (role === "modelo" && modeloLogado === modeloIdCard) {
+    window.location.href = "perfil.html";
+    return;
+  }
 
-          window.location.href = `perfil.html?id=${modeloIdCard}`;
-        };
+  // 👀 Qualquer outro caso
+  window.location.href = `perfil.html?id=${modeloIdCard}`;
+};
 
         lista.appendChild(card);
       });
     })
-    .catch(err => {
-      console.error("Erro ao carregar modelos:", err);
-      lista.innerHTML = "<p>Erro ao carregar modelos.</p>";
+    .catch(() => {
+      lista.innerHTML =
+        "<p>Erro ao carregar o feed.</p>";
     });
 });
