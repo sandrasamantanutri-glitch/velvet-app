@@ -46,7 +46,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       modelos.forEach(modelo => {
-        const id = modelo.id;
         const card = document.createElement("div");
         card.className = "modelo-card";
 
