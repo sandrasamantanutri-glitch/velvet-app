@@ -944,10 +944,21 @@ socket.on("auth", ({ token }) => {
 });
 
 
-socket.on("loginModelo", (modelo_id) => {
-  onlineModelos[modelo_id] = socket.id;
-  console.log("🟣 Modelo online:", modelo_id, socket.id);
+socket.on("loginModelo", async (user_id) => {
+
+  const result = await db.query(
+    "SELECT id FROM modelos WHERE user_id = $1",
+    [user_id]
+  );
+
+  if (!result.rows.length) return;
+
+  const modeloIdReal = result.rows[0].id;
+
+  socket.modelo_id = modeloIdReal;
+  onlineModelos[modeloIdReal] = socket.id;
 });
+
 
 // 📥 ENTRAR NA SALA DO CHAT
 
@@ -972,7 +983,7 @@ socket.on("sendMessage", async ({ cliente_id, modelo_id, text }) => {
   
   // 🔒 segurança por role
   if (socket.user.role === "cliente" && socket.user.id !== cliente_id) return;
-  if (socket.user.role === "modelo"  && socket.user.id !== modelo_id) return;
+  if (socket.user.role === "modelo" && socket.modelo_id !== modelo_id) return;
 
   if (!cliente_id || !modelo_id || !text) {
     console.log("❌ sendMessage inválido", { cliente_id, modelo_id, text });
