@@ -54,6 +54,8 @@ if (token) {
   }
 }
 
+const modelo = await res.json();
+
 /////PERFIL ///
 const btnUpload = document.querySelector(".btn-mais");
 const avatarImg  = document.getElementById("profileAvatar");
@@ -143,6 +145,7 @@ function exigirLogin() {
 
 //PERFIL ///
 async function carregarPerfilBase() {
+  window.MODELO_ID_ATUAL = modelo.id;
 
   // 🔐 PERFIL PRIVADO
   if (modo === "privado") {
@@ -241,7 +244,7 @@ if (!role) {
   // CLIENTE
   if (role === "cliente") {
     try {
-      const res = await fetch(`/api/vip/status/${user_id}`, {
+      const res = await fetch(`/api/vip/status/${MODELO_ID_ATUAL}`, {
         headers: { Authorization: "Bearer " + token }
       });
       const { vip } = res.ok ? await res.json() : { vip: false };
