@@ -883,6 +883,11 @@ body.role-cliente .area-saldos {
   display: none !important;
 }
 
+.hidden {
+  display: none !important;
+}
+
+
 
 
 
