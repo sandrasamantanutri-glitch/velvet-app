@@ -92,7 +92,7 @@ body, html {
 
 #chatBox {
   display: flex;
-  flex-direction: column;   /* 🔥 ESSA LINHA FALTAVA */
+  flex-direction: column;   
   overflow-y: auto;
   padding: 16px;
 }
@@ -100,15 +100,13 @@ body, html {
 #msgInput {
   flex: 1;
   height: 50px;
-
   padding: 0 14px;
   border-radius: 18px;
-
   border: 1px solid #C9C9C9;
   background: #fff;
-
   font-size: 16px;
   outline: none;
+  align-items: center;
 }
 
 
