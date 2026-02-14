@@ -241,7 +241,7 @@ if (!role) {
   // CLIENTE
   if (role === "cliente") {
     try {
-      const res = await fetch(`/api/vip/status/${modelo_id}`, {
+      const res = await fetch(`/api/vip/status/${user_id}`, {
         headers: { Authorization: "Bearer " + token }
       });
       const { vip } = res.ok ? await res.json() : { vip: false };
