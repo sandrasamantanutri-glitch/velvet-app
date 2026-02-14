@@ -60,7 +60,7 @@ socket.on("newMessage", msg => {
 // INIT
 // ===============================
 document.addEventListener("DOMContentLoaded", async () => {
-  const res = await fetch("/api/me", {
+  const res = await fetch("/api/modelo/me", {
     headers: { Authorization: "Bearer " + token }
   });
 
