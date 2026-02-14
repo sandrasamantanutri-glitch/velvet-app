@@ -175,7 +175,7 @@ async function carregarPerfilBase() {
 
 //ESPECIAL E PRA VOCE //
 async function carregarFeedBase() {
-console.log("ID recebido:", user_id_id);
+console.log("ID recebido:", user_id);
   if (!listaMidias || !modelo_id) return;
 
   const res = await fetch(`/api/modelo/publico/${user_id}/feed`, {
