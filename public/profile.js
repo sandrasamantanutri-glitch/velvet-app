@@ -54,8 +54,6 @@ if (token) {
   }
 }
 
-const modelo = await res.json();
-
 /////PERFIL ///
 const btnUpload = document.querySelector(".btn-mais");
 const avatarImg  = document.getElementById("profileAvatar");
