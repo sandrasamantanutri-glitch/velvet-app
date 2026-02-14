@@ -64,8 +64,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     headers: { Authorization: "Bearer " + token }
   });
 
-  const modelo = await res.json();
-  modelo_id = modelo.id;
+  const me = await res.json();
+  modelo_id = me.modelo_id;
+
+   if (!modelo_id) {
+    console.error("modelo_id indefinido");
+    return;
+  }
 
   await carregarInfoCliente(cliente_id);
 
