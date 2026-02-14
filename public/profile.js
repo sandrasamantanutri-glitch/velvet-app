@@ -246,12 +246,16 @@ if (!role) {
       });
       const { vip } = res.ok ? await res.json() : { vip: false };
 
-     if (vip) {
+      if (vip) {
+  window.__CLIENTE_VIP__ = true;
+
+  atualizarUIVip();          // 🔥 atualiza botão
   ofertaCard.style.display = "none";
-  window.__CLIENTE_VIP__ = true;  
+
 } else {
+  window.__CLIENTE_VIP__ = false;
+
   ofertaCard.style.display = "block";
-  window.__CLIENTE_VIP__ = false;  
 }
     } catch {
       ofertaCard.style.display = "block";
@@ -261,9 +265,9 @@ if (!role) {
 
 async function iniciarPerfil() {
   try {
-    await carregarPerfilBase();   
+    await carregarPerfilBase();
+    await aplicarRegrasDeAcesso();   
     await carregarOfertaAtiva();      
-    await aplicarRegrasDeAcesso();
     await carregarFeedBase(); 
   }
  catch (err) {
@@ -1101,13 +1105,11 @@ async function excluirMidia(id, card) {
 //   paymentElement.mount("#payment-element");
 // }
 
-function atualizarUIVip(modelo_id) {
-  const btnVip = document.getElementById("btnVip");
-
-  if (!btnVip) return;
-
-  btnVip.textContent = "VIP ativo 💜";
-  btnVip.disabled = true;
+function atualizarUIVip() {
+  if (btnAssinar) {
+    btnAssinar.textContent = "VIP ativo 💜";
+    btnAssinar.disabled = true;
+  }
 }
 
 // window.abrirPopupPagamento = function () {
