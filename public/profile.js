@@ -25,7 +25,7 @@ if (refParam || srcParam) {
 window.__CLIENTE_VIP__ = false;
 
 let modo = "publico";
-let modelo_id = null;
+let user_id = null;
 
 // VISUALIZACAO MEU PERFIL
 if (token && !modeloParam) {
@@ -35,7 +35,7 @@ if (token && !modeloParam) {
 
 // PERFIL PÚBLICO PARAM=ID NA URL
 if (modeloParam) {
-  modelo_id = Number(modeloParam);
+  user_id = Number(modeloParam);
 }
 
 // ASSINATURAS/OFERTAS ///////
