@@ -54,7 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
 
     card.onclick = () => {
-          window.location.href = `perfil.html?modelo_id=${user_id}`;
+          window.location.href = `perfil.html?modelo_id=${id}`;
         };
 
         lista.appendChild(card);
