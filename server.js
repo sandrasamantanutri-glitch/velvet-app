@@ -14,6 +14,15 @@ const bcrypt = require("bcrypt");
 const path = require("path");
 const fs = require("fs");
 const app = express();
+
+app.use((req, res, next) => {
+  return res.sendFile(
+    path.join(__dirname, "public", "manutencao.html")
+  );
+});
+
+
+
 const nodemailer = require("nodemailer");
 const os = require("os");
 const { exec } = require("child_process");
