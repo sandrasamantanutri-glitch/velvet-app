@@ -25,7 +25,7 @@ body {
   left: 0;
   right: 0;
   height: 64px;
-  background: #f1f1f1;
+  background: none;
   border-bottom: none;
   z-index: 1000;
 }
@@ -41,7 +41,6 @@ body {
 }
 
 .velvet-logo {
-  height: 40px !Important;
   margin-right: auto;
 }
 
