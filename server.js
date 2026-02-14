@@ -2117,7 +2117,7 @@ app.get("/api/chat/cliente", authCliente, async (req, res) => {
 
   const { rows } = await db.query(`
     SELECT
-      m.user_id AS modelo_id,
+      m.id AS modelo_id,          -- 🔥 ID correto
       m.nome_exibicao,
       m.avatar,
 
@@ -2127,7 +2127,9 @@ app.get("/api/chat/cliente", authCliente, async (req, res) => {
       msg.sender
 
     FROM vip_subscriptions v
-    JOIN modelos m ON m.user_id = v.modelo_id
+
+    JOIN modelos m 
+      ON m.id = v.modelo_id      -- 🔥 JOIN corrigido
 
     LEFT JOIN LATERAL (
       SELECT text, created_at, lida, sender
