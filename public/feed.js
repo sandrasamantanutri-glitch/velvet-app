@@ -21,13 +21,13 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   const token = localStorage.getItem("token");
-
   if (!token) {
     lista.innerHTML =
       "<p>Entre para ver as modelos disponíveis.</p>";
     return;
   }
 
+  // 🔹 Busca os modelos do backend
   fetch("/api/modelos", {
     headers: {
       Authorization: "Bearer " + token
@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
     .then(modelos => {
       lista.innerHTML = "";
 
-      if (!modelos.length) {
+      if (!Array.isArray(modelos) || modelos.length === 0) {
         lista.innerHTML = "<p>Nenhuma modelo disponível</p>";
         return;
       }
@@ -50,42 +50,38 @@ document.addEventListener("DOMContentLoaded", () => {
         card.className = "modelo-card";
 
         card.innerHTML = `
-          <img src="${modelo.avatar || "/assets/avatar.png"}">
+          <img src="${modelo.avatar || "/assets/avatar.png"}" alt="${modelo.nome_exibicao || "Modelo"}">
         `;
 
-card.onclick = () => {
-  const id = Number(modelo.user_id);
-  if (!id) return;
+        // 🔹 Clique no card
+        card.onclick = () => {
+          // 🔹 ID do modelo (user_id ou fallback para id)
+          const id = Number(modelo.user_id || modelo.id || modelo.modelo_id);
+          if (!id) return;
 
-  const role = localStorage.getItem("role");
+          const role = localStorage.getItem("role");
+          const userLogado = Number(localStorage.getItem("user_id"));
+          const modeloLogado = Number(localStorage.getItem("modelo_id"));
 
-  const userLogado   = Number(localStorage.getItem("user_id"));
-  const modeloLogado = Number(localStorage.getItem("modelo_id"));
+          // 🔹 Próprio perfil (modelo logado)
+          if (
+            role === "modelo" &&
+            (userLogado === id || modeloLogado === id)
+          ) {
+            window.location.href = "perfil.html";
+            return;
+          }
 
-  console.log("userLogado:", userLogado);
-  console.log("modeloLogado:", modeloLogado);
-  console.log("card user_id:", id);
+          // 🔹 Perfil de outro modelo
+          window.location.href = `perfil.html?id=${id}`;
+        };
 
-  // 👑 Se for modelo e for o próprio perfil
-  if (
-    role === "modelo" &&
-    (
-      userLogado === id ||     // caso esteja salvando user_id
-      modeloLogado === id      // caso esteja salvando modelo_id
-    )
-  ) {
-    window.location.href = "perfil.html";
-    return;
-  }
-
-  // 👀 qualquer outro caso
-  window.location.href = `perfil.html?id=${id}`;
-};
         lista.appendChild(card);
       });
     })
-    .catch(() => {
-      lista.innerHTML =
-        "<p>Erro ao carregar o feed.</p>";
+    .catch(err => {
+      console.error("Erro ao carregar o feed:", err);
+      lista.innerHTML = "<p>Erro ao carregar o feed.</p>";
     });
 });
+
