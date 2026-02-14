@@ -1,6 +1,6 @@
 // middleware/authModelo.js
 const jwt = require("jsonwebtoken");
-const db = require("../db"); // ajuste caminho
+const db = require("../db");
 
 module.exports = async function authModelo(req, res, next) {
   const authHeader = req.headers.authorization;
