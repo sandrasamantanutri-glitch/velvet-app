@@ -27,13 +27,6 @@ const os = require("os");
 const { exec } = require("child_process");
 const ffmpeg = require("fluent-ffmpeg");
 const authAdmin = require("./middleware/authAdmin");
-
-app.use("/app", express.static("app"));
-app.use(express.static("public"));
-app.use((req, res, next) => {
-  console.log("➡️ REQ:", req.method, req.url);
-  next();
-});
 app.set("trust proxy", 1);
 const server = http.createServer(app);
 const multer = require("multer");
@@ -62,19 +55,6 @@ const allowedOrigins = [
 ];
 const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true); // Postman, mobile, SW
-
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-
-    return callback(new Error("CORS bloqueado: " + origin));
-  },
-  credentials: true
-}));
 
 // ===============================
 // BACKBLAZE B2 (UPLOAD NOVO)
@@ -309,7 +289,6 @@ app.use("/icons", express.static(path.join(__dirname, "icons")));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 const rateLimit = require("express-rate-limit");
-
 // 🔒 Rate limit para autenticação (login / register)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
@@ -320,6 +299,27 @@ const authLimiter = rateLimit({
     error: "Muitas tentativas. Tente novamente em alguns minutos."
   }
 });
+
+app.use("/app", express.static("app"));
+app.use(express.static("public"));
+app.use((req, res, next) => {
+  console.log("➡️ REQ:", req.method, req.url);
+  next();
+});
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // Postman, mobile, SW
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error("CORS bloqueado: " + origin));
+  },
+  credentials: true
+}));
+
 
 // 📦 FEED CANÔNICO (FONTE ÚNICA)
 async function buscarFeedCompletoPorUserId(user_id) {
