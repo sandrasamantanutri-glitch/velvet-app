@@ -52,8 +52,8 @@ function autenticarSocket() {
 
   window.socket.emit("auth", { token: tokenAtual });
 
-  const roleAtual = localStorage.getItem("role");
-  if (roleAtual === "cliente") {
+  const role = localStorage.getItem("role");
+  if (role === "cliente") {
     window.socket.emit("loginCliente");
   }
 }
@@ -216,13 +216,13 @@ async function carregarFeedBase() {
       ? { Authorization: "Bearer " + tokenAtual }
       : {}
   });
-console.log("FEED RECEBIDO:", feed);
   if (!res.ok) {
     console.error("Erro ao carregar feed");
     return;
   }
 
   const feed = await res.json();
+  console.log("FEED RECEBIDO:", feed);
 
   if (!Array.isArray(feed)) {
     console.warn("Feed inválido:", feed);
@@ -596,7 +596,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  if (roleAtual !== "modelo" || !tokenAtual) {
+  if (role !== "modelo" || !tokenAtual) {
     btnUpload?.remove();
   }
 
@@ -1111,17 +1111,17 @@ async function enviarMidia(file, dados = {}) {
   console.log("=== ENVIAR MIDIA CHAMADO ===");
 
   const tokenAtual = localStorage.getItem("token");
-  const roleAtual = localStorage.getItem("role");
+  const role = localStorage.getItem("role");
 
   console.log("Token existe?", !!tokenAtual);
-  console.log("Role:", roleAtual);
+  console.log("Role:", role);
   console.log("File recebido:", file);
 
   if (!file) {
     throw new Error("Arquivo não recebido");
   }
 
-  if (!tokenAtual || roleAtual !== "modelo") {
+  if (!tokenAtual || role !== "modelo") {
     throw new Error("Upload não autorizado");
   }
 
@@ -1199,9 +1199,9 @@ window.abrirFluxoVIP = function () {
   fecharPopupPagamento?.();
   document.getElementById("modalMidia")?.classList.add("hidden");
   
-  const roleAtual = localStorage.getItem("role");
+  const role = localStorage.getItem("role");
 
-  if (!roleAtual) {
+  if (!role) {
     exigirCadastro(
       "Crie sua conta para assinar o perfil e acessar tudo 💜"
     );
@@ -1245,9 +1245,9 @@ async function excluirMidia(id, card) {
   if (!confirm("Excluir esta mídia?")) return;
 
   const tokenAtual = localStorage.getItem("token");
-  const roleAtual = localStorage.getItem("role");
+  const role = localStorage.getItem("role");
 
-  if (!tokenAtual || roleAtual !== "modelo") {
+  if (!tokenAtual || role !== "modelo") {
     alert("Ação não autorizada");
     return;
   }
