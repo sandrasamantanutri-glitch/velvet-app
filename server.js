@@ -2287,14 +2287,26 @@ app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
 
 // 🔒 CONTEÚDOS JÁ VISTOS POR CLIENTE (MODELO)
 app.get("/api/chat/conteudos-vistos/:cliente_id", authModelo, async (req, res) => {
-  const modelo_id  = req.user.id;
+
   const cliente_id = Number(req.params.cliente_id);
 
-if (!Number.isInteger(cliente_id) || cliente_id <= 0) {
-  return res.status(400).json({ error: "cliente_id inválido" });
-}
+  if (!Number.isInteger(cliente_id) || cliente_id <= 0) {
+    return res.status(400).json({ error: "cliente_id inválido" });
+  }
 
   try {
+    // 🔥 pegar o ID REAL da tabela modelos
+    const modeloRes = await db.query(
+      "SELECT id FROM modelos WHERE user_id = $1",
+      [req.user.id]
+    );
+
+    if (!modeloRes.rows.length) {
+      return res.json([]);
+    }
+
+    const modelo_id = modeloRes.rows[0].id;
+
     const result = await db.query(`
       SELECT DISTINCT mc.conteudo_id
       FROM messages m
@@ -2305,11 +2317,13 @@ if (!Number.isInteger(cliente_id) || cliente_id <= 0) {
     `, [modelo_id, cliente_id]);
 
     res.json(result.rows.map(r => r.conteudo_id));
+
   } catch (err) {
     console.error("Erro buscar conteudos vistos:", err);
     res.status(500).json([]);
   }
 });
+
 
 app.get("/modelo/relatorio", (req, res) => {
   res.sendFile(
