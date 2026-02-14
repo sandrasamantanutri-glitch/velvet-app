@@ -153,29 +153,29 @@ async function carregarPerfilBase() {
     if (!res.ok) throw new Error("Perfil não encontrado");
 
     const perfil = await res.json();
-    user_id_id = Number(perfil.id);
+    user_id = Number(perfil.id);
     aplicarPerfilNoDOM(perfil);
     return;
   }
 
   // 🌍 PERFIL PÚBLICO
-  if (!user_id_id || isNaN(Number(user_id_id))) {
-    console.warn("modelo_id inválido:", user_id_id);
+  if (!user_id || isNaN(Number(user_id))) {
+    console.warn("modelo_id inválido:", user_id);
     return;
   }
 
-  const res = await fetch(`/api/modelo/publico/${user_id_id}`);
+  const res = await fetch(`/api/modelo/publico/${user_id}`);
   if (!res.ok) throw new Error("Perfil público não encontrado");
 
   const modelo = await res.json();
-  user_id_id = Number(modelo.id);
+  user_id = Number(modelo.id);
   aplicarPerfilNoDOM(modelo);
 }
 
 
 //ESPECIAL E PRA VOCE //
 async function carregarFeedBase() {
-console.log("ID recebido:", modelo_id);
+console.log("ID recebido:", user_id_id);
   if (!listaMidias || !modelo_id) return;
 
   const res = await fetch(`/api/modelo/publico/${user_id}/feed`, {
