@@ -329,10 +329,6 @@ body.role-cliente .area-saldos {
   justify-content: center;
 }
 
-.modal.hidden {
-  display: none !important;
-}
-
 .modal .modal-backdrop {
   position: absolute;
   inset: 0;
@@ -887,10 +883,6 @@ body.role-cliente .area-saldos {
   display: none !important;
 }
 
-.modal.hidden,
-.modal-midia.hidden {
-  pointer-events: none;
-}
 
 
 
