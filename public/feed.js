@@ -53,23 +53,34 @@ document.addEventListener("DOMContentLoaded", () => {
           <img src="${modelo.avatar || "/assets/avatar.png"}">
         `;
 
-        card.onclick = () => {
-  const id = modelo.user_id;
+card.onclick = () => {
+  const id = Number(modelo.user_id);
   if (!id) return;
 
   const role = localStorage.getItem("role");
-  const userLogado = Number(localStorage.getItem("user_id"));
 
-  // 👑 Se for modelo clicando no próprio perfil
-  if (role === "modelo" && userLogado === id) {
+  const userLogado   = Number(localStorage.getItem("user_id"));
+  const modeloLogado = Number(localStorage.getItem("modelo_id"));
+
+  console.log("userLogado:", userLogado);
+  console.log("modeloLogado:", modeloLogado);
+  console.log("card user_id:", id);
+
+  // 👑 Se for modelo e for o próprio perfil
+  if (
+    role === "modelo" &&
+    (
+      userLogado === id ||     // caso esteja salvando user_id
+      modeloLogado === id      // caso esteja salvando modelo_id
+    )
+  ) {
     window.location.href = "perfil.html";
     return;
   }
 
-  // 👀 Qualquer outro caso
+  // 👀 qualquer outro caso
   window.location.href = `perfil.html?id=${id}`;
 };
-
         lista.appendChild(card);
       });
     })
