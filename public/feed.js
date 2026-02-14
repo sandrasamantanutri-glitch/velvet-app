@@ -7,9 +7,6 @@ if (!token) {
   window.location.href = "/index.html";
 }
 
-
- const id = modelo.id;
-
 function logout() {
   localStorage.clear();
   window.location.href = "/index.html";
@@ -49,6 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       modelos.forEach(modelo => {
+        const id = modelo.id;
         const card = document.createElement("div");
         card.className = "modelo-card";
 
