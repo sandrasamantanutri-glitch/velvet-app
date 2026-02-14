@@ -1841,6 +1841,10 @@ app.get("/api/modelo/publico/:id/feed", async (req, res) => {
     // 🔎 3️⃣ Buscar feed pelo user_id (padrão novo)
     const feedCompleto = await buscarFeedCompletoPorUserId(user_id);
 
+    console.log("usuario:", usuario);
+console.log("usuario.id:", usuario?.id);
+console.log("user_id param:", user_id);
+
     // 🧠 DONA DO PERFIL
     if (usuario?.role === "modelo" && usuario.id === user_id) {
       return res.json(feedCompleto);
