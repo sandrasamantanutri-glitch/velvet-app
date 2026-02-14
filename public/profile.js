@@ -174,6 +174,7 @@ async function carregarPerfilBase() {
 
       user_id = Number(perfil.user_id);
       window.MODELO_ID_ATUAL = Number(perfil.modelo_id);
+      window.MODELO_ID = window.MODELO_ID_ATUAL;
 
       aplicarPerfilNoDOM(perfil);
       return;
