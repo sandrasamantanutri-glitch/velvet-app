@@ -1673,8 +1673,25 @@ app.get("/api/ofertas", authModelo, async (req, res) => {
 //ATIVAS
 app.get("/api/ofertas/ativa/:modelo_id", async (req, res) => {
   try {
-    const modeloId = Number(req.params.modelo_id);
+    const user_id = Number(req.params.modelo_id);
 
+    if (!user_id || isNaN(user_id)) {
+      return res.status(400).json({ ativa: false });
+    }
+
+    // 🔥 1️⃣ Converter users.id → modelos.id
+    const modeloRes = await db.query(
+      `SELECT id FROM modelos WHERE user_id = $1`,
+      [user_id]
+    );
+
+    if (!modeloRes.rows.length) {
+      return res.json({ ativa: false });
+    }
+
+    const modeloId = modeloRes.rows[0].id;
+
+    // 🔥 2️⃣ Buscar oferta usando modelos.id
     const result = await db.query(
       `
       SELECT
