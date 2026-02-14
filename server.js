@@ -1726,7 +1726,7 @@ app.get("/api/ofertas/ativa/:user_id", async (req, res) => {
 });
 
 
-app.get("/api/vip/status/:modelo_id", authCliente, async (req, res) => {
+app.get("/api/vip/status/:modelo_id", auth, async (req, res) => {
   const cliente_id = req.user.id;
   const modelo_id = Number(req.params.modelo_id);
 
