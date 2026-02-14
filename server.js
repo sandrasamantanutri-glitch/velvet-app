@@ -4335,7 +4335,8 @@ app.post("/api/contato", async (req, res) => {
 });
 
 app.post("/api/chat/modelo/marcar-lido/:cliente_id", authModelo, async (req, res) => {
-  const modelo_id = req.user.id;
+
+  const userId = req.user.id; // users.id
   const cliente_id = Number(req.params.cliente_id);
 
   if (!Number.isInteger(cliente_id)) {
@@ -4343,6 +4344,19 @@ app.post("/api/chat/modelo/marcar-lido/:cliente_id", authModelo, async (req, res
   }
 
   try {
+
+    // 🔹 converter users.id → modelos.id
+    const modeloRes = await db.query(
+      "SELECT id FROM modelos WHERE user_id = $1",
+      [userId]
+    );
+
+    if (modeloRes.rows.length === 0) {
+      return res.status(404).json({ error: "Modelo não encontrado" });
+    }
+
+    const modelo_id = modeloRes.rows[0].id;
+
     await db.query(
       `
       UPDATE messages
@@ -4356,39 +4370,57 @@ app.post("/api/chat/modelo/marcar-lido/:cliente_id", authModelo, async (req, res
     );
 
     res.json({ success: true });
+
   } catch (err) {
     console.error("Erro marcar lido:", err);
     res.status(500).json({ error: "Erro interno" });
   }
 });
 
-app.post("/api/chat/cliente/marcar-lido/:modelo_id", authCliente, async (req, res) => {
-  const cliente_id = req.user.id;
-  const modelo_id = Number(req.params.modelo_id);
+app.post("/api/chat/modelo/marcar-lido/:cliente_id", authModelo, async (req, res) => {
 
-  if (!Number.isInteger(modelo_id)) {
-    return res.status(400).json({ error: "modelo_id inválido" });
+  const userId = req.user.id; // users.id
+  const cliente_id = Number(req.params.cliente_id);
+
+  if (!Number.isInteger(cliente_id)) {
+    return res.status(400).json({ error: "cliente_id inválido" });
   }
 
   try {
+
+    // 🔹 converter users.id → modelos.id
+    const modeloRes = await db.query(
+      "SELECT id FROM modelos WHERE user_id = $1",
+      [userId]
+    );
+
+    if (!modeloRes.rows.length) {
+      return res.status(404).json({ error: "Modelo não encontrado" });
+    }
+
+    const modelo_id = modeloRes.rows[0].id;
+
     await db.query(
       `
       UPDATE messages
       SET visto = true
-      WHERE modelo_id = $1
-        AND cliente_id = $2
-        AND sender = 'modelo'
+      WHERE cliente_id = $1
+        AND modelo_id = $2
+        AND sender = 'cliente'
         AND visto = false
       `,
-      [modelo_id, cliente_id]
+      [cliente_id, modelo_id]
     );
 
     res.json({ success: true });
+
   } catch (err) {
     console.error("Erro marcar lido:", err);
     res.status(500).json({ error: "Erro interno" });
   }
 });
+
+
 
 app.post(
   "/api/verificacao",
