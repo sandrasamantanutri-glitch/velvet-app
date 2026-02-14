@@ -55,24 +55,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // 🔹 Clique no card
 card.onclick = () => {
-  // Pega sempre o modelo_id do backend
-  const id = Number(modelo.modelo_id); 
-  if (!id) return;
-
-  const role = localStorage.getItem("role");
-  const modeloLogado = Number(localStorage.getItem("modelo_id"));
-
-  // 🔹 Se for o próprio modelo clicando no seu card
-  if (role === "modelo" && modeloLogado === id) {
-    window.location.href = "perfil.html"; // perfil privado sem ID
-    return;
-  }
-
-  // 🔹 Se for outro modelo
-  window.location.href = `perfil.html?id=${id}`; // perfil público
+  window.location.href = `perfil.html?modelo_id=${id}`; // perfil público
 };
-
-
         lista.appendChild(card);
       });
     })
