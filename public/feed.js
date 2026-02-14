@@ -53,10 +53,10 @@ document.addEventListener("DOMContentLoaded", () => {
           <img src="${modelo.avatar || "/assets/avatar.png"}" alt="${modelo.nome_exibicao || "Modelo"}">
         `;
 
-        // 🔹 Clique no card
-card.onclick = () => {
-  window.location.href = `perfil.html?modelo_id=${id}`; // perfil público
-};
+    card.onclick = () => {
+          window.location.href = `perfil.html?modelo_id=${modelo.id}`;
+        };
+
         lista.appendChild(card);
       });
     })
@@ -65,4 +65,3 @@ card.onclick = () => {
       lista.innerHTML = "<p>Erro ao carregar o feed.</p>";
     });
 });
-
