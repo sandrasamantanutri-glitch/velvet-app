@@ -3552,7 +3552,7 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
   }
 });
 
-app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
+app.post("/api/pagamento/vip/pix", auth, async (req, res) => {
   try {
     const { modelo_id } = req.body;
     const cliente_id = req.user.id;
@@ -3707,7 +3707,7 @@ app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
   }
 });
 
-app.post("/api/pagamento/midia/cartao", authCliente, async (req, res) => {
+app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
   const { conteudo_id } = req.body;
   const cliente_id = req.user.id;
 
@@ -3941,7 +3941,7 @@ io.to(sala).emit("conteudoVisto", {
 
 
 
-app.post("/api/pagamento/conteudo/pix", authCliente, async (req, res) => {
+app.post("/api/pagamento/conteudo/pix", auth, async (req, res) => {
   try {
     const { message_id } = req.body;
 
@@ -4013,7 +4013,7 @@ app.post("/api/pagamento/conteudo/pix", authCliente, async (req, res) => {
 
 app.post(
   "/api/pagamento/conteudo/cartao",
-  authCliente,
+  auth,
   async (req, res) => {
     try {
       const { message_id } = req.body;
@@ -4110,7 +4110,7 @@ app.post(
 
 //RENOVAÇÃO VIP
 // POST /api/vip/cartao/assinatura
-app.post("/api/vip/cartao/assinatura", authCliente, async (req, res) => {
+app.post("/api/vip/cartao/assinatura", auth, async (req, res) => {
   const { modelo_id } = req.body;
   const cliente_id = req.user.id;
 
@@ -4150,7 +4150,7 @@ app.post("/api/vip/cartao/assinatura", authCliente, async (req, res) => {
 });
 
 // POST /api/vip/cancelar
-app.post("/api/vip/cancelar", authCliente, async (req, res) => {
+app.post("/api/vip/cancelar", auth, async (req, res) => {
   const { modelo_id } = req.body;
   const cliente_id = req.user.id;
 

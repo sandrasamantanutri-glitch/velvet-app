@@ -394,7 +394,10 @@ async function aplicarRegrasDeAcesso() {
 
   const ehModelo = role === "modelo";
   const ehCliente = role === "cliente";
-  const ehDona = ehModelo && modo === "privado";
+ const userLogado = Number(localStorage.getItem("user_id"));
+const ehDona =
+  ehModelo &&
+  userLogado === user_id;
 
   // ===============================
   // 🟣 MODELO DONA DO PERFIL
