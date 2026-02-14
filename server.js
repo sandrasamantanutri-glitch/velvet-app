@@ -43,7 +43,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const ffmpegPath = require("ffmpeg-static");
 const authCliente = require("./middleware/authCliente");
 const authModelo = require("./middleware/authModelo");
-const authMiddleware = require("./middleware/auth");
+const auth = require("./middleware/auth");
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 

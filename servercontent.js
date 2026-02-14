@@ -2,7 +2,7 @@
 const express = require("express");
 const path = require("path");
 const jwt = require("jsonwebtoken");
-const authMiddleware = require("./middleware/auth");
+const auth = require("./middleware/auth");
 const authCliente = require("./middleware/authCliente");
 const authModelo = require("./middleware/authModelo");
 const db = require("./db");
@@ -231,7 +231,7 @@ router.post("/api/modelo/dados-bancarios/alterar", authModelo, async (req, res) 
 
 router.post(
   "/api/admin/pagamentos/:id/pagar",
-  authMiddleware,
+  auth,
   async (req, res) => {
     const { id } = req.params;
 
@@ -252,7 +252,7 @@ router.post(
 
 router.post(
   "/api/admin/fechar-pagamentos-modelo/:modeloId",
-  authMiddleware,
+  auth,
   async (req, res) => {
     const { modeloId } = req.params;
 
@@ -262,7 +262,7 @@ router.post(
   }
 );
 
-router.post("/api/transacoes", authMiddleware, async (req, res) => {
+router.post("/api/transacoes", auth, async (req, res) => {
   try {
     const {
       codigo,
@@ -316,7 +316,7 @@ router.post("/api/transacoes", authMiddleware, async (req, res) => {
 });
 
 router.post("/api/transacoes/:id/chargeback",
-  authMiddleware,
+  auth,
   requireRole("admin", "modelo"),
   async (req, res) => {
 
@@ -342,7 +342,7 @@ router.post("/api/transacoes/:id/chargeback",
 // ===============================
 router.post(
   "/api/allmessage",
-  authMiddleware,
+  auth,
   requireRole("admin", "modelo"),
   async (req, res) => {
     try {
@@ -479,7 +479,7 @@ router.post(
 // PÁGINA DE RELATÓRIOS
 
 router.get("/relatorios",
-  authMiddleware,
+  auth,
   requireRole("admin"),
   (req, res) => {
     res.sendFile(
@@ -585,7 +585,7 @@ router.get("/access", authCliente, async (req, res) => {
 
 router.get(
   "/api/transacoes",
-  authMiddleware,
+  auth,
   requireRole("modelo"),
   async (req, res) => {
     try {
@@ -698,7 +698,7 @@ router.get("/api/modelo/pagamentos", authModelo, async (req, res) => {
 
 //ROTA DO LINK DE ACESSO A PLATAFORMA(CLIENTES INSTA TIKTOK)
 router.get("/api/transacoes/origem",
-  authMiddleware,
+  auth,
   requireRole("admin"),
   async (req, res) => {
     const result = await db.query(`
@@ -716,7 +716,7 @@ router.get("/api/transacoes/origem",
 
 
 router.get("/api/transacoes/diario",
-  authMiddleware,
+  auth,
   requireRole("admin", "modelo", "agente"),
   async (req, res) => {
     const { mes } = req.query;
@@ -771,7 +771,7 @@ router.get("/api/transacoes/diario",
 
 
 router.get("/api/relatorios/chargebacks",
-  authMiddleware,
+  auth,
   requireRole("admin"),
   async (req, res) => {
 
@@ -811,7 +811,7 @@ router.get("/api/relatorios/chargebacks",
 
 
 router.get("/api/transacoes/resumo-mensal",
-  authMiddleware,
+  auth,
   requireRole("admin", "modelo", "agente"),
   async (req, res) => {
     const { mes } = req.query;
@@ -858,7 +858,7 @@ router.get("/api/transacoes/resumo-mensal",
 );
 
 router.get("/api/relatorios/alertas-chargeback",
-  authMiddleware,
+  auth,
   requireRole("admin"),
   async (req, res) => {
 
@@ -882,7 +882,7 @@ router.get("/api/relatorios/alertas-chargeback",
 );
 
 router.get("/api/transacoes/resumo-anual",
-  authMiddleware,
+  auth,
   requireRole("admin", "modelo"),
   async (req, res) => {
     const { ano } = req.query; // ex: 2025
@@ -930,7 +930,7 @@ router.get("/api/transacoes/resumo-anual",
 );
 
 router.get("/api/alertas/risco",
-  authMiddleware,
+  auth,
   requireRole("admin"),
   async (req, res) => {
 
@@ -1135,7 +1135,7 @@ WHERE modelo_id = $1;
 // ===============================
 router.get(
   "/api/allmessage/modelos",
-  authMiddleware,
+  auth,
   requireRole("admin", "modelo"),
   async (req, res) => {
     try {
@@ -1172,7 +1172,7 @@ router.get(
 // 📣 ALLMESSAGE - CONTEÚDOS DA MODELO
 // ===============================
 router.get("/api/allmessage/conteudos/:modelo_id",
-  authMiddleware,
+  auth,
   requireRole("admin", "modelo"),
   async (req, res) => {
     try {
@@ -1213,7 +1213,7 @@ router.get("/api/allmessage/conteudos/:modelo_id",
 );
 
 router.get("/api/relatorios/kpis-mensais",
-  authMiddleware, // ⬅️ SEM requireRole restritivo
+  auth, // ⬅️ SEM requireRole restritivo
   async (req, res) => {
     try {
       const { mes, modelo_id } = req.query;
@@ -1262,7 +1262,7 @@ router.get("/api/relatorios/kpis-mensais",
 ////////////////////////////////////////// ADM ////////////////////////////////////////////////////
 router.get(
   '/admin/relatorios/geral',
-  authMiddleware,
+  auth,
   requireRole("admin"),
   async (req, res) => {
     try {
@@ -1348,7 +1348,7 @@ router.get(
 // 📊 RELATÓRIO DIÁRIO (GRÁFICO 30 DIAS) - ADMIN ONLY
 router.get(
   '/admin/relatorios/diario',
-  authMiddleware,
+  auth,
   requireRole("admin"),
   async (req, res) => {
     try {
@@ -1416,7 +1416,7 @@ router.get(
 
 router.get(
   '/admin/relatorios/modelo',
-  authMiddleware,
+  auth,
   requireRole("admin"),
   async (req, res) => {
     try {
@@ -1475,7 +1475,7 @@ router.get("/api/modelo/dados-bancarios", authModelo, async (req, res) => {
 });
 
 
-router.get("/modelo/conteudos", authMiddleware, authModelo, async (req, res) => {
+router.get("/modelo/conteudos", auth, authModelo, async (req, res) => {
   const modelo_id = req.user.id;
 
   const result = await db.query(
