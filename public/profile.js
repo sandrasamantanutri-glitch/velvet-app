@@ -26,6 +26,7 @@ window.__CLIENTE_VIP__ = false;
 
 let modo = "publico";
 let modelo_id = null;
+let modelo_user_id = null;
 
 // VISUALIZACAO MEU PERFIL
 if (token && !modeloParam) {
@@ -153,7 +154,8 @@ async function carregarPerfilBase() {
     if (!res.ok) throw new Error("Perfil não encontrado");
 
     const perfil = await res.json();
-    modelo_id = Number(perfil.id);
+    modelo_user_id = Number(modelo.user_id);
+    modelo_id = Number(modelo.id);
     aplicarPerfilNoDOM(perfil);
     return;
   }
@@ -164,7 +166,7 @@ async function carregarPerfilBase() {
     return;
   }
 
-  const res = await fetch(`/api/modelo/publico/${modelo_id}`);
+  const res = await fetch(`/api/modelo/publico/${modelo_user_id}`);
   if (!res.ok) throw new Error("Perfil público não encontrado");
 
   const modelo = await res.json();
@@ -177,7 +179,7 @@ async function carregarPerfilBase() {
 async function carregarFeedBase(isVip = false) {
   if (!listaMidias || !modelo_id) return;
 
-  const res = await fetch(`/api/modelo/publico/${modelo_id}/feed`, {
+  const res = await fetch(`/api/modelo/publico/${modelo_user_id}/feed`, {
     headers: token
       ? { Authorization: "Bearer " + token }
       : {}
@@ -239,7 +241,7 @@ if (!role) {
   // CLIENTE
   if (role === "cliente") {
     try {
-      const res = await fetch(`/api/vip/status/${modelo_id}`, {
+      const res = await fetch(`/api/vip/status/${modelo_user_id}`, {
         headers: { Authorization: "Bearer " + token }
       });
       const { vip } = res.ok ? await res.json() : { vip: false };
