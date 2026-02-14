@@ -153,22 +153,22 @@ async function carregarPerfilBase() {
     if (!res.ok) throw new Error("Perfil não encontrado");
 
     const perfil = await res.json();
-    modelo_id = Number(perfil.id);
+    user_id_id = Number(perfil.id);
     aplicarPerfilNoDOM(perfil);
     return;
   }
 
   // 🌍 PERFIL PÚBLICO
-  if (!modelo_id || isNaN(Number(modelo_id))) {
-    console.warn("modelo_id inválido:", modelo_id);
+  if (!user_id_id || isNaN(Number(user_id_id))) {
+    console.warn("modelo_id inválido:", user_id_id);
     return;
   }
 
-  const res = await fetch(`/api/modelo/publico/${modelo_id}`);
+  const res = await fetch(`/api/modelo/publico/${user_id_id}`);
   if (!res.ok) throw new Error("Perfil público não encontrado");
 
   const modelo = await res.json();
-  modelo_id = Number(modelo.id);
+  user_id_id = Number(modelo.id);
   aplicarPerfilNoDOM(modelo);
 }
 
