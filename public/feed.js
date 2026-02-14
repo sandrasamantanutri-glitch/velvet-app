@@ -46,14 +46,12 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       modelos.forEach(modelo => {
-        const id = modelo.id;
         const card = document.createElement("div");
         card.className = "modelo-card";
 
         card.innerHTML = `
           <img src="${modelo.avatar || "/assets/avatar.png"}" alt="${modelo.nome_exibicao || "Modelo"}">
         `;
-
     card.onclick = () => {
           window.location.href = `perfil.html?modelo_id=${id}`;
         };
@@ -66,3 +64,4 @@ document.addEventListener("DOMContentLoaded", () => {
       lista.innerHTML = "<p>Erro ao carregar o feed.</p>";
     });
 });
+

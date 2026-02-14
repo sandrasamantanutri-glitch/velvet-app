@@ -23,16 +23,7 @@ if (refParam || srcParam) {
 }
 
 window.__CLIENTE_VIP__ = false;
-
-let modo = "publico";
 let user_id = null;
-
-
-// VISUALIZACAO MEU PERFIL
-if (tokenAtual && !modeloParam) {
-  modo = "privado";
-}
-
 
 // PERFIL PÚBLICO PARAM=ID NA URL
 if (modeloParam) {
@@ -147,69 +138,29 @@ function exigirLogin() {
 }
 
 
-//PERFIL ///
 async function carregarPerfilBase() {
   try {
-    const tokenAtual = localStorage.getItem("token");
-
-    // ===============================
-    // 🔐 PERFIL PRIVADO (dona logada)
-    // ===============================
-    if (modo === "privado") {
-
-      if (!tokenAtual) {
-        throw new Error("Token não encontrado para perfil privado");
-      }
-
-      const res = await fetch("/api/modelo/me", {
-        headers: {
-          Authorization: "Bearer " + tokenAtual
-        }
-      });
-
-      if (!res.ok) {
-        throw new Error("Perfil privado não encontrado");
-      }
-
-      const perfil = await res.json();
-
-      // ⚠️ PRIVADO ainda depende de user_id
-      user_id = Number(perfil.user_id);
-      window.MODELO_ID_ATUAL = Number(perfil.modelo_id);
-      window.MODELO_ID = window.MODELO_ID_ATUAL;
-
-      aplicarPerfilNoDOM(perfil);
-      return;
-    }
-
-    // ===============================
-    // 🌍 PERFIL PÚBLICO
-    // ===============================
-
-    // usa apenas modelo_id
-    if (!window.MODELO_ID_ATUAL || isNaN(Number(window.MODELO_ID_ATUAL))) {
-      console.warn("modelo_id inválido:", window.MODELO_ID_ATUAL);
+    if (!window.MODELO_ID_ATUAL) {
+      console.warn("modelo_id inválido");
       return;
     }
 
     const res = await fetch(`/api/modelo/publico/${window.MODELO_ID_ATUAL}`);
+
     if (!res.ok) {
-      throw new Error("Perfil público não encontrado");
+      throw new Error("Perfil não encontrado");
     }
 
     const modelo = await res.json();
 
-    // ⚠️ mantém modelo_id consistente
     window.MODELO_ID_ATUAL = Number(modelo.id);
 
     aplicarPerfilNoDOM(modelo);
 
   } catch (err) {
-    console.error("Erro ao carregar perfil base:", err);
+    console.error("Erro ao carregar perfil:", err);
   }
 }
-
-
 
 async function carregarFeedBase() {
 
