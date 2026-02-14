@@ -2179,38 +2179,37 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
       return res.status(404).json({ error: "Modelo não encontrado" });
     }
 
-    const modelo_id = modeloRes.rows[0].id;
+   const modelo_id = modeloRes.rows[0].id;
 
-    // 🔹 3️⃣ Buscar clientes VIP ativos
-    const { rows } = await db.query(`
-      SELECT DISTINCT ON (c.user_id)
-        c.user_id AS cliente_id,
-        cd.username,
-        c.nome,
-        cd.avatar,
+const { rows } = await db.query(`
+  SELECT DISTINCT ON (c.user_id)
+    c.user_id AS cliente_id,
+    cd.username,
+    c.nome,
+    cd.avatar,
 
-        m.text       AS ultima_mensagem,
-        m.created_at AS ultima_mensagem_em,
-        m.sender     AS ultimo_sender,
+    m.text       AS ultima_mensagem,
+    m.created_at AS ultima_mensagem_em,
+    m.sender     AS ultimo_sender,
 
-        COALESCE(m.visto, false) AS visto,
-        COALESCE(m.lida, false)  AS lida
+    COALESCE(m.visto, false) AS visto,
+    COALESCE(m.lida, false)  AS lida
 
-      FROM vip_subscriptions v
-      JOIN clientes c ON c.user_id = v.cliente_id
-      LEFT JOIN clientes_dados cd ON cd.user_id = c.user_id
-      LEFT JOIN messages m
-        ON m.cliente_id = c.user_id
-       AND m.modelo_id  = $1
+  FROM vip_subscriptions v
+  JOIN clientes c ON c.user_id = v.cliente_id
+  LEFT JOIN clientes_dados cd ON cd.user_id = c.user_id
+  LEFT JOIN messages m
+    ON m.cliente_id = c.user_id
+   AND (m.modelo_id = $1 OR m.modelo_id = $2)
 
-      WHERE v.modelo_id = $1
-        AND v.ativo = true
-        AND v.expiration_at > NOW()
+  WHERE (v.modelo_id = $1 OR v.modelo_id = $2)
+    AND v.ativo = true
+    AND v.expiration_at > NOW()
 
-      ORDER BY
-        c.user_id,
-        m.created_at DESC NULLS LAST;
-    `, [modelo_id]);
+  ORDER BY
+    c.user_id,
+    m.created_at DESC NULLS LAST;
+`, [modelo_id, userId]);
 
     res.json(rows);
 
