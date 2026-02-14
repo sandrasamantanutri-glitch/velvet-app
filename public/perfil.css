@@ -883,6 +883,15 @@ body.role-cliente .area-saldos {
   }
 }
 
+.modal-midia.hidden {
+  display: none !important;
+}
+
+.modal.hidden,
+.modal-midia.hidden {
+  pointer-events: none;
+}
+
 
 
 
