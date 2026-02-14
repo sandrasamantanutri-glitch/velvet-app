@@ -174,7 +174,7 @@ async function carregarPerfilBase() {
 
 
 //ESPECIAL E PRA VOCE //
-async function carregarFeedBase() {
+async function carregarFeedBase(isVip = false) {
   if (!listaMidias || !modelo_id) return;
 
   const res = await fetch(`/api/modelo/publico/${modelo_id}/feed`, {
@@ -201,17 +201,18 @@ async function carregarFeedBase() {
   if (gridFeed) gridFeed.innerHTML = "";
   if (gridEspecial) gridEspecial.innerHTML = "";
 
-  feed.forEach(conteudo => {
+feed.forEach(conteudo => {
+  adicionarMidia(conteudo, isVip);
+
   if (
     conteudo.tipo_conteudo === "venda" &&
     (!conteudo.preco || Number(conteudo.preco) <= 0)
   ) {
-    return; // não renderiza na aba Especial
+    return;
   }
 
-  adicionarMidia(conteudo);
+  adicionarMidia(conteudo, isVip);
 });
-
 }
 
 
@@ -245,25 +246,32 @@ if (!role) {
       });
       const { vip } = res.ok ? await res.json() : { vip: false };
 
-     if (vip) {
-  ofertaCard.style.display = "none";
-  window.__CLIENTE_VIP__ = true;  
-} else {
-  ofertaCard.style.display = "block";
-  window.__CLIENTE_VIP__ = false;  
-}
+       if (vip) {
+        ofertaCard.style.display = "none";
+        atualizarUIVip(modelo_id);
+        return true;
+      } else {
+        ofertaCard.style.display = "block";
+        return false;
+      }
+
     } catch {
       ofertaCard.style.display = "block";
+      return false;
     }
   }
+
+  return false;
 }
 
 async function iniciarPerfil() {
   try {
     await carregarPerfilBase();   
     await carregarOfertaAtiva();      
-    await aplicarRegrasDeAcesso();
-    await carregarFeedBase(); 
+    const vip = await aplicarRegrasDeAcesso();
+    await carregarFeedBase(vip);
+
+
   }
  catch (err) {
   console.error("🔥 ERRO REAL AO INICIAR PERFIL 🔥");
@@ -844,7 +852,7 @@ async function enviarMidia(file, dados = {}) {
 
 
 //3º Função
-function adicionarMidia(conteudo) {
+function adicionarMidia(conteudo, isVip = false) {
   const {
     id,
     url,
@@ -902,7 +910,7 @@ const deveBloquear =
   !donaDoPerfil &&
   (
     tipo_conteudo === "venda" ||
-    !window.__CLIENTE_VIP__
+    !isVip
   );
 
 
@@ -941,7 +949,7 @@ if (deveBloquear) {
   }
 
   // 💎 FEED NORMAL
-  if (!window.__CLIENTE_VIP__) {
+ if (!isVip) {
     window.abrirFluxoVIP();
     return;
   }
@@ -1175,4 +1183,7 @@ function atualizarUIVip(modelo_id) {
 if (role !== "modelo" || !token) {
   btnUpload?.remove();
 }
+
+
+
 
