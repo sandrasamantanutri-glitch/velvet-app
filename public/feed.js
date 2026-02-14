@@ -54,12 +54,21 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
 
         card.onclick = () => {
-          const id = modelo.user_id;
-          if (!id) return;
+  const id = modelo.user_id;
+  if (!id) return;
 
-          localStorage.setItem("modelo_id",  modelo.user_id);
-          window.location.href = `perfil.html?id=${modelo.user_id}`;
-        };
+  const role = localStorage.getItem("role");
+  const userLogado = Number(localStorage.getItem("user_id"));
+
+  // 👑 Se for modelo clicando no próprio perfil
+  if (role === "modelo" && userLogado === id) {
+    window.location.href = "perfil.html";
+    return;
+  }
+
+  // 👀 Qualquer outro caso
+  window.location.href = `perfil.html?id=${id}`;
+};
 
         lista.appendChild(card);
       });
