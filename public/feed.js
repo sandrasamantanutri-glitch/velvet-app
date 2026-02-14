@@ -8,7 +8,7 @@ if (!token) {
 }
 
 
- const id = modelo.id;
+ const id = user_id;
 
 function logout() {
   localStorage.clear();
