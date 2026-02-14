@@ -54,33 +54,22 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
 
 card.onclick = () => {
-  const id = Number(modelo.user_id);
-  if (!id) return;
+  const modeloIdCard = Number(modelo.id);
+  if (!modeloIdCard) return;
 
   const role = localStorage.getItem("role");
-
-  const userLogado   = Number(localStorage.getItem("user_id"));
   const modeloLogado = Number(localStorage.getItem("modelo_id"));
 
-  console.log("userLogado:", userLogado);
-  console.log("modeloLogado:", modeloLogado);
-  console.log("card user_id:", id);
-
   // 👑 Se for modelo e for o próprio perfil
-  if (
-    role === "modelo" &&
-    (
-      userLogado === id ||     // caso esteja salvando user_id
-      modeloLogado === id      // caso esteja salvando modelo_id
-    )
-  ) {
+  if (role === "modelo" && modeloLogado === modeloIdCard) {
     window.location.href = "perfil.html";
     return;
   }
 
-  // 👀 qualquer outro caso
-  window.location.href = `perfil.html?id=${id}`;
+  // 👀 Qualquer outro caso
+  window.location.href = `perfil.html?id=${modeloIdCard}`;
 };
+
         lista.appendChild(card);
       });
     })
