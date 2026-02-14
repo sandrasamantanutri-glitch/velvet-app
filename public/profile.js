@@ -225,14 +225,14 @@ async function aplicarRegrasDeAcesso() {
     btnAssinar.style.cursor = "not-allowed";
   }
 
-  return;
+  return false;
   }
 
   // VISITANTE
 if (!role) {
   ofertaCard.style.display = "block";
   window.__CLIENTE_VIP__ = false;
-  return;
+  return false;
 }
 
 
@@ -244,14 +244,16 @@ if (!role) {
       });
       const { vip } = res.ok ? await res.json() : { vip: false };
 
-       if (vip) {
-        ofertaCard.style.display = "none";
-        atualizarUIVip(modelo_id);
-        return true;
-      } else {
-        ofertaCard.style.display = "block";
-        return false;
-      }
+      if (vip) {
+  window.__CLIENTE_VIP__ = true;
+  ofertaCard.style.display = "none";
+  atualizarUIVip(modelo_id);
+  return true;
+} else {
+  window.__CLIENTE_VIP__ = false;
+  ofertaCard.style.display = "block";
+  return false;
+}
 
     } catch {
       ofertaCard.style.display = "block";
@@ -265,9 +267,10 @@ if (!role) {
 async function iniciarPerfil() {
   try {
     await carregarPerfilBase();   
-    await carregarOfertaAtiva();      
-    const vip = await aplicarRegrasDeAcesso();
-    await carregarFeedBase(vip);
+const vip = await aplicarRegrasDeAcesso();
+await carregarOfertaAtiva(vip);      
+await carregarFeedBase(vip);
+
 
 
   }
@@ -440,7 +443,7 @@ function valorBRL(valor) {
 
 
 let OFERTA_ATUAL = null;
-async function carregarOfertaAtiva() {
+async function carregarOfertaAtiva(isVip = false) {
   console.log("🧪 carregarOfertaAtiva chamado com modelo_id =", modelo_id);
   if (!modelo_id || isNaN(Number(modelo_id))) {
     console.warn("⏳ Oferta aguardando modelo_id válido");
@@ -502,9 +505,14 @@ async function carregarOfertaAtiva() {
     precoOriginalEl.textContent =
       valorBRL(OFERTA_ATUAL.valor_base);
 
-    ofertaCard.style.display = "block";
+      if (!isVip) {
+  ofertaCard.style.display = "block";
+}
+
     
-    if (btnAssinar) btnAssinar.disabled = false;
+if (btnAssinar && !isVip) {
+  btnAssinar.disabled = false;
+}
 
   } catch (err) {
     console.error("Erro ao carregar oferta:", err);
