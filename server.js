@@ -1728,32 +1728,45 @@ app.get("/api/ofertas/ativa/:modelo_id", async (req, res) => {
 
 
 app.get("/api/vip/status/:modelo_id", authCliente, async (req, res) => {
-  const cliente_id = req.user.id;
+
   const modelo_id = Number(req.params.modelo_id);
 
-  // 🔒 validação param
   if (!Number.isInteger(modelo_id) || modelo_id <= 0) {
     return res.status(400).json({ error: "modelo_id inválido" });
   }
 
+  // 🔥 converter users.id → clientes.id
+  const clienteRes = await db.query(
+    `SELECT id FROM clientes WHERE user_id = $1`,
+    [req.user.id]
+  );
+
+  if (clienteRes.rowCount === 0) {
+    return res.json({ vip: false });
+  }
+
+  // ✅ AGORA SIM usa o id correto
+  const cliente_id = clienteRes.rows[0].id;
+
   const result = await db.query(
     `
-   SELECT expiration_at
-   FROM vip_subscriptions
-   WHERE cliente_id = $1
-   AND modelo_id = $2
-   AND ativo = true
-   AND expiration_at > NOW()
-   LIMIT 1
+    SELECT expiration_at
+    FROM vip_subscriptions
+    WHERE cliente_id = $1
+    AND modelo_id = $2
+    AND ativo = true
+    AND expiration_at > NOW()
+    LIMIT 1
     `,
     [cliente_id, modelo_id]
-   );
+  );
 
-   res.json({
-   vip: result.rowCount > 0,
-   expiration_at: result.rows[0]?.expiration_at || null
+  res.json({
+    vip: result.rowCount > 0,
+    expiration_at: result.rows[0]?.expiration_at || null
   });
 });
+
 
 // ✅ NOVA — só para app / PWA
 app.get("/api/app/state-v2", auth, (req, res) => {
