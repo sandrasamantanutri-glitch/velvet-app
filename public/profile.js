@@ -202,8 +202,6 @@ async function carregarFeedBase(isVip = false) {
   if (gridEspecial) gridEspecial.innerHTML = "";
 
 feed.forEach(conteudo => {
-  adicionarMidia(conteudo, isVip);
-
   if (
     conteudo.tipo_conteudo === "venda" &&
     (!conteudo.preco || Number(conteudo.preco) <= 0)
