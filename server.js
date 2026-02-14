@@ -1835,7 +1835,9 @@ app.get("/api/modelo/publico/:id/feed", async (req, res) => {
       try {
         const token = authHeader.split(" ")[1];
         usuario = verificarJWT(token);
-      } catch {}
+      } catch (err) {
+  console.log("Erro ao verificar JWT:", err.message);
+}
     }
 
     // 🔎 3️⃣ Buscar feed pelo user_id (padrão novo)
