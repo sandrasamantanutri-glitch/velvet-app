@@ -402,6 +402,7 @@ app.post(
   "/webhook/stripe",
    express.raw({ type: "application/json" }),
   async (req, res) => {
+     console.log("Tipo do body:", req.body.constructor.name);
     const sig = req.headers["stripe-signature"];
 
     let event;
