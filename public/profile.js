@@ -428,7 +428,7 @@ async function aplicarRegrasDeAcesso() {
   if (ehCliente || (ehModelo && modo === "publico")) {
 
     try {
-      const res = await fetch(`/api/vip/status/${MODELO_ID_ATUAL}`, {
+      const res = await fetch(`/api/vip/status/${modelo_id}`, {
         headers: {
           Authorization: "Bearer " + tokenAtual
         }
