@@ -168,7 +168,7 @@ async function carregarPerfilBase() {
   if (!res.ok) throw new Error("Perfil público não encontrado");
 
   const modelo = await res.json();
-  modelo_id = Number(modelo.user_id);
+  modelo_id = Number(modelo.id);
   aplicarPerfilNoDOM(modelo);
 }
 
