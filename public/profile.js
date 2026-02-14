@@ -176,7 +176,7 @@ async function carregarPerfilBase() {
 //ESPECIAL E PRA VOCE //
 async function carregarFeedBase() {
 console.log("ID recebido:", user_id);
-  if (!listaMidias || !modelo_id) return;
+  if (!listaMidias || !user_id) return;
 
   const res = await fetch(`/api/modelo/publico/${user_id}/feed`, {
     headers: token
@@ -436,9 +436,9 @@ function valorBRL(valor) {
 
 let OFERTA_ATUAL = null;
 async function carregarOfertaAtiva() {
-  console.log("🧪 carregarOfertaAtiva chamado com modelo_id =", modelo_id);
-  if (!modelo_id || isNaN(Number(modelo_id))) {
-    console.warn("⏳ Oferta aguardando modelo_id válido");
+  console.log("🧪 carregarOfertaAtiva chamado com user_id =", user_id);
+  if (!user_id || isNaN(Number(modelo_id))) {
+    console.warn("⏳ Oferta aguardando user_id válido");
     return;
   }
 
@@ -452,7 +452,7 @@ async function carregarOfertaAtiva() {
   }
 
   try {
-    const res = await fetch(`/api/ofertas/ativa/${modelo_id}`);
+    const res = await fetch(`/api/ofertas/ativa/${user_id}`);
 
     if (!res.ok) {
       ofertaCard.style.display = "none";
@@ -473,7 +473,7 @@ async function carregarOfertaAtiva() {
     // salva a oferta globalmente (não usar DOM depois)
     OFERTA_ATUAL = {
       id: oferta.id,
-      modelo_id: oferta.modelo_id,
+      user_id: oferta.user_id,
       valor_base: Number(oferta.valor_base),
       valor_promocional: Number(oferta.valor_promocional),
       desconto_percentual: Number(oferta.desconto_percentual || 0)

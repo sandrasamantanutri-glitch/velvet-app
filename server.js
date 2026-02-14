@@ -1679,9 +1679,9 @@ app.get("/api/ofertas", authModelo, async (req, res) => {
 
 
 //ATIVAS
-app.get("/api/ofertas/ativa/:modelo_id", async (req, res) => {
+app.get("/api/ofertas/ativa/:user_id", async (req, res) => {
   try {
-    const user_id = Number(req.params.modelo_id);
+    const user_id = Number(req.params.user_id);
 
     if (!user_id || isNaN(user_id)) {
       return res.status(400).json({ ativa: false });
