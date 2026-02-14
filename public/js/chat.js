@@ -64,8 +64,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     headers: { Authorization: "Bearer " + token }
   });
 
-  const me = await res.json();
-  modelo_id = me.id;
+  const modelo = await res.json();
+  modelo_id = modelo.id;
 
   await carregarInfoCliente(cliente_id);
 
