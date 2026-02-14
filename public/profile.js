@@ -145,7 +145,6 @@ function exigirLogin() {
 
 //PERFIL ///
 async function carregarPerfilBase() {
-  window.MODELO_ID_ATUAL = modelo.id;
 
   // 🔐 PERFIL PRIVADO
   if (modo === "privado") {
@@ -156,14 +155,17 @@ async function carregarPerfilBase() {
     if (!res.ok) throw new Error("Perfil não encontrado");
 
     const perfil = await res.json();
+
     user_id = Number(perfil.id);
+    window.MODELO_ID_ATUAL = perfil.modelo_id || null; // se existir
+
     aplicarPerfilNoDOM(perfil);
     return;
   }
 
   // 🌍 PERFIL PÚBLICO
   if (!user_id || isNaN(Number(user_id))) {
-    console.warn("modelo_id inválido:", user_id);
+    console.warn("user_id inválido:", user_id);
     return;
   }
 
@@ -171,9 +173,13 @@ async function carregarPerfilBase() {
   if (!res.ok) throw new Error("Perfil público não encontrado");
 
   const modelo = await res.json();
-  user_id = Number(user_id);
+
+  user_id = Number(modelo.user_id);   // users.id
+  window.MODELO_ID_ATUAL = modelo.id; // modelos.id  🔥 AQUI
+
   aplicarPerfilNoDOM(modelo);
 }
+
 
 
 //ESPECIAL E PRA VOCE //
