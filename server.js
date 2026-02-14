@@ -21,7 +21,6 @@ const app = express();
 //   );
 // });
 
-
 const nodemailer = require("nodemailer");
 const os = require("os");
 const { exec } = require("child_process");
@@ -34,7 +33,6 @@ const onlineClientes = {};
 const onlineModelos = {};
 const AWS = require("aws-sdk");
 const multerS3 = require("multer-s3");
-
 const { MercadoPagoConfig, Payment } = require("mercadopago");
 const CONTEUDOS_FILE = "conteudos.json";
 const MODELOS_FILE = "modelos.json";
@@ -1878,7 +1876,8 @@ app.get("/api/modelo/me", auth, async (req, res) => {
 
     const result = await db.query(`
       SELECT
-        m.user_id AS id,
+      m.id AS modelo_id, 
+        m.user_id AS user_id,
         m.nome_exibicao,
         m.bio,
         m.avatar,

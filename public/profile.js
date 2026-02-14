@@ -154,8 +154,8 @@ async function carregarPerfilBase() {
 
     const perfil = await res.json();
 
-    user_id = Number(perfil.id);
-    window.MODELO_ID_ATUAL = perfil.modelo_id || null; // se existir
+    user_id = Number(perfil.user_id);
+window.MODELO_ID_ATUAL = Number(perfil.modelo_id);
 
     aplicarPerfilNoDOM(perfil);
     return;
