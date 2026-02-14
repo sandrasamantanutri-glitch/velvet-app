@@ -1208,13 +1208,13 @@ window.abrirFluxoVIP = function () {
     return;
   }
 
-  if (!window.OFERTA_ATUAL || !window.OFERTA_ATUAL.modelo_id) {
-    alert("Oferta VIP ainda não carregada. Aguarde um instante.");
-    return;
-  }
+  if (!window.MODELO_ID_ATUAL) {
+  alert("Erro ao identificar modelo.");
+  return;
+}
+
 
   window.PAGAMENTO_TIPO_ATUAL = "vip";
-  window.MODELO_ID_ATUAL = window.OFERTA_ATUAL.modelo_id;
 
   preencherResumoVIP({
     valorBase: window.OFERTA_ATUAL.valor_base,
