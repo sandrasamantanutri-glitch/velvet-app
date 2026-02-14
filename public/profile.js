@@ -1,6 +1,5 @@
 window.socket = io();
 const tokenAtual = localStorage.getItem("token");
-const roleAtual = localStorage.getItem("role");
 const role = localStorage.getItem("role");
 const params = new URLSearchParams(window.location.search);
 const modeloParam = params.get("id");
@@ -217,7 +216,7 @@ async function carregarFeedBase() {
       ? { Authorization: "Bearer " + tokenAtual }
       : {}
   });
-
+console.log("FEED RECEBIDO:", feed);
   if (!res.ok) {
     console.error("Erro ao carregar feed");
     return;
@@ -251,7 +250,7 @@ async function carregarFeedBase() {
     ) {
       return;
     }
-
+console.log("FEED RECEBIDO:", feed);
     adicionarMidia(conteudo, {
       ehDona,
       ehVip
@@ -1167,14 +1166,9 @@ async function enviarMidia(file, dados = {}) {
 
 function getVideoThumbnail(url, thumbnail_url) {
   if (thumbnail_url) return thumbnail_url;
-
-  if (url && url.includes("cloudinary.com")) {
-    return url.replace(/\.(mp4|webm|ogg|mov)$/i, ".jpg");
-  }
-
-  // BACKBLAZE OU QUALQUER OUTRO → fallback
   return "/assets/capa.png";
 }
+
 
 function abrirModalMidia(url, isVideo) {
   const modal = document.getElementById("modalMidia");
