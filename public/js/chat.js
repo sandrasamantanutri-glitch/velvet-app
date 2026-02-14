@@ -65,7 +65,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   const me = await res.json();
-  modelo_id = modelo.modelo_id;  
+  modelo_id = modelo_id;  
   const user_id = modelo.user_id; 
 
    if (!modelo_id) {
