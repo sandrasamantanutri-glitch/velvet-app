@@ -400,7 +400,7 @@ app.post("/api/ofertas", authModelo, async (req, res) => {
 app.use(express.static(path.join(__dirname, "public")));
 app.post(
   "/webhook/stripe",
-   express.raw({ type: "application/json" }),
+   express.raw({ type: "*/*" }),
   async (req, res) => {
      console.log("Tipo do body:", req.body.constructor.name);
     const sig = req.headers["stripe-signature"];
