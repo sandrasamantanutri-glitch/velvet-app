@@ -229,7 +229,6 @@ async function carregarFeedBase() {
   }
 
   const feed = await res.json();
-  console.log("FEED RECEBIDO:", feed);
 
   if (!Array.isArray(feed)) {
     console.warn("Feed inválido:", feed);
