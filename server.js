@@ -2298,7 +2298,7 @@ app.get("/api/modelos", auth, async (req, res) => {
 
     const result = await db.query(`
       SELECT
-        m.user_id AS id,
+        m.user_id AS modelo_id,
         m.nome_exibicao,
         m.avatar
       FROM modelos m
