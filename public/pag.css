@@ -204,3 +204,22 @@
 #popupPagamentoVelvet {
   pointer-events: auto;
 }
+
+#popupPagamentoVelvet {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999999 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+#popupPagamentoVelvet .velvet-backdrop {
+  z-index: 1 !important;
+  pointer-events: auto !important;
+}
+
+#popupPagamentoVelvet .velvet-box {
+  z-index: 2 !important;
+  pointer-events: auto !important;
+}
