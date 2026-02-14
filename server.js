@@ -2297,12 +2297,20 @@ app.get("/api/modelos", auth, async (req, res) => {
     }
 
     const result = await db.query(`
-      SELECT 
-  m.id,
-  m.nome_exibicao,
-  m.avatar
-FROM modelos m
-WHERE m.verificada = true;
+      SELECT
+        m.user_id AS modelo_id,
+        m.nome_exibicao,
+        m.avatar
+      FROM modelos m
+      JOIN LATERAL (
+        SELECT status
+        FROM modelos_verificacao
+        WHERE modelo_id = m.id
+        ORDER BY criado_em DESC
+        LIMIT 1
+      ) v ON true
+      WHERE v.status = 'aprovado'
+      ORDER BY m.id DESC;
     `);
 
     res.json(result.rows);
