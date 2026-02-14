@@ -169,9 +169,10 @@ async function carregarPerfilBase() {
   const res = await fetch(`/api/modelo/publico/${modelo_user_id}`);
   if (!res.ok) throw new Error("Perfil público não encontrado");
 
-  const modelo = await res.json();
-  modelo_id = Number(modelo.id);
-  aplicarPerfilNoDOM(modelo);
+const modelo = await res.json();
+modelo_id = Number(modelo.id);
+aplicarPerfilNoDOM(modelo);
+
 }
 
 
@@ -241,7 +242,7 @@ if (!role) {
   // CLIENTE
   if (role === "cliente") {
     try {
-      const res = await fetch(`/api/vip/status/${modelo_user_id}`, {
+      const res = await fetch(`/api/vip/status/${modelo_id}`, {
         headers: { Authorization: "Bearer " + token }
       });
       const { vip } = res.ok ? await res.json() : { vip: false };
