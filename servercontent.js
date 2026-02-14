@@ -1,6 +1,4 @@
 // servercontent.js
-const authModelo = require("./middleware/authModelo");
-const authCliente = require("./middleware/authCliente");
 const express = require("express");
 const path = require("path");
 const jwt = require("jsonwebtoken");
