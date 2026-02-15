@@ -923,3 +923,8 @@ body.role-cliente .area-saldos {
 .vip-link {
   font-weight: 600;
 }
+
+.role-cliente .btn-mais,
+.role-publico .btn-mais {
+  display: none !important;
+}

@@ -58,7 +58,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /////PERFIL ///
-const btnUpload = document.querySelector(".btn-mais");
 const avatarImg  = document.getElementById("profileAvatar");
 const capaImg    = document.getElementById("profileCapa");
 const nomeEl     = document.getElementById("profileName");
@@ -343,7 +342,7 @@ document.getElementById("oferta-desconto")
         }
 
         if (ofertaCard) {
-          ofertaCard.style.display = "block";
+          ofertaCard.style.display = "none";
         }
 
       } else {
@@ -485,7 +484,7 @@ function aplicarPerfilNoDOM(modelo) {
 document.addEventListener("DOMContentLoaded", async () => {
 
   const btnAssinar = document.getElementById("btn-assinar");
-  const btnUpload = document.getElementById("btn-upload");
+const btnUpload = document.querySelector(".btn-mais");
   const tokenAtual = localStorage.getItem("token");
 
   aplicarRoleNoBody();
