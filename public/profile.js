@@ -330,10 +330,7 @@ async function aplicarRegrasDeAcesso() {
             btnAssinar.innerHTML = `
   <div class="vip-inline">
     <span class="vip-status">👑 VIP ativo</span>
-    <span class="vip-info">
-      Acesso até ${dataFormatada}
-      <strong class="vip-link"> · 💬 Falar no chat</strong>
-    </span>
+      <strong class="vip-link"> · 💬 Vem falar comigo!!</strong>
   </div>
 `;
         }
