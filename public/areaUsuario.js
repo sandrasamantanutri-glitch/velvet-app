@@ -448,7 +448,7 @@ async function carregarAreaModelo(user_id) {
   // ===============================
   // 👑 VIP COUNT
   // ===============================
-  carregarVipCountModelo(modelo.modelo_id);
+  carregarVipCountModelo(modelo.user_id ?? modelo.id);
 
  // 🔗 LINKS DO PERFIL
  if (document.getElementById("linkInstagram")) {
