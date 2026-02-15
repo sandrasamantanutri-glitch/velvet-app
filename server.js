@@ -2192,53 +2192,11 @@ app.get("/api/modelo/publico/:modelo_id/feed", async (req, res) => {
       return res.status(403).json([]);
     }
 
-    // 🔎 buscar feed diretamente por modelo_id
+    // 🔎 buscar feed completo
     const feedCompleto = await buscarFeedCompletoPorModeloId(modelo_id);
 
-    let usuario = null;
-
-    const authHeader = req.headers.authorization;
-    if (authHeader?.startsWith("Bearer ")) {
-      try {
-        const token = authHeader.split(" ")[1];
-        usuario = verificarJWT(token);
-      } catch (err) {
-        console.log("Erro JWT:", err.message);
-      }
-    }
-
-    // 👑 DONA DO PERFIL
-    if (usuario?.role === "modelo") {
-
-      const modeloRes = await db.query(
-        `SELECT id FROM modelos WHERE user_id = $1`,
-        [usuario.id]
-      );
-
-      if (modeloRes.rows[0]?.id === modelo_id) {
-        return res.json(feedCompleto);
-      }
-    }
-
-    // 💎 CLIENTE VIP
-    if (usuario?.role === "cliente") {
-
-      const clienteRes = await db.query(
-        `SELECT id FROM clientes WHERE user_id = $1`,
-        [usuario.id]
-      );
-
-      const cliente_id = clienteRes.rows[0]?.id;
-
-      if (cliente_id) {
-        const vip = await verificarVip(cliente_id, modelo_id);
-        if (vip) {
-          return res.json(feedCompleto);
-        }
-      }
-    }
-
-    // 🔒 resto só free
+    // 🔓 SEM JWT, SEM VIP, SEM DONA
+    // Apenas remove conteúdo venda
     const apenasFree = feedCompleto.filter(
       c => c.tipo_conteudo !== "venda"
     );
