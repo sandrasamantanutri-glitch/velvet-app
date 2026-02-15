@@ -2292,6 +2292,7 @@ app.get("/api/modelo/me", authModelo, async (req, res) => {
 // 🌟 FEED GLOBAL DE MODELOS (SÓ VALIDADOS)
 app.get("/api/modelos", auth, async (req, res) => {
   try {
+
     if (!["cliente", "modelo"].includes(req.user.role)) {
       return res.status(403).json([]);
     }
@@ -2300,8 +2301,14 @@ app.get("/api/modelos", auth, async (req, res) => {
       SELECT
         m.id AS modelo_id,
         m.nome_exibicao,
-        m.avatar
+        m.avatar,
+
+        COALESCE(vip.total_vip, 0) +
+        COALESCE(ppv.total_ppv, 0) AS total_ganhos
+
       FROM modelos m
+
+      -- 🔒 Só modelos aprovadas
       JOIN LATERAL (
         SELECT status
         FROM modelos_verificacao
@@ -2309,8 +2316,25 @@ app.get("/api/modelos", auth, async (req, res) => {
         ORDER BY criado_em DESC
         LIMIT 1
       ) v ON true
+
+      -- 💎 Soma ganhos VIP
+      LEFT JOIN LATERAL (
+        SELECT SUM(valor_total) AS total_vip
+        FROM vip_subscriptions
+        WHERE modelo_id = m.id
+      ) vip ON true
+
+      -- 📦 Soma ganhos PPV
+      LEFT JOIN LATERAL (
+        SELECT SUM(valor_total) AS total_ppv
+        FROM conteudo_pacotes
+        WHERE modelo_id = m.id
+          AND status = 'pago'
+      ) ppv ON true
+
       WHERE v.status = 'aprovado'
-      ORDER BY m.id DESC;
+
+      ORDER BY total_ganhos DESC NULLS LAST
     `);
 
     res.json(result.rows);
@@ -2320,6 +2344,7 @@ app.get("/api/modelos", auth, async (req, res) => {
     res.status(500).json([]);
   }
 });
+
 
 
 // MODELOS COM CHAT (CLIENTE)
