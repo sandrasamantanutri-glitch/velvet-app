@@ -928,3 +928,14 @@ body.role-cliente .area-saldos {
 .role-publico .btn-mais {
   display: none !important;
 }
+
+/* ===============================
+   OFERTA - VISUAL QUANDO VIP
+================================ */
+
+.oferta-card.vip-view .oferta-titulo,
+.oferta-card.vip-view .oferta-preco-original,
+.oferta-card.vip-view #oferta-desconto {
+  display: none !important;
+}
+
