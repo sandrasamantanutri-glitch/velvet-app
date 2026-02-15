@@ -21,16 +21,24 @@ if (refParam || srcParam) {
   }).catch(() => {});
 }
 
+
 window.__CLIENTE_VIP__ = false;
 let user_id = null;
+
+// PERFIL PÚBLICO PARAM=ID NA URL
+let modelo_id = null;
 
 const modeloParam =
   params.get("modelo_id") || params.get("id");
 
-// PERFIL PÚBLICO PARAM=ID NA URL
-if (modeloParam) {
-  modelo_id = Number(modeloParam); // ID do modelo
+modelo_id = Number(modeloParam);
+
+if (!modelo_id || isNaN(modelo_id)) {
+  console.warn("modelo_id inválido na URL");
+  modelo_id = null;
 }
+
+
 
 // ASSINATURAS/OFERTAS ///////
 const ofertaCard = document.getElementById("oferta-card");
