@@ -29,7 +29,7 @@ const modeloParam =
 
 // PERFIL PÚBLICO PARAM=ID NA URL
 if (modeloParam) {
-  window.MODELO_ID_ATUAL = Number(modeloParam); // ID do modelo
+  modelo_id = Number(modeloParam); // ID do modelo
 }
 
 // ASSINATURAS/OFERTAS ///////
@@ -142,12 +142,12 @@ function exigirLogin() {
 
 async function carregarPerfilBase() {
   try {
-    if (!window.MODELO_ID_ATUAL) {
+    if (!modelo_id) {
       console.warn("modelo_id inválido");
       return;
     }
 
-    const res = await fetch(`/api/modelo/publico/${window.MODELO_ID_ATUAL}`);
+    const res = await fetch(`/api/modelo/publico/${modelo_id}`);
 
     if (!res.ok) {
       throw new Error("Perfil não encontrado");
@@ -162,7 +162,7 @@ if (!idSeguro || isNaN(idSeguro)) {
   throw new Error("modelo_id inválido vindo do backend");
 }
 
-window.MODELO_ID_ATUAL = idSeguro;
+modelo_id = idSeguro;
 
 aplicarPerfilNoDOM(modelo);
 
@@ -173,11 +173,11 @@ aplicarPerfilNoDOM(modelo);
 
 async function carregarFeedBase() {
 
-  if (!listaMidias || !window.MODELO_ID_ATUAL) return; // ⚠️ usa modelo_id
+  if (!listaMidias || !modelo_id) return; // ⚠️ usa modelo_id
 
   const tokenAtual = localStorage.getItem("token");
 
-  const res = await fetch(`/api/modelo/publico/${window.MODELO_ID_ATUAL}/feed`, {
+  const res = await fetch(`/api/modelo/publico/${modelo_id}/feed`, {
     headers: tokenAtual
       ? { Authorization: "Bearer " + tokenAtual }
       : {}
@@ -361,7 +361,7 @@ async function aplicarRegrasDeAcesso() {
 
   // ⚠️ DONA DO PERFIL agora verifica pelo modelo logado
   const modeloLogado = Number(localStorage.getItem("modelo_id"));
-  const ehDona = ehModelo && modeloLogado === window.MODELO_ID_ATUAL;
+  const ehDona = ehModelo && modeloLogado === modelo_id;
 
   // ===============================
   // 🟣 MODELO DONA DO PERFIL
@@ -395,7 +395,7 @@ async function aplicarRegrasDeAcesso() {
   if (ehCliente || ehModelo) {
 
     try {
-      const res = await fetch(`/api/vip/status/${window.MODELO_ID_ATUAL}`, {
+      const res = await fetch(`/api/vip/status/${modelo_id}`, {
         headers: {
           Authorization: "Bearer " + tokenAtual
         }
@@ -451,7 +451,7 @@ async function iniciarPerfil() {
     await carregarPerfilBase();
 
     // ⚠️ não usar user_id público, só verificar MODELO_ID_ATUAL
-    if (!window.MODELO_ID_ATUAL) {
+    if (!modelo_id) {
       throw new Error("IDs do perfil não definidos corretamente");
     }
 
@@ -673,7 +673,7 @@ function valorBRL(valor) {
 
 let OFERTA_ATUAL = null;
 async function carregarOfertaAtiva() {
-  console.log("🧪 carregarOfertaAtiva chamado com modelo_id =", window.MODELO_ID_ATUAL);
+  console.log("🧪 carregarOfertaAtiva chamado com modelo_id =", modelo_id);
 
   const precoDescontoEl = document.getElementById("preco-desconto");
   const precoOriginalEl = document.getElementById("preco-original");
@@ -1159,7 +1159,7 @@ window.abrirFluxoVIP = function () {
     return;
   }
 
-  if (!window.MODELO_ID_ATUAL) {
+  if (!modelo_id) {
   alert("Erro ao identificar modelo.");
   return;
 }
