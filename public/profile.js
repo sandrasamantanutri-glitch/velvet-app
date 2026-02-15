@@ -602,8 +602,6 @@ async function carregarOfertaAtiva() {
     }
 
     const oferta = data.oferta;
-    window.OFERTA_ATUAL = OFERTA_ATUAL;
-
     OFERTA_ATUAL = {
       id: oferta.id,
       modelo_id: oferta.modelo_id,
@@ -611,6 +609,7 @@ async function carregarOfertaAtiva() {
       valor_promocional: Number(oferta.valor_promocional),
       desconto_percentual: Number(oferta.desconto_percentual || 0)
     };
+      window.OFERTA_ATUAL = OFERTA_ATUAL;
 
     if (descontoEl && OFERTA_ATUAL.desconto_percentual > 0) {
       descontoEl.textContent = `Economize ${OFERTA_ATUAL.desconto_percentual}%`;
@@ -619,8 +618,15 @@ async function carregarOfertaAtiva() {
       descontoEl.style.display = "none";
     }
 
-    precoDescontoEl.textContent = valorBRL(OFERTA_ATUAL.valor_promocional);
-    precoOriginalEl.textContent = valorBRL(OFERTA_ATUAL.valor_base);
+    if (precoDescontoEl) {
+  precoDescontoEl.textContent =
+    valorBRL(OFERTA_ATUAL.valor_promocional);
+}
+
+if (precoOriginalEl) {
+  precoOriginalEl.textContent =
+    valorBRL(OFERTA_ATUAL.valor_base);
+}
 
     ofertaCard.style.display = "block";
 
@@ -939,7 +945,6 @@ modal.querySelector(".modal-close-upload")
 }
 
 async function carregarFeedBase() {
-
   if (!modelo_id) return;
 
   const listaFree = document.getElementById("listaMidias");
@@ -966,7 +971,6 @@ async function carregarFeedBase() {
   });
 }
 
-
 function mostrarLoading() {
   document.body.classList.add("loading");
 }
@@ -975,7 +979,6 @@ function esconderLoading() {
   document.body.classList.remove("loading");
 }
 
-//2º FUNÇÃO
 async function enviarMidia(file, dados = {}) {
 
   console.log("=== ENVIAR MIDIA CHAMADO ===");
@@ -1048,7 +1051,6 @@ function abrirModalMidia(url, isVideo) {
   img.style.display = "none";
   video.style.display = "none";
 
-  // LIMPA ESTADO ANTERIOR
   video.pause();
   video.src = "";
   img.src = "";
@@ -1096,8 +1098,6 @@ window.abrirFluxoVIP = function () {
   abrirPopupPagamento();
 };
 
-
-// FECHAR MODAL
 document.getElementById("fecharModal")?.addEventListener("click", (e) => {
   e.stopPropagation(); 
 
@@ -1138,7 +1138,7 @@ async function excluirMidia(id, card) {
 
 function atualizarUIVip() {
   if (btnAssinar) {
-    btnAssinar.textContent = "VIP ativo 💜";
+    btnAssinar.textContent = "VIP ativo!!";
     btnAssinar.disabled = true;
   }
 }
