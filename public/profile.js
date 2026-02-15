@@ -233,6 +233,13 @@ function adicionarMidia(conteudo, contexto) {
   // ===============================
 
   card.onclick = () => {
+     const role = localStorage.getItem("role");
+  const modeloLogado = Number(localStorage.getItem("modelo_id"));
+
+  if (role === "modelo" && modeloLogado !== modelo_id) {
+    alert("No momento, modelo não pode assinar ou ver conteúdo exclusivo de outra modelo. Estamos trabalhando nisso.");
+    return;
+  }
 
     if (ehDona) {
       abrirModalMidia(url, isVideo);
@@ -498,15 +505,25 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // 👑 Botão assinar
-  btnAssinar?.addEventListener("click", () => {
+btnAssinar?.addEventListener("click", () => {
 
-    if (window.__CLIENTE_VIP__) {
-      window.location.href = `/chatc.html?modelo_id=${modelo_id}`;
-      return;
-    }
+  const role = localStorage.getItem("role");
+  const modeloLogado = Number(localStorage.getItem("modelo_id"));
 
-    window.abrirFluxoVIP();
-  });
+  // 🚫 Modelo vendo perfil de outra modelo
+  if (role === "modelo" && modeloLogado !== modelo_id) {
+    alert("No momento, modelo não pode assinar ou ver conteúdo exclusivo de outra modelo. Estamos trabalhando nisso.");
+    return;
+  }
+
+  if (window.__CLIENTE_VIP__) {
+    window.location.href = `/chatc.html?modelo_id=${modelo_id}`;
+    return;
+  }
+
+  window.abrirFluxoVIP();
+});
+
 
   // ===============================
   // 📂 TABS DE MÍDIAS
