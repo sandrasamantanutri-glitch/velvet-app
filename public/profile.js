@@ -5,8 +5,6 @@ const params = new URLSearchParams(window.location.search);
 const refParam = params.get("ref") || params.get("id");
 const srcParam = params.get("src");
 
-localStorage.setItem("modelo_id", modelo.id);
-
 if (refParam) localStorage.setItem("ref_modelo", refParam);
 if (srcParam) localStorage.setItem("origem_trafego", srcParam);
 
@@ -307,7 +305,7 @@ async function aplicarRegrasDeAcesso() {
   // 🔵 CLIENTE OU MODELO vendo outro perfil
   if (ehCliente || ehModelo) {
 
-   try {
+    try {
 
   const res = await fetch(`/api/vip/status/${modelo_id}`, {
     headers: {
@@ -369,8 +367,9 @@ async function aplicarRegrasDeAcesso() {
   if (ofertaCard) {
     ofertaCard.style.display = "block";
   }
+
 }
-}
+  }
 }
 
 async function carregarPerfilBase() {
