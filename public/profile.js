@@ -580,13 +580,11 @@ async function carregarOfertaAtiva() {
   const precoOriginalEl = document.getElementById("preco-original");
   const descontoEl = document.getElementById("oferta-desconto");
 
-  if (!ofertaCard || !precoDescontoEl || !precoOriginalEl) {
-    console.warn("Elementos da oferta não encontrados");
-    return;
-  }
-
+ if (!ofertaCard) {
+  console.warn("ofertaCard não encontrado");
+  return;
+}
   try {
-    // 🔹 usa modelo_id público
     const res = await fetch(`/api/ofertas/ativa/${modelo_id}`);
 
     if (!res.ok) {
@@ -604,8 +602,8 @@ async function carregarOfertaAtiva() {
     }
 
     const oferta = data.oferta;
+    window.OFERTA_ATUAL = OFERTA_ATUAL;
 
-    // salva a oferta globalmente
     OFERTA_ATUAL = {
       id: oferta.id,
       modelo_id: oferta.modelo_id,
@@ -614,9 +612,6 @@ async function carregarOfertaAtiva() {
       desconto_percentual: Number(oferta.desconto_percentual || 0)
     };
 
-    window.OFERTA_ATUAL = OFERTA_ATUAL;
-
-    // badge de desconto
     if (descontoEl && OFERTA_ATUAL.desconto_percentual > 0) {
       descontoEl.textContent = `Economize ${OFERTA_ATUAL.desconto_percentual}%`;
       descontoEl.style.display = "inline-block";
@@ -624,7 +619,6 @@ async function carregarOfertaAtiva() {
       descontoEl.style.display = "none";
     }
 
-    // preços no layout
     precoDescontoEl.textContent = valorBRL(OFERTA_ATUAL.valor_promocional);
     precoOriginalEl.textContent = valorBRL(OFERTA_ATUAL.valor_base);
 
@@ -640,9 +634,7 @@ async function carregarOfertaAtiva() {
 }
 
 // ===============================
-// 🖼 UPLOAD AVATAR
-// ===============================
-
+// UPLOAD AVATAR
 inputAvatar?.addEventListener("change", async () => {
 
   const file = inputAvatar.files?.[0];
@@ -683,9 +675,7 @@ inputAvatar?.addEventListener("change", async () => {
 
 
 // ===============================
-// 🖼 UPLOAD CAPA
-// ===============================
-
+// UPLOAD CAPA
 inputCapa?.addEventListener("change", async () => {
 
   const file = inputCapa.files?.[0];
@@ -727,7 +717,6 @@ inputCapa?.addEventListener("change", async () => {
 
 // ===============================
 // MIDIA
-// ===============================
 // function abrirModalVenda(c) {
 //   const modal = document.createElement("div");
 //   modal.className = "modal-midia";
