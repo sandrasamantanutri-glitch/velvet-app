@@ -32,7 +32,7 @@ async function abrirPopupConteudos() {
   const modeloUserId = document.getElementById("modeloSelect").value;
 
   const res = await fetch(
-    `/api/allmessage/conteudos/${modeloUserId}`,
+    `/api/allmessage/conteudos/${id}`,
     {
       headers: {
         Authorization: "Bearer " + token
@@ -105,7 +105,7 @@ async function carregarConteudos() {
   const modelo_id = document.getElementById("modeloSelect").value;
 
   const res = await fetch(
-    `/allmessage/conteudos/${modelo_id}`,
+    `api/allmessage/conteudos/${modelo_id}`,
     {
       headers: { Authorization: "Bearer " + token }
     }
