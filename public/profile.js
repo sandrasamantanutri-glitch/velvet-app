@@ -334,7 +334,7 @@ async function aplicarRegrasDeAcesso() {
         }
 
         if (ofertaCard) {
-          ofertaCard.style.display = ("vip-view");
+          ofertaCard.style.display = "block";
         }
 
       } else {
@@ -352,7 +352,7 @@ async function aplicarRegrasDeAcesso() {
         }
 
         if (ofertaCard) {
-          ofertaCard.style.display = ("vip-view");
+          ofertaCard.style.display = "block";
         }
       }
 
