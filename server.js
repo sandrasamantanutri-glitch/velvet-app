@@ -44,6 +44,7 @@ const ffmpegPath = require("ffmpeg-static");
 const authCliente = require("./middleware/authCliente");
 const authModelo = require("./middleware/authModelo");
 const auth = require("./middleware/auth");
+const servercontent = require("./servercontent");
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 
@@ -753,7 +754,6 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
 });
 
 
-const servercontent = require("./servercontent");
 
 const upload = multer({
   storage: multer.memoryStorage(),
