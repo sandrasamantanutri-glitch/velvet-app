@@ -320,7 +320,10 @@ async function aplicarRegrasDeAcesso() {
       if (vip) {
 
         window.__CLIENTE_VIP__ = true;
-
+        // 🔒 Esconder infos da oferta quando VIP
+document.getElementById("oferta-desconto")?.classList.add("hidden");
+document.getElementById("preco-original")?.classList.add("hidden");
+document.getElementById("preco-desconto")?.classList.add("hidden");
         if (btnAssinar) {
           btnAssinar.disabled = false;
           btnAssinar.classList.add("vip-botao");
@@ -342,6 +345,9 @@ async function aplicarRegrasDeAcesso() {
       } else {
 
         window.__CLIENTE_VIP__ = false;
+        document.getElementById("oferta-desconto")?.classList.remove("hidden");
+document.getElementById("preco-original")?.classList.remove("hidden");
+document.getElementById("preco-desconto")?.classList.remove("hidden");
 
         if (btnAssinar) {
           btnAssinar.disabled = false;
