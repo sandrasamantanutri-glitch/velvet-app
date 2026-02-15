@@ -673,70 +673,36 @@ function valorBRL(valor) {
 
 let OFERTA_ATUAL = null;
 async function carregarOfertaAtiva() {
-  console.log("🧪 carregarOfertaAtiva chamado com modelo_id =", modelo_id);
+  console.log("🔥 FORÇANDO EXIBIÇÃO DA OFERTA");
 
+  const ofertaCard = document.getElementById("oferta-card");
   const precoDescontoEl = document.getElementById("preco-desconto");
   const precoOriginalEl = document.getElementById("preco-original");
   const descontoEl = document.getElementById("oferta-desconto");
 
-  if (!ofertaCard || !precoDescontoEl || !precoOriginalEl) {
-    console.warn("Elementos da oferta não encontrados");
+  if (!ofertaCard) {
+    console.warn("ofertaCard não encontrado");
     return;
   }
 
-  try {
-    // 🔹 usa modelo_id público
-    const res = await fetch(`/api/ofertas/ativa/${modelo_id}`);
+  // 🔥 MOSTRA SEM BACKEND
+  ofertaCard.style.display = "block";
 
-    if (!res.ok) {
-      ofertaCard.style.display = "none";
-      OFERTA_ATUAL = null;
-      return;
-    }
+  if (precoDescontoEl)
+    precoDescontoEl.textContent = "R$ 19,90";
 
-    const data = await res.json();
+  if (precoOriginalEl)
+    precoOriginalEl.textContent = "R$ 29,90";
 
-    if (!data.ativa || !data.oferta) {
-      ofertaCard.style.display = "none";
-      OFERTA_ATUAL = null;
-      return;
-    }
-
-    const oferta = data.oferta;
-
-    // salva a oferta globalmente
-    OFERTA_ATUAL = {
-      id: oferta.id,
-      modelo_id: oferta.modelo_id,
-      valor_base: Number(oferta.valor_base),
-      valor_promocional: Number(oferta.valor_promocional),
-      desconto_percentual: Number(oferta.desconto_percentual || 0)
-    };
-
-    window.OFERTA_ATUAL = OFERTA_ATUAL;
-
-    // badge de desconto
-    if (descontoEl && OFERTA_ATUAL.desconto_percentual > 0) {
-      descontoEl.textContent = `Economize ${OFERTA_ATUAL.desconto_percentual}%`;
-      descontoEl.style.display = "inline-block";
-    } else if (descontoEl) {
-      descontoEl.style.display = "none";
-    }
-
-    // preços no layout
-    precoDescontoEl.textContent = valorBRL(OFERTA_ATUAL.valor_promocional);
-    precoOriginalEl.textContent = valorBRL(OFERTA_ATUAL.valor_base);
-
-    ofertaCard.style.display = "block";
-
-    if (btnAssinar) btnAssinar.disabled = false;
-
-  } catch (err) {
-    console.error("Erro ao carregar oferta:", err);
-    ofertaCard.style.display = "none";
-    OFERTA_ATUAL = null;
+  if (descontoEl) {
+    descontoEl.textContent = "Economize 30%";
+    descontoEl.style.display = "inline-block";
   }
+
+  if (btnAssinar)
+    btnAssinar.disabled = false;
 }
+
 
 // ===============================
 // 🖼 UPLOAD AVATAR
