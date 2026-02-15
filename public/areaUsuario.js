@@ -308,8 +308,8 @@ function formatarData(data) {
   });
 }
 
-function gerarLinks(modelo_id) {
-  const base = `https://www.velvet.lat/perfil.html?modelo_id=${modelo_id}`;
+function gerarLinks(modeloId) {
+  const base = `https://www.velvet.lat/perfil.html?modelo_id=${modeloId}`;
 
   document.getElementById("linkInstagram").value =
     `${base}&src=instagram`;
