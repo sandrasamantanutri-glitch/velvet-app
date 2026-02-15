@@ -341,7 +341,7 @@ router.post("/api/transacoes/:id/chargeback",
 // 📣 ALLMESSAGE - ENVIO EM MASSA
 // ===============================
 router.post(
-  "/api/allmessage",
+  "/allmessage",
   auth,
   requireRole("admin", "modelo"),
   async (req, res) => {
