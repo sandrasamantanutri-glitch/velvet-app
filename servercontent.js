@@ -1191,7 +1191,7 @@ router.get("/allmessage/conteudos/:modelo_id",
           [modelo_id, user_id]
         );
         if (check.rowCount === 0) {
-          return res.json([]); // ⚠️ sempre array
+          return res.json([]);
         }
       }
 
@@ -1202,7 +1202,7 @@ router.get("/allmessage/conteudos/:modelo_id",
           url,
           thumbnail_url AS thumbnail
         FROM conteudos
-        WHERE user_id = $1
+        WHERE modelo_id = $1
           AND tipo_conteudo = 'venda'
         ORDER BY id DESC
         `,
