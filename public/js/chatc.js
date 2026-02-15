@@ -585,6 +585,7 @@ async function abrirPixConteudo(message_id, preco) {
 
     intervaloConfirmacaoPix = setInterval(async () => {
       try {
+        if (!pagamentoAtual?.message_id) return;
         const statusRes = await fetch(
           `/api/chat/conteudo-status/${pagamentoAtual.message_id}`,
           {
@@ -602,12 +603,14 @@ async function abrirPixConteudo(message_id, preco) {
           clearInterval(intervaloConfirmacaoPix);
           intervaloConfirmacaoPix = null;
 
+            const idFinal = pagamentoAtual.message_id;
+
           // 🔓 fecha popup
           fecharPopupPix();
 
           // 🔄 força atualização do chat
           socket.emit("conteudoVisto", {
-            message_id: pagamentoAtual.message_id
+            message_id: idFinal
           });
 
           pagamentoAtual = {};
