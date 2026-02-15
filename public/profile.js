@@ -465,7 +465,7 @@ function aplicarPerfilNoDOM(modelo) {
 // DOM
 // ===============================
 document.addEventListener("DOMContentLoaded", async () => {
-
+const btnAssinar = document.getElementById("btn-assinar");
   aplicarRoleNoBody();
 
   try {
@@ -479,10 +479,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     btnUpload?.remove();
   }
 
-  // ===============================
-  // 🔄 PÓS-REGISTRO
-  // ===============================
-
   const postRegisterAction = localStorage.getItem("post_register_action");
 
   if (postRegisterAction === "open_payment") {
@@ -490,13 +486,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.abrirFluxoVIP();
   }
 
-  // ===============================
-  // 🎯 BOTÃO ASSINAR
-  // ===============================
-
-  // ===============================
-// 🎯 BOTÃO ASSINAR
-// ===============================
 
 btnAssinar?.addEventListener("click", () => {
 
@@ -509,11 +498,6 @@ btnAssinar?.addEventListener("click", () => {
 
   window.abrirFluxoVIP();
 });
-
-
-// ===============================
-// 🔗 LINKS VIP DINÂMICOS
-// ===============================
 
 document.addEventListener("click", (e) => {
 
@@ -531,10 +515,6 @@ document.addEventListener("click", (e) => {
 
   window.abrirFluxoVIP();
 });
-
-  // ===============================
-  // 🗂 TABS DE MÍDIA
-  // ===============================
 
   const tabs = document.querySelectorAll(".midias-tabs .tab");
 
@@ -568,9 +548,7 @@ document.addEventListener("click", (e) => {
 
 });
 
-// ===============================
-// ROLE VISUAL
-// ===============================
+
 function aplicarRoleNoBody() {
   const body = document.body;
   body.classList.remove("role-modelo", "role-cliente", "role-publico");
