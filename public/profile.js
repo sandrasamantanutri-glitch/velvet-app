@@ -264,6 +264,8 @@ function adicionarMidia(conteudo, contexto) {
 
 
 async function aplicarRegrasDeAcesso() {
+  const ofertaCard = document.getElementById("oferta-card");
+const btnAssinar = document.getElementById("btn-assinar");
 
   const tokenAtual = localStorage.getItem("token");
 
