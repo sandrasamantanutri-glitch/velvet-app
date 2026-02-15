@@ -36,6 +36,8 @@ modelo_id = Number(modeloParam);
 if (!modelo_id || isNaN(modelo_id)) {
   console.warn("modelo_id inválido na URL");
   modelo_id = null;
+} else {window.MODELO_ID_ATUAL = modelo_id;
+  
 }
 
 function autenticarSocket() {
@@ -815,8 +817,6 @@ function abrirPopupLoginObrigatorio() {
   document.body.appendChild(modal);
 }
 
-
-//1ºFUNÇÃO
 function abrirPreviewUpload(file, url) {
   const modal = document.createElement("div");
   modal.className = "modal-midia";
@@ -862,7 +862,6 @@ function abrirPreviewUpload(file, url) {
     </div>
   `;
 
-  // 🔹 Adiciona primeiro ao DOM
   document.body.appendChild(modal);
 
   const fecharModal = () => {
@@ -964,7 +963,6 @@ async function carregarFeedBase() {
 
    feed.forEach(conteudo => {
 
-    // SEM função extra
     adicionarMidia(conteudo, {
       ehDona: false,
       ehVip
