@@ -35,7 +35,7 @@ let sala = null;
 let modelo_id = null;
 let cliente_id = null;
 let chatAtivo = null;
-let conteudosVistosCliente = new Set();
+window.conteudosVistosCliente = new Set();
 let carregandoHistorico = false;
 
 // ===============================
@@ -766,20 +766,20 @@ async function carregarConteudosVistos(cliente_id) {
 
     if (!res.ok) {
       console.warn("Falha ao buscar conteúdos vistos:", res.status);
-      conteudosVistosCliente = new Set();
+      window.conteudosVistosCliente = new Set();
       return;
     }
 
     const ids = await res.json();
 
     // 🔒 Sempre cria Set para evitar erro no frontend
-    conteudosVistosCliente = new Set(
+    window.conteudosVistosCliente = new Set(
       Array.isArray(ids) ? ids.map(id => Number(id)).filter(id => Number.isInteger(id)) : []
     );
 
   } catch (err) {
     console.error("Erro carregarConteudosVistos:", err);
-    conteudosVistosCliente = new Set();
+    window.conteudosVistosCliente = new Set();
   }
 }
 
