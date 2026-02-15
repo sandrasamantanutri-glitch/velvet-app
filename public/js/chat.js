@@ -905,7 +905,7 @@ async function carregarInfoCliente(cliente_id) {
     }
 
     // 🔒 Rota real do server
-    const res = await fetch(`/api/cliente/me`, {
+    const res = await fetch(`/api/cliente/${cliente_id}`, {
       headers: {
         Authorization: "Bearer " + token
       }

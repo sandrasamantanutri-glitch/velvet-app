@@ -512,7 +512,7 @@ btnAssinar?.addEventListener("click", () => {
 
   // 🚫 Modelo vendo perfil de outra modelo
   if (role === "modelo" && modeloLogado !== modelo_id) {
-    alert("No momento, modelo não pode assinar ou ver conteúdo exclusivo de outra modelo. Estamos trabalhando nisso.");
+    alert("No momento, modelo não pode assinar ou ver conteúdo exclusivo de outra modelo. Estamos trabalhando para que isso seja possível!!💜");
     return;
   }
 

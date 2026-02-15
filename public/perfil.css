@@ -906,14 +906,13 @@ body.role-cliente .area-saldos {
 
 .vip-card-content {
   display: flex;
+  flex-direction: column;   
   align-items: center;
-  justify-content: center;
-  gap: 14px;
-  flex-wrap: wrap;
+  gap: 10px;             
 }
 
 .vip-badge {
-  background: rgba(123, 44, 255, 0.12); /* roxo bem suave */
+  background: rgba(123, 44, 255, 0.12); 
   color: #7B2CFF;
   padding: 5px 12px;
   border-radius: 999px;
