@@ -896,8 +896,8 @@ body.role-cliente .area-saldos {
   margin: 18px auto;
   border-radius: 18px;
   padding: 28px;
-  background: linear-gradient(135deg, #9e6bff, #7b2cff);
-  color: #fff;
+  background: #f1f1f1;
+  color: #7B2CFF;
   text-align: center;
   box-shadow: 0 20px 50px rgba(123,44,255,0.35);
   animation: fadeVip .3s ease;
@@ -924,8 +924,8 @@ body.role-cliente .area-saldos {
 }
 
 .vip-chat-btn {
-  background: #fff;
-  color: #7b2cff;
+  background: #7B2CFF;
+  color: #fff;
   border: none;
   border-radius: 14px;
   padding: 14px 22px;
