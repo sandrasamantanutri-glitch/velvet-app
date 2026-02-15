@@ -464,6 +464,60 @@ function abrirPreviewAvatar(url) {
   });
 }
 
+function abrirPreviewMidia(midia) {
+  if (!midia || !midia.url) return;
+
+  let modal = document.getElementById("midiaPreviewModal");
+
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "midiaPreviewModal";
+    modal.className = "preview-modal";
+
+    modal.innerHTML = `
+      <div class="preview-backdrop"></div>
+      <div class="preview-box">
+        <span class="preview-close">×</span>
+        <div id="midiaPreviewContainer"></div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const fechar = () => {
+      modal.classList.remove("open");
+      setTimeout(() => modal.remove(), 200);
+      document.removeEventListener("keydown", escListener);
+    };
+
+    const escListener = (e) => {
+      if (e.key === "Escape") fechar();
+    };
+
+    modal.querySelector(".preview-backdrop").onclick = fechar;
+    modal.querySelector(".preview-close").onclick = fechar;
+
+    document.addEventListener("keydown", escListener);
+  }
+
+  const container = modal.querySelector("#midiaPreviewContainer");
+  container.innerHTML = "";
+
+  if (midia.tipo_media === "video" || midia.tipo === "video") {
+    container.innerHTML = `
+      <video src="${midia.url}" controls autoplay playsinline></video>
+    `;
+  } else {
+    container.innerHTML = `
+      <img src="${midia.url}" />
+    `;
+  }
+
+  requestAnimationFrame(() => {
+    modal.classList.add("open");
+  });
+}
+
 
 function enviarConteudosSelecionados() {
   if (!window.socket) return;
