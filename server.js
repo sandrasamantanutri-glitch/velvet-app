@@ -3204,21 +3204,21 @@ app.put("/api/usuario/perfil", auth, async (req, res) => {
       );
 
       await db.query(
-        `
-        INSERT INTO modelos_dados (modelo_id, instagram, tiktok)
-        VALUES ($1, $2, $3)
-        ON CONFLICT (modelo_id) DO UPDATE
-        SET
-          instagram     = COALESCE(EXCLUDED.instagram, modelos_dados.instagram),
-          tiktok        = COALESCE(EXCLUDED.tiktok, modelos_dados.tiktok),
-          atualizado_em = NOW()
-        `,
-        [
-          modeloId,
-          instagram ?? null,
-          tiktok ?? null
-        ]
-      );
+        `  INSERT INTO modelos_dados (modelo_id, instagram, tiktok)
+  VALUES ($1, $2, $3)
+  ON CONFLICT (modelo_id) DO UPDATE
+  SET
+    instagram     = COALESCE(EXCLUDED.instagram, modelos_dados.instagram),
+    tiktok        = COALESCE(EXCLUDED.tiktok, modelos_dados.tiktok),
+    atualizado_em = NOW()
+  `,
+  [
+    modeloId,
+    instagram ?? null,
+    tiktok ?? null
+  ]
+);
+
 
       return res.json({ ok: true });
     }
