@@ -417,9 +417,13 @@ async function carregarAreaModelo(user_id) {
 
   // 🔗 BOTÃO PERFIL COMPLETO
 const btn = document.getElementById("btnPerfilCompleto");
-if (btn && modelo?.id) {
-  btn.href = `/perfil.html?modelo_id=${modelo.id}`;
+
+if (!btn) {
+  console.log("Botão perfil completo não existe nesta página");
+} else if (modelo?.id) {
+  btn.setAttribute("href", `/perfil.html?modelo_id=${modelo.id}`);
 }
+
 
 
   // ===============================
@@ -458,7 +462,7 @@ if (btn && modelo?.id) {
 
  // 🔗 LINKS DO PERFIL
  if (document.getElementById("linkInstagram")) {
-  gerarLinks(modelo.modelo_id);
+  gerarLinks(modelo.id);
  }
 
 }
