@@ -37,6 +37,7 @@ let cliente_id = null;
 let chatAtivo = null;
 window.conteudosVistosCliente = new Set();
 let carregandoHistorico = false;
+let historicoInicialCarregado = false;
 
 // ===============================
 // 📎 PARAMETROS URL
@@ -66,8 +67,12 @@ const input = document.getElementById("msgInput");
 
 if (chatBox) {
   chatBox.addEventListener("scroll", () => {
-    if (chatBox.scrollTop === 0 && !carregandoHistorico) {
-      carregarMensagensAntigas();
+    if (
+  historicoInicialCarregado &&
+  chatBox.scrollTop === 0 &&
+  !carregandoHistorico
+) {
+ carregarMensagensAntigas();
     }
   });
 }
@@ -83,8 +88,10 @@ socket.on("chatHistory", mensagens => {
   mensagens.forEach(m => renderMensagem(m));
 
   requestAnimationFrame(() => {
-    chat.scrollTop = chat.scrollHeight;
-  });
+  chat.scrollTop = chat.scrollHeight;
+  historicoInicialCarregado = true;
+});
+
 
   // pega a mais recente
   if (mensagens.length > 0) {
