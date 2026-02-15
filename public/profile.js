@@ -38,16 +38,6 @@ if (!modelo_id || isNaN(modelo_id)) {
   modelo_id = null;
 }
 
-
-
-// ASSINATURAS/OFERTAS ///////
-const ofertaCard = document.getElementById("oferta-card");
-const btnAssinar = document.getElementById("btn-assinar");
-
-if (btnAssinar) {
-  btnAssinar.disabled = true;
-}
-
 function autenticarSocket() {
   const tokenAtual = localStorage.getItem("token");
   if (!tokenAtual || !window.socket) return;
@@ -604,6 +594,8 @@ let OFERTA_ATUAL = null;
 async function carregarOfertaAtiva() {
   console.log("🧪 carregarOfertaAtiva chamado com modelo_id =", modelo_id);
 
+  const ofertaCard = document.getElementById("oferta-card");
+  const btnAssinar = document.getElementById("btn-assinar");
   const precoDescontoEl = document.getElementById("preco-desconto");
   const precoOriginalEl = document.getElementById("preco-original");
   const descontoEl = document.getElementById("oferta-desconto");
