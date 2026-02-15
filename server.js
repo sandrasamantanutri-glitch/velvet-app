@@ -44,6 +44,8 @@ const ffmpegPath = require("ffmpeg-static");
 const authCliente = require("./middleware/authCliente");
 const authModelo = require("./middleware/authModelo");
 const auth = require("./middleware/auth");
+
+app.use(express.json());
 const servercontent = require("./servercontent");
 
 ffmpeg.setFfmpegPath(ffmpegPath);
@@ -319,7 +321,6 @@ app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/admin", express.static(path.join(__dirname, "admin-pages")));
 app.use("/icons", express.static(path.join(__dirname, "icons")));
-app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 const rateLimit = require("express-rate-limit");
 // 🔒 Rate limit para autenticação (login / register)
