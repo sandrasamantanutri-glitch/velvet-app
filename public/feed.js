@@ -20,14 +20,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  const token = localStorage.getItem("token");
-  if (!token) {
-    lista.innerHTML =
-      "<p>Entre para ver as modelos disponíveis.</p>";
-    return;
-  }
-
-  // 🔹 Busca os modelos do backend
   fetch("/api/modelos", {
     headers: {
       Authorization: "Bearer " + token
@@ -50,20 +42,20 @@ document.addEventListener("DOMContentLoaded", () => {
         card.className = "modelo-card";
 
         card.innerHTML = `
-          <img src="${modelo.avatar || "/assets/avatar.png"}" alt="${modelo.nome_exibicao || "Modelo"}">
+          <img 
+            src="${modelo.avatar || "/assets/avatar.png"}" 
+            alt="${modelo.nome_exibicao || "Modelo"}"
+          >
         `;
-<<<<<<< HEAD
-    card.onclick = () => {
-          window.location.href = `perfil.html?modelo_id=${modelo.id}`;
+
+        // 🔥 ID CORRETO
+        card.onclick = () => {
+          const modeloId = Number(modelo.modelo_id);
+          if (!modeloId) return;
+
+          window.location.href = `perfil.html?modelo_id=${modeloId}`;
         };
 
-=======
-
-        // 🔹 Clique no card
-card.onclick = () => {
-  window.location.href = `perfil.html?modelo_id=${id}`; // perfil público
-};
->>>>>>> parent of 15008ff (.)
         lista.appendChild(card);
       });
     })
@@ -72,4 +64,3 @@ card.onclick = () => {
       lista.innerHTML = "<p>Erro ao carregar o feed.</p>";
     });
 });
-
