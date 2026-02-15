@@ -45,9 +45,6 @@ const authCliente = require("./middleware/authCliente");
 const authModelo = require("./middleware/authModelo");
 const auth = require("./middleware/auth");
 
-app.use(express.json());
-const servercontent = require("./servercontent");
-
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 const allowedOrigins = [
@@ -315,6 +312,9 @@ app.post(
     }
   }
 );
+
+app.use(express.json());
+const servercontent = require("./servercontent");
 
 app.use("/api", servercontent);
 app.use("/assets", express.static(path.join(__dirname, "assets")));
