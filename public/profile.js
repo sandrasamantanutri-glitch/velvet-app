@@ -237,7 +237,7 @@ function adicionarMidia(conteudo, contexto) {
   const modeloLogado = Number(localStorage.getItem("modelo_id"));
 
   if (role === "modelo" && modeloLogado !== modelo_id) {
-    alert("No momento, modelo não pode assinar ou ver conteúdo exclusivo de outra modelo. Estamos trabalhando nisso.");
+    alert("No momento, modelo não pode assinar ou ver conteúdo exclusivo de outra modelo. Estamos trabalhando para que isso seja possível!!💜");
     return;
   }
 
