@@ -5,6 +5,7 @@ const params = new URLSearchParams(window.location.search);
 const refParam = params.get("ref") || params.get("id");
 const srcParam = params.get("src");
 
+localStorage.setItem("modelo_id", modelo.id);
 
 if (refParam) localStorage.setItem("ref_modelo", refParam);
 if (srcParam) localStorage.setItem("origem_trafego", srcParam);
@@ -979,10 +980,14 @@ async function carregarFeedBase() {
 
   const ehVip = window.__CLIENTE_VIP__ === true;
 
-   feed.forEach(conteudo => {
+  const role = localStorage.getItem("role");
+  const modeloLogado = Number(localStorage.getItem("modelo_id"));
 
+  const ehDona = role === "modelo" && modeloLogado === modelo_id;
+
+  feed.forEach(conteudo => {
     adicionarMidia(conteudo, {
-      ehDona: false,
+      ehDona,
       ehVip
     });
 
