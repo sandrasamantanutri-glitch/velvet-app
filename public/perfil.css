@@ -893,46 +893,48 @@ body.role-cliente .area-saldos {
 
 .vip-card {
   max-width: 900px;
-  margin: 18px auto;
-  border-radius: 18px;
-  padding: 28px;
+  margin: 14px auto;
+  border-radius: 16px;
+  padding: 18px 20px;
   background: #f1f1f1;
   color: #7B2CFF;
   text-align: center;
-  box-shadow: 0 20px 50px rgba(123,44,255,0.35);
-  animation: fadeVip .3s ease;
+
+  /* sombra bem mais suave */
+  box-shadow: 0 6px 18px rgba(123,44,255,0.12);
+}
+
+.vip-card-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
 }
 
 .vip-badge {
-  display: inline-block;
-  background: #7B2CFF; 
-  color: #fff;
-  padding: 6px 14px;
+  background: rgba(123, 44, 255, 0.12); /* roxo bem suave */
+  color: #7B2CFF;
+  padding: 5px 12px;
   border-radius: 999px;
-  font-size: 20px;
+  font-size: 13px;
   font-weight: 600;
-  margin-bottom: 14px;
 }
 
 .vip-chat-btn {
   background: #7B2CFF;
   color: #fff;
   border: none;
-  border-radius: 14px;
-  padding: 14px 22px;
-  font-size: 18px;
-  font-weight: 700;
+  border-radius: 12px;
+  padding: 10px 18px;
+  font-size: 15px;   /* menor */
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
 }
 
 .vip-chat-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 30px rgba(0,0,0,0.25);
-}
-
-@keyframes fadeVip {
-  from { opacity: 0; transform: translateY(15px); }
-  to { opacity: 1; transform: translateY(0); }
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(123,44,255,0.25);
 }
 
