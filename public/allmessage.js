@@ -105,7 +105,7 @@ async function carregarConteudos() {
   const modelo_id = document.getElementById("modeloSelect").value;
 
   const res = await fetch(
-    `/api/allmessage/conteudos/${modelo_id}`,
+    `/allmessage/conteudos/${modelo_id}`,
     {
       headers: { Authorization: "Bearer " + token }
     }
