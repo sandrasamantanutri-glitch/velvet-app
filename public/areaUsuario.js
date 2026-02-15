@@ -308,8 +308,8 @@ function formatarData(data) {
   });
 }
 
-function gerarLinks(user_id) {
-  const base = `https://www.velvet.lat/perfil.html?modelo_id=${user_id}`;
+function gerarLinks(modelo_id) {
+  const base = `https://www.velvet.lat/perfil.html?modelo_id=${modelo_id}`;
 
   document.getElementById("linkInstagram").value =
     `${base}&src=instagram`;
@@ -448,11 +448,11 @@ async function carregarAreaModelo(user_id) {
   // ===============================
   // 👑 VIP COUNT
   // ===============================
-  carregarVipCountModelo(modelo.user_id ?? modelo.id);
+  carregarVipCountModelo(modelo.modelo_id);
 
  // 🔗 LINKS DO PERFIL
  if (document.getElementById("linkInstagram")) {
-  gerarLinks(modelo.user_id ?? modelo.id);
+  gerarLinks(modelo.modelo_id);
  }
 
 }
