@@ -2312,7 +2312,7 @@ app.get("/api/modelos", auth, async (req, res) => {
         SELECT status
         FROM modelos_verificacao
         WHERE modelo_id = m.id
-        ORDER BY criado_em DESC
+        ORDER BY criado_em ASC
         LIMIT 1
       ) ver ON true
 
