@@ -321,19 +321,23 @@ async function aplicarRegrasDeAcesso() {
 
         window.__CLIENTE_VIP__ = true;
         // 🔒 Esconder infos da oferta quando VIP
-document.getElementById("oferta-desconto")?.classList.add("hidden");
-document.getElementById("preco-original")?.classList.add("hidden");
-document.getElementById("preco-desconto")?.classList.add("hidden");
+        // 🔒 Esconder toda a área de preços
+const precoOriginalContainer =
+  document.getElementById("preco-original")?.closest("p");
+
+precoOriginalContainer?.classList.add("hidden");
+
+document.getElementById("oferta-desconto")
+  ?.classList.add("hidden");
+
+
         if (btnAssinar) {
           btnAssinar.disabled = false;
           btnAssinar.classList.add("vip-botao");
-
-          const dataFormatada = new Date(data.expiration_at)
-            .toLocaleDateString("pt-BR");
             btnAssinar.innerHTML = `
   <div class="vip-inline">
     <span class="vip-status">👑 VIP ativo</span>
-      <strong class="vip-link"> · 💬 Vem falar comigo!!</strong>
+      <strong class="vip-link">💬 Vem falar comigo!!</strong>
   </div>
 `;
         }
@@ -345,9 +349,13 @@ document.getElementById("preco-desconto")?.classList.add("hidden");
       } else {
 
         window.__CLIENTE_VIP__ = false;
-        document.getElementById("oferta-desconto")?.classList.remove("hidden");
-document.getElementById("preco-original")?.classList.remove("hidden");
-document.getElementById("preco-desconto")?.classList.remove("hidden");
+        const precoOriginalContainer =
+  document.getElementById("preco-original")?.closest("p");
+
+precoOriginalContainer?.classList.remove("hidden");
+
+document.getElementById("oferta-desconto")
+  ?.classList.remove("hidden");
 
         if (btnAssinar) {
           btnAssinar.disabled = false;
