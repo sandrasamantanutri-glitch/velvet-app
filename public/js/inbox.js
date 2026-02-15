@@ -7,9 +7,16 @@ if (!token) location.href = "/index.html";
 // ===============================
 // SOCKET (INBOX)
 // ===============================
-const socket = io("https://velvet-test-production.up.railway.app", {
-  auth: { token: "Bearer " + token }
+const socket = io({
+  transports: ["websocket"]
 });
+
+socket.emit("auth", { token });
+
+socket.on("authOk", () => {
+  socket.emit("joinInbox");
+});
+
 
 const inboxEl = document.getElementById("inbox");
 let modeloId = null;
@@ -18,21 +25,20 @@ let modeloId = null;
 // INIT
 // ===============================
 (async function init() {
-  const res = await fetch("/api/me", {
-    headers: { Authorization: "Bearer " + token }
+
+  const role = localStorage.getItem("role");
+  if (role !== "modelo") return logout();
+
+  socket.emit("auth", { token });
+
+  socket.on("authOk", () => {
+    socket.emit("joinInbox");
   });
-  if (!res.ok) return logout();
 
-  const me = await res.json();
-  if (me.role !== "modelo") return logout();
+  socket.on("inboxMessage", carregarListaClientes);
 
-  modeloId = me.id;
-  socket.emit("joinInbox", {
-  sala: `inbox_modelo_${modeloId}`
-});
- socket.on("inboxMessage", carregarListaClientes);
+  await carregarListaClientes();
 
- await carregarListaClientes();
 })();
 
 // ===============================
