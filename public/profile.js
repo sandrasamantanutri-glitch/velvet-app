@@ -280,7 +280,6 @@ async function aplicarRegrasDeAcesso() {
 
   // ===============================
   // 🟣 MODELO DONA DO PERFIL
-  // ===============================
   if (ehDona) {
 
     window.__CLIENTE_VIP__ = false;
@@ -298,7 +297,6 @@ async function aplicarRegrasDeAcesso() {
 
   // ===============================
   // 👀 VISITANTE
-  // ===============================
   if (!tokenAtual) {
     if (ofertaCard) ofertaCard.style.display = "block";
     return;
@@ -306,7 +304,6 @@ async function aplicarRegrasDeAcesso() {
 
   // ===============================
   // 🔵 CLIENTE OU MODELO vendo outro perfil
-  // ===============================
   if (ehCliente || ehModelo) {
 
     try {
@@ -330,18 +327,15 @@ async function aplicarRegrasDeAcesso() {
 
           const dataFormatada = new Date(data.expiration_at)
             .toLocaleDateString("pt-BR");
-
-          btnAssinar.innerHTML = `
-            <div class="vip-box">
-              <div class="vip-topo">👑 Você é VIP!</div>
-              <div class="vip-validade">
-                Acesso garantido até ${dataFormatada}
-              </div>
-              <div class="vip-chat">
-                💬 Vem falar comigo
-              </div>
-            </div>
-          `;
+            btnAssinar.innerHTML = `
+  <div class="vip-inline">
+    <span class="vip-status">👑 VIP ativo</span>
+    <span class="vip-info">
+      Acesso até ${dataFormatada}
+      <strong class="vip-link"> · 💬 Falar no chat</strong>
+    </span>
+  </div>
+`;
         }
 
         if (ofertaCard) {
@@ -378,8 +372,6 @@ async function aplicarRegrasDeAcesso() {
   } 
 }
 
-
-//////////////////////////////////////////////////////
 async function carregarPerfilBase() {
 
   if (!modelo_id) {
@@ -397,7 +389,6 @@ async function carregarPerfilBase() {
 
   aplicarPerfilNoDOM(modelo);
 }
-
 
 async function iniciarPerfil() {
   try {
@@ -424,8 +415,6 @@ async function iniciarPerfil() {
     }
   }
 }
-
-
 
 function aplicarPerfilNoDOM(modelo) {
 
@@ -454,8 +443,6 @@ function aplicarPerfilNoDOM(modelo) {
 
   // ===============================
   // 🌐 REDES SOCIAIS
-  // ===============================
-
   const igLink = document.getElementById("link-instagram");
   const ttLink = document.getElementById("link-tiktok");
 
@@ -484,7 +471,6 @@ function aplicarPerfilNoDOM(modelo) {
 
 // ===============================
 // DOM
-// ===============================
 document.addEventListener("DOMContentLoaded", async () => {
 
   const btnAssinar = document.getElementById("btn-assinar");
@@ -526,8 +512,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // ===============================
   // 📂 TABS DE MÍDIAS
-  // ===============================
-
   const tabs = document.querySelectorAll(".midias-tabs .tab");
 
   tabs.forEach(tab => {
@@ -565,7 +549,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 // =================================
 // 🔗 Link genérico "Assinar VIP"
-// =================================
 
 document.addEventListener("click", (e) => {
 
@@ -584,7 +567,6 @@ document.addEventListener("click", (e) => {
   window.abrirFluxoVIP();
 
 });
-
 
 function aplicarRoleNoBody() {
   const body = document.body;
