@@ -368,10 +368,22 @@ router.post(
 
       const precoFinal = Number(preco) || 0;
 
-      // 🔒 modelo só pode enviar da própria conta
-      if (role === "modelo" && Number(modelo_id) !== user_id) {
-        return res.status(403).json({ error: "Modelo inválida" });
-      }
+      if (role === "modelo") {
+  const modeloRes = await db.query(
+    "SELECT id FROM modelos WHERE user_id = $1",
+    [user_id]
+  );
+
+  if (modeloRes.rowCount === 0) {
+    return res.status(403).json({ error: "Modelo não encontrada" });
+  }
+
+  const modeloRealId = modeloRes.rows[0].id;
+
+  if (Number(modelo_id) !== modeloRealId) {
+    return res.status(403).json({ error: "Modelo inválida" });
+  }
+}
 
       // ===============================
       // 🔍 BUSCAR ASSINANTES ATIVOS
