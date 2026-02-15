@@ -109,13 +109,11 @@ const res = await fetch(
 
     const midia = midias[0];
 
-    // ABRE AUTOMATICAMENTE
     abrirModalMidia(
       midia.url,
       midia.tipo === "video"
     );
 
-    //limpa estado
     window.MIDIA_VENDA_ATUAL = null;
 
     // 🔄 atualiza feed (pra não cobrar de novo)
@@ -630,7 +628,11 @@ if (precoOriginalEl) {
 
     ofertaCard.style.display = "block";
 
-    if (btnAssinar) btnAssinar.disabled = false;
+    if (btnAssinar) {
+  btnAssinar.disabled = false;
+  btnAssinar.textContent =
+    `Assinar VIP por ${valorBRL(OFERTA_ATUAL.valor_promocional)}`;
+}
 
   } catch (err) {
     console.error("Erro ao carregar oferta:", err);
