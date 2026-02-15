@@ -146,6 +146,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       carregarAssinantes();
     }
   }
+
+  const btn = document.getElementById("btnPerfilCompleto");
+  btn.href = `/perfil.html?modelo_id=${user.id}`;
 });
 
 
@@ -403,7 +406,7 @@ async function carregarVipCountModelo(modelo_id) {
   }
 }
 
-async function carregarAreaModelo(user_id) {
+async function carregarAreaModelo(modelo) {
   const res = await fetch("/api/modelo/me", {
     headers: {
       Authorization: "Bearer " + localStorage.getItem("token")
@@ -414,16 +417,6 @@ async function carregarAreaModelo(user_id) {
 
   const modelo = await res.json();
   console.log("Modelo logado:", modelo);
-
-  // 🔗 BOTÃO PERFIL COMPLETO
-const btn = document.getElementById("btnPerfilCompleto");
-
-if (!btn) {
-  console.log("Botão perfil completo não existe nesta página");
-} else if (modelo?.id) {
-  btn.setAttribute("href", `/perfil.html?modelo_id=${modelo.id}`);
-}
-
 
 
   // ===============================
