@@ -2303,8 +2303,7 @@ app.get("/api/modelos", auth, async (req, res) => {
         m.nome_exibicao,
         m.avatar,
 
-        COALESCE(vip.total_vip, 0) +
-        COALESCE(ppv.total_ppv, 0) AS total_ganhos
+        COALESCE(v.total_vips, 0) AS total_vips
 
       FROM modelos m
 
@@ -2315,26 +2314,20 @@ app.get("/api/modelos", auth, async (req, res) => {
         WHERE modelo_id = m.id
         ORDER BY criado_em DESC
         LIMIT 1
-      ) v ON true
+      ) ver ON true
 
-      -- 💎 Soma ganhos VIP
+      -- 👑 Contagem de VIPs ativos
       LEFT JOIN LATERAL (
-        SELECT SUM(valor_total) AS total_vip
+        SELECT COUNT(*) AS total_vips
         FROM vip_subscriptions
         WHERE modelo_id = m.id
-      ) vip ON true
+          AND ativo = true
+          AND expiration_at > NOW()
+      ) v ON true
 
-      -- 📦 Soma ganhos PPV
-      LEFT JOIN LATERAL (
-        SELECT SUM(valor_total) AS total_ppv
-        FROM conteudo_pacotes
-        WHERE modelo_id = m.id
-          AND status = 'pago'
-      ) ppv ON true
+      WHERE ver.status = 'aprovado'
 
-      WHERE v.status = 'aprovado'
-
-      ORDER BY total_ganhos DESC NULLS LAST
+      ORDER BY total_vips DESC NULLS LAST, m.id DESC
     `);
 
     res.json(result.rows);
