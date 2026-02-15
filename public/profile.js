@@ -307,69 +307,70 @@ async function aplicarRegrasDeAcesso() {
   // 🔵 CLIENTE OU MODELO vendo outro perfil
   if (ehCliente || ehModelo) {
 
-    try {
+   try {
 
-      const res = await fetch(`/api/vip/status/${modelo_id}`, {
-        headers: {
-          Authorization: "Bearer " + tokenAtual
-        }
-      });
+  const res = await fetch(`/api/vip/status/${modelo_id}`, {
+    headers: {
+      Authorization: "Bearer " + tokenAtual
+    }
+  });
 
-      const data = res.ok ? await res.json() : { vip: false };
-      const vip = data.vip;
+  const data = res.ok ? await res.json() : { vip: false };
+  const vip = data.vip;
 
-      if (vip) {
+  if (vip) {
 
-        window.__CLIENTE_VIP__ = true;
-        
+    window.__CLIENTE_VIP__ = true;
 
-        if (btnAssinar) {
-          btnAssinar.disabled = false;
-          btnAssinar.classList.add("vip-botao");
-            btnAssinar.innerHTML = `
-  <div class="vip-inline">
-    <span class="vip-status">👑 VIP ativo</span>
-      <strong class="vip-link"> · 💬 Vem falar comigo!!</strong>
-  </div>
-`;
-        }
+    // 🔥 Esconde oferta quando VIP
+    if (ofertaCard) {
+      ofertaCard.style.display = "none";
+    }
 
-        if (ofertaCard) {
-          ofertaCard.style.display = "block";
-        }
+    if (btnAssinar) {
+      btnAssinar.disabled = false;
+      btnAssinar.classList.add("vip-botao");
+      btnAssinar.innerHTML = `
+        <div class="vip-inline">
+          <span class="vip-status">👑 VIP ativo</span>
+          <strong class="vip-link"> · 💬 Vem falar comigo!!</strong>
+        </div>
+      `;
+    }
 
-      } else {
+  } else {
 
-        window.__CLIENTE_VIP__ = false;
+    window.__CLIENTE_VIP__ = false;
 
-        if (btnAssinar) {
-          btnAssinar.disabled = false;
-          btnAssinar.classList.remove("vip-botao");
-          if (window.OFERTA_ATUAL) {
-  btnAssinar.textContent =
-    `Assinar VIP por ${valorBRL(window.OFERTA_ATUAL.valor_promocional)}`;
+    // 🔥 Mostra oferta normal
+    if (ofertaCard) {
+      ofertaCard.style.display = "block";
+    }
+
+    if (btnAssinar) {
+      btnAssinar.disabled = false;
+      btnAssinar.classList.remove("vip-botao");
+
+      if (window.OFERTA_ATUAL) {
+        btnAssinar.textContent =
+          `Assinar VIP por ${valorBRL(window.OFERTA_ATUAL.valor_promocional)}`;
+      }
+    }
+
+  }
+
+} catch (err) {
+
+  console.error("Erro ao verificar VIP:", err);
+
+  window.__CLIENTE_VIP__ = false;
+
+  // Em caso de erro, mantém oferta visível
+  if (ofertaCard) {
+    ofertaCard.style.display = "block";
+  }
 }
-
-        }
-
-        if (ofertaCard) {
-          ofertaCard.style.display = "block";
-        }
-      }
-
-    } catch (err) {
-
-      console.error("Erro ao verificar VIP:", err);
-
-      window.__CLIENTE_VIP__ = false;
-
-      if (ofertaCard) {
-        ofertaCard.style.display = "block";
-      }
-
-    } 
-
-  } 
+}
 }
 
 async function carregarPerfilBase() {
