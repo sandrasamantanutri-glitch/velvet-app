@@ -14,6 +14,18 @@ const socket = io({
 
 socket.emit("auth", { token });
 
+socket.on("authOk", () => {
+  console.log("🔐 Socket autenticado");
+
+  if (role === "cliente") {
+    socket.emit("loginCliente");
+  }
+
+  if (role === "modelo") {
+    socket.emit("loginModelo");
+  }
+});
+
 let cliente_id = null;
 let modelo_id = null;
 const conteudosLiberados = new Set();
@@ -41,7 +53,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   await carregarInfoModelo(modelo_id);
 
   // 🔌 agora sim cria sala correta
-  const sala = `chat_${cliente_id}_${modelo_id}`;
+  socket.emit("joinChat", { cliente_id, modelo_id });
   socket.emit("joinChat", { sala });
   socket.emit("getHistory", { cliente_id, modelo_id });
 

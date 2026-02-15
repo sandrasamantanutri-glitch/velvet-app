@@ -13,11 +13,8 @@ if (!token) {
 const socket = io({
   transports: ["websocket"]
 });
-
-// envia token para o backend validar
 socket.emit("auth", { token });
 
-// quando servidor confirmar autenticação
 socket.on("authOk", () => {
   console.log("🔐 Socket autenticado");
 
