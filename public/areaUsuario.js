@@ -115,12 +115,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const user = await res.json();
 
-   const btn = document.getElementById("btnPerfilCompleto");
-
-  if (btn && modelo?.id) {
-    btn.href = `/perfil.html?modelo_id=${modelo.id}`;
-  }
-
   // 🔒 role REAL e confiável
   document.body.classList.add(`role-${user.role}`);
 
@@ -420,6 +414,13 @@ async function carregarAreaModelo(user_id) {
 
   const modelo = await res.json();
   console.log("Modelo logado:", modelo);
+
+  // 🔗 BOTÃO PERFIL COMPLETO
+const btn = document.getElementById("btnPerfilCompleto");
+if (btn && modelo?.id) {
+  btn.href = `/perfil.html?modelo_id=${modelo.id}`;
+}
+
 
   // ===============================
   // 📸 AVATAR / CAPA
