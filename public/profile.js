@@ -396,7 +396,7 @@ async function aplicarRegrasDeAcesso() {
   // ===============================
   // 🔵 CLIENTE OU MODELO (vendo outro perfil)
   // ===============================
-  if (ehCliente || (ehModelo && modo === "publico")) {
+  if (ehCliente || ehModelo) {
 
     try {
       const res = await fetch(`/api/vip/status/${window.MODELO_ID_ATUAL}`, {
