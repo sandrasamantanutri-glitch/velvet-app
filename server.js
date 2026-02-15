@@ -3685,19 +3685,41 @@ app.post("/api/login", authLimiter, async (req, res) => {
       return res.status(401).json({ error: "Senha incorreta" });
     }
 
+    const role = user.role.toLowerCase();
+
     const token = jwt.sign(
       {
-        id: user.id,          // sempre users.id
+        id: user.id,
         email: user.email,
-        role: user.role.toLowerCase()
+        role
       },
       process.env.JWT_SECRET,
       { expiresIn: "24h" }
     );
 
+    // 🔥 SE FOR MODELO, BUSCA O ID DA TABELA MODELOS
+    if (role === "modelo") {
+
+      const modeloRes = await db.query(
+        "SELECT id FROM modelos WHERE user_id = $1",
+        [user.id]
+      );
+
+      if (modeloRes.rowCount === 0) {
+        return res.status(400).json({ error: "Modelo não encontrado" });
+      }
+
+      return res.json({
+        token,
+        role,
+        modelo_id: modeloRes.rows[0].id
+      });
+    }
+
+    // 🔵 SE FOR CLIENTE
     return res.json({
       token,
-      role: user.role.toLowerCase()
+      role
     });
 
   } catch (err) {
