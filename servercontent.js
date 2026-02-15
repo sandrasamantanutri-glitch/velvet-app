@@ -347,14 +347,29 @@ router.post(
   async (req, res) => {
     try {
       const {
-        modelo_id,
-        texto,
-        preco,
-        conteudos,
-        modo_teste
-      } = req.body;
+  texto,
+  preco,
+  conteudos,
+  modo_teste
+} = req.body;
 
-      const { role, id: user_id } = req.user;
+let modelo_id;
+ if (req.user.role === "modelo") {
+  const modeloRes = await db.query(
+    "SELECT id FROM modelos WHERE user_id = $1",
+    [req.user.id]
+  );
+
+  if (modeloRes.rowCount === 0) {
+    return res.status(403).json({ error: "Modelo não encontrada" });
+  }
+
+  modelo_id = modeloRes.rows[0].id;
+} else {
+  // admin pode enviar manualmente
+  modelo_id = req.body.modelo_id;
+}
+
 
       // ===============================
       // 🔒 VALIDAÇÕES BÁSICAS
@@ -367,23 +382,6 @@ router.post(
         Array.isArray(conteudos) && conteudos.length > 0;
 
       const precoFinal = Number(preco) || 0;
-
-      if (role === "modelo") {
-  const modeloRes = await db.query(
-    "SELECT id FROM modelos WHERE user_id = $1",
-    [user_id]
-  );
-
-  if (modeloRes.rowCount === 0) {
-    return res.status(403).json({ error: "Modelo não encontrada" });
-  }
-
-  const modeloRealId = modeloRes.rows[0].id;
-
-  if (Number(modelo_id) !== modeloRealId) {
-    return res.status(403).json({ error: "Modelo inválida" });
-  }
-}
 
       // ===============================
       // 🔍 BUSCAR ASSINANTES ATIVOS
