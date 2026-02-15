@@ -1177,7 +1177,7 @@ router.get(
 // ===============================
 // 📣 ALLMESSAGE - CONTEÚDOS DA MODELO
 // ===============================
-router.get("/api/allmessage/conteudos/:modelo_id",
+router.get("/allmessage/conteudos/:modelo_id",
   auth,
   requireRole("admin", "modelo"),
   async (req, res) => {
