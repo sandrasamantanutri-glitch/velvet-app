@@ -2178,36 +2178,14 @@ app.get("/api/modelo/publico/:modelo_id/feed", async (req, res) => {
   }
 
   try {
-
-    // 🔒 validar se modelo está aprovado
-    const verificado = await db.query(`
-      SELECT status
-      FROM modelos_verificacao
-      WHERE modelo_id = $1
-      ORDER BY criado_em DESC
-      LIMIT 1
-    `, [modelo_id]);
-
-    if (!verificado.rows.length || verificado.rows[0].status !== "aprovado") {
-      return res.status(403).json([]);
-    }
-
-    // 🔎 buscar feed completo
-    const feedCompleto = await buscarFeedCompletoPorModeloId(modelo_id);
-
-    // 🔓 SEM JWT, SEM VIP, SEM DONA
-    // Apenas remove conteúdo venda
-    const apenasFree = feedCompleto.filter(
-      c => c.tipo_conteudo !== "venda"
-    );
-
-    return res.json(apenasFree);
-
+    const feed = await buscarFeedCompletoPorModeloId(modelo_id);
+    return res.json(feed);
   } catch (err) {
     console.error("Erro feed público:", err);
     res.status(500).json([]);
   }
 });
+
 
 
 // PERFIL USUARIO (CLT,MODELO) //***********check******* */

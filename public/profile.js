@@ -178,58 +178,24 @@ aplicarPerfilNoDOM(modelo);
     console.error("Erro ao carregar perfil:", err);
   }
 }
+const res = await fetch(`/api/modelo/publico/${modelo_id}/feed`);
+const feed = await res.json();
 
-async function carregarFeedBase() {
+const ehVip = window.__CLIENTE_VIP__ === true;
 
-  if (!listaMidias || !modelo_id) return; // ⚠️ usa modelo_id
+console.log("FEED:", feed);
 
-  const tokenAtual = localStorage.getItem("token");
+feed.forEach(conteudo => {
 
-  const res = await fetch(`/api/modelo/publico/${modelo_id}/feed`, {
-    headers: tokenAtual
-      ? { Authorization: "Bearer " + tokenAtual }
-      : {}
-  });
-
-  if (!res.ok) {
-    console.error("Erro ao carregar feed");
-    return;
+  // Se for venda e não for VIP → bloqueia
+  if (conteudo.tipo_conteudo === "venda" && !ehVip) {
+    adicionarMidiaBloqueada(conteudo);
+  } else {
+    adicionarMidia(conteudo);
   }
 
-  const feed = await res.json();
-  console.log("FEED RECEBIDO:", feed);
+});
 
-  if (!Array.isArray(feed)) {
-    console.warn("Feed inválido:", feed);
-    return;
-  }
-
-  const gridFeed = document.getElementById("listaMidias");
-  const gridEspecial = document.getElementById("midias-paid");
-
-  if (gridFeed) gridFeed.innerHTML = "";
-  if (gridEspecial) gridEspecial.innerHTML = "";
-
-  // const ehVip =
-  //   window.__CLIENTE_VIP__ === true;
-
-  // feed.forEach(conteudo => {
-
-  //   if (
-  //     conteudo.tipo_conteudo === "venda" &&
-  //     (!conteudo.preco || Number(conteudo.preco) <= 0)
-  //   ) {
-  //     return;
-  //   }
-
-  //   adicionarMidia(conteudo, {
-  //     ehDona,
-  //     ehVip
-  //   });
-
-  // });
-
-}
 
 function adicionarMidia(conteudo, contexto) {
 
