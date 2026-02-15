@@ -202,28 +202,24 @@ async function carregarFeedBase() {
   if (gridFeed) gridFeed.innerHTML = "";
   if (gridEspecial) gridEspecial.innerHTML = "";
 
-  const ehDona =
-    role === "modelo" &&
-    modo === "privado";
+  // const ehVip =
+  //   window.__CLIENTE_VIP__ === true;
 
-  const ehVip =
-    window.__CLIENTE_VIP__ === true;
+  // feed.forEach(conteudo => {
 
-  feed.forEach(conteudo => {
+  //   if (
+  //     conteudo.tipo_conteudo === "venda" &&
+  //     (!conteudo.preco || Number(conteudo.preco) <= 0)
+  //   ) {
+  //     return;
+  //   }
 
-    if (
-      conteudo.tipo_conteudo === "venda" &&
-      (!conteudo.preco || Number(conteudo.preco) <= 0)
-    ) {
-      return;
-    }
+  //   adicionarMidia(conteudo, {
+  //     ehDona,
+  //     ehVip
+  //   });
 
-    adicionarMidia(conteudo, {
-      ehDona,
-      ehVip
-    });
-
-  });
+  // });
 
 }
 
@@ -679,11 +675,6 @@ let OFERTA_ATUAL = null;
 async function carregarOfertaAtiva() {
   console.log("🧪 carregarOfertaAtiva chamado com modelo_id =", window.MODELO_ID_ATUAL);
 
-  if (!window.MODELO_ID_ATUAL || isNaN(Number(window.MODELO_ID_ATUAL))) {
-    console.warn("⏳ Oferta aguardando modelo_id válido");
-    return;
-  }
-
   const precoDescontoEl = document.getElementById("preco-desconto");
   const precoOriginalEl = document.getElementById("preco-original");
   const descontoEl = document.getElementById("oferta-desconto");
@@ -695,7 +686,7 @@ async function carregarOfertaAtiva() {
 
   try {
     // 🔹 usa modelo_id público
-    const res = await fetch(`/api/ofertas/ativa/${window.MODELO_ID_ATUAL}`);
+    const res = await fetch(`/api/ofertas/ativa/${modelo_id}`);
 
     if (!res.ok) {
       ofertaCard.style.display = "none";
