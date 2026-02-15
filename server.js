@@ -2838,7 +2838,7 @@ app.get("/api/modelo/assinantes", authModelo, async (req, res) => {
 
       ORDER BY v.expiration_at DESC;
       `,
-      [req.modelo_id]   // 🔥 CORRETO
+      [req.user.id] 
     );
 
     res.json(result.rows);
