@@ -2523,6 +2523,17 @@ app.get("/api/chat/cliente", authCliente, async (req, res) => {
 // ===============================
 app.get("/api/chat/modelo", authModelo, async (req, res) => {
   try {
+
+    const modeloRes = await db.query(
+      "SELECT id FROM modelos WHERE user_id = $1",
+      [req.user.id]
+    );
+
+    if (modeloRes.rows.length === 0) {
+      return res.json([]);
+    }
+
+    const modelo_id = modeloRes.rows[0].id;
     console.log("MODELO_ID:", req.modelo_id);
 
     const { rows } = await db.query(`
@@ -2531,7 +2542,6 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
         c.nome,
         cd.username,
         cd.avatar,
-
         msg.text       AS ultima_mensagem,
         msg.created_at AS ultima_mensagem_em,
         msg.sender     AS ultimo_sender,
@@ -2539,12 +2549,8 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
         COALESCE(msg.lida, false)  AS lida
 
       FROM vip_subscriptions v
-
-      JOIN clientes c 
-        ON c.id = v.cliente_id
-
-      LEFT JOIN clientes_dados cd 
-        ON cd.cliente_id = c.id
+      JOIN clientes c ON c.id = v.cliente_id
+      LEFT JOIN clientes_dados cd ON cd.cliente_id = c.id
 
       LEFT JOIN LATERAL (
         SELECT text, created_at, visto, lida, sender
@@ -2560,7 +2566,7 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
         AND v.expiration_at > NOW()
 
       ORDER BY c.id, msg.created_at DESC NULLS LAST;
-    `, [req.modelo_id]);
+    `, [modelo_id]);
 
     res.json(rows);
 
@@ -2569,6 +2575,7 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
     res.status(500).json({ error: "Erro ao buscar chats" });
   }
 });
+
 
 
 // ===============================
