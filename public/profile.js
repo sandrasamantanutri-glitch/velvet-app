@@ -207,6 +207,9 @@ function adicionarMidia(conteudo, contexto) {
   if (bloqueado) {
     card.classList.add("locked");
   }
+  else {
+  card.classList.remove("locked");
+}
 
   // ===============================
   // 🔥 BOTÃO EXCLUIR (SÓ DONA)
