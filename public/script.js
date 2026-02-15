@@ -190,6 +190,10 @@ async function login() {
   localStorage.setItem("token", data.token);
   localStorage.setItem("role", data.role);
   localStorage.setItem("ageConfirmed", "true");
+  
+  if (data.role === "modelo") {
+  localStorage.setItem("modelo_id", data.modelo_id);
+}
 
   window.location.href = "/feed.html";
 }
