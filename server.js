@@ -2307,12 +2307,12 @@ app.get("/api/modelos", auth, async (req, res) => {
 
       FROM modelos m
 
-      -- 🔒 Só modelos aprovadas ************ALTERAR NO FUTURO PARA ORGANIZAR A ORDEM**********
+      -- 🔒 Só modelos aprovadas
       JOIN LATERAL (
         SELECT status
         FROM modelos_verificacao
         WHERE modelo_id = m.id
-        ORDER BY criado_em ASC 
+        ORDER BY criado_em DESC 
         LIMIT 1
       ) ver ON true
 

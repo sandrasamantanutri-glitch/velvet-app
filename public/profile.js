@@ -155,9 +155,16 @@ async function carregarPerfilBase() {
 
     const modelo = await res.json();
 
-    window.MODELO_ID_ATUAL = Number(modelo.id);
+const idSeguro =
+  Number(modelo.modelo_id || modelo.id);
 
-    aplicarPerfilNoDOM(modelo);
+if (!idSeguro || isNaN(idSeguro)) {
+  throw new Error("modelo_id inválido vindo do backend");
+}
+
+window.MODELO_ID_ATUAL = idSeguro;
+
+aplicarPerfilNoDOM(modelo);
 
   } catch (err) {
     console.error("Erro ao carregar perfil:", err);
