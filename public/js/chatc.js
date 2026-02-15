@@ -12,6 +12,7 @@ const socket = io({
 
 let cliente_id = null;
 let modelo_id = null;
+const conteudosLiberados = new Set();
 
 document.addEventListener("DOMContentLoaded", () => {
 
