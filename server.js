@@ -2494,7 +2494,7 @@ app.get("/api/chat/cliente", authCliente, async (req, res) => {
       FROM vip_subscriptions v
 
       JOIN modelos m 
-        ON m.user_id = v.modelo_id  -- 🔥 corrigido
+        ON m.id = v.modelo_id  -- 🔥 corrigido
 
       LEFT JOIN LATERAL (
         SELECT text, created_at, lida, sender
@@ -2508,6 +2508,7 @@ app.get("/api/chat/cliente", authCliente, async (req, res) => {
       WHERE v.cliente_id = $1
         AND v.ativo = true
         AND v.expiration_at > NOW()
+         ORDER BY msg.created_at DESC NULLS LAST
     `, [req.cliente_id]);
 
     res.json(rows);

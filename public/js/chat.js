@@ -1008,3 +1008,25 @@ async function carregarInfoCliente(cliente_id) {
     console.error("Erro carregar cliente:", err);
   }
 }
+
+function prioridadeChat(c) {
+
+  // 1️⃣ NOVO (cliente nunca recebeu resposta da modelo)
+  if (!c.modelo_respondeu) {
+    return 1;
+  }
+
+  // 2️⃣ NÃO LIDO (cliente enviou e você não viu)
+  if (c.ultimo_sender === "cliente" && c.visto === false) {
+    return 2;
+  }
+
+  // 3️⃣ NECESSITA RESPOSTA (cliente enviou, você viu mas não respondeu)
+  if (c.ultimo_sender === "cliente" && c.visto === true) {
+    return 3;
+  }
+
+  // 4️⃣ Demais
+  return 4;
+}
+

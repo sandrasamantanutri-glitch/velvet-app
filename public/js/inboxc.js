@@ -5,10 +5,16 @@ if (!token) {
   window.location.href = "/index.html";
   throw new Error("Sem token");
 }
-
-const socket = io("https://velvet-test-production.up.railway.app", {
-  auth: { token: "Bearer " + token }
+const socket = io({
+  transports: ["websocket"]
 });
+
+socket.emit("auth", { token });
+
+socket.on("authOk", () => {
+  socket.emit("joinInbox");
+});
+
 
 // 🔔 REALTIME INBOX CLIENTE (GLOBAL)
 socket.on("inboxMessage", (data) => {
