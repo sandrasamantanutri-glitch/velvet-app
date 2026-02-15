@@ -994,13 +994,13 @@ async function carregarFeedBase() {
 
   const ehVip = window.__CLIENTE_VIP__ === true;
 
-  feed.forEach(conteudo => {
+   feed.forEach(conteudo => {
 
-    if (conteudo.tipo_conteudo === "venda" && !ehVip) {
-      adicionarMidiaBloqueada(conteudo);
-    } else {
-      adicionarMidia(conteudo, { ehDona: false, ehVip });
-    }
+    // SEM função extra
+    adicionarMidia(conteudo, {
+      ehDona: false,
+      ehVip
+    });
 
   });
 }
