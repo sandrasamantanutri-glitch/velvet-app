@@ -905,10 +905,10 @@ body.role-cliente .area-saldos {
 
 .vip-badge {
   display: inline-block;
-  background: rgba(255,255,255,0.2);
+  background: #7B2CFF; 
   padding: 6px 14px;
   border-radius: 999px;
-  font-size: 13px;
+  font-size: 20px;
   font-weight: 600;
   margin-bottom: 14px;
 }
