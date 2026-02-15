@@ -173,14 +173,12 @@ async function enviar(modoTeste) {
     );
     if (!ok) return;
   }
-
   const payload = {
-    modelo_id,
-    texto,
-    preco,        // pode ser 0
-    conteudos,    // pode ser []
-    modo_teste: modoTeste
-  };
+  texto,
+  preco,
+  conteudos,
+  modo_teste: modoTeste
+};
 
   const res = await fetch("/api/allmessage", {
     method: "POST",

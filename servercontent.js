@@ -394,10 +394,6 @@ let modelo_id;
       `;
       const vipParams = [modelo_id];
 
-      if (modo_teste === true) {
-        vipQuery += " LIMIT 1";
-      }
-
       const clientesRes = await db.query(vipQuery, vipParams);
 
       if (clientesRes.rowCount === 0) {
