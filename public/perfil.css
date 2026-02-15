@@ -906,21 +906,12 @@ body.role-cliente .area-saldos {
 .vip-badge {
   display: inline-block;
   background: #7B2CFF; 
+  color: #fff;
   padding: 6px 14px;
   border-radius: 999px;
   font-size: 20px;
   font-weight: 600;
   margin-bottom: 14px;
-}
-
-.vip-card h3 {
-  font-size: 26px;
-  margin-bottom: 6px;
-}
-
-.vip-card p {
-  opacity: 0.9;
-  margin-bottom: 20px;
 }
 
 .vip-chat-btn {
