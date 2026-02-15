@@ -2526,8 +2526,21 @@ app.get("/api/chat/cliente", authCliente, async (req, res) => {
 app.get("/api/chat/modelo", authModelo, async (req, res) => {
   try {
 
-    const userId = req.user.id; // 🔥 usar users.id
+    const userId = req.user.id;
 
+    // 🔥 1️⃣ Buscar modelos.id da modelo logada
+    const modeloResult = await db.query(
+      "SELECT id FROM modelos WHERE user_id = $1",
+      [userId]
+    );
+
+    if (modeloResult.rows.length === 0) {
+      return res.status(404).json({ error: "Modelo não encontrada" });
+    }
+
+    const modeloId = modeloResult.rows[0].id;
+
+    // 🔥 2️⃣ Usar modeloId correto
     const { rows } = await db.query(`
       SELECT DISTINCT ON (c.id)
         c.id AS cliente_id,
@@ -2552,7 +2565,7 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
         SELECT text, created_at, visto, lida, sender
         FROM messages
         WHERE messages.cliente_id = c.id
-          AND messages.modelo_id  = v.modelo_id
+          AND messages.modelo_id  = $1
         ORDER BY created_at DESC
         LIMIT 1
       ) msg ON true
@@ -2562,7 +2575,7 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
         AND v.expiration_at > NOW()
 
       ORDER BY c.id, msg.created_at DESC NULLS LAST;
-    `, [userId]); // 🔥 aqui mudou
+    `, [modeloId]);
 
     res.json(rows);
 
@@ -2571,7 +2584,6 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
     res.status(500).json({ error: "Erro ao buscar chats" });
   }
 });
-
 
 
 // ===============================
