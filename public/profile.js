@@ -289,9 +289,10 @@ async function aplicarRegrasDeAcesso() {
     if (ofertaCard) ofertaCard.style.display = "block";
 
     if (btnAssinar) {
-      btnAssinar.disabled = true;
+      btnAssinar.disabled = false;
       btnAssinar.style.cursor = "not-allowed";
-      btnAssinar.textContent = "Seu perfil";
+      btnAssinar.textContent =
+    `Assinar VIP por ${valorBRL(OFERTA_ATUAL.valor_promocional)}`;
     }
 
     return;
@@ -306,73 +307,67 @@ async function aplicarRegrasDeAcesso() {
 
   // ===============================
   // 🔵 CLIENTE OU MODELO vendo outro perfil
-  if (ehCliente || ehModelo) {
+if (ehCliente || ehModelo) {
 
-    try {
+  try {
 
-  const res = await fetch(`/api/vip/status/${modelo_id}`, {
-    headers: {
-      Authorization: "Bearer " + tokenAtual
+    const res = await fetch(`/api/vip/status/${modelo_id}`, {
+      headers: {
+        Authorization: "Bearer " + tokenAtual
+      }
+    });
+
+    const data = res.ok ? await res.json() : { vip: false };
+    const vip = data.vip;
+
+    const vipCard = document.getElementById("vip-card");
+    const ofertaCard = document.getElementById("oferta-card");
+
+    if (vip) {
+
+      window.__CLIENTE_VIP__ = true;
+
+      // 🔥 Esconde oferta normal
+      if (ofertaCard) ofertaCard.style.display = "none";
+
+      // 🔥 Mostra card exclusivo VIP
+      if (vipCard) vipCard.classList.remove("hidden");
+
+    } else {
+
+      window.__CLIENTE_VIP__ = false;
+
+      // 🔥 Mostra oferta normal
+      if (ofertaCard) ofertaCard.style.display = "block";
+
+      // 🔥 Esconde card VIP
+      if (vipCard) vipCard.classList.add("hidden");
+
+      if (btnAssinar) {
+        btnAssinar.disabled = false;
+
+        if (window.OFERTA_ATUAL) {
+          btnAssinar.textContent =
+            `Assinar VIP por ${valorBRL(window.OFERTA_ATUAL.valor_promocional)}`;
+        }
+      }
+
     }
-  });
 
-  const data = res.ok ? await res.json() : { vip: false };
-  const vip = data.vip;
+  } catch (err) {
 
-  if (vip) {
-
-    window.__CLIENTE_VIP__ = true;
-
-    // 🔥 Esconde oferta quando VIP
-    if (ofertaCard) {
-      ofertaCard.style.display = "none";
-    }
-
-    if (btnAssinar) {
-      btnAssinar.disabled = false;
-      btnAssinar.classList.add("vip-botao");
-      btnAssinar.innerHTML = `
-        <div class="vip-inline">
-          <span class="vip-status">👑 VIP ativo</span>
-          <strong class="vip-link"> · 💬 Vem falar comigo!!</strong>
-        </div>
-      `;
-    }
-
-  } else {
+    console.error("Erro ao verificar VIP:", err);
 
     window.__CLIENTE_VIP__ = false;
 
-    // 🔥 Mostra oferta normal
-    if (ofertaCard) {
-      ofertaCard.style.display = "block";
-    }
+    const vipCard = document.getElementById("vip-card");
+    const ofertaCard = document.getElementById("oferta-card");
 
-    if (btnAssinar) {
-      btnAssinar.disabled = false;
-      btnAssinar.classList.remove("vip-botao");
-
-      if (window.OFERTA_ATUAL) {
-        btnAssinar.textContent =
-          `Assinar VIP por ${valorBRL(window.OFERTA_ATUAL.valor_promocional)}`;
-      }
-    }
+    if (ofertaCard) ofertaCard.style.display = "block";
+    if (vipCard) vipCard.classList.add("hidden");
 
   }
-
-} catch (err) {
-
-  console.error("Erro ao verificar VIP:", err);
-
-  window.__CLIENTE_VIP__ = false;
-
-  // Em caso de erro, mantém oferta visível
-  if (ofertaCard) {
-    ofertaCard.style.display = "block";
-  }
-
 }
-  }
 }
 
 async function carregarPerfilBase() {
@@ -546,6 +541,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
   });
+  document.getElementById("btn-vip-chat")?.addEventListener("click", () => {
+  window.location.href = `/chatc.html?modelo_id=${modelo_id}`;
+});
+
 
 });
 
