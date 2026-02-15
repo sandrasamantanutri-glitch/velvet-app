@@ -386,12 +386,11 @@ async function carregarVipCountModelo(modelo_id) {
   }
 
   try {
-    const res = await fetch(`/api/modelo/${modelo_id}/vip-count`, {
-      headers: {
-        Authorization: "Bearer " + token
-      }
-    });
-
+    const res = await fetch("/api/modelo/me/vip-count", {
+  headers: {
+    Authorization: "Bearer " + token
+  }
+});
     if (!res.ok) return;
 
     const { total } = await res.json();

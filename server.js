@@ -1972,32 +1972,37 @@ app.get("/api/usuario/perfil", auth, async (req, res) => {
 
 
 //CONTAGEMVIPS
-app.get("/api/modelo/:id/vip-count", async (req, res) => {
-  const modelo_id = Number(req.params.id);
-
-  if (!Number.isInteger(modelo_id) || modelo_id <= 0) {
-    return res.status(400).json({ total: 0 });
-  }
-
+app.get("/api/modelo/me/vip-count", auth, async (req, res) => {
   try {
+    const modeloRes = await db.query(
+      "SELECT id FROM modelos WHERE user_id = $1",
+      [req.user.id]
+    );
+
+    if (!modeloRes.rows.length) {
+      return res.json({ total: 0 });
+    }
+
+    const modelo_id = modeloRes.rows[0].id;
+
     const result = await db.query(
       `
       SELECT COUNT(*)::int AS total
       FROM vip_subscriptions
       WHERE modelo_id = $1
-        AND ativo = true
         AND expiration_at > NOW()
       `,
       [modelo_id]
     );
 
-    res.json({ total: result.rows[0].total });
+    res.json({ total: result.rows[0]?.total || 0 });
 
   } catch (err) {
     console.error("Erro contar VIPs:", err);
     res.status(500).json({ total: 0 });
   }
 });
+
 
 
 //OFERTAS QUANDO ENCERRAR
