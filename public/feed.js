@@ -52,10 +52,18 @@ document.addEventListener("DOMContentLoaded", () => {
         card.innerHTML = `
           <img src="${modelo.avatar || "/assets/avatar.png"}" alt="${modelo.nome_exibicao || "Modelo"}">
         `;
+<<<<<<< HEAD
     card.onclick = () => {
           window.location.href = `perfil.html?modelo_id=${modelo.id}`;
         };
 
+=======
+
+        // 🔹 Clique no card
+card.onclick = () => {
+  window.location.href = `perfil.html?modelo_id=${id}`; // perfil público
+};
+>>>>>>> parent of 15008ff (.)
         lista.appendChild(card);
       });
     })
