@@ -3203,23 +3203,46 @@ app.put("/api/usuario/perfil", auth, async (req, res) => {
         ]
       );
 
-      await db.query(
-        `  INSERT INTO modelos_dados (modelo_id, instagram, tiktok)
-  VALUES ($1, $2, $3)
-  ON CONFLICT (modelo_id) DO UPDATE
-  SET
-    instagram     = COALESCE(EXCLUDED.instagram, modelos_dados.instagram),
-    tiktok        = COALESCE(EXCLUDED.tiktok, modelos_dados.tiktok),
-    atualizado_em = NOW()
-  `,
-  [
-    modeloId,
-    instagram ?? null,
-    tiktok ?? null
-  ]
+// verifica se já existe registro
+const existeDados = await db.query(
+  `SELECT id FROM modelos_dados WHERE modelo_id = $1`,
+  [modeloId]
 );
 
+if (existeDados.rows.length > 0) {
 
+  // UPDATE
+  await db.query(
+    `
+    UPDATE modelos_dados
+    SET
+      instagram     = COALESCE($1, instagram),
+      tiktok        = COALESCE($2, tiktok),
+      atualizado_em = NOW()
+    WHERE modelo_id = $3
+    `,
+    [
+      instagram ?? null,
+      tiktok ?? null,
+      modeloId
+    ]
+  );
+
+} else {
+
+  // INSERT
+  await db.query(
+    `
+    INSERT INTO modelos_dados (modelo_id, instagram, tiktok)
+    VALUES ($1, $2, $3)
+    `,
+    [
+      modeloId,
+      instagram ?? null,
+      tiktok ?? null
+    ]
+  );
+}
       return res.json({ ok: true });
     }
 
