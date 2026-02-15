@@ -1,6 +1,3 @@
-// ===============================
-// AUTH GUARD — CHAT CLIENTE
-// ===============================
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
 
@@ -8,36 +5,17 @@ if (!token) {
   window.location.href = "/index.html";
   throw new Error("Sem token");
 }
+
 const socket = io({
   transports: ["websocket"]
 });
 
-socket.emit("auth", { token });
-
-socket.on("authOk", () => {
-  console.log("🔐 Socket autenticado");
-
-  if (role === "cliente") {
-    socket.emit("loginCliente");
-  }
-
-  if (role === "modelo") {
-    socket.emit("loginModelo");
-  }
-});
-
 let cliente_id = null;
 let modelo_id = null;
-const conteudosLiberados = new Set();
-// let stripe;
-let elements;
-let pagamentoAtual = {};
-stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
 
+document.addEventListener("DOMContentLoaded", () => {
 
-document.addEventListener("DOMContentLoaded", async () => {
-
-  // 🔥 pega modelo da URL
+  // 🔥 pega modelo da URL UMA VEZ
   const params = new URLSearchParams(window.location.search);
   modelo_id = Number(params.get("modelo_id"));
 
@@ -46,16 +24,25 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  // 🔐 carregar cliente primeiro
-  await carregarCliente();   // <-- ESSA LINHA FALTAVA
+  socket.emit("auth", { token });
 
-  // 👩 carregar info da modelo
-  await carregarInfoModelo(modelo_id);
+  socket.on("authOk", async () => {
+    console.log("🔐 Socket autenticado");
 
-  // 🔌 agora sim cria sala correta
-  socket.emit("joinChat", { cliente_id, modelo_id });
-  socket.emit("joinChat", { sala });
-  socket.emit("getHistory", { cliente_id, modelo_id });
+    if (role === "cliente") {
+      socket.emit("loginCliente");
+    }
+
+    if (role === "modelo") {
+      socket.emit("loginModelo");
+    }
+
+    await carregarCliente();
+    await carregarInfoModelo(modelo_id);
+
+    socket.emit("joinChat", { cliente_id, modelo_id });
+    socket.emit("getHistory", { cliente_id, modelo_id });
+  });
 
   const sendBtn = document.getElementById("sendBtn");
   const input   = document.getElementById("messageInput");
