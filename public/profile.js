@@ -344,7 +344,11 @@ async function aplicarRegrasDeAcesso() {
         if (btnAssinar) {
           btnAssinar.disabled = false;
           btnAssinar.classList.remove("vip-botao");
-          btnAssinar.textContent = "Assinar VIP";
+          if (window.OFERTA_ATUAL) {
+  btnAssinar.textContent =
+    `Assinar VIP por ${valorBRL(window.OFERTA_ATUAL.valor_promocional)}`;
+}
+
         }
 
         if (ofertaCard) {
