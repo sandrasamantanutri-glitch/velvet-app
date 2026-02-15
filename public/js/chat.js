@@ -654,11 +654,11 @@ function confirmarEnvioConteudo() {
     if (!Number.isFinite(preco) || preco < 0) preco = 0;
     preco = Number(preco.toFixed(2));
 
-    // 🔥 Garantir que socket existe
-    if (!window.socket) {
-      console.error("Socket não conectado!");
-      return;
-    }
+if (!socket || !socket.connected) {
+  console.error("Socket não conectado!");
+  return;
+}
+
 
     // 🔥 Garantir join na sala antes de enviar
     socket.emit("joinChat", { cliente_id, modelo_id });
