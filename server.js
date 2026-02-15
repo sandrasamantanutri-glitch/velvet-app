@@ -2523,6 +2523,7 @@ app.get("/api/chat/cliente", authCliente, async (req, res) => {
 // ===============================
 app.get("/api/chat/modelo", authModelo, async (req, res) => {
   try {
+    console.log("MODELO_ID:", req.modelo_id);
 
     const { rows } = await db.query(`
       SELECT DISTINCT ON (c.id)
