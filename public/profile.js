@@ -37,7 +37,7 @@ if (!modelo_id || isNaN(modelo_id)) {
   console.warn("modelo_id inválido na URL");
   modelo_id = null;
 } else {window.MODELO_ID_ATUAL = modelo_id;
-  
+
 }
 
 function autenticarSocket() {
@@ -317,15 +317,23 @@ const btnAssinar = document.getElementById("btn-assinar");
         }
       });
 
-      const { vip } = res.ok ? await res.json() : { vip: false };
+      const data = res.ok ? await res.json() : { vip: false };
+      const vip = data.vip;
 
       if (vip) {
-        window.__CLIENTE_VIP__ = true;
+  window.__CLIENTE_VIP__ = true;
 
-        if (btnAssinar) {
-          btnAssinar.disabled = true;
-          btnAssinar.textContent = "VIP ativo 💜";
-        }
+  if (btnAssinar) {
+    btnAssinar.disabled = true;
+
+    const dataFormatada = new Date(data.expiration_at)
+      .toLocaleDateString("pt-BR");
+
+    btnAssinar.innerHTML = `
+     👑 Você é VIP!
+      <small>Acesso garantido até${dataFormatada}</small>
+    `;
+  }
 
         if (ofertaCard) {
           ofertaCard.style.display = "none";
@@ -385,10 +393,8 @@ async function iniciarPerfil() {
     if (!modelo_id) {
       throw new Error("IDs do perfil não definidos corretamente");
     }
-    await aplicarRegrasDeAcesso();
-
     await carregarOfertaAtiva();
-
+    await aplicarRegrasDeAcesso();
     await carregarFeedBase();
 
   } catch (err) {
