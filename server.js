@@ -313,7 +313,7 @@ app.post(
   }
 );
 
-
+app.use("/api", servercontent);
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/admin", express.static(path.join(__dirname, "admin-pages")));
