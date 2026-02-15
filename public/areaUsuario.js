@@ -115,6 +115,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const user = await res.json();
 
+   const btn = document.getElementById("btnPerfilCompleto");
+
+  if (btn && modelo?.id) {
+    btn.href = `/perfil.html?modelo_id=${modelo.id}`;
+  }
+
   // 🔒 role REAL e confiável
   document.body.classList.add(`role-${user.role}`);
 
