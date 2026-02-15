@@ -148,7 +148,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   const btn = document.getElementById("btnPerfilCompleto");
-  btn.href = `/perfil.html?modelo_id=${user.id}`;
+  btn.href = `/perfil.html?modelo_id=${modeloId}`;
 });
 
 
