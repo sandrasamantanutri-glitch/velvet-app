@@ -262,10 +262,9 @@ function adicionarMidia(conteudo, contexto) {
   gridDestino?.appendChild(card);
 }
 
-
 async function aplicarRegrasDeAcesso() {
   const ofertaCard = document.getElementById("oferta-card");
-const btnAssinar = document.getElementById("btn-assinar");
+  const btnAssinar = document.getElementById("btn-assinar");
 
   const tokenAtual = localStorage.getItem("token");
 
@@ -275,7 +274,7 @@ const btnAssinar = document.getElementById("btn-assinar");
   const ehModelo = role === "modelo";
   const ehCliente = role === "cliente";
 
-  // ⚠️ DONA DO PERFIL agora verifica pelo modelo logado
+  // ⚠️ DONA DO PERFIL
   const modeloLogado = Number(localStorage.getItem("modelo_id"));
   const ehDona = ehModelo && modeloLogado === modelo_id;
 
@@ -306,11 +305,12 @@ const btnAssinar = document.getElementById("btn-assinar");
   }
 
   // ===============================
-  // 🔵 CLIENTE OU MODELO (vendo outro perfil)
+  // 🔵 CLIENTE OU MODELO vendo outro perfil
   // ===============================
   if (ehCliente || ehModelo) {
 
     try {
+
       const res = await fetch(`/api/vip/status/${modelo_id}`, {
         headers: {
           Authorization: "Bearer " + tokenAtual
@@ -321,29 +321,40 @@ const btnAssinar = document.getElementById("btn-assinar");
       const vip = data.vip;
 
       if (vip) {
-  window.__CLIENTE_VIP__ = true;
 
-  if (btnAssinar) {
-    btnAssinar.disabled = true;
+        window.__CLIENTE_VIP__ = true;
 
-    const dataFormatada = new Date(data.expiration_at)
-      .toLocaleDateString("pt-BR");
+        if (btnAssinar) {
+          btnAssinar.disabled = false;
+          btnAssinar.classList.add("vip-botao");
 
-    btnAssinar.innerHTML = `
-     👑 Você é VIP!
-      <small>Acesso garantido até${dataFormatada}</small>
-    `;
-  }
+          const dataFormatada = new Date(data.expiration_at)
+            .toLocaleDateString("pt-BR");
+
+          btnAssinar.innerHTML = `
+            <div class="vip-box">
+              <div class="vip-topo">👑 Você é VIP!</div>
+              <div class="vip-validade">
+                Acesso garantido até ${dataFormatada}
+              </div>
+              <div class="vip-chat">
+                💬 Vem falar comigo
+              </div>
+            </div>
+          `;
+        }
 
         if (ofertaCard) {
-          ofertaCard.style.display = "none";
+          ofertaCard.style.display = "block";
         }
 
       } else {
+
         window.__CLIENTE_VIP__ = false;
 
         if (btnAssinar) {
           btnAssinar.disabled = false;
+          btnAssinar.classList.remove("vip-botao");
           btnAssinar.textContent = "Assinar VIP";
         }
 
@@ -353,6 +364,7 @@ const btnAssinar = document.getElementById("btn-assinar");
       }
 
     } catch (err) {
+
       console.error("Erro ao verificar VIP:", err);
 
       window.__CLIENTE_VIP__ = false;
@@ -360,9 +372,12 @@ const btnAssinar = document.getElementById("btn-assinar");
       if (ofertaCard) {
         ofertaCard.style.display = "block";
       }
-    }
-  }
+
+    } 
+
+  } 
 }
+
 
 //////////////////////////////////////////////////////
 async function carregarPerfilBase() {
@@ -471,7 +486,11 @@ function aplicarPerfilNoDOM(modelo) {
 // DOM
 // ===============================
 document.addEventListener("DOMContentLoaded", async () => {
-const btnAssinar = document.getElementById("btn-assinar");
+
+  const btnAssinar = document.getElementById("btn-assinar");
+  const btnUpload = document.getElementById("btn-upload");
+  const tokenAtual = localStorage.getItem("token");
+
   aplicarRoleNoBody();
 
   try {
@@ -481,10 +500,12 @@ const btnAssinar = document.getElementById("btn-assinar");
     return;
   }
 
+  // 🔒 Remove botão upload se não for modelo logado
   if (role !== "modelo" || !tokenAtual) {
     btnUpload?.remove();
   }
 
+  // 🔁 Pós-registro
   const postRegisterAction = localStorage.getItem("post_register_action");
 
   if (postRegisterAction === "open_payment") {
@@ -492,35 +513,20 @@ const btnAssinar = document.getElementById("btn-assinar");
     window.abrirFluxoVIP();
   }
 
+  // 👑 Botão assinar
+  btnAssinar?.addEventListener("click", () => {
 
-btnAssinar?.addEventListener("click", () => {
+    if (window.__CLIENTE_VIP__) {
+      window.location.href = `/chatc.html?modelo_id=${modelo_id}`;
+      return;
+    }
 
-  const tokenAtual = localStorage.getItem("token");
+    window.abrirFluxoVIP();
+  });
 
-  if (!tokenAtual) {
-    abrirPopupLoginObrigatorio();
-    return;
-  }
-
-  window.abrirFluxoVIP();
-});
-
-document.addEventListener("click", (e) => {
-
-  const linkVip = e.target.closest(".link-assinar-vip");
-  if (!linkVip) return;
-
-  e.preventDefault();
-
-  const tokenAtual = localStorage.getItem("token");
-
-  if (!tokenAtual) {
-    abrirPopupLoginObrigatorio();
-    return;
-  }
-
-  window.abrirFluxoVIP();
-});
+  // ===============================
+  // 📂 TABS DE MÍDIAS
+  // ===============================
 
   const tabs = document.querySelectorAll(".midias-tabs .tab");
 
@@ -539,18 +545,43 @@ document.addEventListener("click", (e) => {
       const tipo = tab.dataset.tab;
 
       if (tipo === "free") {
-        document.getElementById("listaMidias")
+        document
+          .getElementById("listaMidias")
           ?.classList.add("active");
       }
 
       if (tipo === "paid") {
-        document.getElementById("midias-paid")
+        document
+          .getElementById("midias-paid")
           ?.classList.add("active");
       }
 
     });
 
   });
+
+});
+
+
+// =================================
+// 🔗 Link genérico "Assinar VIP"
+// =================================
+
+document.addEventListener("click", (e) => {
+
+  const linkVip = e.target.closest(".link-assinar-vip");
+  if (!linkVip) return;
+
+  e.preventDefault();
+
+  const tokenAtual = localStorage.getItem("token");
+
+  if (!tokenAtual) {
+    abrirPopupLoginObrigatorio();
+    return;
+  }
+
+  window.abrirFluxoVIP();
 
 });
 

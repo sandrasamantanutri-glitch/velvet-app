@@ -887,6 +887,40 @@ body.role-cliente .area-saldos {
   display: none !important;
 }
 
+.vip-botao {
+  background: linear-gradient(135deg, #7B2CFF, #9E6BFF);
+  color: white;
+  border: none;
+  border-radius: 16px;
+  padding: 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.vip-botao:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(123, 44, 255, 0.4);
+}
+
+.vip-topo {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.vip-validade {
+  font-size: 13px;
+  opacity: 0.9;
+  margin-top: 4px;
+}
+
+.vip-chat {
+  margin-top: 8px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+
 
 
 
