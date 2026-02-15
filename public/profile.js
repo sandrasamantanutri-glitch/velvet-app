@@ -2,7 +2,6 @@ window.socket = io();
 const tokenAtual = localStorage.getItem("token");
 const role = localStorage.getItem("role");
 const params = new URLSearchParams(window.location.search);
-const modeloParam = params.get("id");
 const refParam = params.get("ref") || params.get("id");
 const srcParam = params.get("src");
 
@@ -24,6 +23,9 @@ if (refParam || srcParam) {
 
 window.__CLIENTE_VIP__ = false;
 let user_id = null;
+
+const modeloParam =
+  params.get("modelo_id") || params.get("id");
 
 // PERFIL PÚBLICO PARAM=ID NA URL
 if (modeloParam) {
