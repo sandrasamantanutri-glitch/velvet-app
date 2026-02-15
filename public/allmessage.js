@@ -174,7 +174,6 @@ async function enviar(modoTeste) {
     if (!ok) return;
   }
   const payload = {
-  modelo_id,
   texto,
   preco,
   conteudos,
