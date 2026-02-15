@@ -28,9 +28,6 @@ async function abrirPopupConteudos() {
 
   const token = localStorage.getItem("token");
 
-  // ⚠️ NO PPV usamos USER_ID da modelo (não modelos.id)
-  const modeloUserId = document.getElementById("modeloSelect").value;
-
   const res = await fetch(
     `/api/allmessage/conteudos/${id}`,
     {
@@ -105,7 +102,7 @@ async function carregarConteudos() {
   const modelo_id = document.getElementById("modeloSelect").value;
 
   const res = await fetch(
-    `api/allmessage/conteudos/${modelo_id}`,
+    `api/allmessage/conteudos/${id}`,
     {
       headers: { Authorization: "Bearer " + token }
     }
