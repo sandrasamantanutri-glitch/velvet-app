@@ -280,7 +280,6 @@ async function aplicarRegrasDeAcesso() {
 
   // ===============================
   // 🟣 MODELO DONA DO PERFIL
-  // ===============================
   if (ehDona) {
 
     window.__CLIENTE_VIP__ = false;
@@ -321,25 +320,17 @@ async function aplicarRegrasDeAcesso() {
       if (vip) {
 
         window.__CLIENTE_VIP__ = true;
+        
 
         if (btnAssinar) {
           btnAssinar.disabled = false;
           btnAssinar.classList.add("vip-botao");
-
-          const dataFormatada = new Date(data.expiration_at)
-            .toLocaleDateString("pt-BR");
-
-          btnAssinar.innerHTML = `
-            <div class="vip-box">
-              <div class="vip-topo">👑 Você é VIP!</div>
-              <div class="vip-validade">
-                Acesso garantido até ${dataFormatada}
-              </div>
-              <div class="vip-chat">
-                💬 Vem falar comigo
-              </div>
-            </div>
-          `;
+            btnAssinar.innerHTML = `
+  <div class="vip-inline">
+    <span class="vip-status">👑 VIP ativo</span>
+      <strong class="vip-link"> · 💬 Vem falar comigo!!</strong>
+  </div>
+`;
         }
 
         if (ofertaCard) {
