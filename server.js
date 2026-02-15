@@ -2524,17 +2524,7 @@ app.get("/api/chat/cliente", authCliente, async (req, res) => {
 app.get("/api/chat/modelo", authModelo, async (req, res) => {
   try {
 
-    const modeloRes = await db.query(
-      "SELECT id FROM modelos WHERE user_id = $1",
-      [req.user.id]
-    );
-
-    if (modeloRes.rows.length === 0) {
-      return res.json([]);
-    }
-
-    const modelo_id = modeloRes.rows[0].id;
-    console.log("MODELO_ID:", req.modelo_id);
+    const userId = req.user.id; // 🔥 usar users.id
 
     const { rows } = await db.query(`
       SELECT DISTINCT ON (c.id)
@@ -2549,8 +2539,12 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
         COALESCE(msg.lida, false)  AS lida
 
       FROM vip_subscriptions v
-      JOIN clientes c ON c.id = v.cliente_id
-      LEFT JOIN clientes_dados cd ON cd.cliente_id = c.id
+
+      JOIN clientes c 
+        ON c.id = v.cliente_id
+
+      LEFT JOIN clientes_dados cd 
+        ON cd.cliente_id = c.id
 
       LEFT JOIN LATERAL (
         SELECT text, created_at, visto, lida, sender
@@ -2566,7 +2560,7 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
         AND v.expiration_at > NOW()
 
       ORDER BY c.id, msg.created_at DESC NULLS LAST;
-    `, [modelo_id]);
+    `, [userId]); // 🔥 aqui mudou
 
     res.json(rows);
 
