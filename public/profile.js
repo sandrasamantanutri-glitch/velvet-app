@@ -58,6 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /////PERFIL ///
+const btnUpload = document.querySelector(".btn-mais");
 const avatarImg  = document.getElementById("profileAvatar");
 const capaImg    = document.getElementById("profileCapa");
 const nomeEl     = document.getElementById("profileName");
@@ -279,6 +280,7 @@ async function aplicarRegrasDeAcesso() {
 
   // ===============================
   // 🟣 MODELO DONA DO PERFIL
+  // ===============================
   if (ehDona) {
 
     window.__CLIENTE_VIP__ = false;
@@ -319,42 +321,34 @@ async function aplicarRegrasDeAcesso() {
       if (vip) {
 
         window.__CLIENTE_VIP__ = true;
-        // 🔒 Esconder infos da oferta quando VIP
-        // 🔒 Esconder toda a área de preços
-const precoOriginalContainer =
-  document.getElementById("preco-original")?.closest("p");
-
-precoOriginalContainer?.classList.add("hidden");
-
-document.getElementById("oferta-desconto")
-  ?.classList.add("hidden");
-
 
         if (btnAssinar) {
           btnAssinar.disabled = false;
           btnAssinar.classList.add("vip-botao");
-            btnAssinar.innerHTML = `
-  <div class="vip-inline">
-    <span class="vip-status">👑 VIP ativo</span>
-      <strong class="vip-link">💬 Vem falar comigo!!</strong>
-  </div>
-`;
+
+          const dataFormatada = new Date(data.expiration_at)
+            .toLocaleDateString("pt-BR");
+
+          btnAssinar.innerHTML = `
+            <div class="vip-box">
+              <div class="vip-topo">👑 Você é VIP!</div>
+              <div class="vip-validade">
+                Acesso garantido até ${dataFormatada}
+              </div>
+              <div class="vip-chat">
+                💬 Vem falar comigo
+              </div>
+            </div>
+          `;
         }
 
         if (ofertaCard) {
-          ofertaCard.style.display = "none";
+          ofertaCard.style.display = "block";
         }
 
       } else {
 
         window.__CLIENTE_VIP__ = false;
-        const precoOriginalContainer =
-  document.getElementById("preco-original")?.closest("p");
-
-precoOriginalContainer?.classList.remove("hidden");
-
-document.getElementById("oferta-desconto")
-  ?.classList.remove("hidden");
 
         if (btnAssinar) {
           btnAssinar.disabled = false;
@@ -484,7 +478,7 @@ function aplicarPerfilNoDOM(modelo) {
 document.addEventListener("DOMContentLoaded", async () => {
 
   const btnAssinar = document.getElementById("btn-assinar");
-const btnUpload = document.querySelector(".btn-mais");
+  const btnUpload = document.getElementById("btn-upload");
   const tokenAtual = localStorage.getItem("token");
 
   aplicarRoleNoBody();
