@@ -2493,7 +2493,7 @@ app.get("/api/chat/cliente", authCliente, async (req, res) => {
       FROM vip_subscriptions v
 
       JOIN modelos m 
-        ON m.id = v.modelo_id
+        ON m.user_id = v.modelo_id  -- 🔥 corrigido
 
       LEFT JOIN LATERAL (
         SELECT text, created_at, lida, sender
