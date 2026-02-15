@@ -147,56 +147,6 @@ function exigirLogin() {
   openAgeGate("login");
 }
 
-
-async function carregarPerfilBase() {
-  try {
-    if (!modelo_id) {
-      console.warn("modelo_id inválido");
-      return;
-    }
-
-    const res = await fetch(`/api/modelo/publico/${modelo_id}`);
-
-    if (!res.ok) {
-      throw new Error("Perfil não encontrado");
-    }
-
-    const modelo = await res.json();
-
-const idSeguro =
-  Number(modelo.modelo_id || modelo.id);
-
-if (!idSeguro || isNaN(idSeguro)) {
-  throw new Error("modelo_id inválido vindo do backend");
-}
-
-modelo_id = idSeguro;
-
-aplicarPerfilNoDOM(modelo);
-
-  } catch (err) {
-    console.error("Erro ao carregar perfil:", err);
-  }
-}
-const res = await fetch(`/api/modelo/publico/${modelo_id}/feed`);
-const feed = await res.json();
-
-const ehVip = window.__CLIENTE_VIP__ === true;
-
-console.log("FEED:", feed);
-
-feed.forEach(conteudo => {
-
-  // Se for venda e não for VIP → bloqueia
-  if (conteudo.tipo_conteudo === "venda" && !ehVip) {
-    adicionarMidiaBloqueada(conteudo);
-  } else {
-    adicionarMidia(conteudo);
-  }
-
-});
-
-
 function adicionarMidia(conteudo, contexto) {
 
   const { ehDona, ehVip } = contexto;
@@ -415,33 +365,38 @@ async function aplicarRegrasDeAcesso() {
 }
 
 //////////////////////////////////////////////////////
+async function carregarPerfilBase() {
+
+  if (!modelo_id) {
+    console.warn("modelo_id inválido");
+    return;
+  }
+
+  const res = await fetch(`/api/modelo/publico/${modelo_id}`);
+
+  if (!res.ok) {
+    throw new Error("Perfil não encontrado");
+  }
+
+  const modelo = await res.json();
+
+  aplicarPerfilNoDOM(modelo);
+}
+
 
 async function iniciarPerfil() {
   try {
 
-    // ===============================
-    // 1️⃣ CARREGAR PERFIL BASE
-    // ===============================
     await carregarPerfilBase();
 
     // ⚠️ não usar user_id público, só verificar MODELO_ID_ATUAL
     if (!modelo_id) {
       throw new Error("IDs do perfil não definidos corretamente");
     }
-
-    // ===============================
-    // 2️⃣ APLICAR REGRAS DE ACESSO
-    // ===============================
     await aplicarRegrasDeAcesso();
 
-    // ===============================
-    // 3️⃣ CARREGAR OFERTA
-    // ===============================
     await carregarOfertaAtiva();
 
-    // ===============================
-    // 4️⃣ CARREGAR FEED
-    // ===============================
     await carregarFeedBase();
 
   } catch (err) {
@@ -1021,6 +976,35 @@ modal.querySelector(".modal-close-upload")
     }
   });
 }
+
+async function carregarFeedBase() {
+
+  if (!modelo_id) return;
+
+  const listaFree = document.getElementById("listaMidias");
+  const listaPaid = document.getElementById("midias-paid");
+
+  if (listaFree) listaFree.innerHTML = "";
+  if (listaPaid) listaPaid.innerHTML = "";
+
+  const res = await fetch(`/api/modelo/publico/${modelo_id}/feed`);
+  const feed = await res.json();
+
+  console.log("FEED:", feed);
+
+  const ehVip = window.__CLIENTE_VIP__ === true;
+
+  feed.forEach(conteudo => {
+
+    if (conteudo.tipo_conteudo === "venda" && !ehVip) {
+      adicionarMidiaBloqueada(conteudo);
+    } else {
+      adicionarMidia(conteudo, { ehDona: false, ehVip });
+    }
+
+  });
+}
+
 
 function mostrarLoading() {
   document.body.classList.add("loading");
