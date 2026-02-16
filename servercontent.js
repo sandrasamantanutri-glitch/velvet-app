@@ -1511,7 +1511,7 @@ router.get(
 router.get("/modelo/dados-bancarios", authModelo, async (req, res) => {
   const result = await db.query(
     `SELECT * FROM modelo_dados_bancarios WHERE modelo_id = $1`,
-    [req.user.id]
+    [req.modelo_id]
   );
 
   res.json(result.rows[0] || null);
