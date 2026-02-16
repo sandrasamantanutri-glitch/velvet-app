@@ -1509,12 +1509,24 @@ router.get(
 );
 
 router.get("/modelo/dados-bancarios", authModelo, async (req, res) => {
-  const result = await db.query(
-    `SELECT * FROM modelo_dados_bancarios WHERE modelo_id = $1`,
-    [req.modelo_id]
-  );
+  try {
+    const { rows } = await db.query(
+      `SELECT * 
+       FROM modelo_dados_bancarios 
+       WHERE modelo_id = $1`,
+      [req.modelo_id]
+    );
 
-  res.json(result.rows[0] || null);
+    if (!rows.length) {
+      return res.json(null);
+    }
+
+    res.json(rows[0]);
+
+  } catch (err) {
+    console.error("Erro buscar dados bancários:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
 });
 
 
