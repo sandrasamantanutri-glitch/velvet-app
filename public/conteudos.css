@@ -41,6 +41,9 @@ body {
   border-radius: 8px;
   cursor: pointer;
   font-weight: 500;
+  justify-content: center;
+  margin-bottom: 20px;
+
 }
 
 /* ================= GRID ================= */
