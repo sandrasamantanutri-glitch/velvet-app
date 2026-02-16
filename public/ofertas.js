@@ -51,9 +51,9 @@ function renderOfertas() {
         </div>
 
         <div class="valores-box">
-          <div><span>Valor original</span><strong>R$ ${(o.valor_original || 0).toFixed(2)}</strong></div>
-          <div class="desconto"><span>Desconto</span><strong>-${o.desconto}%</strong></div>
-          <div><span>Valor final</span><strong>R$ ${o.valor_final.toFixed(2)}</strong></div>
+          <div><span>Valor original: </span><strong> R$ ${(o.valor_original || 0).toFixed(2)}</strong></div>
+          <div class="desconto: "><span>Desconto</span><strong> -${o.desconto}%</strong></div>
+          <div><span>Valor final: </span><strong> R$ ${o.valor_final.toFixed(2)}</strong></div>
         </div>
 
         <div class="oferta-detalhes">
