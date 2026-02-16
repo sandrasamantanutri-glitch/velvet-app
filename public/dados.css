@@ -131,7 +131,7 @@ body {
 }
 
 .form-area h3 {
-  text-align: center !important;
+  text-align: center;
   font-size: 28px;
   margin-bottom: 30px;
   color: #1E1E26;
@@ -256,6 +256,7 @@ body {
   font-weight: 600;
   color: #1E1E26;
   letter-spacing: 0.5px;
+  text-align: center !important;
 }
 
 
