@@ -434,18 +434,6 @@ async function carregarAreaModelo() {
   }
 
   // ===============================
-  // 📝 FORMULÁRIO (dados.html)
-  // ===============================
-  // const form = document.getElementById("formDadosModelo");
-  // if (paginaTem("formDadosModelo")) {
-  //   form.nome_exibicao.value = modelo.nome_exibicao || "";
-  //   form.instagram.value    = modelo.instagram || "";
-  //   form.tiktok.value       = modelo.tiktok || "";
-  //   form.local.value        = modelo.local || "";
-  //   form.bio.value          = modelo.bio || "";
-  // }
-
-  // ===============================
   // 👑 VIP COUNT
   // ===============================
   carregarVipCountModelo(modelo.user_id ?? modelo.id);
@@ -462,8 +450,6 @@ if (linkInstagram) {
   gerarLinks(modelo.modelo_id);
 }
 }
-
-
 
 async function carregarDadosUsuario() {
   const token = localStorage.getItem("token");

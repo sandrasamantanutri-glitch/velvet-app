@@ -1,67 +1,90 @@
-const token = localStorage.getItem("token");
+let chartMensalInstance = null;
+let chartDiarioInstance = null;
 
-async function carregarDashboard() {
-  const res = await fetch("/api/modelo/dashboard-ganhos", {
-    headers: {
-      Authorization: "Bearer " + token
+document.addEventListener("DOMContentLoaded", () => {
+
+  const token = localStorage.getItem("token");
+  if (!token) {
+    console.warn("Sem token");
+    return;
+  }
+
+  async function carregarDashboard() {
+
+    const res = await fetch("/api/modelo/dashboard-ganhos", {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
+
+    if (!res.ok) {
+      console.error("Erro ao buscar dashboard:", res.status);
+      return;
     }
-  });
 
-  const data = await res.json();
+    const data = await res.json();
+    console.log("Dashboard retornado:", data);
 
-  document.getElementById("totalGanhos").innerText =
-    `$${Number(data.total).toFixed(2)}`;
+    document.getElementById("totalGanhos").innerText =
+      `$${Number(data.total || 0).toFixed(2)}`;
 
-  document.getElementById("saldo").innerText =
-    `$${Number(data.saldoDisponivel).toFixed(2)}`;
+    document.getElementById("saldo").innerText =
+      `$${Number(data.saldoDisponivel || 0).toFixed(2)}`;
 
-  document.getElementById("proximoPagamento").innerText =
-    data.proximoPagamento;
+    document.getElementById("proximoPagamento").innerText =
+      data.proximoPagamento || "-";
 
-  renderMensal(data.mensal);
-  renderDiario(data.diario);
-}
+    renderMensal(data.mensal || []);
+    renderDiario(data.diario || []);
+  }
 
-function renderMensal(dados) {
-  new Chart(document.getElementById("chartMensal"), {
-    type: "line",
-    data: {
-      labels: dados.map(i => i.label),
-      datasets: [{
-        label: "Total",
-        data: dados.map(i => Number(i.total)),
-        borderColor: "#7B2CFF",
-        tension: 0.3
-      }]
-    },
-    options: { responsive: true }
-  });
-}
+  function renderMensal(dados) {
+    const ctx = document.getElementById("chartMensal");
 
-function renderDiario(dados) {
-  new Chart(document.getElementById("chartDiario"), {
-    type: "line",
-    data: {
-      labels: dados.map(i => i.label),
-      datasets: [{
-        label: "Total",
-        data: dados.map(i => Number(i.total)),
-        borderColor: "#00c2a8",
-        tension: 0.3
-      }]
-    },
-    options: { responsive: true }
-  });
-}
+    if (!ctx) return;
 
-function mostrarMes() {
-  document.getElementById("chartMes").style.display = "block";
-  document.getElementById("chartDia").style.display = "none";
-}
+    if (chartMensalInstance) {
+      chartMensalInstance.destroy();
+    }
 
-function mostrarDia() {
-  document.getElementById("chartMes").style.display = "none";
-  document.getElementById("chartDia").style.display = "block";
-}
+    chartMensalInstance = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: dados.map(i => i.label),
+        datasets: [{
+          label: "Total",
+          data: dados.map(i => Number(i.total)),
+          borderColor: "#7B2CFF",
+          tension: 0.3
+        }]
+      },
+      options: { responsive: true }
+    });
+  }
 
-carregarDashboard();
+  function renderDiario(dados) {
+    const ctx = document.getElementById("chartDiario");
+
+    if (!ctx) return;
+
+    if (chartDiarioInstance) {
+      chartDiarioInstance.destroy();
+    }
+
+    chartDiarioInstance = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: dados.map(i => i.label),
+        datasets: [{
+          label: "Total",
+          data: dados.map(i => Number(i.total)),
+          borderColor: "#00c2a8",
+          tension: 0.3
+        }]
+      },
+      options: { responsive: true }
+    });
+  }
+
+  carregarDashboard();
+});
