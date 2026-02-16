@@ -315,3 +315,11 @@ body {
   font-size: 14px;
   color: #555;
 }
+
+.titulo-area h3 {
+  font-size: 26px;
+  font-weight: 600;
+  color: #1E1E26;
+  letter-spacing: 0.5px;
+  text-align: center !important;
+}
