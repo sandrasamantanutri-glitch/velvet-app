@@ -682,37 +682,34 @@ router.get(
 );
 
 router.get("/modelo/pagamentos", authModelo, async (req, res) => {
+  try {
 
-  // 🔥 Converter users.id → modelos.id
-  const modeloRes = await db.query(
-    "SELECT id FROM modelos WHERE user_id = $1",
-    [req.user.id]
-  );
+    const modelo_id = req.user.id;
 
-  if (!modeloRes.rows.length) {
-    return res.status(404).json({ error: "Modelo não encontrada" });
+    const result = await db.query(
+      `
+      SELECT
+        mes,
+        total_midias,
+        total_assinaturas,
+        total_geral,
+        status,
+        pago_em
+      FROM modelo_pagamentos
+      WHERE modelo_id = $1
+      ORDER BY mes DESC
+      `,
+      [modelo_id]
+    );
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error("ERRO PAGAMENTOS:", err);
+    res.status(500).json({ error: "Erro interno" });
   }
-
-  const modelo_id = modeloRes.rows[0].id;
-
-  const result = await db.query(
-    `
-    SELECT
-      mes,
-      total_midias,
-      total_assinaturas,
-      total_geral,
-      status,
-      pago_em
-    FROM modelos_pagamentos
-    WHERE modelo_id = $1
-    ORDER BY mes DESC
-    `,
-    [modelo_id]   // 🔥 AGORA CORRETO
-  );
-
-  res.json(result.rows);
 });
+
 
 
 //ROTA DO LINK DE ACESSO A PLATAFORMA(CLIENTES INSTA TIKTOK)
