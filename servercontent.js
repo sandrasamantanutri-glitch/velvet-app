@@ -1035,7 +1035,16 @@ router.get("/api/cliente/transacoes", authCliente, async (req, res) => {
 
 
 router.get("/api/modelo/financeiro", authModelo, async (req, res) => {
-  const modelo_id = req.user.id;
+  const modeloRes = await db.query(
+  "SELECT id FROM modelos WHERE user_id = $1",
+  [req.user.id]
+);
+
+if (!modeloRes.rows.length) {
+  return res.status(404).json({ error: "Modelo não encontrada" });
+}
+
+const modelo_id = modeloRes.rows[0].id;
 
   const result = await db.query(`
     SELECT
@@ -1111,7 +1120,7 @@ SELECT
 FROM vip_subscriptions
 WHERE modelo_id = $1;
   `,
-  [req.user.id]
+ [modelo_id]
 );
 
   const r = result.rows[0];
