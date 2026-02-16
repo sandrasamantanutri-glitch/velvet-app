@@ -588,98 +588,103 @@ router.get("/access", authCliente, async (req, res) => {
   });
 });
 
+router.get("/api/transacoes", authModelo, async (req, res) => {
+  try {
+    const modeloRes = await db.query(
+      "SELECT id FROM modelos WHERE user_id = $1",
+      [req.user.id]
+    );
 
-router.get(
-  "/transacoes",
-  auth,
-  requireRole("modelo"),
-  async (req, res) => {
-    try {
-      const modelo_id = req.user.id;
-
-      const page = parseInt(req.query.page) || 1;
-      const limit = 10;
-      const offset = (page - 1) * limit;
-
-      // ===============================
-      // QUERY PRINCIPAL (PAGINADA)
-      // ===============================
-      const sql = `
-        SELECT *
-        FROM (
-          -- 📦 CONTEÚDOS
-          SELECT
-            cp.id              AS codigo,
-            'conteudo'         AS tipo,
-            cp.criado_em       AS created_at,
-            ROUND(cp.preco * 0.70, 2) AS valor,
-            cp.status          AS status,
-            cp.message_id      AS message_id
-          FROM conteudo_pacotes cp
-          WHERE cp.modelo_id = $1
-            AND cp.status = 'pago'
-
-          UNION ALL
-
-          -- ⭐ ASSINATURAS VIP
-          SELECT
-            vs.id              AS codigo,
-            'assinatura'       AS tipo,
-            vs.created_at      AS created_at,
-            ROUND(vs.valor_assinatura * 0.70, 2) AS valor,
-            'ativo'            AS status,
-            NULL               AS message_id
-          FROM vip_subscriptions vs
-          WHERE vs.modelo_id = $1
-            AND vs.ativo = true
-        ) transacoes
-        ORDER BY created_at DESC
-        LIMIT $2 OFFSET $3
-      `;
-
-      // ===============================
-      // TOTAL DE REGISTROS
-      // ===============================
-      const countSql = `
-        SELECT COUNT(*) FROM (
-          SELECT 1
-          FROM conteudo_pacotes
-          WHERE modelo_id = $1 AND status = 'pago'
-
-          UNION ALL
-
-          SELECT 1
-          FROM vip_subscriptions
-          WHERE modelo_id = $1 AND ativo = true
-        ) total
-      `;
-
-      const [dados, total] = await Promise.all([
-        db.query(sql, [modelo_id, limit, offset]),
-        db.query(countSql, [modelo_id])
-      ]);
-
-      const totalRegistros = parseInt(total.rows[0].count);
-      const totalPaginas = Math.ceil(totalRegistros / limit);
-
-      res.json({
-        registros: dados.rows,
-        paginaAtual: page,
-        totalPaginas,
-        totalRegistros
-      });
-
-    } catch (err) {
-      console.error("❌ Erro /api/transacoes:", err);
-      res.status(500).json({
-        registros: [],
-        paginaAtual: 1,
-        totalPaginas: 1,
-        totalRegistros: 0
-      });
+    if (!modeloRes.rows.length) {
+      return res.status(404).json({ error: "Modelo não encontrada" });
     }
+
+    const modelo_id = modeloRes.rows[0].id;
+
+    // 📄 Paginação
+    const page = parseInt(req.query.page) || 1;
+    const limit = 10;
+    const offset = (page - 1) * limit;
+
+    // ===============================
+    // QUERY PRINCIPAL
+    // ===============================
+    const sql = `
+      SELECT *
+      FROM (
+        -- 📦 CONTEÚDOS
+        SELECT
+          cp.id AS codigo,
+          'conteudo' AS tipo,
+          cp.criado_em AS created_at,
+          ROUND(cp.preco * 0.70, 2) AS valor,
+          cp.status AS status,
+          cp.message_id AS message_id
+        FROM conteudo_pacotes cp
+        WHERE cp.modelo_id = $1
+          AND cp.status = 'pago'
+
+        UNION ALL
+
+        -- ⭐ ASSINATURAS
+        SELECT
+          vs.id AS codigo,
+          'assinatura' AS tipo,
+          vs.created_at AS created_at,
+          ROUND(vs.valor_assinatura * 0.70, 2) AS valor,
+          'ativo' AS status,
+          NULL AS message_id
+        FROM vip_subscriptions vs
+        WHERE vs.modelo_id = $1
+          AND vs.ativo = true
+      ) transacoes
+      ORDER BY created_at DESC
+      LIMIT $2 OFFSET $3
+    `;
+
+    // ===============================
+    // TOTAL DE REGISTROS
+    // ===============================
+    const countSql = `
+      SELECT COUNT(*) FROM (
+        SELECT 1
+        FROM conteudo_pacotes
+        WHERE modelo_id = $1 AND status = 'pago'
+
+        UNION ALL
+
+        SELECT 1
+        FROM vip_subscriptions
+        WHERE modelo_id = $1 AND ativo = true
+      ) total
+    `;
+
+    const [dados, total] = await Promise.all([
+      db.query(sql, [modelo_id, limit, offset]),
+      db.query(countSql, [modelo_id])
+    ]);
+
+    const totalRegistros = parseInt(total.rows[0].count);
+    const totalPaginas = Math.ceil(totalRegistros / limit);
+
+    res.json({
+      registros: dados.rows,
+      paginaAtual: page,
+      totalPaginas,
+      totalRegistros
+    });
+
+  } catch (err) {
+    console.error("❌ Erro /api/transacoes:", err);
+    res.status(500).json({
+      registros: [],
+      paginaAtual: 1,
+      totalPaginas: 1,
+      totalRegistros: 0
+    });
   }
-);
+});
+
 
 router.get("/modelo/pagamentos", authModelo, async (req, res) => {
   try {
