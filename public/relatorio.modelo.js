@@ -309,14 +309,17 @@ async function carregarDadosBancarios() {
   // 🔒 CONTROLE DE ESTADO
   if (statusAtual === "aprovado") {
   bloquearFormulario(document.getElementById("formDadosBancarios"));
+  if (btnAlterar) {
   btnAlterar.style.display = "inline-block";
+}
   return;
 }
 
 if (statusAtual === "pendente") {
   bloquearFormulario(document.getElementById("formDadosBancarios"));
+  if (btnAlterar) {
   btnAlterar.style.display = "none";
-  mostrarAviso("Dados bancários enviados. Pendente de aprovação.");
+}
   return;
 }
 
