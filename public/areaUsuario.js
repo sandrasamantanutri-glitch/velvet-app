@@ -454,12 +454,12 @@ async function carregarAreaModelo() {
 const linkInstagram = document.getElementById("linkInstagram");
 
 if (linkInstagram) {
-  if (!modelo?.id) {
+  if (!modelo?.modelo_id) {
     console.error("❌ modelo.id não veio do /api/modelo/me:", modelo);
     return;
   }
 
-  gerarLinks(modelo.id);
+  gerarLinks(modelo.modelo_id);
 }
 }
 
