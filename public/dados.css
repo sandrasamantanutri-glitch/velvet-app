@@ -193,6 +193,11 @@ body {
 /* ===============================
    BOTÃO SALVAR
 ================================ */
+.btn-salvar-wrap {
+  display: flex;
+  justify-content: center;
+}
+
 .btn-salvar {
   margin-top: 30px;
   border: none;
@@ -204,7 +209,8 @@ body {
   display: flex;
   background: linear-gradient(135deg, #9e6bff, #7b2cff);
   color: #fff;
-
+  justify-content: center;
+  text-align: center;
   cursor: pointer;
   transition: 0.25s ease;
 }
