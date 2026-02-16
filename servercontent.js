@@ -106,7 +106,7 @@ function podeAlterarDadosBancarios() {
 }
 
 //ROTASSSS POST ///////////////////
-router.post("/api/modelo/dados-bancarios", authModelo, async (req, res) => {
+router.post("/modelo/dados-bancarios", authModelo, async (req, res) => {
  if (!(await podeAlterarDadosBancarios(req.user.id))) {
   return res.status(403).json({
     error: "Alterações bloqueadas no período de pagamento"
@@ -171,7 +171,7 @@ router.post("/api/modelo/dados-bancarios", authModelo, async (req, res) => {
   res.json({ ok: true });
 });
 
-router.post("/api/modelo/dados-bancarios/alterar", authModelo, async (req, res) => {
+router.post("/modelo/dados-bancarios/alterar", authModelo, async (req, res) => {
   if (!(await podeAlterarDadosBancarios(req.user.id))) {
   return res.status(403).json({
     error: "Alterações bloqueadas no período de pagamento"
@@ -230,7 +230,7 @@ router.post("/api/modelo/dados-bancarios/alterar", authModelo, async (req, res) 
 });
 
 router.post(
-  "/api/admin/pagamentos/:id/pagar",
+  "/admin/pagamentos/:id/pagar",
   auth,
   async (req, res) => {
     const { id } = req.params;
@@ -251,7 +251,7 @@ router.post(
 );
 
 router.post(
-  "/api/admin/fechar-pagamentos-modelo/:modeloId",
+  "/admin/fechar-pagamentos-modelo/:modeloId",
   auth,
   async (req, res) => {
     const { modeloId } = req.params;
@@ -262,7 +262,7 @@ router.post(
   }
 );
 
-router.post("/api/transacoes", auth, async (req, res) => {
+router.post("/transacoes", auth, async (req, res) => {
   try {
     const {
       codigo,
@@ -315,7 +315,7 @@ router.post("/api/transacoes", auth, async (req, res) => {
   }
 });
 
-router.post("/api/transacoes/:id/chargeback",
+router.post("/transacoes/:id/chargeback",
   auth,
   requireRole("admin", "modelo"),
   async (req, res) => {
@@ -494,7 +494,7 @@ router.get("/relatorios",
   }
 );
 
-router.get("/api/transacoes_cliente", authCliente, async (req, res) => {
+router.get("/transacoes_cliente", authCliente, async (req, res) => {
   try {
     const userId = req.user.id;
     const role = req.user.role;
@@ -590,7 +590,7 @@ router.get("/access", authCliente, async (req, res) => {
 
 
 router.get(
-  "/api/transacoes",
+  "/transacoes",
   auth,
   requireRole("modelo"),
   async (req, res) => {
@@ -681,7 +681,7 @@ router.get(
   }
 );
 
-router.get("/api/modelo/pagamentos", authModelo, async (req, res) => {
+router.get("/modelo/pagamentos", authModelo, async (req, res) => {
   const result = await db.query(
     `
     SELECT
@@ -703,7 +703,7 @@ router.get("/api/modelo/pagamentos", authModelo, async (req, res) => {
 
 
 //ROTA DO LINK DE ACESSO A PLATAFORMA(CLIENTES INSTA TIKTOK)
-router.get("/api/transacoes/origem",
+router.get("/transacoes/origem",
   auth,
   requireRole("admin"),
   async (req, res) => {
@@ -721,7 +721,7 @@ router.get("/api/transacoes/origem",
 );
 
 
-router.get("/api/transacoes/diario",
+router.get("/transacoes/diario",
   auth,
   requireRole("admin", "modelo", "agente"),
   async (req, res) => {
@@ -776,7 +776,7 @@ router.get("/api/transacoes/diario",
 );
 
 
-router.get("/api/relatorios/chargebacks",
+router.get("/relatorios/chargebacks",
   auth,
   requireRole("admin"),
   async (req, res) => {
@@ -816,7 +816,7 @@ router.get("/api/relatorios/chargebacks",
 );
 
 
-router.get("/api/transacoes/resumo-mensal",
+router.get("/transacoes/resumo-mensal",
   auth,
   requireRole("admin", "modelo", "agente"),
   async (req, res) => {
@@ -863,7 +863,7 @@ router.get("/api/transacoes/resumo-mensal",
   }
 );
 
-router.get("/api/relatorios/alertas-chargeback",
+router.get("/relatorios/alertas-chargeback",
   auth,
   requireRole("admin"),
   async (req, res) => {
@@ -887,7 +887,7 @@ router.get("/api/relatorios/alertas-chargeback",
   }
 );
 
-router.get("/api/transacoes/resumo-anual",
+router.get("/transacoes/resumo-anual",
   auth,
   requireRole("admin", "modelo"),
   async (req, res) => {
@@ -935,7 +935,7 @@ router.get("/api/transacoes/resumo-anual",
   }
 );
 
-router.get("/api/alertas/risco",
+router.get("/alertas/risco",
   auth,
   requireRole("admin"),
   async (req, res) => {
@@ -1034,7 +1034,7 @@ router.get("/api/cliente/transacoes", authCliente, async (req, res) => {
 });
 
 
-router.get("/api/modelo/financeiro", authModelo, async (req, res) => {
+router.get("/modelo/financeiro", authModelo, async (req, res) => {
   const modeloRes = await db.query(
   "SELECT id FROM modelos WHERE user_id = $1",
   [req.user.id]
@@ -1149,7 +1149,7 @@ WHERE modelo_id = $1;
 // 📣 ALLMESSAGE - LISTAR MODELOS
 // ===============================
 router.get(
-  "/api/allmessage/modelos",
+  "/allmessage/modelos",
   auth,
   requireRole("admin", "modelo"),
   async (req, res) => {
@@ -1227,7 +1227,7 @@ router.get("/allmessage/conteudos/:modelo_id",
   }
 );
 
-router.get("/api/relatorios/kpis-mensais",
+router.get("/relatorios/kpis-mensais",
   auth, // ⬅️ SEM requireRole restritivo
   async (req, res) => {
     try {
@@ -1480,7 +1480,7 @@ router.get(
   }
 );
 
-router.get("/api/modelo/dados-bancarios", authModelo, async (req, res) => {
+router.get("/modelo/dados-bancarios", authModelo, async (req, res) => {
   const result = await db.query(
     `SELECT * FROM modelo_dados_bancarios WHERE modelo_id = $1`,
     [req.user.id]
