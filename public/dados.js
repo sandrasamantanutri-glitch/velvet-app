@@ -1,27 +1,25 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
 
-  const botoes = document.querySelectorAll(".btn-perfil-completo");
+  const token = localStorage.getItem("token");
+  if (!token) return;
 
-  if (!botoes.length) {
-    console.log("Nenhum botão de perfil encontrado.");
-    return;
-  }
+  const res = await fetch("/api/modelo/me", {
+    headers: {
+      Authorization: "Bearer " + token
+    }
+  });
 
-  botoes.forEach(btn => {
+  if (!res.ok) return;
 
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
+  const modelo = await res.json();
 
-      const modeloId = Number(btn.dataset.modeloId);
+  const btn = document.querySelector(".btn-perfil-completo");
 
-      if (!modeloId) {
-        console.error("modelo_id inválido:", btn.dataset.modeloId);
-        return;
-      }
+  if (!btn) return;
 
-      window.location.href = `/perfil.html?modelo_id=${modeloId}`;
-    });
-
+  btn.addEventListener("click", (e) => {
+    e.preventDefault();
+    window.location.href = `/perfil.html?modelo_id=${modelo.id}`;
   });
 
 });
