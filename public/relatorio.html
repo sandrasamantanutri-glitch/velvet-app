@@ -158,10 +158,12 @@
     <input type="text" id="titularDocumento" required>
 
     <!-- CONFIRMAÇÃO -->
-    <label style="margin-top:12px;">
-      <input type="checkbox" id="confirmarTitular" required>
-      Confirmo que sou titular da conta informada
-    </label>
+<div class="confirmacao-box">
+  <label class="confirmacao-label">
+    <input type="checkbox" id="confirmoTitular">
+    <span>Confirmo que sou titular da conta informada</span>
+  </label>
+</div>
 
     <!-- JUSTIFICATIVA (só aparece ao alterar) -->
     <div id="justificativaBox" style="display:none;">
@@ -169,11 +171,10 @@
       <textarea id="justificativa"></textarea>
     </div>
 
-    <!-- BOTÕES -->
-    <div style="margin-top:20px;">
-      <button type="submit" class="tab active">Salvar dados</button>
-      <button id="btnAlterarDados" class="btn-secundario">Alterar dados</button>
-    </div>
+    <div class="acoes-form">
+  <button type="submit" class="btn-primario">Salvar dados</button>
+  <button type="button" class="btn-secundario">Alterar dados</button>
+</div>
 
   </form>
 </div>

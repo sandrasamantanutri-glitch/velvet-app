@@ -355,3 +355,72 @@ body.role-cliente .area-saldos {
   display: none !important;
 }
 
+
+/* ===============================
+   CONFIRMAÇÃO TITULAR
+================================ */
+
+.confirmacao-box {
+  margin-top: 15px;
+  margin-bottom: 20px;
+}
+
+.confirmacao-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  cursor: pointer;
+  color: #1E1E26;
+}
+
+.confirmacao-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #7b2cff;
+  cursor: pointer;
+}
+
+/* ===============================
+   BOTÕES FORMULÁRIO
+================================ */
+
+.acoes-form {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-primario {
+  background: linear-gradient(135deg, #9e6bff, #7b2cff);
+  border: none;
+  color: #fff;
+  padding: 10px 22px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+  box-shadow: 0 6px 16px rgba(123,44,255,0.25);
+}
+
+.btn-primario:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(123,44,255,0.35);
+}
+
+.btn-secundario {
+  background: #f1f1f1;
+  border: 1px solid #7b2cff;
+  color: #7b2cff;
+  padding: 10px 22px;
+  border-radius: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.btn-secundario:hover {
+  background: #7b2cff;
+  color: #fff;
+}
+
