@@ -11,15 +11,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   if (!res.ok) return;
 
-  const modeloId = Number(modeloId);
+  const modelo = await res.json(); // 👈 PEGAR O OBJETO
+
+  const modelo_id = modelo.id; // 👈 PEGAR O ID CERTO (modelos.id)
 
   const btn = document.querySelector(".btn-perfil-completo");
-
   if (!btn) return;
 
   btn.addEventListener("click", (e) => {
     e.preventDefault();
-    window.location.href = `perfil.html?modelo_id=${modeloId}`;
+    window.location.href = `/perfil.html?modelo_id=${modelo_id}`;
   });
 
 });
