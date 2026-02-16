@@ -482,7 +482,6 @@ body {
 #tab-dados-bancarios label {
   font-size: 13px;
   margin-top: 10px;
-  display: block;
   flex-direction: row-reverse;
 }
 
