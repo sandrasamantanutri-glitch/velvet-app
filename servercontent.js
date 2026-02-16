@@ -682,6 +682,19 @@ router.get(
 );
 
 router.get("/modelo/pagamentos", authModelo, async (req, res) => {
+
+  // 🔥 Converter users.id → modelos.id
+  const modeloRes = await db.query(
+    "SELECT id FROM modelos WHERE user_id = $1",
+    [req.user.id]
+  );
+
+  if (!modeloRes.rows.length) {
+    return res.status(404).json({ error: "Modelo não encontrada" });
+  }
+
+  const modelo_id = modeloRes.rows[0].id;
+
   const result = await db.query(
     `
     SELECT
@@ -691,15 +704,16 @@ router.get("/modelo/pagamentos", authModelo, async (req, res) => {
       total_geral,
       status,
       pago_em
-    FROM modelo_pagamentos
+    FROM modelos_pagamentos
     WHERE modelo_id = $1
     ORDER BY mes DESC
     `,
-    [req.user.id]
+    [modelo_id]   // 🔥 AGORA CORRETO
   );
 
   res.json(result.rows);
 });
+
 
 
 //ROTA DO LINK DE ACESSO A PLATAFORMA(CLIENTES INSTA TIKTOK)
