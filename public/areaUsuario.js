@@ -148,7 +148,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   const btn = document.getElementById("btnPerfilCompleto");
-  btn.href = `/perfil.html?modelo_id=${modeloId}`;
+  btn.href = `/perfil.html?modelo_id=${modelo.id}`;
 });
 
 
@@ -406,7 +406,7 @@ async function carregarVipCountModelo(modelo_id) {
   }
 }
 
-async function carregarAreaModelo(modelo) {
+async function carregarAreaModelo() {
   const res = await fetch("/api/modelo/me", {
     headers: {
       Authorization: "Bearer " + localStorage.getItem("token")
