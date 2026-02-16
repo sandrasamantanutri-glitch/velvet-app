@@ -683,8 +683,12 @@ router.get(
 
 router.get("/modelo/pagamentos", authModelo, async (req, res) => {
   try {
+const modeloRes = await db.query(
+  "SELECT id FROM modelos WHERE user_id = $1",
+  [req.user.id]
+);
 
-    const modelo_id = req.user.id;
+const modelo_id = modeloRes.rows[0].id;
 
     const result = await db.query(
       `
