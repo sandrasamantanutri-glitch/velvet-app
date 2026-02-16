@@ -1187,8 +1187,8 @@ router.get("/allmessage/conteudos/:modelo_id",
 
       if (role === "modelo") {
         const check = await db.query(
-          `SELECT 1 FROM modelos WHERE id = $1 AND modelo_id = $2`,
-          [modelo_id, user_id]
+  `SELECT 1 FROM modelos WHERE id = $1 AND user_id = $2`,
+  [modelo_id, user_id]
         );
         if (check.rowCount === 0) {
           return res.json([]);
