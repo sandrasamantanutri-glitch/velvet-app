@@ -2774,20 +2774,30 @@ app.get("/api/verificacao/status", auth, async (req, res) => {
 
     if (req.user.role === "modelo") {
 
-      const result = await db.query(
-        `
-        SELECT status, motivo_rejeicao
-        FROM modelos_verificacao
-        WHERE modelo_id = $1
-        ORDER BY criado_em DESC
-        LIMIT 1
-        `,
-        [req.modelo_id]
-      );
+  const modeloRes = await db.query(
+    `SELECT id FROM modelos WHERE user_id = $1`,
+    [req.user.id]
+  );
 
-      return res.json(result.rows[0] || { status: "pendente", motivo: null });
-    }
+  if (!modeloRes.rows.length) {
+    return res.json({ status: "pendente", motivo: null });
+  }
 
+  const modeloId = modeloRes.rows[0].id;
+
+  const result = await db.query(
+    `
+    SELECT status, motivo_rejeicao
+    FROM modelos_verificacao
+    WHERE modelo_id = $1
+    ORDER BY criado_em DESC
+    LIMIT 1
+    `,
+    [modeloId]
+  );
+
+  return res.json(result.rows[0] || { status: "pendente", motivo: null });
+}
     if (req.user.role === "cliente") {
 
       const result = await db.query(
