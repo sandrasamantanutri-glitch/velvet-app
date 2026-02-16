@@ -131,7 +131,7 @@ body {
 }
 
 .form-area h3 {
-  text-align: center;
+  text-align: center !important;
   font-size: 28px;
   margin-bottom: 30px;
   color: #1E1E26;
