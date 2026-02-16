@@ -146,9 +146,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       carregarAssinantes();
     }
   }
-
-  const btn = document.getElementById("btnPerfilCompleto");
-  btn.href = `/perfil.html?modelo_id=${modelo.id}`;
 });
 
 

@@ -12,14 +12,14 @@ document.addEventListener("DOMContentLoaded", () => {
     btn.addEventListener("click", (e) => {
       e.preventDefault();
 
-      const modeloId = Number(btn.dataset.modeloId);
+      const modelo = Number(btn.dataset.modelo.id);
 
-      if (!modeloId) {
-        console.error("modelo_id inválido:", btn.dataset.modeloId);
+      if (!modelo.id) {
+        console.error("modelo_id inválido:", btn.dataset.model.id);
         return;
       }
 
-      window.location.href = `/perfil.html?modelo_id=${modeloId}`;
+      window.location.href = `/perfil.html?modelo_id=${modelo.id}`;
     });
 
   });
