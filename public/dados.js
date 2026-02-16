@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   if (!res.ok) return;
 
-  const modelo = await res.json();
+  const modeloId = Number(modelo.modelo_id);
 
   const btn = document.querySelector(".btn-perfil-completo");
 
@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   btn.addEventListener("click", (e) => {
     e.preventDefault();
-    window.location.href = `/perfil.html?modelo_id=${modelo.id}`;
+    window.location.href = `perfil.html?modelo_id=${modeloId}`;
   });
 
 });
