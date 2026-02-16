@@ -10,6 +10,7 @@
 
 .topbar {
   margin-bottom: 24px;
+  text-align: center;
 }
 
 .topbar h1 {
@@ -46,6 +47,7 @@
   font-weight: 600;
   margin-bottom: 8px;
   font-size: 14px;
+text-align: center;
 }
 
 textarea,
@@ -76,11 +78,15 @@ textarea {
   cursor: pointer;
   font-weight: 600;
   font-size: 14px;
+  display: block;
+  margin: 0 auto 20px auto;
 }
 
 .btn.secondary {
   background: #f2f2f2;
   color: #333;
+  display: block;
+  margin: 0 auto 20px auto;
 }
 
 .btn:hover {
