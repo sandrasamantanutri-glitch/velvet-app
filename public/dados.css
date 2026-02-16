@@ -195,13 +195,13 @@ body {
 ================================ */
 .btn-salvar {
   margin-top: 30px;
-  width: 100%;
   border: none;
   border-radius: 16px;
   padding: 16px;
   font-size: 18px;
   font-weight: 600;
-
+  width: 220px;
+  display: flex;
   background: linear-gradient(135deg, #9e6bff, #7b2cff);
   color: #fff;
 
@@ -275,7 +275,6 @@ body {
   font-weight: 600;
   text-align: center;
   justify-content: center;
-
   width: 220px;
 
   background: linear-gradient(135deg, #9e6bff, #7b2cff);
