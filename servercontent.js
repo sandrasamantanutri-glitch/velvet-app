@@ -715,7 +715,6 @@ router.get("/modelo/pagamentos", authModelo, async (req, res) => {
 });
 
 
-
 //ROTA DO LINK DE ACESSO A PLATAFORMA(CLIENTES INSTA TIKTOK)
 router.get("/transacoes/origem",
   auth,
