@@ -107,7 +107,7 @@ function podeAlterarDadosBancarios() {
 
 //ROTASSSS POST ///////////////////
 router.post("/modelo/dados-bancarios", authModelo, async (req, res) => {
- if (!(await podeAlterarDadosBancarios(req.user.id))) {
+ if (!(await podeAlterarDadosBancarios(req.modelo_id))) {
   return res.status(403).json({
     error: "Alterações bloqueadas no período de pagamento"
   });
@@ -131,7 +131,7 @@ router.post("/modelo/dados-bancarios", authModelo, async (req, res) => {
       error: "Confirmação de titularidade obrigatória"
     });
   }
-
+try{
   await db.query(`
     INSERT INTO modelo_dados_bancarios (
       modelo_id, tipo,
@@ -156,7 +156,7 @@ router.post("/modelo/dados-bancarios", authModelo, async (req, res) => {
       status = 'alteracao_pendente',
       atualizado_em = NOW()
   `, [
-    req.user.id,
+    req.modelo_id,
     tipo,
     pix_tipo,
     pix_chave,
@@ -169,10 +169,14 @@ router.post("/modelo/dados-bancarios", authModelo, async (req, res) => {
   ]);
 
   res.json({ ok: true });
+   } catch (err) {
+    console.error("ERRO DADOS BANCÁRIOS:", err);
+    res.status(500).json({ error: "Erro interno ao salvar dados bancários" });
+  }
 });
 
 router.post("/modelo/dados-bancarios/alterar", authModelo, async (req, res) => {
-  if (!(await podeAlterarDadosBancarios(req.user.id))) {
+  if (!(await podeAlterarDadosBancarios(req.modelo_id))) {
   return res.status(403).json({
     error: "Alterações bloqueadas no período de pagamento"
   });
@@ -196,6 +200,7 @@ router.post("/modelo/dados-bancarios/alterar", authModelo, async (req, res) => {
       error: "Justificativa obrigatória"
     });
   }
+  try{
   await db.query(`
     UPDATE modelo_dados_bancarios
     SET
@@ -223,10 +228,14 @@ router.post("/modelo/dados-bancarios/alterar", authModelo, async (req, res) => {
     titular_nome,
     titular_documento,
     justificativa,
-    req.user.id
+    req.modelo_id
   ]);
 
   res.json({ ok: true });
+   } catch (err) {
+    console.error("ERRO DADOS BANCÁRIOS:", err);
+    res.status(500).json({ error: "Erro interno ao salvar dados bancários" });
+  }
 });
 
 router.post(
