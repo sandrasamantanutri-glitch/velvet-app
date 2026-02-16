@@ -225,38 +225,53 @@ app.post(
         // =====================================================
         // ⭐ VIP — PRIMEIRO PAGAMENTO
         // =====================================================
-        if (pi.metadata?.tipo === "vip") {
+ if (pi.metadata?.tipo === "vip") {
 
-          const cliente_id = Number(pi.metadata.cliente_id);
-          const modelo_id = Number(pi.metadata.modelo_id);
-          const valor_assinatura = Number(pi.metadata.valor_assinatura);
-          const taxa_transacao = Number(pi.metadata.taxa_transacao);
-          const taxa_plataforma = Number(pi.metadata.taxa_plataforma);
+  const cliente_id = Number(pi.metadata.cliente_id);
+  const modelo_id = Number(pi.metadata.modelo_id);
+  const valor_assinatura = Number(pi.metadata.valor_assinatura);
+  const taxa_transacao = Number(pi.metadata.taxa_transacao);
+  const taxa_plataforma = Number(pi.metadata.taxa_plataforma);
 
-          if (!cliente_id || !modelo_id) {
-            console.error("❌ Metadata VIP inválida:", pi.metadata);
-            return res.json({ received: true });
-          }
+  if (!cliente_id || !modelo_id) {
+    console.error("❌ Metadata VIP inválida:", pi.metadata);
+    return res.json({ received: true });
+  }
 
-          await ativarVipAssinatura({
-            cliente_id,
-            modelo_id,
-            valor_assinatura,
-            taxa_transacao,
-            taxa_plataforma,
-            stripe_payment_id: pi.id
-          });
+  await ativarVipAssinatura({
+    cliente_id,
+    modelo_id,
+    valor_assinatura,
+    taxa_transacao,
+    taxa_plataforma,
+    stripe_payment_id: pi.id
+  });
 
-          const sid = onlineClientes[cliente_id];
-          if (sid) {
-            io.to(sid).emit("vipAtivado", {
-              modelo_id
-            });
-          }
+  // 🔥 AQUI É O NOVO TRECHO
+  const oferta_id = pi.metadata?.oferta_id;
 
-          console.log("⭐ VIP ativado:", cliente_id, modelo_id);
-        }
-      }
+  if (oferta_id) {
+    await db.query(`
+      UPDATE ofertas
+      SET assinaturas_usadas = assinaturas_usadas + 1
+      WHERE id = $1
+        AND ativa = true
+        AND assinaturas_usadas < limite_assinaturas
+    `, [Number(oferta_id)]);
+
+    console.log("📈 Oferta incrementada (Stripe):", oferta_id);
+  }
+
+  const sid = onlineClientes[cliente_id];
+  if (sid) {
+    io.to(sid).emit("vipAtivado", {
+      modelo_id
+    });
+  }
+
+  console.log("⭐ VIP ativado:", cliente_id, modelo_id);
+}
+}
 
       // =====================================================
       // 🔁 RENOVAÇÃO AUTOMÁTICA VIP
@@ -682,7 +697,7 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
 
     // 1️⃣ Verificar oferta ativa
     const ofertaRes = await db.query(`
-      SELECT valor_promocional
+      SELECT id, valor_promocional
       FROM ofertas
       WHERE modelo_id = $1
         AND ativa = true
@@ -691,9 +706,11 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
     `, [modelo_id]);
 
     let valorAssinatura;
+    let oferta_id = null;
 
     if (ofertaRes.rowCount > 0) {
       valorAssinatura = Number(ofertaRes.rows[0].valor_promocional);
+      oferta_id = ofertaRes.rows[0].id;
     } else {
 
       const planoRes = await db.query(`
@@ -736,6 +753,7 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
         tipo: "vip",
         cliente_id: String(cliente_id),
         modelo_id: String(modelo_id),
+        oferta_id: oferta_id ? String(oferta_id) : "",
         valor_assinatura: String(valorAssinatura),
         taxa_transacao: String(taxaTransacao),
         taxa_plataforma: String(taxaPlataforma)
@@ -4179,7 +4197,7 @@ app.post("/api/pagamento/vip/pix", auth, async (req, res) => {
        2️⃣ BUSCAR OFERTA OU PLANO
     =============================== */
     const ofertaRes = await db.query(`
-      SELECT valor_promocional
+      SELECT id, valor_promocional
       FROM ofertas
       WHERE modelo_id = $1
         AND ativa = true
@@ -4188,9 +4206,11 @@ app.post("/api/pagamento/vip/pix", auth, async (req, res) => {
     `, [modelo_id]);
 
     let valorAssinatura;
+    let oferta_id = null;
 
     if (ofertaRes.rowCount > 0) {
       valorAssinatura = Number(ofertaRes.rows[0].valor_promocional);
+      oferta_id = ofertaRes.rows[0].id;
     } else {
       const planoRes = await db.query(`
         SELECT valor_mensal
@@ -4257,6 +4277,7 @@ app.post("/api/pagamento/vip/pix", auth, async (req, res) => {
           tipo: "vip",
           cliente_id,
           modelo_id,
+          oferta_id,
           valor_assinatura: valorAssinatura,
           taxa_transacao: taxaTransacao,
           taxa_plataforma: taxaPlataforma
@@ -4443,24 +4464,39 @@ app.post("/webhook/mercadopago", async (req, res) => {
         LIMIT 1
       `, [paymentId]);
 
-      if (jaPago.rowCount === 0) {
+if (jaPago.rowCount === 0) {
 
-        await ativarVipAssinatura({
-          cliente_id,
-          modelo_id,
-          valor_assinatura,
-          taxa_transacao,
-          taxa_plataforma
-        });
+  await ativarVipAssinatura({
+    cliente_id,
+    modelo_id,
+    valor_assinatura,
+    taxa_transacao,
+    taxa_plataforma
+  });
 
-        await client.query(`
-          UPDATE pagamentos_pix
-          SET status = 'pago'
-          WHERE mp_payment_id = $1
-        `, [paymentId]);
+  const oferta_id = pagamento.metadata?.oferta_id;
 
-        console.log("✅ VIP ATIVADO:", cliente_id, modelo_id);
-      }
+  if (oferta_id) {
+    await client.query(`
+      UPDATE ofertas
+      SET assinaturas_usadas = assinaturas_usadas + 1
+      WHERE id = $1
+        AND ativa = true
+        AND assinaturas_usadas < limite_assinaturas
+    `, [Number(oferta_id)]);
+
+    console.log("📈 Oferta incrementada:", oferta_id);
+  }
+
+  await client.query(`
+    UPDATE pagamentos_pix
+    SET status = 'pago'
+    WHERE mp_payment_id = $1
+  `, [paymentId]);
+
+  console.log("✅ VIP ATIVADO:", cliente_id, modelo_id);
+}
+
     }
 
     /* =====================================================
