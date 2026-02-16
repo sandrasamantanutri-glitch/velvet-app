@@ -5,7 +5,7 @@ function getUsuarioLogado() {
 
   try {
     const payload = JSON.parse(atob(token.split(".")[1]));
-    return payload; // { id, role, ... }
+    return payload; 
   } catch {
     return null;
   }
