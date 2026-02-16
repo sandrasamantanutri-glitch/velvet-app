@@ -588,7 +588,7 @@ router.get("/access", authCliente, async (req, res) => {
   });
 });
 
-router.get("/api/transacoes", authModelo, async (req, res) => {
+router.get("/transacoes", authModelo, async (req, res) => {
   try {
     const modeloRes = await db.query(
       "SELECT id FROM modelos WHERE user_id = $1",
