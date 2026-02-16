@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   if (!res.ok) return;
 
-  const modeloId = Number(modelo.modelo_id);
+  const modeloId = Number(modeloId);
 
   const btn = document.querySelector(".btn-perfil-completo");
 
