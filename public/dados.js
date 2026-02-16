@@ -12,8 +12,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (!res.ok) return;
 
   const modelo = await res.json(); // 👈 PEGAR O OBJETO
-
-  const modelo_id = modelo.id; // 👈 PEGAR O ID CERTO (modelos.id)
+   
+  const modelo_id = modelo.modelo_id;
 
   const btn = document.querySelector(".btn-perfil-completo");
   if (!btn) return;
