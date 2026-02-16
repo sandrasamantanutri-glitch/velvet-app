@@ -57,10 +57,26 @@ async function abrirPopupConteudos() {
   grid.innerHTML = "Carregando...";
 
   const token = localStorage.getItem("token");
-  const modelo_id = document.getElementById("modeloSelect").value;
+
+  // 🔥 BUSCA MODELO DIRETO
+  const resModelo = await fetch("/api/modelo/me", {
+    headers: {
+      Authorization: "Bearer " + token
+    }
+  });
+
+  if (!resModelo.ok) {
+    grid.innerHTML = "Erro ao buscar modelo";
+    return;
+  }
+
+  const modelo = await resModelo.json();
+  const modelo_id = modelo.modelo_id || modelo.id;
+
+  console.log("modelo_id usado:", modelo_id);
 
   const res = await fetch(
-    `/allmessage/conteudos/${modelo_id}`,
+    `/api/allmessage/conteudos/${modelo_id}`,
     {
       headers: {
         Authorization: "Bearer " + token
