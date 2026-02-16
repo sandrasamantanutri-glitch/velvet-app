@@ -201,9 +201,7 @@ textarea {
    BOTÃO VOLTAR
 ================================ */
 .btn-voltar {
-  position:relative;
-  top: 70px;
-  left: 40px;
+  position:absolute;
   border: none;
   width: 42px;
   height: 42px;

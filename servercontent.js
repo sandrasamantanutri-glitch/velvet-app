@@ -392,7 +392,7 @@ let modelo_id;
         WHERE modelo_id = $1
           AND ativo = true
       `;
-      const vipParams = [req.user.id];
+      const vipParams = [modelo_id];
 
       const clientesRes = await db.query(vipQuery, vipParams);
 
