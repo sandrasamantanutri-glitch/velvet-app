@@ -19,54 +19,6 @@ document
     ?.addEventListener("click", () => enviar(false));
 });
 
-async function abrirPopupConteudos() {
-  const popup = document.getElementById("popupConteudos");
-  popup.classList.remove("hidden");
-
-  const grid = document.getElementById("conteudosGrid");
-  grid.innerHTML = "Carregando...";
-
-  const token = localStorage.getItem("token");
-
-  const res = await fetch(
-    `/api/allmessage/conteudos/${modelo_id}`,
-    {
-      headers: {
-        Authorization: "Bearer " + token
-      }
-    }
-  );
-
-  if (!res.ok) {
-    grid.innerHTML = "Erro ao carregar conteúdos";
-    return;
-  }
-
-  const conteudos = await res.json();
-
-  if (!Array.isArray(conteudos) || conteudos.length === 0) {
-    grid.innerHTML = "<p>Nenhum conteúdo de venda disponível.</p>";
-    return;
-  }
-
-  grid.innerHTML = "";
-
-  conteudos.forEach(c => {
-    const item = document.createElement("div");
-    item.className = "preview-item";
-    item.dataset.conteudoId = c.id;
-
-    item.innerHTML = `
-      <img src="${c.thumbnail || c.url}" />
-    `;
-
-    item.onclick = () => {
-      item.classList.toggle("selected");
-    };
-
-    grid.appendChild(item);
-  });
-}
 
 function fecharPopupConteudos() {
   const popup = document.getElementById("popupConteudos");
@@ -108,7 +60,7 @@ async function abrirPopupConteudos() {
   const modelo_id = document.getElementById("modeloSelect").value;
 
   const res = await fetch(
-    `/api/allmessage/conteudos/${modelo_id}`,
+    `/allmessage/conteudos/${modelo_id}`,
     {
       headers: {
         Authorization: "Bearer " + token
