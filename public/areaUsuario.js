@@ -450,12 +450,20 @@ async function carregarAreaModelo() {
   // ===============================
   carregarVipCountModelo(modelo.user_id ?? modelo.id);
 
- // 🔗 LINKS DO PERFIL
- if (document.getElementById("linkInstagram")) {
-  gerarLinks(modelo.id);
- }
+  // 🔗 LINKS DO PERFIL
+const linkInstagram = document.getElementById("linkInstagram");
 
+if (linkInstagram) {
+  if (!modelo?.id) {
+    console.error("❌ modelo.id não veio do /api/modelo/me:", modelo);
+    return;
+  }
+
+  gerarLinks(modelo.id);
 }
+}
+
+
 
 async function carregarDadosUsuario() {
   const token = localStorage.getItem("token");
