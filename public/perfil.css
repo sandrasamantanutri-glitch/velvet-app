@@ -937,8 +937,8 @@ body.role-cliente .area-saldos {
   box-shadow: 0 6px 16px rgba(123,44,255,0.25);
 }
 
-.role-publico #btn-upload,
-.role-cliente #btn-upload {
+.role-publico .btn-mais,
+.role-cliente .btn-mais {
   display: none !important;
 }
 
