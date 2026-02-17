@@ -280,7 +280,10 @@ async function carregarDadosBancarios() {
   const conta = document.getElementById("conta");
   const contaTipo = document.getElementById("contaTipo");
 
-  const btnAlterar = document.getElementById("btnAlterarDados");
+
+const form = document.getElementById("formDadosBancarios");
+const btnAlterar = document.getElementById("btnAlterarDados");
+
 
   // 🔹 preencher campos comuns
   tipoRecebimento.value = dados.tipo;
@@ -308,7 +311,6 @@ async function carregarDadosBancarios() {
 
   // 🔒 CONTROLE DE ESTADO
   if (statusAtual === "aprovado") {
-  bloquearFormulario(document.getElementById("formDadosBancarios"));
   if (btnAlterar) {
   btnAlterar.style.display = "inline-block";
 }
@@ -316,7 +318,6 @@ async function carregarDadosBancarios() {
 }
 
 if (statusAtual === "pendente") {
-  bloquearFormulario(document.getElementById("formDadosBancarios"));
   if (btnAlterar) {
   btnAlterar.style.display = "none";
 }
@@ -324,13 +325,11 @@ if (statusAtual === "pendente") {
 }
 
   if (statusAtual === "alteracao_pendente") {
-  bloquearFormulario(document.getElementById("formDadosBancarios"));
   btnAlterar.style.display = "none";
   mostrarAviso("Alteração enviada. Aguardando aprovação.");
   return;
 }
  if (alteracaoBloqueada()) {
-  bloquearFormulario(document.getElementById("formDadosBancarios"));
   btnAlterar.style.display = "none";
   mostrarAviso(
     "Alterações de dados bancários estão temporariamente bloqueadas devido ao período de pagamento."
