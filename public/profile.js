@@ -490,11 +490,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Erro ao iniciar perfil:", err);
     return;
   }
+  
+const modeloLogado = Number(localStorage.getItem("modelo_id"));
+const ehDona = role === "modelo" && tokenAtual && modeloLogado === modelo_id;
 
-  // 🔒 Remove botão upload se não for modelo logado
-  if (role !== "modelo" || !tokenAtual) {
-    btnUpload?.remove();
-  }
+// 🔒 Remove botão upload se não for DONA do perfil
+if (!ehDona) {
+  btnUpload?.remove();
+}
+
 
   // 🔁 Pós-registro
   const postRegisterAction = localStorage.getItem("post_register_action");
