@@ -15,6 +15,8 @@ a {
   max-width: 100%;
   display: block;
   width: 30px;
+  border: none;   
+  background: transparent;
 }
 
 .only-modelo {
@@ -23,6 +25,8 @@ a {
 
 body.role-modelo .only-modelo {
   display: block;
+  background: none;
+    border: none;
 }
 
 body.role-cliente .area-saldos {
@@ -103,7 +107,7 @@ body.role-cliente .area-saldos {
 }
 
 .icon-group {
-  padding: 0 30px 20px;
+  padding: 0 22px 20px;
   display: flex;
   gap: 12px;
 }
@@ -940,6 +944,8 @@ body.role-cliente .area-saldos {
 .role-publico .btn-mais,
 .role-cliente .btn-mais {
   display: none !important;
+  border: none;  
+  background: transparent; 
 }
 
 

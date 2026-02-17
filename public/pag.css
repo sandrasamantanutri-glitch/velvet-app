@@ -131,12 +131,14 @@
 .pix-loading,
 .pix-aguardando,
 .pix-sucesso {
-  font-size: 14px;
-  color: #555;
+  font-size: 16px;
+  color: #ca1818;
+  margin: 10px;
 }
 
 .pix-sucesso {
-  color: #2ecc71;
+  font-size: 16px;
+  color: #188043;
 }
 
 .spinner {
@@ -168,11 +170,13 @@
 .cartao-loading,
 .cartao-sucesso {
   font-weight: 600;
-  font-size: 14px;
+  font-size: 16px;
+   margin: 10px;
 }
 
 .cartao-sucesso {
-  color: #2ecc71;
+  font-size: 16px;
+  color: #086b31;
 }
 
 #popupPagamentoVelvet {
@@ -220,3 +224,119 @@
   z-index: 2 !important;
   pointer-events: auto !important;
 }
+
+/* 🔥 POPUP MAIS COMPACTO E PREMIUM */
+
+.velvet-box {
+  max-width: 380px;        /* menor */
+  padding: 16px;           /* menos padding */
+  border-radius: 16px;
+}
+
+.velvet-title {
+  font-size: 18px;         /* menor */
+  margin-bottom: 10px;
+}
+
+.metodo {
+  font-size: 14px;         /* texto geral menor */
+  line-height: 1.4;
+}
+
+.info {
+  font-size: 10px;
+  color: #555;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.velvet-tabs .tab {
+  padding: 8px;
+  font-size: 13px;
+  border-radius: 10px;
+}
+
+.pix-qr {
+  width: 160px;            /* QR menor */
+  margin: 8px auto;
+}
+
+.btn-principal {
+  font-size: 14px;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.btn-secundario {
+  font-size: 13px;
+  padding: 8px;
+}
+
+.pix-status,
+.cartao-status {
+  font-size: 13px;
+}
+
+.vip-beneficios {
+  font-size: 13px;
+  padding-left: 18px;
+  color: #1E1E26;
+  margin: 10px 0;
+}
+
+.vip-beneficios li {
+  margin-bottom: 4px;
+}
+
+
+/* 🔥 BLOCO DE VALORES VIP */
+
+.vip-valores {
+  margin: 12px 0;
+  font-size: 13px;            /* 🔥 fonte menor */
+  text-align: center;         /* 🔥 centraliza tudo */
+}
+
+.vip-valores .linha {
+  display: flex;
+  justify-content: center;    /* 🔥 centraliza horizontalmente */
+  gap: 8px;
+  margin-bottom: 6px;
+  color: #1E1E26;
+}
+
+.vip-valores .linha span {
+  font-size: 14px;
+}
+
+.vip-valores .desconto {
+  color: #1E1E26;          
+}
+
+.vip-valores .total {
+  margin-top: 8px;
+  font-size: 16px;            /* 🔥 total maior */
+  font-weight: 600;
+  color: #7B2CFF;             /* roxo Velvet */
+}
+
+.vip-valores .total strong {
+  font-size: 17px;
+}
+
+.vip-info {
+  font-size: 10px;      
+  line-height: 1.4;     
+  color: #777;            
+  display: block;  
+  margin-top: 10px;
+}
+
+.vip-info strong {
+  font-weight: 600;
+  color: #555;            
+}
+
+
+
+

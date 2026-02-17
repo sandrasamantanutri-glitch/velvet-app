@@ -187,15 +187,30 @@ async function login() {
     return;
   }
 
-  localStorage.setItem("token", data.token);
-  localStorage.setItem("role", data.role);
-  localStorage.setItem("ageConfirmed", "true");
-  
-  if (data.role === "modelo") {
+ localStorage.setItem("token", data.token);
+localStorage.setItem("role", data.role);
+localStorage.setItem("ageConfirmed", "true");
+
+if (data.role === "modelo") {
   localStorage.setItem("modelo_id", data.modelo_id);
 }
 
+// 🔥 verifica se existe ação pós-login
+const action = localStorage.getItem("post_login_action");
+
+if (action === "open_vip_payment") {
+  localStorage.removeItem("post_login_action");
+
+
+  // pequeno delay para garantir DOM carregado
+  setTimeout(() => {
+    if (typeof window.abrirFluxoVIP === "function") {
+      window.abrirFluxoVIP();
+    }
+  }, 300);
+  } else {
   window.location.href = "/feed.html";
+}
 }
 
 // ===============================
@@ -252,7 +267,23 @@ async function register() {
     localStorage.setItem("cliente_id", data.cliente_id);
   }
 
+  const action = localStorage.getItem("post_login_action");
+
+if (action === "open_vip_payment") {
+  localStorage.removeItem("post_login_action");
+
+  closeLoginModal?.();
+
+  setTimeout(() => {
+    if (typeof window.abrirFluxoVIP === "function") {
+      window.abrirFluxoVIP();
+    }
+  }, 300);
+
+} else {
+  // fluxo normal
   window.location.href = "/feed.html";
+}
 }
 
 

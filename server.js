@@ -3626,6 +3626,8 @@ app.post("/api/register", authLimiter, async (req, res) => {
     let modeloId = null;
     let clienteId = null;
 
+    const nomePublico = nome_completo.split(" ")[0];
+
     // ===============================
     // 👠 MODELO
     // ===============================
@@ -3634,11 +3636,11 @@ app.post("/api/register", authLimiter, async (req, res) => {
       // criar modelo base
       const modeloResult = await db.query(
         `
-        INSERT INTO public.modelos (user_id)
-        VALUES ($1)
+        INSERT INTO public.modelos (user_id, nome)
+        VALUES ($1, $2)
         RETURNING id
         `,
-        [userId]
+        [userId, nomePublico]
       );
 
       modeloId = modeloResult.rows[0].id;
@@ -5023,9 +5025,9 @@ app.post("/api/password/forgot", async (req, res) => {
     await client.query(
       `
       INSERT INTO password_resets
-  (user_id, codigo, expires_at)
-VALUES
-  ($1, $2, $3)
+        (user_id, codigo, expires_at, criado_em)
+      VALUES
+        ($1, $2, $3, NOW())
       `,
       [userId, codigo, expires]
     );
@@ -5081,7 +5083,7 @@ app.post("/api/password/reset", async (req, res) => {
 
     if (userRes.rowCount === 0) {
       await client.query("ROLLBACK");
-      return res.status(400).json({ error: "Código inválido ou expirado" });
+      return res.status(400).json({ error: "Código inválido" });
     }
 
     const userId = userRes.rows[0].id;
@@ -5093,7 +5095,7 @@ app.post("/api/password/reset", async (req, res) => {
         AND codigo = $2
         AND usado = false
         AND expires_at > NOW()
-      ORDER BY created_at DESC
+      ORDER BY criado_em DESC
       LIMIT 1
     `, [userId, codigo]);
 
@@ -5105,8 +5107,8 @@ app.post("/api/password/reset", async (req, res) => {
     const senhaHash = await bcrypt.hash(novaSenha, 10);
 
     await client.query(
-  "UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2",
-  [senhaHash, userId]
+      "UPDATE users SET password_hash = $1 WHERE id = $2",
+      [senhaHash, userId]
     );
 
     await client.query(

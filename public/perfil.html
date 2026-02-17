@@ -133,42 +133,40 @@
          DETALHES VIP
     ================================ -->
     <div class="vip-detalhes hidden">
-      <p class="vip-beneficios">
-        <strong>O pagamento VIP te permite:</strong><br>
-        Conversar com a criadora<br>
-        Acessar conteúdos do <strong>Pra você</strong><br>
-        Acesso parcial a conteúdos especiais<br>
-        Benefícios e promoções exclusivas
-      </p>
+      <ul class="vip-beneficios">
+  <li> Conversar com a criadora</li>
+  <li> Acessar conteúdos exclusivos</li>
+  <li> Benefícios e promoções especiais</li>
+</ul>
 
       <div class="vip-valores">
         <div class="linha">
-          <span>Valor da assinatura</span>
-          <span>R$ <span id="vipValorBase">0,00</span></span>
+          <span>Valor da assinatura:</span>
+          <span> R$ <span id="vipValorBase">0,00</span></span>
         </div>
 
         <div class="linha desconto">
-          <span>Desconto</span>
-          <span>– R$ <span id="vipDesconto">0,00</span></span>
+          <span>Desconto:</span>
+          <span> R$ <span id="vipDesconto">0,00</span></span>
         </div>
 
         <div class="linha">
-          <span>Taxa de transação (15%)</span>
-          <span>R$ <span id="vipTaxa">0,00</span></span>
+          <span>Taxa de transação: </span>
+          <span> R$<span id="vipTaxa">0,00</span></span>
         </div>
 
         <div class="linha total">
-          <span>Total</span>
-          <strong>R$ <span id="vipTotal">0,00</span></strong>
+          <span>Total:</span>
+         <span> R$ <span id="vipTotal">0,00</span></span>
         </div>
       </div>
 
       <small class="vip-info">
-        Assinatura VIP renovável com validade de <strong>1 mês</strong>.
-        Cancele quando quiser.<br><br>
-        Ao efetuar o pagamento, você confirma que está de acordo com os
-        <strong>Termos de Uso</strong> e <strong>Condições da Plataforma</strong>.<br><br>
-        Pagamentos realizados não são reembolsáveis.
+        -Renovável com validade de <strong>1 mês</strong>.
+        Cancele quando quiser.<br>
+        - Ao efetuar o pagamento, você confirma que está de acordo com os
+        <strong>Termos de Uso</strong> e <strong>Condições da Plataforma</strong>.<br>
+        - Pagamentos realizados não são reembolsáveis.<br>
       </small>
     </div>
 
@@ -211,7 +209,7 @@
         <strong>Termos de Uso</strong> e
         <strong>Condições da Plataforma</strong>.<br><br>
         Conteúdos digitais são entregues imediatamente após a confirmação
-        do pagamento e <strong>não são reembolsáveis</strong>.
+        do pagamento e <strong>não são reembolsáveis</strong>.<br>
       </small>
     </div>
 
@@ -221,12 +219,12 @@
     <div class="velvet-content">
       <!-- PIX -->
       <div id="conteudoPix" class="metodo">
-        <div id="pixLoading" class="pix-loading hidden">⏳ Aguarde…</div>
+        <div id="pixLoading" class="pix-loading hidden"><strong>⏳ Aguarde…</strong></div>
         <div id="pixAguardando" class="pix-aguardando hidden">
-          Aguardando pagamento Pix
+         <strong>Aguardando pagamento Pix</strong>
         </div>
         <div id="pixSucesso" class="pix-sucesso hidden">
-          ✅ Pagamento confirmado!
+        <strong>✅ Pagamento confirmado!</strong>
         </div>
 
         <img id="pixQr" class="pix-qr hidden">
@@ -238,7 +236,7 @@
 
       <!-- CARTÃO -->
       <div id="conteudoCartao" class="metodo hidden">
-        <div id="cartaoLoading" class="hidden">Preparando pagamento…</div>
+        <div id="cartaoLoading" class="hidden"><strong>Preparando pagamento…</strong></div>
         <form id="formCartao" class="hidden">
           <div id="card-element"></div>
           <button type="submit" class="btn-principal">
@@ -246,27 +244,38 @@
           </button>
         </form>
         <div id="cartaoSucesso" class="hidden">
-          ✅ Pagamento confirmado!
+          <strong>✅ Pagamento confirmado!</strong>
         </div>
       </div>
     </div>
 
   </div>
 </div>
-
-
 </main>
 
+<!-- container do modal auth -->
 <div id="auth-modals-container"></div>
 
 <script>
-fetch("/modals-auth.html")
+fetch("modals-auth.html")
   .then(res => res.text())
   .then(html => {
-    document.getElementById("auth-modals-container").innerHTML = html;
+    const container = document.getElementById("auth-modals-container");
+    if (!container) {
+      console.error("auth-modals-container não encontrado no DOM");
+      return;
+    }
+
+    container.innerHTML = html;
+
+    window.loginEmail = document.getElementById("loginEmail");
+    window.loginSenha = document.getElementById("loginSenha");
+    window.registerSenhaConfirm = document.getElementById("registerSenhaConfirm");
+    window.registerRole = document.getElementById("registerRole");
+    window.registerNome = document.getElementById("registerNome");
+    window.registerNascimento = document.getElementById("registerNascimento");
   });
 </script>
-
 
 <script src="socket.io/socket.io.js"></script>
 <script src="header.js"></script>

@@ -87,6 +87,21 @@
   </div>
 </div>
 
+    <script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    alert("Para ter acesso a essa página deve fazer seu login ou seu cadastro.");
+
+    window.location.href = "/index.html";
+    return;
+  }
+
+});
+</script>
+
 <script src="/socket.io/socket.io.js"></script>
 <script src="allmessage.js"></script>
 <script src="/header.js">defer</script>

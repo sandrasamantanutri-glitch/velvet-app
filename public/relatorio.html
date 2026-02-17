@@ -195,6 +195,22 @@
   </footer>
 
 </main>
+
+
+    <script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    alert("Para ter acesso a essa página deve fazer seu login ou seu cadastro.");
+
+    window.location.href = "/index.html";
+    return;
+  }
+
+});
+</script>
 <script src="/socket.io/socket.io.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="/relatorio.modelo.js"></script>

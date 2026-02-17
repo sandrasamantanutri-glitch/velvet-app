@@ -233,7 +233,14 @@ function adicionarMidia(conteudo, contexto) {
   // ===============================
 
   card.onclick = () => {
-     const role = localStorage.getItem("role");
+const tokenAtual = localStorage.getItem("token");
+
+  // 👀 VISITANTE
+  if (!tokenAtual) {
+    return; 
+  }
+
+  const role = localStorage.getItem("role");
   const modeloLogado = Number(localStorage.getItem("modelo_id"));
 
   if (role === "modelo" && modeloLogado !== modelo_id) {
@@ -510,6 +517,12 @@ if (!ehDona) {
 
   // 👑 Botão assinar
 btnAssinar?.addEventListener("click", () => {
+  const tokenAtual = localStorage.getItem("token");
+
+if (!tokenAtual) {
+  abrirPopupLoginObrigatorio();
+  return;
+}
 
   const role = localStorage.getItem("role");
   const modeloLogado = Number(localStorage.getItem("modelo_id"));
@@ -845,16 +858,36 @@ function abrirPopupLoginObrigatorio() {
 
   modal.querySelector(".modal-backdrop").onclick = () => modal.remove();
 
-  modal.querySelector(".btn-login").onclick = () => {
-    console.log("CLIQUE LOGIN");
-    modal.remove();
-    openAgeGate("login");
-  };
+modal.querySelector(".btn-login").onclick = () => {
+  modal.remove();
 
-  modal.querySelector(".btn-register").onclick = () => {
-    modal.remove();
-    openAgeGate("register");
-  };
+  // 🔥 SALVA QUE DEVE ABRIR VIP DEPOIS DO LOGIN
+  localStorage.setItem("post_login_action", "open_vip_payment");
+
+  if (typeof openAgeGate === "function") {
+    openAgeGate("login");
+  } else {
+    console.error("openAgeGate não carregado ainda");
+
+    const intervalo = setInterval(() => {
+      if (typeof openAgeGate === "function") {
+        clearInterval(intervalo);
+        openAgeGate("login");
+      }
+    }, 100);
+  }
+};
+
+
+modal.querySelector(".btn-register").onclick = () => {
+  modal.remove();
+
+  // 🔥 SALVA QUE DEVE ABRIR VIP DEPOIS DO REGISTRO
+  localStorage.setItem("post_login_action", "open_vip_payment");
+
+  openAgeGate("register");
+};
+
 
   document.body.appendChild(modal);
 }

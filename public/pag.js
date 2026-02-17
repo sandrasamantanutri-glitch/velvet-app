@@ -258,14 +258,15 @@ function mostrarMetodo(tipo) {
 
 window.pagarComPix = async function ({ tipo, modelo_id }) {
   try {
+    const token = localStorage.getItem("token");
     // 🔥 PIX É EXCLUSIVO PARA VIP
     if (tipo !== "vip") {
       throw new Error("Pagamento Pix disponível apenas para VIP");
     }
 
-    if (!token) {
-      throw new Error("Sessão expirada. Faça login novamente.");
-    }
+if (!token) {
+  throw new Error("Sessão expirada. Faça login novamente.");
+}
 
     abrirPopupPagamentoPixLoading();
 
@@ -488,7 +489,11 @@ async function pagarComCartao({ tipo, modelo_id }) {
   initStripe();
 
   try {
-    if (!token) throw new Error("Sessão expirada");
+const token = localStorage.getItem("token");
+
+if (!token) {
+  throw new Error("Sessão expirada. Faça login novamente.");
+}
 
     // 🔄 limpa estado anterior
     if (cardElement) {
@@ -672,9 +677,10 @@ window.confirmarPix = function () {
 
 async function iniciarCartaoMidia() {
   initStripe();
-  if (!token) {
-    alert("Sessão expirada");
-    return;
+const token = localStorage.getItem("token");
+
+if (!token) {
+  throw new Error("Sessão expirada. Faça login novamente.");
   }
 
   const res = await fetch("/api/pagamento/midia/cartao", {
