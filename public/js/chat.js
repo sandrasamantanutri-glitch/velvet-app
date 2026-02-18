@@ -16,6 +16,7 @@ const socket = io({
 socket.emit("auth", { token });
 
 socket.on("authOk", () => {
+  socketAutenticado = true;
   console.log("🔐 Socket autenticado");
 
   if (role === "cliente") {
@@ -38,6 +39,7 @@ let chatAtivo = null;
 window.conteudosVistosCliente = new Set();
 let carregandoHistorico = false;
 let historicoInicialCarregado = false;
+let socketAutenticado = false;
 
 // ===============================
 // 📎 PARAMETROS URL
@@ -909,7 +911,7 @@ function salvarEdicao() {
   }
 
   // 🔒 Emite para o backend apenas se ID válido
-  if (window.socket && socket.connected) {
+if (socket && socket.connected) {
     socket.emit("editarMensagem", {
       id: mensagemEditandoId,
       text: novoTexto
@@ -936,10 +938,8 @@ function excluirMensagem() {
   }
 
   // 🔒 Emite para o backend apenas se socket conectado
-  if (window.socket && socket.connected) {
-    socket.emit("excluirMensagem", {
-      id: mensagemEditandoId
-    });
+ if (socket && socket.connected && socketAutenticado) {
+  socket.emit("excluirMensagem", { id: mensagemEditandoId });
   } else {
     console.warn("Socket não conectado. Exclusão não enviada.");
   }

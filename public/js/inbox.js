@@ -112,7 +112,7 @@ clientes.forEach(c => {
 
   div.innerHTML = `
     <div class="avatar">
-      ${c.avatar ? `<img src="${c.avatar}" />` : ""}
+    <img src="${c.avatar ? c.avatar : 'assets/avatar.png'}" />
     </div>
 
     <div class="chat-body">

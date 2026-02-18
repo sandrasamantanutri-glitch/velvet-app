@@ -1347,6 +1347,7 @@ socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
       FROM messages
       WHERE cliente_id = $1
         AND modelo_id = $2
+        AND deletada IS NOT TRUE
       ORDER BY created_at ASC
       `,
       [cliente_id, modelo_id]
@@ -1618,12 +1619,15 @@ socket.on("editarMensagem", async ({ id, text }) => {
       return socket.disconnect();
     }
 
-    if (
-      !Number.isInteger(id) ||
-      !text ||
-      typeof text !== "string" ||
-      text.trim().length === 0
-    ) return;
+    const messageId = Number(id);
+
+if (
+  !Number.isInteger(messageId) ||
+  !text ||
+  typeof text !== "string" ||
+  text.trim().length === 0
+) return;
+
 
     // 🔒 converter users.id → modelo_id
     const modeloRes = await db.query(
@@ -1643,7 +1647,7 @@ socket.on("editarMensagem", async ({ id, text }) => {
       WHERE id = $1
         AND sender = 'modelo'
       `,
-      [id]
+      [messageId]
     );
 
     if (!msgRes.rowCount) return;
@@ -1661,16 +1665,16 @@ socket.on("editarMensagem", async ({ id, text }) => {
       WHERE id = $2
         AND modelo_id = $3
       `,
-      [text.trim(), id, modeloIdReal]
+      [text.trim(), messageId, modeloIdReal]
     );
 
     // 🔥 emitir apenas para sala correta
     const sala = `chat_${cliente_id}_${modelo_id}`;
 
     io.to(sala).emit("mensagemEditada", {
-      id,
-      text: text.trim()
-    });
+  id: messageId,
+  text: text.trim()
+});
 
   } catch (err) {
     console.error("Erro ao editar mensagem:", err);
@@ -1685,7 +1689,9 @@ socket.on("excluirMensagem", async ({ id }) => {
       return socket.disconnect();
     }
 
-    if (!Number.isInteger(id)) return;
+    const messageId = Number(id);
+if (!Number.isInteger(messageId)) return;
+
 
     // 🔒 converter users.id → modelo_id
     const modeloRes = await db.query(
@@ -1714,15 +1720,18 @@ socket.on("excluirMensagem", async ({ id }) => {
 
     if (modelo_id !== modeloIdReal) return;
 
-    // 🔥 excluir
-    await db.query(
-      `
-      DELETE FROM messages
-      WHERE id = $1
-        AND modelo_id = $2
-      `,
-      [id, modeloIdReal]
-    );
+   const del = await db.query(
+  `
+  UPDATE messages
+  SET deletada = true
+  WHERE id = $1
+    AND modelo_id = $2
+    AND sender = 'modelo'
+  `,
+  [messageId, modeloIdReal]
+);
+
+    console.log("DELETE rows:", del.rowCount);
 
     // 🔔 emitir apenas para sala correta
     const sala = `chat_${cliente_id}_${modelo_id}`;
