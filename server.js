@@ -1668,7 +1668,6 @@ if (
       [text.trim(), messageId, modeloIdReal]
     );
 
-    // 🔥 emitir apenas para sala correta
     const sala = `chat_${cliente_id}_${modelo_id}`;
 
     io.to(sala).emit("mensagemEditada", {
@@ -1693,7 +1692,7 @@ socket.on("excluirMensagem", async ({ id }) => {
 if (!Number.isInteger(messageId)) return;
 
 
-    // 🔒 converter users.id → modelo_id
+ 
     const modeloRes = await db.query(
       "SELECT id FROM modelos WHERE user_id = $1",
       [socket.user.id]
@@ -1733,7 +1732,7 @@ if (!Number.isInteger(messageId)) return;
 
     console.log("DELETE rows:", del.rowCount);
 
-    // 🔔 emitir apenas para sala correta
+
     const sala = `chat_${cliente_id}_${modelo_id}`;
 
     io.to(sala).emit("mensagemExcluida", { id });
@@ -1743,7 +1742,7 @@ if (!Number.isInteger(messageId)) return;
   }
 });
 
-  // CLIENTE ONLINE
+
 socket.on("loginCliente", async () => {
   try {
 

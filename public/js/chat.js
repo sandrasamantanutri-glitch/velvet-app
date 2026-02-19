@@ -920,7 +920,6 @@ if (socket && socket.connected) {
     console.warn("Socket não conectado. Edição não enviada.");
   }
 
-  // 🔄 Fecha menu de edição
   fecharMenuMensagem();
 }
 
@@ -932,12 +931,10 @@ function excluirMensagem() {
 
   if (!confirm("Tem certeza que deseja excluir esta mensagem?")) return;
 
-  // 🔥 Remove do DOM
   if (elementoMensagemEditando) {
     elementoMensagemEditando.remove();
   }
 
-  // 🔒 Emite para o backend apenas se socket conectado
  if (socket && socket.connected && socketAutenticado) {
   socket.emit("excluirMensagem", { id: mensagemEditandoId });
   } else {

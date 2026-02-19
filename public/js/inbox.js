@@ -135,7 +135,6 @@ clientes.forEach(c => {
 
 // ===============================
 // TEMPO
-// ===============================
 function formatarTempo(data) {
   if (!data) return "";
   const d = new Date(data);
@@ -154,7 +153,6 @@ function formatarTempo(data) {
 
 // ===============================
 // HELPERS
-// ===============================
 function abrirChat(clienteId) {
   window.location.href = `/chat.html?cliente_id=${clienteId}`;
 }

@@ -672,19 +672,16 @@ html, body {
   transition: all 0.2s ease;
 }
 
-/* Ícone */
 .btn-enviar1 img {
   width: 30px;
   height: 30px;
 }
 
-/* Hover */
 .btn-enviar1:hover {
   transform: scale(1.08);
   box-shadow: 0 6px 16px rgba(123,44,255,0.4);
 }
 
-/* Click */
 .btn-enviar1:active {
   transform: scale(0.95);
 }
