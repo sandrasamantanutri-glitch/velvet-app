@@ -4926,70 +4926,83 @@ const jaComprado = await client.query(`
       });
     }
 
-    /* =====================================================
-       💰 CÁLCULO SEGURO
-    ===================================================== */
-    const valorBase = Number(preco);
-    const taxaTransacao  = Number((valorBase * 0.10).toFixed(2));
-    const taxaPlataforma = Number((valorBase * 0.05).toFixed(2));
-    const total = Number((valorBase + taxaTransacao + taxaPlataforma).toFixed(2));
-    const amount = Math.round(total * 100); // centavos
+  /* =====================================================
+   💰 CÁLCULO SEGURO
+===================================================== */
+const valorBase = Number(preco);
+const taxaTransacao  = Number((valorBase * 0.10).toFixed(2));
+const taxaPlataforma = Number((valorBase * 0.05).toFixed(2));
+const total = Number((valorBase + taxaTransacao + taxaPlataforma).toFixed(2));
+const amount = Math.round(total * 100); // centavos
 
-    /* =====================================================
-       💳 CRIAR ORDEM PIX PAGAR.ME
-    ===================================================== */
-    const pagarmeResponse = await axios.post(
-      "https://api.pagar.me/core/v5/orders",
-      {
-        items: [{
-          amount,
-          description: "Compra Velvet",
-          quantity: 1
-        }],
-customer: {
-  name: req.user.nome || "Cliente Velvet",
-  email: req.user.email,
-  type: "individual",
-  document: {
-    type: "cpf",
-    number: cpfLimpo
-  },
-  phones: {
-    mobile_phone: {
-      country_code: "55",
-      area_code: "11",
-      number: "999999999"
-    }
-  }
-},
-        payments: [{
-          payment_method: "pix",
-          pix: { expires_in: 3600 }
-        }],
+/* =====================================================
+   🪪 VALIDAR CPF DO CLIENTE
+===================================================== */
+const cpfLimpo = cpf?.replace(/\D/g, "");
 
-        metadata: {
-          tipo: "conteudo_pix",
-          message_id: String(conteudoId),
-          cliente_id: String(cliente_id),
-          modelo_id: String(modelo_id),
-          valor_base: String(valorBase),
-          taxa_transacao: String(taxaTransacao),
-          taxa_plataforma: String(taxaPlataforma),
-          aceite_ip: ip,
-          aceitou_termos: "true",
-          aceite_data: new Date().toISOString()
-        }
+if (!cpfLimpo || cpfLimpo.length !== 11) {
+  await client.query("ROLLBACK");
+  return res.status(400).json({
+    error: "CPF inválido ou não cadastrado."
+  });
+}
+
+/* =====================================================
+   💳 CRIAR ORDEM PIX PAGAR.ME
+===================================================== */
+const pagarmeResponse = await axios.post(
+  "https://api.pagar.me/core/v5/orders",
+  {
+    items: [{
+      amount,
+      description: `Compra conteúdo #${conteudoId}`,
+      quantity: 1
+    }],
+    customer: {
+      name: req.user.nome || "Cliente Velvet",
+      email: req.user.email,
+      type: "individual",
+      document: {
+        type: "cpf",
+        number: cpfLimpo
       },
-      {
-        headers: {
-          Authorization: `Basic ${Buffer
-            .from(process.env.PAGARME_SECRET_KEY + ":")
-            .toString("base64")}`,
-          "Content-Type": "application/json"
+      phones: {
+        mobile_phone: {
+          country_code: "55",
+          area_code: "11",
+          number: "999999999"
         }
       }
-    );
+    },
+    payments: [{
+      payment_method: "pix",
+      pix: { expires_in: 3600 }
+    }],
+    metadata: {
+      tipo: "conteudo_pix",
+      message_id: String(conteudoId),
+      cliente_id: String(cliente_id),
+      modelo_id: String(modelo_id),
+      valor_base: String(valorBase),
+      taxa_transacao: String(taxaTransacao),
+      taxa_plataforma: String(taxaPlataforma),
+      aceite_ip: ip,
+      aceitou_termos: "true",
+      aceite_data: new Date().toISOString()
+    }
+  },
+  {
+    headers: {
+      Authorization: `Basic ${Buffer
+        .from(process.env.PAGARME_SECRET_KEY + ":")
+        .toString("base64")}`,
+      "Content-Type": "application/json"
+    }
+  }
+);
+
 const order = pagarmeResponse.data;
+
 console.log(JSON.stringify(order, null, 2));
 
     const charge = order.charges?.[0];
