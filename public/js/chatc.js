@@ -600,21 +600,7 @@ function iniciarPollingPagamento(conteudo_id) {
 
 async function gerarPix() {
 
-  const cpfInput = document.getElementById("cpfPagamento");
   const termosCheckbox = document.getElementById("aceiteTermosPagamento");
-
-  if (!cpfInput || !termosCheckbox) {
-    alert("Erro no formulário");
-    return;
-  }
-
-  const cpf = cpfInput.value.replace(/\D/g, "");
-
-  if (cpf.length !== 11) {
-    alert("CPF inválido");
-    return;
-  }
-
   if (!termosCheckbox.checked) {
     alert("Você precisa aceitar os termos.");
     return;
@@ -634,7 +620,6 @@ async function gerarPix() {
       },
       body: JSON.stringify({
         conteudo_id: pagamentoAtual.conteudo_id,
-        cpf,
         aceitou_termos: true,
         fingerprint
       })
@@ -663,7 +648,7 @@ async function pagarComCartao() {
 
   document.getElementById("escolhaPagamento").classList.add("hidden");
 
-  if (!pagamentoAtual?.message_id) {
+  if (!pagamentoAtual?.message_id || !termosCheckbox) {
     alert("Conteúdo inválido");
     return;
   }
