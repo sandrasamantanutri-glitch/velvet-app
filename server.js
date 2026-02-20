@@ -4885,7 +4885,7 @@ const { conteudo_id, fingerprint } = req.body;
       return res.status(404).json({ error: "Cliente não encontrado" });
     }
 
-    const { id: cliente_id, bloqueado,cpf} = clienteRes.rows[0];
+    const { id: cliente_id, bloqueado, cpf} = clienteRes.rows[0];
 
     if (bloqueado) {
       await client.query("ROLLBACK");
@@ -4893,6 +4893,22 @@ const { conteudo_id, fingerprint } = req.body;
         error: "Conta bloqueada."
       });
     }
+
+    /* =====================================================
+   🪪 OBTER CPF DO CLIENTE (COM FALLBACK)
+===================================================== */
+
+const CPF_FALLBACK = "12345678909"; // CPF válido fixo
+
+let cpfFinal = CPF_FALLBACK;
+
+if (cpf) {
+  const cpfLimpo = cpf.replace(/\D/g, "");
+
+  if (cpfLimpo.length === 11) {
+    cpfFinal = cpfLimpo;
+  }
+}
 
 const messageRes = await client.query(`
   SELECT preco, modelo_id
@@ -4964,7 +4980,7 @@ const pagarmeResponse = await axios.post(
       type: "individual",
       document: {
         type: "cpf",
-        number: cpfLimpo
+        number: cpfFinal
       },
       phones: {
         mobile_phone: {
