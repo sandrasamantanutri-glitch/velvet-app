@@ -648,11 +648,6 @@ async function pagarComCartao() {
 
   document.getElementById("escolhaPagamento").classList.add("hidden");
 
-  if (!pagamentoAtual?.message_id || !termosCheckbox) {
-    alert("Conteúdo inválido");
-    return;
-  }
-
   const conteudo_id = Number(pagamentoAtual.message_id);
 
   if (!conteudo_id) {
@@ -660,13 +655,6 @@ async function pagarComCartao() {
     return;
   }
 
-  // 🔒 validar aceite de termos
-  const termosCheckbox = document.getElementById("aceiteTermosPagamento");
-
-  if (!termosCheckbox || !termosCheckbox.checked) {
-    alert("Você precisa aceitar os termos.");
-    return;
-  }
 
   try {
 
