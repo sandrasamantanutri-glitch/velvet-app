@@ -4843,16 +4843,12 @@ app.post("/api/pagamento/midia/pix", auth, async (req, res) => {
   const client = await db.connect();
 
   try {
-const { conteudo_id, cpf, aceitou_termos, fingerprint } = req.body;
+const { conteudo_id, aceitou_termos, fingerprint } = req.body;
     const userId = req.user.id;
 
     if (!conteudo_id || !Number.isInteger(Number(conteudo_id))) {
       return res.status(400).json({ error: "conteudo_id inválido" });
     }
-
-    if (!cpf || cpf.length !== 11) {
-  return res.status(400).json({ error: "CPF obrigatório." });
-}
 
 
     if (!aceitou_termos) {
@@ -4897,7 +4893,7 @@ const { conteudo_id, cpf, aceitou_termos, fingerprint } = req.body;
       return res.status(404).json({ error: "Cliente não encontrado" });
     }
 
-    const { id: cliente_id, bloqueado } = clienteRes.rows[0];
+    const { id: cliente_id, bloqueado, cpf } = clienteRes.rows[0];
 
     if (bloqueado) {
       await client.query("ROLLBACK");
@@ -4960,13 +4956,13 @@ const jaComprado = await client.query(`
             quantity: 1
           }
         ],
-      customer: {
+customer: {
   name: req.user.nome || "Cliente Velvet",
   email: req.user.email,
   type: "individual",
   document: {
     type: "cpf",
-    number: cpf
+    number: cpfLimpo
   }
 },
         payments: [
@@ -4999,8 +4995,9 @@ const jaComprado = await client.query(`
         }
       }
     );
+const order = pagarmeResponse.data;
 console.log(JSON.stringify(order, null, 2));
-    const order = pagarmeResponse.data;
+
     const charge = order.charges?.[0];
 const pixData = charge?.last_transaction;
 
