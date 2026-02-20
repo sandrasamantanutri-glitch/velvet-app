@@ -4906,18 +4906,19 @@ const { conteudo_id, cpf, aceitou_termos, fingerprint } = req.body;
       });
     }
 
-   const conteudoRes = await client.query(`
+const messageRes = await client.query(`
   SELECT preco, modelo_id
-  FROM conteudos
+  FROM messages
   WHERE id = $1
-`, [req.body.conteudo_id]);
+    AND tipo = 'conteudo'
+`, [conteudoId]);
 
-if (!conteudoRes.rowCount) {
+if (!messageRes.rowCount) {
   await client.query("ROLLBACK");
   return res.status(404).json({ error: "Conteúdo não encontrado" });
 }
 
-const { preco, modelo_id } = conteudoRes.rows[0];
+const { preco, modelo_id } = messageRes.rows[0];
 
     /* =====================================================
        🚫 EVITAR COMPRA DUPLICADA
