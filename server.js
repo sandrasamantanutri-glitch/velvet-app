@@ -138,22 +138,28 @@ app.post(
       return res.status(400).send("Invalid signature");
     }
 
+    if (event.type !== "payment_intent.succeeded" &&
+        event.type !== "charge.dispute.created") {
+      return res.status(200).send("ok");
+    }
+
     const client = await db.connect();
 
     try {
       await client.query("BEGIN");
 
       /* =====================================================
-         IDEMPOTÊNCIA COM LOCK
+         1️⃣ IDEMPOTÊNCIA GLOBAL
       ===================================================== */
-      const jaExiste = await client.query(
+
+      const jaProcessado = await client.query(
         "SELECT 1 FROM stripe_events WHERE id=$1 FOR UPDATE",
         [event.id]
       );
 
-      if (jaExiste.rowCount > 0) {
+      if (jaProcessado.rowCount > 0) {
         await client.query("ROLLBACK");
-        return res.json({ received: true });
+        return res.status(200).send("ok");
       }
 
       await client.query(
@@ -162,140 +168,136 @@ app.post(
       );
 
       /* =====================================================
-         CONTEÚDO PAGO
+         2️⃣ PAGAMENTO SUCESSO
       ===================================================== */
+
       if (event.type === "payment_intent.succeeded") {
 
         const pi = event.data.object;
+        const metadata = pi.metadata || {};
 
-        if (pi.metadata?.tipo === "conteudo") {
+        if (metadata.tipo !== "vip") {
+          await client.query("COMMIT");
+          return res.status(200).send("ok");
+        }
 
-          const cliente_id = Number(pi.metadata.cliente_id);
-          const modelo_id  = Number(pi.metadata.modelo_id);
-          const message_id = Number(pi.metadata.message_id);
-          const valorPago  = pi.amount / 100;
+        const cliente_id = Number(metadata.cliente_id);
+        const modelo_id  = Number(metadata.modelo_id);
+        const valorPago  = pi.amount / 100;
 
-          /* LOCK CONTEÚDO */
-          const conteudoRes = await client.query(
-            "SELECT preco FROM conteudos WHERE id=$1 FOR UPDATE",
-            [message_id]
-          );
+        /* =====================================================
+           3️⃣ VALIDAR VALOR
+        ===================================================== */
 
-          if (!conteudoRes.rowCount) {
-            await client.query("ROLLBACK");
-            return res.json({ received: true });
-          }
+        const valorMeta = Number(metadata.valor_total || 0);
 
-          const valorOficial = Number(conteudoRes.rows[0].preco);
+        if (valorMeta && valorPago !== valorMeta) {
+          console.log("🚨 Valor divergente Stripe");
+          await client.query("ROLLBACK");
+          return res.status(200).send("ok");
+        }
 
-          if (valorPago < valorOficial) {
-            await client.query("ROLLBACK");
-            return res.json({ received: true });
-          }
+        /* =====================================================
+           4️⃣ ATIVAR VIP
+        ===================================================== */
 
-          await client.query(`
-            INSERT INTO conteudo_pacotes (
-              message_id, cliente_id, modelo_id,
-              preco, valor_base, valor_total,
-              status, payment_id,
-              metodo_pagamento, pago_em
-            )
-            VALUES ($1,$2,$3,$4,$4,$5,'pago',$6,'cartao',NOW())
-            ON CONFLICT (message_id,cliente_id) DO NOTHING
-          `,[
-            message_id,
+        const expiration = new Date();
+        expiration.setMonth(expiration.getMonth() + 1);
+
+        await client.query(`
+          INSERT INTO vip_subscriptions (
             cliente_id,
             modelo_id,
-            valorOficial,
-            valorPago,
-            pi.id
-          ]);
+            ativo,
+            created_at,
+            updated_at,
+            expiration_at,
+            valor_assinatura,
+            taxa_transacao,
+            taxa_plataforma,
+            valor_total,
+            recorrente,
+            gateway_subscription_id
+          )
+          VALUES (
+            $1,$2,true,
+            NOW(),NOW(),$3,
+            $4,$5,$6,$7,
+            false,$8
+          )
+          ON CONFLICT (cliente_id,modelo_id)
+          DO UPDATE SET
+            ativo=true,
+            expiration_at=$3,
+            updated_at=NOW(),
+            valor_assinatura=$4,
+            taxa_transacao=$5,
+            taxa_plataforma=$6,
+            valor_total=$7,
+            recorrente=false,
+            gateway_subscription_id=$8
+        `,[
+          cliente_id,
+          modelo_id,
+          expiration,
+          Number(metadata.valor_assinatura),
+          Number(metadata.taxa_transacao),
+          Number(metadata.taxa_plataforma),
+          Number(metadata.valor_total),
+          pi.id
+        ]);
 
-          await client.query(`
-            INSERT INTO transacoes_agency (
-              tipo, modelo_id, valor_total, status, created_at
-            )
-            VALUES ('midia',$1,$2,'pago',NOW())
-          `,[modelo_id, valorPago]);
-        }
-      }
-
-      /* =====================================================
-         ASSINATURA PAGA
-      ===================================================== */
-      if (event.type === "invoice.payment_succeeded") {
-
-        const invoice = event.data.object;
-        const subId = invoice.subscription;
-        const valorPago = invoice.amount_paid / 100;
-
-        const subRes = await client.query(`
-          SELECT cliente_id, modelo_id
-          FROM vip_subscriptions
-          WHERE stripe_subscription_id=$1
-          FOR UPDATE
-        `,[subId]);
-
-        if (subRes.rowCount) {
-
-          const { cliente_id, modelo_id } = subRes.rows[0];
-
-          await client.query(`
-            UPDATE vip_subscriptions
-            SET ativo=true,
-                updated_at=NOW()
-            WHERE stripe_subscription_id=$1
-          `,[subId]);
-
-          await client.query(`
-            INSERT INTO transacoes_agency (
-              tipo, modelo_id, valor_total, status, created_at
-            )
-            VALUES ('assinatura',$1,$2,'pago',NOW())
-          `,[modelo_id, valorPago]);
-        }
-      }
-
-      /* =====================================================
-         FALHA ASSINATURA
-      ===================================================== */
-      if (event.type === "invoice.payment_failed") {
-
-        const subId = event.data.object.subscription;
+        /* =====================================================
+           5️⃣ REGISTRAR TRANSAÇÃO
+        ===================================================== */
 
         await client.query(`
-          UPDATE vip_subscriptions
-          SET ativo=false,
-              updated_at=NOW()
-          WHERE stripe_subscription_id=$1
-        `,[subId]);
+          INSERT INTO transacoes_agency (
+            modelo_id,
+            cliente_id,
+            tipo,
+            valor_bruto,
+            valor_modelo,
+            agency_fee,
+            velvet_fee,
+            taxa_gateway,
+            status,
+            created_at,
+            aceitou_termos,
+            aceite_ip,
+            aceite_data
+          )
+          VALUES (
+            $1,$2,'assinatura',
+            $3,$4,$5,$6,$7,
+            'pago',NOW(),true,$8,NOW()
+          )
+        `,[
+          modelo_id,
+          cliente_id,
+          Number(metadata.valor_total),
+          Number(metadata.valor_assinatura),
+          0,
+          Number(metadata.taxa_plataforma),
+          Number(metadata.taxa_transacao),
+          metadata.aceite_ip
+        ]);
+
+        console.log("✅ VIP STRIPE ATIVADO");
       }
 
       /* =====================================================
-         CANCELAMENTO
+         6️⃣ CHARGEBACK
       ===================================================== */
-      if (event.type === "customer.subscription.deleted") {
 
-        const subId = event.data.object.id;
-
-        await client.query(`
-          UPDATE vip_subscriptions
-          SET ativo=false,
-              updated_at=NOW()
-          WHERE stripe_subscription_id=$1
-        `,[subId]);
-      }
-
-      /* =====================================================
-         CHARGEBACK
-      ===================================================== */
       if (event.type === "charge.dispute.created") {
 
         const dispute = event.data.object;
         const pi = await stripe.paymentIntents.retrieve(dispute.payment_intent);
+        const metadata = pi.metadata || {};
 
-        const cliente_id = Number(pi.metadata?.cliente_id);
-        const cpf = pi.metadata?.cpf;
+        const cliente_id = Number(metadata.cliente_id);
+        const cpf = metadata.cpf;
 
         if (cliente_id) {
           await client.query(`
@@ -310,15 +312,18 @@ app.post(
             ON CONFLICT DO NOTHING
           `,[cpf]);
         }
+
+        console.log("🚨 CHARGEBACK STRIPE TRATADO");
       }
 
       await client.query("COMMIT");
-      return res.json({ received: true });
+
+      return res.status(200).send("ok");
 
     } catch (err) {
       await client.query("ROLLBACK");
-      console.error("🔥 ERRO STRIPE:", err);
-      return res.status(500).send("Webhook failed");
+      console.error("🔥 ERRO WEBHOOK STRIPE:", err);
+      return res.status(500).send("erro");
     } finally {
       client.release();
     }
@@ -933,124 +938,92 @@ app.post("/api/ofertas", authModelo, async (req, res) => {
 
 
 app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
-  const client = await db.connect();
 
-  let cliente_id; // 🔒 necessário para usar no catch
+  const client = await db.connect();
+  let cliente_id;
 
   try {
 
+    await client.query("BEGIN");
+
     const { modelo_id, cpf, aceitou_termos, fingerprint } = req.body;
+
+    const userId = req.user.id;
 
     /* =====================================================
        🔎 VALIDAÇÕES INICIAIS
     ===================================================== */
 
     if (!modelo_id || !Number.isInteger(Number(modelo_id))) {
+      await client.query("ROLLBACK");
       return res.status(400).json({ error: "modelo_id inválido" });
     }
 
     if (!aceitou_termos) {
-      return res.status(400).json({
-        error: "Você precisa aceitar os termos."
-      });
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Você precisa aceitar os termos." });
     }
 
     if (!cpf || cpf.length < 11) {
-      return res.status(400).json({
-        error: "CPF obrigatório."
-      });
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "CPF obrigatório." });
     }
 
     if (!fingerprint) {
-      return res.status(400).json({
-        error: "Fingerprint obrigatório."
-      });
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Fingerprint obrigatório." });
     }
-const ip =
-  req.headers["x-forwarded-for"]?.split(",")[0] ||
-  req.socket.remoteAddress;
 
-/* =====================================================
-   🔒 VERIFICAR SE IP JÁ ESTÁ BLOQUEADO
-===================================================== */
-
-const ipBloqueado = await db.query(
-  "SELECT 1 FROM ips_bloqueados WHERE ip = $1",
-  [ip]
-);
-
-if (ipBloqueado.rowCount > 0) {
-  return res.status(403).json({
-    error: "IP bloqueado por atividade suspeita."
-  });
-}
-
-/* =====================================================
-   🔒 VERIFICAR MULTIPLAS CONTAS NO MESMO IP
-===================================================== */
-
-const contasMesmoIP = await db.query(`
-  SELECT COUNT(*) FROM clientes
-  WHERE ultimo_ip = $1
-  AND created_at > NOW() - INTERVAL '1 hour'
-`, [ip]);
-
-if (Number(contasMesmoIP.rows[0].count) >= 3) {
-
-  await db.query(`
-    INSERT INTO ips_bloqueados (ip, motivo)
-    VALUES ($1,'multiplas contas em 1h')
-    ON CONFLICT (ip) DO NOTHING
-  `,[ip]);
-
-  return res.status(403).json({
-    error: "Atividade suspeita detectada."
-  });
-}
+    const ip =
+      req.headers["x-forwarded-for"]?.split(",")[0] ||
+      req.socket.remoteAddress;
 
     /* =====================================================
-       🔁 BUSCAR CLIENTE
+       🔒 BLOQUEIOS
     ===================================================== */
 
-    const clienteRes = await db.query(
-      `SELECT id, bloqueado FROM clientes WHERE user_id = $1`,
-      [req.user.id]
+    const ipBloqueado = await client.query(
+      "SELECT 1 FROM ips_bloqueados WHERE ip = $1",
+      [ip]
     );
 
-    if (clienteRes.rowCount === 0) {
+    if (ipBloqueado.rowCount > 0) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ error: "IP bloqueado." });
+    }
+
+    const clienteRes = await client.query(
+      "SELECT id, bloqueado FROM clientes WHERE user_id = $1",
+      [userId]
+    );
+
+    if (!clienteRes.rowCount) {
+      await client.query("ROLLBACK");
       return res.status(404).json({ error: "Cliente não encontrado" });
     }
 
     cliente_id = clienteRes.rows[0].id;
 
-    // 🔒 Cliente bloqueado manualmente ou por MED anterior
     if (clienteRes.rows[0].bloqueado) {
-      return res.status(403).json({
-        error: "Conta bloqueada por irregularidade anterior."
-      });
+      await client.query("ROLLBACK");
+      return res.status(403).json({ error: "Conta bloqueada." });
+    }
+
+    const cpfBloqueado = await client.query(
+      "SELECT 1 FROM cpfs_bloqueados WHERE cpf = $1",
+      [cpf]
+    );
+
+    if (cpfBloqueado.rowCount > 0) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ error: "CPF bloqueado." });
     }
 
     /* =====================================================
-       🔒 BLOQUEIO CPF POR MED
+       🔒 BLOQUEIO POR RECUSAS
     ===================================================== */
 
-  const cpfBloqueado = await client.query(
-  "SELECT 1 FROM cpfs_bloqueados WHERE cpf = $1",
-  [cpf]
-);
-
-if (cpfBloqueado.rowCount > 0) {
-  await client.query("ROLLBACK");
-  return res.status(403).json({
-    error: "CPF bloqueado por irregularidade anterior."
-  });
-}
-
-    /* =====================================================
-       🔒 BLOQUEIO POR 2 RECUSAS
-    ===================================================== */
-
-    const tentativas = await db.query(`
+    const tentativas = await client.query(`
       SELECT COUNT(*) FROM pagamento_tentativas
       WHERE fingerprint_pagamento = $1
       AND status = 'recusado'
@@ -1058,23 +1031,9 @@ if (cpfBloqueado.rowCount > 0) {
     `, [fingerprint]);
 
     if (Number(tentativas.rows[0].count) >= 2) {
+      await client.query("ROLLBACK");
       return res.status(403).json({
         error: "Forma de pagamento bloqueada por múltiplas recusas."
-      });
-    }
-
-    /* =====================================================
-       🔒 CPF DUPLICADO
-    ===================================================== */
-
-    const cpfExiste = await db.query(
-      "SELECT 1 FROM clientes WHERE cpf = $1 AND id != $2",
-      [cpf, cliente_id]
-    );
-
-    if (cpfExiste.rowCount > 0) {
-      return res.status(400).json({
-        error: "CPF já utilizado."
       });
     }
 
@@ -1082,105 +1041,116 @@ if (cpfBloqueado.rowCount > 0) {
        🔄 ATUALIZAR CLIENTE
     ===================================================== */
 
-    await db.query(
+    await client.query(
       "UPDATE clientes SET cpf = $1, ultimo_ip = $2 WHERE id = $3",
       [cpf, ip, cliente_id]
     );
 
-/* =====================================================
-   🔥 BUSCAR PLANO BASE
-===================================================== */
-
-const planoRes = await db.query(`
-  SELECT valor_mensal
-  FROM modelos_planos
-  WHERE modelo_id = $1
-`, [modelo_id]);
-
-if (planoRes.rowCount === 0) {
-  return res.status(400).json({
-    error: "Plano VIP não definido"
-  });
-}
-
-const valorBase = Number(planoRes.rows[0].valor_mensal);
-
-/* =====================================================
-   🔥 BUSCAR OFERTA ATIVA
-===================================================== */
-
-const ofertaRes = await db.query(`
-  SELECT id, desconto_percentual, valor_promocional
-  FROM ofertas
-  WHERE modelo_id = $1
-    AND ativa = true
-    AND (data_inicio IS NULL OR data_inicio <= NOW())
-    AND (data_fim IS NULL OR data_fim >= NOW())
-  ORDER BY created_at DESC
-  LIMIT 1
-`, [modelo_id]);
-
-let valorAssinatura = valorBase;
-let oferta_id = null;
-
-if (ofertaRes.rowCount > 0) {
-
-  oferta_id = ofertaRes.rows[0].id;
-
-  // 🔥 Se existir valor_promocional, usar ele
-  if (ofertaRes.rows[0].valor_promocional) {
-    valorAssinatura = Number(ofertaRes.rows[0].valor_promocional);
-  }
-
-  // 🔥 Senão aplicar desconto percentual
-  else if (ofertaRes.rows[0].desconto_percentual) {
-    const descontoPerc = Number(ofertaRes.rows[0].desconto_percentual);
-    valorAssinatura = valorBase - (valorBase * descontoPerc / 100);
-  }
-}
-
-valorAssinatura = Number(valorAssinatura.toFixed(2));
-
-if (!valorAssinatura || valorAssinatura <= 0) {
-  return res.status(400).json({
-    error: "Valor inválido para assinatura"
-  });
-}
-
     /* =====================================================
-       💰 CÁLCULO FINAL
+       🔥 BUSCAR PLANO
     ===================================================== */
 
-    const taxaTransacao  = Number((valorAssinatura * 0.10).toFixed(2));
-    const taxaPlataforma = Number((valorAssinatura * 0.05).toFixed(2));
-    const valorTotal = Number(
-      (valorAssinatura + taxaTransacao + taxaPlataforma).toFixed(2)
-    );
+    const planoRes = await client.query(`
+      SELECT valor_mensal
+      FROM modelos_planos
+      WHERE modelo_id = $1
+      LIMIT 1
+    `, [modelo_id]);
 
-    const amount = Math.round(valorTotal * 100);
+    if (!planoRes.rowCount) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Plano VIP não definido" });
+    }
+
+    let valorBase = Number(planoRes.rows[0].valor_mensal);
 
     /* =====================================================
-       💳 CRIAR PAYMENT INTENT STRIPE
+       🔥 OFERTA
+    ===================================================== */
+
+    const ofertaRes = await client.query(`
+      SELECT id, desconto_percentual, valor_promocional
+      FROM ofertas
+      WHERE modelo_id = $1
+        AND ativa = true
+        AND (data_inicio IS NULL OR data_inicio <= NOW())
+        AND (data_fim IS NULL OR data_fim >= NOW())
+      ORDER BY created_at DESC
+      LIMIT 1
+    `, [modelo_id]);
+
+    let valorAssinatura = valorBase;
+    let oferta_id = null;
+
+    if (ofertaRes.rowCount) {
+
+      oferta_id = ofertaRes.rows[0].id;
+
+      if (ofertaRes.rows[0].valor_promocional) {
+        valorAssinatura = Number(ofertaRes.rows[0].valor_promocional);
+      } else if (ofertaRes.rows[0].desconto_percentual) {
+        const desconto = Number(ofertaRes.rows[0].desconto_percentual);
+        valorAssinatura =
+          valorBase - (valorBase * desconto / 100);
+      }
+    }
+
+    valorAssinatura = Number(valorAssinatura.toFixed(2));
+
+    if (!valorAssinatura || valorAssinatura <= 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Valor inválido" });
+    }
+
+    /* =====================================================
+       💰 CÁLCULO EM CENTAVOS
+    ===================================================== */
+
+    const valorCentavos = Math.round(valorAssinatura * 100);
+    const taxaTransacaoCentavos  = Math.round(valorCentavos * 0.10);
+    const taxaPlataformaCentavos = Math.round(valorCentavos * 0.05);
+
+    const amount =
+      valorCentavos +
+      taxaTransacaoCentavos +
+      taxaPlataformaCentavos;
+
+    const taxaTransacao  = (taxaTransacaoCentavos / 100).toFixed(2);
+    const taxaPlataforma = (taxaPlataformaCentavos / 100).toFixed(2);
+
+    /* =====================================================
+       💳 STRIPE
     ===================================================== */
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency: "brl",
-      payment_method_types: ["card"],
+      automatic_payment_methods: { enabled: true },
       metadata: {
         tipo: "vip",
         cliente_id: String(cliente_id),
         modelo_id: String(modelo_id),
         oferta_id: oferta_id ? String(oferta_id) : "",
         valor_assinatura: String(valorAssinatura),
-        taxa_transacao: String(taxaTransacao),
-        taxa_plataforma: String(taxaPlataforma),
+        taxa_transacao: taxaTransacao,
+        taxa_plataforma: taxaPlataforma,
         cpf,
         aceite_ip: ip,
-        aceitou_termos: "true",
         aceite_data: new Date().toISOString()
       }
     });
+
+    /* =====================================================
+       📝 REGISTRAR TENTATIVA PENDENTE
+    ===================================================== */
+
+    await client.query(`
+      INSERT INTO pagamento_tentativas
+      (cliente_id, metodo, fingerprint_pagamento, status)
+      VALUES ($1,'cartao',$2,'pendente')
+    `,[cliente_id, fingerprint]);
+
+    await client.query("COMMIT");
 
     return res.json({
       clientSecret: paymentIntent.client_secret
@@ -1188,12 +1158,13 @@ if (!valorAssinatura || valorAssinatura <= 0) {
 
   } catch (err) {
 
+    await client.query("ROLLBACK");
+
     console.error("❌ Erro Stripe VIP:", err);
 
-    // 🔥 registrar tentativa recusada
     if (err.type === "StripeCardError" && cliente_id) {
 
-      await db.query(`
+      await client.query(`
         INSERT INTO pagamento_tentativas
         (cliente_id, metodo, fingerprint_pagamento, status)
         VALUES ($1,'cartao',$2,'recusado')
@@ -1207,6 +1178,9 @@ if (!valorAssinatura || valorAssinatura <= 0) {
     return res.status(500).json({
       error: "Erro ao criar pagamento com cartão"
     });
+
+  } finally {
+    client.release();
   }
 });
 
