@@ -599,13 +599,6 @@ function iniciarPollingPagamento(conteudo_id) {
 }
 
 async function gerarPix() {
-
-  const termosCheckbox = document.getElementById("aceiteTermosPagamento");
-  if (!termosCheckbox.checked) {
-    alert("Você precisa aceitar os termos.");
-    return;
-  }
-
   const fingerprint = btoa(
     navigator.userAgent + navigator.language + screen.width
   );
