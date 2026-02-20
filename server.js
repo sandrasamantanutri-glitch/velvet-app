@@ -4999,18 +4999,18 @@ const jaComprado = await client.query(`
         }
       }
     );
-
+console.log(JSON.stringify(order, null, 2));
     const order = pagarmeResponse.data;
-    const charge = order.charges[0];
-    const pixData = charge.last_transaction;
+    const charge = order.charges?.[0];
+const pixData = charge?.last_transaction;
 
-    if (!pixData?.qr_code) {
-      await client.query("ROLLBACK");
-      return res.status(500).json({
-        error: "Erro ao gerar QR Code Pix"
-      });
-    }
-
+    if (!charge || !pixData || !pixData.qr_code) {
+  console.error("Resposta Pagar.me:", JSON.stringify(order, null, 2));
+  await client.query("ROLLBACK");
+  return res.status(500).json({
+    error: "Erro ao gerar QR Code Pix"
+  });
+}
     /* =====================================================
        📝 REGISTRAR TENTATIVA
     ===================================================== */
