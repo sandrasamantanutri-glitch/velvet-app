@@ -411,18 +411,12 @@ function scrollParaFinal() {
 }
 
 async function abrirConteudoSeguro(message_id, index = 0) {
+
   const modal = document.getElementById("modalConteudo");
   const midiaBox = document.getElementById("modalMidia");
-  
-  conteudosLiberados.add(Number(message_id));
-  socket.emit("marcarConteudoVisto", {
-  message_id,
-  cliente_id,
-  modelo_id
- });
 
   if (!modal || !midiaBox) {
-    console.error("❌ Modal de conteúdo não encontrado no DOM");
+    console.error("❌ Modal não encontrado");
     return;
   }
 
@@ -430,6 +424,7 @@ async function abrirConteudoSeguro(message_id, index = 0) {
   midiaBox.innerHTML = "<p>Carregando...</p>";
 
   try {
+
     const res = await fetch(`/api/chat/conteudo/${message_id}`, {
       headers: {
         Authorization: "Bearer " + localStorage.getItem("token")
@@ -437,7 +432,7 @@ async function abrirConteudoSeguro(message_id, index = 0) {
     });
 
     if (!res.ok) {
-      midiaBox.innerHTML = "<p>Erro ao carregar conteúdo.</p>";
+      midiaBox.innerHTML = "<p>Acesso não autorizado.</p>";
       return;
     }
 
@@ -445,11 +440,20 @@ async function abrirConteudoSeguro(message_id, index = 0) {
     const midia = midias[index];
 
     if (!midia) {
-  midiaBox.innerHTML = "<p>Erro ao abrir mídia.</p>";
-  return;
-}
+      midiaBox.innerHTML = "<p>Erro ao abrir mídia.</p>";
+      return;
+    }
 
-     midiaBox.innerHTML =
+    // 🔓 só marca como liberado DEPOIS de validar backend
+    conteudosLiberados.add(Number(message_id));
+
+    socket.emit("marcarConteudoVisto", {
+      message_id,
+      cliente_id,
+      modelo_id
+    });
+
+    midiaBox.innerHTML =
       (midia.tipo_media || midia.tipo) === "video"
         ? `<video src="${midia.url}" controls autoplay></video>`
         : `<img src="${midia.url}" />`;
@@ -459,7 +463,6 @@ async function abrirConteudoSeguro(message_id, index = 0) {
     midiaBox.innerHTML = "<p>Erro inesperado.</p>";
   }
 }
-
 
 function fecharConteudo() {
   const modal = document.getElementById("modalConteudo");
@@ -478,8 +481,332 @@ document.addEventListener("click", e => {
   }
 });
 
+function pagarComPix() {
+
+
+  document
+    .getElementById("escolhaPagamento")
+    .classList.add("hidden");
+
+
+  if (
+    !pagamentoAtual ||
+    !pagamentoAtual.message_id ||
+    !pagamentoAtual.valor
+  ) {
+    alert("Conteúdo inválido");
+    return;
+  }
+
+  const conteudo_id = Number(pagamentoAtual.message_id);
+  const preco = Number(pagamentoAtual.valor);
+
+  if (!conteudo_id || preco <= 0) {
+    alert("Dados de pagamento inválidos");
+    return;
+  }
+
+
+  abrirPixConteudo(conteudo_id, preco);
+}
+
+async function abrirPixConteudo(conteudo_id, preco) {
+
+  if (!conteudo_id || Number(preco) <= 0) {
+    alert("Conteúdo inválido");
+    return;
+  }
+
+  pagamentoAtual = {
+    conteudo_id: Number(conteudo_id),
+    preco: Number(preco)
+  };
+
+  const taxaTransacao  = Number((preco * 0.10).toFixed(2));
+  const taxaPlataforma = Number((preco * 0.05).toFixed(2));
+  const valorTotal     = Number(
+    (preco + taxaTransacao + taxaPlataforma).toFixed(2)
+  );
+
+  document.getElementById("pixValorBase").innerText = valorBRL(preco);
+  document.getElementById("pixTaxaTransacao").innerText = valorBRL(taxaTransacao);
+  document.getElementById("pixTaxaPlataforma").innerText = valorBRL(taxaPlataforma);
+  document.getElementById("pixValorTotal").innerText = valorBRL(valorTotal);
+
+  document.getElementById("popupPix").classList.remove("hidden");
+}
+
+let intervaloConfirmacaoPagamento = null;
+
+function iniciarPollingPagamento(conteudo_id) {
+
+  if (intervaloConfirmacaoPagamento) {
+    clearInterval(intervaloConfirmacaoPagamento);
+  }
+
+  let tentativas = 0;
+  const maxTentativas = 20; // ~60 segundos
+
+  intervaloConfirmacaoPagamento = setInterval(async () => {
+
+    tentativas++;
+
+    try {
+
+      const res = await fetch(
+        `/api/chat/conteudo-status/${conteudo_id}`,
+        {
+          headers: {
+            Authorization: "Bearer " + localStorage.getItem("token")
+          }
+        }
+      );
+
+      if (!res.ok) return;
+
+      const status = await res.json();
+
+      if (status.liberado === true) {
+
+        clearInterval(intervaloConfirmacaoPagamento);
+        intervaloConfirmacaoPagamento = null;
+
+        const idFinal = conteudo_id;
+
+        // 🔓 fecha possíveis modais
+        fecharPopupPix?.();
+        fecharPagamento?.();
+
+        // 🔄 força atualização via socket
+        socket.emit("conteudoVisto", {
+          message_id: idFinal,
+          cliente_id,
+          modelo_id
+        });
+
+        pagamentoAtual = {};
+      }
+
+      if (tentativas >= maxTentativas) {
+        clearInterval(intervaloConfirmacaoPagamento);
+      }
+
+    } catch (err) {
+      console.error("Erro polling pagamento:", err);
+    }
+
+  }, 3000);
+}
+
+async function gerarPix() {
+
+  const cpfInput = document.getElementById("cpfPagamento");
+  const termosCheckbox = document.getElementById("aceiteTermosPagamento");
+
+  if (!cpfInput || !termosCheckbox) {
+    alert("Erro no formulário");
+    return;
+  }
+
+  const cpf = cpfInput.value.replace(/\D/g, "");
+
+  if (cpf.length !== 11) {
+    alert("CPF inválido");
+    return;
+  }
+
+  if (!termosCheckbox.checked) {
+    alert("Você precisa aceitar os termos.");
+    return;
+  }
+
+  const fingerprint = btoa(
+    navigator.userAgent + navigator.language + screen.width
+  );
+
+  try {
+
+    const res = await fetch("/api/pagamento/midia/pix", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + localStorage.getItem("token")
+      },
+      body: JSON.stringify({
+        conteudo_id: pagamentoAtual.conteudo_id,
+        cpf,
+        aceitou_termos: true,
+        fingerprint
+      })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || "Erro ao gerar PIX");
+      return;
+    }
+
+    document.getElementById("pixQr").src = data.qr_code_url;
+    document.getElementById("pixCopia").value = data.copia_cola;
+
+    iniciarPollingPagamento(pagamentoAtual.conteudo_id);
+
+  } catch (err) {
+    console.error("Erro Pix:", err);
+    alert("Erro inesperado no Pix");
+  }
+}
+
+
+async function pagarComCartao() {
+
+  document.getElementById("escolhaPagamento").classList.add("hidden");
+
+  if (!pagamentoAtual?.message_id) {
+    alert("Conteúdo inválido");
+    return;
+  }
+
+  const conteudo_id = Number(pagamentoAtual.message_id);
+
+  if (!conteudo_id) {
+    alert("Conteúdo inválido");
+    return;
+  }
+
+  // 🔒 validar aceite de termos
+  const termosCheckbox = document.getElementById("aceiteTermosPagamento");
+
+  if (!termosCheckbox || !termosCheckbox.checked) {
+    alert("Você precisa aceitar os termos.");
+    return;
+  }
+
+  try {
+
+    const res = await fetch("/api/pagamento/midia/cartao", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + localStorage.getItem("token")
+      },
+      body: JSON.stringify({
+        conteudo_id,
+        aceitou_termos: true
+      })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || "Erro no pagamento");
+      return;
+    }
+
+    // 🔹 Atualiza valor total exibido
+    document.getElementById("cartaoValorTotal").innerText =
+      valorBRL(data.total);
+
+    // 🔹 Inicializa Stripe Elements
+    elements = stripe.elements({
+      clientSecret: data.clientSecret
+    });
+
+    const paymentElement = elements.create("payment");
+    paymentElement.mount("#payment-element");
+
+    document
+      .getElementById("paymentModal")
+      .classList.remove("hidden");
+
+  } catch (err) {
+    console.error("Erro cartão:", err);
+    alert("Erro inesperado");
+  }
+}
+
+function fecharPagamento() {
+
+  const modal = document.getElementById("paymentModal");
+  if (modal) modal.classList.add("hidden");
+
+  if (elements) {
+    try {
+      elements = null;
+    } catch (err) {
+      console.warn("Erro limpando Stripe Elements:", err);
+    }
+  }
+
+  const el = document.getElementById("payment-element");
+  if (el) el.innerHTML = "";
+}
+
+async function copiarPix() {
+  const input = document.getElementById("pixCopia");
+
+  if (!input || !input.value) {
+    mostrarToast("Código Pix indisponível");
+    return;
+  }
+
+  try {
+
+    // método moderno
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(input.value);
+    } else {
+      // fallback seguro
+      const textarea = document.createElement("textarea");
+      textarea.value = input.value;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+
+    mostrarToast("Código Pix copiado!");
+
+  } catch (err) {
+    console.error("Erro copiar Pix:", err);
+    mostrarToast("Não foi possível copiar");
+  }
+}
+
+function mostrarToast(texto) {
+
+  let toast = document.getElementById("toastPix");
+
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "toastPix";
+    toast.style.position = "fixed";
+    toast.style.bottom = "20px";
+    toast.style.left = "50%";
+    toast.style.transform = "translateX(-50%)";
+    toast.style.background = "#111";
+    toast.style.color = "#fff";
+    toast.style.padding = "12px 20px";
+    toast.style.borderRadius = "8px";
+    toast.style.zIndex = "9999";
+    toast.style.fontSize = "14px";
+    document.body.appendChild(toast);
+  }
+
+  toast.innerText = texto;
+  toast.style.opacity = "1";
+
+  setTimeout(() => {
+    toast.style.opacity = "0";
+  }, 2500);
+}
 
 document.getElementById("confirmarPagamento").onclick = async () => {
+
   const { error, paymentIntent } = await stripe.confirmPayment({
     elements,
     redirect: "if_required"
@@ -490,235 +817,16 @@ document.getElementById("confirmarPagamento").onclick = async () => {
     return;
   }
 
-  // 🔓 pagamento confirmado → abrir conteúdo
+  // ⚠️ NÃO liberar conteúdo aqui
+  // Apenas fecha modal e aguarda backend confirmar
+
   document.getElementById("paymentModal").classList.add("hidden");
   document.getElementById("payment-element").innerHTML = "";
 
-  if (pagamentoAtual.message_id) {
-    abrirConteudoSeguro(pagamentoAtual.message_id);
-    pagamentoAtual = {};
-  }
+  if (!pagamentoAtual?.message_id) return;
+
+  const conteudo_id = pagamentoAtual.message_id;
+
+  iniciarPollingPagamento(conteudo_id);
+
 };
-
-
-// ===============================
-// ⚡ PIX — CONTEÚDO (BOTÃO)
-function pagarComPix() {
-  // 1️⃣ fecha popup de escolha
-  document
-    .getElementById("escolhaPagamento")
-    .classList.add("hidden");
-
-  // 2️⃣ valida dados salvos
-  if (
-    !pagamentoAtual ||
-    !pagamentoAtual.message_id ||
-    !pagamentoAtual.valor
-  ) {
-    alert("Conteúdo inválido");
-    return;
-  }
-
-  // 3️⃣ chama Pix com dados CORRETOS
-  abrirPixConteudo(
-    pagamentoAtual.message_id,
-    Number(pagamentoAtual.valor)
-  );
-}
-
-
-let intervaloConfirmacaoPix = null;
-
-async function abrirPixConteudo(message_id, preco) {
-  if (!message_id || Number(preco) <= 0) {
-    alert("Conteúdo inválido");
-    return;
-  }
-
-  // 🔐 guarda estado do pagamento
-  pagamentoAtual = {
-    message_id: Number(message_id),
-    preco: Number(preco)
-  };
-
-  // 💰 cálculos
-  const taxaTransacao  = Number((preco * 0.10).toFixed(2));
-  const taxaPlataforma = Number((preco * 0.05).toFixed(2));
-  const valorTotal     = Number(
-    (preco + taxaTransacao + taxaPlataforma).toFixed(2)
-  );
-
-  // 🧾 UI
-  document.getElementById("pixValorBase").innerText = valorBRL(preco);
-  document.getElementById("pixTaxaTransacao").innerText = valorBRL(taxaTransacao);
-  document.getElementById("pixTaxaPlataforma").innerText = valorBRL(taxaPlataforma);
-  document.getElementById("pixValorTotal").innerText = valorBRL(valorTotal);
-
-  document.getElementById("popupPix").classList.remove("hidden");
-
-  try {
-    // 🔗 cria pagamento Pix
-    const res = await fetch("/api/pagamento/conteudo/pix", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + localStorage.getItem("token")
-      },
-      body: JSON.stringify({ message_id })
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      alert(data.error || "Erro ao gerar PIX");
-      return;
-    }
-
-    // 🧾 QR Code
-    document.getElementById("pixQr").src =
-      "data:image/png;base64," + data.qr_code;
-
-    document.getElementById("pixCopia").value =
-      data.copia_cola;
-
-    // 🔁 POLLING — confirma pagamento pelo BANCO (verdade final)
-    if (intervaloConfirmacaoPix) {
-      clearInterval(intervaloConfirmacaoPix);
-    }
-
-    intervaloConfirmacaoPix = setInterval(async () => {
-      try {
-        if (!pagamentoAtual?.message_id) return;
-        const statusRes = await fetch(
-          `/api/chat/conteudo-status/${pagamentoAtual.message_id}`,
-          {
-            headers: {
-              Authorization: "Bearer " + localStorage.getItem("token")
-            }
-          }
-        );
-
-        if (!statusRes.ok) return;
-
-        const status = await statusRes.json();
-
-        if (status.liberado === true) {
-          clearInterval(intervaloConfirmacaoPix);
-          intervaloConfirmacaoPix = null;
-
-            const idFinal = pagamentoAtual.message_id;
-
-          // 🔓 fecha popup
-          fecharPopupPix();
-
-          // 🔄 força atualização do chat
-          socket.emit("conteudoVisto", {
-            message_id: idFinal
-          });
-
-          pagamentoAtual = {};
-        }
-      } catch (err) {
-        console.error("Erro polling Pix:", err);
-      }
-    }, 3000);
-
-  } catch (err) {
-    console.error("Erro Pix:", err);
-    alert("Erro inesperado no Pix");
-  }
-}
-
-
-async function pagarComCartao() {
-  document.getElementById("escolhaPagamento").classList.add("hidden");
-
-  if (!pagamentoAtual?.message_id) {
-    alert("Conteúdo inválido");
-    return;
-  }
-
-  const res = await fetch("/api/pagamento/conteudo/cartao", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + localStorage.getItem("token")
-    },
-    body: JSON.stringify({
-      message_id: pagamentoAtual.message_id
-    })
-  });
-
-  const data = await res.json();
-  if (!res.ok) {
-    alert(data.error || "Erro no pagamento");
-    return;
-  }
-
-  // valores
-  document.getElementById("cartaoValorConteudo").innerText =
-    valorBRL(data.valor_base);
-
-  document.getElementById("cartaoTaxaTransacao").innerText =
-    valorBRL(data.taxa_transacao);
-
-  document.getElementById("cartaoTaxaPlataforma").innerText =
-    valorBRL(data.taxa_plataforma);
-
-  document.getElementById("cartaoValorTotal").innerText =
-    valorBRL(data.valor_total);
-
-  // Stripe Elements
-  elements = stripe.elements({
-    clientSecret: data.clientSecret
-  });
-
-  const paymentElement = elements.create("payment");
-  paymentElement.mount("#payment-element");
-
-  document.getElementById("paymentModal").classList.remove("hidden");
-}
-
-function fecharPagamento() {
-  const modal = document.getElementById("paymentModal");
-  if (modal) modal.classList.add("hidden");
-
-  // limpa Stripe Elements
-  const el = document.getElementById("payment-element");
-  if (el) el.innerHTML = "";
-
-  elements = null;
-}
-
-
-function copiarPix() {
-  const input = document.getElementById("pixCopia");
-
-  if (!input || !input.value) {
-    alert("Código Pix indisponível");
-    return;
-  }
-
-  // método moderno
-  if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(input.value)
-      .then(() => {
-        alert("Código Pix copiado!");
-      })
-      .catch(() => {
-        fallbackCopiarPix(input);
-      });
-  } else {
-    fallbackCopiarPix(input);
-  }
-}
-
-function fallbackCopiarPix(input) {
-  input.removeAttribute("readonly");
-  input.select();
-  input.setSelectionRange(0, 99999); // mobile
-  document.execCommand("copy");
-  input.setAttribute("readonly", true);
-
-  alert("Código Pix copiado!");
-}

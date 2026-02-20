@@ -5105,20 +5105,27 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
     /* =====================================================
        🔎 BUSCAR CONTEÚDO
     ===================================================== */
-    const conteudoRes = await client.query(`
-      SELECT preco, modelo_id
-      FROM conteudos
-      WHERE id = $1
-        AND tipo_conteudo = 'venda'
-    `,[conteudoId]);
+/* 🔎 BUSCAR MENSAGEM DE CONTEÚDO */
+const messageRes = await client.query(`
+  SELECT preco, modelo_id
+  FROM messages
+  WHERE id = $1
+    AND tipo = 'conteudo'
+`, [conteudoId]);
 
-    if (conteudoRes.rowCount === 0) {
-      await client.query("ROLLBACK");
-      return res.status(404).json({ error: "Conteúdo não encontrado" });
-    }
+if (!messageRes.rowCount) {
+  await client.query("ROLLBACK");
+  return res.status(404).json({ error: "Conteúdo não encontrado" });
+}
 
-    const { preco, modelo_id } = conteudoRes.rows[0];
+const { preco, modelo_id } = messageRes.rows[0];
 
+if (!preco || Number(preco) <= 0) {
+  await client.query("ROLLBACK");
+  return res.status(400).json({
+    error: "Conteúdo não está à venda."
+  });
+};
     /* =====================================================
        🚫 EVITAR COMPRA DUPLICADA
     ===================================================== */
