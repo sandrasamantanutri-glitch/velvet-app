@@ -12,6 +12,7 @@
   "dependencies": {
     "@sendgrid/mail": "^8.1.6",
     "aws-sdk": "^2.1500.0",
+    "axios": "^1.13.5",
     "backblaze-b2": "^1.7.1",
     "bcrypt": "^6.0.0",
     "body-parser": "^2.2.1",

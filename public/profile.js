@@ -1216,13 +1216,32 @@ async function excluirMidia(id, card) {
 }
 
 function atualizarUIVip() {
+
+  const btnAssinar = document.getElementById("btn-assinar");
+  const ofertaCard = document.getElementById("oferta-card");
+  const vipCard = document.getElementById("vip-card");
+
+  window.__CLIENTE_VIP__ = true;
+
+  // 🔥 Atualiza botão
   if (btnAssinar) {
     btnAssinar.textContent = "VIP ativo!!";
     btnAssinar.disabled = true;
+    btnAssinar.style.cursor = "default";
   }
+
+  // 🔥 Esconde oferta
+  if (ofertaCard) {
+    ofertaCard.style.display = "none";
+  }
+
+  // 🔥 Mostra card VIP
+  if (vipCard) {
+    vipCard.classList.remove("hidden");
+  }
+
+  console.log("💎 UI VIP atualizada com sucesso");
 }
-
-
 
 
 // async function pagarComCartaoRecorrente() {

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Agency Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="agencia.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<header class="topbar">
+  <div class="topbar-left">
+    <img src="/assets/velvet.png" alt="Velvet" class="logo-small">
+    <nav>
+      <a href="/agencia/dashboard.html" class="active">Dashboard</a>
+      <a href="/agencia/pagamentos.html">Pagamentos</a>
+    </nav>
+  </div>
+
+  <div class="topbar-right">
+    <select id="modeloSelect" onchange="irModelo()">
+      <option value="">Selecionar Modelo</option>
+    </select>
+  </div>
+</header>
+
+<div class="cards">
+
+  <div class="card">
+    <h4>Mídias Hoje</h4>
+    <div class="valor" id="midiasHoje">R$ 0</div>
+  </div>
+
+   <div class="card">
+    <h4>Assinaturas Hoje</h4>
+    <div class="valor" id="assinaturasHoje">R$ 0</div>
+  </div>
+
+  <div class="card">
+    <h4>Mídias Mês</h4>
+    <div class="valor" id="midiasMes">R$ 0</div>
+  </div>
+
+    <div class="card">
+    <h4>Assinaturas Mês</h4>
+    <div class="valor" id="assinaturasMes">R$ 0</div>
+  </div>
+
+    <div class="card destaque-hoje">
+  <h4>Total Hoje</h4>
+  <div class="valor total-hoje" id="totalHoje">R$ 0</div>
+</div>
+
+  <div class="card destaque-mes">
+  <h4>Total Mês</h4>
+  <div class="valor total-mes" id="totalMes">R$ 0</div>
+</div>
+
+  <div class="card destaque-ano">
+    <h4>Total Ano 2026</h4>
+    <div class="valor total" id="totalAno">R$ 0</div>
+  </div>
+
+</div>
+
+<br><br>
+
+<div class="card">
+  <canvas id="grafico" height="100"></canvas>
+</div>
+
+</div>
+
+<script>
+const token = localStorage.getItem("token_agencia");
+
+// async function carregarNomeAgencia(){
+//   const res = await fetch("/api/agencia/me",{
+//     headers:{
+//       Authorization:"Bearer "+token
+//     }
+//   });
+
+//   if(!res.ok){
+//     window.location.href="/agencia/login.html";
+//     return;
+//   }
+
+//   const data = await res.json();
+
+//   document.getElementById("nomeAgencia").innerText = data.nome;
+// }
+
+// carregarNomeAgencia();
+
+async function carregarDashboard(){
+
+  const res = await fetch("/api/agencia/dashboard",{
+    headers:{ Authorization:"Bearer "+token }
+  });
+
+  const data = await res.json();
+
+  document.getElementById("midiasHoje").innerText =
+    "R$ "+Number(data.midias_hoje).toFixed(2);
+
+  document.getElementById("assinaturasHoje").innerText =
+    "R$ "+Number(data.assinaturas_hoje).toFixed(2);
+
+  document.getElementById("assinaturasMes").innerText =
+    "R$ "+Number(data.assinaturas_mes).toFixed(2);
+
+  document.getElementById("midiasMes").innerText =
+    "R$ "+Number(data.midias_mes).toFixed(2);
+
+
+    document.getElementById("totalHoje").innerText =
+  "R$ "+Number(data.total_hoje).toFixed(2);
+
+    document.getElementById("totalMes").innerText =
+  "R$ "+Number(data.total_mes).toFixed(2);
+
+  document.getElementById("totalAno").innerText =
+    "R$ "+Number(data.total_ano).toFixed(2);
+
+  criarGrafico(data);
+}
+
+function criarGrafico(data){
+  new Chart(document.getElementById("grafico"), {
+    type: 'bar',
+    data: {
+      labels: [
+        "Mídias Hoje",
+        "Assinaturas Hoje",
+        "Mídias Mês",
+        "Assinaturas Mês",
+        "Total Hoje",
+        "Total Mês",
+        "Total Ano"
+      ],
+      datasets: [{
+        label: "Receita Agência",
+        data: [
+          data.midias_hoje,
+          data.assinaturas_hoje,
+          data.midias_mes,
+          data.assinaturas_mes,
+          data.total_hoje,
+          data.total_mes,
+          data.total_ano
+        ],
+        borderRadius:8
+      }]
+    },
+    options:{
+      plugins:{ legend:{ display:false }},
+      scales:{
+        y:{ ticks:{ color:"#aaa" }},
+        x:{ ticks:{ color:"#aaa" }}
+      }
+    }
+  });
+}
+
+
+async function carregarModelos(){
+  const res = await fetch("/api/agencia/modelos",{
+    headers:{ Authorization:"Bearer "+token }
+  });
+
+  const modelos = await res.json();
+
+  const select = document.getElementById("modeloSelect");
+
+  modelos.forEach(m=>{
+    select.innerHTML += `<option value="${m.id}">${m.nome}</option>`;
+  });
+}
+
+function irModelo(){
+  const id = document.getElementById("modeloSelect").value;
+  if(id) window.location.href="modelo.html?id="+id;
+}
+
+carregarDashboard();
+carregarModelos();
+</script>
+
+</body>
+</html>

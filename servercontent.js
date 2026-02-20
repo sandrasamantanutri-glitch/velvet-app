@@ -34,7 +34,7 @@ cron.schedule("0 3 * * *", async () => {
       COUNT(*) AS total,
       SUM(valor_bruto) AS valor,
       MAX(created_at) AS ultimo
-    FROM transacoes
+    FROM transacoes_agency
     WHERE status = 'chargeback'
       AND created_at >= NOW() - INTERVAL '60 days'
     GROUP BY cliente_id
@@ -77,21 +77,39 @@ cron.schedule("0 3 * * *", async () => {
 
 //RELATORIO FINANCEIROS
 
-function calcularValores({ valor_bruto, taxa_gateway, agency_fee, velvet_fee, status }) {
-  if (status === "chargeback") {
-    return {
-      valor_modelo: 0
-    };
-  }
+async function calcularValores({ modelo_id, valor_bruto, taxa_gateway }) {
+
+  const regraRes = await db.query(`
+    SELECT
+      COALESCE(a.percentual_modelo, 0.70) AS percentual_modelo,
+      COALESCE(a.percentual_agencia, 0) AS percentual_agencia,
+      COALESCE(a.percentual_plataforma, 0.30) AS percentual_plataforma
+    FROM modelos m
+    LEFT JOIN agencias a ON a.id = m.agencia_id
+    WHERE m.id = $1
+  `, [modelo_id]);
+
+  const regra = regraRes.rows[0];
+
+  const bruto = Number(valor_bruto);
+  const gateway = Number(taxa_gateway || 0);
+
+  // 🔥 CALCULAR PRIMEIRO O LÍQUIDO
+  const liquido = bruto - gateway;
+
+  const valorModelo = liquido * Number(regra.percentual_modelo);
+  const valorAgencia = liquido * Number(regra.percentual_agencia);
+  const valorVelvet = liquido * Number(regra.percentual_plataforma);
 
   return {
-    valor_modelo:
-      Number(valor_bruto) -
-      Number(taxa_gateway) -
-      Number(agency_fee) -
-      Number(velvet_fee)
+    valor_modelo: Number(valorModelo.toFixed(2)),
+    agency_fee: Number(valorAgencia.toFixed(2)),
+    velvet_fee: Number(valorVelvet.toFixed(2)),
+    taxa_gateway: gateway
   };
 }
+
+
 
 function podeAlterarDadosBancarios() {
   const hoje = new Date();
@@ -104,6 +122,41 @@ function podeAlterarDadosBancarios() {
 
   return true;
 }
+
+//% MODELOS
+async function getPercentualModelo(modelo_id) {
+  const result = await db.query(`
+    SELECT
+      COALESCE(a.percentual_modelo, 0.70) AS percentual
+    FROM modelos m
+    LEFT JOIN agencias a ON a.id = m.agencia_id
+    WHERE m.id = $1
+  `, [modelo_id]);
+
+  return Number(result.rows[0]?.percentual || 0.70);
+}
+
+function authAgencia(req, res, next) {
+  const token = req.headers.authorization?.split(" ")[1];
+
+  if (!token) return res.sendStatus(401);
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (decoded.role !== "agencia") {
+      return res.sendStatus(403);
+    }
+
+    req.agencia = decoded;
+    next();
+
+  } catch (err) {
+    return res.sendStatus(401);
+  }
+}
+
+
 
 //ROTASSSS POST ///////////////////
 router.post("/modelo/dados-bancarios", authModelo, async (req, res) => {
@@ -274,77 +327,74 @@ router.post(
 router.post("/transacoes", auth, async (req, res) => {
   try {
     const {
-      codigo,
       modelo_id,
       cliente_id,
       tipo,
       valor_bruto,
       taxa_gateway,
-      agency_fee,
-      velvet_fee,
-      origem_cliente
     } = req.body;
 
-    const { valor_modelo } = calcularValores({
+    const valores = await calcularValores({
+      modelo_id,
       valor_bruto,
-      taxa_gateway,
-      agency_fee,
-      velvet_fee,
-      status: "normal"
+      taxa_gateway
     });
 
-    const result = await db.query(
-      `
-      INSERT INTO transacoes (
-        codigo, modelo_id, cliente_id, tipo,
-        valor_bruto, taxa_gateway, agency_fee, velvet_fee,
-        valor_modelo, origem_cliente
-      )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+    const result = await db.query(`
+INSERT INTO transacoes_agency (
+  modelo_id,
+  cliente_id,
+  tipo,
+  valor_bruto,
+  taxa_gateway,
+  agency_fee,
+  velvet_fee,
+  valor_modelo,
+  status
+)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'normal')
       RETURNING *
-      `,
-      [
-        codigo,
-        modelo_id,
-        cliente_id,
-        tipo,
-        valor_bruto,
-        taxa_gateway,
-        agency_fee,
-        velvet_fee,
-        valor_modelo,
-        origem_cliente
-      ]
-    );
+    `, [
+      modelo_id,
+      cliente_id,
+      tipo,
+      valor_bruto,
+      valores.taxa_gateway,
+      valores.agency_fee,
+      valores.velvet_fee,
+      valores.valor_modelo,
+    ]);
 
     res.json(result.rows[0]);
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ erro: "Erro ao criar transação" });
   }
 });
 
-router.post("/transacoes/:id/chargeback",
-  auth,
-  requireRole("admin", "modelo"),
-  async (req, res) => {
 
-    const { result } = req.body; // won | lost
+// router.post("/transacoes/:id/chargeback",
+//   auth,
+//   requireRole("admin", "modelo"),
+//   async (req, res) => {
 
-    await db.query(
-      `
-      UPDATE transacoes
-      SET status = 'chargeback',
-          chargeback_result = $1,
-          valor_modelo = 0
-      WHERE id = $2
-      `,
-      [result, req.params.id]
-    );
+//     const { result } = req.body; // won | lost
 
-    res.json({ ok: true });
-  }
-);
+//     await db.query(
+//       `
+//       UPDATE transacoes
+//       SET status = 'chargeback',
+//           chargeback_result = $1,
+//           valor_modelo = 0
+//       WHERE id = $2
+//       `,
+//       [result, req.params.id]
+//     );
+
+//     res.json({ ok: true });
+//   }
+// );
 
 // ===============================
 // 📣 ALLMESSAGE - ENVIO EM MASSA
@@ -491,6 +541,145 @@ let modelo_id;
   }
 );
 
+const bcrypt = require("bcrypt");
+
+router.post("/agencia/login", async (req, res) => {
+  try {
+    const { email, senha } = req.body;
+
+    const result = await db.query(
+      "SELECT * FROM agencias WHERE email = $1",
+      [email]
+    );
+
+    if (!result.rowCount) {
+      return res.status(401).json({ error: "Agência não encontrada" });
+    }
+
+    const agencia = result.rows[0];
+
+    const senhaValida = await bcrypt.compare(senha, agencia.senha);
+
+    if (!senhaValida) {
+      return res.status(401).json({ error: "Senha inválida" });
+    }
+
+    const token = jwt.sign(
+      { id: agencia.id, role: "agencia" },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.json({ token });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+router.post("/agencia/modelo/:id/solicitar-percentual", authAgencia, async (req,res)=>{
+  try{
+
+    const agencia_id = req.agencia.id;
+    const modelo_id = Number(req.params.id);
+    const { percentual_modelo } = req.body;
+
+    const modeloPercent = Number(percentual_modelo);
+
+    /* =========================================
+       🔒 VALIDAR MODELO PERTENCE À AGÊNCIA
+    ========================================= */
+
+    const modeloAtual = await db.query(`
+      SELECT percentual_modelo, percentual_agencia
+      FROM modelos
+      WHERE id = $1
+      AND agencia_id = $2
+    `,[modelo_id, agencia_id]);
+
+    if(!modeloAtual.rowCount){
+      return res.status(403).json({error:"Modelo inválida"});
+    }
+
+    /* =========================================
+       🔒 VALIDAR LIMITES
+    ========================================= */
+
+    if(isNaN(modeloPercent)){
+      return res.status(400).json({error:"Percentual inválido"});
+    }
+
+    if(modeloPercent < 50 || modeloPercent > 80){
+      return res.status(400).json({
+        error:"Modelo deve ficar entre 50% e 80%."
+      });
+    }
+
+    /* =========================================
+       🔒 CALCULAR AUTOMÁTICO AGÊNCIA
+    ========================================= */
+
+    const percentual_agencia_novo = 80 - modeloPercent;
+
+    /* =========================================
+       🔒 IMPEDIR SOLICITAÇÃO DUPLICADA PENDENTE
+    ========================================= */
+
+    const solicitacaoPendente = await db.query(`
+      SELECT 1
+      FROM solicitacoes_percentual
+      WHERE modelo_id = $1
+      AND agencia_id = $2
+      AND status = 'pendente'
+      LIMIT 1
+    `,[modelo_id, agencia_id]);
+
+    if(solicitacaoPendente.rowCount){
+      return res.status(400).json({
+        error:"Já existe uma solicitação pendente."
+      });
+    }
+
+    /* =========================================
+       🔒 SALVAR SOLICITAÇÃO
+    ========================================= */
+
+    await db.query(`
+      INSERT INTO solicitacoes_percentual
+      (
+        modelo_id,
+        agencia_id,
+        percentual_modelo_novo,
+        percentual_agencia_novo,
+        percentual_modelo_antigo,
+        percentual_agencia_antigo,
+        status,
+        created_at
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,'pendente',NOW())
+    `,[
+      modelo_id,
+      agencia_id,
+      modeloPercent,
+      percentual_agencia_novo,
+      modeloAtual.rows[0].percentual_modelo,
+      modeloAtual.rows[0].percentual_agencia
+    ]);
+
+    res.json({
+      success:true,
+      percentual_modelo_novo:modeloPercent,
+      percentual_agencia_novo:percentual_agencia_novo,
+      percentual_velvet:20
+    });
+
+  }catch(err){
+    console.error(err);
+    res.status(500).json({error:"Erro interno"});
+  }
+});
+
 // PÁGINA DE RELATÓRIOS
 
 router.get("/relatorios",
@@ -598,6 +787,7 @@ router.get("/access", authCliente, async (req, res) => {
 });
 
 router.get("/transacoes", authModelo, async (req, res) => {
+  console.log("🔥 ROTA NOVA EXECUTANDO");
   try {
     const modeloRes = await db.query(
       "SELECT id FROM modelos WHERE user_id = $1",
@@ -615,57 +805,53 @@ router.get("/transacoes", authModelo, async (req, res) => {
     const limit = 10;
     const offset = (page - 1) * limit;
 
-    // ===============================
-    // QUERY PRINCIPAL
-    // ===============================
+    // 🔥 NOVO + ANTIGO (mantendo status original)
     const sql = `
       SELECT *
       FROM (
-        -- 📦 CONTEÚDOS
+        -- 🔵 SISTEMA NOVO (padronizado como normal)
         SELECT
-          cp.id AS codigo,
-          'conteudo' AS tipo,
-          cp.criado_em AS created_at,
-          ROUND(cp.preco * 0.70, 2) AS valor,
-          cp.status AS status,
-          cp.message_id AS message_id
-        FROM conteudo_pacotes cp
-        WHERE cp.modelo_id = $1
-          AND cp.status = 'pago'
+          id AS codigo,
+          tipo,
+          created_at,
+          valor_modelo AS valor,
+          status,
+          NULL AS message_id
+        FROM transacoes_agency
+        WHERE modelo_id = $1
+          AND status = 'normal'
 
         UNION ALL
 
-        -- ⭐ ASSINATURAS
+        -- 🟡 SISTEMA ANTIGO (mantém normal e pago)
         SELECT
-          vs.id AS codigo,
-          'assinatura' AS tipo,
-          vs.created_at AS created_at,
-          ROUND(vs.valor_assinatura * 0.70, 2) AS valor,
-          'ativo' AS status,
+          id AS codigo,
+          tipo,
+          created_at,
+          valor_modelo AS valor,
+          status,
           NULL AS message_id
-        FROM vip_subscriptions vs
-        WHERE vs.modelo_id = $1
-          AND vs.ativo = true
-      ) transacoes
+        FROM transacoes
+        WHERE modelo_id = $1
+      ) t
       ORDER BY created_at DESC
       LIMIT $2 OFFSET $3
     `;
 
-    // ===============================
-    // TOTAL DE REGISTROS
-    // ===============================
     const countSql = `
-      SELECT COUNT(*) FROM (
-        SELECT 1
-        FROM conteudo_pacotes
-        WHERE modelo_id = $1 AND status = 'pago'
+      SELECT COUNT(*)
+      FROM (
+        SELECT id
+        FROM transacoes_agency
+        WHERE modelo_id = $1
+          AND status = 'normal'
 
         UNION ALL
 
-        SELECT 1
-        FROM vip_subscriptions
-        WHERE modelo_id = $1 AND ativo = true
-      ) total
+        SELECT id
+        FROM transacoes
+        WHERE modelo_id = $1
+      ) t
     `;
 
     const [dados, total] = await Promise.all([
@@ -684,7 +870,7 @@ router.get("/transacoes", authModelo, async (req, res) => {
     });
 
   } catch (err) {
-    console.error("❌ Erro /api/transacoes:", err);
+    console.error("❌ Erro /transacoes:", err);
     res.status(500).json({
       registros: [],
       paginaAtual: 1,
@@ -693,6 +879,7 @@ router.get("/transacoes", authModelo, async (req, res) => {
     });
   }
 });
+
 
 
 router.get("/modelo/pagamentos", authModelo, async (req, res) => {
@@ -739,7 +926,7 @@ router.get("/transacoes/origem",
       SELECT origem_cliente,
              COUNT(*) AS clientes,
              SUM(valor_bruto) AS total
-      FROM transacoes
+      FROM transacoes_agency
       WHERE status = 'normal'
       GROUP BY origem_cliente
     `);
@@ -791,7 +978,7 @@ router.get("/transacoes/diario",
         COALESCE(SUM(CASE WHEN tipo = 'assinatura' THEN valor_modelo END),0)
           AS ganhos_assinaturas
 
-      FROM transacoes
+      FROM transacoes_agency
       WHERE ${where}
       GROUP BY dia
       ORDER BY dia
@@ -804,44 +991,44 @@ router.get("/transacoes/diario",
 );
 
 
-router.get("/relatorios/chargebacks",
-  auth,
-  requireRole("admin"),
-  async (req, res) => {
+// router.get("/relatorios/chargebacks",
+//   auth,
+//   requireRole("admin"),
+//   async (req, res) => {
 
-    const { inicio, fim } = req.query;
+//     const { inicio, fim } = req.query;
 
-    let where = `status = 'chargeback'`;
-    let values = [];
+//     let where = `status = 'chargeback'`;
+//     let values = [];
 
-    if (inicio && fim) {
-      values.push(inicio, fim);
-      where += ` AND created_at BETWEEN $1 AND $2`;
-    }
+//     if (inicio && fim) {
+//       values.push(inicio, fim);
+//       where += ` AND created_at BETWEEN $1 AND $2`;
+//     }
 
-    const result = await db.query(
-      `
-      SELECT
-        codigo,
-        tipo,
-        cliente_id,
-        modelo_id,
-        valor_bruto,
-        taxa_gateway,
-        velvet_fee,
-        chargeback_result,
-        origem_cliente,
-        created_at
-      FROM transacoes
-      WHERE ${where}
-      ORDER BY created_at DESC
-      `,
-      values
-    );
+//     const result = await db.query(
+//       `
+//       SELECT
+//         codigo,
+//         tipo,
+//         cliente_id,
+//         modelo_id,
+//         valor_bruto,
+//         taxa_gateway,
+//         velvet_fee,
+//         chargeback_result,
+//         origem_cliente,
+//         created_at
+//       FROM transacoes_agency
+//       WHERE ${where}
+//       ORDER BY created_at DESC
+//       `,
+//       values
+//     );
 
-    res.json(result.rows);
-  }
-);
+//     res.json(result.rows);
+//   }
+// );
 
 
 router.get("/transacoes/resumo-mensal",
@@ -881,7 +1068,7 @@ router.get("/transacoes/resumo-mensal",
 
         COALESCE(SUM(CASE WHEN tipo = 'assinatura' THEN valor_bruto END),0) AS total_assinaturas,
         COALESCE(SUM(CASE WHEN tipo = 'midia' THEN valor_bruto END),0) AS total_midias
-      FROM transacoes
+      FROM transacoes_agency
       WHERE ${where}
       `,
       values
@@ -891,29 +1078,29 @@ router.get("/transacoes/resumo-mensal",
   }
 );
 
-router.get("/relatorios/alertas-chargeback",
-  auth,
-  requireRole("admin"),
-  async (req, res) => {
+// router.get("/relatorios/alertas-chargeback",
+//   auth,
+//   requireRole("admin"),
+//   async (req, res) => {
 
-    const { rows } = await db.query(
-      `
-      SELECT *
-      FROM chargeback_alertas
-      WHERE ativo = true
-      ORDER BY
-        CASE nivel
-          WHEN 'critico' THEN 1
-          WHEN 'alto' THEN 2
-          ELSE 3
-        END,
-        ultimo_chargeback DESC
-      `
-    );
+//     const { rows } = await db.query(
+//       `
+//       SELECT *
+//       FROM chargeback_alertas
+//       WHERE ativo = true
+//       ORDER BY
+//         CASE nivel
+//           WHEN 'critico' THEN 1
+//           WHEN 'alto' THEN 2
+//           ELSE 3
+//         END,
+//         ultimo_chargeback DESC
+//       `
+//     );
 
-    res.json(rows);
-  }
-);
+//     res.json(rows);
+//   }
+// );
 
 router.get("/transacoes/resumo-anual",
   auth,
@@ -951,7 +1138,7 @@ router.get("/transacoes/resumo-anual",
         COALESCE(SUM(CASE WHEN tipo='assinatura' THEN valor_bruto END),0) AS total_assinaturas,
         COALESCE(SUM(CASE WHEN tipo='midia' THEN valor_bruto END),0) AS total_midias
 
-      FROM transacoes
+      FROM transacoes_agency
       WHERE ${where}
       GROUP BY mes
       ORDER BY mes
@@ -963,25 +1150,25 @@ router.get("/transacoes/resumo-anual",
   }
 );
 
-router.get("/alertas/risco",
-  auth,
-  requireRole("admin"),
-  async (req, res) => {
+// router.get("/alertas/risco",
+//   auth,
+//   requireRole("admin"),
+//   async (req, res) => {
 
-    const { rows } = await db.query(`
-      SELECT
-        cliente_id,
-        score,
-        nivel,
-        atualizado_em
-      FROM cliente_risco
-      WHERE nivel IN ('alto','critico')
-      ORDER BY score DESC
-    `);
+//     const { rows } = await db.query(`
+//       SELECT
+//         cliente_id,
+//         score,
+//         nivel,
+//         atualizado_em
+//       FROM cliente_risco
+//       WHERE nivel IN ('alto','critico')
+//       ORDER BY score DESC
+//     `);
 
-    res.json(rows);
-  }
-);
+//     res.json(rows);
+//   }
+// );
 
 router.get("/modelo/relatorio", (req, res) => {
   res.sendFile(
@@ -1005,7 +1192,7 @@ router.get("/content/transacoes", (req, res) => {
   );
 });
 
-router.get("/api/cliente/transacoes", authCliente, async (req, res) => {
+router.get("/cliente/transacoes", authCliente, async (req, res) => {
   try {
     const clienteId = req.user.id;
 
@@ -1063,115 +1250,121 @@ router.get("/api/cliente/transacoes", authCliente, async (req, res) => {
 
 
 router.get("/modelo/financeiro", authModelo, async (req, res) => {
+
+  // 🔎 Buscar modelo_id real
   const modeloRes = await db.query(
-  "SELECT id FROM modelos WHERE user_id = $1",
-  [req.user.id]
-);
+    "SELECT id FROM modelos WHERE user_id = $1",
+    [req.user.id]
+  );
 
-if (!modeloRes.rows.length) {
-  return res.status(404).json({ error: "Modelo não encontrada" });
-}
+  if (!modeloRes.rows.length) {
+    return res.status(404).json({ error: "Modelo não encontrada" });
+  }
 
-const modelo_id = modeloRes.rows[0].id;
+  const modelo_id = modeloRes.rows[0].id;
 
+  // ===============================
+  // 📊 QUERY FINANCEIRA (NOVO + ANTIGO)
+  // ===============================
   const result = await db.query(`
     SELECT
-  -- 🔹 HOJE
-  COALESCE(SUM(CASE
-    WHEN tipo = 'conteudo'
-     AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')::date
-         = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')::date
-    THEN valor_modelo
-  END), 0) AS hoje_midias,
+      -- 🔹 HOJE
+      COALESCE(SUM(CASE
+        WHEN tipo IN ('midia','conteudo')
+         AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')::date
+             = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+        THEN valor_modelo
+      END), 0) AS hoje_midias,
 
-  COALESCE(SUM(CASE
-    WHEN tipo = 'assinatura'
-     AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')::date
-         = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')::date
-    THEN valor_modelo
-  END), 0) AS hoje_assinaturas,
-  
-  -- 🔹 MÊS ATUAL
-  COALESCE(SUM(CASE
-    WHEN tipo = 'conteudo'
-     AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
-         = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
-    THEN valor_modelo
-  END), 0) AS mes_midias,
+      COALESCE(SUM(CASE
+        WHEN tipo = 'assinatura'
+         AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')::date
+             = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+        THEN valor_modelo
+      END), 0) AS hoje_assinaturas,
+      
+      -- 🔹 MÊS ATUAL
+      COALESCE(SUM(CASE
+        WHEN tipo IN ('midia','conteudo')
+         AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
+             = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+        THEN valor_modelo
+      END), 0) AS mes_midias,
 
-  COALESCE(SUM(CASE
-    WHEN tipo = 'assinatura'
-     AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
-         = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
-    THEN valor_modelo
-  END), 0) AS mes_assinaturas,
+      COALESCE(SUM(CASE
+        WHEN tipo = 'assinatura'
+         AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
+             = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+        THEN valor_modelo
+      END), 0) AS mes_assinaturas,
 
-  -- 🔹 ACUMULADO 2026
-  COALESCE(SUM(CASE
-    WHEN EXTRACT(YEAR FROM created_at AT TIME ZONE 'America/Sao_Paulo') = 2026
-    THEN valor_modelo
-  END), 0) AS acumulado_2026
+      -- 🔹 ACUMULADO 2026
+      COALESCE(SUM(CASE
+        WHEN EXTRACT(YEAR FROM created_at AT TIME ZONE 'America/Sao_Paulo') = 2026
+        THEN valor_modelo
+      END), 0) AS acumulado_2026
 
-FROM (
-  -- 📦 CONTEÚDOS
-  SELECT
-    cp.modelo_id,
-    cp.criado_em AS created_at,
-    'conteudo' AS tipo,
-    ROUND(cp.preco * 0.70, 2) AS valor_modelo
-  FROM conteudo_pacotes cp
-  WHERE cp.status = 'pago'
-    AND cp.modelo_id = $1
+    FROM (
 
-  UNION ALL
+      -- 🔵 SISTEMA NOVO
+      SELECT
+        tipo,
+        created_at,
+        valor_modelo
+      FROM transacoes_agency
+      WHERE modelo_id = $1
+        AND status = 'normal'
 
-  -- ⭐ ASSINATURAS
-  SELECT
-    vs.modelo_id,
-    vs.created_at,
-    'assinatura' AS tipo,
-    ROUND(vs.valor_assinatura * 0.70, 2) AS valor_modelo
-  FROM vip_subscriptions vs
-  WHERE vs.modelo_id = $1
-) t;
+      UNION ALL
+
+      -- 🟡 SISTEMA ANTIGO (VIEW)
+      SELECT
+        tipo,
+        created_at,
+        valor_modelo
+      FROM transacoes
+      WHERE modelo_id = $1
+
+    ) t
   `, [modelo_id]);
 
-const assinantes = await db.query(
-  `
-SELECT
-  COUNT(*) FILTER (WHERE ativo = true) AS total,
-  COUNT(*) FILTER (
-    WHERE ativo = true
-    AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
-        = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
-  ) AS hoje
-FROM vip_subscriptions
-WHERE modelo_id = $1;
-  `,
- [modelo_id]
-);
+  // ===============================
+  // 👥 ASSINANTES (continua igual)
+  // ===============================
+  const assinantes = await db.query(`
+    SELECT
+      COUNT(*) FILTER (WHERE ativo = true) AS total,
+      COUNT(*) FILTER (
+        WHERE ativo = true
+        AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
+            = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+      ) AS hoje
+    FROM vip_subscriptions
+    WHERE modelo_id = $1;
+  `, [modelo_id]);
 
   const r = result.rows[0];
   const a = assinantes.rows[0];
 
   res.json({
-  hoje: {
-    midias: r.hoje_midias,
-    assinaturas: r.hoje_assinaturas
-  },
-  mes: {
-    midias: r.mes_midias,
-    assinaturas: r.mes_assinaturas
-  },
-  total: {
-    acumulado_2026: r.acumulado_2026
-  },
-  assinantes: {
-    total: Number(a.total || 0),
-    hoje: Number(a.hoje || 0)
-  }
+    hoje: {
+      midias: Number(r.hoje_midias || 0),
+      assinaturas: Number(r.hoje_assinaturas || 0)
+    },
+    mes: {
+      midias: Number(r.mes_midias || 0),
+      assinaturas: Number(r.mes_assinaturas || 0)
+    },
+    total: {
+      acumulado_2026: Number(r.acumulado_2026 || 0)
+    },
+    assinantes: {
+      total: Number(a.total || 0),
+      hoje: Number(a.hoje || 0)
+    }
+  });
 });
-});
+
 
 // ===============================
 // 📣 ALLMESSAGE - LISTAR MODELOS
@@ -1255,259 +1448,6 @@ router.get("/allmessage/conteudos/:modelo_id",
   }
 );
 
-router.get("/relatorios/kpis-mensais",
-  auth, // ⬅️ SEM requireRole restritivo
-  async (req, res) => {
-    try {
-      const { mes, modelo_id } = req.query;
-
-      if (!mes || !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
-        return res.status(400).json({ error: "Mês inválido" });
-      }
-
-      const inicio = `${mes}-01`;
-
-      let values = [inicio];
-      let whereModelo = "";
-
-      if (modelo_id) {
-        values.push(modelo_id);
-        whereModelo = `AND modelo_id = $${values.length}`;
-      }
-
-      const { rows } = await db.query(
-        `
-        SELECT
-          COALESCE(SUM(valor_modelo),0)                        AS ganhos_totais,
-          COALESCE(SUM(CASE WHEN tipo='assinatura'
-            THEN valor_modelo END),0)                          AS ganhos_assinaturas,
-          COUNT(DISTINCT DATE(created_at))                     AS dias_com_venda,
-          COUNT(DISTINCT cliente_id)
-            FILTER (WHERE tipo='assinatura')                   AS assinantes_mes,
-          COUNT(*) FILTER (WHERE status='chargeback')          AS chargebacks
-        FROM transacoes
-        WHERE created_at >= date_trunc('month', $1::date)
-          AND created_at <  date_trunc('month', $1::date) + interval '1 month'
-          ${whereModelo}
-        `,
-        values
-      );
-
-      res.json(rows[0]);
-    } catch (err) {
-      console.error("Erro KPIs mensais:", err);
-      res.status(500).json({});
-    }
-  }
-);
-
-
-////////////////////////////////////////// ADM ////////////////////////////////////////////////////
-router.get(
-  '/admin/relatorios/geral',
-  auth,
-  requireRole("admin"),
-  async (req, res) => {
-    try {
-      const [
-        midiasDia,
-        assinaturasDia,
-        midiasMes,
-        assinaturasMes,
-        midiasAno,
-        assinaturasAno
-      ] = await Promise.all([
-
-        // 📦 MÍDIAS — HOJE
-        db.query(`
-          SELECT COALESCE(SUM(valor_total), 0) AS total
-          FROM conteudo_pacotes
-          WHERE DATE(criado_em) = CURRENT_DATE
-        `),
-
-        // ⭐ ASSINATURAS — HOJE
-        db.query(`
-          SELECT COALESCE(SUM(valor_total), 0) AS total
-          FROM vip_subscriptions
-          WHERE DATE(created_at) = CURRENT_DATE
-        `),
-
-        // 📦 MÍDIAS — MÊS ATUAL
-        db.query(`
-          SELECT COALESCE(SUM(valor_total), 0) AS total
-          FROM conteudo_pacotes
-          WHERE DATE_TRUNC('month', criado_em)
-                = DATE_TRUNC('month', NOW())
-        `),
-
-        // ⭐ ASSINATURAS — MÊS ATUAL
-        db.query(`
-          SELECT COALESCE(SUM(valor_total), 0) AS total
-          FROM vip_subscriptions
-          WHERE DATE_TRUNC('month', created_at)
-                = DATE_TRUNC('month', NOW())
-        `),
-
-        // 📦 MÍDIAS — ANO ATUAL
-        db.query(`
-          SELECT COALESCE(SUM(valor_total), 0) AS total
-          FROM conteudo_pacotes
-          WHERE EXTRACT(YEAR FROM criado_em)
-                = EXTRACT(YEAR FROM NOW())
-        `),
-
-        // ⭐ ASSINATURAS — ANO ATUAL
-        db.query(`
-          SELECT COALESCE(SUM(valor_total), 0) AS total
-          FROM vip_subscriptions
-          WHERE EXTRACT(YEAR FROM created_at)
-                = EXTRACT(YEAR FROM NOW())
-        `)
-      ]);
-
-      res.json({
-        dia: {
-          midias: Number(midiasDia.rows[0].total),
-          assinaturas: Number(assinaturasDia.rows[0].total)
-        },
-        mes: {
-          midias: Number(midiasMes.rows[0].total),
-          assinaturas: Number(assinaturasMes.rows[0].total)
-        },
-        ano: {
-          midias: Number(midiasAno.rows[0].total),
-          assinaturas: Number(assinaturasAno.rows[0].total)
-        }
-      });
-
-    } catch (err) {
-      console.error("❌ Erro relatório geral:", err);
-      res.status(500).json({ error: "Erro ao gerar relatório" });
-    }
-  }
-);
-
-
-// 📊 RELATÓRIO DIÁRIO (GRÁFICO 30 DIAS) - ADMIN ONLY
-router.get(
-  '/admin/relatorios/diario',
-  auth,
-  requireRole("admin"),
-  async (req, res) => {
-    try {
-      const { mes } = req.query;
-
-      // 🔒 valida mês (opcional)
-      if (mes && !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
-        return res.status(400).json({
-          error: "Formato de mês inválido (YYYY-MM)"
-        });
-      }
-
-      // 📅 intervalo correto do mês (Postgres)
-      const inicio = mes ? `${mes}-01` : null;
-      const fim = mes
-        ? `(${mes}-01)::date + INTERVAL '1 month'`
-        : null;
-
-      const query = `
-        SELECT
-          dia,
-          SUM(total) AS total
-        FROM (
-          -- 📦 MÍDIAS
-          SELECT
-            DATE(criado_em) AS dia,
-            valor_total AS total
-          FROM conteudo_pacotes
-          WHERE status = 'pago'
-            ${mes ? 'AND criado_em >= $1 AND criado_em < ($1::date + INTERVAL \'1 month\')' : ''}
-
-          UNION ALL
-
-          -- ⭐ ASSINATURAS
-          SELECT
-            DATE(created_at) AS dia,
-            valor_total AS total
-          FROM vip_subscriptions
-          WHERE ativo = true
-            ${mes ? 'AND created_at >= $1 AND created_at < ($1::date + INTERVAL \'1 month\')' : ''}
-        ) t
-        GROUP BY dia
-        ORDER BY dia ASC
-        LIMIT 31
-      `;
-
-      const params = mes ? [inicio] : [];
-
-      const result = await db.query(query, params);
-
-      // 🔁 formato exato que o JS espera
-      const resposta = result.rows.map(r => ({
-        dia: String(r.dia.getDate()).padStart(2, '0'),
-        total: Number(r.total)
-      }));
-
-      res.json(resposta);
-
-    } catch (err) {
-      console.error("❌ Erro relatório diário:", err);
-      res.status(500).json([]);
-    }
-  }
-);
-
-router.get(
-  '/admin/relatorios/modelo',
-  auth,
-  requireRole("admin"),
-  async (req, res) => {
-    try {
-      const { modelo_id } = req.query;
-
-      if (!modelo_id) {
-        return res.status(400).json({ error: "modelo_id obrigatório" });
-      }
-
-      const resultados = await Promise.all([
-        // 💰 GANHOS — REGRA FINAL (55% MODELO / 45% VELVET)
-        db.query(`
-  SELECT
-    COALESCE(SUM(valor_total * 0.55), 0) AS ganhos_modelo,
-    COALESCE(SUM(valor_total * 0.45), 0) AS ganhos_velvet
-  FROM (
-    -- 📦 MÍDIAS
-    SELECT cp.valor_total
-    FROM conteudo_pacotes cp
-    WHERE cp.modelo_id = $1
-      AND cp.status = 'pago'
-
-    UNION ALL
-
-    -- ⭐ ASSINATURAS
-    SELECT vs.valor_total
-    FROM vip_subscriptions vs
-    WHERE vs.modelo_id = $1
-      AND vs.ativo = true
-  ) t
-`, [modelo_id]),
-      ]);
-
-      const ganhos = resultados[0];
-      const assinantes = resultados[1];
-
-      res.json({
-        ganhos: ganhos.rows[0],
-        assinantes: assinantes.rows[0]
-      });
-
-    } catch (err) {
-      console.error("❌ Erro relatório por modelo:", err);
-      res.status(500).json({ error: "Erro relatório modelo" });
-    }
-  }
-);
-
 router.get("/modelo/dados-bancarios", authModelo, async (req, res) => {
   try {
     const { rows } = await db.query(
@@ -1546,8 +1486,291 @@ router.get("/modelo/conteudos", auth, authModelo, async (req, res) => {
   res.json(result.rows);
 });
 
+router.get("/agencia/dashboard", authAgencia, async (req, res) => {
+
+  const agencia_id = req.agencia.id;
+
+  const result = await db.query(`
+  SELECT
+
+    -- 🎥 MIDIAS HOJE
+    COALESCE(SUM(CASE
+      WHEN ta.tipo = 'conteudo'
+      AND DATE(ta.created_at AT TIME ZONE 'America/Sao_Paulo')
+          = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+      THEN ta.agency_fee
+    END),0) AS midias_hoje,
+
+    -- 💎 ASSINATURAS HOJE
+    COALESCE(SUM(CASE
+      WHEN ta.tipo = 'assinatura'
+      AND DATE(ta.created_at AT TIME ZONE 'America/Sao_Paulo')
+          = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+      THEN ta.agency_fee
+    END),0) AS assinaturas_hoje,
+
+    -- 🎥 MIDIAS MÊS
+    COALESCE(SUM(CASE
+      WHEN ta.tipo = 'conteudo'
+      AND DATE_TRUNC('month', ta.created_at AT TIME ZONE 'America/Sao_Paulo')
+          = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+      THEN ta.agency_fee
+    END),0) AS midias_mes,
+
+    -- 💎 ASSINATURAS MÊS
+    COALESCE(SUM(CASE
+      WHEN ta.tipo = 'assinatura'
+      AND DATE_TRUNC('month', ta.created_at AT TIME ZONE 'America/Sao_Paulo')
+          = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+      THEN ta.agency_fee
+    END),0) AS assinaturas_mes,
+
+    -- 💰 TOTAL HOJE
+    COALESCE(SUM(CASE
+      WHEN DATE(ta.created_at AT TIME ZONE 'America/Sao_Paulo')
+          = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+      THEN ta.agency_fee
+    END),0) AS total_hoje,
+
+    -- 💰 TOTAL MES
+    COALESCE(SUM(CASE
+      WHEN DATE_TRUNC('month', ta.created_at AT TIME ZONE 'America/Sao_Paulo')
+          = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+      THEN ta.agency_fee
+    END),0) AS total_mes,
+
+    -- 💰 TOTAL ANO
+    COALESCE(SUM(CASE
+      WHEN DATE_TRUNC('year', ta.created_at AT TIME ZONE 'America/Sao_Paulo')
+          = DATE_TRUNC('year', NOW() AT TIME ZONE 'America/Sao_Paulo')
+      THEN ta.agency_fee
+    END),0) AS total_ano
+
+  FROM transacoes_agency ta
+  JOIN modelos m ON m.id = ta.modelo_id
+  WHERE m.agencia_id = $1
+    AND ta.status = 'normal'
+`, [agencia_id]);
+
+  res.json(result.rows[0]);
+
+});
+
+router.get("/agencia/modelos", authAgencia, async (req, res) => {
+  try {
+    const agencia_id = req.agencia.id;
+
+    const result = await db.query(
+      "SELECT id, nome FROM modelos WHERE agencia_id = $1 ORDER BY nome",
+      [agencia_id]
+    );
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erro ao buscar modelos" });
+  }
+});
+
+router.get("/agencia/modelo/:id", authAgencia, async (req, res) => {
+  try {
+    const agencia_id = req.agencia.id;
+    const modelo_id = Number(req.params.id);
+
+    if (!Number.isInteger(modelo_id) || modelo_id <= 0) {
+      return res.status(400).json({ error: "Modelo inválida" });
+    }
+
+    const result = await db.query(`
+      SELECT
+        m.id,
+        m.nome,
+
+        -- 🔹 DIA
+        COALESCE(SUM(CASE
+          WHEN DATE(ta.created_at AT TIME ZONE 'America/Sao_Paulo')
+               = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+          THEN ta.valor_modelo
+        END),0) AS modelo_dia,
+
+        COALESCE(SUM(CASE
+          WHEN DATE(ta.created_at AT TIME ZONE 'America/Sao_Paulo')
+               = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+          THEN ta.agency_fee
+        END),0) AS agencia_dia,
+
+        COALESCE(SUM(CASE
+          WHEN DATE(ta.created_at AT TIME ZONE 'America/Sao_Paulo')
+               = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+          THEN ta.velvet_fee
+        END),0) AS velvet_dia,
+
+        -- 🔹 MÊS
+        COALESCE(SUM(CASE
+          WHEN DATE_TRUNC('month', ta.created_at AT TIME ZONE 'America/Sao_Paulo')
+               = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+          THEN ta.valor_modelo
+        END),0) AS modelo_mes,
+
+        COALESCE(SUM(CASE
+          WHEN DATE_TRUNC('month', ta.created_at AT TIME ZONE 'America/Sao_Paulo')
+               = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+          THEN ta.agency_fee
+        END),0) AS agencia_mes,
+
+        COALESCE(SUM(CASE
+          WHEN DATE_TRUNC('month', ta.created_at AT TIME ZONE 'America/Sao_Paulo')
+               = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+          THEN ta.velvet_fee
+        END),0) AS velvet_mes,
+
+        -- 🔹 ANO
+        COALESCE(SUM(CASE
+          WHEN DATE_TRUNC('year', ta.created_at AT TIME ZONE 'America/Sao_Paulo')
+               = DATE_TRUNC('year', NOW() AT TIME ZONE 'America/Sao_Paulo')
+          THEN ta.valor_modelo
+        END),0) AS modelo_ano,
+
+        COALESCE(SUM(CASE
+          WHEN DATE_TRUNC('year', ta.created_at AT TIME ZONE 'America/Sao_Paulo')
+               = DATE_TRUNC('year', NOW() AT TIME ZONE 'America/Sao_Paulo')
+          THEN ta.agency_fee
+        END),0) AS agencia_ano,
+
+        COALESCE(SUM(CASE
+          WHEN DATE_TRUNC('year', ta.created_at AT TIME ZONE 'America/Sao_Paulo')
+               = DATE_TRUNC('year', NOW() AT TIME ZONE 'America/Sao_Paulo')
+          THEN ta.velvet_fee
+        END),0) AS velvet_ano
+
+      FROM modelos m
+      LEFT JOIN transacoes_agency ta
+        ON ta.modelo_id = m.id
+        AND ta.status = 'normal'
+
+      WHERE m.agencia_id = $1
+        AND m.id = $2
+
+      GROUP BY m.id, m.nome
+    `, [agencia_id, modelo_id]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Modelo não encontrada" });
+    }
+
+    res.json(result.rows[0]);
+
+  } catch (err) {
+    console.error("❌ ERRO /agencia/modelo/:id:", err);
+    res.status(500).json({ error: "Erro ao buscar dados da modelo" });
+  }
+});
 
 
+router.get("/agencia/pagamentos", authAgencia, async (req, res) => {
+  try {
+    const agencia_id = req.agencia.id;
+
+    const result = await db.query(`
+      SELECT
+        p.id,
+        p.referencia_mes,
+        p.valor_midias,
+        p.valor_assinaturas,
+        p.valor_total,
+        p.data_pagamento,
+        m.nome AS modelo_nome
+      FROM pagamentos_agencia p
+      JOIN modelos m ON m.id = p.modelo_id
+      WHERE p.agencia_id = $1
+      ORDER BY p.data_pagamento DESC
+    `, [agencia_id]);
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erro ao buscar pagamentos" });
+  }
+});
+
+//AGENCIAS
+router.get("/api/agencia/me", authAgencia, async (req,res)=>{
+  const agencia_id = req.agencia.id;
+
+  const result = await db.query(
+    "SELECT id, nome FROM agencias WHERE id = $1",
+    [agencia_id]
+  );
+
+  if(!result.rowCount){
+    return res.sendStatus(404);
+  }
+
+  res.json(result.rows[0]);
+});
+
+
+//PUT ///
+router.put("/agencia/modelo/:id/percentual", authAgencia, async (req,res)=>{
+  try{
+
+    const agencia_id = req.agencia.id;
+    const modelo_id = Number(req.params.id);
+    const { percentual_modelo } = req.body;
+
+    const modeloPercent = Number(percentual_modelo);
+
+    /* =========================================
+       🔒 VALIDAÇÃO LIMITES MODELO
+    ========================================= */
+
+    if(modeloPercent < 50 || modeloPercent > 80){
+      return res.status(400).json({
+        error:"Modelo deve ficar entre 50% e 80%."
+      });
+    }
+
+    /* =========================================
+       🔒 CÁLCULO AUTOMÁTICO AGÊNCIA
+       Velvet é FIXO 20%
+    ========================================= */
+
+    const percentual_agencia = 80 - modeloPercent;
+
+    /* =========================================
+       🔒 ATUALIZAR SOMENTE MODELO + AGÊNCIA
+       Velvet não é alterado
+    ========================================= */
+
+    const result = await db.query(`
+      UPDATE modelos
+      SET percentual_modelo = $1,
+          percentual_agencia = $2
+      WHERE id = $3
+      AND agencia_id = $4
+      RETURNING *
+    `,[modeloPercent, percentual_agencia, modelo_id, agencia_id]);
+
+    if(!result.rowCount){
+      return res.status(403).json({
+        error:"Modelo não pertence à agência"
+      });
+    }
+
+    res.json({
+      success:true,
+      percentual_modelo:modeloPercent,
+      percentual_agencia:percentual_agencia,
+      percentual_velvet:20
+    });
+
+  }catch(err){
+    console.error(err);
+    res.status(500).json({error:"Erro interno"});
+  }
+});
 
 
 module.exports = router;

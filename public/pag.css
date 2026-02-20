@@ -21,6 +21,7 @@
 .velvet-box {
   position: relative;
   background: #fff;
+  text-align: center;
 
   width: 92%;
   max-width: 420px;
@@ -110,6 +111,7 @@
   color: #fff;
   font-size: 16px;
   cursor: pointer;
+  margin-top: 20px;
 }
 
 .btn-secundario {
@@ -261,6 +263,23 @@
   margin: 8px auto;
 }
 
+.btn-copiar {
+  background: #fff;
+  color: #7B2CFF;
+  border: 1px solid #7B2CFF;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+  margin-top: 20px;
+}
+
+.btn-copiar:hover {
+  background: #7B2CFF;
+  color: #fff;
+}
+
 .btn-principal {
   font-size: 14px;
   padding: 10px;
@@ -315,13 +334,13 @@
 
 .vip-valores .total {
   margin-top: 8px;
-  font-size: 16px;            /* 🔥 total maior */
+  font-size: 20px;          
   font-weight: 600;
-  color: #7B2CFF;             /* roxo Velvet */
+  color: #7B2CFF;           
 }
 
 .vip-valores .total strong {
-  font-size: 17px;
+  font-size: 20px;
 }
 
 .vip-info {

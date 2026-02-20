@@ -134,11 +134,9 @@
     ================================ -->
     <div class="vip-detalhes hidden">
       <ul class="vip-beneficios">
-  <li> Conversar com a criadora</li>
-  <li> Acessar conteúdos exclusivos</li>
-  <li> Benefícios e promoções especiais</li>
-</ul>
-
+  <span>- Conversar com a criadora</span>
+  <span>- Acessar conteúdos exclusivos </span>
+  <span>- Benefícios e promoções especiais</span>
       <div class="vip-valores">
         <div class="linha">
           <span>Valor da assinatura:</span>
@@ -162,11 +160,10 @@
       </div>
 
       <small class="vip-info">
-        -Renovável com validade de <strong>1 mês</strong>.
-        Cancele quando quiser.<br>
+        - Renovável com validade de <strong>1 mês,</strong> cancele quando quiser.<br>
         - Ao efetuar o pagamento, você confirma que está de acordo com os
         <strong>Termos de Uso</strong> e <strong>Condições da Plataforma</strong>.<br>
-        - Pagamentos realizados não são reembolsáveis.<br>
+        - Pagamentos realizados não são reembolsados, exceto em casos erros na plataforma<br>
       </small>
     </div>
 
@@ -214,24 +211,48 @@
     </div>
 
     <!-- ===============================
+     CPF + TERMOS (OBRIGATÓRIO)
+=============================== -->
+<div class="dados-pagamento-box" style="margin:15px 0;">
+
+  <label style="display:block;margin-bottom:5px;">
+    <strong>CPF</strong>
+  </label>
+
+  <input
+    type="text"
+    id="cpfPagamento"
+    placeholder="000.000.000-00"
+    maxlength="14"
+    style="width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;"
+  />
+
+  <label style="display:flex;gap:8px;margin-top:10px;font-size:14px;">
+    <input type="checkbox" id="aceiteTermosPagamento">
+    Li e aceito os Termos e Condições
+  </label>
+
+</div>
+
+    <!-- ===============================
          CONTEÚDO DE PAGAMENTO
     ================================ -->
     <div class="velvet-content">
       <!-- PIX -->
       <div id="conteudoPix" class="metodo">
         <div id="pixLoading" class="pix-loading hidden"><strong>⏳ Aguarde…</strong></div>
-        <div id="pixAguardando" class="pix-aguardando hidden">
-         <strong>Aguardando pagamento Pix</strong>
+<button id="btnGerarPix" class="btn-principal">
+  Gerar Código Pix</button>
         </div>
+
         <div id="pixSucesso" class="pix-sucesso hidden">
         <strong>✅ Pagamento confirmado!</strong>
         </div>
 
-        <img id="pixQr" class="pix-qr hidden">
-        <input id="pixCodigo" readonly class="hidden">
-        <button class="btn-secundario hidden" onclick="copiarPix()">
-          Copiar código Pix
-        </button>
+       <img id="pixQr" class="hidden">
+       <input type="text" id="pixCodigo" readonly>
+<button id="btnCopiarPix" class="btn-copiar" onclick="copiarPix()">
+  Copiar código </button>
       </div>
 
       <!-- CARTÃO -->
@@ -251,6 +272,8 @@
 
   </div>
 </div>
+
+
 </main>
 
 <!-- container do modal auth -->
