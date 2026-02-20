@@ -4778,7 +4778,6 @@ const total = Number((valorBase + taxaTransacao + taxaPlataforma).toFixed(2));
   aceite_ip: ip,
   fingerprint,
 
-  // 🔥 ADICIONAR ISSO:
   valor_assinatura: String(valorBase),
   taxa_transacao: String(taxaTransacao),
   taxa_plataforma: String(taxaPlataforma),
@@ -4843,18 +4842,11 @@ app.post("/api/pagamento/midia/pix", auth, async (req, res) => {
   const client = await db.connect();
 
   try {
-const { conteudo_id, aceitou_termos, fingerprint } = req.body;
+const { conteudo_id, fingerprint } = req.body;
     const userId = req.user.id;
 
     if (!conteudo_id || !Number.isInteger(Number(conteudo_id))) {
       return res.status(400).json({ error: "conteudo_id inválido" });
-    }
-
-
-    if (!aceitou_termos) {
-      return res.status(400).json({
-        error: "É necessário aceitar os termos."
-      });
     }
 
     const conteudoId = Number(conteudo_id);
@@ -4893,7 +4885,7 @@ const { conteudo_id, aceitou_termos, fingerprint } = req.body;
       return res.status(404).json({ error: "Cliente não encontrado" });
     }
 
-    const { id: cliente_id, bloqueado, cpf } = clienteRes.rows[0];
+    const { id: cliente_id, bloqueado} = clienteRes.rows[0];
 
     if (bloqueado) {
       await client.query("ROLLBACK");
@@ -4949,30 +4941,28 @@ const jaComprado = await client.query(`
     const pagarmeResponse = await axios.post(
       "https://api.pagar.me/core/v5/orders",
       {
-        items: [
-          {
-            amount,
-            description: "Compra de conteúdo Velvet",
-            quantity: 1
-          }
-        ],
-customer: {
+        items: [{
+          amount,
+          description: descricao,
+          quantity: 1
+        }],
+        customer: {
   name: req.user.nome || "Cliente Velvet",
   email: req.user.email,
+  document: cpf,
   type: "individual",
-  document: {
-    type: "cpf",
-    number: cpfLimpo
-  }
+  phones: {
+    mobile_phone: {
+      country_code: "55",
+      area_code: "11",
+      number: "999999999"
 },
-        payments: [
-          {
-            payment_method: "pix",
-            pix: {
-              expires_in: 3600
-            }
-          }
-        ],
+  }},
+        payments: [{
+          payment_method: "pix",
+          pix: { expires_in: 3600 }
+        }],
+        
         metadata: {
           tipo: "conteudo_pix",
           message_id: String(conteudoId),
