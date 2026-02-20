@@ -4960,12 +4960,15 @@ const jaComprado = await client.query(`
             quantity: 1
           }
         ],
-        customer: {
-          name: req.user.nome || "Cliente Velvet",
-          email: req.user.email,
-          document: cpf || "00000000000",
-          type: "individual"
-        },
+      customer: {
+  name: req.user.nome || "Cliente Velvet",
+  email: req.user.email,
+  type: "individual",
+  document: {
+    type: "cpf",
+    number: cpf
+  }
+},
         payments: [
           {
             payment_method: "pix",
