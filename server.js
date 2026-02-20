@@ -4906,22 +4906,18 @@ const { conteudo_id, cpf, aceitou_termos, fingerprint } = req.body;
       });
     }
 
-    /* =====================================================
-       🔎 BUSCAR CONTEÚDO
-    ===================================================== */
-const messageRes = await client.query(`
+   const conteudoRes = await client.query(`
   SELECT preco, modelo_id
-  FROM messages
+  FROM conteudos
   WHERE id = $1
-    AND tipo = 'conteudo'
-`, [conteudoId]);
+`, [req.body.conteudo_id]);
 
-    if (!conteudoRes.rowCount) {
-      await client.query("ROLLBACK");
-      return res.status(404).json({ error: "Conteúdo não encontrado" });
-    }
+if (!conteudoRes.rowCount) {
+  await client.query("ROLLBACK");
+  return res.status(404).json({ error: "Conteúdo não encontrado" });
+}
 
-    const { preco, modelo_id } = conteudoRes.rows[0];
+const { preco, modelo_id } = conteudoRes.rows[0];
 
     /* =====================================================
        🚫 EVITAR COMPRA DUPLICADA
