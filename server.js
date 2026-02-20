@@ -4909,12 +4909,12 @@ const { conteudo_id, cpf, aceitou_termos, fingerprint } = req.body;
     /* =====================================================
        🔎 BUSCAR CONTEÚDO
     ===================================================== */
-    const conteudoRes = await client.query(`
-      SELECT preco, modelo_id
-      FROM conteudos
-      WHERE id = $1
-        AND tipo_conteudo = 'venda'
-    `,[conteudoId]);
+const messageRes = await client.query(`
+  SELECT preco, modelo_id
+  FROM messages
+  WHERE id = $1
+    AND tipo = 'conteudo'
+`, [conteudoId]);
 
     if (!conteudoRes.rowCount) {
       await client.query("ROLLBACK");
@@ -4926,7 +4926,7 @@ const { conteudo_id, cpf, aceitou_termos, fingerprint } = req.body;
     /* =====================================================
        🚫 EVITAR COMPRA DUPLICADA
     ===================================================== */
-    const jaComprado = await client.query(`
+const jaComprado = await client.query(`
       SELECT 1
       FROM conteudo_pacotes
       WHERE message_id = $1
