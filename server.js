@@ -4885,7 +4885,7 @@ const { conteudo_id, fingerprint } = req.body;
       return res.status(404).json({ error: "Cliente não encontrado" });
     }
 
-    const { id: cliente_id, bloqueado} = clienteRes.rows[0];
+    const { id: cliente_id, bloqueado,cpf} = clienteRes.rows[0];
 
     if (bloqueado) {
       await client.query("ROLLBACK");
@@ -4946,18 +4946,22 @@ const jaComprado = await client.query(`
           description: "Compra Velvet",
           quantity: 1
         }],
-        customer: {
+customer: {
   name: req.user.nome || "Cliente Velvet",
   email: req.user.email,
-  document: cpf,
   type: "individual",
+  document: {
+    type: "cpf",
+    number: cpfLimpo
+  },
   phones: {
     mobile_phone: {
       country_code: "55",
       area_code: "11",
       number: "999999999"
+    }
+  }
 },
-  }},
         payments: [{
           payment_method: "pix",
           pix: { expires_in: 3600 }
