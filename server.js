@@ -4943,7 +4943,7 @@ const jaComprado = await client.query(`
       {
         items: [{
           amount,
-          description: descricao,
+          description: "Compra Velvet",
           quantity: 1
         }],
         customer: {
@@ -4962,7 +4962,7 @@ const jaComprado = await client.query(`
           payment_method: "pix",
           pix: { expires_in: 3600 }
         }],
-        
+
         metadata: {
           tipo: "conteudo_pix",
           message_id: String(conteudoId),
