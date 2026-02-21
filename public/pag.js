@@ -206,11 +206,6 @@ function preencherResumoMidia({ valor, descricao }) {
 }
 
 function mostrarMetodo(tipo) {
-  const pix = document.getElementById("conteudoPix");
-  const cartao = document.getElementById("conteudoCartao");
-
-  if (!pix || !cartao) return;
-
   if (tipo === "cartao") {
     // Esconde estado do Pix
     resetarEstadoPix();
@@ -220,9 +215,6 @@ function mostrarMetodo(tipo) {
     cartao.classList.remove("hidden");
 
     document.getElementById("formCartao")?.classList.remove("hidden");
-
-    // 🔥 Aqui inicia Stripe ao clicar na aba
-    iniciarCartaoVip();
   }
 
   if (tipo === "pix") {
@@ -276,50 +268,6 @@ function resetarEstadoCartao() {
     cardEl.innerHTML = "";
   }
 }
-
-async function iniciarCartaoVip() {
-  try {
-    initStripe();
-
-    const token = localStorage.getItem("token");
-    if (!token) {
-      alert("Sessão expirada");
-      return;
-    }
-
-    document.getElementById("cartaoLoading")?.classList.remove("hidden");
-
-    const res = await fetch("/api/pagamento/vip/cartao", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + token
-      }
-    });
-
-    if (!res.ok) {
-      throw new Error("Erro ao iniciar cartão");
-    }
-
-    const data = await res.json();
-
-    elements = stripe.elements({ clientSecret: data.clientSecret });
-
-    const cardEl = document.getElementById("card-element");
-    cardEl.innerHTML = "";
-
-    cardElement = elements.create("payment");
-    cardElement.mount("#card-element");
-
-    document.getElementById("cartaoLoading")?.classList.add("hidden");
-    document.getElementById("formCartao")?.classList.remove("hidden");
-
-  } catch (err) {
-    console.error(err);
-    alert("Erro ao iniciar cartão");
-  }
-}
-
 
 window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id }) {
   try {
