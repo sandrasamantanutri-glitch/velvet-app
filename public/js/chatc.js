@@ -612,8 +612,7 @@ async function gerarPix() {
         Authorization: "Bearer " + localStorage.getItem("token")
       },
       body: JSON.stringify({
-        conteudo_id: pagamentoAtual.message_id,
-        fingerprint
+        conteudo_id,
       })
     });
 
