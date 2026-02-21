@@ -193,13 +193,11 @@ function mostrarMetodo(tipo) {
 
   if (tipo === "cartao") {
     resetarEstadoPix();
+
     pix.classList.add("hidden");
     cartao.classList.remove("hidden");
 
-    document.getElementById("formCartao")?.classList.remove("hidden");
-
-    // 🔥 monta Stripe vazio aqui
-    montarStripeVazio();
+    iniciarCartaoVip(); // 🔥 cria intent aqui
   }
 
   if (tipo === "pix") {
