@@ -46,6 +46,13 @@ img {
   object-fit: cover;
   display: block;
 }
+.badge-top1 {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 34px;
+  height: 34px;
+}
 
 body {
   visibility: visible;

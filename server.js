@@ -2736,7 +2736,13 @@ app.get("/api/modelos", auth, async (req, res) => {
       ORDER BY total_vips DESC NULLS LAST, m.id DESC
     `);
 
-    res.json(result.rows);
+    const modelos = result.rows;
+
+if (modelos.length > 0) {
+  modelos[0].top1 = true; // 👑 primeira do ranking
+}
+
+res.json(modelos);
 
   } catch (err) {
     console.error("Erro feed modelos:", err);
