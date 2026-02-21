@@ -42,10 +42,10 @@ formCartao.addEventListener("submit", async (e) => {
     return;
   }
 
-  await pagarComCartao({
-    tipo: "vip",
-    modelo_id: window.MODELO_ID_ATUAL
-  });
+  if (!elements) {
+    alert("Pagamento não inicializado.");
+    return;
+  }
 
   const { error } = await stripe.confirmPayment({
     elements,
@@ -197,7 +197,11 @@ function mostrarMetodo(tipo) {
     pix.classList.add("hidden");
     cartao.classList.remove("hidden");
 
-    iniciarCartaoVip(); // 🔥 cria intent aqui
+    // 🔥 cria intent e monta Stripe ao clicar na aba
+    pagarComCartao({
+      tipo: "vip",
+      modelo_id: window.MODELO_ID_ATUAL
+    });
   }
 
   if (tipo === "pix") {

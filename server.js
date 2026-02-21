@@ -1063,7 +1063,7 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
 
     await client.query("BEGIN");
 
-    const { modelo_id, cpf, aceitou_termos, fingerprint } = req.body;
+const { modelo_id, cpf, aceitou_termos, fingerprint, apenas_intent } = req.body;
     const userId = req.user.id;
 
     /* =====================================================
@@ -1075,21 +1075,24 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
       return res.status(400).json({ error: "modelo_id inválido" });
     }
 
-    if (!aceitou_termos) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ error: "Você precisa aceitar os termos." });
-    }
+if (!apenas_intent) {
 
-    if (!cpf || cpf.length < 11) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ error: "CPF obrigatório." });
-    }
+  if (!aceitou_termos) {
+    await client.query("ROLLBACK");
+    return res.status(400).json({ error: "Você precisa aceitar os termos." });
+  }
 
-    if (!fingerprint) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ error: "Fingerprint obrigatório." });
-    }
+  if (!cpf || cpf.length < 11) {
+    await client.query("ROLLBACK");
+    return res.status(400).json({ error: "CPF obrigatório." });
+  }
 
+  if (!fingerprint) {
+    await client.query("ROLLBACK");
+    return res.status(400).json({ error: "Fingerprint obrigatório." });
+  }
+
+}
     const ip =
       req.headers["x-forwarded-for"]?.split(",")[0] ||
       req.socket.remoteAddress;
@@ -1250,8 +1253,8 @@ const paymentIntent = await stripe.paymentIntents.create({
     valor_assinatura: String(valorAssinatura),
     taxa_transacao: taxaTransacao,
     taxa_plataforma: taxaPlataforma,
-    cpf,
-    aceite_ip: ip
+     cpf: cpf || "",
+     aceite_ip: ip || ""
   }
 });
 
