@@ -56,7 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
      ${
       modelo.is_new
-      ? `<img src="/assets/new.png" class="badge-top1">`
+      ? `<img src="/assets/new.png" class="badge-new">`
         : ""
     }
   </div>

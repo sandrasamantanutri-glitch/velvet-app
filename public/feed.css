@@ -59,6 +59,15 @@ img {
   z-index: 10;
 }
 
+.badge-new {
+  position: absolute;
+  top: 6px;
+  left: 1px;
+  width: 40px;
+  height: 40px;
+  z-index: 10;
+}
+
 body {
   visibility: visible;
 }
