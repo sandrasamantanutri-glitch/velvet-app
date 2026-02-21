@@ -192,9 +192,14 @@ function mostrarMetodo(tipo) {
 
   if (!pix || !cartao) return;
 
-  // Sempre limpa estados visuais antes de trocar
-  resetarEstadoPix();
-  resetarEstadoCartao();
+  // Só reseta o método que está saindo
+  if (tipo === "cartao") {
+    resetarEstadoPix();
+  }
+
+  if (tipo === "pix") {
+    resetarEstadoCartao();
+  }
 
   pix.classList.toggle("hidden", tipo !== "pix");
   cartao.classList.toggle("hidden", tipo !== "cartao");
@@ -202,6 +207,11 @@ function mostrarMetodo(tipo) {
   document.querySelectorAll(".velvet-tabs .tab").forEach(tab => {
     tab.classList.toggle("active", tab.dataset.metodo === tipo);
   });
+
+  // 🔥 IMPORTANTE: já mostra o form do cartão
+  if (tipo === "cartao") {
+    document.getElementById("formCartao")?.classList.remove("hidden");
+  }
 }
 
 function resetarEstadoPix() {
