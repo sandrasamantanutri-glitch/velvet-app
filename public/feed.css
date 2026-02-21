@@ -39,6 +39,7 @@ img {
   border-radius: 18px;
   overflow: hidden;
   position: relative;
+  aspect-ratio: 3 / 4;
 }
 
 /* imagem */
