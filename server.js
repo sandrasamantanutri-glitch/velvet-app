@@ -138,8 +138,10 @@ app.post(
       return res.status(400).send("Invalid signature");
     }
 
-    if (event.type !== "payment_intent.succeeded" &&
-        event.type !== "charge.dispute.created") {
+    if (
+      event.type !== "payment_intent.succeeded" &&
+      event.type !== "charge.dispute.created"
+    ) {
       return res.status(200).send("ok");
     }
 
@@ -170,16 +172,11 @@ app.post(
       /* =====================================================
          2️⃣ PAGAMENTO SUCESSO
       ===================================================== */
-
       if (event.type === "payment_intent.succeeded") {
 
         const pi = event.data.object;
         const metadata = pi.metadata || {};
-
-        if (metadata.tipo !== "vip") {
-          await client.query("COMMIT");
-          return res.status(200).send("ok");
-        }
+        const tipo = metadata.tipo;
 
         const cliente_id = Number(metadata.cliente_id);
         const modelo_id  = Number(metadata.modelo_id);
@@ -198,126 +195,179 @@ app.post(
         }
 
         /* =====================================================
-           4️⃣ ATIVAR VIP
+           4️⃣ PROCESSAR POR TIPO
         ===================================================== */
 
-        const expiration = new Date();
-        expiration.setMonth(expiration.getMonth() + 1);
+        if (tipo === "vip") {
 
-        await client.query(`
-          INSERT INTO vip_subscriptions (
+          const expiration = new Date();
+          expiration.setMonth(expiration.getMonth() + 1);
+
+          await client.query(`
+            INSERT INTO vip_subscriptions (
+              cliente_id,
+              modelo_id,
+              ativo,
+              created_at,
+              updated_at,
+              expiration_at,
+              valor_assinatura,
+              taxa_transacao,
+              taxa_plataforma,
+              valor_total,
+              recorrente,
+              gateway_subscription_id
+            )
+            VALUES (
+              $1,$2,true,
+              NOW(),NOW(),$3,
+              $4,$5,$6,$7,
+              false,$8
+            )
+            ON CONFLICT (cliente_id,modelo_id)
+            DO UPDATE SET
+              ativo=true,
+              expiration_at=$3,
+              updated_at=NOW(),
+              valor_assinatura=$4,
+              taxa_transacao=$5,
+              taxa_plataforma=$6,
+              valor_total=$7,
+              recorrente=false,
+              gateway_subscription_id=$8
+          `,[
             cliente_id,
             modelo_id,
-            ativo,
-            created_at,
-            updated_at,
-            expiration_at,
-            valor_assinatura,
-            taxa_transacao,
-            taxa_plataforma,
-            valor_total,
-            recorrente,
-            gateway_subscription_id
-          )
-          VALUES (
-            $1,$2,true,
-            NOW(),NOW(),$3,
-            $4,$5,$6,$7,
-            false,$8
-          )
-          ON CONFLICT (cliente_id,modelo_id)
-          DO UPDATE SET
-            ativo=true,
-            expiration_at=$3,
-            updated_at=NOW(),
-            valor_assinatura=$4,
-            taxa_transacao=$5,
-            taxa_plataforma=$6,
-            valor_total=$7,
-            recorrente=false,
-            gateway_subscription_id=$8
-        `,[
-          cliente_id,
-          modelo_id,
-          expiration,
-          Number(metadata.valor_assinatura),
-          Number(metadata.taxa_transacao),
-          Number(metadata.taxa_plataforma),
-          Number(metadata.valor_total),
-          pi.id
-        ]);
+            expiration,
+            Number(metadata.valor_assinatura),
+            Number(metadata.taxa_transacao),
+            Number(metadata.taxa_plataforma),
+            Number(metadata.valor_total),
+            pi.id
+          ]);
 
-        /* =====================================================
-   💬 ENVIAR MENSAGEM AUTOMÁTICA APÓS VIP ATIVO
-===================================================== */
+          /* 💬 Mensagem automática */
+          const existeMsg = await client.query(`
+            SELECT 1
+            FROM messages
+            WHERE cliente_id = $1
+              AND modelo_id = $2
+            LIMIT 1
+          `, [cliente_id, modelo_id]);
 
-const existeMsg = await client.query(`
-  SELECT 1
-  FROM messages
-  WHERE cliente_id = $1
-    AND modelo_id = $2
-  LIMIT 1
-`, [cliente_id, modelo_id]);
+          if (existeMsg.rowCount === 0) {
 
-if (existeMsg.rowCount === 0) {
+            const textoBoasVindas =
+              `🔥 Bem-vindo! Agora você tem acesso exclusivo. qual seu nome? ❤️`;
 
-  const textoBoasVindas = `🔥 Bem-vindo! Agora você tem acesso exclusivo. qual seu nome? ❤️`;
+            const msgRes = await client.query(`
+              INSERT INTO messages
+                (cliente_id, modelo_id, sender, tipo, text, created_at)
+              VALUES
+                ($1, $2, 'modelo', 'texto', $3, NOW())
+              RETURNING *
+            `, [cliente_id, modelo_id, textoBoasVindas]);
 
-  const msgRes = await client.query(`
-    INSERT INTO messages
-      (cliente_id, modelo_id, sender, tipo, text, created_at)
-    VALUES
-      ($1, $2, 'modelo', 'texto', $3, NOW())
-    RETURNING *
-  `, [cliente_id, modelo_id, textoBoasVindas]);
+            const sala = `chat_${cliente_id}_${modelo_id}`;
+            io.to(sala).emit("newMessage", msgRes.rows[0]);
+          }
 
-  const sala = `chat_${cliente_id}_${modelo_id}`;
-
-  io.to(sala).emit("newMessage", msgRes.rows[0]);
-
-  console.log("💜 Mensagem VIP enviada automaticamente");
-}
-        /* =====================================================
-           5️⃣ REGISTRAR TRANSAÇÃO
-        ===================================================== */
-
-        await client.query(`
-          INSERT INTO transacoes_agency (
+          /* Registrar transação VIP */
+          await client.query(`
+            INSERT INTO transacoes_agency (
+              modelo_id,
+              cliente_id,
+              tipo,
+              valor_bruto,
+              valor_modelo,
+              agency_fee,
+              velvet_fee,
+              taxa_gateway,
+              status,
+              created_at,
+              aceitou_termos,
+              aceite_ip,
+              aceite_data
+            )
+            VALUES (
+              $1,$2,'assinatura',
+              $3,$4,$5,$6,$7,
+              'pago',NOW(),true,$8,NOW()
+            )
+          `,[
             modelo_id,
             cliente_id,
-            tipo,
-            valor_bruto,
-            valor_modelo,
-            agency_fee,
-            velvet_fee,
-            taxa_gateway,
-            status,
-            created_at,
-            aceitou_termos,
-            aceite_ip,
-            aceite_data
-          )
-          VALUES (
-            $1,$2,'assinatura',
-            $3,$4,$5,$6,$7,
-            'pago',NOW(),true,$8,NOW()
-          )
-        `,[
-          modelo_id,
-          cliente_id,
-          Number(metadata.valor_total),
-          Number(metadata.valor_assinatura),
-          0,
-          Number(metadata.taxa_plataforma),
-          Number(metadata.taxa_transacao),
-          metadata.aceite_ip
-        ]);
+            Number(metadata.valor_total),
+            Number(metadata.valor_assinatura),
+            0,
+            Number(metadata.taxa_plataforma),
+            Number(metadata.taxa_transacao),
+            metadata.aceite_ip
+          ]);
+        }
 
-        console.log("✅ VIP STRIPE ATIVADO");
+        // ========================= CONTEÚDO =========================
+        if (tipo === "conteudo_cartao") {
+
+          const message_id = Number(metadata.message_id);
+
+          await client.query(`
+            UPDATE pagamentos_cartao
+            SET status = 'pago'
+            WHERE stripe_payment_intent_id = $1
+          `,[pi.id]);
+
+          await client.query(`
+            UPDATE pagamento_tentativas
+            SET status = 'pago'
+            WHERE payment_intent_id = $1
+          `,[pi.id]);
+
+          await client.query(`
+            INSERT INTO conteudo_pacotes (cliente_id, message_id)
+            VALUES ($1,$2)
+            ON CONFLICT DO NOTHING
+          `,[cliente_id, message_id]);
+
+          /* 🔥 Registrar transação CONTEÚDO */
+          await client.query(`
+            INSERT INTO transacoes_agency (
+              modelo_id,
+              cliente_id,
+              tipo,
+              valor_bruto,
+              valor_modelo,
+              agency_fee,
+              velvet_fee,
+              taxa_gateway,
+              status,
+              created_at,
+              aceitou_termos,
+              aceite_ip,
+              aceite_data
+            )
+            VALUES (
+              $1,$2,'conteudo',
+              $3,$4,$5,$6,$7,
+              'pago',NOW(),true,$8,NOW()
+            )
+          `,[
+            modelo_id,
+            cliente_id,
+            Number(metadata.valor_total),
+            Number(metadata.valor_assinatura || metadata.valor_total),
+            0,
+            Number(metadata.taxa_plataforma || 0),
+            Number(metadata.taxa_transacao || 0),
+            metadata.aceite_ip
+          ]);
+
+          console.log("🎉 CONTEÚDO LIBERADO E TRANSAÇÃO REGISTRADA");
+        }
       }
 
       /* =====================================================
-         6️⃣ CHARGEBACK
+         5️⃣ CHARGEBACK
       ===================================================== */
 
       if (event.type === "charge.dispute.created") {
@@ -347,7 +397,6 @@ if (existeMsg.rowCount === 0) {
       }
 
       await client.query("COMMIT");
-
       return res.status(200).send("ok");
 
     } catch (err) {
