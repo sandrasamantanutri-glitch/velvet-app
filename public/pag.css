@@ -311,7 +311,7 @@
 
 .vip-valores {
   margin: 12px 0;
-  font-size: 13px;            /* 🔥 fonte menor */
+  font-size: 12px;            /* 🔥 fonte menor */
   text-align: center;         /* 🔥 centraliza tudo */
 }
 
@@ -324,7 +324,7 @@
 }
 
 .vip-valores .linha span {
-  font-size: 14px;
+  font-size: 10px;
 }
 
 .vip-valores .desconto {
