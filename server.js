@@ -421,12 +421,12 @@ console.log("============================================");
         return res.status(200).send("ok");
       }
 
-      const {
-        cliente_id,
-        modelo_id,
-        valor,
-        conteudo_id
-      } = pagamento;
+  const {
+  cliente_id,
+  modelo_id,
+  valor,
+  message_id
+} = pagamento;
 
       /* =====================================================
          3️⃣ VALIDAR VALOR
@@ -602,9 +602,12 @@ await client.query(`
         WHERE id=$1
       `,[pagamento.id]);
 
+      console.log("Pagamento encontrado:", pagamento);
+
       await client.query("COMMIT");
 
       console.log("✅ PAGAMENTO FINALIZADO");
+      console.log("Dados para emitir:", dadosParaEmitir);
 
       if (dadosParaEmitir) {
 
@@ -5056,6 +5059,32 @@ if (!charge || !pixData || !pixData.qr_code) {
       (cliente_id, metodo, status, pagarme_order_id)
       VALUES ($1,'pix','aguardando',$2)
     `,[cliente_id, order.id]);
+
+    await client.query(`
+  INSERT INTO pagamentos_pix (
+    cliente_id,
+    modelo_id,
+    valor,
+    status,
+    pagarme_order_id,
+    criado_em,
+    aceite_ip,
+    aceitou_termos,
+    cpf,
+    message_id
+  )
+  VALUES (
+    $1,$2,$3,'pendente',$4,NOW(),$5,true,$6,$7
+  )
+`,[
+  cliente_id,
+  modelo_id,
+  total,          // valor total já com taxas
+  order.id,
+  ip,
+  cpfFinal,
+  conteudoId      // 🔥 AQUI ESTÁ O SEGREDO
+]);
 
     await client.query("COMMIT");
 

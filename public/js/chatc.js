@@ -736,3 +736,4 @@ function mostrarToast(texto) {
     toast.style.opacity = "0";
   }, 2500);
 }
+
