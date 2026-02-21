@@ -192,12 +192,9 @@ function mostrarMetodo(tipo) {
 
   if (!pix || !cartao) return;
 
-  // 🎥 MÍDIA → só cartão
-  if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
-    pix.classList.add("hidden");
-    cartao.classList.remove("hidden");
-    return;
-  }
+  // Sempre limpa estados visuais antes de trocar
+  resetarEstadoPix();
+  resetarEstadoCartao();
 
   pix.classList.toggle("hidden", tipo !== "pix");
   cartao.classList.toggle("hidden", tipo !== "cartao");
@@ -205,6 +202,45 @@ function mostrarMetodo(tipo) {
   document.querySelectorAll(".velvet-tabs .tab").forEach(tab => {
     tab.classList.toggle("active", tab.dataset.metodo === tipo);
   });
+}
+
+function resetarEstadoPix() {
+  document.getElementById("pixLoading")?.classList.add("hidden");
+  document.getElementById("pixAguardando")?.classList.add("hidden");
+  document.getElementById("pixSucesso")?.classList.add("hidden");
+
+  const qr = document.getElementById("pixQr");
+  const codigo = document.getElementById("pixCodigo");
+  const btn = document.getElementById("btnCopiarPix");
+
+  if (qr) {
+    qr.src = "";
+    qr.classList.add("hidden");
+  }
+
+  if (codigo) {
+    codigo.value = "";
+    codigo.classList.add("hidden");
+  }
+
+  btn?.classList.add("hidden");
+}
+
+function resetarEstadoCartao() {
+  document.getElementById("cartaoLoading")?.classList.add("hidden");
+  document.getElementById("cartaoSucesso")?.classList.add("hidden");
+  document.getElementById("formCartao")?.classList.add("hidden");
+
+  if (cardElement) {
+    cardElement.unmount();
+    cardElement = null;
+    elements = null;
+  }
+
+  const cardEl = document.getElementById("card-element");
+  if (cardEl) {
+    cardEl.innerHTML = "";
+  }
 }
 
 
