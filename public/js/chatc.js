@@ -244,16 +244,16 @@ async function carregarInfoModelo(modelo_id) {
 
     const modelo = await res.json();
 
-    const avatar = document.getElementById("chatClienteAvatar");
-    const nome   = document.getElementById("chatClienteNome");
-    const status = document.getElementById("chatClienteStatus");
+    const avatar = document.getElementById("chatModeloAvatar");
+    const nome   = document.getElementById("chatModeloNome");
+    const status = document.getElementById("chatModeloStatus");
 
    if (avatar) {
   avatar.style.cursor = "pointer";
 
   avatar.addEventListener("click", () => {
-    if (cliente.avatar) {
-      abrirPreviewAvatar(cliente.avatar);
+    if (modelo.avatar) {
+      abrirPreviewAvatar(modelo.avatar);
     }
   });
 }
