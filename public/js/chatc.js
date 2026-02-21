@@ -560,12 +560,16 @@ function abrirPixConteudo(conteudo_id, preco) {
 
 async function gerarPix() {
 
-  if (!pagamentoAtual?.conteudo_id) {
-    alert("Conteúdo inválido");
+  if (!pagamentoAtual || !pagamentoAtual.conteudo_id) {
+    alert("Conteúdo inválido.");
     return;
   }
 
   const conteudo_id = Number(pagamentoAtual.conteudo_id);
+
+  const fingerprint = btoa(
+    navigator.userAgent + navigator.language + screen.width
+  );
 
   try {
 
@@ -573,10 +577,13 @@ async function gerarPix() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization:
-          "Bearer " + localStorage.getItem("token")
+        Authorization: "Bearer " + localStorage.getItem("token")
       },
-      body: JSON.stringify({ conteudo_id })
+      body: JSON.stringify({
+        conteudo_id,
+        aceitou_termos: true,
+        fingerprint
+      })
     });
 
     const data = await res.json();
@@ -586,11 +593,8 @@ async function gerarPix() {
       return;
     }
 
-    document.getElementById("pixQr").src =
-      data.qr_code_url;
-
-    document.getElementById("pixCopia").value =
-      data.copia_cola;
+    document.getElementById("pixQr").src = data.qr_code_url;
+    document.getElementById("pixCopia").value = data.copia_cola;
 
     iniciarPollingPagamento(conteudo_id);
 
