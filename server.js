@@ -4686,7 +4686,7 @@ app.post("/api/pagamento/vip/pix", auth, async (req, res) => {
 
       valorBase = Number(preco);
       modeloIdFinal = midiaModelo;
-      descricao = "Compra de conteúdo Velvet";
+      descricao = "Compra Velvet";
     }
 
     /* =====================================================
@@ -4914,7 +4914,6 @@ const messageRes = await client.query(`
   SELECT preco, modelo_id
   FROM messages
   WHERE id = $1
-    AND tipo = 'conteudo'
 `, [conteudoId]);
 
 if (!messageRes.rowCount) {
