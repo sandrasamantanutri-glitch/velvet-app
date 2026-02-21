@@ -28,26 +28,35 @@ if (formCartao) {
   formCartao.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    if (!stripe || !elements) {
-      alert("Pagamento não inicializado");
-      return;
-    }
+    try {
 
-    const { error } = await stripe.confirmPayment({
-      elements,
-      redirect: "if_required"
-    });
+      // 1️⃣ Cria o PaymentIntent (valida CPF aqui dentro)
+      await pagarComCartao({
+        tipo: window.PAGAMENTO_TIPO_ATUAL,
+        modelo_id: window.MODELO_ID_ATUAL
+      });
 
-    if (!elements) {
-  alert("Pagamento não inicializado corretamente");
-  return;
-}
-if (error) {
-      alert(error.message);
+      // 2️⃣ Agora confirma o pagamento
+      if (!stripe || !elements) {
+        alert("Pagamento não inicializado");
+        return;
+      }
+
+      const { error } = await stripe.confirmPayment({
+        elements,
+        redirect: "if_required"
+      });
+
+      if (error) {
+        alert(error.message);
+      }
+
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao processar pagamento");
     }
   });
 }
-
 
 function abrirPopupPagamento() {
   const popup = document.getElementById("popupPagamentoVelvet");
@@ -539,21 +548,7 @@ async function pagarComCartao({ tipo, modelo_id }) {
 }
 
 window.iniciarCartao = function () {
-  // 💎 CARTÃO É APENAS PARA VIP
-  if (window.PAGAMENTO_TIPO_ATUAL !== "vip") {
-    console.warn(
-      "iniciarCartao ignorado para tipo:",
-      window.PAGAMENTO_TIPO_ATUAL
-    );
-    return;
-  }
-
   mostrarMetodo("cartao");
-
-  pagarComCartao({
-    tipo: "vip",
-    modelo_id: window.MODELO_ID_ATUAL
-  });
 };
 
 function pagamentoConfirmado() {
