@@ -295,20 +295,25 @@ async function carregarInfoModelo(modelo_id) {
 
     const modelo = await res.json();
 
+    const avatar = document.getElementById("chatModeloAvatar");
     const nome   = document.getElementById("chatModeloNome");
     const status = document.getElementById("chatModeloStatus");
 
-    if (avatar) {
-      avatar.style.cursor = "pointer";
+   if (avatar) {
+  avatar.style.cursor = "pointer";
 
-      // 🔄 remove listener antigo
-      avatar.replaceWith(avatar.cloneNode(true));
-      const novoAvatar = document.getElementById("chatModeloAvatar");
-      
-      if (modelo.avatar) {
-        novoAvatar.addEventListener("click", () => abrirPreviewAvatar(modelo.avatar));
-      }
+   if (modelo.avatar) {
+    avatar.src = modelo.avatar; // 
+  } else {
+    avatar.src = "/assets/avatar.png";
+  }
+
+  avatar.addEventListener("click", () => {
+    if (modelo.avatar) {
+      abrirPreviewAvatar(modelo.avatar);
     }
+  });
+}
 
     if (nome) {
       nome.innerText = modelo.nome_exibicao || "Modelo";
