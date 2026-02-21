@@ -656,6 +656,9 @@ document.getElementById("cartaoTaxaTransacao")
 document.getElementById("cartaoTaxaPlataforma")
   .innerText = valorBRL(data.taxaPlataforma);
 
+document.getElementById("cartaoValorTotal")
+  .innerText = valorBRL(data.total);
+
     elements = stripe.elements({
       clientSecret: data.clientSecret
     });
