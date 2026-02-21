@@ -154,8 +154,12 @@ socket.on("newMessage", msg => {
   if (Number(msg.modelo_id) !== Number(modelo_id)) return;
 
   renderMensagem(msg);
+ if (msg.sender === "modelo") {
+    const status = document.getElementById("chatModeloStatus");
+    if (status) status.innerText = "online";
+  }
 
-  scrollParaFinal(); // 🔥 aqui dentro
+  scrollParaFinal();
 });
 
 
