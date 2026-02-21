@@ -5318,10 +5318,11 @@ const existente = await client.query(`
   SELECT payment_intent_id
   FROM pagamento_tentativas
   WHERE cliente_id = $1
+    AND conteudo_id = $2
     AND status = 'iniciado'
   ORDER BY id DESC
   LIMIT 1
-`, [cliente_id]);
+`, [cliente_id, conteudoId]);
 
 if (existente.rowCount > 0) {
   const piExistente = await stripe.paymentIntents.retrieve(
@@ -5371,11 +5372,11 @@ if (existente.rowCount > 0) {
     /* =====================================================
        📝 REGISTRAR TENTATIVA
     ===================================================== */
-    await client.query(`
-      INSERT INTO pagamento_tentativas
-      (cliente_id, metodo, status, payment_intent_id)
-      VALUES ($1,'cartao','iniciado',$2)
-    `,[cliente_id, paymentIntent.id]);
+await client.query(`
+  INSERT INTO pagamento_tentativas
+  (cliente_id, conteudo_id, metodo, status, payment_intent_id)
+  VALUES ($1,$2,'cartao','iniciado',$3)
+`,[cliente_id, conteudoId, paymentIntent.id]);
 
     await client.query("COMMIT");
     console.log("DEBUG BACKEND MIDIA:", {
