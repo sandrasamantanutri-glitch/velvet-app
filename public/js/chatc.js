@@ -647,8 +647,14 @@ async function pagarComCartao() {
       return;
     }
 
-    document.getElementById("cartaoValorTotal")
-      .innerText = valorBRL(data.total);
+document.getElementById("cartaoValorConteudo")
+  .innerText = valorBRL(data.valorBase);
+
+document.getElementById("cartaoTaxaTransacao")
+  .innerText = valorBRL(data.taxaTransacao);
+
+document.getElementById("cartaoTaxaPlataforma")
+  .innerText = valorBRL(data.taxaPlataforma);
 
     elements = stripe.elements({
       clientSecret: data.clientSecret

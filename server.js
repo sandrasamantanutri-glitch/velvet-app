@@ -5368,6 +5368,12 @@ if (existente.rowCount > 0) {
     `,[cliente_id, paymentIntent.id]);
 
     await client.query("COMMIT");
+    console.log("DEBUG BACKEND MIDIA:", {
+  valorBase,
+  taxaTransacao,
+  taxaPlataforma,
+  total
+});
 
     return res.json({
   clientSecret: paymentIntent.client_secret,
