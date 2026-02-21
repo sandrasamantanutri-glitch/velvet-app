@@ -206,11 +206,14 @@ function preencherResumoMidia({ valor, descricao }) {
 }
 
 function mostrarMetodo(tipo) {
+  const pix = document.getElementById("conteudoPix");
+  const cartao = document.getElementById("conteudoCartao");
+
+  if (!pix || !cartao) return;
+
   if (tipo === "cartao") {
-    // Esconde estado do Pix
     resetarEstadoPix();
 
-    // Mostra cartão
     pix.classList.add("hidden");
     cartao.classList.remove("hidden");
 
@@ -218,7 +221,6 @@ function mostrarMetodo(tipo) {
   }
 
   if (tipo === "pix") {
-    // Esconde estado do cartão
     resetarEstadoCartao();
 
     cartao.classList.add("hidden");
