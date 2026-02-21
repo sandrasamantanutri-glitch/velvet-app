@@ -4954,33 +4954,30 @@ const amount = Math.round(total * 100); // centavos
    💳 CRIAR ORDEM PIX PAGAR.ME
 ===================================================== */
 const pagarmeResponse = await axios.post(
-  "https://api.pagar.me/core/v5/orders",
-  {
-    items: [{
-      amount,
-      description: `Compra conteúdo #${conteudoId}`,
-      quantity: 1
-    }],
-    customer: {
-      name: req.user.nome || "Cliente Velvet",
-      email: req.user.email,
-      type: "individual",
-      document: {
-        type: "cpf",
-        number: cpfFinal
-      },
-      phones: {
-        mobile_phone: {
-          country_code: "55",
-          area_code: "11",
-          number: "999999999"
-        }
-      }
-    },
-    payments: [{
-      payment_method: "pix",
-      pix: { expires_in: 3600 }
-    }],
+      "https://api.pagar.me/core/v5/orders",
+      {
+        items: [{
+          amount,
+          description: "midia Velvet",
+          quantity: 1
+        }],
+        customer: {
+  name: req.user.nome || "Cliente Velvet",
+  email: req.user.email,
+  document: cpf,
+  type: "individual",
+  phones: {
+    mobile_phone: {
+      country_code: "55",
+      area_code: "11",
+      number: "999999999"
+    }
+  }
+},
+        payments: [{
+          payment_method: "pix",
+          pix: { expires_in: 3600 }
+        }],
     metadata: {
       tipo: "conteudo_pix",
       message_id: String(conteudoId),
@@ -5002,13 +4999,8 @@ const pagarmeResponse = await axios.post(
     }
   }
 );
-
-const order = pagarmeResponse.data;
-
-console.log(JSON.stringify(order, null, 2));
-
-    const charge = order.charges?.[0];
-const pixData = charge?.last_transaction;
+    const order = pagarmeResponse.data;
+    const pixData = order.charges[0].last_transaction;
 
     if (!charge || !pixData || !pixData.qr_code) {
   console.error("Resposta Pagar.me:", JSON.stringify(order, null, 2));
@@ -5105,12 +5097,10 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
     /* =====================================================
        🔎 BUSCAR CONTEÚDO
     ===================================================== */
-/* 🔎 BUSCAR MENSAGEM DE CONTEÚDO */
 const messageRes = await client.query(`
   SELECT preco, modelo_id
   FROM messages
   WHERE id = $1
-    AND tipo = 'conteudo'
 `, [conteudoId]);
 
 if (!messageRes.rowCount) {
