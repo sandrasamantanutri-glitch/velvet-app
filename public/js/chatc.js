@@ -14,6 +14,7 @@ let cliente_id = null;
 let modelo_id = null;
 const conteudosLiberados = new Set();
 let pagamentoAtual = null;
+let intervaloConfirmacaoPagamento = null;
 
 const stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
 let elements = null;
@@ -117,8 +118,6 @@ document.getElementById("confirmarPagamento").onclick = async () => {
   if (!pagamentoAtual?.message_id) return;
 
   const conteudo_id = pagamentoAtual.message_id;
-
-  iniciarPollingPagamento(conteudo_id);
 
 };
 
@@ -596,8 +595,6 @@ async function gerarPix() {
     document.getElementById("pixQr").src = data.qr_code_url;
     document.getElementById("pixCopia").value = data.copia_cola;
 
-    iniciarPollingPagamento(conteudo_id);
-
   } catch (err) {
     console.error("Erro Pix:", err);
     alert("Erro inesperado no Pix");
@@ -739,4 +736,3 @@ function mostrarToast(texto) {
     toast.style.opacity = "0";
   }, 2500);
 }
-
