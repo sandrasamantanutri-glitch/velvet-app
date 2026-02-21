@@ -50,7 +50,7 @@
 <!-- ================= POPUPS ================= -->
 
 <div id="popupPix" class="modal hidden">
-  <div class="modal-box pix-box"></div>
+  <div class="modal-box pix-box">
 
     <button class="modal-close" onclick="fecharPopupPix()">×</button>
 
@@ -69,6 +69,16 @@
     <div>Taxa da plataforma: <span id="pixTaxaPlataforma">R$ 0,00</span></div>
   </div>
 </div>
+<div class="campo-pagamento">
+  <label>CPF</label>
+  <input type="text" id="cpfPagamento" maxlength="11" placeholder="Somente números" />
+</div>
+
+<div class="campo-termos">
+  <input type="checkbox" id="aceiteTermosPagamento" />
+  <label for="aceiteTermosPagamento">
+    Li e aceito os termos de compra
+  </label>
   <button onclick="gerarPix()">Gerar Pix</button>
 </div>
 
