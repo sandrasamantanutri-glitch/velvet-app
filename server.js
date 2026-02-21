@@ -1286,54 +1286,32 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
     const taxaTransacao  = (taxaTransacaoCentavos / 100).toFixed(2);
     const taxaPlataforma = (taxaPlataformaCentavos / 100).toFixed(2);
 
-    /* =====================================================
-       🔎 VERIFICAR PAYMENT INTENT EXISTENTE
-    ===================================================== */
+/* =====================================================
+   💳 CRIAR NOVO PAYMENT INTENT (SEMPRE NOVO)
+===================================================== */
 
-    const tentativaExistente = await client.query(`
-      SELECT payment_intent_id
-      FROM pagamento_tentativas
-      WHERE cliente_id = $1
-        AND metodo = 'cartao'
-        AND status = 'pendente'
-      ORDER BY id DESC
-      LIMIT 1
-    `, [cliente_id]);
+const paymentIntent = await stripe.paymentIntents.create({
+  amount,
+  currency: "brl",
+  automatic_payment_methods: { enabled: true },
+  metadata: {
+    tipo: "vip",
+    cliente_id: String(cliente_id),
+    modelo_id: String(modelo_id),
+    oferta_id: oferta_id ? String(oferta_id) : "",
+    valor_assinatura: String(valorAssinatura),
+    taxa_transacao: taxaTransacao,
+    taxa_plataforma: taxaPlataforma,
+    cpf,
+    aceite_ip: ip
+  }
+});
 
-    let paymentIntent;
-
-    if (tentativaExistente.rowCount > 0) {
-
-      paymentIntent = await stripe.paymentIntents.retrieve(
-        tentativaExistente.rows[0].payment_intent_id
-      );
-
-    } else {
-
-      paymentIntent = await stripe.paymentIntents.create({
-        amount,
-        currency: "brl",
-        automatic_payment_methods: { enabled: true },
-        metadata: {
-          tipo: "vip",
-          cliente_id: String(cliente_id),
-          modelo_id: String(modelo_id),
-          oferta_id: oferta_id ? String(oferta_id) : "",
-          valor_assinatura: String(valorAssinatura),
-          taxa_transacao: taxaTransacao,
-          taxa_plataforma: taxaPlataforma,
-          cpf,
-          aceite_ip: ip
-        }
-      });
-
-      await client.query(`
-        INSERT INTO pagamento_tentativas
-        (cliente_id, metodo, fingerprint_pagamento, status, payment_intent_id)
-        VALUES ($1,'cartao',$2,'pendente',$3)
-      `,[cliente_id, fingerprint, paymentIntent.id]);
-    }
-
+await client.query(`
+  INSERT INTO pagamento_tentativas
+  (cliente_id, metodo, fingerprint_pagamento, status, payment_intent_id)
+  VALUES ($1,'cartao',$2,'pendente',$3)
+`, [cliente_id, fingerprint, paymentIntent.id]);
     await client.query("COMMIT");
 
     return res.json({
