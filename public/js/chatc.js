@@ -159,6 +159,11 @@ socket.on("newMessage", msg => {
 
 
 socket.on("conteudoVisto", async ({ message_id }) => {
+  const status = document.getElementById("pixStatus");
+
+if (status) {
+  status.innerText = "✅ Pagamento confirmado!";
+}
 
   console.log("🔓 Conteúdo liberado:", message_id);
   conteudosLiberados.add(Number(message_id));
