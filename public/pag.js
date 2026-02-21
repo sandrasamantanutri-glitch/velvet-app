@@ -209,7 +209,18 @@ if (tipo === "cartao") {
     cartao.classList.add("hidden");
     pix.classList.remove("hidden");
   }
+
+document.querySelectorAll(".velvet-tabs .tab").forEach(tab => {
+  tab.classList.remove("active");
+});
+
+const abaAtiva = document.querySelector(
+  `.velvet-tabs .tab[data-metodo="${tipo}"]`
+);
+
+abaAtiva?.classList.add("active");
 }
+
 
 function montarStripeVazio() {
   if (cardElement) return;
