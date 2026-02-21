@@ -52,10 +52,10 @@ img {
 
 .badge-top1 {
   position: absolute;
-  top: 8px;
-  left: 8px;
-  width: 50px;
-  height: 50px;
+  top: 6px;
+  left: 1px;
+  width: 40px;
+  height: 40px;
   z-index: 10;
 }
 
