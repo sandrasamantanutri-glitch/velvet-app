@@ -50,46 +50,83 @@
 <!-- ================= POPUPS ================= -->
 
 <div id="popupPix" class="modal hidden">
+  
+  <!-- backdrop -->
+  <div class="modal-backdrop" onclick="fecharPopupPix()"></div>
+
+  <!-- caixa -->
   <div class="modal-box pix-box">
 
-    <button class="modal-close" onclick="fecharPopupPix()">×</button>
+    <button 
+      type="button"
+      class="modal-close"
+      onclick="fecharPopupPix()">
+      ×
+    </button>
 
     <h2 class="pix-title">Desbloquear Conteúdo</h2>
 
-    <!-- 🔥 PREÇO -->
-<div class="pix-preco">
-  <div class="pix-total">
-    Total para Desbloquear:
-    <strong id="pixValorTotal">R$ 0,00</strong>
-  </div>
+    <!-- 💰 PREÇO -->
+    <div class="pix-preco">
 
-  <div class="pix-detalhes">
-    <div>Conteúdo: <span id="pixValorBase">R$ 0,00</span></div>
-    <div>Taxa de transação: <span id="pixTaxaTransacao">R$ 0,00</span></div>
-    <div>Taxa da plataforma: <span id="pixTaxaPlataforma">R$ 0,00</span></div>
-  </div>
-</div>
-<div class="campo-pagamento">
-  <button onclick="gerarPix()">Gerar Pix</button>
-</div>
+      <div class="pix-total">
+        Total para Desbloquear:
+        <strong id="pixValorTotal">R$ 0,00</strong>
+      </div>
+
+      <div class="pix-detalhes">
+        <div>
+          Conteúdo:
+          <span id="pixValorBase">R$ 0,00</span>
+        </div>
+
+        <div>
+          Taxa de transação:
+          <span id="pixTaxaTransacao">R$ 0,00</span>
+        </div>
+
+        <div>
+          Taxa da plataforma:
+          <span id="pixTaxaPlataforma">R$ 0,00</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 🔥 AÇÃO -->
+    <div class="campo-pagamento">
+      <button 
+        type="button"
+        class="btn-gerar-pix"
+        onclick="gerarPix()">
+        Gerar Pix
+      </button>
+    </div>
+
     <!-- QR CODE -->
-    <img id="pixQr" class="pix-qr" />
+    <img 
+      id="pixQr" 
+      class="pix-qr"
+      alt="QR Code Pix"
+    />
 
     <!-- COPIA E COLA -->
     <textarea
       id="pixCopia"
       class="pix-copia"
-      readonly
-    ></textarea>
+      placeholder="Código Pix aparecerá aqui..."
+      readonly>
+    </textarea>
 
-    <button class="pix-copiar"
+    <button
+      type="button"
+      class="pix-copiar"
       onclick="copiarPix()">
       Copiar código Pix
     </button>
 
   </div>
 </div>
-
 <!-- ================= STRIPE ================= -->
  <!-- ESCOLHA DO MÉTODO -->
 <div id="escolhaPagamento" class="modal hidden">
