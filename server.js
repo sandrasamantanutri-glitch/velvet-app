@@ -393,6 +393,8 @@ console.log("============================================");
 
     const client = await db.connect();
 
+    let dadosParaEmitir = null;
+
     try {
       await client.query("BEGIN");
 
@@ -475,7 +477,13 @@ console.log("============================================");
         `,[modelo_id, valorPago]);
 
         console.log("✅ MIDIA LIBERADA");
-      }
+
+        dadosParaEmitir = {
+  cliente_id,
+  modelo_id,
+  conteudo_id
+};
+}
 
 if (metadata.tipo === "vip") {
 
@@ -579,6 +587,17 @@ await client.query(`
       await client.query("COMMIT");
 
       console.log("✅ PAGAMENTO FINALIZADO");
+      
+      if (dadosParaEmitir) {
+
+  const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
+
+  io.to(sala).emit("conteudoVisto", {
+    message_id: Number(dadosParaEmitir.conteudo_id)
+  });
+
+  console.log("📡 Evento conteudoVisto enviado para sala:", sala);
+}
 
       return res.status(200).send("ok");
 
