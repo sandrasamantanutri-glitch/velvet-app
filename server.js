@@ -5369,6 +5369,12 @@ if (existente.rowCount > 0) {
   }
 });
 
+await client.query(`
+  INSERT INTO pagamentos_cartao
+  (cliente_id, conteudo_id, stripe_payment_intent_id, status)
+  VALUES ($1,$2,$3,'iniciado')
+`, [cliente_id, conteudoId, paymentIntent.id]);
+
     /* =====================================================
        📝 REGISTRAR TENTATIVA
     ===================================================== */
