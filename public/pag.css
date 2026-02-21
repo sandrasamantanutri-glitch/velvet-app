@@ -317,11 +317,10 @@
 
 .vip-valores .linha {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;    /* 🔥 centraliza horizontalmente */
   gap: 8px;
   margin-bottom: 6px;
   color: #1E1E26;
-  margin: 0 auto 6px auto;
 }
 
 .vip-valores .linha span {
