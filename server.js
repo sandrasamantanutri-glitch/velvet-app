@@ -5000,9 +5000,11 @@ const pagarmeResponse = await axios.post(
   }
 );
     const order = pagarmeResponse.data;
-    const pixData = order.charges[0].last_transaction;
 
-    if (!charge || !pixData || !pixData.qr_code) {
+const charge = order.charges?.[0];
+const pixData = charge?.last_transaction;
+
+if (!charge || !pixData || !pixData.qr_code) {
   console.error("Resposta Pagar.me:", JSON.stringify(order, null, 2));
   await client.query("ROLLBACK");
   return res.status(500).json({
