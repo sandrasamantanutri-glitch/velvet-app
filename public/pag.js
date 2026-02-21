@@ -29,19 +29,31 @@ if (formCartao) {
     e.preventDefault();
 
     try {
+      // 🔐 Validar CPF
+      const cpf = document
+        .getElementById("cpfPagamento")
+        ?.value
+        ?.replace(/\D/g, "");
 
-      // 1️⃣ Cria o PaymentIntent (valida CPF aqui dentro)
-      await pagarComCartao({
-        tipo: window.PAGAMENTO_TIPO_ATUAL,
-        modelo_id: window.MODELO_ID_ATUAL
-      });
+      const aceitou_termos =
+        document.getElementById("aceiteTermosPagamento")?.checked;
 
-      // 2️⃣ Agora confirma o pagamento
+      if (!cpf || cpf.length !== 11) {
+        alert("Informe um CPF válido.");
+        return;
+      }
+
+      if (!aceitou_termos) {
+        alert("Você precisa aceitar os termos.");
+        return;
+      }
+
       if (!stripe || !elements) {
         alert("Pagamento não inicializado");
         return;
       }
 
+      // 💳 Confirmar pagamento
       const { error } = await stripe.confirmPayment({
         elements,
         redirect: "if_required"
@@ -192,26 +204,31 @@ function mostrarMetodo(tipo) {
 
   if (!pix || !cartao) return;
 
-  // Só reseta o método que está saindo
   if (tipo === "cartao") {
+    // Esconde estado do Pix
     resetarEstadoPix();
+
+    // Mostra cartão
+    pix.classList.add("hidden");
+    cartao.classList.remove("hidden");
+
+    document.getElementById("formCartao")?.classList.remove("hidden");
+
+    // 🔥 Aqui inicia Stripe ao clicar na aba
+    iniciarCartaoVip();
   }
 
   if (tipo === "pix") {
+    // Esconde estado do cartão
     resetarEstadoCartao();
-  }
 
-  pix.classList.toggle("hidden", tipo !== "pix");
-  cartao.classList.toggle("hidden", tipo !== "cartao");
+    cartao.classList.add("hidden");
+    pix.classList.remove("hidden");
+  }
 
   document.querySelectorAll(".velvet-tabs .tab").forEach(tab => {
     tab.classList.toggle("active", tab.dataset.metodo === tipo);
   });
-
-  // 🔥 IMPORTANTE: já mostra o form do cartão
-  if (tipo === "cartao") {
-    document.getElementById("formCartao")?.classList.remove("hidden");
-  }
 }
 
 function resetarEstadoPix() {
@@ -239,6 +256,7 @@ function resetarEstadoPix() {
 function resetarEstadoCartao() {
   document.getElementById("cartaoLoading")?.classList.add("hidden");
   document.getElementById("cartaoSucesso")?.classList.add("hidden");
+  document.getElementById("formCartao")?.classList.add("hidden");
 
   if (cardElement) {
     cardElement.unmount();
@@ -249,6 +267,49 @@ function resetarEstadoCartao() {
   const cardEl = document.getElementById("card-element");
   if (cardEl) {
     cardEl.innerHTML = "";
+  }
+}
+
+async function iniciarCartaoVip() {
+  try {
+    initStripe();
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Sessão expirada");
+      return;
+    }
+
+    document.getElementById("cartaoLoading")?.classList.remove("hidden");
+
+    const res = await fetch("/api/pagamento/vip/cartao-intent", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token
+      }
+    });
+
+    if (!res.ok) {
+      throw new Error("Erro ao iniciar cartão");
+    }
+
+    const data = await res.json();
+
+    elements = stripe.elements({ clientSecret: data.clientSecret });
+
+    const cardEl = document.getElementById("card-element");
+    cardEl.innerHTML = "";
+
+    cardElement = elements.create("payment");
+    cardElement.mount("#card-element");
+
+    document.getElementById("cartaoLoading")?.classList.add("hidden");
+    document.getElementById("formCartao")?.classList.remove("hidden");
+
+  } catch (err) {
+    console.error(err);
+    alert("Erro ao iniciar cartão");
   }
 }
 
