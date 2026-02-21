@@ -4898,7 +4898,7 @@ const { conteudo_id, fingerprint } = req.body;
    🪪 OBTER CPF DO CLIENTE (COM FALLBACK)
 ===================================================== */
 
-const CPF_FALLBACK = "12345678909"; // CPF válido fixo
+const CPF_FALLBACK = "12345678909"; 
 
 let cpfFinal = CPF_FALLBACK;
 
@@ -4950,18 +4950,6 @@ const taxaTransacao  = Number((valorBase * 0.10).toFixed(2));
 const taxaPlataforma = Number((valorBase * 0.05).toFixed(2));
 const total = Number((valorBase + taxaTransacao + taxaPlataforma).toFixed(2));
 const amount = Math.round(total * 100); // centavos
-
-/* =====================================================
-   🪪 VALIDAR CPF DO CLIENTE
-===================================================== */
-const cpfLimpo = cpf?.replace(/\D/g, "");
-
-if (!cpfLimpo || cpfLimpo.length !== 11) {
-  await client.query("ROLLBACK");
-  return res.status(400).json({
-    error: "CPF inválido ou não cadastrado."
-  });
-}
 
 /* =====================================================
    💳 CRIAR ORDEM PIX PAGAR.ME
