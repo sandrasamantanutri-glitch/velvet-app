@@ -13,6 +13,7 @@ const socket = io({
 let cliente_id = null;
 let modelo_id = null;
 const conteudosLiberados = new Set();
+let pagamentoAtual = null;
 
 const stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
 let elements = null;
@@ -85,6 +86,41 @@ document.addEventListener("click", (e) => {
   }
 
 });
+
+document.addEventListener("click", e => {
+  if (
+    e.target.classList.contains("modal-backdrop") ||
+    e.target.classList.contains("modal-fechar")
+  ) {
+    fecharConteudo();
+  }
+});
+
+document.getElementById("confirmarPagamento").onclick = async () => {
+
+  const { error, paymentIntent } = await stripe.confirmPayment({
+    elements,
+    redirect: "if_required"
+  });
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  // ⚠️ NÃO liberar conteúdo aqui
+  // Apenas fecha modal e aguarda backend confirmar
+
+  document.getElementById("paymentModal").classList.add("hidden");
+  document.getElementById("payment-element").innerHTML = "";
+
+  if (!pagamentoAtual?.message_id) return;
+
+  const conteudo_id = pagamentoAtual.message_id;
+
+  iniciarPollingPagamento(conteudo_id);
+
+};
 
 });
 
@@ -210,16 +246,17 @@ function valorBRL(valor) {
   });
 }
 
-async function abrirPagamentoChat(valor, conteudoId) {
-  pagamentoAtual = {
-    valor,
-    message_id: conteudoId
-  };
+function abrirPagamentoChat(valor, conteudoId) {
 
   if (!valor || !conteudoId) {
     alert("Erro: dados inválidos");
     return;
   }
+
+  pagamentoAtual = {
+    conteudo_id: Number(conteudoId),
+    valor: Number(valor)
+  };
 
   document
     .getElementById("escolhaPagamento")
@@ -244,16 +281,16 @@ async function carregarInfoModelo(modelo_id) {
 
     const modelo = await res.json();
 
-    const avatar = document.getElementById("chatClienteAvatar");
-    const nome   = document.getElementById("chatClienteNome");
-    const status = document.getElementById("chatClienteStatus");
+    const avatar = document.getElementById("chatModeloAvatar");
+    const nome   = document.getElementById("chatModeloNome");
+    const status = document.getElementById("chatModeloStatus");
 
    if (avatar) {
   avatar.style.cursor = "pointer";
 
   avatar.addEventListener("click", () => {
-    if (cliente.avatar) {
-      abrirPreviewAvatar(cliente.avatar);
+    if (modelo.avatar) {
+      abrirPreviewAvatar(modelo.avatar);
     }
   });
 }
@@ -472,45 +509,25 @@ function fecharConteudo() {
   midia.innerHTML = "";
 }
 
-document.addEventListener("click", e => {
-  if (
-    e.target.classList.contains("modal-backdrop") ||
-    e.target.classList.contains("modal-fechar")
-  ) {
-    fecharConteudo();
-  }
-});
 
 function pagarComPix() {
-
 
   document
     .getElementById("escolhaPagamento")
     .classList.add("hidden");
 
-
-  if (
-    !pagamentoAtual ||
-    !pagamentoAtual.message_id ||
-    !pagamentoAtual.valor
-  ) {
+  if (!pagamentoAtual?.conteudo_id || !pagamentoAtual?.valor) {
     alert("Conteúdo inválido");
     return;
   }
 
-  const conteudo_id = Number(pagamentoAtual.message_id);
-  const preco = Number(pagamentoAtual.valor);
-
-  if (!conteudo_id || preco <= 0) {
-    alert("Dados de pagamento inválidos");
-    return;
-  }
-
-
-  abrirPixConteudo(conteudo_id, preco);
+  abrirPixConteudo(
+    pagamentoAtual.conteudo_id,
+    pagamentoAtual.valor
+  );
 }
 
-async function abrirPixConteudo(conteudo_id, preco) {
+function abrirPixConteudo(conteudo_id, preco) {
 
   if (!conteudo_id || Number(preco) <= 0) {
     alert("Conteúdo inválido");
@@ -519,7 +536,7 @@ async function abrirPixConteudo(conteudo_id, preco) {
 
   pagamentoAtual = {
     conteudo_id: Number(conteudo_id),
-    preco: Number(preco)
+    valor: Number(preco)
   };
 
   const taxaTransacao  = Number((preco * 0.10).toFixed(2));
@@ -528,80 +545,27 @@ async function abrirPixConteudo(conteudo_id, preco) {
     (preco + taxaTransacao + taxaPlataforma).toFixed(2)
   );
 
-  document.getElementById("pixValorBase").innerText = valorBRL(preco);
-  document.getElementById("pixTaxaTransacao").innerText = valorBRL(taxaTransacao);
-  document.getElementById("pixTaxaPlataforma").innerText = valorBRL(taxaPlataforma);
-  document.getElementById("pixValorTotal").innerText = valorBRL(valorTotal);
+  document.getElementById("pixValorBase").innerText =
+    valorBRL(preco);
+  document.getElementById("pixTaxaTransacao").innerText =
+    valorBRL(taxaTransacao);
+  document.getElementById("pixTaxaPlataforma").innerText =
+    valorBRL(taxaPlataforma);
+  document.getElementById("pixValorTotal").innerText =
+    valorBRL(valorTotal);
 
-  document.getElementById("popupPix").classList.remove("hidden");
-}
-
-let intervaloConfirmacaoPagamento = null;
-
-function iniciarPollingPagamento(conteudo_id) {
-
-  if (intervaloConfirmacaoPagamento) {
-    clearInterval(intervaloConfirmacaoPagamento);
-  }
-
-  let tentativas = 0;
-  const maxTentativas = 20; // ~60 segundos
-
-  intervaloConfirmacaoPagamento = setInterval(async () => {
-
-    tentativas++;
-
-    try {
-
-      const res = await fetch(
-        `/api/chat/conteudo-status/${conteudo_id}`,
-        {
-          headers: {
-            Authorization: "Bearer " + localStorage.getItem("token")
-          }
-        }
-      );
-
-      if (!res.ok) return;
-
-      const status = await res.json();
-
-      if (status.liberado === true) {
-
-        clearInterval(intervaloConfirmacaoPagamento);
-        intervaloConfirmacaoPagamento = null;
-
-        const idFinal = conteudo_id;
-
-        // 🔓 fecha possíveis modais
-        fecharPopupPix?.();
-        fecharPagamento?.();
-
-        // 🔄 força atualização via socket
-        socket.emit("conteudoVisto", {
-          message_id: idFinal,
-          cliente_id,
-          modelo_id
-        });
-
-        pagamentoAtual = {};
-      }
-
-      if (tentativas >= maxTentativas) {
-        clearInterval(intervaloConfirmacaoPagamento);
-      }
-
-    } catch (err) {
-      console.error("Erro polling pagamento:", err);
-    }
-
-  }, 3000);
+  document.getElementById("popupPix")
+    .classList.remove("hidden");
 }
 
 async function gerarPix() {
-  const fingerprint = btoa(
-    navigator.userAgent + navigator.language + screen.width
-  );
+
+  if (!pagamentoAtual?.conteudo_id) {
+    alert("Conteúdo inválido");
+    return;
+  }
+
+  const conteudo_id = Number(pagamentoAtual.conteudo_id);
 
   try {
 
@@ -609,11 +573,10 @@ async function gerarPix() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: "Bearer " + localStorage.getItem("token")
+        Authorization:
+          "Bearer " + localStorage.getItem("token")
       },
-      body: JSON.stringify({
-        conteudo_id,
-      })
+      body: JSON.stringify({ conteudo_id })
     });
 
     const data = await res.json();
@@ -623,10 +586,13 @@ async function gerarPix() {
       return;
     }
 
-    document.getElementById("pixQr").src = data.qr_code_url;
-    document.getElementById("pixCopia").value = data.copia_cola;
+    document.getElementById("pixQr").src =
+      data.qr_code_url;
 
-    iniciarPollingPagamento(pagamentoAtual.conteudo_id);
+    document.getElementById("pixCopia").value =
+      data.copia_cola;
+
+    iniciarPollingPagamento(conteudo_id);
 
   } catch (err) {
     console.error("Erro Pix:", err);
@@ -634,34 +600,34 @@ async function gerarPix() {
   }
 }
 
-
 async function pagarComCartao() {
 
-  document.getElementById("escolhaPagamento").classList.add("hidden");
+  document
+    .getElementById("escolhaPagamento")
+    .classList.add("hidden");
 
-  if (!pagamentoAtual?.message_id) {
+  if (!pagamentoAtual?.conteudo_id) {
     alert("Conteúdo inválido");
     return;
   }
 
-  const conteudo_id = Number(pagamentoAtual.message_id);
+  const conteudo_id =
+    Number(pagamentoAtual.conteudo_id);
 
-  if (!conteudo_id) {
-    alert("Conteúdo inválido");
-    return;
-  }
   try {
 
-    const res = await fetch("/api/pagamento/midia/cartao", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + localStorage.getItem("token")
-      },
-      body: JSON.stringify({
-        conteudo_id,
-      })
-    });
+    const res = await fetch(
+      "/api/pagamento/midia/cartao",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization:
+            "Bearer " + localStorage.getItem("token")
+        },
+        body: JSON.stringify({ conteudo_id })
+      }
+    );
 
     const data = await res.json();
 
@@ -670,20 +636,19 @@ async function pagarComCartao() {
       return;
     }
 
-    // 🔹 Atualiza valor total exibido
-    document.getElementById("cartaoValorTotal").innerText =
-      valorBRL(data.total);
+    document.getElementById("cartaoValorTotal")
+      .innerText = valorBRL(data.total);
 
-    // 🔹 Inicializa Stripe Elements
     elements = stripe.elements({
       clientSecret: data.clientSecret
     });
 
-    const paymentElement = elements.create("payment");
+    const paymentElement =
+      elements.create("payment");
+
     paymentElement.mount("#payment-element");
 
-    document
-      .getElementById("paymentModal")
+    document.getElementById("paymentModal")
       .classList.remove("hidden");
 
   } catch (err) {
@@ -771,28 +736,3 @@ function mostrarToast(texto) {
   }, 2500);
 }
 
-document.getElementById("confirmarPagamento").onclick = async () => {
-
-  const { error, paymentIntent } = await stripe.confirmPayment({
-    elements,
-    redirect: "if_required"
-  });
-
-  if (error) {
-    alert(error.message);
-    return;
-  }
-
-  // ⚠️ NÃO liberar conteúdo aqui
-  // Apenas fecha modal e aguarda backend confirmar
-
-  document.getElementById("paymentModal").classList.add("hidden");
-  document.getElementById("payment-element").innerHTML = "";
-
-  if (!pagamentoAtual?.message_id) return;
-
-  const conteudo_id = pagamentoAtual.message_id;
-
-  iniciarPollingPagamento(conteudo_id);
-
-};
