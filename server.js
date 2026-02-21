@@ -323,13 +323,54 @@ app.post(
             WHERE payment_intent_id = $1
           `,[pi.id]);
 
-          await client.query(`
-            INSERT INTO conteudo_pacotes (cliente_id, message_id)
-            VALUES ($1,$2)
-            ON CONFLICT DO NOTHING
-          `,[cliente_id, message_id]);
+// 🔎 Buscar dados reais do conteúdo
+const msgRes = await client.query(`
+  SELECT modelo_id, preco
+  FROM messages
+  WHERE id = $1
+`, [message_id]);
 
-          /* 🔥 Registrar transação CONTEÚDO */
+if (msgRes.rowCount === 0) {
+  throw new Error("Mensagem não encontrada no webhook");
+}
+
+const modelo_id_real = msgRes.rows[0].modelo_id;
+const preco_real = msgRes.rows[0].preco;
+
+/* 2️⃣ Libera conteúdo corretamente */
+await client.query(`
+  INSERT INTO conteudo_pacotes
+  (
+    modelo_id,
+    cliente_id,
+    preco,
+    valor_base,
+    taxa_transacao,
+    taxa_plataforma,
+    valor_total,
+    status,
+    payment_id,
+    metodo_pagamento,
+    pago_em,
+    message_id
+  )
+  VALUES
+  (
+    $1,$2,$3,$4,$5,$6,$7,'pago',$8,'cartao',NOW(),$9
+  )
+  ON CONFLICT DO NOTHING
+`,[
+  modelo_id_real,
+  cliente_id,
+  preco_real,
+  Number(metadata.valor_assinatura),
+  Number(metadata.taxa_transacao),
+  Number(metadata.taxa_plataforma),
+  Number(metadata.valor_total),
+  pi.id,
+  message_id
+]);
+
           await client.query(`
             INSERT INTO transacoes_agency (
               modelo_id,
