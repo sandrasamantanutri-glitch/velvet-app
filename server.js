@@ -500,6 +500,11 @@ await client.query(`
   taxaGateway,          // taxa_gateway
   metadata.aceite_ip || null
 ]);
+dadosParaEmitir = {
+    cliente_id,
+    modelo_id,
+    conteudo_id: message_id
+  };
 
 }
 
