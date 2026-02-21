@@ -191,18 +191,18 @@ function mostrarMetodo(tipo) {
 
   if (!pix || !cartao) return;
 
-  if (tipo === "cartao") {
-    resetarEstadoPix();
+if (tipo === "cartao") {
+  resetarEstadoPix();
 
-    pix.classList.add("hidden");
-    cartao.classList.remove("hidden");
+  pix.classList.add("hidden");
+  cartao.classList.remove("hidden");
 
-    // 🔥 cria intent e monta Stripe ao clicar na aba
-    pagarComCartao({
-      tipo: "vip",
-      modelo_id: window.MODELO_ID_ATUAL
-    });
-  }
+  pagarComCartao({
+    tipo: "vip",
+    modelo_id: window.MODELO_ID_ATUAL,
+    apenasIntent: true
+  });
+}
 
   if (tipo === "pix") {
     resetarEstadoCartao();
@@ -459,8 +459,7 @@ function initStripe() {
   return stripe;
 }
 
-async function pagarComCartao({ tipo, modelo_id }) {
-
+async function pagarComCartao({ tipo, modelo_id, apenasIntent = false }) {
   initStripe();
 
   try {
@@ -499,15 +498,19 @@ async function pagarComCartao({ tipo, modelo_id }) {
       .getElementById("aceiteTermosPagamento")
       ?.checked;
 
-    if (!cpf || cpf.length !== 11) {
-      alert("Informe um CPF válido.");
-      return;
-    }
+      if (!apenasIntent) {
 
-    if (!aceitou_termos) {
-      alert("Você precisa aceitar os termos.");
-      return;
-    }
+  if (!cpf || cpf.length !== 11) {
+    alert("Informe um CPF válido.");
+    return;
+  }
+
+  if (!aceitou_termos) {
+    alert("Você precisa aceitar os termos.");
+    return;
+  }
+
+}
 
     // ===============================
     // 💎 VIP
@@ -523,12 +526,13 @@ async function pagarComCartao({ tipo, modelo_id }) {
 
       url = "/api/pagamento/vip/cartao";
 
-      body = {
-        modelo_id,
-        cpf,
-        aceitou_termos,
-        fingerprint: gerarFingerprint()
-      };
+body = {
+  modelo_id,
+  cpf: apenasIntent ? "" : cpf,
+  aceitou_termos: apenasIntent ? false : aceitou_termos,
+  fingerprint: apenasIntent ? "init" : gerarFingerprint(),
+  apenas_intent: apenasIntent
+};
     }
 
     // ===============================
