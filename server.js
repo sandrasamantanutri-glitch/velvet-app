@@ -4991,7 +4991,6 @@ const pagarmeResponse = await axios.post(
       taxa_transacao: String(taxaTransacao),
       taxa_plataforma: String(taxaPlataforma),
       aceite_ip: ip,
-      aceitou_termos: "true",
       aceite_data: new Date().toISOString()
     }
   },
@@ -5052,17 +5051,11 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
   const client = await db.connect();
 
   try {
-    const { conteudo_id, aceitou_termos } = req.body;
+    const { conteudo_id } = req.body;
     const userId = req.user.id;
 
     if (!conteudo_id || !Number.isInteger(Number(conteudo_id))) {
       return res.status(400).json({ error: "conteudo_id inválido" });
-    }
-
-    if (!aceitou_termos) {
-      return res.status(400).json({
-        error: "É necessário aceitar os termos."
-      });
     }
 
     const conteudoId = Number(conteudo_id);
@@ -5174,12 +5167,10 @@ if (!preco || Number(preco) <= 0) {
           message_id: String(conteudoId),
           cliente_id: String(cliente_id),
           modelo_id: String(modelo_id),
-          cpf: cpf || "",
           valor_base: String(valorBase),
           taxa_transacao: String(taxaTransacao),
           taxa_plataforma: String(taxaPlataforma),
           aceite_ip: ip,
-          aceitou_termos: "true",
           aceite_data: new Date().toISOString()
         }
       },
