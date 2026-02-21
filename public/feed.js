@@ -53,6 +53,12 @@ document.addEventListener("DOMContentLoaded", () => {
         ? `<img src="/assets/top1.png" class="badge-top1">`
         : ""
     }
+
+     ${
+      modelo.is_new
+      ? `<img src="/assets/new.png" class="badge-top1">`
+        : ""
+    }
   </div>
 `;
 

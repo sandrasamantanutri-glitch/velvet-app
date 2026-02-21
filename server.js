@@ -2702,39 +2702,49 @@ app.get("/api/modelos", auth, async (req, res) => {
     if (!["cliente", "modelo"].includes(req.user.role)) {
       return res.status(403).json([]);
     }
+const result = await db.query(`
+  SELECT
+    m.id AS modelo_id,
+    m.nome_exibicao,
+    m.avatar,
 
-    const result = await db.query(`
-      SELECT
-        m.id AS modelo_id,
-        m.nome_exibicao,
-        m.avatar,
+    COALESCE(v.total_vips, 0) AS total_vips,
 
-        COALESCE(v.total_vips, 0) AS total_vips
+    -- Data da última aprovação
+    ver.criado_em AS aprovado_em,
 
-      FROM modelos m
+    -- Define se é NEW (últimos 7 dias)
+    CASE 
+      WHEN ver.criado_em >= NOW() - INTERVAL '7 days' 
+      THEN true 
+      ELSE false 
+    END AS is_new
 
-      -- 🔒 Só modelos aprovadas
-      JOIN LATERAL (
-        SELECT status
-        FROM modelos_verificacao
-        WHERE modelo_id = m.id
-        ORDER BY criado_em DESC 
-        LIMIT 1
-      ) ver ON true
+  FROM modelos m
 
-      -- 👑 Contagem de VIPs ativos
-      LEFT JOIN LATERAL (
-        SELECT COUNT(*) AS total_vips
-        FROM vip_subscriptions
-        WHERE modelo_id = m.id
-          AND ativo = true
-          AND expiration_at > NOW()
-      ) v ON true
+  JOIN LATERAL (
+    SELECT status, criado_em
+    FROM modelos_verificacao
+    WHERE modelo_id = m.id
+    ORDER BY verificado_em DESC 
+    LIMIT 1
+  ) ver ON true
 
-      WHERE ver.status = 'aprovado'
+  LEFT JOIN LATERAL (
+    SELECT COUNT(*) AS total_vips
+    FROM vip_subscriptions
+    WHERE modelo_id = m.id
+      AND ativo = true
+      AND expiration_at > NOW()
+  ) v ON true
 
-      ORDER BY total_vips DESC NULLS LAST, m.id DESC
-    `);
+  WHERE ver.status = 'aprovado'
+
+  ORDER BY 
+    total_vips DESC,
+    is_new DESC,
+    m.id DESC
+`);
 
     const modelos = result.rows;
 
