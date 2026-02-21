@@ -5370,9 +5370,12 @@ if (existente.rowCount > 0) {
     await client.query("COMMIT");
 
     return res.json({
-      clientSecret: paymentIntent.client_secret,
-      total
-    });
+  clientSecret: paymentIntent.client_secret,
+  total,
+  valorBase,
+  taxaTransacao,
+  taxaPlataforma
+});
 
   } catch (err) {
     await client.query("ROLLBACK");
