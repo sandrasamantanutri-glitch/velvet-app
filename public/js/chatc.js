@@ -303,7 +303,7 @@ async function carregarInfoModelo(modelo_id) {
   avatar.style.cursor = "pointer";
 
    if (modelo.avatar) {
-    avatar.src = modelo.avatar; // 
+    avatar.src = modelo.avatar; 
   } else {
     avatar.src = "/css/avatar.png";
   }
