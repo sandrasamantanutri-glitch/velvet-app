@@ -24,56 +24,36 @@ function whenSocketReady(cb) {
 formCartao.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const botao = formCartao.querySelector("button");
-  botao.disabled = true;
-  botao.innerText = "Processando...";
+  const cpf = document
+    .getElementById("cpfPagamento")
+    ?.value
+    ?.replace(/\D/g, "");
 
-  try {
+  const aceitou_termos =
+    document.getElementById("aceiteTermosPagamento")?.checked;
 
-    const cpf = document
-      .getElementById("cpfPagamento")
-      ?.value
-      ?.replace(/\D/g, "");
+  if (!cpf || cpf.length !== 11) {
+    alert("Informe um CPF válido.");
+    return;
+  }
 
-    const aceitou_termos =
-      document.getElementById("aceiteTermosPagamento")?.checked;
+  if (!aceitou_termos) {
+    alert("Você precisa aceitar os termos.");
+    return;
+  }
 
-    if (!cpf || cpf.length !== 11) {
-      alert("Informe um CPF válido.");
-      botao.disabled = false;
-      botao.innerText = "Confirmar pagamento";
-      return;
-    }
+  await pagarComCartao({
+    tipo: "vip",
+    modelo_id: window.MODELO_ID_ATUAL
+  });
 
-    if (!aceitou_termos) {
-      alert("Você precisa aceitar os termos.");
-      botao.disabled = false;
-      botao.innerText = "Confirmar pagamento";
-      return;
-    }
+  const { error } = await stripe.confirmPayment({
+    elements,
+    redirect: "if_required"
+  });
 
-    // 🔥 cria intent aqui
-    await pagarComCartao({
-      tipo: "vip",
-      modelo_id: window.MODELO_ID_ATUAL
-    });
-
-    const { error } = await stripe.confirmPayment({
-      elements,
-      redirect: "if_required"
-    });
-
-    if (error) {
-      alert(error.message);
-      botao.disabled = false;
-      botao.innerText = "Confirmar pagamento";
-    }
-
-  } catch (err) {
-    console.error(err);
-    alert("Erro ao processar pagamento");
-    botao.disabled = false;
-    botao.innerText = "Confirmar pagamento";
+  if (error) {
+    alert(error.message);
   }
 });
 
@@ -213,23 +193,30 @@ function mostrarMetodo(tipo) {
 
   if (tipo === "cartao") {
     resetarEstadoPix();
-
     pix.classList.add("hidden");
     cartao.classList.remove("hidden");
 
     document.getElementById("formCartao")?.classList.remove("hidden");
+
+    // 🔥 monta Stripe vazio aqui
+    montarStripeVazio();
   }
 
   if (tipo === "pix") {
     resetarEstadoCartao();
-
     cartao.classList.add("hidden");
     pix.classList.remove("hidden");
   }
+}
 
-  document.querySelectorAll(".velvet-tabs .tab").forEach(tab => {
-    tab.classList.toggle("active", tab.dataset.metodo === tipo);
-  });
+function montarStripeVazio() {
+  if (cardElement) return;
+
+  initStripe();
+
+  elements = stripe.elements();
+  cardElement = elements.create("payment");
+  cardElement.mount("#card-element");
 }
 
 function resetarEstadoPix() {
