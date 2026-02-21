@@ -465,24 +465,42 @@ console.log("============================================");
           valorPago
         ]);
 
-        await client.query(`
-          INSERT INTO transacoes_agency (
-            tipo,
-            modelo_id,
-            valor_total,
-            status,
-            created_at
-          )
-          VALUES ('midia',$1,$2,'pago',NOW())
-        `,[modelo_id, valorPago]);
+const taxaGateway     = Number((valorPago * 0.10).toFixed(2));
+const taxaPlataforma  = Number((valorPago * 0.05).toFixed(2));
+const valorModelo     = Number((valorPago - taxaGateway - taxaPlataforma).toFixed(2));        
 
-        console.log("✅ MIDIA LIBERADA");
-
-        dadosParaEmitir = {
-  cliente_id,
+await client.query(`
+  INSERT INTO transacoes_agency (
+    modelo_id,
+    cliente_id,
+    tipo,
+    valor_bruto,
+    valor_modelo,
+    agency_fee,
+    velvet_fee,
+    taxa_gateway,
+    status,
+    created_at,
+    aceitou_termos,
+    aceite_ip,
+    aceite_data
+  )
+  VALUES (
+    $1,$2,'midia',
+    $3,$4,$5,$6,$7,
+    'pago',NOW(),true,$8,NOW()
+  )
+`,[
   modelo_id,
-  conteudo_id
-};
+  cliente_id,
+  valorPago,            // valor_bruto
+  valorModelo,          // valor_modelo
+  0,                    // agency_fee (se usar depois)
+  taxaPlataforma,       // velvet_fee
+  taxaGateway,          // taxa_gateway
+  metadata.aceite_ip || null
+]);
+
 }
 
 if (metadata.tipo === "vip") {
@@ -587,7 +605,7 @@ await client.query(`
       await client.query("COMMIT");
 
       console.log("✅ PAGAMENTO FINALIZADO");
-      
+
       if (dadosParaEmitir) {
 
   const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
