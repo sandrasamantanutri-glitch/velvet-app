@@ -331,15 +331,10 @@
   color: #1E1E26;          
 }
 
-.vip-valores .total {
-  margin-top: 8px;
-  font-size: 20px;          
-  font-weight: 600;
-  color: #7B2CFF;           
-}
-
-.vip-valores .total strong {
+.vip-valores .linha.total span {
   font-size: 20px;
+  font-weight: 600;
+  color: #7B2CFF;
 }
 
 .vip-info {
