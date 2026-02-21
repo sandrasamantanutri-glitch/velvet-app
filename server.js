@@ -248,6 +248,36 @@ app.post(
         ]);
 
         /* =====================================================
+   💬 ENVIAR MENSAGEM AUTOMÁTICA APÓS VIP ATIVO
+===================================================== */
+
+const existeMsg = await client.query(`
+  SELECT 1
+  FROM messages
+  WHERE cliente_id = $1
+    AND modelo_id = $2
+  LIMIT 1
+`, [cliente_id, modelo_id]);
+
+if (existeMsg.rowCount === 0) {
+
+  const textoBoasVindas = `🔥 Bem-vindo! Agora você tem acesso exclusivo. qual seu nome? ❤️`;
+
+  const msgRes = await client.query(`
+    INSERT INTO messages
+      (cliente_id, modelo_id, sender, tipo, text, created_at)
+    VALUES
+      ($1, $2, 'modelo', 'texto', $3, NOW())
+    RETURNING *
+  `, [cliente_id, modelo_id, textoBoasVindas]);
+
+  const sala = `chat_${cliente_id}_${modelo_id}`;
+
+  io.to(sala).emit("newMessage", msgRes.rows[0]);
+
+  console.log("💜 Mensagem VIP enviada automaticamente");
+}
+        /* =====================================================
            5️⃣ REGISTRAR TRANSAÇÃO
         ===================================================== */
 
@@ -1521,6 +1551,7 @@ socket.on("joinChat", async ({ cliente_id, modelo_id }) => {
   socket.join(sala);
 
   console.log("🟪 Entrou na sala segura:", sala);
+
 });
 
 socket.on("joinInbox", async () => {
