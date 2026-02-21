@@ -299,14 +299,12 @@ async function carregarInfoModelo(modelo_id) {
     const nome   = document.getElementById("chatModeloNome");
     const status = document.getElementById("chatModeloStatus");
 
-   if (avatar) {
+if (avatar) {
   avatar.style.cursor = "pointer";
 
-   if (modelo.avatar) {
-    avatar.src = modelo.avatar; 
-  } else {
-    avatar.src = "/css/avatar.png";
-  }
+  avatar.innerHTML = modelo.avatar
+    ? `<img src="${modelo.avatar}" />`
+    : `<img src="/assets/avatar.png" />`;
 
   avatar.addEventListener("click", () => {
     if (modelo.avatar) {
