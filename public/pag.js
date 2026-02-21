@@ -282,7 +282,7 @@ async function iniciarCartaoVip() {
 
     document.getElementById("cartaoLoading")?.classList.remove("hidden");
 
-    const res = await fetch("/api/pagamento/vip/cartao-intent", {
+    const res = await fetch("/api/pagamento/vip/cartao", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
