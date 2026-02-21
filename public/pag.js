@@ -21,54 +21,61 @@ function whenSocketReady(cb) {
     }
   }, 50);
 }
-const TAXA_TRANSACAO = 0.15;
-const formCartao = document.getElementById("formCartao");
+formCartao.addEventListener("submit", async (e) => {
+  e.preventDefault();
 
-if (formCartao) {
-  formCartao.addEventListener("submit", async (e) => {
-    e.preventDefault();
+  const botao = formCartao.querySelector("button");
+  botao.disabled = true;
+  botao.innerText = "Processando...";
 
-    try {
-      // 🔐 Validar CPF
-      const cpf = document
-        .getElementById("cpfPagamento")
-        ?.value
-        ?.replace(/\D/g, "");
+  try {
 
-      const aceitou_termos =
-        document.getElementById("aceiteTermosPagamento")?.checked;
+    const cpf = document
+      .getElementById("cpfPagamento")
+      ?.value
+      ?.replace(/\D/g, "");
 
-      if (!cpf || cpf.length !== 11) {
-        alert("Informe um CPF válido.");
-        return;
-      }
+    const aceitou_termos =
+      document.getElementById("aceiteTermosPagamento")?.checked;
 
-      if (!aceitou_termos) {
-        alert("Você precisa aceitar os termos.");
-        return;
-      }
-
-      if (!stripe || !elements) {
-        alert("Pagamento não inicializado");
-        return;
-      }
-
-      // 💳 Confirmar pagamento
-      const { error } = await stripe.confirmPayment({
-        elements,
-        redirect: "if_required"
-      });
-
-      if (error) {
-        alert(error.message);
-      }
-
-    } catch (err) {
-      console.error(err);
-      alert("Erro ao processar pagamento");
+    if (!cpf || cpf.length !== 11) {
+      alert("Informe um CPF válido.");
+      botao.disabled = false;
+      botao.innerText = "Confirmar pagamento";
+      return;
     }
-  });
-}
+
+    if (!aceitou_termos) {
+      alert("Você precisa aceitar os termos.");
+      botao.disabled = false;
+      botao.innerText = "Confirmar pagamento";
+      return;
+    }
+
+    // 🔥 cria intent aqui
+    await pagarComCartao({
+      tipo: "vip",
+      modelo_id: window.MODELO_ID_ATUAL
+    });
+
+    const { error } = await stripe.confirmPayment({
+      elements,
+      redirect: "if_required"
+    });
+
+    if (error) {
+      alert(error.message);
+      botao.disabled = false;
+      botao.innerText = "Confirmar pagamento";
+    }
+
+  } catch (err) {
+    console.error(err);
+    alert("Erro ao processar pagamento");
+    botao.disabled = false;
+    botao.innerText = "Confirmar pagamento";
+  }
+});
 
 function abrirPopupPagamento() {
   const popup = document.getElementById("popupPagamentoVelvet");
