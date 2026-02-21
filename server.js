@@ -459,7 +459,7 @@ console.log("============================================");
           VALUES ($1,$2,$3,$4,$4,$4,'pago','pix',NOW())
           ON CONFLICT (message_id,cliente_id) DO NOTHING
         `,[
-          conteudo_id,
+          message_id,
           cliente_id,
           modelo_id,
           valorPago
