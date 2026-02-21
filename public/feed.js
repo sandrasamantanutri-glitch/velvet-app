@@ -42,12 +42,19 @@ document.addEventListener("DOMContentLoaded", () => {
         card.className = "modelo-card";
 
         card.innerHTML = `
-          <img 
-            src="${modelo.avatar || "/assets/avatar.png"}" 
-            alt="${modelo.nome_exibicao || "Modelo"}"
-            
-          >
-        `;
+  <div class="modelo-avatar-wrapper">
+    <img 
+      src="${modelo.avatar || "/assets/avatar.png"}" 
+      class="modelo-avatar"
+    >
+
+    ${
+      modelo.top1
+        ? `<img src="/assets/top1.png" class="badge-top1">`
+        : ""
+    }
+  </div>
+`;
 
         // 🔥 ID CORRETO
         card.onclick = () => {
