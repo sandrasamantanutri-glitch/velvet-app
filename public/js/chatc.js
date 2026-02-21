@@ -218,7 +218,12 @@ if (toast) {
  card.classList.remove("bloqueado");
 card.classList.add("livre");
 card.removeAttribute("data-preco");
+});
 
+
+socket.on("vipAtivado", () => {
+  fecharPopup();
+  atualizarPerfil();
 });
 
 async function carregarCliente() {

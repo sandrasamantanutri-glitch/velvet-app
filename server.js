@@ -146,13 +146,13 @@ app.post(
     }
 
     const client = await db.connect();
+    let dadosParaEmitir = null;
 
     try {
+
       await client.query("BEGIN");
 
-      /* =====================================================
-         1️⃣ IDEMPOTÊNCIA GLOBAL
-      ===================================================== */
+      /* ================== IDEMPOTÊNCIA ================== */
 
       const jaProcessado = await client.query(
         "SELECT 1 FROM stripe_events WHERE id=$1 FOR UPDATE",
@@ -169,9 +169,8 @@ app.post(
         [event.id, event.type]
       );
 
-      /* =====================================================
-         2️⃣ PAGAMENTO SUCESSO
-      ===================================================== */
+      /* ================== PAGAMENTO SUCESSO ================== */
+
       if (event.type === "payment_intent.succeeded") {
 
         const pi = event.data.object;
@@ -182,10 +181,6 @@ app.post(
         const modelo_id  = Number(metadata.modelo_id);
         const valorPago  = pi.amount / 100;
 
-        /* =====================================================
-           3️⃣ VALIDAR VALOR
-        ===================================================== */
-
         const valorMeta = Number(metadata.valor_total || 0);
 
         if (valorMeta && valorPago !== valorMeta) {
@@ -194,9 +189,7 @@ app.post(
           return res.status(200).send("ok");
         }
 
-        /* =====================================================
-           4️⃣ PROCESSAR POR TIPO
-        ===================================================== */
+        /* ================== VIP CARTÃO ================== */
 
         if (tipo === "vip") {
 
@@ -205,25 +198,13 @@ app.post(
 
           await client.query(`
             INSERT INTO vip_subscriptions (
-              cliente_id,
-              modelo_id,
-              ativo,
-              created_at,
-              updated_at,
-              expiration_at,
-              valor_assinatura,
-              taxa_transacao,
-              taxa_plataforma,
-              valor_total,
-              recorrente,
-              gateway_subscription_id
+              cliente_id, modelo_id, ativo,
+              created_at, updated_at, expiration_at,
+              valor_assinatura, taxa_transacao,
+              taxa_plataforma, valor_total,
+              recorrente, gateway_subscription_id
             )
-            VALUES (
-              $1,$2,true,
-              NOW(),NOW(),$3,
-              $4,$5,$6,$7,
-              false,$8
-            )
+            VALUES ($1,$2,true,NOW(),NOW(),$3,$4,$5,$6,$7,false,$8)
             ON CONFLICT (cliente_id,modelo_id)
             DO UPDATE SET
               ativo=true,
@@ -246,174 +227,90 @@ app.post(
             pi.id
           ]);
 
-          /* 💬 Mensagem automática */
-          const existeMsg = await client.query(`
-            SELECT 1
-            FROM messages
-            WHERE cliente_id = $1
-              AND modelo_id = $2
-            LIMIT 1
-          `, [cliente_id, modelo_id]);
-
-          if (existeMsg.rowCount === 0) {
-
-            const textoBoasVindas =
-              `🔥 Bem-vindo! Agora você tem acesso exclusivo. qual seu nome? ❤️`;
-
-            const msgRes = await client.query(`
-              INSERT INTO messages
-                (cliente_id, modelo_id, sender, tipo, text, created_at)
-              VALUES
-                ($1, $2, 'modelo', 'texto', $3, NOW())
-              RETURNING *
-            `, [cliente_id, modelo_id, textoBoasVindas]);
-
-            const sala = `chat_${cliente_id}_${modelo_id}`;
-            io.to(sala).emit("newMessage", msgRes.rows[0]);
-          }
-
-          /* Registrar transação VIP */
           await client.query(`
             INSERT INTO transacoes_agency (
-              modelo_id,
-              cliente_id,
-              tipo,
-              valor_bruto,
-              valor_modelo,
-              agency_fee,
-              velvet_fee,
-              taxa_gateway,
-              status,
-              created_at,
-              aceitou_termos,
-              aceite_ip,
-              aceite_data
+              modelo_id, cliente_id, tipo,
+              valor_bruto, valor_modelo,
+              agency_fee, velvet_fee,
+              taxa_gateway, status,
+              created_at, aceitou_termos,
+              aceite_ip, aceite_data
             )
             VALUES (
               $1,$2,'assinatura',
-              $3,$4,$5,$6,$7,
-              'pago',NOW(),true,$8,NOW()
+              $3,$4,0,$5,$6,
+              'pago',NOW(),true,$7,NOW()
             )
           `,[
             modelo_id,
             cliente_id,
             Number(metadata.valor_total),
             Number(metadata.valor_assinatura),
-            0,
             Number(metadata.taxa_plataforma),
             Number(metadata.taxa_transacao),
             metadata.aceite_ip
           ]);
+
+          dadosParaEmitir = {
+            tipo: "vip",
+            cliente_id,
+            modelo_id
+          };
         }
 
-        // ========================= CONTEÚDO =========================
+        /* ================== CONTEÚDO CARTÃO ================== */
+
         if (tipo === "conteudo_cartao") {
 
           const message_id = Number(metadata.message_id);
 
           await client.query(`
             UPDATE pagamentos_cartao
-            SET status = 'pago'
-            WHERE stripe_payment_intent_id = $1
+            SET status='pago'
+            WHERE stripe_payment_intent_id=$1
           `,[pi.id]);
 
           await client.query(`
             UPDATE pagamento_tentativas
-            SET status = 'pago'
-            WHERE payment_intent_id = $1
+            SET status='pago'
+            WHERE payment_intent_id=$1
           `,[pi.id]);
 
-// 🔎 Buscar dados reais do conteúdo
-const msgRes = await client.query(`
-  SELECT modelo_id, preco
-  FROM messages
-  WHERE id = $1
-`, [message_id]);
-
-if (msgRes.rowCount === 0) {
-  throw new Error("Mensagem não encontrada no webhook");
-}
-
-const modelo_id_real = msgRes.rows[0].modelo_id;
-const preco_real = msgRes.rows[0].preco;
-
-/* 2️⃣ Libera conteúdo corretamente */
-await client.query(`
-  INSERT INTO conteudo_pacotes
-  (
-    modelo_id,
-    cliente_id,
-    preco,
-    valor_base,
-    taxa_transacao,
-    taxa_plataforma,
-    valor_total,
-    status,
-    payment_id,
-    metodo_pagamento,
-    pago_em,
-    message_id
-  )
-  VALUES
-  (
-    $1,$2,$3,$4,$5,$6,$7,'pago',$8,'cartao',NOW(),$9
-  )
-  ON CONFLICT DO NOTHING
-`,[
-  modelo_id_real,
-  cliente_id,
-  preco_real,
-  Number(metadata.valor_assinatura),
-  Number(metadata.taxa_transacao),
-  Number(metadata.taxa_plataforma),
-  Number(metadata.valor_total),
-  pi.id,
-  message_id
-]);
-
           await client.query(`
-            INSERT INTO transacoes_agency (
-              modelo_id,
-              cliente_id,
-              tipo,
-              valor_bruto,
-              valor_modelo,
-              agency_fee,
-              velvet_fee,
-              taxa_gateway,
-              status,
-              created_at,
-              aceitou_termos,
-              aceite_ip,
-              aceite_data
+            INSERT INTO conteudo_pacotes (
+              modelo_id, cliente_id,
+              preco, valor_base,
+              taxa_transacao, taxa_plataforma,
+              valor_total, status,
+              payment_id, metodo_pagamento,
+              pago_em, message_id
             )
             VALUES (
-              $1,$2,'conteudo',
-              $3,$4,$5,$6,$7,
-              'pago',NOW(),true,$8,NOW()
+              $1,$2,$3,$3,$4,$5,$6,
+              'pago',$7,'cartao',NOW(),$8
             )
+            ON CONFLICT DO NOTHING
           `,[
             modelo_id,
             cliente_id,
+            Number(metadata.valor_assinatura),
+            Number(metadata.taxa_transacao),
+            Number(metadata.taxa_plataforma),
             Number(metadata.valor_total),
-            Number(metadata.valor_assinatura || metadata.valor_total),
-            0,
-            Number(metadata.taxa_plataforma || 0),
-            Number(metadata.taxa_transacao || 0),
-            metadata.aceite_ip
+            pi.id,
+            message_id
           ]);
 
-console.log("🎉 CONTEÚDO LIBERADO E TRANSAÇÃO REGISTRADA");
-io.to(`chat_${cliente_id}_${modelo_id}`)
-.emit("conteudoVisto", {
-message_id
-});
-}
-}
+          dadosParaEmitir = {
+            tipo: "conteudo_cartao",
+            cliente_id,
+            modelo_id,
+            message_id
+          };
+        }
+      }
 
-/* =====================================================
-         5️⃣ CHARGEBACK
-===================================================== */
+      /* ================== CHARGEBACK ================== */
 
       if (event.type === "charge.dispute.created") {
 
@@ -425,23 +322,48 @@ message_id
         const cpf = metadata.cpf;
 
         if (cliente_id) {
-          await client.query(`
-            UPDATE clientes SET bloqueado=true WHERE id=$1
-          `,[cliente_id]);
+          await client.query(
+            "UPDATE clientes SET bloqueado=true WHERE id=$1",
+            [cliente_id]
+          );
         }
 
         if (cpf) {
-          await client.query(`
-            INSERT INTO cpfs_bloqueados (cpf,motivo)
-            VALUES ($1,'Chargeback Stripe')
-            ON CONFLICT DO NOTHING
-          `,[cpf]);
+          await client.query(
+            `INSERT INTO cpfs_bloqueados (cpf,motivo)
+             VALUES ($1,'Chargeback Stripe')
+             ON CONFLICT DO NOTHING`,
+            [cpf]
+          );
         }
-
-        console.log("🚨 CHARGEBACK STRIPE TRATADO");
       }
 
       await client.query("COMMIT");
+
+      /* ================== EMISSÃO SOCKET ================== */
+
+      if (dadosParaEmitir?.tipo === "vip") {
+
+        const socketId = onlineClientes[dadosParaEmitir.cliente_id];
+
+        if (socketId) {
+          io.to(socketId).emit("vipAtivado", {
+            modelo_id: dadosParaEmitir.modelo_id
+          });
+        }
+      }
+
+      if (dadosParaEmitir?.tipo === "conteudo_cartao") {
+
+        const socketId = onlineClientes[dadosParaEmitir.cliente_id];
+
+        if (socketId) {
+          io.to(socketId).emit("conteudoVisto", {
+            message_id: dadosParaEmitir.message_id
+          });
+        }
+      }
+
       return res.status(200).send("ok");
 
     } catch (err) {
@@ -625,10 +547,11 @@ await client.query(`
   metadata.aceite_ip || null
 ]);
 dadosParaEmitir = {
-    cliente_id,
-    modelo_id,
-    conteudo_id: message_id
-  };
+  tipo: "conteudo_pix",
+  cliente_id,
+  modelo_id,
+  conteudo_id: message_id
+};
 
 }
 
@@ -719,6 +642,11 @@ await client.query(`
   Number(metadata.taxa_transacao),        // taxa_gateway
   metadata.aceite_ip
 ]);
+dadosParaEmitir = {
+  tipo: "vip",
+  cliente_id,
+  modelo_id
+};
 }
       /* =====================================================
          4️⃣ MARCAR PAGAMENTO COMO PAGO
@@ -735,21 +663,41 @@ await client.query(`
 
       await client.query("COMMIT");
 
-      console.log("✅ PAGAMENTO FINALIZADO");
-      console.log("Dados para emitir:", dadosParaEmitir);
+console.log("✅ PAGAMENTO FINALIZADO");
+console.log("Dados para emitir:", dadosParaEmitir);
 
-      if (dadosParaEmitir) {
+if (dadosParaEmitir) {
 
-  const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
+  // 🔥 VIP PIX
+  if (dadosParaEmitir.tipo === "vip") {
 
-  io.to(sala).emit("conteudoVisto", {
-    message_id: Number(dadosParaEmitir.conteudo_id)
-  });
+    const socketId = onlineClientes[dadosParaEmitir.cliente_id];
 
-  console.log("📡 Evento conteudoVisto enviado para sala:", sala);
+    if (socketId) {
+      io.to(socketId).emit("vipAtivado", {
+        modelo_id: dadosParaEmitir.modelo_id
+      });
+
+      console.log("📡 VIP ativado enviado para cliente:", dadosParaEmitir.cliente_id);
+    }
+    
+
+  }
+
+  // 🎬 CONTEÚDO PIX
+  if (dadosParaEmitir.tipo === "conteudo_pix") {
+
+    const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
+
+    io.to(sala).emit("conteudoVisto", {
+      message_id: Number(dadosParaEmitir.conteudo_id)
+    });
+
+    console.log("📡 Evento conteudoVisto enviado para sala:", sala);
+  }
 }
 
-      return res.status(200).send("ok");
+return res.status(200).send("ok");
 
     } catch (err) {
       await client.query("ROLLBACK");
