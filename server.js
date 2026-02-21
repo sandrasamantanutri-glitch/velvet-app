@@ -366,9 +366,9 @@ app.post(
         }
       }
 
-      /* =====================================================
+/* =====================================================
          5️⃣ CHARGEBACK
-      ===================================================== */
+===================================================== */
 
       if (event.type === "charge.dispute.created") {
 
@@ -5312,29 +5312,51 @@ if (!preco || Number(preco) <= 0) {
     const amount = Math.round(total * 100);
 
     /* =====================================================
-       💳 CRIAR PAYMENT INTENT (COM IDEMPOTÊNCIA)
+       💳  VERIFICAR SE JÁ EXISTE PAYMENT INTENT PENDENTE
     ===================================================== */
-    const paymentIntent = await stripe.paymentIntents.create(
-      {
-        amount,
-        currency: "brl",
-        payment_method_types: ["card"],
-        metadata: {
-          tipo: "conteudo",
-          message_id: String(conteudoId),
-          cliente_id: String(cliente_id),
-          modelo_id: String(modelo_id),
-          valor_base: String(valorBase),
-          taxa_transacao: String(taxaTransacao),
-          taxa_plataforma: String(taxaPlataforma),
-          aceite_ip: ip,
-          aceite_data: new Date().toISOString()
-        }
-      },
-      {
-        idempotencyKey: `midia-${cliente_id}-${conteudoId}`
-      }
-    );
+const existente = await client.query(`
+  SELECT payment_intent_id
+  FROM pagamento_tentativas
+  WHERE cliente_id = $1
+    AND status = 'iniciado'
+  ORDER BY id DESC
+  LIMIT 1
+`, [cliente_id]);
+
+if (existente.rowCount > 0) {
+  const piExistente = await stripe.paymentIntents.retrieve(
+    existente.rows[0].payment_intent_id
+  );
+
+  await client.query("COMMIT");
+
+  return res.json({
+    clientSecret: piExistente.client_secret,
+    total
+  });
+}
+
+    /* =====================================================
+       💳  CRIAR PAYMENT INTENT SEM IDEMPOTENCY KEY
+    ===================================================== */
+
+    const paymentIntent = await stripe.paymentIntents.create({
+  amount,
+  currency: "brl",
+  payment_method_types: ["card"],
+  metadata: {
+    tipo: "conteudo_cartao", // ⚠️ IMPORTANTE
+    message_id: String(conteudoId),
+    cliente_id: String(cliente_id),
+    modelo_id: String(modelo_id),
+    valor_total: String(total),
+    valor_assinatura: String(valorBase),
+    taxa_transacao: String(taxaTransacao),
+    taxa_plataforma: String(taxaPlataforma),
+    aceite_ip: ip,
+    aceite_data: new Date().toISOString()
+  }
+});
 
     /* =====================================================
        📝 REGISTRAR TENTATIVA
