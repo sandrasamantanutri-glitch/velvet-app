@@ -239,7 +239,6 @@ function resetarEstadoPix() {
 function resetarEstadoCartao() {
   document.getElementById("cartaoLoading")?.classList.add("hidden");
   document.getElementById("cartaoSucesso")?.classList.add("hidden");
-  document.getElementById("formCartao")?.classList.add("hidden");
 
   if (cardElement) {
     cardElement.unmount();
