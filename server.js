@@ -5330,9 +5330,19 @@ if (existente.rowCount > 0) {
 
   await client.query("COMMIT");
 
+  console.log("DEBUG BACKEND MIDIA (EXISTENTE):", {
+    valorBase,
+    taxaTransacao,
+    taxaPlataforma,
+    total
+  });
+
   return res.json({
     clientSecret: piExistente.client_secret,
-    total
+    total,
+    valorBase,
+    taxaTransacao,
+    taxaPlataforma
   });
 }
 
