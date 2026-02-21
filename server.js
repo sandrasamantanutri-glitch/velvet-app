@@ -189,7 +189,7 @@ app.post(
           return res.status(200).send("ok");
         }
 
-        /* ================== VIP CARTÃO ================== */
+  /* ================== VIP CARTÃO ================== */
 
         if (tipo === "vip") {
 
@@ -251,10 +251,17 @@ app.post(
             metadata.aceite_ip
           ]);
 
+           const mensagem = await enviarBoasVindasVip({
+    client,
+    cliente_id,
+    modelo_id
+  });
+
           dadosParaEmitir = {
             tipo: "vip",
             cliente_id,
-            modelo_id
+            modelo_id,
+            mensagemBoasVindas: mensagem
           };
         }
 
@@ -350,8 +357,11 @@ app.post(
           io.to(socketId).emit("vipAtivado", {
             modelo_id: dadosParaEmitir.modelo_id
           });
-        }
-      }
+          if (dadosParaEmitir.mensagemBoasVindas) {
+      io.to(socketId).emit("newMessage", dadosParaEmitir.mensagemBoasVindas);
+    }
+  }
+}
 
       if (dadosParaEmitir?.tipo === "conteudo_cartao") {
 
@@ -642,11 +652,18 @@ await client.query(`
   Number(metadata.taxa_transacao),        // taxa_gateway
   metadata.aceite_ip
 ]);
-dadosParaEmitir = {
-  tipo: "vip",
-  cliente_id,
-  modelo_id
-};
+  const mensagem = await enviarBoasVindasVip({
+    client,
+    cliente_id,
+    modelo_id
+  });
+
+  dadosParaEmitir = {
+    tipo: "vip",
+    cliente_id,
+    modelo_id,
+    mensagemBoasVindas: mensagem
+  };
 }
       /* =====================================================
          4️⃣ MARCAR PAGAMENTO COMO PAGO
@@ -677,10 +694,12 @@ if (dadosParaEmitir) {
       io.to(socketId).emit("vipAtivado", {
         modelo_id: dadosParaEmitir.modelo_id
       });
-
-      console.log("📡 VIP ativado enviado para cliente:", dadosParaEmitir.cliente_id);
     }
-    
+
+    if (dadosParaEmitir.mensagemBoasVindas) {
+  io.to(socketId).emit("newMessage", dadosParaEmitir.mensagemBoasVindas);
+}  
+console.log("📡 VIP ativado enviado para cliente:", dadosParaEmitir.cliente_id);
 
   }
 
@@ -1366,119 +1385,45 @@ async function buscarUnreadModelo(modelo_id) {
   return result.rows.map(r => r.cliente_id);
 }
 
-async function ativarVipAssinatura({
+async function enviarBoasVindasVip({
+  client,
   cliente_id,
-  modelo_id,
-  valor_assinatura
+  modelo_id
 }) {
-
-  if (!Number.isInteger(cliente_id) || !Number.isInteger(modelo_id)) {
-    throw new Error("IDs inválidos em ativarVipAssinatura");
-  }
-
-  const valorBase = Number(valor_assinatura);
-
-  const expiration_at = new Date();
-  expiration_at.setDate(expiration_at.getDate() + 30);
-
-  await db.query(`
-    INSERT INTO vip_subscriptions (
-      cliente_id,
-      modelo_id,
-      valor_assinatura,
-      ativo,
-      created_at,
-      updated_at,
-      expiration_at
-    )
-    VALUES ($1,$2,$3,true,NOW(),NOW(),$4)
-    ON CONFLICT (cliente_id, modelo_id)
-    DO UPDATE SET
-      valor_assinatura = EXCLUDED.valor_assinatura,
-      ativo            = true,
-      updated_at       = NOW(),
-      expiration_at    = CASE
-        WHEN vip_subscriptions.expiration_at > NOW()
-        THEN vip_subscriptions.expiration_at + INTERVAL '30 days'
-        ELSE EXCLUDED.expiration_at
-      END
-  `, [
-    cliente_id,
-    modelo_id,
-    valorBase,
-    expiration_at
-  ]);
-
-  // =========================================
-  // 💬 MENSAGEM AUTOMÁTICA DE BOAS-VINDAS
-  // =========================================
-  const existeMsg = await db.query(
-    `
+  const existeMsg = await client.query(`
     SELECT 1
     FROM messages
     WHERE cliente_id = $1
       AND modelo_id = $2
     LIMIT 1
-    `,
-    [cliente_id, modelo_id]
-  );
+  `, [cliente_id, modelo_id]);
 
   if (existeMsg.rowCount === 0) {
 
     const textoBoasVindas = `Bem-vindo! Como você chama? ❤️‍🔥`;
 
-    const msgRes = await db.query(
-      `
+    const msgRes = await client.query(`
       INSERT INTO messages
         (cliente_id, modelo_id, sender, tipo, text, created_at)
       VALUES
         ($1, $2, 'modelo', 'texto', $3, NOW())
       RETURNING *
-      `,
-      [cliente_id, modelo_id, textoBoasVindas]
-    );
+    `, [cliente_id, modelo_id, textoBoasVindas]);
 
     const mensagem = msgRes.rows[0];
 
-    // 🔔 Marcar como não lida para o cliente
-    await db.query(
-      `
+    await client.query(`
       INSERT INTO unread (cliente_id, modelo_id, unread_for, has_unread)
       VALUES ($1, $2, 'cliente', true)
       ON CONFLICT (cliente_id, modelo_id)
       DO UPDATE SET has_unread = true
-      `,
-      [cliente_id, modelo_id]
-    );
+    `, [cliente_id, modelo_id]);
 
-    // 🔥 Realtime para cliente (se online)
-    const sidCliente = onlineClientes[cliente_id];
-    if (sidCliente) {
-      io.to(sidCliente).emit("newMessage", mensagem);
-    }
+    return mensagem;
   }
 
-  // =========================================
-  // 🚨 AVISAR MODELO: NOVO VIP
-  // =========================================
-  const sidModelo = onlineModelos[modelo_id];
-
-  if (sidModelo) {
-
-    const nomeRes = await db.query(
-      `SELECT nome FROM clientes WHERE id = $1`,
-      [cliente_id]
-    );
-
-    const nomeCliente = nomeRes.rows[0]?.nome || "Novo VIP";
-
-    io.to(sidModelo).emit("novoAssinante", {
-      cliente_id,
-      nome: nomeCliente
-    });
-  }
+  return null;
 }
-
 // ===============================
 // SOCKET.IO – CHAT ESTÁVEL
 // ===============================
@@ -4803,9 +4748,9 @@ app.post("/api/pagamento/vip/pix", auth, async (req, res) => {
       descricao = "Compra Velvet";
     }
 
-    /* =====================================================
+/* =====================================================
        💎 VIP
-    ===================================================== */
+===================================================== */
 if (tipo === "vip") {
 
   if (!modelo_id || !Number.isInteger(Number(modelo_id))) {

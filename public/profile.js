@@ -71,6 +71,10 @@ const bioInput     = document.getElementById("bioInput");
 const localEl = document.getElementById("local-texto");
 const inputUpload = document.getElementById("inputUpload");
 
+socket.on("vipAtivado", (data) => {
+  window.location.href = `/chat/${data.modelo_id}`;
+});
+
 //  CONTEÚDO LIBERADO (PÓS-PAGAMENTO)/////
 socket.on("conteudoVisto", async ({ message_id }) => {
   try {
