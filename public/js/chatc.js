@@ -302,6 +302,12 @@ async function carregarInfoModelo(modelo_id) {
    if (avatar) {
   avatar.style.cursor = "pointer";
 
+   if (modelo.avatar) {
+    avatar.src = modelo.avatar; // 
+  } else {
+    avatar.src = "/css/avatar.png";
+  }
+
   avatar.addEventListener("click", () => {
     if (modelo.avatar) {
       abrirPreviewAvatar(modelo.avatar);
