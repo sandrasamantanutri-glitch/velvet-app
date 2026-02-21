@@ -624,8 +624,6 @@ html, body {
   box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
   z-index: 1000;
 }
-
-/* Caixa do textarea com estilo premium */
 .chat-input textarea {
   flex: 1;
   min-height: 44px;
@@ -639,6 +637,10 @@ html, body {
   line-height: 20px;
 
   background: #f7f7f7;
+
+  resize: none;           /* 🔥 remove redimensionamento */
+  overflow-y: hidden;     /* 🔥 remove scrollbar interna */
+  box-sizing: border-box;
 
   transition: all 0.2s ease;
 }
