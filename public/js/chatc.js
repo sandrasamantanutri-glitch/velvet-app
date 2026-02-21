@@ -15,6 +15,7 @@ let modelo_id = null;
 const conteudosLiberados = new Set();
 let pagamentoAtual = null;
 let intervaloConfirmacaoPagamento = null;
+let pagamentoEmProcesso = false;
 
 const stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
 let elements = null;
@@ -608,17 +609,20 @@ async function gerarPix() {
 
 async function pagarComCartao() {
 
+  if (pagamentoEmProcesso) return;
+  pagamentoEmProcesso = true;
+
   document
     .getElementById("escolhaPagamento")
     .classList.add("hidden");
 
   if (!pagamentoAtual?.conteudo_id) {
     alert("Conteúdo inválido");
+    pagamentoEmProcesso = false;
     return;
   }
 
-  const conteudo_id =
-    Number(pagamentoAtual.conteudo_id);
+  const conteudo_id = Number(pagamentoAtual.conteudo_id);
 
   try {
 
@@ -639,6 +643,7 @@ async function pagarComCartao() {
 
     if (!res.ok) {
       alert(data.error || "Erro no pagamento");
+      pagamentoEmProcesso = false;
       return;
     }
 
@@ -661,6 +666,8 @@ async function pagarComCartao() {
     console.error("Erro cartão:", err);
     alert("Erro inesperado");
   }
+
+  pagamentoEmProcesso = false;
 }
 
 function fecharPagamento() {
