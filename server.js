@@ -403,9 +403,13 @@ await client.query(`
             metadata.aceite_ip
           ]);
 
-          console.log("🎉 CONTEÚDO LIBERADO E TRANSAÇÃO REGISTRADA");
-        }
-      }
+console.log("🎉 CONTEÚDO LIBERADO E TRANSAÇÃO REGISTRADA");
+io.to(`chat_${cliente_id}_${modelo_id}`)
+.emit("conteudoVisto", {
+message_id
+});
+}
+}
 
 /* =====================================================
          5️⃣ CHARGEBACK
