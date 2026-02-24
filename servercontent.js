@@ -979,7 +979,7 @@ router.get("/transacoes/diario",
     }
 
     const result = await db.query(
-      `
+`
 SELECT
   DATE(created_at) AS dia,
 
@@ -991,26 +991,26 @@ SELECT
     CASE WHEN tipo = 'assinatura' THEN valor_modelo END
   ),0) AS ganhos_assinaturas
 
-      FROM (
+FROM (
 
-        -- 🔵 SISTEMA NOVO
-        SELECT
-          tipo,
-          created_at,
-          valor_modelo,
-          modelo_id,
-          status
-        FROM transacoes_agency
+  -- 🔵 SISTEMA NOVO (já correto)
+  SELECT
+    tipo,
+    created_at,
+    valor_modelo,
+    modelo_id,
+    status
+  FROM transacoes_agency
 
-        UNION ALL
+  UNION ALL
 
- -- 🟡 SISTEMA ANTIGO (corrigido aqui)
+  -- 🟡 SISTEMA ANTIGO (normalizando bruto → líquido)
   SELECT
     tipo,
     created_at,
 
     CASE
-      WHEN tipo = 'assinatura'
+      WHEN tipo IN ('assinatura','midia')
       THEN ROUND(valor_modelo * 0.70, 2)
       ELSE valor_modelo
     END AS valor_modelo,
@@ -1021,12 +1021,12 @@ SELECT
 
 ) t
 
-      WHERE ${where}
-      GROUP BY dia
-      ORDER BY dia
-      `,
-      values
-    );
+WHERE ${where}
+GROUP BY dia
+ORDER BY dia
+`,
+values
+);
 
     res.json(result.rows);
   }
