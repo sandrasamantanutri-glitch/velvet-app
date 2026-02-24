@@ -623,6 +623,7 @@ async function gerarPix() {
 
   if (data.qr_code_url) {
     imgQr.src = data.qr_code_url;
+     imgQr.classList.remove("hidden");
   }
 
   if (data.copia_cola) {

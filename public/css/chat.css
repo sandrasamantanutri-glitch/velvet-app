@@ -705,4 +705,8 @@ html, body {
   cursor: pointer;
 }
 
+.hidden {
+  display: none;
+}
+
 
