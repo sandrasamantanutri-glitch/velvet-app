@@ -4815,12 +4815,19 @@ app.post("/api/pagamento/vip/pix", auth, async (req, res) => {
           description: "Assinatura VIP Velvet",
           quantity: 1
         }],
-        customer: {
-          name: req.user.nome || "Cliente Velvet",
-          email: req.user.email,
-          document: cpf,
-          type: "individual"
-        },
+customer: {
+  name: req.user.nome || "Cliente Velvet",
+  email: req.user.email,
+  document: cpf,
+  type: "individual",
+  phones: {
+    mobile_phone: {
+      country_code: "55",
+      area_code: "11",
+      number: "999999999"
+    }
+  }
+},
         payments: [{
           payment_method: "pix",
           pix: { expires_in: 3600 }
@@ -4848,9 +4855,16 @@ app.post("/api/pagamento/vip/pix", auth, async (req, res) => {
     );
 
     const order = pagarmeResponse.data;
-    const pixData = order.charges[0].last_transaction;
-    if (!order.charges?.length) {
-  throw new Error("Charge PIX não criada");
+
+const charge = order.charges?.[0];
+const pixData = charge?.last_transaction;
+
+if (!charge || !pixData || !pixData.qr_code) {
+  console.error("Resposta Pagar.me:", JSON.stringify(order, null, 2));
+  await client.query("ROLLBACK");
+  return res.status(500).json({
+    error: "Erro ao gerar QR Code Pix"
+  });
 }
 
     await client.query(`
