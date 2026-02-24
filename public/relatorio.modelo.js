@@ -61,7 +61,6 @@ async function carregarTransacoes(pagina = 1) {
   const lista = document.getElementById("listaTransacoes");
   const paginacao = document.getElementById("paginacaoTransacoes");
 
-  // 🛑 GUARDA DE SEGURANÇA
   if (!lista) {
     console.warn("listaTransacoes não existe nesta página");
     return;
@@ -235,7 +234,7 @@ function mostrarStatusDadosBancarios(status) {
   if (!box) return;
 
   box.style.display = "block";
-  box.className = "status-box"; // reset
+  box.className = "status-box";
 
   if (status === "aprovado") {
     box.classList.add("status-aprovado");

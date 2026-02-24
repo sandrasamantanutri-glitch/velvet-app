@@ -190,134 +190,199 @@ app.post(
         }
 
   /* ================== VIP CARTÃO ================== */
+if (tipo === "vip") {
+  const expiration = new Date();
+  expiration.setMonth(expiration.getMonth() + 1);
 
-        if (tipo === "vip") {
+  const valorPago = pi.amount / 100;
 
-          const expiration = new Date();
-          expiration.setMonth(expiration.getMonth() + 1);
+  const taxaExtra =
+    Number(metadata.taxa_transacao || 0) +
+    Number(metadata.taxa_plataforma || 0);
 
-          await client.query(`
-            INSERT INTO vip_subscriptions (
-              cliente_id, modelo_id, ativo,
-              created_at, updated_at, expiration_at,
-              valor_assinatura, taxa_transacao,
-              taxa_plataforma, valor_total,
-              recorrente, gateway_subscription_id
-            )
-            VALUES ($1,$2,true,NOW(),NOW(),$3,$4,$5,$6,$7,false,$8)
-            ON CONFLICT (cliente_id,modelo_id)
-            DO UPDATE SET
-              ativo=true,
-              expiration_at=$3,
-              updated_at=NOW(),
-              valor_assinatura=$4,
-              taxa_transacao=$5,
-              taxa_plataforma=$6,
-              valor_total=$7,
-              recorrente=false,
-              gateway_subscription_id=$8
-          `,[
-            cliente_id,
-            modelo_id,
-            expiration,
-            Number(metadata.valor_assinatura),
-            Number(metadata.taxa_transacao),
-            Number(metadata.taxa_plataforma),
-            Number(metadata.valor_total),
-            pi.id
-          ]);
+  const valorBase = Number((valorPago - taxaExtra).toFixed(2));
 
-          await client.query(`
-            INSERT INTO transacoes_agency (
-              modelo_id, cliente_id, tipo,
-              valor_bruto, valor_modelo,
-              agency_fee, velvet_fee,
-              taxa_gateway, status,
-              created_at, aceitou_termos,
-              aceite_ip, aceite_data
-            )
-            VALUES (
-              $1,$2,'assinatura',
-              $3,$4,0,$5,$6,
-              'pago',NOW(),true,$7,NOW()
-            )
-          `,[
-            modelo_id,
-            cliente_id,
-            Number(metadata.valor_total),
-            Number(metadata.valor_assinatura),
-            Number(metadata.taxa_plataforma),
-            Number(metadata.taxa_transacao),
-            metadata.aceite_ip
-          ]);
+  const valores = await calcularValores({
+    modelo_id,
+    valor_bruto: valorBase,
+    taxa_gateway: 0
+  });
 
-           const mensagem = await enviarBoasVindasVip({
+  await client.query(`
+    INSERT INTO vip_subscriptions (
+      cliente_id, modelo_id, ativo,
+      created_at, updated_at, expiration_at,
+      valor_assinatura, taxa_transacao,
+      taxa_plataforma, valor_total,
+      recorrente, gateway_subscription_id
+    )
+    VALUES ($1,$2,true,NOW(),NOW(),$3,$4,$5,$6,false,$7)
+    ON CONFLICT (cliente_id,modelo_id)
+    DO UPDATE SET
+      ativo=true,
+      expiration_at=$3,
+      updated_at=NOW(),
+      valor_assinatura=$4,
+      taxa_transacao=$5,
+      taxa_plataforma=$6,
+      valor_total=$8,
+      recorrente=false,
+      gateway_subscription_id=$7
+  `,[
+    cliente_id,
+    modelo_id,
+    expiration,
+    valorBase,
+    Number(metadata.taxa_transacao || 0),
+    Number(metadata.taxa_plataforma || 0),
+    valorPago,
+    pi.id
+  ]);
+
+  await client.query(`
+    INSERT INTO transacoes_agency (
+      modelo_id,
+      cliente_id,
+      tipo,
+      valor_bruto,
+      valor_modelo,
+      agency_fee,
+      velvet_fee,
+      taxa_gateway,
+      status,
+      created_at,
+      aceitou_termos,
+      aceite_ip,
+      aceite_data
+    )
+    VALUES (
+      $1,$2,'assinatura',
+      $3,$4,$5,$6,$7,
+      'pago',NOW(),true,$8,NOW()
+    )
+  `,[
+    modelo_id,
+    cliente_id,
+    valorBase,
+    valores.valor_modelo,
+    valores.agency_fee,
+    valores.velvet_fee,
+    taxaExtra,
+    metadata.aceite_ip || null
+  ]);
+
+  const mensagem = await enviarBoasVindasVip({
     client,
     cliente_id,
     modelo_id
   });
 
-          dadosParaEmitir = {
-            tipo: "vip",
-            cliente_id,
-            modelo_id,
-            mensagemBoasVindas: mensagem
-          };
-        }
+  dadosParaEmitir = {
+    tipo: "vip",
+    cliente_id,
+    modelo_id,
+    mensagemBoasVindas: mensagem
+  };
+}
 
-        /* ================== CONTEÚDO CARTÃO ================== */
+/* ================== CONTEÚDO CARTÃO ================== */
+if (tipo === "conteudo_cartao") {
 
-        if (tipo === "conteudo_cartao") {
+  const message_id = Number(metadata.message_id);
 
-          const message_id = Number(metadata.message_id);
+  const valorPago = pi.amount / 100;
 
-          await client.query(`
-            UPDATE pagamentos_cartao
-            SET status='pago'
-            WHERE stripe_payment_intent_id=$1
-          `,[pi.id]);
+  const taxaExtra =
+    Number(metadata.taxa_transacao || 0) +
+    Number(metadata.taxa_plataforma || 0);
 
-          await client.query(`
-            UPDATE pagamento_tentativas
-            SET status='pago'
-            WHERE payment_intent_id=$1
-          `,[pi.id]);
+  const valorBase = Number((valorPago - taxaExtra).toFixed(2));
 
-          await client.query(`
-            INSERT INTO conteudo_pacotes (
-              modelo_id, cliente_id,
-              preco, valor_base,
-              taxa_transacao, taxa_plataforma,
-              valor_total, status,
-              payment_id, metodo_pagamento,
-              pago_em, message_id
-            )
-            VALUES (
-              $1,$2,$3,$3,$4,$5,$6,
-              'pago',$7,'cartao',NOW(),$8
-            )
-            ON CONFLICT DO NOTHING
-          `,[
-            modelo_id,
-            cliente_id,
-            Number(metadata.valor_assinatura),
-            Number(metadata.taxa_transacao),
-            Number(metadata.taxa_plataforma),
-            Number(metadata.valor_total),
-            pi.id,
-            message_id
-          ]);
+  const valores = await calcularValores({
+    modelo_id,
+    valor_bruto: valorBase,
+    taxa_gateway: 0
+  });
 
-          dadosParaEmitir = {
-            tipo: "conteudo_cartao",
-            cliente_id,
-            modelo_id,
-            message_id
-          };
-        }
-      }
+  await client.query(`
+    UPDATE pagamentos_cartao
+    SET status='pago'
+    WHERE stripe_payment_intent_id=$1
+  `,[pi.id]);
 
-      /* ================== CHARGEBACK ================== */
+  await client.query(`
+    UPDATE pagamento_tentativas
+    SET status='pago'
+    WHERE payment_intent_id=$1
+  `,[pi.id]);
+
+  await client.query(`
+    INSERT INTO conteudo_pacotes (
+      modelo_id, cliente_id,
+      preco, valor_base,
+      taxa_transacao, taxa_plataforma,
+      valor_total, status,
+      payment_id, metodo_pagamento,
+      pago_em, message_id
+    )
+    VALUES (
+      $1,$2,$3,$3,$4,$5,$6,
+      'pago',$7,'cartao',NOW(),$8
+    )
+    ON CONFLICT DO NOTHING
+  `,[
+    modelo_id,
+    cliente_id,
+    valorBase,
+    Number(metadata.taxa_transacao || 0),
+    Number(metadata.taxa_plataforma || 0),
+    valorPago,
+    pi.id,
+    message_id
+  ]);
+
+  await client.query(`
+    INSERT INTO transacoes_agency (
+      modelo_id,
+      cliente_id,
+      tipo,
+      valor_bruto,
+      valor_modelo,
+      agency_fee,
+      velvet_fee,
+      taxa_gateway,
+      status,
+      created_at,
+      aceitou_termos,
+      aceite_ip,
+      aceite_data
+    )
+    VALUES (
+      $1,$2,'midia',
+      $3,$4,$5,$6,$7,
+      'pago',NOW(),true,$8,NOW()
+    )
+  `,[
+    modelo_id,
+    cliente_id,
+    valorBase,
+    valores.valor_modelo,
+    valores.agency_fee,
+    valores.velvet_fee,
+    taxaExtra,
+    metadata.aceite_ip || null
+  ]);
+
+  dadosParaEmitir = {
+    tipo: "conteudo_cartao",
+    cliente_id,
+    modelo_id,
+    message_id
+  };
+}
+}
+
+/* ================== CHARGEBACK ================== */
 
       if (event.type === "charge.dispute.created") {
 
@@ -347,7 +412,7 @@ app.post(
 
       await client.query("COMMIT");
 
-      /* ================== EMISSÃO SOCKET ================== */
+/* ================== EMISSÃO SOCKET ================== */
 
       if (dadosParaEmitir?.tipo === "vip") {
 
@@ -380,6 +445,7 @@ app.post(
       await client.query("ROLLBACK");
       console.error("🔥 ERRO WEBHOOK STRIPE:", err);
       return res.status(500).send("erro");
+
     } finally {
       client.release();
     }
@@ -494,81 +560,107 @@ console.log("============================================");
         return res.status(200).send("ok");
       }
 
-      /* =====================================================
-         🎬 MIDIA
-      ===================================================== */
+  //=====================================================
+  //MIDIA
+  if (metadata.tipo === "conteudo_pix") {
 
-      if (metadata.tipo === "conteudo_pix") {
+  const valorPago = charge.amount / 100;
 
-        await client.query(`
-          INSERT INTO conteudo_pacotes (
-            message_id,
-            cliente_id,
-            modelo_id,
-            preco,
-            valor_base,
-            valor_total,
-            status,
-            metodo_pagamento,
-            pago_em
-          )
-          VALUES ($1,$2,$3,$4,$4,$4,'pago','pix',NOW())
-          ON CONFLICT (message_id,cliente_id) DO NOTHING
-        `,[
-          message_id,
-          cliente_id,
-          modelo_id,
-          valorPago
-        ]);
+  const taxaExtra =
+    Number(metadata.taxa_transacao || 0) +
+    Number(metadata.taxa_plataforma || 0);
 
-const taxaGateway     = Number((valorPago * 0.10).toFixed(2));
-const taxaPlataforma  = Number((valorPago * 0.05).toFixed(2));
-const valorModelo     = Number((valorPago - taxaGateway - taxaPlataforma).toFixed(2));        
+  const valorBase = Number((valorPago - taxaExtra).toFixed(2));
 
-await client.query(`
-  INSERT INTO transacoes_agency (
+  const valores = await calcularValores({
+    modelo_id,
+    valor_bruto: valorBase,
+    taxa_gateway: 0
+  });
+
+  // 🔹 Registro pacote
+  await client.query(`
+    INSERT INTO conteudo_pacotes (
+      message_id,
+      cliente_id,
+      modelo_id,
+      preco,
+      valor_base,
+      valor_total,
+      status,
+      metodo_pagamento,
+      pago_em
+    )
+    VALUES ($1,$2,$3,$4,$4,$5,'pago','pix',NOW())
+    ON CONFLICT (message_id,cliente_id) DO NOTHING
+  `,[
+    message_id,
+    cliente_id,
+    modelo_id,
+    valorBase,
+    valorPago
+  ]);
+
+  // 🔹 Registro financeiro oficial
+  await client.query(`
+    INSERT INTO transacoes_agency (
+      modelo_id,
+      cliente_id,
+      tipo,
+      valor_bruto,
+      valor_modelo,
+      agency_fee,
+      velvet_fee,
+      taxa_gateway,
+      status,
+      created_at,
+      aceitou_termos,
+      aceite_ip,
+      aceite_data
+    )
+    VALUES (
+      $1,$2,'midia',
+      $3,$4,$5,$6,$7,
+      'pago',NOW(),true,$8,NOW()
+    )
+  `,[
     modelo_id,
     cliente_id,
-    tipo,
-    valor_bruto,
-    valor_modelo,
-    agency_fee,
-    velvet_fee,
-    taxa_gateway,
-    status,
-    created_at,
-    aceitou_termos,
-    aceite_ip,
-    aceite_data
-  )
-  VALUES (
-    $1,$2,'midia',
-    $3,$4,$5,$6,$7,
-    'pago',NOW(),true,$8,NOW()
-  )
-`,[
-  modelo_id,
-  cliente_id,
-  valorPago,            // valor_bruto
-  valorModelo,          // valor_modelo
-  0,                    // agency_fee (se usar depois)
-  taxaPlataforma,       // velvet_fee
-  taxaGateway,          // taxa_gateway
-  metadata.aceite_ip || null
-]);
-dadosParaEmitir = {
-  tipo: "conteudo_pix",
-  cliente_id,
-  modelo_id,
-  conteudo_id: message_id
-};
+    valorBase,
+    valores.valor_modelo,
+    valores.agency_fee,
+    valores.velvet_fee,
+    taxaExtra,
+    metadata.aceite_ip || null
+  ]);
 
+  dadosParaEmitir = {
+    tipo: "conteudo_pix",
+    cliente_id,
+    modelo_id,
+    conteudo_id: message_id
+  };
 }
+
 
 if (metadata.tipo === "vip") {
 
   const expiration = new Date();
   expiration.setMonth(expiration.getMonth() + 1);
+
+  const valorPago = charge.amount / 100;
+
+  const taxaExtra =
+    Number(metadata.taxa_transacao || 0) +
+    Number(metadata.taxa_plataforma || 0);
+
+  const valorBase = Number((valorPago - taxaExtra).toFixed(2));
+
+  const valores = await calcularValores({
+    modelo_id,
+    valor_bruto: valorBase,
+    taxa_gateway: 0
+  });
 
   await client.query(`
     INSERT INTO vip_subscriptions (
@@ -586,72 +678,65 @@ if (metadata.tipo === "vip") {
       gateway_subscription_id
     )
     VALUES (
-      $1,
-      $2,
-      true,
-      NOW(),
-      NOW(),
-      $3,
-      $4,
-      $5,
-      $6,
-      $7,
-      false,
-      $8
+      $1,$2,true,
+      NOW(),NOW(),
+      $3,$4,$5,$6,
+      false,$7
     )
     ON CONFLICT (cliente_id,modelo_id)
     DO UPDATE SET
-      ativo = true,
-      expiration_at = $3,
-      updated_at = NOW(),
-      valor_assinatura = $4,
-      taxa_transacao = $5,
-      taxa_plataforma = $6,
-      valor_total = $7,
-      recorrente = false,
-      gateway_subscription_id = $8
+      ativo=true,
+      expiration_at=$3,
+      updated_at=NOW(),
+      valor_assinatura=$4,
+      taxa_transacao=$5,
+      taxa_plataforma=$6,
+      valor_total=$6,
+      recorrente=false,
+      gateway_subscription_id=$7
   `,[
     cliente_id,
     modelo_id,
     expiration,
-    Number(metadata.valor_assinatura),
-    Number(metadata.taxa_transacao),
-    Number(metadata.taxa_plataforma),
-    Number(metadata.valor_total),
-    event.id
+    valorBase,
+    Number(metadata.taxa_transacao || 0),
+    Number(metadata.taxa_plataforma || 0),
+    valorPago,
+    orderId
   ]);
 
-await client.query(`
-  INSERT INTO transacoes_agency (
+  await client.query(`
+    INSERT INTO transacoes_agency (
+      modelo_id,
+      cliente_id,
+      tipo,
+      valor_bruto,
+      valor_modelo,
+      agency_fee,
+      velvet_fee,
+      taxa_gateway,
+      status,
+      created_at,
+      aceitou_termos,
+      aceite_ip,
+      aceite_data
+    )
+    VALUES (
+      $1,$2,'assinatura',
+      $3,$4,$5,$6,$7,
+      'pago',NOW(),true,$8,NOW()
+    )
+  `,[
     modelo_id,
     cliente_id,
-    tipo,
-    valor_bruto,
-    valor_modelo,
-    agency_fee,
-    velvet_fee,
-    taxa_gateway,
-    status,
-    created_at,
-    aceitou_termos,
-    aceite_ip,
-    aceite_data
-  )
-  VALUES (
-    $1,$2,'assinatura',
-    $3,$4,$5,$6,$7,
-    'pago',NOW(),true,$8,NOW()
-  )
-`,[
-  modelo_id,
-  cliente_id,
-  Number(metadata.valor_total),           // valor_bruto
-  Number(metadata.valor_assinatura),      // valor_modelo
-  0,                                      // agency_fee (ajuste se usar)
-  Number(metadata.taxa_plataforma),       // velvet_fee
-  Number(metadata.taxa_transacao),        // taxa_gateway
-  metadata.aceite_ip
-]);
+    valorBase,
+    valores.valor_modelo,
+    valores.agency_fee,
+    valores.velvet_fee,
+    taxaExtra,
+    metadata.aceite_ip || null
+  ]);
+
   const mensagem = await enviarBoasVindasVip({
     client,
     cliente_id,
@@ -665,9 +750,9 @@ await client.query(`
     mensagemBoasVindas: mensagem
   };
 }
-      /* =====================================================
-         4️⃣ MARCAR PAGAMENTO COMO PAGO
-      ===================================================== */
+/* =====================================================
+MARCAR PAGAMENTO COMO PAGO
+===================================================== */
 
       await client.query(`
         UPDATE pagamentos_pix
@@ -703,7 +788,7 @@ console.log("📡 VIP ativado enviado para cliente:", dadosParaEmitir.cliente_id
 
   }
 
-  // 🎬 CONTEÚDO PIX
+  // CONTEÚDO PIX
   if (dadosParaEmitir.tipo === "conteudo_pix") {
 
     const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
@@ -722,6 +807,7 @@ return res.status(200).send("ok");
       await client.query("ROLLBACK");
       console.error("🔥 ERRO WEBHOOK COMPLETO:", err);
       return res.status(500).send("erro");
+
     } finally {
       client.release();
     }
@@ -1240,24 +1326,26 @@ if (!apenas_intent) {
       return res.status(400).json({ error: "Valor inválido" });
     }
 
-    /* =====================================================
-       💰 CÁLCULO
-    ===================================================== */
+/* =====================================================
+   💰 CÁLCULO CONSISTENTE
+===================================================== */
 
-    const valorCentavos = Math.round(valorAssinatura * 100);
-    const taxaTransacaoCentavos  = Math.round(valorCentavos * 0.10);
-    const taxaPlataformaCentavos = Math.round(valorCentavos * 0.05);
+const valorCentavos = Math.round(valorAssinatura * 100);
 
-    const amount =
-      valorCentavos +
-      taxaTransacaoCentavos +
-      taxaPlataformaCentavos;
+const taxaTransacaoCentavos  = Math.round(valorCentavos * 0.10);
+const taxaPlataformaCentavos = Math.round(valorCentavos * 0.05);
 
-    const taxaTransacao  = (taxaTransacaoCentavos / 100).toFixed(2);
-    const taxaPlataforma = (taxaPlataformaCentavos / 100).toFixed(2);
+const amount =
+  valorCentavos +
+  taxaTransacaoCentavos +
+  taxaPlataformaCentavos;
+
+const taxaTransacao  = (taxaTransacaoCentavos / 100);
+const taxaPlataforma = (taxaPlataformaCentavos / 100);
+const valorTotal     = (amount / 100);
 
 /* =====================================================
-   💳 CRIAR NOVO PAYMENT INTENT (SEMPRE NOVO)
+   💳 CRIAR PAYMENT INTENT
 ===================================================== */
 
 const paymentIntent = await stripe.paymentIntents.create({
@@ -1269,11 +1357,12 @@ const paymentIntent = await stripe.paymentIntents.create({
     cliente_id: String(cliente_id),
     modelo_id: String(modelo_id),
     oferta_id: oferta_id ? String(oferta_id) : "",
-    valor_assinatura: String(valorAssinatura),
-    taxa_transacao: taxaTransacao,
-    taxa_plataforma: taxaPlataforma,
-     cpf: cpf || "",
-     aceite_ip: ip || ""
+    valor_assinatura: String(valorAssinatura),   
+    taxa_transacao: String(taxaTransacao),
+    taxa_plataforma: String(taxaPlataforma),
+    valor_total: String(valorTotal),             
+    cpf: cpf || "",
+    aceite_ip: ip || ""
   }
 });
 
@@ -4647,17 +4736,20 @@ app.post("/api/pagamento/vip/pix", auth, async (req, res) => {
   const client = await db.connect();
 
   try {
-    const { tipo, modelo_id, conteudo_id, cpf, aceitou_termos, fingerprint } = req.body;
+
+    const { modelo_id, cpf, aceitou_termos, fingerprint } = req.body;
     const userId = req.user.id;
 
-    if (!cpf || cpf.length !== 11) {
-      console.log(req.body);
+    if (!aceitou_termos) {
+      return res.status(400).json({ error: "É necessário aceitar os termos." });
     }
 
-    if (!aceitou_termos) {
-      return res.status(400).json({
-        error: "É necessário aceitar os termos."
-      });
+    if (!cpf || cpf.length !== 11) {
+      return res.status(400).json({ error: "CPF obrigatório." });
+    }
+
+    if (!modelo_id || !Number.isInteger(Number(modelo_id))) {
+      return res.status(400).json({ error: "modelo_id inválido" });
     }
 
     const ip =
@@ -4666,20 +4758,6 @@ app.post("/api/pagamento/vip/pix", auth, async (req, res) => {
 
     await client.query("BEGIN");
 
-    /* 🔒 BLOQUEIO IP */
-    const ipBloqueado = await client.query(
-      "SELECT 1 FROM ips_bloqueados WHERE ip = $1",
-      [ip]
-    );
-
-    if (ipBloqueado.rowCount > 0) {
-      await client.query("ROLLBACK");
-      return res.status(403).json({
-        error: "IP bloqueado por atividade suspeita."
-      });
-    }
-
-    /* 🔒 BUSCAR CLIENTE */
     const clienteRes = await client.query(
       "SELECT id, bloqueado FROM clientes WHERE user_id=$1",
       [userId]
@@ -4694,173 +4772,70 @@ app.post("/api/pagamento/vip/pix", auth, async (req, res) => {
 
     if (bloqueado) {
       await client.query("ROLLBACK");
-      return res.status(403).json({
-        error: "Conta bloqueada."
-      });
+      return res.status(403).json({ error: "Conta bloqueada." });
     }
 
-    /* 🔒 BLOQUEIO CPF MED */
-    const cpfBloqueado = await client.query(
-      "SELECT 1 FROM cpfs_bloqueados WHERE cpf=$1",
-      [cpf]
-    );
+    const planoRes = await client.query(`
+      SELECT valor_mensal
+      FROM modelos_planos
+      WHERE modelo_id = $1
+      LIMIT 1
+    `, [modelo_id]);
 
-    if (cpfBloqueado.rowCount) {
+    if (!planoRes.rowCount) {
       await client.query("ROLLBACK");
-      return res.status(403).json({
-        error: "CPF bloqueado por irregularidade anterior."
-      });
+      return res.status(400).json({ error: "Plano VIP não encontrado" });
     }
 
-    /* 🔄 ATUALIZA CPF + IP */
-    await client.query(`
-      UPDATE clientes
-      SET cpf=$1,
-          ultimo_ip=$2
-      WHERE id=$3
-    `,[cpf, ip, cliente_id]);
+    const valorBase = Number(planoRes.rows[0].valor_mensal);
 
-    let valorBase = 0;
-    let modeloIdFinal = null;
-    let descricao = "";
-
-    /* =====================================================
-       🎬 MIDIA
-    ===================================================== */
-    if (tipo === "midia") {
-
-      if (!conteudo_id || !Number.isInteger(Number(conteudo_id))) {
-        await client.query("ROLLBACK");
-        return res.status(400).json({ error: "conteudo_id inválido" });
-      }
-
-      const conteudoRes = await client.query(`
-        SELECT preco, modelo_id
-        FROM conteudos
-        WHERE id=$1 AND tipo_conteudo='venda'
-      `,[conteudo_id]);
-
-      if (!conteudoRes.rowCount) {
-        await client.query("ROLLBACK");
-        return res.status(404).json({ error: "Conteúdo não encontrado" });
-      }
-
-      const { preco, modelo_id: midiaModelo } = conteudoRes.rows[0];
-const jaComprado = await client.query(`
-  SELECT 1
-  FROM pagamentos_pix
-  WHERE message_id = $1
-    AND cliente_id = $2
-    AND status = 'pago'
-  LIMIT 1
-`, [conteudoId, cliente_id]);
-
-      if (jaComprado.rowCount) {
-        await client.query("ROLLBACK");
-        return res.status(400).json({
-          error: "Conteúdo já adquirido."
-        });
-      }
-
-      valorBase = Number(preco);
-      modeloIdFinal = midiaModelo;
-      descricao = "Compra Velvet";
+    if (!valorBase || valorBase <= 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Valor inválido para pagamento" });
     }
 
-/* =====================================================
-       💎 VIP
-===================================================== */
-if (tipo === "vip") {
+    const valorCentavos = Math.round(valorBase * 100);
+    const taxaTransacaoCentavos  = Math.round(valorCentavos * 0.10);
+    const taxaPlataformaCentavos = Math.round(valorCentavos * 0.05);
 
-  if (!modelo_id || !Number.isInteger(Number(modelo_id))) {
-    await client.query("ROLLBACK");
-    return res.status(400).json({ error: "modelo_id inválido" });
-  }
+    const amount =
+      valorCentavos +
+      taxaTransacaoCentavos +
+      taxaPlataformaCentavos;
 
-  const planoRes = await client.query(`
-    SELECT valor_mensal
-    FROM modelos_planos
-    WHERE modelo_id = $1
-    LIMIT 1
-  `, [modelo_id]);
-
-  if (!planoRes.rowCount) {
-    await client.query("ROLLBACK");
-    return res.status(400).json({ error: "Plano VIP não encontrado" });
-  }
-
-  let valorCalculado = Number(planoRes.rows[0].valor_mensal);
-
-  // 🔥 Oferta ativa
-  const ofertaRes = await client.query(`
-    SELECT desconto_percentual
-    FROM ofertas
-    WHERE modelo_id = $1
-      AND ativa = true
-      AND (data_inicio IS NULL OR data_inicio <= NOW())
-      AND (data_fim IS NULL OR data_fim >= NOW())
-    ORDER BY created_at DESC
-    LIMIT 1
-  `, [modelo_id]);
-
-  if (ofertaRes.rowCount) {
-    const desconto = Number(ofertaRes.rows[0].desconto_percentual);
-    valorCalculado = valorCalculado - (valorCalculado * desconto / 100);
-  }
-
-  valorBase = Number(valorCalculado.toFixed(2)); 
-
-  modeloIdFinal = modelo_id;
-  descricao = "Assinatura VIP Velvet";
-}
-if (!valorBase || valorBase <= 0) {
-  await client.query("ROLLBACK");
-  return res.status(400).json({ error: "Valor inválido para pagamento" });
-}
-
-const taxaTransacao  = Number((valorBase * 0.10).toFixed(2));
-const taxaPlataforma = Number((valorBase * 0.05).toFixed(2));
-const total = Number((valorBase + taxaTransacao + taxaPlataforma).toFixed(2));
-    const amount = Math.round(total * 100);
+    const taxaTransacao  = taxaTransacaoCentavos / 100;
+    const taxaPlataforma = taxaPlataformaCentavos / 100;
+    const total          = amount / 100;
 
     const pagarmeResponse = await axios.post(
       "https://api.pagar.me/core/v5/orders",
       {
         items: [{
           amount,
-          description: descricao,
+          description: "Assinatura VIP Velvet",
           quantity: 1
         }],
         customer: {
-  name: req.user.nome || "Cliente Velvet",
-  email: req.user.email,
-  document: cpf,
-  type: "individual",
-  phones: {
-    mobile_phone: {
-      country_code: "55",
-      area_code: "11",
-      number: "999999999"
-    }
-  }
-},
+          name: req.user.nome || "Cliente Velvet",
+          email: req.user.email,
+          document: cpf,
+          type: "individual"
+        },
         payments: [{
           payment_method: "pix",
           pix: { expires_in: 3600 }
         }],
         metadata: {
-  tipo,
-  cliente_id: String(cliente_id),
-  modelo_id: String(modeloIdFinal),
-  conteudo_id: conteudo_id ? String(conteudo_id) : "",
-  aceite_ip: ip,
-  fingerprint,
-
-  valor_assinatura: String(valorBase),
-  taxa_transacao: String(taxaTransacao),
-  taxa_plataforma: String(taxaPlataforma),
-  valor_total: String(total)
-}
+          tipo: "vip",
+          cliente_id: String(cliente_id),
+          modelo_id: String(modelo_id),
+          aceite_ip: ip,
+          fingerprint: fingerprint || "",
+          valor_assinatura: String(valorBase),
+          taxa_transacao: String(taxaTransacao),
+          taxa_plataforma: String(taxaPlataforma),
+          valor_total: String(total)
+        }
       },
       {
         headers: {
@@ -4875,46 +4850,47 @@ const total = Number((valorBase + taxaTransacao + taxaPlataforma).toFixed(2));
     const order = pagarmeResponse.data;
     const pixData = order.charges[0].last_transaction;
 
-   await client.query(`
-  INSERT INTO pagamentos_pix (
-    cliente_id,
-    modelo_id,
-    valor,
-    status,
-    pagarme_order_id,
-    criado_em,
-    aceite_ip,
-    aceitou_termos,
-    cpf,
-    fingerprint
-  )
-  VALUES ($1,$2,$3,'pendente',$4,NOW(),$5,true,$6,$7)
-`,[
-  cliente_id,
-  modeloIdFinal,
-  total,
-  order.id,
-  ip,
-  cpf,
-  fingerprint
-]);
+    await client.query(`
+      INSERT INTO pagamentos_pix (
+        cliente_id,
+        modelo_id,
+        valor,
+        status,
+        pagarme_order_id,
+        criado_em,
+        aceite_ip,
+        aceitou_termos,
+        cpf,
+        fingerprint
+      )
+      VALUES ($1,$2,$3,'pendente',$4,NOW(),$5,true,$6,$7)
+    `,[
+      cliente_id,
+      modelo_id,
+      total,
+      order.id,
+      ip,
+      cpf,
+      fingerprint || ""
+    ]);
+
     await client.query("COMMIT");
 
-res.json({
-  qr_code_url: pixData.qr_code_url,   // 👈 imagem pronta
-  copia_cola: pixData.qr_code,        // 👈 texto PIX
-  expires_at: pixData.expires_at,
-  order_id: order.id
-});
+    res.json({
+      qr_code_url: pixData.qr_code_url,
+      copia_cola: pixData.qr_code,
+      expires_at: pixData.expires_at,
+      order_id: order.id
+    });
+
   } catch (err) {
     await client.query("ROLLBACK");
-    console.error("🔥 ERRO PIX:", err.response?.data || err);
+    console.error("🔥 ERRO PIX VIP:", err.response?.data || err);
     res.status(500).json({ error: "Erro ao gerar pagamento PIX" });
   } finally {
     client.release();
   }
 });
-
 
 app.post("/api/pagamento/midia/pix", auth, async (req, res) => {
   const client = await db.connect();
@@ -5020,14 +4996,24 @@ const jaComprado = await client.query(`
       });
     }
 
-  /* =====================================================
-   💰 CÁLCULO SEGURO
+/* =====================================================
+   💰 CÁLCULO CONSISTENTE COM WEBHOOK
 ===================================================== */
-const valorBase = Number(preco);
-const taxaTransacao  = Number((valorBase * 0.10).toFixed(2));
-const taxaPlataforma = Number((valorBase * 0.05).toFixed(2));
-const total = Number((valorBase + taxaTransacao + taxaPlataforma).toFixed(2));
-const amount = Math.round(total * 100); // centavos
+
+const valorCentavos = Math.round(Number(preco) * 100);
+
+const taxaTransacaoCentavos  = Math.round(valorCentavos * 0.10);
+const taxaPlataformaCentavos = Math.round(valorCentavos * 0.05);
+
+const amount =
+  valorCentavos +
+  taxaTransacaoCentavos +
+  taxaPlataformaCentavos;
+
+const valorBase       = valorCentavos / 100;
+const taxaTransacao   = taxaTransacaoCentavos / 100;
+const taxaPlataforma  = taxaPlataformaCentavos / 100;
+const total           = amount / 100;
 
 /* =====================================================
    💳 CRIAR ORDEM PIX PAGAR.ME
@@ -5057,17 +5043,19 @@ const pagarmeResponse = await axios.post(
           payment_method: "pix",
           pix: { expires_in: 3600 }
         }],
-    metadata: {
-      tipo: "conteudo_pix",
-      message_id: String(conteudoId),
-      cliente_id: String(cliente_id),
-      modelo_id: String(modelo_id),
-      valor_base: String(valorBase),
-      taxa_transacao: String(taxaTransacao),
-      taxa_plataforma: String(taxaPlataforma),
-      aceite_ip: ip,
-      aceite_data: new Date().toISOString()
-    }
+        metadata: {
+  tipo: "conteudo_pix",
+  message_id: String(conteudoId),
+  cliente_id: String(cliente_id),
+  modelo_id: String(modelo_id),
+  aceite_ip: ip,
+  fingerprint: fingerprint || "",
+
+  valor_assinatura: String(valorBase),   
+  taxa_transacao: String(taxaTransacao),
+  taxa_plataforma: String(taxaPlataforma),
+  valor_total: String(total)            
+}
   },
   {
     headers: {
@@ -5164,76 +5152,54 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
 
     await client.query("BEGIN");
 
-    /* =====================================================
-       🔒 BLOQUEIO IP
-    ===================================================== */
-    const ipBloqueado = await client.query(
-      "SELECT 1 FROM ips_bloqueados WHERE ip = $1",
-      [ip]
-    );
-
-    if (ipBloqueado.rowCount > 0) {
-      await client.query("ROLLBACK");
-      return res.status(403).json({
-        error: "IP bloqueado por atividade suspeita."
-      });
-    }
-
-    /* =====================================================
-       🔁 BUSCAR CLIENTE
-    ===================================================== */
+    /* 🔒 BUSCAR CLIENTE */
     const clienteRes = await client.query(
-      "SELECT id, cpf, bloqueado FROM clientes WHERE user_id = $1",
+      "SELECT id, bloqueado FROM clientes WHERE user_id = $1",
       [userId]
     );
 
-    if (clienteRes.rowCount === 0) {
+    if (!clienteRes.rowCount) {
       await client.query("ROLLBACK");
       return res.status(404).json({ error: "Cliente não encontrado" });
     }
 
-    const { id: cliente_id, cpf, bloqueado } = clienteRes.rows[0];
+    const { id: cliente_id, bloqueado } = clienteRes.rows[0];
 
     if (bloqueado) {
       await client.query("ROLLBACK");
-      return res.status(403).json({
-        error: "Conta bloqueada."
+      return res.status(403).json({ error: "Conta bloqueada." });
+    }
+
+    /* 🔎 BUSCAR CONTEÚDO */
+    const messageRes = await client.query(`
+      SELECT preco, modelo_id
+      FROM messages
+      WHERE id = $1
+    `, [conteudoId]);
+
+    if (!messageRes.rowCount) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Conteúdo não encontrado" });
+    }
+
+    const { preco, modelo_id } = messageRes.rows[0];
+
+    if (!preco || Number(preco) <= 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        error: "Conteúdo não está à venda."
       });
     }
 
-    /* =====================================================
-       🔎 BUSCAR CONTEÚDO
-    ===================================================== */
-const messageRes = await client.query(`
-  SELECT preco, modelo_id
-  FROM messages
-  WHERE id = $1
-`, [conteudoId]);
-
-if (!messageRes.rowCount) {
-  await client.query("ROLLBACK");
-  return res.status(404).json({ error: "Conteúdo não encontrado" });
-}
-
-const { preco, modelo_id } = messageRes.rows[0];
-
-if (!preco || Number(preco) <= 0) {
-  await client.query("ROLLBACK");
-  return res.status(400).json({
-    error: "Conteúdo não está à venda."
-  });
-};
-    /* =====================================================
-       🚫 EVITAR COMPRA DUPLICADA
-    ===================================================== */
+    /* 🚫 EVITAR COMPRA DUPLICADA (PIX OU CARTÃO) */
     const jaComprado = await client.query(`
-  SELECT 1
-  FROM pagamentos_pix
-  WHERE message_id = $1
-    AND cliente_id = $2
-    AND status = 'pago'
-  LIMIT 1
-`, [conteudoId, cliente_id]);
+      SELECT 1
+      FROM conteudo_pacotes
+      WHERE message_id = $1
+        AND cliente_id = $2
+        AND status = 'pago'
+      LIMIT 1
+    `, [conteudoId, cliente_id]);
 
     if (jaComprado.rowCount > 0) {
       await client.query("ROLLBACK");
@@ -5242,103 +5208,58 @@ if (!preco || Number(preco) <= 0) {
       });
     }
 
-    /* =====================================================
-       💰 CÁLCULO SEGURO
-    ===================================================== */
-    const valorBase = Number(preco);
-    const taxaTransacao  = Number((valorBase * 0.10).toFixed(2));
-    const taxaPlataforma = Number((valorBase * 0.05).toFixed(2));
-    const total = Number((valorBase + taxaTransacao + taxaPlataforma).toFixed(2));
-    const amount = Math.round(total * 100);
+    /* 💰 CÁLCULO EM CENTAVOS (PADRÃO WEBHOOK) */
+    const valorCentavos = Math.round(Number(preco) * 100);
 
-    /* =====================================================
-       💳  VERIFICAR SE JÁ EXISTE PAYMENT INTENT PENDENTE
-    ===================================================== */
-const existente = await client.query(`
-  SELECT payment_intent_id
-  FROM pagamento_tentativas
-  WHERE cliente_id = $1
-    AND conteudo_id = $2
-    AND status = 'iniciado'
-  ORDER BY id DESC
-  LIMIT 1
-`, [cliente_id, conteudoId]);
+    const taxaTransacaoCentavos  = Math.round(valorCentavos * 0.10);
+    const taxaPlataformaCentavos = Math.round(valorCentavos * 0.05);
 
-if (existente.rowCount > 0) {
-  const piExistente = await stripe.paymentIntents.retrieve(
-    existente.rows[0].payment_intent_id
-  );
+    const amount =
+      valorCentavos +
+      taxaTransacaoCentavos +
+      taxaPlataformaCentavos;
 
-  await client.query("COMMIT");
+    const valorBase      = valorCentavos / 100;
+    const taxaTransacao  = taxaTransacaoCentavos / 100;
+    const taxaPlataforma = taxaPlataformaCentavos / 100;
+    const total          = amount / 100;
 
-  console.log("DEBUG BACKEND MIDIA (EXISTENTE):", {
-    valorBase,
-    taxaTransacao,
-    taxaPlataforma,
-    total
-  });
-
-  return res.json({
-    clientSecret: piExistente.client_secret,
-    total,
-    valorBase,
-    taxaTransacao,
-    taxaPlataforma
-  });
-}
-
-    /* =====================================================
-       💳  CRIAR PAYMENT INTENT SEM IDEMPOTENCY KEY
-    ===================================================== */
-
+    /* 💳 CRIAR PAYMENT INTENT */
     const paymentIntent = await stripe.paymentIntents.create({
-  amount,
-  currency: "brl",
-  payment_method_types: ["card"],
-  metadata: {
-    tipo: "conteudo_cartao", // ⚠️ IMPORTANTE
-    message_id: String(conteudoId),
-    cliente_id: String(cliente_id),
-    modelo_id: String(modelo_id),
-    valor_total: String(total),
-    valor_assinatura: String(valorBase),
-    taxa_transacao: String(taxaTransacao),
-    taxa_plataforma: String(taxaPlataforma),
-    aceite_ip: ip,
-    aceite_data: new Date().toISOString()
-  }
-});
+      amount,
+      currency: "brl",
+      payment_method_types: ["card"],
+      metadata: {
+        tipo: "conteudo_cartao",
+        message_id: String(conteudoId),
+        cliente_id: String(cliente_id),
+        modelo_id: String(modelo_id),
 
-await client.query(`
-  INSERT INTO pagamentos_cartao
-  (cliente_id, conteudo_id, stripe_payment_intent_id, status)
-  VALUES ($1,$2,$3,'iniciado')
-`, [cliente_id, conteudoId, paymentIntent.id]);
+        valor_assinatura: String(valorBase),
+        taxa_transacao: String(taxaTransacao),
+        taxa_plataforma: String(taxaPlataforma),
+        valor_total: String(total),
 
-    /* =====================================================
-       📝 REGISTRAR TENTATIVA
-    ===================================================== */
-await client.query(`
-  INSERT INTO pagamento_tentativas
-  (cliente_id, conteudo_id, metodo, status, payment_intent_id)
-  VALUES ($1,$2,'cartao','iniciado',$3)
-`,[cliente_id, conteudoId, paymentIntent.id]);
+        aceite_ip: ip
+      }
+    });
+
+    /* 📝 REGISTRAR CONTROLE LOCAL */
+    await client.query(`
+      INSERT INTO pagamentos_cartao
+      (cliente_id, conteudo_id, stripe_payment_intent_id, status)
+      VALUES ($1,$2,$3,'iniciado')
+    `, [cliente_id, conteudoId, paymentIntent.id]);
 
     await client.query("COMMIT");
-    console.log("DEBUG BACKEND MIDIA:", {
-  valorBase,
-  taxaTransacao,
-  taxaPlataforma,
-  total
-});
 
     return res.json({
-  clientSecret: paymentIntent.client_secret,
-  total,
-  valorBase,
-  taxaTransacao,
-  taxaPlataforma
-});
+      clientSecret: paymentIntent.client_secret,
+      total,
+      valorBase,
+      taxaTransacao,
+      taxaPlataforma
+    });
 
   } catch (err) {
     await client.query("ROLLBACK");
@@ -5348,7 +5269,6 @@ await client.query(`
     client.release();
   }
 });
-
 
 // POST /api/vip/cancelar
 app.post("/api/vip/cancelar", auth, async (req, res) => {
