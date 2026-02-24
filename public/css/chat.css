@@ -703,6 +703,7 @@ html, body {
   border-radius: 999px;
   padding: 10px 16px;
   cursor: pointer;
+  margin: 10px;
 }
 
 .hidden {

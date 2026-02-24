@@ -769,12 +769,12 @@ function mostrarToast(texto) {
     toast.style.position = "fixed";
     toast.style.bottom = "20px";
     toast.style.left = "50%";
-    toast.style.transform = "translateX(-50%)";
-    toast.style.background = "#111";
+    toast.style.transform = "translateX(-20%)";
+    toast.style.background = "#7B2CFF";
     toast.style.color = "#fff";
     toast.style.padding = "12px 20px";
     toast.style.borderRadius = "8px";
-    toast.style.zIndex = "9999";
+    toast.style.zIndex = "999999";
     toast.style.fontSize = "14px";
     document.body.appendChild(toast);
   }
