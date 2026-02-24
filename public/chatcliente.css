@@ -737,6 +737,7 @@ text-align: center;
   top: 8px;
   right: 8px;
   border: none;
+  background: none;
 }
 
 .modal-box .modal-close:hover {
