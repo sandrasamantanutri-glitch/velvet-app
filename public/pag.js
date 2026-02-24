@@ -352,9 +352,8 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id }) {
     document.getElementById("pixAguardando")?.classList.remove("hidden");
 
     console.log("PIX RESPONSE:", data);
-    if (!data.order_id) {
-  console.error("order_id não veio do backend", data);
-  alert("Erro ao iniciar verificação do Pix.");
+    if (!data.qr_code_url) {
+  alert("Erro ao gerar QR Code PIX");
   return;
 }
     iniciarVerificacaoPix(data.order_id);

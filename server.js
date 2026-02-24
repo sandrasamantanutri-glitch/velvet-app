@@ -4880,11 +4880,11 @@ app.post("/api/pagamento/vip/pix", auth, async (req, res) => {
     await client.query("COMMIT");
 
     res.json({
-      qr_code_url: pixData.qr_code_url,
-      copia_cola: pixData.qr_code,
-      expires_at: pixData.expires_at,
-      order_id: order.id
-    });
+  qr_code_url: pixData?.qr_code_url || null,
+  copia_cola: pixData?.qr_code || null,
+  expires_at: pixData?.expires_at || order.closed_at || null,
+  order_id: order.id
+});
 
   } catch (err) {
     await client.query("ROLLBACK");
