@@ -780,7 +780,6 @@ router.get("/access", authCliente, async (req, res) => {
 });
 
 router.get("/transacoes", authModelo, async (req, res) => {
-  console.log("🔥 ROTA NOVA EXECUTANDO");
   try {
     const modeloRes = await db.query(
       "SELECT id FROM modelos WHERE user_id = $1",
@@ -793,16 +792,29 @@ router.get("/transacoes", authModelo, async (req, res) => {
 
     const modelo_id = modeloRes.rows[0].id;
 
-    // 📄 Paginação
     const page = parseInt(req.query.page) || 1;
     const limit = 10;
     const offset = (page - 1) * limit;
 
-    // 🔥 NOVO + ANTIGO (mantendo status original)
+    const { mes } = req.query; // 👈 NOVO
+
+    let values = [modelo_id];
+    let monthFilter = "";
+
+    if (mes && /^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
+      values.push(`${mes}-01`);
+      monthFilter = `
+        AND created_at >= date_trunc('month', $${values.length}::date)
+        AND created_at <  date_trunc('month', $${values.length}::date) + interval '1 month'
+      `;
+    }
+
+    values.push(limit, offset);
+
     const sql = `
       SELECT *
       FROM (
-        -- 🔵 SISTEMA NOVO (padronizado como normal)
+        -- 🔵 SISTEMA NOVO
         SELECT
           id AS codigo,
           tipo,
@@ -813,10 +825,11 @@ router.get("/transacoes", authModelo, async (req, res) => {
         FROM transacoes_agency
         WHERE modelo_id = $1
           AND status = 'pago'
+          ${monthFilter}
 
         UNION ALL
 
-        -- 🟡 SISTEMA ANTIGO (mantém normal e pago)
+        -- 🟡 SISTEMA ANTIGO
         SELECT
           id AS codigo,
           tipo,
@@ -826,9 +839,12 @@ router.get("/transacoes", authModelo, async (req, res) => {
           NULL AS message_id
         FROM transacoes
         WHERE modelo_id = $1
+          AND status = 'pago'
+          ${monthFilter}
       ) t
       ORDER BY created_at DESC
-      LIMIT $2 OFFSET $3
+      LIMIT $${values.length - 1}
+      OFFSET $${values.length}
     `;
 
     const countSql = `
@@ -838,18 +854,21 @@ router.get("/transacoes", authModelo, async (req, res) => {
         FROM transacoes_agency
         WHERE modelo_id = $1
           AND status = 'pago'
+          ${monthFilter}
 
         UNION ALL
 
         SELECT id
         FROM transacoes
         WHERE modelo_id = $1
+          AND status = 'pago'
+          ${monthFilter}
       ) t
     `;
 
     const [dados, total] = await Promise.all([
-      db.query(sql, [modelo_id, limit, offset]),
-      db.query(countSql, [modelo_id])
+      db.query(sql, values),
+      db.query(countSql, values.slice(0, values.length - 2))
     ]);
 
     const totalRegistros = parseInt(total.rows[0].count);
@@ -863,7 +882,7 @@ router.get("/transacoes", authModelo, async (req, res) => {
     });
 
   } catch (err) {
-    console.error("❌ Erro /transacoes:", err);
+    console.error("Erro /transacoes:", err);
     res.status(500).json({
       registros: [],
       paginaAtual: 1,

@@ -75,27 +75,30 @@ async function carregarTransacoes(pagina = 1) {
     return;
   }
 
-  try {
-    const res = await fetch(`/api/transacoes?page=${pagina}`, {
-      headers: {
-        Authorization: "Bearer " + token
-      }
-    });
+try {
+  const hoje = new Date();
+  const mesAtual = hoje.toISOString().slice(0, 7);
 
-    if (!res.ok) {
-      lista.innerText = "Erro ao carregar transações.";
-      return;
+  const res = await fetch(`/api/transacoes?mes=${mesAtual}&page=${pagina}`, {
+    headers: {
+      Authorization: "Bearer " + token
     }
+  });
 
-    const data = await res.json();
-    const dados = data.registros;
+  if (!res.ok) {
+    lista.innerText = "Erro ao carregar transações.";
+    return;
+  }
 
-    lista.innerHTML = "";
+  const data = await res.json();
+  const dados = data.registros;
 
-    if (!dados.length) {
-      lista.innerText = "Nenhuma transação encontrada.";
-      return;
-    }
+  lista.innerHTML = "";
+
+  if (!dados.length) {
+    lista.innerText = "Nenhuma transação encontrada.";
+    return;
+  }
 
     paginaAtualTransacoes = data.paginaAtual;
 
