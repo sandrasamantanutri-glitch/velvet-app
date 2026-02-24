@@ -4746,11 +4746,14 @@ app.post("/api/pagamento/vip/pix", auth, async (req, res) => {
       }
 
       const { preco, modelo_id: midiaModelo } = conteudoRes.rows[0];
-
-      const jaComprado = await client.query(`
-        SELECT 1 FROM conteudo_pacotes
-        WHERE message_id=$1 AND cliente_id=$2
-      `,[conteudo_id, cliente_id]);
+const jaComprado = await client.query(`
+  SELECT 1
+  FROM pagamentos_pix
+  WHERE message_id = $1
+    AND cliente_id = $2
+    AND status = 'pago'
+  LIMIT 1
+`, [conteudoId, cliente_id]);
 
       if (jaComprado.rowCount) {
         await client.query("ROLLBACK");
@@ -5002,11 +5005,12 @@ const { preco, modelo_id } = messageRes.rows[0];
        🚫 EVITAR COMPRA DUPLICADA
     ===================================================== */
 const jaComprado = await client.query(`
-      SELECT 1
-      FROM conteudo_pacotes
-      WHERE message_id = $1
-        AND cliente_id = $2
-      LIMIT 1
+  SELECT 1
+  FROM pagamentos_pix
+  WHERE message_id = $1
+    AND cliente_id = $2
+    AND status = 'pago'
+  LIMIT 1
     `,[conteudoId, cliente_id]);
 
     if (jaComprado.rowCount > 0) {
@@ -5223,12 +5227,13 @@ if (!preco || Number(preco) <= 0) {
        🚫 EVITAR COMPRA DUPLICADA
     ===================================================== */
     const jaComprado = await client.query(`
-      SELECT 1
-      FROM conteudo_pacotes
-      WHERE message_id = $1
-        AND cliente_id = $2
-      LIMIT 1
-    `,[conteudoId, cliente_id]);
+  SELECT 1
+  FROM pagamentos_pix
+  WHERE message_id = $1
+    AND cliente_id = $2
+    AND status = 'pago'
+  LIMIT 1
+`, [conteudoId, cliente_id]);
 
     if (jaComprado.rowCount > 0) {
       await client.query("ROLLBACK");
