@@ -4793,7 +4793,7 @@ let valorBase = Number(planoRes.rows[0].valor_mensal) || 0;
 
 const ofertaRes = await client.query(`
   SELECT valor_promocional
-  FROM modelos_ofertas
+  FROM ofertas
   WHERE modelo_id = $1
   AND ativa = true
   AND NOW() BETWEEN data_inicio AND data_fim
