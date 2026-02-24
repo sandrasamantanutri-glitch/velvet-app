@@ -593,33 +593,46 @@ async function gerarPix() {
 
   try {
 
-    const res = await fetch("/api/pagamento/midia/pix", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + localStorage.getItem("token")
-      },
-      body: JSON.stringify({
-        conteudo_id,
-        aceitou_termos: true,
-        fingerprint
-      })
-    });
+  const res = await fetch("/api/pagamento/midia/pix", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + localStorage.getItem("token")
+    },
+    body: JSON.stringify({
+      conteudo_id,
+      aceitou_termos: true,
+      fingerprint
+    })
+  });
 
-    const data = await res.json();
+  const data = await res.json();
 
-    if (!res.ok) {
-      alert(data.error || "Erro ao gerar PIX");
-      return;
-    }
-
-    document.getElementById("pixQr").src = data.qr_code_url;
-    document.getElementById("pixCopia").value = data.copia_cola;
-
-  } catch (err) {
-    console.error("Erro Pix:", err);
-    alert("Erro inesperado no Pix");
+  if (!res.ok) {
+    alert(data.error || "Erro ao gerar PIX");
+    return;
   }
+
+  const imgQr = document.getElementById("pixQr");
+  const inputCopia = document.getElementById("pixCopia");
+
+  if (!imgQr || !inputCopia) {
+    console.error("Elementos do Pix não encontrados no HTML");
+    return;
+  }
+
+  if (data.qr_code_url) {
+    imgQr.src = data.qr_code_url;
+  }
+
+  if (data.copia_cola) {
+    inputCopia.value = data.copia_cola;
+  }
+
+} catch (err) {
+  console.error("Erro Pix:", err);
+  alert("Erro inesperado no Pix");
+}
 }
 
 async function pagarComCartao() {
