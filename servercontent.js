@@ -830,17 +830,23 @@ router.get("/transacoes", authModelo, async (req, res) => {
         UNION ALL
 
         -- 🟡 SISTEMA ANTIGO
-        SELECT
-          id AS codigo,
-          tipo,
-          created_at,
-          valor_modelo AS valor,
-          status,
-          NULL AS message_id
-        FROM transacoes
-        WHERE modelo_id = $1
-          AND status = 'pago'
-          ${monthFilter}
+SELECT
+  id AS codigo,
+  tipo,
+  created_at,
+
+  CASE
+    WHEN tipo IN ('assinatura','midia','conteudo')
+    THEN ROUND(valor_modelo * 0.70, 2)
+    ELSE valor_modelo
+  END AS valor,
+
+  status,
+  NULL AS message_id
+FROM transacoes
+WHERE modelo_id = $1
+  AND status = 'pago'
+  ${monthFilter}
       ) t
       ORDER BY created_at DESC
       LIMIT $${values.length - 1}
