@@ -6,7 +6,7 @@ const auth = require("./middleware/auth");
 const authCliente = require("./middleware/authCliente");
 const authModelo = require("./middleware/authModelo");
 const db = require("./db");
-const cloudinary = require("cloudinary").v2;
+
 
 const router = express.Router();   // ⬅️ PRIMEIRO SEMPRE
 
@@ -14,13 +14,6 @@ const router = express.Router();   // ⬅️ PRIMEIRO SEMPRE
 router.use("/assets",
   express.static(path.join(__dirname, "admin-pages"))
 );
-
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
-});
-
 const cron = require("node-cron");
 
 const requireRole = require("./middleware/requireRole");
@@ -1404,13 +1397,16 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
       UNION ALL
 
       -- 🟡 SISTEMA ANTIGO (VIEW)
-      SELECT
-        tipo,
-        created_at,
-        valor_modelo
-      FROM transacoes
-      WHERE modelo_id = $1
+      UNION ALL
 
+-- 🟡 SISTEMA ANTIGO (VIEW)
+SELECT
+  tipo,
+  created_at,
+  valor_modelo
+FROM transacoes
+WHERE modelo_id = $1
+  AND status = 'pago'
     ) t
   `, [modelo_id]);
 
