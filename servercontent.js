@@ -1396,9 +1396,6 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
 
       UNION ALL
 
-      -- 🟡 SISTEMA ANTIGO (VIEW)
-      UNION ALL
-
 -- 🟡 SISTEMA ANTIGO (VIEW)
 SELECT
   tipo,
