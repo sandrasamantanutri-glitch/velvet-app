@@ -4789,7 +4789,21 @@ app.post("/api/pagamento/vip/pix", auth, async (req, res) => {
       return res.status(400).json({ error: "Plano VIP não encontrado" });
     }
 
-    const valorBase = Number(planoRes.rows[0].valor_mensal);
+let valorBase = Number(planoRes.rows[0].valor_mensal) || 0;
+
+const ofertaRes = await client.query(`
+  SELECT valor_promocional
+  FROM modelos_ofertas
+  WHERE modelo_id = $1
+  AND ativa = true
+  AND NOW() BETWEEN data_inicio AND data_fim
+  ORDER BY data_inicio DESC
+  LIMIT 1
+`, [modelo_id]);
+
+if (ofertaRes.rowCount && Number(ofertaRes.rows[0].valor_promocional) > 0) {
+  valorBase = Number(ofertaRes.rows[0].valor_promocional);
+}
 
     if (!valorBase || valorBase <= 0) {
       await client.query("ROLLBACK");
