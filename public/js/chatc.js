@@ -767,23 +767,29 @@ function mostrarToast(texto) {
     toast = document.createElement("div");
     toast.id = "toastPix";
     toast.style.position = "fixed";
-    toast.style.bottom = "20px";
+    toast.style.bottom = "30px";
     toast.style.left = "50%";
-    toast.style.transform = "translateX(-20%)";
-    toast.style.background = "#7B2CFF";
+    toast.style.transform = "translateX(-50%)";
+    toast.style.background = "#7b2cff";
     toast.style.color = "#fff";
-    toast.style.padding = "12px 20px";
-    toast.style.borderRadius = "8px";
+    toast.style.padding = "12px 22px";
+    toast.style.borderRadius = "30px";
+    toast.style.fontWeight = "600";
+    toast.style.boxShadow = "0 8px 25px rgba(0,0,0,0.3)";
     toast.style.zIndex = "999999";
     toast.style.fontSize = "14px";
+    toast.style.transition = "opacity .3s ease, transform .3s ease";
     document.body.appendChild(toast);
   }
 
   toast.innerText = texto;
+
   toast.style.opacity = "1";
+  toast.style.transform = "translateX(-50%) translateY(0)";
 
   setTimeout(() => {
     toast.style.opacity = "0";
+    toast.style.transform = "translateX(-50%) translateY(10px)";
   }, 2500);
 }
 
