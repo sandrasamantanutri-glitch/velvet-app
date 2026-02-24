@@ -1423,11 +1423,17 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
 
       UNION ALL
 
--- 🟡 SISTEMA ANTIGO (VIEW)
+-- 🟡 SISTEMA ANTIGO (normalizando bruto → líquido)
 SELECT
   tipo,
   created_at,
-  valor_modelo
+
+  CASE
+    WHEN tipo IN ('assinatura','midia','conteudo')
+    THEN ROUND(valor_modelo * 0.70, 2)
+    ELSE valor_modelo
+  END AS valor_modelo
+
 FROM transacoes
 WHERE modelo_id = $1
   AND status = 'pago'
