@@ -4867,29 +4867,33 @@ if (!charge || !pixData || !pixData.qr_code) {
   });
 }
 
-    await client.query(`
-      INSERT INTO pagamentos_pix (
-        cliente_id,
-        modelo_id,
-        valor,
-        status,
-        pagarme_order_id,
-        criado_em,
-        aceite_ip,
-        aceitou_termos,
-        cpf,
-        fingerprint
-      )
-      VALUES ($1,$2,$3,'pendente',$4,NOW(),$5,true,$6,$7)
-    `,[
-      cliente_id,
-      modelo_id,
-      total,
-      order.id,
-      ip,
-      cpf,
-      fingerprint || ""
-    ]);
+const modeloIdInt = Number(modelo_id);
+const clienteIdInt = Number(cliente_id);
+const totalNumber = Number(total);
+
+await client.query(`
+  INSERT INTO pagamentos_pix (
+    cliente_id,
+    modelo_id,
+    valor,
+    status,
+    pagarme_order_id,
+    criado_em,
+    aceite_ip,
+    aceitou_termos,
+    cpf,
+    fingerprint
+  )
+  VALUES ($1,$2,$3,'pendente',$4,NOW(),$5,true,$6,$7)
+`,[
+  clienteIdInt,
+  modeloIdInt,
+  totalNumber,
+  order.id,
+  ip,
+  cpf,
+  fingerprint || ""
+]);
 
     await client.query("COMMIT");
 
