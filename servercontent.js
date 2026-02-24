@@ -1773,4 +1773,7 @@ router.put("/agencia/modelo/:id/percentual", authAgencia, async (req,res)=>{
 });
 
 
-module.exports = router;
+module.exports = {
+  router,
+  calcularValores
+};

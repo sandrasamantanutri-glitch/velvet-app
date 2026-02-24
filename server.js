@@ -816,9 +816,9 @@ return res.status(200).send("ok");
 
 
 app.use(express.json());
-const servercontent = require("./servercontent");
+const { router: servercontentRouter, calcularValores } = require('./servercontent');
+app.use("/api", servercontentRouter);
 
-app.use("/api", servercontent);
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/admin", express.static(path.join(__dirname, "admin-pages")));
