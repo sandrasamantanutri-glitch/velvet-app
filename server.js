@@ -210,24 +210,24 @@ if (tipo === "vip") {
 
   await client.query(`
     INSERT INTO vip_subscriptions (
-      cliente_id, modelo_id, ativo,
-      created_at, updated_at, expiration_at,
-      valor_assinatura, taxa_transacao,
-      taxa_plataforma, valor_total,
-      recorrente, gateway_subscription_id
-    )
-    VALUES ($1,$2,true,NOW(),NOW(),$3,$4,$5,$6,false,$7)
-    ON CONFLICT (cliente_id,modelo_id)
-    DO UPDATE SET
-      ativo=true,
-      expiration_at=$3,
-      updated_at=NOW(),
-      valor_assinatura=$4,
-      taxa_transacao=$5,
-      taxa_plataforma=$6,
-      valor_total=$8,
-      recorrente=false,
-      gateway_subscription_id=$7
+  cliente_id, modelo_id, ativo,
+  created_at, updated_at, expiration_at,
+  valor_assinatura, taxa_transacao,
+  taxa_plataforma, valor_total,
+  recorrente, gateway_subscription_id
+)
+VALUES ($1,$2,true,NOW(),NOW(),$3,$4,$5,$6,$7,false,$8)
+ON CONFLICT (cliente_id,modelo_id)
+DO UPDATE SET
+  ativo=true,
+  expiration_at=$3,
+  updated_at=NOW(),
+  valor_assinatura=$4,
+  taxa_transacao=$5,
+  taxa_plataforma=$6,
+  valor_total=$7,
+  recorrente=false,
+  gateway_subscription_id=$8
   `,[
     cliente_id,
     modelo_id,
@@ -695,7 +695,7 @@ DO UPDATE SET
   valor_total=$7,
   recorrente=false,
   gateway_subscription_id=$8
-  
+
   `,[
     cliente_id,
     modelo_id,
