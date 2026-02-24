@@ -980,19 +980,16 @@ router.get("/transacoes/diario",
 
     const result = await db.query(
       `
-      SELECT
-        DATE(created_at) AS dia,
+SELECT
+  DATE(created_at) AS dia,
 
-        COALESCE(SUM(CASE WHEN tipo = 'midia' THEN valor_modelo END),0)
-          AS ganhos_midias,
+  COALESCE(SUM(
+    CASE WHEN tipo = 'midia' THEN valor_modelo END
+  ),0) AS ganhos_midias,
 
-        COALESCE(SUM(
-  CASE 
-    WHEN tipo = 'assinatura' 
-    THEN ROUND(valor_bruto * 0.70, 2)
-  END
-),0)
-          AS ganhos_assinaturas
+  COALESCE(SUM(
+    CASE WHEN tipo = 'assinatura' THEN valor_modelo END
+  ),0) AS ganhos_assinaturas
 
       FROM (
 
@@ -1007,8 +1004,8 @@ router.get("/transacoes/diario",
 
         UNION ALL
 
-        -- 🟡 SISTEMA ANTIGO (VIEW congelada)
- SELECT
+ -- 🟡 SISTEMA ANTIGO (corrigido aqui)
+  SELECT
     tipo,
     created_at,
 
