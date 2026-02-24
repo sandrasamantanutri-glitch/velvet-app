@@ -986,7 +986,12 @@ router.get("/transacoes/diario",
         COALESCE(SUM(CASE WHEN tipo = 'midia' THEN valor_modelo END),0)
           AS ganhos_midias,
 
-        COALESCE(SUM(CASE WHEN tipo = 'assinatura' THEN valor_modelo END),0)
+        COALESCE(SUM(
+  CASE 
+    WHEN tipo = 'assinatura' 
+    THEN ROUND(valor_bruto * 0.70, 2)
+  END
+),0)
           AS ganhos_assinaturas
 
       FROM (
@@ -1003,15 +1008,21 @@ router.get("/transacoes/diario",
         UNION ALL
 
         -- 🟡 SISTEMA ANTIGO (VIEW congelada)
-        SELECT
-          tipo,
-          created_at,
-          valor_modelo,
-          modelo_id,
-          status
-        FROM transacoes
+ SELECT
+    tipo,
+    created_at,
 
-      ) t
+    CASE
+      WHEN tipo = 'assinatura'
+      THEN ROUND(valor_modelo * 0.70, 2)
+      ELSE valor_modelo
+    END AS valor_modelo,
+
+    modelo_id,
+    status
+  FROM transacoes
+
+) t
 
       WHERE ${where}
       GROUP BY dia
