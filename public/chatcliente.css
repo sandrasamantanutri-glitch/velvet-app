@@ -754,16 +754,11 @@ text-align: center;
   width: 100%;
   max-width: 420px;
   max-height: 90vh;
-
   padding: 24px;
   border-radius: 16px;
   background: #fff;
-
   display: flex;
   flex-direction: column;
-
-  overflow-y: auto;
-
   animation: modalIn 0.25s ease;
 }
 
