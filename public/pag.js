@@ -351,6 +351,12 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id }) {
     document.getElementById("pixLoading")?.classList.add("hidden");
     document.getElementById("pixAguardando")?.classList.remove("hidden");
 
+    console.log("PIX RESPONSE:", data);
+    if (!data.order_id) {
+  console.error("order_id não veio do backend", data);
+  alert("Erro ao iniciar verificação do Pix.");
+  return;
+}
     iniciarVerificacaoPix(data.order_id);
 
   } catch (err) {

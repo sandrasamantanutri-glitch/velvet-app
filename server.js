@@ -4849,6 +4849,9 @@ app.post("/api/pagamento/vip/pix", auth, async (req, res) => {
 
     const order = pagarmeResponse.data;
     const pixData = order.charges[0].last_transaction;
+    if (!order.charges?.length) {
+  throw new Error("Charge PIX não criada");
+}
 
     await client.query(`
       INSERT INTO pagamentos_pix (
