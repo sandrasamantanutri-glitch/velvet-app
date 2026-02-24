@@ -352,7 +352,7 @@ INSERT INTO transacoes_agency (
   valor_modelo,
   status
 )
-VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'normal')
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'pago')
       RETURNING *
     `, [
       modelo_id,
@@ -819,7 +819,7 @@ router.get("/transacoes", authModelo, async (req, res) => {
           NULL AS message_id
         FROM transacoes_agency
         WHERE modelo_id = $1
-          AND status = 'normal'
+          AND status = 'pago'
 
         UNION ALL
 
@@ -844,7 +844,7 @@ router.get("/transacoes", authModelo, async (req, res) => {
         SELECT id
         FROM transacoes_agency
         WHERE modelo_id = $1
-          AND status = 'normal'
+          AND status = 'pago'
 
         UNION ALL
 
@@ -940,9 +940,9 @@ router.get("/transacoes/diario",
   auth,
   requireRole("admin", "modelo", "agente"),
   async (req, res) => {
+
     const { mes } = req.query;
 
-    // 🔒 validação do mês
     if (!mes || !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
       return res.status(400).json({
         error: "Formato de mês inválido (YYYY-MM)"
@@ -951,17 +951,16 @@ router.get("/transacoes/diario",
 
     const { role, id: modelo_id } = req.user;
 
-    const inicio = `${mes}-01`;
-    const fim = `${mes}-31`;
+    const dataBase = `${mes}-01`;
+
+    let values = [dataBase];
 
     let where = `
-      status = 'normal'
-      AND created_at BETWEEN $1 AND $2
+      status = 'pago'
+      AND created_at >= date_trunc('month', $1::date)
+      AND created_at <  date_trunc('month', $1::date) + interval '1 month'
     `;
 
-    let values = [inicio, fim];
-
-    // MODELO → só vê suas próprias transações
     if (role === "modelo") {
       values.push(modelo_id);
       where += ` AND modelo_id = $${values.length}`;
@@ -978,7 +977,30 @@ router.get("/transacoes/diario",
         COALESCE(SUM(CASE WHEN tipo = 'assinatura' THEN valor_modelo END),0)
           AS ganhos_assinaturas
 
-      FROM transacoes_agency
+      FROM (
+
+        -- 🔵 SISTEMA NOVO
+        SELECT
+          tipo,
+          created_at,
+          valor_modelo,
+          modelo_id,
+          status
+        FROM transacoes_agency
+
+        UNION ALL
+
+        -- 🟡 SISTEMA ANTIGO (VIEW congelada)
+        SELECT
+          tipo,
+          created_at,
+          valor_modelo,
+          modelo_id,
+          status
+        FROM transacoes
+
+      ) t
+
       WHERE ${where}
       GROUP BY dia
       ORDER BY dia
@@ -1036,21 +1058,22 @@ router.get("/transacoes/resumo-mensal",
   requireRole("admin", "modelo", "agente"),
   async (req, res) => {
     const { mes } = req.query;
+
     if (!mes || !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
-  return res.status(400).json({ error: "Formato de mês inválido (YYYY-MM)" });
-} // ex: 2025-12
+      return res.status(400).json({ error: "Formato de mês inválido (YYYY-MM)" });
+    }
+
     const { role, id: modelo_id } = req.user;
 
     const dataBase = `${mes}-01`;
 
-    let values = [];
+    let values = [dataBase];
+
     let where = `
-      status = 'normal'
+      status = 'pago'
       AND created_at >= date_trunc('month', $1::date)
       AND created_at <  date_trunc('month', $1::date) + interval '1 month'
     `;
-
-    values.push(dataBase);
 
     if (role === "modelo") {
       values.push(modelo_id);
@@ -1068,7 +1091,39 @@ router.get("/transacoes/resumo-mensal",
 
         COALESCE(SUM(CASE WHEN tipo = 'assinatura' THEN valor_bruto END),0) AS total_assinaturas,
         COALESCE(SUM(CASE WHEN tipo = 'midia' THEN valor_bruto END),0) AS total_midias
-      FROM transacoes_agency
+
+      FROM (
+
+        -- 🔵 SISTEMA NOVO
+        SELECT
+          tipo,
+          created_at,
+          valor_bruto,
+          taxa_gateway,
+          agency_fee,
+          velvet_fee,
+          valor_modelo,
+          modelo_id,
+          status
+        FROM transacoes_agency
+
+        UNION ALL
+
+        -- 🟡 SISTEMA ANTIGO (VIEW congelada)
+        SELECT
+          tipo,
+          created_at,
+          valor_bruto,
+          0 AS taxa_gateway,
+          0 AS agency_fee,
+          velvet_fee,
+          valor_modelo,
+          modelo_id,
+          status
+        FROM transacoes
+
+      ) t
+
       WHERE ${where}
       `,
       values
@@ -1106,15 +1161,16 @@ router.get("/transacoes/resumo-anual",
   auth,
   requireRole("admin", "modelo"),
   async (req, res) => {
-    const { ano } = req.query; // ex: 2025
+    const { ano } = req.query;
     const { role, id: modelo_id } = req.user;
 
     const inicio = `${ano}-01-01`;
     const fim = `${Number(ano) + 1}-01-01`;
 
     let values = [inicio, fim];
+
     let where = `
-      status = 'normal'
+      status = 'pago'
       AND created_at >= $1
       AND created_at < $2
     `;
@@ -1126,22 +1182,53 @@ router.get("/transacoes/resumo-anual",
 
     const result = await db.query(
       `
-      SELECT
-        DATE_TRUNC('month', created_at) AS mes,
+SELECT
+  DATE_TRUNC('month', created_at) AS mes,
 
-        COALESCE(SUM(valor_bruto),0) AS total_bruto,
-        COALESCE(SUM(taxa_gateway),0) AS total_taxas,
-        COALESCE(SUM(agency_fee),0) AS total_agency,
-        COALESCE(SUM(velvet_fee),0) AS total_velvet,
-        COALESCE(SUM(valor_modelo),0) AS total_modelo,
+  COALESCE(SUM(valor_bruto),0) AS total_bruto,
+  COALESCE(SUM(taxa_gateway),0) AS total_taxas,
+  COALESCE(SUM(agency_fee),0) AS total_agency,
+  COALESCE(SUM(velvet_fee),0) AS total_velvet,
+  COALESCE(SUM(valor_modelo),0) AS total_modelo,
 
-        COALESCE(SUM(CASE WHEN tipo='assinatura' THEN valor_bruto END),0) AS total_assinaturas,
-        COALESCE(SUM(CASE WHEN tipo='midia' THEN valor_bruto END),0) AS total_midias
+  COALESCE(SUM(CASE WHEN tipo='assinatura' THEN valor_bruto END),0) AS total_assinaturas,
+  COALESCE(SUM(CASE WHEN tipo='midia' THEN valor_bruto END),0) AS total_midias
 
-      FROM transacoes_agency
-      WHERE ${where}
-      GROUP BY mes
-      ORDER BY mes
+FROM (
+
+  -- 🔵 SISTEMA NOVO
+  SELECT
+    tipo,
+    created_at,
+    valor_bruto,
+    taxa_gateway,
+    agency_fee,
+    velvet_fee,
+    valor_modelo,
+    modelo_id,
+    status
+  FROM transacoes_agency
+
+  UNION ALL
+
+  -- 🟡 SISTEMA ANTIGO (VIEW congelada)
+  SELECT
+    tipo,
+    created_at,
+    valor_bruto,
+    0 AS taxa_gateway,
+    0 AS agency_fee,
+    velvet_fee,
+    valor_modelo,
+    modelo_id,
+    status
+  FROM transacoes
+
+) t
+
+WHERE ${where}
+GROUP BY mes
+ORDER BY mes;
       `,
       values
     );
@@ -1149,7 +1236,6 @@ router.get("/transacoes/resumo-anual",
     res.json(result.rows);
   }
 );
-
 // router.get("/alertas/risco",
 //   auth,
 //   requireRole("admin"),
@@ -1313,7 +1399,7 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
         valor_modelo
       FROM transacoes_agency
       WHERE modelo_id = $1
-        AND status = 'normal'
+        AND status = 'pago'
 
       UNION ALL
 
