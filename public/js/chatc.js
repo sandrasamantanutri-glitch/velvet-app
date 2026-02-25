@@ -683,7 +683,7 @@ async function gerarPix() {
         conteudo_id,
         aceitou_termos: true,
         fingerprint,
-        cpf: cpfLimpo   // 🔥 AQUI ESTAVA O ERRO
+        cpf: cpfLimpo  
       })
     });
 

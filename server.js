@@ -3152,7 +3152,7 @@ app.get("/api/chat/cliente", authCliente, async (req, res) => {
       SELECT
         m.id AS modelo_id,
         m.nome_exibicao,
-        m.avatar_thumb AS avatar,
+        m.avatar AS avatar,
 
         msg.text        AS ultima_mensagem,
         msg.created_at  AS ultima_mensagem_em,
@@ -3214,7 +3214,7 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
         c.id AS cliente_id,
         c.nome,
         cd.username,
-        cd.avatar_thumb AS avatar,
+        cd.avatar AS avatar,
         msg.text       AS ultima_mensagem,
         msg.created_at AS ultima_mensagem_em,
         msg.sender     AS ultimo_sender,
