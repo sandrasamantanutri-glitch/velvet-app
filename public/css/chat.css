@@ -794,16 +794,15 @@ html, body {
   align-items: center;
   justify-content: center;
   pointer-events: none; /* não bloquear clique */
-  transition: background 0.2s ease;
 }
 
 /* ▶ Ícone */
 .play-overlay span {
-  font-size: 40px;
+  font-size: 20px;
   color: #fff;
-  background: rgba(0, 0, 0, 0.6);
-  width: 70px;
-  height: 70px;
+  background: rgba(0, 0, 0, 0.65);
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   display: flex;
   align-items: center;
