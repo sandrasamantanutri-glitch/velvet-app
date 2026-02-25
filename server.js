@@ -982,7 +982,7 @@ app.post(
   async (req, res) => {
     try {
 
-       if (!req.files || req.files.length === 0) {
+      if (!req.files || req.files.length === 0) {
         return res.status(400).json({ error: "Arquivo não enviado" });
       }
 
@@ -997,58 +997,62 @@ app.post(
 
       const modelo_id = modeloRes.rows[0].id;
 
-      const {
-        tipo_conteudo,
-        preco,
-        descricao
-      } = req.body;
+      const { tipo_conteudo, preco, descricao } = req.body;
 
-for (const file of req.files) {
+      for (const file of req.files) {
 
-  if (!file) continue;
+        const mimetype = file.mimetype || "";
 
-  const mimetype = file.mimetype || "";
-  const isVideo = mimetype.startsWith("video");
+        let tipo;
+        if (mimetype.startsWith("image/")) {
+          tipo = "imagem";
+        } else if (mimetype.startsWith("video/")) {
+          tipo = "video";
+        } else {
+          continue;
+        }
 
-  // 🔥 pega location se existir, senão monta com key
-  const publicUrl =
-    file.location ||
-    (file.key
-      ? `${process.env.B2_PUBLIC_URL}/${file.key}`
-      : null);
+        const caminho = `velvet/modelos/${req.user.id}/${Date.now()}-${file.originalname}`;
 
-  if (!publicUrl) {
-    console.error("Arquivo sem key/location:", file);
-    continue;
-  }
+        // 🚀 Upload manual igual /api/conteudos
+        const uploadResult = await s3.upload({
+          Bucket: process.env.B2_BUCKET,
+          Key: caminho,
+          Body: file.buffer,
+          ContentType: mimetype,
+          ACL: "public-read"
+        }).promise();
 
-  let thumbnailUrl = null;
+        const publicUrl = uploadResult.Location;
 
-  if (isVideo) {
-    try {
-      thumbnailUrl = await gerarThumbnailVideo(publicUrl, modelo_id);
-    } catch (err) {
-      console.error("Erro ao gerar thumbnail:", err);
-    }
-  }
+        let thumbnailUrl = null;
 
-  await db.query(
-    `
-    INSERT INTO conteudos
-    (modelo_id, url, tipo, tipo_conteudo, preco, descricao, thumbnail_url)
-    VALUES ($1, $2, $3, $4, $5, $6, $7)
-    `,
-    [
-      modelo_id,
-      publicUrl,
-      isVideo ? "video" : "imagem",
-      tipo_conteudo || "feed",
-      preco ? Number(preco) : null,
-      descricao || null,
-      thumbnailUrl
-    ]
-  );
-}
+        if (tipo === "video") {
+          try {
+            thumbnailUrl = await gerarThumbnailVideo(publicUrl, modelo_id);
+          } catch (err) {
+            console.error("Erro ao gerar thumbnail:", err);
+          }
+        }
+
+        await db.query(
+          `
+          INSERT INTO conteudos
+          (modelo_id, url, tipo, tipo_conteudo, preco, descricao, thumbnail_url)
+          VALUES ($1, $2, $3, $4, $5, $6, $7)
+          `,
+          [
+            modelo_id,
+            publicUrl,
+            tipo,
+            tipo_conteudo || "feed",
+            preco ? Number(preco) : null,
+            descricao || null,
+            thumbnailUrl
+          ]
+        );
+      }
+
       res.json({ success: true });
 
     } catch (err) {
