@@ -8,13 +8,59 @@ if (!token) location.href = "/index.html";
 // SOCKET (INBOX)
 // ===============================
 const socket = io({
-  transports: ["websocket"]
+  transports: ["websocket"],
+  reconnection: true,
+  reconnectionAttempts: Infinity,
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000
 });
 
-socket.emit("auth", { token });
+setInterval(() => {
+  if (!socket.connected) {
+    console.warn("⚠️ Socket desconectado. Forçando reconexão...");
+    socket.connect();
+  }
+}, 10000);
 
-socket.on("authOk", () => {
+setInterval(() => {
+  if (socket.connected) {
+    socket.emit("pingCheck");
+  }
+}, 20000);
+
+setInterval(() => {
+  carregarListaClientes();
+}, 30000); 
+
+function autenticar() {
+  socket.emit("auth", { token });
+}
+
+function entrarInbox() {
   socket.emit("joinInbox");
+}
+
+socket.on("connect", () => {
+  console.log("🟢 Inbox conectado:", socket.id);
+  autenticar();
+  setTimeout(() => {
+    entrarInbox();
+  }, 500);
+});
+
+if (socket.connected) {
+  autenticar();
+  entrarInbox();
+}
+
+// 🔐 Após autenticar
+socket.on("authOk", () => {
+  entrarInbox();
+});
+
+// 🔔 Tempo real
+socket.on("inboxMessage", () => {
+  carregarListaClientes();
 });
 
 
@@ -29,17 +75,13 @@ let modeloId = null;
   const role = localStorage.getItem("role");
   if (role !== "modelo") return logout();
 
-  socket.emit("auth", { token });
-
-  socket.on("authOk", () => {
-    socket.emit("joinInbox");
-  });
-
-  socket.on("inboxMessage", carregarListaClientes);
-
   await carregarListaClientes();
 
 })();
+
+socket.on("disconnect", (reason) => {
+  console.warn("🔴 Inbox desconectado:", reason);
+});
 
 // ===============================
 // FETCH INBOX
@@ -112,7 +154,12 @@ clientes.forEach(c => {
 
   div.innerHTML = `
     <div class="avatar">
-    <img src="${c.avatar ? c.avatar : 'assets/avatar.png'}" />
+    <img 
+  src="${c.avatar || 'assets/avatar.png'}"
+  width="40"
+  height="40"
+  loading="lazy"
+/>
     </div>
 
     <div class="chat-body">
@@ -183,3 +230,9 @@ function prioridadeChat(c) {
   // 4️⃣ Demais
   return 4;
 }
+
+window.addEventListener("focus", () => {
+  console.log("👀 Página voltou ao foco — atualizando lista");
+  carregarListaClientes?.();
+  carregarListaModelos?.();
+});

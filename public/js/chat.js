@@ -11,30 +11,80 @@ if (!token) {
 }
 
 const socket = io({
-  transports: ["websocket"]
+  transports: ["websocket"],
+  reconnection: true,
+  reconnectionAttempts: Infinity,
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000
 });
-socket.emit("auth", { token });
 
-socket.on("authOk", () => {
-  socketAutenticado = true;
-  console.log("🔐 Socket autenticado");
+let autenticado = false;
+let salaPronta = false;
+let modelo_id = null;
+let cliente_id = null;
 
+setInterval(() => {
+  if (!socket.connected) {
+    console.warn("⚠️ Forçando reconexão...");
+    socket.connect();
+  }
+}, 10000);
+
+
+function autenticar() {
+  socket.emit("auth", { token });
+}
+
+function fazerLogin() {
   if (role === "cliente") {
     socket.emit("loginCliente");
   }
-
   if (role === "modelo") {
     socket.emit("loginModelo");
   }
+}
+
+function entrarSala() {
+  if (cliente_id && modelo_id) {
+    socket.emit("joinChat", { cliente_id, modelo_id });
+    socket.emit("getHistory", { cliente_id, modelo_id });
+  }
+}
+
+socket.on("connect", () => {
+  console.log("🟢 Conectado:", socket.id);
+  autenticado = false;
+  salaPronta = false; 
+  autenticar();
 });
+
+// 🔐 Após autenticar
+socket.on("authOk", () => {
+  if (autenticado) return;
+  autenticado = true;
+
+if (role === "modelo") socket.emit("loginModelo");
+if (role === "cliente") socket.emit("loginCliente");
+
+  setTimeout(tentarEntrarSala, 200);
+});
+
+function tentarEntrarSala() {
+  if (!autenticado) return;
+  if (!modelo_id || !cliente_id) return;
+  if (salaPronta) return;
+
+  salaPronta = true;
+
+  socket.emit("joinChat", { cliente_id, modelo_id });
+  socket.emit("getHistory", { cliente_id, modelo_id });
+
+  console.log("🟪 Sala conectada");
+}
 
 // ===============================
 // 📌 VARIÁVEIS GLOBAIS DO CHAT
 // ===============================
-
-let sala = null;
-let modelo_id = null;
-let cliente_id = null;
 let chatAtivo = null;
 window.conteudosVistosCliente = new Set();
 let carregandoHistorico = false;
@@ -79,8 +129,6 @@ if (chatBox) {
   });
 }
 
-
-// 📜 HISTÓRICO
 socket.on("chatHistory", mensagens => {
   const chat = document.getElementById("chatBox");
   if (!chat || !Array.isArray(mensagens)) return;
@@ -90,84 +138,90 @@ socket.on("chatHistory", mensagens => {
   mensagens.forEach(m => renderMensagem(m));
 
   requestAnimationFrame(() => {
-  chat.scrollTop = chat.scrollHeight;
-  historicoInicialCarregado = true;
+    chat.scrollTop = chat.scrollHeight;
+  });
 });
 
-
-  // pega a mais recente
-  if (mensagens.length > 0) {
-    ultimoTimestamp = mensagens[mensagens.length - 1].created_at;
-  }
-});
-
+// 💬 NOVA MENSAGEM
 socket.on("newMessage", msg => {
   renderMensagem(msg);
   scrollParaFinal();
 });
 
+// ✏️ Edição
+socket.on("mensagemEditada", ({ id, text }) => {
+  const msgEl = document
+    .querySelector(`.msg-menu[data-id="${id}"]`)
+    ?.closest(".msg");
+
+  if (!msgEl) return;
+
+  const textoDiv = msgEl.querySelector(".msg-texto");
+  if (textoDiv) textoDiv.innerText = text;
+});
+
+// 🗑️ Exclusão
+socket.on("mensagemExcluida", ({ id }) => {
+  const msgEl = document
+    .querySelector(`.msg-menu[data-id="${id}"]`)
+    ?.closest(".msg");
+
+  if (msgEl) msgEl.remove();
+});
+
+// 🔓 Conteúdo visto
+socket.on("conteudoVisto", ({ message_id }) => {
+  if (!message_id) return;
+
+  const el = document.querySelector(
+    `.chat-conteudo[data-id="${message_id}"]`
+  );
+
+  if (!el) return;
+
+  el.classList.remove("bloqueado");
+  el.classList.add("visto");
+
+  const status = el.querySelector(".status-bloqueado");
+  if (status) status.innerText = "🟢 Vendido";
+});
+
+socket.on("disconnect", (reason) => {
+  console.warn("🔴 Socket desconectado:", reason);
+});
 
 // ===============================
 // INIT
 // ===============================
 document.addEventListener("DOMContentLoaded", async () => {
-
   const res = await fetch("/api/modelo/me", {
     headers: { Authorization: "Bearer " + token }
   });
 
+  if (!res.ok) {
+  console.error("Erro ao buscar modelo");
+  return;
+}
+
   const modelo = await res.json();
 
-  modelo_id = modelo.modelo_id;
-
-  if (!modelo_id) {
-    console.error("modelo_id indefinido");
-    return;
-  }
-
-  // 🔥 loginModelo já é emitido após authOk no socket
-  // NÃO repetir aqui
+ modelo_id = modelo.modelo_id;
+if (!modelo_id) {
+  console.error("modelo_id indefinido");
+  return;
+}
 
   await carregarInfoCliente(cliente_id);
+  tentarEntrarSala();
 
   sala = `chat_${cliente_id}_${modelo_id}`;
-
-  // ✅ Enviar formato correto
-  socket.emit("joinChat", { cliente_id, modelo_id });
-
-  socket.emit("getHistory", { cliente_id, modelo_id });
-
   marcarComoLido(cliente_id);
 
   const input = document.getElementById("msgInput");
-
   input.addEventListener("keydown", e => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       enviarMensagem();
-    }
-  });
-
-  socket.on("mensagemEditada", ({ id, text }) => {
-    const msgEl = document
-      .querySelector(`.msg-menu[data-id="${id}"]`)
-      ?.closest(".msg");
-
-    if (!msgEl) return;
-
-    const textoDiv = msgEl.querySelector(".msg-texto");
-    if (textoDiv) {
-      textoDiv.innerText = text;
-    }
-  });
-
-  socket.on("mensagemExcluida", ({ id }) => {
-    const msgEl = document
-      .querySelector(`.msg-menu[data-id="${id}"]`)
-      ?.closest(".msg");
-
-    if (msgEl) {
-      msgEl.remove();
     }
   });
 
@@ -326,46 +380,59 @@ function renderMensagem(msg) {
     const quantidade = msg.quantidade ?? (msg.midias?.length || 0);
     const bloqueado = Number(msg.preco) > 0 && !msg.visto;
 
-    div.innerHTML = `
-      <div class="chat-conteudo premium ${bloqueado ? "bloqueado" : "visto"}"
-           data-id="${msg.id}"
-           data-qtd="${quantidade}">
+div.innerHTML = `
+  <div class="chat-conteudo premium ${bloqueado ? "bloqueado" : "visto"}"
+       data-id="${msg.id}"
+       data-qtd="${quantidade}">
 
-        <div class="pacote-grid">
-          ${(msg.midias || []).map((m, index) => `
-            <div class="midia-item lazy-midia"
-                 data-thumb="${m.thumbnail_url || m.url}"
-                 data-full="${m.url}"
-                 data-index="${index}">
-                 
-                 <div class="midia-placeholder"></div>
+    ${msg.sender === "modelo" && !msg.visto ? `
+      <button
+        class="btn-excluir-pacote"
+        data-id="${msg.id}">
+        ⋮
+      </button>
+    ` : ""}
 
-            </div>
-          `).join("")}
+    <div class="pacote-grid">
+      ${(msg.midias || []).map((m, index) => `
+        <div class="midia-item lazy-midia"
+             data-thumb="${m.thumbnail_url || m.url}"
+             data-full="${m.url}"
+             data-index="${index}">
+             <div class="midia-placeholder"></div>
         </div>
+      `).join("")}
+    </div>
 
-        ${
-          msg.preco > 0
-            ? `
-            <div class="conteudo-info">
-              <span class="status-bloqueado">
-                ${
-                  msg.visto
-                    ? `🟢 Vendido · ${quantidade} mídia(s)`
-                    : `🔒 ${quantidade} mídia(s)`
-                }
-              </span>
-              <span class="preco-bloqueado">
-                R$ ${Number(msg.preco).toFixed(2)}
-              </span>
-            </div>
-          `
-            : ""
-        }
-      </div>
-      <span class="msg-hora">${formatarHora(msg.created_at)}</span>
-    `;
+    ${
+      msg.preco > 0
+        ? `
+        <div class="conteudo-info">
+          <span class="status-bloqueado">
+            ${
+              msg.visto
+                ? `🟢 Vendido · ${quantidade} mídia(s)`
+                : `🔒 ${quantidade} mídia(s)`
+            }
+          </span>
+          <span class="preco-bloqueado">
+            R$ ${Number(msg.preco).toFixed(2)}
+          </span>
+        </div>
+      `
+        : ""
+    }
+  </div>
+  <span class="msg-hora">${formatarHora(msg.created_at)}</span>
+`;
+const btnConteudo = div.querySelector(".btn-excluir-pacote");
 
+if (btnConteudo) {
+  btnConteudo.addEventListener("click", (e) => {
+    e.stopPropagation(); // 🔥 impede abrir preview ao clicar no botão
+    excluirPacoteConteudo(btnConteudo.dataset.id);
+  });
+}
     ativarLazyLoadingModelo(div, msg, bloqueado);
   }
 
@@ -727,7 +794,6 @@ if (!socket || !socket.connected) {
   console.error("Socket não conectado!");
   return;
 }
-
 
     // 🔥 Garantir join na sala antes de enviar
     socket.emit("joinChat", { cliente_id, modelo_id });
@@ -1133,5 +1199,40 @@ function ativarLazyPopup(container) {
   const items = container.querySelectorAll(".lazy-popup");
   items.forEach(el => popupObserver.observe(el));
 }
+
+async function excluirPacoteConteudo(message_id) {
+
+  if (!confirm("Tem certeza que deseja excluir este pacote?")) return;
+
+  try {
+
+    const res = await fetch(`/api/chat/pacote/${message_id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: "Bearer " + localStorage.getItem("token")
+      }
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || "Erro ao excluir pacote.");
+      return;
+    }
+
+    // 🔥 remove do DOM
+    const el = document.querySelector(
+      `.chat-conteudo[data-id="${message_id}"]`
+    )?.closest(".msg");
+
+    if (el) el.remove();
+
+  } catch (err) {
+    console.error("Erro excluir pacote:", err);
+    alert("Erro inesperado.");
+  }
+}
+
+
 
 

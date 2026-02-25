@@ -29,8 +29,8 @@ const authAdmin = require("./middleware/authAdmin");
 app.set("trust proxy", 1);
 const server = http.createServer(app);
 const multer = require("multer");
-const onlineClientes = {};
-const onlineModelos = {};
+const onlineModelos = new Map();
+const onlineClientes = new Map();
 const AWS = require("aws-sdk");
 const multerS3 = require("multer-s3");
 const { MercadoPagoConfig, Payment } = require("mercadopago");
@@ -1408,9 +1408,11 @@ const io = new Server(server, {
     methods: ["GET", "POST"],
     credentials: true
   },
-  transports: ["websocket", "polling"]
-});
+  transports: ["websocket", "polling"],
 
+  pingInterval: 25000,  
+  pingTimeout: 60000     
+});
 // ===============================
 //FUNCOES
 // ===============================
@@ -1550,7 +1552,7 @@ socket.on("loginModelo", async () => {
 
   const result = await db.query(
     "SELECT id FROM modelos WHERE user_id = $1",
-    [socket.user.id] // 🔒 usa ID autenticado
+    [socket.user.id]
   );
 
   if (result.rowCount === 0) return;
@@ -1558,7 +1560,13 @@ socket.on("loginModelo", async () => {
   const modeloIdReal = result.rows[0].id;
 
   socket.modelo_id = modeloIdReal;
-  onlineModelos[modeloIdReal] = socket.id;
+
+  // 🔥 salva como online
+  if (!onlineModelos.has(modeloIdReal)) {
+  onlineModelos.set(modeloIdReal, new Set());
+}
+
+onlineModelos.get(modeloIdReal).add(socket.id);
 
   console.log("🟣 Modelo online:", modeloIdReal);
 });
@@ -2301,7 +2309,6 @@ socket.on("loginCliente", async () => {
       return socket.disconnect();
     }
 
-    // 🔒 converter users.id → cliente_id real
     const clienteRes = await db.query(
       "SELECT id FROM clientes WHERE user_id = $1",
       [socket.user.id]
@@ -2312,11 +2319,14 @@ socket.on("loginCliente", async () => {
     const clienteIdReal = clienteRes.rows[0].id;
 
     socket.cliente_id = clienteIdReal;
-    onlineClientes[clienteIdReal] = socket.id;
+
+    // 🔥 salva como online
+onlineClientes.set(clienteIdReal, new Set());
+onlineClientes.get(clienteIdReal).add(socket.id);
 
     console.log("🟢 Cliente online:", clienteIdReal, socket.id);
 
-    // 🔒 atualizar last_seen corretamente
+    // 🔥 marca como online (last_seen = NULL)
     await db.query(
       `UPDATE clientes SET last_seen = NULL WHERE id = $1`,
       [clienteIdReal]
@@ -2328,19 +2338,57 @@ socket.on("loginCliente", async () => {
 });
 
 socket.on("disconnect", async () => {
-  if (socket.cliente_id) {
-    delete onlineClientes[socket.cliente_id];
+  console.log("🔴 Socket desconectado:", socket.id);
 
-    await db.query(
-      `UPDATE clientes SET last_seen = NOW() WHERE id = $1`,
-      [socket.cliente_id]
-    );
+  // 🔵 CLIENTE
+  if (socket.cliente_id) {
+
+    const set = onlineClientes.get(socket.cliente_id);
+
+    if (set) {
+      set.delete(socket.id);
+
+      // 🔥 Só fica offline se NÃO houver mais sockets
+      if (set.size === 0) {
+        onlineClientes.delete(socket.cliente_id);
+
+        await db.query(
+          `UPDATE clientes SET last_seen = NOW() WHERE id = $1`,
+          [socket.cliente_id]
+        );
+
+        console.log("⚫ Cliente offline:", socket.cliente_id);
+      }
+    }
+  }
+
+  // 🟣 MODELO
+  if (socket.modelo_id) {
+
+    const set = onlineModelos.get(socket.modelo_id);
+
+    if (set) {
+      set.delete(socket.id);
+
+      if (set.size === 0) {
+        onlineModelos.delete(socket.modelo_id);
+
+        await db.query(
+          `UPDATE modelos SET last_seen = NOW() WHERE id = $1`,
+          [socket.modelo_id]
+        );
+
+        console.log("⚫ Modelo offline:", socket.modelo_id);
+      }
+    }
   }
 });
 
-
+socket.on("pingCheck", () => {
+  socket.emit("pongCheck");
 });
 
+});
 
 // ===============================
 //ROTA GET
@@ -3082,7 +3130,7 @@ app.get("/api/chat/cliente", authCliente, async (req, res) => {
       SELECT
         m.id AS modelo_id,
         m.nome_exibicao,
-        m.avatar,
+        m.avatar_thumb AS avatar,
 
         msg.text        AS ultima_mensagem,
         msg.created_at  AS ultima_mensagem_em,
@@ -3144,7 +3192,7 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
         c.id AS cliente_id,
         c.nome,
         cd.username,
-        cd.avatar,
+        cd.avatar_thumb AS avatar,
         msg.text       AS ultima_mensagem,
         msg.created_at AS ultima_mensagem_em,
         msg.sender     AS ultimo_sender,
@@ -3248,10 +3296,24 @@ app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
 
     const mensagem = messageCheck.rows[0];
 
-    // 🔒 só libera se já foi paga/vista
-    if (!mensagem.visto) {
-      return res.status(403).json({ error: "Conteúdo não liberado" });
-    }
+    // 🔒 só libera se já foi paga
+if (Number(mensagem.preco) > 0) {
+
+  const pago = await db.query(
+    `
+    SELECT 1
+    FROM conteudo_pacotes
+    WHERE message_id = $1
+      AND cliente_id = $2
+      AND status = 'pago'
+    `,
+    [message_id, req.cliente_id]
+  );
+
+  if (!pago.rowCount) {
+    return res.status(403).json({ error: "Conteúdo não liberado" });
+  }
+}
 
     const result = await db.query(
       `
@@ -4366,24 +4428,47 @@ app.post(
       const url = req.file.location;
       const userId = req.user.id;
 
+      const thumbBuffer = await sharp(req.file.buffer)
+        .resize(200, 200)
+        .webp({ quality: 80 })
+        .toBuffer();
+
+      // 🔥 2️⃣ Gerar nomes únicos
+      const timestamp = Date.now();
+      const originalName = `avatars/original_${timestamp}.jpg`;
+      const thumbName = `avatars/thumb_${timestamp}.webp`;
+
+      // 🔥 3️⃣ Upload original
+      const originalUpload = await uploadToB2(
+        req.file.buffer,
+        originalName,
+        req.file.mimetype
+      );
+
+      // 🔥 4️⃣ Upload thumb
+      const thumbUpload = await uploadToB2(
+        thumbBuffer,
+        thumbName,
+        "image/webp"
+      );
+
+      const originalUrl = originalUpload.url;
+      const thumbUrl = thumbUpload.url;
+
       if (req.user.role === "modelo") {
-
-        // modelos pode usar user_id
         await db.query(
-          "UPDATE modelos SET avatar = $1 WHERE user_id = $2",
-          [url, userId]
+          "UPDATE modelos SET avatar = $1, avatar_thumb = $2 WHERE user_id = $3",
+          [originalUrl, thumbUrl, userId]
         );
-
       } 
       else if (req.user.role === "cliente") {
 
-        // 🔁 converter users.id → cliente_id
         const clienteRes = await db.query(
           "SELECT id FROM clientes WHERE user_id = $1",
           [userId]
         );
 
-        if (clienteRes.rowCount === 0) {
+        if (!clienteRes.rowCount) {
           return res.status(404).json({ error: "Cliente não encontrado" });
         }
 
@@ -4393,18 +4478,21 @@ app.post(
           `
           UPDATE clientes_dados
           SET avatar = $1,
+              avatar_thumb = $2,
               atualizado_em = NOW()
-          WHERE cliente_id = $2
+          WHERE cliente_id = $3
           `,
-          [url, cliente_id]
+          [originalUrl, thumbUrl, cliente_id]
         );
-
       } 
       else {
         return res.status(403).json({ error: "Role inválida" });
       }
 
-      res.json({ url });
+      res.json({
+        avatar: originalUrl,
+        avatar_thumb: thumbUrl
+      });
 
     } catch (err) {
       console.error("Erro upload avatar:", err);
@@ -4702,6 +4790,71 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
     res.status(500).json({ error: "Erro ao excluir conta" });
   } finally {
     client.release();
+  }
+});
+
+// 🗑 EXCLUIR PACOTE DE CONTEÚDO (MODELO)
+app.delete("/api/chat/pacote/:message_id", authModelo, async (req, res) => {
+
+  const message_id = Number(req.params.message_id);
+
+  if (!Number.isInteger(message_id)) {
+    return res.status(400).json({ error: "message_id inválido" });
+  }
+
+  try {
+
+    // 1️⃣ verificar se pertence ao modelo
+    const msgRes = await db.query(`
+      SELECT id, modelo_id, visto
+      FROM messages
+      WHERE id = $1
+    `, [message_id]);
+
+    if (!msgRes.rowCount) {
+      return res.status(404).json({ error: "Mensagem não encontrada" });
+    }
+
+    const mensagem = msgRes.rows[0];
+
+    if (mensagem.modelo_id !== req.modelo_id) {
+      return res.status(403).json({ error: "Acesso negado" });
+    }
+
+    // ❌ Se já foi visto → NÃO pode excluir
+    if (mensagem.visto === true) {
+      return res.status(400).json({
+        error: "Conteúdo já visualizado não pode ser excluído."
+      });
+    }
+
+    // 2️⃣ verificar se já foi pago
+    const pagoRes = await db.query(`
+      SELECT 1
+      FROM conteudo_pacotes
+      WHERE message_id = $1
+        AND status = 'pago'
+      LIMIT 1
+    `, [message_id]);
+
+    if (pagoRes.rowCount > 0) {
+      return res.status(400).json({
+        error: "Conteúdo já pago não pode ser excluído."
+      });
+    }
+
+    // 3️⃣ marcar mensagem como deletada
+    await db.query(`
+      UPDATE messages
+      SET deletada = true
+      WHERE id = $1
+    `, [message_id]);
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("Erro excluir pacote:", err);
+    res.status(500).json({ error: "Erro ao excluir pacote" });
   }
 });
 
@@ -5038,7 +5191,7 @@ const pagarmeResponse = await axios.post(
         customer: {
   name: req.user.nome || "Cliente Velvet",
   email: req.user.email,
-  document: cpf,
+  document: cpfFinal,
   type: "individual",
   phones: {
     mobile_phone: {
@@ -5549,57 +5702,6 @@ app.post(
     }
 
     try {
-      // 🔁 users.id → modelo_id
-      const modeloRes = await db.query(
-        "SELECT id FROM modelos WHERE user_id = $1",
-        [userId]
-      );
-
-      if (modeloRes.rowCount === 0) {
-        return res.status(404).json({ error: "Modelo não encontrado" });
-      }
-
-      const modelo_id = modeloRes.rows[0].id;
-
-      const updateRes = await db.query(
-        `
-        UPDATE messages
-        SET visto = true
-        WHERE cliente_id = $1
-          AND modelo_id = $2
-          AND sender = 'cliente'
-          AND visto = false
-        `,
-        [cliente_id, modelo_id]
-      );
-
-      return res.json({
-        success: true,
-        atualizadas: updateRes.rowCount
-      });
-
-    } catch (err) {
-      console.error("Erro marcar lido:", err);
-      return res.status(500).json({ error: "Erro interno" });
-    }
-  }
-);
-
-
-app.post(
-  "/api/chat/modelo/marcar-lido/:cliente_id",
-  authModelo,
-  async (req, res) => {
-
-    const userId = req.user.id; // users.id
-    const cliente_id = Number(req.params.cliente_id);
-
-    if (!Number.isInteger(cliente_id) || cliente_id <= 0) {
-      return res.status(400).json({ error: "cliente_id inválido" });
-    }
-
-    try {
-
       // 🔁 users.id → modelo_id
       const modeloRes = await db.query(
         "SELECT id FROM modelos WHERE user_id = $1",

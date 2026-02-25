@@ -840,3 +840,29 @@ html, body {
   background: rgba(0, 0, 0, 0.85);
 }
 
+/* Container da mensagem precisa ser relativo */
+.msg {
+  position: relative;
+}
+
+/* Botão exclusivo do pacote */
+.btn-excluir-pacote {
+  position: relative;
+  top: 200px;
+  border: none;
+  color: #7B2CFF;
+  font-size: 19px;
+  display: flex;
+  justify-content: flex-end;
+  align-content: flex-end;
+  background: none;
+  cursor: pointer;
+}
+
+.avatar img {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}

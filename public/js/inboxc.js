@@ -5,23 +5,66 @@ if (!token) {
   window.location.href = "/index.html";
   throw new Error("Sem token");
 }
+
 const socket = io({
-  transports: ["websocket"]
+  transports: ["websocket"],
+  reconnection: true,
+  reconnectionAttempts: Infinity,
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000
 });
 
-socket.emit("auth", { token });
+let autenticado = false;
 
-socket.on("authOk", () => {
+setInterval(() => {
+  if (!socket.connected) {
+    console.warn("⚠️ Forçando reconexão inbox cliente...");
+    socket.connect();
+  }
+}, 10000);
+
+setInterval(() => {
+  if (socket.connected) {
+    socket.emit("pingCheck");
+  }
+}, 20000);
+
+function autenticar() {
+  socket.emit("auth", { token });
+}
+
+function entrarInbox() {
   socket.emit("joinInbox");
+}
+
+
+socket.on("connect", () => {
+  console.log("🟢 Inbox cliente conectado:", socket.id);
+  autenticar();
 });
 
+// 🔐 Após autenticar, entra na sala
+socket.on("authOk", () => {
+  if (autenticado) return; // 🛡️ evita duplicação
+  autenticado = true;
 
-// 🔔 REALTIME INBOX CLIENTE (GLOBAL)
-socket.on("inboxMessage", (data) => {
-  console.log("📩 inboxMessage recebido:", data);
+  console.log("🔐 Inbox autenticado");
+  entrarInbox();
+});
+
+// 🔔 Atualização em tempo real
+socket.on("inboxMessage", () => {
   carregarListaModelos();
 });
 
+// 🔴 Debug opcional
+socket.on("disconnect", (reason) => {
+  console.warn("🔴 Inbox cliente desconectado:", reason);
+});
+
+setInterval(() => {
+  carregarListaModelos();
+}, 30000);
 
 const inboxEl = document.getElementById("inbox");
 
@@ -66,8 +109,14 @@ async function carregarListaModelos() {
       <div class="avatar">
         ${
           c.avatar
-            ? `<img src="${c.avatar}" />`
-            : `<div class="avatar-placeholder"></div>`
+  ? `<img 
+       src="${c.avatar}" 
+       width="40" 
+       height="40" 
+       loading="lazy" 
+       alt="Avatar"
+     />`
+  : `<div class="avatar-placeholder"></div>`
         }
       </div>
 
@@ -177,3 +226,9 @@ function logout() {
   localStorage.clear();
   location.href = "/index.html";
 }
+
+window.addEventListener("pageshow", function (event) {
+  if (event.persisted) {
+    window.location.reload();
+  }
+});

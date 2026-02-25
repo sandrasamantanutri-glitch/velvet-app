@@ -7,22 +7,65 @@ if (!token) {
 }
 
 const socket = io({
-  transports: ["websocket"]
+  transports: ["websocket"],
+  reconnection: true,
+  reconnectionAttempts: Infinity,
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000
 });
 
+let autenticado = false;
+let salaPronta = false;
 let cliente_id = null;
 let modelo_id = null;
+
+setInterval(() => {
+  if (!socket.connected) {
+    console.warn("Tentando reconectar...");
+    socket.connect();
+  }
+}, 10000);
+
 const conteudosLiberados = new Set();
 let pagamentoAtual = null;
 let intervaloConfirmacaoPagamento = null;
 let pagamentoEmProcesso = false;
-
 const stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
 let elements = null;
 
-document.addEventListener("DOMContentLoaded", () => {
 
-  // 🔥 pega modelo da URL UMA VEZ
+function tentarEntrarSala() {
+  if (!autenticado) return;
+  if (!cliente_id || !modelo_id) return;
+  if (salaPronta) return;
+
+  salaPronta = true;
+
+  socket.emit("joinChat", { cliente_id, modelo_id });
+  socket.emit("getHistory", { cliente_id, modelo_id });
+
+  console.log("🟪 Sala cliente conectada");
+}
+
+socket.on("connect", () => {
+  autenticado = false;
+  salaPronta = false;
+  socket.emit("auth", { token });
+});
+
+socket.on("authOk", async () => {
+  if (autenticado) return;
+  autenticado = true;
+
+  socket.emit("loginCliente");
+
+  await carregarCliente();     // define cliente_id
+  await carregarInfoModelo(modelo_id);
+
+  tentarEntrarSala();
+});
+
+document.addEventListener("DOMContentLoaded", () => {
   const params = new URLSearchParams(window.location.search);
   modelo_id = Number(params.get("modelo_id"));
 
@@ -31,25 +74,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  socket.emit("auth", { token });
-
-  socket.on("authOk", async () => {
-    console.log("🔐 Socket autenticado");
-
-    if (role === "cliente") {
-      socket.emit("loginCliente");
-    }
-
-    if (role === "modelo") {
-      socket.emit("loginModelo");
-    }
-
-    await carregarCliente();
-    await carregarInfoModelo(modelo_id);
-
-    socket.emit("joinChat", { cliente_id, modelo_id });
-    socket.emit("getHistory", { cliente_id, modelo_id });
-  });
+  tentarEntrarSala();
 
   const sendBtn = document.getElementById("sendBtn");
   const input   = document.getElementById("messageInput");
@@ -68,8 +93,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
 document.addEventListener("click", (e) => {
-
-  // 🔘 Clique no botão
   const btn = e.target.closest(".btn-desbloquear");
   if (btn) {
     e.stopPropagation(); // impede duplicação
@@ -79,7 +102,6 @@ document.addEventListener("click", (e) => {
     return;
   }
 
-  // 🟪 Clique no card inteiro
   const card = e.target.closest(".chat-conteudo.bloqueado");
   if (card) {
     const preco = card.dataset.preco;
@@ -109,9 +131,6 @@ document.getElementById("confirmarPagamento").onclick = async () => {
     alert(error.message);
     return;
   }
-
-  // ⚠️ NÃO liberar conteúdo aqui
-  // Apenas fecha modal e aguarda backend confirmar
 
   document.getElementById("paymentModal").classList.add("hidden");
   document.getElementById("payment-element").innerHTML = "";
@@ -224,10 +243,13 @@ card.classList.add("livre");
 card.removeAttribute("data-preco");
 });
 
-
 socket.on("vipAtivado", () => {
   fecharPopup();
   atualizarPerfil();
+});
+
+socket.on("disconnect", (reason) => {
+  console.warn("🔴 Socket desconectado:", reason);
 });
 
 async function carregarCliente() {
@@ -242,7 +264,6 @@ async function carregarCliente() {
 
   socket.emit("loginCliente", cliente_id);
 }
-
 
 function fecharPopupPix() {
   const popup = document.getElementById("popupPix");
@@ -319,10 +340,12 @@ async function carregarInfoModelo(modelo_id) {
       nome.innerText = modelo.nome_exibicao || "Modelo";
     }
 
-    if (status) {
-      status.innerText = modelo.last_seen
-        ? "visto por último: " + modelo.last_seen
-        : "online";
+        if (status) {
+      if (modelo.last_seen) {
+        status.innerText = `visto por último: ${formatarTempo(modelo.last_seen)}`;
+      } else {
+        status.innerText = "visto por último: agora";
+      }
     }
 
   } catch (err) {
@@ -859,4 +882,6 @@ function ativarLazyLoading(container, msg) {
 
   });
 }
+
+
 
