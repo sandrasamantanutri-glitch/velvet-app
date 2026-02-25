@@ -95,41 +95,63 @@ const token = localStorage.getItem("token_agencia");
 
 // carregarNomeAgencia();
 
-async function carregarDashboard(){
+async function carregarDashboard() {
 
-  const res = await fetch("/api/agencia/dashboard",{
-    headers:{ Authorization:"Bearer "+token }
-  });
+  if (!token) {
+    window.location.href = "/agencia/login.html";
+    return;
+  }
 
-  const data = await res.json();
+  try {
+    const res = await fetch("/api/agencia/dashboard", {
+      headers: { Authorization: "Bearer " + token }
+    });
 
-  document.getElementById("midiasHoje").innerText =
-    "R$ "+Number(data.midias_hoje).toFixed(2);
+    if (!res.ok) {
+      console.error("Erro API dashboard:", res.status);
+      window.location.href = "/agencia/login.html";
+      return;
+    }
 
-  document.getElementById("assinaturasHoje").innerText =
-    "R$ "+Number(data.assinaturas_hoje).toFixed(2);
+    const data = await res.json();
 
-  document.getElementById("assinaturasMes").innerText =
-    "R$ "+Number(data.assinaturas_mes).toFixed(2);
+    console.log("Dashboard API:", data); // 👈 MUITO IMPORTANTE
 
-  document.getElementById("midiasMes").innerText =
-    "R$ "+Number(data.midias_mes).toFixed(2);
+    document.getElementById("midiasHoje").innerText =
+      "R$ " + Number(data.midias_hoje || 0).toFixed(2);
 
+    document.getElementById("assinaturasHoje").innerText =
+      "R$ " + Number(data.assinaturas_hoje || 0).toFixed(2);
+
+    document.getElementById("assinaturasMes").innerText =
+      "R$ " + Number(data.assinaturas_mes || 0).toFixed(2);
+
+    document.getElementById("midiasMes").innerText =
+      "R$ " + Number(data.midias_mes || 0).toFixed(2);
 
     document.getElementById("totalHoje").innerText =
-  "R$ "+Number(data.total_hoje).toFixed(2);
+      "R$ " + Number(data.total_hoje || 0).toFixed(2);
 
     document.getElementById("totalMes").innerText =
-  "R$ "+Number(data.total_mes).toFixed(2);
+      "R$ " + Number(data.total_mes || 0).toFixed(2);
 
-  document.getElementById("totalAno").innerText =
-    "R$ "+Number(data.total_ano).toFixed(2);
+    document.getElementById("totalAno").innerText =
+      "R$ " + Number(data.total_ano || 0).toFixed(2);
 
-  criarGrafico(data);
+    criarGrafico(data);
+
+  } catch (err) {
+    console.error("Erro dashboard:", err);
+  }
 }
 
+let grafico;
+
 function criarGrafico(data){
-  new Chart(document.getElementById("grafico"), {
+
+  if (grafico) grafico.destroy();
+
+  grafico = new Chart(document.getElementById("grafico"), {
     type: 'bar',
     data: {
       labels: [
@@ -144,15 +166,15 @@ function criarGrafico(data){
       datasets: [{
         label: "Receita Agência",
         data: [
-          data.midias_hoje,
-          data.assinaturas_hoje,
-          data.midias_mes,
-          data.assinaturas_mes,
-          data.total_hoje,
-          data.total_mes,
-          data.total_ano
+          data.midias_hoje || 0,
+          data.assinaturas_hoje || 0,
+          data.midias_mes || 0,
+          data.assinaturas_mes || 0,
+          data.total_hoje || 0,
+          data.total_mes || 0,
+          data.total_ano || 0
         ],
-        borderRadius:8
+        borderRadius: 8
       }]
     },
     options:{

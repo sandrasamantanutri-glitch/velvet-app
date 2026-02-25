@@ -4447,40 +4447,24 @@ app.post(
         return res.status(400).json({ error: "Arquivo não enviado" });
       }
 
-      const url = req.file.location;
       const userId = req.user.id;
 
-      const thumbBuffer = await sharp(req.file.buffer)
-        .resize(200, 200)
-        .webp({ quality: 80 })
-        .toBuffer();
-
-      // 🔥 2️⃣ Gerar nomes únicos
       const timestamp = Date.now();
-      const originalName = `avatars/original_${timestamp}.jpg`;
-      const thumbName = `avatars/thumb_${timestamp}.webp`;
+      const fileName = `avatars/avatar_${timestamp}_${req.file.originalname}`;
 
-      // 🔥 3️⃣ Upload original
-      const originalUpload = await uploadToB2(
+      // 🔥 Upload direto para o B2
+      const upload = await uploadToB2(
         req.file.buffer,
-        originalName,
+        fileName,
         req.file.mimetype
       );
 
-      // 🔥 4️⃣ Upload thumb
-      const thumbUpload = await uploadToB2(
-        thumbBuffer,
-        thumbName,
-        "image/webp"
-      );
-
-      const originalUrl = originalUpload.url;
-      const thumbUrl = thumbUpload.url;
+      const avatarUrl = upload.url;
 
       if (req.user.role === "modelo") {
         await db.query(
-          "UPDATE modelos SET avatar = $1, avatar_thumb = $2 WHERE user_id = $3",
-          [originalUrl, thumbUrl, userId]
+          "UPDATE modelos SET avatar = $1 WHERE user_id = $2",
+          [avatarUrl, userId]
         );
       } 
       else if (req.user.role === "cliente") {
@@ -4500,11 +4484,10 @@ app.post(
           `
           UPDATE clientes_dados
           SET avatar = $1,
-              avatar_thumb = $2,
               atualizado_em = NOW()
-          WHERE cliente_id = $3
+          WHERE cliente_id = $2
           `,
-          [originalUrl, thumbUrl, cliente_id]
+          [avatarUrl, cliente_id]
         );
       } 
       else {
@@ -4512,8 +4495,7 @@ app.post(
       }
 
       res.json({
-        avatar: originalUrl,
-        avatar_thumb: thumbUrl
+        avatar: avatarUrl
       });
 
     } catch (err) {
