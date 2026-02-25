@@ -6091,6 +6091,13 @@ app.patch("/api/ofertas/:id/encerrar", authModelo, async (req, res) => {
   }
 });
 
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false,
+  },
+});
+
 // ===============================
 // START SERVER
 // ===============================
