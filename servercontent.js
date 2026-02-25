@@ -1614,60 +1614,68 @@ router.get("/agencia/dashboard", authAgencia, async (req, res) => {
   -- 🎥 MIDIAS HOJE
   COALESCE(SUM(CASE
     WHEN ta.tipo = 'conteudo'
-    AND ta.created_at >= DATE_TRUNC('day', NOW() AT TIME ZONE 'America/Sao_Paulo')
-    AND ta.created_at <  DATE_TRUNC('day', NOW() AT TIME ZONE 'America/Sao_Paulo') + INTERVAL '1 day'
+    AND (ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')::date
+        = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
     THEN ta.agency_fee
   END),0) AS midias_hoje,
 
   -- 💎 ASSINATURAS HOJE
   COALESCE(SUM(CASE
     WHEN ta.tipo = 'assinatura'
-    AND ta.created_at >= DATE_TRUNC('day', NOW() AT TIME ZONE 'America/Sao_Paulo')
-    AND ta.created_at <  DATE_TRUNC('day', NOW() AT TIME ZONE 'America/Sao_Paulo') + INTERVAL '1 day'
+    AND (ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')::date
+        = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
     THEN ta.agency_fee
   END),0) AS assinaturas_hoje,
 
-  -- 🎥 MIDIAS MÊS
+  -- 🎥 MIDIAS MES
   COALESCE(SUM(CASE
     WHEN ta.tipo = 'conteudo'
-    AND ta.created_at >= DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
-    AND ta.created_at <  DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') + INTERVAL '1 month'
+    AND DATE_TRUNC('month',
+        ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')
+      = DATE_TRUNC('month',
+        NOW() AT TIME ZONE 'America/Sao_Paulo')
     THEN ta.agency_fee
   END),0) AS midias_mes,
 
-  -- 💎 ASSINATURAS MÊS
+  -- 💎 ASSINATURAS MES
   COALESCE(SUM(CASE
     WHEN ta.tipo = 'assinatura'
-    AND ta.created_at >= DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
-    AND ta.created_at <  DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') + INTERVAL '1 month'
+    AND DATE_TRUNC('month',
+        ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')
+      = DATE_TRUNC('month',
+        NOW() AT TIME ZONE 'America/Sao_Paulo')
     THEN ta.agency_fee
   END),0) AS assinaturas_mes,
 
   -- 💰 TOTAL HOJE
   COALESCE(SUM(CASE
-    WHEN ta.created_at >= DATE_TRUNC('day', NOW() AT TIME ZONE 'America/Sao_Paulo')
-    AND ta.created_at <  DATE_TRUNC('day', NOW() AT TIME ZONE 'America/Sao_Paulo') + INTERVAL '1 day'
+    WHEN (ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')::date
+        = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
     THEN ta.agency_fee
   END),0) AS total_hoje,
 
   -- 💰 TOTAL MES
   COALESCE(SUM(CASE
-    WHEN ta.created_at >= DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
-    AND ta.created_at <  DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') + INTERVAL '1 month'
+    WHEN DATE_TRUNC('month',
+        ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')
+      = DATE_TRUNC('month',
+        NOW() AT TIME ZONE 'America/Sao_Paulo')
     THEN ta.agency_fee
   END),0) AS total_mes,
 
   -- 💰 TOTAL ANO
   COALESCE(SUM(CASE
-    WHEN ta.created_at >= DATE_TRUNC('year', NOW() AT TIME ZONE 'America/Sao_Paulo')
-    AND ta.created_at <  DATE_TRUNC('year', NOW() AT TIME ZONE 'America/Sao_Paulo') + INTERVAL '1 year'
+    WHEN DATE_TRUNC('year',
+        ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')
+      = DATE_TRUNC('year',
+        NOW() AT TIME ZONE 'America/Sao_Paulo')
     THEN ta.agency_fee
   END),0) AS total_ano
 
 FROM transacoes_agency ta
 JOIN modelos m ON m.id = ta.modelo_id
 WHERE m.agencia_id = $1
-  AND ta.status = 'pago'
+  AND ta.status = 'pago';
 `, [agencia_id]);
 
   res.json(result.rows[0]);
