@@ -4113,71 +4113,71 @@ app.put("/api/usuario/dados", auth, async (req, res) => {
   }
 });
 
-app.put(
-  "/api/admin/verificacao/:id",
-  authAdmin,
-  async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { status, motivo } = req.body;
+// app.put(
+//   "/api/admin/verificacao/:id",
+//   authAdmin,
+//   async (req, res) => {
+//     try {
+//       const { id } = req.params;
+//       const { status, motivo } = req.body;
 
-      if (!["aprovado", "recusado"].includes(status)) {
-        return res.status(400).json({ erro: "Status inválido" });
-      }
+//       if (!["aprovado", "recusado"].includes(status)) {
+//         return res.status(400).json({ erro: "Status inválido" });
+//       }
 
-      // 🔎 Buscar modelo_id da verificação
-      const verificacaoRes = await db.query(
-        `SELECT modelo_id FROM modelos_verificacao WHERE id = $1`,
-        [id]
-      );
+//       // 🔎 Buscar modelo_id da verificação
+//       const verificacaoRes = await db.query(
+//         `SELECT modelo_id FROM modelos_verificacao WHERE id = $1`,
+//         [id]
+//       );
 
-      if (verificacaoRes.rowCount === 0) {
-        return res.status(404).json({ erro: "Verificação não encontrada" });
-      }
+//       if (verificacaoRes.rowCount === 0) {
+//         return res.status(404).json({ erro: "Verificação não encontrada" });
+//       }
 
-      const modelo_id = verificacaoRes.rows[0].modelo_id;
+//       const modelo_id = verificacaoRes.rows[0].modelo_id;
 
-      // 🔁 Converter modelo_id → user_id
-      const modeloRes = await db.query(
-        `SELECT user_id FROM modelos WHERE id = $1`,
-        [modelo_id]
-      );
+//       // 🔁 Converter modelo_id → user_id
+//       const modeloRes = await db.query(
+//         `SELECT user_id FROM modelos WHERE id = $1`,
+//         [modelo_id]
+//       );
 
-      if (modeloRes.rowCount === 0) {
-        return res.status(404).json({ erro: "Modelo não encontrado" });
-      }
+//       if (modeloRes.rowCount === 0) {
+//         return res.status(404).json({ erro: "Modelo não encontrado" });
+//       }
 
-      const user_id = modeloRes.rows[0].user_id;
+//       const user_id = modeloRes.rows[0].user_id;
 
-      // ✅ Atualizar verificação
-      await db.query(
-        `
-        UPDATE modelos_verificacao
-        SET
-          status = $1,
-          motivo = $2,
-          atualizado_em = NOW()
-        WHERE id = $3
-        `,
-        [status, motivo || null, id]
-      );
+//       // ✅ Atualizar verificação
+//       await db.query(
+//         `
+//         UPDATE modelos_verificacao
+//         SET
+//           status = $1,
+//           motivo = $2,
+//           atualizado_em = NOW()
+//         WHERE id = $3
+//         `,
+//         [status, motivo || null, id]
+//       );
 
-      // 🚀 Se aprovado → promover para modelo
-      if (status === "aprovado") {
-        await db.query(
-          `UPDATE users SET role = 'modelo' WHERE id = $1`,
-          [user_id]
-        );
-      }
+//       // 🚀 Se aprovado → promover para modelo
+//       if (status === "aprovado") {
+//         await db.query(
+//           `UPDATE users SET role = 'modelo' WHERE id = $1`,
+//           [user_id]
+//         );
+//       }
 
-      res.json({ ok: true });
+//       res.json({ ok: true });
 
-    } catch (err) {
-      console.error("Erro atualizar verificação:", err);
-      res.status(500).json({ erro: "Erro ao atualizar status" });
-    }
-  }
-);
+//     } catch (err) {
+//       console.error("Erro atualizar verificação:", err);
+//       res.status(500).json({ erro: "Erro ao atualizar status" });
+//     }
+//   }
+// );
 
 app.post("/api/register", authLimiter, async (req, res) => {
   try {
