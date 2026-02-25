@@ -332,13 +332,14 @@ function renderMensagem(msg) {
            data-qtd="${quantidade}">
 
         <div class="pacote-grid">
-          ${(msg.midias || []).map((m) => `
-            <div class="midia-item">
-              ${
-                (m.tipo_media || m.tipo) === "video"
-                  ? `<video src="${m.url}" muted></video>`
-                  : `<img src="${m.url}" />`
-              }
+          ${(msg.midias || []).map((m, index) => `
+            <div class="midia-item lazy-midia"
+                 data-thumb="${m.thumbnail_url || m.url}"
+                 data-full="${m.url}"
+                 data-index="${index}">
+                 
+                 <div class="midia-placeholder"></div>
+
             </div>
           `).join("")}
         </div>
@@ -365,26 +366,7 @@ function renderMensagem(msg) {
       <span class="msg-hora">${formatarHora(msg.created_at)}</span>
     `;
 
-    // 🔥 ABRIR PREVIEW (SEM FETCH, SEM ROTA EXTRA)
-    const midiasEls = div.querySelectorAll(".midia-item");
-
-    midiasEls.forEach((el, index) => {
-      el.style.cursor = "pointer";
-
-      el.addEventListener("click", (e) => {
-        e.stopPropagation();
-
-        // 🔒 Se bloqueado, pode abrir fluxo pagamento
-        if (bloqueado) {
-          if (typeof abrirFluxoPagamentoConteudo === "function") {
-            abrirFluxoPagamentoConteudo(msg);
-          }
-          return;
-        }
-
-        abrirPreviewMidiaDireto(msg, index);
-      });
-    });
+    ativarLazyLoadingModelo(div, msg, bloqueado);
   }
 
   // ===============================
@@ -591,14 +573,12 @@ async function abrirPopupConteudos() {
     if (!popup || !grid) return;
 
     popup.classList.remove("hidden");
-    grid.innerHTML = "Carregando...";
+    grid.innerHTML = `<div class="popup-loading">Carregando...</div>`;
 
-    // 🔒 Garantir que o Set existe
     if (!window.conteudosVistosCliente) {
       window.conteudosVistosCliente = new Set();
     }
 
-    // 🔥 Atualiza conteúdos já vistos pelo cliente
     await carregarConteudosVistos(cliente_id);
 
     const token = localStorage.getItem("token");
@@ -634,21 +614,18 @@ async function abrirPopupConteudos() {
 
       const item = document.createElement("div");
       item.className =
-        "preview-item" +
+        "preview-item lazy-popup" +
         (jaVisto ? " visto desabilitado" : "");
 
       item.dataset.conteudoId = c.id;
+      item.dataset.thumb = c.thumbnail_url || c.url;
+      item.dataset.full = c.url;
 
       item.innerHTML = `
-        ${
-          c.tipo === "video"
-            ? `<video src="${c.url}" muted playsinline></video>`
-            : `<img src="${c.url}" loading="lazy" />`
-        }
+        <div class="popup-placeholder"></div>
         ${jaVisto ? `<span class="badge-visto">Visto</span>` : ""}
       `;
 
-      // 🚫 Nunca permitir reenviar conteúdo já visto
       if (jaVisto) {
         item.addEventListener("click", () => {
           alert("Este conteúdo já foi visto por este cliente e não pode ser reenviado.");
@@ -661,6 +638,8 @@ async function abrirPopupConteudos() {
 
       grid.appendChild(item);
     });
+
+    ativarLazyPopup(grid);
 
   } catch (err) {
     console.error("Erro abrirPopupConteudos:", err);
@@ -1026,4 +1005,106 @@ function prioridadeChat(c) {
   // 4️⃣ Demais
   return 4;
 }
+
+//OTIMIZACAO CHAT
+const observerModelo = new IntersectionObserver((entries) => {
+
+  entries.forEach(entry => {
+
+    if (!entry.isIntersecting) return;
+
+    const el = entry.target;
+    const thumb = el.dataset.thumb;
+
+    if (!thumb) return;
+
+    const img = document.createElement("img");
+    img.src = thumb;
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.style.width = "100%";
+    img.style.height = "100%";
+    img.style.objectFit = "cover";
+
+    el.innerHTML = "";
+    el.appendChild(img);
+
+    observerModelo.unobserve(el);
+
+  });
+
+}, {
+  root: document.getElementById("chatBox"),
+  threshold: 0.1
+});
+
+function ativarLazyLoadingModelo(container, msg, bloqueado) {
+
+  const midias = container.querySelectorAll(".lazy-midia");
+
+  midias.forEach((el) => {
+
+    observerModelo.observe(el);
+
+    el.style.cursor = "pointer";
+
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+
+      if (bloqueado) {
+        if (typeof abrirFluxoPagamentoConteudo === "function") {
+          abrirFluxoPagamentoConteudo(msg);
+        }
+        return;
+      }
+
+      const index = Number(el.dataset.index);
+      abrirPreviewMidiaDireto(msg, index);
+    });
+
+  });
+}
+
+let popupObserver;
+
+function ativarLazyPopup(container) {
+
+  if (popupObserver) {
+    popupObserver.disconnect();
+  }
+
+  popupObserver = new IntersectionObserver((entries) => {
+
+    entries.forEach(entry => {
+
+      if (!entry.isIntersecting) return;
+
+      const el = entry.target;
+      const thumb = el.dataset.thumb;
+      if (!thumb) return;
+
+      const img = document.createElement("img");
+      img.src = thumb;
+      img.loading = "lazy";
+      img.decoding = "async";
+      img.style.width = "100%";
+      img.style.height = "100%";
+      img.style.objectFit = "cover";
+
+      el.querySelector(".popup-placeholder")?.remove();
+      el.prepend(img);
+
+      popupObserver.unobserve(el);
+
+    });
+
+  }, {
+    root: container,   // 🔥 AGORA USA O GRID CORRETO
+    threshold: 0.1
+  });
+
+  const items = container.querySelectorAll(".lazy-popup");
+  items.forEach(el => popupObserver.observe(el));
+}
+
 

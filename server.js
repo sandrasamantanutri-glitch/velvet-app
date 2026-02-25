@@ -1883,50 +1883,74 @@ socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
     );
 
     // ===================================
-    // 4️⃣ TRATAR MENSAGENS DE CONTEÚDO
-    // ===================================
-    for (const msg of result.rows) {
+// 4️⃣ TRATAR MENSAGENS DE CONTEÚDO (OTIMIZADO)
+// ===================================
 
-      if (msg.tipo !== "conteudo") continue;
+// 1️⃣ pegar IDs das mensagens de conteúdo
+const mensagensConteudo = result.rows.filter(m => m.tipo === "conteudo");
+const messageIds = mensagensConteudo.map(m => m.id);
 
-      const midiasRes = await db.query(
-        `
-        SELECT
-          c.url,
-          c.tipo AS tipo_media
-        FROM messages_conteudos mc
-        JOIN conteudos c ON c.id = mc.conteudo_id
-        WHERE mc.message_id = $1
-        `,
-        [msg.id]
-      );
+if (messageIds.length > 0) {
 
-      const midias = midiasRes.rows;
-      msg.quantidade = midias.length;
+  // 2️⃣ buscar todas mídias de uma vez
+  const midiasRes = await db.query(
+    `
+    SELECT
+      mc.message_id,
+      c.url,
+      c.thumbnail_url,
+      c.tipo AS tipo_media
+    FROM messages_conteudos mc
+    JOIN conteudos c ON c.id = mc.conteudo_id
+    WHERE mc.message_id = ANY($1)
+    `,
+    [messageIds]
+  );
 
-      if (Number(msg.preco) > 0) {
+  // 3️⃣ organizar por message_id
+  const mapaMidias = {};
 
-        const pagoRes = await db.query(`
-          SELECT 1
-          FROM conteudo_pacotes
-          WHERE message_id = $1
-            AND cliente_id = $2
-            AND status = 'pago'
-          LIMIT 1
-        `, [msg.id, cliente_id]);
-
-        const pago = pagoRes.rowCount > 0;
-
-        msg.visto = pago;
-        msg.bloqueado = !pago;
-
-      } else {
-        msg.visto = true;
-        msg.bloqueado = false;
-      }
-
-      msg.midias = midias;
+  for (const row of midiasRes.rows) {
+    if (!mapaMidias[row.message_id]) {
+      mapaMidias[row.message_id] = [];
     }
+    mapaMidias[row.message_id].push({
+      url: row.url,
+      thumbnail_url: row.thumbnail_url,
+      tipo_media: row.tipo_media
+    });
+  }
+
+  // 4️⃣ aplicar nas mensagens
+  for (const msg of mensagensConteudo) {
+
+    const midias = mapaMidias[msg.id] || [];
+
+    msg.midias = midias;
+    msg.quantidade = midias.length;
+
+    if (Number(msg.preco) > 0) {
+
+      const pagoRes = await db.query(`
+        SELECT 1
+        FROM conteudo_pacotes
+        WHERE message_id = $1
+          AND cliente_id = $2
+          AND status = 'pago'
+        LIMIT 1
+      `, [msg.id, cliente_id]);
+
+      const pago = pagoRes.rowCount > 0;
+
+      msg.visto = pago;
+      msg.bloqueado = !pago;
+
+    } else {
+      msg.visto = true;
+      msg.bloqueado = false;
+    }
+  }
+}
 
     // ===================================
     // 5️⃣ ENVIAR APENAS PARA QUEM PEDIU
@@ -1992,7 +2016,13 @@ socket.on("sendConteudo", async ({
 
     if (idsValidos.length === 0) return;
 
-    const precoNum = Number(preco) || 0;
+    let precoNum = Number(preco);
+
+if (!Number.isFinite(precoNum) || precoNum < 0) {
+  precoNum = 0;
+}
+
+precoNum = Number(precoNum.toFixed(2));
 
     const sala = `chat_${cliente_id}_${modelo_id}`;
 
@@ -2010,23 +2040,26 @@ socket.on("sendConteudo", async ({
 
     const message = msgRes.rows[0];
 
-    // 5️⃣ ASSOCIAR MÍDIAS
-    for (const conteudo_id of idsValidos) {
-      await db.query(
-        `
-        INSERT INTO messages_conteudos (message_id, conteudo_id)
-        VALUES ($1, $2)
-        `,
-        [message.id, conteudo_id]
-      );
-    }
+// 5️⃣ ASSOCIAR MÍDIAS (BATCH INSERT)
+const values = idsValidos
+  .map((_, i) => `($1, $${i + 2})`)
+  .join(",");
+
+await db.query(
+  `
+  INSERT INTO messages_conteudos (message_id, conteudo_id)
+  VALUES ${values}
+  `,
+  [message.id, ...idsValidos]
+);
 
     // 6️⃣ BUSCAR MÍDIAS
     const midiasRes = await db.query(
       `
-      SELECT url, tipo AS tipo_media
-      FROM conteudos
-      WHERE id = ANY($1)
+      SELECT url, thumbnail_url, tipo AS tipo_media
+FROM conteudos
+WHERE id = ANY($1)
+ORDER BY array_position($1, id)
       `,
       [idsValidos]
     );
@@ -5813,9 +5846,6 @@ app.post(
 
 // ===============================
 // 🔥 MIDDLEWARE GLOBAL DE ERRO
-// ===============================
-// ===============================
-// 🔥 GLOBAL ERROR HANDLER
 // ===============================
 app.use((err, req, res, next) => {
 

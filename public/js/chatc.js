@@ -379,10 +379,10 @@ function renderMensagem(msg) {
   if (!chat) return;
 
   const div = document.createElement("div");
-div.className =
-  msg.sender === "modelo"
-    ? "msg modelo"
-    : "msg cliente";
+  div.className =
+    msg.sender === "modelo"
+      ? "msg modelo"
+      : "msg cliente";
 
   /* ✉️ TEXTO */
   if (msg.tipo === "texto") {
@@ -393,70 +393,87 @@ div.className =
   else if (msg.tipo === "conteudo") {
 
     const liberado =
-  msg.visto === true ||
-  conteudosLiberados.has(Number(msg.id)) ||
-  Number(msg.preco) === 0;
+      msg.visto === true ||
+      conteudosLiberados.has(Number(msg.id)) ||
+      Number(msg.preco) === 0;
 
+    /* ===========================
+       🔓 CONTEÚDO LIBERADO
+    ============================ */
+    if (liberado) {
 
-    // 🔓 LIBERADO
-  if (liberado) {
-  div.innerHTML = `
-    <div class="chat-conteudo livre premium"
-         data-id="${msg.id}"
-         data-qtd="${msg.quantidade ?? msg.midias.length}">
-      <div class="pacote-grid">
-        ${msg.midias.map((m, index) => `
-          <div class="midia-item"
-               onclick="abrirConteudoSeguro(${msg.id}, ${index})">
-            ${
-              (m.tipo_media || m.tipo) === "video"
-                ? `<video src="${m.url}" muted playsinline></video>`
-                : `<img src="${m.url}" />`
-            }
+      div.innerHTML = `
+        <div class="chat-conteudo livre premium"
+             data-id="${msg.id}"
+             data-qtd="${msg.quantidade ?? msg.midias.length}">
+          <div class="pacote-grid">
+            ${msg.midias.map((m, index) => `
+              <div class="midia-item lazy-midia"
+                   data-full="${m.url}"
+                   data-thumb="${m.thumbnail_url || m.url}"
+                   data-index="${index}"
+                   data-message-id="${msg.id}">
+                   
+                   <div class="midia-placeholder"></div>
+
+              </div>
+            `).join("")}
           </div>
-        `).join("")}
-      </div>
-    </div>
-  `;
-}
+        </div>
+      `;
 
-    // 🔒 BLOQUEADO
-else {
-  div.innerHTML = `
-    <div class="chat-conteudo bloqueado premium"
-         data-id="${msg.id}"
-         data-preco="${msg.preco}"
-         data-qtd="${msg.quantidade ?? 1}">
+    }
 
-      <div class="pacote-grid">
-        ${Array(msg.quantidade ?? 1).fill("").map(() =>
-          `<div class="midia-item placeholder"></div>`
-        ).join("")}
-      </div>
-         <div class="conteudo-info">
-  <span class="status-bloqueado">
-    ${msg.quantidade ?? 1} mídia(s)
-  </span>
+    /* ===========================
+       🔒 CONTEÚDO BLOQUEADO
+    ============================ */
+    else {
 
-  <span class="preco-bloqueado">
-    R$ ${Number(msg.preco).toFixed(2)}
-  </span>
+      div.innerHTML = `
+        <div class="chat-conteudo bloqueado premium"
+             data-id="${msg.id}"
+             data-preco="${msg.preco}"
+             data-qtd="${msg.quantidade ?? 1}">
 
-<button class="btn-desbloquear"
-  data-preco="${msg.preco}"
-  data-message-id="${msg.id}">
-  Desbloquear
-</button>
-</div>
-</div>
+          <div class="pacote-grid">
+            ${Array(msg.quantidade ?? 1).fill("").map(() =>
+              `<div class="midia-item placeholder"></div>`
+            ).join("")}
+          </div>
+
+          <div class="conteudo-info">
+            <span class="status-bloqueado">
+              ${msg.quantidade ?? 1} mídia(s)
+            </span>
+
+            <span class="preco-bloqueado">
+              R$ ${Number(msg.preco).toFixed(2)}
+            </span>
+
+            <button class="btn-desbloquear"
+              data-preco="${msg.preco}"
+              data-message-id="${msg.id}">
+              Desbloquear
+            </button>
+          </div>
+        </div>
       `;
     }
   }
 
   chat.appendChild(div);
+
+  // 🔥 Ativar lazy loading somente se liberado
+  if (msg.tipo === "conteudo" && 
+      (msg.visto === true || 
+       conteudosLiberados.has(Number(msg.id)) || 
+       Number(msg.preco) === 0)) {
+
+    ativarLazyLoading(div, msg);
+  }
+
   chat.scrollTop = chat.scrollHeight;
 }
-
 
 function scrollParaFinal() {
   const chat = document.getElementById("chatBox");
@@ -791,5 +808,55 @@ function mostrarToast(texto) {
     toast.style.opacity = "0";
     toast.style.transform = "translateX(-50%) translateY(10px)";
   }, 2500);
+}
+
+//OTIMIZACAO CHAT
+const observerMidia = new IntersectionObserver((entries) => {
+
+  entries.forEach(entry => {
+
+    if (!entry.isIntersecting) return;
+
+    const el = entry.target;
+
+    const thumb = el.dataset.thumb;
+    if (!thumb) return;
+
+    const img = document.createElement("img");
+    img.src = thumb;
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.style.width = "100%";
+    img.style.height = "100%";
+    img.style.objectFit = "cover";
+
+    el.innerHTML = "";
+    el.appendChild(img);
+
+    observerMidia.unobserve(el);
+
+  });
+
+}, {
+  root: document.getElementById("chatBox"),
+  threshold: 0.1
+});
+
+function ativarLazyLoading(container, msg) {
+
+  const midias = container.querySelectorAll(".lazy-midia");
+
+  midias.forEach(el => {
+
+    observerMidia.observe(el);
+
+    el.addEventListener("click", () => {
+
+      const index = Number(el.dataset.index);
+      abrirConteudoSeguro(msg.id, index);
+
+    });
+
+  });
 }
 

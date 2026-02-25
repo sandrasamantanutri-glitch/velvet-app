@@ -710,4 +710,73 @@ html, body {
   display: none;
 }
 
+.pacote-grid img {
+  width: 120px;
+  height: 150px;
+  object-fit: cover;
+}
+
+
+.pacote-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 6px;
+}
+
+.midia-item {
+  width: 100%;
+  aspect-ratio: 3/4;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #111;
+  position: relative;
+}
+
+.midia-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    #111 25%,
+    #1c1c1c 37%,
+    #111 63%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.3s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 100% 0 }
+  100% { background-position: -100% 0 }
+}
+
+
+.preview-item {
+  width: 100%;
+  aspect-ratio: 3/4;
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #111;
+  cursor: pointer;
+}
+
+.popup-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    #111 25%,
+    #1c1c1c 37%,
+    #111 63%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.3s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 100% 0 }
+  100% { background-position: -100% 0 }
+}
+
 
