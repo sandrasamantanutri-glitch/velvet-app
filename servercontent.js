@@ -1613,7 +1613,7 @@ router.get("/agencia/dashboard", authAgencia, async (req, res) => {
 
   -- 🎥 MIDIAS HOJE
   COALESCE(SUM(CASE
-    WHEN ta.tipo = 'conteudo'
+    WHEN ta.tipo = 'midia'
     AND (ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')::date
         = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
     THEN ta.agency_fee
@@ -1629,7 +1629,7 @@ router.get("/agencia/dashboard", authAgencia, async (req, res) => {
 
   -- 🎥 MIDIAS MES
   COALESCE(SUM(CASE
-    WHEN ta.tipo = 'conteudo'
+    WHEN ta.tipo = 'midia'
     AND DATE_TRUNC('month',
         ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')
       = DATE_TRUNC('month',
