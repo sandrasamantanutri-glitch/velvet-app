@@ -41,7 +41,7 @@
   <div class="modal-box">
     <h2>Novo conteúdo</h2>
     <div class="file-upload">
-  <input type="file" id="fileConteudo" hidden>
+<input type="file" id="fileConteudo" multiple accept="image/*,video/*" hidden>
   <label for="fileConteudo" class="btn-file">
     📁 Escolher mídia
   </label>
@@ -50,6 +50,12 @@
     <button id="btnEnviarConteudo" class="btn-principal">
       Enviar
     </button>
+    <div id="uploadProgressContainer" class="hidden">
+  <div class="progress-bar">
+    <div id="uploadProgressBar"></div>
+  </div>
+  <span id="uploadPercent">0%</span>
+</div>
 
     <button id="btnFecharModal">Cancelar</button>
   </div>

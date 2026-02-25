@@ -988,7 +988,7 @@ app.post(
   "/api/upload",
   auth,
   authModelo,
-  uploadB2.single("file"),
+  uploadB2.array("file", 10),
   async (req, res) => {
     try {
 
@@ -5755,18 +5755,17 @@ app.post(
 app.post(
   "/api/conteudos",
   authModelo,
-  uploadB2.single("file"),
+  uploadB2.array("file", 10),
   async (req, res) => {
     const userId = req.user.id;
 
-    if (!req.file) {
+     if (!req.files || req.files.length === 0) {
       return res.status(400).json({
         error: "Arquivo obrigatório"
       });
     }
 
     try {
-      // 🔁 users.id → modelo_id
       const modeloRes = await db.query(
         "SELECT id FROM modelos WHERE user_id = $1",
         [userId]
@@ -5779,8 +5778,10 @@ app.post(
       }
 
       const modelo_id = modeloRes.rows[0].id;
+      const resultados = [];
 
-      const { mimetype, location } = req.file;
+      for (const file of req.files) {
+      const { mimetype, location } = file;
 
       let tipo;
       if (mimetype.startsWith("image/")) {
@@ -5788,15 +5789,12 @@ app.post(
       } else if (mimetype.startsWith("video/")) {
         tipo = "video";
       } else {
-        return res.status(400).json({
-          error: "Tipo de arquivo não suportado"
-        });
+        continue;
       }
 
       const url = location;
       let thumbnail_url = null;
 
-      // 🔥 GERA THUMB SE FOR VÍDEO
       if (tipo === "video") {
         try {
           thumbnail_url = await gerarThumbnailVideo(url);
@@ -5832,11 +5830,12 @@ app.post(
           thumbnail_url
         ]
       );
+      resultados.push(result.rows[0]);
+    }
+      res.json(resultados);
 
-      res.json(result.rows[0]);
-
-    } catch (err) {
-      console.error("Erro ao carregar conteúdo:", err);
+   } catch (err) {
+      console.error("Erro upload múltiplo:", err);
       res.status(500).json({
         error: "Erro ao carregar conteúdo"
       });

@@ -22,14 +22,30 @@ document.addEventListener("DOMContentLoaded", () => {
   const fileName = document.getElementById("fileName");
 
   if (fileInput) {
-    fileInput.addEventListener("change", () => {
-      if (fileInput.files.length > 0) {
-        fileName.textContent = fileInput.files[0].name;
-      } else {
-        fileName.textContent = "Nenhum ficheiro selecionado";
-      }
-    });
-  }
+  fileInput.addEventListener("change", () => {
+
+    const files = fileInput.files;
+
+    if (!files || files.length === 0) {
+      fileName.textContent = "Nenhum ficheiro selecionado";
+      return;
+    }
+
+    if (files.length > 10) {
+      alert("Você pode selecionar no máximo 10 arquivos.");
+      fileInput.value = "";
+      fileName.textContent = "Nenhum ficheiro selecionado";
+      return;
+    }
+
+    if (files.length === 1) {
+      fileName.textContent = files[0].name;
+    } else {
+      fileName.textContent = `${files.length} arquivos selecionados`;
+    }
+
+  });
+}
 
   if (btnNovo) {
     btnNovo.addEventListener("click", () => {
@@ -41,52 +57,89 @@ document.addEventListener("DOMContentLoaded", () => {
     btnFechar.addEventListener("click", fecharModalNovoConteudo);
   }
 
-  if (btnEnviar) {
-    btnEnviar.addEventListener("click", async () => {
+if (btnEnviar) {
+  btnEnviar.addEventListener("click", () => {
 
-      const file = fileInput.files[0];
+    const files = fileInput.files;
 
-      if (!file) {
-        alert("Selecione um arquivo");
-        return;
-      }
+    if (!files || files.length === 0) {
+      alert("Selecione pelo menos um arquivo.");
+      return;
+    }
 
-      const formData = new FormData();
+    if (files.length > 10) {
+      alert("Você pode enviar no máximo 10 arquivos.");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+
+    const formData = new FormData();
+    for (const file of files) {
       formData.append("file", file);
+    }
 
-      try {
-        btnEnviar.disabled = true;
-        btnEnviar.textContent = "Enviando...";
+    const progressContainer = document.getElementById("uploadProgressContainer");
+    const progressBar = document.getElementById("uploadProgressBar");
+    const progressText = document.getElementById("uploadPercent");
 
-        const res = await fetch("/api/conteudos", {
-          method: "POST",
-          headers: {
-            Authorization: "Bearer " + token
-          },
-          body: formData
-        });
+    progressContainer.classList.remove("hidden");
+    btnEnviar.disabled = true;
+    btnEnviar.textContent = "Enviando...";
 
-        if (!res.ok) {
-          const erro = await res.text();
-          throw new Error(erro || "Erro ao enviar conteúdo");
-        }
+    const xhr = new XMLHttpRequest();
 
-        fecharModalNovoConteudo();
-        await carregarConteudos();
+    xhr.open("POST", "/api/conteudos", true);
+    xhr.setRequestHeader("Authorization", "Bearer " + token);
 
-        // 🔥 reset visual
-        fileInput.value = "";
-        fileName.textContent = "Nenhum ficheiro selecionado";
+    xhr.upload.onprogress = function (e) {
+      if (e.lengthComputable) {
+        const percent = Math.round((e.loaded / e.total) * 100);
+        progressBar.style.width = percent + "%";
+        progressText.textContent = percent + "%";
+      }
+    };
 
-      } catch (err) {
-        console.error("Erro upload:", err.message);
+    xhr.onload = function () {
+      if (xhr.status >= 200 && xhr.status < 300) {
+
+        progressBar.style.width = "100%";
+        progressText.textContent = "100%";
+
+        setTimeout(async () => {
+
+          fecharModalNovoConteudo();
+          await carregarConteudos();
+
+          fileInput.value = "";
+          fileName.textContent = "Nenhum ficheiro selecionado";
+
+          progressBar.style.width = "0%";
+          progressText.textContent = "0%";
+          progressContainer.classList.add("hidden");
+
+          btnEnviar.disabled = false;
+          btnEnviar.textContent = "Enviar";
+
+        }, 500);
+
+      } else {
         alert("Erro ao enviar conteúdo");
-      } finally {
         btnEnviar.disabled = false;
         btnEnviar.textContent = "Enviar";
       }
-    });
-  }
+    };
+
+    xhr.onerror = function () {
+      alert("Erro na conexão");
+      btnEnviar.disabled = false;
+      btnEnviar.textContent = "Enviar";
+    };
+
+    xhr.send(formData);
+
+  });
+}
 
   const btnFecharViewer = document.getElementById("btnFecharViewer");
   const modalViewer = document.getElementById("modalVisualizarConteudo");
