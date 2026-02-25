@@ -5135,9 +5135,6 @@ const { conteudo_id, fingerprint } = req.body;
     /* =====================================================
    🪪 OBTER CPF DO CLIENTE (COM FALLBACK)
 ===================================================== */
-/* =====================================================
-   🪪 OBTER CPF DO CLIENTE (BUSCA EM pagamentos_pix)
-===================================================== */
 
 let cpfFinal = null;
 
@@ -5221,13 +5218,13 @@ const pagarmeResponse = await axios.post(
       {
         items: [{
           amount,
-          description: "midia Velvet",
+          description: "Midias Velvet",
           quantity: 1
         }],
-        customer: {
+customer: {
   name: req.user.nome || "Cliente Velvet",
   email: req.user.email,
-  document: cpfFinal,
+  document: cpf,
   type: "individual",
   phones: {
     mobile_phone: {
@@ -5304,18 +5301,18 @@ if (!charge || !pixData || !pixData.qr_code) {
 `,[
   cliente_id,
   modelo_id,
-  total,          // valor total já com taxas
+  total,         
   order.id,
   ip,
   cpfFinal,
-  conteudoId      // 🔥 AQUI ESTÁ O SEGREDO
+  conteudoId      
 ]);
 
     await client.query("COMMIT");
 
 res.json({
-  qr_code_url: pixData.qr_code_url,   // 👈 imagem pronta
-  copia_cola: pixData.qr_code,        // 👈 texto PIX
+  qr_code_url: pixData.qr_code_url,   
+  copia_cola: pixData.qr_code,       
   expires_at: pixData.expires_at,
   order_id: order.id
 });
