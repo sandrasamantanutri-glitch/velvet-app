@@ -1611,63 +1611,63 @@ router.get("/agencia/dashboard", authAgencia, async (req, res) => {
   const result = await db.query(`
   SELECT
 
-    -- 🎥 MIDIAS HOJE
-    COALESCE(SUM(CASE
-      WHEN ta.tipo = 'conteudo'
-      AND DATE(ta.created_at AT TIME ZONE 'America/Sao_Paulo')
-          = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
-      THEN ta.agency_fee
-    END),0) AS midias_hoje,
+  -- 🎥 MIDIAS HOJE
+  COALESCE(SUM(CASE
+    WHEN ta.tipo = 'conteudo'
+    AND ta.created_at >= DATE_TRUNC('day', NOW() AT TIME ZONE 'America/Sao_Paulo')
+    AND ta.created_at <  DATE_TRUNC('day', NOW() AT TIME ZONE 'America/Sao_Paulo') + INTERVAL '1 day'
+    THEN ta.agency_fee
+  END),0) AS midias_hoje,
 
-    -- 💎 ASSINATURAS HOJE
-    COALESCE(SUM(CASE
-      WHEN ta.tipo = 'assinatura'
-      AND DATE(ta.created_at AT TIME ZONE 'America/Sao_Paulo')
-          = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
-      THEN ta.agency_fee
-    END),0) AS assinaturas_hoje,
+  -- 💎 ASSINATURAS HOJE
+  COALESCE(SUM(CASE
+    WHEN ta.tipo = 'assinatura'
+    AND ta.created_at >= DATE_TRUNC('day', NOW() AT TIME ZONE 'America/Sao_Paulo')
+    AND ta.created_at <  DATE_TRUNC('day', NOW() AT TIME ZONE 'America/Sao_Paulo') + INTERVAL '1 day'
+    THEN ta.agency_fee
+  END),0) AS assinaturas_hoje,
 
-    -- 🎥 MIDIAS MÊS
-    COALESCE(SUM(CASE
-      WHEN ta.tipo = 'conteudo'
-      AND DATE_TRUNC('month', ta.created_at AT TIME ZONE 'America/Sao_Paulo')
-          = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
-      THEN ta.agency_fee
-    END),0) AS midias_mes,
+  -- 🎥 MIDIAS MÊS
+  COALESCE(SUM(CASE
+    WHEN ta.tipo = 'conteudo'
+    AND ta.created_at >= DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+    AND ta.created_at <  DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') + INTERVAL '1 month'
+    THEN ta.agency_fee
+  END),0) AS midias_mes,
 
-    -- 💎 ASSINATURAS MÊS
-    COALESCE(SUM(CASE
-      WHEN ta.tipo = 'assinatura'
-      AND DATE_TRUNC('month', ta.created_at AT TIME ZONE 'America/Sao_Paulo')
-          = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
-      THEN ta.agency_fee
-    END),0) AS assinaturas_mes,
+  -- 💎 ASSINATURAS MÊS
+  COALESCE(SUM(CASE
+    WHEN ta.tipo = 'assinatura'
+    AND ta.created_at >= DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+    AND ta.created_at <  DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') + INTERVAL '1 month'
+    THEN ta.agency_fee
+  END),0) AS assinaturas_mes,
 
-    -- 💰 TOTAL HOJE
-    COALESCE(SUM(CASE
-      WHEN DATE(ta.created_at AT TIME ZONE 'America/Sao_Paulo')
-          = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
-      THEN ta.agency_fee
-    END),0) AS total_hoje,
+  -- 💰 TOTAL HOJE
+  COALESCE(SUM(CASE
+    WHEN ta.created_at >= DATE_TRUNC('day', NOW() AT TIME ZONE 'America/Sao_Paulo')
+    AND ta.created_at <  DATE_TRUNC('day', NOW() AT TIME ZONE 'America/Sao_Paulo') + INTERVAL '1 day'
+    THEN ta.agency_fee
+  END),0) AS total_hoje,
 
-    -- 💰 TOTAL MES
-    COALESCE(SUM(CASE
-      WHEN DATE_TRUNC('month', ta.created_at AT TIME ZONE 'America/Sao_Paulo')
-          = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
-      THEN ta.agency_fee
-    END),0) AS total_mes,
+  -- 💰 TOTAL MES
+  COALESCE(SUM(CASE
+    WHEN ta.created_at >= DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+    AND ta.created_at <  DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') + INTERVAL '1 month'
+    THEN ta.agency_fee
+  END),0) AS total_mes,
 
-    -- 💰 TOTAL ANO
-    COALESCE(SUM(CASE
-      WHEN DATE_TRUNC('year', ta.created_at AT TIME ZONE 'America/Sao_Paulo')
-          = DATE_TRUNC('year', NOW() AT TIME ZONE 'America/Sao_Paulo')
-      THEN ta.agency_fee
-    END),0) AS total_ano
+  -- 💰 TOTAL ANO
+  COALESCE(SUM(CASE
+    WHEN ta.created_at >= DATE_TRUNC('year', NOW() AT TIME ZONE 'America/Sao_Paulo')
+    AND ta.created_at <  DATE_TRUNC('year', NOW() AT TIME ZONE 'America/Sao_Paulo') + INTERVAL '1 year'
+    THEN ta.agency_fee
+  END),0) AS total_ano
 
-  FROM transacoes_agency ta
-  JOIN modelos m ON m.id = ta.modelo_id
-  WHERE m.agencia_id = $1
-    AND ta.status = 'normal'
+FROM transacoes_agency ta
+JOIN modelos m ON m.id = ta.modelo_id
+WHERE m.agencia_id = $1
+  AND ta.status = 'pago'
 `, [agencia_id]);
 
   res.json(result.rows[0]);
