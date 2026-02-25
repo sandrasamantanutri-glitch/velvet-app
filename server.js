@@ -1003,11 +1003,24 @@ app.post(
         descricao
       } = req.body;
 
-      for (const file of req.files) {
+for (const file of req.files) {
 
-  const isVideo = file.mimetype.startsWith("video");
+  if (!file) continue;
 
-  const publicUrl = `${process.env.B2_PUBLIC_URL}/${file.key}`;
+  const mimetype = file.mimetype || "";
+  const isVideo = mimetype.startsWith("video");
+
+  // 🔥 pega location se existir, senão monta com key
+  const publicUrl =
+    file.location ||
+    (file.key
+      ? `${process.env.B2_PUBLIC_URL}/${file.key}`
+      : null);
+
+  if (!publicUrl) {
+    console.error("Arquivo sem key/location:", file);
+    continue;
+  }
 
   let thumbnailUrl = null;
 
