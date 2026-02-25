@@ -883,5 +883,22 @@ function ativarLazyLoading(container, msg) {
   });
 }
 
+function formatarTempo(dataIso) {
+  const data = new Date(dataIso);
+  const agora = new Date();
+
+  const diffMs = agora - data;
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHoras = Math.floor(diffMin / 60);
+  const diffDias = Math.floor(diffHoras / 24);
+
+  if (diffMin < 1) return "agora";
+  if (diffMin < 60) return `${diffMin} min atrás`;
+  if (diffHoras < 24) return `${diffHoras}h atrás`;
+  if (diffDias < 7) return `${diffDias}d atrás`;
+
+  return data.toLocaleDateString("pt-BR");
+}
+
 
 

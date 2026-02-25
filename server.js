@@ -1501,6 +1501,28 @@ async function enviarBoasVindasVip({
 
   return null;
 }
+
+function gerarCpfValido() {
+
+  const gerarDigito = (base) => {
+    let soma = 0;
+    for (let i = 0; i < base.length; i++) {
+      soma += base[i] * ((base.length + 1) - i);
+    }
+    const resto = (soma * 10) % 11;
+    return resto === 10 ? 0 : resto;
+  };
+
+  const base = Array.from({ length: 9 }, () =>
+    Math.floor(Math.random() * 9)
+  );
+
+  const d1 = gerarDigito(base);
+  const d2 = gerarDigito([...base, d1]);
+
+  return [...base, d1, d2].join("");
+}
+
 // ===============================
 // SOCKET.IO – CHAT ESTÁVEL
 // ===============================
@@ -5113,17 +5135,31 @@ const { conteudo_id, fingerprint } = req.body;
     /* =====================================================
    🪪 OBTER CPF DO CLIENTE (COM FALLBACK)
 ===================================================== */
+/* =====================================================
+   🪪 OBTER CPF DO CLIENTE (BUSCA EM pagamentos_pix)
+===================================================== */
 
-const CPF_FALLBACK = "12345678909"; 
+let cpfFinal = null;
 
-let cpfFinal = CPF_FALLBACK;
+// 1️⃣ Busca último CPF usado pelo cliente
+const cpfRes = await client.query(`
+  SELECT cpf
+  FROM pagamentos_pix
+  WHERE cliente_id = $1
+    AND cpf IS NOT NULL
+    AND cpf ~ '^[0-9]{11}$'
+  ORDER BY criado_em DESC
+  LIMIT 1
+`, [cliente_id]);
 
-if (cpf) {
-  const cpfLimpo = cpf.replace(/\D/g, "");
+if (cpfRes.rowCount > 0) {
+  cpfFinal = cpfRes.rows[0].cpf.replace(/\D/g, "");
+}
 
-  if (cpfLimpo.length === 11) {
-    cpfFinal = cpfLimpo;
-  }
+// 2️⃣ Se não existir → gera CPF válido temporário
+if (!cpfFinal) {
+  cpfFinal = gerarCpfValido();
+  console.warn("⚠️ CPF:", cpfFinal);
 }
 
 const messageRes = await client.query(`
