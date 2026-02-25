@@ -143,6 +143,31 @@ document.getElementById("confirmarPagamento").onclick = async () => {
 
 });
 
+function formatarTempo(timestamp) {
+  if (!timestamp || timestamp === "0") return "agora";
+
+  // aceita número OU string ISO
+  const time =
+    typeof timestamp === "number"
+      ? timestamp
+      : new Date(timestamp).getTime();
+
+  if (isNaN(time)) return "agora";
+
+  const diff = Date.now() - time;
+
+  const min = Math.floor(diff / 60000);
+  const h   = Math.floor(diff / 3600000);
+  const d   = Math.floor(diff / 86400000);
+
+  if (min < 1) return "agora";
+  if (min < 60) return `há ${min} min`;
+  if (h < 24) return `há ${h} h`;
+  if (d === 1) return "ontem";
+  return `há ${d} dias`;
+}
+
+
 // 📜 HISTÓRICO
 socket.on("chatHistory", mensagens => {
   const chat = document.getElementById("chatBox");
@@ -269,6 +294,8 @@ function fecharPopupPix() {
   const popup = document.getElementById("popupPix");
   if (popup) popup.classList.add("hidden");
   pagamentoAtual = {};
+  const cpf = document.getElementById("pixCpf");
+if (cpf) cpf.value = "";
 }
 
 // ===============================
@@ -625,6 +652,19 @@ async function gerarPix() {
     return;
   }
 
+  const cpfInput = document.getElementById("pixCpf");
+  if (!cpfInput) {
+    alert("Campo CPF não encontrado.");
+    return;
+  }
+
+  const cpfLimpo = cpfInput.value.replace(/\D/g, "");
+
+  if (cpfLimpo.length !== 11) {
+    alert("Digite um CPF válido.");
+    return;
+  }
+
   const conteudo_id = Number(pagamentoAtual.conteudo_id);
 
   const fingerprint = btoa(
@@ -883,22 +923,22 @@ function ativarLazyLoading(container, msg) {
   });
 }
 
-function formatarTempo(dataIso) {
-  const data = new Date(dataIso);
-  const agora = new Date();
+const inputCpf = document.getElementById("pixCpf");
 
-  const diffMs = agora - data;
-  const diffMin = Math.floor(diffMs / 60000);
-  const diffHoras = Math.floor(diffMin / 60);
-  const diffDias = Math.floor(diffHoras / 24);
+if (inputCpf) {
+  inputCpf.addEventListener("input", (e) => {
+    let v = e.target.value.replace(/\D/g, "");
 
-  if (diffMin < 1) return "agora";
-  if (diffMin < 60) return `${diffMin} min atrás`;
-  if (diffHoras < 24) return `${diffHoras}h atrás`;
-  if (diffDias < 7) return `${diffDias}d atrás`;
+    if (v.length > 11) v = v.slice(0, 11);
 
-  return data.toLocaleDateString("pt-BR");
+    v = v.replace(/(\d{3})(\d)/, "$1.$2");
+    v = v.replace(/(\d{3})(\d)/, "$1.$2");
+    v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+
+    e.target.value = v;
+  });
 }
+
 
 
 

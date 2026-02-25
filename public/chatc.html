@@ -91,12 +91,23 @@
       </div>
     </div>
 
+    <div class="campo-cpf">
+  <label for="pixCpf">CPF do titular</label>
+  <input 
+    type="text" 
+    id="pixCpf" 
+    placeholder="000.000.000-00"
+    maxlength="14"
+    autocomplete="off"
+  >
+</div>
+
     <div class="campo-pagamento">
       <button 
         type="button"
         class="btn-gerar-pix"
         onclick="gerarPix()">
-        Clique aqui para gerar o código Pix
+        Gerar o código Pix
       </button>
     </div>
 

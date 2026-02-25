@@ -5080,7 +5080,7 @@ app.post("/api/pagamento/midia/pix", auth, async (req, res) => {
   const client = await db.connect();
 
   try {
-const { conteudo_id, fingerprint } = req.body;
+const { conteudo_id, fingerprint, cpf } = req.body;
     const userId = req.user.id;
 
     if (!conteudo_id || !Number.isInteger(Number(conteudo_id))) {
@@ -5088,7 +5088,15 @@ const { conteudo_id, fingerprint } = req.body;
     }
 
     const conteudoId = Number(conteudo_id);
+if (!cpf) {
+  return res.status(400).json({ error: "CPF obrigatório." });
+}
 
+const cpfLimpo = String(cpf).replace(/\D/g, "");
+
+if (!/^[0-9]{11}$/.test(cpfLimpo)) {
+  return res.status(400).json({ error: "CPF inválido." });
+}
     const ip =
       req.headers["x-forwarded-for"]?.split(",")[0] ||
       req.socket.remoteAddress;
@@ -5123,7 +5131,7 @@ const { conteudo_id, fingerprint } = req.body;
       return res.status(404).json({ error: "Cliente não encontrado" });
     }
 
-    const { id: cliente_id, bloqueado, cpf} = clienteRes.rows[0];
+   const { id: cliente_id, bloqueado } = clienteRes.rows[0];
 
     if (bloqueado) {
       await client.query("ROLLBACK");
@@ -5131,33 +5139,6 @@ const { conteudo_id, fingerprint } = req.body;
         error: "Conta bloqueada."
       });
     }
-
-    /* =====================================================
-   🪪 OBTER CPF DO CLIENTE (COM FALLBACK)
-===================================================== */
-
-let cpfFinal = null;
-
-// 1️⃣ Busca último CPF usado pelo cliente
-const cpfRes = await client.query(`
-  SELECT cpf
-  FROM pagamentos_pix
-  WHERE cliente_id = $1
-    AND cpf IS NOT NULL
-    AND cpf ~ '^[0-9]{11}$'
-  ORDER BY criado_em DESC
-  LIMIT 1
-`, [cliente_id]);
-
-if (cpfRes.rowCount > 0) {
-  cpfFinal = cpfRes.rows[0].cpf.replace(/\D/g, "");
-}
-
-// 2️⃣ Se não existir → gera CPF válido temporário
-if (!cpfFinal) {
-  cpfFinal = gerarCpfValido();
-  console.warn("⚠️ CPF:", cpfFinal);
-}
 
 const messageRes = await client.query(`
   SELECT preco, modelo_id
@@ -5224,7 +5205,7 @@ const pagarmeResponse = await axios.post(
 customer: {
   name: req.user.nome || "Cliente Velvet",
   email: req.user.email,
-  document: cpf,
+  document: cpfLimpo,
   type: "individual",
   phones: {
     mobile_phone: {
@@ -5304,9 +5285,14 @@ if (!charge || !pixData || !pixData.qr_code) {
   total,         
   order.id,
   ip,
-  cpfFinal,
+  cpfLimpo,
   conteudoId      
 ]);
+
+await client.query(
+  "UPDATE clientes SET cpf = $1 WHERE id = $2 AND cpf IS NULL",
+  [cpfLimpo, cliente_id]
+);
 
     await client.query("COMMIT");
 
@@ -5345,7 +5331,7 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
       req.headers["x-forwarded-for"]?.split(",")[0] ||
       req.socket.remoteAddress;
 
-    await client.query("BEGIN");
+     await client.query("BEGIN");
 
     /* 🔒 BUSCAR CLIENTE */
     const clienteRes = await client.query(
