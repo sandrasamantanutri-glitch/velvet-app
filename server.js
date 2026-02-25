@@ -5080,28 +5080,30 @@ app.post("/api/pagamento/midia/pix", auth, async (req, res) => {
   const client = await db.connect();
 
   try {
-const { conteudo_id, fingerprint, cpf } = req.body;
+    const { conteudo_id, fingerprint, cpf } = req.body;
     const userId = req.user.id;
 
-    if (!conteudo_id || !Number.isInteger(Number(conteudo_id))) {
+    if (!conteudo_id || isNaN(conteudo_id)) {
       return res.status(400).json({ error: "conteudo_id inválido" });
     }
 
     const conteudoId = Number(conteudo_id);
-if (!cpf) {
-  return res.status(400).json({ error: "CPF obrigatório." });
-}
 
-const cpfLimpo = String(cpf).replace(/\D/g, "");
+    if (!cpf) {
+      return res.status(400).json({ error: "CPF obrigatório." });
+    }
 
-if (!/^[0-9]{11}$/.test(cpfLimpo)) {
-  return res.status(400).json({ error: "CPF inválido." });
-}
+    const cpfLimpo = String(cpf).replace(/\D/g, "");
+
+    if (!/^[0-9]{11}$/.test(cpfLimpo)) {
+      return res.status(400).json({ error: "CPF inválido." });
+    }
+
+    const safeFingerprint = String(fingerprint || "").slice(0, 255);
+
     const ip =
       req.headers["x-forwarded-for"]?.split(",")[0] ||
       req.socket.remoteAddress;
-
-    await client.query("BEGIN");
 
     /* =====================================================
        🔒 BLOQUEIO IP
@@ -5112,7 +5114,6 @@ if (!/^[0-9]{11}$/.test(cpfLimpo)) {
     );
 
     if (ipBloqueado.rowCount > 0) {
-      await client.query("ROLLBACK");
       return res.status(403).json({
         error: "IP bloqueado por atividade suspeita."
       });
@@ -5122,79 +5123,75 @@ if (!/^[0-9]{11}$/.test(cpfLimpo)) {
        🔁 BUSCAR CLIENTE
     ===================================================== */
     const clienteRes = await client.query(
-      "SELECT id, cpf, bloqueado FROM clientes WHERE user_id = $1",
+      "SELECT id, bloqueado FROM clientes WHERE user_id = $1",
       [userId]
     );
 
     if (!clienteRes.rowCount) {
-      await client.query("ROLLBACK");
       return res.status(404).json({ error: "Cliente não encontrado" });
     }
 
-   const { id: cliente_id, bloqueado } = clienteRes.rows[0];
+    const { id: cliente_id, bloqueado } = clienteRes.rows[0];
 
     if (bloqueado) {
-      await client.query("ROLLBACK");
-      return res.status(403).json({
-        error: "Conta bloqueada."
-      });
+      return res.status(403).json({ error: "Conta bloqueada." });
     }
 
-const messageRes = await client.query(`
-  SELECT preco, modelo_id
-  FROM messages
-  WHERE id = $1
-`, [conteudoId]);
+    /* =====================================================
+       📦 BUSCAR CONTEÚDO
+    ===================================================== */
+    const messageRes = await client.query(
+      "SELECT preco, modelo_id FROM messages WHERE id = $1",
+      [conteudoId]
+    );
 
-if (!messageRes.rowCount) {
-  await client.query("ROLLBACK");
-  return res.status(404).json({ error: "Conteúdo não encontrado" });
-}
+    if (!messageRes.rowCount) {
+      return res.status(404).json({ error: "Conteúdo não encontrado" });
+    }
 
-const { preco, modelo_id } = messageRes.rows[0];
+    const { preco, modelo_id } = messageRes.rows[0];
+
+    if (!preco || isNaN(preco) || Number(preco) <= 0) {
+      return res.status(400).json({ error: "Preço inválido." });
+    }
 
     /* =====================================================
        🚫 EVITAR COMPRA DUPLICADA
     ===================================================== */
-const jaComprado = await client.query(`
-  SELECT 1
-  FROM pagamentos_pix
-  WHERE message_id = $1
-    AND cliente_id = $2
-    AND status = 'pago'
-  LIMIT 1
-    `,[conteudoId, cliente_id]);
+    const jaComprado = await client.query(
+      `SELECT 1
+       FROM pagamentos_pix
+       WHERE message_id = $1
+         AND cliente_id = $2
+         AND status = 'pago'
+       LIMIT 1`,
+      [conteudoId, cliente_id]
+    );
 
     if (jaComprado.rowCount > 0) {
-      await client.query("ROLLBACK");
       return res.status(400).json({
         error: "Conteúdo já adquirido."
       });
     }
 
-/* =====================================================
-   💰 CÁLCULO CONSISTENTE COM WEBHOOK
-===================================================== */
+    /* =====================================================
+       💰 CÁLCULO
+    ===================================================== */
+    const valorCentavos = Math.round(Number(preco) * 100);
+    const taxaTransacaoCentavos = Math.round(valorCentavos * 0.10);
+    const taxaPlataformaCentavos = Math.round(valorCentavos * 0.05);
 
-const valorCentavos = Math.round(Number(preco) * 100);
+    const amount =
+      valorCentavos +
+      taxaTransacaoCentavos +
+      taxaPlataformaCentavos;
 
-const taxaTransacaoCentavos  = Math.round(valorCentavos * 0.10);
-const taxaPlataformaCentavos = Math.round(valorCentavos * 0.05);
+    const total = amount / 100;
 
-const amount =
-  valorCentavos +
-  taxaTransacaoCentavos +
-  taxaPlataformaCentavos;
-
-const valorBase       = valorCentavos / 100;
-const taxaTransacao   = taxaTransacaoCentavos / 100;
-const taxaPlataforma  = taxaPlataformaCentavos / 100;
-const total           = amount / 100;
-
-/* =====================================================
-   💳 CRIAR ORDEM PIX PAGAR.ME
-===================================================== */
-const pagarmeResponse = await axios.post(
+    /* =====================================================
+       💳 CRIAR ORDEM PIX PAGAR.ME (SEM TRANSAÇÃO ABERTA)
+    ===================================================== */
+    const pagarmeResponse = await axios.post(
       "https://api.pagar.me/core/v5/orders",
       {
         items: [{
@@ -5202,106 +5199,95 @@ const pagarmeResponse = await axios.post(
           description: "Midias Velvet",
           quantity: 1
         }],
-customer: {
-  name: req.user.nome || "Cliente Velvet",
-  email: req.user.email,
-  document: cpfLimpo,
-  type: "individual",
-  phones: {
-    mobile_phone: {
-      country_code: "55",
-      area_code: "11",
-      number: "999999999"
-    }
-  }
-},
+        customer: {
+          name: req.user.nome || "Cliente Velvet",
+          email: req.user.email,
+          document: cpfLimpo,
+          type: "individual"
+        },
         payments: [{
           payment_method: "pix",
           pix: { expires_in: 3600 }
         }],
         metadata: {
-  tipo: "conteudo_pix",
-  message_id: String(conteudoId),
-  cliente_id: String(cliente_id),
-  modelo_id: String(modelo_id),
-  aceite_ip: ip,
-  fingerprint: fingerprint || "",
+          tipo: "conteudo_pix",
+          message_id: String(conteudoId),
+          cliente_id: String(cliente_id),
+          modelo_id: String(modelo_id),
+          aceite_ip: ip,
+          fingerprint: safeFingerprint
+        }
+      },
+      {
+        headers: {
+          Authorization: `Basic ${Buffer
+            .from(process.env.PAGARME_SECRET_KEY + ":")
+            .toString("base64")}`,
+          "Content-Type": "application/json",
+          "Idempotency-Key": `pix_${cliente_id}_${conteudoId}`
+        }
+      }
+    );
 
-  valor_assinatura: String(valorBase),   
-  taxa_transacao: String(taxaTransacao),
-  taxa_plataforma: String(taxaPlataforma),
-  valor_total: String(total)            
-}
-  },
-  {
-    headers: {
-      Authorization: `Basic ${Buffer
-        .from(process.env.PAGARME_SECRET_KEY + ":")
-        .toString("base64")}`,
-      "Content-Type": "application/json"
-    }
-  }
-);
     const order = pagarmeResponse.data;
+    const charge = order.charges?.[0];
+    const pixData = charge?.last_transaction;
 
-const charge = order.charges?.[0];
-const pixData = charge?.last_transaction;
+    if (!charge || !pixData || !pixData.qr_code) {
+      console.error("Resposta Pagar.me:", JSON.stringify(order, null, 2));
+      return res.status(500).json({
+        error: "Erro ao gerar QR Code Pix"
+      });
+    }
 
-if (!charge || !pixData || !pixData.qr_code) {
-  console.error("Resposta Pagar.me:", JSON.stringify(order, null, 2));
-  await client.query("ROLLBACK");
-  return res.status(500).json({
-    error: "Erro ao gerar QR Code Pix"
-  });
-}
     /* =====================================================
-       📝 REGISTRAR TENTATIVA
+       📝 AGORA SIM ABRE TRANSAÇÃO
     ===================================================== */
+    await client.query("BEGIN");
+
     await client.query(`
       INSERT INTO pagamento_tentativas
       (cliente_id, metodo, status, pagarme_order_id)
       VALUES ($1,'pix','aguardando',$2)
-    `,[cliente_id, order.id]);
+    `, [cliente_id, order.id]);
 
     await client.query(`
-  INSERT INTO pagamentos_pix (
-    cliente_id,
-    modelo_id,
-    valor,
-    status,
-    pagarme_order_id,
-    criado_em,
-    aceite_ip,
-    aceitou_termos,
-    cpf,
-    message_id
-  )
-  VALUES (
-    $1,$2,$3,'pendente',$4,NOW(),$5,true,$6,$7
-  )
-`,[
-  cliente_id,
-  modelo_id,
-  total,         
-  order.id,
-  ip,
-  cpfLimpo,
-  conteudoId      
-]);
+      INSERT INTO pagamentos_pix (
+        cliente_id,
+        modelo_id,
+        valor,
+        status,
+        pagarme_order_id,
+        criado_em,
+        aceite_ip,
+        aceitou_termos,
+        cpf,
+        message_id
+      )
+      VALUES ($1,$2,$3,'pendente',$4,NOW(),$5,true,$6,$7)
+    `, [
+      cliente_id,
+      modelo_id,
+      total,
+      order.id,
+      ip,
+      cpfLimpo,
+      conteudoId
+    ]);
 
-await client.query(
-  "UPDATE clientes SET cpf = $1 WHERE id = $2 AND cpf IS NULL",
-  [cpfLimpo, cliente_id]
-);
+    await client.query(
+      "UPDATE clientes SET cpf = $1 WHERE id = $2 AND cpf IS NULL",
+      [cpfLimpo, cliente_id]
+    );
 
     await client.query("COMMIT");
 
-res.json({
-  qr_code_url: pixData.qr_code_url,   
-  copia_cola: pixData.qr_code,       
-  expires_at: pixData.expires_at,
-  order_id: order.id
-});
+    return res.json({
+      qr_code_url: pixData.qr_code_url,
+      copia_cola: pixData.qr_code,
+      expires_at: pixData.expires_at,
+      order_id: order.id
+    });
 
   } catch (err) {
     await client.query("ROLLBACK");
