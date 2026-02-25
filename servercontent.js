@@ -1715,57 +1715,57 @@ router.get("/agencia/modelo/:id", authAgencia, async (req, res) => {
 
         -- 🔹 DIA
         COALESCE(SUM(CASE
-          WHEN DATE(ta.created_at AT TIME ZONE 'America/Sao_Paulo')
+          WHEN DATE(ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')
                = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
           THEN ta.valor_modelo
         END),0) AS modelo_dia,
 
         COALESCE(SUM(CASE
-          WHEN DATE(ta.created_at AT TIME ZONE 'America/Sao_Paulo')
+          WHEN DATE(ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')
                = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
           THEN ta.agency_fee
         END),0) AS agencia_dia,
 
         COALESCE(SUM(CASE
-          WHEN DATE(ta.created_at AT TIME ZONE 'America/Sao_Paulo')
+          WHEN DATE(ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')
                = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
           THEN ta.velvet_fee
         END),0) AS velvet_dia,
 
         -- 🔹 MÊS
         COALESCE(SUM(CASE
-          WHEN DATE_TRUNC('month', ta.created_at AT TIME ZONE 'America/Sao_Paulo')
+          WHEN DATE_TRUNC('month', ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')
                = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
           THEN ta.valor_modelo
         END),0) AS modelo_mes,
 
         COALESCE(SUM(CASE
-          WHEN DATE_TRUNC('month', ta.created_at AT TIME ZONE 'America/Sao_Paulo')
+          WHEN DATE_TRUNC('month', ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')
                = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
           THEN ta.agency_fee
         END),0) AS agencia_mes,
 
         COALESCE(SUM(CASE
-          WHEN DATE_TRUNC('month', ta.created_at AT TIME ZONE 'America/Sao_Paulo')
+          WHEN DATE_TRUNC('month', ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')
                = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
           THEN ta.velvet_fee
         END),0) AS velvet_mes,
 
         -- 🔹 ANO
         COALESCE(SUM(CASE
-          WHEN DATE_TRUNC('year', ta.created_at AT TIME ZONE 'America/Sao_Paulo')
+          WHEN DATE_TRUNC('year', ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')
                = DATE_TRUNC('year', NOW() AT TIME ZONE 'America/Sao_Paulo')
           THEN ta.valor_modelo
         END),0) AS modelo_ano,
 
         COALESCE(SUM(CASE
-          WHEN DATE_TRUNC('year', ta.created_at AT TIME ZONE 'America/Sao_Paulo')
+          WHEN DATE_TRUNC('year', ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')
                = DATE_TRUNC('year', NOW() AT TIME ZONE 'America/Sao_Paulo')
           THEN ta.agency_fee
         END),0) AS agencia_ano,
 
         COALESCE(SUM(CASE
-          WHEN DATE_TRUNC('year', ta.created_at AT TIME ZONE 'America/Sao_Paulo')
+          WHEN DATE_TRUNC('year', ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')
                = DATE_TRUNC('year', NOW() AT TIME ZONE 'America/Sao_Paulo')
           THEN ta.velvet_fee
         END),0) AS velvet_ano
@@ -1773,7 +1773,7 @@ router.get("/agencia/modelo/:id", authAgencia, async (req, res) => {
       FROM modelos m
       LEFT JOIN transacoes_agency ta
         ON ta.modelo_id = m.id
-        AND ta.status = 'normal'
+        AND ta.status = 'pago'
 
       WHERE m.agencia_id = $1
         AND m.id = $2
