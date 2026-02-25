@@ -4446,18 +4446,25 @@ app.post(
         return res.status(400).json({ error: "Arquivo não enviado" });
       }
 
-      if (!req.file.location) {
-        return res.status(400).json({ error: "Upload falhou (sem location)" });
-      }
-
       const userId = req.user.id;
-      const avatarUrl = req.file.location;
 
-      console.log("User:", req.user);
-      console.log("Avatar URL:", avatarUrl);
+      const { mimetype, originalname, buffer } = req.file;
+
+      const caminho = `velvet/avatars/${userId}/${Date.now()}-${originalname}`;
+
+      // 🚀 Upload manual para Backblaze (igual conteudos)
+      const uploadResult = await s3.upload({
+        Bucket: process.env.B2_BUCKET,
+        Key: caminho,
+        Body: buffer,
+        ContentType: mimetype,
+        ACL: "public-read"
+      }).promise();
+
+      const avatarUrl = uploadResult.Location;
 
       // ==============================
-      // 👩 MODELO
+      // MODELO
       // ==============================
       if (req.user.role === "modelo") {
 
@@ -4472,19 +4479,14 @@ app.post(
 
         const modelo_id = modeloRes.rows[0].id;
 
-        const update = await db.query(
-          "UPDATE modelos SET avatar = $1 WHERE id = $2 RETURNING id",
+        await db.query(
+          "UPDATE modelos SET avatar = $1 WHERE id = $2",
           [avatarUrl, modelo_id]
         );
-
-        if (!update.rowCount) {
-          return res.status(500).json({ error: "Falha ao atualizar modelo" });
-        }
-
       }
 
       // ==============================
-      // 👤 CLIENTE
+      // CLIENTE
       // ==============================
       else if (req.user.role === "cliente") {
 
@@ -4499,29 +4501,22 @@ app.post(
 
         const cliente_id = clienteRes.rows[0].id;
 
-        const update = await db.query(
+        await db.query(
           `
           UPDATE clientes_dados
           SET avatar = $1,
               atualizado_em = NOW()
           WHERE cliente_id = $2
-          RETURNING cliente_id
           `,
           [avatarUrl, cliente_id]
         );
-
-        if (!update.rowCount) {
-          return res.status(500).json({ error: "Falha ao atualizar cliente" });
-        }
       }
 
       else {
         return res.status(403).json({ error: "Role inválida" });
       }
 
-      res.json({
-        avatar: avatarUrl
-      });
+      res.json({ avatar: avatarUrl });
 
     } catch (err) {
       console.error("Erro upload avatar:", err);
@@ -4529,7 +4524,6 @@ app.post(
     }
   }
 );
-
 
 app.post(
   "/uploadCapa",
