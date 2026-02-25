@@ -4436,7 +4436,6 @@ app.post("/api/login", authLimiter, async (req, res) => {
   }
 });
 
-
 app.post(
   "/uploadAvatar",
   auth,
@@ -4447,25 +4446,27 @@ app.post(
         return res.status(400).json({ error: "Arquivo não enviado" });
       }
 
+      const url = req.file.location;
       const userId = req.user.id;
 
-      // 🔥 URL já vem pronta do uploadB2
-      const avatarUrl = req.file.location;
-
       if (req.user.role === "modelo") {
+
+        // modelos pode usar user_id
         await db.query(
           "UPDATE modelos SET avatar = $1 WHERE user_id = $2",
-          [avatarUrl, userId]
+          [url, userId]
         );
+
       } 
       else if (req.user.role === "cliente") {
 
+        // 🔁 converter users.id → cliente_id
         const clienteRes = await db.query(
           "SELECT id FROM clientes WHERE user_id = $1",
           [userId]
         );
 
-        if (!clienteRes.rowCount) {
+        if (clienteRes.rowCount === 0) {
           return res.status(404).json({ error: "Cliente não encontrado" });
         }
 
@@ -4478,16 +4479,15 @@ app.post(
               atualizado_em = NOW()
           WHERE cliente_id = $2
           `,
-          [avatarUrl, cliente_id]
+          [url, cliente_id]
         );
+
       } 
       else {
         return res.status(403).json({ error: "Role inválida" });
       }
 
-      res.json({
-        avatar: avatarUrl
-      });
+      res.json({ url });
 
     } catch (err) {
       console.error("Erro upload avatar:", err);
@@ -4495,6 +4495,7 @@ app.post(
     }
   }
 );
+
 
 app.post(
   "/uploadCapa",
