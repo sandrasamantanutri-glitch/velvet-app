@@ -1035,11 +1035,13 @@ app.post(
           }
         }
 
+        const hash = gerarHash(file.buffer);
+
         await db.query(
           `
-          INSERT INTO conteudos
-          (modelo_id, url, tipo, tipo_conteudo, preco, descricao, thumbnail_url)
-          VALUES ($1, $2, $3, $4, $5, $6, $7)
+         INSERT INTO conteudos
+  (modelo_id, url, tipo, tipo_conteudo, preco, descricao, thumbnail_url, hash, tamanho)
+  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
           `,
           [
             modelo_id,
@@ -1048,7 +1050,10 @@ app.post(
             tipo_conteudo || "feed",
             preco ? Number(preco) : null,
             descricao || null,
-            thumbnailUrl
+            thumbnailUrl,
+            thumbnailUrl,
+            hash,
+            file.size
           ]
         );
       }
