@@ -34,10 +34,6 @@ const onlineModelos = {};
 const AWS = require("aws-sdk");
 const multerS3 = require("multer-s3");
 const { MercadoPagoConfig, Payment } = require("mercadopago");
-const CONTEUDOS_FILE = "conteudos.json";
-const MODELOS_FILE = "modelos.json";
-const COMPRAS_FILE = "compras.json";
-const bodyParser = require("body-parser");
 const Stripe = require("stripe");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const ffmpegPath = require("ffmpeg-static");
@@ -83,7 +79,7 @@ const s3Privado = new AWS.S3({
 const uploadB2 = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 200 * 1024 * 1024 // 200MB (ajuste se quiser)
+    fileSize: 200 * 1024 * 1024 
   }
 });
 
@@ -5771,11 +5767,13 @@ app.post(
 
         const hash = gerarHash(file.buffer);
 
-        // 🔎 Verificar duplicado
         const duplicado = await db.query(
-          "SELECT id FROM conteudos WHERE modelo_id = $1 AND hash = $2",
-          [modelo_id, hash]
-        );
+  `SELECT id FROM conteudos 
+   WHERE modelo_id = $1 
+   AND hash = $2 
+   AND tamanho = $3`,
+  [modelo_id, hash, file.size]
+);
 
         if (duplicado.rowCount > 0) {
           continue; // apenas ignora o arquivo duplicado
@@ -5826,9 +5824,10 @@ app.post(
             url,
             thumbnail_url,
             hash,
+            tamanho,
             criado_em
           )
-          VALUES ($1, $2, 'venda', $3, $4, $5, NOW())
+          VALUES ($1, $2, 'venda', $3, $4, $5, $6, NOW())
           RETURNING
             id,
             modelo_id,
@@ -5843,7 +5842,8 @@ app.post(
             tipo,
             url,
             thumbnail_url,
-            hash
+            hash,
+            file.size
           ]
         );
 
