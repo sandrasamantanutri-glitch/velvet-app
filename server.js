@@ -1051,7 +1051,6 @@ app.post(
             preco ? Number(preco) : null,
             descricao || null,
             thumbnailUrl,
-            thumbnailUrl,
             hash,
             file.size
           ]
