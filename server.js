@@ -4449,17 +4449,8 @@ app.post(
 
       const userId = req.user.id;
 
-      const timestamp = Date.now();
-      const fileName = `avatars/avatar_${timestamp}_${req.file.originalname}`;
-
-      // 🔥 Upload direto para o B2
-      const upload = await uploadToB2(
-        req.file.buffer,
-        fileName,
-        req.file.mimetype
-      );
-
-      const avatarUrl = upload.url;
+      // 🔥 URL já vem pronta do uploadB2
+      const avatarUrl = req.file.location;
 
       if (req.user.role === "modelo") {
         await db.query(
