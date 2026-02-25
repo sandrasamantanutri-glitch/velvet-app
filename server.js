@@ -81,24 +81,12 @@ const s3Privado = new AWS.S3({
 });
 
 const uploadB2 = multer({
-  storage: multerS3({
-    s3,
-    bucket: process.env.B2_BUCKET,
-    acl: "public-read",
-    contentType: multerS3.AUTO_CONTENT_TYPE,
-    key: (req, file, cb) => {
-      const ext = file.originalname.split(".").pop();
-
-      // 👇 AQUI entra a regra
-      const pasta =
-        req.user.role === "modelo" ? "modelos" : "clientes";
-
-      const caminho = `velvet/${pasta}/${req.user.id}/${Date.now()}.${ext}`;
-
-      cb(null, caminho);
-    }
-  })
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 200 * 1024 * 1024 // 200MB (ajuste se quiser)
+  }
 });
+
 
 // ===============================
 // BACKBLAZE B2 (VERIFICAÇÃO - PRIVADO)
@@ -858,6 +846,12 @@ app.use(cors({
   credentials: true
 }));
 
+function gerarHash(buffer) {
+  return crypto
+    .createHash("sha256")
+    .update(buffer)
+    .digest("hex");
+}
 
 // 📦 FEED CANÔNICO (FONTE ÚNICA)
 async function buscarFeedCompletoPorModeloId(modelo_id) {
@@ -1405,12 +1399,6 @@ await client.query(`
   } finally {
     client.release();
   }
-});
-
-
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
 });
 
 const io = new Server(server, {
@@ -5751,7 +5739,6 @@ app.post(
   }
 );
 
-
 app.post(
   "/api/conteudos",
   authModelo,
@@ -5759,7 +5746,7 @@ app.post(
   async (req, res) => {
     const userId = req.user.id;
 
-     if (!req.files || req.files.length === 0) {
+    if (!req.files || req.files.length === 0) {
       return res.status(400).json({
         error: "Arquivo obrigatório"
       });
@@ -5781,60 +5768,91 @@ app.post(
       const resultados = [];
 
       for (const file of req.files) {
-      const { mimetype, location } = file;
 
-      let tipo;
-      if (mimetype.startsWith("image/")) {
-        tipo = "imagem";
-      } else if (mimetype.startsWith("video/")) {
-        tipo = "video";
-      } else {
-        continue;
-      }
+        const hash = gerarHash(file.buffer);
 
-      const url = location;
-      let thumbnail_url = null;
+        // 🔎 Verificar duplicado
+        const duplicado = await db.query(
+          "SELECT id FROM conteudos WHERE modelo_id = $1 AND hash = $2",
+          [modelo_id, hash]
+        );
 
-      if (tipo === "video") {
-        try {
-          thumbnail_url = await gerarThumbnailVideo(url);
-        } catch (err) {
-          console.error("Erro ao gerar thumbnail:", err);
+        if (duplicado.rowCount > 0) {
+          continue; // apenas ignora o arquivo duplicado
         }
+
+        const { mimetype, originalname } = file;
+
+        let tipo;
+        if (mimetype.startsWith("image/")) {
+          tipo = "imagem";
+        } else if (mimetype.startsWith("video/")) {
+          tipo = "video";
+        } else {
+          continue;
+        }
+
+        // 📁 Caminho igual você já fazia
+        const ext = originalname.split(".").pop();
+
+        const caminho = `velvet/modelos/${userId}/${Date.now()}-${originalname}`;
+
+        // 🚀 Upload manual para Backblaze
+        const uploadResult = await s3.upload({
+          Bucket: process.env.B2_BUCKET,
+          Key: caminho,
+          Body: file.buffer,
+          ContentType: mimetype,
+          ACL: "public-read"
+        }).promise();
+
+        const url = uploadResult.Location;
+        let thumbnail_url = null;
+
+        if (tipo === "video") {
+          try {
+            thumbnail_url = await gerarThumbnailVideo(url);
+          } catch (err) {
+            console.error("Erro ao gerar thumbnail:", err);
+          }
+        }
+
+        const result = await db.query(
+          `
+          INSERT INTO conteudos (
+            modelo_id,
+            tipo,
+            tipo_conteudo,
+            url,
+            thumbnail_url,
+            hash,
+            criado_em
+          )
+          VALUES ($1, $2, 'venda', $3, $4, $5, NOW())
+          RETURNING
+            id,
+            modelo_id,
+            tipo,
+            tipo_conteudo,
+            url,
+            thumbnail_url,
+            criado_em
+          `,
+          [
+            modelo_id,
+            tipo,
+            url,
+            thumbnail_url,
+            hash
+          ]
+        );
+
+        resultados.push(result.rows[0]);
       }
 
-      const result = await db.query(
-        `
-        INSERT INTO conteudos (
-          modelo_id,
-          tipo,
-          tipo_conteudo,
-          url,
-          thumbnail_url,
-          criado_em
-        )
-        VALUES ($1, $2, 'venda', $3, $4, NOW())
-        RETURNING
-          id,
-          modelo_id,
-          tipo,
-          tipo_conteudo,
-          url,
-          thumbnail_url,
-          criado_em
-        `,
-        [
-          modelo_id,
-          tipo,
-          url,
-          thumbnail_url
-        ]
-      );
-      resultados.push(result.rows[0]);
-    }
       res.json(resultados);
 
-   } catch (err) {
+    } catch (err) {
       console.error("Erro upload múltiplo:", err);
       res.status(500).json({
         error: "Erro ao carregar conteúdo"
