@@ -1003,37 +1003,39 @@ app.post(
         descricao
       } = req.body;
 
-       for (const file of req.files) {
-        const isVideo = req.file.mimetype.startsWith("video");
+      for (const file of req.files) {
 
-      const publicUrl = `${process.env.B2_PUBLIC_URL}/${file.key}`;
-      let thumbnailUrl = null;
+  const isVideo = file.mimetype.startsWith("video");
 
-      if (isVideo) {
-        try {
-          thumbnailUrl = await gerarThumbnailVideo(publicUrl, modelo_id);
-        } catch (err) {
-          console.error("Erro ao gerar thumbnail:", err);
-        }
-      }
+  const publicUrl = `${process.env.B2_PUBLIC_URL}/${file.key}`;
 
-      await db.query(
-        `
-        INSERT INTO conteudos
-        (modelo_id, url, tipo, tipo_conteudo, preco, descricao, thumbnail_url)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-        `,
-        [
-          modelo_id,
-          publicUrl,
-          isVideo ? "video" : "imagem",
-          tipo_conteudo || "feed",
-          preco ? Number(preco) : null,
-          descricao || null,
-          thumbnailUrl
-        ]
-      );
+  let thumbnailUrl = null;
+
+  if (isVideo) {
+    try {
+      thumbnailUrl = await gerarThumbnailVideo(publicUrl, modelo_id);
+    } catch (err) {
+      console.error("Erro ao gerar thumbnail:", err);
     }
+  }
+
+  await db.query(
+    `
+    INSERT INTO conteudos
+    (modelo_id, url, tipo, tipo_conteudo, preco, descricao, thumbnail_url)
+    VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `,
+    [
+      modelo_id,
+      publicUrl,
+      isVideo ? "video" : "imagem",
+      tipo_conteudo || "feed",
+      preco ? Number(preco) : null,
+      descricao || null,
+      thumbnailUrl
+    ]
+  );
+}
       res.json({ success: true });
 
     } catch (err) {
