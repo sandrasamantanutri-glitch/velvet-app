@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Detalhes Modelo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="agencia.css">
+</head>
+
+<body>
+
+<header class="topbar">
+  <div class="topbar-left">
+    <img src="/assets/velvet.png" alt="Velvet" class="logo-small">
+    <nav>
+      <a href="/agencia/dashboard.html" class="active">Dashboard</a>
+      <a href="/agencia/pagamentos.html">Pagamentos</a>
+    </nav>
+  </div>
+</header>
+
+<div class="main">
+
+<h1 id="tituloModelo">Modelo:</h1>
+
+<div class="dashboard-grid">
+
+  <!-- HOJE -->
+  <div class="periodo-card hoje">
+    <h2>HOJE</h2>
+
+    <div class="linha">
+      <span>Modelo:</span>
+      <strong id="modeloDia"></strong>
+    </div>
+
+    <div class="linha">
+      <span>Agência:</span>
+      <strong id="agenciaDia"></strong>
+    </div>
+
+    <div class="linha">
+      <span>Plataforma:</span>
+      <strong id="velvetDia"></strong>
+    </div>
+  </div>
+
+  <!-- MÊS -->
+  <div class="periodo-card mes">
+    <h2>MÊS</h2>
+
+    <div class="linha">
+      <span>Modelo:</span>
+      <strong id="modeloMes"></strong>
+    </div>
+
+    <div class="linha">
+      <span>Agência:</span>
+      <strong id="agenciaMes"></strong>
+    </div>
+
+    <div class="linha">
+      <span>Plataforma:</span>
+      <strong id="velvetMes"></strong>
+    </div>
+  </div>
+
+  <!-- ANO -->
+  <div class="periodo-card ano">
+    <h2>ANO</h2>
+
+    <div class="linha">
+      <span>Modelo:</span>
+      <strong id="modeloAno"></strong>
+    </div>
+
+    <div class="linha">
+      <span>Agência:</span>
+      <strong id="agenciaAno"></strong>
+    </div>
+
+    <div class="linha">
+      <span>Plataforma:</span>
+      <strong id="velvetAno"></strong>
+    </div>
+  </div>
+
+</div>
+<br><br>
+
+<div class="card">
+  <h3>Configuração de Percentual</h3>
+
+  <label>Percentual Modelo</label>
+  <input type="range" id="rangeModelo" min="40" max="80" value="60" step="1">
+  <div class="valor" id="valorModelo">60%</div>
+
+  <br>
+
+  <label>Percentual Agência</label>
+  <input type="range" id="rangeAgencia" min="10" max="40" value="20" step="1">
+  <div class="valor" id="valorAgencia">20%</div>
+
+  <br>
+
+  <div class="valor">Velvet: <span id="valorVelvet">20%</span></div>
+
+  <br>
+
+  <button onclick="salvarPercentual()" 
+    style="padding:12px 20px;
+           background:#7B2CFF;
+           border:none;
+           border-radius:8px;
+           color:white;
+           font-weight:bold;
+           cursor:pointer;">
+    Salvar Alteração
+  </button>
+
+  <div id="msgPercentual" style="margin-top:10px;color:#22c55e;"></div>
+
+</div>
+
+<script>
+
+const token = localStorage.getItem("token_agencia");
+const params = new URLSearchParams(window.location.search);
+const id = params.get("id");
+
+async function carregar(){
+
+  const res = await fetch("/api/agencia/modelo/"+id,{
+    headers:{ Authorization:"Bearer "+token }
+  });
+
+  if(!res.ok){
+    console.error("Erro ao carregar modelo");
+    return;
+  }
+
+  const data = await res.json();
+  document.getElementById("tituloModelo").innerText =
+  "Modelo: " + (data.nome || "Sem nome") + " | ID: " + id;
+
+  // HOJE
+  document.getElementById("modeloDia").innerText =
+    "R$ "+Number(data.modelo_dia||0).toFixed(2);
+
+  document.getElementById("agenciaDia").innerText =
+    "R$ "+Number(data.agencia_dia||0).toFixed(2);
+
+  document.getElementById("velvetDia").innerText =
+    "R$ "+Number(data.velvet_dia||0).toFixed(2);
+
+  // MÊS
+  document.getElementById("modeloMes").innerText =
+    "R$ "+Number(data.modelo_mes||0).toFixed(2);
+
+  document.getElementById("agenciaMes").innerText =
+    "R$ "+Number(data.agencia_mes||0).toFixed(2);
+
+  document.getElementById("velvetMes").innerText =
+    "R$ "+Number(data.velvet_mes||0).toFixed(2);
+
+  // ANO
+  document.getElementById("modeloAno").innerText =
+    "R$ "+Number(data.modelo_ano||0).toFixed(2);
+
+  document.getElementById("agenciaAno").innerText =
+    "R$ "+Number(data.agencia_ano||0).toFixed(2);
+
+  document.getElementById("velvetAno").innerText =
+    "R$ "+Number(data.velvet_ano||0).toFixed(2);
+}
+carregar();
+
+const rangeModelo = document.getElementById("rangeModelo");
+const rangeAgencia = document.getElementById("rangeAgencia");
+
+rangeModelo.addEventListener("input", atualizar);
+rangeAgencia.addEventListener("input", atualizar);
+
+function atualizar(){
+  const modelo = Number(rangeModelo.value);
+  const agencia = Number(rangeAgencia.value);
+  const velvet = 100 - modelo - agencia;
+
+  if(velvet < 20){
+    document.getElementById("msgPercentual").innerText =
+      "Velvet precisa manter mínimo 20%";
+    return;
+  }
+
+  document.getElementById("valorModelo").innerText = modelo + "%";
+  document.getElementById("valorAgencia").innerText = agencia + "%";
+  document.getElementById("valorVelvet").innerText = velvet + "%";
+  document.getElementById("msgPercentual").innerText = "";
+}
+
+async function salvarPercentual(){
+  const modelo = Number(rangeModelo.value);
+  const agencia = Number(rangeAgencia.value);
+  const velvet = 100 - modelo - agencia;
+
+  if(velvet < 20){
+    alert("Velvet precisa manter mínimo 20%.");
+    return;
+  }
+
+  const res = await fetch(`/api/agencia/modelo/${id}/percentual`,{
+    method:"PUT",
+    headers:{
+      "Content-Type":"application/json",
+      Authorization:"Bearer "+token
+    },
+    body:JSON.stringify({
+      percentual_modelo:modelo,
+      percentual_agencia:agencia
+    })
+  });
+
+  const data = await res.json();
+
+  if(res.ok){
+    document.getElementById("msgPercentual").innerText =
+      "Percentual atualizado com sucesso!";
+  }else{
+    alert(data.error);
+  }
+}
+
+</script>
+
+</body>
+</html>

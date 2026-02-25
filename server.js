@@ -982,11 +982,10 @@ app.post(
   async (req, res) => {
     try {
 
-      if (!req.file) {
+       if (!req.files || req.files.length === 0) {
         return res.status(400).json({ error: "Arquivo não enviado" });
       }
 
-      // 🔁 1️⃣ Converter users.id → modelos.id
       const modeloRes = await db.query(
         `SELECT id FROM modelos WHERE user_id = $1`,
         [req.user.id]
@@ -998,18 +997,18 @@ app.post(
 
       const modelo_id = modeloRes.rows[0].id;
 
-      const isVideo = req.file.mimetype.startsWith("video");
-
       const {
         tipo_conteudo,
         preco,
         descricao
       } = req.body;
 
-      const publicUrl = `${process.env.B2_PUBLIC_URL}/${req.file.key}`;
+       for (const file of req.files) {
+        const isVideo = req.file.mimetype.startsWith("video");
+
+      const publicUrl = `${process.env.B2_PUBLIC_URL}/${file.key}`;
       let thumbnailUrl = null;
 
-      // 🔥 2️⃣ GERA THUMBNAIL SE FOR VÍDEO
       if (isVideo) {
         try {
           thumbnailUrl = await gerarThumbnailVideo(publicUrl, modelo_id);
@@ -1018,7 +1017,6 @@ app.post(
         }
       }
 
-      // 🔥 3️⃣ Inserir usando modelo_id (não user_id)
       await db.query(
         `
         INSERT INTO conteudos
@@ -1035,7 +1033,7 @@ app.post(
           thumbnailUrl
         ]
       );
-
+    }
       res.json({ success: true });
 
     } catch (err) {

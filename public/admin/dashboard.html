@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Admin Dashboard - Velvet</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/adm/agencia.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<header class="topbar">
+  <div class="topbar-left">
+    <img src="/assets/velvet.png" class="logo-small">
+    <nav>
+      <a href="/adm/dashboard.html" class="active">Dashboard</a>
+    </nav>
+  </div>
+
+  <div class="topbar-right">
+    <select id="modeloSelect" onchange="irModelo()">
+      <option value="">Selecionar Modelo</option>
+    </select>
+  </div>
+</header>
+
+<div class="cards">
+
+  <!-- HOJE -->
+  <div class="card">
+    <h4>Velvet Hoje</h4>
+    <div class="valor" id="velvetHoje">R$ 0</div>
+  </div>
+
+  <div class="card">
+    <h4>Agência 3 Hoje</h4>
+    <div class="valor" id="agenciaHoje">R$ 0</div>
+  </div>
+
+  <div class="card">
+    <h4>Taxa Gateway Hoje</h4>
+    <div class="valor" id="gatewayHoje">R$ 0</div>
+  </div>
+
+  <div class="card">
+    <h4>Modelo Hoje</h4>
+    <div class="valor" id="modeloHoje">R$ 0</div>
+  </div>
+
+  <!-- MÊS -->
+  <div class="card">
+    <h4>Velvet Mês</h4>
+    <div class="valor" id="velvetMes">R$ 0</div>
+  </div>
+
+  <div class="card">
+    <h4>Agência 3 Mês</h4>
+    <div class="valor" id="agenciaMes">R$ 0</div>
+  </div>
+
+  <div class="card">
+    <h4>Gateway Mês</h4>
+    <div class="valor" id="gatewayMes">R$ 0</div>
+  </div>
+
+  <div class="card">
+    <h4>Modelo Mês</h4>
+    <div class="valor" id="modeloMes">R$ 0</div>
+  </div>
+
+  <!-- ANO -->
+  <div class="card destaque-ano">
+    <h4>Total Ano Velvet</h4>
+    <div class="valor total-ano" id="velvetAno">R$ 0</div>
+  </div>
+
+  <div class="card destaque-ano">
+    <h4>Total Ano Agência 3</h4>
+    <div class="valor total-ano" id="agenciaAno">R$ 0</div>
+  </div>
+
+  <div class="card destaque-ano">
+    <h4>Total Ano Gateway</h4>
+    <div class="valor total-ano" id="gatewayAno">R$ 0</div>
+  </div>
+
+</div>
+
+<br>
+
+<div class="card">
+  <canvas id="grafico" height="100"></canvas>
+</div>
+
+<script>
+
+const token = localStorage.getItem("token_admin");
+
+async function carregarDashboard(){
+  const res = await fetch("/api/admin/dashboard",{
+    headers:{ Authorization:"Bearer "+token }
+  });
+
+  if(!res.ok){
+    alert("Erro ao carregar dashboard admin");
+    return;
+  }
+
+  const data = await res.json();
+
+  const set = (id,val)=>
+    document.getElementById(id).innerText =
+      "R$ "+Number(val||0).toFixed(2);
+
+  set("velvetHoje", data.velvet_hoje);
+  set("agenciaHoje", data.agencia_hoje);
+  set("gatewayHoje", data.gateway_hoje);
+  set("modeloHoje", data.modelo_hoje);
+
+  set("velvetMes", data.velvet_mes);
+  set("agenciaMes", data.agencia_mes);
+  set("gatewayMes", data.gateway_mes);
+  set("modeloMes", data.modelo_mes);
+
+  set("velvetAno", data.velvet_ano);
+  set("agenciaAno", data.agencia_ano);
+  set("gatewayAno", data.gateway_ano);
+
+  criarGrafico(data);
+}
+
+let grafico;
+
+function criarGrafico(data){
+  if(grafico) grafico.destroy();
+
+  grafico = new Chart(document.getElementById("grafico"),{
+    type:"bar",
+    data:{
+      labels:["Velvet","Agência","Modelo","Gateway"],
+      datasets:[{
+        label:"Mês Atual",
+        data:[
+          data.velvet_mes || 0,
+          data.agencia_mes || 0,
+          data.modelo_mes || 0,
+          data.gateway_mes || 0
+        ],
+        borderRadius:8
+      }]
+    },
+    options:{
+      plugins:{ legend:{ display:false }},
+      scales:{
+        y:{ ticks:{ color:"#aaa" }},
+        x:{ ticks:{ color:"#aaa" }}
+      }
+    }
+  });
+}
+
+async function carregarModelos(){
+  const res = await fetch("/api/admin/modelos",{
+    headers:{ Authorization:"Bearer "+token }
+  });
+
+  const modelos = await res.json();
+  const select = document.getElementById("modeloSelect");
+
+  modelos.forEach(m=>{
+    select.innerHTML += `<option value="${m.id}">${m.nome}</option>`;
+  });
+}
+
+function irModelo(){
+  const id = document.getElementById("modeloSelect").value;
+  if(id) window.location.href="modelo.html?id="+id;
+}
+
+carregarDashboard();
+carregarModelos();
+
+</script>
+</body>
+</html>
