@@ -626,6 +626,21 @@ item.dataset.tipo = c.tipo;
         <div class="popup-placeholder"></div>
         ${jaVisto ? `<span class="badge-visto">Visto</span>` : ""}
       `;
+// 👁 BOTÃO DE PREVIEW (não altera seleção)
+const btnPreview = document.createElement("button");
+btnPreview.className = "btn-preview";
+btnPreview.innerHTML = "👁";
+
+btnPreview.addEventListener("click", (e) => {
+  e.stopPropagation(); // 🔥 impede de selecionar/desselecionar
+
+  abrirPreviewMidia({
+    url: item.dataset.full,
+    tipo: item.dataset.tipo
+  });
+});
+
+item.appendChild(btnPreview);   
         // ▶ OVERLAY PARA VÍDEO
   if (c.tipo === "video") {
     const overlay = document.createElement("div");

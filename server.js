@@ -1866,7 +1866,7 @@ socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
       [cliente_id, modelo_id]
     );
 
-    // ===================================
+// ===================================
 // 4️⃣ TRATAR MENSAGENS DE CONTEÚDO (OTIMIZADO)
 // ===================================
 
@@ -1898,6 +1898,7 @@ if (messageIds.length > 0) {
     if (!mapaMidias[row.message_id]) {
       mapaMidias[row.message_id] = [];
     }
+
     mapaMidias[row.message_id].push({
       url: row.url,
       thumbnail_url: row.thumbnail_url,
@@ -1905,7 +1906,20 @@ if (messageIds.length > 0) {
     });
   }
 
-  // 4️⃣ aplicar nas mensagens
+  // 4️⃣ buscar todos pagamentos de uma vez (OTIMIZAÇÃO)
+  const pagosRes = await db.query(`
+    SELECT message_id
+    FROM conteudo_pacotes
+    WHERE message_id = ANY($1)
+      AND cliente_id = $2
+      AND status = 'pago'
+  `, [messageIds, cliente_id]);
+
+  const pagosSet = new Set(
+    pagosRes.rows.map(r => r.message_id)
+  );
+
+  // 5️⃣ aplicar nas mensagens
   for (const msg of mensagensConteudo) {
 
     const midias = mapaMidias[msg.id] || [];
@@ -1915,16 +1929,7 @@ if (messageIds.length > 0) {
 
     if (Number(msg.preco) > 0) {
 
-      const pagoRes = await db.query(`
-        SELECT 1
-        FROM conteudo_pacotes
-        WHERE message_id = $1
-          AND cliente_id = $2
-          AND status = 'pago'
-        LIMIT 1
-      `, [msg.id, cliente_id]);
-
-      const pago = pagoRes.rowCount > 0;
+      const pago = pagosSet.has(msg.id);
 
       msg.visto = pago;
       msg.bloqueado = !pago;
@@ -1936,10 +1941,10 @@ if (messageIds.length > 0) {
   }
 }
 
-    // ===================================
-    // 5️⃣ ENVIAR APENAS PARA QUEM PEDIU
-    // ===================================
-    socket.emit("chatHistory", result.rows);
+// ===================================
+// 5️⃣ ENVIAR APENAS PARA QUEM PEDIU
+// ===================================
+socket.emit("chatHistory", result.rows);
 
   } catch (err) {
     console.error("❌ Erro getHistory:", err);
@@ -3225,6 +3230,29 @@ app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
   }
 
   try {
+
+    // 🔒 verifica se mensagem pertence ao cliente
+    const messageCheck = await db.query(
+      `
+      SELECT id, visto
+      FROM messages
+      WHERE id = $1
+        AND cliente_id = $2
+      `,
+      [message_id, req.cliente_id]
+    );
+
+    if (!messageCheck.rowCount) {
+      return res.status(403).json({ error: "Acesso negado" });
+    }
+
+    const mensagem = messageCheck.rows[0];
+
+    // 🔒 só libera se já foi paga/vista
+    if (!mensagem.visto) {
+      return res.status(403).json({ error: "Conteúdo não liberado" });
+    }
+
     const result = await db.query(
       `
       SELECT
@@ -3232,11 +3260,9 @@ app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
         c.tipo AS tipo_media
       FROM messages_conteudos mc
       JOIN conteudos c ON c.id = mc.conteudo_id
-      JOIN messages m ON m.id = mc.message_id
       WHERE mc.message_id = $1
-        AND m.cliente_id = $2
       `,
-      [message_id, req.cliente_id]
+      [message_id]
     );
 
     res.json(result.rows);
@@ -3246,7 +3272,6 @@ app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
     res.status(500).json([]);
   }
 });
-
 
 
 // 🔒 CONTEÚDOS JÁ VISTOS POR CLIENTE (MODELO)
@@ -3324,7 +3349,7 @@ app.get("/api/conteudos", authModelo, async (req, res) => {
   const { venda } = req.query;
 
   try {
-    let where = "c.modelo_id = $1";
+    let where = "c.modelo_id = $1 AND c.ativo = TRUE";
     const params = [req.modelo_id];
 
     if (venda === "true") {
@@ -4543,7 +4568,7 @@ app.post(
 );
 
 
-// 🗑 EXCLUIR CONTEÚDO (MODELO)
+// 🗑 DESATIVAR CONTEÚDO (MODELO) — SOFT DELETE
 app.delete("/api/conteudos/:id", authModelo, async (req, res) => {
   const userId = req.user.id;
   const conteudo_id = Number(req.params.id);
@@ -4562,10 +4587,12 @@ app.delete("/api/conteudos/:id", authModelo, async (req, res) => {
 
     const modelo_id = modeloRes.rows[0].id;
 
-    // 🔥 deletar usando modelo_id
+    // ✅ SOFT DELETE
     const result = await db.query(
       `
-      DELETE FROM conteudos
+      UPDATE conteudos
+      SET ativo = FALSE,
+          deletado_em = NOW()
       WHERE id = $1
         AND modelo_id = $2
       RETURNING id
@@ -4582,12 +4609,10 @@ app.delete("/api/conteudos/:id", authModelo, async (req, res) => {
     res.json({ success: true });
 
   } catch (err) {
-    console.error("Erro apagar conteúdo:", err);
-    res.status(500).json({ error: "Erro ao apagar conteúdo" });
+    console.error("Erro desativar conteúdo:", err);
+    res.status(500).json({ error: "Erro ao desativar conteúdo" });
   }
 });
-
-
 
 //DELETAR CONTA
 app.delete("/api/conta/excluir", auth, async (req, res) => {

@@ -800,9 +800,9 @@ html, body {
 .play-overlay span {
   font-size: 20px;
   color: #fff;
-  background: rgba(0, 0, 0, 0.65);
-  width: 40px;
-  height: 40px;
+  background: #7B2CFF;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -814,4 +814,29 @@ html, body {
   background: rgba(0, 0, 0, 0.5);
 }
 
+.preview-item {
+  position: relative;
+}
+
+.btn-preview {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  color: white;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+
+.btn-preview:hover {
+  background: rgba(0, 0, 0, 0.85);
+}
 
