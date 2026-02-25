@@ -617,14 +617,26 @@ async function abrirPopupConteudos() {
         "preview-item lazy-popup" +
         (jaVisto ? " visto desabilitado" : "");
 
-      item.dataset.conteudoId = c.id;
-      item.dataset.thumb = c.thumbnail_url || c.url;
-      item.dataset.full = c.url;
+        item.dataset.conteudoId = c.id;
+item.dataset.thumb = c.thumbnail_url || c.url;
+item.dataset.full = c.url;
+item.dataset.tipo = c.tipo; 
 
       item.innerHTML = `
         <div class="popup-placeholder"></div>
         ${jaVisto ? `<span class="badge-visto">Visto</span>` : ""}
       `;
+        // ▶ OVERLAY PARA VÍDEO
+  if (c.tipo === "video") {
+    const overlay = document.createElement("div");
+    overlay.className = "play-overlay";
+
+    const icon = document.createElement("span");
+    icon.textContent = "▶";
+
+    overlay.appendChild(icon);
+    item.appendChild(overlay);
+  }
 
       if (jaVisto) {
         item.addEventListener("click", () => {

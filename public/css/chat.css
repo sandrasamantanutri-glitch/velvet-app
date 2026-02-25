@@ -779,4 +779,40 @@ html, body {
   100% { background-position: -100% 0 }
 }
 
+/* 🔥 Garantir posicionamento correto */
+.preview-item {
+  position: relative;
+  overflow: hidden;
+}
+
+/* ▶ Overlay escuro */
+.play-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none; /* não bloquear clique */
+  transition: background 0.2s ease;
+}
+
+/* ▶ Ícone */
+.play-overlay span {
+  font-size: 40px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 🎯 Hover mais escuro */
+.preview-item:hover .play-overlay {
+  background: rgba(0, 0, 0, 0.5);
+}
+
 
