@@ -481,26 +481,31 @@ async function carregarDadosUsuario() {
   }
 
   const res = await fetch(endpoint, {
-    headers: {
-      Authorization: "Bearer " + token
-    }
+    headers: { Authorization: "Bearer " + token }
   });
 
-  if (!res.ok) {
-    console.error("Erro ao carregar dados:", res.status);
-    return;
-  }
+  if (!res.ok) return;
 
   const dados = await res.json();
 
   const form = document.getElementById("formDadosUsuario");
   if (!form) return;
 
-  Object.keys(dados).forEach(campo => {
-    if (form[campo] !== undefined) {
-      form[campo].value = dados[campo] ?? "";
-    }
-  });
+  // 🔥 Campo principal (mesmo input para ambos)
+  if (form.nome_exibicao) {
+    form.nome_exibicao.value =
+      usuario.role === "modelo"
+        ? dados.nome_exibicao || ""
+        : dados.username || "";
+  }
+
+  // 🔥 Campos extras só para modelo
+  if (usuario.role === "modelo") {
+    if (form.instagram) form.instagram.value = dados.instagram || "";
+    if (form.tiktok) form.tiktok.value = dados.tiktok || "";
+    if (form.local) form.local.value = dados.local || "";
+    if (form.bio) form.bio.value = dados.bio || "";
+  }
 }
 
 async function carregarDadosPessoais() {
@@ -652,35 +657,34 @@ formModelo?.addEventListener("submit", async (e) => {
   let endpoint;
   let dados;
 
+  // 🔥 valor do input principal (mesmo para ambos)
+  const nomeDigitado = formData.get("nome_exibicao")?.trim() || "";
+
+  if (!nomeDigitado) {
+    alert("O nome é obrigatório");
+    return;
+  }
+
   if (usuario.role === "modelo") {
 
     endpoint = "/api/usuario/perfil";
 
     dados = {
-      nome_exibicao: formData.get("nome_exibicao")?.trim() || "",
+      nome_exibicao: nomeDigitado,
       instagram: normalizarInstagram(formData.get("instagram") || ""),
       tiktok: formData.get("tiktok")?.trim() || "",
       local: formData.get("local")?.trim() || "",
       bio: formData.get("bio")?.trim() || ""
     };
 
-    if (!dados.nome_exibicao) {
-      alert("O nome de exibição é obrigatório");
-      return;
-    }
-
   } else {
 
     endpoint = "/api/cliente/dados";
 
+    // 🔥 converte nome_exibicao → username
     dados = {
-      username: formData.get("username")?.trim() || ""
+      username: nomeDigitado
     };
-
-    if (!dados.username) {
-      alert("O username é obrigatório");
-      return;
-    }
   }
 
   const res = await fetch(endpoint, {
