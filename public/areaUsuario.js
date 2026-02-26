@@ -427,11 +427,17 @@ async function carregarAreaModelo() {
   // ===============================
   // 📸 AVATAR / CAPA
   // ===============================
-  const avatar = document.getElementById("profileAvatar");
-  if (avatar && modelo.avatar) avatar.src = modelo.avatar;
+if (avatar) {
+  avatar.src = modelo.avatar
+    ? modelo.avatar + "?t=" + Date.now()
+    : "/assets/avatar.png";
+}
 
-  const capa = document.getElementById("profileCapa");
-  if (capa && modelo.capa) capa.src = modelo.capa;
+if (capa) {
+  capa.src = modelo.capa
+    ? modelo.capa + "?t=" + Date.now()
+    : "/assets/capa.png";
+}
 
   // ===============================
   // 👤 NOME VISUAL (só se existir)
@@ -572,7 +578,9 @@ inputAvatar?.addEventListener("change", async () => {
   });
 
   const data = await res.json();
-  if (data.url) avatarImg.src = data.url;
+ if (data.avatar) {
+  avatarImg.src = data.avatar + "?t=" + Date.now();
+}
 });
 
 const formPessoais = document.getElementById("formDadosPessoais");
