@@ -3904,33 +3904,33 @@ app.put("/api/usuario/perfil", auth, async (req, res) => {
 
   const clienteId = clienteRes.rows[0].id;
 
-  await db.query(`
-    INSERT INTO clientes_dados (
-      cliente_id,
-      username,
-      instagram,
-      tiktok,
-      local,
-      bio,
-      atualizado_em
-    )
-    VALUES ($1, $2, $3, $4, $5, $6, NOW())
-    ON CONFLICT (cliente_id)
-    DO UPDATE SET
-      username      = EXCLUDED.username,
-      instagram     = EXCLUDED.instagram,
-      tiktok        = EXCLUDED.tiktok,
-      local         = EXCLUDED.local,
-      bio           = EXCLUDED.bio,
-      atualizado_em = NOW()
-  `, [
-    clienteId,
-    nome_exibicao || null,
-    instagram || null,
-    tiktok || null,
-    local || null,
-    bio || null
-  ]);
+await db.query(`
+  INSERT INTO clientes_dados (
+    cliente_id,
+    username,
+    instagram,
+    tiktok,
+    local,
+    bio,
+    atualizado_em
+  )
+  VALUES ($1, $2, $3, $4, $5, $6, NOW())
+  ON CONFLICT (cliente_id)
+  DO UPDATE SET
+    username      = EXCLUDED.username,
+    instagram     = EXCLUDED.instagram,
+    tiktok        = EXCLUDED.tiktok,
+    local         = EXCLUDED.local,
+    bio           = EXCLUDED.bio,
+    atualizado_em = NOW()
+`, [
+  clienteId,
+  nome_exibicao.trim(),   // 👈 nunca null
+  instagram || null,
+  tiktok || null,
+  local || null,
+  bio || null
+]);
 
   return res.json({ ok: true });
 }
