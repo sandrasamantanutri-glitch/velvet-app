@@ -34,7 +34,7 @@ tabs.forEach(btn => {
   });
 
   await carregarTransacoes();
-  
+
   const abaAtiva = document.querySelector(".tab-btn.ativa");
 if (abaAtiva && abaAtiva.dataset.tab === "subscricoes") {
   await carregarSubscricoes();
@@ -256,4 +256,60 @@ function renderSubscricoes(subscricoes) {
 
   });
 
+}
+
+async function cancelarSubscricao(id) {
+
+  if (!confirm("Tem certeza que deseja cancelar esta subscrição?")) {
+    return;
+  }
+
+  try {
+
+    const res = await fetch(
+      `/api/cliente/subscricoes/${id}/cancelar`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: "Bearer " + token
+        }
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      mostrarMensagem(data.error || "Erro ao cancelar.", "erro");
+      return;
+    }
+
+    mostrarMensagem(data.message || "Cancelada com sucesso.");
+
+    // 🔄 Atualizar imediatamente
+    await carregarSubscricoes();
+
+  } catch (err) {
+    mostrarMensagem("Erro inesperado.", "erro");
+  }
+}
+window.cancelarSubscricao = cancelarSubscricao;
+
+function mostrarMensagem(texto, tipo = "sucesso") {
+
+  let msg = document.getElementById("msgSub");
+
+  if (!msg) {
+    msg = document.createElement("div");
+    msg.id = "msgSub";
+    msg.className = "msg-feedback";
+    document.querySelector("#tab-subscricoes")
+      .prepend(msg);
+  }
+
+  msg.innerText = texto;
+  msg.className = "msg-feedback " + tipo;
+
+  setTimeout(() => {
+    msg.remove();
+  }, 3000);
 }

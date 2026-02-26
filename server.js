@@ -4303,6 +4303,62 @@ app.put("/api/cliente/dados", authCliente, async (req, res) => {
   }
 });
 
+app.put("/api/cliente/subscricoes/:id/cancelar", auth, async (req, res) => {
+  try {
+
+    const subscriptionId = req.params.id;
+
+    // 🔁 users.id → clientes.id
+    const clienteRes = await db.query(
+      "SELECT id FROM clientes WHERE user_id = $1",
+      [req.user.id]
+    );
+
+    if (!clienteRes.rowCount) {
+      return res.status(404).json({ error: "Cliente não encontrado." });
+    }
+
+    const clienteId = clienteRes.rows[0].id;
+
+    // 🔒 Verificar se a subscrição pertence ao cliente
+    const subRes = await db.query(
+      `SELECT id, ativo 
+       FROM vip_subscriptions
+       WHERE id = $1 AND cliente_id = $2`,
+      [subscriptionId, clienteId]
+    );
+
+    if (!subRes.rowCount) {
+      return res.status(403).json({ error: "Subscrição inválida." });
+    }
+
+    // 🔎 Se já estiver cancelada
+    if (!subRes.rows[0].ativo) {
+      return res.status(400).json({ error: "Esta subscrição já está cancelada." });
+    }
+
+    // 🔥 Cancelar recorrência
+    await db.query(
+      `UPDATE vip_subscriptions
+       SET recorrente = false,
+           ativo = false
+       WHERE id = $1`,
+      [subscriptionId]
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Subscrição cancelada com sucesso."
+    });
+
+  } catch (err) {
+    console.error("Erro ao cancelar:", err);
+    return res.status(500).json({
+      error: "Erro interno ao cancelar subscrição."
+    });
+  }
+});
+
 // app.put(
 //   "/api/admin/verificacao/:id",
 //   authAdmin,
