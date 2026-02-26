@@ -3072,7 +3072,11 @@ app.get("/api/cliente/me", authCliente, async (req, res) => {
         c.nome,
         cd.username,
         cd.avatar,
-        cd.capa
+        cd.capa, 
+        cd.instagram,
+        cd.tiktok,
+        cd.local,
+        cd.bio
       FROM clientes c
       LEFT JOIN clientes_dados cd
         ON cd.cliente_id = c.id
