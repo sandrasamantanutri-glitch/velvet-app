@@ -746,43 +746,24 @@ inputAvatar?.addEventListener("change", async () => {
 // ===============================
 // UPLOAD CAPA
 inputCapa?.addEventListener("change", async () => {
-
-  const file = inputCapa.files?.[0];
+  const file = inputCapa.files[0];
   if (!file) return;
-
-  const tokenAtual = localStorage.getItem("token");
-  if (!tokenAtual) {
-    abrirPopupLoginObrigatorio();
-    return;
-  }
 
   const fd = new FormData();
   fd.append("capa", file);
 
-  try {
-    const res = await fetch("/uploadCapa", {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer " + tokenAtual
-      },
-      body: fd
-    });
+  const res = await fetch("/uploadCapa", {
+    method: "POST",
+    headers: { Authorization: "Bearer " + token },
+    body: fd
+  });
 
-    const data = await res.json();
+  const data = await res.json();
 
-    if (data.url && capaImg) {
-      capaImg.src = data.url;
-    } else {
-      alert("Erro ao atualizar capa");
-    }
-
-  } catch (err) {
-    console.error("Erro upload capa:", err);
-    alert("Erro ao enviar capa");
+  if (data.capa) {
+    capaImg.src = data.capa + "?t=" + Date.now();
   }
-
 });
-
 
 // ===============================
 // MIDIA

@@ -4548,34 +4548,54 @@ app.post(
 app.post(
   "/uploadCapa",
   auth,
-  uploadB2.single("capa"),
+  uploadB2.single("capa"), 
   async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: "Arquivo não enviado" });
       }
 
-      const url = req.file.location;
       const userId = req.user.id;
+      const { mimetype, originalname, buffer } = req.file;
 
+      // 🔥 caminho único (evita cache)
+      const caminho = `velvet/capas/${userId}/${Date.now()}-${originalname}`;
+
+      // 🚀 Upload manual para Backblaze (igual avatar)
+      const uploadResult = await s3.upload({
+        Bucket: process.env.B2_BUCKET,
+        Key: caminho,
+        Body: buffer,
+        ContentType: mimetype,
+        ACL: "public-read",
+        CacheControl: "no-cache"
+      }).promise();
+
+      const url = uploadResult.Location;
+
+      // ==============================
+      // MODELO
+      // ==============================
       if (req.user.role === "modelo") {
 
-        // modelos pode usar user_id
         await db.query(
           "UPDATE modelos SET capa = $1 WHERE user_id = $2",
           [url, userId]
         );
 
-      } 
+      }
+
+      // ==============================
+      // CLIENTE
+      // ==============================
       else if (req.user.role === "cliente") {
 
-        // 🔁 converter users.id → cliente_id
         const clienteRes = await db.query(
           "SELECT id FROM clientes WHERE user_id = $1",
           [userId]
         );
 
-        if (clienteRes.rowCount === 0) {
+        if (!clienteRes.rowCount) {
           return res.status(404).json({ error: "Cliente não encontrado" });
         }
 
@@ -4590,13 +4610,13 @@ app.post(
           `,
           [url, cliente_id]
         );
+      }
 
-      } 
       else {
         return res.status(403).json({ error: "Role inválida" });
       }
 
-      res.json({ url });
+      res.json({ capa: url });
 
     } catch (err) {
       console.error("Erro upload capa:", err);
@@ -4604,7 +4624,6 @@ app.post(
     }
   }
 );
-
 
 
 // Salvar / atualizar dados

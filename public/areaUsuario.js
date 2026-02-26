@@ -561,7 +561,10 @@ inputCapa?.addEventListener("change", async () => {
   });
 
   const data = await res.json();
-  if (data.url) capaImg.src = data.url;
+
+  if (data.capa) {
+    capaImg.src = data.capa + "?t=" + Date.now();
+  }
 });
 
 inputAvatar?.addEventListener("change", async () => {
