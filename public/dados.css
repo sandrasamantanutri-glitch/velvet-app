@@ -321,3 +321,97 @@ a {
   }
 
 }
+
+/* Fundo escuro */
+.modal-validacao {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Backdrop */
+.modal-validacao .modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease;
+}
+
+/* Caixa */
+.modal-validacao .modal-box {
+  position: relative;
+  background: #1c1c1f;
+  color: #fff;
+  width: 90%;
+  max-width: 420px;
+  padding: 28px;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  animation: slideUp 0.25s ease;
+}
+
+/* Título */
+.modal-validacao h3 {
+  margin-bottom: 14px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+/* Texto */
+.modal-validacao p {
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 10px;
+  color: #cfcfcf;
+}
+
+/* Link */
+.modal-validacao a {
+  color: #a855f7;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.modal-validacao a:hover {
+  text-decoration: underline;
+}
+
+/* Botão */
+.modal-validacao .btn-fechar {
+  margin-top: 18px;
+  background: #a855f7;
+  border: none;
+  color: white;
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.2s;
+}
+
+.modal-validacao .btn-fechar:hover {
+  background: #9333ea;
+}
+
+/* Animações */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
