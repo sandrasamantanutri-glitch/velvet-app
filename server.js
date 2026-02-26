@@ -576,7 +576,14 @@ console.log("============================================");
       pago_em
     )
     VALUES ($1,$2,$3,$4,$4,$5,'pago','pix',NOW())
-    ON CONFLICT (message_id,cliente_id) DO NOTHING
+    ON CONFLICT (message_id,cliente_id)
+     DO UPDATE SET
+    status = 'pago',
+    metodo_pagamento = 'pix',
+    pago_em = NOW(),
+    preco = EXCLUDED.preco,
+    valor_base = EXCLUDED.valor_base,
+    valor_total = EXCLUDED.valor_total
   `,[
     message_id,
     cliente_id,
@@ -617,6 +624,21 @@ console.log("============================================");
     taxaExtra,
     metadata.aceite_ip || null
   ]);
+
+  await client.query(`
+  UPDATE messages
+  SET visto = true,
+      updated_at = NOW()
+  WHERE id = $1
+    AND cliente_id = $2
+    AND modelo_id = $3
+`, [message_id, cliente_id, modelo_id]);
+
+if (!upd.rowCount) {
+  console.log("🚨 Não atualizou messages.visto — IDs não bateram", {
+    message_id, cliente_id, modelo_id
+  });
+}
 
   dadosParaEmitir = {
     tipo: "conteudo_pix",
@@ -3320,11 +3342,10 @@ app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
   }
 
   try {
-
-    // 🔒 verifica se mensagem pertence ao cliente
+    // ✅ pega preco e visto
     const messageCheck = await db.query(
       `
-      SELECT id, visto
+      SELECT id, visto, preco
       FROM messages
       WHERE id = $1
         AND cliente_id = $2
@@ -3337,25 +3358,26 @@ app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
     }
 
     const mensagem = messageCheck.rows[0];
+    const preco = Number(mensagem.preco || 0);
 
-    // 🔒 só libera se já foi paga
-if (Number(mensagem.preco) > 0) {
+    // 🔒 só libera se já foi paga (ou já marcado como visto)
+    if (preco > 0 && mensagem.visto !== true) {
+      const pago = await db.query(
+        `
+        SELECT 1
+        FROM conteudo_pacotes
+        WHERE message_id = $1
+          AND cliente_id = $2
+          AND status = 'pago'
+        LIMIT 1
+        `,
+        [message_id, req.cliente_id]
+      );
 
-  const pago = await db.query(
-    `
-    SELECT 1
-    FROM conteudo_pacotes
-    WHERE message_id = $1
-      AND cliente_id = $2
-      AND status = 'pago'
-    `,
-    [message_id, req.cliente_id]
-  );
-
-  if (!pago.rowCount) {
-    return res.status(403).json({ error: "Conteúdo não liberado" });
-  }
-}
+      if (!pago.rowCount) {
+        return res.status(403).json({ error: "Conteúdo não liberado" });
+      }
+    }
 
     const result = await db.query(
       `
@@ -3376,7 +3398,6 @@ if (Number(mensagem.preco) > 0) {
     res.status(500).json([]);
   }
 });
-
 
 // 🔒 CONTEÚDOS JÁ VISTOS POR CLIENTE (MODELO)
 app.get("/api/chat/conteudos-vistos/:cliente_id", authModelo, async (req, res) => {
