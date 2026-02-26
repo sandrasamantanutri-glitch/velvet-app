@@ -656,7 +656,7 @@ formModelo?.addEventListener("submit", async (e) => {
     endpoint = "/api/usuario/perfil";
   } else {
     dados = {
-      username: formData.get("username")?.trim() || ""
+      nome_exibicao: formData.get("username")?.trim() || ""
     };
 
     if (!dados.username) {
@@ -682,7 +682,7 @@ formModelo?.addEventListener("submit", async (e) => {
   }
 
   alert("Dados salvos com sucesso");
-  
+
   // 🔄 Recarrega dados visuais
   await carregarPerfilBase(usuario);
 });
