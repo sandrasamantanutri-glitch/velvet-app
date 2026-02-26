@@ -25,7 +25,7 @@ const nodemailer = require("nodemailer");
 const os = require("os");
 const { exec } = require("child_process");
 const ffmpeg = require("fluent-ffmpeg");
-const authAdmin = require("./middleware/authAdmin");
+
 app.set("trust proxy", 1);
 const server = http.createServer(app);
 const multer = require("multer");
