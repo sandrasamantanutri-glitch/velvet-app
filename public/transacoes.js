@@ -3,10 +3,6 @@ let paginaAtual = 1;
 const itensPorPagina = 10;
 
 document.addEventListener("DOMContentLoaded", async () => {
-
-  // ================================
-  // TABS
-  // ================================
 const tabs = document.querySelectorAll(".tab-btn");
 
 tabs.forEach(btn => {
@@ -80,9 +76,6 @@ async function carregarTransacoes() {
   renderTransacoes(todasTransacoes);
 }
 
-// ================================
-// FILTRO APENAS POR TIPO
-// ================================
 function aplicarFiltros() {
   const tipoSelecionado =
     document.getElementById("filtroTipo").value;
@@ -98,9 +91,6 @@ function aplicarFiltros() {
   renderTransacoes(filtradas);
 }
 
-// ================================
-// RENDER
-// ================================
 function renderTransacoes(transacoes) {
   const lista = document.getElementById("listaTransacoes");
   const paginacao = document.getElementById("paginacao");
@@ -173,20 +163,14 @@ function gerarPaginacao(totalItens) {
   }
 }
 
-// ================================
-// RECLAMAR
-// ================================
 function reclamar(id, tipo) {
   window.location.href =
     `/contato.html?transacao_id=${id}&tipo=${tipo}`;
 }
 
 async function carregarSubscricoes() {
-
-  const token = localStorage.getItem("token");
-  const lista = document.getElementById("listaSubscricoes");
-
-  if (!lista) return;
+ const token = localStorage.getItem("token");
+ const lista = document.getElementById("listaSubscricoes");
 
   const res = await fetch("/api/cliente/subscricoes", {
     headers: {
