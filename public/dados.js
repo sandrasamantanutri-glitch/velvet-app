@@ -82,7 +82,7 @@ function mostrarAvisoValidacao(role) {
       </p>
       <p>
         Para validar,
-        <a href="/area-usuario.html">clique aqui</a>.
+        <a href="/conta.html">clique aqui</a>.
       </p>
       <button class="btn-fechar">Fechar</button>
     </div>
