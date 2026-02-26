@@ -234,8 +234,7 @@
   padding: 18px;
   box-shadow: 0 8px 25px rgba(123, 44, 255, 0.08);
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  justify-content: space-around;
   gap: 20px;
   transition: 0.2s ease;
 }
@@ -248,7 +247,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .sub-vip-info strong {
@@ -260,7 +259,7 @@
 ================================ */
 
 .badge-status {
-  font-size: 12px;
+  font-size: 16px;
   padding: 5px 10px;
   border-radius: 20px;
   font-weight: 600;
@@ -283,9 +282,9 @@
 ================================ */
 
 .btn-cancelar {
-  background: #FFEAEA;
-  color: #C62828;
-  border: 1px solid #C62828;
+  background: #ddd3ec;
+  color: #1E1E26;
+  border: 1px solid #7B2CFF;
   padding: 8px 16px;
   border-radius: 12px;
   font-size: 13px;
@@ -294,14 +293,14 @@
 }
 
 .btn-cancelar:hover {
-  background: #C62828;
+  background: #955df7;
   color: white;
 }
 
 .btn-renovar {
-  background: #7B2CFF;
-  color: white;
-  border: none;
+ background: #ddd3ec;
+  color: #1E1E26;
+  border: 1px solid #7B2CFF;
   padding: 8px 16px;
   border-radius: 12px;
   font-size: 13px;
