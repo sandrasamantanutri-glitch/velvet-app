@@ -475,9 +475,9 @@ async function carregarDadosUsuario() {
   let endpoint;
 
   if (usuario.role === "modelo") {
-    endpoint = "/api/usuario/perfil";
+    endpoint = "/api/modelo/me";
   } else {
-    endpoint = "/api/cliente/dados";
+    endpoint = "/api/cliente/me";
   }
 
   const res = await fetch(endpoint, {
@@ -486,7 +486,10 @@ async function carregarDadosUsuario() {
     }
   });
 
-  if (!res.ok) return;
+  if (!res.ok) {
+    console.error("Erro ao carregar dados:", res.status);
+    return;
+  }
 
   const dados = await res.json();
 
