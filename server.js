@@ -1781,15 +1781,20 @@ socket.on("sendMessage", async ({ cliente_id, modelo_id, text }) => {
     [cliente_id, modelo_id, unreadFor]);
 
     // 3️⃣ REALTIME SALA CHAT
-    io.to(sala).emit("newMessage", {
-      id: message.id,
-      cliente_id,
-      modelo_id,
-      sender,
-      tipo: "texto",
-      text,
-      created_at: message.created_at
-    });
+io.to(sala).emit("newMessage", {
+  id: message.id,
+  cliente_id,
+  modelo_id,
+  sender: "modelo",
+  tipo: "conteudo",
+  preco: precoNum,
+  visto: false,
+  liberado: precoNum === 0,
+  bloqueado: precoNum > 0,
+  quantidade: midias.length,
+  midias,
+  created_at: message.created_at
+});
 
     // 4️⃣ INBOX MODELO
     io.to(`inbox_modelo_${modelo_id}`).emit("inboxMessage", {
@@ -1920,14 +1925,12 @@ socket.on("getHistory", async ({ cliente_id, modelo_id }) => {
 // ===================================
 // 4️⃣ TRATAR MENSAGENS DE CONTEÚDO (OTIMIZADO)
 // ===================================
-
-// 1️⃣ pegar IDs das mensagens de conteúdo
 const mensagensConteudo = result.rows.filter(m => m.tipo === "conteudo");
 const messageIds = mensagensConteudo.map(m => m.id);
 
 if (messageIds.length > 0) {
 
-  // 2️⃣ buscar todas mídias de uma vez
+  // buscar todas mídias de uma vez
   const midiasRes = await db.query(
     `
     SELECT
@@ -1942,7 +1945,7 @@ if (messageIds.length > 0) {
     [messageIds]
   );
 
-  // 3️⃣ organizar por message_id
+  // organizar por message_id
   const mapaMidias = {};
 
   for (const row of midiasRes.rows) {
@@ -1957,7 +1960,7 @@ if (messageIds.length > 0) {
     });
   }
 
-  // 4️⃣ buscar todos pagamentos de uma vez (OTIMIZAÇÃO)
+  // buscar todos pagamentos de uma vez (OTIMIZAÇÃO)
   const pagosRes = await db.query(`
     SELECT message_id
     FROM conteudo_pacotes
@@ -1970,26 +1973,26 @@ if (messageIds.length > 0) {
     pagosRes.rows.map(r => r.message_id)
   );
 
-  // 5️⃣ aplicar nas mensagens
-  for (const msg of mensagensConteudo) {
+ // 5️⃣ aplicar nas mensagens
+for (const msg of mensagensConteudo) {
 
-    const midias = mapaMidias[msg.id] || [];
+  const midias = mapaMidias[msg.id] || [];
 
-    msg.midias = midias;
-    msg.quantidade = midias.length;
+  msg.midias = midias;
+  msg.quantidade = midias.length;
 
-    if (Number(msg.preco) > 0) {
+  if (Number(msg.preco) > 0) {
 
-      const pago = pagosSet.has(msg.id);
+    const pago = pagosSet.has(msg.id);
 
-      msg.visto = pago;
-      msg.bloqueado = !pago;
+    msg.liberado = pago;
+    msg.bloqueado = !pago;
 
-    } else {
-      msg.visto = true;
-      msg.bloqueado = false;
-    }
+  } else {
+    msg.liberado = true;
+    msg.bloqueado = false;
   }
+}
 }
 
 // ===================================

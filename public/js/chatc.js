@@ -179,7 +179,7 @@ socket.on("chatHistory", mensagens => {
 
     // 🔓 marca como liberado
     if (m.tipo === "conteudo") {
-      if (m.visto === true || Number(m.preco) === 0) {
+      if (m.liberado === true || Number(m.preco) === 0){
         conteudosLiberados.add(Number(m.id));
       }
     }
@@ -219,11 +219,11 @@ if (status) {
 
   fecharPopupPix();
 
-  const card = document.querySelector(
-    `.chat-conteudo[data-id="${message_id}"]`
-  );
-
-  if (!card) return;
+  if (!card) {
+  console.warn("Card não encontrado, forçando refresh do histórico");
+  socket.emit("getHistory", { cliente_id, modelo_id });
+  return;
+}
 
   const res = await fetch(`/api/chat/conteudo/${message_id}`, {
     headers: {
@@ -442,10 +442,9 @@ function renderMensagem(msg) {
   /* 📦 CONTEÚDO */
   else if (msg.tipo === "conteudo") {
 
-    const liberado =
-      msg.visto === true ||
-      conteudosLiberados.has(Number(msg.id)) ||
-      Number(msg.preco) === 0;
+   const liberado =
+  msg.liberado === true ||
+  Number(msg.preco) === 0;
 
     /* ===========================
        🔓 CONTEÚDO LIBERADO
@@ -514,14 +513,12 @@ function renderMensagem(msg) {
   chat.appendChild(div);
 
   // 🔥 Ativar lazy loading somente se liberado
-  if (msg.tipo === "conteudo" && 
-      (msg.visto === true || 
-       conteudosLiberados.has(Number(msg.id)) || 
-       Number(msg.preco) === 0)) {
+if (msg.tipo === "conteudo" && 
+    (msg.liberado === true || 
+     conteudosLiberados.has(Number(msg.id)))) {
 
-    ativarLazyLoading(div, msg);
-  }
-
+  ativarLazyLoading(div, msg);
+}
   chat.scrollTop = chat.scrollHeight;
 }
 
