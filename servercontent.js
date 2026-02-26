@@ -1335,9 +1335,17 @@ router.get("/content/transacoes", (req, res) => {
 
 router.get("/cliente/transacoes", authCliente, async (req, res) => {
   try {
-    const clienteId = req.user.id;
+    const clienteRes = await db.query(
+  "SELECT id FROM clientes WHERE user_id = $1",
+  [req.user.id]
+);
 
-    // 📦 Conteúdos comprados
+if (clienteRes.rowCount === 0) {
+  return res.status(404).json({ error: "Cliente não encontrado" });
+}
+
+const clienteId = clienteRes.rows[0].id;
+
     const conteudos = await db.query(`
       SELECT
         'conteudo' AS tipo,
@@ -1352,7 +1360,6 @@ router.get("/cliente/transacoes", authCliente, async (req, res) => {
         AND cp.status = 'pago'
     `, [clienteId]);
 
-    // ⭐ Assinaturas VIP
     const assinaturas = await db.query(`
       SELECT
         'assinatura' AS tipo,

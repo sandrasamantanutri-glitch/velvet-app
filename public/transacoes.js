@@ -101,7 +101,7 @@ function renderTransacoes(transacoes) {
 
         <button class="btn-reclamar"
           onclick="reclamar(${t.id}, '${t.tipo}')">
-          Reclamar pagamento
+          Reclamar transação
         </button>
       </div>
     `;
