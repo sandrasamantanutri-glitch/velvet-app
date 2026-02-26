@@ -322,6 +322,7 @@ a {
 
 }
 
+
 .modal-validacao {
   position: fixed;
   inset: 0;
@@ -335,9 +336,9 @@ a {
 .modal-validacao .modal-backdrop {
   position: absolute;
   inset: 0;
-  background: #fff;
+  background: #1c1c1f;
+  backdrop-filter: blur(4px);
   animation: fadeIn 0.2s ease;
-  color: #1c1c1f;;
 }
 
 /* Caixa */

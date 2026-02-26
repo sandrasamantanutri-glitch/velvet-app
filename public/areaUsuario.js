@@ -630,24 +630,46 @@ const formModelo = document.getElementById("formDadosUsuario");
 formModelo?.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const dados = {
-    nome_exibicao: formModelo.nome_exibicao.value.trim(),
-    instagram: normalizarInstagram(formModelo.instagram.value),
-    tiktok: formModelo.tiktok.value.trim(),
-    local: formModelo.local.value.trim(),
-    bio: formModelo.bio.value.trim()
-  };
+  const usuario = getUsuarioLogado();
+  if (!usuario) return;
 
-  if (!dados.nome_exibicao) {
+  const token = localStorage.getItem("token");
+
+  // 🔥 Define endpoint baseado no role
+  const endpoint =
+    usuario.role === "modelo"
+      ? "/api/usuario/perfil"
+      : "/api/cliente/dados";
+
+  const method =
+    usuario.role === "modelo"
+      ? "PUT"
+      : "POST";
+
+  const dados =
+    usuario.role === "modelo"
+      ? {
+          nome_exibicao: formModelo.nome_exibicao.value.trim(),
+          instagram: normalizarInstagram(formModelo.instagram.value),
+          tiktok: formModelo.tiktok.value.trim(),
+          local: formModelo.local.value.trim(),
+          bio: formModelo.bio.value.trim()
+        }
+      : {
+          username: formModelo.username.value.trim()
+        };
+
+  // validação modelo
+  if (usuario.role === "modelo" && !dados.nome_exibicao) {
     alert("O nome de exibição é obrigatório");
     return;
   }
 
-  const res = await fetch("/api/usuario/perfil", {
-    method: "PUT",
+  const res = await fetch(endpoint, {
+    method,
     headers: {
       "Content-Type": "application/json",
-      Authorization: "Bearer " + localStorage.getItem("token")
+      Authorization: "Bearer " + token
     },
     body: JSON.stringify(dados)
   });
@@ -658,5 +680,7 @@ formModelo?.addEventListener("submit", async (e) => {
   }
 
   alert("Dados salvos com sucesso");
-});
 
+  // 🔄 Recarrega dados visuais
+  await carregarPerfilBase(usuario);
+});
