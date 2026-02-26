@@ -469,7 +469,18 @@ async function carregarDadosUsuario() {
   const token = localStorage.getItem("token");
   if (!token) return;
 
-  const res = await fetch("/api/usuario/perfil", {
+  const usuario = getUsuarioLogado();
+  if (!usuario) return;
+
+  let endpoint;
+
+  if (usuario.role === "modelo") {
+    endpoint = "/api/usuario/perfil";
+  } else {
+    endpoint = "/api/cliente/dados";
+  }
+
+  const res = await fetch(endpoint, {
     headers: {
       Authorization: "Bearer " + token
     }
@@ -488,7 +499,6 @@ async function carregarDadosUsuario() {
     }
   });
 }
-
 
 async function carregarDadosPessoais() {
   if (!paginaTem("formDadosPessoais")) return;
@@ -633,13 +643,16 @@ formModelo?.addEventListener("submit", async (e) => {
   const usuario = getUsuarioLogado();
   if (!usuario) return;
 
+  const token = localStorage.getItem("token");
   const formData = new FormData(formModelo);
 
-  let dados;
   let endpoint;
-  let method = "PUT";
+  let dados;
 
   if (usuario.role === "modelo") {
+
+    endpoint = "/api/usuario/perfil";
+
     dados = {
       nome_exibicao: formData.get("nome_exibicao")?.trim() || "",
       instagram: normalizarInstagram(formData.get("instagram") || ""),
@@ -653,25 +666,25 @@ formModelo?.addEventListener("submit", async (e) => {
       return;
     }
 
-    endpoint = "/api/usuario/perfil";
   } else {
+
+    endpoint = "/api/cliente/dados";
+
     dados = {
-      nome_exibicao: formData.get("username")?.trim() || ""
+      username: formData.get("username")?.trim() || ""
     };
 
     if (!dados.username) {
       alert("O username é obrigatório");
       return;
     }
-
-    endpoint = "/api/cliente/dados";
   }
 
   const res = await fetch(endpoint, {
-    method,
+    method: "PUT",
     headers: {
       "Content-Type": "application/json",
-      Authorization: "Bearer " + localStorage.getItem("token")
+      Authorization: "Bearer " + token
     },
     body: JSON.stringify(dados)
   });
@@ -683,6 +696,5 @@ formModelo?.addEventListener("submit", async (e) => {
 
   alert("Dados salvos com sucesso");
 
-  // 🔄 Recarrega dados visuais
   await carregarPerfilBase(usuario);
 });
