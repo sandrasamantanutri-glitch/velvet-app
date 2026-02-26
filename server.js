@@ -4181,6 +4181,58 @@ app.put("/api/usuario/dados", auth, async (req, res) => {
   }
 });
 
+app.put("/api/cliente/dados", authCliente, async (req, res) => {
+  try {
+
+    const {
+      username,
+      instagram,
+      tiktok,
+      local,
+      bio
+    } = req.body;
+
+    if (!username || typeof username !== "string") {
+      return res.status(400).json({ error: "Username obrigatório." });
+    }
+
+    await db.query(`
+      INSERT INTO clientes_dados (
+        cliente_id,
+        username,
+        instagram,
+        tiktok,
+        local,
+        bio,
+        criado_em,
+        atualizado_em
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,NOW(),NOW())
+      ON CONFLICT (cliente_id)
+      DO UPDATE SET
+        username = COALESCE(EXCLUDED.username, clientes_dados.username),
+        instagram = COALESCE(EXCLUDED.instagram, clientes_dados.instagram),
+        tiktok = COALESCE(EXCLUDED.tiktok, clientes_dados.tiktok),
+        local = COALESCE(EXCLUDED.local, clientes_dados.local),
+        bio = COALESCE(EXCLUDED.bio, clientes_dados.bio),
+        atualizado_em = NOW()
+    `, [
+      req.cliente_id,
+      username.trim(),
+      instagram || null,
+      tiktok || null,
+      local || null,
+      bio || null
+    ]);
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("Erro atualizar dados cliente:", err);
+    res.status(500).json({ error: "Erro interno." });
+  }
+});
+
 // app.put(
 //   "/api/admin/verificacao/:id",
 //   authAdmin,

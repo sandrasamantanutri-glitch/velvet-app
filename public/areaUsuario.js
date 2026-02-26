@@ -499,13 +499,11 @@ async function carregarDadosUsuario() {
         : dados.username || "";
   }
 
-  // 🔥 Campos extras só para modelo
-  if (usuario.role === "modelo") {
-    if (form.instagram) form.instagram.value = dados.instagram || "";
-    if (form.tiktok) form.tiktok.value = dados.tiktok || "";
-    if (form.local) form.local.value = dados.local || "";
-    if (form.bio) form.bio.value = dados.bio || "";
-  }
+  // 🔥 Campos extras para ambos
+  if (form.instagram) form.instagram.value = dados.instagram || "";
+  if (form.tiktok) form.tiktok.value = dados.tiktok || "";
+  if (form.local) form.local.value = dados.local || "";
+  if (form.bio) form.bio.value = dados.bio || "";
 }
 
 async function carregarDadosPessoais() {
@@ -643,8 +641,6 @@ if (!res.ok) {
   alert("Dados pessoais salvos com sucesso");
 });
 
-const formModelo = document.getElementById("formDadosUsuario");
-
 formModelo?.addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -654,16 +650,15 @@ formModelo?.addEventListener("submit", async (e) => {
   const token = localStorage.getItem("token");
   const formData = new FormData(formModelo);
 
-  let endpoint;
-  let dados;
-
-  // 🔥 valor do input principal (mesmo para ambos)
   const nomeDigitado = formData.get("nome_exibicao")?.trim() || "";
 
   if (!nomeDigitado) {
     alert("O nome é obrigatório");
     return;
   }
+
+  let endpoint;
+  let dados;
 
   if (usuario.role === "modelo") {
 
@@ -690,7 +685,7 @@ formModelo?.addEventListener("submit", async (e) => {
     };
   }
 
- const res = await fetch(endpoint, {
+  const res = await fetch(endpoint, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
