@@ -4120,64 +4120,131 @@ app.put("/api/usuario/dados", auth, async (req, res) => {
 
     const userId = req.user.id;
 
-    // 🔁 Converter users.id → modelos.id
-    const modeloRes = await db.query(
-      "SELECT id FROM modelos WHERE user_id = $1",
-      [userId]
-    );
+    /* =====================================================
+       🔵 MODELO
+    ===================================================== */
+    if (req.user.role === "modelo") {
 
-    if (modeloRes.rowCount === 0) {
-      return res.status(404).json({ erro: "Modelo não encontrado" });
+      const modeloRes = await db.query(
+        "SELECT id FROM modelos WHERE user_id = $1",
+        [userId]
+      );
+
+      if (!modeloRes.rowCount) {
+        return res.status(404).json({ erro: "Modelo não encontrado" });
+      }
+
+      const modelo_id = modeloRes.rows[0].id;
+
+      const verificacao = await db.query(`
+        SELECT status
+        FROM modelos_verificacao
+        WHERE modelo_id = $1
+        ORDER BY criado_em DESC
+        LIMIT 1
+      `, [modelo_id]);
+
+      if (
+        verificacao.rowCount > 0 &&
+        verificacao.rows[0].status === "aprovado"
+      ) {
+        return res.status(403).json({
+          erro: "Dados pessoais já aprovados e não podem ser alterados"
+        });
+      }
+
+      await db.query(`
+        INSERT INTO modelos_dados
+          (modelo_id, nome_completo, data_nascimento, telefone, endereco, estado, cidade, pais, atualizado_em)
+        VALUES
+          ($1,$2,$3,$4,$5,$6,$7,$8,NOW())
+        ON CONFLICT (modelo_id)
+        DO UPDATE SET
+          nome_completo = EXCLUDED.nome_completo,
+          data_nascimento = EXCLUDED.data_nascimento,
+          telefone = EXCLUDED.telefone,
+          endereco = EXCLUDED.endereco,
+          estado = EXCLUDED.estado,
+          cidade = EXCLUDED.cidade,
+          pais = EXCLUDED.pais,
+          atualizado_em = NOW()
+      `, [
+        modelo_id,
+        nome_completo?.trim() || null,
+        data_nascimento || null,
+        telefone?.trim() || null,
+        endereco?.trim() || null,
+        estado?.trim() || null,
+        cidade?.trim() || null,
+        pais?.trim() || null
+      ]);
+
+      return res.json({ sucesso: true });
     }
 
-    const modelo_id = modeloRes.rows[0].id;
+    /* =====================================================
+       🟢 CLIENTE
+    ===================================================== */
+    if (req.user.role === "cliente") {
 
-    // 🔒 Verificar status usando modelo_id correto
-    const verificacao = await db.query(`
-      SELECT status
-      FROM modelos_verificacao
-      WHERE modelo_id = $1
-      ORDER BY criado_em DESC
-      LIMIT 1
-    `, [modelo_id]);
+      const clienteRes = await db.query(
+        "SELECT id FROM clientes WHERE user_id = $1",
+        [userId]
+      );
 
-    if (
-      verificacao.rowCount > 0 &&
-      verificacao.rows[0].status === "aprovado"
-    ) {
-      return res.status(403).json({
-        erro: "Dados pessoais já aprovados e não podem ser alterados"
-      });
+      if (!clienteRes.rowCount) {
+        return res.status(404).json({ erro: "Cliente não encontrado" });
+      }
+
+      const cliente_id = clienteRes.rows[0].id;
+
+      const verificacao = await db.query(`
+        SELECT status
+        FROM clientes_verificacao
+        WHERE cliente_id = $1
+        ORDER BY criado_em DESC
+        LIMIT 1
+      `, [cliente_id]);
+
+      if (
+        verificacao.rowCount > 0 &&
+        verificacao.rows[0].status === "aprovado"
+      ) {
+        return res.status(403).json({
+          erro: "Dados pessoais já aprovados e não podem ser alterados"
+        });
+      }
+
+      await db.query(`
+        INSERT INTO clientes_dados
+          (cliente_id, nome_completo, data_nascimento, telefone, endereco, estado, cidade, pais, atualizado_em)
+        VALUES
+          ($1,$2,$3,$4,$5,$6,$7,$8,NOW())
+        ON CONFLICT (cliente_id)
+        DO UPDATE SET
+          nome_completo = EXCLUDED.nome_completo,
+          data_nascimento = EXCLUDED.data_nascimento,
+          telefone = EXCLUDED.telefone,
+          endereco = EXCLUDED.endereco,
+          estado = EXCLUDED.estado,
+          cidade = EXCLUDED.cidade,
+          pais = EXCLUDED.pais,
+          atualizado_em = NOW()
+      `, [
+        cliente_id,
+        nome_completo?.trim() || null,
+        data_nascimento || null,
+        telefone?.trim() || null,
+        endereco?.trim() || null,
+        estado?.trim() || null,
+        cidade?.trim() || null,
+        pais?.trim() || null
+      ]);
+
+      return res.json({ sucesso: true });
     }
 
-    // ✅ Salvar usando modelo_id (NÃO user_id)
-    await db.query(`
-      INSERT INTO modelos_dados
-        (modelo_id, nome_completo, data_nascimento, telefone, endereco, estado, cidade, pais, atualizado_em)
-      VALUES
-        ($1,$2,$3,$4,$5,$6,$7,$8,NOW())
-      ON CONFLICT (modelo_id)
-      DO UPDATE SET
-        nome_completo = EXCLUDED.nome_completo,
-        data_nascimento = EXCLUDED.data_nascimento,
-        telefone = EXCLUDED.telefone,
-        endereco = EXCLUDED.endereco,
-        estado = EXCLUDED.estado,
-        cidade = EXCLUDED.cidade,
-        pais = EXCLUDED.pais,
-        atualizado_em = NOW()
-    `, [
-      modelo_id,
-      nome_completo?.trim() || null,
-      data_nascimento || null,
-      telefone?.trim() || null,
-      endereco?.trim() || null,
-      estado?.trim() || null,
-      cidade?.trim() || null,
-      pais?.trim() || null
-    ]);
-
-    res.json({ sucesso: true });
+    return res.status(403).json({ erro: "Role inválida" });
 
   } catch (err) {
     console.error("ERRO PUT /api/usuario/dados:", err);
