@@ -3925,7 +3925,7 @@ await db.query(`
     atualizado_em = NOW()
 `, [
   clienteId,
-  nome_exibicao,
+  username || null,
   instagram || null,
   tiktok || null,
   local || null,
