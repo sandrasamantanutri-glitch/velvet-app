@@ -3682,7 +3682,7 @@ app.get("/api/pagamento/status/:orderId", async (req, res) => {
   }
 });
 
-app.get("/api/cliente/subscricoes", authCliente, async (req, res) => {
+app.get("/api/cliente/subscricoes", auth, async (req, res) => {
   try {
     const clienteRes = await db.query(
       "SELECT id FROM clientes WHERE user_id = $1",
