@@ -681,13 +681,16 @@ formModelo?.addEventListener("submit", async (e) => {
 
     endpoint = "/api/cliente/dados";
 
-    // 🔥 converte nome_exibicao → username
     dados = {
-      username: nomeDigitado
+      username: nomeDigitado,
+      instagram: normalizarInstagram(formData.get("instagram") || ""),
+      tiktok: formData.get("tiktok")?.trim() || "",
+      local: formData.get("local")?.trim() || "",
+      bio: formData.get("bio")?.trim() || ""
     };
   }
 
-  const res = await fetch(endpoint, {
+  const res = await fetch("/api/usuario/perfil", {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
