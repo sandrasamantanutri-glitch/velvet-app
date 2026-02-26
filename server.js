@@ -3893,57 +3893,47 @@ app.put("/api/usuario/perfil", auth, async (req, res) => {
     // ===============================
     if (req.user.role === "cliente") {
 
-      const clienteRes = await db.query(
-        `SELECT id FROM clientes WHERE user_id = $1`,
-        [req.user.id]
-      );
+  const clienteRes = await db.query(
+    `SELECT id FROM clientes WHERE user_id = $1`,
+    [req.user.id]
+  );
 
-      if (!clienteRes.rows.length) {
-        return res.status(404).json({ erro: "Cliente não encontrado" });
-      }
+  if (!clienteRes.rows.length) {
+    return res.status(404).json({ erro: "Cliente não encontrado" });
+  }
 
-      const clienteId = clienteRes.rows[0].id;
+  const clienteId = clienteRes.rows[0].id;
 
-      // garante que exista linha em clientes_dados
-      const existe = await db.query(
-        `SELECT 1 FROM clientes_dados WHERE cliente_id = $1`,
-        [clienteId]
-      );
+  await db.query(`
+    INSERT INTO clientes_dados (
+      cliente_id,
+      username,
+      instagram,
+      tiktok,
+      local,
+      bio,
+      atualizado_em
+    )
+    VALUES ($1, $2, $3, $4, $5, $6, NOW())
+    ON CONFLICT (cliente_id)
+    DO UPDATE SET
+      username      = EXCLUDED.username,
+      instagram     = EXCLUDED.instagram,
+      tiktok        = EXCLUDED.tiktok,
+      local         = EXCLUDED.local,
+      bio           = EXCLUDED.bio,
+      atualizado_em = NOW()
+  `, [
+    clienteId,
+    nome_exibicao || null,
+    instagram || null,
+    tiktok || null,
+    local || null,
+    bio || null
+  ]);
 
-      if (existe.rows.length === 0) {
-        await db.query(
-          `
-          INSERT INTO clientes_dados (cliente_id, nome_completo)
-          VALUES ($1, (SELECT nome FROM clientes WHERE id = $1))
-          `,
-          [clienteId]
-        );
-      }
-
-      await db.query(
-        `
-        UPDATE clientes_dados
-        SET
-          username      = COALESCE($1, username),
-          instagram     = COALESCE($2, instagram),
-          tiktok        = COALESCE($3, tiktok),
-          local         = COALESCE($4, local),
-          bio           = COALESCE($5, bio),
-          atualizado_em = NOW()
-        WHERE cliente_id = $6
-        `,
-        [
-          nome_exibicao ?? null,
-          instagram ?? null,
-          tiktok ?? null,
-          local ?? null,
-          bio ?? null,
-          clienteId
-        ]
-      );
-
-      return res.json({ ok: true });
-    }
+  return res.json({ ok: true });
+}
 
     // ===============================
     // 👠 MODELO
