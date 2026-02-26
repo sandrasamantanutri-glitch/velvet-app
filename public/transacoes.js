@@ -313,3 +313,9 @@ function mostrarMensagem(texto, tipo = "sucesso") {
     msg.remove();
   }, 3000);
 }
+
+function renovarSubscricao(modeloId) {
+  window.location.href = `/perfil.html?id=${modeloId}`;
+}
+
+window.renovarSubscricao = renovarSubscricao;
