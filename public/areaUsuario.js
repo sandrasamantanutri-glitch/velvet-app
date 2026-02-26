@@ -427,12 +427,14 @@ async function carregarAreaModelo() {
   // ===============================
   // 📸 AVATAR / CAPA
   // ===============================
+  const avatar = document.getElementById("profileAvatar");
 if (avatar) {
   avatar.src = modelo.avatar
     ? modelo.avatar + "?t=" + Date.now()
     : "/assets/avatar.png";
 }
 
+const capa = document.getElementById("profileCapa");
 if (capa) {
   capa.src = modelo.capa
     ? modelo.capa + "?t=" + Date.now()
