@@ -5,7 +5,7 @@ const jwt = require("jsonwebtoken");
 const auth = require("./middleware/auth");
 const authCliente = require("./middleware/authCliente");
 const authModelo = require("./middleware/authModelo");
-const { authAdmin } = require("./middleware/authAdmin");
+const authAdmin = require("./middleware/authAdmin");
 const db = require("./db");
 
 
