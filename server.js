@@ -1785,14 +1785,10 @@ io.to(sala).emit("newMessage", {
   id: message.id,
   cliente_id,
   modelo_id,
-  sender: "modelo",
-  tipo: "conteudo",
-  preco: precoNum,
+  sender,          
+  tipo: "texto",  
+  text,           
   visto: false,
-  liberado: precoNum === 0,
-  bloqueado: precoNum > 0,
-  quantidade: midias.length,
-  midias,
   created_at: message.created_at
 });
 
