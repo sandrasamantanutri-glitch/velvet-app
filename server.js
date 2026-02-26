@@ -625,18 +625,21 @@ console.log("============================================");
     metadata.aceite_ip || null
   ]);
 
-  await client.query(`
+const upd = await client.query(`
   UPDATE messages
   SET visto = true,
       updated_at = NOW()
   WHERE id = $1
     AND cliente_id = $2
     AND modelo_id = $3
+  RETURNING id
 `, [message_id, cliente_id, modelo_id]);
 
 if (!upd.rowCount) {
   console.log("🚨 Não atualizou messages.visto — IDs não bateram", {
-    message_id, cliente_id, modelo_id
+    message_id,
+    cliente_id,
+    modelo_id
   });
 }
 
