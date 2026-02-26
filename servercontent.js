@@ -1396,6 +1396,43 @@ const clienteId = clienteRes.rows[0].id;
   }
 });
 
+router.get("/cliente/subscricoes", auth, async (req, res) => {
+  try {
+    const clienteRes = await db.query(
+      "SELECT id FROM clientes WHERE user_id = $1",
+      [req.user.id]
+    );
+
+    if (!clienteRes.rowCount) {
+      return res.status(404).json({ error: "Cliente não encontrado" });
+    }
+
+    const clienteId = clienteRes.rows[0].id;
+
+    const result = await db.query(`
+      SELECT 
+        v.id,
+        v.modelo_id,
+        m.nome_exibicao AS modelo,
+        v.created_at,
+        v.expiration_at,
+        v.ativo,
+        v.recorrente
+      FROM vip_subscriptions v
+      JOIN modelos m ON m.id = v.modelo_id
+      WHERE v.cliente_id = $1
+      ORDER BY v.created_at DESC
+    `, [clienteId]);
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error("Erro subscrições:", err);
+    res.status(500).json({ error: "Erro ao buscar subscrições" });
+  }
+});
+
+
 
 router.get("/modelo/financeiro", authModelo, async (req, res) => {
 
