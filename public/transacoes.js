@@ -26,7 +26,6 @@ tabs.forEach(btn => {
       content.classList.add("ativa");
     }
 
-    // 🔥 Carregar subscrições só quando abrir
     if (tab === "subscricoes") {
       carregarSubscricoes();
     }
@@ -34,10 +33,12 @@ tabs.forEach(btn => {
   });
   });
 
-  // ================================
-  // CARREGAR TRANSAÇÕES
-  // ================================
   await carregarTransacoes();
+  
+  const abaAtiva = document.querySelector(".tab-btn.ativa");
+if (abaAtiva && abaAtiva.dataset.tab === "subscricoes") {
+  await carregarSubscricoes();
+}
 
   // ================================
   // FILTRO (com proteção)

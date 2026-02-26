@@ -282,7 +282,7 @@
 ================================ */
 
 .btn-cancelar {
-  background: #ddd3ec;
+  background:rgba(123, 44, 255, 0.08);
   color: #1E1E26;
   border: 1px solid #7B2CFF;
   padding: 8px 16px;
@@ -298,7 +298,7 @@
 }
 
 .btn-renovar {
- background: #ddd3ec;
+ background: rgba(123, 44, 255, 0.08);
   color: #1E1E26;
   border: 1px solid #7B2CFF;
   padding: 8px 16px;
