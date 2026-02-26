@@ -3,15 +3,53 @@ let paginaAtual = 1;
 const itensPorPagina = 10;
 
 document.addEventListener("DOMContentLoaded", async () => {
+
+  // ================================
+  // TABS
+  // ================================
+const tabs = document.querySelectorAll(".tab-btn");
+
+tabs.forEach(btn => {
+  btn.addEventListener("click", () => {
+
+    document.querySelectorAll(".tab-btn")
+      .forEach(b => b.classList.remove("ativa"));
+
+    document.querySelectorAll(".tab-content")
+      .forEach(c => c.classList.remove("ativa"));
+
+    btn.classList.add("ativa");
+
+    const tab = btn.dataset.tab;
+
+    const content = document.getElementById("tab-" + tab);
+
+    if (content) {
+      content.classList.add("ativa");
+    }
+
+    // 🔥 Carregar subscrições só quando abrir
+    if (tab === "subscricoes") {
+      carregarSubscricoes();
+    }
+
+  });
+  });
+
+  // ================================
+  // CARREGAR TRANSAÇÕES
+  // ================================
   await carregarTransacoes();
 
-  document
-    .getElementById("filtroTipo")
-    const filtro = document.getElementById("filtroTipo");
+  // ================================
+  // FILTRO (com proteção)
+  // ================================
+  const filtro = document.getElementById("filtroTipo");
 
-if (filtro) {
-  filtro.addEventListener("change", aplicarFiltros);
-}
+  if (filtro) {
+    filtro.addEventListener("change", aplicarFiltros);
+  }
+
 });
 
 // ================================
@@ -21,7 +59,7 @@ async function carregarTransacoes() {
   const token = localStorage.getItem("token");
   const lista = document.getElementById("listaTransacoes");
 
-  const res = await fetch("/api/cliente/transacoes", {
+  const res = await fetch("/api/cliente", {
     headers: {
       Authorization: "Bearer " + token
     }
@@ -101,7 +139,7 @@ function renderTransacoes(transacoes) {
 
         <button class="btn-reclamar"
           onclick="reclamar(${t.id}, '${t.tipo}')">
-          Reclamar transação
+          Reclamar pagamento
         </button>
       </div>
     `;
@@ -141,4 +179,97 @@ function gerarPaginacao(totalItens) {
 function reclamar(id, tipo) {
   window.location.href =
     `/contato.html?transacao_id=${id}&tipo=${tipo}`;
+}
+
+async function carregarSubscricoes() {
+
+  const token = localStorage.getItem("token");
+  const lista = document.getElementById("listaSubscricoes");
+
+  if (!lista) return;
+
+  const res = await fetch("/api/cliente/subscricoes", {
+    headers: {
+      Authorization: "Bearer " + token
+    }
+  });
+
+  if (!res.ok) {
+    lista.innerHTML = "Erro ao carregar subscrições.";
+    return;
+  }
+
+  const subscricoes = await res.json();
+
+  renderSubscricoes(subscricoes);
+}
+
+function renderSubscricoes(subscricoes) {
+
+  const lista = document.getElementById("listaSubscricoes");
+  lista.innerHTML = "";
+
+  if (!subscricoes.length) {
+    lista.innerHTML = "Você não possui subscrições.";
+    return;
+  }
+
+  subscricoes.forEach(v => {
+
+    const ativa = v.ativo && new Date(v.expiration_at) > new Date();
+
+    const statusBadge = ativa
+      ? `<span class="badge-status badge-ativa">Ativa</span>`
+      : `<span class="badge-status badge-expirada">Expirada</span>`;
+
+    const card = document.createElement("div");
+    card.className = "sub-vip-card";
+
+    card.innerHTML = `
+      <div class="sub-vip-info">
+
+        ${statusBadge}
+
+        <div class="transacao-tipo">
+          Subscrição VIP
+        </div>
+
+        <div>
+          <strong>Criadora:</strong> ${v.modelo}
+        </div>
+
+        <div>
+          <strong>Data da assinatura/renovação:</strong>
+          ${new Date(v.created_at).toLocaleDateString()}
+        </div>
+
+        <div>
+          <strong>Termina em:</strong>
+          ${new Date(v.expiration_at).toLocaleDateString()}
+        </div>
+
+        <div>
+          <strong>Renovação automática:</strong>
+          ${v.recorrente ? "Sim" : "Não"}
+        </div>
+
+        ${
+          ativa
+            ? `<button class="btn-cancelar"
+                 onclick="cancelarSubscricao(${v.id})">
+                 Cancelar subscrição
+               </button>`
+            : `<button class="btn-renovar"
+                 onclick="renovarSubscricao(${v.modelo_id})">
+                 Renovar subscrição
+               </button>`
+        }
+
+      </div>
+    `;
+
+    lista.appendChild(card);
+
+  });
+
 }

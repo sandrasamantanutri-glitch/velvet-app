@@ -2,7 +2,7 @@
 
 <head>
   <meta charset="UTF-8">
-   <title>Extrato de gastos</title>
+   <title>Subscrições e Transações</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="/transacoes.css">
   <link rel="stylesheet" href="/area.css">
@@ -14,7 +14,29 @@
  <section class="area-card">
 
   <button type="button" class="btn-voltar" onclick="history.back()"> <img src="/assets/voltar.png" alt="Voltar"> </button>
+  <div class="tabs">
+        <button class="tab-btn" data-tab="subscricoes">
+      Subscrições
+        </button>
+    <button class="tab-btn ativa" data-tab="transacoes">
+      Transações
+    </button>
+  </div>
 
+  <div id="tab-subscricoes" class="tab-content ativa">
+
+    <h3>Subscrições VIP</h3>
+
+    <p class="transacoes-descricao">
+      Aqui você pode gerir suas assinaturas VIP ativas.
+    </p>
+
+    <div id="listaSubscricoes" class="lista-transacoes">
+      Carregando subscrições...
+    </div>
+  </div>
+
+  <div id="tab-transacoes" class="tab-content">
  <h3>Transações</h3>
  <p class="transacoes-descricao">
   Aqui você pode conferir todos os pagamentos que já fez na plataforma.
@@ -31,6 +53,8 @@
     Carregando transações...
   </div>
   <div id="paginacao" class="paginacao"></div>
+  </div>
+
 
 </section>
 

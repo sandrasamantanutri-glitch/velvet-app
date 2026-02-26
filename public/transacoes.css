@@ -191,3 +191,124 @@
   font-size: 15px;
   line-height: 1.6;
 }
+
+.tabs {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 25px;
+}
+
+.tab-btn {
+  padding: 10px 22px;
+  border-radius: 12px;
+  border: 1px solid #7B2CFF;
+  background: white;
+  color: #7B2CFF;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.tab-btn.ativa {
+  background: #7B2CFF;
+  color: white;
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.ativa {
+  display: block;
+}
+
+/* ===============================
+   SUBSCRIÇÕES VIP
+================================ */
+
+.sub-vip-card {
+  background: #F8F5FF;
+  border: 1px solid #E2D8FF;
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 8px 25px rgba(123, 44, 255, 0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  transition: 0.2s ease;
+}
+
+.sub-vip-card:hover {
+  transform: translateY(-2px);
+}
+
+.sub-vip-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.sub-vip-info strong {
+  color: #1E1E26;
+}
+
+/* ===============================
+   BADGES
+================================ */
+
+.badge-status {
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+
+.badge-ativa {
+  background: #E6F8ED;
+  color: #1E1E26;
+}
+
+.badge-expirada {
+  background: #FFEAEA;
+  color: #C62828;
+}
+
+/* ===============================
+   BOTÕES VIP
+================================ */
+
+.btn-cancelar {
+  background: #FFEAEA;
+  color: #C62828;
+  border: 1px solid #C62828;
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.btn-cancelar:hover {
+  background: #C62828;
+  color: white;
+}
+
+.btn-renovar {
+  background: #7B2CFF;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.btn-renovar:hover {
+  opacity: 0.9;
+}
