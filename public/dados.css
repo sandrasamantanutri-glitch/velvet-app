@@ -322,7 +322,6 @@ a {
 
 }
 
-/* Fundo escuro */
 .modal-validacao {
   position: fixed;
   inset: 0;
@@ -336,16 +335,16 @@ a {
 .modal-validacao .modal-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(4px);
+  background: #fff;
   animation: fadeIn 0.2s ease;
+  color: #1c1c1f;;
 }
 
 /* Caixa */
 .modal-validacao .modal-box {
   position: relative;
-  background: fff;
-  color: #1c1c1f;;
+  background: #fff;
+  color: #1c1c1f;
   width: 90%;
   max-width: 420px;
   padding: 28px;
@@ -360,6 +359,7 @@ a {
   margin-bottom: 14px;
   font-size: 20px;
   font-weight: 600;
+  color: #7b2cff;
 }
 
 /* Texto */
@@ -367,7 +367,7 @@ a {
   font-size: 14px;
   line-height: 1.6;
   margin-bottom: 10px;
-  color: #cfcfcf;
+  color: #1c1c1f;
 }
 
 /* Link */
