@@ -2,6 +2,8 @@ let todasTransacoes = [];
 let paginaAtual = 1;
 const itensPorPagina = 10;
 
+const token = localStorage.getItem("token");
+
 document.addEventListener("DOMContentLoaded", async () => {
 const tabs = document.querySelectorAll(".tab-btn");
 
@@ -52,7 +54,6 @@ tabs.forEach(btn => {
 // CARREGAR
 // ================================
 async function carregarTransacoes() {
-  const token = localStorage.getItem("token");
   const lista = document.getElementById("listaTransacoes");
 
   const res = await fetch("/api/cliente/transacoes", {
@@ -169,7 +170,6 @@ function reclamar(id, tipo) {
 }
 
 async function carregarSubscricoes() {
- const token = localStorage.getItem("token");
  const lista = document.getElementById("listaSubscricoes");
 
   const res = await fetch("/api/cliente/subscricoes", {
@@ -189,7 +189,6 @@ async function carregarSubscricoes() {
 }
 
 function renderSubscricoes(subscricoes) {
-
   const lista = document.getElementById("listaSubscricoes");
   lista.innerHTML = "";
 
