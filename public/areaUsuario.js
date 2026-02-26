@@ -690,7 +690,7 @@ formModelo?.addEventListener("submit", async (e) => {
     };
   }
 
-  const res = await fetch("/api/usuario/perfil", {
+ const res = await fetch(endpoint, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
