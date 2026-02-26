@@ -206,12 +206,20 @@ async function carregarPerfilBase(usuario) {
   const perfil = await res.json();
 
   // 📸 AVATAR
-  const avatar = document.getElementById("profileAvatar");
-  if (avatar && perfil.avatar) avatar.src = perfil.avatar;
+const avatar = document.getElementById("profileAvatar");
+if (avatar) {
+  avatar.src = perfil.avatar
+    ? perfil.avatar + "?t=" + Date.now()
+    : "/assets/avatar.png";
+}
 
   // 🖼️ CAPA
-  const capa = document.getElementById("profileCapa");
-  if (capa && perfil.capa) capa.src = perfil.capa;
+const capa = document.getElementById("profileCapa");
+if (capa) {
+  capa.src = perfil.capa
+    ? perfil.capa + "?t=" + Date.now()
+    : "/assets/capa.png";
+}
 
   // 👤 NOME
   const profileName = document.getElementById("profileName");

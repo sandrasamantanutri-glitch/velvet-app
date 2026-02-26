@@ -432,6 +432,7 @@ async function iniciarPerfil() {
 }
 
 function aplicarPerfilNoDOM(modelo) {
+  console.log("Avatar vindo do backend:", modelo.avatar);
 
   if (nomeEl)
     nomeEl.textContent = modelo.nome_exibicao || "";

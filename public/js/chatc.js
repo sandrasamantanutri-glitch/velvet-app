@@ -195,7 +195,10 @@ socket.on("chatHistory", mensagens => {
 
 // 💬 NOVA MENSAGEM
 socket.on("newMessage", msg => {
-  if (Number(msg.modelo_id) !== Number(modelo_id)) return;
+if (
+  Number(msg.modelo_id) !== Number(modelo_id) ||
+  Number(msg.cliente_id) !== Number(cliente_id)
+) return;
 
   renderMensagem(msg);
  if (msg.sender === "modelo") {
@@ -219,6 +222,7 @@ if (status) {
 
   fecharPopupPix();
 
+  const card = document.querySelector(`[data-id="${message_id}"]`);
   if (!card) {
   console.warn("Card não encontrado, forçando refresh do histórico");
   socket.emit("getHistory", { cliente_id, modelo_id });
@@ -263,8 +267,6 @@ if (toast) {
   }, 3000);
 }
 
- card.classList.remove("bloqueado");
-card.classList.add("livre");
 card.removeAttribute("data-preco");
 });
 
