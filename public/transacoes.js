@@ -59,7 +59,7 @@ async function carregarTransacoes() {
   const token = localStorage.getItem("token");
   const lista = document.getElementById("listaTransacoes");
 
-  const res = await fetch("/api/cliente", {
+  const res = await fetch("/api/cliente/transacoes", {
     headers: {
       Authorization: "Bearer " + token
     }
