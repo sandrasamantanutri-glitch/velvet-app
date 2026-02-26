@@ -641,6 +641,8 @@ if (!res.ok) {
   alert("Dados pessoais salvos com sucesso");
 });
 
+const formModelo = document.getElementById("formDadosUsuario");
+
 formModelo?.addEventListener("submit", async (e) => {
   e.preventDefault();
 
