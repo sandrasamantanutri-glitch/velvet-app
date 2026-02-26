@@ -633,43 +633,45 @@ formModelo?.addEventListener("submit", async (e) => {
   const usuario = getUsuarioLogado();
   if (!usuario) return;
 
-  const token = localStorage.getItem("token");
+  const formData = new FormData(formModelo);
 
-  // 🔥 Define endpoint baseado no role
-  const endpoint =
-    usuario.role === "modelo"
-      ? "/api/usuario/perfil"
-      : "/api/cliente/dados";
+  let dados;
+  let endpoint;
+  let method = "PUT";
 
-  const method =
-    usuario.role === "modelo"
-      ? "PUT"
-      : "POST";
+  if (usuario.role === "modelo") {
+    dados = {
+      nome_exibicao: formData.get("nome_exibicao")?.trim() || "",
+      instagram: normalizarInstagram(formData.get("instagram") || ""),
+      tiktok: formData.get("tiktok")?.trim() || "",
+      local: formData.get("local")?.trim() || "",
+      bio: formData.get("bio")?.trim() || ""
+    };
 
-  const dados =
-    usuario.role === "modelo"
-      ? {
-          nome_exibicao: formModelo.nome_exibicao.value.trim(),
-          instagram: normalizarInstagram(formModelo.instagram.value),
-          tiktok: formModelo.tiktok.value.trim(),
-          local: formModelo.local.value.trim(),
-          bio: formModelo.bio.value.trim()
-        }
-      : {
-          username: formModelo.username.value.trim()
-        };
+    if (!dados.nome_exibicao) {
+      alert("O nome de exibição é obrigatório");
+      return;
+    }
 
-  // validação modelo
-  if (usuario.role === "modelo" && !dados.nome_exibicao) {
-    alert("O nome de exibição é obrigatório");
-    return;
+    endpoint = "/api/usuario/perfil";
+  } else {
+    dados = {
+      username: formData.get("username")?.trim() || ""
+    };
+
+    if (!dados.username) {
+      alert("O username é obrigatório");
+      return;
+    }
+
+    endpoint = "/api/cliente/dados";
   }
 
   const res = await fetch(endpoint, {
     method,
     headers: {
       "Content-Type": "application/json",
-      Authorization: "Bearer " + token
+      Authorization: "Bearer " + localStorage.getItem("token")
     },
     body: JSON.stringify(dados)
   });
@@ -680,7 +682,7 @@ formModelo?.addEventListener("submit", async (e) => {
   }
 
   alert("Dados salvos com sucesso");
-
+  
   // 🔄 Recarrega dados visuais
   await carregarPerfilBase(usuario);
 });
