@@ -7,7 +7,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   document
     .getElementById("filtroTipo")
-    .addEventListener("change", aplicarFiltros);
+    const filtro = document.getElementById("filtroTipo");
+
+if (filtro) {
+  filtro.addEventListener("change", aplicarFiltros);
+}
 });
 
 // ================================
@@ -17,7 +21,7 @@ async function carregarTransacoes() {
   const token = localStorage.getItem("token");
   const lista = document.getElementById("listaTransacoes");
 
-  const res = await fetch("/api/transacoes_cliente", {
+  const res = await fetch("/api/cliente/transacoes", {
     headers: {
       Authorization: "Bearer " + token
     }
