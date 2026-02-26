@@ -4031,24 +4031,52 @@ app.post("/api/cliente/dados", authCliente, async (req, res) => {
       data_nascimento,
       pais,
       nome_cartao,
-      ultimos4_cartao,
-      bandeira_cartao
+      nome_exibicao,
+      instagram,
+      tiktok,
+      local,
+      bio,
+      avatar,
+      avatar_thumb,
+      capa
     } = req.body;
 
     await db.query(`
-      INSERT INTO clientes_dados
-        (cliente_id, username, nome_completo, data_nascimento, pais,
-         nome_cartao, ultimos4_cartao, bandeira_cartao)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+      INSERT INTO clientes_dados (
+        cliente_id,
+        username,
+        nome_completo,
+        data_nascimento,
+        pais,
+        nome_exibicao,
+        instagram,
+        tiktok,
+        local,
+        bio,
+        avatar,
+        avatar_thumb,
+        capa,
+        criado_em,
+        atualizado_em
+      )
+      VALUES (
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,
+        NOW(),NOW()
+      )
       ON CONFLICT (cliente_id)
       DO UPDATE SET
         username = EXCLUDED.username,
         nome_completo = EXCLUDED.nome_completo,
         data_nascimento = EXCLUDED.data_nascimento,
         pais = EXCLUDED.pais,
-        nome_cartao = EXCLUDED.nome_cartao,
-        ultimos4_cartao = EXCLUDED.ultimos4_cartao,
-        bandeira_cartao = EXCLUDED.bandeira_cartao,
+        nome_exibicao = EXCLUDED.nome_exibicao,
+        instagram = EXCLUDED.instagram,
+        tiktok = EXCLUDED.tiktok,
+        local = EXCLUDED.local,
+        bio = EXCLUDED.bio,
+        avatar = EXCLUDED.avatar,
+        avatar_thumb = EXCLUDED.avatar_thumb,
+        capa = EXCLUDED.capa,
         atualizado_em = NOW()
     `, [
       req.cliente_id,
@@ -4056,9 +4084,14 @@ app.post("/api/cliente/dados", authCliente, async (req, res) => {
       nome_completo,
       data_nascimento,
       pais,
-      nome_cartao || null,
-      ultimos4_cartao || null,
-      bandeira_cartao || null
+      nome_exibicao || null,
+      instagram || null,
+      tiktok || null,
+      local || null,
+      bio || null,
+      avatar || null,
+      avatar_thumb || null,
+      capa || null
     ]);
 
     res.json({ success: true });
@@ -4068,7 +4101,6 @@ app.post("/api/cliente/dados", authCliente, async (req, res) => {
     res.status(500).json({ error: "Erro interno" });
   }
 });
-
 
 app.put("/api/usuario/dados", auth, async (req, res) => {
   try {
