@@ -727,12 +727,12 @@ inputAvatar?.addEventListener("change", async () => {
     });
 
     const data = await res.json();
-
-    if (data.url && avatarImg) {
-      avatarImg.src = data.url;
-    } else {
-      alert("Erro ao atualizar avatar");
-    }
+  
+  if (data.avatar && avatarImg) {
+  avatarImg.src = data.avatar + "?t=" + Date.now(); // evita cache
+} else {
+  alert("Erro ao atualizar avatar");
+}
 
   } catch (err) {
     console.error("Erro upload avatar:", err);
