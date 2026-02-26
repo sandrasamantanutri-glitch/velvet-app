@@ -344,8 +344,8 @@ a {
 /* Caixa */
 .modal-validacao .modal-box {
   position: relative;
-  background: #1c1c1f;
-  color: #fff;
+  background: fff;
+  color: #1c1c1f;;
   width: 90%;
   max-width: 420px;
   padding: 28px;
@@ -372,7 +372,7 @@ a {
 
 /* Link */
 .modal-validacao a {
-  color: #a855f7;
+  color: #7b2cff;;
   font-weight: 600;
   text-decoration: none;
 }
