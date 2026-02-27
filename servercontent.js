@@ -1953,6 +1953,10 @@ router.get("/admin/dashboard", auth, authAdmin, async (req, res) => {
           THEN (velvet_fee + agency_fee + taxa_gateway)
         END),0) AS total_mes,
 
+                COALESCE(SUM(CASE 
+          WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
+          THEN valor_modelo END),0) AS modelo_mes,
+
         /* ================= ANO ================= */
 
         COALESCE(SUM(CASE 
