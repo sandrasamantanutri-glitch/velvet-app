@@ -1932,61 +1932,55 @@ router.get("/agencia/me", authAgencia, async (req,res)=>{
   res.json(result.rows[0]);
 });
 
-router.get("/agencia/dashboard", async (req, res) => {
+router.get("/agencia/dashboard", authAgencia, async (req, res) => {
   try {
 
     const agencia_id = req.agencia.id;
 
     const result = await db.query(`
       SELECT
-        /* ================= HOJE ================= */
         COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN agency_fee END),0) AS agencia_hoje,
-
-        /* ================= MÊS ================= */
         COALESCE(SUM(CASE 
           WHEN DATE_TRUNC('month', data_sp) = DATE_TRUNC('month', CURRENT_DATE)
           THEN agency_fee END),0) AS agencia_mes,
-
-        /* ================= ANO ================= */
         COALESCE(SUM(CASE 
           WHEN DATE_TRUNC('year', data_sp) = DATE_TRUNC('year', CURRENT_DATE)
           THEN agency_fee END),0) AS agencia_ano
-
       FROM (
 
-        /* ================= NOVO PADRÃO ================= */
+        /* NOVO PADRÃO */
         SELECT
-          agency_fee,
-          (created_at AT TIME ZONE 'UTC'
+          ta.agency_fee,
+          (ta.created_at AT TIME ZONE 'UTC'
            AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
-        FROM transacoes_agency
-        WHERE status = 'pago'
-          AND agencia_id = $1
+        FROM transacoes_agency ta
+        JOIN modelos m ON m.id = ta.modelo_id
+        WHERE ta.status = 'pago'
+          AND m.agencia_id = $1
 
         UNION ALL
 
-        /* ================= DADOS ANTIGOS ================= */
-SELECT
-  ROUND(valor_bruto * 0.85 * 0.10,2) AS agency_fee,
-  (created_at AT TIME ZONE 'UTC'
-   AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
-FROM transacoes t
-JOIN modelos m ON m.id = t.modelo_id
-WHERE t.status = 'pago'
-  AND m.agencia_id = $1
+        /* DADOS ANTIGOS */
+        SELECT
+          ROUND(t.valor_bruto * 0.85 * 0.10,2) AS agency_fee,
+          (t.created_at AT TIME ZONE 'UTC'
+           AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
+        FROM transacoes t
+        JOIN modelos m ON m.id = t.modelo_id
+        WHERE t.status = 'pago'
+          AND m.agencia_id = $1
 
       ) t
     `, [agencia_id]);
 
     res.json({
-      midias_hoje: 0,          // se quiser separar depois
-      assinaturas_hoje: 0,
-      midias_mes: 0,
-      assinaturas_mes: 0,
-
       total_hoje: result.rows[0].agencia_hoje,
       total_mes: result.rows[0].agencia_mes,
-      total_ano: result.rows[0].agencia_ano
+      total_ano: result.rows[0].agencia_ano,
+      midias_hoje: 0,
+      assinaturas_hoje: 0,
+      midias_mes: 0,
+      assinaturas_mes: 0
     });
 
   } catch (err) {
