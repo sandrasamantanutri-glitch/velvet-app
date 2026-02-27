@@ -146,28 +146,30 @@ function criarGrafico(data){
         "Total Ano"
       ],
       datasets: [{
-        label: "Receita Agência",
-        data: [
-          data.midias_hoje || 0,
-          data.assinaturas_hoje || 0,
-          data.midias_mes || 0,
-          data.assinaturas_mes || 0,
-          data.total_hoje || 0,
-          data.total_mes || 0,
-          data.total_ano || 0
-        ],
-        borderRadius: 8
-      }]
-    },
-    options:{
-      plugins:{ legend:{ display:false }},
-      scales:{
-        y:{ ticks:{ color:"#aaa" }},
-        x:{ ticks:{ color:"#aaa" }}
-      }
+  label: "Receita Agência",
+  data: [
+    data.midias_hoje || 0,        // mídia
+    data.assinaturas_hoje || 0,   // assinatura
+    data.midias_mes || 0,         // mídia
+    data.assinaturas_mes || 0,    // assinatura
+    data.total_hoje || 0,
+    data.total_mes || 0,
+    data.total_ano || 0
+  ],
+  backgroundColor: [
+    "#4da6ff", // mídia hoje
+    "#ff7a59", // assinatura hoje
+    "#4da6ff", // mídia mês
+    "#ff7a59", // assinatura mês
+    "#888888", // total hoje
+    "#888888", // total mês
+    "#888888"  // total ano
+  ],
+  borderRadius: 8
+}]
     }
   });
-}
+
 
 
 async function carregarModelos(){
