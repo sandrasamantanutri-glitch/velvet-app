@@ -39,10 +39,6 @@
       <strong id="agenciaDia"></strong>
     </div>
 
-    <div class="linha">
-      <span>Plataforma:</span>
-      <strong id="velvetDia"></strong>
-    </div>
   </div>
 
   <!-- MÊS -->
@@ -57,11 +53,6 @@
     <div class="linha">
       <span>Agência:</span>
       <strong id="agenciaMes"></strong>
-    </div>
-
-    <div class="linha">
-      <span>Plataforma:</span>
-      <strong id="velvetMes"></strong>
     </div>
   </div>
 
@@ -79,10 +70,6 @@
       <strong id="agenciaAno"></strong>
     </div>
 
-    <div class="linha">
-      <span>Plataforma:</span>
-      <strong id="velvetAno"></strong>
-    </div>
   </div>
 
 </div>
@@ -103,9 +90,6 @@
 
   <br>
 
-  <div class="valor">Velvet: <span id="valorVelvet">20%</span></div>
-
-  <br>
 
   <button onclick="salvarPercentual()" 
     style="padding:12px 20px;
@@ -160,18 +144,12 @@ async function carregar(){
   document.getElementById("agenciaMes").innerText =
     "R$ "+Number(data.agencia_mes||0).toFixed(2);
 
-  document.getElementById("velvetMes").innerText =
-    "R$ "+Number(data.velvet_mes||0).toFixed(2);
-
   // ANO
   document.getElementById("modeloAno").innerText =
     "R$ "+Number(data.modelo_ano||0).toFixed(2);
 
   document.getElementById("agenciaAno").innerText =
     "R$ "+Number(data.agencia_ano||0).toFixed(2);
-
-  document.getElementById("velvetAno").innerText =
-    "R$ "+Number(data.velvet_ano||0).toFixed(2);
 }
 carregar();
 
@@ -194,7 +172,6 @@ function atualizar(){
 
   document.getElementById("valorModelo").innerText = modelo + "%";
   document.getElementById("valorAgencia").innerText = agencia + "%";
-  document.getElementById("valorVelvet").innerText = velvet + "%";
   document.getElementById("msgPercentual").innerText = "";
 }
 
