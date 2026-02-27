@@ -1939,16 +1939,48 @@ router.get("/agencia/dashboard", authAgencia, async (req, res) => {
 
     const result = await db.query(`
       SELECT
-        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN agency_fee END),0) AS agencia_hoje,
+
+        /* ================= HOJE ================= */
+
+        COALESCE(SUM(CASE 
+          WHEN data_sp = CURRENT_DATE AND tipo = 'midia'
+          THEN agency_fee END),0) AS midias_hoje,
+
+        COALESCE(SUM(CASE 
+          WHEN data_sp = CURRENT_DATE AND tipo = 'assinatura'
+          THEN agency_fee END),0) AS assinaturas_hoje,
+
+        /* ================= MÊS ================= */
+
         COALESCE(SUM(CASE 
           WHEN DATE_TRUNC('month', data_sp) = DATE_TRUNC('month', CURRENT_DATE)
-          THEN agency_fee END),0) AS agencia_mes,
+          AND tipo = 'midia'
+          THEN agency_fee END),0) AS midias_mes,
+
+        COALESCE(SUM(CASE 
+          WHEN DATE_TRUNC('month', data_sp) = DATE_TRUNC('month', CURRENT_DATE)
+          AND tipo = 'assinatura'
+          THEN agency_fee END),0) AS assinaturas_mes,
+
+        /* ================= TOTAIS ================= */
+
+        COALESCE(SUM(CASE 
+          WHEN data_sp = CURRENT_DATE
+          THEN agency_fee END),0) AS total_hoje,
+
+        COALESCE(SUM(CASE 
+          WHEN DATE_TRUNC('month', data_sp) = DATE_TRUNC('month', CURRENT_DATE)
+          THEN agency_fee END),0) AS total_mes,
+
         COALESCE(SUM(CASE 
           WHEN DATE_TRUNC('year', data_sp) = DATE_TRUNC('year', CURRENT_DATE)
-          THEN agency_fee END),0) AS agencia_ano
+          THEN agency_fee END),0) AS total_ano
+
       FROM (
 
+        /* ================= NOVO PADRÃO ================= */
         SELECT
+          ta.tipo,
           ta.agency_fee,
           (ta.created_at AT TIME ZONE 'UTC'
            AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
@@ -1959,7 +1991,9 @@ router.get("/agencia/dashboard", authAgencia, async (req, res) => {
 
         UNION ALL
 
+        /* ================= DADOS ANTIGOS ================= */
         SELECT
+          t.tipo,
           ROUND(t.valor_bruto * 0.85 * 0.10,2) AS agency_fee,
           (t.created_at AT TIME ZONE 'UTC'
            AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
@@ -1968,25 +2002,16 @@ router.get("/agencia/dashboard", authAgencia, async (req, res) => {
         WHERE t.status = 'pago'
           AND m.agencia_id = $1
 
-      ) AS dados
+      ) dados
     `, [agencia_id]);
 
-    res.json({
-      total_hoje: result.rows[0].agencia_hoje,
-      total_mes: result.rows[0].agencia_mes,
-      total_ano: result.rows[0].agencia_ano,
-      midias_hoje: 0,
-      assinaturas_hoje: 0,
-      midias_mes: 0,
-      assinaturas_mes: 0
-    });
+    res.json(result.rows[0]);
 
   } catch (err) {
     console.error("Erro dashboard agência:", err);
     res.status(500).json({ error: "Erro ao carregar dashboard" });
   }
 });
-
 
 router.get("/admin/modelo/:id", auth, authAdmin, async (req,res)=>{
 
