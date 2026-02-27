@@ -538,7 +538,6 @@ console.log("============================================");
 /* =====================================================
 3️⃣ VALIDAR VALOR
 ===================================================== */
-const valorTotalMeta = Number(metadata.valor_total || 0);
 const valorComparacao = valorTotalMeta || Number(charge.amount) / 100;
 
 if (Number(valorComparacao) !== Number(valor)) {
