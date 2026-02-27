@@ -76,24 +76,24 @@
 <script>
 const token = localStorage.getItem("token_agencia");
 
-// async function carregarNomeAgencia(){
-//   const res = await fetch("/api/agencia/me",{
-//     headers:{
-//       Authorization:"Bearer "+token
-//     }
-//   });
+async function carregarNomeAgencia(){
+  const res = await fetch("/api/agencia/me",{
+    headers:{
+      Authorization:"Bearer "+token
+    }
+  });
 
-//   if(!res.ok){
-//     window.location.href="/agencia/login.html";
-//     return;
-//   }
+  if(!res.ok){
+    window.location.href="/agencia/login.html";
+    return;
+  }
 
-//   const data = await res.json();
+  const data = await res.json();
 
-//   document.getElementById("nomeAgencia").innerText = data.nome;
-// }
+  document.getElementById("nomeAgencia").innerText = data.nome;
+}
 
-// carregarNomeAgencia();
+carregarNomeAgencia();
 
 async function carregarDashboard() {
 
