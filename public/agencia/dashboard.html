@@ -27,6 +27,7 @@
 </header>
 
 <div class="cards">
+<h2 id="nomeAgencia" class="nome-agencia"></h2>
 
   <div class="card">
     <h4>Mídias Hoje</h4>
@@ -75,12 +76,6 @@
 
 <script>
 const token = localStorage.getItem("token_agencia");
-
-async function carregarNomeAgencia(){
-document.getElementById("nomeAgencia").innerText = data.nome;
-}
-
-carregarNomeAgencia();
 
 async function carregarDashboard() {
 
@@ -194,6 +189,22 @@ function irModelo(){
   if(id) window.location.href="modelo.html?id="+id;
 }
 
+async function carregarAgencia(){
+  const res = await fetch("/api/agencia/me", {
+    headers:{ Authorization:"Bearer "+token }
+  });
+
+  if(!res.ok) return;
+
+  const data = await res.json();
+
+  const el = document.getElementById("nomeAgencia");
+  if(el){
+    el.innerText = data.nome;
+  }
+}
+
+carregarAgencia();
 carregarDashboard();
 carregarModelos();
 </script>

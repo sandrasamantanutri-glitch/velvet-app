@@ -318,5 +318,12 @@ tr:nth-child(even){
   100% { opacity: 0.5; }
 }
 
+.nome-agencia {
+  text-align: center;
+  font-size: 22px;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
 
 
