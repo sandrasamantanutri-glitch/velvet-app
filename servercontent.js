@@ -1932,7 +1932,7 @@ router.get("/agencia/me", authAgencia, async (req,res)=>{
   res.json(result.rows[0]);
 });
 
-router.get("/agencia/dashboard", authAgencia, async (req, res) => {
+router.get("/agencia/dashboard", auth, authAgencia, async (req, res) => {
   try {
 
     const agencia_id = req.agencia.id;
