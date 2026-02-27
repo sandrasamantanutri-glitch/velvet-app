@@ -894,6 +894,7 @@ async function buscarFeedCompletoPorModeloId(modelo_id) {
       criado_em
     FROM conteudos
     WHERE modelo_id = $1
+      AND ativo = TRUE   -- 🔥 FILTRO QUE FALTAVA
       AND (
         tipo_conteudo != 'venda'
         OR (tipo_conteudo = 'venda' AND COALESCE(preco, 0) > 0)
