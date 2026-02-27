@@ -89,11 +89,11 @@ async function carregarDashboard() {
       headers: { Authorization: "Bearer " + token }
     });
 
-    if (!res.ok) {
-      console.error("Erro API dashboard:", res.status);
-      window.location.href = "/agencia/login.html";
-      return;
-    }
+    // if (!res.ok) {
+    //   console.error("Erro API dashboard:", res.status);
+    //   window.location.href = "/agencia/login.html";
+    //   return;
+    // }
 
     const data = await res.json();
 
