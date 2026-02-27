@@ -6212,7 +6212,7 @@ app.post(
 
         if (tipo === "video") {
           try {
-            thumbnail_url = await gerarThumbnailVideo(url);
+            thumbnail_url = await gerarThumbnailVideo(file.buffer, modelo_id);
           } catch (err) {
             console.error("Erro ao gerar thumbnail:", err);
           }
