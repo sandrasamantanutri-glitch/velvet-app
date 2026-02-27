@@ -464,6 +464,7 @@ app.post(
     const charge = event.data;
     const metadata = charge.metadata || {};
     const orderId = charge.order?.id;
+    const valorPago = charge.amount / 100;
     const valorTotalMeta = Number(metadata.valor_total || 0);
 
     // 🔎 DEBUG AQUI
