@@ -17,6 +17,12 @@
       <a href="/agencia/pagamentos.html">Pagamentos</a>
     </nav>
   </div>
+
+    <div class="topbar-right">
+    <select id="modeloSelect" onchange="irModelo()">
+      <option value="">Selecionar Modelo</option>
+    </select>
+  </div>
 </header>
 
 <div class="main">
@@ -149,6 +155,25 @@ async function carregar(){
     "R$ "+Number(data.agencia_ano||0).toFixed(2);
 }
 carregar();
+
+async function carregarModelos(){
+  const res = await fetch("/api/agencia/modelos",{
+    headers:{ Authorization:"Bearer "+token }
+  });
+
+  const modelos = await res.json();
+
+  const select = document.getElementById("modeloSelect");
+
+  modelos.forEach(m=>{
+    select.innerHTML += `<option value="${m.id}">${m.nome}</option>`;
+  });
+}
+
+function irModelo(){
+  const id = document.getElementById("modeloSelect").value;
+  if(id) window.location.href="modelo.html?id="+id;
+}
 
 // const rangeModelo = document.getElementById("rangeModelo");
 // const rangeAgencia = document.getElementById("rangeAgencia");
