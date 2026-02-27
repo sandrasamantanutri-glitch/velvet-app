@@ -1232,7 +1232,3 @@ async function excluirPacoteConteudo(message_id) {
     alert("Erro inesperado.");
   }
 }
-
-
-
-

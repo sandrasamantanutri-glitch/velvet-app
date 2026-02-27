@@ -302,7 +302,6 @@ if (cpf) cpf.value = "";
 
 // ===============================
 // FUNÇÕES
-// 💰 FORMATA VALORES EM REAL (R$)
 function valorBRL(valor) {
   return Number(valor).toLocaleString("pt-BR", {
     style: "currency",
