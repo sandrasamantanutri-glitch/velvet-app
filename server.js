@@ -907,26 +907,20 @@ async function buscarFeedCompletoPorModeloId(modelo_id) {
   return result.rows;
 }
 
-async function gerarThumbnailVideo(videoUrl, modelo_id) {
+async function gerarThumbnailVideo(videoBuffer, modelo_id) {
 
   const timestamp = Date.now();
   const tmpDir = os.tmpdir();
 
-  const videoPath = path.join(tmpDir, `video-${timestamp}.mp4`);
+  const videoPath = path.join(tmpDir, `video-${timestamp}.tmp`);
   const thumbPath = path.join(tmpDir, `thumb-${timestamp}.jpg`);
 
   try {
 
-    // 1️⃣ Download vídeo
-    const response = await fetch(videoUrl);
-    if (!response.ok) {
-      throw new Error("Falha ao baixar vídeo");
-    }
+    // 1️⃣ Salva o buffer direto (sem baixar do B2)
+    fs.writeFileSync(videoPath, videoBuffer);
 
-    const buffer = Buffer.from(await response.arrayBuffer());
-    fs.writeFileSync(videoPath, buffer);
-
-    // 2️⃣ Gerar thumb
+    // 2️⃣ Gera thumbnail
     await new Promise((resolve, reject) => {
       ffmpeg(videoPath)
         .screenshots({
@@ -939,12 +933,12 @@ async function gerarThumbnailVideo(videoUrl, modelo_id) {
         .on("error", reject);
     });
 
-    // 3️⃣ Upload Backblaze
+    // 3️⃣ Upload da thumb para o B2
     const thumbBuffer = fs.readFileSync(thumbPath);
 
     const upload = await s3.upload({
       Bucket: process.env.B2_BUCKET,
-      Key: `modelos/${modelo_id}/thumbs/${timestamp}.jpg`,
+      Key: `velvet/modelos/${modelo_id}/thumbs/${timestamp}.jpg`,
       Body: thumbBuffer,
       ContentType: "image/jpeg",
       ACL: "public-read"
@@ -953,7 +947,6 @@ async function gerarThumbnailVideo(videoUrl, modelo_id) {
     return upload.Location;
 
   } finally {
-    // 4️⃣ Limpeza garantida
     if (fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
     if (fs.existsSync(thumbPath)) fs.unlinkSync(thumbPath);
   }
@@ -1060,7 +1053,7 @@ app.post(
 
         if (tipo === "video") {
           try {
-            thumbnailUrl = await gerarThumbnailVideo(publicUrl, modelo_id);
+            thumbnailUrl = await gerarThumbnailVideo(file.buffer, modelo_id);
           } catch (err) {
             console.error("Erro ao gerar thumbnail:", err);
           }
