@@ -1895,7 +1895,7 @@ router.get("/agencia/pagamentos", authAgencia, async (req, res) => {
 });
 
 //AGENCIAS
-router.get("/api/agencia/me", authAgencia, async (req,res)=>{
+router.get("/agencia/me", authAgencia, async (req,res)=>{
   const agencia_id = req.agencia.id;
 
   const result = await db.query(
