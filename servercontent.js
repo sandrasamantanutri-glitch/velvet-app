@@ -1948,29 +1948,27 @@ router.get("/agencia/dashboard", authAgencia, async (req, res) => {
           THEN agency_fee END),0) AS agencia_ano
       FROM (
 
-        /* NOVO PADRÃO */
         SELECT
           ta.agency_fee,
           (ta.created_at AT TIME ZONE 'UTC'
            AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
         FROM transacoes_agency ta
-        JOIN modelos m ON m.id = ta.modelo_id
+        INNER JOIN modelos m ON m.id = ta.modelo_id
         WHERE ta.status = 'pago'
           AND m.agencia_id = $1
 
         UNION ALL
 
-        /* DADOS ANTIGOS */
         SELECT
           ROUND(t.valor_bruto * 0.85 * 0.10,2) AS agency_fee,
           (t.created_at AT TIME ZONE 'UTC'
            AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
         FROM transacoes t
-        JOIN modelos m ON m.id = t.modelo_id
+        INNER JOIN modelos m ON m.id = t.modelo_id
         WHERE t.status = 'pago'
           AND m.agencia_id = $1
 
-      ) t
+      ) AS dados
     `, [agencia_id]);
 
     res.json({
@@ -1988,6 +1986,7 @@ router.get("/agencia/dashboard", authAgencia, async (req, res) => {
     res.status(500).json({ error: "Erro ao carregar dashboard" });
   }
 });
+
 
 router.get("/admin/modelo/:id", auth, authAdmin, async (req,res)=>{
 
