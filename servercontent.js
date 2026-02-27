@@ -1932,93 +1932,64 @@ router.get("/agencia/me", authAgencia, async (req,res)=>{
   res.json(result.rows[0]);
 });
 
-router.get("/agencia/dashboard", auth, authAgencia, async (req, res) => {
+router.get("/agencia/dashboard", authAgencia, async (req, res) => {
   try {
+
+    const agencia_id = req.agencia.id;
 
     const result = await db.query(`
       SELECT
         /* ================= HOJE ================= */
-
-        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN velvet_fee END),0) AS velvet_hoje,
         COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN agency_fee END),0) AS agencia_hoje,
-        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN taxa_gateway END),0) AS gateway_hoje,
-        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN valor_modelo END),0) AS modelo_hoje,
 
         /* ================= MÊS ================= */
-
         COALESCE(SUM(CASE 
-          WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
-          THEN velvet_fee END),0) AS velvet_mes,
-
-        COALESCE(SUM(CASE 
-          WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
+          WHEN DATE_TRUNC('month', data_sp) = DATE_TRUNC('month', CURRENT_DATE)
           THEN agency_fee END),0) AS agencia_mes,
 
-        COALESCE(SUM(CASE 
-          WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
-          THEN taxa_gateway END),0) AS gateway_mes,
-
-        COALESCE(SUM(CASE 
-          WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
-          THEN valor_modelo END),0) AS modelo_mes,
-
-        /* 🔥 TOTAL MÊS (Velvet + Agência + Gateway) */
-        COALESCE(SUM(CASE 
-          WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
-          THEN (velvet_fee + agency_fee + taxa_gateway)
-        END),0) AS total_mes,
-
         /* ================= ANO ================= */
-
         COALESCE(SUM(CASE 
-          WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
-          THEN velvet_fee END),0) AS velvet_ano,
-
-        COALESCE(SUM(CASE 
-          WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
-          THEN agency_fee END),0) AS agencia_ano,
-
-        COALESCE(SUM(CASE 
-          WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
-          THEN taxa_gateway END),0) AS gateway_ano,
-
-        COALESCE(SUM(CASE 
-          WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
-          THEN valor_modelo END),0) AS modelo_ano
+          WHEN DATE_TRUNC('year', data_sp) = DATE_TRUNC('year', CURRENT_DATE)
+          THEN agency_fee END),0) AS agencia_ano
 
       FROM (
 
         /* ================= NOVO PADRÃO ================= */
         SELECT
-          valor_modelo,
-          velvet_fee,
           agency_fee,
-          taxa_gateway,
           (created_at AT TIME ZONE 'UTC'
            AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
         FROM transacoes_agency
         WHERE status = 'pago'
+          AND agencia_id = $1
 
         UNION ALL
 
         /* ================= DADOS ANTIGOS ================= */
         SELECT
-          ROUND(valor_bruto * 0.70,2) AS valor_modelo,
-          ROUND(valor_bruto * 0.20,2) AS velvet_fee,
-          ROUND(valor_bruto * 0.10,2) AS agency_fee,
-          ROUND(valor_bruto * 0.15,2) AS taxa_gateway,
+          ROUND(valor_bruto * 0.85 * 0.10,2) AS agency_fee,
           (created_at AT TIME ZONE 'UTC'
            AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
         FROM transacoes
         WHERE status = 'pago'
+          AND agencia_id = $1
 
       ) t
-    `);
+    `, [agencia_id]);
 
-    res.json(result.rows[0]);
+    res.json({
+      midias_hoje: 0,          // se quiser separar depois
+      assinaturas_hoje: 0,
+      midias_mes: 0,
+      assinaturas_mes: 0,
+
+      total_hoje: result.rows[0].agencia_hoje,
+      total_mes: result.rows[0].agencia_mes,
+      total_ano: result.rows[0].agencia_ano
+    });
 
   } catch (err) {
-    console.error("Erro dashboard admin:", err);
+    console.error("Erro dashboard agência:", err);
     res.status(500).json({ error: "Erro ao carregar dashboard" });
   }
 });
