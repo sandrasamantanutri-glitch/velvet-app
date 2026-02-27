@@ -981,7 +981,7 @@ router.get("/transacoes/origem",
              COUNT(*) AS clientes,
              SUM(valor_bruto) AS total
       FROM transacoes_agency
-      WHERE status = 'normal'
+      WHERE status = 'pago'
       GROUP BY origem_cliente
     `);
 
@@ -1684,82 +1684,95 @@ router.get("/modelo/conteudos", auth, authModelo, async (req, res) => {
   res.json(result.rows);
 });
 
-router.get("/agencia/dashboard", authAgencia, async (req, res) => {
+router.get("/admin/dashboard", auth, authAdmin, async (req, res) => {
+  try {
 
-  const agencia_id = req.agencia.id;
+    const result = await db.query(`
+      SELECT
+        /* ================= HOJE ================= */
 
-  const result = await db.query(`
-  SELECT
+        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN velvet_fee END),0) AS velvet_hoje,
+        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN agency_fee END),0) AS agencia_hoje,
+        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN taxa_gateway END),0) AS gateway_hoje,
+        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN valor_modelo END),0) AS modelo_hoje,
 
-  -- 🎥 MIDIAS HOJE
-  COALESCE(SUM(CASE
-    WHEN ta.tipo = 'midia'
-    AND (ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')::date
-        = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
-    THEN ta.agency_fee
-  END),0) AS midias_hoje,
+        /* ================= MÊS ================= */
 
-  -- 💎 ASSINATURAS HOJE
-  COALESCE(SUM(CASE
-    WHEN ta.tipo = 'assinatura'
-    AND (ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')::date
-        = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
-    THEN ta.agency_fee
-  END),0) AS assinaturas_hoje,
+        COALESCE(SUM(CASE 
+          WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
+          THEN velvet_fee END),0) AS velvet_mes,
 
-  -- 🎥 MIDIAS MES
-  COALESCE(SUM(CASE
-    WHEN ta.tipo = 'midia'
-    AND DATE_TRUNC('month',
-        ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')
-      = DATE_TRUNC('month',
-        NOW() AT TIME ZONE 'America/Sao_Paulo')
-    THEN ta.agency_fee
-  END),0) AS midias_mes,
+        COALESCE(SUM(CASE 
+          WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
+          THEN agency_fee END),0) AS agencia_mes,
 
-  -- 💎 ASSINATURAS MES
-  COALESCE(SUM(CASE
-    WHEN ta.tipo = 'assinatura'
-    AND DATE_TRUNC('month',
-        ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')
-      = DATE_TRUNC('month',
-        NOW() AT TIME ZONE 'America/Sao_Paulo')
-    THEN ta.agency_fee
-  END),0) AS assinaturas_mes,
+        COALESCE(SUM(CASE 
+          WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
+          THEN taxa_gateway END),0) AS gateway_mes,
 
-  -- 💰 TOTAL HOJE
-  COALESCE(SUM(CASE
-    WHEN (ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')::date
-        = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
-    THEN ta.agency_fee
-  END),0) AS total_hoje,
+        COALESCE(SUM(CASE 
+          WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
+          THEN valor_modelo END),0) AS modelo_mes,
 
-  -- 💰 TOTAL MES
-  COALESCE(SUM(CASE
-    WHEN DATE_TRUNC('month',
-        ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')
-      = DATE_TRUNC('month',
-        NOW() AT TIME ZONE 'America/Sao_Paulo')
-    THEN ta.agency_fee
-  END),0) AS total_mes,
+        /* 🔥 TOTAL MÊS (Velvet + Agência + Gateway) */
+        COALESCE(SUM(CASE 
+          WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
+          THEN (velvet_fee + agency_fee + taxa_gateway)
+        END),0) AS total_mes,
 
-  -- 💰 TOTAL ANO
-  COALESCE(SUM(CASE
-    WHEN DATE_TRUNC('year',
-        ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')
-      = DATE_TRUNC('year',
-        NOW() AT TIME ZONE 'America/Sao_Paulo')
-    THEN ta.agency_fee
-  END),0) AS total_ano
+        /* ================= ANO ================= */
 
-FROM transacoes_agency ta
-JOIN modelos m ON m.id = ta.modelo_id
-WHERE m.agencia_id = $1
-  AND ta.status = 'pago';
-`, [agencia_id]);
+        COALESCE(SUM(CASE 
+          WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
+          THEN velvet_fee END),0) AS velvet_ano,
 
-  res.json(result.rows[0]);
+        COALESCE(SUM(CASE 
+          WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
+          THEN agency_fee END),0) AS agencia_ano,
 
+        COALESCE(SUM(CASE 
+          WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
+          THEN taxa_gateway END),0) AS gateway_ano,
+
+        COALESCE(SUM(CASE 
+          WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
+          THEN valor_modelo END),0) AS modelo_ano
+
+      FROM (
+
+        /* ================= NOVO PADRÃO ================= */
+        SELECT
+          valor_modelo,
+          velvet_fee,
+          agency_fee,
+          taxa_gateway,
+          (created_at AT TIME ZONE 'UTC'
+           AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
+        FROM transacoes_agency
+        WHERE status = 'pago'
+
+        UNION ALL
+
+        /* ================= DADOS ANTIGOS ================= */
+        SELECT
+          ROUND(valor_bruto * 0.70,2) AS valor_modelo,
+          ROUND(valor_bruto * 0.20,2) AS velvet_fee,
+          ROUND(valor_bruto * 0.10,2) AS agency_fee,
+          ROUND(valor_bruto * 0.15,2) AS taxa_gateway,
+          (created_at AT TIME ZONE 'UTC'
+           AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
+        FROM transacoes
+        WHERE status = 'pago'
+
+      ) t
+    `);
+
+    res.json(result.rows[0]);
+
+  } catch (err) {
+    console.error("Erro dashboard admin:", err);
+    res.status(500).json({ error: "Erro ao carregar dashboard" });
+  }
 });
 
 router.get("/agencia/modelos", authAgencia, async (req, res) => {
@@ -1793,67 +1806,69 @@ router.get("/agencia/modelo/:id", authAgencia, async (req, res) => {
         m.id,
         m.nome,
 
-        -- 🔹 DIA
-        COALESCE(SUM(CASE
-          WHEN DATE(ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')
-               = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
-          THEN ta.valor_modelo
-        END),0) AS modelo_dia,
+        /* ================= DIA ================= */
 
-        COALESCE(SUM(CASE
-          WHEN DATE(ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')
-               = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
-          THEN ta.agency_fee
-        END),0) AS agencia_dia,
+        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN valor_modelo END),0) AS modelo_dia,
+        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN agency_fee END),0) AS agencia_dia,
+        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN velvet_fee END),0) AS velvet_dia,
 
-        COALESCE(SUM(CASE
-          WHEN DATE(ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')
-               = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
-          THEN ta.velvet_fee
-        END),0) AS velvet_dia,
+        /* ================= MÊS ================= */
 
-        -- 🔹 MÊS
-        COALESCE(SUM(CASE
-          WHEN DATE_TRUNC('month', ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')
-               = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
-          THEN ta.valor_modelo
-        END),0) AS modelo_mes,
+        COALESCE(SUM(CASE 
+          WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
+          THEN valor_modelo END),0) AS modelo_mes,
 
-        COALESCE(SUM(CASE
-          WHEN DATE_TRUNC('month', ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')
-               = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
-          THEN ta.agency_fee
-        END),0) AS agencia_mes,
+        COALESCE(SUM(CASE 
+          WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
+          THEN agency_fee END),0) AS agencia_mes,
 
-        COALESCE(SUM(CASE
-          WHEN DATE_TRUNC('month', ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')
-               = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
-          THEN ta.velvet_fee
-        END),0) AS velvet_mes,
+        COALESCE(SUM(CASE 
+          WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
+          THEN velvet_fee END),0) AS velvet_mes,
 
-        -- 🔹 ANO
-        COALESCE(SUM(CASE
-          WHEN DATE_TRUNC('year', ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')
-               = DATE_TRUNC('year', NOW() AT TIME ZONE 'America/Sao_Paulo')
-          THEN ta.valor_modelo
-        END),0) AS modelo_ano,
+        /* ================= ANO ================= */
 
-        COALESCE(SUM(CASE
-          WHEN DATE_TRUNC('year', ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')
-               = DATE_TRUNC('year', NOW() AT TIME ZONE 'America/Sao_Paulo')
-          THEN ta.agency_fee
-        END),0) AS agencia_ano,
+        COALESCE(SUM(CASE 
+          WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
+          THEN valor_modelo END),0) AS modelo_ano,
 
-        COALESCE(SUM(CASE
-          WHEN DATE_TRUNC('year', ta.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')
-               = DATE_TRUNC('year', NOW() AT TIME ZONE 'America/Sao_Paulo')
-          THEN ta.velvet_fee
-        END),0) AS velvet_ano
+        COALESCE(SUM(CASE 
+          WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
+          THEN agency_fee END),0) AS agencia_ano,
+
+        COALESCE(SUM(CASE 
+          WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
+          THEN velvet_fee END),0) AS velvet_ano
 
       FROM modelos m
-      LEFT JOIN transacoes_agency ta
-        ON ta.modelo_id = m.id
-        AND ta.status = 'pago'
+
+      LEFT JOIN (
+
+        /* ====== NOVO PADRÃO ====== */
+        SELECT
+          modelo_id,
+          valor_modelo,
+          velvet_fee,
+          agency_fee,
+          (created_at AT TIME ZONE 'UTC'
+           AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
+        FROM transacoes_agency
+        WHERE status='pago'
+
+        UNION ALL
+
+        /* ====== DADOS ANTIGOS ====== */
+        SELECT
+          modelo_id,
+          ROUND(valor_bruto * 0.70,2) AS valor_modelo,
+          ROUND(valor_bruto * 0.20,2) AS velvet_fee,
+          ROUND(valor_bruto * 0.10,2) AS agency_fee,
+          (created_at AT TIME ZONE 'UTC'
+           AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
+        FROM transacoes
+        WHERE status='pago'
+
+      ) ta ON ta.modelo_id = m.id
 
       WHERE m.agencia_id = $1
         AND m.id = $2
@@ -1953,10 +1968,6 @@ router.get("/admin/dashboard", auth, authAdmin, async (req, res) => {
           THEN (velvet_fee + agency_fee + taxa_gateway)
         END),0) AS total_mes,
 
-                COALESCE(SUM(CASE 
-          WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
-          THEN valor_modelo END),0) AS modelo_mes,
-
         /* ================= ANO ================= */
 
         COALESCE(SUM(CASE 
@@ -1976,11 +1987,31 @@ router.get("/admin/dashboard", auth, authAdmin, async (req, res) => {
           THEN valor_modelo END),0) AS modelo_ano
 
       FROM (
-        SELECT *,
-        (created_at AT TIME ZONE 'UTC'
-         AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
+
+        /* ================= NOVO PADRÃO ================= */
+        SELECT
+          valor_modelo,
+          velvet_fee,
+          agency_fee,
+          taxa_gateway,
+          (created_at AT TIME ZONE 'UTC'
+           AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
         FROM transacoes_agency
         WHERE status = 'pago'
+
+        UNION ALL
+
+        /* ================= DADOS ANTIGOS ================= */
+        SELECT
+          ROUND(valor_bruto * 0.70,2) AS valor_modelo,
+          ROUND(valor_bruto * 0.20,2) AS velvet_fee,
+          ROUND(valor_bruto * 0.10,2) AS agency_fee,
+          ROUND(valor_bruto * 0.15,2) AS taxa_gateway,
+          (created_at AT TIME ZONE 'UTC'
+           AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
+        FROM transacoes
+        WHERE status = 'pago'
+
       ) t
     `);
 
@@ -2000,36 +2031,69 @@ router.get("/admin/modelo/:id", auth, authAdmin, async (req,res)=>{
     SELECT
       m.nome,
 
-      SUM(CASE WHEN data_sp=CURRENT_DATE THEN valor_modelo END) modelo_dia,
-      SUM(CASE WHEN data_sp=CURRENT_DATE THEN agency_fee END) agencia_dia,
-      SUM(CASE WHEN data_sp=CURRENT_DATE THEN velvet_fee END) velvet_dia,
-      SUM(CASE WHEN data_sp=CURRENT_DATE THEN taxa_gateway END) gateway_dia,
+      /* ================= DIA ================= */
 
-      SUM(CASE WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
-        THEN valor_modelo END) modelo_mes,
-      SUM(CASE WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
-        THEN agency_fee END) agencia_mes,
-      SUM(CASE WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
-        THEN velvet_fee END) velvet_mes,
-      SUM(CASE WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
-        THEN taxa_gateway END) gateway_mes,
+      COALESCE(SUM(CASE WHEN data_sp=CURRENT_DATE THEN valor_modelo END),0) modelo_dia,
+      COALESCE(SUM(CASE WHEN data_sp=CURRENT_DATE THEN agency_fee END),0) agencia_dia,
+      COALESCE(SUM(CASE WHEN data_sp=CURRENT_DATE THEN velvet_fee END),0) velvet_dia,
+      COALESCE(SUM(CASE WHEN data_sp=CURRENT_DATE THEN taxa_gateway END),0) gateway_dia,
 
-      SUM(CASE WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
-        THEN valor_modelo END) modelo_ano,
-      SUM(CASE WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
-        THEN agency_fee END) agencia_ano,
-      SUM(CASE WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
-        THEN velvet_fee END) velvet_ano,
-      SUM(CASE WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
-        THEN taxa_gateway END) gateway_ano
+      /* ================= MÊS ================= */
+
+      COALESCE(SUM(CASE WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
+        THEN valor_modelo END),0) modelo_mes,
+
+      COALESCE(SUM(CASE WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
+        THEN agency_fee END),0) agencia_mes,
+
+      COALESCE(SUM(CASE WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
+        THEN velvet_fee END),0) velvet_mes,
+
+      COALESCE(SUM(CASE WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
+        THEN taxa_gateway END),0) gateway_mes,
+
+      /* ================= ANO ================= */
+
+      COALESCE(SUM(CASE WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
+        THEN valor_modelo END),0) modelo_ano,
+
+      COALESCE(SUM(CASE WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
+        THEN agency_fee END),0) agencia_ano,
+
+      COALESCE(SUM(CASE WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
+        THEN velvet_fee END),0) velvet_ano,
+
+      COALESCE(SUM(CASE WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
+        THEN taxa_gateway END),0) gateway_ano
 
     FROM (
-      SELECT *,
-      (created_at AT TIME ZONE 'UTC'
-       AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
+
+      /* ================= NOVO PADRÃO ================= */
+      SELECT
+        valor_modelo,
+        velvet_fee,
+        agency_fee,
+        taxa_gateway,
+        (created_at AT TIME ZONE 'UTC'
+         AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
       FROM transacoes_agency
       WHERE status='pago'
         AND modelo_id=$1
+
+      UNION ALL
+
+      /* ================= DADOS ANTIGOS ================= */
+      SELECT
+        ROUND(valor_bruto * 0.70,2) AS valor_modelo,
+        ROUND(valor_bruto * 0.20,2) AS velvet_fee,
+        ROUND(valor_bruto * 0.10,2) AS agency_fee,
+        ROUND(valor_bruto * 0.15,2) AS taxa_gateway,
+        (created_at AT TIME ZONE 'UTC'
+         AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
+      FROM transacoes
+      WHERE status='pago'
+        AND modelo_id=$1
+
     ) t
     JOIN modelos m ON m.id=$1
     GROUP BY m.nome
