@@ -1932,7 +1932,7 @@ router.get("/agencia/me", authAgencia, async (req,res)=>{
   res.json(result.rows[0]);
 });
 
-router.get("/admin/dashboard", auth, authAdmin, async (req, res) => {
+router.get("/agencia/dashboard", auth, authAgencia, async (req, res) => {
   try {
 
     const result = await db.query(`
