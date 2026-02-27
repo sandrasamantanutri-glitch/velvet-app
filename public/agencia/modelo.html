@@ -76,7 +76,7 @@
 <br><br>
 
 <div class="card">
-  <h3>Configuração de Percentual</h3>
+  <h3>Percentual</h3>
 
   <label>Percentual Modelo</label>
   <input type="range" id="rangeModelo" min="40" max="80" value="60" step="1">
@@ -91,7 +91,7 @@
   <br>
 
 
-  <button onclick="salvarPercentual()" 
+  <!-- <button onclick="salvarPercentual()" 
     style="padding:12px 20px;
            background:#7B2CFF;
            border:none;
@@ -100,7 +100,7 @@
            font-weight:bold;
            cursor:pointer;">
     Salvar Alteração
-  </button>
+  </button> -->
 
   <div id="msgPercentual" style="margin-top:10px;color:#22c55e;"></div>
 
@@ -150,59 +150,59 @@ async function carregar(){
 }
 carregar();
 
-const rangeModelo = document.getElementById("rangeModelo");
-const rangeAgencia = document.getElementById("rangeAgencia");
+// const rangeModelo = document.getElementById("rangeModelo");
+// const rangeAgencia = document.getElementById("rangeAgencia");
 
-rangeModelo.addEventListener("input", atualizar);
-rangeAgencia.addEventListener("input", atualizar);
+// rangeModelo.addEventListener("input", atualizar);
+// rangeAgencia.addEventListener("input", atualizar);
 
-function atualizar(){
-  const modelo = Number(rangeModelo.value);
-  const agencia = Number(rangeAgencia.value);
-  const velvet = 100 - modelo - agencia;
+// function atualizar(){
+//   const modelo = Number(rangeModelo.value);
+//   const agencia = Number(rangeAgencia.value);
+//   const velvet = 100 - modelo - agencia;
 
-  if(velvet < 20){
-    document.getElementById("msgPercentual").innerText =
-      "Velvet precisa manter mínimo 20%";
-    return;
-  }
+//   if(velvet < 20){
+//     document.getElementById("msgPercentual").innerText =
+//       "Velvet precisa manter mínimo 20%";
+//     return;
+//   }
 
-  document.getElementById("valorModelo").innerText = modelo + "%";
-  document.getElementById("valorAgencia").innerText = agencia + "%";
-  document.getElementById("msgPercentual").innerText = "";
-}
+//   document.getElementById("valorModelo").innerText = modelo + "%";
+//   document.getElementById("valorAgencia").innerText = agencia + "%";
+//   document.getElementById("msgPercentual").innerText = "";
+// }
 
-async function salvarPercentual(){
-  const modelo = Number(rangeModelo.value);
-  const agencia = Number(rangeAgencia.value);
-  const velvet = 100 - modelo - agencia;
+// async function salvarPercentual(){
+//   const modelo = Number(rangeModelo.value);
+//   const agencia = Number(rangeAgencia.value);
+//   const velvet = 100 - modelo - agencia;
 
-  if(velvet < 20){
-    alert("Velvet precisa manter mínimo 20%.");
-    return;
-  }
+//   if(velvet < 20){
+//     alert("Velvet precisa manter mínimo 20%.");
+//     return;
+//   }
 
-  const res = await fetch(`/api/agencia/modelo/${id}/percentual`,{
-    method:"PUT",
-    headers:{
-      "Content-Type":"application/json",
-      Authorization:"Bearer "+token
-    },
-    body:JSON.stringify({
-      percentual_modelo:modelo,
-      percentual_agencia:agencia
-    })
-  });
+//   const res = await fetch(`/api/agencia/modelo/${id}/percentual`,{
+//     method:"PUT",
+//     headers:{
+//       "Content-Type":"application/json",
+//       Authorization:"Bearer "+token
+//     },
+//     body:JSON.stringify({
+//       percentual_modelo:modelo,
+//       percentual_agencia:agencia
+//     })
+//   });
 
-  const data = await res.json();
+//   const data = await res.json();
 
-  if(res.ok){
-    document.getElementById("msgPercentual").innerText =
-      "Percentual atualizado com sucesso!";
-  }else{
-    alert(data.error);
-  }
-}
+//   if(res.ok){
+//     document.getElementById("msgPercentual").innerText =
+//       "Percentual atualizado com sucesso!";
+//   }else{
+//     alert(data.error);
+//   }
+// }
 
 </script>
 

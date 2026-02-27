@@ -1987,64 +1987,64 @@ router.get("/api/agencia/me", authAgencia, async (req,res)=>{
 // });
 
 //PUT ///
-router.put("/agencia/modelo/:id/percentual", authAgencia, async (req,res)=>{
-  try{
+// router.put("/agencia/modelo/:id/percentual", authAgencia, async (req,res)=>{
+//   try{
 
-    const agencia_id = req.agencia.id;
-    const modelo_id = Number(req.params.id);
-    const { percentual_modelo } = req.body;
+//     const agencia_id = req.agencia.id;
+//     const modelo_id = Number(req.params.id);
+//     const { percentual_modelo } = req.body;
 
-    const modeloPercent = Number(percentual_modelo);
+//     const modeloPercent = Number(percentual_modelo);
 
-    /* =========================================
-       🔒 VALIDAÇÃO LIMITES MODELO
-    ========================================= */
+//     /* =========================================
+//        🔒 VALIDAÇÃO LIMITES MODELO
+//     ========================================= */
 
-    if(modeloPercent < 50 || modeloPercent > 80){
-      return res.status(400).json({
-        error:"Modelo deve ficar entre 50% e 80%."
-      });
-    }
+//     if(modeloPercent < 50 || modeloPercent > 80){
+//       return res.status(400).json({
+//         error:"Modelo deve ficar entre 50% e 80%."
+//       });
+//     }
 
-    /* =========================================
-       🔒 CÁLCULO AUTOMÁTICO AGÊNCIA
-       Velvet é FIXO 20%
-    ========================================= */
+//     /* =========================================
+//        🔒 CÁLCULO AUTOMÁTICO AGÊNCIA
+//        Velvet é FIXO 20%
+//     ========================================= */
 
-    const percentual_agencia = 80 - modeloPercent;
+//     const percentual_agencia = 80 - modeloPercent;
 
-    /* =========================================
-       🔒 ATUALIZAR SOMENTE MODELO + AGÊNCIA
-       Velvet não é alterado
-    ========================================= */
+//     /* =========================================
+//        🔒 ATUALIZAR SOMENTE MODELO + AGÊNCIA
+//        Velvet não é alterado
+//     ========================================= */
 
-    const result = await db.query(`
-      UPDATE modelos
-      SET percentual_modelo = $1,
-          percentual_agencia = $2
-      WHERE id = $3
-      AND agencia_id = $4
-      RETURNING *
-    `,[modeloPercent, percentual_agencia, modelo_id, agencia_id]);
+//     const result = await db.query(`
+//       UPDATE modelos
+//       SET percentual_modelo = $1,
+//           percentual_agencia = $2
+//       WHERE id = $3
+//       AND agencia_id = $4
+//       RETURNING *
+//     `,[modeloPercent, percentual_agencia, modelo_id, agencia_id]);
 
-    if(!result.rowCount){
-      return res.status(403).json({
-        error:"Modelo não pertence à agência"
-      });
-    }
+//     if(!result.rowCount){
+//       return res.status(403).json({
+//         error:"Modelo não pertence à agência"
+//       });
+//     }
 
-    res.json({
-      success:true,
-      percentual_modelo:modeloPercent,
-      percentual_agencia:percentual_agencia,
-      percentual_velvet:20
-    });
+//     res.json({
+//       success:true,
+//       percentual_modelo:modeloPercent,
+//       percentual_agencia:percentual_agencia,
+//       percentual_velvet:20
+//     });
 
-  }catch(err){
-    console.error(err);
-    res.status(500).json({error:"Erro interno"});
-  }
-});
+//   }catch(err){
+//     console.error(err);
+//     res.status(500).json({error:"Erro interno"});
+//   }
+// });
 
 
 module.exports = {
