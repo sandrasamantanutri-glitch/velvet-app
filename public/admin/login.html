@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Painel Agências - Velvet</title>
+<title>ADMIN - Velvet</title>
 
 <style>
 body{
@@ -17,15 +17,12 @@ body{
   color:#fff;
 }
 
-
 .card{
   background:#c9c9c9a4;
   padding:40px;
   width:350px;
   border-radius:14px;
   box-shadow:#7B2CFF;
-  align-items:center;
-  justify-content:center;
 }
 
 h2{
@@ -45,7 +42,6 @@ input{
 }
 
 button{
-  width:100%;
   padding:12px;
   border:none;
   border-radius:8px;
@@ -54,58 +50,52 @@ button{
   font-weight:bold;
   cursor:pointer;
   transition:0.3s;
-  width: 200px;
-   display: block;
-  margin: 0 auto;
+  width:200px;
+  display:block;
+  margin:0 auto;
 }
 
 button:hover{
   background:#9E6BFF;
 }
+
 .header {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 60px;
-  background:none;
   display: flex;
   align-items: center;
   padding-left: 20px;
-  z-index: 1000;
 }
 
 .logo {
-  height: 100px; /* controla tamanho */
+  height: 100px;
   width: auto;
 }
-
 </style>
 </head>
 
 <body>
 
-    <header class="header">
-  <div class="header-container">
-    <img src="/assets/velvet.png" alt="Velvet" class="logo"></div>
+<header class="header">
+  <img src="/assets/velvet.png" alt="Velvet" class="logo">
 </header>
 
- <div class="titulo"><h2>Velvet - Agências</h2>
-
 <div class="card">
-  <h2>Login</h2>
+  <h2>Admin Login</h2>
   <input type="email" id="email" placeholder="Email">
   <input type="password" id="senha" placeholder="Senha">
   <button onclick="login()">Entrar</button>
 </div>
- </div>
 
 <script>
 async function login(){
   const email = document.getElementById("email").value;
   const senha = document.getElementById("senha").value;
 
-  const res = await fetch("/api/agencia/login",{
+  const res = await fetch("/api/admin/login",{
     method:"POST",
     headers:{ "Content-Type":"application/json" },
     body:JSON.stringify({email,senha})
@@ -114,10 +104,10 @@ async function login(){
   const data = await res.json();
 
   if(res.ok){
-    localStorage.setItem("token_agencia", data.token);
-    window.location.href="dashboard.html";
+    localStorage.setItem("token_admin", data.token);
+    window.location.href="/admin/dashboard.html";
   }else{
-    alert(data.error);
+    alert(data.error || "Erro ao fazer login");
   }
 }
 </script>

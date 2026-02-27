@@ -674,32 +674,39 @@ router.post("/agencia/modelo/:id/solicitar-percentual", authAgencia, async (req,
   }
 });
 
-router.post("/admin/login", async (req,res)=>{
+router.post("/admin/login", async (req, res) => {
+  const { email, senha } = req.body;
 
-  const {email,senha} = req.body;
+  try {
+    const admin = await db.query(
+      "SELECT * FROM admin WHERE email = $1",
+      [email]
+    );
 
-  const user = await db.query(
-    "SELECT * FROM users WHERE email=$1 AND role='admin'",
-    [email]
-  );
+    if (!admin.rowCount) {
+      return res.status(400).json({ error: "Admin não encontrado" });
+    }
 
-  if(!user.rows.length){
-    return res.status(401).json({error:"Admin não encontrado"});
+    const adminData = admin.rows[0];
+
+    const senhaValida = await bcrypt.compare(senha, adminData.senha);
+
+    if (!senhaValida) {
+      return res.status(400).json({ error: "Senha inválida" });
+    }
+
+    const token = jwt.sign(
+      { id: adminData.id, role: "admin" },
+      process.env.JWT_SECRET,
+      { expiresIn: "12h" }
+    );
+
+    res.json({ token });
+
+  } catch (err) {
+    console.error("Erro login admin:", err);
+    res.status(500).json({ error: "Erro interno" });
   }
-
-  const valido = await bcrypt.compare(senha, user.rows[0].senha);
-
-  if(!valido){
-    return res.status(401).json({error:"Senha incorreta"});
-  }
-
-  const token = jwt.sign(
-    { id:user.rows[0].id, role:"admin" },
-    process.env.JWT_SECRET,
-    { expiresIn:"8h" }
-  );
-
-  res.json({token});
 });
 
 // PÁGINA DE RELATÓRIOS
@@ -1910,81 +1917,122 @@ router.get("/agencia/me", authAgencia, async (req,res)=>{
   res.json(result.rows[0]);
 });
 
-// router.get("/admin/dashboard", authAdmin, async (req,res)=>{
+router.get("/admin/dashboard", auth, authAdmin, async (req, res) => {
+  try {
 
-//   const result = await db.query(`
-//     SELECT
-//       SUM(CASE WHEN data_sp = CURRENT_DATE THEN velvet_fee END) AS velvet_hoje,
-//       SUM(CASE WHEN data_sp = CURRENT_DATE THEN agency_fee END) AS agencia_hoje,
-//       SUM(CASE WHEN data_sp = CURRENT_DATE THEN taxa_gateway END) AS gateway_hoje,
-//       SUM(CASE WHEN data_sp = CURRENT_DATE THEN valor_modelo END) AS modelo_hoje,
+    const result = await db.query(`
+      SELECT
+        /* ================= HOJE ================= */
 
-//       SUM(CASE WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE) THEN velvet_fee END) AS velvet_mes,
-//       SUM(CASE WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE) THEN agency_fee END) AS agencia_mes,
-//       SUM(CASE WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE) THEN taxa_gateway END) AS gateway_mes,
-//       SUM(CASE WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE) THEN valor_modelo END) AS modelo_mes,
+        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN velvet_fee END),0) AS velvet_hoje,
+        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN agency_fee END),0) AS agencia_hoje,
+        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN taxa_gateway END),0) AS gateway_hoje,
+        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN valor_modelo END),0) AS modelo_hoje,
 
-//       SUM(CASE WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE) THEN velvet_fee END) AS velvet_ano,
-//       SUM(CASE WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE) THEN agency_fee END) AS agencia_ano,
-//       SUM(CASE WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE) THEN taxa_gateway END) AS gateway_ano
+        /* ================= MÊS ================= */
 
-//     FROM (
-//       SELECT *,
-//       (created_at AT TIME ZONE 'UTC'
-//        AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
-//       FROM transacoes_agency
-//       WHERE status='pago'
-//     ) t
-//   `);
+        COALESCE(SUM(CASE 
+          WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
+          THEN velvet_fee END),0) AS velvet_mes,
 
-//   res.json(result.rows[0]);
-// });
+        COALESCE(SUM(CASE 
+          WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
+          THEN agency_fee END),0) AS agencia_mes,
 
-// router.get("/admin/modelo/:id", authAdmin, async (req,res)=>{
+        COALESCE(SUM(CASE 
+          WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
+          THEN taxa_gateway END),0) AS gateway_mes,
 
-//   const modelo_id = Number(req.params.id);
+        COALESCE(SUM(CASE 
+          WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
+          THEN valor_modelo END),0) AS modelo_mes,
 
-//   const result = await db.query(`
-//     SELECT
-//       m.nome,
+        /* 🔥 TOTAL MÊS (Velvet + Agência + Gateway) */
+        COALESCE(SUM(CASE 
+          WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
+          THEN (velvet_fee + agency_fee + taxa_gateway)
+        END),0) AS total_mes,
 
-//       SUM(CASE WHEN data_sp=CURRENT_DATE THEN valor_modelo END) modelo_dia,
-//       SUM(CASE WHEN data_sp=CURRENT_DATE THEN agency_fee END) agencia_dia,
-//       SUM(CASE WHEN data_sp=CURRENT_DATE THEN velvet_fee END) velvet_dia,
-//       SUM(CASE WHEN data_sp=CURRENT_DATE THEN taxa_gateway END) gateway_dia,
+        /* ================= ANO ================= */
 
-//       SUM(CASE WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
-//         THEN valor_modelo END) modelo_mes,
-//       SUM(CASE WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
-//         THEN agency_fee END) agencia_mes,
-//       SUM(CASE WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
-//         THEN velvet_fee END) velvet_mes,
-//       SUM(CASE WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
-//         THEN taxa_gateway END) gateway_mes,
+        COALESCE(SUM(CASE 
+          WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
+          THEN velvet_fee END),0) AS velvet_ano,
 
-//       SUM(CASE WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
-//         THEN valor_modelo END) modelo_ano,
-//       SUM(CASE WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
-//         THEN agency_fee END) agencia_ano,
-//       SUM(CASE WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
-//         THEN velvet_fee END) velvet_ano,
-//       SUM(CASE WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
-//         THEN taxa_gateway END) gateway_ano
+        COALESCE(SUM(CASE 
+          WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
+          THEN agency_fee END),0) AS agencia_ano,
 
-//     FROM (
-//       SELECT *,
-//       (created_at AT TIME ZONE 'UTC'
-//        AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
-//       FROM transacoes_agency
-//       WHERE status='pago'
-//         AND modelo_id=$1
-//     ) t
-//     JOIN modelos m ON m.id=$1
-//     GROUP BY m.nome
-//   `,[modelo_id]);
+        COALESCE(SUM(CASE 
+          WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
+          THEN taxa_gateway END),0) AS gateway_ano,
 
-//   res.json(result.rows[0]);
-// });
+        COALESCE(SUM(CASE 
+          WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
+          THEN valor_modelo END),0) AS modelo_ano
+
+      FROM (
+        SELECT *,
+        (created_at AT TIME ZONE 'UTC'
+         AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
+        FROM transacoes_agency
+        WHERE status = 'pago'
+      ) t
+    `);
+
+    res.json(result.rows[0]);
+
+  } catch (err) {
+    console.error("Erro dashboard admin:", err);
+    res.status(500).json({ error: "Erro ao carregar dashboard" });
+  }
+});
+
+router.get("/admin/modelo/:id", auth, authAdmin, async (req,res)=>{
+
+  const modelo_id = Number(req.params.id);
+
+  const result = await db.query(`
+    SELECT
+      m.nome,
+
+      SUM(CASE WHEN data_sp=CURRENT_DATE THEN valor_modelo END) modelo_dia,
+      SUM(CASE WHEN data_sp=CURRENT_DATE THEN agency_fee END) agencia_dia,
+      SUM(CASE WHEN data_sp=CURRENT_DATE THEN velvet_fee END) velvet_dia,
+      SUM(CASE WHEN data_sp=CURRENT_DATE THEN taxa_gateway END) gateway_dia,
+
+      SUM(CASE WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
+        THEN valor_modelo END) modelo_mes,
+      SUM(CASE WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
+        THEN agency_fee END) agencia_mes,
+      SUM(CASE WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
+        THEN velvet_fee END) velvet_mes,
+      SUM(CASE WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
+        THEN taxa_gateway END) gateway_mes,
+
+      SUM(CASE WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
+        THEN valor_modelo END) modelo_ano,
+      SUM(CASE WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
+        THEN agency_fee END) agencia_ano,
+      SUM(CASE WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
+        THEN velvet_fee END) velvet_ano,
+      SUM(CASE WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
+        THEN taxa_gateway END) gateway_ano
+
+    FROM (
+      SELECT *,
+      (created_at AT TIME ZONE 'UTC'
+       AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
+      FROM transacoes_agency
+      WHERE status='pago'
+        AND modelo_id=$1
+    ) t
+    JOIN modelos m ON m.id=$1
+    GROUP BY m.nome
+  `,[modelo_id]);
+
+  res.json(result.rows[0]);
+});
 
 //PUT ///
 // router.put("/agencia/modelo/:id/percentual", authAgencia, async (req,res)=>{

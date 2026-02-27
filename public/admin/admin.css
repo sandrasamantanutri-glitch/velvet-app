@@ -1,11 +1,13 @@
 :root{
-  --bg: #f1f1f1;
-  --card: #fff;
-  --border: #7B2CFF;
-  --primary: #7B2CFF;
-  --text: #7B2CFF;
-  --muted: #7B2CFF;
-  --success: #11863c;
+  --plataforma:#7B2CFF;
+  --agencia:#3b82f6;
+  --gateway:#f59e0b;
+  --modelo:#22c55e;
+
+  --plataforma-bg: linear-gradient(135deg, rgba(123,44,255,0.06), rgba(123,44,255,0.02));
+  --agencia-bg: linear-gradient(135deg, rgba(59,130,246,0.06), rgba(59,130,246,0.02));
+  --gateway-bg: linear-gradient(135deg, rgba(245,158,11,0.06), rgba(245,158,11,0.02));
+  --modelo-bg: linear-gradient(135deg, rgba(34,197,94,0.06), rgba(34,197,94,0.02));
 }
 
 *{
@@ -318,5 +320,119 @@ tr:nth-child(even){
   100% { opacity: 0.5; }
 }
 
+.cards{
+  display:flex;
+  flex-direction:column;
+  gap:30px;
+  margin-top:30px;
+}
+
+/* linhas com 4 cards */
+.linha-4{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:20px;
+}
+
+/* linha com 2 cards */
+.linha-2{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:20px;
+}
+
+/* linha única */
+.linha-1{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:20px;
+}
+
+.card{
+  background:#fff;
+  border-radius:14px;
+  padding:25px;
+  box-shadow:0 10px 25px rgba(0,0,0,0.05);
+  transition:0.25s ease;
+  text-align:center;
+  border-left:4px solid transparent;
+  position:relative;
+  overflow:hidden;
+}
+
+.card::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  opacity:0.6;
+  z-index:0;
+}
+
+.card h4,
+.card .valor{
+  position:relative;
+  z-index:1;
+}
+
+.card:hover{
+  transform:translateY(-4px);
+  box-shadow:0 15px 35px rgba(0,0,0,0.08);
+}
+
+/* PLATAFORMA */
+.plataforma{
+  border-left:4px solid var(--plataforma);
+}
+
+.plataforma::before{
+  background:var(--plataforma-bg);
+}
+
+.plataforma h4,
+.plataforma .valor{
+  color:var(--plataforma);
+}
+
+/* AGÊNCIA */
+.agencia{
+  border-left:4px solid var(--agencia);
+}
+
+.agencia::before{
+  background:var(--agencia-bg);
+}
+
+.agencia h4,
+.agencia .valor{
+  color:var(--agencia);
+}
+
+/* GATEWAY */
+.gateway{
+  border-left:4px solid var(--gateway);
+}
+
+.gateway::before{
+  background:var(--gateway-bg);
+}
+
+.gateway h4,
+.gateway .valor{
+  color:var(--gateway);
+}
+
+/* MODELO */
+.modelo{
+  border-left:4px solid var(--modelo);
+}
+
+.modelo::before{
+  background:var(--modelo-bg);
+}
+
+.modelo h4,
+.modelo .valor{
+  color:var(--modelo);
+}
 
 

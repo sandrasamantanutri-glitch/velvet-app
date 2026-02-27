@@ -25,73 +25,101 @@
   </div>
 </header>
 
+
+
 <div class="cards">
 
   <!-- HOJE -->
-  <div class="card">
-    <h4>Velvet Hoje</h4>
-    <div class="valor" id="velvetHoje">R$ 0</div>
-  </div>
+  <div class="linha-4">
+    <div class="card plataforma">
+      <h4>Ganhos Plataforma Hoje</h4>
+      <div class="valor" id="velvetHoje">R$ 0</div>
+    </div>
 
-  <div class="card">
-    <h4>Agência 3 Hoje</h4>
-    <div class="valor" id="agenciaHoje">R$ 0</div>
-  </div>
+    <div class="card agencia">
+      <h4>Ganhos Agência Hoje</h4>
+      <div class="valor" id="agenciaHoje">R$ 0</div>
+    </div>
 
-  <div class="card">
-    <h4>Taxa Gateway Hoje</h4>
-    <div class="valor" id="gatewayHoje">R$ 0</div>
-  </div>
+    <div class="card gateway">
+      <h4>Taxa Gateway Hoje</h4>
+      <div class="valor" id="gatewayHoje">R$ 0</div>
+    </div>
 
-  <div class="card">
-    <h4>Modelo Hoje</h4>
-    <div class="valor" id="modeloHoje">R$ 0</div>
+    <div class="card modelo">
+      <h4>Ganhos Modelo Hoje</h4>
+      <div class="valor" id="modeloHoje">R$ 0</div>
+    </div>
   </div>
 
   <!-- MÊS -->
-  <div class="card">
-    <h4>Velvet Mês</h4>
-    <div class="valor" id="velvetMes">R$ 0</div>
+  <div class="linha-4">
+    <div class="card plataforma">
+      <h4>Ganhos Plataforma Mês</h4>
+      <div class="valor" id="velvetMes">R$ 0</div>
+    </div>
+
+    <div class="card agencia">
+      <h4>Ganhos Agência Mês</h4>
+      <div class="valor" id="agenciaMes">R$ 0</div>
+    </div>
+
+    <div class="card gateway">
+      <h4>Taxa Gateway Mês</h4>
+      <div class="valor" id="gatewayMes">R$ 0</div>
+    </div>
+
+    <div class="card modelo">
+      <h4>Ganhos Modelo Mês</h4>
+      <div class="valor" id="modeloMes">R$ 0</div>
+    </div>
   </div>
 
-  <div class="card">
-    <h4>Agência 3 Mês</h4>
-    <div class="valor" id="agenciaMes">R$ 0</div>
-  </div>
+  <!-- TOTAIS MÊS -->
+  <div class="linha-2">
+    <div class="card plataforma">
+      <h4>Total Plataforma + Agência + Gateway</h4>
+      <div class="valor" id="totalmes">R$ 0</div>
+    </div>
 
-  <div class="card">
-    <h4>Gateway Mês</h4>
-    <div class="valor" id="gatewayMes">R$ 0</div>
-  </div>
-
-  <div class="card">
-    <h4>Modelo Mês</h4>
-    <div class="valor" id="modeloMes">R$ 0</div>
+    <div class="card modelo">
+      <h4>Total Modelo Mês</h4>
+      <div class="valor" id="modelomes">R$ 0</div>
+    </div>
   </div>
 
   <!-- ANO -->
-  <div class="card destaque-ano">
-    <h4>Total Ano Velvet</h4>
-    <div class="valor total-ano" id="velvetAno">R$ 0</div>
+  <div class="linha-1">
+    <div class="card plataforma">
+      <h4>Total Ano Plataforma</h4>
+      <div class="valor" id="velvetAno">R$ 0</div>
+    </div>
   </div>
 
-  <div class="card destaque-ano">
-    <h4>Total Ano Agência 3</h4>
-    <div class="valor total-ano" id="agenciaAno">R$ 0</div>
+  <div class="linha-1">
+    <div class="card agencia">
+      <h4>Total Ano Agência</h4>
+      <div class="valor" id="agenciaAno">R$ 0</div>
+    </div>
   </div>
 
-  <div class="card destaque-ano">
-    <h4>Total Ano Gateway</h4>
-    <div class="valor total-ano" id="gatewayAno">R$ 0</div>
+  <div class="linha-1">
+    <div class="card gateway">
+      <h4>Total Ano Gateway</h4>
+      <div class="valor" id="gatewayAno">R$ 0</div>
+    </div>
+  </div>
+
+  <div class="linha-1">
+    <div class="card modelo">
+      <h4>Total Ano Modelos</h4>
+      <div class="valor" id="modeloAno">R$ 0</div>
+    </div>
   </div>
 
 </div>
 
 <br>
-
-<div class="card">
-  <canvas id="grafico" height="100"></canvas>
-</div>
 
 <script>
 
@@ -123,9 +151,13 @@ async function carregarDashboard(){
   set("gatewayMes", data.gateway_mes);
   set("modeloMes", data.modelo_mes);
 
+  set("totalmes", data.total_mes);
+  set("modeloMes", data.modelo_mes);
+
   set("velvetAno", data.velvet_ano);
   set("agenciaAno", data.agencia_ano);
   set("gatewayAno", data.gateway_ano);
+  set("modeloAno", data.modelo_ano);
 
   criarGrafico(data);
 }
@@ -161,7 +193,7 @@ function criarGrafico(data){
 }
 
 async function carregarModelos(){
-  const res = await fetch("/api/admin/modelos",{
+  const res = await fetch("/api/admin/modelo",{
     headers:{ Authorization:"Bearer "+token }
   });
 
