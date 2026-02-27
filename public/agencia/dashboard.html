@@ -175,9 +175,16 @@ async function carregarModelos(){
     headers:{ Authorization:"Bearer "+token }
   });
 
+  if(!res.ok){
+    console.error("Erro ao carregar modelos");
+    return;
+  }
+
   const modelos = await res.json();
 
   const select = document.getElementById("modeloSelect");
+
+  select.innerHTML = `<option value="">Selecionar Modelo</option>`;
 
   modelos.forEach(m=>{
     select.innerHTML += `<option value="${m.id}">${m.nome}</option>`;
