@@ -1966,13 +1966,14 @@ router.get("/agencia/dashboard", authAgencia, async (req, res) => {
         UNION ALL
 
         /* ================= DADOS ANTIGOS ================= */
-        SELECT
-          ROUND(valor_bruto * 0.85 * 0.10,2) AS agency_fee,
-          (created_at AT TIME ZONE 'UTC'
-           AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
-        FROM transacoes
-        WHERE status = 'pago'
-          AND agencia_id = $1
+SELECT
+  ROUND(valor_bruto * 0.85 * 0.10,2) AS agency_fee,
+  (created_at AT TIME ZONE 'UTC'
+   AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
+FROM transacoes t
+JOIN modelos m ON m.id = t.modelo_id
+WHERE t.status = 'pago'
+  AND m.agencia_id = $1
 
       ) t
     `, [agencia_id]);
