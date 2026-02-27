@@ -79,10 +79,10 @@ const token = localStorage.getItem("token_agencia");
 
 async function carregarDashboard() {
 
-  if (!token) {
-    window.location.href = "/agencia/login.html";
-    return;
-  }
+  // if (!token) {
+  //   window.location.href = "/agencia/login.html";
+  //   return;
+  // }
 
   try {
     const res = await fetch("/api/agencia/dashboard", {
@@ -97,7 +97,7 @@ async function carregarDashboard() {
 
     const data = await res.json();
 
-    console.log("Dashboard API:", data); // 👈 MUITO IMPORTANTE
+    console.log("Dashboard API:", data);
 
     document.getElementById("midiasHoje").innerText =
       "R$ " + Number(data.midias_hoje || 0).toFixed(2);
