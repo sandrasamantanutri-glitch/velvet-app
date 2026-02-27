@@ -464,7 +464,7 @@ app.post(
     const charge = event.data;
     const metadata = charge.metadata || {};
     const orderId = charge.order?.id;
-    const valorPago = charge.amount / 100;
+    const valorTotalMeta = Number(metadata.valor_total || 0);
 
     // 🔎 DEBUG AQUI
 console.log("============== DEBUG WEBHOOK ==============");
@@ -534,27 +534,32 @@ console.log("============================================");
   message_id
 } = pagamento;
 
-      /* =====================================================
-         3️⃣ VALIDAR VALOR
-      ===================================================== */
+/* =====================================================
+3️⃣ VALIDAR VALOR
+===================================================== */
+const valorTotalMeta = Number(metadata.valor_total || 0);
+const valorComparacao = valorTotalMeta || Number(charge.amount) / 100;
 
-      if (Number(valorPago) !== Number(valor)) {
-        console.log("🚨 Valor divergente webhook");
-        await client.query("ROLLBACK");
-        return res.status(200).send("ok");
-      }
+if (Number(valorComparacao) !== Number(valor)) {
+  console.log("🚨 Valor divergente webhook");
+  await client.query("ROLLBACK");
+  return res.status(200).send("ok");
+}
+//=====================================================
+// MIDIA
+if (metadata.tipo === "conteudo_pix") {
 
-  //=====================================================
-  //MIDIA
-  if (metadata.tipo === "conteudo_pix") {
+  const valorBase = Number(metadata.valor_base || 0);
+  const taxaTransacao = Number(metadata.taxa_transacao || 0);
+  const taxaPlataforma = Number(metadata.taxa_plataforma || 0);
 
-  const valorPago = charge.amount / 100;
+  if (!valorBase || !valorTotalMeta) {
+    console.log("🚨 Metadata incompleto em conteudo_pix");
+    await client.query("ROLLBACK");
+    return res.status(200).send("ok");
+  }
 
-  const taxaExtra =
-    Number(metadata.taxa_transacao || 0) +
-    Number(metadata.taxa_plataforma || 0);
-
-  const valorBase = Number((valorPago - taxaExtra).toFixed(2));
+  const taxaExtra = taxaTransacao + taxaPlataforma;
 
   const valores = await calcularValores({
     modelo_id,
@@ -5451,6 +5456,9 @@ app.post("/api/pagamento/midia/pix", auth, async (req, res) => {
       taxaTransacaoCentavos +
       taxaPlataformaCentavos;
 
+    const taxaTransacao = taxaTransacaoCentavos / 100;
+    const taxaPlataforma = taxaPlataformaCentavos / 100;
+    const valorBaseReal = valorCentavos / 100;
     const total = amount / 100;
 
     /* =====================================================
@@ -5475,13 +5483,17 @@ app.post("/api/pagamento/midia/pix", auth, async (req, res) => {
           pix: { expires_in: 3600 }
         }],
         metadata: {
-          tipo: "conteudo_pix",
-          message_id: String(conteudoId),
-          cliente_id: String(cliente_id),
-          modelo_id: String(modelo_id),
-          aceite_ip: ip,
-          fingerprint: safeFingerprint
-        }
+  tipo: "conteudo_pix",
+  message_id: String(conteudoId),
+  cliente_id: String(cliente_id),
+  modelo_id: String(modelo_id),
+  aceite_ip: ip,
+  fingerprint: safeFingerprint,
+  valor_base: String(valorBaseReal),
+  taxa_transacao: String(taxaTransacao),
+  taxa_plataforma: String(taxaPlataforma),
+  valor_total: String(total)
+}
       },
       {
         headers: {
