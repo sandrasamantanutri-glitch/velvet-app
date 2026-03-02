@@ -21,7 +21,7 @@ const app = express();
 //   );
 // });
 
-const enviarEmailValidacao = require("email.js");
+
 const os = require("os");
 const { exec } = require("child_process");
 const ffmpeg = require("fluent-ffmpeg");
@@ -42,6 +42,7 @@ const authModelo = require("./middleware/authModelo");
 const auth = require("./middleware/auth");
 const crypto = require("crypto");
 const axios = require("axios");
+// const enviarEmailValidacao = require("email.js");
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 
