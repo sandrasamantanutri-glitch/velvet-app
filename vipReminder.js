@@ -19,17 +19,25 @@ async function processarAvisos() {
   // ==============================
   // 📅 AVISO 7 DIAS
   // ==============================
-  const seteDias = await db.query(`
-    SELECT v.id, v.modelo_id, u.email
-    FROM vip_subscriptions v
-    JOIN clientes c ON c.id = v.cliente_id
-    JOIN users u ON u.id = c.user_id
-    WHERE v.ativo = 'true'
-      AND v.aviso_7_dias_enviado = false
-      AND v.expiration_at BETWEEN
-          NOW() + INTERVAL '6 days'
-          AND NOW() + INTERVAL '7 days'
-  `);
+  // const seteDias = await db.query(`
+  //   SELECT v.id, v.modelo_id, u.email
+  //   FROM vip_subscriptions v
+  //   JOIN clientes c ON c.id = v.cliente_id
+  //   JOIN users u ON u.id = c.user_id
+  //   WHERE v.ativo = 'true'
+  //     AND v.aviso_7_dias_enviado = false
+  //     AND v.expiration_at BETWEEN
+  //         NOW() + INTERVAL '6 days'
+  //         AND NOW() + INTERVAL '7 days'
+  // `);
+const seteDias = await db.query(`
+  SELECT v.id, v.modelo_id, u.email
+  FROM vip_subscriptions v
+  JOIN clientes c ON c.id = v.cliente_id
+  JOIN users u ON u.id = c.user_id
+  WHERE v.cliente_id = 2367
+    AND v.ativo = true
+`);
 
   for (const row of seteDias.rows) {
 
@@ -71,60 +79,60 @@ async function processarAvisos() {
     }
   }
 
-  // ==============================
-  // ⏰ AVISO 24 HORAS
-  // ==============================
-  const vinte4h = await db.query(`
-    SELECT v.id, v.modelo_id, u.email
-    FROM vip_subscriptions v
-    JOIN clientes c ON c.id = v.cliente_id
-    JOIN users u ON u.id = c.user_id
-    WHERE v.ativo = 'true'
-      AND v.aviso_24h_enviado = false
-      AND v.expiration_at BETWEEN
-          NOW()
-          AND NOW() + INTERVAL '1 day'
-  `);
+  // // ==============================
+  // // ⏰ AVISO 24 HORAS
+  // // ==============================
+  // const vinte4h = await db.query(`
+  //   SELECT v.id, v.modelo_id, u.email
+  //   FROM vip_subscriptions v
+  //   JOIN clientes c ON c.id = v.cliente_id
+  //   JOIN users u ON u.id = c.user_id
+  //   WHERE v.ativo = 'true'
+  //     AND v.aviso_24h_enviado = false
+  //     AND v.expiration_at BETWEEN
+  //         NOW()
+  //         AND NOW() + INTERVAL '1 day'
+  // `);
 
-  for (const row of vinte4h.rows) {
+  // for (const row of vinte4h.rows) {
 
-    const linkPerfil = `https://velvet.lat/perfil.html?modelo_id=${row.modelo_id}`;
+  //   const linkPerfil = `https://velvet.lat/perfil.html?modelo_id=${row.modelo_id}`;
 
-    try {
+  //   try {
 
-      await enviarEmail(
-        row.email,
-        "Sua VIP expira em 24 horas",
-        `
-          <h2>Sua VIP termina amanhã</h2>
-          <p>Renove agora para não perder acesso exclusivo.</p>
+  //     await enviarEmail(
+  //       row.email,
+  //       "Sua VIP expira em 24 horas",
+  //       `
+  //         <h2>Sua VIP termina amanhã</h2>
+  //         <p>Renove agora para não perder acesso exclusivo.</p>
 
-          <div style="margin:20px 0;">
-            <a href="${linkPerfil}"
-               style="
-                 background-color:#7B2CFF;
-                 color:#ffffff;
-                 padding:12px 20px;
-                 text-decoration:none;
-                 border-radius:6px;
-                 display:inline-block;
-                 font-weight:bold;
-               ">
-               Renovar VIP agora
-            </a>
-          </div>
-        `
-      );
+  //         <div style="margin:20px 0;">
+  //           <a href="${linkPerfil}"
+  //              style="
+  //                background-color:#7B2CFF;
+  //                color:#ffffff;
+  //                padding:12px 20px;
+  //                text-decoration:none;
+  //                border-radius:6px;
+  //                display:inline-block;
+  //                font-weight:bold;
+  //              ">
+  //              Renovar VIP agora
+  //           </a>
+  //         </div>
+  //       `
+  //     );
 
-      await db.query(
-        "UPDATE vip_subscriptions SET aviso_24h_enviado = true WHERE id = $1",
-        [row.id]
-      );
+  //     await db.query(
+  //       "UPDATE vip_subscriptions SET aviso_24h_enviado = true WHERE id = $1",
+  //       [row.id]
+  //     );
 
-    } catch (err) {
-      console.error("Erro ao enviar aviso 24h:", err);
-    }
-  }
+  //   } catch (err) {
+  //     console.error("Erro ao enviar aviso 24h:", err);
+  //   }
+  // }
 
   console.log("✅ Avisos processados");
   process.exit();
