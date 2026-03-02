@@ -3175,6 +3175,7 @@ app.get("/api/modelo/publico/:modelo_id", async (req, res) => {
         m.avatar,
         m.capa,
         m.local,
+        COALESCE(NULLIF(mp.valor_mensal, 0), 20.00) AS valor_assinatura,
         md.instagram,
         md.tiktok
       FROM modelos m
@@ -3187,6 +3188,10 @@ app.get("/api/modelo/publico/:modelo_id", async (req, res) => {
       ) v ON true
       LEFT JOIN modelos_dados md
         ON md.modelo_id = m.id
+      
+      LEFT JOIN modelos_planos mp
+        ON mp.modelo_id = m.id
+
       WHERE m.id = $1
         AND v.status = 'aprovado'
       LIMIT 1;
