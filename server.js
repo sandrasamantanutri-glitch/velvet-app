@@ -1319,12 +1319,11 @@ if (!apenas_intent) {
       LIMIT 1
     `, [modelo_id]);
 
-    if (!planoRes.rowCount) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ error: "Plano VIP não definido" });
-    }
+    let valorBase = 20.00; 
 
-    let valorBase = Number(planoRes.rows[0].valor_mensal);
+if (planoRes.rowCount && Number(planoRes.rows[0].valor_mensal) > 0) {
+  valorBase = Number(planoRes.rows[0].valor_mensal);
+}
 
     /* =====================================================
        🔥 OFERTA
@@ -5249,12 +5248,11 @@ app.post("/api/pagamento/vip/pix", auth, async (req, res) => {
       LIMIT 1
     `, [modelo_id]);
 
-    if (!planoRes.rowCount) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ error: "Plano VIP não encontrado" });
-    }
+    let valorBase = 20.00; // 🔥 valor padrão
 
-let valorBase = Number(planoRes.rows[0].valor_mensal) || 0;
+if (planoRes.rowCount && Number(planoRes.rows[0].valor_mensal) > 0) {
+  valorBase = Number(planoRes.rows[0].valor_mensal);
+}
 
 const ofertaRes = await client.query(`
   SELECT valor_promocional
