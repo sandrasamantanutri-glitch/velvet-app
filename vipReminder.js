@@ -26,7 +26,7 @@ async function processarAvisos() {
     JOIN users u ON u.id = c.user_id
     WHERE v.ativo = 'true'
       AND v.aviso_7_dias_enviado = false
-      AND v.current_period_end BETWEEN
+      AND v.expiration_at BETWEEN
           NOW() + INTERVAL '6 days'
           AND NOW() + INTERVAL '7 days'
   `);
@@ -81,7 +81,7 @@ async function processarAvisos() {
     JOIN users u ON u.id = c.user_id
     WHERE v.ativo = 'true'
       AND v.aviso_24h_enviado = false
-      AND v.current_period_end BETWEEN
+      AND v.expiration_at BETWEEN
           NOW()
           AND NOW() + INTERVAL '1 day'
   `);
