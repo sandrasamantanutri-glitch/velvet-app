@@ -2682,7 +2682,7 @@ const result = await db.query(
   FROM vip_subscriptions
   WHERE modelo_id = $1
     AND ativo = true
-    AND expiration_at > NOW()
+    AND created_at + INTERVAL '30 days' > NOW()
   `,
   [modelo_id]
 );
