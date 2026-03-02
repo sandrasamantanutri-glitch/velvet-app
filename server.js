@@ -21,7 +21,7 @@ const app = express();
 //   );
 // });
 
-const nodemailer = require("nodemailer");
+const { enviarEmailValidacao } = require("/email");
 const os = require("os");
 const { exec } = require("child_process");
 const ffmpeg = require("fluent-ffmpeg");
@@ -4439,7 +4439,7 @@ app.post("/api/register", authLimiter, async (req, res) => {
     } = req.body;
 
     // ===============================
-    // 🔒 VALIDAÇÕES BÁSICAS
+    // 🔒 VALIDAÇÕES
     // ===============================
     if (!email || !senha || !role || !nome_completo || !data_nascimento) {
       return res.status(400).json({
@@ -4511,11 +4511,12 @@ app.post("/api/register", authLimiter, async (req, res) => {
     // ===============================
     if (role === "modelo") {
 
-      // criar modelo base
       const modeloResult = await db.query(
         `
-        INSERT INTO public.modelos (user_id, nome)
-        VALUES ($1, $2)
+        INSERT INTO public.modelos
+          (user_id, nome, status, email_enviado_em, prazo_validacao)
+        VALUES
+          ($1, $2, 'pendente', NOW() + INTERVAL '14 days')
         RETURNING id
         `,
         [userId, nomePublico]
@@ -4523,7 +4524,6 @@ app.post("/api/register", authLimiter, async (req, res) => {
 
       modeloId = modeloResult.rows[0].id;
 
-      // dados pessoais via modelo_id
       await db.query(
         `
         INSERT INTO public.modelos_dados
@@ -4533,14 +4533,15 @@ app.post("/api/register", authLimiter, async (req, res) => {
         `,
         [modeloId, nome_completo, data_nascimento]
       );
+
+      // 📩 Enviar email automático
+      await enviarEmailValidacao(email);
     }
 
     // ===============================
     // 👤 CLIENTE
     // ===============================
     if (role === "cliente") {
-
-      const nomePublico = nome_completo.split(" ")[0];
 
       const clienteResult = await db.query(
         `
@@ -4581,7 +4582,7 @@ app.post("/api/register", authLimiter, async (req, res) => {
     // ===============================
     const token = jwt.sign(
       {
-        id: userId,   // sempre users.id
+        id: userId,
         email,
         role
       },
