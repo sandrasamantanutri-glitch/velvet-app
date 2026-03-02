@@ -8,3 +8,4 @@ users.json
 unread.json
 subscriptions.json
 compras.json
+*.JS
