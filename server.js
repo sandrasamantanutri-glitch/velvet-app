@@ -21,7 +21,7 @@ const app = express();
 //   );
 // });
 
-const { enviarEmailValidacao } = require("/email");
+const { enviarEmailValidacao } = require("./email");
 const os = require("os");
 const { exec } = require("child_process");
 const ffmpeg = require("fluent-ffmpeg");
