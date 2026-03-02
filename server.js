@@ -2480,10 +2480,19 @@ app.get("/api/modelo/planos/me", auth, authModelo, async (req, res) => {
   try {
 
     const plano = await db.query(
-      `SELECT * FROM modelos_planos WHERE modelo_id = $1`,
+      `SELECT
+      COALESCE(NULLIF(valor_mensal, 0), 20.00) AS valor_mensal
+      FROM modelos_planos 
+      WHERE modelo_id = $1`,
       [req.modelo_id]
     );
 
+     if (!result.rowCount) {
+      return res.json({
+        valor_mensal: 20
+      });
+    }
+    
     res.json(plano.rows[0] || null);
 
   } catch (err) {
