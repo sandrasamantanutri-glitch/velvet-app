@@ -357,7 +357,8 @@ body.role-cliente .area-saldos {
 }
 
 .midiaCard.locked .midiaThumb {
-  filter: blur(10px) brightness(0.2);
+  filter: blur(35px) brightness(0.05) contrast(2);
+  transform: scale(1.1);
 }
 
 .midiaCard.locked .midiaWrapper::after {
