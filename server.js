@@ -42,7 +42,8 @@ const authModelo = require("./middleware/authModelo");
 const auth = require("./middleware/auth");
 const crypto = require("crypto");
 const axios = require("axios");
-// const enviarEmailValidacao = require("email.js");
+const { Resend } = require("resend");
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 
@@ -83,7 +84,6 @@ const uploadB2 = multer({
     fileSize: 200 * 1024 * 1024 
   }
 });
-
 
 // ===============================
 // BACKBLAZE B2 (VERIFICAÇÃO - PRIVADO)
@@ -1567,6 +1567,21 @@ function gerarCpfValido() {
   const d2 = gerarDigito([...base, d1]);
 
   return [...base, d1, d2].join("");
+}
+
+async function enviarEmailValidacao(email) {
+  await resend.emails.send({
+    from: "Velvet <no-reply@velvet.lat>",
+    to: email,
+    subject: "Envio de documentos para aprovação",
+    html: `
+      <h2>Seu perfil de criador foi criado!</h2>
+      <p>Para ativar seu perfil e começar a ganhar, envie sua documentação através da página <strong>Conta</strong> na plataforma.</p>
+      <p>Você tem 14 dias para concluir a validação.</p>
+      <p>Caso tenha se registrado por engano como criador(a), envie um email para contato@velvet.lat e solicite a alteração de influencer para usuario, assim poderá ser utilizador da plataforma e conversar com os criadores de conteúdo.</p>
+      <p>Após 14 dias sem validação, sua conta será removida automaticamente.</p>
+    `
+  });
 }
 
 // ===============================
@@ -4517,7 +4532,7 @@ app.post("/api/register", authLimiter, async (req, res) => {
         INSERT INTO public.modelos
           (user_id, nome, status, email_enviado_em, prazo_validacao)
         VALUES
-          ($1, $2, 'pendente', NOW() + INTERVAL '14 days')
+          ($1, $2, 'pendente', NOW(), NOW() + INTERVAL '14 days')
         RETURNING id
         `,
         [userId, nomePublico]
@@ -4535,7 +4550,7 @@ app.post("/api/register", authLimiter, async (req, res) => {
         [modeloId, nome_completo, data_nascimento]
       );
 
-      // 📩 Enviar email automático
+      console.log("📩 Tentando enviar email para:", email);
       await enviarEmailValidacao(email);
     }
 
