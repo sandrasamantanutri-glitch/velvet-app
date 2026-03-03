@@ -2220,8 +2220,6 @@ router.get("/admin/perfis", auth, authAdmin, async (req,res)=>{
 
           -- CLIENTE DONO
           u.email,
-          c.cpf,
-          c.bloqueado,
 
           -- CLIENTES_DADOS
           cd.telefone AS cliente_telefone,
@@ -2277,8 +2275,6 @@ router.get("/admin/perfis", auth, authAdmin, async (req,res)=>{
 
           -- CLIENTE
           u.email,
-          c.cpf,
-          c.bloqueado,
 
           -- CLIENTES_DADOS
           cd.telefone AS cliente_telefone,
@@ -2621,50 +2617,89 @@ router.put("/admin/validar-cliente/:id", auth, authAdmin, async (req,res)=>{
   }
 });
 
-async function salvarDadosPerfil(id, tipo){
+router.put("/admin/perfis/:id/editar", auth, authAdmin, async (req,res)=>{
 
-  const dados = {
-    nome_completo: document.getElementById(`edit_nome_completo_${id}`)?.value,
-    data_nascimento: document.getElementById(`edit_data_nascimento_${id}`)?.value,
-    cpf: document.getElementById(`edit_cpf_${id}`)?.value,
-    telefone: document.getElementById(`edit_telefone_${id}`)?.value,
-    endereco: document.getElementById(`edit_endereco_${id}`)?.value,
-    pais: document.getElementById(`edit_pais_${id}`)?.value,
-    estado: document.getElementById(`edit_estado_${id}`)?.value,
-    cidade: document.getElementById(`edit_cidade_${id}`)?.value,
-    bio: document.getElementById(`edit_bio_${id}`)?.value,
-    vip_preco: document.getElementById(`edit_vip_preco_${id}`)?.value,
-    instagram: document.getElementById(`edit_instagram_${id}`)?.value,
-    tiktok: document.getElementById(`edit_tiktok_${id}`)?.value,
-    email: document.getElementById(`edit_email_${id}`)?.value
-  };
+  const { id } = req.params;
+  const { tipo, dados } = req.body;
 
   try{
 
-    const res = await fetch(`/api/admin/perfis/${id}/editar`,{
-      method:"PUT",
-      headers:{
-        "Content-Type":"application/json",
-        Authorization:"Bearer "+token
-      },
-      body: JSON.stringify({ tipo, dados })
-    });
+    if(tipo === "modelo"){
 
-    const resposta = await res.json();
+      // Atualiza tabela modelos
+      await db.query(`
+        UPDATE modelos
+        SET nome_exibicao=$1,
+            local=$2,
+            bio=$3
+        WHERE id=$4
+      `,[
+        dados.nome_exibicao,
+        dados.local,
+        dados.bio,
+        id
+      ]);
 
-    if(!res.ok){
-      alert(resposta.error || "Erro ao salvar");
-      return;
+      // Atualiza modelos_dados
+      await db.query(`
+        UPDATE modelos_dados
+        SET nome_completo=$1,
+            data_nascimento=$2,
+            telefone=$3,
+            endereco=$4,
+            pais=$5,
+            estado=$6,
+            cidade=$7,
+            instagram=$8,
+            tiktok=$9,
+            vip_preco=$10
+        WHERE modelo_id=$11
+      `,[
+        dados.nome_completo,
+        dados.data_nascimento,
+        dados.telefone,
+        dados.endereco,
+        dados.pais,
+        dados.estado,
+        dados.cidade,
+        dados.instagram,
+        dados.tiktok,
+        dados.vip_preco,
+        id
+      ]);
+
+    } else {
+
+      await db.query(`
+        UPDATE clientes_dados
+        SET nome_completo=$1,
+            data_nascimento=$2,
+            telefone=$3,
+            endereco=$4,
+            pais=$5,
+            estado=$6,
+            cidade=$7
+        WHERE cliente_id=$8
+      `,[
+        dados.nome_completo,
+        dados.data_nascimento,
+        dados.telefone,
+        dados.endereco,
+        dados.pais,
+        dados.estado,
+        dados.cidade,
+        id
+      ]);
+
     }
 
-    alert("Dados atualizados com sucesso!");
-    carregarPerfis();
+    res.json({ message:"Atualizado com sucesso" });
 
   }catch(err){
-    alert("Erro inesperado");
+    console.error(err);
+    res.status(500).json({ error:"Erro ao atualizar dados" });
   }
-}
-
+});
 
 router.put("/admin/rejeitar/:id", auth, authAdmin, async (req,res)=>{
 
