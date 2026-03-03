@@ -231,8 +231,9 @@ function prioridadeChat(c) {
   return 4;
 }
 
-window.addEventListener("focus", () => {
-  console.log("👀 Página voltou ao foco — atualizando lista");
-  carregarListaClientes?.();
-  carregarListaModelos?.();
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    console.log("👁 Página visível — atualizando inbox");
+    carregarListaClientes();
+  }
 });
