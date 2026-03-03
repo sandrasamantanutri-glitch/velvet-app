@@ -7,9 +7,20 @@ const authCliente = require("./middleware/authCliente");
 const authModelo = require("./middleware/authModelo");
 const authAdmin = require("./middleware/authAdmin");
 const db = require("./db");
+const AWS = require("aws-sdk");
 
 
 const router = express.Router();   // ⬅️ PRIMEIRO SEMPRE
+
+const s3Privado = new AWS.S3({
+  endpoint: new AWS.Endpoint(process.env.B2_ENDPOINT),
+  accessKeyId: process.env.B2_KEY_ID_PRIVATE,
+  secretAccessKey: process.env.B2_APP_KEY_PRIVATE,
+  region: process.env.B2_REGION,
+  signatureVersion: "v4",
+  s3ForcePathStyle: true
+});
+
 
 // 🔓 assets do admin (HTML/CSS/JS)
 router.use("/assets",
