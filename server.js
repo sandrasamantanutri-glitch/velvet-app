@@ -3028,6 +3028,7 @@ const result = await db.query(`
   ) v ON true
 
   WHERE ver.status = 'aprovado'
+  AND m.feed = true
 
   ORDER BY 
     total_vips DESC,
