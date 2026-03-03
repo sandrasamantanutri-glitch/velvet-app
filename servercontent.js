@@ -2028,11 +2028,14 @@ router.get("/agencia/dashboard", authAgencia, async (req, res) => {
 });
 
 router.get("/admin/modelos", auth, authAdmin, async (req,res)=>{
+
   const result = await db.query(`
-    SELECT id, nome
-    FROM modelos
-    WHERE verificada = true
-    ORDER BY nome ASC
+    SELECT m.id, m.nome
+    FROM modelos m
+    JOIN modelos_verificacao mv
+      ON mv.modelo_id = m.id
+    WHERE mv.status = 'aprovado'
+    ORDER BY m.nome ASC
   `);
 
   res.json(result.rows);
