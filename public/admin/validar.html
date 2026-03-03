@@ -132,30 +132,52 @@ const res = await fetch(
 </div>
 
         <div class="validar-config">
-  <div class="dados-perfil">
+<div class="dados-perfil">
 
-    ${p.nome_completo ? `<p><strong>Nome completo:</strong> ${p.nome_completo}</p>` : ""}
-    ${p.data_nascimento ? `<p><strong>Nascimento:</strong> ${p.data_nascimento}</p>` : ""}
-    ${p.cpf ? `<p><strong>CPF:</strong> ${p.cpf}</p>` : ""}
-    ${p.telefone ? `<p><strong>Telefone:</strong> ${p.telefone}</p>` : ""}
-    ${p.cliente_telefone ? `<p><strong>Telefone cliente:</strong> ${p.cliente_telefone}</p>` : ""}
-    ${p.endereco ? `<p><strong>Endereço:</strong> ${p.endereco}</p>` : ""}
-    ${p.cliente_endereco ? `<p><strong>Endereço cliente:</strong> ${p.cliente_endereco}</p>` : ""}
-    ${p.pais ? `<p><strong>País:</strong> ${p.pais}</p>` : ""}
-    ${p.estado ? `<p><strong>Estado:</strong> ${p.estado}</p>` : ""}
-    ${p.cidade ? `<p><strong>Cidade:</strong> ${p.cidade}</p>` : ""}
-    ${p.bio ? `<p><strong>Bio:</strong> ${p.bio}</p>` : ""}
-    ${p.vip_preco ? `<p><strong>VIP Preço:</strong> € ${p.vip_preco}</p>` : ""}
-    ${p.instagram ? `<p><strong>Instagram:</strong> ${p.instagram}</p>` : ""}
-    ${p.tiktok ? `<p><strong>TikTok:</strong> ${p.tiktok}</p>` : ""}
-    ${p.email ? `<p><strong>Email:</strong> ${p.email}</p>` : ""}
+  ${(() => {
 
-  </div>
+    function campo(label, valor, nomeCampo){
+      return `
+        <div class="campo-editavel">
+          <label>${label}</label>
+          <input 
+            type="text" 
+            id="edit_${nomeCampo}_${p.id}" 
+            value="${valor || ""}" 
+            placeholder="Não preenchido"
+          >
+        </div>
+      `;
+    }
+
+    return `
+      ${campo("Nome completo", p.nome_completo, "nome_completo")}
+      ${campo("Data nascimento", p.data_nascimento, "data_nascimento")}
+      ${campo("CPF", p.cpf, "cpf")}
+      ${campo("Telefone", p.telefone || p.cliente_telefone, "telefone")}
+      ${campo("Endereço", p.endereco || p.cliente_endereco, "endereco")}
+      ${campo("País", p.pais, "pais")}
+      ${campo("Estado", p.estado, "estado")}
+      ${campo("Cidade", p.cidade, "cidade")}
+      ${campo("Bio", p.bio, "bio")}
+      ${campo("VIP Preço", p.vip_preco, "vip_preco")}
+      ${campo("Instagram", p.instagram, "instagram")}
+      ${campo("TikTok", p.tiktok, "tiktok")}
+      ${campo("Email", p.email, "email")}
+
+      <button 
+        class="btn-salvar-dados"
+        onclick="salvarDadosPerfil(${p.id}, '${p.tipo}')"
+      >
+        Salvar Dados
+      </button>
+    `;
+
+  })()}
+
+</div>
 
   <hr>
-          <label>VIP Preço</label>
-          <input type="number" step="0.01" id="vip_${p.id}" placeholder="Ex: 49.90">
-
           <label>Agência</label>
           <select id="agencia_${p.id}">
   <option value="">Sem agência</option>

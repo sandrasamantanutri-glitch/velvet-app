@@ -2360,6 +2360,7 @@ router.get("/admin/agencias", auth, authAdmin, async (req,res)=>{
   }
 });
 
+
 //PUT ///
 // router.put("/agencia/modelo/:id/percentual", authAgencia, async (req,res)=>{
 //   try{
@@ -2620,6 +2621,50 @@ router.put("/admin/validar-cliente/:id", auth, authAdmin, async (req,res)=>{
   }
 });
 
+async function salvarDadosPerfil(id, tipo){
+
+  const dados = {
+    nome_completo: document.getElementById(`edit_nome_completo_${id}`)?.value,
+    data_nascimento: document.getElementById(`edit_data_nascimento_${id}`)?.value,
+    cpf: document.getElementById(`edit_cpf_${id}`)?.value,
+    telefone: document.getElementById(`edit_telefone_${id}`)?.value,
+    endereco: document.getElementById(`edit_endereco_${id}`)?.value,
+    pais: document.getElementById(`edit_pais_${id}`)?.value,
+    estado: document.getElementById(`edit_estado_${id}`)?.value,
+    cidade: document.getElementById(`edit_cidade_${id}`)?.value,
+    bio: document.getElementById(`edit_bio_${id}`)?.value,
+    vip_preco: document.getElementById(`edit_vip_preco_${id}`)?.value,
+    instagram: document.getElementById(`edit_instagram_${id}`)?.value,
+    tiktok: document.getElementById(`edit_tiktok_${id}`)?.value,
+    email: document.getElementById(`edit_email_${id}`)?.value
+  };
+
+  try{
+
+    const res = await fetch(`/api/admin/perfis/${id}/editar`,{
+      method:"PUT",
+      headers:{
+        "Content-Type":"application/json",
+        Authorization:"Bearer "+token
+      },
+      body: JSON.stringify({ tipo, dados })
+    });
+
+    const resposta = await res.json();
+
+    if(!res.ok){
+      alert(resposta.error || "Erro ao salvar");
+      return;
+    }
+
+    alert("Dados atualizados com sucesso!");
+    carregarPerfis();
+
+  }catch(err){
+    alert("Erro inesperado");
+  }
+}
+
 
 router.put("/admin/rejeitar/:id", auth, authAdmin, async (req,res)=>{
 
@@ -2636,6 +2681,7 @@ router.put("/admin/rejeitar/:id", auth, authAdmin, async (req,res)=>{
   res.json({ success:true });
 
 });
+
 
 
 module.exports = {

@@ -658,4 +658,48 @@ tr:nth-child(even){
   background: linear-gradient(135deg, #27ae60, #2ecc71);
 }
 
+.campo-faltando{
+  color:#dc2626;
+  font-weight:600;
+}
+
+.dados-faltando{
+  margin-top:10px;
+  padding:8px;
+  background:#fee2e2;
+  border-radius:6px;
+  font-size:13px;
+}
+
+.dados-ok{
+  margin-top:10px;
+  padding:8px;
+  background:#dcfce7;
+  border-radius:6px;
+  font-size:13px;
+  color:#166534;
+}
+
+.campo-editavel{
+  margin-bottom:8px;
+  display:flex;
+  flex-direction:column;
+}
+
+.campo-editavel input{
+  padding:6px;
+  border:1px solid #ddd;
+  border-radius:6px;
+}
+
+.btn-salvar-dados{
+  margin-top:10px;
+  padding:8px;
+  background:#2563eb;
+  color:white;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+}
+
 
