@@ -3752,6 +3752,106 @@ app.get("/api/pagamento/status/:orderId", async (req, res) => {
   }
 });
 
+app.get("api/admin/perfis", auth, authAdmin, async (req,res)=>{
+
+  const status = req.query.status || "em_analise";
+
+  const page = Math.max(Number(req.query.page) || 1, 1);
+  const limit = 10;
+  const offset = (page - 1) * limit;
+
+  try{
+
+    // 🔹 TOTAL DE REGISTROS
+    const totalRes = await db.query(`
+      SELECT COUNT(*) 
+      FROM modelos_verificacao
+      WHERE status = $1
+    `,[status]);
+
+    const total = Number(totalRes.rows[0].count);
+    const totalPages = Math.max(Math.ceil(total / limit), 1);
+
+    // 🔹 BUSCAR DADOS PAGINADOS
+    const result = await db.query(`
+      SELECT
+        m.id,
+        m.nome_exibicao,
+        mv.status,
+        mv.doc_frente_url,
+        mv.doc_verso_url,
+        mv.selfie_url,
+        mv.motivo_rejeicao,
+
+        CASE 
+          WHEN md.nome_completo IS NOT NULL
+           AND md.data_nascimento IS NOT NULL
+           AND md.telefone IS NOT NULL
+           AND md.endereco IS NOT NULL
+           AND md.pais IS NOT NULL
+           AND md.cidade IS NOT NULL
+           AND md.estado IS NOT NULL
+          THEN true ELSE false
+        END AS dados_completos,
+
+        CASE 
+          WHEN mv.doc_frente_url IS NOT NULL
+           AND mv.doc_verso_url IS NOT NULL
+           AND mv.selfie_url IS NOT NULL
+           AND mv.declaracao = true
+          THEN true ELSE false
+        END AS documentos_completos
+
+      FROM modelos_verificacao mv
+      JOIN modelos m ON m.id = mv.modelo_id
+      LEFT JOIN modelos_dados md ON md.modelo_id = m.id
+
+      WHERE mv.status = $1
+      ORDER BY mv.criado_em DESC NULLS LAST
+      LIMIT $2 OFFSET $3
+    `,[status, limit, offset]);
+
+    const perfisFormatados = result.rows.map(p => ({
+  ...p,
+
+  doc_frente_url: p.doc_frente_url
+    ? s3Privado.getSignedUrl("getObject", {
+        Bucket: process.env.B2_BUCKET_PRIVATE,
+        Key: p.doc_frente_url,
+        Expires: 60 * 10
+      })
+    : null,
+
+  doc_verso_url: p.doc_verso_url
+    ? s3Privado.getSignedUrl("getObject", {
+        Bucket: process.env.B2_BUCKET_PRIVATE,
+        Key: p.doc_verso_url,
+        Expires: 60 * 10
+      })
+    : null,
+
+  selfie_url: p.selfie_url
+    ? s3Privado.getSignedUrl("getObject", {
+        Bucket: process.env.B2_BUCKET_PRIVATE,
+        Key: p.selfie_url,
+        Expires: 60 * 10
+      })
+    : null
+}));
+
+res.json({
+  dados: perfisFormatados,
+  totalPages,
+  page
+});
+
+  } catch(err){
+    console.error("Erro buscar perfis:", err);
+    res.status(500).json({ error:"Erro ao buscar perfis" });
+  }
+
+});
+
 app.get("/manifest.json", (req, res) => {
   res.sendFile(path.join(__dirname, "manifest.json"));
 });
