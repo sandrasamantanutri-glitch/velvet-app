@@ -908,6 +908,14 @@ async function buscarFeedCompletoPorModeloId(modelo_id) {
   return result.rows;
 }
 
+function gerarUrlPrivada(key){
+  return s3Privado.getSignedUrl("getObject", {
+    Bucket: process.env.B2_BUCKET_PRIVATE, 
+    Key: key,
+    Expires: 60 * 5 
+  });
+}
+
 async function gerarThumbnailVideo(videoBuffer, modelo_id) {
 
   const timestamp = Date.now();
