@@ -2632,7 +2632,7 @@ router.put("/admin/validar-modelo/:id", auth, authAdmin, async (req,res)=>{
     const modelo_id = Number(req.params.id);
     const { status } = req.body;
 
-    const modeloRes = await client.query(
+const modeloRes = await client.query(
   "SELECT user_id, nome_exibicao FROM modelos WHERE id=$1",
   [modelo_id]
 );
