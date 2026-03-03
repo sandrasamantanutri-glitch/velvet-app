@@ -2555,61 +2555,94 @@ router.put("/admin/validar-cliente/:id", auth, authAdmin, async (req,res)=>{
       WHERE cliente_id = $1
     `,[cliente_id, status, motivo_rejeicao || null]);
 
-    if(status === "aprovado"){
+    if (status === "aprovado") {
 
-      // 1️⃣ Atualiza role
-      await client.query(
-        "UPDATE users SET role='modelo' WHERE id=$1",
-        [cliente_id]
-      );
+  // 🔹 1️⃣ Buscar user_id do cliente
+  const userRes = await client.query(
+    "SELECT user_id, nome FROM clientes WHERE id = $1",
+    [cliente_id]
+  );
 
-      // 2️⃣ Criar registro em modelos
-      await client.query(`
-        INSERT INTO modelos (user_id, nome, nome_exibicao, created_at, verificada)
-        SELECT
-          c.user_id,
-          COALESCE(cd.nome_completo, c.nome),
-          c.nome,
-          NOW(),
-          true
-        FROM clientes c
-        WHERE c.user_id = $1
-        ON CONFLICT (user_id) DO NOTHING
-      `,[cliente_id]);
+  if (!userRes.rowCount) {
+    throw new Error("Cliente não encontrado");
+  }
 
-      // 3️⃣ Copiar dados
-      await client.query(`
-        INSERT INTO modelos_dados (
-          modelo_id,
-          nome_completo,
-          data_nascimento,
-          telefone,
-          endereco,
-          pais,
-          cidade,
-          estado,
-          instagram,
-          tiktok,
-          bio
-        )
-        SELECT
-          m.id,
-          cd.nome_completo,
-          cd.data_nascimento,
-          cd.telefone,
-          cd.endereco,
-          cd.pais,
-          cd.cidade,
-          cd.estado,
-          cd.instagram,
-          cd.tiktok,
-          cd.bio
-        FROM clientes_dados cd
-        JOIN modelos m ON m.user_id = cd.cliente_id
-        WHERE cd.cliente_id = $1
-        ON CONFLICT (modelo_id) DO NOTHING
-      `,[cliente_id]);
-    }
+  const user_id = userRes.rows[0].user_id;
+  const nome_cliente = userRes.rows[0].nome;
+
+  // 🔹 2️⃣ Atualizar role no users
+  await client.query(
+    "UPDATE users SET role = 'modelo' WHERE id = $1",
+    [user_id]
+  );
+
+  // 🔹 3️⃣ Criar registro em modelos (copiando clientes → modelos)
+  await client.query(`
+    INSERT INTO modelos (
+      user_id,
+      nome,
+      nome_exibicao,
+      local,
+      bio,
+      created_at,
+      verificada
+    )
+    SELECT
+      c.user_id,
+      c.nome,
+      cd.nome_exibicao,
+      cd.local,
+      cd.bio,
+      NOW(),
+      true
+    FROM clientes c
+    LEFT JOIN clientes_dados cd ON cd.cliente_id = c.id
+    WHERE c.id = $1
+    ON CONFLICT (user_id) DO NOTHING
+  `, [cliente_id]);
+
+  // 🔹 4️⃣ Buscar modelo_id recém criado
+  const modeloRes = await client.query(
+    "SELECT id FROM modelos WHERE user_id = $1",
+    [user_id]
+  );
+
+  const modelo_id = modeloRes.rows[0].id;
+
+  // 🔹 5️⃣ Copiar clientes_dados → modelos_dados
+  await client.query(`
+    INSERT INTO modelos_dados (
+      modelo_id,
+      nome_completo,
+      data_nascimento,
+      telefone,
+      endereco,
+      pais,
+      cidade,
+      estado,
+      instagram,
+      tiktok,
+      bio,
+      vip_preco
+    )
+    SELECT
+      $1,
+      cd.nome_completo,
+      cd.data_nascimento,
+      cd.telefone,
+      cd.endereco,
+      cd.pais,
+      cd.cidade,
+      cd.estado,
+      cd.instagram,
+      cd.tiktok,
+      cd.bio,
+      cd.vip_preco
+    FROM clientes_dados cd
+    WHERE cd.cliente_id = $2
+    ON CONFLICT (modelo_id) DO NOTHING
+  `, [modelo_id, cliente_id]);
+}
 
     await client.query("COMMIT");
 
