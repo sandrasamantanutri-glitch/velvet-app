@@ -94,13 +94,13 @@ const res = await fetch(
   </div>
 
         <span class="badge ${p.dados_completos && p.documentos_completos ? 'ok':'pendente'}">
-          ${p.dados_completos && p.documentos_completos ? 'Pronto para validar' : 'Incompleto'}
+          ${p.dados_completos && p.documentos_completos ? 'Pronto para validar' : 'em_validação'}
         </span>
       </div>
 
-      <div class="validar-grid">
+<div class="validar-grid">
 
-        <div class="validar-docs">
+<div class="validar-docs">
 
   ${p.doc_frente_url ? `
     <div class="doc-item">
@@ -128,6 +128,36 @@ const res = await fetch(
       </a>
     </div>
   ` : ""}
+
+  ${p.avatar ? `
+    <div class="doc-item">
+      <span>Avatar</span>
+      <a href="${p.avatar}" target="_blank">
+        <img src="${p.avatar}" alt="Avatar">
+      </a>
+    </div>
+  ` : `
+    <div class="doc-item vazio">
+      <span>Avatar</span>
+      <div class="img-vazia">Não enviado</div>
+    </div>
+  `}
+
+  ${p.capa ? `
+    <div class="doc-item">
+      <span>Capa</span>
+      <a href="${p.capa}" target="_blank">
+        <img src="${p.capa}" alt="Capa">
+      </a>
+    </div>
+  ` : `
+    <div class="doc-item vazio">
+      <span>Capa</span>
+      <div class="img-vazia">Não enviada</div>
+    </div>
+  `}
+
+</div>
 
 </div>
 

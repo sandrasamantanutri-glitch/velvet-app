@@ -702,4 +702,20 @@ tr:nth-child(even){
   cursor:pointer;
 }
 
+.img-vazia{
+  width:120px;
+  height:120px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#f3f4f6;
+  border-radius:8px;
+  font-size:13px;
+  color:#6b7280;
+}
+
+.doc-item.vazio{
+  opacity:0.8;
+}
+
 
