@@ -1154,29 +1154,28 @@ function abrirModalMidia(url, isVideo) {
 window.abrirFluxoVIP = function () {
   fecharPopupPagamento?.();
   document.getElementById("modalMidia")?.classList.add("hidden");
-  
+
   const role = localStorage.getItem("role");
 
   if (!role) {
-    exigirCadastro(
-      "Crie sua conta para assinar o perfil e acessar tudo 💜"
-    );
+    exigirCadastro("Crie sua conta para assinar o perfil e acessar tudo 💜");
     return;
   }
 
   if (!modelo_id) {
-  alert("Erro ao identificar modelo.");
-  return;
-}
-
+    alert("Erro ao identificar modelo.");
+    return;
+  }
 
   window.PAGAMENTO_TIPO_ATUAL = "vip";
 
+  const valorBase = window.OFERTA_ATUAL?.valor_base ?? 20;
+  const valorPromocional =
+    window.OFERTA_ATUAL?.valor_promocional ?? valorBase;
+
   preencherResumoVIP({
-    valorBase: window.OFERTA_ATUAL.valor_base,
-    desconto:
-      window.OFERTA_ATUAL.valor_base -
-      window.OFERTA_ATUAL.valor_promocional
+    valorBase: valorBase,
+    desconto: valorBase - valorPromocional
   });
 
   abrirPopupPagamento();
