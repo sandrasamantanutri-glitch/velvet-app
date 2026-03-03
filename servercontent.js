@@ -1687,60 +1687,18 @@ router.get("/modelo/conteudos", auth, authModelo, async (req, res) => {
 router.get("/admin/dashboard", auth, authAdmin, async (req, res) => {
   try {
 
+    const mesParam = req.query.mes; // ex: 2026-03
+    let ano = null;
+    let mes = null;
+
+    if (mesParam) {
+      const partes = mesParam.split("-");
+      ano = Number(partes[0]);
+      mes = Number(partes[1]);
+    }
+
     const result = await db.query(`
-      SELECT
-        /* ================= HOJE ================= */
-
-        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN velvet_fee END),0) AS velvet_hoje,
-        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN agency_fee END),0) AS agencia_hoje,
-        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN taxa_gateway END),0) AS gateway_hoje,
-        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN valor_modelo END),0) AS modelo_hoje,
-
-        /* ================= MÊS ================= */
-
-        COALESCE(SUM(CASE 
-          WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
-          THEN velvet_fee END),0) AS velvet_mes,
-
-        COALESCE(SUM(CASE 
-          WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
-          THEN agency_fee END),0) AS agencia_mes,
-
-        COALESCE(SUM(CASE 
-          WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
-          THEN taxa_gateway END),0) AS gateway_mes,
-
-        COALESCE(SUM(CASE 
-          WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
-          THEN valor_modelo END),0) AS modelo_mes,
-
-        /* 🔥 TOTAL MÊS (Velvet + Agência + Gateway) */
-        COALESCE(SUM(CASE 
-          WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
-          THEN (velvet_fee + agency_fee + taxa_gateway)
-        END),0) AS total_mes,
-
-        /* ================= ANO ================= */
-
-        COALESCE(SUM(CASE 
-          WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
-          THEN velvet_fee END),0) AS velvet_ano,
-
-        COALESCE(SUM(CASE 
-          WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
-          THEN agency_fee END),0) AS agencia_ano,
-
-        COALESCE(SUM(CASE 
-          WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
-          THEN taxa_gateway END),0) AS gateway_ano,
-
-        COALESCE(SUM(CASE 
-          WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
-          THEN valor_modelo END),0) AS modelo_ano
-
-      FROM (
-
-        /* ================= NOVO PADRÃO ================= */
+      WITH base AS (
         SELECT
           valor_modelo,
           velvet_fee,
@@ -1753,7 +1711,6 @@ router.get("/admin/dashboard", auth, authAdmin, async (req, res) => {
 
         UNION ALL
 
-        /* ================= DADOS ANTIGOS ================= */
         SELECT
           ROUND(valor_bruto * 0.70,2) AS valor_modelo,
           ROUND(valor_bruto * 0.20,2) AS velvet_fee,
@@ -1763,9 +1720,65 @@ router.get("/admin/dashboard", auth, authAdmin, async (req, res) => {
            AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
         FROM transacoes
         WHERE status = 'pago'
+      )
 
-      ) t
-    `);
+      SELECT
+
+        /* ================= HOJE (sempre real) ================= */
+
+        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN velvet_fee END),0) AS velvet_hoje,
+        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN agency_fee END),0) AS agencia_hoje,
+        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN taxa_gateway END),0) AS gateway_hoje,
+        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN valor_modelo END),0) AS modelo_hoje,
+
+        /* ================= MÊS SELECIONADO ================= */
+
+        COALESCE(SUM(CASE 
+          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM CURRENT_DATE))
+           AND EXTRACT(MONTH FROM data_sp) = COALESCE($2, EXTRACT(MONTH FROM CURRENT_DATE))
+          THEN velvet_fee END),0) AS velvet_mes,
+
+        COALESCE(SUM(CASE 
+          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM CURRENT_DATE))
+           AND EXTRACT(MONTH FROM data_sp) = COALESCE($2, EXTRACT(MONTH FROM CURRENT_DATE))
+          THEN agency_fee END),0) AS agencia_mes,
+
+        COALESCE(SUM(CASE 
+          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM CURRENT_DATE))
+           AND EXTRACT(MONTH FROM data_sp) = COALESCE($2, EXTRACT(MONTH FROM CURRENT_DATE))
+          THEN taxa_gateway END),0) AS gateway_mes,
+
+        COALESCE(SUM(CASE 
+          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM CURRENT_DATE))
+           AND EXTRACT(MONTH FROM data_sp) = COALESCE($2, EXTRACT(MONTH FROM CURRENT_DATE))
+          THEN valor_modelo END),0) AS modelo_mes,
+
+        COALESCE(SUM(CASE 
+          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM CURRENT_DATE))
+           AND EXTRACT(MONTH FROM data_sp) = COALESCE($2, EXTRACT(MONTH FROM CURRENT_DATE))
+          THEN (velvet_fee + agency_fee + taxa_gateway)
+        END),0) AS total_mes,
+
+        /* ================= ANO DO MÊS SELECIONADO ================= */
+
+        COALESCE(SUM(CASE 
+          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM CURRENT_DATE))
+          THEN velvet_fee END),0) AS velvet_ano,
+
+        COALESCE(SUM(CASE 
+          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM CURRENT_DATE))
+          THEN agency_fee END),0) AS agencia_ano,
+
+        COALESCE(SUM(CASE 
+          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM CURRENT_DATE))
+          THEN taxa_gateway END),0) AS gateway_ano,
+
+        COALESCE(SUM(CASE 
+          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM CURRENT_DATE))
+          THEN valor_modelo END),0) AS modelo_ano
+
+      FROM base
+    `, [ano, mes]);
 
     res.json(result.rows[0]);
 
@@ -1774,6 +1787,7 @@ router.get("/admin/dashboard", auth, authAdmin, async (req, res) => {
     res.status(500).json({ error: "Erro ao carregar dashboard" });
   }
 });
+
 
 router.get("/agencia/modelos", authAgencia, async (req, res) => {
   try {
@@ -2017,46 +2031,18 @@ router.get("/admin/modelo/:id", auth, authAdmin, async (req,res)=>{
 
   const modelo_id = Number(req.params.id);
 
+  const mesParam = req.query.mes; // ex: 2026-03
+  let ano = null;
+  let mes = null;
+
+  if (mesParam) {
+    const partes = mesParam.split("-");
+    ano = Number(partes[0]);
+    mes = Number(partes[1]);
+  }
+
   const result = await db.query(`
-    SELECT
-      m.nome,
-
-      /* ================= DIA ================= */
-
-      COALESCE(SUM(CASE WHEN data_sp=CURRENT_DATE THEN valor_modelo END),0) modelo_dia,
-      COALESCE(SUM(CASE WHEN data_sp=CURRENT_DATE THEN agency_fee END),0) agencia_dia,
-      COALESCE(SUM(CASE WHEN data_sp=CURRENT_DATE THEN velvet_fee END),0) velvet_dia,
-      COALESCE(SUM(CASE WHEN data_sp=CURRENT_DATE THEN taxa_gateway END),0) gateway_dia,
-
-      /* ================= MÊS ================= */
-
-      COALESCE(SUM(CASE WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
-        THEN valor_modelo END),0) modelo_mes,
-
-      COALESCE(SUM(CASE WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
-        THEN agency_fee END),0) agencia_mes,
-
-      COALESCE(SUM(CASE WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
-        THEN velvet_fee END),0) velvet_mes,
-
-      COALESCE(SUM(CASE WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
-        THEN taxa_gateway END),0) gateway_mes,
-
-      /* ================= ANO ================= */
-
-      COALESCE(SUM(CASE WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
-        THEN valor_modelo END),0) modelo_ano,
-
-      COALESCE(SUM(CASE WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
-        THEN agency_fee END),0) agencia_ano,
-
-      COALESCE(SUM(CASE WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
-        THEN velvet_fee END),0) velvet_ano,
-
-      COALESCE(SUM(CASE WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
-        THEN taxa_gateway END),0) gateway_ano
-
-    FROM (
+    WITH base AS (
 
       /* ================= NOVO PADRÃO ================= */
       SELECT
@@ -2083,13 +2069,155 @@ router.get("/admin/modelo/:id", auth, authAdmin, async (req,res)=>{
       FROM transacoes
       WHERE status='pago'
         AND modelo_id=$1
+    )
 
-    ) t
+    SELECT
+      m.nome,
+
+      /* ================= DIA (sempre real) ================= */
+
+      COALESCE(SUM(CASE WHEN data_sp=CURRENT_DATE THEN valor_modelo END),0) modelo_dia,
+      COALESCE(SUM(CASE WHEN data_sp=CURRENT_DATE THEN agency_fee END),0) agencia_dia,
+      COALESCE(SUM(CASE WHEN data_sp=CURRENT_DATE THEN velvet_fee END),0) velvet_dia,
+      COALESCE(SUM(CASE WHEN data_sp=CURRENT_DATE THEN taxa_gateway END),0) gateway_dia,
+
+      /* ================= MÊS SELECIONADO ================= */
+
+      COALESCE(SUM(CASE 
+        WHEN EXTRACT(YEAR FROM data_sp)=COALESCE($2, EXTRACT(YEAR FROM CURRENT_DATE))
+         AND EXTRACT(MONTH FROM data_sp)=COALESCE($3, EXTRACT(MONTH FROM CURRENT_DATE))
+        THEN valor_modelo END),0) modelo_mes,
+
+      COALESCE(SUM(CASE 
+        WHEN EXTRACT(YEAR FROM data_sp)=COALESCE($2, EXTRACT(YEAR FROM CURRENT_DATE))
+         AND EXTRACT(MONTH FROM data_sp)=COALESCE($3, EXTRACT(MONTH FROM CURRENT_DATE))
+        THEN agency_fee END),0) agencia_mes,
+
+      COALESCE(SUM(CASE 
+        WHEN EXTRACT(YEAR FROM data_sp)=COALESCE($2, EXTRACT(YEAR FROM CURRENT_DATE))
+         AND EXTRACT(MONTH FROM data_sp)=COALESCE($3, EXTRACT(MONTH FROM CURRENT_DATE))
+        THEN velvet_fee END),0) velvet_mes,
+
+      COALESCE(SUM(CASE 
+        WHEN EXTRACT(YEAR FROM data_sp)=COALESCE($2, EXTRACT(YEAR FROM CURRENT_DATE))
+         AND EXTRACT(MONTH FROM data_sp)=COALESCE($3, EXTRACT(MONTH FROM CURRENT_DATE))
+        THEN taxa_gateway END),0) gateway_mes,
+
+      /* ================= ANO DO MÊS SELECIONADO ================= */
+
+      COALESCE(SUM(CASE 
+        WHEN EXTRACT(YEAR FROM data_sp)=COALESCE($2, EXTRACT(YEAR FROM CURRENT_DATE))
+        THEN valor_modelo END),0) modelo_ano,
+
+      COALESCE(SUM(CASE 
+        WHEN EXTRACT(YEAR FROM data_sp)=COALESCE($2, EXTRACT(YEAR FROM CURRENT_DATE))
+        THEN agency_fee END),0) agencia_ano,
+
+      COALESCE(SUM(CASE 
+        WHEN EXTRACT(YEAR FROM data_sp)=COALESCE($2, EXTRACT(YEAR FROM CURRENT_DATE))
+        THEN velvet_fee END),0) velvet_ano,
+
+      COALESCE(SUM(CASE 
+        WHEN EXTRACT(YEAR FROM data_sp)=COALESCE($2, EXTRACT(YEAR FROM CURRENT_DATE))
+        THEN taxa_gateway END),0) gateway_ano
+
+    FROM base
     JOIN modelos m ON m.id=$1
     GROUP BY m.nome
-  `,[modelo_id]);
+
+  `,[modelo_id, ano, mes]);
 
   res.json(result.rows[0]);
+});
+
+router.get("/admin/perfis", auth, authAdmin, async (req,res)=>{
+
+  const status = req.query.status || "pendente";
+
+  const page = Math.max(Number(req.query.page) || 1, 1);
+  const limit = 10;
+  const offset = (page - 1) * limit;
+
+  try{
+
+    // 🔹 TOTAL DE REGISTROS
+    const totalRes = await db.query(`
+      SELECT COUNT(*) 
+      FROM modelos_verificacao
+      WHERE status = $1
+    `,[status]);
+
+    const total = Number(totalRes.rows[0].count);
+    const totalPages = Math.max(Math.ceil(total / limit), 1);
+
+    // 🔹 BUSCAR DADOS PAGINADOS
+    const result = await db.query(`
+      SELECT
+        m.id,
+        m.nome_exibicao,
+        mv.status,
+        mv.doc_frente_url,
+        mv.doc_verso_url,
+        mv.selfie_url,
+        mv.motivo_rejeicao,
+
+        CASE 
+          WHEN md.nome_completo IS NOT NULL
+           AND md.data_nascimento IS NOT NULL
+           AND md.telefone IS NOT NULL
+           AND md.endereco IS NOT NULL
+           AND md.pais IS NOT NULL
+           AND md.cidade IS NOT NULL
+           AND md.estado IS NOT NULL
+          THEN true ELSE false
+        END AS dados_completos,
+
+        CASE 
+          WHEN mv.doc_frente_url IS NOT NULL
+           AND mv.doc_verso_url IS NOT NULL
+           AND mv.selfie_url IS NOT NULL
+           AND mv.declaracao = true
+          THEN true ELSE false
+        END AS documentos_completos
+
+      FROM modelos_verificacao mv
+      JOIN modelos m ON m.id = mv.modelo_id
+      LEFT JOIN modelos_dados md ON md.modelo_id = m.id
+
+      WHERE mv.status = $1
+      ORDER BY mv.criado_em DESC NULLS LAST
+      LIMIT $2 OFFSET $3
+    `,[status, limit, offset]);
+
+    res.json({
+      dados: result.rows,
+      total,
+      totalPages,
+      page
+    });
+
+  } catch(err){
+    console.error("Erro buscar perfis:", err);
+    res.status(500).json({ error:"Erro ao buscar perfis" });
+  }
+
+});
+
+router.get("/admin/agencias", auth, authAdmin, async (req,res)=>{
+  try{
+
+    const result = await db.query(`
+      SELECT id, nome
+      FROM agencias
+      ORDER BY nome ASC
+    `);
+
+    res.json(result.rows);
+
+  } catch(err){
+    console.error("Erro buscar agências:", err);
+    res.status(500).json({ error:"Erro ao buscar agências" });
+  }
 });
 
 //PUT ///
@@ -2151,6 +2279,162 @@ router.get("/admin/modelo/:id", auth, authAdmin, async (req,res)=>{
 //     res.status(500).json({error:"Erro interno"});
 //   }
 // });
+
+router.put("/admin/validar-modelo/:id", auth, authAdmin, async (req,res)=>{
+
+  const modelo_id = Number(req.params.id);
+
+  const {
+    status,              // aprovado | rejeitado
+    motivo_rejeicao,
+    agencia_id,
+    vip_preco
+  } = req.body;
+
+  const client = await db.connect();
+
+  try {
+
+    await client.query("BEGIN");
+
+    // ===============================
+    // 1️⃣ Atualiza modelos_verificacao
+    // ===============================
+
+    await client.query(`
+      UPDATE modelos_verificacao
+      SET
+        status = $2,
+        motivo_rejeicao = $3,
+        verificado_em = NOW(),
+        atualizado_em = NOW()
+      WHERE modelo_id = $1
+    `,[modelo_id, status, motivo_rejeicao || null]);
+
+
+    // ===============================
+    // 2️⃣ Atualiza modelos
+    // ===============================
+
+    await client.query(`
+      UPDATE modelos
+      SET
+        verificada = $2,
+        agencia_id = $3,
+        atualizado_em = NOW()
+      WHERE id = $1
+    `,[
+      modelo_id,
+      status === "aprovado",
+      agencia_id || null
+    ]);
+
+
+    // ===============================
+    // 3️⃣ Atualiza modelos_dados
+    // ===============================
+
+    if(vip_preco){
+
+      await client.query(`
+        UPDATE modelos_dados
+        SET
+          vip_preco = $2,
+          atualizado_em = NOW()
+        WHERE modelo_id = $1
+      `,[modelo_id, vip_preco]);
+
+    }
+
+    await client.query("COMMIT");
+
+    res.json({ success:true });
+
+  } catch (err) {
+
+    await client.query("ROLLBACK");
+    console.error("Erro validar modelo:", err);
+    res.status(500).json({ error:"Erro ao validar modelo" });
+
+  } finally {
+    client.release();
+  }
+
+});
+
+router.put("/admin/validar-cliente/:id", auth, authAdmin, async (req,res)=>{
+
+  const cliente_id = Number(req.params.id);
+
+  const {
+    status,
+    motivo_rejeicao
+  } = req.body;
+
+  const client = await db.connect();
+
+  try {
+
+    await client.query("BEGIN");
+
+    // ===============================
+    // 1️⃣ Atualiza clientes_verificacao
+    // ===============================
+
+    await client.query(`
+      UPDATE clientes_verificacao
+      SET
+        status = $2,
+        motivo_rejeicao = $3,
+        verificado_em = NOW(),
+        atualizado_em = NOW()
+      WHERE cliente_id = $1
+    `,[cliente_id, status, motivo_rejeicao || null]);
+
+
+    // ===============================
+    // 2️⃣ Atualiza clientes_dados
+    // ===============================
+
+    await client.query(`
+      UPDATE clientes_dados
+      SET atualizado_em = NOW()
+      WHERE cliente_id = $1
+    `,[cliente_id]);
+
+    await client.query("COMMIT");
+
+    res.json({ success:true });
+
+  } catch (err) {
+
+    await client.query("ROLLBACK");
+    console.error("Erro validar cliente:", err);
+    res.status(500).json({ error:"Erro ao validar cliente" });
+
+  } finally {
+    client.release();
+  }
+
+});
+
+
+
+router.put("/admin/rejeitar/:id", auth, authAdmin, async (req,res)=>{
+
+  const id = Number(req.params.id);
+  const { motivo } = req.body;
+
+  await db.query(`
+    UPDATE modelos_verificacao
+    SET status = 'rejeitado',
+        motivo_rejeicao = $2
+    WHERE modelo_id = $1
+  `,[id, motivo || "Não especificado"]);
+
+  res.json({ success:true });
+
+});
 
 
 module.exports = {

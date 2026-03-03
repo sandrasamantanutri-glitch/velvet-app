@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>Admin - Detalhes Modelo</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="/adm/agencia.css">
+<link rel="stylesheet" href="admin.css">
 </head>
 
 <body>
@@ -12,10 +12,26 @@
 <header class="topbar">
   <div class="topbar-left">
     <img src="/assets/velvet.png" class="logo-small">
-    <nav>
-      <a href="/adm/dashboard.html">Dashboard</a>
-    </nav>
+<nav>
+  <a href="/admin/dashboard.html">Dashboard</a>
+  <a href="/admin/modelos.html"class="active">Modelos</a>
+  <a href="/admin/validar.html">Validar Perfis</a>
+</nav>
   </div>
+
+  <div class="topbar-right filtros">
+  <select id="mesSelect" onchange="alterarMes()">
+    <option value="">Selecionar Mês</option>
+  </select>
+    <select id="modeloSelect" onchange="irModelo()">
+    <option value="">Selecionar Modelo</option>
+  </select>
+
+  <button class="logout-btn" onclick="logoutAdmin()">
+    Sair
+  </button>
+
+</div>
 </header>
 
 <div class="main">
@@ -53,16 +69,34 @@
 </div>
 
 <script>
+//   const token = localStorage.getItem("token_admin");
 
-const token = localStorage.getItem("token_admin");
+// if (!token) {
+//   window.location.href = "/admin/login.html";
+//   throw new Error("Sem token admin");
+// }
 const params = new URLSearchParams(window.location.search);
 const id = params.get("id");
 
 async function carregar(){
 
-  const res = await fetch("/api/admin/modelo/"+id,{
+  const mes = document.getElementById("mesSelect").value;
+
+  let url = "/api/admin/modelo/" + id;
+
+  if(mes){
+    url += "?mes=" + mes;
+  }
+
+  const res = await fetch(url,{
     headers:{ Authorization:"Bearer "+token }
   });
+
+  if(res.status === 401 || res.status === 403){
+    localStorage.removeItem("token_admin");
+    window.location.href="/admin/login.html";
+    return;
+  }
 
   if(!res.ok){
     alert("Erro ao carregar modelo");
@@ -91,6 +125,20 @@ async function carregar(){
   set("agenciaAno",d.agencia_ano);
   set("velvetAno",d.velvet_ano);
   set("gatewayAno",d.gateway_ano);
+}
+
+function irModelo(){
+  const id = document.getElementById("modeloSelect").value;
+  if(id) window.location.href="modelo.html?id="+id;
+}
+
+function alterarMes(){
+  carregar(); 
+}
+
+function logoutAdmin(){
+  localStorage.removeItem("token_admin");
+  window.location.href = "/admin/login.html";
 }
 
 carregar();

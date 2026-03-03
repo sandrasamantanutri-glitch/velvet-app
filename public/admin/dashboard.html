@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>Admin Dashboard - Velvet</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="/admin/admin.css">
+<link rel="stylesheet" href="admin.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
@@ -13,22 +13,28 @@
 <header class="topbar">
   <div class="topbar-left">
     <img src="/assets/velvet.png" class="logo-small">
-    <nav>
-      <a href="/admin/dashboard.html" class="active">Dashboard</a>
-    </nav>
+<nav>
+  <a href="/admin/dashboard.html">Dashboard</a>
+  <a href="/admin/modelos.html">Modelos</a>
+  <a href="/admin/validar.html">Validar Perfis</a>
+</nav>
   </div>
 
-  <div class="topbar-right">
-    <select id="modeloSelect" onchange="irModelo()">
-      <option value="">Selecionar Modelo</option>
-    </select>
-  </div>
+<div class="topbar-right filtros">
+  <select id="mesSelect" onchange="alterarMes()">
+    <option value="">Selecionar Mês</option>
+  </select>
+
+  <button class="logout-btn" onclick="logoutAdmin()">
+    Sair
+  </button>
+
+</div>
 </header>
 
 
-
 <div class="cards">
-
+<h2 class="secao-titulo">Hoje</h2>
   <!-- HOJE -->
   <div class="linha-4">
     <div class="card plataforma">
@@ -53,8 +59,10 @@
   </div>
 
   <!-- MÊS -->
+   <h2 class="secao-titulo">Mês Atual</h2>
   <div class="linha-4">
     <div class="card plataforma">
+      
       <h4>Ganhos Plataforma Mês</h4>
       <div class="valor" id="velvetMes">R$ 0</div>
     </div>
@@ -89,6 +97,7 @@
   </div>
 
   <!-- ANO -->
+   <h2 class="secao-titulo">Ano</h2>
   <div class="linha-1">
     <div class="card plataforma">
       <h4>Total Ano Plataforma</h4>
@@ -122,18 +131,50 @@
 <br>
 
 <script>
+//   const token = localStorage.getItem("token_admin");
 
-const token = localStorage.getItem("token_admin");
+// if (!token) {
+//   window.location.href = "/admin/login.html";
+//   throw new Error("Sem token admin");
+// }
 
-async function carregarDashboard(){
-  const res = await fetch("/api/admin/dashboard",{
+function carregarMeses(){
+  const select = document.getElementById("mesSelect");
+  const meses = [
+    "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+    "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
+  ];
+
+  const anoAtual = new Date().getFullYear();
+
+  meses.forEach((mes, index)=>{
+    const valor = `${anoAtual}-${String(index+1).padStart(2,"0")}`;
+    select.innerHTML += `<option value="${valor}">${mes} ${anoAtual}</option>`;
+  });
+}
+
+async function carregarDashboard(mesSelecionado){
+
+  let url = "/api/admin/dashboard";
+
+  if(mesSelecionado){
+    url += "?mes=" + mesSelecionado;
+  }
+
+  const res = await fetch(url,{
     headers:{ Authorization:"Bearer "+token }
   });
 
-  if(!res.ok){
-    alert("Erro ao carregar dashboard admin");
-    return;
-  }
+if (res.status === 401 || res.status === 403) {
+  localStorage.removeItem("token_admin");
+  window.location.href = "/admin/login.html";
+  return;
+}
+
+if (!res.ok) {
+  alert("Erro ao carregar dashboard");
+  return;
+}
 
   const data = await res.json();
 
@@ -210,8 +251,20 @@ function irModelo(){
   if(id) window.location.href="modelo.html?id="+id;
 }
 
+function alterarMes(){
+  const mes = document.getElementById("mesSelect").value;
+  carregarDashboard(mes);
+}
+
+function logoutAdmin(){
+  localStorage.removeItem("token_admin");
+  window.location.href = "/admin/login.html";
+}
+
+
 carregarDashboard();
 carregarModelos();
+carregarMeses();
 
 </script>
 </body>
