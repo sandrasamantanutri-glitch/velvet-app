@@ -181,21 +181,19 @@ const res = await fetch(
     }
 
     return `
-  ${p.tipo === "modelo" ? campo("Nome de exibição", p.nome_exibicao, "nome_exibicao") : ""}
-  ${p.tipo === "modelo" ? campo("Local", p.local, "local") : ""}
-
+ ${campo("Nome de exibição", p.nome_exibicao || p.cliente_nome_exibicao, "nome_exibicao")}
+ ${campo("Local", p.local || p.cliente_local, "local")}
   ${campo("Nome completo", p.nome_completo, "nome_completo")}
   ${campo("Data nascimento", p.data_nascimento, "data_nascimento")}
   ${campo("Telefone", p.telefone || p.cliente_telefone, "telefone")}
   ${campo("Endereço", p.endereco || p.cliente_endereco, "endereco")}
-  ${campo("País", p.pais, "pais")}
-  ${campo("Estado", p.estado, "estado")}
-  ${campo("Cidade", p.cidade, "cidade")}
-  ${campo("Bio", p.bio, "bio")}
-  ${campo("VIP Preço", p.vip_preco, "vip_preco")}
-  ${campo("Instagram", p.instagram, "instagram")}
-  ${campo("TikTok", p.tiktok, "tiktok")}
-  ${campo("Email", p.email, "email")}
+  ${campo("País", p.pais || p.cliente_pais, "pais")}
+  ${campo("Estado", p.estado || p.cliente_estado, "estado")}
+  ${campo("Cidade", p.cidade || p.cliente_cidade, "cidade")}
+  ${campo("Bio", p.bio || p.cliente_bio, "bio")}
+  ${campo("VIP Preço", p.vip_preco || p.cliente_vip_preco, "vip_preco")}
+  ${campo("Instagram", p.instagram || p.cliente_instagram, "instagram")}
+  ${campo("TikTok", p.tiktok || p.cliente_tiktok, "tiktok")}
 
   <button 
     class="btn-salvar-dados"

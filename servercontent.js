@@ -2247,55 +2247,60 @@ router.get("/admin/perfis", auth, authAdmin, async (req,res)=>{
 
       (
         -- ================= CLIENTES =================
-        SELECT
-          cv.cliente_id AS id,
-          'cliente' AS tipo,
-          u.email AS nome_exibicao,
-          cv.status,
-          cv.doc_frente_url,
-          cv.doc_verso_url,
-          cv.selfie_url,
-          cv.motivo_rejeicao,
-          cv.criado_em,
+        
+  SELECT
+    cv.cliente_id AS id,
+    'cliente' AS tipo,
+    cd.nome_exibicao,
+    cv.status,
+    cv.doc_frente_url,
+    cv.doc_verso_url,
+    cv.selfie_url,
+    cv.motivo_rejeicao,
+    cv.criado_em,
 
-          -- MODELO CAMPOS (NULL PARA PADRONIZAR UNION)
-          NULL AS avatar,
-          NULL AS capa,
-          NULL AS bio,
-          NULL AS local,
-          NULL AS verificada,
-          NULL AS agencia_id,
+    -- CAMPOS PADRÃO (MODELO → NULL PARA CLIENTE)
+    cd.avatar,
+    cd.capa,
+    cd.bio,
+    cd.local,
+    NULL AS verificada,
+    NULL AS agencia_id,
 
-          -- MODELOS_DADOS
-          cd.nome_completo,
-          cd.data_nascimento,
-          cd.telefone,
-          cd.endereco,
-          cd.pais,
-          cd.estado,
-          cd.cidade,
-          NULL AS instagram,
-          NULL AS tiktok,
-          NULL AS vip_preco,
+    -- DADOS PRINCIPAIS
+    cd.nome_completo,
+    cd.data_nascimento,
+    cd.telefone,
+    cd.endereco,
+    cd.pais,
+    cd.estado,
+    cd.cidade,
+    cd.instagram,
+    cd.tiktok,
+    cd.vip_preco,
 
-          -- CLIENTE
-          u.email,
+    -- EMAIL
+    u.email,
 
-          -- CLIENTES_DADOS
-          cd.telefone AS cliente_telefone,
-          cd.endereco AS cliente_endereco,
-          cd.pais AS cliente_pais,
-          cd.estado AS cliente_estado,
-          cd.cidade AS cliente_cidade
+    -- CAMPOS ESPECÍFICOS CLIENTE
+    cd.telefone AS cliente_telefone,
+    cd.endereco AS cliente_endereco,
+    cd.pais AS cliente_pais,
+    cd.estado AS cliente_estado,
+    cd.cidade AS cliente_cidade,
+    cd.nome_exibicao AS cliente_nome_exibicao,
+    cd.instagram AS cliente_instagram,
+    cd.tiktok AS cliente_tiktok,
+    cd.local AS cliente_local,
+    cd.bio AS cliente_bio
 
-        FROM clientes_verificacao cv
-        JOIN clientes c ON c.id = cv.cliente_id
-        JOIN users u ON u.id = c.user_id
-        LEFT JOIN clientes_dados cd ON cd.cliente_id = c.id
+  FROM clientes_verificacao cv
+  JOIN clientes c ON c.id = cv.cliente_id
+  JOIN users u ON u.id = c.user_id
+  LEFT JOIN clientes_dados cd ON cd.cliente_id = c.id
 
-        WHERE cv.status = $1
-      )
-
+  WHERE cv.status = $1
+)
       ORDER BY criado_em DESC NULLS LAST
       LIMIT $2 OFFSET $3
     `,[status, limit, offset]);
