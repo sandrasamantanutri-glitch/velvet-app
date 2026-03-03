@@ -35,12 +35,12 @@
 </div>
 
 <script>
-// const token = localStorage.getItem("token_admin");
+const token = localStorage.getItem("token_admin");
 
-// if (!token) {
-//   window.location.href = "/admin/login.html";
-//   throw new Error("Sem token admin");
-// }
+if (!token) {
+  window.location.href = "/admin/login.html";
+  throw new Error("Sem token admin");
+}
 
 let listaAgencias = [];
 let statusAtual = "pendente";
@@ -153,7 +153,7 @@ const res = await fetch(
 
     </div>
   `).join("");
-  
+
 renderPaginacao(totalPages, page);
 }
 

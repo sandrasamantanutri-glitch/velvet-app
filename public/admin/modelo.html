@@ -69,12 +69,12 @@
 </div>
 
 <script>
-//   const token = localStorage.getItem("token_admin");
+  const token = localStorage.getItem("token_admin");
 
-// if (!token) {
-//   window.location.href = "/admin/login.html";
-//   throw new Error("Sem token admin");
-// }
+if (!token) {
+  window.location.href = "/admin/login.html";
+  throw new Error("Sem token admin");
+}
 const params = new URLSearchParams(window.location.search);
 const id = params.get("id");
 
