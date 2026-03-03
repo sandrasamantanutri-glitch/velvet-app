@@ -4598,9 +4598,9 @@ app.post("/api/register", authLimiter, async (req, res) => {
       const modeloResult = await db.query(
         `
         INSERT INTO public.modelos
-          (user_id, nome, status, email_enviado_em, prazo_validacao)
+          (user_id, nome, verificada, email_enviado_em, prazo_validacao)
         VALUES
-          ($1, $2, 'pendente', NOW(), NOW() + INTERVAL '14 days')
+          ($1, $2, 'false', NOW(), NOW() + INTERVAL '14 days')
         RETURNING id
         `,
         [userId, nomePublico]
