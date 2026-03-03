@@ -21,10 +21,12 @@
 
   <div class="topbar-right filtros">
 <div class="filtro-status">
-  <button class="filtro-btn" onclick="trocarStatus('em_analise', this)">Pendentes</button>
-  <button class="filtro-btn active" onclick="trocarStatus('aprovado', this)">Aprovados</button>
-  <button class="filtro-btn" onclick="trocarStatus('rejeitado', this)">Rejeitados</button>
-<button class="logout-btn" onclick="logoutAdmin()">Sair</button>
+    <div class="filtro-status">
+    <button class="filtro-btn" onclick="window.location.href='/admin/validar.html'">Pendentes</button>
+      <button class="filtro-btn active" onclick="window.location.href='/admin/aprovados.html'">Aprovados</button>
+      <button class="filtro-btn" onclick="window.location.href='/admin/rejeitados.html'">Rejeitados</button>
+      <button class="logout-btn" onclick="logoutAdmin()">Sair</button>
+    </div>
   </div>
 </header>
 
