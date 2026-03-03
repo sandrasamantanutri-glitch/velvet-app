@@ -33,6 +33,7 @@
 </header>
 
 <div class="cards">
+  <div id="secaoHoje">
 <h2 class="secao-titulo">Hoje</h2>
   <!-- HOJE -->
   <div class="linha-4">
@@ -55,6 +56,7 @@
       <h4>Ganhos Modelo Hoje</h4>
       <div class="valor" id="modeloHoje">R$ 0</div>
     </div>
+  </div>
   </div>
 
   <!-- MÊS -->
@@ -150,10 +152,10 @@ function carregarMeses(){
     select.innerHTML += `<option value="${valor}">${mes} ${anoAtual}</option>`;
   });
 
-  // 🔥 Seleciona automaticamente o mês atual
   select.value = valorAtual;
 
-  // 🔥 Já carrega dashboard com mês atual
+  controlarSecaoHoje(valorAtual);
+
   carregarDashboard(valorAtual);
 }
 
@@ -207,12 +209,28 @@ if (!res.ok) {
 
 function alterarMes(){
   const mes = document.getElementById("mesSelect").value;
+  controlarSecaoHoje(mes);
   carregarDashboard(mes);
 }
 
 function logoutAdmin(){
   localStorage.removeItem("token_admin");
   window.location.href = "/admin/login.html";
+}
+
+function controlarSecaoHoje(mesSelecionado){
+  const hoje = new Date();
+  const anoAtual = hoje.getFullYear();
+  const mesAtual = String(hoje.getMonth()+1).padStart(2,"0");
+  const valorAtual = `${anoAtual}-${mesAtual}`;
+
+  const secaoHoje = document.getElementById("secaoHoje");
+
+  if(!mesSelecionado || mesSelecionado === valorAtual){
+    secaoHoje.style.display = "block";
+  } else {
+    secaoHoje.style.display = "none";
+  }
 }
 
 carregarMeses();
