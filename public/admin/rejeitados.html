@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Perfis Aprovados</title>
+  <title>Perfis Rejeitados</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="admin.css">
 </head>
@@ -13,25 +13,25 @@
     <img src="/assets/velvet.png" class="logo-small">
     <nav>
       <a href="/admin/dashboard.html">Dashboard</a>
-      <a href="/admin/modelo.html">Modelos</a>
+      <a href="/admin/modelos.html">Modelos</a>
       <a href="/admin/validar.html" class="active">Validar Perfis</a>
     </nav>
-    
   </div>
 
   <div class="topbar-right filtros">
-<div class="filtro-status">
-  <button class="filtro-btn" onclick="trocarStatus('em_analise', this)">Pendentes</button>
-  <button class="filtro-btn active" onclick="trocarStatus('aprovado', this)">Aprovados</button>
-  <button class="filtro-btn" onclick="trocarStatus('rejeitado', this)">Rejeitados</button>
-<button class="logout-btn" onclick="logoutAdmin()">Sair</button>
+    <div class="filtro-status">
+      <button class="filtro-btn" onclick="window.location.href='validar.html'">Pendentes</button>
+      <button class="filtro-btn" onclick="window.location.href='aprovados.html'">Aprovados</button>
+      <button class="filtro-btn active">Rejeitados</button>
+      <button class="logout-btn" onclick="logoutAdmin()">Sair</button>
+    </div>
   </div>
 </header>
 
 <div class="main clean">
-  <h1>Perfis Aprovados</h1>
+  <h1>Perfis Rejeitados</h1>
 
-  <div id="listaAprovados"></div>
+  <div id="listaRejeitados"></div>
 
   <div class="paginacao" id="paginacao"></div>
 </div>
@@ -50,27 +50,27 @@ function logoutAdmin() {
   window.location.href = "/admin/login.html";
 }
 
-async function carregarAprovados(page = 1) {
+async function carregarRejeitados(page = 1) {
 
-  const res = await fetch(`/api/admin/verificacoes-aprovadas?page=${page}`, {
+  const res = await fetch(`/api/admin/verificacoes-rejeitadas?page=${page}`, {
     headers: {
       Authorization: "Bearer " + token
     }
   });
 
   if (!res.ok) {
-    alert("Erro ao carregar aprovados");
+    alert("Erro ao carregar rejeitados");
     return;
   }
 
   const data = await res.json();
   const perfis = data.dados;
-  const container = document.getElementById("listaAprovados");
+  const container = document.getElementById("listaRejeitados");
 
   if (!perfis.length) {
     container.innerHTML = `
       <div class="card">
-        <p>Nenhum perfil aprovado.</p>
+        <p>Nenhum perfil rejeitado.</p>
       </div>
     `;
     return;
@@ -95,11 +95,7 @@ async function carregarAprovados(page = 1) {
               <img src="${p.doc_frente_url}">
             </a>
           </div>
-        ` : `
-          <div class="doc-item vazio">
-            <div class="img-vazia">Sem frente</div>
-          </div>
-        `}
+        ` : ``}
 
         ${p.doc_verso_url ? `
           <div class="doc-item">
@@ -108,11 +104,7 @@ async function carregarAprovados(page = 1) {
               <img src="${p.doc_verso_url}">
             </a>
           </div>
-        ` : `
-          <div class="doc-item vazio">
-            <div class="img-vazia">Sem verso</div>
-          </div>
-        `}
+        ` : ``}
 
         ${p.selfie_url ? `
           <div class="doc-item">
@@ -121,16 +113,17 @@ async function carregarAprovados(page = 1) {
               <img src="${p.selfie_url}">
             </a>
           </div>
-        ` : `
-          <div class="doc-item vazio">
-            <div class="img-vazia">Sem selfie</div>
-          </div>
-        `}
+        ` : ``}
 
       </div>
 
-      <div class="dados-ok">
-        Aprovado em: ${new Date(p.verificado_em).toLocaleString()}
+      <div class="dados-faltando">
+        <strong>Motivo da rejeição:</strong><br>
+        ${p.motivo_rejeicao || "Não informado"}
+      </div>
+
+      <div style="margin-top:10px;font-size:13px;color:#666;">
+        Rejeitado em: ${new Date(p.rejeitado_em).toLocaleString()}
       </div>
 
     </div>
@@ -149,21 +142,22 @@ function renderPaginacao(totalPages, page) {
 
   paginacao.innerHTML = `
     <button ${page === 1 ? "disabled" : ""}
-      onclick="carregarAprovados(${page - 1})">
+      onclick="carregarRejeitados(${page - 1})">
       Anterior
     </button>
 
     <span>Página ${page} de ${totalPages}</span>
 
     <button ${page === totalPages ? "disabled" : ""}
-      onclick="carregarAprovados(${page + 1})">
+      onclick="carregarRejeitados(${page + 1})">
       Próxima
     </button>
   `;
 }
-carregarAprovados();
-</script>
 
+carregarRejeitados();
+
+</script>
 
 </body>
 </html>

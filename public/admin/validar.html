@@ -14,16 +14,17 @@
     <img src="/assets/velvet.png" class="logo-small">
     <nav>
       <a href="/admin/dashboard.html">Dashboard</a>
-      <a href="/admin/modelos.html">Modelos</a>
+      <a href="/admin/modelo.html">Modelos</a>
       <a href="/admin/validar.html" class="active">Validar Perfis</a>
     </nav>
+
   </div>
 
   <div class="topbar-right filtros">
 <div class="filtro-status">
   <button class="filtro-btn active" onclick="trocarStatus('em_analise', this)">Pendentes</button>
  <button class="filtro-btn" onclick="window.location.href='/admin/aprovados.html'"> Aprovados</button>
-  <button class="filtro-btn" onclick="trocarStatus('rejeitado', this)">Rejeitados</button>
+ <button class="filtro-btn" onclick="window.location.href='rejeitados.html'">Rejeitados</button>
 <button class="logout-btn" onclick="logoutAdmin()">Sair</button>
   </div>
 </header>

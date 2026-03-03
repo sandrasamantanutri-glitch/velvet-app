@@ -2460,6 +2460,53 @@ router.get("/admin/verificacoes-aprovadas", auth, authAdmin, async (req, res) =>
   }
 });
 
+router.get("/api/admin/verificacoes-rejeitadas", auth, authAdmin, async (req,res)=>{
+
+  const page = Math.max(Number(req.query.page) || 1, 1);
+  const limit = 10;
+  const offset = (page - 1) * limit;
+
+  try{
+
+    const totalRes = await db.query(`
+      SELECT COUNT(*) 
+      FROM modelos_verificacao
+      WHERE status = 'rejeitado'
+    `);
+
+    const total = Number(totalRes.rows[0].count);
+    const totalPages = Math.ceil(total / limit);
+
+    const result = await db.query(`
+      SELECT
+        m.id,
+        m.nome_exibicao,
+        mv.tipo,
+        mv.doc_frente_url,
+        mv.doc_verso_url,
+        mv.selfie_url,
+        mv.motivo_rejeicao,
+        mv.updated_at AS rejeitado_em
+      FROM modelos_verificacao mv
+      JOIN modelos m ON m.id = mv.modelo_id
+      WHERE mv.status = 'rejeitado'
+      ORDER BY mv.updated_at DESC
+      LIMIT $1 OFFSET $2
+    `,[limit, offset]);
+
+    res.json({
+      dados: result.rows,
+      totalPages,
+      page
+    });
+
+  }catch(err){
+    console.error(err);
+    res.status(500).json({error:"Erro interno"});
+  }
+
+});
+
 //PUT ///
 // router.put("/agencia/modelo/:id/percentual", authAgencia, async (req,res)=>{
 //   try{
