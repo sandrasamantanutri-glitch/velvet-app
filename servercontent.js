@@ -9,6 +9,7 @@ const authAdmin = require("./middleware/authAdmin");
 const db = require("./db");
 const AWS = require("aws-sdk");
 const fs = require("fs");
+const { enviarEmailAprovacao } = require("./email");
 
 const router = express.Router();   // ⬅️ PRIMEIRO SEMPRE
 
@@ -160,48 +161,6 @@ function authAgencia(req, res, next) {
     return res.sendStatus(401);
   }
 }
-
-async function enviarEmailAprovacao(email, nome) {
-
-  const pdfPath = path.join(__dirname, "docs/manual-velvet.pdf");
-  console.log(pdfPath);
-  const pdfBuffer = fs.readFileSync(pdfPath);
-
-  await resend.emails.send({
-    from: "Velvet <noreply@velvet.lat>",
-    to: email,
-    subject: "Sua conta foi aprovada 🎉",
-    html: `
-      <h2>Conta aprovada!</h2>
-
-      <p>Olá ${nome || ""},</p>
-
-      <p>
-      Sua verificação foi aprovada e seu perfil já pode ser utilizado na Velvet.
-      </p>
-
-      <p>
-      No PDF anexado você encontra um guia rápido para começar.
-      </p>
-
-      <p>
-      Acesse sua conta:
-      <br>
-      https://velvet.lat
-      </p>
-
-      <p>Bem-vindo(a) 💜</p>
-    `,
-    attachments: [
-      {
-        filename: "Guia-Velvet.pdf",
-        content: pdfBuffer
-      }
-    ]
-  });
-}
-
-
 
 //ROTASSSS POST ///////////////////
 router.post("/modelo/dados-bancarios", authModelo, async (req, res) => {
@@ -2764,9 +2723,10 @@ const email = emailRes.rows[0]?.email;
     );
 
     await client.query("COMMIT");
-    if(status === "aprovado" && email){
+
+if(status === "aprovado" && email){
   try{
-    await enviarEmailAprovacao(email);
+    await enviarEmailAprovacao(email, nome_modelo);
   }catch(e){
     console.error("Erro enviar email aprovação:", e);
   }
