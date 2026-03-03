@@ -2146,7 +2146,7 @@ router.get("/admin/modelo/:id", auth, authAdmin, async (req,res)=>{
 
 router.get("/admin/perfis", auth, authAdmin, async (req,res)=>{
 
-  const status = req.query.status || "pendente";
+  const status = req.query.status || "em_analise";
 
   const page = Math.max(Number(req.query.page) || 1, 1);
   const limit = 10;
