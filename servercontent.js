@@ -2584,6 +2584,8 @@ router.put("/admin/validar-cliente/:id", auth, authAdmin, async (req,res)=>{
       nome_exibicao,
       local,
       bio,
+      avatar,
+      capa,
       created_at,
       verificada
     )
@@ -2593,6 +2595,8 @@ router.put("/admin/validar-cliente/:id", auth, authAdmin, async (req,res)=>{
       cd.nome_exibicao,
       cd.local,
       cd.bio,
+      cd.avatar,
+      cd.capa,
       NOW(),
       true
     FROM clientes c
