@@ -2493,7 +2493,7 @@ router.get("/admin/verificacoes-rejeitadas", auth, authAdmin, async (req,res)=>{
           mv.doc_verso_url,
           mv.selfie_url,
           mv.motivo_rejeicao,
-          mv.updated_at AS rejeitado_em,
+          mv.verificado_em AS rejeitado_em,
           'modelo' AS tipo
         FROM modelos_verificacao mv
         JOIN modelos m ON m.id = mv.modelo_id
@@ -2510,7 +2510,7 @@ router.get("/admin/verificacoes-rejeitadas", auth, authAdmin, async (req,res)=>{
           cv.doc_verso_url,
           cv.selfie_url,
           cv.motivo_rejeicao,
-          cv.updated_at AS rejeitado_em,
+          cv.verificado_em AS rejeitado_em,
           'cliente' AS tipo
         FROM clientes_verificacao cv
         JOIN clientes c ON c.id = cv.cliente_id
