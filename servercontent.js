@@ -2694,9 +2694,9 @@ router.put("/admin/perfis/:id/editar", auth, authAdmin, async (req,res)=>{
         dados.instagram,
         dados.tiktok,
         dados.vip_preco,
-        nome_exibicao,
-        local,
-        bio,
+        dados.nome_exibicao,
+        dados.local,
+        dados.bio,
         id
       ]);
     }
