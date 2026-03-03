@@ -3184,7 +3184,11 @@ app.get("/api/modelo/publico/:modelo_id", async (req, res) => {
         m.avatar,
         m.capa,
         m.local,
-        COALESCE(NULLIF(mp.valor_mensal, 0), 20.00) AS valor_assinatura,
+           COALESCE(
+      NULLIF(mp.valor_mensal, 0),
+      NULLIF(md.vip_preco, 0),
+      20.00
+    ) AS valor_assinatura,
         md.instagram,
         md.tiktok
       FROM modelos m
