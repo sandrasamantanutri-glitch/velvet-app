@@ -2626,7 +2626,6 @@ router.put("/admin/validar-cliente/:id", auth, authAdmin, async (req,res)=>{
       estado,
       instagram,
       tiktok,
-      bio,
       vip_preco
     )
     SELECT
@@ -2640,7 +2639,6 @@ router.put("/admin/validar-cliente/:id", auth, authAdmin, async (req,res)=>{
       cd.estado,
       cd.instagram,
       cd.tiktok,
-      cd.bio,
       cd.vip_preco
     FROM clientes_dados cd
     WHERE cd.cliente_id = $2
