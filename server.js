@@ -2756,7 +2756,7 @@ app.get("/api/ofertas/ativa/:modelo_id", async (req, res) => {
       return res.status(400).json({ ativa: false });
     }
 
-    const result = await db.query(
+    const ofertaRes = await db.query(
       `
       SELECT
         id,
@@ -2775,13 +2775,41 @@ app.get("/api/ofertas/ativa/:modelo_id", async (req, res) => {
       [modelo_id]
     );
 
-    if (!result.rows.length) {
-      return res.json({ ativa: false });
+     if (ofertaRes.rowCount) {
+      return res.json({
+        ativa: true,
+        oferta: ofertaRes.rows[0]
+      });
     }
 
-    res.json({
-      ativa: true,
-      oferta: result.rows[0]
+    // ===============================
+    // 🔥 2️⃣ NÃO TEM OFERTA → BUSCAR PREÇO BASE
+    // ===============================
+
+    const precoRes = await db.query(`
+      SELECT
+        COALESCE(
+          NULLIF(mp.valor_mensal, 0),
+          NULLIF(md.vip_preco, 0),
+          20.00
+        ) AS valor_base
+      FROM modelos m
+      LEFT JOIN modelos_planos mp
+        ON mp.modelo_id = m.id
+      LEFT JOIN modelos_dados md
+        ON md.modelo_id = m.id
+      WHERE m.id = $1
+      LIMIT 1
+    `, [modelo_id]);
+
+    const valorBase =
+      precoRes.rowCount
+        ? Number(precoRes.rows[0].valor_base)
+        : 20.00;
+
+    return res.json({
+      ativa: false,
+      valor_base: valorBase
     });
 
   } catch (err) {

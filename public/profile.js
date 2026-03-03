@@ -654,12 +654,32 @@ async function carregarOfertaAtiva() {
 
     const data = await res.json();
 
-    if (!data.ativa || !data.oferta) {
-      ofertaCard.style.display = "none";
-      OFERTA_ATUAL = null;
-      return;
-    }
+    if (!data.ativa) {
 
+  const valor = Number(data.valor_base) || 20;
+
+  OFERTA_ATUAL = {
+    valor_base: valor,
+    valor_promocional: valor,
+    desconto_percentual: 0
+  };
+
+  if (precoDescontoEl)
+    precoDescontoEl.textContent = valorBRL(valor);
+
+  if (precoOriginalEl)
+    precoOriginalEl.textContent = "";
+
+  if (descontoEl)
+    descontoEl.style.display = "none";
+
+  if (btnAssinar)
+    btnAssinar.textContent =
+      `Assinar VIP por ${valorBRL(valor)}`;
+
+  ofertaCard.style.display = "block";
+  return;
+}
     const oferta = data.oferta;
     OFERTA_ATUAL = {
       id: oferta.id,
