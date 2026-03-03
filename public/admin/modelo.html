@@ -191,7 +191,10 @@ function logoutAdmin(){
 async function iniciar(){
   carregarMeses();
   await carregarModelos();
-  await carregar();
+
+  if(id){
+    await carregar();
+  }
 }
 
 iniciar();
