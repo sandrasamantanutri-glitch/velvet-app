@@ -2522,9 +2522,37 @@ router.get("/admin/verificacoes-rejeitadas", auth, authAdmin, async (req,res)=>{
       LIMIT $1 OFFSET $2
     `,[limit, offset]);
 
+     const perfisAssinados = result.rows.map(p => ({
+      ...p,
+
+      doc_frente_url: p.doc_frente_url
+        ? s3Privado.getSignedUrl("getObject", {
+            Bucket: process.env.B2_BUCKET_PRIVATE,
+            Key: p.doc_frente_url,
+            Expires: 60 * 10
+          })
+        : null,
+
+      doc_verso_url: p.doc_verso_url
+        ? s3Privado.getSignedUrl("getObject", {
+            Bucket: process.env.B2_BUCKET_PRIVATE,
+            Key: p.doc_verso_url,
+            Expires: 60 * 10
+          })
+        : null,
+
+      selfie_url: p.selfie_url
+        ? s3Privado.getSignedUrl("getObject", {
+            Bucket: process.env.B2_BUCKET_PRIVATE,
+            Key: p.selfie_url,
+            Expires: 60 * 10
+          })
+        : null
+    }));
+
     res.json({
-      dados: result.rows,
-      totalPages,
+      dados: perfisAssinados,
+     totalPages,
       page
     });
 
