@@ -2366,6 +2366,72 @@ router.get("/admin/agencias", auth, authAdmin, async (req,res)=>{
   }
 });
 
+router.get("/admin/verificacoes-aprovadas", auth, authAdmin, async (req, res) => {
+  try {
+
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const limit = 10;
+    const offset = (page - 1) * limit;
+
+    const totalRes = await db.query(`
+      SELECT COUNT(*) FROM (
+        SELECT id FROM modelos_verificacao WHERE status='aprovado'
+        UNION ALL
+        SELECT id FROM clientes_verificacao WHERE status='aprovado'
+      ) t
+    `);
+
+    const total = Number(totalRes.rows[0].count);
+    const totalPages = Math.max(Math.ceil(total / limit), 1);
+
+    const result = await db.query(`
+      (
+        SELECT 
+          mv.modelo_id AS id,
+          'modelo' AS tipo,
+          m.nome_exibicao,
+          mv.doc_frente_url,
+          mv.doc_verso_url,
+          mv.selfie_url,
+          mv.verificado_em
+        FROM modelos_verificacao mv
+        JOIN modelos m ON m.id = mv.modelo_id
+        WHERE mv.status='aprovado'
+      )
+
+      UNION ALL
+
+      (
+        SELECT
+          cv.cliente_id AS id,
+          'cliente' AS tipo,
+          cd.nome_exibicao,
+          cv.doc_frente_url,
+          cv.doc_verso_url,
+          cv.selfie_url,
+          cv.verificado_em
+        FROM clientes_verificacao cv
+        JOIN clientes c ON c.id = cv.cliente_id
+        LEFT JOIN clientes_dados cd ON cd.cliente_id = c.id
+        WHERE cv.status='aprovado'
+      )
+
+      ORDER BY verificado_em DESC
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+
+    res.json({
+      dados: result.rows,
+      totalPages,
+      page
+    });
+
+  } catch (err) {
+    console.error("Erro buscar aprovados:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
 
 //PUT ///
 // router.put("/agencia/modelo/:id/percentual", authAgencia, async (req,res)=>{
@@ -2643,7 +2709,7 @@ router.put("/admin/validar-cliente/:id", auth, authAdmin, async (req,res)=>{
     WHERE cd.cliente_id = $2
     ON CONFLICT (modelo_id) DO NOTHING
   `, [modelo_id, cliente_id]);
-  
+
    await client.query(
     "UPDATE clientes SET convertido_para_modelo = true WHERE id = $1",
     [cliente_id]
