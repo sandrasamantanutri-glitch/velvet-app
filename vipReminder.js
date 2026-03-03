@@ -21,6 +21,10 @@ async function enviarEmail(to, assunto, html) {
   return response;
 }
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function processarAvisos() {
 
   console.log("🔔 Verificando assinaturas próximas do vencimento...");
@@ -69,6 +73,7 @@ const seteDias = await db.query(`
           </div>
         `
       );
+      await sleep(600);
       console.log("7 dias encontrados:", seteDias.rows.length);
 
       await db.query(
@@ -125,8 +130,9 @@ const vinte4h = await db.query(`
           </div>
         `
       );
+      await sleep(600);
 
-          console.log("7 dias encontrados:", seteDias.rows.length);
+          console.log("24h encontrados:", vinte4h.rows.length);
 
       await db.query(
         "UPDATE vip_subscriptions SET aviso_24h_enviado = true WHERE id = $1",
