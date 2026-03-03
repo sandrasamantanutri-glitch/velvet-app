@@ -2480,7 +2480,7 @@ router.get("/admin/verificacoes-rejeitadas", auth, authAdmin, async (req,res)=>{
     const total = Number(totalRes.rows[0].count);
     const totalPages = Math.ceil(total / limit);
 
-    // 📦 DADOS PAGINADOS
+    // DADOS PAGINADOS
     const result = await db.query(`
       SELECT * FROM (
 
