@@ -2505,7 +2505,7 @@ router.get("/admin/verificacoes-rejeitadas", auth, authAdmin, async (req,res)=>{
     res.status(500).json({error:"Erro interno"});
   }
 
-});
+}); //cooment
 
 //PUT ///
 // router.put("/agencia/modelo/:id/percentual", authAgencia, async (req,res)=>{
