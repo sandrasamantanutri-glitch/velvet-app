@@ -15,7 +15,7 @@
     <img src="/assets/velvet.png" class="logo-small">
 <nav>
   <a href="/admin/dashboard.html">Dashboard</a>
-  <a href="/admin/modelos.html">Modelos</a>
+  <a href="/admin/modelo.html">Modelos</a>
   <a href="/admin/validar.html">Validar Perfis</a>
 </nav>
   </div>
@@ -31,7 +31,6 @@
 
 </div>
 </header>
-
 
 <div class="cards">
 <h2 class="secao-titulo">Hoje</h2>
@@ -200,55 +199,6 @@ if (!res.ok) {
   set("gatewayAno", data.gateway_ano);
   set("modeloAno", data.modelo_ano);
 
-  criarGrafico(data);
-}
-
-let grafico;
-
-function criarGrafico(data){
-  if(grafico) grafico.destroy();
-
-  grafico = new Chart(document.getElementById("grafico"),{
-    type:"bar",
-    data:{
-      labels:["Velvet","Agência","Modelo","Gateway"],
-      datasets:[{
-        label:"Mês Atual",
-        data:[
-          data.velvet_mes || 0,
-          data.agencia_mes || 0,
-          data.modelo_mes || 0,
-          data.gateway_mes || 0
-        ],
-        borderRadius:8
-      }]
-    },
-    options:{
-      plugins:{ legend:{ display:false }},
-      scales:{
-        y:{ ticks:{ color:"#aaa" }},
-        x:{ ticks:{ color:"#aaa" }}
-      }
-    }
-  });
-}
-
-async function carregarModelos(){
-  const res = await fetch("/api/admin/modelo",{
-    headers:{ Authorization:"Bearer "+token }
-  });
-
-  const modelos = await res.json();
-  const select = document.getElementById("modeloSelect");
-
-  modelos.forEach(m=>{
-    select.innerHTML += `<option value="${m.id}">${m.nome}</option>`;
-  });
-}
-
-function irModelo(){
-  const id = document.getElementById("modeloSelect").value;
-  if(id) window.location.href="modelo.html?id="+id;
 }
 
 function alterarMes(){
@@ -263,7 +213,6 @@ function logoutAdmin(){
 
 
 carregarDashboard();
-carregarModelos();
 carregarMeses();
 
 </script>
