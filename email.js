@@ -20,7 +20,7 @@ async function enviarEmailValidacao(email) {
 }
 
 async function enviarEmailAprovacao(email, nome) {
-  const pdfPath = path.join(__dirname, "../docs/manual-velvet.pdf");
+const pdfPath = path.join(process.cwd(), "docs", "manual-velvet.pdf");
   const pdfBuffer = fs.readFileSync(pdfPath);
   console.log(pdfPath);
 

@@ -2633,15 +2633,16 @@ router.put("/admin/validar-modelo/:id", auth, authAdmin, async (req,res)=>{
     const { status } = req.body;
 
     const modeloRes = await client.query(
-      "SELECT user_id FROM modelos WHERE id=$1",
-      [modelo_id]
-    );
+  "SELECT user_id, nome_exibicao FROM modelos WHERE id=$1",
+  [modelo_id]
+);
 
     if(!modeloRes.rowCount){
       throw new Error("Modelo não encontrada");
     }
 
-    const user_id = modeloRes.rows[0].user_id;
+const user_id = modeloRes.rows[0].user_id;
+const nome_modelo = modeloRes.rows[0].nome_exibicao;
 
     const userRes = await client.query(
       "SELECT role FROM users WHERE id=$1",
@@ -2749,6 +2750,8 @@ router.put("/admin/validar-cliente/:id", auth, authAdmin, async (req,res)=>{
   const { status, motivo_rejeicao } = req.body;
 
   const client = await db.connect();
+   let email = null;
+  let nome_cliente = null;
 
   try {
     await client.query("BEGIN");
@@ -2779,6 +2782,7 @@ router.put("/admin/validar-cliente/:id", auth, authAdmin, async (req,res)=>{
 
   const user_id = userRes.rows[0].user_id;
   const nome_cliente = userRes.rows[0].nome;
+
   const emailRes = await client.query(
   "SELECT email FROM users WHERE id=$1",
   [user_id]
