@@ -2460,7 +2460,7 @@ router.get("/admin/verificacoes-aprovadas", auth, authAdmin, async (req, res) =>
   }
 });
 
-router.get("/api/admin/verificacoes-rejeitadas", auth, authAdmin, async (req,res)=>{
+router.get("/admin/verificacoes-rejeitadas", auth, authAdmin, async (req,res)=>{
 
   const page = Math.max(Number(req.query.page) || 1, 1);
   const limit = 10;
