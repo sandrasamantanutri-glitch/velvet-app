@@ -2504,7 +2504,7 @@ router.get("/admin/verificacoes-rejeitadas", auth, authAdmin, async (req,res)=>{
         -- 🔹 CLIENTES
         SELECT
           c.id,
-          c.username AS nome_exibicao,
+          c.nome AS nome_exibicao,
           cv.documento_tipo,
           cv.doc_frente_url,
           cv.doc_verso_url,
