@@ -132,7 +132,27 @@ const res = await fetch(
 </div>
 
         <div class="validar-config">
-          
+  <div class="dados-perfil">
+
+    ${p.nome_completo ? `<p><strong>Nome completo:</strong> ${p.nome_completo}</p>` : ""}
+    ${p.data_nascimento ? `<p><strong>Nascimento:</strong> ${p.data_nascimento}</p>` : ""}
+    ${p.cpf ? `<p><strong>CPF:</strong> ${p.cpf}</p>` : ""}
+    ${p.telefone ? `<p><strong>Telefone:</strong> ${p.telefone}</p>` : ""}
+    ${p.cliente_telefone ? `<p><strong>Telefone cliente:</strong> ${p.cliente_telefone}</p>` : ""}
+    ${p.endereco ? `<p><strong>Endereço:</strong> ${p.endereco}</p>` : ""}
+    ${p.cliente_endereco ? `<p><strong>Endereço cliente:</strong> ${p.cliente_endereco}</p>` : ""}
+    ${p.pais ? `<p><strong>País:</strong> ${p.pais}</p>` : ""}
+    ${p.estado ? `<p><strong>Estado:</strong> ${p.estado}</p>` : ""}
+    ${p.cidade ? `<p><strong>Cidade:</strong> ${p.cidade}</p>` : ""}
+    ${p.bio ? `<p><strong>Bio:</strong> ${p.bio}</p>` : ""}
+    ${p.vip_preco ? `<p><strong>VIP Preço:</strong> € ${p.vip_preco}</p>` : ""}
+    ${p.instagram ? `<p><strong>Instagram:</strong> ${p.instagram}</p>` : ""}
+    ${p.tiktok ? `<p><strong>TikTok:</strong> ${p.tiktok}</p>` : ""}
+    ${p.email ? `<p><strong>Email:</strong> ${p.email}</p>` : ""}
+
+  </div>
+
+  <hr>
           <label>VIP Preço</label>
           <input type="number" step="0.01" id="vip_${p.id}" placeholder="Ex: 49.90">
 
