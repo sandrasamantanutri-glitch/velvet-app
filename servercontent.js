@@ -2681,7 +2681,7 @@ router.put("/admin/perfis/:id/editar", auth, authAdmin, async (req,res)=>{
             vip_preco=$10,
             nome_exibicao=$11,
             local=$12,
-            bio=$13,
+            bio=$13
         WHERE cliente_id=$14
       `,[
         dados.nome_completo,
