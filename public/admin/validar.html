@@ -181,27 +181,30 @@ const res = await fetch(
     }
 
     return `
-      ${campo("Nome completo", p.nome_completo, "nome_completo")}
-      ${campo("Data nascimento", p.data_nascimento, "data_nascimento")}
-      ${campo("CPF", p.cpf, "cpf")}
-      ${campo("Telefone", p.telefone || p.cliente_telefone, "telefone")}
-      ${campo("Endereço", p.endereco || p.cliente_endereco, "endereco")}
-      ${campo("País", p.pais, "pais")}
-      ${campo("Estado", p.estado, "estado")}
-      ${campo("Cidade", p.cidade, "cidade")}
-      ${campo("Bio", p.bio, "bio")}
-      ${campo("VIP Preço", p.vip_preco, "vip_preco")}
-      ${campo("Instagram", p.instagram, "instagram")}
-      ${campo("TikTok", p.tiktok, "tiktok")}
-      ${campo("Email", p.email, "email")}
+  ${p.tipo === "modelo" ? campo("Nome de exibição", p.nome_exibicao, "nome_exibicao") : ""}
+  ${p.tipo === "modelo" ? campo("Local", p.local, "local") : ""}
 
-      <button 
-        class="btn-salvar-dados"
-        onclick="salvarDadosPerfil(${p.id}, '${p.tipo}')"
-      >
-        Salvar Dados
-      </button>
-    `;
+  ${campo("Nome completo", p.nome_completo, "nome_completo")}
+  ${campo("Data nascimento", p.data_nascimento, "data_nascimento")}
+  ${campo("CPF", p.cpf, "cpf")}
+  ${campo("Telefone", p.telefone || p.cliente_telefone, "telefone")}
+  ${campo("Endereço", p.endereco || p.cliente_endereco, "endereco")}
+  ${campo("País", p.pais, "pais")}
+  ${campo("Estado", p.estado, "estado")}
+  ${campo("Cidade", p.cidade, "cidade")}
+  ${campo("Bio", p.bio, "bio")}
+  ${campo("VIP Preço", p.vip_preco, "vip_preco")}
+  ${campo("Instagram", p.instagram, "instagram")}
+  ${campo("TikTok", p.tiktok, "tiktok")}
+  ${campo("Email", p.email, "email")}
+
+  <button 
+    class="btn-salvar-dados"
+    onclick="salvarDadosPerfil(${p.id}, '${p.tipo}')"
+  >
+    Salvar Dados
+  </button>
+`;
 
   })()}
 
