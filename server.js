@@ -3587,35 +3587,45 @@ app.get("/api/conteudos", authModelo, async (req, res) => {
 app.get("/api/verificacao/status", auth, async (req, res) => {
   try {
 
-    if (req.user.role === "modelo") {
+    const userId = req.user.id;
 
-  const modeloRes = await db.query(
-    `SELECT id FROM modelos WHERE user_id = $1`,
-    [req.user.id]
-  );
+    // 🔹 1️⃣ Verificar se existe modelo
+    const modeloRes = await db.query(
+      "SELECT id FROM modelos WHERE user_id = $1",
+      [userId]
+    );
 
-  if (!modeloRes.rows.length) {
-    return res.json({ status: "pendente", motivo: null });
-  }
+    if (modeloRes.rows.length) {
 
-  const modeloId = modeloRes.rows[0].id;
+      const modeloId = modeloRes.rows[0].id;
 
-  const result = await db.query(
-    `
-    SELECT status, motivo_rejeicao
-    FROM modelos_verificacao
-    WHERE modelo_id = $1
-    ORDER BY criado_em DESC
-    LIMIT 1
-    `,
-    [modeloId]
-  );
+      const modeloVerificacao = await db.query(
+        `
+        SELECT status, motivo_rejeicao
+        FROM modelos_verificacao
+        WHERE modelo_id = $1
+        ORDER BY criado_em DESC
+        LIMIT 1
+        `,
+        [modeloId]
+      );
 
-  return res.json(result.rows[0] || { status: "pendente", motivo: null });
-}
-    if (req.user.role === "cliente") {
+      if (modeloVerificacao.rows.length) {
+        return res.json(modeloVerificacao.rows[0]);
+      }
+    }
 
-      const result = await db.query(
+    // 🔹 2️⃣ Se não houver verificação como modelo, verificar como cliente
+    const clienteRes = await db.query(
+      "SELECT id FROM clientes WHERE user_id = $1",
+      [userId]
+    );
+
+    if (clienteRes.rows.length) {
+
+      const clienteId = clienteRes.rows[0].id;
+
+      const clienteVerificacao = await db.query(
         `
         SELECT status, motivo_rejeicao
         FROM clientes_verificacao
@@ -3623,12 +3633,15 @@ app.get("/api/verificacao/status", auth, async (req, res) => {
         ORDER BY criado_em DESC
         LIMIT 1
         `,
-        [req.cliente_id]
+        [clienteId]
       );
 
-      return res.json(result.rows[0] || { status: "pendente", motivo: null });
+      if (clienteVerificacao.rows.length) {
+        return res.json(clienteVerificacao.rows[0]);
+      }
     }
 
+    // 🔹 3️⃣ Se não existir nada
     return res.json({ status: "pendente", motivo: null });
 
   } catch (err) {
