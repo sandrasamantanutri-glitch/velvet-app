@@ -646,75 +646,20 @@ async function carregarOfertaAtiva() {
   try {
     const res = await fetch(`/api/ofertas/ativa/${modelo_id}`);
 
-if (!res.ok) {
-  console.warn("Erro ao buscar oferta, usando fallback.");
-
-  const perfilRes = await fetch(`/api/modelo/publico/${modelo_id}`);
-  const perfil = perfilRes.ok ? await perfilRes.json() : null;
-
-  const valorPlano =
-    Number(perfil?.valor_assinatura) || 20.00;
-
-  OFERTA_ATUAL = {
-    id: null,
-    modelo_id: modelo_id,
-    valor_base: valorPlano,
-    valor_promocional: valorPlano,
-    desconto_percentual: 0
-  };
-
-  window.OFERTA_ATUAL = OFERTA_ATUAL;
-
-  if (btnAssinar) {
-    btnAssinar.disabled = false;
-    btnAssinar.textContent =
-      `Assinar VIP por ${valorBRL(valorPlano)}`;
-  }
-
-  ofertaCard.style.display = "block";
-  return;
-}
+    if (!res.ok) {
+      ofertaCard.style.display = "none";
+      OFERTA_ATUAL = null;
+      return;
+    }
 
     const data = await res.json();
-if (!data.ativa || !data.oferta) {
 
-  // 🔎 Buscar valor do plano
-  const perfilRes = await fetch(`/api/modelo/publico/${modelo_id}`);
-  const perfil = perfilRes.ok ? await perfilRes.json() : null;
+    if (!data.ativa || !data.oferta) {
+      ofertaCard.style.display = "none";
+      OFERTA_ATUAL = null;
+      return;
+    }
 
-  const valorPlano =
-    Number(perfil?.valor_assinatura) || 20.00;
-
-  OFERTA_ATUAL = {
-    id: null,
-    modelo_id: modelo_id,
-    valor_base: valorPlano,
-    valor_promocional: valorPlano,
-    desconto_percentual: 0
-  };
-
-  window.OFERTA_ATUAL = OFERTA_ATUAL;
-
-  // 🔥 Atualiza UI como preço normal
-  if (descontoEl) descontoEl.style.display = "none";
-
-  if (precoDescontoEl)
-    precoDescontoEl.textContent =
-      valorBRL(valorPlano);
-
-  if (precoOriginalEl)
-    precoOriginalEl.textContent = "";
-
-  ofertaCard.style.display = "block";
-
-  if (btnAssinar) {
-    btnAssinar.disabled = false;
-    btnAssinar.textContent =
-      `Assinar VIP por ${valorBRL(valorPlano)}`;
-  }
-
-  return;
-}
     const oferta = data.oferta;
     OFERTA_ATUAL = {
       id: oferta.id,
