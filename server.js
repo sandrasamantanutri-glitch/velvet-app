@@ -2492,7 +2492,7 @@ app.get("/api/modelo/planos/me", auth, authModelo, async (req, res) => {
         valor_mensal: 20
       });
     }
-
+    
     res.json(plano.rows[0] || null);
 
   } catch (err) {
@@ -2753,13 +2753,17 @@ app.get("/api/ofertas/ativa/:modelo_id", async (req, res) => {
     const modelo_id = Number(req.params.modelo_id);
 
     if (!Number.isInteger(modelo_id) || modelo_id <= 0) {
-      return res.status(400).json({ erro: "modelo_id inválido" });
+      return res.status(400).json({ ativa: false });
     }
 
-    // 🔎 1️⃣ Buscar oferta ativa
-    const ofertaRes = await db.query(
+    const result = await db.query(
       `
       SELECT
+        id,
+        modelo_id,
+        nome,
+        desconto_percentual,
+        valor_base,
         valor_promocional,
         data_fim
       FROM ofertas
@@ -2771,40 +2775,13 @@ app.get("/api/ofertas/ativa/:modelo_id", async (req, res) => {
       [modelo_id]
     );
 
-    // ✅ Se tiver oferta ativa
-    if (ofertaRes.rowCount) {
-      return res.json({
-        ativa: true,
-        valor_final: Number(ofertaRes.rows[0].valor_promocional),
-        origem: "oferta"
-      });
+    if (!result.rows.length) {
+      return res.json({ ativa: false });
     }
 
-    // 🔎 2️⃣ Se não tiver oferta → buscar plano
-    const planoRes = await db.query(
-      `
-      SELECT COALESCE(NULLIF(valor_mensal, 0), 20.00)::numeric(10,2) AS valor
-      FROM modelos_planos
-      WHERE modelo_id = $1
-      LIMIT 1
-      `,
-      [modelo_id]
-    );
-
-    // Se existir plano
-    if (planoRes.rowCount) {
-      return res.json({
-        ativa: false,
-        valor_final: Number(planoRes.rows[0].valor),
-        origem: "plano"
-      });
-    }
-
-    // 🔥 3️⃣ Se não existir nada → cobrar 20
-    return res.json({
-      ativa: false,
-      valor_final: 20.00,
-      origem: "padrao"
+    res.json({
+      ativa: true,
+      oferta: result.rows[0]
     });
 
   } catch (err) {
@@ -2812,6 +2789,7 @@ app.get("/api/ofertas/ativa/:modelo_id", async (req, res) => {
     res.status(500).json({ erro: "Erro interno" });
   }
 });
+
 
 app.get("/api/vip/status/:modelo_id", authCliente, async (req, res) => {
   try {
