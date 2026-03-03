@@ -136,12 +136,63 @@ function alterarMes(){
   carregar(); 
 }
 
+function carregarMeses(){
+  const select = document.getElementById("mesSelect");
+
+  const meses = [
+    "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+    "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
+  ];
+
+  const hoje = new Date();
+  const anoAtual = hoje.getFullYear();
+  const mesAtual = String(hoje.getMonth()+1).padStart(2,"0");
+  const valorAtual = `${anoAtual}-${mesAtual}`;
+
+  meses.forEach((mes, index)=>{
+    const valor = `${anoAtual}-${String(index+1).padStart(2,"0")}`;
+    select.innerHTML += `<option value="${valor}">${mes} ${anoAtual}</option>`;
+  });
+
+  select.value = valorAtual;
+}
+
+async function carregarModelos(){
+
+  const res = await fetch("/api/admin/modelos", {
+    headers:{ Authorization:"Bearer "+token }
+  });
+
+  if(!res.ok) return;
+
+  const lista = await res.json();
+
+  const select = document.getElementById("modeloSelect");
+
+  lista.forEach(m=>{
+    select.innerHTML +=
+      `<option value="${m.id}">${m.nome}</option>`;
+  });
+
+  // marca modelo atual
+  if(id){
+    select.value = id;
+  }
+}
+
 function logoutAdmin(){
   localStorage.removeItem("token_admin");
   window.location.href = "/admin/login.html";
 }
 
-carregar();
+async function iniciar(){
+  carregarMeses();
+  await carregarModelos();
+  await carregar();
+}
+
+iniciar();
+
 </script>
 
 </body>
