@@ -2181,12 +2181,12 @@ router.get("/admin/perfis", auth, authAdmin, async (req,res)=>{
     const totalPages = Math.max(Math.ceil(total / limit), 1);
 
     // ================================
-    // BUSCA UNIFICADA
+    // BUSCA UNIFICADA (AGORA COMPLETA)
     // ================================
 
     const result = await db.query(`
       (
-        -- MODELOS
+        -- ================= MODELOS =================
         SELECT
           mv.modelo_id AS id,
           'modelo' AS tipo,
@@ -2196,16 +2196,54 @@ router.get("/admin/perfis", auth, authAdmin, async (req,res)=>{
           mv.doc_verso_url,
           mv.selfie_url,
           mv.motivo_rejeicao,
-          mv.criado_em
+          mv.criado_em,
+
+          -- MODELO
+          m.avatar,
+          m.capa,
+          m.bio,
+          m.local,
+          m.verificada,
+          m.agencia_id,
+
+          -- MODELOS_DADOS
+          md.nome_completo,
+          md.data_nascimento,
+          md.telefone,
+          md.endereco,
+          md.pais,
+          md.estado,
+          md.cidade,
+          md.instagram,
+          md.tiktok,
+          md.vip_preco,
+
+          -- CLIENTE DONO
+          u.email,
+          c.cpf,
+          c.bloqueado,
+
+          -- CLIENTES_DADOS
+          cd.telefone AS cliente_telefone,
+          cd.endereco AS cliente_endereco,
+          cd.pais AS cliente_pais,
+          cd.estado AS cliente_estado,
+          cd.cidade AS cliente_cidade
+
         FROM modelos_verificacao mv
         JOIN modelos m ON m.id = mv.modelo_id
+        LEFT JOIN modelos_dados md ON md.modelo_id = m.id
+        LEFT JOIN users u ON u.id = m.user_id
+        LEFT JOIN clientes c ON c.user_id = u.id
+        LEFT JOIN clientes_dados cd ON cd.cliente_id = c.id
+
         WHERE mv.status = $1
       )
 
       UNION ALL
 
       (
-        -- CLIENTES
+        -- ================= CLIENTES =================
         SELECT
           cv.cliente_id AS id,
           'cliente' AS tipo,
@@ -2215,9 +2253,45 @@ router.get("/admin/perfis", auth, authAdmin, async (req,res)=>{
           cv.doc_verso_url,
           cv.selfie_url,
           cv.motivo_rejeicao,
-          cv.criado_em
+          cv.criado_em,
+
+          -- MODELO CAMPOS (NULL PARA PADRONIZAR UNION)
+          NULL AS avatar,
+          NULL AS capa,
+          NULL AS bio,
+          NULL AS local,
+          NULL AS verificada,
+          NULL AS agencia_id,
+
+          -- MODELOS_DADOS
+          cd.nome_completo,
+          cd.data_nascimento,
+          cd.telefone,
+          cd.endereco,
+          cd.pais,
+          cd.estado,
+          cd.cidade,
+          NULL AS instagram,
+          NULL AS tiktok,
+          NULL AS vip_preco,
+
+          -- CLIENTE
+          u.email,
+          c.cpf,
+          c.bloqueado,
+
+          -- CLIENTES_DADOS
+          cd.telefone AS cliente_telefone,
+          cd.endereco AS cliente_endereco,
+          cd.pais AS cliente_pais,
+          cd.estado AS cliente_estado,
+          cd.cidade AS cliente_cidade
+
         FROM clientes_verificacao cv
-        JOIN users u ON u.id = cv.cliente_id
+        JOIN clientes c ON c.id = cv.cliente_id
+        JOIN users u ON u.id = c.user_id
+        LEFT JOIN clientes_dados cd ON cd.cliente_id = c.id
+
         WHERE cv.status = $1
       )
 
