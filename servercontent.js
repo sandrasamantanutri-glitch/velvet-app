@@ -2486,8 +2486,7 @@ router.put("/admin/validar-modelo/:id", auth, authAdmin, async (req,res)=>{
             cidade,
             estado,
             instagram,
-            tiktok,
-            bio
+            tiktok
           )
           SELECT
             m.id,
@@ -2499,8 +2498,7 @@ router.put("/admin/validar-modelo/:id", auth, authAdmin, async (req,res)=>{
             cd.cidade,
             cd.estado,
             cd.instagram,
-            cd.tiktok,
-            cd.bio
+            cd.tiktok
           FROM clientes_dados cd
           JOIN modelos m ON m.user_id = cd.cliente_id
           WHERE cd.cliente_id=$1
