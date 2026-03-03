@@ -41,6 +41,7 @@ const token = localStorage.getItem("token_admin");
 
 if (!token) {
   window.location.href = "/admin/login.html";
+  throw new Error("Sem token admin");
 }
 
 function logoutAdmin() {
