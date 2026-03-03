@@ -2468,7 +2468,7 @@ router.get("/admin/verificacoes-rejeitadas", auth, authAdmin, async (req,res)=>{
 
   try{
 
-    // 🔢 TOTAL (modelos + clientes)
+    // TOTAL (modelos + clientes)
     const totalRes = await db.query(`
       SELECT COUNT(*) FROM (
         SELECT id FROM modelos_verificacao WHERE status = 'rejeitado'
