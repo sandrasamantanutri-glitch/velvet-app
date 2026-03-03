@@ -2426,7 +2426,6 @@ router.put("/admin/validar-modelo/:id", auth, authAdmin, async (req,res)=>{
     const modelo_id = Number(req.params.id);
     const { status } = req.body;
 
-    // 🔹 Buscar user_id
     const modeloRes = await client.query(
       "SELECT user_id FROM modelos WHERE id=$1",
       [modelo_id]
@@ -2438,7 +2437,6 @@ router.put("/admin/validar-modelo/:id", auth, authAdmin, async (req,res)=>{
 
     const user_id = modeloRes.rows[0].user_id;
 
-    // 🔹 Buscar role atual
     const userRes = await client.query(
       "SELECT role FROM users WHERE id=$1",
       [user_id]
@@ -2669,17 +2667,22 @@ router.put("/admin/perfis/:id/editar", auth, authAdmin, async (req,res)=>{
       ]);
 
     } else {
-
       await db.query(`
-        UPDATE clientes_dados
+         UPDATE clientes_dados
         SET nome_completo=$1,
             data_nascimento=$2,
             telefone=$3,
             endereco=$4,
             pais=$5,
             estado=$6,
-            cidade=$7
-        WHERE cliente_id=$8
+            cidade=$7,
+            instagram=$8,
+            tiktok=$9,
+            vip_preco=$10,
+            nome_exibicao=$11,
+            local=$12,
+            bio=$13,
+        WHERE cliente_id=$14
       `,[
         dados.nome_completo,
         dados.data_nascimento,
@@ -2688,9 +2691,14 @@ router.put("/admin/perfis/:id/editar", auth, authAdmin, async (req,res)=>{
         dados.pais,
         dados.estado,
         dados.cidade,
+        dados.instagram,
+        dados.tiktok,
+        dados.vip_preco,
+        nome_exibicao,
+        local,
+        bio,
         id
       ]);
-
     }
 
     res.json({ message:"Atualizado com sucesso" });

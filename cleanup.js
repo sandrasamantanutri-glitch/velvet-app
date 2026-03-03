@@ -9,11 +9,11 @@ async function limparModelos() {
   console.log("🧹 Iniciando limpeza...");
 
   const result = await db.query(`
-    SELECT m.id AS modelo_id, m.user_id
-    FROM modelos m
-    WHERE m.status = 'pendente'
-    AND m.prazo_validacao < NOW()
-  `);
+  SELECT m.id AS modelo_id, m.user_id
+  FROM modelos m
+  WHERE m.verificada = false
+  AND m.prazo_validacao < NOW()
+`);
 
   for (const modelo of result.rows) {
 
