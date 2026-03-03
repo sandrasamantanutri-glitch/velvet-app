@@ -2247,7 +2247,7 @@ router.get("/admin/perfis", auth, authAdmin, async (req,res)=>{
 
       (
         -- ================= CLIENTES =================
-        
+
   SELECT
     cv.cliente_id AS id,
     'cliente' AS tipo,
@@ -2565,9 +2565,10 @@ router.put("/admin/validar-cliente/:id", auth, authAdmin, async (req,res)=>{
 
       // 2️⃣ Criar registro em modelos
       await client.query(`
-        INSERT INTO modelos (user_id, nome_exibicao, created_at, verificada)
+        INSERT INTO modelos (user_id, nome, nome_exibicao, created_at, verificada)
         SELECT
           c.user_id,
+          COALESCE(cd.nome_completo, c.nome),
           c.nome,
           NOW(),
           true
