@@ -406,7 +406,7 @@ async function salvarDadosPerfil(id, tipo){
 
   try{
 
-    const res = await fetch(`/admin/perfis/${id}/editar`,{
+    const res = await fetch(`/api/admin/perfis/${id}/editar`,{
       method:"PUT",
       headers:{
         "Content-Type":"application/json",
