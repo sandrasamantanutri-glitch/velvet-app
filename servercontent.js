@@ -1687,7 +1687,7 @@ router.get("/modelo/conteudos", auth, authModelo, async (req, res) => {
 router.get("/admin/dashboard", auth, authAdmin, async (req, res) => {
   try {
 
-    const mesParam = req.query.mes; // ex: 2026-03
+    const mesParam = req.query.mes;
     let ano = null;
     let mes = null;
 
@@ -1751,13 +1751,14 @@ router.get("/admin/dashboard", auth, authAdmin, async (req, res) => {
         COALESCE(SUM(CASE 
           WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM CURRENT_DATE))
            AND EXTRACT(MONTH FROM data_sp) = COALESCE($2, EXTRACT(MONTH FROM CURRENT_DATE))
-          THEN valor_modelo END),0) AS modelo_mes,
-
-        COALESCE(SUM(CASE 
-          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM CURRENT_DATE))
-           AND EXTRACT(MONTH FROM data_sp) = COALESCE($2, EXTRACT(MONTH FROM CURRENT_DATE))
           THEN (velvet_fee + agency_fee + taxa_gateway)
         END),0) AS total_mes,
+
+         COALESCE(SUM(CASE 
+          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM CURRENT_DATE))
+           AND EXTRACT(MONTH FROM data_sp) = COALESCE($2, EXTRACT(MONTH FROM CURRENT_DATE))
+          THEN valor_modelo 
+          END),0) AS modelo_mes,
 
         /* ================= ANO DO MÊS SELECIONADO ================= */
 
