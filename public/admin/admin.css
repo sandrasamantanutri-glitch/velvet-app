@@ -628,4 +628,34 @@ tr:nth-child(even){
   cursor:not-allowed;
 }
 
+.titulo-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.badge-tipo {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 20px;
+  color: white;
+}
+
+.badge-tipo.cliente {
+  background: linear-gradient(135deg, #8e44ad, #c0392b);
+}
+
+.badge-tipo.modelo {
+  background: linear-gradient(135deg, #2980b9, #16a085);
+}
+
+.btn-aprovar.cliente {
+  background: linear-gradient(135deg, #8e44ad, #e74c3c);
+}
+
+.btn-aprovar.modelo {
+  background: linear-gradient(135deg, #27ae60, #2ecc71);
+}
+
 

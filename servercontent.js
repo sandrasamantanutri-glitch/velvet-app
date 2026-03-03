@@ -2165,94 +2165,108 @@ router.get("/admin/perfis", auth, authAdmin, async (req,res)=>{
 
   try{
 
-    // 🔹 TOTAL DE REGISTROS
+    // ================================
+    // TOTAL (CLIENTES + MODELOS)
+    // ================================
+
     const totalRes = await db.query(`
-      SELECT COUNT(*) 
-      FROM modelos_verificacao
-      WHERE status = $1
+      SELECT COUNT(*) FROM (
+        SELECT id FROM modelos_verificacao WHERE status = $1
+        UNION ALL
+        SELECT id FROM clientes_verificacao WHERE status = $1
+      ) t
     `,[status]);
 
     const total = Number(totalRes.rows[0].count);
     const totalPages = Math.max(Math.ceil(total / limit), 1);
 
-    // 🔹 BUSCAR DADOS PAGINADOS
+    // ================================
+    // BUSCA UNIFICADA
+    // ================================
+
     const result = await db.query(`
-      SELECT
-        m.id,
-        m.nome_exibicao,
-        mv.status,
-        mv.doc_frente_url,
-        mv.doc_verso_url,
-        mv.selfie_url,
-        mv.motivo_rejeicao,
+      (
+        -- MODELOS
+        SELECT
+          mv.modelo_id AS id,
+          'modelo' AS tipo,
+          m.nome_exibicao,
+          mv.status,
+          mv.doc_frente_url,
+          mv.doc_verso_url,
+          mv.selfie_url,
+          mv.motivo_rejeicao,
+          mv.criado_em
+        FROM modelos_verificacao mv
+        JOIN modelos m ON m.id = mv.modelo_id
+        WHERE mv.status = $1
+      )
 
-        CASE 
-          WHEN md.nome_completo IS NOT NULL
-           AND md.data_nascimento IS NOT NULL
-           AND md.telefone IS NOT NULL
-           AND md.endereco IS NOT NULL
-           AND md.pais IS NOT NULL
-           AND md.cidade IS NOT NULL
-           AND md.estado IS NOT NULL
-          THEN true ELSE false
-        END AS dados_completos,
+      UNION ALL
 
-        CASE 
-          WHEN mv.doc_frente_url IS NOT NULL
-           AND mv.doc_verso_url IS NOT NULL
-           AND mv.selfie_url IS NOT NULL
-           AND mv.declaracao = true
-          THEN true ELSE false
-        END AS documentos_completos
+      (
+        -- CLIENTES
+        SELECT
+          cv.cliente_id AS id,
+          'cliente' AS tipo,
+          u.email AS nome_exibicao,
+          cv.status,
+          cv.doc_frente_url,
+          cv.doc_verso_url,
+          cv.selfie_url,
+          cv.motivo_rejeicao,
+          cv.criado_em
+        FROM clientes_verificacao cv
+        JOIN users u ON u.id = cv.cliente_id
+        WHERE cv.status = $1
+      )
 
-      FROM modelos_verificacao mv
-      JOIN modelos m ON m.id = mv.modelo_id
-      LEFT JOIN modelos_dados md ON md.modelo_id = m.id
-
-      WHERE mv.status = $1
-      ORDER BY mv.criado_em DESC NULLS LAST
+      ORDER BY criado_em DESC NULLS LAST
       LIMIT $2 OFFSET $3
     `,[status, limit, offset]);
 
+    // ================================
+    // ASSINAR URLS PRIVADAS
+    // ================================
+
     const perfisFormatados = result.rows.map(p => ({
-  ...p,
+      ...p,
 
-  doc_frente_url: p.doc_frente_url
-    ? s3Privado.getSignedUrl("getObject", {
-        Bucket: process.env.B2_BUCKET_PRIVATE,
-        Key: p.doc_frente_url,
-        Expires: 60 * 10
-      })
-    : null,
+      doc_frente_url: p.doc_frente_url
+        ? s3Privado.getSignedUrl("getObject", {
+            Bucket: process.env.B2_BUCKET_PRIVATE,
+            Key: p.doc_frente_url,
+            Expires: 60 * 10
+          })
+        : null,
 
-  doc_verso_url: p.doc_verso_url
-    ? s3Privado.getSignedUrl("getObject", {
-        Bucket: process.env.B2_BUCKET_PRIVATE,
-        Key: p.doc_verso_url,
-        Expires: 60 * 10
-      })
-    : null,
+      doc_verso_url: p.doc_verso_url
+        ? s3Privado.getSignedUrl("getObject", {
+            Bucket: process.env.B2_BUCKET_PRIVATE,
+            Key: p.doc_verso_url,
+            Expires: 60 * 10
+          })
+        : null,
 
-  selfie_url: p.selfie_url
-    ? s3Privado.getSignedUrl("getObject", {
-        Bucket: process.env.B2_BUCKET_PRIVATE,
-        Key: p.selfie_url,
-        Expires: 60 * 10
-      })
-    : null
-}));
+      selfie_url: p.selfie_url
+        ? s3Privado.getSignedUrl("getObject", {
+            Bucket: process.env.B2_BUCKET_PRIVATE,
+            Key: p.selfie_url,
+            Expires: 60 * 10
+          })
+        : null
+    }));
 
-res.json({
-  dados: perfisFormatados,
-  totalPages,
-  page
-});
+    res.json({
+      dados: perfisFormatados,
+      totalPages,
+      page
+    });
 
   } catch(err){
     console.error("Erro buscar perfis:", err);
     res.status(500).json({ error:"Erro ao buscar perfis" });
   }
-
 });
 
 router.get("/admin/agencias", auth, authAdmin, async (req,res)=>{
@@ -2332,107 +2346,126 @@ router.get("/admin/agencias", auth, authAdmin, async (req,res)=>{
 //   }
 // });
 
-router.put("/admin/validar-modelo/:id", auth, authAdmin, async (req,res)=>{
-
-  const modelo_id = Number(req.params.id);
-
-  const {
-    status,              // aprovado | rejeitado
-    motivo_rejeicao,
-    agencia_id,
-    vip_preco
-  } = req.body;
-
+router.put("/api/admin/validar-modelo/:id", auth, authAdmin, async (req,res)=>{
   const client = await db.connect();
 
   try {
-
     await client.query("BEGIN");
 
-    // ===============================
-    // 1️⃣ Atualiza modelos_verificacao
-    // ===============================
+    const modelo_id = Number(req.params.id);
+    const { status } = req.body;
 
-    await client.query(`
-      UPDATE modelos_verificacao
-      SET
-        status = $2,
-        motivo_rejeicao = $3,
-        verificado_em = NOW(),
-        atualizado_em = NOW()
-      WHERE modelo_id = $1
-    `,[modelo_id, status, motivo_rejeicao || null]);
+    // 🔹 Buscar user_id
+    const modeloRes = await client.query(
+      "SELECT user_id FROM modelos WHERE id=$1",
+      [modelo_id]
+    );
 
-
-    // ===============================
-    // 2️⃣ Atualiza modelos
-    // ===============================
-
-    await client.query(`
-      UPDATE modelos
-      SET
-        verificada = $2,
-        agencia_id = $3,
-        atualizado_em = NOW()
-      WHERE id = $1
-    `,[
-      modelo_id,
-      status === "aprovado",
-      agencia_id || null
-    ]);
-
-
-    // ===============================
-    // 3️⃣ Atualiza modelos_dados
-    // ===============================
-
-    if(vip_preco){
-
-      await client.query(`
-        UPDATE modelos_dados
-        SET
-          vip_preco = $2,
-          atualizado_em = NOW()
-        WHERE modelo_id = $1
-      `,[modelo_id, vip_preco]);
-
+    if(!modeloRes.rowCount){
+      throw new Error("Modelo não encontrada");
     }
+
+    const user_id = modeloRes.rows[0].user_id;
+
+    // 🔹 Buscar role atual
+    const userRes = await client.query(
+      "SELECT role FROM users WHERE id=$1",
+      [user_id]
+    );
+
+    const roleAtual = userRes.rows[0].role;
+
+    if(status === "aprovado"){
+
+      // 🟣 Se for cliente → migrar
+      if(roleAtual === "cliente"){
+
+        // 1️⃣ Atualizar role
+        await client.query(
+          "UPDATE users SET role='modelo' WHERE id=$1",
+          [user_id]
+        );
+
+        // 2️⃣ Criar registro em modelos
+        await client.query(`
+          INSERT INTO modelos (user_id, nome_exibicao, created_at)
+          SELECT user_id, nome, NOW()
+          FROM clientes
+          WHERE user_id=$1
+          ON CONFLICT (user_id) DO NOTHING
+        `,[user_id]);
+
+        // 3️⃣ Copiar clientes_dados → modelos_dados
+        await client.query(`
+          INSERT INTO modelos_dados (
+            modelo_id,
+            nome_completo,
+            data_nascimento,
+            telefone,
+            endereco,
+            pais,
+            cidade,
+            estado,
+            instagram,
+            tiktok,
+            bio
+          )
+          SELECT
+            m.id,
+            cd.nome_completo,
+            cd.data_nascimento,
+            cd.telefone,
+            cd.endereco,
+            cd.pais,
+            cd.cidade,
+            cd.estado,
+            cd.instagram,
+            cd.tiktok,
+            cd.bio
+          FROM clientes_dados cd
+          JOIN modelos m ON m.user_id = cd.cliente_id
+          WHERE cd.cliente_id=$1
+          ON CONFLICT (modelo_id) DO NOTHING
+        `,[user_id]);
+      }
+
+      // 🔹 Marcar como verificada
+      await client.query(
+        "UPDATE modelos SET verificada=true WHERE id=$1",
+        [modelo_id]
+      );
+    }
+
+    // 🔹 Atualizar status da verificação
+    await client.query(
+      "UPDATE modelos_verificacao SET status=$1 WHERE modelo_id=$2",
+      [status, modelo_id]
+    );
 
     await client.query("COMMIT");
 
-    res.json({ success:true });
+    res.json({ message:"Processo concluído" });
 
-  } catch (err) {
-
+  } catch(err){
     await client.query("ROLLBACK");
-    console.error("Erro validar modelo:", err);
+    console.error(err);
     res.status(500).json({ error:"Erro ao validar modelo" });
-
   } finally {
     client.release();
   }
-
 });
 
 router.put("/admin/validar-cliente/:id", auth, authAdmin, async (req,res)=>{
 
   const cliente_id = Number(req.params.id);
-
-  const {
-    status,
-    motivo_rejeicao
-  } = req.body;
+  const { status, motivo_rejeicao } = req.body;
 
   const client = await db.connect();
 
   try {
-
     await client.query("BEGIN");
 
-    // ===============================
-    // 1️⃣ Atualiza clientes_verificacao
-    // ===============================
-
+    // 🔹 Atualiza status da verificação
     await client.query(`
       UPDATE clientes_verificacao
       SET
@@ -2443,16 +2476,60 @@ router.put("/admin/validar-cliente/:id", auth, authAdmin, async (req,res)=>{
       WHERE cliente_id = $1
     `,[cliente_id, status, motivo_rejeicao || null]);
 
+    if(status === "aprovado"){
 
-    // ===============================
-    // 2️⃣ Atualiza clientes_dados
-    // ===============================
+      // 1️⃣ Atualiza role
+      await client.query(
+        "UPDATE users SET role='modelo' WHERE id=$1",
+        [cliente_id]
+      );
 
-    await client.query(`
-      UPDATE clientes_dados
-      SET atualizado_em = NOW()
-      WHERE cliente_id = $1
-    `,[cliente_id]);
+      // 2️⃣ Criar registro em modelos
+      await client.query(`
+        INSERT INTO modelos (user_id, nome_exibicao, created_at, verificada)
+        SELECT
+          c.user_id,
+          c.nome,
+          NOW(),
+          true
+        FROM clientes c
+        WHERE c.user_id = $1
+        ON CONFLICT (user_id) DO NOTHING
+      `,[cliente_id]);
+
+      // 3️⃣ Copiar dados
+      await client.query(`
+        INSERT INTO modelos_dados (
+          modelo_id,
+          nome_completo,
+          data_nascimento,
+          telefone,
+          endereco,
+          pais,
+          cidade,
+          estado,
+          instagram,
+          tiktok,
+          bio
+        )
+        SELECT
+          m.id,
+          cd.nome_completo,
+          cd.data_nascimento,
+          cd.telefone,
+          cd.endereco,
+          cd.pais,
+          cd.cidade,
+          cd.estado,
+          cd.instagram,
+          cd.tiktok,
+          cd.bio
+        FROM clientes_dados cd
+        JOIN modelos m ON m.user_id = cd.cliente_id
+        WHERE cd.cliente_id = $1
+        ON CONFLICT (modelo_id) DO NOTHING
+      `,[cliente_id]);
+    }
 
     await client.query("COMMIT");
 
@@ -2467,9 +2544,7 @@ router.put("/admin/validar-cliente/:id", auth, authAdmin, async (req,res)=>{
   } finally {
     client.release();
   }
-
 });
-
 
 
 router.put("/admin/rejeitar/:id", auth, authAdmin, async (req,res)=>{

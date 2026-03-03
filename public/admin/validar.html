@@ -83,9 +83,16 @@ const res = await fetch(
 
   container.innerHTML = perfis.map(p=>`
     <div class="card validar-card">
-      
-      <div class="validar-topo">
-        <h3>${p.nome_exibicao}</h3>
+
+        <div class="validar-topo">
+  <div class="titulo-badge">
+    <h3>${p.nome_exibicao}</h3>
+
+    <span class="badge-tipo ${p.tipo}">
+      ${p.tipo === "cliente" ? "Cliente → Modelo" : "Modelo"}
+    </span>
+  </div>
+
         <span class="badge ${p.dados_completos && p.documentos_completos ? 'ok':'pendente'}">
           ${p.dados_completos && p.documentos_completos ? 'Pronto para validar' : 'Incompleto'}
         </span>
@@ -143,9 +150,22 @@ const res = await fetch(
           <textarea id="motivo_${p.id}" placeholder="Motivo da rejeição"></textarea>
 
           <div class="validar-botoes">
-            <button onclick="validar(${p.id}, 'aprovado')" class="btn-aprovar">Aprovar</button>
-            <button onclick="validar(${p.id}, 'rejeitado')" class="btn-rejeitar">Rejeitar</button>
-          </div>
+
+  <button 
+    onclick="validar(${p.id}, '${p.tipo}', 'aprovado')" 
+    class="btn-aprovar ${p.tipo}"
+  >
+    ${p.tipo === "cliente" ? "Promover para Modelo" : "Validar Modelo"}
+  </button>
+
+  <button 
+    onclick="validar(${p.id}, '${p.tipo}', 'rejeitado')" 
+    class="btn-rejeitar"
+  >
+    Rejeitar
+  </button>
+
+</div>
 
         </div>
 
@@ -157,13 +177,56 @@ const res = await fetch(
 renderPaginacao(totalPages, page);
 }
 
-async function validar(id, status){
+async function validar(id, tipo, status){
 
-  const vip_preco = document.getElementById("vip_"+id).value;
-  const agencia_id = document.getElementById("agencia_"+id).value;
-  const motivo = document.getElementById("motivo_"+id).value;
+  const vip_preco = document.getElementById("vip_"+id)?.value;
+  const agencia_id = document.getElementById("agencia_"+id)?.value;
+  const motivo = document.getElementById("motivo_"+id)?.value;
 
-  const res = await fetch("/api/admin/validar-modelo/"+id,{
+  // 🔥 CONFIRMAÇÃO ESPECIAL PARA PROMOÇÃO
+  if(tipo === "cliente" && status === "aprovado"){
+    const confirmar = confirm(
+      "Tem certeza que deseja PROMOVER este cliente para MODELO?\n\n" +
+      "• A role será alterada para 'modelo'\n" +
+      "• Os dados serão migrados\n" +
+      "• O processo não deve ser revertido manualmente"
+    );
+
+    if(!confirmar) return;
+  }
+
+  // 🔥 Confirmação simples para validar modelo
+  if(tipo === "modelo" && status === "aprovado"){
+    const confirmar = confirm(
+      "Confirmar validação deste modelo?"
+    );
+
+    if(!confirmar) return;
+  }
+
+  // 🔥 Confirmação para rejeição
+  if(status === "rejeitado"){
+    if(!motivo){
+      alert("Informe o motivo da rejeição.");
+      return;
+    }
+
+    const confirmar = confirm(
+      "Confirmar REJEIÇÃO deste perfil?"
+    );
+
+    if(!confirmar) return;
+  }
+
+  let url;
+
+  if(tipo === "cliente"){
+    url = "/admin/validar-cliente/" + id;
+  } else {
+    url = "/api/admin/validar-modelo/" + id;
+  }
+
+  const res = await fetch(url,{
     method:"PUT",
     headers:{
       "Content-Type":"application/json",
