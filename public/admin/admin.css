@@ -651,7 +651,7 @@ tr:nth-child(even){
 }
 
 .btn-aprovar.cliente {
-  background: linear-gradient(135deg, #8e44ad, #e74c3c);
+  background: linear-gradient(135deg, #8e44ad, #b466d8);
 }
 
 .btn-aprovar.modelo {
