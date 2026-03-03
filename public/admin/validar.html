@@ -295,7 +295,7 @@ async function validar(id, tipo, status){
   let url;
 
   if(tipo === "cliente"){
-    url = "/admin/validar-cliente/" + id;
+    url = "/api/admin/validar-cliente/" + id;
   } else {
     url = "/api/admin/validar-modelo/" + id;
   }

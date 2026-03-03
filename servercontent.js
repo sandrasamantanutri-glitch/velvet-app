@@ -2417,7 +2417,7 @@ router.get("/admin/agencias", auth, authAdmin, async (req,res)=>{
 //   }
 // });
 
-router.put("/api/admin/validar-modelo/:id", auth, authAdmin, async (req,res)=>{
+router.put("/admin/validar-modelo/:id", auth, authAdmin, async (req,res)=>{
   const client = await db.connect();
 
   try {
