@@ -2226,7 +2226,12 @@ router.get("/admin/perfis", auth, authAdmin, async (req,res)=>{
           cd.endereco AS cliente_endereco,
           cd.pais AS cliente_pais,
           cd.estado AS cliente_estado,
-          cd.cidade AS cliente_cidade
+          cd.cidade AS cliente_cidade,
+          cd.nome_exibicao AS cliente_nome_exibicao,
+          cd.instagram AS cliente_instagram,
+          cd.tiktok AS cliente_tiktok,
+          cd.local AS cliente_local,
+          cd.bio AS cliente_bio
 
         FROM modelos_verificacao mv
         JOIN modelos m ON m.id = mv.modelo_id
