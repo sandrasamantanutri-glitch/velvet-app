@@ -2468,29 +2468,57 @@ router.get("/admin/verificacoes-rejeitadas", auth, authAdmin, async (req,res)=>{
 
   try{
 
+    // 🔢 TOTAL (modelos + clientes)
     const totalRes = await db.query(`
-      SELECT COUNT(*) 
-      FROM modelos_verificacao
-      WHERE status = 'rejeitado'
+      SELECT COUNT(*) FROM (
+        SELECT id FROM modelos_verificacao WHERE status = 'rejeitado'
+        UNION ALL
+        SELECT id FROM clientes_verificacao WHERE status = 'rejeitado'
+      ) AS total
     `);
 
     const total = Number(totalRes.rows[0].count);
     const totalPages = Math.ceil(total / limit);
 
+    // 📦 DADOS PAGINADOS
     const result = await db.query(`
-      SELECT
-        m.id,
-        m.nome_exibicao,
-        mv.tipo,
-        mv.doc_frente_url,
-        mv.doc_verso_url,
-        mv.selfie_url,
-        mv.motivo_rejeicao,
-        mv.updated_at AS rejeitado_em
-      FROM modelos_verificacao mv
-      JOIN modelos m ON m.id = mv.modelo_id
-      WHERE mv.status = 'rejeitado'
-      ORDER BY mv.updated_at DESC
+      SELECT * FROM (
+
+        -- 🔹 MODELOS
+        SELECT
+          m.id,
+          m.nome_exibicao,
+          mv.documento_tipo,
+          mv.doc_frente_url,
+          mv.doc_verso_url,
+          mv.selfie_url,
+          mv.motivo_rejeicao,
+          mv.updated_at AS rejeitado_em,
+          'modelo' AS tipo
+        FROM modelos_verificacao mv
+        JOIN modelos m ON m.id = mv.modelo_id
+        WHERE mv.status = 'rejeitado'
+
+        UNION ALL
+
+        -- 🔹 CLIENTES
+        SELECT
+          c.id,
+          u.nome AS nome_exibicao,
+          cv.documento_tipo,
+          cv.doc_frente_url,
+          cv.doc_verso_url,
+          cv.selfie_url,
+          cv.motivo_rejeicao,
+          cv.updated_at AS rejeitado_em,
+          'cliente' AS tipo
+        FROM clientes_verificacao cv
+        JOIN clientes c ON c.id = cv.cliente_id
+        JOIN users u ON u.id = c.user_id
+        WHERE cv.status = 'rejeitado'
+
+      ) AS rejeitados
+      ORDER BY rejeitado_em DESC
       LIMIT $1 OFFSET $2
     `,[limit, offset]);
 
@@ -2501,11 +2529,12 @@ router.get("/admin/verificacoes-rejeitadas", auth, authAdmin, async (req,res)=>{
     });
 
   }catch(err){
-    console.error(err);
+    console.error("Erro rejeitados:", err);
     res.status(500).json({error:"Erro interno"});
   }
 
-}); //cooment
+});
+
 
 //PUT ///
 // router.put("/agencia/modelo/:id/percentual", authAgencia, async (req,res)=>{
