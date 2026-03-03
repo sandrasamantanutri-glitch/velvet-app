@@ -8,7 +8,7 @@ const authModelo = require("./middleware/authModelo");
 const authAdmin = require("./middleware/authAdmin");
 const db = require("./db");
 const AWS = require("aws-sdk");
-
+const fs = require("fs");
 
 const router = express.Router();   // ⬅️ PRIMEIRO SEMPRE
 
@@ -159,6 +159,46 @@ function authAgencia(req, res, next) {
   } catch (err) {
     return res.sendStatus(401);
   }
+}
+
+async function enviarEmailAprovacao(email, nome) {
+
+  const pdfPath = path.join(__dirname, "docs/manual-velvet.pdf");
+  console.log(pdfPath);
+  const pdfBuffer = fs.readFileSync(pdfPath);
+
+  await resend.emails.send({
+    from: "Velvet <noreply@velvet.lat>",
+    to: email,
+    subject: "Sua conta foi aprovada 🎉",
+    html: `
+      <h2>Conta aprovada!</h2>
+
+      <p>Olá ${nome || ""},</p>
+
+      <p>
+      Sua verificação foi aprovada e seu perfil já pode ser utilizado na Velvet.
+      </p>
+
+      <p>
+      No PDF anexado você encontra um guia rápido para começar.
+      </p>
+
+      <p>
+      Acesse sua conta:
+      <br>
+      https://velvet.lat
+      </p>
+
+      <p>Bem-vindo(a) 💜</p>
+    `,
+    attachments: [
+      {
+        filename: "Guia-Velvet.pdf",
+        content: pdfBuffer
+      }
+    ]
+  });
 }
 
 
@@ -2651,6 +2691,13 @@ router.put("/admin/validar-modelo/:id", auth, authAdmin, async (req,res)=>{
 
     const roleAtual = userRes.rows[0].role;
 
+    const emailRes = await client.query(
+  "SELECT email FROM users WHERE id=$1",
+  [user_id]
+);
+
+const email = emailRes.rows[0]?.email;
+
     if(status === "aprovado"){
 
       // 🟣 Se for cliente → migrar
@@ -2717,6 +2764,13 @@ router.put("/admin/validar-modelo/:id", auth, authAdmin, async (req,res)=>{
     );
 
     await client.query("COMMIT");
+    if(status === "aprovado" && email){
+  try{
+    await enviarEmailAprovacao(email);
+  }catch(e){
+    console.error("Erro enviar email aprovação:", e);
+  }
+}
 
     res.json({ message:"Processo concluído" });
 
@@ -2765,6 +2819,12 @@ router.put("/admin/validar-cliente/:id", auth, authAdmin, async (req,res)=>{
 
   const user_id = userRes.rows[0].user_id;
   const nome_cliente = userRes.rows[0].nome;
+  const emailRes = await client.query(
+  "SELECT email FROM users WHERE id=$1",
+  [user_id]
+);
+
+const email = emailRes.rows[0]?.email;
 
   // 🔹 2️⃣ Atualizar role no users
   await client.query(
@@ -2847,6 +2907,14 @@ router.put("/admin/validar-cliente/:id", auth, authAdmin, async (req,res)=>{
   );
 } 
     await client.query("COMMIT");
+
+    if(status === "aprovado" && email){
+  try{
+    await enviarEmailAprovacao(email, nome_cliente);
+  }catch(e){
+    console.error("Erro enviar email aprovação:", e);
+  }
+}
 
     res.json({ success:true });
 
