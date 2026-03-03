@@ -2031,6 +2031,7 @@ router.get("/admin/modelos", auth, authAdmin, async (req,res)=>{
   const result = await db.query(`
     SELECT id, nome
     FROM modelos
+    WHERE verificada = true
     ORDER BY nome ASC
   `);
 
