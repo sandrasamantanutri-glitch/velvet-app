@@ -75,23 +75,25 @@
       <h4>Taxa Gateway Mês</h4>
       <div class="valor" id="gatewayMes">R$ 0</div>
     </div>
+  </div>
 
   <!-- TOTAIS MÊS -->
   <div class="linha-2">
+     <h2 class="secao-titulo">Comparativo de Lucros Velvet e Modelos</h2>
     <div class="card plataforma">
       <h4>Total Plataforma + Agência + Gateway</h4>
       <div class="valor" id="totalmes">R$ 0</div>
     </div>
 
     <div class="card modelo">
-      <h4>Total Modelo Mês</h4>
+      <h4>Total Modelos Mês</h4>
       <div class="valor" id="modelomes">R$ 0</div>
     </div>
   </div>
 
   <!-- ANO -->
-   <h2 class="secao-titulo">Ano</h2>
   <div class="linha-1">
+    <h2 class="secao-titulo">Ano</h2>
     <div class="card plataforma">
       <h4>Total Ano Plataforma</h4>
       <div class="valor" id="velvetAno">R$ 0</div>
@@ -138,12 +140,21 @@ function carregarMeses(){
     "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
   ];
 
-  const anoAtual = new Date().getFullYear();
+  const hoje = new Date();
+  const anoAtual = hoje.getFullYear();
+  const mesAtual = String(hoje.getMonth()+1).padStart(2,"0");
+  const valorAtual = `${anoAtual}-${mesAtual}`;
 
   meses.forEach((mes, index)=>{
     const valor = `${anoAtual}-${String(index+1).padStart(2,"0")}`;
     select.innerHTML += `<option value="${valor}">${mes} ${anoAtual}</option>`;
   });
+
+  // 🔥 Seleciona automaticamente o mês atual
+  select.value = valorAtual;
+
+  // 🔥 Já carrega dashboard com mês atual
+  carregarDashboard(valorAtual);
 }
 
 async function carregarDashboard(mesSelecionado){
@@ -205,8 +216,6 @@ function logoutAdmin(){
   window.location.href = "/admin/login.html";
 }
 
-
-carregarDashboard();
 carregarMeses();
 
 </script>
