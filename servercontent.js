@@ -1751,7 +1751,7 @@ router.get("/admin/dashboard", auth, authAdmin, async (req, res) => {
         COALESCE(SUM(CASE 
           WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM CURRENT_DATE))
            AND EXTRACT(MONTH FROM data_sp) = COALESCE($2, EXTRACT(MONTH FROM CURRENT_DATE))
-          THEN valor_modelo END),0) AS modelo_mes,
+          THEN valor_modelo END),0) AS totalm_mes,
 
         COALESCE(SUM(CASE 
           WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM CURRENT_DATE))
