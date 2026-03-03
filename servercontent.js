@@ -2547,6 +2547,7 @@ router.put("/admin/validar-cliente/:id", auth, authAdmin, async (req,res)=>{
       UPDATE clientes_verificacao
       SET
         status = $2,
+
         motivo_rejeicao = $3,
         verificado_em = NOW(),
         atualizado_em = NOW()
@@ -2642,8 +2643,12 @@ router.put("/admin/validar-cliente/:id", auth, authAdmin, async (req,res)=>{
     WHERE cd.cliente_id = $2
     ON CONFLICT (modelo_id) DO NOTHING
   `, [modelo_id, cliente_id]);
-} //comment
-
+  
+   await client.query(
+    "UPDATE clientes SET convertido_para_modelo = true WHERE id = $1",
+    [cliente_id]
+  );
+} 
     await client.query("COMMIT");
 
     res.json({ success:true });
