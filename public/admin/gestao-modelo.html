@@ -22,7 +22,7 @@
   <a href="/admin/dashboard.html">Dashboard</a>
   <a href="/admin/modelo.html">Ganhos Modelos</a>
   <a href="/admin/validar.html">Validar Perfis</a>
-  <a href="/admin/gestão-modelo.html" class="active">Gestão Modelos</a>
+  <a href="/admin/gestao-modelo.html" class="active">Gestão Modelos</a>
 </nav>
   </div>
 
@@ -388,6 +388,9 @@ window.location.href="/admin/login.html";
 }
 
 let modelo_id = null;
+let paginaHistorico = 1;
+let paginaPagamentos = 1;
+let paginaSeguranca = 1;
 
 if(!modelo_id){
 console.warn("Nenhuma modelo selecionada");
@@ -408,8 +411,9 @@ headers:{ Authorization:"Bearer "+token }
 
 const d = await res.json();
 
-
-/* BANCO */
+//BANCO
+if(!d.banco){
+console.log("Modelo sem dados bancários");
 
 document.getElementById("bankTitular").innerText =
 d.banco?.titular_nome || "-";
@@ -435,6 +439,13 @@ d.banco?.pix_tipo || "-";
 document.getElementById("bankPix").innerText =
 d.banco?.pix_chave || "-";
 
+
+document.getElementById("bankStatus").innerHTML =
+`<span class="badge-status vazio">Sem dados</span>`;
+
+return;
+}
+
 const status = d.banco?.status || "em_analise";
 
 const dataAprovacao = formatarData(d.banco?.aprovado_em);
@@ -450,7 +461,6 @@ btnAprovar.style.display = "inline-block";
 }else{
 btnAprovar.style.display = "none";
 }
-
 
 
 /* AGENCIA */
@@ -552,8 +562,6 @@ carregarGestao();
 
 
 /* RESET PASSWORD */
-let paginaSeguranca = 1;
-
 async function resetPassword(){
 
 if(!confirm("Deseja resetar a password da modelo?")) return;

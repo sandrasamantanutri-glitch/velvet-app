@@ -2596,7 +2596,7 @@ router.get("/admin/verificacoes-rejeitadas", auth, authAdmin, async (req,res)=>{
 });
 
 router.get("/admin/modelo/:id/gestao", auth, authAdmin, async (req,res)=>{
-  
+
 const modelo_id = Number(req.params.id);
 
 if(!modelo_id){
@@ -2621,7 +2621,7 @@ FROM modelo_dados_bancarios
 WHERE modelo_id = $1
 ORDER BY criado_em DESC
 LIMIT 1
-`,[id]);
+`,[modelo_id]);
 
 res.json({
 banco: bancoRes.rows[0] || null
