@@ -2900,6 +2900,28 @@ res.status(500).json({error:"Erro histórico segurança"});
 
 });
 
+router.put("/admin/modelo/:id/feed", auth, authAdmin, async (req,res)=>{
+
+const modelo_id = Number(req.params.id);
+const { feed } = req.body;
+
+try{
+
+await db.query(`
+UPDATE modelos
+SET feed = $1
+WHERE id = $2
+`,[feed, modelo_id]);
+
+res.json({ feed });
+
+}catch(err){
+console.error("Erro alterar feed:",err);
+res.status(500).json({ error:"Erro alterar feed" });
+}
+
+});
+
 //PUT ///
 // router.put("/agencia/modelo/:id/percentual", authAgencia, async (req,res)=>{
 //   try{
