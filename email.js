@@ -31,7 +31,7 @@ const pdfPath = path.join(process.cwd(), "docs", "manual-velvet.pdf");
     html: `
       <h2>Conta aprovada!</h2>
 
-      <p>Olá ${nome || ""},</p>
+      <p>Olá,</p>
 
       <p>
       Sua verificação foi aprovada e seu perfil já pode ser utilizado na Velvet.
