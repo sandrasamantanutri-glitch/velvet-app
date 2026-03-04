@@ -480,13 +480,21 @@ document.getElementById("bankStatus").innerHTML =
 ${dataAprovacao ? "<small> • aprovado em "+dataAprovacao+"</small>" : ""}`;
 
 const btnAprovar = document.getElementById("btnAprovarBanco");
+const btnRejeitar = document.getElementById("btnRejeitarBanco");
+const motivo = document.getElementById("motivoBanco");
 
 if(status === "em_analise"){
 btnAprovar.style.display = "inline-block";
-}else{
-btnAprovar.style.display = "none";
-}
+btnRejeitar.style.display = "inline-block";
+motivo.style.display = "block";
 
+}else{
+
+btnAprovar.style.display = "none";
+btnRejeitar.style.display = "none";
+motivo.style.display = "none";
+
+}
 
 /* AGENCIA */
 document.getElementById("agenciaNome").innerText =
