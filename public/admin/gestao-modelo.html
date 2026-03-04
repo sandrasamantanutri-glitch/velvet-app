@@ -107,7 +107,7 @@ Aprovar dados bancários
 <div class="banco-historico">
 
 <h3>Histórico de alterações</h3>
-
+<div class="tabela-container"></div>
 <table class="historico-table">
 
 <thead>
@@ -125,6 +125,7 @@ Aprovar dados bancários
 <tbody id="historicoBancario"></tbody>
 
 </table>
+</div>
 
 <div class="paginacao-historico">
 
@@ -486,27 +487,6 @@ d.agencia?.id || "-";
 document.getElementById("agenciaDesde").innerText =
 d.agencia?.desde ? formatarData(d.agencia.desde) : "-";
 
-
-/* PAGAMENTOS */
-
-const tbody = document.getElementById("pagamentosTabela");
-let paginaPagamentos = 1;
-
-tbody.innerHTML="";
-
-d.pagamentos.forEach(p=>{
-
-tbody.innerHTML += `
-<tr>
-<td>${p.mes}</td>
-<td>R$ ${p.total_midias}</td>
-<td>R$ ${p.total_assinaturas}</td>
-<td>R$ ${p.total_geral}</td>
-<td>${p.status}</td>
-</tr>
-`;
-
-});
 
 const ativo = d.feed === true;
 document.getElementById("feedStatus").innerHTML =
