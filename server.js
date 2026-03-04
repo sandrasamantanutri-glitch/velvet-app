@@ -6374,7 +6374,7 @@ user_id
 
 // salvar histórico
 await db.query(`
-INSERT INTO admin_segurança_historico
+INSERT INTO admin_seguranca_historico
 (modelo_id, admin_id, motivo, data)
 VALUES ($1,$2,$3,NOW())
 `,[
