@@ -788,6 +788,11 @@ color:#991b1b;
 margin-top:30px;
 }
 
+.badge-status.vazio{
+background:#999;
+color:#fff;
+}
+
 .historico-table{
 width:100%;
 border-collapse:collapse;

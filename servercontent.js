@@ -2624,7 +2624,10 @@ LIMIT 1
 `,[modelo_id]);
 
 res.json({
-banco: bancoRes.rows[0] || null
+banco: bancoRes.rows.length ? bancoRes.rows[0] : null,
+pagamentos: [],
+feed: false,
+agencia: null
 });
 
 }catch(err){
