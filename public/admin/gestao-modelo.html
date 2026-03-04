@@ -96,10 +96,20 @@
 <span id="bankStatus"></span>
 </div>
 
-<div>
-<button id="btnAprovarBanco" class="btn-aprovar" onclick="aprovarBanco()">
-Aprovar dados bancários
+<div id="bancoAcoes" class="banco-acoes">
+
+<textarea id="motivoBanco" placeholder="Motivo da rejeição (se necessário)"></textarea>
+
+<div class="acoes-banco">
+<button class="btn-aprovar" onclick="validarBanco('aprovado')">
+Aprovar
 </button>
+
+<button class="btn-rejeitar" onclick="validarBanco('rejeitado')">
+Rejeitar
+</button>
+</div>
+
 </div>
 </div>
 <hr>
@@ -461,7 +471,7 @@ document.getElementById("bankPix").innerText =
 d.banco.pix_chave || "-";
 }
 
-const status = d.banco.status || "em_analise";
+const status = d.banco.status || "pendente";
 
 const dataAprovacao = formatarData(d.banco.aprovado_em);
 
@@ -490,13 +500,23 @@ d.agencia?.desde ? formatarData(d.agencia.desde) : "-";
 }
 
 
-async function aprovarBanco(){
+async function validarBanco(status){
 
-await fetch(`/api/admin/modelo/${modelo_id}/aprovar-banco`,{
+const motivo = document.getElementById("motivoBanco").value;
+
+await fetch(`/api/admin/modelo/${modelo_id}/validar-banco`,{
 
 method:"POST",
 
-headers:{ Authorization:"Bearer "+token }
+headers:{
+Authorization:"Bearer "+token,
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+status,
+motivo
+})
 
 });
 

@@ -720,35 +720,21 @@ router.post("/admin/login", async (req, res) => {
   }
 });
 
-router.post("/admin/modelo/:id/aprovar-banco", auth, authAdmin, async (req,res)=>{
+router.post("/api/admin/modelo/:id/validar-banco", auth, authAdmin, async (req,res)=>{
 
-const { id } = req.params;
-
-try{
+const modelo_id = Number(req.params.id);
+const { status, motivo } = req.body;
 
 await db.query(`
 UPDATE modelo_dados_bancarios
 SET
-status = 'aprovado',
-aprovado_em = NOW(),
-atualizado_em = NOW()
-WHERE id = (
-SELECT id
-FROM modelo_dados_bancarios
-WHERE modelo_id = $1
-ORDER BY criado_em DESC
-LIMIT 1
-)
-`,[id]);
+status = $1,
+motivo_rejeicao = $2,
+aprovado_em = CASE WHEN $1='aprovado' THEN NOW() ELSE NULL END
+WHERE modelo_id = $3
+`,[status, motivo || null, modelo_id]);
 
-res.json({
-message:"Dados bancários aprovados"
-});
-
-}catch(err){
-console.error("Erro aprovar banco:", err);
-res.status(500).json({error:"Erro ao aprovar dados bancários"});
-}
+res.json({ ok:true });
 
 });
 
