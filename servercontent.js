@@ -2662,6 +2662,22 @@ feed: false,
 agencia: null
 });
 
+const agenciaRes = await db.query(`
+SELECT
+a.id,
+a.nome,
+m.agencia_desde AS desde
+FROM modelos m
+LEFT JOIN agencias a
+ON a.id = m.agencia_id
+WHERE m.id = $1
+`,[modelo_id]);
+
+res.json({
+banco: bancoRes.rows[0] || null,
+agencia: agenciaRes.rows[0] || null
+});
+
 }catch(err){
 console.error("Erro carregar gestão:", err);
 res.status(500).json({error:"Erro ao carregar dados bancários"});
@@ -3243,6 +3259,49 @@ router.put("/admin/perfis/:id/editar", auth, authAdmin, async (req,res)=>{
     console.error(err);
     res.status(500).json({ error:"Erro ao atualizar dados" });
   }
+});
+
+router.put("/admin/modelo/:id/agencia", auth, authAdmin, async (req,res)=>{
+
+const modelo_id = Number(req.params.id);
+const { agencia_id } = req.body;
+
+try{
+
+await db.query(`
+UPDATE modelos
+SET agencia_id = $1
+WHERE id = $2
+`,[
+agencia_id || null,
+modelo_id
+]);
+
+let nome_agencia = "Sem agência";
+
+if(agencia_id){
+
+const ag = await db.query(`
+SELECT nome
+FROM agencias
+WHERE id=$1
+`,[agencia_id]);
+
+nome_agencia = ag.rows[0]?.nome || "Agência";
+
+}
+
+res.json({
+ok:true,
+nome_agencia,
+data:new Date()
+});
+
+}catch(err){
+console.error("Erro alterar agência:",err);
+res.status(500).json({error:"Erro alterar agência"});
+}
+
 });
 
 
