@@ -778,7 +778,9 @@ select.innerHTML = "<option value=''>Selecionar</option>";
 lista.forEach(a=>{
 
 select.innerHTML +=
-`<option value="${a.id}">${a.nome}</option>`;
+`<option value="${a.id}" ${a.id == document.getElementById("agenciaId").innerText ? "selected":""}>
+${a.nome}
+</option>`;
 
 });
 
@@ -851,6 +853,7 @@ carregarGestao();
 carregarHistorico();
 carregarPagamentos();
 carregarHistoricoSeguranca();
+carregarAgencias();
 
 }
 
