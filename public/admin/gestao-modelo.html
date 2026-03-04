@@ -487,10 +487,14 @@ if(status === "pendente"){
 btnAprovar.style.display = "inline-block";
 btnRejeitar.style.display = "inline-block";
 motivo.style.display = "block";
-}else{
+
+}else if(status === "pendente"){
 btnAprovar.style.display = "none";
 btnRejeitar.style.display = "none";
 motivo.style.display = "none";
+
+}else{
+bancoAcoes.style.display = "none";
 }
 
 /* AGENCIA */
