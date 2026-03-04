@@ -735,7 +735,8 @@ WHERE modelo_id = $3
 `,[
 status,
 motivo || null,
-modelo_id
+modelo_id,
+status === "aprovado"
 ]);
 
 res.json({ ok:true });
