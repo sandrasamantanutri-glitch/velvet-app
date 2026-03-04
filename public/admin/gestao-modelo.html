@@ -414,6 +414,8 @@ headers:{ Authorization:"Bearer "+token }
 
 const d = await res.json();
 
+renderFeedStatus(d.feed);
+
 //BANCO
 if(!d.banco){
 
@@ -431,8 +433,7 @@ document.getElementById("bankPix").innerText = "-";
 document.getElementById("bankStatus").innerHTML =
 `<span class="badge-status vazio">Sem dados</span>`;
 
-return;
-}
+}else{
 
 // SE EXISTEM DADOS BANCÁRIOS
 document.getElementById("bankTitular").innerText =
@@ -458,7 +459,7 @@ d.banco.pix_tipo || "-";
 
 document.getElementById("bankPix").innerText =
 d.banco.pix_chave || "-";
-
+}
 
 const status = d.banco.status || "em_analise";
 
