@@ -720,7 +720,7 @@ router.post("/admin/login", async (req, res) => {
   }
 });
 
-router.post("/api/admin/modelo/:id/validar-banco", auth, authAdmin, async (req,res)=>{
+router.post("/admin/modelo/:id/validar-banco", auth, authAdmin, async (req,res)=>{
 
 const modelo_id = Number(req.params.id);
 const { status, motivo } = req.body;
