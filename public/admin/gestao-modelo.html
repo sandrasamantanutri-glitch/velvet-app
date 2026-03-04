@@ -412,33 +412,19 @@ headers:{ Authorization:"Bearer "+token }
 const d = await res.json();
 
 //BANCO
+//BANCO
 if(!d.banco){
+
 console.log("Modelo sem dados bancários");
 
-document.getElementById("bankTitular").innerText =
-d.banco?.titular_nome || "-";
-
-document.getElementById("bankDocumento").innerText =
-d.banco?.titular_documento || "-";
-
-document.getElementById("bankBanco").innerText =
-d.banco?.banco || "-";
-
-document.getElementById("bankAgencia").innerText =
-d.banco?.agencia || "-";
-
-document.getElementById("bankConta").innerText =
-d.banco?.conta || "-";
-
-document.getElementById("bankContaTipo").innerText =
-d.banco?.conta_tipo || "-";
-
-document.getElementById("bankPixTipo").innerText =
-d.banco?.pix_tipo || "-";
-
-document.getElementById("bankPix").innerText =
-d.banco?.pix_chave || "-";
-
+document.getElementById("bankTitular").innerText = "-";
+document.getElementById("bankDocumento").innerText = "-";
+document.getElementById("bankBanco").innerText = "-";
+document.getElementById("bankAgencia").innerText = "-";
+document.getElementById("bankConta").innerText = "-";
+document.getElementById("bankContaTipo").innerText = "-";
+document.getElementById("bankPixTipo").innerText = "-";
+document.getElementById("bankPix").innerText = "-";
 
 document.getElementById("bankStatus").innerHTML =
 `<span class="badge-status vazio">Sem dados</span>`;
@@ -446,9 +432,36 @@ document.getElementById("bankStatus").innerHTML =
 return;
 }
 
-const status = d.banco?.status || "em_analise";
 
-const dataAprovacao = formatarData(d.banco?.aprovado_em);
+// SE EXISTEM DADOS BANCÁRIOS
+document.getElementById("bankTitular").innerText =
+d.banco.titular_nome || "-";
+
+document.getElementById("bankDocumento").innerText =
+d.banco.titular_documento || "-";
+
+document.getElementById("bankBanco").innerText =
+d.banco.banco || "-";
+
+document.getElementById("bankAgencia").innerText =
+d.banco.agencia || "-";
+
+document.getElementById("bankConta").innerText =
+d.banco.conta || "-";
+
+document.getElementById("bankContaTipo").innerText =
+d.banco.conta_tipo || "-";
+
+document.getElementById("bankPixTipo").innerText =
+d.banco.pix_tipo || "-";
+
+document.getElementById("bankPix").innerText =
+d.banco.pix_chave || "-";
+
+
+const status = d.banco.status || "em_analise";
+
+const dataAprovacao = formatarData(d.banco.aprovado_em);
 
 document.getElementById("bankStatus").innerHTML =
 `<span class="badge-status ${status}">${status}</span>
