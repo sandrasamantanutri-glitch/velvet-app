@@ -2596,8 +2596,12 @@ router.get("/admin/verificacoes-rejeitadas", auth, authAdmin, async (req,res)=>{
 });
 
 router.get("/admin/modelo/:id/gestao", auth, authAdmin, async (req,res)=>{
+  
+const modelo_id = Number(req.params.id);
 
-const { id } = req.params;
+if(!modelo_id){
+return res.status(400).json({error:"Modelo inválida"});
+}
 
 try{
 
