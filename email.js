@@ -19,7 +19,7 @@ async function enviarEmailValidacao(email) {
   });
 }
 
-async function enviarEmailAprovacao(email, nome) {
+async function enviarEmailAprovacao(email) {
 const pdfPath = path.join(process.cwd(), "docs", "manual-velvet.pdf");
   const pdfBuffer = fs.readFileSync(pdfPath);
   console.log(pdfPath);

@@ -2727,7 +2727,7 @@ const email = emailRes.rows[0]?.email;
 
 if(status === "aprovado" && email){
   try{
-    await enviarEmailAprovacao(email, nome_modelo);
+    await enviarEmailAprovacao(email);
   }catch(e){
     console.error("Erro enviar email aprovação:", e);
   }
@@ -2872,9 +2872,9 @@ email = emailRes.rows[0]?.email;
 } 
     await client.query("COMMIT");
 
-    if(status === "aprovado" && email && nome_cliente){
+    if(status === "aprovado" && email){
   try{
-    await enviarEmailAprovacao(email, nome_cliente);
+    await enviarEmailAprovacao(email);
   }catch(e){
     console.error("Erro enviar email aprovação:", e);
   }
