@@ -165,11 +165,11 @@ function authAgencia(req, res, next) {
 
 //ROTASSSS POST ///////////////////
 router.post("/modelo/dados-bancarios", authModelo, async (req, res) => {
- if (!(await podeAlterarDadosBancarios(req.modelo_id))) {
-  return res.status(403).json({
-    error: "Alterações bloqueadas no período de pagamento"
-  });
-}
+//  if (!(await podeAlterarDadosBancarios(req.modelo_id))) {
+//   return res.status(403).json({
+//     error: "Alterações bloqueadas no período de pagamento"
+//   });
+// }
 
   const {
     tipo,
@@ -234,11 +234,11 @@ try{
 });
 
 router.post("/modelo/dados-bancarios/alterar", authModelo, async (req, res) => {
-  if (!(await podeAlterarDadosBancarios(req.modelo_id))) {
-  return res.status(403).json({
-    error: "Alterações bloqueadas no período de pagamento"
-  });
-}
+//   if (!(await podeAlterarDadosBancarios(req.modelo_id))) {
+//   return res.status(403).json({
+//     error: "Alterações bloqueadas no período de pagamento"
+//   });
+// }
 
   const {
     justificativa,
