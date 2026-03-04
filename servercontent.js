@@ -2655,13 +2655,6 @@ ORDER BY criado_em DESC
 LIMIT 1
 `,[modelo_id]);
 
-res.json({
-banco: bancoRes.rows.length ? bancoRes.rows[0] : null,
-pagamentos: [],
-feed: false,
-agencia: null
-});
-
 const agenciaRes = await db.query(`
 SELECT
 a.id,
@@ -2673,9 +2666,17 @@ ON a.id = m.agencia_id
 WHERE m.id = $1
 `,[modelo_id]);
 
+const feedRes = await db.query(`
+SELECT visivel_feed
+FROM modelos
+WHERE id = $1
+`,[modelo_id]);
+
 res.json({
 banco: bancoRes.rows[0] || null,
-agencia: agenciaRes.rows[0] || null
+agencia: agenciaRes.rows[0] || null,
+feed: feedRes.rows[0]?.visivel_feed || false,
+pagamentos: []
 });
 
 }catch(err){
@@ -2844,11 +2845,11 @@ const totalPages = Math.ceil(total / limit);
 const result = await db.query(`
 SELECT
 h.data,
-u.nome AS admin,
+a.email AS admin,
 h.motivo
 FROM admin_seguranca_historico h
-LEFT JOIN users u
-ON u.id = h.admin_id
+LEFT JOIN admin a
+ON a.id = h.admin_id
 WHERE h.modelo_id=$1
 ORDER BY h.data DESC
 LIMIT $2 OFFSET $3
@@ -2866,7 +2867,6 @@ res.status(500).json({error:"Erro histórico segurança"});
 }
 
 });
-
 
 //PUT ///
 // router.put("/agencia/modelo/:id/percentual", authAgencia, async (req,res)=>{

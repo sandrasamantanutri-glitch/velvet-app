@@ -44,7 +44,7 @@ const authAdmin = require("./middleware/authAdmin");
 const crypto = require("crypto");
 const axios = require("axios");
 const { Resend } = require("resend");
-const resend = new Resend(process.env.RESEND_API_KEY);
+const Resend = new Resend(process.env.RESEND_API_KEY);
 const { enviarEmailValidacao } = require("./email");
 
 ffmpeg.setFfmpegPath(ffmpegPath);

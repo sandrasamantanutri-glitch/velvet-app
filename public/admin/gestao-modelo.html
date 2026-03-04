@@ -661,7 +661,7 @@ const tbody = document.getElementById("historicoBancario");
 
 tbody.innerHTML="";
 
-d.dados.forEach(r=>{
+(d.dados || []).forEach(r=>{
 
 tbody.innerHTML += `
 <tr>
@@ -695,7 +695,7 @@ const tbody = document.getElementById("pagamentosTabela");
 
 tbody.innerHTML="";
 
-d.dados.forEach(p=>{
+(d.dados || []).forEach(r=>{
 
 tbody.innerHTML += `
 <tr>
@@ -804,7 +804,7 @@ const tbody = document.getElementById("historicoSeguranca");
 
 tbody.innerHTML="";
 
-d.dados.forEach(h=>{
+(d.dados || []).forEach(r=>{
 
 tbody.innerHTML += `
 <tr>
