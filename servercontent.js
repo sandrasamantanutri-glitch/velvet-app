@@ -2631,7 +2631,7 @@ router.put("/admin/validar-modelo/:id", auth, authAdmin, async (req,res)=>{
     await client.query("BEGIN");
 
     const modelo_id = Number(req.params.id);
-    const { status } = req.body;
+    const { status, motivo_rejeicao } = req.body;
 
 const modeloRes = await client.query(
   "SELECT user_id, nome_exibicao FROM modelos WHERE id=$1",
@@ -2719,12 +2719,21 @@ const email = emailRes.rows[0]?.email;
     }
 
     // 🔹 Atualizar status da verificação
-    await client.query(
-      "UPDATE modelos_verificacao SET status=$1 WHERE modelo_id=$2",
-      [status, modelo_id]
-    );
+await client.query(`
+  UPDATE modelos_verificacao
+  SET
+    status = $1,
+    motivo_rejeicao = $2,
+    verificado_em = NOW()
+  WHERE modelo_id = $3
+`,[
+  status,
+  motivo_rejeicao || null,
+  modelo_id
+]);
 
     await client.query("COMMIT");
+  
 
 if(status === "aprovado" && email){
   try{
@@ -2734,6 +2743,13 @@ if(status === "aprovado" && email){
   }
 }
 
+if(status === "rejeitado" && email){
+  try{
+    await enviarEmailRejeicao(email, motivo_rejeicao);
+  }catch(e){
+    console.error("Erro enviar email rejeição:", e);
+  }
+}
     res.json({ message:"Processo concluído" });
 
   } catch(err){
@@ -2767,7 +2783,7 @@ router.put("/admin/validar-cliente/:id", auth, authAdmin, async (req,res)=>{
         verificado_em = NOW(),
         atualizado_em = NOW()
       WHERE cliente_id = $1
-    `,[cliente_id, status, motivo_rejeicao || null]);
+    `,[cliente_id, status, motivo_rejeicao || "Não informado"]);
 
     if (status === "aprovado") {
 
@@ -2986,122 +3002,6 @@ router.put("/admin/perfis/:id/editar", auth, authAdmin, async (req,res)=>{
     console.error(err);
     res.status(500).json({ error:"Erro ao atualizar dados" });
   }
-});
-
-router.put("/admin/rejeitar/:id", auth, authAdmin, async (req,res)=>{
-
-  const id = Number(req.params.id);
-  const motivo = req.body.motivo || "Não especificado";
-
-  try{
-
-    console.log("Rejeitando ID:", id);
-    console.log("Motivo recebido:", motivo);
-
-    let user_id = null;
-
-    // =============================
-    // MODELO
-    // =============================
-    const modeloCheck = await db.query(
-      `SELECT modelo_id FROM modelos_verificacao WHERE modelo_id=$1`,
-      [id]
-    );
-
-    if(modeloCheck.rowCount){
-
-      const update = await db.query(`
-        UPDATE modelos_verificacao
-        SET
-          status='rejeitado',
-          motivo_rejeicao=$1,
-          verificado_em=NOW()
-        WHERE modelo_id=$2
-      `,[motivo, id]);
-
-      console.log("Linhas atualizadas modelo:", update.rowCount);
-
-      const modeloRes = await db.query(
-        `SELECT user_id FROM modelos WHERE id=$1`,
-        [id]
-      );
-
-      user_id = modeloRes.rows[0]?.user_id;
-
-    } else {
-
-      // =============================
-      // CLIENTE
-      // =============================
-      const clienteCheck = await db.query(
-        `SELECT cliente_id FROM clientes_verificacao WHERE cliente_id=$1`,
-        [id]
-      );
-
-      if(clienteCheck.rowCount){
-
-        const update = await db.query(`
-          UPDATE clientes_verificacao
-          SET
-            status='rejeitado',
-            motivo_rejeicao=$1,
-            verificado_em=NOW()
-          WHERE cliente_id=$2
-        `,[motivo, id]);
-
-        console.log("Linhas atualizadas cliente:", update.rowCount);
-
-        const clienteRes = await db.query(
-          `SELECT user_id FROM clientes WHERE id=$1`,
-          [id]
-        );
-
-        user_id = clienteRes.rows[0]?.user_id;
-
-      } else {
-
-        console.log("ID não encontrado em nenhuma tabela");
-
-        return res.status(404).json({
-          error:"Registro não encontrado"
-        });
-
-      }
-    }
-
-    // =============================
-    // EMAIL
-    // =============================
-    if(user_id){
-
-      const emailRes = await db.query(
-        `SELECT email FROM users WHERE id=$1`,
-        [user_id]
-      );
-
-      const email = emailRes.rows[0]?.email;
-
-      console.log("Email encontrado:", email);
-
-      if(email){
-        await enviarEmailRejeicao(email, motivo);
-        console.log("Email enviado");
-      }
-
-    }
-
-    res.json({ success:true });
-
-  }catch(err){
-
-    console.error("Erro rota rejeitar:", err);
-
-    res.status(500).json({
-      error:"Erro ao rejeitar perfil"
-    });
-
-  }
-
 });
 
 
