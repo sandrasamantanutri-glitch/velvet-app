@@ -40,6 +40,7 @@ const ffmpegPath = require("ffmpeg-static");
 const authCliente = require("./middleware/authCliente");
 const authModelo = require("./middleware/authModelo");
 const auth = require("./middleware/auth");
+const authAdmin = require("./middleware/authAdmin");
 const crypto = require("crypto");
 const axios = require("axios");
 const { Resend } = require("resend");
