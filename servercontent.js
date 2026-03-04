@@ -11,6 +11,8 @@ const AWS = require("aws-sdk");
 const fs = require("fs");
 const { enviarEmailAprovacao } = require("./email");
 const { enviarEmailRejeicao } = require("./email");
+const multer = require("multer");
+const upload = multer({ storage: multer.memoryStorage() });
 
 const router = express.Router();   // ⬅️ PRIMEIRO SEMPRE
 
@@ -19,6 +21,7 @@ const s3Privado = new AWS.S3({
   accessKeyId: process.env.B2_KEY_ID_PRIVATE,
   secretAccessKey: process.env.B2_APP_KEY_PRIVATE,
   region: process.env.B2_REGION,
+
   signatureVersion: "v4",
   s3ForcePathStyle: true
 });
@@ -743,12 +746,30 @@ res.json({ ok:true });
 
 });
 
-router.post("/admin/modelo/:id/registrar-pagamento", auth, authAdmin, async (req,res)=>{
+router.post("/admin/modelo/:id/registrar-pagamento", auth, authAdmin, upload.single("recibo"), async (req,res)=>{
 
 const modelo_id = Number(req.params.id);
 
 const { mes, midias, assinaturas } = req.body;
 
+const mesFormatado = mes ? mes + "-01" : null;
+
+let recibo_url = null;
+
+if(req.file){
+
+const key = `recibos/${modelo_id}/${Date.now()}-${req.file.originalname}`;
+
+await s3Privado.putObject({
+Bucket: process.env.B2_BUCKET_PRIVATE,
+Key: key,
+Body: req.file.buffer,
+ContentType: req.file.mimetype
+}).promise();
+
+recibo_url = key;
+
+}
 const total_geral =
 Number(midias || 0) + Number(assinaturas || 0);
 
@@ -756,14 +777,15 @@ try{
 
 await db.query(`
 INSERT INTO modelo_pagamentos
-(modelo_id, mes, total_midias, total_assinaturas, total_geral, status)
-VALUES ($1,$2,$3,$4,$5,'pendente')
+(modelo_id, mes, total_midias, total_assinaturas, total_geral, status, recibo_url)
+VALUES ($1,$2,$3,$4,$5,'pendente', $6)
 `,[
 modelo_id,
-mes,
+mesFormatado,
 midias,
 assinaturas,
-total_geral
+total_geral,
+recibo_url
 ]);
 
 res.json({ok:true});
@@ -774,6 +796,7 @@ res.status(500).json({error:"Erro registrar pagamento"});
 }
 
 });
+
 
 // PÁGINA DE RELATÓRIOS
 
@@ -2761,8 +2784,24 @@ ORDER BY mes DESC
 LIMIT $2 OFFSET $3
 `,[modelo_id,limit,offset]);
 
+const pagamentos = result.rows;
+
+for(const p of pagamentos){
+
+if(p.recibo_url){
+
+p.recibo_url = s3Privado.getSignedUrl("getObject",{
+Bucket: process.env.B2_BUCKET_PRIVATE,
+Key: p.recibo_url,
+Expires: 300
+});
+
+}
+
+}
+
 res.json({
-dados: result.rows,
+dados: pagamentos,
 page,
 totalPages
 });

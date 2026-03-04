@@ -752,10 +752,16 @@ document.getElementById("modalPagamento").classList.add("hidden");
 async function salvarPagamento(){
 
 const formData = new FormData();
+const mes = document.getElementById("pagamentoMes").value;
 
-formData.append("mes", document.getElementById("pagamentoMes").value);
-formData.append("midias", document.getElementById("pagamentoMidias").value);
-formData.append("assinaturas", document.getElementById("pagamentoAssinaturas").value);
+if(!mes){
+alert("Selecione o mês do pagamento");
+return;
+}
+
+formData.append("mes", mes);
+formData.append("midias", document.getElementById("pagamentoMidias").value || 0);
+formData.append("assinaturas", document.getElementById("pagamentoAssinaturas").value|| 0);
 
 const file = document.getElementById("pagamentoRecibo").files[0];
 
