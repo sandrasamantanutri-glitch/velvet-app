@@ -101,11 +101,11 @@
 <textarea id="motivoBanco" placeholder="Motivo da rejeição (se necessário)"></textarea>
 
 <div class="acoes-banco">
-<button class="btn-aprovar" onclick="validarBanco('aprovado')">
+<button id="btnAprovarBanco" class="btn-aprovar" onclick="validarBanco('aprovado')">
 Aprovar
 </button>
 
-<button class="btn-rejeitar" onclick="validarBanco('rejeitado')">
+<button id="btnRejeitarBanco" class="btn-rejeitar" onclick="validarBanco('rejeitado')">
 Rejeitar
 </button>
 </div>
@@ -483,17 +483,14 @@ const btnAprovar = document.getElementById("btnAprovarBanco");
 const btnRejeitar = document.getElementById("btnRejeitarBanco");
 const motivo = document.getElementById("motivoBanco");
 
-if(status === "em_analise"){
+if(status === "pendente"){
 btnAprovar.style.display = "inline-block";
 btnRejeitar.style.display = "inline-block";
 motivo.style.display = "block";
-
 }else{
-
 btnAprovar.style.display = "none";
 btnRejeitar.style.display = "none";
 motivo.style.display = "none";
-
 }
 
 /* AGENCIA */
