@@ -793,10 +793,15 @@ background:#999;
 color:#fff;
 }
 
+.tabela-container{
+width:100%;
+overflow-x:auto;
+}
+
 .historico-table{
 width:100%;
+min-width:700px;
 border-collapse:collapse;
-margin-top:10px;
 }
 
 .historico-table th{
