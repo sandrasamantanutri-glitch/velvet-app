@@ -720,6 +720,38 @@ router.post("/admin/login", async (req, res) => {
   }
 });
 
+router.post("/admin/modelo/:id/aprovar-banco", auth, authAdmin, async (req,res)=>{
+
+const { id } = req.params;
+
+try{
+
+await db.query(`
+UPDATE modelo_dados_bancarios
+SET
+status = 'aprovado',
+aprovado_em = NOW(),
+atualizado_em = NOW()
+WHERE id = (
+SELECT id
+FROM modelo_dados_bancarios
+WHERE modelo_id = $1
+ORDER BY criado_em DESC
+LIMIT 1
+)
+`,[id]);
+
+res.json({
+message:"Dados bancários aprovados"
+});
+
+}catch(err){
+console.error("Erro aprovar banco:", err);
+res.status(500).json({error:"Erro ao aprovar dados bancários"});
+}
+
+});
+
 // PÁGINA DE RELATÓRIOS
 
 router.get("/relatorios",
@@ -2563,6 +2595,87 @@ router.get("/admin/verificacoes-rejeitadas", auth, authAdmin, async (req,res)=>{
 
 });
 
+router.get("/admin/modelo/:id/gestao", auth, authAdmin, async (req,res)=>{
+
+const { id } = req.params;
+
+try{
+
+const bancoRes = await db.query(`
+SELECT
+titular_nome,
+titular_documento,
+banco,
+agencia,
+conta,
+conta_tipo,
+pix_tipo,
+pix_chave,
+status,
+aprovado_em
+FROM modelo_dados_bancarios
+WHERE modelo_id = $1
+ORDER BY criado_em DESC
+LIMIT 1
+`,[id]);
+
+res.json({
+banco: bancoRes.rows[0] || null
+});
+
+}catch(err){
+console.error("Erro carregar gestão:", err);
+res.status(500).json({error:"Erro ao carregar dados bancários"});
+}
+
+});
+
+router.get("/admin/modelo/:id/historico-bancario", auth, authAdmin, async (req,res)=>{
+
+const { id } = req.params;
+
+const page = Number(req.query.page) || 1;
+const limit = 10;
+const offset = (page - 1) * limit;
+
+try{
+
+const totalRes = await db.query(`
+SELECT COUNT(*)
+FROM modelo_dados_bancarios
+WHERE modelo_id = $1
+`,[id]);
+
+const total = Number(totalRes.rows[0].count);
+const totalPages = Math.ceil(total / limit);
+
+const result = await db.query(`
+SELECT
+titular_nome,
+banco,
+agencia,
+conta,
+pix_chave,
+status,
+criado_em
+FROM modelo_dados_bancarios
+WHERE modelo_id = $1
+ORDER BY criado_em DESC
+LIMIT $2 OFFSET $3
+`,[id,limit,offset]);
+
+res.json({
+dados: result.rows,
+page,
+totalPages
+});
+
+}catch(err){
+console.error("Erro histórico bancário:", err);
+res.status(500).json({error:"Erro ao buscar histórico"});
+}
+
+});
 
 //PUT ///
 // router.put("/agencia/modelo/:id/percentual", authAgencia, async (req,res)=>{
