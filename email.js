@@ -76,7 +76,7 @@ async function enviarEmailRejeicao(email, motivo) {
       <p>${motivo}</p>
 
       <p>
-      Você pode acessar sua conta, corrigir os documentos enviados e reenviar para nova análise.
+      Você pode acessar sua conta, preencher todos os dados necessários, anexar os documentos e reenviar para nova análise.
       </p>
 
       <p>
