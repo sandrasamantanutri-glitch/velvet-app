@@ -2821,6 +2821,53 @@ res.status(500).json({error:"Erro calcular saldo"});
 });
 
 
+//HISTORICO RESET SENHA
+router.get("/admin/modelo/:id/historico-seguranca", auth, authAdmin, async (req,res)=>{
+
+const modelo_id = Number(req.params.id);
+
+const page = Number(req.query.page) || 1;
+const limit = 10;
+const offset = (page - 1) * limit;
+
+try{
+
+const totalRes = await db.query(`
+SELECT COUNT(*)
+FROM admin_seguranca_historico
+WHERE modelo_id=$1
+`,[modelo_id]);
+
+const total = Number(totalRes.rows[0].count);
+const totalPages = Math.ceil(total / limit);
+
+const result = await db.query(`
+SELECT
+h.data,
+u.nome AS admin,
+h.motivo
+FROM admin_seguranca_historico h
+LEFT JOIN users u
+ON u.id = h.admin_id
+WHERE h.modelo_id=$1
+ORDER BY h.data DESC
+LIMIT $2 OFFSET $3
+`,[modelo_id,limit,offset]);
+
+res.json({
+dados: result.rows,
+page,
+totalPages
+});
+
+}catch(err){
+console.error("Erro histórico segurança:",err);
+res.status(500).json({error:"Erro histórico segurança"});
+}
+
+});
+
+
 //PUT ///
 // router.put("/agencia/modelo/:id/percentual", authAgencia, async (req,res)=>{
 //   try{

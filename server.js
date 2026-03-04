@@ -6337,6 +6337,63 @@ app.post(
   }
 );
 
+app.post("/api/admin/modelo/:id/reset-password", auth, authAdmin, async (req,res)=>{
+
+const modelo_id = Number(req.params.id);
+
+try{
+
+// buscar user_id da modelo
+const modeloRes = await db.query(`
+SELECT user_id
+FROM modelos
+WHERE id = $1
+`,[modelo_id]);
+
+if(!modeloRes.rows.length){
+return res.status(404).json({error:"Modelo não encontrada"});
+}
+
+const user_id = modeloRes.rows[0].user_id;
+
+// gerar nova senha aleatória
+const password = Math.random().toString(36).slice(-10);
+
+// gerar hash
+const password_hash = await bcrypt.hash(password, 10);
+
+// atualizar password no users
+await db.query(`
+UPDATE users
+SET password_hash = $1
+WHERE id = $2
+`,[
+password_hash,
+user_id
+]);
+
+// salvar histórico
+await db.query(`
+INSERT INTO admin_segurança_historico
+(modelo_id, admin_id, motivo, data)
+VALUES ($1,$2,$3,NOW())
+`,[
+modelo_id,
+req.user.id,
+"Reset de password"
+]);
+
+res.json({
+password
+});
+
+}catch(err){
+console.error("Erro reset password:",err);
+res.status(500).json({error:"Erro reset password"});
+}
+
+});
+
 // ===============================
 // 🔥 MIDDLEWARE GLOBAL DE ERRO
 // ===============================
