@@ -752,6 +752,38 @@ res.status(500).json({error:"Erro ao aprovar dados bancários"});
 
 });
 
+router.post("/admin/modelo/:id/registrar-pagamento", auth, authAdmin, async (req,res)=>{
+
+const modelo_id = Number(req.params.id);
+
+const { mes, midias, assinaturas } = req.body;
+
+const total_geral =
+Number(midias || 0) + Number(assinaturas || 0);
+
+try{
+
+await db.query(`
+INSERT INTO modelo_pagamentos
+(modelo_id, mes, total_midias, total_assinaturas, total_geral, status)
+VALUES ($1,$2,$3,$4,$5,'pendente')
+`,[
+modelo_id,
+mes,
+midias,
+assinaturas,
+total_geral
+]);
+
+res.json({ok:true});
+
+}catch(err){
+console.error("Erro registrar pagamento:",err);
+res.status(500).json({error:"Erro registrar pagamento"});
+}
+
+});
+
 // PÁGINA DE RELATÓRIOS
 
 router.get("/relatorios",
@@ -2683,6 +2715,95 @@ res.status(500).json({error:"Erro ao buscar histórico"});
 }
 
 });
+
+router.get("/admin/modelo/:id/pagamentos", auth, authAdmin, async (req,res)=>{
+
+const modelo_id = Number(req.params.id);
+
+const page = Number(req.query.page) || 1;
+const limit = 10;
+const offset = (page - 1) * limit;
+
+try{
+
+const totalRes = await db.query(`
+SELECT COUNT(*)
+FROM modelo_pagamentos
+WHERE modelo_id=$1
+`,[modelo_id]);
+
+const total = Number(totalRes.rows[0].count);
+const totalPages = Math.ceil(total / limit);
+
+const result = await db.query(`
+SELECT
+id,
+mes,
+total_midias,
+total_assinaturas,
+total_geral,
+status,
+pago_em,
+recibo_url
+FROM modelo_pagamentos
+WHERE modelo_id=$1
+ORDER BY mes DESC
+LIMIT $2 OFFSET $3
+`,[modelo_id,limit,offset]);
+
+res.json({
+dados: result.rows,
+page,
+totalPages
+});
+
+}catch(err){
+console.error("Erro listar pagamentos:",err);
+res.status(500).json({error:"Erro listar pagamentos"});
+}
+
+});
+
+router.get("/admin/modelo/:id/saldo", auth, authAdmin, async (req,res)=>{
+
+const modelo_id = Number(req.params.id);
+
+try{
+
+const ganhosRes = await db.query(`
+SELECT
+COALESCE(SUM(valor_modelo),0) AS ganhos
+FROM transacoes_agency
+WHERE modelo_id = $1
+AND status = 'pago'
+`,[modelo_id]);
+
+const pagosRes = await db.query(`
+SELECT
+COALESCE(SUM(total_geral),0) AS pagos
+FROM modelo_pagamentos
+WHERE modelo_id = $1
+AND status = 'pago'
+`,[modelo_id]);
+
+const ganhos = Number(ganhosRes.rows[0].ganhos);
+const pagos = Number(pagosRes.rows[0].pagos);
+
+const saldo = ganhos - pagos;
+
+res.json({
+ganhos,
+pagos,
+saldo
+});
+
+}catch(err){
+console.error("Erro calcular saldo:", err);
+res.status(500).json({error:"Erro calcular saldo"});
+}
+
+});
+
 
 //PUT ///
 // router.put("/agencia/modelo/:id/percentual", authAgencia, async (req,res)=>{
