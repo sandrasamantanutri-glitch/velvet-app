@@ -44,7 +44,7 @@ const pdfPath = path.join(process.cwd(), "docs", "manual-velvet.pdf");
       <p>
       Acesse sua conta:
       <br>
-      https://velvet.lat
+      https://www.velvet.lat
       </p>
 
       <p>Bem-vindo(a) 💜</p>
@@ -58,6 +58,43 @@ const pdfPath = path.join(process.cwd(), "docs", "manual-velvet.pdf");
   });
 }
 
+async function enviarEmailRejeicao(email, motivo) {
+  await resend.emails.send({
+    from: "Velvet <no-reply@velvet.lat>",
+    to: email,
+    subject: "Verificação de conta não aprovada",
+    html: `
+      <h2>Verificação não aprovada</h2>
+
+      <p>Olá,</p>
+
+      <p>
+      Infelizmente não foi possível aprovar sua verificação nesta análise.
+      </p>
+
+      <p><strong>Motivo:</strong></p>
+      <p>${motivo}</p>
+
+      <p>
+      Você pode acessar sua conta, corrigir os documentos enviados e reenviar para nova análise.
+      </p>
+
+      <p>
+      Acesse a plataforma:
+      <br>
+      https://www.velvet.lat
+      </p>
+
+      <p>
+      Caso tenha dúvidas, entre em contato com nosso suporte.
+      </p>
+
+      <p>Equipe Velvet 💜</p>
+    `
+  });
+}
+
 module.exports = { 
   enviarEmailValidacao,
-  enviarEmailAprovacao };
+  enviarEmailAprovacao,
+  enviarEmailRejeicao };

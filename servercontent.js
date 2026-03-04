@@ -10,6 +10,7 @@ const db = require("./db");
 const AWS = require("aws-sdk");
 const fs = require("fs");
 const { enviarEmailAprovacao } = require("./email");
+const { enviarEmailRejeicao } = require("./email");
 
 const router = express.Router();   // ⬅️ PRIMEIRO SEMPRE
 
@@ -2987,22 +2988,109 @@ router.put("/admin/perfis/:id/editar", auth, authAdmin, async (req,res)=>{
   }
 });
 
+const { enviarEmailRejeicao } = require("./email");
+
 router.put("/admin/rejeitar/:id", auth, authAdmin, async (req,res)=>{
 
   const id = Number(req.params.id);
   const { motivo } = req.body;
 
-  await db.query(`
-    UPDATE modelos_verificacao
-    SET status = 'rejeitado',
-        motivo_rejeicao = $2
-    WHERE modelo_id = $1
-  `,[id, motivo || "Não especificado"]);
+  try{
 
-  res.json({ success:true });
+    let user_id = null;
+    let email = null;
+
+    // ====================================
+    // 🔹 1️⃣ TENTAR REJEITAR MODELO
+    // ====================================
+    const modeloCheck = await db.query(
+      `SELECT modelo_id FROM modelos_verificacao WHERE modelo_id = $1`,
+      [id]
+    );
+
+    if(modeloCheck.rowCount){
+
+      await db.query(`
+        UPDATE modelos_verificacao
+        SET status = 'rejeitado',
+            motivo_rejeicao = $2,
+            verificado_em = NOW()
+        WHERE modelo_id = $1
+      `,[id, motivo || "Não especificado"]);
+
+      const modeloRes = await db.query(
+        "SELECT user_id FROM modelos WHERE id=$1",
+        [id]
+      );
+
+      user_id = modeloRes.rows[0]?.user_id;
+
+    } else {
+
+      // ====================================
+      // 🔹 2️⃣ SE NÃO FOR MODELO → CLIENTE
+      // ====================================
+      const clienteCheck = await db.query(
+        `SELECT cliente_id FROM clientes_verificacao WHERE cliente_id = $1`,
+        [id]
+      );
+
+      if(clienteCheck.rowCount){
+
+        await db.query(`
+          UPDATE clientes_verificacao
+          SET status = 'rejeitado',
+              motivo_rejeicao = $2,
+              verificado_em = NOW()
+          WHERE cliente_id = $1
+        `,[id, motivo || "Não especificado"]);
+
+        const clienteRes = await db.query(
+          "SELECT user_id FROM clientes WHERE id=$1",
+          [id]
+        );
+
+        user_id = clienteRes.rows[0]?.user_id;
+
+      } else {
+
+        return res.status(404).json({
+          error:"Registro não encontrado"
+        });
+
+      }
+    }
+
+    // ====================================
+    // 🔹 3️⃣ BUSCAR EMAIL
+    // ====================================
+    if(user_id){
+
+      const emailRes = await db.query(
+        "SELECT email FROM users WHERE id=$1",
+        [user_id]
+      );
+
+      email = emailRes.rows[0]?.email;
+
+      if(email){
+        try{
+          await enviarEmailRejeicao(email, motivo || "Não especificado");
+        }catch(e){
+          console.error("Erro enviar email rejeição:", e);
+        }
+      }
+
+    }
+
+    res.json({ success:true });
+
+  }catch(err){
+    console.error(err);
+    res.status(500).json({ error:"Erro ao rejeitar perfil" });
+  }
 
 });
-
 
 
 module.exports = {
