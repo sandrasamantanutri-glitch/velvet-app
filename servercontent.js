@@ -2988,8 +2988,6 @@ router.put("/admin/perfis/:id/editar", auth, authAdmin, async (req,res)=>{
   }
 });
 
-const { enviarEmailRejeicao } = require("./email");
-
 router.put("/admin/rejeitar/:id", auth, authAdmin, async (req,res)=>{
 
   const id = Number(req.params.id);
