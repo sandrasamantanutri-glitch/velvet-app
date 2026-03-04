@@ -2991,33 +2991,38 @@ router.put("/admin/perfis/:id/editar", auth, authAdmin, async (req,res)=>{
 router.put("/admin/rejeitar/:id", auth, authAdmin, async (req,res)=>{
 
   const id = Number(req.params.id);
-  const { motivo } = req.body;
+  const motivo = req.body.motivo || "Não especificado";
 
   try{
 
-    let user_id = null;
-    let email = null;
+    console.log("Rejeitando ID:", id);
+    console.log("Motivo recebido:", motivo);
 
-    // ====================================
-    // 🔹 1️⃣ TENTAR REJEITAR MODELO
-    // ====================================
+    let user_id = null;
+
+    // =============================
+    // MODELO
+    // =============================
     const modeloCheck = await db.query(
-      `SELECT modelo_id FROM modelos_verificacao WHERE modelo_id = $1`,
+      `SELECT modelo_id FROM modelos_verificacao WHERE modelo_id=$1`,
       [id]
     );
 
     if(modeloCheck.rowCount){
 
-      await db.query(`
+      const update = await db.query(`
         UPDATE modelos_verificacao
-        SET status = 'rejeitado',
-            motivo_rejeicao = $2,
-            verificado_em = NOW()
-        WHERE modelo_id = $1
-      `,[id, motivo || "Não especificado"]);
+        SET
+          status='rejeitado',
+          motivo_rejeicao=$1,
+          verificado_em=NOW()
+        WHERE modelo_id=$2
+      `,[motivo, id]);
+
+      console.log("Linhas atualizadas modelo:", update.rowCount);
 
       const modeloRes = await db.query(
-        "SELECT user_id FROM modelos WHERE id=$1",
+        `SELECT user_id FROM modelos WHERE id=$1`,
         [id]
       );
 
@@ -3025,32 +3030,37 @@ router.put("/admin/rejeitar/:id", auth, authAdmin, async (req,res)=>{
 
     } else {
 
-      // ====================================
-      // 🔹 2️⃣ SE NÃO FOR MODELO → CLIENTE
-      // ====================================
+      // =============================
+      // CLIENTE
+      // =============================
       const clienteCheck = await db.query(
-        `SELECT cliente_id FROM clientes_verificacao WHERE cliente_id = $1`,
+        `SELECT cliente_id FROM clientes_verificacao WHERE cliente_id=$1`,
         [id]
       );
 
       if(clienteCheck.rowCount){
 
-        await db.query(`
+        const update = await db.query(`
           UPDATE clientes_verificacao
-          SET status = 'rejeitado',
-              motivo_rejeicao = $2,
-              verificado_em = NOW()
-          WHERE cliente_id = $1
-        `,[id, motivo || "Não especificado"]);
+          SET
+            status='rejeitado',
+            motivo_rejeicao=$1,
+            verificado_em=NOW()
+          WHERE cliente_id=$2
+        `,[motivo, id]);
+
+        console.log("Linhas atualizadas cliente:", update.rowCount);
 
         const clienteRes = await db.query(
-          "SELECT user_id FROM clientes WHERE id=$1",
+          `SELECT user_id FROM clientes WHERE id=$1`,
           [id]
         );
 
         user_id = clienteRes.rows[0]?.user_id;
 
       } else {
+
+        console.log("ID não encontrado em nenhuma tabela");
 
         return res.status(404).json({
           error:"Registro não encontrado"
@@ -3059,24 +3069,23 @@ router.put("/admin/rejeitar/:id", auth, authAdmin, async (req,res)=>{
       }
     }
 
-    // ====================================
-    // 🔹 3️⃣ BUSCAR EMAIL
-    // ====================================
+    // =============================
+    // EMAIL
+    // =============================
     if(user_id){
 
       const emailRes = await db.query(
-        "SELECT email FROM users WHERE id=$1",
+        `SELECT email FROM users WHERE id=$1`,
         [user_id]
       );
 
-      email = emailRes.rows[0]?.email;
+      const email = emailRes.rows[0]?.email;
+
+      console.log("Email encontrado:", email);
 
       if(email){
-        try{
-          await enviarEmailRejeicao(email, motivo || "Não especificado");
-        }catch(e){
-          console.error("Erro enviar email rejeição:", e);
-        }
+        await enviarEmailRejeicao(email, motivo);
+        console.log("Email enviado");
       }
 
     }
@@ -3084,8 +3093,13 @@ router.put("/admin/rejeitar/:id", auth, authAdmin, async (req,res)=>{
     res.json({ success:true });
 
   }catch(err){
-    console.error(err);
-    res.status(500).json({ error:"Erro ao rejeitar perfil" });
+
+    console.error("Erro rota rejeitar:", err);
+
+    res.status(500).json({
+      error:"Erro ao rejeitar perfil"
+    });
+
   }
 
 });
