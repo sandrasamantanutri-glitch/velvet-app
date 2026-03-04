@@ -730,9 +730,13 @@ UPDATE modelo_dados_bancarios
 SET
 status = $1,
 motivo_rejeicao = $2,
-aprovado_em = CASE WHEN $1='aprovado' THEN NOW() ELSE NULL END
+aprovado_em = CASE WHEN $4::text = 'aprovado' THEN NOW() ELSE NULL END
 WHERE modelo_id = $3
-`,[status, motivo || null, modelo_id]);
+`,[
+status,
+motivo || null,
+modelo_id
+]);
 
 res.json({ ok:true });
 
