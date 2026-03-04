@@ -107,7 +107,7 @@ Aprovar dados bancários
 <div class="banco-historico">
 
 <h3>Histórico de alterações</h3>
-<div class="tabela-container"></div>
+<div class="tabela-container">
 <table class="historico-table">
 
 <thead>
@@ -150,7 +150,7 @@ Próxima
 <section class="gestao-section">
 
 <h2>Pagamentos</h2>
-
+<div class="tabela-container">
 <table class="historico-table">
 
 <thead>
@@ -167,6 +167,7 @@ Próxima
 <tbody id="pagamentosTabela"></tbody>
 
 </table>
+</div>
 
 <div class="paginacao-historico">
 
@@ -300,7 +301,7 @@ Resetar password da modelo
 <div id="msgSeguranca" class="alerta-sucesso hidden"></div>
 
 <h3 style="margin-top:30px">Histórico de alterações</h3>
-
+<div class="tabela-container">
 <table class="historico-table">
 
 <thead>
@@ -314,6 +315,7 @@ Resetar password da modelo
 <tbody id="historicoSeguranca"></tbody>
 
 </table>
+</div>
 
 <div class="paginacao-historico">
 
@@ -413,7 +415,6 @@ headers:{ Authorization:"Bearer "+token }
 const d = await res.json();
 
 //BANCO
-//BANCO
 if(!d.banco){
 
 console.log("Modelo sem dados bancários");
@@ -432,7 +433,6 @@ document.getElementById("bankStatus").innerHTML =
 
 return;
 }
-
 
 // SE EXISTEM DADOS BANCÁRIOS
 document.getElementById("bankTitular").innerText =
@@ -486,14 +486,6 @@ d.agencia?.id || "-";
 
 document.getElementById("agenciaDesde").innerText =
 d.agencia?.desde ? formatarData(d.agencia.desde) : "-";
-
-
-const ativo = d.feed === true;
-document.getElementById("feedStatus").innerHTML =
-ativo
-? `<span class="badge-feed ativo">Visível no feed</span>`
-: `<span class="badge-feed oculto">Oculta no feed</span>`;
-
 }
 
 
@@ -592,22 +584,15 @@ document.getElementById("modalSenha").classList.add("hidden");
 //FEED//
 async function toggleFeed(){
 
-const ativo = document.getElementById("feedStatus")
-.innerText.includes("Visível");
-
-const novoFeed = !ativo;
+const novoFeed = !feedAtual;
 
 const res = await fetch(`/api/admin/modelo/${modelo_id}/feed`,{
-
 method:"PUT",
-
 headers:{
 Authorization:"Bearer "+token,
 "Content-Type":"application/json"
 },
-
 body:JSON.stringify({ feed: novoFeed })
-
 });
 
 const d = await res.json();
@@ -870,6 +855,22 @@ function limparTela(){
 
 document.querySelectorAll("p").forEach(e=>e.innerText="-");
 document.querySelectorAll("tbody").forEach(e=>e.innerHTML="");
+
+}
+
+let feedAtual = false;
+
+function renderFeedStatus(feed){
+
+  feedAtual = feed;
+
+  const el = document.getElementById("feedStatus");
+
+  if(feed === true){
+    el.innerHTML = `<span class="badge-feed ativo">Visível</span>`;
+  }else{
+    el.innerHTML = `<span class="badge-feed oculto">Não visível</span>`;
+  }
 
 }
 
