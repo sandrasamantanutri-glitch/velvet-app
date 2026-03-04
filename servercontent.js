@@ -2781,14 +2781,14 @@ router.put("/admin/validar-cliente/:id", auth, authAdmin, async (req,res)=>{
   }
 
   const user_id = userRes.rows[0].user_id;
-  const nome_cliente = userRes.rows[0].nome;
+  nome_cliente = userRes.rows[0].nome;
 
   const emailRes = await client.query(
   "SELECT email FROM users WHERE id=$1",
   [user_id]
 );
 
-const email = emailRes.rows[0]?.email;
+email = emailRes.rows[0]?.email;
 
   // 🔹 2️⃣ Atualizar role no users
   await client.query(
@@ -2872,7 +2872,7 @@ const email = emailRes.rows[0]?.email;
 } 
     await client.query("COMMIT");
 
-    if(status === "aprovado" && email){
+    if(status === "aprovado" && email && nome_cliente){
   try{
     await enviarEmailAprovacao(email, nome_cliente);
   }catch(e){
