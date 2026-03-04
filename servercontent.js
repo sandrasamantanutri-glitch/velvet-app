@@ -2667,7 +2667,7 @@ WHERE m.id = $1
 `,[modelo_id]);
 
 const feedRes = await db.query(`
-SELECT visivel_feed
+SELECT feed
 FROM modelos
 WHERE id = $1
 `,[modelo_id]);
@@ -2675,7 +2675,7 @@ WHERE id = $1
 res.json({
 banco: bancoRes.rows[0] || null,
 agencia: agenciaRes.rows[0] || null,
-feed: feedRes.rows[0]?.visivel_feed || false,
+feed: feedRes.rows[0]?.feed || false,
 pagamentos: []
 });
 
