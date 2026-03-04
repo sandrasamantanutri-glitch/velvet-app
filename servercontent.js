@@ -778,7 +778,7 @@ try{
 await db.query(`
 INSERT INTO modelo_pagamentos
 (modelo_id, mes, total_midias, total_assinaturas, total_geral, status, recibo_url)
-VALUES ($1,$2,$3,$4,$5,'pendente', $6)
+VALUES ($1,$2,$3,$4,$5,'pago', $6)
 `,[
 modelo_id,
 mesFormatado,
