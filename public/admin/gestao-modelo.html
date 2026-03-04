@@ -381,11 +381,11 @@ Alterar visibilidade
 
 <script>
 
-// const token = localStorage.getItem("token_admin");
+const token = localStorage.getItem("token_admin");
 
-// if(!token){
-// window.location.href="/admin/login.html";
-// }
+if(!token){
+window.location.href="/admin/login.html";
+}
 
 const params = new URLSearchParams(window.location.search);
 const modelo_id = params.get("id");
