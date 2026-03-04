@@ -592,11 +592,21 @@ document.getElementById("modalSenha").classList.add("hidden");
 //FEED//
 async function toggleFeed(){
 
+const ativo = document.getElementById("feedStatus")
+.innerText.includes("Visível");
+
+const novoFeed = !ativo;
+
 const res = await fetch(`/api/admin/modelo/${modelo_id}/feed`,{
 
 method:"PUT",
 
-headers:{ Authorization:"Bearer "+token }
+headers:{
+Authorization:"Bearer "+token,
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({ feed: novoFeed })
 
 });
 
@@ -618,7 +628,6 @@ msg.classList.add("hidden");
 carregarGestao();
 
 }
-
 
 function logoutAdmin(){
 

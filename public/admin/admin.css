@@ -815,7 +815,7 @@ text-align:left;
 padding:10px;
 border-bottom:1px solid #eee;
 font-size:13px;
-white-space:nowrap;
+word-break:break-word;
 }
 
 .paginacao-historico{

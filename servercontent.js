@@ -2672,10 +2672,12 @@ FROM modelos
 WHERE id = $1
 `,[modelo_id]);
 
+const feed = feedRes.rows.length ? feedRes.rows[0].feed : false;
+
 res.json({
 banco: bancoRes.rows[0] || null,
 agencia: agenciaRes.rows[0] || null,
-feed: feedRes.rows[0]?.feed || false,
+feed,
 pagamentos: []
 });
 
