@@ -387,8 +387,7 @@ if(!token){
 window.location.href="/admin/login.html";
 }
 
-const params = new URLSearchParams(window.location.search);
-const modelo_id = params.get("id");
+let modelo_id = null;
 
 if(!modelo_id){
 console.warn("Nenhuma modelo selecionada");
@@ -840,13 +839,28 @@ ${m.nome} (ID ${m.id})
 
 function irModelo(){
 
-const id = document.getElementById("modeloSelect").value;
+modelo_id = document.getElementById("modeloSelect").value;
 
-if(!id) return;
+if(!modelo_id) return;
 
-window.location.href = `/admin/gestão-modelo.html?id=${id}`;
+document.getElementById("tituloModelo").innerText =
+"Gestão da conta da modelo ID " + modelo_id;
+
+carregarGestao();
+carregarHistorico();
+carregarPagamentos();
+carregarHistoricoSeguranca();
 
 }
+
+function limparTela(){
+
+document.querySelectorAll("p").forEach(e=>e.innerText="-");
+document.querySelectorAll("tbody").forEach(e=>e.innerHTML="");
+
+}
+
+carregarModelos();
 
 </script>
 
