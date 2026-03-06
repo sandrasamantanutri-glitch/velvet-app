@@ -5,16 +5,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
    <title>Chat</title>
-  <link rel="stylesheet" href="css/chat.css">
+  <link rel="stylesheet" href="/chat.css">
   <link rel="stylesheet" href="/chatmodelo.css">
 </head>
 
 <body class="role-modelo">
    <div id="header-container"></div>
 <header class="chat-topo">
-  <button type="button" class="btn-voltar" onclick="history.back()">
-    <img src="/assets/voltar.png" alt="Voltar">
-  </button>
+<button type="button" class="btn-voltar" onclick="window.location.href='/inbox.html'">
+  <img src="/assets/voltar.png" alt="Voltar">
+</button>
 
   <div class="chat-cliente-info">
     <img id="chatClienteAvatar" class="chat-avatar" src="/assets/avatar.png" alt="Avatar cliente" />
@@ -93,10 +93,16 @@
   </div>
 </div>
 
-
+<div id="modalMidia" class="modal-midia hidden">
+  <div class="modal-backdrop" onclick="fecharModalMidia()"></div>
+<div class="modal-box modal-midia-box">
+    <img id="modalImg" />
+    <video id="modalVideo" controls playsinline></video>
+  </div>
+</div>
 
 <script src="/socket.io/socket.io.js"></script>
-<script src="/js/chat.js"> defer </script>
 <script src="/header.js"></script>
+<script src="/chat.js" defer></script>
 </body>
 </html>

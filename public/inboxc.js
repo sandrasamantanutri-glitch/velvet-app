@@ -16,11 +16,7 @@ let listaCompleta = [];
 // SOCKET
 // ===============================
 const socket = io({
-  transports: ["websocket"],
-  reconnection: true,
-  reconnectionAttempts: Infinity,
-  reconnectionDelay: 1000,
-  reconnectionDelayMax: 5000
+  transports: ["websocket", "polling"]
 });
 
 let clienteId = null;
@@ -44,9 +40,14 @@ socket.on("authOk", () => {
   entrarInbox();
 });
 
-// atualização realtime
 socket.on("inboxMessage", dados => {
   atualizarChatLocal(dados);
+
+  // fallback segurança
+  if (!chatsMap.has(dados.modelo_id)) {
+    carregarListaModelos();
+  }
+
 });
 
 socket.on("disconnect", (reason) => {
@@ -118,6 +119,7 @@ async function carregarListaModelos() {
     if (!res.ok) return;
 
     const modelos = await res.json();
+    preloadAvatars(modelos);
 
     // ordenação inteligente
     modelos.sort((a, b) => {
@@ -272,7 +274,7 @@ function renderizarMais() {
 
     }
 
-    const avatar = m.avatar || "assets/avatar.png";
+    const avatar = m.avatar_thumb || "assets/avatar.png";
 
     const div = document.createElement("div");
     div.className = "chat-item";
@@ -280,12 +282,14 @@ function renderizarMais() {
     div.onclick = () => abrirChat(m.modelo_id);
 
     div.innerHTML = `
-      <div class="avatar">
-        <img
-          src="${avatar}"
+    <div class="avatar">
+    <img 
+  src="${m.avatar || 'assets/avatar.png'}"
           width="40"
           height="40"
           loading="lazy"
+          decoding="async"
+           fetchpriority="low"
         />
       </div>
 
@@ -326,13 +330,27 @@ function renderizarMais() {
   offset += LIMITE_INICIAL;
 
 }
+
+function preloadAvatars(modelos) {
+
+  modelos.slice(0,10).forEach(m => {
+
+    const avatar = m.avatar_thumb || m.avatar;
+    if (!avatar) return;
+
+    const img = new Image();
+    img.src = avatar;
+
+  });
+
+}
 // ===============================
 // ATUALIZA AO VOLTAR PRA ABA
 // ===============================
-document.addEventListener("visibilitychange", () => {
+setInterval(() => {
 
   if (document.visibilityState === "visible") {
     carregarListaModelos();
   }
 
-});
+}, 8000);

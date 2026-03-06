@@ -4,11 +4,11 @@
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
 
-if (!token || role !== "cliente") {
+if (!token || role !== "modelo") {
   logout();
 }
 
-const LIMITE_INICIAL = 30;
+const LIMIT = 30;
 let offset = 0;
 let listaCompleta = [];
 
@@ -16,27 +16,20 @@ let listaCompleta = [];
 // SOCKET
 // ===============================
 const socket = io({
-  transports: ["websocket"],
-  reconnection: true,
-  reconnectionAttempts: Infinity,
-  reconnectionDelay: 1000,
-  reconnectionDelayMax: 5000
+  transports: ["websocket", "polling"]
 });
-
-let clienteId = null;
 
 function autenticar() {
   socket.emit("auth", { token });
 }
 
 function entrarInbox() {
-  socket.emit("joinInbox", {
-    sala: `inbox_cliente_${clienteId}`
-  });
+  socket.emit("joinInbox");
 }
 
+
 socket.on("connect", () => {
-  console.log("🟢 Inbox cliente conectado:", socket.id);
+  console.log("🟢 Inbox conectado:", socket.id);
   autenticar();
 });
 
@@ -44,9 +37,15 @@ socket.on("authOk", () => {
   entrarInbox();
 });
 
-// atualização realtime
 socket.on("inboxMessage", dados => {
+
   atualizarChatLocal(dados);
+
+  // fallback segurança
+  if (!chatsMap.has(dados.cliente_id)) {
+    carregarListaClientes();
+  }
+
 });
 
 socket.on("disconnect", (reason) => {
@@ -61,66 +60,54 @@ const inboxEl = document.getElementById("inbox");
 document
   .getElementById("loadMoreChats")
   ?.addEventListener("click", renderizarMais);
+
 const chatsMap = new Map();
 
 // ===============================
 // INIT
 // ===============================
-async function initClienteInbox() {
-
-  const res = await fetch("/api/cliente/me", {
-    headers: { Authorization: "Bearer " + token }
-  });
-
-  if (!res.ok) return logout();
-
-  const me = await res.json();
-
-  clienteId = me.id;
-
-  if (socket.connected) {
-    entrarInbox();
-  }
-
-  carregarListaModelos();
-}
-
-document.addEventListener("DOMContentLoaded", initClienteInbox);
-
+window.addEventListener("load", () => {
+  carregarListaClientes();
+});
 // ===============================
 // PRIORIDADE CHAT
 // ===============================
 function prioridadeChat(c) {
 
-  // mensagem da modelo não lida
-  if (c.sender === "modelo" && c.lida === false) return 1;
+  // novo VIP
+  if (c.novo_vip) return 1;
 
-  // modelo enviou e você leu
-  if (c.sender === "modelo" && c.lida === true) return 2;
+  // cliente nunca recebeu resposta
+  if (!c.modelo_respondeu) return 2;
 
-  // você enviou por último
-  if (c.sender === "cliente") return 3;
+  // cliente enviou e não foi visto
+  if (c.ultimo_sender === "cliente" && c.visto === false) return 3;
 
-  return 4;
+  // cliente enviou e você viu
+  if (c.ultimo_sender === "cliente" && c.visto === true) return 4;
+
+  return 5;
 }
 
 // ===============================
-// FETCH MODELOS
+// FETCH CLIENTES
 // ===============================
-async function carregarListaModelos() {
+async function carregarListaClientes() {
 
   try {
 
-    const res = await fetch("/api/chat/cliente", {
-      headers: { Authorization: "Bearer " + token }
-    });
+    const res = await fetch(
+      `/api/chat/modelo?limit=${LIMIT}&offset=${offset}`,
+      { headers: { Authorization: "Bearer " + token } }
+    );
 
     if (!res.ok) return;
 
-    const modelos = await res.json();
+    const clientes = await res.json();
 
-    // ordenação inteligente
-    modelos.sort((a, b) => {
+    preloadAvatars(clientes);
+
+    clientes.sort((a, b) => {
 
       const pa = prioridadeChat(a);
       const pb = prioridadeChat(b);
@@ -131,20 +118,37 @@ async function carregarListaModelos() {
       const db = b.ultima_mensagem_em ? new Date(b.ultima_mensagem_em) : 0;
 
       return db - da;
+
     });
 
-    listaCompleta = modelos;
+    /* primeira carga */
+    if (offset === 0) {
 
-offset = 0;
+      listaCompleta = clientes;
 
-inboxEl.innerHTML = "";
-chatsMap.clear();
+      inboxEl.innerHTML = "";
+      chatsMap.clear();
 
-renderizarMais();
+    } 
+    /* carregar mais */
+    else {
+
+      listaCompleta = listaCompleta.concat(clientes);
+
+    }
+
+    renderizarMais();
+
+    /* esconder botão se não houver mais chats */
+    const btnLoadMore = document.getElementById("loadMoreChats");
+
+    if (clientes.length < LIMIT && btnLoadMore) {
+      btnLoadMore.style.display = "none";
+    }
 
   } catch (err) {
 
-    console.error("Erro inbox cliente:", err);
+    console.error("Erro carregar inbox:", err);
 
   }
 
@@ -178,8 +182,8 @@ function formatarTempo(data) {
 // ===============================
 // HELPERS
 // ===============================
-function abrirChat(modeloId) {
-  window.location.href = `/chatc.html?modelo_id=${modeloId}`;
+function abrirChat(clienteId) {
+  window.location.href = `/chat.html?cliente_id=${clienteId}`;
 }
 
 function logout() {
@@ -243,28 +247,31 @@ function gerarStatus(c) {
 
   return "";
 }
-
 function renderizarMais() {
 
-  const slice = listaCompleta.slice(offset, offset + LIMITE_INICIAL);
+  const slice = listaCompleta.slice(offset, offset + LIMIT);
 
-  slice.forEach(m => {
+  slice.forEach(c => {
 
     let statusHTML = "";
 
-    if (m.sender === "modelo") {
+    if (c.novo_vip) {
+      statusHTML = `<span class="status status-vip">Novo VIP</span>`;
+    }
 
-      if (m.lida === false) {
+    else if (c.ultimo_sender === "cliente") {
+
+      if (c.visto === false) {
         statusHTML = `<span class="status status-unseen">Não lida</span>`;
       } else {
-        statusHTML = `<span class="status status-read">✓✓</span>`;
+        statusHTML = `<span class="status status-reply">Por responder</span>`;
       }
 
     }
 
-    if (m.sender === "cliente") {
+    else if (c.ultimo_sender === "modelo") {
 
-      if (m.lida === true) {
+      if (c.lida === true) {
         statusHTML = `<span class="status status-read">✓✓</span>`;
       } else {
         statusHTML = `<span class="status status-sent">✓</span>`;
@@ -272,38 +279,34 @@ function renderizarMais() {
 
     }
 
-    const avatar = m.avatar || "assets/avatar.png";
+    const avatar = c.avatar || "assets/avatar.png";
 
     const div = document.createElement("div");
     div.className = "chat-item";
 
-    div.onclick = () => abrirChat(m.modelo_id);
+    div.onclick = () => abrirChat(c.cliente_id);
 
     div.innerHTML = `
-      <div class="avatar">
-        <img
-          src="${avatar}"
-          width="40"
-          height="40"
-          loading="lazy"
-        />
+    <div class="avatar">
+    <img 
+  src="${c.avatar || 'assets/avatar.png'}" width="40" height="40" loading="lazy" decoding="async" fetchpriority="low">
       </div>
 
       <div class="chat-body">
 
         <div class="chat-top">
           <span class="chat-name">
-            ${m.nome_exibicao || "Modelo"}
+            ${c.username || c.nome || "Cliente"}
           </span>
 
           <span class="chat-time">
-            ${formatarTempo(m.ultima_mensagem_em)}
+            ${formatarTempo(c.ultima_mensagem_em)}
           </span>
         </div>
 
         <div class="chat-bottom">
           <span class="chat-last">
-            ${m.ultima_mensagem || ""}
+            ${c.ultima_mensagem || ""}
           </span>
 
           <div class="chat-status">
@@ -316,23 +319,55 @@ function renderizarMais() {
 
     inboxEl.appendChild(div);
 
-    chatsMap.set(m.modelo_id, {
-      data: m,
+    chatsMap.set(c.cliente_id, {
+      data: c,
       element: div
     });
 
   });
 
-  offset += LIMITE_INICIAL;
+  offset += LIMIT;
 
 }
-// ===============================
-// ATUALIZA AO VOLTAR PRA ABA
-// ===============================
-document.addEventListener("visibilitychange", () => {
+function preloadAvatars(clientes) {
+
+  clientes.slice(0,10).forEach(c => {
+
+ const avatar = c.avatar_thumb || c.avatar;
+    if (!avatar) return;
+
+    const img = new Image();
+    img.src = avatar;
+
+  });
+
+}
+
+function carregarMaisChats(){
+
+  offset += LIMIT;
+
+  carregarListaClientes();
+
+}
+
+const btnLoadMore = document.getElementById("loadMoreChats");
+
+if (btnLoadMore) {
+  btnLoadMore.addEventListener("click", () => {
+
+    offset += LIMIT;
+
+    carregarListaClientes();
+
+  });
+}
+
+
+setInterval(() => {
 
   if (document.visibilityState === "visible") {
-    carregarListaModelos();
+    carregarListaClientes();
   }
 
-});
+}, 8000);

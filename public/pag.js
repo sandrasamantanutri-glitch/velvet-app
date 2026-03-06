@@ -757,10 +757,19 @@ function gerarFingerprint() {
   );
 }
 
+let pollingPixInterval = null;
+
 function iniciarVerificacaoPix(orderId) {
 
-  const intervalo = setInterval(async () => {
+  // evita múltiplos polling simultâneos
+  if (pollingPixInterval) {
+    clearInterval(pollingPixInterval);
+  }
+
+  pollingPixInterval = setInterval(async () => {
+
     try {
+
       const res = await fetch(`/api/pagamento/status/${orderId}`, {
         headers: {
           Authorization: "Bearer " + localStorage.getItem("token")
@@ -771,53 +780,112 @@ function iniciarVerificacaoPix(orderId) {
 
       const data = await res.json();
 
+      // =========================
+      // PAGAMENTO APROVADO
+      // =========================
+
       if (data.status === "pago") {
 
-        clearInterval(intervalo);
+        clearInterval(pollingPixInterval);
+        pollingPixInterval = null;
 
-        // Esconde aguardando
-        document.getElementById("pixAguardando")
-          ?.classList.add("hidden");
+        document.getElementById("pixAguardando")?.classList.add("hidden");
+        document.getElementById("pixSucesso")?.classList.remove("hidden");
 
-        // Mostra sucesso
-        document.getElementById("pixSucesso")
-          ?.classList.remove("hidden");
+        // =========================
+        // VIP
+        // =========================
 
-        // 💎 SE FOR VIP
         if (window.PAGAMENTO_TIPO_ATUAL === "vip") {
 
           setTimeout(async () => {
 
             fecharPopupPagamento();
 
-            // Atualiza botão VIP
             atualizarUIVip?.();
-
-            // Reaplica regras de acesso
             await aplicarRegrasDeAcesso?.();
-
-            // Recarrega feed desbloqueado
             await carregarFeedBase?.();
 
           }, 1500);
 
-        } else {
+        }
 
-          // 🎬 MÍDIA
-          setTimeout(() => {
+        // =========================
+        // MIDIA
+        // =========================
+
+        else {
+
+          const messageId = data.message_id;
+
+          setTimeout(async () => {
+
             fecharPopupPagamento();
-          }, 1500);
+
+            const res = await fetch(`/api/conteudo/liberado/${messageId}`, {
+              headers: {
+                Authorization: "Bearer " + localStorage.getItem("token")
+              }
+            });
+
+            if (!res.ok) return;
+
+            const midias = await res.json();
+
+            if (!midias.length) return;
+
+            abrirModalMidia(
+              midias[0].url,
+              midias[0].tipo === "video"
+            );
+
+          }, 1200);
 
         }
 
       }
 
+      // =========================
+      // PIX EXPIRADO
+      // =========================
+
+      if (data.status === "expirado") {
+
+        clearInterval(pollingPixInterval);
+        pollingPixInterval = null;
+
+        document.getElementById("pixAguardando")?.classList.add("hidden");
+
+        alert("Este Pix expirou. Gere um novo.");
+
+      }
+
+      // =========================
+      // PAGAMENTO FALHOU
+      // =========================
+
+      if (data.status === "falhou") {
+
+        clearInterval(pollingPixInterval);
+        pollingPixInterval = null;
+
+        document.getElementById("pixAguardando")?.classList.add("hidden");
+
+        alert("Pagamento não aprovado.");
+
+      }
+
     } catch (err) {
+
       console.error("Erro verificação PIX:", err);
+
     }
 
-  }, 5000); // verifica a cada 5s
+  }, 5000);
+
 }
+
+
 document.getElementById("btnGerarPix")?.addEventListener("click", () => {
 
   if (window.PAGAMENTO_TIPO_ATUAL === "vip") {

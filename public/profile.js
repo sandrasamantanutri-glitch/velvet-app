@@ -71,45 +71,44 @@ const bioInput     = document.getElementById("bioInput");
 const localEl = document.getElementById("local-texto");
 const inputUpload = document.getElementById("inputUpload");
 
-socket.on("vipAtivado", () => {
-  window.location.href = `/inboxc.html`;
+socket.on("vipAtivado", async () => {
+
+  await aplicarRegrasDeAcesso();
+  await carregarFeedBase();
+
 });
 
 socket.on("conteudoVisto", async ({ message_id }) => {
+
   try {
-    // 🔒 fecha popup de pagamento (se ainda estiver aberto)
+
+    const tokenAtual = localStorage.getItem("token");
+    if (!tokenAtual) return;
+
+    // 🔒 fechar popup
     fecharPopupPagamento?.();
 
-    // 🧠 se não sabemos qual mídia foi comprada, recarrega feed
-    if (!window.MIDIA_VENDA_ATUAL?.conteudo_id) {
-      await carregarFeedBase();
-      return;
-    }
-
-    // busca a mídia liberada no backend (segurança)
-    const conteudo_id = window.MIDIA_VENDA_ATUAL?.conteudo_id;
-if (!conteudo_id) return;
-
-const tokenAtual = localStorage.getItem("token");
-if (!tokenAtual) return;
-
-const res = await fetch(
-  `/api/conteudo/liberado/${conteudo_id}`,
-  {
-    headers: {
-      Authorization: "Bearer " + tokenAtual
-    }
-  }
-);
+    // 🔎 buscar mídia liberada no backend
+    const res = await fetch(
+      `/api/conteudo/liberado/${message_id}`,
+      {
+        headers: {
+          Authorization: "Bearer " + tokenAtual
+        }
+      }
+    );
 
     if (!res.ok) {
-      console.warn("Conteúdo liberado, mas não foi possível buscar mídia");
       await carregarFeedBase();
       return;
     }
 
     const midias = await res.json();
-    if (!midias || !midias.length) return;
+
+    if (!midias || !midias.length) {
+      await carregarFeedBase();
+      return;
+    }
 
     const midia = midias[0];
 
@@ -120,11 +119,14 @@ const res = await fetch(
 
     window.MIDIA_VENDA_ATUAL = null;
 
-    // 🔄 atualiza feed (pra não cobrar de novo)
     await carregarFeedBase();
+
   } catch (err) {
-    console.error("Erro ao liberar mídia:", err);
+
+    console.error("Erro liberar mídia:", err);
+
   }
+
 });
 
 ///////////////////////////////// FUNCOES ///////////////////////////////////

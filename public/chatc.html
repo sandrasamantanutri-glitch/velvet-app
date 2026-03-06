@@ -5,16 +5,18 @@
    <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Chat Cliente</title>
 
-<link rel="stylesheet" href="css/chat.css">
-<link rel="stylesheet" href="/chatcliente.css">
+<link rel="stylesheet" href="/css/chat.css">
+<link rel="stylesheet" href="/chatmodelo.css">
+<link rel="stylesheet" href="/chat.css">
+
 
 <body class="role-cliente">
 
   <div id="header-container"></div>
 <header class="chat-topo">
-  <button type="button" class="btn-voltar" onclick="history.back()">
-    <img src="/assets/voltar.png" alt="Voltar">
-  </button>
+<button type="button" class="btn-voltar" onclick="window.location.href='/inboxc.html'">
+  <img src="/assets/voltar.png" alt="Voltar">
+</button>
 
   <div class="chat-cliente-info">
     <img id="chatModeloAvatar" class="chat-avatar" src="/assets/avatar.png" alt="Avatar Modelo" />
@@ -31,153 +33,108 @@
 <!-- INPUT FIXO -->
 <footer class="chat-input">
 
-  <textarea
-    id="messageInput"
+ <input
+    id="msgInput"
+    type="text"
     placeholder="Digite uma mensagem..."
-    autocomplete="off">
-  </textarea>
+    autocomplete="off"/>
 
-  <button
-    id="sendBtn"
+      <button
     class="btn-enviar1"
+    onclick="enviarMensagem()"
     aria-label="Enviar mensagem"
   >
     <img src="/assets/enviar.png" alt="Enviar" />
   </button>
 
 </footer>
-<!-- ================= POPUPS ================= -->
+<!-- =============********==== POPUPS ================= -->
 
 <div id="popupPix" class="modal hidden">
-  
-  <!-- backdrop -->
+
   <div class="modal-backdrop" onclick="fecharPopupPix()"></div>
 
-  <!-- caixa -->
-  <div class="modal-box pix-box">
+  <div class="modal-content modal-pix">
 
-    <button 
-      type="button"
-      class="modal-close"
-      onclick="fecharPopupPix()">
-      ×
-    </button>
+    <button class="modal-close" onclick="fecharPopupPix()">×</button>
 
     <h2 class="pix-title">Desbloquear Conteúdo</h2>
 
-    <!-- 💰 PREÇO -->
     <div class="pix-preco">
-
       <div class="pix-total">
         Total para Desbloquear:
         <strong id="pixValorTotal">R$ 0,00</strong>
       </div>
 
       <div class="pix-detalhes">
-        <div>
-          Conteúdo:
-          <span id="pixValorBase">R$ 0,00</span>
-        </div>
-
-        <div>
-          Taxa de transação:
-          <span id="pixTaxaTransacao">R$ 0,00</span>
-        </div>
-
-        <div>
-          Taxa da plataforma:
-          <span id="pixTaxaPlataforma">R$ 0,00</span>
-        </div>
+        <div>Conteúdo: <span id="pixValorBase">R$ 0,00</span></div>
+        <div>Taxa de transação: <span id="pixTaxaTransacao">R$ 0,00</span></div>
+        <div>Taxa da plataforma: <span id="pixTaxaPlataforma">R$ 0,00</span></div>
       </div>
     </div>
 
-    <div class="campo-cpf">
-  <label for="pixCpf">CPF</label>
-  <input 
-    type="text" 
-    id="pixCpf" 
-    placeholder="000.000.000-00"
-    maxlength="14"
-    autocomplete="off"
-  >
-</div>
-
     <div class="campo-pagamento">
-      <button 
-        type="button"
-        class="btn-gerar-pix"
-        onclick="gerarPix()">
-        Gerar o código Pix
-      </button>
+      <button class="btn-gerar-pix" onclick="gerarPix()">Gerar o código Pix</button>
     </div>
 
-    <img
-   id="pixQr"
-   class="pix-qr hidden"
-   alt="" />
-   
-   <div id="pixStatus" class="pix-status aguardando">
-  ⏳ Aguardando pagamento...
-</div>
+    <img id="pixQr" class="pix-qr hidden" alt="">
 
-    <textarea
-      id="pixCopia"
-      class="pix-copia"
-      placeholder="Código Pix aparecerá aqui..."
-      readonly>
-    </textarea>
+    <div id="pixStatus" class="pix-status aguardando">
+      ⏳ Aguardando pagamento...
+    </div>
 
-    <button
-      type="button"
-      class="pix-copiar"
-      onclick="copiarPix()">
-      Copiar código Pix
-    </button>
+    <textarea id="pixCopia" class="pix-copia" readonly></textarea>
+
+    <button class="pix-copiar" onclick="copiarPix()">Copiar código Pix</button>
 
   </div>
 </div>
 
 <div id="escolhaPagamento" class="modal hidden">
+
   <div class="modal-backdrop"></div>
 
-  <div class="modal-box escolha-box">
+  <div class="modal-content modal-escolha">
+
     <button class="modal-close" onclick="fecharEscolha()">×</button>
 
-    <h2 class="titulo-roxo">Escolha a forma de desbloqueio do conteúdo</h2>
+    <h2 class="titulo-roxo">🔒 Desbloquear Midia ✨</h2>
+
+    <div class="termos-pagamento">
+ - Pagamentos realizados não são reembolsados, exceto em casos de erros na plataforma, e analisamos o caso atraves do <a href="contato.html" target="_blank" rel="noopener noreferrer"><strong>formulário de contato.</strong></a><br> 
+ - Ao desbloquear você confirma que está de acordo com os <strong><a href="/terms.html" target="_blank" rel="noopener noreferrer"> Termos de uso</strong></a> e <strong><a href="/policies.html" target="_blank" rel="noopener noreferrer">condições da plataforma.</strong></a><br> 
+ -Se concorda, digite seu CPF e escolha a forma de desbloqueio.<br>
+    </div>
+
+    <div class="campo-cpf">
+      <label for="cpfEscolha">CPF</label>
+      <input id="cpfEscolha" type="text" maxlength="14">
+    </div>
 
     <button class="btn-pagamento pix" onclick="pagarComPix()">
-      ⚡ Desboquear com Pix
+      ⚡ Desbloquear com Pix
     </button>
 
     <button class="btn-pagamento cartao" onclick="pagarComCartao()">
       💳 Desbloquear com Cartão
     </button>
+
   </div>
 </div>
 
 <div id="paymentModal" class="modal hidden">
+
   <div class="modal-backdrop"></div>
 
-  <div class="modal-box">
-    <button
-  class="modal-close"
-  id="fecharPagamento"
-  onclick="fecharPagamento()"
->×</button>
+  <div class="modal-content modal-cartao">
 
-    <h2 class="desbloq"> Desbloquear conteúdo</h2>
-   <div class="cartao-preco">
-  <div class="cartao-total">
-    Total para Desbloquear:
-    <strong id="cartaoValorTotal">R$ 0,00</strong>
-  </div>
+    <button class="modal-close" onclick="fecharPagamento()">×</button>
 
-  <div class="cartao-detalhes">
-    <div>Conteúdo: <span id="cartaoValorConteudo">R$ 0,00</span></div>
-    <div>Taxa de transação: <span id="cartaoTaxaTransacao">R$ 0,00</span></div>
-    <div>Taxa da plataforma: <span id="cartaoTaxaPlataforma">R$ 0,00</span></div>
-  </div>
-</div>
+    <h2 class="desbloq">Desbloquear Midia</h2>
+
+    <div class="cartao-preco">
+      ...
+    </div>
 
     <div id="payment-element-container">
       <div id="payment-element"></div>
@@ -186,18 +143,31 @@
     <button id="confirmarPagamento" class="btn-confirmar-desbloqueio">
       Confirmar desbloqueio
     </button>
+
   </div>
 </div>
 
-<div id="modalConteudo" class="hidden">
-  <button class="modal-close" onclick="fecharConteudo()">×</button>
-  <div id="modalMidia"></div>
+<div id="modalMidia" class="modal-midia hidden">
+
+  <div class="modal-backdrop" onclick="fecharModalMidia()"></div>
+
+ <div class="modal-box modal-midia-box">
+    <button class="nav-midia prev" onclick="midiaAnterior()">‹</button>
+
+    <img id="modalImg" />
+    <video id="modalVideo" controls playsinline></video>
+
+    <button class="nav-midia next" onclick="proximaMidia()">›</button>
+
   </div>
+
+</div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/header.js"></script>
 <script src="https://js.stripe.com/v3/"></script>
-<script src="/js/chatc.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+<script src="/chatc.js"></script>
 
 
 </body>
