@@ -1235,7 +1235,7 @@ app.use("/api", manutencaoClientes);
 const MANUTENCAO_CLIENTES = true;
 const EXCECOES_MANUTENCAO = [
   "emersondoido@gmail.com",
-  "outroemail@gmail.com"
+  "clienteste0603@gmail.com"
 ];
 
 function manutencaoClientes(req, res, next) {
