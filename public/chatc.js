@@ -663,7 +663,9 @@ function abrirPagamentoChat(valor, conteudoId) {
     valor: Number(valor)
   };
 
-document.getElementById("escolhaPagamento")?.classList.add("hidden");
+  document
+    .getElementById("escolhaPagamento")
+    .classList.remove("hidden");
 }
 
 async function carregarInfoModelo(modelo_id){
@@ -1210,7 +1212,17 @@ async function pagarComCartao() {
       return;
     }
 
-    
+    document.getElementById("cartaoValorConteudo")
+      .innerText = valorBRL(data.valorBase);
+
+    document.getElementById("cartaoTaxaTransacao")
+      .innerText = valorBRL(data.taxaTransacao);
+
+    document.getElementById("cartaoTaxaPlataforma")
+      .innerText = valorBRL(data.taxaPlataforma);
+
+    document.getElementById("cartaoValorTotal")
+      .innerText = valorBRL(data.total);
 
     elements = stripe.elements({
       clientSecret: data.clientSecret
