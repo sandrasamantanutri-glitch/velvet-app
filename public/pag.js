@@ -704,13 +704,7 @@ async function confirmarPagamentoCartao() {
 
       return;
     }
-
-    if (!error) {
-
-  console.log("Pagamento enviado ao Stripe");
-
-  document.getElementById("cartaoLoading")?.classList.add("hidden");
-  document.getElementById("formCartao")?.classList.add("hidden");
+if (!error) {
 
   document.getElementById("cartaoSucesso")?.classList.remove("hidden");
 
@@ -718,10 +712,17 @@ async function confirmarPagamentoCartao() {
 
     fecharPopupPagamento();
 
-    atualizarUIVip?.(window.MODELO_ID_ATUAL);
+    if (typeof atualizarUIVip === "function") {
+      atualizarUIVip();
+    }
 
-    await aplicarRegrasDeAcesso?.();
-    await carregarFeedBase?.();
+    if (typeof aplicarRegrasDeAcesso === "function") {
+      await aplicarRegrasDeAcesso();
+    }
+
+    if (typeof carregarFeedBase === "function") {
+      await carregarFeedBase();
+    }
 
   }, 1200);
 

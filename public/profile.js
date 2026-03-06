@@ -1,4 +1,3 @@
-window.socket = io();
 const tokenAtual = localStorage.getItem("token");
 const role = localStorage.getItem("role");
 const params = new URLSearchParams(window.location.search);
@@ -39,23 +38,6 @@ if (!modelo_id || isNaN(modelo_id)) {
 
 }
 
-function autenticarSocket() {
-  const tokenAtual = localStorage.getItem("token");
-  if (!tokenAtual || !window.socket) return;
-
-  window.socket.emit("auth", { token: tokenAtual });
-
-  const role = localStorage.getItem("role");
-  if (role === "cliente") {
-    window.socket.emit("loginCliente");
-  }
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  autenticarSocket();
-});
-
-
 /////PERFIL ///
 const btnUpload = document.querySelector(".btn-mais");
 const avatarImg  = document.getElementById("profileAvatar");
@@ -71,63 +53,6 @@ const bioInput     = document.getElementById("bioInput");
 const localEl = document.getElementById("local-texto");
 const inputUpload = document.getElementById("inputUpload");
 
-socket.on("vipAtivado", async () => {
-
-  await aplicarRegrasDeAcesso();
-  await carregarFeedBase();
-
-});
-
-socket.on("conteudoVisto", async ({ message_id }) => {
-
-  try {
-
-    const tokenAtual = localStorage.getItem("token");
-    if (!tokenAtual) return;
-
-    // 🔒 fechar popup
-    fecharPopupPagamento?.();
-
-    // 🔎 buscar mídia liberada no backend
-    const res = await fetch(
-      `/api/conteudo/liberado/${message_id}`,
-      {
-        headers: {
-          Authorization: "Bearer " + tokenAtual
-        }
-      }
-    );
-
-    if (!res.ok) {
-      await carregarFeedBase();
-      return;
-    }
-
-    const midias = await res.json();
-
-    if (!midias || !midias.length) {
-      await carregarFeedBase();
-      return;
-    }
-
-    const midia = midias[0];
-
-    abrirModalMidia(
-      midia.url,
-      midia.tipo === "video"
-    );
-
-    window.MIDIA_VENDA_ATUAL = null;
-
-    await carregarFeedBase();
-
-  } catch (err) {
-
-    console.error("Erro liberar mídia:", err);
-
-  }
-
-});
 
 ///////////////////////////////// FUNCOES ///////////////////////////////////
 function exigirCadastro(motivo = "Para continuar, crie sua conta") {
