@@ -5781,7 +5781,7 @@ await client.query(`
 });
 
 //MIDIA PIX
-app.post("/api/pagamento/midia/pix", auth, manutencaoClientes, async (req, res) => {
+app.post("/api/pagamento/midia/pix", auth, async (req, res) => {
   const client = await db.connect();
 
   try {
