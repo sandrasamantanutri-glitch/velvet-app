@@ -1204,7 +1204,7 @@ async function pagarComCartao() {
       })
     });
 
-    const data = await res.json().catch(() => ({}));
+    const data = await res.json();
 
     if (!res.ok) {
       alert(data.error || "Erro no pagamento");
