@@ -640,27 +640,61 @@ function pagamentoConfirmado() {
   }, 1200);
 }
 
+let pagamentoEmProcesso = false;
+
 async function confirmarPagamentoCartao() {
+
+  if (pagamentoEmProcesso) return;
+
+  pagamentoEmProcesso = true;
+
   try {
+
     if (!elements) {
       alert("Pagamento não inicializado");
+      pagamentoEmProcesso = false;
       return;
     }
 
-    const { error } = await stripe.confirmPayment({
+    const btn = document.getElementById("btnConfirmarCartao");
+
+    if (btn) {
+      btn.disabled = true;
+      btn.innerText = "Processando...";
+    }
+
+    const { error, paymentIntent } = await stripe.confirmPayment({
       elements,
       redirect: "if_required"
     });
 
     if (error) {
+
       alert(error.message);
+      pagamentoEmProcesso = false;
+
+      if (btn) {
+        btn.disabled = false;
+        btn.innerText = "Pagar";
+      }
+
+      return;
+    }
+
+    if (paymentIntent && paymentIntent.status === "succeeded") {
+      console.log("Pagamento aprovado");
     }
 
   } catch (err) {
+
     console.error("Erro confirmar cartão:", err);
     alert("Erro ao confirmar pagamento");
+    pagamentoEmProcesso = false;
+
   }
+
 }
+
 
 
 window.fecharPopupPagamento = function () {
