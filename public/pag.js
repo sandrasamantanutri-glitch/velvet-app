@@ -103,10 +103,9 @@ function prepararPagamento() {
   // ===============================
   if (window.PAGAMENTO_TIPO_ATUAL === "vip") {
 
-    if (!window.OFERTA_ATUAL) {
-      console.error("Oferta VIP não carregada");
-      return;
-    }
+if (!window.OFERTA_ATUAL) {
+  console.warn("Sem oferta VIP, usando valor padrão");
+}
 
     const valorBase  = Number(OFERTA_ATUAL.valor_base);
     const valorPromo = Number(OFERTA_ATUAL.valor_promocional);
