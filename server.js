@@ -1230,8 +1230,9 @@ app.use(cors({
   credentials: true
 }));
 
-const MANUTENCAO_CLIENTES = true;
+app.use("/api", manutencaoClientes);
 
+const MANUTENCAO_CLIENTES = true;
 const EXCECOES_MANUTENCAO = [
   "emersondoido@gmail.com",
   "outroemail@gmail.com"
