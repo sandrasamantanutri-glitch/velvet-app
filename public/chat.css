@@ -1119,3 +1119,12 @@ cursor:pointer;
   text-decoration: none;
   font-weight: 600;
 }
+
+#header-container{
+  display:none;
+}
+
+.role-cliente #header-container,
+.role-modelo #header-container{
+  display:none;
+}
