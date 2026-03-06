@@ -1010,6 +1010,9 @@ if (metadata.tipo === "vip") {
 const expiration = new Date();
 expiration.setMonth(expiration.getMonth() + 1);
 
+const taxaTransacao = Number(metadata.taxa_transacao ?? 0);
+const taxaPlataforma = Number(metadata.taxa_plataforma ?? 0);
+
 await client.query(`
 INSERT INTO vip_subscriptions (
   cliente_id,
