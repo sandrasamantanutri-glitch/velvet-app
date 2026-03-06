@@ -1301,8 +1301,6 @@ function iniciarPollingPagamento(orderId) {
         statusPix.innerText = "⏳ Aguarde, estamos processando o pagamento...";
         statusPix.className = "pix-status processando";
       }
-
-      popupPagamento("⏳ Aguardando confirmação do Pix...", "processando");
     }
 
     // ==========================
@@ -1314,8 +1312,6 @@ function iniciarPollingPagamento(orderId) {
         statusPix.innerText = "✅ Pagamento confirmado!";
         statusPix.className = "pix-status pago";
       }
-
-      popupPagamento("✅ Pagamento concluído com sucesso!", "sucesso");
 
       clearInterval(pollingPagamento);
       clearTimeout(pollingTimeout);
@@ -1337,8 +1333,6 @@ function iniciarPollingPagamento(orderId) {
         statusPix.className = "pix-status erro";
       }
 
-      popupPagamento("❌ Pagamento não aprovado.", "erro");
-
       clearInterval(pollingPagamento);
       clearTimeout(pollingTimeout);
 
@@ -1354,8 +1348,6 @@ function iniciarPollingPagamento(orderId) {
 
       clearInterval(pollingPagamento);
       clearTimeout(pollingTimeout);
-
-      popupPagamento("⚠️ Este Pix expirou. Gere um novo.", "erro");
 
       setTimeout(() => {
         fecharPopupPagamento();
@@ -1483,26 +1475,6 @@ function resetarPixUI() {
   }
 }
 
-function popupPagamento(texto,tipo="processando"){
-
-  const popup = document.getElementById("popupStatusPagamento");
-  const box   = popup.querySelector(".popup-status-box");
-  const span  = document.getElementById("popupStatusTexto");
-
-  span.innerText = texto;
-
-  box.className = "popup-status-box " + tipo;
-
-  popup.classList.remove("hidden");
-
-}
-
-function fecharPopupPagamento(){
-
-  const popup = document.getElementById("popupStatusPagamento");
-  if(popup) popup.classList.add("hidden");
-
-}
 
 let galeriaMidias = [];
 let indiceAtualMidia = 0;
