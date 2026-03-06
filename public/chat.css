@@ -23,7 +23,7 @@ body, html {
 /* header fixo */
 .chat-topo{
   position:fixed;
-  top:64px; /* abaixo do header principal */
+  top:0px; /* abaixo do header principal */
   left:0;
   right:0;
 
