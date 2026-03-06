@@ -424,6 +424,30 @@ socket.on("vipAtivado", ({ modelo_id }) => {
   }, 1500);
 });
 
+socket.on("vipAtivadoCartao", async ({ modelo_id }) => {
+
+  document.getElementById("cartaoLoading")?.classList.add("hidden");
+  document.getElementById("formCartao")?.classList.add("hidden");
+
+  document.getElementById("cartaoSucesso")?.classList.remove("hidden");
+
+  setTimeout(async () => {
+
+    fecharPopupPagamento();
+
+    // 🔄 atualiza UI do perfil
+    atualizarUIVip?.(modelo_id);
+
+    // aplica regras VIP
+    await aplicarRegrasDeAcesso?.();
+
+    // recarrega feed
+    await carregarFeedBase?.();
+
+  }, 1200);
+
+});
+
  socket.on("conteudoVisto", async ({ message_id }) => {
 
   // 🔒 UI de sucesso (igual você já tem)
@@ -462,6 +486,7 @@ socket.on("vipAtivado", ({ modelo_id }) => {
 
   }, 1200);
  });
+ 
 
 });
 
@@ -671,6 +696,7 @@ async function confirmarPagamentoCartao() {
     if (error) {
 
       alert(error.message);
+
       pagamentoEmProcesso = false;
 
       if (btn) {
@@ -682,20 +708,37 @@ async function confirmarPagamentoCartao() {
     }
 
     if (paymentIntent && paymentIntent.status === "succeeded") {
+
       console.log("Pagamento aprovado");
+
+      document.getElementById("cartaoLoading")?.classList.add("hidden");
+      document.getElementById("formCartao")?.classList.add("hidden");
+
+      document.getElementById("cartaoSucesso")?.classList.remove("hidden");
+
+      setTimeout(async () => {
+
+        fecharPopupPagamento();
+
+        atualizarUIVip?.(window.MODELO_ID_ATUAL);
+
+        await aplicarRegrasDeAcesso?.();
+        await carregarFeedBase?.();
+
+      }, 1200);
+
     }
 
   } catch (err) {
 
     console.error("Erro confirmar cartão:", err);
     alert("Erro ao confirmar pagamento");
+
     pagamentoEmProcesso = false;
 
   }
 
 }
-
-
 
 window.fecharPopupPagamento = function () {
   const popup = document.getElementById("popupPagamentoVelvet");

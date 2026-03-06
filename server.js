@@ -543,6 +543,14 @@ app.post(
         const valorPago = pi.amount / 100;
         const valorTotalMeta = Number(metadata.valor_total || 0);
 
+          if (cliente_id) {
+    io.to(`cliente_${cliente_id}`).emit("pagamentoAprovado", {
+      tipo,
+      conteudo_id: metadata.message_id,
+      modelo_id,
+      valor: valorPago
+    });
+  }
         /* =====================================================
            VALIDAÇÃO DE VALOR (IGUAL PAGARME)
         ===================================================== */
