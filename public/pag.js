@@ -708,23 +708,61 @@ if (!error) {
 
   document.getElementById("cartaoSucesso")?.classList.remove("hidden");
 
-  setTimeout(async () => {
+  const modeloId = window.MODELO_ID_ATUAL;
+  const token = localStorage.getItem("token");
 
-    fecharPopupPagamento();
+  let vipAtivo = false;
 
-    if (typeof atualizarUIVip === "function") {
-      atualizarUIVip();
-    }
+  // tenta confirmar VIP por até 5 segundos
+  for (let i = 0; i < 5; i++) {
 
-    if (typeof aplicarRegrasDeAcesso === "function") {
-      await aplicarRegrasDeAcesso();
-    }
+    try {
 
-    if (typeof carregarFeedBase === "function") {
-      await carregarFeedBase();
-    }
+      const res = await fetch(`/api/vip/status/${modeloId}`, {
+        headers: {
+          Authorization: "Bearer " + token
+        }
+      });
 
-  }, 1200);
+      if (res.ok) {
+        const data = await res.json();
+
+        if (data.vip) {
+          vipAtivo = true;
+          break;
+        }
+      }
+
+    } catch (e) {}
+
+    await new Promise(r => setTimeout(r, 1000));
+  }
+
+  if (vipAtivo) {
+
+    setTimeout(async () => {
+
+      fecharPopupPagamento();
+
+      if (typeof atualizarUIVip === "function") {
+        atualizarUIVip();
+      }
+
+      if (typeof aplicarRegrasDeAcesso === "function") {
+        await aplicarRegrasDeAcesso();
+      }
+
+      if (typeof carregarFeedBase === "function") {
+        await carregarFeedBase();
+      }
+
+    }, 1200);
+
+  } else {
+
+    console.warn("Pagamento aprovado mas VIP ainda não ativo");
+
+  }
 
 }
 
