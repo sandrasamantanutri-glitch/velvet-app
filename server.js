@@ -853,10 +853,10 @@ console.log("METADATA:", event.data?.order?.metadata || event.data?.metadata);
     /* =====================================================
        PROCESSAR APENAS charge.paid
     ===================================================== */
-
+console.log("EVENT TYPE:", event.type);
     if (event.type !== "charge.paid") {
       return res.status(200).send("ok");
-      console.log("EVENT TYPE:", event.type);
+      
     }
 
     const eventId = event.id;
