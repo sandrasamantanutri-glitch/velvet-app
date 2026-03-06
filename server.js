@@ -2822,20 +2822,14 @@ app.get("/api/modelo/planos/me", auth, authModelo, async (req, res) => {
   try {
 
     const plano = await db.query(
-      `SELECT
-      COALESCE(NULLIF(valor_mensal, 0), 20.00) AS valor_mensal
-      FROM modelos_planos 
-      WHERE modelo_id = $1`,
-      [req.modelo_id]
-    );
+  `SELECT COALESCE(valor_mensal, 20.00) AS valor_mensal
+   FROM modelos_planos
+   WHERE modelo_id = $1
+   LIMIT 1`,
+  [req.modelo_id]
+);
 
-     if (!result.rowCount) {
-      return res.json({
-        valor_mensal: 20
-      });
-    }
-    
-    res.json(plano.rows[0] || null);
+res.json(plano.rows[0] || { valor_mensal: 20 });
 
   } catch (err) {
     console.error("Erro buscar plano:", err);
