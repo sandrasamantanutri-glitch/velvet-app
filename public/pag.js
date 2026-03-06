@@ -423,11 +423,10 @@ socket.on("vipAtivado", ({ modelo_id }) => {
   }, 1500);
 });
 
-socket.on("vipAtivadoCartao", async ({ modelo_id }) => {
+socket.on("vipAtivado", async ({ modelo_id }) => {
 
   document.getElementById("cartaoLoading")?.classList.add("hidden");
   document.getElementById("formCartao")?.classList.add("hidden");
-
   document.getElementById("cartaoSucesso")?.classList.remove("hidden");
 
   setTimeout(async () => {
@@ -706,27 +705,27 @@ async function confirmarPagamentoCartao() {
       return;
     }
 
-    if (paymentIntent && paymentIntent.status === "succeeded") {
+    if (!error) {
 
-      console.log("Pagamento aprovado");
+  console.log("Pagamento enviado ao Stripe");
 
-      document.getElementById("cartaoLoading")?.classList.add("hidden");
-      document.getElementById("formCartao")?.classList.add("hidden");
+  document.getElementById("cartaoLoading")?.classList.add("hidden");
+  document.getElementById("formCartao")?.classList.add("hidden");
 
-      document.getElementById("cartaoSucesso")?.classList.remove("hidden");
+  document.getElementById("cartaoSucesso")?.classList.remove("hidden");
 
-      setTimeout(async () => {
+  setTimeout(async () => {
 
-        fecharPopupPagamento();
+    fecharPopupPagamento();
 
-        atualizarUIVip?.(window.MODELO_ID_ATUAL);
+    atualizarUIVip?.(window.MODELO_ID_ATUAL);
 
-        await aplicarRegrasDeAcesso?.();
-        await carregarFeedBase?.();
+    await aplicarRegrasDeAcesso?.();
+    await carregarFeedBase?.();
 
-      }, 1200);
+  }, 1200);
 
-    }
+}
 
   } catch (err) {
 
@@ -736,7 +735,7 @@ async function confirmarPagamentoCartao() {
     pagamentoEmProcesso = false;
 
   }
-
+  
 }
 
 window.fecharPopupPagamento = function () {
