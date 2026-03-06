@@ -836,56 +836,44 @@ dadosParaEmitir = {
 
 
 app.post("/api/webhook/pagarme", express.raw({ type: "*/*" }), async (req, res) => {
+
 let event;
-    try {
-      event = JSON.parse(req.body.toString());
-    } catch (err) {
-      console.log("🚨 Body inválido");
-      return res.status(400).send("invalid");
-    }
 
-    console.log("🔥 WEBHOOK PAGARME:", event.type);
-console.log("ORDER:", event.data?.order?.id);
-console.log("CHARGE:", event.data?.id);
-console.log("AMOUNT:", event.data?.amount);
-console.log("METADATA:", event.data?.order?.metadata || event.data?.metadata);
+try {
+  event = JSON.parse(req.body.toString());
+} catch (err) {
+  console.log("🚨 Body inválido");
+  return res.status(400).send("invalid");
+}
 
-    /* =====================================================
-       PROCESSAR APENAS charge.paid
-    ===================================================== */
-console.log("EVENT TYPE:", event.type);
-    if (event.type !== "charge.paid") {
-      return res.status(200).send("ok");
-      
-    }
+console.log("🔥 WEBHOOK PAGARME:", event.type);
 
-    const eventId = event.id;
-    const charge = event.data;
-    const metadata = charge.order?.metadata || charge.metadata || {};
-    const orderId = event.data?.order?.id;
-    console.log("ORDER ID:", orderId);
-    console.log("METADATA:", metadata);
-console.log("TIPO:", metadata?.tipo);
+if (event.type !== "charge.paid") {
+  return res.status(200).send("ok");
+}
 
-    const valorPago = charge.amount / 100;
-    const valorTotalMeta = Number(metadata.valor_total || 0);
+const eventId = event.id;
+const charge = event.data;
+const metadata = charge.order?.metadata || charge.metadata || {};
+const orderId = charge.order?.id;
 
-console.log("WEBHOOK:", event.type, orderId);
+if (!orderId) {
+  console.log("🚨 orderId ausente");
+  return res.status(200).send("ok");
+}
 
-    if (!orderId) {
-      return res.status(200).send("ok");
-    }
+const valorPago = charge.amount / 100;
 
-    const client = await db.connect();
+const client = await db.connect();
 
-    let dadosParaEmitir = null;
-    let enviarMensagemVip = null;
+let dadosParaEmitir = null;
 
-    try {
-      await client.query("BEGIN");
+try {
 
-      /* =====================================================
-   IDEMPOTÊNCIA DO WEBHOOK (AGORA DENTRO DA TRANSAÇÃO)
+await client.query("BEGIN");
+
+/* =====================================================
+IDEMPOTÊNCIA
 ===================================================== */
 
 const jaProcessado = await client.query(
@@ -903,64 +891,65 @@ await client.query(
   [eventId, event.type]
 );
 
-      /* =====================================================
-         2️⃣ LOCK PAGAMENTO
-      ===================================================== */
-console.log("Procurando pagamento:", orderId);
+/* =====================================================
+LOCK PAGAMENTO
+===================================================== */
+
 const pagamentoRes = await client.query(`
-  SELECT *
-  FROM pagamentos_pix
-  WHERE gateway = 'pagarme'
-    AND pagarme_order_id = $1
-  FOR UPDATE
+SELECT *
+FROM pagamentos_pix
+WHERE gateway = 'pagarme'
+AND pagarme_order_id = $1
+FOR UPDATE
 `, [orderId]);
-console.log("Encontrou pagamento:", pagamentoRes.rowCount);
 
 if (!pagamentoRes.rowCount) {
-  console.log("🚨 NÃO ENCONTREI pagamentos_pix para:", { gateway: "pagarme", orderId });
+
+  console.log("🚨 Pagamento não encontrado:", orderId);
+
   await client.query("ROLLBACK");
   return res.status(200).send("ok");
+
 }
 
-      const pagamento = pagamentoRes.rows[0];
+const pagamento = pagamentoRes.rows[0];
 
-      if (pagamento.status === "pago") {
-        await client.query("ROLLBACK");
-        return res.status(200).send("ok");
-      }
+if (pagamento.status === "pago") {
 
-  const {
-  cliente_id,
-  modelo_id,
-  valor,
-  message_id
+  await client.query("ROLLBACK");
+  return res.status(200).send("ok");
+
+}
+
+const {
+cliente_id,
+modelo_id,
+valor,
+message_id
 } = pagamento;
 
 /* =====================================================
-3️⃣ VALIDAR VALOR
+VALIDAÇÃO DE VALOR
 ===================================================== */
-const valorWebhook = Number(charge.amount) / 100;
-const valorBanco = Number(pagamento.valor);
 
-if (Math.abs(valorWebhook - valorBanco) > 0.01) {
-  console.log("🚨 Valor divergente", { valorWebhook, valorBanco });
+if (Math.abs(Number(valorPago) - Number(valor)) > 0.01) {
+
+  console.log("🚨 Valor divergente", valorPago, valor);
+
   await client.query("ROLLBACK");
   return res.status(200).send("ok");
+
 }
 
-//=====================================================
-// MIDIA
+/* =====================================================
+MIDIA
+===================================================== */
+
 if (metadata.tipo === "conteudo_pix") {
 
   const valorBase = Number(metadata.valor_base || 0);
   const taxaTransacao = Number(metadata.taxa_transacao || 0);
   const taxaPlataforma = Number(metadata.taxa_plataforma || 0);
-
-  if (!valorBase || !valorTotalMeta) {
-    console.log("🚨 Metadata incompleto em conteudo_pix");
-    await client.query("ROLLBACK");
-    return res.status(200).send("ok");
-  }
 
   const taxaExtra = taxaTransacao + taxaPlataforma;
 
@@ -970,236 +959,162 @@ if (metadata.tipo === "conteudo_pix") {
     taxa_gateway: 0
   });
 
-  // 🔹 Registro pacote
   await client.query(`
-    INSERT INTO conteudo_pacotes (
-      message_id,
-      cliente_id,
-      modelo_id,
-      preco,
-      valor_base,
-      valor_total,
-      status,
-      metodo_pagamento,
-      pago_em
-    )
-    VALUES ($1,$2,$3,$4,$4,$5,'pago','pix',NOW())
-    ON CONFLICT (message_id,cliente_id)
-     DO UPDATE SET
-    status = 'pago',
-    metodo_pagamento = 'pix',
-    pago_em = NOW(),
-    preco = EXCLUDED.preco,
-    valor_base = EXCLUDED.valor_base,
-    valor_total = EXCLUDED.valor_total
-  `,[
-    message_id,
-    cliente_id,
-    modelo_id,
-    valorBase,
-    valorPago
-  ]);
-
-  // 🔹 Registro financeiro oficial
-  await client.query(`
-    INSERT INTO transacoes_agency (
-      modelo_id,
-      cliente_id,
-      tipo,
-      valor_bruto,
-      valor_modelo,
-      agency_fee,
-      velvet_fee,
-      taxa_gateway,
-      status,
-      created_at,
-      aceitou_termos,
-      aceite_ip,
-      aceite_data
-    )
-    VALUES (
-      $1,$2,'midia',
-      $3,$4,$5,$6,$7,
-      'pago',NOW(),true,$8,NOW()
-    )
-  `,[
-    modelo_id,
-    cliente_id,
-    valorBase,
-    valores.valor_modelo,
-    valores.agency_fee,
-    valores.velvet_fee,
-    taxaExtra,
-    metadata.aceite_ip || null
-  ]);
+INSERT INTO conteudo_pacotes (
+message_id,
+cliente_id,
+modelo_id,
+preco,
+valor_base,
+valor_total,
+status,
+metodo_pagamento,
+pago_em
+)
+VALUES ($1,$2,$3,$4,$4,$5,'pago','pix',NOW())
+ON CONFLICT (message_id,cliente_id)
+DO UPDATE SET
+status='pago',
+metodo_pagamento='pix',
+pago_em=NOW()
+`,[
+message_id,
+cliente_id,
+modelo_id,
+valorBase,
+valorPago
+]);
 
 const conteudo_ids = await marcarConteudoComoLiberadoPorPagamento(client, {
-  message_id,
-  cliente_id,
-  modelo_id,
+message_id,
+cliente_id,
+modelo_id,
 });
 
 dadosParaEmitir = {
-  tipo: "conteudo_pix",
-  cliente_id,
-  modelo_id,
-  message_id,
-  conteudo_ids,
+tipo: "conteudo_pix",
+cliente_id,
+modelo_id,
+message_id,
+conteudo_ids
 };
+
 }
+
+/* =====================================================
+VIP
+===================================================== */
 
 if (metadata.tipo === "vip") {
 
-  const expiration = new Date();
-  expiration.setMonth(expiration.getMonth() + 1);
+const expiration = new Date();
+expiration.setMonth(expiration.getMonth() + 1);
 
-  const taxaExtra =
-    Number(metadata.taxa_transacao || 0) +
-    Number(metadata.taxa_plataforma || 0);
-
-  const valorBase = Number((valorPago - taxaExtra).toFixed(2));
-
-  const valores = await calcularValores({
-    modelo_id,
-    valor_bruto: valorBase,
-    taxa_gateway: 0
-  });
-
-  await client.query(`
-
-    INSERT INTO vip_subscriptions (
-  cliente_id,
-  modelo_id,
-  ativo,
-  created_at,
-  updated_at,
-  expiration_at,
-  valor_assinatura,
-  taxa_transacao,
-  taxa_plataforma,
-  valor_total,
-  recorrente,
-  gateway_subscription_id
+await client.query(`
+INSERT INTO vip_subscriptions (
+cliente_id,
+modelo_id,
+ativo,
+created_at,
+updated_at,
+expiration_at,
+valor_total,
+recorrente,
+gateway_subscription_id
 )
 VALUES (
-  $1,$2,true,
-  NOW(),NOW(),
-  $3,$4,$5,$6,$7,
-  false,$8
+$1,$2,true,
+NOW(),NOW(),
+$3,$4,
+false,$5
 )
 ON CONFLICT (cliente_id,modelo_id)
 DO UPDATE SET
-  ativo=true,
-  expiration_at=$3,
-  updated_at=NOW(),
-  valor_assinatura=$4,
-  taxa_transacao=$5,
-  taxa_plataforma=$6,
-  valor_total=$7,
-  recorrente=false,
-  gateway_subscription_id=$8
+ativo=true,
+expiration_at=$3,
+updated_at=NOW(),
+valor_total=$4
+`,[
+cliente_id,
+modelo_id,
+expiration,
+valorPago,
+orderId
+]);
 
-  `,[
-    cliente_id,
-    modelo_id,
-    expiration,
-    valorBase,
-    Number(metadata.taxa_transacao || 0),
-    Number(metadata.taxa_plataforma || 0),
-    valorPago,
-    orderId
-  ]);
-
-  await client.query(`
-    INSERT INTO transacoes_agency (
-      modelo_id,
-      cliente_id,
-      tipo,
-      valor_bruto,
-      valor_modelo,
-      agency_fee,
-      velvet_fee,
-      taxa_gateway,
-      status,
-      created_at,
-      aceitou_termos,
-      aceite_ip,
-      aceite_data
-    )
-    VALUES (
-      $1,$2,'assinatura',
-      $3,$4,$5,$6,$7,
-      'pago',NOW(),true,$8,NOW()
-    )
-  `,[
-    modelo_id,
-    cliente_id,
-    valorBase,
-    valores.valor_modelo,
-    valores.agency_fee,
-    valores.velvet_fee,
-    taxaExtra,
-    metadata.aceite_ip || null
-  ]);
-
-enviarMensagemVip = {
-  cliente_id,
-  modelo_id
+dadosParaEmitir = {
+tipo: "vip",
+cliente_id,
+modelo_id
 };
 
-  dadosParaEmitir = {
-    tipo: "vip",
-    cliente_id,
-    modelo_id,
-  };
 }
+
 /* =====================================================
 MARCAR PAGAMENTO COMO PAGO
 ===================================================== */
 
-      await client.query(`
-        UPDATE pagamentos_pix
-        SET status='pago',
-            pago_em=NOW()
-        WHERE id=$1
-      `,[pagamento.id]);
+await client.query(`
+UPDATE pagamentos_pix
+SET status='pago',
+pago_em=NOW()
+WHERE id=$1
+`,[pagamento.id]);
 
-      console.log("Pagamento encontrado:", pagamento);
+await client.query("COMMIT");
 
-      await client.query("COMMIT");
+/* =====================================================
+SOCKET
+===================================================== */
 
-      try {
-  if (dadosParaEmitir?.tipo === "conteudo_pix") {
-    const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
-    io.to(sala).emit("conteudoLiberado", {
-      message_id: Number(dadosParaEmitir.message_id),
-      conteudo_ids: dadosParaEmitir.conteudo_ids || [],
-    });
-  }
+try {
 
-  if (dadosParaEmitir?.tipo === "vip") {
-    const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
-    io.to(sala).emit("vipAtivado", {
-      cliente_id: Number(dadosParaEmitir.cliente_id),
-      modelo_id: Number(dadosParaEmitir.modelo_id),
-    });
-  }
-} catch (e) {
-  console.error("Falha ao emitir sockets pagarme:", e);
+if (dadosParaEmitir?.tipo === "conteudo_pix") {
+
+const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
+
+io.to(sala).emit("conteudoLiberado", {
+message_id: Number(dadosParaEmitir.message_id),
+conteudo_ids: dadosParaEmitir.conteudo_ids || [],
+});
+
 }
+
+if (dadosParaEmitir?.tipo === "vip") {
+
+const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
+
+io.to(sala).emit("vipAtivado", {
+cliente_id: Number(dadosParaEmitir.cliente_id),
+modelo_id: Number(dadosParaEmitir.modelo_id),
+});
+
+}
+
+} catch (e) {
+
+console.error("Erro emitir socket:", e);
+
+}
+
 console.log("✅ PAGAMENTO FINALIZADO");
+
 return res.status(200).send("ok");
 
 } catch (err) {
 
-  await client.query("ROLLBACK");
-  console.error("🔥 ERRO WEBHOOK PAGARME:", err);
+await client.query("ROLLBACK");
 
-  return res.status(500).send("erro");
+console.error("🔥 ERRO WEBHOOK PAGARME:", err);
+
+return res.status(500).send("erro");
 
 } finally {
-  client.release();
+
+client.release();
+
 }
+
 });
 
 app.use(express.json());
