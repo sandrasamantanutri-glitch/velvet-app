@@ -5988,7 +5988,7 @@ let qrCodeBase64 = null;
 try {
 
   const mpResponse = await axios.post(
-    // "https://api.mercadopago.com/v1/payments",
+    "https://api.mercadopago.com/v1/payments",
     {
       transaction_amount: valorTotal,
       description: "Midia Velvet",
