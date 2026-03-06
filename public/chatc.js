@@ -1319,7 +1319,7 @@ function iniciarPollingPagamento(orderId) {
       liberarConteudo(data.message_id);
 
       setTimeout(() => {
-        fecharPopupPagamento();
+        fecharPagamento();
       }, 2000);
     }
 
@@ -1337,7 +1337,7 @@ function iniciarPollingPagamento(orderId) {
       clearTimeout(pollingTimeout);
 
       setTimeout(() => {
-        fecharPopupPagamento();
+        fecharPagamento();
       }, 3000);
     }
 
@@ -1350,7 +1350,7 @@ function iniciarPollingPagamento(orderId) {
       clearTimeout(pollingTimeout);
 
       setTimeout(() => {
-        fecharPopupPagamento();
+        fecharPagamento();
       }, 3000);
     }
 
