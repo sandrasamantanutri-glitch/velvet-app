@@ -845,6 +845,10 @@ let event;
     }
 
     console.log("🔥 WEBHOOK PAGARME:", event.type);
+console.log("ORDER:", event.data?.order?.id);
+console.log("CHARGE:", event.data?.id);
+console.log("AMOUNT:", event.data?.amount);
+console.log("METADATA:", event.data?.order?.metadata || event.data?.metadata);
 
     /* =====================================================
        PROCESSAR APENAS charge.paid
@@ -852,12 +856,17 @@ let event;
 
     if (event.type !== "charge.paid") {
       return res.status(200).send("ok");
+      console.log("EVENT TYPE:", event.type);
     }
 
     const eventId = event.id;
     const charge = event.data;
     const metadata = charge.order?.metadata || charge.metadata || {};
-    const orderId = charge.order?.id;
+    const orderId = event.data?.order?.id;
+    console.log("ORDER ID:", orderId);
+    console.log("METADATA:", metadata);
+console.log("TIPO:", metadata?.tipo);
+
     const valorPago = charge.amount / 100;
     const valorTotalMeta = Number(metadata.valor_total || 0);
 
@@ -897,7 +906,7 @@ await client.query(
       /* =====================================================
          2️⃣ LOCK PAGAMENTO
       ===================================================== */
-
+console.log("Procurando pagamento:", orderId);
 const pagamentoRes = await client.query(`
   SELECT *
   FROM pagamentos_pix
@@ -905,6 +914,7 @@ const pagamentoRes = await client.query(`
     AND pagarme_order_id = $1
   FOR UPDATE
 `, [orderId]);
+console.log("Encontrou pagamento:", pagamentoRes.rowCount);
 
 if (!pagamentoRes.rowCount) {
   console.log("🚨 NÃO ENCONTREI pagamentos_pix para:", { gateway: "pagarme", orderId });
@@ -929,13 +939,15 @@ if (!pagamentoRes.rowCount) {
 /* =====================================================
 3️⃣ VALIDAR VALOR
 ===================================================== */
-const valorComparacao = valorTotalMeta || Number(charge.amount) / 100;
+const valorWebhook = Number(charge.amount) / 100;
+const valorBanco = Number(pagamento.valor);
 
-if (Math.abs(Number(valorComparacao) - Number(valor)) > 0.01) {
-  console.log("🚨 Valor divergente webhook");
+if (Math.abs(valorWebhook - valorBanco) > 0.01) {
+  console.log("🚨 Valor divergente", { valorWebhook, valorBanco });
   await client.query("ROLLBACK");
   return res.status(200).send("ok");
 }
+
 //=====================================================
 // MIDIA
 if (metadata.tipo === "conteudo_pix") {
