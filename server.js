@@ -812,14 +812,14 @@ dadosParaEmitir = {
       conteudo_ids: dadosParaEmitir.conteudo_ids || [],
     });
   }
+if (dadosParaEmitir?.tipo === "vip") {
 
-  if (dadosParaEmitir?.tipo === "vip") {
-    const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
-    io.to(sala).emit("vipAtivado", {
-      cliente_id: Number(dadosParaEmitir.cliente_id),
-      modelo_id: Number(dadosParaEmitir.modelo_id),
-    });
-  }
+  io.emit("vipAtivado", {
+    cliente_id: Number(dadosParaEmitir.cliente_id),
+    modelo_id: Number(dadosParaEmitir.modelo_id),
+  });
+
+}
 } catch (e) {
   console.error("Falha ao emitir sockets stripe:", e);
 }

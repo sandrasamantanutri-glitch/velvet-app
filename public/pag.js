@@ -401,7 +401,11 @@ function abrirPopupPagamentoPixLoading() {
 
 whenSocketReady((socket) => {
 
-socket.on("vipAtivado", async ({ modelo_id }) => {
+socket.on("vipAtivado", async ({ cliente_id, modelo_id }) => {
+
+  const meuClienteId = window.CLIENTE_ID;
+
+  if (Number(cliente_id) !== Number(meuClienteId)) return;
 
   document.getElementById("cartaoLoading")?.classList.add("hidden");
   document.getElementById("formCartao")?.classList.add("hidden");
@@ -411,13 +415,9 @@ socket.on("vipAtivado", async ({ modelo_id }) => {
 
     fecharPopupPagamento();
 
-    // 🔄 atualiza UI do perfil
     atualizarUIVip?.(modelo_id);
 
-    // aplica regras VIP
     await aplicarRegrasDeAcesso?.();
-
-    // recarrega feed
     await carregarFeedBase?.();
 
   }, 1200);
