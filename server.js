@@ -1018,6 +1018,7 @@ ativo,
 created_at,
 updated_at,
 expiration_at,
+valor_assinatura,
 valor_total,
 recorrente,
 gateway_subscription_id
@@ -1025,19 +1026,21 @@ gateway_subscription_id
 VALUES (
 $1,$2,true,
 NOW(),NOW(),
-$3,$4,
-false,$5
+$3,$4, $5,
+false,$6
 )
 ON CONFLICT (cliente_id,modelo_id)
 DO UPDATE SET
 ativo=true,
 expiration_at=$3,
 updated_at=NOW(),
-valor_total=$4
+valor_assinatura=$4,
+valor_total=$5
 `,[
 cliente_id,
 modelo_id,
 expiration,
+valorPago,
 valorPago,
 orderId
 ]);
