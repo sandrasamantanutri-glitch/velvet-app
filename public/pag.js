@@ -401,28 +401,6 @@ function abrirPopupPagamentoPixLoading() {
 
 whenSocketReady((socket) => {
 
-socket.on("vipAtivado", ({ modelo_id }) => {
-
-  const aguardando = document.getElementById("pixAguardando");
-  const sucesso = document.getElementById("pixSucesso");
-
-  aguardando?.classList.add("hidden");
-  aguardando?.classList.remove("pix-aguardando-anim");
-
-  sucesso?.classList.remove("hidden");
-
-  // efeito visual rápido
-  sucesso.style.transform = "scale(0.9)";
-  setTimeout(() => {
-    sucesso.style.transform = "scale(1)";
-  }, 100);
-
-  setTimeout(() => {
-    fecharPopupPagamento();
-    atualizarUIVip(modelo_id);
-  }, 1500);
-});
-
 socket.on("vipAtivado", async ({ modelo_id }) => {
 
   document.getElementById("cartaoLoading")?.classList.add("hidden");
@@ -686,7 +664,7 @@ async function confirmarPagamentoCartao() {
       btn.innerText = "Processando...";
     }
 
-    const { error, paymentIntent } = await stripe.confirmPayment({
+    const { error } = await stripe.confirmPayment({
       elements,
       redirect: "if_required"
     });
@@ -704,67 +682,11 @@ async function confirmarPagamentoCartao() {
 
       return;
     }
-if (!error) {
 
-  document.getElementById("cartaoSucesso")?.classList.remove("hidden");
+    // pagamento aprovado no Stripe
+    document.getElementById("cartaoSucesso")?.classList.remove("hidden");
 
-  const modeloId = window.MODELO_ID_ATUAL;
-  const token = localStorage.getItem("token");
-
-  let vipAtivo = false;
-
-  // tenta confirmar VIP por até 5 segundos
-  for (let i = 0; i < 5; i++) {
-
-    try {
-
-      const res = await fetch(`/api/vip/status/${modeloId}`, {
-        headers: {
-          Authorization: "Bearer " + token
-        }
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-
-        if (data.vip) {
-          vipAtivo = true;
-          break;
-        }
-      }
-
-    } catch (e) {}
-
-    await new Promise(r => setTimeout(r, 1000));
-  }
-
-  if (vipAtivo) {
-
-    setTimeout(async () => {
-
-      fecharPopupPagamento();
-
-      if (typeof atualizarUIVip === "function") {
-        atualizarUIVip();
-      }
-
-      if (typeof aplicarRegrasDeAcesso === "function") {
-        await aplicarRegrasDeAcesso();
-      }
-
-      if (typeof carregarFeedBase === "function") {
-        await carregarFeedBase();
-      }
-
-    }, 1200);
-
-  } else {
-
-    console.warn("Pagamento aprovado mas VIP ainda não ativo");
-
-  }
-
-}
+    console.log("Stripe aprovado, aguardando webhook...");
 
   } catch (err) {
 
@@ -774,7 +696,6 @@ if (!error) {
     pagamentoEmProcesso = false;
 
   }
-  
 }
 
 window.fecharPopupPagamento = function () {
