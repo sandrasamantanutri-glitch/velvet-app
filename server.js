@@ -931,7 +931,7 @@ if (!pagamentoRes.rowCount) {
 ===================================================== */
 const valorComparacao = valorTotalMeta || Number(charge.amount) / 100;
 
-if (Number(valorComparacao) !== Number(valor)) {
+if (Math.abs(Number(valorComparacao) - Number(valor)) > 0.01) {
   console.log("🚨 Valor divergente webhook");
   await client.query("ROLLBACK");
   return res.status(200).send("ok");
