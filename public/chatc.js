@@ -1545,19 +1545,27 @@ if (btnConfirmar) {
       return;
     }
 
-    // pagamento aprovado
     if (paymentIntent && paymentIntent.status === "succeeded") {
 
-      fecharPagamento();
+  fecharPagamento();
 
-      if (pagamentoAtual?.conteudo_id) {
-        liberarConteudo(pagamentoAtual.conteudo_id);
-      }
+  if (pagamentoAtual?.conteudo_id) {
 
-      pagamentoEmProcesso = false;
-    }
+    const messageId = pagamentoAtual.conteudo_id;
 
-  };
+    await liberarConteudo(messageId);
+
+    // abrir automaticamente a primeira mídia
+    setTimeout(() => {
+      abrirConteudo(messageId, 0);
+    }, 200);
+
+  }
+
+  pagamentoEmProcesso = false;
+}
+
+};
 
 }
 
