@@ -155,7 +155,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 const btnConfirmar = document.getElementById("confirmarPagamento");
 
 if (btnConfirmar) {
-  btnConfirmar.addEventListener("click", confirmarPagamentoCartao);
+  btnConfirmar.addEventListener("click", confirmarPagamento);
 }
 
 });
