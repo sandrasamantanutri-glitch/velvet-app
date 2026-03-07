@@ -152,12 +152,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Erro DOMContentLoaded:",err);
   }
 
-const btnConfirmar = document.getElementById("confirmarPagamento");
-
-if (btnConfirmar) {
-  btnConfirmar.addEventListener("click", confirmarPagamento);
-}
-
 });
 
 // ===============================
