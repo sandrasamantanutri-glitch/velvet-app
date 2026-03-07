@@ -152,6 +152,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Erro DOMContentLoaded:",err);
   }
 
+  const btnCartao = document.getElementById("btnConfirmarCartao");
+
+if (btnCartao) {
+  btnCartao.addEventListener("click", pagarComCartao);
+}
+
 });
 
 // ===============================
