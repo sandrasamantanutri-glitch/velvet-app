@@ -1212,17 +1212,25 @@ async function pagarComCartao() {
       return;
     }
 
-    document.getElementById("cartaoValorConteudo")
-      .innerText = valorBRL(data.valorBase);
+const elValorConteudo = document.getElementById("cartaoValorConteudo");
+if (elValorConteudo) {
+  elValorConteudo.innerText = valorBRL(data.valorBase);
+}
 
-    document.getElementById("cartaoTaxaTransacao")
-      .innerText = valorBRL(data.taxaTransacao);
+const elTaxaTransacao = document.getElementById("cartaoTaxaTransacao");
+if (elTaxaTransacao) {
+  elTaxaTransacao.innerText = valorBRL(data.taxaTransacao);
+}
 
-    document.getElementById("cartaoTaxaPlataforma")
-      .innerText = valorBRL(data.taxaPlataforma);
+const elTaxaPlataforma = document.getElementById("cartaoTaxaPlataforma");
+if (elTaxaPlataforma) {
+  elTaxaPlataforma.innerText = valorBRL(data.taxaPlataforma);
+}
 
-    document.getElementById("cartaoValorTotal")
-      .innerText = valorBRL(data.total);
+const elValorTotal = document.getElementById("cartaoValorTotal");
+if (elValorTotal) {
+  elValorTotal.innerText = valorBRL(data.total);
+}
 
     elements = stripe.elements({
       clientSecret: data.clientSecret
