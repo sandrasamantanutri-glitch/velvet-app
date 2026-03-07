@@ -6160,7 +6160,7 @@ VALUES ($1,$2,$3,$4,$5,'pendente', $6, $7, NOW(), NOW() + INTERVAL '15 minutes')
   }
 });
 
-app.post("/api/pagamento/midia/cartao", auth, manutencaoClientes, async (req, res) => {
+app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
   const client = await db.connect();
 
   try {
