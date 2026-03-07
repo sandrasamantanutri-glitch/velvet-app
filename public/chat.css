@@ -1137,6 +1137,31 @@ cursor:pointer;
   margin-bottom: 15px;
 }
 
+.cartao-total {
+  font-size: 16px;
+  margin-bottom: 6px;
+  text-align: center;
+  color: #7B2CFF;
+}
+
+.cartao-total strong {
+  font-weight: 700;
+}
+
+.cartao-detalhes {
+  font-size: 11px;
+  color: #666;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+
+.cartao-detalhes div {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
 .btn-confirmar-desbloqueio {
   width: 100%;
   padding: 12px 14px;
