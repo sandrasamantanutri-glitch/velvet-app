@@ -152,10 +152,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Erro DOMContentLoaded:",err);
   }
 
-  const btnCartao = document.getElementById("btnConfirmarCartao");
+const btnConfirmar = document.getElementById("confirmarPagamento");
 
-if (btnCartao) {
-  btnCartao.addEventListener("click", pagarComCartao);
+if (btnConfirmar) {
+  btnConfirmar.addEventListener("click", confirmarPagamentoCartao);
 }
 
 });
@@ -1521,6 +1521,31 @@ function mostrarMidiaAtual(){
     midia.url.includes(".mov");
 
   abrirModalMidia(midia.url, isVideo);
+
+}
+
+const btnConfirmar = document.getElementById("confirmarPagamento");
+
+if (btnConfirmar) {
+
+  btnConfirmar.onclick = async () => {
+
+    btnConfirmar.disabled = true;
+    btnConfirmar.innerText = "Processando...";
+
+    const { error } = await stripe.confirmPayment({
+      elements,
+      redirect: "if_required"
+    });
+
+    if (error) {
+      alert(error.message || "Erro no pagamento");
+      btnConfirmar.disabled = false;
+      btnConfirmar.innerText = "Confirmar desbloqueio";
+      return;
+    }
+
+  };
 
 }
 
