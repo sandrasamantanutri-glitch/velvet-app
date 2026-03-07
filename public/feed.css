@@ -12,7 +12,8 @@ a {
 }
 
 img {
-  max-width: 100%;
+  max-width: 120%;
+  max-height: 140%;
   display: block;
   height: auto;
   object-fit: cover;
@@ -70,5 +71,9 @@ img {
 
 body {
   visibility: visible;
+}
+modelo-avatar-wrapper {
+    width: 100%;
+    height: 100%;
 }
 
