@@ -1533,7 +1533,7 @@ if (btnConfirmar) {
     btnConfirmar.disabled = true;
     btnConfirmar.innerText = "Processando...";
 
-    const { error } = await stripe.confirmPayment({
+    const { error, paymentIntent } = await stripe.confirmPayment({
       elements,
       redirect: "if_required"
     });
@@ -1543,6 +1543,18 @@ if (btnConfirmar) {
       btnConfirmar.disabled = false;
       btnConfirmar.innerText = "Confirmar desbloqueio";
       return;
+    }
+
+    // pagamento aprovado
+    if (paymentIntent && paymentIntent.status === "succeeded") {
+
+      fecharPagamento();
+
+      if (pagamentoAtual?.conteudo_id) {
+        liberarConteudo(pagamentoAtual.conteudo_id);
+      }
+
+      pagamentoEmProcesso = false;
     }
 
   };
