@@ -40,6 +40,10 @@ body {
   margin-right: auto;
 }
 
+img.velvet-logo {
+    max-width: 100%;
+}
+
 
 body {
   visibility: visible;
