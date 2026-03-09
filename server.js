@@ -3319,59 +3319,66 @@ app.get("/api/modelos", auth, async (req, res) => {
     if (!["cliente", "modelo"].includes(req.user.role)) {
       return res.status(403).json([]);
     }
-
 const result = await db.query(`
-SELECT
-  m.id AS modelo_id,
-  m.nome_exibicao,
-  m.avatar,
-  m.bio,
+  SELECT
+    m.id AS modelo_id,
+    m.nome_exibicao,
+    m.avatar,
+    m.bio,
 
-  COALESCE(r.ganhos_total, 0) AS ganhos_total,
+    COALESCE(v.total_vips, 0) AS total_vips,
 
-  ver.criado_em AS aprovado_em,
+    -- Data da última aprovação
+    ver.criado_em AS aprovado_em,
 
-  CASE 
-    WHEN ver.criado_em >= NOW() - INTERVAL '5 days'
-    THEN true
-    ELSE false
-  END AS is_new
+    -- Define se é NEW (últimos 7 dias)
+    CASE 
+      WHEN ver.criado_em >= NOW() - INTERVAL '7 days' 
+      THEN true 
+      ELSE false 
+    END AS is_new
 
-FROM modelos m
+  FROM modelos m
 
-JOIN LATERAL (
-  SELECT status, criado_em
-  FROM modelos_verificacao
-  WHERE modelo_id = m.id
-  ORDER BY criado_em DESC
-  LIMIT 1
-) ver ON true
+  JOIN LATERAL (
+    SELECT status, criado_em
+    FROM modelos_verificacao
+    WHERE modelo_id = m.id
+    ORDER BY verificado_em DESC 
+    LIMIT 1
+  ) ver ON true
 
-LEFT JOIN modelos_ranking r
-  ON r.modelo_id = m.id
+  LEFT JOIN LATERAL (
+    SELECT COUNT(*) AS total_vips
+    FROM vip_subscriptions
+    WHERE modelo_id = m.id
+      AND ativo = true
+      AND expiration_at > NOW()
+  ) v ON true
 
-WHERE ver.status = 'aprovado'
-AND m.feed = true
+  WHERE ver.status = 'aprovado'
+  AND m.feed = true
 
-ORDER BY ganhos_total DESC
+  ORDER BY 
+    total_vips DESC,
+    is_new DESC,
+    m.id DESC
 `);
 
     const modelos = result.rows;
 
-    // definir ranking top
-    modelos.forEach((m, i) => {
-      if (i === 0) m.top1 = true;
-      if (i === 1) m.top2 = true;
-      if (i === 2) m.top3 = true;
-    });
+if (modelos.length > 0) {
+  modelos[0].top1 = true; // 👑 primeira do ranking
+}
 
-    res.json(modelos);
+res.json(modelos);
 
   } catch (err) {
     console.error("Erro feed modelos:", err);
     res.status(500).json([]);
   }
 });
+
 
 
 // MODELOS COM CHAT (CLIENTE)
