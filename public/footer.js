@@ -6,6 +6,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const menu = document.getElementById("footerMenu");
 
+  
+  const btnPerfil = document.getElementById("btnPerfil");
   const btnMedia = document.getElementById("btnMedia");
   const btnConteudos = document.getElementById("btnConteudos");
   const btnVip = document.getElementById("btnVip");
@@ -43,40 +45,28 @@ document.addEventListener("DOMContentLoaded", () => {
   // CONTEUDOS
   // =========================
 
-  btnConteudos?.addEventListener("click", () => {
-
-    abrirMenu(`
-      <button onclick="novoConteudo()">Adicionar conteúdo para venda</button>
-      <button onclick="gerenciarConteudos()">Gerenciar conteúdos</button>
-    `);
-
-  });
+btnConteudos?.addEventListener("click", () => {
+  gerenciarConteudos();
+});
 
   // =========================
   // VIP
   // =========================
 
-  btnVip?.addEventListener("click", () => {
-
-    abrirMenu(`
-      <button onclick="alterarVIP()">Alterar preço VIP</button>
-      <button onclick="criarOferta()">Criar oferta</button>
-    `);
-
-  });
+btnVip?.addEventListener("click", () => {
+  alterarVIP();
+});
 
   // =========================
   // LINKS
   // =========================
 
-  btnLinks?.addEventListener("click", () => {
+btnLinks?.addEventListener("click", () => {
+  abrirLinks();
+});
 
-    abrirMenu(`
-      <button onclick="editarLinks()">Editar links do perfil</button>
-    `);
-
-  });
-
+btnPerfil?.addEventListener("click", () => {
+  abrirPerfil(modelo.modelo_id);
 });
 
 
@@ -92,22 +82,23 @@ function postarPremium(){
   window.location.href="/modelo/postar-premium.html";
 }
 
-function novoConteudo(){
-  window.location.href="/modelo/conteudos-upload.html";
-}
-
 function gerenciarConteudos(){
-  window.location.href="/modelo/conteudos.html";
+  window.location.href="/conteudos.html";
 }
 
 function alterarVIP(){
-  window.location.href="/modelo/config-vip.html";
+  window.location.href="/ofertas.html";
 }
 
-function criarOferta(){
-  window.location.href="/modelo/ofertas.html";
+function abrirPerfil(modelo_id){
+  window.location.href = `/perfil.html?id=${modelo_id}`;
 }
 
-function editarLinks(){
-  window.location.href="/modelo/links.html";
+
+function abrirLinks() {
+  window.location.href = "/links.html";
 }
+
+
+
+});
