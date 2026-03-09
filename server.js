@@ -3327,7 +3327,7 @@ SELECT
   m.avatar,
   m.bio,
 
-  COALESCE(r.ganhos_total, 0) AS ganhos_total,
+  COALESCE(r.ganhos_mes, 0) AS ganhos_total,
 
   ver.criado_em AS aprovado_em,
 
@@ -3347,8 +3347,14 @@ JOIN LATERAL (
   LIMIT 1
 ) ver ON true
 
-LEFT JOIN modelos_ranking r
-  ON r.modelo_id = m.id
+LEFT JOIN LATERAL (
+
+  SELECT SUM(valor_modelo) AS ganhos_mes
+  FROM transacoes_agency t
+  WHERE t.modelo_id = m.id
+  AND date_trunc('month', t.criado_em) = date_trunc('month', NOW())
+
+) r ON true
 
 WHERE ver.status = 'aprovado'
 AND m.feed = true
