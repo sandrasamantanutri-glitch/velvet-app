@@ -62,7 +62,8 @@ const allowedOrigins = [
   "https://app-production-e7e1.up.railway.app",
   "https://velvet-test-production.up.railway.app",
   "https://velvet-test-production.up.railway.app/app",
-   "https://www.velvet.lat/app/"
+   "https://www.velvet.lat/app/",
+   "https://velvet-app-an4a.onrender.com"
 ];
 const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
