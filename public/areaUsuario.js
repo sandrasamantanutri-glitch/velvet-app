@@ -477,9 +477,7 @@ async function carregarDadosUsuario() {
   let endpoint;
 
   if (usuario.role === "modelo") {
-
     endpoint = "/api/modelo/me";
-    
   } else {
     endpoint = "/api/cliente/me";
   }
