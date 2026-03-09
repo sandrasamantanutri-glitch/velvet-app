@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1">
+   <title>Velvet</title>
+   <link rel="stylesheet" href="perfilnew.css">
+   <link rel="stylesheet" href="pag.css">
+   <link rel="stylesheet" href="style.css">
+   
+
+</head>
+
+<body>
+
+  <div id="header-container"></div>
+<main class="page-container">
+
+<div class="perfil-card">
+  <div class="perfil-capa">
+    <img id="profileCapa" src="assets/capa.png" alt="Capa da modelo">
+  </div>
+
+  <div class="perfil-avatar">
+    <img id="profileAvatar" src="assets/avatar.png" alt="Avatar da modelo">
+  </div>
+
+  <div class="perfil-nome" id="profileName"></div>
+
+  <div class="perfil-bio" id="profileBio"></div>
+
+  <div class="local-icons"> <img src="assets/local.png" alt="Local"><span id="local-texto"></span>
+  </div>
+
+  <div class="icon-group">
+  <a id="link-instagram" target="_blank" rel="noopener"><img src="/assets/insta.png" alt="Instagram">
+  </a>
+  <a id="link-tiktok" target="_blank" rel="noopener"><img src="/assets/tiktok.png" alt="TikTok">
+  </a>
+  </div>
+  
+  <div class="oferta-card" id="oferta-card">
+
+  <div class="oferta-titulo">💎 Oferta Assinatura</div>
+
+  <div class="oferta-botao-wrapper">
+  <span class="oferta-balao" id="oferta-desconto"></span>
+
+    <button class="oferta-botao" id="btn-assinar">
+      Assinar agora por <span id="preco-desconto"></span>
+    </button>
+  </div>
+
+  <div class="oferta-preco-original">
+    Preço original:
+    <span id="preco-original"></span>
+  </div>
+  </div>
+
+<!-- CARD EXCLUSIVO VIP -->
+<div class="vip-card hidden" id="vip-card">
+  <div class="vip-card-content">
+    <div class="vip-badge">👑 VIP ATIVO</div>
+
+    <button class="vip-chat-btn" id="btn-vip-chat">
+      💬 Vem falar comigo
+    </button>
+  </div>
+</div>
+
+
+<div class="midias-section">
+
+<div class="midias-topo">
+  <button class="btn-mais only-modelo" id="btn-upload" type="button">
+    <img src="assets/more.png" alt="Carregar Mídias">
+  </button>
+
+  <input
+    type="file"
+    id="inputUpload"
+    accept="image/*,video/*"
+    hidden
+  />
+</div>
+
+    <div class="midias-tabs">
+      <button class="tab active" data-tab="free">🎁 Pra você</button>
+      <!-- <button class="tab" data-tab="paid">🔥 Especial</button> -->
+    </div>
+  </div>
+
+  <!-- 🔥 GRID TEM QUE ESTAR AQUI DENTRO -->
+  <div class="midias-grid active" id="listaMidias"></div>
+  <div class="midias-grid" id="midias-paid"></div>
+
+</div>
+
+ <!-- MODAL VISUALIZAÇÃO MÍDIA -->
+ <div id="modalMidia" class="modal-midia hidden">
+  <div class="modal-backdrop"></div>
+
+  <div class="modal-conteudo">
+    <button id="fecharModal" style="align-self:flex-end;">✕</button>
+
+    <img id="modalImg" style="display:none; max-width:100%;" />
+    <video id="modalVideo" controls style="display:none; max-width:100%;"></video>
+  </div>
+ </div>
+
+<div id="popupPagamentoVelvet" class="velvet-modal hidden">
+  <div class="velvet-backdrop" onclick="fecharPopupPagamento()"></div>
+
+  <div class="velvet-box">
+    <button class="velvet-close" onclick="fecharPopupPagamento()">×</button>
+
+    <h2 class="velvet-title">Ativar VIP</h2>
+
+    <!-- ===============================
+         TABS (VIP)
+    ================================ -->
+    <div class="velvet-tabs">
+      <button class="tab active" data-metodo="pix" onclick="mostrarMetodo('pix')">
+        ⚡ Pix
+      </button>
+      <button class="tab" data-metodo="cartao" onclick="iniciarCartao()">
+        💳 Cartão
+      </button>
+    </div>
+
+    <!-- ===============================
+         DETALHES VIP
+    ================================ -->
+    <div class="vip-detalhes hidden">
+      <ul class="vip-beneficios">
+  <span>- Conversar com a criadora no chat,</span><br>
+  <span>- Acessar conteúdos exclusivos, </span><br>
+  <span>- Benefícios e promoções especiais!</span><br>
+      <div class="vip-valores">
+        <div class="linha">
+          <span>Valor da assinatura:</span>
+          <span> R$ <span id="vipValorBase">0,00</span></span>
+        </div>
+
+        <div class="linha desconto">
+          <span>Desconto:</span>
+          <span> R$ <span id="vipDesconto">0,00</span></span>
+        </div>
+
+        <div class="linha">
+          <span>Taxa de transação: </span>
+          <span> R$<span id="vipTaxa">0,00</span></span>
+        </div>
+
+        <div class="linha total">
+          <span>Total:</span>
+         <span> R$ <span id="vipTotal">0,00</span></span>
+        </div>
+      </div>
+
+      <small class="vip-info">
+        - A assinatura é sujeita a renovação automática e tem validade de <strong>1 mês,</strong> você pode cancelar quando quiser.<br>
+        - Ao efetuar o pagamento, você confirma que está de acordo com os
+        <strong>Termos de uso</strong> e <strong>condições da plataforma.</strong><br>
+        - Pagamentos realizados não são reembolsados, exceto em casos de erros na plataforma, analisamos o caso atraves do <a href="contato.html">formulário de <strong>contato.</strong></a><br>
+      </small>
+    </div>
+
+    <!-- ===============================
+         DETALHES MÍDIA
+    ================================ -->
+    <div class="midia-detalhes hidden">
+      <p class="midia-info">
+        <strong>O pagamento deste conteúdo permite:</strong><br>
+        Visualizar este conteúdo exclusivo.<br><br>
+
+        <strong>Este pagamento não inclui:</strong><br>
+        Acesso ao chat da criadora<br>
+        Acesso a outras mídias compartilhadas<br>
+        Benefícios de assinantes VIP<br><br>
+
+        Para ter acesso completo, é necessário
+        <a href="#" class="link-assinar-vip"><strong>assinar o perfil</strong>.</a>
+      </p>
+
+      <div class="midia-valores">
+        <div class="linha">
+          <span>Valor do conteúdo</span>
+          <span>R$ <span id="midiaValorBase">0,00</span></span>
+        </div>
+
+        <div class="linha">
+          <span>Taxa de transação</span>
+          <span>R$ <span id="midiaTaxa">0,00</span></span>
+        </div>
+
+        <div class="linha total">
+          <span>Total</span>
+          <strong>R$ <span id="midiaTotal">0,00</span></strong>
+        </div>
+      </div>
+
+      <small class="midia-info-legal">
+        Ao efetuar o pagamento, você confirma que está de acordo com os
+        <strong>Termos de Uso</strong> e
+        <strong>Condições da Plataforma</strong>.<br><br>
+        Conteúdos digitais são entregues imediatamente após a confirmação
+        do pagamento e <strong>não são reembolsáveis</strong>.<br>
+      </small>
+    </div>
+
+    <!-- ===============================
+     CPF + TERMOS (OBRIGATÓRIO)
+=============================== -->
+<div class="dados-pagamento-box" style="margin:15px 0;">
+  
+    <label style="display:block; margin-bottom:5px; color:#7B2CFF;">
+    <strong>CPF</strong>
+  </label>
+
+  <input
+    type="text"
+    id="cpfPagamento"
+    placeholder="000.000.000-00"
+    maxlength="14"
+    style="width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;"
+  />
+
+  <label style="display:flex;gap:8px;margin-top:10px;font-size:14px;">
+    <input type="checkbox" id="aceiteTermosPagamento">
+    Li e aceito os Termos e Condições
+  </label>
+
+</div>
+
+    <!-- ===============================
+         CONTEÚDO DE PAGAMENTO
+    ================================ -->
+    <div class="velvet-content">
+      <!-- PIX -->
+      <div id="conteudoPix" class="metodo">
+        <div id="pixLoading" class="pix-loading hidden"><strong>⏳ Aguarde…</strong></div>
+<button id="btnGerarPix" class="btn-principal">
+  Gerar Código Pix</button>
+        </div>
+
+        <div id="pixSucesso" class="pix-sucesso hidden">
+        <strong>✅ Pagamento confirmado!</strong>
+        </div>
+
+       <img id="pixQr" class="hidden">
+       <input type="text" id="pixCodigo" readonly>
+<button id="btnCopiarPix" class="btn-copiar" onclick="copiarPix()">
+  Copiar código </button>
+      </div>
+
+      <!-- CARTÃO -->
+      <div id="conteudoCartao" class="metodo hidden">
+        <div id="cartaoLoading" class="hidden"><strong>Preparando pagamento…</strong></div>
+        <form id="formCartao" class="hidden">
+          <div id="card-element"></div>
+          <button type="submit" class="btn-principal">
+            Confirmar pagamento
+          </button>
+        </form>
+        <div id="cartaoSucesso" class="hidden">
+          <strong>✅ Pagamento confirmado!</strong>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+<div class="modelo-footer only-modelo">
+
+  <button class="footer-btn" id="btnMedia">
+    <img src="/assets/media.png">
+    <span>Mídia</span>
+  </button>
+
+  <button class="footer-btn" id="btnConteudos">
+    <img src="/assets/conteudos.png">
+    <span>Conteúdos</span>
+  </button>
+
+  <button class="footer-btn" id="btnVip">
+    <img src="/assets/vip.png">
+    <span>VIP</span>
+  </button>
+
+  <button class="footer-btn" id="btnLinks">
+    <img src="/assets/links.png">
+    <span>Links</span>
+  </button>
+
+</div>
+
+
+<div id="footerMenu" class="footer-menu hidden"></div>
+
+</main>
+
+<!-- container do modal auth -->
+<div id="auth-modals-container"></div>
+
+<script>
+fetch("modals-auth.html")
+  .then(res => res.text())
+  .then(html => {
+    const container = document.getElementById("auth-modals-container");
+    if (!container) {
+      console.error("auth-modals-container não encontrado no DOM");
+      return;
+    }
+
+    container.innerHTML = html;
+
+    window.loginEmail = document.getElementById("loginEmail");
+    window.loginSenha = document.getElementById("loginSenha");
+    window.registerSenhaConfirm = document.getElementById("registerSenhaConfirm");
+    window.registerRole = document.getElementById("registerRole");
+    window.registerNome = document.getElementById("registerNome");
+    window.registerNascimento = document.getElementById("registerNascimento");
+  });
+</script>
+
+
+
+<script src="socket.io/socket.io.js"></script>
+<script src="header.js"></script>
+<script src="https://js.stripe.com/v3/"></script>
+<script>window.STRIPE_PUBLIC_KEY = "pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz";</script>
+<script src="/script.js"></script>
+<script src="/pag.js"></script>
+<script src="/profile.js"></script>
+<script src="/perfilnew.js"></script>
+
+
+</body>
+</html>
