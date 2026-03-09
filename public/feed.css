@@ -6,74 +6,176 @@ body {
   padding: 0;
   width: 100%;
 }
-a {
-  text-decoration: none;
-  color: inherit;
+
+.modelo-feed{
+  max-width:1200px;
+  margin:auto;
+  padding:16px;
 }
 
-img {
-  max-width: 120%;
-  max-height: 140%;
-  display: block;
-  height: auto;
-  object-fit: cover;
+.perfil-modelo{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom:20px;
 }
 
-.area-card h3 {
-  font-size: 3rem;     
-  font-weight: 700;
-  color: #6d28ff;
-  margin-bottom: 24px;
+.modelo-avatar{
+  width:60px;
+  height:60px;
+  border-radius:50%;
+  object-fit:cover;
 }
 
-/* grid */
-#listaModelos {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 30px;
-  padding: 10px; 
+.feed-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:16px;
 }
 
-/* card */
-.modelo-card {
-  background: #f3f3f3;
-  border-radius: 18px;
-  overflow: hidden;
-  position: relative;
-  aspect-ratio: 3 / 4;
+.feed-card{
+  background:#fff;
+  border-radius:12px;
+  overflow:hidden;
+  box-shadow:0 2px 10px rgba(0,0,0,0.05);
+  display:flex;
+  flex-direction:column;
 }
 
-/* imagem */
-.modelo-card > img {
-  width: 100%;
-  height: auto;
-  object-fit: cover;
-  display: block;
+.feed-preview{
+  width:100%;
+  height:250px;
+  overflow:hidden;
 }
 
-.badge-top1 {
-  position: absolute;
-  top: 6px;
-  left: 1px;
-  width: 30px;
-  height: 30px;
-  z-index: 10;
+.feed-preview img,
+.feed-preview video{
+  width:100%;
+  height:100%;
+  object-fit:cover;
 }
 
-.badge-new {
-  position: absolute;
-  top: 6px;
-  right: 3px;
-  width: 30px;
-  height: 30px;
-  z-index: 10;
+.feed-content{
+  padding:12px;
 }
 
-body {
-  visibility: visible;
+.feed-user{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:6px;
 }
-modelo-avatar-wrapper {
-    width: 100%;
-    height: 100%;
+
+.feed-user img{
+  width:26px;
+  height:26px;
+  border-radius:50%;
+  object-fit:cover;
+}
+
+.feed-text{
+  font-size:14px;
+  margin-bottom:10px;
+}
+
+.feed-action{
+  background:#6a00ff;
+  color:white;
+  border:none;
+  padding:8px 10px;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+#listaModelos{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+gap:20px;
+padding:20px;
+margin-top: 80px;
+border-radius: 8px;
+}
+
+.modelo-card{
+  background:#fff;
+  border-radius:16px;
+  border:1px solid #e6e6e6;
+  overflow:hidden;
+  transition:0.2s;
+  cursor:pointer;
+  
+}
+
+.modelo-card:hover{
+  transform: translateY(-3px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+}
+
+.modelo-foto{
+width:100%;
+height:260px;
+overflow:hidden;
+border-bottom:1px solid #eee;
+}
+
+.foto-principal{
+  width:100%;
+  height:260px;
+  object-fit:cover;
+  display:block;
+}
+
+.modelo-info{
+  padding:14px 16px 16px 16px;
+}
+
+.modelo-header{
+display:flex;
+align-items:center;
+gap:10px;
+margin-bottom:6px;
+}
+
+.avatar-mini-wrapper{
+position:relative;
+}
+
+.avatar-mini{
+width:28px;
+height:28px;
+border-radius:50%;
+object-fit:cover;
+}
+
+.badge-top1,
+.badge-new{
+position:absolute;
+bottom:-4px;
+right:-4px;
+width:16px;
+height:16px;
+}
+
+.modelo-nome{
+font-weight:600;
+font-size:14px;
+}
+
+.modelo-bio{
+font-size:13px;
+color:#666;
+margin-bottom:10px;
+}
+
+@media (max-width:600px){
+
+.feed-grid{
+  grid-template-columns:repeat(2,1fr);
+}
+
+.feed-preview{
+  height:180px;
+}
+
 }
 
