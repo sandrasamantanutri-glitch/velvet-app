@@ -319,17 +319,29 @@ function abrirMidia(item){
   img.style.display = "none";
   video.style.display = "none";
 
-  if(item.tipo_conteudo === "video"){
-    video.src = item.url;
+  const url = item.url || "";
+
+  const ehVideo =
+    url.includes(".mp4") ||
+    url.includes(".webm") ||
+    url.includes(".mov");
+
+  if(ehVideo){
+
+    video.src = url;
     video.style.display = "block";
-    video.play();
+
+    video.currentTime = 0;
+    video.play().catch(()=>{});
+
   }else{
-    img.src = item.url;
+
+    img.src = url;
     img.style.display = "block";
+
   }
 
   modal.classList.remove("hidden");
-
 }
 
 const modal = document.getElementById("modalMidia");
