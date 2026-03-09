@@ -3332,7 +3332,7 @@ SELECT
   ver.verificado_em AS aprovado_em,
 
   CASE 
-    WHEN ver.criado_em >= NOW() - INTERVAL '5 days'
+    WHEN ver.verificado_em >= NOW() - INTERVAL '5 days'
     THEN true
     ELSE false
   END AS is_new
@@ -3352,7 +3352,7 @@ LEFT JOIN LATERAL (
   SELECT SUM(valor_modelo) AS ganhos_mes
   FROM transacoes_agency t
   WHERE t.modelo_id = m.id
-  AND date_trunc('month', t.criado_em) = date_trunc('month', NOW())
+  AND date_trunc('month', t.created_at) = date_trunc('month', NOW())
 
 ) r ON true
 
