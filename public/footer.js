@@ -7,8 +7,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const menu = document.getElementById("footerMenu");
 
   
-  const btnPerfil = document.getElementById("btnPerfil");
-  const btnMedia = document.getElementById("btnMedia");
+  const btnPerfil = document.getElementById("btnAvatar");
+  const btnMedia = document.getElementById("btnPost");
   const btnConteudos = document.getElementById("btnConteudos");
   const btnVip = document.getElementById("btnVip");
   const btnLinks = document.getElementById("btnLinks");
