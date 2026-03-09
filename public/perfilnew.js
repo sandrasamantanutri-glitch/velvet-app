@@ -488,7 +488,7 @@ function valorBRL(valor) {
     currency: "BRL"
   });
 }
-
+///////
 function abrirPopupLoginObrigatorio() {
 
   const modal = document.createElement("div");
