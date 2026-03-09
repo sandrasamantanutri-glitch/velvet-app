@@ -44,11 +44,18 @@ async function carregarPerfil(){
     document.getElementById("profileBio").textContent =
       modelo.bio || "";
 
-    document.getElementById("profileAvatar").src =
-      modelo.avatar || "/assets/avatar.png";
+      const avatar = document.getElementById("profileAvatar");
+const capa = document.getElementById("profileCapa");
 
-    document.getElementById("profileCapa").src =
-      modelo.capa || "/assets/capa.png";
+if (avatar) {
+  avatar.src = modelo.avatar || "/assets/avatar.png";
+  avatar.onerror = () => avatar.src = "/assets/avatar.png";
+}
+
+if (capa) {
+  capa.src = modelo.capa || "/assets/capa.png";
+  capa.onerror = () => capa.src = "/assets/capa.png";
+}
 
     const localEl = document.getElementById("local-texto");
 
