@@ -71,6 +71,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.location.href = `/chatc.html?modelo_id=${MODELO_ID}`;
   });
 
+
   // =========================
   // CARREGAMENTO
   // =========================

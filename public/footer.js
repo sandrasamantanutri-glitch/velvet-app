@@ -32,14 +32,15 @@ document.addEventListener("DOMContentLoaded", () => {
   // MIDIA
   // =========================
 
-  btnMedia?.addEventListener("click", () => {
+btnMedia?.addEventListener("click", () => {
 
-    abrirMenu(`
-      <button onclick="postarFeed()">Postar no Feed</button>
-      <button onclick="postarPremium()">Postar no Premium</button>
-    `);
+  abrirMenu(`
+    <button onclick="postarFeed()">Postar no Feed</button>
+    <input type="file" id="inputUploadMidia" accept="image/*,video/*" hidden>
+    <button onclick="postarPremium()">Postar no Premium</button>
+  `);
 
-  });
+});
 
   // =========================
   // CONTEUDOS
@@ -74,10 +75,6 @@ btnPerfil?.addEventListener("click", () => {
 // FUNÇÕES
 // =========================
 
-function postarFeed(){
-  window.location.href="/modelo/postar-feed.html";
-}
-
 function postarPremium(){
   window.location.href="/modelo/postar-premium.html";
 }
@@ -97,6 +94,29 @@ function abrirPerfil(modelo_id){
 
 function abrirLinks() {
   window.location.href = "/links.html";
+}
+
+function postarFeed(){
+
+  const input = document.getElementById("inputUploadMidia");
+
+  if(!input) return;
+
+  input.click();
+
+  input.onchange = (e) => {
+
+    const file = e.target.files[0];
+    if(!file) return;
+
+    const url = URL.createObjectURL(file);
+
+    abrirPreviewUpload(file, url);
+
+    input.value = "";
+
+  };
+
 }
 
 
