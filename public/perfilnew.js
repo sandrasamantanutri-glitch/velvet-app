@@ -4,6 +4,12 @@ const role = localStorage.getItem("role");
 let MODELO_ID = null;
 let EH_DONA = false;
 
+socket.on("vipAtivado", async ({ modelo_id }) => {
+  if (modelo_id === MODELO_ID) {
+    await aplicarRegrasDeAcesso();
+  }
+});
+
 document.addEventListener("DOMContentLoaded", async () => {
 
   const params = new URLSearchParams(window.location.search);
@@ -25,6 +31,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   await carregarPerfil();
   await carregarFeed();
+  await aplicarRegrasDeAcesso();
 
 });
 
@@ -126,6 +133,108 @@ async function carregarFeed(){
 
   }catch(e){
     console.error("erro feed",e);
+  }
+
+}
+
+async function aplicarRegrasDeAcesso() {
+
+  const ofertaCard = document.getElementById("oferta-card");
+  const vipCard = document.getElementById("vip-card");
+  const btnAssinar = document.getElementById("btn-assinar");
+
+  const tokenAtual = localStorage.getItem("token");
+
+  // estado padrão
+  window.__CLIENTE_VIP__ = false;
+
+  const ehModelo = role === "modelo";
+  const ehCliente = role === "cliente";
+
+  // ==========================
+  // MODELO DONA DO PERFIL
+  // ==========================
+
+  if (EH_DONA) {
+
+    window.__CLIENTE_VIP__ = false;
+
+    if (ofertaCard) ofertaCard.style.display = "block";
+    if (vipCard) vipCard.classList.add("hidden");
+
+    if (btnAssinar) {
+      btnAssinar.disabled = true;
+      btnAssinar.style.cursor = "not-allowed";
+
+      if (window.OFERTA_ATUAL) {
+        btnAssinar.textContent =
+          `Assinar VIP por ${valorBRL(window.OFERTA_ATUAL.valor_promocional)}`;
+      }
+    }
+
+    return;
+  }
+
+  // ==========================
+  // VISITANTE
+  // ==========================
+
+  if (!tokenAtual) {
+    if (ofertaCard) ofertaCard.style.display = "block";
+    if (vipCard) vipCard.classList.add("hidden");
+    return;
+  }
+
+  // ==========================
+  // CLIENTE / MODELO VISITANTE
+  // ==========================
+
+  if (ehCliente || ehModelo) {
+
+    try {
+
+      const res = await fetch(`/api/vip/status/${MODELO_ID}`, {
+        headers: {
+          Authorization: "Bearer " + tokenAtual
+        }
+      });
+
+      const data = res.ok ? await res.json() : { vip: false };
+      const vip = data.vip;
+
+      if (vip) {
+
+        window.__CLIENTE_VIP__ = true;
+
+        if (ofertaCard) ofertaCard.style.display = "none";
+        if (vipCard) vipCard.classList.remove("hidden");
+
+      } else {
+
+        window.__CLIENTE_VIP__ = false;
+
+        if (ofertaCard) ofertaCard.style.display = "block";
+        if (vipCard) vipCard.classList.add("hidden");
+
+        if (btnAssinar && window.OFERTA_ATUAL) {
+          btnAssinar.disabled = false;
+          btnAssinar.textContent =
+            `Assinar VIP por ${valorBRL(window.OFERTA_ATUAL.valor_promocional)}`;
+        }
+
+      }
+
+    } catch (err) {
+
+      console.error("Erro ao verificar VIP:", err);
+
+      window.__CLIENTE_VIP__ = false;
+
+      if (ofertaCard) ofertaCard.style.display = "block";
+      if (vipCard) vipCard.classList.add("hidden");
+
+    }
+
   }
 
 }
