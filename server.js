@@ -3319,8 +3319,9 @@ app.get("/api/modelos", auth, async (req, res) => {
     if (!["cliente", "modelo"].includes(req.user.role)) {
       return res.status(403).json([]);
     }
+
 const result = await db.query(`
-  SELECT
+SELECT
   m.id AS modelo_id,
   m.nome_exibicao,
   m.avatar,
@@ -3339,7 +3340,7 @@ const result = await db.query(`
 FROM modelos m
 
 JOIN LATERAL (
-  SELECT status, criado_em
+  SELECT status, verificado_em
   FROM modelos_verificacao
   WHERE modelo_id = m.id
   ORDER BY verificado_em DESC
@@ -3359,16 +3360,18 @@ WHERE ver.status = 'aprovado'
 AND m.feed = true
 
 ORDER BY ganhos_total DESC
-
 `);
 
     const modelos = result.rows;
 
-if (modelos.length > 0) {
-  modelos[0].top1 = true; // 👑 primeira do ranking
-}
+    // definir ranking top
+    modelos.forEach((m, i) => {
+      if (i === 0) m.top1 = true;
+      if (i === 1) m.top2 = true;
+      if (i === 2) m.top3 = true;
+    });
 
-res.json(modelos);
+    res.json(modelos);
 
   } catch (err) {
     console.error("Erro feed modelos:", err);
