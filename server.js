@@ -3329,7 +3329,7 @@ SELECT
 
   COALESCE(r.ganhos_mes, 0) AS ganhos_total,
 
-  ver.criado_em AS aprovado_em,
+  ver.verificado_em AS aprovado_em,
 
   CASE 
     WHEN ver.criado_em >= NOW() - INTERVAL '5 days'
