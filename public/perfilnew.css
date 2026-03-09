@@ -319,6 +319,17 @@ a{
   cursor:pointer;
 }
 
+.social-group {
+  padding: 0 22px 20px;
+  display: flex;
+  gap: 12px;
+}
+
+.social-group img {
+  width: 30px;
+  opacity: 0.85;
+}
+
 /* ===============================
    RESPONSIVO
 =============================== */
