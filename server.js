@@ -3321,32 +3321,30 @@ app.get("/api/modelos", auth, async (req, res) => {
     }
 const result = await db.query(`
   SELECT
-    m.id AS modelo_id,
-    m.nome_exibicao,
-    m.avatar,
-    m.bio,
+  m.id AS modelo_id,
+  m.nome_exibicao,
+  m.avatar,
+  m.bio,
 
   COALESCE(r.ganhos_mes, 0) AS ganhos_total,
 
-    -- Data da última aprovação
-    ver.criado_em AS aprovado_em,
+  ver.criado_em AS aprovado_em,
 
-    -- Define se é NEW (últimos 7 dias)
-    CASE 
-      WHEN ver.criado_em >= NOW() - INTERVAL '7 days' 
-      THEN true 
-      ELSE false 
-    END AS is_new
+  CASE 
+    WHEN ver.criado_em >= NOW() - INTERVAL '5 days'
+    THEN true
+    ELSE false
+  END AS is_new
 
-  FROM modelos m
+FROM modelos m
 
-  JOIN LATERAL (
-    SELECT status, criado_em
-    FROM modelos_verificacao
-    WHERE modelo_id = m.id
-    ORDER BY verificado_em DESC 
-    LIMIT 1
-  ) ver ON true
+JOIN LATERAL (
+  SELECT status, criado_em
+  FROM modelos_verificacao
+  WHERE modelo_id = m.id
+  ORDER BY verificado_em DESC
+  LIMIT 1
+) ver ON true
 
 LEFT JOIN LATERAL (
 
@@ -3357,13 +3355,11 @@ LEFT JOIN LATERAL (
 
 ) r ON true
 
-  WHERE ver.status = 'aprovado'
-  AND m.feed = true
+WHERE ver.status = 'aprovado'
+AND m.feed = true
 
-  ORDER BY 
-    total_vips DESC,
-    is_new DESC,
-    m.id DESC
+ORDER BY ganhos_total DESC
+
 `);
 
     const modelos = result.rows;
