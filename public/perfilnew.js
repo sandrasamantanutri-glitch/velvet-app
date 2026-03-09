@@ -186,13 +186,28 @@ async function carregarFeed(){
 
       const img = document.createElement("img");
 
-      img.src = item.thumbnail_url || item.url;
+      const url = item.url || "";
+      const thumbnail = item.thumbnail_url || url;
 
-      img.onerror = ()=> img.src="/assets/capa.png";
+      img.src = thumbnail;
+      img.onerror = () => img.src = "/assets/capa.png";
 
       card.appendChild(img);
 
-      card.onclick = ()=> abrirMidia(item);
+      // detectar se é vídeo
+      const ehVideo =
+        url.includes(".mp4") ||
+        url.includes(".webm") ||
+        url.includes(".mov");
+
+      if(ehVideo){
+        const icon = document.createElement("div");
+        icon.className = "video-icon";
+        icon.innerHTML = "▶";
+        card.appendChild(icon);
+      }
+
+      card.onclick = () => abrirMidia(item);
 
       if(item.tipo_conteudo === "venda"){
         gridPaid.appendChild(card);

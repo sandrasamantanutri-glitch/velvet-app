@@ -382,6 +382,21 @@ a{
   text-align: right;
 }
 
+.midia-thumb{
+ position:relative;
+}
+
+.video-icon{
+ position:absolute;
+ bottom:8px;
+ right:8px;
+ background:rgba(0,0,0,0.6);
+ color:white;
+ padding:4px 6px;
+ border-radius:4px;
+ font-size:12px;
+}
+
 /* ===============================
    RESPONSIVO
 =============================== */
