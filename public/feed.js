@@ -13,68 +13,104 @@ function logout() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+
   const lista = document.getElementById("listaModelos");
 
   if (!lista) {
-    console.error("❌ listaModelos não encontrada no index.html");
+    console.error("❌ listaModelos não encontrada");
     return;
   }
 
   fetch("/api/modelos", {
-    headers: {
-      Authorization: "Bearer " + token
+  headers: {
+    Authorization: "Bearer " + token
+  }
+})
+.then(res => {
+  if (!res.ok) throw new Error("Erro ao buscar modelos");
+  return res.json();
+})
+.then(modelos => {
+
+  lista.innerHTML = "";
+
+  if (!Array.isArray(modelos) || modelos.length === 0) {
+    lista.innerHTML = "<p>Nenhuma modelo disponível</p>";
+    return;
+  }
+
+  modelos.forEach(modelo => {
+
+    const card = document.createElement("div");
+    card.className = "modelo-card";
+
+    // lógica dos ícones
+    let avatarIcon = modelo.avatar || "/assets/avatar.png";
+
+    if (modelo.top1) {
+      avatarIcon = "/assets/top1.png";
+    } 
+    else if (modelo.top2) {
+      avatarIcon = "/assets/top2.png";
+    } 
+    else if (modelo.top3) {
+      avatarIcon = "/assets/top3.png";
+    } 
+    else if (modelo.is_new) {
+      avatarIcon = "/assets/new.png";
     }
-  })
-    .then(res => {
-      if (!res.ok) throw new Error();
-      return res.json();
-    })
-    .then(modelos => {
-      lista.innerHTML = "";
 
-      if (!Array.isArray(modelos) || modelos.length === 0) {
-        lista.innerHTML = "<p>Nenhuma modelo disponível</p>";
-        return;
-      }
+    card.innerHTML = `
 
-      modelos.forEach(modelo => {
-        const card = document.createElement("div");
-        card.className = "modelo-card";
+      <div class="modelo-foto">
+        <img 
+          src="${modelo.avatar || "/assets/avatar.png"}"
+          class="foto-principal"
+        >
+      </div>
 
-        card.innerHTML = `
-  <div class="modelo-avatar-wrapper">
-    <img 
-      src="${modelo.avatar || "/assets/avatar.png"}" 
-      class="modelo-avatar"
-    >
+      <div class="modelo-info">
 
-    ${
-      modelo.top1
-        ? `<img src="/assets/top1.png" class="badge-top1">`
-        : ""
-    }
+        <div class="modelo-header">
 
-     ${
-      modelo.is_new
-      ? `<img src="/assets/new.png" class="badge-new">`
-        : ""
-    }
-  </div>
-`;
+          <img 
+            src="${avatarIcon}"
+            class="avatar-mini"
+          >
 
-        // 🔥 ID CORRETO
-        card.onclick = () => {
-          const modeloId = Number(modelo.modelo_id);
-          if (!modeloId) return;
+          <span class="modelo-nome">
+            ${modelo.nome_exibicao || ""}
+          </span>
 
-          window.location.href = `perfil.html?modelo_id=${modeloId}`;
-        };
+        </div>
 
-        lista.appendChild(card);
-      });
-    })
-    .catch(err => {
-      console.error("Erro ao carregar o feed:", err);
-      lista.innerHTML = "<p>Erro ao carregar o feed.</p>";
-    });
+        <div class="modelo-bio">
+          ${modelo.bio || ""}
+        </div>
+
+      </div>
+
+    `;
+
+    card.onclick = () => {
+
+      const modeloId = Number(modelo.modelo_id);
+      if (!modeloId) return;
+
+      window.location.href = `perfil.html?modelo_id=${modeloId}`;
+
+    };
+
+    lista.appendChild(card);
+
+  });
+
+})
+.catch(err => {
+
+  console.error("Erro ao carregar o feed:", err);
+  lista.innerHTML = "<p>Erro ao carregar o feed.</p>";
+
+});
+
 });
