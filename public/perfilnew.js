@@ -29,9 +29,78 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   iniciarTabs();
 
+  // =========================
+  // BOTÃO ASSINAR
+  // =========================
+
+  const btnAssinar = document.getElementById("btn-assinar");
+
+  btnAssinar?.addEventListener("click", () => {
+
+    const tokenAtual = localStorage.getItem("token");
+
+    if (!tokenAtual) {
+      abrirPopupLoginObrigatorio();
+      return;
+    }
+
+    const roleAtual = localStorage.getItem("role");
+    const modeloLogado = Number(localStorage.getItem("modelo_id"));
+
+    // modelo não pode assinar outra modelo
+    if (roleAtual === "modelo" && modeloLogado !== MODELO_ID) {
+      alert("No momento, modelo não pode assinar outra modelo.");
+      return;
+    }
+
+    if (window.__CLIENTE_VIP__) {
+      window.location.href = `/chatc.html?modelo_id=${MODELO_ID}`;
+      return;
+    }
+
+    window.abrirFluxoVIP();
+  });
+
+  // =========================
+  // BOTÃO CHAT VIP
+  // =========================
+
+  document.getElementById("btn-vip-chat")?.addEventListener("click", () => {
+    window.location.href = `/chatc.html?modelo_id=${MODELO_ID}`;
+  });
+
+  // =========================
+  // CARREGAMENTO
+  // =========================
+
   await carregarPerfil();
+  await carregarOfertaAtiva();
   await carregarFeed();
   await aplicarRegrasDeAcesso();
+
+
+});
+
+
+// =================================
+// LINK GENÉRICO "ASSINAR VIP"
+// =================================
+
+document.addEventListener("click", (e) => {
+
+  const linkVip = e.target.closest(".link-assinar-vip");
+  if (!linkVip) return;
+
+  e.preventDefault();
+
+  const tokenAtual = localStorage.getItem("token");
+
+  if (!tokenAtual) {
+    abrirPopupLoginObrigatorio();
+    return;
+  }
+
+  window.abrirFluxoVIP();
 
 });
 
@@ -301,4 +370,175 @@ function iniciarTabs(){
 
   });
 
+}
+
+let OFERTA_ATUAL = null;
+
+async function carregarOfertaAtiva() {
+
+  console.log("🧪 carregarOfertaAtiva chamado com modelo_id =", MODELO_ID);
+
+  const ofertaCard = document.getElementById("oferta-card");
+  const btnAssinar = document.getElementById("btn-assinar");
+  const precoDescontoEl = document.getElementById("preco-desconto");
+  const precoOriginalEl = document.getElementById("preco-original");
+  const descontoEl = document.getElementById("oferta-desconto");
+
+  if (!ofertaCard) {
+    console.warn("ofertaCard não encontrado");
+    return;
+  }
+
+  try {
+
+    const res = await fetch(`/api/ofertas/ativa/${MODELO_ID}`);
+
+    if (!res.ok) {
+      ofertaCard.style.display = "none";
+      OFERTA_ATUAL = null;
+      return;
+    }
+
+    const data = await res.json();
+
+    // =========================
+    // SEM PROMOÇÃO
+    // =========================
+
+    if (!data.ativa) {
+
+      const valor = Number(data.valor_base) || 20;
+
+      OFERTA_ATUAL = {
+        valor_base: valor,
+        valor_promocional: valor,
+        desconto_percentual: 0
+      };
+
+      window.OFERTA_ATUAL = OFERTA_ATUAL;
+
+      precoDescontoEl.textContent = valorBRL(valor);
+      precoOriginalEl.textContent = "";
+
+      if (descontoEl)
+        descontoEl.style.display = "none";
+
+      if (btnAssinar)
+        btnAssinar.textContent =
+          `Assinar VIP por ${valorBRL(valor)}`;
+
+      ofertaCard.style.display = "block";
+
+      return;
+    }
+
+    // =========================
+    // COM PROMOÇÃO
+    // =========================
+
+    const oferta = data.oferta;
+
+    OFERTA_ATUAL = {
+      id: oferta.id,
+      modelo_id: oferta.modelo_id,
+      valor_base: Number(oferta.valor_base),
+      valor_promocional: Number(oferta.valor_promocional),
+      desconto_percentual: Number(oferta.desconto_percentual || 0)
+    };
+
+    window.OFERTA_ATUAL = OFERTA_ATUAL;
+
+    if (descontoEl && OFERTA_ATUAL.desconto_percentual > 0) {
+      descontoEl.textContent =
+        `Economize ${OFERTA_ATUAL.desconto_percentual}%`;
+      descontoEl.style.display = "inline-block";
+    } else if (descontoEl) {
+      descontoEl.style.display = "none";
+    }
+
+    if (precoDescontoEl)
+      precoDescontoEl.textContent =
+        valorBRL(OFERTA_ATUAL.valor_promocional);
+
+    if (precoOriginalEl)
+      precoOriginalEl.textContent =
+        valorBRL(OFERTA_ATUAL.valor_base);
+
+    ofertaCard.style.display = "block";
+
+    if (btnAssinar) {
+      btnAssinar.disabled = false;
+      btnAssinar.textContent =
+        `Assinar VIP por ${valorBRL(OFERTA_ATUAL.valor_promocional)}`;
+    }
+
+  } catch (err) {
+
+    console.error("Erro ao carregar oferta:", err);
+
+    ofertaCard.style.display = "none";
+    OFERTA_ATUAL = null;
+
+  }
+}
+
+function valorBRL(valor) {
+  return Number(valor).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  });
+}
+
+function abrirPopupLoginObrigatorio() {
+
+  const modal = document.createElement("div");
+  modal.className = "modal-login-obrigatorio";
+
+  modal.innerHTML = `
+    <div class="modal-backdrop"></div>
+    <div class="modal-box-login">
+      <h3>🔒 Acesso necessário</h3>
+      <p>É necessário estar logado para esta ação.</p>
+
+      <div class="login-acoes">
+        <button class="btn-login">Ja tenho conta</button>
+        <button class="btn-register">Não tenho conta</button>
+      </div>
+    </div>
+  `;
+
+  modal.querySelector(".modal-backdrop").onclick = () => modal.remove();
+
+modal.querySelector(".btn-login").onclick = () => {
+  modal.remove();
+
+  // 🔥 SALVA QUE DEVE ABRIR VIP DEPOIS DO LOGIN
+  localStorage.setItem("post_login_action", "open_vip_payment");
+
+  if (typeof openAgeGate === "function") {
+    openAgeGate("login");
+  } else {
+    console.error("openAgeGate não carregado ainda");
+
+    const intervalo = setInterval(() => {
+      if (typeof openAgeGate === "function") {
+        clearInterval(intervalo);
+        openAgeGate("login");
+      }
+    }, 100);
+  }
+};
+
+
+modal.querySelector(".btn-register").onclick = () => {
+  modal.remove();
+
+  // 🔥 SALVA QUE DEVE ABRIR VIP DEPOIS DO REGISTRO
+  localStorage.setItem("post_login_action", "open_vip_payment");
+
+  openAgeGate("register");
+};
+
+
+  document.body.appendChild(modal);
 }
