@@ -1021,6 +1021,16 @@ expiration.setMonth(expiration.getMonth() + 1);
 const taxaTransacao = Number(metadata.taxa_transacao ?? 0);
 const taxaPlataforma = Number(metadata.taxa_plataforma ?? 0);
 
+const taxaExtra = taxaTransacao + taxaPlataforma;
+
+const valorBase = Number((valorPago - taxaExtra).toFixed(2));
+
+const valores = await calcularValores({
+  modelo_id,
+  valor_bruto: valorBase,
+  taxa_gateway: 0
+});
+
 await client.query(`
 INSERT INTO vip_subscriptions (
   cliente_id,
@@ -1057,11 +1067,43 @@ DO UPDATE SET
   cliente_id,
   modelo_id,
   expiration,
-  valorPago,
+  valorBase,
   taxaTransacao,
   taxaPlataforma,
   valorPago,
   orderId
+]);
+
+await client.query(`
+INSERT INTO transacoes_agency (
+  modelo_id,
+  cliente_id,
+  tipo,
+  valor_bruto,
+  valor_modelo,
+  agency_fee,
+  velvet_fee,
+  taxa_gateway,
+  status,
+  created_at,
+  aceitou_termos,
+  aceite_ip,
+  aceite_data
+)
+VALUES (
+  $1,$2,'assinatura',
+  $3,$4,$5,$6,$7,
+  'pago',NOW(),true,$8,NOW()
+)
+`,[
+  modelo_id,
+  cliente_id,
+  valorBase,
+  valores.valor_modelo,
+  valores.agency_fee,
+  valores.velvet_fee,
+  taxaExtra,
+  metadata.aceite_ip || null
 ]);
 
 dadosParaEmitir = {
