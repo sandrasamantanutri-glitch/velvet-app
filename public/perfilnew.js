@@ -36,7 +36,36 @@ if (token && window.io) {
     definirModo();
     aplicarRoleNoBody();
     iniciarPerfil();
+
+    document.querySelectorAll(".tab").forEach(btn => {
+
+  btn.addEventListener("click", () => {
+
+    document.querySelectorAll(".tab").forEach(t =>
+      t.classList.remove("active")
+    );
+
+    btn.classList.add("active");
+
+    const tab = btn.dataset.tab;
+
+    document.querySelectorAll(".midias-grid").forEach(grid =>
+      grid.classList.remove("active")
+    );
+
+    if(tab === "free"){
+      document.getElementById("listaMidias").classList.add("active");
+    }
+
+    if(tab === "paid"){
+      document.getElementById("midias-paid").classList.add("active");
+    }
+
   });
+
+ });
+
+ });
 
   // ===============================
   // DOM
