@@ -316,31 +316,37 @@ function abrirMidia(item){
   const img = document.getElementById("modalImg");
   const video = document.getElementById("modalVideo");
 
-  img.style.display="none";
-  video.style.display="none";
+  img.style.display = "none";
+  video.style.display = "none";
 
-  if(item.tipo === "video"){
+  if(item.tipo_conteudo === "video"){
     video.src = item.url;
-    video.style.display="block";
+    video.style.display = "block";
     video.play();
   }else{
     img.src = item.url;
-    img.style.display="block";
+    img.style.display = "block";
   }
 
   modal.classList.remove("hidden");
 
 }
 
-document.getElementById("fecharModal")?.addEventListener("click",()=>{
+const modal = document.getElementById("modalMidia");
 
-  const modal = document.getElementById("modalMidia");
-  const video = document.getElementById("modalVideo");
+modal?.addEventListener("click", (e) => {
 
-  video.pause();
-  video.src="";
+  if (e.target === modal) {
 
-  modal.classList.add("hidden");
+    const video = document.getElementById("modalVideo");
+
+    if (video) {
+      video.pause();
+      video.src = "";
+    }
+
+    modal.classList.add("hidden");
+  }
 
 });
 
