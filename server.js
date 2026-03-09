@@ -1791,7 +1791,8 @@ const io = new Server(server, {
       "https://velvet.lat",
       "https://www.velvet.lat",
       "https://app-production-e7e1.up.railway.app",
-      "https://velvet-test-production.up.railway.app"
+      "https://velvet-test-production.up.railway.app",
+      "https://velvet-app-an4a.onrender.com"
     ],
     methods: ["GET", "POST"],
     credentials: true
