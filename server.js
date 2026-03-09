@@ -3326,11 +3326,7 @@ const result = await db.query(`
     m.avatar,
     m.bio,
 
-<<<<<<< HEAD
   COALESCE(r.ganhos_mes, 0) AS ganhos_total,
-=======
-    COALESCE(v.total_vips, 0) AS total_vips,
->>>>>>> parent of aa42db4 (.)
 
     -- Data da última aprovação
     ver.criado_em AS aprovado_em,
@@ -3352,7 +3348,6 @@ const result = await db.query(`
     LIMIT 1
   ) ver ON true
 
-<<<<<<< HEAD
 LEFT JOIN LATERAL (
 
   SELECT SUM(valor_modelo) AS ganhos_mes
@@ -3361,15 +3356,6 @@ LEFT JOIN LATERAL (
   AND date_trunc('month', t.criado_em) = date_trunc('month', NOW())
 
 ) r ON true
-=======
-  LEFT JOIN LATERAL (
-    SELECT COUNT(*) AS total_vips
-    FROM vip_subscriptions
-    WHERE modelo_id = m.id
-      AND ativo = true
-      AND expiration_at > NOW()
-  ) v ON true
->>>>>>> parent of aa42db4 (.)
 
   WHERE ver.status = 'aprovado'
   AND m.feed = true
