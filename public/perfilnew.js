@@ -1,357 +1,188 @@
 const token = localStorage.getItem("token");
-const role  = localStorage.getItem("role");
+const role = localStorage.getItem("role");
 
-if (token && window.io) {
-  const socket = io();
-  socket.emit("auth", { token });
+let MODELO_ID = null;
+let EH_DONA = false;
+
+document.addEventListener("DOMContentLoaded", async () => {
+
+  const params = new URLSearchParams(window.location.search);
+  MODELO_ID = Number(params.get("modelo_id") || params.get("id"));
+
+  if (!MODELO_ID) {
+    console.warn("modelo_id não encontrado na URL");
+    return;
+  }
+
+  const modeloLogado = Number(localStorage.getItem("modelo_id"));
+  EH_DONA = role === "modelo" && modeloLogado === MODELO_ID;
+
+  if (!EH_DONA) {
+    document.getElementById("btn-upload")?.remove();
+  }
+
+  iniciarTabs();
+
+  await carregarPerfil();
+  await carregarFeed();
+
+});
+
+async function carregarPerfil(){
+
+  try{
+
+    const res = await fetch(`/api/modelo/publico/${MODELO_ID}`);
+
+    if(!res.ok) return;
+
+    const modelo = await res.json();
+
+    document.getElementById("profileName").textContent =
+      modelo.nome_exibicao || "";
+
+    document.getElementById("profileBio").textContent =
+      modelo.bio || "";
+
+    document.getElementById("profileAvatar").src =
+      modelo.avatar || "/assets/avatar.png";
+
+    document.getElementById("profileCapa").src =
+      modelo.capa || "/assets/capa.png";
+
+    const localEl = document.getElementById("local-texto");
+
+    if(localEl){
+      localEl.textContent = modelo.local || "";
+    }
+
+    const ig = document.getElementById("link-instagram");
+    const tt = document.getElementById("link-tiktok");
+
+    if(modelo.instagram){
+      ig.href = "https://instagram.com/" + modelo.instagram.replace("@","");
+      ig.style.display = "inline-block";
+    }else{
+      ig.style.display = "none";
+    }
+
+    if(modelo.tiktok){
+      tt.href = "https://tiktok.com/@" + modelo.tiktok.replace("@","");
+      tt.style.display = "inline-block";
+    }else{
+      tt.style.display = "none";
+    }
+
+  }catch(e){
+    console.error("erro perfil",e);
+  }
+
 }
 
-// ===============================
-// PERFIL.JS — VERSÃO BLINDADA
-// ===============================
+async function carregarFeed(){
 
-(() => {
-  "use strict";
+  const gridFree = document.getElementById("listaMidias");
+  const gridPaid = document.getElementById("midias-paid");
 
-  // ===============================
-  // STATE
-  // ===============================
-  const state = {
-    token: localStorage.getItem("token"),
-    role: localStorage.getItem("role"),
-    modeloId: null,
-    modo: "publico"
-  };
+  gridFree.innerHTML = "";
+  gridPaid.innerHTML = "";
 
-  // ===============================
-  // DOM CACHE
-  // ===============================
-  const dom = {};
+  try{
 
-  // ===============================
-  // INIT
-  // ===============================
-  document.addEventListener("DOMContentLoaded", () => {
-    cacheDOM();
-    definirModo();
-    aplicarRoleNoBody();
-    iniciarPerfil();
+    const res = await fetch(`/api/modelo/publico/${MODELO_ID}/feed`);
+    const feed = await res.json();
 
-    document.querySelectorAll(".tab").forEach(btn => {
+    if(!Array.isArray(feed)) return;
 
-  btn.addEventListener("click", () => {
+    feed.forEach(item=>{
 
-    document.querySelectorAll(".tab").forEach(t =>
-      t.classList.remove("active")
-    );
-
-    btn.classList.add("active");
-
-    const tab = btn.dataset.tab;
-
-    document.querySelectorAll(".midias-grid").forEach(grid =>
-      grid.classList.remove("active")
-    );
-
-    if(tab === "free"){
-      document.getElementById("listaMidias").classList.add("active");
-    }
-
-    if(tab === "paid"){
-      document.getElementById("midias-paid").classList.add("active");
-    }
-
-  });
-
- });
-
- });
-
-  // ===============================
-  // DOM
-  // ===============================
-  function cacheDOM() {
-    dom.avatar = document.getElementById("perfil-avatar");
-    dom.capa   = document.getElementById("perfil-capa");
-    dom.nome   = document.getElementById("perfil-nome");
-    dom.bio    = document.getElementById("perfil-bio");
-    dom.local  = document.getElementById("local-texto");
-
-    dom.midiasFree = document.getElementById("midias-free");
-    dom.midiasPaid = document.getElementById("midias-paid");
-  }
-
-  // ===============================
-  // MODO
-  // ===============================
-  function definirModo() {
-    const params = new URLSearchParams(window.location.search);
-    const paramId = params.get("id");
-
-    if (state.token && state.role === "modelo" && !paramId) {
-      state.modo = "privado";
-      state.modeloId = localStorage.getItem("modelo_id");
-      return;
-    }
-
-    if (paramId) {
-      state.modo = "publico";
-      state.modeloId = Number(paramId);
-      return;
-    }
-
-    state.modo = "publico";
-  }
-
-  // ===============================
-  // ROLE VISUAL
-  // ===============================
-  function aplicarRoleNoBody() {
-    document.body.classList.remove("role-modelo", "role-cliente", "role-publico");
-
-    if (state.role === "modelo") {
-      document.body.classList.add("role-modelo");
-    } else if (state.role === "cliente") {
-      document.body.classList.add("role-cliente");
-    } else {
-      document.body.classList.add("role-publico");
-    }
-  }
-
-  // ===============================
-  // PERFIL FLOW
-  // ===============================
-  function iniciarPerfil() {
-
-    if (state.modo === "privado" && state.role === "modelo") {
-      carregarPerfilPrivado();
-      carregarFeedPrivado();
-      return;
-    }
-
-    if (state.modo === "publico" && state.modeloId) {
-      carregarPerfilPublico();
-      carregarFeedPublico();
-      return;
-    }
-
-    aplicarDefaults();
-  }
-
-  // ===============================
-  // PERFIL PRIVADO
-  // ===============================
-  async function carregarPerfilPrivado() {
-
-    try {
-
-      const res = await fetch("/api/modelo/me", {
-        headers: { Authorization: "Bearer " + state.token }
-      });
-
-      if (!res.ok) throw new Error("perfil privado não encontrado");
-
-      const modelo = await res.json();
-
-      state.modeloId = modelo.id;
-
-      localStorage.setItem("modelo_id", modelo.id);
-
-      aplicarPerfilNoDOM(modelo);
-
-    } catch {
-
-      aplicarDefaults();
-
-    }
-
-  }
-
-  // ===============================
-  // PERFIL PÚBLICO
-  // ===============================
-  async function carregarPerfilPublico() {
-
-    try {
-
-      const res = await fetch(`/api/modelo/publico/${state.modeloId}`);
-
-      if (!res.ok) throw new Error("perfil público não encontrado");
-
-      const modelo = await res.json();
-
-      aplicarPerfilNoDOM(modelo);
-
-    } catch {
-
-      aplicarDefaults();
-
-    }
-
-  }
-
-  // ===============================
-  // DOM PERFIL
-  // ===============================
-  function aplicarPerfilNoDOM(modelo) {
-
-    if (dom.nome) {
-      dom.nome.textContent =
-        typeof modelo.nome === "string"
-          ? modelo.nome
-          : "";
-    }
-
-    if (dom.bio) {
-      dom.bio.textContent =
-        typeof modelo.bio === "string"
-          ? modelo.bio
-          : "";
-    }
-
-    if (dom.avatar) {
-
-      dom.avatar.src =
-        typeof modelo.avatar === "string" && modelo.avatar !== ""
-          ? modelo.avatar
-          : "/assets/avatar.png";
-
-      dom.avatar.onerror = () => {
-        dom.avatar.src = "/assets/avatar.png";
-      };
-
-    }
-
-    if (dom.capa) {
-
-      dom.capa.src =
-        typeof modelo.capa === "string" && modelo.capa !== ""
-          ? modelo.capa
-          : "/assets/capa.png";
-
-      dom.capa.onerror = () => {
-        dom.capa.src = "/assets/capa.png";
-      };
-
-    }
-
-    if (dom.local) {
-
-      const cidade = typeof modelo.cidade === "string" ? modelo.cidade : "";
-      const estado = typeof modelo.estado === "string" ? modelo.estado : "";
-
-      dom.local.textContent =
-        [cidade, estado].filter(Boolean).join(" • ");
-
-    }
-
-  }
-
-  // ===============================
-  // DEFAULTS
-  // ===============================
-  function aplicarDefaults() {
-
-    if (dom.nome)  dom.nome.textContent = "";
-    if (dom.bio)   dom.bio.textContent  = "";
-
-    if (dom.avatar) dom.avatar.src = "/assets/avatar.png";
-    if (dom.capa)   dom.capa.src   = "/assets/capa.png";
-    if (dom.local)  dom.local.textContent = "";
-
-  }
-
-  // ===============================
-  // FEED
-  // ===============================
-  async function carregarFeedPrivado() {
-
-    if (!dom.midiasFree || !dom.midiasPaid) return;
-
-    try {
-
-      const res = await fetch("/api/feed/me", {
-        headers: { Authorization: "Bearer " + state.token }
-      });
-
-      const feed = await res.json();
-
-      renderFeed(feed);
-
-    } catch {}
-
-  }
-
-  async function carregarFeedPublico() {
-
-    if (!dom.midiasFree || !dom.midiasPaid) return;
-
-    try {
-
-      const res = await fetch(`/api/modelo/publico/${state.modeloId}/feed`);
-
-      const feed = await res.json();
-
-      renderFeed(feed);
-
-    } catch {}
-
-  }
-
-  function renderFeed(feed) {
-
-    dom.midiasFree.innerHTML = "";
-    dom.midiasPaid.innerHTML = "";
-
-    if (!Array.isArray(feed)) return;
-
-    feed.forEach(item => {
-
-      const container =
-        item.tipo_conteudo === "paid"
-          ? dom.midiasPaid
-          : dom.midiasFree;
-
-      const div = document.createElement("div");
-
-      div.className = "midia-thumb";
+      const card = document.createElement("div");
+      card.className = "midia-thumb";
 
       const img = document.createElement("img");
 
       img.src = item.thumbnail_url || item.url;
 
-      img.onerror = () => img.src = "/assets/capaDefault.jpg";
+      img.onerror = ()=> img.src="/assets/capa.png";
 
-      div.appendChild(img);
+      card.appendChild(img);
 
-      container.appendChild(div);
+      card.onclick = ()=> abrirMidia(item);
+
+      if(item.tipo_conteudo === "venda"){
+        gridPaid.appendChild(card);
+      }else{
+        gridFree.appendChild(card);
+      }
 
     });
 
+  }catch(e){
+    console.error("erro feed",e);
   }
 
-  // ===============================
-  // FUNÇÕES DO RODAPÉ
-  // ===============================
+}
 
-  window.postarFeed = () => {
-    window.location.href = "/modelo/postar-feed.html";
-  };
+function abrirMidia(item){
 
-  window.postarPremium = () => {
-    window.location.href = "/modelo/postar-premium.html";
-  };
+  const modal = document.getElementById("modalMidia");
+  const img = document.getElementById("modalImg");
+  const video = document.getElementById("modalVideo");
 
-  window.abrirConteudosVenda = () => {
-    window.location.href = "/modelo/conteudos.html";
-  };
+  img.style.display="none";
+  video.style.display="none";
 
-  window.alterarVIP = () => {
-    window.location.href = "/modelo/config-vip.html";
-  };
+  if(item.tipo === "video"){
+    video.src = item.url;
+    video.style.display="block";
+    video.play();
+  }else{
+    img.src = item.url;
+    img.style.display="block";
+  }
 
-  window.editarLinksPerfil = () => {
-    window.location.href = "/modelo/links.html";
-  };
+  modal.classList.remove("hidden");
 
-})();
+}
+
+document.getElementById("fecharModal")?.addEventListener("click",()=>{
+
+  const modal = document.getElementById("modalMidia");
+  const video = document.getElementById("modalVideo");
+
+  video.pause();
+  video.src="";
+
+  modal.classList.add("hidden");
+
+});
+
+function iniciarTabs(){
+
+  const tabs = document.querySelectorAll(".tab");
+
+  tabs.forEach(tab=>{
+
+    tab.addEventListener("click",()=>{
+
+      tabs.forEach(t=>t.classList.remove("active"));
+
+      document
+        .querySelectorAll(".midias-grid")
+        .forEach(g=>g.classList.remove("active"));
+
+      tab.classList.add("active");
+
+      if(tab.dataset.tab==="free"){
+        document.getElementById("listaMidias").classList.add("active");
+      }
+
+      if(tab.dataset.tab==="paid"){
+        document.getElementById("midias-paid").classList.add("active");
+      }
+
+    });
+
+  });
+
+}
