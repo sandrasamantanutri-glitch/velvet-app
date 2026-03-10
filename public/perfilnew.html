@@ -85,16 +85,26 @@
 </div>
 
  <!-- MODAL VISUALIZAÇÃO MÍDIA -->
- <div id="modalMidia" class="modal-midia hidden">
+<div id="modalMidia" class="modal-midia hidden">
   <div class="modal-backdrop"></div>
 
   <div class="modal-conteudo">
-    <button id="fecharModal" style="align-self:flex-end;">✕</button>
 
-    <img id="modalImg" style="display:none; max-width:100%;" />
-    <video id="modalVideo" controls style="display:none; max-width:100%;"></video>
+    <button id="fecharModal">✕</button>
+
+    <img id="modalImg" style="display:none;max-width:100%;">
+    <video id="modalVideo" controls style="display:none;max-width:100%;"></video>
+
+    <iframe
+      id="modalIframe"
+      style="display:none;max-width:100%;max-height:80vh;"
+      frameborder="0"
+      allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+      allowfullscreen>
+    </iframe>
+
   </div>
- </div>
+</div>
 
 <div id="popupPagamentoVelvet" class="velvet-modal hidden">
   <div class="velvet-backdrop" onclick="fecharPopupPagamento()"></div>
