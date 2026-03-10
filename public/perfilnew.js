@@ -265,101 +265,130 @@ async function carregarFeed(){
     const ehVip = window.__CLIENTE_VIP__ === true;
     const tokenAtual = localStorage.getItem("token");
 
-feed.forEach(item=>{
+feed.forEach(item => {
 
   const card = document.createElement("div");
-
-  if(item.tipo_conteudo === "venda"){
-    card.className = "midia-card-premium";
-  }else{
-    card.className = "midia-thumb";
-  }
-
-  const img = document.createElement("img");
 
   const url = item.url || "";
   const thumbnail = item.thumbnail_url || url;
 
+  const img = document.createElement("img");
   img.src = thumbnail;
   img.onerror = () => img.src = "/assets/capa.png";
 
-  card.appendChild(img);
-
-  // =========================
-  // PREÇO PREMIUM
-  // =========================
-
-  if(item.tipo_conteudo === "venda"){
-
-    const preco = document.createElement("div");
-    preco.className = "premium-preco";
-
-    preco.innerHTML = `🔒 R$ ${Number(item.preco || 0).toFixed(2)}`;
-
-    card.appendChild(preco);
-
-  }
-
-  // =========================
-  // LEGENDA PREMIUM
-  // =========================
-
-if(item.tipo_conteudo === "venda" && item.descricao){
-
-    const legenda = document.createElement("div");
-    legenda.className = "premium-legenda";
-
-  legenda.textContent = item.descricao;
-
-    card.appendChild(legenda);
-
-  }
-
-  // detectar se é vídeo
   const ehVideo =
     url.includes(".mp4") ||
     url.includes(".webm") ||
     url.includes(".mov");
 
-  if(ehVideo){
-    const icon = document.createElement("div");
-    icon.className = "video-icon";
-    icon.innerHTML = "▶";
-    card.appendChild(icon);
+  // =========================
+  // PREMIUM (POST ESTILO INSTAGRAM)
+  // =========================
+
+  if (item.tipo_conteudo === "venda") {
+
+    card.className = "midia-card-premium";
+
+    // HEADER
+    const header = document.createElement("div");
+    header.className = "premium-header";
+
+    const avatar = document.createElement("img");
+    avatar.className = "premium-avatar";
+    avatar.src = document.getElementById("profileAvatar")?.src || "/assets/avatar.png";
+
+    const username = document.createElement("div");
+    username.className = "premium-username";
+    username.textContent =
+      document.getElementById("profileName")?.textContent || "user";
+
+    header.appendChild(avatar);
+    header.appendChild(username);
+
+    // MEDIA
+    const media = document.createElement("div");
+    media.className = "premium-media";
+
+    if (ehVideo) {
+      const video = document.createElement("video");
+      video.src = url;
+      video.controls = false;
+      media.appendChild(video);
+    } else {
+      media.appendChild(img);
+    }
+
+    // INFO
+    const info = document.createElement("div");
+    info.className = "premium-info";
+
+    if (item.descricao) {
+      const legenda = document.createElement("div");
+      legenda.textContent = item.descricao;
+      info.appendChild(legenda);
+    }
+
+    const preco = document.createElement("div");
+    preco.className = "premium-preco";
+    preco.innerHTML = `🔒 R$ ${Number(item.preco || 0).toFixed(2)}`;
+
+    info.appendChild(preco);
+
+    card.appendChild(header);
+    card.appendChild(media);
+    card.appendChild(info);
+
   }
 
-      // =========================
-      // BLOQUEIO DE ACESSO
-      // =========================
+  // =========================
+  // FEED NORMAL (GRID)
+  // =========================
 
-      let bloqueado = false;
+  else {
 
-      if (!EH_DONA) {
+    card.className = "midia-thumb";
+    card.appendChild(img);
 
-        if (item.tipo_conteudo === "venda") {
-          bloqueado = true;
-        }
+    if (ehVideo) {
+      const icon = document.createElement("div");
+      icon.className = "video-icon";
+      icon.innerHTML = "▶";
+      card.appendChild(icon);
+    }
 
-        if (item.tipo_conteudo !== "venda" && !ehVip) {
-          bloqueado = true;
-        }
+  }
 
-      }
+  // =========================
+  // BLOQUEIO
+  // =========================
 
-      if (bloqueado) {
-        card.classList.add("locked");
-      }
+  let bloqueado = false;
 
-      // =========================
-      // ENVIAR PARA GRID CORRETO
-      // =========================
+  if (!EH_DONA) {
 
-      if(item.tipo_conteudo === "venda"){
-        gridPaid.appendChild(card);
-      }else{
-        gridFree.appendChild(card);
-      }
+    if (item.tipo_conteudo === "venda") {
+      bloqueado = true;
+    }
 
+    if (item.tipo_conteudo !== "venda" && !window.__CLIENTE_VIP__) {
+      bloqueado = true;
+    }
+
+  }
+
+  if (bloqueado) {
+    card.classList.add("locked");
+  }
+
+  // =========================
+  // ADICIONAR NO GRID
+  // =========================
+
+  if (item.tipo_conteudo === "venda") {
+    gridPaid.appendChild(card);
+  } else {
+    gridFree.appendChild(card);
+  }
       // =========================
       // BOTÃO EXCLUIR (SÓ DONA)
       // =========================
@@ -432,6 +461,7 @@ if(item.tipo_conteudo === "venda" && item.descricao){
   }
 
 }
+
 async function aplicarRegrasDeAcesso() {
 
   const ofertaCard = document.getElementById("oferta-card");
