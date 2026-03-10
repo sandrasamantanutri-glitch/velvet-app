@@ -337,7 +337,6 @@ function abrirMidia(item){
   const video = document.getElementById("modalVideo");
   const iframe = document.getElementById("modalIframe");
 
-  // reset inicial
   img.style.display = "none";
   video.style.display = "none";
   iframe.style.display = "none";
@@ -346,7 +345,6 @@ function abrirMidia(item){
   video.src = "";
   iframe.src = "";
 
-  // normaliza estrutura
   const midias = item.midias && item.midias.length
     ? item.midias
     : [{ url: item.url }];
@@ -376,9 +374,11 @@ function abrirMidia(item){
 
       if (url.includes("videodelivery.net")) {
 
-        const videoId = url.split("/").pop();
+        const videoId = url.split("/")[3];
 
-        iframe.src = `https://iframe.videodelivery.net/${videoId}`;
+        iframe.src =
+        `https://iframe.videodelivery.net/${videoId}?autoplay=true`;
+
         iframe.style.display = "block";
 
       } else {
@@ -404,7 +404,6 @@ function abrirMidia(item){
 
   modal.classList.remove("hidden");
 
-  // carrossel
   if(midias.length > 1){
 
     modal.onclick = (e) => {
@@ -1054,4 +1053,25 @@ function tempoAtras(dataISO){
   if (horas < 24) return `${horas} h`;
   return `${dias} d`;
 
+}
+
+function renderThumb(item){
+
+  const div = document.createElement("div");
+  div.className = "midia-thumb";
+
+  const ehVideo = item.tipo === "video";
+
+  const thumbSrc = ehVideo
+    ? item.thumbnail_url
+    : item.url;
+
+  div.innerHTML = `
+    <img src="${thumbSrc}" loading="lazy">
+    ${ehVideo ? '<span class="video-icon">▶</span>' : ''}
+  `;
+
+  div.onclick = () => abrirMidia(item);
+
+  return div;
 }

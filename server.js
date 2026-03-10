@@ -1367,15 +1367,20 @@ app.post(
 
         if (mimetype.startsWith("image/")) {
           tipo = "imagem";
-        } else if (mimetype.startsWith("video/")) {
+        } 
+        else if (mimetype.startsWith("video/")) {
           tipo = "video";
-        } else {
+        } 
+        else {
           continue;
         }
 
         let publicUrl = null;
 
-        // imagens vão para Cloudflare Images
+        // -------------------
+        // IMAGEM
+        // -------------------
+
         if (tipo === "imagem") {
 
           const form = new FormData();
@@ -1392,44 +1397,60 @@ app.post(
             }
           );
 
+          if (!response.data || !response.data.success) {
+            throw new Error("Erro upload Cloudflare Images");
+          }
+
           const imageId = response.data.result.id;
 
           publicUrl =
             `https://imagedelivery.net/${process.env.CF_ACCOUNT_HASH}/${imageId}/public`;
-
         }
 
-if (tipo === "video") {
+        // -------------------
+        // VIDEO
+        // -------------------
 
-  const form = new FormData();
-  form.append("file", file.buffer, file.originalname);
+        if (tipo === "video") {
 
-  const response = await axios.post(
-    `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT_ID}/stream`,
-    form,
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.CF_STREAM_TOKEN}`,
-        ...form.getHeaders()
-      }
-    }
-  );
+          const form = new FormData();
+          form.append("file", file.buffer, file.originalname);
 
-  const videoId = response.data.result.uid;
+          const response = await axios.post(
+            `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT_ID}/stream`,
+            form,
+            {
+              headers: {
+                Authorization: `Bearer ${process.env.CF_STREAM_TOKEN}`,
+                ...form.getHeaders()
+              },
+              maxContentLength: Infinity,
+              maxBodyLength: Infinity
+            }
+          );
 
-  publicUrl = `https://iframe.videodelivery.net/${videoId}`;
+          if (!response.data || !response.data.success) {
+            throw new Error("Erro upload Cloudflare Stream");
+          }
 
-}
+          const videoId = response.data.result.uid;
+
+          publicUrl = `https://iframe.videodelivery.net/${videoId}`;
+
+          const thumbnailUrl =
+          `https://videodelivery.net/${videoId}/thumbnails/thumbnail.jpg`;
+        }
 
         await db.query(
           `
           INSERT INTO conteudos
-          (modelo_id, url, tipo, tipo_conteudo, preco, descricao)
-          VALUES ($1,$2,$3,$4,$5,$6)
+          (modelo_id, url, thumbnail_url, tipo, tipo_conteudo, preco, descricao)
+          VALUES ($1,$2,$3,$4,$5,$6,$7)
           `,
           [
             modelo_id,
             publicUrl,
+            thumbnailUrl,
             tipo,
             tipoFinal,
             preco ? Number(preco) : null,
@@ -1983,22 +2004,39 @@ module.exports = uploadCloudflareImage;
 
 async function uploadVideoCloudflare(buffer, filename) {
 
-  const form = new FormData();
-  form.append("file", buffer, filename);
+  try {
 
-  const res = await axios.post(
-    `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT_ID}/stream`,
-    form,
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.CF_STREAM_TOKEN}`,
-        ...form.getHeaders()
+    const form = new FormData();
+    form.append("file", buffer, filename);
+
+    const res = await axios.post(
+      `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT_ID}/stream`,
+      form,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.CF_STREAM_TOKEN}`,
+          ...form.getHeaders()
+        },
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity
       }
-    }
-  );
+    );
 
-  return res.data.result;
+    if (!res.data || !res.data.success) {
+      throw new Error("Falha no upload para Cloudflare Stream");
+    }
+
+    return res.data.result; // retorna uid, thumbnail, etc
+
+  } catch (err) {
+
+    console.error("Erro upload Cloudflare:", err.response?.data || err.message);
+    throw err;
+
+  }
 }
+
+module.exports = uploadVideoCloudflare;
 
 
 // ===============================
@@ -6858,25 +6896,30 @@ app.post(
 
       for (const file of req.files) {
 
-        const { mimetype, originalname } = file;
+        const { mimetype, originalname, buffer } = file;
 
         let tipo;
 
         if (mimetype.startsWith("image/")) {
           tipo = "imagem";
-        } else if (mimetype.startsWith("video/")) {
+        }
+        else if (mimetype.startsWith("video/")) {
           tipo = "video";
-        } else {
+        }
+        else {
           continue;
         }
 
         let url = null;
 
+        // -------------------------
         // IMAGEM → Cloudflare Images
+        // -------------------------
+
         if (tipo === "imagem") {
 
           const form = new FormData();
-          form.append("file", file.buffer, originalname);
+          form.append("file", buffer, originalname);
 
           const response = await axios.post(
             `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT_ID}/images/v1`,
@@ -6889,52 +6932,70 @@ app.post(
             }
           );
 
+          if (!response.data || !response.data.success) {
+            throw new Error("Erro upload Cloudflare Images");
+          }
+
           const imageId = response.data.result.id;
 
           url =
             `https://imagedelivery.net/${process.env.CF_ACCOUNT_HASH}/${imageId}/public`;
         }
 
-if (tipo === "video") {
+        // -------------------------
+        // VIDEO → Cloudflare Stream
+        // -------------------------
 
-  const form = new FormData();
-  form.append("file", file.buffer, originalname);
+        if (tipo === "video") {
 
-  const response = await axios.post(
-    `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT_ID}/stream`,
-    form,
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.CF_STREAM_TOKEN}`,
-        ...form.getHeaders()
-      }
-    }
-  );
+          const form = new FormData();
+          form.append("file", buffer, originalname);
 
-  const videoId = response.data.result.uid;
+          const response = await axios.post(
+            `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT_ID}/stream`,
+            form,
+            {
+              headers: {
+                Authorization: `Bearer ${process.env.CF_STREAM_TOKEN}`,
+                ...form.getHeaders()
+              },
+              maxContentLength: Infinity,
+              maxBodyLength: Infinity
+            }
+          );
 
-  url = `https://iframe.videodelivery.net/${videoId}`;
+          if (!response.data || !response.data.success) {
+            throw new Error("Erro upload Cloudflare Stream");
+          }
 
-}
+          const videoId = response.data.result.uid;
+
+          url = `https://iframe.videodelivery.net/${videoId}`;
+
+          const thumbnailUrl =
+          `https://videodelivery.net/${videoId}/thumbnails/thumbnail.jpg`;
+        }
 
         const result = await db.query(
           `
           INSERT INTO conteudos (
             modelo_id,
+            url,
+            thumbnail_url,
             tipo,
             tipo_conteudo,
-            url,
             preco,
             descricao,
             criado_em
           )
-          VALUES ($1,$2,'venda',$3,$4,$5,NOW())
+          VALUES ($1,$2, $3,$4,'venda',$5,$6,NOW())
           RETURNING
             id,
             modelo_id,
+            url,
+            thumbnail_url,
             tipo,
             tipo_conteudo,
-            url,
             preco,
             descricao,
             criado_em
@@ -6949,7 +7010,6 @@ if (tipo === "video") {
         );
 
         resultados.push(result.rows[0]);
-
       }
 
       res.json(resultados);
@@ -6963,7 +7023,6 @@ if (tipo === "video") {
       });
 
     }
-
   }
 );
 
