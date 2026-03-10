@@ -3258,33 +3258,15 @@ app.get("/api/me", auth, async (req, res) => {
 });
 
 
-app.get("/api/modelo/publico/:id/premium", async (req, res) => {
-  const modeloId = Number(req.params.id);
-
-  const { rows } = await pool.query(
-    `
-    SELECT id, url, thumbnail_url, tipo, tipo_conteudo, preco, descricao, criado_em
-    FROM conteudos
-    WHERE modelo_id = $1
-      AND ativo = true
-      AND tipo_conteudo = 'venda'
-    ORDER BY id DESC
-    `,
-    [modeloId]
-  );
-
-  res.json(rows);
-});
-
 app.get("/api/modelo/publico/:id/feed", async (req, res) => {
 
   const modeloId = Number(req.params.id);
 
-  const { rows } = await pool.query(`
-    SELECT id, url, thumbnail_url, tipo, tipo_conteudo, preco, descricao
+  const { rows } = await db.query(`
+    SELECT id,url,thumbnail_url,tipo,tipo_conteudo,preco,descricao
     FROM conteudos
     WHERE modelo_id = $1
-      AND (tipo_conteudo IS NULL OR tipo_conteudo = 'feed')
+      AND (tipo_conteudo IS NULL OR tipo_conteudo='feed')
     ORDER BY id DESC
   `,[modeloId]);
 
@@ -3292,7 +3274,21 @@ app.get("/api/modelo/publico/:id/feed", async (req, res) => {
 
 });
 
+app.get("/api/modelo/publico/:id/premium", async (req, res) => {
 
+  const modeloId = Number(req.params.id);
+
+  const { rows } = await db.query(`
+    SELECT id,url,thumbnail_url,tipo,tipo_conteudo,preco,descricao
+    FROM conteudos
+    WHERE modelo_id = $1
+      AND tipo_conteudo='venda'
+    ORDER BY id DESC
+  `,[modeloId]);
+
+  res.json(rows);
+
+});
 
 // PERFIL USUARIO (CLT,MODELO) //***********check******* */
 app.get("/api/modelo/me", authModelo, async (req, res) => {
