@@ -232,33 +232,68 @@ async function carregarFeed(){
     const ehVip = window.__CLIENTE_VIP__ === true;
     const tokenAtual = localStorage.getItem("token");
 
-    feed.forEach(item=>{
+feed.forEach(item=>{
 
-      const card = document.createElement("div");
-      card.className = "midia-thumb";
+  const card = document.createElement("div");
 
-      const img = document.createElement("img");
+  if(item.tipo_conteudo === "venda"){
+    card.className = "midia-card-premium";
+  }else{
+    card.className = "midia-thumb";
+  }
 
-      const url = item.url || "";
-      const thumbnail = item.thumbnail_url || url;
+  const img = document.createElement("img");
 
-      img.src = thumbnail;
-      img.onerror = () => img.src = "/assets/capa.png";
+  const url = item.url || "";
+  const thumbnail = item.thumbnail_url || url;
 
-      card.appendChild(img);
+  img.src = thumbnail;
+  img.onerror = () => img.src = "/assets/capa.png";
 
-      // detectar se é vídeo
-      const ehVideo =
-        url.includes(".mp4") ||
-        url.includes(".webm") ||
-        url.includes(".mov");
+  card.appendChild(img);
 
-      if(ehVideo){
-        const icon = document.createElement("div");
-        icon.className = "video-icon";
-        icon.innerHTML = "▶";
-        card.appendChild(icon);
-      }
+  // =========================
+  // PREÇO PREMIUM
+  // =========================
+
+  if(item.tipo_conteudo === "venda"){
+
+    const preco = document.createElement("div");
+    preco.className = "premium-preco";
+
+    preco.innerHTML = `🔒 R$ ${Number(item.preco || 0).toFixed(2)}`;
+
+    card.appendChild(preco);
+
+  }
+
+  // =========================
+  // LEGENDA PREMIUM
+  // =========================
+
+  if(item.tipo_conteudo === "venda" && item.texto){
+
+    const legenda = document.createElement("div");
+    legenda.className = "premium-legenda";
+
+    legenda.textContent = item.texto;
+
+    card.appendChild(legenda);
+
+  }
+
+  // detectar se é vídeo
+  const ehVideo =
+    url.includes(".mp4") ||
+    url.includes(".webm") ||
+    url.includes(".mov");
+
+  if(ehVideo){
+    const icon = document.createElement("div");
+    icon.className = "video-icon";
+    icon.innerHTML = "▶";
+    card.appendChild(icon);
+  }
 
       // =========================
       // BLOQUEIO DE ACESSO
