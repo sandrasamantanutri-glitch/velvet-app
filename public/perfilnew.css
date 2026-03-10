@@ -585,8 +585,13 @@ transition:width 0.2s;
 ========================= */
 
 #midias-paid{
+display:flex;
   flex-direction:column;
   gap:25px;
+
+  max-width:900px;
+  margin:auto;
+  width:100%;
 }
 
 /* card */
@@ -596,7 +601,8 @@ transition:width 0.2s;
   border-radius:16px;
   overflow:hidden;
 position:relative;
-  max-width:440px;
+  width:100%;
+  max-width:100%;
   margin:auto;
 
   box-shadow:0 8px 25px rgba(0,0,0,0.08);
