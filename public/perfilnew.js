@@ -803,7 +803,7 @@ async function carregarPremium(){
     </span>
 
     <span class="premium-tempo">
-      ${tempoAtras(item.created_at)} atrás
+      ${tempoAtras(item.criado_em)} atrás
     </span>
   </div>
 
