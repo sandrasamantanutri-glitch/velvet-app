@@ -644,3 +644,153 @@ modal.querySelector(".btn-register").onclick = () => {
 
   document.body.appendChild(modal);
 }
+
+function abrirPreviewUpload(file, url) {
+
+  const modal = document.createElement("div");
+  modal.className = "modal-midia";
+
+  modal.innerHTML = `
+    <div class="modal-backdrop"></div>
+
+    <div class="modal-conteudo upload-preview">
+      <button type="button" class="modal-close-upload">✕</button>
+
+      ${
+        file.type.startsWith("video")
+          ? `<video src="${url}" controls autoplay muted playsinline></video>`
+          : `<img src="${url}">`
+      }
+
+      <div class="upload-box">
+
+        <p class="upload-titulo">Escolha onde deseja adicionar a mídia:</p>
+
+        <div class="upload-opcoes">
+          <button type="button" class="upload-tab active" data-value="feed">🎁 Pra você</button>
+          <button type="button" class="upload-tab" data-value="venda">🔥 Especial</button>
+        </div>
+
+        <input type="hidden" name="tipo_conteudo" value="feed">
+
+        <div class="upload-especial hidden">
+          <input
+            type="number"
+            id="upload-preco"
+            placeholder="Preço (R$)"
+            min="0"
+            step="0.01"
+          >
+
+          <textarea
+            id="upload-descricao"
+            placeholder="Descrição do conteúdo"
+            rows="3"
+          ></textarea>
+        </div>
+
+        <button type="button" class="btn-confirmar">Publicar</button>
+
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  const fecharModal = () => {
+    URL.revokeObjectURL(url);
+    modal.remove();
+  };
+
+  // fechar clicando no fundo
+  modal.querySelector(".modal-backdrop")
+    .addEventListener("click", fecharModal);
+
+  // fechar no X
+  modal.querySelector(".modal-close-upload")
+    ?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      fecharModal();
+    });
+
+  // =========================
+  // TABS (Feed / Venda)
+  // =========================
+
+  const tabs = modal.querySelectorAll(".upload-tab");
+  const hiddenTipo = modal.querySelector("input[name='tipo_conteudo']");
+  const boxEspecial = modal.querySelector(".upload-especial");
+
+  tabs.forEach(tab => {
+
+    tab.addEventListener("click", () => {
+
+      tabs.forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+
+      const valor = tab.dataset.value;
+
+      hiddenTipo.value = valor;
+
+      boxEspecial.classList.toggle("hidden", valor !== "venda");
+
+    });
+
+  });
+
+  // =========================
+  // BOTÃO PUBLICAR
+  // =========================
+
+  const btnPublicar = modal.querySelector(".btn-confirmar");
+
+  btnPublicar.addEventListener("click", async () => {
+
+    const tipo = hiddenTipo.value;
+    const preco = modal.querySelector("#upload-preco")?.value || "";
+    const descricao = modal.querySelector("#upload-descricao")?.value || "";
+
+    const form = new FormData();
+    form.append("file", file);
+    form.append("tipo_conteudo", tipo);
+    form.append("preco", preco);
+    form.append("descricao", descricao);
+
+    try {
+
+      btnPublicar.disabled = true;
+      btnPublicar.textContent = "Enviando...";
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + localStorage.getItem("token")
+        },
+        body: form
+      });
+
+      if (!res.ok) {
+        alert("Erro ao enviar mídia");
+        btnPublicar.disabled = false;
+        btnPublicar.textContent = "Publicar";
+        return;
+      }
+
+      fecharModal();
+
+      // atualiza feed
+      await carregarFeed();
+
+    } catch (err) {
+
+      console.error("Erro upload:", err);
+      alert("Erro ao enviar mídia");
+
+      btnPublicar.disabled = false;
+      btnPublicar.textContent = "Publicar";
+
+    }
+
+  });
+
+}
