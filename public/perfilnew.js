@@ -208,6 +208,50 @@ async function carregarFeed(){
         card.appendChild(icon);
       }
 
+      // =========================
+      // BOTÃO EXCLUIR (SÓ DONA)
+      // =========================
+
+      if (EH_DONA) {
+
+        const btnExcluir = document.createElement("button");
+        btnExcluir.className = "btn-excluir-midia";
+        btnExcluir.innerHTML = "🗑";
+
+        btnExcluir.onclick = async (e) => {
+
+          e.stopPropagation();
+
+          if (!confirm("Deseja excluir este conteúdo?")) return;
+
+          try {
+
+            const tokenAtual = localStorage.getItem("token");
+
+            const res = await fetch(`/api/conteudos/${item.id}`, {
+              method: "DELETE",
+              headers: {
+                Authorization: "Bearer " + tokenAtual
+              }
+            });
+
+            if (!res.ok) {
+              alert("Erro ao excluir conteúdo");
+              return;
+            }
+
+            card.remove();
+
+          } catch (err) {
+            console.error("Erro excluir:", err);
+          }
+
+        };
+
+        card.appendChild(btnExcluir);
+      }
+
+      // abrir mídia
       card.onclick = () => abrirMidia(item);
 
       if(item.tipo_conteudo === "venda"){
@@ -360,20 +404,42 @@ function abrirMidia(item){
   modal.classList.remove("hidden");
 }
 
-const modal = document.getElementById("modalMidia");
+// =========================
+// FECHAR MODAL
+// =========================
 
+const modal = document.getElementById("modalMidia");
+const btnFechar = document.getElementById("fecharModal");
+
+function fecharModalMidia(){
+
+  const video = document.getElementById("modalVideo");
+
+  if(video){
+    video.pause();
+    video.src = "";
+  }
+
+  modal.classList.add("hidden");
+}
+
+// botão X
+btnFechar?.addEventListener("click", fecharModalMidia);
+
+// clique fora (backdrop)
 modal?.addEventListener("click", (e) => {
 
-  if (e.target === modal) {
+  if (e.target.classList.contains("modal-backdrop")) {
+    fecharModalMidia();
+  }
 
-    const video = document.getElementById("modalVideo");
+});
 
-    if (video) {
-      video.pause();
-      video.src = "";
-    }
+// tecla ESC
+document.addEventListener("keydown", (e) => {
 
-    modal.classList.add("hidden");
+  if (e.key === "Escape") {
+    fecharModalMidia();
   }
 
 });
