@@ -265,132 +265,130 @@ async function carregarFeed(){
     const ehVip = window.__CLIENTE_VIP__ === true;
     const tokenAtual = localStorage.getItem("token");
 
-feed.forEach(item => {
+    feed.forEach(item => {
 
-  const card = document.createElement("div");
+      const card = document.createElement("div");
 
-  const url = item.url || "";
-  const thumbnail = item.thumbnail_url || url;
+      const url = item.url || "";
+      const thumbnail = item.thumbnail_url || url;
 
-  const img = document.createElement("img");
-  img.src = thumbnail;
-  img.onerror = () => img.src = "/assets/capa.png";
+      const img = document.createElement("img");
+      img.src = thumbnail;
+      img.onerror = () => img.src = "/assets/capa.png";
 
-  const ehVideo =
-    url.includes(".mp4") ||
-    url.includes(".webm") ||
-    url.includes(".mov");
+      const ehVideo =
+        url.includes(".mp4") ||
+        url.includes(".webm") ||
+        url.includes(".mov");
 
-  // =========================
-  // PREMIUM (POST ESTILO INSTAGRAM)
-  // =========================
-
-  if (item.tipo_conteudo === "venda") {
-
-    card.className = "midia-card-premium";
-
-    // HEADER
-    const header = document.createElement("div");
-    header.className = "premium-header";
-
-    const avatar = document.createElement("img");
-    avatar.className = "premium-avatar";
-    avatar.src = document.getElementById("profileAvatar")?.src || "/assets/avatar.png";
-
-    const username = document.createElement("div");
-    username.className = "premium-username";
-    username.textContent =
-      document.getElementById("profileName")?.textContent || "user";
-
-    header.appendChild(avatar);
-    header.appendChild(username);
-
-    // MEDIA
-    const media = document.createElement("div");
-    media.className = "premium-media";
-
-    if (ehVideo) {
-      const video = document.createElement("video");
-      video.src = url;
-      video.controls = false;
-      media.appendChild(video);
-    } else {
-      media.appendChild(img);
-    }
-
-    // INFO
-    const info = document.createElement("div");
-    info.className = "premium-info";
-
-    if (item.descricao) {
-      const legenda = document.createElement("div");
-      legenda.textContent = item.descricao;
-      info.appendChild(legenda);
-    }
-
-    const preco = document.createElement("div");
-    preco.className = "premium-preco";
-    preco.innerHTML = `🔒 R$ ${Number(item.preco || 0).toFixed(2)}`;
-
-    info.appendChild(preco);
-
-    card.appendChild(header);
-    card.appendChild(media);
-    card.appendChild(info);
-
-  }
-
-  // =========================
-  // FEED NORMAL (GRID)
-  // =========================
-
-  else {
-
-    card.className = "midia-thumb";
-    card.appendChild(img);
-
-    if (ehVideo) {
-      const icon = document.createElement("div");
-      icon.className = "video-icon";
-      icon.innerHTML = "▶";
-      card.appendChild(icon);
-    }
-
-  }
-
-  // =========================
-  // BLOQUEIO
-  // =========================
-
-  let bloqueado = false;
-
-  if (!EH_DONA) {
-
-    if (item.tipo_conteudo === "venda") {
-      bloqueado = true;
-    }
-
-    if (item.tipo_conteudo !== "venda" && !window.__CLIENTE_VIP__) {
-      bloqueado = true;
-    }
-
-  }
-
-  if (bloqueado) {
-    card.classList.add("locked");
-  }
-
-  // =========================
-  // ADICIONAR NO GRID
-  // =========================
-
-  if (item.tipo_conteudo === "venda") {
-    gridPaid.appendChild(card);
-  } else {
-    gridFree.appendChild(card);
-  }
       // =========================
-      // BOTÃO EXCLUIR (SÓ DONA)
+      // PREMIUM (POST ESTILO INSTAGRAM)
+      // =========================
+
+      if (item.tipo_conteudo === "venda") {
+
+        card.className = "midia-card-premium";
+
+        const header = document.createElement("div");
+        header.className = "premium-header";
+
+        const avatar = document.createElement("img");
+        avatar.className = "premium-avatar";
+        avatar.src = document.getElementById("profileAvatar")?.src || "/assets/avatar.png";
+
+        const username = document.createElement("div");
+        username.className = "premium-username";
+        username.textContent =
+          document.getElementById("profileName")?.textContent || "user";
+
+        header.appendChild(avatar);
+        header.appendChild(username);
+
+        const media = document.createElement("div");
+        media.className = "premium-media";
+
+        if (ehVideo) {
+          const video = document.createElement("video");
+          video.src = url;
+          video.controls = false;
+          media.appendChild(video);
+        } else {
+          media.appendChild(img);
+        }
+
+        const info = document.createElement("div");
+        info.className = "premium-info";
+
+        if (item.descricao) {
+          const legenda = document.createElement("div");
+          legenda.textContent = item.descricao;
+          info.appendChild(legenda);
+        }
+
+        const preco = document.createElement("div");
+        preco.className = "premium-preco";
+        preco.innerHTML = `🔒 R$ ${Number(item.preco || 0).toFixed(2)}`;
+
+        info.appendChild(preco);
+
+        card.appendChild(header);
+        card.appendChild(media);
+        card.appendChild(info);
+
+      }
+
+      // =========================
+      // FEED NORMAL (GRID)
+      // =========================
+
+      else {
+
+        card.className = "midia-thumb";
+        card.appendChild(img);
+
+        if (ehVideo) {
+          const icon = document.createElement("div");
+          icon.className = "video-icon";
+          icon.innerHTML = "▶";
+          card.appendChild(icon);
+        }
+
+      }
+
+      // =========================
+      // BLOQUEIO
+      // =========================
+
+      let bloqueado = false;
+
+      if (!EH_DONA) {
+
+        if (item.tipo_conteudo === "venda") {
+          bloqueado = true;
+        }
+
+        if (item.tipo_conteudo !== "venda" && !ehVip) {
+          bloqueado = true;
+        }
+
+      }
+
+      if (bloqueado) {
+        card.classList.add("locked");
+      }
+
+      // =========================
+      // ADICIONAR NO GRID
+      // =========================
+
+      if (item.tipo_conteudo === "venda") {
+        gridPaid.appendChild(card);
+      } else {
+        gridFree.appendChild(card);
+      }
+
+      // =========================
+      // BOTÃO EXCLUIR
       // =========================
 
       if (EH_DONA) {
@@ -406,8 +404,6 @@ feed.forEach(item => {
           if (!confirm("Deseja excluir este conteúdo?")) return;
 
           try {
-
-            const tokenAtual = localStorage.getItem("token");
 
             const res = await fetch(`/api/conteudos/${item.id}`, {
               method: "DELETE",
