@@ -172,8 +172,9 @@ document.getElementById("btnEnviarPremium")
   form.append("file", file);
   form.append("descricao", descricao);
   form.append("preco", preco);
+  form.append("tipo_conteudo","venda");
 
-  const res = await fetch("/api/conteudos", {
+  const res = await fetch("/api/upload", {
     method:"POST",
     headers:{
       Authorization:"Bearer " + token
