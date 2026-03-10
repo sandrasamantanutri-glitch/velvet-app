@@ -66,10 +66,9 @@ if (!tokenAtual) {
 
 
 await carregarPerfil();
-await carregarOfertaAtiva()
-await aplicarRegrasDeAcesso();
+await carregarOfertaAtiva();
 await carregarFeed();
-
+await aplicarRegrasDeAcesso();
 
 });
 
@@ -457,14 +456,21 @@ async function carregarFeed() {
     const midias = await res.json();
 
     if (!midias.length) {
-      grid.innerHTML = "<p style='grid-column:1/-1;text-align:center;'>Sem posts ainda</p>";
+      grid.innerHTML =
+        "<p style='grid-column:1/-1;text-align:center;'>Sem posts ainda</p>";
       return;
     }
+
+    const podeVer = EH_DONA || window.__CLIENTE_VIP__;
 
     midias.forEach(item => {
 
       const div = document.createElement("div");
       div.className = "midia-thumb";
+
+      if (!podeVer) {
+        div.classList.add("locked");
+      }
 
       const url = item.thumbnail_url || item.url || "";
 
@@ -486,7 +492,15 @@ async function carregarFeed() {
 
       }
 
-      div.onclick = () => abrirMidia(item);
+      div.onclick = () => {
+
+        if (!podeVer) {
+          abrirFluxoVIP();
+          return;
+        }
+
+        abrirMidia(item);
+      };
 
       grid.appendChild(div);
 
@@ -495,4 +509,5 @@ async function carregarFeed() {
   } catch (err) {
     console.error("Erro ao carregar feed:", err);
   }
+
 }
