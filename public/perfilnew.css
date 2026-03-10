@@ -331,6 +331,57 @@ a{
 }
 
 
+.oferta-card {
+  max-width: 900px !Important;
+  margin: 18px auto;
+  background: #f1f1f1;
+  border-radius: 18px !Important;
+  padding: 20px;
+  color: #1E1E26;
+  position: relative;
+}
+
+.oferta-titulo {
+  font-weight: 700;
+  margin-bottom: 28px;
+  font-size: 18px;
+}
+
+.oferta-botao-wrapper {
+  position: relative;
+}
+
+.oferta-balao {
+  position: absolute;
+  top: -12px;
+  left: 12px;
+  background: #1bd96a;
+  color: #0a3d1f;
+  font-size: 14px;
+  padding: 4px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.oferta-botao {
+  width: 100%;
+  border: none;
+  border-radius: 14px;
+  padding: 14px;
+  font-size: 22px;
+  font-weight: 700;
+  background: #7b2cff;
+  color: #fff;
+  cursor: pointer;
+}
+
+.oferta-preco-original {
+  margin-top: 8px;
+  font-size: 16px;
+  opacity: 0.9;
+  text-align: right;
+}
+
 .midia-thumb{
  position:relative;
 }
@@ -362,6 +413,68 @@ color:white;
 
 cursor:pointer;
 font-size:14px;
+}
+
+/* ===============================
+   UPLOAD PREVIEW
+=============================== */
+
+.upload-preview{
+display:flex;
+flex-direction:column;
+align-items:center;
+gap:16px;
+max-width:520px;
+width:90vw;
+}
+
+.upload-preview img,
+.upload-preview video{
+max-width:100%;
+max-height:60vh;
+border-radius:12px;
+object-fit:contain;
+}
+
+.modal-close-upload{
+position:absolute;
+top:10px;
+right:10px;
+
+border:none;
+width:34px;
+height:34px;
+
+border-radius:50%;
+background:#fff;
+color:#7b2cff;
+font-size:18px;
+cursor:pointer;
+}
+
+.upload-box{
+width:100%;
+text-align:center;
+}
+
+.upload-titulo{
+font-size:16px;
+font-weight:600;
+margin-bottom:10px;
+}
+
+.btn-confirmar{
+background:#7b2cff;
+color:white;
+border:none;
+border-radius:10px;
+padding:12px 20px;
+font-size:15px;
+cursor:pointer;
+}
+
+.btn-confirmar:hover{
+opacity:.9;
 }
 
 

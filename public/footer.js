@@ -66,9 +66,17 @@ btnLinks?.addEventListener("click", () => {
 });
 
 btnPerfil?.addEventListener("click", () => {
-  abrirPerfil(modelo.modelo_id);
-});
 
+  const modeloId = localStorage.getItem("modelo_id");
+
+  if (!modeloId) {
+    console.warn("modelo_id não encontrado no localStorage");
+    return;
+  }
+
+  abrirPerfil(modeloId);
+
+});
 
 // =========================
 // FUNÇÕES
