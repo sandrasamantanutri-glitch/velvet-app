@@ -68,6 +68,7 @@ if (!tokenAtual) {
 await carregarPerfil();
 await carregarOfertaAtiva()
 await aplicarRegrasDeAcesso();
+await carregarFeed();
 
 
 });
@@ -439,4 +440,59 @@ function abrirFluxoVIP() {
   });
 
   abrirPopupPagamento();
+}
+
+async function carregarFeed() {
+
+  const grid = document.getElementById("listaMidias");
+  if (!grid) return;
+
+  grid.innerHTML = "";
+
+  try {
+
+    const res = await fetch(`/api/modelo/publico/${modelo_id}/feed`);
+    if (!res.ok) return;
+
+    const midias = await res.json();
+
+    if (!midias.length) {
+      grid.innerHTML = "<p style='grid-column:1/-1;text-align:center;'>Sem posts ainda</p>";
+      return;
+    }
+
+    midias.forEach(item => {
+
+      const div = document.createElement("div");
+      div.className = "midia-thumb";
+
+      const url = item.thumbnail_url || item.url || "";
+
+      const ehVideo =
+        url.includes(".mp4") ||
+        url.includes(".webm") ||
+        url.includes(".mov");
+
+      if (ehVideo) {
+
+        div.innerHTML = `
+          <video src="${url}" muted preload="metadata"></video>
+          <span class="video-icon">▶</span>
+        `;
+
+      } else {
+
+        div.innerHTML = `<img src="${url}">`;
+
+      }
+
+      div.onclick = () => abrirMidia(item);
+
+      grid.appendChild(div);
+
+    });
+
+  } catch (err) {
+    console.error("Erro ao carregar feed:", err);
+  }
 }
