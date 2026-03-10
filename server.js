@@ -1960,9 +1960,6 @@ function emitirInboxUpdate(io, { cliente_id, modelo_id, sender, text, created_at
   io.to(`inbox_cliente_${cliente_id}`).emit("inboxMessage", payload);
 }
 
-const axios = require("axios");
-const FormData = require("form-data");
-
 async function uploadCloudflareImage(fileBuffer, filename) {
 
   const form = new FormData();
