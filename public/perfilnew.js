@@ -12,8 +12,6 @@ let EH_DONA = false;
 
 document.addEventListener("DOMContentLoaded", async () => {
 
-  const role = localStorage.getItem("role");
-
   // =========================
   // PARAMETROS URL
   // =========================
@@ -216,6 +214,8 @@ if (capa) {
 
 async function carregarFeed(){
 
+  console.log("Carregando feed do modelo:", MODELO_ID);
+  
   const gridFree = document.getElementById("listaMidias");
   const gridPaid = document.getElementById("midias-paid");
 
@@ -259,6 +259,8 @@ async function carregarFeed(){
         icon.innerHTML = "▶";
         card.appendChild(icon);
       }
+
+      gridFree.appendChild(card);
 
       // =========================
       // BLOQUEIO DE ACESSO
