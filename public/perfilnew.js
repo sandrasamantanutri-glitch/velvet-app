@@ -5,13 +5,13 @@ let MODELO_ID = null;
 let EH_DONA = false;
 
 
-// const socket = io();
+const socket = io();
 
-// socket.on("vipAtivado", async ({ modelo_id }) => {
-//   if (modelo_id === MODELO_ID) {
-//     await aplicarRegrasDeAcesso();
-//   }
-// });
+socket.on("vipAtivado", async ({ modelo_id }) => {
+  if (modelo_id === MODELO_ID) {
+    await aplicarRegrasDeAcesso();
+  }
+});
 
 document.addEventListener("DOMContentLoaded", async () => {
 
@@ -696,3 +696,115 @@ document.getElementById("btnEnviarFeed")?.addEventListener("click", async () => 
   }
 
 });
+
+const uploadArea = document.getElementById("uploadArea");
+const inputFile = document.getElementById("fileFeed");
+const previewContainer = document.getElementById("previewContainer");
+const progressFill = document.getElementById("uploadProgress");
+const progressBox = document.getElementById("uploadProgressBox");
+const progressText = document.getElementById("progressText");
+
+let arquivoSelecionado = null;
+
+uploadArea?.addEventListener("click", () => inputFile.click());
+
+inputFile?.addEventListener("change", (e) => {
+
+  const file = e.target.files[0];
+  if(!file) return;
+
+  arquivoSelecionado = file;
+
+  previewContainer.innerHTML = "";
+
+  const url = URL.createObjectURL(file);
+
+  if(file.type.startsWith("video")){
+    const video = document.createElement("video");
+    video.src = url;
+    video.controls = true;
+    previewContainer.appendChild(video);
+  }else{
+    const img = document.createElement("img");
+    img.src = url;
+    previewContainer.appendChild(img);
+  }
+
+});
+
+document.getElementById("btnEnviarFeed")?.addEventListener("click", () => {
+
+  if(!arquivoSelecionado){
+    alert("Selecione uma mídia");
+    return;
+  }
+
+  const maxSize = 100 * 1024 * 1024;
+
+  if(arquivoSelecionado.size > maxSize){
+    alert("Arquivo muito grande (máx 100MB)");
+    return;
+  }
+
+  enviarUploadFeed();
+
+});
+
+function enviarUploadFeed(){
+
+  const token = localStorage.getItem("token");
+
+  const form = new FormData();
+  form.append("file", arquivoSelecionado);
+  form.append("tipo", "feed");
+  form.append("modelo_id", MODELO_ID);
+
+  const xhr = new XMLHttpRequest();
+
+  xhr.open("POST", "/api/upload");
+
+  xhr.setRequestHeader("Authorization", "Bearer " + token);
+
+  progressBox.classList.remove("hidden");
+
+  xhr.upload.onprogress = function(e){
+
+    if(!e.lengthComputable) return;
+
+    const percent = Math.round((e.loaded / e.total) * 100);
+
+    progressFill.style.width = percent + "%";
+    progressText.textContent = percent + "%";
+
+  };
+
+  xhr.onload = async function(){
+
+    if(xhr.status !== 200){
+      alert("Erro no upload");
+      return;
+    }
+
+    fecharPopupUpload();
+
+    await carregarFeed();
+
+  };
+
+  xhr.onerror = function(){
+    alert("Erro de rede no upload");
+  };
+
+  xhr.send(form);
+
+}
+
+function fecharPopupUpload(){
+
+  const popup = document.getElementById("popupUploadFeed");
+
+  if(popup){
+    popup.classList.add("hidden");
+  }
+
+}

@@ -296,17 +296,28 @@
 
     <h2 class="velvet-title">Postar no Feed</h2>
 
-    <div class="upload-box">
+    <div class="upload-area" id="uploadArea">
 
-      <input type="file" id="fileFeed" accept="image/*,video/*">
+      <input type="file" id="fileFeed" accept="image/*,video/*" hidden>
 
-      <button id="btnEnviarFeed" class="btn-principal">
-        Publicar no Feed
-      </button>
+      <div class="upload-placeholder" id="uploadPlaceholder">
+        Arraste uma mídia ou clique para selecionar
+      </div>
 
-      <div id="uploadStatus"></div>
+      <div id="previewContainer"></div>
 
     </div>
+
+    <div class="upload-progress hidden" id="uploadProgressBox">
+      <div class="progress-bar">
+        <div class="progress-fill" id="uploadProgress"></div>
+      </div>
+      <span id="progressText">0%</span>
+    </div>
+
+    <button id="btnEnviarFeed" class="btn-principal">
+      Publicar no Feed
+    </button>
 
   </div>
 

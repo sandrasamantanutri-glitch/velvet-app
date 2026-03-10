@@ -439,6 +439,44 @@ font-size:14px;
 color:#666;
 }
 
+.upload-area{
+border:2px dashed #ccc;
+border-radius:10px;
+padding:30px;
+text-align:center;
+cursor:pointer;
+margin-bottom:15px;
+}
+
+.upload-placeholder{
+color:#888;
+}
+
+#previewContainer img,
+#previewContainer video{
+max-width:100%;
+border-radius:8px;
+margin-top:10px;
+}
+
+.upload-progress{
+margin:10px 0;
+}
+
+.progress-bar{
+height:8px;
+background:#eee;
+border-radius:4px;
+overflow:hidden;
+}
+
+.progress-fill{
+height:100%;
+width:0%;
+background:#7B2CFF;
+transition:width 0.2s;
+}
+
 
 
 /* ===============================
