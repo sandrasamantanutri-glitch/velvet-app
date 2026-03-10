@@ -752,7 +752,7 @@ async function carregarFeed() {
 
         if (url.includes("videodelivery.net")) {
 
-          const videoId = url.split("/").pop();
+          const videoId = url.split("videodelivery.net/")[1];
 
           thumbnail = `https://videodelivery.net/${videoId}/thumbnails/thumbnail.jpg`;
 
@@ -902,10 +902,10 @@ async function carregarPremium(){
       let mediaHTML = medias.map((m, i) => {
 
         const ehVideo =
-  url.includes(".mp4") ||
-  url.includes(".webm") ||
-  url.includes(".mov") ||
-  url.includes("videodelivery.net");
+  m.url.includes(".mp4") ||
+  m.url.includes(".webm") ||
+  m.url.includes(".mov") ||
+  m.url.includes("videodelivery.net");
 
         return `
           <div class="carousel-item ${i === 0 ? "active" : ""}">
