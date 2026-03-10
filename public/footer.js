@@ -105,9 +105,9 @@ document.addEventListener("DOMContentLoaded", () => {
       btnFeed.onclick = postarFeed;
     }
 
-    if(btnPremium){
-      btnPremium.onclick = postarPremium;
-    }
+    // if(btnPremium){
+    //   btnPremium.onclick = postarPremium;
+    // }
 
   }
 
@@ -129,14 +129,14 @@ document.addEventListener("DOMContentLoaded", () => {
   // POSTAR PREMIUM
   // =========================
 
-function postarPremium(){
+// function postarPremium(){
 
-  const popup = document.getElementById("popupUploadPremium");
+//   const popup = document.getElementById("popupUploadPremium");
 
-  if(!popup) return;
+//   if(!popup) return;
 
-  popup.classList.remove("hidden");
+//   popup.classList.remove("hidden");
 
-}
+// }
 
 });
