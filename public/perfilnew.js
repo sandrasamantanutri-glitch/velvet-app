@@ -15,6 +15,8 @@ socket.on("vipAtivado", async ({ modelo_id }) => {
 
 document.addEventListener("DOMContentLoaded", async () => {
 
+  const role = localStorage.getItem("role");
+
   // =========================
   // PARAMETROS URL
   // =========================
@@ -31,8 +33,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   // FECHAR POPUP UPLOAD
   // =========================
 
-  document.getElementById("uploadBackdrop")?.addEventListener("click", fecharPopupUpload);
-  document.getElementById("uploadClose")?.addEventListener("click", fecharPopupUpload);
+  const uploadBackdrop = document.getElementById("uploadBackdrop");
+  const uploadClose = document.getElementById("uploadClose");
+
+  uploadBackdrop?.addEventListener("click", fecharPopupUpload);
+  uploadClose?.addEventListener("click", fecharPopupUpload);
 
   // =========================
   // VERIFICAR SE É DONA
