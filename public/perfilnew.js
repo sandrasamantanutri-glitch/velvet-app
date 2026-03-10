@@ -38,10 +38,11 @@ btnAssinar?.addEventListener("click", () => {
    }
 
   // 👀 VISITANTE
-  if (!tokenAtual) {
-    abrirPopupLoginObrigatorio();
-    return;
-  }
+const tokenAtual = localStorage.getItem("token");
+if (!tokenAtual) {
+  abrirPopupLoginObrigatorio();
+  return;
+}
 
   const role = localStorage.getItem("role");
   const modeloLogado = Number(localStorage.getItem("modelo_id"));
@@ -389,13 +390,23 @@ function abrirPopupLoginObrigatorio() {
 
   modal.querySelector(".modal-backdrop").onclick = () => modal.remove();
 
-  modal.querySelector(".btn-login").onclick = () => {
-    modal.remove();
+modal.querySelector(".btn-login").onclick = () => {
+  modal.remove();
+
+  // limpa ação pendente
+  localStorage.removeItem("post_login_action");
+  localStorage.removeItem("post_register_action");
+
+  if (typeof openAgeGate === "function") {
     openAgeGate("login");
-  };
+  } else {
+    console.error("openAgeGate não carregado");
+  }
+};
 
   modal.querySelector(".btn-register").onclick = () => {
     modal.remove();
+    localStorage.removeItem("post_login_action");
     openAgeGate("register");
   };
 
