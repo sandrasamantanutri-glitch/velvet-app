@@ -271,7 +271,7 @@ feed.forEach(item=>{
   // LEGENDA PREMIUM
   // =========================
 
-  if(item.tipo_conteudo === "venda" && item.texto){
+if(item.tipo_conteudo === "venda" && item.descricao){
 
     const legenda = document.createElement("div");
     legenda.className = "premium-legenda";
@@ -894,8 +894,24 @@ function enviarUploadPremium(){
 
   const token = localStorage.getItem("token");
 
+  const texto = document.getElementById("premiumTexto").value;
+  const preco = document.getElementById("premiumPreco").value;
+
+  if(!arquivoPremium){
+    alert("Selecione uma mídia");
+    return;
+  }
+
+  if(!preco || preco <= 0){
+    alert("Informe o preço do conteúdo");
+    return;
+  }
+
   const form = new FormData();
+
   form.append("file", arquivoPremium);
+  form.append("descricao", texto);
+  form.append("preco", preco);
 
   const xhr = new XMLHttpRequest();
 
