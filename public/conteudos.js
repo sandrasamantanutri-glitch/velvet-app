@@ -219,11 +219,14 @@ function renderizarConteudos(conteudos) {
 
       if (!src && c.url && c.url.includes("videodelivery.net")) {
 
-        const videoId = c.url
-          .split("videodelivery.net/")[1]
-          .split("?")[0];
+const match = c.url.match(/videodelivery\.net\/([^\/]+)/);
+const videoId = match ? match[1] : null;
 
-        src = `https://videodelivery.net/${videoId}/thumbnails/thumbnail.jpg`;
+if (videoId) {
+  src = `https://videodelivery.net/${videoId}/thumbnails/thumbnail.jpg`;
+} else {
+  src = "/assets/capa.png";
+}
 
       }
 
@@ -313,34 +316,38 @@ function abrirViewer(conteudo) {
 
   viewer.innerHTML = "";
 
-  if (conteudo.tipo === "video") {
+if (conteudo.tipo === "video") {
 
-    // CLOUDFARE STREAM
-    if (conteudo.url.includes("videodelivery.net")) {
+  if (conteudo.url.includes("videodelivery.net")) {
 
-      const videoId = conteudo.url.split("videodelivery.net/")[1].split("?")[0];
+    // extrai somente o ID do vídeo
+    const match = conteudo.url.match(/videodelivery\.net\/([^\/]+)/);
+    const videoId = match ? match[1] : null;
 
-      const iframe = document.createElement("iframe");
-      iframe.src = `https://iframe.videodelivery.net/${videoId}?autoplay=true`;
-      iframe.allow =
-        "accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture";
-      iframe.allowFullscreen = true;
-
-      viewer.appendChild(iframe);
-
-    } else {
-
-      // fallback para mp4 antigo
-      const video = document.createElement("video");
-      video.src = conteudo.url;
-      video.controls = true;
-      video.autoplay = true;
-
-      viewer.appendChild(video);
-
+    if (!videoId) {
+      console.error("VideoId inválido:", conteudo.url);
+      return;
     }
 
+    const iframe = document.createElement("iframe");
+    iframe.src = `https://iframe.videodelivery.net/${videoId}?autoplay=true`;
+    iframe.allow =
+      "accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture";
+    iframe.allowFullscreen = true;
+
+    viewer.appendChild(iframe);
+
   } else {
+
+    const video = document.createElement("video");
+    video.src = conteudo.url;
+    video.controls = true;
+    video.autoplay = true;
+
+    viewer.appendChild(video);
+
+  }
+} else {
 
     const img = document.createElement("img");
     img.src = conteudo.url;
