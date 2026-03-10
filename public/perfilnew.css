@@ -753,6 +753,25 @@ transition:width 0.2s;
  margin-top:6px;
 }
 
+/* PREMIUM LIST (estilo Instagram) */
+
+.premium-list{
+  display:none;
+  flex-direction:column;
+  gap:25px;
+  max-width:600px;
+  margin:auto;
+}
+
+.premium-list.active{
+  display:flex;
+}
+
+.midia-card-premium{
+  max-width:520px;
+  width:100%;
+}
+
 /* ===============================
    RESPONSIVO
 =============================== */
