@@ -1356,6 +1356,17 @@ app.post(
 
       const { tipo_conteudo, preco, descricao } = req.body;
 
+      const tipoFinal = tipo_conteudo || "feed";
+
+      // 🔒 REGRA: conteúdo premium precisa ter preço
+      if (tipoFinal === "venda") {
+        if (!preco || Number(preco) <= 0) {
+          return res.status(400).json({
+            error: "Conteúdo premium precisa ter preço"
+          });
+        }
+      }
+
       for (const file of req.files) {
 
         const mimetype = file.mimetype || "";
@@ -1371,7 +1382,6 @@ app.post(
 
         const caminho = `velvet/modelos/${req.user.id}/${Date.now()}-${file.originalname}`;
 
-        //Upload manual igual /api/conteudos
         const uploadResult = await s3.upload({
           Bucket: process.env.B2_BUCKET,
           Key: caminho,
@@ -1396,16 +1406,16 @@ app.post(
 
         await db.query(
           `
-         INSERT INTO conteudos
-  (modelo_id, url, tipo, tipo_conteudo, preco, descricao, thumbnail_url, hash, tamanho)
-  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          INSERT INTO conteudos
+          (modelo_id, url, tipo, tipo_conteudo, preco, descricao, thumbnail_url, hash, tamanho)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
           `,
           [
             modelo_id,
             publicUrl,
             tipo,
-            tipo_conteudo || "feed",
-            preco ? Number(preco) : null,
+            tipoFinal,
+            tipoFinal === "venda" ? Number(preco) : null,
             descricao || null,
             thumbnailUrl,
             hash,
@@ -1422,6 +1432,7 @@ app.post(
     }
   }
 );
+
 
 //OFERTAS
 app.post("/api/ofertas", authModelo, async (req, res) => {
