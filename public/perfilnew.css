@@ -590,13 +590,13 @@ transition:width 0.2s;
 
 .midia-card-premium{
   background:#fff;
-  border-radius:12px;
+  border-radius:16px;
   overflow:hidden;
 
-  max-width:520px;
+  max-width:440px;
   margin:auto;
 
-  box-shadow:0 2px 10px rgba(0,0,0,0.06);
+  box-shadow:0 8px 25px rgba(0,0,0,0.08);
 }
 
 /* header */
@@ -604,20 +604,25 @@ transition:width 0.2s;
 .premium-header{
   display:flex;
   align-items:center;
-  gap:10px;
-  padding:10px 12px;
+  gap:12px;
+  padding:14px 16px;
 }
 
 .premium-avatar{
-  width:36px;
-  height:36px;
+  width:42px;
+  height:42px;
   border-radius:50%;
   object-fit:cover;
 }
 
 .premium-username{
-  font-size:14px;
+  font-size:16px;
   font-weight:600;
+}
+
+.premium-tempo{
+  font-size:13px;
+  color:#888;
 }
 
 /* media */
@@ -625,7 +630,7 @@ transition:width 0.2s;
 .premium-media img,
 .premium-media video{
   width:100%;
-  max-height:520px;
+  max-height:420px;
   object-fit:cover;
 }
 
@@ -637,9 +642,10 @@ transition:width 0.2s;
 }
 
 .premium-preco{
-  color:#7B2CFF;
-  font-weight:600;
-  margin-top:6px;
+ color:#7B2CFF;
+ font-weight:700;
+ font-size:18px;
+ margin-top:8px;
 }
 
 /* ===============================
@@ -743,14 +749,10 @@ transition:width 0.2s;
 }
 
 .premium-descricao{
- margin-top:6px;
- line-height:1.4;
-}
-
-.premium-preco{
- color:#7B2CFF;
- font-weight:600;
- margin-top:6px;
+ margin-top:4px;
+ line-height:1.5;
+ font-size:15px;
+ color:#333;
 }
 
 /* PREMIUM LIST (estilo Instagram) */
@@ -767,10 +769,43 @@ transition:width 0.2s;
   display:flex;
 }
 
-.midia-card-premium{
-  max-width:520px;
-  width:100%;
+.carousel{
+ position:relative;
+ overflow:hidden;
 }
+
+.carousel-item{
+ display:none;
+}
+
+.carousel-item.active{
+ display:block;
+}
+
+.carousel img,
+.carousel video{
+ width:100%;
+ max-height:420px;
+ object-fit:cover;
+}
+
+.carousel-prev,
+.carousel-next{
+ position:absolute;
+ top:50%;
+ transform:translateY(-50%);
+ border:none;
+ background:rgba(0,0,0,0.5);
+ color:white;
+ font-size:24px;
+ width:36px;
+ height:36px;
+ border-radius:50%;
+ cursor:pointer;
+}
+
+.carousel-prev{ left:10px; }
+.carousel-next{ right:10px; }
 
 /* ===============================
    RESPONSIVO

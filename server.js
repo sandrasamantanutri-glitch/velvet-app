@@ -1355,10 +1355,8 @@ app.post(
       const modelo_id = modeloRes.rows[0].id;
 
       const { tipo_conteudo, preco, descricao } = req.body;
-
       const tipoFinal = tipo_conteudo || "feed";
 
-      // 🔒 REGRA: conteúdo premium precisa ter preço
       if (tipoFinal === "venda") {
         if (!preco || Number(preco) <= 0) {
           return res.status(400).json({
@@ -1367,61 +1365,145 @@ app.post(
         }
       }
 
-      for (const file of req.files) {
+      // ===============================
+      // 🔹 FEED (comportamento antigo)
+      // ===============================
+      if (tipoFinal === "feed") {
 
-        const mimetype = file.mimetype || "";
+        for (const file of req.files) {
 
-        let tipo;
-        if (mimetype.startsWith("image/")) {
-          tipo = "imagem";
-        } else if (mimetype.startsWith("video/")) {
-          tipo = "video";
-        } else {
-          continue;
-        }
+          const mimetype = file.mimetype || "";
 
-        const caminho = `velvet/modelos/${req.user.id}/${Date.now()}-${file.originalname}`;
-
-        const uploadResult = await s3.upload({
-          Bucket: process.env.B2_BUCKET,
-          Key: caminho,
-          Body: file.buffer,
-          ContentType: mimetype,
-          ACL: "public-read"
-        }).promise();
-
-        const publicUrl = uploadResult.Location;
-
-        let thumbnailUrl = null;
-
-        if (tipo === "video") {
-          try {
-            thumbnailUrl = await gerarThumbnailVideo(file.buffer, modelo_id);
-          } catch (err) {
-            console.error("Erro ao gerar thumbnail:", err);
+          let tipo;
+          if (mimetype.startsWith("image/")) {
+            tipo = "imagem";
+          } else if (mimetype.startsWith("video/")) {
+            tipo = "video";
+          } else {
+            continue;
           }
+
+          const caminho = `velvet/modelos/${req.user.id}/${Date.now()}-${file.originalname}`;
+
+          const uploadResult = await s3.upload({
+            Bucket: process.env.B2_BUCKET,
+            Key: caminho,
+            Body: file.buffer,
+            ContentType: mimetype,
+            ACL: "public-read"
+          }).promise();
+
+          const publicUrl = uploadResult.Location;
+
+          let thumbnailUrl = null;
+
+          if (tipo === "video") {
+            try {
+              thumbnailUrl = await gerarThumbnailVideo(file.buffer, modelo_id);
+            } catch (err) {
+              console.error("Erro thumbnail:", err);
+            }
+          }
+
+          const hash = gerarHash(file.buffer);
+
+          await db.query(
+            `
+            INSERT INTO conteudos
+            (modelo_id, url, tipo, tipo_conteudo, descricao, thumbnail_url, hash, tamanho)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+            `,
+            [
+              modelo_id,
+              publicUrl,
+              tipo,
+              "feed",
+              descricao || null,
+              thumbnailUrl,
+              hash,
+              file.size
+            ]
+          );
         }
 
-        const hash = gerarHash(file.buffer);
+      }
 
-        await db.query(
+      // ===============================
+      // 🔒 PREMIUM (carrossel)
+      // ===============================
+      else if (tipoFinal === "venda") {
+
+        const conteudoRes = await db.query(
           `
           INSERT INTO conteudos
-          (modelo_id, url, tipo, tipo_conteudo, preco, descricao, thumbnail_url, hash, tamanho)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+          (modelo_id, tipo_conteudo, preco, descricao)
+          VALUES ($1,$2,$3,$4)
+          RETURNING id
           `,
           [
             modelo_id,
-            publicUrl,
-            tipo,
-            tipoFinal,
-            tipoFinal === "venda" ? Number(preco) : null,
-            descricao || null,
-            thumbnailUrl,
-            hash,
-            file.size
+            "venda",
+            Number(preco),
+            descricao || null
           ]
         );
+
+        const conteudo_id = conteudoRes.rows[0].id;
+
+        for (const file of req.files) {
+
+          const mimetype = file.mimetype || "";
+
+          let tipo;
+          if (mimetype.startsWith("image/")) {
+            tipo = "imagem";
+          } else if (mimetype.startsWith("video/")) {
+            tipo = "video";
+          } else {
+            continue;
+          }
+
+          const caminho = `velvet/modelos/${req.user.id}/${Date.now()}-${file.originalname}`;
+
+          const uploadResult = await s3.upload({
+            Bucket: process.env.B2_BUCKET,
+            Key: caminho,
+            Body: file.buffer,
+            ContentType: mimetype,
+            ACL: "public-read"
+          }).promise();
+
+          const publicUrl = uploadResult.Location;
+
+          let thumbnailUrl = null;
+
+          if (tipo === "video") {
+            try {
+              thumbnailUrl = await gerarThumbnailVideo(file.buffer, modelo_id);
+            } catch (err) {
+              console.error("Erro thumbnail:", err);
+            }
+          }
+
+          const hash = gerarHash(file.buffer);
+
+          await db.query(
+            `
+            INSERT INTO conteudo_midias
+            (conteudo_id, url, thumbnail_url, tipo, hash, tamanho)
+            VALUES ($1,$2,$3,$4,$5,$6)
+            `,
+            [
+              conteudo_id,
+              publicUrl,
+              thumbnailUrl,
+              tipo,
+              hash,
+              file.size
+            ]
+          );
+        }
+
       }
 
       res.json({ success: true });
@@ -3292,21 +3374,35 @@ app.get("/api/modelo/publico/:id/premium", async (req, res) => {
   const modeloId = Number(req.params.id);
 
   const { rows } = await db.query(`
-    SELECT 
-      id,
-      url,
-      thumbnail_url,
-      tipo,
-      tipo_conteudo,
-      preco,
-      descricao,
-      criado_em
-    FROM conteudos
-    WHERE modelo_id = $1
-      AND tipo_conteudo = 'venda'
-      AND preco IS NOT NULL
-      AND preco > 0
-    ORDER BY id DESC
+    SELECT
+      c.id,
+      c.preco,
+      c.descricao,
+      c.criado_em,
+
+      COALESCE(
+        json_agg(
+          json_build_object(
+            'url', m.url,
+            'thumbnail_url', m.thumbnail_url,
+            'tipo', m.tipo
+          )
+        ) FILTER (WHERE m.id IS NOT NULL),
+        '[]'
+      ) AS midias
+
+    FROM conteudos c
+
+    LEFT JOIN conteudo_midias m
+      ON m.conteudo_id = c.id
+
+    WHERE c.modelo_id = $1
+      AND c.tipo_conteudo = 'venda'
+      AND c.preco IS NOT NULL
+      AND c.preco > 0
+
+    GROUP BY c.id
+    ORDER BY c.id DESC
   `,[modeloId]);
 
   res.json(rows);

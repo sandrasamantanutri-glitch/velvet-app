@@ -300,31 +300,72 @@ function abrirMidia(item){
   img.style.display = "none";
   video.style.display = "none";
 
-  const url = item.url || "";
+  // 🔹 normaliza estrutura
+  const midias = item.midias && item.midias.length
+    ? item.midias
+    : [{ url: item.url }];
 
-  const ehVideo =
-    url.includes(".mp4") ||
-    url.includes(".webm") ||
-    url.includes(".mov");
+  let index = 0;
 
-  if(ehVideo){
+  const mostrar = () => {
 
-    video.src = url;
-    video.style.display = "block";
+    const media = midias[index];
+    const url = media.url || "";
 
-    video.currentTime = 0;
-    video.play().catch(()=>{});
+    const ehVideo =
+      url.includes(".mp4") ||
+      url.includes(".webm") ||
+      url.includes(".mov");
 
-  }else{
+    img.style.display = "none";
+    video.style.display = "none";
 
-    img.src = url;
-    img.style.display = "block";
+    if (ehVideo) {
+
+      video.src = url;
+      video.style.display = "block";
+
+      video.currentTime = 0;
+      video.play().catch(()=>{});
+
+    } else {
+
+      img.src = url;
+      img.style.display = "block";
+
+      video.pause();
+      video.src = "";
+
+    }
+
+  };
+
+  mostrar();
+
+  modal.classList.remove("hidden");
+
+  // 🔹 habilita carrossel apenas se tiver mais de uma mídia
+  if(midias.length > 1){
+
+    modal.onclick = (e) => {
+
+      if(e.target === img || e.target === video){
+
+        if(e.clientX > window.innerWidth / 2){
+          index = (index + 1) % midias.length;
+        }else{
+          index = (index - 1 + midias.length) % midias.length;
+        }
+
+        mostrar();
+
+      }
+
+    };
 
   }
 
-  modal.classList.remove("hidden");
 }
-
 
 function valorBRL(valor) {
   return Number(valor).toLocaleString("pt-BR", {
@@ -783,12 +824,28 @@ async function carregarPremium(){
       const card = document.createElement("div");
       card.className = "midia-card-premium";
 
-      const url = item.thumbnail_url || item.url;
+const medias = item.midias || [
+  { url: item.thumbnail_url || item.url }
+];
 
-      const ehVideo =
-        url.includes(".mp4") ||
-        url.includes(".webm") ||
-        url.includes(".mov");
+let mediaHTML = medias.map((m, i) => {
+
+  const ehVideo =
+    m.url.includes(".mp4") ||
+    m.url.includes(".webm") ||
+    m.url.includes(".mov");
+
+  return `
+    <div class="carousel-item ${i === 0 ? "active" : ""}">
+      ${
+        ehVideo
+        ? `<video src="${m.url}" muted></video>`
+        : `<img src="${m.url}">`
+      }
+    </div>
+  `;
+
+}).join("");
 
 card.innerHTML = `
 <div class="premium-header">
@@ -808,12 +865,23 @@ card.innerHTML = `
 
 </div>
 
-<div class="premium-media" data-id="${item.id}">
-  ${
-    ehVideo
-    ? `<video src="${url}" muted></video>`
-    : `<img src="${url}">`
-  }
+<div class="premium-media">
+
+  <div class="carousel">
+
+    ${mediaHTML}
+
+    ${
+      medias.length > 1
+      ? `
+      <button class="carousel-prev">‹</button>
+      <button class="carousel-next">›</button>
+      `
+      : ""
+    }
+
+  </div>
+
 </div>
 
 <div class="premium-info">
@@ -843,9 +911,39 @@ card.innerHTML = `
     card.appendChild(btnExcluir);
 
   }
-card.querySelector(".premium-media").onclick = () => {
-  abrirMidia(item);
-};
+
+const media = card.querySelector(".premium-media");
+
+const carousel = card.querySelector(".carousel");
+
+if (carousel) {
+
+  let index = 0;
+  const items = carousel.querySelectorAll(".carousel-item");
+
+  const show = (i) => {
+    items.forEach(el => el.classList.remove("active"));
+    items[i].classList.add("active");
+  };
+
+  carousel.querySelector(".carousel-next")?.addEventListener("click", (e)=>{
+    e.stopPropagation();
+    index = (index + 1) % items.length;
+    show(index);
+  });
+
+  carousel.querySelector(".carousel-prev")?.addEventListener("click", (e)=>{
+    e.stopPropagation();
+    index = (index - 1 + items.length) % items.length;
+    show(index);
+  });
+
+}
+
+if (media) {
+  media.onclick = () => abrirMidia(item);
+}
+
 
 container.appendChild(card);
 
