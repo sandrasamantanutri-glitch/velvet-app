@@ -3274,12 +3274,13 @@ app.get("/api/modelo/publico/:id/feed", async (req, res) => {
   const modeloId = Number(req.params.id);
 
 const { rows } = await db.query(`
-  SELECT id,url,thumbnail_url,tipo,tipo_conteudo,preco,descricao
-  FROM conteudos
-  WHERE modelo_id = $1
-  AND ativo = TRUE
-  AND tipo_conteudo = 'feed'
-  ORDER BY id DESC
+SELECT id,url,thumbnail_url,tipo,tipo_conteudo,preco,descricao
+FROM conteudos
+WHERE modelo_id = $1
+AND ativo = TRUE
+AND tipo_conteudo = 'feed'
+AND (preco IS NULL OR preco = 0)
+ORDER BY id DESC
 `,[modeloId]);
 
   res.json(rows);
