@@ -5,13 +5,13 @@ let MODELO_ID = null;
 let EH_DONA = false;
 
 
-const socket = io();
+// const socket = io();
 
-socket.on("vipAtivado", async ({ modelo_id }) => {
-  if (modelo_id === MODELO_ID) {
-    await aplicarRegrasDeAcesso();
-  }
-});
+// socket.on("vipAtivado", async ({ modelo_id }) => {
+//   if (modelo_id === MODELO_ID) {
+//     await aplicarRegrasDeAcesso();
+//   }
+// });
 
 document.addEventListener("DOMContentLoaded", async () => {
 
@@ -96,10 +96,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.abrirFluxoVIP();
   });
 
-  // =========================
-  // BOTÃO CHAT VIP
-  // =========================
-
   document.getElementById("btn-vip-chat")?.addEventListener("click", () => {
     window.location.href = `/chatc.html?modelo_id=${MODELO_ID}`;
   });
@@ -116,7 +112,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 
 });
-
 
 // =================================
 // LINK GENÉRICO "ASSINAR VIP"
@@ -325,12 +320,6 @@ async function carregarFeed(){
           return;
         }
 
-        // conteúdo pago
-        if (item.tipo_conteudo === "venda") {
-          abrirPopupPagamentoVenda(item);
-          return;
-        }
-
         // não VIP
         if (!ehVip) {
           abrirFluxoVIP();
@@ -341,15 +330,6 @@ async function carregarFeed(){
 
       });
 
-      // =========================
-      // DESTINO GRID
-      // =========================
-
-      if(item.tipo_conteudo === "venda"){
-        gridPaid.appendChild(card);
-      }else{
-        gridFree.appendChild(card);
-      }
 
     });
 
@@ -358,6 +338,7 @@ async function carregarFeed(){
   }
 
 }
+
 async function aplicarRegrasDeAcesso() {
 
   const ofertaCard = document.getElementById("oferta-card");
@@ -494,36 +475,6 @@ function abrirMidia(item){
   modal.classList.remove("hidden");
 }
 
-function iniciarTabs(){
-
-  const tabs = document.querySelectorAll(".tab");
-
-  tabs.forEach(tab=>{
-
-    tab.addEventListener("click",()=>{
-
-      tabs.forEach(t=>t.classList.remove("active"));
-
-      document
-        .querySelectorAll(".midias-grid")
-        .forEach(g=>g.classList.remove("active"));
-
-      tab.classList.add("active");
-
-      if(tab.dataset.tab==="free"){
-        document.getElementById("listaMidias").classList.add("active");
-      }
-
-      if(tab.dataset.tab==="paid"){
-        document.getElementById("midias-paid").classList.add("active");
-      }
-
-    });
-
-  });
-
-}
-
 let OFERTA_ATUAL = null;
 
 async function carregarOfertaAtiva() {
@@ -640,7 +591,7 @@ function valorBRL(valor) {
     currency: "BRL"
   });
 }
-///////
+
 function abrirPopupLoginObrigatorio() {
 
   const modal = document.createElement("div");
@@ -695,95 +646,53 @@ modal.querySelector(".btn-register").onclick = () => {
   document.body.appendChild(modal);
 }
 
-function abrirPreviewUpload(file, url) {
 
-  const modal = document.createElement("div");
-modal.className = "modal-midia upload-modal";
+document.getElementById("btnEnviarFeed")?.addEventListener("click", async () => {
 
-  modal.innerHTML = `
-    <div class="modal-backdrop"></div>
+  const fileInput = document.getElementById("fileFeed");
+  const status = document.getElementById("uploadStatus");
 
-    <div class="modal-conteudo upload-preview">
-      <button type="button" class="modal-close-upload">✕</button>
+  if(!fileInput.files.length){
+    alert("Selecione uma mídia");
+    return;
+  }
 
-      ${
-        file.type.startsWith("video")
-          ? `<video src="${url}" controls autoplay muted playsinline></video>`
-          : `<img src="${url}">`
-      }
+  const file = fileInput.files[0];
 
-      <div class="upload-box">
-        <p class="upload-titulo">Publicar esta mídia no feed?</p>
-        <button type="button" class="btn-confirmar">Publicar</button>
-      </div>
+  const form = new FormData();
 
-    </div>
-  `;
+  form.append("file", file);
+  form.append("tipo", "feed");
+  form.append("modelo_id", MODELO_ID);
 
-  document.body.appendChild(modal);
+  status.textContent = "Enviando...";
 
-  const fecharModal = () => {
-    URL.revokeObjectURL(url);
-    modal.remove();
-  };
+  try{
 
-  // fechar clicando no fundo
-  modal.querySelector(".modal-backdrop")
-    .addEventListener("click", fecharModal);
-
-  // fechar no X
-  modal.querySelector(".modal-close-upload")
-    ?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      fecharModal();
+    const res = await fetch("/api/upload",{
+      method:"POST",
+      headers:{
+        Authorization:"Bearer "+token
+      },
+      body:form
     });
 
-  const btnPublicar = modal.querySelector(".btn-confirmar");
-
-  btnPublicar.addEventListener("click", async () => {
-
-    try {
-
-      btnPublicar.disabled = true;
-      btnPublicar.textContent = "Enviando...";
-
-      // 🔹 criar formdata
-      const form = new FormData();
-      form.append("file", file);
-      form.append("tipo_conteudo", "feed");
-
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("token")
-        },
-        body: form
-      });
-
-      if (!res.ok) {
-        alert("Erro ao enviar mídia");
-        btnPublicar.disabled = false;
-        btnPublicar.textContent = "Publicar";
-        return;
-      }
-
-      fecharModal();
-
-      // atualizar feed
-      await carregarFeed();
-
-    } catch (err) {
-
-      console.error("Erro upload:", err);
-      alert("Erro ao enviar mídia");
-
-      btnPublicar.disabled = false;
-      btnPublicar.textContent = "Publicar";
-
+    if(!res.ok){
+      status.textContent = "Erro no upload";
+      return;
     }
 
-  });
+    status.textContent = "Upload realizado ✔";
 
-}
+    fecharPopupUpload();
 
-window.abrirPreviewUpload = abrirPreviewUpload;
+    await carregarFeed();
+
+  }catch(err){
+
+    console.error(err);
+    status.textContent = "Erro ao enviar";
+
+  }
+
+});

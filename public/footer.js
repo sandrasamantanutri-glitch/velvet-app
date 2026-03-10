@@ -1,26 +1,19 @@
 document.addEventListener("DOMContentLoaded", () => {
 
   const role = localStorage.getItem("role");
-
   if (role !== "modelo") return;
 
   const menu = document.getElementById("footerMenu");
 
-  
   const btnPerfil = document.getElementById("btnAvatar");
   const btnMedia = document.getElementById("btnPost");
   const btnConteudos = document.getElementById("btnConteudos");
   const btnVip = document.getElementById("btnVip");
   const btnLinks = document.getElementById("btnLinks");
 
-  function abrirMenu(html) {
-    menu.innerHTML = html;
-    menu.classList.remove("hidden");
-  }
-
-  function fecharMenu() {
-    menu.classList.add("hidden");
-  }
+  // =========================
+  // FECHAR MENU AO CLICAR FORA
+  // =========================
 
   document.addEventListener("click", (e) => {
     if (!menu.contains(e.target) && !e.target.closest(".footer-btn")) {
@@ -29,108 +22,117 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // =========================
-  // MIDIA
+  // BOTÃO POST
   // =========================
 
-btnMedia?.addEventListener("click", () => {
+  btnMedia?.addEventListener("click", () => {
 
-  abrirMenu(`
-    <button onclick="postarFeed()">Postar no Feed</button>
-    <button onclick="postarPremium()">Postar no Premium</button>
-  `);
+    abrirMenu(`
+      <button id="menuPostFeed">Postar no Feed</button>
+      <button id="menuPostPremium">Postar no Premium</button>
+    `);
 
-});
+  });
 
   // =========================
-  // CONTEUDOS
+  // CONTEÚDOS
   // =========================
 
-btnConteudos?.addEventListener("click", () => {
-  gerenciarConteudos();
-});
+  btnConteudos?.addEventListener("click", () => {
+    window.location.href = "/conteudos.html";
+  });
 
   // =========================
   // VIP
   // =========================
 
-btnVip?.addEventListener("click", () => {
-  alterarVIP();
-});
+  btnVip?.addEventListener("click", () => {
+    window.location.href = "/ofertas.html";
+  });
 
   // =========================
   // LINKS
   // =========================
 
-btnLinks?.addEventListener("click", () => {
-  abrirLinks();
-});
+  btnLinks?.addEventListener("click", () => {
+    window.location.href = "/links.html";
+  });
 
-btnPerfil?.addEventListener("click", () => {
+  // =========================
+  // PERFIL
+  // =========================
 
-  const modeloId = localStorage.getItem("modelo_id");
+  btnPerfil?.addEventListener("click", () => {
 
-  if (!modeloId) {
-    console.warn("modelo_id não encontrado no localStorage");
-    return;
-  }
+    const modeloId = localStorage.getItem("modelo_id");
 
-  abrirPerfil(modeloId);
+    if (!modeloId) {
+      console.warn("modelo_id não encontrado no localStorage");
+      return;
+    }
 
-});
-
-// =========================
-// FUNÇÕES
-// =========================
-
-function postarPremium(){
-  window.location.href="/modelo/postar-premium.html";
-}
-
-function gerenciarConteudos(){
-  window.location.href="/conteudos.html";
-}
-
-function alterarVIP(){
-  window.location.href="/ofertas.html";
-}
-
-function abrirPerfil(modelo_id){
-  window.location.href = `/perfil.html?id=${modelo_id}`;
-}
-
-
-function abrirLinks() {
-  window.location.href = "/links.html";
-}
-
-function postarFeed(){
-
-  const input = document.getElementById("inputUploadMidia");
-
-  if(!input) return;
-
-  // remove listeners antigos
-  const newInput = input.cloneNode(true);
-  input.parentNode.replaceChild(newInput, input);
-
-  newInput.click();
-
-  newInput.addEventListener("change", (e)=>{
-
-    const file = e.target.files[0];
-    if(!file) return;
-
-    const url = URL.createObjectURL(file);
-
-    abrirPreviewUpload(file, url);
-
-    newInput.value="";
+    window.location.href = `/perfil.html?id=${modeloId}`;
 
   });
 
-}
-window.postarFeed = postarFeed;
+  // =========================
+  // ABRIR MENU
+  // =========================
 
+  function abrirMenu(html) {
 
+    menu.innerHTML = html;
+    menu.classList.remove("hidden");
+
+    registrarEventosMenu();
+
+  }
+
+  function fecharMenu() {
+    menu.classList.add("hidden");
+  }
+
+  // =========================
+  // REGISTRAR EVENTOS DO MENU
+  // =========================
+
+  function registrarEventosMenu(){
+
+    const btnFeed = document.getElementById("menuPostFeed");
+    const btnPremium = document.getElementById("menuPostPremium");
+
+    if(btnFeed){
+      btnFeed.onclick = postarFeed;
+    }
+
+    if(btnPremium){
+      btnPremium.onclick = postarPremium;
+    }
+
+  }
+
+  // =========================
+  // POSTAR NO FEED
+  // =========================
+
+  function postarFeed(){
+
+    const popup = document.getElementById("popupUploadFeed");
+
+    if(!popup) return;
+
+    popup.classList.remove("hidden");
+
+  }
+
+  // =========================
+  // POSTAR PREMIUM
+  // =========================
+
+  function postarPremium(){
+
+    console.log("abrir upload premium");
+
+  }
 
 });

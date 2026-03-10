@@ -285,6 +285,33 @@
 
 </div>
 
+<!-- POPUP UPLOAD FEED -->
+<div id="popupUploadFeed" class="velvet-modal hidden">
+
+  <div class="velvet-backdrop" onclick="fecharPopupUpload()"></div>
+
+  <div class="velvet-box">
+
+    <button class="velvet-close" onclick="fecharPopupUpload()">×</button>
+
+    <h2 class="velvet-title">Postar no Feed</h2>
+
+    <div class="upload-box">
+
+      <input type="file" id="fileFeed" accept="image/*,video/*">
+
+      <button id="btnEnviarFeed" class="btn-principal">
+        Publicar no Feed
+      </button>
+
+      <div id="uploadStatus"></div>
+
+    </div>
+
+  </div>
+
+</div>
+
 
 <div id="footerMenu" class="footer-menu hidden"></div>
 
