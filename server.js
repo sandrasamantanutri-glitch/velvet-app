@@ -6736,6 +6736,7 @@ app.post(
   uploadB2.array("file", 10),
   async (req, res) => {
     const userId = req.user.id;
+    const { preco, descricao } = req.body;
 
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({
@@ -6812,34 +6813,40 @@ app.post(
 
         const result = await db.query(
           `
-          INSERT INTO conteudos (
-            modelo_id,
-            tipo,
-            tipo_conteudo,
-            url,
-            thumbnail_url,
-            hash,
-            tamanho,
-            criado_em
-          )
-          VALUES ($1, $2, 'venda', $3, $4, $5, $6, NOW())
-          RETURNING
-            id,
-            modelo_id,
-            tipo,
-            tipo_conteudo,
-            url,
-            thumbnail_url,
-            criado_em
+INSERT INTO conteudos (
+  modelo_id,
+  tipo,
+  tipo_conteudo,
+  url,
+  thumbnail_url,
+  preco,
+  descricao,
+  hash,
+  tamanho,
+  criado_em
+)
+VALUES ($1,$2,'venda',$3,$4,$5,$6,$7,$8,NOW())
+RETURNING
+  id,
+  modelo_id,
+  tipo,
+  tipo_conteudo,
+  url,
+  thumbnail_url,
+  preco,
+  descricao,
+  criado_em
           `,
-          [
-            modelo_id,
-            tipo,
-            url,
-            thumbnail_url,
-            hash,
-            file.size
-          ]
+[
+  modelo_id,
+  tipo,
+  url,
+  thumbnail_url,
+  preco || 0,
+  descricao || null,
+  hash,
+  file.size
+]
         );
 
         resultados.push(result.rows[0]);

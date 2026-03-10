@@ -892,50 +892,20 @@ document.getElementById("btnEnviarPremium")?.addEventListener("click", enviarUpl
 
 function enviarUploadPremium(){
 
-  const texto = document.getElementById("premiumTexto").value;
-  const preco = document.getElementById("premiumPreco").value;
-
-  if(!arquivoPremium){
-    alert("Selecione uma mídia");
-    return;
-  }
-
-  if(!preco){
-    alert("Informe o preço");
-    return;
-  }
-
   const token = localStorage.getItem("token");
 
   const form = new FormData();
   form.append("file", arquivoPremium);
-  form.append("tipo", "venda");
-  form.append("modelo_id", MODELO_ID);
-  form.append("texto", texto);
-  form.append("preco", preco);
 
   const xhr = new XMLHttpRequest();
 
-  xhr.open("POST","/api/upload");
+  xhr.open("POST","/api/conteudos");
   xhr.setRequestHeader("Authorization","Bearer "+token);
-
-  premiumProgressBox.classList.remove("hidden");
-
-  xhr.upload.onprogress = function(e){
-
-    if(!e.lengthComputable) return;
-
-    const percent = Math.round((e.loaded / e.total)*100);
-
-    premiumProgressFill.style.width = percent+"%";
-    premiumProgressText.textContent = percent+"%";
-
-  };
 
   xhr.onload = async function(){
 
     if(xhr.status !== 200){
-      alert("Erro no upload");
+      alert("Erro no upload premium");
       return;
     }
 
@@ -945,9 +915,14 @@ function enviarUploadPremium(){
 
   };
 
+  xhr.onerror = function(){
+    alert("Erro de rede no upload");
+  };
+
   xhr.send(form);
 
 }
+
 
 function fecharPopupPremium(){
 
