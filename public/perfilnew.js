@@ -712,8 +712,6 @@ function iniciarTabs(){
   const tabs = document.querySelectorAll(".midias-tabs .tab");
   const grids = document.querySelectorAll(".midias-grid");
 
-  feed.sort((a,b)=>b.id-a.id);
-
   tabs.forEach(tab => {
 
     tab.addEventListener("click", () => {
