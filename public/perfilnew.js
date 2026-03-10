@@ -366,3 +366,64 @@ if (precoOriginalEl) {
     OFERTA_ATUAL = null;
   }
 }
+
+function abrirPopupLoginObrigatorio() {
+
+  const modal = document.createElement("div");
+  modal.className = "modal-login-obrigatorio";
+
+  modal.innerHTML = `
+    <div class="modal-backdrop"></div>
+    <div class="modal-box-login">
+      <h3>🔒 Acesso necessário</h3>
+      <p>É necessário estar logado para esta ação.</p>
+
+      <div class="login-acoes">
+        <button class="btn-login">Ja tenho conta</button>
+        <button class="btn-register">Não tenho conta</button>
+      </div>
+    </div>
+  `;
+
+  modal.querySelector(".modal-backdrop").onclick = () => modal.remove();
+
+  modal.querySelector(".btn-login").onclick = () => {
+    modal.remove();
+    openAgeGate("login");
+  };
+
+  modal.querySelector(".btn-register").onclick = () => {
+    modal.remove();
+    openAgeGate("register");
+  };
+
+  document.body.appendChild(modal);
+}
+
+function abrirFluxoVIP() {
+
+  const roleAtual = localStorage.getItem("role");
+
+  if (!roleAtual) {
+    abrirPopupLoginObrigatorio();
+    return;
+  }
+
+  if (!modelo_id) {
+    alert("Erro ao identificar modelo.");
+    return;
+  }
+
+  window.PAGAMENTO_TIPO_ATUAL = "vip";
+
+  const valorBase = window.OFERTA_ATUAL?.valor_base ?? 20;
+  const valorPromocional =
+    window.OFERTA_ATUAL?.valor_promocional ?? valorBase;
+
+  preencherResumoVIP({
+    valorBase: valorBase,
+    desconto: valorBase - valorPromocional
+  });
+
+  abrirPopupPagamento();
+}
