@@ -17,6 +17,7 @@ const bcrypt = require("bcrypt");
 const path = require("path");
 const fs = require("fs");
 const app = express();
+const FormData = require("form-data");
 
 // app.use((req, res, next) => {
 //   return res.sendFile(
@@ -1337,6 +1338,7 @@ app.post(
   authModelo,
   uploadB2.array("file", 10),
   async (req, res) => {
+
     try {
 
       if (!req.files || req.files.length === 0) {
@@ -1355,23 +1357,14 @@ app.post(
       const modelo_id = modeloRes.rows[0].id;
 
       const { tipo_conteudo, preco, descricao } = req.body;
-
       const tipoFinal = tipo_conteudo || "feed";
-
-      // 🔒 REGRA: conteúdo premium precisa ter preço
-      if (tipoFinal === "venda") {
-        if (!preco || Number(preco) <= 0) {
-          return res.status(400).json({
-            error: "Conteúdo premium precisa ter preço"
-          });
-        }
-      }
 
       for (const file of req.files) {
 
         const mimetype = file.mimetype || "";
 
         let tipo;
+
         if (mimetype.startsWith("image/")) {
           tipo = "imagem";
         } else if (mimetype.startsWith("video/")) {
@@ -1380,46 +1373,67 @@ app.post(
           continue;
         }
 
-        const caminho = `velvet/modelos/${req.user.id}/${Date.now()}-${file.originalname}`;
+        let publicUrl = null;
 
-        const uploadResult = await s3.upload({
-          Bucket: process.env.B2_BUCKET,
-          Key: caminho,
-          Body: file.buffer,
-          ContentType: mimetype,
-          ACL: "public-read"
-        }).promise();
+        // imagens vão para Cloudflare Images
+        if (tipo === "imagem") {
 
-        const publicUrl = uploadResult.Location;
+          const form = new FormData();
+          form.append("file", file.buffer, file.originalname);
 
-        let thumbnailUrl = null;
+          const response = await axios.post(
+            `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT_ID}/images/v1`,
+            form,
+            {
+              headers: {
+                Authorization: `Bearer ${process.env.CF_IMAGES_TOKEN}`,
+                ...form.getHeaders()
+              }
+            }
+          );
 
-        if (tipo === "video") {
-          try {
-            thumbnailUrl = await gerarThumbnailVideo(file.buffer, modelo_id);
-          } catch (err) {
-            console.error("Erro ao gerar thumbnail:", err);
-          }
+          const imageId = response.data.result.id;
+
+          publicUrl =
+            `https://imagedelivery.net/${process.env.CF_ACCOUNT_HASH}/${imageId}/public`;
+
         }
 
-        const hash = gerarHash(file.buffer);
+if (tipo === "video") {
+
+  const form = new FormData();
+  form.append("file", file.buffer, file.originalname);
+
+  const response = await axios.post(
+    `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT_ID}/stream`,
+    form,
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.CF_STREAM_TOKEN}`,
+        ...form.getHeaders()
+      }
+    }
+  );
+
+  const videoId = response.data.result.uid;
+
+  publicUrl = `https://iframe.videodelivery.net/${videoId}`;
+
+}
 
         await db.query(
           `
           INSERT INTO conteudos
-          (modelo_id, url, tipo, tipo_conteudo, preco, descricao, thumbnail_url, hash, tamanho)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+          (modelo_id, url, tipo, tipo_conteudo, preco, descricao)
+          VALUES ($1,$2,$3,$4,$5,$6)
           `,
           [
             modelo_id,
             publicUrl,
             tipo,
             tipoFinal,
-            tipoFinal === "venda" ? Number(preco) : null,
-            descricao || null,
-            thumbnailUrl,
-            hash,
-            file.size
+            preco ? Number(preco) : null,
+            descricao || null
           ]
         );
       }
@@ -1427,12 +1441,16 @@ app.post(
       res.json({ success: true });
 
     } catch (err) {
+
       console.error("Erro /api/upload:", err);
-      res.status(500).json({ error: "Erro interno" });
+
+      res.status(500).json({
+        error: "Erro interno"
+      });
+
     }
   }
 );
-
 
 //OFERTAS
 app.post("/api/ofertas", authModelo, async (req, res) => {
@@ -1940,6 +1958,49 @@ function emitirInboxUpdate(io, { cliente_id, modelo_id, sender, text, created_at
 
   io.to(`inbox_modelo_${modelo_id}`).emit("inboxMessage", payload);
   io.to(`inbox_cliente_${cliente_id}`).emit("inboxMessage", payload);
+}
+
+const axios = require("axios");
+const FormData = require("form-data");
+
+async function uploadCloudflareImage(fileBuffer, filename) {
+
+  const form = new FormData();
+  form.append("file", fileBuffer, filename);
+
+  const res = await axios.post(
+    `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT_ID}/images/v1`,
+    form,
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.CF_IMAGES_TOKEN}`,
+        ...form.getHeaders()
+      }
+    }
+  );
+
+  return res.data.result;
+}
+
+module.exports = uploadCloudflareImage;
+
+async function uploadVideoCloudflare(buffer, filename) {
+
+  const form = new FormData();
+  form.append("file", buffer, filename);
+
+  const res = await axios.post(
+    `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT_ID}/stream`,
+    form,
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.CF_STREAM_TOKEN}`,
+        ...form.getHeaders()
+      }
+    }
+  );
+
+  return res.data.result;
 }
 
 
@@ -6766,11 +6827,15 @@ app.post(
   }
 );
 
+const axios = require("axios");
+const FormData = require("form-data");
+
 app.post(
   "/api/conteudos",
   authModelo,
   uploadB2.array("file", 10),
   async (req, res) => {
+
     const userId = req.user.id;
     const { preco, descricao } = req.body;
 
@@ -6781,6 +6846,7 @@ app.post(
     }
 
     try {
+
       const modeloRes = await db.query(
         "SELECT id FROM modelos WHERE user_id = $1",
         [userId]
@@ -6793,27 +6859,15 @@ app.post(
       }
 
       const modelo_id = modeloRes.rows[0].id;
+
       const resultados = [];
 
       for (const file of req.files) {
 
-        const hash = gerarHash(file.buffer);
-
-        const duplicado = await db.query(
-  `SELECT id FROM conteudos 
-   WHERE modelo_id = $1 
-   AND hash = $2 
-   AND tamanho = $3`,
-  [modelo_id, hash, file.size]
-);
-
-        if (duplicado.rowCount > 0) {
-          continue; // apenas ignora o arquivo duplicado
-        }
-
         const { mimetype, originalname } = file;
 
         let tipo;
+
         if (mimetype.startsWith("image/")) {
           tipo = "imagem";
         } else if (mimetype.startsWith("video/")) {
@@ -6822,139 +6876,102 @@ app.post(
           continue;
         }
 
-        // 📁 Caminho igual você já fazia
-        const ext = originalname.split(".").pop();
+        let url = null;
 
-        const caminho = `velvet/modelos/${userId}/${Date.now()}-${originalname}`;
+        // IMAGEM → Cloudflare Images
+        if (tipo === "imagem") {
 
-        // 🚀 Upload manual para Backblaze
-        const uploadResult = await s3.upload({
-          Bucket: process.env.B2_BUCKET,
-          Key: caminho,
-          Body: file.buffer,
-          ContentType: mimetype,
-          ACL: "public-read"
-        }).promise();
+          const form = new FormData();
+          form.append("file", file.buffer, originalname);
 
-        const url = uploadResult.Location;
-        let thumbnail_url = null;
+          const response = await axios.post(
+            `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT_ID}/images/v1`,
+            form,
+            {
+              headers: {
+                Authorization: `Bearer ${process.env.CF_IMAGES_TOKEN}`,
+                ...form.getHeaders()
+              }
+            }
+          );
 
-        if (tipo === "video") {
-          try {
-            thumbnail_url = await gerarThumbnailVideo(file.buffer, modelo_id);
-          } catch (err) {
-            console.error("Erro ao gerar thumbnail:", err);
-          }
+          const imageId = response.data.result.id;
+
+          url =
+            `https://imagedelivery.net/${process.env.CF_ACCOUNT_HASH}/${imageId}/public`;
         }
+
+if (tipo === "video") {
+
+  const form = new FormData();
+  form.append("file", file.buffer, originalname);
+
+  const response = await axios.post(
+    `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT_ID}/stream`,
+    form,
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.CF_STREAM_TOKEN}`,
+        ...form.getHeaders()
+      }
+    }
+  );
+
+  const videoId = response.data.result.uid;
+
+  url = `https://iframe.videodelivery.net/${videoId}`;
+
+}
 
         const result = await db.query(
           `
-INSERT INTO conteudos (
-  modelo_id,
-  tipo,
-  tipo_conteudo,
-  url,
-  thumbnail_url,
-  preco,
-  descricao,
-  hash,
-  tamanho,
-  criado_em
-)
-VALUES ($1,$2,'venda',$3,$4,$5,$6,$7,$8,NOW())
-RETURNING
-  id,
-  modelo_id,
-  tipo,
-  tipo_conteudo,
-  url,
-  thumbnail_url,
-  preco,
-  descricao,
-  criado_em
+          INSERT INTO conteudos (
+            modelo_id,
+            tipo,
+            tipo_conteudo,
+            url,
+            preco,
+            descricao,
+            criado_em
+          )
+          VALUES ($1,$2,'venda',$3,$4,$5,NOW())
+          RETURNING
+            id,
+            modelo_id,
+            tipo,
+            tipo_conteudo,
+            url,
+            preco,
+            descricao,
+            criado_em
           `,
-[
-  modelo_id,
-  tipo,
-  url,
-  thumbnail_url,
-  preco || 0,
-  descricao || null,
-  hash,
-  file.size
-]
+          [
+            modelo_id,
+            tipo,
+            url,
+            preco || 0,
+            descricao || null
+          ]
         );
 
         resultados.push(result.rows[0]);
+
       }
 
       res.json(resultados);
 
     } catch (err) {
+
       console.error("Erro upload múltiplo:", err);
+
       res.status(500).json({
         error: "Erro ao carregar conteúdo"
       });
+
     }
+
   }
 );
-
-app.post("/api/admin/modelo/:id/reset-password", auth, authAdmin, async (req,res)=>{
-
-const modelo_id = Number(req.params.id);
-
-try{
-
-// buscar user_id da modelo
-const modeloRes = await db.query(`
-SELECT user_id
-FROM modelos
-WHERE id = $1
-`,[modelo_id]);
-
-if(!modeloRes.rows.length){
-return res.status(404).json({error:"Modelo não encontrada"});
-}
-
-const user_id = modeloRes.rows[0].user_id;
-
-// gerar nova senha aleatória
-const password = Math.random().toString(36).slice(-10);
-
-// gerar hash
-const password_hash = await bcrypt.hash(password, 10);
-
-// atualizar password no users
-await db.query(`
-UPDATE users
-SET password_hash = $1
-WHERE id = $2
-`,[
-password_hash,
-user_id
-]);
-
-// salvar histórico
-await db.query(`
-INSERT INTO admin_seguranca_historico
-(modelo_id, admin_id, motivo, data)
-VALUES ($1,$2,$3,NOW())
-`,[
-modelo_id,
-req.user.id,
-"Reset de password"
-]);
-
-res.json({
-password
-});
-
-}catch(err){
-console.error("Erro reset password:",err);
-res.status(500).json({error:"Erro reset password"});
-}
-
-});
 
 app.post("/api/conteudo/visto", auth, async (req, res) => {
 
