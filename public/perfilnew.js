@@ -176,7 +176,7 @@ document.getElementById("btnEnviarPremium")
   }
 
  const form = new FormData();
- 
+
 const files = filePremium.files;
 for(const file of files){
   form.append("file", file);
@@ -240,6 +240,11 @@ tabs.forEach(tab => {
 
 });
 
+document.getElementById("premiumClose")
+?.addEventListener("click", fecharPopupPremium);
+
+document.getElementById("premiumBackdrop")
+?.addEventListener("click", fecharPopupPremium);
 
 
 });
@@ -964,6 +969,19 @@ container.appendChild(card);
   }catch(err){
     console.error("Erro carregar premium:", err);
   }
+
+}
+
+function fecharPopupPremium(){
+
+  const popup = document.getElementById("popupUploadPremium");
+
+  popup.classList.add("hidden");
+
+  filePremium.value = "";
+  previewPremium.innerHTML = "";
+  document.getElementById("premiumTexto").value = "";
+  document.getElementById("premiumPreco").value = "";
 
 }
 
