@@ -4,6 +4,8 @@ const role = localStorage.getItem("role");
 let modelo_id = null;
 let EH_DONA = false;
 
+  const btnAssinar = document.getElementById("btn-assinar");
+
 document.addEventListener("DOMContentLoaded", async () => {
 
   // =========================
@@ -28,6 +30,36 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (!EH_DONA) {
     document.getElementById("btn-upload")?.remove();
   }
+
+btnAssinar?.addEventListener("click", () => {
+
+  const tokenAtual = localStorage.getItem("token");
+
+  // 👀 VISITANTE
+  if (!tokenAtual) {
+    abrirPopupLoginObrigatorio();
+    return;
+  }
+
+  const role = localStorage.getItem("role");
+  const modeloLogado = Number(localStorage.getItem("modelo_id"));
+
+  // 🚫 MODELO tentando assinar outra modelo
+  if (role === "modelo" && modeloLogado !== modelo_id) {
+    alert("No momento, modelo não pode assinar ou ver conteúdo exclusivo de outra modelo. Estamos trabalhando para que isso seja possível!!💜");
+    return;
+  }
+
+  // 💎 JÁ VIP
+  if (window.__CLIENTE_VIP__) {
+    window.location.href = `/chatc.html?modelo_id=${modelo_id}`;
+    return;
+  }
+
+  // 💳 ABRIR PAGAMENTO
+  window.abrirFluxoVIP();
+
+});
 
 
 await carregarPerfil();
@@ -140,7 +172,6 @@ function valorBRL(valor) {
 
 async function aplicarRegrasDeAcesso() {
   const ofertaCard = document.getElementById("oferta-card");
-  const btnAssinar = document.getElementById("btn-assinar");
 
   const tokenAtual = localStorage.getItem("token");
 
@@ -249,7 +280,6 @@ async function carregarOfertaAtiva() {
   console.log("🧪 carregarOfertaAtiva chamado com modelo_id =", modelo_id);
 
   const ofertaCard = document.getElementById("oferta-card");
-  const btnAssinar = document.getElementById("btn-assinar");
   const precoDescontoEl = document.getElementById("preco-desconto");
   const precoOriginalEl = document.getElementById("preco-original");
   const descontoEl = document.getElementById("oferta-desconto");
