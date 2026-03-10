@@ -272,7 +272,10 @@ async function carregarFeed() {
       if (vistos.has(item.id)) return;
       vistos.add(item.id);
 
-      const isPremium = item.tipo_conteudo === "venda";
+const isPremium =
+  item.tipo_conteudo === "venda" ||
+  item.tipo_conteudo === "premium" ||
+  item.tipo === "venda";
 
       const card = document.createElement("div");
 
