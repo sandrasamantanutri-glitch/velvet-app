@@ -40,6 +40,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   uploadBackdrop?.addEventListener("click", fecharPopupUpload);
   uploadClose?.addEventListener("click", fecharPopupUpload);
 
+ document.getElementById("btnEnviarPremium")
+    ?.addEventListener("click", enviarUploadPremium);
+
   // =========================
   // VERIFICAR SE É DONA
   // =========================
@@ -244,6 +247,8 @@ async function carregarFeed() {
     const tokenAtual = localStorage.getItem("token");
 
     const vistos = new Set();
+
+    feed.sort((a,b)=>b.id-a.id);
 
     feed.forEach(item => {
 
