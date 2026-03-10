@@ -135,9 +135,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   await carregarPerfil();
   await carregarOfertaAtiva();
-  await carregarFeed();
-  await aplicarRegrasDeAcesso();
-
+await carregarFeed();
+await carregarPremium();
+await aplicarRegrasDeAcesso();
 
 });
 
@@ -221,6 +221,30 @@ if (capa) {
 
 }
 
+async function carregarPremium(){
+
+  const gridPaid = document.getElementById("midias-paid");
+  gridPaid.innerHTML = "";
+
+  const res = await fetch(`/api/modelo/publico/${MODELO_ID}/premium`);
+  const premium = await res.json();
+
+  premium.forEach(item => {
+
+    const card = document.createElement("div");
+    card.className = "midia-card-premium";
+
+    const img = document.createElement("img");
+    img.src = item.thumbnail_url || item.url;
+
+    card.appendChild(img);
+
+    gridPaid.appendChild(card);
+
+  });
+
+}
+
 let carregandoFeed = false;
 
 async function carregarFeed() {
@@ -231,10 +255,7 @@ async function carregarFeed() {
   console.log("Carregando feed do modelo:", MODELO_ID);
 
   const gridFree = document.getElementById("listaMidias");
-  const gridPaid = document.getElementById("midias-paid");
-
   gridFree.innerHTML = "";
-  gridPaid.innerHTML = "";
 
   try {
 
@@ -252,15 +273,14 @@ async function carregarFeed() {
 
     feed.forEach(item => {
 
+      // ignora qualquer conteúdo premium
+      if (item.tipo_conteudo === "venda") return;
+
       if (vistos.has(item.id)) return;
       vistos.add(item.id);
 
-      const isPremium =
-        item.tipo_conteudo === "venda" ||
-        item.tipo_conteudo === "premium" ||
-        item.tipo === "venda";
-
       const card = document.createElement("div");
+      card.className = "midia-thumb";
 
       const url = item.url || "";
       const thumbnail = item.thumbnail_url || url;
@@ -274,142 +294,25 @@ async function carregarFeed() {
         url.includes(".webm") ||
         url.includes(".mov");
 
-      // =========================
-      // PREMIUM
-      // =========================
+      card.appendChild(img);
 
-      if (isPremium) {
-
-        card.className = "midia-card-premium";
-
-        const header = document.createElement("div");
-        header.className = "premium-header";
-
-        const avatar = document.createElement("img");
-        avatar.className = "premium-avatar";
-        avatar.src = document.getElementById("profileAvatar")?.src || "/assets/avatar.png";
-
-        const username = document.createElement("div");
-        username.className = "premium-username";
-        username.textContent =
-          document.getElementById("profileName")?.textContent || "user";
-
-        header.appendChild(avatar);
-        header.appendChild(username);
-
-        const media = document.createElement("div");
-        media.className = "premium-media";
-
-        if (ehVideo) {
-          const video = document.createElement("video");
-          video.src = url;
-          video.controls = false;
-          media.appendChild(video);
-        } else {
-          media.appendChild(img);
-        }
-
-        const info = document.createElement("div");
-        info.className = "premium-info";
-
-        if (item.descricao) {
-          const legenda = document.createElement("div");
-          legenda.textContent = item.descricao;
-          info.appendChild(legenda);
-        }
-
-        const preco = document.createElement("div");
-        preco.className = "premium-preco";
-        preco.innerHTML = `🔒 R$ ${Number(item.preco || 0).toFixed(2)}`;
-
-        info.appendChild(preco);
-
-        card.appendChild(header);
-        card.appendChild(media);
-        card.appendChild(info);
-
+      if (ehVideo) {
+        const icon = document.createElement("div");
+        icon.className = "video-icon";
+        icon.innerHTML = "▶";
+        card.appendChild(icon);
       }
 
-      // =========================
-      // FEED NORMAL
-      // =========================
-
-      else {
-
-        card.className = "midia-thumb";
-        card.appendChild(img);
-
-        if (ehVideo) {
-          const icon = document.createElement("div");
-          icon.className = "video-icon";
-          icon.innerHTML = "▶";
-          card.appendChild(icon);
-        }
-
-      }
-
-      // =========================
-      // BLOQUEIO
-      // =========================
-
+      // bloqueio se não for VIP
       let bloqueado = false;
 
-      if (!EH_DONA) {
-
-        if (isPremium) bloqueado = true;
-
-        if (!isPremium && !ehVip) bloqueado = true;
-
+      if (!EH_DONA && !ehVip) {
+        bloqueado = true;
       }
 
       if (bloqueado) {
         card.classList.add("locked");
       }
-
-      // =========================
-      // BOTÃO EXCLUIR
-      // =========================
-
-      if (EH_DONA) {
-
-        const btnExcluir = document.createElement("button");
-        btnExcluir.className = "btn-excluir-midia";
-        btnExcluir.innerHTML = "🗑";
-
-        btnExcluir.onclick = async (e) => {
-
-          e.stopPropagation();
-
-          if (!confirm("Deseja excluir este conteúdo?")) return;
-
-          try {
-
-            const res = await fetch(`/api/conteudos/${item.id}`, {
-              method: "DELETE",
-              headers: {
-                Authorization: "Bearer " + tokenAtual
-              }
-            });
-
-            if (!res.ok) {
-              alert("Erro ao excluir conteúdo");
-              return;
-            }
-
-            card.remove();
-
-          } catch (err) {
-            console.error("Erro excluir:", err);
-          }
-
-        };
-
-        card.appendChild(btnExcluir);
-      }
-
-      // =========================
-      // CLICK
-      // =========================
 
       card.addEventListener("click", () => {
 
@@ -429,18 +332,11 @@ async function carregarFeed() {
 
       });
 
-      // =========================
-      // ADICIONAR GRID
-      // =========================
-
-      if (isPremium) {
-        gridPaid.appendChild(card);
-      } else {
-        gridFree.appendChild(card);
-      }
+      gridFree.appendChild(card);
 
     });
- } catch (e) {
+
+  } catch (e) {
 
     console.error("erro feed", e);
 
@@ -879,7 +775,7 @@ form.append("modelo_id", MODELO_ID);
 
     fecharPopupPremium();
 
-    await carregarFeed();
+   await carregarPremium();
 
   };
 

@@ -3258,21 +3258,38 @@ app.get("/api/me", auth, async (req, res) => {
 });
 
 
-// FEED PÚBLICO DA MODELO (SÓ SE VALIDADA) //***CHECK **** */
-app.get("/api/modelo/publico/:modelo_id/feed", async (req, res) => {
-  const modelo_id = Number(req.params.modelo_id);
+app.get("/api/modelo/publico/:id/premium", async (req, res) => {
+  const modeloId = Number(req.params.id);
 
-  if (!Number.isInteger(modelo_id) || modelo_id <= 0) {
-    return res.status(400).json([]);
-  }
+  const { rows } = await pool.query(
+    `
+    SELECT id, url, thumbnail_url, tipo, tipo_conteudo, preco, descricao, criado_em
+    FROM conteudos
+    WHERE modelo_id = $1
+      AND ativo = true
+      AND tipo_conteudo = 'venda'
+    ORDER BY id DESC
+    `,
+    [modeloId]
+  );
 
-  try {
-    const feed = await buscarFeedCompletoPorModeloId(modelo_id);
-    return res.json(feed);
-  } catch (err) {
-    console.error("Erro feed público:", err);
-    res.status(500).json([]);
-  }
+  res.json(rows);
+});
+
+app.get("/api/modelo/publico/:id/feed", async (req, res) => {
+
+  const modeloId = Number(req.params.id);
+
+  const { rows } = await pool.query(`
+    SELECT id, url, thumbnail_url, tipo, tipo_conteudo, preco, descricao
+    FROM conteudos
+    WHERE modelo_id = $1
+      AND (tipo_conteudo IS NULL OR tipo_conteudo = 'feed')
+    ORDER BY id DESC
+  `,[modeloId]);
+
+  res.json(rows);
+
 });
 
 
