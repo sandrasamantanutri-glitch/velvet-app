@@ -32,6 +32,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 await carregarPerfil();
 await aplicarRegrasDeAcesso();
+await carregarOfertaAtiva()
 
 });
 
@@ -240,4 +241,97 @@ if (ehCliente || ehModelo) {
 
   }
 }
+}
+
+let OFERTA_ATUAL = null;
+async function carregarOfertaAtiva() {
+  console.log("🧪 carregarOfertaAtiva chamado com modelo_id =", modelo_id);
+
+  const ofertaCard = document.getElementById("oferta-card");
+  const btnAssinar = document.getElementById("btn-assinar");
+  const precoDescontoEl = document.getElementById("preco-desconto");
+  const precoOriginalEl = document.getElementById("preco-original");
+  const descontoEl = document.getElementById("oferta-desconto");
+
+ if (!ofertaCard) {
+  console.warn("ofertaCard não encontrado");
+  return;
+}
+  try {
+    const res = await fetch(`/api/ofertas/ativa/${modelo_id}`);
+
+    if (!res.ok) {
+      ofertaCard.style.display = "none";
+      OFERTA_ATUAL = null;
+      return;
+    }
+
+    const data = await res.json();
+
+    if (!data.ativa) {
+
+  const valor = Number(data.valor_base) || 20;
+
+  OFERTA_ATUAL = {
+    valor_base: valor,
+    valor_promocional: valor,
+    desconto_percentual: 0
+  };
+
+  if (precoDescontoEl)
+    precoDescontoEl.textContent = valorBRL(valor);
+
+  if (precoOriginalEl)
+    precoOriginalEl.textContent = "";
+
+  if (descontoEl)
+    descontoEl.style.display = "none";
+
+  if (btnAssinar)
+    btnAssinar.textContent =
+      `Assinar VIP por ${valorBRL(valor)}`;
+
+  ofertaCard.style.display = "block";
+  return;
+}
+    const oferta = data.oferta;
+    OFERTA_ATUAL = {
+      id: oferta.id,
+      modelo_id: oferta.modelo_id,
+      valor_base: Number(oferta.valor_base),
+      valor_promocional: Number(oferta.valor_promocional),
+      desconto_percentual: Number(oferta.desconto_percentual || 0)
+    };
+      window.OFERTA_ATUAL = OFERTA_ATUAL;
+
+    if (descontoEl && OFERTA_ATUAL.desconto_percentual > 0) {
+      descontoEl.textContent = `Economize ${OFERTA_ATUAL.desconto_percentual}%`;
+      descontoEl.style.display = "inline-block";
+    } else if (descontoEl) {
+      descontoEl.style.display = "none";
+    }
+
+    if (precoDescontoEl) {
+  precoDescontoEl.textContent =
+    valorBRL(OFERTA_ATUAL.valor_promocional);
+}
+
+if (precoOriginalEl) {
+  precoOriginalEl.textContent =
+    valorBRL(OFERTA_ATUAL.valor_base);
+}
+
+    ofertaCard.style.display = "block";
+
+    if (btnAssinar) {
+  btnAssinar.disabled = false;
+  btnAssinar.textContent =
+    `Assinar VIP por ${valorBRL(OFERTA_ATUAL.valor_promocional)}`;
+}
+
+  } catch (err) {
+    console.error("Erro ao carregar oferta:", err);
+    ofertaCard.style.display = "none";
+    OFERTA_ATUAL = null;
+  }
 }
