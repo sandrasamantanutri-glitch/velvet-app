@@ -825,7 +825,7 @@ async function carregarPremium(){
       card.className = "midia-card-premium";
 
 const medias = item.midias || [
-  { url: item.thumbnail_url || item.url }
+  { url: item.url || item.thumbnail_url }
 ];
 
 let mediaHTML = medias.map((m, i) => {
