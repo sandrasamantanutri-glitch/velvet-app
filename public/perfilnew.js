@@ -794,3 +794,5 @@ function abrirPreviewUpload(file, url) {
   });
 
 }
+
+window.abrirPreviewUpload = abrirPreviewUpload;

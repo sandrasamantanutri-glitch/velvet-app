@@ -331,57 +331,6 @@ a{
 }
 
 
-.oferta-card {
-  max-width: 900px !Important;
-  margin: 18px auto;
-  background: #f1f1f1;
-  border-radius: 18px !Important;
-  padding: 20px;
-  color: #1E1E26;
-  position: relative;
-}
-
-.oferta-titulo {
-  font-weight: 700;
-  margin-bottom: 28px;
-  font-size: 18px;
-}
-
-.oferta-botao-wrapper {
-  position: relative;
-}
-
-.oferta-balao {
-  position: absolute;
-  top: -12px;
-  left: 12px;
-  background: #1bd96a;
-  color: #0a3d1f;
-  font-size: 14px;
-  padding: 4px 8px;
-  border-radius: 10px;
-  font-weight: 600;
-}
-
-.oferta-botao {
-  width: 100%;
-  border: none;
-  border-radius: 14px;
-  padding: 14px;
-  font-size: 22px;
-  font-weight: 700;
-  background: #7b2cff;
-  color: #fff;
-  cursor: pointer;
-}
-
-.oferta-preco-original {
-  margin-top: 8px;
-  font-size: 18px;
-  opacity: 0.9;
-  text-align: right;
-}
-
 .midia-thumb{
  position:relative;
 }
