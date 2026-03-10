@@ -644,6 +644,96 @@ transition:width 0.2s;
 }
 
 /* ===============================
+   POPUP LOGIN OBRIGATÓRIO
+================================ */
+
+.modal-login-obrigatorio {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-login-obrigatorio .modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.modal-box-login {
+  position: relative;
+  z-index: 2;
+
+  background: #fff;
+  width: 92%;
+  max-width: 380px;
+
+  padding: 28px;
+  border-radius: 20px;
+
+  text-align: center;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+
+  animation: fadeUpLogin .25s ease;
+}
+
+/* Título */
+.modal-box-login h3 {
+  color: #7B2CFF;
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+/* Texto */
+.modal-box-login p {
+  color: #555;
+  font-size: 15px;
+  margin-bottom: 22px;
+}
+
+/* Botões */
+.login-acoes {
+  display: flex;
+  gap: 12px;
+}
+
+.login-acoes button {
+  flex: 1;
+  padding: 12px;
+  border-radius: 14px;
+  border: none;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+/* Botão Login */
+.btn-login {
+  background: #f0f0f5;
+  color: #333;
+}
+
+.btn-login:hover {
+  background: #e5e5ef;
+}
+
+/* Botão Registar */
+.btn-register {
+  background: linear-gradient(135deg, #7B2CFF, #9E6BFF);
+  color: #fff;
+  box-shadow: 0 10px 25px rgba(123, 44, 255, 0.35);
+}
+
+.btn-register:hover {
+  transform: translateY(-2px);
+}
+
+
+/* ===============================
    RESPONSIVO
 =============================== */
 

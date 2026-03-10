@@ -197,7 +197,7 @@ async function aplicarRegrasDeAcesso() {
       btnAssinar.disabled = false;
       btnAssinar.style.cursor = "not-allowed";
       btnAssinar.textContent =
-    `Assinar VIP por ${valorBRL(OFERTA_ATUAL.valor_promocional)}`;
+    `Assinar VIP por ${valorBRL(window.OFERTA_ATUAL.valor_promocional)}`;
     }
 
     return;
@@ -251,9 +251,9 @@ if (ehCliente || ehModelo) {
       if (btnAssinar) {
         btnAssinar.disabled = false;
 
-        if (window.OFERTA_ATUAL) {
+        if (window.window.OFERTA_ATUAL) {
           btnAssinar.textContent =
-            `Assinar VIP por ${valorBRL(window.OFERTA_ATUAL.valor_promocional)}`;
+            `Assinar VIP por ${valorBRL(window.window.OFERTA_ATUAL.valor_promocional)}`;
         }
       }
 
@@ -275,7 +275,7 @@ if (ehCliente || ehModelo) {
 }
 }
 
-let OFERTA_ATUAL = null;
+window.window.OFERTA_ATUAL = null;
 async function carregarOfertaAtiva() {
   console.log("🧪 carregarOfertaAtiva chamado com modelo_id =", modelo_id);
 
@@ -293,7 +293,7 @@ async function carregarOfertaAtiva() {
 
     if (!res.ok) {
       ofertaCard.style.display = "none";
-      OFERTA_ATUAL = null;
+      window.OFERTA_ATUAL = null;
       return;
     }
 
@@ -303,7 +303,7 @@ async function carregarOfertaAtiva() {
 
   const valor = Number(data.valor_base) || 20;
 
-  OFERTA_ATUAL = {
+  window.OFERTA_ATUAL = {
     valor_base: valor,
     valor_promocional: valor,
     desconto_percentual: 0
@@ -326,17 +326,17 @@ async function carregarOfertaAtiva() {
   return;
 }
     const oferta = data.oferta;
-    OFERTA_ATUAL = {
+    window.OFERTA_ATUAL = {
       id: oferta.id,
       modelo_id: oferta.modelo_id,
       valor_base: Number(oferta.valor_base),
       valor_promocional: Number(oferta.valor_promocional),
       desconto_percentual: Number(oferta.desconto_percentual || 0)
     };
-      window.OFERTA_ATUAL = OFERTA_ATUAL;
+      window.window.OFERTA_ATUAL = window.OFERTA_ATUAL;
 
-    if (descontoEl && OFERTA_ATUAL.desconto_percentual > 0) {
-      descontoEl.textContent = `Economize ${OFERTA_ATUAL.desconto_percentual}%`;
+    if (descontoEl && window.OFERTA_ATUAL.desconto_percentual > 0) {
+      descontoEl.textContent = `Economize ${window.OFERTA_ATUAL.desconto_percentual}%`;
       descontoEl.style.display = "inline-block";
     } else if (descontoEl) {
       descontoEl.style.display = "none";
@@ -344,12 +344,12 @@ async function carregarOfertaAtiva() {
 
     if (precoDescontoEl) {
   precoDescontoEl.textContent =
-    valorBRL(OFERTA_ATUAL.valor_promocional);
+    valorBRL(window.OFERTA_ATUAL.valor_promocional);
 }
 
 if (precoOriginalEl) {
   precoOriginalEl.textContent =
-    valorBRL(OFERTA_ATUAL.valor_base);
+    valorBRL(window.OFERTA_ATUAL.valor_base);
 }
 
     ofertaCard.style.display = "block";
@@ -357,13 +357,13 @@ if (precoOriginalEl) {
     if (btnAssinar) {
   btnAssinar.disabled = false;
   btnAssinar.textContent =
-    `Assinar VIP por ${valorBRL(OFERTA_ATUAL.valor_promocional)}`;
+    `Assinar VIP por ${valorBRL(window.OFERTA_ATUAL.valor_promocional)}`;
 }
 
   } catch (err) {
     console.error("Erro ao carregar oferta:", err);
     ofertaCard.style.display = "none";
-    OFERTA_ATUAL = null;
+    window.OFERTA_ATUAL = null;
   }
 }
 
@@ -416,9 +416,9 @@ function abrirFluxoVIP() {
 
   window.PAGAMENTO_TIPO_ATUAL = "vip";
 
-  const valorBase = window.OFERTA_ATUAL?.valor_base ?? 20;
+  const valorBase = window.window.OFERTA_ATUAL?.valor_base ?? 20;
   const valorPromocional =
-    window.OFERTA_ATUAL?.valor_promocional ?? valorBase;
+    window.window.OFERTA_ATUAL?.valor_promocional ?? valorBase;
 
   preencherResumoVIP({
     valorBase: valorBase,
