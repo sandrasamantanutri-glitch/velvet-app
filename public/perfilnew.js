@@ -723,6 +723,36 @@ document.getElementById("btnEnviarFeed")?.addEventListener("click", () => {
 
 });
 
+function iniciarTabs(){
+
+  const tabs = document.querySelectorAll(".midias-tabs .tab");
+  const grids = document.querySelectorAll(".midias-grid");
+
+  tabs.forEach(tab => {
+
+    tab.addEventListener("click", () => {
+
+      tabs.forEach(t => t.classList.remove("active"));
+      grids.forEach(g => g.classList.remove("active"));
+
+      tab.classList.add("active");
+
+      const tipo = tab.dataset.tab;
+
+      if(tipo === "free"){
+        document.getElementById("listaMidias")?.classList.add("active");
+      }
+
+      if(tipo === "paid"){
+        document.getElementById("midias-paid")?.classList.add("active");
+      }
+
+    });
+
+  });
+
+}
+
 function enviarUploadFeed(){
 
   const token = localStorage.getItem("token");
