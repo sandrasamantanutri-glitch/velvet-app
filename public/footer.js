@@ -109,9 +109,13 @@ function postarFeed(){
 
   if(!input) return;
 
-  input.click();
+  // remove listeners antigos
+  const newInput = input.cloneNode(true);
+  input.parentNode.replaceChild(newInput, input);
 
-  input.onchange = (e) => {
+  newInput.click();
+
+  newInput.addEventListener("change", (e)=>{
 
     const file = e.target.files[0];
     if(!file) return;
@@ -120,9 +124,9 @@ function postarFeed(){
 
     abrirPreviewUpload(file, url);
 
-    input.value = "";
+    newInput.value="";
 
-  };
+  });
 
 }
 window.postarFeed = postarFeed;
