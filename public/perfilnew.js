@@ -312,11 +312,18 @@ function abrirMidia(item){
   const modal = document.getElementById("modalMidia");
   const img = document.getElementById("modalImg");
   const video = document.getElementById("modalVideo");
+  const iframe = document.getElementById("modalIframe");
 
+  // reset inicial
   img.style.display = "none";
   video.style.display = "none";
+  iframe.style.display = "none";
 
-  // 🔹 normaliza estrutura
+  video.pause();
+  video.src = "";
+  iframe.src = "";
+
+  // normaliza estrutura
   const midias = item.midias && item.midias.length
     ? item.midias
     : [{ url: item.url }];
@@ -331,26 +338,40 @@ function abrirMidia(item){
     const ehVideo =
       url.includes(".mp4") ||
       url.includes(".webm") ||
-      url.includes(".mov");
+      url.includes(".mov") ||
+      url.includes("videodelivery.net");
 
     img.style.display = "none";
     video.style.display = "none";
+    iframe.style.display = "none";
+
+    video.pause();
+    video.src = "";
+    iframe.src = "";
 
     if (ehVideo) {
 
-      video.src = url;
-      video.style.display = "block";
+      if (url.includes("videodelivery.net")) {
 
-      video.currentTime = 0;
-      video.play().catch(()=>{});
+        const videoId = url.split("/").pop();
+
+        iframe.src = `https://iframe.videodelivery.net/${videoId}`;
+        iframe.style.display = "block";
+
+      } else {
+
+        video.src = url;
+        video.style.display = "block";
+
+        video.currentTime = 0;
+        video.play().catch(()=>{});
+
+      }
 
     } else {
 
       img.src = url;
       img.style.display = "block";
-
-      video.pause();
-      video.src = "";
 
     }
 
@@ -360,12 +381,16 @@ function abrirMidia(item){
 
   modal.classList.remove("hidden");
 
-  // 🔹 habilita carrossel apenas se tiver mais de uma mídia
+  // carrossel
   if(midias.length > 1){
 
     modal.onclick = (e) => {
 
-      if(e.target === img || e.target === video){
+      if(
+        e.target === img ||
+        e.target === video ||
+        e.target === iframe
+      ){
 
         if(e.clientX > window.innerWidth / 2){
           index = (index + 1) % midias.length;
@@ -689,23 +714,36 @@ async function carregarFeed() {
         div.classList.add("locked");
       }
 
-      const url = item.thumbnail_url || item.url || "";
+      const url = item.url || "";
+      const thumb = item.thumbnail_url || url;
 
       const ehVideo =
         url.includes(".mp4") ||
         url.includes(".webm") ||
-        url.includes(".mov");
+        url.includes(".mov") ||
+        url.includes("videodelivery.net");
 
       if (ehVideo) {
 
+        // thumbnail do cloudflare
+        let thumbnail = thumb;
+
+        if (url.includes("videodelivery.net")) {
+
+          const videoId = url.split("/").pop();
+
+          thumbnail = `https://videodelivery.net/${videoId}/thumbnails/thumbnail.jpg`;
+
+        }
+
         div.innerHTML = `
-          <video src="${url}" muted preload="metadata"></video>
+          <img src="${thumbnail}">
           <span class="video-icon">▶</span>
         `;
 
       } else {
 
-        div.innerHTML = `<img src="${url}">`;
+        div.innerHTML = `<img src="${thumb}">`;
 
       }
 
@@ -717,9 +755,10 @@ async function carregarFeed() {
         }
 
         abrirMidia(item);
+
       };
 
-      // BOTÃO EXCLUIR
+      // botão excluir (modelo)
       if (EH_DONA) {
 
         const btnExcluir = document.createElement("button");
@@ -740,24 +779,12 @@ async function carregarFeed() {
     });
 
   } catch (err) {
+
     console.error("Erro ao carregar feed:", err);
+
   }
 
 }
-
-document.querySelector("#modalMidia .modal-backdrop")
-?.addEventListener("click", () => {
-
-  const modal = document.getElementById("modalMidia");
-  modal.classList.add("hidden");
-
-  const video = document.getElementById("modalVideo");
-  if (video) {
-    video.pause();
-    video.currentTime = 0;
-  }
-
-});
 
 const uploadArea = document.getElementById("uploadArea");
 const fileInput = document.getElementById("fileFeed");
@@ -853,9 +880,10 @@ async function carregarPremium(){
       let mediaHTML = medias.map((m, i) => {
 
         const ehVideo =
-          m.url.includes(".mp4") ||
-          m.url.includes(".webm") ||
-          m.url.includes(".mov");
+  url.includes(".mp4") ||
+  url.includes(".webm") ||
+  url.includes(".mov") ||
+  url.includes("videodelivery.net");
 
         return `
           <div class="carousel-item ${i === 0 ? "active" : ""}">
