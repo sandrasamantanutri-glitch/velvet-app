@@ -829,10 +829,26 @@ async function carregarPremium(){
 
 </div>
 `;
+ if (EH_DONA) {
 
-      container.appendChild(card);
+    const btnExcluir = document.createElement("button");
+    btnExcluir.className = "btn-excluir-midia";
+    btnExcluir.textContent = "✕";
 
-    });
+    btnExcluir.onclick = (e) => {
+      e.stopPropagation();
+      excluirMidia(item.id, card);
+    };
+
+    card.appendChild(btnExcluir);
+
+  }
+
+  container.appendChild(card);
+
+
+
+});
 
   }catch(err){
     console.error("Erro carregar premium:", err);
