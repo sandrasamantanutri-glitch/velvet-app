@@ -578,6 +578,23 @@ transition:width 0.2s;
   background:#7B2CFF;
 }
 
+.midia-card-premium{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.premium-preco{
+  font-size:13px;
+  color:#7B2CFF;
+  font-weight:600;
+}
+
+.premium-legenda{
+  font-size:14px;
+  color:#333;
+}
+
 /* ===============================
    RESPONSIVO
 =============================== */

@@ -276,7 +276,7 @@ if(item.tipo_conteudo === "venda" && item.descricao){
     const legenda = document.createElement("div");
     legenda.className = "premium-legenda";
 
-    legenda.textContent = item.texto;
+  legenda.textContent = item.descricao;
 
     card.appendChild(legenda);
 
