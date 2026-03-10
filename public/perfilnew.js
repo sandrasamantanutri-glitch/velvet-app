@@ -712,6 +712,8 @@ function iniciarTabs(){
   const tabs = document.querySelectorAll(".midias-tabs .tab");
   const grids = document.querySelectorAll(".midias-grid");
 
+  feed.sort((a,b)=>b.id-a.id);
+
   tabs.forEach(tab => {
 
     tab.addEventListener("click", () => {
@@ -854,10 +856,11 @@ function enviarUploadPremium(){
 
   const form = new FormData();
 
-  form.append("file", arquivoPremium);
-  form.append("descricao", texto);
-  form.append("preco", preco);
-  form.append("modelo_id", MODELO_ID);
+form.append("file", arquivoPremium);
+form.append("descricao", texto);
+form.append("preco", preco);
+form.append("tipo_conteudo", "venda");
+form.append("modelo_id", MODELO_ID);
 
   const xhr = new XMLHttpRequest();
 
