@@ -15,6 +15,10 @@ socket.on("vipAtivado", async ({ modelo_id }) => {
 
 document.addEventListener("DOMContentLoaded", async () => {
 
+  // =========================
+  // PARAMETROS URL
+  // =========================
+
   const params = new URLSearchParams(window.location.search);
   MODELO_ID = Number(params.get("modelo_id") || params.get("id"));
 
@@ -22,6 +26,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.warn("modelo_id não encontrado na URL");
     return;
   }
+
+  // =========================
+  // FECHAR POPUP UPLOAD
+  // =========================
+
+  document.getElementById("uploadBackdrop")?.addEventListener("click", fecharPopupUpload);
+  document.getElementById("uploadClose")?.addEventListener("click", fecharPopupUpload);
+
+  // =========================
+  // VERIFICAR SE É DONA
+  // =========================
 
   const modeloLogado = Number(localStorage.getItem("modelo_id"));
   EH_DONA = role === "modelo" && modeloLogado === MODELO_ID;
@@ -31,6 +46,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   iniciarTabs();
+
+  // =========================
+  // MODAL MIDIA
+  // =========================
 
   const modal = document.getElementById("modalMidia");
   const btnFechar = document.getElementById("fecharModal");
@@ -645,57 +664,6 @@ modal.querySelector(".btn-register").onclick = () => {
 
   document.body.appendChild(modal);
 }
-
-
-document.getElementById("btnEnviarFeed")?.addEventListener("click", async () => {
-
-  const fileInput = document.getElementById("fileFeed");
-  const status = document.getElementById("uploadStatus");
-
-  if(!fileInput.files.length){
-    alert("Selecione uma mídia");
-    return;
-  }
-
-  const file = fileInput.files[0];
-
-  const form = new FormData();
-
-  form.append("file", file);
-  form.append("tipo", "feed");
-  form.append("modelo_id", MODELO_ID);
-
-  status.textContent = "Enviando...";
-
-  try{
-
-    const res = await fetch("/api/upload",{
-      method:"POST",
-      headers:{
-        Authorization:"Bearer "+token
-      },
-      body:form
-    });
-
-    if(!res.ok){
-      status.textContent = "Erro no upload";
-      return;
-    }
-
-    status.textContent = "Upload realizado ✔";
-
-    fecharPopupUpload();
-
-    await carregarFeed();
-
-  }catch(err){
-
-    console.error(err);
-    status.textContent = "Erro ao enviar";
-
-  }
-
-});
 
 const uploadArea = document.getElementById("uploadArea");
 const inputFile = document.getElementById("fileFeed");
