@@ -36,7 +36,6 @@ btnMedia?.addEventListener("click", () => {
 
   abrirMenu(`
     <button onclick="postarFeed()">Postar no Feed</button>
-    <input type="file" id="inputUploadMidia" accept="image/*,video/*" hidden>
     <button onclick="postarPremium()">Postar no Premium</button>
   `);
 

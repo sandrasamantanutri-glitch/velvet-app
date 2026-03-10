@@ -663,35 +663,10 @@ function abrirPreviewUpload(file, url) {
       }
 
       <div class="upload-box">
-
-        <p class="upload-titulo">Escolha onde deseja adicionar a mídia:</p>
-
-        <div class="upload-opcoes">
-          <button type="button" class="upload-tab active" data-value="feed">🎁 Pra você</button>
-          <button type="button" class="upload-tab" data-value="venda">🔥 Especial</button>
-        </div>
-
-        <input type="hidden" name="tipo_conteudo" value="feed">
-
-        <div class="upload-especial hidden">
-          <input
-            type="number"
-            id="upload-preco"
-            placeholder="Preço (R$)"
-            min="0"
-            step="0.01"
-          >
-
-          <textarea
-            id="upload-descricao"
-            placeholder="Descrição do conteúdo"
-            rows="3"
-          ></textarea>
-        </div>
-
+        <p class="upload-titulo">Publicar esta mídia no feed?</p>
         <button type="button" class="btn-confirmar">Publicar</button>
-
       </div>
+
     </div>
   `;
 
@@ -713,53 +688,19 @@ function abrirPreviewUpload(file, url) {
       fecharModal();
     });
 
-  // =========================
-  // TABS (Feed / Venda)
-  // =========================
-
-  const tabs = modal.querySelectorAll(".upload-tab");
-  const hiddenTipo = modal.querySelector("input[name='tipo_conteudo']");
-  const boxEspecial = modal.querySelector(".upload-especial");
-
-  tabs.forEach(tab => {
-
-    tab.addEventListener("click", () => {
-
-      tabs.forEach(t => t.classList.remove("active"));
-      tab.classList.add("active");
-
-      const valor = tab.dataset.value;
-
-      hiddenTipo.value = valor;
-
-      boxEspecial.classList.toggle("hidden", valor !== "venda");
-
-    });
-
-  });
-
-  // =========================
-  // BOTÃO PUBLICAR
-  // =========================
-
   const btnPublicar = modal.querySelector(".btn-confirmar");
 
   btnPublicar.addEventListener("click", async () => {
-
-    const tipo = hiddenTipo.value;
-    const preco = modal.querySelector("#upload-preco")?.value || "";
-    const descricao = modal.querySelector("#upload-descricao")?.value || "";
-
-    const form = new FormData();
-    form.append("file", file);
-    form.append("tipo_conteudo", tipo);
-    form.append("preco", preco);
-    form.append("descricao", descricao);
 
     try {
 
       btnPublicar.disabled = true;
       btnPublicar.textContent = "Enviando...";
+
+      // 🔹 criar formdata
+      const form = new FormData();
+      form.append("file", file);
+      form.append("tipo_conteudo", "feed");
 
       const res = await fetch("/api/upload", {
         method: "POST",
@@ -778,7 +719,7 @@ function abrirPreviewUpload(file, url) {
 
       fecharModal();
 
-      // atualiza feed
+      // atualizar feed
       await carregarFeed();
 
     } catch (err) {
