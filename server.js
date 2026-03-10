@@ -1405,7 +1405,7 @@ app.post(
 
           publicUrl =
             `https://imagedelivery.net/${process.env.CF_ACCOUNT_HASH}/${imageId}/public`;
-            
+
             thumbnailUrl = publicUrl;
         }
 
@@ -6970,6 +6970,8 @@ app.post(
             throw new Error("Erro upload Cloudflare Stream");
           }
 
+          let url = null;
+
           const videoId = response.data.result.uid;
 
           url = `https://iframe.videodelivery.net/${videoId}`;
@@ -6978,38 +6980,39 @@ app.post(
           `https://videodelivery.net/${videoId}/thumbnails/thumbnail.jpg`;
         }
 
-        const result = await db.query(
-          `
-          INSERT INTO conteudos (
-            modelo_id,
-            url,
-            thumbnail_url,
-            tipo,
-            tipo_conteudo,
-            preco,
-            descricao,
-            criado_em
-          )
-          VALUES ($1,$2, $3,$4,'venda',$5,$6,NOW())
-          RETURNING
-            id,
-            modelo_id,
-            url,
-            thumbnail_url,
-            tipo,
-            tipo_conteudo,
-            preco,
-            descricao,
-            criado_em
-          `,
-          [
-            modelo_id,
-            tipo,
-            url,
-            preco || 0,
-            descricao || null
-          ]
-        );
+       const result = await db.query(
+`
+INSERT INTO conteudos (
+  modelo_id,
+  url,
+  thumbnail_url,
+  tipo,
+  tipo_conteudo,
+  preco,
+  descricao,
+  criado_em
+)
+VALUES ($1,$2,$3,$4,'venda',$5,$6,NOW())
+RETURNING
+  id,
+  modelo_id,
+  url,
+  thumbnail_url,
+  tipo,
+  tipo_conteudo,
+  preco,
+  descricao,
+  criado_em
+`,
+[
+  modelo_id,
+  url,
+  thumbnailUrl || null,
+  tipo,
+  preco || 0,
+  descricao || null
+]
+);
 
         resultados.push(result.rows[0]);
       }
