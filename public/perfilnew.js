@@ -67,8 +67,8 @@ if (!tokenAtual) {
 
 await carregarPerfil();
 await carregarOfertaAtiva();
-await carregarFeed();
 await aplicarRegrasDeAcesso();
+await carregarFeed();
 
 });
 
