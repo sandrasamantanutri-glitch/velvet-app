@@ -9,6 +9,29 @@ let EH_DONA = false;
 document.addEventListener("DOMContentLoaded", async () => {
 
   // =========================
+  // FECHAR POPUPS
+  // =========================
+
+  // FEED
+  document.getElementById("uploadClose")?.addEventListener("click", () => {
+    document.getElementById("popupUploadFeed").classList.add("hidden");
+  });
+
+  document.getElementById("uploadBackdrop")?.addEventListener("click", () => {
+    document.getElementById("popupUploadFeed").classList.add("hidden");
+  });
+
+  // PREMIUM
+  document.getElementById("premiumClose")?.addEventListener("click", () => {
+    document.getElementById("popupUploadPremium").classList.add("hidden");
+  });
+
+  document.getElementById("premiumBackdrop")?.addEventListener("click", () => {
+    document.getElementById("popupUploadPremium").classList.add("hidden");
+  });
+
+
+  // =========================
   // PARAMETROS URL
   // =========================
 
@@ -30,7 +53,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (!EH_DONA) {
     document.getElementById("btn-upload")?.remove();
   }
-
 btnAssinar?.addEventListener("click", () => {
 
    if (EH_DONA) {
@@ -70,8 +92,9 @@ await aplicarRegrasDeAcesso();
 await carregarFeed();
 await carregarPremium();
 
-
-
+// ===============================
+// ENVIAR POST FEED
+// ===============================
 
 const btnEnviarFeed = document.getElementById("btnEnviarFeed");
 
@@ -112,22 +135,15 @@ btnEnviarFeed?.addEventListener("click", async () => {
     fileInput.value = "";
     preview.innerHTML = "";
 
-    carregarFeed(); // recarrega o feed
+    carregarFeed();
 
   } catch (err) {
     console.error(err);
     alert("Erro no upload");
   }
 
-    document.getElementById("uploadClose")?.addEventListener("click", () => {
-    document.getElementById("popupUploadFeed").classList.add("hidden");
-  });
-
-  document.getElementById("uploadBackdrop")?.addEventListener("click", () => {
-    document.getElementById("popupUploadFeed").classList.add("hidden");
-  });
-
 });
+
 
 const filePremium = document.getElementById("filePremium");
 const previewPremium = document.getElementById("previewPremium");
