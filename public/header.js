@@ -81,10 +81,17 @@ function atualizarBadgeHeader(total) {
 }
 
 function initHeaderSocketModelo() {
+
   const token = localStorage.getItem("token");
   const role = localStorage.getItem("role");
 
   if (!token || role !== "modelo") return;
+
+  // socket desativado por enquanto
+  if (typeof io === "undefined") {
+    console.warn("Socket.IO não carregado — notificações desativadas");
+    return;
+  }
 
   const socket = io({
     transports: ["websocket"]
@@ -94,10 +101,10 @@ function initHeaderSocketModelo() {
     socket.emit("auth", { token });
   });
 
-  // mensagem nova para a modelo
   socket.on("unreadUpdate", ({ modelo_id }) => {
     atualizarUnreadModeloHeader();
   });
+
 }
 
 
