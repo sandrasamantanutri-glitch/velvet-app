@@ -260,8 +260,6 @@ async function carregarFeed(){
         card.appendChild(icon);
       }
 
-      gridFree.appendChild(card);
-
       // =========================
       // BLOQUEIO DE ACESSO
       // =========================
@@ -270,12 +268,10 @@ async function carregarFeed(){
 
       if (!EH_DONA) {
 
-        // conteúdo pago sempre bloqueado
         if (item.tipo_conteudo === "venda") {
           bloqueado = true;
         }
 
-        // conteúdo free exige VIP
         if (item.tipo_conteudo !== "venda" && !ehVip) {
           bloqueado = true;
         }
@@ -284,6 +280,16 @@ async function carregarFeed(){
 
       if (bloqueado) {
         card.classList.add("locked");
+      }
+
+      // =========================
+      // ENVIAR PARA GRID CORRETO
+      // =========================
+
+      if(item.tipo_conteudo === "venda"){
+        gridPaid.appendChild(card);
+      }else{
+        gridFree.appendChild(card);
       }
 
       // =========================
@@ -335,7 +341,6 @@ async function carregarFeed(){
 
       card.addEventListener("click", () => {
 
-        // visitante não abre
         if (!tokenAtual) return;
 
         if (EH_DONA) {
@@ -343,7 +348,6 @@ async function carregarFeed(){
           return;
         }
 
-        // não VIP
         if (!ehVip) {
           abrirFluxoVIP();
           return;
@@ -353,7 +357,6 @@ async function carregarFeed(){
 
       });
 
-
     });
 
   }catch(e){
@@ -361,7 +364,6 @@ async function carregarFeed(){
   }
 
 }
-
 async function aplicarRegrasDeAcesso() {
 
   const ofertaCard = document.getElementById("oferta-card");
