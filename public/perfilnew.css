@@ -479,6 +479,24 @@ opacity:.9;
 }
 
 
+.midia-thumb.locked img{
+  filter: blur(12px);
+}
+
+.midia-thumb.locked{
+  position:relative;
+}
+
+.midia-thumb.locked::after{
+  content:"🔒";
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  font-size:28px;
+}
+
+
 
 /* ===============================
    RESPONSIVO

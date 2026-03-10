@@ -4,6 +4,7 @@ const role = localStorage.getItem("role");
 let MODELO_ID = null;
 let EH_DONA = false;
 
+
 const socket = io();
 
 socket.on("vipAtivado", async ({ modelo_id }) => {
@@ -212,6 +213,9 @@ async function carregarFeed(){
 
     if(!Array.isArray(feed)) return;
 
+    const ehVip = window.__CLIENTE_VIP__ === true;
+    const tokenAtual = localStorage.getItem("token");
+
     feed.forEach(item=>{
 
       const card = document.createElement("div");
@@ -238,6 +242,30 @@ async function carregarFeed(){
         icon.className = "video-icon";
         icon.innerHTML = "▶";
         card.appendChild(icon);
+      }
+
+      // =========================
+      // BLOQUEIO DE ACESSO
+      // =========================
+
+      let bloqueado = false;
+
+      if (!EH_DONA) {
+
+        // conteúdo pago sempre bloqueado
+        if (item.tipo_conteudo === "venda") {
+          bloqueado = true;
+        }
+
+        // conteúdo free exige VIP
+        if (item.tipo_conteudo !== "venda" && !ehVip) {
+          bloqueado = true;
+        }
+
+      }
+
+      if (bloqueado) {
+        card.classList.add("locked");
       }
 
       // =========================
@@ -283,8 +311,39 @@ async function carregarFeed(){
         card.appendChild(btnExcluir);
       }
 
-      // abrir mídia
-      card.addEventListener("click", () => abrirMidia(item));
+      // =========================
+      // CLICK NA MIDIA
+      // =========================
+
+      card.addEventListener("click", () => {
+
+        // visitante não abre
+        if (!tokenAtual) return;
+
+        if (EH_DONA) {
+          abrirMidia(item);
+          return;
+        }
+
+        // conteúdo pago
+        if (item.tipo_conteudo === "venda") {
+          abrirPopupPagamentoVenda(item);
+          return;
+        }
+
+        // não VIP
+        if (!ehVip) {
+          abrirFluxoVIP();
+          return;
+        }
+
+        abrirMidia(item);
+
+      });
+
+      // =========================
+      // DESTINO GRID
+      // =========================
 
       if(item.tipo_conteudo === "venda"){
         gridPaid.appendChild(card);
@@ -299,7 +358,6 @@ async function carregarFeed(){
   }
 
 }
-
 async function aplicarRegrasDeAcesso() {
 
   const ofertaCard = document.getElementById("oferta-card");
