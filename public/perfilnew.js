@@ -68,6 +68,7 @@ await carregarPerfil();
 await carregarOfertaAtiva();
 await aplicarRegrasDeAcesso();
 await carregarFeed();
+await carregarPremium();
 
 
 
@@ -125,6 +126,73 @@ btnEnviarFeed?.addEventListener("click", async () => {
   document.getElementById("uploadBackdrop")?.addEventListener("click", () => {
     document.getElementById("popupUploadFeed").classList.add("hidden");
   });
+
+});
+
+const filePremium = document.getElementById("filePremium");
+const previewPremium = document.getElementById("previewPremium");
+
+document.getElementById("uploadAreaPremium")
+?.addEventListener("click", () => {
+  filePremium.click();
+});
+
+filePremium?.addEventListener("change", () => {
+
+  const file = filePremium.files[0];
+  if(!file) return;
+
+  const url = URL.createObjectURL(file);
+
+  previewPremium.innerHTML =
+    file.type.startsWith("video")
+      ? `<video src="${url}" controls></video>`
+      : `<img src="${url}">`;
+
+});
+
+document.getElementById("btnEnviarPremium")
+?.addEventListener("click", async () => {
+
+  const file = filePremium.files[0];
+  const descricao = document.getElementById("premiumTexto").value;
+  const preco = document.getElementById("premiumPreco").value;
+
+  if(!file){
+    alert("Selecione uma mídia");
+    return;
+  }
+
+  if(!preco){
+    alert("Informe o preço");
+    return;
+  }
+
+  const form = new FormData();
+  form.append("file", file);
+  form.append("descricao", descricao);
+  form.append("preco", preco);
+
+  const res = await fetch("/api/conteudos", {
+    method:"POST",
+    headers:{
+      Authorization:"Bearer " + token
+    },
+    body:form
+  });
+
+  if(!res.ok){
+    alert("Erro ao publicar");
+    return;
+  }
+
+  document.getElementById("popupUploadPremium")
+    .classList.add("hidden");
+
+  filePremium.value = "";
+  previewPremium.innerHTML = "";
+
+  carregarPremium();
 
 });
 
@@ -654,6 +722,75 @@ async function excluirMidia(id, elemento) {
     console.error("Erro ao excluir mídia:", err);
     alert("Erro ao excluir mídia");
 
+  }
+
+}
+
+async function carregarPremium(){
+
+  const container = document.getElementById("midias-paid");
+  if(!container) return;
+
+  container.innerHTML = "";
+
+  try{
+
+    const res = await fetch(`/api/modelo/publico/${modelo_id}/premium`);
+    if(!res.ok) return;
+
+    const midias = await res.json();
+
+    if(!midias.length){
+      container.innerHTML =
+      "<p style='text-align:center;'>Nenhum conteúdo premium ainda</p>";
+      return;
+    }
+
+    midias.forEach(item => {
+
+      const card = document.createElement("div");
+      card.className = "midia-card-premium";
+
+      const url = item.thumbnail_url || item.url;
+
+      const ehVideo =
+        url.includes(".mp4") ||
+        url.includes(".webm") ||
+        url.includes(".mov");
+
+      card.innerHTML = `
+
+        <div class="premium-header">
+          <img class="premium-avatar"
+          src="${document.getElementById("profileAvatar").src}">
+          <span class="premium-username">
+            ${document.getElementById("profileName").textContent}
+          </span>
+        </div>
+
+        <div class="premium-media">
+          ${
+            ehVideo
+            ? `<video src="${url}" muted controls></video>`
+            : `<img src="${url}">`
+          }
+        </div>
+
+        <div class="premium-info">
+          ${item.descricao || ""}
+          <div class="premium-preco">
+            ${valorBRL(item.preco)}
+          </div>
+        </div>
+
+      `;
+
+      container.appendChild(card);
+
+    });
+
+  }catch(err){
+    console.error("Erro carregar premium:", err);
   }
 
 }
