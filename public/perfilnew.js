@@ -284,7 +284,7 @@ async function carregarFeed(){
       }
 
       // abrir mídia
-      card.onclick = () => abrirMidia(item);
+      card.addEventListener("click", () => abrirMidia(item));
 
       if(item.tipo_conteudo === "venda"){
         gridPaid.appendChild(card);
