@@ -58,9 +58,18 @@ body {
 }
 
 #viewerConteudo img,
-#viewerConteudo video {
+#viewerConteudo video,
+#viewerConteudo iframe {
+  width: 100%;
   max-width: 100%;
-  max-height: 70vh;
+  height: 70vh;
+  border-radius: 8px;
+}
+
+#viewerConteudo iframe {
+  width: 100%;
+  max-width: 420px;
+  height: 70vh;
   border-radius: 8px;
 }
 
