@@ -33,7 +33,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 btnAssinar?.addEventListener("click", () => {
 
-  const tokenAtual = localStorage.getItem("token");
+   if (EH_DONA) {
+    return;
+   }
 
   // 👀 VISITANTE
   if (!tokenAtual) {
@@ -251,9 +253,9 @@ if (ehCliente || ehModelo) {
       if (btnAssinar) {
         btnAssinar.disabled = false;
 
-        if (window.window.OFERTA_ATUAL) {
+        if (window.OFERTA_ATUAL) {
           btnAssinar.textContent =
-            `Assinar VIP por ${valorBRL(window.window.OFERTA_ATUAL.valor_promocional)}`;
+            `Assinar VIP por ${valorBRL(window.OFERTA_ATUAL.valor_promocional)}`;
         }
       }
 
@@ -275,7 +277,7 @@ if (ehCliente || ehModelo) {
 }
 }
 
-window.window.OFERTA_ATUAL = null;
+window.OFERTA_ATUAL = null;
 async function carregarOfertaAtiva() {
   console.log("🧪 carregarOfertaAtiva chamado com modelo_id =", modelo_id);
 
@@ -333,7 +335,7 @@ async function carregarOfertaAtiva() {
       valor_promocional: Number(oferta.valor_promocional),
       desconto_percentual: Number(oferta.desconto_percentual || 0)
     };
-      window.window.OFERTA_ATUAL = window.OFERTA_ATUAL;
+      window.OFERTA_ATUAL = window.OFERTA_ATUAL;
 
     if (descontoEl && window.OFERTA_ATUAL.desconto_percentual > 0) {
       descontoEl.textContent = `Economize ${window.OFERTA_ATUAL.desconto_percentual}%`;
@@ -416,9 +418,9 @@ function abrirFluxoVIP() {
 
   window.PAGAMENTO_TIPO_ATUAL = "vip";
 
-  const valorBase = window.window.OFERTA_ATUAL?.valor_base ?? 20;
+  const valorBase = window.OFERTA_ATUAL?.valor_base ?? 20;
   const valorPromocional =
-    window.window.OFERTA_ATUAL?.valor_promocional ?? valorBase;
+    window.OFERTA_ATUAL?.valor_promocional ?? valorBase;
 
   preencherResumoVIP({
     valorBase: valorBase,
