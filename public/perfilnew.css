@@ -582,7 +582,6 @@ transition:width 0.2s;
 ========================= */
 
 #midias-paid{
-  display:flex;
   flex-direction:column;
   gap:25px;
 }
