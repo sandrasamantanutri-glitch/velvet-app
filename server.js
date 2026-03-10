@@ -844,14 +844,13 @@ if (dadosParaEmitir?.tipo === "vip") {
   }
 );
 
-
 app.post("/api/webhook/pagarme", express.raw({ type: "*/*" }), async (req, res) => {
 
 let event;
 
 try {
   event = JSON.parse(req.body.toString());
-} catch (err) {
+} catch {
   console.log("🚨 Body inválido");
   return res.status(400).send("invalid");
 }
@@ -875,7 +874,6 @@ if (!orderId) {
 const valorPago = charge.amount / 100;
 
 const client = await db.connect();
-
 let dadosParaEmitir = null;
 
 try {
@@ -908,27 +906,22 @@ LOCK PAGAMENTO
 const pagamentoRes = await client.query(`
 SELECT *
 FROM pagamentos_pix
-WHERE gateway = 'pagarme'
-AND pagarme_order_id = $1
+WHERE gateway='pagarme'
+AND pagarme_order_id=$1
 FOR UPDATE
-`, [orderId]);
+`,[orderId]);
 
 if (!pagamentoRes.rowCount) {
-
   console.log("🚨 Pagamento não encontrado:", orderId);
-
   await client.query("ROLLBACK");
   return res.status(200).send("ok");
-
 }
 
 const pagamento = pagamentoRes.rows[0];
 
 if (pagamento.status === "pago") {
-
   await client.query("ROLLBACK");
   return res.status(200).send("ok");
-
 }
 
 const {
@@ -957,16 +950,13 @@ MIDIA
 
 if (metadata.tipo === "conteudo_pix") {
 
-  const valorBase = Number(metadata.valor_base || 0);
-  const taxaTransacao = Number(metadata.taxa_transacao ?? 0);
-  const taxaPlataforma = Number(metadata.taxa_plataforma ?? 0);
-
-  const taxaExtra = taxaTransacao + taxaPlataforma;
+  const valorBase = Number(metadata.valor_base || valorPago);
+  const taxaGateway = Number(metadata.taxa_transacao ?? 0);
 
   const valores = await calcularValores({
     modelo_id,
     valor_bruto: valorBase,
-    taxa_gateway: 0
+    taxa_gateway: taxaGateway
   });
 
   await client.query(`
@@ -995,19 +985,47 @@ valorBase,
 valorPago
 ]);
 
-const conteudo_ids = await marcarConteudoComoLiberadoPorPagamento(client, {
-message_id,
-cliente_id,
-modelo_id,
-});
+  const conteudo_ids =
+  await marcarConteudoComoLiberadoPorPagamento(client,{
+    message_id,
+    cliente_id,
+    modelo_id
+  });
 
-dadosParaEmitir = {
-tipo: "conteudo_pix",
-cliente_id,
+  await client.query(`
+INSERT INTO transacoes_agency (
 modelo_id,
-message_id,
-conteudo_ids
-};
+cliente_id,
+tipo,
+valor_bruto,
+valor_modelo,
+agency_fee,
+velvet_fee,
+taxa_gateway,
+status,
+created_at
+)
+VALUES (
+$1,$2,'midia',
+$3,$4,$5,$6,$7,'pago',NOW()
+)
+`,[
+modelo_id,
+cliente_id,
+valores.valor_bruto,
+valores.valor_modelo,
+valores.agency_fee,
+valores.velvet_fee,
+valores.taxa_gateway
+]);
+
+  dadosParaEmitir = {
+    tipo:"conteudo_pix",
+    cliente_id,
+    modelo_id,
+    message_id,
+    conteudo_ids
+  };
 
 }
 
@@ -1020,54 +1038,86 @@ if (metadata.tipo === "vip") {
 const expiration = new Date();
 expiration.setMonth(expiration.getMonth() + 1);
 
-const taxaTransacao = Number(metadata.taxa_transacao ?? 0);
-const taxaPlataforma = Number(metadata.taxa_plataforma ?? 0);
+const taxaGateway = Number(metadata.taxa_transacao ?? 0);
+
+const valores = await calcularValores({
+  modelo_id,
+  valor_bruto: valorPago,
+  taxa_gateway: taxaGateway
+});
 
 await client.query(`
 INSERT INTO vip_subscriptions (
-  cliente_id,
-  modelo_id,
-  ativo,
-  created_at,
-  updated_at,
-  expiration_at,
-  valor_assinatura,
-  taxa_transacao,
-  taxa_plataforma,
-  valor_total,
-  recorrente,
-  gateway_subscription_id
+cliente_id,
+modelo_id,
+ativo,
+created_at,
+updated_at,
+expiration_at,
+valor_assinatura,
+taxa_transacao,
+taxa_plataforma,
+valor_total,
+recorrente,
+gateway_subscription_id
 )
 VALUES (
-  $1,$2,true,
-  NOW(),NOW(),
-  $3,$4,$5,$6,$7,
-  false,$8
+$1,$2,true,
+NOW(),NOW(),
+$3,$4,$5,$6,$7,
+false,$8
 )
 ON CONFLICT (cliente_id,modelo_id)
 DO UPDATE SET
-  ativo=true,
-  expiration_at=$3,
-  updated_at=NOW(),
-  valor_assinatura=$4,
-  taxa_transacao=$5,
-  taxa_plataforma=$6,
-  valor_total=$7,
-  recorrente=false,
-  gateway_subscription_id=$8
+ativo=true,
+expiration_at=$3,
+updated_at=NOW(),
+valor_assinatura=$4,
+taxa_transacao=$5,
+taxa_plataforma=$6,
+valor_total=$7,
+recorrente=false,
+gateway_subscription_id=$8
 `,[
-  cliente_id,
-  modelo_id,
-  expiration,
-  valorPago,
-  taxaTransacao,
-  taxaPlataforma,
-  valorPago,
-  orderId
+cliente_id,
+modelo_id,
+expiration,
+valorPago,
+metadata.taxa_transacao ?? 0,
+metadata.taxa_plataforma ?? 0,
+valorPago,
+orderId
+]);
+
+await client.query(`
+INSERT INTO transacoes_agency (
+modelo_id,
+cliente_id,
+tipo,
+valor_bruto,
+valor_modelo,
+agency_fee,
+velvet_fee,
+taxa_gateway,
+status,
+created_at
+)
+VALUES (
+$1,$2,'assinatura',
+$3,$4,$5,$6,$7,'pago',NOW()
+)
+`,[
+modelo_id,
+cliente_id,
+valores.valor_bruto,
+valores.valor_modelo,
+valores.agency_fee,
+valores.velvet_fee,
+valores.taxa_gateway
 ]);
 
 dadosParaEmitir = {
-tipo: "vip",
+tipo:"vip",
 cliente_id,
 modelo_id
 };
@@ -1097,9 +1147,9 @@ if (dadosParaEmitir?.tipo === "conteudo_pix") {
 
 const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
 
-io.to(sala).emit("conteudoLiberado", {
-message_id: Number(dadosParaEmitir.message_id),
-conteudo_ids: dadosParaEmitir.conteudo_ids || [],
+io.to(sala).emit("conteudoLiberado",{
+message_id:Number(dadosParaEmitir.message_id),
+conteudo_ids:dadosParaEmitir.conteudo_ids || []
 });
 
 }
@@ -1108,16 +1158,16 @@ if (dadosParaEmitir?.tipo === "vip") {
 
 const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
 
-io.to(sala).emit("vipAtivado", {
-cliente_id: Number(dadosParaEmitir.cliente_id),
-modelo_id: Number(dadosParaEmitir.modelo_id),
+io.to(sala).emit("vipAtivado",{
+cliente_id:Number(dadosParaEmitir.cliente_id),
+modelo_id:Number(dadosParaEmitir.modelo_id)
 });
 
 }
 
-} catch (e) {
+} catch(e) {
 
-console.error("Erro emitir socket:", e);
+console.error("Erro emitir socket:",e);
 
 }
 
@@ -1125,11 +1175,11 @@ console.log("✅ PAGAMENTO FINALIZADO");
 
 return res.status(200).send("ok");
 
-} catch (err) {
+} catch(err) {
 
 await client.query("ROLLBACK");
 
-console.error("🔥 ERRO WEBHOOK PAGARME:", err);
+console.error("🔥 ERRO WEBHOOK PAGARME:",err);
 
 return res.status(500).send("erro");
 
