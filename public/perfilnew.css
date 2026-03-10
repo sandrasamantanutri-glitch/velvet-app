@@ -426,7 +426,7 @@ font-size:14px;
 
 
 .midia-thumb.locked img{
-  filter: blur(50px);
+  filter: blur(80px);
 }
 
 .midia-thumb.locked{
