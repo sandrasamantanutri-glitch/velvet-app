@@ -245,7 +245,7 @@ if (capa) {
 
 }
 
-async function carregarFeed(){
+async function carregarFeed() {
 
   console.log("Carregando feed do modelo:", MODELO_ID);
 
@@ -255,17 +255,24 @@ async function carregarFeed(){
   gridFree.innerHTML = "";
   gridPaid.innerHTML = "";
 
-  try{
+  try {
 
     const res = await fetch(`/api/modelo/publico/${MODELO_ID}/feed`);
     const feed = await res.json();
 
-    if(!Array.isArray(feed)) return;
+    if (!Array.isArray(feed)) return;
 
     const ehVip = window.__CLIENTE_VIP__ === true;
     const tokenAtual = localStorage.getItem("token");
 
+    const vistos = new Set();
+
     feed.forEach(item => {
+
+      if (vistos.has(item.id)) return;
+      vistos.add(item.id);
+
+      const isPremium = item.tipo_conteudo === "venda";
 
       const card = document.createElement("div");
 
@@ -282,10 +289,10 @@ async function carregarFeed(){
         url.includes(".mov");
 
       // =========================
-      // PREMIUM (POST ESTILO INSTAGRAM)
+      // PREMIUM
       // =========================
 
-      if (item.tipo_conteudo === "venda") {
+      if (isPremium) {
 
         card.className = "midia-card-premium";
 
@@ -338,7 +345,7 @@ async function carregarFeed(){
       }
 
       // =========================
-      // FEED NORMAL (GRID)
+      // FEED NORMAL
       // =========================
 
       else {
@@ -363,28 +370,14 @@ async function carregarFeed(){
 
       if (!EH_DONA) {
 
-        if (item.tipo_conteudo === "venda") {
-          bloqueado = true;
-        }
+        if (isPremium) bloqueado = true;
 
-        if (item.tipo_conteudo !== "venda" && !ehVip) {
-          bloqueado = true;
-        }
+        if (!isPremium && !ehVip) bloqueado = true;
 
       }
 
       if (bloqueado) {
         card.classList.add("locked");
-      }
-
-      // =========================
-      // ADICIONAR NO GRID
-      // =========================
-
-      if (item.tipo_conteudo === "venda") {
-        gridPaid.appendChild(card);
-      } else {
-        gridFree.appendChild(card);
       }
 
       // =========================
@@ -429,7 +422,7 @@ async function carregarFeed(){
       }
 
       // =========================
-      // CLICK NA MIDIA
+      // CLICK
       // =========================
 
       card.addEventListener("click", () => {
@@ -450,115 +443,24 @@ async function carregarFeed(){
 
       });
 
+      // =========================
+      // ADICIONAR GRID
+      // =========================
+
+      if (isPremium) {
+        gridPaid.appendChild(card);
+      } else {
+        gridFree.appendChild(card);
+      }
+
     });
 
-  }catch(e){
-    console.error("erro feed",e);
+  } catch (e) {
+    console.error("erro feed", e);
   }
 
 }
 
-async function aplicarRegrasDeAcesso() {
-
-  const ofertaCard = document.getElementById("oferta-card");
-  const vipCard = document.getElementById("vip-card");
-  const btnAssinar = document.getElementById("btn-assinar");
-
-  const tokenAtual = localStorage.getItem("token");
-
-  // estado padrão
-  window.__CLIENTE_VIP__ = false;
-
-  const ehModelo = role === "modelo";
-  const ehCliente = role === "cliente";
-
-  // ==========================
-  // MODELO DONA DO PERFIL
-  // ==========================
-
-  if (EH_DONA) {
-
-    window.__CLIENTE_VIP__ = false;
-
-    if (ofertaCard) ofertaCard.style.display = "block";
-    if (vipCard) vipCard.classList.add("hidden");
-
-    if (btnAssinar) {
-      btnAssinar.disabled = true;
-      btnAssinar.style.cursor = "not-allowed";
-
-      if (window.OFERTA_ATUAL) {
-        btnAssinar.textContent =
-          `Assinar VIP por ${valorBRL(window.OFERTA_ATUAL.valor_promocional)}`;
-      }
-    }
-
-    return;
-  }
-
-  // ==========================
-  // VISITANTE
-  // ==========================
-
-  if (!tokenAtual) {
-    if (ofertaCard) ofertaCard.style.display = "block";
-    if (vipCard) vipCard.classList.add("hidden");
-    return;
-  }
-
-  // ==========================
-  // CLIENTE / MODELO VISITANTE
-  // ==========================
-
-  if (ehCliente || ehModelo) {
-
-    try {
-
-      const res = await fetch(`/api/vip/status/${MODELO_ID}`, {
-        headers: {
-          Authorization: "Bearer " + tokenAtual
-        }
-      });
-
-      const data = res.ok ? await res.json() : { vip: false };
-      const vip = data.vip;
-
-      if (vip) {
-
-        window.__CLIENTE_VIP__ = true;
-
-        if (ofertaCard) ofertaCard.style.display = "none";
-        if (vipCard) vipCard.classList.remove("hidden");
-
-      } else {
-
-        window.__CLIENTE_VIP__ = false;
-
-        if (ofertaCard) ofertaCard.style.display = "block";
-        if (vipCard) vipCard.classList.add("hidden");
-
-        if (btnAssinar && window.OFERTA_ATUAL) {
-          btnAssinar.disabled = false;
-          btnAssinar.textContent =
-            `Assinar VIP por ${valorBRL(window.OFERTA_ATUAL.valor_promocional)}`;
-        }
-
-      }
-
-    } catch (err) {
-
-      console.error("Erro ao verificar VIP:", err);
-
-      window.__CLIENTE_VIP__ = false;
-
-      if (ofertaCard) ofertaCard.style.display = "block";
-      if (vipCard) vipCard.classList.add("hidden");
-
-    }
-
-  }
-
-}
 
 function abrirMidia(item){
 
@@ -783,7 +685,8 @@ inputFile?.addEventListener("change", (e) => {
 
   arquivoSelecionado = file;
 
-  previewContainer.innerHTML = "";
+previewContainer.innerHTML = "";
+previewContainer.classList.remove("hidden");
 
   const url = URL.createObjectURL(file);
 
@@ -900,21 +803,22 @@ function enviarUploadFeed(){
 function fecharPopupUpload(){
 
   const popup = document.getElementById("popupUploadFeed");
+  const preview = document.getElementById("previewContainer");
+  const input = document.getElementById("fileFeed");
 
-  if(popup){
-    popup.classList.add("hidden");
-  }
+  if(popup) popup.classList.add("hidden");
+
+  if(preview) preview.innerHTML = "";
+
+  if(input) input.value = "";
+
+  arquivoSelecionado = null;
 
 }
 
 // =============================
 // PREMIUM UPLOAD
 // =============================
-
-const uploadAreaPremium = document.getElementById("uploadAreaPremium");
-const inputPremium = document.getElementById("filePremium");
-const previewPremium = document.getElementById("previewPremium");
-
 const premiumProgressFill = document.getElementById("premiumProgress");
 const premiumProgressBox = document.getElementById("premiumProgressBox");
 const premiumProgressText = document.getElementById("premiumProgressText");
