@@ -300,18 +300,23 @@ a{
 
 #modalMidia .modal-conteudo{
   position:relative;
-  background:#fff;
+  background:#000;
   border-radius:18px;
-  padding:20px;
+  padding:10px;
   max-width:90vw;
   max-height:90vh;
+  max-width:900px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
 }
 
+#modalMidia video,
 #modalMidia img,
-#modalMidia video{
-  max-width:100%;
-  max-height:80vh;
-  border-radius:12px;
+#modalMidia iframe{
+  width:100%;
+  height:100%;
+  object-fit:contain;
 }
 
 .social-group {

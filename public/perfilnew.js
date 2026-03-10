@@ -30,6 +30,29 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("popupUploadPremium").classList.add("hidden");
   });
 
+  document.getElementById("fecharModal")?.addEventListener("click", () => {
+    const modal = document.getElementById("modalMidia");
+    const video = document.getElementById("modalVideo");
+    const iframe = document.getElementById("modalIframe");
+
+    modal.classList.add("hidden");
+
+    if (video) {
+      video.pause();
+      video.src = "";
+    }
+
+    if (iframe) {
+      iframe.src = "";
+    }
+  });
+
+  // fechar clicando fora
+  document.querySelector("#modalMidia .modal-backdrop")
+  ?.addEventListener("click", () => {
+    document.getElementById("modalMidia").classList.add("hidden");
+  });
+
 
   // =========================
   // PARAMETROS URL
