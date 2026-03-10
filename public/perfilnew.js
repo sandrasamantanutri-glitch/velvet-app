@@ -943,6 +943,7 @@ function enviarUploadPremium(){
   form.append("file", arquivoPremium);
   form.append("descricao", texto);
   form.append("preco", preco);
+  form.append("modelo_id", MODELO_ID);
 
   const xhr = new XMLHttpRequest();
 
