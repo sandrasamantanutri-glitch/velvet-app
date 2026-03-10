@@ -595,7 +595,7 @@ transition:width 0.2s;
   background:#fff;
   border-radius:16px;
   overflow:hidden;
-
+position:relative;
   max-width:440px;
   margin:auto;
 
