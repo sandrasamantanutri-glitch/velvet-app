@@ -64,11 +64,71 @@ if (!tokenAtual) {
 
 });
 
-
 await carregarPerfil();
 await carregarOfertaAtiva();
 await aplicarRegrasDeAcesso();
 await carregarFeed();
+
+
+
+
+const btnEnviarFeed = document.getElementById("btnEnviarFeed");
+
+btnEnviarFeed?.addEventListener("click", async () => {
+
+  const file = fileInput.files[0];
+
+  if (!file) {
+    alert("Selecione uma mídia");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("tipo_conteudo", "feed");
+
+  try {
+
+    const res = await fetch("/api/upload", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + token
+      },
+      body: formData
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || "Erro ao enviar");
+      return;
+    }
+
+    alert("Post publicado!");
+
+    document.getElementById("popupUploadFeed").classList.add("hidden");
+
+    fileInput.value = "";
+    preview.innerHTML = "";
+
+    carregarFeed(); // recarrega o feed
+
+  } catch (err) {
+    console.error(err);
+    alert("Erro no upload");
+  }
+
+    document.getElementById("uploadClose")?.addEventListener("click", () => {
+    document.getElementById("popupUploadFeed").classList.add("hidden");
+  });
+
+  document.getElementById("uploadBackdrop")?.addEventListener("click", () => {
+    document.getElementById("popupUploadFeed").classList.add("hidden");
+  });
+
+});
+
+
 
 });
 
@@ -511,3 +571,42 @@ async function carregarFeed() {
   }
 
 }
+
+document.querySelector("#modalMidia .modal-backdrop")
+?.addEventListener("click", () => {
+
+  const modal = document.getElementById("modalMidia");
+  modal.classList.add("hidden");
+
+  const video = document.getElementById("modalVideo");
+  if (video) {
+    video.pause();
+    video.currentTime = 0;
+  }
+
+});
+
+const uploadArea = document.getElementById("uploadArea");
+const fileInput = document.getElementById("fileFeed");
+const preview = document.getElementById("previewContainer");
+
+uploadArea?.addEventListener("click", () => {
+  fileInput.click();
+});
+
+fileInput?.addEventListener("change", () => {
+
+  const file = fileInput.files[0];
+  if (!file) return;
+
+  preview.innerHTML = "";
+
+  const url = URL.createObjectURL(file);
+
+  if (file.type.startsWith("video")) {
+    preview.innerHTML = `<video src="${url}" controls></video>`;
+  } else {
+    preview.innerHTML = `<img src="${url}">`;
+  }
+
+});
