@@ -31,8 +31,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 
 await carregarPerfil();
-await aplicarRegrasDeAcesso();
 await carregarOfertaAtiva()
+await aplicarRegrasDeAcesso();
+
 
 });
 
