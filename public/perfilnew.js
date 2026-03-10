@@ -119,6 +119,39 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.location.href = `/chatc.html?modelo_id=${MODELO_ID}`;
   });
 
+  const uploadAreaPremium = document.getElementById("uploadAreaPremium");
+  const inputPremium = document.getElementById("filePremium");
+  const previewPremium = document.getElementById("previewPremium");
+
+  let arquivoPremium = null;
+
+  uploadAreaPremium?.addEventListener("click", () => inputPremium.click());
+
+  inputPremium?.addEventListener("change", (e) => {
+
+    const file = e.target.files[0];
+    if(!file) return;
+
+    arquivoPremium = file;
+
+    previewPremium.innerHTML = "";
+
+    const url = URL.createObjectURL(file);
+
+    if(file.type.startsWith("video")){
+      const video = document.createElement("video");
+      video.src = url;
+      video.controls = true;
+      previewPremium.appendChild(video);
+    }else{
+      const img = document.createElement("img");
+      img.src = url;
+      previewPremium.appendChild(img);
+    }
+
+  });
+
+  document.getElementById("btnEnviarPremium")?.addEventListener("click", enviarUploadPremium);
 
   // =========================
   // CARREGAMENTO
@@ -887,8 +920,6 @@ inputPremium?.addEventListener("change", (e) => {
   }
 
 });
-
-document.getElementById("btnEnviarPremium")?.addEventListener("click", enviarUploadPremium);
 
 function enviarUploadPremium(){
 
