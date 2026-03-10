@@ -4,14 +4,11 @@ const role = localStorage.getItem("role");
 let MODELO_ID = null;
 let EH_DONA = false;
 
-
-const socket = io();
-
-socket.on("vipAtivado", async ({ modelo_id }) => {
-  if (modelo_id === MODELO_ID) {
-    await aplicarRegrasDeAcesso();
-  }
-});
+// socket.on("vipAtivado", async ({ modelo_id }) => {
+//   if (modelo_id === MODELO_ID) {
+//     await aplicarRegrasDeAcesso();
+//   }
+// });
 
 document.addEventListener("DOMContentLoaded", async () => {
 
