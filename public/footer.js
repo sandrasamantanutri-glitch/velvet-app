@@ -118,6 +118,7 @@ function postarFeed(){
   };
 
 }
+window.postarFeed = postarFeed;
 
 
 
