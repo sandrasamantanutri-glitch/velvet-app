@@ -10,6 +10,12 @@ let EH_DONA = false;
 //   }
 // });
 
+  const uploadAreaPremium = document.getElementById("uploadAreaPremium");
+  const inputPremium = document.getElementById("filePremium");
+  const previewPremium = document.getElementById("previewPremium");
+
+  let arquivoPremium = null;
+
 document.addEventListener("DOMContentLoaded", async () => {
 
   // =========================
@@ -118,12 +124,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("btn-vip-chat")?.addEventListener("click", () => {
     window.location.href = `/chatc.html?modelo_id=${MODELO_ID}`;
   });
-
-  const uploadAreaPremium = document.getElementById("uploadAreaPremium");
-  const inputPremium = document.getElementById("filePremium");
-  const previewPremium = document.getElementById("previewPremium");
-
-  let arquivoPremium = null;
 
   uploadAreaPremium?.addEventListener("click", () => inputPremium.click());
 
@@ -823,8 +823,6 @@ const premiumProgressFill = document.getElementById("premiumProgress");
 const premiumProgressBox = document.getElementById("premiumProgressBox");
 const premiumProgressText = document.getElementById("premiumProgressText");
 
-let arquivoPremium = null;
-
 uploadAreaPremium?.addEventListener("click", () => inputPremium.click());
 
 inputPremium?.addEventListener("change", (e) => {
@@ -910,4 +908,89 @@ function fecharPopupPremium(){
     popup.classList.add("hidden");
   }
 
+}
+
+async function aplicarRegrasDeAcesso() {
+
+  const ofertaCard = document.getElementById("oferta-card");
+  const btnAssinar = document.getElementById("btn-assinar");
+  const vipCard = document.getElementById("vip-card");
+
+  const tokenAtual = localStorage.getItem("token");
+
+  window.__CLIENTE_VIP__ = false;
+
+  const ehModelo = role === "modelo";
+  const ehCliente = role === "cliente";
+
+  const modeloLogado = Number(localStorage.getItem("modelo_id"));
+  const ehDona = ehModelo && modeloLogado === MODELO_ID;
+
+  // MODELO DONA
+  if (ehDona) {
+
+    if (ofertaCard) ofertaCard.style.display = "block";
+
+    if (btnAssinar && window.OFERTA_ATUAL) {
+      btnAssinar.disabled = false;
+      btnAssinar.style.cursor = "not-allowed";
+      btnAssinar.textContent =
+        `Assinar VIP por ${valorBRL(window.OFERTA_ATUAL.valor_promocional)}`;
+    }
+
+    return;
+  }
+
+  // VISITANTE
+  if (!tokenAtual) {
+    if (ofertaCard) ofertaCard.style.display = "block";
+    return;
+  }
+
+  // CLIENTE OU MODELO VISITANDO
+  if (ehCliente || ehModelo) {
+
+    try {
+
+      const res = await fetch(`/api/vip/status/${MODELO_ID}`, {
+        headers: { Authorization: "Bearer " + tokenAtual }
+      });
+
+      const data = res.ok ? await res.json() : { vip: false };
+      const vip = data.vip;
+
+      if (vip) {
+
+        window.__CLIENTE_VIP__ = true;
+
+        if (ofertaCard) ofertaCard.style.display = "none";
+        if (vipCard) vipCard.classList.remove("hidden");
+
+      } else {
+
+        window.__CLIENTE_VIP__ = false;
+
+        if (ofertaCard) ofertaCard.style.display = "block";
+        if (vipCard) vipCard.classList.add("hidden");
+
+        if (btnAssinar && window.OFERTA_ATUAL) {
+          btnAssinar.disabled = false;
+          btnAssinar.textContent =
+            `Assinar VIP por ${valorBRL(window.OFERTA_ATUAL.valor_promocional)}`;
+        }
+
+      }
+
+    } catch (err) {
+
+      console.error("Erro ao verificar VIP:", err);
+
+      window.__CLIENTE_VIP__ = false;
+
+      if (ofertaCard) ofertaCard.style.display = "block";
+      if (vipCard) vipCard.classList.add("hidden");
+
+    }
+
+  }
 }
