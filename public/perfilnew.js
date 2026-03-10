@@ -790,8 +790,7 @@ async function carregarPremium(){
         url.includes(".webm") ||
         url.includes(".mov");
 
-        card.innerHTML = `
-
+card.innerHTML = `
 <div class="premium-header">
 
   <img class="premium-avatar"
@@ -809,10 +808,10 @@ async function carregarPremium(){
 
 </div>
 
-<div class="premium-media">
+<div class="premium-media" data-id="${item.id}">
   ${
     ehVideo
-    ? `<video src="${url}" muted controls></video>`
+    ? `<video src="${url}" muted></video>`
     : `<img src="${url}">`
   }
 </div>
@@ -829,6 +828,7 @@ async function carregarPremium(){
 
 </div>
 `;
+
  if (EH_DONA) {
 
     const btnExcluir = document.createElement("button");
@@ -843,10 +843,11 @@ async function carregarPremium(){
     card.appendChild(btnExcluir);
 
   }
+card.querySelector(".premium-media").onclick = () => {
+  abrirMidia(item);
+};
 
-  container.appendChild(card);
-
-
+container.appendChild(card);
 
 });
 
