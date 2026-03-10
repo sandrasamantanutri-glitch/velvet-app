@@ -311,6 +311,17 @@ a{
   border-radius:12px;
 }
 
+.upload-modal{
+  position:fixed;
+  inset:0;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  z-index:99999;
+}
+
 #fecharModal{
   position:absolute;
   top:10px;

@@ -494,15 +494,6 @@ function abrirMidia(item){
   modal.classList.remove("hidden");
 }
 
-// tecla ESC
-document.addEventListener("keydown", (e) => {
-
-  if (e.key === "Escape") {
-    fecharModalMidia();
-  }
-
-});
-
 function iniciarTabs(){
 
   const tabs = document.querySelectorAll(".tab");
@@ -707,7 +698,7 @@ modal.querySelector(".btn-register").onclick = () => {
 function abrirPreviewUpload(file, url) {
 
   const modal = document.createElement("div");
-  modal.className = "modal-midia";
+modal.className = "modal-midia upload-modal";
 
   modal.innerHTML = `
     <div class="modal-backdrop"></div>
