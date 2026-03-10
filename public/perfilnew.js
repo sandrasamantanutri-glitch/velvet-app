@@ -4,12 +4,6 @@ const role = localStorage.getItem("role");
 let MODELO_ID = null;
 let EH_DONA = false;
 
-// socket.on("vipAtivado", async ({ modelo_id }) => {
-//   if (modelo_id === MODELO_ID) {
-//     await aplicarRegrasDeAcesso();
-//   }
-// });
-
 document.addEventListener("DOMContentLoaded", async () => {
 
   // =========================
@@ -25,16 +19,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // =========================
-  // FECHAR POPUP UPLOAD
-  // =========================
-
-  const uploadBackdrop = document.getElementById("uploadBackdrop");
-  const uploadClose = document.getElementById("uploadClose");
-
-  uploadBackdrop?.addEventListener("click", fecharPopupUpload);
-  uploadClose?.addEventListener("click", fecharPopupUpload);
-
-  // =========================
   // VERIFICAR SE É DONA
   // =========================
 
@@ -45,88 +29,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("btn-upload")?.remove();
   }
 
-  // =========================
-  // MODAL MIDIA
-  // =========================
 
-  const modal = document.getElementById("modalMidia");
-  const btnFechar = document.getElementById("fecharModal");
+await carregarPerfil();
 
-  function fecharModalMidia(){
-
-    const video = document.getElementById("modalVideo");
-
-    if(video){
-      video.pause();
-      video.src = "";
-    }
-
-    modal.classList.add("hidden");
-  }
-
-  // botão X
-  btnFechar?.addEventListener("click", fecharModalMidia);
-
-  // clique fora
-  modal?.addEventListener("click", (e) => {
-
-    if (e.target.classList.contains("modal-backdrop")) {
-      fecharModalMidia();
-    }
-
-  });
-
-  // tecla ESC
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") fecharModalMidia();
-  });
-
-  // =========================
-  // BOTÃO ASSINAR
-  // =========================
-
-  const btnAssinar = document.getElementById("btn-assinar");
-
-  btnAssinar?.addEventListener("click", () => {
-
-    const tokenAtual = localStorage.getItem("token");
-
-    if (!tokenAtual) {
-      abrirPopupLoginObrigatorio();
-      return;
-    }
-
-    const roleAtual = localStorage.getItem("role");
-    const modeloLogado = Number(localStorage.getItem("modelo_id"));
-
-    // modelo não pode assinar outra modelo
-    if (roleAtual === "modelo" && modeloLogado !== MODELO_ID) {
-      alert("No momento, modelo não pode assinar outra modelo.");
-      return;
-    }
-
-    if (window.__CLIENTE_VIP__) {
-      window.location.href = `/chatc.html?modelo_id=${MODELO_ID}`;
-      return;
-    }
-
-    window.abrirFluxoVIP();
-  });
-
-  document.getElementById("btn-vip-chat")?.addEventListener("click", () => {
-    window.location.href = `/chatc.html?modelo_id=${MODELO_ID}`;
-  });
-
-
-  // =========================
-  // CARREGAMENTO
-  // =========================
-
-  await carregarPerfil();
-  await carregarOfertaAtiva();
-await carregarFeed();
-await carregarPremium();
-await aplicarRegrasDeAcesso();
 
 });
 
