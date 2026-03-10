@@ -562,24 +562,25 @@ async function carregarFeed() {
         abrirMidia(item);
       };
 
+      // BOTÃO EXCLUIR
+      if (EH_DONA) {
+
+        const btnExcluir = document.createElement("button");
+        btnExcluir.className = "btn-excluir-midia";
+        btnExcluir.textContent = "✕";
+
+        btnExcluir.onclick = (e) => {
+          e.stopPropagation();
+          excluirMidia(item.id, div);
+        };
+
+        div.appendChild(btnExcluir);
+
+      }
+
       grid.appendChild(div);
 
     });
-
-    if (EH_DONA) {
-
-  const btnExcluir = document.createElement("button");
-  btnExcluir.className = "btn-excluir-midia";
-  btnExcluir.textContent = "✕";
-
-  btnExcluir.onclick = (e) => {
-    e.stopPropagation();
-    excluirMidia(item.id, div);
-  };
-
-  div.appendChild(btnExcluir);
-
-}
 
   } catch (err) {
     console.error("Erro ao carregar feed:", err);
