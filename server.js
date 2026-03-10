@@ -1364,6 +1364,8 @@ app.post(
         const mimetype = file.mimetype || "";
 
         let tipo;
+        let publicUrl = null;
+        let thumbnailUrl = null;
 
         if (mimetype.startsWith("image/")) {
           tipo = "imagem";
@@ -1374,8 +1376,6 @@ app.post(
         else {
           continue;
         }
-
-        let publicUrl = null;
 
         // -------------------
         // IMAGEM
@@ -1405,6 +1405,8 @@ app.post(
 
           publicUrl =
             `https://imagedelivery.net/${process.env.CF_ACCOUNT_HASH}/${imageId}/public`;
+            
+            thumbnailUrl = publicUrl;
         }
 
         // -------------------
