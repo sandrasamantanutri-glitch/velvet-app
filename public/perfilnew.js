@@ -566,6 +566,21 @@ async function carregarFeed() {
 
     });
 
+    if (EH_DONA) {
+
+  const btnExcluir = document.createElement("button");
+  btnExcluir.className = "btn-excluir-midia";
+  btnExcluir.textContent = "✕";
+
+  btnExcluir.onclick = (e) => {
+    e.stopPropagation();
+    excluirMidia(item.id, div);
+  };
+
+  div.appendChild(btnExcluir);
+
+}
+
   } catch (err) {
     console.error("Erro ao carregar feed:", err);
   }
@@ -610,3 +625,34 @@ fileInput?.addEventListener("change", () => {
   }
 
 });
+
+async function excluirMidia(id, elemento) {
+
+  if (!confirm("Excluir esta mídia?")) return;
+
+  try {
+
+    const res = await fetch(`/api/conteudos/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || "Erro ao excluir");
+      return;
+    }
+
+    elemento.remove();
+
+  } catch (err) {
+
+    console.error("Erro ao excluir mídia:", err);
+    alert("Erro ao excluir mídia");
+
+  }
+
+}
