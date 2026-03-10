@@ -31,6 +31,38 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   iniciarTabs();
 
+  const modal = document.getElementById("modalMidia");
+  const btnFechar = document.getElementById("fecharModal");
+
+  function fecharModalMidia(){
+
+    const video = document.getElementById("modalVideo");
+
+    if(video){
+      video.pause();
+      video.src = "";
+    }
+
+    modal.classList.add("hidden");
+  }
+
+  // botão X
+  btnFechar?.addEventListener("click", fecharModalMidia);
+
+  // clique fora
+  modal?.addEventListener("click", (e) => {
+
+    if (e.target.classList.contains("modal-backdrop")) {
+      fecharModalMidia();
+    }
+
+  });
+
+  // tecla ESC
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") fecharModalMidia();
+  });
+
   // =========================
   // BOTÃO ASSINAR
   // =========================
@@ -403,37 +435,6 @@ function abrirMidia(item){
 
   modal.classList.remove("hidden");
 }
-
-// =========================
-// FECHAR MODAL
-// =========================
-
-const modal = document.getElementById("modalMidia");
-const btnFechar = document.getElementById("fecharModal");
-
-function fecharModalMidia(){
-
-  const video = document.getElementById("modalVideo");
-
-  if(video){
-    video.pause();
-    video.src = "";
-  }
-
-  modal.classList.add("hidden");
-}
-
-// botão X
-btnFechar?.addEventListener("click", fecharModalMidia);
-
-// clique fora (backdrop)
-modal?.addEventListener("click", (e) => {
-
-  if (e.target.classList.contains("modal-backdrop")) {
-    fecharModalMidia();
-  }
-
-});
 
 // tecla ESC
 document.addEventListener("keydown", (e) => {
