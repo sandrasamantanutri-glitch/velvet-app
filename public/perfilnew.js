@@ -1,7 +1,7 @@
 const token = localStorage.getItem("token");
 const role = localStorage.getItem("role");
 
-let MODELO_ID = null;
+let modelo_id = null;
 let EH_DONA = false;
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -11,9 +11,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   // =========================
 
   const params = new URLSearchParams(window.location.search);
-  MODELO_ID = Number(params.get("modelo_id") || params.get("id"));
+  modelo_id = Number(params.get("modelo_id") || params.get("id"));
 
-  if (!MODELO_ID) {
+  if (!modelo_id) {
     console.warn("modelo_id não encontrado na URL");
     return;
   }
@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // =========================
 
   const modeloLogado = Number(localStorage.getItem("modelo_id"));
-  EH_DONA = role === "modelo" && modeloLogado === MODELO_ID;
+  EH_DONA = role === "modelo" && modeloLogado === modelo_id;
 
   if (!EH_DONA) {
     document.getElementById("btn-upload")?.remove();
@@ -40,7 +40,7 @@ async function carregarPerfil(){
 
   try{
 
-    const res = await fetch(`/api/modelo/publico/${MODELO_ID}`);
+    const res = await fetch(`/api/modelo/publico/${modelo_id}`);
 
     if(!res.ok) return;
 
