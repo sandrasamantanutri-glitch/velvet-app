@@ -732,6 +732,27 @@ transition:width 0.2s;
 }
 
 
+.premium-user{
+ display:flex;
+ flex-direction:column;
+}
+
+.premium-tempo{
+ font-size:12px;
+ color:#888;
+}
+
+.premium-descricao{
+ margin-top:6px;
+ line-height:1.4;
+}
+
+.premium-preco{
+ color:#7B2CFF;
+ font-weight:600;
+ margin-top:6px;
+}
+
 /* ===============================
    RESPONSIVO
 =============================== */

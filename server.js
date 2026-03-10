@@ -3292,7 +3292,15 @@ app.get("/api/modelo/publico/:id/premium", async (req, res) => {
   const modeloId = Number(req.params.id);
 
   const { rows } = await db.query(`
-    SELECT id, url, thumbnail_url, tipo, tipo_conteudo, preco, descricao
+    SELECT 
+      id,
+      url,
+      thumbnail_url,
+      tipo,
+      tipo_conteudo,
+      preco,
+      descricao,
+      criado_em
     FROM conteudos
     WHERE modelo_id = $1
       AND tipo_conteudo = 'venda'

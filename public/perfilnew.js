@@ -790,32 +790,45 @@ async function carregarPremium(){
         url.includes(".webm") ||
         url.includes(".mov");
 
-      card.innerHTML = `
+        card.innerHTML = `
 
-        <div class="premium-header">
-          <img class="premium-avatar"
-          src="${document.getElementById("profileAvatar").src}">
-          <span class="premium-username">
-            ${document.getElementById("profileName").textContent}
-          </span>
-        </div>
+<div class="premium-header">
 
-        <div class="premium-media">
-          ${
-            ehVideo
-            ? `<video src="${url}" muted controls></video>`
-            : `<img src="${url}">`
-          }
-        </div>
+  <img class="premium-avatar"
+  src="${document.getElementById("profileAvatar").src}">
 
-        <div class="premium-info">
-          ${item.descricao || ""}
-          <div class="premium-preco">
-            ${valorBRL(item.preco)}
-          </div>
-        </div>
+  <div class="premium-user">
+    <span class="premium-username">
+      ${document.getElementById("profileName").textContent}
+    </span>
 
-      `;
+    <span class="premium-tempo">
+      ${tempoAtras(item.created_at)} atrás
+    </span>
+  </div>
+
+</div>
+
+<div class="premium-media">
+  ${
+    ehVideo
+    ? `<video src="${url}" muted controls></video>`
+    : `<img src="${url}">`
+  }
+</div>
+
+<div class="premium-info">
+
+  <div class="premium-descricao">
+    ${item.descricao || ""}
+  </div>
+
+  <div class="premium-preco">
+    ${valorBRL(item.preco)}
+  </div>
+
+</div>
+`;
 
       container.appendChild(card);
 
@@ -824,5 +837,22 @@ async function carregarPremium(){
   }catch(err){
     console.error("Erro carregar premium:", err);
   }
+
+}
+
+function tempoAtras(dataISO){
+
+  const agora = new Date();
+  const data = new Date(dataISO);
+
+  const diff = Math.floor((agora - data) / 1000);
+
+  const minutos = Math.floor(diff / 60);
+  const horas = Math.floor(diff / 3600);
+  const dias = Math.floor(diff / 86400);
+
+  if (minutos < 60) return `${minutos} min`;
+  if (horas < 24) return `${horas} h`;
+  return `${dias} d`;
 
 }
