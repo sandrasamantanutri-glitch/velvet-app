@@ -821,133 +821,150 @@ async function carregarPremium(){
 
     midias.forEach(item => {
 
+      const podeVer = EH_DONA || window.__CLIENTE_VIP__;
+
       const card = document.createElement("div");
       card.className = "midia-card-premium";
 
-const medias = item.midias || [
-  { url: item.url || item.thumbnail_url }
-];
-
-let mediaHTML = medias.map((m, i) => {
-
-  const ehVideo =
-    m.url.includes(".mp4") ||
-    m.url.includes(".webm") ||
-    m.url.includes(".mov");
-
-  return `
-    <div class="carousel-item ${i === 0 ? "active" : ""}">
-      ${
-        ehVideo
-        ? `<video src="${m.url}" muted></video>`
-        : `<img src="${m.url}">`
+      if(!podeVer){
+        card.classList.add("locked");
       }
-    </div>
-  `;
 
-}).join("");
+      const medias = item.midias || [
+        { url: item.url || item.thumbnail_url }
+      ];
 
-card.innerHTML = `
-<div class="premium-header">
+      let mediaHTML = medias.map((m, i) => {
 
-  <img class="premium-avatar"
-  src="${document.getElementById("profileAvatar").src}">
+        const ehVideo =
+          m.url.includes(".mp4") ||
+          m.url.includes(".webm") ||
+          m.url.includes(".mov");
 
-  <div class="premium-user">
-    <span class="premium-username">
-      ${document.getElementById("profileName").textContent}
-    </span>
+        return `
+          <div class="carousel-item ${i === 0 ? "active" : ""}">
+            ${
+              ehVideo
+              ? `<video src="${m.url}" muted></video>`
+              : `<img src="${m.url}">`
+            }
+          </div>
+        `;
 
-    <span class="premium-tempo">
-      ${tempoAtras(item.criado_em)} atrás
-    </span>
-  </div>
+      }).join("");
 
-</div>
+      card.innerHTML = `
+      <div class="premium-header">
 
-<div class="premium-media">
+        <img class="premium-avatar"
+        src="${document.getElementById("profileAvatar").src}">
 
-  <div class="carousel">
+        <div class="premium-user">
+          <span class="premium-username">
+            ${document.getElementById("profileName").textContent}
+          </span>
 
-    ${mediaHTML}
+          <span class="premium-tempo">
+            ${tempoAtras(item.criado_em)} atrás
+          </span>
+        </div>
 
-    ${
-      medias.length > 1
-      ? `
-      <button class="carousel-prev">‹</button>
-      <button class="carousel-next">›</button>
-      `
-      : ""
-    }
+      </div>
 
-  </div>
+      <div class="premium-media">
 
-</div>
+        <div class="carousel">
 
-<div class="premium-info">
+          ${mediaHTML}
 
-  <div class="premium-descricao">
-    ${item.descricao || ""}
-  </div>
+          ${
+            medias.length > 1
+            ? `
+            <button class="carousel-prev">‹</button>
+            <button class="carousel-next">›</button>
+            `
+            : ""
+          }
 
-  <div class="premium-preco">
-    ${valorBRL(item.preco)}
-  </div>
+        </div>
 
-</div>
-`;
+      </div>
 
- if (EH_DONA) {
+      <div class="premium-info">
 
-    const btnExcluir = document.createElement("button");
-    btnExcluir.className = "btn-excluir-midia";
-    btnExcluir.textContent = "✕";
+        <div class="premium-descricao">
+          ${item.descricao || ""}
+        </div>
 
-    btnExcluir.onclick = (e) => {
-      e.stopPropagation();
-      excluirMidia(item.id, card);
-    };
+        <div class="premium-preco">
+          ${valorBRL(item.preco)}
+        </div>
 
-    card.appendChild(btnExcluir);
+      </div>
+      `;
 
-  }
+      // BOTÃO EXCLUIR (dona do perfil)
+      if (EH_DONA) {
 
-const media = card.querySelector(".premium-media");
+        const btnExcluir = document.createElement("button");
+        btnExcluir.className = "btn-excluir-midia";
+        btnExcluir.textContent = "✕";
 
-const carousel = card.querySelector(".carousel");
+        btnExcluir.onclick = (e) => {
+          e.stopPropagation();
+          excluirMidia(item.id, card);
+        };
 
-if (carousel) {
+        card.appendChild(btnExcluir);
+      }
 
-  let index = 0;
-  const items = carousel.querySelectorAll(".carousel-item");
+      const media = card.querySelector(".premium-media");
+      const carousel = card.querySelector(".carousel");
 
-  const show = (i) => {
-    items.forEach(el => el.classList.remove("active"));
-    items[i].classList.add("active");
-  };
+      // CARROSSEL
+      if (carousel) {
 
-  carousel.querySelector(".carousel-next")?.addEventListener("click", (e)=>{
-    e.stopPropagation();
-    index = (index + 1) % items.length;
-    show(index);
-  });
+        let index = 0;
+        const items = carousel.querySelectorAll(".carousel-item");
 
-  carousel.querySelector(".carousel-prev")?.addEventListener("click", (e)=>{
-    e.stopPropagation();
-    index = (index - 1 + items.length) % items.length;
-    show(index);
-  });
+        const show = (i) => {
+          items.forEach(el => el.classList.remove("active"));
+          items[i].classList.add("active");
+        };
 
-}
+        carousel.querySelector(".carousel-next")?.addEventListener("click",(e)=>{
+          e.stopPropagation();
+          index = (index + 1) % items.length;
+          show(index);
+        });
 
-if (media) {
-  media.onclick = () => abrirMidia(item);
-}
+        carousel.querySelector(".carousel-prev")?.addEventListener("click",(e)=>{
+          e.stopPropagation();
+          index = (index - 1 + items.length) % items.length;
+          show(index);
+        });
 
+      }
 
-container.appendChild(card);
+      // CLICK MIDIA
+      if (media) {
 
-});
+        media.onclick = () => {
+
+          if(!podeVer){
+            abrirFluxoMidia(item);
+            return;
+          }
+
+          abrirMidia(item);
+        };
+
+      }
+
+      // ADICIONA CARD
+      container.appendChild(card);
+
+    });
 
   }catch(err){
     console.error("Erro carregar premium:", err);

@@ -633,7 +633,7 @@ position:relative;
 .premium-media img,
 .premium-media video{
   width:100%;
-  max-height:420px;
+  max-height:220px;
   object-fit:cover;
   display:block;
 }
@@ -650,6 +650,29 @@ position:relative;
  font-weight:700;
  font-size:18px;
  margin-top:8px;
+}
+
+.midia-card-premium.locked .premium-media img,
+.midia-card-premium.locked .premium-media video{
+  filter: blur(45px);
+}
+
+.midia-card-premium.locked::after{
+  content:"🔒 Desbloquear";
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+
+  background:rgba(0,0,0,0.7);
+  color:white;
+
+  padding:10px 16px;
+  border-radius:20px;
+  font-weight:600;
+  font-size:14px;
+
+  pointer-events:none;
 }
 
 /* ===============================
