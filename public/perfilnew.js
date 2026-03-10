@@ -196,6 +196,37 @@ document.getElementById("btnEnviarPremium")
 
 });
 
+// ===============================
+// TABS FEED / PREMIUM
+// ===============================
+
+const tabs = document.querySelectorAll(".midias-tabs .tab");
+const feedGrid = document.getElementById("listaMidias");
+const premiumGrid = document.getElementById("midias-paid");
+
+tabs.forEach(tab => {
+
+  tab.addEventListener("click", () => {
+
+    tabs.forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+
+    const tipo = tab.dataset.tab;
+
+    if (tipo === "free") {
+      feedGrid.classList.add("active");
+      premiumGrid.classList.remove("active");
+    }
+
+    if (tipo === "paid") {
+      premiumGrid.classList.add("active");
+      feedGrid.classList.remove("active");
+    }
+
+  });
+
+});
+
 
 
 });
