@@ -215,7 +215,7 @@ if (capa) {
 async function carregarFeed(){
 
   console.log("Carregando feed do modelo:", MODELO_ID);
-  
+
   const gridFree = document.getElementById("listaMidias");
   const gridPaid = document.getElementById("midias-paid");
 
@@ -804,6 +804,117 @@ function enviarUploadFeed(){
 function fecharPopupUpload(){
 
   const popup = document.getElementById("popupUploadFeed");
+
+  if(popup){
+    popup.classList.add("hidden");
+  }
+
+}
+
+// =============================
+// PREMIUM UPLOAD
+// =============================
+
+const uploadAreaPremium = document.getElementById("uploadAreaPremium");
+const inputPremium = document.getElementById("filePremium");
+const previewPremium = document.getElementById("previewPremium");
+
+const premiumProgressFill = document.getElementById("premiumProgress");
+const premiumProgressBox = document.getElementById("premiumProgressBox");
+const premiumProgressText = document.getElementById("premiumProgressText");
+
+let arquivoPremium = null;
+
+uploadAreaPremium?.addEventListener("click", () => inputPremium.click());
+
+inputPremium?.addEventListener("change", (e) => {
+
+  const file = e.target.files[0];
+  if(!file) return;
+
+  arquivoPremium = file;
+
+  previewPremium.innerHTML = "";
+
+  const url = URL.createObjectURL(file);
+
+  if(file.type.startsWith("video")){
+    const video = document.createElement("video");
+    video.src = url;
+    video.controls = true;
+    previewPremium.appendChild(video);
+  }else{
+    const img = document.createElement("img");
+    img.src = url;
+    previewPremium.appendChild(img);
+  }
+
+});
+
+document.getElementById("btnEnviarPremium")?.addEventListener("click", enviarUploadPremium);
+
+function enviarUploadPremium(){
+
+  const texto = document.getElementById("premiumTexto").value;
+  const preco = document.getElementById("premiumPreco").value;
+
+  if(!arquivoPremium){
+    alert("Selecione uma mídia");
+    return;
+  }
+
+  if(!preco){
+    alert("Informe o preço");
+    return;
+  }
+
+  const token = localStorage.getItem("token");
+
+  const form = new FormData();
+  form.append("file", arquivoPremium);
+  form.append("tipo", "venda");
+  form.append("modelo_id", MODELO_ID);
+  form.append("texto", texto);
+  form.append("preco", preco);
+
+  const xhr = new XMLHttpRequest();
+
+  xhr.open("POST","/api/upload");
+  xhr.setRequestHeader("Authorization","Bearer "+token);
+
+  premiumProgressBox.classList.remove("hidden");
+
+  xhr.upload.onprogress = function(e){
+
+    if(!e.lengthComputable) return;
+
+    const percent = Math.round((e.loaded / e.total)*100);
+
+    premiumProgressFill.style.width = percent+"%";
+    premiumProgressText.textContent = percent+"%";
+
+  };
+
+  xhr.onload = async function(){
+
+    if(xhr.status !== 200){
+      alert("Erro no upload");
+      return;
+    }
+
+    fecharPopupPremium();
+
+    await carregarFeed();
+
+  };
+
+  xhr.send(form);
+
+}
+
+function fecharPopupPremium(){
+
+  const popup = document.getElementById("popupUploadPremium");
 
   if(popup){
     popup.classList.add("hidden");

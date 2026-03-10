@@ -129,10 +129,14 @@ document.addEventListener("DOMContentLoaded", () => {
   // POSTAR PREMIUM
   // =========================
 
-  function postarPremium(){
+function postarPremium(){
 
-    console.log("abrir upload premium");
+  const popup = document.getElementById("popupUploadPremium");
 
-  }
+  if(!popup) return;
+
+  popup.classList.remove("hidden");
+
+}
 
 });
