@@ -139,15 +139,22 @@ document.getElementById("uploadAreaPremium")
 
 filePremium?.addEventListener("change", () => {
 
-  const file = filePremium.files[0];
-  if(!file) return;
+  const files = Array.from(filePremium.files);
+  if(!files.length) return;
 
-  const url = URL.createObjectURL(file);
+  previewPremium.innerHTML = "";
 
-  previewPremium.innerHTML =
-    file.type.startsWith("video")
+  files.forEach(file => {
+
+    const url = URL.createObjectURL(file);
+
+    const el = file.type.startsWith("video")
       ? `<video src="${url}" controls></video>`
       : `<img src="${url}">`;
+
+    previewPremium.innerHTML += el;
+
+  });
 
 });
 
@@ -168,8 +175,13 @@ document.getElementById("btnEnviarPremium")
     return;
   }
 
-  const form = new FormData();
+ const form = new FormData();
+ 
+const files = filePremium.files;
+for(const file of files){
   form.append("file", file);
+}
+
   form.append("descricao", descricao);
   form.append("preco", preco);
   form.append("tipo_conteudo","venda");
