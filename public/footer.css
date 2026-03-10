@@ -36,25 +36,26 @@
   margin-bottom:4px;
 }
 
-.footer-menu{
+.modelo-footer{
   position:fixed;
-  bottom:80px;
+  bottom:0;
+
   left:50%;
   transform:translateX(-50%);
 
-  width:260px;
+  width:100%;
+  max-width:900px; /* mesma largura do perfil */
+
+  height:70px;
 
   background:#fff;
-  border-radius:10px;
-
-  box-shadow:0 10px 30px rgba(0,0,0,0.15);
-
-  padding:10px;
+  border-top:1px solid #eee;
 
   display:flex;
-  flex-direction:column;
+  justify-content:space-around;
+  align-items:center;
 
-  z-index:1001;
+  z-index:1000;
 }
 
 .footer-menu button{
