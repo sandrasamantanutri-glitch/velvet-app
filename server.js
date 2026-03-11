@@ -537,7 +537,7 @@ if (!orderId) {
   return res.status(200).send("ok");
 }
 
-const valorPago = charge.amount / 100;
+const valorPago = Number(charge.amount || 0) / 100;
 
 console.log("Valor pago:", valorPago);
 
@@ -693,6 +693,16 @@ modelo_id
 
 console.log("Conteúdos liberados:", conteudo_ids);
 
+const valorBruto = Number(valores.valor_bruto ?? valorBase ?? valorPago ?? 0);
+
+console.log("Valores finais transação MIDIA:",{
+  valorBruto,
+  valor_modelo: valores.valor_modelo,
+  agency_fee: valores.agency_fee,
+  velvet_fee: valores.velvet_fee,
+  taxa_gateway: valores.taxa_gateway
+});
+
 await client.query(`
 INSERT INTO transacoes_agency (
 modelo_id,
@@ -713,11 +723,11 @@ $3,$4,$5,$6,$7,'pago',NOW()
 `,[
 modelo_id,
 cliente_id,
-valores.valor_bruto,
-valores.valor_modelo,
-valores.agency_fee,
-valores.velvet_fee,
-valores.taxa_gateway
+valorBruto,
+Number(valores.valor_modelo || 0),
+Number(valores.agency_fee || 0),
+Number(valores.velvet_fee || 0),
+Number(valores.taxa_gateway || 0)
 ]);
 
 console.log("transacoes_agency (midia) inserido");
@@ -800,6 +810,16 @@ orderId
 
 console.log("vip_subscriptions atualizado");
 
+const valorBruto = Number(valores.valor_bruto ?? valorPago ?? 0);
+
+console.log("Valores finais transação VIP:",{
+  valorBruto,
+  valor_modelo: valores.valor_modelo,
+  agency_fee: valores.agency_fee,
+  velvet_fee: valores.velvet_fee,
+  taxa_gateway: valores.taxa_gateway
+});
+
 await client.query(`
 INSERT INTO transacoes_agency (
 modelo_id,
@@ -820,11 +840,11 @@ $3,$4,$5,$6,$7,'pago',NOW()
 `,[
 modelo_id,
 cliente_id,
-valores.valor_bruto,
-valores.valor_modelo,
-valores.agency_fee,
-valores.velvet_fee,
-valores.taxa_gateway
+valorBruto,
+Number(valores.valor_modelo || 0),
+Number(valores.agency_fee || 0),
+Number(valores.velvet_fee || 0),
+Number(valores.taxa_gateway || 0)
 ]);
 
 console.log("transacoes_agency (vip) inserido");
