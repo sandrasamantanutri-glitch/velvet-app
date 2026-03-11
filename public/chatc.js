@@ -39,32 +39,6 @@ let pagamentoEmProcesso = false;
 
 const stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
 
-chatBox.addEventListener("click", (e) => {
-
-  const midia = e.target.closest(".midia-item");
-  if(!midia) return;
-
-  const conteudo = midia.closest(".chat-conteudo");
-  if(!conteudo) return;
-
-  const bloqueado = conteudo.classList.contains("bloqueado");
-  const url = midia.dataset.full;
-
-  if(bloqueado){
-
-    abrirPagamentoConteudo(
-      conteudo.dataset.id,
-      conteudo.dataset.preco
-    );
-
-  } else {
-
-    abrirModalMidia(url);
-
-  }
-
-});
-
 // ===============================
 // SOCKET
 // ===============================
@@ -204,11 +178,16 @@ document.addEventListener(
     const preco = Number(card.dataset.preco || 0);
     const messageId = Number(card.dataset.id);
 
-const estaLiberado =
-  preco === 0 ||
-  card.classList.contains("livre") ||
-  card.classList.contains("visto") ||
-  conteudosLiberados.has(messageId);
+    const midia =
+      e.target.closest(".midia-item") ||
+      e.target.parentElement?.closest(".midia-item");
+    if (!midia) return;
+
+    const estaLiberado =
+      preco === 0 ||
+      card.classList.contains("livre") ||
+      card.classList.contains("visto") ||
+      conteudosLiberados.has(messageId);
 
     const precisaPagar = preco > 0 && !estaLiberado;
 
@@ -219,14 +198,14 @@ const estaLiberado =
       return;
     }
 
-    const midia = e.target.closest(".midia-item") || e.target.parentElement?.closest(".midia-item");
+    // ✅ LIBERADO: também intercepta
+    e.preventDefault();
+    e.stopPropagation();
 
-if (midia && estaLiberado) {
-  const index = Number(midia.dataset.index || 0);
-  abrirConteudo(messageId, index);
-}
+    const index = Number(midia.dataset.index || 0);
+    abrirConteudo(messageId, index);
   },
-  true // 👈 CAPTURE (crítico)
+  true // CAPTURE
 );
 
 // ===============================

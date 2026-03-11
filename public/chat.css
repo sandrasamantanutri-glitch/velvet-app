@@ -1214,7 +1214,7 @@ cursor:pointer;
 /* caixa da mídia */
 .modal-midia-box{
   position:relative;
-  z-index:2;
+z-index:100001;
 
   max-height:120vh;
   max-width:120vw;
