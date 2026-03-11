@@ -124,6 +124,18 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
+     const modal = document.getElementById("modalMidia");
+
+    if(modal){
+      modal.addEventListener("click", function(e){
+
+        if(e.target.classList.contains("modal-backdrop")){
+          fecharModalMidia();
+        }
+
+      });
+    }
+
     await carregarInfoModelo(modelo_id);
     tentarEntrarSala();
 
