@@ -431,6 +431,7 @@ socket.on("mensagemExcluida", ({ id }) => {
 // CONTEÚDO VENDIDO
 // ===============================
 // 🔔 Atualiza a mensagem de conteúdo quando cliente já viu
+
 socket.on("conteudoVisto", ({ message_id, conteudo_ids }) => {
 
   if (!message_id) return;
@@ -449,12 +450,18 @@ socket.on("conteudoVisto", ({ message_id, conteudo_ids }) => {
 
   // 🔒 Atualiza lista local para bloquear no popup
   if (Array.isArray(conteudo_ids)) {
-    conteudo_ids.forEach(id => {
-      window.conteudosVistosCliente.add(Number(id));
-      if(!window.conteudosVistosCliente){
-  window.conteudosVistosCliente = new Set();
-}
-    });
+
+    if(!window.conteudosVistosCliente){
+      window.conteudosVistosCliente = new Set();
+    }
+
+conteudo_ids.forEach(id => {
+  const num = Number(id);
+  if(Number.isInteger(num)){
+    window.conteudosVistosCliente.add(num);
+  }
+});
+
   }
 
 });
@@ -524,7 +531,7 @@ div.innerHTML = `
         data-thumb="${m.thumbnail_url || m.url}"
         data-full="${m.url}"
         data-index="${index}"
-        style="background-image:url('${m.thumbnail_url || m.url}')">
+        style="background:#111"
       </div>
     `).join("")}
   </div>
@@ -923,13 +930,23 @@ function fecharModalMidia() {
 }
 
 function abrirMidia(midia){
-  const src = midia.dataset.full || midia.dataset.thumb;
-  if(!src) return;
+  let src = midia.dataset.full || midia.dataset.thumb;
+
+  if(!src){
+    console.warn("URL de mídia inválida");
+    return;
+  }
+
+  // garante URL absoluta se vier relativa
+  if(src.startsWith("/")){
+    src = window.location.origin + src;
+  }
 
   const isVideo =
-    src.includes(".mp4") ||
-    src.includes(".webm") ||
-    src.includes(".mov");
+    src.endsWith(".mp4") ||
+    src.endsWith(".webm") ||
+    src.endsWith(".mov") ||
+    src.includes("videodelivery.net");
 
   abrirModalMidia(src, isVideo);
 }
@@ -1082,9 +1099,13 @@ function ativarLazyLoadingModelo(div, msg, bloqueado){
     media.className = "midia-thumb";
     media.style.pointerEvents = "none";
 
-    // 🔧 inserir imediatamente para não quebrar o layout
     el.innerHTML = "";
-    el.appendChild(media);
+media.style.width = "100%";
+media.style.height = "100%";
+media.style.objectFit = "cover";
+media.style.pointerEvents = "none";
+
+el.appendChild(media);
 
   });
 
