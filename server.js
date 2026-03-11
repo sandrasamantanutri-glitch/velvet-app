@@ -659,7 +659,7 @@ if (metadata.tipo === "conteudo_pix") {
     return res.status(200).send("ok");
   }
 
-  const valorBase = Number(conteudoRes.rows[0].preco);
+const valorBase = Number(Number(conteudoRes.rows[0].preco).toFixed(2));
   const taxaGateway = Number((valorBase * 0.15).toFixed(2));
   const valorBruto = valorBase;
 
