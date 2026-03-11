@@ -209,7 +209,7 @@ app.post(
 
         const valorComparacao = valorTotalMeta || valorPago;
 
-        if (Number(valorComparacao) !== Number(valorPago)) {
+if (Math.abs(Number(valorComparacao) - Number(valorPago)) > 0.01) {
           console.log("🚨 Valor divergente Stripe");
           await client.query("ROLLBACK");
           return res.status(200).send("ok");
@@ -224,92 +224,98 @@ app.post(
           const expiration = new Date();
           expiration.setMonth(expiration.getMonth() + 1);
 
-          const taxaExtra =
-            Number(metadata.taxa_transacao || 0) +
-            Number(metadata.taxa_plataforma || 0);
+let valorBase = Number(metadata.valor_base ?? valorPago);
 
-          const valorBase = Number((valorPago - taxaExtra).toFixed(2));
+if (!Number.isFinite(valorBase) || valorBase <= 0) {
+  console.log("🚨 valorBase inválido stripe:", metadata.valor_base, valorPago);
+  await client.query("ROLLBACK");
+  return res.status(200).send("ok");
+}
 
-          const valores = await calcularValores({
-            modelo_id,
-            valor_bruto: valorBase,
-            taxa_gateway: 0
-          });
+valorBase = Number(valorBase.toFixed(2));
+const taxaGateway = Number((valorBase * 0.15).toFixed(2));
 
-          await client.query(`
-            INSERT INTO vip_subscriptions (
-              cliente_id,
-              modelo_id,
-              ativo,
-              created_at,
-              updated_at,
-              expiration_at,
-              valor_assinatura,
-              taxa_transacao,
-              taxa_plataforma,
-              valor_total,
-              recorrente,
-              gateway_subscription_id
-            )
-            VALUES (
-              $1,$2,true,
-              NOW(),NOW(),
-              $3,$4,$5,$6,$7,
-              false,$8
-            )
-            ON CONFLICT (cliente_id,modelo_id)
-            DO UPDATE SET
-              ativo=true,
-              expiration_at=$3,
-              updated_at=NOW(),
-              valor_assinatura=$4,
-              taxa_transacao=$5,
-              taxa_plataforma=$6,
-              valor_total=$7,
-              recorrente=false,
-              gateway_subscription_id=$8
-          `,[
-            cliente_id,
-            modelo_id,
-            expiration,
-            valorBase,
-            Number(metadata.taxa_transacao || 0),
-            Number(metadata.taxa_plataforma || 0),
-            valorPago,
-            pi.id
-          ]);
+const valores = await calcularValores({
+  modelo_id,
+  valor_bruto: valorBase,
+  taxa_gateway: taxaGateway
+});
 
-          await client.query(`
-            INSERT INTO transacoes_agency (
-              modelo_id,
-              cliente_id,
-              tipo,
-              valor_bruto,
-              valor_modelo,
-              agency_fee,
-              velvet_fee,
-              taxa_gateway,
-              status,
-              created_at,
-              aceitou_termos,
-              aceite_ip,
-              aceite_data
-            )
-            VALUES (
-              $1,$2,'assinatura',
-              $3,$4,$5,$6,$7,
-              'pago',NOW(),true,$8,NOW()
-            )
-          `,[
-            modelo_id,
-            cliente_id,
-            valorBase,
-            valores.valor_modelo,
-            valores.agency_fee,
-            valores.velvet_fee,
-            taxaExtra,
-            metadata.aceite_ip || null
-          ]);
+
+await client.query(`
+INSERT INTO vip_subscriptions (
+cliente_id,
+modelo_id,
+ativo,
+created_at,
+updated_at,
+expiration_at,
+valor_assinatura,
+taxa_transacao,
+taxa_plataforma,
+valor_total,
+recorrente,
+gateway_subscription_id
+)
+VALUES (
+$1,$2,true,
+NOW(),NOW(),
+$3,$4,$5,$6,$7,
+false,$8
+)
+ON CONFLICT (cliente_id,modelo_id)
+DO UPDATE SET
+ativo=true,
+expiration_at=$3,
+updated_at=NOW(),
+valor_assinatura=$4,
+taxa_transacao=$5,
+taxa_plataforma=$6,
+valor_total=$7,
+recorrente=false,
+gateway_subscription_id=$8
+`,[
+cliente_id,
+modelo_id,
+expiration,
+valorBase,
+0,
+0,
+valorPago,
+pi.id
+]);
+
+await client.query(`
+INSERT INTO transacoes_agency (
+modelo_id,
+cliente_id,
+tipo,
+valor_bruto,
+valor_modelo,
+agency_fee,
+velvet_fee,
+taxa_gateway,
+status,
+created_at,
+aceitou_termos,
+aceite_ip,
+aceite_data
+)
+VALUES (
+$1,$2,'assinatura',
+$3,$4,$5,$6,$7,
+'pago',NOW(),true,$8,NOW()
+)
+`,[
+modelo_id,
+cliente_id,
+valorBase,
+valores.valor_modelo,
+valores.agency_fee,
+valores.velvet_fee,
+taxaGateway,
+metadata.aceite_ip || null
+]);
 
           enviarMensagemVip = {
             cliente_id,
@@ -330,13 +336,24 @@ app.post(
 
         if (tipo === "conteudo_cartao") {
 
-          const message_id = Number(metadata.message_id);
+const message_id = Number(metadata.message_id);
 
-          const taxaExtra =
-            Number(metadata.taxa_transacao || 0) +
-            Number(metadata.taxa_plataforma || 0);
+          if (!message_id) {
+  console.log("🚨 message_id inválido stripe");
+  await client.query("ROLLBACK");
+  return res.status(200).send("ok");
+}
 
-          const valorBase = Number((valorPago - taxaExtra).toFixed(2));
+let valorBase = Number(metadata.valor_base ?? valorPago);
+
+if (!Number.isFinite(valorBase) || valorBase <= 0) {
+  console.log("🚨 valorBase inválido stripe midia");
+  await client.query("ROLLBACK");
+  return res.status(200).send("ok");
+}
+
+valorBase = Number(valorBase.toFixed(2));
+const taxaGateway = Number((valorBase * 0.15).toFixed(2));
 
           const valores = await calcularValores({
             modelo_id,
@@ -368,8 +385,8 @@ app.post(
             modelo_id,
             cliente_id,
             valorBase,
-            Number(metadata.taxa_transacao || 0),
-            Number(metadata.taxa_plataforma || 0),
+            0,
+            0,
             valorPago,
             pi.id,
             message_id
@@ -403,7 +420,7 @@ app.post(
             valores.valor_modelo,
             valores.agency_fee,
             valores.velvet_fee,
-            taxaExtra,
+            taxaGateway,
             metadata.aceite_ip || null
           ]);
 
