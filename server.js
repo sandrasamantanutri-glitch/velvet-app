@@ -5507,6 +5507,7 @@ return res.status(400).json({ error: "CPF obrigatório." });
 }
 
 const cpfLimpo = cpf.replace(/\D/g,"");
+console.log("CPF limpo:", cpfLimpo);
 
 if (!modelo_id || !Number.isInteger(Number(modelo_id))) {
 return res.status(400).json({ error: "modelo_id inválido" });
@@ -5518,11 +5519,15 @@ req.socket.remoteAddress;
 
 console.log("IP:", ip);
 
+console.log("ENV PAGARME KEY EXISTE:", !!process.env.PAGARME_SECRET_KEY);
+
 await client.query("BEGIN");
 
 /* =========================
 CLIENTE
 ========================= */
+
+console.log("Buscando cliente...");
 
 const clienteRes = await client.query(
 "SELECT id, bloqueado FROM clientes WHERE user_id=$1",
@@ -5538,6 +5543,9 @@ return res.status(404).json({ error: "Cliente não encontrado" });
 
 const { id: cliente_id, bloqueado } = clienteRes.rows[0];
 
+console.log("cliente_id:", cliente_id);
+console.log("bloqueado:", bloqueado);
+
 if (bloqueado) {
 await client.query("ROLLBACK");
 return res.status(403).json({ error: "Conta bloqueada." });
@@ -5546,6 +5554,8 @@ return res.status(403).json({ error: "Conta bloqueada." });
 /* =========================
 PLANO VIP
 ========================= */
+
+console.log("Buscando plano VIP...");
 
 const planoRes = await client.query(`
 SELECT valor_mensal
@@ -5568,6 +5578,8 @@ console.log("Valor base:", valorBase);
 /* =========================
 OFERTA
 ========================= */
+
+console.log("Buscando oferta...");
 
 const ofertaRes = await client.query(`
 SELECT valor_promocional
@@ -5610,7 +5622,7 @@ console.log("centavos:", amount);
 CRIAR ORDER PAGARME
 ========================= */
 
-console.log("Criando order Pagar.me");
+console.log("Criando order Pagar.me...");
 
 const payload = {
 
@@ -5649,7 +5661,8 @@ fingerprint: fingerprint || ""
 
 };
 
-console.log("Payload pagarme:", payload);
+console.log("Payload enviado ao pagarme:");
+console.log(JSON.stringify(payload,null,2));
 
 const pagarmeResponse = await axios.post(
 "https://api.pagar.me/core/v5/orders",
@@ -5664,16 +5677,23 @@ Authorization:`Basic ${Buffer
 }
 );
 
+console.log("Resposta bruta pagarme:", pagarmeResponse.status);
+
 const order = pagarmeResponse.data;
 
-console.log("Resposta pagarme:", JSON.stringify(order,null,2));
+console.log("ORDER COMPLETA:");
+console.log(JSON.stringify(order,null,2));
 
 const charge = order.charges?.[0];
 const pixData = charge?.last_transaction;
 
+console.log("Charge:", charge);
+console.log("PixData:", pixData);
+
 if (!pixData?.qr_code) {
 
-console.error("Resposta Pagar.me inválida:", JSON.stringify(order,null,2));
+console.error("QR NÃO GERADO");
+console.error("ORDER:", JSON.stringify(order,null,2));
 
 await client.query("ROLLBACK");
 
@@ -5686,7 +5706,7 @@ error:"Erro ao gerar QR"
 REGISTRAR PIX
 ========================= */
 
-console.log("Registrando pagamento no banco");
+console.log("Registrando pagamento no banco...");
 
 await client.query(`
 INSERT INTO pagamentos_pix
@@ -5708,6 +5728,8 @@ console.log("Pagamento registrado");
 
 await client.query("COMMIT");
 
+console.log("COMMIT realizado");
+
 console.log("PIX criado com sucesso");
 
 return res.json({
@@ -5719,9 +5741,22 @@ order_id: order.id
 
 } catch (err) {
 
-console.error("🔥 ERRO PIX VIP:", err.response?.data || err);
+console.error("=================================");
+console.error("🔥 ERRO PIX VIP");
+console.error("message:", err.message);
+console.error("stack:", err.stack);
 
-try { await client.query("ROLLBACK"); } catch {}
+if (err.response) {
+console.error("STATUS:", err.response.status);
+console.error("DATA:", err.response.data);
+}
+
+try {
+console.log("ROLLBACK executado");
+await client.query("ROLLBACK");
+} catch (rollbackErr) {
+console.error("Erro no rollback:", rollbackErr);
+}
 
 return res.status(500).json({
 error:"Erro ao gerar pagamento"
@@ -5730,6 +5765,7 @@ error:"Erro ao gerar pagamento"
 } finally {
 
 client.release();
+console.log("Conexão DB liberada");
 
 }
 
