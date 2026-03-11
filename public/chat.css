@@ -572,13 +572,6 @@ cursor:pointer;
   overflow-y: auto;
 }
 
-#modalImg,
-#modalVideo{
-  max-width:100%;
-  max-height:85vh;
-  border-radius:12px;
-}
-
 #previewConteudos {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -746,18 +739,6 @@ cursor:pointer;
   opacity:.95;
 }
 
-.modal-midia-box{
-  background:transparent;
-  padding:0;
-  width:auto;
-  max-width:90vw;
-  max-height:90vh;
-
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
 .modal-box{
   background:#fff;
   border-radius:18px;
@@ -781,28 +762,6 @@ cursor:pointer;
   inset: 0;
   background: rgba(0,0,0,0.85);
   cursor: pointer;
-}
-
-.modal-midia-box{
-  position: relative;
-  z-index: 2;
-
-  max-width: 90vw;
-  max-height: 90vh;
-
-  display:flex;
-  align-items:center;
-  justify-content:center;
-
-  background: transparent !important;
-  padding:0;
-}
-
-.modal-midia-box img,
-.modal-midia-box video{
-  max-width:90vw;
-  max-height:90vh;
-  border-radius:12px;
 }
 
 .badge-visto{
@@ -1186,4 +1145,55 @@ cursor:pointer;
   color: #868585;
   cursor: not-allowed;
   opacity: 0.9;
+}
+
+.modal-midia-box{
+  position: relative;
+
+  width: auto;
+  max-width: 95vw;
+
+  max-height: 95vh;
+
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  overflow:hidden;
+}
+
+#modalImg,
+#modalVideo,
+#modalIframe{
+
+  max-width: 95vw;
+  max-height: 95vh;
+
+  width: auto;
+  height: auto;
+
+  display:block;
+  margin:auto;
+
+  object-fit: contain;
+}
+
+.modal-midia{
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.modal-backdrop{
+  position:absolute;
+  inset:0;
+  background: rgba(0,0,0,0.85);
 }
