@@ -565,6 +565,7 @@ ${msg.sender === "modelo" && !msg.liberado ? `
 </div>
 `;
 
+
 const btnConteudo = div.querySelector(".btn-excluir-pacote");
 
 if (btnConteudo) {
@@ -1134,45 +1135,39 @@ function ativarLazyLoadingModelo(div, msg, bloqueado){
       thumb.endsWith(".mov") ||
       thumb.includes("videodelivery.net");
 
-    el.innerHTML = "";
+    let media;
 
-    const container = document.createElement("div");
-    container.style.position = "relative";
-    container.style.width = "100%";
-    container.style.height = "100%";
-
-    const img = document.createElement("img");
-    img.src = thumb;
-    img.loading = "lazy";
-    img.decoding = "async";
-    img.className = "midia-thumb";
-
-    img.style.width = "100%";
-    img.style.height = "100%";
-    img.style.objectFit = "cover";
-
-    container.appendChild(img);
-
-    // overlay de vídeo
+    // 🔹 vídeos (mp4 ou cloudflare stream)
     if(isVideo){
 
-      const play = document.createElement("div");
-      play.innerHTML = "▶";
+      media = document.createElement("div");
+      media.className = "video-thumb";
 
-      play.style.position = "absolute";
-      play.style.top = "50%";
-      play.style.left = "50%";
-      play.style.transform = "translate(-50%,-50%)";
-      play.style.fontSize = "28px";
-      play.style.color = "white";
-      play.style.textShadow = "0 0 10px rgba(0,0,0,0.6)";
+      media.innerHTML = `
+        <div class="video-overlay">
+          ▶
+        </div>
+      `;
 
-      container.appendChild(play);
+      media.style.backgroundImage = `url(${thumb})`;
+      media.style.backgroundSize = "cover";
+      media.style.backgroundPosition = "center";
+
+    }
+    else{
+
+      media = document.createElement("img");
+      media.src = thumb;
+      media.loading = "lazy";
+      media.decoding = "async";
+      media.className = "midia-thumb";
+
     }
 
-    container.style.pointerEvents = "none";
+    media.style.pointerEvents = "none";
 
-    el.appendChild(container);
+    el.innerHTML = "";
+    el.appendChild(media);
 
   });
 

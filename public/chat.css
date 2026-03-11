@@ -494,8 +494,8 @@ cursor:pointer;
   display:block;
 }
 .pix-qr {
-  width: 420px;
-  height: 420px;
+  width: 320px;
+  height: 320px;
   display: block;
   margin: 16px auto;
   padding: 10px;
@@ -1202,13 +1202,5 @@ cursor:pointer;
   margin:auto;
 
   border:none;
-}
-
-.midia-preview video,
-.midia-preview img{
-  width: 100%;
-  height: auto;
-  object-fit: contain;
-  border-radius: 10px;
 }
 

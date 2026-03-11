@@ -948,48 +948,36 @@ function ativarLazyLoadingModelo(div, msg, bloqueado){
     const isVideo =
       thumb.endsWith(".mp4") ||
       thumb.endsWith(".webm") ||
-      thumb.endsWith(".mov") ||
-      thumb.includes("videodelivery.net");
+      thumb.endsWith(".mov");
 
-    el.innerHTML = "";
+    let media;
 
-    const container = document.createElement("div");
-    container.style.position = "relative";
-    container.style.width = "100%";
-    container.style.height = "100%";
-
-    const img = document.createElement("img");
-    img.src = thumb;
-    img.loading = "lazy";
-    img.decoding = "async";
-    img.className = "midia-thumb";
-
-    img.style.width = "100%";
-    img.style.height = "100%";
-    img.style.objectFit = "cover";
-
-    container.appendChild(img);
-
-    // overlay de vídeo
     if(isVideo){
 
-      const play = document.createElement("div");
-      play.innerHTML = "▶";
+      media = document.createElement("video");
+      media.src = thumb;
+      media.muted = true;
+      media.playsInline = true;
+      media.preload = "metadata";
 
-      play.style.position = "absolute";
-      play.style.top = "50%";
-      play.style.left = "50%";
-      play.style.transform = "translate(-50%,-50%)";
-      play.style.fontSize = "28px";
-      play.style.color = "white";
-      play.style.textShadow = "0 0 10px rgba(0,0,0,0.6)";
+    }else{
 
-      container.appendChild(play);
+      media = document.createElement("img");
+      media.src = thumb;
+      media.loading = "lazy";
+
     }
 
-    container.style.pointerEvents = "none";
+    media.className = "midia-thumb";
 
-    el.appendChild(container);
+    media.style.pointerEvents = "auto";
+
+    media.onload = media.onloadeddata = () => {
+
+  el.innerHTML = "";
+  el.appendChild(media);
+
+};
 
   });
 
