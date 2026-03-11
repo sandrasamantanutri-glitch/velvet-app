@@ -5502,9 +5502,11 @@ if (!aceitou_termos) {
 return res.status(400).json({ error: "É necessário aceitar os termos." });
 }
 
-if (!cpf || cpf.length !== 11) {
+if (!cpf || cpf.length < 11) {
 return res.status(400).json({ error: "CPF obrigatório." });
 }
+
+const cpfLimpo = cpf.replace(/\D/g,"");
 
 if (!modelo_id || !Number.isInteger(Number(modelo_id))) {
 return res.status(400).json({ error: "modelo_id inválido" });
@@ -5610,30 +5612,48 @@ CRIAR ORDER PAGARME
 
 console.log("Criando order Pagar.me");
 
-const pagarmeResponse = await axios.post(
-"https://api.pagar.me/core/v5/orders",
-{
+const payload = {
+
 items:[{
 amount,
 description:"Assinatura VIP Velvet",
 quantity:1
 }],
+
 customer:{
 name:req.user.nome || "Cliente Velvet",
 email:req.user.email,
-document:cpf,
-type:"individual"
+document:cpfLimpo,
+type:"individual",
+phones:{
+mobile_phone:{
+country_code:"55",
+area_code:"11",
+number:"999999999"
+}
+}
 },
+
 payments:[{
 payment_method:"pix",
 pix:{ expires_in:3600 }
 }],
+
 metadata:{
 tipo:"vip",
 cliente_id:String(cliente_id),
-modelo_id:String(modelo_id)
+modelo_id:String(modelo_id),
+aceite_ip: ip,
+fingerprint: fingerprint || ""
 }
-},
+
+};
+
+console.log("Payload pagarme:", payload);
+
+const pagarmeResponse = await axios.post(
+"https://api.pagar.me/core/v5/orders",
+payload,
 {
 headers:{
 Authorization:`Basic ${Buffer
@@ -5646,14 +5666,14 @@ Authorization:`Basic ${Buffer
 
 const order = pagarmeResponse.data;
 
-console.log("Order criada:", order.id);
+console.log("Resposta pagarme:", JSON.stringify(order,null,2));
 
 const charge = order.charges?.[0];
 const pixData = charge?.last_transaction;
 
 if (!pixData?.qr_code) {
 
-console.error("Resposta Pagar.me:", JSON.stringify(order,null,2));
+console.error("Resposta Pagar.me inválida:", JSON.stringify(order,null,2));
 
 await client.query("ROLLBACK");
 
@@ -5679,7 +5699,7 @@ modelo_id,
 amount/100,
 order.id,
 ip,
-cpf,
+cpfLimpo,
 fingerprint || ""
 ]
 );
@@ -5693,6 +5713,7 @@ console.log("PIX criado com sucesso");
 return res.json({
 qr_code_url: pixData.qr_code_url,
 copia_cola: pixData.qr_code,
+expires_at: pixData?.expires_at || null,
 order_id: order.id
 });
 
