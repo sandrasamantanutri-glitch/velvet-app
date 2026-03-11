@@ -5762,7 +5762,7 @@ app.delete("/api/chat/pacote/:message_id", authModelo, async (req, res) => {
   }
 });
 
-app.post("/api/pagamento/vip/pix", auth, async (req, res) => {
+app.post("/api/pagamento/vip/pix", auth, manutencaoClientes, async (req, res) => {
 
   const client = await db.connect();
 
@@ -5961,7 +5961,7 @@ await client.query(`
 });
 
 //MIDIA PIX
-app.post("/api/pagamento/midia/pix", auth, async (req, res) => {
+app.post("/api/pagamento/midia/pix", auth, manutencaoClientes, async (req, res) => {
   const client = await db.connect();
 
   try {
