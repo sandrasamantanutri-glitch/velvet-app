@@ -643,16 +643,15 @@ if (metadata.tipo === "conteudo_pix") {
   console.log("💰 Processando compra de mídia");
 
   const valorBase = Number(metadata.valor_base || valorPago);
-  const taxaGateway = Number(metadata.taxa_transacao ?? 0);
-
-  console.log("valorBase:", valorBase);
-  console.log("taxaGateway:", taxaGateway);
+  const taxaGateway = Number(metadata.taxa_transacao || 0);
 
   const valores = await calcularValores({
     modelo_id,
     valor_bruto: valorBase,
     taxa_gateway: taxaGateway
   });
+
+  const valorBruto = valorBase;
 
   console.log("Valores calculados:", valores);
 
@@ -693,14 +692,13 @@ modelo_id
 
 console.log("Conteúdos liberados:", conteudo_ids);
 
-const valorBruto = Number(valores.valor_bruto ?? valorBase ?? valorPago ?? 0);
 
 console.log("Valores finais transação MIDIA:",{
   valorBruto,
   valor_modelo: valores.valor_modelo,
   agency_fee: valores.agency_fee,
   velvet_fee: valores.velvet_fee,
-  taxa_gateway: valores.taxa_gateway
+  taxa_gateway: taxaGateway
 });
 
 await client.query(`
@@ -727,7 +725,7 @@ valorBruto,
 Number(valores.valor_modelo || 0),
 Number(valores.agency_fee || 0),
 Number(valores.velvet_fee || 0),
-Number(valores.taxa_gateway || 0)
+taxaGateway
 ]);
 
 console.log("transacoes_agency (midia) inserido");
@@ -755,13 +753,17 @@ expiration.setMonth(expiration.getMonth() + 1);
 
 console.log("Expiração VIP:", expiration);
 
-const taxaGateway = Number(metadata.taxa_transacao ?? 0);
+ const valorBase = Number(metadata.valor_base || valorPago);
+  const taxaGateway = Number(metadata.taxa_transacao || 0);
 
-const valores = await calcularValores({
-modelo_id,
-valor_bruto: valorPago,
-taxa_gateway: taxaGateway
-});
+
+ const valores = await calcularValores({
+    modelo_id,
+    valor_bruto: valorBase,
+    taxa_gateway: taxaGateway
+  });
+
+  const valorBruto = valorBase;
 
 console.log("Valores VIP:", valores);
 
@@ -810,14 +812,12 @@ orderId
 
 console.log("vip_subscriptions atualizado");
 
-const valorBruto = Number(valores.valor_bruto ?? valorPago ?? 0);
-
 console.log("Valores finais transação VIP:",{
   valorBruto,
   valor_modelo: valores.valor_modelo,
   agency_fee: valores.agency_fee,
   velvet_fee: valores.velvet_fee,
-  taxa_gateway: valores.taxa_gateway
+  taxa_gateway: taxaGateway
 });
 
 await client.query(`
@@ -844,7 +844,7 @@ valorBruto,
 Number(valores.valor_modelo || 0),
 Number(valores.agency_fee || 0),
 Number(valores.velvet_fee || 0),
-Number(valores.taxa_gateway || 0)
+taxaGateway
 ]);
 
 console.log("transacoes_agency (vip) inserido");
