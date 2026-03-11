@@ -572,6 +572,7 @@ async function abrirConteudo(message_id, index = 0){
   const modal = document.getElementById("modalMidia");
   const img   = document.getElementById("modalImg");
   const video = document.getElementById("modalVideo");
+  const iframe = document.getElementById("modalIframe");
 
   const btnPrev = document.getElementById("btnMidiaAnterior");
   const btnNext = document.getElementById("btnMidiaProxima");
@@ -593,7 +594,7 @@ async function abrirConteudo(message_id, index = 0){
 
   // 🔹 galeria para navegação
   galeriaMidias = midias;
-  indiceAtualMidia = index;
+  indiceAtualMidia = index
 
   // 🔹 esconder botões se só tiver uma mídia
   if(btnPrev && btnNext){
@@ -607,37 +608,42 @@ async function abrirConteudo(message_id, index = 0){
   }
 
   const midia = midias[index];
+  if(!midia) return;
 
   conteudosLiberados.add(Number(message_id));
 
   marcarConteudoVisto(message_id);
 
-  const isVideo =
-    midia.tipo_media === "video" ||
-    midia.url.endsWith(".mp4") ||
-    midia.url.endsWith(".webm") ||
-    midia.url.endsWith(".mov");
-
   // 🔹 limpar mídia anterior
+img.style.display = "none";
+img.src = "";
+
   video.pause();
   video.removeAttribute("src");
-  video.load();
+  video.load();   
+  video.style.display = "none";
+  iframe.src = "";
+  iframe.style.display = "none";
 
-  img.removeAttribute("src");
+  if(midia.url.includes("iframe.videodelivery.net")){
 
-  if(isVideo){
+    iframe.src = midia.url;
+    iframe.style.display = "block";
+
+
+  } else if(
+    midia.url.includes(".mp4") ||
+    midia.url.includes(".webm") ||
+    midia.url.includes(".mov")
+  ){
 
     video.src = midia.url;
     video.style.display = "block";
-    img.style.display = "none";
-
     video.play().catch(()=>{});
 
   }else{
-
     img.src = midia.url;
     img.style.display = "block";
-    video.style.display = "none";
 
   }
 
@@ -870,54 +876,25 @@ function abrirPreviewAvatar(url) {
   });
 }
 
-function ativarLazyLoadingModelo(div, msg, bloqueado){
+function ativarLazyLoadingModelo(div){
 
   const midias = div.querySelectorAll(".lazy-midia");
 
   midias.forEach(el => {
 
     const thumb = el.dataset.thumb;
-    const full  = el.dataset.full;
-
     if(!thumb) return;
 
-    if(full){
-      el.dataset.full = full;
-    }
+    const img = document.createElement("img");
 
-    const isVideo =
-      thumb.endsWith(".mp4") ||
-      thumb.endsWith(".webm") ||
-      thumb.endsWith(".mov");
+    img.src = thumb;
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.className = "midia-thumb";
+    img.style.pointerEvents = "none";
 
-    let media;
-
-    if(isVideo){
-
-      media = document.createElement("video");
-      media.src = thumb;
-      media.muted = true;
-      media.playsInline = true;
-      media.preload = "metadata";
-
-    }else{
-
-      media = document.createElement("img");
-      media.src = thumb;
-      media.loading = "lazy";
-
-    }
-
-    media.className = "midia-thumb";
-
-    media.style.pointerEvents = "auto";
-
-    media.onload = media.onloadeddata = () => {
-
-  el.innerHTML = "";
-  el.appendChild(media);
-
-};
+    el.innerHTML = "";
+    el.appendChild(img);
 
   });
 
@@ -933,22 +910,11 @@ function formatarHora(data) {
   });
 }
 
-function abrirPreviewMidia({ url, tipo }){
+function abrirPreviewMidia({ url }){
 
+  if(!url) return;
 
-  if (!midia) return;
-
-  const src = midia.dataset.full || midia.dataset.thumb;
-  if (!src) return;
-
-  const isVideo =
-    src.includes(".mp4") ||
-    src.includes(".webm") ||
-    src.includes(".mov") ||
-    src.includes(".m3u8") ||
-    src.includes("videodelivery.net");
-
-  abrirModalMidia(url, isVideo);
+  abrirModalMidia(url);
 
 }
 
@@ -1533,7 +1499,7 @@ function mostrarMidiaAtual(){
     midia.url.includes(".webm") ||
     midia.url.includes(".mov");
 
-  abrirModalMidia(midia.url, isVideo);
+ abrirModalMidia(midia.url);
 
 }
 

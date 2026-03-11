@@ -1037,55 +1037,30 @@ async function marcarComoLido(cliente_id){
 
 }
 
-function ativarLazyLoadingModelo(div, msg, bloqueado){
+function ativarLazyLoadingModelo(div){
 
   const midias = div.querySelectorAll(".lazy-midia");
 
   midias.forEach(el => {
 
     const thumb = el.dataset.thumb;
-    const full  = el.dataset.full;
-
     if(!thumb) return;
 
-    if(full){
-      el.dataset.full = full;
-    }
+    const img = document.createElement("img");
 
-    const isVideo =
-      thumb.endsWith(".mp4") ||
-      thumb.endsWith(".webm") ||
-      thumb.endsWith(".mov");
+    img.src = thumb;
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.className = "midia-thumb";
+    img.style.pointerEvents = "none";
 
-    let media;
-
-    if(isVideo){
-
-      media = document.createElement("video");
-      media.src = thumb;
-      media.muted = true;
-      media.playsInline = true;
-      media.preload = "metadata";
-
-    }else{
-
-      media = document.createElement("img");
-      media.src = thumb;
-      media.loading = "lazy";
-      media.decoding = "async";
-
-    }
-
-    media.className = "midia-thumb";
-    media.style.pointerEvents = "none";
-
-    // 🔧 inserir imediatamente para não quebrar o layout
     el.innerHTML = "";
-    el.appendChild(media);
+    el.appendChild(img);
 
   });
 
 }
+
 function abrirMenuMensagem(id, text){
 
   window.mensagemSelecionada = id;
@@ -1148,7 +1123,7 @@ function abrirPreviewMidia({ url, tipo }) {
     url.includes(".mov") ||
     url.includes("videodelivery.net");
 
-  abrirModalMidia(url, isVideo);
+  abrirModalMidia(src)
 
 }
 
