@@ -5929,6 +5929,260 @@ console.log("Conexão DB liberada");
 
 });
 
+app.post("/api/pagamento/midia/pix", auth, async (req, res) => {
+
+  const client = await db.connect();
+
+  try {
+
+    const { conteudo_id, cpf } = req.body;
+    const userId = req.user.id;
+
+    const ip =
+      req.headers["x-forwarded-for"]?.split(",")[0] ||
+      req.socket.remoteAddress;
+
+    if (!conteudo_id) {
+      return res.status(400).json({ error: "Conteúdo inválido." });
+    }
+
+    if (!cpf) {
+      return res.status(400).json({ error: "CPF obrigatório." });
+    }
+
+    const cpfLimpo = cpf.replace(/\D/g, "");
+
+    if (!validarCPF(cpfLimpo)) {
+      return res.status(400).json({ error: "CPF inválido." });
+    }
+
+    /* ================================
+       CLIENTE
+    ================================ */
+
+    const clienteRes = await client.query(
+      "SELECT id FROM clientes WHERE user_id = $1",
+      [userId]
+    );
+
+    if (!clienteRes.rowCount) {
+      return res.status(404).json({ error: "Cliente não encontrado" });
+    }
+
+    const cliente_id = clienteRes.rows[0].id;
+
+    /* ================================
+       BUSCAR MIDIA
+    ================================ */
+
+    const conteudo = await client.query(
+      `SELECT preco, modelo_id
+       FROM messages
+       WHERE id = $1
+       AND cliente_id = $2`,
+      [conteudo_id, cliente_id]
+    );
+
+    if (!conteudo.rowCount) {
+      return res.status(404).json({ error: "Conteúdo não encontrado" });
+    }
+
+    const { preco, modelo_id } = conteudo.rows[0];
+
+    const precoNum = Number(preco);
+
+    const taxaTransacao = Number((precoNum * 0.10).toFixed(2));
+    const taxaPlataforma = Number((precoNum * 0.05).toFixed(2));
+
+    const valorTotal = Number(
+      (precoNum + taxaTransacao + taxaPlataforma).toFixed(2)
+    );
+
+    const valorCentavos = Math.round(valorTotal * 100);
+
+    /* ================================
+       VERIFICAR SE JA COMPROU
+    ================================ */
+
+    const jaComprado = await client.query(
+      `SELECT 1
+       FROM pagamentos_pix
+       WHERE cliente_id = $1
+       AND message_id = $2
+       AND status = 'pago'
+       LIMIT 1`,
+      [cliente_id, conteudo_id]
+    );
+
+    if (jaComprado.rowCount > 0) {
+      return res.status(400).json({
+        error: "Conteúdo já adquirido."
+      });
+    }
+
+    await client.query("BEGIN");
+
+    /* ================================
+       EXPIRAR PIX ANTIGOS
+    ================================ */
+
+    await client.query(`
+      UPDATE pagamentos_pix
+      SET status = 'expirado'
+      WHERE status = 'pendente'
+      AND expires_at < NOW()
+    `);
+
+    /* ================================
+       REUTILIZAR PIX EXISTENTE
+    ================================ */
+
+    const pixExistente = await client.query(
+      `
+      SELECT pagarme_order_id, qr_code
+      FROM pagamentos_pix
+      WHERE cliente_id = $1
+      AND message_id = $2
+      AND status = 'pendente'
+      AND expires_at > NOW()
+      LIMIT 1
+      `,
+      [cliente_id, conteudo_id]
+    );
+
+    if (pixExistente.rowCount > 0) {
+
+      await client.query("ROLLBACK");
+
+      return res.json({
+        qr_code: pixExistente.rows[0].qr_code,
+        payment_id: pixExistente.rows[0].pagarme_order_id,
+        status: "pendente"
+      });
+
+    }
+
+    /* ================================
+       CRIAR PIX PAGARME
+    ================================ */
+
+    const pagarmeResponse = await axios.post(
+      "https://api.pagar.me/core/v5/orders",
+      {
+        items: [{
+          amount: valorCentavos,
+          description: "Midia Velvet",
+          quantity: 1
+        }],
+
+        customer: {
+          name: req.user.nome || "Cliente Velvet",
+          email: req.user.email,
+          document: cpfLimpo,
+          type: "individual"
+        },
+
+        payments: [{
+          payment_method: "pix",
+          pix: { expires_in: 1800 }
+        }],
+
+        metadata: {
+          tipo: "conteudo_pix",
+          message_id: conteudo_id,
+          cliente_id,
+          modelo_id,
+          valor_base: precoNum,
+          taxa_transacao: taxaTransacao,
+          taxa_plataforma: taxaPlataforma
+        }
+
+      },
+      {
+        headers: {
+          Authorization: `Basic ${Buffer
+            .from(process.env.PAGARME_SECRET_KEY + ":")
+            .toString("base64")}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    const order = pagarmeResponse.data;
+    const charge = order.charges?.[0];
+    const pixData = charge?.last_transaction;
+
+    if (!pixData?.qr_code) {
+      throw new Error("Erro ao gerar PIX no Pagar.me");
+    }
+
+    /* ================================
+       QR CODE BASE64
+    ================================ */
+
+    let qrCodeBase64 = null;
+
+    try {
+
+      const img = await axios.get(
+        pixData.qr_code_url,
+        { responseType: "arraybuffer" }
+      );
+
+      qrCodeBase64 = Buffer
+        .from(img.data, "binary")
+        .toString("base64");
+
+    } catch (err) {
+
+      console.error("Erro converter QR:", err);
+
+    }
+
+    /* ================================
+       SALVAR PIX
+    ================================ */
+
+    await client.query(
+      `INSERT INTO pagamentos_pix
+      (cliente_id, modelo_id, message_id, qr_code, valor, status, gateway, pagarme_order_id, criado_em, expires_at)
+      VALUES ($1,$2,$3,$4,$5,'pendente','pagarme',$6,NOW(),NOW() + INTERVAL '15 minutes')`,
+      [
+        cliente_id,
+        modelo_id,
+        conteudo_id,
+        pixData.qr_code,
+        valorTotal,
+        order.id
+      ]
+    );
+
+    await client.query("COMMIT");
+
+    return res.json({
+      qr_code: pixData.qr_code,
+      qr_code_base64: qrCodeBase64,
+      payment_id: order.id
+    });
+
+  } catch (err) {
+
+    console.error("Erro gerar PIX:", err);
+
+    try { await client.query("ROLLBACK"); } catch {}
+
+    return res.status(500).json({
+      error: "Erro ao gerar pagamento PIX"
+    });
+
+  } finally {
+
+    client.release();
+
+  }
+
+});
+
 app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
   const client = await db.connect();
 
