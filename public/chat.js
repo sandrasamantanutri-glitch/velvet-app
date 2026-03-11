@@ -218,7 +218,7 @@ document.addEventListener("click", e => {
 
   // 🔓 MODELO SEMPRE PODE VER
   if (role === "modelo") {
-    abrirModalMidia(midia);
+    abrirMidia(midia);
     return;
   }
 
@@ -231,7 +231,7 @@ document.addEventListener("click", e => {
 
   }
 
-  abrirModalMidia(midia);
+  abrirMidia(midia);
 
 
 });
@@ -599,7 +599,7 @@ div.querySelectorAll(".midia-item").forEach(el=>{
       thumb: el.dataset.thumb,
       index: el.dataset.index,
     });
-    abrirModalMidia(el);
+    abrirMidia(el);
   });
 });
 

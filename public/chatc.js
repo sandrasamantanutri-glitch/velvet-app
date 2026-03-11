@@ -737,7 +737,7 @@ function fecharModalMidia() {
   modal.classList.add("hidden");
 }
 
-function abrirModalMidia(midia){
+function abrirMidia(midia){
 
   const grid = midia.closest(".pacote-grid");
   if(!grid) return;
