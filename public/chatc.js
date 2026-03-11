@@ -39,6 +39,31 @@ let pagamentoEmProcesso = false;
 
 const stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
 
+chatBox.addEventListener("click", (e) => {
+
+  const midia = e.target.closest(".midia-item");
+  if(!midia) return;
+
+  const conteudo = midia.closest(".chat-conteudo");
+  if(!conteudo) return;
+
+  const bloqueado = conteudo.classList.contains("bloqueado");
+  const url = midia.dataset.full;
+
+  if(bloqueado){
+
+    abrirPagamentoConteudo(
+      conteudo.dataset.id,
+      conteudo.dataset.preco
+    );
+
+  } else {
+
+    abrirModalMidia(url);
+
+  }
+
+});
 
 // ===============================
 // SOCKET
@@ -876,15 +901,13 @@ function abrirPreviewAvatar(url) {
   });
 }
 
-function ativarLazyLoadingModelo(div, msg, bloqueado){
+function ativarLazyLoadingModelo(div){
 
   const midias = div.querySelectorAll(".lazy-midia");
 
   midias.forEach(el => {
 
     const thumb = el.dataset.thumb;
-    const full  = el.dataset.full;
-
     if(!thumb) return;
 
     const img = document.createElement("img");
@@ -898,26 +921,25 @@ function ativarLazyLoadingModelo(div, msg, bloqueado){
     el.innerHTML = "";
     el.appendChild(img);
 
-    // CLICK DA MIDIA
-    el.addEventListener("click", () => {
-
-      const conteudo = el.closest(".chat-conteudo");
-
-      const bloqueado =
-        conteudo?.classList.contains("bloqueado");
-
-      if(bloqueado){
-        abrirPagamentoConteudo(
-          conteudo.dataset.id,
-          conteudo.dataset.preco
-        );
-      } else {
-        abrirModalMidia(full);
-      }
-
-    });
-
   });
+
+}
+
+function formatarHora(data) {
+  if (!data) return "";
+
+  const d = new Date(data);
+  return d.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function abrirPreviewMidia({ url }){
+
+  if(!url) return;
+
+  abrirModalMidia(url);
 
 }
 
