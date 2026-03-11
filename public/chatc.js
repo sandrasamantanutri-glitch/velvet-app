@@ -182,45 +182,36 @@ if (chatBox) {
 }
 
 // 👇 EVENTO GLOBAL DE CLIQUE (CAPTURE) - pagamento tem prioridade absoluta
-document.addEventListener(
-  "click",
-  (e) => {
-    const card = e.target.closest(".chat-conteudo");
+document.addEventListener("click", (e) => {
+
+  const midia = e.target.closest(".midia-item");
+
+  if (midia) {
+
+    const card = midia.closest(".chat-conteudo");
     if (!card) return;
 
     const preco = Number(card.dataset.preco || 0);
     const messageId = Number(card.dataset.id);
 
-const estaLiberado =
-  preco === 0 ||
-  card.classList.contains("livre") ||
-  card.classList.contains("visto") ||
-  conteudosLiberados.has(messageId);
+    const estaLiberado =
+      preco === 0 ||
+      card.classList.contains("livre") ||
+      card.classList.contains("visto") ||
+      conteudosLiberados.has(messageId);
 
-    const precisaPagar = preco > 0 && !estaLiberado;
-
-    if (precisaPagar) {
-      e.preventDefault();
-      e.stopPropagation();
+    if (!estaLiberado) {
       abrirPagamentoChat(preco, messageId);
       return;
     }
 
- const midia = e.target.closest(".midia-item");
+    const index = Number(midia.dataset.index || 0);
 
-    if (midia && estaLiberado) {
+    abrirConteudo(messageId, index);
+    return;
+  }
 
-      e.preventDefault();
-      e.stopPropagation();
-
-      const index = Number(midia.dataset.index || 0);
-
-      abrirConteudo(messageId, index);
-    }
-
-  },
-  true
-);
+}, true);
 
 // ===============================
 // HISTÓRICO
