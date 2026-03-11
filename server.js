@@ -495,15 +495,16 @@ if (dadosParaEmitir?.tipo === "vip") {
 app.post("/api/webhook/pagarme", express.raw({ type: "*/*" }), async (req, res) => {
 
 console.log("======================================");
-console.log("🔥 WEBHOOK PAGARME RECEBIDO", new Date().toISOString());
+console.log("🔥 WEBHOOK PAGARME RECEBIDO");
+console.log("URL:", req.originalUrl);
+console.log("METHOD:", req.method);
 
 let event;
 
-try {
+try{
   event = JSON.parse(req.body.toString());
-} catch (e) {
-  console.log("🚨 Body inválido", e);
-  return res.status(400).send("invalid");
+}catch(err){
+  console.error("Erro parse webhook:", err);
 }
 
 console.log("Evento:", event.type);
