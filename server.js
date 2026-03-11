@@ -189,6 +189,12 @@ app.post(
         const metadata = pi.metadata || {};
 
         const tipo = metadata.tipo;
+        if (!metadata.tipo) {
+  console.log("🚨 metadata.tipo ausente stripe");
+  await client.query("ROLLBACK");
+  return res.status(200).send("ok");
+}
+
         const cliente_id = Number(metadata.cliente_id);
         const modelo_id = Number(metadata.modelo_id);
 
@@ -330,11 +336,10 @@ metadata.aceite_ip || null
 
         }
 
-        /* =====================================================
+/* =====================================================
            CONTEÚDO CARTÃO
-        ===================================================== */
-
-        if (tipo === "conteudo_cartao") {
+===================================================== */
+if (tipo === "conteudo_cartao") {
 
 const message_id = Number(metadata.message_id);
 
@@ -355,11 +360,11 @@ if (!Number.isFinite(valorBase) || valorBase <= 0) {
 valorBase = Number(valorBase.toFixed(2));
 const taxaGateway = Number((valorBase * 0.15).toFixed(2));
 
-          const valores = await calcularValores({
-            modelo_id,
-            valor_bruto: valorBase,
-            taxa_gateway: 0
-          });
+const valores = await calcularValores({
+  modelo_id,
+  valor_bruto: valorBase,
+  taxa_gateway: taxaGateway
+});
 
           await client.query(`
             INSERT INTO conteudo_pacotes (
