@@ -178,16 +178,11 @@ document.addEventListener(
     const preco = Number(card.dataset.preco || 0);
     const messageId = Number(card.dataset.id);
 
-    const midia =
-      e.target.closest(".midia-item") ||
-      e.target.parentElement?.closest(".midia-item");
-    if (!midia) return;
-
-    const estaLiberado =
-      preco === 0 ||
-      card.classList.contains("livre") ||
-      card.classList.contains("visto") ||
-      conteudosLiberados.has(messageId);
+const estaLiberado =
+  preco === 0 ||
+  card.classList.contains("livre") ||
+  card.classList.contains("visto") ||
+  conteudosLiberados.has(messageId);
 
     const precisaPagar = preco > 0 && !estaLiberado;
 
@@ -198,14 +193,14 @@ document.addEventListener(
       return;
     }
 
-    // ✅ LIBERADO: também intercepta
-    e.preventDefault();
-    e.stopPropagation();
+    const midia = e.target.closest(".midia-item") || e.target.parentElement?.closest(".midia-item");
 
-    const index = Number(midia.dataset.index || 0);
-    abrirConteudo(messageId, index);
+if (midia && estaLiberado) {
+  const index = Number(midia.dataset.index || 0);
+  abrirConteudo(messageId, index);
+}
   },
-  true // CAPTURE
+  true // 👈 CAPTURE (crítico)
 );
 
 // ===============================
