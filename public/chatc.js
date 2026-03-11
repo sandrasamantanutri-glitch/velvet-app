@@ -206,19 +206,20 @@ const estaLiberado =
       return;
     }
 
-const midia = e.target.closest(".midia-item");
+ const midia = e.target.closest(".midia-item");
 
-if (midia && estaLiberado) {
+    if (midia && estaLiberado) {
 
-  e.preventDefault();
-  e.stopPropagation();
+      e.preventDefault();
+      e.stopPropagation();
 
-  const index = Number(midia.dataset.index || 0);
+      const index = Number(midia.dataset.index || 0);
 
-  abrirConteudo(messageId, index);
-}
+      abrirConteudo(messageId, index);
+    }
+
   },
-  true // 👈 CAPTURE (crítico)
+  true
 );
 
 // ===============================
