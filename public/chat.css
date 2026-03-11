@@ -1250,6 +1250,26 @@ cursor:pointer;
   cursor:pointer;
 }
 
+.modal-midia-box img{
+  max-height:90vh;
+  max-width:90vw;
+  border-radius:12px;
+}
+
+/* vídeo vertical */
+.modal-midia-box video{
+  height:90vh;
+  width:auto;
+  border-radius:12px;
+}
+
+/* iframe (cloudflare stream / reels) */
+.modal-midia-box iframe{
+  height:90vh;
+  width:calc(90vh * 0.56); /* proporção 9:16 */
+  border-radius:12px;
+}
+
 /* mobile */
 @media (max-width:700px){
 
