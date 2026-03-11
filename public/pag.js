@@ -843,7 +843,6 @@ function iniciarVerificacaoPix(orderId) {
 
             fecharPopupPagamento();
 
-            atualizarUIVip?.();
             await aplicarRegrasDeAcesso?.();
             await carregarFeedBase?.();
 
