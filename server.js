@@ -670,7 +670,7 @@ if (metadata.tipo === "conteudo_pix") {
 
   const conteudoRes = await client.query(`
     SELECT preco
-    FROM menssages
+    FROM messages
     WHERE id = $1
     LIMIT 1
   `,[message_id]);
