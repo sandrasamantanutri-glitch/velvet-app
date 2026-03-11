@@ -952,31 +952,31 @@ app.use(cors({
   credentials: true
 }));
 
-app.use("/api", manutencaoClientes);
+// app.use("/api", manutencaoClientes);
 
-const MANUTENCAO_CLIENTES = true;
-const EXCECOES_MANUTENCAO = [
-  "emersondoido@gmail.com",
-  "emersondoido92@gmail.com"
-];
+// const MANUTENCAO_CLIENTES = true;
+// const EXCECOES_MANUTENCAO = [
+//   "emersondoido@gmail.com",
+//   "emersondoido92@gmail.com"
+// ];
 
-function manutencaoClientes(req, res, next) {
+// function manutencaoClientes(req, res, next) {
 
-  if (!MANUTENCAO_CLIENTES) return next();
+//   if (!MANUTENCAO_CLIENTES) return next();
 
-  if (!req.user) return next();
+//   if (!req.user) return next();
 
-  if (req.user.role !== "cliente") return next();
+//   if (req.user.role !== "cliente") return next();
 
-  if (EXCECOES_MANUTENCAO.includes(req.user.email)) {
-    return next();
-  }
+//   if (EXCECOES_MANUTENCAO.includes(req.user.email)) {
+//     return next();
+//   }
 
-  return res.status(503).json({
-    error: "Plataforma em atualização. Aguarde alguns minutos e tente novamente."
-  });
+//   return res.status(503).json({
+//     error: "Plataforma em atualização. Aguarde alguns minutos e tente novamente."
+//   });
 
-}
+// }
 
 function gerarHash(buffer) {
   return crypto
