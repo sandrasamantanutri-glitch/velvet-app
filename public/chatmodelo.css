@@ -411,10 +411,12 @@ h2 #modeloNome {
   font-size: 16px;
   font-weight: 500;
   cursor: pointer;
+  background: #7B2CFF;
+  color: #fff;
 }
 
 .btn-cancelar {
-  background: #eee;
+  background: #f0c8c8;
   color: #333;
 }
 
@@ -670,7 +672,7 @@ body.role-modelo .chat-conteudo * {
 
 /* caixa do popup */
 #menuMensagem .popup-box {
-  position: relative;
+  position: fixed;
   background: #fff;
   width: 90%;
   max-width: 420px;
