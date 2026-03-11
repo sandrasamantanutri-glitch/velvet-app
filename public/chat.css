@@ -333,9 +333,10 @@ body, html {
 }
 
 .popup-box textarea{
+  width:100%;
   min-height:80px;
   border-radius:10px;
-  border:1px solid #6a2cff;
+  border:1px solid #e5e5ee;
 
   padding:10px;
 
@@ -398,6 +399,8 @@ body, html {
 
   background:rgba(0,0,0,.4);
   backdrop-filter:blur(3px);
+
+  z-index:190;
 }
 
 #chatBox{
