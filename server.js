@@ -780,24 +780,6 @@ taxaGateway
 
 console.log("transacoes_agency (midia) inserido");
 
-await client.query(`
-INSERT INTO messages (
-  cliente_id,
-  modelo_id,
-  text,
-  sender,
-  tipo,
-  created_at,
-  lida,
-  visto,
-  deletada
-)
-VALUES ($1,$2,$3,'modelo','texto',NOW(),false,false,false)
-`,[
-  cliente_id,
-  modelo_id
-]);
-
 /* =====================================================
 SOCKET
 ===================================================== */
