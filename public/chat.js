@@ -1118,47 +1118,41 @@ function ativarLazyLoadingModelo(div, msg, bloqueado){
     const isVideo =
       thumb.endsWith(".mp4") ||
       thumb.endsWith(".webm") ||
-      thumb.endsWith(".mov") ||
-      thumb.includes("videodelivery.net");
+      thumb.endsWith(".mov");
 
     let media;
 
-    // 🔹 vídeos (mp4 ou cloudflare stream)
     if(isVideo){
 
-      media = document.createElement("div");
-      media.className = "video-thumb";
+      media = document.createElement("video");
+      media.src = thumb;
+      media.muted = true;
+      media.playsInline = true;
+      media.preload = "metadata";
 
-      media.innerHTML = `
-        <div class="video-overlay">
-          ▶
-        </div>
-      `;
-
-      media.style.backgroundImage = `url(${thumb})`;
-      media.style.backgroundSize = "cover";
-      media.style.backgroundPosition = "center";
-
-    }
-    else{
+    }else{
 
       media = document.createElement("img");
       media.src = thumb;
       media.loading = "lazy";
       media.decoding = "async";
-      media.className = "midia-thumb";
 
     }
 
+    media.className = "midia-thumb";
     media.style.pointerEvents = "none";
 
     el.innerHTML = "";
-    el.appendChild(media);
+media.style.width = "100%";
+media.style.height = "100%";
+media.style.objectFit = "cover";
+media.style.pointerEvents = "none";
+
+el.appendChild(media);
 
   });
 
 }
-
 function abrirMenuMensagem(id, text){
 
   window.mensagemSelecionada = id;
