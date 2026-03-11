@@ -795,8 +795,7 @@ INSERT INTO messages (
 VALUES ($1,$2,$3,'modelo','texto',NOW(),false,false,false)
 `,[
   cliente_id,
-  modelo_id,
-  "Oii!! Bem vindo, como você chama?🔥❤️‍🔥"
+  modelo_id
 ]);
 
 /* =====================================================

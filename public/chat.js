@@ -44,7 +44,12 @@ socket.on("connect", () => {
   autenticado = false;
   salaPronta = false;
 
-  socket.emit("auth", { token });
+ if(!token){
+  console.warn("Token ausente");
+  return;
+}
+
+socket.emit("auth",{token});
 
 });
 
@@ -56,9 +61,17 @@ socket.on("authOk", async () => {
 
   socket.emit("loginModelo");
 
-  if(cliente_id){
-    await carregarInfoCliente(cliente_id);
-  }
+  // esperar IDs existirem
+  const esperarIds = () =>
+    new Promise(resolve => {
+      const check = () => {
+        if (cliente_id && modelo_id) resolve();
+        else setTimeout(check, 100);
+      };
+      check();
+    });
+
+  await esperarIds();
 
   tentarEntrarSala();
 
@@ -150,21 +163,27 @@ msgInput.addEventListener("keydown", e=>{
   // ===============================
   // SCROLL HISTÓRICO
   // ===============================
-if (chatBox) {
+let scrollLock = false;
 
-  chatBox.addEventListener("scroll", () => {
+chatBox.addEventListener("scroll", () => {
 
-    if (
-      historicoInicialCarregado &&
-      chatBox.scrollTop <= 100 &&
-      !carregandoHistorico
-    ) {
-      carregarMensagensAntigas();
-    }
+  if (scrollLock) return;
 
-  });
+  if (
+    historicoInicialCarregado &&
+    chatBox.scrollTop <= 100 &&
+    !carregandoHistorico
+  ) {
 
-}
+    scrollLock = true;
+
+    carregarMensagensAntigas();
+
+    setTimeout(()=> scrollLock = false, 500);
+  }
+
+});
+
 
 document.addEventListener("click", e => {
 
@@ -245,8 +264,10 @@ socket.on("chatHistory", mensagens => {
   } else {
 
     const alturaAntes = chatBox.scrollHeight;
-
-    mensagens.reverse().forEach(m => {
+    
+mensagens
+  .sort((a,b)=> new Date(a.created_at) - new Date(b.created_at))
+  .forEach(m => {
 
       if (mensagensRenderizadas.has(m.id)) return;
       mensagensRenderizadas.add(m.id);
@@ -282,11 +303,15 @@ socket.on("newMessage", msg => {
 
   const temp = document.querySelector(`[data-id="${msg.tempId}"]`);
 
-  if (temp) {
-    temp.dataset.id = msg.id;
-    mensagensRenderizadas.add(msg.id);
-    return;
-  }
+if (temp) {
+
+  mensagensRenderizadas.delete(msg.tempId);
+
+  temp.dataset.id = msg.id;
+  mensagensRenderizadas.add(msg.id);
+
+  return;
+}
 
   if (mensagensRenderizadas.has(msg.id)) return;
 
@@ -426,6 +451,9 @@ socket.on("conteudoVisto", ({ message_id, conteudo_ids }) => {
   if (Array.isArray(conteudo_ids)) {
     conteudo_ids.forEach(id => {
       window.conteudosVistosCliente.add(Number(id));
+      if(!window.conteudosVistosCliente){
+  window.conteudosVistosCliente = new Set();
+}
     });
   }
 
