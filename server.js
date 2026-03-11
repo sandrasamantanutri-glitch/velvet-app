@@ -117,358 +117,6 @@ const uploadVerificacao = multer({
   }
 });
 
-console.log("🔥 ARQUIVO WEBHOOK CARREGADO");
-app.post("/api/webhook/mercadopago", express.json(), manutencaoClientes, async (req, res) => {
-
-  const type = req.body.type;
-  const paymentId = req.body.data?.id;
-
-  console.log("🔥 WEBHOOK MP:", type, paymentId);
-
-  if (type !== "payment" || !paymentId) {
-    return res.status(200).send("ok");
-  }
-  
-  let payment;
-
-  try {
-    const mpRes = await axios.get(
-      `https://api.mercadopago.com/v1/payments/${paymentId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}`
-        }
-      }
-    );
-
-    payment = mpRes.data;
-
-  } catch (err) {
-    console.error("Erro consultar pagamento MP:", err.response?.data || err.message);
-    return res.status(200).send("ok");
-  }
-
-  if (payment.status !== "approved") {
-    return res.status(200).send("ok");
-  }
-
-  const metadata = payment.metadata || {};
-  const valorPago = Number(payment.transaction_amount || 0);
-
-  const client = await db.connect();
-
-  let dadosParaEmitir = null;
-  let enviarMensagemVip = null;
-
-  try {
-
-    await client.query("BEGIN");
-/* =====================================================
-   IDEMPOTÊNCIA DO WEBHOOK MP
-===================================================== */
-
-const evento = await client.query(`
-  INSERT INTO mercadopago_events (id,type)
-  VALUES ($1,$2)
-  ON CONFLICT (id) DO NOTHING
-  RETURNING id
-`, [paymentId, type]);
-
-if (evento.rowCount === 0) {
-  await client.query("ROLLBACK");
-  return res.status(200).send("ok");
-}
-
-    /* =====================================================
-       LOCK PAGAMENTO
-    ===================================================== */
-
-const pagamentoRes = await client.query(
-  `
-  SELECT *
-  FROM pagamentos_pix
-  WHERE pagarme_order_id = $1
-  FOR UPDATE
-  `,
-  [paymentId]
-);
-
-if (!pagamentoRes.rowCount) {
-  console.log("🚨 NÃO ENCONTREI pagamentos_pix para:", { gateway: "pagarme", orderId });
-  await client.query("ROLLBACK");
-  return res.status(200).send("ok");
-}
-
-    const pagamento = pagamentoRes.rows[0];
-
-    if (pagamento.status === "pago") {
-      await client.query("ROLLBACK");
-      return res.status(200).send("ok");
-    }
-
-    const {
-      cliente_id,
-      modelo_id,
-      valor,
-      message_id
-    } = pagamento;
-
-    /* =====================================================
-       VALIDAR VALOR
-    ===================================================== */
-
-    if (Number(valorPago) !== Number(valor)) {
-
-      console.log("🚨 Valor divergente webhook MP");
-
-      await client.query("ROLLBACK");
-      return res.status(200).send("ok");
-    }
-
-    /* =====================================================
-       CONTEÚDO PIX
-    ===================================================== */
-
-    if (metadata.tipo === "conteudo_pix") {
-
-      const valorBase = Number(metadata.valor_base || valor);
-      const taxaTransacao = Number(metadata.taxa_transacao || 0);
-      const taxaPlataforma = Number(metadata.taxa_plataforma || 0);
-
-      const taxaExtra = taxaTransacao + taxaPlataforma;
-
-      const valores = await calcularValores({
-        modelo_id,
-        valor_bruto: valorBase,
-        taxa_gateway: 0
-      });
-
-      await client.query(`
-        INSERT INTO conteudo_pacotes (
-          message_id,
-          cliente_id,
-          modelo_id,
-          preco,
-          valor_base,
-          valor_total,
-          status,
-          metodo_pagamento,
-          pago_em
-        )
-        VALUES ($1,$2,$3,$4,$4,$5,'pago','pix',NOW())
-        ON CONFLICT (message_id,cliente_id)
-        DO UPDATE SET
-          status='pago',
-          pago_em=NOW(),
-          preco=EXCLUDED.preco,
-          valor_base=EXCLUDED.valor_base,
-          valor_total=EXCLUDED.valor_total
-      `,[
-        message_id,
-        cliente_id,
-        modelo_id,
-        valorBase,
-        valorPago
-      ]);
-
-      await client.query(`
-        INSERT INTO transacoes_agency (
-          modelo_id,
-          cliente_id,
-          tipo,
-          valor_bruto,
-          valor_modelo,
-          agency_fee,
-          velvet_fee,
-          taxa_gateway,
-          status,
-          created_at,
-          aceitou_termos,
-          aceite_ip,
-          aceite_data
-        )
-        VALUES (
-          $1,$2,'midia',
-          $3,$4,$5,$6,$7,
-          'pago',NOW(),true,$8,NOW()
-        )
-      `,[
-        modelo_id,
-        cliente_id,
-        valorBase,
-        valores.valor_modelo,
-        valores.agency_fee,
-        valores.velvet_fee,
-        taxaExtra,
-        metadata.aceite_ip || null
-      ]);
-
-      const conteudo_ids = await marcarConteudoComoLiberadoPorPagamento(client, { message_id, cliente_id, modelo_id });
-     dadosParaEmitir = {
-  tipo: "conteudo_pix",
-  cliente_id,
-  modelo_id,
-  message_id,
-  conteudo_ids,
-      };
-    }
-
-    /* =====================================================
-       VIP
-    ===================================================== */
-
-    if (metadata.tipo === "vip") {
-
-      const expiration = new Date();
-      expiration.setMonth(expiration.getMonth() + 1);
-
-      const taxaExtra =
-        Number(metadata.taxa_transacao || 0) +
-        Number(metadata.taxa_plataforma || 0);
-
-      const valorBase = Number((valorPago - taxaExtra).toFixed(2));
-
-      const valores = await calcularValores({
-        modelo_id,
-        valor_bruto: valorBase,
-        taxa_gateway: 0
-      });
-
-      await client.query(`
-        INSERT INTO vip_subscriptions (
-          cliente_id,
-          modelo_id,
-          ativo,
-          created_at,
-          updated_at,
-          expiration_at,
-          valor_assinatura,
-          taxa_transacao,
-          taxa_plataforma,
-          valor_total,
-          recorrente,
-          gateway_subscription_id
-        )
-        VALUES (
-          $1,$2,true,
-          NOW(),NOW(),
-          $3,$4,$5,$6,$7,
-          false,$8
-        )
-        ON CONFLICT (cliente_id,modelo_id)
-        DO UPDATE SET
-          ativo=true,
-          expiration_at=$3,
-          updated_at=NOW(),
-          valor_assinatura=$4,
-          taxa_transacao=$5,
-          taxa_plataforma=$6,
-          valor_total=$7,
-          recorrente=false,
-          gateway_subscription_id=$8
-      `,[
-        cliente_id,
-        modelo_id,
-        expiration,
-        valorBase,
-        Number(metadata.taxa_transacao || 0),
-        Number(metadata.taxa_plataforma || 0),
-        valorPago,
-        paymentId
-      ]);
-
-      await client.query(`
-        INSERT INTO transacoes_agency (
-          modelo_id,
-          cliente_id,
-          tipo,
-          valor_bruto,
-          valor_modelo,
-          agency_fee,
-          velvet_fee,
-          taxa_gateway,
-          status,
-          created_at,
-          aceitou_termos,
-          aceite_ip,
-          aceite_data
-        )
-        VALUES (
-          $1,$2,'assinatura',
-          $3,$4,$5,$6,$7,
-          'pago',NOW(),true,$8,NOW()
-        )
-      `,[
-        modelo_id,
-        cliente_id,
-        valorBase,
-        valores.valor_modelo,
-        valores.agency_fee,
-        valores.velvet_fee,
-        taxaExtra,
-        metadata.aceite_ip || null
-      ]);
-
-      enviarMensagemVip = {
-        cliente_id,
-        modelo_id
-      };
-
-      dadosParaEmitir = {
-        tipo: "vip",
-        cliente_id,
-        modelo_id
-      };
-    }
-
-    /* =====================================================
-       MARCAR PAGAMENTO COMO PAGO
-    ===================================================== */
-
-    await client.query(`
-      UPDATE pagamentos_pix
-      SET status='pago',
-          pago_em=NOW()
-      WHERE id=$1
-    `,[pagamento.id]);
-
-   await client.query("COMMIT");
-
-try {
-if (dadosParaEmitir?.tipo === "conteudo_pix") {
-  const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
-  io.to(sala).emit("conteudoLiberado", {
-    message_id: Number(dadosParaEmitir.message_id),
-    conteudo_ids: dadosParaEmitir.conteudo_ids || [],
-  });
-}
-
-  if (dadosParaEmitir?.tipo === "vip") {
-    const sala = `chat_${cliente_id}_${modelo_id}`;
-    io.to(sala).emit("vipAtivado", { cliente_id: Number(cliente_id), modelo_id: Number(modelo_id) });
-  }
-} catch (e) {
-  console.error("Falha ao emitir sockets:", e);
-}
-
-console.log("✅ PAGAMENTO MP FINALIZADO");
-return res.status(200).send("ok");
-    
-  } catch (err) {
-
-    await client.query("ROLLBACK");
-    console.error("🔥 ERRO WEBHOOK MP:", err);
-
-    return res.status(500).send("erro");
-
-  } finally {
-
-    client.release();
-
-  }
-
-});
-
 
 app.post(
   "/api/webhook/stripe",
@@ -846,18 +494,23 @@ if (dadosParaEmitir?.tipo === "vip") {
 
 app.post("/api/webhook/pagarme", express.raw({ type: "*/*" }), manutencaoClientes, async (req, res) => {
 
+console.log("======================================");
+console.log("🔥 WEBHOOK PAGARME RECEBIDO", new Date().toISOString());
+
 let event;
 
 try {
   event = JSON.parse(req.body.toString());
-} catch {
-  console.log("🚨 Body inválido");
+} catch (e) {
+  console.log("🚨 Body inválido", e);
   return res.status(400).send("invalid");
 }
 
-console.log("🔥 WEBHOOK PAGARME:", event.type);
+console.log("Evento:", event.type);
+console.log("EventID:", event.id);
 
 if (event.type !== "charge.paid") {
+  console.log("Evento ignorado");
   return res.status(200).send("ok");
 }
 
@@ -866,6 +519,9 @@ const charge = event.data;
 const metadata = charge.order?.metadata || charge.metadata || {};
 const orderId = charge.order?.id;
 
+console.log("OrderID:", orderId);
+console.log("Metadata:", metadata);
+
 if (!orderId) {
   console.log("🚨 orderId ausente");
   return res.status(200).send("ok");
@@ -873,23 +529,31 @@ if (!orderId) {
 
 const valorPago = charge.amount / 100;
 
+console.log("Valor pago:", valorPago);
+
 const client = await db.connect();
 let dadosParaEmitir = null;
 
 try {
 
+console.log("🔹 BEGIN");
 await client.query("BEGIN");
 
 /* =====================================================
 IDEMPOTÊNCIA
 ===================================================== */
 
+console.log("🔎 Verificando evento duplicado");
+
 const jaProcessado = await client.query(
   "SELECT 1 FROM pagarme_events WHERE id=$1 FOR UPDATE",
   [eventId]
 );
 
+console.log("Evento já processado?", jaProcessado.rowCount);
+
 if (jaProcessado.rowCount > 0) {
+  console.log("Evento já existia, ignorando");
   await client.query("ROLLBACK");
   return res.status(200).send("ok");
 }
@@ -899,9 +563,13 @@ await client.query(
   [eventId, event.type]
 );
 
+console.log("Evento registrado em pagarme_events");
+
 /* =====================================================
 LOCK PAGAMENTO
 ===================================================== */
+
+console.log("🔎 Buscando pagamento PIX");
 
 const pagamentoRes = await client.query(`
 SELECT *
@@ -911,6 +579,8 @@ AND pagarme_order_id=$1
 FOR UPDATE
 `,[orderId]);
 
+console.log("Pagamentos encontrados:", pagamentoRes.rowCount);
+
 if (!pagamentoRes.rowCount) {
   console.log("🚨 Pagamento não encontrado:", orderId);
   await client.query("ROLLBACK");
@@ -919,7 +589,10 @@ if (!pagamentoRes.rowCount) {
 
 const pagamento = pagamentoRes.rows[0];
 
+console.log("Pagamento encontrado:", pagamento);
+
 if (pagamento.status === "pago") {
+  console.log("Pagamento já estava pago");
   await client.query("ROLLBACK");
   return res.status(200).send("ok");
 }
@@ -930,6 +603,11 @@ modelo_id,
 valor,
 message_id
 } = pagamento;
+
+console.log("cliente_id:", cliente_id);
+console.log("modelo_id:", modelo_id);
+console.log("valor esperado:", valor);
+console.log("message_id:", message_id);
 
 /* =====================================================
 VALIDAÇÃO DE VALOR
@@ -944,20 +622,29 @@ if (Math.abs(Number(valorPago) - Number(valor)) > 0.01) {
 
 }
 
+console.log("Valor validado");
+
 /* =====================================================
 MIDIA
 ===================================================== */
 
 if (metadata.tipo === "conteudo_pix") {
 
+  console.log("💰 Processando compra de mídia");
+
   const valorBase = Number(metadata.valor_base || valorPago);
   const taxaGateway = Number(metadata.taxa_transacao ?? 0);
+
+  console.log("valorBase:", valorBase);
+  console.log("taxaGateway:", taxaGateway);
 
   const valores = await calcularValores({
     modelo_id,
     valor_bruto: valorBase,
     taxa_gateway: taxaGateway
   });
+
+  console.log("Valores calculados:", valores);
 
   await client.query(`
 INSERT INTO conteudo_pacotes (
@@ -985,14 +672,18 @@ valorBase,
 valorPago
 ]);
 
-  const conteudo_ids =
-  await marcarConteudoComoLiberadoPorPagamento(client,{
-    message_id,
-    cliente_id,
-    modelo_id
-  });
+console.log("conteudo_pacotes atualizado");
 
-  await client.query(`
+const conteudo_ids =
+await marcarConteudoComoLiberadoPorPagamento(client,{
+message_id,
+cliente_id,
+modelo_id
+});
+
+console.log("Conteúdos liberados:", conteudo_ids);
+
+await client.query(`
 INSERT INTO transacoes_agency (
 modelo_id,
 cliente_id,
@@ -1019,13 +710,15 @@ valores.velvet_fee,
 valores.taxa_gateway
 ]);
 
-  dadosParaEmitir = {
-    tipo:"conteudo_pix",
-    cliente_id,
-    modelo_id,
-    message_id,
-    conteudo_ids
-  };
+console.log("transacoes_agency (midia) inserido");
+
+dadosParaEmitir = {
+tipo:"conteudo_pix",
+cliente_id,
+modelo_id,
+message_id,
+conteudo_ids
+};
 
 }
 
@@ -1035,16 +728,22 @@ VIP
 
 if (metadata.tipo === "vip") {
 
+console.log("⭐ Processando VIP");
+
 const expiration = new Date();
 expiration.setMonth(expiration.getMonth() + 1);
+
+console.log("Expiração VIP:", expiration);
 
 const taxaGateway = Number(metadata.taxa_transacao ?? 0);
 
 const valores = await calcularValores({
-  modelo_id,
-  valor_bruto: valorPago,
-  taxa_gateway: taxaGateway
+modelo_id,
+valor_bruto: valorPago,
+taxa_gateway: taxaGateway
 });
+
+console.log("Valores VIP:", valores);
 
 await client.query(`
 INSERT INTO vip_subscriptions (
@@ -1089,6 +788,8 @@ valorPago,
 orderId
 ]);
 
+console.log("vip_subscriptions atualizado");
+
 await client.query(`
 INSERT INTO transacoes_agency (
 modelo_id,
@@ -1116,6 +817,8 @@ valores.velvet_fee,
 valores.taxa_gateway
 ]);
 
+console.log("transacoes_agency (vip) inserido");
+
 dadosParaEmitir = {
 tipo:"vip",
 cliente_id,
@@ -1128,6 +831,8 @@ modelo_id
 MARCAR PAGAMENTO COMO PAGO
 ===================================================== */
 
+console.log("Marcando pagamento como pago");
+
 await client.query(`
 UPDATE pagamentos_pix
 SET status='pago',
@@ -1135,7 +840,14 @@ pago_em=NOW()
 WHERE id=$1
 `,[pagamento.id]);
 
+console.log("Pagamento atualizado");
+
+/* =====================================================
+COMMIT
+===================================================== */
+
 await client.query("COMMIT");
+console.log("COMMIT realizado");
 
 /* =====================================================
 SOCKET
@@ -1143,9 +855,13 @@ SOCKET
 
 try {
 
+console.log("Emitindo eventos socket");
+
 if (dadosParaEmitir?.tipo === "conteudo_pix") {
 
 const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
+
+console.log("Emitindo conteudoLiberado para", sala);
 
 io.to(sala).emit("conteudoLiberado",{
 message_id:Number(dadosParaEmitir.message_id),
@@ -1157,6 +873,8 @@ conteudo_ids:dadosParaEmitir.conteudo_ids || []
 if (dadosParaEmitir?.tipo === "vip") {
 
 const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
+
+console.log("Emitindo vipAtivado para", sala);
 
 io.to(sala).emit("vipAtivado",{
 cliente_id:Number(dadosParaEmitir.cliente_id),
@@ -1186,10 +904,12 @@ return res.status(500).send("erro");
 } finally {
 
 client.release();
+console.log("🔚 conexão liberada");
 
 }
 
 });
+
 
 app.use(express.json());
 const { router: servercontentRouter, calcularValores } = require('./servercontent');
