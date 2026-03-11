@@ -776,70 +776,101 @@ function abrirModalMidia(src, isVideo=false){
 
   modal.classList.remove("hidden");
 
-if(!iframe){
-  iframe = document.createElement("iframe");
-  iframe.id = "modalIframe";
-  iframe.allow = "accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;";
-  iframe.allowFullscreen = true;
+  // criar iframe se não existir
+  if(!iframe){
+    iframe = document.createElement("iframe");
+    iframe.id = "modalIframe";
+    iframe.allow = "accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;";
+    iframe.allowFullscreen = true;
 
-  // tamanho correto para vídeo vertical
-  iframe.style.width = "min(90vw,420px)";
-  iframe.style.height = "calc(min(90vw,420px)*1.78)";
-  iframe.style.maxHeight = "90vh";
+    // estilo vertical tipo reels
+    iframe.style.height = "90vh";
+    iframe.style.width = "calc(90vh * 0.56)"; // proporção 9:16
 
-  iframe.style.border = "none";
-  iframe.style.display = "block";
-  iframe.style.margin = "0 auto";
+    iframe.style.maxWidth = "95vw";
+    iframe.style.border = "none";
+    iframe.style.display = "block";
+    iframe.style.margin = "0 auto";
 
-  video.parentNode.appendChild(iframe);
-}
+    video.parentNode.appendChild(iframe);
+  }
+
+  /* ==============================
+     CLOUDLFARE STREAM
+  ============================== */
 
   if(src.includes("videodelivery.net")){
 
-    // usar iframe para cloudflare stream
     iframe.src = src;
     iframe.style.display = "block";
 
     if(video){
       video.pause();
+      video.removeAttribute("src");
       video.style.display = "none";
     }
 
     if(img){
+      img.removeAttribute("src");
       img.style.display = "none";
     }
 
     return;
   }
 
-  // VIDEO NORMAL
+  /* ==============================
+     VIDEO NORMAL
+  ============================== */
+
   if(isVideo){
 
     iframe.style.display = "none";
+    iframe.src = "";
 
     if(video){
       video.pause();
+      video.removeAttribute("src");
+
       video.src = src;
       video.load();
+
       video.style.display = "block";
+      video.style.maxHeight = "90vh";
+      video.style.width = "auto";
+      video.style.margin = "0 auto";
+
       video.play().catch(()=>{});
     }
 
     if(img){
+      img.removeAttribute("src");
       img.style.display = "none";
     }
 
-  }else{
+  }
+
+  /* ==============================
+     IMAGEM
+  ============================== */
+
+  else{
 
     iframe.style.display = "none";
+    iframe.src = "";
 
     if(img){
+      img.removeAttribute("src");
       img.src = src;
+
       img.style.display = "block";
+      img.style.maxHeight = "90vh";
+      img.style.maxWidth = "95vw";
+      img.style.margin = "0 auto";
     }
 
     if(video){
       video.pause();
+      video.removeAttribute("src");
       video.style.display = "none";
     }
 
