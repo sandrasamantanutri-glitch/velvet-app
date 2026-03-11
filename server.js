@@ -995,7 +995,7 @@ ON CONFLICT DO NOTHING
 `,[
   cliente_id,
   modelo_id,
-  "Oii!! Bem vindo, como você chama?🔥❤️‍🔥"
+  "Oii!! Bem vindo, como você chama?🔥❤️‍🔥 Quero saber quem acabou de entrar no meu VIP 😏"
 ]);
 
 /* =====================================================
