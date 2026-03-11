@@ -1147,12 +1147,6 @@ cursor:pointer;
   opacity: 0.9;
 }
 
-.modal-backdrop{
-  position:absolute;
-  inset:0;
-  background: rgba(0,0,0,0.85);
-}
-
 .modal-midia-box{
   position: relative;
 
@@ -1206,4 +1200,5 @@ cursor:pointer;
 
   border:none;
 }
+
 
