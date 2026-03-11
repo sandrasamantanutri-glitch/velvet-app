@@ -642,8 +642,30 @@ if (metadata.tipo === "conteudo_pix") {
 
   console.log("💰 Processando compra de mídia");
 
-  const valorBase = Number(metadata.valor_base || valorPago);
-  const taxaGateway = Number(metadata.taxa_transacao || 0);
+  /* =====================================================
+  BUSCAR PREÇO REAL DA MÍDIA
+  ===================================================== */
+
+  const conteudoRes = await client.query(`
+    SELECT preco
+    FROM mensagens
+    WHERE id = $1
+    LIMIT 1
+  `,[message_id]);
+
+  if (!conteudoRes.rowCount) {
+    console.log("🚨 mensagem não encontrada:", message_id);
+    await client.query("ROLLBACK");
+    return res.status(200).send("ok");
+  }
+
+  const valorBase = Number(conteudoRes.rows[0].preco);
+  const taxaGateway = Number((valorBase * 0.15).toFixed(2));
+  const valorBruto = valorBase;
+
+  /* =====================================================
+  CALCULAR SPLIT
+  ===================================================== */
 
   const valores = await calcularValores({
     modelo_id,
@@ -651,9 +673,8 @@ if (metadata.tipo === "conteudo_pix") {
     taxa_gateway: taxaGateway
   });
 
-  const valorBruto = valorBase;
-
   console.log("Valores calculados:", valores);
+
 
   await client.query(`
 INSERT INTO conteudo_pacotes (
@@ -683,6 +704,10 @@ valorPago
 
 console.log("conteudo_pacotes atualizado");
 
+/* =====================================================
+LIBERAR CONTEÚDO
+===================================================== */
+
 const conteudo_ids =
 await marcarConteudoComoLiberadoPorPagamento(client,{
 message_id,
@@ -692,6 +717,9 @@ modelo_id
 
 console.log("Conteúdos liberados:", conteudo_ids);
 
+/* =====================================================
+REGISTRAR TRANSAÇÃO FINANCEIRA
+===================================================== */
 
 console.log("Valores finais transação MIDIA:",{
   valorBruto,
@@ -729,6 +757,9 @@ taxaGateway
 ]);
 
 console.log("transacoes_agency (midia) inserido");
+/* =====================================================
+SOCKET
+===================================================== */
 
 dadosParaEmitir = {
 tipo:"conteudo_pix",
@@ -753,8 +784,8 @@ expiration.setMonth(expiration.getMonth() + 1);
 
 console.log("Expiração VIP:", expiration);
 
- const valorBase = Number(metadata.valor_base || valorPago);
-  const taxaGateway = Number(metadata.taxa_transacao || 0);
+const valorBase = Number(metadata.valor_base);
+const taxaGateway = Number((valorBase * 0.15).toFixed(2));
 
 
  const valores = await calcularValores({
@@ -803,9 +834,9 @@ gateway_subscription_id=$8
 cliente_id,
 modelo_id,
 expiration,
-valorPago,
-metadata.taxa_transacao ?? 0,
-metadata.taxa_plataforma ?? 0,
+valorBase,
+0,
+0,
 valorPago,
 orderId
 ]);
@@ -5685,6 +5716,8 @@ metadata:{
 tipo:"vip",
 cliente_id:String(cliente_id),
 modelo_id:String(modelo_id),
+valor_base:String(valorBase),
+taxa_gateway:"0.15",
 aceite_ip: ip,
 fingerprint: fingerprint || ""
 }
