@@ -719,12 +719,17 @@ function fecharEscolha() {
 
 function fecharModalMidia(){
 
-  const modal = document.getElementById("modalMidia");
-  const video = document.getElementById("modalVideo");
+  const modal  = document.getElementById("modalMidia");
+  const video  = document.getElementById("modalVideo");
+  const iframe = document.getElementById("modalIframe");
 
   if(video){
     video.pause();
     video.src = "";
+  }
+
+  if(iframe){
+    iframe.src = "";
   }
 
   modal.classList.add("hidden");
@@ -757,7 +762,6 @@ function abrirMidia(midia){
 });
 }
 }
-
 function abrirModalMidia(src){
 
   const modal  = document.getElementById("modalMidia");
@@ -770,25 +774,32 @@ function abrirModalMidia(src){
   modal.classList.remove("hidden");
 
   /* reset */
-  img.style.display = "none";
-  img.src = "";
+  if(img){
+    img.style.display = "none";
+    img.src = "";
+  }
 
-  video.pause();
-  video.removeAttribute("src");
-  video.load();
-  video.style.display = "none";
+  if(video){
+    video.pause();
+    video.removeAttribute("src");
+    video.load();
+    video.style.display = "none";
+  }
 
-  iframe.style.display = "none";
-  iframe.src = "";
+  if(iframe){
+    iframe.src = "";
+    iframe.style.display = "none";
+  }
 
-  /* Cloudflare Stream */
+  /* CLOUDFlARE STREAM */
   if(src.includes("iframe.videodelivery.net")){
+
     iframe.src = src;
     iframe.style.display = "block";
     return;
   }
 
-  /* vídeo normal */
+  /* VIDEO NORMAL */
   if(
     src.includes(".mp4") ||
     src.includes(".webm") ||
@@ -800,11 +811,12 @@ function abrirModalMidia(src){
     return;
   }
 
-  /* imagem */
+  /* IMAGEM */
   img.src = src;
   img.style.display = "block";
-
 }
+
+
 
 function abrirPreviewAvatar(url) {
   if (!url || typeof url !== "string") return;

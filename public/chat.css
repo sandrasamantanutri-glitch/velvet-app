@@ -1272,8 +1272,12 @@ cursor:pointer;
 }
 
 #modalIframe{
+  display:none;
+  width:90vw;
+  height:90vh;
   max-width:90vw;
   max-height:90vh;
   border:none;
-  display:none;
+  border-radius:10px;
+  background:black;
 }
