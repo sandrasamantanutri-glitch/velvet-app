@@ -953,75 +953,61 @@ function abrirMidia(midia){
 
 function abrirModalMidia(src, isVideo=false){
 
-  const modal  = document.getElementById("modalMidia");
-  const img    = document.getElementById("modalImg");
-  const video  = document.getElementById("modalVideo");
-
-  let iframe = document.getElementById("modalIframe");
+  const modal = document.getElementById("modalMidia");
+  const img   = document.getElementById("modalImg");
+  const video = document.getElementById("modalVideo");
 
   if(!modal) return;
 
   modal.classList.remove("hidden");
 
-  // criar iframe se não existir
-  if(!iframe){
-    iframe = document.createElement("iframe");
-    iframe.id = "modalIframe";
-    iframe.allow = "accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;";
-    iframe.allowFullscreen = true;
-    iframe.style.width = "100%";
-    iframe.style.height = "100%";
-    iframe.style.border = "none";
-
-    video.parentNode.appendChild(iframe);
-  }
-
-  if(src.includes("videodelivery.net")){
-
-    // usar iframe para cloudflare stream
-    iframe.src = src;
-    iframe.style.display = "block";
-
-    if(video){
-      video.pause();
-      video.style.display = "none";
-    }
-
-    if(img){
-      img.style.display = "none";
-    }
-
-    return;
-  }
-
-  // VIDEO NORMAL
   if(isVideo){
 
-    iframe.style.display = "none";
-
     if(video){
+
+      // reset completo do player
       video.pause();
+      video.removeAttribute("src");
+
       video.src = src;
       video.load();
+
       video.style.display = "block";
-      video.play().catch(()=>{});
+
+      video.play().catch(err=>{
+        console.warn("Autoplay bloqueado:", err);
+      });
+
+      // debug se falhar
+      video.onerror = ()=>{
+        console.error("Erro ao carregar vídeo:", src);
+      };
+
     }
 
     if(img){
       img.style.display = "none";
+      img.removeAttribute("src");
     }
 
   }else{
 
-    iframe.style.display = "none";
-
     if(img){
+
+      img.removeAttribute("src");
       img.src = src;
       img.style.display = "block";
+
+      img.onerror = ()=>{
+        console.error("Erro ao carregar imagem:", src);
+      };
+
     }
 
     if(video){
       video.pause();
+      video.removeAttribute("src");
+      video.load();
       video.style.display = "none";
     }
 
