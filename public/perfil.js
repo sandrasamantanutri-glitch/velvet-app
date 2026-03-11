@@ -65,6 +65,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.warn("modelo_id não encontrado na URL");
     return;
   }
+  window.MODELO_ID_ATUAL = modelo_id;
 
   // =========================
   // VERIFICAR SE É DONA

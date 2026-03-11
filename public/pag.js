@@ -297,8 +297,16 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id }) {
 
     let url = "";
     let body = {};
+ if (tipo === "vip") {
 
-    if (tipo === "vip") {
+      const modeloIdFinal = Number(modelo_id || window.MODELO_ID_ATUAL);
+
+      if (!modeloIdFinal) {
+        console.error("modelo_id inválido:", modelo_id, window.MODELO_ID_ATUAL);
+        alert("Erro interno: modelo não identificado.");
+        return;
+      }
+
       url = "/api/pagamento/vip/pix";
       body = {
         tipo: "vip",
