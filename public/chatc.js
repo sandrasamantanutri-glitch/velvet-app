@@ -178,14 +178,15 @@ document.addEventListener(
     const preco = Number(card.dataset.preco || 0);
     const messageId = Number(card.dataset.id);
 
-const estaLiberado =
-  preco === 0 ||
-  card.classList.contains("livre") ||
-  card.classList.contains("visto") ||
-  conteudosLiberados.has(messageId);
+    const estaLiberado =
+      preco === 0 ||
+      card.classList.contains("livre") ||
+      card.classList.contains("visto") ||
+      conteudosLiberados.has(messageId);
 
     const precisaPagar = preco > 0 && !estaLiberado;
 
+    // 1) BLOQUEADO: clicar em QUALQUER lugar do card abre pagamento
     if (precisaPagar) {
       e.preventDefault();
       e.stopPropagation();
@@ -193,14 +194,20 @@ const estaLiberado =
       return;
     }
 
-    const midia = e.target.closest(".midia-item") || e.target.parentElement?.closest(".midia-item");
+    // 2) LIBERADO: só abre mídia se clicou numa mídia mesmo
+    const midia =
+      e.target.closest(".midia-item") ||
+      e.target.parentElement?.closest(".midia-item");
 
-if (midia && estaLiberado) {
-  const index = Number(midia.dataset.index || 0);
-  abrirConteudo(messageId, index);
-}
+    if (!midia) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const index = Number(midia.dataset.index || 0);
+    abrirConteudo(messageId, index);
   },
-  true // 👈 CAPTURE (crítico)
+  true
 );
 
 // ===============================
