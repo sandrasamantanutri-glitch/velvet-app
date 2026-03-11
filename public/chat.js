@@ -44,12 +44,7 @@ socket.on("connect", () => {
   autenticado = false;
   salaPronta = false;
 
- if(!token){
-  console.warn("Token ausente");
-  return;
-}
-
-socket.emit("auth",{token});
+  socket.emit("auth", { token });
 
 });
 
@@ -61,17 +56,9 @@ socket.on("authOk", async () => {
 
   socket.emit("loginModelo");
 
-  // esperar IDs existirem
-  const esperarIds = () =>
-    new Promise(resolve => {
-      const check = () => {
-        if (cliente_id && modelo_id) resolve();
-        else setTimeout(check, 100);
-      };
-      check();
-    });
-
-  await esperarIds();
+  if(cliente_id){
+    await carregarInfoCliente(cliente_id);
+  }
 
   tentarEntrarSala();
 
@@ -163,27 +150,21 @@ msgInput.addEventListener("keydown", e=>{
   // ===============================
   // SCROLL HISTÓRICO
   // ===============================
-let scrollLock = false;
+if (chatBox) {
 
-chatBox.addEventListener("scroll", () => {
+  chatBox.addEventListener("scroll", () => {
 
-  if (scrollLock) return;
+    if (
+      historicoInicialCarregado &&
+      chatBox.scrollTop <= 100 &&
+      !carregandoHistorico
+    ) {
+      carregarMensagensAntigas();
+    }
 
-  if (
-    historicoInicialCarregado &&
-    chatBox.scrollTop <= 100 &&
-    !carregandoHistorico
-  ) {
+  });
 
-    scrollLock = true;
-
-    carregarMensagensAntigas();
-
-    setTimeout(()=> scrollLock = false, 500);
-  }
-
-});
-
+}
 
 document.addEventListener("click", e => {
 
@@ -264,10 +245,8 @@ socket.on("chatHistory", mensagens => {
   } else {
 
     const alturaAntes = chatBox.scrollHeight;
-    
-mensagens
-  .sort((a,b)=> new Date(a.created_at) - new Date(b.created_at))
-  .forEach(m => {
+
+    mensagens.reverse().forEach(m => {
 
       if (mensagensRenderizadas.has(m.id)) return;
       mensagensRenderizadas.add(m.id);
@@ -303,15 +282,11 @@ socket.on("newMessage", msg => {
 
   const temp = document.querySelector(`[data-id="${msg.tempId}"]`);
 
-if (temp) {
-
-  mensagensRenderizadas.delete(msg.tempId);
-
-  temp.dataset.id = msg.id;
-  mensagensRenderizadas.add(msg.id);
-
-  return;
-}
+  if (temp) {
+    temp.dataset.id = msg.id;
+    mensagensRenderizadas.add(msg.id);
+    return;
+  }
 
   if (mensagensRenderizadas.has(msg.id)) return;
 
@@ -431,7 +406,6 @@ socket.on("mensagemExcluida", ({ id }) => {
 // CONTEÚDO VENDIDO
 // ===============================
 // 🔔 Atualiza a mensagem de conteúdo quando cliente já viu
-
 socket.on("conteudoVisto", ({ message_id, conteudo_ids }) => {
 
   if (!message_id) return;
@@ -450,18 +424,9 @@ socket.on("conteudoVisto", ({ message_id, conteudo_ids }) => {
 
   // 🔒 Atualiza lista local para bloquear no popup
   if (Array.isArray(conteudo_ids)) {
-
-    if(!window.conteudosVistosCliente){
-      window.conteudosVistosCliente = new Set();
-    }
-
-conteudo_ids.forEach(id => {
-  const num = Number(id);
-  if(Number.isInteger(num)){
-    window.conteudosVistosCliente.add(num);
-  }
-});
-
+    conteudo_ids.forEach(id => {
+      window.conteudosVistosCliente.add(Number(id));
+    });
   }
 
 });
@@ -531,7 +496,7 @@ div.innerHTML = `
         data-thumb="${m.thumbnail_url || m.url}"
         data-full="${m.url}"
         data-index="${index}"
-        style="background:#111"
+        style="background-image:url('${m.thumbnail_url || m.url}')">
       </div>
     `).join("")}
   </div>
@@ -930,23 +895,13 @@ function fecharModalMidia() {
 }
 
 function abrirMidia(midia){
-  let src = midia.dataset.full || midia.dataset.thumb;
-
-  if(!src){
-    console.warn("URL de mídia inválida");
-    return;
-  }
-
-  // garante URL absoluta se vier relativa
-  if(src.startsWith("/")){
-    src = window.location.origin + src;
-  }
+  const src = midia.dataset.full || midia.dataset.thumb;
+  if(!src) return;
 
   const isVideo =
-    src.endsWith(".mp4") ||
-    src.endsWith(".webm") ||
-    src.endsWith(".mov") ||
-    src.includes("videodelivery.net");
+    src.includes(".mp4") ||
+    src.includes(".webm") ||
+    src.includes(".mov");
 
   abrirModalMidia(src, isVideo);
 }
@@ -954,60 +909,31 @@ function abrirMidia(midia){
 function abrirModalMidia(src, isVideo=false){
 
   const modal = document.getElementById("modalMidia");
-  const img   = document.getElementById("modalImg");
+  const img = document.getElementById("modalImg");
   const video = document.getElementById("modalVideo");
 
   if(!modal) return;
 
   modal.classList.remove("hidden");
-
   if(isVideo){
 
     if(video){
-
-      // reset completo do player
-      video.pause();
-      video.removeAttribute("src");
-
       video.src = src;
-      video.load();
-
       video.style.display = "block";
-
-      video.play().catch(err=>{
-        console.warn("Autoplay bloqueado:", err);
-      });
-
-      // debug se falhar
-      video.onerror = ()=>{
-        console.error("Erro ao carregar vídeo:", src);
-      };
-
+      video.play().catch(()=>{});
     }
 
-    if(img){
-      img.style.display = "none";
-      img.removeAttribute("src");
-    }
+    if(img) img.style.display = "none";
 
   }else{
 
     if(img){
-
-      img.removeAttribute("src");
       img.src = src;
       img.style.display = "block";
-
-      img.onerror = ()=>{
-        console.error("Erro ao carregar imagem:", src);
-      };
-
     }
 
     if(video){
       video.pause();
-      video.removeAttribute("src");
-      video.load();
       video.style.display = "none";
     }
 
@@ -1128,13 +1054,9 @@ function ativarLazyLoadingModelo(div, msg, bloqueado){
     media.className = "midia-thumb";
     media.style.pointerEvents = "none";
 
+    // 🔧 inserir imediatamente para não quebrar o layout
     el.innerHTML = "";
-media.style.width = "100%";
-media.style.height = "100%";
-media.style.objectFit = "cover";
-media.style.pointerEvents = "none";
-
-el.appendChild(media);
+    el.appendChild(media);
 
   });
 
