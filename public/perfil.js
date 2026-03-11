@@ -141,11 +141,15 @@ if (!tokenAtual) {
 await carregarPerfil();
 await carregarOfertaAtiva();
 await aplicarRegrasDeAcesso();
+
+await verificarVip();   // define estado VIP primeiro
+
 await carregarFeed();
 await carregarPremium();
 
-await verificarVip();
 iniciarVerificacaoVip();
+
+
 // ===============================
 // ENVIAR POST FEED
 // ===============================
@@ -1107,6 +1111,26 @@ function renderThumb(item){
   return div;
 }
 
+function ativarVip(expiration_at){
+
+  window.__CLIENTE_VIP__ = true;
+
+  atualizarBotaoVip(expiration_at);
+
+  liberarMidiasVip();
+
+}
+
+function liberarMidiasVip(){
+
+  document
+    .querySelectorAll(".midia-thumb.locked")
+    .forEach(el => {
+      el.classList.remove("locked");
+    });
+
+}
+
 async function verificarVip() {
 
   const token = localStorage.getItem("token");
@@ -1126,7 +1150,7 @@ async function verificarVip() {
 
     if (data.vip) {
 
-      atualizarBotaoVip(data.expiration_at);
+      ativarVip(data.expiration_at);
 
       if (vipCheckInterval) {
         clearInterval(vipCheckInterval);
@@ -1151,17 +1175,18 @@ function iniciarVerificacaoVip(){
   if(!token) return;
 
   // própria modelo
-  if(window.EH_DONA) return;
+  if(EH_DONA) return;
 
-  // outra modelo
-  if(window.EH_MODELO) return;
+  // qualquer modelo
+  if(role === "modelo") return;
 
+  // já é VIP
+  if(window.__CLIENTE_VIP__) return;
+
+  // já existe polling
   if(vipCheckInterval) return;
 
-  vipCheckInterval = setInterval(async () => {
+  vipCheckInterval = setInterval(verificarVip, 4000);
 
-    await verificarVip();
-
-  }, 10000);
-
+  verificarVip(); // primeira verificação imediata
 }
