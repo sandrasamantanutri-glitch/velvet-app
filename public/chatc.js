@@ -195,18 +195,19 @@ document.addEventListener(
     }
 
     // 2) LIBERADO: só abre mídia se clicou numa mídia mesmo
-    const midia =
-      e.target.closest(".midia-item") ||
-      e.target.parentElement?.closest(".midia-item");
+let midia =
+  e.target.closest(".midia-item") ||
+  card.querySelector(".midia-item");
 
-    if (!midia) return;
+if (!midia) return;
 
-    e.preventDefault();
-    e.stopPropagation();
+e.preventDefault();
+e.stopPropagation();
 
-    const index = Number(midia.dataset.index || 0);
-    abrirConteudo(messageId, index);
+const index = Number(midia.dataset.index || 0);
+abrirConteudo(messageId, index);
   },
+
   true
 );
 
@@ -585,16 +586,16 @@ async function abrirConteudo(message_id, index = 0){
 
   if(!modal) return;
 
-  modal.classList.remove("hidden");
+const res = await fetch(`/api/chat/conteudo/${message_id}`,{
+  headers:{ Authorization:"Bearer "+token }
+});
 
-  const res = await fetch(`/api/chat/conteudo/${message_id}`,{
-    headers:{ Authorization:"Bearer "+token }
-  });
+if(!res.ok){
+  alert("Erro ao carregar mídia");
+  return;
+}
 
-  if(!res.ok){
-    alert("Erro ao carregar mídia");
-    return;
-  }
+modal.classList.remove("hidden");
 
   const midias = await res.json();
 
