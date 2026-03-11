@@ -121,6 +121,8 @@ await aplicarRegrasDeAcesso();
 await carregarFeed();
 await carregarPremium();
 
+await verificarVip();
+iniciarVerificacaoVip();
 // ===============================
 // ENVIAR POST FEED
 // ===============================
@@ -1080,4 +1082,63 @@ function renderThumb(item){
   div.onclick = () => abrirMidia(item);
 
   return div;
+}
+
+async function verificarVip() {
+
+  const token = localStorage.getItem("token");
+  if (!token) return;
+
+  try {
+
+    const res = await fetch(`/api/vip/status/${modelo_id}`, {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
+
+    if (!res.ok) return;
+
+    const data = await res.json();
+
+    if (data.vip) {
+
+      atualizarBotaoVip(data.expiration_at);
+
+      if (vipCheckInterval) {
+        clearInterval(vipCheckInterval);
+        vipCheckInterval = null;
+      }
+
+    }
+
+  } catch (err) {
+    console.error("Erro verificar VIP:", err);
+  }
+
+}
+
+let vipCheckInterval = null;
+
+function iniciarVerificacaoVip(){
+
+  const token = localStorage.getItem("token");
+
+  // visitante
+  if(!token) return;
+
+  // própria modelo
+  if(window.EH_DONA) return;
+
+  // outra modelo
+  if(window.EH_MODELO) return;
+
+  if(vipCheckInterval) return;
+
+  vipCheckInterval = setInterval(async () => {
+
+    await verificarVip();
+
+  }, 3000);
+
 }

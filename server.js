@@ -3082,7 +3082,7 @@ app.get("/api/vip/status/:modelo_id", authCliente, async (req, res) => {
       WHERE cliente_id = $1
       AND modelo_id = $2
       AND ativo = true
-      AND expiration_at > NOW()
+      AND expiration_at > NOW() AT TIME ZONE 'America/Sao_Paulo'
       LIMIT 1
       `,
       [req.cliente_id, modelo_id]
