@@ -1270,3 +1270,10 @@ cursor:pointer;
   cursor: pointer;
   pointer-events: auto;
 }
+
+#modalIframe{
+  max-width:90vw;
+  max-height:90vh;
+  border:none;
+  display:none;
+}

@@ -30,7 +30,7 @@
 <main id="chatBox" class="chat-box"></main>
 
 <!-- INPUT FIXO -->
- 
+
 <footer class="chat-input">
   <button
     id="btnEnviarConteudo1"
@@ -88,7 +88,7 @@
 
     <div class="popup-actions">
       <button onclick="salvarEdicao()">Salvar</button>
-      <button onclick="excluirMensagem()" style="color:red">Excluir</button>
+      <button onclick="excluirMensagem()">Excluir</button>
       <button onclick="fecharMenuMensagem()">Cancelar</button>
     </div>
   </div>
@@ -102,7 +102,14 @@
 
   <video id="modalVideo" controls playsinline></video>
 
+  <iframe
+    id="modalIframe"
+    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+    allowfullscreen>
+  </iframe>
+
 </div>
+
 <script src="/socket.io/socket.io.js"></script>
 <script src="/header.js"></script>
 <script src="/chat.js" defer></script>
