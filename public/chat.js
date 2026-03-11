@@ -963,18 +963,23 @@ function abrirModalMidia(src, isVideo=false){
 
   modal.classList.remove("hidden");
 
-  // criar iframe se não existir
-  if(!iframe){
-    iframe = document.createElement("iframe");
-    iframe.id = "modalIframe";
-    iframe.allow = "accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;";
-    iframe.allowFullscreen = true;
-    iframe.style.width = "100%";
-    iframe.style.height = "100%";
-    iframe.style.border = "none";
+if(!iframe){
+  iframe = document.createElement("iframe");
+  iframe.id = "modalIframe";
+  iframe.allow = "accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;";
+  iframe.allowFullscreen = true;
 
-    video.parentNode.appendChild(iframe);
-  }
+  // tamanho correto para vídeo vertical
+  iframe.style.width = "min(90vw,420px)";
+  iframe.style.height = "calc(min(90vw,420px)*1.78)";
+  iframe.style.maxHeight = "90vh";
+
+  iframe.style.border = "none";
+  iframe.style.display = "block";
+  iframe.style.margin = "0 auto";
+
+  video.parentNode.appendChild(iframe);
+}
 
   if(src.includes("videodelivery.net")){
 
