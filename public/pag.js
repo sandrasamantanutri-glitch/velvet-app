@@ -423,8 +423,6 @@ socket.on("vipAtivado", async ({ cliente_id, modelo_id }) => {
 
     fecharPopupPagamento();
 
-    atualizarUIVip?.(modelo_id);
-
     await aplicarRegrasDeAcesso?.();
     await carregarFeedBase?.();
 

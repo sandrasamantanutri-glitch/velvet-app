@@ -1139,6 +1139,29 @@ function iniciarVerificacaoVip(){
 
     await verificarVip();
 
-  }, 3000);
+  }, 10000);
+
+}
+
+function atualizarBotaoVip(expiration_at){
+
+  const btn = document.getElementById("btnAssinarVip");
+  if(!btn) return;
+
+  btn.innerText = "VIP ativo";
+  btn.disabled = true;
+  btn.classList.add("vip-ativo");
+
+  if(expiration_at){
+
+    const data = new Date(expiration_at);
+    const label = document.getElementById("vipExpira");
+
+    if(label){
+      label.innerText =
+        "VIP até " + data.toLocaleDateString("pt-BR");
+    }
+
+  }
 
 }
