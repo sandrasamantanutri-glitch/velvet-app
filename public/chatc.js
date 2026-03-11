@@ -737,7 +737,7 @@ function fecharModalMidia() {
   modal.classList.add("hidden");
 }
 
-function abrirMidia(midia){
+function abrirModalMidia(midia){
 
   const grid = midia.closest(".pacote-grid");
   if(!grid) return;
@@ -766,32 +766,111 @@ function abrirMidia(midia){
 
 function abrirModalMidia(src, isVideo=false){
 
-  const modal = document.getElementById("modalMidia");
-  const img = document.getElementById("modalImg");
-  const video = document.getElementById("modalVideo");
+  const modal  = document.getElementById("modalMidia");
+  const img    = document.getElementById("modalImg");
+  const video  = document.getElementById("modalVideo");
+
+  let iframe = document.getElementById("modalIframe");
 
   if(!modal) return;
 
   modal.classList.remove("hidden");
-  if(isVideo){
+
+  // criar iframe se não existir
+  if(!iframe){
+    iframe = document.createElement("iframe");
+    iframe.id = "modalIframe";
+    iframe.allow = "accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;";
+    iframe.allowFullscreen = true;
+
+    // estilo vertical tipo reels
+    iframe.style.height = "90vh";
+    iframe.style.width = "calc(90vh * 0.56)"; // proporção 9:16
+
+    iframe.style.maxWidth = "95vw";
+    iframe.style.border = "none";
+    iframe.style.display = "block";
+    iframe.style.margin = "0 auto";
+
+    video.parentNode.appendChild(iframe);
+  }
+
+  /* ==============================
+     CLOUDLFARE STREAM
+  ============================== */
+
+  if(src.includes("videodelivery.net")){
+
+    iframe.src = src;
+    iframe.style.display = "block";
 
     if(video){
+      video.pause();
+      video.removeAttribute("src");
+      video.style.display = "none";
+    }
+
+    if(img){
+      img.removeAttribute("src");
+      img.style.display = "none";
+    }
+
+    return;
+  }
+
+  /* ==============================
+     VIDEO NORMAL
+  ============================== */
+
+  if(isVideo){
+
+    iframe.style.display = "none";
+    iframe.src = "";
+
+    if(video){
+      video.pause();
+      video.removeAttribute("src");
+
       video.src = src;
+      video.load();
+
       video.style.display = "block";
+      video.style.maxHeight = "90vh";
+      video.style.width = "auto";
+      video.style.margin = "0 auto";
+
       video.play().catch(()=>{});
     }
 
-    if(img) img.style.display = "none";
+    if(img){
+      img.removeAttribute("src");
+      img.style.display = "none";
+    }
 
-  }else{
+  }
+
+  /* ==============================
+     IMAGEM
+  ============================== */
+
+  else{
+
+    iframe.style.display = "none";
+    iframe.src = "";
 
     if(img){
+      img.removeAttribute("src");
       img.src = src;
+
       img.style.display = "block";
+      img.style.maxHeight = "90vh";
+      img.style.maxWidth = "95vw";
+      img.style.margin = "0 auto";
     }
 
     if(video){
       video.pause();
+      video.removeAttribute("src");
       video.style.display = "none";
     }
 
@@ -869,36 +948,48 @@ function ativarLazyLoadingModelo(div, msg, bloqueado){
     const isVideo =
       thumb.endsWith(".mp4") ||
       thumb.endsWith(".webm") ||
-      thumb.endsWith(".mov");
+      thumb.endsWith(".mov") ||
+      thumb.includes("videodelivery.net");
 
-    let media;
+    el.innerHTML = "";
 
+    const container = document.createElement("div");
+    container.style.position = "relative";
+    container.style.width = "100%";
+    container.style.height = "100%";
+
+    const img = document.createElement("img");
+    img.src = thumb;
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.className = "midia-thumb";
+
+    img.style.width = "100%";
+    img.style.height = "100%";
+    img.style.objectFit = "cover";
+
+    container.appendChild(img);
+
+    // overlay de vídeo
     if(isVideo){
 
-      media = document.createElement("video");
-      media.src = thumb;
-      media.muted = true;
-      media.playsInline = true;
-      media.preload = "metadata";
+      const play = document.createElement("div");
+      play.innerHTML = "▶";
 
-    }else{
+      play.style.position = "absolute";
+      play.style.top = "50%";
+      play.style.left = "50%";
+      play.style.transform = "translate(-50%,-50%)";
+      play.style.fontSize = "28px";
+      play.style.color = "white";
+      play.style.textShadow = "0 0 10px rgba(0,0,0,0.6)";
 
-      media = document.createElement("img");
-      media.src = thumb;
-      media.loading = "lazy";
-
+      container.appendChild(play);
     }
 
-    media.className = "midia-thumb";
+    container.style.pointerEvents = "none";
 
-    media.style.pointerEvents = "auto";
-
-    media.onload = media.onloadeddata = () => {
-
-  el.innerHTML = "";
-  el.appendChild(media);
-
-};
+    el.appendChild(container);
 
   });
 
