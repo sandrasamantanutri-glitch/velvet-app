@@ -721,16 +721,16 @@ async function abrirPopupConteudos() {
       return;
     }
 
-    const res = await fetch("/api/conteudos", {
-      headers: {
-        Authorization: "Bearer " + token
-      }
-    });
+const res = await fetch("/api/conteudos?venda=true", {
+  headers: {
+    Authorization: "Bearer " + token
+  }
+});
 
-    if (!res.ok) {
-      grid.innerHTML = "Erro ao carregar conteúdos.";
-      return;
-    }
+if (!res.ok) {
+  grid.innerHTML = "Erro ao carregar conteúdos.";
+  return;
+}
 
     const conteudos = await res.json();
 

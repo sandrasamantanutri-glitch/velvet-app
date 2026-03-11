@@ -3948,6 +3948,7 @@ app.get("/api/conteudos", authModelo, async (req, res) => {
   const { venda } = req.query;
 
   try {
+
     let where = "c.modelo_id = $1 AND c.ativo = TRUE";
     const params = [req.modelo_id];
 
