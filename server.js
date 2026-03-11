@@ -1,3 +1,5 @@
+console.log("SERVIDOR INICIADO")
+
 // ===============================
 // SERVER.JS 
 // ===============================
@@ -499,21 +501,28 @@ console.log("🔥 WEBHOOK PAGARME RECEBIDO");
 console.log("URL:", req.originalUrl);
 console.log("METHOD:", req.method);
 
-let event;
+let event = null;
 
-try{
-  event = JSON.parse(req.body.toString());
-}catch(err){
+try {
+  const raw = req.body?.toString() || "";
+  event = raw ? JSON.parse(raw) : null;
+} catch (err) {
   console.error("Erro parse webhook:", err);
+  return res.status(400).send("invalid body");
+}
+
+if (!event || typeof event !== "object") {
+  console.log("Evento inválido (sem objeto)");
+  return res.status(200).send("ok");
+}
+
+if (!event.type) {
+  console.log("Evento sem type:", event);
+  return res.status(200).send("ok");
 }
 
 console.log("Evento:", event.type);
 console.log("EventID:", event.id);
-
-if (event.type !== "charge.paid") {
-  console.log("Evento ignorado");
-  return res.status(200).send("ok");
-}
 
 const eventId = event.id;
 const charge = event.data;
