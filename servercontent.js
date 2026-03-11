@@ -92,8 +92,8 @@ async function calcularValores({ modelo_id, valor_bruto, taxa_gateway }) {
   const regraRes = await db.query(`
     SELECT
       COALESCE(a.percentual_modelo, 0.70) AS percentual_modelo,
-      COALESCE(a.percentual_agencia, 0) AS percentual_agencia,
-      COALESCE(a.percentual_plataforma, 0.30) AS percentual_plataforma
+      COALESCE(a.percentual_agencia, 0.10) AS percentual_agencia,
+      COALESCE(a.percentual_plataforma, 0.20) AS percentual_plataforma
     FROM modelos m
     LEFT JOIN agencias a ON a.id = m.agencia_id
     WHERE m.id = $1
@@ -104,12 +104,9 @@ async function calcularValores({ modelo_id, valor_bruto, taxa_gateway }) {
   const bruto = Number(valor_bruto);
   const gateway = Number(taxa_gateway || 0);
 
-  // 🔥 CALCULAR PRIMEIRO O LÍQUIDO
-  const liquido = bruto - gateway;
-
-  const valorModelo = liquido * Number(regra.percentual_modelo);
-  const valorAgencia = liquido * Number(regra.percentual_agencia);
-  const valorVelvet = liquido * Number(regra.percentual_plataforma);
+  const valorModelo = bruto * Number(regra.percentual_modelo);
+  const valorAgencia = bruto * Number(regra.percentual_agencia);
+  const valorVelvet = bruto * Number(regra.percentual_plataforma);
 
   return {
     valor_modelo: Number(valorModelo.toFixed(2)),
