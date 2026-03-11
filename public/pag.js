@@ -652,7 +652,6 @@ let pagamentoEmProcesso = false;
 async function confirmarPagamentoCartao() {
 
   if (pagamentoEmProcesso) return;
-
   pagamentoEmProcesso = true;
 
   try {
@@ -689,16 +688,31 @@ async function confirmarPagamentoCartao() {
       return;
     }
 
-    // pagamento aprovado no Stripe
-    document.getElementById("cartaoSucesso")?.classList.remove("hidden");
+document.getElementById("cartaoSucesso")
+  ?.classList.remove("hidden");
 
-    console.log("Stripe aprovado, aguardando webhook...");
+console.log("Stripe aprovado, aguardando webhook...");
+
+setTimeout(async () => {
+
+  try {
+
+    await verificarVip();
+
+    fecharPopupPagamento();
+
+  } catch (err) {
+    console.error("Erro ao verificar VIP após Stripe:", err);
+  }
+
+  pagamentoEmProcesso = false;
+
+}, 2000);
 
   } catch (err) {
 
     console.error("Erro confirmar cartão:", err);
     alert("Erro ao confirmar pagamento");
-
     pagamentoEmProcesso = false;
 
   }
@@ -922,6 +936,42 @@ function iniciarVerificacaoPix(orderId) {
     }
 
   }, 5000);
+
+}
+
+async function aguardarConfirmacaoPagamento() {
+
+  let tentativas = 0;
+
+  const intervalo = setInterval(async () => {
+
+    tentativas++;
+
+    try {
+
+      const res = await verificarVip(); // tua função já existente
+
+      if (window.__CLIENTE_VIP__) {
+
+        clearInterval(intervalo);
+
+        fecharPopupPagamento();
+
+        atualizarBotaoVip();
+
+        desbloquearConteudoPremium?.();
+
+      }
+
+    } catch (e) {
+      console.error("Erro verificar VIP:", e);
+    }
+
+    if (tentativas > 10) {
+      clearInterval(intervalo);
+    }
+
+  }, 2000);
 
 }
 
