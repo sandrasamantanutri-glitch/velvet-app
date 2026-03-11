@@ -118,7 +118,7 @@ const uploadVerificacao = multer({
 });
 
 console.log("🔥 ARQUIVO WEBHOOK CARREGADO");
-app.post("/api/webhook/mercadopago", express.json(), async (req, res) => {
+app.post("/api/webhook/mercadopago", express.json(), manutencaoClientes, async (req, res) => {
 
   const type = req.body.type;
   const paymentId = req.body.data?.id;
@@ -844,7 +844,7 @@ if (dadosParaEmitir?.tipo === "vip") {
   }
 );
 
-app.post("/api/webhook/pagarme", express.raw({ type: "*/*" }), async (req, res) => {
+app.post("/api/webhook/pagarme", express.raw({ type: "*/*" }), manutencaoClientes, async (req, res) => {
 
 let event;
 
