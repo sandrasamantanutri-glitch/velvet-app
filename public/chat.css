@@ -1191,6 +1191,9 @@ cursor:pointer;
 .modal-midia{
   position:fixed;
   inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
   z-index:9999;
 }
 
@@ -1198,53 +1201,61 @@ cursor:pointer;
   display:none;
 }
 
+/* fundo escuro */
 .modal-backdrop{
   position:absolute;
   inset:0;
-  background:rgba(0,0,0,0.9);
-}
-
-/* container central */
-.modal-midia-box{
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%, -50%);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:15px;
-}
-
-/* mídia */
-#modalImg,
-#modalVideo,
-#modalIframe{
-  max-width:60vw;
-  max-height:80vh;
-  object-fit:contain;
-  border-radius:12px;
-}
-
-#modalIframe{
-  border:0;
-}
-
-/* navegação */
-.nav-midia{
-  background:rgba(0,0,0,0.6);
-  color:white;
-  border:none;
-  font-size:32px;
-  width:45px;
-  height:45px;
-  border-radius:50%;
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
-.nav-midia:hover{
   background:rgba(0,0,0,0.85);
+  backdrop-filter: blur(4px);
+}
+
+/* caixa da mídia */
+.modal-midia-box{
+  position:relative;
+  z-index:2;
+
+  max-height:90vh;
+  max-width:90vw;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* imagem e video */
+.modal-midia-box img,
+.modal-midia-box video,
+.modal-midia-box iframe{
+  max-height:90vh;
+  max-width:90vw;
+  border-radius:12px;
+  box-shadow:0 10px 40px rgba(0,0,0,0.6);
+}
+
+/* botão fechar */
+.modal-close{
+  position:absolute;
+  top:-40px;
+  right:0;
+
+  background:#000;
+  color:#fff;
+
+  border:none;
+  width:36px;
+  height:36px;
+  border-radius:50%;
+
+  font-size:18px;
+  cursor:pointer;
+}
+
+/* mobile */
+@media (max-width:700px){
+
+.modal-close{
+  top:10px;
+  right:10px;
+}
+
 }

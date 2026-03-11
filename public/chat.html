@@ -94,21 +94,26 @@
   </div>
 </div>
 
-<div id="modalMidia" class="hidden">
+<div id="modalMidia" class="modal-midia hidden">
 
-  <span class="modal-close" onclick="fecharModalMidia()">×</span>
+  <div class="modal-backdrop" onclick="fecharModalMidia()"></div>
 
-   <div class="modal-media-box">
-  <img id="modalImg">
+  <div class="modal-box modal-midia-box">
 
-  <video id="modalVideo" controls playsinline></video>
+    <button class="modal-close" onclick="fecharModalMidia()">✕</button>
 
-  <iframe
-    id="modalIframe"
-    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
-    allowfullscreen>
-  </iframe>
-   </div>
+    <img id="modalImg">
+
+    <video id="modalVideo" controls playsinline preload="metadata"></video>
+
+    <iframe
+      id="modalIframe"
+      allow="autoplay; fullscreen; picture-in-picture"
+      allowfullscreen>
+    </iframe>
+
+  </div>
+
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
