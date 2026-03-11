@@ -876,13 +876,15 @@ function abrirPreviewAvatar(url) {
   });
 }
 
-function ativarLazyLoadingModelo(div){
+function ativarLazyLoadingModelo(div, msg, bloqueado){
 
   const midias = div.querySelectorAll(".lazy-midia");
 
   midias.forEach(el => {
 
     const thumb = el.dataset.thumb;
+    const full  = el.dataset.full;
+
     if(!thumb) return;
 
     const img = document.createElement("img");
@@ -896,25 +898,26 @@ function ativarLazyLoadingModelo(div){
     el.innerHTML = "";
     el.appendChild(img);
 
+    // CLICK DA MIDIA
+    el.addEventListener("click", () => {
+
+      const conteudo = el.closest(".chat-conteudo");
+
+      const bloqueado =
+        conteudo?.classList.contains("bloqueado");
+
+      if(bloqueado){
+        abrirPagamentoConteudo(
+          conteudo.dataset.id,
+          conteudo.dataset.preco
+        );
+      } else {
+        abrirModalMidia(full);
+      }
+
+    });
+
   });
-
-}
-
-function formatarHora(data) {
-  if (!data) return "";
-
-  const d = new Date(data);
-  return d.toLocaleTimeString("pt-BR", {
-    hour: "2-digit",
-    minute: "2-digit"
-  });
-}
-
-function abrirPreviewMidia({ url }){
-
-  if(!url) return;
-
-  abrirModalMidia(url);
 
 }
 

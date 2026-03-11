@@ -2,11 +2,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
    const role = localStorage.getItem("role");
 
-  const menu = document.getElementById("footerModelo");
+ const menu = document.getElementById("footerModelo");
+
   if (!menu) return;
 
-  // esconder se não for modelo
-  if (role !== "modelo") {
+  if (role === "modelo") {
+    menu.style.display = "flex";
+  } else {
     menu.style.display = "none";
     return;
   }
