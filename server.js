@@ -492,7 +492,7 @@ if (dadosParaEmitir?.tipo === "vip") {
   }
 );
 
-app.post("/api/webhook/pagarme", express.raw({ type: "*/*" }), manutencaoClientes, async (req, res) => {
+app.post("/api/webhook/pagarme", express.raw({ type: "*/*" }), async (req, res) => {
 
 console.log("======================================");
 console.log("🔥 WEBHOOK PAGARME RECEBIDO", new Date().toISOString());
@@ -1350,7 +1350,7 @@ app.post("/api/ofertas", authModelo, async (req, res) => {
 });
 
 
-app.post("/api/pagamento/vip/cartao", authCliente, manutencaoClientes, async (req, res) => {
+app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
 
   const client = await db.connect();
   let cliente_id;
@@ -5482,7 +5482,7 @@ app.delete("/api/chat/pacote/:message_id", authModelo, async (req, res) => {
   }
 });
 
-app.post("/api/pagamento/vip/pix", auth, manutencaoClientes, async (req, res) => {
+app.post("/api/pagamento/vip/pix", auth, async (req, res) => {
 
 console.log("=================================");
 console.log("🔥 NOVO PIX VIP");
