@@ -1192,16 +1192,8 @@ cursor:pointer;
   justify-content:center;
 }
 
-#modalIframe{
-  width: min(90vw, 420px);
-  height: calc(min(90vw, 420px) * 1.78); /* proporção vertical */
-
-  max-height: 90vh;
-
-  display:block;
-  margin:auto;
-
-  border:none;
+.modal-backdrop{
+  position:absolute;
+  inset:0;
+  background: rgba(0,0,0,0.85);
 }
-
-
