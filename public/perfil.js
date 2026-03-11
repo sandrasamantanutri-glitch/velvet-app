@@ -302,7 +302,15 @@ tabs.forEach(tab => {
 
 });
 
+const btnVipChat = document.getElementById("btn-vip-chat");
 
+btnVipChat?.addEventListener("click", () => {
+
+  if(!modelo_id) return;
+
+  window.location.href = `/chat.html?modelo=${modelo_id}`;
+
+});
 
 });
 
