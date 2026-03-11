@@ -784,19 +784,48 @@ expiration.setMonth(expiration.getMonth() + 1);
 
 console.log("Expiração VIP:", expiration);
 
-const valorBase = Number(metadata.valor_base);
+/* =====================================================
+NORMALIZAR VALOR BASE
+===================================================== */
+
+let valorBase = Number(metadata.valor_base ?? valor);
+
+if (!Number.isFinite(valorBase) || valorBase <= 0) {
+  console.log("🚨 valorBase inválido:", metadata.valor_base, valor);
+  await client.query("ROLLBACK");
+  return res.status(200).send("ok");
+}
+
+valorBase = Number(valorBase.toFixed(2));
+
 const taxaGateway = Number((valorBase * 0.15).toFixed(2));
+const valorBruto = valorBase;
 
+/* =====================================================
+CALCULAR SPLIT
+===================================================== */
 
- const valores = await calcularValores({
-    modelo_id,
-    valor_bruto: valorBase,
-    taxa_gateway: taxaGateway
-  });
+const valores = await calcularValores({
+  modelo_id,
+  valor_bruto: valorBase,
+  taxa_gateway: taxaGateway
+});
 
-  const valorBruto = valorBase;
+const valorModelo = Number(valores.valor_modelo || 0);
+const agencyFee = Number(valores.agency_fee || 0);
+const velvetFee = Number(valores.velvet_fee || 0);
 
-console.log("Valores VIP:", valores);
+console.log("Valores VIP:", {
+  valorBruto,
+  valorModelo,
+  agencyFee,
+  velvetFee,
+  taxaGateway
+});
+
+/* =====================================================
+SALVAR VIP
+===================================================== */
 
 await client.query(`
 INSERT INTO vip_subscriptions (
@@ -843,13 +872,9 @@ orderId
 
 console.log("vip_subscriptions atualizado");
 
-console.log("Valores finais transação VIP:",{
-  valorBruto,
-  valor_modelo: valores.valor_modelo,
-  agency_fee: valores.agency_fee,
-  velvet_fee: valores.velvet_fee,
-  taxa_gateway: taxaGateway
-});
+/* =====================================================
+REGISTRAR FINANCEIRO
+===================================================== */
 
 await client.query(`
 INSERT INTO transacoes_agency (
@@ -872,13 +897,17 @@ $3,$4,$5,$6,$7,'pago',NOW()
 modelo_id,
 cliente_id,
 valorBruto,
-Number(valores.valor_modelo || 0),
-Number(valores.agency_fee || 0),
-Number(valores.velvet_fee || 0),
+valorModelo,
+agencyFee,
+velvetFee,
 taxaGateway
 ]);
 
 console.log("transacoes_agency (vip) inserido");
+
+/* =====================================================
+SOCKET
+===================================================== */
 
 dadosParaEmitir = {
 tipo:"vip",
