@@ -954,31 +954,60 @@ function abrirMidia(midia){
 function abrirModalMidia(src, isVideo=false){
 
   const modal = document.getElementById("modalMidia");
-  const img = document.getElementById("modalImg");
+  const img   = document.getElementById("modalImg");
   const video = document.getElementById("modalVideo");
 
   if(!modal) return;
 
   modal.classList.remove("hidden");
+
   if(isVideo){
 
     if(video){
+
+      // reset completo do player
+      video.pause();
+      video.removeAttribute("src");
+
       video.src = src;
+      video.load();
+
       video.style.display = "block";
-      video.play().catch(()=>{});
+
+      video.play().catch(err=>{
+        console.warn("Autoplay bloqueado:", err);
+      });
+
+      // debug se falhar
+      video.onerror = ()=>{
+        console.error("Erro ao carregar vídeo:", src);
+      };
+
     }
 
-    if(img) img.style.display = "none";
+    if(img){
+      img.style.display = "none";
+      img.removeAttribute("src");
+    }
 
   }else{
 
     if(img){
+
+      img.removeAttribute("src");
       img.src = src;
       img.style.display = "block";
+
+      img.onerror = ()=>{
+        console.error("Erro ao carregar imagem:", src);
+      };
+
     }
 
     if(video){
       video.pause();
+      video.removeAttribute("src");
+      video.load();
       video.style.display = "none";
     }
 
