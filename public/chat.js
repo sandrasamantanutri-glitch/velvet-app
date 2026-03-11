@@ -874,71 +874,78 @@ function confirmarEnvioConteudo() {
   }
 }
 
-function fecharModalMidia() {
-  const modal = document.getElementById("modalMidia");
-  const img = document.getElementById("modalImg");
-  const video = document.getElementById("modalVideo");
-  if (!modal) return;
+function fecharModalMidia(){
 
-  if (video) {
+  const modal = document.getElementById("modalMidia");
+  const video = document.getElementById("modalVideo");
+
+  if(video){
     video.pause();
-    video.removeAttribute("src");
-    video.load();
-    video.style.display = "none";
-  }
-  if (img) {
-    img.removeAttribute("src");
-    img.style.display = "none";
+    video.src = "";
   }
 
   modal.classList.add("hidden");
 }
 
 function abrirMidia(midia){
+
+  if (!midia) return;
+
   const src = midia.dataset.full || midia.dataset.thumb;
-  if(!src) return;
+  if (!src) return;
 
   const isVideo =
     src.includes(".mp4") ||
     src.includes(".webm") ||
-    src.includes(".mov");
+    src.includes(".mov") ||
+    src.includes(".m3u8") ||
+    src.includes("videodelivery.net");
 
   abrirModalMidia(src, isVideo);
 }
 
-function abrirModalMidia(src, isVideo=false){
+
+function abrirModalMidia(src, isVideo = false){
 
   const modal = document.getElementById("modalMidia");
-  const img = document.getElementById("modalImg");
+  const img   = document.getElementById("modalImg");
   const video = document.getElementById("modalVideo");
 
-  if(!modal) return;
+  if (!modal || !src) return;
 
   modal.classList.remove("hidden");
-  if(isVideo){
 
-    if(video){
+  /* reset das mídias */
+  if (img){
+    img.style.display = "none";
+    img.src = "";
+  }
+
+  if (video){
+    video.pause();
+    video.removeAttribute("src");   // melhor que video.src=""
+    video.load();                   // força reset do player
+    video.style.display = "none";
+  }
+
+  if (isVideo){
+
+    if (video){
       video.src = src;
       video.style.display = "block";
+      video.currentTime = 0;
+
       video.play().catch(()=>{});
     }
 
-    if(img) img.style.display = "none";
+  } else {
 
-  }else{
-
-    if(img){
+    if (img){
       img.src = src;
       img.style.display = "block";
     }
 
-    if(video){
-      video.pause();
-      video.style.display = "none";
-    }
-
   }
-
 }
 
 function abrirPreviewAvatar(url) {
@@ -1112,19 +1119,21 @@ function formatarHora(data) {
   });
 }
 
-function abrirPreviewMidia({ url, tipo }){
+function abrirPreviewMidia({ url, tipo }) {
 
-  if(!url) return;
+  if (!url) return;
 
   const isVideo =
     tipo === "video" ||
-    url.endsWith(".mp4") ||
-    url.endsWith(".webm") ||
-    url.endsWith(".mov");
+    url.includes(".mp4") ||
+    url.includes(".webm") ||
+    url.includes(".mov") ||
+    url.includes("videodelivery.net");
 
   abrirModalMidia(url, isVideo);
 
 }
+
 async function excluirPacoteConteudo(messageId){
 
   const id = Number(messageId);

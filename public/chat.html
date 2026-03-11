@@ -30,6 +30,7 @@
 <main id="chatBox" class="chat-box"></main>
 
 <!-- INPUT FIXO -->
+ 
 <footer class="chat-input">
   <button
     id="btnEnviarConteudo1"
@@ -93,14 +94,15 @@
   </div>
 </div>
 
-<div id="modalMidia" class="modal-midia hidden">
-  <div class="modal-backdrop" onclick="fecharModalMidia()"></div>
-<div class="modal-box modal-midia-box">
-    <img id="modalImg" />
-    <video id="modalVideo" controls playsinline></video>
-  </div>
-</div>
+<div id="modalMidia" class="hidden">
 
+  <span class="modal-close" onclick="fecharModalMidia()">×</span>
+
+  <img id="modalImg">
+
+  <video id="modalVideo" controls playsinline></video>
+
+</div>
 <script src="/socket.io/socket.io.js"></script>
 <script src="/header.js"></script>
 <script src="/chat.js" defer></script>

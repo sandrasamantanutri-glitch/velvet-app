@@ -158,11 +158,13 @@
 
   <div class="modal-backdrop" onclick="fecharModalMidia()"></div>
 
- <div class="modal-box modal-midia-box">
+  <div class="modal-box modal-midia-box">
+
     <button class="nav-midia prev" onclick="midiaAnterior()">‹</button>
 
     <img id="modalImg" />
-    <video id="modalVideo" controls playsinline></video>
+
+    <video id="modalVideo" controls playsinline preload="metadata"></video>
 
     <button class="nav-midia next" onclick="proximaMidia()">›</button>
 
