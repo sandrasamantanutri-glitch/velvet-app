@@ -124,18 +124,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-     const modal = document.getElementById("modalMidia");
-
-    if(modal){
-      modal.addEventListener("click", function(e){
-
-        if(e.target.classList.contains("modal-backdrop")){
-          fecharModalMidia();
-        }
-
-      });
-    }
-
     await carregarInfoModelo(modelo_id);
     tentarEntrarSala();
 
@@ -182,36 +170,39 @@ if (chatBox) {
 }
 
 // 👇 EVENTO GLOBAL DE CLIQUE (CAPTURE) - pagamento tem prioridade absoluta
-document.addEventListener("click", (e) => {
-
-  const midia = e.target.closest(".midia-item");
-
-  if (midia) {
-
-    const card = midia.closest(".chat-conteudo");
+document.addEventListener(
+  "click",
+  (e) => {
+    const card = e.target.closest(".chat-conteudo");
     if (!card) return;
 
     const preco = Number(card.dataset.preco || 0);
     const messageId = Number(card.dataset.id);
 
-    const estaLiberado =
-      preco === 0 ||
-      card.classList.contains("livre") ||
-      card.classList.contains("visto") ||
-      conteudosLiberados.has(messageId);
+const estaLiberado =
+  preco === 0 ||
+  card.classList.contains("livre") ||
+  card.classList.contains("visto") ||
+  conteudosLiberados.has(messageId);
 
-    if (!estaLiberado) {
+    const precisaPagar = preco > 0 && !estaLiberado;
+
+    if (precisaPagar) {
+      e.preventDefault();
+      e.stopPropagation();
       abrirPagamentoChat(preco, messageId);
       return;
     }
 
-    const index = Number(midia.dataset.index || 0);
+    const midia = e.target.closest(".midia-item") || e.target.parentElement?.closest(".midia-item");
 
-    abrirConteudo(messageId, index);
-    return;
-  }
-
-}, true);
+if (midia && estaLiberado) {
+  const index = Number(midia.dataset.index || 0);
+  abrirConteudo(messageId, index);
+}
+  },
+  true // 👈 CAPTURE (crítico)
+);
 
 // ===============================
 // HISTÓRICO
