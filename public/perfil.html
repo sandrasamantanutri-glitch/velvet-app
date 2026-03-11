@@ -5,25 +5,26 @@
   <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1">
    <title>Velvet</title>
-   <link rel="stylesheet" href="perfil.css">
    <link rel="stylesheet" href="pag.css">
-   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="footer.css">
+  <link rel="stylesheet" href="style.css">
+   <link rel="stylesheet" href="perfil.css">
    
 
 </head>
 
 <body>
 
-  <div id="header-container"></div>
+<div id="header-container"></div>
 <main class="page-container">
 
 <div class="perfil-card">
   <div class="perfil-capa">
-    <img id="profileCapa" src="assets/capa.png" alt="Capa da modelo">
+    <img id="profileCapa" src="/assets/capa.png" alt="Capa da modelo">
   </div>
 
   <div class="perfil-avatar">
-    <img id="profileAvatar" src="assets/avatar.png" alt="Avatar da modelo">
+    <img id="profileAvatar" src="/assets/avatar.png" alt="Avatar da modelo">
   </div>
 
   <div class="perfil-nome" id="profileName"></div>
@@ -33,7 +34,7 @@
   <div class="local-icons"> <img src="assets/local.png" alt="Local"><span id="local-texto"></span>
   </div>
 
-  <div class="icon-group">
+  <div class="social-group">
   <a id="link-instagram" target="_blank" rel="noopener"><img src="/assets/insta.png" alt="Instagram">
   </a>
   <a id="link-tiktok" target="_blank" rel="noopener"><img src="/assets/tiktok.png" alt="TikTok">
@@ -72,42 +73,38 @@
 
 <div class="midias-section">
 
-<div class="midias-topo">
-  <button class="btn-mais only-modelo" id="btn-upload" type="button">
-    <img src="assets/more.png" alt="Carregar Mídias">
-  </button>
-
-  <input
-    type="file"
-    id="inputUpload"
-    accept="image/*,video/*"
-    hidden
-  />
-</div>
-
-    <div class="midias-tabs">
-      <button class="tab active" data-tab="free">🎁 Pra você</button>
-      <!-- <button class="tab" data-tab="paid">🔥 Especial</button> -->
-    </div>
+  <div class="midias-tabs">
+    <button class="tab active" data-tab="free">📷 Feed</button>
+    <button class="tab" data-tab="paid">🔒 Premium</button>
   </div>
 
-  <!-- 🔥 GRID TEM QUE ESTAR AQUI DENTRO -->
   <div class="midias-grid active" id="listaMidias"></div>
-  <div class="midias-grid" id="midias-paid"></div>
+
+<div class="premium-list" id="midias-paid"></div>
 
 </div>
 
  <!-- MODAL VISUALIZAÇÃO MÍDIA -->
- <div id="modalMidia" class="modal-midia hidden">
+<div id="modalMidia" class="modal-midia hidden">
   <div class="modal-backdrop"></div>
 
   <div class="modal-conteudo">
-    <button id="fecharModal" style="align-self:flex-end;">✕</button>
 
-    <img id="modalImg" style="display:none; max-width:100%;" />
-    <video id="modalVideo" controls style="display:none; max-width:100%;"></video>
+    <button id="fecharModal">✕</button>
+
+    <img id="modalImg" style="display:none;max-width:100%;">
+    <video id="modalVideo" controls style="display:none;max-width:100%;"></video>
+
+    <iframe
+      id="modalIframe"
+      style="display:none;max-width:100%;max-height:80vh;"
+      frameborder="0"
+      allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+      allowfullscreen>
+    </iframe>
+
   </div>
- </div>
+</div>
 
 <div id="popupPagamentoVelvet" class="velvet-modal hidden">
   <div class="velvet-backdrop" onclick="fecharPopupPagamento()"></div>
@@ -273,6 +270,125 @@
   </div>
 </div>
 
+<input type="file" id="inputUploadMidia" accept="image/*,video/*" hidden>
+<div class="modelo-footer only-modelo">
+
+  <button class="footer-btn" id="btnAvatar">
+    <img src="/assets/avatar.png">
+  </button>
+
+  <button class="footer-btn" id="btnPost">
+    <img src="/assets/post.png">
+  </button>
+
+  <button class="footer-btn" id="btnConteudos">
+    <img src="/assets/conteudos.png">
+  </button>
+
+  <button class="footer-btn" id="btnVip">
+    <img src="/assets/vip.png">
+  </button>
+
+  <button class="footer-btn" id="btnLinks">
+    <img src="/assets/links.png">
+  </button>
+
+</div>
+
+<!-- POPUP UPLOAD FEED -->
+<div id="popupUploadFeed" class="velvet-modal hidden">
+
+<div class="velvet-backdrop" id="uploadBackdrop"></div>
+
+  <div class="velvet-box">
+
+<button class="velvet-close" id="uploadClose">×</button>
+
+    <h2 class="velvet-title">Postar no Feed</h2>
+
+    <div class="upload-area" id="uploadArea">
+
+      <input type="file" id="fileFeed" accept="image/*,video/*" hidden>
+
+      <div class="upload-placeholder" id="uploadPlaceholder">
+        Arraste uma mídia ou clique para selecionar
+      </div>
+
+      <div id="previewContainer"></div>
+
+    </div>
+
+    <div class="upload-progress hidden" id="uploadProgressBox">
+      <div class="progress-bar">
+        <div class="progress-fill" id="uploadProgress"></div>
+      </div>
+      <span id="progressText">0%</span>
+    </div>
+
+    <button id="btnEnviarFeed" class="btn-principal">
+      Publicar no Feed
+    </button>
+
+  </div>
+
+</div>
+
+<!-- POPUP UPLOAD PREMIUM -->
+<div id="popupUploadPremium" class="velvet-modal hidden">
+
+  <div class="velvet-backdrop" id="premiumBackdrop"></div>
+
+  <div class="velvet-box">
+
+    <button class="velvet-close" id="premiumClose">×</button>
+
+    <h2 class="velvet-title">Postar no Premium</h2>
+
+    <!-- TEXTO POST -->
+    <textarea 
+      id="premiumTexto"
+      placeholder="Escreva algo sobre este conteúdo..."
+      style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px;"
+    ></textarea>
+
+    <!-- PREÇO -->
+    <input 
+      type="number"
+      id="premiumPreco"
+      placeholder="Preço do conteúdo (R$)"
+      style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;margin-bottom:15px;"
+    >
+
+    <!-- AREA UPLOAD -->
+    <div class="upload-area" id="uploadAreaPremium">
+
+      <input type="file" id="filePremium" accept="image/*,video/*" hidden>
+
+      <div class="upload-placeholder">
+        Clique para selecionar mídia
+      </div>
+
+      <div id="previewPremium"></div>
+
+    </div>
+
+    <!-- PROGRESS -->
+    <div class="upload-progress hidden" id="premiumProgressBox">
+      <div class="progress-bar">
+        <div class="progress-fill" id="premiumProgress"></div>
+      </div>
+      <span id="premiumProgressText">0%</span>
+    </div>
+
+    <button id="btnEnviarPremium" class="btn-principal">
+      Publicar Premium
+    </button>
+
+  </div>
+
+</div>
+
+<div id="footerMenu" class="footer-menu hidden"></div>
 
 </main>
 
@@ -300,14 +416,14 @@ fetch("modals-auth.html")
   });
 </script>
 
-<script src="socket.io/socket.io.js"></script>
+
 <script src="header.js"></script>
 <script src="https://js.stripe.com/v3/"></script>
 <script>window.STRIPE_PUBLIC_KEY = "pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz";</script>
 <script src="/script.js"></script>
 <script src="/pag.js"></script>
-<script src="/profile.js"></script>
-
+<script src="/perfil.js"></script>
+<script src="/footer.js"></script>
 
 </body>
 </html>
