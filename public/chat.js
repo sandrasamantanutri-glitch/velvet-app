@@ -1116,14 +1116,7 @@ function abrirPreviewMidia({ url, tipo }) {
 
   if (!url) return;
 
-  const isVideo =
-    tipo === "video" ||
-    url.includes(".mp4") ||
-    url.includes(".webm") ||
-    url.includes(".mov") ||
-    url.includes("videodelivery.net");
-
-  abrirModalMidia(src)
+  abrirModalMidia(url);
 
 }
 
