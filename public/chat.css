@@ -1270,6 +1270,10 @@ cursor:pointer;
   border-radius:12px;
 }
 
+.midia-thumb{
+  pointer-events:none;
+}
+
 /* mobile */
 @media (max-width:700px){
 

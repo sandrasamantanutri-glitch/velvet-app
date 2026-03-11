@@ -206,10 +206,15 @@ const estaLiberado =
       return;
     }
 
-    const midia = e.target.closest(".midia-item") || e.target.parentElement?.closest(".midia-item");
+const midia = e.target.closest(".midia-item");
 
 if (midia && estaLiberado) {
+
+  e.preventDefault();
+  e.stopPropagation();
+
   const index = Number(midia.dataset.index || 0);
+
   abrirConteudo(messageId, index);
 }
   },
