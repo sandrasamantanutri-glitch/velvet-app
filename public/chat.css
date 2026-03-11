@@ -1216,8 +1216,8 @@ cursor:pointer;
   position:relative;
 z-index:100001;
 
-  max-height:120vh;
-  max-width:120vw;
+  max-height:400vh;
+  max-width:400vw;
 
   display:flex;
   align-items:center;
