@@ -203,19 +203,24 @@ document.addEventListener("click", (e) => {
 
 // =========================================================
 
-const btnPerfil = document.getElementById("btnAvatar");
-  btnPerfil?.addEventListener("click", () => {
+document.addEventListener("click", (e) => {
 
-    const modeloId = localStorage.getItem("modelo_id");
+  const avatar = e.target.closest("#linkPerfil");
+  if (!avatar) return;
 
-    if (!modeloId) {
-      console.warn("modelo_id não encontrado no localStorage");
-      return;
-    }
+  e.preventDefault();
+  e.stopPropagation();
 
-    window.location.href = `/perfil.html?id=${modeloId}`;
+  const modeloId = localStorage.getItem("modelo_id");
 
-  });
+  if (!modeloId) {
+    console.warn("Apenas criadoras verificadas tem perfil publico");
+    return;
+  }
+
+  window.location.href = `/perfil.html?id=${modeloId}`;
+
+});
 // =========================================================
 
 async function irParaInbox() {

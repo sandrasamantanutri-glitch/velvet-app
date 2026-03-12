@@ -4,9 +4,6 @@ console.log("SERVIDOR INICIADO")
 // SERVER.JS 
 // ===============================
 require("dotenv").config();      // 🔑 PRIMEIRO
-console.log("Gateway midia:", process.env.PIX_GATEWAY_MIDIA);
-console.log("Gateway assinatura:", process.env.PIX_GATEWAY_ASSINATURA);
-
 const http = require("http");
 const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
