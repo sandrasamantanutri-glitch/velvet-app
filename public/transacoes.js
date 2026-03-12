@@ -66,8 +66,7 @@ async function carregarTransacoes() {
   if (!res.ok) {
     lista.innerHTML = `
   <div class="erro-transacoes">
-    Erro ao carregar transações.<br>
-    No momento, apenas clientes podem processar pagamentos.
+    Não existem transações.<br>
   </div>
 `;
     return;
