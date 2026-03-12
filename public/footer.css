@@ -1,4 +1,4 @@
-.modelo-footer{
+.role-modelo .modelo-footer{
   position:fixed;
   bottom:0;
   left:50%;
@@ -18,7 +18,7 @@
   z-index:1000;
 }
 
-.footer-btn{
+..role-modelo .footer-btn{
   background:none;
   border:none;
 
@@ -33,13 +33,13 @@
   cursor:pointer;
 }
 
-.footer-btn img{
+.role-modelo .footer-btn img{
   width:24px;
   height:24px;
   margin-bottom:4px;
 }
 
-.footer-menu{
+.role-modelo .footer-menu{
   position:fixed;
   bottom:80px;
   left:50%;
@@ -60,7 +60,7 @@
   z-index:1001;
 }
 
-.footer-menu button{
+.role-modelo .footer-menu button{
   background:none;
   border:none;
 
@@ -72,7 +72,7 @@
   cursor:pointer;
 }
 
-.footer-menu button:hover{
+.role-modelo .footer-menu button:hover{
   background:#f5f5f5;
 }
 
