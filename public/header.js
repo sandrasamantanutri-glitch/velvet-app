@@ -163,19 +163,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   await initUsuario();        // 🔑 carrega dados do usuário
   carregarHeader();           // 🔥 monta o header
 
-  const linkPerfil = document.getElementById("linkPerfil");
-  if (linkPerfil) {
-
-    const modelo_id = localStorage.getItem("modelo_id");
-
-    if (modelo_id) {
-      linkPerfil.href = `/perfil.html?modelo_id=${modelo_id}`;
-    } else {
-      console.warn("modelo_id não encontrado no localStorage");
-    }
-
-  }
-
   atualizarUnreadClienteHeader();
   atualizarUnreadModeloHeader();
   initHeaderSocketModelo();
@@ -214,6 +201,22 @@ document.addEventListener("click", (e) => {
   window.location.href = "/index.html";
 });
 
+// =========================================================
+
+const btnPerfil = document.getElementById("btnAvatar");
+  btnPerfil?.addEventListener("click", () => {
+
+    const modeloId = localStorage.getItem("modelo_id");
+
+    if (!modeloId) {
+      console.warn("modelo_id não encontrado no localStorage");
+      return;
+    }
+
+    window.location.href = `/perfil.html?id=${modeloId}`;
+
+  });
+// =========================================================
 
 async function irParaInbox() {
   const token = localStorage.getItem("token");
