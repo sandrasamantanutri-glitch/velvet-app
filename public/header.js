@@ -160,14 +160,6 @@ async function atualizarUnreadModeloHeader() {
 // INIT HEADER (ORDEM CORRETA)
 
 document.addEventListener("DOMContentLoaded", async () => {
- const link = document.getElementById("linkPerfil");
-
-  const modelo_id = localStorage.getItem("modelo_id");
-
-  if (link && modelo_id) {
-    link.href = `/perfil.html?modelo_id=${modelo_id}`;
-  }
-
   await initUsuario();        // 🔑 garante role atualizado
   carregarHeader();           // 🔥 carrega menu certo
 
