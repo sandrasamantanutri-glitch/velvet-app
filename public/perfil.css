@@ -387,15 +387,29 @@ a{
   text-align: right;
 }
 
-.video-icon{
- position:absolute;
- bottom:8px;
- right:8px;
- background:rgba(0,0,0,0.6);
- color:white;
- padding:4px 6px;
- border-radius:4px;
- font-size:12px;
+.video-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  width: 44px;
+  height: 44px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(0,0,0,0.55);
+  color: white;
+
+  border-radius: 50%;
+  font-size: 18px;
+
+  backdrop-filter: blur(6px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+
+  pointer-events: none;
 }
 
 .btn-excluir-midia{
