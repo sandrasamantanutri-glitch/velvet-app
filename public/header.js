@@ -158,16 +158,29 @@ async function atualizarUnreadModeloHeader() {
 }
 // =========================================================
 // INIT HEADER (ORDEM CORRETA)
-
 document.addEventListener("DOMContentLoaded", async () => {
-  await initUsuario();        // 🔑 garante role atualizado
-  carregarHeader();           // 🔥 carrega menu certo
+
+  await initUsuario();        // 🔑 carrega dados do usuário
+  carregarHeader();           // 🔥 monta o header
+
+  const linkPerfil = document.getElementById("linkPerfil");
+  if (linkPerfil) {
+
+    const modelo_id = localStorage.getItem("modelo_id");
+
+    if (modelo_id) {
+      linkPerfil.href = `/perfil.html?modelo_id=${modelo_id}`;
+    } else {
+      console.warn("modelo_id não encontrado no localStorage");
+    }
+
+  }
 
   atualizarUnreadClienteHeader();
   atualizarUnreadModeloHeader();
   initHeaderSocketModelo();
-});
 
+});
 // =========================================================
 // LOGO → HOME POR ROLE
 
