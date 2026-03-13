@@ -1,4 +1,4 @@
-console.log("SERVIDOR INICIADO")
+console.log("SERVIDOR INICIADO - O SENHOR EH MEU PASTOR E NADA ME FALTARA!")
 
 // ===============================
 // SERVER.JS 

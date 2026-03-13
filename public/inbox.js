@@ -81,7 +81,7 @@ if (inboxEl) {
 
       const pertoDoFim =
         inboxEl.scrollTop + inboxEl.clientHeight >=
-        inboxEl.scrollHeight - 200;
+        inboxEl.scrollHeight - 100;
 
       if (pertoDoFim) {
         carregarListaClientes();
