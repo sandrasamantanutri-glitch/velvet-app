@@ -160,19 +160,9 @@ textarea {
   overflow: auto;
   display: flex;
   flex-direction: column;
-
+  overflow:hidden;
   box-shadow: 0 25px 60px rgba(0,0,0,.25);
 }
-
-.conteudos-grid{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:12px;
-  padding:10px;
-  overflow-y:auto;
-  max-height:55vh;
-}
-
 
 .modal-box h3 {
   text-align: center;
@@ -184,11 +174,14 @@ textarea {
    GRID DE CONTEÚDOS
 ================================ */
 
-conteudos-grid{
+.conteudos-grid{
   display:grid;
   grid-template-columns:repeat(3,1fr);
   gap:12px;
   padding:10px;
+
+  overflow-y:auto;
+  max-height:55vh;
 }
 
 .preview-item {
