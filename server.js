@@ -799,6 +799,22 @@ if (metadata.tipo === "vip") {
 
 console.log("⭐ Processando VIP");
 
+/* =====================================================
+VERIFICAR SE É PRIMEIRA ASSINATURA
+===================================================== */
+
+const vipExistente = await client.query(`
+SELECT 1
+FROM vip_subscriptions
+WHERE cliente_id=$1
+AND modelo_id=$2
+LIMIT 1
+`,[cliente_id,modelo_id]);
+
+const primeiraAssinatura = vipExistente.rowCount === 0;
+
+console.log("Primeira assinatura?", primeiraAssinatura);
+
 const expiration = new Date();
 expiration.setMonth(expiration.getMonth() + 1);
 
@@ -926,6 +942,33 @@ taxaGateway
 console.log("transacoes_agency (vip) inserido");
 
 /* =====================================================
+CHAT
+===================================================== */
+
+if (metadata.tipo === "vip" && primeiraAssinatura) {
+
+await client.query(`
+INSERT INTO messages (
+cliente_id,
+modelo_id,
+text,
+sender,
+tipo,
+created_at,
+lida,
+visto,
+deletada
+)
+VALUES ($1,$2,$3,'modelo','texto',NOW(),false,false,false)
+`,[
+cliente_id,
+modelo_id,
+"Oii!! Bem vindo, como vc chama?🔥Quero saber quem acabou de entrar no meu VIP!😏"
+]);
+
+}
+
+/* =====================================================
 SOCKET
 ===================================================== */
 
@@ -951,30 +994,6 @@ WHERE id=$1
 `,[pagamento.id]);
 
 console.log("Pagamento atualizado");
-
-/* =====================================================
-CHAT
-===================================================== */
-
-await client.query(`
-INSERT INTO messages (
-  cliente_id,
-  modelo_id,
-  text,
-  sender,
-  tipo,
-  created_at,
-  lida,
-  visto,
-  deletada
-)
-VALUES ($1,$2,$3,'modelo','texto',NOW(),false,false,false)
-ON CONFLICT DO NOTHING
-`,[
-  cliente_id,
-  modelo_id,
-  "Oii!! Bem vindo, como você chama?🔥❤️‍🔥 Quero saber quem acabou de entrar no meu VIP 😏"
-]);
 
 /* =====================================================
 COMMIT
