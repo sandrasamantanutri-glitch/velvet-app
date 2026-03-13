@@ -2,9 +2,7 @@
   display: block;
   margin: 20px auto 30px;
   text-align: center;
-
-  font-weight: 600;
-  font-size: 32px;
+  font-size: 22px;
   color: #7B2CFF;
 }
 
@@ -171,12 +169,6 @@
 .link-card:hover {
   color: #5f2edc;
 }
-
-
-.footer {
-  margin-top: 90px;
-  padding: 30px 20px;
-}
 /* =========================
    🌸 MODO SOFT – RELATÓRIO
 ========================= */
@@ -201,6 +193,7 @@ body {
   color: #7B2CFF;
   font-weight: 600;
   letter-spacing: 0.4px;
+  font-size: 22px;
 }
 
 /* cards soft */
@@ -263,34 +256,6 @@ body {
 
 .card.total.mes-anterior {
   background: linear-gradient(135deg, #b79cff, #cabcf3);
-}
-
-/* links soft */
-.links-abaixo-cards {
-  margin-top: 36px;
-  justify-content: center;
-  gap: 36px;
-}
-
-.link-card {
-  font-size: 15px;
-  color: #7B2CFF;
-  font-weight: 500;
-}
-
-.link-card:hover {
-  color: #4f2cbf;
-}
-
-/* links desativados */
-.link-card.disabled {
-  color: #a9a4bf;
-}
-
-/* footer mais leve */
-.footer {
-  margin-top: 100px;
-  color: #a9a4bf;
 }
 
 .tabs {
