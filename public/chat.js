@@ -37,8 +37,10 @@ const mensagensRenderizadas = new Set();
 const chatBox = document.getElementById("chatBox");
 
 let paginaConteudos = 1;
-let totalPaginasConteudos = 1;
 const limiteConteudos = 12;
+
+let carregandoConteudos = false;
+let fimConteudos = false;
 
 // ===============================
 // AUTENTICAR
@@ -230,6 +232,19 @@ document.addEventListener("click", e => {
 
   abrirMidia(midia);
 
+  const previewScroll = document.querySelector(".preview-scroll");
+
+previewScroll?.addEventListener("scroll", ()=>{
+
+  const nearBottom =
+    previewScroll.scrollTop + previewScroll.clientHeight >=
+    previewScroll.scrollHeight - 200;
+
+  if(nearBottom){
+    carregarConteudosPopup();
+  }
+
+});
 
 });
 
@@ -703,6 +718,10 @@ function excluirMensagem(){
 // ===============================
 
 async function abrirPopupConteudos(page = 1){
+paginaConteudos = 1;
+fimConteudos = false;
+carregandoConteudos = false;
+
   try {
 
     // 🔒 validar IDs
@@ -710,8 +729,6 @@ async function abrirPopupConteudos(page = 1){
       console.warn("IDs inválidos para abrir popup.");
       return;
     }
-
-    paginaConteudos = page;
 
     const popup = document.getElementById("popupConteudos");
     const grid  = document.getElementById("previewConteudos");
@@ -757,7 +774,8 @@ totalPaginasConteudos = data.totalPaginas || 1;
     return;
   }
 
-    grid.innerHTML = "";
+  grid.innerHTML = "";
+await carregarConteudosPopup();
 
     conteudos.forEach(c => {
 
@@ -824,7 +842,6 @@ if (jaVisto) {
     });
 
      ativarLazyPopup(grid);
-     renderPaginacaoConteudos();
 
   } catch (err) {
     console.error("Erro abrirPopupConteudos:", err);
@@ -1284,26 +1301,68 @@ function criarMensagemElemento(msg){
 
 }
 
-function renderPaginacaoConteudos(){
+async function carregarConteudosPopup(){
 
-  const nav = document.getElementById("conteudosPaginacao");
-  if(!nav) return;
+  if(carregandoConteudos || fimConteudos) return;
 
-  nav.innerHTML = `
-    <button ${paginaConteudos === 1 ? "disabled" : ""}
-      onclick="abrirPopupConteudos(${paginaConteudos-1})">
-      ◀
-    </button>
+  carregandoConteudos = true;
 
-    <span>
-      Página ${paginaConteudos} / ${totalPaginasConteudos}
-    </span>
+  const grid = document.getElementById("previewConteudos");
+  const token = localStorage.getItem("token");
 
-    <button ${paginaConteudos === totalPaginasConteudos ? "disabled" : ""}
-      onclick="abrirPopupConteudos(${paginaConteudos+1})">
-      ▶
-    </button>
-  `;
+  try{
+
+    const res = await fetch(
+      `/api/conteudos?venda=true&page=${paginaConteudos}&limit=${limiteConteudos}`,
+      {
+        headers:{ Authorization:"Bearer " + token }
+      }
+    );
+
+    if(!res.ok){
+      carregandoConteudos = false;
+      return;
+    }
+
+    const data = await res.json();
+    const conteudos = data.conteudos || [];
+
+    if(conteudos.length === 0){
+      fimConteudos = true;
+      carregandoConteudos = false;
+      return;
+    }
+
+    conteudos.forEach(c=>{
+
+      const item = document.createElement("div");
+
+      item.className = "preview-item lazy-popup";
+      item.dataset.conteudoId = c.id;
+      item.dataset.thumb = c.thumbnail_url || c.url;
+      item.dataset.full = c.url;
+      item.dataset.tipo = c.tipo || "imagem";
+
+      item.innerHTML = `<div class="popup-placeholder"></div>`;
+
+      item.addEventListener("click",()=>{
+        item.classList.toggle("selected");
+      });
+
+      grid.appendChild(item);
+
+    });
+
+    ativarLazyPopup(grid);
+
+    paginaConteudos++;
+
+  }catch(err){
+    console.error(err);
+  }
+
+  carregandoConteudos = false;
+
 }
 
 

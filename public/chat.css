@@ -1298,6 +1298,11 @@ z-index:100001;
   cursor:default;
 }
 
+.preview-scroll{
+  max-height:320px;
+  overflow-y:auto;
+}
+
 /* mobile */
 @media (max-width:700px){
 
