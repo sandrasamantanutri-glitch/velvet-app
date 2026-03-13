@@ -315,9 +315,9 @@ body, html {
 
   background:#fff;
   border-radius:14px;
-
+  color:#5a3bff;
+  text-align: center;
   padding:18px;
-
   box-shadow:0 10px 30px rgba(0,0,0,.2);
 
   display:flex;
@@ -361,58 +361,14 @@ body, html {
   padding: 0 18px;
   border-radius: 14px;
   border: none;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-}
-
-.btn-cancelar {
-  background: #7B2CFF;
+  background: linear-gradient(135deg, #7b2cff, #9E6BFF);
   color: #fff;
+  
 }
 
-.btn-enviar {
-background: linear-gradient(135deg, #7b2cff, #9E6BFF);
-  color: #fff;
-}
-
-
-.btn-salvar{
-  background:#7B2CFF;
-  color:white;
-
-  border:none;
-  border-radius:20px;
-
-  padding:6px 14px;
-
-  font-size:13px;
-  cursor:pointer;
-}
-
-.btn-excluir{
-  background:#ff4d4f;
-  color:white;
-
-  border:none;
-  border-radius:20px;
-
-  padding:6px 14px;
-
-  font-size:13px;
-  cursor:pointer;
-}
-
-.btn-cancelar{
-  background:#f3f3f8;
-  border:none;
-  border-radius:20px;
-
-  padding:6px 14px;
-
-  font-size:13px;
-  cursor:pointer;
-}
 
 #chatBox{
   top:60px;
@@ -1198,7 +1154,7 @@ cursor:pointer;
   position:absolute;
   inset:0;
   background:rgba(0,0,0,0.85);
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(2px);
   z-index:1;
 }
 
@@ -1207,6 +1163,17 @@ cursor:pointer;
   z-index:2;
 }
 
+#popupConteudos {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 100005;
+}
 
 
 /* caixa da mídia */
