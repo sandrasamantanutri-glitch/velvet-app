@@ -159,6 +159,23 @@ msgInput.addEventListener("keydown", e=>{
     enviarMensagem(e);
   }
 });
+
+
+const previewScroll = document.querySelector(".preview-scroll");
+
+previewScroll?.addEventListener("scroll", ()=>{
+
+  const nearBottom =
+    previewScroll.scrollTop + previewScroll.clientHeight >=
+    previewScroll.scrollHeight - 200;
+
+  if(nearBottom){
+    carregarConteudosPopup();
+  }
+
+});
+
+
   }catch(err){
     console.error("Erro DOMContentLoaded:",err);
   }
@@ -231,21 +248,6 @@ document.addEventListener("click", e => {
   }
 
   abrirMidia(midia);
-
-  const previewScroll = document.querySelector(".preview-scroll");
-
-previewScroll?.addEventListener("scroll", ()=>{
-
-  const nearBottom =
-    previewScroll.scrollTop + previewScroll.clientHeight >=
-    previewScroll.scrollHeight - 200;
-
-  if(nearBottom){
-    carregarConteudosPopup();
-  }
-
-});
-
 });
 
 
@@ -717,7 +719,7 @@ function excluirMensagem(){
 // POPUP ENVIAR CONTEÚDO
 // ===============================
 
-async function abrirPopupConteudos(page = 1){
+async function abrirPopupConteudos() {
 paginaConteudos = 1;
 fimConteudos = false;
 carregandoConteudos = false;
@@ -751,31 +753,29 @@ carregandoConteudos = false;
       return;
     }
 
-  const res = await fetch(
-    `/api/conteudos?venda=true&page=${paginaConteudos}&limit=${limiteConteudos}`,
-    {
-      headers:{
-        Authorization:"Bearer " + token
+    carregandoConteudos = true;
+
+     const res = await fetch(
+      `/api/conteudos?venda=true&page=${paginaConteudos}&limit=${limiteConteudos}`,
+      {
+        headers:{ Authorization:"Bearer " + token }
       }
+    );
+
+    if (!res.ok) {
+      grid.innerHTML = "Erro ao carregar conteúdos.";
+      return;
     }
-  );
 
-if (!res.ok) {
-  grid.innerHTML = "Erro ao carregar conteúdos.";
-  return;
-}
-
-const data = await res.json();
-const conteudos = data.conteudos || [];
-totalPaginasConteudos = data.totalPaginas || 1;
+    const data = await res.json();
+    const conteudos = data.conteudos || [];
 
   if(conteudos.length === 0){
     grid.innerHTML = "<p>Nenhum conteúdo enviado ainda.</p>";
     return;
   }
 
-  grid.innerHTML = "";
-await carregarConteudosPopup();
+   grid.innerHTML = "";
 
     conteudos.forEach(c => {
 
@@ -841,7 +841,10 @@ if (jaVisto) {
       grid.appendChild(item);
     });
 
-     ativarLazyPopup(grid);
+    ativarLazyPopup(grid);
+    paginaConteudos++;
+    carregandoConteudos = false;
+
 
   } catch (err) {
     console.error("Erro abrirPopupConteudos:", err);
@@ -1337,7 +1340,12 @@ async function carregarConteudosPopup(){
 
       const item = document.createElement("div");
 
-      item.className = "preview-item lazy-popup";
+     const jaVisto = window.conteudosVistosCliente.has(Number(c.id));
+
+item.className =
+  "preview-item lazy-popup" +
+  (jaVisto ? " visto desabilitado" : "");
+  
       item.dataset.conteudoId = c.id;
       item.dataset.thumb = c.thumbnail_url || c.url;
       item.dataset.full = c.url;
