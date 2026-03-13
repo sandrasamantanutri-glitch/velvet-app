@@ -38,21 +38,21 @@ document.getElementById("mesMidias").innerText =
 document.getElementById("mesAssinaturas").innerText =
   `R$ ${Number(data.mes.assinaturas || 0).toFixed(2)}`;
 
- const totalMesAtual =
+const totalMesAtual =
   Number(data.mes.midias || 0) +
   Number(data.mes.assinaturas || 0);
 
-  document.getElementById("totalMesAtual").innerText =
+document.getElementById("totalMesAtual").innerText =
   `R$ ${totalMesAtual.toFixed(2)}`;
 
-    document.getElementById("totalMesAnterior").innerText =
+const totalMesAnterior =
+  Number(data.mesAnterior?.midias || 0) +
+  Number(data.mesAnterior?.assinaturas || 0);
+
+document.getElementById("totalMesAnterior").innerText =
   `R$ ${totalMesAnterior.toFixed(2)}`;
 
 // ACUMULADO
-const acumulado =
-  Number(data.total.midias || 0) +
-  Number(data.total.assinaturas || 0);
-
 document.getElementById("acumuladoAnterior").innerText =
   `R$ ${Number(data.total.acumulado_2026 || 0).toFixed(2)}`;
 

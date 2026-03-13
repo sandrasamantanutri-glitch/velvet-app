@@ -542,6 +542,13 @@ body {
   transform: scale(1.08);
 }
 
+.separador{
+  border: none;
+  height: 1px;
+  background: linear-gradient(to right, transparent, #7B2CFF, transparent);
+  margin: 18px 0;
+}
+
 /* ===============================
    TABS MOBILE
 ================================ */
