@@ -1231,20 +1231,19 @@ cursor:pointer;
 .modal-midia-box img,
 .modal-midia-box video,
 .modal-midia-box iframe{
-  max-width:95vw;
-  max-height:95vh;
-
-  width:auto;
-  height:auto;
-
+height:90vh;
+width:auto;
+max-width:calc(90vh * 0.56); /* proporção 9:16 */
   object-fit:contain;
   border-radius:12px;
 }
 
 .modal-midia-box video{
-  max-height:90vh;
+  height:90vh;
   width:auto;
+  max-width:calc(90vh * 0.56); /* proporção 9:16 */
 }
+
 
 
 
