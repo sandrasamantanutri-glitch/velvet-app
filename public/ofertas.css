@@ -25,7 +25,7 @@ body {
 .page-container {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 24px 20px 80px;
+  padding: 34px 20px 80px;
 }
 
 .ofertas-container {
@@ -331,7 +331,7 @@ body {
 ================================ */
 .btn-voltar {
   position:absolute;
-  top: 80px;
+  top: 100px;
   left: 20px;
   border: none;
   width: 42px;

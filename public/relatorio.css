@@ -278,7 +278,7 @@ body {
 
 /* total soft */
 .total {
-  background: #c3afec;
+  background: #fff;
   border: none;
 }
 
@@ -287,6 +287,10 @@ body {
 }
 
 .card.total.mes-atual {
+  background: linear-gradient(135deg, #b79cff, #cabcf3);
+}
+
+.card.total.mes-anterior {
   background: linear-gradient(135deg, #b79cff, #cabcf3);
 }
 

@@ -45,6 +45,9 @@ document.getElementById("mesAssinaturas").innerText =
   document.getElementById("totalMesAtual").innerText =
   `R$ ${totalMesAtual.toFixed(2)}`;
 
+    document.getElementById("totalMesAnterior").innerText =
+  `R$ ${totalMesAnterior.toFixed(2)}`;
+
 // ACUMULADO
 const acumulado =
   Number(data.total.midias || 0) +

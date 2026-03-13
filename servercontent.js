@@ -1580,6 +1580,21 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
         THEN valor_modelo
       END), 0) AS mes_assinaturas,
 
+      -- 🔹 MÊS ANTERIOR
+COALESCE(SUM(CASE
+  WHEN tipo IN ('midia','conteudo')
+   AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
+       = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '1 month'
+  THEN valor_modelo
+END), 0) AS mes_anterior_midias,
+
+COALESCE(SUM(CASE
+  WHEN tipo = 'assinatura'
+   AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
+       = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '1 month'
+  THEN valor_modelo
+END), 0) AS mes_anterior_assinaturas,
+
       -- 🔹 ACUMULADO 2026
       COALESCE(SUM(CASE
         WHEN EXTRACT(YEAR FROM created_at AT TIME ZONE 'America/Sao_Paulo') = 2026
@@ -1643,6 +1658,11 @@ WHERE modelo_id = $1
       midias: Number(r.mes_midias || 0),
       assinaturas: Number(r.mes_assinaturas || 0)
     },
+      mesAnterior: {
+    midias: Number(r.mes_anterior_midias || 0),
+    assinaturas: Number(r.mes_anterior_assinaturas || 0)
+  },
+  
     total: {
       acumulado_2026: Number(r.acumulado_2026 || 0)
     },

@@ -13,7 +13,7 @@
 }
 
 .area-card h2 {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   margin-bottom: 8px;
   text-align: center;
@@ -112,7 +112,7 @@
 .footer-links {
   display: flex;
   justify-content: center;
-  gap: 15px;
+  gap: 9px;
   margin-bottom: 8px;
 }
 

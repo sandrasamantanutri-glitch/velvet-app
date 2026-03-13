@@ -16,7 +16,6 @@
  <section class="area-card">
     <button type="button" class="btn-voltar" onclick="history.back()"> <img src="/assets/voltar.png" alt="Voltar"> </button>
 
-   <h3>Meus Ganhos</h3>
    <div class="tabs">
   <button class="tab active" data-tab="ganhos">Ganhos</button>
   <button class="tab" data-tab="pagamentos">Pagamentos</button>
@@ -27,7 +26,8 @@
 
   <section id="tab-ganhos" class="tab-content active">
  <main class="container">
-  <span class="page-title">Meus Ganhos</span>
+  
+    <span class="page-title"><h3>Meus Ganhos</h3></span>
 
   <!-- GANHOS HOJE -->
   <section class="cards-row destaque">
@@ -77,9 +77,16 @@
   </div>
 </section>
 
+<section class="cards-row single">
+  <div class="card total mes-anterior">
+    <span>Total do mês atual</span>
+    <strong id="totalMesAtual">R$0.00</strong>
+  </div>
+</section>
+
    <section class="cards-row single">
     <div class="card total">
-      <span>Acumulados de 2026</span>
+      <span>Total de 2026</span>
       <strong id="acumuladoAnterior">R$0.00</strong>
     </div>
    </section>
