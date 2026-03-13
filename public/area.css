@@ -393,7 +393,8 @@ font-size: 10px;
 .acoes-form {
   display: flex;
   gap: 12px;
-  flex-wrap: wrap;
+   flex-wrap: wrap;
+  justify-content: space-around;
 }
 
 .btn-primario {

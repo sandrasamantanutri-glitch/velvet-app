@@ -58,12 +58,13 @@ text-align: center;
 
 textarea,
 select,
-input[type="number"] {
+input {
   width: 100%;
+  padding: 10px;
+  margin-top: 6px;
   border-radius: 10px;
   border: 1px solid #ddd;
-  padding: 10px 12px;
-  font-size: 14px;
+  box-sizing: border-box;
 }
 
 textarea {
@@ -143,25 +144,30 @@ textarea {
   display: none;
 }
 
-.modal-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,.55);
+.modal-backdrop{
+  position:absolute;
+  inset:0;
+  background: rgba(0,0,0,0.45);
 }
 
-.modal-box {
-  position: relative;
-  background: #fff;
-  border-radius: 18px;
-  width: 100%;
-  max-width: 720px;
-  max-height: 90vh;
+/* =========================
+   CAIXA DO MODAL
+========================= */
 
-  overflow: auto;
+.modal-box{
+  position: relative;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  width: 90%;
+  max-width: 360px;
+
+  box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+  z-index: 2;
+
   display: flex;
   flex-direction: column;
-  overflow:hidden;
-  box-shadow: 0 25px 60px rgba(0,0,0,.25);
+  gap: 12px;
 }
 
 .modal-box h3 {
