@@ -187,25 +187,32 @@ document.getElementById("btnProxima").addEventListener("click",()=>{
 });
 
 async function carregarConteudos() {
+
   try {
-    const res = await fetch(`/api/conteudos?venda=true&page=${paginaAtual}&limit=${limite}`,{
-      headers: {
-        Authorization: "Bearer " + token
+
+    const res = await fetch(
+      `/api/conteudos?venda=true&page=${paginaAtual}&limit=${limite}`,
+      {
+        headers: {
+          Authorization: "Bearer " + token
+        }
       }
-    });
+    );
 
     if (!res.ok) throw new Error("Erro ao carregar conteúdos");
 
-    const conteudos = await res.json();
-    renderizarConteudos(conteudos);
+    const data = await res.json();
 
-     totalPaginas = data.totalPaginas;
+    renderizarConteudos(data.conteudos);
+
+    totalPaginas = data.totalPaginas;
 
     atualizarPaginacao();
 
   } catch (err) {
     console.error(err.message);
   }
+
 }
 
 let observer = null;
@@ -270,8 +277,8 @@ if (videoId) {
     // ===============================
 
     img.loading = "lazy";
-    img.dataset.src = src || "/assets/capa.png";
-    img.src = "/assets/placeholder.png";
+    img.dataset.src = src || "/assets/video-thumb.png";
+    img.src = "/assets/thumb-default.png";
 
     if (observer) observer.observe(img);
 
