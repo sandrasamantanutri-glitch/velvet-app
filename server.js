@@ -3694,7 +3694,7 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
     }
 
     const modeloId = modeloResult.rows[0].id;
-    const limit = Number(req.query.limit) || 30;
+    const limit = Number(req.query.limit) || 20;
     const offset = Number(req.query.offset) || 0;
 
     // 🔥 2️⃣ Usar modeloId correto
