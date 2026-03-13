@@ -94,13 +94,14 @@ body {
 
 /* ================= MODAL CLARO ================= */
 
-.modal {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.modal{
+  position:fixed;
+  inset:0;
+  z-index:9999;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
 }
 
 .modal.hidden {
@@ -112,6 +113,7 @@ body {
   inset: 0;
   background: rgba(0, 0, 0, 0.25); /* leve, não escuro */
 }
+
 
 /* CAIXA DO MODAL carregar conteudos*/
 .modal-upload .modal-box{
@@ -363,10 +365,16 @@ body {
 .modal-midia .modal-backdrop{
   background: rgba(0,0,0,0.85);
   backdrop-filter: blur(4px);
+  z-index:1;
 }
 
 .modal-midia .modal-box{
   background: transparent;
   box-shadow:none;
+  z-index:2;
+
+  max-width:95vw;
+  max-height:95vh;
 }
+
 

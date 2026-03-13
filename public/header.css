@@ -27,26 +27,43 @@ body {
 }
 
 .header-inner {
+  width: 100%;
   max-width: 1100px;
   height: 100%;
+
   margin: 0 auto;
   padding: 0 16px;
+
   display: flex;
   align-items: center;
-  gap: 30px;
+  gap: 20px;
 }
 
 .velvet-logo {
   margin-right: auto;
 }
 
-img.velvet-logo {
-    max-width: 100%;
+.velvet-logo {
+  height: 36px;
+  width: auto;
 }
 
 
 body {
   visibility: visible;
+}
+
+@media (max-width: 600px){
+
+  .header-inner{
+    padding: 0 12px;
+    gap: 14px;
+  }
+
+  .velvet-logo{
+    height: 28px;
+  }
+
 }
 
 
