@@ -12,7 +12,7 @@
 }
 
 body {
-  font-family: 'poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: 'poppins';
   background: #f4f4f8;
   color: #1E1E26;
   padding-top: 64px;
@@ -349,4 +349,30 @@ body {
 
 .btn-voltar:hover {
   transform: scale(1.08);
+}
+
+/* ===============================
+   FOOTER
+================================ */
+.footer {
+  max-width: 900px;
+  margin: 40px auto 30px;
+  text-align: center;
+  opacity: .6;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 8px;
+}
+
+.footer-links a {
+  color: #1E1E26;
+  text-decoration: none !important;
+  border-bottom: none;
+
 }
