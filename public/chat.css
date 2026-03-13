@@ -93,7 +93,7 @@ body, html {
 
 .msg {
   max-width: 70%;
-  padding: 5px 10px;
+  padding: 5px 15px;
   border-radius: 14px;
   font-size: 14px;
   margin: 6px 0;
@@ -735,27 +735,6 @@ cursor:pointer;
   cursor: pointer;
 }
 
-.modal-midia-box{
-  position: relative;
-
-  max-width: 90vw;
-  max-height: 90vh;
-
-  display:flex;
-  align-items:center;
-  justify-content:center;
-
-  background: transparent !important;
-  padding:0;
-}
-
-.modal-midia-box img,
-.modal-midia-box video{
-  max-width:90vw;
-  max-height:90vh;
-  border-radius:12px;
-}
-
 .badge-visto{
   position:absolute;
   top:6px;
@@ -1150,24 +1129,6 @@ cursor:pointer;
 }
 
 
-/* caixa da mídia */
-.modal-midia-box{
-  max-height:400vh;
-  max-width:400vw;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
-/* imagem e video */
-.modal-midia-box img,
-.modal-midia-box video,
-.modal-midia-box iframe{
-  max-height:90vh;
-  max-width:90vw;
-  border-radius:12px;
-  box-shadow:0 10px 40px rgba(0,0,0,0.6);
-}
 
 /* botão fechar */
 .modal-close{
@@ -1185,19 +1146,6 @@ cursor:pointer;
 
   font-size:18px;
   cursor:pointer;
-}
-
-.modal-midia-box img{
-  max-height:90vh;
-  max-width:90vw;
-  border-radius:12px;
-}
-
-/* vídeo vertical */
-.modal-midia-box video{
-  height:90vh;
-  width:auto;
-  border-radius:12px;
 }
 
 /* iframe (cloudflare stream / reels) */
@@ -1266,6 +1214,38 @@ cursor:pointer;
   flex:1;
   overflow-y:auto;
 }
+
+.modal-midia-box{
+  position:relative;
+  z-index:2;
+
+  max-width:95vw;
+  max-height:95vh;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.modal-midia-box img,
+.modal-midia-box video,
+.modal-midia-box iframe{
+  max-width:95vw;
+  max-height:95vh;
+
+  width:auto;
+  height:auto;
+
+  object-fit:contain;
+  border-radius:12px;
+}
+
+.modal-midia-box video{
+  max-height:90vh;
+  width:auto;
+}
+
+
 
 /* mobile */
 @media (max-width:700px){
