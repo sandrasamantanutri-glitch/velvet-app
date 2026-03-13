@@ -59,7 +59,7 @@ const inboxEl = document.getElementById("inbox");
 
 document
   .getElementById("loadMoreChats")
-  ?.addEventListener("click", renderizarMais);
+  ?.addEventListener("click", carregarMaisChats);
 
 const chatsMap = new Map();
 
@@ -295,9 +295,10 @@ function renderizarMais() {
       <div class="chat-body">
 
         <div class="chat-top">
-          <span class="chat-name">
-            ${c.username || c.nome || "Cliente"}
-          </span>
+        <span class="chat-name">
+        ${c.username || c.nome || "Cliente"}
+        <span class="spend-level">${c.spend_level || ""}</span>
+        </span>
 
           <span class="chat-time">
             ${formatarTempo(c.ultima_mensagem_em)}
@@ -349,18 +350,6 @@ function carregarMaisChats(){
 
   carregarListaClientes();
 
-}
-
-const btnLoadMore = document.getElementById("loadMoreChats");
-
-if (btnLoadMore) {
-  btnLoadMore.addEventListener("click", () => {
-
-    offset += LIMIT;
-
-    carregarListaClientes();
-
-  });
 }
 
 

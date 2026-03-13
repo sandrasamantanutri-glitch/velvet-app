@@ -61,7 +61,7 @@ const inboxEl = document.getElementById("inbox");
 
 document
   .getElementById("loadMoreChats")
-  ?.addEventListener("click", renderizarMais);
+  ?.addEventListener("click", carregarMaisChats);
 const chatsMap = new Map();
 
 // ===============================
@@ -344,6 +344,15 @@ function preloadAvatars(modelos) {
   });
 
 }
+
+function carregarMaisChats(){
+
+  offset += LIMITE_INICIAL;
+
+  renderizarMais();
+
+}
+
 // ===============================
 // ATUALIZA AO VOLTAR PRA ABA
 // ===============================

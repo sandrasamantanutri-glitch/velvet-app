@@ -3711,6 +3711,15 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
   COALESCE(msg.visto, false) AS visto,
   COALESCE(msg.lida, false)  AS lida
 
+   COALESCE(g.total_gasto,0) AS total_gasto,
+
+  CASE
+    WHEN COALESCE(g.total_gasto,0) >= 200 THEN '$$$'
+    WHEN COALESCE(g.total_gasto,0) >= 50 THEN '$$'
+    WHEN COALESCE(g.total_gasto,0) > 0 THEN '$'
+    ELSE ''
+  END AS spend_level
+
 FROM vip_subscriptions v
 
 JOIN clientes c 
@@ -3727,6 +3736,14 @@ LEFT JOIN LATERAL (
   ORDER BY created_at DESC
   LIMIT 1
 ) msg ON true
+
+LEFT JOIN LATERAL (
+  SELECT SUM(valor_bruto) AS total_gasto
+  FROM transacoes_agency t
+  WHERE t.cliente_id = c.id
+    AND t.modelo_id  = $1
+    AND t.status = 'pago'
+) g ON true
 
 WHERE v.modelo_id = $1
   AND v.ativo = true
@@ -3971,7 +3988,7 @@ app.get("/api/conteudos", authModelo, async (req, res) => {
     const totalPaginas = Math.ceil(total / limite);
 
      res.json({
-      conteudos: conteudos.rows,
+      conteudos: result.rows,
       total,
       totalPaginas,
       paginaAtual: pagina

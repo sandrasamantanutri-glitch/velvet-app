@@ -23,11 +23,11 @@ body {
 }
 
 .area-card h3 {
-  font-size: 26px;
+  font-size: 24px;
   text-align: center;
   margin: 10px 0 10px;
   font-weight: 700;
-  color: #1E1E26;
+  color: #7B2CFF;
 }
 
 .btn-voltar {
@@ -105,7 +105,6 @@ body {
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: #9E6BFF;
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -237,4 +236,13 @@ body {
   padding:10px 20px;
   border-radius:8px;
   cursor:pointer;
+}
+
+.spend-level{
+  margin-left:6px;
+  font-size:11px;
+  background:#f1eaff;
+  color:#7B2CFF;
+  padding:2px 6px;
+  border-radius:6px;
 }
