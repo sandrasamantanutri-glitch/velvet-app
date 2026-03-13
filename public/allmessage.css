@@ -144,30 +144,25 @@ textarea {
   display: none;
 }
 
-.modal-backdrop{
-  position:absolute;
-  inset:0;
-  background: rgba(0,0,0,0.45);
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.55);
 }
 
-/* =========================
-   CAIXA DO MODAL
-========================= */
-
-.modal-box{
+.modal-box {
   position: relative;
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 24px;
-  width: 90%;
-  max-width: 360px;
+  background: #fff;
+  border-radius: 18px;
+  width: 100%;
+  max-width: 720px;
+  max-height: 90vh;
 
-  box-shadow: 0 20px 50px rgba(0,0,0,0.25);
-  z-index: 2;
-
+  overflow: auto;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  overflow:hidden;
+  box-shadow: 0 25px 60px rgba(0,0,0,.25);
 }
 
 .modal-box h3 {
