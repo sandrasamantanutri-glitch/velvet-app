@@ -3925,6 +3925,7 @@ app.get("/api/chat/conteudo-status/:message_id", authCliente, async (req, res) =
 app.get("/api/conteudos", authModelo, async (req, res) => {
 
   const { venda, page = 1, limit = 10 } = req.query;
+
   try {
 
     const pagina = Number(page);
@@ -3937,26 +3938,6 @@ app.get("/api/conteudos", authModelo, async (req, res) => {
     if (venda === "true") {
       where += " AND c.tipo_conteudo = 'venda'";
     }
-
-     // ===============================
-    // TOTAL DE REGISTROS
-    // ===============================
-
-    const totalRes = await db.query(
-      `
-      SELECT COUNT(*) AS total
-      FROM conteudos c
-      WHERE ${where}
-      `,
-      params
-    );
-
-    const total = Number(totalRes.rows[0].total);
-    const totalPaginas = Math.ceil(total / limite);
-
-      // ===============================
-    // CONTEÚDOS DA PÁGINA
-    // ===============================
 
     const result = await db.query(
       `
@@ -3974,18 +3955,18 @@ app.get("/api/conteudos", authModelo, async (req, res) => {
       LIMIT $2
       OFFSET $3
       `,
-       [...params, limite, offset]
+      [...params, limite, offset]
     );
 
     res.json({
-      conteudos: result.rows,
-      totalPaginas
+      conteudos: result.rows
     });
 
   } catch (err) {
     console.error("Erro listar conteúdos:", err);
     res.status(500).json({ error: "Erro ao listar conteúdos" });
   }
+
 });
 
 
