@@ -1413,7 +1413,7 @@ app.post("/api/ofertas", authModelo, async (req, res) => {
     const VALOR_MINIMO = Number((VALOR_BASE * 0.5).toFixed(2));
 
     // 3️⃣ Dados
-    const { nome, limite, dias, desconto, mensagem } = req.body;
+    const { nome, limite, dias, desconto } = req.body;
 
     const limiteNum = Number(limite);
     const diasNum = Number(dias);
@@ -1457,10 +1457,9 @@ app.post("/api/ofertas", authModelo, async (req, res) => {
         valor_promocional,
         data_inicio,
         data_fim,
-        mensagem,
         ativa
       )
-      VALUES ($1,$2,$3,0,$4,$5,$6,NOW(),$7,$8,true)
+      VALUES ($1,$2,$3,0,$4,$5,NOW(),$6,$7,true)
       RETURNING *
       `,
       [
@@ -1470,8 +1469,7 @@ app.post("/api/ofertas", authModelo, async (req, res) => {
         descontoNum,
         VALOR_BASE,
         valorPromocional,
-        dataFim,
-        mensagem || null
+        dataFim
       ]
     );
 
@@ -3085,6 +3083,7 @@ app.get("/api/ofertas", authModelo, async (req, res) => {
       FROM ofertas
       WHERE modelo_id = $1
       ORDER BY created_at DESC
+      LIMIT 5
       `,
       [req.modelo_id]
     );

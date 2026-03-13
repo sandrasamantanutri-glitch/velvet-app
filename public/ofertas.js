@@ -207,7 +207,7 @@ async function abrirModalCriarOferta() {
 
     if (etapa === 1) {
       content.innerHTML = `
-        <h3>Nome da oferta</h3>
+        <h2>Nome da oferta</h2>
         <input id="nome" placeholder="Ex: Oferta especial">
       `;
     }
@@ -273,15 +273,6 @@ async function abrirModalCriarOferta() {
 
     if (etapa === 5) {
       content.innerHTML = `
-        <h3>Mensagem da oferta</h3>
-        <textarea id="msg" rows="4"
-          placeholder="Ex: Aproveite essa oferta exclusiva por tempo limitado">
-        </textarea>
-      `;
-    }
-
-    if (etapa === 6) {
-      content.innerHTML = `
         <h3>🎉 Parabéns!</h3>
         <p>Você criou sua oferta com sucesso.</p>
       `;
@@ -291,9 +282,8 @@ async function abrirModalCriarOferta() {
   btnAvancar.onclick = async () => {
     if (etapa === 1) dados.nome = content.querySelector("#nome").value;
     if (etapa === 2) dados.limite = Number(content.querySelector("#limite").value);
-    if (etapa === 5) dados.mensagem = content.querySelector("#msg").value;
 
-    if (etapa < 5) {
+    if (etapa < 4) {
   etapa++;
   render();
   return;
