@@ -45,34 +45,6 @@ body, html {
   transform: scale(1.08);
 }
 
-/* HEADER FIXO */
-.chat-header {
-  position: fixed;
-  top: 10px;
-  left: 0;
-  right: 0;
-  height: 90px;
-  z-index: 50;
-  background: #f1f1f1;
-  border-bottom: 1px solid #C9C9C9;
-}
-
-.chat-input {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 50px;
-  padding: 0 12px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  font-size: 16px;
-  background: #f1f1f1;
-  border-top: 1px solid #C9C9C9;
-  z-index: 50;
-}
-
 .chat-area {
   display: flex;
   flex-direction: column;
@@ -152,53 +124,6 @@ body, html {
   font-size: 16px;
   line-height: 1.4;
 }
-
-.btn-back:active,
-#btnEnviarConteudo1:active,
-.btn-enviar1:active {
-  transform: scale(0.92);
-  opacity: 0.8;
-}
-
-
-/* ===============================
-   POPUP EDITAR MENSAGEM
-================================ */
-
-#menuMensagem {
-  position: fixed;
-  inset: 0;
-  z-index: 9999; /* 🔥 isso é o mais importante */
-}
-
-#menuMensagem.hidden {
-  display: none;
-}
-
-#menuMensagem .popup-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,0.6);
-}
-
-#menuMensagem .popup-box {
-  position: relative;
-  background: #fff;
-  width: 90%;
-  max-width: 400px;
-  margin: 25% auto;
-  padding: 16px;
-  border-radius: 12px;
-  z-index: 10000;
-}
-
-#menuMensagem textarea {
-  width: 100%;
-  min-height: 90px;
-  margin: 12px 0;
-  padding: 10px;
-}
-
 /* ===============================
    MENU ⋮ DA MENSAGEM (NEUTRO)
 ================================ */
@@ -239,7 +164,7 @@ body, html {
 .chat-topo {
   position: sticky;
   top: 0;
-  z-index: 40;
+
 
   display: flex;
   align-items: center;
@@ -276,49 +201,6 @@ body, html {
   font-size: 14px;
   color: #6f6f6f;
 }
-
-
-#popupMidiaEmBreve {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-}
-
-#popupMidiaEmBreve.hidden {
-  display: none;
-}
-
-#popupMidiaEmBreve .popup-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-}
-
-#popupMidiaEmBreve .popup-box {
-  background: #fff;
-  width: 90%;
-  max-width: 360px;
-  margin: 40% auto;
-  padding: 20px;
-  border-radius: 12px;
-  text-align: center;
-}
-
-#popupMidiaEmBreve p {
-  margin: 12px 0 20px;
-  font-size: 14px;
-  color: #444;
-}
-
-#popupMidiaEmBreve .btn-fechar {
-  background: #7B2CFF;
-  color: #fff;
-  border: none;
-  padding: 10px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
 /* ===============================
    MOBILE OTIMIZADO
 ================================ */
@@ -413,13 +295,6 @@ body, html {
   background: rgba(0,0,0,0.9);
 }
 
-.preview-box {
-  position: relative;
-  z-index: 2;
-  max-width: 90vw;
-  max-height: 90vh;
-}
-
 .preview-content img,
 .preview-content video {
   max-width: 90vw;
@@ -476,31 +351,6 @@ body, html {
   border-radius: 12px;
   pointer-events: none; 
 }
-
-.btn-desbloquear {
-  position: relative;
-  z-index: 2;
-}
-
-.chat-input {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-
-  height: 80px;
-  padding: 0 16px;
-
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  background: #ffffff;
-  border-top: 1px solid #e5e5e5;
-
-  z-index: 100;
-}
-
 .chat-input textarea {
     flex: 1;
     height: 50px;
@@ -524,24 +374,6 @@ body, html {
 html, body {
   height: 100% !important;
   overflow: hidden !important; /* impede scroll do body */
-}
-
-.chat-topo {
-  position: fixed !important;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 64px;          /* 🔥 altura real do header */
-  z-index: 1000;
-}
-
-.chat-input {
-  position: fixed !important;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 80px;          /* 🔥 altura real do input */
-  z-index: 1000;
 }
 
 #chatBox,
@@ -576,25 +408,6 @@ html, body {
    💬 INPUT MODERNO VELVET
 ================================ */
 
-.chat-input {
-  position: fixed !important;
-  bottom: 0;
-  left: 0;
-  right: 0;
-
-  height: 80px;
-  padding: 12px 16px;
-
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  background: #ffffff;
-  border-top: 1px solid #eee;
-
-  box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
-  z-index: 1000;
-}
 .chat-input textarea {
   flex: 1;
   min-height: 44px;
@@ -794,23 +607,6 @@ html, body {
   position: relative;
 }
 
-.btn-preview {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  background: rgba(0, 0, 0, 0.6);
-  border: none;
-  color: white;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 5;
-}
 
 .btn-preview:hover {
   background: rgba(0, 0, 0, 0.85);
@@ -884,11 +680,6 @@ html, body {
   position:absolute;
   inset:0;
   background:rgba(0,0,0,.7);
-}
-
-.preview-box{
-  position:relative;
-  z-index:2;
 }
 
 .preview-box img{
@@ -1028,23 +819,6 @@ html, body {
   border-color:#7B2CFF;
 }
 
-.role-modelo .msg-menu {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-
-  background: transparent;
-  border: none;
-  padding: 4px;
-
-  font-size: 16px;
-  cursor: pointer;
-
-  color: rgba(255,255,255,0.75);
-
-  opacity: 1 !important;     
-  z-index: 10;                
-}
 
 /* opcional: efeito hover */
 .role-modelo .msg-menu:hover {
@@ -1076,15 +850,6 @@ html, body {
   justify-content:flex-end;
 }
 
-.popup-status{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0.6);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  z-index:9999;
-}
 
 .popup-status.hidden{
   display:none;
