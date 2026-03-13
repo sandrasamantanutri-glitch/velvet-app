@@ -36,8 +36,6 @@ body, html {
   border-top: 1px solid #e9e9ef;
   background:#f1f1f1;
   border-bottom:1px solid #e9e9ef;
-
-  z-index:50;
 }
 
 .chat-cliente-info{
@@ -301,7 +299,6 @@ body, html {
   inset:0;
   background:rgba(0,0,0,.4);
   backdrop-filter:blur(3px);
-  z-index:1;
 }
 
 .popup-box{
@@ -324,7 +321,6 @@ body, html {
   flex-direction:column;
   gap:12px;
 
-  z-index:2;
 }
 
 .popup-title{
@@ -490,7 +486,6 @@ cursor:pointer;
   display:flex;
   align-items:center;
   justify-content:center;
-  z-index:9999;
 }
 
 .popup-status.hidden{
@@ -538,7 +533,6 @@ cursor:pointer;
   max-width:100%;
   max-height:85vh;
   border-radius:12px;
-  z-index: 10;
 }
 
 #previewConteudos {
@@ -577,7 +571,6 @@ cursor:pointer;
     position: absolute;
     top: 4px;
     right: 6px;
-    z-index: 5;
     width: 16px;
     height: 16px;
     border: none;
@@ -596,7 +589,6 @@ cursor:pointer;
 .play-overlay{
   position: absolute;
   inset: 0;
-  z-index: 4;
 
   display: flex;
   align-items: center;
@@ -724,13 +716,12 @@ cursor:pointer;
   padding:24px;
   max-width:420px;
   width:92%;
-  z-index: 10;
+
 }
 
 .modal-midia{
   position: fixed;
   inset: 0;
-  z-index: 10;
 
   display: flex;
   align-items: center;
@@ -746,7 +737,6 @@ cursor:pointer;
 
 .modal-midia-box{
   position: relative;
-  z-index: 2;
 
   max-width: 90vw;
   max-height: 90vh;
@@ -814,7 +804,6 @@ cursor:pointer;
 .modal{
   position: fixed;
   inset: 0;
-  z-index: 100000;
 
   display: flex;
   align-items: center;
@@ -826,7 +815,6 @@ cursor:pointer;
 .popup-status{
   position:fixed;
   inset:0;
-  z-index:11000;
 }
 
 /* ==============================
@@ -836,7 +824,6 @@ cursor:pointer;
 .modal {
   position: fixed;
   inset: 0;
-  z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -857,8 +844,6 @@ cursor:pointer;
   padding: 30px;
   width: 420px;
   max-width: 92%;
-  z-index: 10;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
 }
 
 /* ==============================
@@ -1027,7 +1012,6 @@ cursor:pointer;
   display:flex;
   align-items:center;
   justify-content:center;
-  z-index:9999;
 }
 
 .modal.hidden{
@@ -1038,7 +1022,6 @@ cursor:pointer;
 
 .modal-content{
   position:relative;
-  z-index:2;
 
   width:420px;
   max-width:92vw;
@@ -1141,7 +1124,6 @@ cursor:pointer;
 .modal-midia{
   position:fixed;
   inset:0;
-  z-index:100000;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -1155,7 +1137,6 @@ cursor:pointer;
   inset:0;
   background:rgba(0,0,0,0.85);
   backdrop-filter: blur(2px);
-  z-index:1;
 }
 
 #popupConteudos {
@@ -1166,8 +1147,6 @@ cursor:pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-
-  z-index: 100005;
 }
 
 
