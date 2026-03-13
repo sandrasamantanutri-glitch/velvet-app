@@ -130,17 +130,25 @@ function renderizarPaginacaoTransacoes(totalPaginas) {
   const paginacao = document.getElementById("paginacaoTransacoes");
   if (!paginacao) return;
 
-  paginacao.innerHTML = "";
+  paginacao.innerHTML = `
+    <button 
+      class="pag-btn"
+      ${paginaAtualTransacoes === 1 ? "disabled" : ""}
+      onclick="carregarTransacoes(${paginaAtualTransacoes - 1})">
+      ← Anterior
+    </button>
 
-  for (let i = 1; i <= totalPaginas; i++) {
-    paginacao.innerHTML += `
-      <button
-        class="pagina ${i === paginaAtualTransacoes ? "ativa" : ""}"
-        onclick="carregarTransacoes(${i})">
-        ${i}
-      </button>
-    `;
-  }
+    <span class="pag-info">
+      ${paginaAtualTransacoes} / ${totalPaginas}
+    </span>
+
+    <button 
+      class="pag-btn"
+      ${paginaAtualTransacoes === totalPaginas ? "disabled" : ""}
+      onclick="carregarTransacoes(${paginaAtualTransacoes + 1})">
+      Próxima →
+    </button>
+  `;
 }
 
 
