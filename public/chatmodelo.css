@@ -583,7 +583,6 @@ html, body {
   left: 0;
   right: 0;
   height: 64px;          /* 🔥 altura real do header */
-  z-index: 1000;
 }
 
 .chat-conteudo + .msg-meta{
