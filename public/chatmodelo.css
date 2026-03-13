@@ -241,32 +241,6 @@ h2 #modeloNome {
 #popupConteudos.hidden {
   display: none;
 }
-
-/* =========================
-   CAIXA DO POPUP
-========================= */
-.popup-box {
-  width: 480px;
-  max-width: 95%;
-  max-height: 80vh;
-  color: #7B2CFF;
-  background: #fff;
-  border-radius: 20px;
-  padding: 20px;
-
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-
-  box-shadow: 0 25px 80px rgba(0,0,0,0.4);
-}
-
-.popup-box h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #7B2CFF;
-}
 /* GRID DE CONTEÚDOS NO POPUP */
 .preview-grid {
   display: grid;
@@ -392,35 +366,6 @@ h2 #modeloNome {
   border-radius: 10px;
   border: 1px solid #9E6BFF;
   font-size: 14px;
-}
-
-/* =========================
-   BOTÕES
-========================= */
-.popup-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.popup-actions button {
-  height: 36px;
-  padding: 0 18px;
-  border-radius: 14px;
-  border: none;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.btn-cancelar {
-  background: #eee;
-  color: #333;
-}
-
-.btn-enviar {
-background: linear-gradient(135deg, #7b2cff, #9E6BFF);
-  color: #fff;
 }
 
 .linha-topo {
@@ -634,52 +579,6 @@ body.role-modelo .chat-conteudo * {
   margin-top: 4px;
 }
 
-/* ===============================
-   MENU ⋮ DA MENSAGEM — FIX REAL
-================================ */
-
-.msg {
-  position: relative;
-  overflow: visible; /* 🔥 importante */
-  padding-right: 28px;
-}
-
-/* ===============================
-   POPUP EDITAR / EXCLUIR (OVERLAY)
-================================ */
-
-#menuMensagem {
-  position: fixed;          /* 🔥 tira do fluxo da página */
-  inset: 0;                 /* top:0 right:0 bottom:0 left:0 */
-  z-index: 99999;           /* 🔥 acima de tudo */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-#menuMensagem.hidden {
-  display: none;
-}
-
-/* fundo escuro */
-#menuMensagem .popup-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-}
-
-/* caixa do popup */
-#menuMensagem .popup-box {
-  position: relative;
-  background: #fff;
-  width: 90%;
-  max-width: 420px;
-  padding: 20px;
-  border-radius: 14px;
-  z-index: 1;
-}
-
-
 /* =========================================
    🔥 FIX FINAL SCROLL – NÃO COMER HEADER
 ========================================= */
@@ -719,9 +618,6 @@ html, body {
   white-space:nowrap;
 }
   
-
-
-
 
 
 

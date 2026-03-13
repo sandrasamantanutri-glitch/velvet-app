@@ -305,7 +305,7 @@ body, html {
 }
 
 .popup-box{
-  position:fixed;
+  position:absolute;
   top:50%;
   left:50%;
   transform:translate(-50%,-50%);
@@ -339,9 +339,6 @@ body, html {
   min-height:80px;
   border-radius:10px;
   border:1px solid #e5e5ee;
-
-  padding:10px;
-
   font-size:14px;
   font-family:'poppins';
 
@@ -353,11 +350,32 @@ body, html {
   border-color:#7B2CFF;
 }
 
-.popup-actions{
-  display:flex;
-  justify-content:flex-end;
-  gap:8px;
+.popup-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
+
+.popup-actions button {
+  height: 36px;
+  padding: 0 18px;
+  border-radius: 14px;
+  border: none;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn-cancelar {
+  background: #7B2CFF;
+  color: #fff;
+}
+
+.btn-enviar {
+background: linear-gradient(135deg, #7b2cff, #9E6BFF);
+  color: #fff;
+}
+
 
 .btn-salvar{
   background:#7B2CFF;
@@ -384,6 +402,7 @@ body, html {
   font-size:13px;
   cursor:pointer;
 }
+
 .btn-cancelar{
   background:#f3f3f8;
   border:none;
@@ -393,16 +412,6 @@ body, html {
 
   font-size:13px;
   cursor:pointer;
-}
-
-.popup-backdrop{
-  position:fixed;
-  inset:0;
-
-  background:rgba(0,0,0,.4);
-  backdrop-filter:blur(3px);
-
-  z-index:190;
 }
 
 #chatBox{
