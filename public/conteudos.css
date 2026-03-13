@@ -359,12 +359,14 @@ body {
 }
 
 .paginacao button{
-  background:#f5f5f5;
-  border:1px solid #ddd;
+  border:none;
+  background:#7B2CFF;
+  color:#fff;
   padding:6px 12px;
-  border-radius:6px;
+  border-radius:8px;
   cursor:pointer;
 }
+
 
 .paginacao button:disabled{
   opacity:0.5;

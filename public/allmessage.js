@@ -26,7 +26,7 @@ document.getElementById("btnConteudosPrev")?.addEventListener("click",()=>{
 
   if(paginaConteudos > 1){
     paginaConteudos--;
-    carregarConteudosPopup();
+    abrirPopupConteudos();
   }
 
 });
@@ -35,7 +35,7 @@ document.getElementById("btnConteudosNext")?.addEventListener("click",()=>{
 
   if(paginaConteudos < totalPaginasConteudos){
     paginaConteudos++;
-    carregarConteudosPopup();
+    abrirPopupConteudos();
   }
 
 });
