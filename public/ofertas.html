@@ -8,22 +8,20 @@
   <link rel="stylesheet" href="/ofertas.css">
 
 </head>
+
 <body>
- <div id="header-container"></div>
+   <div id="header-container"></div>
 
-    <section class="area-card">
-
-<main class="page-container">
+  <main class="page-container">
        <button type="button" class="btn-voltar" onclick="history.back()">
       <img src="/assets/voltar.png" alt="Voltar">
      </button>
-     
-  <!-- HEADER -->
-  <div class="ofertas-topo">
-  <div class="plano-card">
-      <h2>Assinaturas e Ofertas</h2>
+
+       <div class="ofertas-topo">
+     <h2>Assinaturas</h2>
   </div>
-  <div class="plano-header">
+
+     <div class="plano-card">
     <h2>💎 Plano de Assinatura</h2>
     <span class="plano-badge">VIP</span>
 
@@ -57,7 +55,10 @@
     Salvar Plano
   </button>
 </div>
-</div>
+
+  <div class="ofertas-topo">
+     <h2>Descontos na Asinatura</h2>
+  </div>
 
 <div class="ofertas-container">
 
@@ -110,6 +111,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <script src="/socket.io/socket.io.js"></script>
 <script src="/header.js" defer></script>
 <script src="/ofertas.js" defer></script>
+
 </body>
 </html>
 
