@@ -164,9 +164,13 @@ textarea {
   box-shadow: 0 25px 60px rgba(0,0,0,.25);
 }
 
-.conteudos-grid {
-  flex: 1;
-  overflow-y: auto;
+.conteudos-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+  padding:10px;
+  overflow-y:auto;
+  max-height:55vh;
 }
 
 
@@ -193,7 +197,6 @@ conteudos-grid{
   overflow: hidden;
   cursor: pointer;
   border: 2px solid transparent;
-  background: #000;
 }
 
 .preview-item img,
@@ -315,7 +318,8 @@ conteudos-grid{
   justify-content:center;
   align-items:center;
   gap:10px;
-  padding:10px;
+  padding:12px;
+  border-top:1px solid #eee;
 }
 
 .paginacao button{
