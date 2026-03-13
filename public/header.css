@@ -43,15 +43,15 @@ body {
   margin-right: auto;
 }
 
-.velvet-logo {
-  height: 36px;
-  width: auto;
+img.velvet-logo {
+    max-width: 100%;
 }
 
 
 body {
   visibility: visible;
 }
+
 
 @media (max-width: 600px){
 
@@ -60,10 +60,4 @@ body {
     gap: 14px;
   }
 
-  .velvet-logo{
-    height: 28px;
-  }
-
 }
-
-

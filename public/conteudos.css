@@ -48,35 +48,45 @@ body {
   color: #9e6bff;
 }
 
-.modal-viewer {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.modal-viewer{
+  display:flex;
+  align-items:center;
+  justify-content:center;
 
-  max-width: 95vw;
-  max-height: 95vh;
+  max-width:95vw;
+  max-height:95vh;
 }
 
-#viewerConteudo img,
-#viewerConteudo video,
-#viewerConteudo iframe {
-  max-width: 90vw;
-  max-height: 85vh;
-
-  width: auto;
-  height: auto;
-
-  object-fit: contain;
-  border-radius: 12px;
+#viewerConteudo{
+  display:flex;
+  align-items:center;
+  justify-content:center;
 }
 
-#viewerConteudo iframe {
-  width: 100%;
-  max-width: 420px;
-  height: 70vh;
-  border-radius: 8px;
+/* IMAGENS */
+#viewerConteudo img{
+  max-width:90vw;
+  max-height:85vh;
+  width:auto;
+  height:auto;
+  border-radius:14px;
 }
 
+/* VIDEOS */
+#viewerConteudo video{
+  max-height:90vh;
+  max-width:420px;
+  width:100%;
+  border-radius:16px;
+}
+
+/* IFRAME (Cloudflare vídeo) */
+#viewerConteudo iframe{
+  width:100%;
+  max-width:420px;
+  height:70vh;
+  border-radius:8px;
+}
 .modal-midia {
   padding: 20px;
 }

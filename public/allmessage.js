@@ -103,6 +103,10 @@ async function abrirPopupConteudos() {
     item.className = "preview-item";
     item.dataset.conteudoId = c.id;
 
+     if (c.tipo === "video") {
+    item.classList.add("video");
+  }
+
     item.innerHTML = `
       <img src="${c.thumbnail || c.url}" />
     `;
