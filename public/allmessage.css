@@ -150,7 +150,7 @@ textarea {
   background: rgba(0,0,0,.55);
 }
 
-.modal-box {
+.modal-box{
   position: relative;
   background: #fff;
   border-radius: 18px;
@@ -158,10 +158,10 @@ textarea {
   max-width: 720px;
   max-height: 90vh;
 
-  overflow: auto;
   display: flex;
   flex-direction: column;
-  overflow:hidden;
+
+  overflow: hidden; /* mantém header fixo */
   box-shadow: 0 25px 60px rgba(0,0,0,.25);
 }
 
@@ -182,7 +182,7 @@ textarea {
   padding:10px;
 
   overflow-y:auto;
-  max-height:55vh;
+  height:55vh; /* importante */
 }
 
 .preview-item {
@@ -191,6 +191,7 @@ textarea {
   overflow: hidden;
   cursor: pointer;
   border: 2px solid transparent;
+  aspect-ratio: 3/4;
 }
 
 .preview-item img,

@@ -378,3 +378,6 @@ font-size: 10px;
 .footer-copy {
   font-size: 11px;
 }
+.footer a {
+text-decoration: none;
+}

@@ -3,6 +3,8 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  font-size: 14px;
+  color: #333;
 }
 
 .transacao-card {
@@ -60,9 +62,10 @@
 
 
 .area-card h3 {
-  font-size: 32px;
+  font-size: 22px;
   margin-bottom: 10px;
   text-align: center;
+  color: #7B2CFF;
 }
 
 /* ===============================
@@ -328,4 +331,31 @@
 .msg-feedback.erro {
   background: #FFEAEA;
   color: #C62828;
+}
+
+
+/* ===============================
+   FOOTER
+================================ */
+.footer {
+max-width: 900px;
+ margin: 40px auto 30px;
+text-align: center;
+opacity: .6;
+font-size: 10px;
+ margin-bottom: 8px;
+}
+
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 8px;
+}
+
+.footer-links a:hover {
+  color: #9e6bff;
+}
+.footer-copy {
+  font-size: 11px;
 }

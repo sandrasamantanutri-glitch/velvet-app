@@ -28,16 +28,17 @@ body {
   padding: 0 20px;
 }
 
-h1 {
+h2 {
   text-align: center;
   margin-bottom: 8px;
   font-weight: 600;
+  color:#7B2CFF
 }
 
 .subtitle {
   text-align: center;
   color: #1E1E26;
-  font-size: 14px;
+  font-size: 1px;
   margin-bottom: 30px;
 }
 

@@ -164,7 +164,8 @@ body {
 }
 
 .form-group label {
-  font-size: 16px;
+  font-size: 14px;
+  text-align: center;
 }
 
 .form-group input,
@@ -222,17 +223,6 @@ body {
 
 
 /* ===============================
-   SEPARADOR
-================================ */
-.separator {
-  border: none;
-  height: 1px;
-  background: #e5e5e5;
-  margin: 40px auto;
-  max-width: 900px;
-}
-
-/* ===============================
    FOOTER
 ================================ */
 .footer {
@@ -258,9 +248,9 @@ body {
 
 }
 .titulo-area h3 {
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 600;
-  color: #1E1E26;
+  color: #7b2cff;
   letter-spacing: 0.5px;
   text-align: center !important;
 }

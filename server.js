@@ -3957,8 +3957,24 @@ app.get("/api/conteudos", authModelo, async (req, res) => {
       [...params, limite, offset]
     );
 
-    res.json({
-      conteudos: result.rows
+      // 🔹 contar total
+    const totalRes = await db.query(
+      `
+      SELECT COUNT(*) 
+      FROM conteudos c
+      WHERE ${where}
+      `,
+      params
+    );
+
+    const total = Number(totalRes.rows[0].count);
+    const totalPaginas = Math.ceil(total / limite);
+
+     res.json({
+      conteudos: conteudos.rows,
+      total,
+      totalPaginas,
+      paginaAtual: pagina
     });
 
   } catch (err) {

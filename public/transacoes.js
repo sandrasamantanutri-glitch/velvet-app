@@ -179,7 +179,7 @@ async function carregarSubscricoes() {
   });
 
   if (!res.ok) {
-    lista.innerHTML = "Erro ao carregar subscrições.";
+    lista.innerHTML = "Não existem assinaturas vips a exibir.";
     return;
   }
 
