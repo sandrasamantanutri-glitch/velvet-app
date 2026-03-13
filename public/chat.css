@@ -1217,15 +1217,13 @@ cursor:pointer;
 }
 
 .modal-midia-box{
+
+  background: transparent;
+  box-shadow: none;
+  z-index: 2;
+  max-width: 95vw;
+  max-height: 95vh;
   position:relative;
-  z-index:2;
-
-  max-width:95vw;
-  max-height:95vh;
-
-  display:flex;
-  align-items:center;
-  justify-content:center;
 }
 
 .modal-midia-box img,
