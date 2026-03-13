@@ -576,26 +576,3 @@ body {
 
 }
 
-.span h2 {
-  font-size: 24px;
-  font-weight: 700;
-  margin-bottom: 8px;
-  text-align: center;
-  color:#7b2cff;
-}
-
-.card-highlight {
-  background: linear-gradient(135deg, #b79cff, #cabcf3);
-  border-radius: 22px;
-  padding: 28px;
-  box-shadow: 0 8px 24px rgba(123, 63, 228, 0.08), inset 0 0 0 1px rgba(123, 63, 228, 0.05);
-  transition: all 0.2s ease;
-}
-
-.card {
-  background: #ffffff;
-  border-radius: 22px;
-  padding: 28px;
-  box-shadow: 0 8px 24px rgba(123, 63, 228, 0.08), inset 0 0 0 1px rgba(123, 63, 228, 0.05);
-  transition: all 0.2s ease;
-}
