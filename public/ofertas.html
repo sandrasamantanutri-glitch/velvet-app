@@ -19,34 +19,12 @@
 </header>
 
 <main>
-<div class="ofertas-container">
 
-  <!-- HEADER -->
-  <div class="ofertas-topo">
-    <h2>Assinaturas e Ofertas</h2>
-  </div>
-
-  <!-- TABS -->
-  <div class="ofertas-tabs">
-    <button class="tab active" data-tab="ativas">Ativas</button>
-    <button class="tab" data-tab="inativas">Inativas</button>
-  </div>
-
-  <div class="ofertas-criar">
-  <button class="btn-criar-oferta" id="btnCriarOferta">
-    + Criar oferta
-  </button>
-</div>
-
-  <!-- LISTA -->
-  <div class="ofertas-lista" id="ofertasLista"></div>
-
-</div>
-
-<div class="plano-card">
+  <div class="plano-card">
   <div class="plano-header">
     <h2>💎 Plano de Assinatura</h2>
     <span class="plano-badge">VIP</span>
+    <label>Escolha o valor mensal da sua assinatura</label>
   </div>
 
   <div class="plano-grid">
@@ -79,6 +57,30 @@
   </button>
 </div>
 
+<div class="ofertas-container">
+
+  <!-- HEADER -->
+  <div class="ofertas-topo">
+    <h2>Assinaturas e Ofertas</h2>
+  </div>
+
+  <!-- TABS -->
+  <div class="ofertas-tabs">
+    <button class="tab active" data-tab="ativas">Ativas</button>
+    <button class="tab" data-tab="inativas">Inativas</button>
+  </div>
+
+  <div class="ofertas-criar">
+  <button class="btn-criar-oferta" id="btnCriarOferta">
+    + Criar oferta
+  </button>
+</div>
+
+  <!-- LISTA -->
+  <div class="ofertas-lista" id="ofertasLista"></div>
+
+</div>
+
 </main>
 
 
@@ -98,7 +100,6 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 
 <script src="/socket.io/socket.io.js"></script>
-<script src="/header.js"></script>
 <script src="/ofertas.js" defer></script>
 </body>
 </html>

@@ -36,6 +36,10 @@ const mensagensRenderizadas = new Set();
 
 const chatBox = document.getElementById("chatBox");
 
+let paginaConteudos = 1;
+let totalPaginasConteudos = 1;
+const limiteConteudos = 12;
+
 // ===============================
 // AUTENTICAR
 // ===============================
@@ -698,7 +702,7 @@ function excluirMensagem(){
 // POPUP ENVIAR CONTEÚDO
 // ===============================
 
-async function abrirPopupConteudos() {
+async function abrirPopupConteudos(page = 1){
   try {
 
     // 🔒 validar IDs
@@ -706,6 +710,8 @@ async function abrirPopupConteudos() {
       console.warn("IDs inválidos para abrir popup.");
       return;
     }
+
+    paginaConteudos = page;
 
     const popup = document.getElementById("popupConteudos");
     const grid  = document.getElementById("previewConteudos");
@@ -728,23 +734,28 @@ async function abrirPopupConteudos() {
       return;
     }
 
-const res = await fetch("/api/conteudos?venda=true", {
-  headers: {
-    Authorization: "Bearer " + token
-  }
-});
+  const res = await fetch(
+    `/api/conteudos?venda=true&page=${paginaConteudos}&limit=${limiteConteudos}`,
+    {
+      headers:{
+        Authorization:"Bearer " + token
+      }
+    }
+  );
 
 if (!res.ok) {
   grid.innerHTML = "Erro ao carregar conteúdos.";
   return;
 }
 
-    const conteudos = await res.json();
+const data = await res.json();
+const conteudos = data.conteudos || [];
+totalPaginasConteudos = data.totalPaginas || 1;
 
-    if (!Array.isArray(conteudos) || conteudos.length === 0) {
-      grid.innerHTML = "<p>Nenhum conteúdo enviado ainda.</p>";
-      return;
-    }
+  if(conteudos.length === 0){
+    grid.innerHTML = "<p>Nenhum conteúdo enviado ainda.</p>";
+    return;
+  }
 
     grid.innerHTML = "";
 
@@ -755,7 +766,7 @@ if (!res.ok) {
       const id = Number(c.id);
       const tipo = c.tipo || "imagem";
 
-      const jaVisto = window.conteudosVistosCliente.has(c.id);
+     const jaVisto = window.conteudosVistosCliente.has(Number(c.id));
 
       const item = document.createElement("div");
 
@@ -813,6 +824,7 @@ if (jaVisto) {
     });
 
      ativarLazyPopup(grid);
+     renderPaginacaoConteudos();
 
   } catch (err) {
     console.error("Erro abrirPopupConteudos:", err);
@@ -1270,6 +1282,28 @@ function criarMensagemElemento(msg){
 
   return div;
 
+}
+
+function renderPaginacaoConteudos(){
+
+  const nav = document.getElementById("conteudosPaginacao");
+  if(!nav) return;
+
+  nav.innerHTML = `
+    <button ${paginaConteudos === 1 ? "disabled" : ""}
+      onclick="abrirPopupConteudos(${paginaConteudos-1})">
+      ◀
+    </button>
+
+    <span>
+      Página ${paginaConteudos} / ${totalPaginasConteudos}
+    </span>
+
+    <button ${paginaConteudos === totalPaginasConteudos ? "disabled" : ""}
+      onclick="abrirPopupConteudos(${paginaConteudos+1})">
+      ▶
+    </button>
+  `;
 }
 
 

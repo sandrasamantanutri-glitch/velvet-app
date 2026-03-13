@@ -1276,6 +1276,28 @@ z-index:100001;
   pointer-events:none;
 }
 
+.conteudos-paginacao{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:10px;
+  margin-top:12px;
+}
+
+.conteudos-paginacao button{
+  padding:6px 12px;
+  border:none;
+  border-radius:8px;
+  background:#6b4bff;
+  color:white;
+  cursor:pointer;
+}
+
+.conteudos-paginacao button:disabled{
+  opacity:0.4;
+  cursor:default;
+}
+
 /* mobile */
 @media (max-width:700px){
 
