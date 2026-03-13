@@ -1,3 +1,7 @@
+let paginaConteudos = 1;
+const limiteConteudos = 9; // 3x3
+let totalPaginasConteudos = 1;
+
 document.addEventListener("DOMContentLoaded", async () => {
   await carregarModelo();
 
@@ -17,6 +21,25 @@ document
   document
     .getElementById("btnEnviar")
     ?.addEventListener("click", () => enviar(false));
+    
+document.getElementById("btnConteudosPrev")?.addEventListener("click",()=>{
+
+  if(paginaConteudos > 1){
+    paginaConteudos--;
+    carregarConteudosPopup();
+  }
+
+});
+
+document.getElementById("btnConteudosNext")?.addEventListener("click",()=>{
+
+  if(paginaConteudos < totalPaginasConteudos){
+    paginaConteudos++;
+    carregarConteudosPopup();
+  }
+
+});
+
 });
 
 
@@ -49,7 +72,8 @@ async function carregarModelo() {
 // ===============================
 // CONTEÚDOS DA MODELO
 // ===============================
-async function abrirPopupConteudos() {
+async function abrirPopupConteudos(){
+
   const popup = document.getElementById("popupConteudos");
   popup.classList.remove("hidden");
 
@@ -58,67 +82,63 @@ async function abrirPopupConteudos() {
 
   const token = localStorage.getItem("token");
 
-  // 🔥 BUSCA MODELO DIRETO
-  const resModelo = await fetch("/api/modelo/me", {
-    headers: {
-      Authorization: "Bearer " + token
-    }
-  });
+  try{
 
-  if (!resModelo.ok) {
-    grid.innerHTML = "Erro ao buscar modelo";
-    return;
-  }
-
-  const modelo = await resModelo.json();
-  const modelo_id = modelo.modelo_id || modelo.id;
-
-  console.log("modelo_id usado:", modelo_id);
-
-  const res = await fetch(
-    `/api/allmessage/conteudos/${modelo_id}`,
-    {
-      headers: {
-        Authorization: "Bearer " + token
+    const res = await fetch(
+      `/api/conteudos?venda=true&page=${paginaConteudos}&limit=${limiteConteudos}`,
+      {
+        headers:{
+          Authorization:"Bearer "+token
+        }
       }
+    );
+
+    if(!res.ok){
+      grid.innerHTML = "Erro ao carregar conteúdos";
+      return;
     }
-  );
 
-  if (!res.ok) {
+    const data = await res.json();
+    const conteudos = data.conteudos || [];
+    totalPaginasConteudos = data.totalPaginas || 1;
+
+    if(conteudos.length === 0){
+      grid.innerHTML = "<p>Nenhum conteúdo de venda disponível.</p>";
+      return;
+    }
+
+    grid.innerHTML = "";
+
+    conteudos.forEach(c => {
+
+      const item = document.createElement("div");
+      item.className = "preview-item";
+      item.dataset.conteudoId = c.id;
+
+      if(c.tipo === "video"){
+        item.classList.add("video");
+      }
+
+      const thumb = c.thumbnail_url || c.thumbnail || c.url;
+
+      item.innerHTML = `
+        <img src="${thumb}" loading="lazy">
+      `;
+
+      item.onclick = () => {
+        item.classList.toggle("selected");
+      };
+
+      grid.appendChild(item);
+
+    });
+
+  }catch(err){
+    console.error(err);
     grid.innerHTML = "Erro ao carregar conteúdos";
-    return;
   }
 
-  const conteudos = await res.json();
-
-  if (!Array.isArray(conteudos) || conteudos.length === 0) {
-    grid.innerHTML = "<p>Nenhum conteúdo de venda disponível.</p>";
-    return;
-  }
-
-  grid.innerHTML = "";
-
-  conteudos.forEach(c => {
-    const item = document.createElement("div");
-    item.className = "preview-item";
-    item.dataset.conteudoId = c.id;
-
-     if (c.tipo === "video") {
-    item.classList.add("video");
-  }
-
-    item.innerHTML = `
-      <img src="${c.thumbnail || c.url}" />
-    `;
-
-    item.onclick = () => {
-      item.classList.toggle("selected");
-    };
-
-    grid.appendChild(item);
-  });
 }
-
 
 // ===============================
 // MOSTRAR SELECIONADOS
@@ -215,4 +235,20 @@ function confirmarConteudosSelecionados() {
 
   fecharPopupConteudos();
 }
+
+function atualizarPaginacaoPopup(){
+
+  const info = document.getElementById("paginaConteudosInfo");
+  const btnPrev = document.getElementById("btnConteudosPrev");
+  const btnNext = document.getElementById("btnConteudosNext");
+
+  if(!info) return;
+
+  info.textContent = `${paginaConteudos} / ${totalPaginasConteudos}`;
+
+  btnPrev.disabled = paginaConteudos === 1;
+  btnNext.disabled = paginaConteudos === totalPaginasConteudos;
+
+}
+
 
