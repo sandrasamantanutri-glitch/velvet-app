@@ -1,44 +1,68 @@
 let paginaConteudos = 1;
-const limiteConteudos = 9; // 3x3
-let totalPaginasConteudos = 1;
+const limiteConteudos = 9;
+let carregandoConteudos = false;
+let fimConteudos = false;
+let conteudosSelecionados = new Set();
+
+const observerLazy = new IntersectionObserver(entries=>{
+
+  entries.forEach(entry=>{
+
+    if(!entry.isIntersecting) return;
+
+    const img = entry.target;
+    const src = img.dataset.src;
+
+    if(src){
+      img.src = src;
+      img.removeAttribute("data-src");
+    }
+
+    observerLazy.unobserve(img);
+
+  });
+
+},{
+  rootMargin:"200px"
+});
+
 
 document.addEventListener("DOMContentLoaded", async () => {
+
   await carregarModelo();
 
   document
     .getElementById("btnAbrirConteudos")
     ?.addEventListener("click", abrirPopupConteudos);
 
-    document
-  .getElementById("btnConfirmarConteudos")
-  ?.addEventListener("click", confirmarConteudosSelecionados);
+  document
+    .getElementById("btnConfirmarConteudos")
+    ?.addEventListener("click", confirmarConteudosSelecionados);
 
-document
-  .getElementById("btnFecharConteudos")
-  ?.addEventListener("click", fecharPopupConteudos);
-
+  document
+    .getElementById("btnFecharConteudos")
+    ?.addEventListener("click", fecharPopupConteudos);
 
   document
     .getElementById("btnEnviar")
     ?.addEventListener("click", () => enviar(false));
 
-document.getElementById("btnConteudosPrev")?.addEventListener("click",()=>{
+  const grid = document.getElementById("conteudosGrid");
 
-  if(paginaConteudos > 1){
-    paginaConteudos--;
-    abrirPopupConteudos();
+  if(grid){
+
+    grid.addEventListener("scroll", () => {
+
+      const nearBottom =
+        grid.scrollTop + grid.clientHeight >= grid.scrollHeight - 150;
+
+      if(nearBottom){
+        carregarConteudos();
+      }
+
+    });
+
   }
-
-});
-
-document.getElementById("btnConteudosNext")?.addEventListener("click",()=>{
-
-  if(paginaConteudos < totalPaginasConteudos){
-    paginaConteudos++;
-    abrirPopupConteudos();
-  }
-
-});
 
 });
 
@@ -75,70 +99,22 @@ async function carregarModelo() {
 async function abrirPopupConteudos(){
 
   const popup = document.getElementById("popupConteudos");
+  const grid  = document.getElementById("conteudosGrid");
+
+  if(!popup || !grid) return;
+
   popup.classList.remove("hidden");
 
-  const grid = document.getElementById("conteudosGrid");
-  grid.innerHTML = "Carregando...";
+  // reset estado
+  paginaConteudos = 1;
+  fimConteudos = false;
+  conteudosSelecionados.clear();
+  atualizarContadorMidias();
 
-  const token = localStorage.getItem("token");
+  grid.innerHTML = "";
 
-  try{
-
-    const res = await fetch(
-      `/api/conteudos?venda=true&page=${paginaConteudos}&limit=${limiteConteudos}`,
-      {
-        headers:{
-          Authorization:"Bearer "+token
-        }
-      }
-    );
-
-    if(!res.ok){
-      grid.innerHTML = "Erro ao carregar conteúdos";
-      return;
-    }
-
-    const data = await res.json();
-    const conteudos = data.conteudos || [];
-    totalPaginasConteudos = data.totalPaginas || 1;
-
-    if(conteudos.length === 0){
-      grid.innerHTML = "<p>Nenhum conteúdo de venda disponível.</p>";
-      return;
-    }
-
-    grid.innerHTML = "";
-
-    conteudos.forEach(c => {
-
-      const item = document.createElement("div");
-      item.className = "preview-item";
-      item.dataset.conteudoId = c.id;
-
-      if(c.tipo === "video"){
-        item.classList.add("video");
-      }
-
-      const thumb = c.thumbnail_url || c.thumbnail || c.url;
-
-      item.innerHTML = `
-        <img src="${thumb}" loading="lazy">
-      `;
-
-      item.onclick = () => {
-        item.classList.toggle("selected");
-      };
-
-      grid.appendChild(item);
-
-    });
-
-    atualizarPaginacaoPopup();
-
-  }catch(err){
-    console.error(err);
-    grid.innerHTML = "Erro ao carregar conteúdos";
-  }
+  // carrega primeira página
+  await carregarConteudos();
 
 }
 
@@ -165,9 +141,7 @@ async function enviar(modoTeste) {
   const texto = document.getElementById("mensagem").value.trim();
   const preco = Number(document.getElementById("preco").value || 0);
 
-  const conteudos = Array.from(
-    document.querySelectorAll(".preview-item.selected")
-  ).map(el => Number(el.dataset.conteudoId));
+const conteudos = [...conteudosSelecionados];
 
   if (!texto) {
     alert("Digite a mensagem");
@@ -212,45 +186,135 @@ async function enviar(modoTeste) {
   window.location.reload();
 }
 
-function confirmarConteudosSelecionados() {
-  const selecionados = Array.from(
-    document.querySelectorAll(".preview-item.selected")
-  );
+function confirmarConteudosSelecionados(){
 
   const container = document.getElementById("conteudosSelecionados");
   container.innerHTML = "";
 
-  if (selecionados.length === 0) {
+  if(conteudosSelecionados.size === 0){
     container.innerHTML =
       "<span style='opacity:.6'>Nenhuma mídia selecionada</span>";
+    fecharPopupConteudos();
+    return;
   }
 
-  selecionados.forEach(item => {
-    const img = item.querySelector("img, video").cloneNode(true);
+  conteudosSelecionados.forEach(id=>{
+
+    const el = document.querySelector(
+      `.preview-item[data-conteudo-id="${id}"] img`
+    );
+
+    if(!el) return;
+
+    const img = el.cloneNode(true);
+
     img.style.width = "70px";
     img.style.height = "90px";
     img.style.objectFit = "cover";
     img.style.borderRadius = "8px";
     img.style.border = "2px solid #7B2CFF";
+
     container.appendChild(img);
+
   });
 
   fecharPopupConteudos();
 }
 
-function atualizarPaginacaoPopup(){
+async function carregarConteudos(){
 
-  const info = document.getElementById("paginaConteudosInfo");
-  const btnPrev = document.getElementById("btnConteudosPrev");
-  const btnNext = document.getElementById("btnConteudosNext");
+  if(carregandoConteudos || fimConteudos) return;
 
-  if(!info) return;
+  carregandoConteudos = true;
 
-  info.textContent = `${paginaConteudos} / ${totalPaginasConteudos}`;
+  const grid = document.getElementById("conteudosGrid");
+  const token = localStorage.getItem("token");
 
-  btnPrev.disabled = paginaConteudos === 1;
-  btnNext.disabled = paginaConteudos === totalPaginasConteudos;
+  try{
 
+    const res = await fetch(
+      `/api/conteudos?venda=true&page=${paginaConteudos}&limit=${limiteConteudos}`,
+      {
+        headers:{
+          Authorization:"Bearer "+token
+        }
+      }
+    );
+
+    if(!res.ok){
+      console.error("Erro ao carregar conteúdos");
+      carregandoConteudos = false;
+      return;
+    }
+
+    const data = await res.json();
+    const conteudos = data.conteudos || [];
+
+    if(conteudos.length === 0){
+      fimConteudos = true;
+      carregandoConteudos = false;
+      return;
+    }
+
+    conteudos.forEach(c=>{
+
+      const item = document.createElement("div");
+      item.className = "preview-item";
+      item.dataset.conteudoId = c.id;
+
+      if(c.tipo === "video"){
+        item.classList.add("video");
+      }
+
+      const thumb = c.thumbnail_url || c.url;
+
+      // placeholder para lazy load
+      const img = document.createElement("img");
+      img.dataset.src = thumb;
+      img.loading = "lazy";
+
+      item.appendChild(img);
+
+      // restaurar seleção se já estava selecionado
+      const id = Number(c.id);
+      if(conteudosSelecionados.has(id)){
+        item.classList.add("selected");
+      }
+
+      item.onclick = ()=>{
+
+  if(conteudosSelecionados.has(id)){
+    conteudosSelecionados.delete(id);
+    item.classList.remove("selected");
+  }else{
+    conteudosSelecionados.add(id);
+    item.classList.add("selected");
+  }
+
+  atualizarContadorMidias();
+
+};
+
+      grid.appendChild(item);
+
+      observerLazy.observe(img);
+
+    });
+
+    paginaConteudos++;
+
+  }catch(err){
+    console.error(err);
+  }
+
+  carregandoConteudos = false;
 }
 
+function atualizarContadorMidias(){
 
+  const contador = document.getElementById("contadorSelecionados");
+  if(!contador) return;
+
+  contador.textContent = `Selecionadas: ${conteudosSelecionados.size}`;
+
+}

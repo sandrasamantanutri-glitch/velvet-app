@@ -332,3 +332,11 @@ conteudos-grid{
   cursor:pointer;
 }
 
+.contador-midias{
+  text-align:center;
+  font-size:14px;
+  font-weight:600;
+  color:#7B2CFF;
+  padding:6px 0 4px 0;
+}
+
