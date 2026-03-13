@@ -554,12 +554,6 @@ cursor:pointer;
   color:#5a3bff;
 }
 
-.modal-backdrop{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0.75);
-  backdrop-filter:blur(6px);
-}
 
 .modal-box{
   position: relative;
@@ -887,13 +881,6 @@ cursor:pointer;
   display: none;
 }
 
-.modal-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,0.6);
-  backdrop-filter: blur(4px);
-}
-
 /* ==============================
    CAIXA DO MODAL
 ============================== */
@@ -1082,11 +1069,7 @@ cursor:pointer;
   display:none;
 }
 
-.modal-backdrop{
-  position:absolute;
-  inset:0;
-  background:rgba(0,0,0,.6);
-}
+
 
 .modal-content{
   position:relative;
@@ -1193,32 +1176,34 @@ cursor:pointer;
 .modal-midia{
   position:fixed;
   inset:0;
+  z-index:100000;
   display:flex;
   align-items:center;
   justify-content:center;
-  z-index:100001;
 }
 
 .modal-midia.hidden{
   display:none;
 }
-
-/* fundo escuro */
 .modal-backdrop{
   position:absolute;
   inset:0;
   background:rgba(0,0,0,0.85);
   backdrop-filter: blur(4px);
+  z-index:1;
 }
+
+.modal-midia-box{
+  position:relative;
+  z-index:2;
+}
+
+
 
 /* caixa da mídia */
 .modal-midia-box{
-  position:relative;
-z-index:100001;
-
   max-height:400vh;
   max-width:400vw;
-
   display:flex;
   align-items:center;
   justify-content:center;
