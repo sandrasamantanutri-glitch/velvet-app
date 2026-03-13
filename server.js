@@ -3709,9 +3709,8 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
   msg.created_at AS ultima_mensagem_em,
   msg.sender     AS ultimo_sender,
   COALESCE(msg.visto, false) AS visto,
-  COALESCE(msg.lida, false)  AS lida
-
-   COALESCE(g.total_gasto,0) AS total_gasto,
+  COALESCE(msg.lida, false)  AS lida,
+  COALESCE(g.total_gasto,0) AS total_gasto,
 
   CASE
     WHEN COALESCE(g.total_gasto,0) >= 200 THEN '$$$'
@@ -3749,7 +3748,7 @@ WHERE v.modelo_id = $1
   AND v.ativo = true
   AND v.expiration_at > NOW()
 
-ORDER BY msg.created_at DESC NULLS LAST
+ORDER BY ultima_mensagem_em DESC NULLS LAST
 LIMIT $2 OFFSET $3;
 
     `, [modeloId, limit, offset]);
