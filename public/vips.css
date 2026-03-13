@@ -145,6 +145,43 @@ body {
   transform: scale(1.08);
 }
 
+.paginacao{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:12px;
+  margin-top:25px;
+}
+
+.paginacao button{
+  border:none;
+  background:#7B2CFF;
+  color:#fff;
+  padding:6px 12px;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+
+.paginacao{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:10px;
+  padding:12px;
+  border-top:1px solid #eee;
+  font-size: 15px;
+}
+
+.paginacao button{
+  border:none;
+  background:#7B2CFF;
+  color:#fff;
+  padding:6px 12px;
+  border-radius:8px;
+  cursor:pointer;
+}
+
 
 /* ===============================
    RESPONSIVO
