@@ -273,12 +273,12 @@ function gerarStatus(c) {
 
   return "";
 }
+
 function renderizarMais() {
 
-  const inicio = inboxEl.children.length;
-  const novos = listaCompleta.slice(inicio);
+  listaCompleta.forEach(c => {
 
-  novos.forEach(c => {
+    if (chatsMap.has(c.cliente_id)) return;
 
     let statusHTML = "";
 
@@ -312,45 +312,39 @@ function renderizarMais() {
     div.onclick = () => abrirChat(c.cliente_id);
 
     div.innerHTML = `
-  <div class="avatar">
-    <img
-      src="${c.avatar || 'assets/avatar.png'}"
-      width="40"
-      height="40"
-      loading="lazy"
-      decoding="async"
-      fetchpriority="low">
-  </div>
-
-  <div class="chat-body">
-
-    <div class="chat-top">
-
-      <span class="chat-name">
-        ${c.username || c.nome || "Cliente"}
-        <span class="spend-level">${c.spend_level || ""}</span>
-      </span>
-
-      <span class="chat-time">
-        ${formatarTempo(c.ultima_mensagem_em)}
-      </span>
-
-    </div>
-
-    <div class="chat-bottom">
-
-      <span class="chat-last">
-        ${c.ultima_mensagem || ""}
-      </span>
-
-      <div class="chat-status">
-        ${statusHTML}
+      <div class="avatar">
+        <img src="${c.avatar || 'assets/avatar.png'}" width="40" height="40">
       </div>
 
-    </div>
+      <div class="chat-body">
 
-  </div>
-`;
+        <div class="chat-top">
+
+          <span class="chat-name">
+            ${c.username || c.nome || "Cliente"}
+            <span class="spend-level">${c.spend_level || ""}</span>
+          </span>
+
+          <span class="chat-time">
+            ${formatarTempo(c.ultima_mensagem_em)}
+          </span>
+
+        </div>
+
+        <div class="chat-bottom">
+
+          <span class="chat-last">
+            ${c.ultima_mensagem || ""}
+          </span>
+
+          <div class="chat-status">
+            ${statusHTML}
+          </div>
+
+        </div>
+
+      </div>
+    `;
 
     inboxEl.appendChild(div);
 
@@ -362,6 +356,7 @@ function renderizarMais() {
   });
 
 }
+
 
 function preloadAvatars(clientes) {
 
@@ -379,15 +374,11 @@ function preloadAvatars(clientes) {
 
 setInterval(() => {
 
-  if (document.visibilityState === "visible") {
+  if (document.visibilityState !== "visible") return;
 
-    offset = 0;
-    fimLista = false;
-    listaCompleta = [];
-    inboxEl.innerHTML = "";
+  offset = 0;
+  fimLista = false;
 
-    carregarListaClientes();
+  carregarListaClientes();
 
-  }
-
-}, 8000);
+}, 30000);

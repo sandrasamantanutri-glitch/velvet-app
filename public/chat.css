@@ -1302,11 +1302,11 @@ z-index:100001;
   max-height:320px;
   overflow-y:auto;
 }
-
 #inbox{
-  overflow-y:auto;
-  height:calc(100vh - 120px);
+  overflow-y: auto;
+  height: 100%;
 }
+
 
 /* mobile */
 @media (max-width:700px){
