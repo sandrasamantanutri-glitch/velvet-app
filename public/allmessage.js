@@ -21,7 +21,7 @@ document
   document
     .getElementById("btnEnviar")
     ?.addEventListener("click", () => enviar(false));
-    
+
 document.getElementById("btnConteudosPrev")?.addEventListener("click",()=>{
 
   if(paginaConteudos > 1){
@@ -132,6 +132,8 @@ async function abrirPopupConteudos(){
       grid.appendChild(item);
 
     });
+
+    atualizarPaginacaoPopup();
 
   }catch(err){
     console.error(err);

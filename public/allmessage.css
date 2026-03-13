@@ -310,3 +310,20 @@ conteudos-grid{
   outline: 3px solid #7B2CFF;
 }
 
+.paginacao{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:10px;
+  padding:10px;
+}
+
+.paginacao button{
+  border:none;
+  background:#7B2CFF;
+  color:#fff;
+  padding:6px 12px;
+  border-radius:8px;
+  cursor:pointer;
+}
+
