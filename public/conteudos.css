@@ -57,13 +57,17 @@ body {
   max-height:95vh;
 }
 
+/* container do conteúdo */
 #viewerConteudo{
+  width:100%;
+  height:90vh;
   display:flex;
   align-items:center;
   justify-content:center;
+  background:black;
 }
 
-/* IMAGENS */
+/* imagens */
 #viewerConteudo img{
   max-width:90vw;
   max-height:85vh;
@@ -72,20 +76,20 @@ body {
   border-radius:14px;
 }
 
-/* VIDEOS */
+/* vídeo HTML */
 #viewerConteudo video{
   max-height:90vh;
-  max-width:420px;
-  width:100%;
+  width:auto;
+  max-width:90vw;
   border-radius:16px;
 }
 
-/* IFRAME (Cloudflare vídeo) */
+/* iframe cloudflare */
 #viewerConteudo iframe{
   width:100%;
-  max-width:420px;
-  height:70vh;
-  border-radius:8px;
+  height:100%;
+  border:none;
+  border-radius:12px;
 }
 .modal-midia {
   padding: 20px;
