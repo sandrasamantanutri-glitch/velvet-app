@@ -1308,7 +1308,7 @@ z-index:100001;
 }
 
 .content{
-  height: calc(100vh - 160px);
+  height: calc(100vh - 180px);
 }
 
 .inbox{
@@ -1316,6 +1316,21 @@ z-index:100001;
   overflow-y:auto;
 }
 
+.area-card{
+  height: calc(100vh - 40px);
+  display:flex;
+  flex-direction:column;
+}
+
+.content{
+  flex:1;
+  overflow:hidden;
+}
+
+.inbox{
+  flex:1;
+  overflow-y:auto;
+}
 
 /* mobile */
 @media (max-width:700px){
