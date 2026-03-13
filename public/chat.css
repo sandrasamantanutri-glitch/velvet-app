@@ -301,7 +301,7 @@ body, html {
   inset:0;
   background:rgba(0,0,0,.4);
   backdrop-filter:blur(3px);
-  z-index:20000;
+  z-index:1;
 }
 
 .popup-box{
@@ -324,7 +324,7 @@ body, html {
   flex-direction:column;
   gap:12px;
 
-  z-index:20001;
+  z-index:2;
 }
 
 .popup-title{
@@ -538,6 +538,7 @@ cursor:pointer;
   max-width:100%;
   max-height:85vh;
   border-radius:12px;
+  z-index: 10;
 }
 
 #previewConteudos {
@@ -714,6 +715,7 @@ cursor:pointer;
   display:flex;
   align-items:center;
   justify-content:center;
+  
 }
 
 .modal-box{
@@ -722,12 +724,13 @@ cursor:pointer;
   padding:24px;
   max-width:420px;
   width:92%;
+  z-index: 10;
 }
 
 .modal-midia{
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: 10;
 
   display: flex;
   align-items: center;
@@ -854,7 +857,7 @@ cursor:pointer;
   padding: 30px;
   width: 420px;
   max-width: 92%;
-  z-index: 2;
+  z-index: 10;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
 }
 
@@ -1153,11 +1156,6 @@ cursor:pointer;
   background:rgba(0,0,0,0.85);
   backdrop-filter: blur(2px);
   z-index:1;
-}
-
-.modal-midia-box{
-  position:relative;
-  z-index:2;
 }
 
 #popupConteudos {
