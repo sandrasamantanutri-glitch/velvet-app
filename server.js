@@ -3713,9 +3713,9 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
   COALESCE(g.total_gasto,0) AS total_gasto,
 
   CASE
-    WHEN COALESCE(g.total_gasto,0) >= 200 THEN '$$$'
-    WHEN COALESCE(g.total_gasto,0) >= 50 THEN '$$'
-    WHEN COALESCE(g.total_gasto,0) > 0 THEN '$'
+    WHEN COALESCE(g.total_gasto,0) >= 300 THEN '$$$'
+    WHEN COALESCE(g.total_gasto,0) >= 200 THEN '$$'
+    WHEN COALESCE(g.total_gasto,0) > 100 THEN '$'
     ELSE ''
   END AS spend_level
 
@@ -3742,6 +3742,7 @@ LEFT JOIN LATERAL (
   WHERE t.cliente_id = c.id
     AND t.modelo_id  = $1
     AND t.status = 'pago'
+    AND t.tipo = 'midia'
 ) g ON true
 
 WHERE v.modelo_id = $1
