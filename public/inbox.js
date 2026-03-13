@@ -67,31 +67,18 @@ window.addEventListener("load", () => {
   carregarListaClientes();
 });
 
+window.addEventListener("scroll", () => {
 
+  const pertoDoFim =
+    window.innerHeight + window.scrollY >=
+    document.body.offsetHeight - 100;
 
-if (inboxEl) {
+  if (pertoDoFim) {
+    carregarListaClientes();
+  }
 
-  let scrollTimer;
+});
 
-  inboxEl.addEventListener("scroll", () => {
-
-    clearTimeout(scrollTimer);
-
-    scrollTimer = setTimeout(() => {
-
-      const pertoDoFim =
-        inboxEl.scrollTop + inboxEl.clientHeight >=
-        inboxEl.scrollHeight - 100;
-
-      if (pertoDoFim) {
-        carregarListaClientes();
-      }
-
-    }, 120);
-
-  });
-
-}
 
 // ===============================
 // PRIORIDADE CHAT
