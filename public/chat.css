@@ -1303,6 +1303,11 @@ z-index:100001;
   overflow-y:auto;
 }
 
+#inbox{
+  overflow-y:auto;
+  height:calc(100vh - 120px);
+}
+
 /* mobile */
 @media (max-width:700px){
 

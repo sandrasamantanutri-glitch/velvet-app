@@ -8,9 +8,11 @@ if (!token || role !== "modelo") {
   logout();
 }
 
-const LIMIT = 30;
+const LIMIT = 20;
 let offset = 0;
 let listaCompleta = [];
+let carregando = false;
+let fimLista = false;
 
 // ===============================
 // SOCKET
@@ -56,11 +58,6 @@ socket.on("disconnect", (reason) => {
 // ELEMENTOS
 // ===============================
 const inboxEl = document.getElementById("inbox");
-
-document
-  .getElementById("loadMoreChats")
-  ?.addEventListener("click", carregarMaisChats);
-
 const chatsMap = new Map();
 
 // ===============================
@@ -69,6 +66,33 @@ const chatsMap = new Map();
 window.addEventListener("load", () => {
   carregarListaClientes();
 });
+
+
+
+if (inboxEl) {
+
+  let scrollTimer;
+
+  inboxEl.addEventListener("scroll", () => {
+
+    clearTimeout(scrollTimer);
+
+    scrollTimer = setTimeout(() => {
+
+      const pertoDoFim =
+        inboxEl.scrollTop + inboxEl.clientHeight >=
+        inboxEl.scrollHeight - 200;
+
+      if (pertoDoFim) {
+        carregarListaClientes();
+      }
+
+    }, 120);
+
+  });
+
+}
+
 // ===============================
 // PRIORIDADE CHAT
 // ===============================
@@ -94,6 +118,11 @@ function prioridadeChat(c) {
 // ===============================
 async function carregarListaClientes() {
 
+   if (carregando || fimLista) return;
+
+  carregando = true;
+  document.body.classList.add("loading");
+
   try {
 
     const res = await fetch(
@@ -101,9 +130,18 @@ async function carregarListaClientes() {
       { headers: { Authorization: "Bearer " + token } }
     );
 
-    if (!res.ok) return;
+    if (!res.ok) {
+      carregando = false;
+      return;
+    }
 
     const clientes = await res.json();
+
+     if (clientes.length === 0) {
+      fimLista = true;
+      carregando = false;
+      return;
+    }
 
     preloadAvatars(clientes);
 
@@ -121,37 +159,25 @@ async function carregarListaClientes() {
 
     });
 
-    /* primeira carga */
-    if (offset === 0) {
-
-      listaCompleta = clientes;
-
-      inboxEl.innerHTML = "";
-      chatsMap.clear();
-
-    } 
-    /* carregar mais */
-    else {
-
-      listaCompleta = listaCompleta.concat(clientes);
-
-    }
+    clientes.forEach(c => {
+  if (!chatsMap.has(c.cliente_id)) {
+    listaCompleta.push(c);
+  }
+});
 
     renderizarMais();
 
-    /* esconder botão se não houver mais chats */
-    const btnLoadMore = document.getElementById("loadMoreChats");
-
-    if (clientes.length < LIMIT && btnLoadMore) {
-      btnLoadMore.style.display = "none";
-    }
+    offset += clientes.length;
 
   } catch (err) {
 
     console.error("Erro carregar inbox:", err);
 
-  }
+  }  finally {
 
+    carregando = false;
+    document.body.classList.remove("loading");
+}
 }
 
 // ===============================
@@ -229,19 +255,19 @@ function moverChatParaTopo(el) {
 
 function gerarStatus(c) {
 
-  if (c.sender === "cliente" && c.visto === false) {
+  if (c.ultimo_sender === "cliente" && c.visto === false) {
     return `<span class="status status-unseen">Não lida</span>`;
   }
 
-  if (c.sender === "cliente" && c.visto === true) {
+  if (c.ultimo_sender === "cliente" && c.visto === true) {
     return `<span class="status status-reply">Por responder</span>`;
   }
 
-  if (c.sender === "modelo" && c.lida === true) {
+  if (c.ultimo_sender === "modelo" && c.lida === true) {
     return `<span class="status status-read">✓✓</span>`;
   }
 
-  if (c.sender === "modelo") {
+  if (c.ultimo_sender === "modelo") {
     return `<span class="status status-sent">✓</span>`;
   }
 
@@ -249,9 +275,10 @@ function gerarStatus(c) {
 }
 function renderizarMais() {
 
-  const slice = listaCompleta.slice(offset, offset + LIMIT);
+  const inicio = inboxEl.children.length;
+  const novos = listaCompleta.slice(inicio);
 
-  slice.forEach(c => {
+  novos.forEach(c => {
 
     let statusHTML = "";
 
@@ -279,44 +306,12 @@ function renderizarMais() {
 
     }
 
-    const avatar = c.avatar || "assets/avatar.png";
-
     const div = document.createElement("div");
     div.className = "chat-item";
 
     div.onclick = () => abrirChat(c.cliente_id);
 
-    div.innerHTML = `
-    <div class="avatar">
-    <img 
-  src="${c.avatar || 'assets/avatar.png'}" width="40" height="40" loading="lazy" decoding="async" fetchpriority="low">
-      </div>
-
-      <div class="chat-body">
-
-        <div class="chat-top">
-        <span class="chat-name">
-        ${c.username || c.nome || "Cliente"}
-        <span class="spend-level">${c.spend_level || ""}</span>
-        </span>
-
-          <span class="chat-time">
-            ${formatarTempo(c.ultima_mensagem_em)}
-          </span>
-        </div>
-
-        <div class="chat-bottom">
-          <span class="chat-last">
-            ${c.ultima_mensagem || ""}
-          </span>
-
-          <div class="chat-status">
-            ${statusHTML}
-          </div>
-        </div>
-
-      </div>
-    `;
+    div.innerHTML = `...`;
 
     inboxEl.appendChild(div);
 
@@ -327,9 +322,8 @@ function renderizarMais() {
 
   });
 
-  offset += LIMIT;
-
 }
+
 function preloadAvatars(clientes) {
 
   clientes.slice(0,10).forEach(c => {
@@ -344,19 +338,17 @@ function preloadAvatars(clientes) {
 
 }
 
-function carregarMaisChats(){
-
-  offset += LIMIT;
-
-  carregarListaClientes();
-
-}
-
-
 setInterval(() => {
 
   if (document.visibilityState === "visible") {
+
+    offset = 0;
+    fimLista = false;
+    listaCompleta = [];
+    inboxEl.innerHTML = "";
+
     carregarListaClientes();
+
   }
 
 }, 8000);
