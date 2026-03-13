@@ -3923,9 +3923,13 @@ app.get("/api/chat/conteudo-status/:message_id", authCliente, async (req, res) =
 
 // 📦 CONTEÚDOS DA MODELO (PARA POPUP)
 app.get("/api/conteudos", authModelo, async (req, res) => {
-  const { venda } = req.query;
 
+  const { venda, page = 1, limit = 10 } = req.query;
   try {
+
+    const pagina = Number(page);
+    const limite = Number(limit);
+    const offset = (pagina - 1) * limite;
 
     let where = "c.modelo_id = $1 AND c.ativo = TRUE";
     const params = [req.modelo_id];
@@ -3933,6 +3937,26 @@ app.get("/api/conteudos", authModelo, async (req, res) => {
     if (venda === "true") {
       where += " AND c.tipo_conteudo = 'venda'";
     }
+
+     // ===============================
+    // TOTAL DE REGISTROS
+    // ===============================
+
+    const totalRes = await db.query(
+      `
+      SELECT COUNT(*) AS total
+      FROM conteudos c
+      WHERE ${where}
+      `,
+      params
+    );
+
+    const total = Number(totalRes.rows[0].total);
+    const totalPaginas = Math.ceil(total / limite);
+
+      // ===============================
+    // CONTEÚDOS DA PÁGINA
+    // ===============================
 
     const result = await db.query(
       `
@@ -3947,11 +3971,16 @@ app.get("/api/conteudos", authModelo, async (req, res) => {
       FROM conteudos c
       WHERE ${where}
       ORDER BY c.criado_em DESC
+      LIMIT $2
+      OFFSET $3
       `,
-      params
+       [...params, limite, offset]
     );
 
-    res.json(result.rows);
+    res.json({
+      conteudos: result.rows,
+      totalPaginas
+    });
 
   } catch (err) {
     console.error("Erro listar conteúdos:", err);

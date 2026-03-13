@@ -9,6 +9,10 @@ if (!token) {
   throw new Error("Sem token");
 }
 
+let paginaAtual = 1;
+const limite = 10;
+let totalPaginas = 1;
+
 document.addEventListener("DOMContentLoaded", () => {
   carregarConteudos();
   iniciarLazyLoading();
@@ -163,11 +167,28 @@ const files = fileInput.files;
       }
     });
   }
+
+  document.getElementById("btnAnterior").addEventListener("click",()=>{
+  if(paginaAtual > 1){
+    paginaAtual--;
+    carregarConteudos();
+  }
+});
+
+document.getElementById("btnProxima").addEventListener("click",()=>{
+  if(paginaAtual < totalPaginas){
+    paginaAtual++;
+    carregarConteudos();
+  }
+});
+
+
+
 });
 
 async function carregarConteudos() {
   try {
-    const res = await fetch("/api/conteudos?venda=true", {
+    const res = await fetch(`/api/conteudos?venda=true&page=${paginaAtual}&limit=${limite}`,{
       headers: {
         Authorization: "Bearer " + token
       }
@@ -177,6 +198,10 @@ async function carregarConteudos() {
 
     const conteudos = await res.json();
     renderizarConteudos(conteudos);
+
+     totalPaginas = data.totalPaginas;
+
+    atualizarPaginacao();
 
   } catch (err) {
     console.error(err.message);
@@ -430,6 +455,19 @@ function iniciarLazyLoading(){
   },{
     rootMargin: "200px"
   });
+
+}
+
+function atualizarPaginacao(){
+
+  const info = document.getElementById("paginaInfo");
+  const btnAnterior = document.getElementById("btnAnterior");
+  const btnProxima = document.getElementById("btnProxima");
+
+  info.textContent = `${paginaAtual} / ${totalPaginas}`;
+
+  btnAnterior.disabled = paginaAtual === 1;
+  btnProxima.disabled = paginaAtual === totalPaginas;
 
 }
 
