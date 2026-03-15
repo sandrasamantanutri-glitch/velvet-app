@@ -722,10 +722,6 @@ function excluirMensagem(){
 // ===============================
 
 async function abrirPopupConteudos() {
-paginaConteudos = 1;
-fimConteudos = false;
-carregandoConteudos = false;
-
   try {
 
     // 🔒 validar IDs
@@ -740,20 +736,7 @@ const grid  = document.getElementById("previewConteudos");
 if (!popup || !grid) return;
 
 popup.classList.remove("hidden");
-
-grid.onscroll = () => {
-
-  const nearBottom =
-    grid.scrollTop + grid.clientHeight >=
-    grid.scrollHeight - 200;
-
-  if (nearBottom) {
-    carregarConteudosPopup();
-  }
-
-};
-
-    grid.innerHTML = `<div class="popup-loading">Carregando...</div>`;
+grid.innerHTML = `<div class="popup-loading">Carregando...</div>`;
 
    if (!window.conteudosVistosCliente) {
       window.conteudosVistosCliente = new Set();
@@ -768,27 +751,23 @@ grid.onscroll = () => {
       return;
     }
 
-    carregandoConteudos = true;
-
-     const res = await fetch(
-      `/api/conteudos?venda=true&page=${paginaConteudos}&limit=${limiteConteudos}`,
-      {
-        headers:{ Authorization:"Bearer " + token }
+    const res = await fetch("/api/conteudos", {
+      headers: {
+        Authorization: "Bearer " + token
       }
-    );
+    });
 
     if (!res.ok) {
       grid.innerHTML = "Erro ao carregar conteúdos.";
       return;
     }
 
-    const data = await res.json();
-    const conteudos = data.conteudos || [];
+    const conteudos = await res.json();
 
-  if(conteudos.length === 0){
-    grid.innerHTML = "<p>Nenhum conteúdo enviado ainda.</p>";
-    return;
-  }
+    if (!Array.isArray(conteudos) || conteudos.length === 0) {
+      grid.innerHTML = "<p>Nenhum conteúdo enviado ainda.</p>";
+      return;
+    }
 
    grid.innerHTML = "";
 
@@ -822,7 +801,7 @@ btnPreview.className = "btn-preview";
 btnPreview.innerHTML = "👁";
 
 btnPreview.addEventListener("click", (e) => {
-  e.stopPropagation(); // 🔥 impede de selecionar/desselecionar
+  e.stopPropagation();
 
   abrirPreviewMidia({
     url: item.dataset.full,
@@ -857,8 +836,6 @@ if (jaVisto) {
     });
 
     ativarLazyPopup(grid);
-    paginaConteudos++;
-    carregandoConteudos = false;
 
 
   } catch (err) {
