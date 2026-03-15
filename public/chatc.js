@@ -497,12 +497,9 @@ function renderMensagem(msg){
   // - liberado após pagamento
   // - cliente já viu alguma mídia
   const pacoteLiberado =
-  msg.liberado ||
-  conteudosLiberados.has(msg.id) ||
-  (msg.midias || []).some(m =>
-    window.conteudosVistosCliente?.has(Number(m.id))
-  );
-  
+    msg.liberado ||
+    conteudosLiberados.has(msg.id);
+
   // definir classe visual
   const classeEstado =
     pacoteLiberado
@@ -646,11 +643,12 @@ modal.classList.remove("hidden");
     }
   }
 
-  const midia = midias[index];
-if (!midia) return;
-
-// marcar a mídia específica como vista
 marcarConteudoVisto(midia.id);
+  if(!midia) return;
+
+  conteudosLiberados.add(Number(message_id));
+
+  marcarConteudoVisto(message_id);
 
   // 🔹 limpar mídia anterior
 img.style.display = "none";
