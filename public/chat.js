@@ -734,6 +734,7 @@ async function abrirPopupConteudos() {
     }
 
     await carregarConteudosVistos(cliente_id);
+    tentarEntrarSala();
 
     const token = localStorage.getItem("token");
 

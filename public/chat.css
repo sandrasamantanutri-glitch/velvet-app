@@ -1167,3 +1167,12 @@ cursor:pointer;
 .midia-item.midia-vista img{
   filter: grayscale(100%) brightness(0.8);
 } */
+
+.midia-vista {
+  filter:none;
+  opacity:1;
+}
+
+.midia-bloqueada {
+  filter: blur(8px);
+}
