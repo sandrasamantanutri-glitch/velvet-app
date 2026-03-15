@@ -129,7 +129,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     await carregarInfoModelo(modelo_id);
-    await carregarConteudosVistos(cliente_id);
+    await carregarConteudosVistos();
     tentarEntrarSala();
 
     const sendBtn = document.getElementById("sendBtn");
@@ -193,35 +193,29 @@ document.addEventListener(
 
     const conteudoId =
       Number(midia.dataset.conteudoId || midia.dataset.conteudo_id);
+      const jaVisto = window.conteudosVistosCliente?.has(conteudoId);
 
-    const jaVisto =
-      window.conteudosVistosCliente?.has(conteudoId);
+const pacoteLiberado =
+  preco === 0 ||
+  card.classList.contains("livre") ||
+  conteudosLiberados.has(messageId); // pago no runtime
 
-    const pacoteLiberado =
-      jaVisto ||
-      preco === 0 ||
-      card.classList.contains("livre") ||
-      card.classList.contains("visto") ||
-      conteudosLiberados.has(messageId);
+const midiaLiberada = pacoteLiberado || jaVisto;
 
-    const precisaPagar =
-      preco > 0 && !pacoteLiberado;
+const precisaPagar = preco > 0 && !midiaLiberada;
 
-    // BLOQUEADO
-    if (precisaPagar) {
-      e.preventDefault();
-      e.stopPropagation();
-      abrirPagamentoChat(preco, messageId);
-      return;
-    }
+if (precisaPagar) {
+  e.preventDefault();
+  e.stopPropagation();
+  abrirPagamentoChat(preco, messageId);
+  return;
+}
 
-    // LIBERADO
-    e.preventDefault();
-    e.stopPropagation();
+e.preventDefault();
+e.stopPropagation();
 
-    const index = Number(midia.dataset.index || 0);
-
-    abrirConteudo(messageId, index);
+const index = Number(midia.dataset.index || 0);
+abrirConteudo(messageId, index);
 
   },
   true
@@ -508,28 +502,19 @@ function renderMensagem(msg){
 
   const preco = Number(msg.preco) || 0;
 
+const pacoteLiberado =
+  preco === 0 ||
+  msg.liberado ||
+  conteudosLiberados.has(msg.id);
+
+const classeEstado =
+  pacoteLiberado ? "livre" : (preco > 0 ? "bloqueado" : "livre");
+
   // verificar se alguma mídia já foi vista
   const pacoteVisto =
     (msg.midias || []).some(m =>
       window.conteudosVistosCliente?.has(Number(m.id))
     );
-
-  // pacote liberado se:
-  // - backend marcou liberado
-  // - liberado após pagamento
-  // - cliente já viu alguma mídia
-  const pacoteLiberado =
-  msg.liberado ||
-  conteudosLiberados.has(msg.id) ||
-  (msg.midias || []).some(m =>
-    window.conteudosVistosCliente?.has(Number(m.id))
-  );
-  
-  // definir classe visual
-  const classeEstado =
-    pacoteLiberado
-      ? "visto"
-      : (preco > 0 ? "bloqueado" : "livre");
 
   div.innerHTML = `
 <div class="chat-conteudo premium ${classeEstado}"
@@ -539,10 +524,11 @@ function renderMensagem(msg){
   <div class="pacote-grid">
     ${(msg.midias || []).map((m,index)=>{
 
-      const conteudoId = Number(m.id);
-        const jaVisto =
-    pacoteLiberado ||
-    window.conteudosVistosCliente?.has(conteudoId);
+      const conteudoId = Number(m.id); 
+
+const jaVisto =
+  pacoteLiberado ||
+  window.conteudosVistosCliente?.has(conteudoId);
 
       return `
         <div class="midia-item lazy-midia ${jaVisto ? "midia-vista" : "midia-bloqueada"}"
@@ -672,8 +658,13 @@ modal.classList.remove("hidden");
   const midia = midias[index];
 if (!midia) return;
 
+if (!midia.liberado || !midia.url) {
+  abrirPagamentoChat(Number(document.querySelector(`.chat-conteudo[data-id="${message_id}"]`)?.dataset.preco || 0), message_id);
+  return;
+}
+
 // marcar a mídia específica como vista
-marcarConteudoVisto(midia.id);
+marcarConteudoVisto(message_id, midia.conteudo_id);
 
   // 🔹 limpar mídia anterior
 img.style.display = "none";
@@ -993,13 +984,10 @@ function criarMensagemElemento(msg){
   if(msg.tipo === "conteudo"){
 
     const preco = Number(msg.preco) || 0;
-
     const pacoteLiberado =
-      msg.liberado ||
-      conteudosLiberados.has(msg.id) ||
-      (msg.midias || []).some(m =>
-        window.conteudosVistosCliente?.has(Number(m.id))
-      );
+  preco === 0 ||
+  msg.liberado ||
+  conteudosLiberados.has(msg.id);
 
     const classeEstado =
       pacoteLiberado
@@ -1517,32 +1505,25 @@ abrirConteudo(messageId, 0);
 
 }
 
-async function marcarConteudoVisto(conteudoId){
-
-  try{
-
-    await fetch("/api/conteudo/visto",{
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json",
-        Authorization:"Bearer "+localStorage.getItem("token")
+async function marcarConteudoVisto(message_id, conteudo_id) {
+  try {
+    await fetch("/api/conteudo/visto", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + localStorage.getItem("token")
       },
-      body:JSON.stringify({
-        conteudo_id: conteudoId
+      body: JSON.stringify({
+        message_id: Number(message_id),
+        conteudo_id: Number(conteudo_id)
       })
     });
 
-    // atualizar estado local
-    if(!window.conteudosVistosCliente){
-      window.conteudosVistosCliente = new Set();
-    }
-
-    window.conteudosVistosCliente.add(Number(conteudoId));
-
-  }catch(err){
-    console.error("Erro marcarConteudoVisto:",err);
+    window.conteudosVistosCliente ||= new Set();
+    window.conteudosVistosCliente.add(Number(conteudo_id));
+  } catch (err) {
+    console.error("Erro marcarConteudoVisto:", err);
   }
-
 }
 
 function copiarPix() {
@@ -1672,31 +1653,25 @@ if (btnConfirmar) {
 
 }
 
-async function carregarConteudosVistos(cliente_id){
-
-  try{
-
-    const res = await fetch(`/api/chat/conteudos-vistos/${cliente_id}`,{
-      headers:{
-        Authorization:"Bearer "+token
-      }
+async function carregarConteudosVistos() {
+  try {
+    const res = await fetch("/api/chat/conteudos-vistos", {
+      headers: { Authorization: "Bearer " + token }
     });
 
-if(!res.ok){
-    console.error("Erro ao carregar conteudos vistos",res.status);
-    return;
+    if (!res.ok) {
+      console.error("Erro ao carregar conteudos vistos", res.status);
+      return;
+    }
+
+    const data = await res.json();
+
+    window.conteudosVistosCliente = new Set(
+      data.map((c) => Number(c.conteudo_id))
+    );
+  } catch (err) {
+    console.error("Erro carregar vistos:", err);
   }
-
-  const data = await res.json();
-
-  window.conteudosVistosCliente = new Set(
-    data.map(c => Number(c.conteudo_id))
-  );
-  
-}catch(err){
-    console.error("Erro carregar vistos:",err);
-  }
-
 }
 
 // apenas log
