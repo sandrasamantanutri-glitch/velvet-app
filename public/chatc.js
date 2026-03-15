@@ -1682,18 +1682,17 @@ async function carregarConteudosVistos(cliente_id){
       }
     });
 
-if(!res.ok){
-    console.error("Erro ao carregar conteudos vistos",res.status);
-    return;
-  }
+    if(!res.ok) return;
 
-  const data = await res.json();
+    const vistos = await res.json();
 
-  window.conteudosVistosCliente = new Set(
-    data.map(c => Number(c.conteudo_id))
-  );
-  
-}catch(err){
+    window.conteudosVistosCliente = new Set(
+      Array.isArray(vistos)
+        ? vistos.map(id => Number(id))
+        : []
+    );
+
+  }catch(err){
     console.error("Erro carregar vistos:",err);
   }
 
