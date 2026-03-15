@@ -771,7 +771,26 @@ async function abrirPopupConteudos() {
         (jaVisto ? " visto desabilitado" : "");
 
       item.dataset.conteudoId = c.id;
-      item.dataset.thumb = c.thumbnail_url || c.url;
+      let thumb = c.thumbnail_url;
+
+if (!thumb) {
+
+  if (c.tipo === "video") {
+
+    if (c.url.includes("videodelivery.net")) {
+      thumb = c.url.replace("iframe.videodelivery.net", "videodelivery.net") + "/thumbnails/thumbnail.jpg";
+    } else {
+      thumb = "/assets/video-thumb.jpg"; // fallback
+    }
+
+  } else {
+    thumb = c.url;
+  }
+
+}
+
+item.dataset.thumb = thumb;
+
       item.dataset.full  = c.url;
       item.dataset.tipo  = tipo;
 
