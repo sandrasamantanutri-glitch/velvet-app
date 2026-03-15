@@ -2590,36 +2590,62 @@ ORDER BY array_position($1, id)
   }
 });
 
-socket.on("marcarConteudoVisto", async ({
-  message_id,
-  cliente_id,
-  modelo_id
-}) => {
-  try {
+// path: sockets/chat.js
 
+socket.on("marcarConteudoVisto", async (payload) => {
+  try {
     if (!socket.user || socket.user.role !== "cliente") {
       return socket.disconnect();
     }
 
-    if (
-      !Number.isInteger(message_id) ||
-      !Number.isInteger(cliente_id) ||
-      !Number.isInteger(modelo_id)
-    ) return;
+    const message_id = Number(payload?.message_id);
+    const conteudo_id = Number(payload?.conteudo_id);
+    const cliente_id = Number(payload?.cliente_id);
+    const modelo_id = Number(payload?.modelo_id);
 
-    // 🔒 CONVERTER users.id → cliente_id real
+    if (!Number.isInteger(message_id) || message_id <= 0) return;
+    if (!Number.isInteger(conteudo_id) || conteudo_id <= 0) return;
+    if (!Number.isInteger(cliente_id) || cliente_id <= 0) return;
+    if (!Number.isInteger(modelo_id) || modelo_id <= 0) return;
+
+    // 🔒 users.id → cliente_id real
     const clienteRes = await db.query(
       "SELECT id FROM clientes WHERE user_id = $1",
       [socket.user.id]
     );
-
     if (!clienteRes.rowCount) return;
 
-    const clienteIdReal = clienteRes.rows[0].id;
-
+    const clienteIdReal = Number(clienteRes.rows[0].id);
     if (clienteIdReal !== cliente_id) return;
 
-    // ✅ marcar como visto
+    // 🔒 valida que conteudo_id pertence a message_id e ao chat
+    const owns = await db.query(
+      `
+      SELECT 1
+      FROM messages m
+      JOIN messages_conteudos mc ON mc.message_id = m.id
+      WHERE m.id = $1
+        AND m.cliente_id = $2
+        AND m.modelo_id = $3
+        AND mc.conteudo_id = $4
+      LIMIT 1
+      `,
+      [message_id, cliente_id, modelo_id, conteudo_id]
+    );
+    if (!owns.rowCount) return;
+
+    // ✅ 1) marca a MÍDIA como vista
+    await db.query(
+      `
+      INSERT INTO conteudos_vistos (cliente_id, conteudo_id)
+      VALUES ($1, $2)
+      ON CONFLICT (cliente_id, conteudo_id)
+      DO UPDATE SET visto_em = NOW()
+      `,
+      [cliente_id, conteudo_id]
+    );
+
+    // ✅ 2) (opcional) marca o PACOTE como visto (não libera mídia, só status)
     await db.query(
       `
       UPDATE messages
@@ -2631,17 +2657,18 @@ socket.on("marcarConteudoVisto", async ({
       [message_id, cliente_id, modelo_id]
     );
 
-    // 🔥 avisar sala
+    // 🔥 avisa sala com qual mídia foi vista
     const sala = `chat_${cliente_id}_${modelo_id}`;
-
     io.to(sala).emit("conteudoVisto", {
-      message_id: Number(message_id)
+      message_id,
+      cliente_id,
+      conteudo_id
     });
-
   } catch (err) {
     console.error("❌ Erro marcarConteudoVisto:", err);
   }
 });
+
 
 socket.on("editarMensagem", async ({ id, text }) => {
   try {
@@ -3945,19 +3972,51 @@ app.get("/api/modelo/chat/:cliente_id/conteudos-vistos", authModelo, async (req,
 });
 
 // 🔒 CONTEÚDOS JÁ VISTOS PELO PRÓPRIO CLIENTE
+// path: routes/chat_cliente.js (exemplo)
+
 app.get("/api/chat/conteudos-vistos", authCliente, async (req, res) => {
   try {
+    // 1) pega vistos novos + vistos antigos (messages.visto=true)
     const result = await db.query(
       `
-      SELECT conteudo_id
-      FROM conteudos_vistos
-      WHERE cliente_id = $1
-      ORDER BY visto_em DESC
+      WITH antigos AS (
+        SELECT DISTINCT mc.conteudo_id
+        FROM messages m
+        JOIN messages_conteudos mc ON mc.message_id = m.id
+        WHERE m.cliente_id = $1
+          AND m.visto = true
+      ),
+      novos AS (
+        SELECT conteudo_id
+        FROM conteudos_vistos
+        WHERE cliente_id = $1
+      ),
+      todos AS (
+        SELECT conteudo_id FROM novos
+        UNION
+        SELECT conteudo_id FROM antigos
+      )
+      -- 2) backfill: grava o que estava só no "antigo" dentro da tabela nova
+      INSERT INTO conteudos_vistos (cliente_id, conteudo_id)
+      SELECT $1, t.conteudo_id
+      FROM todos t
+      ON CONFLICT (cliente_id, conteudo_id) DO NOTHING
+      RETURNING conteudo_id
       `,
       [req.cliente_id]
     );
 
-    return res.json(result.rows);
+    // 3) resposta final: retorna todos que existem (após backfill)
+    const out = await db.query(
+      `
+      SELECT conteudo_id
+      FROM conteudos_vistos
+      WHERE cliente_id = $1
+      `,
+      [req.cliente_id]
+    );
+
+    return res.json(out.rows);
   } catch (err) {
     console.error("Erro buscar conteudos vistos (cliente):", err);
     return res.status(500).json([]);
