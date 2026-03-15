@@ -735,11 +735,24 @@ carregandoConteudos = false;
     }
 
     const popup = document.getElementById("popupConteudos");
-    const grid  = document.getElementById("previewConteudos");
+const grid  = document.getElementById("previewConteudos");
 
-    if (!popup || !grid) return;
+if (!popup || !grid) return;
 
-    popup.classList.remove("hidden");
+popup.classList.remove("hidden");
+
+grid.onscroll = () => {
+
+  const nearBottom =
+    grid.scrollTop + grid.clientHeight >=
+    grid.scrollHeight - 200;
+
+  if (nearBottom) {
+    carregarConteudosPopup();
+  }
+
+};
+
     grid.innerHTML = `<div class="popup-loading">Carregando...</div>`;
 
    if (!window.conteudosVistosCliente) {
