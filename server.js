@@ -2359,6 +2359,7 @@ if (messageIds.length > 0) {
     `
     SELECT
       mc.message_id,
+      c.id,
       c.url,
       c.thumbnail_url,
       c.tipo AS tipo_media
@@ -2378,10 +2379,12 @@ if (messageIds.length > 0) {
     }
 
     mapaMidias[row.message_id].push({
-      url: row.url,
-      thumbnail_url: row.thumbnail_url,
-      tipo_media: row.tipo_media
-    });
+  id: row.id,
+  url: row.url,
+  thumbnail_url: row.thumbnail_url,
+  tipo_media: row.tipo_media
+});
+
   }
 
   // buscar todos pagamentos de uma vez (OTIMIZAÇÃO)
