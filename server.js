@@ -2642,10 +2642,9 @@ ORDER BY array_position($1, id)
 
 socket.on("marcarConteudoVisto", async (payload) => {
   try {
-  if (!socket.user) {
-  console.warn("socket sem usuário");
-  return;
-}
+    if (!socket.user || socket.user.role !== "cliente") {
+      return socket.disconnect();
+    }
 
     const message_id = Number(payload?.message_id);
     const cliente_id = Number(payload?.cliente_id);
@@ -2663,10 +2662,7 @@ socket.on("marcarConteudoVisto", async (payload) => {
       [socket.user.id]
     );
     if (!clienteRes.rowCount) return;
-  if (Number(clienteRes.rows[0].id) !== cliente_id) {
-  console.warn("cliente mismatch", clienteRes.rows[0].id, cliente_id);
-  return;
-}
+    if (Number(clienteRes.rows[0].id) !== cliente_id) return;
 
     const owns = await db.query(
       `
