@@ -191,17 +191,17 @@ document.addEventListener(
 
     if (!midia) return;
 
-    const conteudoId =
-      Number(midia.dataset.conteudoId || midia.dataset.conteudo_id);
-      const jaVisto = window.conteudosVistosCliente?.has(conteudoId);
+    const mediaKey = String(midia.dataset.mediaKey || "").trim();
+
+// visto por media_key (não por conteudo_id)
+const jaVisto = !!mediaKey && window.mediaKeysVistas?.has(mediaKey);
 
 const pacoteLiberado =
   preco === 0 ||
   card.classList.contains("livre") ||
-  conteudosLiberados.has(messageId); // pago no runtime
+  conteudosLiberados.has(messageId); // pago
 
 const midiaLiberada = pacoteLiberado || jaVisto;
-
 const precisaPagar = preco > 0 && !midiaLiberada;
 
 if (precisaPagar) {
@@ -289,18 +289,6 @@ socket.on("newMessage", msg => {
     temp.dataset.id = msg.id;
     mensagensRenderizadas.add(msg.id);
     return;
-  }
-
- if (msg.tipo === "conteudo" && Array.isArray(msg.midias)) {
-
-    const jaViuAlguma = msg.midias.some(m =>
-      window.conteudosVistosCliente?.has(Number(m.id))
-    );
-
-    if (jaViuAlguma) {
-      msg.liberado = true;
-    }
-
   }
 
   renderMensagem(msg);
@@ -391,49 +379,39 @@ function carregarMensagensAntigas(){
 
 // path: public/js/chatc.js
 
-socket.on("conteudoVisto", async ({ message_id, cliente_id: cid, conteudo_id }) => {
-  console.log("📩 conteudoVisto recebido:", { message_id, cid, conteudo_id });
+socket.on("conteudoVisto", async ({ message_id, cliente_id: cid, media_key }) => {
+  console.log("📩 conteudoVisto recebido:", { message_id, cid, media_key });
 
   if (!message_id) return;
   if (cid != null && Number(cid) !== Number(cliente_id)) return;
 
-  try {
-    // Se o backend mandou conteudo_id, atualiza o Set local sem novo fetch
-    if (conteudo_id) {
-      window.conteudosVistosCliente ||= new Set();
-      window.conteudosVistosCliente.add(Number(conteudo_id));
-    } else {
-      // fallback: recarrega do backend (bom após refresh / backfill)
-      await carregarConteudosVistos();
-    }
-
-    const el = document.querySelector(`.chat-conteudo[data-id="${message_id}"]`);
-    if (!el) return;
-
-    const preco = Number(el.dataset.preco || 0);
-
-    // pacoteLiberado só se pagou/grátis (NÃO por "viu 1")
-    const pacoteLiberado =
-      preco === 0 ||
-      conteudosLiberados.has(Number(message_id)) ||
-      el.classList.contains("livre"); // caso seu UI marque "livre" quando paga
-
-    // atualiza classes de cada tile individualmente
-    el.querySelectorAll(".midia-item").forEach((tile) => {
-      const conteudoId =
-        Number(tile.dataset.conteudoId) ||
-        Number(tile.dataset.conteudo_id);
-
-      if (!conteudoId) return;
-
-      const jaVisto = pacoteLiberado || window.mediaKeysVistas?.has(String(m.media_key));
-
-      tile.classList.toggle("midia-vista", jaVisto);
-      tile.classList.toggle("midia-bloqueada", !jaVisto);
-    });
-  } catch (err) {
-    console.error("Erro no handler conteudoVisto:", err);
+    if (media_key) {
+    window.mediaKeysVistas ||= new Set();
+    window.mediaKeysVistas.add(String(media_key));
+  } else {
+    // fallback se o server ainda não manda media_key
+    await carregarConteudosVistos();
   }
+
+  const el = document.querySelector(`.chat-conteudo[data-id="${message_id}"]`);
+  if (!el) return;
+
+  const preco = Number(el.dataset.preco || 0);
+  const pacoteLiberado =
+    preco === 0 ||
+    el.classList.contains("livre") ||
+    conteudosLiberados.has(Number(message_id));
+
+  // ✅ Atualiza cada tile individualmente (por media_key)
+  el.querySelectorAll(".midia-item").forEach((tile) => {
+    const mk = String(tile.dataset.mediaKey || "").trim();
+    if (!mk) return;
+
+    const jaVisto = pacoteLiberado || window.mediaKeysVistas?.has(mk);
+
+    tile.classList.toggle("midia-vista", jaVisto);
+    tile.classList.toggle("midia-bloqueada", !jaVisto);
+  });
 });
 
 // ===============================
