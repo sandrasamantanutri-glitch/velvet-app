@@ -164,6 +164,8 @@ msgInput.addEventListener("keydown", e=>{
 const previewScroll = document.getElementById("previewConteudos");
 
 previewScroll?.addEventListener("scroll", ()=>{
+   console.log("scroll popup");
+
 
   const nearBottom =
     previewScroll.scrollTop + previewScroll.clientHeight >=
