@@ -3915,7 +3915,7 @@ app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
 
 // 🔒 CONTEÚDOS JÁ VISTOS
 
-app.get("/api/chat/conteudos-vistos", authCliente, async (req, res) => {
+app.get("/api/chat/conteudos-vistos", authCliente, authModelo, async (req, res) => {
   try {
     const result = await db.query(
       `
