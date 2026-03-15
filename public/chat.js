@@ -1198,51 +1198,68 @@ function ativarLazyPopup(container){
 
   const items = container.querySelectorAll(".lazy-popup");
 
-  const observer = new IntersectionObserver(entries => {
+  const observer = new IntersectionObserver((entries)=>{
 
-    entries.forEach(entry => {
+    entries.forEach(entry=>{
 
-      if (!entry.isIntersecting) return;
+      if(!entry.isIntersecting) return;
 
       const el = entry.target;
       const thumb = el.dataset.thumb;
-      const tipo  = el.dataset.tipo || "imagem";
 
-      if (!thumb) return;
+      if(!thumb) return;
 
-      const isVideo =
-        tipo === "video" ||
-        thumb.endsWith(".mp4") ||
-        thumb.endsWith(".webm") ||
-        thumb.endsWith(".mov");
+      const img = document.createElement("img");
 
-      let media = document.createElement("img");
+      img.className = "popup-thumb";
+      img.loading = "lazy";
 
-      media.src = thumb;
-      media.loading = "lazy";
-      media.decoding = "async";
-      media.className = "popup-thumb";
-
-      if (isVideo) {
-        media.classList.add("video-thumb");
-      }
+      // lazy igual à página conteúdos
+      img.dataset.src = thumb;
+      img.src = "/assets/thumb-default.png";
 
       const placeholder = el.querySelector(".popup-placeholder");
-      if (placeholder) placeholder.remove();
+      if(placeholder) placeholder.remove();
 
-      el.appendChild(media);
+      el.appendChild(img);
+
+      // quando imagem entrar no viewport
+      const imgObserver = new IntersectionObserver((entries2)=>{
+
+        entries2.forEach(entry2=>{
+
+          if(entry2.isIntersecting){
+
+            const image = entry2.target;
+
+            const src = image.dataset.src;
+
+            if(src){
+              image.src = src;
+              image.removeAttribute("data-src");
+            }
+
+            imgObserver.unobserve(image);
+
+          }
+
+        });
+
+      },{
+        rootMargin:"200px"
+      });
+
+      imgObserver.observe(img);
 
       observer.unobserve(el);
 
     });
 
   },{
-    root: null,
-    threshold: 0.05,
-    rootMargin: "120px"
+    rootMargin:"200px"
   });
 
-  items.forEach(el => observer.observe(el));
+  items.forEach(el=>observer.observe(el));
 
 }
 
