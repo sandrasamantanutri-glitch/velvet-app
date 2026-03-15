@@ -1302,49 +1302,39 @@ async function carregarConteudosPopup(){
   const grid = document.getElementById("previewConteudos");
   const token = localStorage.getItem("token");
 
-  if(!grid || !token) return;
+  if (!grid || !token) return;
 
-  grid.innerHTML = `<div class="popup-loading">Carregando...</div>`;
-
-  let pagina = 1;
-  const limite = 50;
-  let todosConteudos = [];
+  const limite = 1000; // grande o suficiente para trazer tudo
 
   try{
 
-    while(true){
-
-      const res = await fetch(
-        `/api/conteudos?venda=true&page=${pagina}&limit=${limite}`,
-        {
-          headers:{ Authorization:"Bearer " + token }
-        }
-      );
-
-      if(!res.ok) break;
-
-      const data = await res.json();
-      const conteudos = data.conteudos || [];
-
-      if(!conteudos.length) break;
-
-      todosConteudos.push(...conteudos);
-
-      if(data.paginaAtual >= data.totalPaginas){
-        break;
+    const res = await fetch(
+      `/api/conteudos?venda=true&page=1&limit=${limite}`,
+      {
+        headers:{ Authorization:"Bearer " + token }
       }
+    );
 
-      pagina++;
+    if(!res.ok){
+      grid.innerHTML = "Erro ao carregar conteúdos.";
+      return;
+    }
 
+    const data = await res.json();
+    const conteudos = data.conteudos || [];
+
+    if(!conteudos.length){
+      grid.innerHTML = "<p>Nenhum conteúdo enviado ainda.</p>";
+      return;
     }
 
     grid.innerHTML = "";
 
-    todosConteudos.forEach(c=>{
+    conteudos.forEach(c=>{
 
       const item = document.createElement("div");
 
-      const jaVisto = window.conteudosVistosCliente.has(Number(c.id));
+      const jaVisto = window.conteudosVistosCliente?.has(Number(c.id));
 
       item.className =
         "preview-item lazy-popup" +
@@ -1352,8 +1342,8 @@ async function carregarConteudosPopup(){
 
       item.dataset.conteudoId = c.id;
       item.dataset.thumb = c.thumbnail_url || c.url;
-      item.dataset.full = c.url;
-      item.dataset.tipo = c.tipo || "imagem";
+      item.dataset.full  = c.url;
+      item.dataset.tipo  = c.tipo || "imagem";
 
       item.innerHTML = `<div class="popup-placeholder"></div>`;
 
@@ -1369,10 +1359,10 @@ async function carregarConteudosPopup(){
 
   }catch(err){
     console.error("Erro carregar conteúdos popup:", err);
+    grid.innerHTML = "Erro inesperado.";
   }
 
 }
-
 
 // apenas log
 socket.on("disconnect", reason => {
