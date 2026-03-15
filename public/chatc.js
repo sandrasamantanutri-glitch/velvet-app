@@ -184,7 +184,7 @@ document.addEventListener(
 
     if (!midia) return;
 
-    const conteudoId = Number(midia.dataset.conteudoId || midia.dataset.conteudo_id);
+    const conteudoId = Number(midia.dataset.conteudoId);
     const jaVisto =
       window.conteudosVistosCliente?.has(conteudoId);
 
@@ -479,84 +479,66 @@ function renderMensagem(msg){
   // ===============================
   // 📦 MENSAGEM DE CONTEÚDO
   // ===============================
- if (msg.tipo === "conteudo") {
+  if (msg.tipo === "conteudo") {
 
-  const quantidade =
-    msg.quantidade ?? (msg.midias?.length || 0);
+    const quantidade =
+      msg.quantidade ?? (msg.midias?.length || 0);
 
-  const preco = Number(msg.preco) || 0;
+    const bloqueado = Number(msg.preco) > 0 && !msg.liberado;
 
-  // verificar se alguma mídia já foi vista
-  const pacoteVisto =
-    (msg.midias || []).some(m =>
-      window.conteudosVistosCliente?.has(Number(m.id))
-    );
-
-  // pacote liberado se:
-  // - backend marcou liberado
-  // - liberado após pagamento
-  // - cliente já viu alguma mídia
-  const pacoteLiberado =
-    msg.liberado ||
-    conteudosLiberados.has(msg.id) ||
-    pacoteVisto;
-
-  // definir classe visual
-  const classeEstado =
-    pacoteLiberado
-      ? "visto"
-      : (preco > 0 ? "bloqueado" : "livre");
-
-  div.innerHTML = `
-<div class="chat-conteudo premium ${classeEstado}"
-     data-id="${msg.id}"
-     data-preco="${preco}">
+    div.innerHTML = `
+<div class="chat-conteudo premium ${
+ (msg.liberado || conteudosLiberados.has(msg.id))
+  ? "visto"
+  : (msg.preco > 0 ? "bloqueado" : "")
+}" data-id="${msg.id}" data-preco="${msg.preco || 0}">
 
   <div class="pacote-grid">
-    ${(msg.midias || []).map((m,index)=>{
+  ${(msg.midias || []).map((m,index)=>{
 
-      const conteudoId = Number(m.id);
-      const jaVisto =
-        window.conteudosVistosCliente?.has(conteudoId);
+  const conteudoId = Number(m.id);
+  const jaVisto = window.conteudosVistosCliente?.has(conteudoId);
 
-      return `
-        <div class="midia-item lazy-midia ${jaVisto ? "midia-vista" : "midia-bloqueada"}"
-             data-conteudo-id="${conteudoId}"
-             data-thumb="${m.thumbnail_url || m.url}"
-             data-full="${m.url}"
-             data-index="${index}"
-             style="background-image:url('${m.thumbnail_url || m.url}')">
-        </div>
-      `;
+  return `
+    <div class="midia-item lazy-midia ${jaVisto ? "midia-vista" : "midia-bloqueada"}"
+      data-conteudo-id="${conteudoId}"
+      data-thumb="${m.thumbnail_url || m.url}"
+      data-full="${m.url}"
+      data-index="${index}"
+      style="background-image:url('${m.thumbnail_url || m.url}')">
+    </div>
+  `;
 
-    }).join("")}
+}).join("")}
   </div>
 
   ${
-    preco > 0
+    msg.preco > 0
       ? `
       <div class="conteudo-info">
         <span class="status-bloqueado">
           ${
-            pacoteLiberado
+            msg.liberado
               ? `🟢 ${quantidade} mídia(s)`
               : `✨ ${quantidade} mídia(s)`
           }
         </span>
 
         <span class="preco-bloqueado">
-          R$ ${preco.toFixed(2)}
+          R$ ${Number(msg.preco).toFixed(2)}
         </span>
       </div>
-      `
+    `
       : ""
   }
 
 </div>
 `;
 
-  ativarLazyLoadingModelo(div);
-}
+    // lazy loading
+    ativarLazyLoadingModelo(div, msg, bloqueado);
+
+  }
 
   // ===============================
   // 💬 MENSAGEM DE TEXTO
