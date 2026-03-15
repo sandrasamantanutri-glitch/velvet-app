@@ -3968,40 +3968,23 @@ app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
 
 app.get("/api/chat/conteudos-vistos", authCliente, async (req, res) => {
   try {
+
     const result = await db.query(
       `
-      WITH acessiveis AS (
-  SELECT DISTINCT c.media_key
-  FROM messages m
-  JOIN messages_conteudos mc ON mc.message_id = m.id
-  JOIN conteudos c ON c.id = mc.conteudo_id
-  LEFT JOIN conteudo_pacotes cp
-    ON cp.message_id = m.id
-   AND cp.cliente_id = $1
-   AND cp.status = 'pago'
-  WHERE m.cliente_id = $1
-    AND (
-      COALESCE(m.preco,0) <= 0
-      OR cp.message_id IS NOT NULL
-    )
-    AND c.media_key IS NOT NULL
-),
-vistos AS (
-  SELECT media_key
-  FROM conteudos_vistos_key
-  WHERE cliente_id = $1
-)
-SELECT media_key FROM acessiveis
-UNION
-SELECT media_key FROM vistos;
+      SELECT media_key
+      FROM conteudos_vistos_key
+      WHERE cliente_id = $1
       `,
       [req.cliente_id]
     );
 
     return res.json(result.rows); // [{media_key}]
+
   } catch (err) {
-    console.error("Erro buscar media_keys vistos/acessiveis:", err);
+
+    console.error("Erro buscar media_keys:", err);
     return res.status(500).json([]);
+
   }
 });
 
