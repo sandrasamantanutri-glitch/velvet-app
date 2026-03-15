@@ -1160,10 +1160,10 @@ cursor:pointer;
   cursor:pointer;
 }
 
-.midia-item.midia-bloqueada{
+/*  .midia-item.midia-bloqueada{
   filter: blur(12px);
 }
 
-.midia-item.midia-vista{
-  filter:none;
-}
+.midia-item.midia-vista img{
+  filter: grayscale(100%) brightness(0.8);
+} */
