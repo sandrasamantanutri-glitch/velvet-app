@@ -161,7 +161,7 @@ msgInput.addEventListener("keydown", e=>{
 });
 
 
-const previewScroll = document.querySelector(".preview-scroll");
+const previewScroll = document.getElementById("previewConteudos");
 
 previewScroll?.addEventListener("scroll", ()=>{
 

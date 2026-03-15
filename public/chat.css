@@ -1242,15 +1242,7 @@ max-width:calc(90vh * 0.56); /* proporção 9:16 */
   max-width:calc(90vh * 0.56); /* proporção 9:16 */
 }
 
-
-
-
-/* mobile */
-@media (max-width:700px){
-
-.modal-close{
-  top:10px;
-  right:10px;
-}
-
+#previewConteudos{
+  max-height: 60vh;
+  overflow-y: auto;
 }
