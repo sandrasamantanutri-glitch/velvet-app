@@ -1156,3 +1156,45 @@ cursor:pointer;
   cursor:pointer;
 }
 
+/* ==============================
+ESTADOS DAS MIDIAS
+============================== */
+
+/* mídia bloqueada */
+.midia-item.midia-bloqueada{
+  filter: brightness(.35);
+  position:relative;
+}
+
+/* cadeado */
+.midia-item.midia-bloqueada::after{
+  content:"🔒";
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:18px;
+  background:rgba(0,0,0,.45);
+}
+
+/* mídia já vista */
+.midia-item.midia-vista{
+  filter:none;
+}
+
+/* ==============================
+PACOTE PARCIAL
+============================== */
+
+.chat-conteudo.parcial{
+  border:2px solid #f5a623;
+}
+
+/* ==============================
+PACOTE LIBERADO
+============================== */
+
+.chat-conteudo.livre{
+  border:2px solid #18c964;
+}
