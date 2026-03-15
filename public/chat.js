@@ -511,7 +511,6 @@ div.innerHTML = `
   <div class="pacote-grid">
     ${(msg.midias || []).map((m,index)=>`
       <div class="midia-item lazy-midia"
-        data-conteudo-id="${m.id}"
         data-thumb="${m.thumbnail_url || m.url}"
         data-full="${m.url}"
         data-index="${index}"
