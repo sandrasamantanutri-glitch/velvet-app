@@ -188,11 +188,11 @@ document.addEventListener(
     const jaVisto =
       window.conteudosVistosCliente?.has(conteudoId);
 
-    const estaLiberado =
-      preco === 0 ||
-      card.classList.contains("livre") ||
-      card.classList.contains("visto") ||
-      conteudosLiberados.has(messageId);
+      const estaLiberado =
+  preco === 0 ||
+  jaVisto ||
+  card.classList.contains("livre") ||
+  conteudosLiberados.has(messageId);
 
     const precisaPagar =
       preco > 0 && !estaLiberado && !jaVisto;
