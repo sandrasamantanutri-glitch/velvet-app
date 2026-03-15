@@ -3831,76 +3831,67 @@ app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
   }
 
   try {
-    const msgRes = await db.query(
+    // ✅ pega preco e visto
+    const messageCheck = await db.query(
       `
-      SELECT id, preco
+      SELECT id, visto, preco
       FROM messages
-      WHERE id = $1 AND cliente_id = $2
+      WHERE id = $1
+        AND cliente_id = $2
       `,
       [message_id, req.cliente_id]
     );
 
-    if (!msgRes.rowCount) {
+    if (!messageCheck.rowCount) {
       return res.status(403).json({ error: "Acesso negado" });
     }
 
-    const preco = Number(msgRes.rows[0].preco || 0);
+    const mensagem = messageCheck.rows[0];
+    const preco = Number(mensagem.preco || 0);
 
-    const pagoRes = await db.query(
-      `
-      SELECT 1
-      FROM conteudo_pacotes
-      WHERE message_id = $1
-        AND cliente_id = $2
-        AND status = 'pago'
-      LIMIT 1
-      `,
-      [message_id, req.cliente_id]
-    );
+    // 🔒 só libera se já foi paga (ou já marcado como visto)
+    if (preco > 0 && mensagem.visto !== true) {
+      const pago = await db.query(
+        `
+        SELECT 1
+        FROM conteudo_pacotes
+        WHERE message_id = $1
+          AND cliente_id = $2
+          AND status = 'pago'
+        LIMIT 1
+        `,
+        [message_id, req.cliente_id]
+      );
 
-    const pacotePagoOuGratis = preco <= 0 || !!pagoRes.rowCount;
+      if (!pago.rowCount) {
+        return res.status(403).json({ error: "Conteúdo não liberado" });
+      }
+    }
 
     const result = await db.query(
       `
       SELECT
-        c.id AS conteudo_id,
-        c.tipo AS tipo_media,
-        c.thumbnail_url,
-        CASE
-          WHEN $3::boolean = true THEN c.url
-          WHEN cv.conteudo_id IS NOT NULL THEN c.url
-          ELSE NULL
-        END AS url,
-        CASE
-          WHEN $3::boolean = true THEN true
-          WHEN cv.conteudo_id IS NOT NULL THEN true
-          ELSE false
-        END AS liberado
+        c.url,
+        c.tipo AS tipo_media
       FROM messages_conteudos mc
       JOIN conteudos c ON c.id = mc.conteudo_id
-      LEFT JOIN conteudos_vistos cv
-        ON cv.conteudo_id = c.id
-       AND cv.cliente_id = $2
       WHERE mc.message_id = $1
-      ORDER BY mc.id
       `,
-      [message_id, req.cliente_id, pacotePagoOuGratis]
+      [message_id]
     );
 
-    return res.json(result.rows);
+    res.json(result.rows);
+
   } catch (err) {
-    console.error("Erro buscar conteúdo:", err);
-    return res.status(500).json([]);
+    console.error("Erro buscar conteúdo liberado:", err);
+    res.status(500).json([]);
   }
 });
 
 
 // 🔒 CONTEÚDOS JÁ VISTOS OU COMPRADOS POR CLIENTE (MODELO)
+app.get("/api/chat/conteudos-vistos/:cliente_id", auth, async (req, res) => {
 
-// path: routes/chat_modelo.js (exemplo)
-
-// 🔒 CONTEÚDOS JÁ VISTOS PELO CLIENTE (VISÃO DA MODELO)
-app.get("/api/modelo/chat/:cliente_id/conteudos-vistos", authModelo, async (req, res) => {
   const cliente_id = Number(req.params.cliente_id);
 
   if (!Number.isInteger(cliente_id) || cliente_id <= 0) {
@@ -3908,61 +3899,24 @@ app.get("/api/modelo/chat/:cliente_id/conteudos-vistos", authModelo, async (req,
   }
 
   try {
-    // ✅ garante que existe conversa entre esta modelo e este cliente
-    const perm = await db.query(
-      `
-      SELECT 1
-      FROM messages
-      WHERE cliente_id = $1
-        AND modelo_id = $2
-      LIMIT 1
-      `,
-      [cliente_id, req.modelo_id]
-    );
+    const result = await db.query(`
+      SELECT DISTINCT mc.conteudo_id
+      FROM messages m
+      JOIN messages_conteudos mc 
+        ON mc.message_id = m.id
+      WHERE m.modelo_id = $1
+        AND m.cliente_id = $2
+        AND m.visto = true
+    `, [req.modelo_id, cliente_id]);
 
-    if (!perm.rowCount) {
-      return res.status(403).json({ error: "Acesso negado" });
-    }
+    res.json(result.rows.map(r => r.conteudo_id));
 
-    // ✅ retorna vistos desse cliente, mas só do conteúdo dessa modelo (evita vazamento)
-    const result = await db.query(
-      `
-      SELECT cv.conteudo_id
-      FROM conteudos_vistos cv
-      JOIN conteudos c ON c.id = cv.conteudo_id
-      WHERE cv.cliente_id = $1
-        AND c.modelo_id = $2
-      ORDER BY cv.visto_em DESC
-      `,
-      [cliente_id, req.modelo_id]
-    );
-
-    return res.json(result.rows);
   } catch (err) {
-    console.error("Erro buscar conteudos vistos (modelo):", err);
-    return res.status(500).json([]);
+    console.error("Erro buscar conteudos vistos:", err);
+    res.status(500).json([]);
   }
 });
 
-// 🔒 CONTEÚDOS JÁ VISTOS PELO PRÓPRIO CLIENTE
-app.get("/api/chat/conteudos-vistos", authCliente, async (req, res) => {
-  try {
-    const result = await db.query(
-      `
-      SELECT conteudo_id
-      FROM conteudos_vistos
-      WHERE cliente_id = $1
-      ORDER BY visto_em DESC
-      `,
-      [req.cliente_id]
-    );
-
-    return res.json(result.rows);
-  } catch (err) {
-    console.error("Erro buscar conteudos vistos (cliente):", err);
-    return res.status(500).json([]);
-  }
-});
 
 
 app.get("/modelo/relatorio", authModelo, (req, res) => {
@@ -6985,53 +6939,31 @@ app.post(
   }
 );
 
-// path: routes/chat.js (exemplo)
-
 app.post("/api/conteudo/visto", auth, async (req, res) => {
-  const message_id = Number(req.body.message_id);
-  const conteudo_id = Number(req.body.conteudo_id);
 
-  if (!Number.isInteger(message_id) || message_id <= 0) {
-    return res.status(400).json({ error: "message_id inválido" });
+  const { message_id } = req.body;
+
+  const clienteRes = await db.query(
+    "SELECT id FROM clientes WHERE user_id = $1",
+    [req.user.id]
+  );
+
+  if (!clienteRes.rowCount) {
+    return res.status(404).json({ error: "Cliente não encontrado" });
   }
-  if (!Number.isInteger(conteudo_id) || conteudo_id <= 0) {
-    return res.status(400).json({ error: "conteudo_id inválido" });
-  }
 
-  try {
-    // valida que o conteúdo pertence a essa mensagem e que a mensagem pertence ao cliente
-    const owns = await db.query(
-      `
-      SELECT 1
-      FROM messages m
-      JOIN messages_conteudos mc ON mc.message_id = m.id
-      WHERE m.id = $1
-        AND m.cliente_id = $2
-        AND mc.conteudo_id = $3
-      LIMIT 1
-      `,
-      [message_id, req.cliente_id, conteudo_id]
-    );
+  const cliente_id = clienteRes.rows[0].id;
 
-    if (!owns.rowCount) {
-      return res.status(403).json({ error: "Acesso negado" });
-    }
+  await db.query(`
+    UPDATE messages
+    SET visto = true,
+        updated_at = NOW()
+    WHERE id = $1
+    AND cliente_id = $2
+  `,[message_id, cliente_id]);
 
-    await db.query(
-      `
-      INSERT INTO conteudos_vistos (cliente_id, conteudo_id)
-      VALUES ($1, $2)
-      ON CONFLICT (cliente_id, conteudo_id)
-      DO UPDATE SET visto_em = NOW()
-      `,
-      [req.cliente_id, conteudo_id]
-    );
+  res.json({ ok: true });
 
-    return res.json({ ok: true });
-  } catch (err) {
-    console.error("Erro marcar conteudo visto:", err);
-    return res.status(500).json({ error: "Erro interno" });
-  }
 });
 
 // ===============================
