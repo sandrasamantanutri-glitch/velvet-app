@@ -201,14 +201,12 @@ async function abrirModalCriarOferta() {
   return v < VALOR_MINIMO ? VALOR_MINIMO : v;
 }
 
-  function render() {
+function render() {
     btnVoltar.disabled = etapa === 1;
     btnAvancar.textContent =
-    etapa === 4 ? "Criar oferta" :
-    etapa === 5 ? "Fechar" :
-    "Avançar";
-
-  btnVoltar.style.display = etapa === 5 ? "none" : "block";
+  etapa === 4 ? "Criar oferta" :
+  etapa === 5 ? "Fechar" :
+  "Avançar";
 
     if (etapa === 1) {
       content.innerHTML = `
@@ -230,7 +228,7 @@ async function abrirModalCriarOferta() {
 
       content.innerHTML = `
         <h3>Quanto tempo ficará ativa</h3>
-        <input type="range" min="1" max="15" value="${dados.dias || 1}" id="dias">
+        <input type="range" min="1" max="15" value="${dados.dias}" id="dias">
         <p class="info">
           Sua oferta ficará ativa até
           <strong>${fim.toLocaleDateString("pt-BR")}</strong>
@@ -286,31 +284,11 @@ async function abrirModalCriarOferta() {
 
   btnAvancar.onclick = async () => {
     if (etapa === 1) dados.nome = content.querySelector("#nome").value;
-    if (etapa === 2) dados.limite = Number(content.querySelector("#limite").value) || 0;
+    if (etapa === 2) dados.limite = Number(content.querySelector("#limite").value);
 
-if (etapa < 4) {
+    if (etapa < 4) {
   etapa++;
   render();
-  return;
-}
-
- if (etapa === 5) {
-    modal.remove();
-    return;
-  }
-
-if (!dados.nome) {
-  alert("Digite o nome da oferta");
-  return;
-}
-
-if (!dados.limite || dados.limite <= 0) {
-  alert("Informe o limite de assinaturas");
-  return;
-}
-
-if (!dados.desconto) {
-  alert("Escolha um desconto");
   return;
 }
 
@@ -331,18 +309,17 @@ if (!dados.desconto) {
        })
      });
 
-const data = await res.json();
+      const data = await res.json();
 
-if (!res.ok) {
+      if (!res.ok) {
   console.error("ERRO BACKEND:", data);
   alert(JSON.stringify(data));
   return;
 }
+      modal.remove();
+      carregarOfertasDoBanco();
 
-etapa = 5;
-render();
-
-carregarOfertasDoBanco();
+      alert("🎉 Oferta criada com sucesso!");
 
     } catch (err) {
       console.error(err);
@@ -360,6 +337,7 @@ carregarOfertasDoBanco();
   render();
   document.body.appendChild(modal);
 }
+
 
 async function carregarOfertasDoBanco() {
   try {
