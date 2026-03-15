@@ -2362,8 +2362,7 @@ if (messageIds.length > 0) {
       c.id,
       c.url,
       c.thumbnail_url,
-      c.tipo AS tipo_media,
-      c.media_key
+      c.tipo AS tipo_media
     FROM messages_conteudos mc
     JOIN conteudos c ON c.id = mc.conteudo_id
     WHERE mc.message_id = ANY($1)
@@ -2383,8 +2382,7 @@ if (messageIds.length > 0) {
   id: row.id,
   url: row.url,
   thumbnail_url: row.thumbnail_url,
-  tipo_media: row.tipo_media,
-  media_key: row.media_key
+  tipo_media: row.tipo_media
 });
 
   }
@@ -2528,7 +2526,7 @@ await db.query(
     // 6️⃣ BUSCAR MÍDIAS
     const midiasRes = await db.query(
       `
-      SELECT id, url, thumbnail_url, tipo AS tipo_media, media_key
+      SELECT id, url, thumbnail_url, tipo AS tipo_media
 FROM conteudos
 WHERE id = ANY($1)
 ORDER BY array_position($1, id)
@@ -3913,9 +3911,59 @@ app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
 });
 
 
-// 🔒 CONTEÚDOS JÁ VISTOS
+// 🔒 CONTEÚDOS JÁ VISTOS OU COMPRADOS POR CLIENTE (MODELO)
 
-app.get("/api/chat/conteudos-vistos", authCliente, authModelo, async (req, res) => {
+// path: routes/chat_modelo.js (exemplo)
+
+// 🔒 CONTEÚDOS JÁ VISTOS PELO CLIENTE (VISÃO DA MODELO)
+app.get("/api/modelo/chat/:cliente_id/conteudos-vistos", authModelo, async (req, res) => {
+  const cliente_id = Number(req.params.cliente_id);
+
+  if (!Number.isInteger(cliente_id) || cliente_id <= 0) {
+    return res.status(400).json({ error: "cliente_id inválido" });
+  }
+
+  try {
+    // ✅ garante que existe conversa entre esta modelo e este cliente
+    const perm = await db.query(
+      `
+      SELECT 1
+      FROM messages
+      WHERE cliente_id = $1
+        AND modelo_id = $2
+      LIMIT 1
+      `,
+      [cliente_id, req.modelo_id]
+    );
+
+    if (!perm.rowCount) {
+      return res.status(403).json({ error: "Acesso negado" });
+    }
+
+    const result = await db.query(
+      `
+      SELECT cv.conteudo_id
+      FROM conteudos_vistos cv
+      JOIN conteudos c ON c.id = cv.conteudo_id
+      WHERE cv.cliente_id = $1
+        AND c.modelo_id = $2
+      ORDER BY cv.visto_em DESC
+      `,
+      [cliente_id, req.modelo_id]
+    );
+
+    return res.json(result.rows);
+  } catch (err) {
+    console.error("Erro buscar conteudos vistos (modelo):", err);
+    return res.status(500).json([]);
+  }
+});
+
+// 🔒 CONTEÚDOS JÁ VISTOS PELO PRÓPRIO CLIENTE
+
+// path: routes/chat_cliente.js
+
+app.get("/api/chat/conteudos-vistos", authCliente, async (req, res) => {
   try {
     const result = await db.query(
       `
