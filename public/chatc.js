@@ -191,11 +191,10 @@ document.addEventListener(
 
     if (!midia) return;
 
-const mediaKeys = window.mediaKeysVistas || new Set();
+    const mediaKey = String(midia.dataset.mediaKey || "").trim();
 
-const jaVisto =
-  pacoteLiberado ||
-  (mediaKey && mediaKeys.has(mediaKey));
+// visto por media_key (não por conteudo_id)
+const jaVisto = !!mediaKey && window.mediaKeysVistas?.has(mediaKey);
 
 const pacoteLiberado =
   preco === 0 ||
@@ -378,26 +377,44 @@ function carregarMensagensAntigas(){
   });
 }
 
-socket.on("conteudoVisto", ({ message_id, cliente_id: cid, media_key }) => {
+// path: public/js/chatc.js
 
-  if (!message_id || !media_key) return;
+socket.on("conteudoVisto", async ({ message_id, cliente_id: cid, media_key }) => {
+  if (!message_id) return;
+
+  console.log("📩 conteudoVisto recebido:", { message_id, cid, media_key });
 
   if (cid != null && Number(cid) !== Number(cliente_id)) return;
 
-  const mk = String(media_key).trim();
+    if (media_key) {
+    window.mediaKeysVistas ||= new Set();
+    window.mediaKeysVistas.add(String(media_key));
+    atualizarTilesPorMediaKey(String(media_key));
 
-  window.mediaKeysVistas ||= new Set();
-  window.mediaKeysVistas.add(mk);
+  } else {
+    // fallback se o server ainda não manda media_key
+    await carregarConteudosVistos();
+  }
 
-  const tiles = document.querySelectorAll(
-    `.midia-item[data-media-key="${mk}"]`
-  );
+  const el = document.querySelector(`.chat-conteudo[data-id="${message_id}"]`);
+  if (!el) return;
 
-  tiles.forEach(tile => {
-    tile.classList.add("midia-vista");
-    tile.classList.remove("midia-bloqueada");
+  const preco = Number(el.dataset.preco || 0);
+  const pacoteLiberado =
+    preco === 0 ||
+    el.classList.contains("livre") ||
+    conteudosLiberados.has(Number(message_id));
+
+  // ✅ Atualiza cada tile individualmente (por media_key)
+  el.querySelectorAll(".midia-item").forEach((tile) => {
+    const mk = String(tile.dataset.mediaKey || "").trim();
+    if (!mk) return;
+
+    const jaVisto = pacoteLiberado || window.mediaKeysVistas?.has(mk);
+
+    tile.classList.toggle("midia-vista", jaVisto);
+    tile.classList.toggle("midia-bloqueada", !jaVisto);
   });
-
 });
 
 // ===============================
@@ -462,49 +479,46 @@ function renderMensagem(msg){
 const pacoteLiberado =
   preco === 0 ||
   msg.liberado ||
- conteudosLiberados.has(Number(msg.id));
+  conteudosLiberados.has(msg.id);
 
-const algumaVista = (msg.midias || []).some((m) => {
-  const mk = String(m.media_key || "").trim();
-  return mk && window.mediaKeysVistas?.has(mk);
-});
+const classeEstado =
+  pacoteLiberado ? "livre" : (preco > 0 ? "bloqueado" : "livre");
 
-let classeEstado = "livre";
+  // verificar se alguma mídia já foi vista
+  const pacoteVisto =
+    (msg.midias || []).some(m =>
+      window.conteudosVistosCliente?.has(Number(m.id))
+    );
 
-if (preco > 0 && !pacoteLiberado) {
-  classeEstado = algumaVista ? "parcial" : "bloqueado";
-}
-
-const mediaKeys = window.mediaKeysVistas || new Set();
-
-div.innerHTML = `
+  div.innerHTML = `
 <div class="chat-conteudo premium ${classeEstado}"
      data-id="${msg.id}"
      data-preco="${preco}">
 
-<div class="pacote-grid">
-${(msg.midias || []).map((m,index)=>{
+  <div class="pacote-grid">
+    ${(msg.midias || []).map((m,index)=>{
+      const conteudoId = Number(m.id); 
+      const mediaKey = String(m.media_key || "");
 
-  const conteudoId = Number(m.id);
-  const mediaKey = String(m.media_key || "").trim();
 
-  const jaVisto =
-    pacoteLiberado ||
-    (mediaKey && mediaKeys.has(mediaKey));
+const jaVisto =
+  pacoteLiberado ||
+   (mediaKey && window.mediaKeysVistas?.has(mediaKey));
 
-  return `
-    <div class="midia-item lazy-midia ${jaVisto ? "midia-vista" : "midia-bloqueada"}"
-         data-conteudo-id="${conteudoId}"
-         data-media-key="${mediaKey}"
-         data-thumb="${m.thumbnail_url || m.url}"
-         data-full="${m.url}"
-         data-index="${index}"
-         style="background-image:url('${m.thumbnail_url || m.url}')">
-    </div>
-  `;
+      return `
+        <div class="midia-item lazy-midia ${jaVisto ? "midia-vista" : "midia-bloqueada"}"
+             data-conteudo-id="${conteudoId}"
+              data-media-key="${mediaKey}"
+             data-thumb="${m.thumbnail_url || m.url}"
+             data-full="${m.url}"
+             data-index="${index}"
+             style="background-image:url('${m.thumbnail_url || m.url}')">
+        </div>
+      `;
 
-}).join("")}
-</div>
+    }).join("")}
+  </div>
+
   ${
     preco > 0
       ? `
@@ -618,28 +632,13 @@ modal.classList.remove("hidden");
     }
   }
 
-const card = document.querySelector(`.chat-conteudo[data-id="${message_id}"]`);
-const preco = Number(card?.dataset.preco || 0);
-
-const pacoteLiberado =
-  preco === 0 ||
-  card?.classList.contains("livre") ||
-  conteudosLiberados.has(Number(message_id));
-
-const mediaKeys = window.mediaKeysVistas || new Set();
-const mediaKey = String(midia.media_key || "").trim();
-
-const jaVisto =
-  pacoteLiberado ||
-  (mediaKey && mediaKeys.has(mediaKey));
-
-if (!jaVisto || !midia.url) {
-  abrirPagamentoChat(
-    Number(document.querySelector(`.chat-conteudo[data-id="${message_id}"]`)?.dataset.preco || 0),
-    message_id
-  );
-  return;
-}
+  if (!midia.liberado || !midia.url) {
+    abrirPagamentoChat(
+      Number(document.querySelector(`.chat-conteudo[data-id="${message_id}"]`)?.dataset.preco || 0),
+      message_id
+    );
+    return;
+  }
 
    registrarMidiaVista({
     message_id: Number(message_id),
@@ -770,6 +769,33 @@ function fecharModalMidia(){
   }
 
   modal.classList.add("hidden");
+}
+
+function abrirMidia(midia) {
+  const grid = midia.closest(".pacote-grid");
+  if (!grid) return;
+
+  galeriaMidias = Array.from(grid.querySelectorAll(".midia-item"));
+  indiceAtualMidia = galeriaMidias.indexOf(midia);
+  mostrarMidiaAtual();
+
+  const conteudoEl = midia.closest(".chat-conteudo");
+  if (!conteudoEl) return;
+
+  const message_id = Number(conteudoEl.dataset.id);
+  const media_key = String(midia.dataset.mediaKey || "").trim();
+
+  if (!Number.isInteger(message_id) || message_id <= 0) return;
+  if (!media_key) return;
+
+  if (socket) {
+    socket.emit("marcarConteudoVisto", {
+      message_id,
+      media_key,
+      cliente_id,
+      modelo_id
+    });
+  }
 }
 
 function abrirModalMidia(src){
@@ -936,24 +962,15 @@ function criarMensagemElemento(msg){
   if(msg.tipo === "conteudo"){
 
     const preco = Number(msg.preco) || 0;
-
     const pacoteLiberado =
-      preco === 0 ||
-      msg.liberado ||
-      conteudosLiberados.has(Number(msg.id));
+  preco === 0 ||
+  msg.liberado ||
+  conteudosLiberados.has(msg.id);
 
-    const mediaKeys = window.mediaKeysVistas || new Set();
-
-    const algumaVista = (msg.midias || []).some((m) => {
-      const mk = String(m.media_key || "").trim();
-      return mk && mediaKeys.has(mk);
-    });
-
-    let classeEstado = "livre";
-
-    if (preco > 0 && !pacoteLiberado) {
-      classeEstado = algumaVista ? "parcial" : "bloqueado";
-    }
+    const classeEstado =
+      pacoteLiberado
+        ? "visto"
+        : (preco > 0 ? "bloqueado" : "livre");
 
     const quantidade =
       msg.quantidade ?? (msg.midias?.length || 0);
@@ -968,20 +985,19 @@ function criarMensagemElemento(msg){
     ${(msg.midias || []).map((m,index)=>{
 
       const conteudoId = Number(m.id);
-      const mediaKey = String(m.media_key || "").trim();
 
       const jaVisto =
         pacoteLiberado ||
-        (mediaKey && mediaKeys.has(mediaKey));
+         window.conteudosVistosCliente?.has(conteudoId) ||
+  (m.url && window.conteudosVistosUrl?.has(String(m.url)));
 
       return `
         <div class="midia-item lazy-midia ${jaVisto ? "midia-vista" : "midia-bloqueada"}"
-             data-conteudo-id="${conteudoId}"
-             data-media-key="${mediaKey}"
-             data-thumb="${m.thumbnail_url || m.url}"
-             data-full="${m.url}"
-             data-index="${index}"
-             style="background-image:url('${m.thumbnail_url || m.url}')">
+          data-conteudo-id="${conteudoId}"
+          data-thumb="${m.thumbnail_url || m.url}"
+          data-full="${m.url}"
+          data-index="${index}"
+          style="background-image:url('${m.thumbnail_url || m.url}')">
         </div>
       `;
 
@@ -1425,59 +1441,92 @@ function iniciarPollingPagamento(orderId) {
 async function liberarConteudo(messageId) {
 
   console.log("Conteúdo liberado via polling", messageId);
-
   fecharPopupPix();
 
   conteudosLiberados.add(Number(messageId));
 
   const el = document.querySelector(`.chat-conteudo[data-id="${messageId}"]`);
+
   if (!el) return;
 
   try {
 
     const res = await fetch(`/api/chat/conteudo/${messageId}`, {
-      headers: { Authorization: "Bearer " + token }
+      headers: {
+        Authorization: "Bearer " + token
+      }
     });
 
     if (!res.ok) return;
 
     const midias = await res.json();
 
-    el.classList.remove("bloqueado", "parcial");
+    el.classList.remove("bloqueado");
     el.classList.add("livre");
 
     el.innerHTML = `
       <div class="pacote-grid">
-        ${midias.map((m,index)=>{
-
-          const conteudoId = m.conteudo_id ?? m.id;
-          const mediaKey = String(m.media_key || "").trim();
-          const thumb = m.thumbnail_url || m.url || "";
-
-          return `
-            <div class="midia-item lazy-midia midia-vista"
-                 data-conteudo-id="${conteudoId}"
-                 data-media-key="${mediaKey}"
-                 data-thumb="${thumb}"
-                 data-full="${m.url || ""}"
-                 data-index="${index}"
-                 style="background-image:url('${thumb}')">
-            </div>
-          `;
-
-        }).join("")}
+        ${midias.map((m,index)=>`
+          <div class="midia-item" onclick="abrirConteudo(${messageId},${index})">
+            ${
+              m.tipo_media === "video"
+                ? `<video src="${m.url}" muted playsinline></video>`
+                : `<img src="${m.url}">`
+            }
+          </div>
+        `).join("")}
       </div>
     `;
-
-    ativarLazyLoadingModelo(el);
-
-    abrirConteudo(messageId, 0);
-
+abrirConteudo(messageId, 0);
   } catch (err) {
-
     console.error("Erro liberar conteúdo:", err);
-
   }
+
+}
+
+async function marcarConteudoVisto(message_id, conteudo_id) {
+  try {
+    await fetch("/api/conteudo/visto", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + localStorage.getItem("token")
+      },
+      body: JSON.stringify({
+        message_id: Number(message_id),
+        conteudo_id: Number(conteudo_id)
+      })
+    });
+
+    window.conteudosVistosCliente ||= new Set();
+    window.conteudosVistosCliente.add(Number(conteudo_id));
+  } catch (err) {
+    console.error("Erro marcarConteudoVisto:", err);
+  }
+}
+
+function copiarPix() {
+
+  const campo = document.getElementById("pixCopia");
+  if (!campo) return;
+
+  const codigo = campo.value.trim();
+  if (!codigo) {
+    alert("Nenhum código Pix disponível.");
+    return;
+  }
+
+  navigator.clipboard.writeText(codigo)
+    .then(() => {
+      alert("Pix copiado!");
+    })
+    .catch(() => {
+
+      campo.select();
+      document.execCommand("copy");
+      alert("Pix copiado!");
+
+    });
 
 }
 
