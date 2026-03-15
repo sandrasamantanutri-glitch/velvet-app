@@ -32,6 +32,11 @@ const mensagensRenderizadas = new Set();
 const chatBox = document.getElementById("chatBox");
 
 const conteudosLiberados = new Set();
+
+window.conteudosVistosCliente =
+window.conteudosVistosCliente || new Set();
+
+
 let pagamentoAtual = null;
 let elements = null;
 let pagamentoEmProcesso = false;

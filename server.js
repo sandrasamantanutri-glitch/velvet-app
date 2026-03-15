@@ -3890,7 +3890,7 @@ app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
 
 
 // 🔒 CONTEÚDOS JÁ VISTOS OU COMPRADOS POR CLIENTE (MODELO)
-app.get("/api/chat/conteudos-vistos/:cliente_id", authModelo, async (req, res) => {
+app.get("/api/chat/conteudos-vistos/:cliente_id", authModelo, authCliente, async (req, res) => {
 
   const cliente_id = Number(req.params.cliente_id);
 
