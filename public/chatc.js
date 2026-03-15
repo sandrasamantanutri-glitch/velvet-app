@@ -426,8 +426,8 @@ socket.on("conteudoVisto", async ({ message_id, cliente_id: cid, conteudo_id }) 
 
       if (!conteudoId) return;
 
-      const jaVisto = pacoteLiberado || window.conteudosVistosCliente?.has(conteudoId);
-
+      const jaVisto = pacoteLiberado || window.mediaKeysVistas?.has(String(m.media_key));
+      
       tile.classList.toggle("midia-vista", jaVisto);
       tile.classList.toggle("midia-bloqueada", !jaVisto);
     });
@@ -521,7 +521,8 @@ const classeEstado =
 
 const jaVisto =
   pacoteLiberado ||
-  window.conteudosVistosCliente?.has(conteudoId);
+   window.conteudosVistosCliente?.has(conteudoId) ||
+  (m.url && window.conteudosVistosUrl?.has(String(m.url)));
 
       return `
         <div class="midia-item lazy-midia ${jaVisto ? "midia-vista" : "midia-bloqueada"}"
@@ -809,7 +810,7 @@ function abrirMidia(midia) {
   if (socket) {
     socket.emit("marcarConteudoVisto", {
       message_id,
-      conteudo_id,
+      media_key,
       cliente_id,
       modelo_id
     });
@@ -1006,7 +1007,8 @@ function criarMensagemElemento(msg){
 
       const jaVisto =
         pacoteLiberado ||
-        window.conteudosVistosCliente?.has(conteudoId);
+         window.conteudosVistosCliente?.has(conteudoId) ||
+  (m.url && window.conteudosVistosUrl?.has(String(m.url)));
 
       return `
         <div class="midia-item lazy-midia ${jaVisto ? "midia-vista" : "midia-bloqueada"}"
@@ -1648,26 +1650,14 @@ if (btnConfirmar) {
 };
 
 }
-
 async function carregarConteudosVistos() {
-  try {
-    const res = await fetch("/api/chat/conteudos-vistos", {
-      headers: { Authorization: "Bearer " + token }
-    });
+  const res = await fetch("/api/chat/conteudos-vistos", {
+    headers: { Authorization: "Bearer " + token }
+  });
+  if (!res.ok) return;
 
-    if (!res.ok) {
-      console.error("Erro ao carregar conteudos vistos", res.status);
-      return;
-    }
-
-    const data = await res.json();
-
-    window.conteudosVistosCliente = new Set(
-      data.map((c) => Number(c.conteudo_id))
-    );
-  } catch (err) {
-    console.error("Erro carregar vistos:", err);
-  }
+  const data = await res.json();
+  window.mediaKeysVistas = new Set(data.map(r => String(r.media_key)));
 }
 
 // apenas log
