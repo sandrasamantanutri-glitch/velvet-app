@@ -4028,31 +4028,29 @@ app.get("/api/modelo/chat/:cliente_id/conteudos-vistos", authModelo, async (req,
     const result = await db.query(
       `
       WITH acessiveis AS (
-        SELECT DISTINCT c.media_key
-        FROM messages m
-        JOIN messages_conteudos mc ON mc.message_id = m.id
-        JOIN conteudos c ON c.id = mc.conteudo_id
-        LEFT JOIN conteudo_pacotes cp
-          ON cp.message_id = m.id
-         AND cp.cliente_id = m.cliente_id
-         AND cp.status = 'pago'
-        WHERE m.cliente_id = $1
-          AND m.modelo_id = $2
-          AND (
-            COALESCE(m.preco, 0) <= 0
-            OR cp.message_id IS NOT NULL
-            OR m.visto = true
-          )
-          AND c.media_key IS NOT NULL
-      ),
-      vistos AS (
-        SELECT media_key
-        FROM conteudos_vistos_key
-        WHERE cliente_id = $1
-      )
-      SELECT media_key FROM acessiveis
-      UNION
-      SELECT media_key FROM vistos
+  SELECT DISTINCT c.media_key
+  FROM messages m
+  JOIN messages_conteudos mc ON mc.message_id = m.id
+  JOIN conteudos c ON c.id = mc.conteudo_id
+  LEFT JOIN conteudo_pacotes cp
+    ON cp.message_id = m.id
+   AND cp.cliente_id = $1
+   AND cp.status = 'pago'
+  WHERE m.cliente_id = $1
+    AND (
+      COALESCE(m.preco,0) <= 0
+      OR cp.message_id IS NOT NULL
+    )
+    AND c.media_key IS NOT NULL
+),
+vistos AS (
+  SELECT media_key
+  FROM conteudos_vistos_key
+  WHERE cliente_id = $1
+)
+SELECT media_key FROM acessiveis
+UNION
+SELECT media_key FROM vistos;
       `,
       [cliente_id, req.modelo_id]
     );
