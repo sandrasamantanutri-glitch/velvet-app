@@ -2599,14 +2599,14 @@ socket.on("marcarConteudoVisto", async (payload) => {
     }
 
     const message_id = Number(payload?.message_id);
+    const conteudo_id = Number(payload?.conteudo_id);
     const cliente_id = Number(payload?.cliente_id);
     const modelo_id = Number(payload?.modelo_id);
-    const media_key = String(payload?.media_key || "").trim();
 
     if (!Number.isInteger(message_id) || message_id <= 0) return;
+    if (!Number.isInteger(conteudo_id) || conteudo_id <= 0) return;
     if (!Number.isInteger(cliente_id) || cliente_id <= 0) return;
     if (!Number.isInteger(modelo_id) || modelo_id <= 0) return;
-    if (!media_key) return;
 
     // 🔒 users.id → cliente_id real
     const clienteRes = await db.query(
@@ -2618,27 +2618,34 @@ socket.on("marcarConteudoVisto", async (payload) => {
     const clienteIdReal = Number(clienteRes.rows[0].id);
     if (clienteIdReal !== cliente_id) return;
 
-    const ok = await db.query(
+    // 🔒 valida que conteudo_id pertence a message_id e ao chat
+    const owns = await db.query(
       `
       SELECT 1
-      FROM messages
-      WHERE id = $1 AND cliente_id = $2 AND modelo_id = $3
+      FROM messages m
+      JOIN messages_conteudos mc ON mc.message_id = m.id
+      WHERE m.id = $1
+        AND m.cliente_id = $2
+        AND m.modelo_id = $3
+        AND mc.conteudo_id = $4
       LIMIT 1
       `,
-      [message_id, cliente_id, modelo_id]
+      [message_id, cliente_id, modelo_id, conteudo_id]
     );
-    if (!ok.rowCount) return;
+    if (!owns.rowCount) return;
 
- await db.query(
+    // ✅ 1) marca a MÍDIA como vista
+    await db.query(
       `
-      INSERT INTO conteudos_vistos_key (cliente_id, media_key)
-      VALUES ($1,$2)
-      ON CONFLICT (cliente_id, media_key)
+      INSERT INTO conteudos_vistos (cliente_id, conteudo_id)
+      VALUES ($1, $2)
+      ON CONFLICT (cliente_id, conteudo_id)
       DO UPDATE SET visto_em = NOW()
       `,
-      [cliente_id, media_key]
+      [cliente_id, conteudo_id]
     );
 
+    // ✅ 2) (opcional) marca o PACOTE como visto (não libera mídia, só status)
     await db.query(
       `
       UPDATE messages
@@ -2652,7 +2659,11 @@ socket.on("marcarConteudoVisto", async (payload) => {
 
     // 🔥 avisa sala com qual mídia foi vista
     const sala = `chat_${cliente_id}_${modelo_id}`;
-  io.to(sala).emit("conteudoVisto", { message_id, cliente_id, media_key });
+    io.to(sala).emit("conteudoVisto", {
+      message_id,
+      cliente_id,
+      conteudo_id
+    });
   } catch (err) {
     console.error("❌ Erro marcarConteudoVisto:", err);
   }
@@ -3940,6 +3951,7 @@ app.get("/api/modelo/chat/:cliente_id/conteudos-vistos", authModelo, async (req,
       return res.status(403).json({ error: "Acesso negado" });
     }
 
+    // ✅ retorna vistos desse cliente, mas só do conteúdo dessa modelo (evita vazamento)
     const result = await db.query(
       `
       SELECT cv.conteudo_id
@@ -3961,17 +3973,14 @@ app.get("/api/modelo/chat/:cliente_id/conteudos-vistos", authModelo, async (req,
 
 // 🔒 CONTEÚDOS JÁ VISTOS PELO PRÓPRIO CLIENTE
 
-// path: routes/chat_cliente.js
-
 app.get("/api/chat/conteudos-vistos", authCliente, async (req, res) => {
   try {
     const result = await db.query(
       `
       WITH acessiveis AS (
-        SELECT DISTINCT c.media_key
+        SELECT DISTINCT mc.conteudo_id
         FROM messages m
         JOIN messages_conteudos mc ON mc.message_id = m.id
-        JOIN conteudos c ON c.id = mc.conteudo_id
         LEFT JOIN conteudo_pacotes cp
           ON cp.message_id = m.id
          AND cp.cliente_id = m.cliente_id
@@ -3980,28 +3989,27 @@ app.get("/api/chat/conteudos-vistos", authCliente, async (req, res) => {
           AND (
             COALESCE(m.preco, 0) <= 0
             OR cp.message_id IS NOT NULL
-            OR m.visto = true
           )
-          AND c.media_key IS NOT NULL
       ),
       vistos AS (
-        SELECT media_key
-        FROM conteudos_vistos_key
+        SELECT conteudo_id
+        FROM conteudos_vistos
         WHERE cliente_id = $1
       )
-      SELECT media_key FROM acessiveis
+      SELECT conteudo_id FROM acessiveis
       UNION
-      SELECT media_key FROM vistos
+      SELECT conteudo_id FROM vistos
       `,
       [req.cliente_id]
     );
 
-    return res.json(result.rows); // [{media_key}]
+    return res.json(result.rows); // [{conteudo_id: ...}]
   } catch (err) {
-    console.error("Erro buscar media_keys vistos/acessiveis:", err);
+    console.error("Erro buscar conteudos vistos/acessiveis:", err);
     return res.status(500).json([]);
   }
 });
+
 
 app.get("/modelo/relatorio", authModelo, (req, res) => {
   res.sendFile(
@@ -6907,37 +6915,24 @@ app.post(
       }
 
       const modelo_id = modeloRes.rows[0].id;
-      const precoNum = Number.isFinite(Number(preco)) ? Number(preco) : 0;
 
       const resultados = [];
 
-        for (const file of req.files) {
-        const { mimetype, originalname, buffer } = file;
+      for (const file of req.files) {
 
-        let tipo;
-        if (mimetype?.startsWith("image/")) tipo = "imagem";
-        else if (mimetype?.startsWith("video/")) tipo = "video";
-        else continue;
+  const { mimetype, originalname, buffer } = file;
 
-        // ✅ media_key canônica do arquivo
-        const media_key = crypto.createHash("sha256").update(buffer).digest("hex");
+  let tipo;
 
-        // ✅ dedup: se já existe conteúdo com esse hash pra essa modelo, reutiliza
-        const existente = await db.query(
-          `
-           SELECT *
-          FROM conteudos
-          WHERE modelo_id = $1
-            AND media_key = $2
-          LIMIT 1
-          `,
-          [modelo_id, media_key]
-        );
-
-        if (existente.rowCount) {
-          resultados.push(existente.rows[0]);
-          continue;
-        }
+  if (mimetype.startsWith("image/")) {
+    tipo = "imagem";
+  }
+  else if (mimetype.startsWith("video/")) {
+    tipo = "video";
+  }
+  else {
+    continue;
+  }
 
   let url = null;
   let thumbnailUrl = null;
@@ -6960,10 +6955,10 @@ app.post(
     );
 
     const imageId = response.data.result.id;
-     if (!imageId) throw new Error("Cloudflare Images: id ausente");
 
     url =
       `https://imagedelivery.net/${process.env.CF_ACCOUNT_HASH}/${imageId}/public`;
+
     thumbnailUrl = url;
   }
 
@@ -6987,7 +6982,6 @@ app.post(
     );
 
     const videoId = response.data.result.uid;
-     if (!videoId) throw new Error("Cloudflare Stream: uid ausente");
 
     url = `https://iframe.videodelivery.net/${videoId}`;
 
@@ -7005,10 +6999,9 @@ app.post(
       tipo_conteudo,
       preco,
       descricao,
-      media_key,
       criado_em
     )
-    VALUES ($1,$2,$3,$4,'venda',$5,$6,$7,NOW())
+    VALUES ($1,$2,$3,$4,'venda',$5,$6,NOW())
     RETURNING *
     `,
     [
@@ -7017,8 +7010,7 @@ app.post(
       thumbnailUrl,
       tipo,
       preco || 0,
-      descricao || null,
-      media_key
+      descricao || null
     ]
   );
 
@@ -7038,6 +7030,8 @@ app.post(
     }
   }
 );
+
+// path: routes/chat.js (exemplo)
 
 app.post("/api/conteudo/visto", auth, async (req, res) => {
   const message_id = Number(req.body.message_id);
