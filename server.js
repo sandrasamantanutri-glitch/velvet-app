@@ -2616,20 +2616,23 @@ socket.on("marcarConteudoVisto", async (payload) => {
       [socket.user.id]
     );
     if (!clienteRes.rowCount) return;
+    if (Number(clienteRes.rows[0].id) !== cliente_id) return;
 
-    const clienteIdReal = Number(clienteRes.rows[0].id);
-    if (clienteIdReal !== cliente_id) return;
-
-    const ok = await db.query(
+    const owns = await db.query(
       `
       SELECT 1
-      FROM messages
-      WHERE id = $1 AND cliente_id = $2 AND modelo_id = $3
+      FROM messages m
+      JOIN messages_conteudos mc ON mc.message_id = m.id
+      JOIN conteudos c ON c.id = mc.conteudo_id
+      WHERE m.id = $1
+        AND m.cliente_id = $2
+        AND m.modelo_id = $3
+        AND c.media_key = $4
       LIMIT 1
       `,
-      [message_id, cliente_id, modelo_id]
+      [message_id, cliente_id, modelo_id, media_key]
     );
-    if (!ok.rowCount) return;
+    if (!owns.rowCount) return;
 
  await db.query(
       `
@@ -3884,21 +3887,22 @@ app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
         c.id AS conteudo_id,
         c.tipo AS tipo_media,
         c.thumbnail_url,
+        c.media_key,
         CASE
           WHEN $3::boolean = true THEN c.url
-          WHEN cv.conteudo_id IS NOT NULL THEN c.url
+          WHEN cvk.media_key IS NOT NULL THEN c.url
           ELSE NULL
         END AS url,
         CASE
           WHEN $3::boolean = true THEN true
-          WHEN cv.conteudo_id IS NOT NULL THEN true
+          WHEN cvk.media_key IS NOT NULL THEN true
           ELSE false
         END AS liberado
       FROM messages_conteudos mc
       JOIN conteudos c ON c.id = mc.conteudo_id
-      LEFT JOIN conteudos_vistos cv
-        ON cv.conteudo_id = c.id
-       AND cv.cliente_id = $2
+      LEFT JOIN conteudos_vistos_key cvk
+         ON cvk.cliente_id = $2
+        AND cvk.media_key = c.media_key
       WHERE mc.message_id = $1
       ORDER BY mc.id
       `,
@@ -3951,6 +3955,64 @@ app.get("/api/chat/conteudos-vistos", authCliente, async (req, res) => {
     return res.json(result.rows); // [{media_key}]
   } catch (err) {
     console.error("Erro buscar media_keys vistos/acessiveis:", err);
+    return res.status(500).json([]);
+  }
+});
+
+app.get("/api/modelo/chat/:cliente_id/conteudos-vistos", authModelo, async (req, res) => {
+  const cliente_id = Number(req.params.cliente_id);
+  if (!Number.isInteger(cliente_id) || cliente_id <= 0) {
+    return res.status(400).json({ error: "cliente_id inválido" });
+  }
+
+  try {
+    // Permissão: existe conversa entre essa modelo e esse cliente?
+    const perm = await db.query(
+      `
+      SELECT 1
+      FROM messages
+      WHERE cliente_id = $1 AND modelo_id = $2
+      LIMIT 1
+      `,
+      [cliente_id, req.modelo_id]
+    );
+    if (!perm.rowCount) return res.status(403).json({ error: "Acesso negado" });
+
+    const result = await db.query(
+      `
+      WITH acessiveis AS (
+        SELECT DISTINCT c.media_key
+        FROM messages m
+        JOIN messages_conteudos mc ON mc.message_id = m.id
+        JOIN conteudos c ON c.id = mc.conteudo_id
+        LEFT JOIN conteudo_pacotes cp
+          ON cp.message_id = m.id
+         AND cp.cliente_id = m.cliente_id
+         AND cp.status = 'pago'
+        WHERE m.cliente_id = $1
+          AND m.modelo_id = $2
+          AND (
+            COALESCE(m.preco, 0) <= 0
+            OR cp.message_id IS NOT NULL
+            OR m.visto = true
+          )
+          AND c.media_key IS NOT NULL
+      ),
+      vistos AS (
+        SELECT media_key
+        FROM conteudos_vistos_key
+        WHERE cliente_id = $1
+      )
+      SELECT media_key FROM acessiveis
+      UNION
+      SELECT media_key FROM vistos
+      `,
+      [cliente_id, req.modelo_id]
+    );
+
+    return res.json(result.rows);
+  } catch (err) {
+    console.error("Erro buscar vistos (modelo):", err);
     return res.status(500).json([]);
   }
 });
@@ -7002,40 +7064,40 @@ app.post("/api/conteudo/visto", auth, async (req, res) => {
     return res.status(400).json({ error: "conteudo_id inválido" });
   }
 
-  try {
-    // valida que o conteúdo pertence a essa mensagem e que a mensagem pertence ao cliente
-    const owns = await db.query(
-      `
-      SELECT 1
-      FROM messages m
-      JOIN messages_conteudos mc ON mc.message_id = m.id
-      WHERE m.id = $1
-        AND m.cliente_id = $2
-        AND mc.conteudo_id = $3
-      LIMIT 1
-      `,
-      [message_id, req.cliente_id, conteudo_id]
-    );
+  const clienteRes = await db.query(
+    "SELECT id FROM clientes WHERE user_id = $1",
+    [req.user.id]
+  );
+  if (!clienteRes.rowCount) return res.status(404).json({ error: "Cliente não encontrado" });
 
-    if (!owns.rowCount) {
-      return res.status(403).json({ error: "Acesso negado" });
-    }
+  const cliente_id = Number(clienteRes.rows[0].id);
 
-    await db.query(
-      `
-      INSERT INTO conteudos_vistos (cliente_id, conteudo_id)
-      VALUES ($1, $2)
-      ON CONFLICT (cliente_id, conteudo_id)
-      DO UPDATE SET visto_em = NOW()
-      `,
-      [req.cliente_id, conteudo_id]
-    );
+  const owns = await db.query(
+    `
+    SELECT 1
+    FROM messages m
+    JOIN messages_conteudos mc ON mc.message_id = m.id
+    WHERE m.id = $1
+      AND m.cliente_id = $2
+      AND mc.conteudo_id = $3
+    LIMIT 1
+    `,
+    [message_id, cliente_id, conteudo_id]
+  );
 
-    return res.json({ ok: true });
-  } catch (err) {
-    console.error("Erro marcar conteudo visto:", err);
-    return res.status(500).json({ error: "Erro interno" });
-  }
+  if (!owns.rowCount) return res.status(403).json({ error: "Acesso negado" });
+
+  await db.query(
+    `
+    INSERT INTO conteudos_vistos (cliente_id, conteudo_id)
+    VALUES ($1, $2)
+    ON CONFLICT (cliente_id, conteudo_id)
+    DO UPDATE SET visto_em = NOW()
+    `,
+    [cliente_id, conteudo_id]
+  );
+
+  return res.json({ ok: true });
 });
 
 // ===============================

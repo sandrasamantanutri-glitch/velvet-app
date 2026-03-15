@@ -380,14 +380,17 @@ function carregarMensagensAntigas(){
 // path: public/js/chatc.js
 
 socket.on("conteudoVisto", async ({ message_id, cliente_id: cid, media_key }) => {
+  if (!message_id) return;
+
   console.log("📩 conteudoVisto recebido:", { message_id, cid, media_key });
 
-  if (!message_id) return;
   if (cid != null && Number(cid) !== Number(cliente_id)) return;
 
     if (media_key) {
     window.mediaKeysVistas ||= new Set();
     window.mediaKeysVistas.add(String(media_key));
+    atualizarTilesPorMediaKey(String(media_key));
+
   } else {
     // fallback se o server ainda não manda media_key
     await carregarConteudosVistos();
@@ -612,8 +615,9 @@ if(!res.ok){
 modal.classList.remove("hidden");
 
   const midias = await res.json();
+  const midia = midias[index];
+  if (!midia) return;
 
-  // 🔹 galeria para navegação
   galeriaMidias = midias;
   indiceAtualMidia = index
 
@@ -628,18 +632,19 @@ modal.classList.remove("hidden");
     }
   }
 
-  const midia = midias[index];
-if (!midia) return;
+  if (!midia.liberado || !midia.url) {
+    abrirPagamentoChat(
+      Number(document.querySelector(`.chat-conteudo[data-id="${message_id}"]`)?.dataset.preco || 0),
+      message_id
+    );
+    return;
+  }
 
-if (!midia.liberado || !midia.url) {
-  abrirPagamentoChat(Number(document.querySelector(`.chat-conteudo[data-id="${message_id}"]`)?.dataset.preco || 0), message_id);
-  return;
-}
+   registrarMidiaVista({
+    message_id: Number(message_id),
+    media_key: String(midia.media_key || "").trim()
+  });
 
-// marcar a mídia específica como vista
-marcarConteudoVisto(message_id, midia.conteudo_id);
-
-  // 🔹 limpar mídia anterior
 img.style.display = "none";
 img.src = "";
 
@@ -1627,6 +1632,7 @@ if (btnConfirmar) {
 
 }
 
+window.mediaKeysVistas = window.mediaKeysVistas || new Set();
 async function carregarConteudosVistos() {
   try {
     const res = await fetch("/api/chat/conteudos-vistos", {
@@ -1639,12 +1645,48 @@ async function carregarConteudosVistos() {
     }
 
     const data = await res.json(); // [{ media_key }]
-
     window.mediaKeysVistas = new Set(
       data.map((r) => String(r.media_key)).filter(Boolean)
     );
   } catch (err) {
     console.error("Erro carregar vistos:", err);
+  }
+}
+
+
+function atualizarTilesPorMediaKey(mediaKey) {
+  if (!mediaKey) return;
+
+  // CSS.escape pode não existir em browsers antigos; fallback simples
+  const safeKey = (window.CSS && CSS.escape) ? CSS.escape(mediaKey) : mediaKey.replace(/"/g, '\\"');
+
+  document
+    .querySelectorAll(`.midia-item[data-media-key="${safeKey}"]`)
+    .forEach((tile) => {
+      tile.classList.add("midia-vista");
+      tile.classList.remove("midia-bloqueada");
+    });
+}
+
+function registrarMidiaVista({ message_id, media_key }) {
+  if (!media_key) return;
+
+  window.mediaKeysVistas ||= new Set();
+  if (!window.mediaKeysVistas.has(media_key)) {
+    window.mediaKeysVistas.add(media_key);
+  }
+
+  // 🔥 importantíssimo: atualiza TODAS as mensagens (inclui PPV já renderizado)
+  atualizarTilesPorMediaKey(media_key);
+
+  // persiste via socket (sem POST 403)
+  if (socket) {
+    socket.emit("marcarConteudoVisto", {
+      message_id,
+      media_key,
+      cliente_id,
+      modelo_id
+    });
   }
 }
 
