@@ -3972,40 +3972,53 @@ app.get("/api/modelo/chat/:cliente_id/conteudos-vistos", authModelo, async (req,
 });
 
 // 🔒 CONTEÚDOS JÁ VISTOS PELO PRÓPRIO CLIENTE
+// path: routes/chat_cliente.js (exemplo)
 
 app.get("/api/chat/conteudos-vistos", authCliente, async (req, res) => {
   try {
+    // 1) pega vistos novos + vistos antigos (messages.visto=true)
     const result = await db.query(
       `
-      WITH acessiveis AS (
+      WITH antigos AS (
         SELECT DISTINCT mc.conteudo_id
         FROM messages m
         JOIN messages_conteudos mc ON mc.message_id = m.id
-        LEFT JOIN conteudo_pacotes cp
-          ON cp.message_id = m.id
-         AND cp.cliente_id = m.cliente_id
-         AND cp.status = 'pago'
         WHERE m.cliente_id = $1
-          AND (
-            COALESCE(m.preco, 0) <= 0
-            OR cp.message_id IS NOT NULL
-          )
+          AND m.visto = true
       ),
-      vistos AS (
+      novos AS (
         SELECT conteudo_id
         FROM conteudos_vistos
         WHERE cliente_id = $1
+      ),
+      todos AS (
+        SELECT conteudo_id FROM novos
+        UNION
+        SELECT conteudo_id FROM antigos
       )
-      SELECT conteudo_id FROM acessiveis
-      UNION
-      SELECT conteudo_id FROM vistos
+      -- 2) backfill: grava o que estava só no "antigo" dentro da tabela nova
+      INSERT INTO conteudos_vistos (cliente_id, conteudo_id)
+      SELECT $1, t.conteudo_id
+      FROM todos t
+      ON CONFLICT (cliente_id, conteudo_id) DO NOTHING
+      RETURNING conteudo_id
       `,
       [req.cliente_id]
     );
 
-    return res.json(result.rows); // [{conteudo_id: ...}]
+    // 3) resposta final: retorna todos que existem (após backfill)
+    const out = await db.query(
+      `
+      SELECT conteudo_id
+      FROM conteudos_vistos
+      WHERE cliente_id = $1
+      `,
+      [req.cliente_id]
+    );
+
+    return res.json(out.rows);
   } catch (err) {
-    console.error("Erro buscar conteudos vistos/acessiveis:", err);
+    console.error("Erro buscar conteudos vistos (cliente):", err);
     return res.status(500).json([]);
   }
 });
