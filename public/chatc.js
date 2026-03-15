@@ -193,14 +193,14 @@ document.addEventListener(
 
 const mediaKeys = window.mediaKeysVistas || new Set();
 
+const jaVisto =
+  pacoteLiberado ||
+  (mediaKey && mediaKeys.has(mediaKey));
+
 const pacoteLiberado =
   preco === 0 ||
   card.classList.contains("livre") ||
-  conteudosLiberados.has(messageId);
-
-  const jaVisto =
-  pacoteLiberado ||
-  (mediaKey && mediaKeys.has(mediaKey));
+  conteudosLiberados.has(messageId); // pago
 
 const midiaLiberada = pacoteLiberado || jaVisto;
 const precisaPagar = preco > 0 && !midiaLiberada;
