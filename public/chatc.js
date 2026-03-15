@@ -389,51 +389,58 @@ function carregarMensagensAntigas(){
   });
 }
 
-// path: public/js/chatc.js
-
-socket.on("conteudoVisto", async ({ message_id, cliente_id: cid, conteudo_id }) => {
-  console.log("📩 conteudoVisto recebido:", { message_id, cid, conteudo_id });
+socket.on("conteudoVisto", async ({ message_id, cliente_id: cid }) => {
+  console.log("📩 conteudoVisto recebido:", { message_id, cid, cliente_id });
 
   if (!message_id) return;
+
   if (cid != null && Number(cid) !== Number(cliente_id)) return;
 
+  const el = document.querySelector(
+    `.chat-conteudo[data-id="${message_id}"]`
+  );
+
+  if (!el) return;
+
+  // evitar renderizar duas vezes
+  if (el.classList.contains("livre")) return;
+
   try {
-    // Se o backend mandou conteudo_id, atualiza o Set local sem novo fetch
-    if (conteudo_id) {
-      window.conteudosVistosCliente ||= new Set();
-      window.conteudosVistosCliente.add(Number(conteudo_id));
-    } else {
-      // fallback: recarrega do backend (bom após refresh / backfill)
-      await carregarConteudosVistos();
-    }
 
-    const el = document.querySelector(`.chat-conteudo[data-id="${message_id}"]`);
-    if (!el) return;
-
-    const preco = Number(el.dataset.preco || 0);
-
-    // pacoteLiberado só se pagou/grátis (NÃO por "viu 1")
-    const pacoteLiberado =
-      preco === 0 ||
-      conteudosLiberados.has(Number(message_id)) ||
-      el.classList.contains("livre"); // caso seu UI marque "livre" quando paga
-
-    // atualiza classes de cada tile individualmente
-    el.querySelectorAll(".midia-item").forEach((tile) => {
-      const conteudoId =
-        Number(tile.dataset.conteudoId) ||
-        Number(tile.dataset.conteudo_id);
-
-      if (!conteudoId) return;
-
-      const jaVisto = pacoteLiberado || window.conteudosVistosCliente?.has(conteudoId);
-
-      tile.classList.toggle("midia-vista", jaVisto);
-      tile.classList.toggle("midia-bloqueada", !jaVisto);
+    const res = await fetch(`/api/chat/conteudo/${message_id}`, {
+      headers: {
+        Authorization: "Bearer " + token
+      }
     });
+
+    if (!res.ok) return;
+
+    const midias = await res.json();
+
+    el.classList.remove("bloqueado");
+    el.classList.add("livre");
+
+    el.innerHTML = `
+      <div class="pacote-grid">
+        ${midias.map((m,index)=>`
+          <div class="midia-item"
+               onclick="abrirConteudo(${message_id},${index})">
+
+            ${
+              m.tipo_media === "video"
+                ? `<video src="${m.url}" muted playsinline></video>`
+                : `<img src="${m.url}">`
+            }
+
+          </div>
+        `).join("")}
+      </div>
+    `;
+
   } catch (err) {
-    console.error("Erro no handler conteudoVisto:", err);
+    console.error("Erro liberar conteúdo:", err);
   }
+
 });
 
 // ===============================
@@ -787,35 +794,32 @@ function fecharModalMidia(){
 }
 
 
-// path: public/js/chatc.js
+function abrirMidia(midia){
 
-function abrirMidia(midia) {
   const grid = midia.closest(".pacote-grid");
-  if (!grid) return;
+  if(!grid) return;
 
-  galeriaMidias = Array.from(grid.querySelectorAll(".midia-item"));
+  galeriaMidias = Array.from(
+    grid.querySelectorAll(".midia-item")
+  );
+
   indiceAtualMidia = galeriaMidias.indexOf(midia);
+
   mostrarMidiaAtual();
 
-  const conteudoEl = midia.closest(".chat-conteudo");
-  if (!conteudoEl) return;
+  const conteudo = midia.closest(".chat-conteudo");
+  if(!conteudo) return;
 
-  const message_id = Number(conteudoEl.dataset.id);
-  const conteudo_id = Number(midia.dataset.conteudoId || midia.dataset.conteudo_id);
+  const message_id = Number(conteudo.dataset.id);
 
-  if (!Number.isInteger(message_id) || message_id <= 0) return;
-  if (!Number.isInteger(conteudo_id) || conteudo_id <= 0) return;
-
-  if (socket) {
+  if(message_id && socket){
     socket.emit("marcarConteudoVisto", {
-      message_id,
-      conteudo_id,
-      cliente_id,
-      modelo_id
-    });
-  }
+  message_id,
+  cliente_id,
+  modelo_id
+});
 }
-
+}
 function abrirModalMidia(src){
 
   const modal  = document.getElementById("modalMidia");
