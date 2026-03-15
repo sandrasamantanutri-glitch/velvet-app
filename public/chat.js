@@ -759,18 +759,18 @@ async function abrirPopupConteudos() {
 
       if (!c?.id || !c?.url) return;
 
-      const id = Number(c.id);
       const tipo = c.tipo || "imagem";
 
-      const jaVisto = window.conteudosVistosCliente.has(Number(c.id));
+      const id = Number(c.id);
+      const jaVisto = window.conteudosVistosCliente.has(id);
 
       const item = document.createElement("div");
 
       item.className =
-        "preview-item lazy-popup" +
-        (jaVisto ? " visto desabilitado" : "");
+  "preview-item lazy-popup" +
+  (jaVisto ? " visto" : "");
 
-      item.dataset.conteudoId = c.id;
+      item.dataset.conteudoId = id;
       let thumb = c.thumbnail_url;
 
 if (!thumb) {

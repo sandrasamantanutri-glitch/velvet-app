@@ -703,11 +703,6 @@ cursor:pointer;
   position:relative;
 }
 
-.preview-item.visto{
-  filter: grayscale(100%);
-  opacity: 0.6;
-}
-
 .preview-item.visto .badge-visto{
   position:absolute;
   left:6px;
@@ -726,6 +721,7 @@ cursor:pointer;
 
 .preview-item.visto{
   filter: grayscale(100%) brightness(0.75);
+  opacity:0.6;
 }
 
 .modal{
