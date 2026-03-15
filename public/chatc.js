@@ -498,8 +498,7 @@ function renderMensagem(msg){
   // - cliente já viu alguma mídia
   const pacoteLiberado =
     msg.liberado ||
-    conteudosLiberados.has(msg.id) ||
-    pacoteVisto;
+    conteudosLiberados.has(msg.id);
 
   // definir classe visual
   const classeEstado =
@@ -644,7 +643,7 @@ modal.classList.remove("hidden");
     }
   }
 
-  const midia = midias[index];
+marcarConteudoVisto(midia.id);
   if(!midia) return;
 
   conteudosLiberados.add(Number(message_id));
@@ -1455,16 +1454,29 @@ abrirConteudo(messageId, 0);
 
 async function marcarConteudoVisto(conteudoId){
 
-  await fetch("/api/conteudo/visto",{
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      Authorization:"Bearer "+localStorage.getItem("token")
-    },
-    body:JSON.stringify({
-      conteudo_id: conteudoId
-    })
-  });
+  try{
+
+    await fetch("/api/conteudo/visto",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        Authorization:"Bearer "+localStorage.getItem("token")
+      },
+      body:JSON.stringify({
+        conteudo_id: conteudoId
+      })
+    });
+
+    // atualizar estado local
+    if(!window.conteudosVistosCliente){
+      window.conteudosVistosCliente = new Set();
+    }
+
+    window.conteudosVistosCliente.add(Number(conteudoId));
+
+  }catch(err){
+    console.error("Erro marcarConteudoVisto:",err);
+  }
 
 }
 
