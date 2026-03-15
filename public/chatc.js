@@ -178,26 +178,15 @@ document.addEventListener(
     const preco = Number(card.dataset.preco || 0);
     const messageId = Number(card.dataset.id);
 
-    let midia =
-      e.target.closest(".midia-item") ||
-      card.querySelector(".midia-item");
-
-    if (!midia) return;
-
-    const conteudoId = Number(midia.dataset.conteudoId);
-    const jaVisto =
-      window.conteudosVistosCliente?.has(conteudoId);
-
     const estaLiberado =
       preco === 0 ||
       card.classList.contains("livre") ||
       card.classList.contains("visto") ||
       conteudosLiberados.has(messageId);
 
-    const precisaPagar =
-      preco > 0 && !estaLiberado && !jaVisto;
+    const precisaPagar = preco > 0 && !estaLiberado;
 
-    // BLOQUEADO
+    // 1) BLOQUEADO: clicar em QUALQUER lugar do card abre pagamento
     if (precisaPagar) {
       e.preventDefault();
       e.stopPropagation();
@@ -205,13 +194,20 @@ document.addEventListener(
       return;
     }
 
-    // LIBERADO
-    e.preventDefault();
-    e.stopPropagation();
+    // 2) LIBERADO: só abre mídia se clicou numa mídia mesmo
+let midia =
+  e.target.closest(".midia-item") ||
+  card.querySelector(".midia-item");
 
-    const index = Number(midia.dataset.index || 0);
-    abrirConteudo(messageId, index);
+if (!midia) return;
+
+e.preventDefault();
+e.stopPropagation();
+
+const index = Number(midia.dataset.index || 0);
+abrirConteudo(messageId, index);
   },
+
   true
 );
 
@@ -494,22 +490,14 @@ function renderMensagem(msg){
 }" data-id="${msg.id}" data-preco="${msg.preco || 0}">
 
   <div class="pacote-grid">
-  ${(msg.midias || []).map((m,index)=>{
-
-  const conteudoId = Number(m.id);
-  const jaVisto = window.conteudosVistosCliente?.has(conteudoId);
-
-  return `
-    <div class="midia-item lazy-midia ${jaVisto ? "midia-vista" : "midia-bloqueada"}"
-      data-conteudo-id="${conteudoId}"
-      data-thumb="${m.thumbnail_url || m.url}"
-      data-full="${m.url}"
-      data-index="${index}"
-      style="background-image:url('${m.thumbnail_url || m.url}')">
-    </div>
-  `;
-
-}).join("")}
+    ${(msg.midias || []).map((m,index)=>`
+      <div class="midia-item lazy-midia"
+        data-thumb="${m.thumbnail_url || m.url}"
+        data-full="${m.url}"
+        data-index="${index}"
+        style="background-image:url('${m.thumbnail_url || m.url}')">
+      </div>
+    `).join("")}
   </div>
 
   ${
@@ -954,27 +942,20 @@ function criarMensagemElemento(msg){
       msg.quantidade ?? (msg.midias?.length || 0);
 
     div.innerHTML = `
-<div class="chat-conteudo premium"
-     data-id="${msg.id}"
-     data-preco="${msg.preco || 0}">
+<div class="chat-conteudo premium ${
+ ((msg.liberado) || conteudosLiberados.has(msg.id))
+  ? "visto"
+  : (msg.preco > 0 ? "bloqueado" : "")
+}" data-id="${msg.id}" data-preco="${msg.preco || 0}">
 
   <div class="pacote-grid">
-   ${(msg.midias || []).map((m,index)=>{
-
-  const conteudoId = Number(m.id);
-  const jaVisto = window.conteudosVistosCliente?.has(conteudoId);
-
-  return `
-    <div class="midia-item lazy-midia ${jaVisto ? "midia-vista" : "midia-bloqueada"}"
-      data-conteudo-id="${conteudoId}"
-      data-thumb="${m.thumbnail_url || m.url}"
-      data-full="${m.url}"
-      data-index="${index}"
-      style="background-image:url('${m.thumbnail_url || m.url}')">
-    </div>
-  `;
-
-}).join("")}
+    ${(msg.midias || []).map((m,index)=>`
+      <div class="midia-item lazy-midia"
+        data-thumb="${m.thumbnail_url || m.url}"
+        data-full="${m.url}"
+        data-index="${index}">
+      </div>
+    `).join("")}
   </div>
 
 </div>
@@ -1435,7 +1416,7 @@ abrirConteudo(messageId, 0);
 
 }
 
-async function marcarConteudoVisto(conteudoId){
+async function marcarConteudoVisto(messageId){
 
   await fetch("/api/conteudo/visto",{
     method:"POST",
@@ -1443,11 +1424,8 @@ async function marcarConteudoVisto(conteudoId){
       "Content-Type":"application/json",
       Authorization:"Bearer "+localStorage.getItem("token")
     },
-    body:JSON.stringify({
-      conteudo_id: conteudoId
-    })
+    body:JSON.stringify({message_id:messageId})
   });
-
 }
 
 function copiarPix() {
