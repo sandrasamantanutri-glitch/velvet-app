@@ -124,7 +124,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     await carregarInfoModelo(modelo_id);
-    await carregarConteudosVistos(cliente_id);
     tentarEntrarSala();
 
     const sendBtn = document.getElementById("sendBtn");
@@ -286,17 +285,7 @@ socket.on("newMessage", msg => {
     return;
   }
 
- if (msg.tipo === "conteudo" && Array.isArray(msg.midias)) {
-
-    const jaViuAlguma = msg.midias.some(m =>
-      window.conteudosVistosCliente?.has(Number(m.id))
-    );
-
-    if (jaViuAlguma) {
-      msg.liberado = true;
-    }
-
-  }
+  if (mensagensRenderizadas.has(msg.id)) return;
 
   renderMensagem(msg);
   scrollParaFinal();
@@ -1617,32 +1606,6 @@ if (btnConfirmar) {
 }
 
 };
-
-}
-
-async function carregarConteudosVistos(cliente_id){
-
-  try{
-
-    const res = await fetch(`/api/chat/conteudos-vistos/${cliente_id}`,{
-      headers:{
-        Authorization:"Bearer "+token
-      }
-    });
-
-    if(!res.ok) return;
-
-    const vistos = await res.json();
-
-    window.conteudosVistosCliente = new Set(
-      Array.isArray(vistos)
-        ? vistos.map(id => Number(id))
-        : []
-    );
-
-  }catch(err){
-    console.error("Erro carregar vistos:",err);
-  }
 
 }
 
