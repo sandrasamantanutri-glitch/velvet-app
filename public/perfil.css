@@ -858,6 +858,23 @@ transition:width 0.2s;
 .carousel-next{ right:10px; }
 
 
+.campo-cartao{
+display:flex;
+flex-direction:column;
+margin-bottom:10px;
+}
+
+.campo-cartao input{
+padding:10px;
+border-radius:8px;
+border:1px solid #ddd;
+font-size:14px;
+}
+
+.linha-cartao{
+display:flex;
+gap:10px;
+}
 
 /* ===============================
    RESPONSIVO
@@ -881,3 +898,5 @@ transition:width 0.2s;
   }
 
 }
+
+

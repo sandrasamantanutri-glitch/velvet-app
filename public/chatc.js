@@ -36,7 +36,7 @@ let pagamentoAtual = null;
 let elements = null;
 let pagamentoEmProcesso = false;
 
-
+const PAGARME_PUBLIC_KEY = "pk_oQW43ZaU7HPVnbj8";
 const stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
 
 // ===============================
@@ -1160,6 +1160,90 @@ function pagarComPix() {
 }
 
 
+// async function pagarComCartao() {
+
+//   const cpf = obterCpfValido();
+//   if (!cpf) return;
+
+//   pagamentoAtual.cpf = cpf;
+
+//   if (pagamentoEmProcesso) return;
+//   pagamentoEmProcesso = true;
+
+//   document
+//     .getElementById("escolhaPagamento")
+//     .classList.add("hidden");
+
+//   if (!pagamentoAtual?.conteudo_id) {
+//     alert("Conteúdo inválido");
+//     pagamentoEmProcesso = false;
+//     return;
+//   }
+
+//   const conteudo_id = Number(pagamentoAtual.conteudo_id);
+
+//   try {
+
+//     const res = await fetch("/api/pagamento/midia/cartao", {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//         Authorization: "Bearer " + localStorage.getItem("token")
+//       },
+//       body: JSON.stringify({
+//         conteudo_id,
+//         cpf: pagamentoAtual.cpf
+//       })
+//     });
+
+//     const data = await res.json();
+
+//     if (!res.ok) {
+//       alert(data.error || "Erro no pagamento");
+//       pagamentoEmProcesso = false;
+//       return;
+//     }
+
+// const elValorConteudo = document.getElementById("cartaoValorConteudo");
+// if (elValorConteudo) {
+//   elValorConteudo.innerText = valorBRL(data.valorBase);
+// }
+
+// const elTaxaTransacao = document.getElementById("cartaoTaxaTransacao");
+// if (elTaxaTransacao) {
+//   elTaxaTransacao.innerText = valorBRL(data.taxaTransacao);
+// }
+
+// const elTaxaPlataforma = document.getElementById("cartaoTaxaPlataforma");
+// if (elTaxaPlataforma) {
+//   elTaxaPlataforma.innerText = valorBRL(data.taxaPlataforma);
+// }
+
+// const elValorTotal = document.getElementById("cartaoValorTotal");
+// if (elValorTotal) {
+//   elValorTotal.innerText = valorBRL(data.total);
+// }
+
+//     elements = stripe.elements({
+//       clientSecret: data.clientSecret
+//     });
+
+//     const paymentElement = elements.create("payment");
+//     paymentElement.mount("#payment-element");
+
+//     document
+//       .getElementById("paymentModal")
+//       .classList.remove("hidden");
+
+//   } catch (err) {
+
+//     console.error("Erro cartão:", err);
+//     alert("Erro inesperado");
+//     pagamentoEmProcesso = false;
+
+//   }
+// }
+
 async function pagarComCartao() {
 
   const cpf = obterCpfValido();
@@ -1184,6 +1268,35 @@ async function pagarComCartao() {
 
   try {
 
+    /* =========================
+       GERAR TOKEN DO CARTÃO
+    ========================= */
+
+    const client = await pagarme.client.connect({
+      encryption_key: PAGARME_PUBLIC_KEY
+    });
+
+    const card = await client.security.encrypt({
+      card_number: document
+        .getElementById("card_number")
+        .value.replace(/\s/g, ""),   // remove espaços
+      card_holder_name: document
+        .getElementById("card_holder")
+        .value,
+      card_expiration_date: document
+        .getElementById("card_expiration")
+        .value,
+      card_cvv: document
+        .getElementById("card_cvv")
+        .value
+    });
+
+    const card_token = card.card_hash;
+
+    /* =========================
+       ENVIAR PARA BACKEND
+    ========================= */
+
     const res = await fetch("/api/pagamento/midia/cartao", {
       method: "POST",
       headers: {
@@ -1192,7 +1305,8 @@ async function pagarComCartao() {
       },
       body: JSON.stringify({
         conteudo_id,
-        cpf: pagamentoAtual.cpf
+        cpf: pagamentoAtual.cpf,
+        card_token
       })
     });
 
@@ -1201,47 +1315,55 @@ async function pagarComCartao() {
     if (!res.ok) {
       alert(data.error || "Erro no pagamento");
       pagamentoEmProcesso = false;
-      return;
+      return { sucesso:false };
     }
 
-const elValorConteudo = document.getElementById("cartaoValorConteudo");
-if (elValorConteudo) {
-  elValorConteudo.innerText = valorBRL(data.valorBase);
-}
+    /* =========================
+       ATUALIZAR UI
+    ========================= */
 
-const elTaxaTransacao = document.getElementById("cartaoTaxaTransacao");
-if (elTaxaTransacao) {
-  elTaxaTransacao.innerText = valorBRL(data.taxaTransacao);
-}
+    const elValorConteudo = document.getElementById("cartaoValorConteudo");
+    if (elValorConteudo) {
+      elValorConteudo.innerText = valorBRL(data.valorBase);
+    }
 
-const elTaxaPlataforma = document.getElementById("cartaoTaxaPlataforma");
-if (elTaxaPlataforma) {
-  elTaxaPlataforma.innerText = valorBRL(data.taxaPlataforma);
-}
+    const elTaxaTransacao = document.getElementById("cartaoTaxaTransacao");
+    if (elTaxaTransacao) {
+      elTaxaTransacao.innerText = valorBRL(data.taxaTransacao);
+    }
 
-const elValorTotal = document.getElementById("cartaoValorTotal");
-if (elValorTotal) {
-  elValorTotal.innerText = valorBRL(data.total);
-}
+    const elTaxaPlataforma = document.getElementById("cartaoTaxaPlataforma");
+    if (elTaxaPlataforma) {
+      elTaxaPlataforma.innerText = valorBRL(data.taxaPlataforma);
+    }
 
-    elements = stripe.elements({
-      clientSecret: data.clientSecret
-    });
-
-    const paymentElement = elements.create("payment");
-    paymentElement.mount("#payment-element");
+    const elValorTotal = document.getElementById("cartaoValorTotal");
+    if (elValorTotal) {
+      elValorTotal.innerText = valorBRL(data.total);
+    }
 
     document
       .getElementById("paymentModal")
       .classList.remove("hidden");
 
+    alert("Pagamento enviado. Aguardando confirmação.");
+
+    pagamentoEmProcesso = false;
+
+    return { sucesso:true };
+
   } catch (err) {
 
     console.error("Erro cartão:", err);
+
     alert("Erro inesperado");
+
     pagamentoEmProcesso = false;
 
+    return { sucesso:false };
+
   }
+
 }
 
 function fecharPagamento() {
@@ -1510,6 +1632,51 @@ function mostrarMidiaAtual(){
 
 }
 
+// const btnConfirmar = document.getElementById("confirmarPagamento");
+
+// if (btnConfirmar) {
+
+//   btnConfirmar.onclick = async () => {
+
+//     btnConfirmar.disabled = true;
+//     btnConfirmar.innerText = "Processando...";
+
+//     const { error, paymentIntent } = await stripe.confirmPayment({
+//       elements,
+//       redirect: "if_required"
+//     });
+
+//     if (error) {
+//       alert(error.message || "Erro no pagamento");
+//       btnConfirmar.disabled = false;
+//       btnConfirmar.innerText = "Confirmar desbloqueio";
+//       return;
+//     }
+
+//     if (paymentIntent && paymentIntent.status === "succeeded") {
+
+//   fecharPagamento();
+
+//   if (pagamentoAtual?.conteudo_id) {
+
+//     const messageId = pagamentoAtual.conteudo_id;
+
+//     await liberarConteudo(messageId);
+
+//     // abrir automaticamente a primeira mídia
+//     setTimeout(() => {
+//       abrirConteudo(messageId, 0);
+//     }, 200);
+
+//   }
+
+//   pagamentoEmProcesso = false;
+// }
+
+// };
+
+// }
+
 const btnConfirmar = document.getElementById("confirmarPagamento");
 
 if (btnConfirmar) {
@@ -1519,39 +1686,44 @@ if (btnConfirmar) {
     btnConfirmar.disabled = true;
     btnConfirmar.innerText = "Processando...";
 
-    const { error, paymentIntent } = await stripe.confirmPayment({
-      elements,
-      redirect: "if_required"
-    });
+    try {
 
-    if (error) {
-      alert(error.message || "Erro no pagamento");
+      const resultado = await pagarComCartao();
+
+      if (!resultado || !resultado.sucesso) {
+        btnConfirmar.disabled = false;
+        btnConfirmar.innerText = "Confirmar desbloqueio";
+        return;
+      }
+
+      fecharPagamento();
+
+      if (pagamentoAtual?.conteudo_id) {
+
+        const messageId = pagamentoAtual.conteudo_id;
+
+        await liberarConteudo(messageId);
+
+        setTimeout(() => {
+          abrirConteudo(messageId, 0);
+        }, 200);
+
+      }
+
+      pagamentoEmProcesso = false;
+
+    } catch (err) {
+
+      console.error("Erro pagamento:", err);
+
+      alert("Erro ao processar pagamento");
+
       btnConfirmar.disabled = false;
       btnConfirmar.innerText = "Confirmar desbloqueio";
-      return;
+
     }
 
-    if (paymentIntent && paymentIntent.status === "succeeded") {
-
-  fecharPagamento();
-
-  if (pagamentoAtual?.conteudo_id) {
-
-    const messageId = pagamentoAtual.conteudo_id;
-
-    await liberarConteudo(messageId);
-
-    // abrir automaticamente a primeira mídia
-    setTimeout(() => {
-      abrirConteudo(messageId, 0);
-    }, 200);
-
-  }
-
-  pagamentoEmProcesso = false;
-}
-
-};
+  };
 
 }
 

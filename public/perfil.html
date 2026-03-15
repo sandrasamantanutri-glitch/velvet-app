@@ -252,7 +252,7 @@
   Copiar código </button>
       </div>
 
-      <!-- CARTÃO -->
+      <!-- CARTÃO
       <div id="conteudoCartao" class="metodo hidden">
         <div id="cartaoLoading" class="hidden"><strong>Preparando pagamento…</strong></div>
         <form id="formCartao" class="hidden">
@@ -268,6 +268,78 @@
     </div>
 
   </div>
+</div> -->
+
+<!-- CARTÃO -->
+<div id="conteudoCartao" class="metodo hidden">
+
+  <div id="cartaoLoading" class="hidden">
+    <strong>Preparando pagamento…</strong>
+  </div>
+
+  <form id="formCartao" class="hidden" onsubmit="event.preventDefault(); confirmarPagamentoCartao();">
+
+    <div class="campo-cartao">
+      <label>Número do cartão</label>
+      <input
+        type="text"
+        id="card_number"
+        placeholder="0000 0000 0000 0000"
+        autocomplete="cc-number"
+        maxlength="19"
+        required
+      >
+    </div>
+
+    <div class="campo-cartao">
+      <label>Nome no cartão</label>
+      <input
+        type="text"
+        id="card_holder"
+        placeholder="Nome impresso no cartão"
+        autocomplete="cc-name"
+        required
+      >
+    </div>
+
+    <div class="linha-cartao">
+
+      <div class="campo-cartao">
+        <label>Validade</label>
+        <input
+          type="text"
+          id="card_expiration"
+          placeholder="MMYY"
+          autocomplete="cc-exp"
+          maxlength="4"
+          required
+        >
+      </div>
+
+      <div class="campo-cartao">
+        <label>CVV</label>
+        <input
+          type="text"
+          id="card_cvv"
+          placeholder="123"
+          autocomplete="cc-csc"
+          maxlength="4"
+          required
+        >
+      </div>
+
+    </div>
+
+    <button id="btnConfirmarCartao" type="submit" class="btn-principal">
+      Confirmar pagamento
+    </button>
+
+  </form>
+
+  <div id="cartaoSucesso" class="hidden">
+    <strong>✅ Pagamento confirmado!</strong>
+  </div>
+
 </div>
 
 <input type="file" id="inputUploadMidia" accept="image/*,video/*" hidden>
@@ -419,6 +491,7 @@ fetch("modals-auth.html")
 
 <script src="header.js"></script>
 <script src="https://js.stripe.com/v3/"></script>
+<script src="https://assets.pagar.me/pagarme-js/4.0/pagarme.min.js"></script>
 <script>window.STRIPE_PUBLIC_KEY = "pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz";</script>
 <script src="/script.js"></script>
 <script src="/perfil.js"></script>

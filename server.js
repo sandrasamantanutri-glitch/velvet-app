@@ -1501,7 +1501,265 @@ RETURNING *
 });
 
 
-app.post("/api/pagamento/vip/cartao", authCliente, manutencaoClientes, async (req, res) => {
+// app.post("/api/pagamento/vip/cartao", authCliente, manutencaoClientes, async (req, res) => {
+
+//   const client = await db.connect();
+//   let cliente_id;
+
+//   try {
+
+//     await client.query("BEGIN");
+
+// const { modelo_id, cpf, aceitou_termos, fingerprint, apenas_intent } = req.body;
+//     const userId = req.user.id;
+
+//     /* =====================================================
+//        🔎 VALIDAÇÕES INICIAIS
+//     ===================================================== */
+
+//     if (!modelo_id || !Number.isInteger(Number(modelo_id))) {
+//       await client.query("ROLLBACK");
+//       return res.status(400).json({ error: "modelo_id inválido" });
+//     }
+
+// if (!apenas_intent) {
+
+//   if (!aceitou_termos) {
+//     await client.query("ROLLBACK");
+//     return res.status(400).json({ error: "Você precisa aceitar os termos." });
+//   }
+
+//   if (!cpf || cpf.length < 11) {
+//     await client.query("ROLLBACK");
+//     return res.status(400).json({ error: "CPF obrigatório." });
+//   }
+
+//   if (!fingerprint) {
+//     await client.query("ROLLBACK");
+//     return res.status(400).json({ error: "Fingerprint obrigatório." });
+//   }
+
+// }
+//     const ip =
+//       req.headers["x-forwarded-for"]?.split(",")[0] ||
+//       req.socket.remoteAddress;
+
+//     /* =====================================================
+//        🔒 BLOQUEIOS
+//     ===================================================== */
+
+//     const ipBloqueado = await client.query(
+//       "SELECT 1 FROM ips_bloqueados WHERE ip = $1",
+//       [ip]
+//     );
+
+//     if (ipBloqueado.rowCount > 0) {
+//       await client.query("ROLLBACK");
+//       return res.status(403).json({ error: "IP bloqueado." });
+//     }
+
+//     const clienteRes = await client.query(
+//       "SELECT id, bloqueado FROM clientes WHERE user_id = $1",
+//       [userId]
+//     );
+
+//     if (!clienteRes.rowCount) {
+//       await client.query("ROLLBACK");
+//       return res.status(404).json({ error: "Cliente não encontrado" });
+//     }
+
+//     cliente_id = clienteRes.rows[0].id;
+
+//     if (clienteRes.rows[0].bloqueado) {
+//       await client.query("ROLLBACK");
+//       return res.status(403).json({ error: "Conta bloqueada." });
+//     }
+
+//     if (cpf) {
+//   const cpfBloqueado = await client.query(
+//     "SELECT 1 FROM cpfs_bloqueados WHERE cpf = $1",
+//     [cpf]
+//   );
+//   if (cpfBloqueado.rowCount > 0) {
+//     await client.query("ROLLBACK");
+//     return res.status(403).json({ error: "CPF bloqueado." });
+//   }
+// }
+
+//     /* =====================================================
+//        🔒 BLOQUEIO POR RECUSAS
+//     ===================================================== */
+
+//     if (fingerprint) {
+//       const tentativas = await client.query(`
+//       SELECT COUNT(*) FROM pagamento_tentativas
+//       WHERE fingerprint_pagamento = $1
+//       AND status = 'recusado'
+//       AND criado_em > NOW() - INTERVAL '1 hours'
+//     `, [fingerprint]);
+
+//     if (Number(tentativas.rows[0].count) >= 2) {
+//       await client.query("ROLLBACK");
+//       return res.status(403).json({
+//         error: "Forma de pagamento bloqueada por múltiplas recusas."
+//       });
+//     }
+//   }
+
+//     /* =====================================================
+//        🔄 ATUALIZAR CLIENTE
+//     ===================================================== */
+// if (cpf) {
+//   await client.query(
+//     "UPDATE clientes SET cpf = $1, ultimo_ip = $2 WHERE id = $3",
+//     [cpf, ip, cliente_id]
+//   );
+// } else {
+//   await client.query(
+//     "UPDATE clientes SET ultimo_ip = $1 WHERE id = $2",
+//     [ip, cliente_id]
+//   );
+// }
+
+//     /* =====================================================
+//        🔥 BUSCAR PLANO
+//     ===================================================== */
+
+//     const planoRes = await client.query(`
+//       SELECT valor_mensal
+//       FROM modelos_planos
+//       WHERE modelo_id = $1
+//       LIMIT 1
+//     `, [modelo_id]);
+
+//     if (!planoRes.rowCount) {
+//       await client.query("ROLLBACK");
+//       return res.status(400).json({ error: "Plano VIP não definido" });
+//     }
+
+//     let valorBase = Number(planoRes.rows[0].valor_mensal);
+
+//     /* =====================================================
+//        🔥 OFERTA
+//     ===================================================== */
+
+//     const ofertaRes = await client.query(`
+//       SELECT id, desconto_percentual, valor_promocional
+//       FROM ofertas
+//       WHERE modelo_id = $1
+//         AND ativa = true
+//         AND (data_inicio IS NULL OR data_inicio <= NOW())
+//         AND (data_fim IS NULL OR data_fim >= NOW())
+//       ORDER BY created_at DESC
+//       LIMIT 1
+//     `, [modelo_id]);
+
+//     let valorAssinatura = valorBase;
+//     let oferta_id = null;
+
+//     if (ofertaRes.rowCount) {
+
+//       oferta_id = ofertaRes.rows[0].id;
+
+//       if (ofertaRes.rows[0].valor_promocional) {
+//         valorAssinatura = Number(ofertaRes.rows[0].valor_promocional);
+//       } else if (ofertaRes.rows[0].desconto_percentual) {
+//         const desconto = Number(ofertaRes.rows[0].desconto_percentual);
+//         valorAssinatura =
+//           valorBase - (valorBase * desconto / 100);
+//       }
+//     }
+
+//     valorAssinatura = Number(valorAssinatura.toFixed(2));
+
+//     if (!valorAssinatura || valorAssinatura <= 0) {
+//       await client.query("ROLLBACK");
+//       return res.status(400).json({ error: "Valor inválido" });
+//     }
+
+// /* =====================================================
+//    💰 CÁLCULO CONSISTENTE
+// ===================================================== */
+
+// const valorCentavos = Math.round(valorAssinatura * 100);
+
+// const taxaTransacaoCentavos  = Math.round(valorCentavos * 0.10);
+// const taxaPlataformaCentavos = Math.round(valorCentavos * 0.05);
+
+// const amount =
+//   valorCentavos +
+//   taxaTransacaoCentavos +
+//   taxaPlataformaCentavos;
+
+// const taxaTransacao  = (taxaTransacaoCentavos / 100);
+// const taxaPlataforma = (taxaPlataformaCentavos / 100);
+// const valorTotal     = (amount / 100);
+
+// /* =====================================================
+//    💳 CRIAR PAYMENT INTENT
+// ===================================================== */
+
+// const paymentIntent = await stripe.paymentIntents.create({
+//   amount,
+//   currency: "brl",
+//    payment_method_types: ["card"],
+//    capture_method: "automatic",
+//   metadata: {
+//     tipo: "vip",
+//     cliente_id: String(cliente_id),
+//     modelo_id: String(modelo_id),
+//     oferta_id: oferta_id ? String(oferta_id) : "",
+//     valor_assinatura: String(valorAssinatura),   
+//     taxa_transacao: String(taxaTransacao),
+//     taxa_plataforma: String(taxaPlataforma),
+//     valor_total: String(valorTotal),             
+//     cpf: cpf || "",
+//     aceite_ip: ip || ""
+//   }
+// });
+
+// if (fingerprint) {
+// await client.query(`
+//   INSERT INTO pagamento_tentativas
+//   (cliente_id, metodo, fingerprint_pagamento, status, payment_intent_id)
+//   VALUES ($1,'cartao',$2,'pendente',$3)
+// `, [cliente_id, fingerprint, paymentIntent.id]);
+// }
+//     await client.query("COMMIT");
+
+//     return res.json({
+//       clientSecret: paymentIntent.client_secret
+//     });
+
+//   } catch (err) {
+
+//     await client.query("ROLLBACK");
+
+//     console.error("❌ Erro Stripe VIP:", err);
+
+//    if (err.type === "StripeCardError" && cliente_id && req.body.fingerprint) {
+
+//       await client.query(`
+//         INSERT INTO pagamento_tentativas
+//         (cliente_id, metodo, fingerprint_pagamento, status)
+//         VALUES ($1,'cartao',$2,'recusado')
+//       `,[cliente_id, req.body.fingerprint]);
+
+//       return res.status(400).json({
+//         error: "Pagamento não autorizado."
+//       });
+//     }
+
+//     return res.status(500).json({
+//       error: "Erro ao criar pagamento com cartão"
+//     });
+
+//   } finally {
+//     client.release();
+//   }
+// });
+
+app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
 
   const client = await db.connect();
   let cliente_id;
@@ -1510,7 +1768,15 @@ app.post("/api/pagamento/vip/cartao", authCliente, manutencaoClientes, async (re
 
     await client.query("BEGIN");
 
-const { modelo_id, cpf, aceitou_termos, fingerprint, apenas_intent } = req.body;
+    const {
+      modelo_id,
+      cpf,
+      aceitou_termos,
+      fingerprint,
+      apenas_intent,
+      card_token
+    } = req.body;
+
     const userId = req.user.id;
 
     /* =====================================================
@@ -1522,24 +1788,29 @@ const { modelo_id, cpf, aceitou_termos, fingerprint, apenas_intent } = req.body;
       return res.status(400).json({ error: "modelo_id inválido" });
     }
 
-if (!apenas_intent) {
+    if (!card_token) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "card_token obrigatório" });
+    }
 
-  if (!aceitou_termos) {
-    await client.query("ROLLBACK");
-    return res.status(400).json({ error: "Você precisa aceitar os termos." });
-  }
+    if (!apenas_intent) {
 
-  if (!cpf || cpf.length < 11) {
-    await client.query("ROLLBACK");
-    return res.status(400).json({ error: "CPF obrigatório." });
-  }
+      if (!aceitou_termos) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({ error: "Você precisa aceitar os termos." });
+      }
 
-  if (!fingerprint) {
-    await client.query("ROLLBACK");
-    return res.status(400).json({ error: "Fingerprint obrigatório." });
-  }
+      if (!cpf || cpf.length < 11) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({ error: "CPF obrigatório." });
+      }
 
-}
+      if (!fingerprint) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({ error: "Fingerprint obrigatório." });
+      }
+    }
+
     const ip =
       req.headers["x-forwarded-for"]?.split(",")[0] ||
       req.socket.remoteAddress;
@@ -1576,50 +1847,32 @@ if (!apenas_intent) {
     }
 
     if (cpf) {
-  const cpfBloqueado = await client.query(
-    "SELECT 1 FROM cpfs_bloqueados WHERE cpf = $1",
-    [cpf]
-  );
-  if (cpfBloqueado.rowCount > 0) {
-    await client.query("ROLLBACK");
-    return res.status(403).json({ error: "CPF bloqueado." });
-  }
-}
+      const cpfBloqueado = await client.query(
+        "SELECT 1 FROM cpfs_bloqueados WHERE cpf = $1",
+        [cpf]
+      );
 
-    /* =====================================================
-       🔒 BLOQUEIO POR RECUSAS
-    ===================================================== */
-
-    if (fingerprint) {
-      const tentativas = await client.query(`
-      SELECT COUNT(*) FROM pagamento_tentativas
-      WHERE fingerprint_pagamento = $1
-      AND status = 'recusado'
-      AND criado_em > NOW() - INTERVAL '1 hours'
-    `, [fingerprint]);
-
-    if (Number(tentativas.rows[0].count) >= 2) {
-      await client.query("ROLLBACK");
-      return res.status(403).json({
-        error: "Forma de pagamento bloqueada por múltiplas recusas."
-      });
+      if (cpfBloqueado.rowCount > 0) {
+        await client.query("ROLLBACK");
+        return res.status(403).json({ error: "CPF bloqueado." });
+      }
     }
-  }
 
     /* =====================================================
        🔄 ATUALIZAR CLIENTE
     ===================================================== */
-if (cpf) {
-  await client.query(
-    "UPDATE clientes SET cpf = $1, ultimo_ip = $2 WHERE id = $3",
-    [cpf, ip, cliente_id]
-  );
-} else {
-  await client.query(
-    "UPDATE clientes SET ultimo_ip = $1 WHERE id = $2",
-    [ip, cliente_id]
-  );
-}
+
+    if (cpf) {
+      await client.query(
+        "UPDATE clientes SET cpf = $1, ultimo_ip = $2 WHERE id = $3",
+        [cpf, ip, cliente_id]
+      );
+    } else {
+      await client.query(
+        "UPDATE clientes SET ultimo_ip = $1 WHERE id = $2",
+        [ip, cliente_id]
+      );
+    }
 
     /* =====================================================
        🔥 BUSCAR PLANO
@@ -1677,67 +1930,103 @@ if (cpf) {
       return res.status(400).json({ error: "Valor inválido" });
     }
 
-/* =====================================================
-   💰 CÁLCULO CONSISTENTE
-===================================================== */
+    /* =====================================================
+       💰 CÁLCULO
+    ===================================================== */
 
-const valorCentavos = Math.round(valorAssinatura * 100);
+    const valorCentavos = Math.round(valorAssinatura * 100);
 
-const taxaTransacaoCentavos  = Math.round(valorCentavos * 0.10);
-const taxaPlataformaCentavos = Math.round(valorCentavos * 0.05);
+    const taxaTransacaoCentavos  = Math.round(valorCentavos * 0.10);
+    const taxaPlataformaCentavos = Math.round(valorCentavos * 0.05);
 
-const amount =
-  valorCentavos +
-  taxaTransacaoCentavos +
-  taxaPlataformaCentavos;
+    const amount =
+      valorCentavos +
+      taxaTransacaoCentavos +
+      taxaPlataformaCentavos;
 
-const taxaTransacao  = (taxaTransacaoCentavos / 100);
-const taxaPlataforma = (taxaPlataformaCentavos / 100);
-const valorTotal     = (amount / 100);
+    const taxaTransacao  = taxaTransacaoCentavos / 100;
+    const taxaPlataforma = taxaPlataformaCentavos / 100;
+    const valorTotal     = amount / 100;
 
-/* =====================================================
-   💳 CRIAR PAYMENT INTENT
-===================================================== */
+    /* =====================================================
+       💳 CRIAR ORDER PAGARME
+    ===================================================== */
 
-const paymentIntent = await stripe.paymentIntents.create({
-  amount,
-  currency: "brl",
-   payment_method_types: ["card"],
-   capture_method: "automatic",
-  metadata: {
-    tipo: "vip",
-    cliente_id: String(cliente_id),
-    modelo_id: String(modelo_id),
-    oferta_id: oferta_id ? String(oferta_id) : "",
-    valor_assinatura: String(valorAssinatura),   
-    taxa_transacao: String(taxaTransacao),
-    taxa_plataforma: String(taxaPlataforma),
-    valor_total: String(valorTotal),             
-    cpf: cpf || "",
-    aceite_ip: ip || ""
-  }
-});
+    const pagarmeRes = await axios.post(
+      "https://api.pagar.me/core/v5/orders",
+      {
 
-if (fingerprint) {
-await client.query(`
-  INSERT INTO pagamento_tentativas
-  (cliente_id, metodo, fingerprint_pagamento, status, payment_intent_id)
-  VALUES ($1,'cartao',$2,'pendente',$3)
-`, [cliente_id, fingerprint, paymentIntent.id]);
-}
+        items: [
+          {
+            amount: amount,
+            description: "Assinatura VIP",
+            quantity: 1
+          }
+        ],
+
+        payments: [
+          {
+            payment_method: "credit_card",
+
+            credit_card: {
+              card_token: card_token,
+              installments: 1
+            },
+
+            antifraud_enabled: true
+          }
+        ],
+
+        metadata: {
+          tipo: "vip",
+          cliente_id: String(cliente_id),
+          modelo_id: String(modelo_id),
+          oferta_id: oferta_id ? String(oferta_id) : "",
+
+          valor_assinatura: String(valorAssinatura),
+          taxa_transacao: String(taxaTransacao),
+          taxa_plataforma: String(taxaPlataforma),
+          valor_total: String(valorTotal),
+
+          cpf: cpf || "",
+          aceite_ip: ip || ""
+        }
+
+      },
+      {
+        headers: {
+          Authorization:
+            "Basic " +
+            Buffer.from(process.env.PAGARME_SECRET_KEY + ":").toString("base64"),
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    const order = pagarmeRes.data;
+
+    if (fingerprint) {
+      await client.query(`
+        INSERT INTO pagamento_tentativas
+        (cliente_id, metodo, fingerprint_pagamento, status, pagarme_order_id)
+        VALUES ($1,'cartao',$2,'pendente',$3)
+      `,[cliente_id, fingerprint, order.id]);
+    }
+
     await client.query("COMMIT");
 
     return res.json({
-      clientSecret: paymentIntent.client_secret
+      order_id: order.id,
+      valor_total: valorTotal
     });
 
   } catch (err) {
 
     await client.query("ROLLBACK");
 
-    console.error("❌ Erro Stripe VIP:", err);
+    console.error("Erro VIP Pagarme:", err.response?.data || err);
 
-   if (err.type === "StripeCardError" && cliente_id && req.body.fingerprint) {
+    if (cliente_id && req.body.fingerprint) {
 
       await client.query(`
         INSERT INTO pagamento_tentativas
@@ -6223,15 +6512,158 @@ app.post("/api/pagamento/midia/pix", auth, async (req, res) => {
 
 });
 
+// app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
+//   const client = await db.connect();
+
+//   try {
+//     const { conteudo_id } = req.body;
+//     const userId = req.user.id;
+
+//     if (!conteudo_id || !Number.isInteger(Number(conteudo_id))) {
+//       return res.status(400).json({ error: "conteudo_id inválido" });
+//     }
+
+//     const conteudoId = Number(conteudo_id);
+
+//     const ip =
+//       req.headers["x-forwarded-for"]?.split(",")[0] ||
+//       req.socket.remoteAddress;
+
+//      await client.query("BEGIN");
+
+//     /* 🔒 BUSCAR CLIENTE */
+//     const clienteRes = await client.query(
+//       "SELECT id, bloqueado FROM clientes WHERE user_id = $1",
+//       [userId]
+//     );
+
+//     if (!clienteRes.rowCount) {
+//       await client.query("ROLLBACK");
+//       return res.status(404).json({ error: "Cliente não encontrado" });
+//     }
+
+//     const { id: cliente_id, bloqueado } = clienteRes.rows[0];
+
+//     if (bloqueado) {
+//       await client.query("ROLLBACK");
+//       return res.status(403).json({ error: "Conta bloqueada." });
+//     }
+
+//     /* 🔎 BUSCAR CONTEÚDO */
+//     const messageRes = await client.query(`
+//       SELECT preco, modelo_id
+//       FROM messages
+//       WHERE id = $1
+//        AND cliente_id = $2
+//     `, [conteudoId, cliente_id]);
+
+//     if (!messageRes.rowCount) {
+//       await client.query("ROLLBACK");
+//       return res.status(404).json({ error: "Conteúdo não encontrado" });
+//     }
+
+//     const { preco, modelo_id } = messageRes.rows[0];
+
+//     if (!preco || Number(preco) <= 0) {
+//       await client.query("ROLLBACK");
+//       return res.status(400).json({
+//         error: "Conteúdo não está à venda."
+//       });
+//     }
+
+//     /* 🚫 EVITAR COMPRA DUPLICADA (PIX OU CARTÃO) */
+//     const jaComprado = await client.query(`
+//       SELECT 1
+//       FROM conteudo_pacotes
+//       WHERE message_id = $1
+//         AND cliente_id = $2
+//         AND status = 'pago'
+//       LIMIT 1
+//     `, [conteudoId, cliente_id]);
+
+//     if (jaComprado.rowCount > 0) {
+//       await client.query("ROLLBACK");
+//       return res.status(400).json({
+//         error: "Conteúdo já adquirido."
+//       });
+//     }
+
+//     /* 💰 CÁLCULO EM CENTAVOS (PADRÃO WEBHOOK) */
+//     const valorCentavos = Math.round(Number(preco) * 100);
+
+//     const taxaTransacaoCentavos  = Math.round(valorCentavos * 0.10);
+//     const taxaPlataformaCentavos = Math.round(valorCentavos * 0.05);
+
+//     const amount =
+//       valorCentavos +
+//       taxaTransacaoCentavos +
+//       taxaPlataformaCentavos;
+
+//     const valorBase      = valorCentavos / 100;
+//     const taxaTransacao  = taxaTransacaoCentavos / 100;
+//     const taxaPlataforma = taxaPlataformaCentavos / 100;
+//     const total          = amount / 100;
+
+//     /* 💳 CRIAR PAYMENT INTENT */
+//     const paymentIntent = await stripe.paymentIntents.create({
+//       amount,
+//       currency: "brl",
+//       payment_method_types: ["card"],
+//       metadata: {
+//         tipo: "conteudo_cartao",
+//         message_id: String(conteudoId),
+//         cliente_id: String(cliente_id),
+//         modelo_id: String(modelo_id),
+
+//         valor_midia: String(valorBase),
+//         taxa_transacao: String(taxaTransacao),
+//         taxa_plataforma: String(taxaPlataforma),
+//         valor_total: String(total),
+
+//         aceite_ip: ip
+//       }
+//     });
+
+//     /* 📝 REGISTRAR CONTROLE LOCAL */
+//     await client.query(`
+//       INSERT INTO pagamentos_cartao
+//       (cliente_id, conteudo_id, stripe_payment_intent_id, status)
+//       VALUES ($1,$2,$3,'iniciado')
+//     `, [cliente_id, conteudoId, paymentIntent.id]);
+
+//     await client.query("COMMIT");
+
+//     return res.json({
+//       clientSecret: paymentIntent.client_secret,
+//       total,
+//       valorBase,
+//       taxaTransacao,
+//       taxaPlataforma
+//     });
+
+//   } catch (err) {
+//     await client.query("ROLLBACK");
+//     console.error("🔥 ERRO CARTÃO MIDIA:", err);
+//     return res.status(500).json({ error: "Erro ao gerar pagamento" });
+//   } finally {
+//     client.release();
+//   }
+// });
+
 app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
   const client = await db.connect();
 
   try {
-    const { conteudo_id } = req.body;
+
+    const { conteudo_id, card_token } = req.body;
     const userId = req.user.id;
 
     if (!conteudo_id || !Number.isInteger(Number(conteudo_id))) {
       return res.status(400).json({ error: "conteudo_id inválido" });
+    }
+
+    if (!card_token) {
+      return res.status(400).json({ error: "card_token obrigatório" });
     }
 
     const conteudoId = Number(conteudo_id);
@@ -6240,7 +6672,7 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
       req.headers["x-forwarded-for"]?.split(",")[0] ||
       req.socket.remoteAddress;
 
-     await client.query("BEGIN");
+    await client.query("BEGIN");
 
     /* 🔒 BUSCAR CLIENTE */
     const clienteRes = await client.query(
@@ -6265,7 +6697,7 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
       SELECT preco, modelo_id
       FROM messages
       WHERE id = $1
-       AND cliente_id = $2
+      AND cliente_id = $2
     `, [conteudoId, cliente_id]);
 
     if (!messageRes.rowCount) {
@@ -6282,13 +6714,13 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
       });
     }
 
-    /* 🚫 EVITAR COMPRA DUPLICADA (PIX OU CARTÃO) */
+    /* 🚫 EVITAR COMPRA DUPLICADA */
     const jaComprado = await client.query(`
       SELECT 1
       FROM conteudo_pacotes
       WHERE message_id = $1
-        AND cliente_id = $2
-        AND status = 'pago'
+      AND cliente_id = $2
+      AND status = 'pago'
       LIMIT 1
     `, [conteudoId, cliente_id]);
 
@@ -6299,7 +6731,7 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
       });
     }
 
-    /* 💰 CÁLCULO EM CENTAVOS (PADRÃO WEBHOOK) */
+    /* 💰 CÁLCULO EM CENTAVOS */
     const valorCentavos = Math.round(Number(preco) * 100);
 
     const taxaTransacaoCentavos  = Math.round(valorCentavos * 0.10);
@@ -6315,37 +6747,71 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
     const taxaPlataforma = taxaPlataformaCentavos / 100;
     const total          = amount / 100;
 
-    /* 💳 CRIAR PAYMENT INTENT */
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount,
-      currency: "brl",
-      payment_method_types: ["card"],
-      metadata: {
-        tipo: "conteudo_cartao",
-        message_id: String(conteudoId),
-        cliente_id: String(cliente_id),
-        modelo_id: String(modelo_id),
+    /* 💳 CRIAR ORDER NO PAGARME */
 
-        valor_midia: String(valorBase),
-        taxa_transacao: String(taxaTransacao),
-        taxa_plataforma: String(taxaPlataforma),
-        valor_total: String(total),
+    const pagarmeRes = await axios.post(
+      "https://api.pagar.me/core/v5/orders",
+      {
+        items: [
+          {
+            amount: amount,
+            description: "Conteúdo premium",
+            quantity: 1
+          }
+        ],
 
-        aceite_ip: ip
+        payments: [
+          {
+            payment_method: "credit_card",
+
+            credit_card: {
+              card_token: card_token,
+              installments: 1
+            },
+
+            antifraud_enabled: true
+          }
+        ],
+
+        metadata: {
+          tipo: "conteudo_cartao",
+          message_id: String(conteudoId),
+          cliente_id: String(cliente_id),
+          modelo_id: String(modelo_id),
+
+          valor_midia: String(valorBase),
+          taxa_transacao: String(taxaTransacao),
+          taxa_plataforma: String(taxaPlataforma),
+          valor_total: String(total),
+
+          aceite_ip: ip
+        }
+
+      },
+      {
+        headers: {
+          Authorization:
+            "Basic " +
+            Buffer.from(process.env.PAGARME_SECRET_KEY + ":").toString("base64"),
+          "Content-Type": "application/json"
+        }
       }
-    });
+    );
+
+    const order = pagarmeRes.data;
 
     /* 📝 REGISTRAR CONTROLE LOCAL */
+
     await client.query(`
       INSERT INTO pagamentos_cartao
-      (cliente_id, conteudo_id, stripe_payment_intent_id, status)
+      (cliente_id, conteudo_id, pagarme_order_id, status)
       VALUES ($1,$2,$3,'iniciado')
-    `, [cliente_id, conteudoId, paymentIntent.id]);
+    `, [cliente_id, conteudoId, order.id]);
 
     await client.query("COMMIT");
 
     return res.json({
-      clientSecret: paymentIntent.client_secret,
+      order_id: order.id,
       total,
       valorBase,
       taxaTransacao,
@@ -6353,9 +6819,18 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
     });
 
   } catch (err) {
+
     await client.query("ROLLBACK");
-    console.error("🔥 ERRO CARTÃO MIDIA:", err);
-    return res.status(500).json({ error: "Erro ao gerar pagamento" });
+
+    console.error(
+      "🔥 ERRO PAGAMENTO CARTÃO:",
+      err.response?.data || err
+    );
+
+    return res.status(500).json({
+      error: "Erro ao gerar pagamento"
+    });
+
   } finally {
     client.release();
   }
