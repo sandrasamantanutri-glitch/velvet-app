@@ -2639,7 +2639,6 @@ ORDER BY array_position($1, id)
   }
 });
 
-// path: sockets/chat.js
 
 socket.on("marcarConteudoVisto", async (payload) => {
   try {
@@ -2667,19 +2666,25 @@ socket.on("marcarConteudoVisto", async (payload) => {
 
     const owns = await db.query(
       `
-      SELECT 1
-      FROM messages m
-      JOIN messages_conteudos mc ON mc.message_id = m.id
-      JOIN conteudos c ON c.id = mc.conteudo_id
-      WHERE m.id = $1
-        AND m.cliente_id = $2
-        AND m.modelo_id = $3
-        AND c.media_key = $4
-      LIMIT 1
+SELECT 1
+FROM messages m
+JOIN messages_conteudos mc ON mc.message_id = m.id
+JOIN conteudos c ON c.id = mc.conteudo_id
+WHERE m.id = $1
+  AND m.cliente_id = $2
+  AND c.media_key = $3
+LIMIT 1
       `,
-      [message_id, cliente_id, modelo_id, media_key]
+      [message_id, cliente_id, media_key]
     );
-    if (!owns.rowCount) return;
+   if (!owns.rowCount) {
+  console.warn("⚠️ mídia não pertence à mensagem", {
+    message_id,
+    cliente_id,
+    media_key
+  });
+  return;
+}
 
  await db.query(
       `
@@ -3977,6 +3982,9 @@ app.get("/api/chat/conteudos-vistos", authCliente, async (req, res) => {
       `,
       [req.cliente_id]
     );
+
+    console.log("cliente:", req.cliente_id);
+console.log("rows:", result.rows);
 
     return res.json(result.rows); // [{media_key}]
 
