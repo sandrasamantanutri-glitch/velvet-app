@@ -1616,15 +1616,36 @@ async function carregarConteudosVistos() {
 function atualizarTilesPorMediaKey(mediaKey) {
   if (!mediaKey) return;
 
-  // CSS.escape pode não existir em browsers antigos; fallback simples
-  const safeKey = (window.CSS && CSS.escape) ? CSS.escape(mediaKey) : mediaKey.replace(/"/g, '\\"');
+  const safeKey =
+    (window.CSS && CSS.escape)
+      ? CSS.escape(mediaKey)
+      : mediaKey.replace(/"/g, '\\"');
 
-  document
-    .querySelectorAll(`.midia-item[data-media-key="${safeKey}"]`)
-    .forEach((tile) => {
-      tile.classList.add("midia-vista");
-      tile.classList.remove("midia-bloqueada");
-    });
+  const tiles = document.querySelectorAll(
+    `.midia-item[data-media-key="${safeKey}"]`
+  );
+
+  tiles.forEach((tile) => {
+
+    tile.classList.add("midia-vista");
+    tile.classList.remove("midia-bloqueada");
+
+    const card = tile.closest(".chat-conteudo");
+
+    if (!card) return;
+
+    const total = card.querySelectorAll(".midia-item").length;
+    const vistas = card.querySelectorAll(".midia-vista").length;
+
+    if (vistas === total) {
+      card.classList.remove("bloqueado", "parcial");
+      card.classList.add("livre");
+    } else if (vistas > 0) {
+      card.classList.remove("bloqueado");
+      card.classList.add("parcial");
+    }
+
+  });
 }
 
 function registrarMidiaVista({ message_id, media_key }) {
@@ -1635,10 +1656,8 @@ function registrarMidiaVista({ message_id, media_key }) {
     window.mediaKeysVistas.add(media_key);
   }
 
-  // 🔥 importantíssimo: atualiza TODAS as mensagens (inclui PPV já renderizado)
   atualizarTilesPorMediaKey(media_key);
 
-  // persiste via socket (sem POST 403)
   if (socket) {
     socket.emit("marcarConteudoVisto", {
       message_id,
