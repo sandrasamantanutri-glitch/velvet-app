@@ -161,23 +161,6 @@ msgInput.addEventListener("keydown", e=>{
 });
 
 
-const previewScroll = document.getElementById("previewConteudos");
-
-previewScroll?.addEventListener("scroll", ()=>{
-   console.log("scroll popup");
-
-
-  const nearBottom =
-    previewScroll.scrollTop + previewScroll.clientHeight >=
-    previewScroll.scrollHeight - 200;
-
-  if(nearBottom){
-    carregarConteudosPopup();
-  }
-
-});
-
-
   }catch(err){
     console.error("Erro DOMContentLoaded:",err);
   }
@@ -731,12 +714,12 @@ async function abrirPopupConteudos() {
     }
 
     const popup = document.getElementById("popupConteudos");
-const grid  = document.getElementById("previewConteudos");
+    const grid  = document.getElementById("previewConteudos");
 
-if (!popup || !grid) return;
+    if (!popup || !grid) return;
 
-popup.classList.remove("hidden");
-grid.innerHTML = `<div class="popup-loading">Carregando...</div>`;
+    popup.classList.remove("hidden");
+    grid.innerHTML = `<div class="popup-loading">Carregando...</div>`;
 
    if (!window.conteudosVistosCliente) {
       window.conteudosVistosCliente = new Set();
@@ -751,26 +734,26 @@ grid.innerHTML = `<div class="popup-loading">Carregando...</div>`;
       return;
     }
 
-const res = await fetch("/api/conteudos", {
-  headers: {
-    Authorization: "Bearer " + token
-  }
-});
-
-const data = await res.json();
-const conteudos = data.conteudos || [];
+    const res = await fetch("/api/conteudos?limit=1000", {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
 
     if (!res.ok) {
       grid.innerHTML = "Erro ao carregar conteúdos.";
       return;
     }
 
-if (!conteudos.length) {
-  grid.innerHTML = "<p>Nenhum conteúdo enviado ainda.</p>";
-  return;
-}
+    const data = await res.json();
+    const conteudos = Array.isArray(data) ? data : data.conteudos;
 
-   grid.innerHTML = "";
+    if (!Array.isArray(conteudos) || conteudos.length === 0) {
+      grid.innerHTML = "<p>Nenhum conteúdo enviado ainda.</p>";
+      return;
+    }
+
+    grid.innerHTML = "";
 
     conteudos.forEach(c => {
 
@@ -779,7 +762,7 @@ if (!conteudos.length) {
       const id = Number(c.id);
       const tipo = c.tipo || "imagem";
 
-     const jaVisto = window.conteudosVistosCliente.has(Number(c.id));
+      const jaVisto = window.conteudosVistosCliente.has(Number(c.id));
 
       const item = document.createElement("div");
 
@@ -802,7 +785,7 @@ btnPreview.className = "btn-preview";
 btnPreview.innerHTML = "👁";
 
 btnPreview.addEventListener("click", (e) => {
-  e.stopPropagation();
+  e.stopPropagation(); // 🔥 impede de selecionar/desselecionar
 
   abrirPreviewMidia({
     url: item.dataset.full,
@@ -836,8 +819,7 @@ if (jaVisto) {
       grid.appendChild(item);
     });
 
-    ativarLazyPopup(grid);
-
+     ativarLazyPopup(grid);
 
   } catch (err) {
     console.error("Erro abrirPopupConteudos:", err);
@@ -1294,73 +1276,6 @@ function criarMensagemElemento(msg){
   }
 
   return div;
-
-}
-
-async function carregarConteudosPopup(){
-
-  const grid = document.getElementById("previewConteudos");
-  const token = localStorage.getItem("token");
-
-  if (!grid || !token) return;
-
-  const limite = 1000; // grande o suficiente para trazer tudo
-
-  try{
-
-    const res = await fetch(
-      `/api/conteudos?venda=true&page=1&limit=${limite}`,
-      {
-        headers:{ Authorization:"Bearer " + token }
-      }
-    );
-
-    if(!res.ok){
-      grid.innerHTML = "Erro ao carregar conteúdos.";
-      return;
-    }
-
-    const data = await res.json();
-    const conteudos = data.conteudos || [];
-
-    if(!conteudos.length){
-      grid.innerHTML = "<p>Nenhum conteúdo enviado ainda.</p>";
-      return;
-    }
-
-    grid.innerHTML = "";
-
-    conteudos.forEach(c=>{
-
-      const item = document.createElement("div");
-
-      const jaVisto = window.conteudosVistosCliente?.has(Number(c.id));
-
-      item.className =
-        "preview-item lazy-popup" +
-        (jaVisto ? " visto desabilitado" : "");
-
-      item.dataset.conteudoId = c.id;
-      item.dataset.thumb = c.thumbnail_url || c.url;
-      item.dataset.full  = c.url;
-      item.dataset.tipo  = c.tipo || "imagem";
-
-      item.innerHTML = `<div class="popup-placeholder"></div>`;
-
-      item.addEventListener("click",()=>{
-        item.classList.toggle("selected");
-      });
-
-      grid.appendChild(item);
-
-    });
-
-    ativarLazyPopup(grid);
-
-  }catch(err){
-    console.error("Erro carregar conteúdos popup:", err);
-    grid.innerHTML = "Erro inesperado.";
-  }
 
 }
 
