@@ -2471,10 +2471,10 @@ socket.on("sendConteudo", async ({
         // 🔒 3️⃣ VALIDAR QUE OS CONTEÚDOS PERTENCEM À MODELO
         const validosRes = await db.query(
           `
-          SELECT id
+          SELECT id, url, thumbnail_url, tipo AS tipo_media
           FROM conteudos
           WHERE id = ANY($1)
-          AND modelo_id = $2
+          ORDER BY array_position($1, id)
           `,
           [conteudos_ids, modelo_id]
         );
@@ -2523,7 +2523,7 @@ await db.query(
     // 6️⃣ BUSCAR MÍDIAS
     const midiasRes = await db.query(
       `
-      SELECT id, url, thumbnail_url, tipo AS tipo_media
+      SELECT url, thumbnail_url, tipo AS tipo_media
 FROM conteudos
 WHERE id = ANY($1)
 ORDER BY array_position($1, id)
