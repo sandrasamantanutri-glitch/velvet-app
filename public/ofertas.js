@@ -203,7 +203,7 @@ async function abrirModalCriarOferta() {
 
   function render() {
     btnVoltar.disabled = etapa === 1;
-    btnAvancar.textContent = etapa === 6 ? "Fechar" : "Avançar";
+btnAvancar.textContent = etapa === 5 ? "Criar oferta" : "Avançar";
 
     if (etapa === 1) {
       content.innerHTML = `
@@ -281,11 +281,26 @@ async function abrirModalCriarOferta() {
 
   btnAvancar.onclick = async () => {
     if (etapa === 1) dados.nome = content.querySelector("#nome").value;
-    if (etapa === 2) dados.limite = Number(content.querySelector("#limite").value);
+    if (etapa === 2) dados.limite = Number(content.querySelector("#limite").value) || 0;
 
-    if (etapa < 4) {
+if (etapa < 5) {
   etapa++;
   render();
+  return;
+}
+
+if (!dados.nome) {
+  alert("Digite o nome da oferta");
+  return;
+}
+
+if (!dados.limite || dados.limite <= 0) {
+  alert("Informe o limite de assinaturas");
+  return;
+}
+
+if (!dados.desconto) {
+  alert("Escolha um desconto");
   return;
 }
 
@@ -302,8 +317,7 @@ async function abrirModalCriarOferta() {
        nome: dados.nome,
        limite: dados.limite,
       dias: dados.dias,
-      desconto: dados.desconto,
-      mensagem: dados.mensagem
+      desconto: dados.desconto
        })
      });
 

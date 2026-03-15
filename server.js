@@ -1466,20 +1466,20 @@ app.post("/api/ofertas", authModelo, async (req, res) => {
 
     const result = await db.query(
       `
-      INSERT INTO ofertas (
-        modelo_id,
-        nome,
-        limite_assinaturas,
-        assinaturas_usadas,
-        desconto_percentual,
-        valor_base,
-        valor_promocional,
-        data_inicio,
-        data_fim,
-        ativa
-      )
-      VALUES ($1,$2,$3,0,$4,$5,NOW(),$6,$7,true)
-      RETURNING *
+     INSERT INTO ofertas (
+  modelo_id,
+  nome,
+  limite_assinaturas,
+  assinaturas_usadas,
+  desconto_percentual,
+  valor_base,
+  valor_promocional,
+  data_inicio,
+  data_fim,
+  ativa
+)
+VALUES ($1,$2,$3,0,$4,$5,$6,NOW(),$7,true)
+RETURNING *
       `,
       [
         modeloId,
