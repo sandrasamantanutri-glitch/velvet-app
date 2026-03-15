@@ -509,15 +509,22 @@ div.innerHTML = `
     ${msg.sender === "modelo" && !msg.visto ? `
     ` : ""}
   <div class="pacote-grid">
-    ${(msg.midias || []).map((m,index)=>`
-      <div class="midia-item lazy-midia"
-        data-conteudo-id="${m.id}"
-        data-thumb="${m.thumbnail_url || m.url}"
-        data-full="${m.url}"
-        data-index="${index}"
-        style="background-image:url('${m.thumbnail_url || m.url}')">
-      </div>
-    `).join("")}
+
+  ${(msg.midias || []).map((m,index)=>{
+
+  const conteudoId = Number(m.id);
+  const jaVisto = window.conteudosVistosCliente?.has(conteudoId);
+
+  return `
+    <div class="midia-item lazy-midia ${jaVisto ? "midia-vista" : "midia-bloqueada"}"
+      data-conteudo-id="${conteudoId}"
+      data-thumb="${m.thumbnail_url || m.url}"
+      data-full="${m.url}"
+      data-index="${index}"
+      style="background-image:url('${m.thumbnail_url || m.url}')">
+    </div>
+  `;
+}).join("")}
   </div>
 
   <div class="msg-meta">
