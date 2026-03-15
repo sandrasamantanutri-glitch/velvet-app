@@ -426,11 +426,12 @@ const valores = await calcularValores({
             metadata.aceite_ip || null
           ]);
 
-          const conteudo_ids = await marcarConteudoComoLiberadoPorPagamento(client, {
-  message_id,
-  cliente_id,
-  modelo_id,
-});
+const { conteudo_ids, media_keys } =
+  await marcarConteudoComoLiberadoPorPagamento(client, {
+    message_id,
+    cliente_id,
+    modelo_id,
+  });
 
 dadosParaEmitir = {
   tipo: "conteudo_cartao",
@@ -438,6 +439,7 @@ dadosParaEmitir = {
   modelo_id,
   message_id,
   conteudo_ids,
+  media_keys
 };
         }
       }
@@ -478,11 +480,15 @@ dadosParaEmitir = {
       try {
   if (dadosParaEmitir?.tipo === "conteudo_cartao") {
     const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
-    io.to(sala).emit("conteudoLiberado", {
-      message_id: Number(dadosParaEmitir.message_id),
-      conteudo_ids: dadosParaEmitir.conteudo_ids || [],
-    });
-  }
+
+io.to(sala).emit("conteudoLiberado", {
+  message_id: Number(dadosParaEmitir.message_id),
+  conteudo_ids: dadosParaEmitir.conteudo_ids || [],
+  media_keys: dadosParaEmitir.media_keys || []
+});
+
+}
+
 if (dadosParaEmitir?.tipo === "vip") {
 
   io.emit("vipAtivado", {
@@ -727,7 +733,7 @@ console.log("conteudo_pacotes atualizado");
 LIBERAR CONTEÚDO
 ===================================================== */
 
-const conteudo_ids =
+const { conteudo_ids, media_keys } =
 await marcarConteudoComoLiberadoPorPagamento(client,{
 message_id,
 cliente_id,
@@ -786,7 +792,8 @@ tipo:"conteudo_pix",
 cliente_id,
 modelo_id,
 message_id,
-conteudo_ids
+conteudo_ids,
+media_keys
 };
 
 }
@@ -1018,7 +1025,8 @@ console.log("Emitindo conteudoLiberado para", sala);
 
 io.to(sala).emit("conteudoLiberado",{
 message_id:Number(dadosParaEmitir.message_id),
-conteudo_ids:dadosParaEmitir.conteudo_ids || []
+conteudo_ids:dadosParaEmitir.conteudo_ids || [],
+media_keys:dadosParaEmitir.media_keys || []
 });
 
 }
@@ -1131,127 +1139,166 @@ function manutencaoClientes(req, res, next) {
 
 }
 
-function gerarHash(buffer) {
-  return crypto
-    .createHash("sha256")
-    .update(buffer)
-    .digest("hex");
-}
+// function gerarHash(buffer) {
+//   return crypto
+//     .createHash("sha256")
+//     .update(buffer)
+//     .digest("hex");
+// }
 
-// 📦 FEED CANÔNICO (FONTE ÚNICA)
-async function buscarFeedCompletoPorModeloId(modelo_id) {
-  const result = await db.query(
-    `
-    SELECT
-      id,
-      url,
-      tipo,
-      tipo_conteudo,
-      preco,
-      descricao,
-      thumbnail_url,
-      criado_em
-    FROM conteudos
-    WHERE modelo_id = $1
-      AND ativo = TRUE   -- 🔥 FILTRO QUE FALTAVA
-      AND (
-        tipo_conteudo != 'venda'
-        OR (tipo_conteudo = 'venda' AND COALESCE(preco, 0) > 0)
-      )
-    ORDER BY id DESC
-    `,
-    [modelo_id]
-  );
+// // 📦 FEED CANÔNICO (FONTE ÚNICA)
+// async function buscarFeedCompletoPorModeloId(modelo_id) {
+//   const result = await db.query(
+//     `
+//     SELECT
+//       id,
+//       url,
+//       tipo,
+//       tipo_conteudo,
+//       preco,
+//       descricao,
+//       thumbnail_url,
+//       criado_em
+//     FROM conteudos
+//     WHERE modelo_id = $1
+//       AND ativo = TRUE   -- 🔥 FILTRO QUE FALTAVA
+//       AND (
+//         tipo_conteudo != 'venda'
+//         OR (tipo_conteudo = 'venda' AND COALESCE(preco, 0) > 0)
+//       )
+//     ORDER BY id DESC
+//     `,
+//     [modelo_id]
+//   );
 
-  return result.rows;
-}
+//   return result.rows;
+// }
 
-async function gerarThumbnailVideo(videoBuffer, modelo_id) {
+// async function gerarThumbnailVideo(videoBuffer, modelo_id) {
 
-  const timestamp = Date.now();
-  const tmpDir = os.tmpdir();
+//   const timestamp = Date.now();
+//   const tmpDir = os.tmpdir();
 
-  const videoPath = path.join(tmpDir, `video-${timestamp}.tmp`);
-  const thumbPath = path.join(tmpDir, `thumb-${timestamp}.jpg`);
+//   const videoPath = path.join(tmpDir, `video-${timestamp}.tmp`);
+//   const thumbPath = path.join(tmpDir, `thumb-${timestamp}.jpg`);
 
-  try {
+//   try {
 
-    // 1️⃣ Salva o buffer direto (sem baixar do B2)
-    fs.writeFileSync(videoPath, videoBuffer);
+//     // 1️⃣ Salva o buffer direto (sem baixar do B2)
+//     fs.writeFileSync(videoPath, videoBuffer);
 
-    // 2️⃣ Gera thumbnail
-    await new Promise((resolve, reject) => {
-      ffmpeg(videoPath)
-        .screenshots({
-          timestamps: ["1"],
-          filename: path.basename(thumbPath),
-          folder: tmpDir,
-          size: "400x?"
-        })
-        .on("end", resolve)
-        .on("error", reject);
-    });
+//     // 2️⃣ Gera thumbnail
+//     await new Promise((resolve, reject) => {
+//       ffmpeg(videoPath)
+//         .screenshots({
+//           timestamps: ["1"],
+//           filename: path.basename(thumbPath),
+//           folder: tmpDir,
+//           size: "400x?"
+//         })
+//         .on("end", resolve)
+//         .on("error", reject);
+//     });
 
-    // 3️⃣ Upload da thumb para o B2
-    const thumbBuffer = fs.readFileSync(thumbPath);
+//     // 3️⃣ Upload da thumb para o B2
+//     const thumbBuffer = fs.readFileSync(thumbPath);
 
-    const upload = await s3.upload({
-      Bucket: process.env.B2_BUCKET,
-      Key: `velvet/modelos/${modelo_id}/thumbs/${timestamp}.jpg`,
-      Body: thumbBuffer,
-      ContentType: "image/jpeg",
-      ACL: "public-read"
-    }).promise();
+//     const upload = await s3.upload({
+//       Bucket: process.env.B2_BUCKET,
+//       Key: `velvet/modelos/${modelo_id}/thumbs/${timestamp}.jpg`,
+//       Body: thumbBuffer,
+//       ContentType: "image/jpeg",
+//       ACL: "public-read"
+//     }).promise();
 
-    return upload.Location;
+//     return upload.Location;
 
-  } finally {
-    if (fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
-    if (fs.existsSync(thumbPath)) fs.unlinkSync(thumbPath);
-  }
-}
+//   } finally {
+//     if (fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
+//     if (fs.existsSync(thumbPath)) fs.unlinkSync(thumbPath);
+//   }
+// }
 
 async function marcarConteudoComoLiberadoPorPagamento(
   client,
   { message_id, cliente_id, modelo_id }
 ) {
-  const mid = Number(message_id);
-  const cid = Number(cliente_id);
+
+  const mid  = Number(message_id);
+  const cid  = Number(cliente_id);
   const moid = Number(modelo_id);
 
-  if (!Number.isInteger(mid) || mid <= 0) throw new Error("message_id inválido");
-  if (!Number.isInteger(cid) || cid <= 0) throw new Error("cliente_id inválido");
-  if (!Number.isInteger(moid) || moid <= 0) throw new Error("modelo_id inválido");
+  if (!Number.isInteger(mid) || mid <= 0)
+    throw new Error("message_id inválido");
+
+  if (!Number.isInteger(cid) || cid <= 0)
+    throw new Error("cliente_id inválido");
+
+  if (!Number.isInteger(moid) || moid <= 0)
+    throw new Error("modelo_id inválido");
+
+  /* =====================================================
+     MARCAR MESSAGE COMO VISTA
+  ===================================================== */
 
   const up = await client.query(
-`
-UPDATE messages
-SET visto = true,
-    updated_at = NOW()
-WHERE id = $1
-AND cliente_id = $2
-AND modelo_id = $3
-RETURNING id
-`,
-[mid, cid, moid]
-);
+    `
+    UPDATE messages
+       SET visto = true,
+           updated_at = NOW()
+     WHERE id = $1
+       AND cliente_id = $2
+       AND modelo_id = $3
+     RETURNING id
+    `,
+    [mid, cid, moid]
+  );
 
   if (!up.rowCount) {
-    throw new Error("messages não encontrada / não pertence ao cliente/modelo");
+    throw new Error(
+      "messages não encontrada / não pertence ao cliente/modelo"
+    );
   }
+
+  /* =====================================================
+     BUSCAR CONTEÚDOS DO PACOTE
+  ===================================================== */
 
   const conteudos = await client.query(
     `
-    SELECT mc.conteudo_id
-      FROM messages_conteudos mc
-     WHERE mc.message_id = $1
+    SELECT
+      mc.conteudo_id,
+      c.media_key
+    FROM messages_conteudos mc
+    JOIN conteudos c
+      ON c.id = mc.conteudo_id
+   WHERE mc.message_id = $1
     `,
     [mid]
   );
 
-  return conteudos.rows
-    .map((r) => Number(r.conteudo_id))
-    .filter((n) => Number.isInteger(n) && n > 0);
+  const conteudo_ids = [];
+  const media_keys   = [];
+
+  for (const row of conteudos.rows) {
+
+    const id = Number(row.conteudo_id);
+
+    if (Number.isInteger(id)) {
+      conteudo_ids.push(id);
+    }
+
+    if (row.media_key) {
+      media_keys.push(row.media_key);
+    }
+
+  }
+
+  return {
+    conteudo_ids,
+    media_keys
+  };
+
 }
 
 //APP POST ROTAS //////////**********////////////////////
@@ -4463,7 +4510,7 @@ app.put("/api/modelo/me", authModelo, async (req, res) => {
 
 app.put("/api/conteudos/:id", authModelo, async (req, res) => {
 
-  const message_id = Number(req.params.id);
+  const conteudo_id = Number(req.params.id);
 
   if (!Number.isInteger(conteudo_id) || conteudo_id <= 0) {
     return res.status(400).json({ error: "ID inválido" });
@@ -4497,7 +4544,7 @@ app.put("/api/conteudos/:id", authModelo, async (req, res) => {
       [tipo, url, thumbnail_url || null, conteudo_id, req.modelo_id]
     );
 
-    if (result.rows.length === 0) {
+    if (!result.rows.length) {
       return res.status(404).json({
         error: "Conteúdo não encontrado"
       });
@@ -4510,7 +4557,6 @@ app.put("/api/conteudos/:id", authModelo, async (req, res) => {
     res.status(500).json({ error: "Erro ao editar conteúdo" });
   }
 });
-
 
 app.put("/api/usuario/perfil", auth, async (req, res) => {
   try {
@@ -6147,11 +6193,11 @@ app.post("/api/pagamento/midia/pix", auth, async (req, res) => {
 
     const jaComprado = await client.query(
       `SELECT 1
-       FROM pagamentos_pix
-       WHERE cliente_id = $1
-       AND message_id = $2
-       AND status = 'pago'
-       LIMIT 1`,
+FROM conteudo_pacotes
+WHERE cliente_id = $1
+AND message_id = $2
+AND status = 'pago'
+LIMIT 1`,
       [cliente_id, conteudo_id]
     );
 

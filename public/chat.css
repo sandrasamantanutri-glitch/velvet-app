@@ -148,10 +148,6 @@ body, html {
   object-fit: cover;
 }
 
-.role-cliente .chat-conteudo.bloqueado img,
-.role-cliente .chat-conteudo.bloqueado video {
-  filter: blur(12px) brightness(.4);
-}
 
 .role-cliente .chat-conteudo.bloqueado {
   position: relative;
@@ -1160,19 +1156,3 @@ cursor:pointer;
   cursor:pointer;
 }
 
-/*  .midia-item.midia-bloqueada{
-  filter: blur(12px);
-}
-
-.midia-item.midia-vista img{
-  filter: grayscale(100%) brightness(0.8);
-} */
-
-.midia-vista {
-  filter:none;
-  opacity:1;
-}
-
-.midia-bloqueada {
-  filter: blur(8px);
-}
