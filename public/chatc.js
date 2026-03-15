@@ -173,30 +173,34 @@ if (chatBox) {
 document.addEventListener(
   "click",
   (e) => {
+
     const card = e.target.closest(".chat-conteudo");
     if (!card) return;
 
     const preco = Number(card.dataset.preco || 0);
     const messageId = Number(card.dataset.id);
 
-    let midia =
+    const midia =
       e.target.closest(".midia-item") ||
       card.querySelector(".midia-item");
 
     if (!midia) return;
 
-    const conteudoId = Number(midia.dataset.conteudoId || midia.dataset.conteudo_id);
+    const conteudoId =
+      Number(midia.dataset.conteudoId || midia.dataset.conteudo_id);
+
     const jaVisto =
       window.conteudosVistosCliente?.has(conteudoId);
 
-      const estaLiberado =
-  preco === 0 ||
-  jaVisto ||
-  card.classList.contains("livre") ||
-  conteudosLiberados.has(messageId);
+    const pacoteLiberado =
+      jaVisto ||
+      preco === 0 ||
+      card.classList.contains("livre") ||
+      card.classList.contains("visto") ||
+      conteudosLiberados.has(messageId);
 
     const precisaPagar =
-      preco > 0 && !estaLiberado && !jaVisto;
+      preco > 0 && !pacoteLiberado;
 
     // BLOQUEADO
     if (precisaPagar) {
@@ -211,7 +215,9 @@ document.addEventListener(
     e.stopPropagation();
 
     const index = Number(midia.dataset.index || 0);
+
     abrirConteudo(messageId, index);
+
   },
   true
 );
@@ -529,8 +535,9 @@ function renderMensagem(msg){
     ${(msg.midias || []).map((m,index)=>{
 
       const conteudoId = Number(m.id);
-      const jaVisto =
-        window.conteudosVistosCliente?.has(conteudoId);
+        const jaVisto =
+    pacoteLiberado ||
+    window.conteudosVistosCliente?.has(conteudoId);
 
       return `
         <div class="midia-item lazy-midia ${jaVisto ? "midia-vista" : "midia-bloqueada"}"
@@ -980,32 +987,71 @@ function criarMensagemElemento(msg){
 
   if(msg.tipo === "conteudo"){
 
+    const preco = Number(msg.preco) || 0;
+
+    const pacoteLiberado =
+      msg.liberado ||
+      conteudosLiberados.has(msg.id) ||
+      (msg.midias || []).some(m =>
+        window.conteudosVistosCliente?.has(Number(m.id))
+      );
+
+    const classeEstado =
+      pacoteLiberado
+        ? "visto"
+        : (preco > 0 ? "bloqueado" : "livre");
+
     const quantidade =
       msg.quantidade ?? (msg.midias?.length || 0);
 
     div.innerHTML = `
-<div class="chat-conteudo premium"
+<div class="chat-conteudo premium ${classeEstado}"
      data-id="${msg.id}"
-     data-preco="${msg.preco || 0}">
+     data-preco="${preco}">
 
   <div class="pacote-grid">
-   ${(msg.midias || []).map((m,index)=>{
 
-  const conteudoId = Number(m.id);
-  const jaVisto = window.conteudosVistosCliente?.has(conteudoId);
+    ${(msg.midias || []).map((m,index)=>{
 
-  return `
-    <div class="midia-item lazy-midia ${jaVisto ? "midia-vista" : "midia-bloqueada"}"
-      data-conteudo-id="${conteudoId}"
-      data-thumb="${m.thumbnail_url || m.url}"
-      data-full="${m.url}"
-      data-index="${index}"
-      style="background-image:url('${m.thumbnail_url || m.url}')">
-    </div>
-  `;
+      const conteudoId = Number(m.id);
 
-}).join("")}
+      const jaVisto =
+        pacoteLiberado ||
+        window.conteudosVistosCliente?.has(conteudoId);
+
+      return `
+        <div class="midia-item lazy-midia ${jaVisto ? "midia-vista" : "midia-bloqueada"}"
+          data-conteudo-id="${conteudoId}"
+          data-thumb="${m.thumbnail_url || m.url}"
+          data-full="${m.url}"
+          data-index="${index}"
+          style="background-image:url('${m.thumbnail_url || m.url}')">
+        </div>
+      `;
+
+    }).join("")}
+
   </div>
+
+  ${
+    preco > 0
+      ? `
+      <div class="conteudo-info">
+        <span class="status-bloqueado">
+          ${
+            pacoteLiberado
+              ? `🟢 ${quantidade} mídia(s)`
+              : `✨ ${quantidade} mídia(s)`
+          }
+        </span>
+
+        <span class="preco-bloqueado">
+          R$ ${preco.toFixed(2)}
+        </span>
+      </div>
+      `
+      : ""
+  }
 
 </div>
 
@@ -1013,6 +1059,7 @@ function criarMensagemElemento(msg){
   <span class="msg-hora">${formatarTempo(msg.created_at)}</span>
 </div>
 `;
+
   } else {
 
     div.innerHTML = `
