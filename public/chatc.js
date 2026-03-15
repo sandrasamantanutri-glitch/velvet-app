@@ -191,35 +191,32 @@ document.addEventListener(
 
     if (!midia) return;
 
-    // media_key da mídia clicada
-    const mediaKey = String(midia.dataset.mediaKey || "").trim();
+const mediaKeys = window.mediaKeysVistas || new Set();
 
-    const mediaKeys = window.mediaKeysVistas || new Set();
+const pacoteLiberado =
+  preco === 0 ||
+  card.classList.contains("livre") ||
+  conteudosLiberados.has(messageId);
 
-    const pacoteLiberado =
-      preco === 0 ||
-      card.classList.contains("livre") ||
-      conteudosLiberados.has(messageId);
+  const jaVisto =
+  pacoteLiberado ||
+  (mediaKey && mediaKeys.has(mediaKey));
 
-    const jaVisto =
-      pacoteLiberado ||
-      (mediaKey && mediaKeys.has(mediaKey));
+const midiaLiberada = pacoteLiberado || jaVisto;
+const precisaPagar = preco > 0 && !midiaLiberada;
 
-    const midiaLiberada = pacoteLiberado || jaVisto;
-    const precisaPagar = preco > 0 && !midiaLiberada;
+if (precisaPagar) {
+  e.preventDefault();
+  e.stopPropagation();
+  abrirPagamentoChat(preco, messageId);
+  return;
+}
 
-    if (precisaPagar) {
-      e.preventDefault();
-      e.stopPropagation();
-      abrirPagamentoChat(preco, messageId);
-      return;
-    }
+e.preventDefault();
+e.stopPropagation();
 
-    e.preventDefault();
-    e.stopPropagation();
-
-    const index = Number(midia.dataset.index || 0);
-    abrirConteudo(messageId, index);
+const index = Number(midia.dataset.index || 0);
+abrirConteudo(messageId, index);
 
   },
   true
