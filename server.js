@@ -2461,23 +2461,23 @@ socket.on("sendConteudo", async ({
 
     if (modeloIdReal !== modelo_id) return;
 
-    // 🔒 2️⃣ SANITIZAR IDS
-    conteudos_ids = conteudos_ids
-      .map(id => Number(id))
-      .filter(id => Number.isInteger(id) && id > 0);
-
-    if (conteudos_ids.length === 0) return;
-
-    // 🔒 3️⃣ VALIDAR QUE OS CONTEÚDOS PERTENCEM À MODELO
-    const validosRes = await db.query(
-      `
-      SELECT id
-      FROM conteudos
-      WHERE id = ANY($1)
-        AND modelo_id = $2
-      `,
-      [conteudos_ids, modelo_id]
-    );
+        // 🔒 2️⃣ SANITIZAR IDS
+        conteudos_ids = conteudos_ids
+          .map(id => Number(id))
+          .filter(id => Number.isInteger(id) && id > 0);
+    
+        if (conteudos_ids.length === 0) return;
+    
+        // 🔒 3️⃣ VALIDAR QUE OS CONTEÚDOS PERTENCEM À MODELO
+        const validosRes = await db.query(
+          `
+          SELECT id, url, thumbnail_url, tipo AS tipo_media
+          FROM conteudos
+          WHERE id = ANY($1)
+          ORDER BY array_position($1, id)
+          `,
+          [conteudos_ids, modelo_id]
+        );
 
     const idsValidos = validosRes.rows.map(r => r.id);
 
