@@ -632,11 +632,11 @@ const pacoteLiberado =
 const mediaKeys = window.mediaKeysVistas || new Set();
 const mediaKey = String(midia.media_key || "").trim();
 
-const jaVisto =
+const liberada =
   pacoteLiberado ||
   (mediaKey && mediaKeys.has(mediaKey));
 
-if (!jaVisto || !midia.url) {
+if (!liberada || !midia.url) {
   abrirPagamentoChat(
     Number(document.querySelector(`.chat-conteudo[data-id="${message_id}"]`)?.dataset.preco || 0),
     message_id
@@ -644,10 +644,13 @@ if (!jaVisto || !midia.url) {
   return;
 }
 
-   registrarMidiaVista({
+// 🔥 registrar como visto sempre que abrir
+if (mediaKey) {
+  registrarMidiaVista({
     message_id: Number(message_id),
-    media_key: String(midia.media_key || "").trim()
+    media_key: mediaKey
   });
+}
 
 img.style.display = "none";
 img.src = "";
@@ -1531,14 +1534,16 @@ function mostrarMidiaAtual(){
   const midia = galeriaMidias[indiceAtualMidia];
   if(!midia) return;
 
-  const isVideo =
-    midia.tipo_media === "video" ||
-    midia.url.includes(".mp4") ||
-    midia.url.includes(".webm") ||
-    midia.url.includes(".mov");
+  const mediaKey = String(midia.media_key || "").trim();
 
- abrirModalMidia(midia.url);
+  if(mediaKey){
+    registrarMidiaVista({
+      message_id: Number(midia.message_id),
+      media_key: mediaKey
+    });
+  }
 
+  abrirModalMidia(midia.url);
 }
 
 const btnConfirmar = document.getElementById("confirmarPagamento");
