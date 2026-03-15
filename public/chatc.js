@@ -427,7 +427,7 @@ socket.on("conteudoVisto", async ({ message_id, cliente_id: cid, conteudo_id }) 
       if (!conteudoId) return;
 
       const jaVisto = pacoteLiberado || window.mediaKeysVistas?.has(String(m.media_key));
-      
+
       tile.classList.toggle("midia-vista", jaVisto);
       tile.classList.toggle("midia-bloqueada", !jaVisto);
     });
@@ -516,17 +516,18 @@ const classeEstado =
 
   <div class="pacote-grid">
     ${(msg.midias || []).map((m,index)=>{
-
       const conteudoId = Number(m.id); 
+      const mediaKey = String(m.media_key || "");
+
 
 const jaVisto =
   pacoteLiberado ||
-   window.conteudosVistosCliente?.has(conteudoId) ||
-  (m.url && window.conteudosVistosUrl?.has(String(m.url)));
+   (mediaKey && window.mediaKeysVistas?.has(mediaKey));
 
       return `
         <div class="midia-item lazy-midia ${jaVisto ? "midia-vista" : "midia-bloqueada"}"
              data-conteudo-id="${conteudoId}"
+              data-media-key="${mediaKey}"
              data-thumb="${m.thumbnail_url || m.url}"
              data-full="${m.url}"
              data-index="${index}"
@@ -787,9 +788,6 @@ function fecharModalMidia(){
   modal.classList.add("hidden");
 }
 
-
-// path: public/js/chatc.js
-
 function abrirMidia(midia) {
   const grid = midia.closest(".pacote-grid");
   if (!grid) return;
@@ -802,10 +800,10 @@ function abrirMidia(midia) {
   if (!conteudoEl) return;
 
   const message_id = Number(conteudoEl.dataset.id);
-  const conteudo_id = Number(midia.dataset.conteudoId || midia.dataset.conteudo_id);
+  const media_key = String(midia.dataset.mediaKey || "").trim();
 
   if (!Number.isInteger(message_id) || message_id <= 0) return;
-  if (!Number.isInteger(conteudo_id) || conteudo_id <= 0) return;
+  if (!media_key) return;
 
   if (socket) {
     socket.emit("marcarConteudoVisto", {
@@ -1650,14 +1648,26 @@ if (btnConfirmar) {
 };
 
 }
-async function carregarConteudosVistos() {
-  const res = await fetch("/api/chat/conteudos-vistos", {
-    headers: { Authorization: "Bearer " + token }
-  });
-  if (!res.ok) return;
 
-  const data = await res.json();
-  window.mediaKeysVistas = new Set(data.map(r => String(r.media_key)));
+async function carregarConteudosVistos() {
+  try {
+    const res = await fetch("/api/chat/conteudos-vistos", {
+      headers: { Authorization: "Bearer " + token }
+    });
+
+    if (!res.ok) {
+      console.error("Erro ao carregar conteudos vistos", res.status);
+      return;
+    }
+
+    const data = await res.json(); // [{ media_key }]
+
+    window.mediaKeysVistas = new Set(
+      data.map((r) => String(r.media_key)).filter(Boolean)
+    );
+  } catch (err) {
+    console.error("Erro carregar vistos:", err);
+  }
 }
 
 // apenas log
