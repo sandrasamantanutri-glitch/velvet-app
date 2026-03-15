@@ -526,7 +526,7 @@ cursor:pointer;
   border-radius: 16px;
   padding: 24px;
 
-  overflow-y: auto;
+  overflow: hidden; 
 }
 
 #modalImg,
@@ -1236,9 +1236,10 @@ max-width:calc(90vh * 0.56); /* proporção 9:16 */
 }
 
 #previewConteudos{
-  height: 60vh;
+  height: 55vh;
   overflow-y: auto;
+
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(70px,1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(80px,1fr));
+  gap: 10px;
 }
