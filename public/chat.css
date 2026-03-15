@@ -1159,11 +1159,3 @@ cursor:pointer;
   font-size:20px;
   cursor:pointer;
 }
-
-.midia-item.midia-bloqueada{
-  filter: blur(12px);
-}
-
-.midia-item.midia-vista{
-  filter:none;
-}

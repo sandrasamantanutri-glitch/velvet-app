@@ -393,24 +393,17 @@ div.innerHTML = `
       </button>
     ` : ""}
 
-<div class="pacote-grid">
-  ${(msg.midias || []).map((m, index) => {
+    <div class="pacote-grid">
+      ${(msg.midias || []).map((m, index) => `
+        <div class="midia-item lazy-midia"
+             data-thumb="${m.thumbnail_url || m.url}"
+             data-full="${m.url}"
+             data-index="${index}">
+             <div class="midia-placeholder"></div>
+        </div>
+      `).join("")}
+    </div>
 
-    const conteudoId = Number(m.id);
-    const jaVisto = window.conteudosVistosCliente?.has(conteudoId);
-
-    return `
-      <div class="midia-item lazy-midia ${jaVisto ? "midia-vista" : "midia-bloqueada"}"
-           data-conteudo-id="${conteudoId}"
-           data-thumb="${m.thumbnail_url || m.url}"
-           data-full="${m.url}"
-           data-index="${index}">
-           <div class="midia-placeholder"></div>
-      </div>
-    `;
-
-  }).join("")}
-</div>
     ${
       msg.preco > 0
         ? `
