@@ -1,5 +1,18 @@
 document.addEventListener("DOMContentLoaded", () => {
 
+   const role = localStorage.getItem("role");
+
+ const menu = document.getElementById("footerModelo");
+
+  if (!menu) return;
+
+  if (role === "modelo") {
+    menu.style.display = "flex";
+  } else {
+    menu.style.display = "none";
+    return;
+  }
+
   const btnPerfil = document.getElementById("btnAvatar");
   const btnMedia = document.getElementById("btnPost");
   const btnConteudos = document.getElementById("btnConteudos");
