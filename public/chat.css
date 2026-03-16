@@ -1220,47 +1220,29 @@ gap:10px;
 flex:1;
 }
 
-/* mídia individual liberada: nunca mostra cadeado */
-.role-cliente .midia-item[data-liberado="true"] .midia-lock {
-  display: none !important;
-}
-
-/* mídia individual liberada: remove qualquer escurecimento/blur */
-.role-cliente .midia-item[data-liberado="true"] img,
-.role-cliente .midia-item[data-liberado="true"] video,
-.role-cliente .midia-item[data-liberado="true"] .midia-preview {
-  filter: none !important;
-  opacity: 1 !important;
-}
-
-/* se a thumb estiver no próprio item via background-image */
-.role-cliente .midia-item.midia-livre {
-  filter: none !important;
-}
-
-/* cards já vistos/livres não devem exibir overlay */
-.role-cliente .chat-conteudo.visto .midia-lock,
-.role-cliente .chat-conteudo.livre .midia-lock,
-.role-cliente .chat-conteudo.liberado .midia-lock {
-  display: none !important;
-}
-
-/* cards já vistos/livres não devem manter preview borrado */
-.role-cliente .chat-conteudo.visto .midia-preview,
-.role-cliente .chat-conteudo.livre .midia-preview,
-.role-cliente .chat-conteudo.liberado .midia-preview {
-  filter: none !important;
-  opacity: 1 !important;
-}
-
-/* mesmo que ainda exista .bloqueado junto, a mídia liberada vence */
+/* mídia liberada dentro de card ainda marcado como bloqueado */
 .role-cliente .chat-conteudo.bloqueado .midia-item[data-liberado="true"] img,
-.role-cliente .chat-conteudo.bloqueado .midia-item[data-liberado="true"] video,
+.role-cliente .chat-conteudo.bloqueado .midia-item[data-liberado="true"] video {
+  filter: none !important;
+}
+
+/* se existir preview dentro do item liberado, tira blur também */
 .role-cliente .chat-conteudo.bloqueado .midia-item[data-liberado="true"] .midia-preview {
   filter: none !important;
   opacity: 1 !important;
 }
 
-.role-cliente .chat-conteudo.bloqueado .midia-item[data-liberado="true"] .midia-lock {
+/* nunca mostrar cadeado em item liberado */
+.role-cliente .chat-conteudo .midia-item[data-liberado="true"] .midia-lock {
   display: none !important;
+}
+
+/* garante que item liberado fique “normal” mesmo dentro de card parcial */
+.role-cliente .chat-conteudo.bloqueado .midia-item.midia-livre {
+  opacity: 1 !important;
+}
+
+/* se a thumb estiver no próprio item via background-image */
+.role-cliente .chat-conteudo.bloqueado .midia-item[data-liberado="true"] {
+  filter: none !important;
 }
