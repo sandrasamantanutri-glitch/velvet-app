@@ -168,7 +168,7 @@ if (chatBox) {
 
 }
 
-// 👇 EVENTO GLOBAL DE CLIQUE (CAPTURE) - pagamento tem prioridade absoluta
+// 👇 EVENTO GLOBAL DE CLIQUE (CAPTURE)
 document.addEventListener(
   "click",
   (e) => {
@@ -177,44 +177,43 @@ document.addEventListener(
 
     const preco = Number(card.dataset.preco || 0);
     const messageId = Number(card.dataset.id);
+    const midiaClicada = e.target.closest(".midia-item");
 
-    const midia =
-      e.target.closest(".midia-item") ||
-      card.querySelector(".midia-item");
+    const todasMidias = [...card.querySelectorAll(".midia-item")];
 
-const cardTotalmenteLiberado =
-  preco === 0 ||
-  card.classList.contains("livre") ||
-  conteudosLiberados.has(messageId);
+    // pacote totalmente liberado só quando TODAS as mídias estiverem liberadas
+    const pacoteTotalmenteLiberado =
+      preco === 0 ||
+      card.classList.contains("livre") ||
+      conteudosLiberados.has(messageId) ||
+      (todasMidias.length > 0 &&
+        todasMidias.every(
+          (m) =>
+            m.classList.contains("midia-livre") ||
+            m.dataset.liberado === "true"
+        ));
 
-    // sem mídia clicada, se o card estiver bloqueado abre pagamento
-    if (!midia) {
-      if (preco > 0 && !cardTotalmenteLiberado) {
-        e.preventDefault();
-        e.stopPropagation();
-        abrirPagamentoChat(preco, messageId);
-      }
-      return;
-    }
-
-    const midiaLiberada =
-      midia.classList.contains("midia-livre") ||
-      midia.dataset.liberado === "true" ||
-      cardTotalmenteLiberado;
-
-    // clicou em mídia bloqueada -> abre pagamento
-    if (preco > 0 && !midiaLiberada) {
+    // ==============================
+    // PACOTE NÃO ESTÁ 100% LIBERADO
+    // qualquer clique abre pagamento
+    // ==============================
+    if (preco > 0 && !pacoteTotalmenteLiberado) {
       e.preventDefault();
       e.stopPropagation();
       abrirPagamentoChat(preco, messageId);
       return;
     }
 
-    // clicou em mídia liberada -> abre conteúdo
+    // ==============================
+    // PACOTE 100% LIBERADO
+    // pode abrir a mídia clicada
+    // ==============================
+    if (!midiaClicada) return;
+
     e.preventDefault();
     e.stopPropagation();
 
-    const index = Number(midia.dataset.index || 0);
+    const index = Number(midiaClicada.dataset.index || 0);
     abrirConteudo(messageId, index);
   },
   true
