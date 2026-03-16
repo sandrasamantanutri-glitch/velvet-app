@@ -1220,49 +1220,47 @@ gap:10px;
 flex:1;
 }
 
-/* =========================
-   PPV já visto / já livre
-   remove visual de bloqueio
-========================= */
+/* mídia individual liberada: nunca mostra cadeado */
+.role-cliente .midia-item[data-liberado="true"] .midia-lock {
+  display: none !important;
+}
 
+/* mídia individual liberada: remove qualquer escurecimento/blur */
+.role-cliente .midia-item[data-liberado="true"] img,
+.role-cliente .midia-item[data-liberado="true"] video,
+.role-cliente .midia-item[data-liberado="true"] .midia-preview {
+  filter: none !important;
+  opacity: 1 !important;
+}
+
+/* se a thumb estiver no próprio item via background-image */
+.role-cliente .midia-item.midia-livre {
+  filter: none !important;
+}
+
+/* cards já vistos/livres não devem exibir overlay */
 .role-cliente .chat-conteudo.visto .midia-lock,
-.role-cliente .chat-conteudo.livre .midia-lock {
+.role-cliente .chat-conteudo.livre .midia-lock,
+.role-cliente .chat-conteudo.liberado .midia-lock {
   display: none !important;
 }
 
+/* cards já vistos/livres não devem manter preview borrado */
 .role-cliente .chat-conteudo.visto .midia-preview,
-.role-cliente .chat-conteudo.livre .midia-preview {
+.role-cliente .chat-conteudo.livre .midia-preview,
+.role-cliente .chat-conteudo.liberado .midia-preview {
   filter: none !important;
+  opacity: 1 !important;
 }
 
-.role-cliente .chat-conteudo.visto img,
-.role-cliente .chat-conteudo.visto video,
-.role-cliente .chat-conteudo.livre img,
-.role-cliente .chat-conteudo.livre video {
+/* mesmo que ainda exista .bloqueado junto, a mídia liberada vence */
+.role-cliente .chat-conteudo.bloqueado .midia-item[data-liberado="true"] img,
+.role-cliente .chat-conteudo.bloqueado .midia-item[data-liberado="true"] video,
+.role-cliente .chat-conteudo.bloqueado .midia-item[data-liberado="true"] .midia-preview {
   filter: none !important;
+  opacity: 1 !important;
 }
 
-/* quando a thumb estiver vindo como background-image no próprio item */
-.role-cliente .chat-conteudo.visto .midia-item,
-.role-cliente .chat-conteudo.livre .midia-item {
-  filter: none !important;
-}
-
-/* se ainda existir a classe bloqueado junto por algum motivo,
-   visto/livre ganha prioridade visual */
-.role-cliente .chat-conteudo.bloqueado.visto img,
-.role-cliente .chat-conteudo.bloqueado.visto video,
-.role-cliente .chat-conteudo.bloqueado.livre img,
-.role-cliente .chat-conteudo.bloqueado.livre video {
-  filter: none !important;
-}
-
-.role-cliente .chat-conteudo.bloqueado.visto .midia-lock,
-.role-cliente .chat-conteudo.bloqueado.livre .midia-lock {
+.role-cliente .chat-conteudo.bloqueado .midia-item[data-liberado="true"] .midia-lock {
   display: none !important;
-}
-
-.role-cliente .chat-conteudo.bloqueado.visto .midia-preview,
-.role-cliente .chat-conteudo.bloqueado.livre .midia-preview {
-  filter: none !important;
 }
