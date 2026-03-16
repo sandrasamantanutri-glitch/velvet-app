@@ -36,9 +36,6 @@ if (token && window.io) {
 
 document.addEventListener("DOMContentLoaded", async () => {
 
-  // =========================
-  // FECHAR POPUPS
-  // =========================
 
   // FEED
   document.getElementById("uploadClose")?.addEventListener("click", () => {
