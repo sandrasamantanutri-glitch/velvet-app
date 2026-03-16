@@ -174,13 +174,13 @@ async function enviar(modoTeste) {
       body: JSON.stringify(payload)
     });
 
-    const data = await res.json();
+const data = await parseJsonSafe(res);
 
-    if (!res.ok) {
-      fecharPopupEnvioPPV();
-      alert(data.error || "Erro ao iniciar envio");
-      return;
-    }
+if (!res.ok) {
+  fecharPopupEnvioPPV();
+  alert(data?.error || "Erro ao iniciar envio");
+  return;
+}
 
     const jobId = data.jobId;
 
@@ -366,13 +366,13 @@ async function acompanharProgressoEnvio(jobId, modoTeste) {
       }
     });
 
-    const data = await res.json();
+const data = await parseJsonSafe(res);
 
-    if (!res.ok) {
-      fecharPopupEnvioPPV();
-      alert(data.error || "Erro ao acompanhar progresso");
-      return;
-    }
+if (!res.ok) {
+  fecharPopupEnvioPPV();
+  alert(data?.error || "Erro ao acompanhar progresso");
+  return;
+}
 
     const total = Number(data.total || 0);
     const processados = Number(data.processados || 0);
@@ -412,5 +412,17 @@ async function acompanharProgressoEnvio(jobId, modoTeste) {
       alert(data.error || "Erro durante o envio");
       return;
     }
+  }
+}
+
+async function parseJsonSafe(res) {
+  const text = await res.text();
+
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
   }
 }

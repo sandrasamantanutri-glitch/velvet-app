@@ -17,6 +17,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 const router = express.Router();   // ⬅️ PRIMEIRO SEMPRE
 
 const crypto = require("crypto");
+const bcrypt = require("bcrypt");
 
 const allmessageJobs = new Map();
 
@@ -171,7 +172,7 @@ function authAgencia(req, res, next) {
   }
 }
 
-async function executarEnvioAllmessage(jobId, {
+async function processarAllmessageJob(jobId, {
   modelo_id,
   texto,
   preco,
@@ -181,116 +182,132 @@ async function executarEnvioAllmessage(jobId, {
   const job = allmessageJobs.get(jobId);
   if (!job) return;
 
-  const temConteudo = Array.isArray(conteudos) && conteudos.length > 0;
-  const precoFinal = Number(preco) || 0;
+  try {
+    const temConteudo = Array.isArray(conteudos) && conteudos.length > 0;
+    const precoFinal = Number(preco) || 0;
 
-  // ===============================
-  // 🔍 BUSCAR ASSINANTES ATIVOS
-  // ===============================
-  const clientesRes = await db.query(
-    `
-    SELECT cliente_id
-    FROM vip_subscriptions
-    WHERE modelo_id = $1
-      AND ativo = true
-    `,
-    [modelo_id]
-  );
+    // ===============================
+    // 🔍 BUSCAR ASSINANTES ATIVOS
+    // ===============================
+    const clientesRes = await db.query(
+      `
+      SELECT cliente_id
+      FROM vip_subscriptions
+      WHERE modelo_id = $1
+        AND ativo = true
+      `,
+      [modelo_id]
+    );
 
-  if (clientesRes.rowCount === 0) {
-    job.status = "erro";
-    job.error = "Nenhum assinante ativo encontrado";
-    return;
-  }
-
-  let clientes = clientesRes.rows;
-
-  // mantém funcionalidade de modo_teste
-  if (modo_teste) {
-    clientes = clientes.slice(0, 1);
-  }
-
-  job.total = clientes.length;
-
-  for (const row of clientes) {
-    const cliente_id = row.cliente_id;
-
-    try {
-      // 1️⃣ MENSAGEM DE TEXTO (SEMPRE)
-      await db.query(
-        `
-        INSERT INTO messages
-          (modelo_id, cliente_id, text, sender, visto, tipo)
-        VALUES
-          ($1, $2, $3, 'modelo', false, 'texto')
-        `,
-        [modelo_id, cliente_id, texto]
-      );
-
-      // 2️⃣ CONTEÚDO (GRÁTIS OU PAGO)
-      if (temConteudo) {
-        const msgRes = await db.query(
-          `
-          INSERT INTO messages
-            (modelo_id, cliente_id, text, sender, preco, visto, tipo)
-          VALUES
-            ($1, $2, '', 'modelo', $3, false, 'conteudo')
-          RETURNING id
-          `,
-          [modelo_id, cliente_id, precoFinal]
-        );
-
-        const message_id = msgRes.rows[0].id;
-
-        // 3️⃣ PACOTE DE CONTEÚDO
-        await db.query(
-          `
-          INSERT INTO conteudo_pacotes
-            (cliente_id, modelo_id, preco, valor_total, status, message_id)
-          VALUES
-            ($1, $2, $3, $4, 'pendente', $5)
-          `,
-          [
-            cliente_id,
-            modelo_id,
-            precoFinal,
-            precoFinal,
-            message_id
-          ]
-        );
-
-        // 4️⃣ VINCULAR CONTEÚDOS
-        for (const conteudo_id of conteudos) {
-          await db.query(
-            `
-            INSERT INTO messages_conteudos
-              (message_id, conteudo_id)
-            VALUES
-              ($1, $2)
-            `,
-            [message_id, conteudo_id]
-          );
-        }
-      }
-
-      job.enviados++;
-    } catch (err) {
-      console.error(`❌ Falha ao enviar para cliente ${cliente_id}:`, err);
-      job.falhas++;
+    if (clientesRes.rowCount === 0) {
+      job.status = "erro";
+      job.error = "Nenhum assinante ativo encontrado";
+      job.percentual = 0;
+      job.finalizado_em = new Date().toISOString();
+      return;
     }
 
-    job.processados++;
-    job.percentual = job.total > 0
-      ? Math.round((job.processados / job.total) * 100)
-      : 0;
+    let clientes = clientesRes.rows;
+
+    // mantém funcionalidade do modo teste
+    if (modo_teste) {
+      clientes = clientes.slice(0, 1);
+    }
+
+    job.total = clientes.length;
+    job.processados = 0;
+    job.enviados = 0;
+    job.falhas = 0;
+    job.percentual = 0;
+    job.status = "processando";
+    job.error = null;
+
+    for (const row of clientes) {
+      const cliente_id = row.cliente_id;
+
+      try {
+        // ===============================
+        // 1) MENSAGEM DE TEXTO
+        // ===============================
+        await db.query(
+          `
+          INSERT INTO messages
+            (modelo_id, cliente_id, text, sender, visto, tipo)
+          VALUES
+            ($1, $2, $3, 'modelo', false, 'texto')
+          `,
+          [modelo_id, cliente_id, texto]
+        );
+
+        // ===============================
+        // 2) MENSAGEM DE CONTEÚDO + PACOTE
+        // ===============================
+        if (temConteudo) {
+          const msgRes = await db.query(
+            `
+            INSERT INTO messages
+              (modelo_id, cliente_id, text, sender, preco, visto, tipo)
+            VALUES
+              ($1, $2, '', 'modelo', $3, false, 'conteudo')
+            RETURNING id
+            `,
+            [modelo_id, cliente_id, precoFinal]
+          );
+
+          const message_id = msgRes.rows[0].id;
+
+          await db.query(
+            `
+            INSERT INTO conteudo_pacotes
+              (cliente_id, modelo_id, preco, valor_total, status, message_id)
+            VALUES
+              ($1, $2, $3, $4, 'pendente', $5)
+            `,
+            [
+              cliente_id,
+              modelo_id,
+              precoFinal,
+              precoFinal,
+              message_id
+            ]
+          );
+
+          for (const conteudo_id of conteudos) {
+            await db.query(
+              `
+              INSERT INTO messages_conteudos
+                (message_id, conteudo_id)
+              VALUES
+                ($1, $2)
+              `,
+              [message_id, conteudo_id]
+            );
+          }
+        }
+
+        job.enviados++;
+      } catch (err) {
+        console.error(`❌ Falha ao enviar para cliente ${cliente_id}:`, err);
+        job.falhas++;
+      }
+
+      job.processados++;
+      job.percentual = job.total > 0
+        ? Math.round((job.processados / job.total) * 100)
+        : 0;
+    }
+
+    job.status = "concluido";
+    job.percentual = 100;
+    job.finalizado_em = new Date().toISOString();
+
+  } catch (err) {
+    console.error("❌ Erro geral no processarAllmessageJob:", err);
+    job.status = "erro";
+    job.error = err.message || "Erro interno no envio em massa";
+    job.finalizado_em = new Date().toISOString();
   }
-
-  job.status = "concluido";
-  job.percentual = 100;
-  job.finalizado_em = new Date().toISOString();
 }
-
-
 
 //ROTASSSS POST ///////////////////
 router.post("/modelo/dados-bancarios", authModelo, async (req, res) => {
@@ -610,7 +627,6 @@ router.post(
     }
   }
 );
-const bcrypt = require("bcrypt");
 
 router.post("/agencia/login", async (req, res) => {
   try {
