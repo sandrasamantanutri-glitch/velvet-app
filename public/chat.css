@@ -682,7 +682,7 @@ body, html {
 .modal-midia-backdrop{
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.85);
+  background: rgba(0,0,0,0.50);
   cursor: pointer;
 
 }
@@ -1116,15 +1116,14 @@ body, html {
   position: absolute;
   inset: 0;
 
-  background: rgba(0,0,0,.85);
+  background: rgba(0,0,0,.50);
   backdrop-filter: blur(2px);
 
   cursor: pointer;
 }
 
 .modal-midia-box img{
-  max-width: 90vw;
-  max-height: 90vh;
+  max-height: 500px;
   width: auto;
   height: auto;
   object-fit: contain;
@@ -1133,11 +1132,9 @@ body, html {
 
 .modal-midia-box video{
   max-height:90vh;
-  max-width:420px;
-
+  max-width:500px;
   width:100%;
   height:auto;
-
   border-radius:12px;
 }
 
@@ -1145,7 +1142,7 @@ body, html {
   height:90vh;
   width:calc(90vh * 0.56); /* 9:16 */
 
-  max-width:420px;
+  max-width:500px;
 
   border-radius:12px;
 }
@@ -1153,12 +1150,12 @@ body, html {
 .modal-close{
 position: absolute;
     top: 5px;
-    right: 0;
+    right: 10px;
     width: 36px;
     height: 36px;
     border-radius: 50%;
     border: none;
-    background: none;
+    background: #fff;
     color: #6a2cff;
     font-size: 22px;
     cursor: pointer;

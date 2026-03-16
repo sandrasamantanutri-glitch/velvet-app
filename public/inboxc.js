@@ -59,11 +59,6 @@ socket.on("disconnect", (reason) => {
 // ===============================
 const inboxEl = document.getElementById("inbox");
 
-document
-  .getElementById("loadMoreChats")
-  ?.addEventListener("click", carregarMaisChats);
-const chatsMap = new Map();
-
 // ===============================
 // INIT
 // ===============================
@@ -342,14 +337,6 @@ function preloadAvatars(modelos) {
     img.src = avatar;
 
   });
-
-}
-
-function carregarMaisChats(){
-
-  offset += LIMITE_INICIAL;
-
-  renderizarMais();
 
 }
 

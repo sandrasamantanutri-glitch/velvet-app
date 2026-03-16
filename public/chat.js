@@ -207,29 +207,24 @@ document.addEventListener("click", e => {
 
  });
 
- document.addEventListener("click", e => {
-
+document.addEventListener("click", e => {
   const midia = e.target.closest(".midia-item");
   if (!midia) return;
 
   const conteudo = midia.closest(".chat-conteudo");
   if (!conteudo) return;
 
-  const bloqueado = conteudo.classList.contains("bloqueado");
-
-  // 🔓 MODELO SEMPRE PODE VER
   if (role === "modelo") {
     abrirMidia(midia);
     return;
   }
 
-  // 🔒 CLIENTE
-  if (bloqueado) {
+  const bloqueado = conteudo.classList.contains("bloqueado");
+  const messageId = conteudo.dataset.id;
 
-    const messageId = conteudo.dataset.id;
+  if (bloqueado) {
     abrirPopupPagamento(messageId);
     return;
-
   }
 
   abrirMidia(midia);
@@ -483,7 +478,6 @@ function formatarTempo(timestamp) {
 function renderMensagem(msg) {
   if (!chatBox) return;
 
-  // evitar duplicação
   if (mensagensRenderizadas.has(msg.id)) return;
   mensagensRenderizadas.add(msg.id);
 
@@ -496,104 +490,103 @@ function renderMensagem(msg) {
 
   div.dataset.id = msg.id;
 
-  if (msg.tipo === "conteudo") {
+  if (ehMensagemConteudo(msg)) {
+    const quantidade = getQuantidadeMidias(msg);
+    const bloqueado = mensagemEstaBloqueada(msg);
+    const liberado = !bloqueado;
 
-    const quantidade = msg.quantidade ?? (msg.midias?.length || 0);
-    const bloqueado = Number(msg.preco) > 0 && !msg.visto;
+    div.innerHTML = `
+      <div class="chat-conteudo premium ${bloqueado ? "bloqueado" : "visto"}"
+           data-id="${msg.id}"
+           data-qtd="${quantidade}"
+           data-preco="${msg.preco || 0}">
 
-div.innerHTML = `
-  <div class="chat-conteudo premium ${bloqueado ? "bloqueado" : "visto"}"
-       data-id="${msg.id}"
-       data-qtd="${quantidade}">
+        <div class="pacote-grid">
+          ${(msg.midias || []).map((m, index) => `
+            <div class="midia-item lazy-midia"
+              data-thumb="${m.thumbnail_url || m.url}"
+              data-full="${m.url}"
+              data-index="${index}"
+              style="background-image:url('${m.thumbnail_url || m.url}')">
+            </div>
+          `).join("")}
+        </div>
 
-    ${msg.sender === "modelo" && !msg.visto ? `
-    ` : ""}
-  <div class="pacote-grid">
-    ${(msg.midias || []).map((m,index)=>`
-      <div class="midia-item lazy-midia"
-        data-thumb="${m.thumbnail_url || m.url}"
-        data-full="${m.url}"
-        data-index="${index}"
-        style="background-image:url('${m.thumbnail_url || m.url}')">
+        <div class="msg-meta">
+          <span class="meta-midias">
+            ${liberado ? `🟢${quantidade} mídia(s)` : `🔒${quantidade} mídia(s)`}
+          </span>
+
+          <span class="meta-valor">
+            R$ ${Number(msg.preco || 0).toFixed(2)}
+          </span>
+
+          <span class="msg-hora">
+            ${formatarTempo(msg.created_at)}
+
+            ${msg.sender === "modelo" && !msg.liberado ? `
+              <button
+                class="btn-excluir-pacote"
+                data-id="${msg.id}">
+                ⋮
+              </button>
+            ` : ""}
+          </span>
+        </div>
       </div>
-    `).join("")}
-  </div>
+    `;
 
-  <div class="msg-meta">
-    <span class="meta-midias">
-      ${
-        msg.liberado
-          ? `🟢${quantidade} mídia(s)`
-          : `🔒${quantidade} mídia(s)`
-      }
-    </span>
+    const btnConteudo = div.querySelector(".btn-excluir-pacote");
 
-<span class="meta-valor">
-  R$ ${Number(msg.preco).toFixed(2)}
-</span>
+    if (btnConteudo) {
+      btnConteudo.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
 
-<span class="msg-hora">
-  ${formatarTempo(msg.created_at)}
+        const btn = e.currentTarget;
 
-${msg.sender === "modelo" && !msg.liberado ? `
-<button
-  class="btn-excluir-pacote"
-  data-id="${msg.id}">
-  ⋮
-</button>
-` : ""}
-</span>
+        console.log("[btn-excluir-pacote click]", {
+          messageId: btn.dataset.id,
+          socketConnected: !!socket?.connected,
+          cliente_id,
+          modelo_id,
+        });
 
-</div>
-</div>
-`;
-
-
-const btnConteudo = div.querySelector(".btn-excluir-pacote");
-
-if (btnConteudo) {
-  btnConteudo.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const btn = e.currentTarget;
-
-    console.log("[btn-excluir-pacote click]", {
-      messageId: btn.dataset.id,
-      socketConnected: !!socket?.connected,
-      cliente_id,
-      modelo_id,
-    });
-
-    excluirPacoteConteudo(btn.dataset.id);
-  });
-}
+        excluirPacoteConteudo(btn.dataset.id);
+      });
+    }
 
     ativarLazyLoadingModelo(div, msg, bloqueado);
 
-div.querySelectorAll(".midia-item").forEach(el=>{
-  el.addEventListener("click",(e)=>{
-     console.log("[midia-item click]", {
-      target: e.target,
-      el,
-      idMsg: msg.id,
-      bloqueado,
-      full: el.dataset.full,
-      thumb: el.dataset.thumb,
-      index: el.dataset.index,
+    div.querySelectorAll(".midia-item").forEach(el => {
+      el.addEventListener("click", (e) => {
+        console.log("[midia-item click]", {
+          target: e.target,
+          el,
+          idMsg: msg.id,
+          bloqueado,
+          full: el.dataset.full,
+          thumb: el.dataset.thumb,
+          index: el.dataset.index,
+        });
+
+        if (role === "modelo") {
+          abrirMidia(el);
+          return;
+        }
+
+        if (bloqueado) {
+          abrirPopupPagamento(msg.id);
+          return;
+        }
+
+        abrirMidia(el);
+      });
     });
-    abrirMidia(el);
-  });
-});
 
-}
-
-  // ===============================
-  // 💬 MENSAGEM DE TEXTO
-  // ===============================
-  else {
+  } else {
     div.innerHTML = `
-      <div class="msg-texto">${msg.text}</div>
+      <div class="msg-texto">${msg.text || ""}</div>
 
       ${msg.sender === "modelo" ? `
         <button
@@ -1263,8 +1256,7 @@ function ativarLazyPopup(container){
 
 }
 
-function criarMensagemElemento(msg){
-
+function criarMensagemElemento(msg) {
   const div = document.createElement("div");
 
   div.className =
@@ -1274,45 +1266,89 @@ function criarMensagemElemento(msg){
 
   div.dataset.id = msg.id;
 
-  if(msg.tipo === "conteudo"){
-
-    const quantidade =
-      msg.quantidade ?? (msg.midias?.length || 0);
+  if (ehMensagemConteudo(msg)) {
+    const quantidade = getQuantidadeMidias(msg);
+    const bloqueado = mensagemEstaBloqueada(msg);
 
     div.innerHTML = `
-<div class="chat-conteudo premium ${
- ((msg.liberado) || conteudosLiberados.has(msg.id))
-  ? "visto"
-  : (msg.preco > 0 ? "bloqueado" : "")
-}" data-id="${msg.id}" data-preco="${msg.preco || 0}">
+      <div class="chat-conteudo premium ${bloqueado ? "bloqueado" : "visto"}"
+           data-id="${msg.id}"
+           data-preco="${msg.preco || 0}"
+           data-qtd="${quantidade}">
 
-  <div class="pacote-grid">
-    ${(msg.midias || []).map((m,index)=>`
-      <div class="midia-item lazy-midia"
-        data-thumb="${m.thumbnail_url || m.url}"
-        data-full="${m.url}"
-        data-index="${index}">
+        <div class="pacote-grid">
+          ${(msg.midias || []).map((m, index) => `
+            <div class="midia-item lazy-midia"
+              data-thumb="${m.thumbnail_url || m.url}"
+              data-full="${m.url}"
+              data-index="${index}"
+              style="background-image:url('${m.thumbnail_url || m.url}')">
+            </div>
+          `).join("")}
+        </div>
       </div>
-    `).join("")}
-  </div>
 
-</div>
+      <div class="msg-meta">
+        <span class="msg-hora">${formatarTempo(msg.created_at)}</span>
+      </div>
+    `;
 
-<div class="msg-meta">
-  <span class="msg-hora">${formatarTempo(msg.created_at)}</span>
-</div>
-`;
+    div.querySelectorAll(".midia-item").forEach(el => {
+      el.addEventListener("click", () => {
+        if (role === "modelo") {
+          abrirMidia(el);
+          return;
+        }
+
+        if (bloqueado) {
+          abrirPopupPagamento(msg.id);
+          return;
+        }
+
+        abrirMidia(el);
+      });
+    });
+
   } else {
-
     div.innerHTML = `
-<div class="msg-texto">${msg.text}</div>
-<span class="msg-hora">${formatarTempo(msg.created_at)}</span>
-`;
-
+      <div class="msg-texto">${msg.text || ""}</div>
+      <span class="msg-hora">${formatarTempo(msg.created_at)}</span>
+    `;
   }
 
   return div;
+}
 
+function ehMensagemConteudo(msg) {
+  if (!msg) return false;
+
+  // aceita tipos antigos e novos
+  const tiposConteudo = [
+    "conteudo",
+    "ppv",
+    "conteudo_ppv",
+    "midia_ppv",
+    "pacote",
+    "pacote_ppv"
+  ];
+
+  if (tiposConteudo.includes(msg.tipo)) return true;
+
+  // fallback: se vier com mídias, também trata como conteúdo
+  if (Array.isArray(msg.midias) && msg.midias.length > 0) return true;
+
+  return false;
+}
+
+function getQuantidadeMidias(msg) {
+  return msg.quantidade ?? (Array.isArray(msg.midias) ? msg.midias.length : 0);
+}
+
+function mensagemEstaBloqueada(msg) {
+  // modelo nunca deve ficar bloqueada no próprio chat
+  if (role === "modelo") return false;
+
+  return Number(msg.preco || 0) > 0 && !msg.liberado && !msg.visto;
 }
 
 // apenas log
