@@ -312,17 +312,13 @@ function gerarStatus(c) {
 // }
 
 function preloadAvatars(clientes) {
-
-  clientes.slice(0,10).forEach(c => {
-
- const avatar = c.avatar_thumb || c.avatar;
-    if (!avatar) return;
+  clientes.slice(0, 10).forEach(c => {
+    const avatar = c.avatar_thumb || c.avatar;
+    if (!avatar || avatar === "assets/avatar.png") return;
 
     const img = new Image();
     img.src = avatar;
-
   });
-
 }
 
 function compararChats(a, b) {
@@ -351,8 +347,9 @@ function rerenderizarInboxCompleta() {
   inboxEl.innerHTML = "";
   chatsMap.clear();
 
-  listaCompleta.forEach(c => {
+listaCompleta.forEach(c => {
     const statusHTML = gerarStatus(c);
+    const avatarSrc = c.avatar_thumb || c.avatar || "assets/avatar.png";
 
     const div = document.createElement("div");
     div.className = "chat-item";
@@ -360,9 +357,13 @@ function rerenderizarInboxCompleta() {
 
     div.innerHTML = `
       <div class="avatar">
-        <img src="${c.avatar || 'assets/avatar.png'}" width="40" height="40">
+        <img
+          src="${avatarSrc}"
+          width="40"
+          height="40"
+          onerror="this.onerror=null; this.src='assets/avatar.png';"
+        >
       </div>
-
       <div class="chat-body">
         <div class="chat-top">
           <span class="chat-name">
@@ -406,4 +407,4 @@ setInterval(() => {
 
   carregarListaClientes();
 
-}, 20000);
+}, 30000);
