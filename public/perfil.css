@@ -876,14 +876,6 @@ display:flex;
 gap:10px;
 }
 
-.page-container{
-  padding-bottom:100px;
-}
-
-.modelo-footer{
-  z-index:9999;
-}
-
 /* ===============================
    RESPONSIVO
 =============================== */
