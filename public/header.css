@@ -5,7 +5,7 @@ body {
 }
 
 .area-card {
-  max-width: 1100px;
+  max-width: 900px;
   margin: 90px auto 30px;
   background: #fff;
   border-radius: 18px;
@@ -14,7 +14,6 @@ body {
   position: relative;
 }
 
-
 .app-header {
   position: fixed;
   top: 0;
@@ -22,7 +21,6 @@ body {
   right: 0;
   height: 64px;
   background: #f1f1f1;
-  border-bottom: none;
   z-index: 1000;
 }
 
@@ -30,32 +28,29 @@ body {
   width: 100%;
   max-width: 1100px;
   height: 100%;
-
-  margin: auto -5px;
+  margin: 0 auto;
+  padding: 0 16px;
 
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 20px;
 }
 
 .velvet-logo {
   margin-right: auto;
+  display: flex;
+  align-items: center;
 }
 
-img.velvet-logo {
-    max-width: 100%;
+.header-inner a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-
-body {
-  visibility: visible;
-}
-
-
-@media (max-width: 600px){
-
-  .header-inner{
-    gap: 14px;
-  }
-
+.header-inner a img {
+  display: block;
+  width: 30px;
+  height: 30px;
 }
