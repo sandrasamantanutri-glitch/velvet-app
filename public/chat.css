@@ -473,16 +473,6 @@ body, html {
   object-fit:cover;
   display:block;
 }
-.pix-qr {
-  width: 320px;
-  height: 320px;
-  display: block;
-  margin: 16px auto;
-  padding: 10px;
-  background: #ffffff;
-  border-radius: 12px;
-}
-
 
 .msg-meta{
   display:flex;
@@ -843,8 +833,8 @@ body, html {
 ============================== */
 
 .pix-qr {
-  width: 100px;
-  height: 100px;
+  width: 220px;
+  height: 220px;
   margin: 14px auto;
   display: block;
 }
@@ -927,19 +917,16 @@ body, html {
 
 .modal-content{
   position:relative;
-
-  width:420px;
+  width:330px;
   max-width:92vw;
-
   background:#fff;
   border-radius:18px;
-  padding:26px;
   font-size: 12px;
   display:flex;
   flex-direction:column;
   gap:8px;
-
   box-shadow:0 25px 70px rgba(0,0,0,.35);
+  padding: 26px;
 }
 
 #escolhaPagamento a{
@@ -1097,19 +1084,15 @@ body, html {
 }
 
 .modal-midia-box{
-  position: relative;
-  z-index: 2;
-
-  display:flex;
-  align-items:center;
-  justify-content:center;
-
-  max-width: 95vw;
-  max-height: 95vh;
-
-  background:black;
-  padding:8px;
-  border-radius:16px;
+position: relative;
+    z-index: 2;
+    align-items: center;
+    justify-content: center;
+    max-width: 95vw;
+    max-height: 95vh;
+    padding: 10px 18px;
+    border-radius: 16px;
+    background: rgb(0 0 0 / 63%)
 }
 
 .modal-midia{
@@ -1123,11 +1106,8 @@ body, html {
 
 .modal-backdrop{
   position: absolute;
-  inset: 0;
-
-  background: rgba(0,0,0,.85);
+  background: rgba(0, 0, 0, 0.26);
   backdrop-filter: blur(2px);
-
   cursor: pointer;
 }
 
@@ -1135,7 +1115,7 @@ body, html {
   max-width: 90vw;
   max-height: 90vh;
   width: auto;
-  height: auto;
+  height: 520px;
   object-fit: contain;
   border-radius: 12px;
 }
@@ -1160,15 +1140,12 @@ body, html {
 }
 
 .modal-close{
-    position: fixed;
-    top: 10px;
-    right: 30px;
-    width: 30px;
-    height: 30px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
     border: none;
-    background: none;
-    color: #fff;
+    background: #fff;
+    color: #6a2cff;
     font-size: 20px;
     cursor: pointer;
 }
