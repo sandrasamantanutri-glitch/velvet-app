@@ -513,22 +513,27 @@ const cardLiberado =
         cardLiberado;
 
       return `
- <div class="midia-item lazy-midia ${
-          midiaLiberada ? "midia-livre" : "midia-bloqueada"
-        }"
-          data-thumb="${m.thumbnail_url || m.url}"
-          data-full="${m.url}"
-          data-index="${index}"
-          data-conteudo-id="${m.conteudo_id || ""}"
-          data-ja-possuia="${m.ja_possuia === true ? "true" : "false"}"
-          data-liberado="${midiaLiberada ? "true" : "false"}"
-          style="background-image:url('${m.thumbnail_url || m.url}')">
-          ${
-            !midiaLiberada
-              ? `<div class="midia-lock">🔒</div>`
-              : ""
-          }
-        </div>
+<div class="midia-item lazy-midia ${
+    midiaLiberada ? "midia-livre" : "midia-bloqueada"
+  }"
+    data-thumb="${m.thumbnail_url || m.url}"
+    data-full="${m.url}"
+    data-index="${index}"
+    data-conteudo-id="${m.conteudo_id || ""}"
+    data-ja-possuia="${m.ja_possuia === true ? "true" : "false"}"
+    data-liberado="${midiaLiberada ? "true" : "false"}"
+    ${midiaLiberada ? "" : `style="background-image:url('${m.thumbnail_url || m.url}')"`}>
+
+    ${
+      midiaLiberada
+        ? (
+            m.tipo_media === "video"
+              ? `<video src="${m.url}" muted playsinline></video>`
+              : `<img src="${m.url}" alt="">`
+          )
+        : `<div class="midia-lock">🔒</div>`
+    }
+  </div>
       `;
     }).join("")}
   </div>
@@ -997,21 +1002,27 @@ const cardLiberado =
         cardLiberado;
 
       return `
-       <div class="midia-item lazy-midia ${
-  midiaLiberada ? "midia-livre" : "midia-bloqueada"
-}"
-  data-thumb="${m.thumbnail_url || m.url}"
-  data-full="${m.url}"
-  data-index="${index}"
-  data-conteudo-id="${m.conteudo_id || ""}"
-  data-ja-possuia="${m.ja_possuia === true ? "true" : "false"}"
-  data-liberado="${midiaLiberada ? "true" : "false"}">
-  ${
-    !midiaLiberada
-      ? `<div class="midia-lock">🔒</div>`
-      : ""
-  }
-</div>
+     <div class="midia-item lazy-midia ${
+    midiaLiberada ? "midia-livre" : "midia-bloqueada"
+  }"
+    data-thumb="${m.thumbnail_url || m.url}"
+    data-full="${m.url}"
+    data-index="${index}"
+    data-conteudo-id="${m.conteudo_id || ""}"
+    data-ja-possuia="${m.ja_possuia === true ? "true" : "false"}"
+    data-liberado="${midiaLiberada ? "true" : "false"}"
+    ${midiaLiberada ? "" : `style="background-image:url('${m.thumbnail_url || m.url}')"`}>
+
+    ${
+      midiaLiberada
+        ? (
+            m.tipo_media === "video"
+              ? `<video src="${m.url}" muted playsinline></video>`
+              : `<img src="${m.url}" alt="">`
+          )
+        : `<div class="midia-lock">🔒</div>`
+    }
+  </div>
       `;
     }).join("")}
   </div>
