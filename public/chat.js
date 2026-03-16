@@ -1337,6 +1337,59 @@ function criarMensagemElemento(msg) {
         </div>
       </div>
     `;
+
+    ativarLazyLoadingModelo(div);
+
+    const btnConteudo = div.querySelector(".btn-excluir-pacote");
+    if (btnConteudo) {
+      btnConteudo.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        excluirPacoteConteudo(btnConteudo.dataset.id);
+      });
+    }
+
+    div.querySelectorAll(".midia-item").forEach(el => {
+      el.addEventListener("click", () => {
+        if (role === "modelo") {
+          abrirMidia(el);
+          return;
+        }
+
+        if (mensagemEstaBloqueada(msg)) {
+          abrirPopupPagamento(msg.id);
+          return;
+        }
+
+        abrirMidia(el);
+      });
+    });
+
+  } else {
+    div.innerHTML = `
+      <div class="msg-texto">${msg.text || ""}</div>
+
+      ${msg.sender === "modelo" ? `
+        <button
+          class="msg-menu"
+          data-id="${msg.id}"
+          data-text="${encodeURIComponent(msg.text || "")}">
+          ⋮
+        </button>
+      ` : ""}
+
+      <span class="msg-hora">${formatarTempo(msg.created_at)}</span>
+    `;
+
+    const btn = div.querySelector(".msg-menu");
+    if (btn) {
+      btn.addEventListener("click", () => {
+        abrirMenuMensagem(
+          btn.dataset.id,
+          decodeURIComponent(btn.dataset.text)
+        );
+      });
+    }
   }
 
   return div;

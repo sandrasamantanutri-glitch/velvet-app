@@ -1377,3 +1377,59 @@ body.role-cliente .msg-modelo {
 body.role-cliente .msg-cliente {
   align-self: flex-end;
 }
+
+/* ===== CORREÇÃO DE ALINHAMENTO DAS MENSAGENS ===== */
+
+#chatBox {
+  align-items: stretch;
+}
+
+.msg {
+  width: fit-content;
+  max-width: 70%;
+  min-width: 0;
+}
+
+/* chat da modelo */
+body.role-modelo .msg-modelo {
+  align-self: flex-end;
+  text-align: right;
+}
+
+body.role-modelo .msg-cliente {
+  align-self: flex-start;
+  text-align: left;
+}
+
+/* chat do cliente */
+body.role-cliente .msg-modelo {
+  align-self: flex-start;
+  text-align: left;
+}
+
+body.role-cliente .msg-cliente {
+  align-self: flex-end;
+  text-align: right;
+}
+
+/* conteúdo segue o lado do remetente */
+body.role-modelo .msg-modelo:has(.chat-conteudo),
+body.role-cliente .msg-cliente:has(.chat-conteudo) {
+  align-items: flex-end;
+}
+
+body.role-modelo .msg-cliente:has(.chat-conteudo),
+body.role-cliente .msg-modelo:has(.chat-conteudo) {
+  align-items: flex-start;
+}
+
+/* hora acompanha o lado da bolha */
+body.role-modelo .msg-modelo .msg-hora,
+body.role-cliente .msg-cliente .msg-hora {
+  align-self: flex-end;
+}
+
+body.role-modelo .msg-cliente .msg-hora,
+body.role-cliente .msg-modelo .msg-hora {
+  align-self: flex-start;
+}

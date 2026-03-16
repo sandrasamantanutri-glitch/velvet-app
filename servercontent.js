@@ -853,6 +853,15 @@ router.get("/transacoes", authModelo, async (req, res) => {
         id AS codigo,
         tipo,
         created_at,
+        created_at AT TIME ZONE 'America/Sao_Paulo' AS created_at_sp,
+        TO_CHAR(
+          created_at AT TIME ZONE 'America/Sao_Paulo',
+          'DD/MM/YYYY HH24:MI'
+        ) AS created_at_sp_formatado,
+        TO_CHAR(
+          created_at AT TIME ZONE 'America/Sao_Paulo',
+          'DD/MM/YYYY'
+        ) AS data_sp,
         valor_modelo AS valor,
         status,
         NULL AS message_id
@@ -898,7 +907,6 @@ router.get("/transacoes", authModelo, async (req, res) => {
     });
   }
 });
-
 
 
 router.get("/modelo/pagamentos", authModelo, async (req, res) => {
