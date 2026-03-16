@@ -54,7 +54,7 @@ document.getElementById("totalMesAnterior").innerText =
 
 // ACUMULADO
 document.getElementById("acumuladoAnterior").innerText =
-  `R$ ${Number(data.total.acumulado_2026 || 0).toFixed(2)}`;
+  `R$ ${Number(data.total.acumulado_ano_atual || 0).toFixed(2)}`;
 
   } catch (err) {
     console.error("Erro carregarResumoModelo:", err);

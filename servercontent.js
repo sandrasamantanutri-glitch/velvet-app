@@ -1290,7 +1290,6 @@ router.get("/cliente/subscricoes", auth, async (req, res) => {
 
 router.get("/modelo/financeiro", authModelo, async (req, res) => {
   try {
-    // 🔎 Buscar modelo_id real
     const modeloRes = await db.query(
       "SELECT id FROM modelos WHERE user_id = $1",
       [req.user.id]
@@ -1302,13 +1301,9 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
 
     const modelo_id = modeloRes.rows[0].id;
 
-    // ===============================
-    // 📊 QUERY FINANCEIRA (SOMENTE transacoes_agency)
-    // ===============================
     const result = await db.query(
       `
       SELECT
-        -- 🔹 HOJE
         COALESCE(SUM(CASE
           WHEN tipo IN ('midia', 'conteudo')
            AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
@@ -1323,7 +1318,6 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
           THEN valor_modelo
         END), 0) AS hoje_assinaturas,
 
-        -- 🔹 MÊS ATUAL
         COALESCE(SUM(CASE
           WHEN tipo IN ('midia', 'conteudo')
            AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
@@ -1338,7 +1332,6 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
           THEN valor_modelo
         END), 0) AS mes_assinaturas,
 
-        -- 🔹 MÊS ANTERIOR
         COALESCE(SUM(CASE
           WHEN tipo IN ('midia', 'conteudo')
            AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
@@ -1353,12 +1346,25 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
           THEN valor_modelo
         END), 0) AS mes_anterior_assinaturas,
 
-        -- 🔹 ACUMULADO ANO ATUAL (Brasil)
         COALESCE(SUM(CASE
           WHEN EXTRACT(YEAR FROM created_at AT TIME ZONE 'America/Sao_Paulo')
                = EXTRACT(YEAR FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
           THEN valor_modelo
-        END), 0) AS acumulado_ano_atual
+        END), 0) AS acumulado_ano_atual,
+
+        COUNT(DISTINCT CASE
+          WHEN tipo = 'assinatura'
+           AND status = 'pago'
+          THEN cliente_id
+        END) AS assinantes_total,
+
+        COUNT(DISTINCT CASE
+          WHEN tipo = 'assinatura'
+           AND status = 'pago'
+           AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
+               = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+          THEN cliente_id
+        END) AS assinantes_hoje
 
       FROM transacoes_agency
       WHERE modelo_id = $1
@@ -1367,26 +1373,7 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
       [modelo_id]
     );
 
-    // ===============================
-    // 👥 ASSINANTES
-    // ===============================
-    const assinantes = await db.query(
-      `
-      SELECT
-        COUNT(*) FILTER (WHERE ativo = true) AS total,
-        COUNT(*) FILTER (
-          WHERE ativo = true
-            AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
-                = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
-        ) AS hoje
-      FROM vip_subscriptions
-      WHERE modelo_id = $1
-      `,
-      [modelo_id]
-    );
-
     const r = result.rows[0];
-    const a = assinantes.rows[0];
 
     res.json({
       hoje: {
@@ -1405,8 +1392,8 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
         acumulado_ano_atual: Number(r.acumulado_ano_atual || 0)
       },
       assinantes: {
-        total: Number(a.total || 0),
-        hoje: Number(a.hoje || 0)
+        total: Number(r.assinantes_total || 0),
+        hoje: Number(r.assinantes_hoje || 0)
       }
     });
   } catch (err) {
@@ -1414,6 +1401,7 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
     res.status(500).json({ error: "Erro interno" });
   }
 });
+
 
 // ===============================
 // 📣 ALLMESSAGE - LISTAR MODELOS
