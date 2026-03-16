@@ -255,10 +255,11 @@ document.addEventListener(
       e.target.closest(".midia-item") ||
       card.querySelector(".midia-item");
 
-const cardTotalmenteLiberado =
-  preco === 0 ||
-  card.classList.contains("liberado") ||
-  conteudosLiberados.has(messageId);
+    const cardTotalmenteLiberado =
+      preco === 0 ||
+      card.classList.contains("livre") ||
+      card.classList.contains("visto") ||
+      conteudosLiberados.has(messageId);
 
     // sem mídia clicada, se o card estiver bloqueado abre pagamento
     if (!midia) {
@@ -435,6 +436,67 @@ function carregarMensagensAntigas(){
     limit: LIMIT_MENSAGENS
   });
 }
+
+socket.on("conteudoVisto", async ({ message_id, cliente_id: cid }) => {
+  console.log("📩 conteudoVisto recebido:", { message_id, cid, cliente_id });
+
+  if (!message_id) return;
+  if (cid != null && Number(cid) !== Number(cliente_id)) return;
+
+  const el = document.querySelector(`.chat-conteudo[data-id="${message_id}"]`);
+  if (!el) return;
+
+  try {
+    const res = await fetch(`/api/chat/conteudo/${message_id}`, {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
+
+    if (!res.ok) return;
+
+    const midias = await res.json();
+
+    const todasLiberadas = midias.every(m => m.liberado !== false);
+
+    el.classList.remove("bloqueado");
+
+    if (todasLiberadas) {
+      el.classList.add("livre");
+      conteudosLiberados.add(Number(message_id));
+    }
+
+    el.innerHTML = `
+      <div class="pacote-grid">
+        ${midias.map((m, index) => {
+          const liberado = m.liberado !== false;
+
+          return `
+            <div class="midia-item ${liberado ? "midia-livre" : "midia-bloqueada"}"
+                 data-index="${index}"
+                 data-liberado="${liberado ? "true" : "false"}">
+              ${
+                liberado
+                  ? (
+                      m.tipo_media === "video"
+                        ? `<video src="${m.url}" muted playsinline></video>`
+                        : `<img src="${m.url}">`
+                    )
+                  : `
+                    <div class="midia-preview" style="background-image:url('${m.thumbnail_url || m.url}')"></div>
+                    <div class="midia-lock">🔒</div>
+                  `
+              }
+            </div>
+          `;
+        }).join("")}
+      </div>
+    `;
+  } catch (err) {
+    console.error("Erro liberar conteúdo:", err);
+  }
+});
+
 
 // ===============================
 // FORMATAR HORA
@@ -938,14 +1000,8 @@ function criarMensagemElemento(msg) {
       };
     });
 
-    const todasLiberadas =
-      midias.length > 0 &&
-      midias.every(m => m.liberado !== false);
-
-    const classeCard =
-      todasLiberadas || Number(msg.preco) === 0
-        ? "liberado"
-        : "bloqueado";
+    const todasLiberadas = midias.length > 0 && midias.every(m => m.liberado !== false);
+    const classeCard = todasLiberadas || Number(msg.preco) === 0 ? "liberado" : "bloqueado";
 
     div.innerHTML = `
       <div class="chat-conteudo premium ${classeCard}"
@@ -966,34 +1022,6 @@ function criarMensagemElemento(msg) {
         <span class="msg-hora">${formatarTempo(msg.created_at)}</span>
       </div>
     `;
-  } else {
-    div.innerHTML = `
-      <div class="msg-texto">${msg.text || ""}</div>
-
-      ${msg.sender === "modelo" ? `
-        <button
-          class="msg-menu"
-          data-id="${msg.id}"
-          data-text="${encodeURIComponent(msg.text || "")}">
-          ⋮
-        </button>
-      ` : ""}
-
-      <span class="msg-hora">
-        ${formatarTempo(msg.created_at)}
-      </span>
-    `;
-
-    const btn = div.querySelector(".msg-menu");
-
-    if (btn) {
-      btn.addEventListener("click", () => {
-        abrirMenuMensagem(
-          btn.dataset.id,
-          decodeURIComponent(btn.dataset.text)
-        );
-      });
-    }
   }
 
   return div;
