@@ -490,51 +490,64 @@ function renderMensagem(msg) {
 
   div.dataset.id = msg.id;
 
-  if (ehMensagemConteudo(msg)) {
-    const quantidade = getQuantidadeMidias(msg);
-    const bloqueado = mensagemEstaBloqueada(msg);
-    const liberado = !bloqueado;
+ if (ehMensagemConteudo(msg)) {
+  const quantidade = getQuantidadeMidias(msg);
+  const bloqueado = mensagemEstaBloqueada(msg);
+  const foiVisto = !!(msg.visto || msg.liberado);
 
-    div.innerHTML = `
-      <div class="chat-conteudo premium ${bloqueado ? "bloqueado" : "visto"}"
-           data-id="${msg.id}"
-           data-qtd="${quantidade}"
-           data-preco="${msg.preco || 0}">
+  let estadoClasse = "";
+  if (bloqueado) {
+    estadoClasse = "bloqueado";
+  } else if (foiVisto) {
+    estadoClasse = "visto";
+  } else {
+    estadoClasse = "livre";
+  }
 
-        <div class="pacote-grid">
-          ${(msg.midias || []).map((m, index) => `
-            <div class="midia-item lazy-midia"
-              data-thumb="${m.thumbnail_url || m.url}"
-              data-full="${m.url}"
-              data-index="${index}"
-              style="background-image:url('${m.thumbnail_url || m.url}')">
-            </div>
-          `).join("")}
-        </div>
+  div.innerHTML = `
+    <div class="chat-conteudo premium ${estadoClasse}"
+         data-id="${msg.id}"
+         data-qtd="${quantidade}"
+         data-preco="${msg.preco || 0}">
 
-        <div class="msg-meta">
-          <span class="meta-midias">
-            ${liberado ? `🟢${quantidade} mídia(s)` : `🔒${quantidade} mídia(s)`}
-          </span>
-
-          <span class="meta-valor">
-            R$ ${Number(msg.preco || 0).toFixed(2)}
-          </span>
-
-          <span class="msg-hora">
-            ${formatarTempo(msg.created_at)}
-
-            ${msg.sender === "modelo" && !msg.liberado ? `
-              <button
-                class="btn-excluir-pacote"
-                data-id="${msg.id}">
-                ⋮
-              </button>
-            ` : ""}
-          </span>
-        </div>
+      <div class="pacote-grid">
+        ${(msg.midias || []).map((m, index) => `
+          <div class="midia-item lazy-midia"
+            data-thumb="${m.thumbnail_url || m.url}"
+            data-full="${m.url}"
+            data-index="${index}"
+            style="background-image:url('${m.thumbnail_url || m.url}')">
+          </div>
+        `).join("")}
       </div>
-    `;
+
+      <div class="msg-meta">
+        <span class="meta-midias">
+          ${bloqueado
+            ? `🔒${quantidade} mídia(s)`
+            : foiVisto
+              ? `🟢${quantidade} mídia(s)`
+              : `📩${quantidade} mídia(s)`}
+        </span>
+
+        <span class="meta-valor">
+          R$ ${Number(msg.preco || 0).toFixed(2)}
+        </span>
+
+        <span class="msg-hora">
+          ${formatarTempo(msg.created_at)}
+
+          ${msg.sender === "modelo" && !msg.liberado ? `
+            <button
+              class="btn-excluir-pacote"
+              data-id="${msg.id}">
+              ⋮
+            </button>
+          ` : ""}
+        </span>
+      </div>
+    </div>
+  `;
 
     const btnConteudo = div.querySelector(".btn-excluir-pacote");
 
@@ -1269,9 +1282,19 @@ function criarMensagemElemento(msg) {
   if (ehMensagemConteudo(msg)) {
     const quantidade = getQuantidadeMidias(msg);
     const bloqueado = mensagemEstaBloqueada(msg);
+    const foiVisto = !!(msg.visto || msg.liberado);
+
+    let estadoClasse = "";
+    if (bloqueado) {
+      estadoClasse = "bloqueado";
+    } else if (foiVisto) {
+      estadoClasse = "visto";
+    } else {
+      estadoClasse = "livre";
+    }
 
     div.innerHTML = `
-      <div class="chat-conteudo premium ${bloqueado ? "bloqueado" : "visto"}"
+      <div class="chat-conteudo premium ${estadoClasse}"
            data-id="${msg.id}"
            data-preco="${msg.preco || 0}"
            data-qtd="${quantidade}">
@@ -1286,33 +1309,33 @@ function criarMensagemElemento(msg) {
             </div>
           `).join("")}
         </div>
+
+        <div class="msg-meta">
+          <span class="meta-midias">
+            ${bloqueado
+              ? `🔒${quantidade} mídia(s)`
+              : foiVisto
+                ? `🟢${quantidade} mídia(s)`
+                : `📩${quantidade} mídia(s)`}
+          </span>
+
+          <span class="meta-valor">
+            R$ ${Number(msg.preco || 0).toFixed(2)}
+          </span>
+
+          <span class="msg-hora">
+            ${formatarTempo(msg.created_at)}
+
+            ${msg.sender === "modelo" && !msg.liberado ? `
+              <button
+                class="btn-excluir-pacote"
+                data-id="${msg.id}">
+                ⋮
+              </button>
+            ` : ""}
+          </span>
+        </div>
       </div>
-
-      <div class="msg-meta">
-        <span class="msg-hora">${formatarTempo(msg.created_at)}</span>
-      </div>
-    `;
-
-    div.querySelectorAll(".midia-item").forEach(el => {
-      el.addEventListener("click", () => {
-        if (role === "modelo") {
-          abrirMidia(el);
-          return;
-        }
-
-        if (bloqueado) {
-          abrirPopupPagamento(msg.id);
-          return;
-        }
-
-        abrirMidia(el);
-      });
-    });
-
-  } else {
-    div.innerHTML = `
-      <div class="msg-texto">${msg.text || ""}</div>
-      <span class="msg-hora">${formatarTempo(msg.created_at)}</span>
     `;
   }
 
@@ -1341,7 +1364,8 @@ function ehMensagemConteudo(msg) {
 }
 
 function getQuantidadeMidias(msg) {
-  return msg.quantidade ?? (Array.isArray(msg.midias) ? msg.midias.length : 0);
+  if (msg?.quantidade != null) return Number(msg.quantidade) || 0;
+  return Array.isArray(msg?.midias) ? msg.midias.length : 0;
 }
 
 function mensagemEstaBloqueada(msg) {
