@@ -1257,3 +1257,47 @@ flex:1;
   visibility: hidden !important;
   pointer-events: none !important;
 }
+
+.midia-item {
+  position: relative;
+  overflow: hidden;
+}
+
+.midia-bloqueada::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.28);
+  z-index: 2;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.midia-bloqueada::after {
+  content: "🔒";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  font-size: 28px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* garante que a mídia fique abaixo do overlay */
+.midia-item img,
+.midia-item video,
+.midia-item .midia-preview {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* caso ainda exista HTML antigo com .midia-lock */
+.midia-lock {
+  display: none !important;
+}

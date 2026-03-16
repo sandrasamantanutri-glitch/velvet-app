@@ -426,7 +426,6 @@ socket.on("conteudoVisto", async ({ message_id, cliente_id: cid }) => {
                     )
                   : `
                     <div class="midia-preview" style="background-image:url('${m.thumbnail_url || m.url}')"></div>
-                    <div class="midia-lock">🔒</div>
                   `
               }
             </div>
@@ -523,11 +522,6 @@ const cardLiberado =
           data-ja-possuia="${m.ja_possuia === true ? "true" : "false"}"
           data-liberado="${midiaLiberada ? "true" : "false"}"
           style="background-image:url('${m.thumbnail_url || m.url}')">
-          ${
-            !midiaLiberada
-              ? `<div class="midia-lock">🔒</div>`
-              : ""
-          }
         </div>
       `;
     }).join("")}
@@ -909,7 +903,7 @@ function abrirPreviewAvatar(url) {
 
   const img = modal.querySelector("#avatarPreviewImg");
 
-  // 🔒 Evita mostrar imagem quebrada
+  //Evita mostrar imagem quebrada
   img.onerror = () => {
     console.warn("Erro ao carregar avatar preview");
     modal.remove();
@@ -1006,11 +1000,6 @@ const cardLiberado =
   data-conteudo-id="${m.conteudo_id || ""}"
   data-ja-possuia="${m.ja_possuia === true ? "true" : "false"}"
   data-liberado="${midiaLiberada ? "true" : "false"}">
-  ${
-    !midiaLiberada
-      ? `<div class="midia-lock">🔒</div>`
-      : ""
-  }
 </div>
       `;
     }).join("")}
