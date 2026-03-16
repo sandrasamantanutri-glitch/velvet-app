@@ -4248,7 +4248,7 @@ app.get("/api/chat/conteudo-status/:message_id", authCliente, async (req, res) =
 // 📦 CONTEÚDOS DA MODELO (PARA POPUP)
 app.get("/api/conteudos", authModelo, async (req, res) => {
 
-  const { venda, page = 1, limit = 10 } = req.query;
+  const { page = 1, limit = 10 } = req.query;
 
   try {
 
@@ -4256,12 +4256,7 @@ app.get("/api/conteudos", authModelo, async (req, res) => {
     const limite = Number(limit);
     const offset = (pagina - 1) * limite;
 
-    let where = "c.modelo_id = $1 AND c.ativo = TRUE";
-    const params = [req.modelo_id];
-
-    if (venda === "true") {
-      where += " AND c.tipo_conteudo = 'venda'";
-    }
+    const params = [req.modelo_id, limite, offset];
 
     const result = await db.query(
       `
@@ -4274,28 +4269,33 @@ app.get("/api/conteudos", authModelo, async (req, res) => {
         c.thumbnail_url,
         c.criado_em
       FROM conteudos c
-      WHERE ${where}
+      WHERE
+        c.modelo_id = $1
+        AND c.ativo = TRUE
+        AND c.tipo_conteudo = 'venda'
       ORDER BY c.criado_em DESC
       LIMIT $2
       OFFSET $3
       `,
-      [...params, limite, offset]
+      params
     );
 
-      // 🔹 contar total
     const totalRes = await db.query(
       `
-      SELECT COUNT(*) 
+      SELECT COUNT(*)
       FROM conteudos c
-      WHERE ${where}
+      WHERE
+        c.modelo_id = $1
+        AND c.ativo = TRUE
+        AND c.tipo_conteudo = 'venda'
       `,
-      params
+      [req.modelo_id]
     );
 
     const total = Number(totalRes.rows[0].count);
     const totalPaginas = Math.ceil(total / limite);
 
-     res.json({
+    res.json({
       conteudos: result.rows,
       total,
       totalPaginas,
@@ -4308,7 +4308,6 @@ app.get("/api/conteudos", authModelo, async (req, res) => {
   }
 
 });
-
 
 app.get("/api/verificacao/status", auth, async (req, res) => {
   try {
