@@ -21,6 +21,8 @@ const bcrypt = require("bcrypt");
 
 const allmessageJobs = new Map();
 
+const TZ_FINANCEIRO = "America/Sao_Paulo";
+
 const s3Privado = new AWS.S3({
   endpoint: new AWS.Endpoint(process.env.B2_ENDPOINT),
   accessKeyId: process.env.B2_KEY_ID_PRIVATE,
@@ -475,78 +477,6 @@ router.post(
   }
 );
 
-router.post("/transacoes", auth, async (req, res) => {
-  try {
-    const {
-      modelo_id,
-      cliente_id,
-      tipo,
-      valor_bruto,
-      taxa_gateway,
-    } = req.body;
-
-    const valores = await calcularValores({
-      modelo_id,
-      valor_bruto,
-      taxa_gateway
-    });
-
-    const result = await db.query(`
-INSERT INTO transacoes_agency (
-  modelo_id,
-  cliente_id,
-  tipo,
-  valor_bruto,
-  taxa_gateway,
-  agency_fee,
-  velvet_fee,
-  valor_modelo,
-  status
-)
-VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'pago')
-      RETURNING *
-    `, [
-      modelo_id,
-      cliente_id,
-      tipo,
-      valor_bruto,
-      valores.taxa_gateway,
-      valores.agency_fee,
-      valores.velvet_fee,
-      valores.valor_modelo,
-    ]);
-
-    res.json(result.rows[0]);
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ erro: "Erro ao criar transação" });
-  }
-});
-
-
-// router.post("/transacoes/:id/chargeback",
-//   auth,
-//   requireRole("admin", "modelo"),
-//   async (req, res) => {
-
-//     const { result } = req.body; // won | lost
-
-//     await db.query(
-//       `
-//       UPDATE transacoes
-//       SET status = 'chargeback',
-//           chargeback_result = $1,
-//           valor_modelo = 0
-//       WHERE id = $2
-//       `,
-//       [result, req.params.id]
-//     );
-
-//     res.json({ ok: true });
-//   }
-// );
-
 // ===============================
 // 📣 ALLMESSAGE - ENVIO EM MASSA (ASSÍNCRONO)
 // ===============================
@@ -663,107 +593,6 @@ router.post("/agencia/login", async (req, res) => {
   }
 });
 
-router.post("/agencia/modelo/:id/solicitar-percentual", authAgencia, async (req,res)=>{
-  try{
-
-    const agencia_id = req.agencia.id;
-    const modelo_id = Number(req.params.id);
-    const { percentual_modelo } = req.body;
-
-    const modeloPercent = Number(percentual_modelo);
-
-    /* =========================================
-       🔒 VALIDAR MODELO PERTENCE À AGÊNCIA
-    ========================================= */
-
-    const modeloAtual = await db.query(`
-      SELECT percentual_modelo, percentual_agencia
-      FROM modelos
-      WHERE id = $1
-      AND agencia_id = $2
-    `,[modelo_id, agencia_id]);
-
-    if(!modeloAtual.rowCount){
-      return res.status(403).json({error:"Modelo inválida"});
-    }
-
-    /* =========================================
-       🔒 VALIDAR LIMITES
-    ========================================= */
-
-    if(isNaN(modeloPercent)){
-      return res.status(400).json({error:"Percentual inválido"});
-    }
-
-    if(modeloPercent < 50 || modeloPercent > 80){
-      return res.status(400).json({
-        error:"Modelo deve ficar entre 50% e 80%."
-      });
-    }
-
-    /* =========================================
-       🔒 CALCULAR AUTOMÁTICO AGÊNCIA
-    ========================================= */
-
-    const percentual_agencia_novo = 80 - modeloPercent;
-
-    /* =========================================
-       🔒 IMPEDIR SOLICITAÇÃO DUPLICADA PENDENTE
-    ========================================= */
-
-    const solicitacaoPendente = await db.query(`
-      SELECT 1
-      FROM solicitacoes_percentual
-      WHERE modelo_id = $1
-      AND agencia_id = $2
-      AND status = 'pendente'
-      LIMIT 1
-    `,[modelo_id, agencia_id]);
-
-    if(solicitacaoPendente.rowCount){
-      return res.status(400).json({
-        error:"Já existe uma solicitação pendente."
-      });
-    }
-
-    /* =========================================
-       🔒 SALVAR SOLICITAÇÃO
-    ========================================= */
-
-    await db.query(`
-      INSERT INTO solicitacoes_percentual
-      (
-        modelo_id,
-        agencia_id,
-        percentual_modelo_novo,
-        percentual_agencia_novo,
-        percentual_modelo_antigo,
-        percentual_agencia_antigo,
-        status,
-        created_at
-      )
-      VALUES ($1,$2,$3,$4,$5,$6,'pendente',NOW())
-    `,[
-      modelo_id,
-      agencia_id,
-      modeloPercent,
-      percentual_agencia_novo,
-      modeloAtual.rows[0].percentual_modelo,
-      modeloAtual.rows[0].percentual_agencia
-    ]);
-
-    res.json({
-      success:true,
-      percentual_modelo_novo:modeloPercent,
-      percentual_agencia_novo:percentual_agencia_novo,
-      percentual_velvet:20
-    });
-
-  }catch(err){
-    console.error(err);
-    res.status(500).json({error:"Erro interno"});
-  }
-});
 
 router.post("/admin/login", async (req, res) => {
   const { email, senha } = req.body;
@@ -994,92 +823,62 @@ router.get("/transacoes", authModelo, async (req, res) => {
 
     const modelo_id = modeloRes.rows[0].id;
 
-    const page = parseInt(req.query.page) || 1;
+    const page = parseInt(req.query.page, 10) || 1;
     const limit = 10;
     const offset = (page - 1) * limit;
 
-    const { mes } = req.query; // 👈 NOVO
+    const { mes } = req.query;
 
     let values = [modelo_id];
     let monthFilter = "";
 
     if (mes && /^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
-      values.push(`${mes}-01`);
+      const [ano, mesNum] = mes.split("-").map(Number);
+
+      values.push(ano, mesNum);
+
       monthFilter = `
-        AND created_at >= date_trunc('month', $${values.length}::date)
-        AND created_at <  date_trunc('month', $${values.length}::date) + interval '1 month'
+        AND created_at >= make_timestamptz($2, $3, 1, 0, 0, 0, 'America/Sao_Paulo')
+        AND created_at < (
+          make_timestamptz($2, $3, 1, 0, 0, 0, 'America/Sao_Paulo')
+          + interval '1 month'
+        )
       `;
     }
 
-    values.push(limit, offset);
+    const dataValues = [...values, limit, offset];
 
     const sql = `
-      SELECT *
-      FROM (
-        -- 🔵 SISTEMA NOVO
-        SELECT
-          id AS codigo,
-          tipo,
-          created_at,
-          valor_modelo AS valor,
-          status,
-          NULL AS message_id
-        FROM transacoes_agency
-        WHERE modelo_id = $1
-          AND status = 'pago'
-          ${monthFilter}
-
-        UNION ALL
-
-        -- 🟡 SISTEMA ANTIGO
-SELECT
-  id AS codigo,
-  tipo,
-  created_at,
-
-  CASE
-    WHEN tipo IN ('assinatura','midia','conteudo')
-    THEN ROUND(valor_modelo * 0.70, 2)
-    ELSE valor_modelo
-  END AS valor,
-
-  status,
-  NULL AS message_id
-FROM transacoes
-WHERE modelo_id = $1
-  AND status = 'pago'
-  ${monthFilter}
-      ) t
+      SELECT
+        id AS codigo,
+        tipo,
+        created_at,
+        valor_modelo AS valor,
+        status,
+        NULL AS message_id
+      FROM transacoes_agency
+      WHERE modelo_id = $1
+        AND status = 'pago'
+        ${monthFilter}
       ORDER BY created_at DESC
-      LIMIT $${values.length - 1}
-      OFFSET $${values.length}
+      LIMIT $${dataValues.length - 1}
+      OFFSET $${dataValues.length}
     `;
 
     const countSql = `
-      SELECT COUNT(*)
-      FROM (
-        SELECT id
-        FROM transacoes_agency
-        WHERE modelo_id = $1
-          AND status = 'pago'
-          ${monthFilter}
-
-        UNION ALL
-
-        SELECT id
-        FROM transacoes
-        WHERE modelo_id = $1
-          AND status = 'pago'
-          ${monthFilter}
-      ) t
+      SELECT COUNT(*) AS count
+      FROM transacoes_agency
+      WHERE modelo_id = $1
+        AND status = 'pago'
+        ${monthFilter}
     `;
 
     const [dados, total] = await Promise.all([
-      db.query(sql, values),
-      db.query(countSql, values.slice(0, values.length - 2))
+      db.query(sql, dataValues),
+      db.query(countSql, values)
     ]);
 
-    const totalRegistros = parseInt(total.rows[0].count);
+    const totalRegistros = parseInt(total.rows[0].count, 10);
     const totalPaginas = Math.ceil(totalRegistros / limit);
 
     res.json({
@@ -1156,333 +955,215 @@ router.get("/transacoes/origem",
 );
 
 
-router.get("/transacoes/diario",
+router.get(
+  "/transacoes/diario",
   auth,
   requireRole("admin", "modelo", "agente"),
   async (req, res) => {
+    try {
+      const { mes } = req.query;
 
-    const { mes } = req.query;
+      if (!mes || !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
+        return res.status(400).json({
+          error: "Formato de mês inválido (YYYY-MM)"
+        });
+      }
 
-    if (!mes || !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
-      return res.status(400).json({
-        error: "Formato de mês inválido (YYYY-MM)"
-      });
-    }
+      const [ano, mesNum] = mes.split("-").map(Number);
+      const { role } = req.user;
 
-    const { role, id: modelo_id } = req.user;
+      let values = [ano, mesNum];
+      let where = `
+        status = 'pago'
+        AND created_at >= make_timestamptz($1, $2, 1, 0, 0, 0, 'America/Sao_Paulo')
+        AND created_at < (
+          make_timestamptz($1, $2, 1, 0, 0, 0, 'America/Sao_Paulo')
+          + interval '1 month'
+        )
+      `;
 
-    const dataBase = `${mes}-01`;
+      if (role === "modelo") {
+        const modeloRes = await db.query(
+          "SELECT id FROM modelos WHERE user_id = $1",
+          [req.user.id]
+        );
 
-    let values = [dataBase];
+        if (!modeloRes.rows.length) {
+          return res.status(404).json({ error: "Modelo não encontrada" });
+        }
 
-    let where = `
-      status = 'pago'
-      AND created_at >= date_trunc('month', $1::date)
-      AND created_at <  date_trunc('month', $1::date) + interval '1 month'
-    `;
+        const modelo_id = modeloRes.rows[0].id;
+        values.push(modelo_id);
+        where += ` AND modelo_id = $${values.length}`;
+      }
 
-    if (role === "modelo") {
-      values.push(modelo_id);
-      where += ` AND modelo_id = $${values.length}`;
-    }
-
-    const result = await db.query(
-`
-SELECT
-  DATE(created_at) AS dia,
-
-  COALESCE(SUM(
-    CASE WHEN tipo = 'midia' THEN valor_modelo END
-  ),0) AS ganhos_midias,
-
-  COALESCE(SUM(
-    CASE WHEN tipo = 'assinatura' THEN valor_modelo END
-  ),0) AS ganhos_assinaturas
-
-FROM (
-
-  -- 🔵 SISTEMA NOVO (já correto)
-  SELECT
-    tipo,
-    created_at,
-    valor_modelo,
-    modelo_id,
-    status
-  FROM transacoes_agency
-
-  UNION ALL
-
-  -- 🟡 SISTEMA ANTIGO (normalizando bruto → líquido)
-  SELECT
-    tipo,
-    created_at,
-
-    CASE
-      WHEN tipo IN ('assinatura','midia')
-      THEN ROUND(valor_modelo * 0.70, 2)
-      ELSE valor_modelo
-    END AS valor_modelo,
-
-    modelo_id,
-    status
-  FROM transacoes
-
-) t
-
-WHERE ${where}
-GROUP BY dia
-ORDER BY dia
-`,
-values
-);
-
-    res.json(result.rows);
-  }
-);
-
-
-// router.get("/relatorios/chargebacks",
-//   auth,
-//   requireRole("admin"),
-//   async (req, res) => {
-
-//     const { inicio, fim } = req.query;
-
-//     let where = `status = 'chargeback'`;
-//     let values = [];
-
-//     if (inicio && fim) {
-//       values.push(inicio, fim);
-//       where += ` AND created_at BETWEEN $1 AND $2`;
-//     }
-
-//     const result = await db.query(
-//       `
-//       SELECT
-//         codigo,
-//         tipo,
-//         cliente_id,
-//         modelo_id,
-//         valor_bruto,
-//         taxa_gateway,
-//         velvet_fee,
-//         chargeback_result,
-//         origem_cliente,
-//         created_at
-//       FROM transacoes_agency
-//       WHERE ${where}
-//       ORDER BY created_at DESC
-//       `,
-//       values
-//     );
-
-//     res.json(result.rows);
-//   }
-// );
-
-
-router.get("/transacoes/resumo-mensal",
-  auth,
-  requireRole("admin", "modelo", "agente"),
-  async (req, res) => {
-    const { mes } = req.query;
-
-    if (!mes || !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
-      return res.status(400).json({ error: "Formato de mês inválido (YYYY-MM)" });
-    }
-
-    const { role, id: modelo_id } = req.user;
-
-    const dataBase = `${mes}-01`;
-
-    let values = [dataBase];
-
-    let where = `
-      status = 'pago'
-      AND created_at >= date_trunc('month', $1::date)
-      AND created_at <  date_trunc('month', $1::date) + interval '1 month'
-    `;
-
-    if (role === "modelo") {
-      values.push(modelo_id);
-      where += ` AND modelo_id = $${values.length}`;
-    }
-
-    const result = await db.query(
-      `
-      SELECT
-        COALESCE(SUM(valor_bruto),0) AS total_bruto,
-        COALESCE(SUM(taxa_gateway),0) AS total_taxas,
-        COALESCE(SUM(agency_fee),0) AS total_agency,
-        COALESCE(SUM(velvet_fee),0) AS total_velvet,
-        COALESCE(SUM(valor_modelo),0) AS total_modelo,
-
-        COALESCE(SUM(CASE WHEN tipo = 'assinatura' THEN valor_bruto END),0) AS total_assinaturas,
-        COALESCE(SUM(CASE WHEN tipo = 'midia' THEN valor_bruto END),0) AS total_midias
-
-      FROM (
-
-        -- 🔵 SISTEMA NOVO
+      const result = await db.query(
+        `
         SELECT
-          tipo,
-          created_at,
-          valor_bruto,
-          taxa_gateway,
-          agency_fee,
-          velvet_fee,
-          valor_modelo,
-          modelo_id,
-          status
+          DATE(created_at AT TIME ZONE 'America/Sao_Paulo') AS dia,
+
+          COALESCE(SUM(
+            CASE WHEN tipo = 'midia' THEN valor_modelo END
+          ), 0) AS ganhos_midias,
+
+          COALESCE(SUM(
+            CASE WHEN tipo = 'assinatura' THEN valor_modelo END
+          ), 0) AS ganhos_assinaturas
+
         FROM transacoes_agency
+        WHERE ${where}
+        GROUP BY dia
+        ORDER BY dia
+        `,
+        values
+      );
 
-        UNION ALL
-
-        -- 🟡 SISTEMA ANTIGO (VIEW congelada)
-        SELECT
-          tipo,
-          created_at,
-          valor_bruto,
-          0 AS taxa_gateway,
-          0 AS agency_fee,
-          velvet_fee,
-          valor_modelo,
-          modelo_id,
-          status
-        FROM transacoes
-
-      ) t
-
-      WHERE ${where}
-      `,
-      values
-    );
-
-    res.json(result.rows[0]);
+      res.json(result.rows);
+    } catch (err) {
+      console.error("Erro /transacoes/diario:", err);
+      res.status(500).json({ error: "Erro interno" });
+    }
   }
 );
 
-// router.get("/relatorios/alertas-chargeback",
-//   auth,
-//   requireRole("admin"),
-//   async (req, res) => {
 
-//     const { rows } = await db.query(
-//       `
-//       SELECT *
-//       FROM chargeback_alertas
-//       WHERE ativo = true
-//       ORDER BY
-//         CASE nivel
-//           WHEN 'critico' THEN 1
-//           WHEN 'alto' THEN 2
-//           ELSE 3
-//         END,
-//         ultimo_chargeback DESC
-//       `
-//     );
 
-//     res.json(rows);
-//   }
-// );
 
-router.get("/transacoes/resumo-anual",
+router.get(
+  "/transacoes/resumo-mensal",
+  auth,
+  requireRole("admin", "modelo", "agente"),
+  async (req, res) => {
+    try {
+      const { mes } = req.query;
+
+      if (!mes || !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
+        return res.status(400).json({
+          error: "Formato de mês inválido (YYYY-MM)"
+        });
+      }
+
+      const [ano, mesNum] = mes.split("-").map(Number);
+      const { role } = req.user;
+
+      let values = [ano, mesNum];
+      let where = `
+        status = 'pago'
+        AND created_at >= make_timestamptz($1, $2, 1, 0, 0, 0, 'America/Sao_Paulo')
+        AND created_at < (
+          make_timestamptz($1, $2, 1, 0, 0, 0, 'America/Sao_Paulo')
+          + interval '1 month'
+        )
+      `;
+
+      if (role === "modelo") {
+        const modeloRes = await db.query(
+          "SELECT id FROM modelos WHERE user_id = $1",
+          [req.user.id]
+        );
+
+        if (!modeloRes.rows.length) {
+          return res.status(404).json({ error: "Modelo não encontrada" });
+        }
+
+        const modelo_id = modeloRes.rows[0].id;
+        values.push(modelo_id);
+        where += ` AND modelo_id = $${values.length}`;
+      }
+
+      const result = await db.query(
+        `
+        SELECT
+          COALESCE(SUM(valor_bruto), 0) AS total_bruto,
+          COALESCE(SUM(taxa_gateway), 0) AS total_taxas,
+          COALESCE(SUM(agency_fee), 0) AS total_agency,
+          COALESCE(SUM(velvet_fee), 0) AS total_velvet,
+          COALESCE(SUM(valor_modelo), 0) AS total_modelo,
+
+          COALESCE(SUM(CASE WHEN tipo = 'assinatura' THEN valor_bruto END), 0) AS total_assinaturas,
+          COALESCE(SUM(CASE WHEN tipo = 'midia' THEN valor_bruto END), 0) AS total_midias
+
+        FROM transacoes_agency
+        WHERE ${where}
+        `,
+        values
+      );
+
+      res.json(result.rows[0]);
+    } catch (err) {
+      console.error("Erro /transacoes/resumo-mensal:", err);
+      res.status(500).json({ error: "Erro interno" });
+    }
+  }
+);
+
+
+router.get(
+  "/transacoes/resumo-anual",
   auth,
   requireRole("admin", "modelo"),
   async (req, res) => {
-    const { ano } = req.query;
-    const { role, id: modelo_id } = req.user;
+    try {
+      const { ano } = req.query;
 
-    const inicio = `${ano}-01-01`;
-    const fim = `${Number(ano) + 1}-01-01`;
+      if (!ano || !/^\d{4}$/.test(ano)) {
+        return res.status(400).json({ error: "Formato de ano inválido (YYYY)" });
+      }
 
-    let values = [inicio, fim];
+      const anoNum = Number(ano);
+      const { role } = req.user;
 
-    let where = `
-      status = 'pago'
-      AND created_at >= $1
-      AND created_at < $2
-    `;
+      let values = [anoNum];
+      let where = `
+        status = 'pago'
+        AND created_at >= make_timestamptz($1, 1, 1, 0, 0, 0, 'America/Sao_Paulo')
+        AND created_at < make_timestamptz($1 + 1, 1, 1, 0, 0, 0, 'America/Sao_Paulo')
+      `;
 
-    if (role === "modelo") {
-      values.push(modelo_id);
-      where += ` AND modelo_id = $${values.length}`;
+      if (role === "modelo") {
+        const modeloRes = await db.query(
+          "SELECT id FROM modelos WHERE user_id = $1",
+          [req.user.id]
+        );
+
+        if (!modeloRes.rows.length) {
+          return res.status(404).json({ error: "Modelo não encontrada" });
+        }
+
+        const modelo_id = modeloRes.rows[0].id;
+        values.push(modelo_id);
+        where += ` AND modelo_id = $${values.length}`;
+      }
+
+      const result = await db.query(
+        `
+        SELECT
+          DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo') AS mes,
+
+          COALESCE(SUM(valor_bruto), 0) AS total_bruto,
+          COALESCE(SUM(taxa_gateway), 0) AS total_taxas,
+          COALESCE(SUM(agency_fee), 0) AS total_agency,
+          COALESCE(SUM(velvet_fee), 0) AS total_velvet,
+          COALESCE(SUM(valor_modelo), 0) AS total_modelo,
+
+          COALESCE(SUM(CASE WHEN tipo = 'assinatura' THEN valor_bruto END), 0) AS total_assinaturas,
+          COALESCE(SUM(CASE WHEN tipo = 'midia' THEN valor_bruto END), 0) AS total_midias
+
+        FROM transacoes_agency
+        WHERE ${where}
+        GROUP BY mes
+        ORDER BY mes
+        `,
+        values
+      );
+
+      res.json(result.rows);
+    } catch (err) {
+      console.error("Erro /transacoes/resumo-anual:", err);
+      res.status(500).json({ error: "Erro interno" });
     }
-
-    const result = await db.query(
-      `
-SELECT
-  DATE_TRUNC('month', created_at) AS mes,
-
-  COALESCE(SUM(valor_bruto),0) AS total_bruto,
-  COALESCE(SUM(taxa_gateway),0) AS total_taxas,
-  COALESCE(SUM(agency_fee),0) AS total_agency,
-  COALESCE(SUM(velvet_fee),0) AS total_velvet,
-  COALESCE(SUM(valor_modelo),0) AS total_modelo,
-
-  COALESCE(SUM(CASE WHEN tipo='assinatura' THEN valor_bruto END),0) AS total_assinaturas,
-  COALESCE(SUM(CASE WHEN tipo='midia' THEN valor_bruto END),0) AS total_midias
-
-FROM (
-
-  -- 🔵 SISTEMA NOVO
-  SELECT
-    tipo,
-    created_at,
-    valor_bruto,
-    taxa_gateway,
-    agency_fee,
-    velvet_fee,
-    valor_modelo,
-    modelo_id,
-    status
-  FROM transacoes_agency
-
-  UNION ALL
-
-  -- 🟡 SISTEMA ANTIGO (VIEW congelada)
-  SELECT
-    tipo,
-    created_at,
-    valor_bruto,
-    0 AS taxa_gateway,
-    0 AS agency_fee,
-    velvet_fee,
-    valor_modelo,
-    modelo_id,
-    status
-  FROM transacoes
-
-) t
-
-WHERE ${where}
-GROUP BY mes
-ORDER BY mes;
-      `,
-      values
-    );
-
-    res.json(result.rows);
   }
 );
-// router.get("/alertas/risco",
-//   auth,
-//   requireRole("admin"),
-//   async (req, res) => {
-
-//     const { rows } = await db.query(`
-//       SELECT
-//         cliente_id,
-//         score,
-//         nivel,
-//         atualizado_em
-//       FROM cliente_risco
-//       WHERE nivel IN ('alto','critico')
-//       ORDER BY score DESC
-//     `);
-
-//     res.json(rows);
-//   }
-// );
 
 router.get("/modelo/relatorio", (req, res) => {
   res.sendFile(
@@ -1608,147 +1289,131 @@ router.get("/cliente/subscricoes", auth, async (req, res) => {
 
 
 router.get("/modelo/financeiro", authModelo, async (req, res) => {
+  try {
+    // 🔎 Buscar modelo_id real
+    const modeloRes = await db.query(
+      "SELECT id FROM modelos WHERE user_id = $1",
+      [req.user.id]
+    );
 
-  // 🔎 Buscar modelo_id real
-  const modeloRes = await db.query(
-    "SELECT id FROM modelos WHERE user_id = $1",
-    [req.user.id]
-  );
+    if (!modeloRes.rows.length) {
+      return res.status(404).json({ error: "Modelo não encontrada" });
+    }
 
-  if (!modeloRes.rows.length) {
-    return res.status(404).json({ error: "Modelo não encontrada" });
-  }
+    const modelo_id = modeloRes.rows[0].id;
 
-  const modelo_id = modeloRes.rows[0].id;
-
-  // ===============================
-  // 📊 QUERY FINANCEIRA (NOVO + ANTIGO)
-  // ===============================
-  const result = await db.query(`
-    SELECT
-      -- 🔹 HOJE
-      COALESCE(SUM(CASE
-        WHEN tipo IN ('midia','conteudo')
-         AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')::date
-             = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')::date
-        THEN valor_modelo
-      END), 0) AS hoje_midias,
-
-      COALESCE(SUM(CASE
-        WHEN tipo = 'assinatura'
-         AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')::date
-             = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')::date
-        THEN valor_modelo
-      END), 0) AS hoje_assinaturas,
-      
-      -- 🔹 MÊS ATUAL
-      COALESCE(SUM(CASE
-        WHEN tipo IN ('midia','conteudo')
-         AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
-             = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
-        THEN valor_modelo
-      END), 0) AS mes_midias,
-
-      COALESCE(SUM(CASE
-        WHEN tipo = 'assinatura'
-         AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
-             = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
-        THEN valor_modelo
-      END), 0) AS mes_assinaturas,
-
-      -- 🔹 MÊS ANTERIOR
-COALESCE(SUM(CASE
-  WHEN tipo IN ('midia','conteudo')
-   AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
-       = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '1 month'
-  THEN valor_modelo
-END), 0) AS mes_anterior_midias,
-
-COALESCE(SUM(CASE
-  WHEN tipo = 'assinatura'
-   AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
-       = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '1 month'
-  THEN valor_modelo
-END), 0) AS mes_anterior_assinaturas,
-
-      -- 🔹 ACUMULADO 2026
-      COALESCE(SUM(CASE
-        WHEN EXTRACT(YEAR FROM created_at AT TIME ZONE 'America/Sao_Paulo') = 2026
-        THEN valor_modelo
-      END), 0) AS acumulado_2026
-
-    FROM (
-
-      -- 🔵 SISTEMA NOVO
+    // ===============================
+    // 📊 QUERY FINANCEIRA (SOMENTE transacoes_agency)
+    // ===============================
+    const result = await db.query(
+      `
       SELECT
-        tipo,
-        created_at,
-        valor_modelo
+        -- 🔹 HOJE
+        COALESCE(SUM(CASE
+          WHEN tipo IN ('midia', 'conteudo')
+           AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
+               = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+          THEN valor_modelo
+        END), 0) AS hoje_midias,
+
+        COALESCE(SUM(CASE
+          WHEN tipo = 'assinatura'
+           AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
+               = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+          THEN valor_modelo
+        END), 0) AS hoje_assinaturas,
+
+        -- 🔹 MÊS ATUAL
+        COALESCE(SUM(CASE
+          WHEN tipo IN ('midia', 'conteudo')
+           AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
+               = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+          THEN valor_modelo
+        END), 0) AS mes_midias,
+
+        COALESCE(SUM(CASE
+          WHEN tipo = 'assinatura'
+           AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
+               = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+          THEN valor_modelo
+        END), 0) AS mes_assinaturas,
+
+        -- 🔹 MÊS ANTERIOR
+        COALESCE(SUM(CASE
+          WHEN tipo IN ('midia', 'conteudo')
+           AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
+               = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '1 month'
+          THEN valor_modelo
+        END), 0) AS mes_anterior_midias,
+
+        COALESCE(SUM(CASE
+          WHEN tipo = 'assinatura'
+           AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
+               = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '1 month'
+          THEN valor_modelo
+        END), 0) AS mes_anterior_assinaturas,
+
+        -- 🔹 ACUMULADO ANO ATUAL (Brasil)
+        COALESCE(SUM(CASE
+          WHEN EXTRACT(YEAR FROM created_at AT TIME ZONE 'America/Sao_Paulo')
+               = EXTRACT(YEAR FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
+          THEN valor_modelo
+        END), 0) AS acumulado_ano_atual
+
       FROM transacoes_agency
       WHERE modelo_id = $1
         AND status = 'pago'
+      `,
+      [modelo_id]
+    );
 
-      UNION ALL
+    // ===============================
+    // 👥 ASSINANTES
+    // ===============================
+    const assinantes = await db.query(
+      `
+      SELECT
+        COUNT(*) FILTER (WHERE ativo = true) AS total,
+        COUNT(*) FILTER (
+          WHERE ativo = true
+            AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
+                = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+        ) AS hoje
+      FROM vip_subscriptions
+      WHERE modelo_id = $1
+      `,
+      [modelo_id]
+    );
 
--- 🟡 SISTEMA ANTIGO (normalizando bruto → líquido)
-SELECT
-  tipo,
-  created_at,
+    const r = result.rows[0];
+    const a = assinantes.rows[0];
 
-  CASE
-    WHEN tipo IN ('assinatura','midia','conteudo')
-    THEN ROUND(valor_modelo * 0.70, 2)
-    ELSE valor_modelo
-  END AS valor_modelo
-
-FROM transacoes
-WHERE modelo_id = $1
-  AND status = 'pago'
-    ) t
-  `, [modelo_id]);
-
-  // ===============================
-  // 👥 ASSINANTES (continua igual)
-  // ===============================
-  const assinantes = await db.query(`
-    SELECT
-      COUNT(*) FILTER (WHERE ativo = true) AS total,
-      COUNT(*) FILTER (
-        WHERE ativo = true
-        AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
-            = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
-      ) AS hoje
-    FROM vip_subscriptions
-    WHERE modelo_id = $1;
-  `, [modelo_id]);
-
-  const r = result.rows[0];
-  const a = assinantes.rows[0];
-
-  res.json({
-    hoje: {
-      midias: Number(r.hoje_midias || 0),
-      assinaturas: Number(r.hoje_assinaturas || 0)
-    },
-    mes: {
-      midias: Number(r.mes_midias || 0),
-      assinaturas: Number(r.mes_assinaturas || 0)
-    },
+    res.json({
+      hoje: {
+        midias: Number(r.hoje_midias || 0),
+        assinaturas: Number(r.hoje_assinaturas || 0)
+      },
+      mes: {
+        midias: Number(r.mes_midias || 0),
+        assinaturas: Number(r.mes_assinaturas || 0)
+      },
       mesAnterior: {
-    midias: Number(r.mes_anterior_midias || 0),
-    assinaturas: Number(r.mes_anterior_assinaturas || 0)
-  },
-  
-    total: {
-      acumulado_2026: Number(r.acumulado_2026 || 0)
-    },
-    assinantes: {
-      total: Number(a.total || 0),
-      hoje: Number(a.hoje || 0)
-    }
-  });
+        midias: Number(r.mes_anterior_midias || 0),
+        assinaturas: Number(r.mes_anterior_assinaturas || 0)
+      },
+      total: {
+        acumulado_ano_atual: Number(r.acumulado_ano_atual || 0)
+      },
+      assinantes: {
+        total: Number(a.total || 0),
+        hoje: Number(a.hoje || 0)
+      }
+    });
+  } catch (err) {
+    console.error("Erro /modelo/financeiro:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
 });
-
 
 // ===============================
 // 📣 ALLMESSAGE - LISTAR MODELOS
@@ -1872,102 +1537,94 @@ router.get("/modelo/conteudos", auth, authModelo, async (req, res) => {
 
 router.get("/admin/dashboard", auth, authAdmin, async (req, res) => {
   try {
-
     const mesParam = req.query.mes;
     let ano = null;
     let mes = null;
 
     if (mesParam) {
       const partes = mesParam.split("-");
+      if (
+        partes.length !== 2 ||
+        !/^\d{4}$/.test(partes[0]) ||
+        !/^(0[1-9]|1[0-2])$/.test(partes[1])
+      ) {
+        return res.status(400).json({ error: "Formato de mês inválido (YYYY-MM)" });
+      }
+
       ano = Number(partes[0]);
       mes = Number(partes[1]);
     }
 
-    const result = await db.query(`
+    const result = await db.query(
+      `
       WITH base AS (
         SELECT
           valor_modelo,
           velvet_fee,
           agency_fee,
           taxa_gateway,
-          (created_at AT TIME ZONE 'UTC'
-           AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
+          (created_at AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
         FROM transacoes_agency
         WHERE status = 'pago'
-
-        UNION ALL
-
-        SELECT
-          ROUND(valor_bruto * 0.70,2) AS valor_modelo,
-          ROUND(valor_bruto * 0.20,2) AS velvet_fee,
-          ROUND(valor_bruto * 0.10,2) AS agency_fee,
-          ROUND(valor_bruto * 0.15,2) AS taxa_gateway,
-          (created_at AT TIME ZONE 'UTC'
-           AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
-        FROM transacoes
-        WHERE status = 'pago'
       )
-
       SELECT
 
-        /* ================= HOJE (sempre real) ================= */
-
-        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN velvet_fee END),0) AS velvet_hoje,
-        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN agency_fee END),0) AS agencia_hoje,
-        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN taxa_gateway END),0) AS gateway_hoje,
-        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN valor_modelo END),0) AS modelo_hoje,
+        /* ================= HOJE (São Paulo) ================= */
+        COALESCE(SUM(CASE WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date THEN velvet_fee END), 0) AS velvet_hoje,
+        COALESCE(SUM(CASE WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date THEN agency_fee END), 0) AS agencia_hoje,
+        COALESCE(SUM(CASE WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date THEN taxa_gateway END), 0) AS gateway_hoje,
+        COALESCE(SUM(CASE WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date THEN valor_modelo END), 0) AS modelo_hoje,
 
         /* ================= MÊS SELECIONADO ================= */
+        COALESCE(SUM(CASE
+          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+           AND EXTRACT(MONTH FROM data_sp) = COALESCE($2, EXTRACT(MONTH FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+          THEN velvet_fee END), 0) AS velvet_mes,
 
-        COALESCE(SUM(CASE 
-          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM CURRENT_DATE))
-           AND EXTRACT(MONTH FROM data_sp) = COALESCE($2, EXTRACT(MONTH FROM CURRENT_DATE))
-          THEN velvet_fee END),0) AS velvet_mes,
+        COALESCE(SUM(CASE
+          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+           AND EXTRACT(MONTH FROM data_sp) = COALESCE($2, EXTRACT(MONTH FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+          THEN agency_fee END), 0) AS agencia_mes,
 
-        COALESCE(SUM(CASE 
-          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM CURRENT_DATE))
-           AND EXTRACT(MONTH FROM data_sp) = COALESCE($2, EXTRACT(MONTH FROM CURRENT_DATE))
-          THEN agency_fee END),0) AS agencia_mes,
+        COALESCE(SUM(CASE
+          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+           AND EXTRACT(MONTH FROM data_sp) = COALESCE($2, EXTRACT(MONTH FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+          THEN taxa_gateway END), 0) AS gateway_mes,
 
-        COALESCE(SUM(CASE 
-          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM CURRENT_DATE))
-           AND EXTRACT(MONTH FROM data_sp) = COALESCE($2, EXTRACT(MONTH FROM CURRENT_DATE))
-          THEN taxa_gateway END),0) AS gateway_mes,
+        COALESCE(SUM(CASE
+          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+           AND EXTRACT(MONTH FROM data_sp) = COALESCE($2, EXTRACT(MONTH FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+          THEN valor_modelo END), 0) AS totalm_mes,
 
-        COALESCE(SUM(CASE 
-          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM CURRENT_DATE))
-           AND EXTRACT(MONTH FROM data_sp) = COALESCE($2, EXTRACT(MONTH FROM CURRENT_DATE))
-          THEN valor_modelo END),0) AS totalm_mes,
-
-        COALESCE(SUM(CASE 
-          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM CURRENT_DATE))
-           AND EXTRACT(MONTH FROM data_sp) = COALESCE($2, EXTRACT(MONTH FROM CURRENT_DATE))
+        COALESCE(SUM(CASE
+          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+           AND EXTRACT(MONTH FROM data_sp) = COALESCE($2, EXTRACT(MONTH FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
           THEN (velvet_fee + agency_fee + taxa_gateway)
-        END),0) AS total_mes,
+        END), 0) AS total_mes,
 
         /* ================= ANO DO MÊS SELECIONADO ================= */
+        COALESCE(SUM(CASE
+          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+          THEN velvet_fee END), 0) AS velvet_ano,
 
-        COALESCE(SUM(CASE 
-          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM CURRENT_DATE))
-          THEN velvet_fee END),0) AS velvet_ano,
+        COALESCE(SUM(CASE
+          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+          THEN agency_fee END), 0) AS agencia_ano,
 
-        COALESCE(SUM(CASE 
-          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM CURRENT_DATE))
-          THEN agency_fee END),0) AS agencia_ano,
+        COALESCE(SUM(CASE
+          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+          THEN taxa_gateway END), 0) AS gateway_ano,
 
-        COALESCE(SUM(CASE 
-          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM CURRENT_DATE))
-          THEN taxa_gateway END),0) AS gateway_ano,
-
-        COALESCE(SUM(CASE 
-          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM CURRENT_DATE))
-          THEN valor_modelo END),0) AS modelo_ano
+        COALESCE(SUM(CASE
+          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+          THEN valor_modelo END), 0) AS modelo_ano
 
       FROM base
-    `, [ano, mes]);
+      `,
+      [ano, mes]
+    );
 
     res.json(result.rows[0]);
-
   } catch (err) {
     console.error("Erro dashboard admin:", err);
     res.status(500).json({ error: "Erro ao carregar dashboard" });
@@ -2001,93 +1658,100 @@ router.get("/agencia/modelo/:id", authAgencia, async (req, res) => {
       return res.status(400).json({ error: "Modelo inválida" });
     }
 
-    const result = await db.query(`
+    const result = await db.query(
+      `
       SELECT
         m.id,
         m.nome,
 
         /* ================= DIA ================= */
 
-        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN valor_modelo END),0) AS modelo_dia,
-        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN agency_fee END),0) AS agencia_dia,
-        COALESCE(SUM(CASE WHEN data_sp = CURRENT_DATE THEN velvet_fee END),0) AS velvet_dia,
+        COALESCE(SUM(CASE
+          WHEN ta.data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+          THEN ta.valor_modelo
+        END), 0) AS modelo_dia,
+
+        COALESCE(SUM(CASE
+          WHEN ta.data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+          THEN ta.agency_fee
+        END), 0) AS agencia_dia,
+
+        COALESCE(SUM(CASE
+          WHEN ta.data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+          THEN ta.velvet_fee
+        END), 0) AS velvet_dia,
 
         /* ================= MÊS ================= */
 
-        COALESCE(SUM(CASE 
-          WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
-          THEN valor_modelo END),0) AS modelo_mes,
+        COALESCE(SUM(CASE
+          WHEN DATE_TRUNC('month', ta.data_sp) =
+               DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
+          THEN ta.valor_modelo
+        END), 0) AS modelo_mes,
 
-        COALESCE(SUM(CASE 
-          WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
-          THEN agency_fee END),0) AS agencia_mes,
+        COALESCE(SUM(CASE
+          WHEN DATE_TRUNC('month', ta.data_sp) =
+               DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
+          THEN ta.agency_fee
+        END), 0) AS agencia_mes,
 
-        COALESCE(SUM(CASE 
-          WHEN DATE_TRUNC('month',data_sp)=DATE_TRUNC('month',CURRENT_DATE)
-          THEN velvet_fee END),0) AS velvet_mes,
+        COALESCE(SUM(CASE
+          WHEN DATE_TRUNC('month', ta.data_sp) =
+               DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
+          THEN ta.velvet_fee
+        END), 0) AS velvet_mes,
 
         /* ================= ANO ================= */
 
-        COALESCE(SUM(CASE 
-          WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
-          THEN valor_modelo END),0) AS modelo_ano,
+        COALESCE(SUM(CASE
+          WHEN DATE_TRUNC('year', ta.data_sp) =
+               DATE_TRUNC('year', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
+          THEN ta.valor_modelo
+        END), 0) AS modelo_ano,
 
-        COALESCE(SUM(CASE 
-          WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
-          THEN agency_fee END),0) AS agencia_ano,
+        COALESCE(SUM(CASE
+          WHEN DATE_TRUNC('year', ta.data_sp) =
+               DATE_TRUNC('year', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
+          THEN ta.agency_fee
+        END), 0) AS agencia_ano,
 
-        COALESCE(SUM(CASE 
-          WHEN DATE_TRUNC('year',data_sp)=DATE_TRUNC('year',CURRENT_DATE)
-          THEN velvet_fee END),0) AS velvet_ano
+        COALESCE(SUM(CASE
+          WHEN DATE_TRUNC('year', ta.data_sp) =
+               DATE_TRUNC('year', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
+          THEN ta.velvet_fee
+        END), 0) AS velvet_ano
 
       FROM modelos m
 
       LEFT JOIN (
-
-        /* ====== NOVO PADRÃO ====== */
         SELECT
           modelo_id,
           valor_modelo,
           velvet_fee,
           agency_fee,
-          (created_at AT TIME ZONE 'UTC'
-           AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
+          (created_at AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
         FROM transacoes_agency
-        WHERE status='pago'
-
-        UNION ALL
-
-        /* ====== DADOS ANTIGOS ====== */
-        SELECT
-          modelo_id,
-          ROUND(valor_bruto * 0.70,2) AS valor_modelo,
-          ROUND(valor_bruto * 0.20,2) AS velvet_fee,
-          ROUND(valor_bruto * 0.10,2) AS agency_fee,
-          (created_at AT TIME ZONE 'UTC'
-           AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
-        FROM transacoes
-        WHERE status='pago'
-
+        WHERE status = 'pago'
       ) ta ON ta.modelo_id = m.id
 
       WHERE m.agencia_id = $1
         AND m.id = $2
 
       GROUP BY m.id, m.nome
-    `, [agencia_id, modelo_id]);
+      `,
+      [agencia_id, modelo_id]
+    );
 
     if (result.rowCount === 0) {
       return res.status(404).json({ error: "Modelo não encontrada" });
     }
 
     res.json(result.rows[0]);
-
   } catch (err) {
     console.error("❌ ERRO /agencia/modelo/:id:", err);
     res.status(500).json({ error: "Erro ao buscar dados da modelo" });
   }
 });
-
 
 router.get("/agencia/pagamentos", authAgencia, async (req, res) => {
   try {
@@ -2134,84 +1798,81 @@ router.get("/agencia/me", authAgencia, async (req,res)=>{
 
 router.get("/agencia/dashboard", authAgencia, async (req, res) => {
   try {
-
     const agencia_id = req.agencia.id;
 
-    const result = await db.query(`
+    const result = await db.query(
+      `
       SELECT
-
         /* ================= HOJE ================= */
 
-        COALESCE(SUM(CASE 
-          WHEN data_sp = CURRENT_DATE AND tipo = 'midia'
-          THEN agency_fee END),0) AS midias_hoje,
+        COALESCE(SUM(CASE
+          WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+           AND tipo = 'midia'
+          THEN agency_fee
+        END), 0) AS midias_hoje,
 
-        COALESCE(SUM(CASE 
-          WHEN data_sp = CURRENT_DATE AND tipo = 'assinatura'
-          THEN agency_fee END),0) AS assinaturas_hoje,
+        COALESCE(SUM(CASE
+          WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+           AND tipo = 'assinatura'
+          THEN agency_fee
+        END), 0) AS assinaturas_hoje,
 
         /* ================= MÊS ================= */
 
-        COALESCE(SUM(CASE 
-          WHEN DATE_TRUNC('month', data_sp) = DATE_TRUNC('month', CURRENT_DATE)
-          AND tipo = 'midia'
-          THEN agency_fee END),0) AS midias_mes,
+        COALESCE(SUM(CASE
+          WHEN DATE_TRUNC('month', data_sp) =
+               DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
+           AND tipo = 'midia'
+          THEN agency_fee
+        END), 0) AS midias_mes,
 
-        COALESCE(SUM(CASE 
-          WHEN DATE_TRUNC('month', data_sp) = DATE_TRUNC('month', CURRENT_DATE)
-          AND tipo = 'assinatura'
-          THEN agency_fee END),0) AS assinaturas_mes,
+        COALESCE(SUM(CASE
+          WHEN DATE_TRUNC('month', data_sp) =
+               DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
+           AND tipo = 'assinatura'
+          THEN agency_fee
+        END), 0) AS assinaturas_mes,
 
         /* ================= TOTAIS ================= */
 
-        COALESCE(SUM(CASE 
-          WHEN data_sp = CURRENT_DATE
-          THEN agency_fee END),0) AS total_hoje,
+        COALESCE(SUM(CASE
+          WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+          THEN agency_fee
+        END), 0) AS total_hoje,
 
-        COALESCE(SUM(CASE 
-          WHEN DATE_TRUNC('month', data_sp) = DATE_TRUNC('month', CURRENT_DATE)
-          THEN agency_fee END),0) AS total_mes,
+        COALESCE(SUM(CASE
+          WHEN DATE_TRUNC('month', data_sp) =
+               DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
+          THEN agency_fee
+        END), 0) AS total_mes,
 
-        COALESCE(SUM(CASE 
-          WHEN DATE_TRUNC('year', data_sp) = DATE_TRUNC('year', CURRENT_DATE)
-          THEN agency_fee END),0) AS total_ano
+        COALESCE(SUM(CASE
+          WHEN DATE_TRUNC('year', data_sp) =
+               DATE_TRUNC('year', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
+          THEN agency_fee
+        END), 0) AS total_ano
 
       FROM (
-
-        /* ================= NOVO PADRÃO ================= */
         SELECT
           ta.tipo,
           ta.agency_fee,
-          (ta.created_at AT TIME ZONE 'UTC'
-           AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
+          (ta.created_at AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
         FROM transacoes_agency ta
         INNER JOIN modelos m ON m.id = ta.modelo_id
         WHERE ta.status = 'pago'
           AND m.agencia_id = $1
-
-        UNION ALL
-
-        /* ================= DADOS ANTIGOS ================= */
-        SELECT
-          t.tipo,
-          ROUND(t.valor_bruto * 0.85 * 0.10,2) AS agency_fee,
-          (t.created_at AT TIME ZONE 'UTC'
-           AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
-        FROM transacoes t
-        INNER JOIN modelos m ON m.id = t.modelo_id
-        WHERE t.status = 'pago'
-          AND m.agencia_id = $1
-
       ) dados
-    `, [agencia_id]);
+      `,
+      [agencia_id]
+    );
 
     res.json(result.rows[0]);
-
   } catch (err) {
     console.error("Erro dashboard agência:", err);
     res.status(500).json({ error: "Erro ao carregar dashboard" });
   }
 });
+
 
 router.get("/admin/modelos", auth, authAdmin, async (req,res)=>{
 
@@ -2227,108 +1888,127 @@ router.get("/admin/modelos", auth, authAdmin, async (req,res)=>{
   res.json(result.rows);
 });
 
-router.get("/admin/modelo/:id", auth, authAdmin, async (req,res)=>{
+router.get("/admin/modelo/:id", auth, authAdmin, async (req, res) => {
+  try {
+    const modelo_id = Number(req.params.id);
 
-  const modelo_id = Number(req.params.id);
+    if (!Number.isInteger(modelo_id) || modelo_id <= 0) {
+      return res.status(400).json({ error: "Modelo inválida" });
+    }
 
-  const mesParam = req.query.mes; // ex: 2026-03
-  let ano = null;
-  let mes = null;
+    const mesParam = req.query.mes; // ex: 2026-03
+    let ano = null;
+    let mes = null;
 
-  if (mesParam) {
-    const partes = mesParam.split("-");
-    ano = Number(partes[0]);
-    mes = Number(partes[1]);
+    if (mesParam) {
+      const partes = mesParam.split("-");
+
+      if (
+        partes.length !== 2 ||
+        !/^\d{4}$/.test(partes[0]) ||
+        !/^(0[1-9]|1[0-2])$/.test(partes[1])
+      ) {
+        return res.status(400).json({ error: "Formato de mês inválido (YYYY-MM)" });
+      }
+
+      ano = Number(partes[0]);
+      mes = Number(partes[1]);
+    }
+
+    const result = await db.query(
+      `
+      WITH base AS (
+        SELECT
+          valor_modelo,
+          velvet_fee,
+          agency_fee,
+          taxa_gateway,
+          (created_at AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
+        FROM transacoes_agency
+        WHERE status = 'pago'
+          AND modelo_id = $1
+      )
+
+      SELECT
+        m.nome,
+
+        /* ================= DIA (São Paulo) ================= */
+
+        COALESCE(SUM(CASE
+          WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+          THEN valor_modelo END), 0) AS modelo_dia,
+
+        COALESCE(SUM(CASE
+          WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+          THEN agency_fee END), 0) AS agencia_dia,
+
+        COALESCE(SUM(CASE
+          WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+          THEN velvet_fee END), 0) AS velvet_dia,
+
+        COALESCE(SUM(CASE
+          WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+          THEN taxa_gateway END), 0) AS gateway_dia,
+
+        /* ================= MÊS SELECIONADO ================= */
+
+        COALESCE(SUM(CASE
+          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($2, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+           AND EXTRACT(MONTH FROM data_sp) = COALESCE($3, EXTRACT(MONTH FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+          THEN valor_modelo END), 0) AS modelo_mes,
+
+        COALESCE(SUM(CASE
+          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($2, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+           AND EXTRACT(MONTH FROM data_sp) = COALESCE($3, EXTRACT(MONTH FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+          THEN agency_fee END), 0) AS agencia_mes,
+
+        COALESCE(SUM(CASE
+          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($2, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+           AND EXTRACT(MONTH FROM data_sp) = COALESCE($3, EXTRACT(MONTH FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+          THEN velvet_fee END), 0) AS velvet_mes,
+
+        COALESCE(SUM(CASE
+          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($2, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+           AND EXTRACT(MONTH FROM data_sp) = COALESCE($3, EXTRACT(MONTH FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+          THEN taxa_gateway END), 0) AS gateway_mes,
+
+        /* ================= ANO DO MÊS SELECIONADO ================= */
+
+        COALESCE(SUM(CASE
+          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($2, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+          THEN valor_modelo END), 0) AS modelo_ano,
+
+        COALESCE(SUM(CASE
+          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($2, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+          THEN agency_fee END), 0) AS agencia_ano,
+
+        COALESCE(SUM(CASE
+          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($2, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+          THEN velvet_fee END), 0) AS velvet_ano,
+
+        COALESCE(SUM(CASE
+          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($2, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+          THEN taxa_gateway END), 0) AS gateway_ano
+
+      FROM modelos m
+      LEFT JOIN base ON TRUE
+      WHERE m.id = $1
+      GROUP BY m.nome
+      `,
+      [modelo_id, ano, mes]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Modelo não encontrada" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Erro /admin/modelo/:id:", err);
+    res.status(500).json({ error: "Erro ao buscar dados da modelo" });
   }
-
-  const result = await db.query(`
-    WITH base AS (
-
-      /* ================= NOVO PADRÃO ================= */
-      SELECT
-        valor_modelo,
-        velvet_fee,
-        agency_fee,
-        taxa_gateway,
-        (created_at AT TIME ZONE 'UTC'
-         AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
-      FROM transacoes_agency
-      WHERE status='pago'
-        AND modelo_id=$1
-
-      UNION ALL
-
-      /* ================= DADOS ANTIGOS ================= */
-      SELECT
-        ROUND(valor_bruto * 0.70,2) AS valor_modelo,
-        ROUND(valor_bruto * 0.20,2) AS velvet_fee,
-        ROUND(valor_bruto * 0.10,2) AS agency_fee,
-        ROUND(valor_bruto * 0.15,2) AS taxa_gateway,
-        (created_at AT TIME ZONE 'UTC'
-         AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
-      FROM transacoes
-      WHERE status='pago'
-        AND modelo_id=$1
-    )
-
-    SELECT
-      m.nome,
-
-      /* ================= DIA (sempre real) ================= */
-
-      COALESCE(SUM(CASE WHEN data_sp=CURRENT_DATE THEN valor_modelo END),0) modelo_dia,
-      COALESCE(SUM(CASE WHEN data_sp=CURRENT_DATE THEN agency_fee END),0) agencia_dia,
-      COALESCE(SUM(CASE WHEN data_sp=CURRENT_DATE THEN velvet_fee END),0) velvet_dia,
-      COALESCE(SUM(CASE WHEN data_sp=CURRENT_DATE THEN taxa_gateway END),0) gateway_dia,
-
-      /* ================= MÊS SELECIONADO ================= */
-
-      COALESCE(SUM(CASE 
-        WHEN EXTRACT(YEAR FROM data_sp)=COALESCE($2, EXTRACT(YEAR FROM CURRENT_DATE))
-         AND EXTRACT(MONTH FROM data_sp)=COALESCE($3, EXTRACT(MONTH FROM CURRENT_DATE))
-        THEN valor_modelo END),0) modelo_mes,
-
-      COALESCE(SUM(CASE 
-        WHEN EXTRACT(YEAR FROM data_sp)=COALESCE($2, EXTRACT(YEAR FROM CURRENT_DATE))
-         AND EXTRACT(MONTH FROM data_sp)=COALESCE($3, EXTRACT(MONTH FROM CURRENT_DATE))
-        THEN agency_fee END),0) agencia_mes,
-
-      COALESCE(SUM(CASE 
-        WHEN EXTRACT(YEAR FROM data_sp)=COALESCE($2, EXTRACT(YEAR FROM CURRENT_DATE))
-         AND EXTRACT(MONTH FROM data_sp)=COALESCE($3, EXTRACT(MONTH FROM CURRENT_DATE))
-        THEN velvet_fee END),0) velvet_mes,
-
-      COALESCE(SUM(CASE 
-        WHEN EXTRACT(YEAR FROM data_sp)=COALESCE($2, EXTRACT(YEAR FROM CURRENT_DATE))
-         AND EXTRACT(MONTH FROM data_sp)=COALESCE($3, EXTRACT(MONTH FROM CURRENT_DATE))
-        THEN taxa_gateway END),0) gateway_mes,
-
-      /* ================= ANO DO MÊS SELECIONADO ================= */
-
-      COALESCE(SUM(CASE 
-        WHEN EXTRACT(YEAR FROM data_sp)=COALESCE($2, EXTRACT(YEAR FROM CURRENT_DATE))
-        THEN valor_modelo END),0) modelo_ano,
-
-      COALESCE(SUM(CASE 
-        WHEN EXTRACT(YEAR FROM data_sp)=COALESCE($2, EXTRACT(YEAR FROM CURRENT_DATE))
-        THEN agency_fee END),0) agencia_ano,
-
-      COALESCE(SUM(CASE 
-        WHEN EXTRACT(YEAR FROM data_sp)=COALESCE($2, EXTRACT(YEAR FROM CURRENT_DATE))
-        THEN velvet_fee END),0) velvet_ano,
-
-      COALESCE(SUM(CASE 
-        WHEN EXTRACT(YEAR FROM data_sp)=COALESCE($2, EXTRACT(YEAR FROM CURRENT_DATE))
-        THEN taxa_gateway END),0) gateway_ano
-
-    FROM base
-    JOIN modelos m ON m.id=$1
-    GROUP BY m.nome
-
-  `,[modelo_id, ano, mes]);
-
-  res.json(result.rows[0]);
 });
+
 
 router.get("/admin/perfis", auth, authAdmin, async (req,res)=>{
 
@@ -3044,65 +2724,6 @@ res.status(500).json({ error:"Erro alterar feed" });
 
 });
 
-//PUT ///
-// router.put("/agencia/modelo/:id/percentual", authAgencia, async (req,res)=>{
-//   try{
-
-//     const agencia_id = req.agencia.id;
-//     const modelo_id = Number(req.params.id);
-//     const { percentual_modelo } = req.body;
-
-//     const modeloPercent = Number(percentual_modelo);
-
-//     /* =========================================
-//        🔒 VALIDAÇÃO LIMITES MODELO
-//     ========================================= */
-
-//     if(modeloPercent < 50 || modeloPercent > 80){
-//       return res.status(400).json({
-//         error:"Modelo deve ficar entre 50% e 80%."
-//       });
-//     }
-
-//     /* =========================================
-//        🔒 CÁLCULO AUTOMÁTICO AGÊNCIA
-//        Velvet é FIXO 20%
-//     ========================================= */
-
-//     const percentual_agencia = 80 - modeloPercent;
-
-//     /* =========================================
-//        🔒 ATUALIZAR SOMENTE MODELO + AGÊNCIA
-//        Velvet não é alterado
-//     ========================================= */
-
-//     const result = await db.query(`
-//       UPDATE modelos
-//       SET percentual_modelo = $1,
-//           percentual_agencia = $2
-//       WHERE id = $3
-//       AND agencia_id = $4
-//       RETURNING *
-//     `,[modeloPercent, percentual_agencia, modelo_id, agencia_id]);
-
-//     if(!result.rowCount){
-//       return res.status(403).json({
-//         error:"Modelo não pertence à agência"
-//       });
-//     }
-
-//     res.json({
-//       success:true,
-//       percentual_modelo:modeloPercent,
-//       percentual_agencia:percentual_agencia,
-//       percentual_velvet:20
-//     });
-
-//   }catch(err){
-//     console.error(err);
-//     res.status(500).json({error:"Erro interno"});
-//   }
-// });
 
 router.put("/admin/validar-modelo/:id", auth, authAdmin, async (req,res)=>{
   const client = await db.connect();

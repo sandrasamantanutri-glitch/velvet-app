@@ -48,8 +48,7 @@ const axios = require("axios");
 const { Resend } = require("resend");
 const { enviarEmailValidacao } = require("./email");
 
-const criarPixMercadoPago = require("./pagamentos/mercadopago");
-const criarPixPagarme = require("./pagamentos/pagarme");
+const TZ_FINANCEIRO = "America/Sao_Paulo";
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 
@@ -117,401 +116,401 @@ const uploadVerificacao = multer({
 });
 
 
-app.post(
-  "/api/webhook/stripe",
-  express.raw({ type: "application/json" }),
-  async (req, res) => {
-
-    const sig = req.headers["stripe-signature"];
-    let event;
-
-    try {
-      event = stripe.webhooks.constructEvent(
-        req.body,
-        sig,
-        process.env.STRIPE_WEBHOOK_SECRET
-      );
-    } catch (err) {
-      console.log("🚨 Assinatura inválida Stripe");
-      return res.status(400).send("invalid");
-    }
-
-    console.log("🔥 WEBHOOK STRIPE:", event.type);
-
-    /* =====================================================
-       PROCESSAR APENAS EVENTOS NECESSÁRIOS
-    ===================================================== */
-
-    if (
-      event.type !== "payment_intent.succeeded" &&
-      event.type !== "charge.dispute.created"
-    ) {
-      return res.status(200).send("ok");
-    }
-
-    const client = await db.connect();
-    let dadosParaEmitir = null;
-    let enviarMensagemVip = null;
-
-    try {
-
-      await client.query("BEGIN");
-
-      /* =====================================================
-         IDEMPOTÊNCIA (MESMA LÓGICA DO PAGARME)
-      ===================================================== */
-
-      const jaProcessado = await client.query(
-        "SELECT 1 FROM stripe_events WHERE id=$1 FOR UPDATE",
-        [event.id]
-      );
-
-      if (jaProcessado.rowCount > 0) {
-        await client.query("ROLLBACK");
-        return res.status(200).send("ok");
-      }
-
-      await client.query(
-        "INSERT INTO stripe_events (id,type) VALUES ($1,$2)",
-        [event.id, event.type]
-      );
-
-      /* =====================================================
-         PAGAMENTO APROVADO
-      ===================================================== */
-
-      if (event.type === "payment_intent.succeeded") {
-
-        const pi = event.data.object;
-        const metadata = pi.metadata || {};
-
-        const tipo = metadata.tipo;
-        if (!metadata.tipo) {
-  console.log("🚨 metadata.tipo ausente stripe");
-  await client.query("ROLLBACK");
-  return res.status(200).send("ok");
-}
-
-        const cliente_id = Number(metadata.cliente_id);
-        const modelo_id = Number(metadata.modelo_id);
-
-        const valorPago = pi.amount / 100;
-        const valorTotalMeta = Number(metadata.valor_total || 0);
-
-          if (cliente_id) {
-    io.to(`cliente_${cliente_id}`).emit("pagamentoAprovado", {
-      tipo,
-      conteudo_id: metadata.message_id,
-      modelo_id,
-      valor: valorPago
-    });
-  }
-        /* =====================================================
-           VALIDAÇÃO DE VALOR (IGUAL PAGARME)
-        ===================================================== */
-
-        const valorComparacao = valorTotalMeta || valorPago;
-
-if (Math.abs(Number(valorComparacao) - Number(valorPago)) > 0.01) {
-          console.log("🚨 Valor divergente Stripe");
-          await client.query("ROLLBACK");
-          return res.status(200).send("ok");
-        }
-
-        /* =====================================================
-           VIP CARTÃO
-        ===================================================== */
-
-        if (tipo === "vip") {
-
-          const expiration = new Date();
-          expiration.setMonth(expiration.getMonth() + 1);
-
-let valorBase = Number(metadata.valor_base ?? valorPago);
-
-if (!Number.isFinite(valorBase) || valorBase <= 0) {
-  console.log("🚨 valorBase inválido stripe:", metadata.valor_base, valorPago);
-  await client.query("ROLLBACK");
-  return res.status(200).send("ok");
-}
-
-valorBase = Number(valorBase.toFixed(2));
-const taxaGateway = Number((valorBase * 0.15).toFixed(2));
-
-const valores = await calcularValores({
-  modelo_id,
-  valor_bruto: valorBase,
-  taxa_gateway: taxaGateway
-});
-
-
-await client.query(`
-INSERT INTO vip_subscriptions (
-cliente_id,
-modelo_id,
-ativo,
-created_at,
-updated_at,
-expiration_at,
-valor_assinatura,
-taxa_transacao,
-taxa_plataforma,
-valor_total,
-recorrente,
-gateway_subscription_id
-)
-VALUES (
-$1,$2,true,
-NOW(),NOW(),
-$3,$4,$5,$6,$7,
-false,$8
-)
-ON CONFLICT (cliente_id,modelo_id)
-DO UPDATE SET
-ativo=true,
-expiration_at=$3,
-updated_at=NOW(),
-valor_assinatura=$4,
-taxa_transacao=$5,
-taxa_plataforma=$6,
-valor_total=$7,
-recorrente=false,
-gateway_subscription_id=$8
-`,[
-cliente_id,
-modelo_id,
-expiration,
-valorBase,
-0,
-0,
-valorPago,
-pi.id
-]);
-
-await client.query(`
-INSERT INTO transacoes_agency (
-modelo_id,
-cliente_id,
-tipo,
-valor_bruto,
-valor_modelo,
-agency_fee,
-velvet_fee,
-taxa_gateway,
-status,
-created_at,
-aceitou_termos,
-aceite_ip,
-aceite_data
-)
-VALUES (
-$1,$2,'assinatura',
-$3,$4,$5,$6,$7,
-'pago',NOW(),true,$8,NOW()
-)
-`,[
-modelo_id,
-cliente_id,
-valorBase,
-valores.valor_modelo,
-valores.agency_fee,
-valores.velvet_fee,
-taxaGateway,
-metadata.aceite_ip || null
-]);
-
-          enviarMensagemVip = {
-            cliente_id,
-            modelo_id
-          };
-
-          dadosParaEmitir = {
-            tipo: "vip",
-            cliente_id,
-            modelo_id
-          };
-
-        }
-
-/* =====================================================
-           CONTEÚDO CARTÃO
-===================================================== */
-if (tipo === "conteudo_cartao") {
-
-const message_id = Number(metadata.message_id);
-
-          if (!message_id) {
-  console.log("🚨 message_id inválido stripe");
-  await client.query("ROLLBACK");
-  return res.status(200).send("ok");
-}
-
-let valorBase = Number(metadata.valor_base ?? valorPago);
-
-if (!Number.isFinite(valorBase) || valorBase <= 0) {
-  console.log("🚨 valorBase inválido stripe midia");
-  await client.query("ROLLBACK");
-  return res.status(200).send("ok");
-}
-
-valorBase = Number(valorBase.toFixed(2));
-const taxaGateway = Number((valorBase * 0.15).toFixed(2));
-
-const valores = await calcularValores({
-  modelo_id,
-  valor_bruto: valorBase,
-  taxa_gateway: taxaGateway
-});
-
-          await client.query(`
-            INSERT INTO conteudo_pacotes (
-              modelo_id,
-              cliente_id,
-              preco,
-              valor_base,
-              taxa_transacao,
-              taxa_plataforma,
-              valor_total,
-              status,
-              payment_id,
-              metodo_pagamento,
-              pago_em,
-              message_id
-            )
-            VALUES (
-              $1,$2,$3,$3,$4,$5,$6,
-              'pago',$7,'cartao',NOW(),$8
-            )
-            ON CONFLICT DO NOTHING
-          `,[
-            modelo_id,
-            cliente_id,
-            valorBase,
-            0,
-            0,
-            valorPago,
-            pi.id,
-            message_id
-          ]);
-
-          await client.query(`
-            INSERT INTO transacoes_agency (
-              modelo_id,
-              cliente_id,
-              tipo,
-              valor_bruto,
-              valor_modelo,
-              agency_fee,
-              velvet_fee,
-              taxa_gateway,
-              status,
-              created_at,
-              aceitou_termos,
-              aceite_ip,
-              aceite_data
-            )
-            VALUES (
-              $1,$2,'midia',
-              $3,$4,$5,$6,$7,
-              'pago',NOW(),true,$8,NOW()
-            )
-          `,[
-            modelo_id,
-            cliente_id,
-            valorBase,
-            valores.valor_modelo,
-            valores.agency_fee,
-            valores.velvet_fee,
-            taxaGateway,
-            metadata.aceite_ip || null
-          ]);
-
-          const conteudo_ids = await marcarConteudoComoLiberadoPorPagamento(client, {
-  message_id,
-  cliente_id,
-  modelo_id,
-});
-
-dadosParaEmitir = {
-  tipo: "conteudo_cartao",
-  cliente_id,
-  modelo_id,
-  message_id,
-  conteudo_ids,
-};
-        }
-      }
-
-
-/*============================================================ 
-         CHARGEBACK
-      ===================================================== */
-
-      if (event.type === "charge.dispute.created") {
-
-        const dispute = event.data.object;
-        const pi = await stripe.paymentIntents.retrieve(dispute.payment_intent);
-        const metadata = pi.metadata || {};
-
-        const cliente_id = Number(metadata.cliente_id);
-        const cpf = metadata.cpf;
-
-        if (cliente_id) {
-          await client.query(
-            "UPDATE clientes SET bloqueado=true WHERE id=$1",
-            [cliente_id]
-          );
-        }
-
-        if (cpf) {
-          await client.query(`
-            INSERT INTO cpfs_bloqueados (cpf,motivo)
-            VALUES ($1,'Chargeback Stripe')
-            ON CONFLICT DO NOTHING
-          `,[cpf]);
-        }
-
-      }
-
-      await client.query("COMMIT");
-
-      try {
-  if (dadosParaEmitir?.tipo === "conteudo_cartao") {
-    const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
-    io.to(sala).emit("conteudoLiberado", {
-      message_id: Number(dadosParaEmitir.message_id),
-      conteudo_ids: dadosParaEmitir.conteudo_ids || [],
-    });
-  }
-if (dadosParaEmitir?.tipo === "vip") {
-
-  io.emit("vipAtivado", {
-    cliente_id: Number(dadosParaEmitir.cliente_id),
-    modelo_id: Number(dadosParaEmitir.modelo_id),
-  });
-
-}
-} catch (e) {
-  console.error("Falha ao emitir sockets stripe:", e);
-}
-
-      return res.status(200).send("ok");
-
-    } catch (err) {
-
-      await client.query("ROLLBACK");
-      console.error("🔥 ERRO WEBHOOK STRIPE:", err);
-
-      return res.status(500).send("erro");
-
-    } finally {
-
-      client.release();
-
-    }
-
-  }
-);
+// app.post(
+//   "/api/webhook/stripe",
+//   express.raw({ type: "application/json" }),
+//   async (req, res) => {
+
+//     const sig = req.headers["stripe-signature"];
+//     let event;
+
+//     try {
+//       event = stripe.webhooks.constructEvent(
+//         req.body,
+//         sig,
+//         process.env.STRIPE_WEBHOOK_SECRET
+//       );
+//     } catch (err) {
+//       console.log("🚨 Assinatura inválida Stripe");
+//       return res.status(400).send("invalid");
+//     }
+
+//     console.log("🔥 WEBHOOK STRIPE:", event.type);
+
+//     /* =====================================================
+//        PROCESSAR APENAS EVENTOS NECESSÁRIOS
+//     ===================================================== */
+
+//     if (
+//       event.type !== "payment_intent.succeeded" &&
+//       event.type !== "charge.dispute.created"
+//     ) {
+//       return res.status(200).send("ok");
+//     }
+
+//     const client = await db.connect();
+//     let dadosParaEmitir = null;
+//     let enviarMensagemVip = null;
+
+//     try {
+
+//       await client.query("BEGIN");
+
+//       /* =====================================================
+//          IDEMPOTÊNCIA (MESMA LÓGICA DO PAGARME)
+//       ===================================================== */
+
+//       const jaProcessado = await client.query(
+//         "SELECT 1 FROM stripe_events WHERE id=$1 FOR UPDATE",
+//         [event.id]
+//       );
+
+//       if (jaProcessado.rowCount > 0) {
+//         await client.query("ROLLBACK");
+//         return res.status(200).send("ok");
+//       }
+
+//       await client.query(
+//         "INSERT INTO stripe_events (id,type) VALUES ($1,$2)",
+//         [event.id, event.type]
+//       );
+
+//       /* =====================================================
+//          PAGAMENTO APROVADO
+//       ===================================================== */
+
+//       if (event.type === "payment_intent.succeeded") {
+
+//         const pi = event.data.object;
+//         const metadata = pi.metadata || {};
+
+//         const tipo = metadata.tipo;
+//         if (!metadata.tipo) {
+//   console.log("🚨 metadata.tipo ausente stripe");
+//   await client.query("ROLLBACK");
+//   return res.status(200).send("ok");
+// }
+
+//         const cliente_id = Number(metadata.cliente_id);
+//         const modelo_id = Number(metadata.modelo_id);
+
+//         const valorPago = pi.amount / 100;
+//         const valorTotalMeta = Number(metadata.valor_total || 0);
+
+//           if (cliente_id) {
+//     io.to(`cliente_${cliente_id}`).emit("pagamentoAprovado", {
+//       tipo,
+//       conteudo_id: metadata.message_id,
+//       modelo_id,
+//       valor: valorPago
+//     });
+//   }
+//         /* =====================================================
+//            VALIDAÇÃO DE VALOR (IGUAL PAGARME)
+//         ===================================================== */
+
+//         const valorComparacao = valorTotalMeta || valorPago;
+
+// if (Math.abs(Number(valorComparacao) - Number(valorPago)) > 0.01) {
+//           console.log("🚨 Valor divergente Stripe");
+//           await client.query("ROLLBACK");
+//           return res.status(200).send("ok");
+//         }
+
+//         /* =====================================================
+//            VIP CARTÃO
+//         ===================================================== */
+
+//         if (tipo === "vip") {
+
+//           const expiration = new Date();
+//           expiration.setMonth(expiration.getMonth() + 1);
+
+// let valorBase = Number(metadata.valor_base ?? valorPago);
+
+// if (!Number.isFinite(valorBase) || valorBase <= 0) {
+//   console.log("🚨 valorBase inválido stripe:", metadata.valor_base, valorPago);
+//   await client.query("ROLLBACK");
+//   return res.status(200).send("ok");
+// }
+
+// valorBase = Number(valorBase.toFixed(2));
+// const taxaGateway = Number((valorBase * 0.15).toFixed(2));
+
+// const valores = await calcularValores({
+//   modelo_id,
+//   valor_bruto: valorBase,
+//   taxa_gateway: taxaGateway
+// });
+
+
+// await client.query(`
+// INSERT INTO vip_subscriptions (
+// cliente_id,
+// modelo_id,
+// ativo,
+// created_at,
+// updated_at,
+// expiration_at,
+// valor_assinatura,
+// taxa_transacao,
+// taxa_plataforma,
+// valor_total,
+// recorrente,
+// gateway_subscription_id
+// )
+// VALUES (
+// $1,$2,true,
+// NOW(),NOW(),
+// $3,$4,$5,$6,$7,
+// false,$8
+// )
+// ON CONFLICT (cliente_id,modelo_id)
+// DO UPDATE SET
+// ativo=true,
+// expiration_at=$3,
+// updated_at=NOW(),
+// valor_assinatura=$4,
+// taxa_transacao=$5,
+// taxa_plataforma=$6,
+// valor_total=$7,
+// recorrente=false,
+// gateway_subscription_id=$8
+// `,[
+// cliente_id,
+// modelo_id,
+// expiration,
+// valorBase,
+// 0,
+// 0,
+// valorPago,
+// pi.id
+// ]);
+
+// await client.query(`
+// INSERT INTO transacoes_agency (
+// modelo_id,
+// cliente_id,
+// tipo,
+// valor_bruto,
+// valor_modelo,
+// agency_fee,
+// velvet_fee,
+// taxa_gateway,
+// status,
+// created_at,
+// aceitou_termos,
+// aceite_ip,
+// aceite_data
+// )
+// VALUES (
+// $1,$2,'assinatura',
+// $3,$4,$5,$6,$7,
+// 'pago',NOW(),true,$8,NOW()
+// )
+// `,[
+// modelo_id,
+// cliente_id,
+// valorBase,
+// valores.valor_modelo,
+// valores.agency_fee,
+// valores.velvet_fee,
+// taxaGateway,
+// metadata.aceite_ip || null
+// ]);
+
+//           enviarMensagemVip = {
+//             cliente_id,
+//             modelo_id
+//           };
+
+//           dadosParaEmitir = {
+//             tipo: "vip",
+//             cliente_id,
+//             modelo_id
+//           };
+
+//         }
+
+// /* =====================================================
+//            CONTEÚDO CARTÃO
+// ===================================================== */
+// if (tipo === "conteudo_cartao") {
+
+// const message_id = Number(metadata.message_id);
+
+//           if (!message_id) {
+//   console.log("🚨 message_id inválido stripe");
+//   await client.query("ROLLBACK");
+//   return res.status(200).send("ok");
+// }
+
+// let valorBase = Number(metadata.valor_base ?? valorPago);
+
+// if (!Number.isFinite(valorBase) || valorBase <= 0) {
+//   console.log("🚨 valorBase inválido stripe midia");
+//   await client.query("ROLLBACK");
+//   return res.status(200).send("ok");
+// }
+
+// valorBase = Number(valorBase.toFixed(2));
+// const taxaGateway = Number((valorBase * 0.15).toFixed(2));
+
+// const valores = await calcularValores({
+//   modelo_id,
+//   valor_bruto: valorBase,
+//   taxa_gateway: taxaGateway
+// });
+
+//           await client.query(`
+//             INSERT INTO conteudo_pacotes (
+//               modelo_id,
+//               cliente_id,
+//               preco,
+//               valor_base,
+//               taxa_transacao,
+//               taxa_plataforma,
+//               valor_total,
+//               status,
+//               payment_id,
+//               metodo_pagamento,
+//               pago_em,
+//               message_id
+//             )
+//             VALUES (
+//               $1,$2,$3,$3,$4,$5,$6,
+//               'pago',$7,'cartao',NOW(),$8
+//             )
+//             ON CONFLICT DO NOTHING
+//           `,[
+//             modelo_id,
+//             cliente_id,
+//             valorBase,
+//             0,
+//             0,
+//             valorPago,
+//             pi.id,
+//             message_id
+//           ]);
+
+//           await client.query(`
+//             INSERT INTO transacoes_agency (
+//               modelo_id,
+//               cliente_id,
+//               tipo,
+//               valor_bruto,
+//               valor_modelo,
+//               agency_fee,
+//               velvet_fee,
+//               taxa_gateway,
+//               status,
+//               created_at,
+//               aceitou_termos,
+//               aceite_ip,
+//               aceite_data
+//             )
+//             VALUES (
+//               $1,$2,'midia',
+//               $3,$4,$5,$6,$7,
+//               'pago',NOW(),true,$8,NOW()
+//             )
+//           `,[
+//             modelo_id,
+//             cliente_id,
+//             valorBase,
+//             valores.valor_modelo,
+//             valores.agency_fee,
+//             valores.velvet_fee,
+//             taxaGateway,
+//             metadata.aceite_ip || null
+//           ]);
+
+//           const conteudo_ids = await marcarConteudoComoLiberadoPorPagamento(client, {
+//   message_id,
+//   cliente_id,
+//   modelo_id,
+// });
+
+// dadosParaEmitir = {
+//   tipo: "conteudo_cartao",
+//   cliente_id,
+//   modelo_id,
+//   message_id,
+//   conteudo_ids,
+// };
+//         }
+//       }
+
+
+// /*============================================================ 
+//          CHARGEBACK
+//       ===================================================== */
+
+//       if (event.type === "charge.dispute.created") {
+
+//         const dispute = event.data.object;
+//         const pi = await stripe.paymentIntents.retrieve(dispute.payment_intent);
+//         const metadata = pi.metadata || {};
+
+//         const cliente_id = Number(metadata.cliente_id);
+//         const cpf = metadata.cpf;
+
+//         if (cliente_id) {
+//           await client.query(
+//             "UPDATE clientes SET bloqueado=true WHERE id=$1",
+//             [cliente_id]
+//           );
+//         }
+
+//         if (cpf) {
+//           await client.query(`
+//             INSERT INTO cpfs_bloqueados (cpf,motivo)
+//             VALUES ($1,'Chargeback Stripe')
+//             ON CONFLICT DO NOTHING
+//           `,[cpf]);
+//         }
+
+//       }
+
+//       await client.query("COMMIT");
+
+//       try {
+//   if (dadosParaEmitir?.tipo === "conteudo_cartao") {
+//     const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
+//     io.to(sala).emit("conteudoLiberado", {
+//       message_id: Number(dadosParaEmitir.message_id),
+//       conteudo_ids: dadosParaEmitir.conteudo_ids || [],
+//     });
+//   }
+// if (dadosParaEmitir?.tipo === "vip") {
+
+//   io.emit("vipAtivado", {
+//     cliente_id: Number(dadosParaEmitir.cliente_id),
+//     modelo_id: Number(dadosParaEmitir.modelo_id),
+//   });
+
+// }
+// } catch (e) {
+//   console.error("Falha ao emitir sockets stripe:", e);
+// }
+
+//       return res.status(200).send("ok");
+
+//     } catch (err) {
+
+//       await client.query("ROLLBACK");
+//       console.error("🔥 ERRO WEBHOOK STRIPE:", err);
+
+//       return res.status(500).send("erro");
+
+//     } finally {
+
+//       client.release();
+
+//     }
+
+//   }
+// );
 
 app.post("/api/webhook/pagarme", express.raw({ type: "*/*" }), async (req, res) => {
 
@@ -3539,7 +3538,8 @@ app.get("/api/vip/status/:modelo_id", authCliente, async (req, res) => {
       WHERE cliente_id = $1
       AND modelo_id = $2
       AND ativo = true
-      AND expiration_at > NOW() AT TIME ZONE 'America/Sao_Paulo'
+      AND expiration_at > NOW()
+      ORDER BY expiration_at DESC
       LIMIT 1
       `,
       [req.cliente_id, modelo_id]
