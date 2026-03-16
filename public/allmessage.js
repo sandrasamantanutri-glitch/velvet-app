@@ -142,8 +142,7 @@ async function enviar(modoTeste) {
   const modelo_id = document.getElementById("modeloSelect").value;
   const texto = document.getElementById("mensagem").value.trim();
   const preco = Number(document.getElementById("preco").value || 0);
-
-const conteudos = [...conteudosSelecionados];
+  const conteudos = [...conteudosSelecionados];
 
   if (!texto) {
     alert("Digite a mensagem");
@@ -151,41 +150,53 @@ const conteudos = [...conteudosSelecionados];
   }
 
   if (!modoTeste) {
-    const ok = confirm(
-      "Enviar esta mensagem para TODOS os assinantes VIP?"
-    );
+    const ok = confirm("Enviar esta mensagem para TODOS os assinantes VIP?");
     if (!ok) return;
   }
+
   const payload = {
-  texto,
-  preco,
-  conteudos,
-  modo_teste: modoTeste
-};
+    modelo_id,
+    texto,
+    preco,
+    conteudos,
+    modo_teste: modoTeste
+  };
 
-  const res = await fetch("/api/allmessage", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + localStorage.getItem("token")
-    },
-    body: JSON.stringify(payload)
-  });
+  try {
+    abrirPopupEnvioPPV();
 
-  const data = await res.json();
+    const res = await fetch("/api/allmessage", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + localStorage.getItem("token")
+      },
+      body: JSON.stringify(payload)
+    });
 
-  if (!res.ok) {
-    alert(data.error || "Erro ao enviar mensagem");
-    return;
+    const data = await res.json();
+
+    if (!res.ok) {
+      fecharPopupEnvioPPV();
+      alert(data.error || "Erro ao iniciar envio");
+      return;
+    }
+
+    const jobId = data.jobId;
+
+    if (!jobId) {
+      fecharPopupEnvioPPV();
+      alert("O backend não retornou jobId para acompanhar o progresso.");
+      return;
+    }
+
+    await acompanharProgressoEnvio(jobId, modoTeste);
+
+  } catch (err) {
+    console.error(err);
+    fecharPopupEnvioPPV();
+    alert("Erro ao enviar mensagem");
   }
-
-  alert(
-    modoTeste
-      ? "Mensagem enviada com sucesso 💜"
-      : `Mensagem enviada para ${data.enviados} assinantes 💜`
-  );
-
-  window.location.reload();
 }
 
 function confirmarConteudosSelecionados(){
@@ -319,4 +330,87 @@ function atualizarContadorMidias(){
 
   contador.textContent = `Selecionadas: ${conteudosSelecionados.size}`;
 
+}
+
+function abrirPopupEnvioPPV() {
+  document.getElementById("popupEnvioPPV")?.classList.remove("hidden");
+  atualizarProgressoEnvio({
+    percentual: 0,
+    texto: "Preparando envio..."
+  });
+}
+
+function fecharPopupEnvioPPV() {
+  document.getElementById("popupEnvioPPV")?.classList.add("hidden");
+}
+
+function atualizarProgressoEnvio({ percentual = 0, texto = "" }) {
+  const fill = document.getElementById("barraProgressoFill");
+  const percentualEl = document.getElementById("statusEnvioPercentual");
+  const textoEl = document.getElementById("statusEnvioTexto");
+
+  if (fill) fill.style.width = `${percentual}%`;
+  if (percentualEl) percentualEl.textContent = `${percentual}%`;
+  if (textoEl) textoEl.textContent = texto;
+}
+
+async function acompanharProgressoEnvio(jobId, modoTeste) {
+  let concluido = false;
+
+  while (!concluido) {
+    await new Promise(resolve => setTimeout(resolve, 1200));
+
+    const res = await fetch(`/api/allmessage/status/${jobId}`, {
+      headers: {
+        Authorization: "Bearer " + localStorage.getItem("token")
+      }
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      fecharPopupEnvioPPV();
+      alert(data.error || "Erro ao acompanhar progresso");
+      return;
+    }
+
+    const total = Number(data.total || 0);
+    const processados = Number(data.processados || 0);
+    const enviados = Number(data.enviados || 0);
+    const falhas = Number(data.falhas || 0);
+
+    const percentual = total > 0
+      ? Math.min(100, Math.round((processados / total) * 100))
+      : 0;
+
+    atualizarProgressoEnvio({
+      percentual,
+      texto: `Enviando ${processados}/${total} • enviados: ${enviados} • falhas: ${falhas}`
+    });
+
+    if (data.status === "concluido") {
+      atualizarProgressoEnvio({
+        percentual: 100,
+        texto: `Enviado com sucesso para ${enviados} assinantes`
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 900));
+      fecharPopupEnvioPPV();
+
+      alert(
+        modoTeste
+          ? "Mensagem enviada com sucesso 💜"
+          : `Mensagem enviada para ${enviados} assinantes 💜`
+      );
+
+      window.location.reload();
+      concluido = true;
+    }
+
+    if (data.status === "erro") {
+      fecharPopupEnvioPPV();
+      alert(data.error || "Erro durante o envio");
+      return;
+    }
+  }
 }

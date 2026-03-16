@@ -16,6 +16,10 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 const router = express.Router();   // ⬅️ PRIMEIRO SEMPRE
 
+const crypto = require("crypto");
+
+const allmessageJobs = new Map();
+
 const s3Privado = new AWS.S3({
   endpoint: new AWS.Endpoint(process.env.B2_ENDPOINT),
   accessKeyId: process.env.B2_KEY_ID_PRIVATE,
@@ -166,6 +170,127 @@ function authAgencia(req, res, next) {
     return res.sendStatus(401);
   }
 }
+
+async function executarEnvioAllmessage(jobId, {
+  modelo_id,
+  texto,
+  preco,
+  conteudos,
+  modo_teste
+}) {
+  const job = allmessageJobs.get(jobId);
+  if (!job) return;
+
+  const temConteudo = Array.isArray(conteudos) && conteudos.length > 0;
+  const precoFinal = Number(preco) || 0;
+
+  // ===============================
+  // 🔍 BUSCAR ASSINANTES ATIVOS
+  // ===============================
+  const clientesRes = await db.query(
+    `
+    SELECT cliente_id
+    FROM vip_subscriptions
+    WHERE modelo_id = $1
+      AND ativo = true
+    `,
+    [modelo_id]
+  );
+
+  if (clientesRes.rowCount === 0) {
+    job.status = "erro";
+    job.error = "Nenhum assinante ativo encontrado";
+    return;
+  }
+
+  let clientes = clientesRes.rows;
+
+  // mantém funcionalidade de modo_teste
+  if (modo_teste) {
+    clientes = clientes.slice(0, 1);
+  }
+
+  job.total = clientes.length;
+
+  for (const row of clientes) {
+    const cliente_id = row.cliente_id;
+
+    try {
+      // 1️⃣ MENSAGEM DE TEXTO (SEMPRE)
+      await db.query(
+        `
+        INSERT INTO messages
+          (modelo_id, cliente_id, text, sender, visto, tipo)
+        VALUES
+          ($1, $2, $3, 'modelo', false, 'texto')
+        `,
+        [modelo_id, cliente_id, texto]
+      );
+
+      // 2️⃣ CONTEÚDO (GRÁTIS OU PAGO)
+      if (temConteudo) {
+        const msgRes = await db.query(
+          `
+          INSERT INTO messages
+            (modelo_id, cliente_id, text, sender, preco, visto, tipo)
+          VALUES
+            ($1, $2, '', 'modelo', $3, false, 'conteudo')
+          RETURNING id
+          `,
+          [modelo_id, cliente_id, precoFinal]
+        );
+
+        const message_id = msgRes.rows[0].id;
+
+        // 3️⃣ PACOTE DE CONTEÚDO
+        await db.query(
+          `
+          INSERT INTO conteudo_pacotes
+            (cliente_id, modelo_id, preco, valor_total, status, message_id)
+          VALUES
+            ($1, $2, $3, $4, 'pendente', $5)
+          `,
+          [
+            cliente_id,
+            modelo_id,
+            precoFinal,
+            precoFinal,
+            message_id
+          ]
+        );
+
+        // 4️⃣ VINCULAR CONTEÚDOS
+        for (const conteudo_id of conteudos) {
+          await db.query(
+            `
+            INSERT INTO messages_conteudos
+              (message_id, conteudo_id)
+            VALUES
+              ($1, $2)
+            `,
+            [message_id, conteudo_id]
+          );
+        }
+      }
+
+      job.enviados++;
+    } catch (err) {
+      console.error(`❌ Falha ao enviar para cliente ${cliente_id}:`, err);
+      job.falhas++;
+    }
+
+    job.processados++;
+    job.percentual = job.total > 0
+      ? Math.round((job.processados / job.total) * 100)
+      : 0;
+  }
+
+  job.status = "concluido";
+  job.percentual = 100;
+  job.finalizado_em = new Date().toISOString();
+}
+
+
 
 //ROTASSSS POST ///////////////////
 router.post("/modelo/dados-bancarios", authModelo, async (req, res) => {
@@ -406,7 +531,7 @@ VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'pago')
 // );
 
 // ===============================
-// 📣 ALLMESSAGE - ENVIO EM MASSA
+// 📣 ALLMESSAGE - ENVIO EM MASSA (ASSÍNCRONO)
 // ===============================
 router.post(
   "/allmessage",
@@ -414,30 +539,24 @@ router.post(
   requireRole("admin", "modelo"),
   async (req, res) => {
     try {
-      const {
-  texto,
-  preco,
-  conteudos,
-  modo_teste
-} = req.body;
+      const { texto, preco, conteudos, modo_teste } = req.body;
 
-let modelo_id;
- if (req.user.role === "modelo") {
-  const modeloRes = await db.query(
-    "SELECT id FROM modelos WHERE user_id = $1",
-    [req.user.id]
-  );
+      let modelo_id;
 
-  if (modeloRes.rowCount === 0) {
-    return res.status(403).json({ error: "Modelo não encontrada" });
-  }
+      if (req.user.role === "modelo") {
+        const modeloRes = await db.query(
+          "SELECT id FROM modelos WHERE user_id = $1",
+          [req.user.id]
+        );
 
-  modelo_id = modeloRes.rows[0].id;
-} else {
-  // admin pode enviar manualmente
-  modelo_id = req.body.modelo_id;
-}
+        if (modeloRes.rowCount === 0) {
+          return res.status(403).json({ error: "Modelo não encontrada" });
+        }
 
+        modelo_id = modeloRes.rows[0].id;
+      } else {
+        modelo_id = req.body.modelo_id;
+      }
 
       // ===============================
       // 🔒 VALIDAÇÕES BÁSICAS
@@ -446,101 +565,43 @@ let modelo_id;
         return res.status(400).json({ error: "Dados inválidos" });
       }
 
-      const temConteudo =
-        Array.isArray(conteudos) && conteudos.length > 0;
+      const jobId = crypto.randomUUID();
 
-      const precoFinal = Number(preco) || 0;
+      allmessageJobs.set(jobId, {
+        jobId,
+        status: "processando",
+        modelo_id,
+        total: 0,
+        processados: 0,
+        enviados: 0,
+        falhas: 0,
+        percentual: 0,
+        modo_teste: !!modo_teste,
+        criado_em: new Date().toISOString(),
+        error: null
+      });
 
-      // ===============================
-      // 🔍 BUSCAR ASSINANTES ATIVOS
-      // ===============================
-      let vipQuery = `
-        SELECT cliente_id
-        FROM vip_subscriptions
-        WHERE modelo_id = $1
-          AND ativo = true
-      `;
-      const vipParams = [modelo_id];
-
-      const clientesRes = await db.query(vipQuery, vipParams);
-
-      if (clientesRes.rowCount === 0) {
-        return res.status(400).json({
-          error: "Nenhum assinante ativo encontrado"
-        });
-      }
-
-      // ===============================
-      // 🔁 ENVIO INDIVIDUAL
-      // ===============================
-      for (const row of clientesRes.rows) {
-        const cliente_id = row.cliente_id;
-
-        // 1️⃣ MENSAGEM DE TEXTO (SEMPRE)
-        await db.query(
-          `
-          INSERT INTO messages
-            (modelo_id, cliente_id, text, sender, visto, tipo)
-          VALUES
-            ($1, $2, $3, 'modelo', false, 'texto')
-          `,
-          [modelo_id, cliente_id, texto]
-        );
-
-        // 2️⃣ CONTEÚDO (GRÁTIS OU PAGO)
-        if (temConteudo) {
-          const msgRes = await db.query(
-            `
-            INSERT INTO messages
-              (modelo_id, cliente_id, text, sender, preco, visto, tipo)
-            VALUES
-              ($1, $2, '', 'modelo', $3, false, 'conteudo')
-            RETURNING id
-            `,
-            [modelo_id, cliente_id, precoFinal]
-          );
-
-          const message_id = msgRes.rows[0].id;
-
-          // 3️⃣ PACOTE DE CONTEÚDO (preço pode ser 0)
-          await db.query(
-            `
-            INSERT INTO conteudo_pacotes
-              (cliente_id, modelo_id, preco, valor_total, status, message_id)
-            VALUES
-              ($1, $2, $3, $4, 'pendente', $5)
-            `,
-            [
-              cliente_id,
-              modelo_id,
-              precoFinal,
-              precoFinal,
-              message_id
-            ]
-          );
-
-          // 4️⃣ VINCULAR CONTEÚDOS
-          for (const conteudo_id of conteudos) {
-            await db.query(
-              `
-              INSERT INTO messages_conteudos
-                (message_id, conteudo_id)
-              VALUES
-                ($1, $2)
-              `,
-              [message_id, conteudo_id]
-            );
-          }
-        }
-      }
-
-      // ===============================
-      // ✅ RESPOSTA FINAL
-      // ===============================
+      // responde imediatamente
       res.json({
         ok: true,
-        enviados: clientesRes.rowCount,
-        modo_teste: !!modo_teste
+        jobId
+      });
+
+      // continua o processamento em background
+      processarAllmessageJob(jobId, {
+        modelo_id,
+        texto,
+        preco,
+        conteudos,
+        modo_teste
+      }).catch((err) => {
+        console.error("❌ ERRO JOB ALLMESSAGE:", err);
+
+        const job = allmessageJobs.get(jobId);
+        if (job) {
+          job.status = "erro";
+          job.error = err.message;
+        }
       });
 
     } catch (err) {
@@ -549,7 +610,6 @@ let modelo_id;
     }
   }
 );
-
 const bcrypt = require("bcrypt");
 
 router.post("/agencia/login", async (req, res) => {
@@ -2920,6 +2980,31 @@ res.status(500).json({error:"Erro histórico segurança"});
 }
 
 });
+
+// ===============================
+// 📊 STATUS DO ENVIO EM MASSA
+// ===============================
+router.get(
+  "/allmessage/status/:jobId",
+  auth,
+  requireRole("admin", "modelo"),
+  async (req, res) => {
+    try {
+      const { jobId } = req.params;
+
+      const job = allmessageJobs.get(jobId);
+
+      if (!job) {
+        return res.status(404).json({ error: "Job não encontrado ou expirado" });
+      }
+
+      res.json(job);
+    } catch (err) {
+      console.error("❌ ERRO STATUS ALLMESSAGE:", err);
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
 
 router.put("/admin/modelo/:id/feed", auth, authAdmin, async (req,res)=>{
 

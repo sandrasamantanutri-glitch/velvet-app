@@ -119,7 +119,7 @@ body {
   .header-inner {
     width: 100%;
     max-width: 100%;
-    padding: 0 8px;
+    padding: 0 0 0 0;
     gap: 8px;
   }
 
