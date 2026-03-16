@@ -1246,3 +1246,14 @@ flex:1;
 .role-cliente .chat-conteudo.bloqueado .midia-item[data-liberado="true"] {
   filter: none !important;
 }
+
+/* item liberado nunca mostra cadeado */
+.role-cliente .midia-item[data-liberado="true"] .midia-lock,
+.role-cliente .midia-item.midia-livre .midia-lock,
+.role-cliente .chat-conteudo.visto .midia-lock,
+.role-cliente .chat-conteudo.livre .midia-lock {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
