@@ -64,7 +64,7 @@ body {
   display:flex;
   align-items:center;
   justify-content:center;
-  background:black;
+  background:transparent;
 }
 
 /* imagens */
@@ -96,9 +96,9 @@ body {
 }
 
 .modal-close {
-  position: absolute;
-  top: 12px;
-  right: 14px;
+  position: fixed;
+  top: 30px;
+  right: 30px;
   background: none;
   border: none;
   color: #fff;

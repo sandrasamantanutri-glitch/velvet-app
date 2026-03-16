@@ -54,3 +54,86 @@ body {
   width: 30px;
   height: 30px;
 }
+
+@media (max-width: 480px) {
+  .app-header {
+    height: 56px;
+  }
+
+  .header-inner {
+    width: 100%;
+    max-width: 100%;
+    padding: 0 8px;
+    gap: 8px;
+  }
+
+  .velvet-logo {
+    margin-right: auto;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .velvet-logo img,
+  .live-logo {
+    display: block;
+    width: 108px;
+    max-width: 108px;
+    height: auto;
+  }
+
+  .header-inner a {
+    width: 24px;
+    height: 24px;
+    flex: 0 0 24px;
+  }
+
+  .header-inner a img {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+@media (max-width: 380px) {
+  .header-inner {
+    padding: 0 6px;
+    gap: 6px;
+  }
+
+  .velvet-logo img,
+  .live-logo {
+    width: 96px;
+    max-width: 96px;
+  }
+
+  .header-inner a {
+    width: 22px;
+    height: 22px;
+    flex: 0 0 22px;
+  }
+
+  .header-inner a img {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.velvet-logo {
+  margin-right: auto;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.velvet-logo img,
+.live-logo {
+  display: block;
+  height: auto;
+  max-width: 100%;
+}
+
+.header-inner a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
