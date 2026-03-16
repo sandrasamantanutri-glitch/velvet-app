@@ -105,7 +105,6 @@ body, html {
 }
 
 .msg-modelo {
-  align-self: flex-end;
   background: #9E6BFF;
   color: #fff;
   border-bottom-right-radius: 4px;
@@ -113,15 +112,14 @@ body, html {
 }
 
 .msg-cliente {
-  align-self: flex-start;
   background: #7B2CFF;
   color: #fff;
 }
 
-.msg-cliente:has(.chat-conteudo) {
-  align-self: flex-start;
-  align-items: flex-start;
-  text-align: left;
+body.role-cliente .msg-cliente:has(.chat-conteudo) {
+  align-self: flex-end;
+  align-items: flex-end;
+  text-align: right;
 }
 
 .chat-conteudo {
@@ -1321,29 +1319,61 @@ flex:1;
   cursor: pointer;
 }
 
-.msg-conteudo-wrap {
-  display: flex;
-  flex-direction: column;
-  width: fit-content;
-  max-width: 220px;
+/* CONTEÚDO NO CHAT DO CLIENTE: seguir o sender real */
+body.role-cliente .msg.msg-modelo:has(.chat-conteudo) {
+  align-self: flex-start !important;
+  align-items: flex-start !important;
+  text-align: left !important;
 }
 
-.msg-conteudo-wrap.lado-modelo {
-  margin-left: auto;
-  align-items: flex-end;
-  text-align: right;
+body.role-cliente .msg.msg-cliente:has(.chat-conteudo) {
+  align-self: flex-end !important;
+  align-items: flex-end !important;
+  text-align: right !important;
 }
 
-.msg-conteudo-wrap.lado-cliente {
-  margin-right: auto;
-  align-items: flex-start;
-  text-align: left;
+/* se houver wrapper */
+body.role-cliente .msg.msg-modelo .msg-conteudo-wrap {
+  margin-right: auto !important;
+  margin-left: 0 !important;
+  align-items: flex-start !important;
+  text-align: left !important;
 }
 
-.msg-conteudo-wrap .chat-conteudo,
-.msg-conteudo-wrap .msg-meta,
-.msg-conteudo-wrap .conteudo-info,
-.msg-conteudo-wrap .status-bloqueado,
-.msg-conteudo-wrap .preco-bloqueado {
-  width: fit-content;
+body.role-cliente .msg.msg-cliente .msg-conteudo-wrap {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+  align-items: flex-end !important;
+  text-align: right !important;
+}
+
+/* sem depender do wrapper */
+body.role-cliente .msg.msg-modelo .chat-conteudo,
+body.role-cliente .msg.msg-modelo .msg-meta,
+body.role-cliente .msg.msg-modelo .conteudo-info,
+body.role-cliente .msg.msg-modelo .status-bloqueado,
+body.role-cliente .msg.msg-modelo .preco-bloqueado {
+  margin-right: auto !important;
+  margin-left: 0 !important;
+  align-self: flex-start !important;
+  text-align: left !important;
+}
+
+body.role-cliente .msg.msg-cliente .chat-conteudo,
+body.role-cliente .msg.msg-cliente .msg-meta,
+body.role-cliente .msg.msg-cliente .conteudo-info,
+body.role-cliente .msg.msg-cliente .status-bloqueado,
+body.role-cliente .msg.msg-cliente .preco-bloqueado {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+  align-self: flex-end !important;
+  text-align: right !important;
+}
+
+body.role-cliente .msg-modelo {
+  align-self: flex-start;
+}
+
+body.role-cliente .msg-cliente {
+  align-self: flex-end;
 }
