@@ -516,7 +516,11 @@ const cardLiberado =
   Number(msg.preco) === 0 ||
   msg.liberado === true;
 
-  div.innerHTML = `
+ div.innerHTML = `
+  <div class="msg-conteudo-wrap ${
+        msg.sender === "modelo" ? "lado-modelo" : "lado-cliente"
+  }">
+
 <div class="chat-conteudo premium ${
   cardLiberado ? "visto" : (msg.preco > 0 ? "bloqueado" : "")
 }" data-id="${msg.id}" data-preco="${msg.preco || 0}">
@@ -566,6 +570,7 @@ const cardLiberado =
       : ""
   }
 
+</div>
 </div>
 `;
 
@@ -630,10 +635,6 @@ async function abrirConteudo(message_id, index = 0) {
   const video = document.getElementById("modalVideo");
   const iframe = document.getElementById("modalIframe");
 
-  const btnPrev = document.getElementById("btnMidiaAnterior");
-  const btnNext = document.getElementById("btnMidiaProxima");
-
-  if (!modal) return;
 
   const res = await fetch(`/api/chat/conteudo/${message_id}`, {
     headers: { Authorization: "Bearer " + token }
@@ -976,7 +977,10 @@ const cardLiberado =
   Number(msg.preco) === 0 ||
   msg.liberado === true;
 
-  div.innerHTML = `
+div.innerHTML = `
+  <div class="msg-conteudo-wrap ${
+    msg.sender === "modelo" ? "lado-modelo" : "lado-cliente"
+  }">
 <div class="chat-conteudo premium ${
   cardLiberado ? "visto" : (msg.preco > 0 ? "bloqueado" : "")
 }" data-id="${msg.id}" data-preco="${msg.preco || 0}">
@@ -1028,6 +1032,7 @@ const cardLiberado =
 
 <div class="msg-meta">
   <span class="msg-hora">${formatarTempo(msg.created_at)}</span>
+</div>
 </div>
 `;
 }

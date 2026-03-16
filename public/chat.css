@@ -1322,24 +1322,29 @@ flex:1;
   cursor: pointer;
 }
 
-.msg-modelo .chat-conteudo,
-.msg-modelo .conteudo-bar,
-.msg-modelo .msg-meta,
-.msg-modelo .preco-bloqueado,
-.msg-modelo .status-bloqueado {
-  margin-left: auto;
-}
-
-.msg-cliente .chat-conteudo,
-.msg-cliente .conteudo-bar,
-.msg-cliente .msg-meta,
-.msg-cliente .preco-bloqueado,
-.msg-cliente .status-bloqueado {
-  margin-right: auto;
-}
-
-/* impede que o card ocupe largura “solta” */
-.chat-conteudo {
+.msg-conteudo-wrap {
+  display: flex;
+  flex-direction: column;
   width: fit-content;
   max-width: 220px;
+}
+
+.msg-conteudo-wrap.lado-modelo {
+  margin-left: auto;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.msg-conteudo-wrap.lado-cliente {
+  margin-right: auto;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.msg-conteudo-wrap .chat-conteudo,
+.msg-conteudo-wrap .msg-meta,
+.msg-conteudo-wrap .conteudo-info,
+.msg-conteudo-wrap .status-bloqueado,
+.msg-conteudo-wrap .preco-bloqueado {
+  width: fit-content;
 }
