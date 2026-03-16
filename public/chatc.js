@@ -176,12 +176,11 @@ document.addEventListener(
     if (!card) return;
 
     const preco = Number(card.dataset.preco || 0);
-    const messageId = Number(card.dataset.id);
-    const midiaClicada = e.target.closest(".midia-item");
+    const messageId = Number(card.dataset.id || 0);
 
-    const todasMidias = [...card.querySelectorAll(".midia-item")];
+    const midiaClicada = e.target.closest(".midia-item[data-index]");
+    const todasMidias = [...card.querySelectorAll(".midia-item[data-index]")];
 
-    // pacote totalmente liberado só quando TODAS as mídias estiverem liberadas
     const pacoteTotalmenteLiberado =
       preco === 0 ||
       card.classList.contains("livre") ||
@@ -193,10 +192,7 @@ document.addEventListener(
             m.dataset.liberado === "true"
         ));
 
-    // ==============================
-    // PACOTE NÃO ESTÁ 100% LIBERADO
-    // qualquer clique abre pagamento
-    // ==============================
+    // pacote não 100% liberado -> qualquer clique abre pagamento
     if (preco > 0 && !pacoteTotalmenteLiberado) {
       e.preventDefault();
       e.stopPropagation();
@@ -204,10 +200,7 @@ document.addEventListener(
       return;
     }
 
-    // ==============================
-    // PACOTE 100% LIBERADO
-    // pode abrir a mídia clicada
-    // ==============================
+    // pacote 100% liberado -> precisa ter clicado numa mídia específica
     if (!midiaClicada) return;
 
     e.preventDefault();
