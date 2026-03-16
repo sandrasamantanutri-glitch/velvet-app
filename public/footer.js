@@ -1,5 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
 
+   const menu = document.getElementById("footerModelo");
+
   const btnPerfil = document.getElementById("btnAvatar");
   const btnMedia = document.getElementById("btnPost");
   const btnConteudos = document.getElementById("btnConteudos");
