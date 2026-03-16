@@ -84,34 +84,41 @@ window.addEventListener("scroll", () => {
 // PRIORIDADE CHAT
 // ===============================
 function prioridadeChat(c) {
+  // 1) NÃO LIDA
+  if (c.ultimo_sender === "cliente" && c.lida === false) return 1;
 
-  // novo VIP
-  if (c.novo_vip) return 1;
+  // 2) POR RESPONDER
+  if (c.ultimo_sender === "cliente" && c.lida === true) return 2;
 
-  // cliente nunca recebeu resposta
-  if (!c.modelo_respondeu) return 2;
+  // 3) NOVO VIP
+  if (c.novo_vip === true) return 3;
 
-  // cliente enviou e não foi visto
-  if (c.ultimo_sender === "cliente" && c.visto === false) return 3;
+  // 4) CLIENTE VISUALIZOU MAS NÃO RESPONDEU
+  if (c.ultimo_sender === "modelo" && c.visto === true) return 4;
 
-  // cliente enviou e você viu
-  if (c.ultimo_sender === "cliente" && c.visto === true) return 4;
-
+  // 5) RESTO
   return 5;
+}
+
+function pesoGasto(c) {
+  const total = Number(c.total_gasto || 0);
+
+  if (total >= 300) return 3; // $$$
+  if (total >= 200) return 2; // $$
+  if (total > 100) return 1;  // $
+  return 0;
 }
 
 // ===============================
 // FETCH CLIENTES
 // ===============================
 async function carregarListaClientes() {
-
-   if (carregando || fimLista) return;
+  if (carregando || fimLista) return;
 
   carregando = true;
   document.body.classList.add("loading");
 
   try {
-
     const res = await fetch(
       `/api/chat/modelo?limit=${LIMIT}&offset=${offset}`,
       { headers: { Authorization: "Bearer " + token } }
@@ -124,7 +131,7 @@ async function carregarListaClientes() {
 
     const clientes = await res.json();
 
-     if (clientes.length === 0) {
+    if (clientes.length === 0) {
       fimLista = true;
       carregando = false;
       return;
@@ -132,39 +139,43 @@ async function carregarListaClientes() {
 
     preloadAvatars(clientes);
 
-    clientes.sort((a, b) => {
+clientes.sort((a, b) => {
+  const pa = prioridadeChat(a);
+  const pb = prioridadeChat(b);
 
-      const pa = prioridadeChat(a);
-      const pb = prioridadeChat(b);
+  if (pa !== pb) return pa - pb;
 
-      if (pa !== pb) return pa - pb;
+  const ga = pesoGasto(a);
+  const gb = pesoGasto(b);
 
-      const da = a.ultima_mensagem_em ? new Date(a.ultima_mensagem_em) : 0;
-      const db = b.ultima_mensagem_em ? new Date(b.ultima_mensagem_em) : 0;
+  if (ga !== gb) return gb - ga;
 
-      return db - da;
+  const va = Number(a.total_gasto || 0);
+  const vb = Number(b.total_gasto || 0);
 
-    });
+  if (va !== vb) return vb - va;
 
-    clientes.forEach(c => {
-  if (!chatsMap.has(c.cliente_id)) {
-    listaCompleta.push(c);
-  }
+  const da = a.ultima_mensagem_em ? new Date(a.ultima_mensagem_em).getTime() : 0;
+  const db = b.ultima_mensagem_em ? new Date(b.ultima_mensagem_em).getTime() : 0;
+
+  return db - da;
 });
 
-    renderizarMais();
+    clientes.forEach(c => {
+      if (!chatsMap.has(c.cliente_id)) {
+        listaCompleta.push(c);
+      }
+    });
 
+    renderizarMais();
     offset += clientes.length;
 
   } catch (err) {
-
     console.error("Erro carregar inbox:", err);
-
-  }  finally {
-
+  } finally {
     carregando = false;
     document.body.classList.remove("loading");
-}
+  }
 }
 
 // ===============================
@@ -262,9 +273,7 @@ function gerarStatus(c) {
 }
 
 function renderizarMais() {
-
   listaCompleta.forEach(c => {
-
     if (chatsMap.has(c.cliente_id)) return;
 
     let statusHTML = "";
@@ -274,23 +283,19 @@ function renderizarMais() {
     }
 
     else if (c.ultimo_sender === "cliente") {
-
-      if (c.visto === false) {
+      if (c.lida === false) {
         statusHTML = `<span class="status status-unseen">Não lida</span>`;
       } else {
         statusHTML = `<span class="status status-reply">Por responder</span>`;
       }
-
     }
 
     else if (c.ultimo_sender === "modelo") {
-
-      if (c.lida === true) {
+      if (c.visto === true) {
         statusHTML = `<span class="status status-read">✓✓</span>`;
       } else {
         statusHTML = `<span class="status status-sent">✓</span>`;
       }
-
     }
 
     const div = document.createElement("div");
@@ -306,7 +311,6 @@ function renderizarMais() {
       <div class="chat-body">
 
         <div class="chat-top">
-
           <span class="chat-name">
             ${c.username || c.nome || "Cliente"}
             <span class="spend-level">${c.spend_level || ""}</span>
@@ -315,11 +319,9 @@ function renderizarMais() {
           <span class="chat-time">
             ${formatarTempo(c.ultima_mensagem_em)}
           </span>
-
         </div>
 
         <div class="chat-bottom">
-
           <span class="chat-last">
             ${c.ultima_mensagem || ""}
           </span>
@@ -327,7 +329,6 @@ function renderizarMais() {
           <div class="chat-status">
             ${statusHTML}
           </div>
-
         </div>
 
       </div>
@@ -339,11 +340,8 @@ function renderizarMais() {
       data: c,
       element: div
     });
-
   });
-
 }
-
 
 function preloadAvatars(clientes) {
 
@@ -368,4 +366,4 @@ setInterval(() => {
 
   carregarListaClientes();
 
-}, 30000);
+}, 20000);
