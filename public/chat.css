@@ -473,15 +473,6 @@ body, html {
   object-fit:cover;
   display:block;
 }
-.pix-qr {
-  width: 320px;
-  height: 320px;
-  display: block;
-  margin: 16px auto;
-  padding: 10px;
-  background: #ffffff;
-  border-radius: 12px;
-}
 
 
 .msg-meta{
@@ -843,8 +834,8 @@ body, html {
 ============================== */
 
 .pix-qr {
-  width: 100px;
-  height: 100px;
+  width: 220px;
+  height: 220px;
   margin: 14px auto;
   display: block;
 }
@@ -1160,21 +1151,17 @@ body, html {
 }
 
 .modal-close{
-  position:absolute;
-  top:-30px;
-  right:0;
-
-  width:36px;
-  height:36px;
-
-  border-radius:50%;
-  border:none;
-
-  background:#000;
-  color:#fff;
-
-  font-size:20px;
-  cursor:pointer;
+position: absolute;
+    top: 5px;
+    right: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: none;
+    color: #6a2cff;
+    font-size: 22px;
+    cursor: pointer;
 }
 
 .cartao-form{
