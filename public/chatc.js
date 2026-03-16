@@ -550,7 +550,6 @@ const cardLiberado =
 
 </div>
 `;
-
     const bloqueadoTotal =
       Number(msg.preco) > 0 &&
       msg.liberado !== true &&
