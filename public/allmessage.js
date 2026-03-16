@@ -51,16 +51,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   if(grid){
 
-    grid.addEventListener("scroll", () => {
+grid.addEventListener("scroll", async () => {
+  const nearBottom =
+    grid.scrollTop + grid.clientHeight >= grid.scrollHeight - 150;
 
-      const nearBottom =
-        grid.scrollTop + grid.clientHeight >= grid.scrollHeight - 150;
-
-      if(nearBottom){
-        carregarConteudos();
-      }
-
-    });
+  if (nearBottom && !carregandoConteudos && !fimConteudos) {
+    await carregarConteudos();
+  }
+});
 
   }
 
@@ -96,18 +94,18 @@ async function carregarModelo() {
 // ===============================
 // CONTEÚDOS DA MODELO
 // ===============================
-async function abrirPopupConteudos(){
-
+async function abrirPopupConteudos() {
   const popup = document.getElementById("popupConteudos");
   const grid  = document.getElementById("conteudosGrid");
 
-  if(!popup || !grid) return;
+  if (!popup || !grid) return;
 
   popup.classList.remove("hidden");
 
   // reset estado
   paginaConteudos = 1;
   fimConteudos = false;
+  carregandoConteudos = false;
   conteudosSelecionados.clear();
   atualizarContadorMidias();
 
@@ -116,6 +114,10 @@ async function abrirPopupConteudos(){
   // carrega primeira página
   await carregarConteudos();
 
+  // se ainda não criou scroll, continua carregando
+  while (!fimConteudos && grid.scrollHeight <= grid.clientHeight) {
+    await carregarConteudos();
+  }
 }
 
 // ===============================
