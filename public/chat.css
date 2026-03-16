@@ -1314,3 +1314,16 @@ flex:1;
   pointer-events: none;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
+
+.midia-bloqueada::before,
+.midia-bloqueada::after,
+.midia-lock,
+.midia-overlay,
+.blur-overlay {
+  pointer-events: none;
+}
+
+.midia-item {
+  position: relative;
+  cursor: pointer;
+}

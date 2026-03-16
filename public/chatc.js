@@ -175,24 +175,26 @@ document.addEventListener(
     const card = e.target.closest(".chat-conteudo");
     if (!card) return;
 
+    const grid = e.target.closest(".pacote-grid");
+    if (!grid) return;
+
     const preco = Number(card.dataset.preco || 0);
     const messageId = Number(card.dataset.id || 0);
+    const todasMidias = [...grid.querySelectorAll(".midia-item[data-index]")];
 
-    const midiaClicada = e.target.closest(".midia-item[data-index]");
-    const todasMidias = [...card.querySelectorAll(".midia-item[data-index]")];
+    if (!todasMidias.length) return;
 
     const pacoteTotalmenteLiberado =
       preco === 0 ||
       card.classList.contains("livre") ||
       conteudosLiberados.has(messageId) ||
-      (todasMidias.length > 0 &&
-        todasMidias.every(
-          (m) =>
-            m.classList.contains("midia-livre") ||
-            m.dataset.liberado === "true"
-        ));
+      todasMidias.every(
+        (m) =>
+          m.classList.contains("midia-livre") ||
+          m.dataset.liberado === "true"
+      );
 
-    // pacote não 100% liberado -> qualquer clique abre pagamento
+    // se NÃO estiver 100% liberado, qualquer clique no pacote abre pagamento
     if (preco > 0 && !pacoteTotalmenteLiberado) {
       e.preventDefault();
       e.stopPropagation();
@@ -200,11 +202,35 @@ document.addEventListener(
       return;
     }
 
-    // pacote 100% liberado -> precisa ter clicado numa mídia específica
-    if (!midiaClicada) return;
-
+    // daqui para baixo: pacote 100% liberado
     e.preventDefault();
     e.stopPropagation();
+
+    // tenta primeiro pelo elemento
+    let midiaClicada = e.target.closest(".midia-item[data-index]");
+
+    // fallback: identifica pela posição do clique
+    if (!midiaClicada) {
+      const x = e.clientX;
+      const y = e.clientY;
+
+      midiaClicada = todasMidias.find((m) => {
+        const r = m.getBoundingClientRect();
+        return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+      });
+    }
+
+    // fallback final: elemento visual mais próximo do ponto clicado
+    if (!midiaClicada && document.elementsFromPoint) {
+      const els = document.elementsFromPoint(e.clientX, e.clientY);
+      midiaClicada = els.find(
+        (el) =>
+          el instanceof Element &&
+          el.matches(".midia-item[data-index]")
+      );
+    }
+
+    if (!midiaClicada) return;
 
     const index = Number(midiaClicada.dataset.index || 0);
     abrirConteudo(messageId, index);
