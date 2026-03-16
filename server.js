@@ -1759,7 +1759,7 @@ RETURNING *
 //   }
 // });
 
-app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
+app.post("/api/pagamento/vip/cartao", authCliente, manutencaoClientes, async (req, res) => {
 
   const client = await db.connect();
   let cliente_id;
@@ -6650,7 +6650,7 @@ app.post("/api/pagamento/midia/pix", auth, async (req, res) => {
 //   }
 // });
 
-app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
+app.post("/api/pagamento/midia/cartao", auth, manutencaoClientes, async (req, res) => {
   const client = await db.connect();
 
   try {
