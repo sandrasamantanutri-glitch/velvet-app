@@ -60,6 +60,7 @@ document.getElementById("acumuladoAnterior").innerText =
     console.error("Erro carregarResumoModelo:", err);
   }
 }
+
 async function carregarTransacoes(pagina = 1) {
   const lista = document.getElementById("listaTransacoes");
   const paginacao = document.getElementById("paginacaoTransacoes");
@@ -78,30 +79,53 @@ async function carregarTransacoes(pagina = 1) {
     return;
   }
 
-try {
-  const hoje = new Date();
-  const mesAtual = hoje.toISOString().slice(0, 7);
+  function obterMesAtualSP() {
+    const partes = new Intl.DateTimeFormat("sv-SE", {
+      timeZone: "America/Sao_Paulo",
+      year: "numeric",
+      month: "2-digit"
+    }).formatToParts(new Date());
 
-  const res = await fetch(`/api/transacoes?mes=${mesAtual}&page=${pagina}`, {
-    headers: {
-      Authorization: "Bearer " + token
+    const ano = partes.find(p => p.type === "year")?.value;
+    const mes = partes.find(p => p.type === "month")?.value;
+
+    return `${ano}-${mes}`;
+  }
+
+  function formatarDataHoraSP(dataIso) {
+    return new Intl.DateTimeFormat("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    }).format(new Date(dataIso));
+  }
+
+  try {
+    const mesAtual = obterMesAtualSP();
+
+    const res = await fetch(`/api/transacoes?mes=${mesAtual}&page=${pagina}`, {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
+
+    if (!res.ok) {
+      lista.innerText = "Erro ao carregar transações.";
+      return;
     }
-  });
 
-  if (!res.ok) {
-    lista.innerText = "Erro ao carregar transações.";
-    return;
-  }
+    const data = await res.json();
+    const dados = data.registros || [];
 
-  const data = await res.json();
-  const dados = data.registros;
+    lista.innerHTML = "";
 
-  lista.innerHTML = "";
-
-  if (!dados.length) {
-    lista.innerText = "Nenhuma transação encontrada.";
-    return;
-  }
+    if (!dados.length) {
+      lista.innerText = "Nenhuma transação encontrada.";
+      return;
+    }
 
     paginaAtualTransacoes = data.paginaAtual;
 
@@ -109,13 +133,12 @@ try {
       lista.innerHTML += `
         <div class="transacao">
           <strong>#${t.codigo}</strong> · ${t.tipo}<br>
-          ${new Date(t.created_at).toLocaleDateString("pt-BR")}<br>
+          ${formatarDataHoraSP(t.created_at)}<br>
           Valor: ${emReais(t.valor)}
         </div>
       `;
     });
 
-    // 🔢 PAGINAÇÃO
     if (paginacao && data.totalPaginas > 1) {
       renderizarPaginacaoTransacoes(data.totalPaginas);
     }
