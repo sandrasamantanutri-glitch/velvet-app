@@ -205,7 +205,6 @@ textarea {
 
 .preview-item.selected::after {
   content: "✓";
-  position: absolute;
   top: 8px;
   right: 8px;
   width: 26px;
@@ -290,19 +289,22 @@ textarea {
   max-height: 55vh;
   overflow-y: auto;
   overflow-x: hidden;
-  min-height: 120px;
+
+  align-items: start;
 }
 
 .preview-item{
   position: relative;
   width: 100%;
-  aspect-ratio: 9/12;
+  aspect-ratio: 3 / 4;
   overflow: hidden;
   border-radius: 12px;
-  cursor: pointer;
+  background: #eee;
 }
 
-.preview-item img{
+.preview-item img,
+.preview-item video{
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
