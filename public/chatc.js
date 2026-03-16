@@ -643,14 +643,6 @@ async function abrirConteudo(message_id, index = 0) {
 
   modal.classList.remove("hidden");
 
-  // desativa totalmente navegação lateral no modal
-  galeriaMidias = [];
-  indiceAtualMidia = 0;
-
-  if (btnPrev) btnPrev.style.display = "none";
-  if (btnNext) btnNext.style.display = "none";
-
-  // não marcar o pacote inteiro como liberado aqui
   marcarConteudoVisto(message_id);
 
   img.style.display = "none";
@@ -775,86 +767,82 @@ function fecharModalMidia(){
 }
 
 
-function abrirMidia(midia){
+function abrirMidia(midia) {
+  if (!midia) return;
 
-  const grid = midia.closest(".pacote-grid");
-  if(!grid) return;
+  const src = midia.dataset.full || midia.dataset.src || midia.dataset.thumb;
+  if (!src) return;
 
-  galeriaMidias = Array.from(
-    grid.querySelectorAll(".midia-item")
-  );
-
-  indiceAtualMidia = galeriaMidias.indexOf(midia);
-
-  mostrarMidiaAtual();
+  abrirModalMidia(src);
 
   const conteudo = midia.closest(".chat-conteudo");
-  if(!conteudo) return;
+  if (!conteudo) return;
 
   const message_id = Number(conteudo.dataset.id);
 
-  if(message_id && socket){
+  if (message_id && socket) {
     socket.emit("marcarConteudoVisto", {
-  message_id,
-  cliente_id,
-  modelo_id
-});
+      message_id,
+      cliente_id,
+      modelo_id
+    });
+  }
 }
-}
-function abrirModalMidia(src){
 
+function abrirModalMidia(src) {
   const modal  = document.getElementById("modalMidia");
   const img    = document.getElementById("modalImg");
   const video  = document.getElementById("modalVideo");
   const iframe = document.getElementById("modalIframe");
 
-  if(!modal || !src) return;
+  if (!modal || !src) return;
 
   modal.classList.remove("hidden");
 
-  /* reset */
-  if(img){
+  // reset de tudo
+  if (img) {
     img.style.display = "none";
-    img.src = "";
+    img.removeAttribute("src");
   }
 
-  if(video){
+  if (video) {
     video.pause();
     video.removeAttribute("src");
-    video.load();
     video.style.display = "none";
+    video.load();
   }
 
-  if(iframe){
-    iframe.src = "";
+  if (iframe) {
+    iframe.removeAttribute("src");
     iframe.style.display = "none";
   }
 
-  /* CLOUDFlARE STREAM */
-  if(src.includes("iframe.videodelivery.net")){
-
-    iframe.src = src;
-    iframe.style.display = "block";
+  if (src.includes("iframe.videodelivery.net")) {
+    if (iframe) {
+      iframe.src = src;
+      iframe.style.display = "block";
+    }
     return;
   }
 
-  /* VIDEO NORMAL */
-  if(
+  if (
     src.includes(".mp4") ||
     src.includes(".webm") ||
     src.includes(".mov")
-  ){
-    video.src = src;
-    video.style.display = "block";
-    video.play().catch(()=>{});
+  ) {
+    if (video) {
+      video.src = src;
+      video.style.display = "block";
+      video.play().catch(() => {});
+    }
     return;
   }
 
-  /* IMAGEM */
-  img.src = src;
-  img.style.display = "block";
+  if (img) {
+    img.src = src;
+    img.style.display = "block";
+  }
 }
-
 
 
 function abrirPreviewAvatar(url) {
