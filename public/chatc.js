@@ -178,16 +178,15 @@ document.addEventListener(
     const preco = Number(card.dataset.preco || 0);
     const messageId = Number(card.dataset.id);
 
-    const midia =
-      e.target.closest(".midia-item") ||
-      card.querySelector(".midia-item");
+    // só considera a mídia realmente clicada
+    const midia = e.target.closest(".midia-item");
 
-const cardTotalmenteLiberado =
-  preco === 0 ||
-  card.classList.contains("livre") ||
-  conteudosLiberados.has(messageId);
+    const cardTotalmenteLiberado =
+      preco === 0 ||
+      card.classList.contains("livre") ||
+      conteudosLiberados.has(messageId);
 
-    // sem mídia clicada, se o card estiver bloqueado abre pagamento
+    // clicou fora da mídia
     if (!midia) {
       if (preco > 0 && !cardTotalmenteLiberado) {
         e.preventDefault();
@@ -202,7 +201,7 @@ const cardTotalmenteLiberado =
       midia.dataset.liberado === "true" ||
       cardTotalmenteLiberado;
 
-    // clicou em mídia bloqueada -> abre pagamento
+    // mídia bloqueada
     if (preco > 0 && !midiaLiberada) {
       e.preventDefault();
       e.stopPropagation();
@@ -210,10 +209,32 @@ const cardTotalmenteLiberado =
       return;
     }
 
-    // clicou em mídia liberada -> abre conteúdo
     e.preventDefault();
     e.stopPropagation();
 
+    // tenta abrir direto a mídia clicada
+    const srcDireta =
+      midia.dataset.full ||
+      midia.querySelector("img")?.currentSrc ||
+      midia.querySelector("img")?.src ||
+      midia.querySelector("video")?.currentSrc ||
+      midia.querySelector("video")?.src ||
+      midia.dataset.thumb;
+
+    if (srcDireta) {
+      abrirModalMidia(srcDireta);
+
+      if (messageId && socket) {
+        socket.emit("marcarConteudoVisto", {
+          message_id: messageId,
+          cliente_id,
+          modelo_id
+        });
+      }
+      return;
+    }
+
+    // fallback
     const index = Number(midia.dataset.index || 0);
     abrirConteudo(messageId, index);
   },
@@ -407,27 +428,29 @@ socket.on("conteudoVisto", async ({ message_id, cliente_id: cid }) => {
       conteudosLiberados.add(Number(message_id));
     }
 
-    el.innerHTML = `
-      <div class="pacote-grid">
-        ${midias.map((m, index) => {
-          const liberado = m.liberado !== false;
+el.innerHTML = `
+  <div class="pacote-grid">
+    ${midias.map((m, index) => {
+      const liberado = m.liberado !== false;
 
-          return `
-            <div class="midia-item ${liberado ? "midia-livre" : "midia-bloqueada"}"
-                 data-index="${index}"
-                 data-liberado="${liberado ? "true" : "false"}">
-              ${
-                liberado
-                  ? (
-                      m.tipo_media === "video"
-                        ? `<video src="${m.url}" muted playsinline></video>`
-                        : `<img src="${m.url}">`
-                    )
-                  : `
-                    <div class="midia-preview" style="background-image:url('${m.thumbnail_url || m.url}')"></div>
-                  `
-              }
-            </div>
+      return `
+        <div class="midia-item ${liberado ? "midia-livre" : "midia-bloqueada"}"
+             data-index="${index}"
+             data-liberado="${liberado ? "true" : "false"}"
+             data-full="${m.url}"
+             data-thumb="${m.thumbnail_url || m.url}">
+          ${
+            liberado
+              ? (
+                  m.tipo_media === "video"
+                    ? `<video src="${m.url}" muted playsinline></video>`
+                    : `<img src="${m.url}">`
+                )
+              : `
+                <div class="midia-preview" style="background-image:url('${m.thumbnail_url || m.url}')"></div>
+              `
+          }
+        </div>
           `;
         }).join("")}
       </div>
