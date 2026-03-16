@@ -11,6 +11,7 @@ if (!token || role !== "cliente") {
 const LIMITE_INICIAL = 30;
 let offset = 0;
 let listaCompleta = [];
+const chatsMap = new Map();
 
 // ===============================
 // SOCKET
