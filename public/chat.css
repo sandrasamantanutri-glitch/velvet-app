@@ -1219,3 +1219,50 @@ gap:10px;
 .cartao-field{
 flex:1;
 }
+
+/* =========================
+   PPV já visto / já livre
+   remove visual de bloqueio
+========================= */
+
+.role-cliente .chat-conteudo.visto .midia-lock,
+.role-cliente .chat-conteudo.livre .midia-lock {
+  display: none !important;
+}
+
+.role-cliente .chat-conteudo.visto .midia-preview,
+.role-cliente .chat-conteudo.livre .midia-preview {
+  filter: none !important;
+}
+
+.role-cliente .chat-conteudo.visto img,
+.role-cliente .chat-conteudo.visto video,
+.role-cliente .chat-conteudo.livre img,
+.role-cliente .chat-conteudo.livre video {
+  filter: none !important;
+}
+
+/* quando a thumb estiver vindo como background-image no próprio item */
+.role-cliente .chat-conteudo.visto .midia-item,
+.role-cliente .chat-conteudo.livre .midia-item {
+  filter: none !important;
+}
+
+/* se ainda existir a classe bloqueado junto por algum motivo,
+   visto/livre ganha prioridade visual */
+.role-cliente .chat-conteudo.bloqueado.visto img,
+.role-cliente .chat-conteudo.bloqueado.visto video,
+.role-cliente .chat-conteudo.bloqueado.livre img,
+.role-cliente .chat-conteudo.bloqueado.livre video {
+  filter: none !important;
+}
+
+.role-cliente .chat-conteudo.bloqueado.visto .midia-lock,
+.role-cliente .chat-conteudo.bloqueado.livre .midia-lock {
+  display: none !important;
+}
+
+.role-cliente .chat-conteudo.bloqueado.visto .midia-preview,
+.role-cliente .chat-conteudo.bloqueado.livre .midia-preview {
+  filter: none !important;
+}
