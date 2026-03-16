@@ -1581,26 +1581,25 @@ async function liberarConteudo(messageId) {
       el.classList.add("livre");
     }
 
-   el.innerHTML = `
-  <div class="pacote-grid">
-    ${midias.map((m,index) => `
-      <div class="midia-item ${m.liberado !== false ? "midia-livre" : "midia-bloqueada"}"
-           data-index="${index}"
-           data-liberado="${m.liberado !== false ? "true" : "false"}"
-           data-full="${m.url}"
-           data-thumb="${m.thumbnail_url || m.url}">
-        ${
-          m.liberado !== false
-            ? (
-                m.tipo_media === "video"
-                  ? `<video src="${m.url}" muted playsinline></video>`
-                  : `<img src="${m.url}">`
-              )
-            : `
-              <div class="midia-preview" style="background-image:url('${m.thumbnail_url || m.url}')"></div>
-            `
-        }
-      </div>
+    el.innerHTML = `
+      <div class="pacote-grid">
+        ${midias.map((m,index) => `
+          <div class="midia-item ${m.liberado !== false ? "midia-livre" : "midia-bloqueada"}"
+               data-index="${index}"
+               data-liberado="${m.liberado !== false ? "true" : "false"}">
+            ${
+              m.liberado !== false
+                ? (
+                    m.tipo_media === "video"
+                      ? `<video src="${m.url}" muted playsinline></video>`
+                      : `<img src="${m.url}">`
+                  )
+                : `
+                  <div class="midia-preview" style="background-image:url('${m.thumbnail_url || m.url}')"></div>
+                  <div class="midia-lock">🔒</div>
+                `
+            }
+          </div>
         `).join("")}
       </div>
     `;
