@@ -39,79 +39,6 @@ let pagamentoEmProcesso = false;
 
 const stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
 
-
-function montarHtmlConteudo(midias = []) {
-  return `
-    <div class="pacote-grid">
-      ${midias.map((m, index) => {
-        const liberado = m.liberado !== false;
-
-        return `
-          <div
-            class="midia-item ${liberado ? "midia-livre" : "midia-bloqueada"}"
-            data-index="${index}"
-            data-liberado="${liberado ? "true" : "false"}"
-            data-thumb="${m.thumbnail_url || m.url}"
-            data-full="${m.url}"
-            data-conteudo-id="${m.conteudo_id || ""}"
-            data-ja-possuia="${m.ja_possuia === true ? "true" : "false"}"
-            style="background-image:url('${m.thumbnail_url || m.url}')"
-          >
-            ${
-              liberado
-                ? (
-                    m.tipo_media === "video"
-                      ? `<video src="${m.url}" muted playsinline></video>`
-                      : `<img src="${m.url}" alt="">`
-                  )
-                : `
-                  <div class="midia-preview" style="background-image:url('${m.thumbnail_url || m.url}')"></div>
-                  <div class="midia-lock">🔒</div>
-                `
-            }
-          </div>
-        `;
-      }).join("")}
-    </div>
-  `;
-}
-
-function atualizarEstadoCardConteudo(el, midias = []) {
-  if (!el) return;
-
-  const todasLiberadas = midias.length > 0 && midias.every(m => m.liberado !== false);
-
-  el.classList.remove("bloqueado", "liberado", "livre", "visto");
-
-  if (todasLiberadas) {
-    el.classList.add("liberado");
-  } else {
-    el.classList.add("bloqueado");
-  }
-}
-
-function montarInfoConteudo(preco, quantidade, todasLiberadas, temParcialLiberado = false) {
-  if (Number(preco) <= 0) return "";
-
-  return `
-    <div class="conteudo-info">
-      <span class="status-bloqueado">
-        ${
-          todasLiberadas
-            ? `🟢 ${quantidade} mídia(s)`
-            : temParcialLiberado
-              ? `✨ ${quantidade} mídia(s) · parcial`
-              : `✨ ${quantidade} mídia(s)`
-        }
-      </span>
-
-      <span class="preco-bloqueado">
-        R$ ${Number(preco || 0).toFixed(2)}
-      </span>
-    </div>
-  `;
-}
-
 // ===============================
 // SOCKET
 // ===============================
@@ -297,38 +224,53 @@ document.addEventListener(
 // ===============================
 // HISTÓRICO
 // ===============================
-socket.on("conteudoVisto", async ({ message_id, cliente_id: cid }) => {
-  console.log("📩 conteudoVisto recebido:", { message_id, cid, cliente_id });
 
-  if (!message_id) return;
-  if (cid != null && Number(cid) !== Number(cliente_id)) return;
+socket.on("chatHistory", mensagens => {
 
-  const el = document.querySelector(`.chat-conteudo[data-id="${message_id}"]`);
-  if (!el) return;
+  if (!chatBox || !Array.isArray(mensagens)) return;
 
-  try {
-    const res = await fetch(`/api/chat/conteudo/${message_id}`, {
-      headers: {
-        Authorization: "Bearer " + token
-      }
+  const primeiraCarga = offsetMensagens === 0;
+
+  if (primeiraCarga) {
+
+    chatBox.innerHTML = "";
+    mensagensRenderizadas.clear();
+
+    mensagens.forEach(m => renderMensagem(m));
+
+    // 🔧 esperar DOM + imagens renderizarem
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        chatBox.scrollTop = chatBox.scrollHeight;
+      });
     });
 
-    if (!res.ok) return;
+  } else {
 
-    const midias = await res.json();
-    const todasLiberadas = midias.length > 0 && midias.every(m => m.liberado !== false);
+    const alturaAntes = chatBox.scrollHeight;
 
-    if (todasLiberadas) {
-      conteudosLiberados.add(Number(message_id));
-    }
+    mensagens.reverse().forEach(m => {
 
-    atualizarEstadoCardConteudo(el, midias);
-    el.innerHTML = montarHtmlConteudo(midias);
-  } catch (err) {
-    console.error("Erro liberar conteúdo:", err);
+      if (mensagensRenderizadas.has(m.id)) return;
+      mensagensRenderizadas.add(m.id);
+
+      const div = criarMensagemElemento(m);
+      chatBox.prepend(div);
+
+    });
+
+    requestAnimationFrame(() => {
+      const alturaDepois = chatBox.scrollHeight;
+      chatBox.scrollTop += (alturaDepois - alturaAntes);
+    });
+
   }
-});
 
+  offsetMensagens += mensagens.length;
+  historicoInicialCarregado = true;
+  carregandoHistorico = false;
+
+});
 
 // ===============================
 // NOVA MENSAGEM
@@ -530,9 +472,11 @@ function formatarTempo(timestamp) {
 // RENDER MENSAGEM
 // ===============================
 
-function renderMensagem(msg) {
+function renderMensagem(msg){
+
   if (!chatBox) return;
 
+  // evitar duplicação
   if (mensagensRenderizadas.has(msg.id)) return;
   mensagensRenderizadas.add(msg.id);
 
@@ -545,79 +489,125 @@ function renderMensagem(msg) {
 
   div.dataset.id = msg.id;
 
-  if (msg.tipo === "conteudo" || msg.tipo === "conteudo_ppv_mass") {
-    const quantidade = msg.quantidade ?? (msg.midias?.length || 0);
+  // ===============================
+  // 📦 MENSAGEM DE CONTEÚDO
+  // ===============================
+if (msg.tipo === "conteudo" || msg.tipo === "conteudo_ppv_mass") {
+  const quantidade =
+    msg.quantidade ?? (msg.midias?.length || 0);
 
-    const midias = (msg.midias || []).map(m => {
+const cardLiberado =
+  Number(msg.preco) === 0 ||
+  msg.liberado === true;
+
+  div.innerHTML = `
+<div class="chat-conteudo premium ${
+  cardLiberado ? "visto" : (msg.preco > 0 ? "bloqueado" : "")
+}" data-id="${msg.id}" data-preco="${msg.preco || 0}">
+
+  <div class="pacote-grid">
+    ${(msg.midias || []).map((m, index) => {
       const midiaLiberada =
         Number(msg.preco) === 0 ||
-        msg.liberado === true ||
-        m.liberado === true;
+        m.liberado === true ||
+        cardLiberado;
 
-      return {
-        ...m,
-        liberado: midiaLiberada
-      };
-    });
+      return `
+ <div class="midia-item lazy-midia ${
+          midiaLiberada ? "midia-livre" : "midia-bloqueada"
+        }"
+          data-thumb="${m.thumbnail_url || m.url}"
+          data-full="${m.url}"
+          data-index="${index}"
+          data-conteudo-id="${m.conteudo_id || ""}"
+          data-ja-possuia="${m.ja_possuia === true ? "true" : "false"}"
+          data-liberado="${midiaLiberada ? "true" : "false"}"
+          style="background-image:url('${m.thumbnail_url || m.url}')">
+          ${
+            !midiaLiberada
+              ? `<div class="midia-lock">🔒</div>`
+              : ""
+          }
+        </div>
+      `;
+    }).join("")}
+  </div>
 
-    const todasLiberadas = midias.length > 0 && midias.every(m => m.liberado !== false);
-    const classeCard = todasLiberadas || Number(msg.preco) === 0 ? "liberado" : "bloqueado";
+  ${
+    msg.preco > 0
+      ? `
+      <div class="conteudo-info">
+        <span class="status-bloqueado">
+          ${
+            msg.liberado
+              ? `🟢 ${quantidade} mídia(s)`
+              : msg.tem_parcial_liberado
+                ? `✨ ${quantidade} mídia(s) · parcial`
+                : `✨ ${quantidade} mídia(s)`
+          }
+        </span>
 
-    div.innerHTML = `
-      <div class="chat-conteudo premium ${classeCard}"
-           data-id="${msg.id}"
-           data-preco="${msg.preco || 0}">
-
-        ${montarHtmlConteudo(midias)}
-
-        ${montarInfoConteudo(
-          msg.preco,
-          quantidade,
-          todasLiberadas || Number(msg.preco) === 0,
-          msg.tem_parcial_liberado === true
-        )}
+        <span class="preco-bloqueado">
+          R$ ${Number(msg.preco).toFixed(2)}
+        </span>
       </div>
-    `;
+    `
+      : ""
+  }
+
+</div>
+`;
 
     const bloqueadoTotal =
       Number(msg.preco) > 0 &&
-      !todasLiberadas &&
+      msg.liberado !== true &&
       !msg.tem_parcial_liberado;
 
     ativarLazyLoadingModelo(div, msg, bloqueadoTotal);
-  } else {
+}
+
+  // ===============================
+  // 💬 MENSAGEM DE TEXTO
+  // ===============================
+  else {
+
     div.innerHTML = `
-      <div class="msg-texto">${msg.text}</div>
+<div class="msg-texto">${msg.text}</div>
 
-      ${msg.sender === "modelo" ? `
-        <button
-          class="msg-menu"
-          data-id="${msg.id}"
-          data-text="${encodeURIComponent(msg.text || "")}">
-          ⋮
-        </button>
-      ` : ""}
+${msg.sender === "modelo" ? `
+  <button
+    class="msg-menu"
+    data-id="${msg.id}"
+    data-text="${encodeURIComponent(msg.text || "")}">
+    ⋮
+  </button>
+` : ""}
 
-      <span class="msg-hora">
-        ${formatarTempo(msg.created_at)}
-      </span>
-    `;
+<span class="msg-hora">
+  ${formatarTempo(msg.created_at)}
+</span>
+`;
 
     const btn = div.querySelector(".msg-menu");
 
     if (btn) {
+
       btn.addEventListener("click", () => {
+
         abrirMenuMensagem(
           btn.dataset.id,
           decodeURIComponent(btn.dataset.text)
         );
+
       });
+
     }
+
   }
 
   chatBox.appendChild(div);
-}
 
+}
 
 // // ===============================
 // // ABRIR CONTEÚDO
@@ -975,7 +965,8 @@ function abrirPreviewMidia({ url }){
 
 }
 
-function criarMensagemElemento(msg) {
+function criarMensagemElemento(msg){
+
   const div = document.createElement("div");
 
   div.className =
@@ -985,46 +976,77 @@ function criarMensagemElemento(msg) {
 
   div.dataset.id = msg.id;
 
-  if (msg.tipo === "conteudo" || msg.tipo === "conteudo_ppv_mass") {
-    const quantidade = msg.quantidade ?? (msg.midias?.length || 0);
+if (msg.tipo === "conteudo" || msg.tipo === "conteudo_ppv_mass") {
+  const quantidade =
+    msg.quantidade ?? (msg.midias?.length || 0);
 
-    const midias = (msg.midias || []).map(m => {
+const cardLiberado =
+  Number(msg.preco) === 0 ||
+  msg.liberado === true;
+
+  div.innerHTML = `
+<div class="chat-conteudo premium ${
+  cardLiberado ? "visto" : (msg.preco > 0 ? "bloqueado" : "")
+}" data-id="${msg.id}" data-preco="${msg.preco || 0}">
+
+  <div class="pacote-grid">
+    ${(msg.midias || []).map((m, index) => {
       const midiaLiberada =
         Number(msg.preco) === 0 ||
-        msg.liberado === true ||
-        m.liberado === true;
+        m.liberado === true ||
+        cardLiberado;
 
-      return {
-        ...m,
-        liberado: midiaLiberada
-      };
-    });
-
-    const todasLiberadas = midias.length > 0 && midias.every(m => m.liberado !== false);
-    const classeCard = todasLiberadas || Number(msg.preco) === 0 ? "liberado" : "bloqueado";
-
-    div.innerHTML = `
-      <div class="chat-conteudo premium ${classeCard}"
-           data-id="${msg.id}"
-           data-preco="${msg.preco || 0}">
-
-        ${montarHtmlConteudo(midias)}
-
-        ${montarInfoConteudo(
-          msg.preco,
-          quantidade,
-          todasLiberadas || Number(msg.preco) === 0,
-          msg.tem_parcial_liberado === true
-        )}
-      </div>
-
-      <div class="msg-meta">
-        <span class="msg-hora">${formatarTempo(msg.created_at)}</span>
-      </div>
-    `;
+      return `
+       <div class="midia-item lazy-midia ${
+  midiaLiberada ? "midia-livre" : "midia-bloqueada"
+}"
+  data-thumb="${m.thumbnail_url || m.url}"
+  data-full="${m.url}"
+  data-index="${index}"
+  data-conteudo-id="${m.conteudo_id || ""}"
+  data-ja-possuia="${m.ja_possuia === true ? "true" : "false"}"
+  data-liberado="${midiaLiberada ? "true" : "false"}">
+  ${
+    !midiaLiberada
+      ? `<div class="midia-lock">🔒</div>`
+      : ""
   }
+</div>
+      `;
+    }).join("")}
+  </div>
+
+  ${
+    msg.preco > 0
+      ? `
+      <div class="conteudo-info">
+        <span class="status-bloqueado">
+          ${
+            msg.liberado
+              ? `🟢 ${quantidade} mídia(s)`
+              : msg.tem_parcial_liberado
+                ? `✨ ${quantidade} mídia(s) · parcial`
+                : `✨ ${quantidade} mídia(s)`
+          }
+        </span>
+
+        <span class="preco-bloqueado">
+          R$ ${Number(msg.preco).toFixed(2)}
+        </span>
+      </div>
+      `
+      : ""
+  }
+</div>
+
+<div class="msg-meta">
+  <span class="msg-hora">${formatarTempo(msg.created_at)}</span>
+</div>
+`;
+}
 
   return div;
+
 }
 
 function obterCpfValido(){
@@ -1559,14 +1581,37 @@ async function liberarConteudo(messageId) {
     if (!res.ok) return;
 
     const midias = await res.json();
-    const todasLiberadas = midias.length > 0 && midias.every(m => m.liberado !== false);
+
+    const todasLiberadas = midias.every(m => m.liberado !== false);
 
     if (todasLiberadas) {
       conteudosLiberados.add(Number(messageId));
+      el.classList.remove("bloqueado");
+      el.classList.add("livre");
     }
 
-    atualizarEstadoCardConteudo(el, midias);
-    el.innerHTML = montarHtmlConteudo(midias);
+    el.innerHTML = `
+      <div class="pacote-grid">
+        ${midias.map((m,index) => `
+          <div class="midia-item ${m.liberado !== false ? "midia-livre" : "midia-bloqueada"}"
+               data-index="${index}"
+               data-liberado="${m.liberado !== false ? "true" : "false"}">
+            ${
+              m.liberado !== false
+                ? (
+                    m.tipo_media === "video"
+                      ? `<video src="${m.url}" muted playsinline></video>`
+                      : `<img src="${m.url}">`
+                  )
+                : `
+                  <div class="midia-preview" style="background-image:url('${m.thumbnail_url || m.url}')"></div>
+                  <div class="midia-lock">🔒</div>
+                `
+            }
+          </div>
+        `).join("")}
+      </div>
+    `;
 
     abrirConteudo(messageId, 0);
   } catch (err) {

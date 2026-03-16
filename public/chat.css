@@ -149,6 +149,15 @@ body, html {
   object-fit: cover;
 }
 
+.role-cliente .chat-conteudo.bloqueado img,
+.role-cliente .chat-conteudo.bloqueado video {
+  filter: blur(12px) brightness(.4);
+}
+
+.role-cliente .chat-conteudo.bloqueado {
+  position: relative;
+}
+
 .role-modelo .chat-conteudo.visto {
   border: 2px solid #18c964;
 }
@@ -1209,22 +1218,4 @@ gap:10px;
 
 .cartao-field{
 flex:1;
-}
-
-.role-cliente .chat-conteudo.bloqueado img,
-.role-cliente .chat-conteudo.bloqueado video {
-  filter: blur(12px) brightness(.4);
-}
-
-.role-cliente .chat-conteudo.bloqueado {
-  position: relative;
-}
-
-.role-cliente .chat-conteudo.liberado img,
-.role-cliente .chat-conteudo.liberado video {
-  filter: none !important;
-}
-
-.role-cliente .chat-conteudo.liberado .midia-lock {
-  display: none !important;
 }
