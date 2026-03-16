@@ -36,7 +36,7 @@ let pagamentoAtual = null;
 let elements = null;
 let pagamentoEmProcesso = false;
 
-const PAGARME_PUBLIC_KEY = "pk_oQW43ZaU7HPVnbj8";
+
 const stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
 
 // ===============================
@@ -178,36 +178,46 @@ document.addEventListener(
     const preco = Number(card.dataset.preco || 0);
     const messageId = Number(card.dataset.id);
 
-    const estaLiberado =
+    const midia =
+      e.target.closest(".midia-item") ||
+      card.querySelector(".midia-item");
+
+    const cardTotalmenteLiberado =
       preco === 0 ||
       card.classList.contains("livre") ||
       card.classList.contains("visto") ||
       conteudosLiberados.has(messageId);
 
-    const precisaPagar = preco > 0 && !estaLiberado;
+    // sem mídia clicada, se o card estiver bloqueado abre pagamento
+    if (!midia) {
+      if (preco > 0 && !cardTotalmenteLiberado) {
+        e.preventDefault();
+        e.stopPropagation();
+        abrirPagamentoChat(preco, messageId);
+      }
+      return;
+    }
 
-    // 1) BLOQUEADO: clicar em QUALQUER lugar do card abre pagamento
-    if (precisaPagar) {
+    const midiaLiberada =
+      midia.classList.contains("midia-livre") ||
+      midia.dataset.liberado === "true" ||
+      cardTotalmenteLiberado;
+
+    // clicou em mídia bloqueada -> abre pagamento
+    if (preco > 0 && !midiaLiberada) {
       e.preventDefault();
       e.stopPropagation();
       abrirPagamentoChat(preco, messageId);
       return;
     }
 
-    // 2) LIBERADO: só abre mídia se clicou numa mídia mesmo
-let midia =
-  e.target.closest(".midia-item") ||
-  card.querySelector(".midia-item");
+    // clicou em mídia liberada -> abre conteúdo
+    e.preventDefault();
+    e.stopPropagation();
 
-if (!midia) return;
-
-e.preventDefault();
-e.stopPropagation();
-
-const index = Number(midia.dataset.index || 0);
-abrirConteudo(messageId, index);
+    const index = Number(midia.dataset.index || 0);
+    abrirConteudo(messageId, index);
   },
-
   true
 );
 
@@ -373,20 +383,12 @@ socket.on("conteudoVisto", async ({ message_id, cliente_id: cid }) => {
   console.log("📩 conteudoVisto recebido:", { message_id, cid, cliente_id });
 
   if (!message_id) return;
-
   if (cid != null && Number(cid) !== Number(cliente_id)) return;
 
-  const el = document.querySelector(
-    `.chat-conteudo[data-id="${message_id}"]`
-  );
-
+  const el = document.querySelector(`.chat-conteudo[data-id="${message_id}"]`);
   if (!el) return;
 
-  // evitar renderizar duas vezes
-  if (el.classList.contains("livre")) return;
-
   try {
-
     const res = await fetch(`/api/chat/conteudo/${message_id}`, {
       headers: {
         Authorization: "Bearer " + token
@@ -397,31 +399,46 @@ socket.on("conteudoVisto", async ({ message_id, cliente_id: cid }) => {
 
     const midias = await res.json();
 
+    const todasLiberadas = midias.every(m => m.liberado !== false);
+
     el.classList.remove("bloqueado");
-    el.classList.add("livre");
+
+    if (todasLiberadas) {
+      el.classList.add("livre");
+      conteudosLiberados.add(Number(message_id));
+    }
 
     el.innerHTML = `
       <div class="pacote-grid">
-        ${midias.map((m,index)=>`
-          <div class="midia-item"
-               onclick="abrirConteudo(${message_id},${index})">
+        ${midias.map((m, index) => {
+          const liberado = m.liberado !== false;
 
-            ${
-              m.tipo_media === "video"
-                ? `<video src="${m.url}" muted playsinline></video>`
-                : `<img src="${m.url}">`
-            }
-
-          </div>
-        `).join("")}
+          return `
+            <div class="midia-item ${liberado ? "midia-livre" : "midia-bloqueada"}"
+                 data-index="${index}"
+                 data-liberado="${liberado ? "true" : "false"}">
+              ${
+                liberado
+                  ? (
+                      m.tipo_media === "video"
+                        ? `<video src="${m.url}" muted playsinline></video>`
+                        : `<img src="${m.url}">`
+                    )
+                  : `
+                    <div class="midia-preview" style="background-image:url('${m.thumbnail_url || m.url}')"></div>
+                    <div class="midia-lock">🔒</div>
+                  `
+              }
+            </div>
+          `;
+        }).join("")}
       </div>
     `;
-
   } catch (err) {
     console.error("Erro liberar conteúdo:", err);
   }
-
 });
+
 
 // ===============================
 // FORMATAR HORA
@@ -475,29 +492,45 @@ function renderMensagem(msg){
   // ===============================
   // 📦 MENSAGEM DE CONTEÚDO
   // ===============================
-  if (msg.tipo === "conteudo") {
+if (msg.tipo === "conteudo" || msg.tipo === "conteudo_ppv_mass") {
+  const quantidade =
+    msg.quantidade ?? (msg.midias?.length || 0);
 
-    const quantidade =
-      msg.quantidade ?? (msg.midias?.length || 0);
+const cardLiberado =
+  Number(msg.preco) === 0 ||
+  msg.liberado === true;
 
-    const bloqueado = Number(msg.preco) > 0 && !msg.liberado;
-
-    div.innerHTML = `
+  div.innerHTML = `
 <div class="chat-conteudo premium ${
- (msg.liberado || conteudosLiberados.has(msg.id))
-  ? "visto"
-  : (msg.preco > 0 ? "bloqueado" : "")
+  cardLiberado ? "visto" : (msg.preco > 0 ? "bloqueado" : "")
 }" data-id="${msg.id}" data-preco="${msg.preco || 0}">
 
   <div class="pacote-grid">
-    ${(msg.midias || []).map((m,index)=>`
-      <div class="midia-item lazy-midia"
-        data-thumb="${m.thumbnail_url || m.url}"
-        data-full="${m.url}"
-        data-index="${index}"
-        style="background-image:url('${m.thumbnail_url || m.url}')">
-      </div>
-    `).join("")}
+    ${(msg.midias || []).map((m, index) => {
+      const midiaLiberada =
+        Number(msg.preco) === 0 ||
+        m.liberado === true ||
+        cardLiberado;
+
+      return `
+ <div class="midia-item lazy-midia ${
+          midiaLiberada ? "midia-livre" : "midia-bloqueada"
+        }"
+          data-thumb="${m.thumbnail_url || m.url}"
+          data-full="${m.url}"
+          data-index="${index}"
+          data-conteudo-id="${m.conteudo_id || ""}"
+          data-ja-possuia="${m.ja_possuia === true ? "true" : "false"}"
+          data-liberado="${midiaLiberada ? "true" : "false"}"
+          style="background-image:url('${m.thumbnail_url || m.url}')">
+          ${
+            !midiaLiberada
+              ? `<div class="midia-lock">🔒</div>`
+              : ""
+          }
+        </div>
+      `;
+    }).join("")}
   </div>
 
   ${
@@ -508,7 +541,9 @@ function renderMensagem(msg){
           ${
             msg.liberado
               ? `🟢 ${quantidade} mídia(s)`
-              : `✨ ${quantidade} mídia(s)`
+              : msg.tem_parcial_liberado
+                ? `✨ ${quantidade} mídia(s) · parcial`
+                : `✨ ${quantidade} mídia(s)`
           }
         </span>
 
@@ -523,10 +558,13 @@ function renderMensagem(msg){
 </div>
 `;
 
-    // lazy loading
-    ativarLazyLoadingModelo(div, msg, bloqueado);
+    const bloqueadoTotal =
+      Number(msg.preco) > 0 &&
+      msg.liberado !== true &&
+      !msg.tem_parcial_liberado;
 
-  }
+    ativarLazyLoadingModelo(div, msg, bloqueadoTotal);
+}
 
   // ===============================
   // 💬 MENSAGEM DE TEXTO
@@ -570,91 +608,93 @@ ${msg.sender === "modelo" ? `
   chatBox.appendChild(div);
 
 }
+
 // // ===============================
 // // ABRIR CONTEÚDO
 // // ===============================
 
-async function abrirConteudo(message_id, index = 0){
-
+async function abrirConteudo(message_id, index = 0) {
   const modal = document.getElementById("modalMidia");
-  const img   = document.getElementById("modalImg");
+  const img = document.getElementById("modalImg");
   const video = document.getElementById("modalVideo");
   const iframe = document.getElementById("modalIframe");
 
   const btnPrev = document.getElementById("btnMidiaAnterior");
   const btnNext = document.getElementById("btnMidiaProxima");
 
-  if(!modal) return;
+  if (!modal) return;
 
-const res = await fetch(`/api/chat/conteudo/${message_id}`,{
-  headers:{ Authorization:"Bearer "+token }
-});
+  const res = await fetch(`/api/chat/conteudo/${message_id}`, {
+    headers: { Authorization: "Bearer " + token }
+  });
 
-if(!res.ok){
-  alert("Erro ao carregar mídia");
-  return;
-}
-
-modal.classList.remove("hidden");
+  if (!res.ok) {
+    alert("Erro ao carregar mídia");
+    return;
+  }
 
   const midias = await res.json();
+  const midia = midias[index];
 
-  // 🔹 galeria para navegação
-  galeriaMidias = midias;
-  indiceAtualMidia = index
+  if (!midia) return;
 
-  // 🔹 esconder botões se só tiver uma mídia
-  if(btnPrev && btnNext){
-    if(midias.length <= 1){
+  if (midia.liberado === false) {
+    const card = document.querySelector(`.chat-conteudo[data-id="${message_id}"]`);
+    const preco = Number(card?.dataset.preco || 0);
+
+    if (preco > 0) {
+      abrirPagamentoChat(preco, message_id);
+    }
+    return;
+  }
+
+  modal.classList.remove("hidden");
+
+  galeriaMidias = midias.filter(m => m.liberado !== false);
+  indiceAtualMidia = galeriaMidias.findIndex(m => m.url === midia.url);
+  if (indiceAtualMidia < 0) indiceAtualMidia = 0;
+
+  if (btnPrev && btnNext) {
+    if (galeriaMidias.length <= 1) {
       btnPrev.style.display = "none";
       btnNext.style.display = "none";
-    }else{
+    } else {
       btnPrev.style.display = "flex";
       btnNext.style.display = "flex";
     }
   }
 
-  const midia = midias[index];
-  if(!midia) return;
-
   conteudosLiberados.add(Number(message_id));
-
   marcarConteudoVisto(message_id);
 
-  // 🔹 limpar mídia anterior
-img.style.display = "none";
-img.src = "";
+  img.style.display = "none";
+  img.src = "";
 
   video.pause();
   video.removeAttribute("src");
-  video.load();   
+  video.load();
   video.style.display = "none";
+
   iframe.src = "";
   iframe.style.display = "none";
 
-  if(midia.url.includes("iframe.videodelivery.net")){
-
+  if (midia.url.includes("iframe.videodelivery.net")) {
     iframe.src = midia.url;
     iframe.style.display = "block";
-
-
-  } else if(
+  } else if (
     midia.url.includes(".mp4") ||
     midia.url.includes(".webm") ||
     midia.url.includes(".mov")
-  ){
-
+  ) {
     video.src = midia.url;
     video.style.display = "block";
-    video.play().catch(()=>{});
-
-  }else{
+    video.play().catch(() => {});
+  } else {
     img.src = midia.url;
     img.style.display = "block";
-
   }
-
 }
+
 // ===============================
 // PAGAMENTO CHAT
 // ===============================
@@ -936,42 +976,74 @@ function criarMensagemElemento(msg){
 
   div.dataset.id = msg.id;
 
-  if(msg.tipo === "conteudo"){
+if (msg.tipo === "conteudo" || msg.tipo === "conteudo_ppv_mass") {
+  const quantidade =
+    msg.quantidade ?? (msg.midias?.length || 0);
 
-    const quantidade =
-      msg.quantidade ?? (msg.midias?.length || 0);
+const cardLiberado =
+  Number(msg.preco) === 0 ||
+  msg.liberado === true;
 
-    div.innerHTML = `
+  div.innerHTML = `
 <div class="chat-conteudo premium ${
- ((msg.liberado) || conteudosLiberados.has(msg.id))
-  ? "visto"
-  : (msg.preco > 0 ? "bloqueado" : "")
+  cardLiberado ? "visto" : (msg.preco > 0 ? "bloqueado" : "")
 }" data-id="${msg.id}" data-preco="${msg.preco || 0}">
 
   <div class="pacote-grid">
-    ${(msg.midias || []).map((m,index)=>`
-      <div class="midia-item lazy-midia"
-        data-thumb="${m.thumbnail_url || m.url}"
-        data-full="${m.url}"
-        data-index="${index}">
-      </div>
-    `).join("")}
+    ${(msg.midias || []).map((m, index) => {
+      const midiaLiberada =
+        Number(msg.preco) === 0 ||
+        m.liberado === true ||
+        cardLiberado;
+
+      return `
+       <div class="midia-item lazy-midia ${
+  midiaLiberada ? "midia-livre" : "midia-bloqueada"
+}"
+  data-thumb="${m.thumbnail_url || m.url}"
+  data-full="${m.url}"
+  data-index="${index}"
+  data-conteudo-id="${m.conteudo_id || ""}"
+  data-ja-possuia="${m.ja_possuia === true ? "true" : "false"}"
+  data-liberado="${midiaLiberada ? "true" : "false"}">
+  ${
+    !midiaLiberada
+      ? `<div class="midia-lock">🔒</div>`
+      : ""
+  }
+</div>
+      `;
+    }).join("")}
   </div>
 
+  ${
+    msg.preco > 0
+      ? `
+      <div class="conteudo-info">
+        <span class="status-bloqueado">
+          ${
+            msg.liberado
+              ? `🟢 ${quantidade} mídia(s)`
+              : msg.tem_parcial_liberado
+                ? `✨ ${quantidade} mídia(s) · parcial`
+                : `✨ ${quantidade} mídia(s)`
+          }
+        </span>
+
+        <span class="preco-bloqueado">
+          R$ ${Number(msg.preco).toFixed(2)}
+        </span>
+      </div>
+      `
+      : ""
+  }
 </div>
 
 <div class="msg-meta">
   <span class="msg-hora">${formatarTempo(msg.created_at)}</span>
 </div>
 `;
-  } else {
-
-    div.innerHTML = `
-<div class="msg-texto">${msg.text}</div>
-<span class="msg-hora">${formatarTempo(msg.created_at)}</span>
-`;
-
-  }
+}
 
   return div;
 
@@ -1493,18 +1565,13 @@ function iniciarPollingPagamento(orderId) {
 }
 
 async function liberarConteudo(messageId) {
-
   console.log("Conteúdo liberado via polling", messageId);
   fecharPopupPix();
 
-  conteudosLiberados.add(Number(messageId));
-
   const el = document.querySelector(`.chat-conteudo[data-id="${messageId}"]`);
-
   if (!el) return;
 
   try {
-
     const res = await fetch(`/api/chat/conteudo/${messageId}`, {
       headers: {
         Authorization: "Bearer " + token
@@ -1515,27 +1582,41 @@ async function liberarConteudo(messageId) {
 
     const midias = await res.json();
 
-    el.classList.remove("bloqueado");
-    el.classList.add("livre");
+    const todasLiberadas = midias.every(m => m.liberado !== false);
+
+    if (todasLiberadas) {
+      conteudosLiberados.add(Number(messageId));
+      el.classList.remove("bloqueado");
+      el.classList.add("livre");
+    }
 
     el.innerHTML = `
       <div class="pacote-grid">
-        ${midias.map((m,index)=>`
-          <div class="midia-item" onclick="abrirConteudo(${messageId},${index})">
+        ${midias.map((m,index) => `
+          <div class="midia-item ${m.liberado !== false ? "midia-livre" : "midia-bloqueada"}"
+               data-index="${index}"
+               data-liberado="${m.liberado !== false ? "true" : "false"}">
             ${
-              m.tipo_media === "video"
-                ? `<video src="${m.url}" muted playsinline></video>`
-                : `<img src="${m.url}">`
+              m.liberado !== false
+                ? (
+                    m.tipo_media === "video"
+                      ? `<video src="${m.url}" muted playsinline></video>`
+                      : `<img src="${m.url}">`
+                  )
+                : `
+                  <div class="midia-preview" style="background-image:url('${m.thumbnail_url || m.url}')"></div>
+                  <div class="midia-lock">🔒</div>
+                `
             }
           </div>
         `).join("")}
       </div>
     `;
-abrirConteudo(messageId, 0);
+
+    abrirConteudo(messageId, 0);
   } catch (err) {
     console.error("Erro liberar conteúdo:", err);
   }
-
 }
 
 async function marcarConteudoVisto(messageId){

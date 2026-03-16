@@ -242,48 +242,48 @@ async function processarAllmessageJob(jobId, {
         // ===============================
         // 2) MENSAGEM DE CONTEÚDO + PACOTE
         // ===============================
-        if (temConteudo) {
-          const msgRes = await db.query(
-            `
-            INSERT INTO messages
-              (modelo_id, cliente_id, text, sender, preco, visto, tipo)
-            VALUES
-              ($1, $2, '', 'modelo', $3, false, 'conteudo')
-            RETURNING id
-            `,
-            [modelo_id, cliente_id, precoFinal]
-          );
+if (temConteudo) {
+  const msgRes = await db.query(
+    `
+    INSERT INTO messages
+      (modelo_id, cliente_id, text, sender, preco, visto, tipo)
+    VALUES
+      ($1, $2, '', 'modelo', $3, false, 'conteudo_ppv_mass')
+    RETURNING id
+    `,
+    [modelo_id, cliente_id, precoFinal]
+  );
 
-          const message_id = msgRes.rows[0].id;
+  const message_id = msgRes.rows[0].id;
 
-          await db.query(
-            `
-            INSERT INTO conteudo_pacotes
-              (cliente_id, modelo_id, preco, valor_total, status, message_id)
-            VALUES
-              ($1, $2, $3, $4, 'pendente', $5)
-            `,
-            [
-              cliente_id,
-              modelo_id,
-              precoFinal,
-              precoFinal,
-              message_id
-            ]
-          );
+  await db.query(
+    `
+    INSERT INTO conteudo_pacotes
+      (cliente_id, modelo_id, preco, valor_total, status, message_id)
+    VALUES
+      ($1, $2, $3, $4, 'pendente', $5)
+    `,
+    [
+      cliente_id,
+      modelo_id,
+      precoFinal,
+      precoFinal,
+      message_id
+    ]
+  );
 
-          for (const conteudo_id of conteudos) {
-            await db.query(
-              `
-              INSERT INTO messages_conteudos
-                (message_id, conteudo_id)
-              VALUES
-                ($1, $2)
-              `,
-              [message_id, conteudo_id]
-            );
-          }
-        }
+  for (const conteudo_id of conteudos) {
+    await db.query(
+      `
+      INSERT INTO messages_conteudos
+        (message_id, conteudo_id)
+      VALUES
+        ($1, $2)
+      `,
+      [message_id, conteudo_id]
+    );
+  }
+}
 
         job.enviados++;
       } catch (err) {

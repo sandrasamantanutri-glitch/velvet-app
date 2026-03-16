@@ -2250,6 +2250,27 @@ async function uploadVideoCloudflare(buffer, filename) {
 
 module.exports = uploadVideoCloudflare;
 
+async function buscarConteudosJaPossuidosPorCliente(client, { cliente_id, modelo_id }) {
+  const result = await client.query(
+    `
+    SELECT DISTINCT mc.conteudo_id
+    FROM messages m
+    JOIN messages_conteudos mc
+      ON mc.message_id = m.id
+    WHERE m.modelo_id = $1
+      AND m.cliente_id = $2
+      AND m.visto = true
+      AND m.deletada IS NOT TRUE
+    `,
+    [modelo_id, cliente_id]
+  );
+
+  return new Set(
+    result.rows
+      .map(r => Number(r.conteudo_id))
+      .filter(id => Number.isInteger(id) && id > 0)
+  );
+}
 
 // ===============================
 // SOCKET.IO – CHAT ESTÁVEL
@@ -2638,16 +2659,18 @@ const mensagens = result.rows.reverse();
 // ===================================
 // 4️⃣ TRATAR MENSAGENS DE CONTEÚDO (OTIMIZADO)
 // ===================================
-const mensagensConteudo = mensagens.filter(m => m.tipo === "conteudo");
+const mensagensConteudo = mensagens.filter(
+  m => m.tipo === "conteudo" || m.tipo === "conteudo_ppv_mass"
+);
 const messageIds = mensagensConteudo.map(m => m.id);
 
 if (messageIds.length > 0) {
-
   // buscar todas mídias de uma vez
   const midiasRes = await db.query(
     `
     SELECT
       mc.message_id,
+      mc.conteudo_id,
       c.url,
       c.thumbnail_url,
       c.tipo AS tipo_media
@@ -2667,43 +2690,66 @@ if (messageIds.length > 0) {
     }
 
     mapaMidias[row.message_id].push({
+      conteudo_id: Number(row.conteudo_id),
       url: row.url,
       thumbnail_url: row.thumbnail_url,
       tipo_media: row.tipo_media
     });
   }
 
-  // buscar todos pagamentos de uma vez (OTIMIZAÇÃO)
-  const pagosRes = await db.query(`
+  // buscar todos pagamentos de uma vez
+  const pagosRes = await db.query(
+    `
     SELECT message_id
     FROM conteudo_pacotes
     WHERE message_id = ANY($1)
       AND cliente_id = $2
       AND status = 'pago'
-  `, [messageIds, cliente_id]);
-
-  const pagosSet = new Set(
-    pagosRes.rows.map(r => r.message_id)
+    `,
+    [messageIds, cliente_id]
   );
 
- // 5️⃣ aplicar nas mensagens
+  const pagosSet = new Set(
+    pagosRes.rows.map(r => Number(r.message_id))
+  );
+
+  // buscar conteúdos que esse cliente já possuiu antes com essa modelo
+  const conteudosPossuidosSet = await buscarConteudosJaPossuidosPorCliente(db, {
+    cliente_id,
+    modelo_id
+  });
+
+  // aplicar nas mensagens
 for (const msg of mensagensConteudo) {
-
   const midias = mapaMidias[msg.id] || [];
+  const pago = Number(msg.preco) > 0 ? pagosSet.has(Number(msg.id)) : true;
+  const ehPPVMass = msg.tipo === "conteudo_ppv_mass";
 
-  msg.midias = midias;
-  msg.quantidade = midias.length;
+  msg.midias = midias.map(midia => {
+    const jaPossuia = ehPPVMass
+      ? conteudosPossuidosSet.has(Number(midia.conteudo_id))
+      : false;
+
+    return {
+      ...midia,
+      ja_possuia: jaPossuia,
+      liberado: pago || jaPossuia,
+      bloqueado: !(pago || jaPossuia)
+    };
+  });
+
+  msg.quantidade = msg.midias.length;
 
   if (Number(msg.preco) > 0) {
-
-    const pago = pagosSet.has(msg.id);
-
     msg.liberado = pago;
     msg.bloqueado = !pago;
-
+    msg.tem_parcial_liberado = msg.midias.some(m => m.liberado);
+    msg.tem_parcial_bloqueado = msg.midias.some(m => m.bloqueado);
   } else {
     msg.liberado = true;
     msg.bloqueado = false;
+    msg.tem_parcial_liberado = msg.midias.length > 0;
+    msg.tem_parcial_bloqueado = false;
   }
 }
 }
@@ -4117,10 +4163,9 @@ app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
   }
 
   try {
-    // ✅ pega preco e visto
     const messageCheck = await db.query(
       `
-      SELECT id, visto, preco
+      SELECT id, visto, preco, modelo_id, pacote_id
       FROM messages
       WHERE id = $1
         AND cliente_id = $2
@@ -4135,30 +4180,28 @@ app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
     const mensagem = messageCheck.rows[0];
     const preco = Number(mensagem.preco || 0);
 
-    // 🔒 só libera se já foi paga (ou já marcado como visto)
-    if (preco > 0 && mensagem.visto !== true) {
-      const pago = await db.query(
-        `
-        SELECT 1
-        FROM conteudo_pacotes
-        WHERE message_id = $1
-          AND cliente_id = $2
-          AND status = 'pago'
-        LIMIT 1
-        `,
-        [message_id, req.cliente_id]
-      );
+    const pagoRes = await db.query(
+      `
+      SELECT 1
+      FROM conteudo_pacotes
+      WHERE message_id = $1
+        AND cliente_id = $2
+        AND status = 'pago'
+      LIMIT 1
+      `,
+      [message_id, req.cliente_id]
+    );
 
-      if (!pago.rowCount) {
-        return res.status(403).json({ error: "Conteúdo não liberado" });
-      }
-    }
+    const pacotePago = !!pagoRes.rowCount;
+    const mensagemLiberada = mensagem.visto === true || pacotePago;
 
     const result = await db.query(
       `
       SELECT
+        mc.conteudo_id,
         c.url,
-        c.tipo AS tipo_media
+        c.tipo AS tipo_media,
+        c.thumbnail_url
       FROM messages_conteudos mc
       JOIN conteudos c ON c.id = mc.conteudo_id
       WHERE mc.message_id = $1
@@ -4166,7 +4209,58 @@ app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
       [message_id]
     );
 
-    res.json(result.rows);
+    // conteúdo grátis ou mensagem totalmente liberada
+    if (preco <= 0 || mensagemLiberada) {
+      return res.json(
+        result.rows.map(row => ({
+          conteudo_id: Number(row.conteudo_id),
+          url: row.url,
+          tipo_media: row.tipo_media,
+          thumbnail_url: row.thumbnail_url,
+          liberado: true,
+          bloqueado: false,
+          ja_possuia: true
+        }))
+      );
+    }
+
+    // daqui pra baixo: mensagem paga e ainda não liberada por completo
+
+    const ehMass = mensagem.pacote_id != null; // ajuste se teu critério real for outro
+
+    // envio pago normal continua igual
+    if (!ehMass) {
+      return res.status(403).json({ error: "Conteúdo não liberado" });
+    }
+
+    // PPV mass: libera individualmente o que o cliente já possuía
+    const conteudosPossuidosSet = await buscarConteudosJaPossuidosPorCliente(db, {
+      cliente_id: req.cliente_id,
+      modelo_id: Number(mensagem.modelo_id)
+    });
+
+    const midias = result.rows.map(row => {
+      const conteudoId = Number(row.conteudo_id);
+      const jaPossuia = conteudosPossuidosSet.has(conteudoId);
+
+      return {
+        conteudo_id: conteudoId,
+        url: row.url,
+        tipo_media: row.tipo_media,
+        thumbnail_url: row.thumbnail_url,
+        ja_possuia: jaPossuia,
+        liberado: jaPossuia,
+        bloqueado: !jaPossuia
+      };
+    });
+
+    const algumaLiberada = midias.some(m => m.liberado);
+
+    if (!algumaLiberada) {
+      return res.status(403).json({ error: "Conteúdo não liberado" });
+    }
+
+    return res.json(midias);
 
   } catch (err) {
     console.error("Erro buscar conteúdo liberado:", err);
