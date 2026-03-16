@@ -149,11 +149,6 @@ body, html {
   object-fit: cover;
 }
 
-.role-cliente .chat-conteudo.bloqueado img,
-.role-cliente .chat-conteudo.bloqueado video {
-  filter: blur(12px) brightness(.4);
-}
-
 .role-cliente .chat-conteudo.bloqueado {
   position: relative;
 }
@@ -179,14 +174,6 @@ body, html {
   background: rgba(0,0,0,.35);
   font-size: 24px;
   border-radius: 12px;
-}
-
-.midia-preview {
-  width: 100%;
-  height: 100%;
-  background-size: cover;
-  background-position: center;
-  filter: blur(4px);
 }
 
 .conteudo-card{
@@ -1261,31 +1248,9 @@ flex:1;
 .midia-item {
   position: relative;
   overflow: hidden;
+  border-radius: 12px; /* ajuste se já tiver outro valor */
 }
 
-.midia-bloqueada::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.28);
-  z-index: 2;
-  pointer-events: none;
-  border-radius: inherit;
-}
-
-.midia-bloqueada::after {
-  content: "🔒";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 3;
-  font-size: 28px;
-  line-height: 1;
-  pointer-events: none;
-}
-
-/* garante que a mídia fique abaixo do overlay */
 .midia-item img,
 .midia-item video,
 .midia-item .midia-preview {
@@ -1297,7 +1262,55 @@ flex:1;
   object-fit: cover;
 }
 
-/* caso ainda exista HTML antigo com .midia-lock */
 .midia-lock {
   display: none !important;
+}
+
+/* remove o blur pesado do card inteiro */
+.role-cliente .chat-conteudo.bloqueado img,
+.role-cliente .chat-conteudo.bloqueado video {
+  filter: none;
+}
+
+/* preview base sem blur exagerado */
+.midia-preview {
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  filter: none;
+  transform: scale(1.03);
+}
+
+/* bloqueio só no item realmente bloqueado */
+.midia-item.midia-bloqueada img,
+.midia-item.midia-bloqueada video,
+.midia-item.midia-bloqueada .midia-preview {
+  filter: blur(3px) brightness(0.72);
+  transform: scale(1.04);
+}
+
+/* overlay mais elegante */
+.midia-bloqueada::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.22);
+  z-index: 2;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.midia-bloqueada::after {
+  content: "🔒";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  line-height: 1;
+  pointer-events: none;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
