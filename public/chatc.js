@@ -182,11 +182,10 @@ document.addEventListener(
       e.target.closest(".midia-item") ||
       card.querySelector(".midia-item");
 
-    const cardTotalmenteLiberado =
-      preco === 0 ||
-      card.classList.contains("livre") ||
-      card.classList.contains("visto") ||
-      conteudosLiberados.has(messageId);
+const cardTotalmenteLiberado =
+  preco === 0 ||
+  card.classList.contains("livre") ||
+  conteudosLiberados.has(messageId);
 
     // sem mídia clicada, se o card estiver bloqueado abre pagamento
     if (!midia) {
@@ -644,21 +643,14 @@ async function abrirConteudo(message_id, index = 0) {
 
   modal.classList.remove("hidden");
 
-  galeriaMidias = midias.filter(m => m.liberado !== false);
-  indiceAtualMidia = galeriaMidias.findIndex(m => m.url === midia.url);
-  if (indiceAtualMidia < 0) indiceAtualMidia = 0;
+  // desativa totalmente navegação lateral no modal
+  galeriaMidias = [];
+  indiceAtualMidia = 0;
 
-  if (btnPrev && btnNext) {
-    if (galeriaMidias.length <= 1) {
-      btnPrev.style.display = "none";
-      btnNext.style.display = "none";
-    } else {
-      btnPrev.style.display = "flex";
-      btnNext.style.display = "flex";
-    }
-  }
+  if (btnPrev) btnPrev.style.display = "none";
+  if (btnNext) btnNext.style.display = "none";
 
-  conteudosLiberados.add(Number(message_id));
+  // não marcar o pacote inteiro como liberado aqui
   marcarConteudoVisto(message_id);
 
   img.style.display = "none";
@@ -1665,41 +1657,6 @@ function resetarPixUI() {
     pagamentoAtual.orderId = null;
     pagamentoAtual.payment_id = null;
   }
-}
-
-
-let galeriaMidias = [];
-let indiceAtualMidia = 0;
-
-function proximaMidia(){
-  indiceAtualMidia++;
-  if(indiceAtualMidia >= galeriaMidias.length){
-    indiceAtualMidia = 0;
-  }
-  mostrarMidiaAtual();
-}
-
-function midiaAnterior(){
-  indiceAtualMidia--;
-  if(indiceAtualMidia < 0){
-    indiceAtualMidia = galeriaMidias.length - 1;
-  }
-  mostrarMidiaAtual();
-}
-
-function mostrarMidiaAtual(){
-
-  const midia = galeriaMidias[indiceAtualMidia];
-  if(!midia) return;
-
-  const isVideo =
-    midia.tipo_media === "video" ||
-    midia.url.includes(".mp4") ||
-    midia.url.includes(".webm") ||
-    midia.url.includes(".mov");
-
- abrirModalMidia(midia.url);
-
 }
 
 // const btnConfirmar = document.getElementById("confirmarPagamento");
