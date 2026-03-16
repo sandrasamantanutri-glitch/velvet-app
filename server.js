@@ -4165,7 +4165,7 @@ app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
   try {
     const messageCheck = await db.query(
       `
-      SELECT id, visto, preco, modelo_id, pacote_id
+      SELECT id, visto, preco, modelo_id, pacote_id, tipo
       FROM messages
       WHERE id = $1
         AND cliente_id = $2
@@ -4226,8 +4226,7 @@ app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
 
     // daqui pra baixo: mensagem paga e ainda não liberada por completo
 
-    const ehMass = mensagem.pacote_id != null; // ajuste se teu critério real for outro
-
+    const ehMass = mensagem.tipo === "conteudo_ppv_mass";
     // envio pago normal continua igual
     if (!ehMass) {
       return res.status(403).json({ error: "Conteúdo não liberado" });
