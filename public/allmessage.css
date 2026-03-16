@@ -348,19 +348,68 @@ textarea {
   padding:6px 0 4px 0;
 }
 
-.barra-progresso{
+.popup-envio-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 9999;
+}
+
+.popup-envio-box {
+  width: min(420px, 100%);
+  background: #fff;
+  border-radius: 20px;
+  padding: 28px 24px 24px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
+  text-align: center;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+   gap: 6px;
+}
+
+.popup-envio-box h3 {
+  margin: 0 0 14px;
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: #6f2cff;
+}
+
+#statusEnvioTexto {
+  margin: 0 0 18px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #6f2cff;
+  text-align: center;
+}
+
+.barra-progresso {
   width: 100%;
+  max-width: 340px;
   height: 14px;
   background: #eee;
   border-radius: 999px;
   overflow: hidden;
-  margin: 18px 0 10px;
+  margin: 0 auto 14px;
 }
 
-.barra-progresso-fill{
+.barra-progresso-fill {
   width: 0%;
   height: 100%;
   background: linear-gradient(90deg, #7B2CFF, #9b67ff);
-  transition: width .35s ease;
+  border-radius: 999px;
+  transition: width 0.35s ease;
 }
 
+#statusEnvioPercentual {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #6f2cff;
+  text-align: center;
+}
