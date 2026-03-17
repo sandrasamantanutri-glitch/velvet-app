@@ -158,181 +158,84 @@
   </div>
 </div> -->
 
-<div id="paymentModal" class="modal hidden">
-  <div class="modal-backdrop"></div>
+<div class="popup-pagamento-overlay hidden">
+  <div class="popup-pagamento">
+    <button class="modal-close" type="button">×</button>
 
-  <div class="modal-content modal-cartao">
-    <button type="button" class="modal-close" onclick="fecharPagamento()">×</button>
+    <h2>Desbloquear Mídia</h2>
 
-    <h2 class="desbloq">Desbloquear Mídia</h2>
+    <div class="total-desbloqueio">
+      Total para desbloquear: <strong>R$ 0,46</strong>
+    </div>
 
-    <div class="cartao-preco">
-      <div class="cartao-total">
-        Total para Desbloquear:
-        <strong id="cartaoValorTotal">R$ 0,00</strong>
+    <div class="breakdown-pagamento">
+      <p><span>Mídia</span><span>R$ 0,40</span></p>
+      <p><span>Taxa de transação</span><span>R$ 0,04</span></p>
+      <p><span>Taxa da plataforma</span><span>R$ 0,02</span></p>
+    </div>
+
+    <form class="form-pagamento">
+      <div class="form-group">
+        <label>Número do cartão</label>
+        <input type="text" placeholder="0000 0000 0000 0000">
       </div>
 
-      <div class="cartao-detalhes">
-        <div>Mídia: <span id="cartaoValorConteudo">R$ 0,00</span></div>
-        <div>Taxa de transação: <span id="cartaoTaxaTransacao">R$ 0,00</span></div>
-        <div>Taxa da plataforma: <span id="cartaoTaxaPlataforma">R$ 0,00</span></div>
+      <div class="form-group">
+        <label>Nome no cartão</label>
+        <input type="text" placeholder="Nome impresso no cartão">
       </div>
-    </div>
 
-    <form id="formCartao" class="cartao-form">
-  <label for="card_number">Número do cartão</label>
-  <input
-    type="text"
-    id="card_number"
-    name="card_number"
-    placeholder="0000 0000 0000 0000"
-    autocomplete="cc-number"
-    inputmode="numeric"
-    maxlength="19"
-  >
-  <div id="card_number_error" class="campo-erro-cartao"></div>
+      <div class="row-3">
+        <div class="form-group">
+          <label>Mês</label>
+          <input type="text" placeholder="MM">
+        </div>
+        <div class="form-group">
+          <label>Ano</label>
+          <input type="text" placeholder="AAAA">
+        </div>
+        <div class="form-group">
+          <label>CVV</label>
+          <input type="text" placeholder="123">
+        </div>
+      </div>
 
-  <label for="card_holder">Nome no cartão</label>
-  <input
-    type="text"
-    id="card_holder"
-    name="holder_name"
-    placeholder="Nome impresso no cartão"
-    autocomplete="cc-name"
-  >
-  <div id="card_holder_error" class="campo-erro-cartao"></div>
+      <div class="form-group">
+        <label>Telefone com DDD</label>
+        <input type="text" placeholder="(11) 99999-9999">
+      </div>
 
-  <div class="cartao-row">
-    <div class="cartao-field">
-      <label for="card_exp_month">Mês</label>
-      <input
-        type="text"
-        id="card_exp_month"
-        name="exp_month"
-        placeholder="MM"
-        inputmode="numeric"
-        maxlength="2"
-      >
-      <div id="card_exp_month_error" class="campo-erro-cartao"></div>
-    </div>
+      <div class="form-group">
+        <label>Endereço</label>
+        <input type="text" placeholder="Rua, número e bairro">
+      </div>
 
-    <div class="cartao-field">
-      <label for="card_exp_year">Ano</label>
-      <input
-        type="text"
-        id="card_exp_year"
-        name="exp_year"
-        placeholder="AAAA"
-        inputmode="numeric"
-        maxlength="4"
-      >
-      <div id="card_exp_year_error" class="campo-erro-cartao"></div>
-    </div>
+      <div class="form-group">
+        <label>Complemento</label>
+        <input type="text" placeholder="Apartamento, bloco, referência (opcional)">
+      </div>
 
-    <div class="cartao-field">
-      <label for="card_cvv">CVV</label>
-      <input
-        type="text"
-        id="card_cvv"
-        name="cvv"
-        placeholder="123"
-        autocomplete="cc-csc"
-        inputmode="numeric"
-        maxlength="4"
-      >
-      <div id="card_cvv_error" class="campo-erro-cartao"></div>
-    </div>
+      <div class="row-3">
+        <div class="form-group">
+          <label>CEP</label>
+          <input type="text" placeholder="00000-000">
+        </div>
+        <div class="form-group">
+          <label>Cidade</label>
+          <input type="text" placeholder="São Paulo">
+        </div>
+        <div class="form-group">
+          <label>Estado</label>
+          <input type="text" placeholder="SP">
+        </div>
+      </div>
+
+      <button type="submit" class="btn-confirmar-desbloqueio">
+        Confirmar desbloqueio
+      </button>
+    </form>
   </div>
-
-  <label for="card_phone">Telefone com DDD</label>
-  <input
-    type="text"
-    id="card_phone"
-    name="card_phone"
-    placeholder="(11) 99999-9999"
-    autocomplete="tel"
-    inputmode="numeric"
-    maxlength="15"
-  >
-  <div id="card_phone_error" class="campo-erro-cartao"></div>
-
-  <label for="billing_line_1">Endereço</label>
-  <input
-    type="text"
-    id="billing_line_1"
-    name="billing_line_1"
-    placeholder="Rua, número e bairro"
-    autocomplete="address-line1"
-  >
-  <div id="billing_line_1_error" class="campo-erro-cartao"></div>
-
-  <label for="billing_line_2">Complemento</label>
-  <input
-    type="text"
-    id="billing_line_2"
-    name="billing_line_2"
-    placeholder="Apartamento, bloco, referência (opcional)"
-    autocomplete="address-line2"
-  >
-  <div id="billing_line_2_error" class="campo-erro-cartao"></div>
-
-  <div class="cartao-row">
-    <div class="cartao-field">
-      <label for="billing_zip_code">CEP</label>
-      <input
-        type="text"
-        id="billing_zip_code"
-        name="billing_zip_code"
-        placeholder="00000-000"
-        autocomplete="postal-code"
-        inputmode="numeric"
-        maxlength="9"
-      >
-      <div id="billing_zip_code_error" class="campo-erro-cartao"></div>
-    </div>
-
-    <div class="cartao-field">
-      <label for="billing_city">Cidade</label>
-      <input
-        type="text"
-        id="billing_city"
-        name="billing_city"
-        placeholder="São Paulo"
-        autocomplete="address-level2"
-      >
-      <div id="billing_city_error" class="campo-erro-cartao"></div>
-    </div>
-
-    <div class="cartao-field">
-      <label for="billing_state">Estado</label>
-      <input
-        type="text"
-        id="billing_state"
-        name="billing_state"
-        placeholder="SP"
-        autocomplete="address-level1"
-        maxlength="2"
-      >
-      <div id="billing_state_error" class="campo-erro-cartao"></div>
-    </div>
-  </div>
-
-  <input
-    type="hidden"
-    id="billing_country"
-    name="billing_country"
-    value="BR"
-  >
-
-  <button
-    type="submit"
-    id="confirmarPagamento"
-    class="btn-confirmar-desbloqueio"
-  >
-    Confirmar desbloqueio
-  </button>
-</form>
-
+</div>
 
 <div id="modalMidia" class="modal-midia hidden">
 
