@@ -24,8 +24,8 @@
   text-align: center;
 
   width: 92%;
-  max-width: 420px;
-  max-height: 90vh;      /* 🔥 limita altura */
+  max-width: 600px;
+  max-height: 70vh;      /* 🔥 limita altura */
   
   border-radius: 18px;
   padding: 20px;
@@ -190,8 +190,8 @@
 
   .velvet-box {
     width: 95%;
-    max-width: 95%;
-    max-height: 95vh;
+max-width: 80%;
+max-height: 80%;
     border-radius: 16px;
     padding: 18px;
   }

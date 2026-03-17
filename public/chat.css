@@ -924,17 +924,18 @@ body.role-cliente .msg-cliente:has(.chat-conteudo) {
 .modal-content{
   position:relative;
 
-  width:320px;
-  max-width:92vw;
-
+  width:300px;
+  max-width: 280px;
   background:#fff;
   border-radius:18px;
   padding:26px;
-  font-size: 12px;
+  font-size: 11px;
   display:flex;
   flex-direction:column;
   gap:8px;
   color:#666;
+  overflow-y: auto;
+  max-height: 400px;
 
   box-shadow:0 25px 70px rgba(0,0,0,.35);
 }
@@ -1540,7 +1541,7 @@ body.role-cliente .msg-modelo .msg-hora {
 .popup-pagamento {
   width: 100%;
   max-width: 430px;
-  max-height: 92vh;
+  max-height: 70vh;
   overflow-y: auto;
   background: #ffffff;
   border-radius: 22px;
@@ -1556,7 +1557,7 @@ body.role-cliente .msg-modelo .msg-hora {
 .modal-content h2 {
   margin: 0 0 10px;
   text-align: center;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 800;
   color: #6d28d9;
   line-height: 1.2;
