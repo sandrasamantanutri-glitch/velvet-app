@@ -950,88 +950,115 @@ async function pagarComCartao(tipoParam = null) {
     // VIP
     // =========================
     if (tipo === "vip") {
-      const modelo_id = Number(
-        pagamentoAtual.modelo_id ||
-        window.MODELO_ID_ATUAL
-      );
-
-      if (!modelo_id) {
-        alert("Modelo inválido");
-        pagamentoEmProcesso = false;
-        return { sucesso: false };
-      }
-
-      atualizarStatusCartao("💳 Processando assinatura VIP...");
-
-      const payload = {
-        modelo_id,
-        cpf: pagamentoAtual.cpf,
-        phone_area_code,
-        phone_number,
-        billing_address: {
-          line_1: enderecoLinha1,
-          zip_code: zipCodeLimpo,
-          city: cidade,
-          state: estado.toUpperCase(),
-          country: pais.toUpperCase(),
-          ...(enderecoLinha2 ? { line_2: enderecoLinha2 } : {})
-        },
-
-        card_number: numero.replace(/\s/g, ""),
-        card_holder_name: nome,
-        card_exp_month: Number(mes),
-        card_exp_year: Number(ano),
-        card_cvv: cvv.replace(/\D/g, "")
-      };
-
-      console.log("Payload PSP /api/pagamento/vip/cartao:", payload);
-
-      atualizarStatusCartao("💳 Processando assinatura VIP...");
-      mostrarLoadingCartao();
-
-      const res = await fetch("/api/pagamento/vip/cartao", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + localStorage.getItem("token")
-        },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await res.json();
-
-if (!res.ok) {
-  console.error("Erro retorno VIP cartão:", data);
-  alert(
-    data?.error ||
-    data?.detalhe ||
-    "Erro no pagamento VIP com cartão."
+  const modelo_id = Number(
+    pagamentoAtual.modelo_id ||
+    window.MODELO_ID_ATUAL
   );
 
-  document.getElementById("cartaoLoading")?.classList.add("hidden");
-  document.getElementById("formCartao")?.classList.remove("hidden");
+  if (!modelo_id) {
+    alert("Modelo inválido");
+    pagamentoEmProcesso = false;
+    return { sucesso: false };
+  }
 
-  atualizarStatusCartao("❌ Falha no pagamento");
+  const aceitou_termos = !!(
+    document.getElementById("aceitouTermos")?.checked ||
+    document.getElementById("chkTermosVip")?.checked ||
+    document.getElementById("termosVip")?.checked ||
+    document.getElementById("checkboxTermosVip")?.checked
+  );
+
+  if (!aceitou_termos) {
+    alert("Você precisa aceitar os termos.");
+    pagamentoEmProcesso = false;
+    return { sucesso: false };
+  }
+
+  const fingerprint =
+    window.fingerprintPagamento ||
+    localStorage.getItem("fingerprint_pagamento") ||
+    localStorage.getItem("fingerprint") ||
+    "";
+
+  if (!fingerprint) {
+    alert("Fingerprint não encontrado. Recarregue a página e tente novamente.");
+    pagamentoEmProcesso = false;
+    return { sucesso: false };
+  }
+
+  atualizarStatusCartao("💳 Processando assinatura VIP...");
+
+  const payload = {
+    modelo_id,
+    cpf: pagamentoAtual.cpf,
+    aceitou_termos,
+    fingerprint,
+    phone_area_code,
+    phone_number,
+    billing_address: {
+      line_1: enderecoLinha1,
+      zip_code: zipCodeLimpo,
+      city: cidade,
+      state: estado.toUpperCase(),
+      country: pais.toUpperCase(),
+      ...(enderecoLinha2 ? { line_2: enderecoLinha2 } : {})
+    },
+
+    card_number: numero.replace(/\s/g, ""),
+    card_holder_name: nome,
+    card_exp_month: Number(mes),
+    card_exp_year: Number(ano),
+    card_cvv: cvv.replace(/\D/g, "")
+  };
+
+  console.log("Payload PSP /api/pagamento/vip/cartao:", payload);
+
+  atualizarStatusCartao("💳 Processando assinatura VIP...");
+  mostrarLoadingCartao();
+
+  const res = await fetch("/api/pagamento/vip/cartao", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + localStorage.getItem("token")
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    console.error("Erro retorno VIP cartão:", data);
+    alert(
+      data?.error ||
+      data?.detalhe ||
+      "Erro no pagamento VIP com cartão."
+    );
+
+    document.getElementById("cartaoLoading")?.classList.add("hidden");
+    document.getElementById("formCartao")?.classList.remove("hidden");
+
+    atualizarStatusCartao("❌ Falha no pagamento");
+    pagamentoEmProcesso = false;
+    return { sucesso: false };
+  }
+
+  pagamentoAtual.payment_id = data.payment_id || data.order_id || null;
+  pagamentoAtual.assinatura_id = data.assinatura_id || null;
+
+  atualizarStatusCartao("⏳ Aguardando confirmação...");
+
+  if (pagamentoAtual.payment_id) {
+    iniciarPollingPagamento(
+      pagamentoAtual.payment_id,
+      pagamentoAtual.assinatura_id || modelo_id,
+      "cartao"
+    );
+  }
+
   pagamentoEmProcesso = false;
-  return { sucesso: false };
+  return { sucesso: true, aguardando_confirmacao: true };
 }
-
-      pagamentoAtual.payment_id = data.payment_id || data.order_id || null;
-      pagamentoAtual.assinatura_id = data.assinatura_id || null;
-
-      atualizarStatusCartao("⏳ Aguardando confirmação...");
-
-      if (pagamentoAtual.payment_id) {
-        iniciarPollingPagamento(
-          pagamentoAtual.payment_id,
-          pagamentoAtual.assinatura_id || modelo_id,
-          "cartao"
-        );
-      }
-
-      pagamentoEmProcesso = false;
-      return { sucesso: true, aguardando_confirmacao: true };
-    }
 
     // =========================
     // MÍDIA
