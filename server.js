@@ -7608,76 +7608,78 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
     console.log("taxaPlataforma:", taxaPlataforma);
     console.log("total:", total);
 
-    console.log("----- MONTANDO paymentPayload -----");
-    const paymentPayload = {
-      payment_method: "credit_card",
-      credit_card: {
-        card_token,
-        installments: 1,
-        statement_descriptor: "VELVET"
-      },
-      antifraud_enabled: true
-    };
+ console.log("----- MONTANDO paymentPayload -----");
 
-    console.log("paymentPayload inicial:", JSON.stringify(paymentPayload, null, 2));
-
-    if (billing_address && typeof billing_address === "object") {
-      paymentPayload.credit_card.billing_address = {
-        line_1: billing_address.line_1,
-        zip_code: String(billing_address.zip_code || "").replace(/\D/g, ""),
-        city: billing_address.city,
-        state: billing_address.state,
-        country: billing_address.country || "BR"
-      };
-
-      if (billing_address.line_2) {
-        paymentPayload.credit_card.billing_address.line_2 = billing_address.line_2;
-      }
-
-      console.log(
-        "paymentPayload com billing_address:",
-        JSON.stringify(paymentPayload, null, 2)
-      );
-    } else {
-      console.log("billing_address ausente ou inválido, seguindo sem ele");
+const paymentPayload = {
+  payment_method: "credit_card",
+  credit_card: {
+    card_token,
+    installments: 1,
+    statement_descriptor: "VELVET"
+  },
+  billing: {
+    name: nome,
+    address: {
+      line_1: billing_address?.line_1 || "Rua não informada, 0",
+      zip_code: String(billing_address?.zip_code || "").replace(/\D/g, ""),
+      city: billing_address?.city || "Sao Paulo",
+      state: billing_address?.state || "SP",
+      country: billing_address?.country || "BR"
     }
+  },
+  antifraud_enabled: true
+};
 
-    const pagarmeBody = {
-      closed: true,
-      customer: {
-        name: nome,
-        email: email,
-        document: cpfLimpo,
-        type: "individual"
-      },
-      items: [
-        {
-          amount,
-          description: "Conteúdo premium",
-          quantity: 1,
-          code: `conteudo_${conteudoId}`
-        }
-      ],
-      payments: [paymentPayload],
-      metadata: {
-        tipo: "conteudo_cartao",
-        message_id: String(conteudoId),
-        cliente_id: String(cliente_id),
-        modelo_id: String(modelo_id),
-        valor_midia: String(valorBase),
-        taxa_transacao: String(taxaTransacao),
-        taxa_plataforma: String(taxaPlataforma),
-        valor_total: String(total),
-        aceite_ip: ip || ""
-      }
-    };
+if (billing_address?.line_2) {
+  paymentPayload.billing.address.line_2 = billing_address.line_2;
+}
 
-    const pagarmeHeaders = {
-      Authorization:
-        "Basic " +
-        Buffer.from(process.env.PAGARME_SECRET_KEY + ":").toString("base64"),
-      "Content-Type": "application/json"
-    };
+console.log(
+  "paymentPayload FINAL:",
+  JSON.stringify(paymentPayload, null, 2)
+);
+
+const pagarmeBody = {
+  closed: true,
+  customer: {
+    name: nome,
+    email: email,
+    document: cpfLimpo,
+    type: "individual"
+  },
+  items: [
+    {
+      amount,
+      description: "Conteúdo premium",
+      quantity: 1,
+      code: `conteudo_${conteudoId}`
+    }
+  ],
+  payments: [paymentPayload],
+  metadata: {
+    tipo: "conteudo_cartao",
+    message_id: String(conteudoId),
+    cliente_id: String(cliente_id),
+    modelo_id: String(modelo_id),
+    valor_midia: String(valorBase),
+    taxa_transacao: String(taxaTransacao),
+    taxa_plataforma: String(taxaPlataforma),
+    valor_total: String(total),
+    aceite_ip: ip || ""
+  }
+};
+
+console.log(
+  "pagarmeBody FINAL:",
+  JSON.stringify(pagarmeBody, null, 2)
+);
+
+const pagarmeHeaders = {
+  Authorization:
+    "Basic " +
+    Buffer.from(process.env.PAGARME_SECRET_KEY + ":").toString("base64"),
+  "Content-Type": "application/json"
+};
 
     console.log("----- ANTES DO AXIOS PAGARME -----");
     console.log("PAGARME_SECRET_KEY existe?:", !!process.env.PAGARME_SECRET_KEY);
