@@ -946,10 +946,7 @@ async function pagarComCartao(tipoParam = null) {
       return { sucesso: false };
     }
 
-    // =========================
-    // VIP
-    // =========================
-    if (tipo === "vip") {
+ if (tipo === "vip") {
   const modelo_id = Number(
     pagamentoAtual.modelo_id ||
     window.MODELO_ID_ATUAL
@@ -961,12 +958,7 @@ async function pagarComCartao(tipoParam = null) {
     return { sucesso: false };
   }
 
-  const aceitou_termos = !!(
-    document.getElementById("aceitouTermos")?.checked ||
-    document.getElementById("chkTermosVip")?.checked ||
-    document.getElementById("termosVip")?.checked ||
-    document.getElementById("checkboxTermosVip")?.checked
-  );
+  const aceitou_termos = !!document.getElementById("aceiteTermosPagamento")?.checked;
 
   if (!aceitou_termos) {
     alert("Você precisa aceitar os termos.");
@@ -974,17 +966,7 @@ async function pagarComCartao(tipoParam = null) {
     return { sucesso: false };
   }
 
-  const fingerprint =
-    window.fingerprintPagamento ||
-    localStorage.getItem("fingerprint_pagamento") ||
-    localStorage.getItem("fingerprint") ||
-    "";
-
-  if (!fingerprint) {
-    alert("Fingerprint não encontrado. Recarregue a página e tente novamente.");
-    pagamentoEmProcesso = false;
-    return { sucesso: false };
-  }
+  const fingerprint = gerarFingerprint();
 
   atualizarStatusCartao("💳 Processando assinatura VIP...");
 
@@ -1003,7 +985,6 @@ async function pagarComCartao(tipoParam = null) {
       country: pais.toUpperCase(),
       ...(enderecoLinha2 ? { line_2: enderecoLinha2 } : {})
     },
-
     card_number: numero.replace(/\s/g, ""),
     card_holder_name: nome,
     card_exp_month: Number(mes),
@@ -1013,7 +994,6 @@ async function pagarComCartao(tipoParam = null) {
 
   console.log("Payload PSP /api/pagamento/vip/cartao:", payload);
 
-  atualizarStatusCartao("💳 Processando assinatura VIP...");
   mostrarLoadingCartao();
 
   const res = await fetch("/api/pagamento/vip/cartao", {
@@ -1029,11 +1009,7 @@ async function pagarComCartao(tipoParam = null) {
 
   if (!res.ok) {
     console.error("Erro retorno VIP cartão:", data);
-    alert(
-      data?.error ||
-      data?.detalhe ||
-      "Erro no pagamento VIP com cartão."
-    );
+    alert(data?.error || data?.detalhe || "Erro no pagamento VIP com cartão.");
 
     document.getElementById("cartaoLoading")?.classList.add("hidden");
     document.getElementById("formCartao")?.classList.remove("hidden");
