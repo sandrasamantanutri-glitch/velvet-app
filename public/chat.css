@@ -1433,3 +1433,78 @@ body.role-modelo .msg-cliente .msg-hora,
 body.role-cliente .msg-modelo .msg-hora {
   align-self: flex-start;
 }
+
+.toast-pagamento {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 99999;
+  min-width: 260px;
+  max-width: 90vw;
+  padding: 14px 18px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0,0,0,.18);
+  background: #1f1f1f;
+  color: #fff;
+  opacity: 1;
+  transition: .25s ease;
+}
+
+.toast-pagamento.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(10px);
+}
+
+.toast-pagamento.info {
+  background: #2d2d2d;
+}
+
+.toast-pagamento.sucesso {
+  background: #177a3f;
+}
+
+.toast-pagamento.erro {
+  background: #b42318;
+}
+
+.pix-status {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.pix-status-titulo {
+  font-weight: 700;
+}
+
+.pix-status-detalhe {
+  margin-top: 4px;
+  font-size: 13px;
+  opacity: .92;
+}
+
+.pix-status.aguardando {
+  background: rgba(255, 193, 7, 0.12);
+  color: #7a5600;
+}
+
+.pix-status.processando {
+  background: rgba(33, 150, 243, 0.12);
+  color: #0b5cad;
+}
+
+.pix-status.pago {
+  background: rgba(22, 163, 74, 0.12);
+  color: #166534;
+}
+
+.pix-status.erro {
+  background: rgba(220, 38, 38, 0.12);
+  color: #991b1b;
+}

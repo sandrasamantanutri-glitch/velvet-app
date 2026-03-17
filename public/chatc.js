@@ -1149,7 +1149,7 @@ async function gerarPix() {
 
   if (btn) {
     btn.disabled = true;
-    btn.innerText = "Aguarde...";
+    btn.innerText = "Gerando Pix...";
   }
 
   try {
@@ -1163,7 +1163,13 @@ async function gerarPix() {
 
     const conteudo_id = Number(pagamentoAtual.conteudo_id);
 
-    atualizarStatusPix("⏳ Gerando Pix...", "aguardando");
+    atualizarStatusPix(
+      "⏳ Gerando seu código Pix...",
+      "aguardando",
+      "Isso pode levar alguns segundos. Não feche esta janela."
+    );
+
+    mostrarToastPagamento("Gerando Pix...", "info");
 
     const res = await fetch("/api/pagamento/midia/pix", {
       method: "POST",
@@ -1181,7 +1187,12 @@ async function gerarPix() {
 
     if (!res.ok) {
       alert(data.error || "Erro ao gerar PIX");
-      atualizarStatusPix("❌ Erro ao gerar Pix.", "erro");
+      atualizarStatusPix(
+        "❌ Não foi possível gerar o Pix.",
+        "erro",
+        "Tente novamente em alguns instantes."
+      );
+      mostrarToastPagamento("Erro ao gerar Pix.", "erro", true);
       return;
     }
 
@@ -1204,21 +1215,37 @@ async function gerarPix() {
     pagamentoAtual.payment_id = data.payment_id || data.order_id || null;
     pagamentoAtual.message_id = data.message_id || pagamentoAtual.conteudo_id;
 
-    atualizarStatusPix("⏳ Aguardando pagamento...", "aguardando");
+    atualizarStatusPix(
+      "✅ Pix gerado com sucesso.",
+      "aguardando",
+      "Agora faça o pagamento. Assim que identificarmos, vamos liberar automaticamente. Não feche esta janela."
+    );
+
+    mostrarToastPagamento("Pix gerado. Aguardando pagamento...", "info");
 
     if (pagamentoAtual.payment_id) {
-iniciarPollingPagamento(
-  pagamentoAtual.payment_id,
-  pagamentoAtual.message_id,
-  "pix"
-);
+      iniciarPollingPagamento(
+        pagamentoAtual.payment_id,
+        pagamentoAtual.message_id,
+        "pix"
+      );
     } else {
       console.warn("PIX criado sem payment_id retornado");
+      atualizarStatusPix(
+        "⚠️ Pix gerado, mas sem identificador de acompanhamento.",
+        "erro",
+        "Se o pagamento for feito, talvez seja necessário atualizar a conversa."
+      );
     }
   } catch (err) {
     console.error("Erro Pix:", err);
     alert("Erro inesperado no Pix");
-    atualizarStatusPix("❌ Erro inesperado ao gerar Pix.", "erro");
+    atualizarStatusPix(
+      "❌ Erro inesperado ao gerar o Pix.",
+      "erro",
+      "Tente novamente."
+    );
+    mostrarToastPagamento("Erro inesperado no Pix.", "erro", true);
   } finally {
     if (btn) {
       btn.disabled = false;
@@ -1518,11 +1545,15 @@ function pararPollingPagamento() {
   }
 }
 
-function atualizarStatusPix(texto, classe = "aguardando") {
+function atualizarStatusPix(texto, classe = "aguardando", detalhe = "") {
   const statusPix = document.getElementById("pixStatus");
   if (!statusPix) return;
 
-  statusPix.innerText = texto;
+  statusPix.innerHTML = `
+    <div class="pix-status-titulo">${texto}</div>
+    ${detalhe ? `<div class="pix-status-detalhe">${detalhe}</div>` : ""}
+  `;
+
   statusPix.className = `pix-status ${classe}`;
 }
 
@@ -1536,7 +1567,19 @@ function atualizarStatusCartao(texto) {
 function iniciarPollingPagamento(paymentId, messageId, tipo = "pix") {
   pararPollingPagamento();
 
-  pollingPagamento = setInterval(async () => {
+  let tentativas = 0;
+
+  const setStatus = (texto, classe = "aguardando", detalhe = "") => {
+    if (tipo === "pix") {
+      atualizarStatusPix(texto, classe, detalhe);
+    } else {
+      atualizarStatusCartao(texto);
+    }
+  };
+
+  const verificar = async () => {
+    tentativas++;
+
     try {
       const res = await fetch(`/api/pagamento/status/${paymentId}`, {
         headers: {
@@ -1549,39 +1592,59 @@ function iniciarPollingPagamento(paymentId, messageId, tipo = "pix") {
       const data = await res.json();
       const status = (data.status || "").toLowerCase();
 
-      const setStatus = (texto, classe = "aguardando") => {
-        if (tipo === "pix") {
-          atualizarStatusPix(texto, classe);
-        } else {
-          atualizarStatusCartao(texto);
-        }
-      };
-
       if (
         status === "pending" ||
         status === "pendente" ||
         status === "waiting_payment" ||
         status === "aguardando_pagamento"
       ) {
-        setStatus("⏳ Aguardando pagamento...", "aguardando");
+        setStatus(
+          "⏳ Aguardando pagamento...",
+          "aguardando",
+          "Assim que o pagamento cair, o conteúdo será liberado automaticamente. Não feche esta janela."
+        );
         return;
       }
 
       if (status === "processing" || status === "processando") {
-        setStatus("⏳ Pagamento recebido. Processando confirmação...", "processando");
+        setStatus(
+          "💳 Pagamento identificado.",
+          "processando",
+          "Estamos confirmando com segurança. Isso pode levar alguns segundos."
+        );
+        mostrarToastPagamento("Pagamento identificado. Confirmando...", "info");
         return;
       }
-      
+
       if (status === "authorized" || status === "authorizing") {
-  setStatus("⏳ Pagamento autorizado. Finalizando confirmação...", "processando");
-  return;
-}
+        setStatus(
+          "🔐 Pagamento autorizado.",
+          "processando",
+          "Finalizando a liberação do seu conteúdo..."
+        );
+        return;
+      }
 
       if (status === "paid" || status === "pago") {
-        setStatus("✅ Pagamento confirmado!", "pago");
+        setStatus(
+          "✅ Pagamento aprovado!",
+          "pago",
+          "Estamos liberando seu conteúdo agora..."
+        );
+
+        mostrarToastPagamento("Pagamento aprovado. Liberando conteúdo...", "sucesso");
+
         pararPollingPagamento();
 
         await liberarConteudo(messageId || data.message_id);
+
+        setStatus(
+          "🎉 Conteúdo desbloqueado com sucesso!",
+          "pago",
+          "Você já pode abrir sua mídia."
+        );
+
+        mostrarToastPagamento("Conteúdo desbloqueado com sucesso!", "sucesso", true);
 
         setTimeout(() => {
           if (tipo === "pix") {
@@ -1589,7 +1652,8 @@ function iniciarPollingPagamento(paymentId, messageId, tipo = "pix") {
           } else {
             fecharPagamento();
           }
-        }, 1200);
+          esconderToastPagamento();
+        }, 3200);
 
         return;
       }
@@ -1600,28 +1664,55 @@ function iniciarPollingPagamento(paymentId, messageId, tipo = "pix") {
         status === "canceled" ||
         status === "cancelado"
       ) {
-        setStatus("❌ Pagamento não aprovado.", "erro");
+        setStatus(
+          "❌ Pagamento não aprovado.",
+          "erro",
+          "Você pode tentar novamente."
+        );
+        mostrarToastPagamento("Pagamento não aprovado.", "erro", true);
         pararPollingPagamento();
         return;
       }
 
       if (status === "expired" || status === "expirado") {
-        setStatus("⌛ Pagamento expirado. Tente novamente.", "erro");
+        setStatus(
+          "⌛ Pix expirado.",
+          "erro",
+          "Gere um novo código para tentar novamente."
+        );
+        mostrarToastPagamento("Pix expirado.", "erro", true);
         pararPollingPagamento();
       }
     } catch (err) {
       console.error("Erro polling:", err);
+
+      if (tipo === "pix") {
+        atualizarStatusPix(
+          "⚠️ Estamos tentando confirmar seu pagamento...",
+          "processando",
+          "Se você já pagou, aguarde mais alguns segundos. Não feche esta janela."
+        );
+      }
     }
-  }, 5000);
+  };
+
+  verificar();
+  pollingPagamento = setInterval(verificar, 2500);
 
   pollingTimeout = setTimeout(() => {
     pararPollingPagamento();
 
     if (tipo === "pix") {
-      atualizarStatusPix("⌛ Tempo de verificação encerrado. Você pode tentar novamente.", "erro");
+      atualizarStatusPix(
+        "⌛ Tempo de verificação encerrado.",
+        "erro",
+        "Se você já pagou, atualize a conversa ou tente novamente."
+      );
     } else {
       atualizarStatusCartao("Tentar novamente");
     }
+
+    mostrarToastPagamento("Tempo de verificação encerrado.", "erro", true);
   }, 180000);
 }
 
@@ -1656,6 +1747,7 @@ async function liberarConteudo(messageId) {
         ${midias.map((m, index) => `
           <div class="midia-item ${m.liberado !== false ? "midia-livre" : "midia-bloqueada"}"
                data-index="${index}"
+               data-full="${m.url}"
                data-liberado="${m.liberado !== false ? "true" : "false"}">
             ${
               m.liberado !== false
@@ -1673,6 +1765,12 @@ async function liberarConteudo(messageId) {
         `).join("")}
       </div>
     `;
+
+    if (todasLiberadas && midias.length > 0) {
+      setTimeout(() => {
+        abrirConteudo(messageId, 0);
+      }, 600);
+    }
   } catch (err) {
     console.error("Erro liberar conteúdo:", err);
   }
@@ -1801,6 +1899,39 @@ function abrirModalCartao() {
 // };
 
 // }
+
+function garantirToastPagamento() {
+  let el = document.getElementById("toastPagamento");
+
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "toastPagamento";
+    el.className = "toast-pagamento hidden";
+    document.body.appendChild(el);
+  }
+
+  return el;
+}
+
+function mostrarToastPagamento(texto, tipo = "info", autoHide = false) {
+  const el = garantirToastPagamento();
+
+  el.innerText = texto;
+  el.className = `toast-pagamento ${tipo}`;
+
+  if (autoHide) {
+    clearTimeout(el._hideTimer);
+    el._hideTimer = setTimeout(() => {
+      el.className = "toast-pagamento hidden";
+    }, 3500);
+  }
+}
+
+function esconderToastPagamento() {
+  const el = document.getElementById("toastPagamento");
+  if (!el) return;
+  el.className = "toast-pagamento hidden";
+}
 
 // apenas log
 socket.on("disconnect", reason => {
