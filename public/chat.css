@@ -1524,6 +1524,7 @@ body.role-cliente .msg-modelo .msg-hora {
   align-items: center;
   justify-content: center;
   padding: 20px;
+  z-index: 200001;
 
 }
 
@@ -1551,6 +1552,7 @@ body.role-cliente .msg-modelo .msg-hora {
   align-items: center;
   justify-content: center;
   padding: 14px;
+  z-index: 9999;
 }
 
 .popup-pagamento {
