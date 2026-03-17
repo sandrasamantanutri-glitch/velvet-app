@@ -35,7 +35,7 @@ const conteudosLiberados = new Set();
 let pagamentoAtual = null;
 let pagamentoEmProcesso = false;
 
-const PAGARME_PUBLIC_KEY = "pk_oQW43ZaU7JHP";
+const PAGARME_PUBLIC_KEY = "pk_oQW43ZaU7HPVnbj8";
 // const stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
 
 // // ===============================
@@ -1478,7 +1478,7 @@ async function tokenizarCartaoDireto({
   exp_year,
   cvv
 }) {
-  const publicKey = "pk_oQW43ZaU7JHP";
+  const publicKey = "pk_oQW43ZaU7HPVnbj8";
 
   const res = await fetch(
     `https://api.pagar.me/core/v5/tokens?appId=${encodeURIComponent(publicKey)}`,
