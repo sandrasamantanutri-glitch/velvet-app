@@ -9,6 +9,10 @@ body, html {
   color:#7B2CFF;
 }
 
+.hidden{
+  display:none !important;
+}
+
 /* container principal */
 .chat-area {
   height: 100vh;
@@ -1115,10 +1119,12 @@ body.role-cliente .msg-cliente:has(.chat-conteudo) {
 }
 
 .modal-backdrop{
-  position: fixed;
+  position: absolute;
   inset: 0;
+
   background: rgba(0,0,0,.50);
   backdrop-filter: blur(2px);
+
   cursor: pointer;
 }
 
@@ -1701,6 +1707,22 @@ body.role-cliente .msg-modelo .msg-hora {
   transform: translateY(0);
 }
 
+/* BOTÃO FECHAR, SE EXISTIR */
+.btn-fechar-modal,
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 999px;
+  background: #f3f0ff;
+  color: #6d28d9;
+  font-size: 20px;
+  cursor: pointer;
+}
+
 /* RESPONSIVO */
 @media (max-width: 520px) {
   .modal-pagamento .modal-content,
@@ -1733,70 +1755,23 @@ body.role-cliente .msg-modelo .msg-hora {
   }
 }
 
+#modalMidia {
+  z-index: 100001 !important;
+}
+
+#modalMidia .modal-midia-box {
+  z-index: 100002 !important;
+}
+
 /* os elementos internos começam escondidos; o JS mostra só o necessário */
 #modalImg,
 #modalVideo,
 #modalIframe {
   display: none;
 }
-
-
-/* =========================
-   CAMADAS DOS MODAIS
-========================= */
-
-/* modal de mídia fica abaixo do de pagamento */
-.modal-midia {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
+.popup-pagamento-overlay.hidden {
+  display: none !important;
 }
-
-/* backdrop da mídia deve cobrir a tela inteira */
-.modal-midia .modal-backdrop,
-.modal-midia-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.50);
-  backdrop-filter: blur(2px);
-  z-index: 10000;
-}
-
-/* caixa da mídia acima do backdrop */
-.modal-midia-box {
-  position: relative;
-  z-index: 10001;
-}
-
-/* modal de pagamento sempre acima da mídia */
-.popup-pagamento-overlay,
-.modal-pagamento,
-#modalPagamento {
-  position: fixed;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  background: rgba(12, 12, 18, 0.55);
-  backdrop-filter: blur(4px);
-  z-index: 11000;
-}
-
-/* quando abrir */
-.popup-pagamento-overlay.ativo,
-.modal-pagamento.ativo,
-#modalPagamento.ativo {
-  display: flex;
-}
-
-/* caixa interna do pagamento */
-.popup-pagamento,
-.modal-pagamento .modal-content,
-#modalPagamento .modal-content {
-  position: relative;
-  z-index: 11001;
+#paymentModal {
+  z-index: 100001 !important;
 }
