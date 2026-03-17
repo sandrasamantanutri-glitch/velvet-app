@@ -9,6 +9,10 @@ body, html {
   color:#7B2CFF;
 }
 
+.hidden{
+  display:none !important;
+}
+
 /* container principal */
 .chat-area {
   height: 100vh;
@@ -1523,8 +1527,232 @@ body.role-cliente .msg-modelo .msg-hora {
   align-items: center;
   justify-content: center;
   padding: 20px;
-  z-index: 200001;
+  z-index: 9999;
+  display: none;
+}
 
+/* CAIXA DO POPUP */
+.modal-pagamento .modal-content,
+#modalPagamento .modal-content,
+.popup-pagamento {
+  width: 100%;
+  max-width: 430px;
+  max-height: 92vh;
+  overflow-y: auto;
+  background: #ffffff;
+  border-radius: 22px;
+  padding: 26px 22px 22px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(124, 58, 237, 0.10);
+  font-family: inherit;
+  scrollbar-width: thin;
+}
+
+/* TÍTULO */
+.popup-pagamento h2,
+.modal-content h2 {
+  margin: 0 0 10px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 800;
+  color: #6d28d9;
+  line-height: 1.2;
+}
+
+/* TOTAL */
+.valor-total,
+.total-desbloqueio {
+  text-align: center;
+  margin-bottom: 14px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #7c3aed;
+}
+
+.valor-total strong,
+.total-desbloqueio strong {
+  font-size: 30px;
+  font-weight: 800;
+}
+
+/* RESUMO DE TAXAS */
+.resumo-valores,
+.breakdown-pagamento {
+  background: #f8f5ff;
+  border: 1px solid #ede9fe;
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 20px;
+}
+
+.resumo-valores p,
+.breakdown-pagamento p {
+  margin: 6px 0;
+  font-size: 14px;
+  color: #5b5565;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.resumo-valores p span:last-child,
+.breakdown-pagamento p span:last-child {
+  font-weight: 700;
+  color: #2f243d;
+}
+
+/* FORM */
+.form-pagamento {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #6d28d9;
+}
+
+/* INPUTS */
+.form-pagamento input,
+.form-pagamento select,
+.form-pagamento textarea,
+.popup-pagamento input,
+.popup-pagamento select {
+  width: 100%;
+  height: 48px;
+  border: 1px solid #ddd6fe;
+  border-radius: 12px;
+  padding: 0 14px;
+  font-size: 15px;
+  color: #2d2438;
+  background: #fcfcff;
+  outline: none;
+  transition: 0.18s ease;
+  box-sizing: border-box;
+}
+
+.form-pagamento textarea {
+  min-height: 90px;
+  padding-top: 12px;
+  resize: vertical;
+}
+
+.form-pagamento input::placeholder,
+.popup-pagamento input::placeholder {
+  color: #9a90ac;
+}
+
+.form-pagamento input:focus,
+.form-pagamento select:focus,
+.form-pagamento textarea:focus,
+.popup-pagamento input:focus,
+.popup-pagamento select:focus {
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.10);
+  background: #fff;
+}
+
+/* LINHAS COM VÁRIOS CAMPOS */
+.row-2,
+.row-3,
+.form-row {
+  display: grid;
+  gap: 12px;
+}
+
+.row-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.row-3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+/* BOTÃO */
+.btn-confirmar-pagamento,
+.btn-confirmar-desbloqueio,
+.popup-pagamento button[type="submit"] {
+  width: 100%;
+  height: 52px;
+  border: 0;
+  border-radius: 14px;
+  margin-top: 8px;
+  background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(124, 58, 237, 0.28);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+.btn-confirmar-pagamento:hover,
+.btn-confirmar-desbloqueio:hover,
+.popup-pagamento button[type="submit"]:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(124, 58, 237, 0.32);
+}
+
+.btn-confirmar-pagamento:active,
+.btn-confirmar-desbloqueio:active,
+.popup-pagamento button[type="submit"]:active {
+  transform: translateY(0);
+}
+
+/* BOTÃO FECHAR, SE EXISTIR */
+.btn-fechar-modal,
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 999px;
+  background: #f3f0ff;
+  color: #6d28d9;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+/* RESPONSIVO */
+@media (max-width: 520px) {
+  .modal-pagamento .modal-content,
+  #modalPagamento .modal-content,
+  .popup-pagamento {
+    max-width: 100%;
+    border-radius: 18px;
+    padding: 22px 16px 18px;
+  }
+
+  .popup-pagamento h2,
+  .modal-content h2 {
+    font-size: 20px;
+  }
+
+  .valor-total,
+  .total-desbloqueio {
+    font-size: 18px;
+  }
+
+  .valor-total strong,
+  .total-desbloqueio strong {
+    font-size: 26px;
+  }
+
+  .row-2,
+  .row-3,
+  .form-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 #modalMidia {
@@ -1541,189 +1769,9 @@ body.role-cliente .msg-modelo .msg-hora {
 #modalIframe {
   display: none;
 }
-
-.popup-pagamento-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(12, 12, 18, 0.45);
-  backdrop-filter: blur(3px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 14px;
-  z-index: 9999;
+.popup-pagamento-overlay.hidden {
+  display: none !important;
 }
-
-.popup-pagamento {
-  position: relative;
-  width: min(430px, 100%);
-  max-height: 82vh;
-  overflow-y: auto;
-  background: #f7f7fb;
-  border-radius: 22px;
-  padding: 20px 18px 18px;
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
-  border: 1px solid rgba(124, 58, 237, 0.12);
-}
-
-/* barra de scroll */
-.popup-pagamento::-webkit-scrollbar {
-  width: 8px;
-}
-
-.popup-pagamento::-webkit-scrollbar-thumb {
-  background: rgba(124, 58, 237, 0.28);
-  border-radius: 999px;
-}
-
-.modal-close {
-  position: absolute;
-  top: -10px;
-  right: -10px;
-  width: 36px;
-  height: 36px;
-  border: none;
-  border-radius: 50%;
-  background: #ece8f8;
-  color: #7c3aed;
-  font-size: 22px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 8px 18px rgba(0,0,0,0.12);
-}
-
-.popup-pagamento h2 {
-  margin: 0 0 10px;
-  text-align: center;
-  font-size: 22px;
-  font-weight: 800;
-  color: #6d28d9;
-}
-
-.total-desbloqueio {
-  text-align: center;
-  margin-bottom: 12px;
-  font-size: 17px;
-  font-weight: 700;
-  color: #6d28d9;
-}
-
-.total-desbloqueio strong {
-  font-size: 24px;
-}
-
-.breakdown-pagamento {
-  background: #ece8f1;
-  border: 1px solid #ddd3ef;
-  border-radius: 16px;
-  padding: 12px 14px;
-  margin-bottom: 16px;
-}
-
-.breakdown-pagamento p {
-  margin: 4px 0;
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  font-size: 14px;
-  color: #3b3151;
-}
-
-.breakdown-pagamento p span:last-child {
-  font-weight: 800;
-  color: #231942;
-}
-
-.form-pagamento {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.form-group label {
-  font-size: 13px;
-  font-weight: 800;
-  color: #6d28d9;
-}
-
-.form-pagamento input {
-  width: 100%;
-  height: 46px;
-  border: 1px solid #d9cef5;
-  border-radius: 14px;
-  padding: 0 14px;
-  font-size: 15px;
-  background: #f9f9fd;
-  color: #2f2740;
-  outline: none;
-  box-sizing: border-box;
-}
-
-.form-pagamento input:focus {
-  border-color: #7c3aed;
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.10);
-  background: #fff;
-}
-
-.form-pagamento input::placeholder {
-  color: #9d91b5;
-}
-
-/* linhas com mais de um input */
-.form-row {
-  display: grid;
-  gap: 10px;
-}
-
-.form-row-2 {
-  grid-template-columns: 1fr 1fr;
-}
-
-.form-row-3 {
-  grid-template-columns: 1fr 1fr 1fr;
-}
-
-.form-row-cep {
-  grid-template-columns: 1fr 1.3fr 0.8fr;
-}
-
-.btn-confirmar-desbloqueio,
-.popup-pagamento button[type="submit"] {
-  width: 100%;
-  height: 48px;
-  margin-top: 6px;
-  border: none;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%);
-  color: #fff;
-  font-size: 16px;
-  font-weight: 800;
-  cursor: pointer;
-  box-shadow: 0 10px 22px rgba(124, 58, 237, 0.25);
-}
-
-@media (max-width: 480px) {
-  .popup-pagamento {
-    width: 100%;
-    max-height: 84vh;
-    padding: 18px 14px 16px;
-    border-radius: 18px;
-  }
-
-  .form-row-2,
-  .form-row-3,
-  .form-row-cep {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .form-row-3 .form-group:last-child,
-  .form-row-cep .form-group:last-child {
-    grid-column: span 2;
-  }
+#paymentModal {
+  z-index: 100001 !important;
 }

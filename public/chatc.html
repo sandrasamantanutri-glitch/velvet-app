@@ -173,72 +173,66 @@
       <p><span>Taxa da plataforma</span><span id="cartaoTaxaPlataforma">R$ 0,00</span></p>
     </div>
 
- <form id="formCartao" class="form-pagamento">
-  <div class="form-group">
-    <label>Número do cartão</label>
-    <input type="text" placeholder="0000 0000 0000 0000">
-  </div>
+    <form id="formCartao" class="form-pagamento">
+      <div class="form-group">
+        <label>Número do cartão</label>
+        <input id="card_number" type="text" placeholder="0000 0000 0000 0000">
+      </div>
 
-  <div class="form-group">
-    <label>Nome no cartão</label>
-    <input type="text" placeholder="Nome impresso no cartão">
-  </div>
+      <div class="form-group">
+        <label>Nome no cartão</label>
+        <input id="card_holder" type="text" placeholder="Nome impresso no cartão">
+      </div>
 
-  <div class="form-row form-row-3">
-    <div class="form-group">
-      <label>Mês</label>
-      <input type="text" placeholder="MM">
-    </div>
+      <div class="row-3">
+        <div class="form-group">
+          <label>Mês</label>
+          <input id="card_exp_month" type="text" placeholder="MM">
+        </div>
+        <div class="form-group">
+          <label>Ano</label>
+          <input id="card_exp_year" type="text" placeholder="AAAA">
+        </div>
+        <div class="form-group">
+          <label>CVV</label>
+          <input id="card_cvv" type="text" placeholder="123">
+        </div>
+      </div>
 
-    <div class="form-group">
-      <label>Ano</label>
-      <input type="text" placeholder="AAAA">
-    </div>
+      <div class="form-group">
+        <label>Telefone com DDD</label>
+        <input id="card_phone" type="text" placeholder="(11) 99999-9999">
+      </div>
 
-    <div class="form-group">
-      <label>CVV</label>
-      <input type="text" placeholder="123">
-    </div>
-  </div>
+      <div class="form-group">
+        <label>Endereço</label>
+        <input id="billing_line_1" type="text" placeholder="Rua, número e bairro">
+      </div>
 
-  <div class="form-row form-row-2">
-    <div class="form-group">
-      <label>Telefone com DDD</label>
-      <input type="text" placeholder="(11) 99999-9999">
-    </div>
+      <div class="form-group">
+        <label>Complemento</label>
+        <input id="billing_line_2" type="text" placeholder="Apartamento, bloco, referência (opcional)">
+      </div>
 
-    <div class="form-group">
-      <label>CEP</label>
-      <input type="text" placeholder="00000-000">
-    </div>
-  </div>
+      <div class="row-3">
+        <div class="form-group">
+          <label>CEP</label>
+          <input id="billing_zip_code" type="text" placeholder="00000-000">
+        </div>
+        <div class="form-group">
+          <label>Cidade</label>
+          <input id="billing_city" type="text" placeholder="São Paulo">
+        </div>
+        <div class="form-group">
+          <label>Estado</label>
+          <input id="billing_state" type="text" placeholder="SP">
+        </div>
+      </div>
 
-  <div class="form-group">
-    <label>Endereço</label>
-    <input type="text" placeholder="Rua, número e bairro">
-  </div>
-
-  <div class="form-row form-row-2">
-    <div class="form-group">
-      <label>Cidade</label>
-      <input type="text" placeholder="São Paulo">
-    </div>
-
-    <div class="form-group">
-      <label>Estado</label>
-      <input type="text" placeholder="SP">
-    </div>
-  </div>
-
-  <div class="form-group">
-    <label>Complemento</label>
-    <input type="text" placeholder="Apartamento, bloco, referência (opcional)">
-  </div>
-
-  <button type="submit" class="btn-confirmar-desbloqueio">
-    Confirmar desbloqueio
-  </button>
-</form>
+      <button id="confirmarPagamento" type="submit" class="btn-confirmar-desbloqueio">
+        Confirmar desbloqueio
+      </button>
+    </form>
   </div>
 </div>
 
