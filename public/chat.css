@@ -1748,6 +1748,11 @@ body.role-cliente .msg-modelo .msg-hora {
   z-index: 10000;
 }
 
+
+.modal-midia.ativo {
+  display: flex;
+}
+
 /* backdrop da mídia deve cobrir a tela inteira */
 .modal-midia .modal-backdrop,
 .modal-midia-backdrop {
