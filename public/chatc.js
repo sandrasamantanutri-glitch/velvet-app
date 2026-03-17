@@ -207,13 +207,35 @@ document.addEventListener(
     e.preventDefault();
     e.stopPropagation();
 
-  const midiaClicada = e.target.closest(".midia-item[data-index]");
+    // tenta primeiro pelo elemento
+    let midiaClicada = e.target.closest(".midia-item[data-index]");
+
+    // fallback: identifica pela posição do clique
+    if (!midiaClicada) {
+      const x = e.clientX;
+      const y = e.clientY;
+
+      midiaClicada = todasMidias.find((m) => {
+        const r = m.getBoundingClientRect();
+        return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+      });
+    }
+
+    // fallback final: elemento visual mais próximo do ponto clicado
+    if (!midiaClicada && document.elementsFromPoint) {
+      const els = document.elementsFromPoint(e.clientX, e.clientY);
+      midiaClicada = els.find(
+        (el) =>
+          el instanceof Element &&
+          el.matches(".midia-item[data-index]")
+      );
+    }
+
     if (!midiaClicada) return;
 
     const index = Number(midiaClicada.dataset.index || 0);
     abrirConteudo(messageId, index);
   },
-  
   true
 );
 
