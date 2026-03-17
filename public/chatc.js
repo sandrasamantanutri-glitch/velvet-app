@@ -1433,26 +1433,22 @@ async function pagarComCartao() {
             pagamentoAtual.payment_id = data.payment_id || data.order_id || null;
             pagamentoAtual.message_id = data.message_id || conteudo_id;
 
-            const elValorConteudo = document.getElementById("cartaoValorConteudo");
-            const elTaxaTransacao = document.getElementById("cartaoTaxaTransacao");
-            const elTaxaPlataforma = document.getElementById("cartaoTaxaPlataforma");
-            const elValorTotal = document.getElementById("cartaoValorTotal");
+            const valorMidia = Number(pagamentoAtual.valor || 0);
+const taxaTransacao = Number((valorMidia * 0.10).toFixed(2));
+const taxaPlataforma = Number((valorMidia * 0.05).toFixed(2));
+const valorTotal = Number(
+  (valorMidia + taxaTransacao + taxaPlataforma).toFixed(2)
+);
 
-            if (elValorConteudo && data.valorBase != null) {
-              elValorConteudo.innerText = valorBRL(data.valorBase);
-            }
+const elValorConteudo = document.getElementById("cartaoValorConteudo");
+const elTaxaTransacao = document.getElementById("cartaoTaxaTransacao");
+const elTaxaPlataforma = document.getElementById("cartaoTaxaPlataforma");
+const elValorTotal = document.getElementById("cartaoValorTotal");
 
-            if (elTaxaTransacao && data.taxaTransacao != null) {
-              elTaxaTransacao.innerText = valorBRL(data.taxaTransacao);
-            }
-
-            if (elTaxaPlataforma && data.taxaPlataforma != null) {
-              elTaxaPlataforma.innerText = valorBRL(data.taxaPlataforma);
-            }
-
-            if (elValorTotal && data.total != null) {
-              elValorTotal.innerText = valorBRL(data.total);
-            }
+if (elValorConteudo) elValorConteudo.innerText = valorBRL(valorMidia);
+if (elTaxaTransacao) elTaxaTransacao.innerText = valorBRL(taxaTransacao);
+if (elTaxaPlataforma) elTaxaPlataforma.innerText = valorBRL(taxaPlataforma);
+if (elValorTotal) elValorTotal.innerText = valorBRL(valorTotal);
 
             atualizarStatusCartao("⏳ Aguardando confirmação...");
 
@@ -1842,13 +1838,37 @@ function abrirModalCartao() {
   const cpf = obterCpfValido();
   if (!cpf) return;
 
+  if (!pagamentoAtual?.conteudo_id || !pagamentoAtual?.valor) {
+    alert("Conteúdo inválido");
+    return;
+  }
+
   pagamentoAtual.cpf = cpf;
+
+  const valorMidia = Number(pagamentoAtual.valor || 0);
+  const taxaTransacao = Number((valorMidia * 0.10).toFixed(2));
+  const taxaPlataforma = Number((valorMidia * 0.05).toFixed(2));
+  const valorTotal = Number(
+    (valorMidia + taxaTransacao + taxaPlataforma).toFixed(2)
+  );
+
+  const elValorConteudo = document.getElementById("cartaoValorConteudo");
+  const elTaxaTransacao = document.getElementById("cartaoTaxaTransacao");
+  const elTaxaPlataforma = document.getElementById("cartaoTaxaPlataforma");
+  const elValorTotal = document.getElementById("cartaoValorTotal");
+
+  if (elValorConteudo) elValorConteudo.innerText = valorBRL(valorMidia);
+  if (elTaxaTransacao) elTaxaTransacao.innerText = valorBRL(taxaTransacao);
+  if (elTaxaPlataforma) elTaxaPlataforma.innerText = valorBRL(taxaPlataforma);
+  if (elValorTotal) elValorTotal.innerText = valorBRL(valorTotal);
 
   const btnConfirmar = document.getElementById("confirmarPagamento");
   if (btnConfirmar) {
     btnConfirmar.disabled = false;
     btnConfirmar.innerText = "Confirmar desbloqueio";
   }
+
+  atualizarStatusCartao("Confirmar desbloqueio");
 
   document.getElementById("escolhaPagamento").classList.add("hidden");
   document.getElementById("paymentModal").classList.remove("hidden");
