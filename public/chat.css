@@ -1735,7 +1735,7 @@ body.role-cliente .msg-modelo .msg-hora {
 
   .popup-pagamento h2,
   .modal-content h2 {
-    font-size: 26px;
+    font-size: 20px;
   }
 
   .valor-total,
@@ -1771,4 +1771,7 @@ body.role-cliente .msg-modelo .msg-hora {
 }
 .popup-pagamento-overlay.hidden {
   display: none !important;
+}
+#paymentModal {
+  z-index: 100001 !important;
 }
