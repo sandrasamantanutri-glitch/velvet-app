@@ -921,8 +921,6 @@ body.role-cliente .msg-cliente:has(.chat-conteudo) {
   display:none;
 }
 
-
-
 .modal-content{
   position:relative;
 
@@ -936,6 +934,7 @@ body.role-cliente .msg-cliente:has(.chat-conteudo) {
   display:flex;
   flex-direction:column;
   gap:8px;
+  color:#666;
 
   box-shadow:0 25px 70px rgba(0,0,0,.35);
 }
@@ -1554,7 +1553,7 @@ body.role-cliente .msg-modelo .msg-hora {
 .modal-content h2 {
   margin: 0 0 10px;
   text-align: center;
-  font-size: 31px;
+  font-size: 20px;
   font-weight: 800;
   color: #6d28d9;
   line-height: 1.2;
