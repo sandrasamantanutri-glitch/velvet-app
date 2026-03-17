@@ -7388,7 +7388,15 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
     client = await db.connect();
     console.log("✅ db.connect OK");
 
-    const { conteudo_id, card_token, fingerprint, cpf, billing_address } = req.body || {};
+const {
+  conteudo_id,
+  card_token,
+  fingerprint,
+  cpf,
+  billing_address,
+  phone_area_code,
+  phone_number
+} = req.body || {};
     const userId = req.user?.id;
 
     console.log("----- DADOS EXTRAIDOS -----");
@@ -7646,11 +7654,12 @@ const pagarmeBody = {
     email,
     document: cpfLimpo,
     type: "individual",
+    address: billingAddress,
     phones: {
       mobile_phone: {
         country_code: "55",
-        area_code: String(req.body?.phone_area_code || "11").replace(/\D/g, ""),
-        number: String(req.body?.phone_number || "999999999").replace(/\D/g, "")
+        area_code: String(phone_area_code || "11").replace(/\D/g, ""),
+number: String(phone_number || "999999999").replace(/\D/g, "")
       }
     }
   },
