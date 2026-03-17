@@ -94,14 +94,12 @@ function tentarEntrarSala() {
 // ===============================
 
 document.addEventListener("DOMContentLoaded", async () => {
-
   try {
-
-    const res = await fetch("/api/cliente/me",{
-      headers:{ Authorization:"Bearer "+token }
+    const res = await fetch("/api/cliente/me", {
+      headers: { Authorization: "Bearer " + token }
     });
 
-    if(!res.ok) {
+    if (!res.ok) {
       console.error("Erro ao buscar cliente");
       return;
     }
@@ -109,7 +107,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const cliente = await res.json();
     cliente_id = cliente.cliente_id;
 
-    if(!cliente_id){
+    if (!cliente_id) {
       console.error("cliente_id indefinido");
       return;
     }
@@ -126,9 +124,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     tentarEntrarSala();
 
     const sendBtn = document.getElementById("sendBtn");
-    const input   = document.getElementById("msgInput");
+    const input = document.getElementById("msgInput");
 
-    if(sendBtn){
+    if (sendBtn) {
       sendBtn.addEventListener("click", enviarMensagem);
     }
 
@@ -141,40 +139,80 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     }
 
+    const formCartao = document.getElementById("formCartao");
     const btnConfirmar = document.getElementById("confirmarPagamento");
-if (btnConfirmar) {
-  btnConfirmar.onclick = async () => {
-    btnConfirmar.disabled = true;
-    btnConfirmar.innerText = "Processando...";
 
-    try {
-      const resultado = await pagarComCartao();
+    if (formCartao) {
+      formCartao.addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-      if (!resultado || !resultado.sucesso) {
-        btnConfirmar.disabled = false;
-        btnConfirmar.innerText = "Confirmar desbloqueio";
-        return;
-      }
+        if (btnConfirmar) {
+          btnConfirmar.disabled = true;
+          btnConfirmar.innerText = "Processando...";
+        }
 
-      btnConfirmar.innerText = "Aguardando confirmação...";
-    } catch (err) {
-      console.error("Erro pagamento:", err);
-      alert("Erro ao processar pagamento");
-      btnConfirmar.disabled = false;
-      btnConfirmar.innerText = "Confirmar desbloqueio";
+        try {
+          const resultado = await pagarComCartao();
+
+          if (!resultado || !resultado.sucesso) {
+            if (btnConfirmar) {
+              btnConfirmar.disabled = false;
+              btnConfirmar.innerText = "Confirmar desbloqueio";
+            }
+            return;
+          }
+
+          if (btnConfirmar) {
+            btnConfirmar.disabled = true;
+            btnConfirmar.innerText = "Aguardando confirmação...";
+          }
+        } catch (err) {
+          console.error("Erro pagamento:", err);
+          alert("Erro ao processar pagamento");
+
+          if (btnConfirmar) {
+            btnConfirmar.disabled = false;
+            btnConfirmar.innerText = "Confirmar desbloqueio";
+          }
+        }
+      });
     }
-  };
-}
 
-     if (!window.PagarmeCheckout) {
-      console.error("PagarmeCheckout não carregou");
+    const numero = document.getElementById("card_number");
+    const mes = document.getElementById("card_exp_month");
+    const ano = document.getElementById("card_exp_year");
+    const cvv = document.getElementById("card_cvv");
+
+    if (numero) {
+      numero.addEventListener("input", () => {
+        let v = numero.value.replace(/\D/g, "").slice(0, 19);
+        v = v.replace(/(\d{4})(?=\d)/g, "$1 ");
+        numero.value = v;
+      });
     }
 
-  } catch (err){
-    console.error("Erro DOMContentLoaded:",err);
+    if (mes) {
+      mes.addEventListener("input", () => {
+        mes.value = mes.value.replace(/\D/g, "").slice(0, 2);
+      });
+    }
+
+    if (ano) {
+      ano.addEventListener("input", () => {
+        ano.value = ano.value.replace(/\D/g, "").slice(0, 4);
+      });
+    }
+
+    if (cvv) {
+      cvv.addEventListener("input", () => {
+        cvv.value = cvv.value.replace(/\D/g, "").slice(0, 4);
+      });
+    }
+  } catch (err) {
+    console.error("Erro DOMContentLoaded:", err);
   }
-
 });
+
 
 // ===============================
 // SCROLL HISTÓRICO
@@ -1364,6 +1402,129 @@ function pagarComPix() {
 //   }
 // }
 
+
+function limparErrosCartao() {
+  const ids = [
+    "card_number_error",
+    "card_holder_error",
+    "card_exp_month_error",
+    "card_exp_year_error",
+    "card_cvv_error"
+  ];
+
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = "";
+  });
+}
+
+function mostrarErroCartao(campo, mensagem) {
+  const mapa = {
+    card_number: "card_number_error",
+    holder_name: "card_holder_error",
+    exp_month: "card_exp_month_error",
+    exp_year: "card_exp_year_error",
+    cvv: "card_cvv_error"
+  };
+
+  const el = document.getElementById(mapa[campo]);
+  if (el) el.innerText = mensagem;
+}
+
+function validarCamposCartao({ number, holder_name, exp_month, exp_year, cvv }) {
+  let ok = true;
+
+  limparErrosCartao();
+
+  const numeroLimpo = String(number || "").replace(/\D/g, "");
+  const nomeLimpo = String(holder_name || "").trim();
+  const mesLimpo = String(exp_month || "").replace(/\D/g, "");
+  const anoLimpo = String(exp_year || "").replace(/\D/g, "");
+  const cvvLimpo = String(cvv || "").replace(/\D/g, "");
+
+  if (numeroLimpo.length < 13 || numeroLimpo.length > 19) {
+    mostrarErroCartao("card_number", "Número do cartão inválido.");
+    ok = false;
+  }
+
+  if (!nomeLimpo || nomeLimpo.length < 3) {
+    mostrarErroCartao("holder_name", "Informe o nome impresso no cartão.");
+    ok = false;
+  }
+
+  const mesNum = Number(mesLimpo);
+  if (!mesLimpo || mesLimpo.length < 1 || mesNum < 1 || mesNum > 12) {
+    mostrarErroCartao("exp_month", "Mês inválido.");
+    ok = false;
+  }
+
+  if (!anoLimpo || anoLimpo.length !== 4) {
+    mostrarErroCartao("exp_year", "Ano inválido.");
+    ok = false;
+  }
+
+  if (!cvvLimpo || cvvLimpo.length < 3 || cvvLimpo.length > 4) {
+    mostrarErroCartao("cvv", "CVV inválido.");
+    ok = false;
+  }
+
+  return ok;
+}
+
+async function tokenizarCartaoDireto({
+  number,
+  holder_name,
+  exp_month,
+  exp_year,
+  cvv
+}) {
+  const publicKey = "pk_oQW43ZaU7JHP";
+
+  const res = await fetch(
+    `https://api.pagar.me/core/v5/tokens?appId=${encodeURIComponent(publicKey)}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        type: "card",
+        card: {
+          type: "credit_card",
+          number: String(number).replace(/\D/g, ""),
+          holder_name: String(holder_name || "").trim(),
+          exp_month: String(exp_month).replace(/\D/g, "").padStart(2, "0"),
+          exp_year: String(exp_year).replace(/\D/g, ""),
+          cvv: String(cvv).replace(/\D/g, "")
+        }
+      })
+    }
+  );
+
+  let data = null;
+  try {
+    data = await res.json();
+  } catch {
+    data = null;
+  }
+
+  if (!res.ok) {
+    const erroApi =
+      data?.message ||
+      data?.error ||
+      data?.errors?.[0]?.message ||
+      "Não foi possível tokenizar o cartão.";
+    throw new Error(erroApi);
+  }
+
+  const card_token = data?.id;
+  if (!card_token) {
+    throw new Error("Token do cartão não retornado.");
+  }
+
+  return card_token;
+}
+
 async function pagarComCartao() {
   const cpf = obterCpfValido();
   if (!cpf) return { sucesso: false };
@@ -1380,127 +1541,111 @@ async function pagarComCartao() {
       return { sucesso: false };
     }
 
-    if (!window.PagarmeCheckout) {
-      alert("Biblioteca do cartão não carregou.");
+    const form = document.getElementById("formCartao");
+    if (!form) {
+      console.error("formCartao não encontrado");
+      pagamentoEmProcesso = false;
+      return { sucesso: false };
+    }
+
+    limparErrosCartao();
+
+    const numero = form.querySelector("#card_number")?.value || "";
+    const nome = form.querySelector("#card_holder")?.value || "";
+    const mes = form.querySelector("#card_exp_month")?.value || "";
+    const ano = form.querySelector("#card_exp_year")?.value || "";
+    const cvv = form.querySelector("#card_cvv")?.value || "";
+
+    const valido = validarCamposCartao({
+      number: numero,
+      holder_name: nome,
+      exp_month: mes,
+      exp_year: ano,
+      cvv
+    });
+
+    if (!valido) {
       pagamentoEmProcesso = false;
       return { sucesso: false };
     }
 
     const conteudo_id = Number(pagamentoAtual.conteudo_id);
 
-    return await new Promise((resolve) => {
-      PagarmeCheckout.init(
-        async function success(tokenData) {
-          try {
-            console.log("Token do cartão gerado:", tokenData);
-            console.log("Chaves recebidas:", tokenData ? Object.keys(tokenData) : []);
+    atualizarStatusCartao("🔐 Validando cartão...");
 
-            const card_token =
-              tokenData?.id ||
-              tokenData?.token ||
-              tokenData?.card_token ||
-              tokenData?.pagarmetoken;
-
-            if (!card_token) {
-              alert("Não foi possível gerar o token do cartão.");
-              pagamentoEmProcesso = false;
-              resolve({ sucesso: false });
-              return false;
-            }
-
-            const res = await fetch("/api/pagamento/midia/cartao", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: "Bearer " + localStorage.getItem("token")
-              },
-              body: JSON.stringify({
-                conteudo_id,
-                cpf: pagamentoAtual.cpf,
-                card_token
-              })
-            });
-
-            const data = await res.json();
-
-            if (!res.ok) {
-              alert(data.error || "Erro no pagamento");
-              pagamentoEmProcesso = false;
-              resolve({ sucesso: false });
-              return false;
-            }
-
-            pagamentoAtual.payment_id = data.payment_id || data.order_id || null;
-            pagamentoAtual.message_id = data.message_id || conteudo_id;
-
-            const valorMidia = Number(pagamentoAtual.valor || 0);
-const taxaTransacao = Number((valorMidia * 0.10).toFixed(2));
-const taxaPlataforma = Number((valorMidia * 0.05).toFixed(2));
-const valorTotal = Number(
-  (valorMidia + taxaTransacao + taxaPlataforma).toFixed(2)
-);
-
-const elValorConteudo = document.getElementById("cartaoValorConteudo");
-const elTaxaTransacao = document.getElementById("cartaoTaxaTransacao");
-const elTaxaPlataforma = document.getElementById("cartaoTaxaPlataforma");
-const elValorTotal = document.getElementById("cartaoValorTotal");
-
-if (elValorConteudo) elValorConteudo.innerText = valorBRL(valorMidia);
-if (elTaxaTransacao) elTaxaTransacao.innerText = valorBRL(taxaTransacao);
-if (elTaxaPlataforma) elTaxaPlataforma.innerText = valorBRL(taxaPlataforma);
-if (elValorTotal) elValorTotal.innerText = valorBRL(valorTotal);
-
-            atualizarStatusCartao("⏳ Aguardando confirmação...");
-
-            if (pagamentoAtual.payment_id) {
-              iniciarPollingPagamento(
-                pagamentoAtual.payment_id,
-                pagamentoAtual.message_id,
-                "cartao"
-              );
-            }
-
-            pagamentoEmProcesso = false;
-            resolve({ sucesso: true, aguardando_confirmacao: true });
-            return false;
-          } catch (err) {
-            console.error("Erro no pagamento com cartão:", err);
-            alert("Erro inesperado ao processar cartão");
-            pagamentoEmProcesso = false;
-            resolve({ sucesso: false });
-            return false;
-          }
-        },
-        function fail(error) {
-          console.error("Erro tokenização Pagar.me:", error);
-          alert("Não foi possível validar os dados do cartão.");
-          pagamentoEmProcesso = false;
-          resolve({ sucesso: false });
-        }
-      );
-
-      const form = document.getElementById("formCartao");
-      if (form) {
-        if (typeof form.requestSubmit === "function") {
-          form.requestSubmit();
-        } else {
-          form.dispatchEvent(
-            new Event("submit", { bubbles: true, cancelable: true })
-          );
-        }
-      } else {
-        console.error("formCartao não encontrado");
-        pagamentoEmProcesso = false;
-        resolve({ sucesso: false });
-      }
+    const card_token = await tokenizarCartaoDireto({
+      number: numero,
+      holder_name: nome,
+      exp_month: mes,
+      exp_year: ano,
+      cvv
     });
+
+    atualizarStatusCartao("💳 Processando pagamento...");
+
+    const res = await fetch("/api/pagamento/midia/cartao", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + localStorage.getItem("token")
+      },
+      body: JSON.stringify({
+        conteudo_id,
+        cpf: pagamentoAtual.cpf,
+        card_token
+      })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || "Erro no pagamento");
+      pagamentoEmProcesso = false;
+      return { sucesso: false };
+    }
+
+    pagamentoAtual.payment_id = data.payment_id || data.order_id || null;
+    pagamentoAtual.message_id = data.message_id || conteudo_id;
+
+    const valorMidia = Number(pagamentoAtual.valor || 0);
+    const taxaTransacao = Number((valorMidia * 0.10).toFixed(2));
+    const taxaPlataforma = Number((valorMidia * 0.05).toFixed(2));
+    const valorTotal = Number(
+      (valorMidia + taxaTransacao + taxaPlataforma).toFixed(2)
+    );
+
+    const elValorConteudo = document.getElementById("cartaoValorConteudo");
+    const elTaxaTransacao = document.getElementById("cartaoTaxaTransacao");
+    const elTaxaPlataforma = document.getElementById("cartaoTaxaPlataforma");
+    const elValorTotal = document.getElementById("cartaoValorTotal");
+
+    if (elValorConteudo) elValorConteudo.innerText = valorBRL(valorMidia);
+    if (elTaxaTransacao) elTaxaTransacao.innerText = valorBRL(taxaTransacao);
+    if (elTaxaPlataforma) elTaxaPlataforma.innerText = valorBRL(taxaPlataforma);
+    if (elValorTotal) elValorTotal.innerText = valorBRL(valorTotal);
+
+    atualizarStatusCartao("⏳ Aguardando confirmação...");
+
+    if (pagamentoAtual.payment_id) {
+      iniciarPollingPagamento(
+        pagamentoAtual.payment_id,
+        pagamentoAtual.message_id,
+        "cartao"
+      );
+    }
+
+    pagamentoEmProcesso = false;
+    return { sucesso: true, aguardando_confirmacao: true };
   } catch (err) {
-    console.error("Erro cartão:", err);
-    alert("Erro inesperado");
+    console.error("Erro no pagamento com cartão:", err);
+    alert(err.message || "Erro inesperado ao processar cartão");
+    atualizarStatusCartao("❌ Falha no pagamento");
     pagamentoEmProcesso = false;
     return { sucesso: false };
   }
 }
+
+    
 
 function fecharPagamento() {
   const modal = document.getElementById("paymentModal");

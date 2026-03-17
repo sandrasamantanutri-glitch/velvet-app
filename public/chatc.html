@@ -179,82 +179,79 @@
       </div>
     </div>
 
-    <!-- FORM CARTÃO -->
-    <form id="formCartao" class="cartao-form" data-pagarmecheckout-form>
-      <label for="card_number">Número do cartão</label>
+    <form id="formCartao" class="cartao-form">
+  <label for="card_number">Número do cartão</label>
+  <input
+    type="text"
+    id="card_number"
+    name="card_number"
+    placeholder="0000 0000 0000 0000"
+    autocomplete="cc-number"
+    inputmode="numeric"
+    maxlength="19"
+  >
+  <div id="card_number_error" class="campo-erro-cartao"></div>
+
+  <label for="card_holder">Nome no cartão</label>
+  <input
+    type="text"
+    id="card_holder"
+    name="holder_name"
+    placeholder="Nome impresso no cartão"
+    autocomplete="cc-name"
+  >
+  <div id="card_holder_error" class="campo-erro-cartao"></div>
+
+  <div class="cartao-row">
+    <div class="cartao-field">
+      <label for="card_exp_month">Mês</label>
       <input
         type="text"
-        id="card_number"
-        name="card_number"
-        data-pagarmecheckout-element="number"
-        placeholder="0000 0000 0000 0000"
-        autocomplete="cc-number"
+        id="card_exp_month"
+        name="exp_month"
+        placeholder="MM"
         inputmode="numeric"
-        maxlength="19"
+        maxlength="2"
       >
+      <div id="card_exp_month_error" class="campo-erro-cartao"></div>
+    </div>
 
-      <label for="card_holder">Nome no cartão</label>
+    <div class="cartao-field">
+      <label for="card_exp_year">Ano</label>
       <input
         type="text"
-        id="card_holder"
-        name="holder_name"
-        data-pagarmecheckout-element="holder_name"
-        placeholder="Nome impresso no cartão"
-        autocomplete="cc-name"
+        id="card_exp_year"
+        name="exp_year"
+        placeholder="AAAA"
+        inputmode="numeric"
+        maxlength="4"
       >
+      <div id="card_exp_year_error" class="campo-erro-cartao"></div>
+    </div>
 
-      <div class="cartao-row">
-        <div class="cartao-field">
-          <label for="card_exp_month">Mês</label>
-          <input
-            type="text"
-            id="card_exp_month"
-            name="exp_month"
-            data-pagarmecheckout-element="exp_month"
-            placeholder="MM"
-            inputmode="numeric"
-            maxlength="2"
-          >
-        </div>
-
-        <div class="cartao-field">
-          <label for="card_exp_year">Ano</label>
-          <input
-            type="text"
-            id="card_exp_year"
-            name="exp_year"
-            data-pagarmecheckout-element="exp_year"
-            placeholder="AAAA"
-            inputmode="numeric"
-            maxlength="4"
-          >
-        </div>
-
-        <div class="cartao-field">
-          <label for="card_cvv">CVV</label>
-          <input
-            type="text"
-            id="card_cvv"
-            name="cvv"
-            data-pagarmecheckout-element="cvv"
-            placeholder="123"
-            autocomplete="cc-csc"
-            inputmode="numeric"
-            maxlength="4"
-          >
-        </div>
-      </div>
-
-      <button
-        type="button"
-        id="confirmarPagamento"
-        class="btn-confirmar-desbloqueio"
+    <div class="cartao-field">
+      <label for="card_cvv">CVV</label>
+      <input
+        type="text"
+        id="card_cvv"
+        name="cvv"
+        placeholder="123"
+        autocomplete="cc-csc"
+        inputmode="numeric"
+        maxlength="4"
       >
-        Confirmar desbloqueio
-      </button>
-    </form>
+      <div id="card_cvv_error" class="campo-erro-cartao"></div>
+    </div>
   </div>
-</div>
+
+  <button
+    type="submit"
+    id="confirmarPagamento"
+    class="btn-confirmar-desbloqueio"
+  >
+    Confirmar desbloqueio
+  </button>
+</form>
 
 <div id="modalMidia" class="modal-midia hidden">
 
@@ -280,11 +277,6 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-<script
-  src="https://checkout.pagar.me/v1/tokenizecard.js"
-  data-pagarmecheckout-app-id="pk_oQW43ZaU7JHP">
-</script>
-<script src="/header.js"></script>
 <script src="/chatc.js" defer></script>
 
 

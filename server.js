@@ -7366,7 +7366,7 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
   const client = await db.connect();
 
   try {
-    const { conteudo_id, card_token, fingerprint } = req.body;
+    const { conteudo_id, card_token, fingerprint, cpf, billing_address } = req.body;
     const userId = req.user.id;
 
     if (!conteudo_id || !Number.isInteger(Number(conteudo_id))) {
@@ -7375,6 +7375,11 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
 
     if (!card_token || typeof card_token !== "string") {
       return res.status(400).json({ error: "card_token obrigatório" });
+    }
+
+    const cpfLimpo = String(cpf || "").replace(/\D/g, "");
+    if (cpfLimpo.length !== 11) {
+      return res.status(400).json({ error: "CPF inválido" });
     }
 
     const conteudoId = Number(conteudo_id);
@@ -7388,9 +7393,15 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
 
     const clienteRes = await client.query(
       `
-      SELECT id, bloqueado
-      FROM clientes
-      WHERE user_id = $1
+      SELECT
+        c.id,
+        c.bloqueado,
+        u.email,
+        COALESCE(NULLIF(u.username, ''), split_part(u.email, '@', 1), 'Cliente Velvet') AS nome
+      FROM clientes c
+      JOIN users u ON u.id = c.user_id
+      WHERE c.user_id = $1
+      LIMIT 1
       `,
       [userId]
     );
@@ -7400,7 +7411,12 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
       return res.status(404).json({ error: "Cliente não encontrado" });
     }
 
-    const { id: cliente_id, bloqueado } = clienteRes.rows[0];
+    const {
+      id: cliente_id,
+      bloqueado,
+      email,
+      nome
+    } = clienteRes.rows[0];
 
     if (bloqueado) {
       await client.query("ROLLBACK");
@@ -7484,10 +7500,41 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
     const taxaPlataforma = taxaPlataformaCentavos / 100;
     const total = amount / 100;
 
+    const paymentPayload = {
+      payment_method: "credit_card",
+      credit_card: {
+        card_token,
+        installments: 1,
+        statement_descriptor: "VELVET"
+      },
+      antifraud_enabled: true
+    };
+
+    // billing_address é recomendado/esperado em pedidos com token
+    if (billing_address && typeof billing_address === "object") {
+      paymentPayload.credit_card.billing_address = {
+        line_1: billing_address.line_1,
+        zip_code: String(billing_address.zip_code || "").replace(/\D/g, ""),
+        city: billing_address.city,
+        state: billing_address.state,
+        country: billing_address.country || "BR"
+      };
+
+      if (billing_address.line_2) {
+        paymentPayload.credit_card.billing_address.line_2 = billing_address.line_2;
+      }
+    }
+
     const pagarmeRes = await axios.post(
       "https://api.pagar.me/core/v5/orders",
       {
         closed: true,
+        customer: {
+          name: nome,
+          email: email,
+          document: cpfLimpo,
+          type: "individual"
+        },
         items: [
           {
             amount,
@@ -7496,17 +7543,7 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
             code: `conteudo_${conteudoId}`
           }
         ],
-        payments: [
-          {
-            payment_method: "credit_card",
-            credit_card: {
-              card_token,
-              installments: 1,
-              statement_descriptor: "VELVET"
-            },
-            antifraud_enabled: true
-          }
-        ],
+        payments: [paymentPayload],
         metadata: {
           tipo: "conteudo_cartao",
           message_id: String(conteudoId),
