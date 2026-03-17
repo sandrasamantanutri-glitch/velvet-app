@@ -1527,14 +1527,6 @@ body.role-cliente .msg-modelo .msg-hora {
 
 }
 
-#modalMidia {
-  z-index: 100001 !important;
-}
-
-#modalMidia .modal-midia-box {
-  z-index: 100002 !important;
-}
-
 /* os elementos internos começam escondidos; o JS mostra só o necessário */
 #modalImg,
 #modalVideo,
