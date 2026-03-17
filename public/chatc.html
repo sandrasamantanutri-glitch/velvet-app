@@ -244,6 +244,86 @@
     </div>
   </div>
 
+  <label for="card_phone">Telefone com DDD</label>
+  <input
+    type="text"
+    id="card_phone"
+    name="card_phone"
+    placeholder="(11) 99999-9999"
+    autocomplete="tel"
+    inputmode="numeric"
+    maxlength="15"
+  >
+  <div id="card_phone_error" class="campo-erro-cartao"></div>
+
+  <label for="billing_line_1">Endereço</label>
+  <input
+    type="text"
+    id="billing_line_1"
+    name="billing_line_1"
+    placeholder="Rua, número e bairro"
+    autocomplete="address-line1"
+  >
+  <div id="billing_line_1_error" class="campo-erro-cartao"></div>
+
+  <label for="billing_line_2">Complemento</label>
+  <input
+    type="text"
+    id="billing_line_2"
+    name="billing_line_2"
+    placeholder="Apartamento, bloco, referência (opcional)"
+    autocomplete="address-line2"
+  >
+  <div id="billing_line_2_error" class="campo-erro-cartao"></div>
+
+  <div class="cartao-row">
+    <div class="cartao-field">
+      <label for="billing_zip_code">CEP</label>
+      <input
+        type="text"
+        id="billing_zip_code"
+        name="billing_zip_code"
+        placeholder="00000-000"
+        autocomplete="postal-code"
+        inputmode="numeric"
+        maxlength="9"
+      >
+      <div id="billing_zip_code_error" class="campo-erro-cartao"></div>
+    </div>
+
+    <div class="cartao-field">
+      <label for="billing_city">Cidade</label>
+      <input
+        type="text"
+        id="billing_city"
+        name="billing_city"
+        placeholder="São Paulo"
+        autocomplete="address-level2"
+      >
+      <div id="billing_city_error" class="campo-erro-cartao"></div>
+    </div>
+
+    <div class="cartao-field">
+      <label for="billing_state">Estado</label>
+      <input
+        type="text"
+        id="billing_state"
+        name="billing_state"
+        placeholder="SP"
+        autocomplete="address-level1"
+        maxlength="2"
+      >
+      <div id="billing_state_error" class="campo-erro-cartao"></div>
+    </div>
+  </div>
+
+  <input
+    type="hidden"
+    id="billing_country"
+    name="billing_country"
+    value="BR"
+  >
+
   <button
     type="submit"
     id="confirmarPagamento"
@@ -252,6 +332,7 @@
     Confirmar desbloqueio
   </button>
 </form>
+
 
 <div id="modalMidia" class="modal-midia hidden">
 

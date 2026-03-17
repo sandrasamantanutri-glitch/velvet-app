@@ -139,78 +139,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     }
 
-    const formCartao = document.getElementById("formCartao");
-    const btnConfirmar = document.getElementById("confirmarPagamento");
+    aplicarMascarasCamposCartao();
+    bindFormularioCartao();
 
-    if (formCartao) {
-      formCartao.addEventListener("submit", async (e) => {
-        e.preventDefault();
-
-        if (btnConfirmar) {
-          btnConfirmar.disabled = true;
-          btnConfirmar.innerText = "Processando...";
-        }
-
-        try {
-          const resultado = await pagarComCartao();
-
-          if (!resultado || !resultado.sucesso) {
-            if (btnConfirmar) {
-              btnConfirmar.disabled = false;
-              btnConfirmar.innerText = "Confirmar desbloqueio";
-            }
-            return;
-          }
-
-          if (btnConfirmar) {
-            btnConfirmar.disabled = true;
-            btnConfirmar.innerText = "Aguardando confirmação...";
-          }
-        } catch (err) {
-          console.error("Erro pagamento:", err);
-          alert("Erro ao processar pagamento");
-
-          if (btnConfirmar) {
-            btnConfirmar.disabled = false;
-            btnConfirmar.innerText = "Confirmar desbloqueio";
-          }
-        }
-      });
-    }
-
-    const numero = document.getElementById("card_number");
-    const mes = document.getElementById("card_exp_month");
-    const ano = document.getElementById("card_exp_year");
-    const cvv = document.getElementById("card_cvv");
-
-    if (numero) {
-      numero.addEventListener("input", () => {
-        let v = numero.value.replace(/\D/g, "").slice(0, 19);
-        v = v.replace(/(\d{4})(?=\d)/g, "$1 ");
-        numero.value = v;
-      });
-    }
-
-    if (mes) {
-      mes.addEventListener("input", () => {
-        mes.value = mes.value.replace(/\D/g, "").slice(0, 2);
-      });
-    }
-
-    if (ano) {
-      ano.addEventListener("input", () => {
-        ano.value = ano.value.replace(/\D/g, "").slice(0, 4);
-      });
-    }
-
-    if (cvv) {
-      cvv.addEventListener("input", () => {
-        cvv.value = cvv.value.replace(/\D/g, "").slice(0, 4);
-      });
-    }
   } catch (err) {
     console.error("Erro DOMContentLoaded:", err);
   }
+
 });
 
 
@@ -1402,14 +1337,18 @@ function pagarComPix() {
 //   }
 // }
 
-
 function limparErrosCartao() {
   const ids = [
     "card_number_error",
     "card_holder_error",
     "card_exp_month_error",
     "card_exp_year_error",
-    "card_cvv_error"
+    "card_cvv_error",
+    "card_phone_error",
+    "billing_line_1_error",
+    "billing_zip_code_error",
+    "billing_city_error",
+    "billing_state_error"
   ];
 
   ids.forEach(id => {
@@ -1471,60 +1410,6 @@ function validarCamposCartao({ number, holder_name, exp_month, exp_year, cvv }) 
   return ok;
 }
 
-async function tokenizarCartaoDireto({
-  number,
-  holder_name,
-  exp_month,
-  exp_year,
-  cvv
-}) {
-  const publicKey = "pk_oQW43ZaU7HPVnbj8";
-
-  const res = await fetch(
-    `https://api.pagar.me/core/v5/tokens?appId=${encodeURIComponent(publicKey)}`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        type: "card",
-        card: {
-          type: "credit_card",
-          number: String(number).replace(/\D/g, ""),
-          holder_name: String(holder_name || "").trim(),
-          exp_month: String(exp_month).replace(/\D/g, "").padStart(2, "0"),
-          exp_year: String(exp_year).replace(/\D/g, ""),
-          cvv: String(cvv).replace(/\D/g, "")
-        }
-      })
-    }
-  );
-
-  let data = null;
-  try {
-    data = await res.json();
-  } catch {
-    data = null;
-  }
-
-  if (!res.ok) {
-    const erroApi =
-      data?.message ||
-      data?.error ||
-      data?.errors?.[0]?.message ||
-      "Não foi possível tokenizar o cartão.";
-    throw new Error(erroApi);
-  }
-
-  const card_token = data?.id;
-  if (!card_token) {
-    throw new Error("Token do cartão não retornado.");
-  }
-
-  return card_token;
-}
-
 async function pagarComCartao() {
   const cpf = obterCpfValido();
   if (!cpf) return { sucesso: false };
@@ -1550,11 +1435,12 @@ async function pagarComCartao() {
 
     limparErrosCartao();
 
-    const numero = form.querySelector("#card_number")?.value || "";
-    const nome = form.querySelector("#card_holder")?.value || "";
-    const mes = form.querySelector("#card_exp_month")?.value || "";
-    const ano = form.querySelector("#card_exp_year")?.value || "";
-    const cvv = form.querySelector("#card_cvv")?.value || "";
+    // ===== DADOS DO CARTÃO =====
+    const numero = form.querySelector("#card_number")?.value?.trim() || "";
+    const nome = form.querySelector("#card_holder")?.value?.trim() || "";
+    const mes = form.querySelector("#card_exp_month")?.value?.trim() || "";
+    const ano = form.querySelector("#card_exp_year")?.value?.trim() || "";
+    const cvv = form.querySelector("#card_cvv")?.value?.trim() || "";
 
     const valido = validarCamposCartao({
       number: numero,
@@ -1569,19 +1455,112 @@ async function pagarComCartao() {
       return { sucesso: false };
     }
 
+    // ===== TELEFONE =====
+    const telefoneBruto =
+      form.querySelector("#card_phone")?.value?.trim() ||
+      form.querySelector("#phone")?.value?.trim() ||
+      "";
+
+    const telefoneLimpo = telefoneBruto.replace(/\D/g, "");
+
+    let phone_area_code = "";
+    let phone_number = "";
+
+    if (telefoneLimpo.length === 10) {
+      phone_area_code = telefoneLimpo.slice(0, 2);
+      phone_number = telefoneLimpo.slice(2);
+    } else if (telefoneLimpo.length === 11) {
+      phone_area_code = telefoneLimpo.slice(0, 2);
+      phone_number = telefoneLimpo.slice(2);
+    } else {
+      alert("Informe um telefone válido com DDD.");
+      pagamentoEmProcesso = false;
+      return { sucesso: false };
+    }
+
+    // ===== ENDEREÇO =====
+    const enderecoLinha1 =
+      form.querySelector("#billing_line_1")?.value?.trim() ||
+      form.querySelector("#card_address")?.value?.trim() ||
+      "";
+
+    const enderecoLinha2 =
+      form.querySelector("#billing_line_2")?.value?.trim() ||
+      form.querySelector("#card_address_2")?.value?.trim() ||
+      "";
+
+    const cep =
+      form.querySelector("#billing_zip_code")?.value?.trim() ||
+      form.querySelector("#card_zipcode")?.value?.trim() ||
+      "";
+
+    const cidade =
+      form.querySelector("#billing_city")?.value?.trim() ||
+      form.querySelector("#card_city")?.value?.trim() ||
+      "";
+
+    const estado =
+      form.querySelector("#billing_state")?.value?.trim() ||
+      form.querySelector("#card_state")?.value?.trim() ||
+      "";
+
+    const pais =
+      form.querySelector("#billing_country")?.value?.trim() ||
+      "BR";
+
+    const zipCodeLimpo = cep.replace(/\D/g, "");
+
+    if (!enderecoLinha1) {
+      alert("Informe o endereço.");
+      pagamentoEmProcesso = false;
+      return { sucesso: false };
+    }
+
+    if (!zipCodeLimpo || zipCodeLimpo.length < 8) {
+      alert("Informe um CEP válido.");
+      pagamentoEmProcesso = false;
+      return { sucesso: false };
+    }
+
+    if (!cidade) {
+      alert("Informe a cidade.");
+      pagamentoEmProcesso = false;
+      return { sucesso: false };
+    }
+
+    if (!estado || estado.length < 2) {
+      alert("Informe o estado.");
+      pagamentoEmProcesso = false;
+      return { sucesso: false };
+    }
+
     const conteudo_id = Number(pagamentoAtual.conteudo_id);
 
-    atualizarStatusCartao("🔐 Validando cartão...");
-
-    const card_token = await tokenizarCartaoDireto({
-      number: numero,
-      holder_name: nome,
-      exp_month: mes,
-      exp_year: ano,
-      cvv
-    });
-
     atualizarStatusCartao("💳 Processando pagamento...");
+
+    const payload = {
+      conteudo_id,
+      cpf: pagamentoAtual.cpf,
+      phone_area_code,
+      phone_number,
+      billing_address: {
+        line_1: enderecoLinha1,
+        zip_code: zipCodeLimpo,
+        city: cidade,
+        state: estado.toUpperCase(),
+        country: pais.toUpperCase(),
+        ...(enderecoLinha2 ? { line_2: enderecoLinha2 } : {})
+      },
+
+      // PSP = dados brutos do cartão
+      card_number: numero.replace(/\s/g, ""),
+      card_holder_name: nome,
+      card_exp_month: Number(mes),
+      card_exp_year: Number(ano),
+      card_cvv: cvv.replace(/\D/g, "")
+    };
+
+    console.log("Payload PSP /api/pagamento/midia/cartao:", payload);
 
     const res = await fetch("/api/pagamento/midia/cartao", {
       method: "POST",
@@ -1589,17 +1568,19 @@ async function pagarComCartao() {
         "Content-Type": "application/json",
         Authorization: "Bearer " + localStorage.getItem("token")
       },
-      body: JSON.stringify({
-        conteudo_id,
-        cpf: pagamentoAtual.cpf,
-        card_token
-      })
+      body: JSON.stringify(payload)
     });
 
     const data = await res.json();
 
     if (!res.ok) {
-      alert(data.error || "Erro no pagamento");
+      console.error("Erro retorno pagamento PSP:", data);
+      alert(
+        data?.error ||
+          data?.detalhe ||
+          "Erro no pagamento com cartão."
+      );
+      atualizarStatusCartao("❌ Falha no pagamento");
       pagamentoEmProcesso = false;
       return { sucesso: false };
     }
@@ -1644,7 +1625,6 @@ async function pagarComCartao() {
     return { sucesso: false };
   }
 }
-
     
 
 function fecharPagamento() {
@@ -1662,29 +1642,23 @@ function fecharPagamento() {
     "card_holder",
     "card_exp_month",
     "card_exp_year",
-    "card_cvv"
+    "card_cvv",
+    "card_phone",
+    "billing_line_1",
+    "billing_line_2",
+    "billing_zip_code",
+    "billing_city",
+    "billing_state"
   ];
 
   campos.forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.value = "";
   });
+
+  limparErrosCartao();
 }
 
-let pollingPagamento = null;
-let pollingTimeout = null;
-
-function pararPollingPagamento() {
-  if (pollingPagamento) {
-    clearInterval(pollingPagamento);
-    pollingPagamento = null;
-  }
-
-  if (pollingTimeout) {
-    clearTimeout(pollingTimeout);
-    pollingTimeout = null;
-  }
-}
 
 function atualizarStatusPix(texto, classe = "aguardando", detalhe = "") {
   const statusPix = document.getElementById("pixStatus");
@@ -2017,6 +1991,52 @@ function abrirModalCartao() {
 
   document.getElementById("escolhaPagamento").classList.add("hidden");
   document.getElementById("paymentModal").classList.remove("hidden");
+
+  aplicarMascarasCamposCartao();
+  bindFormularioCartao();
+}
+
+function bindFormularioCartao() {
+  const formCartao = document.getElementById("formCartao");
+  const btnConfirmar = document.getElementById("confirmarPagamento");
+
+  if (!formCartao || formCartao.dataset.bound === "true") return;
+
+  formCartao.dataset.bound = "true";
+
+  formCartao.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    if (btnConfirmar) {
+      btnConfirmar.disabled = true;
+      btnConfirmar.innerText = "Processando...";
+    }
+
+    try {
+      const resultado = await pagarComCartao();
+
+      if (!resultado || !resultado.sucesso) {
+        if (btnConfirmar) {
+          btnConfirmar.disabled = false;
+          btnConfirmar.innerText = "Confirmar desbloqueio";
+        }
+        return;
+      }
+
+      if (btnConfirmar) {
+        btnConfirmar.disabled = true;
+        btnConfirmar.innerText = "Aguardando confirmação...";
+      }
+    } catch (err) {
+      console.error("Erro pagamento:", err);
+      alert("Erro ao processar pagamento");
+
+      if (btnConfirmar) {
+        btnConfirmar.disabled = false;
+        btnConfirmar.innerText = "Confirmar desbloqueio";
+      }
+    }
+  });
 }
 
 
@@ -2096,6 +2116,77 @@ function esconderToastPagamento() {
   const el = document.getElementById("toastPagamento");
   if (!el) return;
   el.className = "toast-pagamento hidden";
+}
+
+function aplicarMascarasCamposCartao() {
+  const numero = document.getElementById("card_number");
+  const mes = document.getElementById("card_exp_month");
+  const ano = document.getElementById("card_exp_year");
+  const cvv = document.getElementById("card_cvv");
+  const phone = document.getElementById("card_phone");
+  const zip = document.getElementById("billing_zip_code");
+  const state = document.getElementById("billing_state");
+
+  if (numero) {
+    numero.addEventListener("input", () => {
+      let v = numero.value.replace(/\D/g, "").slice(0, 19);
+      v = v.replace(/(\d{4})(?=\d)/g, "$1 ");
+      numero.value = v;
+    });
+  }
+
+  if (mes) {
+    mes.addEventListener("input", () => {
+      mes.value = mes.value.replace(/\D/g, "").slice(0, 2);
+    });
+  }
+
+  if (ano) {
+    ano.addEventListener("input", () => {
+      ano.value = ano.value.replace(/\D/g, "").slice(0, 4);
+    });
+  }
+
+  if (cvv) {
+    cvv.addEventListener("input", () => {
+      cvv.value = cvv.value.replace(/\D/g, "").slice(0, 4);
+    });
+  }
+
+  if (phone) {
+    phone.addEventListener("input", e => {
+      let v = e.target.value.replace(/\D/g, "").slice(0, 11);
+
+      if (v.length > 10) {
+        v = v.replace(/^(\d{2})(\d{5})(\d{0,4}).*/, "($1) $2-$3");
+      } else if (v.length > 6) {
+        v = v.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, "($1) $2-$3");
+      } else if (v.length > 2) {
+        v = v.replace(/^(\d{2})(\d{0,5}).*/, "($1) $2");
+      } else if (v.length > 0) {
+        v = v.replace(/^(\d*)/, "($1");
+      }
+
+      e.target.value = v;
+    });
+  }
+
+  if (zip) {
+    zip.addEventListener("input", e => {
+      let v = e.target.value.replace(/\D/g, "").slice(0, 8);
+      if (v.length > 5) v = v.replace(/^(\d{5})(\d{0,3}).*/, "$1-$2");
+      e.target.value = v;
+    });
+  }
+
+  if (state) {
+    state.addEventListener("input", e => {
+      e.target.value = e.target.value
+        .replace(/[^a-zA-Z]/g, "")
+        .toUpperCase()
+        .slice(0, 2);
+    });
+  }
 }
 
 // apenas log

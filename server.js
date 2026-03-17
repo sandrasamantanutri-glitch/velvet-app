@@ -7374,107 +7374,84 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
     console.log("🔥 INICIO /api/pagamento/midia/cartao");
     console.log("requestId:", requestId);
     console.log("timestamp:", new Date().toISOString());
-    console.log("originalUrl:", req.originalUrl);
-    console.log("method:", req.method);
-    console.log("headers content-type:", req.headers["content-type"]);
-    console.log("headers user-agent:", req.headers["user-agent"]);
-    console.log("headers origin:", req.headers["origin"]);
-    console.log("headers referer:", req.headers["referer"]);
-    console.log("headers x-forwarded-for:", req.headers["x-forwarded-for"]);
-    console.log("socket remoteAddress:", req.socket?.remoteAddress || null);
     console.log("BODY bruto:", req.body);
     console.log("USER bruto:", req.user);
 
     client = await db.connect();
     console.log("✅ db.connect OK");
 
-const {
-  conteudo_id,
-  card_token,
-  fingerprint,
-  cpf,
-  billing_address,
-  phone_area_code,
-  phone_number
-} = req.body || {};
+    const {
+      conteudo_id,
+      fingerprint,
+      cpf,
+      billing_address,
+      phone_area_code,
+      phone_number,
+
+      // PSP
+      card_id,
+
+      // se vierem dados brutos do cartão
+      card_number,
+      card_holder_name,
+      card_exp_month,
+      card_exp_year,
+      card_cvv,
+
+      // legado - vamos rejeitar
+      card_token
+    } = req.body || {};
+
     const userId = req.user?.id;
 
-    console.log("----- DADOS EXTRAIDOS -----");
-    console.log("conteudo_id:", conteudo_id, "| tipo:", typeof conteudo_id);
-    console.log(
-      "card_token existe?:",
-      !!card_token,
-      "| tipo:",
-      typeof card_token,
-      "| length:",
-      typeof card_token === "string" ? card_token.length : null
-    );
-    console.log("fingerprint:", fingerprint, "| tipo:", typeof fingerprint);
-    console.log("cpf recebido:", cpf, "| tipo:", typeof cpf);
-    console.log("billing_address recebido:", billing_address);
-    console.log("userId:", userId);
-
     if (!userId) {
-      console.error("❌ req.user.id não encontrado");
       return res.status(401).json({ error: "Usuário não autenticado" });
     }
 
     if (!conteudo_id || !Number.isInteger(Number(conteudo_id))) {
-      console.error("❌ conteudo_id inválido:", conteudo_id);
       return res.status(400).json({ error: "conteudo_id inválido" });
     }
 
-    if (!card_token || typeof card_token !== "string") {
-      console.error("❌ card_token inválido:", card_token);
-      return res.status(400).json({ error: "card_token obrigatório" });
+    // PSP: não usar card_token nessa rota
+    if (card_token) {
+      return res.status(400).json({
+        error:
+          "Sua conta é PSP. Esta rota não aceita card_token. Envie card_id ou os dados completos do cartão."
+      });
     }
 
     const cpfLimpo = String(cpf || "").replace(/\D/g, "");
-    console.log("cpfLimpo:", cpfLimpo, "| length:", cpfLimpo.length);
-
     if (cpfLimpo.length !== 11) {
-      console.error("❌ CPF inválido após limpeza:", cpfLimpo);
       return res.status(400).json({ error: "CPF inválido" });
     }
 
     const conteudoId = Number(conteudo_id);
-    console.log("conteudoId normalizado:", conteudoId);
 
     const ip =
       req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
       req.socket?.remoteAddress ||
       null;
 
-    console.log("IP resolvido:", ip);
-
-    console.log("----- BEGIN TRANSACTION -----");
     await client.query("BEGIN");
     console.log("✅ BEGIN OK");
 
-    console.log("----- BUSCANDO CLIENTE -----");
-    const clienteQuery = `
+    const clienteRes = await client.query(
+      `
       SELECT
         c.id,
         c.bloqueado,
-        u.email,
-        split_part(u.email, '@', 1) AS nome
+        COALESCE(NULLIF(TRIM(c.nome), ''), NULLIF(TRIM(u.nome), ''), split_part(u.email, '@', 1)) AS nome,
+        u.email
       FROM clientes c
       JOIN users u ON u.id = c.user_id
       WHERE c.user_id = $1
       LIMIT 1
-    `;
-    console.log("clienteQuery:", clienteQuery);
-    console.log("clienteQuery params:", [userId]);
-
-    const clienteRes = await client.query(clienteQuery, [userId]);
-
-    console.log("clienteRes.rowCount:", clienteRes.rowCount);
-    console.log("clienteRes.rows:", clienteRes.rows);
+      `,
+      [userId]
+    );
 
     if (!clienteRes.rowCount) {
-      console.error("❌ Cliente não encontrado para userId:", userId);
       await client.query("ROLLBACK");
-      console.log("↩️ ROLLBACK OK");
       return res.status(404).json({ error: "Cliente não encontrado" });
     }
 
@@ -7485,245 +7462,244 @@ const {
       nome
     } = clienteRes.rows[0];
 
-    console.log("cliente_id:", cliente_id);
-    console.log("bloqueado:", bloqueado);
-    console.log("email:", email);
-    console.log("nome:", nome);
-
     if (bloqueado) {
-      console.error("❌ Conta bloqueada para cliente_id:", cliente_id);
       await client.query("ROLLBACK");
-      console.log("↩️ ROLLBACK OK");
       return res.status(403).json({ error: "Conta bloqueada." });
     }
 
-    console.log("----- BUSCANDO MESSAGE/CONTEUDO -----");
-    const messageQuery = `
+    const messageRes = await client.query(
+      `
       SELECT preco, modelo_id
       FROM messages
       WHERE id = $1
         AND cliente_id = $2
       LIMIT 1
-    `;
-    console.log("messageQuery:", messageQuery);
-    console.log("messageQuery params:", [conteudoId, cliente_id]);
-
-    const messageRes = await client.query(messageQuery, [conteudoId, cliente_id]);
-
-    console.log("messageRes.rowCount:", messageRes.rowCount);
-    console.log("messageRes.rows:", messageRes.rows);
+      `,
+      [conteudoId, cliente_id]
+    );
 
     if (!messageRes.rowCount) {
-      console.error("❌ Conteúdo não encontrado para conteudoId/cliente_id:", {
-        conteudoId,
-        cliente_id
-      });
       await client.query("ROLLBACK");
-      console.log("↩️ ROLLBACK OK");
       return res.status(404).json({ error: "Conteúdo não encontrado" });
     }
 
     const { preco, modelo_id } = messageRes.rows[0];
 
-    console.log("preco bruto do banco:", preco, "| tipo:", typeof preco);
-    console.log("modelo_id:", modelo_id);
-
     if (!preco || Number(preco) <= 0) {
-      console.error("❌ Conteúdo sem preço válido:", preco);
       await client.query("ROLLBACK");
-      console.log("↩️ ROLLBACK OK");
-      return res.status(400).json({
-        error: "Conteúdo não está à venda."
-      });
+      return res.status(400).json({ error: "Conteúdo não está à venda." });
     }
 
-    console.log("----- VERIFICANDO JA COMPRADO -----");
-    const jaCompradoQuery = `
+    const jaComprado = await client.query(
+      `
       SELECT 1
       FROM conteudo_pacotes
       WHERE message_id = $1
         AND cliente_id = $2
         AND status = 'pago'
       LIMIT 1
-    `;
-    console.log("jaCompradoQuery:", jaCompradoQuery);
-    console.log("jaCompradoQuery params:", [conteudoId, cliente_id]);
-
-    const jaComprado = await client.query(jaCompradoQuery, [conteudoId, cliente_id]);
-
-    console.log("jaComprado.rowCount:", jaComprado.rowCount);
-    console.log("jaComprado.rows:", jaComprado.rows);
+      `,
+      [conteudoId, cliente_id]
+    );
 
     if (jaComprado.rowCount > 0) {
-      console.error("❌ Conteúdo já adquirido:", { conteudoId, cliente_id });
       await client.query("ROLLBACK");
-      console.log("↩️ ROLLBACK OK");
-      return res.status(400).json({
-        error: "Conteúdo já adquirido."
-      });
+      return res.status(400).json({ error: "Conteúdo já adquirido." });
     }
 
-    console.log("----- VERIFICANDO PAGAMENTO PENDENTE -----");
-    const pedidoPendenteQuery = `
+    const pedidoPendente = await client.query(
+      `
       SELECT 1
       FROM pagamentos_cartao
       WHERE cliente_id = $1
         AND conteudo_id = $2
         AND status IN ('iniciado', 'pending', 'processing', 'pendente')
       LIMIT 1
-    `;
-    console.log("pedidoPendenteQuery:", pedidoPendenteQuery);
-    console.log("pedidoPendenteQuery params:", [cliente_id, conteudoId]);
-
-    const pedidoPendente = await client.query(pedidoPendenteQuery, [
-      cliente_id,
-      conteudoId
-    ]);
-
-    console.log("pedidoPendente.rowCount:", pedidoPendente.rowCount);
-    console.log("pedidoPendente.rows:", pedidoPendente.rows);
+      `,
+      [cliente_id, conteudoId]
+    );
 
     if (pedidoPendente.rowCount > 0) {
-      console.error("❌ Já existe pagamento pendente:", { cliente_id, conteudoId });
       await client.query("ROLLBACK");
-      console.log("↩️ ROLLBACK OK");
       return res.status(400).json({
         error: "Já existe um pagamento em processamento para este conteúdo."
       });
     }
 
-    console.log("----- CALCULOS FINANCEIROS -----");
     const valorCentavos = Math.round(Number(preco) * 100);
     const taxaTransacaoCentavos = Math.round(valorCentavos * 0.10);
     const taxaPlataformaCentavos = Math.round(valorCentavos * 0.05);
-
     const amount =
       valorCentavos +
       taxaTransacaoCentavos +
       taxaPlataformaCentavos;
+
+    if (!Number.isInteger(amount) || amount <= 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Valor do pagamento inválido." });
+    }
 
     const valorBase = valorCentavos / 100;
     const taxaTransacao = taxaTransacaoCentavos / 100;
     const taxaPlataforma = taxaPlataformaCentavos / 100;
     const total = amount / 100;
 
-    console.log("valorCentavos:", valorCentavos);
-    console.log("taxaTransacaoCentavos:", taxaTransacaoCentavos);
-    console.log("taxaPlataformaCentavos:", taxaPlataformaCentavos);
-    console.log("amount:", amount);
-    console.log("valorBase:", valorBase);
-    console.log("taxaTransacao:", taxaTransacao);
-    console.log("taxaPlataforma:", taxaPlataforma);
-    console.log("total:", total);
+    // billing obrigatório e sem fallback fake
+    if (
+      !billing_address ||
+      !billing_address.line_1 ||
+      !billing_address.zip_code ||
+      !billing_address.city ||
+      !billing_address.state ||
+      !billing_address.country
+    ) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        error: "billing_address incompleto"
+      });
+    }
 
- console.log("----- MONTANDO paymentPayload -----");
+    const billingAddress = {
+      line_1: String(billing_address.line_1).trim(),
+      zip_code: String(billing_address.zip_code).replace(/\D/g, ""),
+      city: String(billing_address.city).trim(),
+      state: String(billing_address.state).trim(),
+      country: String(billing_address.country).trim().toUpperCase()
+    };
 
-const billingAddress = {
-  line_1: billing_address?.line_1 || "Rua Exemplo, 100",
-  zip_code: String(billing_address?.zip_code || "01310930").replace(/\D/g, ""),
-  city: billing_address?.city || "Sao Paulo",
-  state: billing_address?.state || "SP",
-  country: billing_address?.country || "BR"
-};
+    if (billing_address.line_2) {
+      billingAddress.line_2 = String(billing_address.line_2).trim();
+    }
 
-if (billing_address?.line_2) {
-  billingAddress.line_2 = billing_address.line_2;
-}
+    if (billingAddress.zip_code.length < 8) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "CEP inválido." });
+    }
 
-const paymentPayload = {
-  payment_method: "credit_card",
-  amount, // <- importante
-  credit_card: {
-    installments: 1,
-    statement_descriptor: "VELVET",
-    operation_type: "auth_and_capture",
-    card_token,
-    billing_address: billingAddress
-  },
-  antifraud_enabled: true
-};
+    const areaCode = String(phone_area_code || "").replace(/\D/g, "");
+    const phoneNumber = String(phone_number || "").replace(/\D/g, "");
 
-console.log(
-  "paymentPayload FINAL:",
-  JSON.stringify(paymentPayload, null, 2)
-);
+    if (!areaCode || areaCode.length < 2 || !phoneNumber || phoneNumber.length < 8) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Telefone inválido." });
+    }
 
-const pagarmeBody = {
-  closed: true,
-  customer: {
-    name: nome,
-    email,
-    document: cpfLimpo,
-    type: "individual",
-    address: billingAddress,
-    phones: {
-      mobile_phone: {
-        country_code: "55",
-        area_code: String(phone_area_code || "11").replace(/\D/g, ""),
-number: String(phone_number || "999999999").replace(/\D/g, "")
+    const nomeCompleto = String(nome || "").trim();
+    if (!nomeCompleto || nomeCompleto.length < 3) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Nome do cliente inválido." });
+    }
+
+    if (!email || !String(email).includes("@")) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "E-mail do cliente inválido." });
+    }
+
+    let creditCardNode = null;
+
+    // opção 1: cartão salvo
+    if (card_id && typeof card_id === "string") {
+      creditCardNode = {
+        installments: 1,
+        statement_descriptor: "VELVET",
+        operation_type: "auth_and_capture",
+        card_id: card_id.trim(),
+        billing_address: billingAddress
+      };
+    } else {
+      // opção 2: dados brutos do cartão
+      const number = String(card_number || "").replace(/\s+/g, "");
+      const holderName = String(card_holder_name || "").trim();
+      const expMonth = Number(card_exp_month);
+      const expYear = Number(card_exp_year);
+      const cvv = String(card_cvv || "").replace(/\D/g, "");
+
+      if (!number || !holderName || !expMonth || !expYear || !cvv) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          error:
+            "Para PSP, envie card_id ou os dados completos do cartão (number, holder_name, exp_month, exp_year, cvv)."
+        });
       }
+
+      creditCardNode = {
+        installments: 1,
+        statement_descriptor: "VELVET",
+        operation_type: "auth_and_capture",
+        card: {
+          number,
+          holder_name: holderName,
+          exp_month: expMonth,
+          exp_year: expYear,
+          cvv,
+          billing_address: billingAddress
+        }
+      };
     }
-  },
-  items: [
-    {
+
+    const paymentPayload = {
+      payment_method: "credit_card",
       amount,
-      description: "Conteúdo premium",
-      quantity: 1,
-      code: `conteudo_${conteudoId}`
-    }
-  ],
-  payments: [paymentPayload],
-  metadata: {
-    tipo: "conteudo_cartao",
-    message_id: String(conteudoId),
-    cliente_id: String(cliente_id),
-    modelo_id: String(modelo_id),
-    valor_midia: String(valorBase),
-    taxa_transacao: String(taxaTransacao),
-    taxa_plataforma: String(taxaPlataforma),
-    valor_total: String(total),
-    aceite_ip: ip || ""
-  }
-};
+      credit_card: creditCardNode,
+      antifraud_enabled: true
+    };
 
-console.log(
-  "pagarmeBody FINAL:",
-  JSON.stringify(pagarmeBody, null, 2)
-);
+    const pagarmeBody = {
+      closed: true,
+      customer: {
+        name: nomeCompleto,
+        email: String(email).trim().toLowerCase(),
+        document: cpfLimpo,
+        type: "individual",
+        address: billingAddress,
+        phones: {
+          mobile_phone: {
+            country_code: "55",
+            area_code: areaCode,
+            number: phoneNumber
+          }
+        }
+      },
+      items: [
+        {
+          amount,
+          description: "Conteúdo premium",
+          quantity: 1,
+          code: `conteudo_${conteudoId}`
+        }
+      ],
+      payments: [paymentPayload],
+      metadata: {
+        tipo: "conteudo_cartao",
+        message_id: String(conteudoId),
+        cliente_id: String(cliente_id),
+        modelo_id: String(modelo_id),
+        valor_midia: String(valorBase),
+        taxa_transacao: String(taxaTransacao),
+        taxa_plataforma: String(taxaPlataforma),
+        valor_total: String(total),
+        aceite_ip: ip || ""
+      }
+    };
 
-if (!amount || amount <= 0) {
-  await client.query("ROLLBACK");
-  return res.status(400).json({ error: "Valor do pagamento inválido." });
-}
-
-if (!billingAddress.line_1 || !billingAddress.zip_code) {
-  await client.query("ROLLBACK");
-  return res.status(400).json({ error: "Endereço de cobrança incompleto." });
-}
-
-const pagarmeHeaders = {
-  Authorization:
-    "Basic " +
-    Buffer.from(process.env.PAGARME_SECRET_KEY + ":").toString("base64"),
-  "Content-Type": "application/json"
-};
-
-    console.log("----- ANTES DO AXIOS PAGARME -----");
-    console.log("PAGARME_SECRET_KEY existe?:", !!process.env.PAGARME_SECRET_KEY);
+    console.log("=== PSP BODY FINAL ===");
+    console.log(JSON.stringify(pagarmeBody, null, 2));
+    console.log("payments[0].amount =", pagarmeBody?.payments?.[0]?.amount);
     console.log(
-      "PAGARME_SECRET_KEY prefixo:",
-      process.env.PAGARME_SECRET_KEY
-        ? process.env.PAGARME_SECRET_KEY.slice(0, 10) + "..."
-        : null
+      "payments[0].credit_card.card_id =",
+      pagarmeBody?.payments?.[0]?.credit_card?.card_id || null
     );
-    console.log("URL pagarme:", "https://api.pagar.me/core/v5/orders");
-    console.log("Headers pagarme:", {
-      ...pagarmeHeaders,
-      Authorization: pagarmeHeaders.Authorization
-        ? pagarmeHeaders.Authorization.slice(0, 20) + "..."
-        : null
-    });
-    console.log("Body pagarme:", JSON.stringify(pagarmeBody, null, 2));
+    console.log(
+      "payments[0].credit_card.card.number existe? =",
+      !!pagarmeBody?.payments?.[0]?.credit_card?.card?.number
+    );
+
+    const pagarmeHeaders = {
+      Authorization:
+        "Basic " +
+        Buffer.from(process.env.PAGARME_SECRET_KEY + ":").toString("base64"),
+      "Content-Type": "application/json"
+    };
 
     const pagarmeRes = await axios.post(
       "https://api.pagar.me/core/v5/orders",
@@ -7734,24 +7710,13 @@ const pagarmeHeaders = {
       }
     );
 
-    console.log("----- RESPOSTA PAGARME -----");
-    console.log("pagarmeRes.status:", pagarmeRes.status);
-    console.log("pagarmeRes.statusText:", pagarmeRes.statusText);
-    console.log("pagarmeRes.data:", JSON.stringify(pagarmeRes.data, null, 2));
-
     const order = pagarmeRes.data;
     const charge = order?.charges?.[0] || null;
     const gatewayStatusRaw = charge?.status || order?.status || "pending";
     const gatewayStatus = String(gatewayStatusRaw).toLowerCase();
 
-    console.log("order.id:", order?.id);
-    console.log("charge:", charge);
-    console.log("charge.id:", charge?.id || null);
-    console.log("gatewayStatusRaw:", gatewayStatusRaw);
-    console.log("gatewayStatus normalizado:", gatewayStatus);
-
-    console.log("----- INSERT pagamentos_cartao -----");
-    const insertPagamentoQuery = `
+    await client.query(
+      `
       INSERT INTO pagamentos_cartao
       (
         cliente_id,
@@ -7765,29 +7730,20 @@ const pagarmeHeaders = {
         updated_at
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-    `;
-    const insertPagamentoParams = [
-      cliente_id,
-      modelo_id,
-      conteudoId,
-      order.id,
-      total,
-      "conteudo_cartao",
-      gatewayStatus
-    ];
-    console.log("insertPagamentoQuery:", insertPagamentoQuery);
-    console.log("insertPagamentoParams:", insertPagamentoParams);
-
-    const insertPagamentoRes = await client.query(
-      insertPagamentoQuery,
-      insertPagamentoParams
+      `,
+      [
+        cliente_id,
+        modelo_id,
+        conteudoId,
+        order.id,
+        total,
+        "conteudo_cartao",
+        gatewayStatus
+      ]
     );
 
-    console.log("✅ INSERT pagamentos_cartao OK");
-    console.log("insertPagamentoRes.rowCount:", insertPagamentoRes.rowCount);
-
-    console.log("----- INSERT pagamento_tentativas -----");
-    const insertTentativaQuery = `
+    await client.query(
+      `
       INSERT INTO pagamento_tentativas
       (
         cliente_id,
@@ -7799,31 +7755,20 @@ const pagarmeHeaders = {
         ip
       )
       VALUES ($1, 'cartao', $2, $3, $4, $5, $6)
-    `;
-    const insertTentativaParams = [
-      cliente_id,
-      fingerprint || null,
-      gatewayStatus,
-      order.id,
-      conteudoId,
-      ip
-    ];
-    console.log("insertTentativaQuery:", insertTentativaQuery);
-    console.log("insertTentativaParams:", insertTentativaParams);
-
-    const insertTentativaRes = await client.query(
-      insertTentativaQuery,
-      insertTentativaParams
+      `,
+      [
+        cliente_id,
+        fingerprint || null,
+        gatewayStatus,
+        order.id,
+        conteudoId,
+        ip
+      ]
     );
 
-    console.log("✅ INSERT pagamento_tentativas OK");
-    console.log("insertTentativaRes.rowCount:", insertTentativaRes.rowCount);
-
-    console.log("----- COMMIT -----");
     await client.query("COMMIT");
-    console.log("✅ COMMIT OK");
 
-    const responsePayload = {
+    return res.json({
       order_id: order.id,
       charge_id: charge?.id || null,
       status: gatewayStatus,
@@ -7831,97 +7776,51 @@ const pagarmeHeaders = {
       valorBase,
       taxaTransacao,
       taxaPlataforma
-    };
-
-    console.log("----- RESPONSE FINAL -----");
-    console.log("responsePayload:", responsePayload);
-    console.log("tempo total ms:", Date.now() - startedAt);
-    console.log("✅ FIM /api/pagamento/midia/cartao");
-    console.log("==============================\n");
-
-    return res.json(responsePayload);
+    });
   } catch (err) {
     console.error("\n==============================");
     console.error("💥 ERRO EM /api/pagamento/midia/cartao");
     console.error("requestId:", requestId);
-    console.error("timestamp:", new Date().toISOString());
     console.error("tempo até erro ms:", Date.now() - startedAt);
-
     console.error("err.message:", err.message);
-    console.error("err.name:", err.name);
-    console.error("err.code:", err.code);
-    console.error("err.type:", err.type);
-    console.error("err.stack:", err.stack);
-
-    if (err.config) {
-      console.error("----- AXIOS err.config -----");
-      console.error("url:", err.config.url);
-      console.error("method:", err.config.method);
-      console.error("timeout:", err.config.timeout);
-      console.error("headers:", err.config.headers);
-      console.error("data:", err.config.data);
-    }
 
     if (err.response) {
-      console.error("----- AXIOS err.response -----");
       console.error("response.status:", err.response.status);
-      console.error("response.statusText:", err.response.statusText);
-      console.error("response.headers:", err.response.headers);
       console.error(
         "response.data:",
         typeof err.response.data === "object"
           ? JSON.stringify(err.response.data, null, 2)
           : err.response.data
       );
-    } else {
-      console.error("err.response inexistente");
     }
 
-    if (err.request) {
-      console.error("----- AXIOS err.request existe -----");
-      console.error("request path:", err.request.path);
-      console.error("request method:", err.request.method);
-      console.error("request host:", err.request.host);
-    } else {
-      console.error("err.request inexistente");
+    if (err.config?.data) {
+      console.error("=== AXIOS DATA ENVIADA ===");
+      console.error(
+        typeof err.config.data === "string"
+          ? err.config.data
+          : JSON.stringify(err.config.data, null, 2)
+      );
     }
 
     try {
-      if (client) {
-        console.error("Tentando ROLLBACK...");
-        await client.query("ROLLBACK");
-        console.error("↩️ ROLLBACK OK");
-      } else {
-        console.error("client não existia, rollback não executado");
-      }
+      if (client) await client.query("ROLLBACK");
     } catch (e) {
       console.error("❌ Erro no rollback:", e.message);
-      console.error("rollback stack:", e.stack);
     }
-
-    console.error("BODY no erro:", req.body);
-    console.error("USER no erro:", req.user);
-    console.error("==============================\n");
 
     return res.status(500).json({
       error: "Erro interno ao processar pagamento com cartão",
       detalhe: err.message,
-      code: err.code || null,
       gateway_status: err.response?.status || null,
       gateway_error: err.response?.data || null,
       requestId
     });
   } finally {
-    try {
-      if (client) {
+    if (client) {
+      try {
         client.release();
-        console.log("🔌 client.release OK | requestId:", requestId);
-      } else {
-        console.log("ℹ️ client não foi criado | requestId:", requestId);
-      }
-    } catch (releaseErr) {
-      console.error("❌ Erro ao liberar client:", releaseErr.message);
-      console.error("releaseErr.stack:", releaseErr.stack);
+      } catch (_) {}
     }
   }
 });
