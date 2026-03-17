@@ -1115,7 +1115,7 @@ body.role-cliente .msg-cliente:has(.chat-conteudo) {
 }
 
 .modal-backdrop{
-  position: relative;
+  position: absolute;
   inset: 0;
 
   background: rgba(0,0,0,.50);
@@ -1547,7 +1547,7 @@ body.role-cliente .msg-modelo .msg-hora {
   inset: 0;
   background: rgba(12, 12, 18, 0.45);
   backdrop-filter: blur(3px);
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
   padding: 14px;
@@ -1574,6 +1574,22 @@ body.role-cliente .msg-modelo .msg-hora {
 .popup-pagamento::-webkit-scrollbar-thumb {
   background: rgba(124, 58, 237, 0.28);
   border-radius: 999px;
+}
+
+.modal-close {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: #ece8f8;
+  color: #7c3aed;
+  font-size: 22px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.12);
 }
 
 .popup-pagamento h2 {
