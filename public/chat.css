@@ -1582,7 +1582,7 @@ body.role-cliente .msg-modelo .msg-hora {
 .breakdown-pagamento {
   border: 1px solid #ede9fe;
   border-radius: 14px;
-  padding: 5px 50px;
+  padding: 5px 100px;
   margin-bottom: 20px;
 }
 
@@ -1638,13 +1638,13 @@ body.role-cliente .msg-modelo .msg-hora {
 .modal-close {
   position: absolute;
   top: 15px;
-  right: 20px;
+  right: 25px;
   width: 36px;
   height: 36px;
   border: 0;
   border-radius: 999px;
-  background: #7B2CFF;
-  color: #fff;
+  background: #fff;
+  color: #7B2CFF;
   font-size: 20px;
   cursor: pointer;
 }
@@ -1744,31 +1744,26 @@ body.role-cliente .msg-modelo .msg-hora {
 
 .popup-pagamento h2,
 .modal-content h2 {
-  font-size: 16px;
+  font-size: 22px;
   margin-bottom: 8px;
 }
 
 .total-desbloqueio,
 .valor-total {
   font-size: 14px;
-  margin-bottom: 10px;
-  color: #333;
+  margin-bottom: 15px;
+  color: #5b5565;
 }
 
 .total-desbloqueio strong,
 .valor-total strong {
-  font-size: 24px;
-}
-
-.breakdown-pagamento,
-.resumo-valores {
-  padding: 10px 12px;
-  margin-bottom: 14px;
+  font-size: 14px;
+  color:#5b5565
 }
 
 .form-group label {
-  font-size: 11px;
-  color:#333;
+  font-size: 12px;
+  color:#5b5565;
   text-align: center;
 }
 
@@ -1777,7 +1772,8 @@ body.role-cliente .msg-modelo .msg-hora {
 .popup-pagamento input,
 .popup-pagamento select {
   height: 30px;
-  font-size: 11px;
+  font-size: 12px;
+  border-radius: 10px;
 }
 
 /* botão */
