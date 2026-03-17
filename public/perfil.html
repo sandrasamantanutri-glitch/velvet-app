@@ -121,19 +121,20 @@
       <button class="tab active" data-metodo="pix" onclick="mostrarMetodo('pix')">
         ⚡ Pix
       </button>
-      <button class="tab" data-metodo="cartao" onclick="iniciarCartao()">
-        💳 Cartão
-      </button>
+      <button class="tab" data-metodo="cartao" onclick="mostrarMetodo('cartao')">
+  💳 Cartão
+</button>
     </div>
 
     <!-- ===============================
          DETALHES VIP
     ================================ -->
-    <div class="vip-detalhes hidden">
-      <ul class="vip-beneficios">
-  <span>- Conversar com a criadora no chat,</span><br>
-  <span>- Acessar conteúdos exclusivos, </span><br>
-  <span>- Benefícios e promoções especiais!</span><br>
+<div class="vip-detalhes hidden">
+  <div class="vip-beneficios">
+    <div>- Conversar com a criadora no chat</div>
+    <div>- Acessar conteúdos exclusivos</div>
+    <div>- Benefícios e promoções especiais</div>
+  </div>
       <div class="vip-valores">
         <div class="linha">
           <span>Valor da assinatura:</span>
@@ -231,44 +232,215 @@
 
 </div>
 
-    <!-- ===============================
-         CONTEÚDO DE PAGAMENTO
-    ================================ -->
-    <div class="velvet-content">
-      <!-- PIX -->
-      <div id="conteudoPix" class="metodo">
-        <div id="pixLoading" class="pix-loading hidden"><strong>⏳ Aguarde…</strong></div>
-<button id="btnGerarPix" class="btn-principal">
-  Gerar Código Pix</button>
-        </div>
+ <div class="velvet-content">
+  <!-- PIX -->
+  <div id="conteudoPix" class="metodo">
+    <div id="pixLoading" class="pix-loading hidden">
+      <strong>⏳ Aguarde…</strong>
+    </div>
 
-        <div id="pixSucesso" class="pix-sucesso hidden">
-        <strong>✅ Pagamento confirmado!</strong>
-        </div>
+    <div id="pixAguardando" class="pix-aguardando hidden">
+ <strong>⌛ Aguardando confirmação do pagamento...</strong>
+  <p>Não feche esta janela nem atualize a página até a confirmação.</p>
+</div>
 
-       <img id="pixQr" class="hidden">
-       <input type="text" id="pixCodigo" readonly>
-<button id="btnCopiarPix" class="btn-copiar" onclick="copiarPix()">
-  Copiar código </button>
-      </div>
+    <button id="btnGerarPix" class="btn-principal">
+      Gerar Código Pix
+    </button>
 
-      <!-- CARTÃO -->
-      <div id="conteudoCartao" class="metodo hidden">
-        <div id="cartaoLoading" class="hidden"><strong>Preparando pagamento…</strong></div>
-        <form id="formCartao" class="hidden">
-          <div id="card-element"></div>
-          <button type="submit" class="btn-principal">
-            Confirmar pagamento
-          </button>
-        </form>
-        <div id="cartaoSucesso" class="hidden">
-          <strong>✅ Pagamento confirmado!</strong>
-        </div>
+    <div id="pixSucesso" class="pix-sucesso hidden">
+      <strong>✅ Pagamento confirmado!</strong>
+    </div>
+
+    <img id="pixQr" class="hidden">
+    <input type="text" id="pixCodigo" readonly>
+    <button id="btnCopiarPix" class="btn-copiar" onclick="copiarPix()">
+      Copiar código
+    </button>
+  </div>
+
+<!-- CARTÃO -->
+<div id="conteudoCartao" class="metodo hidden">
+  <div id="cartaoLoading" class="cartao-loading hidden">
+    <strong>⏳ Processando pagamento…</strong>
+     <p>Não feche esta janela nem atualize a página até a confirmação.</p>
+  </div>
+
+  <div id="cartaoSucesso" class="cartao-sucesso hidden">
+    <strong>✅ Pagamento confirmado!</strong>
+  </div>
+
+  <form id="formCartao" class="form-cartao-vip hidden">
+    <div class="linha">
+      <div class="form-group full">
+        <label for="card_holder">Nome no cartão</label>
+        <input
+          type="text"
+          id="card_holder"
+          autocomplete="cc-name"
+          placeholder="Nome como está no cartão"
+        />
+        <small id="card_holder_error" class="cartao-erro"></small>
       </div>
     </div>
 
+    <div class="linha">
+      <div class="form-group full">
+        <label for="card_number">Número do cartão</label>
+        <input
+          type="text"
+          id="card_number"
+          inputmode="numeric"
+          autocomplete="cc-number"
+          placeholder="0000 0000 0000 0000"
+        />
+        <small id="card_number_error" class="cartao-erro"></small>
+      </div>
+    </div>
+
+    <div class="linha">
+      <div class="form-group">
+        <label for="card_exp_month">Mês</label>
+        <input
+          type="text"
+          id="card_exp_month"
+          inputmode="numeric"
+          maxlength="2"
+          autocomplete="cc-exp-month"
+          placeholder="MM"
+        />
+        <small id="card_exp_month_error" class="cartao-erro"></small>
+      </div>
+
+      <div class="form-group">
+        <label for="card_exp_year">Ano</label>
+        <input
+          type="text"
+          id="card_exp_year"
+          inputmode="numeric"
+          maxlength="4"
+          autocomplete="cc-exp-year"
+          placeholder="AAAA"
+        />
+        <small id="card_exp_year_error" class="cartao-erro"></small>
+      </div>
+    </div>
+
+    <div class="linha">
+      <div class="form-group">
+        <label for="card_cvv">CVV</label>
+        <input
+          type="text"
+          id="card_cvv"
+          inputmode="numeric"
+          maxlength="4"
+          autocomplete="cc-csc"
+          placeholder="123"
+        />
+        <small id="card_cvv_error" class="cartao-erro"></small>
+      </div>
+
+      <div class="form-group">
+        <label for="card_phone">Telefone</label>
+        <input
+          type="text"
+          id="card_phone"
+          inputmode="tel"
+          autocomplete="tel"
+          placeholder="(11) 99999-9999"
+        />
+        <small id="card_phone_error" class="cartao-erro"></small>
+      </div>
+    </div>
+
+    <div class="linha">
+      <div class="form-group full">
+        <label for="billing_line_1">Endereço</label>
+        <input
+          type="text"
+          id="billing_line_1"
+          autocomplete="address-line1"
+          placeholder="Rua, número e complemento"
+        />
+        <small id="billing_line_1_error" class="cartao-erro"></small>
+      </div>
+    </div>
+
+    <div class="linha">
+      <div class="form-group full">
+        <label for="billing_line_2">Bairro / complemento extra</label>
+        <input
+          type="text"
+          id="billing_line_2"
+          autocomplete="address-line2"
+          placeholder="Apartamento, bloco, referência (opcional)"
+        />
+      </div>
+    </div>
+
+    <div class="linha">
+      <div class="form-group">
+        <label for="billing_zip_code">CEP</label>
+        <input
+          type="text"
+          id="billing_zip_code"
+          inputmode="numeric"
+          autocomplete="postal-code"
+          placeholder="00000-000"
+        />
+        <small id="billing_zip_code_error" class="cartao-erro"></small>
+      </div>
+
+      <div class="form-group">
+        <label for="billing_city">Cidade</label>
+        <input
+          type="text"
+          id="billing_city"
+          autocomplete="address-level2"
+          placeholder="Cidade"
+        />
+        <small id="billing_city_error" class="cartao-erro"></small>
+      </div>
+    </div>
+
+    <div class="linha">
+      <div class="form-group">
+        <label for="billing_state">Estado</label>
+        <input
+          type="text"
+          id="billing_state"
+          maxlength="2"
+          autocomplete="address-level1"
+          placeholder="UF"
+        />
+        <small id="billing_state_error" class="cartao-erro"></small>
+      </div>
+
+      <div class="form-group">
+        <label for="billing_country">País</label>
+        <input
+          type="text"
+          id="billing_country"
+          value="BR"
+          maxlength="2"
+          placeholder="BR"
+        />
+      </div>
+    </div>
+
+    <button type="submit" id="btnConfirmarCartao" class="btn-principal">
+      Ativar VIP
+    </button>
+  </form>
+</div>
+<div id="cartaoSucesso" class="hidden">
+      <strong>✅ Pagamento confirmado!</strong>
+    </div>
   </div>
 </div>
+
+</div>
+</div> 
 
 <input type="file" id="inputUploadMidia" accept="image/*,video/*" hidden>
 <div class="modelo-footer only-modelo">
@@ -418,8 +590,6 @@ fetch("modals-auth.html")
 
 
 <script src="header.js"></script>
-<script src="https://js.stripe.com/v3/"></script>
-<script>window.STRIPE_PUBLIC_KEY = "pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz";</script>
 <script src="/script.js"></script>
 <script src="/perfil.js"></script>
 <script src="/pag.js"></script>

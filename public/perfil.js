@@ -3,38 +3,40 @@ const role = localStorage.getItem("role");
 
 let modelo_id = null;
 let EH_DONA = false;
+let btnAssinar = null;
 
 if (token && window.io) {
   const socket = io();
   socket.emit("auth", { token });
 }
 
-  const btnAssinar = document.getElementById("btn-assinar");
+function atualizarBotaoVip(expiration_at) {
+  const btn = document.getElementById("btn-assinar");
+  const ofertaCard = document.getElementById("oferta-card");
+  const vipCard = document.getElementById("vip-card");
+  const vipChatBtn = document.getElementById("btn-vip-chat");
 
-  function atualizarBotaoVip(expiration_at){
-
-  const btn = document.getElementById("btnAssinarVip");
-  if(!btn) return;
-
-  btn.innerText = "VIP ativo";
-  btn.disabled = true;
-  btn.classList.add("vip-ativo");
-
-  if(expiration_at){
-
-    const data = new Date(expiration_at);
-    const label = document.getElementById("vipExpira");
-
-    if(label){
-      label.innerText =
-        "VIP até " + data.toLocaleDateString("pt-BR");
-    }
-
+  if (btn) {
+    btn.innerText = "VIP ativo";
+    btn.disabled = true;
+    btn.classList.add("vip-ativo");
+    btn.style.cursor = "default";
   }
 
+  if (ofertaCard) ofertaCard.style.display = "none";
+  if (vipCard) vipCard.classList.remove("hidden");
+
+  if (vipChatBtn) {
+    vipChatBtn.disabled = false;
+  }
+
+  if (expiration_at) {
+    console.log("VIP ativo até:", new Date(expiration_at).toLocaleDateString("pt-BR"));
+  }
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+btnAssinar = document.getElementById("btn-assinar");
 
   // =========================
   // FECHAR POPUPS
@@ -134,7 +136,7 @@ if (!tokenAtual) {
   }
 
   // 💳 ABRIR PAGAMENTO
-  window.abrirFluxoVIP();
+abrirFluxoVIP();
 
 });
 
@@ -502,11 +504,10 @@ async function aplicarRegrasDeAcesso() {
     if (ofertaCard) ofertaCard.style.display = "block";
 
     if (btnAssinar) {
-      btnAssinar.disabled = false;
-      btnAssinar.style.cursor = "not-allowed";
-      btnAssinar.textContent =
-    `Assinar VIP por ${valorBRL(window.OFERTA_ATUAL.valor_promocional)}`;
-    }
+  btnAssinar.disabled = true;
+  btnAssinar.style.cursor = "not-allowed";
+  btnAssinar.textContent = "Este é o seu perfil";
+}
 
     return;
   }
@@ -641,7 +642,6 @@ async function carregarOfertaAtiva() {
       valor_promocional: Number(oferta.valor_promocional),
       desconto_percentual: Number(oferta.desconto_percentual || 0)
     };
-      window.OFERTA_ATUAL = window.OFERTA_ATUAL;
 
     if (descontoEl && window.OFERTA_ATUAL.desconto_percentual > 0) {
       descontoEl.textContent = `Economize ${window.OFERTA_ATUAL.desconto_percentual}%`;
@@ -732,7 +732,8 @@ function abrirFluxoVIP() {
     return;
   }
 
-  window.PAGAMENTO_TIPO_ATUAL = "vip";
+ window.PAGAMENTO_TIPO_ATUAL = "vip";
+mostrarMetodo("pix");
 
   const valorBase = window.OFERTA_ATUAL?.valor_base ?? 20;
   const valorPromocional =
@@ -1117,14 +1118,18 @@ function renderThumb(item){
   return div;
 }
 
-function ativarVip(expiration_at){
-
+function ativarVip(expiration_at) {
   window.__CLIENTE_VIP__ = true;
 
   atualizarBotaoVip(expiration_at);
 
-  liberarMidiasVip();
+  const ofertaCard = document.getElementById("oferta-card");
+  const vipCard = document.getElementById("vip-card");
 
+  if (ofertaCard) ofertaCard.style.display = "none";
+  if (vipCard) vipCard.classList.remove("hidden");
+
+  liberarMidiasVip();
 }
 
 function liberarMidiasVip(){

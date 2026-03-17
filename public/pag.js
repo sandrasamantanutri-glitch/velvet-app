@@ -1,63 +1,36 @@
-localStorage.getItem("token")
-
 window.__CLIENTE_VIP__ = false;
 window.__VIP_READY__ = false;
 
-let elements = null;
-let stripe = null;
-let cardElement;
-let clientSecretAtual = null;
+let pagamentoAtual = window.pagamentoAtual || {};
+let pagamentoEmProcesso = false;
+window.pagamentoAtual = pagamentoAtual;
+window.__PAGAMENTO_CONFIRMADO_ATUAL__ = null;
 
 const PAGARME_PUBLIC_KEY = "pk_oQW43ZaU7HPVnbj8";
 
-function whenSocketReady(cb) {
+function whenSocketReady(cb, { timeoutMs = 8000, intervalMs = 50 } = {}) {
   if (window.socket) {
     cb(window.socket);
     return;
   }
 
+  const startedAt = Date.now();
+
   const interval = setInterval(() => {
     if (window.socket) {
       clearInterval(interval);
       cb(window.socket);
+      return;
     }
-  }, 50);
+
+    if (Date.now() - startedAt >= timeoutMs) {
+      clearInterval(interval);
+      console.warn("Socket não ficou disponível dentro do tempo esperado.");
+    }
+  }, intervalMs);
 }
-formCartao.addEventListener("submit", async (e) => {
-  e.preventDefault();
 
-  const cpf = document
-    .getElementById("cpfPagamento")
-    ?.value
-    ?.replace(/\D/g, "");
 
-  const aceitou_termos =
-    document.getElementById("aceiteTermosPagamento")?.checked;
-
-  if (!cpf || cpf.length !== 11) {
-    alert("Informe um CPF válido.");
-    return;
-  }
-
-  if (!aceitou_termos) {
-    alert("Você precisa aceitar os termos.");
-    return;
-  }
-
-  if (!elements) {
-    alert("Pagamento não inicializado.");
-    return;
-  }
-
-  const { error } = await stripe.confirmPayment({
-    elements,
-    redirect: "if_required"
-  });
-
-  if (error) {
-    alert(error.message);
-  }
-});
 
 function abrirPopupPagamento() {
   const popup = document.getElementById("popupPagamentoVelvet");
@@ -95,8 +68,7 @@ function abrirPopupPagamento() {
 }
 
 function prepararPagamento() {
-
-  // 🔄 limpa resumos visuais antes de preencher
+  // limpa resumos visuais antes de preencher
   document.querySelector(".vip-detalhes")?.classList.add("hidden");
   document.querySelector(".midia-detalhes")?.classList.add("hidden");
 
@@ -104,17 +76,33 @@ function prepararPagamento() {
   // 💎 VIP
   // ===============================
   if (window.PAGAMENTO_TIPO_ATUAL === "vip") {
+    const oferta = window.OFERTA_ATUAL || null;
+    const plano = window.PLANO_VIP_ATUAL || window.MODELO_VIP_ATUAL || null;
 
-if (!window.OFERTA_ATUAL) {
-  console.warn("Sem oferta VIP, usando valor padrão");
-}
+    let valorBase = 0;
+    let valorFinal = 0;
+    let desconto = 0;
 
-    const valorBase  = Number(OFERTA_ATUAL.valor_base);
-    const valorPromo = Number(OFERTA_ATUAL.valor_promocional);
-    const desconto   = valorBase - valorPromo;
+    if (oferta) {
+      valorBase = Number(oferta.valor_base || oferta.valor || 0);
+      valorFinal = Number(
+        oferta.valor_promocional || oferta.valor || valorBase
+      );
+      desconto = Math.max(0, valorBase - valorFinal);
+    } else if (plano) {
+      valorBase = Number(plano.valor || plano.preco || plano.valor_mensal || 0);
+      valorFinal = valorBase;
+      desconto = 0;
+
+      console.warn("Sem oferta VIP, usando valor do plano");
+    } else {
+      console.error("Nem OFERTA_ATUAL nem PLANO_VIP_ATUAL definidos para VIP");
+      return;
+    }
 
     preencherResumoVIP({
       valorBase,
+      valorFinal,
       desconto
     });
 
@@ -126,7 +114,6 @@ if (!window.OFERTA_ATUAL) {
   // 🔥 MÍDIA
   // ===============================
   if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
-
     const midia = window.MIDIA_VENDA_ATUAL;
 
     if (!midia || !midia.preco) {
@@ -144,12 +131,14 @@ if (!window.OFERTA_ATUAL) {
   }
 }
 
-
-function preencherResumoVIP({ valorBase, desconto = 0 }) {
+function preencherResumoVIP({ valorBase = 0, desconto = 0 }) {
   const taxaPerc =
     typeof TAXA_TRANSACAO === "number" ? TAXA_TRANSACAO : 0.15;
 
-  const valorComDesconto = valorBase - desconto;
+  valorBase = Number(valorBase || 0);
+  desconto = Number(desconto || 0);
+
+  const valorComDesconto = Math.max(0, valorBase - desconto);
   const taxa = valorComDesconto * taxaPerc;
   const total = valorComDesconto + taxa;
 
@@ -166,7 +155,8 @@ function preencherResumoVIP({ valorBase, desconto = 0 }) {
     total.toFixed(2).replace(".", ",");
 }
 
-function preencherResumoMidia({ valor, descricao }) {
+function preencherResumoMidia({ valor = 0, descricao = "" }) {
+  valor = Number(valor || 0);
 
   const taxa = valor * 0.15;
   const total = valor + taxa;
@@ -180,10 +170,23 @@ function preencherResumoMidia({ valor, descricao }) {
   document.getElementById("midiaTotal").textContent =
     total.toFixed(2).replace(".", ",");
 
-  document.querySelector(".vip-beneficios").innerHTML = `
+const boxMidia =
+  document.querySelector(".midia-beneficios") ||
+  document.querySelector(".vip-beneficios");
+
+if (boxMidia) {
+  boxMidia.innerHTML = `
     <strong>Conteúdo exclusivo</strong><br>
     ${descricao || "Acesso imediato após pagamento"}
   `;
+  }
+}
+
+function valorBRL(v) {
+  return Number(v || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  });
 }
 
 function mostrarMetodo(tipo) {
@@ -192,18 +195,18 @@ function mostrarMetodo(tipo) {
 
   if (!pix || !cartao) return;
 
-if (tipo === "cartao") {
-  resetarEstadoPix();
+  if (tipo === "cartao") {
+    resetarEstadoPix();
 
-  pix.classList.add("hidden");
-  cartao.classList.remove("hidden");
+    pix.classList.add("hidden");
+    cartao.classList.remove("hidden");
 
-  pagarComCartao({
-    tipo: "vip",
-    modelo_id: window.MODELO_ID_ATUAL,
-    apenasIntent: true
-  });
-}
+    if (window.PAGAMENTO_TIPO_ATUAL === "vip") {
+      iniciarCartaoVip();
+    } else if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
+      iniciarCartaoMidia();
+    }
+  }
 
   if (tipo === "pix") {
     resetarEstadoCartao();
@@ -211,45 +214,341 @@ if (tipo === "cartao") {
     pix.classList.remove("hidden");
   }
 
-document.querySelectorAll(".velvet-tabs .tab").forEach(tab => {
-  tab.classList.remove("active");
-});
+  document.querySelectorAll(".velvet-tabs .tab").forEach(tab => {
+    tab.classList.remove("active");
+  });
 
-const abaAtiva = document.querySelector(
-  `.velvet-tabs .tab[data-metodo="${tipo}"]`
-);
+  const abaAtiva = document.querySelector(
+    `.velvet-tabs .tab[data-metodo="${tipo}"]`
+  );
 
-abaAtiva?.classList.add("active");
+  abaAtiva?.classList.add("active");
 }
 
 
-// function montarStripeVazio() {
-//   if (cardElement) return;
-
-//   initStripe();
-
-//   elements = stripe.elements();
-//   cardElement = elements.create("payment");
-//   cardElement.mount("#card-element");
-// }
-
-function montarFormularioCartao() {
-
+function montarFormularioCartao({ limpar = true } = {}) {
   const form = document.getElementById("formCartao");
-
   if (!form) return;
 
   form.classList.remove("hidden");
 
-  const numero = document.getElementById("card_number");
-  const nome   = document.getElementById("card_holder");
-  const validade = document.getElementById("card_expiration");
-  const cvv = document.getElementById("card_cvv");
+  if (!limpar) return;
 
-  if (numero) numero.value = "";
-  if (nome) nome.value = "";
-  if (validade) validade.value = "";
-  if (cvv) cvv.value = "";
+  const campos = [
+    "card_number",
+    "card_holder",
+    "card_exp_month",
+    "card_exp_year",
+    "card_cvv",
+    "card_phone",
+    "billing_line_1",
+    "billing_line_2",
+    "billing_zip_code",
+    "billing_city",
+    "billing_state",
+    "billing_country"
+  ];
+
+  campos.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+}
+
+function obterCpfValido() {
+  const input =
+    document.getElementById("cpfPagamento") ||
+    document.getElementById("cpfEscolha");
+
+  if (!input) {
+    alert("Campo de CPF não encontrado.");
+    return null;
+  }
+
+  const cpf = String(input.value || "").replace(/\D/g, "");
+
+  if (cpf.length !== 11) {
+    alert("Informe um CPF válido para continuar.");
+    input.focus();
+    return null;
+  }
+
+  return cpf;
+}
+
+function atualizarStatusCartao(texto) {
+  const btn =
+    document.getElementById("btnConfirmarCartao") ||
+    document.getElementById("confirmarPagamento");
+
+  if (btn) btn.innerText = texto;
+}
+
+function limparErrosCartao() {
+  const ids = [
+    "card_number_error",
+    "card_holder_error",
+    "card_exp_month_error",
+    "card_exp_year_error",
+    "card_cvv_error",
+    "card_phone_error",
+    "billing_line_1_error",
+    "billing_zip_code_error",
+    "billing_city_error",
+    "billing_state_error"
+  ];
+
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = "";
+  });
+}
+
+function mostrarErroCartao(campo, mensagem) {
+  const mapa = {
+    card_number: "card_number_error",
+    holder_name: "card_holder_error",
+    exp_month: "card_exp_month_error",
+    exp_year: "card_exp_year_error",
+    cvv: "card_cvv_error",
+    phone: "card_phone_error",
+    billing_line_1: "billing_line_1_error",
+    billing_zip_code: "billing_zip_code_error",
+    billing_city: "billing_city_error",
+    billing_state: "billing_state_error"
+  };
+
+  const el = document.getElementById(mapa[campo]);
+  if (el) el.innerText = mensagem;
+}
+
+function validarCamposCartao({ number, holder_name, exp_month, exp_year, cvv }) {
+  let ok = true;
+
+  limparErrosCartao();
+
+  const numeroLimpo = String(number || "").replace(/\D/g, "");
+  const nomeLimpo = String(holder_name || "").trim();
+  const mesLimpo = String(exp_month || "").replace(/\D/g, "");
+  const anoLimpo = String(exp_year || "").replace(/\D/g, "");
+  const cvvLimpo = String(cvv || "").replace(/\D/g, "");
+
+  if (numeroLimpo.length < 13 || numeroLimpo.length > 19) {
+    mostrarErroCartao("card_number", "Número do cartão inválido.");
+    ok = false;
+  }
+
+  if (!nomeLimpo || nomeLimpo.length < 3) {
+    mostrarErroCartao("holder_name", "Informe o nome impresso no cartão.");
+    ok = false;
+  }
+
+  const mesNum = Number(mesLimpo);
+  if (!mesLimpo || mesNum < 1 || mesNum > 12) {
+    mostrarErroCartao("exp_month", "Mês inválido.");
+    ok = false;
+  }
+
+  if (!anoLimpo || anoLimpo.length !== 4) {
+    mostrarErroCartao("exp_year", "Ano inválido.");
+    ok = false;
+  }
+
+  if (!cvvLimpo || cvvLimpo.length < 3 || cvvLimpo.length > 4) {
+    mostrarErroCartao("cvv", "CVV inválido.");
+    ok = false;
+  }
+
+  return ok;
+}
+
+function aplicarMascarasCamposCartao() {
+  const numero = document.getElementById("card_number");
+  const mes = document.getElementById("card_exp_month");
+  const ano = document.getElementById("card_exp_year");
+  const cvv = document.getElementById("card_cvv");
+  const phone = document.getElementById("card_phone");
+  const zip = document.getElementById("billing_zip_code");
+  const state = document.getElementById("billing_state");
+
+  if (numero && !numero.dataset.maskBound) {
+    numero.dataset.maskBound = "true";
+    numero.addEventListener("input", () => {
+      let v = numero.value.replace(/\D/g, "").slice(0, 19);
+      v = v.replace(/(\d{4})(?=\d)/g, "$1 ");
+      numero.value = v;
+    });
+  }
+
+  if (mes && !mes.dataset.maskBound) {
+    mes.dataset.maskBound = "true";
+    mes.addEventListener("input", () => {
+      mes.value = mes.value.replace(/\D/g, "").slice(0, 2);
+    });
+  }
+
+  if (ano && !ano.dataset.maskBound) {
+    ano.dataset.maskBound = "true";
+    ano.addEventListener("input", () => {
+      ano.value = ano.value.replace(/\D/g, "").slice(0, 4);
+    });
+  }
+
+  if (cvv && !cvv.dataset.maskBound) {
+    cvv.dataset.maskBound = "true";
+    cvv.addEventListener("input", () => {
+      cvv.value = cvv.value.replace(/\D/g, "").slice(0, 4);
+    });
+  }
+
+  if (phone && !phone.dataset.maskBound) {
+    phone.dataset.maskBound = "true";
+    phone.addEventListener("input", e => {
+      let v = e.target.value.replace(/\D/g, "").slice(0, 11);
+
+      if (v.length > 10) {
+        v = v.replace(/^(\d{2})(\d{5})(\d{0,4}).*/, "($1) $2-$3");
+      } else if (v.length > 6) {
+        v = v.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, "($1) $2-$3");
+      } else if (v.length > 2) {
+        v = v.replace(/^(\d{2})(\d{0,5}).*/, "($1) $2");
+      } else if (v.length > 0) {
+        v = v.replace(/^(\d*)/, "($1");
+      }
+
+      e.target.value = v;
+    });
+  }
+
+  if (zip && !zip.dataset.maskBound) {
+    zip.dataset.maskBound = "true";
+    zip.addEventListener("input", e => {
+      let v = e.target.value.replace(/\D/g, "").slice(0, 8);
+      if (v.length > 5) v = v.replace(/^(\d{5})(\d{0,3}).*/, "$1-$2");
+      e.target.value = v;
+    });
+  }
+
+  if (state && !state.dataset.maskBound) {
+    state.dataset.maskBound = "true";
+    state.addEventListener("input", e => {
+      e.target.value = e.target.value.replace(/[^a-zA-Z]/g, "").slice(0, 2).toUpperCase();
+    });
+  }
+}
+
+function bindFormularioCartao() {
+  const formCartao = document.getElementById("formCartao");
+  const btnConfirmar =
+    document.getElementById("btnConfirmarCartao") ||
+    document.getElementById("confirmarPagamento");
+
+  if (!formCartao || formCartao.dataset.bound === "true") return;
+
+  formCartao.dataset.bound = "true";
+
+  formCartao.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    if (btnConfirmar) {
+      btnConfirmar.disabled = true;
+      btnConfirmar.innerText = "Processando...";
+    }
+
+    try {
+      const resultado = await pagarComCartao();
+
+      if (!resultado || !resultado.sucesso) {
+        if (btnConfirmar) {
+          btnConfirmar.disabled = false;
+          btnConfirmar.innerText = "Confirmar pagamento";
+        }
+        return;
+      }
+
+      if (btnConfirmar) {
+        btnConfirmar.disabled = true;
+        btnConfirmar.innerText = "Aguardando confirmação...";
+      }
+    } catch (err) {
+      console.error("Erro pagamento:", err);
+      alert("Erro ao processar pagamento");
+
+      if (btnConfirmar) {
+        btnConfirmar.disabled = false;
+        btnConfirmar.innerText = "Confirmar pagamento";
+      }
+    }
+  });
+}
+
+function iniciarCartaoVip() {
+  const oferta = window.OFERTA_ATUAL || null;
+  const plano = window.PLANO_VIP_ATUAL || window.MODELO_VIP_ATUAL || null;
+  const modeloId = Number(window.MODELO_ID_ATUAL);
+
+  let valorBase = 0;
+  let valorFinal = 0;
+  let desconto = 0;
+
+  if (oferta) {
+    valorBase = Number(oferta.valor_base || oferta.valor || 0);
+    valorFinal = Number(oferta.valor_promocional || oferta.valor || valorBase);
+    desconto = Math.max(0, valorBase - valorFinal);
+  } else if (plano) {
+    valorBase = Number(plano.valor || plano.preco || plano.valor_mensal || 0);
+    valorFinal = valorBase;
+    desconto = 0;
+  } else {
+    console.error("VIP sem oferta e sem plano.");
+    return;
+  }
+
+  if (!modeloId) {
+    console.error("MODELO_ID_ATUAL inválido.");
+    return;
+  }
+
+  pagamentoAtual = {
+    tipo: "vip",
+    modelo_id: modeloId,
+    valor: valorFinal,
+    valor_base: valorBase,
+    desconto
+  };
+  window.pagamentoAtual = pagamentoAtual;
+
+  preencherResumoVIP({ valorBase, desconto });
+  montarFormularioCartao();
+  aplicarMascarasCamposCartao();
+  bindFormularioCartao();
+}
+
+
+function iniciarCartaoMidia() {
+  const midia = window.MIDIA_VENDA_ATUAL;
+
+  if (!midia?.conteudo_id) {
+    console.error("MIDIA_VENDA_ATUAL inválida:", midia);
+    return;
+  }
+
+  pagamentoAtual = {
+    tipo: "midia",
+    conteudo_id: Number(midia.conteudo_id),
+    valor: Number(midia.preco || 0),
+    descricao: midia.descricao || ""
+  };
+  window.pagamentoAtual = pagamentoAtual;
+
+  preencherResumoMidia({
+    valor: Number(midia.preco || 0),
+    descricao: midia.descricao || ""
+  });
+
+  montarFormularioCartao();
+  aplicarMascarasCamposCartao();
+  bindFormularioCartao();
 }
 
 function resetarEstadoPix() {
@@ -279,16 +578,23 @@ function resetarEstadoCartao() {
   document.getElementById("cartaoSucesso")?.classList.add("hidden");
   document.getElementById("formCartao")?.classList.add("hidden");
 
-  if (cardElement) {
-    cardElement.unmount();
-    cardElement = null;
-    elements = null;
-  }
-
-  const cardEl = document.getElementById("card-element");
-  if (cardEl) {
-    cardEl.innerHTML = "";
-  }
+  [
+    "card_number",
+    "card_holder",
+    "card_exp_month",
+    "card_exp_year",
+    "card_cvv",
+    "card_phone",
+    "billing_line_1",
+    "billing_line_2",
+    "billing_zip_code",
+    "billing_city",
+    "billing_state",
+    "billing_country"
+  ].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
 }
 
 window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id }) {
@@ -318,25 +624,25 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id }) {
 
     let url = "";
     let body = {};
- if (tipo === "vip") {
 
-      const modeloIdFinal = Number(modelo_id || window.MODELO_ID_ATUAL);
+if (tipo === "vip") {
+  const modeloIdFinal = Number(modelo_id || window.MODELO_ID_ATUAL);
 
-      if (!modeloIdFinal) {
-        console.error("modelo_id inválido:", modelo_id, window.MODELO_ID_ATUAL);
-        alert("Erro interno: modelo não identificado.");
-        return;
-      }
+  if (!modeloIdFinal) {
+    console.error("modelo_id inválido:", modelo_id, window.MODELO_ID_ATUAL);
+    alert("Erro interno: modelo não identificado.");
+    return;
+  }
 
-      url = "/api/pagamento/vip/pix";
-      body = {
-        tipo: "vip",
-        modelo_id,
-        cpf,
-        aceitou_termos,
-        fingerprint: gerarFingerprint()
-      };
-    }
+  url = "/api/pagamento/vip/pix";
+  body = {
+    tipo: "vip",
+    modelo_id: modeloIdFinal,
+    cpf,
+    aceitou_termos,
+    fingerprint: gerarFingerprint()
+  };
+}
 
     if (tipo === "midia") {
       url = "/api/pagamento/midia/pix";
@@ -348,6 +654,11 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id }) {
         fingerprint: gerarFingerprint()
       };
     }
+
+    if (!url) {
+  alert("Tipo de pagamento inválido.");
+  return;
+}
 
     const res = await fetch(url, {
       method: "POST",
@@ -392,28 +703,43 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id }) {
   }
 };
 
-function copiarPix() {
+async function copiarPix() {
   const input = document.getElementById("pixCodigo");
-  input.select();
-  input.setSelectionRange(0, 99999);
-  navigator.clipboard.writeText(input.value);
 
-  alert("Código Pix copiado 💜");
+  if (!input || !input.value) {
+    alert("Código Pix indisponível no momento.");
+    return;
+  }
+
+  try {
+    input.select?.();
+    input.setSelectionRange?.(0, 99999);
+    await navigator.clipboard.writeText(input.value);
+    alert("Código Pix copiado 💜");
+  } catch (err) {
+    console.error("Erro ao copiar Pix:", err);
+    alert("Não foi possível copiar o código Pix.");
+  }
 }
 
 function abrirPopupPagamentoPixLoading() {
   const popup = document.getElementById("popupPagamentoVelvet");
-  popup.classList.remove("hidden");
+  popup?.classList.remove("hidden");
 
-  // estados iniciais
+  // reseta cartão também
+  resetarEstadoCartao();
+
+  // mostra PIX loading
+  document.getElementById("conteudoPix")?.classList.remove("hidden");
+  document.getElementById("conteudoCartao")?.classList.add("hidden");
+
   document.getElementById("pixLoading")?.classList.remove("hidden");
-  document.getElementById("pixAguardando")?.classList.add("pix-aguardando-anim");
+  document.getElementById("pixAguardando")?.classList.add("hidden");
   document.getElementById("pixSucesso")?.classList.add("hidden");
 
-  // limpa dados antigos
   const qr = document.getElementById("pixQr");
   const codigo = document.getElementById("pixCodigo");
-  const btnCopiar = document.querySelector("#conteudoPix .btn-secundario");
+  const btnCopiar = document.getElementById("btnCopiarPix");
 
   if (qr) {
     qr.src = "";
@@ -431,27 +757,27 @@ function abrirPopupPagamentoPixLoading() {
 whenSocketReady((socket) => {
 
 socket.on("vipAtivado", async ({ cliente_id, modelo_id }) => {
-
   const meuClienteId = window.CLIENTE_ID;
 
   if (Number(cliente_id) !== Number(meuClienteId)) return;
+
+  const confirmId = `vip_${cliente_id}_${modelo_id}`;
+  if (!marcarPagamentoConfirmado(confirmId)) return;
 
   document.getElementById("cartaoLoading")?.classList.add("hidden");
   document.getElementById("formCartao")?.classList.add("hidden");
   document.getElementById("cartaoSucesso")?.classList.remove("hidden");
 
   setTimeout(async () => {
-
     fecharPopupPagamento();
-
     await aplicarRegrasDeAcesso?.();
     await carregarFeedBase?.();
-
   }, 1200);
-
 });
 
  socket.on("conteudoVisto", async ({ message_id }) => {
+  const confirmId = `midia_${message_id}`;
+if (!marcarPagamentoConfirmado(confirmId)) return;
 
   // 🔒 UI de sucesso (igual você já tem)
   document.getElementById("pixLoading")?.classList.add("hidden");
@@ -496,333 +822,344 @@ socket.on("vipAtivado", async ({ cliente_id, modelo_id }) => {
 window.MIDIA_VENDA_ATUAL = null;
 
 
-// function initStripe() {
-//   if (stripe) return stripe;
+async function pagarComCartao(tipoParam = null) {
+  const tipo = tipoParam || pagamentoAtual?.tipo || window.PAGAMENTO_TIPO_ATUAL || "midia";
 
-//   stripe = Stripe(window.STRIPE_PUBLIC_KEY);
-//   return stripe;
-// }
+  const cpf = obterCpfValido();
+  if (!cpf) return { sucesso: false };
 
-// async function pagarComCartao({ tipo, modelo_id, apenasIntent = false }) {
-//   initStripe();
+  pagamentoAtual = pagamentoAtual || {};
+  pagamentoAtual.tipo = tipo;
+  pagamentoAtual.cpf = cpf;
 
-//   try {
-//     const token = localStorage.getItem("token");
-
-//     if (!token) {
-//       throw new Error("Sessão expirada. Faça login novamente.");
-//     }
-
-//     // 🔄 limpa estado anterior
-//     if (cardElement) {
-//       cardElement.unmount();
-//       cardElement = null;
-//       elements = null;
-//     }
-
-//     document.getElementById("cartaoLoading")
-//       ?.classList.remove("hidden");
-
-//     document.getElementById("formCartao")
-//       ?.classList.add("hidden");
-
-//     let url = "";
-//     let body = {};
-
-//     // ===============================
-//     // 🔐 VALIDAR CPF + TERMOS (OBRIGATÓRIO PARA TODOS)
-//     // ===============================
-
-//     const cpf = document
-//       .getElementById("cpfPagamento")
-//       ?.value
-//       ?.replace(/\D/g, "");
-
-//     const aceitou_termos = document
-//       .getElementById("aceiteTermosPagamento")
-//       ?.checked;
-
-//       if (!apenasIntent) {
-
-//   if (!cpf || cpf.length !== 11) {
-//     alert("Informe um CPF válido.");
-//     return;
-//   }
-
-//   if (!aceitou_termos) {
-//     alert("Você precisa aceitar os termos.");
-//     return;
-//   }
-
-// }
-
-//     // ===============================
-//     // 💎 VIP
-//     // ===============================
-
-//     if (tipo === "vip") {
-
-//       modelo_id = modelo_id || window.MODELO_ID_ATUAL;
-
-//       if (!modelo_id) {
-//         throw new Error("modelo_id inválido");
-//       }
-
-//       url = "/api/pagamento/vip/cartao";
-
-// body = {
-//   modelo_id,
-//   cpf: apenasIntent ? "" : cpf,
-//   aceitou_termos: apenasIntent ? false : aceitou_termos,
-//   fingerprint: apenasIntent ? "init" : gerarFingerprint(),
-//   apenas_intent: apenasIntent
-// };
-//     }
-
-//     // ===============================
-//     // 🔥 MÍDIA
-//     // ===============================
-
-//     if (tipo === "midia") {
-
-//       const conteudo_id =
-//         window.MIDIA_VENDA_ATUAL?.conteudo_id;
-
-//       if (!conteudo_id) {
-//         throw new Error("conteudo_id inválido");
-//       }
-
-//       url = "/api/pagamento/midia/cartao";
-
-//       body = {
-//         conteudo_id,
-//         cpf,
-//         aceitou_termos,
-//         fingerprint: gerarFingerprint()
-//       };
-//     }
-
-//     if (!url) {
-//       throw new Error("Tipo de pagamento inválido");
-//     }
-
-//     const res = await fetch(url, {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json",
-//         Authorization: "Bearer " + token
-//       },
-//       body: JSON.stringify(body)
-//     });
-
-//     if (!res.ok) {
-//       const erro = await res.text();
-//       throw new Error(`Erro cartão ${res.status}: ${erro}`);
-//     }
-
-//     const data = await res.json();
-//     const clientSecretAtual = data.clientSecret;
-
-//     if (!clientSecretAtual) {
-//       throw new Error("clientSecret inválido");
-//     }
-
-//     elements = stripe.elements({ clientSecret: clientSecretAtual });
-
-//     const cardEl = document.getElementById("card-element");
-//     cardEl.innerHTML = "";
-
-//     cardElement = elements.create("payment");
-//     cardElement.mount("#card-element");
-
-//     document.getElementById("cartaoLoading")
-//       ?.classList.add("hidden");
-
-//     document.getElementById("formCartao")
-//       ?.classList.remove("hidden");
-
-//   } catch (err) {
-//     console.error("❌ Erro cartão:", err);
-//     alert(err.message || "Erro ao iniciar pagamento com cartão");
-//   }
-// }
-
-// window.iniciarCartao = function () {
-//   mostrarMetodo("cartao");
-// };
-
-async function pagarComCartao({ tipo, modelo_id, apenasIntent = false }) {
+  if (pagamentoEmProcesso) return { sucesso: false };
+  pagamentoEmProcesso = true;
 
   try {
-
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      throw new Error("Sessão expirada. Faça login novamente.");
+    const form = document.getElementById("formCartao");
+    if (!form) {
+      console.error("formCartao não encontrado");
+      pagamentoEmProcesso = false;
+      return { sucesso: false };
     }
 
-    document.getElementById("cartaoLoading")
-      ?.classList.remove("hidden");
+    limparErrosCartao();
 
-    document.getElementById("formCartao")
-      ?.classList.add("hidden");
+    // =========================
+    // DADOS DO CARTÃO
+    // =========================
+    const numero = form.querySelector("#card_number")?.value?.trim() || "";
+    const nome = form.querySelector("#card_holder")?.value?.trim() || "";
+    const mes = form.querySelector("#card_exp_month")?.value?.trim() || "";
+    const ano = form.querySelector("#card_exp_year")?.value?.trim() || "";
+    const cvv = form.querySelector("#card_cvv")?.value?.trim() || "";
 
-    let url = "";
-    let body = {};
+    const valido = validarCamposCartao({
+      number: numero,
+      holder_name: nome,
+      exp_month: mes,
+      exp_year: ano,
+      cvv
+    });
 
-    /* ===============================
-       VALIDAR CPF + TERMOS
-    =============================== */
-
-    const cpf = document
-      .getElementById("cpfPagamento")
-      ?.value
-      ?.replace(/\D/g, "");
-
-    const aceitou_termos = document
-      .getElementById("aceiteTermosPagamento")
-      ?.checked;
-
-    if (!apenasIntent) {
-
-      if (!cpf || cpf.length !== 11) {
-        alert("Informe um CPF válido.");
-        return;
-      }
-
-      if (!aceitou_termos) {
-        alert("Você precisa aceitar os termos.");
-        return;
-      }
-
+    if (!valido) {
+      pagamentoEmProcesso = false;
+      return { sucesso: false };
     }
 
-    /* ===============================
-       GERAR TOKEN DO CARTÃO
-    =============================== */
+    // =========================
+    // TELEFONE
+    // =========================
+    const telefoneBruto =
+      form.querySelector("#card_phone")?.value?.trim() ||
+      form.querySelector("#phone")?.value?.trim() ||
+      "";
 
-    const client = await pagarme.client.connect({
-      encryption_key: PAGARME_PUBLIC_KEY
-    });
+    const telefoneLimpo = telefoneBruto.replace(/\D/g, "");
 
-    const card = await client.security.encrypt({
-      card_number: document
-        .getElementById("card_number")
-        .value
-        .replace(/\s/g, ""),
+    let phone_area_code = "";
+    let phone_number = "";
 
-      card_holder_name: document
-        .getElementById("card_holder")
-        .value,
+    if (telefoneLimpo.length === 10 || telefoneLimpo.length === 11) {
+      phone_area_code = telefoneLimpo.slice(0, 2);
+      phone_number = telefoneLimpo.slice(2);
+    } else {
+      alert("Informe um telefone válido com DDD.");
+      pagamentoEmProcesso = false;
+      return { sucesso: false };
+    }
 
-      card_expiration_date: document
-        .getElementById("card_expiration")
-        .value,
+    // =========================
+    // ENDEREÇO
+    // =========================
+    const enderecoLinha1 =
+      form.querySelector("#billing_line_1")?.value?.trim() ||
+      form.querySelector("#card_address")?.value?.trim() ||
+      "";
 
-      card_cvv: document
-        .getElementById("card_cvv")
-        .value
-    });
+    const enderecoLinha2 =
+      form.querySelector("#billing_line_2")?.value?.trim() ||
+      form.querySelector("#card_address_2")?.value?.trim() ||
+      "";
 
-    const card_token = card.card_hash;
+    const cep =
+      form.querySelector("#billing_zip_code")?.value?.trim() ||
+      form.querySelector("#card_zipcode")?.value?.trim() ||
+      "";
 
-    /* ===============================
-       VIP
-    =============================== */
+    const cidade =
+      form.querySelector("#billing_city")?.value?.trim() ||
+      form.querySelector("#card_city")?.value?.trim() ||
+      "";
 
+    const estado =
+      form.querySelector("#billing_state")?.value?.trim() ||
+      form.querySelector("#card_state")?.value?.trim() ||
+      "";
+
+    const pais =
+      form.querySelector("#billing_country")?.value?.trim() || "BR";
+
+    const zipCodeLimpo = cep.replace(/\D/g, "");
+
+    if (!enderecoLinha1) {
+      alert("Informe o endereço.");
+      pagamentoEmProcesso = false;
+      return { sucesso: false };
+    }
+
+    if (!zipCodeLimpo || zipCodeLimpo.length < 8) {
+      alert("Informe um CEP válido.");
+      pagamentoEmProcesso = false;
+      return { sucesso: false };
+    }
+
+    if (!cidade) {
+      alert("Informe a cidade.");
+      pagamentoEmProcesso = false;
+      return { sucesso: false };
+    }
+
+    if (!estado || estado.length < 2) {
+      alert("Informe o estado.");
+      pagamentoEmProcesso = false;
+      return { sucesso: false };
+    }
+
+    // =========================
+    // VIP
+    // =========================
     if (tipo === "vip") {
-
-      modelo_id = modelo_id || window.MODELO_ID_ATUAL;
+      const modelo_id = Number(
+        pagamentoAtual.modelo_id ||
+        window.MODELO_ID_ATUAL
+      );
 
       if (!modelo_id) {
-        throw new Error("modelo_id inválido");
+        alert("Modelo inválido");
+        pagamentoEmProcesso = false;
+        return { sucesso: false };
       }
 
-      url = "/api/pagamento/vip/cartao";
+      atualizarStatusCartao("💳 Processando assinatura VIP...");
 
-      body = {
+      const payload = {
         modelo_id,
-        card_token,
-        cpf: apenasIntent ? "" : cpf,
-        aceitou_termos: apenasIntent ? false : aceitou_termos,
-        fingerprint: apenasIntent ? "init" : gerarFingerprint(),
-        apenas_intent: apenasIntent
+        cpf: pagamentoAtual.cpf,
+        phone_area_code,
+        phone_number,
+        billing_address: {
+          line_1: enderecoLinha1,
+          zip_code: zipCodeLimpo,
+          city: cidade,
+          state: estado.toUpperCase(),
+          country: pais.toUpperCase(),
+          ...(enderecoLinha2 ? { line_2: enderecoLinha2 } : {})
+        },
+
+        card_number: numero.replace(/\s/g, ""),
+        card_holder_name: nome,
+        card_exp_month: Number(mes),
+        card_exp_year: Number(ano),
+        card_cvv: cvv.replace(/\D/g, "")
       };
 
+      console.log("Payload PSP /api/pagamento/vip/cartao:", payload);
+
+      atualizarStatusCartao("💳 Processando assinatura VIP...");
+      mostrarLoadingCartao();
+
+      const res = await fetch("/api/pagamento/vip/cartao", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + localStorage.getItem("token")
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+
+if (!res.ok) {
+  console.error("Erro retorno VIP cartão:", data);
+  alert(
+    data?.error ||
+    data?.detalhe ||
+    "Erro no pagamento VIP com cartão."
+  );
+
+  document.getElementById("cartaoLoading")?.classList.add("hidden");
+  document.getElementById("formCartao")?.classList.remove("hidden");
+
+  atualizarStatusCartao("❌ Falha no pagamento");
+  pagamentoEmProcesso = false;
+  return { sucesso: false };
+}
+
+      pagamentoAtual.payment_id = data.payment_id || data.order_id || null;
+      pagamentoAtual.assinatura_id = data.assinatura_id || null;
+
+      atualizarStatusCartao("⏳ Aguardando confirmação...");
+
+      if (pagamentoAtual.payment_id) {
+        iniciarPollingPagamento(
+          pagamentoAtual.payment_id,
+          pagamentoAtual.assinatura_id || modelo_id,
+          "cartao"
+        );
+      }
+
+      pagamentoEmProcesso = false;
+      return { sucesso: true, aguardando_confirmacao: true };
     }
 
-    /* ===============================
-       MIDIA
-    =============================== */
-
+    // =========================
+    // MÍDIA
+    // =========================
     if (tipo === "midia") {
-
-      const conteudo_id =
-        window.MIDIA_VENDA_ATUAL?.conteudo_id;
+      const conteudo_id = Number(pagamentoAtual.conteudo_id);
 
       if (!conteudo_id) {
-        throw new Error("conteudo_id inválido");
+        alert("Conteúdo inválido");
+        pagamentoEmProcesso = false;
+        return { sucesso: false };
       }
 
-      url = "/api/pagamento/midia/cartao";
+      atualizarStatusCartao("💳 Processando pagamento...");
 
-      body = {
+      const payload = {
         conteudo_id,
-        card_token,
-        cpf,
-        aceitou_termos,
-        fingerprint: gerarFingerprint()
+        cpf: pagamentoAtual.cpf,
+        phone_area_code,
+        phone_number,
+        billing_address: {
+          line_1: enderecoLinha1,
+          zip_code: zipCodeLimpo,
+          city: cidade,
+          state: estado.toUpperCase(),
+          country: pais.toUpperCase(),
+          ...(enderecoLinha2 ? { line_2: enderecoLinha2 } : {})
+        },
+
+        card_number: numero.replace(/\s/g, ""),
+        card_holder_name: nome,
+        card_exp_month: Number(mes),
+        card_exp_year: Number(ano),
+        card_cvv: cvv.replace(/\D/g, "")
       };
 
-    }
+      console.log("Payload PSP /api/pagamento/midia/cartao:", payload);
 
-    if (!url) {
-      throw new Error("Tipo de pagamento inválido");
-    }
+      atualizarStatusCartao("💳 Processando pagamento...");
+      mostrarLoadingCartao();
 
-    /* ===============================
-       ENVIAR PARA BACKEND
-    =============================== */
+      const res = await fetch("/api/pagamento/midia/cartao", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + localStorage.getItem("token")
+        },
+        body: JSON.stringify(payload)
+      });
 
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + token
-      },
-      body: JSON.stringify(body)
-    });
+      const data = await res.json();
 
-    const data = await res.json();
+if (!res.ok) {
+  console.error("Erro retorno pagamento PSP:", data);
+  alert(
+    data?.error ||
+    data?.detalhe ||
+    "Erro no pagamento com cartão."
+  );
 
-    if (!res.ok) {
-      throw new Error(data.error || "Erro no pagamento");
-    }
+  document.getElementById("cartaoLoading")?.classList.add("hidden");
+  document.getElementById("formCartao")?.classList.remove("hidden");
 
-    document.getElementById("cartaoLoading")
-      ?.classList.add("hidden");
-
-    document.getElementById("formCartao")
-      ?.classList.remove("hidden");
-
-    alert("Pagamento enviado. Aguardando confirmação.");
-
-  } catch (err) {
-
-    console.error("Erro cartão:", err);
-    alert(err.message || "Erro ao processar pagamento");
-
-  }
-
+  atualizarStatusCartao("❌ Falha no pagamento");
+  pagamentoEmProcesso = false;
+  return { sucesso: false };
 }
+
+      pagamentoAtual.payment_id = data.payment_id || data.order_id || null;
+      pagamentoAtual.message_id = data.message_id || conteudo_id;
+
+      const valorMidia = Number(pagamentoAtual.valor || 0);
+      const taxaTransacao = Number((valorMidia * 0.10).toFixed(2));
+      const taxaPlataforma = Number((valorMidia * 0.05).toFixed(2));
+      const valorTotal = Number(
+        (valorMidia + taxaTransacao + taxaPlataforma).toFixed(2)
+      );
+
+      const elValorConteudo = document.getElementById("cartaoValorConteudo");
+      const elTaxaTransacao = document.getElementById("cartaoTaxaTransacao");
+      const elTaxaPlataforma = document.getElementById("cartaoTaxaPlataforma");
+      const elValorTotal = document.getElementById("cartaoValorTotal");
+
+      if (elValorConteudo) elValorConteudo.innerText = valorBRL(valorMidia);
+      if (elTaxaTransacao) elTaxaTransacao.innerText = valorBRL(taxaTransacao);
+      if (elTaxaPlataforma) elTaxaPlataforma.innerText = valorBRL(taxaPlataforma);
+      if (elValorTotal) elValorTotal.innerText = valorBRL(valorTotal);
+
+      atualizarStatusCartao("⏳ Aguardando confirmação...");
+
+      if (pagamentoAtual.payment_id) {
+        iniciarPollingPagamento(
+          pagamentoAtual.payment_id,
+          pagamentoAtual.message_id,
+          "cartao"
+        );
+      }
+
+      pagamentoEmProcesso = false;
+      return { sucesso: true, aguardando_confirmacao: true };
+    }
+
+    alert("Tipo de pagamento inválido");
+    pagamentoEmProcesso = false;
+    return { sucesso: false };
+
+} catch (err) {
+  console.error("Erro no pagamento com cartão:", err);
+  alert(err.message || "Erro inesperado ao processar cartão");
+
+  document.getElementById("cartaoLoading")?.classList.add("hidden");
+  document.getElementById("formCartao")?.classList.remove("hidden");
+
+  atualizarStatusCartao("❌ Falha no pagamento");
+  pagamentoEmProcesso = false;
+  return { sucesso: false };
+}
+}
+
 
 window.iniciarCartao = function () {
   mostrarMetodo("cartao");
 };
 
 function pagamentoConfirmado() {
+  // PIX
   document.getElementById("pixLoading")?.classList.add("hidden");
-  document.getElementById("pixAguardando")?.classList.add("pix-aguardando-anim");
+  document.getElementById("pixAguardando")?.classList.add("hidden");
 
   // Cartão
   document.getElementById("cartaoLoading")?.classList.add("hidden");
@@ -837,205 +1174,6 @@ function pagamentoConfirmado() {
   }, 1200);
 }
 
-// let pagamentoEmProcesso = false;
-
-// async function confirmarPagamentoCartao() {
-
-//   if (pagamentoEmProcesso) return;
-//   pagamentoEmProcesso = true;
-
-//   try {
-
-//     if (!elements) {
-//       alert("Pagamento não inicializado");
-//       pagamentoEmProcesso = false;
-//       return;
-//     }
-
-//     const btn = document.getElementById("btnConfirmarCartao");
-
-//     if (btn) {
-//       btn.disabled = true;
-//       btn.innerText = "Processando...";
-//     }
-
-//     const { error } = await stripe.confirmPayment({
-//       elements,
-//       redirect: "if_required"
-//     });
-
-//     if (error) {
-
-//       alert(error.message);
-
-//       pagamentoEmProcesso = false;
-
-//       if (btn) {
-//         btn.disabled = false;
-//         btn.innerText = "Pagar";
-//       }
-
-//       return;
-//     }
-
-// document.getElementById("cartaoSucesso")
-//   ?.classList.remove("hidden");
-
-// console.log("Stripe aprovado, aguardando webhook...");
-
-// setTimeout(async () => {
-
-//   try {
-
-//     await verificarVip();
-
-//     fecharPopupPagamento();
-
-//   } catch (err) {
-//     console.error("Erro ao verificar VIP após Stripe:", err);
-//   }
-
-//   pagamentoEmProcesso = false;
-
-// }, 2000);
-
-//   } catch (err) {
-
-//     console.error("Erro confirmar cartão:", err);
-//     alert("Erro ao confirmar pagamento");
-//     pagamentoEmProcesso = false;
-
-//   }
-// }
-
-let pagamentoEmProcesso = false;
-
-async function confirmarPagamentoCartao() {
-
-  if (pagamentoEmProcesso) return;
-  pagamentoEmProcesso = true;
-
-  try {
-
-    const btn = document.getElementById("btnConfirmarCartao");
-
-    if (btn) {
-      btn.disabled = true;
-      btn.innerText = "Processando...";
-    }
-
-    /* =========================
-       GERAR TOKEN DO CARTÃO
-    ========================= */
-
-    const client = await pagarme.client.connect({
-      encryption_key: PAGARME_PUBLIC_KEY
-    });
-
-    const card = await client.security.encrypt({
-      card_number: document
-        .getElementById("card_number")
-        ?.value
-        ?.replace(/\s/g, ""),
-
-      card_holder_name: document
-        .getElementById("card_holder")
-        ?.value,
-
-      card_expiration_date: document
-        .getElementById("card_expiration")
-        ?.value,
-
-      card_cvv: document
-        .getElementById("card_cvv")
-        ?.value
-    });
-
-    const card_token = card.card_hash;
-
-    /* =========================
-       ENVIAR PARA BACKEND
-    ========================= */
-
-    const token = localStorage.getItem("token");
-
-    const res = await fetch("/api/pagamento/midia/cartao", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + token
-      },
-      body: JSON.stringify({
-        conteudo_id: window.MIDIA_VENDA_ATUAL?.conteudo_id,
-        card_token,
-        cpf: document
-          .getElementById("cpfPagamento")
-          ?.value
-          ?.replace(/\D/g, ""),
-        fingerprint: gerarFingerprint()
-      })
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-
-      alert(data.error || "Erro no pagamento");
-
-      pagamentoEmProcesso = false;
-
-      if (btn) {
-        btn.disabled = false;
-        btn.innerText = "Pagar";
-      }
-
-      return;
-    }
-
-    /* =========================
-       SUCESSO
-    ========================= */
-
-    document.getElementById("cartaoLoading")
-      ?.classList.add("hidden");
-
-    document.getElementById("formCartao")
-      ?.classList.add("hidden");
-
-    document.getElementById("cartaoSucesso")
-      ?.classList.remove("hidden");
-
-    console.log("Pagamento enviado ao Pagar.me, aguardando webhook...");
-
-    setTimeout(async () => {
-
-      try {
-
-        await verificarVip();
-
-        fecharPopupPagamento();
-
-      } catch (err) {
-
-        console.error("Erro ao verificar VIP:", err);
-
-      }
-
-      pagamentoEmProcesso = false;
-
-    }, 2000);
-
-  } catch (err) {
-
-    console.error("Erro confirmar cartão:", err);
-
-    alert("Erro ao confirmar pagamento");
-
-    pagamentoEmProcesso = false;
-
-  }
-}
-
 window.fecharPopupPagamento = function () {
   const popup = document.getElementById("popupPagamentoVelvet");
   if (!popup) return;
@@ -1045,8 +1183,11 @@ window.fecharPopupPagamento = function () {
 
   // limpa estados PIX
   document.getElementById("pixLoading")?.classList.add("hidden");
-  document.getElementById("pixAguardando")?.classList.add("pix-aguardando-anim");
+  document.getElementById("pixAguardando")?.classList.add("hidden");
   document.getElementById("pixSucesso")?.classList.add("hidden");
+  document.getElementById("pixQr")?.classList.add("hidden");
+  document.getElementById("pixCodigo")?.classList.add("hidden");
+  document.getElementById("btnCopiarPix")?.classList.add("hidden");
 
   // limpa estados cartão
   document.getElementById("cartaoLoading")?.classList.add("hidden");
@@ -1056,139 +1197,40 @@ window.fecharPopupPagamento = function () {
   // esconde conteúdos
   document.getElementById("conteudoPix")?.classList.add("hidden");
   document.getElementById("conteudoCartao")?.classList.add("hidden");
+
+  // reseta abas
+  document.querySelectorAll(".velvet-tabs .tab").forEach(tab => {
+    tab.classList.remove("active");
+  });
+  pagamentoAtual = {};
+  window.pagamentoAtual = pagamentoAtual;
+  window.MIDIA_VENDA_ATUAL = null;
+
+   limparPagamentoConfirmado();
 };
+
+function mostrarLoadingCartao() {
+  document.getElementById("cartaoSucesso")?.classList.add("hidden");
+  document.getElementById("cartaoLoading")?.classList.remove("hidden");
+  document.getElementById("formCartao")?.classList.add("hidden");
+}
+
 
 window.confirmarPix = function () {
-  if (window.PAGAMENTO_TIPO_ATUAL !== "midia") return;
-
-  pagarComPix({
-    tipo: "midia",
-    conteudo_id: window.MIDIA_VENDA_ATUAL?.conteudo_id
-  });
-};
-
-
-// async function iniciarCartaoMidia() {
-//   initStripe();
-// const token = localStorage.getItem("token");
-
-// if (!token) {
-//   throw new Error("Sessão expirada. Faça login novamente.");
-//   }
-
-//   const res = await fetch("/api/pagamento/midia/cartao", {
-//     method: "POST",
-//     headers: {
-//       "Content-Type": "application/json",
-//       Authorization: "Bearer " + token
-//     },
-//     body: JSON.stringify({
-//       conteudo_id: window.MIDIA_VENDA_ATUAL?.conteudo_id
-//     })
-//   });
-
-//   if (!res.ok) {
-//     const erro = await res.text();
-//     throw new Error(erro || "Erro ao iniciar pagamento");
-//   }
-
-//   const data = await res.json();
-
-//   // 🔎 resumo vindo do server
-//   document.getElementById("midiaValorBase").textContent =
-//     data.resumo.valor_base.toFixed(2);
-
-//   document.getElementById("midiaTaxa").textContent =
-//     (data.resumo.taxa_transacao + data.resumo.taxa_plataforma).toFixed(2);
-
-//   document.getElementById("midiaTotal").textContent =
-//     data.resumo.total.toFixed(2);
-
-//   // 💳 Stripe (usa os IDs REAIS do HTML)
-//   const cardEl = document.getElementById("card-element");
-//   if (!cardEl) {
-//     console.error("❌ card-element não encontrado no DOM");
-//     return;
-//   }
-
-//   cardEl.innerHTML = "";
-
-//   elements = stripe.elements({ clientSecret: data.clientSecret });
-//   const payment = elements.create("payment");
-//   payment.mount("#card-element");
-
-//   document.getElementById("cartaoLoading")?.classList.add("hidden");
-//   document.getElementById("formCartao")?.classList.remove("hidden");
-// }
-
-async function iniciarCartaoMidia() {
-
-  const token = localStorage.getItem("token");
-
-  if (!token) {
-    throw new Error("Sessão expirada. Faça login novamente.");
-  }
-
-  try {
-
-    const res = await fetch("/api/pagamento/midia/resumo", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + token
-      },
-      body: JSON.stringify({
-        conteudo_id: window.MIDIA_VENDA_ATUAL?.conteudo_id
-      })
+  if (window.PAGAMENTO_TIPO_ATUAL === "vip") {
+    return pagarComPix({
+      tipo: "vip",
+      modelo_id: window.MODELO_ID_ATUAL
     });
-
-    if (!res.ok) {
-      const erro = await res.text();
-      throw new Error(erro || "Erro ao carregar pagamento");
-    }
-
-    const data = await res.json();
-
-    /* ===============================
-       ATUALIZAR RESUMO
-    =============================== */
-
-    const base = document.getElementById("midiaValorBase");
-    const taxa = document.getElementById("midiaTaxa");
-    const total = document.getElementById("midiaTotal");
-
-    if (base) {
-      base.textContent = Number(data.resumo.valor_base).toFixed(2);
-    }
-
-    if (taxa) {
-      taxa.textContent = (
-        Number(data.resumo.taxa_transacao) +
-        Number(data.resumo.taxa_plataforma)
-      ).toFixed(2);
-    }
-
-    if (total) {
-      total.textContent = Number(data.resumo.total).toFixed(2);
-    }
-
-    /* ===============================
-       MOSTRAR FORM CARTÃO
-    =============================== */
-
-    document.getElementById("cartaoLoading")
-      ?.classList.add("hidden");
-
-    document.getElementById("formCartao")
-      ?.classList.remove("hidden");
-
-  } catch (err) {
-
-    console.error("Erro iniciar cartão:", err);
-    alert(err.message || "Erro ao iniciar pagamento");
-
   }
-}
+
+  if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
+    return pagarComPix({
+      tipo: "midia",
+      conteudo_id: window.MIDIA_VENDA_ATUAL?.conteudo_id
+    });
+  }
+};
 
 function gerarFingerprint() {
   return btoa(
@@ -1202,16 +1244,13 @@ function gerarFingerprint() {
 let pollingPixInterval = null;
 
 function iniciarVerificacaoPix(orderId) {
-
   // evita múltiplos polling simultâneos
   if (pollingPixInterval) {
     clearInterval(pollingPixInterval);
   }
 
   pollingPixInterval = setInterval(async () => {
-
     try {
-
       const res = await fetch(`/api/pagamento/status/${orderId}`, {
         headers: {
           Authorization: "Bearer " + localStorage.getItem("token")
@@ -1220,47 +1259,29 @@ function iniciarVerificacaoPix(orderId) {
 
       if (!res.ok) return;
 
-      const data = await res.json();
+const data = await res.json();
 
-      // =========================
-      // PAGAMENTO APROVADO
-      // =========================
+if (data.status === "pago") {
+  if (!marcarPagamentoConfirmado(data.order_id || data.payment_id || data.message_id || orderId)) {
+    return;
+  }
 
-      if (data.status === "pago") {
+  clearInterval(pollingPixInterval);
+  pollingPixInterval = null;
 
-        clearInterval(pollingPixInterval);
-        pollingPixInterval = null;
-
-        document.getElementById("pixAguardando")?.classList.add("hidden");
-        document.getElementById("pixSucesso")?.classList.remove("hidden");
-
-        // =========================
-        // VIP
-        // =========================
+  document.getElementById("pixAguardando")?.classList.add("hidden");
+  document.getElementById("pixSucesso")?.classList.remove("hidden");
 
         if (window.PAGAMENTO_TIPO_ATUAL === "vip") {
-
           setTimeout(async () => {
-
             fecharPopupPagamento();
-
             await aplicarRegrasDeAcesso?.();
             await carregarFeedBase?.();
-
           }, 1500);
-
-        }
-
-        // =========================
-        // MIDIA
-        // =========================
-
-        else {
-
+        } else {
           const messageId = data.message_id;
 
           setTimeout(async () => {
-
             fecharPopupPagamento();
 
             const res = await fetch(`/api/conteudo/liberado/${messageId}`, {
@@ -1272,95 +1293,137 @@ function iniciarVerificacaoPix(orderId) {
             if (!res.ok) return;
 
             const midias = await res.json();
-
             if (!midias.length) return;
 
-            abrirModalMidia(
-              midias[0].url,
-              midias[0].tipo === "video"
-            );
-
+            abrirModalMidia(midias[0].url, midias[0].tipo === "video");
           }, 1200);
-
         }
 
+        return;
       }
 
       // =========================
       // PIX EXPIRADO
       // =========================
-
       if (data.status === "expirado") {
-
         clearInterval(pollingPixInterval);
         pollingPixInterval = null;
 
         document.getElementById("pixAguardando")?.classList.add("hidden");
 
         alert("Este Pix expirou. Gere um novo.");
-
+        return;
       }
 
       // =========================
       // PAGAMENTO FALHOU
       // =========================
-
       if (data.status === "falhou") {
-
         clearInterval(pollingPixInterval);
         pollingPixInterval = null;
 
         document.getElementById("pixAguardando")?.classList.add("hidden");
 
         alert("Pagamento não aprovado.");
-
+        return;
       }
+
+      // outros status: continua aguardando
 
     } catch (err) {
-
       console.error("Erro verificação PIX:", err);
-
     }
-
   }, 5000);
-
 }
 
-async function aguardarConfirmacaoPagamento() {
+function marcarPagamentoConfirmado(id) {
+  if (!id) return false;
+  if (window.__PAGAMENTO_CONFIRMADO_ATUAL__ === id) return false;
+  window.__PAGAMENTO_CONFIRMADO_ATUAL__ = id;
+  return true;
+}
 
-  let tentativas = 0;
+function limparPagamentoConfirmado() {
+  window.__PAGAMENTO_CONFIRMADO_ATUAL__ = null;
+}
 
-  const intervalo = setInterval(async () => {
+let pollingCartaoInterval = null;
 
-    tentativas++;
+function iniciarPollingPagamento(paymentId, refId = null, metodo = "cartao") {
+  if (!paymentId) return;
 
+  if (pollingCartaoInterval) {
+    clearInterval(pollingCartaoInterval);
+  }
+
+  pollingCartaoInterval = setInterval(async () => {
     try {
+      const res = await fetch(`/api/pagamento/status/${paymentId}`, {
+        headers: {
+          Authorization: "Bearer " + localStorage.getItem("token")
+        }
+      });
 
-      const res = await verificarVip(); // tua função já existente
+      if (!res.ok) return;
 
-      if (window.__CLIENTE_VIP__) {
+      const data = await res.json();
 
-        clearInterval(intervalo);
+      if (data.status === "pago") {
+        clearInterval(pollingCartaoInterval);
+        pollingCartaoInterval = null;
 
-        fecharPopupPagamento();
+        if (!marcarPagamentoConfirmado(paymentId)) return;
 
-        atualizarBotaoVip();
+        document.getElementById("cartaoLoading")?.classList.add("hidden");
+        document.getElementById("cartaoSucesso")?.classList.remove("hidden");
 
-        desbloquearConteudoPremium?.();
+        if (window.PAGAMENTO_TIPO_ATUAL === "vip") {
+          setTimeout(async () => {
+            fecharPopupPagamento();
+            await aplicarRegrasDeAcesso?.();
+            await carregarFeedBase?.();
+          }, 1200);
+        } else {
+          const messageId = data.message_id || refId;
 
+          setTimeout(async () => {
+            fecharPopupPagamento();
+
+            const liberado = await fetch(`/api/conteudo/liberado/${messageId}`, {
+              headers: {
+                Authorization: "Bearer " + localStorage.getItem("token")
+              }
+            });
+
+            if (!liberado.ok) return;
+
+            const midias = await liberado.json();
+            if (!midias.length) return;
+
+            abrirModalMidia(midias[0].url, midias[0].tipo === "video");
+          }, 1200);
+        }
       }
 
-    } catch (e) {
-      console.error("Erro verificar VIP:", e);
+      if (data.status === "falhou" || data.status === "expirado") {
+        clearInterval(pollingCartaoInterval);
+        pollingCartaoInterval = null;
+
+        document.getElementById("cartaoLoading")?.classList.add("hidden");
+        document.getElementById("formCartao")?.classList.remove("hidden");
+        atualizarStatusCartao("❌ Falha no pagamento");
+      }
+    } catch (err) {
+      console.error("Erro polling cartão:", err);
     }
-
-    if (tentativas > 10) {
-      clearInterval(intervalo);
-    }
-
-  }, 2000);
-
+  }, 5000);
 }
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  aplicarMascarasCamposCartao();
+  bindFormularioCartao();
+});
 
 
 document.getElementById("btnGerarPix")?.addEventListener("click", () => {
