@@ -7435,20 +7435,20 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
     await client.query("BEGIN");
     console.log("✅ BEGIN OK");
 
-    const clienteRes = await client.query(
-      `
-      SELECT
-        c.id,
-        c.bloqueado,
-        COALESCE(NULLIF(TRIM(c.nome), ''), NULLIF(TRIM(u.nome), ''), split_part(u.email, '@', 1)) AS nome,
-        u.email
-      FROM clientes c
-      JOIN users u ON u.id = c.user_id
-      WHERE c.user_id = $1
-      LIMIT 1
-      `,
-      [userId]
-    );
+const clienteRes = await client.query(
+  `
+  SELECT
+    c.id,
+    c.bloqueado,
+    COALESCE(NULLIF(TRIM(c.nome), ''), split_part(u.email, '@', 1)) AS nome,
+    u.email
+  FROM clientes c
+  JOIN users u ON u.id = c.user_id
+  WHERE c.user_id = $1
+  LIMIT 1
+  `,
+  [userId]
+);
 
     if (!clienteRes.rowCount) {
       await client.query("ROLLBACK");
