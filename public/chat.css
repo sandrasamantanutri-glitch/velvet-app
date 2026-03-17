@@ -1769,3 +1769,6 @@ body.role-cliente .msg-modelo .msg-hora {
 #modalIframe {
   display: none;
 }
+.popup-pagamento-overlay.hidden {
+  display: none !important;
+}
