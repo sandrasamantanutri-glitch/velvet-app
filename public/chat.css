@@ -1527,9 +1527,12 @@ body.role-cliente .msg-modelo .msg-hora {
   align-items: center;
   justify-content: center;
   padding: 20px;
-  z-index: 9999;
-  display: none;
+  z-index: 100003 !Important;
 }
+  .hidden {
+  display: none !important;
+}
+
 
 /* CAIXA DO POPUP */
 .modal-pagamento .modal-content,
@@ -1769,9 +1772,4 @@ body.role-cliente .msg-modelo .msg-hora {
 #modalIframe {
   display: none;
 }
-.popup-pagamento-overlay.hidden {
-  display: none !important;
-}
-#paymentModal {
-  z-index: 100001 !important;
-}
+
