@@ -927,7 +927,7 @@ body.role-cliente .msg-cliente:has(.chat-conteudo) {
   border-radius:18px;
   padding:26px;
   font-size: 12px;
-  display:flex;
+  display:none;
   flex-direction:column;
   gap:8px;
   color:#666;
