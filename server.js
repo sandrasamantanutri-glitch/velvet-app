@@ -7610,29 +7610,29 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
 
  console.log("----- MONTANDO paymentPayload -----");
 
+const billingAddress = {
+  line_1: billing_address?.line_1 || "Rua não informada, 0",
+  zip_code: String(billing_address?.zip_code || "").replace(/\D/g, ""),
+  city: billing_address?.city || "Sao Paulo",
+  state: billing_address?.state || "SP",
+  country: billing_address?.country || "BR"
+};
+
+if (billing_address?.line_2) {
+  billingAddress.line_2 = billing_address.line_2;
+}
+
 const paymentPayload = {
   payment_method: "credit_card",
   credit_card: {
     card_token,
     installments: 1,
-    statement_descriptor: "VELVET"
-  },
-  billing: {
-    name: nome,
-    address: {
-      line_1: billing_address?.line_1 || "Rua não informada, 0",
-      zip_code: String(billing_address?.zip_code || "").replace(/\D/g, ""),
-      city: billing_address?.city || "Sao Paulo",
-      state: billing_address?.state || "SP",
-      country: billing_address?.country || "BR"
-    }
+    statement_descriptor: "VELVET",
+    operation_type: "auth_and_capture",
+    billing_address: billingAddress
   },
   antifraud_enabled: true
 };
-
-if (billing_address?.line_2) {
-  paymentPayload.billing.address.line_2 = billing_address.line_2;
-}
 
 console.log(
   "paymentPayload FINAL:",
@@ -7643,9 +7643,16 @@ const pagarmeBody = {
   closed: true,
   customer: {
     name: nome,
-    email: email,
+    email,
     document: cpfLimpo,
-    type: "individual"
+    type: "individual",
+    phones: {
+      mobile_phone: {
+        country_code: "55",
+        area_code: String(req.body?.phone_area_code || "11").replace(/\D/g, ""),
+        number: String(req.body?.phone_number || "999999999").replace(/\D/g, "")
+      }
+    }
   },
   items: [
     {
@@ -7673,6 +7680,21 @@ console.log(
   "pagarmeBody FINAL:",
   JSON.stringify(pagarmeBody, null, 2)
 );
+
+// ===== VALIDAÇÕES ANTES DO AXIOS =====
+if (!billingAddress.zip_code || billingAddress.zip_code.length < 8) {
+  await client.query("ROLLBACK");
+  return res.status(400).json({ error: "CEP inválido para cobrança." });
+}
+
+if (
+  !pagarmeBody.customer.phones.mobile_phone.area_code ||
+  !pagarmeBody.customer.phones.mobile_phone.number
+) {
+  await client.query("ROLLBACK");
+  return res.status(400).json({ error: "Telefone inválido para cobrança." });
+}
+
 
 const pagarmeHeaders = {
   Authorization:
