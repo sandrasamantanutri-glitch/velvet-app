@@ -7611,8 +7611,8 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
  console.log("----- MONTANDO paymentPayload -----");
 
 const billingAddress = {
-  line_1: billing_address?.line_1 || "Rua não informada, 0",
-  zip_code: String(billing_address?.zip_code || "02280150").replace(/\D/g, ""),
+  line_1: billing_address?.line_1 || "Rua Exemplo, 100",
+  zip_code: String(billing_address?.zip_code || "01310930").replace(/\D/g, ""),
   city: billing_address?.city || "Sao Paulo",
   state: billing_address?.state || "SP",
   country: billing_address?.country || "BR"
@@ -7625,10 +7625,10 @@ if (billing_address?.line_2) {
 const paymentPayload = {
   payment_method: "credit_card",
   credit_card: {
-    card_token,
     installments: 1,
     statement_descriptor: "VELVET",
     operation_type: "auth_and_capture",
+    card_token,
     billing_address: billingAddress
   },
   antifraud_enabled: true
@@ -7680,6 +7680,7 @@ console.log(
   "pagarmeBody FINAL:",
   JSON.stringify(pagarmeBody, null, 2)
 );
+
 
 // // ===== VALIDAÇÕES ANTES DO AXIOS =====
 // if (!billingAddress.zip_code || billingAddress.zip_code.length < 8) {
