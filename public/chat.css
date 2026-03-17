@@ -1733,13 +1733,6 @@ body.role-cliente .msg-modelo .msg-hora {
   }
 }
 
-/* os elementos internos começam escondidos; o JS mostra só o necessário */
-#modalImg,
-#modalVideo,
-#modalIframe {
-  display: none;
-}
-
 
 /* =========================
    CAMADAS DOS MODAIS
@@ -1799,4 +1792,15 @@ body.role-cliente .msg-modelo .msg-hora {
 #modalPagamento .modal-content {
   position: relative;
   z-index: 11001;
+}
+
+#modalImg,
+#modalVideo,
+#modalIframe {
+  max-width: 100%;
+  max-height: 90vh;
+}
+
+.midia-hidden {
+  display: none !important;
 }
