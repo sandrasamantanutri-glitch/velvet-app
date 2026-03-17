@@ -655,65 +655,41 @@ ${msg.sender === "modelo" ? `
 // // ===============================
 
 async function abrirConteudo(message_id, index = 0) {
-  const modal = document.getElementById("modalMidia");
-  const img = document.getElementById("modalImg");
-  const video = document.getElementById("modalVideo");
-  const iframe = document.getElementById("modalIframe");
+  try {
+    const res = await fetch(`/api/chat/conteudo/${message_id}`, {
+      headers: { Authorization: "Bearer " + token }
+    });
 
-
-  const res = await fetch(`/api/chat/conteudo/${message_id}`, {
-    headers: { Authorization: "Bearer " + token }
-  });
-
-  if (!res.ok) {
-    alert("Erro ao carregar mídia");
-    return;
-  }
-
-  const midias = await res.json();
-  const midia = midias[index];
-
-  if (!midia) return;
-
-  if (midia.liberado === false) {
-    const card = document.querySelector(`.chat-conteudo[data-id="${message_id}"]`);
-    const preco = Number(card?.dataset.preco || 0);
-
-    if (preco > 0) {
-      abrirPagamentoChat(preco, message_id);
+    if (!res.ok) {
+      alert("Erro ao carregar mídia");
+      return;
     }
-    return;
-  }
 
-  modal.classList.remove("hidden");
+    const midias = await res.json();
+    const midia = midias[index];
 
-  marcarConteudoVisto(message_id);
+    if (!midia) return;
 
-  img.style.display = "none";
-  img.src = "";
+    if (midia.liberado === false) {
+      const card = document.querySelector(`.chat-conteudo[data-id="${message_id}"]`);
+      const preco = Number(card?.dataset.preco || 0);
 
-  video.pause();
-  video.removeAttribute("src");
-  video.load();
-  video.style.display = "none";
+      if (preco > 0) {
+        abrirPagamentoChat(preco, message_id);
+      }
+      return;
+    }
 
-  iframe.src = "";
-  iframe.style.display = "none";
+    if (!midia.url) {
+      console.warn("Mídia sem URL:", { message_id, index, midia });
+      return;
+    }
 
-  if (midia.url.includes("iframe.videodelivery.net")) {
-    iframe.src = midia.url;
-    iframe.style.display = "block";
-  } else if (
-    midia.url.includes(".mp4") ||
-    midia.url.includes(".webm") ||
-    midia.url.includes(".mov")
-  ) {
-    video.src = midia.url;
-    video.style.display = "block";
-    video.play().catch(() => {});
-  } else {
-    img.src = midia.url;
-    img.style.display = "block";
+    abrirModalMidia(midia.url);
+    marcarConteudoVisto(message_id);
+
+  } catch (err) {
+    console.error("Erro ao abrir conteúdo:", err);
   }
 }
 
