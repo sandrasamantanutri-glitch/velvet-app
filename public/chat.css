@@ -1161,7 +1161,6 @@ position: absolute;
     color: #6a2cff;
     font-size: 22px;
     cursor: pointer;
-    display: none;
 }
 
 .cartao-form{
@@ -1516,7 +1515,7 @@ body.role-cliente .msg-modelo .msg-hora {
 .modal-pagamento,
 #modalPagamento,
 .popup-pagamento-overlay {
-  position: none;
+  position: fixed;
   inset: 0;
   background: rgba(12, 12, 18, 0.55);
   backdrop-filter: blur(4px);
