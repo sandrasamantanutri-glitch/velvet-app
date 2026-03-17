@@ -7449,7 +7449,7 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
         c.id,
         c.bloqueado,
         u.email,
-        COALESCE(NULLIF(u.username, ''), split_part(u.email, '@', 1), 'Cliente Velvet') AS nome
+        split_part(u.email, '@', 1) AS nome
       FROM clientes c
       JOIN users u ON u.id = c.user_id
       WHERE c.user_id = $1
