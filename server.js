@@ -7366,6 +7366,11 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
   const client = await db.connect();
 
   try {
+
+    console.log("=== INICIO /api/pagamento/midia/cartao ===");
+    console.log("BODY:", req.body);
+    console.log("USER:", req.user);
+
     const { conteudo_id, card_token, fingerprint, cpf, billing_address } = req.body;
     const userId = req.user.id;
 
@@ -7635,20 +7640,23 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
       taxaPlataforma
     });
   } catch (err) {
-    await client.query("ROLLBACK");
+    try {
+      await client.query("ROLLBACK");
+    } catch (e) {
+      console.error("Erro no rollback:", e.message);
+    }
 
-    console.error(
-      "🔥 ERRO PAGAMENTO CARTÃO MÍDIA:",
-      err.response?.data || err
-    );
+    console.error("Erro em /api/pagamento/midia/cartao");
+    console.error("message:", err.message);
+    console.error("stack:", err.stack);
+    console.error("response status:", err.response?.status);
+    console.error("response data:", err.response?.data);
 
-    const gatewayMessage =
-      err.response?.data?.message ||
-      err.response?.data?.errors?.[0]?.message ||
-      null;
-
-    return res.status(err.response?.status || 500).json({
-      error: gatewayMessage || "Erro ao gerar pagamento"
+    return res.status(500).json({
+      error: "Erro interno ao processar pagamento com cartão",
+      detalhe: err.message,
+      gateway_status: err.response?.status || null,
+      gateway_error: err.response?.data || null
     });
   } finally {
     client.release();
