@@ -7632,6 +7632,7 @@ if (billing_address?.line_2) {
 
 const paymentPayload = {
   payment_method: "credit_card",
+  amount, // <- importante
   credit_card: {
     installments: 1,
     statement_descriptor: "VELVET",
@@ -7690,21 +7691,15 @@ console.log(
   JSON.stringify(pagarmeBody, null, 2)
 );
 
+if (!amount || amount <= 0) {
+  await client.query("ROLLBACK");
+  return res.status(400).json({ error: "Valor do pagamento inválido." });
+}
 
-// // ===== VALIDAÇÕES ANTES DO AXIOS =====
-// if (!billingAddress.zip_code || billingAddress.zip_code.length < 8) {
-//   await client.query("ROLLBACK");
-//   return res.status(400).json({ error: "CEP inválido para cobrança." });
-// }
-
-// if (
-//   !pagarmeBody.customer.phones.mobile_phone.area_code ||
-//   !pagarmeBody.customer.phones.mobile_phone.number
-// ) {
-//   await client.query("ROLLBACK");
-//   return res.status(400).json({ error: "Telefone inválido para cobrança." });
-// }
-
+if (!billingAddress.line_1 || !billingAddress.zip_code) {
+  await client.query("ROLLBACK");
+  return res.status(400).json({ error: "Endereço de cobrança incompleto." });
+}
 
 const pagarmeHeaders = {
   Authorization:
