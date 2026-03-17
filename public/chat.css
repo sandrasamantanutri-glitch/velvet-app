@@ -1604,81 +1604,6 @@ body.role-cliente .msg-modelo .msg-hora {
   color: #2f243d;
 }
 
-/* FORM */
-.form-pagamento {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.form-group label {
-  font-size: 14px;
-  font-weight: 700;
-  color: #6d28d9;
-}
-
-/* INPUTS */
-.form-pagamento input,
-.form-pagamento select,
-.form-pagamento textarea,
-.popup-pagamento input,
-.popup-pagamento select {
-  width: 100%;
-  height: 48px;
-  border: 1px solid #ddd6fe;
-  border-radius: 12px;
-  padding: 0 14px;
-  font-size: 15px;
-  color: #2d2438;
-  background: #fcfcff;
-  outline: none;
-  transition: 0.18s ease;
-  box-sizing: border-box;
-}
-
-.form-pagamento textarea {
-  min-height: 90px;
-  padding-top: 12px;
-  resize: vertical;
-}
-
-.form-pagamento input::placeholder,
-.popup-pagamento input::placeholder {
-  color: #9a90ac;
-}
-
-.form-pagamento input:focus,
-.form-pagamento select:focus,
-.form-pagamento textarea:focus,
-.popup-pagamento input:focus,
-.popup-pagamento select:focus {
-  border-color: #7c3aed;
-  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.10);
-  background: #fff;
-}
-
-/* LINHAS COM VÁRIOS CAMPOS */
-.row-2,
-.row-3,
-.form-row {
-  display: grid;
-  gap: 12px;
-}
-
-.row-2 {
-  grid-template-columns: 1fr 1fr;
-}
-
-.row-3 {
-  grid-template-columns: 1fr 1fr 1fr;
-}
-
 /* BOTÃO */
 .btn-confirmar-pagamento,
 .btn-confirmar-desbloqueio,
@@ -1773,3 +1698,115 @@ body.role-cliente .msg-modelo .msg-hora {
   display: none;
 }
 
+
+.form-pagamento {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.form-group.full {
+  grid-column: 1 / -1;
+}
+
+.form-group.small {
+  grid-column: span 1;
+}
+
+.linha-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  grid-column: 1 / -1;
+}
+
+.linha-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  grid-column: 1 / -1;
+}
+
+/* deixa o modal mais compacto */
+.popup-pagamento,
+.modal-pagamento .modal-content,
+#modalPagamento .modal-content {
+  max-width: 390px;
+  padding: 20px 18px 18px;
+  border-radius: 18px;
+}
+
+.popup-pagamento h2,
+.modal-content h2 {
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.total-desbloqueio,
+.valor-total {
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.total-desbloqueio strong,
+.valor-total strong {
+  font-size: 24px;
+}
+
+.breakdown-pagamento,
+.resumo-valores {
+  padding: 10px 12px;
+  margin-bottom: 14px;
+}
+
+.form-group label {
+  font-size: 13px;
+}
+
+.form-pagamento input,
+.form-pagamento select,
+.popup-pagamento input,
+.popup-pagamento select {
+  height: 42px;
+  font-size: 14px;
+  border-radius: 10px;
+}
+
+/* botão */
+.btn-confirmar-pagamento,
+.btn-confirmar-desbloqueio,
+.popup-pagamento button[type="submit"] {
+  height: 46px;
+  font-size: 15px;
+  margin-top: 4px;
+}
+
+/* mobile */
+@media (max-width: 520px) {
+  .form-pagamento {
+    grid-template-columns: 1fr;
+  }
+
+  .linha-2,
+  .linha-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .form-group.full,
+  .form-group.small {
+    grid-column: auto;
+  }
+
+  .popup-pagamento,
+  .modal-pagamento .modal-content,
+  #modalPagamento .modal-content {
+    max-width: 100%;
+  }
+}
