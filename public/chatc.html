@@ -2,13 +2,13 @@
 <html lang="pt">
 <head>
   <meta charset="UTF-8">
-   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Chat Cliente</title>
 
-<link rel="stylesheet" href="/css/chat.css">
-<link rel="stylesheet" href="/chatmodelo.css">
-<link rel="stylesheet" href="/chat.css">
-
+  <link rel="stylesheet" href="/css/chat.css">
+  <link rel="stylesheet" href="/chatmodelo.css">
+  <link rel="stylesheet" href="/chat.css">
+</head>
 
 <body class="role-cliente">
 
@@ -74,7 +74,9 @@
     </div>
 
     <div class="campo-pagamento">
-      <button class="btn-gerar-pix" onclick="gerarPix()">Gerar o código Pix</button>
+      <button id="btnGerarPix" class="btn-gerar-pix" onclick="gerarPix()">
+  Gerar o código Pix
+</button>
     </div>
 
     <img id="pixQr" class="pix-qr hidden" alt="">
@@ -85,7 +87,9 @@
 
     <textarea id="pixCopia" class="pix-copia" readonly></textarea>
 
-    <button class="pix-copiar" onclick="copiarPix()">Copiar código Pix</button>
+   <button id="btnCopiarPix" class="pix-copiar" onclick="copiarPix()" disabled>
+  Copiar código Pix
+</button>
 
   </div>
 </div>
@@ -115,9 +119,9 @@
       ⚡ Desbloquear com Pix
     </button>
 
-    <button class="btn-pagamento cartao" onclick="pagarComCartao()">
-      💳 Desbloquear com Cartão
-    </button>
+    <button class="btn-pagamento cartao" onclick="abrirModalCartao()">
+  💳 Desbloquear com Cartão
+</button>
 
   </div>
 </div>
@@ -155,87 +159,101 @@
 </div> -->
 
 <div id="paymentModal" class="modal hidden">
-
   <div class="modal-backdrop"></div>
 
   <div class="modal-content modal-cartao">
-
-    <button class="modal-close" onclick="fecharPagamento()">×</button>
+    <button type="button" class="modal-close" onclick="fecharPagamento()">×</button>
 
     <h2 class="desbloq">Desbloquear Mídia</h2>
 
     <div class="cartao-preco">
-
       <div class="cartao-total">
         Total para Desbloquear:
         <strong id="cartaoValorTotal">R$ 0,00</strong>
       </div>
 
       <div class="cartao-detalhes">
-        <div>Midia: <span id="cartaoValorConteudo">R$ 0,00</span></div>
+        <div>Mídia: <span id="cartaoValorConteudo">R$ 0,00</span></div>
         <div>Taxa de transação: <span id="cartaoTaxaTransacao">R$ 0,00</span></div>
         <div>Taxa da plataforma: <span id="cartaoTaxaPlataforma">R$ 0,00</span></div>
       </div>
-
     </div>
 
     <!-- FORM CARTÃO -->
-
-    <div class="cartao-form">
-
-      <label>Número do cartão</label>
+    <form id="formCartao" class="cartao-form" data-pagarmecheckout-form>
+      <label for="card_number">Número do cartão</label>
       <input
         type="text"
         id="card_number"
+        name="card_number"
+        data-pagarmecheckout-element="number"
         placeholder="0000 0000 0000 0000"
         autocomplete="cc-number"
+        inputmode="numeric"
         maxlength="19"
       >
 
-      <label>Nome no cartão</label>
+      <label for="card_holder">Nome no cartão</label>
       <input
         type="text"
         id="card_holder"
+        name="holder_name"
+        data-pagarmecheckout-element="holder_name"
         placeholder="Nome impresso no cartão"
         autocomplete="cc-name"
       >
 
       <div class="cartao-row">
-
         <div class="cartao-field">
-          <label>Validade</label>
+          <label for="card_exp_month">Mês</label>
           <input
             type="text"
-            id="card_expiration"
-            placeholder="MMYY"
-            autocomplete="cc-exp"
+            id="card_exp_month"
+            name="exp_month"
+            data-pagarmecheckout-element="exp_month"
+            placeholder="MM"
+            inputmode="numeric"
+            maxlength="2"
+          >
+        </div>
+
+        <div class="cartao-field">
+          <label for="card_exp_year">Ano</label>
+          <input
+            type="text"
+            id="card_exp_year"
+            name="exp_year"
+            data-pagarmecheckout-element="exp_year"
+            placeholder="AAAA"
+            inputmode="numeric"
             maxlength="4"
           >
         </div>
 
         <div class="cartao-field">
-          <label>CVV</label>
+          <label for="card_cvv">CVV</label>
           <input
             type="text"
             id="card_cvv"
+            name="cvv"
+            data-pagarmecheckout-element="cvv"
             placeholder="123"
             autocomplete="cc-csc"
+            inputmode="numeric"
             maxlength="4"
           >
         </div>
-
       </div>
 
-    </div>
-
-    <!-- BOTÃO -->
-
-    <button id="confirmarPagamento" class="btn-confirmar-desbloqueio">
-      Confirmar desbloqueio
-    </button>
-
+      <button
+        type="button"
+        id="confirmarPagamento"
+        class="btn-confirmar-desbloqueio"
+      >
+        Confirmar desbloqueio
+      </button>
+    </form>
   </div>
-
 </div>
 
 <div id="modalMidia" class="modal-midia hidden">
@@ -261,9 +279,11 @@
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
-<script src="https://js.stripe.com/v3/"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-<script src="https://unpkg.com/@pagarme/browser-encryption@1/dist/browser-encryption.min.js"></script>
+<script
+  src="https://checkout.pagar.me/v1/tokenizecard.js"
+  data-pagarmecheckout-app-id="pk_oQW43ZaU7JHP">
+</script>
 <script src="/header.js"></script>
 <script src="/chatc.js" defer></script>
 

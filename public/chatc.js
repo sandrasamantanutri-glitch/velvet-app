@@ -33,14 +33,13 @@ const chatBox = document.getElementById("chatBox");
 
 const conteudosLiberados = new Set();
 let pagamentoAtual = null;
-let elements = null;
 let pagamentoEmProcesso = false;
 
+const PAGARME_PUBLIC_KEY = "pk_oQW43ZaU7JHP";
+// const stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
 
-const stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
-
-// ===============================
-// SOCKET
+// // ===============================
+// // SOCKET
 // ===============================
 
 socket.on("connect", () => {
@@ -140,6 +139,35 @@ document.addEventListener("DOMContentLoaded", async () => {
           enviarMensagem();
         }
       });
+    }
+
+    const btnConfirmar = document.getElementById("confirmarPagamento");
+if (btnConfirmar) {
+  btnConfirmar.onclick = async () => {
+    btnConfirmar.disabled = true;
+    btnConfirmar.innerText = "Processando...";
+
+    try {
+      const resultado = await pagarComCartao();
+
+      if (!resultado || !resultado.sucesso) {
+        btnConfirmar.disabled = false;
+        btnConfirmar.innerText = "Confirmar desbloqueio";
+        return;
+      }
+
+      btnConfirmar.innerText = "Aguardando confirmação...";
+    } catch (err) {
+      console.error("Erro pagamento:", err);
+      alert("Erro ao processar pagamento");
+      btnConfirmar.disabled = false;
+      btnConfirmar.innerText = "Confirmar desbloqueio";
+    }
+  };
+}
+
+     if (!window.PagarmeCheckout) {
+      console.error("PagarmeCheckout não carregou");
     }
 
   } catch (err){
@@ -1063,9 +1091,11 @@ function fecharPopupPix() {
 
   const popup = document.getElementById("popupPix");
   if (popup) popup.classList.add("hidden");
+
   pagamentoAtual = {};
-  const cpf = document.getElementById("pixCpf");
-if (cpf) cpf.value = "";
+
+  const cpf = document.getElementById("cpfEscolha");
+  if (cpf) cpf.value = "";
 }
 
 function valorBRL(valor) {
@@ -1112,15 +1142,10 @@ function abrirPixConteudo(conteudo_id, preco) {
 }
 
 async function gerarPix() {
-  if (pollingPagamento) {
-  clearInterval(pollingPagamento);
-}
-
-if (pollingTimeout) {
-  clearTimeout(pollingTimeout);
-}
+  pararPollingPagamento();
 
   const btn = document.getElementById("btnGerarPix");
+  const btnCopiar = document.getElementById("btnCopiarPix");
 
   if (btn) {
     btn.disabled = true;
@@ -1128,16 +1153,17 @@ if (pollingTimeout) {
   }
 
   try {
-
     if (!pagamentoAtual?.conteudo_id) {
       alert("Conteúdo inválido.");
       return;
     }
 
-const cpfLimpo = obterCpfValido();
-if (!cpfLimpo) return;
+    const cpfLimpo = obterCpfValido();
+    if (!cpfLimpo) return;
 
-const conteudo_id = Number(pagamentoAtual.conteudo_id);
+    const conteudo_id = Number(pagamentoAtual.conteudo_id);
+
+    atualizarStatusPix("⏳ Gerando Pix...", "aguardando");
 
     const res = await fetch("/api/pagamento/midia/pix", {
       method: "POST",
@@ -1155,46 +1181,49 @@ const conteudo_id = Number(pagamentoAtual.conteudo_id);
 
     if (!res.ok) {
       alert(data.error || "Erro ao gerar PIX");
+      atualizarStatusPix("❌ Erro ao gerar Pix.", "erro");
       return;
     }
 
-const imgQr = document.getElementById("pixQr");
-
-if (data.qr_code_base64) {
-
-  imgQr.src = "data:image/png;base64," + data.qr_code_base64;
-  imgQr.classList.remove("hidden");
-
-} else {console.error("Gateway não retornou QR base64");
-}
-
+    const imgQr = document.getElementById("pixQr");
     const inputCopia = document.getElementById("pixCopia");
-    const btnCopiar = document.getElementById("btnCopiarPix");
 
-    if (data.qr_code) {
+    if (data.qr_code_base64 && imgQr) {
+      imgQr.src = "data:image/png;base64," + data.qr_code_base64;
+      imgQr.classList.remove("hidden");
+    }
+
+    if (data.qr_code && inputCopia) {
       inputCopia.value = data.qr_code;
     }
 
     if (btnCopiar) {
-      btnCopiar.disabled = false;
+      btnCopiar.disabled = !data.qr_code;
     }
 
-    pagamentoAtual.orderId = data.payment_id;
+    pagamentoAtual.payment_id = data.payment_id || data.order_id || null;
+    pagamentoAtual.message_id = data.message_id || pagamentoAtual.conteudo_id;
 
-    iniciarPollingPagamento(data.payment_id);
+    atualizarStatusPix("⏳ Aguardando pagamento...", "aguardando");
 
+    if (pagamentoAtual.payment_id) {
+iniciarPollingPagamento(
+  pagamentoAtual.payment_id,
+  pagamentoAtual.message_id,
+  "pix"
+);
+    } else {
+      console.warn("PIX criado sem payment_id retornado");
+    }
   } catch (err) {
-
     console.error("Erro Pix:", err);
     alert("Erro inesperado no Pix");
-
+    atualizarStatusPix("❌ Erro inesperado ao gerar Pix.", "erro");
   } finally {
-
     if (btn) {
       btn.disabled = false;
       btn.innerText = "Gerar o código Pix";
     }
-
   }
 }
 
@@ -1309,256 +1338,297 @@ function pagarComPix() {
 // }
 
 async function pagarComCartao() {
-
   const cpf = obterCpfValido();
-  if (!cpf) return;
+  if (!cpf) return { sucesso: false };
 
   pagamentoAtual.cpf = cpf;
 
-  if (pagamentoEmProcesso) return;
+  if (pagamentoEmProcesso) return { sucesso: false };
   pagamentoEmProcesso = true;
 
-  document
-    .getElementById("escolhaPagamento")
-    .classList.add("hidden");
-
-  if (!pagamentoAtual?.conteudo_id) {
-    alert("Conteúdo inválido");
-    pagamentoEmProcesso = false;
-    return;
-  }
-
-  const conteudo_id = Number(pagamentoAtual.conteudo_id);
-
   try {
-
-    /* =========================
-       GERAR TOKEN DO CARTÃO
-    ========================= */
-
-    const client = await pagarme.client.connect({
-      encryption_key: PAGARME_PUBLIC_KEY
-    });
-
-    const card = await client.security.encrypt({
-      card_number: document
-        .getElementById("card_number")
-        .value.replace(/\s/g, ""),   // remove espaços
-      card_holder_name: document
-        .getElementById("card_holder")
-        .value,
-      card_expiration_date: document
-        .getElementById("card_expiration")
-        .value,
-      card_cvv: document
-        .getElementById("card_cvv")
-        .value
-    });
-
-    const card_token = card.card_hash;
-
-    /* =========================
-       ENVIAR PARA BACKEND
-    ========================= */
-
-    const res = await fetch("/api/pagamento/midia/cartao", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + localStorage.getItem("token")
-      },
-      body: JSON.stringify({
-        conteudo_id,
-        cpf: pagamentoAtual.cpf,
-        card_token
-      })
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      alert(data.error || "Erro no pagamento");
+    if (!pagamentoAtual?.conteudo_id) {
+      alert("Conteúdo inválido");
       pagamentoEmProcesso = false;
-      return { sucesso:false };
+      return { sucesso: false };
     }
 
-    /* =========================
-       ATUALIZAR UI
-    ========================= */
-
-    const elValorConteudo = document.getElementById("cartaoValorConteudo");
-    if (elValorConteudo) {
-      elValorConteudo.innerText = valorBRL(data.valorBase);
+    if (!window.PagarmeCheckout) {
+      alert("Biblioteca do cartão não carregou.");
+      pagamentoEmProcesso = false;
+      return { sucesso: false };
     }
 
-    const elTaxaTransacao = document.getElementById("cartaoTaxaTransacao");
-    if (elTaxaTransacao) {
-      elTaxaTransacao.innerText = valorBRL(data.taxaTransacao);
-    }
+    const conteudo_id = Number(pagamentoAtual.conteudo_id);
 
-    const elTaxaPlataforma = document.getElementById("cartaoTaxaPlataforma");
-    if (elTaxaPlataforma) {
-      elTaxaPlataforma.innerText = valorBRL(data.taxaPlataforma);
-    }
+    return await new Promise((resolve) => {
+      PagarmeCheckout.init(
+        async function success(tokenData) {
+          try {
+            console.log("Token do cartão gerado:", tokenData);
+            console.log("Chaves recebidas:", tokenData ? Object.keys(tokenData) : []);
 
-    const elValorTotal = document.getElementById("cartaoValorTotal");
-    if (elValorTotal) {
-      elValorTotal.innerText = valorBRL(data.total);
-    }
+            const card_token =
+              tokenData?.id ||
+              tokenData?.token ||
+              tokenData?.card_token ||
+              tokenData?.pagarmetoken;
 
-    document
-      .getElementById("paymentModal")
-      .classList.remove("hidden");
+            if (!card_token) {
+              alert("Não foi possível gerar o token do cartão.");
+              pagamentoEmProcesso = false;
+              resolve({ sucesso: false });
+              return false;
+            }
 
-    alert("Pagamento enviado. Aguardando confirmação.");
+            const res = await fetch("/api/pagamento/midia/cartao", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: "Bearer " + localStorage.getItem("token")
+              },
+              body: JSON.stringify({
+                conteudo_id,
+                cpf: pagamentoAtual.cpf,
+                card_token
+              })
+            });
 
-    pagamentoEmProcesso = false;
+            const data = await res.json();
 
-    return { sucesso:true };
+            if (!res.ok) {
+              alert(data.error || "Erro no pagamento");
+              pagamentoEmProcesso = false;
+              resolve({ sucesso: false });
+              return false;
+            }
 
+            pagamentoAtual.payment_id = data.payment_id || data.order_id || null;
+            pagamentoAtual.message_id = data.message_id || conteudo_id;
+
+            const elValorConteudo = document.getElementById("cartaoValorConteudo");
+            const elTaxaTransacao = document.getElementById("cartaoTaxaTransacao");
+            const elTaxaPlataforma = document.getElementById("cartaoTaxaPlataforma");
+            const elValorTotal = document.getElementById("cartaoValorTotal");
+
+            if (elValorConteudo && data.valorBase != null) {
+              elValorConteudo.innerText = valorBRL(data.valorBase);
+            }
+
+            if (elTaxaTransacao && data.taxaTransacao != null) {
+              elTaxaTransacao.innerText = valorBRL(data.taxaTransacao);
+            }
+
+            if (elTaxaPlataforma && data.taxaPlataforma != null) {
+              elTaxaPlataforma.innerText = valorBRL(data.taxaPlataforma);
+            }
+
+            if (elValorTotal && data.total != null) {
+              elValorTotal.innerText = valorBRL(data.total);
+            }
+
+            atualizarStatusCartao("⏳ Aguardando confirmação...");
+
+            if (pagamentoAtual.payment_id) {
+              iniciarPollingPagamento(
+                pagamentoAtual.payment_id,
+                pagamentoAtual.message_id,
+                "cartao"
+              );
+            }
+
+            pagamentoEmProcesso = false;
+            resolve({ sucesso: true, aguardando_confirmacao: true });
+            return false;
+          } catch (err) {
+            console.error("Erro no pagamento com cartão:", err);
+            alert("Erro inesperado ao processar cartão");
+            pagamentoEmProcesso = false;
+            resolve({ sucesso: false });
+            return false;
+          }
+        },
+        function fail(error) {
+          console.error("Erro tokenização Pagar.me:", error);
+          alert("Não foi possível validar os dados do cartão.");
+          pagamentoEmProcesso = false;
+          resolve({ sucesso: false });
+        }
+      );
+
+      const form = document.getElementById("formCartao");
+      if (form) {
+        if (typeof form.requestSubmit === "function") {
+          form.requestSubmit();
+        } else {
+          form.dispatchEvent(
+            new Event("submit", { bubbles: true, cancelable: true })
+          );
+        }
+      } else {
+        console.error("formCartao não encontrado");
+        pagamentoEmProcesso = false;
+        resolve({ sucesso: false });
+      }
+    });
   } catch (err) {
-
     console.error("Erro cartão:", err);
-
     alert("Erro inesperado");
-
     pagamentoEmProcesso = false;
-
-    return { sucesso:false };
-
+    return { sucesso: false };
   }
-
 }
 
 function fecharPagamento() {
-
   const modal = document.getElementById("paymentModal");
   if (modal) modal.classList.add("hidden");
 
-  if (elements) {
-    try {
-      elements = null;
-    } catch (err) {
-      console.warn("Erro limpando Stripe Elements:", err);
-    }
+  const btnConfirmar = document.getElementById("confirmarPagamento");
+  if (btnConfirmar) {
+    btnConfirmar.disabled = false;
+    btnConfirmar.innerText = "Confirmar desbloqueio";
   }
 
-  const el = document.getElementById("payment-element");
-  if (el) el.innerHTML = "";
+  const campos = [
+    "card_number",
+    "card_holder",
+    "card_exp_month",
+    "card_exp_year",
+    "card_cvv"
+  ];
+
+  campos.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
 }
 
 let pollingPagamento = null;
 let pollingTimeout = null;
 
-function iniciarPollingPagamento(orderId) {
-
+function pararPollingPagamento() {
   if (pollingPagamento) {
     clearInterval(pollingPagamento);
+    pollingPagamento = null;
   }
 
   if (pollingTimeout) {
     clearTimeout(pollingTimeout);
+    pollingTimeout = null;
   }
+}
 
- pollingPagamento = setInterval(async () => {
+function atualizarStatusPix(texto, classe = "aguardando") {
+  const statusPix = document.getElementById("pixStatus");
+  if (!statusPix) return;
 
-  try {
+  statusPix.innerText = texto;
+  statusPix.className = `pix-status ${classe}`;
+}
 
-    const res = await fetch(`/api/pagamento/status/${orderId}`, {
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token")
-      }
-    });
+function atualizarStatusCartao(texto) {
+  const btnConfirmar = document.getElementById("confirmarPagamento");
+  if (!btnConfirmar) return;
 
-    if (!res.ok) {
-      return;
-    }
+  btnConfirmar.innerText = texto;
+}
 
-    const data = await res.json();
+function iniciarPollingPagamento(paymentId, messageId, tipo = "pix") {
+  pararPollingPagamento();
 
-    const statusPix = document.getElementById("pixStatus");
+  pollingPagamento = setInterval(async () => {
+    try {
+      const res = await fetch(`/api/pagamento/status/${paymentId}`, {
+        headers: {
+          Authorization: "Bearer " + localStorage.getItem("token")
+        }
+      });
 
-    // ==========================
-    // PROCESSANDO
-    // ==========================
-    if (data.status === "processing") {
+      if (!res.ok) return;
 
-      if (statusPix) {
-        statusPix.innerText = "⏳ Aguarde, estamos processando o pagamento...";
-        statusPix.className = "pix-status processando";
-      }
-    }
+      const data = await res.json();
+      const status = (data.status || "").toLowerCase();
 
-    // ==========================
-    // PAGAMENTO CONFIRMADO
-    // ==========================
-    if (data.status === "pago") {
+      const setStatus = (texto, classe = "aguardando") => {
+        if (tipo === "pix") {
+          atualizarStatusPix(texto, classe);
+        } else {
+          atualizarStatusCartao(texto);
+        }
+      };
 
-      if (statusPix) {
-        statusPix.innerText = "✅ Pagamento confirmado!";
-        statusPix.className = "pix-status pago";
-      }
-
-      clearInterval(pollingPagamento);
-      clearTimeout(pollingTimeout);
-
-      liberarConteudo(data.message_id);
-
-      setTimeout(() => {
-        fecharPagamento();
-      }, 2000);
-    }
-
-    // ==========================
-    // PAGAMENTO FALHOU
-    // ==========================
-    if (data.status === "falhou") {
-
-      if (statusPix) {
-        statusPix.innerText = "❌ Pagamento não aprovado. Verifique com seu banco ou tente outro método.";
-        statusPix.className = "pix-status erro";
+      if (
+        status === "pending" ||
+        status === "pendente" ||
+        status === "waiting_payment" ||
+        status === "aguardando_pagamento"
+      ) {
+        setStatus("⏳ Aguardando pagamento...", "aguardando");
+        return;
       }
 
-      clearInterval(pollingPagamento);
-      clearTimeout(pollingTimeout);
+      if (status === "processing" || status === "processando") {
+        setStatus("⏳ Pagamento recebido. Processando confirmação...", "processando");
+        return;
+      }
+      
+      if (status === "authorized" || status === "authorizing") {
+  setStatus("⏳ Pagamento autorizado. Finalizando confirmação...", "processando");
+  return;
+}
 
-      setTimeout(() => {
-        fecharPagamento();
-      }, 3000);
+      if (status === "paid" || status === "pago") {
+        setStatus("✅ Pagamento confirmado!", "pago");
+        pararPollingPagamento();
+
+        await liberarConteudo(messageId || data.message_id);
+
+        setTimeout(() => {
+          if (tipo === "pix") {
+            fecharPopupPix();
+          } else {
+            fecharPagamento();
+          }
+        }, 1200);
+
+        return;
+      }
+
+      if (
+        status === "failed" ||
+        status === "falhou" ||
+        status === "canceled" ||
+        status === "cancelado"
+      ) {
+        setStatus("❌ Pagamento não aprovado.", "erro");
+        pararPollingPagamento();
+        return;
+      }
+
+      if (status === "expired" || status === "expirado") {
+        setStatus("⌛ Pagamento expirado. Tente novamente.", "erro");
+        pararPollingPagamento();
+      }
+    } catch (err) {
+      console.error("Erro polling:", err);
     }
-
-    // ==========================
-    // PIX EXPIRADO
-    // ==========================
-    if (data.status === "expirado") {
-
-      clearInterval(pollingPagamento);
-      clearTimeout(pollingTimeout);
-
-      setTimeout(() => {
-        fecharPagamento();
-      }, 3000);
-    }
-
-  } catch (err) {
-    console.error("Erro polling:", err);
-  }
-
-}, 5000);
+  }, 5000);
 
   pollingTimeout = setTimeout(() => {
+    pararPollingPagamento();
 
-    clearInterval(pollingPagamento);
-
-    console.log("Polling encerrado após 2 minutos");
-
-  }, 120000);
-
+    if (tipo === "pix") {
+      atualizarStatusPix("⌛ Tempo de verificação encerrado. Você pode tentar novamente.", "erro");
+    } else {
+      atualizarStatusCartao("Tentar novamente");
+    }
+  }, 180000);
 }
 
 async function liberarConteudo(messageId) {
-  console.log("Conteúdo liberado via polling", messageId);
-  fecharPopupPix();
+  if (!messageId) return;
+
+  console.log("Conteúdo confirmado pelo backend:", messageId);
 
   const el = document.querySelector(`.chat-conteudo[data-id="${messageId}"]`);
   if (!el) return;
@@ -1573,7 +1643,6 @@ async function liberarConteudo(messageId) {
     if (!res.ok) return;
 
     const midias = await res.json();
-
     const todasLiberadas = midias.every(m => m.liberado !== false);
 
     if (todasLiberadas) {
@@ -1584,7 +1653,7 @@ async function liberarConteudo(messageId) {
 
     el.innerHTML = `
       <div class="pacote-grid">
-        ${midias.map((m,index) => `
+        ${midias.map((m, index) => `
           <div class="midia-item ${m.liberado !== false ? "midia-livre" : "midia-bloqueada"}"
                data-index="${index}"
                data-liberado="${m.liberado !== false ? "true" : "false"}">
@@ -1604,8 +1673,6 @@ async function liberarConteudo(messageId) {
         `).join("")}
       </div>
     `;
-
-    abrirConteudo(messageId, 0);
   } catch (err) {
     console.error("Erro liberar conteúdo:", err);
   }
@@ -1649,8 +1716,7 @@ function copiarPix() {
 }
 
 function resetarPixUI() {
-  if (pollingPagamento) clearInterval(pollingPagamento);
-  if (pollingTimeout) clearTimeout(pollingTimeout);
+  pararPollingPagamento();
 
   const imgQr = document.getElementById("pixQr");
   if (imgQr) {
@@ -1662,13 +1728,34 @@ function resetarPixUI() {
   if (inputCopia) inputCopia.value = "";
 
   const statusPix = document.getElementById("pixStatus");
-  if (statusPix) statusPix.innerText = "";
+  if (statusPix) {
+    statusPix.innerText = "";
+    statusPix.className = "pix-status aguardando";
+  }
 
   if (pagamentoAtual) {
     pagamentoAtual.orderId = null;
     pagamentoAtual.payment_id = null;
+    pagamentoAtual.message_id = null;
   }
 }
+
+function abrirModalCartao() {
+  const cpf = obterCpfValido();
+  if (!cpf) return;
+
+  pagamentoAtual.cpf = cpf;
+
+  const btnConfirmar = document.getElementById("confirmarPagamento");
+  if (btnConfirmar) {
+    btnConfirmar.disabled = false;
+    btnConfirmar.innerText = "Confirmar desbloqueio";
+  }
+
+  document.getElementById("escolhaPagamento").classList.add("hidden");
+  document.getElementById("paymentModal").classList.remove("hidden");
+}
+
 
 // const btnConfirmar = document.getElementById("confirmarPagamento");
 
@@ -1714,56 +1801,6 @@ function resetarPixUI() {
 // };
 
 // }
-
-const btnConfirmar = document.getElementById("confirmarPagamento");
-
-if (btnConfirmar) {
-
-  btnConfirmar.onclick = async () => {
-
-    btnConfirmar.disabled = true;
-    btnConfirmar.innerText = "Processando...";
-
-    try {
-
-      const resultado = await pagarComCartao();
-
-      if (!resultado || !resultado.sucesso) {
-        btnConfirmar.disabled = false;
-        btnConfirmar.innerText = "Confirmar desbloqueio";
-        return;
-      }
-
-      fecharPagamento();
-
-      if (pagamentoAtual?.conteudo_id) {
-
-        const messageId = pagamentoAtual.conteudo_id;
-
-        await liberarConteudo(messageId);
-
-        setTimeout(() => {
-          abrirConteudo(messageId, 0);
-        }, 200);
-
-      }
-
-      pagamentoEmProcesso = false;
-
-    } catch (err) {
-
-      console.error("Erro pagamento:", err);
-
-      alert("Erro ao processar pagamento");
-
-      btnConfirmar.disabled = false;
-      btnConfirmar.innerText = "Confirmar desbloqueio";
-
-    }
-
-  };
-
-}
 
 // apenas log
 socket.on("disconnect", reason => {
