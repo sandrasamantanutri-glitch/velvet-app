@@ -1568,7 +1568,6 @@ body.role-cliente .msg-modelo .msg-hora {
   text-align: center;
   margin-bottom: 14px;
   font-size: 20px;
-  font-weight: 700;
   color: #7c3aed;
 }
 
@@ -1581,17 +1580,16 @@ body.role-cliente .msg-modelo .msg-hora {
 /* RESUMO DE TAXAS */
 .resumo-valores,
 .breakdown-pagamento {
-  background: #f8f5ff;
   border: 1px solid #ede9fe;
   border-radius: 14px;
-  padding: 12px 14px;
+  padding: 5px 50px;
   margin-bottom: 20px;
 }
 
 .resumo-valores p,
 .breakdown-pagamento p {
   margin: 6px 0;
-  font-size: 14px;
+  font-size: 10px;
   color: #5b5565;
   display: flex;
   justify-content: space-between;
@@ -1639,14 +1637,14 @@ body.role-cliente .msg-modelo .msg-hora {
 .btn-fechar-modal,
 .modal-close {
   position: absolute;
-  top: 14px;
-  right: 14px;
+  top: 15px;
+  right: 20px;
   width: 36px;
   height: 36px;
   border: 0;
   border-radius: 999px;
-  background: #f3f0ff;
-  color: #6d28d9;
+  background: #7B2CFF;
+  color: #fff;
   font-size: 20px;
   cursor: pointer;
 }
@@ -1673,7 +1671,8 @@ body.role-cliente .msg-modelo .msg-hora {
 
   .valor-total strong,
   .total-desbloqueio strong {
-    font-size: 26px;
+    font-size: 16px;
+    color: #333;
   }
 
   .row-2,
@@ -1708,7 +1707,7 @@ body.role-cliente .msg-modelo .msg-hora {
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -1745,14 +1744,15 @@ body.role-cliente .msg-modelo .msg-hora {
 
 .popup-pagamento h2,
 .modal-content h2 {
-  font-size: 18px;
+  font-size: 16px;
   margin-bottom: 8px;
 }
 
 .total-desbloqueio,
 .valor-total {
-  font-size: 16px;
+  font-size: 14px;
   margin-bottom: 10px;
+  color: #333;
 }
 
 .total-desbloqueio strong,
@@ -1767,24 +1767,25 @@ body.role-cliente .msg-modelo .msg-hora {
 }
 
 .form-group label {
-  font-size: 13px;
+  font-size: 11px;
+  color:#333;
+  text-align: center;
 }
 
 .form-pagamento input,
 .form-pagamento select,
 .popup-pagamento input,
 .popup-pagamento select {
-  height: 42px;
-  font-size: 14px;
-  border-radius: 10px;
+  height: 30px;
+  font-size: 11px;
 }
 
 /* botão */
 .btn-confirmar-pagamento,
 .btn-confirmar-desbloqueio,
 .popup-pagamento button[type="submit"] {
-  height: 46px;
-  font-size: 15px;
+  height: 40px;
+  font-size: 12px;
   margin-top: 4px;
 }
 
