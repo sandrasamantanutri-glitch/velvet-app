@@ -1659,6 +1659,21 @@ function fecharPagamento() {
   limparErrosCartao();
 }
 
+let pollingPagamento = null;
+let pollingTimeout = null;
+
+function pararPollingPagamento() {
+  if (pollingPagamento) {
+    clearInterval(pollingPagamento);
+    pollingPagamento = null;
+  }
+
+  if (pollingTimeout) {
+    clearTimeout(pollingTimeout);
+    pollingTimeout = null;
+  }
+}
+
 
 function atualizarStatusPix(texto, classe = "aguardando", detalhe = "") {
   const statusPix = document.getElementById("pixStatus");
