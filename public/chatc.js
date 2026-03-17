@@ -2008,7 +2008,7 @@ const escolha = document.getElementById("escolhaPagamento");
 const modal = document.getElementById("paymentModal");
 
 if (escolha) escolha.classList.add("hidden");
-if (modal) modal.classList.remove("hidden");
+
 
   aplicarMascarasCamposCartao();
   bindFormularioCartao();
