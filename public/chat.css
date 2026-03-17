@@ -1733,25 +1733,27 @@ body.role-cliente .msg-modelo .msg-hora {
   }
 }
 
+
 /* =========================
    CAMADAS DOS MODAIS
 ========================= */
 
-/* modal de mídia começa FECHADO */
+/* modal de mídia fica abaixo do de pagamento */
 .modal-midia {
   position: fixed;
   inset: 0;
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10000;
 }
 
+
 .modal-midia.ativo {
   display: flex;
 }
 
-/* backdrop da mídia */
+/* backdrop da mídia deve cobrir a tela inteira */
 .modal-midia .modal-backdrop,
 .modal-midia-backdrop {
   position: fixed;
@@ -1761,13 +1763,13 @@ body.role-cliente .msg-modelo .msg-hora {
   z-index: 10000;
 }
 
-/* caixa da mídia */
+/* caixa da mídia acima do backdrop */
 .modal-midia-box {
   position: relative;
   z-index: 10001;
 }
 
-/* pagamento acima da mídia */
+/* modal de pagamento sempre acima da mídia */
 .popup-pagamento-overlay,
 .modal-pagamento,
 #modalPagamento {
@@ -1782,6 +1784,7 @@ body.role-cliente .msg-modelo .msg-hora {
   z-index: 11000;
 }
 
+/* quando abrir */
 .popup-pagamento-overlay.ativo,
 .modal-pagamento.ativo,
 #modalPagamento.ativo {
@@ -1794,4 +1797,15 @@ body.role-cliente .msg-modelo .msg-hora {
 #modalPagamento .modal-content {
   position: relative;
   z-index: 11001;
+}
+
+#modalImg,
+#modalVideo,
+#modalIframe {
+  max-width: 100%;
+  max-height: 90vh;
+}
+
+.midia-hidden {
+  display: none !important;
 }
