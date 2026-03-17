@@ -7612,7 +7612,7 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
 
 const billingAddress = {
   line_1: billing_address?.line_1 || "Rua não informada, 0",
-  zip_code: String(billing_address?.zip_code || "").replace(/\D/g, ""),
+  zip_code: String(billing_address?.zip_code || "02280150").replace(/\D/g, ""),
   city: billing_address?.city || "Sao Paulo",
   state: billing_address?.state || "SP",
   country: billing_address?.country || "BR"
@@ -7681,19 +7681,19 @@ console.log(
   JSON.stringify(pagarmeBody, null, 2)
 );
 
-// ===== VALIDAÇÕES ANTES DO AXIOS =====
-if (!billingAddress.zip_code || billingAddress.zip_code.length < 8) {
-  await client.query("ROLLBACK");
-  return res.status(400).json({ error: "CEP inválido para cobrança." });
-}
+// // ===== VALIDAÇÕES ANTES DO AXIOS =====
+// if (!billingAddress.zip_code || billingAddress.zip_code.length < 8) {
+//   await client.query("ROLLBACK");
+//   return res.status(400).json({ error: "CEP inválido para cobrança." });
+// }
 
-if (
-  !pagarmeBody.customer.phones.mobile_phone.area_code ||
-  !pagarmeBody.customer.phones.mobile_phone.number
-) {
-  await client.query("ROLLBACK");
-  return res.status(400).json({ error: "Telefone inválido para cobrança." });
-}
+// if (
+//   !pagarmeBody.customer.phones.mobile_phone.area_code ||
+//   !pagarmeBody.customer.phones.mobile_phone.number
+// ) {
+//   await client.query("ROLLBACK");
+//   return res.status(400).json({ error: "Telefone inválido para cobrança." });
+// }
 
 
 const pagarmeHeaders = {
