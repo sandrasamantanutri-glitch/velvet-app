@@ -1700,7 +1700,6 @@ body.role-cliente .msg-modelo .msg-hora {
 
 .form-pagamento {
   display: grid;
-  grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
 
