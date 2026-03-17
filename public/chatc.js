@@ -213,7 +213,7 @@ document.addEventListener(
     const index = Number(midiaClicada.dataset.index || 0);
     abrirConteudo(messageId, index);
   },
-
+  
   true
 );
 
@@ -627,21 +627,7 @@ async function abrirConteudo(message_id, index = 0) {
   const midias = await res.json();
   const midia = midias[index];
 
-  console.log("abrirConteudo", {
-  message_id,
-  index,
-  midias,
-  midiaSelecionada: midia
-});
-
   if (!midia) return;
-
-  console.log("status da midia ao abrir", {
-  message_id,
-  index,
-  liberado: midia?.liberado,
-  url: midia?.url
-});
 
   if (midia.liberado === false) {
     const card = document.querySelector(`.chat-conteudo[data-id="${message_id}"]`);
