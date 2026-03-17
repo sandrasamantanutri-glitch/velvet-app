@@ -211,26 +211,49 @@ document.addEventListener(
     let midiaClicada = e.target.closest(".midia-item[data-index]");
 
     // fallback: identifica pela posição do clique
-    if (!midiaClicada) {
+ if (!midiaClicada) {
       const x = e.clientX;
       const y = e.clientY;
 
       midiaClicada = todasMidias.find((m) => {
         const r = m.getBoundingClientRect();
-        return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+        const margem = 8; // tolerância pequena
+        return (
+          x >= r.left - margem &&
+          x <= r.right + margem &&
+          y >= r.top - margem &&
+          y <= r.bottom + margem
+        );
       });
     }
+    
+    if (!midiaClicada) {
+      const gridRect = grid.getBoundingClientRect();
+      const x = e.clientX;
+      const y = e.clientY;
 
-    // fallback final: elemento visual mais próximo do ponto clicado
-    if (!midiaClicada && document.elementsFromPoint) {
-      const els = document.elementsFromPoint(e.clientX, e.clientY);
-      midiaClicada = els.find(
-        (el) =>
-          el instanceof Element &&
-          el.matches(".midia-item[data-index]")
-      );
+      const clicouDentroDoGrid =
+        x >= gridRect.left &&
+        x <= gridRect.right &&
+        y >= gridRect.top &&
+        y <= gridRect.bottom;
+
+      if (clicouDentroDoGrid) {
+        let menorDistancia = Infinity;
+
+        todasMidias.forEach((m) => {
+          const r = m.getBoundingClientRect();
+          const cx = r.left + r.width / 2;
+          const cy = r.top + r.height / 2;
+          const distancia = Math.hypot(x - cx, y - cy);
+
+          if (distancia < menorDistancia) {
+            menorDistancia = distancia;
+            midiaClicada = m;
+          }
+        });
+      }
     }
-
     if (!midiaClicada) return;
 
     const index = Number(midiaClicada.dataset.index || 0);
@@ -238,6 +261,7 @@ document.addEventListener(
   },
   true
 );
+    
 
 // ===============================
 // HISTÓRICO
