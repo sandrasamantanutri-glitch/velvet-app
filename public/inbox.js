@@ -412,6 +412,25 @@ listaCompleta.forEach(c => {
   });
 }
 
+function aplicarEstadoLocalInboxModelo(c) {
+  return {
+    ...c,
+    cliente_id: Number(c.cliente_id || 0),
+    modelo_id: Number(c.modelo_id || 0),
+    lida: c.lida === true || c.lida === "true" || c.lida === 1,
+    visto: c.visto === true || c.visto === "true" || c.visto === 1,
+    novo_vip: c.novo_vip === true || c.novo_vip === "true" || c.novo_vip === 1,
+    total_gasto: Number(c.total_gasto || 0),
+    ultima_mensagem: c.ultima_mensagem || "",
+    ultima_mensagem_em: c.ultima_mensagem_em || null,
+    ultimo_sender: c.ultimo_sender || null,
+    username: c.username || c.nome || "Cliente",
+    avatar: c.avatar || "assets/avatar.png",
+    avatar_thumb: c.avatar_thumb || c.avatar || "assets/avatar.png",
+    spend_level: c.spend_level || ""
+  };
+}
+
 
 setInterval(() => {
 
