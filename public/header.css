@@ -59,6 +59,14 @@ body {
   height: 30px;
 }
 
+.header-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
 @media (max-width: 480px) {
   .app-header {
     height: 56px;
@@ -154,6 +162,20 @@ body {
   }
 
   .header-inner a img {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-avatar {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+@media (max-width: 380px) {
+  .header-avatar {
     width: 18px;
     height: 18px;
   }

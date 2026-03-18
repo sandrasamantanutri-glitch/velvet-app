@@ -16,7 +16,14 @@ function carregarHeader() {
     .then(res => res.text())
     .then(html => {
       container.insertAdjacentHTML("afterbegin", html);
+    const user = {
+        avatar_url: localStorage.getItem("avatar_url"),
+        avatar: localStorage.getItem("avatar")
+      };
+
+      atualizarAvatarHeader(user);
     })
+
     .catch(err => console.error("Erro ao carregar header:", err));
 }
 
@@ -46,6 +53,12 @@ async function initUsuario() {
     // 🔑 SEMPRE atualiza
     localStorage.setItem("role", user.role);
     localStorage.setItem("nome", user.nome);
+
+    if (user.avatar_url) {
+  localStorage.setItem("avatar_url", user.avatar_url);
+} else if (user.avatar) {
+  localStorage.setItem("avatar_url", user.avatar);
+}
 
     // limpa flag pós-registro sem afetar lógica
     if (localStorage.getItem("post_register_action") === "just_registered") {
@@ -247,5 +260,26 @@ async function irParaInbox() {
   }
 }
 
+function atualizarAvatarHeader(user = {}) {
+  const avatar = document.getElementById("headerAvatar");
+  if (!avatar) return;
 
+  const avatarUrl =
+    user.avatar_url ||
+    user.avatar ||
+    user.foto_perfil ||
+    user.foto ||
+    localStorage.getItem("avatar_url") ||
+    localStorage.getItem("avatar") ||
+    "";
 
+  if (avatarUrl && typeof avatarUrl === "string" && avatarUrl.trim() !== "") {
+    avatar.src = avatarUrl;
+  } else {
+    avatar.src = "assets/avatar.png";
+  }
+
+  avatar.onerror = () => {
+    avatar.src = "assets/avatar.png";
+  };
+}
