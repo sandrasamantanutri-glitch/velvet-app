@@ -506,8 +506,9 @@ async function aplicarRegrasDeAcesso() {
     if (btnAssinar) {
   btnAssinar.disabled = true;
   btnAssinar.style.cursor = "not-allowed";
-  btnAssinar.textContent = `Assinar VIP por ${valorBRL(window.OFERTA_ATUAL.valor_promocional)}`;
+  btnAssinar.textContent = "Este é o seu perfil";
 }
+
     return;
   }
 
