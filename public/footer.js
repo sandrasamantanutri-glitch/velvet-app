@@ -1,4 +1,29 @@
 document.addEventListener("DOMContentLoaded", () => {
+    function atualizarAvatarFooter(user = {}) {
+  const avatar = document.getElementById("footerAvatar");
+  if (!avatar) return;
+
+  const avatarUrl =
+    user.avatar_url ||
+    user.avatar ||
+    user.foto_perfil ||
+    user.foto ||
+    localStorage.getItem("avatar_url") ||
+    localStorage.getItem("avatar") ||
+    "";
+
+  if (avatarUrl && typeof avatarUrl === "string" && avatarUrl.trim() !== "") {
+    avatar.src = avatarUrl;
+  } else {
+    avatar.src = "/assets/avatar.png";
+  }
+
+  avatar.onerror = () => {
+    avatar.src = "/assets/avatar.png";
+  };
+}
+
+ atualizarAvatarFooter();
 
    const role = localStorage.getItem("role");
 
@@ -148,3 +173,4 @@ document.addEventListener("DOMContentLoaded", () => {
 // }
 
 });
+

@@ -83,3 +83,22 @@
 #footerModelo{
   display:none;
 }
+
+.footer-avatar{
+  width:24px;
+  height:24px;
+  border-radius:50%;
+  object-fit:cover;
+  display:block;
+}
+
+.footer-btn img{
+  width:24px;
+  height:24px;
+  margin-bottom:4px;
+}
+
+.footer-avatar{
+  border-radius:50%;
+  object-fit:cover;
+}
