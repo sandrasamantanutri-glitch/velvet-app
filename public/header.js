@@ -22,6 +22,7 @@ function carregarHeader() {
       };
 
       atualizarAvatarHeader(user);
+      sincronizarIconeNotificacoes();
     })
 
     .catch(err => console.error("Erro ao carregar header:", err));
@@ -174,7 +175,9 @@ async function atualizarUnreadModeloHeader() {
 document.addEventListener("DOMContentLoaded", async () => {
 
   await initUsuario();        // 🔑 carrega dados do usuário
-  carregarHeader();           // 🔥 monta o header
+  carregarHeader();  
+
+  await carregarVapidPublicKey();
 
   atualizarUnreadClienteHeader();
   atualizarUnreadModeloHeader();
@@ -235,6 +238,21 @@ document.addEventListener("click", (e) => {
 
 });
 // =========================================================
+document.addEventListener("click", async (e) => {
+  const btnNotif = e.target.closest("#btnNotificacoes");
+  if (!btnNotif) return;
+
+  e.preventDefault();
+
+  const ativo = localStorage.getItem("notificacoes_ativas") === "true";
+
+  if (ativo) {
+    await desativarNotificacoes();
+  } else {
+    await ativarNotificacoes();
+  }
+});
+//===========================================================
 
 async function irParaInbox() {
   const token = localStorage.getItem("token");
@@ -282,4 +300,190 @@ function atualizarAvatarHeader(user = {}) {
   avatar.onerror = () => {
     avatar.src = "assets/avatar.png";
   };
+}
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding)
+    .replace(/-/g, "+")
+    .replace(/_/g, "/");
+
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; i++) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+
+  return outputArray;
+}
+
+function atualizarIconeNotificacoes(ativo) {
+  const icon = document.getElementById("iconNotificacoes");
+  if (!icon) return;
+
+  icon.src = ativo ? "assets/noton.png" : "assets/notoff.png";
+  icon.alt = ativo ? "Notificações ativadas" : "Notificações desativadas";
+  icon.title = ativo ? "Desativar notificações" : "Ativar notificações";
+}
+
+async function obterEstadoRealNotificacoes() {
+  try {
+    if (!("serviceWorker" in navigator)) return false;
+
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.getSubscription();
+
+    return !!subscription;
+  } catch (err) {
+    console.warn("Erro ao verificar subscription push:", err);
+    return false;
+  }
+}
+
+async function sincronizarIconeNotificacoes() {
+  const ativo = await obterEstadoRealNotificacoes();
+  localStorage.setItem("notificacoes_ativas", ativo ? "true" : "false");
+  atualizarIconeNotificacoes(ativo);
+}
+
+async function ativarNotificacoes() {
+  try {
+    if (!("Notification" in window)) {
+      alert("Este navegador não suporta notificações.");
+      return;
+    }
+
+    if (!("serviceWorker" in navigator)) {
+      alert("Este navegador não suporta service worker.");
+      return;
+    }
+
+    if (!("PushManager" in window)) {
+      alert("Este navegador não suporta notificações push.");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Você precisa estar logada para ativar notificações.");
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+
+    if (permission !== "granted") {
+      atualizarIconeNotificacoes(false);
+      localStorage.setItem("notificacoes_ativas", "false");
+      return;
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+
+    let subscription = await registration.pushManager.getSubscription();
+
+    if (!subscription) {
+let vapidPublicKey =
+  window.VAPID_PUBLIC_KEY ||
+  localStorage.getItem("VAPID_PUBLIC_KEY") ||
+  localStorage.getItem("vapid_public_key");
+
+if (!vapidPublicKey) {
+  vapidPublicKey = await carregarVapidPublicKey();
+}
+
+if (!vapidPublicKey) {
+  console.error("VAPID public key não encontrada.");
+  alert("Chave pública de notificação não configurada.");
+  return;
+}
+
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+      });
+    }
+
+    const res = await fetch("/api/notificacoes/inscrever", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token
+      },
+      body: JSON.stringify(subscription)
+    });
+
+    if (!res.ok) {
+      const erro = await res.json().catch(() => null);
+      console.error("Erro ao inscrever notificações:", erro || res.status);
+      alert("Não foi possível ativar as notificações.");
+      return;
+    }
+
+    localStorage.setItem("notificacoes_ativas", "true");
+    atualizarIconeNotificacoes(true);
+  } catch (err) {
+    console.error("Erro ao ativar notificações:", err);
+    alert("Erro ao ativar notificações.");
+  }
+}
+
+async function desativarNotificacoes() {
+  try {
+    const token = localStorage.getItem("token");
+
+    if ("serviceWorker" in navigator) {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+
+      if (subscription) {
+        await subscription.unsubscribe();
+      }
+    }
+
+    if (token) {
+      await fetch("/api/notificacoes/desinscrever", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token
+        }
+      });
+    }
+
+    localStorage.setItem("notificacoes_ativas", "false");
+    atualizarIconeNotificacoes(false);
+  } catch (err) {
+    console.error("Erro ao desativar notificações:", err);
+    alert("Erro ao desativar notificações.");
+  }
+}
+
+async function carregarVapidPublicKey() {
+  try {
+    const jaExiste =
+      window.VAPID_PUBLIC_KEY ||
+      localStorage.getItem("VAPID_PUBLIC_KEY") ||
+      localStorage.getItem("vapid_public_key");
+
+    if (jaExiste) {
+      window.VAPID_PUBLIC_KEY = jaExiste;
+      return jaExiste;
+    }
+
+    const res = await fetch("/api/push/public-key");
+    const data = await res.json().catch(() => null);
+
+    const publicKey = data?.publicKey || null;
+
+    if (publicKey) {
+      window.VAPID_PUBLIC_KEY = publicKey;
+      localStorage.setItem("VAPID_PUBLIC_KEY", publicKey);
+      localStorage.setItem("vapid_public_key", publicKey);
+    }
+
+    return publicKey;
+  } catch (err) {
+    console.error("Erro ao carregar VAPID public key:", err);
+    return null;
+  }
 }

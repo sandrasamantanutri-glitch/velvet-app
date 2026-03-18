@@ -12,7 +12,7 @@
   "navigationDividerColorDark": "#000000",
   "backgroundColor": "#FFFFFF",
   "enableNotifications": true,
-  "startUrl": "https://www.velvet.lat/app/",
+  "startUrl": "https://www.velvet.lat/",
   "iconUrl": "https://www.velvet.lat/icons/icon-512.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
@@ -32,7 +32,7 @@
   "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
   "isMetaQuest": false,
-  "fullScopeUrl": "https://www.velvet.lat/app/",
+  "fullScopeUrl": "https://www.velvet.lat/",
   "minSdkVersion": 21,
   "orientation": "portrait",
   "fingerprints": [],

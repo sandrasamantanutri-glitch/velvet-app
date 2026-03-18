@@ -17,6 +17,7 @@ const path = require("path");
 const fs = require("fs");
 const app = express();
 const FormData = require("form-data");
+const webpush = require("web-push");
 
 // app.use((req, res, next) => {
 //   return res.sendFile(
@@ -2650,6 +2651,74 @@ async function buscarConteudosJaPossuidosPorCliente(client, { cliente_id, modelo
   );
 }
 
+
+if (
+  process.env.VAPID_SUBJECT &&
+  process.env.VAPID_PUBLIC_KEY &&
+  process.env.VAPID_PRIVATE_KEY
+) {
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT,
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+  console.log("VAPID configurado com sucesso");
+} else {
+  console.warn("VAPID não configurado. Push desativado por enquanto.");
+}
+
+async function enviarPush(subscription, mensagem, url = "/inbox.html") {
+  const payload = JSON.stringify({
+    title: "Nova mensagem",
+    body: mensagem,
+    url
+  });
+
+  await webpush.sendNotification(subscription, payload);
+}
+
+async function notificarNovaMensagem(userIdDestino, textoMensagem, url = "/inbox.html") {
+  try {
+    if (
+      !process.env.VAPID_SUBJECT ||
+      !process.env.VAPID_PUBLIC_KEY ||
+      !process.env.VAPID_PRIVATE_KEY
+    ) {
+      console.warn("Push ignorado: VAPID não configurado");
+      return;
+    }
+
+    const subRes = await db.query(
+      `
+      SELECT subscription_json
+      FROM push_subscriptions
+      WHERE user_id = $1
+      LIMIT 1
+      `,
+      [userIdDestino]
+    );
+
+    if (subRes.rowCount === 0) {
+      console.log("Usuário sem subscription push:", userIdDestino);
+      return;
+    }
+
+    const subscription = subRes.rows[0].subscription_json;
+
+    await enviarPush(subscription, textoMensagem, url);
+    console.log("Push enviado para user_id:", userIdDestino);
+  } catch (err) {
+    console.error("Erro ao enviar push:", err);
+
+    if (err.statusCode === 404 || err.statusCode === 410) {
+      await db.query(
+        `DELETE FROM push_subscriptions WHERE user_id = $1`,
+        [userIdDestino]
+      );
+      console.log("Subscription removida por expiração:", userIdDestino);
+    }
+  }
+}
 // ===============================
 // SOCKET.IO – CHAT ESTÁVEL
 // ===============================
@@ -2910,6 +2979,55 @@ io.to(sala).emit("newMessage", {
       text,
       created_at: message.created_at
     });
+
+    // 5️⃣ PUSH NOTIFICATION
+    try {
+      let userIdDestino = null;
+      let pushUrl = "/inbox.html";
+
+      if (sender === "cliente") {
+        const modeloDestinoRes = await db.query(
+          `
+          SELECT user_id
+          FROM modelos
+          WHERE id = $1
+          LIMIT 1
+          `,
+          [modelo_id]
+        );
+
+        userIdDestino = modeloDestinoRes.rows[0]?.user_id || null;
+        pushUrl = "/inbox.html";
+      } else if (sender === "modelo") {
+        const clienteDestinoRes = await db.query(
+          `
+          SELECT user_id
+          FROM clientes
+          WHERE id = $1
+          LIMIT 1
+          `,
+          [cliente_id]
+        );
+
+        userIdDestino = clienteDestinoRes.rows[0]?.user_id || null;
+        pushUrl = "/inboxc.html";
+      }
+
+      console.log("[push] sender:", sender);
+      console.log("[push] cliente_id:", cliente_id);
+      console.log("[push] modelo_id:", modelo_id);
+      console.log("[push] userIdDestino:", userIdDestino);
+
+      if (userIdDestino) {
+        await notificarNovaMensagem(
+          userIdDestino,
+          text?.trim() ? text.trim().slice(0, 120) : "Você recebeu uma nova mensagem",
+          pushUrl
+        );
+      }
+    } catch (pushErr) {
+      console.error("Erro ao disparar push de mensagem:", pushErr);
+    }
 
     // ✅ ACK PARA QUEM ENVIOU
     callback?.({
@@ -5018,6 +5136,14 @@ app.get("/api/pagamento/status/:orderId", auth, async (req, res) => {
 
 app.get("/manifest.json", (req, res) => {
   res.sendFile(path.join(__dirname, "manifest.json"));
+});
+
+app.get("/api/push/public-key", (req, res) => {
+  if (!process.env.VAPID_PUBLIC_KEY) {
+    return res.status(500).json({ error: "Chave pública não configurada" });
+  }
+
+  res.json({ publicKey: process.env.VAPID_PUBLIC_KEY });
 });
 
 
@@ -8790,6 +8916,54 @@ app.post("/api/conteudo/visto", auth, async (req, res) => {
   res.json({ ok: true });
 
 });
+
+app.post("/api/notificacoes/inscrever", auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const subscription = req.body;
+
+    if (!subscription || !subscription.endpoint) {
+      return res.status(400).json({ error: "Subscription inválida" });
+    }
+
+    await db.query(
+      `
+      INSERT INTO push_subscriptions (user_id, subscription_json, created_at, updated_at)
+      VALUES ($1, $2, NOW(), NOW())
+      ON CONFLICT (user_id)
+      DO UPDATE SET
+        subscription_json = EXCLUDED.subscription_json,
+        updated_at = NOW()
+      `,
+      [userId, JSON.stringify(subscription)]
+    );
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error("Erro ao salvar subscription:", err);
+    return res.status(500).json({ error: "Erro ao salvar subscription" });
+  }
+});
+
+app.post("/api/notificacoes/desinscrever", auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    await db.query(
+      `
+      DELETE FROM push_subscriptions
+      WHERE user_id = $1
+      `,
+      [userId]
+    );
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error("Erro ao remover subscription:", err);
+    return res.status(500).json({ error: "Erro ao remover subscription" });
+  }
+});
+
 
 // ===============================
 // 🔥 MIDDLEWARE GLOBAL DE ERRO

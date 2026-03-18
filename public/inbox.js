@@ -1,3 +1,15 @@
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", async () => {
+    try {
+      const reg = await navigator.serviceWorker.register("/service-worker.js", {
+        scope: "/"
+      });
+      console.log("Service worker registrado:", reg.scope);
+    } catch (err) {
+      console.error("Erro ao registrar service worker:", err);
+    }
+  });
+}
 // ===============================
 // AUTH
 // ===============================
@@ -140,12 +152,13 @@ async function carregarListaClientes() {
     preloadAvatars(clientes);
 
 clientes.forEach(c => {
-  const idx = listaCompleta.findIndex(x => x.cliente_id === c.cliente_id);
+  const chatNormalizado = aplicarEstadoLocalInboxModelo(c);
+  const idx = listaCompleta.findIndex(x => x.cliente_id === chatNormalizado.cliente_id);
 
   if (idx === -1) {
-    listaCompleta.push(c);
+    listaCompleta.push(chatNormalizado);
   } else {
-    listaCompleta[idx] = c;
+    listaCompleta[idx] = chatNormalizado;
   }
 });
 
@@ -206,10 +219,12 @@ function atualizarChatLocal(dados) {
   const idx = listaCompleta.findIndex(c => c.cliente_id === chatId);
   if (idx === -1) return;
 
-  listaCompleta[idx] = {
+  const atualizado = aplicarEstadoLocalInboxModelo({
     ...listaCompleta[idx],
     ...dados
-  };
+  });
+
+  listaCompleta[idx] = atualizado;
 
   listaCompleta.sort(compararChats);
   rerenderizarInboxCompleta();

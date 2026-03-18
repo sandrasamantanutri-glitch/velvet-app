@@ -1,3 +1,15 @@
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", async () => {
+    try {
+      const reg = await navigator.serviceWorker.register("/service-worker.js", {
+        scope: "/"
+      });
+      console.log("Service worker registrado:", reg.scope);
+    } catch (err) {
+      console.error("Erro ao registrar service worker:", err);
+    }
+  });
+}
 // ===============================
 // AUTH
 // ===============================
@@ -222,20 +234,15 @@ function moverChatParaTopo(el) {
 }
 
 function gerarStatus(c) {
-
-  if (c.sender === "cliente" && c.visto === false) {
+  if (c.sender === "modelo" && c.lida === false) {
     return `<span class="status status-unseen">Não lida</span>`;
-  }
-
-  if (c.sender === "cliente" && c.visto === true) {
-    return `<span class="status status-reply">Por responder</span>`;
   }
 
   if (c.sender === "modelo" && c.lida === true) {
     return `<span class="status status-read">✓✓</span>`;
   }
 
-  if (c.sender === "modelo") {
+  if (c.sender === "cliente") {
     return `<span class="status status-sent">✓</span>`;
   }
 
@@ -250,27 +257,13 @@ function renderizarMais() {
 
     let statusHTML = "";
 
-    if (m.sender === "modelo") {
-
-      if (m.lida === false) {
-        statusHTML = `<span class="status status-unseen">Não lida</span>`;
-      } else {
-        statusHTML = `<span class="status status-read">✓✓</span>`;
-      }
-
+    if (m.sender === "modelo" && m.lida === false) {
+      statusHTML = `<span class="status status-unseen">Não lida</span>`;
+    } else if (m.sender === "modelo" && m.lida === true) {
+      statusHTML = `<span class="status status-read">✓✓</span>`;
+    } else if (m.sender === "cliente") {
+      statusHTML = `<span class="status status-sent">✓</span>`;
     }
-
-    if (m.sender === "cliente") {
-
-      if (m.lida === true) {
-        statusHTML = `<span class="status status-read">✓✓</span>`;
-      } else {
-        statusHTML = `<span class="status status-sent">✓</span>`;
-      }
-
-    }
-
-    const avatar = m.avatar_thumb || "assets/avatar.png";
 
     const div = document.createElement("div");
     div.className = "chat-item";
@@ -279,39 +272,37 @@ function renderizarMais() {
 
     div.innerHTML = `
     <div class="avatar">
-    <img 
-  src="${m.avatar || 'assets/avatar.png'}"
-          width="40"
-          height="40"
-          loading="lazy"
-          decoding="async"
-           fetchpriority="low"
-        />
+      <img 
+        src="${m.avatar || 'assets/avatar.png'}"
+        width="40"
+        height="40"
+        loading="lazy"
+        decoding="async"
+        fetchpriority="low"
+      />
+    </div>
+
+    <div class="chat-body">
+      <div class="chat-top">
+        <span class="chat-name">
+          ${m.nome_exibicao || "Modelo"}
+        </span>
+
+        <span class="chat-time">
+          ${formatarTempo(m.ultima_mensagem_em)}
+        </span>
       </div>
 
-      <div class="chat-body">
+      <div class="chat-bottom">
+        <span class="chat-last">
+          ${m.ultima_mensagem || ""}
+        </span>
 
-        <div class="chat-top">
-          <span class="chat-name">
-            ${m.nome_exibicao || "Modelo"}
-          </span>
-
-          <span class="chat-time">
-            ${formatarTempo(m.ultima_mensagem_em)}
-          </span>
+        <div class="chat-status">
+          ${statusHTML}
         </div>
-
-        <div class="chat-bottom">
-          <span class="chat-last">
-            ${m.ultima_mensagem || ""}
-          </span>
-
-          <div class="chat-status">
-            ${statusHTML}
-          </div>
-        </div>
-
       </div>
+    </div>
     `;
 
     inboxEl.appendChild(div);
@@ -324,8 +315,8 @@ function renderizarMais() {
   });
 
   offset += LIMITE_INICIAL;
-
 }
+
 
 function preloadAvatars(modelos) {
 
@@ -350,4 +341,4 @@ setInterval(() => {
     carregarListaModelos();
   }
 
-}, 8000);
+}, 30000);

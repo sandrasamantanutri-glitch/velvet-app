@@ -352,6 +352,8 @@ function enviarMensagem(e){
       const el = document.querySelector(`[data-id="${tempId}"]`);
       if(el) el.dataset.id = resposta.message_id;
 
+       localStorage.removeItem(`inbox_modelo_lido_${cliente_id}`);
+
     }
   );
 
@@ -1067,13 +1069,17 @@ async function marcarComoLido(cliente_id){
   if(!cliente_id) return;
 
   try{
-
-    await fetch(`/api/chat/modelo/marcar-lido/${cliente_id}`,{
+    const res = await fetch(`/api/chat/modelo/marcar-lido/${cliente_id}`,{
       method:"POST",
       headers:{
         Authorization:"Bearer " + token
       }
     });
+
+    if (!res.ok) return;
+
+    // marca localmente que o último envio do cliente já foi lido
+    localStorage.setItem(`inbox_modelo_lido_${cliente_id}`, "1");
 
   }catch(err){
     console.error("Erro marcar como lido:",err);
@@ -1426,6 +1432,25 @@ function mensagemEstaBloqueada(msg) {
   if (role === "modelo") return false;
 
   return Number(msg.preco || 0) > 0 && !msg.liberado && !msg.visto;
+}
+
+function aplicarEstadoLocalInboxModelo(chat) {
+  if (!chat) return chat;
+
+  const foiLidoNoChat =
+    localStorage.getItem(`inbox_modelo_lido_${chat.cliente_id}`) === "1";
+
+  if (
+    foiLidoNoChat &&
+    chat.ultimo_sender === "cliente"
+  ) {
+    return {
+      ...chat,
+      lida: true
+    };
+  }
+
+  return chat;
 }
 
 // apenas log

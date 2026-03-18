@@ -1,3 +1,14 @@
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", async () => {
+    try {
+      await navigator.serviceWorker.register("/service-worker.js");
+      console.log("Service worker registrado");
+    } catch (err) {
+      console.error("Erro ao registrar service worker:", err);
+    }
+  });
+}
+
 // ===============================
 // INDEX — VELVET
 window.token = localStorage.getItem("token");
@@ -395,6 +406,4 @@ async function confirmReset() {
   closeForgotModal();
   openLoginModal();
 }
-
-
 
