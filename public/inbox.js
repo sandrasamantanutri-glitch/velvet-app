@@ -26,7 +26,7 @@ let listaCompleta = [];
 let carregando = false;
 let fimLista = false;
 
-// ===============================
+////// ===============================
 // SOCKET
 // ===============================
 const socket = io({
