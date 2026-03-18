@@ -5138,7 +5138,7 @@ app.get("/manifest.json", (req, res) => {
   res.sendFile(path.join(__dirname, "manifest.json"));
 });
 
-app.get("/api/push/public-key", (req, res) => {
+app.get("/push/public-key", (req, res) => {
   if (!process.env.VAPID_PUBLIC_KEY) {
     return res.status(500).json({ error: "Chave pública não configurada" });
   }
