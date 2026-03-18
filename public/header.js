@@ -470,16 +470,34 @@ async function carregarVapidPublicKey() {
       return jaExiste;
     }
 
-    const res = await fetch("/api/push/public-key");
-    const data = await res.json().catch(() => null);
+    const API_BASE =
+      window.location.hostname === "velvet.lat" ||
+      window.location.hostname === "www.velvet.lat"
+        ? "https://velvet-app.onrender.com"
+        : "";
 
+    const res = await fetch(`${API_BASE}/api/push/public-key`, {
+      method: "GET",
+      headers: { Accept: "application/json" }
+    });
+
+    if (!res.ok) {
+      const texto = await res.text().catch(() => "");
+      console.error("Erro ao buscar VAPID public key:", res.status, texto);
+      return null;
+    }
+
+    const data = await res.json();
     const publicKey = data?.publicKey || null;
 
-    if (publicKey) {
-      window.VAPID_PUBLIC_KEY = publicKey;
-      localStorage.setItem("VAPID_PUBLIC_KEY", publicKey);
-      localStorage.setItem("vapid_public_key", publicKey);
+    if (!publicKey) {
+      console.error("Resposta sem publicKey:", data);
+      return null;
     }
+
+    window.VAPID_PUBLIC_KEY = publicKey;
+    localStorage.setItem("VAPID_PUBLIC_KEY", publicKey);
+    localStorage.setItem("vapid_public_key", publicKey);
 
     return publicKey;
   } catch (err) {
