@@ -2838,46 +2838,59 @@ socket.on("joinChat", async ({ cliente_id, modelo_id }) => {
 
 });
 
-socket.on("joinInbox", async () => {
+socket.on("joinInbox", async (callback) => {
+  try {
+    if (!socket.user) {
+      callback?.({ ok: false, error: "Usuário não autenticado" });
+      return;
+    }
 
-  if (!socket.user) return;
+    if (socket.user.role === "cliente") {
+      const clienteRes = await db.query(
+        "SELECT id FROM clientes WHERE user_id = $1",
+        [socket.user.id]
+      );
 
-  if (socket.user.role === "cliente") {
+      if (!clienteRes.rowCount) {
+        callback?.({ ok: false, error: "Cliente não encontrado" });
+        return;
+      }
 
-    const clienteRes = await db.query(
-      "SELECT id FROM clientes WHERE user_id = $1",
-      [socket.user.id]
-    );
+      const cliente_id = clienteRes.rows[0].id;
+      const sala = `inbox_cliente_${cliente_id}`;
 
-    if (!clienteRes.rowCount) return;
+      socket.join(sala);
+      console.log("📬 Inbox cliente conectada:", sala);
+      callback?.({ ok: true, sala, tipo: "cliente" });
+      return;
+    }
 
-    const cliente_id = clienteRes.rows[0].id;
+    if (socket.user.role === "modelo") {
+      const modeloRes = await db.query(
+        "SELECT id FROM modelos WHERE user_id = $1",
+        [socket.user.id]
+      );
 
-    const sala = `inbox_cliente_${cliente_id}`;
+      if (!modeloRes.rowCount) {
+        callback?.({ ok: false, error: "Modelo não encontrado" });
+        return;
+      }
 
-    socket.join(sala);
+      const modelo_id = modeloRes.rows[0].id;
+      const sala = `inbox_modelo_${modelo_id}`;
 
-    console.log("📬 Inbox cliente conectada:", sala);
+      socket.join(sala);
+      console.log("📬 Inbox modelo conectada:", sala);
+      callback?.({ ok: true, sala, tipo: "modelo" });
+      return;
+    }
 
-  } else if (socket.user.role === "modelo") {
-
-    const modeloRes = await db.query(
-      "SELECT id FROM modelos WHERE user_id = $1",
-      [socket.user.id]
-    );
-
-    if (!modeloRes.rowCount) return;
-
-    const modelo_id = modeloRes.rows[0].id;
-
-    const sala = `inbox_modelo_${modelo_id}`;
-
-    socket.join(sala);
-
-    console.log("📬 Inbox modelo conectada:", sala);
+    callback?.({ ok: false, error: "Role inválida" });
+  } catch (err) {
+    console.error("❌ Erro no joinInbox:", err);
+    callback?.({ ok: false, error: "Erro interno ao entrar na inbox" });
   }
 });
-
 
 // 💬 ENVIAR MENSAGEM (ÚNICO)
 socket.on("sendMessage", async (data, callback) => {
@@ -8997,11 +9010,6 @@ app.use((err, req, res, next) => {
 // ===============================
 process.on("unhandledRejection", (reason) => {
   console.error("❌ Unhandled Rejection:", reason);
-
-  // Em produção, melhor derrubar o processo
-  if (process.env.NODE_ENV === "production") {
-    process.exit(1);
-  }
 });
 
 
@@ -9010,8 +9018,6 @@ process.on("unhandledRejection", (reason) => {
 // ===============================
 process.on("uncaughtException", (err) => {
   console.error("❌ Uncaught Exception:", err);
-
-  // Sempre derrubar processo em erro fatal
   process.exit(1);
 });
 
