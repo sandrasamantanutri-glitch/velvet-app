@@ -6,9 +6,29 @@ let EH_DONA = false;
 let btnAssinar = null;
 
 if (token && window.io) {
-  const socket = io();
-  socket.emit("auth", { token });
+  const socket = io({
+    transports: ["websocket"],
+    reconnection: true,
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000
+  });
+
+  window.socket = socket;
+
+  socket.on("connect", () => {
+    socket.emit("auth", { token });
+  });
+
+  socket.on("authOk", () => {
+    console.log("Socket autenticado no perfil");
+  });
+
+  socket.on("disconnect", () => {
+    console.log("Socket desconectado no perfil");
+  });
 }
+
 
 function atualizarBotaoVip(expiration_at) {
   const btn = document.getElementById("btn-assinar");

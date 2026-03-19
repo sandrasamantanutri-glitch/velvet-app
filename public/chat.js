@@ -6,7 +6,8 @@ const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
 
 const socket = io({
-  transports: ["websocket"],
+  transports: ["websocket", "polling"],
+  auth: { token },
   reconnection: true,
   reconnectionAttempts: Infinity,
   reconnectionDelay: 1000,
@@ -45,29 +46,23 @@ let fimConteudos = false;
 // ===============================
 // AUTENTICAR
 // ===============================
-socket.on("connect", () => {
-
-  autenticado = false;
-  salaPronta = false;
-
-  socket.emit("auth", { token });
-
-});
-
-socket.on("authOk", async () => {
-
-  if (autenticado) return;
-
+socket.on("connect", async () => {
   autenticado = true;
+  salaPronta = false;
 
   socket.emit("loginModelo");
 
-  if(cliente_id){
+  if (cliente_id) {
     await carregarInfoCliente(cliente_id);
   }
 
   tentarEntrarSala();
+});
 
+socket.on("connect_error", (err) => {
+  autenticado = false;
+  salaPronta = false;
+  console.error("❌ connect_error socket:", err.message, err);
 });
 
 // ===============================
