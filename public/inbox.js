@@ -10,61 +10,61 @@ if ("serviceWorker" in navigator) {
     }
   });
 }
+
 // ===============================
 // AUTH
 // ===============================
 const token = localStorage.getItem("token");
-const role  = localStorage.getItem("role");
+const role = localStorage.getItem("role");
 
 if (!token || role !== "modelo") {
   logout();
 }
 
+// ===============================
+// ESTADO
+// ===============================
 const LIMIT = 20;
 let offset = 0;
 let listaCompleta = [];
 let carregando = false;
 let fimLista = false;
 
-////// ===============================
+// ===============================
 // SOCKET
 // ===============================
 const socket = io({
-  transports: ["websocket", "polling"]
+  transports: ["websocket", "polling"],
+  auth: {
+    token
+  },
+  reconnection: true,
+  reconnectionAttempts: 5,
+  reconnectionDelay: 2000,
+  timeout: 10000
 });
-
-function autenticar() {
-  socket.emit("auth", { token });
-}
-
-function entrarInbox() {
-  socket.emit("joinInbox");
-}
-
 
 socket.on("connect", () => {
   console.log("🟢 Inbox conectado:", socket.id);
-  autenticar();
-});
-
-socket.on("authOk", () => {
   entrarInbox();
 });
 
-socket.on("inboxMessage", dados => {
+socket.on("connect_error", (err) => {
+  console.error("❌ connect_error socket:", err.message, err);
+});
 
+socket.on("inboxMessage", (dados) => {
   atualizarChatLocal(dados);
 
-  // fallback segurança
   if (!chatsMap.has(dados.cliente_id)) {
     carregarListaClientes();
   }
-
 });
 
 socket.on("disconnect", (reason) => {
   console.warn("🔴 Inbox desconectado:", reason);
 });
+
 
 // ===============================
 // ELEMENTOS
@@ -91,6 +91,16 @@ window.addEventListener("scroll", () => {
 
 });
 
+function entrarInbox() {
+socket.emit("joinInbox", (res) => {
+    if (!res?.ok) {
+      console.warn("⚠️ Falha ao entrar na inbox:", res?.error);
+      return;
+    }
+
+    console.log("📬 Entrou na inbox:", res.sala);
+  });
+}
 
 // ===============================
 // PRIORIDADE CHAT
@@ -204,6 +214,18 @@ function formatarTempo(data) {
 // HELPERS
 // ===============================
 function abrirChat(clienteId) {
+  const idx = listaCompleta.findIndex(c => c.cliente_id === clienteId);
+
+  if (idx !== -1 && listaCompleta[idx].ultimo_sender === "cliente") {
+    listaCompleta[idx] = {
+      ...listaCompleta[idx],
+      lida: true
+    };
+
+    listaCompleta.sort(compararChats);
+    rerenderizarInboxCompleta();
+  }
+
   window.location.href = `/chat.html?cliente_id=${clienteId}`;
 }
 

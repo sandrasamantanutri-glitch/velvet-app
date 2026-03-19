@@ -2719,203 +2719,209 @@ async function notificarNovaMensagem(userIdDestino, textoMensagem, url = "/inbox
     }
   }
 }
+
+  // ===============================
+// MIDDLEWARE DE AUTENTICAÇÃO DO SOCKET
 // ===============================
-// SOCKET.IO – CHAT ESTÁVEL
+io.use((socket, next) => {
+  try {
+    const token = socket.handshake.auth?.token;
+
+    if (!token) {
+      return next(new Error("Sem token"));
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (!decoded?.id || !decoded?.role) {
+      return next(new Error("Token inválido"));
+    }
+
+    socket.user = {
+      id: decoded.id,
+      role: decoded.role
+    };
+
+    return next();
+  } catch (err) {
+    console.error("❌ Erro auth socket:", err);
+    return next(new Error("Falha na autenticação"));
+  }
+});
+
+// ===============================
+// SOCKET.IO – CONNECTION
 // ===============================
 io.on("connection", (socket) => {
-  console.log("🔥 Socket conectado:", socket.id);
+  console.log("🔥 Socket conectado:", socket.id, socket.user);
 
-  socket.user = null;
-
-  // 🔐 AUTENTICAÇÃO DO SOCKET
-  socket.on("auth", (data) => {
-
-    if (!data || !data.token) {
-      return;
-    }
-
+  socket.on("loginModelo", async () => {
     try {
-      const decoded = jwt.verify(
-        data.token,
-        process.env.JWT_SECRET
-      );
-
-      if (!decoded || !decoded.id || !decoded.role) {
-        return;
+      if (!socket.user || socket.user.role !== "modelo") {
+        return socket.disconnect();
       }
 
-      socket.user = {
-        id: decoded.id,      // users.id
-        role: decoded.role   // cliente | modelo
-      };
-
-      socket.emit("authOk");
-
-      console.log(
-        "🔐 Socket autenticado:",
-        socket.user.id,
-        socket.user.role
-      );
-
-    } catch (err) {
-      socket.disconnect();
-    }
-  });
-
-socket.on("loginModelo", async () => {
-
-  if (!socket.user || socket.user.role !== "modelo") {
-    return socket.disconnect();
-  }
-
-  const result = await db.query(
-    "SELECT id FROM modelos WHERE user_id = $1",
-    [socket.user.id]
-  );
-
-  if (result.rowCount === 0) return;
-
-  const modeloIdReal = result.rows[0].id;
-
-  socket.modelo_id = modeloIdReal;
-
-  // 🔥 salva como online
-  if (!onlineModelos.has(modeloIdReal)) {
-  onlineModelos.set(modeloIdReal, new Set());
-}
-
-onlineModelos.get(modeloIdReal).add(socket.id);
-
-  console.log("🟣 Modelo online:", modeloIdReal);
-});
-
-// 📥 ENTRAR NA SALA DO CHAT
-
-socket.on("joinChat", async ({ cliente_id, modelo_id }) => {
-
-  if (!socket.user) return;
-
-  if (
-    !Number.isInteger(cliente_id) ||
-    !Number.isInteger(modelo_id)
-  ) return;
-
-  // 🔒 Verifica se usuário pertence à conversa
-  if (socket.user.role === "cliente") {
-
-    const clienteRes = await db.query(
-      "SELECT id FROM clientes WHERE user_id = $1",
-      [socket.user.id]
-    );
-
-    if (clienteRes.rowCount === 0) return;
-
-    const clienteIdReal = clienteRes.rows[0].id;
-
-    if (clienteIdReal !== cliente_id) return;
-
-  } else if (socket.user.role === "modelo") {
-
-    const modeloRes = await db.query(
-      "SELECT id FROM modelos WHERE user_id = $1",
-      [socket.user.id]
-    );
-
-    if (modeloRes.rowCount === 0) return;
-
-    const modeloIdReal = modeloRes.rows[0].id;
-
-    if (modeloIdReal !== modelo_id) return;
-  } else {
-    return;
-  }
-
-  const sala = `chat_${cliente_id}_${modelo_id}`;
-
-  socket.join(sala);
-
-  console.log("🟪 Entrou na sala segura:", sala);
-
-});
-
-socket.on("joinInbox", async (callback) => {
-  try {
-    if (!socket.user) {
-      callback?.({ ok: false, error: "Usuário não autenticado" });
-      return;
-    }
-
-    if (socket.user.role === "cliente") {
-      const clienteRes = await db.query(
-        "SELECT id FROM clientes WHERE user_id = $1",
-        [socket.user.id]
-      );
-
-      if (!clienteRes.rowCount) {
-        callback?.({ ok: false, error: "Cliente não encontrado" });
-        return;
-      }
-
-      const cliente_id = clienteRes.rows[0].id;
-      const sala = `inbox_cliente_${cliente_id}`;
-
-      socket.join(sala);
-      console.log("📬 Inbox cliente conectada:", sala);
-      callback?.({ ok: true, sala, tipo: "cliente" });
-      return;
-    }
-
-    if (socket.user.role === "modelo") {
-      const modeloRes = await db.query(
+      const result = await db.query(
         "SELECT id FROM modelos WHERE user_id = $1",
         [socket.user.id]
       );
 
-      if (!modeloRes.rowCount) {
-        callback?.({ ok: false, error: "Modelo não encontrado" });
+      if (result.rowCount === 0) return;
+
+      const modeloIdReal = result.rows[0].id;
+
+      socket.modelo_id = modeloIdReal;
+
+      if (!onlineModelos.has(modeloIdReal)) {
+        onlineModelos.set(modeloIdReal, new Set());
+      }
+
+      onlineModelos.get(modeloIdReal).add(socket.id);
+
+      console.log("🟣 Modelo online:", modeloIdReal);
+    } catch (err) {
+      console.error("❌ Erro loginModelo:", err);
+    }
+  });
+
+
+
+
+// 📥 ENTRAR NA SALA DO CHAT
+
+ socket.on("joinChat", async ({ cliente_id, modelo_id }, callback) => {
+    try {
+      if (!socket.user) {
+        callback?.({ ok: false, error: "Usuário não autenticado" });
         return;
       }
 
-      const modelo_id = modeloRes.rows[0].id;
-      const sala = `inbox_modelo_${modelo_id}`;
+      cliente_id = Number(cliente_id);
+      modelo_id = Number(modelo_id);
 
+      if (
+        !Number.isInteger(cliente_id) ||
+        !Number.isInteger(modelo_id)
+      ) {
+        callback?.({ ok: false, error: "IDs inválidos" });
+        return;
+      }
+
+      if (socket.user.role === "cliente") {
+        const clienteRes = await db.query(
+          "SELECT id FROM clientes WHERE user_id = $1",
+          [socket.user.id]
+        );
+
+        if (clienteRes.rowCount === 0) {
+          callback?.({ ok: false, error: "Cliente não encontrado" });
+          return;
+        }
+
+        const clienteIdReal = clienteRes.rows[0].id;
+
+        if (clienteIdReal !== cliente_id) {
+          callback?.({ ok: false, error: "Cliente inválido" });
+          return;
+        }
+      } else if (socket.user.role === "modelo") {
+        const modeloRes = await db.query(
+          "SELECT id FROM modelos WHERE user_id = $1",
+          [socket.user.id]
+        );
+
+        if (modeloRes.rowCount === 0) {
+          callback?.({ ok: false, error: "Modelo não encontrado" });
+          return;
+        }
+
+        const modeloIdReal = modeloRes.rows[0].id;
+
+        if (modeloIdReal !== modelo_id) {
+          callback?.({ ok: false, error: "Modelo inválido" });
+          return;
+        }
+      } else {
+        callback?.({ ok: false, error: "Role inválida" });
+        return;
+      }
+
+      const sala = `chat_${cliente_id}_${modelo_id}`;
       socket.join(sala);
-      console.log("📬 Inbox modelo conectada:", sala);
-      callback?.({ ok: true, sala, tipo: "modelo" });
-      return;
+
+      console.log("🟪 Entrou na sala segura:", sala);
+      callback?.({ ok: true, sala });
+    } catch (err) {
+      console.error("❌ Erro no joinChat:", err);
+      callback?.({ ok: false, error: "Erro interno ao entrar no chat" });
     }
+  });
 
-    callback?.({ ok: false, error: "Role inválida" });
-  } catch (err) {
-    console.error("❌ Erro no joinInbox:", err);
-    callback?.({ ok: false, error: "Erro interno ao entrar na inbox" });
-  }
-});
 
-// 💬 ENVIAR MENSAGEM (ÚNICO)
-socket.on("sendMessage", async (data, callback) => {
+socket.on("joinInbox", async (payload, callback) => {
+    try {
+      if (typeof payload === "function") {
+        callback = payload;
+        payload = {};
+      }
 
-  const { cliente_id, modelo_id, text, tempId } = data;
+      if (!socket.user) {
+        callback?.({ ok: false, error: "Usuário não autenticado" });
+        return;
+      }
 
-  if (!socket.user) {
-    console.log("❌ Socket sem usuário");
-    return;
-  }
+      if (socket.user.role === "cliente") {
+        const clienteRes = await db.query(
+          "SELECT id FROM clientes WHERE user_id = $1",
+          [socket.user.id]
+        );
 
-  if (
-    !Number.isInteger(cliente_id) ||
-    !Number.isInteger(modelo_id) ||
-    !text || typeof text !== "string"
-  ) {
-    console.log("❌ sendMessage inválido");
-    callback?.({ ok: false });
-    return;
-  }
+        if (!clienteRes.rowCount) {
+          callback?.({ ok: false, error: "Cliente não encontrado" });
+          return;
+        }
 
-  try {
+        const cliente_id = clienteRes.rows[0].id;
+        const sala = `inbox_cliente_${cliente_id}`;
 
-    // 🔒 VALIDAR IDENTIDADE REAL
-    if (socket.user.role === "cliente") {
+        socket.join(sala);
+        console.log("📬 Inbox cliente conectada:", sala);
+        callback?.({ ok: true, sala, tipo: "cliente" });
+        return;
+      }
+
+      if (socket.user.role === "modelo") {
+        const modeloRes = await db.query(
+          "SELECT id FROM modelos WHERE user_id = $1",
+          [socket.user.id]
+        );
+
+        if (!modeloRes.rowCount) {
+          callback?.({ ok: false, error: "Modelo não encontrado" });
+          return;
+        }
+
+        const modelo_id = modeloRes.rows[0].id;
+        const sala = `inbox_modelo_${modelo_id}`;
+
+        socket.join(sala);
+        console.log("📬 Inbox modelo conectada:", sala);
+        callback?.({ ok: true, sala, tipo: "modelo" });
+        return;
+      }
+
+      callback?.({ ok: false, error: "Role inválida" });
+    } catch (err) {
+      console.error("❌ Erro no joinInbox:", err);
+      callback?.({ ok: false, error: "Erro interno ao entrar na inbox" });
+    }
+  });
+
+   socket.on("loginCliente", async () => {
+    try {
+      if (!socket.user || socket.user.role !== "cliente") {
+        return socket.disconnect();
+      }
 
       const clienteRes = await db.query(
         "SELECT id FROM clientes WHERE user_id = $1",
@@ -2925,69 +2931,185 @@ socket.on("sendMessage", async (data, callback) => {
       if (!clienteRes.rowCount) return;
 
       const clienteIdReal = clienteRes.rows[0].id;
+      socket.cliente_id = clienteIdReal;
 
-      if (clienteIdReal !== cliente_id) return;
+      if (!onlineClientes.has(clienteIdReal)) {
+        onlineClientes.set(clienteIdReal, new Set());
+      }
+
+      onlineClientes.get(clienteIdReal).add(socket.id);
+
+      console.log("🟢 Cliente online:", clienteIdReal, socket.id);
+
+      await db.query(
+        `UPDATE clientes SET last_seen = NULL WHERE id = $1`,
+        [clienteIdReal]
+      );
+    } catch (err) {
+      console.error("❌ Erro loginCliente:", err);
+    }
+  });
+
+  socket.on("disconnect", async () => {
+    console.log("🔴 Socket desconectado:", socket.id);
+
+    try {
+      if (socket.cliente_id) {
+        const set = onlineClientes.get(socket.cliente_id);
+
+        if (set) {
+          set.delete(socket.id);
+
+          if (set.size === 0) {
+            onlineClientes.delete(socket.cliente_id);
+
+            await db.query(
+              `UPDATE clientes SET last_seen = NOW() WHERE id = $1`,
+              [socket.cliente_id]
+            );
+
+            console.log("⚫ Cliente offline:", socket.cliente_id);
+          }
+        }
+      }
+
+      if (socket.modelo_id) {
+        const set = onlineModelos.get(socket.modelo_id);
+
+        if (set) {
+          set.delete(socket.id);
+
+          if (set.size === 0) {
+            onlineModelos.delete(socket.modelo_id);
+
+            await db.query(
+              `UPDATE modelos SET last_seen = NOW() WHERE id = $1`,
+              [socket.modelo_id]
+            );
+
+            console.log("⚫ Modelo offline:", socket.modelo_id);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("❌ Erro no disconnect:", err);
+    }
+  });
+
+// 💬 ENVIAR MENSAGEM (ÚNICO)
+socket.on("sendMessage", async (data, callback) => {
+  const { cliente_id, modelo_id, text, tempId } = data || {};
+
+  const clienteIdNum = Number(cliente_id);
+  const modeloIdNum = Number(modelo_id);
+
+  if (!socket.user) {
+    console.log("❌ Socket sem usuário");
+    callback?.({ ok: false });
+    return;
+  }
+
+  if (
+    !Number.isInteger(clienteIdNum) ||
+    !Number.isInteger(modeloIdNum) ||
+    !text ||
+    typeof text !== "string"
+  ) {
+    console.log("❌ sendMessage inválido");
+    callback?.({ ok: false });
+    return;
+  }
+
+  try {
+    // 🔒 VALIDAR IDENTIDADE REAL
+    if (socket.user.role === "cliente") {
+      const clienteRes = await db.query(
+        "SELECT id FROM clientes WHERE user_id = $1",
+        [socket.user.id]
+      );
+
+      if (!clienteRes.rowCount) {
+        callback?.({ ok: false });
+        return;
+      }
+
+      const clienteIdReal = clienteRes.rows[0].id;
+
+      if (clienteIdReal !== clienteIdNum) {
+        callback?.({ ok: false });
+        return;
+      }
 
     } else if (socket.user.role === "modelo") {
-
       const modeloRes = await db.query(
         "SELECT id FROM modelos WHERE user_id = $1",
         [socket.user.id]
       );
 
-      if (!modeloRes.rowCount) return;
+      if (!modeloRes.rowCount) {
+        callback?.({ ok: false });
+        return;
+      }
 
       const modeloIdReal = modeloRes.rows[0].id;
 
-      if (modeloIdReal !== modelo_id) return;
+      if (modeloIdReal !== modeloIdNum) {
+        callback?.({ ok: false });
+        return;
+      }
 
     } else {
+      callback?.({ ok: false });
       return;
     }
 
-    const sala = `chat_${cliente_id}_${modelo_id}`;
+    const sala = `chat_${clienteIdNum}_${modeloIdNum}`;
     const sender = socket.user.role;
     const unreadFor = sender === "cliente" ? "modelo" : "cliente";
 
     // 1️⃣ SALVAR NO BANCO
-    const result = await db.query(`
+    const result = await db.query(
+      `
       INSERT INTO messages
         (cliente_id, modelo_id, sender, tipo, text, visto)
       VALUES ($1, $2, $3, 'texto', $4, false)
       RETURNING id, created_at
-    `,
-    [cliente_id, modelo_id, sender, text]);
+      `,
+      [clienteIdNum, modeloIdNum, sender, text]
+    );
 
     const message = result.rows[0];
 
     // 2️⃣ MARCAR COMO NÃO LIDA
-    await db.query(`
+    await db.query(
+      `
       INSERT INTO unread (cliente_id, modelo_id, unread_for, has_unread)
       VALUES ($1, $2, $3, true)
       ON CONFLICT (cliente_id, modelo_id)
       DO UPDATE SET
         unread_for = EXCLUDED.unread_for,
         has_unread = true
-    `,
-    [cliente_id, modelo_id, unreadFor]);
+      `,
+      [clienteIdNum, modeloIdNum, unreadFor]
+    );
 
     // 3️⃣ REALTIME CHAT
-io.to(sala).emit("newMessage", {
-  id: message.id,
-  tempId,
-  cliente_id,
-  modelo_id,
-  sender,
-  tipo: "texto",
-  text,
-  visto: false,
-  created_at: message.created_at
-});
+    io.to(sala).emit("newMessage", {
+      id: message.id,
+      tempId,
+      cliente_id: clienteIdNum,
+      modelo_id: modeloIdNum,
+      sender,
+      tipo: "texto",
+      text,
+      visto: false,
+      created_at: message.created_at
+    });
 
     // 4️⃣ ATUALIZAR INBOX
     emitirInboxUpdate(io, {
-      cliente_id,
-      modelo_id,
+      cliente_id: clienteIdNum,
+      modelo_id: modeloIdNum,
       sender,
       text,
       created_at: message.created_at
@@ -3006,7 +3128,7 @@ io.to(sala).emit("newMessage", {
           WHERE id = $1
           LIMIT 1
           `,
-          [modelo_id]
+          [modeloIdNum]
         );
 
         userIdDestino = modeloDestinoRes.rows[0]?.user_id || null;
@@ -3019,7 +3141,7 @@ io.to(sala).emit("newMessage", {
           WHERE id = $1
           LIMIT 1
           `,
-          [cliente_id]
+          [clienteIdNum]
         );
 
         userIdDestino = clienteDestinoRes.rows[0]?.user_id || null;
@@ -3027,14 +3149,14 @@ io.to(sala).emit("newMessage", {
       }
 
       console.log("[push] sender:", sender);
-      console.log("[push] cliente_id:", cliente_id);
-      console.log("[push] modelo_id:", modelo_id);
+      console.log("[push] cliente_id:", clienteIdNum);
+      console.log("[push] modelo_id:", modeloIdNum);
       console.log("[push] userIdDestino:", userIdDestino);
 
       if (userIdDestino) {
         await notificarNovaMensagem(
           userIdDestino,
-          text?.trim() ? text.trim().slice(0, 120) : "Você recebeu uma nova mensagem",
+          text.trim() ? text.trim().slice(0, 120) : "Você recebeu uma nova mensagem",
           pushUrl
         );
       }
@@ -3050,31 +3172,30 @@ io.to(sala).emit("newMessage", {
     });
 
   } catch (err) {
-
     console.error("🔥 ERRO AO SALVAR MENSAGEM:", err);
-
     callback?.({ ok: false });
-
   }
-
 });
-
 
 // 📜 HISTÓRICO DO CHAT
 socket.on("getHistory", async ({ cliente_id, modelo_id, offset = 0, limit = 20 }) => {
+  const clienteIdNum = Number(cliente_id);
+  const modeloIdNum = Number(modelo_id);
+  const offsetNum = Number(offset);
+  const limitNum = Number(limit);
 
   if (!socket.user) return;
 
   if (
-    !Number.isInteger(cliente_id) ||
-    !Number.isInteger(modelo_id)
+    !Number.isInteger(clienteIdNum) ||
+    !Number.isInteger(modeloIdNum) ||
+    !Number.isInteger(offsetNum) ||
+    !Number.isInteger(limitNum)
   ) return;
 
   try {
-
     // 🔒 VALIDAR IDENTIDADE REAL
     if (socket.user.role === "cliente") {
-
       const clienteRes = await db.query(
         "SELECT id FROM clientes WHERE user_id = $1",
         [socket.user.id]
@@ -3084,10 +3205,9 @@ socket.on("getHistory", async ({ cliente_id, modelo_id, offset = 0, limit = 20 }
 
       const clienteIdReal = clienteRes.rows[0].id;
 
-      if (clienteIdReal !== cliente_id) return;
+      if (clienteIdReal !== clienteIdNum) return;
 
     } else if (socket.user.role === "modelo") {
-
       const modeloRes = await db.query(
         "SELECT id FROM modelos WHERE user_id = $1",
         [socket.user.id]
@@ -3097,15 +3217,13 @@ socket.on("getHistory", async ({ cliente_id, modelo_id, offset = 0, limit = 20 }
 
       const modeloIdReal = modeloRes.rows[0].id;
 
-      if (modeloIdReal !== modelo_id) return;
+      if (modeloIdReal !== modeloIdNum) return;
 
     } else {
       return;
     }
 
-    // ===================================
     // 1️⃣ LIMPAR UNREAD
-    // ===================================
     await db.query(
       `
       UPDATE unread
@@ -3114,159 +3232,150 @@ socket.on("getHistory", async ({ cliente_id, modelo_id, offset = 0, limit = 20 }
         AND modelo_id = $2
         AND unread_for = $3
       `,
-      [cliente_id, modelo_id, socket.user.role]
+      [clienteIdNum, modeloIdNum, socket.user.role]
     );
 
-    // ===================================
     // 2️⃣ MARCAR COMO LIDA (SE CLIENTE)
-    // ===================================
     if (socket.user.role === "cliente") {
-
-      await db.query(`
+      await db.query(
+        `
         UPDATE messages
         SET lida = true
         WHERE cliente_id = $1
           AND modelo_id = $2
           AND sender = 'modelo'
           AND lida = false
-      `, [cliente_id, modelo_id]);
+        `,
+        [clienteIdNum, modeloIdNum]
+      );
 
-      io.to(`inbox_modelo_${modelo_id}`).emit("mensagemLida", {
-        cliente_id,
-        modelo_id
+      io.to(`inbox_modelo_${modeloIdNum}`).emit("mensagemLida", {
+        cliente_id: clienteIdNum,
+        modelo_id: modeloIdNum
       });
     }
 
-    // ===================================
     // 3️⃣ BUSCAR HISTÓRICO
-    // ===================================
-const result = await db.query(
-`
-SELECT
-  id,
-  cliente_id,
-  modelo_id,
-  sender,
-  text,
-  tipo,
-  preco,
-  visto,
-  conteudo_id,
-  pacote_id,
-  created_at
-FROM messages
-WHERE cliente_id = $1
-  AND modelo_id = $2
-  AND deletada IS NOT TRUE
-ORDER BY created_at DESC
-LIMIT $3 OFFSET $4
-`,
-[cliente_id, modelo_id, limit, offset]
-);
-const mensagens = result.rows.reverse();
+    const result = await db.query(
+      `
+      SELECT
+        id,
+        cliente_id,
+        modelo_id,
+        sender,
+        text,
+        tipo,
+        preco,
+        visto,
+        conteudo_id,
+        pacote_id,
+        created_at
+      FROM messages
+      WHERE cliente_id = $1
+        AND modelo_id = $2
+        AND deletada IS NOT TRUE
+      ORDER BY created_at DESC
+      LIMIT $3 OFFSET $4
+      `,
+      [clienteIdNum, modeloIdNum, limitNum, offsetNum]
+    );
 
-// ===================================
-// 4️⃣ TRATAR MENSAGENS DE CONTEÚDO (OTIMIZADO)
-// ===================================
-const mensagensConteudo = mensagens.filter(
-  m => m.tipo === "conteudo" || m.tipo === "conteudo_ppv_mass"
-);
-const messageIds = mensagensConteudo.map(m => m.id);
+    const mensagens = result.rows.reverse();
 
-if (messageIds.length > 0) {
-  // buscar todas mídias de uma vez
-  const midiasRes = await db.query(
-    `
-    SELECT
-      mc.message_id,
-      mc.conteudo_id,
-      c.url,
-      c.thumbnail_url,
-      c.tipo AS tipo_media
-    FROM messages_conteudos mc
-    JOIN conteudos c ON c.id = mc.conteudo_id
-    WHERE mc.message_id = ANY($1)
-    `,
-    [messageIds]
-  );
+    // 4️⃣ TRATAR MENSAGENS DE CONTEÚDO
+    const mensagensConteudo = mensagens.filter(
+      m => m.tipo === "conteudo" || m.tipo === "conteudo_ppv_mass"
+    );
 
-  // organizar por message_id
-  const mapaMidias = {};
+    const messageIds = mensagensConteudo.map(m => m.id);
 
-  for (const row of midiasRes.rows) {
-    if (!mapaMidias[row.message_id]) {
-      mapaMidias[row.message_id] = [];
+    if (messageIds.length > 0) {
+      const midiasRes = await db.query(
+        `
+        SELECT
+          mc.message_id,
+          mc.conteudo_id,
+          c.url,
+          c.thumbnail_url,
+          c.tipo AS tipo_media
+        FROM messages_conteudos mc
+        JOIN conteudos c ON c.id = mc.conteudo_id
+        WHERE mc.message_id = ANY($1)
+        `,
+        [messageIds]
+      );
+
+      const mapaMidias = {};
+
+      for (const row of midiasRes.rows) {
+        if (!mapaMidias[row.message_id]) {
+          mapaMidias[row.message_id] = [];
+        }
+
+        mapaMidias[row.message_id].push({
+          conteudo_id: Number(row.conteudo_id),
+          url: row.url,
+          thumbnail_url: row.thumbnail_url,
+          tipo_media: row.tipo_media
+        });
+      }
+
+      const pagosRes = await db.query(
+        `
+        SELECT message_id
+        FROM conteudo_pacotes
+        WHERE message_id = ANY($1)
+          AND cliente_id = $2
+          AND status = 'pago'
+        `,
+        [messageIds, clienteIdNum]
+      );
+
+      const pagosSet = new Set(
+        pagosRes.rows.map(r => Number(r.message_id))
+      );
+
+      const conteudosPossuidosSet = await buscarConteudosJaPossuidosPorCliente(db, {
+        cliente_id: clienteIdNum,
+        modelo_id: modeloIdNum
+      });
+
+      for (const msg of mensagensConteudo) {
+        const midias = mapaMidias[msg.id] || [];
+        const pago = Number(msg.preco) > 0 ? pagosSet.has(Number(msg.id)) : true;
+        const ehPPVMass = msg.tipo === "conteudo_ppv_mass";
+
+        msg.midias = midias.map(midia => {
+          const jaPossuia = ehPPVMass
+            ? conteudosPossuidosSet.has(Number(midia.conteudo_id))
+            : false;
+
+          return {
+            ...midia,
+            ja_possuia: jaPossuia,
+            liberado: pago || jaPossuia,
+            bloqueado: !(pago || jaPossuia)
+          };
+        });
+
+        msg.quantidade = msg.midias.length;
+
+        if (Number(msg.preco) > 0) {
+          msg.liberado = pago;
+          msg.bloqueado = !pago;
+          msg.tem_parcial_liberado = msg.midias.some(m => m.liberado);
+          msg.tem_parcial_bloqueado = msg.midias.some(m => m.bloqueado);
+        } else {
+          msg.liberado = true;
+          msg.bloqueado = false;
+          msg.tem_parcial_liberado = msg.midias.length > 0;
+          msg.tem_parcial_bloqueado = false;
+        }
+      }
     }
 
-    mapaMidias[row.message_id].push({
-      conteudo_id: Number(row.conteudo_id),
-      url: row.url,
-      thumbnail_url: row.thumbnail_url,
-      tipo_media: row.tipo_media
-    });
-  }
-
-  // buscar todos pagamentos de uma vez
-  const pagosRes = await db.query(
-    `
-    SELECT message_id
-    FROM conteudo_pacotes
-    WHERE message_id = ANY($1)
-      AND cliente_id = $2
-      AND status = 'pago'
-    `,
-    [messageIds, cliente_id]
-  );
-
-  const pagosSet = new Set(
-    pagosRes.rows.map(r => Number(r.message_id))
-  );
-
-  // buscar conteúdos que esse cliente já possuiu antes com essa modelo
-  const conteudosPossuidosSet = await buscarConteudosJaPossuidosPorCliente(db, {
-    cliente_id,
-    modelo_id
-  });
-
-  // aplicar nas mensagens
-for (const msg of mensagensConteudo) {
-  const midias = mapaMidias[msg.id] || [];
-  const pago = Number(msg.preco) > 0 ? pagosSet.has(Number(msg.id)) : true;
-  const ehPPVMass = msg.tipo === "conteudo_ppv_mass";
-
-  msg.midias = midias.map(midia => {
-    const jaPossuia = ehPPVMass
-      ? conteudosPossuidosSet.has(Number(midia.conteudo_id))
-      : false;
-
-    return {
-      ...midia,
-      ja_possuia: jaPossuia,
-      liberado: pago || jaPossuia,
-      bloqueado: !(pago || jaPossuia)
-    };
-  });
-
-  msg.quantidade = msg.midias.length;
-
-  if (Number(msg.preco) > 0) {
-    msg.liberado = pago;
-    msg.bloqueado = !pago;
-    msg.tem_parcial_liberado = msg.midias.some(m => m.liberado);
-    msg.tem_parcial_bloqueado = msg.midias.some(m => m.bloqueado);
-  } else {
-    msg.liberado = true;
-    msg.bloqueado = false;
-    msg.tem_parcial_liberado = msg.midias.length > 0;
-    msg.tem_parcial_bloqueado = false;
-  }
-}
-}
-
-// ===================================
-// 5️⃣ ENVIAR APENAS PARA QUEM PEDIU
-// ===================================
-socket.emit("chatHistory", mensagens);
+    // 5️⃣ ENVIAR APENAS PARA QUEM PEDIU
+    socket.emit("chatHistory", mensagens);
 
   } catch (err) {
     console.error("❌ Erro getHistory:", err);
@@ -3279,16 +3388,17 @@ socket.on("sendConteudo", async ({
   conteudos_ids,
   preco
 }) => {
+  const clienteIdNum = Number(cliente_id);
+  const modeloIdNum = Number(modelo_id);
 
   try {
-
     if (!socket.user || socket.user.role !== "modelo") {
       return;
     }
 
     if (
-      !Number.isInteger(cliente_id) ||
-      !Number.isInteger(modelo_id)
+      !Number.isInteger(clienteIdNum) ||
+      !Number.isInteger(modeloIdNum)
     ) return;
 
     if (!Array.isArray(conteudos_ids)) return;
@@ -3303,14 +3413,14 @@ socket.on("sendConteudo", async ({
 
     const modeloIdReal = modeloRes.rows[0].id;
 
-    if (modeloIdReal !== modelo_id) return;
+    if (modeloIdReal !== modeloIdNum) return;
 
     // 🔒 2️⃣ SANITIZAR IDS
-    conteudos_ids = conteudos_ids
+    const conteudosIdsNum = conteudos_ids
       .map(id => Number(id))
       .filter(id => Number.isInteger(id) && id > 0);
 
-    if (conteudos_ids.length === 0) return;
+    if (conteudosIdsNum.length === 0) return;
 
     // 🔒 3️⃣ VALIDAR QUE OS CONTEÚDOS PERTENCEM À MODELO
     const validosRes = await db.query(
@@ -3320,7 +3430,7 @@ socket.on("sendConteudo", async ({
       WHERE id = ANY($1)
         AND modelo_id = $2
       `,
-      [conteudos_ids, modelo_id]
+      [conteudosIdsNum, modeloIdNum]
     );
 
     const idsValidos = validosRes.rows.map(r => r.id);
@@ -3329,13 +3439,13 @@ socket.on("sendConteudo", async ({
 
     let precoNum = Number(preco);
 
-if (!Number.isFinite(precoNum) || precoNum < 0) {
-  precoNum = 0;
-}
+    if (!Number.isFinite(precoNum) || precoNum < 0) {
+      precoNum = 0;
+    }
 
-precoNum = Number(precoNum.toFixed(2));
+    precoNum = Number(precoNum.toFixed(2));
 
-    const sala = `chat_${cliente_id}_${modelo_id}`;
+    const sala = `chat_${clienteIdNum}_${modeloIdNum}`;
 
     // 4️⃣ CRIAR MENSAGEM
     const msgRes = await db.query(
@@ -3346,31 +3456,31 @@ precoNum = Number(precoNum.toFixed(2));
         ($1, $2, 'modelo', 'conteudo', $3, false, NOW())
       RETURNING id, created_at
       `,
-      [cliente_id, modelo_id, precoNum]
+      [clienteIdNum, modeloIdNum, precoNum]
     );
 
     const message = msgRes.rows[0];
 
-// 5️⃣ ASSOCIAR MÍDIAS (BATCH INSERT)
-const values = idsValidos
-  .map((_, i) => `($1, $${i + 2})`)
-  .join(",");
+    // 5️⃣ ASSOCIAR MÍDIAS
+    const values = idsValidos
+      .map((_, i) => `($1, $${i + 2})`)
+      .join(",");
 
-await db.query(
-  `
-  INSERT INTO messages_conteudos (message_id, conteudo_id)
-  VALUES ${values}
-  `,
-  [message.id, ...idsValidos]
-);
+    await db.query(
+      `
+      INSERT INTO messages_conteudos (message_id, conteudo_id)
+      VALUES ${values}
+      `,
+      [message.id, ...idsValidos]
+    );
 
     // 6️⃣ BUSCAR MÍDIAS
     const midiasRes = await db.query(
       `
       SELECT url, thumbnail_url, tipo AS tipo_media
-FROM conteudos
-WHERE id = ANY($1)
-ORDER BY array_position($1, id)
+      FROM conteudos
+      WHERE id = ANY($1)
+      ORDER BY array_position($1, id)
       `,
       [idsValidos]
     );
@@ -3378,18 +3488,21 @@ ORDER BY array_position($1, id)
     const midias = midiasRes.rows;
 
     // 7️⃣ MARCAR UNREAD PARA CLIENTE
-    await db.query(`
+    await db.query(
+      `
       INSERT INTO unread (cliente_id, modelo_id, unread_for, has_unread)
       VALUES ($1, $2, 'cliente', true)
       ON CONFLICT (cliente_id, modelo_id)
       DO UPDATE SET has_unread = true
-    `, [cliente_id, modelo_id]);
+      `,
+      [clienteIdNum, modeloIdNum]
+    );
 
     // 🔥 CHAT
     io.to(sala).emit("newMessage", {
       id: message.id,
-      cliente_id,
-      modelo_id,
+      cliente_id: clienteIdNum,
+      modelo_id: modeloIdNum,
       sender: "modelo",
       tipo: "conteudo",
       preco: precoNum,
@@ -3401,9 +3514,9 @@ ORDER BY array_position($1, id)
     });
 
     // 🔔 INBOX MODELO
-    io.to(`inbox_modelo_${modelo_id}`).emit("inboxMessage", {
-      cliente_id,
-      modelo_id,
+    io.to(`inbox_modelo_${modeloIdNum}`).emit("inboxMessage", {
+      cliente_id: clienteIdNum,
+      modelo_id: modeloIdNum,
       sender: "modelo",
       tipo: "conteudo",
       textoPreview:
@@ -3414,9 +3527,9 @@ ORDER BY array_position($1, id)
     });
 
     // 🔔 INBOX CLIENTE
-    io.to(`inbox_cliente_${cliente_id}`).emit("inboxMessage", {
-      cliente_id,
-      modelo_id,
+    io.to(`inbox_cliente_${clienteIdNum}`).emit("inboxMessage", {
+      cliente_id: clienteIdNum,
+      modelo_id: modeloIdNum,
       sender: "modelo",
       tipo: "conteudo",
       textoPreview:
@@ -3436,16 +3549,19 @@ socket.on("marcarConteudoVisto", async ({
   cliente_id,
   modelo_id
 }) => {
-  try {
+  const messageIdNum = Number(message_id);
+  const clienteIdNum = Number(cliente_id);
+  const modeloIdNum = Number(modelo_id);
 
+  try {
     if (!socket.user || socket.user.role !== "cliente") {
       return socket.disconnect();
     }
 
     if (
-      !Number.isInteger(message_id) ||
-      !Number.isInteger(cliente_id) ||
-      !Number.isInteger(modelo_id)
+      !Number.isInteger(messageIdNum) ||
+      !Number.isInteger(clienteIdNum) ||
+      !Number.isInteger(modeloIdNum)
     ) return;
 
     // 🔒 CONVERTER users.id → cliente_id real
@@ -3458,7 +3574,7 @@ socket.on("marcarConteudoVisto", async ({
 
     const clienteIdReal = clienteRes.rows[0].id;
 
-    if (clienteIdReal !== cliente_id) return;
+    if (clienteIdReal !== clienteIdNum) return;
 
     // ✅ marcar como visto
     await db.query(
@@ -3469,14 +3585,14 @@ socket.on("marcarConteudoVisto", async ({
         AND cliente_id = $2
         AND modelo_id = $3
       `,
-      [message_id, cliente_id, modelo_id]
+      [messageIdNum, clienteIdNum, modeloIdNum]
     );
 
     // 🔥 avisar sala
-    const sala = `chat_${cliente_id}_${modelo_id}`;
+    const sala = `chat_${clienteIdNum}_${modeloIdNum}`;
 
     io.to(sala).emit("conteudoVisto", {
-      message_id: Number(message_id)
+      message_id: messageIdNum
     });
 
   } catch (err) {
@@ -3606,87 +3722,7 @@ socket.on("excluirMensagem", async ({ id }) => {
   }
 });
 
-socket.on("loginCliente", async () => {
-  try {
 
-    if (!socket.user || socket.user.role !== "cliente") {
-      return socket.disconnect();
-    }
-
-    const clienteRes = await db.query(
-      "SELECT id FROM clientes WHERE user_id = $1",
-      [socket.user.id]
-    );
-
-    if (!clienteRes.rowCount) return;
-
-    const clienteIdReal = clienteRes.rows[0].id;
-
-    socket.cliente_id = clienteIdReal;
-
-    // 🔥 salva como online
-onlineClientes.set(clienteIdReal, new Set());
-onlineClientes.get(clienteIdReal).add(socket.id);
-
-    console.log("🟢 Cliente online:", clienteIdReal, socket.id);
-
-    // 🔥 marca como online (last_seen = NULL)
-    await db.query(
-      `UPDATE clientes SET last_seen = NULL WHERE id = $1`,
-      [clienteIdReal]
-    );
-
-  } catch (err) {
-    console.error("Erro atualizar last_seen (online):", err);
-  }
-});
-
-socket.on("disconnect", async () => {
-  console.log("🔴 Socket desconectado:", socket.id);
-
-  // 🔵 CLIENTE
-  if (socket.cliente_id) {
-
-    const set = onlineClientes.get(socket.cliente_id);
-
-    if (set) {
-      set.delete(socket.id);
-
-      // 🔥 Só fica offline se NÃO houver mais sockets
-      if (set.size === 0) {
-        onlineClientes.delete(socket.cliente_id);
-
-        await db.query(
-          `UPDATE clientes SET last_seen = NOW() WHERE id = $1`,
-          [socket.cliente_id]
-        );
-
-        console.log("⚫ Cliente offline:", socket.cliente_id);
-      }
-    }
-  }
-
-  // 🟣 MODELO
-  if (socket.modelo_id) {
-
-    const set = onlineModelos.get(socket.modelo_id);
-
-    if (set) {
-      set.delete(socket.id);
-
-      if (set.size === 0) {
-        onlineModelos.delete(socket.modelo_id);
-
-        await db.query(
-          `UPDATE modelos SET last_seen = NOW() WHERE id = $1`,
-          [socket.modelo_id]
-        );
-
-        console.log("⚫ Modelo offline:", socket.modelo_id);
-      }
-    }
-  }
- });
 
 });
 

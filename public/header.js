@@ -1,3 +1,16 @@
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", async () => {
+    try {
+      const reg = await navigator.serviceWorker.register("/service-worker.js", {
+        scope: "/"
+      });
+      console.log("Service worker registrado:", reg.scope);
+    } catch (err) {
+      console.error("Erro ao registrar service worker:", err);
+    }
+  });
+}
+
 // ===============================
 // SOCKET GLOBAL
 function carregarHeader() {
@@ -95,30 +108,36 @@ function atualizarBadgeHeader(total) {
 }
 
 function initHeaderSocketModelo() {
-
   const token = localStorage.getItem("token");
   const role = localStorage.getItem("role");
 
   if (!token || role !== "modelo") return;
 
-  // socket desativado por enquanto
+  const path = window.location.pathname || "";
+  if (
+    path.includes("/inbox.html") ||
+    path.includes("/chat.html")
+  ) {
+    return;
+  }
+
   if (typeof io === "undefined") {
     console.warn("Socket.IO não carregado — notificações desativadas");
     return;
   }
 
   const socket = io({
-    transports: ["websocket"]
+    transports: ["websocket", "polling"],
+    auth: { token }
   });
 
-  socket.on("connect", () => {
-    socket.emit("auth", { token });
-  });
-
-  socket.on("unreadUpdate", ({ modelo_id }) => {
+  socket.on("unreadUpdate", () => {
     atualizarUnreadModeloHeader();
   });
 
+  socket.on("connect_error", (err) => {
+    console.error("❌ Erro socket header:", err.message, err);
+  });
 }
 
 
@@ -471,8 +490,7 @@ async function carregarVapidPublicKey() {
     }
 
     const API_BASE =
-      window.location.hostname === "velvet.lat" ||
-      window.location.hostname === "www.velvet.lat"
+      window.location.hostname === "http://www.velvet.lat"
         ? "https://velvet-app.onrender.com"
         : "";
 

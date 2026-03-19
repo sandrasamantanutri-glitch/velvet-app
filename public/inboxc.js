@@ -10,7 +10,8 @@ if ("serviceWorker" in navigator) {
     }
   });
 }
-// ===============================
+
+//===========================
 // AUTH
 // ===============================
 const token = localStorage.getItem("token");
@@ -29,28 +30,33 @@ const chatsMap = new Map();
 // SOCKET
 // ===============================
 const socket = io({
-  transports: ["websocket", "polling"]
+  transports: ["websocket", "polling"],
+  auth: {
+    token
+  },
+  reconnection: true,
+  reconnectionAttempts: 5,
+  reconnectionDelay: 2000,
+  timeout: 10000
 });
 
-let clienteId = null;
-
-function autenticar() {
-  socket.emit("auth", { token });
-}
-
 function entrarInbox() {
+  if (!clienteId) return;
+
   socket.emit("joinInbox", {
     sala: `inbox_cliente_${clienteId}`
   });
 }
 
 socket.on("connect", () => {
-  console.log("🟢 Inbox cliente conectado:", socket.id);
-  autenticar();
+  console.log("🟢 Inbox conectado:", socket.id);
+ if (clienteId) {
+    entrarInbox();
+  }
 });
 
-socket.on("authOk", () => {
-  entrarInbox();
+socket.on("connect_error", (err) => {
+  console.error("❌ connect_error socket:", err.message, err);
 });
 
 socket.on("inboxMessage", dados => {
@@ -76,7 +82,6 @@ const inboxEl = document.getElementById("inbox");
 // INIT
 // ===============================
 async function initClienteInbox() {
-
   const res = await fetch("/api/cliente/me", {
     headers: { Authorization: "Bearer " + token }
   });
@@ -84,7 +89,6 @@ async function initClienteInbox() {
   if (!res.ok) return logout();
 
   const me = await res.json();
-
   clienteId = me.id;
 
   if (socket.connected) {
