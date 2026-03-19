@@ -1,14 +1,17 @@
 console.log("SERVIDOR INICIADO - O SENHOR EH MEU PASTOR E NADA ME FALTARA!")
 
 // ===============================
-// SERVER.JS 
+// VARIAVEIS
 // ===============================
-require("dotenv").config();      // 🔑 PRIMEIRO
+
+require("dotenv").config();      //PRIMEIRO
 const http = require("http");
 const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
+
 const JWT_SECRET = process.env.JWT_SECRET;
 console.log("JWT_SECRET carregado?", JWT_SECRET);
+
 const cors = require("cors");
 const express = require("express");
 const db = require("./db");
@@ -19,54 +22,78 @@ const app = express();
 const FormData = require("form-data");
 const webpush = require("web-push");
 
-// app.use((req, res, next) => {
-//   return res.sendFile(
-//     path.join(__dirname, "public", "manutencao.html")
-//   );
-// });
-
 const os = require("os");
 const { exec } = require("child_process");
 const ffmpeg = require("fluent-ffmpeg");
 
-app.set("trust proxy", 1);
+
 const server = http.createServer(app);
 const multer = require("multer");
 const onlineModelos = new Map();
 const onlineClientes = new Map();
 const AWS = require("aws-sdk");
 const multerS3 = require("multer-s3");
-const { MercadoPagoConfig } = require("mercadopago");
-const Stripe = require("stripe");
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
 const ffmpegPath = require("ffmpeg-static");
 const authCliente = require("./middleware/authCliente");
 const authModelo = require("./middleware/authModelo");
 const auth = require("./middleware/auth");
-const authAdmin = require("./middleware/authAdmin");
+
 const crypto = require("crypto");
 const axios = require("axios");
+
 const { Resend } = require("resend");
 const { enviarEmailValidacao } = require("./email");
+const rateLimit = require("express-rate-limit");
 
-const TZ_FINANCEIRO = "America/Sao_Paulo";
+module.exports = uploadCloudflareImage;
+module.exports = uploadVideoCloudflare;
 
+app.set("trust proxy", 1);
 ffmpeg.setFfmpegPath(ffmpegPath);
 
-const client = new MercadoPagoConfig({
-  accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN
-});
+const sgMail = require("@sendgrid/mail");
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 const allowedOrigins = [
   "https://www.velvet.lat",
-  "https://app-production-e7e1.up.railway.app",
   "https://velvet-test-production.up.railway.app",
-  "https://velvet-test-production.up.railway.app/app",
-   "https://www.velvet.lat/app/",
-   "https://velvet-app-an4a.onrender.com"
+  "https://velvet-app-production.up.railway.app",
+  "https://velvet-app.onrender.com"
 ];
-const sgMail = require("@sendgrid/mail");
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+const io = new Server(server, {
+  cors: {
+    origin: [
+      "https://www.velvet.lat",
+      "https://velvet-app.onrender.com",
+      "https://velvet-app-production.up.railway.app",
+      "https://velvet-test-production.up.railway.app"
+    ],
+    methods: ["GET", "POST"],
+    credentials: true
+  },
+  transports: ["websocket"],
+  
+});
+
+// ===========================
+// WEBPUSH
+// ===========================
+if (
+  process.env.VAPID_SUBJECT &&
+  process.env.VAPID_PUBLIC_KEY &&
+  process.env.VAPID_PRIVATE_KEY
+) {
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT,
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+  console.log("VAPID configurado com sucesso");
+} else {
+  console.warn("VAPID não configurado. Push desativado por enquanto.");
+}
 
 // ===============================
 // BACKBLAZE B2 (UPLOAD NOVO)
@@ -116,402 +143,15 @@ const uploadVerificacao = multer({
   }
 });
 
-
-// app.post(
-//   "/api/webhook/stripe",
-//   express.raw({ type: "application/json" }),
-//   async (req, res) => {
-
-//     const sig = req.headers["stripe-signature"];
-//     let event;
-
-//     try {
-//       event = stripe.webhooks.constructEvent(
-//         req.body,
-//         sig,
-//         process.env.STRIPE_WEBHOOK_SECRET
-//       );
-//     } catch (err) {
-//       console.log("🚨 Assinatura inválida Stripe");
-//       return res.status(400).send("invalid");
-//     }
-
-//     console.log("🔥 WEBHOOK STRIPE:", event.type);
-
-//     /* =====================================================
-//        PROCESSAR APENAS EVENTOS NECESSÁRIOS
-//     ===================================================== */
-
-//     if (
-//       event.type !== "payment_intent.succeeded" &&
-//       event.type !== "charge.dispute.created"
-//     ) {
-//       return res.status(200).send("ok");
-//     }
-
-//     const client = await db.connect();
-//     let dadosParaEmitir = null;
-//     let enviarMensagemVip = null;
-
-//     try {
-
-//       await client.query("BEGIN");
-
-//       /* =====================================================
-//          IDEMPOTÊNCIA (MESMA LÓGICA DO PAGARME)
-//       ===================================================== */
-
-//       const jaProcessado = await client.query(
-//         "SELECT 1 FROM stripe_events WHERE id=$1 FOR UPDATE",
-//         [event.id]
-//       );
-
-//       if (jaProcessado.rowCount > 0) {
-//         await client.query("ROLLBACK");
-//         return res.status(200).send("ok");
-//       }
-
-//       await client.query(
-//         "INSERT INTO stripe_events (id,type) VALUES ($1,$2)",
-//         [event.id, event.type]
-//       );
-
-//       /* =====================================================
-//          PAGAMENTO APROVADO
-//       ===================================================== */
-
-//       if (event.type === "payment_intent.succeeded") {
-
-//         const pi = event.data.object;
-//         const metadata = pi.metadata || {};
-
-//         const tipo = metadata.tipo;
-//         if (!metadata.tipo) {
-//   console.log("🚨 metadata.tipo ausente stripe");
-//   await client.query("ROLLBACK");
-//   return res.status(200).send("ok");
-// }
-
-//         const cliente_id = Number(metadata.cliente_id);
-//         const modelo_id = Number(metadata.modelo_id);
-
-//         const valorPago = pi.amount / 100;
-//         const valorTotalMeta = Number(metadata.valor_total || 0);
-
-//           if (cliente_id) {
-//     io.to(`cliente_${cliente_id}`).emit("pagamentoAprovado", {
-//       tipo,
-//       conteudo_id: metadata.message_id,
-//       modelo_id,
-//       valor: valorPago
-//     });
-//   }
-//         /* =====================================================
-//            VALIDAÇÃO DE VALOR (IGUAL PAGARME)
-//         ===================================================== */
-
-//         const valorComparacao = valorTotalMeta || valorPago;
-
-// if (Math.abs(Number(valorComparacao) - Number(valorPago)) > 0.01) {
-//           console.log("🚨 Valor divergente Stripe");
-//           await client.query("ROLLBACK");
-//           return res.status(200).send("ok");
-//         }
-
-//         /* =====================================================
-//            VIP CARTÃO
-//         ===================================================== */
-
-//         if (tipo === "vip") {
-
-//           const expiration = new Date();
-//           expiration.setMonth(expiration.getMonth() + 1);
-
-// let valorBase = Number(metadata.valor_base ?? valorPago);
-
-// if (!Number.isFinite(valorBase) || valorBase <= 0) {
-//   console.log("🚨 valorBase inválido stripe:", metadata.valor_base, valorPago);
-//   await client.query("ROLLBACK");
-//   return res.status(200).send("ok");
-// }
-
-// valorBase = Number(valorBase.toFixed(2));
-// const taxaGateway = Number((valorBase * 0.15).toFixed(2));
-
-// const valores = await calcularValores({
-//   modelo_id,
-//   valor_bruto: valorBase,
-//   taxa_gateway: taxaGateway
+// app.use((req, res, next) => {
+//   return res.sendFile(
+//     path.join(__dirname, "public", "manutencao.html")
+//   );
 // });
 
-
-// await client.query(`
-// INSERT INTO vip_subscriptions (
-// cliente_id,
-// modelo_id,
-// ativo,
-// created_at,
-// updated_at,
-// expiration_at,
-// valor_assinatura,
-// taxa_transacao,
-// taxa_plataforma,
-// valor_total,
-// recorrente,
-// gateway_subscription_id
-// )
-// VALUES (
-// $1,$2,true,
-// NOW(),NOW(),
-// $3,$4,$5,$6,$7,
-// false,$8
-// )
-// ON CONFLICT (cliente_id,modelo_id)
-// DO UPDATE SET
-// ativo=true,
-// expiration_at=$3,
-// updated_at=NOW(),
-// valor_assinatura=$4,
-// taxa_transacao=$5,
-// taxa_plataforma=$6,
-// valor_total=$7,
-// recorrente=false,
-// gateway_subscription_id=$8
-// `,[
-// cliente_id,
-// modelo_id,
-// expiration,
-// valorBase,
-// 0,
-// 0,
-// valorPago,
-// pi.id
-// ]);
-
-// await client.query(`
-// INSERT INTO transacoes_agency (
-// modelo_id,
-// cliente_id,
-// tipo,
-// valor_bruto,
-// valor_modelo,
-// agency_fee,
-// velvet_fee,
-// taxa_gateway,
-// status,
-// created_at,
-// aceitou_termos,
-// aceite_ip,
-// aceite_data
-// )
-// VALUES (
-// $1,$2,'assinatura',
-// $3,$4,$5,$6,$7,
-// 'pago',NOW(),true,$8,NOW()
-// )
-// `,[
-// modelo_id,
-// cliente_id,
-// valorBase,
-// valores.valor_modelo,
-// valores.agency_fee,
-// valores.velvet_fee,
-// taxaGateway,
-// metadata.aceite_ip || null
-// ]);
-
-//           enviarMensagemVip = {
-//             cliente_id,
-//             modelo_id
-//           };
-
-//           dadosParaEmitir = {
-//             tipo: "vip",
-//             cliente_id,
-//             modelo_id
-//           };
-
-//         }
-
-// /* =====================================================
-//            CONTEÚDO CARTÃO
-// ===================================================== */
-// if (tipo === "conteudo_cartao") {
-
-// const message_id = Number(metadata.message_id);
-
-//           if (!message_id) {
-//   console.log("🚨 message_id inválido stripe");
-//   await client.query("ROLLBACK");
-//   return res.status(200).send("ok");
-// }
-
-// let valorBase = Number(metadata.valor_base ?? valorPago);
-
-// if (!Number.isFinite(valorBase) || valorBase <= 0) {
-//   console.log("🚨 valorBase inválido stripe midia");
-//   await client.query("ROLLBACK");
-//   return res.status(200).send("ok");
-// }
-
-// valorBase = Number(valorBase.toFixed(2));
-// const taxaGateway = Number((valorBase * 0.15).toFixed(2));
-
-// const valores = await calcularValores({
-//   modelo_id,
-//   valor_bruto: valorBase,
-//   taxa_gateway: taxaGateway
-// });
-
-//           await client.query(`
-//             INSERT INTO conteudo_pacotes (
-//               modelo_id,
-//               cliente_id,
-//               preco,
-//               valor_base,
-//               taxa_transacao,
-//               taxa_plataforma,
-//               valor_total,
-//               status,
-//               payment_id,
-//               metodo_pagamento,
-//               pago_em,
-//               message_id
-//             )
-//             VALUES (
-//               $1,$2,$3,$3,$4,$5,$6,
-//               'pago',$7,'cartao',NOW(),$8
-//             )
-//             ON CONFLICT DO NOTHING
-//           `,[
-//             modelo_id,
-//             cliente_id,
-//             valorBase,
-//             0,
-//             0,
-//             valorPago,
-//             pi.id,
-//             message_id
-//           ]);
-
-//           await client.query(`
-//             INSERT INTO transacoes_agency (
-//               modelo_id,
-//               cliente_id,
-//               tipo,
-//               valor_bruto,
-//               valor_modelo,
-//               agency_fee,
-//               velvet_fee,
-//               taxa_gateway,
-//               status,
-//               created_at,
-//               aceitou_termos,
-//               aceite_ip,
-//               aceite_data
-//             )
-//             VALUES (
-//               $1,$2,'midia',
-//               $3,$4,$5,$6,$7,
-//               'pago',NOW(),true,$8,NOW()
-//             )
-//           `,[
-//             modelo_id,
-//             cliente_id,
-//             valorBase,
-//             valores.valor_modelo,
-//             valores.agency_fee,
-//             valores.velvet_fee,
-//             taxaGateway,
-//             metadata.aceite_ip || null
-//           ]);
-
-//           const conteudo_ids = await marcarConteudoComoLiberadoPorPagamento(client, {
-//   message_id,
-//   cliente_id,
-//   modelo_id,
-// });
-
-// dadosParaEmitir = {
-//   tipo: "conteudo_cartao",
-//   cliente_id,
-//   modelo_id,
-//   message_id,
-//   conteudo_ids,
-// };
-//         }
-//       }
-
-
-// /*============================================================ 
-//          CHARGEBACK
-//       ===================================================== */
-
-//       if (event.type === "charge.dispute.created") {
-
-//         const dispute = event.data.object;
-//         const pi = await stripe.paymentIntents.retrieve(dispute.payment_intent);
-//         const metadata = pi.metadata || {};
-
-//         const cliente_id = Number(metadata.cliente_id);
-//         const cpf = metadata.cpf;
-
-//         if (cliente_id) {
-//           await client.query(
-//             "UPDATE clientes SET bloqueado=true WHERE id=$1",
-//             [cliente_id]
-//           );
-//         }
-
-//         if (cpf) {
-//           await client.query(`
-//             INSERT INTO cpfs_bloqueados (cpf,motivo)
-//             VALUES ($1,'Chargeback Stripe')
-//             ON CONFLICT DO NOTHING
-//           `,[cpf]);
-//         }
-
-//       }
-
-//       await client.query("COMMIT");
-
-//       try {
-//   if (dadosParaEmitir?.tipo === "conteudo_cartao") {
-//     const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
-//     io.to(sala).emit("conteudoLiberado", {
-//       message_id: Number(dadosParaEmitir.message_id),
-//       conteudo_ids: dadosParaEmitir.conteudo_ids || [],
-//     });
-//   }
-// if (dadosParaEmitir?.tipo === "vip") {
-
-//   io.emit("vipAtivado", {
-//     cliente_id: Number(dadosParaEmitir.cliente_id),
-//     modelo_id: Number(dadosParaEmitir.modelo_id),
-//   });
-
-// }
-// } catch (e) {
-//   console.error("Falha ao emitir sockets stripe:", e);
-// }
-
-//       return res.status(200).send("ok");
-
-//     } catch (err) {
-
-//       await client.query("ROLLBACK");
-//       console.error("🔥 ERRO WEBHOOK STRIPE:", err);
-
-//       return res.status(500).send("erro");
-
-//     } finally {
-
-//       client.release();
-
-//     }
-
-//   }
-// );
+// ===============================
+// WEBHOOKS
+// ===============================
 
 app.post("/api/webhook/pagarme", express.raw({ type: "*/*" }), async (req, res) => {
   console.log("======================================");
@@ -567,9 +207,11 @@ app.post("/api/webhook/pagarme", express.raw({ type: "*/*" }), async (req, res) 
   }
 
   // status normalizado do evento
-  const isPaidEvent =
-    eventType === "order.paid" ||
-    eventType === "charge.paid";
+const gatewayStatus = String(charge?.status || order?.status || "").toLowerCase();
+const isPaidEvent =
+  eventType === "order.paid" ||
+  eventType === "charge.paid" ||
+  ["paid"].includes(gatewayStatus);
 
 const isFailedEvent =
   eventType === "order.payment_failed" ||
@@ -795,11 +437,14 @@ if (!isPaidEvent) {
        JÁ PAGO
     ===================================================== */
 
-    if (String(pagamento.status).toLowerCase() === "pago") {
-      console.log("Pagamento já estava pago");
-      await client.query("ROLLBACK");
-      return res.status(200).send("ok");
-    }
+const statusLocal = String(pagamento.status || "").toLowerCase().trim();
+const pagamentoJaFinalizado = ["pago"].includes(statusLocal);
+
+if (pagamentoJaFinalizado) {
+  console.log("Pagamento já estava pago");
+  await client.query("ROLLBACK");
+  return res.status(200).send("ok");
+}
 
     /* =====================================================
        VALIDAÇÃO DE VALOR
@@ -935,174 +580,242 @@ if (!isPaidEvent) {
        VIP
     ===================================================== */
 
-    if (metadata.tipo === "vip") {
-      console.log("⭐ Processando VIP");
+   if (metadata.tipo === "vip") {
 
-      const vipExistente = await client.query(
-        `
-        SELECT 1
-        FROM vip_subscriptions
-        WHERE cliente_id = $1
-          AND modelo_id = $2
-        LIMIT 1
-        `,
-        [cliente_id, modelo_id]
-      );
+  console.log("⭐ Processando VIP");
+  console.log("VIP metadata:", metadata);
+  console.log("VIP cliente_id:", cliente_id);
+  console.log("VIP modelo_id:", modelo_id);
+  console.log("VIP valorPago:", valorPago);
+  console.log("VIP orderId:", orderId);
 
-      const primeiraAssinatura = vipExistente.rowCount === 0;
+  const vipExistente = await client.query(
+    `
+    SELECT id, ativo, expiration_at
+    FROM vip_subscriptions
+    WHERE cliente_id = $1
+      AND modelo_id = $2
+    LIMIT 1
+    FOR UPDATE
+    `,
+    [cliente_id, modelo_id]
+  );
 
-      console.log("Primeira assinatura?", primeiraAssinatura);
+  console.log("vipExistente.rowCount:", vipExistente.rowCount);
+  console.log("vipExistente.rows:", vipExistente.rows);
 
-      const expiration = new Date();
-      expiration.setMonth(expiration.getMonth() + 1);
 
-      let valorBase = Number(metadata.valor_assinatura ?? metadata.valor_base ?? pagamento.valor ?? 0);
+  const primeiraAssinatura = vipExistente.rowCount === 0;
 
-      if (!Number.isFinite(valorBase) || valorBase <= 0) {
-        console.log("🚨 valorBase inválido:", metadata.valor_assinatura, metadata.valor_base, pagamento.valor);
-        await client.query("ROLLBACK");
-        return res.status(200).send("ok");
-      }
+  console.log("Primeira assinatura?", primeiraAssinatura);
 
-      valorBase = Number(valorBase.toFixed(2));
+  let valorBase = Number(
+    metadata.valor_assinatura ??
+    metadata.valor_base ??
+    pagamento.valor ??
+    0
+  );
 
-      const taxaGateway = Number((valorBase * 0.15).toFixed(2));
-      const valorBruto = valorBase;
+  if (!Number.isFinite(valorBase) || valorBase <= 0) {
+    console.log(
+      "🚨 valorBase inválido:",
+      metadata.valor_assinatura,
+      metadata.valor_base,
+      pagamento.valor
+    );
+    await client.query("ROLLBACK");
+    return res.status(200).send("ok");
+  }
 
-      const valores = await calcularValores({
-        modelo_id,
-        valor_bruto: valorBase,
-        taxa_gateway: taxaGateway
-      });
+  valorBase = Number(valorBase.toFixed(2));
 
-      const valorModelo = Number(valores.valor_modelo || 0);
-      const agencyFee = Number(valores.agency_fee || 0);
-      const velvetFee = Number(valores.velvet_fee || 0);
+  const taxaTransacao = Number(metadata.taxa_transacao || 0);
+  const taxaPlataforma = Number(metadata.taxa_plataforma || 0);
 
-      console.log("Valores VIP:", {
-        valorBruto,
-        valorModelo,
-        agencyFee,
-        velvetFee,
-        taxaGateway
-      });
+  const taxaGateway = Number((valorBase * 0.15).toFixed(2));
+  const valorBruto = valorBase;
 
-      await client.query(
-        `
-        INSERT INTO vip_subscriptions (
-          cliente_id,
-          modelo_id,
-          ativo,
-          created_at,
-          updated_at,
-          expiration_at,
-          valor_assinatura,
-          taxa_transacao,
-          taxa_plataforma,
-          valor_total,
-          recorrente,
-          gateway_subscription_id
-        )
-        VALUES (
-          $1,$2,true,
-          NOW(),NOW(),
-          $3,$4,$5,$6,$7,
-          false,$8
-        )
-        ON CONFLICT (cliente_id,modelo_id)
-        DO UPDATE SET
-          ativo=true,
-          expiration_at=$3,
-          updated_at=NOW(),
-          valor_assinatura=$4,
-          taxa_transacao=$5,
-          taxa_plataforma=$6,
-          valor_total=$7,
-          recorrente=false,
-          gateway_subscription_id=$8
-        `,
-        [
-          cliente_id,
-          modelo_id,
-          expiration,
-          valorBase,
-          Number(metadata.taxa_transacao || 0),
-          Number(metadata.taxa_plataforma || 0),
-          valorPago,
-          orderId
-        ]
-      );
+  const valores = await calcularValores({
+    modelo_id,
+    valor_bruto: valorBase,
+    taxa_gateway: taxaGateway
+  });
 
-      console.log("vip_subscriptions atualizado");
+  const valorModelo = Number(valores.valor_modelo || 0);
+  const agencyFee = Number(valores.agency_fee || 0);
+  const velvetFee = Number(valores.velvet_fee || 0);
 
-      await client.query(
-        `
-        INSERT INTO transacoes_agency (
-          modelo_id,
-          cliente_id,
-          tipo,
-          valor_bruto,
-          valor_modelo,
-          agency_fee,
-          velvet_fee,
-          taxa_gateway,
-          status,
-          created_at
-        )
-        VALUES (
-          $1,$2,'assinatura',
-          $3,$4,$5,$6,$7,'pago',NOW()
-        )
-        `,
-        [
-          modelo_id,
-          cliente_id,
-          valorBruto,
-          valorModelo,
-          agencyFee,
-          velvetFee,
-          taxaGateway
-        ]
-      );
+  console.log("Valores VIP:", {
+    valorBruto,
+    valorModelo,
+    agencyFee,
+    velvetFee,
+    taxaGateway
+  });
 
-      console.log("transacoes_agency (vip) inserido");
+  let novaExpiracao;
 
-      if (primeiraAssinatura) {
-        await client.query(
-          `
-          INSERT INTO messages (
-            cliente_id,
-            modelo_id,
-            text,
-            sender,
-            tipo,
-            created_at,
-            lida,
-            visto,
-            deletada
-          )
-          VALUES ($1,$2,$3,'modelo','texto',NOW(),false,false,false)
-          `,
-          [
-            cliente_id,
-            modelo_id,
-            "Oii!! Bem vindo, como vc chama?🔥Quero saber quem acabou de entrar no meu VIP!😏"
-          ]
-        );
-      }
+  if (
+    vipExistente.rowCount > 0 &&
+    vipExistente.rows[0].expiration_at &&
+    new Date(vipExistente.rows[0].expiration_at) > new Date()
+  ) {
 
-      dadosParaEmitir = {
-        tipo: "vip",
+    // renovação antecipada: soma 1 mês sobre a data atual de vencimento
+    novaExpiracao = new Date(vipExistente.rows[0].expiration_at);
+    novaExpiracao.setMonth(novaExpiracao.getMonth() + 1);
+
+    console.log("Renovando VIP ativo. Nova expiração:", novaExpiracao);
+  } else {
+
+    // primeira assinatura ou assinatura expirada
+    novaExpiracao = new Date();
+    novaExpiracao.setMonth(novaExpiracao.getMonth() + 1);
+
+    console.log("Ativando/Reativando VIP. Nova expiração:", novaExpiracao);
+  }
+
+  if (vipExistente.rowCount > 0) {
+    await client.query(
+      `
+      UPDATE vip_subscriptions
+      SET
+        ativo = true,
+        updated_at = NOW(),
+        expiration_at = $3,
+        valor_assinatura = $4,
+        taxa_transacao = $5,
+        taxa_plataforma = $6,
+        valor_total = $7,
+        recorrente = false,
+        gateway_subscription_id = $8
+      WHERE cliente_id = $1
+        AND modelo_id = $2
+      `,
+      [
         cliente_id,
-        modelo_id
-      };
-    }
+        modelo_id,
+        novaExpiracao,
+        valorBase,
+        taxaTransacao,
+        taxaPlataforma,
+        valorPago,
+        orderId
+      ]
+    );
 
-    /* =====================================================
-       MARCAR PAGAMENTO COMO PAGO
-    ===================================================== */
+    console.log("vip_subscriptions atualizado (UPDATE)");
 
-    console.log("Marcando pagamento como pago");
+  } else {
+    await client.query(
+      `
+      INSERT INTO vip_subscriptions (
+        cliente_id,
+        modelo_id,
+        ativo,
+        created_at,
+        updated_at,
+        expiration_at,
+        valor_assinatura,
+        taxa_transacao,
+        taxa_plataforma,
+        valor_total,
+        recorrente,
+        gateway_subscription_id
+      )
+      VALUES (
+        $1, $2, true,
+        NOW(), NOW(),
+        $3, $4, $5, $6, $7,
+        false, $8
+      )
+      `,
+      [
+        cliente_id,
+        modelo_id,
+        novaExpiracao,
+        valorBase,
+        taxaTransacao,
+        taxaPlataforma,
+        valorPago,
+        orderId
+      ]
+    );
+
+    console.log("vip_subscriptions atualizado (INSERT)");
+  }
+
+  await client.query(
+    `
+    INSERT INTO transacoes_agency (
+      modelo_id,
+      cliente_id,
+      tipo,
+      valor_bruto,
+      valor_modelo,
+      agency_fee,
+      velvet_fee,
+      taxa_gateway,
+      status,
+      created_at
+    )
+    VALUES (
+      $1,$2,'assinatura',
+      $3,$4,$5,$6,$7,'pago',NOW()
+    )
+    `,
+    [
+      modelo_id,
+      cliente_id,
+      valorBruto,
+      valorModelo,
+      agencyFee,
+      velvetFee,
+      taxaGateway
+    ]
+  );
+
+  console.log("transacoes_agency (vip) inserido");
+
+  if (primeiraAssinatura) {
+    await client.query(
+      `
+      INSERT INTO messages (
+        cliente_id,
+        modelo_id,
+        text,
+        sender,
+        tipo,
+        created_at,
+        lida,
+        visto,
+        deletada
+      )
+      VALUES ($1,$2,$3,'modelo','texto',NOW(),false,false,false)
+      `,
+      [
+        cliente_id,
+        modelo_id,
+        "Oii!! Bem vindo, como vc chama?🔥"
+      ]
+    );
+     console.log("Mensagem de boas-vindas enviada");
+  }
+
+  dadosParaEmitir = {
+    tipo: "vip",
+    cliente_id,
+    modelo_id
+  };
+
+   console.log("✅ Bloco VIP finalizado com sucesso");
+}
+
+/* =====================================================
+ MARCAR PAGAMENTO COMO PAGO
+===================================================== */
+
+console.log("Marcando pagamento como pago");
 
 if (tabelaPagamento === "pagamentos_pix") {
   await client.query(
@@ -1129,16 +842,16 @@ if (tabelaPagamento === "pagamentos_pix") {
 
     console.log("Pagamento atualizado");
 
-    /* =====================================================
+/* =====================================================
        COMMIT
-    ===================================================== */
+ ===================================================== */
 
-    await client.query("COMMIT");
-    console.log("COMMIT realizado");
+await client.query("COMMIT");
+console.log("COMMIT realizado");
 
-    /* =====================================================
+/* =====================================================
        SOCKET
-    ===================================================== */
+ ===================================================== */
 
     try {
       console.log("Emitindo eventos socket");
@@ -1170,588 +883,32 @@ if (tabelaPagamento === "pagamentos_pix") {
 
     console.log("✅ PAGAMENTO FINALIZADO");
     return res.status(200).send("ok");
+
   } catch (err) {
     await client.query("ROLLBACK");
+
     console.error("🔥 ERRO WEBHOOK PAGARME:", err);
+
     return res.status(500).send("erro");
+
   } finally {
     client.release();
     console.log("🔚 conexão liberada");
   }
 });
 
-// app.post("/api/webhook/pagarme", express.raw({ type: "*/*" }), async (req, res) => {
-
-// console.log("======================================");
-// console.log("🔥 WEBHOOK PAGARME RECEBIDO");
-// console.log("URL:", req.originalUrl);
-// console.log("METHOD:", req.method);
-
-// let event = null;
-
-// try {
-//   const raw = req.body?.toString() || "";
-//   event = raw ? JSON.parse(raw) : null;
-// } catch (err) {
-//   console.error("Erro parse webhook:", err);
-//   return res.status(400).send("invalid body");
-// }
-
-// if (!event || typeof event !== "object") {
-//   console.log("Evento inválido (sem objeto)");
-//   return res.status(200).send("ok");
-// }
-
-// if (!event.type) {
-//   console.log("Evento sem type:", event);
-//   return res.status(200).send("ok");
-// }
-
-// console.log("Evento:", event.type);
-// console.log("EventID:", event.id);
-
-// const eventId = event.id;
-// const charge = event.data;
-// const metadata = charge.order?.metadata || charge.metadata || {};
-// const orderId = charge.order?.id;
-
-// console.log("OrderID:", orderId);
-// console.log("Metadata:", metadata);
-
-// if (!orderId) {
-//   console.log("🚨 orderId ausente");
-//   return res.status(200).send("ok");
-// }
-
-// const valorPago = Number(charge.amount || 0) / 100;
-
-// console.log("Valor pago:", valorPago);
-
-// const client = await db.connect();
-// let dadosParaEmitir = null;
-
-// try {
-
-// console.log("🔹 BEGIN");
-// await client.query("BEGIN");
-
-// /* =====================================================
-// IDEMPOTÊNCIA
-// ===================================================== */
-
-// console.log("🔎 Verificando evento duplicado");
-
-// const jaProcessado = await client.query(
-//   "SELECT 1 FROM pagarme_events WHERE id=$1 FOR UPDATE",
-//   [eventId]
-// );
-
-// console.log("Evento já processado?", jaProcessado.rowCount);
-
-// if (jaProcessado.rowCount > 0) {
-//   console.log("Evento já existia, ignorando");
-//   await client.query("ROLLBACK");
-//   return res.status(200).send("ok");
-// }
-
-// await client.query(
-//   "INSERT INTO pagarme_events (id,type) VALUES ($1,$2)",
-//   [eventId, event.type]
-// );
-
-// console.log("Evento registrado em pagarme_events");
-
-// /* =====================================================
-// LOCK PAGAMENTO
-// ===================================================== */
-
-// console.log("🔎 Buscando pagamento PIX");
-
-// const pagamentoRes = await client.query(`
-// SELECT *
-// FROM pagamentos_pix
-// WHERE gateway='pagarme'
-// AND pagarme_order_id=$1
-// FOR UPDATE
-// `,[orderId]);
-
-// console.log("Pagamentos encontrados:", pagamentoRes.rowCount);
-
-// if (!pagamentoRes.rowCount) {
-//   console.log("🚨 Pagamento não encontrado:", orderId);
-//   await client.query("ROLLBACK");
-//   return res.status(200).send("ok");
-// }
-
-// const pagamento = pagamentoRes.rows[0];
-
-// console.log("Pagamento encontrado:", pagamento);
-
-// if (pagamento.status === "pago") {
-//   console.log("Pagamento já estava pago");
-//   await client.query("ROLLBACK");
-//   return res.status(200).send("ok");
-// }
-
-// const {
-// cliente_id,
-// modelo_id,
-// valor,
-// message_id
-// } = pagamento;
-
-// console.log("cliente_id:", cliente_id);
-// console.log("modelo_id:", modelo_id);
-// console.log("valor esperado:", valor);
-// console.log("message_id:", message_id);
-
-// /* =====================================================
-// VALIDAÇÃO DE VALOR
-// ===================================================== */
-
-// if (Math.abs(Number(valorPago) - Number(valor)) > 0.01) {
-
-//   console.log("🚨 Valor divergente", valorPago, valor);
-
-//   await client.query("ROLLBACK");
-//   return res.status(200).send("ok");
-
-// }
-
-// console.log("Valor validado");
-
-// /* =====================================================
-// MIDIA
-// ===================================================== */
-
-// if (metadata.tipo === "conteudo_pix") {
-
-//   console.log("💰 Processando compra de mídia");
-
-//   /* =====================================================
-//   BUSCAR PREÇO REAL DA MÍDIA
-//   ===================================================== */
-
-//   const conteudoRes = await client.query(`
-//     SELECT preco
-//     FROM messages
-//     WHERE id = $1
-//     LIMIT 1
-//   `,[message_id]);
-
-//   if (!conteudoRes.rowCount) {
-//     console.log("🚨 mensagem não encontrada:", message_id);
-//     await client.query("ROLLBACK");
-//     return res.status(200).send("ok");
-//   }
-
-// const valorBase = Number(Number(conteudoRes.rows[0].preco).toFixed(2));
-//   const taxaGateway = Number((valorBase * 0.15).toFixed(2));
-//   const valorBruto = valorBase;
-
-//   /* =====================================================
-//   CALCULAR SPLIT
-//   ===================================================== */
-
-//   const valores = await calcularValores({
-//     modelo_id,
-//     valor_bruto: valorBase,
-//     taxa_gateway: taxaGateway
-//   });
-
-//   console.log("Valores calculados:", valores);
-
-
-//   await client.query(`
-// INSERT INTO conteudo_pacotes (
-// message_id,
-// cliente_id,
-// modelo_id,
-// preco,
-// valor_base,
-// valor_total,
-// status,
-// metodo_pagamento,
-// pago_em
-// )
-// VALUES ($1,$2,$3,$4,$4,$5,'pago','pix',NOW())
-// ON CONFLICT (message_id,cliente_id)
-// DO UPDATE SET
-// status='pago',
-// metodo_pagamento='pix',
-// pago_em=NOW()
-// `,[
-// message_id,
-// cliente_id,
-// modelo_id,
-// valorBase,
-// valorPago
-// ]);
-
-// console.log("conteudo_pacotes atualizado");
-
-// /* =====================================================
-// LIBERAR CONTEÚDO
-// ===================================================== */
-
-// const conteudo_ids =
-// await marcarConteudoComoLiberadoPorPagamento(client,{
-// message_id,
-// cliente_id,
-// modelo_id
-// });
-
-// console.log("Conteúdos liberados:", conteudo_ids);
-
-// /* =====================================================
-// REGISTRAR TRANSAÇÃO FINANCEIRA
-// ===================================================== */
-
-// console.log("Valores finais transação MIDIA:",{
-//   valorBruto,
-//   valor_modelo: valores.valor_modelo,
-//   agency_fee: valores.agency_fee,
-//   velvet_fee: valores.velvet_fee,
-//   taxa_gateway: taxaGateway
-// });
-
-// await client.query(`
-// INSERT INTO transacoes_agency (
-// modelo_id,
-// cliente_id,
-// tipo,
-// valor_bruto,
-// valor_modelo,
-// agency_fee,
-// velvet_fee,
-// taxa_gateway,
-// status,
-// created_at
-// )
-// VALUES (
-// $1,$2,'midia',
-// $3,$4,$5,$6,$7,'pago',NOW()
-// )
-// `,[
-// modelo_id,
-// cliente_id,
-// valorBruto,
-// Number(valores.valor_modelo || 0),
-// Number(valores.agency_fee || 0),
-// Number(valores.velvet_fee || 0),
-// taxaGateway
-// ]);
-
-// console.log("transacoes_agency (midia) inserido");
-
-// /* =====================================================
-// SOCKET
-// ===================================================== */
-
-// dadosParaEmitir = {
-// tipo:"conteudo_pix",
-// cliente_id,
-// modelo_id,
-// message_id,
-// conteudo_ids
-// };
-
-// }
-
-// /* =====================================================
-// VIP
-// ===================================================== */
-
-// if (metadata.tipo === "vip") {
-
-// console.log("⭐ Processando VIP");
-
-// /* =====================================================
-// VERIFICAR SE É PRIMEIRA ASSINATURA
-// ===================================================== */
-
-// const vipExistente = await client.query(`
-// SELECT 1
-// FROM vip_subscriptions
-// WHERE cliente_id=$1
-// AND modelo_id=$2
-// LIMIT 1
-// `,[cliente_id,modelo_id]);
-
-// const primeiraAssinatura = vipExistente.rowCount === 0;
-
-// console.log("Primeira assinatura?", primeiraAssinatura);
-
-// const expiration = new Date();
-// expiration.setMonth(expiration.getMonth() + 1);
-
-// console.log("Expiração VIP:", expiration);
-
-// /* =====================================================
-// NORMALIZAR VALOR BASE
-// ===================================================== */
-
-// let valorBase = Number(metadata.valor_base ?? valor);
-
-// if (!Number.isFinite(valorBase) || valorBase <= 0) {
-//   console.log("🚨 valorBase inválido:", metadata.valor_base, valor);
-//   await client.query("ROLLBACK");
-//   return res.status(200).send("ok");
-// }
-
-// valorBase = Number(valorBase.toFixed(2));
-
-// const taxaGateway = Number((valorBase * 0.15).toFixed(2));
-// const valorBruto = valorBase;
-
-// /* =====================================================
-// CALCULAR SPLIT
-// ===================================================== */
-
-// const valores = await calcularValores({
-//   modelo_id,
-//   valor_bruto: valorBase,
-//   taxa_gateway: taxaGateway
-// });
-
-// const valorModelo = Number(valores.valor_modelo || 0);
-// const agencyFee = Number(valores.agency_fee || 0);
-// const velvetFee = Number(valores.velvet_fee || 0);
-
-// console.log("Valores VIP:", {
-//   valorBruto,
-//   valorModelo,
-//   agencyFee,
-//   velvetFee,
-//   taxaGateway
-// });
-
-// /* =====================================================
-// SALVAR VIP
-// ===================================================== */
-
-// await client.query(`
-// INSERT INTO vip_subscriptions (
-// cliente_id,
-// modelo_id,
-// ativo,
-// created_at,
-// updated_at,
-// expiration_at,
-// valor_assinatura,
-// taxa_transacao,
-// taxa_plataforma,
-// valor_total,
-// recorrente,
-// gateway_subscription_id
-// )
-// VALUES (
-// $1,$2,true,
-// NOW(),NOW(),
-// $3,$4,$5,$6,$7,
-// false,$8
-// )
-// ON CONFLICT (cliente_id,modelo_id)
-// DO UPDATE SET
-// ativo=true,
-// expiration_at=$3,
-// updated_at=NOW(),
-// valor_assinatura=$4,
-// taxa_transacao=$5,
-// taxa_plataforma=$6,
-// valor_total=$7,
-// recorrente=false,
-// gateway_subscription_id=$8
-// `,[
-// cliente_id,
-// modelo_id,
-// expiration,
-// valorBase,
-// 0,
-// 0,
-// valorPago,
-// orderId
-// ]);
-
-// console.log("vip_subscriptions atualizado");
-
-// /* =====================================================
-// REGISTRAR FINANCEIRO
-// ===================================================== */
-
-// await client.query(`
-// INSERT INTO transacoes_agency (
-// modelo_id,
-// cliente_id,
-// tipo,
-// valor_bruto,
-// valor_modelo,
-// agency_fee,
-// velvet_fee,
-// taxa_gateway,
-// status,
-// created_at
-// )
-// VALUES (
-// $1,$2,'assinatura',
-// $3,$4,$5,$6,$7,'pago',NOW()
-// )
-// `,[
-// modelo_id,
-// cliente_id,
-// valorBruto,
-// valorModelo,
-// agencyFee,
-// velvetFee,
-// taxaGateway
-// ]);
-
-// console.log("transacoes_agency (vip) inserido");
-
-// /* =====================================================
-// CHAT
-// ===================================================== */
-
-// if (metadata.tipo === "vip" && primeiraAssinatura) {
-
-// await client.query(`
-// INSERT INTO messages (
-// cliente_id,
-// modelo_id,
-// text,
-// sender,
-// tipo,
-// created_at,
-// lida,
-// visto,
-// deletada
-// )
-// VALUES ($1,$2,$3,'modelo','texto',NOW(),false,false,false)
-// `,[
-// cliente_id,
-// modelo_id,
-// "Oii!! Bem vindo, como vc chama?🔥Quero saber quem acabou de entrar no meu VIP!😏"
-// ]);
-
-// }
-
-// /* =====================================================
-// SOCKET
-// ===================================================== */
-
-// dadosParaEmitir = {
-// tipo:"vip",
-// cliente_id,
-// modelo_id
-// };
-
-// }
-
-// /* =====================================================
-// MARCAR PAGAMENTO COMO PAGO
-// ===================================================== */
-
-// console.log("Marcando pagamento como pago");
-
-// await client.query(`
-// UPDATE pagamentos_pix
-// SET status='pago',
-// pago_em=NOW()
-// WHERE id=$1
-// `,[pagamento.id]);
-
-// console.log("Pagamento atualizado");
-
-// /* =====================================================
-// COMMIT
-// ===================================================== */
-
-// await client.query("COMMIT");
-// console.log("COMMIT realizado");
-
-// /* =====================================================
-// SOCKET
-// ===================================================== */
-
-// try {
-
-// console.log("Emitindo eventos socket");
-
-// if (dadosParaEmitir?.tipo === "conteudo_pix") {
-
-// const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
-
-// console.log("Emitindo conteudoLiberado para", sala);
-
-// io.to(sala).emit("conteudoLiberado",{
-// message_id:Number(dadosParaEmitir.message_id),
-// conteudo_ids:dadosParaEmitir.conteudo_ids || []
-// });
-
-// }
-
-// if (dadosParaEmitir?.tipo === "vip") {
-
-// const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
-
-// console.log("Emitindo vipAtivado para", sala);
-
-// io.to(sala).emit("vipAtivado",{
-// cliente_id:Number(dadosParaEmitir.cliente_id),
-// modelo_id:Number(dadosParaEmitir.modelo_id)
-// });
-
-// }
-
-// } catch(e) {
-
-// console.error("Erro emitir socket:",e);
-
-// }
-
-// console.log("✅ PAGAMENTO FINALIZADO");
-
-// return res.status(200).send("ok");
-
-// } catch(err) {
-
-// await client.query("ROLLBACK");
-
-// console.error("🔥 ERRO WEBHOOK PAGARME:",err);
-
-// return res.status(500).send("erro");
-
-// } finally {
-
-// client.release();
-// console.log("🔚 conexão liberada");
-
-// }
-
-// });
-
+// ===============================
+// ROTAS GLOBAIS
+// ===============================
 
 app.use(express.json());
 const { router: servercontentRouter, calcularValores } = require('./servercontent');
 app.use("/api", servercontentRouter);
-
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/admin", express.static(path.join(__dirname, "admin-pages")));
 app.use("/icons", express.static(path.join(__dirname, "icons")));
 app.use(express.urlencoded({ extended: true }));
-const rateLimit = require("express-rate-limit");
-// 🔒 Rate limit para autenticação (login / register)
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 10, // 10 tentativas
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    error: "Muitas tentativas. Tente novamente em alguns minutos."
-  }
-});
-
 app.use("/app", express.static("app"));
 app.use(express.static("public"));
 app.use((req, res, next) => {
@@ -1761,7 +918,7 @@ app.use((req, res, next) => {
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin) return callback(null, true); // Postman, mobile, SW
+    if (!origin) return callback(null, true);
 
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
@@ -1772,111 +929,58 @@ app.use(cors({
   credentials: true
 }));
 
-// app.use("/api", manutencaoClientes);
 
+app.use((err, req, res, next) => {
+
+  const isProduction = process.env.NODE_ENV === "production";
+
+  console.error("🔥 ERRO GLOBAL:", {
+    message: err.message,
+    path: req.originalUrl,
+    method: req.method,
+    stack: isProduction ? undefined : err.stack
+  });
+
+  if (err.statusCode) {
+    return res.status(err.statusCode).json({
+      error: err.message
+    });
+  }
+
+  return res.status(500).json({
+    error: "Erro interno do servidor"
+  });
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("❌ Unhandled Rejection:", reason);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("❌ Uncaught Exception:", err);
+  process.exit(1);
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 10, // 10 tentativas
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: "Muitas tentativas. Tente novamente em alguns minutos."
+  }
+});
+
+// app.use("/api", manutencaoClientes);
 // const MANUTENCAO_CLIENTES = true;
 // const EXCECOES_MANUTENCAO = [
 //   "emersondoido@gmail.com",
 //   "emersondoido92@gmail.com"
 // ];
 
-// function manutencaoClientes(req, res, next) {
-
-//   if (!MANUTENCAO_CLIENTES) return next();
-
-//   if (!req.user) return next();
-
-//   if (req.user.role !== "cliente") return next();
-
-//   if (EXCECOES_MANUTENCAO.includes(req.user.email)) {
-//     return next();
-//   }
-
-//   return res.status(503).json({
-//     error: "Plataforma em atualização. Aguarde alguns minutos e tente novamente."
-//   });
-
-// }
-
-function gerarHash(buffer) {
-  return crypto
-    .createHash("sha256")
-    .update(buffer)
-    .digest("hex");
-}
-
-// 📦 FEED CANÔNICO (FONTE ÚNICA)
-async function buscarFeedCompletoPorModeloId(modelo_id) {
-  const result = await db.query(
-    `
-    SELECT
-      id,
-      url,
-      tipo,
-      tipo_conteudo,
-      preco,
-      descricao,
-      thumbnail_url,
-      criado_em
-    FROM conteudos
-    WHERE modelo_id = $1
-      AND ativo = TRUE   -- 🔥 FILTRO QUE FALTAVA
-      AND (
-        tipo_conteudo != 'venda'
-        OR (tipo_conteudo = 'venda' AND COALESCE(preco, 0) > 0)
-      )
-    ORDER BY id DESC
-    `,
-    [modelo_id]
-  );
-
-  return result.rows;
-}
-
-async function gerarThumbnailVideo(videoBuffer, modelo_id) {
-
-  const timestamp = Date.now();
-  const tmpDir = os.tmpdir();
-
-  const videoPath = path.join(tmpDir, `video-${timestamp}.tmp`);
-  const thumbPath = path.join(tmpDir, `thumb-${timestamp}.jpg`);
-
-  try {
-
-    // 1️⃣ Salva o buffer direto (sem baixar do B2)
-    fs.writeFileSync(videoPath, videoBuffer);
-
-    // 2️⃣ Gera thumbnail
-    await new Promise((resolve, reject) => {
-      ffmpeg(videoPath)
-        .screenshots({
-          timestamps: ["1"],
-          filename: path.basename(thumbPath),
-          folder: tmpDir,
-          size: "400x?"
-        })
-        .on("end", resolve)
-        .on("error", reject);
-    });
-
-    // 3️⃣ Upload da thumb para o B2
-    const thumbBuffer = fs.readFileSync(thumbPath);
-
-    const upload = await s3.upload({
-      Bucket: process.env.B2_BUCKET,
-      Key: `velvet/modelos/${modelo_id}/thumbs/${timestamp}.jpg`,
-      Body: thumbBuffer,
-      ContentType: "image/jpeg",
-      ACL: "public-read"
-    }).promise();
-
-    return upload.Location;
-
-  } finally {
-    if (fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
-    if (fs.existsSync(thumbPath)) fs.unlinkSync(thumbPath);
-  }
-}
+// ===============================
+// FUNÇÕES
+// ===============================
 
 async function marcarConteudoComoLiberadoPorPagamento(
   client,
@@ -1921,615 +1025,12 @@ RETURNING id
     .filter((n) => Number.isInteger(n) && n > 0);
 }
 
-//APP POST ROTAS //////////**********////////////////////
-app.post(
-  "/api/upload",
-  auth,
-  authModelo,
-  uploadB2.array("file", 10),
-  async (req, res) => {
-
-    try {
-
-      if (!req.files || req.files.length === 0) {
-        return res.status(400).json({ error: "Arquivo não enviado" });
-      }
-
-      const modeloRes = await db.query(
-        `SELECT id FROM modelos WHERE user_id = $1`,
-        [req.user.id]
-      );
-
-      if (modeloRes.rowCount === 0) {
-        return res.status(404).json({ error: "Modelo não encontrado" });
-      }
-
-      const modelo_id = modeloRes.rows[0].id;
-
-      const { tipo_conteudo, preco, descricao } = req.body;
-      const tipoFinal = tipo_conteudo || "feed";
-
-      for (const file of req.files) {
-
-        const mimetype = file.mimetype || "";
-
-        let tipo;
-        let publicUrl = null;
-        let thumbnailUrl = null;
-
-        if (mimetype.startsWith("image/")) {
-          tipo = "imagem";
-        } 
-        else if (mimetype.startsWith("video/")) {
-          tipo = "video";
-        } 
-        else {
-          continue;
-        }
-
-        // -------------------
-        // IMAGEM
-        // -------------------
-
-        if (tipo === "imagem") {
-
-          const form = new FormData();
-          form.append("file", file.buffer, file.originalname);
-
-          const response = await axios.post(
-            `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT_ID}/images/v1`,
-            form,
-            {
-              headers: {
-                Authorization: `Bearer ${process.env.CF_IMAGES_TOKEN}`,
-                ...form.getHeaders()
-              }
-            }
-          );
-
-          if (!response.data || !response.data.success) {
-            throw new Error("Erro upload Cloudflare Images");
-          }
-
-          const imageId = response.data.result.id;
-
-          publicUrl =
-            `https://imagedelivery.net/${process.env.CF_ACCOUNT_HASH}/${imageId}/public`;
-
-            thumbnailUrl = publicUrl;
-        }
-
-        // -------------------
-        // VIDEO
-        // -------------------
-
-        if (tipo === "video") {
-
-          const form = new FormData();
-          form.append("file", file.buffer, file.originalname);
-
-          const response = await axios.post(
-            `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT_ID}/stream`,
-            form,
-            {
-              headers: {
-                Authorization: `Bearer ${process.env.CF_STREAM_TOKEN}`,
-                ...form.getHeaders()
-              },
-              maxContentLength: Infinity,
-              maxBodyLength: Infinity
-            }
-          );
-
-          if (!response.data || !response.data.success) {
-            throw new Error("Erro upload Cloudflare Stream");
-          }
-
-          const videoId = response.data.result.uid;
-
-          publicUrl = `https://iframe.videodelivery.net/${videoId}`;
-
-          const thumbnailUrl =
-          `https://videodelivery.net/${videoId}/thumbnails/thumbnail.jpg`;
-        }
-
-        await db.query(
-          `
-          INSERT INTO conteudos
-          (modelo_id, url, thumbnail_url, tipo, tipo_conteudo, preco, descricao)
-          VALUES ($1,$2,$3,$4,$5,$6,$7)
-          `,
-          [
-            modelo_id,
-            publicUrl,
-            thumbnailUrl,
-            tipo,
-            tipoFinal,
-            preco ? Number(preco) : null,
-            descricao || null
-          ]
-        );
-      }
-
-      res.json({ success: true });
-
-    } catch (err) {
-
-      console.error("Erro /api/upload:", err);
-
-      res.status(500).json({
-        error: "Erro interno"
-      });
-
-    }
-  }
-);
-
-//OFERTAS
-app.post("/api/ofertas", authModelo, async (req, res) => {
-  try {
-
-    const userId = req.user.id;
-
-    // 1️⃣ Buscar modelo
-    const modeloRes = await db.query(
-      `SELECT id FROM modelos WHERE user_id = $1`,
-      [userId]
-    );
-
-    if (modeloRes.rowCount === 0) {
-      return res.status(404).json({ erro: "Modelo não encontrado" });
-    }
-
-    const modeloId = modeloRes.rows[0].id;
-
-    // 2️⃣ Buscar plano
-    const planoRes = await db.query(
-      `SELECT valor_mensal FROM modelos_planos WHERE modelo_id = $1`,
-      [modeloId]
-    );
-
-    if (planoRes.rowCount === 0) {
-      return res.status(400).json({
-        erro: "Defina primeiro o plano de assinatura."
-      });
-    }
-
-    const VALOR_BASE = Number(planoRes.rows[0].valor_mensal);
-    const VALOR_MINIMO = Number((VALOR_BASE * 0.5).toFixed(2));
-
-    // 3️⃣ Dados
-    const { nome, limite, dias, desconto } = req.body;
-
-    const limiteNum = Number(limite);
-    const diasNum = Number(dias);
-    const descontoNum = Number(desconto);
-
-    if (
-      !nome ||
-      !Number.isFinite(limiteNum) || limiteNum <= 0 ||
-      !Number.isFinite(diasNum) || diasNum <= 0 ||
-      !Number.isFinite(descontoNum) || descontoNum < 0 || descontoNum > 50
-    ) {
-      return res.status(400).json({ erro: "Dados inválidos" });
-    }
-
-    let valorPromocional = Number(
-      (VALOR_BASE * (1 - descontoNum / 100)).toFixed(2)
-    );
-
-    if (valorPromocional < VALOR_MINIMO) {
-      valorPromocional = VALOR_MINIMO;
-    }
-
-    const dataFim = new Date();
-    dataFim.setDate(dataFim.getDate() + diasNum);
-
-    // 🔥 Desativar anteriores
-    await db.query(
-      `UPDATE ofertas SET ativa = false WHERE modelo_id = $1`,
-      [modeloId]
-    );
-
-    const result = await db.query(
-      `
-     INSERT INTO ofertas (
-  modelo_id,
-  nome,
-  limite_assinaturas,
-  assinaturas_usadas,
-  desconto_percentual,
-  valor_base,
-  valor_promocional,
-  data_inicio,
-  data_fim,
-  ativa
-)
-VALUES ($1,$2,$3,0,$4,$5,$6,NOW(),$7,true)
-RETURNING *
-      `,
-      [
-        modeloId,
-        nome,
-        limiteNum,
-        descontoNum,
-        VALOR_BASE,
-        valorPromocional,
-        dataFim
-      ]
-    );
-
-    res.json(result.rows[0]);
-
-  } catch (err) {
-    console.error("🔥 ERRO AO CRIAR OFERTA 🔥", err);
-    res.status(500).json({ erro: "Erro interno ao criar oferta" });
-  }
-});
-
-
-// app.post("/api/pagamento/vip/cartao", authCliente, manutencaoClientes, async (req, res) => {
-
-//   const client = await db.connect();
-//   let cliente_id;
-
-//   try {
-
-//     await client.query("BEGIN");
-
-// const { modelo_id, cpf, aceitou_termos, fingerprint, apenas_intent } = req.body;
-//     const userId = req.user.id;
-
-//     /* =====================================================
-//        🔎 VALIDAÇÕES INICIAIS
-//     ===================================================== */
-
-//     if (!modelo_id || !Number.isInteger(Number(modelo_id))) {
-//       await client.query("ROLLBACK");
-//       return res.status(400).json({ error: "modelo_id inválido" });
-//     }
-
-// if (!apenas_intent) {
-
-//   if (!aceitou_termos) {
-//     await client.query("ROLLBACK");
-//     return res.status(400).json({ error: "Você precisa aceitar os termos." });
-//   }
-
-//   if (!cpf || cpf.length < 11) {
-//     await client.query("ROLLBACK");
-//     return res.status(400).json({ error: "CPF obrigatório." });
-//   }
-
-//   if (!fingerprint) {
-//     await client.query("ROLLBACK");
-//     return res.status(400).json({ error: "Fingerprint obrigatório." });
-//   }
-
-// }
-//     const ip =
-//       req.headers["x-forwarded-for"]?.split(",")[0] ||
-//       req.socket.remoteAddress;
-
-//     /* =====================================================
-//        🔒 BLOQUEIOS
-//     ===================================================== */
-
-//     const ipBloqueado = await client.query(
-//       "SELECT 1 FROM ips_bloqueados WHERE ip = $1",
-//       [ip]
-//     );
-
-//     if (ipBloqueado.rowCount > 0) {
-//       await client.query("ROLLBACK");
-//       return res.status(403).json({ error: "IP bloqueado." });
-//     }
-
-//     const clienteRes = await client.query(
-//       "SELECT id, bloqueado FROM clientes WHERE user_id = $1",
-//       [userId]
-//     );
-
-//     if (!clienteRes.rowCount) {
-//       await client.query("ROLLBACK");
-//       return res.status(404).json({ error: "Cliente não encontrado" });
-//     }
-
-//     cliente_id = clienteRes.rows[0].id;
-
-//     if (clienteRes.rows[0].bloqueado) {
-//       await client.query("ROLLBACK");
-//       return res.status(403).json({ error: "Conta bloqueada." });
-//     }
-
-//     if (cpf) {
-//   const cpfBloqueado = await client.query(
-//     "SELECT 1 FROM cpfs_bloqueados WHERE cpf = $1",
-//     [cpf]
-//   );
-//   if (cpfBloqueado.rowCount > 0) {
-//     await client.query("ROLLBACK");
-//     return res.status(403).json({ error: "CPF bloqueado." });
-//   }
-// }
-
-//     /* =====================================================
-//        🔒 BLOQUEIO POR RECUSAS
-//     ===================================================== */
-
-//     if (fingerprint) {
-//       const tentativas = await client.query(`
-//       SELECT COUNT(*) FROM pagamento_tentativas
-//       WHERE fingerprint_pagamento = $1
-//       AND status = 'recusado'
-//       AND criado_em > NOW() - INTERVAL '1 hours'
-//     `, [fingerprint]);
-
-//     if (Number(tentativas.rows[0].count) >= 2) {
-//       await client.query("ROLLBACK");
-//       return res.status(403).json({
-//         error: "Forma de pagamento bloqueada por múltiplas recusas."
-//       });
-//     }
-//   }
-
-//     /* =====================================================
-//        🔄 ATUALIZAR CLIENTE
-//     ===================================================== */
-// if (cpf) {
-//   await client.query(
-//     "UPDATE clientes SET cpf = $1, ultimo_ip = $2 WHERE id = $3",
-//     [cpf, ip, cliente_id]
-//   );
-// } else {
-//   await client.query(
-//     "UPDATE clientes SET ultimo_ip = $1 WHERE id = $2",
-//     [ip, cliente_id]
-//   );
-// }
-
-//     /* =====================================================
-//        🔥 BUSCAR PLANO
-//     ===================================================== */
-
-//     const planoRes = await client.query(`
-//       SELECT valor_mensal
-//       FROM modelos_planos
-//       WHERE modelo_id = $1
-//       LIMIT 1
-//     `, [modelo_id]);
-
-//     if (!planoRes.rowCount) {
-//       await client.query("ROLLBACK");
-//       return res.status(400).json({ error: "Plano VIP não definido" });
-//     }
-
-//     let valorBase = Number(planoRes.rows[0].valor_mensal);
-
-//     /* =====================================================
-//        🔥 OFERTA
-//     ===================================================== */
-
-//     const ofertaRes = await client.query(`
-//       SELECT id, desconto_percentual, valor_promocional
-//       FROM ofertas
-//       WHERE modelo_id = $1
-//         AND ativa = true
-//         AND (data_inicio IS NULL OR data_inicio <= NOW())
-//         AND (data_fim IS NULL OR data_fim >= NOW())
-//       ORDER BY created_at DESC
-//       LIMIT 1
-//     `, [modelo_id]);
-
-//     let valorAssinatura = valorBase;
-//     let oferta_id = null;
-
-//     if (ofertaRes.rowCount) {
-
-//       oferta_id = ofertaRes.rows[0].id;
-
-//       if (ofertaRes.rows[0].valor_promocional) {
-//         valorAssinatura = Number(ofertaRes.rows[0].valor_promocional);
-//       } else if (ofertaRes.rows[0].desconto_percentual) {
-//         const desconto = Number(ofertaRes.rows[0].desconto_percentual);
-//         valorAssinatura =
-//           valorBase - (valorBase * desconto / 100);
-//       }
-//     }
-
-//     valorAssinatura = Number(valorAssinatura.toFixed(2));
-
-//     if (!valorAssinatura || valorAssinatura <= 0) {
-//       await client.query("ROLLBACK");
-//       return res.status(400).json({ error: "Valor inválido" });
-//     }
-
-// /* =====================================================
-//    💰 CÁLCULO CONSISTENTE
-// ===================================================== */
-
-// const valorCentavos = Math.round(valorAssinatura * 100);
-
-// const taxaTransacaoCentavos  = Math.round(valorCentavos * 0.10);
-// const taxaPlataformaCentavos = Math.round(valorCentavos * 0.05);
-
-// const amount =
-//   valorCentavos +
-//   taxaTransacaoCentavos +
-//   taxaPlataformaCentavos;
-
-// const taxaTransacao  = (taxaTransacaoCentavos / 100);
-// const taxaPlataforma = (taxaPlataformaCentavos / 100);
-// const valorTotal     = (amount / 100);
-
-// /* =====================================================
-//    💳 CRIAR PAYMENT INTENT
-// ===================================================== */
-
-// const paymentIntent = await stripe.paymentIntents.create({
-//   amount,
-//   currency: "brl",
-//    payment_method_types: ["card"],
-//    capture_method: "automatic",
-//   metadata: {
-//     tipo: "vip",
-//     cliente_id: String(cliente_id),
-//     modelo_id: String(modelo_id),
-//     oferta_id: oferta_id ? String(oferta_id) : "",
-//     valor_assinatura: String(valorAssinatura),   
-//     taxa_transacao: String(taxaTransacao),
-//     taxa_plataforma: String(taxaPlataforma),
-//     valor_total: String(valorTotal),             
-//     cpf: cpf || "",
-//     aceite_ip: ip || ""
-//   }
-// });
-
-// if (fingerprint) {
-// await client.query(`
-//   INSERT INTO pagamento_tentativas
-//   (cliente_id, metodo, fingerprint_pagamento, status, payment_intent_id)
-//   VALUES ($1,'cartao',$2,'pendente',$3)
-// `, [cliente_id, fingerprint, paymentIntent.id]);
-// }
-//     await client.query("COMMIT");
-
-//     return res.json({
-//       clientSecret: paymentIntent.client_secret
-//     });
-
-//   } catch (err) {
-
-//     await client.query("ROLLBACK");
-
-//     console.error("❌ Erro Stripe VIP:", err);
-
-//    if (err.type === "StripeCardError" && cliente_id && req.body.fingerprint) {
-
-//       await client.query(`
-//         INSERT INTO pagamento_tentativas
-//         (cliente_id, metodo, fingerprint_pagamento, status)
-//         VALUES ($1,'cartao',$2,'recusado')
-//       `,[cliente_id, req.body.fingerprint]);
-
-//       return res.status(400).json({
-//         error: "Pagamento não autorizado."
-//       });
-//     }
-
-//     return res.status(500).json({
-//       error: "Erro ao criar pagamento com cartão"
-//     });
-
-//   } finally {
-//     client.release();
-//   }
-// });
-
-
-const io = new Server(server, {
-  cors: {
-    origin: [
-      "https://velvet.lat",
-      "https://www.velvet.lat",
-      "https://app-production-e7e1.up.railway.app",
-      "https://velvet-test-production.up.railway.app",
-      "https://velvet-app-an4a.onrender.com"
-    ],
-    methods: ["GET", "POST"],
-    credentials: true
-  },
-  transports: ["websocket"],
-  
-});
-
-// ===============================
-//FUNCOES
-// ===============================
+// ===========================
+// EMAIL E CPF VALIDO
+// ===========================
 
 function emailValido(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-async function buscarUnreadCliente(cliente_id) {
-
-  if (!cliente_id || !Number.isInteger(cliente_id)) {
-    throw new Error("cliente_id inválido");
-  }
-
-  const result = await db.query(
-    `
-    SELECT modelo_id
-    FROM unread
-    WHERE cliente_id = $1
-      AND unread_for = 'cliente'
-      AND has_unread = true
-    `,
-    [cliente_id]
-  );
-
-  return result.rows.map(r => r.modelo_id);
-}
-
-
-async function buscarUnreadModelo(modelo_id) {
-
-  if (!modelo_id || !Number.isInteger(modelo_id)) {
-    throw new Error("modelo_id inválido");
-  }
-
-  const result = await db.query(
-    `
-    SELECT cliente_id
-    FROM unread
-    WHERE modelo_id = $1
-      AND unread_for = 'modelo'
-      AND has_unread = true
-    `,
-    [modelo_id]
-  );
-
-  return result.rows.map(r => r.cliente_id);
-}
-
-async function enviarBoasVindasVip({
-  client,
-  cliente_id,
-  modelo_id
-}) {
-  const existeMsg = await client.query(`
-    SELECT 1
-    FROM messages
-    WHERE cliente_id = $1
-      AND modelo_id = $2
-    LIMIT 1
-  `, [cliente_id, modelo_id]);
-
-  if (existeMsg.rowCount === 0) {
-
-    const textoBoasVindas = `Bem-vindo! Como você chama? ❤️‍🔥`;
-
-    const msgRes = await client.query(`
-      INSERT INTO messages
-        (cliente_id, modelo_id, sender, tipo, text, created_at)
-      VALUES
-        ($1, $2, 'modelo', 'texto', $3, NOW())
-      RETURNING *
-    `, [cliente_id, modelo_id, textoBoasVindas]);
-
-    const mensagem = msgRes.rows[0];
-
-    await client.query(`
-      INSERT INTO unread (cliente_id, modelo_id, unread_for, has_unread)
-      VALUES ($1, $2, 'cliente', true)
-      ON CONFLICT (cliente_id, modelo_id)
-      DO UPDATE SET has_unread = true
-    `, [cliente_id, modelo_id]);
-
-    return mensagem;
-  }
-
-  return null;
 }
 
 function validarCPF(cpf) {
@@ -2557,6 +1058,54 @@ const cpfLimpo = String(cpf || "").replace(/\D/g, "");
   return resto === parseInt(cpf.substring(10, 11));
 }
 
+// ===========================
+// MSG NÃO LIDA 
+// ===========================
+
+async function buscarUnreadCliente(cliente_id) {
+
+  if (!cliente_id || !Number.isInteger(cliente_id)) {
+    throw new Error("cliente_id inválido");
+  }
+
+  const result = await db.query(
+    `
+    SELECT modelo_id
+    FROM unread
+    WHERE cliente_id = $1
+      AND unread_for = 'cliente'
+      AND has_unread = true
+    `,
+    [cliente_id]
+  );
+
+  return result.rows.map(r => r.modelo_id);
+}
+
+async function buscarUnreadModelo(modelo_id) {
+
+  if (!modelo_id || !Number.isInteger(modelo_id)) {
+    throw new Error("modelo_id inválido");
+  }
+
+  const result = await db.query(
+    `
+    SELECT cliente_id
+    FROM unread
+    WHERE modelo_id = $1
+      AND unread_for = 'modelo'
+      AND has_unread = true
+    `,
+    [modelo_id]
+  );
+
+  return result.rows.map(r => r.cliente_id);
+}
+
+// ===========================
+// ATUALIZACAO INBOX
+// ===========================
+
 function emitirInboxUpdate(io, { cliente_id, modelo_id, sender, text, created_at }) {
   const payload = {
     cliente_id,
@@ -2571,6 +1120,10 @@ function emitirInboxUpdate(io, { cliente_id, modelo_id, sender, text, created_at
   io.to(`inbox_modelo_${modelo_id}`).emit("inboxMessage", payload);
   io.to(`inbox_cliente_${cliente_id}`).emit("inboxMessage", payload);
 }
+
+// ===========================
+// UPLOAD MIDIAS
+// ===========================
 
 async function uploadCloudflareImage(fileBuffer, filename) {
 
@@ -2591,10 +1144,7 @@ async function uploadCloudflareImage(fileBuffer, filename) {
   return res.data.result;
 }
 
-module.exports = uploadCloudflareImage;
-
 async function uploadVideoCloudflare(buffer, filename) {
-
   try {
 
     const form = new FormData();
@@ -2627,7 +1177,9 @@ async function uploadVideoCloudflare(buffer, filename) {
   }
 }
 
-module.exports = uploadVideoCloudflare;
+// ===========================
+// MARCAR MIDIA VISTA
+// ===========================
 
 async function buscarConteudosJaPossuidosPorCliente(client, { cliente_id, modelo_id }) {
   const result = await client.query(
@@ -2651,21 +1203,9 @@ async function buscarConteudosJaPossuidosPorCliente(client, { cliente_id, modelo
   );
 }
 
-
-if (
-  process.env.VAPID_SUBJECT &&
-  process.env.VAPID_PUBLIC_KEY &&
-  process.env.VAPID_PRIVATE_KEY
-) {
-  webpush.setVapidDetails(
-    process.env.VAPID_SUBJECT,
-    process.env.VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
-  );
-  console.log("VAPID configurado com sucesso");
-} else {
-  console.warn("VAPID não configurado. Push desativado por enquanto.");
-}
+// ===========================
+// ENVIAR PUSH
+// ===========================
 
 async function enviarPush(subscription, mensagem, url = "/inbox.html") {
   const payload = JSON.stringify({
@@ -2720,9 +1260,51 @@ async function notificarNovaMensagem(userIdDestino, textoMensagem, url = "/inbox
   }
 }
 
-  // ===============================
-// MIDDLEWARE DE AUTENTICAÇÃO DO SOCKET
-// ===============================
+// function manutencaoClientes(req, res, next) {
+//   if (!MANUTENCAO_CLIENTES) return next();
+//   if (!req.user) return next();
+//   if (req.user.role !== "cliente") return next();
+//   if (EXCECOES_MANUTENCAO.includes(req.user.email)) {
+//     return next();
+//   }
+//   return res.status(503).json({
+//     error: "Plataforma em atualização. Aguarde alguns minutos e tente novamente."
+//   });
+// }
+
+// // 📦 FEED CANÔNICO (FONTE ÚNICA)
+// async function buscarFeedCompletoPorModeloId(modelo_id) {
+//   const result = await db.query(
+//     `
+//     SELECT
+//       id,
+//       url,
+//       tipo,
+//       tipo_conteudo,
+//       preco,
+//       descricao,
+//       thumbnail_url,
+//       criado_em
+//     FROM conteudos
+//     WHERE modelo_id = $1
+//       AND ativo = TRUE   -- 🔥 FILTRO QUE FALTAVA
+//       AND (
+//         tipo_conteudo != 'venda'
+//         OR (tipo_conteudo = 'venda' AND COALESCE(preco, 0) > 0)
+//       )
+//     ORDER BY id DESC
+//     `,
+//     [modelo_id]
+//   );
+
+//   return result.rows;
+// }
+
+
+// ===========================
+// SOCKETS
+// ===========================
+
 io.use((socket, next) => {
   try {
     const token = socket.handshake.auth?.token;
@@ -2749,9 +1331,6 @@ io.use((socket, next) => {
   }
 });
 
-// ===============================
-// SOCKET.IO – CONNECTION
-// ===============================
 io.on("connection", (socket) => {
   console.log("🔥 Socket conectado:", socket.id, socket.user);
 
@@ -3728,9 +2307,52 @@ socket.on("excluirMensagem", async ({ id } = {}) => {
 });
 
 // ===============================
-//ROTA GET
+// ROTAS GET - BUSCA DE DADOS
 // ===============================
-//VALOR ASISNATURA
+
+// ===========================
+// HEALTH DB
+// ===========================
+
+app.get("/api/health/db", async (req, res) => {
+  try {
+    await db.query("SELECT 1");
+    res.json({
+      status: "ok",
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error("❌ DB ERROR:", err);
+    res.status(500).json({
+      status: "error"
+    });
+  }
+});
+
+// ===========================
+// MANIFEST
+// ===========================
+
+app.get("/manifest.json", (req, res) => {
+  res.sendFile(path.join(__dirname, "manifest.json"));
+});
+
+// ===========================
+// PUBLIC KEY
+// ===========================
+
+app.get("/api/push/public-key", (req, res) => {
+  if (!process.env.VAPID_PUBLIC_KEY) {
+    return res.status(500).json({ error: "Chave pública não configurada" });
+  }
+
+  res.json({ publicKey: process.env.VAPID_PUBLIC_KEY });
+});
+
+// ===========================
+// VALOR ASSINATURA
+// ===========================
+
 app.get("/api/modelo/planos/me", auth, authModelo, async (req, res) => {
   try {
 
@@ -3750,6 +2372,9 @@ res.json(plano.rows[0] || { valor_mensal: 20 });
   }
 });
 
+// ===========================
+// INFO MODELO NO CHAT
+// ===========================
 
 app.get(
   "/api/modelo/chat/:id",
@@ -3788,6 +2413,9 @@ app.get(
   }
 );
 
+// ===========================
+// DADOS.HTML
+// ===========================
 
 app.get("/api/usuario/dados", auth, async (req, res) => {
   try {
@@ -3851,6 +2479,9 @@ app.get("/api/usuario/dados", auth, async (req, res) => {
   }
 });
 
+// ===========================
+// PERFIL.HTML
+// ===========================
 
 app.get("/api/usuario/perfil", auth, async (req, res) => {
   try {
@@ -3935,8 +2566,10 @@ app.get("/api/usuario/perfil", auth, async (req, res) => {
   }
 });
 
+// ===========================
+// VIPS.HTML
+// ===========================
 
-//CONTAGEMVIPS
 app.get("/api/modelo/me/vip-count", auth, async (req, res) => {
   try {
     const modeloRes = await db.query(
@@ -3969,9 +2602,10 @@ const result = await db.query(
   }
 });
 
+// ===========================
+// OFERTAS ENCERRADAS
+// ===========================
 
-
-//OFERTAS QUANDO ENCERRAR
 app.get("/api/ofertas", authModelo, async (req, res) => {
   try {
 
@@ -3996,8 +2630,10 @@ app.get("/api/ofertas", authModelo, async (req, res) => {
   }
 });
 
+// ===========================
+// OFERTA ATIVAS
+// ===========================
 
-//ATIVAS
 app.get("/api/ofertas/ativa/:modelo_id", async (req, res) => {
   try {
     const modelo_id = Number(req.params.modelo_id);
@@ -4068,6 +2704,9 @@ app.get("/api/ofertas/ativa/:modelo_id", async (req, res) => {
   }
 });
 
+// ===========================
+// STATUS VIP
+// ===========================
 
 app.get("/api/vip/status/:modelo_id", authCliente, async (req, res) => {
   try {
@@ -4103,8 +2742,10 @@ app.get("/api/vip/status/:modelo_id", authCliente, async (req, res) => {
   }
 });
 
+// ===========================
+// PWA
+// ===========================
 
-// ✅ NOVA — só para app / PWA
 app.get("/api/app/state-v2", auth, (req, res) => {
   if (!req.user || !req.user.role) {
     return res.status(401).json({ next: "logout" });
@@ -4121,6 +2762,9 @@ app.get("/api/app/state-v2", auth, (req, res) => {
   return res.json({ next: "logout" });
 });
 
+// ===========================
+// PERFIL MODELO
+// ===========================
 
 app.get("/api/me", auth, async (req, res) => {
   try {
@@ -4158,7 +2802,6 @@ app.get("/api/me", auth, async (req, res) => {
       });
     }
 
-    // cliente ou outro
     return res.json({
       user_id: req.user.id,
       role: req.user.role
@@ -4170,6 +2813,9 @@ app.get("/api/me", auth, async (req, res) => {
   }
 });
 
+// ===========================
+// FEED DO PERFIL
+// ===========================
 
 app.get("/api/modelo/publico/:id/feed", async (req, res) => {
 
@@ -4188,6 +2834,10 @@ ORDER BY id DESC
   res.json(rows);
 
 });
+
+// ===========================
+// PREMIUM PERFIL
+// ===========================
 
 app.get("/api/modelo/publico/:id/premium", async (req, res) => {
 
@@ -4215,7 +2865,11 @@ app.get("/api/modelo/publico/:id/premium", async (req, res) => {
 
 });
 
-// PERFIL USUARIO (CLT,MODELO) //***********check******* */
+
+// ===========================
+// PERFIL MODELO VERIFICADA
+// ===========================
+
 app.get("/api/modelo/me", authModelo, async (req, res) => {
   try {
 
@@ -4251,8 +2905,10 @@ app.get("/api/modelo/me", authModelo, async (req, res) => {
   }
 });
 
+// ===========================
+// FEED.HTML
+// ===========================
 
-// 🌟 FEED GLOBAL DE MODELOS (SÓ VALIDADOS)
 app.get("/api/modelos", auth, async (req, res) => {
   try {
 
@@ -4319,159 +2975,10 @@ ORDER BY ganhos_total DESC
   }
 });
 
+// ===========================
+// PERFIL PUBLICO MODELO
+// ===========================
 
-// MODELOS COM CHAT (CLIENTE)
-app.get("/api/cliente/modelos", authCliente, async (req, res) => {
-  try {
-
-    const result = await db.query(`
-      SELECT 
-        m.id AS modelo_id,
-        m.nome_exibicao
-      FROM vip_subscriptions v
-      JOIN modelos m 
-        ON m.id = v.modelo_id
-      WHERE v.cliente_id = $1
-      AND v.ativo = true
-      AND v.expiration_at > NOW()
-      ORDER BY m.nome_exibicao
-    `,
-    [req.cliente_id]);
-
-    res.json(result.rows);
-
-  } catch (err) {
-    console.error("Erro modelos chat cliente:", err);
-    res.status(500).json([]);
-  }
-});
-
-
-app.get("/api/health/db", async (req, res) => {
-  try {
-    await db.query("SELECT 1");
-    res.json({
-      status: "ok",
-      timestamp: new Date().toISOString()
-    });
-  } catch (err) {
-    console.error("❌ DB ERROR:", err);
-    res.status(500).json({
-      status: "error"
-    });
-  }
-});
-
-
-app.get("/api/chat/unread/cliente", authCliente, async (req, res) => {
-  try {
-
-    const ids = await buscarUnreadCliente(req.cliente_id);
-
-    res.json(ids);
-
-  } catch (err) {
-    console.error("Erro unread cliente:", err);
-    res.status(500).json([]);
-  }
-});
-
-
-app.get("/api/chat/unread/modelo", authModelo, async (req, res) => {
-  try {
-
-    const ids = await buscarUnreadModelo(req.modelo_id);
-
-    res.json(ids);
-
-  } catch (err) {
-    console.error("Erro unread modelo:", err);
-    res.status(500).json([]);
-  }
-});
-
-
-// 👤 IDENTIDADE DO CLIENTE (JWT)
-app.get("/api/cliente/me", authCliente, async (req, res) => {
-  try {
-
-    const result = await db.query(`
-      SELECT
-        c.id AS cliente_id,
-        c.user_id,
-        c.nome,
-        cd.username,
-        cd.avatar,
-        cd.capa, 
-        cd.instagram,
-        cd.tiktok,
-        cd.local,
-        cd.bio
-      FROM clientes c
-      LEFT JOIN clientes_dados cd
-        ON cd.cliente_id = c.id
-      WHERE c.id = $1
-    `, [req.cliente_id]);
-
-    if (!result.rows.length) {
-      return res.status(404).json({ error: "Cliente não encontrado" });
-    }
-
-    res.json(result.rows[0]);
-
-  } catch (err) {
-    console.error("Erro /api/cliente/me:", err);
-    res.status(500).json({ error: "Erro interno" });
-  }
-});
-
-
-//ROTA LISTA VIP
-app.get("/api/modelo/vips", authModelo, async (req, res) => {
-  try {
-
-    const result = await db.query(
-      `
-      SELECT 
-        c.id AS cliente_id,
-        c.nome
-      FROM vip_subscriptions v
-      JOIN clientes c 
-        ON c.id = v.cliente_id
-      WHERE v.modelo_id = $1
-      AND v.ativo = true
-      AND v.expiration_at > NOW()
-      ORDER BY c.nome
-      `,
-      [req.modelo_id]
-    );
-
-    res.json(result.rows);
-
-  } catch (err) {
-    console.error("Erro listar VIPs:", err);
-    res.status(500).json([]);
-  }
-});
-
-
-app.get(
-  "/conteudos.html",
-  authModelo,
-  (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "conteudos.html"));
-  }
-);
-
-app.get(
-  "/chatmodelo.html",
-  authModelo,
-  (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "chatmodelo.html"));
-  }
-);
-
-// 🌍 PERFIL PÚBLICO //*********CHECK******* */
 app.get("/api/modelo/publico/:modelo_id", async (req, res) => {
   const modelo_id = Number(req.params.modelo_id);
 
@@ -4529,10 +3036,150 @@ app.get("/api/modelo/publico/:modelo_id", async (req, res) => {
   }
 });
 
+// ===========================
+// INFO MODELOS NO CHAT CLT
+// ===========================
 
-// ===============================
-// CHAT — LISTA PARA CLIENTE
-// ===============================
+app.get("/api/cliente/modelos", authCliente, async (req, res) => {
+  try {
+
+    const result = await db.query(`
+      SELECT 
+        m.id AS modelo_id,
+        m.nome_exibicao
+      FROM vip_subscriptions v
+      JOIN modelos m 
+        ON m.id = v.modelo_id
+      WHERE v.cliente_id = $1
+      AND v.ativo = true
+      AND v.expiration_at > NOW()
+      ORDER BY m.nome_exibicao
+    `,
+    [req.cliente_id]);
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error("Erro modelos chat cliente:", err);
+    res.status(500).json([]);
+  }
+});
+
+// ===========================
+// NÃO LIDAS CLIENTE
+// ===========================
+
+app.get("/api/chat/unread/cliente", authCliente, async (req, res) => {
+  try {
+
+    const ids = await buscarUnreadCliente(req.cliente_id);
+
+    res.json(ids);
+
+  } catch (err) {
+    console.error("Erro unread cliente:", err);
+    res.status(500).json([]);
+  }
+});
+
+// ===========================
+// MSG NÃO LIDA - MODELOS
+// ===========================
+
+app.get("/api/chat/unread/modelo", authModelo, async (req, res) => {
+  try {
+
+    const ids = await buscarUnreadModelo(req.modelo_id);
+
+    res.json(ids);
+
+  } catch (err) {
+    console.error("Erro unread modelo:", err);
+    res.status(500).json([]);
+  }
+});
+
+// ===========================
+// INFOS CLIENTE
+// ===========================
+
+app.get("/api/cliente/me", authCliente, async (req, res) => {
+  try {
+
+    const result = await db.query(`
+      SELECT
+        c.id AS cliente_id,
+        c.user_id,
+        c.nome,
+        cd.username,
+        cd.avatar,
+        cd.capa, 
+        cd.instagram,
+        cd.tiktok,
+        cd.local,
+        cd.bio
+      FROM clientes c
+      LEFT JOIN clientes_dados cd
+        ON cd.cliente_id = c.id
+      WHERE c.id = $1
+    `, [req.cliente_id]);
+
+    if (!result.rows.length) {
+      return res.status(404).json({ error: "Cliente não encontrado" });
+    }
+
+    res.json(result.rows[0]);
+
+  } catch (err) {
+    console.error("Erro /api/cliente/me:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+// ===========================
+// LISTA VIPS
+// ===========================
+
+app.get("/api/modelo/vips", authModelo, async (req, res) => {
+  try {
+
+    const result = await db.query(
+      `
+      SELECT 
+        c.id AS cliente_id,
+        c.nome
+      FROM vip_subscriptions v
+      JOIN clientes c 
+        ON c.id = v.cliente_id
+      WHERE v.modelo_id = $1
+      AND v.ativo = true
+      AND v.expiration_at > NOW()
+      ORDER BY c.nome
+      `,
+      [req.modelo_id]
+    );
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error("Erro listar VIPs:", err);
+    res.status(500).json([]);
+  }
+});
+
+// ===========================
+// CONTEUDOS.HTML
+// ===========================
+
+app.get( "/conteudos.html", authModelo, (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "conteudos.html"));
+  }
+);
+
+// =============================
+// LISTA INBOX CLIENTE
+// =============================
+
 app.get("/api/chat/cliente", authCliente, async (req, res) => {
   try {
 
@@ -4575,16 +3222,15 @@ app.get("/api/chat/cliente", authCliente, async (req, res) => {
   }
 });
 
+/// ===========================
+// LISTA INBOX MODELO
+// ============================
 
-/// ===============================
-// CHAT — LISTA PARA MODELO
-// ===============================
 app.get("/api/chat/modelo", authModelo, async (req, res) => {
   try {
 
     const userId = req.user.id;
 
-    // 🔥 1️⃣ Buscar modelos.id da modelo logada
     const modeloResult = await db.query(
       "SELECT id FROM modelos WHERE user_id = $1",
       [userId]
@@ -4598,7 +3244,6 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
     const limit = Number(req.query.limit) || 20;
     const offset = Number(req.query.offset) || 0;
 
-    // 🔥 2️⃣ Usar modeloId correto
     const { rows } = await db.query(`
 
       SELECT
@@ -4663,10 +3308,10 @@ LIMIT $2 OFFSET $3;
   }
 });
 
+// =============================
+// INFOS CLIENTE CHAT MODELO
+// =============================
 
-// ===============================
-// 📄 DADOS DE UM CLIENTE (por ID)
-// ===============================
 app.get("/api/cliente/:cliente_id", authModelo, async (req, res) => {
   const cliente_id = Number(req.params.cliente_id);
 
@@ -4701,6 +3346,48 @@ app.get("/api/cliente/:cliente_id", authModelo, async (req, res) => {
   }
 });
 
+// ===========================
+// INFO CLIENTE CHAT
+// ===========================
+
+app.get("/api/chat/cliente/:cliente_id", authModelo, async (req, res) => {
+
+  const cliente_id = Number(req.params.cliente_id);
+
+  if (!Number.isInteger(cliente_id) || cliente_id <= 0) {
+    return res.status(400).json({ error: "cliente_id inválido" });
+  }
+
+  try {
+    const result = await db.query(`
+      SELECT
+        c.id AS cliente_id,
+        c.nome,
+        c.last_seen,
+        cd.username,
+        cd.avatar
+      FROM clientes c
+      LEFT JOIN clientes_dados cd
+        ON cd.cliente_id = c.id
+      WHERE c.id = $1
+      LIMIT 1
+    `, [cliente_id]);
+
+    if (!result.rows.length) {
+      return res.status(404).json({ error: "Cliente não encontrado" });
+    }
+
+    res.json(result.rows[0]);
+
+  } catch (err) {
+    console.error("Erro buscar cliente:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+// ===========================
+// MENSAGEM COM CONTEUDO
+// ===========================
 
 app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
   const message_id = Number(req.params.message_id);
@@ -4815,7 +3502,10 @@ app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
 });
 
 
-// 🔒 CONTEÚDOS JÁ VISTOS OU COMPRADOS POR CLIENTE (MODELO)
+// ===========================
+// CHAT CONTEUDOS JA VISTOS
+// ===========================
+
 app.get("/api/chat/conteudos-vistos/:cliente_id", authModelo, async (req, res) => {
 
   const cliente_id = Number(req.params.cliente_id);
@@ -4843,13 +3533,9 @@ app.get("/api/chat/conteudos-vistos/:cliente_id", authModelo, async (req, res) =
   }
 });
 
-
-
-app.get("/modelo/relatorio", authModelo, (req, res) => {
-  res.sendFile(
-    path.join(process.cwd(), "admin-pages", "relatorio.html")
-  );
-});
+// ===========================
+// CHAT STATUS CONTEUDO
+// ===========================
 
 app.get("/api/chat/conteudo-status/:message_id", authCliente, async (req, res) => {
   const message_id = Number(req.params.message_id);
@@ -4885,7 +3571,10 @@ app.get("/api/chat/conteudo-status/:message_id", authCliente, async (req, res) =
   }
 });
 
-// 📦 CONTEÚDOS DA MODELO (PARA POPUP)
+// ===========================
+// MIDIAS NO POPUP CHAT
+// ===========================
+
 app.get("/api/conteudos", authModelo, async (req, res) => {
 
   const { page = 1, limit = 10 } = req.query;
@@ -4949,12 +3638,16 @@ app.get("/api/conteudos", authModelo, async (req, res) => {
 
 });
 
+
+// ===========================
+// STATUS INBOX/CHAT
+// ===========================
+
 app.get("/api/verificacao/status", auth, async (req, res) => {
   try {
 
     const userId = req.user.id;
 
-    // 🔹 1️⃣ Verificar se existe modelo
     const modeloRes = await db.query(
       "SELECT id FROM modelos WHERE user_id = $1",
       [userId]
@@ -4980,7 +3673,6 @@ app.get("/api/verificacao/status", auth, async (req, res) => {
       }
     }
 
-    // 🔹 2️⃣ Se não houver verificação como modelo, verificar como cliente
     const clienteRes = await db.query(
       "SELECT id FROM clientes WHERE user_id = $1",
       [userId]
@@ -5006,7 +3698,6 @@ app.get("/api/verificacao/status", auth, async (req, res) => {
       }
     }
 
-    // 🔹 3️⃣ Se não existir nada
     return res.json({ status: "pendente", motivo: null });
 
   } catch (err) {
@@ -5015,6 +3706,19 @@ app.get("/api/verificacao/status", auth, async (req, res) => {
   }
 });
 
+// ===========================
+// RELATORIO.HTML
+// ===========================
+
+app.get("/modelo/relatorio", authModelo, (req, res) => {
+  res.sendFile(
+    path.join(process.cwd(), "admin-pages", "relatorio.html")
+  );
+});
+
+// ===========================
+// VIPS.HTML - LISTA
+// ===========================
 
 app.get("/api/modelo/assinantes", authModelo, async (req, res) => {
   try {
@@ -5070,40 +3774,9 @@ app.get("/api/modelo/assinantes", authModelo, async (req, res) => {
   }
 });
 
-app.get("/api/chat/cliente/:cliente_id", authModelo, async (req, res) => {
-
-  const cliente_id = Number(req.params.cliente_id);
-
-  if (!Number.isInteger(cliente_id) || cliente_id <= 0) {
-    return res.status(400).json({ error: "cliente_id inválido" });
-  }
-
-  try {
-    const result = await db.query(`
-      SELECT
-        c.id AS cliente_id,
-        c.nome,
-        c.last_seen,
-        cd.username,
-        cd.avatar
-      FROM clientes c
-      LEFT JOIN clientes_dados cd
-        ON cd.cliente_id = c.id
-      WHERE c.id = $1
-      LIMIT 1
-    `, [cliente_id]);
-
-    if (!result.rows.length) {
-      return res.status(404).json({ error: "Cliente não encontrado" });
-    }
-
-    res.json(result.rows[0]);
-
-  } catch (err) {
-    console.error("Erro buscar cliente:", err);
-    res.status(500).json({ error: "Erro interno" });
-  }
-});
+// =============================
+// STATUS PAGAMENTOS VIP/MIDIAS
+// ============================
 
 app.get("/api/pagamento/status/:orderId", auth, async (req, res) => {
   try {
@@ -5184,22 +3857,13 @@ app.get("/api/pagamento/status/:orderId", auth, async (req, res) => {
   }
 });
 
-app.get("/manifest.json", (req, res) => {
-  res.sendFile(path.join(__dirname, "manifest.json"));
-});
+// ==================================
+// ROTAS PUT - ATUALIZAR DADOS
+// ==================================
 
-app.get("/api/push/public-key", (req, res) => {
-  if (!process.env.VAPID_PUBLIC_KEY) {
-    return res.status(500).json({ error: "Chave pública não configurada" });
-  }
-
-  res.json({ publicKey: process.env.VAPID_PUBLIC_KEY });
-});
-
-
-// ===============================
-// ROTA POST
-// ===============================
+// ===========================
+// ALTERAR PLANO ASSINATURA
+// ===========================
 
 app.put("/api/modelo/planos", authModelo, async (req, res) => {
   try {
@@ -5250,6 +3914,10 @@ app.put("/api/modelo/planos", authModelo, async (req, res) => {
   }
 });
 
+// ===========================
+// ALTERAR OFERTAS
+// ===========================
+
 app.put("/api/ofertas/:id/encerrar", authModelo, async (req, res) => {
   try {
 
@@ -5283,6 +3951,10 @@ app.put("/api/ofertas/:id/encerrar", authModelo, async (req, res) => {
     res.status(500).json({ erro: "Erro interno" });
   }
 });
+
+// ===========================
+// ALTERAR INFOS PERFIL
+// ===========================
 
 app.put("/api/modelo/me", authModelo, async (req, res) => {
   try {
@@ -5337,58 +4009,63 @@ app.put("/api/modelo/me", authModelo, async (req, res) => {
   }
 });
 
+// ===========================
+// EDITAR CONTEUDOS?
+// ===========================
+
+// app.put("/api/conteudos/:id", authModelo, async (req, res) => {
+//   const conteudo_id = Number(req.params.id);
+
+//   if (!Number.isInteger(conteudo_id) || conteudo_id <= 0) {
+//     return res.status(400).json({ error: "ID inválido" });
+//   }
+
+//   const { tipo, url, thumbnail_url } = req.body;
+
+//   if (!tipo || !url) {
+//     return res.status(400).json({
+//       error: "Campos obrigatórios: tipo e url"
+//     });
+//   }
+
+//   try {
+//     const result = await db.query(
+//       `
+//       UPDATE conteudos
+//       SET
+//         tipo = $1,
+//         url = $2,
+//         thumbnail_url = $3
+//       WHERE id = $4
+//         AND modelo_id = $5
+//       RETURNING
+//         id,
+//         tipo,
+//         url,
+//         thumbnail_url,
+//         modelo_id
+//       `,
+//       [tipo, url, thumbnail_url || null, conteudo_id, req.modelo_id]
+//     );
+
+//     if (result.rows.length === 0) {
+//       return res.status(404).json({
+//         error: "Conteúdo não encontrado"
+//       });
+//     }
+
+//     res.json(result.rows[0]);
+
+//   } catch (err) {
+//     console.error("Erro editar conteúdo:", err);
+//     res.status(500).json({ error: "Erro ao editar conteúdo" });
+//   }
+// });
 
 
-app.put("/api/conteudos/:id", authModelo, async (req, res) => {
-
-  const message_id = Number(req.params.id);
-
-  if (!Number.isInteger(conteudo_id) || conteudo_id <= 0) {
-    return res.status(400).json({ error: "ID inválido" });
-  }
-
-  const { tipo, url, thumbnail_url } = req.body;
-
-  if (!tipo || !url) {
-    return res.status(400).json({
-      error: "Campos obrigatórios: tipo e url"
-    });
-  }
-
-  try {
-    const result = await db.query(
-      `
-      UPDATE conteudos
-      SET
-        tipo = $1,
-        url = $2,
-        thumbnail_url = $3
-      WHERE id = $4
-        AND modelo_id = $5
-      RETURNING
-        id,
-        tipo,
-        url,
-        thumbnail_url,
-        modelo_id
-      `,
-      [tipo, url, thumbnail_url || null, conteudo_id, req.modelo_id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        error: "Conteúdo não encontrado"
-      });
-    }
-
-    res.json(result.rows[0]);
-
-  } catch (err) {
-    console.error("Erro editar conteúdo:", err);
-    res.status(500).json({ error: "Erro ao editar conteúdo" });
-  }
-});
-
+// ===========================
+// EDITAR DADOS DO PERFIL
+// ===========================
 
 app.put("/api/usuario/perfil", auth, async (req, res) => {
   try {
@@ -5401,9 +4078,8 @@ app.put("/api/usuario/perfil", auth, async (req, res) => {
       bio
     } = req.body;
 
-    // ===============================
-    // 👤 CLIENTE
-    // ===============================
+
+    // CLIENTE
     if (req.user.role === "cliente") {
 
   const clienteRes = await db.query(
@@ -5448,9 +4124,8 @@ await db.query(`
   return res.json({ ok: true });
 }
 
-    // ===============================
-    // 👠 MODELO
-    // ===============================
+// MODELO
+
     if (req.user.role === "modelo") {
 
       const modeloRes = await db.query(
@@ -5482,7 +4157,6 @@ await db.query(`
         ]
       );
 
-// verifica se já existe registro
 const existeDados = await db.query(
   `SELECT id FROM modelos_dados WHERE modelo_id = $1`,
   [modeloId]
@@ -5509,7 +4183,6 @@ if (existeDados.rows.length > 0) {
 
 } else {
 
-  // INSERT
   await db.query(
     `
     INSERT INTO modelos_dados (modelo_id, instagram, tiktok)
@@ -5533,8 +4206,508 @@ if (existeDados.rows.length > 0) {
   }
 });
 
+// ===========================
+// ATUALIZAR DADOS
+// ===========================
 
-//DADOS CLIENTE
+app.put("/api/usuario/dados", auth, async (req, res) => {
+  try {
+    const {
+      nome_completo,
+      data_nascimento,
+      telefone,
+      endereco,
+      estado,
+      cidade,
+      pais
+    } = req.body;
+
+    const userId = req.user.id;
+
+ // MODELO
+    if (req.user.role === "modelo") {
+
+      const modeloRes = await db.query(
+        "SELECT id FROM modelos WHERE user_id = $1",
+        [userId]
+      );
+
+      if (!modeloRes.rowCount) {
+        return res.status(404).json({ erro: "Modelo não encontrado" });
+      }
+
+      const modelo_id = modeloRes.rows[0].id;
+
+      const verificacao = await db.query(`
+        SELECT status
+        FROM modelos_verificacao
+        WHERE modelo_id = $1
+        ORDER BY criado_em DESC
+        LIMIT 1
+      `, [modelo_id]);
+
+      if (
+        verificacao.rowCount > 0 &&
+        verificacao.rows[0].status === "aprovado"
+      ) {
+        return res.status(403).json({
+          erro: "Dados pessoais já aprovados e não podem ser alterados"
+        });
+      }
+
+      await db.query(`
+        INSERT INTO modelos_dados
+          (modelo_id, nome_completo, data_nascimento, telefone, endereco, estado, cidade, pais, atualizado_em)
+        VALUES
+          ($1,$2,$3,$4,$5,$6,$7,$8,NOW())
+        ON CONFLICT (modelo_id)
+        DO UPDATE SET
+          nome_completo = EXCLUDED.nome_completo,
+          data_nascimento = EXCLUDED.data_nascimento,
+          telefone = EXCLUDED.telefone,
+          endereco = EXCLUDED.endereco,
+          estado = EXCLUDED.estado,
+          cidade = EXCLUDED.cidade,
+          pais = EXCLUDED.pais,
+          atualizado_em = NOW()
+      `, [
+        modelo_id,
+        nome_completo?.trim() || null,
+        data_nascimento || null,
+        telefone?.trim() || null,
+        endereco?.trim() || null,
+        estado?.trim() || null,
+        cidade?.trim() || null,
+        pais?.trim() || null
+      ]);
+
+      return res.json({ sucesso: true });
+    }
+
+// CLIENTE
+
+    if (req.user.role === "cliente") {
+
+      const clienteRes = await db.query(
+        "SELECT id FROM clientes WHERE user_id = $1",
+        [userId]
+      );
+
+      if (!clienteRes.rowCount) {
+        return res.status(404).json({ erro: "Cliente não encontrado" });
+      }
+
+      const cliente_id = clienteRes.rows[0].id;
+
+      const verificacao = await db.query(`
+        SELECT status
+        FROM clientes_verificacao
+        WHERE cliente_id = $1
+        ORDER BY criado_em DESC
+        LIMIT 1
+      `, [cliente_id]);
+
+      if (
+        verificacao.rowCount > 0 &&
+        verificacao.rows[0].status === "aprovado"
+      ) {
+        return res.status(403).json({
+          erro: "Dados pessoais já aprovados e não podem ser alterados"
+        });
+      }
+
+      await db.query(`
+        INSERT INTO clientes_dados
+          (cliente_id, nome_completo, data_nascimento, telefone, endereco, estado, cidade, pais, atualizado_em)
+        VALUES
+          ($1,$2,$3,$4,$5,$6,$7,$8,NOW())
+        ON CONFLICT (cliente_id)
+        DO UPDATE SET
+          nome_completo = EXCLUDED.nome_completo,
+          data_nascimento = EXCLUDED.data_nascimento,
+          telefone = EXCLUDED.telefone,
+          endereco = EXCLUDED.endereco,
+          estado = EXCLUDED.estado,
+          cidade = EXCLUDED.cidade,
+          pais = EXCLUDED.pais,
+          atualizado_em = NOW()
+      `, [
+        cliente_id,
+        nome_completo?.trim() || null,
+        data_nascimento || null,
+        telefone?.trim() || null,
+        endereco?.trim() || null,
+        estado?.trim() || null,
+        cidade?.trim() || null,
+        pais?.trim() || null
+      ]);
+
+      return res.json({ sucesso: true });
+    }
+
+    return res.status(403).json({ erro: "Role inválida" });
+
+  } catch (err) {
+    console.error("ERRO PUT /api/usuario/dados:", err);
+    res.status(500).json({ erro: err.message });
+  }
+});
+
+// ===========================
+// ATUALIZAR INFOS CLIENTE
+// ===========================
+
+app.put("/api/cliente/dados", authCliente, async (req, res) => {
+  try {
+
+    const {
+      username,
+      instagram,
+      tiktok,
+      local,
+      bio
+    } = req.body;
+
+    if (!username || typeof username !== "string") {
+      return res.status(400).json({ error: "Username obrigatório." });
+    }
+
+    await db.query(`
+      INSERT INTO clientes_dados (
+        cliente_id,
+        username,
+        instagram,
+        tiktok,
+        local,
+        bio,
+        criado_em,
+        atualizado_em
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,NOW(),NOW())
+      ON CONFLICT (cliente_id)
+      DO UPDATE SET
+        username = COALESCE(EXCLUDED.username, clientes_dados.username),
+        instagram = COALESCE(EXCLUDED.instagram, clientes_dados.instagram),
+        tiktok = COALESCE(EXCLUDED.tiktok, clientes_dados.tiktok),
+        local = COALESCE(EXCLUDED.local, clientes_dados.local),
+        bio = COALESCE(EXCLUDED.bio, clientes_dados.bio),
+        atualizado_em = NOW()
+    `, [
+      req.cliente_id,
+      username.trim(),
+      instagram || null,
+      tiktok || null,
+      local || null,
+      bio || null
+    ]);
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("Erro atualizar dados cliente:", err);
+    res.status(500).json({ error: "Erro interno." });
+  }
+});
+
+// ===========================
+// CANCELAR VIP
+// ===========================
+
+app.put("/api/cliente/subscricoes/:id/cancelar", auth, async (req, res) => {
+  try {
+
+    const subscriptionId = req.params.id;
+
+    const clienteRes = await db.query(
+      "SELECT id FROM clientes WHERE user_id = $1",
+      [req.user.id]
+    );
+
+    if (!clienteRes.rowCount) {
+      return res.status(404).json({ error: "Cliente não encontrado." });
+    }
+
+    const clienteId = clienteRes.rows[0].id;
+
+    const subRes = await db.query(
+      `SELECT id, ativo 
+       FROM vip_subscriptions
+       WHERE id = $1 AND cliente_id = $2`,
+      [subscriptionId, clienteId]
+    );
+
+    if (!subRes.rowCount) {
+      return res.status(403).json({ error: "Subscrição inválida." });
+    }
+
+    if (!subRes.rows[0].ativo) {
+      return res.status(400).json({ error: "Esta subscrição já está cancelada." });
+    }
+
+    await db.query(
+      `UPDATE vip_subscriptions
+       SET recorrente = false,
+           ativo = false
+       WHERE id = $1`,
+      [subscriptionId]
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Subscrição cancelada com sucesso."
+    });
+
+  } catch (err) {
+    console.error("Erro ao cancelar:", err);
+    return res.status(500).json({
+      error: "Erro interno ao cancelar subscrição."
+    });
+  }
+});
+
+// ================================
+// APP POST - CRIAR/ENVIAR DADOS
+// ===============================
+
+// ===========================
+// UPLOAD MIDIA - FEED
+// ===========================
+
+app.post("/api/upload", auth, authModelo, uploadB2.array("file", 10), async (req, res) => {
+
+    try {
+
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ error: "Arquivo não enviado" });
+      }
+
+      const modeloRes = await db.query(
+        `SELECT id FROM modelos WHERE user_id = $1`,
+        [req.user.id]
+      );
+
+      if (modeloRes.rowCount === 0) {
+        return res.status(404).json({ error: "Modelo não encontrado" });
+      }
+
+      const modelo_id = modeloRes.rows[0].id;
+
+      const { tipo_conteudo, preco, descricao } = req.body;
+      const tipoFinal = tipo_conteudo || "feed";
+
+      for (const file of req.files) {
+
+        const mimetype = file.mimetype || "";
+
+        let tipo;
+        let publicUrl = null;
+        let thumbnailUrl = null;
+
+        if (mimetype.startsWith("image/")) {
+          tipo = "imagem";
+        } 
+        else if (mimetype.startsWith("video/")) {
+          tipo = "video";
+        } 
+        else {
+          continue;
+        }
+
+        if (tipo === "imagem") {
+
+          const form = new FormData();
+          form.append("file", file.buffer, file.originalname);
+
+          const response = await axios.post(
+            `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT_ID}/images/v1`,
+            form,
+            {
+              headers: {
+                Authorization: `Bearer ${process.env.CF_IMAGES_TOKEN}`,
+                ...form.getHeaders()
+              }
+            }
+          );
+
+          if (!response.data || !response.data.success) {
+            throw new Error("Erro upload Cloudflare Images");
+          }
+
+          const imageId = response.data.result.id;
+
+          publicUrl =
+            `https://imagedelivery.net/${process.env.CF_ACCOUNT_HASH}/${imageId}/public`;
+
+            thumbnailUrl = publicUrl;
+        }
+
+        if (tipo === "video") {
+
+          const form = new FormData();
+          form.append("file", file.buffer, file.originalname);
+
+          const response = await axios.post(
+            `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT_ID}/stream`,
+            form,
+            {
+              headers: {
+                Authorization: `Bearer ${process.env.CF_STREAM_TOKEN}`,
+                ...form.getHeaders()
+              },
+              maxContentLength: Infinity,
+              maxBodyLength: Infinity
+            }
+          );
+
+          if (!response.data || !response.data.success) {
+            throw new Error("Erro upload Cloudflare Stream");
+          }
+
+          const videoId = response.data.result.uid;
+
+          publicUrl = `https://iframe.videodelivery.net/${videoId}`;
+
+          const thumbnailUrl =
+          `https://videodelivery.net/${videoId}/thumbnails/thumbnail.jpg`;
+        }
+
+        await db.query(
+          `
+          INSERT INTO conteudos
+          (modelo_id, url, thumbnail_url, tipo, tipo_conteudo, preco, descricao)
+          VALUES ($1,$2,$3,$4,$5,$6,$7)
+          `,
+          [
+            modelo_id,
+            publicUrl,
+            thumbnailUrl,
+            tipo,
+            tipoFinal,
+            preco ? Number(preco) : null,
+            descricao || null
+          ]
+        );
+      }
+
+      res.json({ success: true });
+
+    } catch (err) {
+
+      console.error("Erro /api/upload:", err);
+
+      res.status(500).json({
+        error: "Erro interno"
+      });
+
+    }
+  }
+);
+
+// ===========================
+// INSERIR OFERTAS
+// ===========================
+
+app.post("/api/ofertas", authModelo, async (req, res) => {
+  try {
+
+    const userId = req.user.id;
+
+    const modeloRes = await db.query(
+      `SELECT id FROM modelos WHERE user_id = $1`,
+      [userId]
+    );
+
+    if (modeloRes.rowCount === 0) {
+      return res.status(404).json({ erro: "Modelo não encontrado" });
+    }
+
+    const modeloId = modeloRes.rows[0].id;
+
+    const planoRes = await db.query(
+      `SELECT valor_mensal FROM modelos_planos WHERE modelo_id = $1`,
+      [modeloId]
+    );
+
+    if (planoRes.rowCount === 0) {
+      return res.status(400).json({
+        erro: "Defina primeiro o plano de assinatura."
+      });
+    }
+
+    const VALOR_BASE = Number(planoRes.rows[0].valor_mensal);
+    const VALOR_MINIMO = Number((VALOR_BASE * 0.5).toFixed(2));
+
+    const { nome, limite, dias, desconto } = req.body;
+
+    const limiteNum = Number(limite);
+    const diasNum = Number(dias);
+    const descontoNum = Number(desconto);
+
+    if (
+      !nome ||
+      !Number.isFinite(limiteNum) || limiteNum <= 0 ||
+      !Number.isFinite(diasNum) || diasNum <= 0 ||
+      !Number.isFinite(descontoNum) || descontoNum < 0 || descontoNum > 50
+    ) {
+      return res.status(400).json({ erro: "Dados inválidos" });
+    }
+
+    let valorPromocional = Number(
+      (VALOR_BASE * (1 - descontoNum / 100)).toFixed(2)
+    );
+
+    if (valorPromocional < VALOR_MINIMO) {
+      valorPromocional = VALOR_MINIMO;
+    }
+
+    const dataFim = new Date();
+    dataFim.setDate(dataFim.getDate() + diasNum);
+
+    await db.query(
+      `UPDATE ofertas SET ativa = false WHERE modelo_id = $1`,
+      [modeloId]
+    );
+
+    const result = await db.query(
+      `
+     INSERT INTO ofertas (
+  modelo_id,
+  nome,
+  limite_assinaturas,
+  assinaturas_usadas,
+  desconto_percentual,
+  valor_base,
+  valor_promocional,
+  data_inicio,
+  data_fim,
+  ativa
+)
+VALUES ($1,$2,$3,0,$4,$5,$6,NOW(),$7,true)
+RETURNING *
+      `,
+      [
+        modeloId,
+        nome,
+        limiteNum,
+        descontoNum,
+        VALOR_BASE,
+        valorPromocional,
+        dataFim
+      ]
+    );
+
+    res.json(result.rows[0]);
+
+  } catch (err) {
+    console.error("🔥 ERRO AO CRIAR OFERTA 🔥", err);
+    res.status(500).json({ erro: "Erro interno ao criar oferta" });
+  }
+});
+
+// ===========================
+// DADOS.HTML CLIENTE
+// ===========================
+
 app.post("/api/cliente/dados", authCliente, async (req, res) => {
   try {
 
@@ -5543,7 +4716,6 @@ app.post("/api/cliente/dados", authCliente, async (req, res) => {
       nome_completo,
       data_nascimento,
       pais,
-      nome_cartao,
       nome_exibicao,
       instagram,
       tiktok,
@@ -5615,325 +4787,9 @@ app.post("/api/cliente/dados", authCliente, async (req, res) => {
   }
 });
 
-app.put("/api/usuario/dados", auth, async (req, res) => {
-  try {
-    const {
-      nome_completo,
-      data_nascimento,
-      telefone,
-      endereco,
-      estado,
-      cidade,
-      pais
-    } = req.body;
-
-    const userId = req.user.id;
-
-    /* =====================================================
-       🔵 MODELO
-    ===================================================== */
-    if (req.user.role === "modelo") {
-
-      const modeloRes = await db.query(
-        "SELECT id FROM modelos WHERE user_id = $1",
-        [userId]
-      );
-
-      if (!modeloRes.rowCount) {
-        return res.status(404).json({ erro: "Modelo não encontrado" });
-      }
-
-      const modelo_id = modeloRes.rows[0].id;
-
-      const verificacao = await db.query(`
-        SELECT status
-        FROM modelos_verificacao
-        WHERE modelo_id = $1
-        ORDER BY criado_em DESC
-        LIMIT 1
-      `, [modelo_id]);
-
-      if (
-        verificacao.rowCount > 0 &&
-        verificacao.rows[0].status === "aprovado"
-      ) {
-        return res.status(403).json({
-          erro: "Dados pessoais já aprovados e não podem ser alterados"
-        });
-      }
-
-      await db.query(`
-        INSERT INTO modelos_dados
-          (modelo_id, nome_completo, data_nascimento, telefone, endereco, estado, cidade, pais, atualizado_em)
-        VALUES
-          ($1,$2,$3,$4,$5,$6,$7,$8,NOW())
-        ON CONFLICT (modelo_id)
-        DO UPDATE SET
-          nome_completo = EXCLUDED.nome_completo,
-          data_nascimento = EXCLUDED.data_nascimento,
-          telefone = EXCLUDED.telefone,
-          endereco = EXCLUDED.endereco,
-          estado = EXCLUDED.estado,
-          cidade = EXCLUDED.cidade,
-          pais = EXCLUDED.pais,
-          atualizado_em = NOW()
-      `, [
-        modelo_id,
-        nome_completo?.trim() || null,
-        data_nascimento || null,
-        telefone?.trim() || null,
-        endereco?.trim() || null,
-        estado?.trim() || null,
-        cidade?.trim() || null,
-        pais?.trim() || null
-      ]);
-
-      return res.json({ sucesso: true });
-    }
-
-    /* =====================================================
-       🟢 CLIENTE
-    ===================================================== */
-    if (req.user.role === "cliente") {
-
-      const clienteRes = await db.query(
-        "SELECT id FROM clientes WHERE user_id = $1",
-        [userId]
-      );
-
-      if (!clienteRes.rowCount) {
-        return res.status(404).json({ erro: "Cliente não encontrado" });
-      }
-
-      const cliente_id = clienteRes.rows[0].id;
-
-      const verificacao = await db.query(`
-        SELECT status
-        FROM clientes_verificacao
-        WHERE cliente_id = $1
-        ORDER BY criado_em DESC
-        LIMIT 1
-      `, [cliente_id]);
-
-      if (
-        verificacao.rowCount > 0 &&
-        verificacao.rows[0].status === "aprovado"
-      ) {
-        return res.status(403).json({
-          erro: "Dados pessoais já aprovados e não podem ser alterados"
-        });
-      }
-
-      await db.query(`
-        INSERT INTO clientes_dados
-          (cliente_id, nome_completo, data_nascimento, telefone, endereco, estado, cidade, pais, atualizado_em)
-        VALUES
-          ($1,$2,$3,$4,$5,$6,$7,$8,NOW())
-        ON CONFLICT (cliente_id)
-        DO UPDATE SET
-          nome_completo = EXCLUDED.nome_completo,
-          data_nascimento = EXCLUDED.data_nascimento,
-          telefone = EXCLUDED.telefone,
-          endereco = EXCLUDED.endereco,
-          estado = EXCLUDED.estado,
-          cidade = EXCLUDED.cidade,
-          pais = EXCLUDED.pais,
-          atualizado_em = NOW()
-      `, [
-        cliente_id,
-        nome_completo?.trim() || null,
-        data_nascimento || null,
-        telefone?.trim() || null,
-        endereco?.trim() || null,
-        estado?.trim() || null,
-        cidade?.trim() || null,
-        pais?.trim() || null
-      ]);
-
-      return res.json({ sucesso: true });
-    }
-
-    return res.status(403).json({ erro: "Role inválida" });
-
-  } catch (err) {
-    console.error("ERRO PUT /api/usuario/dados:", err);
-    res.status(500).json({ erro: err.message });
-  }
-});
-
-app.put("/api/cliente/dados", authCliente, async (req, res) => {
-  try {
-
-    const {
-      username,
-      instagram,
-      tiktok,
-      local,
-      bio
-    } = req.body;
-
-    if (!username || typeof username !== "string") {
-      return res.status(400).json({ error: "Username obrigatório." });
-    }
-
-    await db.query(`
-      INSERT INTO clientes_dados (
-        cliente_id,
-        username,
-        instagram,
-        tiktok,
-        local,
-        bio,
-        criado_em,
-        atualizado_em
-      )
-      VALUES ($1,$2,$3,$4,$5,$6,NOW(),NOW())
-      ON CONFLICT (cliente_id)
-      DO UPDATE SET
-        username = COALESCE(EXCLUDED.username, clientes_dados.username),
-        instagram = COALESCE(EXCLUDED.instagram, clientes_dados.instagram),
-        tiktok = COALESCE(EXCLUDED.tiktok, clientes_dados.tiktok),
-        local = COALESCE(EXCLUDED.local, clientes_dados.local),
-        bio = COALESCE(EXCLUDED.bio, clientes_dados.bio),
-        atualizado_em = NOW()
-    `, [
-      req.cliente_id,
-      username.trim(),
-      instagram || null,
-      tiktok || null,
-      local || null,
-      bio || null
-    ]);
-
-    res.json({ success: true });
-
-  } catch (err) {
-    console.error("Erro atualizar dados cliente:", err);
-    res.status(500).json({ error: "Erro interno." });
-  }
-});
-
-app.put("/api/cliente/subscricoes/:id/cancelar", auth, async (req, res) => {
-  try {
-
-    const subscriptionId = req.params.id;
-
-    // 🔁 users.id → clientes.id
-    const clienteRes = await db.query(
-      "SELECT id FROM clientes WHERE user_id = $1",
-      [req.user.id]
-    );
-
-    if (!clienteRes.rowCount) {
-      return res.status(404).json({ error: "Cliente não encontrado." });
-    }
-
-    const clienteId = clienteRes.rows[0].id;
-
-    // 🔒 Verificar se a subscrição pertence ao cliente
-    const subRes = await db.query(
-      `SELECT id, ativo 
-       FROM vip_subscriptions
-       WHERE id = $1 AND cliente_id = $2`,
-      [subscriptionId, clienteId]
-    );
-
-    if (!subRes.rowCount) {
-      return res.status(403).json({ error: "Subscrição inválida." });
-    }
-
-    // 🔎 Se já estiver cancelada
-    if (!subRes.rows[0].ativo) {
-      return res.status(400).json({ error: "Esta subscrição já está cancelada." });
-    }
-
-    // 🔥 Cancelar recorrência
-    await db.query(
-      `UPDATE vip_subscriptions
-       SET recorrente = false,
-           ativo = false
-       WHERE id = $1`,
-      [subscriptionId]
-    );
-
-    return res.status(200).json({
-      success: true,
-      message: "Subscrição cancelada com sucesso."
-    });
-
-  } catch (err) {
-    console.error("Erro ao cancelar:", err);
-    return res.status(500).json({
-      error: "Erro interno ao cancelar subscrição."
-    });
-  }
-});
-
-// app.put(
-//   "/api/admin/verificacao/:id",
-//   authAdmin,
-//   async (req, res) => {
-//     try {
-//       const { id } = req.params;
-//       const { status, motivo } = req.body;
-
-//       if (!["aprovado", "recusado"].includes(status)) {
-//         return res.status(400).json({ erro: "Status inválido" });
-//       }
-
-//       // 🔎 Buscar modelo_id da verificação
-//       const verificacaoRes = await db.query(
-//         `SELECT modelo_id FROM modelos_verificacao WHERE id = $1`,
-//         [id]
-//       );
-
-//       if (verificacaoRes.rowCount === 0) {
-//         return res.status(404).json({ erro: "Verificação não encontrada" });
-//       }
-
-//       const modelo_id = verificacaoRes.rows[0].modelo_id;
-
-//       // 🔁 Converter modelo_id → user_id
-//       const modeloRes = await db.query(
-//         `SELECT user_id FROM modelos WHERE id = $1`,
-//         [modelo_id]
-//       );
-
-//       if (modeloRes.rowCount === 0) {
-//         return res.status(404).json({ erro: "Modelo não encontrado" });
-//       }
-
-//       const user_id = modeloRes.rows[0].user_id;
-
-//       // ✅ Atualizar verificação
-//       await db.query(
-//         `
-//         UPDATE modelos_verificacao
-//         SET
-//           status = $1,
-//           motivo = $2,
-//           atualizado_em = NOW()
-//         WHERE id = $3
-//         `,
-//         [status, motivo || null, id]
-//       );
-
-//       // 🚀 Se aprovado → promover para modelo
-//       if (status === "aprovado") {
-//         await db.query(
-//           `UPDATE users SET role = 'modelo' WHERE id = $1`,
-//           [user_id]
-//         );
-//       }
-
-//       res.json({ ok: true });
-
-//     } catch (err) {
-//       console.error("Erro atualizar verificação:", err);
-//       res.status(500).json({ erro: "Erro ao atualizar status" });
-//     }
-//   }
-// );
+// ===========================
+// CADASTRO
+// ===========================
 
 app.post("/api/register", authLimiter, async (req, res) => {
   try {
@@ -5948,9 +4804,6 @@ app.post("/api/register", authLimiter, async (req, res) => {
       src
     } = req.body;
 
-    // ===============================
-    // 🔒 VALIDAÇÕES
-    // ===============================
     if (!email || !senha || !role || !nome_completo || !data_nascimento) {
       return res.status(400).json({
         erro: "Todos os campos obrigatórios devem ser preenchidos"
@@ -5971,9 +4824,6 @@ app.post("/api/register", authLimiter, async (req, res) => {
       });
     }
 
-    // ===============================
-    // 🔥 VALIDAÇÃO REAL DE IDADE
-    // ===============================
     const nascimento = new Date(data_nascimento);
     const hoje = new Date();
 
@@ -5993,9 +4843,6 @@ app.post("/api/register", authLimiter, async (req, res) => {
       });
     }
 
-    // ===============================
-    // 🔐 CRIAR USER
-    // ===============================
     const hash = await bcrypt.hash(senha, 10);
 
     const userResult = await db.query(
@@ -6016,9 +4863,8 @@ app.post("/api/register", authLimiter, async (req, res) => {
 
     const nomePublico = nome_completo.split(" ")[0];
 
-    // ===============================
-    // 👠 MODELO
-    // ===============================
+
+    // MODELO
     if (role === "modelo") {
 
       const modeloResult = await db.query(
@@ -6048,9 +4894,7 @@ app.post("/api/register", authLimiter, async (req, res) => {
       await enviarEmailValidacao(email);
     }
 
-    // ===============================
-    // 👤 CLIENTE
-    // ===============================
+    // CLIENTE
     if (role === "cliente") {
 
       const clienteResult = await db.query(
@@ -6087,9 +4931,8 @@ app.post("/api/register", authLimiter, async (req, res) => {
       );
     }
 
-    // ===============================
-    // 🎟 GERAR TOKEN
-    // ===============================
+    // GERAR TOKEN
+
     const token = jwt.sign(
       {
         id: userId,
@@ -6120,8 +4963,10 @@ app.post("/api/register", authLimiter, async (req, res) => {
   }
 });
 
+// ===========================
+// LOGIN
+// ===========================
 
-//END POINT DE LOGIN
 app.post("/api/login", authLimiter, async (req, res) => {
   try {
     const { email, senha } = req.body;
@@ -6191,11 +5036,12 @@ app.post("/api/login", authLimiter, async (req, res) => {
   }
 });
 
-app.post(
-  "/uploadAvatar",
-  auth,
-  uploadB2.single("avatar"),
-  async (req, res) => {
+// ===========================
+// AVATAR
+// ===========================
+
+app.post( "/uploadAvatar", auth, uploadB2.single("avatar"), async (req, res) => {
+
     try {
       if (!req.file) {
         return res.status(400).json({ error: "Arquivo não enviado" });
@@ -6280,11 +5126,12 @@ app.post(
   }
 );
 
-app.post(
-  "/uploadCapa",
-  auth,
-  uploadB2.single("capa"), 
-  async (req, res) => {
+// ===========================
+// CAPA
+// ===========================
+
+app.post( "/uploadCapa", auth, uploadB2.single("capa"),  async (req, res) => {
+
     try {
       if (!req.file) {
         return res.status(400).json({ error: "Arquivo não enviado" });
@@ -6360,13 +5207,12 @@ app.post(
   }
 );
 
+// ===========================
+// DADOS MODELO
+// ===========================
 
-// Salvar / atualizar dados
-app.post(
-  "/api/modelo/dados",
-  auth,
-  authModelo,
-  async (req, res) => {
+app.post("/api/modelo/dados", auth, authModelo, async (req, res) => {
+
     try {
       let {
         nome_exibicao,
@@ -6453,15 +5299,16 @@ app.post(
   }
 );
 
+// ===========================
+// EXCLUIR MIDIA DE CONTEUDOS
+// ===========================
 
-// 🗑 DESATIVAR CONTEÚDO (MODELO) — SOFT DELETE
 app.delete("/api/conteudos/:id", authModelo, async (req, res) => {
   const userId = req.user.id;
   const conteudo_id = Number(req.params.id);
 
   try {
 
-    // 🔁 converter users.id → modelo_id
     const modeloRes = await db.query(
       "SELECT id FROM modelos WHERE user_id = $1",
       [userId]
@@ -6473,7 +5320,6 @@ app.delete("/api/conteudos/:id", authModelo, async (req, res) => {
 
     const modelo_id = modeloRes.rows[0].id;
 
-    // ✅ SOFT DELETE
     const result = await db.query(
       `
       UPDATE conteudos
@@ -6500,7 +5346,10 @@ app.delete("/api/conteudos/:id", authModelo, async (req, res) => {
   }
 });
 
-//DELETAR CONTA
+// ===========================
+// EXCLUIR CONTA
+// ===========================
+
 app.delete("/api/conta/excluir", auth, async (req, res) => {
   const userId = req.user.id;
   const role = req.user.role;
@@ -6531,9 +5380,7 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
 
     await client.query("BEGIN");
 
-    // ===============================
-    // 👠 SE FOR MODELO
-    // ===============================
+    // MODELO
     if (role === "modelo") {
 
       const modeloRes = await client.query(
@@ -6553,9 +5400,7 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
       }
     }
 
-    // ===============================
-    // 👤 SE FOR CLIENTE
-    // ===============================
+    // CLIENTE
     if (role === "cliente") {
 
       const clienteRes = await client.query(
@@ -6573,9 +5418,8 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
       }
     }
 
-    // ===============================
-    // 🔥 FINALMENTE APAGA O USER
-    // ===============================
+    // APAGA O USER
+
     await client.query("DELETE FROM users WHERE id = $1", [userId]);
 
     await client.query("COMMIT");
@@ -6584,14 +5428,20 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
 
   } catch (err) {
     await client.query("ROLLBACK");
+
     console.error("ERRO EXCLUIR CONTA:", err);
+
     res.status(500).json({ error: "Erro ao excluir conta" });
+
   } finally {
     client.release();
   }
 });
 
-// 🗑 EXCLUIR PACOTE DE CONTEÚDO (MODELO)
+// ===========================
+// EXCLUIR PCT MIDIA CHAT
+// ===========================
+
 app.delete("/api/chat/pacote/:message_id", authModelo, async (req, res) => {
 
   const message_id = Number(req.params.message_id);
@@ -6645,7 +5495,6 @@ app.delete("/api/chat/pacote/:message_id", authModelo, async (req, res) => {
       WHERE id = $1
     `, [message_id]);
 
-    // 🔴 emitir para a sala do chat
     io.to(`chat_${mensagem.cliente_id}_${mensagem.modelo_id}`)
       .emit("mensagemExcluida", { id: message_id });
 
@@ -6656,6 +5505,10 @@ app.delete("/api/chat/pacote/:message_id", authModelo, async (req, res) => {
     res.status(500).json({ error: "Erro ao excluir pacote" });
   }
 });
+
+// ===========================
+// VIP PIX
+// ===========================
 
 app.post("/api/pagamento/vip/pix", auth, async (req, res) => {
 
@@ -6961,6 +5814,10 @@ console.log("Conexão DB liberada");
 
 });
 
+// ===========================
+// MIDIA PIX
+// ===========================
+
 app.post("/api/pagamento/midia/pix", auth, async (req, res) => {
 
   const client = await db.connect();
@@ -7215,6 +6072,10 @@ app.post("/api/pagamento/midia/pix", auth, async (req, res) => {
 
 });
 
+// ===========================
+// VIP CARTAO
+// ===========================
+
 app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
   const client = await db.connect();
   let cliente_id = null;
@@ -7398,25 +6259,27 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
     /* =====================================================
        EVITAR VIP JÁ ATIVO
     ===================================================== */
-    const vipAtivoRes = await client.query(
-      `
-      SELECT 1
-      FROM vip_subscriptions
-      WHERE cliente_id = $1
-        AND modelo_id = $2
-        AND ativo = true
-        AND (expiration_at IS NULL OR expiration_at > NOW())
-      LIMIT 1
-      `,
-      [cliente_id, modeloIdNum]
-    );
 
-    if (vipAtivoRes.rowCount > 0) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({
-        error: "Você já possui VIP ativo com esta modelo."
-      });
-    }
+const tentativaVipRecenteRes = await client.query(
+  `
+  SELECT 1
+  FROM pagamentos_cartao
+  WHERE cliente_id = $1
+    AND modelo_id = $2
+    AND tipo = 'vip'
+    AND created_at > NOW() - INTERVAL '3 minutes'
+    AND LOWER(COALESCE(status, '')) IN ('pending', 'pendente', 'processing')
+  LIMIT 1
+  `,
+  [cliente_id, modeloIdNum]
+);
+
+if (tentativaVipRecenteRes.rowCount > 0) {
+  await client.query("ROLLBACK");
+  return res.status(400).json({
+    error: "Já existe uma tentativa recente de pagamento para este VIP."
+  });
+}
 
     /* =====================================================
        BUSCAR PLANO
@@ -7762,6 +6625,10 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
     client.release();
   }
 });
+
+// ===========================
+// MIDIA CARTAO
+// ===========================
 
 app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
   const requestId =
@@ -8226,146 +7093,10 @@ const clienteRes = await client.query(
   }
 });
 
+// ===========================
+// CANCELAR VIP??
+// ===========================
 
-// app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
-//   const client = await db.connect();
-
-//   try {
-//     const { conteudo_id } = req.body;
-//     const userId = req.user.id;
-
-//     if (!conteudo_id || !Number.isInteger(Number(conteudo_id))) {
-//       return res.status(400).json({ error: "conteudo_id inválido" });
-//     }
-
-//     const conteudoId = Number(conteudo_id);
-
-//     const ip =
-//       req.headers["x-forwarded-for"]?.split(",")[0] ||
-//       req.socket.remoteAddress;
-
-//      await client.query("BEGIN");
-
-//     /* 🔒 BUSCAR CLIENTE */
-//     const clienteRes = await client.query(
-//       "SELECT id, bloqueado FROM clientes WHERE user_id = $1",
-//       [userId]
-//     );
-
-//     if (!clienteRes.rowCount) {
-//       await client.query("ROLLBACK");
-//       return res.status(404).json({ error: "Cliente não encontrado" });
-//     }
-
-//     const { id: cliente_id, bloqueado } = clienteRes.rows[0];
-
-//     if (bloqueado) {
-//       await client.query("ROLLBACK");
-//       return res.status(403).json({ error: "Conta bloqueada." });
-//     }
-
-//     /* 🔎 BUSCAR CONTEÚDO */
-//     const messageRes = await client.query(`
-//       SELECT preco, modelo_id
-//       FROM messages
-//       WHERE id = $1
-//        AND cliente_id = $2
-//     `, [conteudoId, cliente_id]);
-
-//     if (!messageRes.rowCount) {
-//       await client.query("ROLLBACK");
-//       return res.status(404).json({ error: "Conteúdo não encontrado" });
-//     }
-
-//     const { preco, modelo_id } = messageRes.rows[0];
-
-//     if (!preco || Number(preco) <= 0) {
-//       await client.query("ROLLBACK");
-//       return res.status(400).json({
-//         error: "Conteúdo não está à venda."
-//       });
-//     }
-
-//     /* 🚫 EVITAR COMPRA DUPLICADA (PIX OU CARTÃO) */
-//     const jaComprado = await client.query(`
-//       SELECT 1
-//       FROM conteudo_pacotes
-//       WHERE message_id = $1
-//         AND cliente_id = $2
-//         AND status = 'pago'
-//       LIMIT 1
-//     `, [conteudoId, cliente_id]);
-
-//     if (jaComprado.rowCount > 0) {
-//       await client.query("ROLLBACK");
-//       return res.status(400).json({
-//         error: "Conteúdo já adquirido."
-//       });
-//     }
-
-//     /* 💰 CÁLCULO EM CENTAVOS (PADRÃO WEBHOOK) */
-//     const valorCentavos = Math.round(Number(preco) * 100);
-
-//     const taxaTransacaoCentavos  = Math.round(valorCentavos * 0.10);
-//     const taxaPlataformaCentavos = Math.round(valorCentavos * 0.05);
-
-//     const amount =
-//       valorCentavos +
-//       taxaTransacaoCentavos +
-//       taxaPlataformaCentavos;
-
-//     const valorBase      = valorCentavos / 100;
-//     const taxaTransacao  = taxaTransacaoCentavos / 100;
-//     const taxaPlataforma = taxaPlataformaCentavos / 100;
-//     const total          = amount / 100;
-
-//     /* 💳 CRIAR PAYMENT INTENT */
-//     const paymentIntent = await stripe.paymentIntents.create({
-//       amount,
-//       currency: "brl",
-//       payment_method_types: ["card"],
-//       metadata: {
-//         tipo: "conteudo_cartao",
-//         message_id: String(conteudoId),
-//         cliente_id: String(cliente_id),
-//         modelo_id: String(modelo_id),
-
-//         valor_midia: String(valorBase),
-//         taxa_transacao: String(taxaTransacao),
-//         taxa_plataforma: String(taxaPlataforma),
-//         valor_total: String(total),
-
-//         aceite_ip: ip
-//       }
-//     });
-
-//     /* 📝 REGISTRAR CONTROLE LOCAL */
-//     await client.query(`
-//       INSERT INTO pagamentos_cartao
-//       (cliente_id, conteudo_id, stripe_payment_intent_id, status)
-//       VALUES ($1,$2,$3,'iniciado')
-//     `, [cliente_id, conteudoId, paymentIntent.id]);
-
-//     await client.query("COMMIT");
-
-//     return res.json({
-//       clientSecret: paymentIntent.client_secret,
-//       total,
-//       valorBase,
-//       taxaTransacao,
-//       taxaPlataforma
-//     });
-
-//   } catch (err) {
-//     await client.query("ROLLBACK");
-//     console.error("🔥 ERRO CARTÃO MIDIA:", err);
-//     return res.status(500).json({ error: "Erro ao gerar pagamento" });
-//   } finally {
-//     client.release();
-//   }
-// });
-
-// POST /api/vip/cancelar
 app.post("/api/vip/cancelar", auth, async (req, res) => {
   try {
     const { modelo_id } = req.body;
@@ -8375,7 +7106,6 @@ app.post("/api/vip/cancelar", auth, async (req, res) => {
       return res.status(400).json({ error: "modelo_id inválido" });
     }
 
-    // 🔁 Converter users.id → cliente_id
     const clienteRes = await db.query(
       "SELECT id FROM clientes WHERE user_id = $1",
       [userId]
@@ -8402,7 +7132,6 @@ app.post("/api/vip/cancelar", auth, async (req, res) => {
 
     const subscriptionId = vip.rows[0].stripe_subscription_id;
 
-    // 🔒 cancelar no final do período
     await stripe.subscriptions.update(subscriptionId, {
       cancel_at_period_end: true
     });
@@ -8422,7 +7151,10 @@ app.post("/api/vip/cancelar", auth, async (req, res) => {
   }
 });
 
-//ESQUECI MINHA SENHA
+// ===========================
+// ESQUECI A SENHA
+// ===========================
+
 app.post("/api/password/forgot", async (req, res) => {
   const client = await db.connect();
 
@@ -8437,7 +7169,6 @@ app.post("/api/password/forgot", async (req, res) => {
 
     await client.query("BEGIN");
 
-    // 🔒 nunca revele se o email existe
     const userRes = await client.query(
       "SELECT id FROM users WHERE email = $1",
       [email]
@@ -8450,7 +7181,6 @@ app.post("/api/password/forgot", async (req, res) => {
 
     const userId = userRes.rows[0].id;
 
-    // 🔥 remover códigos antigos do mesmo usuário
     await client.query(
       "DELETE FROM password_resets WHERE user_id = $1",
       [userId]
@@ -8471,7 +7201,6 @@ app.post("/api/password/forgot", async (req, res) => {
 
     await client.query("COMMIT");
 
-    // 📧 Enviar email (fora da transaction)
     await sgMail.send({
       to: email,
       from: process.env.EMAIL_FROM,
@@ -8486,15 +7215,22 @@ app.post("/api/password/forgot", async (req, res) => {
     return res.json({ ok: true });
 
   } catch (error) {
+
     await client.query("ROLLBACK");
+
     console.error("❌ ERRO PASSWORD FORGOT:", error.response?.body || error);
+
     return res.status(500).json({ error: "Erro ao enviar código" });
+
   } finally {
     client.release();
   }
 });
 
-//confirmar codigo e nova senha
+// ===========================
+// REGISTAR NOVA SENHA
+// ===========================
+
 app.post("/api/password/reset", async (req, res) => {
   const client = await db.connect();
 
@@ -8566,10 +7302,10 @@ app.post("/api/password/reset", async (req, res) => {
   }
 });
 
+// =============================
+// FALE CONOSCO / CONTATO
+// =============================
 
-// ===============================
-// 📩 FALE CONOSCO / CONTATO
-// ===============================
 app.post("/api/contato", async (req, res) => {
   try {
     let { nome, email, assunto, mensagem } = req.body;
@@ -8578,7 +7314,6 @@ app.post("/api/contato", async (req, res) => {
       return res.status(400).json({ error: "Dados incompletos" });
     }
 
-    // 🔒 normalizações
     nome = nome.trim().slice(0, 100);
     email = email.trim().toLowerCase().slice(0, 150);
     assunto = assunto.trim().slice(0, 150);
@@ -8590,7 +7325,6 @@ app.post("/api/contato", async (req, res) => {
       return res.status(400).json({ error: "Email inválido" });
     }
 
-    // 🔒 escape básico contra HTML injection
     const escape = (str) =>
       str
         .replace(/&/g, "&amp;")
@@ -8617,17 +7351,20 @@ app.post("/api/contato", async (req, res) => {
     return res.json({ success: true });
 
   } catch (error) {
+
     console.error("❌ Erro contato:", error.response?.body || error);
+
     return res.status(500).json({ error: "Erro ao enviar mensagem" });
   }
 });
-///
-app.post(
-  "/api/chat/modelo/marcar-lido/:cliente_id",
-  authModelo,
-  async (req, res) => {
 
-    const userId = req.user.id; // users.id
+// ===========================
+// MARCAR LIDO MODELO
+// ===========================
+
+app.post("/api/chat/modelo/marcar-lido/:cliente_id", authModelo, async (req, res) => {
+
+    const userId = req.user.id;
     const cliente_id = Number(req.params.cliente_id);
 
     if (!Number.isInteger(cliente_id) || cliente_id <= 0) {
@@ -8635,7 +7372,6 @@ app.post(
     }
 
     try {
-      // 🔁 users.id → modelo_id
       const modeloRes = await db.query(
         "SELECT id FROM modelos WHERE user_id = $1",
         [userId]
@@ -8671,18 +7407,13 @@ app.post(
   }
 );
 
+// ===========================
+// VERIFICACAO PERFIL
+// ===========================
 
-app.post(
-  "/api/verificacao",
-  auth,
-  uploadVerificacao.fields([
-    { name: "doc_frente", maxCount: 1 },
-    { name: "doc_verso", maxCount: 1 },
-    { name: "selfie", maxCount: 1 }
-  ]),
-  async (req, res) => {
+app.post("/api/verificacao", auth, uploadVerificacao.fields([ { name: "doc_frente", maxCount: 1 }, { name: "doc_verso", maxCount: 1 }, { name: "selfie", maxCount: 1 }]), async (req, res) => {
+
     try {
-
       const userId = req.user.id;
       const role = req.user.role;
       const { documento_tipo } = req.body;
@@ -8703,9 +7434,7 @@ app.post(
       const docVersoUrl = req.files.doc_verso?.[0]?.key || null;
       const selfieUrl = req.files.selfie[0].key;
 
-      // ===============================
-      // 👠 MODELO
-      // ===============================
+      // MODELO
       if (role === "modelo") {
 
         const modeloRes = await db.query(
@@ -8743,9 +7472,7 @@ app.post(
         return res.json({ ok: true });
       }
 
-      // ===============================
       // 👤 CLIENTE
-      // ===============================
       if (role === "cliente") {
 
         const clienteRes = await db.query(
@@ -8783,9 +7510,8 @@ app.post(
         return res.json({ ok: true });
       }
 
-      // ===============================
-      // 🚫 ROLE INVÁLIDA
-      // ===============================
+
+      // ROLE INVÁLIDA
       return res.status(403).json({ erro: "Role inválida" });
 
     } catch (err) {
@@ -8795,11 +7521,11 @@ app.post(
   }
 );
 
-app.post(
-  "/api/conteudos",
-  authModelo,
-  uploadB2.array("file", 10),
-  async (req, res) => {
+// ===========================
+// CARREGAR MIDIAS CONTEUDOS
+// ===========================
+
+app.post("/api/conteudos", authModelo, uploadB2.array("file", 10), async (req, res) => {
 
     const userId = req.user.id;
     const { preco, descricao } = req.body;
@@ -8940,6 +7666,10 @@ app.post(
   }
 );
 
+// ===========================
+// MARCAR CONTEUDO VISTO CHAT
+// ===========================
+
 app.post("/api/conteudo/visto", auth, async (req, res) => {
 
   const { message_id } = req.body;
@@ -8967,7 +7697,12 @@ app.post("/api/conteudo/visto", auth, async (req, res) => {
 
 });
 
+// ===========================
+// ATIVAR PUSH
+// ===========================
+
 app.post("/api/notificacoes/inscrever", auth, async (req, res) => {
+
   try {
     const userId = req.user.id;
     const subscription = req.body;
@@ -8995,7 +7730,12 @@ app.post("/api/notificacoes/inscrever", auth, async (req, res) => {
   }
 });
 
+// ===========================
+// DESATIVAR PUSH
+// ===========================
+
 app.post("/api/notificacoes/desinscrever", auth, async (req, res) => {
+
   try {
     const userId = req.user.id;
 
@@ -9014,51 +7754,10 @@ app.post("/api/notificacoes/desinscrever", auth, async (req, res) => {
   }
 });
 
+// ===========================
+// ENCERRAR OFERTA MANUAL
+// ===========================
 
-// ===============================
-// 🔥 MIDDLEWARE GLOBAL DE ERRO
-// ===============================
-app.use((err, req, res, next) => {
-
-  const isProduction = process.env.NODE_ENV === "production";
-
-  console.error("🔥 ERRO GLOBAL:", {
-    message: err.message,
-    path: req.originalUrl,
-    method: req.method,
-    stack: isProduction ? undefined : err.stack
-  });
-
-  // Se erro já tiver status definido
-  if (err.statusCode) {
-    return res.status(err.statusCode).json({
-      error: err.message
-    });
-  }
-
-  return res.status(500).json({
-    error: "Erro interno do servidor"
-  });
-});
-
-
-// ===============================
-// ❌ UNHANDLED PROMISE REJECTION
-// ===============================
-process.on("unhandledRejection", (reason) => {
-  console.error("❌ Unhandled Rejection:", reason);
-});
-
-
-// ===============================
-// ❌ UNCAUGHT EXCEPTION
-// ===============================
-process.on("uncaughtException", (err) => {
-  console.error("❌ Uncaught Exception:", err);
-  process.exit(1);
-});
-
-//ENCERRAR OFERTA MANUALMENTE
 app.patch("/api/ofertas/:id/encerrar", authModelo, async (req, res) => {
   try {
     const ofertaId = Number(req.params.id);
@@ -9068,7 +7767,6 @@ app.patch("/api/ofertas/:id/encerrar", authModelo, async (req, res) => {
       return res.status(400).json({ error: "ID inválido" });
     }
 
-    // 🔁 users.id → modelo_id
     const modeloRes = await db.query(
       "SELECT id FROM modelos WHERE user_id = $1",
       [userId]
@@ -9106,12 +7804,6 @@ app.patch("/api/ofertas/:id/encerrar", authModelo, async (req, res) => {
   }
 });
 
-// const pool = new Pool({
-//   connectionString: process.env.DATABASE_URL,
-//   ssl: {
-//     rejectUnauthorized: false,
-//   },
-// });
 
 // ===============================
 // START SERVER

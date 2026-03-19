@@ -222,8 +222,8 @@ function renderSubscricoes(subscricoes) {
         </div>
 
         <div>
-          <strong>Data da assinatura/renovação:</strong>
-          ${new Date(v.created_at).toLocaleDateString()}
+         <strong>Data da assinatura/renovação:</strong>
+         ${new Date(v.updated_at || v.created_at).toLocaleDateString()}
         </div>
 
         <div>

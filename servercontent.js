@@ -1,4 +1,6 @@
-// servercontent.js
+// ===========================
+// VARIAVEIS
+// ===========================
 const express = require("express");
 const path = require("path");
 const jwt = require("jsonwebtoken");
@@ -14,14 +16,19 @@ const { enviarEmailRejeicao } = require("./email");
 const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });
 
-const router = express.Router();   // ⬅️ PRIMEIRO SEMPRE
+const router = express.Router();   //PRIMEIRO SEMPRE
 
 const crypto = require("crypto");
 const bcrypt = require("bcrypt");
 
 const allmessageJobs = new Map();
 
-const TZ_FINANCEIRO = "America/Sao_Paulo";
+const cron = require("node-cron");
+const requireRole = require("./middleware/requireRole");
+
+// ===========================
+// BACKBLAZE
+// ===========================
 
 const s3Privado = new AWS.S3({
   endpoint: new AWS.Endpoint(process.env.B2_ENDPOINT),
@@ -33,14 +40,17 @@ const s3Privado = new AWS.S3({
   s3ForcePathStyle: true
 });
 
+// ===========================
+// GLOBAIS
+// ===========================
 
-// 🔓 assets do admin (HTML/CSS/JS)
 router.use("/assets",
   express.static(path.join(__dirname, "admin-pages"))
 );
-const cron = require("node-cron");
 
-const requireRole = require("./middleware/requireRole");
+// ===========================
+// CHARGE BACK?
+// ===========================
 
 cron.schedule("0 3 * * *", async () => {
   console.log("🔍 Verificando clientes com chargeback...");
@@ -91,8 +101,13 @@ cron.schedule("0 3 * * *", async () => {
   }
 });
 
+// ===========================
+// FUNCOES
+// ===========================
 
-//RELATORIO FINANCEIROS
+// =========================
+// CALCULAR VALORES PARA BD
+// =========================
 
 async function calcularValores({ modelo_id, valor_bruto, taxa_gateway }) {
 
@@ -127,32 +142,9 @@ async function calcularValores({ modelo_id, valor_bruto, taxa_gateway }) {
   };
 }
 
-
-
-function podeAlterarDadosBancarios() {
-  const hoje = new Date();
-  const dia = hoje.getDate();
-
-  // bloqueia de 25 até 5
-  if (dia >= 25 || dia <= 5) {
-    return false;
-  }
-
-  return true;
-}
-
-//% MODELOS
-async function getPercentualModelo(modelo_id) {
-  const result = await db.query(`
-    SELECT
-      COALESCE(a.percentual_modelo, 0.70) AS percentual
-    FROM modelos m
-    LEFT JOIN agencias a ON a.id = m.agencia_id
-    WHERE m.id = $1
-  `, [modelo_id]);
-
-  return Number(result.rows[0]?.percentual || 0.70);
-}
+// ===========================
+// AUTH AGENCIAS
+// ===========================
 
 function authAgencia(req, res, next) {
   const token = req.headers.authorization?.split(" ")[1];
@@ -174,6 +166,10 @@ function authAgencia(req, res, next) {
   }
 }
 
+// ===========================
+// PPV
+// ===========================
+
 async function processarAllmessageJob(jobId, {
   modelo_id,
   texto,
@@ -188,9 +184,6 @@ async function processarAllmessageJob(jobId, {
     const temConteudo = Array.isArray(conteudos) && conteudos.length > 0;
     const precoFinal = Number(preco) || 0;
 
-    // ===============================
-    // 🔍 BUSCAR ASSINANTES ATIVOS
-    // ===============================
     const clientesRes = await db.query(
       `
       SELECT cliente_id
@@ -211,7 +204,6 @@ async function processarAllmessageJob(jobId, {
 
     let clientes = clientesRes.rows;
 
-    // mantém funcionalidade do modo teste
     if (modo_teste) {
       clientes = clientes.slice(0, 1);
     }
@@ -228,9 +220,8 @@ async function processarAllmessageJob(jobId, {
       const cliente_id = row.cliente_id;
 
       try {
-        // ===============================
+
         // 1) MENSAGEM DE TEXTO
-        // ===============================
         await db.query(
           `
           INSERT INTO messages
@@ -241,11 +232,10 @@ async function processarAllmessageJob(jobId, {
           [modelo_id, cliente_id, texto]
         );
 
-        // ===============================
+
         // 2) MENSAGEM DE CONTEÚDO + PACOTE
-        // ===============================
-if (temConteudo) {
-  const msgRes = await db.query(
+        if (temConteudo) {
+       const msgRes = await db.query(
     `
     INSERT INTO messages
       (modelo_id, cliente_id, text, sender, preco, visto, tipo)
@@ -287,38 +277,52 @@ if (temConteudo) {
   }
 }
 
-        job.enviados++;
-      } catch (err) {
-        console.error(`❌ Falha ao enviar para cliente ${cliente_id}:`, err);
-        job.falhas++;
-      }
+job.enviados++;
 
-      job.processados++;
-      job.percentual = job.total > 0
-        ? Math.round((job.processados / job.total) * 100)
-        : 0;
-    }
+} catch (err) {
+console.error(`❌ Falha ao enviar para cliente ${cliente_id}:`, err);
+job.falhas++;
+}
 
-    job.status = "concluido";
-    job.percentual = 100;
-    job.finalizado_em = new Date().toISOString();
+job.processados++;
+job.percentual = job.total > 0
+? Math.round((job.processados / job.total) * 100)
+: 0;
+}
 
-  } catch (err) {
+job.status = "concluido";
+job.percentual = 100;
+job.finalizado_em = new Date().toISOString();
+
+} catch (err) {
+
     console.error("❌ Erro geral no processarAllmessageJob:", err);
+
     job.status = "erro";
+
     job.error = err.message || "Erro interno no envio em massa";
+
     job.finalizado_em = new Date().toISOString();
   }
 }
 
-//ROTASSSS POST ///////////////////
-router.post("/modelo/dados-bancarios", authModelo, async (req, res) => {
-//  if (!(await podeAlterarDadosBancarios(req.modelo_id))) {
-//   return res.status(403).json({
-//     error: "Alterações bloqueadas no período de pagamento"
-//   });
-// }
 
+// ======================================
+// ROTAS POST
+// ======================================
+
+// ===============================
+// DADOS BANCARIOS INCLUIR ALTERAR
+// ===============================
+
+router.post("/modelo/dados-bancarios", authModelo, async (req, res) => {
+
+ if (!(await podeAlterarDadosBancarios(req.modelo_id))) {
+
+  return res.status(403).json({
+    error: "Alterações bloqueadas no período de pagamento"
+  });
+}
   const {
     tipo,
     pix_tipo,
@@ -382,11 +386,12 @@ try{
 });
 
 router.post("/modelo/dados-bancarios/alterar", authModelo, async (req, res) => {
-//   if (!(await podeAlterarDadosBancarios(req.modelo_id))) {
-//   return res.status(403).json({
-//     error: "Alterações bloqueadas no período de pagamento"
-//   });
-// }
+
+  if (!(await podeAlterarDadosBancarios(req.modelo_id))) {
+  return res.status(403).json({
+    error: "Alterações bloqueadas no período de pagamento"
+  });
+}
 
   const {
     justificativa,
@@ -444,12 +449,13 @@ router.post("/modelo/dados-bancarios/alterar", authModelo, async (req, res) => {
   }
 });
 
-router.post(
-  "/admin/pagamentos/:id/pagar",
-  auth,
-  async (req, res) => {
-    const { id } = req.params;
+// ===========================
+// PAGAMENTOS
+// ===========================
 
+router.post("/admin/pagamentos/:id/pagar", auth, async (req, res) => { 
+  
+  const { id } = req.params;
     await db.query(
       `
       UPDATE modelo_pagamentos
@@ -465,25 +471,21 @@ router.post(
   }
 );
 
-router.post(
-  "/admin/fechar-pagamentos-modelo/:modeloId",
-  auth,
-  async (req, res) => {
-    const { modeloId } = req.params;
+router.post("/admin/fechar-pagamentos-modelo/:modeloId", auth, async (req, res) => {
+  const { modeloId } = req.params;
 
-    await db.query(`/* SQL acima */`, [modeloId]);
+  await db.query(`/* SQL acima */`, [modeloId]);
 
     res.json({ ok: true });
   }
 );
 
-// ===============================
-// 📣 ALLMESSAGE - ENVIO EM MASSA (ASSÍNCRONO)
-// ===============================
-router.post(
-  "/allmessage",
-  auth,
-  requireRole("admin", "modelo"),
+// ===========================
+// PPV
+// ===========================
+
+router.post("/allmessage", auth, requireRole("admin", "modelo"),
+
   async (req, res) => {
     try {
       const { texto, preco, conteudos, modo_teste } = req.body;
@@ -505,9 +507,6 @@ router.post(
         modelo_id = req.body.modelo_id;
       }
 
-      // ===============================
-      // 🔒 VALIDAÇÕES BÁSICAS
-      // ===============================
       if (!modelo_id || !texto) {
         return res.status(400).json({ error: "Dados inválidos" });
       }
@@ -528,19 +527,18 @@ router.post(
         error: null
       });
 
-      // responde imediatamente
       res.json({
         ok: true,
         jobId
       });
 
-      // continua o processamento em background
       processarAllmessageJob(jobId, {
         modelo_id,
         texto,
         preco,
         conteudos,
         modo_teste
+
       }).catch((err) => {
         console.error("❌ ERRO JOB ALLMESSAGE:", err);
 
@@ -558,7 +556,12 @@ router.post(
   }
 );
 
+// ===========================
+// LOGINS
+// ===========================
+
 router.post("/agencia/login", async (req, res) => {
+
   try {
     const { email, senha } = req.body;
 
@@ -595,6 +598,7 @@ router.post("/agencia/login", async (req, res) => {
 
 
 router.post("/admin/login", async (req, res) => {
+
   const { email, senha } = req.body;
 
   try {
@@ -629,6 +633,9 @@ router.post("/admin/login", async (req, res) => {
   }
 });
 
+// ===========================
+// APROVAR BANCO
+// ===========================
 router.post("/admin/modelo/:id/validar-banco", auth, authAdmin, async (req,res)=>{
 
 const modelo_id = Number(req.params.id);
@@ -651,6 +658,10 @@ status === "aprovado"
 res.json({ ok:true });
 
 });
+
+// ===========================
+// REGISTRAR PGMT
+// ===========================
 
 router.post("/admin/modelo/:id/registrar-pagamento", auth, authAdmin, upload.single("recibo"), async (req,res)=>{
 
@@ -703,833 +714,17 @@ res.status(500).json({error:"Erro registrar pagamento"});
 
 });
 
+// ===========================
+// GETS - ADMIN
+// ===========================
 
-// PÁGINA DE RELATÓRIOS
+router.get("/relatorios", auth, requireRole("admin"), (req, res) => { 
 
-router.get("/relatorios",
-  auth,
-  requireRole("admin"),
-  (req, res) => {
-    res.sendFile(
-      path.join(__dirname, "admin-pages", "chart.html")
-    );
-  }
-);
-
-router.get("/transacoes_cliente", authCliente, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const role = req.user.role;
-
-    let vipQuery;
-    let conteudoQuery;
-
-    if (role === "cliente") {
-
-      vipQuery = await db.query(`
-        SELECT
-          id,
-          'assinatura' AS tipo,
-          valor_total AS valor,
-          CASE 
-            WHEN ativo = true THEN 'pago'
-            ELSE 'inativo'
-          END AS status,
-          created_at
-        FROM vip_subscriptions
-        WHERE cliente_id = $1
-      `, [userId]);
-
-      conteudoQuery = await db.query(`
-        SELECT
-          id,
-          'midia' AS tipo,
-          valor_total AS valor,
-          status,
-          criado_em AS created_at
-        FROM conteudo_pacotes
-        WHERE cliente_id = $1
-      `, [userId]);
-
-    } else {
-      return res.status(403).json({ error: "Apenas cliente pode acessar" });
-    }
-
-    const transacoes = [
-      ...vipQuery.rows,
-      ...conteudoQuery.rows
-    ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-    res.json(transacoes);
-
-  } catch (err) {
-    console.error("Erro buscar transações cliente:", err);
-    res.status(500).json({ error: "Erro interno" });
-  }
-});
-
-// 🔐 ENDPOINT DE ACESSO AO CONTEÚDO
-router.get("/access", authCliente, async (req, res) => {
-  const message_id = Number(req.query.message_id);
-
-  // 🔒 validação query/param
-  if (!Number.isInteger(message_id) || message_id <= 0) {
-    return res.status(400).json({ error: "message_id inválido" });
-  }
-
-  const msgRes = await db.query(
-    `
-    SELECT id
-    FROM messages
-    WHERE id = $1
-      AND cliente_id = $2
-      AND visto = true
-    `,
-    [message_id, req.user.id]
-  );
-
-  if (msgRes.rowCount === 0) {
-    return res.status(403).json({ error: "Conteúdo não liberado" });
-  }
-
-  const midiasRes = await db.query(
-    `
-    SELECT c.url, c.tipo
-    FROM messages_conteudos mc
-    JOIN conteudos c ON c.id = mc.conteudo_id
-    WHERE mc.message_id = $1
-    `,
-    [message_id]
-  );
-
-  res.json({
-    midias: midiasRes.rows.map(m => ({
-      tipo: m.tipo,
-      url: m.url
-    }))
-  });
-});
-
-router.get("/transacoes", authModelo, async (req, res) => {
-  try {
-    const modeloRes = await db.query(
-      "SELECT id FROM modelos WHERE user_id = $1",
-      [req.user.id]
-    );
-
-    if (!modeloRes.rows.length) {
-      return res.status(404).json({ error: "Modelo não encontrada" });
-    }
-
-    const modelo_id = modeloRes.rows[0].id;
-
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = 10;
-    const offset = (page - 1) * limit;
-
-    const { mes } = req.query;
-
-    let values = [modelo_id];
-    let monthFilter = "";
-
-    if (mes && /^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
-      const [ano, mesNum] = mes.split("-").map(Number);
-
-      values.push(ano, mesNum);
-
-      monthFilter = `
-        AND created_at >= make_timestamptz($2, $3, 1, 0, 0, 0, 'America/Sao_Paulo')
-        AND created_at < (
-          make_timestamptz($2, $3, 1, 0, 0, 0, 'America/Sao_Paulo')
-          + interval '1 month'
-        )
-      `;
-    }
-
-    const dataValues = [...values, limit, offset];
-
-    const sql = `
-      SELECT
-        id AS codigo,
-        tipo,
-        created_at,
-        created_at AT TIME ZONE 'America/Sao_Paulo' AS created_at_sp,
-        TO_CHAR(
-          created_at AT TIME ZONE 'America/Sao_Paulo',
-          'DD/MM/YYYY HH24:MI'
-        ) AS created_at_sp_formatado,
-        TO_CHAR(
-          created_at AT TIME ZONE 'America/Sao_Paulo',
-          'DD/MM/YYYY'
-        ) AS data_sp,
-        valor_modelo AS valor,
-        status,
-        NULL AS message_id
-      FROM transacoes_agency
-      WHERE modelo_id = $1
-        AND status = 'pago'
-        ${monthFilter}
-      ORDER BY created_at DESC
-      LIMIT $${dataValues.length - 1}
-      OFFSET $${dataValues.length}
-    `;
-
-    const countSql = `
-      SELECT COUNT(*) AS count
-      FROM transacoes_agency
-      WHERE modelo_id = $1
-        AND status = 'pago'
-        ${monthFilter}
-    `;
-
-    const [dados, total] = await Promise.all([
-      db.query(sql, dataValues),
-      db.query(countSql, values)
-    ]);
-
-    const totalRegistros = parseInt(total.rows[0].count, 10);
-    const totalPaginas = Math.ceil(totalRegistros / limit);
-
-    res.json({
-      registros: dados.rows,
-      paginaAtual: page,
-      totalPaginas,
-      totalRegistros
-    });
-
-  } catch (err) {
-    console.error("Erro /transacoes:", err);
-    res.status(500).json({
-      registros: [],
-      paginaAtual: 1,
-      totalPaginas: 1,
-      totalRegistros: 0
-    });
-  }
-});
-
-
-router.get("/modelo/pagamentos", authModelo, async (req, res) => {
-  try {
-const modeloRes = await db.query(
-  "SELECT id FROM modelos WHERE user_id = $1",
-  [req.user.id]
-);
-
-const modelo_id = modeloRes.rows[0].id;
-
-    const result = await db.query(
-      `
-      SELECT
-        mes,
-        total_midias,
-        total_assinaturas,
-        total_geral,
-        status,
-        pago_em
-      FROM modelo_pagamentos
-      WHERE modelo_id = $1
-      ORDER BY mes DESC
-      `,
-      [modelo_id]
-    );
-
-    res.json(result.rows);
-
-  } catch (err) {
-    console.error("ERRO PAGAMENTOS:", err);
-    res.status(500).json({ error: "Erro interno" });
-  }
-});
-
-
-
-//ROTA DO LINK DE ACESSO A PLATAFORMA(CLIENTES INSTA TIKTOK)
-router.get("/transacoes/origem",
-  auth,
-  requireRole("admin"),
-  async (req, res) => {
-    const result = await db.query(`
-      SELECT origem_cliente,
-             COUNT(*) AS clientes,
-             SUM(valor_bruto) AS total
-      FROM transacoes_agency
-      WHERE status = 'pago'
-      GROUP BY origem_cliente
-    `);
-
-    res.json(result.rows);
-  }
-);
-
-
-router.get(
-  "/transacoes/diario",
-  auth,
-  requireRole("admin", "modelo", "agente"),
-  async (req, res) => {
-    try {
-      const { mes } = req.query;
-
-      if (!mes || !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
-        return res.status(400).json({
-          error: "Formato de mês inválido (YYYY-MM)"
-        });
-      }
-
-      const [ano, mesNum] = mes.split("-").map(Number);
-      const { role } = req.user;
-
-      let values = [ano, mesNum];
-      let where = `
-        status = 'pago'
-        AND created_at >= make_timestamptz($1, $2, 1, 0, 0, 0, 'America/Sao_Paulo')
-        AND created_at < (
-          make_timestamptz($1, $2, 1, 0, 0, 0, 'America/Sao_Paulo')
-          + interval '1 month'
-        )
-      `;
-
-      if (role === "modelo") {
-        const modeloRes = await db.query(
-          "SELECT id FROM modelos WHERE user_id = $1",
-          [req.user.id]
-        );
-
-        if (!modeloRes.rows.length) {
-          return res.status(404).json({ error: "Modelo não encontrada" });
-        }
-
-        const modelo_id = modeloRes.rows[0].id;
-        values.push(modelo_id);
-        where += ` AND modelo_id = $${values.length}`;
-      }
-
-      const result = await db.query(
-        `
-        SELECT
-          DATE(created_at AT TIME ZONE 'America/Sao_Paulo') AS dia,
-
-          COALESCE(SUM(
-            CASE WHEN tipo = 'midia' THEN valor_modelo END
-          ), 0) AS ganhos_midias,
-
-          COALESCE(SUM(
-            CASE WHEN tipo = 'assinatura' THEN valor_modelo END
-          ), 0) AS ganhos_assinaturas
-
-        FROM transacoes_agency
-        WHERE ${where}
-        GROUP BY dia
-        ORDER BY dia
-        `,
-        values
-      );
-
-      res.json(result.rows);
-    } catch (err) {
-      console.error("Erro /transacoes/diario:", err);
-      res.status(500).json({ error: "Erro interno" });
-    }
-  }
-);
-
-
-
-
-router.get(
-  "/transacoes/resumo-mensal",
-  auth,
-  requireRole("admin", "modelo", "agente"),
-  async (req, res) => {
-    try {
-      const { mes } = req.query;
-
-      if (!mes || !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
-        return res.status(400).json({
-          error: "Formato de mês inválido (YYYY-MM)"
-        });
-      }
-
-      const [ano, mesNum] = mes.split("-").map(Number);
-      const { role } = req.user;
-
-      let values = [ano, mesNum];
-      let where = `
-        status = 'pago'
-        AND created_at >= make_timestamptz($1, $2, 1, 0, 0, 0, 'America/Sao_Paulo')
-        AND created_at < (
-          make_timestamptz($1, $2, 1, 0, 0, 0, 'America/Sao_Paulo')
-          + interval '1 month'
-        )
-      `;
-
-      if (role === "modelo") {
-        const modeloRes = await db.query(
-          "SELECT id FROM modelos WHERE user_id = $1",
-          [req.user.id]
-        );
-
-        if (!modeloRes.rows.length) {
-          return res.status(404).json({ error: "Modelo não encontrada" });
-        }
-
-        const modelo_id = modeloRes.rows[0].id;
-        values.push(modelo_id);
-        where += ` AND modelo_id = $${values.length}`;
-      }
-
-      const result = await db.query(
-        `
-        SELECT
-          COALESCE(SUM(valor_bruto), 0) AS total_bruto,
-          COALESCE(SUM(taxa_gateway), 0) AS total_taxas,
-          COALESCE(SUM(agency_fee), 0) AS total_agency,
-          COALESCE(SUM(velvet_fee), 0) AS total_velvet,
-          COALESCE(SUM(valor_modelo), 0) AS total_modelo,
-
-          COALESCE(SUM(CASE WHEN tipo = 'assinatura' THEN valor_bruto END), 0) AS total_assinaturas,
-          COALESCE(SUM(CASE WHEN tipo = 'midia' THEN valor_bruto END), 0) AS total_midias
-
-        FROM transacoes_agency
-        WHERE ${where}
-        `,
-        values
-      );
-
-      res.json(result.rows[0]);
-    } catch (err) {
-      console.error("Erro /transacoes/resumo-mensal:", err);
-      res.status(500).json({ error: "Erro interno" });
-    }
-  }
-);
-
-
-router.get(
-  "/transacoes/resumo-anual",
-  auth,
-  requireRole("admin", "modelo"),
-  async (req, res) => {
-    try {
-      const { ano } = req.query;
-
-      if (!ano || !/^\d{4}$/.test(ano)) {
-        return res.status(400).json({ error: "Formato de ano inválido (YYYY)" });
-      }
-
-      const anoNum = Number(ano);
-      const { role } = req.user;
-
-      let values = [anoNum];
-      let where = `
-        status = 'pago'
-        AND created_at >= make_timestamptz($1, 1, 1, 0, 0, 0, 'America/Sao_Paulo')
-        AND created_at < make_timestamptz($1 + 1, 1, 1, 0, 0, 0, 'America/Sao_Paulo')
-      `;
-
-      if (role === "modelo") {
-        const modeloRes = await db.query(
-          "SELECT id FROM modelos WHERE user_id = $1",
-          [req.user.id]
-        );
-
-        if (!modeloRes.rows.length) {
-          return res.status(404).json({ error: "Modelo não encontrada" });
-        }
-
-        const modelo_id = modeloRes.rows[0].id;
-        values.push(modelo_id);
-        where += ` AND modelo_id = $${values.length}`;
-      }
-
-      const result = await db.query(
-        `
-        SELECT
-          DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo') AS mes,
-
-          COALESCE(SUM(valor_bruto), 0) AS total_bruto,
-          COALESCE(SUM(taxa_gateway), 0) AS total_taxas,
-          COALESCE(SUM(agency_fee), 0) AS total_agency,
-          COALESCE(SUM(velvet_fee), 0) AS total_velvet,
-          COALESCE(SUM(valor_modelo), 0) AS total_modelo,
-
-          COALESCE(SUM(CASE WHEN tipo = 'assinatura' THEN valor_bruto END), 0) AS total_assinaturas,
-          COALESCE(SUM(CASE WHEN tipo = 'midia' THEN valor_bruto END), 0) AS total_midias
-
-        FROM transacoes_agency
-        WHERE ${where}
-        GROUP BY mes
-        ORDER BY mes
-        `,
-        values
-      );
-
-      res.json(result.rows);
-    } catch (err) {
-      console.error("Erro /transacoes/resumo-anual:", err);
-      res.status(500).json({ error: "Erro interno" });
-    }
-  }
-);
-
-router.get("/modelo/relatorio", (req, res) => {
   res.sendFile(
-    path.join(process.cwd(), "admin-pages", "relatorio.html")
-  );
-});
-
-
-router.get("/modelo/transacoes",
-  requireRole("modelo", "admin", "agente"),
-  (req, res) => {
-    res.sendFile(
-      path.join(process.cwd(), "transacoes", "transacoes.html")
+    path.join(__dirname, "admin-pages", "chart.html")
     );
   }
 );
-
-router.get("/content/transacoes", (req, res) => {
-  res.sendFile(
-    path.join(process.cwd(), "content", "transacoes.html")
-  );
-});
-
-router.get("/cliente/transacoes", authCliente, async (req, res) => {
-  try {
-    const clienteRes = await db.query(
-  "SELECT id FROM clientes WHERE user_id = $1",
-  [req.user.id]
-);
-
-if (clienteRes.rowCount === 0) {
-  return res.status(404).json({ error: "Cliente não encontrado" });
-}
-
-const clienteId = clienteRes.rows[0].id;
-
-    const conteudos = await db.query(`
-      SELECT
-        'conteudo' AS tipo,
-        cp.id,
-        cp.modelo_id,
-        cp.valor_total AS valor,
-        cp.status,
-        cp.criado_em AS created_at,
-        cp.message_id
-      FROM conteudo_pacotes cp
-      WHERE cp.cliente_id = $1
-        AND cp.status = 'pago'
-    `, [clienteId]);
-
-    const assinaturas = await db.query(`
-      SELECT
-        'assinatura' AS tipo,
-        v.id,
-        v.modelo_id,
-        (
-          v.valor_assinatura +
-          v.taxa_transacao +
-          v.taxa_plataforma
-        ) AS valor,
-        CASE
-          WHEN v.ativo THEN 'ativa'
-          ELSE 'inativa'
-        END AS status,
-        v.created_at,
-        NULL AS message_id
-      FROM vip_subscriptions v
-      WHERE v.cliente_id = $1
-    `, [clienteId]);
-
-    // 🔀 Unifica e ordena
-    const historico = [
-      ...conteudos.rows,
-      ...assinaturas.rows
-    ].sort(
-      (a, b) => new Date(b.created_at) - new Date(a.created_at)
-    );
-
-    res.json(historico);
-
-  } catch (err) {
-    console.error("Erro histórico cliente:", err);
-    res.status(500).json({ error: "Erro ao buscar histórico do cliente" });
-  }
-});
-
-router.get("/cliente/subscricoes", auth, async (req, res) => {
-  try {
-    const clienteRes = await db.query(
-      "SELECT id FROM clientes WHERE user_id = $1",
-      [req.user.id]
-    );
-
-    if (!clienteRes.rowCount) {
-      return res.status(404).json({ error: "Cliente não encontrado" });
-    }
-
-    const clienteId = clienteRes.rows[0].id;
-
-    const result = await db.query(`
-      SELECT 
-        v.id,
-        v.modelo_id,
-        m.nome_exibicao AS modelo,
-        v.created_at,
-        v.expiration_at,
-        v.ativo,
-        v.recorrente
-      FROM vip_subscriptions v
-      JOIN modelos m ON m.id = v.modelo_id
-      WHERE v.cliente_id = $1
-      ORDER BY v.created_at DESC
-    `, [clienteId]);
-
-    res.json(result.rows);
-
-  } catch (err) {
-    console.error("Erro subscrições:", err);
-    res.status(500).json({ error: "Erro ao buscar subscrições" });
-  }
-});
-
-
-
-router.get("/modelo/financeiro", authModelo, async (req, res) => {
-  try {
-    const modeloRes = await db.query(
-      "SELECT id FROM modelos WHERE user_id = $1",
-      [req.user.id]
-    );
-
-    if (!modeloRes.rows.length) {
-      return res.status(404).json({ error: "Modelo não encontrada" });
-    }
-
-    const modelo_id = modeloRes.rows[0].id;
-
-    const result = await db.query(
-      `
-      SELECT
-        COALESCE(SUM(CASE
-          WHEN tipo IN ('midia', 'conteudo')
-           AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
-               = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
-          THEN valor_modelo
-        END), 0) AS hoje_midias,
-
-        COALESCE(SUM(CASE
-          WHEN tipo = 'assinatura'
-           AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
-               = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
-          THEN valor_modelo
-        END), 0) AS hoje_assinaturas,
-
-        COALESCE(SUM(CASE
-          WHEN tipo IN ('midia', 'conteudo')
-           AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
-               = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
-          THEN valor_modelo
-        END), 0) AS mes_midias,
-
-        COALESCE(SUM(CASE
-          WHEN tipo = 'assinatura'
-           AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
-               = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
-          THEN valor_modelo
-        END), 0) AS mes_assinaturas,
-
-        COALESCE(SUM(CASE
-          WHEN tipo IN ('midia', 'conteudo')
-           AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
-               = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '1 month'
-          THEN valor_modelo
-        END), 0) AS mes_anterior_midias,
-
-        COALESCE(SUM(CASE
-          WHEN tipo = 'assinatura'
-           AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
-               = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '1 month'
-          THEN valor_modelo
-        END), 0) AS mes_anterior_assinaturas,
-
-        COALESCE(SUM(CASE
-          WHEN EXTRACT(YEAR FROM created_at AT TIME ZONE 'America/Sao_Paulo')
-               = EXTRACT(YEAR FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
-          THEN valor_modelo
-        END), 0) AS acumulado_ano_atual,
-
-        COUNT(DISTINCT CASE
-          WHEN tipo = 'assinatura'
-           AND status = 'pago'
-          THEN cliente_id
-        END) AS assinantes_total,
-
-        COUNT(DISTINCT CASE
-          WHEN tipo = 'assinatura'
-           AND status = 'pago'
-           AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
-               = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
-          THEN cliente_id
-        END) AS assinantes_hoje
-
-      FROM transacoes_agency
-      WHERE modelo_id = $1
-        AND status = 'pago'
-      `,
-      [modelo_id]
-    );
-
-    const r = result.rows[0];
-
-    res.json({
-      hoje: {
-        midias: Number(r.hoje_midias || 0),
-        assinaturas: Number(r.hoje_assinaturas || 0)
-      },
-      mes: {
-        midias: Number(r.mes_midias || 0),
-        assinaturas: Number(r.mes_assinaturas || 0)
-      },
-      mesAnterior: {
-        midias: Number(r.mes_anterior_midias || 0),
-        assinaturas: Number(r.mes_anterior_assinaturas || 0)
-      },
-      total: {
-        acumulado_ano_atual: Number(r.acumulado_ano_atual || 0)
-      },
-      assinantes: {
-        total: Number(r.assinantes_total || 0),
-        hoje: Number(r.assinantes_hoje || 0)
-      }
-    });
-  } catch (err) {
-    console.error("Erro /modelo/financeiro:", err);
-    res.status(500).json({ error: "Erro interno" });
-  }
-});
-
-
-// ===============================
-// 📣 ALLMESSAGE - LISTAR MODELOS
-// ===============================
-router.get(
-  "/allmessage/modelos",
-  auth,
-  requireRole("admin", "modelo"),
-  async (req, res) => {
-    try {
-      const { role, id: user_id } = req.user;
-
-       let sql = `
-        SELECT
-          m.id        AS modelo_id,
-          m.nome      AS nome
-        FROM modelos m
-      `;
-      let params = [];
-
-      // 🔒 modelo só vê a própria
-      if (role === "modelo") {
-        sql += ` WHERE m.user_id = $1 `;
-        params.push(user_id);
-      }
-
-      sql += ` ORDER BY m.nome `;
-
-      const result = await db.query(sql, params);
-      res.json(result.rows);
-
-    } catch (err) {
-      console.error("❌ Erro ALLMESSAGE modelos:", err);
-      res.status(500).json({ error: "Erro ao listar modelos" });
-    }
-  }
-);
-
-
-// ===============================
-// 📣 ALLMESSAGE - CONTEÚDOS DA MODELO
-// ===============================
-router.get("/allmessage/conteudos/:modelo_id",
-  auth,
-  requireRole("admin", "modelo"),
-  async (req, res) => {
-    try {
-      const { modelo_id } = req.params;
-      const { role, id: user_id } = req.user;
-
-      if (role === "modelo") {
-        const check = await db.query(
-  `SELECT 1 FROM modelos WHERE id = $1 AND user_id = $2`,
-  [modelo_id, user_id]
-        );
-        if (check.rowCount === 0) {
-          return res.json([]);
-        }
-      }
-
-      const result = await db.query(
-        `
-        SELECT
-          id,
-          url,
-          thumbnail_url AS thumbnail
-        FROM conteudos
-        WHERE modelo_id = $1
-          AND tipo_conteudo = 'venda'
-        ORDER BY id DESC
-        `,
-        [modelo_id]
-      );
-
-      res.json(result.rows); // ✅ SEMPRE array
-
-    } catch (err) {
-      console.error("❌ Erro ALLMESSAGE conteudos:", err);
-      res.json([]); // ⚠️ NUNCA retornar objeto
-    }
-  }
-);
-
-router.get("/modelo/dados-bancarios", authModelo, async (req, res) => {
-  try {
-    const { rows } = await db.query(
-      `SELECT * 
-       FROM modelo_dados_bancarios 
-       WHERE modelo_id = $1`,
-      [req.modelo_id]
-    );
-
-    if (!rows.length) {
-      return res.json(null);
-    }
-
-    res.json(rows[0]);
-
-  } catch (err) {
-    console.error("Erro buscar dados bancários:", err);
-    res.status(500).json({ error: "Erro interno" });
-  }
-});
-
-
-router.get("/modelo/conteudos", auth, authModelo, async (req, res) => {
-  const modelo_id = req.user.id;
-
-  const result = await db.query(
-    `
-    SELECT id, url, thumbnail
-    FROM conteudos
-    WHERE user_id = $1
-    ORDER BY created_at DESC
-    `,
-    [modelo_id]
-  );
-
-  res.json(result.rows);
-});
 
 router.get("/admin/dashboard", auth, authAdmin, async (req, res) => {
   try {
@@ -1626,249 +821,6 @@ router.get("/admin/dashboard", auth, authAdmin, async (req, res) => {
     res.status(500).json({ error: "Erro ao carregar dashboard" });
   }
 });
-
-
-router.get("/agencia/modelos", authAgencia, async (req, res) => {
-  try {
-    const agencia_id = req.agencia.id;
-
-    const result = await db.query(
-      "SELECT id, nome FROM modelos WHERE agencia_id = $1 ORDER BY nome",
-      [agencia_id]
-    );
-
-    res.json(result.rows);
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erro ao buscar modelos" });
-  }
-});
-
-router.get("/agencia/modelo/:id", authAgencia, async (req, res) => {
-  try {
-    const agencia_id = req.agencia.id;
-    const modelo_id = Number(req.params.id);
-
-    if (!Number.isInteger(modelo_id) || modelo_id <= 0) {
-      return res.status(400).json({ error: "Modelo inválida" });
-    }
-
-    const result = await db.query(
-      `
-      SELECT
-        m.id,
-        m.nome,
-
-        /* ================= DIA ================= */
-
-        COALESCE(SUM(CASE
-          WHEN ta.data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
-          THEN ta.valor_modelo
-        END), 0) AS modelo_dia,
-
-        COALESCE(SUM(CASE
-          WHEN ta.data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
-          THEN ta.agency_fee
-        END), 0) AS agencia_dia,
-
-        COALESCE(SUM(CASE
-          WHEN ta.data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
-          THEN ta.velvet_fee
-        END), 0) AS velvet_dia,
-
-        /* ================= MÊS ================= */
-
-        COALESCE(SUM(CASE
-          WHEN DATE_TRUNC('month', ta.data_sp) =
-               DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
-          THEN ta.valor_modelo
-        END), 0) AS modelo_mes,
-
-        COALESCE(SUM(CASE
-          WHEN DATE_TRUNC('month', ta.data_sp) =
-               DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
-          THEN ta.agency_fee
-        END), 0) AS agencia_mes,
-
-        COALESCE(SUM(CASE
-          WHEN DATE_TRUNC('month', ta.data_sp) =
-               DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
-          THEN ta.velvet_fee
-        END), 0) AS velvet_mes,
-
-        /* ================= ANO ================= */
-
-        COALESCE(SUM(CASE
-          WHEN DATE_TRUNC('year', ta.data_sp) =
-               DATE_TRUNC('year', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
-          THEN ta.valor_modelo
-        END), 0) AS modelo_ano,
-
-        COALESCE(SUM(CASE
-          WHEN DATE_TRUNC('year', ta.data_sp) =
-               DATE_TRUNC('year', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
-          THEN ta.agency_fee
-        END), 0) AS agencia_ano,
-
-        COALESCE(SUM(CASE
-          WHEN DATE_TRUNC('year', ta.data_sp) =
-               DATE_TRUNC('year', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
-          THEN ta.velvet_fee
-        END), 0) AS velvet_ano
-
-      FROM modelos m
-
-      LEFT JOIN (
-        SELECT
-          modelo_id,
-          valor_modelo,
-          velvet_fee,
-          agency_fee,
-          (created_at AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
-        FROM transacoes_agency
-        WHERE status = 'pago'
-      ) ta ON ta.modelo_id = m.id
-
-      WHERE m.agencia_id = $1
-        AND m.id = $2
-
-      GROUP BY m.id, m.nome
-      `,
-      [agencia_id, modelo_id]
-    );
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: "Modelo não encontrada" });
-    }
-
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error("❌ ERRO /agencia/modelo/:id:", err);
-    res.status(500).json({ error: "Erro ao buscar dados da modelo" });
-  }
-});
-
-router.get("/agencia/pagamentos", authAgencia, async (req, res) => {
-  try {
-    const agencia_id = req.agencia.id;
-
-    const result = await db.query(`
-      SELECT
-        p.id,
-        p.referencia_mes,
-        p.valor_midias,
-        p.valor_assinaturas,
-        p.valor_total,
-        p.data_pagamento,
-        m.nome AS modelo_nome
-      FROM pagamentos_agencia p
-      JOIN modelos m ON m.id = p.modelo_id
-      WHERE p.agencia_id = $1
-      ORDER BY p.data_pagamento DESC
-    `, [agencia_id]);
-
-    res.json(result.rows);
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erro ao buscar pagamentos" });
-  }
-});
-
-//AGENCIAS
-router.get("/agencia/me", authAgencia, async (req,res)=>{
-  const agencia_id = req.agencia.id;
-
-  const result = await db.query(
-    "SELECT id, nome FROM agencias WHERE id = $1",
-    [agencia_id]
-  );
-
-  if(!result.rowCount){
-    return res.sendStatus(404);
-  }
-
-  res.json(result.rows[0]);
-});
-
-router.get("/agencia/dashboard", authAgencia, async (req, res) => {
-  try {
-    const agencia_id = req.agencia.id;
-
-    const result = await db.query(
-      `
-      SELECT
-        /* ================= HOJE ================= */
-
-        COALESCE(SUM(CASE
-          WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
-           AND tipo = 'midia'
-          THEN agency_fee
-        END), 0) AS midias_hoje,
-
-        COALESCE(SUM(CASE
-          WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
-           AND tipo = 'assinatura'
-          THEN agency_fee
-        END), 0) AS assinaturas_hoje,
-
-        /* ================= MÊS ================= */
-
-        COALESCE(SUM(CASE
-          WHEN DATE_TRUNC('month', data_sp) =
-               DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
-           AND tipo = 'midia'
-          THEN agency_fee
-        END), 0) AS midias_mes,
-
-        COALESCE(SUM(CASE
-          WHEN DATE_TRUNC('month', data_sp) =
-               DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
-           AND tipo = 'assinatura'
-          THEN agency_fee
-        END), 0) AS assinaturas_mes,
-
-        /* ================= TOTAIS ================= */
-
-        COALESCE(SUM(CASE
-          WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
-          THEN agency_fee
-        END), 0) AS total_hoje,
-
-        COALESCE(SUM(CASE
-          WHEN DATE_TRUNC('month', data_sp) =
-               DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
-          THEN agency_fee
-        END), 0) AS total_mes,
-
-        COALESCE(SUM(CASE
-          WHEN DATE_TRUNC('year', data_sp) =
-               DATE_TRUNC('year', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
-          THEN agency_fee
-        END), 0) AS total_ano
-
-      FROM (
-        SELECT
-          ta.tipo,
-          ta.agency_fee,
-          (ta.created_at AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
-        FROM transacoes_agency ta
-        INNER JOIN modelos m ON m.id = ta.modelo_id
-        WHERE ta.status = 'pago'
-          AND m.agencia_id = $1
-      ) dados
-      `,
-      [agencia_id]
-    );
-
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error("Erro dashboard agência:", err);
-    res.status(500).json({ error: "Erro ao carregar dashboard" });
-  }
-});
-
 
 router.get("/admin/modelos", auth, authAdmin, async (req,res)=>{
 
@@ -2005,7 +957,6 @@ router.get("/admin/modelo/:id", auth, authAdmin, async (req, res) => {
   }
 });
 
-
 router.get("/admin/perfis", auth, authAdmin, async (req,res)=>{
 
   const status = req.query.status || "em_analise";
@@ -2014,12 +965,9 @@ router.get("/admin/perfis", auth, authAdmin, async (req,res)=>{
   const limit = 10;
   const offset = (page - 1) * limit;
 
-  try{
+  try {
 
-    // ================================
     // TOTAL (CLIENTES + MODELOS)
-    // ================================
-
     const totalRes = await db.query(`
       SELECT COUNT(*) FROM (
         SELECT id FROM modelos_verificacao WHERE status = $1
@@ -2031,10 +979,8 @@ router.get("/admin/perfis", auth, authAdmin, async (req,res)=>{
     const total = Number(totalRes.rows[0].count);
     const totalPages = Math.max(Math.ceil(total / limit), 1);
 
-    // ================================
-    // BUSCA UNIFICADA (AGORA COMPLETA)
-    // ================================
-
+  
+    // BUSCA UNIFICADA 
     const result = await db.query(`
       (
         -- ================= MODELOS =================
@@ -2156,10 +1102,7 @@ router.get("/admin/perfis", auth, authAdmin, async (req,res)=>{
       LIMIT $2 OFFSET $3
     `,[status, limit, offset]);
 
-    // ================================
-    // ASSINAR URLS PRIVADAS
-    // ================================
-
+    // URLS PRIVADAS
     const perfisFormatados = result.rows.map(p => ({
       ...p,
 
@@ -2197,23 +1140,6 @@ router.get("/admin/perfis", auth, authAdmin, async (req,res)=>{
   } catch(err){
     console.error("Erro buscar perfis:", err);
     res.status(500).json({ error:"Erro ao buscar perfis" });
-  }
-});
-
-router.get("/admin/agencias", auth, authAdmin, async (req,res)=>{
-  try{
-
-    const result = await db.query(`
-      SELECT id, nome
-      FROM agencias
-      ORDER BY nome ASC
-    `);
-
-    res.json(result.rows);
-
-  } catch(err){
-    console.error("Erro buscar agências:", err);
-    res.status(500).json({ error:"Erro ao buscar agências" });
   }
 });
 
@@ -2626,8 +1552,6 @@ res.status(500).json({error:"Erro calcular saldo"});
 
 });
 
-
-//HISTORICO RESET SENHA
 router.get("/admin/modelo/:id/historico-seguranca", auth, authAdmin, async (req,res)=>{
 
 const modelo_id = Number(req.params.id);
@@ -2673,14 +1597,726 @@ res.status(500).json({error:"Erro histórico segurança"});
 
 });
 
-// ===============================
-// 📊 STATUS DO ENVIO EM MASSA
-// ===============================
-router.get(
-  "/allmessage/status/:jobId",
-  auth,
-  requireRole("admin", "modelo"),
+
+// ===========================
+// CLIENTES
+// ===========================
+
+router.get("/transacoes_cliente", authCliente, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const role = req.user.role;
+
+    let vipQuery;
+    let conteudoQuery;
+
+    if (role === "cliente") {
+
+      vipQuery = await db.query(`
+        SELECT
+          id,
+          'assinatura' AS tipo,
+          valor_total AS valor,
+          CASE 
+            WHEN ativo = true THEN 'pago'
+            ELSE 'inativo'
+          END AS status,
+          created_at
+        FROM vip_subscriptions
+        WHERE cliente_id = $1
+      `, [userId]);
+
+      conteudoQuery = await db.query(`
+        SELECT
+          id,
+          'midia' AS tipo,
+          valor_total AS valor,
+          status,
+          criado_em AS created_at
+        FROM conteudo_pacotes
+        WHERE cliente_id = $1
+      `, [userId]);
+
+    } else {
+      return res.status(403).json({ error: "Apenas cliente pode acessar" });
+    }
+
+    const transacoes = [
+      ...vipQuery.rows,
+      ...conteudoQuery.rows
+    ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    res.json(transacoes);
+
+  } catch (err) {
+    console.error("Erro buscar transações cliente:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+router.get("/cliente/transacoes", authCliente, async (req, res) => {
+  try {
+    const clienteRes = await db.query(
+  "SELECT id FROM clientes WHERE user_id = $1",
+  [req.user.id]
+);
+
+if (clienteRes.rowCount === 0) {
+  return res.status(404).json({ error: "Cliente não encontrado" });
+}
+
+const clienteId = clienteRes.rows[0].id;
+
+    const conteudos = await db.query(`
+      SELECT
+        'conteudo' AS tipo,
+        cp.id,
+        cp.modelo_id,
+        cp.valor_total AS valor,
+        cp.status,
+        cp.criado_em AS created_at,
+        cp.message_id
+      FROM conteudo_pacotes cp
+      WHERE cp.cliente_id = $1
+        AND cp.status = 'pago'
+    `, [clienteId]);
+
+    const assinaturas = await db.query(`
+      SELECT
+        'assinatura' AS tipo,
+        v.id,
+        v.modelo_id,
+        (
+          v.valor_assinatura +
+          v.taxa_transacao +
+          v.taxa_plataforma
+        ) AS valor,
+        CASE
+          WHEN v.ativo THEN 'ativa'
+          ELSE 'inativa'
+        END AS status,
+        v.created_at,
+        NULL AS message_id
+      FROM vip_subscriptions v
+      WHERE v.cliente_id = $1
+    `, [clienteId]);
+
+    // 🔀 Unifica e ordena
+    const historico = [
+      ...conteudos.rows,
+      ...assinaturas.rows
+    ].sort(
+      (a, b) => new Date(b.created_at) - new Date(a.created_at)
+    );
+
+    res.json(historico);
+
+  } catch (err) {
+    console.error("Erro histórico cliente:", err);
+    res.status(500).json({ error: "Erro ao buscar histórico do cliente" });
+  }
+});
+
+router.get("/cliente/subscricoes", auth, async (req, res) => {
+  try {
+    const clienteRes = await db.query(
+      "SELECT id FROM clientes WHERE user_id = $1",
+      [req.user.id]
+    );
+
+    if (!clienteRes.rowCount) {
+      return res.status(404).json({ error: "Cliente não encontrado" });
+    }
+
+    const clienteId = clienteRes.rows[0].id;
+
+    const result = await db.query(`
+      SELECT 
+        v.id,
+        v.modelo_id,
+        m.nome_exibicao AS modelo,
+        v.created_at,
+        v.expiration_at,
+        v.ativo,
+        v.recorrente
+      FROM vip_subscriptions v
+      JOIN modelos m ON m.id = v.modelo_id
+      WHERE v.cliente_id = $1
+      ORDER BY v.created_at DESC
+    `, [clienteId]);
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error("Erro subscrições:", err);
+    res.status(500).json({ error: "Erro ao buscar subscrições" });
+  }
+});
+
+router.get("/access", authCliente, async (req, res) => {
+  const message_id = Number(req.query.message_id);
+
+  if (!Number.isInteger(message_id) || message_id <= 0) {
+
+    return res.status(400).json({ error: "message_id inválido" });
+  }
+
+  const msgRes = await db.query(
+    `
+    SELECT id
+    FROM messages
+    WHERE id = $1
+      AND cliente_id = $2
+      AND visto = true
+    `,
+    [message_id, req.user.id]
+  );
+
+  if (msgRes.rowCount === 0) {
+    return res.status(403).json({ error: "Conteúdo não liberado" });
+  }
+
+  const midiasRes = await db.query(
+    `
+    SELECT c.url, c.tipo
+    FROM messages_conteudos mc
+    JOIN conteudos c ON c.id = mc.conteudo_id
+    WHERE mc.message_id = $1
+    `,
+    [message_id]
+  );
+
+  res.json({
+    midias: midiasRes.rows.map(m => ({
+      tipo: m.tipo,
+      url: m.url
+    }))
+  });
+});
+
+// ===========================
+// MODELOS
+// ===========================
+
+router.get("/modelo/transacoes",
+  requireRole("modelo", "admin", "agente"),
+  (req, res) => {
+    res.sendFile(
+      path.join(process.cwd(), "transacoes", "transacoes.html")
+    );
+  }
+);
+
+router.get("/transacoes", authModelo, async (req, res) => {
+  try {
+    const modeloRes = await db.query(
+      "SELECT id FROM modelos WHERE user_id = $1",
+      [req.user.id]
+    );
+
+    if (!modeloRes.rows.length) {
+      return res.status(404).json({ error: "Modelo não encontrada" });
+    }
+
+    const modelo_id = modeloRes.rows[0].id;
+
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = 10;
+    const offset = (page - 1) * limit;
+
+    const { mes } = req.query;
+
+    let values = [modelo_id];
+    let monthFilter = "";
+
+    if (mes && /^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
+      const [ano, mesNum] = mes.split("-").map(Number);
+
+      values.push(ano, mesNum);
+
+      monthFilter = `
+        AND created_at >= make_timestamptz($2, $3, 1, 0, 0, 0, 'America/Sao_Paulo')
+        AND created_at < (
+          make_timestamptz($2, $3, 1, 0, 0, 0, 'America/Sao_Paulo')
+          + interval '1 month'
+        )
+      `;
+    }
+
+    const dataValues = [...values, limit, offset];
+
+    const sql = `
+      SELECT
+        id AS codigo,
+        tipo,
+        created_at,
+        created_at AT TIME ZONE 'America/Sao_Paulo' AS created_at_sp,
+        TO_CHAR(
+          created_at AT TIME ZONE 'America/Sao_Paulo',
+          'DD/MM/YYYY HH24:MI'
+        ) AS created_at_sp_formatado,
+        TO_CHAR(
+          created_at AT TIME ZONE 'America/Sao_Paulo',
+          'DD/MM/YYYY'
+        ) AS data_sp,
+        valor_modelo AS valor,
+        status,
+        NULL AS message_id
+      FROM transacoes_agency
+      WHERE modelo_id = $1
+        AND status = 'pago'
+        ${monthFilter}
+      ORDER BY created_at DESC
+      LIMIT $${dataValues.length - 1}
+      OFFSET $${dataValues.length}
+    `;
+
+    const countSql = `
+      SELECT COUNT(*) AS count
+      FROM transacoes_agency
+      WHERE modelo_id = $1
+        AND status = 'pago'
+        ${monthFilter}
+    `;
+
+    const [dados, total] = await Promise.all([
+      db.query(sql, dataValues),
+      db.query(countSql, values)
+    ]);
+
+    const totalRegistros = parseInt(total.rows[0].count, 10);
+    const totalPaginas = Math.ceil(totalRegistros / limit);
+
+    res.json({
+      registros: dados.rows,
+      paginaAtual: page,
+      totalPaginas,
+      totalRegistros
+    });
+
+  } catch (err) {
+    console.error("Erro /transacoes:", err);
+    res.status(500).json({
+      registros: [],
+      paginaAtual: 1,
+      totalPaginas: 1,
+      totalRegistros: 0
+    });
+  }
+});
+
+router.get("/transacoes/diario", auth, requireRole("admin", "modelo", "agente"),
+
   async (req, res) => {
+    try {
+      const { mes } = req.query;
+
+      if (!mes || !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
+        return res.status(400).json({
+          error: "Formato de mês inválido (YYYY-MM)"
+        });
+      }
+
+      const [ano, mesNum] = mes.split("-").map(Number);
+      const { role } = req.user;
+
+      let values = [ano, mesNum];
+      let where = `
+        status = 'pago'
+        AND created_at >= make_timestamptz($1, $2, 1, 0, 0, 0, 'America/Sao_Paulo')
+        AND created_at < (
+          make_timestamptz($1, $2, 1, 0, 0, 0, 'America/Sao_Paulo')
+          + interval '1 month'
+        )
+      `;
+
+      if (role === "modelo") {
+        const modeloRes = await db.query(
+          "SELECT id FROM modelos WHERE user_id = $1",
+          [req.user.id]
+        );
+
+        if (!modeloRes.rows.length) {
+          return res.status(404).json({ error: "Modelo não encontrada" });
+        }
+
+        const modelo_id = modeloRes.rows[0].id;
+        values.push(modelo_id);
+        where += ` AND modelo_id = $${values.length}`;
+      }
+
+      const result = await db.query(
+        `
+        SELECT
+          DATE(created_at AT TIME ZONE 'America/Sao_Paulo') AS dia,
+
+          COALESCE(SUM(
+            CASE WHEN tipo = 'midia' THEN valor_modelo END
+          ), 0) AS ganhos_midias,
+
+          COALESCE(SUM(
+            CASE WHEN tipo = 'assinatura' THEN valor_modelo END
+          ), 0) AS ganhos_assinaturas
+
+        FROM transacoes_agency
+        WHERE ${where}
+        GROUP BY dia
+        ORDER BY dia
+        `,
+        values
+      );
+
+      res.json(result.rows);
+    } catch (err) {
+      console.error("Erro /transacoes/diario:", err);
+      res.status(500).json({ error: "Erro interno" });
+    }
+  }
+);
+
+router.get("/transacoes/resumo-mensal", auth, requireRole("admin", "modelo", "agente"), async (req, res) => {
+    try {
+      const { mes } = req.query;
+
+      if (!mes || !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
+        return res.status(400).json({
+          error: "Formato de mês inválido (YYYY-MM)"
+        });
+      }
+
+      const [ano, mesNum] = mes.split("-").map(Number);
+      const { role } = req.user;
+
+      let values = [ano, mesNum];
+      let where = `
+        status = 'pago'
+        AND created_at >= make_timestamptz($1, $2, 1, 0, 0, 0, 'America/Sao_Paulo')
+        AND created_at < (
+          make_timestamptz($1, $2, 1, 0, 0, 0, 'America/Sao_Paulo')
+          + interval '1 month'
+        )
+      `;
+
+      if (role === "modelo") {
+        const modeloRes = await db.query(
+          "SELECT id FROM modelos WHERE user_id = $1",
+          [req.user.id]
+        );
+
+        if (!modeloRes.rows.length) {
+          return res.status(404).json({ error: "Modelo não encontrada" });
+        }
+
+        const modelo_id = modeloRes.rows[0].id;
+        values.push(modelo_id);
+        where += ` AND modelo_id = $${values.length}`;
+      }
+
+      const result = await db.query(
+        `
+        SELECT
+          COALESCE(SUM(valor_bruto), 0) AS total_bruto,
+          COALESCE(SUM(taxa_gateway), 0) AS total_taxas,
+          COALESCE(SUM(agency_fee), 0) AS total_agency,
+          COALESCE(SUM(velvet_fee), 0) AS total_velvet,
+          COALESCE(SUM(valor_modelo), 0) AS total_modelo,
+
+          COALESCE(SUM(CASE WHEN tipo = 'assinatura' THEN valor_bruto END), 0) AS total_assinaturas,
+          COALESCE(SUM(CASE WHEN tipo = 'midia' THEN valor_bruto END), 0) AS total_midias
+
+        FROM transacoes_agency
+        WHERE ${where}
+        `,
+        values
+      );
+
+      res.json(result.rows[0]);
+    } catch (err) {
+      console.error("Erro /transacoes/resumo-mensal:", err);
+      res.status(500).json({ error: "Erro interno" });
+    }
+  }
+);
+
+router.get("/transacoes/resumo-anual", auth, requireRole("admin", "modelo"), async (req, res) => {
+
+    try {
+      const { ano } = req.query;
+
+      if (!ano || !/^\d{4}$/.test(ano)) {
+        return res.status(400).json({ error: "Formato de ano inválido (YYYY)" });
+      }
+
+      const anoNum = Number(ano);
+      const { role } = req.user;
+
+      let values = [anoNum];
+      let where = `
+        status = 'pago'
+        AND created_at >= make_timestamptz($1, 1, 1, 0, 0, 0, 'America/Sao_Paulo')
+        AND created_at < make_timestamptz($1 + 1, 1, 1, 0, 0, 0, 'America/Sao_Paulo')
+      `;
+
+      if (role === "modelo") {
+        const modeloRes = await db.query(
+          "SELECT id FROM modelos WHERE user_id = $1",
+          [req.user.id]
+        );
+
+        if (!modeloRes.rows.length) {
+          return res.status(404).json({ error: "Modelo não encontrada" });
+        }
+
+        const modelo_id = modeloRes.rows[0].id;
+        values.push(modelo_id);
+        where += ` AND modelo_id = $${values.length}`;
+      }
+
+      const result = await db.query(
+        `
+        SELECT
+          DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo') AS mes,
+
+          COALESCE(SUM(valor_bruto), 0) AS total_bruto,
+          COALESCE(SUM(taxa_gateway), 0) AS total_taxas,
+          COALESCE(SUM(agency_fee), 0) AS total_agency,
+          COALESCE(SUM(velvet_fee), 0) AS total_velvet,
+          COALESCE(SUM(valor_modelo), 0) AS total_modelo,
+
+          COALESCE(SUM(CASE WHEN tipo = 'assinatura' THEN valor_bruto END), 0) AS total_assinaturas,
+          COALESCE(SUM(CASE WHEN tipo = 'midia' THEN valor_bruto END), 0) AS total_midias
+
+        FROM transacoes_agency
+        WHERE ${where}
+        GROUP BY mes
+        ORDER BY mes
+        `,
+        values
+      );
+
+      res.json(result.rows);
+    } catch (err) {
+      console.error("Erro /transacoes/resumo-anual:", err);
+      res.status(500).json({ error: "Erro interno" });
+    }
+  }
+);
+
+router.get("/modelo/relatorio", (req, res) => {
+  res.sendFile(
+    path.join(process.cwd(), "admin-pages", "relatorio.html")
+  );
+});
+
+router.get("/content/transacoes", (req, res) => {
+  res.sendFile(
+    path.join(process.cwd(), "content", "transacoes.html")
+  );
+});
+
+router.get("/modelo/financeiro", authModelo, async (req, res) => {
+  try {
+    const modeloRes = await db.query(
+      "SELECT id FROM modelos WHERE user_id = $1",
+      [req.user.id]
+    );
+
+    if (!modeloRes.rows.length) {
+      return res.status(404).json({ error: "Modelo não encontrada" });
+    }
+
+    const modelo_id = modeloRes.rows[0].id;
+
+    const result = await db.query(
+      `
+      SELECT
+        COALESCE(SUM(CASE
+          WHEN tipo IN ('midia', 'conteudo')
+           AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
+               = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+          THEN valor_modelo
+        END), 0) AS hoje_midias,
+
+        COALESCE(SUM(CASE
+          WHEN tipo = 'assinatura'
+           AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
+               = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+          THEN valor_modelo
+        END), 0) AS hoje_assinaturas,
+
+        COALESCE(SUM(CASE
+          WHEN tipo IN ('midia', 'conteudo')
+           AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
+               = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+          THEN valor_modelo
+        END), 0) AS mes_midias,
+
+        COALESCE(SUM(CASE
+          WHEN tipo = 'assinatura'
+           AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
+               = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+          THEN valor_modelo
+        END), 0) AS mes_assinaturas,
+
+        COALESCE(SUM(CASE
+          WHEN tipo IN ('midia', 'conteudo')
+           AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
+               = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '1 month'
+          THEN valor_modelo
+        END), 0) AS mes_anterior_midias,
+
+        COALESCE(SUM(CASE
+          WHEN tipo = 'assinatura'
+           AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
+               = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '1 month'
+          THEN valor_modelo
+        END), 0) AS mes_anterior_assinaturas,
+
+        COALESCE(SUM(CASE
+          WHEN EXTRACT(YEAR FROM created_at AT TIME ZONE 'America/Sao_Paulo')
+               = EXTRACT(YEAR FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
+          THEN valor_modelo
+        END), 0) AS acumulado_ano_atual,
+
+        COUNT(DISTINCT CASE
+          WHEN tipo = 'assinatura'
+           AND status = 'pago'
+          THEN cliente_id
+        END) AS assinantes_total,
+
+        COUNT(DISTINCT CASE
+          WHEN tipo = 'assinatura'
+           AND status = 'pago'
+           AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
+               = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+          THEN cliente_id
+        END) AS assinantes_hoje
+
+      FROM transacoes_agency
+      WHERE modelo_id = $1
+        AND status = 'pago'
+      `,
+      [modelo_id]
+    );
+
+    const r = result.rows[0];
+
+    res.json({
+      hoje: {
+        midias: Number(r.hoje_midias || 0),
+        assinaturas: Number(r.hoje_assinaturas || 0)
+      },
+      mes: {
+        midias: Number(r.mes_midias || 0),
+        assinaturas: Number(r.mes_assinaturas || 0)
+      },
+      mesAnterior: {
+        midias: Number(r.mes_anterior_midias || 0),
+        assinaturas: Number(r.mes_anterior_assinaturas || 0)
+      },
+      total: {
+        acumulado_ano_atual: Number(r.acumulado_ano_atual || 0)
+      },
+      assinantes: {
+        total: Number(r.assinantes_total || 0),
+        hoje: Number(r.assinantes_hoje || 0)
+      }
+    });
+  } catch (err) {
+    console.error("Erro /modelo/financeiro:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+router.get("/modelo/pagamentos", authModelo, async (req, res) => {
+  try {
+const modeloRes = await db.query(
+  "SELECT id FROM modelos WHERE user_id = $1",
+  [req.user.id]
+);
+
+const modelo_id = modeloRes.rows[0].id;
+
+    const result = await db.query(
+      `
+      SELECT
+        mes,
+        total_midias,
+        total_assinaturas,
+        total_geral,
+        status,
+        pago_em
+      FROM modelo_pagamentos
+      WHERE modelo_id = $1
+      ORDER BY mes DESC
+      `,
+      [modelo_id]
+    );
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error("ERRO PAGAMENTOS:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+router.get("/modelo/dados-bancarios", authModelo, async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT * 
+       FROM modelo_dados_bancarios 
+       WHERE modelo_id = $1`,
+      [req.modelo_id]
+    );
+
+    if (!rows.length) {
+      return res.json(null);
+    }
+
+    res.json(rows[0]);
+
+  } catch (err) {
+    console.error("Erro buscar dados bancários:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+// ===========================
+// PPV
+// ===========================
+
+router.get("/allmessage/modelos", auth, requireRole("admin", "modelo"), async (req, res) => {
+    try {
+      const { role, id: user_id } = req.user;
+
+       let sql = `
+        SELECT
+          m.id        AS modelo_id,
+          m.nome      AS nome
+        FROM modelos m
+      `;
+      let params = [];
+
+      // modelo só vê a própria
+      if (role === "modelo") {
+        sql += ` WHERE m.user_id = $1 `;
+        params.push(user_id);
+      }
+
+      sql += ` ORDER BY m.nome `;
+
+      const result = await db.query(sql, params);
+      res.json(result.rows);
+
+    } catch (err) {
+      console.error("❌ Erro ALLMESSAGE modelos:", err);
+      res.status(500).json({ error: "Erro ao listar modelos" });
+    }
+  }
+);
+
+router.get("/allmessage/status/:jobId", auth, requireRole("admin", "modelo"), async (req, res) => {
     try {
       const { jobId } = req.params;
 
@@ -2697,6 +2333,347 @@ router.get(
     }
   }
 );
+
+router.get("/allmessage/conteudos/:modelo_id", auth, requireRole("admin", "modelo"), async (req, res) => {
+    try {
+      const { modelo_id } = req.params;
+      const { role, id: user_id } = req.user;
+
+      if (role === "modelo") {
+        const check = await db.query(
+  `SELECT 1 FROM modelos WHERE id = $1 AND user_id = $2`,
+  [modelo_id, user_id]
+        );
+        if (check.rowCount === 0) {
+          return res.json([]);
+        }
+      }
+
+      const result = await db.query(
+        `
+        SELECT
+          id,
+          url,
+          thumbnail_url AS thumbnail
+        FROM conteudos
+        WHERE modelo_id = $1
+          AND tipo_conteudo = 'venda'
+        ORDER BY id DESC
+        `,
+        [modelo_id]
+      );
+
+      res.json(result.rows); // ✅ SEMPRE array
+
+    } catch (err) {
+      console.error("❌ Erro ALLMESSAGE conteudos:", err);
+      res.json([]); // ⚠️ NUNCA retornar objeto
+    }
+  }
+);
+
+router.get("/modelo/conteudos", auth, authModelo, async (req, res) => {
+  const modelo_id = req.user.id;
+
+  const result = await db.query(
+    `
+    SELECT id, url, thumbnail
+    FROM conteudos
+    WHERE user_id = $1
+    ORDER BY created_at DESC
+    `,
+    [modelo_id]
+  );
+
+  res.json(result.rows);
+});
+
+// ===========================
+// AGENCIAS
+// ===========================
+
+router.get("/agencia/modelos", authAgencia, async (req, res) => {
+  try {
+    const agencia_id = req.agencia.id;
+
+    const result = await db.query(
+      "SELECT id, nome FROM modelos WHERE agencia_id = $1 ORDER BY nome",
+      [agencia_id]
+    );
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erro ao buscar modelos" });
+  }
+});
+
+router.get("/agencia/modelo/:id", authAgencia, async (req, res) => {
+  try {
+    const agencia_id = req.agencia.id;
+    const modelo_id = Number(req.params.id);
+
+    if (!Number.isInteger(modelo_id) || modelo_id <= 0) {
+      return res.status(400).json({ error: "Modelo inválida" });
+    }
+
+    const result = await db.query(
+      `
+      SELECT
+        m.id,
+        m.nome,
+
+        /* ================= DIA ================= */
+
+        COALESCE(SUM(CASE
+          WHEN ta.data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+          THEN ta.valor_modelo
+        END), 0) AS modelo_dia,
+
+        COALESCE(SUM(CASE
+          WHEN ta.data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+          THEN ta.agency_fee
+        END), 0) AS agencia_dia,
+
+        COALESCE(SUM(CASE
+          WHEN ta.data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+          THEN ta.velvet_fee
+        END), 0) AS velvet_dia,
+
+        /* ================= MÊS ================= */
+
+        COALESCE(SUM(CASE
+          WHEN DATE_TRUNC('month', ta.data_sp) =
+               DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
+          THEN ta.valor_modelo
+        END), 0) AS modelo_mes,
+
+        COALESCE(SUM(CASE
+          WHEN DATE_TRUNC('month', ta.data_sp) =
+               DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
+          THEN ta.agency_fee
+        END), 0) AS agencia_mes,
+
+        COALESCE(SUM(CASE
+          WHEN DATE_TRUNC('month', ta.data_sp) =
+               DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
+          THEN ta.velvet_fee
+        END), 0) AS velvet_mes,
+
+        /* ================= ANO ================= */
+
+        COALESCE(SUM(CASE
+          WHEN DATE_TRUNC('year', ta.data_sp) =
+               DATE_TRUNC('year', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
+          THEN ta.valor_modelo
+        END), 0) AS modelo_ano,
+
+        COALESCE(SUM(CASE
+          WHEN DATE_TRUNC('year', ta.data_sp) =
+               DATE_TRUNC('year', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
+          THEN ta.agency_fee
+        END), 0) AS agencia_ano,
+
+        COALESCE(SUM(CASE
+          WHEN DATE_TRUNC('year', ta.data_sp) =
+               DATE_TRUNC('year', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
+          THEN ta.velvet_fee
+        END), 0) AS velvet_ano
+
+      FROM modelos m
+
+      LEFT JOIN (
+        SELECT
+          modelo_id,
+          valor_modelo,
+          velvet_fee,
+          agency_fee,
+          (created_at AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
+        FROM transacoes_agency
+        WHERE status = 'pago'
+      ) ta ON ta.modelo_id = m.id
+
+      WHERE m.agencia_id = $1
+        AND m.id = $2
+
+      GROUP BY m.id, m.nome
+      `,
+      [agencia_id, modelo_id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Modelo não encontrada" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("❌ ERRO /agencia/modelo/:id:", err);
+    res.status(500).json({ error: "Erro ao buscar dados da modelo" });
+  }
+});
+
+router.get("/agencia/pagamentos", authAgencia, async (req, res) => {
+  try {
+    const agencia_id = req.agencia.id;
+
+    const result = await db.query(`
+      SELECT
+        p.id,
+        p.referencia_mes,
+        p.valor_midias,
+        p.valor_assinaturas,
+        p.valor_total,
+        p.data_pagamento,
+        m.nome AS modelo_nome
+      FROM pagamentos_agencia p
+      JOIN modelos m ON m.id = p.modelo_id
+      WHERE p.agencia_id = $1
+      ORDER BY p.data_pagamento DESC
+    `, [agencia_id]);
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erro ao buscar pagamentos" });
+  }
+});
+
+router.get("/agencia/me", authAgencia, async (req,res)=>{
+
+  const agencia_id = req.agencia.id;
+
+  const result = await db.query(
+    "SELECT id, nome FROM agencias WHERE id = $1",
+    [agencia_id]
+  );
+
+  if(!result.rowCount){
+    return res.sendStatus(404);
+  }
+
+  res.json(result.rows[0]);
+});
+
+router.get("/agencia/dashboard", authAgencia, async (req, res) => {
+  try {
+    const agencia_id = req.agencia.id;
+
+    const result = await db.query(
+      `
+      SELECT
+        /* ================= HOJE ================= */
+
+        COALESCE(SUM(CASE
+          WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+           AND tipo = 'midia'
+          THEN agency_fee
+        END), 0) AS midias_hoje,
+
+        COALESCE(SUM(CASE
+          WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+           AND tipo = 'assinatura'
+          THEN agency_fee
+        END), 0) AS assinaturas_hoje,
+
+        /* ================= MÊS ================= */
+
+        COALESCE(SUM(CASE
+          WHEN DATE_TRUNC('month', data_sp) =
+               DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
+           AND tipo = 'midia'
+          THEN agency_fee
+        END), 0) AS midias_mes,
+
+        COALESCE(SUM(CASE
+          WHEN DATE_TRUNC('month', data_sp) =
+               DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
+           AND tipo = 'assinatura'
+          THEN agency_fee
+        END), 0) AS assinaturas_mes,
+
+        /* ================= TOTAIS ================= */
+
+        COALESCE(SUM(CASE
+          WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+          THEN agency_fee
+        END), 0) AS total_hoje,
+
+        COALESCE(SUM(CASE
+          WHEN DATE_TRUNC('month', data_sp) =
+               DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
+          THEN agency_fee
+        END), 0) AS total_mes,
+
+        COALESCE(SUM(CASE
+          WHEN DATE_TRUNC('year', data_sp) =
+               DATE_TRUNC('year', (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
+          THEN agency_fee
+        END), 0) AS total_ano
+
+      FROM (
+        SELECT
+          ta.tipo,
+          ta.agency_fee,
+          (ta.created_at AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
+        FROM transacoes_agency ta
+        INNER JOIN modelos m ON m.id = ta.modelo_id
+        WHERE ta.status = 'pago'
+          AND m.agencia_id = $1
+      ) dados
+      `,
+      [agencia_id]
+    );
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Erro dashboard agência:", err);
+    res.status(500).json({ error: "Erro ao carregar dashboard" });
+  }
+});
+
+router.get("/admin/agencias", auth, authAdmin, async (req,res)=>{
+  try{
+
+    const result = await db.query(`
+      SELECT id, nome
+      FROM agencias
+      ORDER BY nome ASC
+    `);
+
+    res.json(result.rows);
+
+  } catch(err){
+    console.error("Erro buscar agências:", err);
+    res.status(500).json({ error:"Erro ao buscar agências" });
+  }
+});
+
+// ===========================
+// ORIGEM DOS ACESSOS
+// ===========================
+
+router.get("/transacoes/origem",
+  auth,
+  requireRole("admin"),
+  async (req, res) => {
+    const result = await db.query(`
+      SELECT origem_cliente,
+             COUNT(*) AS clientes,
+             SUM(valor_bruto) AS total
+      FROM transacoes_agency
+      WHERE status = 'pago'
+      GROUP BY origem_cliente
+    `);
+
+    res.json(result.rows);
+  }
+);
+
+// ===========================
+// PUTS - ALTERACOES
+// ===========================
 
 router.put("/admin/modelo/:id/feed", auth, authAdmin, async (req,res)=>{
 
@@ -2719,7 +2696,6 @@ res.status(500).json({ error:"Erro alterar feed" });
 }
 
 });
-
 
 router.put("/admin/validar-modelo/:id", auth, authAdmin, async (req,res)=>{
   const client = await db.connect();
@@ -3144,6 +3120,9 @@ res.status(500).json({error:"Erro alterar agência"});
 
 });
 
+// ===========================
+// EXPORT PARA SERVER
+// ===========================
 
 module.exports = {
   router,
