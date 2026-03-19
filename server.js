@@ -2789,7 +2789,7 @@ io.on("connection", (socket) => {
 
 // 📥 ENTRAR NA SALA DO CHAT
 
- socket.on("joinChat", async ({ cliente_id, modelo_id }, callback) => {
+socket.on("joinChat", async ({ cliente_id, modelo_id } = {}, callback) => {
     try {
       if (!socket.user) {
         callback?.({ ok: false, error: "Usuário não autenticado" });
@@ -3178,7 +3178,8 @@ socket.on("sendMessage", async (data, callback) => {
 });
 
 // 📜 HISTÓRICO DO CHAT
-socket.on("getHistory", async ({ cliente_id, modelo_id, offset = 0, limit = 20 }) => {
+
+socket.on("getHistory", async ({ cliente_id, modelo_id, offset = 0, limit = 20 } = {}) => {
   const clienteIdNum = Number(cliente_id);
   const modeloIdNum = Number(modelo_id);
   const offsetNum = Number(offset);
@@ -3387,7 +3388,7 @@ socket.on("sendConteudo", async ({
   modelo_id,
   conteudos_ids,
   preco
-}) => {
+} = {}) => {
   const clienteIdNum = Number(cliente_id);
   const modeloIdNum = Number(modelo_id);
 
@@ -3548,7 +3549,7 @@ socket.on("marcarConteudoVisto", async ({
   message_id,
   cliente_id,
   modelo_id
-}) => {
+} = {}) => {
   const messageIdNum = Number(message_id);
   const clienteIdNum = Number(cliente_id);
   const modeloIdNum = Number(modelo_id);
@@ -3600,7 +3601,7 @@ socket.on("marcarConteudoVisto", async ({
   }
 });
 
-socket.on("editarMensagem", async ({ id, text }) => {
+socket.on("editarMensagem", async ({ id, text } = {}) => {
   try {
 
     if (!socket.user || socket.user.role !== "modelo") {
@@ -3669,7 +3670,7 @@ if (
 });
 
 
-socket.on("excluirMensagem", async ({ id }) => {
+socket.on("excluirMensagem", async ({ id } = {}) => {
   try {
 
     if (!socket.user || socket.user.role !== "modelo") return;
