@@ -1823,7 +1823,7 @@ body.role-cliente .msg-modelo .msg-hora {
   padding:3px 6px;
   border-radius:999px;
   background:rgba(255,255,255,.08);
-  color:#d7c8ff;
+  color:#6a2cff;
   max-width:180px;
   white-space:nowrap;
   overflow:hidden;
@@ -1863,7 +1863,8 @@ body.role-cliente .msg-modelo .msg-hora {
 .popup-anotacoes-backdrop{
   position:absolute;
   inset:0;
-  background:rgba(0,0,0,.55);
+  background:rgba(22, 16, 35, .28);
+  backdrop-filter: blur(2px);
 }
 
 .popup-anotacoes-box{
@@ -1871,37 +1872,53 @@ body.role-cliente .msg-modelo .msg-hora {
   z-index:2;
   width:min(92vw, 460px);
   margin:8vh auto 0;
-  background:#161022;
-  border:1px solid rgba(255,255,255,.08);
-  border-radius:16px;
-  padding:18px;
-  box-shadow:0 20px 60px rgba(0,0,0,.4);
-  color:#fff;
+  background:#ffffff;
+  border:1px solid #e7dcf8;
+  border-radius:18px;
+  padding:20px;
+  box-shadow:0 20px 60px rgba(53, 30, 96, .18);
+  color:#2e2340;
 }
 
 .popup-anotacoes-box h3{
-  margin:0 0 14px;
-  font-size:18px;
+  margin:0 0 16px;
+  font-size:22px;
+  font-weight:700;
+  color:#24113d;
 }
 
 .popup-anotacoes-box label{
   display:block;
-  margin:10px 0 6px;
-  font-size:13px;
-  color:#cfc3ef;
+  margin:12px 0 7px;
+  font-size:14px;
+  font-weight:600;
+  color:#5a4a78;
 }
 
 .popup-anotacoes-box input,
 .popup-anotacoes-box textarea{
   width:100%;
-  border:none;
+  border:1px solid #ddd2f3;
   outline:none;
-  border-radius:10px;
-  padding:10px 12px;
-  background:#241733;
-  color:#fff;
+  border-radius:12px;
+  padding:12px 14px;
+  background:#faf7ff;
+  color:#2e2340;
   font-size:14px;
   box-sizing:border-box;
+  transition:border-color .18s ease, box-shadow .18s ease, background .18s ease;
+}
+
+.popup-anotacoes-box input::placeholder,
+.popup-anotacoes-box textarea::placeholder{
+  color:#9487b0;
+}
+
+.popup-anotacoes-box input:focus,
+.popup-anotacoes-box textarea:focus{
+  border-color:#8b5cf6;
+  background:#ffffff;
+  box-shadow:0 0 0 4px rgba(139, 92, 246, .10);
 }
 
 .popup-anotacoes-box textarea{
@@ -1912,29 +1929,41 @@ body.role-cliente .msg-modelo .msg-hora {
 .popup-anotacoes-acoes{
   display:flex;
   justify-content:flex-end;
-  margin-top:14px;
+  margin-top:16px;
 }
 
 .popup-anotacoes-acoes button{
   border:none;
-  border-radius:10px;
-  padding:10px 14px;
-  background:#7c3aed;
+  border-radius:12px;
+  padding:11px 16px;
+  background:linear-gradient(135deg, #7c3aed, #9333ea);
   color:#fff;
+  font-weight:700;
   cursor:pointer;
+  box-shadow:0 8px 20px rgba(124, 58, 237, .20);
+}
+
+.popup-anotacoes-acoes button:hover{
+  filter:brightness(1.04);
 }
 
 .popup-anotacoes-fechar{
   position:absolute;
-  top:10px;
-  right:10px;
-  width:28px;
-  height:28px;
+  top:12px;
+  right:12px;
+  width:32px;
+  height:32px;
   border:none;
   border-radius:999px;
-  background:rgba(255,255,255,.08);
-  color:#fff;
+  background:#f3ecff;
+  color:#6d3df0;
   cursor:pointer;
+  font-size:18px;
+  line-height:1;
+}
+
+.popup-anotacoes-fechar:hover{
+  background:#eadfff;
 }
 
 /* mobile */
