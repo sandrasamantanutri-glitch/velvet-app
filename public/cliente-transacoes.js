@@ -11,81 +11,88 @@ function formatarMoeda(valor) {
 
 function formatarData(data) {
   if (!data) return "-";
-
-  try {
-    return new Date(data).toLocaleString("pt-BR", {
-      timeZone: "America/Sao_Paulo",
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
-    });
-  } catch {
-    return data;
-  }
+  return new Date(data).toLocaleString("pt-BR");
 }
 
-function obterLabelTipo(tipo) {
-  return tipo === "assinatura" ? "Assinatura" : "Mídia";
+function renderizarEstadoTabela(mensagem) {
+  const tbody = document.getElementById("listaTransacoes");
+  if (!tbody) return;
+
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="6" class="estado-tabela">${mensagem}</td>
+    </tr>
+  `;
 }
 
-function obterClasseBadge(tipo) {
-  return tipo === "assinatura"
-    ? "badge badge-assinatura"
-    : "badge badge-conteudo";
-}
+function renderizarTransacoes(transacoes = []) {
+  const tbody = document.getElementById("listaTransacoes");
+  if (!tbody) return;
 
-function renderTransacoes(lista) {
-  const container = document.getElementById("listaTransacoes");
-
-  if (!container) return;
-
-  if (!Array.isArray(lista) || !lista.length) {
-    container.innerHTML = `<div class="estado-vazio">Nenhuma transação encontrada para este cliente.</div>`;
+  if (!transacoes.length) {
+    renderizarEstadoTabela("Nenhuma transação encontrada");
     return;
   }
 
-  container.innerHTML = lista.map(item => `
-    <div class="transacao-item">
-      <div class="transacao-esquerda">
-        <span class="${obterClasseBadge(item.tipo)}">${obterLabelTipo(item.tipo)}</span>
+  tbody.innerHTML = transacoes.map(t => {
+    const tipo = String(t.tipo || "").toLowerCase();
 
-        <div class="transacao-meta">
-          <strong>ID transação:</strong> ${item.id} · <strong>tipo:</strong> ${item.tipo || "-"}
-        </div>
+    const tipoClasse =
+      tipo === "assinatura" ? "tipo-assinatura" : "tipo-conteudo";
 
-        <div class="transacao-data">
-          <strong>Data e hora:</strong> ${formatarData(item.created_at)}
-        </div>
-      </div>
+    const status = String(t.status || "").toLowerCase();
 
-      <div class="transacao-direita">
-        <div class="transacao-valor">
-          <strong>Valor:</strong> ${formatarMoeda(item.valor_modelo)} de valor_modelo
-        </div>
+    const statusClasse =
+      status === "paid" || status === "pago" ? "status-pago" :
+      status === "pending" || status === "pendente" ? "status-pendente" :
+      "status-cancelado";
 
-        <div class="transacao-status">
-          <strong>Status:</strong> ${item.status || "-"}
-        </div>
-      </div>
-    </div>
-  `).join("");
+    const tipoLabel =
+      tipo === "midia" ? "Conteúdo" :
+      tipo === "assinatura" ? "Assinatura" :
+      (t.tipo || "-");
+
+    return `
+      <tr>
+        <td>#${t.id ?? "-"}</td>
+        <td>
+          <span class="tipo-badge ${tipoClasse}">
+            ${tipoLabel}
+          </span>
+        </td>
+        <td>${formatarData(t.created_at)}</td>
+        <td>${formatarMoeda(t.valor_modelo)}</td>
+        <td class="${statusClasse}">${t.status || "-"}</td>
+        <td>-</td>
+      </tr>
+    `;
+  }).join("");
 }
 
-function preencherResumo(lista) {
+function preencherResumo(lista = []) {
   const totalCompras = document.getElementById("totalCompras");
-  const valorTotalPago = document.getElementById("valorTotalPago");
+  const totalPago = document.getElementById("totalPago");
   const totalConteudos = document.getElementById("totalConteudos");
   const totalAssinaturas = document.getElementById("totalAssinaturas");
 
   const total = lista.length;
-  const soma = lista.reduce((acc, item) => acc + Number(item.valor_modelo || 0), 0);
-  const qtdConteudos = lista.filter(item => item.tipo === "midia").length;
-  const qtdAssinaturas = lista.filter(item => item.tipo === "assinatura").length;
+
+  const soma = lista.reduce((acc, item) => {
+    return acc + Number(item.valor_modelo || 0);
+  }, 0);
+
+  const qtdConteudos = lista.filter(item => {
+    const tipo = String(item.tipo || "").toLowerCase();
+    return tipo === "midia";
+  }).length;
+
+  const qtdAssinaturas = lista.filter(item => {
+    const tipo = String(item.tipo || "").toLowerCase();
+    return tipo === "assinatura";
+  }).length;
 
   if (totalCompras) totalCompras.textContent = total;
-  if (valorTotalPago) valorTotalPago.textContent = formatarMoeda(soma);
+  if (totalPago) totalPago.textContent = formatarMoeda(soma);
   if (totalConteudos) totalConteudos.textContent = qtdConteudos;
   if (totalAssinaturas) totalAssinaturas.textContent = qtdAssinaturas;
 }
@@ -101,19 +108,13 @@ function preencherCliente(cliente, total) {
 }
 
 async function carregarTransacoesCliente() {
-  const lista = document.getElementById("listaTransacoes");
-
   if (!token) {
-    if (lista) {
-      lista.innerHTML = `<div class="estado-vazio">Token não encontrado.</div>`;
-    }
+    renderizarEstadoTabela("Token não encontrado.");
     return;
   }
 
   if (!cliente_id) {
-    if (lista) {
-      lista.innerHTML = `<div class="estado-vazio">cliente_id inválido.</div>`;
-    }
+    renderizarEstadoTabela("cliente_id inválido.");
     return;
   }
 
@@ -127,22 +128,17 @@ async function carregarTransacoesCliente() {
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      if (lista) {
-        lista.innerHTML = `<div class="estado-vazio">${data.error || "Erro ao carregar transações."}</div>`;
-      }
+      renderizarEstadoTabela(data.error || "Erro ao carregar transações.");
       return;
     }
 
     preencherCliente(data.cliente, data.totalRegistros || 0);
     preencherResumo(data.registros || []);
-    renderTransacoes(data.registros || []);
+    renderizarTransacoes(data.registros || []);
 
   } catch (err) {
     console.error("Erro carregarTransacoesCliente:", err);
-
-    if (lista) {
-      lista.innerHTML = `<div class="estado-vazio">Erro ao carregar transações.</div>`;
-    }
+    renderizarEstadoTabela("Erro ao carregar transações.");
   }
 }
 

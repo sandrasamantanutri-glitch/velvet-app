@@ -1,50 +1,42 @@
-* {
-  box-sizing: border-box;
-}
-
-body {
+body, html {
   margin: 0;
-  font-family: Arial, sans-serif;
-  background: #0f0a16;
-  color: #fff;
+  height: 100%;
+  font-family: "poppins","Inter", sans-serif;
+  background: #f7f7fb;
 }
 
 .pagina-transacoes {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 24px 16px 40px;
+  padding: 20px;
 }
 
 .topo-transacoes {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-bottom: 22px;
+  margin-bottom: 16px;
 }
 
 .btn-voltar {
-  align-self: flex-start;
-  border: none;
-  background: #2a1b3d;
+  background: #5b2a86;
   color: #fff;
-  padding: 10px 14px;
-  border-radius: 12px;
+  border: 0;
+  padding: 10px 16px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
 }
 
 .btn-voltar:hover {
-  opacity: .92;
+  opacity: 0.92;
 }
 
-.cliente-card {
+.cliente-faixa {
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 18px;
   display: flex;
   align-items: center;
   gap: 14px;
-  background: #181022;
-  border: 1px solid rgba(255,255,255,.06);
-  border-radius: 18px;
-  padding: 16px;
+  margin-bottom: 18px;
 }
 
 .cliente-avatar {
@@ -52,175 +44,148 @@ body {
   height: 64px;
   border-radius: 50%;
   object-fit: cover;
-  background: #241733;
+  border: 1px solid #ccc;
 }
 
 .cliente-info h1 {
   margin: 0 0 6px;
-  font-size: 24px;
+  font-size: 20px;
 }
 
 .cliente-info p {
   margin: 0;
-  color: #cbbbe8;
+  color: #666;
   font-size: 14px;
 }
 
-.resumo-grid {
+.resumo-linha {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-  margin-bottom: 24px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
-.resumo-box {
-  background: #181022;
-  border: 1px solid rgba(255,255,255,.06);
-  border-radius: 18px;
-  padding: 16px;
+.resumo-item {
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 14px 16px;
 }
 
-.resumo-label {
+.resumo-item .label {
   display: block;
-  color: #bfaedc;
   font-size: 13px;
+  color: #666;
   margin-bottom: 8px;
 }
 
-.resumo-box strong {
+.resumo-item strong {
+  font-size: 24px;
+  color: #111;
+}
+
+.historico-box {
+  background: #fff;
+  border: 1px solid #ddd;
+}
+
+.historico-topo {
+  padding: 16px 18px;
+  border-bottom: 1px solid #ddd;
+}
+
+.historico-topo h2 {
+  margin: 0;
   font-size: 24px;
 }
 
-.lista-wrapper {
-  background: #181022;
-  border: 1px solid rgba(255,255,255,.06);
-  border-radius: 18px;
-  padding: 18px;
+.tabela-wrapper {
+  overflow-x: auto;
 }
 
-.lista-topo {
-  margin-bottom: 16px;
+.tabela-transacoes {
+  width: 100%;
+  border-collapse: collapse;
 }
 
-.lista-topo h2 {
-  margin: 0;
-  font-size: 20px;
+.tabela-transacoes thead {
+  background: #f7f7f7;
 }
 
-.lista-transacoes {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.transacao-item {
-  display: flex;
-  justify-content: space-between;
-  gap: 14px;
-  background: #241733;
-  border: 1px solid rgba(255,255,255,.05);
-  border-radius: 16px;
-  padding: 14px;
-}
-
-.transacao-esquerda,
-.transacao-direita {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.transacao-direita {
-  align-items: flex-end;
-  text-align: right;
-}
-
-.transacao-meta,
-.transacao-data,
-.transacao-status {
+.tabela-transacoes th,
+.tabela-transacoes td {
+  text-align: left;
+  padding: 14px 12px;
+  border-bottom: 1px solid #e5e5e5;
   font-size: 14px;
-  color: #e9defa;
-  line-height: 1.5;
 }
 
-.transacao-valor {
-  font-size: 16px;
+.tabela-transacoes th {
   font-weight: 700;
-  color: #fff;
-  line-height: 1.5;
+  color: #333;
 }
 
-.badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: fit-content;
-  padding: 5px 9px;
+.tabela-transacoes tbody tr:hover {
+  background: #fafafa;
+}
+
+.estado-tabela {
+  text-align: center;
+  color: #777;
+  padding: 24px !important;
+}
+
+.tipo-badge {
+  display: inline-block;
+  padding: 5px 10px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
+  background: #eee;
+  color: #333;
 }
 
-.badge-conteudo {
-  background: rgba(124, 58, 237, .18);
-  color: #d9c2ff;
+.tipo-conteudo {
+  background: #efe7ff;
+  color: #5b2a86;
 }
 
-.badge-assinatura {
-  background: rgba(236, 72, 153, .18);
-  color: #ffc1df;
+.tipo-assinatura {
+  background: #e7f7ee;
+  color: #18794e;
 }
 
-.estado-vazio {
-  text-align: center;
-  padding: 30px 12px;
-  color: #cbbbe8;
+.status-pago {
+  color: #18794e;
+  font-weight: 700;
 }
 
-.paginacao-transacoes {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 18px;
+.status-pendente {
+  color: #b26a00;
+  font-weight: 700;
 }
 
-.pag-btn {
-  border: none;
-  background: #2a1b3d;
-  color: #fff;
-  padding: 8px 14px;
-  border-radius: 10px;
-  cursor: pointer;
-}
-
-.pag-btn:disabled {
-  opacity: .5;
-  cursor: not-allowed;
-}
-
-.pag-info {
-  display: inline-flex;
-  align-items: center;
-  color: #cbbbe8;
+.status-cancelado {
+  color: #b42318;
+  font-weight: 700;
 }
 
 @media (max-width: 900px) {
-  .resumo-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .resumo-linha {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: 640px) {
-  .resumo-grid {
+@media (max-width: 560px) {
+  .resumo-linha {
     grid-template-columns: 1fr;
   }
 
-  .transacao-item {
-    flex-direction: column;
+  .cliente-faixa {
+    align-items: flex-start;
   }
 
-  .transacao-direita {
-    align-items: flex-start;
-    text-align: left;
+  .cliente-avatar {
+    width: 54px;
+    height: 54px;
   }
 }

@@ -12,45 +12,61 @@
   <main class="pagina-transacoes">
     <section class="topo-transacoes">
       <button class="btn-voltar" type="button" onclick="history.back()">Voltar</button>
+    </section>
 
-      <div class="cliente-card">
-        <img id="clienteAvatar" class="cliente-avatar" src="/assets/avatar.png" alt="Avatar do cliente">
-        <div class="cliente-info">
-          <h1 id="clienteNome">Cliente</h1>
-          <p id="clienteResumo">Carregando histórico...</p>
-        </div>
+    <section class="cliente-faixa">
+      <img id="clienteAvatar" class="cliente-avatar" src="/assets/avatar.png" alt="Avatar do cliente">
+      <div class="cliente-info">
+        <h1 id="clienteNome">Cliente</h1>
+        <p id="clienteResumo">Carregando histórico...</p>
       </div>
     </section>
 
-    <section class="resumo-grid">
-      <div class="resumo-box">
-        <span class="resumo-label">Total de compras</span>
+    <section class="resumo-linha">
+      <div class="resumo-item">
+        <span class="label">Total de compras</span>
         <strong id="totalCompras">0</strong>
       </div>
 
-      <div class="resumo-box">
-        <span class="resumo-label">Total pago</span>
-        <strong id="valorTotalPago">R$ 0,00</strong>
+      <div class="resumo-item">
+        <span class="label">Total pago</span>
+        <strong id="totalPago">R$ 0,00</strong>
       </div>
 
-      <div class="resumo-box">
-        <span class="resumo-label">Conteúdos pagos</span>
+      <div class="resumo-item">
+        <span class="label">Conteúdos pagos</span>
         <strong id="totalConteudos">0</strong>
       </div>
 
-      <div class="resumo-box">
-        <span class="resumo-label">Assinaturas</span>
+      <div class="resumo-item">
+        <span class="label">Assinaturas</span>
         <strong id="totalAssinaturas">0</strong>
       </div>
     </section>
 
-    <section class="lista-wrapper">
-      <div class="lista-topo">
+    <section class="historico-box">
+      <div class="historico-topo">
         <h2>Histórico</h2>
       </div>
 
-      <div id="listaTransacoes" class="lista-transacoes">
-        <div class="estado-vazio">Carregando...</div>
+      <div class="tabela-wrapper">
+        <table class="tabela-transacoes">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Tipo</th>
+              <th>Data</th>
+              <th>Valor</th>
+              <th>Status</th>
+              <th>Detalhe</th>
+            </tr>
+          </thead>
+          <tbody id="listaTransacoes">
+            <tr>
+              <td colspan="6" class="estado-tabela">Carregando transações...</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </section>
   </main>
