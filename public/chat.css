@@ -22,37 +22,64 @@ body, html {
 
 /* header fixo */
 .chat-topo{
-  position:fixed;
-  top:0px; /* abaixo do header principal */
-  left:0;
-  right:0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
 
-  height:64px;
-  display:flex;
-  align-items:center;
-  gap:12px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* importante */
+  gap: 12px;
 
-  padding:0 16px;
+  padding: 0 16px;
   border-top: 1px solid #e9e9ef;
-  background:#f1f1f1;
-  border-bottom:1px solid #e9e9ef;
+  background: #f1f1f1;
+  border-bottom: 1px solid #e9e9ef;
 }
 
 .chat-cliente-info{
-  display:flex;
-  align-items:center;
-  gap:10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1; /* ocupa a esquerda */
 }
 
 .chat-cliente-texto{
-  display:flex;
-  flex-direction:column;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.chat-nome-linha{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
 }
 
 .chat-nome{
-  font-weight:600;
-  font-size:14px;
-  color:#1E1E26 !Important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn-transacoes-cliente{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  border: none;
+  border-radius: 999px;
+  background: #16a34a;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 .chat-status{
@@ -1908,28 +1935,6 @@ body.role-cliente .msg-modelo .msg-hora {
   background:rgba(255,255,255,.08);
   color:#fff;
   cursor:pointer;
-}
-
-.btn-transacoes-cliente{
-  width:22px;
-  height:22px;
-  min-width:22px;
-  border:none;
-  border-radius:50%;
-  background:#1f9d55;
-  color:#fff;
-  font-size:12px;
-  font-weight:700;
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:0;
-  margin-left:auto;
-}
-
-.btn-transacoes-cliente:hover{
-  opacity:.9;
 }
 
 /* mobile */
