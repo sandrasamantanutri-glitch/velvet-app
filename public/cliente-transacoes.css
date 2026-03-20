@@ -5,11 +5,6 @@ body, html {
   background: #f7f7fb;
 }
 
-.pagina-transacoes {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 20px;
-}
 
 .topo-transacoes {
   margin-bottom: 16px;
@@ -29,19 +24,10 @@ body, html {
   opacity: 0.92;
 }
 
-.cliente-faixa {
-  background: #fff;
-  border: 1px solid #ddd;
-  padding: 18px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 18px;
-}
-
 .cliente-avatar {
   width: 64px;
   height: 64px;
+  min-width: 64px;
   border-radius: 50%;
   object-fit: cover;
   border: 1px solid #ccc;
@@ -65,12 +51,6 @@ body, html {
   margin-bottom: 20px;
 }
 
-.resumo-item {
-  background: #fff;
-  border: 1px solid #ddd;
-  padding: 14px 16px;
-}
-
 .resumo-item .label {
   display: block;
   font-size: 13px;
@@ -81,11 +61,6 @@ body, html {
 .resumo-item strong {
   font-size: 24px;
   color: #111;
-}
-
-.historico-box {
-  background: #fff;
-  border: 1px solid #ddd;
 }
 
 .historico-topo {
@@ -100,6 +75,7 @@ body, html {
 
 .tabela-wrapper {
   overflow-x: auto;
+  max-height: 70vh;
 }
 
 .tabela-transacoes {
@@ -167,6 +143,31 @@ body, html {
 .status-cancelado {
   color: #b42318;
   font-weight: 700;
+}
+
+.cliente-faixa {
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+  border-radius: 14px;
+}
+
+.resumo-item {
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 14px 16px;
+  border-radius: 14px;
+}
+
+.historico-box {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 14px;
+  overflow: hidden;
 }
 
 @media (max-width: 900px) {

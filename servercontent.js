@@ -2285,9 +2285,6 @@ router.get("/modelo/dados-bancarios", authModelo, async (req, res) => {
 router.get("/modelo/clientes/:cliente_id/transacoes", authModelo, async (req, res) => {
   try {
     const cliente_id = Number(req.params.cliente_id);
-    const page = Math.max(Number(req.query.page) || 1, 1);
-    const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 100);
-    const offset = (page - 1) * limit;
 
     if (!Number.isInteger(cliente_id) || cliente_id <= 0) {
       return res.status(400).json({ error: "cliente_id inválido" });
@@ -2306,9 +2303,14 @@ router.get("/modelo/clientes/:cliente_id/transacoes", authModelo, async (req, re
 
     const clienteRes = await db.query(
       `
-      SELECT id, nome, avatar_url
-      FROM clientes
-      WHERE id = $1
+      SELECT
+        c.id,
+        c.nome,
+        cd.avatar AS avatar_url
+      FROM clientes c
+      LEFT JOIN clientes_dados cd
+        ON cd.cliente_id = c.id
+      WHERE c.id = $1
       LIMIT 1
       `,
       [cliente_id]
@@ -2318,9 +2320,17 @@ router.get("/modelo/clientes/:cliente_id/transacoes", authModelo, async (req, re
       return res.status(404).json({ error: "Cliente não encontrado" });
     }
 
-    const countRes = await db.query(
+    const resumoRes = await db.query(
       `
-      SELECT COUNT(*)::int AS total
+      SELECT
+        COUNT(*)::int AS total_compras,
+        COALESCE(SUM(t.valor_bruto), 0)::numeric(10,2) AS total_pago,
+        COUNT(*) FILTER (
+          WHERE LOWER(COALESCE(t.tipo, '')) IN ('conteudo', 'midia')
+        )::int AS conteudos_pagos,
+        COUNT(*) FILTER (
+          WHERE LOWER(COALESCE(t.tipo, '')) = 'assinatura'
+        )::int AS assinaturas
       FROM transacoes_agency t
       WHERE t.modelo_id = $1
         AND t.cliente_id = $2
@@ -2328,40 +2338,45 @@ router.get("/modelo/clientes/:cliente_id/transacoes", authModelo, async (req, re
       [modelo_id, cliente_id]
     );
 
-    const totalRegistros = countRes.rows[0]?.total || 0;
-    const totalPaginas = Math.max(Math.ceil(totalRegistros / limit), 1);
-
     const transRes = await db.query(
       `
       SELECT
         t.id,
         CASE
-          WHEN t.tipo = 'conteudo' THEN 'midia'
-          ELSE t.tipo
+          WHEN LOWER(COALESCE(t.tipo, '')) = 'conteudo' THEN 'midia'
+          ELSE LOWER(COALESCE(t.tipo, ''))
         END AS tipo,
         t.created_at,
+        t.valor_bruto,
         t.valor_modelo,
-        t.status
+        t.status,
+        t.aceitou_termos
       FROM transacoes_agency t
       WHERE t.modelo_id = $1
         AND t.cliente_id = $2
-      ORDER BY t.created_at DESC
-      LIMIT $3 OFFSET $4
+      ORDER BY t.created_at DESC, t.id DESC
       `,
-      [modelo_id, cliente_id, limit, offset]
+      [modelo_id, cliente_id]
     );
 
     return res.json({
       cliente: clienteRes.rows[0],
-      registros: transRes.rows,
-      paginaAtual: page,
-      totalPaginas,
-      totalRegistros
+      resumo: {
+        total_compras: Number(resumoRes.rows[0]?.total_compras || 0),
+        total_pago: Number(resumoRes.rows[0]?.total_pago || 0),
+        conteudos_pagos: Number(resumoRes.rows[0]?.conteudos_pagos || 0),
+        assinaturas: Number(resumoRes.rows[0]?.assinaturas || 0)
+      },
+      totalRegistros: transRes.rowCount,
+      registros: transRes.rows
     });
 
   } catch (err) {
     console.error("Erro ao buscar transações do cliente para a modelo:", err);
-    return res.status(500).json({ error: "Erro ao buscar transações" });
+    return res.status(500).json({
+      error: "Erro ao buscar transações",
+      detalhe: err.message
+    });
   }
 });
 

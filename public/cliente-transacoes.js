@@ -69,32 +69,27 @@ function renderizarTransacoes(transacoes = []) {
   }).join("");
 }
 
-function preencherResumo(lista = []) {
+function preencherResumo(resumo = {}) {
   const totalCompras = document.getElementById("totalCompras");
   const totalPago = document.getElementById("totalPago");
   const totalConteudos = document.getElementById("totalConteudos");
   const totalAssinaturas = document.getElementById("totalAssinaturas");
 
-  const total = lista.length;
+  if (totalCompras) {
+    totalCompras.textContent = Number(resumo.total_compras || 0);
+  }
 
-  const soma = lista.reduce((acc, item) => {
-    return acc + Number(item.valor_modelo || 0);
-  }, 0);
+  if (totalPago) {
+    totalPago.textContent = formatarMoeda(resumo.total_pago || 0);
+  }
 
-  const qtdConteudos = lista.filter(item => {
-    const tipo = String(item.tipo || "").toLowerCase();
-    return tipo === "midia";
-  }).length;
+  if (totalConteudos) {
+    totalConteudos.textContent = Number(resumo.conteudos_pagos || 0);
+  }
 
-  const qtdAssinaturas = lista.filter(item => {
-    const tipo = String(item.tipo || "").toLowerCase();
-    return tipo === "assinatura";
-  }).length;
-
-  if (totalCompras) totalCompras.textContent = total;
-  if (totalPago) totalPago.textContent = formatarMoeda(soma);
-  if (totalConteudos) totalConteudos.textContent = qtdConteudos;
-  if (totalAssinaturas) totalAssinaturas.textContent = qtdAssinaturas;
+  if (totalAssinaturas) {
+    totalAssinaturas.textContent = Number(resumo.assinaturas || 0);
+  }
 }
 
 function preencherCliente(cliente, total) {
@@ -133,7 +128,7 @@ async function carregarTransacoesCliente() {
     }
 
     preencherCliente(data.cliente, data.totalRegistros || 0);
-    preencherResumo(data.registros || []);
+    preencherResumo(data.resumo || {});
     renderizarTransacoes(data.registros || []);
 
   } catch (err) {
