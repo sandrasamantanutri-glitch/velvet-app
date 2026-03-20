@@ -65,6 +65,8 @@ socket.on("connect_error", (err) => {
   console.error("❌ connect_error socket:", err.message, err);
 });
 
+
+
 // ===============================
 // ENTRAR NA SALA
 function tentarEntrarSala(){
@@ -94,14 +96,12 @@ function tentarEntrarSala(){
 // ===============================
 
 document.addEventListener("DOMContentLoaded", async () => {
-
-  try{
-
-    const res = await fetch("/api/modelo/me",{
-      headers:{ Authorization:"Bearer " + token }
+  try {
+    const res = await fetch("/api/modelo/me", {
+      headers: { Authorization: "Bearer " + token }
     });
 
-    if(!res.ok){
+    if (!res.ok) {
       console.error("Erro ao buscar modelo");
       return;
     }
@@ -110,7 +110,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     modelo_id = modelo.modelo_id;
 
-    if(!modelo_id){
+    if (!modelo_id) {
       console.error("modelo_id indefinido");
       return;
     }
@@ -118,48 +118,51 @@ document.addEventListener("DOMContentLoaded", async () => {
     const params = new URLSearchParams(location.search);
     cliente_id = Number(params.get("cliente_id"));
 
-    if(!cliente_id){
+    if (!cliente_id) {
       alert("cliente inválido");
       return;
     }
 
-     const modal = document.getElementById("modalMidia");
+    const modal = document.getElementById("modalMidia");
 
-    if(modal){
-      modal.addEventListener("click", function(e){
-
-        if(e.target.classList.contains("modal-backdrop")){
+    if (modal) {
+      modal.addEventListener("click", function (e) {
+        if (e.target.classList.contains("modal-backdrop")) {
           fecharModalMidia();
         }
-
       });
     }
 
+    const sendBtn = document.getElementById("sendBtn");
+    const msgInput = document.getElementById("msgInput");
+
+    if (sendBtn) {
+      sendBtn.addEventListener("click", enviarMensagem);
+    }
+
+    if (msgInput) {
+      msgInput.addEventListener("keydown", e => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          enviarMensagem(e);
+        }
+      });
+    }
+
+    document.getElementById("btnAnotacoesCliente")?.addEventListener("click", abrirPopupAnotacoesCliente);
+    document.getElementById("fecharPopupAnotacoes")?.addEventListener("click", fecharPopupAnotacoesCliente);
+    document.getElementById("salvarAnotacoesCliente")?.addEventListener("click", salvarAnotacoesCliente);
+    document.querySelector(".popup-anotacoes-backdrop")?.addEventListener("click", fecharPopupAnotacoesCliente);
+
     await carregarInfoCliente(cliente_id);
 
-    marcarComoLido(cliente_id);
+    await marcarComoLido(cliente_id);
 
     tentarEntrarSala();
 
-const sendBtn = document.getElementById("sendBtn");
-const msgInput = document.getElementById("msgInput");
-
-if(sendBtn){
-  sendBtn.addEventListener("click", enviarMensagem);
-}
-
-msgInput.addEventListener("keydown", e=>{
-   if(e.key==="Enter" && !e.shiftKey){
-    e.preventDefault();
-    enviarMensagem(e);
+  } catch (err) {
+    console.error("Erro DOMContentLoaded:", err);
   }
-});
-
-
-  }catch(err){
-    console.error("Erro DOMContentLoaded:",err);
-  }
-
 });
 
   // ===============================
@@ -624,19 +627,17 @@ function renderMensagem(msg) {
   chatBox.appendChild(div);
 }
 
-async function carregarInfoCliente(cliente_id){
+async function carregarInfoCliente(cliente_id) {
+  if (!cliente_id) return;
 
-  if(!cliente_id) return;
-
-  try{
-
-    const res = await fetch(`/api/chat/cliente/${cliente_id}`,{
-      headers:{
-        Authorization:"Bearer " + token
+  try {
+    const res = await fetch(`/api/chat/cliente/${cliente_id}`, {
+      headers: {
+        Authorization: "Bearer " + token
       }
     });
 
-    if(!res.ok){
+    if (!res.ok) {
       console.warn("Erro ao carregar cliente");
       return;
     }
@@ -646,31 +647,32 @@ async function carregarInfoCliente(cliente_id){
     const nome = document.getElementById("chatClienteNome");
     const avatar = document.getElementById("chatClienteAvatar");
     const status = document.getElementById("chatClienteStatus");
-    if(status) status.innerText = "online";
 
-    if(nome) nome.innerText = cliente.nome || "Cliente";
+    if (nome) nome.innerText = cliente.nome || "Cliente";
 
-if (avatar && cliente.avatar_url) {
-  avatar.src = cliente.avatar_url;
+    if (avatar) {
+      avatar.src = cliente.avatar_url || "/assets/avatar.png";
+      avatar.style.cursor = "pointer";
 
-  avatar.style.cursor = "pointer";
+      avatar.onclick = () => {
+        abrirPreviewAvatar(cliente.avatar_url || "/assets/avatar.png");
+      };
+    }
 
-  avatar.onclick = () => {
-    abrirPreviewAvatar(cliente.avatar_url);
-  };
-}
     if (status) {
       if (cliente.last_seen) {
         status.innerText = `visto por último: ${formatarTempo(cliente.last_seen)}`;
       } else {
-        status.innerText = "visto por último: agora";
+        status.innerText = "Nunca";
       }
     }
 
-  }catch(err){
-    console.error("Erro carregarInfoCliente:",err);
-  }
+    // carrega resumo + nota privada da modelo sobre este cliente
+    await carregarAnotacoesCliente(cliente_id);
 
+  } catch (err) {
+    console.error("Erro carregarInfoCliente:", err);
+  }
 }
 
 function fecharMenuMensagem(){
@@ -1446,6 +1448,91 @@ function aplicarEstadoLocalInboxModelo(chat) {
   }
 
   return chat;
+}
+
+async function carregarAnotacoesCliente(cliente_id) {
+  if (!cliente_id) return;
+
+  try {
+    const res = await fetch(`/api/chat/cliente/${cliente_id}/anotacoes`, {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
+
+    if (!res.ok) {
+      console.warn("Erro ao carregar anotações do cliente");
+      return;
+    }
+
+    const data = await res.json();
+
+    const resumoEl = document.getElementById("chatClienteResumo");
+    const inputResumo = document.getElementById("inputResumoCliente");
+    const textareaNota = document.getElementById("textareaNotaCliente");
+
+    if (resumoEl) {
+      resumoEl.innerText = data?.resumo_curto || "";
+      resumoEl.style.display = data?.resumo_curto ? "inline-flex" : "none";
+    }
+
+    if (inputResumo) inputResumo.value = data?.resumo_curto || "";
+    if (textareaNota) textareaNota.value = data?.nota_privada || "";
+
+  } catch (err) {
+    console.error("Erro carregarAnotacoesCliente:", err);
+  }
+}
+
+async function salvarAnotacoesCliente() {
+  if (!cliente_id) return;
+
+  const inputResumo = document.getElementById("inputResumoCliente");
+  const textareaNota = document.getElementById("textareaNotaCliente");
+
+  const resumo_curto = String(inputResumo?.value || "").trim();
+  const nota_privada = String(textareaNota?.value || "").trim();
+
+  try {
+    const res = await fetch(`/api/chat/cliente/${cliente_id}/anotacoes`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token
+      },
+      body: JSON.stringify({
+        resumo_curto,
+        nota_privada
+      })
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      alert(data.error || "Erro ao salvar anotações");
+      return;
+    }
+
+    const resumoEl = document.getElementById("chatClienteResumo");
+    if (resumoEl) {
+      resumoEl.innerText = data?.resumo_curto || "";
+      resumoEl.style.display = data?.resumo_curto ? "inline-flex" : "none";
+    }
+
+    fecharPopupAnotacoesCliente();
+
+  } catch (err) {
+    console.error("Erro salvarAnotacoesCliente:", err);
+    alert("Erro ao salvar anotações");
+  }
+}
+
+function abrirPopupAnotacoesCliente() {
+  document.getElementById("popupAnotacoesCliente")?.classList.remove("hidden");
+}
+
+function fecharPopupAnotacoesCliente() {
+  document.getElementById("popupAnotacoesCliente")?.classList.add("hidden");
 }
 
 // apenas log

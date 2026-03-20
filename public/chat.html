@@ -10,21 +10,35 @@
 </head>
 
 <body class="role-modelo">
-   <div id="header-container"></div>
-<header class="chat-topo">
-<button type="button" class="btn-voltar" onclick="window.location.href='/inbox.html'">
-  <img src="/assets/voltar.png" alt="Voltar">
-</button>
+  <div id="header-container"></div>
 
-  <div class="chat-cliente-info">
-    <img id="chatClienteAvatar" class="chat-avatar" src="/assets/avatar.png" alt="Avatar cliente" />
-    <div class="chat-cliente-texto">
-      <div id="chatClienteNome" class="chat-nome">Cliente</div>
-      <div id="chatClienteStatus" class="chat-status">carregando…</div>
+  <header class="chat-topo">
+    <button type="button" class="btn-voltar" onclick="window.location.href='/inbox.html'">
+      <img src="/assets/voltar.png" alt="Voltar">
+    </button>
+
+    <div class="chat-cliente-info">
+      <img id="chatClienteAvatar" class="chat-avatar" src="/assets/avatar.png" alt="Avatar cliente" />
+
+      <div class="chat-cliente-texto">
+        <div class="chat-nome-linha">
+          <div id="chatClienteNome" class="chat-nome">Cliente</div>
+
+          <span id="chatClienteResumo" class="chat-cliente-resumo" style="display:none;"></span>
+
+          <button
+            id="btnAnotacoesCliente"
+            type="button"
+            class="btn-anotacoes-cliente"
+            title="Anotações privadas">
+            ✎
+          </button>
+        </div>
+
+        <div id="chatClienteStatus" class="chat-status">carregando…</div>
+      </div>
     </div>
-  </div>
-</header>
-
+  </header>
 
 <!-- ÁREA DE MENSAGENS -->
 <main id="chatBox" class="chat-box"></main>
@@ -92,7 +106,34 @@
       <button onclick="fecharMenuMensagem()">Cancelar</button>
     </div>
   </div>
-</div>
+ </div>
+
+  <div id="popupAnotacoesCliente" class="popup-anotacoes hidden">
+    <div class="popup-anotacoes-backdrop"></div>
+
+    <div class="popup-anotacoes-box">
+      <button id="fecharPopupAnotacoes" class="popup-anotacoes-fechar" type="button">×</button>
+
+      <h3>Anotações privadas</h3>
+
+      <label for="inputResumoCliente">Resumo curto</label>
+      <input
+        id="inputResumoCliente"
+        type="text"
+        maxlength="120"
+        placeholder="Ex: compra VIP, gosta de áudio, responde à noite">
+
+      <label for="textareaNotaCliente">Informações privadas</label>
+      <textarea
+        id="textareaNotaCliente"
+        rows="8"
+        placeholder="Escreve aqui observações que só a modelo pode ver..."></textarea>
+
+      <div class="popup-anotacoes-acoes">
+        <button id="salvarAnotacoesCliente" type="button">Salvar</button>
+      </div>
+    </div>
+  </div>
 
 <div id="modalMidia" class="modal-midia hidden">
 

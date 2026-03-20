@@ -3857,6 +3857,61 @@ app.get("/api/pagamento/status/:orderId", auth, async (req, res) => {
   }
 });
 
+// =============================
+// ANOTACOES DO CLIENTE CHAT
+// ============================
+
+app.get("/api/chat/cliente/:cliente_id/anotacoes", authModelo, async (req, res) => {
+  try {
+    const cliente_id = Number(req.params.cliente_id);
+    const userId = req.user.id;
+
+    if (!Number.isInteger(cliente_id) || cliente_id <= 0) {
+      return res.status(400).json({ error: "cliente_id inválido" });
+    }
+
+    const modeloRes = await db.query(
+      `SELECT id FROM modelos WHERE user_id = $1 LIMIT 1`,
+      [userId]
+    );
+
+    if (!modeloRes.rowCount) {
+      return res.status(403).json({ error: "Modelo não encontrada" });
+    }
+
+    const modelo_id = Number(modeloRes.rows[0].id);
+
+    const result = await db.query(
+      `
+      SELECT
+        resumo_curto,
+        nota_privada,
+        updated_at
+      FROM cliente_notas_modelo
+      WHERE modelo_id = $1
+        AND cliente_id = $2
+      LIMIT 1
+      `,
+      [modelo_id, cliente_id]
+    );
+
+    if (!result.rowCount) {
+      return res.json({
+        resumo_curto: "",
+        nota_privada: "",
+        updated_at: null
+      });
+    }
+
+    return res.json(result.rows[0]);
+
+  } catch (err) {
+    console.error("Erro ao buscar anotações do cliente:", err);
+    return res.status(500).json({ error: "Erro interno ao buscar anotações" });
+  }
+});
+
+
 // ==================================
 // ROTAS PUT - ATUALIZAR DADOS
 // ==================================
@@ -4462,6 +4517,73 @@ app.put("/api/cliente/subscricoes/:id/cancelar", auth, async (req, res) => {
     return res.status(500).json({
       error: "Erro interno ao cancelar subscrição."
     });
+  }
+});
+
+// =============================
+// ATUALIZAR INFOS CLT CHAT
+// ============================
+
+app.put("/api/chat/cliente/:cliente_id/anotacoes", authModelo, async (req, res) => {
+  try {
+    const cliente_id = Number(req.params.cliente_id);
+    const userId = req.user.id;
+
+    if (!Number.isInteger(cliente_id) || cliente_id <= 0) {
+      return res.status(400).json({ error: "cliente_id inválido" });
+    }
+
+    let { resumo_curto, nota_privada } = req.body || {};
+
+    resumo_curto = String(resumo_curto || "").trim();
+    nota_privada = String(nota_privada || "").trim();
+
+    if (resumo_curto.length > 120) {
+      return res.status(400).json({ error: "Resumo curto deve ter no máximo 120 caracteres" });
+    }
+
+    const modeloRes = await db.query(
+      `SELECT id FROM modelos WHERE user_id = $1 LIMIT 1`,
+      [userId]
+    );
+
+    if (!modeloRes.rowCount) {
+      return res.status(403).json({ error: "Modelo não encontrada" });
+    }
+
+    const modelo_id = Number(modeloRes.rows[0].id);
+
+    const result = await db.query(
+      `
+      INSERT INTO cliente_notas_modelo (
+        modelo_id,
+        cliente_id,
+        resumo_curto,
+        nota_privada,
+        updated_at
+      )
+      VALUES ($1, $2, $3, $4, NOW())
+      ON CONFLICT (modelo_id, cliente_id)
+      DO UPDATE SET
+        resumo_curto = EXCLUDED.resumo_curto,
+        nota_privada = EXCLUDED.nota_privada,
+        updated_at = NOW()
+      RETURNING
+        resumo_curto,
+        nota_privada,
+        updated_at
+      `,
+      [modelo_id, cliente_id, resumo_curto || null, nota_privada || null]
+    );
+
+    return res.json({
+      ok: true,
+      ...result.rows[0]
+    });
+
+  } catch (err) {
+    console.error("Erro ao salvar anotações do cliente:", err);
+    return res.status(500).json({ error: "Erro interno ao salvar anotações" });
   }
 });
 
