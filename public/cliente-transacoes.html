@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Transações do Cliente</title>
+  <link rel="stylesheet" href="/cliente-transacoes.css" />
+</head>
+<body class="role-modelo">
+  <div id="header-container"></div>
+
+  <main class="pagina-transacoes">
+    <section class="topo-transacoes">
+      <button class="btn-voltar" type="button" onclick="history.back()">Voltar</button>
+
+      <div class="cliente-card">
+        <img id="clienteAvatar" class="cliente-avatar" src="/assets/avatar.png" alt="Avatar do cliente">
+        <div class="cliente-info">
+          <h1 id="clienteNome">Cliente</h1>
+          <p id="clienteResumo">Carregando histórico...</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="resumo-grid">
+      <div class="resumo-box">
+        <span class="resumo-label">Total de compras</span>
+        <strong id="totalCompras">0</strong>
+      </div>
+
+      <div class="resumo-box">
+        <span class="resumo-label">Total pago</span>
+        <strong id="valorTotalPago">R$ 0,00</strong>
+      </div>
+
+      <div class="resumo-box">
+        <span class="resumo-label">Conteúdos pagos</span>
+        <strong id="totalConteudos">0</strong>
+      </div>
+
+      <div class="resumo-box">
+        <span class="resumo-label">Assinaturas</span>
+        <strong id="totalAssinaturas">0</strong>
+      </div>
+    </section>
+
+    <section class="lista-wrapper">
+      <div class="lista-topo">
+        <h2>Histórico</h2>
+      </div>
+
+      <div id="listaTransacoes" class="lista-transacoes">
+        <div class="estado-vazio">Carregando...</div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/cliente-transacoes.js"></script>
+</body>
+</html>

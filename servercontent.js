@@ -2282,6 +2282,89 @@ router.get("/modelo/dados-bancarios", authModelo, async (req, res) => {
   }
 });
 
+router.get("/modelo/clientes/:cliente_id/transacoes", authModelo, async (req, res) => {
+  try {
+    const cliente_id = Number(req.params.cliente_id);
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 100);
+    const offset = (page - 1) * limit;
+
+    if (!Number.isInteger(cliente_id) || cliente_id <= 0) {
+      return res.status(400).json({ error: "cliente_id inválido" });
+    }
+
+    const modeloRes = await db.query(
+      `SELECT id FROM modelos WHERE user_id = $1 LIMIT 1`,
+      [req.user.id]
+    );
+
+    if (!modeloRes.rowCount) {
+      return res.status(404).json({ error: "Modelo não encontrada" });
+    }
+
+    const modelo_id = Number(modeloRes.rows[0].id);
+
+    const clienteRes = await db.query(
+      `
+      SELECT id, nome, avatar_url
+      FROM clientes
+      WHERE id = $1
+      LIMIT 1
+      `,
+      [cliente_id]
+    );
+
+    if (!clienteRes.rowCount) {
+      return res.status(404).json({ error: "Cliente não encontrado" });
+    }
+
+    const countRes = await db.query(
+      `
+      SELECT COUNT(*)::int AS total
+      FROM transacoes_agency t
+      WHERE t.modelo_id = $1
+        AND t.cliente_id = $2
+      `,
+      [modelo_id, cliente_id]
+    );
+
+    const totalRegistros = countRes.rows[0]?.total || 0;
+    const totalPaginas = Math.max(Math.ceil(totalRegistros / limit), 1);
+
+    const transRes = await db.query(
+      `
+      SELECT
+        t.id,
+        CASE
+          WHEN t.tipo = 'conteudo' THEN 'midia'
+          ELSE t.tipo
+        END AS tipo,
+        t.created_at,
+        t.valor_modelo,
+        t.status
+      FROM transacoes_agency t
+      WHERE t.modelo_id = $1
+        AND t.cliente_id = $2
+      ORDER BY t.created_at DESC
+      LIMIT $3 OFFSET $4
+      `,
+      [modelo_id, cliente_id, limit, offset]
+    );
+
+    return res.json({
+      cliente: clienteRes.rows[0],
+      registros: transRes.rows,
+      paginaAtual: page,
+      totalPaginas,
+      totalRegistros
+    });
+
+  } catch (err) {
+    console.error("Erro ao buscar transações do cliente para a modelo:", err);
+    return res.status(500).json({ error: "Erro ao buscar transações" });
+  }
+});
+
 // ===========================
 // PPV
 // ===========================

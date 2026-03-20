@@ -1910,6 +1910,28 @@ body.role-cliente .msg-modelo .msg-hora {
   cursor:pointer;
 }
 
+.btn-transacoes-cliente{
+  width:22px;
+  height:22px;
+  min-width:22px;
+  border:none;
+  border-radius:50%;
+  background:#1f9d55;
+  color:#fff;
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+  margin-left:auto;
+}
+
+.btn-transacoes-cliente:hover{
+  opacity:.9;
+}
+
 /* mobile */
 @media (max-width: 520px) {
   .form-pagamento {

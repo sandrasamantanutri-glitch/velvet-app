@@ -153,7 +153,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("fecharPopupAnotacoes")?.addEventListener("click", fecharPopupAnotacoesCliente);
     document.getElementById("salvarAnotacoesCliente")?.addEventListener("click", salvarAnotacoesCliente);
     document.querySelector(".popup-anotacoes-backdrop")?.addEventListener("click", fecharPopupAnotacoesCliente);
-
+    
+    document.getElementById("btnTransacoesCliente")?.addEventListener("click", () => {
+  if (!cliente_id) return;
+  window.open(`/cliente-transacoes.html?cliente_id=${cliente_id}`, "_blank");
+    });
+    
     await carregarInfoCliente(cliente_id);
 
     await marcarComoLido(cliente_id);
