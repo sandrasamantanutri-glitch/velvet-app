@@ -3791,8 +3791,7 @@ app.get("/api/modelo/assinantes", authModelo, async (req, res) => {
        AND f.modelo_id = vs.modelo_id
 
       ORDER BY
-        vs.ativo DESC,
-        vs.expiration_at DESC NULLS LAST,
+        vs.ultima_renovacao DESC NULLS LAST,
         c.nome ASC
       `,
       [req.modelo_id]
