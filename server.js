@@ -3767,13 +3767,8 @@ app.get("/api/modelo/assinantes", authModelo, async (req, res) => {
         c.nome AS nome_cliente,
 
         CASE
-          WHEN vs.ativo = true
-           AND vs.expiration_at IS NOT NULL
-           AND vs.expiration_at > NOW()
-            THEN 'VIP'
-          WHEN vs.ativo = true
-            THEN 'Ativo'
-          ELSE 'Não ativo'
+          WHEN vs.ativo = true THEN 'Ativo'
+          ELSE 'Inativo'
         END AS status_vip,
 
         vs.ativo,
