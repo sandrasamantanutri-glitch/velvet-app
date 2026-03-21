@@ -1604,42 +1604,47 @@ res.status(500).json({error:"Erro histórico segurança"});
 
 router.get("/transacoes_cliente", authCliente, async (req, res) => {
   try {
-    const userId = req.user.id;
     const role = req.user.role;
 
-    let vipQuery;
-    let conteudoQuery;
-
-    if (role === "cliente") {
-
-      vipQuery = await db.query(`
-        SELECT
-          id,
-          'assinatura' AS tipo,
-          valor_total AS valor,
-          CASE 
-            WHEN ativo = true THEN 'pago'
-            ELSE 'inativo'
-          END AS status,
-          created_at
-        FROM vip_subscriptions
-        WHERE cliente_id = $1
-      `, [userId]);
-
-      conteudoQuery = await db.query(`
-        SELECT
-          id,
-          'midia' AS tipo,
-          valor_total AS valor,
-          status,
-          criado_em AS created_at
-        FROM conteudo_pacotes
-        WHERE cliente_id = $1
-      `, [userId]);
-
-    } else {
+    if (role !== "cliente") {
       return res.status(403).json({ error: "Apenas cliente pode acessar" });
     }
+
+    const clienteRes = await db.query(
+      "SELECT id FROM clientes WHERE user_id = $1",
+      [req.user.id]
+    );
+
+    if (clienteRes.rowCount === 0) {
+      return res.status(404).json({ error: "Cliente não encontrado" });
+    }
+
+    const clienteId = clienteRes.rows[0].id;
+
+    const vipQuery = await db.query(`
+      SELECT
+        id,
+        'assinatura' AS tipo,
+        valor_total AS valor,
+        CASE 
+          WHEN ativo = true THEN 'pago'
+          ELSE 'inativo'
+        END AS status,
+        created_at
+      FROM vip_subscriptions
+      WHERE cliente_id = $1
+    `, [clienteId]);
+
+    const conteudoQuery = await db.query(`
+      SELECT
+        id,
+        'midia' AS tipo,
+        valor_total AS valor,
+        status,
+        criado_em AS created_at
+      FROM conteudo_pacotes
+      WHERE cliente_id = $1
+    `, [clienteId]);
 
     const transacoes = [
       ...vipQuery.rows,
@@ -2323,17 +2328,20 @@ router.get("/modelo/clientes/:cliente_id/transacoes", authModelo, async (req, re
     const resumoRes = await db.query(
       `
       SELECT
-        COUNT(*)::int AS total_compras,
-        COALESCE(SUM(t.valor_bruto), 0)::numeric(10,2) AS total_pago,
-        COUNT(*) FILTER (
-          WHERE LOWER(COALESCE(t.tipo, '')) IN ('conteudo', 'midia')
-        )::int AS conteudos_pagos,
-        COUNT(*) FILTER (
-          WHERE LOWER(COALESCE(t.tipo, '')) = 'assinatura'
-        )::int AS assinaturas
-      FROM transacoes_agency t
-      WHERE t.modelo_id = $1
-        AND t.cliente_id = $2
+  COUNT(*) FILTER (WHERE t.status = 'pago')::int AS total_compras,
+  COALESCE(SUM(CASE WHEN t.status = 'pago' THEN t.valor_bruto END), 0)::numeric(10,2) AS total_pago,
+  COUNT(*) FILTER (
+    WHERE t.status = 'pago'
+      AND LOWER(COALESCE(t.tipo, '')) IN ('conteudo', 'midia')
+  )::int AS conteudos_pagos,
+  COUNT(*) FILTER (
+    WHERE t.status = 'pago'
+      AND LOWER(COALESCE(t.tipo, '')) = 'assinatura'
+  )::int AS assinaturas
+FROM transacoes_agency t
+WHERE t.modelo_id = $1
+  AND t.cliente_id = $2
+
       `,
       [modelo_id, cliente_id]
     );
@@ -2353,7 +2361,8 @@ router.get("/modelo/clientes/:cliente_id/transacoes", authModelo, async (req, re
         t.aceitou_termos
       FROM transacoes_agency t
       WHERE t.modelo_id = $1
-        AND t.cliente_id = $2
+  AND t.cliente_id = $2
+  AND t.status = 'pago'
       ORDER BY t.created_at DESC, t.id DESC
       `,
       [modelo_id, cliente_id]

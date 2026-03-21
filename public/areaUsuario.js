@@ -255,11 +255,11 @@ function renderizarPagina() {
     tbody.innerHTML += `
       <tr>
         <td class="assinante-nome">${a.nome_cliente}</td>
-        <td>
-          <span class="badge ${a.ativo ? "badge-ativo" : "badge-inativo"}">
-            ${a.ativo ? "Ativo" : "Inativo"}
-          </span>
-        </td>
+<td>
+  <span class="status-badge ${a.ativo ? "ativo" : "inativo"}">
+    ${a.status_vip}
+  </span>
+</td>
         <td>${formatarData(a.expiration_at)}</td>
         <td>${formatarData(a.ultima_renovacao)}</td>
         <td>R$ ${Number(a.total_assinaturas).toFixed(2)}</td>

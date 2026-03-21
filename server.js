@@ -3722,48 +3722,80 @@ app.get("/modelo/relatorio", authModelo, (req, res) => {
 
 app.get("/api/modelo/assinantes", authModelo, async (req, res) => {
   try {
-
     const result = await db.query(
       `
+      WITH vip_status AS (
+        SELECT
+          v.cliente_id,
+          v.modelo_id,
+          BOOL_OR(v.ativo) AS ativo,
+          MAX(v.expiration_at) AS expiration_at,
+          MAX(v.updated_at) AS ultima_renovacao
+        FROM vip_subscriptions v
+        WHERE v.modelo_id = $1
+        GROUP BY v.cliente_id, v.modelo_id
+      ),
+      financeiros AS (
+        SELECT
+          t.cliente_id,
+          t.modelo_id,
+
+          COALESCE(SUM(
+            CASE
+              WHEN LOWER(COALESCE(t.tipo, '')) = 'assinatura'
+               AND t.status = 'pago'
+              THEN COALESCE(t.valor_modelo, 0)
+              ELSE 0
+            END
+          ), 0)::numeric(10,2) AS total_assinaturas,
+
+          COALESCE(SUM(
+            CASE
+              WHEN LOWER(COALESCE(t.tipo, '')) IN ('conteudo', 'midia')
+               AND t.status = 'pago'
+              THEN COALESCE(t.valor_modelo, 0)
+              ELSE 0
+            END
+          ), 0)::numeric(10,2) AS total_midias
+
+        FROM transacoes_agency t
+        WHERE t.modelo_id = $1
+        GROUP BY t.cliente_id, t.modelo_id
+      )
       SELECT
-        c.id    AS cliente_id,
-        c.nome  AS nome_cliente,
+        c.id AS cliente_id,
+        c.nome AS nome_cliente,
 
-        v.ativo,
-        v.expiration_at,
-        v.updated_at AS ultima_renovacao,
+        CASE
+          WHEN vs.ativo = true
+           AND vs.expiration_at IS NOT NULL
+           AND vs.expiration_at > NOW()
+            THEN 'VIP'
+          WHEN vs.ativo = true
+            THEN 'Ativo'
+          ELSE 'Não ativo'
+        END AS status_vip,
 
-        COALESCE(
-          SUM(DISTINCT (v.valor_assinatura * 0.7)),
-          0
-        ) AS total_assinaturas,
+        vs.ativo,
+        vs.expiration_at,
+        vs.ultima_renovacao,
 
-        COALESCE(
-          SUM(cp.preco * 0.7),
-          0
-        ) AS total_midias
+        COALESCE(f.total_assinaturas, 0)::numeric(10,2) AS total_assinaturas,
+        COALESCE(f.total_midias, 0)::numeric(10,2) AS total_midias
 
-      FROM vip_subscriptions v
-
+      FROM vip_status vs
       JOIN clientes c
-        ON c.id = v.cliente_id
+        ON c.id = vs.cliente_id
+      LEFT JOIN financeiros f
+        ON f.cliente_id = vs.cliente_id
+       AND f.modelo_id = vs.modelo_id
 
-      LEFT JOIN conteudo_pacotes cp
-        ON cp.cliente_id = c.id
-       AND cp.modelo_id  = v.modelo_id
-
-      WHERE v.modelo_id = $1
-
-      GROUP BY
-        c.id,
-        c.nome,
-        v.ativo,
-        v.expiration_at,
-        v.updated_at
-
-      ORDER BY v.expiration_at DESC;
+      ORDER BY
+        vs.ativo DESC,
+        vs.expiration_at DESC NULLS LAST,
+        c.nome ASC
       `,
-      [req.modelo_id] 
+      [req.modelo_id]
     );
 
     res.json(result.rows);
