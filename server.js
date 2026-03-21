@@ -3730,7 +3730,7 @@ app.get("/api/modelo/assinantes", authModelo, async (req, res) => {
           v.modelo_id,
           BOOL_OR(v.ativo) AS ativo,
           MAX(v.expiration_at) AS expiration_at,
-          MAX(v.updated_at) AS ultima_renovacao
+          MAX(v.created_at) AS criado_em
         FROM vip_subscriptions v
         WHERE v.modelo_id = $1
         GROUP BY v.cliente_id, v.modelo_id
@@ -3778,7 +3778,7 @@ app.get("/api/modelo/assinantes", authModelo, async (req, res) => {
 
         vs.ativo,
         vs.expiration_at,
-        vs.ultima_renovacao,
+        vs.criado_em,
 
         COALESCE(f.total_assinaturas, 0)::numeric(10,2) AS total_assinaturas,
         COALESCE(f.total_midias, 0)::numeric(10,2) AS total_midias
@@ -3791,7 +3791,7 @@ app.get("/api/modelo/assinantes", authModelo, async (req, res) => {
        AND f.modelo_id = vs.modelo_id
 
       ORDER BY
-        vs.ultima_renovacao DESC NULLS LAST,
+        vs.criado_em DESC NULLS LAST,
         c.nome ASC
       `,
       [req.modelo_id]

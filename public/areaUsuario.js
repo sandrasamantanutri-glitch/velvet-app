@@ -261,7 +261,7 @@ function renderizarPagina() {
   </span>
 </td>
         <td>${formatarData(a.expiration_at)}</td>
-        <td>${formatarData(a.ultima_renovacao)}</td>
+        <td>${formatarData(a.criado_em)}</td>
         <td>R$ ${Number(a.total_assinaturas).toFixed(2)}</td>
         <td>R$ ${Number(a.total_midias).toFixed(2)}</td>
         <td class="total-geral">R$ ${total.toFixed(2)}</td>
