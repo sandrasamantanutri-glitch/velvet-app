@@ -2376,42 +2376,39 @@ res.json(plano.rows[0] || { valor_mensal: 20 });
 // INFO MODELO NO CHAT
 // ===========================
 
-app.get(
-  "/api/modelo/chat/:id",
-  auth,
-  async (req, res) => {
-    const modelo_id = Number(req.params.id);
+app.get("/api/modelo/chat/:id", auth, async (req, res) => {
+  const modelo_id = Number(req.params.id);
 
-    if (!Number.isInteger(modelo_id) || modelo_id <= 0) {
-      return res.status(400).json({ error: "modelo_id inválido" });
-    }
-
-    try {
-      const result = await db.query(
-        `
-        SELECT
-          id,
-          nome_exibicao,
-          avatar,
-          last_seen
-        FROM modelos
-        WHERE id = $1
-        `,
-        [modelo_id]
-      );
-
-      if (!result.rows.length) {
-        return res.status(404).json({ error: "Modelo não encontrado" });
-      }
-
-      res.json(result.rows[0]);
-
-    } catch (err) {
-      console.error("Erro buscar modelo chat:", err);
-      res.status(500).json({ error: "Erro interno" });
-    }
+  if (!Number.isInteger(modelo_id) || modelo_id <= 0) {
+    return res.status(400).json({ error: "modelo_id inválido" });
   }
-);
+
+  try {
+    const result = await db.query(
+      `
+      SELECT
+        id,
+        nome_exibicao,
+        avatar,
+        last_seen
+      FROM modelos
+      WHERE id = $1
+        AND ativo = true
+      `,
+      [modelo_id]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ error: "Modelo não encontrado" });
+    }
+
+    res.json(result.rows[0]);
+
+  } catch (err) {
+    console.error("Erro buscar modelo chat:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
 
 // ===========================
 // DADOS.HTML
@@ -2422,10 +2419,11 @@ app.get("/api/usuario/dados", auth, async (req, res) => {
     let result;
 
     if (req.user.role === "modelo") {
-
-      // 🔥 converter users.id → modelos.id
       const modeloRes = await db.query(
-        `SELECT id FROM modelos WHERE user_id = $1`,
+        `SELECT id
+         FROM modelos
+         WHERE user_id = $1
+           AND ativo = true`,
         [req.user.id]
       );
 
@@ -2435,8 +2433,9 @@ app.get("/api/usuario/dados", auth, async (req, res) => {
 
       const modelo_id = modeloRes.rows[0].id;
 
-      result = await db.query(`
-        SELECT 
+      result = await db.query(
+        `
+        SELECT
           md.*,
           (
             SELECT v.status
@@ -2447,12 +2446,17 @@ app.get("/api/usuario/dados", auth, async (req, res) => {
           ) AS status
         FROM modelos_dados md
         WHERE md.modelo_id = $1
-      `, [modelo_id]);
+          AND md.ativo = true
+        `,
+        [modelo_id]
+      );
 
     } else if (req.user.role === "cliente") {
-
       const clienteRes = await db.query(
-        `SELECT id FROM clientes WHERE user_id = $1`,
+        `SELECT id
+         FROM clientes
+         WHERE user_id = $1
+           AND ativo = true`,
         [req.user.id]
       );
 
@@ -2463,7 +2467,10 @@ app.get("/api/usuario/dados", auth, async (req, res) => {
       const cliente_id = clienteRes.rows[0].id;
 
       result = await db.query(
-        `SELECT * FROM clientes_dados WHERE cliente_id = $1`,
+        `SELECT *
+         FROM clientes_dados
+         WHERE cliente_id = $1
+           AND ativo = true`,
         [cliente_id]
       );
 
@@ -2488,10 +2495,11 @@ app.get("/api/usuario/perfil", auth, async (req, res) => {
     let result;
 
     if (req.user.role === "modelo") {
-
-      // 🔥 converter users.id → modelos.id
       const modeloRes = await db.query(
-        `SELECT id FROM modelos WHERE user_id = $1`,
+        `SELECT id
+         FROM modelos
+         WHERE user_id = $1
+           AND ativo = true`,
         [req.user.id]
       );
 
@@ -2512,16 +2520,20 @@ app.get("/api/usuario/perfil", auth, async (req, res) => {
         FROM modelos m
         LEFT JOIN modelos_dados md
           ON md.modelo_id = m.id
+         AND md.ativo = true
         WHERE m.id = $1
+          AND m.ativo = true
         `,
         [modelo_id]
       );
     }
 
     if (req.user.role === "cliente") {
-
       const clienteRes = await db.query(
-        `SELECT id FROM clientes WHERE user_id = $1`,
+        `SELECT id
+         FROM clientes
+         WHERE user_id = $1
+           AND ativo = true`,
         [req.user.id]
       );
 
@@ -2541,6 +2553,7 @@ app.get("/api/usuario/perfil", auth, async (req, res) => {
           cd.bio
         FROM clientes_dados cd
         WHERE cd.cliente_id = $1
+          AND cd.ativo = true
         `,
         [cliente_id]
       );
@@ -2768,9 +2781,7 @@ app.get("/api/app/state-v2", auth, (req, res) => {
 
 app.get("/api/me", auth, async (req, res) => {
   try {
-
     if (req.user.role === "modelo") {
-
       const result = await db.query(
         `
         SELECT
@@ -2782,6 +2793,7 @@ app.get("/api/me", auth, async (req, res) => {
           m.local
         FROM modelos m
         WHERE m.user_id = $1
+          AND m.ativo = true
         `,
         [req.user.id]
       );
@@ -2802,6 +2814,23 @@ app.get("/api/me", auth, async (req, res) => {
       });
     }
 
+    if (req.user.role === "cliente") {
+      const clienteRes = await db.query(
+        `
+        SELECT id
+        FROM clientes
+        WHERE user_id = $1
+          AND ativo = true
+        LIMIT 1
+        `,
+        [req.user.id]
+      );
+
+      if (!clienteRes.rows.length) {
+        return res.status(403).json({ error: "Conta desativada" });
+      }
+    }
+
     return res.json({
       user_id: req.user.id,
       role: req.user.role
@@ -2818,21 +2847,25 @@ app.get("/api/me", auth, async (req, res) => {
 // ===========================
 
 app.get("/api/modelo/publico/:id/feed", async (req, res) => {
-
   const modeloId = Number(req.params.id);
 
-const { rows } = await db.query(`
-SELECT id,url,thumbnail_url,tipo,tipo_conteudo,preco,descricao
-FROM conteudos
-WHERE modelo_id = $1
-AND ativo = TRUE
-AND tipo_conteudo = 'feed'
-AND (preco IS NULL OR preco = 0)
-ORDER BY id DESC
-`,[modeloId]);
+  const { rows } = await db.query(
+    `
+    SELECT c.id, c.url, c.thumbnail_url, c.tipo, c.tipo_conteudo, c.preco, c.descricao
+    FROM conteudos c
+    JOIN modelos m
+      ON m.id = c.modelo_id
+    WHERE c.modelo_id = $1
+      AND m.ativo = true
+      AND c.ativo = true
+      AND c.tipo_conteudo = 'feed'
+      AND (c.preco IS NULL OR c.preco = 0)
+    ORDER BY c.id DESC
+    `,
+    [modeloId]
+  );
 
   res.json(rows);
-
 });
 
 // ===========================
@@ -2840,31 +2873,35 @@ ORDER BY id DESC
 // ===========================
 
 app.get("/api/modelo/publico/:id/premium", async (req, res) => {
-
   const modeloId = Number(req.params.id);
 
-  const { rows } = await db.query(`
-    SELECT 
-      id,
-      url,
-      thumbnail_url,
-      tipo,
-      tipo_conteudo,
-      preco,
-      descricao,
-      criado_em
-    FROM conteudos
-    WHERE modelo_id = $1
-      AND tipo_conteudo = 'venda'
-      AND preco IS NOT NULL
-      AND preco > 0
-    ORDER BY id DESC
-  `,[modeloId]);
+  const { rows } = await db.query(
+    `
+    SELECT
+      c.id,
+      c.url,
+      c.thumbnail_url,
+      c.tipo,
+      c.tipo_conteudo,
+      c.preco,
+      c.descricao,
+      c.criado_em
+    FROM conteudos c
+    JOIN modelos m
+      ON m.id = c.modelo_id
+    WHERE c.modelo_id = $1
+      AND m.ativo = true
+      AND c.ativo = true
+      AND c.tipo_conteudo = 'venda'
+      AND c.preco IS NOT NULL
+      AND c.preco > 0
+    ORDER BY c.id DESC
+    `,
+    [modeloId]
+  );
 
   res.json(rows);
-
 });
-
 
 // ===========================
 // PERFIL MODELO VERIFICADA
@@ -2872,8 +2909,8 @@ app.get("/api/modelo/publico/:id/premium", async (req, res) => {
 
 app.get("/api/modelo/me", authModelo, async (req, res) => {
   try {
-
-    const result = await db.query(`
+    const result = await db.query(
+      `
       SELECT
         m.id AS modelo_id,
         m.user_id,
@@ -2888,8 +2925,12 @@ app.get("/api/modelo/me", authModelo, async (req, res) => {
       FROM modelos m
       LEFT JOIN modelos_dados md
         ON md.modelo_id = m.id
+       AND md.ativo = true
       WHERE m.id = $1
-    `, [req.modelo_id]);
+        AND m.ativo = true
+      `,
+      [req.modelo_id]
+    );
 
     if (!result.rows.length) {
       return res.status(404).json({
@@ -2911,56 +2952,53 @@ app.get("/api/modelo/me", authModelo, async (req, res) => {
 
 app.get("/api/modelos", auth, async (req, res) => {
   try {
-
     if (!["cliente", "modelo"].includes(req.user.role)) {
       return res.status(403).json([]);
     }
 
-const result = await db.query(`
-SELECT
-  m.id AS modelo_id,
-  m.nome_exibicao,
-  m.avatar,
-  m.bio,
+    const result = await db.query(`
+      SELECT
+        m.id AS modelo_id,
+        m.nome_exibicao,
+        m.avatar,
+        m.bio,
 
-  COALESCE(r.ganhos_mes, 0) AS ganhos_total,
+        COALESCE(r.ganhos_mes, 0) AS ganhos_total,
 
-  ver.verificado_em AS aprovado_em,
+        ver.verificado_em AS aprovado_em,
 
-  CASE 
-    WHEN ver.verificado_em >= NOW() - INTERVAL '5 days'
-    THEN true
-    ELSE false
-  END AS is_new
+        CASE
+          WHEN ver.verificado_em >= NOW() - INTERVAL '5 days'
+          THEN true
+          ELSE false
+        END AS is_new
 
-FROM modelos m
+      FROM modelos m
 
-JOIN LATERAL (
-  SELECT status, verificado_em
-  FROM modelos_verificacao
-  WHERE modelo_id = m.id
-  ORDER BY verificado_em DESC
-  LIMIT 1
-) ver ON true
+      JOIN LATERAL (
+        SELECT status, verificado_em
+        FROM modelos_verificacao
+        WHERE modelo_id = m.id
+        ORDER BY verificado_em DESC
+        LIMIT 1
+      ) ver ON true
 
-LEFT JOIN LATERAL (
+      LEFT JOIN LATERAL (
+        SELECT SUM(valor_modelo) AS ganhos_mes
+        FROM transacoes_agency t
+        WHERE t.modelo_id = m.id
+          AND date_trunc('month', t.created_at) = date_trunc('month', NOW())
+      ) r ON true
 
-  SELECT SUM(valor_modelo) AS ganhos_mes
-  FROM transacoes_agency t
-  WHERE t.modelo_id = m.id
-  AND date_trunc('month', t.created_at) = date_trunc('month', NOW())
+      WHERE ver.status = 'aprovado'
+        AND m.feed = true
+        AND m.ativo = true
 
-) r ON true
-
-WHERE ver.status = 'aprovado'
-AND m.feed = true
-
-ORDER BY ganhos_total DESC
-`);
+      ORDER BY ganhos_total DESC
+    `);
 
     const modelos = result.rows;
 
-    // definir ranking top
     modelos.forEach((m, i) => {
       if (i === 0) m.top1 = true;
       if (i === 1) m.top2 = true;
@@ -2987,8 +3025,8 @@ app.get("/api/modelo/publico/:modelo_id", async (req, res) => {
   }
 
   try {
-
-    const result = await db.query(`
+    const result = await db.query(
+      `
       SELECT
         m.id AS modelo_id,
         m.nome_exibicao,
@@ -2996,11 +3034,11 @@ app.get("/api/modelo/publico/:modelo_id", async (req, res) => {
         m.avatar,
         m.capa,
         m.local,
-           COALESCE(
-      NULLIF(mp.valor_mensal, 0),
-      NULLIF(md.vip_preco, 0),
-      20.00
-    ) AS valor_assinatura,
+        COALESCE(
+          NULLIF(mp.valor_mensal, 0),
+          NULLIF(md.vip_preco, 0),
+          20.00
+        ) AS valor_assinatura,
         md.instagram,
         md.tiktok
       FROM modelos m
@@ -3013,14 +3051,16 @@ app.get("/api/modelo/publico/:modelo_id", async (req, res) => {
       ) v ON true
       LEFT JOIN modelos_dados md
         ON md.modelo_id = m.id
-      
+       AND md.ativo = true
       LEFT JOIN modelos_planos mp
         ON mp.modelo_id = m.id
-
       WHERE m.id = $1
+        AND m.ativo = true
         AND v.status = 'aprovado'
-      LIMIT 1;
-    `, [modelo_id]);
+      LIMIT 1
+      `,
+      [modelo_id]
+    );
 
     if (!result.rows.length) {
       return res.status(403).json({
@@ -3042,20 +3082,22 @@ app.get("/api/modelo/publico/:modelo_id", async (req, res) => {
 
 app.get("/api/cliente/modelos", authCliente, async (req, res) => {
   try {
-
-    const result = await db.query(`
-      SELECT 
+    const result = await db.query(
+      `
+      SELECT
         m.id AS modelo_id,
         m.nome_exibicao
       FROM vip_subscriptions v
-      JOIN modelos m 
+      JOIN modelos m
         ON m.id = v.modelo_id
       WHERE v.cliente_id = $1
-      AND v.ativo = true
-      AND v.expiration_at > NOW()
+        AND v.ativo = true
+        AND v.expiration_at > NOW()
+        AND m.ativo = true
       ORDER BY m.nome_exibicao
-    `,
-    [req.cliente_id]);
+      `,
+      [req.cliente_id]
+    );
 
     res.json(result.rows);
 
@@ -3064,7 +3106,6 @@ app.get("/api/cliente/modelos", authCliente, async (req, res) => {
     res.status(500).json([]);
   }
 });
-
 // ===========================
 // NÃO LIDAS CLIENTE
 // ===========================
@@ -3105,15 +3146,15 @@ app.get("/api/chat/unread/modelo", authModelo, async (req, res) => {
 
 app.get("/api/cliente/me", authCliente, async (req, res) => {
   try {
-
-    const result = await db.query(`
+    const result = await db.query(
+      `
       SELECT
         c.id AS cliente_id,
         c.user_id,
         c.nome,
         cd.username,
         cd.avatar,
-        cd.capa, 
+        cd.capa,
         cd.instagram,
         cd.tiktok,
         cd.local,
@@ -3121,8 +3162,12 @@ app.get("/api/cliente/me", authCliente, async (req, res) => {
       FROM clientes c
       LEFT JOIN clientes_dados cd
         ON cd.cliente_id = c.id
+       AND cd.ativo = true
       WHERE c.id = $1
-    `, [req.cliente_id]);
+        AND c.ativo = true
+      `,
+      [req.cliente_id]
+    );
 
     if (!result.rows.length) {
       return res.status(404).json({ error: "Cliente não encontrado" });
@@ -3331,6 +3376,7 @@ app.get("/api/cliente/:cliente_id", authModelo, async (req, res) => {
       LEFT JOIN clientes_dados cd
         ON cd.cliente_id = c.id
       WHERE c.id = $1
+       AND c.ativo = true
       LIMIT 1
     `, [cliente_id]);
 
@@ -3370,6 +3416,7 @@ app.get("/api/chat/cliente/:cliente_id", authModelo, async (req, res) => {
       LEFT JOIN clientes_dados cd
         ON cd.cliente_id = c.id
       WHERE c.id = $1
+      AND c.ativo = true
       LIMIT 1
     `, [cliente_id]);
 
@@ -4858,7 +4905,6 @@ RETURNING *
 
 app.post("/api/cliente/dados", authCliente, async (req, res) => {
   try {
-
     const {
       username,
       nome_completo,
@@ -4874,7 +4920,23 @@ app.post("/api/cliente/dados", authCliente, async (req, res) => {
       capa
     } = req.body;
 
-    await db.query(`
+    const clienteRes = await db.query(
+      `
+      SELECT id
+      FROM clientes
+      WHERE id = $1
+        AND ativo = true
+      LIMIT 1
+      `,
+      [req.cliente_id]
+    );
+
+    if (clienteRes.rowCount === 0) {
+      return res.status(404).json({ error: "Cliente não encontrado ou desativado" });
+    }
+
+    await db.query(
+      `
       INSERT INTO clientes_dados (
         cliente_id,
         username,
@@ -4889,12 +4951,12 @@ app.post("/api/cliente/dados", authCliente, async (req, res) => {
         avatar,
         avatar_thumb,
         capa,
+        ativo,
         criado_em,
         atualizado_em
       )
       VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,
-        NOW(),NOW()
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,true,NOW(),NOW()
       )
       ON CONFLICT (cliente_id)
       DO UPDATE SET
@@ -4910,28 +4972,32 @@ app.post("/api/cliente/dados", authCliente, async (req, res) => {
         avatar = EXCLUDED.avatar,
         avatar_thumb = EXCLUDED.avatar_thumb,
         capa = EXCLUDED.capa,
+        ativo = true,
+        desativado_em = NULL,
         atualizado_em = NOW()
-    `, [
-      req.cliente_id,
-      username,
-      nome_completo,
-      data_nascimento,
-      pais,
-      nome_exibicao || null,
-      instagram || null,
-      tiktok || null,
-      local || null,
-      bio || null,
-      avatar || null,
-      avatar_thumb || null,
-      capa || null
-    ]);
+      `,
+      [
+        req.cliente_id,
+        username || null,
+        nome_completo || null,
+        data_nascimento || null,
+        pais || null,
+        nome_exibicao || null,
+        instagram || null,
+        tiktok || null,
+        local || null,
+        bio || null,
+        avatar || null,
+        avatar_thumb || null,
+        capa || null
+      ]
+    );
 
-    res.json({ success: true });
+    return res.json({ success: true });
 
   } catch (err) {
     console.error("Erro salvar dados cliente:", err);
-    res.status(500).json({ error: "Erro interno" });
+    return res.status(500).json({ error: "Erro interno" });
   }
 });
 
@@ -5124,9 +5190,10 @@ app.post("/api/login", authLimiter, async (req, res) => {
     }
 
     const result = await db.query(
-      `SELECT id, email, password_hash, role 
-       FROM public.users 
-       WHERE email = $1`,
+      `SELECT id, email, password_hash, role, ativo
+       FROM public.users
+       WHERE email = $1
+       LIMIT 1`,
       [email]
     );
 
@@ -5136,12 +5203,68 @@ app.post("/api/login", authLimiter, async (req, res) => {
 
     const user = result.rows[0];
 
+    if (user.ativo === false) {
+      return res.status(403).json({ error: "Conta desativada" });
+    }
+
     const senhaOk = await bcrypt.compare(senha, user.password_hash);
     if (!senhaOk) {
       return res.status(401).json({ error: "Senha incorreta" });
     }
 
     const role = user.role.toLowerCase();
+
+    if (role === "modelo") {
+      const modeloRes = await db.query(
+        `SELECT id, ativo
+         FROM modelos
+         WHERE user_id = $1
+         LIMIT 1`,
+        [user.id]
+      );
+
+      if (modeloRes.rowCount === 0) {
+        return res.status(400).json({ error: "Modelo não encontrado" });
+      }
+
+      if (modeloRes.rows[0].ativo === false) {
+        return res.status(403).json({ error: "Conta desativada" });
+      }
+
+      const token = jwt.sign(
+        {
+          id: user.id,
+          email: user.email,
+          role
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: "60d" }
+      );
+
+      return res.json({
+        token,
+        role,
+        modelo_id: modeloRes.rows[0].id
+      });
+    }
+
+    if (role === "cliente") {
+      const clienteRes = await db.query(
+        `SELECT id, ativo
+         FROM clientes
+         WHERE user_id = $1
+         LIMIT 1`,
+        [user.id]
+      );
+
+      if (clienteRes.rowCount === 0) {
+        return res.status(400).json({ error: "Cliente não encontrado" });
+      }
+
+      if (clienteRes.rows[0].ativo === false) {
+        return res.status(403).json({ error: "Conta desativada" });
+      }
+    }
 
     const token = jwt.sign(
       {
@@ -5153,26 +5276,6 @@ app.post("/api/login", authLimiter, async (req, res) => {
       { expiresIn: "60d" }
     );
 
-    // 🔥 SE FOR MODELO, BUSCA O ID DA TABELA MODELOS
-    if (role === "modelo") {
-
-      const modeloRes = await db.query(
-        "SELECT id FROM modelos WHERE user_id = $1",
-        [user.id]
-      );
-
-      if (modeloRes.rowCount === 0) {
-        return res.status(400).json({ error: "Modelo não encontrado" });
-      }
-
-      return res.json({
-        token,
-        role,
-        modelo_id: modeloRes.rows[0].id
-      });
-    }
-
-    // 🔵 SE FOR CLIENTE
     return res.json({
       token,
       role
@@ -5360,9 +5463,86 @@ app.post( "/uploadCapa", auth, uploadB2.single("capa"),  async (req, res) => {
 // ===========================
 
 app.post("/api/modelo/dados", auth, authModelo, async (req, res) => {
+  try {
+    let {
+      nome_exibicao,
+      nome_completo,
+      data_nascimento,
+      telefone,
+      endereco,
+      pais,
+      instagram,
+      tiktok
+    } = req.body;
 
-    try {
-      let {
+    instagram = instagram?.replace("@", "").trim() || null;
+    tiktok = tiktok?.replace("@", "").trim() || null;
+
+    if (
+      !nome_exibicao ||
+      !nome_completo ||
+      !data_nascimento ||
+      !telefone ||
+      !endereco ||
+      !pais
+    ) {
+      return res.status(400).json({ error: "Dados obrigatórios em falta" });
+    }
+
+    const userId = req.user.id;
+
+    const modeloRes = await db.query(
+      `
+      SELECT id
+      FROM modelos
+      WHERE user_id = $1
+        AND ativo = true
+      LIMIT 1
+      `,
+      [userId]
+    );
+
+    if (modeloRes.rowCount === 0) {
+      return res.status(404).json({ error: "Modelo não encontrado ou desativado" });
+    }
+
+    const modelo_id = modeloRes.rows[0].id;
+
+    await db.query(
+      `
+      INSERT INTO modelos_dados (
+        modelo_id,
+        nome_exibicao,
+        nome_completo,
+        data_nascimento,
+        telefone,
+        endereco,
+        pais,
+        instagram,
+        tiktok,
+        ativo,
+        criado_em,
+        atualizado_em
+      )
+      VALUES (
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,true,NOW(),NOW()
+      )
+      ON CONFLICT (modelo_id)
+      DO UPDATE SET
+        nome_exibicao = EXCLUDED.nome_exibicao,
+        nome_completo = EXCLUDED.nome_completo,
+        data_nascimento = EXCLUDED.data_nascimento,
+        telefone = EXCLUDED.telefone,
+        endereco = EXCLUDED.endereco,
+        pais = EXCLUDED.pais,
+        instagram = EXCLUDED.instagram,
+        tiktok = EXCLUDED.tiktok,
+        ativo = true,
+        desativado_em = NULL,
+        atualizado_em = NOW()
+      `,
+      [
+        modelo_id,
         nome_exibicao,
         nome_completo,
         data_nascimento,
@@ -5371,81 +5551,26 @@ app.post("/api/modelo/dados", auth, authModelo, async (req, res) => {
         pais,
         instagram,
         tiktok
-      } = req.body;
+      ]
+    );
 
-      instagram = instagram?.replace("@", "").trim() || null;
-      tiktok = tiktok?.replace("@", "").trim() || null;
+    await db.query(
+      `
+      UPDATE modelos
+      SET nome_exibicao = $1
+      WHERE id = $2
+        AND ativo = true
+      `,
+      [nome_exibicao, modelo_id]
+    );
 
-      if (
-        !nome_exibicao ||
-        !nome_completo ||
-        !data_nascimento ||
-        !telefone ||
-        !endereco ||
-        !pais
-      ) {
-        return res.status(400).json({ error: "Dados obrigatórios em falta" });
-      }
+    return res.json({ success: true });
 
-      const userId = req.user.id;
-
-      // 🔁 converter users.id → modelo_id
-      const modeloRes = await db.query(
-        "SELECT id FROM modelos WHERE user_id = $1",
-        [userId]
-      );
-
-      if (modeloRes.rowCount === 0) {
-        return res.status(404).json({ error: "Modelo não encontrado" });
-      }
-
-      const modelo_id = modeloRes.rows[0].id;
-
-      await db.query(
-        `
-        INSERT INTO modelos_dados
-          (modelo_id, nome_exibicao, nome_completo, data_nascimento,
-           telefone, endereco, pais, instagram, tiktok, criado_em, atualizado_em)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW(),NOW())
-        ON CONFLICT (modelo_id)
-        DO UPDATE SET
-          nome_exibicao = EXCLUDED.nome_exibicao,
-          nome_completo = EXCLUDED.nome_completo,
-          data_nascimento = EXCLUDED.data_nascimento,
-          telefone = EXCLUDED.telefone,
-          endereco = EXCLUDED.endereco,
-          pais = EXCLUDED.pais,
-          instagram = EXCLUDED.instagram,
-          tiktok = EXCLUDED.tiktok,
-          atualizado_em = NOW()
-        `,
-        [
-          modelo_id,
-          nome_exibicao,
-          nome_completo,
-          data_nascimento,
-          telefone,
-          endereco,
-          pais,
-          instagram,
-          tiktok
-        ]
-      );
-
-      // 🔥 sincronizar nome público no perfil base
-      await db.query(
-        "UPDATE modelos SET nome = $1 WHERE id = $2",
-        [nome_exibicao, modelo_id]
-      );
-
-      res.json({ success: true });
-
-    } catch (err) {
-      console.error("Erro salvar dados modelo:", err);
-      res.status(500).json({ error: "Erro interno" });
-    }
+  } catch (err) {
+    console.error("Erro salvar dados modelo:", err);
+    return res.status(500).json({ error: "Erro interno" });
   }
-);
+});
 
 // ===========================
 // EXCLUIR MIDIA DE CONTEUDOS
@@ -5511,7 +5636,9 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
 
   try {
     const userRes = await client.query(
-      "SELECT password_hash FROM users WHERE id = $1",
+      `SELECT id, password_hash, ativo
+       FROM users
+       WHERE id = $1`,
       [userId]
     );
 
@@ -5519,8 +5646,16 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
       return res.status(404).json({ error: "Usuário não encontrado" });
     }
 
-    const senhaHash = userRes.rows[0].password_hash;
-    const senhaOk = await bcrypt.compare(senhaInformada, senhaHash);
+    const usuario = userRes.rows[0];
+
+    if (usuario.ativo === false) {
+      return res.status(400).json({ error: "Conta já desativada" });
+    }
+
+    const senhaOk = await bcrypt.compare(
+      senhaInformada,
+      usuario.password_hash
+    );
 
     if (!senhaOk) {
       return res.status(401).json({ error: "Senha inválida" });
@@ -5528,59 +5663,139 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
 
     await client.query("BEGIN");
 
+    // ===========================
     // MODELO
+    // ===========================
     if (role === "modelo") {
-
       const modeloRes = await client.query(
-        "SELECT id FROM modelos WHERE user_id = $1",
+        `SELECT id FROM modelos WHERE user_id = $1`,
         [userId]
       );
 
       if (modeloRes.rowCount > 0) {
         const modelo_id = modeloRes.rows[0].id;
 
-        await client.query("DELETE FROM messages WHERE modelo_id = $1", [modelo_id]);
-        await client.query("DELETE FROM vip_subscriptions WHERE modelo_id = $1", [modelo_id]);
-        await client.query("DELETE FROM conteudo_pacotes WHERE modelo_id = $1", [modelo_id]);
-        await client.query("DELETE FROM conteudos WHERE modelo_id = $1", [modelo_id]);
-        await client.query("DELETE FROM modelos_dados WHERE modelo_id = $1", [modelo_id]);
-        await client.query("DELETE FROM modelos WHERE id = $1", [modelo_id]);
+        // 🔥 IMPORTANTE: messages usa deletada
+        await client.query(
+          `UPDATE messages
+           SET deletada = true
+           WHERE modelo_id = $1`,
+          [modelo_id]
+        );
+
+        // Encerrar VIPs
+        await client.query(
+          `UPDATE vip_subscriptions
+           SET ativo = false,
+               expiration_at = NOW(),
+               updated_at = NOW()
+           WHERE modelo_id = $1
+             AND ativo = true`,
+          [modelo_id]
+        );
+
+        // Desativar conteúdos
+        await client.query(
+          `UPDATE conteudos
+           SET ativo = false,
+               desativado_em = NOW()
+           WHERE modelo_id = $1`,
+          [modelo_id]
+        );
+
+        // Dados modelo
+        await client.query(
+          `UPDATE modelos_dados
+           SET ativo = false,
+               desativado_em = NOW()
+           WHERE modelo_id = $1`,
+          [modelo_id]
+        );
+
+        // Modelo
+        await client.query(
+          `UPDATE modelos
+           SET ativo = false,
+               desativado_em = NOW()
+           WHERE id = $1`,
+          [modelo_id]
+        );
       }
     }
 
+    // ===========================
     // CLIENTE
+    // ===========================
     if (role === "cliente") {
-
       const clienteRes = await client.query(
-        "SELECT id FROM clientes WHERE user_id = $1",
+        `SELECT id FROM clientes WHERE user_id = $1`,
         [userId]
       );
 
       if (clienteRes.rowCount > 0) {
         const cliente_id = clienteRes.rows[0].id;
 
-        await client.query("DELETE FROM messages WHERE cliente_id = $1", [cliente_id]);
-        await client.query("DELETE FROM vip_subscriptions WHERE cliente_id = $1", [cliente_id]);
-        await client.query("DELETE FROM clientes_dados WHERE cliente_id = $1", [cliente_id]);
-        await client.query("DELETE FROM clientes WHERE id = $1", [cliente_id]);
+        // 🔥 messages usa deletada
+        await client.query(
+          `UPDATE messages
+           SET deletada = true
+           WHERE cliente_id = $1`,
+          [cliente_id]
+        );
+
+        // Encerrar VIPs
+        await client.query(
+          `UPDATE vip_subscriptions
+           SET ativo = false,
+               expiration_at = NOW(),
+               updated_at = NOW()
+           WHERE cliente_id = $1
+             AND ativo = true`,
+          [cliente_id]
+        );
+
+        // Dados cliente
+        await client.query(
+          `UPDATE clientes_dados
+           SET ativo = false,
+               desativado_em = NOW()
+           WHERE cliente_id = $1`,
+          [cliente_id]
+        );
+
+        // Cliente
+        await client.query(
+          `UPDATE clientes
+           SET ativo = false,
+               desativado_em = NOW()
+           WHERE id = $1`,
+          [cliente_id]
+        );
       }
     }
 
-    // APAGA O USER
-
-    await client.query("DELETE FROM users WHERE id = $1", [userId]);
+    // ===========================
+    // USER
+    // ===========================
+    await client.query(
+      `UPDATE users
+       SET ativo = false,
+           desativado_em = NOW()
+       WHERE id = $1`,
+      [userId]
+    );
 
     await client.query("COMMIT");
 
-    res.json({ ok: true });
+    return res.json({
+      ok: true,
+      message: "Conta desativada com sucesso"
+    });
 
   } catch (err) {
     await client.query("ROLLBACK");
-
-    console.error("ERRO EXCLUIR CONTA:", err);
-
-    res.status(500).json({ error: "Erro ao excluir conta" });
-
+    console.error("ERRO DESATIVAR CONTA:", err);
+    return res.status(500).json({ error: "Erro ao desativar conta" });
   } finally {
     client.release();
   }
@@ -7318,7 +7533,13 @@ app.post("/api/password/forgot", async (req, res) => {
     await client.query("BEGIN");
 
     const userRes = await client.query(
-      "SELECT id FROM users WHERE email = $1",
+      `
+      SELECT id
+      FROM users
+      WHERE email = $1
+        AND ativo = true
+      LIMIT 1
+      `,
       [email]
     );
 
@@ -7330,7 +7551,7 @@ app.post("/api/password/forgot", async (req, res) => {
     const userId = userRes.rows[0].id;
 
     await client.query(
-      "DELETE FROM password_resets WHERE user_id = $1",
+      `DELETE FROM password_resets WHERE user_id = $1`,
       [userId]
     );
 
@@ -7339,10 +7560,13 @@ app.post("/api/password/forgot", async (req, res) => {
 
     await client.query(
       `
-      INSERT INTO password_resets
-        (user_id, codigo, expires_at, criado_em)
-      VALUES
-        ($1, $2, $3, NOW())
+      INSERT INTO password_resets (
+        user_id,
+        codigo,
+        expires_at,
+        criado_em
+      )
+      VALUES ($1, $2, $3, NOW())
       `,
       [userId, codigo, expires]
     );
@@ -7363,13 +7587,9 @@ app.post("/api/password/forgot", async (req, res) => {
     return res.json({ ok: true });
 
   } catch (error) {
-
     await client.query("ROLLBACK");
-
     console.error("❌ ERRO PASSWORD FORGOT:", error.response?.body || error);
-
     return res.status(500).json({ error: "Erro ao enviar código" });
-
   } finally {
     client.release();
   }
@@ -7398,7 +7618,13 @@ app.post("/api/password/reset", async (req, res) => {
     await client.query("BEGIN");
 
     const userRes = await client.query(
-      "SELECT id FROM users WHERE email = $1",
+      `
+      SELECT id
+      FROM users
+      WHERE email = $1
+        AND ativo = true
+      LIMIT 1
+      `,
       [email]
     );
 
@@ -7409,7 +7635,8 @@ app.post("/api/password/reset", async (req, res) => {
 
     const userId = userRes.rows[0].id;
 
-    const resetRes = await client.query(`
+    const resetRes = await client.query(
+      `
       SELECT id
       FROM password_resets
       WHERE user_id = $1
@@ -7418,7 +7645,9 @@ app.post("/api/password/reset", async (req, res) => {
         AND expires_at > NOW()
       ORDER BY criado_em DESC
       LIMIT 1
-    `, [userId, codigo]);
+      `,
+      [userId, codigo]
+    );
 
     if (resetRes.rowCount === 0) {
       await client.query("ROLLBACK");
@@ -7428,12 +7657,21 @@ app.post("/api/password/reset", async (req, res) => {
     const senhaHash = await bcrypt.hash(novaSenha, 10);
 
     await client.query(
-      "UPDATE users SET password_hash = $1 WHERE id = $2",
+      `
+      UPDATE users
+      SET password_hash = $1
+      WHERE id = $2
+        AND ativo = true
+      `,
       [senhaHash, userId]
     );
 
     await client.query(
-      "UPDATE password_resets SET usado = true WHERE id = $1",
+      `
+      UPDATE password_resets
+      SET usado = true
+      WHERE id = $1
+      `,
       [resetRes.rows[0].id]
     );
 
