@@ -21,16 +21,6 @@ if (!token || role !== "modelo") {
   logout();
 }
 
-if (btnVoltarPerfil) {
-  btnVoltarPerfil.addEventListener("click", () => {
-    if (modeloId) {
-      window.location.href = `/perfil.html?id=${modeloId}`;
-    } else {
-      window.history.back();
-    }
-  });
-}
-
 // ===============================
 // ESTADO
 // ===============================
@@ -84,6 +74,18 @@ socket.on("disconnect", (reason) => {
 // ===============================
 const inboxEl = document.getElementById("inbox");
 const chatsMap = new Map();
+const btnVoltarPerfil = document.getElementById("btnVoltarPerfil");
+const modeloId = localStorage.getItem("modelo_id") || localStorage.getItem("user_id");
+
+if (btnVoltarPerfil) {
+  btnVoltarPerfil.addEventListener("click", () => {
+    if (modeloId) {
+      window.location.href = `/perfil.html?id=${modeloId}`;
+    } else {
+      window.location.href = "/perfil.html";
+    }
+  });
+}
 
 // ===============================
 // INIT
