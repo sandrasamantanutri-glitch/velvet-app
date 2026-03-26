@@ -435,10 +435,11 @@ function rerenderizarInboxCompleta() {
       </div>
       <div class="chat-body">
         <div class="chat-top">
-          <span class="chat-name">
-            ${c.username || c.nome || "Cliente"}
-            <span class="spend-level">${c.spend_level || ""}</span>
-          </span>
+        <span class="chat-name">
+  ${c.username || c.nome || "Cliente"}
+  ${c.resumo_curto ? `<span class="chat-resumo-curto">${c.resumo_curto}</span>` : ""}
+  <span class="spend-level">${c.spend_level || ""}</span>
+</span>
 
           <span class="chat-time">
             ${formatarTempo(c.ultima_mensagem_em)}

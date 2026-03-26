@@ -3295,6 +3295,7 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
         c.nome,
         cd.username,
         cd.avatar AS avatar,
+        COALESCE(cnm.resumo_curto, '') AS resumo_curto,
 
         msg.text       AS ultima_mensagem,
         msg.created_at AS ultima_mensagem_em,
@@ -3332,6 +3333,10 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
 
       LEFT JOIN clientes_dados cd
         ON cd.cliente_id = c.id
+
+      LEFT JOIN cliente_notas_modelo cnm
+      ON cnm.cliente_id = c.id
+      AND cnm.modelo_id = $1
 
       LEFT JOIN LATERAL (
         SELECT text, created_at, visto, lida, sender
