@@ -79,7 +79,7 @@ btnAssinar = document.getElementById("btn-assinar");
   document.getElementById("premiumBackdrop")?.addEventListener("click", () => {
     document.getElementById("popupUploadPremium").classList.add("hidden");
   });
-  
+
 document.getElementById("fecharModal")?.addEventListener("click", fecharModalMidia);
 
   // fechar clicando fora
@@ -1210,7 +1210,10 @@ function fecharModalMidia() {
   const video = document.getElementById("modalVideo");
   const iframe = document.getElementById("modalIframe");
 
-  modal.classList.add("hidden");
+  if (modal) {
+    modal.classList.add("hidden");
+    modal.onclick = null;
+  }
 
   if (video) {
     video.pause();
@@ -1229,6 +1232,4 @@ function fecharModalMidia() {
     img.removeAttribute("src");
     img.style.display = "none";
   }
-
-  modal.onclick = null;
 }
