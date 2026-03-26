@@ -175,13 +175,6 @@ textarea {
    GRID DE CONTEÚDOS
 ================================ */
 
-.conteudos-grid{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:12px;
-  padding:10px;
-}
-
 .preview-item {
   position: relative;
   border-radius: 12px;
@@ -278,19 +271,6 @@ textarea {
   justify-content:center;
 
   font-size:14px;
-}
-
-#conteudosGrid{
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  padding: 10px;
-
-  max-height: 55vh;
-  overflow-y: auto;
-  overflow-x: hidden;
-
-  align-items: start;
 }
 
 .preview-item{
@@ -416,49 +396,107 @@ textarea {
 
 @media (max-width: 768px) {
   .modal {
-    padding: 10px;
+    align-items: flex-start;
+    padding: 8px;
+    overflow-y: auto;
   }
 
   .modal-box {
     width: 100%;
     max-width: 100%;
-    max-height: 88vh;
+    max-height: none;
+    min-height: auto;
+    margin: 0;
     border-radius: 16px;
+    display: flex;
+    flex-direction: column;
   }
 
   .modal-box h3 {
-    font-size: 20px;
-    margin: 0 0 10px;
-    padding: 0 12px;
+    font-size: 18px;
+    line-height: 1.2;
+    margin: 0;
+    padding: 14px 12px 8px;
   }
 
   .contador-midias {
     font-size: 14px;
-    padding: 4px 0 8px;
+    padding: 0 12px 8px;
   }
 
-  .conteudos-grid,
-  #conteudosGrid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-    padding: 8px 10px;
-    max-height: 50vh;
+  .modal-body-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
   }
+
+ .conteudos-grid,
+#conteudosGrid,
+#previewConteudos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 10px;
+  align-items: start;
+}
 
   .preview-item {
+    width: 100%;
+    aspect-ratio: 3 / 4;
     border-radius: 10px;
   }
 
-  .modal-actions {
-    margin-top: 10px;
-    padding: 0 12px 14px;
+  .btn-preview {
+    width: 26px;
+    height: 26px;
+    font-size: 12px;
+    top: 6px;
+    right: 6px;
   }
 
-  .btn,
-  .btn.secondary {
+  .badge-visto {
+    font-size: 11px;
+    padding: 4px 6px;
+  }
+
+  .modal-actions {
+    margin-top: 0;
+    padding: 10px 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .modal-actions .btn,
+  .modal-actions .btn.secondary,
+  .modal-actions button {
     width: 100%;
-    max-width: 260px;
-    margin: 0 auto 12px auto;
+    max-width: none;
+    margin: 0;
+  }
+}
+
+@media (max-width: 390px) {
+  .conteudos-grid,
+  #conteudosGrid,
+  #previewConteudos {
+    gap: 5px;
+    padding: 6px;
+  }
+
+  .modal-box h3 {
+    font-size: 17px;
+    padding: 12px 10px 6px;
+  }
+
+  .contador-midias {
+    font-size: 13px;
+    padding: 0 10px 6px;
+  }
+
+  .modal-actions {
+    padding: 8px 10px 12px;
   }
 }
 
