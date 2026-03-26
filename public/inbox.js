@@ -21,6 +21,16 @@ if (!token || role !== "modelo") {
   logout();
 }
 
+if (btnVoltarPerfil) {
+  btnVoltarPerfil.addEventListener("click", () => {
+    if (modeloId) {
+      window.location.href = `/perfil.html?id=${modeloId}`;
+    } else {
+      window.history.back();
+    }
+  });
+}
+
 // ===============================
 // ESTADO
 // ===============================

@@ -26,6 +26,26 @@ let offset = 0;
 let listaCompleta = [];
 const chatsMap = new Map();
 
+const params = new URLSearchParams(window.location.search);
+const modelo_id = params.get("modelo_id");
+
+  document.addEventListener("DOMContentLoaded", () => {
+    
+  const btnVoltar = document.getElementById("btnVoltarPerfil");
+
+  if (btnVoltar) {
+    btnVoltar.addEventListener("click", () => {
+      if (modelo_id) {
+        window.location.href = `/perfil.html?id=${modelo_id}`;
+      } else {
+        window.location.href = "/feed.html";
+      }
+    });
+  }
+
+  initClienteInbox();
+});
+
 // ===============================
 // SOCKET
 // ===============================
@@ -97,9 +117,6 @@ async function initClienteInbox() {
 
   carregarListaModelos();
 }
-
-document.addEventListener("DOMContentLoaded", initClienteInbox);
-
 // ===============================
 // PRIORIDADE CHAT
 // ===============================
