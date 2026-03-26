@@ -1073,27 +1073,25 @@ function abrirPreviewAvatar(url) {
   });
 }
 
-async function marcarComoLido(cliente_id){
+async function marcarComoLido(cliente_id) {
+  if (!cliente_id) return;
 
-  if(!cliente_id) return;
-
-  try{
-    const res = await fetch(`/api/chat/modelo/marcar-lido/${cliente_id}`,{
-      method:"POST",
-      headers:{
-        Authorization:"Bearer " + token
+  try {
+    const res = await fetch(`/api/chat/modelo/marcar-lido/${cliente_id}`, {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + token
       }
     });
 
-    if (!res.ok) return;
+    if (!res.ok) {
+      console.warn("Não foi possível marcar como lido");
+      return;
+    }
 
-    // marca localmente que o último envio do cliente já foi lido
-    localStorage.setItem(`inbox_modelo_lido_${cliente_id}`, "1");
-
-  }catch(err){
-    console.error("Erro marcar como lido:",err);
+  } catch (err) {
+    console.error("Erro marcar como lido:", err);
   }
-
 }
 
 function ativarLazyLoadingModelo(div){

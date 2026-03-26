@@ -3273,7 +3273,6 @@ app.get("/api/chat/cliente", authCliente, async (req, res) => {
 
 app.get("/api/chat/modelo", authModelo, async (req, res) => {
   try {
-
     const userId = req.user.id;
 
     const modeloResult = await db.query(
@@ -3281,72 +3280,108 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
       [userId]
     );
 
-    if (modeloResult.rows.length === 0) {
+    if (modeloResult.rowCount === 0) {
       return res.status(404).json({ error: "Modelo não encontrada" });
     }
 
     const modeloId = modeloResult.rows[0].id;
-    const limit = Number(req.query.limit) || 20;
-    const offset = Number(req.query.offset) || 0;
+    const limit = Math.min(Number(req.query.limit) || 20, 100);
+    const offset = Math.max(Number(req.query.offset) || 0, 0);
 
-    const { rows } = await db.query(`
-
+    const { rows } = await db.query(
+      `
       SELECT
-  c.id AS cliente_id,
-  c.nome,
-  cd.username,
-  cd.avatar AS avatar,
-  msg.text       AS ultima_mensagem,
-  msg.created_at AS ultima_mensagem_em,
-  msg.sender     AS ultimo_sender,
-  COALESCE(msg.visto, false) AS visto,
-  COALESCE(msg.lida, false)  AS lida,
-  COALESCE(g.total_gasto,0) AS total_gasto,
+        c.id AS cliente_id,
+        c.nome,
+        cd.username,
+        cd.avatar AS avatar,
 
-  CASE
-    WHEN COALESCE(g.total_gasto,0) >= 300 THEN '$$$'
-    WHEN COALESCE(g.total_gasto,0) >= 200 THEN '$$'
-    WHEN COALESCE(g.total_gasto,0) > 100 THEN '$'
-    ELSE ''
-  END AS spend_level
+        msg.text       AS ultima_mensagem,
+        msg.created_at AS ultima_mensagem_em,
+        msg.sender     AS ultimo_sender,
+        COALESCE(msg.visto, false) AS visto,
+        COALESCE(msg.lida, false)  AS lida,
 
-FROM vip_subscriptions v
+        COALESCE(g.total_gasto, 0) AS total_gasto,
 
-JOIN clientes c 
-  ON c.id = v.cliente_id
+        CASE
+          WHEN COALESCE(g.total_gasto, 0) >= 300 THEN '$$$'
+          WHEN COALESCE(g.total_gasto, 0) >= 200 THEN '$$'
+          WHEN COALESCE(g.total_gasto, 0) > 100 THEN '$'
+          ELSE ''
+        END AS spend_level,
 
-LEFT JOIN clientes_dados cd 
-  ON cd.cliente_id = c.id
+        CASE
+          WHEN msg.sender = 'cliente' AND COALESCE(msg.lida, false) = false THEN true
+          ELSE false
+        END AS nao_lido,
 
-LEFT JOIN LATERAL (
-  SELECT text, created_at, visto, lida, sender
-  FROM messages
-  WHERE messages.cliente_id = c.id
-    AND messages.modelo_id  = $1
-  ORDER BY created_at DESC
-  LIMIT 1
-) msg ON true
+        CASE
+          WHEN msg.sender = 'cliente' AND COALESCE(msg.lida, false) = true THEN true
+          ELSE false
+        END AS por_responder,
 
-LEFT JOIN LATERAL (
-  SELECT SUM(valor_bruto) AS total_gasto
-  FROM transacoes_agency t
-  WHERE t.cliente_id = c.id
-    AND t.modelo_id  = $1
-    AND t.status = 'pago'
-    AND t.tipo = 'midia'
-) g ON true
+        CASE
+          WHEN msg.sender = 'modelo' AND COALESCE(msg.visto, false) = true THEN true
+          ELSE false
+        END AS cliente_visualizou
 
-WHERE v.modelo_id = $1
-  AND v.ativo = true
-  AND v.expiration_at > NOW()
+      FROM vip_subscriptions v
+      JOIN clientes c
+        ON c.id = v.cliente_id
 
-ORDER BY ultima_mensagem_em DESC NULLS LAST
-LIMIT $2 OFFSET $3;
+      LEFT JOIN clientes_dados cd
+        ON cd.cliente_id = c.id
 
-    `, [modeloId, limit, offset]);
+      LEFT JOIN LATERAL (
+        SELECT text, created_at, visto, lida, sender
+        FROM messages
+        WHERE messages.cliente_id = c.id
+          AND messages.modelo_id = $1
+        ORDER BY created_at DESC
+        LIMIT 1
+      ) msg ON true
+
+      LEFT JOIN LATERAL (
+        SELECT SUM(valor_bruto) AS total_gasto
+        FROM transacoes_agency t
+        WHERE t.cliente_id = c.id
+          AND t.modelo_id = $1
+          AND t.status = 'pago'
+          AND t.tipo IN ('midia', 'assinatura')
+      ) g ON true
+
+      WHERE v.modelo_id = $1
+        AND v.ativo = true
+        AND v.expiration_at > NOW()
+
+      ORDER BY
+        CASE
+          WHEN msg.sender = 'cliente' AND COALESCE(msg.lida, false) = false THEN 1
+          WHEN msg.sender = 'cliente' AND COALESCE(msg.lida, false) = true THEN 2
+          WHEN msg.sender = 'modelo' AND COALESCE(msg.visto, false) = true THEN 3
+          ELSE 4
+        END,
+        CASE
+          WHEN msg.sender = 'modelo' AND COALESCE(msg.visto, false) = true THEN
+            CASE
+              WHEN COALESCE(g.total_gasto, 0) >= 300 THEN 3
+              WHEN COALESCE(g.total_gasto, 0) >= 200 THEN 2
+              WHEN COALESCE(g.total_gasto, 0) > 100 THEN 1
+              ELSE 0
+            END
+          ELSE 0
+        END DESC,
+        COALESCE(g.total_gasto, 0) DESC,
+        msg.created_at DESC NULLS LAST,
+        c.id DESC
+
+      LIMIT $2 OFFSET $3
+      `,
+      [modeloId, limit, offset]
+    );
 
     res.json(rows);
-
   } catch (err) {
     console.error("Erro ao buscar chats da modelo:", err);
     res.status(500).json({ error: "Erro ao buscar chats" });
@@ -7710,49 +7745,46 @@ app.post("/api/contato", async (req, res) => {
 // ===========================
 
 app.post("/api/chat/modelo/marcar-lido/:cliente_id", authModelo, async (req, res) => {
+  const userId = req.user.id;
+  const cliente_id = Number(req.params.cliente_id);
 
-    const userId = req.user.id;
-    const cliente_id = Number(req.params.cliente_id);
-
-    if (!Number.isInteger(cliente_id) || cliente_id <= 0) {
-      return res.status(400).json({ error: "cliente_id inválido" });
-    }
-
-    try {
-      const modeloRes = await db.query(
-        "SELECT id FROM modelos WHERE user_id = $1",
-        [userId]
-      );
-
-      if (modeloRes.rowCount === 0) {
-        return res.status(404).json({ error: "Modelo não encontrado" });
-      }
-
-      const modelo_id = modeloRes.rows[0].id;
-
-      const updateRes = await db.query(
-        `
-        UPDATE messages
-        SET visto = true
-        WHERE cliente_id = $1
-          AND modelo_id = $2
-          AND sender = 'cliente'
-          AND visto = false
-        `,
-        [cliente_id, modelo_id]
-      );
-
-      return res.json({
-        success: true,
-        atualizadas: updateRes.rowCount
-      });
-
-    } catch (err) {
-      console.error("Erro marcar lido:", err);
-      return res.status(500).json({ error: "Erro interno" });
-    }
+  if (!Number.isInteger(cliente_id) || cliente_id <= 0) {
+    return res.status(400).json({ error: "cliente_id inválido" });
   }
-);
+
+  try {
+    const modeloRes = await db.query(
+      "SELECT id FROM modelos WHERE user_id = $1",
+      [userId]
+    );
+
+    if (modeloRes.rowCount === 0) {
+      return res.status(404).json({ error: "Modelo não encontrado" });
+    }
+
+    const modelo_id = modeloRes.rows[0].id;
+
+    const updateRes = await db.query(
+      `
+      UPDATE messages
+      SET lida = true
+      WHERE cliente_id = $1
+        AND modelo_id = $2
+        AND sender = 'cliente'
+        AND COALESCE(lida, false) = false
+      `,
+      [cliente_id, modelo_id]
+    );
+
+    return res.json({
+      success: true,
+      atualizadas: updateRes.rowCount
+    });
+  } catch (err) {
+    console.error("Erro marcar lido:", err);
+    return res.status(500).json({ error: "Erro interno" });
+  }
+});
 
 // ===========================
 // VERIFICACAO PERFIL

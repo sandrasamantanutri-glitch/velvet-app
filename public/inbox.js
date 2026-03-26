@@ -53,11 +53,14 @@ socket.on("connect_error", (err) => {
   console.error("❌ connect_error socket:", err.message, err);
 });
 
-socket.on("inboxMessage", (dados) => {
+socket.on("inboxMessage", async (dados) => {
+  const chatId = dados.cliente_id || dados.modelo_id;
+  const jaExisteNaTela = chatsMap.has(chatId);
+
   atualizarChatLocal(dados);
 
-  if (!chatsMap.has(dados.cliente_id)) {
-    carregarListaClientes();
+  if (!jaExisteNaTela) {
+    await recarregarInboxDoZero();
   }
 });
 
@@ -75,8 +78,9 @@ const chatsMap = new Map();
 // ===============================
 // INIT
 // ===============================
-window.addEventListener("load", () => {
-  carregarListaClientes();
+
+window.addEventListener("load", async () => {
+  await carregarInboxInicial();
 });
 
 window.addEventListener("scroll", () => {
@@ -103,23 +107,56 @@ socket.emit("joinInbox", (res) => {
 }
 
 // ===============================
+// HELPERS DE ESTADO
+// ===============================
+
+function normalizarChat(c) {
+  const ultimo_sender = c.ultimo_sender ?? c.sender ?? null;
+  const lida = Boolean(c.lida);
+  const visto = Boolean(c.visto);
+
+  return {
+    ...c,
+    ultimo_sender,
+    lida,
+    visto,
+    nao_lido: ultimo_sender === "cliente" && lida === false,
+    por_responder: ultimo_sender === "cliente" && lida === true,
+    cliente_visualizou: ultimo_sender === "modelo" && visto === true
+  };
+}
+
+function upsertChats(clientes) {
+  clientes
+    .map(normalizarChat)
+    .forEach(c => {
+      const idx = listaCompleta.findIndex(x => x.cliente_id === c.cliente_id);
+
+      if (idx === -1) {
+        listaCompleta.push(c);
+      } else {
+        listaCompleta[idx] = {
+          ...listaCompleta[idx],
+          ...c
+        };
+      }
+    });
+}
+
+async function recarregarInboxDoZero() {
+  if (carregando) return;
+  await carregarInboxInicial();
+}
+
+// ===============================
 // PRIORIDADE CHAT
 // ===============================
+
 function prioridadeChat(c) {
-  // 1) NÃO LIDA
-  if (c.ultimo_sender === "cliente" && c.lida === false) return 1;
-
-  // 2) POR RESPONDER
-  if (c.ultimo_sender === "cliente" && c.lida === true) return 2;
-
-  // 3) NOVO VIP
-  if (c.novo_vip === true) return 3;
-
-  // 4) CLIENTE VISUALIZOU MAS NÃO RESPONDEU
-  if (c.ultimo_sender === "modelo" && c.visto === true) return 4;
-
-  // 5) RESTO
-  return 5;
+  if (c.nao_lido) return 1;
+  if (c.por_responder) return 2;
+  if (c.cliente_visualizou) return 3;
+  return 4;
 }
 
 function pesoGasto(c) {
@@ -131,9 +168,35 @@ function pesoGasto(c) {
   return 0;
 }
 
+function compararChats(a, b) {
+  const pa = prioridadeChat(a);
+  const pb = prioridadeChat(b);
+
+  if (pa !== pb) return pa - pb;
+
+  // só no grupo 3: cliente visualizou e não respondeu
+  if (pa === 3) {
+    const ga = pesoGasto(a);
+    const gb = pesoGasto(b);
+
+    if (ga !== gb) return gb - ga;
+
+    const va = Number(a.total_gasto || 0);
+    const vb = Number(b.total_gasto || 0);
+
+    if (va !== vb) return vb - va;
+  }
+
+  const da = a.ultima_mensagem_em ? new Date(a.ultima_mensagem_em).getTime() : 0;
+  const db = b.ultima_mensagem_em ? new Date(b.ultima_mensagem_em).getTime() : 0;
+
+  return db - da;
+}
+
 // ===============================
 // FETCH CLIENTES
 // ===============================
+
 async function carregarListaClientes() {
   if (carregando || fimLista) return;
 
@@ -146,37 +209,22 @@ async function carregarListaClientes() {
       { headers: { Authorization: "Bearer " + token } }
     );
 
-    if (!res.ok) {
-      carregando = false;
-      return;
-    }
+    if (!res.ok) return;
 
     const clientes = await res.json();
 
     if (clientes.length === 0) {
       fimLista = true;
-      carregando = false;
       return;
     }
 
     preloadAvatars(clientes);
+    upsertChats(clientes);
 
-clientes.forEach(c => {
-  const idx = listaCompleta.findIndex(x => x.cliente_id === c.cliente_id);
-
-  if (idx === -1) {
-    listaCompleta.push(c);
-  } else {
-    listaCompleta[idx] = c;
-  }
-});
-
-listaCompleta.sort(compararChats);
-
-rerenderizarInboxCompleta();
+    listaCompleta.sort(compararChats);
+    rerenderizarInboxCompleta();
 
     offset += clientes.length;
-
   } catch (err) {
     console.error("Erro carregar inbox:", err);
   } finally {
@@ -213,14 +261,15 @@ function formatarTempo(data) {
 // ===============================
 // HELPERS
 // ===============================
+
 function abrirChat(clienteId) {
   const idx = listaCompleta.findIndex(c => c.cliente_id === clienteId);
 
   if (idx !== -1 && listaCompleta[idx].ultimo_sender === "cliente") {
-    listaCompleta[idx] = {
+    listaCompleta[idx] = normalizarChat({
       ...listaCompleta[idx],
       lida: true
-    };
+    });
 
     listaCompleta.sort(compararChats);
     rerenderizarInboxCompleta();
@@ -240,32 +289,25 @@ function atualizarChatLocal(dados) {
   const idx = listaCompleta.findIndex(c => c.cliente_id === chatId);
   if (idx === -1) return;
 
-const atualizado = {
-  ...listaCompleta[idx],
-  ...dados
-};
-
-  listaCompleta[idx] = atualizado;
+  listaCompleta[idx] = normalizarChat({
+    ...listaCompleta[idx],
+    ...dados
+  });
 
   listaCompleta.sort(compararChats);
   rerenderizarInboxCompleta();
 }
 
-
 function gerarStatus(c) {
-  if (c.ultimo_sender === "cliente" && c.lida === false) {
+  if (c.nao_lido) {
     return `<span class="status status-unseen">Não lida</span>`;
   }
 
-  if (c.ultimo_sender === "cliente" && c.lida === true) {
+  if (c.por_responder) {
     return `<span class="status status-reply">Por responder</span>`;
   }
 
-  if (c.novo_vip === true) {
-    return `<span class="status status-vip">Novo VIP</span>`;
-  }
-
-  if (c.ultimo_sender === "modelo" && c.visto === true) {
+  if (c.cliente_visualizou) {
     return `<span class="status status-read">✓✓</span>`;
   }
 
@@ -276,76 +318,9 @@ function gerarStatus(c) {
   return "";
 }
 
-// function renderizarMais() {
-//   listaCompleta.forEach(c => {
-//     if (chatsMap.has(c.cliente_id)) return;
-
-//     let statusHTML = "";
-
-//     if (c.novo_vip) {
-//       statusHTML = `<span class="status status-vip">Novo VIP</span>`;
-//     }
-
-//     else if (c.ultimo_sender === "cliente") {
-//       if (c.lida === false) {
-//         statusHTML = `<span class="status status-unseen">Não lida</span>`;
-//       } else {
-//         statusHTML = `<span class="status status-reply">Por responder</span>`;
-//       }
-//     }
-
-//     else if (c.ultimo_sender === "modelo") {
-//       if (c.visto === true) {
-//         statusHTML = `<span class="status status-read">✓✓</span>`;
-//       } else {
-//         statusHTML = `<span class="status status-sent">✓</span>`;
-//       }
-//     }
-
-//     const div = document.createElement("div");
-//     div.className = "chat-item";
-
-//     div.onclick = () => abrirChat(c.cliente_id);
-
-//     div.innerHTML = `
-//       <div class="avatar">
-//         <img src="${c.avatar || 'assets/avatar.png'}" width="40" height="40">
-//       </div>
-
-//       <div class="chat-body">
-
-//         <div class="chat-top">
-//           <span class="chat-name">
-//             ${c.username || c.nome || "Cliente"}
-//             <span class="spend-level">${c.spend_level || ""}</span>
-//           </span>
-
-//           <span class="chat-time">
-//             ${formatarTempo(c.ultima_mensagem_em)}
-//           </span>
-//         </div>
-
-//         <div class="chat-bottom">
-//           <span class="chat-last">
-//             ${c.ultima_mensagem || ""}
-//           </span>
-
-//           <div class="chat-status">
-//             ${statusHTML}
-//           </div>
-//         </div>
-
-//       </div>
-//     `;
-
-//     inboxEl.appendChild(div);
-
-//     chatsMap.set(c.cliente_id, {
-//       data: c,
-//       element: div
-//     });
-//   });
-// }
+// ===============================
+// PRELOAD INICIAL
+// ===============================
 
 function preloadAvatars(clientes) {
   clientes.slice(0, 10).forEach(c => {
@@ -357,33 +332,79 @@ function preloadAvatars(clientes) {
   });
 }
 
-function compararChats(a, b) {
-  const pa = prioridadeChat(a);
-  const pb = prioridadeChat(b);
+function ehPrioritario(c) {
+  return c.nao_lido || c.por_responder || c.cliente_visualizou;
+}
 
-  if (pa !== pb) return pa - pb;
+async function carregarInboxInicial() {
+  offset = 0;
+  fimLista = false;
+  listaCompleta = [];
+  chatsMap.clear();
 
-  const ga = pesoGasto(a);
-  const gb = pesoGasto(b);
+  let continuar = true;
 
-  if (ga !== gb) return gb - ga;
+  while (continuar && !fimLista) {
+    const clientes = await buscarPaginaInbox();
 
-  const va = Number(a.total_gasto || 0);
-  const vb = Number(b.total_gasto || 0);
+    if (!clientes.length) {
+      fimLista = true;
+      break;
+    }
 
-  if (va !== vb) return vb - va;
+    upsertChats(clientes);
 
-  const da = a.ultima_mensagem_em ? new Date(a.ultima_mensagem_em).getTime() : 0;
-  const db = b.ultima_mensagem_em ? new Date(b.ultima_mensagem_em).getTime() : 0;
+    listaCompleta.sort(compararChats);
+    rerenderizarInboxCompleta();
 
-  return db - da;
+    offset += clientes.length;
+
+    const paginaNormalizada = clientes.map(normalizarChat);
+    const paginaTemPrioritario = paginaNormalizada.some(ehPrioritario);
+
+    if (!paginaTemPrioritario) {
+      continuar = false;
+    }
+  }
+}
+
+async function buscarPaginaInbox() {
+  if (carregando || fimLista) return [];
+
+  carregando = true;
+  document.body.classList.add("loading");
+
+  try {
+    const res = await fetch(
+      `/api/chat/modelo?limit=${LIMIT}&offset=${offset}`,
+      { headers: { Authorization: "Bearer " + token } }
+    );
+
+    if (!res.ok) return [];
+
+    const clientes = await res.json();
+
+    if (clientes.length === 0) {
+      fimLista = true;
+      return [];
+    }
+
+    preloadAvatars(clientes);
+    return clientes;
+  } catch (err) {
+    console.error("Erro carregar inbox:", err);
+    return [];
+  } finally {
+    carregando = false;
+    document.body.classList.remove("loading");
+  }
 }
 
 function rerenderizarInboxCompleta() {
   inboxEl.innerHTML = "";
   chatsMap.clear();
 
-listaCompleta.forEach(c => {
+  listaCompleta.forEach(c => {
     const statusHTML = gerarStatus(c);
     const avatarSrc = c.avatar_thumb || c.avatar || "assets/avatar.png";
 
@@ -433,13 +454,12 @@ listaCompleta.forEach(c => {
   });
 }
 
-setInterval(() => {
+// ===============================
+// REFRESH PERIÓDICO
+// ===============================
 
+setInterval(async () => {
   if (document.visibilityState !== "visible") return;
-
-  offset = 0;
-  fimLista = false;
-
-  carregarListaClientes();
-
+  await recarregarInboxDoZero();
 }, 30000);
+
