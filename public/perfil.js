@@ -769,14 +769,14 @@ async function carregarFeed() {
       return;
     }
 
-    const podeVer = EH_DONA || window.__CLIENTE_VIP__;
-
     midias.forEach(item => {
 
       const div = document.createElement("div");
       div.className = "midia-thumb";
 
-      if (!podeVer) {
+      const podeVerAgora = EH_DONA || window.__CLIENTE_VIP__;
+
+      if (!podeVerAgora) {
         div.classList.add("locked");
       }
 
@@ -813,16 +813,16 @@ async function carregarFeed() {
 
       }
 
-      div.onclick = () => {
+       div.onclick = () => {
+    const podeAbrir = EH_DONA || window.__CLIENTE_VIP__;
 
-        if (!podeVer) {
-          abrirFluxoVIP();
-          return;
-        }
+    if (!podeAbrir) {
+      abrirFluxoVIP();
+      return;
+    }
 
-        abrirMidia(item);
-
-      };
+    abrirMidia(item);
+  };
 
       // botão excluir (modelo)
       if (EH_DONA) {
@@ -1131,17 +1131,7 @@ function ativarVip(expiration_at) {
   if (ofertaCard) ofertaCard.style.display = "none";
   if (vipCard) vipCard.classList.remove("hidden");
 
-  liberarMidiasVip();
-}
-
-function liberarMidiasVip(){
-
-  document
-    .querySelectorAll(".midia-thumb.locked")
-    .forEach(el => {
-      el.classList.remove("locked");
-    });
-
+  carregarFeed();
 }
 
 async function verificarVip() {
