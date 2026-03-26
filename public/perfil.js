@@ -79,29 +79,12 @@ btnAssinar = document.getElementById("btn-assinar");
   document.getElementById("premiumBackdrop")?.addEventListener("click", () => {
     document.getElementById("popupUploadPremium").classList.add("hidden");
   });
-
-  document.getElementById("fecharModal")?.addEventListener("click", () => {
-    const modal = document.getElementById("modalMidia");
-    const video = document.getElementById("modalVideo");
-    const iframe = document.getElementById("modalIframe");
-
-    modal.classList.add("hidden");
-
-    if (video) {
-      video.pause();
-      video.src = "";
-    }
-
-    if (iframe) {
-      iframe.src = "";
-    }
-  });
+  
+document.getElementById("fecharModal")?.addEventListener("click", fecharModalMidia);
 
   // fechar clicando fora
-  document.querySelector("#modalMidia .modal-backdrop")
-  ?.addEventListener("click", () => {
-    document.getElementById("modalMidia").classList.add("hidden");
-  });
+document.querySelector("#modalMidia .modal-backdrop")
+?.addEventListener("click", fecharModalMidia);
 
 
   // =========================
@@ -1219,4 +1202,33 @@ function iniciarVerificacaoVip(){
   vipCheckInterval = setInterval(verificarVip, 4000);
 
   verificarVip(); // primeira verificação imediata
+}
+
+function fecharModalMidia() {
+  const modal = document.getElementById("modalMidia");
+  const img = document.getElementById("modalImg");
+  const video = document.getElementById("modalVideo");
+  const iframe = document.getElementById("modalIframe");
+
+  modal.classList.add("hidden");
+
+  if (video) {
+    video.pause();
+    video.currentTime = 0;
+    video.removeAttribute("src");
+    video.load();
+    video.style.display = "none";
+  }
+
+  if (iframe) {
+    iframe.src = "";
+    iframe.style.display = "none";
+  }
+
+  if (img) {
+    img.removeAttribute("src");
+    img.style.display = "none";
+  }
+
+  modal.onclick = null;
 }
