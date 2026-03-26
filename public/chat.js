@@ -309,6 +309,10 @@ socket.on("newMessage", msg => {
   renderMensagem(msg);
   scrollParaFinal();
 
+  if (msg.sender === "cliente") {
+    carregarInfoCliente(cliente_id);
+  }
+
 });
 
 // ===============================
@@ -653,14 +657,18 @@ async function carregarInfoCliente(cliente_id) {
     const avatar = document.getElementById("chatClienteAvatar");
     const status = document.getElementById("chatClienteStatus");
 
-    if (nome) nome.innerText = cliente.nome || "Cliente";
+    if (nome) {
+      nome.innerText = cliente.nome || "Cliente";
+    }
+
+    const avatarUrl = cliente.avatar || "/assets/avatar.png";
 
     if (avatar) {
-      avatar.src = cliente.avatar_url || "/assets/avatar.png";
+      avatar.src = avatarUrl;
       avatar.style.cursor = "pointer";
 
       avatar.onclick = () => {
-        abrirPreviewAvatar(cliente.avatar_url || "/assets/avatar.png");
+        abrirPreviewAvatar(avatarUrl);
       };
     }
 
@@ -668,11 +676,10 @@ async function carregarInfoCliente(cliente_id) {
       if (cliente.last_seen) {
         status.innerText = `visto por último: ${formatarTempo(cliente.last_seen)}`;
       } else {
-        status.innerText = "Nunca";
+        status.innerText = "visto por último: agora";
       }
     }
 
-    // carrega resumo + nota privada da modelo sobre este cliente
     await carregarAnotacoesCliente(cliente_id);
 
   } catch (err) {

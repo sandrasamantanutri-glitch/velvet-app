@@ -1521,7 +1521,7 @@ socket.on("joinInbox", async (payload, callback) => {
       console.log("🟢 Cliente online:", clienteIdReal, socket.id);
 
       await db.query(
-        `UPDATE clientes SET last_seen = NULL WHERE id = $1`,
+        `UPDATE clientes SET online = true WHERE id = $1`,
         [clienteIdReal]
       );
     } catch (err) {
@@ -1543,7 +1543,7 @@ socket.on("joinInbox", async (payload, callback) => {
             onlineClientes.delete(socket.cliente_id);
 
             await db.query(
-              `UPDATE clientes SET last_seen = NOW() WHERE id = $1`,
+              `UPDATE clientes SET online = false, last_seen = NOW() WHERE id = $1`,
               [socket.cliente_id]
             );
 
@@ -3350,45 +3350,6 @@ LIMIT $2 OFFSET $3;
   } catch (err) {
     console.error("Erro ao buscar chats da modelo:", err);
     res.status(500).json({ error: "Erro ao buscar chats" });
-  }
-});
-
-// =============================
-// INFOS CLIENTE CHAT MODELO
-// =============================
-
-app.get("/api/cliente/:cliente_id", authModelo, async (req, res) => {
-  const cliente_id = Number(req.params.cliente_id);
-
-  if (!Number.isInteger(cliente_id) || cliente_id <= 0) {
-    return res.status(400).json({ error: "cliente_id inválido" });
-  }
-
-  try {
-    const result = await db.query(`
-      SELECT
-        c.id AS cliente_id,
-        c.nome,
-        c.last_seen,
-        cd.username,
-        cd.avatar
-      FROM clientes c
-      LEFT JOIN clientes_dados cd
-        ON cd.cliente_id = c.id
-      WHERE c.id = $1
-       AND c.ativo = true
-      LIMIT 1
-    `, [cliente_id]);
-
-    if (!result.rows.length) {
-      return res.status(404).json({ error: "Cliente não encontrado" });
-    }
-
-    res.json(result.rows[0]);
-
-  } catch (err) {
-    console.error("Erro ao buscar cliente:", err);
-    res.status(500).json({ error: "Erro interno" });
   }
 });
 
