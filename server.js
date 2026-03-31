@@ -8699,65 +8699,62 @@ app.post("/api/pagamento/premium/pix", authCliente, async (req, res) => {
 
     console.log("Registrando premium_unlock pendente no banco...");
 
-    await client.query(
-      `
-      INSERT INTO premium_unlocks
-      (
-        premium_post_id,
-        cliente_id,
-        modelo_id,
-        status,
-        metodo_pagamento,
-        valor_base,
-        taxa_transacao,
-        taxa_plataforma,
-        valor_total,
-        gateway,
-        pagarme_order_id,
-        qr_code,
-        qr_code_url,
-        pacote_ref,
-        created_at,
-        updated_at
-      )
-      VALUES
-      (
-        $1,$2,$3,
-        'pendente','pix',
-        $4,$5,$6,$7,
-        'pagarme',$8,$9,$10,$11,
-        NOW(),NOW()
-      )
-      ON CONFLICT (premium_post_id, cliente_id)
-      DO UPDATE SET
-        modelo_id = EXCLUDED.modelo_id,
-        status = 'pendente',
-        metodo_pagamento = 'pix',
-        valor_base = EXCLUDED.valor_base,
-        taxa_transacao = EXCLUDED.taxa_transacao,
-        taxa_plataforma = EXCLUDED.taxa_plataforma,
-        valor_total = EXCLUDED.valor_total,
-        gateway = EXCLUDED.gateway,
-        pagarme_order_id = EXCLUDED.pagarme_order_id,
-        qr_code = EXCLUDED.qr_code,
-        qr_code_url = EXCLUDED.qr_code_url,
-        pacote_ref = EXCLUDED.pacote_ref,
-        updated_at = NOW()
-      `,
-      [
-        premiumPostIdNum,
-        cliente_id,
-        modeloIdNum,
-        valorBase,
-        taxaTransacao,
-        taxaPlataforma,
-        valorTotal,
-        order.id,
-        pixData.qr_code,
-        pixData.qr_code_url || null,
-        `premium_${premiumPostIdNum}_${cliente_id}`
-      ]
-    );
+await client.query(
+  `
+  INSERT INTO premium_unlocks
+  (
+    premium_post_id,
+    cliente_id,
+    modelo_id,
+    status,
+    metodo_pagamento,
+    valor_base,
+    taxa_transacao,
+    taxa_plataforma,
+    valor_total,
+    gateway,
+    pagarme_order_id,
+    qr_code_url,
+    pacote_ref,
+    created_at,
+    updated_at
+  )
+  VALUES
+  (
+    $1,$2,$3,
+    'pendente','pix',
+    $4,$5,$6,$7,
+    'pagarme',$8,$9,$10,
+    NOW(),NOW()
+  )
+  ON CONFLICT (premium_post_id, cliente_id)
+  DO UPDATE SET
+    modelo_id = EXCLUDED.modelo_id,
+    status = 'pendente',
+    metodo_pagamento = 'pix',
+    valor_base = EXCLUDED.valor_base,
+    taxa_transacao = EXCLUDED.taxa_transacao,
+    taxa_plataforma = EXCLUDED.taxa_plataforma,
+    valor_total = EXCLUDED.valor_total,
+    gateway = EXCLUDED.gateway,
+    pagarme_order_id = EXCLUDED.pagarme_order_id,
+    qr_code_url = EXCLUDED.qr_code_url,
+    pacote_ref = EXCLUDED.pacote_ref,
+    updated_at = NOW()
+  `,
+  [
+    premiumPostIdNum,
+    cliente_id,
+    modeloIdNum,
+    valorBase,
+    taxaTransacao,
+    taxaPlataforma,
+    valorTotal,
+    order.id,
+    pixData.qr_code_url || null,
+    `premium_${premiumPostIdNum}_${cliente_id}`
+  ]
+);
 
     console.log("Premium unlock registrado");
 
@@ -8778,6 +8775,11 @@ app.post("/api/pagamento/premium/pix", authCliente, async (req, res) => {
     console.error("🔥 ERRO PIX PREMIUM");
     console.error("message:", err.message);
     console.error("stack:", err.stack);
+    console.error("code:", err.code);
+    console.error("detail:", err.detail);
+    console.error("constraint:", err.constraint);
+    console.error("table:", err.table);
+    console.error("column:", err.column);
 
     if (err.response) {
       console.error("STATUS:", err.response.status);
