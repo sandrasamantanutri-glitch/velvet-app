@@ -729,7 +729,6 @@ if (tipo === "premium") {
   if (!telefoneLimpo) return;
 
   url = "/api/pagamento/premium/pix";
-
   body = {
     tipo: "premium",
     premium_post_id,

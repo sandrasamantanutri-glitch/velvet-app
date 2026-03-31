@@ -8222,98 +8222,224 @@ const clienteRes = await client.query(
 // PREMIUM PIX
 // ===========================
 
-app.post("/api/pagamento/premium/pix", auth, async (req, res) => {
+app.post("/api/pagamento/premium/pix", authCliente, async (req, res) => {
+  console.log("=================================");
+  console.log("🔥 NOVO PIX PREMIUM");
+  console.log("BODY:", req.body);
+
   const client = await db.connect();
 
   try {
-    const { premium_post_id, cpf } = req.body;
-    const userId = req.user.id;
+    const {
+      premium_post_id,
+      cpf,
+      telefone,
+      aceitou_termos,
+      fingerprint
+    } = req.body;
+
+    const userId = Number(req.user?.id || 0);
+
+    console.log("User:", userId);
+    console.log("Premium post:", premium_post_id);
+
+    if (!aceitou_termos) {
+      return res.status(400).json({ error: "É necessário aceitar os termos." });
+    }
+
+    if (!Number.isInteger(userId) || userId <= 0) {
+      return res.status(401).json({ error: "Usuário inválido." });
+    }
+
+    const premiumPostIdNum = Number(premium_post_id);
+    if (!Number.isInteger(premiumPostIdNum) || premiumPostIdNum <= 0) {
+      return res.status(400).json({ error: "premium_post_id inválido." });
+    }
+
+    const cpfLimpo = String(cpf || "").replace(/\D/g, "");
+    if (!cpfLimpo) {
+      return res.status(400).json({ error: "CPF obrigatório." });
+    }
+
+    if (!validarCPF(cpfLimpo)) {
+      return res.status(400).json({ error: "CPF inválido." });
+    }
+
+    console.log("CPF limpo:", cpfLimpo);
+
+    const telefoneLimpo = String(telefone || "").replace(/\D/g, "");
+
+    if (!telefoneLimpo) {
+      return res.status(400).json({ error: "Telefone obrigatório." });
+    }
+
+    if (telefoneLimpo.length < 10 || telefoneLimpo.length > 11) {
+      return res.status(400).json({ error: "Telefone inválido." });
+    }
+
+    const area_code = telefoneLimpo.slice(0, 2);
+    const number = telefoneLimpo.slice(2);
 
     const ip =
       req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
       req.socket.remoteAddress ||
       null;
 
-    if (!premium_post_id || !Number.isInteger(Number(premium_post_id))) {
-      return res.status(400).json({ error: "Premium inválido." });
-    }
+    console.log("IP:", ip);
+    console.log("Telefone:", telefoneLimpo);
+    console.log("ENV PAGARME KEY EXISTE:", !!process.env.PAGARME_SECRET_KEY);
 
-    if (!cpf) {
-      return res.status(400).json({ error: "CPF obrigatório." });
-    }
+    await client.query("BEGIN");
 
-    const cpfLimpo = String(cpf).replace(/\D/g, "");
+    /* =========================
+       CLIENTE + USER
+    ========================= */
 
-    if (!validarCPF(cpfLimpo)) {
-      return res.status(400).json({ error: "CPF inválido." });
-    }
+    console.log("Buscando cliente...");
 
-  // CLIENTE
     const clienteRes = await client.query(
       `
       SELECT
         c.id,
+        c.nome,
         c.bloqueado,
-        COALESCE(NULLIF(TRIM(c.nome), ''), split_part(u.email, '@', 1)) AS nome,
         u.email
       FROM clientes c
-      JOIN users u ON u.id = c.user_id
+      LEFT JOIN users u
+        ON u.id = c.user_id
       WHERE c.user_id = $1
       LIMIT 1
       `,
       [userId]
     );
 
+    console.log("Cliente encontrado:", clienteRes.rowCount);
+
     if (!clienteRes.rowCount) {
+      await client.query("ROLLBACK");
       return res.status(404).json({ error: "Cliente não encontrado" });
     }
 
     const {
       id: cliente_id,
-      bloqueado,
       nome,
+      bloqueado,
       email
     } = clienteRes.rows[0];
 
+    console.log("cliente_id:", cliente_id);
+    console.log("bloqueado:", bloqueado);
+
     if (bloqueado) {
+      await client.query("ROLLBACK");
       return res.status(403).json({ error: "Conta bloqueada." });
     }
 
-   // BUSCAR PREMIUM
+    const nomeFinal = String(nome || "").trim() || "Cliente Velvet";
+    const emailFinal = String(email || "").trim();
+
+    if (!emailFinal) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "E-mail do cliente não encontrado." });
+    }
+
+    /* =========================
+       BUSCAR PREMIUM
+    ========================= */
+
+    console.log("Buscando premium post...");
+
     const premiumRes = await client.query(
       `
       SELECT
-        id,
-        modelo_id,
-        preco,
-        descricao,
-        ativo
-      FROM premium_posts
-      WHERE id = $1
+        pp.id,
+        pp.modelo_id,
+        pp.preco,
+        pp.descricao,
+        pp.ativo
+      FROM premium_posts pp
+      WHERE pp.id = $1
       LIMIT 1
       `,
-      [Number(premium_post_id)]
+      [premiumPostIdNum]
     );
 
+    console.log("Premium encontrado:", premiumRes.rowCount);
+
     if (!premiumRes.rowCount) {
-      return res.status(404).json({ error: "Premium não encontrado" });
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Premium não encontrado." });
     }
 
     const premium = premiumRes.rows[0];
+    const modeloIdNum = Number(premium.modelo_id);
+    const precoBase = Number(premium.preco || 0);
+
+    console.log("modelo_id:", modeloIdNum);
+    console.log("precoBase:", precoBase);
+    console.log("ativo:", premium.ativo);
 
     if (!premium.ativo) {
+      await client.query("ROLLBACK");
       return res.status(400).json({ error: "Premium indisponível." });
     }
 
-    const precoNum = Number(premium.preco);
+    if (!Number.isInteger(modeloIdNum) || modeloIdNum <= 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Modelo inválida para este premium." });
+    }
 
-    if (!precoNum || precoNum <= 0) {
+    if (!precoBase || precoBase <= 0) {
+      await client.query("ROLLBACK");
       return res.status(400).json({ error: "Premium sem preço válido." });
     }
 
-    const { modelo_id } = premium;
+    /* =========================
+       IMPEDIR COMPRAR O PRÓPRIO PREMIUM
+    ========================= */
 
-        const vipRes = await client.query(
+    const donaRes = await client.query(
+      `
+      SELECT id
+      FROM modelos
+      WHERE user_id = $1
+        AND id = $2
+      LIMIT 1
+      `,
+      [userId, modeloIdNum]
+    );
+
+    if (donaRes.rowCount) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Não é possível comprar o próprio premium." });
+    }
+
+    /* =========================
+       VALIDAR MODELO
+    ========================= */
+
+    const modeloRes = await client.query(
+      `
+      SELECT id
+      FROM modelos
+      WHERE id = $1
+      LIMIT 1
+      `,
+      [modeloIdNum]
+    );
+
+    if (!modeloRes.rowCount) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Modelo não encontrada." });
+    }
+
+    /* =========================
+       EXIGIR VIP ATIVO
+    ========================= */
+
+    console.log("Validando VIP ativo...");
+
+    const vipRes = await client.query(
       `
       SELECT 1
       FROM vip_subscriptions
@@ -8323,28 +8449,25 @@ app.post("/api/pagamento/premium/pix", auth, async (req, res) => {
         AND expiration_at > NOW()
       LIMIT 1
       `,
-      [cliente_id, modelo_id]
+      [cliente_id, modeloIdNum]
     );
 
+    console.log("VIP ativo:", vipRes.rowCount);
+
     if (!vipRes.rowCount) {
+      await client.query("ROLLBACK");
       return res.status(403).json({
         error: "Apenas clientes VIP podem comprar conteúdos premium."
       });
     }
 
-    const taxaTransacao = Number((precoNum * 0.10).toFixed(2));
-    const taxaPlataforma = Number((precoNum * 0.05).toFixed(2));
+    /* =========================
+       IMPEDIR DUPLICIDADE PAGA
+    ========================= */
 
-    const valorTotal = Number(
-      (precoNum + taxaTransacao + taxaPlataforma).toFixed(2)
-    );
+    console.log("Verificando se já foi comprado...");
 
-    const valorCentavos = Math.round(valorTotal * 100);
-
-    /* ================================
-       VERIFICAR SE JA COMPROU
-    ================================ */
-    const jaComprado = await client.query(
+    const pagoRes = await client.query(
       `
       SELECT 1
       FROM premium_unlocks
@@ -8353,20 +8476,22 @@ app.post("/api/pagamento/premium/pix", auth, async (req, res) => {
         AND status = 'pago'
       LIMIT 1
       `,
-      [premium.id, cliente_id]
+      [premiumPostIdNum, cliente_id]
     );
 
-    if (jaComprado.rowCount > 0) {
+    if (pagoRes.rowCount) {
+      await client.query("ROLLBACK");
       return res.status(400).json({
         error: "Conteúdo premium já adquirido."
       });
     }
 
-    await client.query("BEGIN");
-
-    /* ================================
+    /* =========================
        EXPIRAR PENDENTES ANTIGOS
-    ================================ */
+    ========================= */
+
+    console.log("Expirando pendentes antigos...");
+
     await client.query(
       `
       UPDATE premium_unlocks
@@ -8375,83 +8500,165 @@ app.post("/api/pagamento/premium/pix", auth, async (req, res) => {
       WHERE premium_post_id = $1
         AND cliente_id = $2
         AND status = 'pendente'
-        AND created_at < NOW() - INTERVAL '30 minutes'
+        AND metodo_pagamento = 'pix'
+        AND created_at < NOW() - INTERVAL '55 minutes'
       `,
-      [premium.id, cliente_id]
+      [premiumPostIdNum, cliente_id]
     );
 
-    /* ================================
-       REUTILIZAR PIX EXISTENTE
-    ================================ */
+    /* =========================
+       REUTILIZAR PIX PENDENTE RECENTE
+    ========================= */
 
-    const pixExistente = await client.query(
-  `
-  SELECT
-    pagarme_order_id,
-    qr_code,
-    qr_code_url,
-    valor_total
-  FROM premium_unlocks
-  WHERE premium_post_id = $1
-    AND cliente_id = $2
-    AND status = 'pendente'
-    AND metodo_pagamento = 'pix'
-    AND created_at > NOW() - INTERVAL '30 minutes'
-  ORDER BY id DESC
-  LIMIT 1
-  `,
-  [premium.id, cliente_id]
-);
+    console.log("Buscando PIX pendente recente...");
 
-    if (pixExistente.rowCount > 0) {
-  await client.query("ROLLBACK");
+    const pendenteRes = await client.query(
+      `
+      SELECT pagarme_order_id, created_at
+      FROM premium_unlocks
+      WHERE premium_post_id = $1
+        AND cliente_id = $2
+        AND gateway = 'pagarme'
+        AND status = 'pendente'
+        AND metodo_pagamento = 'pix'
+        AND created_at >= NOW() - INTERVAL '55 minutes'
+      ORDER BY created_at DESC
+      LIMIT 1
+      `,
+      [premiumPostIdNum, cliente_id]
+    );
 
-return res.json({
-  qr_code_url: pixExistente.rows[0].qr_code_url || null,
-  copia_cola: pixExistente.rows[0].qr_code,
-  payment_id: pixExistente.rows[0].pagarme_order_id,
-  order_id: pixExistente.rows[0].pagarme_order_id,
-  status: "pendente"
-});
-}
+    if (pendenteRes.rowCount) {
+      const pagarmeOrderId = pendenteRes.rows[0].pagarme_order_id;
 
-    /* ================================
-       CRIAR PIX PAGARME
-    ================================ */
-    const pagarmeResponse = await axios.post(
-      "https://api.pagar.me/core/v5/orders",
-      {
-        items: [{
-          amount: valorCentavos,
+      console.log("PIX pendente encontrado:", pagarmeOrderId);
+      console.log("Reconsultando order na Pagar.me...");
+
+      try {
+        const orderRes = await axios.get(
+          `https://api.pagar.me/core/v5/orders/${pagarmeOrderId}`,
+          {
+            headers: {
+              Authorization: `Basic ${Buffer
+                .from(process.env.PAGARME_SECRET_KEY + ":")
+                .toString("base64")}`
+            }
+          }
+        );
+
+        const orderExistente = orderRes.data;
+        const chargeExistente = orderExistente?.charges?.[0];
+        const pixExistente = chargeExistente?.last_transaction;
+        const chargeStatus = String(chargeExistente?.status || "").toLowerCase();
+
+        if (
+          pixExistente?.qr_code &&
+          chargeStatus !== "paid" &&
+          chargeStatus !== "canceled" &&
+          chargeStatus !== "failed"
+        ) {
+          await client.query("COMMIT");
+
+          return res.json({
+            qr_code_url: pixExistente.qr_code_url,
+            copia_cola: pixExistente.qr_code,
+            expires_at: pixExistente?.expires_at || null,
+            order_id: orderExistente.id,
+            reutilizado: true
+          });
+        }
+      } catch (reuseErr) {
+        console.error("Erro ao reutilizar PIX pendente premium:", reuseErr.message);
+
+        if (reuseErr.response) {
+          console.error("STATUS:", reuseErr.response.status);
+          console.error("DATA:", reuseErr.response.data);
+        }
+      }
+    }
+
+    /* =========================
+       CÁLCULO
+    ========================= */
+
+    const valorCentavos = Math.round(precoBase * 100);
+    const taxaTransacaoCentavos = Math.round(valorCentavos * 0.10);
+    const taxaPlataformaCentavos = Math.round(valorCentavos * 0.05);
+
+    const amount =
+      valorCentavos +
+      taxaTransacaoCentavos +
+      taxaPlataformaCentavos;
+
+    const valorBase = Number(precoBase.toFixed(2));
+    const taxaTransacao = Number((valorBase * 0.10).toFixed(2));
+    const taxaPlataforma = Number((valorBase * 0.05).toFixed(2));
+    const valorTotal = Number(
+      (valorBase + taxaTransacao + taxaPlataforma).toFixed(2)
+    );
+
+    console.log("VALORES:");
+    console.log("base:", valorBase);
+    console.log("centavos:", amount);
+
+    /* =========================
+       CRIAR ORDER PAGAR.ME
+    ========================= */
+
+    console.log("Criando order Pagar.me...");
+
+    const payload = {
+      items: [
+        {
+          amount,
           description: "Premium Velvet",
           quantity: 1,
-          code: `premium_${premium.id}`
-        }],
-
-        customer: {
-          name: nome || "Cliente Velvet",
-          email,
-          document: cpfLimpo,
-          type: "individual"
-        },
-
-        payments: [{
-          payment_method: "pix",
-          pix: { expires_in: 1800 }
-        }],
-
-        metadata: {
-          tipo: "premium_pix",
-          premium_post_id: String(premium.id),
-          cliente_id: String(cliente_id),
-          modelo_id: String(modelo_id),
-          valor_base: String(precoNum),
-          taxa_transacao: String(taxaTransacao),
-          taxa_plataforma: String(taxaPlataforma),
-          valor_total: String(valorTotal),
-          aceite_ip: ip || ""
+          code: `premium_${premiumPostIdNum}`
+        }
+      ],
+      customer: {
+        name: nomeFinal,
+        email: emailFinal,
+        document: cpfLimpo,
+        type: "individual",
+        phones: {
+          mobile_phone: {
+            country_code: "55",
+            area_code,
+            number
+          }
         }
       },
+      payments: [
+        {
+          payment_method: "pix",
+          pix: { expires_in: 3600 }
+        }
+      ],
+      metadata: {
+        tipo: "premium",
+        premium_post_id: String(premiumPostIdNum),
+        cliente_id: String(cliente_id),
+        modelo_id: String(modeloIdNum),
+
+        valor_base: String(valorBase),
+        taxa_transacao: String(taxaTransacao),
+        taxa_plataforma: String(taxaPlataforma),
+        valor_total: String(valorTotal),
+        taxa_gateway: "0.15",
+
+        aceite_ip: ip || "",
+        fingerprint: fingerprint || "",
+        telefone: telefoneLimpo
+      }
+    };
+
+    console.log("Payload enviado ao pagarme:");
+    console.log(JSON.stringify(payload, null, 2));
+
+    const pagarmeResponse = await axios.post(
+      "https://api.pagar.me/core/v5/orders",
+      payload,
       {
         headers: {
           Authorization: `Basic ${Buffer
@@ -8462,116 +8669,134 @@ return res.json({
       }
     );
 
+    console.log("Resposta bruta pagarme:", pagarmeResponse.status);
+
     const order = pagarmeResponse.data;
-    const charge = order?.charges?.[0] || null;
-    const pixData = charge?.last_transaction || null;
+
+    console.log("ORDER COMPLETA:");
+    console.log(JSON.stringify(order, null, 2));
+
+    const charge = order?.charges?.[0];
+    const pixData = charge?.last_transaction;
+
+    console.log("Charge:", charge);
+    console.log("PixData:", pixData);
 
     if (!pixData?.qr_code) {
-      throw new Error("Erro ao gerar PIX no Pagar.me");
+      console.error("QR NÃO GERADO");
+      console.error("ORDER:", JSON.stringify(order, null, 2));
+
+      await client.query("ROLLBACK");
+
+      return res.status(500).json({
+        error: "Erro ao gerar QR"
+      });
     }
 
-    /* ================================
-       QR CODE BASE64
-    ================================ */
-    let qrCodeBase64 = null;
+    /* =========================
+       REGISTRAR / UPSERT PREMIUM_UNLOCKS
+    ========================= */
 
-    try {
-      const img = await axios.get(
-        pixData.qr_code_url,
-        { responseType: "arraybuffer" }
-      );
+    console.log("Registrando premium_unlock pendente no banco...");
 
-      qrCodeBase64 = Buffer
-        .from(img.data, "binary")
-        .toString("base64");
-    } catch (err) {
-      console.error("Erro converter QR premium:", err);
-    }
+    await client.query(
+      `
+      INSERT INTO premium_unlocks
+      (
+        premium_post_id,
+        cliente_id,
+        modelo_id,
+        status,
+        metodo_pagamento,
+        valor_base,
+        taxa_transacao,
+        taxa_plataforma,
+        valor_total,
+        gateway,
+        pagarme_order_id,
+        qr_code,
+        qr_code_url,
+        pacote_ref,
+        created_at,
+        updated_at
+      )
+      VALUES
+      (
+        $1,$2,$3,
+        'pendente','pix',
+        $4,$5,$6,$7,
+        'pagarme',$8,$9,$10,$11,
+        NOW(),NOW()
+      )
+      ON CONFLICT (premium_post_id, cliente_id)
+      DO UPDATE SET
+        modelo_id = EXCLUDED.modelo_id,
+        status = 'pendente',
+        metodo_pagamento = 'pix',
+        valor_base = EXCLUDED.valor_base,
+        taxa_transacao = EXCLUDED.taxa_transacao,
+        taxa_plataforma = EXCLUDED.taxa_plataforma,
+        valor_total = EXCLUDED.valor_total,
+        gateway = EXCLUDED.gateway,
+        pagarme_order_id = EXCLUDED.pagarme_order_id,
+        qr_code = EXCLUDED.qr_code,
+        qr_code_url = EXCLUDED.qr_code_url,
+        pacote_ref = EXCLUDED.pacote_ref,
+        updated_at = NOW()
+      `,
+      [
+        premiumPostIdNum,
+        cliente_id,
+        modeloIdNum,
+        valorBase,
+        taxaTransacao,
+        taxaPlataforma,
+        valorTotal,
+        order.id,
+        pixData.qr_code,
+        pixData.qr_code_url || null,
+        `premium_${premiumPostIdNum}_${cliente_id}`
+      ]
+    );
 
-    /* ================================
-       SALVAR PENDENTE
-    ================================ */
-await client.query(
-  `
-  INSERT INTO premium_unlocks
-  (
-    premium_post_id,
-    cliente_id,
-    modelo_id,
-    status,
-    metodo_pagamento,
-    valor_base,
-    taxa_transacao,
-    taxa_plataforma,
-    valor_total,
-    gateway,
-    pagarme_order_id,
-    qr_code,
-    qr_code_url,
-    pacote_ref,
-    created_at,
-    updated_at
-  )
-  VALUES
-  (
-    $1,$2,$3,
-    'pendente','pix',
-    $4,$5,$6,$7,
-    'pagarme',$8,$9,$10,$11,
-    NOW(),NOW()
-  )
-  ON CONFLICT (premium_post_id, cliente_id)
-  DO UPDATE SET
-    status = 'pendente',
-    metodo_pagamento = 'pix',
-    valor_base = EXCLUDED.valor_base,
-    taxa_transacao = EXCLUDED.taxa_transacao,
-    taxa_plataforma = EXCLUDED.taxa_plataforma,
-    valor_total = EXCLUDED.valor_total,
-    gateway = EXCLUDED.gateway,
-    pagarme_order_id = EXCLUDED.pagarme_order_id,
-    qr_code = EXCLUDED.qr_code,
-    qr_code_url = EXCLUDED.qr_code_url,
-    pacote_ref = EXCLUDED.pacote_ref,
-    updated_at = NOW()
-  `,
-  [
-    premium.id,
-    cliente_id,
-    modelo_id,
-    precoNum,
-    taxaTransacao,
-    taxaPlataforma,
-    valorTotal,
-    order.id,
-    pixData.qr_code,
-    pixData.qr_code_url || null,
-    `premium_${premium.id}_${cliente_id}`
-  ]
-);
+    console.log("Premium unlock registrado");
 
     await client.query("COMMIT");
 
-return res.json({
-  qr_code_url: pixData.qr_code_url || null,
-  copia_cola: pixData.qr_code,
-  qr_code_base64: qrCodeBase64 || null,
-  payment_id: order.id,
-  order_id: order.id,
-  status: "pendente"
-});
+    console.log("COMMIT realizado");
+    console.log("PIX premium criado com sucesso");
 
+    return res.json({
+      qr_code_url: pixData.qr_code_url,
+      copia_cola: pixData.qr_code,
+      expires_at: pixData?.expires_at || null,
+      order_id: order.id,
+      reutilizado: false
+    });
   } catch (err) {
-    console.error("Erro gerar PIX premium:", err);
+    console.log("=================================");
+    console.error("🔥 ERRO PIX PREMIUM");
+    console.error("message:", err.message);
+    console.error("stack:", err.stack);
 
-    try { await client.query("ROLLBACK"); } catch {}
+    if (err.response) {
+      console.error("STATUS:", err.response.status);
+      console.error("DATA:", err.response.data);
+    }
+
+    try {
+      console.log("ROLLBACK executado");
+      await client.query("ROLLBACK");
+    } catch (rollbackErr) {
+      console.error("Erro no rollback:", rollbackErr);
+    }
 
     return res.status(500).json({
-      error: "Erro ao gerar pagamento PIX do premium"
+      error: "Erro ao gerar pagamento premium"
     });
-
   } finally {
     client.release();
+    console.log("Conexão DB liberada");
   }
 });
 
@@ -8579,7 +8804,7 @@ return res.json({
 // PREMIUM CARTAO
 // ===========================
 
-app.post("/api/pagamento/premium/cartao", auth, async (req, res) => {
+app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
   const requestId =
     "premium_cartao_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
 
@@ -8601,6 +8826,7 @@ app.post("/api/pagamento/premium/cartao", auth, async (req, res) => {
       premium_post_id,
       fingerprint,
       cpf,
+      aceitou_termos,
       billing_address,
       phone_area_code,
       phone_number,
@@ -8619,10 +8845,14 @@ app.post("/api/pagamento/premium/cartao", auth, async (req, res) => {
       card_token
     } = req.body || {};
 
-    const userId = req.user?.id;
+    const userId = Number(req.user?.id || 0);
 
     if (!userId) {
       return res.status(401).json({ error: "Usuário não autenticado" });
+    }
+
+    if (!aceitou_termos) {
+      return res.status(400).json({ error: "É necessário aceitar os termos." });
     }
 
     if (!premium_post_id || !Number.isInteger(Number(premium_post_id))) {
@@ -8638,6 +8868,10 @@ app.post("/api/pagamento/premium/cartao", auth, async (req, res) => {
 
     const cpfLimpo = String(cpf || "").replace(/\D/g, "");
     if (cpfLimpo.length !== 11) {
+      return res.status(400).json({ error: "CPF inválido" });
+    }
+
+    if (!validarCPF(cpfLimpo)) {
       return res.status(400).json({ error: "CPF inválido" });
     }
 
@@ -8711,7 +8945,25 @@ app.post("/api/pagamento/premium/cartao", auth, async (req, res) => {
       ativo
     } = premiumRes.rows[0];
 
-        const vipRes = await client.query(
+    const donaRes = await client.query(
+      `
+      SELECT id
+      FROM modelos
+      WHERE user_id = $1
+        AND id = $2
+      LIMIT 1
+      `,
+      [userId, modelo_id]
+    );
+
+    if (donaRes.rowCount) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        error: "Não é possível comprar o próprio conteúdo premium."
+      });
+    }
+
+    const vipRes = await client.query(
       `
       SELECT 1
       FROM vip_subscriptions
@@ -8918,15 +9170,19 @@ app.post("/api/pagamento/premium/cartao", auth, async (req, res) => {
       ],
       payments: [paymentPayload],
       metadata: {
-        tipo: "premium_cartao",
+        tipo: "premium",
+        metodo_pagamento: "cartao",
         premium_post_id: String(premium_id),
         cliente_id: String(cliente_id),
         modelo_id: String(modelo_id),
-        valor_premium: String(valorBase),
+        valor_base: String(valorBase),
         taxa_transacao: String(taxaTransacao),
         taxa_plataforma: String(taxaPlataforma),
         valor_total: String(total),
-        aceite_ip: ip || ""
+        taxa_gateway: "0.15",
+        aceite_ip: ip || "",
+        fingerprint: fingerprint || "",
+        telefone: `${areaCode}${phoneNumber}`
       }
     };
 
@@ -8949,28 +9205,22 @@ app.post("/api/pagamento/premium/cartao", auth, async (req, res) => {
       }
     );
 
-const order = pagarmeRes.data;
-const charge = order?.charges?.[0] || null;
-const gatewayStatusRaw = charge?.status || order?.status || "pending";
-const gatewayStatus = String(gatewayStatusRaw).toLowerCase().trim();
+    const order = pagarmeRes.data;
+    const charge = order?.charges?.[0] || null;
+    const gatewayStatusRaw = charge?.status || order?.status || "pending";
+    const gatewayStatus = String(gatewayStatusRaw).toLowerCase().trim();
 
-function normalizarStatusInicialPremium(status) {
-  if (
-    [
-      "failed",
-      "refused",
-      "denied",
-      "cancelled",
-      "canceled"
-    ].includes(status)
-  ) {
-    return "falhou";
-  }
+    function normalizarStatusInicialPremium(status) {
+      const s = String(status || "").toLowerCase().trim();
 
-  return "pendente";
-}
+      if (["failed", "refused", "denied", "cancelled", "canceled"].includes(s)) {
+        return "falhou";
+      }
 
-const statusLocal = normalizarStatusInicialPremium(gatewayStatus);
+      return "pendente";
+    }
+
+    const statusLocal = normalizarStatusInicialPremium(gatewayStatus);
 
     await client.query(
       `
@@ -8999,6 +9249,7 @@ const statusLocal = normalizarStatusInicialPremium(gatewayStatus);
       )
       ON CONFLICT (premium_post_id, cliente_id)
       DO UPDATE SET
+        modelo_id = EXCLUDED.modelo_id,
         status = EXCLUDED.status,
         metodo_pagamento = 'cartao',
         valor_base = EXCLUDED.valor_base,
@@ -9012,18 +9263,18 @@ const statusLocal = normalizarStatusInicialPremium(gatewayStatus);
         updated_at = NOW()
       `,
       [
-  premium_id,
-  cliente_id,
-  modelo_id,
-  statusLocal,
-  valorBase,
-  taxaTransacao,
-  taxaPlataforma,
-  total,
-  order.id,
-  charge?.id || null,
-  `premium_${premium_id}_${cliente_id}`
-]
+        premium_id,
+        cliente_id,
+        modelo_id,
+        statusLocal,
+        valorBase,
+        taxaTransacao,
+        taxaPlataforma,
+        total,
+        order.id,
+        charge?.id || null,
+        `premium_${premium_id}_${cliente_id}`
+      ]
     );
 
     await client.query(
@@ -9052,16 +9303,16 @@ const statusLocal = normalizarStatusInicialPremium(gatewayStatus);
 
     await client.query("COMMIT");
 
-return res.json({
-  order_id: order.id,
-  charge_id: charge?.id || null,
-  status: statusLocal,
-  raw_status: gatewayStatus,
-  total,
-  valorBase,
-  taxaTransacao,
-  taxaPlataforma
-});
+    return res.json({
+      order_id: order.id,
+      charge_id: charge?.id || null,
+      status: statusLocal,
+      raw_status: gatewayStatus,
+      total,
+      valorBase,
+      taxaTransacao,
+      taxaPlataforma
+    });
 
   } catch (err) {
     console.error("\n==============================");
