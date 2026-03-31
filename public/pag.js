@@ -38,7 +38,6 @@ function abrirPopupPagamento() {
 
   popup.classList.remove("hidden");
 
-  // Reset visual PIX
   document.getElementById("pixQr")?.classList.add("hidden");
   document.getElementById("pixCodigo")?.classList.add("hidden");
   document.getElementById("btnCopiarPix")?.classList.add("hidden");
@@ -50,7 +49,6 @@ function abrirPopupPagamento() {
   const cartao = document.getElementById("conteudoCartao");
   const tabsContainer = document.querySelector(".velvet-tabs");
 
-  // 🎥 MÍDIA → só cartão
   if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
     tabsContainer?.classList.add("hidden");
     pix?.classList.add("hidden");
@@ -59,12 +57,21 @@ function abrirPopupPagamento() {
     return;
   }
 
-  // 💜 VIP
-  tabsContainer?.classList.remove("hidden");
-  pix?.classList.remove("hidden");
-  cartao?.classList.add("hidden");
+  if (window.PAGAMENTO_TIPO_ATUAL === "premium") {
+    tabsContainer?.classList.remove("hidden");
+    pix?.classList.remove("hidden");
+    cartao?.classList.add("hidden");
+    prepararPagamento();
+    return;
+  }
 
-  prepararPagamento();
+  if (window.PAGAMENTO_TIPO_ATUAL === "vip") {
+    tabsContainer?.classList.remove("hidden");
+    pix?.classList.remove("hidden");
+    cartao?.classList.add("hidden");
+    prepararPagamento();
+    return;
+  }
 }
 
 function prepararPagamento() {
@@ -110,25 +117,22 @@ function prepararPagamento() {
     return;
   }
 
-  // ===============================
-  // 🔥 MÍDIA
-  // ===============================
-  if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
-    const midia = window.MIDIA_VENDA_ATUAL;
+  if (window.PAGAMENTO_TIPO_ATUAL === "premium") {
+  const premium = window.PREMIUM_ATUAL;
 
-    if (!midia || !midia.preco) {
-      console.error("MIDIA_VENDA_ATUAL inválida:", midia);
-      return;
-    }
-
-    preencherResumoMidia({
-      valor: Number(midia.preco),
-      descricao: midia.descricao
-    });
-
-    document.querySelector(".midia-detalhes")?.classList.remove("hidden");
+  if (!premium || !premium.preco) {
+    console.error("PREMIUM_ATUAL inválido:", premium);
     return;
   }
+
+  preencherResumoMidia({
+    valor: Number(premium.preco),
+    descricao: premium.descricao
+  });
+
+  document.querySelector(".midia-detalhes")?.classList.remove("hidden");
+  return;
+}
 }
 
 function preencherResumoVIP({ valorBase = 0, desconto = 0 }) {
@@ -195,18 +199,15 @@ function mostrarMetodo(tipo) {
 
   if (!pix || !cartao) return;
 
-  if (tipo === "cartao") {
-    resetarEstadoPix();
+if (tipo === "cartao") {
+  resetarEstadoPix();
+  pix.classList.add("hidden");
+  cartao.classList.remove("hidden");
 
-    pix.classList.add("hidden");
-    cartao.classList.remove("hidden");
-
-    if (window.PAGAMENTO_TIPO_ATUAL === "vip") {
-      iniciarCartaoVip();
-    } else if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
-      iniciarCartaoMidia();
-    }
-  }
+  if (window.PAGAMENTO_TIPO_ATUAL === "vip") iniciarCartaoVip();
+  if (window.PAGAMENTO_TIPO_ATUAL === "midia") iniciarCartaoMidia();
+  if (window.PAGAMENTO_TIPO_ATUAL === "premium") iniciarCartaoPremium();
+}
 
   if (tipo === "pix") {
     resetarEstadoCartao();
@@ -274,6 +275,28 @@ function obterCpfValido() {
   }
 
   return cpf;
+}
+
+function obterTelefoneValido() {
+  const input =
+    document.getElementById("phonePagamento") ||
+    document.getElementById("card_phone") ||
+    document.getElementById("phone");
+
+  if (!input) {
+    alert("Campo de telefone não encontrado.");
+    return null;
+  }
+
+  const telefone = String(input.value || "").replace(/\D/g, "");
+
+  if (telefone.length < 10 || telefone.length > 11) {
+    alert("Informe um telefone válido com DDD.");
+    input.focus();
+    return null;
+  }
+
+  return telefone;
 }
 
 function atualizarStatusCartao(texto) {
@@ -367,10 +390,16 @@ function aplicarMascarasCamposCartao() {
   const mes = document.getElementById("card_exp_month");
   const ano = document.getElementById("card_exp_year");
   const cvv = document.getElementById("card_cvv");
-  const phone = document.getElementById("card_phone");
+
+  const phoneCartao = document.getElementById("card_phone");
+  const phonePix = document.getElementById("phonePagamento");
+
   const zip = document.getElementById("billing_zip_code");
   const state = document.getElementById("billing_state");
 
+  // =========================
+  // CARTÃO
+  // =========================
   if (numero && !numero.dataset.maskBound) {
     numero.dataset.maskBound = "true";
     numero.addEventListener("input", () => {
@@ -401,9 +430,15 @@ function aplicarMascarasCamposCartao() {
     });
   }
 
-  if (phone && !phone.dataset.maskBound) {
-    phone.dataset.maskBound = "true";
-    phone.addEventListener("input", e => {
+  // =========================
+  // TELEFONE (reutilizável)
+  // =========================
+  function aplicarMascaraTelefone(input) {
+    if (!input || input.dataset.maskBound) return;
+
+    input.dataset.maskBound = "true";
+
+    input.addEventListener("input", e => {
       let v = e.target.value.replace(/\D/g, "").slice(0, 11);
 
       if (v.length > 10) {
@@ -420,6 +455,12 @@ function aplicarMascarasCamposCartao() {
     });
   }
 
+  aplicarMascaraTelefone(phoneCartao);
+  aplicarMascaraTelefone(phonePix);
+
+  // =========================
+  // CEP
+  // =========================
   if (zip && !zip.dataset.maskBound) {
     zip.dataset.maskBound = "true";
     zip.addEventListener("input", e => {
@@ -429,10 +470,16 @@ function aplicarMascarasCamposCartao() {
     });
   }
 
+  // =========================
+  // ESTADO
+  // =========================
   if (state && !state.dataset.maskBound) {
     state.dataset.maskBound = "true";
     state.addEventListener("input", e => {
-      e.target.value = e.target.value.replace(/[^a-zA-Z]/g, "").slice(0, 2).toUpperCase();
+      e.target.value = e.target.value
+        .replace(/[^a-zA-Z]/g, "")
+        .slice(0, 2)
+        .toUpperCase();
     });
   }
 }
@@ -573,6 +620,33 @@ function resetarEstadoPix() {
   btn?.classList.add("hidden");
 }
 
+function iniciarCartaoPremium() {
+  const premium = window.PREMIUM_ATUAL;
+
+  if (!premium?.premium_post_id) {
+    console.error("PREMIUM_ATUAL inválido:", premium);
+    return;
+  }
+
+  pagamentoAtual = {
+    tipo: "premium",
+    premium_post_id: Number(premium.premium_post_id),
+    valor: Number(premium.preco || 0),
+    descricao: premium.descricao || ""
+  };
+
+  window.pagamentoAtual = pagamentoAtual;
+
+  preencherResumoMidia({
+    valor: Number(premium.preco || 0),
+    descricao: premium.descricao || ""
+  });
+
+  montarFormularioCartao();
+  aplicarMascarasCamposCartao();
+  bindFormularioCartao();
+}
+
 function resetarEstadoCartao() {
   document.getElementById("cartaoLoading")?.classList.add("hidden");
   document.getElementById("cartaoSucesso")?.classList.add("hidden");
@@ -597,7 +671,7 @@ function resetarEstadoCartao() {
   });
 }
 
-window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id }) {
+window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_post_id }) {
   try {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -635,9 +709,26 @@ if (tipo === "vip") {
   }
 
   url = "/api/pagamento/vip/pix";
+
+const telefoneLimpo = obterTelefoneValido();
+if (!telefoneLimpo) return;
+
+body = {
+  tipo: "vip",
+  modelo_id: modeloIdFinal,
+  cpf,
+  telefone: telefoneLimpo,
+  aceitou_termos,
+  fingerprint: gerarFingerprint()
+};
+
+}
+
+if (tipo === "premium") {
+  url = "/api/pagamento/premium/pix";
   body = {
-    tipo: "vip",
-    modelo_id: modeloIdFinal,
+    tipo: "premium",
+    premium_post_id,
     cpf,
     aceitou_termos,
     fingerprint: gerarFingerprint()
@@ -670,9 +761,9 @@ if (tipo === "vip") {
     });
 
     if (!res.ok) {
-      const erro = await res.text();
-      throw new Error(erro);
-    }
+  const erro = await lerErroResposta(res);
+  throw new Error(erro);
+}
 
     const data = await res.json();
 
@@ -764,14 +855,20 @@ socket.on("vipAtivado", async ({ cliente_id, modelo_id }) => {
   const confirmId = `vip_${cliente_id}_${modelo_id}`;
   if (!marcarPagamentoConfirmado(confirmId)) return;
 
-  document.getElementById("cartaoLoading")?.classList.add("hidden");
-  document.getElementById("formCartao")?.classList.add("hidden");
-  document.getElementById("cartaoSucesso")?.classList.remove("hidden");
+document.getElementById("pixLoading")?.classList.add("hidden");
+document.getElementById("pixAguardando")?.classList.add("hidden");
+document.getElementById("cartaoLoading")?.classList.add("hidden");
+document.getElementById("formCartao")?.classList.add("hidden");
+
+document.getElementById("pixSucesso")?.classList.remove("hidden");
+document.getElementById("cartaoSucesso")?.classList.remove("hidden");
 
   setTimeout(async () => {
     fecharPopupPagamento();
     await aplicarRegrasDeAcesso?.();
     await carregarFeedBase?.();
+    await carregarFeed?.();
+    await carregarPremium?.();
   }, 1200);
 });
 
@@ -870,24 +967,23 @@ async function pagarComCartao(tipoParam = null) {
     // =========================
     // TELEFONE
     // =========================
-    const telefoneBruto =
-      form.querySelector("#card_phone")?.value?.trim() ||
-      form.querySelector("#phone")?.value?.trim() ||
-      "";
 
-    const telefoneLimpo = telefoneBruto.replace(/\D/g, "");
+const telefoneBruto =
+  document.getElementById("phonePagamento")?.value?.trim() ||
+  form.querySelector("#card_phone")?.value?.trim() ||
+  form.querySelector("#phone")?.value?.trim() ||
+  "";
 
-    let phone_area_code = "";
-    let phone_number = "";
+const telefone = telefoneBruto.replace(/\D/g, "");
 
-    if (telefoneLimpo.length === 10 || telefoneLimpo.length === 11) {
-      phone_area_code = telefoneLimpo.slice(0, 2);
-      phone_number = telefoneLimpo.slice(2);
-    } else {
-      alert("Informe um telefone válido com DDD.");
-      pagamentoEmProcesso = false;
-      return { sucesso: false };
-    }
+if (telefone.length < 10 || telefone.length > 11) {
+  alert("Informe um telefone válido com DDD.");
+  pagamentoEmProcesso = false;
+  return { sucesso: false };
+}
+
+const phone_area_code = telefone.slice(0, 2);
+const phone_number = telefone.slice(2);
 
     // =========================
     // ENDEREÇO
@@ -970,27 +1066,26 @@ async function pagarComCartao(tipoParam = null) {
 
   atualizarStatusCartao("💳 Processando assinatura VIP...");
 
-  const payload = {
-    modelo_id,
-    cpf: pagamentoAtual.cpf,
-    aceitou_termos,
-    fingerprint,
-    phone_area_code,
-    phone_number,
-    billing_address: {
-      line_1: enderecoLinha1,
-      zip_code: zipCodeLimpo,
-      city: cidade,
-      state: estado.toUpperCase(),
-      country: pais.toUpperCase(),
-      ...(enderecoLinha2 ? { line_2: enderecoLinha2 } : {})
-    },
-    card_number: numero.replace(/\s/g, ""),
-    card_holder_name: nome,
-    card_exp_month: Number(mes),
-    card_exp_year: Number(ano),
-    card_cvv: cvv.replace(/\D/g, "")
-  };
+ const payload = {
+  modelo_id,
+  cpf: pagamentoAtual.cpf,
+  telefone,
+  aceitou_termos,
+  fingerprint,
+  billing_address: {
+    line_1: enderecoLinha1,
+    zip_code: zipCodeLimpo,
+    city: cidade,
+    state: estado.toUpperCase(),
+    country: pais.toUpperCase(),
+    ...(enderecoLinha2 ? { line_2: enderecoLinha2 } : {})
+  },
+  card_number: numero.replace(/\s/g, ""),
+  card_holder_name: nome,
+  card_exp_month: Number(mes),
+  card_exp_year: Number(ano),
+  card_cvv: cvv.replace(/\D/g, "")
+};
 
   console.log("Payload PSP /api/pagamento/vip/cartao:", payload);
 
@@ -1019,31 +1114,38 @@ async function pagarComCartao(tipoParam = null) {
     return { sucesso: false };
   }
 
-  pagamentoAtual.payment_id = data.payment_id || data.order_id || null;
-  pagamentoAtual.assinatura_id = data.assinatura_id || null;
+pagamentoAtual.payment_id = data.payment_id || data.order_id || null;
+pagamentoAtual.assinatura_id = data.assinatura_id || null;
 
   atualizarStatusCartao("⏳ Aguardando confirmação...");
 
   if (pagamentoAtual.payment_id) {
     iniciarPollingPagamento(
-      pagamentoAtual.payment_id,
-      pagamentoAtual.assinatura_id || modelo_id,
-      "cartao"
-    );
+  pagamentoAtual.payment_id,
+  modelo_id,
+  "cartao"
+);
   }
 
   pagamentoEmProcesso = false;
   return { sucesso: true, aguardando_confirmacao: true };
 }
-
     // =========================
-    // MÍDIA
+    // PREMIUM
     // =========================
-    if (tipo === "midia") {
-      const conteudo_id = Number(pagamentoAtual.conteudo_id);
+    if (tipo === "premium") {
+      const premium_post_id = Number(pagamentoAtual.premium_post_id);
 
-      if (!conteudo_id) {
-        alert("Conteúdo inválido");
+      if (!premium_post_id) {
+        alert("Post premium inválido");
+        pagamentoEmProcesso = false;
+        return { sucesso: false };
+      }
+
+      const aceitou_termos = !!document.getElementById("aceiteTermosPagamento")?.checked;
+
+      if (!aceitou_termos) {
+        alert("Você precisa aceitar os termos.");
         pagamentoEmProcesso = false;
         return { sucesso: false };
       }
@@ -1051,8 +1153,10 @@ async function pagarComCartao(tipoParam = null) {
       atualizarStatusCartao("💳 Processando pagamento...");
 
       const payload = {
-        conteudo_id,
+        premium_post_id,
         cpf: pagamentoAtual.cpf,
+        aceitou_termos,
+        fingerprint: gerarFingerprint(),
         phone_area_code,
         phone_number,
         billing_address: {
@@ -1063,7 +1167,6 @@ async function pagarComCartao(tipoParam = null) {
           country: pais.toUpperCase(),
           ...(enderecoLinha2 ? { line_2: enderecoLinha2 } : {})
         },
-
         card_number: numero.replace(/\s/g, ""),
         card_holder_name: nome,
         card_exp_month: Number(mes),
@@ -1071,12 +1174,9 @@ async function pagarComCartao(tipoParam = null) {
         card_cvv: cvv.replace(/\D/g, "")
       };
 
-      console.log("Payload PSP /api/pagamento/midia/cartao:", payload);
-
-      atualizarStatusCartao("💳 Processando pagamento...");
       mostrarLoadingCartao();
 
-      const res = await fetch("/api/pagamento/midia/cartao", {
+      const res = await fetch("/api/pagamento/premium/cartao", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1087,48 +1187,29 @@ async function pagarComCartao(tipoParam = null) {
 
       const data = await res.json();
 
-if (!res.ok) {
-  console.error("Erro retorno pagamento PSP:", data);
-  alert(
-    data?.error ||
-    data?.detalhe ||
-    "Erro no pagamento com cartão."
-  );
+      if (!res.ok) {
+        console.error("Erro retorno PREMIUM cartão:", data);
+        alert(data?.error || data?.detalhe || "Erro no pagamento premium com cartão.");
 
-  document.getElementById("cartaoLoading")?.classList.add("hidden");
-  document.getElementById("formCartao")?.classList.remove("hidden");
+        document.getElementById("cartaoLoading")?.classList.add("hidden");
+        document.getElementById("formCartao")?.classList.remove("hidden");
 
-  atualizarStatusCartao("❌ Falha no pagamento");
-  pagamentoEmProcesso = false;
-  return { sucesso: false };
-}
+        atualizarStatusCartao("❌ Falha no pagamento");
+        pagamentoEmProcesso = false;
+        return { sucesso: false };
+      }
 
-      pagamentoAtual.payment_id = data.payment_id || data.order_id || null;
-      pagamentoAtual.message_id = data.message_id || conteudo_id;
-
-      const valorMidia = Number(pagamentoAtual.valor || 0);
-      const taxaTransacao = Number((valorMidia * 0.10).toFixed(2));
-      const taxaPlataforma = Number((valorMidia * 0.05).toFixed(2));
-      const valorTotal = Number(
-        (valorMidia + taxaTransacao + taxaPlataforma).toFixed(2)
-      );
-
-      const elValorConteudo = document.getElementById("cartaoValorConteudo");
-      const elTaxaTransacao = document.getElementById("cartaoTaxaTransacao");
-      const elTaxaPlataforma = document.getElementById("cartaoTaxaPlataforma");
-      const elValorTotal = document.getElementById("cartaoValorTotal");
-
-      if (elValorConteudo) elValorConteudo.innerText = valorBRL(valorMidia);
-      if (elTaxaTransacao) elTaxaTransacao.innerText = valorBRL(taxaTransacao);
-      if (elTaxaPlataforma) elTaxaPlataforma.innerText = valorBRL(taxaPlataforma);
-      if (elValorTotal) elValorTotal.innerText = valorBRL(valorTotal);
+ pagamentoAtual.payment_id = data.payment_id || data.order_id || null;
+      pagamentoAtual.premium_post_id = data.premium_post_id || premium_post_id;
+      
+      atualizarResumoCartaoPagamento(pagamentoAtual.valor);
 
       atualizarStatusCartao("⏳ Aguardando confirmação...");
 
       if (pagamentoAtual.payment_id) {
         iniciarPollingPagamento(
           pagamentoAtual.payment_id,
-          pagamentoAtual.message_id,
+          pagamentoAtual.premium_post_id,
           "cartao"
         );
       }
@@ -1136,6 +1217,89 @@ if (!res.ok) {
       pagamentoEmProcesso = false;
       return { sucesso: true, aguardando_confirmacao: true };
     }
+
+    // =========================
+// MÍDIA
+// =========================
+if (tipo === "midia") {
+  const conteudo_id = Number(pagamentoAtual.conteudo_id);
+
+  if (!conteudo_id) {
+    alert("Conteúdo inválido");
+    pagamentoEmProcesso = false;
+    return { sucesso: false };
+  }
+
+  atualizarStatusCartao("💳 Processando pagamento...");
+
+  const payload = {
+    conteudo_id,
+    cpf: pagamentoAtual.cpf,
+    phone_area_code,
+    phone_number,
+    billing_address: {
+      line_1: enderecoLinha1,
+      zip_code: zipCodeLimpo,
+      city: cidade,
+      state: estado.toUpperCase(),
+      country: pais.toUpperCase(),
+      ...(enderecoLinha2 ? { line_2: enderecoLinha2 } : {})
+    },
+    card_number: numero.replace(/\s/g, ""),
+    card_holder_name: nome,
+    card_exp_month: Number(mes),
+    card_exp_year: Number(ano),
+    card_cvv: cvv.replace(/\D/g, "")
+  };
+
+  mostrarLoadingCartao();
+
+  const res = await fetch("/api/pagamento/midia/cartao", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + localStorage.getItem("token")
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    console.error("Erro retorno MIDIA cartão:", data);
+    alert(
+      data?.error ||
+      data?.detalhe ||
+      "Erro no pagamento de conteúdo."
+    );
+
+    document.getElementById("cartaoLoading")?.classList.add("hidden");
+    document.getElementById("formCartao")?.classList.remove("hidden");
+
+    atualizarStatusCartao("❌ Falha no pagamento");
+    pagamentoEmProcesso = false;
+    return { sucesso: false };
+  }
+
+pagamentoAtual.payment_id = data.payment_id || data.order_id || null;
+pagamentoAtual.message_id = data.message_id || null;
+pagamentoAtual.conteudo_id = conteudo_id;
+
+  atualizarResumoCartaoPagamento(pagamentoAtual.valor);
+
+  atualizarStatusCartao("⏳ Aguardando confirmação...");
+
+  if (pagamentoAtual.payment_id) {
+    iniciarPollingPagamento(
+      pagamentoAtual.payment_id,
+      pagamentoAtual.message_id,
+      "cartao"
+    );
+  }
+
+  pagamentoEmProcesso = false;
+  return { sucesso: true, aguardando_confirmacao: true };
+}
 
     alert("Tipo de pagamento inválido");
     pagamentoEmProcesso = false;
@@ -1181,6 +1345,17 @@ window.fecharPopupPagamento = function () {
   const popup = document.getElementById("popupPagamentoVelvet");
   if (!popup) return;
 
+  // para pollings ativos
+  if (pollingPixInterval) {
+    clearInterval(pollingPixInterval);
+    pollingPixInterval = null;
+  }
+
+  if (pollingCartaoInterval) {
+    clearInterval(pollingCartaoInterval);
+    pollingCartaoInterval = null;
+  }
+
   // fecha popup
   popup.classList.add("hidden");
 
@@ -1189,7 +1364,13 @@ window.fecharPopupPagamento = function () {
   document.getElementById("pixAguardando")?.classList.add("hidden");
   document.getElementById("pixSucesso")?.classList.add("hidden");
   document.getElementById("pixQr")?.classList.add("hidden");
-  document.getElementById("pixCodigo")?.classList.add("hidden");
+
+  const pixCodigo = document.getElementById("pixCodigo");
+  if (pixCodigo) {
+    pixCodigo.classList.add("hidden");
+    pixCodigo.value = "";
+  }
+
   document.getElementById("btnCopiarPix")?.classList.add("hidden");
 
   // limpa estados cartão
@@ -1205,11 +1386,12 @@ window.fecharPopupPagamento = function () {
   document.querySelectorAll(".velvet-tabs .tab").forEach(tab => {
     tab.classList.remove("active");
   });
+
   pagamentoAtual = {};
   window.pagamentoAtual = pagamentoAtual;
   window.MIDIA_VENDA_ATUAL = null;
 
-   limparPagamentoConfirmado();
+  limparPagamentoConfirmado();
 };
 
 function mostrarLoadingCartao() {
@@ -1233,6 +1415,13 @@ window.confirmarPix = function () {
       conteudo_id: window.MIDIA_VENDA_ATUAL?.conteudo_id
     });
   }
+
+ if (window.PAGAMENTO_TIPO_ATUAL === "premium") {
+    return pagarComPix({
+      tipo: "premium",
+      premium_post_id: window.PREMIUM_ATUAL?.premium_post_id
+    });
+  }
 };
 
 function gerarFingerprint() {
@@ -1247,9 +1436,9 @@ function gerarFingerprint() {
 let pollingPixInterval = null;
 
 function iniciarVerificacaoPix(orderId) {
-  // evita múltiplos polling simultâneos
   if (pollingPixInterval) {
     clearInterval(pollingPixInterval);
+    pollingPixInterval = null;
   }
 
   pollingPixInterval = setInterval(async () => {
@@ -1262,45 +1451,86 @@ function iniciarVerificacaoPix(orderId) {
 
       if (!res.ok) return;
 
-const data = await res.json();
+      const data = await res.json();
+      const tipoAtual =
+        data.tipo || window.PAGAMENTO_TIPO_ATUAL || pagamentoAtual?.tipo;
 
-if (data.status === "pago") {
-  if (!marcarPagamentoConfirmado(data.order_id || data.payment_id || data.message_id || orderId)) {
-    return;
-  }
+      if (data.status === "pago") {
+        clearInterval(pollingPixInterval);
+        pollingPixInterval = null;
 
-  clearInterval(pollingPixInterval);
-  pollingPixInterval = null;
+        const confirmId = montarConfirmIdPagamento(tipoAtual, data, orderId);
 
-  document.getElementById("pixAguardando")?.classList.add("hidden");
-  document.getElementById("pixSucesso")?.classList.remove("hidden");
+        if (!marcarPagamentoConfirmado(confirmId)) return;
 
-        if (window.PAGAMENTO_TIPO_ATUAL === "vip") {
+        document.getElementById("pixAguardando")?.classList.add("hidden");
+        document.getElementById("pixSucesso")?.classList.remove("hidden");
+
+        // =========================
+        // VIP
+        // =========================
+        if (tipoAtual === "vip") {
           setTimeout(async () => {
             fecharPopupPagamento();
-            await aplicarRegrasDeAcesso?.();
-            await carregarFeedBase?.();
+
+            if (typeof window.atualizarPerfilPosPagamento === "function") {
+              await window.atualizarPerfilPosPagamento();
+            } else {
+              await aplicarRegrasDeAcesso?.();
+              await carregarFeed?.();
+              await carregarPremium?.();
+            }
           }, 1500);
-        } else {
-          const messageId = data.message_id;
+
+          return;
+        }
+
+        // =========================
+        // PREMIUM
+        // =========================
+        if (tipoAtual === "premium") {
+          if (data.premium_post_id) {
+            if (!window.PREMIUM_ATUAL) window.PREMIUM_ATUAL = {};
+            window.PREMIUM_ATUAL.premium_post_id = Number(data.premium_post_id);
+          }
 
           setTimeout(async () => {
             fecharPopupPagamento();
 
-            const res = await fetch(`/api/conteudo/liberado/${messageId}`, {
-              headers: {
-                Authorization: "Bearer " + localStorage.getItem("token")
-              }
-            });
-
-            if (!res.ok) return;
-
-            const midias = await res.json();
-            if (!midias.length) return;
-
-            abrirModalMidia(midias[0].url, midias[0].tipo === "video");
+            if (typeof window.atualizarPerfilPosPagamento === "function") {
+              await window.atualizarPerfilPosPagamento();
+            } else {
+              await carregarPremium?.();
+              await abrirPremiumLiberadoAtual?.();
+            }
           }, 1200);
+
+          return;
         }
+
+        // =========================
+        // MIDIA
+        // =========================
+        const messageId = data.message_id;
+
+        setTimeout(async () => {
+          fecharPopupPagamento();
+
+          if (!messageId) return;
+
+          const resLiberado = await fetch(`/api/conteudo/liberado/${messageId}`, {
+            headers: {
+              Authorization: "Bearer " + localStorage.getItem("token")
+            }
+          });
+
+          if (!resLiberado.ok) return;
+
+          const midias = await resLiberado.json();
+          if (!midias.length) return;
+
+          abrirModalMidia(midias[0].url, midias[0].tipo === "video");
+        }, 1200);
 
         return;
       }
@@ -1331,8 +1561,6 @@ if (data.status === "pago") {
         return;
       }
 
-      // outros status: continua aguardando
-
     } catch (err) {
       console.error("Erro verificação PIX:", err);
     }
@@ -1357,6 +1585,7 @@ function iniciarPollingPagamento(paymentId, refId = null, metodo = "cartao") {
 
   if (pollingCartaoInterval) {
     clearInterval(pollingCartaoInterval);
+    pollingCartaoInterval = null;
   }
 
   pollingCartaoInterval = setInterval(async () => {
@@ -1370,42 +1599,97 @@ function iniciarPollingPagamento(paymentId, refId = null, metodo = "cartao") {
       if (!res.ok) return;
 
       const data = await res.json();
+      const tipoAtual =
+        data.tipo || window.PAGAMENTO_TIPO_ATUAL || pagamentoAtual?.tipo;
 
       if (data.status === "pago") {
         clearInterval(pollingCartaoInterval);
         pollingCartaoInterval = null;
 
-        if (!marcarPagamentoConfirmado(paymentId)) return;
+        const confirmId = montarConfirmIdPagamento(tipoAtual, data, refId || paymentId);
 
+        if (!marcarPagamentoConfirmado(confirmId)) return;
+
+        document.getElementById("pixLoading")?.classList.add("hidden");
+        document.getElementById("pixAguardando")?.classList.add("hidden");
         document.getElementById("cartaoLoading")?.classList.add("hidden");
+        document.getElementById("formCartao")?.classList.add("hidden");
+
+        document.getElementById("pixSucesso")?.classList.remove("hidden");
         document.getElementById("cartaoSucesso")?.classList.remove("hidden");
 
-        if (window.PAGAMENTO_TIPO_ATUAL === "vip") {
-          setTimeout(async () => {
-            fecharPopupPagamento();
-            await aplicarRegrasDeAcesso?.();
-            await carregarFeedBase?.();
-          }, 1200);
-        } else {
-          const messageId = data.message_id || refId;
-
+        // =========================
+        // VIP
+        // =========================
+        if (tipoAtual === "vip") {
           setTimeout(async () => {
             fecharPopupPagamento();
 
-            const liberado = await fetch(`/api/conteudo/liberado/${messageId}`, {
-              headers: {
-                Authorization: "Bearer " + localStorage.getItem("token")
-              }
-            });
-
-            if (!liberado.ok) return;
-
-            const midias = await liberado.json();
-            if (!midias.length) return;
-
-            abrirModalMidia(midias[0].url, midias[0].tipo === "video");
+            if (typeof window.atualizarPerfilPosPagamento === "function") {
+              await window.atualizarPerfilPosPagamento();
+            } else {
+              await aplicarRegrasDeAcesso?.();
+              await carregarFeed?.();
+              await carregarPremium?.();
+            }
           }, 1200);
+
+          return;
         }
+
+        // =========================
+        // PREMIUM
+        // =========================
+        if (tipoAtual === "premium") {
+          if (data.premium_post_id) {
+            if (!window.PREMIUM_ATUAL) window.PREMIUM_ATUAL = {};
+            window.PREMIUM_ATUAL.premium_post_id = Number(data.premium_post_id);
+          }
+
+          setTimeout(async () => {
+            fecharPopupPagamento();
+
+            if (typeof window.atualizarPerfilPosPagamento === "function") {
+              await window.atualizarPerfilPosPagamento();
+            } else {
+              await carregarPremium?.();
+              await abrirPremiumLiberadoAtual?.();
+            }
+          }, 1200);
+
+          return;
+        }
+
+        // =========================
+        // MIDIA
+        // =========================
+        const messageId = data.message_id || refId;
+
+        if (!messageId) {
+          setTimeout(() => {
+            fecharPopupPagamento();
+          }, 1200);
+          return;
+        }
+
+        setTimeout(async () => {
+          fecharPopupPagamento();
+
+          const liberado = await fetch(`/api/conteudo/liberado/${messageId}`, {
+            headers: {
+              Authorization: "Bearer " + localStorage.getItem("token")
+            }
+          });
+
+          if (!liberado.ok) return;
+
+          const midias = await liberado.json();
+          if (!midias.length) return;
+
+          abrirModalMidia(midias[0].url, midias[0].tipo === "video");
+        }, 1200);
+
+        return;
       }
 
       if (data.status === "falhou" || data.status === "expirado") {
@@ -1416,12 +1700,66 @@ function iniciarPollingPagamento(paymentId, refId = null, metodo = "cartao") {
         document.getElementById("formCartao")?.classList.remove("hidden");
         atualizarStatusCartao("❌ Falha no pagamento");
       }
+
     } catch (err) {
       console.error("Erro polling cartão:", err);
     }
   }, 5000);
 }
 
+function montarConfirmIdPagamento(tipo, data = {}, refId = null) {
+  if (tipo === "vip") {
+    const clienteId = Number(data.cliente_id || window.CLIENTE_ID || 0);
+    const modeloId = Number(data.modelo_id || refId || window.MODELO_ID_ATUAL || 0);
+
+    if (clienteId && modeloId) {
+      return `vip_${clienteId}_${modeloId}`;
+    }
+
+    return data.order_id || data.payment_id || `vip_${refId || "unknown"}`;
+  }
+
+  if (tipo === "premium") {
+    return `premium_${data.premium_post_id || refId || data.order_id || data.payment_id}`;
+  }
+
+  if (tipo === "midia") {
+    const messageId = data.message_id || refId;
+    return messageId ? `midia_${messageId}` : (data.order_id || data.payment_id || null);
+  }
+
+  return data.order_id || data.payment_id || null;
+}
+
+function atualizarResumoCartaoPagamento(valorBase = 0) {
+  const valor = Number(valorBase || 0);
+  const taxaTransacao = Number((valor * 0.10).toFixed(2));
+  const taxaPlataforma = Number((valor * 0.05).toFixed(2));
+  const valorTotal = Number((valor + taxaTransacao + taxaPlataforma).toFixed(2));
+
+  const elValorConteudo = document.getElementById("cartaoValorConteudo");
+  const elTaxaTransacao = document.getElementById("cartaoTaxaTransacao");
+  const elTaxaPlataforma = document.getElementById("cartaoTaxaPlataforma");
+  const elValorTotal = document.getElementById("cartaoValorTotal");
+
+  if (elValorConteudo) elValorConteudo.innerText = valorBRL(valor);
+  if (elTaxaTransacao) elTaxaTransacao.innerText = valorBRL(taxaTransacao);
+  if (elTaxaPlataforma) elTaxaPlataforma.innerText = valorBRL(taxaPlataforma);
+  if (elValorTotal) elValorTotal.innerText = valorBRL(valorTotal);
+}
+
+async function lerErroResposta(res) {
+  try {
+    const data = await res.json();
+    return data?.error || data?.message || JSON.stringify(data);
+  } catch {
+    try {
+      return await res.text();
+    } catch {
+      return "Erro desconhecido.";
+    }
+  }
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   aplicarMascarasCamposCartao();
@@ -1430,21 +1768,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 document.getElementById("btnGerarPix")?.addEventListener("click", () => {
-
   if (window.PAGAMENTO_TIPO_ATUAL === "vip") {
-    pagarComPix({
-      tipo: "vip",
-      modelo_id: window.MODELO_ID_ATUAL
-    });
+    pagarComPix({ tipo: "vip", modelo_id: window.MODELO_ID_ATUAL });
   }
 
   if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
-    pagarComPix({
-      tipo: "midia",
-      conteudo_id: window.MIDIA_VENDA_ATUAL?.conteudo_id
-    });
+    pagarComPix({ tipo: "midia", conteudo_id: window.MIDIA_VENDA_ATUAL?.conteudo_id });
   }
 
+  if (window.PAGAMENTO_TIPO_ATUAL === "premium") {
+    pagarComPix({ tipo: "premium", premium_post_id: window.PREMIUM_ATUAL?.premium_post_id });
+  }
 });
 
 

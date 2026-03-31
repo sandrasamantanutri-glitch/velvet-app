@@ -70,18 +70,14 @@
   </div>
 </div>
 
-
 <div class="midias-section">
-
   <div class="midias-tabs">
     <button class="tab active" data-tab="free">📷 Feed</button>
     <button class="tab" data-tab="paid">🔒 Premium</button>
   </div>
 
-  <div class="midias-grid active" id="listaMidias"></div>
-
-<div class="premium-list" id="midias-paid"></div>
-
+<div class="midias-grid active" id="listaMidias"></div>
+<div id="midias-paid" class="premium-list"></div>
 </div>
 
  <!-- MODAL VISUALIZAÇÃO MÍDIA -->
@@ -112,7 +108,7 @@
   <div class="velvet-box">
     <button class="velvet-close" onclick="fecharPopupPagamento()">×</button>
 
-    <h2 class="velvet-title">Ativar VIP</h2>
+    <h2 class="velvet-title">Pagamentos</h2>
 
     <!-- ===============================
          TABS (VIP)
@@ -132,7 +128,7 @@
 <div class="vip-detalhes hidden">
   <div class="vip-beneficios">
     <div>- Conversar com a criadora no chat</div>
-    <div>- Acessar conteúdos exclusivos</div>
+    <div>- Acessar conteúdos do FEED</div>
     <div>- Benefícios e promoções especiais</div>
   </div>
       <div class="vip-valores">
@@ -158,57 +154,56 @@
       </div>
 
       <small class="vip-info">
-        - A assinatura é sujeita a renovação automática e tem validade de <strong>1 mês,</strong> você pode cancelar quando quiser.<br>
-        - Ao efetuar o pagamento, você confirma que está de acordo com os
-        <strong>Termos de uso</strong> e <strong>condições da plataforma.</strong><br>
-        - Pagamentos realizados não são reembolsados, exceto em casos de erros na plataforma, analisamos o caso atraves do <a href="contato.html">formulário de <strong>contato.</strong></a><br>
-      </small>
+  - Postagens premium não ficam disponíveis para visualização após assinatura VIP, a visualização é liberada com pagamento adicional.<br>
+  - A assinatura é sujeita a renovação automática e tem validade de <strong>30 dias,</strong> você pode cancelar quando quiser.<br>
+  - Ao efetuar o pagamento, você confirma que está de acordo com os
+  <strong>Termos de uso</strong> e <strong>condições da plataforma.</strong><br>
+  - Pagamentos realizados NÃO SÃO REEMBOLSADOS, exceto em casos de erros na plataforma, analisamos o caso através do
+  <a href="contato.html">formulário de <strong>contato</strong></a>.<br>
+</small>
+
     </div>
 
     <!-- ===============================
          DETALHES MÍDIA
     ================================ -->
-    <div class="midia-detalhes hidden">
-      <p class="midia-info">
-        <strong>O pagamento deste conteúdo permite:</strong><br>
-        Visualizar este conteúdo exclusivo.<br><br>
+<div class="midia-detalhes hidden">
+  <div class="midia-info">
+    <strong>Desbloqueie este conteúdo premium agora</strong><br>
+    Tenha acesso imediato a esta mídia exclusiva da criadora após a confirmação do pagamento.<br><br>
 
-        <strong>Este pagamento não inclui:</strong><br>
-        Acesso ao chat da criadora<br>
-        Acesso a outras mídias compartilhadas<br>
-        Benefícios de assinantes VIP<br><br>
+    <strong>Este desbloqueio inclui:</strong><br>
+    - Acesso somente a este conteúdo premium<br>
+    - Liberação permanente desta mídia na sua conta<br><br>
+  </div>
 
-        Para ter acesso completo, é necessário
-        <a href="#" class="link-assinar-vip"><strong>assinar o perfil</strong>.</a>
-      </p>
-
-      <div class="midia-valores">
-        <div class="linha">
-          <span>Valor do conteúdo</span>
-          <span>R$ <span id="midiaValorBase">0,00</span></span>
-        </div>
-
-        <div class="linha">
-          <span>Taxa de transação</span>
-          <span>R$ <span id="midiaTaxa">0,00</span></span>
-        </div>
-
-        <div class="linha total">
-          <span>Total</span>
-          <strong>R$ <span id="midiaTotal">0,00</span></strong>
-        </div>
-      </div>
-
-      <small class="midia-info-legal">
-        Ao efetuar o pagamento, você confirma que está de acordo com os
-        <strong>Termos de Uso</strong> e
-        <strong>Condições da Plataforma</strong>.<br><br>
-        Conteúdos digitais são entregues imediatamente após a confirmação
-        do pagamento e <strong>não são reembolsáveis</strong>.<br>
-      </small>
+  <div class="midia-valores">
+    <div class="linha">
+      <span>Valor da mídia</span>
+      <span>R$ <span id="midiaValorBase">0,00</span></span>
     </div>
 
-    <!-- ===============================
+    <div class="linha">
+      <span>Taxa de transação</span>
+      <span>R$ <span id="midiaTaxa">0,00</span></span>
+    </div>
+
+    <div class="linha total">
+      <span>Total</span>
+      <strong>R$ <span id="midiaTotal">0,00</span></strong>
+    </div>
+  </div>
+
+  <small class="midia-info-legal">
+    Ao efetuar o pagamento, você confirma que está de acordo com os
+    <strong>Termos de Uso</strong> e
+    <strong>Condições da Plataforma</strong>.<br><br>
+    Conteúdos digitais são entregues imediatamente após a confirmação
+    do pagamento e <strong>não são reembolsáveis</strong>.<br>
+  </small>
+</div>
+
+<!-- ===============================
      CPF + TERMOS (OBRIGATÓRIO)
 =============================== -->
 <div class="dados-pagamento-box" style="margin:15px 0;">
@@ -224,6 +219,17 @@
     maxlength="14"
     style="width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;"
   />
+
+  <label style="display:block; margin-top:10px; color:#7B2CFF;">
+  <strong>Telefone</strong>
+</label>
+
+<input
+  type="text"
+  id="phonePagamento"
+  placeholder="(11) 99999-9999"
+  style="width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;"
+/>
 
   <label style="display:flex;gap:8px;margin-top:10px;font-size:14px;">
     <input type="checkbox" id="aceiteTermosPagamento">
@@ -339,18 +345,6 @@
         />
         <small id="card_cvv_error" class="cartao-erro"></small>
       </div>
-
-      <div class="form-group">
-        <label for="card_phone">Telefone</label>
-        <input
-          type="text"
-          id="card_phone"
-          inputmode="tel"
-          autocomplete="tel"
-          placeholder="(11) 99999-9999"
-        />
-        <small id="card_phone_error" class="cartao-erro"></small>
-      </div>
     </div>
 
     <div class="linha">
@@ -429,18 +423,24 @@
     </div>
 
     <button type="submit" id="btnConfirmarCartao" class="btn-principal">
-      Ativar VIP
+      Confirmar pagamento
     </button>
   </form>
 </div>
-<div id="cartaoSucesso" class="hidden">
-      <strong>✅ Pagamento confirmado!</strong>
-    </div>
+  </div>
+    <a
+      href="https://pagarme.helpjuice.com/pt_BR/incorpora%C3%A7%C3%A3o-mundipagg"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="banner-seguranca-pagamento"
+    >
+      <img
+        src="/assets/security.png"
+        alt="Pagamentos seguros via Pagar.me"
+      >
+    </a>
   </div>
 </div>
-
-</div>
-</div> 
 
 <input type="file" id="inputUploadMidia" accept="image/*,video/*" hidden>
 <div class="modelo-footer only-modelo">

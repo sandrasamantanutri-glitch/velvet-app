@@ -586,6 +586,71 @@ max-height: 80%;
   text-align: center;
 }
 
+/* =========================
+   PREMIUM MAIS COMPACTO
+========================= */
+
+.midia-detalhes,
+.midia-detalhes .metodo {
+  font-size: 12px;
+  line-height: 1.45;
+  color: #555;
+}
+
+.midia-detalhes h3,
+.midia-detalhes strong {
+  font-size: 13px;
+  line-height: 1.35;
+  color: #3b3b46;
+  font-weight: 600;
+}
+
+.midia-detalhes p {
+  margin: 6px 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.midia-detalhes ul,
+.midia-detalhes ol {
+  margin: 8px 0;
+  padding-left: 18px;
+}
+
+.midia-detalhes li {
+  margin-bottom: 4px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #555;
+}
+
+.midia-detalhes .vip-valores {
+  margin: 10px 0;
+  font-size: 12px;
+}
+
+.midia-detalhes .vip-valores .linha {
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.midia-detalhes .vip-valores .linha span {
+  font-size: 12px;
+}
+
+.midia-detalhes .vip-valores .linha.total span {
+  font-size: 14px;
+  font-weight: 700;
+  color: #3b3b46;
+}
+
+.midia-detalhes .vip-info {
+  font-size: 11px;
+  line-height: 1.45;
+  margin-top: 8px;
+  color: #666;
+}
+
 
 
 

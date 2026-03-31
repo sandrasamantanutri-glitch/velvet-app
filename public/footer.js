@@ -129,20 +129,30 @@ document.addEventListener("DOMContentLoaded", () => {
   // REGISTRAR EVENTOS DO MENU
   // =========================
 
-  function registrarEventosMenu(){
+function registrarEventosMenu() {
+  const btnFeed = document.getElementById("menuPostFeed");
+  const btnPremium = document.getElementById("menuPostPremium");
 
-    const btnFeed = document.getElementById("menuPostFeed");
-    const btnPremium = document.getElementById("menuPostPremium");
-
-    if(btnFeed){
-      btnFeed.onclick = postarFeed;
-    }
-
-    // if(btnPremium){
-    //   btnPremium.onclick = postarPremium;
-    // }
-
+  if (btnFeed) {
+    btnFeed.onclick = postarFeed;
   }
+
+  if (btnPremium) {
+    btnPremium.onclick = postarPremium;
+  }
+}
+
+function postarFeed() {
+  const popup = document.getElementById("popupUploadFeed");
+  if (!popup) return;
+  popup.classList.remove("hidden");
+}
+
+function postarPremium() {
+  const popup = document.getElementById("popupUploadPremium");
+  if (!popup) return;
+  popup.classList.remove("hidden");
+}
 
   // =========================
   // POSTAR NO FEED
