@@ -2151,6 +2151,43 @@ function bindFormularioCartao() {
 
 // }
 
+window.finalizarPagamentoEAbrirMidia = async function (messageId) {
+  const popup = document.getElementById("popupPagamentoVelvet");
+  const modalMidia = document.getElementById("modalMidia");
+
+  if (popup) {
+    popup.classList.add("hidden");
+    popup.style.display = "none";
+    popup.style.visibility = "hidden";
+    popup.style.pointerEvents = "none";
+  }
+
+  if (!messageId) return;
+
+  try {
+    const res = await fetch(`/api/chat/conteudo/${messageId}`, {
+      headers: {
+        Authorization: "Bearer " + localStorage.getItem("token")
+      }
+    });
+
+    if (!res.ok) return;
+
+    const midias = await res.json();
+    if (!midias.length) return;
+
+    const midia = midias[0];
+
+    if (modalMidia) {
+      modalMidia.classList.remove("hidden");
+    }
+
+    abrirModalMidia(midia.url);
+  } catch (err) {
+    console.error("Erro ao finalizar pagamento e abrir mídia:", err);
+  }
+};
+
 function garantirToastPagamento() {
   let el = document.getElementById("toastPagamento");
 

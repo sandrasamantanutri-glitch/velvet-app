@@ -1423,7 +1423,11 @@ function iniciarPollingPagamento(paymentId, refId = null, metodo = "cartao") {
 
 setTimeout(async () => {
   window.fecharPopupPagamento?.();
-  document.getElementById("popupPagamentoVelvet")?.classList.add("hidden");
+
+  if (typeof window.finalizarPagamentoEAbrirMidia === "function") {
+    await window.finalizarPagamentoEAbrirMidia(messageId);
+    return;
+  }
 
   const liberado = await fetch(`/api/chat/conteudo/${messageId}`, {
     headers: {
