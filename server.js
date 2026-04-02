@@ -9775,6 +9775,7 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
     /* =====================================================
        PAYMENT INTENT
     ===================================================== */
+    console.log("✅ antes stripe.paymentIntents.create");
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency: "brl",
@@ -9801,6 +9802,7 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
         aceitou_termos: aceitou_termos ? "true" : "false"
       }
     });
+    console.log("✅ paymentIntent criado:", paymentIntent.id);
 
     const stripeStatusRaw = String(
       paymentIntent.status || "requires_payment_method"
@@ -9814,6 +9816,7 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
     /* =====================================================
        REGISTRAR PAGAMENTO LOCAL
     ===================================================== */
+    console.log("✅ antes insert premium_unlocks");
     await client.query(
       `
       INSERT INTO premium_unlocks
@@ -9865,32 +9868,34 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
         `premium_${premium_id}_${cliente_id}`
       ]
     );
+    console.log("✅ premium_unlocks OK");
 
-    await client.query(
-      `
-      INSERT INTO pagamento_tentativas
-      (
-        cliente_id,
-        metodo,
-        fingerprint_pagamento,
-        status,
-        payment_intent_id,
-        premium_post_id,
-        cpf,
-        ip
-      )
-      VALUES ($1, 'cartao', $2, $3, $4, $5, $6, $7)
-      `,
-      [
-        cliente_id,
-        fingerprint || null,
-        stripeStatusRaw,
-        paymentIntent.id,
-        premium_id,
-        cpfLimpo,
-        ip
-      ]
-    );
+    console.log("✅ antes insert pagamento_tentativas");
+await client.query(
+  `
+  INSERT INTO pagamento_tentativas
+  (
+    cliente_id,
+    metodo,
+    fingerprint_pagamento,
+    status,
+    payment_intent_id,
+    cpf,
+    ip,
+    gateway
+  )
+  VALUES ($1, 'cartao', $2, $3, $4, $5, $6, 'stripe')
+  `,
+  [
+    cliente_id,
+    fingerprint || null,
+    stripeStatusRaw,
+    paymentIntent.id,
+    cpfLimpo,
+    ip
+  ]
+);
+    console.log("✅ pagamento_tentativas OK");
 
     await client.query("COMMIT");
 
@@ -9899,6 +9904,9 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
       apenas_intent: true,
       payment_intent_id: paymentIntent.id,
       client_secret: paymentIntent.client_secret || null,
+      premium_post_id: premium_id,
+      modelo_id,
+      cliente_id,
       status: statusLocal,
       raw_status: stripeStatusRaw,
       requires_action: stripeStatusRaw === "requires_action",
@@ -9934,30 +9942,29 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
 
     try {
       if (client && cliente_id && req.body?.fingerprint) {
-        await client.query(
-          `
-          INSERT INTO pagamento_tentativas
-          (
-            cliente_id,
-            metodo,
-            fingerprint_pagamento,
-            status,
-            premium_post_id,
-            cpf,
-            ip
-          )
-          VALUES ($1, 'cartao', $2, 'recusado', $3, $4, $5)
-          `,
-          [
-            cliente_id,
-            req.body.fingerprint,
-            Number(req.body?.premium_post_id || 0) || null,
-            req.body?.cpf ? String(req.body.cpf).replace(/\D/g, "") : null,
-            req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
-              req.socket?.remoteAddress ||
-              null
-          ]
-        );
+      await client.query(
+  `
+  INSERT INTO pagamento_tentativas
+  (
+    cliente_id,
+    metodo,
+    fingerprint_pagamento,
+    status,
+    cpf,
+    ip,
+    gateway
+  )
+  VALUES ($1, 'cartao', $2, 'recusado', $3, $4, 'stripe')
+  `,
+  [
+    cliente_id,
+    req.body.fingerprint,
+    req.body?.cpf ? String(req.body.cpf).replace(/\D/g, "") : null,
+    req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+      req.socket?.remoteAddress ||
+      null
+  ]
+);  
       }
     } catch (logErr) {
       console.error("❌ Erro ao registrar tentativa recusada:", logErr.message);
