@@ -393,10 +393,11 @@ max-height: 80%;
 .form-cartao-vip label,
 #formCartaoVip label,
 #formCartao label {
-  font-size: 12px;
+  font-size: 18px;
   font-weight: 600;
   color: #3b3b46;
   line-height: 1.2;
+  text-align: center;
 }
 
 .form-pagamento-vip input,
