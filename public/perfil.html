@@ -108,338 +108,177 @@
   <div class="velvet-box">
     <button class="velvet-close" onclick="fecharPopupPagamento()">×</button>
 
-    <h2 class="velvet-title">Pagamentos</h2>
-
-    <!-- ===============================
-         TABS (VIP)
-    ================================ -->
-    <div class="velvet-tabs">
-      <button class="tab active" data-metodo="pix" onclick="mostrarMetodo('pix')">
-        ⚡ Pix
-      </button>
-      <button class="tab" data-metodo="cartao" onclick="mostrarMetodo('cartao')">
-  💳 Cartão
-</button>
-    </div>
-
-    <!-- ===============================
-         DETALHES VIP
-    ================================ -->
-<div class="vip-detalhes hidden">
-  <div class="vip-beneficios">
-    <div>- Conversar com a criadora no chat</div>
-    <div>- Acessar conteúdos do FEED</div>
-    <div>- Benefícios e promoções especiais</div>
-  </div>
-      <div class="vip-valores">
-        <div class="linha">
-          <span>Valor da assinatura:</span>
-          <span> R$ <span id="vipValorBase">0,00</span></span>
+    <!-- ETAPA 1 -->
+    <div id="etapaPagamentoInicial" class="etapa-pagamento">
+      <!-- DETALHES VIP -->
+      <div class="vip-detalhes hidden">
+        <div class="vip-beneficios">
+          <h2 class="velvet-title">ATIVAÇÃO VIP</h2>
+          <div><strong>Vantagens:</strong></div>
+          <div>- Conversar com a criadora no chat</div>
+          <div>- Acessar conteúdos do FEED</div>
+          <div>- Benefícios e promoções especiais</div>
         </div>
 
-        <div class="linha desconto">
-          <span>Desconto:</span>
-          <span> R$ <span id="vipDesconto">0,00</span></span>
+        <div class="vip-valores">
+          <div class="linha">
+            <span>Valor da assinatura:</span>
+            <span>R$ <span id="vipValorBase">0,00</span></span>
+          </div>
+
+          <div class="linha desconto">
+            <span>Desconto:</span>
+            <span>R$ <span id="vipDesconto">0,00</span></span>
+          </div>
+
+          <div class="linha">
+            <span>Taxa de transação:</span>
+            <span>R$ <span id="vipTaxa">0,00</span></span>
+          </div>
+
+          <div class="linha total">
+            <span>Total:</span>
+            <span>R$ <span id="vipTotal">0,00</span></span>
+          </div>
+        </div>
+         <small class="vip-info">
+        - A assinatura é sujeita a renovação automática e tem validade de <strong>30 dias,</strong> você pode cancelar quando quiser.<br>
+        - Pagamentos realizados não são reembolsados, exceto em casos de erros na plataforma, analisamos o caso atraves do <a href="contato.html">formulário de <strong>contato.</strong></a><br>
+      </small>
+      </div>
+
+      <!-- DETALHES MÍDIA -->
+      <div class="midia-detalhes hidden">
+        <div class="midia-info">
+          <strong>Desbloqueie este conteúdo premium agora</strong><br>
+          Tenha acesso imediato a esta mídia exclusiva da criadora após a confirmação do pagamento.<br><br>
+
+          <strong>Este desbloqueio inclui:</strong><br>
+          - Acesso somente a este conteúdo premium<br>
+          - Liberação permanente desta mídia na sua conta
         </div>
 
-        <div class="linha">
-          <span>Taxa de transação: </span>
-          <span> R$<span id="vipTaxa">0,00</span></span>
-        </div>
+        <div class="midia-valores">
+          <div class="linha">
+            <span>Valor da mídia</span>
+            <span>R$ <span id="midiaValorBase">0,00</span></span>
+          </div>
 
-        <div class="linha total">
-          <span>Total:</span>
-         <span> R$ <span id="vipTotal">0,00</span></span>
+          <div class="linha">
+            <span>Taxa de transação</span>
+            <span>R$ <span id="midiaTaxa">0,00</span></span>
+          </div>
+
+          <div class="linha total">
+            <span>Total</span>
+            <strong>R$ <span id="midiaTotal">0,00</span></strong>
+          </div>
         </div>
       </div>
 
-      <small class="vip-info">
-  - Postagens premium não ficam disponíveis para visualização após assinatura VIP, a visualização é liberada com pagamento adicional.<br>
-  - A assinatura é sujeita a renovação automática e tem validade de <strong>30 dias,</strong> você pode cancelar quando quiser.<br>
-  - Ao efetuar o pagamento, você confirma que está de acordo com os
-  <strong>Termos de uso</strong> e <strong>condições da plataforma.</strong><br>
-  - Pagamentos realizados NÃO SÃO REEMBOLSADOS, exceto em casos de erros na plataforma, analisamos o caso através do
-  <a href="contato.html">formulário de <strong>contato</strong></a>.<br>
-</small>
-
-    </div>
-
-    <!-- ===============================
-         DETALHES MÍDIA
-    ================================ -->
-<div class="midia-detalhes hidden">
-  <div class="midia-info">
-    <strong>Desbloqueie este conteúdo premium agora</strong><br>
-    Tenha acesso imediato a esta mídia exclusiva da criadora após a confirmação do pagamento.<br><br>
-
-    <strong>Este desbloqueio inclui:</strong><br>
-    - Acesso somente a este conteúdo premium<br>
-    - Liberação permanente desta mídia na sua conta<br><br>
-  </div>
-
-  <div class="midia-valores">
-    <div class="linha">
-      <span>Valor da mídia</span>
-      <span>R$ <span id="midiaValorBase">0,00</span></span>
-    </div>
-
-    <div class="linha">
-      <span>Taxa de transação</span>
-      <span>R$ <span id="midiaTaxa">0,00</span></span>
-    </div>
-
-    <div class="linha total">
-      <span>Total</span>
-      <strong>R$ <span id="midiaTotal">0,00</span></strong>
-    </div>
-  </div>
-
-  <small class="midia-info-legal">
-    Ao efetuar o pagamento, você confirma que está de acordo com os
-    <strong>Termos de Uso</strong> e
-    <strong>Condições da Plataforma</strong>.<br><br>
-    Conteúdos digitais são entregues imediatamente após a confirmação
-    do pagamento e <strong>não são reembolsáveis</strong>.<br>
-  </small>
-</div>
-
-<!-- ===============================
-     CPF + TERMOS (OBRIGATÓRIO)
-=============================== -->
-<div class="dados-pagamento-box" style="margin:15px 0;">
-  
-    <label style="display:block; margin-bottom:5px; color:#7B2CFF;">
-    <strong>CPF</strong>
-  </label>
-
+<!-- DADOS OBRIGATÓRIOS -->
+<div class="dados-pagamento-box">
+  <label for="cpfPagamento" class="campo-label"><strong>CPF</strong></label>
   <input
     type="text"
     id="cpfPagamento"
+    class="campo-input"
     placeholder="000.000.000-00"
     maxlength="14"
-    style="width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;"
   />
 
-  <label style="display:block; margin-top:10px; color:#7B2CFF;">
-  <strong>Telefone</strong>
-</label>
+  <label for="phonePagamento" class="campo-label"><strong>Telefone</strong></label>
+  <input
+    type="text"
+    id="phonePagamento"
+    class="campo-input"
+    placeholder="(11) 99999-9999"
+  />
 
-<input
-  type="text"
-  id="phonePagamento"
-  placeholder="(11) 99999-9999"
-  style="width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;"
-/>
+  <div class="termos-pagamento">
+    <p class="termos-aviso">
+      Ao efetuar o pagamento, você confirma que está de acordo com os
+      <a href="/terms.htm" target="_blank" rel="noopener noreferrer">Termos de uso</a>
+      e com as
+      <a href="/policies.html" target="_blank" rel="noopener noreferrer">condições da plataforma</a>.
+    </p>
 
-  <label style="display:flex;gap:8px;margin-top:10px;font-size:14px;">
-    <input type="checkbox" id="aceiteTermosPagamento">
-    Li e aceito os Termos e Condições
-  </label>
-
-</div>
-
- <div class="velvet-content">
-  <!-- PIX -->
-  <div id="conteudoPix" class="metodo">
-    <div id="pixLoading" class="pix-loading hidden">
-      <strong>⏳ Aguarde…</strong>
-    </div>
-
-    <div id="pixAguardando" class="pix-aguardando hidden">
- <strong>⌛ Aguardando confirmação do pagamento...</strong>
-  <p>Não feche esta janela nem atualize a página até a confirmação.</p>
-</div>
-
-    <button id="btnGerarPix" class="btn-principal">
-      Gerar Código Pix
-    </button>
-
-    <div id="pixSucesso" class="pix-sucesso hidden">
-      <strong>✅ Pagamento confirmado!</strong>
-    </div>
-
-    <img id="pixQr" class="hidden">
-    <input type="text" id="pixCodigo" readonly>
-    <button id="btnCopiarPix" class="btn-copiar" onclick="copiarPix()">
-      Copiar código
-    </button>
+    <label class="termos-check-linha" for="aceiteTermosPagamento">
+      <input type="checkbox" id="aceiteTermosPagamento" />
+      <span>Li e aceito os Termos e Condições</span>
+    </label>
   </div>
+</div>
 
-<!-- CARTÃO -->
-<div id="conteudoCartao" class="metodo hidden">
+      <!-- ESCOLHA DO MÉTODO -->
+      <div class="acoes-metodo">
+<button id="btnEscolherPix" type="button" class="btn-principal" onclick="mostrarMetodo('pix')">
+  ⚡ Desbloquear com Pix
+</button>
+
+<button id="btnEscolherCartao" type="button" class="btn-principal" onclick="mostrarMetodo('cartao')">
+  💳 Desbloquear com cartão
+</button>
+      </div>
+    </div>
+
+    <!-- ETAPA 2 PIX -->
+    <div id="etapaPagamentoPix" class="etapa-pagamento hidden">
+<button type="button" class="btn-voltar" onclick="voltarEtapaPagamento()">
+  ← Voltar
+</button>
+
+      <div id="pixLoading" class="pix-loading hidden">
+        <strong>⏳ Aguarde…</strong>
+      </div>
+
+      <div id="pixAguardando" class="pix-aguardando hidden">
+        <strong>⌛ Aguardando confirmação do pagamento...</strong>
+        <p>Não feche esta janela nem atualize a página até a confirmação.</p>
+      </div>
+
+      <div id="pixSucesso" class="pix-sucesso hidden">
+        <strong>✅ Pagamento confirmado!</strong>
+      </div>
+
+      <img id="pixQr" class="hidden" alt="QR Code Pix">
+      <input type="text" id="pixCodigo" readonly class="hidden">
+      <button id="btnGerarPix" type="button" class="btn-principal">
+  Gerar QR Code Pix
+</button>
+      <button id="btnCopiarPix" class="btn-copiar hidden" onclick="copiarPix()">
+        Copiar código
+      </button>
+    </div>
+   <!-- ETAPA 3 CARTÃO -->
+<div id="etapaPagamentoCartao" class="etapa-pagamento hidden">
+  <button type="button" class="btn-voltar" onclick="voltarEtapaPagamento()">
+    ← Voltar
+  </button>
+
   <div id="cartaoLoading" class="cartao-loading hidden">
     <strong>⏳ Processando pagamento…</strong>
-     <p>Não feche esta janela nem atualize a página até a confirmação.</p>
+    <p>Não feche esta janela nem atualize a página até a confirmação.</p>
   </div>
 
   <div id="cartaoSucesso" class="cartao-sucesso hidden">
     <strong>✅ Pagamento confirmado!</strong>
   </div>
 
-  <form id="formCartao" class="form-cartao-vip hidden">
+  <form id="formStripePagamento" class="form-cartao-vip">
     <div class="linha">
       <div class="form-group full">
-        <label for="card_holder">Nome no cartão</label>
-        <input
-          type="text"
-          id="card_holder"
-          autocomplete="cc-name"
-          placeholder="Nome como está no cartão"
-        />
-        <small id="card_holder_error" class="cartao-erro"></small>
+        <label>Dados do pagamento</label>
+        <div id="stripe-payment-element"></div>
       </div>
     </div>
 
-    <div class="linha">
-      <div class="form-group full">
-        <label for="card_number">Número do cartão</label>
-        <input
-          type="text"
-          id="card_number"
-          inputmode="numeric"
-          autocomplete="cc-number"
-          placeholder="0000 0000 0000 0000"
-        />
-        <small id="card_number_error" class="cartao-erro"></small>
-      </div>
-    </div>
-
-    <div class="linha">
-      <div class="form-group">
-        <label for="card_exp_month">Mês</label>
-        <input
-          type="text"
-          id="card_exp_month"
-          inputmode="numeric"
-          maxlength="2"
-          autocomplete="cc-exp-month"
-          placeholder="MM"
-        />
-        <small id="card_exp_month_error" class="cartao-erro"></small>
-      </div>
-
-      <div class="form-group">
-        <label for="card_exp_year">Ano</label>
-        <input
-          type="text"
-          id="card_exp_year"
-          inputmode="numeric"
-          maxlength="4"
-          autocomplete="cc-exp-year"
-          placeholder="AAAA"
-        />
-        <small id="card_exp_year_error" class="cartao-erro"></small>
-      </div>
-    </div>
-
-    <div class="linha">
-      <div class="form-group">
-        <label for="card_cvv">CVV</label>
-        <input
-          type="text"
-          id="card_cvv"
-          inputmode="numeric"
-          maxlength="4"
-          autocomplete="cc-csc"
-          placeholder="123"
-        />
-        <small id="card_cvv_error" class="cartao-erro"></small>
-      </div>
-    </div>
-
-    <div class="linha">
-      <div class="form-group full">
-        <label for="billing_line_1">Endereço</label>
-        <input
-          type="text"
-          id="billing_line_1"
-          autocomplete="address-line1"
-          placeholder="Rua, número e complemento"
-        />
-        <small id="billing_line_1_error" class="cartao-erro"></small>
-      </div>
-    </div>
-
-    <div class="linha">
-      <div class="form-group full">
-        <label for="billing_line_2">Bairro / complemento extra</label>
-        <input
-          type="text"
-          id="billing_line_2"
-          autocomplete="address-line2"
-          placeholder="Apartamento, bloco, referência (opcional)"
-        />
-      </div>
-    </div>
-
-    <div class="linha">
-      <div class="form-group">
-        <label for="billing_zip_code">CEP</label>
-        <input
-          type="text"
-          id="billing_zip_code"
-          inputmode="numeric"
-          autocomplete="postal-code"
-          placeholder="00000-000"
-        />
-        <small id="billing_zip_code_error" class="cartao-erro"></small>
-      </div>
-
-      <div class="form-group">
-        <label for="billing_city">Cidade</label>
-        <input
-          type="text"
-          id="billing_city"
-          autocomplete="address-level2"
-          placeholder="Cidade"
-        />
-        <small id="billing_city_error" class="cartao-erro"></small>
-      </div>
-    </div>
-
-    <div class="linha">
-      <div class="form-group">
-        <label for="billing_state">Estado</label>
-        <input
-          type="text"
-          id="billing_state"
-          maxlength="2"
-          autocomplete="address-level1"
-          placeholder="UF"
-        />
-        <small id="billing_state_error" class="cartao-erro"></small>
-      </div>
-
-      <div class="form-group">
-        <label for="billing_country">País</label>
-        <input
-          type="text"
-          id="billing_country"
-          value="BR"
-          maxlength="2"
-          placeholder="BR"
-        />
-      </div>
-    </div>
-
-    <button type="submit" id="btnConfirmarCartao" class="btn-principal">
+    <button type="submit" id="btnConfirmarStripe" class="btn-principal">
       Confirmar pagamento
     </button>
   </form>
 </div>
-  </div>
-    <a
-      href="https://pagarme.helpjuice.com/pt_BR/incorpora%C3%A7%C3%A3o-mundipagg"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="banner-seguranca-pagamento"
-    >
-      <img
-        src="/assets/security.png"
-        alt="Pagamentos seguros via Pagar.me"
-      >
-    </a>
-  </div>
+</div>
 </div>
 
 <input type="file" id="inputUploadMidia" accept="image/*,video/*" hidden>
@@ -597,6 +436,7 @@ fetch("modals-auth.html")
 <script src="header.js"></script>
 <script src="/script.js"></script>
 <script src="/perfil.js"></script>
+<script src="https://js.stripe.com/v3"></script>
 <script src="/pag.js"></script>
 <script src="/footer.js"></script>
 

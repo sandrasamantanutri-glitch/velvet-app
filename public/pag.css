@@ -297,7 +297,7 @@ max-height: 80%;
 }
 
 .vip-beneficios {
-  font-size: 13px;
+  font-size: 12px;
   padding-left: 18px;
   color: #1E1E26;
   margin: 10px 0;
@@ -324,7 +324,7 @@ max-height: 80%;
 }
 
 .vip-valores .linha span {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .vip-valores .desconto {
@@ -332,7 +332,7 @@ max-height: 80%;
 }
 
 .vip-valores .linha.total span {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   color: #7B2CFF;
 }
@@ -649,6 +649,131 @@ max-height: 80%;
   line-height: 1.45;
   margin-top: 8px;
   color: #666;
+}
+
+.dados-pagamento-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 16px;
+}
+
+.campo-label {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  text-align: center;
+  font-size: 14px;
+  color: #555;
+  margin: 0;
+}
+
+.campo-input {
+  width: 100%;
+  max-width: 320px;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid #d5d5d5;
+  border-radius: 10px;
+  font-size: 15px;
+  text-align: center;
+  box-sizing: border-box;
+  outline: none;
+  background: #fff;
+}
+
+.campo-input:focus {
+  border-color: #b38cff;
+  box-shadow: 0 0 0 3px rgba(122, 44, 255, 0.08);
+}
+
+.termos-pagamento {
+  width: 100%;
+  max-width: 320px;
+  margin-top: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f8f8f8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+}
+
+.termos-aviso {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: center;
+  color: #666;
+}
+
+.termos-aviso a {
+  color: #7a2cff;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.termos-aviso a:hover {
+  text-decoration: underline;
+}
+
+.termos-check-linha {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  cursor: pointer;
+  font-size: 13px;
+  color: #444;
+  line-height: 1.4;
+}
+
+.termos-check-linha input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.btn-voltar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 110px;
+  height: 42px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 14px;
+  background: #f3ecff;
+  color: #6d28d9;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-voltar:hover {
+  background: #eadcff;
+  transform: translateY(-1px);
+}
+
+.btn-voltar:active {
+  transform: translateY(0);
+}
+
+.btn-voltar:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(123, 44, 255, 0.14);
+}
+
+.etapa-pagamento .btn-voltar {
+  margin-bottom: 16px;
 }
 
 

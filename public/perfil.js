@@ -854,7 +854,6 @@ function abrirPopupLoginObrigatorio() {
 }
 
 function abrirFluxoVIP() {
-
   const roleAtual = localStorage.getItem("role");
 
   if (!roleAtual) {
@@ -867,19 +866,21 @@ function abrirFluxoVIP() {
     return;
   }
 
- window.PAGAMENTO_TIPO_ATUAL = "vip";
-mostrarMetodo("pix");
+  window.PAGAMENTO_TIPO_ATUAL = "vip";
+  window.PREMIUM_ATUAL = null;
+  window.MIDIA_VENDA_ATUAL = null;
 
-  const valorBase = window.OFERTA_ATUAL?.valor_base ?? 20;
-  const valorPromocional =
-    window.OFERTA_ATUAL?.valor_promocional ?? valorBase;
-
-  preencherResumoVIP({
-    valorBase: valorBase,
-    desconto: valorBase - valorPromocional
-  });
+  const valorBase = Number(window.OFERTA_ATUAL?.valor_base ?? 20);
+  const valorPromocional = Number(
+    window.OFERTA_ATUAL?.valor_promocional ?? valorBase
+  );
 
   abrirPopupPagamento();
+
+  preencherResumoVIP({
+    valorBase,
+    desconto: Math.max(0, valorBase - valorPromocional)
+  });
 }
 
 async function carregarFeed() {
@@ -1274,7 +1275,6 @@ function abrirFluxoPremium(item) {
   window.PAGAMENTO_TIPO_ATUAL = "premium";
   window.MIDIA_VENDA_ATUAL = null;
 
-  mostrarMetodo("pix");
   abrirPopupPagamento();
 }
 
