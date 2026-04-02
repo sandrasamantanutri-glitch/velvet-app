@@ -304,21 +304,21 @@ body.role-cliente .msg-cliente:has(.chat-conteudo) {
 }
 
 .btn-voltar{
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
 
-  width:25px;
-  height:25px;
+  width:25px !important;
+  height:25px !important;
 
-  border:none;
-  background:transparent;
-  cursor:pointer;
+  border:none !important;
+  background:transparent !important;
+  cursor:pointer !important;
 }
 
 .btn-voltar img{
-  width:25px;
-  height:25px;
+  width:25px !important;
+  height:25px !important;
 }
 
 .btn-midia{
@@ -678,6 +678,7 @@ body.role-cliente .msg-cliente:has(.chat-conteudo) {
   font-weight:600;
   color:#6a2cff;
   text-align: center;
+  margin-top: 10px;
 }
 
 .campo-cpf input{

@@ -492,7 +492,7 @@ async function confirmarPagamentoStripeCartao() {
             phone: telefone || undefined
           }
         },
-        return_url: `${window.location.origin}/perfil.html`
+        return_url: window.location.href
       },
       redirect: "if_required"
     });
@@ -762,7 +762,6 @@ const boxMidia =
 
 if (boxMidia) {
   boxMidia.innerHTML = `
-    <strong>Conteúdo exclusivo</strong><br>
     ${descricao || "Acesso imediato após pagamento"}
   `;
   }

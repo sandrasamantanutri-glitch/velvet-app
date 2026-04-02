@@ -96,7 +96,7 @@
 }
 
 #pixCodigo {
-  width: 100%;
+  width: 90%;
   padding: 10px;
   margin-top: 8px;
 }
@@ -573,7 +573,7 @@ max-height: 80%;
 .cartao-loading p {
   margin-top: 8px;
   font-size: 13px;
-  line-height: 1.4;
+  line-height: 1.5;
   color: #6b5a2f;
 }
 
@@ -693,15 +693,17 @@ max-height: 80%;
 .termos-pagamento {
   width: 100%;
   max-width: 320px;
-  margin-top: 8px;
+  margin: 8px auto 0;
   padding: 12px 14px;
   border-radius: 12px;
   background: #f8f8f8;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 10px;
   box-sizing: border-box;
+  text-align: center;
 }
 
 .termos-aviso {
@@ -727,6 +729,7 @@ max-height: 80%;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  width: 100%;
   text-align: center;
   cursor: pointer;
   font-size: 13px;
@@ -739,6 +742,11 @@ max-height: 80%;
   height: 16px;
   margin: 0;
   flex-shrink: 0;
+}
+
+.termos-check-linha span {
+  display: inline-block;
+  text-align: center;
 }
 
 .btn-voltar {

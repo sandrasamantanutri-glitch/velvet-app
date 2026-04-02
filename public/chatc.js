@@ -33,8 +33,8 @@ const mensagensRenderizadas = new Set();
 const chatBox = document.getElementById("chatBox");
 
 const conteudosLiberados = new Set();
-let pagamentoAtual = null;
-let pagamentoEmProcesso = false;
+let chatPagamentoAtual = null;
+let chatPagamentoEmProcesso = false;
 
 const PAGARME_PUBLIC_KEY = "pk_oQW43ZaU7HPVnbj8";
 // const stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
@@ -138,15 +138,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     }
 
-    aplicarMascarasCamposCartao();
-    bindFormularioCartao();
+if (typeof bindFormularioStripePagamento === "function") {
+  bindFormularioStripePagamento();
+}
 
   } catch (err) {
     console.error("Erro DOMContentLoaded:", err);
   }
 
 });
-
 
 // ===============================
 // SCROLL HISTÓRICO
@@ -697,20 +697,48 @@ async function abrirConteudo(message_id, index = 0) {
 // ===============================
 
 function abrirPagamentoChat(valor, conteudoId) {
-
   if (!valor || !conteudoId) {
     alert("Erro: dados inválidos");
     return;
   }
 
-  pagamentoAtual = {
-    conteudo_id: Number(conteudoId),
-    valor: Number(valor)
+  const conteudo_id = Number(conteudoId);
+  const preco = Number(valor);
+
+  // mantém compatibilidade com qualquer trecho antigo do chat
+  chatPagamentoAtual = {
+    conteudo_id,
+    valor: preco
   };
 
-  document
-    .getElementById("escolhaPagamento")
-    .classList.remove("hidden");
+  // alimenta o fluxo novo do pag.js
+  window.PAGAMENTO_TIPO_ATUAL = "midia";
+  window.MIDIA_VENDA_ATUAL = {
+    conteudo_id,
+    preco,
+    descricao: ""
+  };
+
+  // sincroniza também o objeto global que o pag.js usa
+  window.pagamentoAtual = {
+    tipo: "midia",
+    conteudo_id,
+    valor: preco,
+    preco
+  };
+
+  // se o modal antigo estiver aberto por qualquer motivo, fecha
+  document.getElementById("escolhaPagamento")?.classList.add("hidden");
+  document.getElementById("popupPix")?.classList.add("hidden");
+  document.getElementById("paymentModal")?.classList.add("hidden");
+
+  if (typeof abrirPopupPagamento !== "function") {
+    console.error("abrirPopupPagamento não está disponível.");
+    alert("Erro ao abrir pagamento.");
+    return;
+  }
+
+  abrirPopupPagamento();
 }
 
 async function carregarInfoModelo(modelo_id){
@@ -1041,21 +1069,19 @@ div.innerHTML = `
 
 }
 
-function obterCpfValido(){
-
+function obterCpfValidoChat() {
   const input = document.getElementById("cpfEscolha");
-  if(!input) return null;
+  if (!input) return null;
 
-  const cpf = input.value.replace(/\D/g,"");
+  const cpf = input.value.replace(/\D/g, "");
 
-  if(cpf.length !== 11){
+  if (cpf.length !== 11) {
     alert("Informe um CPF válido para continuar.");
     input.focus();
     return null;
   }
 
   return cpf;
-
 }
 
 function fecharPopupPix() {
@@ -1064,13 +1090,13 @@ function fecharPopupPix() {
   const popup = document.getElementById("popupPix");
   if (popup) popup.classList.add("hidden");
 
-  pagamentoAtual = {};
+  chatPagamentoAtual = {};
 
   const cpf = document.getElementById("cpfEscolha");
   if (cpf) cpf.value = "";
 }
 
-function valorBRL(valor) {
+function valorBRLChat(valor) {
   return Number(valor).toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL"
@@ -1085,10 +1111,10 @@ function abrirPixConteudo(conteudo_id, preco) {
     return;
   }
 
-  pagamentoAtual = {};
-  
-  pagamentoAtual.conteudo_id = Number(conteudo_id);
-  pagamentoAtual.valor = Number(preco);
+  chatPagamentoAtual = {};
+
+  chatPagamentoAtual.conteudo_id = Number(conteudo_id);
+  chatPagamentoAtual.valor = Number(preco);
 
   const taxaTransacao  = Number((preco * 0.10).toFixed(2));
   const taxaPlataforma = Number((preco * 0.05).toFixed(2));
@@ -1096,21 +1122,11 @@ function abrirPixConteudo(conteudo_id, preco) {
     (preco + taxaTransacao + taxaPlataforma).toFixed(2)
   );
 
-  document.getElementById("pixValorBase").innerText =
-    valorBRL(preco);
-
-  document.getElementById("pixTaxaTransacao").innerText =
-    valorBRL(taxaTransacao);
-
-  document.getElementById("pixTaxaPlataforma").innerText =
-    valorBRL(taxaPlataforma);
-
-  document.getElementById("pixValorTotal").innerText =
-    valorBRL(valorTotal);
-
-  document
-    .getElementById("popupPix")
-    .classList.remove("hidden");
+document.getElementById("pixValorBase").innerText = valorBRLChat(preco);
+document.getElementById("pixTaxaTransacao").innerText = valorBRLChat(taxaTransacao);
+document.getElementById("pixTaxaPlataforma").innerText = valorBRLChat(taxaPlataforma);
+document.getElementById("pixValorTotal").innerText = valorBRLChat(valorTotal);
+document.getElementById("popupPix").classList.remove("hidden");
 }
 
 async function gerarPix() {
@@ -1125,15 +1141,15 @@ async function gerarPix() {
   }
 
   try {
-    if (!pagamentoAtual?.conteudo_id) {
+    if (!chatPagamentoAtual?.conteudo_id) {
       alert("Conteúdo inválido.");
       return;
     }
 
-    const cpfLimpo = obterCpfValido();
+    const cpfLimpo = obterCpfValidoChat();
     if (!cpfLimpo) return;
 
-    const conteudo_id = Number(pagamentoAtual.conteudo_id);
+    const conteudo_id = Number(chatPagamentoAtual.conteudo_id);
 
     atualizarStatusPix(
       "⏳ Gerando seu código Pix...",
@@ -1169,12 +1185,13 @@ async function gerarPix() {
     }
 
     const imgQr = document.getElementById("pixQr");
-    const inputCopia = document.getElementById("pixCopia");
+    const inputCopia =
+  document.getElementById("pixCodigo") ||
+  document.getElementById("pixCopia");
 
-    if (data.qr_code_base64 && imgQr) {
-      imgQr.src = "data:image/png;base64," + data.qr_code_base64;
-      imgQr.classList.remove("hidden");
-    }
+if (data.qr_code && inputCopia) {
+  inputCopia.value = data.qr_code;
+}
 
     if (data.qr_code && inputCopia) {
       inputCopia.value = data.qr_code;
@@ -1184,8 +1201,8 @@ async function gerarPix() {
       btnCopiar.disabled = !data.qr_code;
     }
 
-    pagamentoAtual.payment_id = data.payment_id || data.order_id || null;
-    pagamentoAtual.message_id = data.message_id || pagamentoAtual.conteudo_id;
+chatPagamentoAtual.payment_id = data.payment_id || data.order_id || null;
+chatPagamentoAtual.message_id = data.message_id || chatPagamentoAtual.conteudo_id;
 
     atualizarStatusPix(
       "✅ Pix gerado com sucesso.",
@@ -1195,13 +1212,13 @@ async function gerarPix() {
 
     mostrarToastPagamento("Pix gerado. Aguardando pagamento...", "info");
 
-    if (pagamentoAtual.payment_id) {
-      iniciarPollingPagamento(
-        pagamentoAtual.payment_id,
-        pagamentoAtual.message_id,
-        "pix"
-      );
-    } else {
+if (chatPagamentoAtual.payment_id) {
+  iniciarPollingPagamento(
+    chatPagamentoAtual.payment_id,
+    chatPagamentoAtual.message_id,
+    "pix"
+  );
+} else {
       console.warn("PIX criado sem payment_id retornado");
       atualizarStatusPix(
         "⚠️ Pix gerado, mas sem identificador de acompanhamento.",
@@ -1227,30 +1244,29 @@ async function gerarPix() {
 }
 
 
-function pagarComPix() {
+function pagarComPixChatLegado() {
 
   resetarPixUI();
 
-  const cpf = obterCpfValido();
+  const cpf = obterCpfValidoChat();
   if(!cpf) return;
 
-  pagamentoAtual.cpf = cpf;  
+  chatPagamentoAtual.cpf = cpf;
 
   document
     .getElementById("escolhaPagamento")
     .classList.add("hidden");
 
-  if (!pagamentoAtual?.conteudo_id || !pagamentoAtual?.valor) {
+  if (!chatPagamentoAtual?.conteudo_id || !chatPagamentoAtual?.valor) {
     alert("Conteúdo inválido");
     return;
   }
 
-  abrirPixConteudo(
-    pagamentoAtual.conteudo_id,
-    pagamentoAtual.valor
-  );
+abrirPixConteudo(
+  chatPagamentoAtual.conteudo_id,
+  chatPagamentoAtual.valor
+);
 }
-
 
 // async function pagarComCartao() {
 
@@ -1918,11 +1934,13 @@ async function marcarConteudoVisto(messageId){
 }
 
 function copiarPix() {
+  const campo =
+    document.getElementById("pixCodigo") ||
+    document.getElementById("pixCopia");
 
-  const campo = document.getElementById("pixCopia");
   if (!campo) return;
 
-  const codigo = campo.value.trim();
+  const codigo = String(campo.value || "").trim();
   if (!codigo) {
     alert("Nenhum código Pix disponível.");
     return;
@@ -1933,13 +1951,10 @@ function copiarPix() {
       alert("Pix copiado!");
     })
     .catch(() => {
-
-      campo.select();
+      campo.select?.();
       document.execCommand("copy");
       alert("Pix copiado!");
-
     });
-
 }
 
 function resetarPixUI() {
@@ -1951,8 +1966,11 @@ function resetarPixUI() {
     imgQr.classList.add("hidden");
   }
 
-  const inputCopia = document.getElementById("pixCopia");
-  if (inputCopia) inputCopia.value = "";
+  const inputNovo = document.getElementById("pixCodigo");
+  if (inputNovo) inputNovo.value = "";
+
+  const inputAntigo = document.getElementById("pixCopia");
+  if (inputAntigo) inputAntigo.value = "";
 
   const statusPix = document.getElementById("pixStatus");
   if (statusPix) {
@@ -1960,10 +1978,10 @@ function resetarPixUI() {
     statusPix.className = "pix-status aguardando";
   }
 
-  if (pagamentoAtual) {
-    pagamentoAtual.orderId = null;
-    pagamentoAtual.payment_id = null;
-    pagamentoAtual.message_id = null;
+  if (chatPagamentoAtual) {
+    chatPagamentoAtual.orderId = null;
+    chatPagamentoAtual.payment_id = null;
+    chatPagamentoAtual.message_id = null;
   }
 }
 

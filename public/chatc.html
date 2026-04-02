@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/css/chat.css">
   <link rel="stylesheet" href="/chatmodelo.css">
   <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/pag.css">
 </head>
 
 <body class="role-cliente">
@@ -50,176 +51,146 @@
 </footer>
 <!-- =============********==== POPUPS ================= -->
 
-<div id="popupPix" class="modal hidden">
+<div id="popupPagamentoVelvet" class="velvet-modal hidden">
+  <div class="velvet-backdrop" onclick="fecharPopupPagamento()"></div>
 
-  <div class="modal-backdrop" onclick="fecharPopupPix()"></div>
+  <div class="velvet-box">
+    <button class="velvet-close" type="button" onclick="fecharPopupPagamento()">×</button>
 
-  <div class="modal-content modal-pix">
+    <h2 class="velvet-title">Desbloquear mídias</h2>
 
-    <button class="modal-close" onclick="fecharPopupPix()">×</button>
+    <!-- ETAPA INICIAL -->
+    <div id="etapaPagamentoInicial">
+      <div class="midia-detalhes hidden">
+        <div class="midia-valores">
+          <div class="linha">
+            <span>Conteúdo: R$</span>
+            <span id="midiaValorBase">0,00</span>
+          </div>
+          <div class="linha">
+            <span>Taxa de Transação: R$</span>
+            <span id="midiaTaxa">0,00</span>
+          </div>
+          <div class="linha total">
+            <span>Total: R$</span>
+            <span id="midiaTotal">0,00</span>
+          </div>
+        </div>
 
-    <h2 class="pix-title">Desbloquear Conteúdo</h2>
-
-    <div class="pix-preco">
-      <div class="pix-total">
-        Total para Desbloquear:
-        <strong id="pixValorTotal">R$ 0,00</strong>
+        <div class="midia-beneficios"></div>
       </div>
 
-      <div class="pix-detalhes">
-        <div>Conteúdo: <span id="pixValorBase">R$ 0,00</span></div>
-        <div>Taxa de transação: <span id="pixTaxaTransacao">R$ 0,00</span></div>
-        <div>Taxa da plataforma: <span id="pixTaxaPlataforma">R$ 0,00</span></div>
+      <div class="campo-cpf">
+        <label for="cpfPagamento">CPF</label>
+        <input id="cpfPagamento" type="text" maxlength="14">
       </div>
+
+      <div class="campo-cpf">
+        <label for="phonePagamento">Telefone</label>
+        <input id="phonePagamento" type="text" maxlength="16">
+      </div>
+
+      <div class="termos-pagamento">
+        <p class="termos-aviso">
+          Ao efetuar o pagamento, você confirma que está de acordo com os
+          <a href="/terms.html" target="_blank" rel="noopener noreferrer">Termos de uso</a>
+          e com as
+          <a href="/policies.html" target="_blank" rel="noopener noreferrer">condições da plataforma</a>.
+        </p>
+
+        <label class="termos-check-linha" for="aceiteTermosPagamento">
+          <input type="checkbox" id="aceiteTermosPagamento">
+          <span>Li e aceito os Termos e Condições</span>
+        </label>
+      </div>
+
+      <button
+        type="button"
+        class="btn-principal"
+        onclick="mostrarMetodo('pix')"
+      >
+        Pagar com Pix
+      </button>
+
+      <button
+        type="button"
+        class="btn-principal"
+        onclick="mostrarMetodo('cartao')"
+      >
+        Pagar com Cartão
+      </button>
     </div>
 
-    <div class="campo-pagamento">
-      <button id="btnGerarPix" class="btn-gerar-pix" onclick="gerarPix()">
-  Gerar o código Pix
-</button>
+    <!-- ETAPA PIX -->
+    <div id="etapaPagamentoPix" class="etapa-pagamento hidden">
+      <button type="button" class="btn-voltar" onclick="voltarEtapaPagamento()">
+        ← Voltar
+      </button>
+
+      <div id="pixLoading" class="pix-loading hidden">
+        <strong>⏳ Aguarde…</strong>
+      </div>
+
+      <div id="pixAguardando" class="pix-aguardando hidden">
+        <strong>⌛ Aguardando confirmação do pagamento...</strong>
+        <p>Não feche esta janela nem atualize a página até a confirmação.</p>
+      </div>
+
+      <div id="pixSucesso" class="pix-sucesso hidden">
+        <strong>✅ Pagamento confirmado!</strong>
+      </div>
+
+      <img id="pixQr" class="hidden" alt="QR Code Pix">
+      <input type="text" id="pixCodigo" readonly class="hidden">
+
+      <button
+        id="btnGerarPix"
+        type="button"
+        class="btn-principal"
+        onclick="pagarComPix({ tipo: 'midia', conteudo_id: window.MIDIA_VENDA_ATUAL?.conteudo_id })"
+      >
+        Gerar QR Code Pix
+      </button>
+
+      <button
+        id="btnCopiarPix"
+        type="button"
+        class="btn-copiar hidden"
+        onclick="copiarPix()"
+      >
+        Copiar código
+      </button>
     </div>
 
-    <img id="pixQr" class="pix-qr hidden" alt="">
+    <!-- ETAPA CARTÃO -->
+    <div id="etapaPagamentoCartao" class="hidden">
+      <div id="cartaoLoading" class="cartao-loading hidden">
+        <strong>⏳ Processando pagamento…</strong>
+        <p>Não feche esta janela nem atualize a página até a confirmação.</p>
+      </div>
 
-    <div id="pixStatus" class="pix-status aguardando">
-      ⏳ Aguardando pagamento...
+      <div id="cartaoSucesso" class="cartao-sucesso hidden">
+        <strong>✅ Pagamento confirmado!</strong>
+      </div>
+
+      <form id="formStripePagamento" class="form-cartao-vip">
+        <input type="hidden" id="stripeCpfHidden">
+
+        <div class="linha">
+          <div class="form-group full">
+            <div id="stripe-payment-element"></div>
+          </div>
+        </div>
+
+        <button type="submit" id="btnConfirmarStripe" class="btn-principal">
+          Confirmar
+        </button>
+      </form>
+
+      <button type="button" class="btn-secundario" onclick="voltarEtapaPagamento()">
+        Voltar
+      </button>
     </div>
-
-    <textarea id="pixCopia" class="pix-copia" readonly></textarea>
-
-   <button id="btnCopiarPix" class="pix-copiar" onclick="copiarPix()" disabled>
-  Copiar código Pix
-</button>
-
-  </div>
-</div>
-
-<div id="escolhaPagamento" class="modal hidden">
-
-  <div class="modal-backdrop"></div>
-
-  <div class="modal-content modal-escolha">
-
-    <button class="modal-close" onclick="fecharEscolha()">×</button>
-
-    <h2 class="titulo-roxo">🔒 Desbloquear Midia ✨</h2>
-
-    <div class="termos-pagamento">
- - Pagamentos realizados não são reembolsados, exceto em casos de erros na plataforma, e analisamos o caso atraves do <a href="contato.html" target="_blank" rel="noopener noreferrer"><strong>formulário de contato.</strong></a><br> 
- - Ao desbloquear você confirma que está de acordo com os <strong><a href="/terms.html" target="_blank" rel="noopener noreferrer"> Termos de uso</strong></a> e <strong><a href="/policies.html" target="_blank" rel="noopener noreferrer">condições da plataforma.</strong></a><br> 
- -Se concorda, digite seu CPF e escolha a forma de desbloqueio.<br>
-    </div>
-
-    <div class="campo-cpf">
-      <label for="cpfEscolha">CPF</label>
-      <input id="cpfEscolha" type="text" maxlength="14">
-    </div>
-
-    <button class="btn-pagamento pix" onclick="pagarComPix()">
-      ⚡ Desbloquear com Pix
-    </button>
-
-    <button class="btn-pagamento cartao">
-  💳 Desbloquear com Cartão (BREVE)
-</button>
-
-  </div>
-</div>
-
-<!-- <div id="paymentModal" class="modal hidden">
-
-  <div class="modal-backdrop"></div>
-
-  <div class="modal-content modal-cartao">
-
-    <button class="modal-close" onclick="fecharPagamento()">×</button>
-
-    <h2 class="desbloq">Desbloquear Midia</h2>
-
-    <div class="cartao-preco">
-   <div class="cartao-total">
-        Total para Desbloquear:<strong id="cartaoValorTotal">R$ 0,00</strong>
-    </div>
-<div class="cartao-detalhes">
-  <div>Midia: <span id="cartaoValorConteudo">R$ 0,00</span></div>
-  <div>Taxa de transação: <span id="cartaoTaxaTransacao">R$ 0,00</span></div>
-  <div>Taxa da plataforma: <span id="cartaoTaxaPlataforma">R$ 0,00</span></div>
-</div>
-    </div>
-
-    <div id="payment-element-container">
-      <div id="payment-element"></div>
-    </div>
-
-    <button id="confirmarPagamento" class="btn-confirmar-desbloqueio">
-      Confirmar desbloqueio
-    </button>
-
-  </div>
-</div> -->
-<div id="paymentModal" class="popup-pagamento-overlay hidden">
-  <div class="popup-pagamento">
-    <button class="modal-close" type="button" onclick="fecharPagamento()">×</button>
-
-    <h2>🔒 Desbloquear Midia ✨</h2>
-
-    <div class="total-desbloqueio">
-      Total para desbloquear: <strong id="cartaoValorTotal">R$ 0,00</strong>
-    </div>
-
-    <div class="breakdown-pagamento">
-      <p><span>Mídia</span><span id="cartaoValorConteudo">R$ 0,00</span></p>
-      <p><span>Taxa de transação</span><span id="cartaoTaxaTransacao">R$ 0,00</span></p>
-      <p><span>Taxa da plataforma</span><span id="cartaoTaxaPlataforma">R$ 0,00</span></p>
-    </div>
-
-   <form id="formCartao" class="form-pagamento">
-  <div class="form-group full">
-    <label>Número do cartão</label>
-    <input type="text" id="cardNumber" placeholder="0000 0000 0000 0000">
-  </div>
-
-  <div class="form-group full">
-    <label>Nome no cartão</label>
-    <input type="text" id="cardName" placeholder="Nome impresso no cartão">
-  </div>
-
-  <div class="linha-3">
-    <div class="form-group">
-      <label>Mês</label>
-      <input type="text" id="cardMonth" placeholder="MM">
-    </div>
-
-    <div class="form-group">
-      <label>Ano</label>
-      <input type="text" id="cardYear" placeholder="AAAA">
-    </div>
-
-    <div class="form-group">
-      <label>CVV</label>
-      <input type="text" id="cardCvv" placeholder="123">
-    </div>
-  </div>
-
-  <div class="linha-2">
-    <div class="form-group">
-      <label>Telefone com DDD</label>
-      <input type="text" id="cardPhone" placeholder="(11) 99999-9999">
-    </div>
-
-    <div class="form-group">
-      <label>Endereço</label>
-      <input type="text" id="cardAddress" placeholder="Rua, número e bairro">
-    </div>
-  </div>
-
-  <div class="form-group full">
-    <label>Complemento</label>
-    <input type="text" id="cardComplement" placeholder="Apartamento, bloco, referência (opcional)">
-  </div>
-
-  <button type="submit" id="confirmarPagamento">Confirmar</button>
-</form>
   </div>
 </div>
 
@@ -246,6 +217,8 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+<script src="https://js.stripe.com/v3/"></script>
+<script src="/pag.js"></script>
 <script src="/chatc.js" defer></script>
 
 
