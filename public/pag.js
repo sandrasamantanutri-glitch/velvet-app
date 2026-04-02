@@ -1414,34 +1414,31 @@ function iniciarPollingPagamento(paymentId, refId = null, metodo = "cartao") {
         // =========================
         const messageId = data.message_id || refId;
 
+        pagamentoConfirmado();
+
         if (!messageId) {
-          setTimeout(() => {
-            fecharPopupPagamento();
-          }, 1200);
           return;
         }
 
-setTimeout(async () => {
-  window.fecharPopupPagamento?.();
+        setTimeout(async () => {
+          if (typeof window.finalizarPagamentoEAbrirMidia === "function") {
+            await window.finalizarPagamentoEAbrirMidia(messageId);
+            return;
+          }
 
-  if (typeof window.finalizarPagamentoEAbrirMidia === "function") {
-    await window.finalizarPagamentoEAbrirMidia(messageId);
-    return;
-  }
+          const liberado = await fetch(`/api/chat/conteudo/${messageId}`, {
+            headers: {
+              Authorization: "Bearer " + localStorage.getItem("token")
+            }
+          });
 
-  const liberado = await fetch(`/api/chat/conteudo/${messageId}`, {
-    headers: {
-      Authorization: "Bearer " + localStorage.getItem("token")
-    }
-  });
+          if (!liberado.ok) return;
 
-  if (!liberado.ok) return;
+          const midias = await liberado.json();
+          if (!midias.length) return;
 
-  const midias = await liberado.json();
-  if (!midias.length) return;
-
-  abrirModalMidia(midias[0].url, midias[0].tipo_media === "video");
-}, 800);
+          abrirModalMidia(midias[0].url, midias[0].tipo_media === "video");
+        }, 1300);
 
         return;
       }
