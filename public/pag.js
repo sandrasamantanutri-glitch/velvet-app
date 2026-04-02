@@ -1266,7 +1266,7 @@ function iniciarVerificacaoPix(orderId) {
 
           if (!messageId) return;
 
-          const resLiberado = await ffetch(`/api/chat/conteudo/${messageId}`, {
+          const resLiberado = await fetch(`/api/chat/conteudo/${messageId}`, {
             headers: {
               Authorization: "Bearer " + localStorage.getItem("token")
             }
