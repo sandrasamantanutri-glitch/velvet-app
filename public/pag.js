@@ -1089,40 +1089,41 @@ whenSocketReady((socket) => {
     }, 1200);
   });
 
-  socket.on("conteudoVisto", async ({ message_id }) => {
-    const confirmId = `midia_${message_id}`;
-    if (!marcarPagamentoConfirmado(confirmId)) return;
+socket.on("conteudoVisto", async ({ message_id }) => {
+  const confirmId = `midia_${message_id}`;
+  if (!marcarPagamentoConfirmado(confirmId)) return;
 
-    document.getElementById("pixLoading")?.classList.add("hidden");
-    document.getElementById("pixAguardando")?.classList.add("hidden");
-    document.getElementById("cartaoLoading")?.classList.add("hidden");
-    document.getElementById("formStripePagamento")?.classList.add("hidden");
+  document.getElementById("pixLoading")?.classList.add("hidden");
+  document.getElementById("pixAguardando")?.classList.add("hidden");
+  document.getElementById("cartaoLoading")?.classList.add("hidden");
+  document.getElementById("formStripePagamento")?.classList.add("hidden");
 
-    document.getElementById("pixSucesso")?.classList.remove("hidden");
-    document.getElementById("cartaoSucesso")?.classList.remove("hidden");
+  document.getElementById("pixSucesso")?.classList.remove("hidden");
+  document.getElementById("cartaoSucesso")?.classList.remove("hidden");
 
-    setTimeout(async () => {
-      fecharPopupPagamento();
+  setTimeout(async () => {
+    window.fecharPopupPagamento?.();
+    document.getElementById("popupPagamentoVelvet")?.classList.add("hidden");
 
-      const res = await fetch(`/api/chat/conteudo/${messageId}`, {
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("token")
-        }
-      });
+    const res = await fetch(`/api/chat/conteudo/${message_id}`, {
+      headers: {
+        Authorization: "Bearer " + localStorage.getItem("token")
+      }
+    });
 
-      if (!res.ok) return;
+    if (!res.ok) return;
 
-      const midias = await res.json();
-      if (!midias.length) return;
+    const midias = await res.json();
+    if (!midias.length) return;
 
-      const midia = midias[0];
+    const midia = midias[0];
 
-      abrirModalMidia(
-        midia.url,
-        midia.tipo === "video"
-      );
-    }, 1200);
-  });
+    abrirModalMidia(
+      midia.url,
+      midia.tipo_media === "video"
+    );
+  }, 800);
+});
 
 });
 
@@ -1277,7 +1278,7 @@ function iniciarVerificacaoPix(orderId) {
           const midias = await resLiberado.json();
           if (!midias.length) return;
 
-          abrirModalMidia(midias[0].url, midias[0].tipo === "video");
+          abrirModalMidia(midias[0].url, midias[0].tipo_media === "video");
         }, 1200);
 
         return;
@@ -1420,22 +1421,23 @@ function iniciarPollingPagamento(paymentId, refId = null, metodo = "cartao") {
           return;
         }
 
-        setTimeout(async () => {
-          fecharPopupPagamento();
+setTimeout(async () => {
+  window.fecharPopupPagamento?.();
+  document.getElementById("popupPagamentoVelvet")?.classList.add("hidden");
 
-          const liberado = await fetch(`/api/chat/conteudo/${messageId}`, {
-            headers: {
-              Authorization: "Bearer " + localStorage.getItem("token")
-            }
-          });
+  const liberado = await fetch(`/api/chat/conteudo/${messageId}`, {
+    headers: {
+      Authorization: "Bearer " + localStorage.getItem("token")
+    }
+  });
 
-          if (!liberado.ok) return;
+  if (!liberado.ok) return;
 
-          const midias = await liberado.json();
-          if (!midias.length) return;
+  const midias = await liberado.json();
+  if (!midias.length) return;
 
-          abrirModalMidia(midias[0].url, midias[0].tipo === "video");
-        }, 1200);
+  abrirModalMidia(midias[0].url, midias[0].tipo_media === "video");
+}, 800);
 
         return;
       }

@@ -1881,40 +1881,71 @@ async function liberarConteudo(messageId) {
     const midias = await res.json();
     const todasLiberadas = midias.every(m => m.liberado !== false);
 
+    // marca estado do card
+    el.classList.remove("bloqueado");
+    el.classList.remove("visto");
+
     if (todasLiberadas) {
       conteudosLiberados.add(Number(messageId));
-      el.classList.remove("bloqueado");
       el.classList.add("livre");
+    } else {
+      el.classList.remove("livre");
     }
+
+    const precoAtual = Number(el.dataset.preco || 0);
+    const quantidade = midias.length || 0;
 
     el.innerHTML = `
       <div class="pacote-grid">
-        ${midias.map((m, index) => `
-          <div class="midia-item ${m.liberado !== false ? "midia-livre" : "midia-bloqueada"}"
-               data-index="${index}"
-               data-full="${m.url}"
-               data-liberado="${m.liberado !== false ? "true" : "false"}">
-            ${
-              m.liberado !== false
-                ? (
-                    m.tipo_media === "video"
-                      ? `<video src="${m.url}" muted playsinline></video>`
-                      : `<img src="${m.url}">`
-                  )
-                : `
-                  <div class="midia-preview" style="background-image:url('${m.thumbnail_url || m.url}')"></div>
-                  <div class="midia-lock">🔒</div>
-                `
-            }
-          </div>
-        `).join("")}
+        ${midias.map((m, index) => {
+          const liberado = m.liberado !== false;
+
+          return `
+            <div
+              class="midia-item ${liberado ? "midia-livre" : "midia-bloqueada"}"
+              data-index="${index}"
+              data-full="${m.url || ""}"
+              data-thumb="${m.thumbnail_url || m.url || ""}"
+              data-liberado="${liberado ? "true" : "false"}"
+              style="${!liberado ? `background-image:url('${m.thumbnail_url || m.url || ""}')` : ""}"
+            >
+              ${
+                liberado
+                  ? (
+                      m.tipo_media === "video"
+                        ? `<video src="${m.url}" muted playsinline preload="metadata"></video>`
+                        : `<img src="${m.url}" alt="">`
+                    )
+                  : `
+                    <div class="midia-preview" style="background-image:url('${m.thumbnail_url || m.url || ""}')"></div>
+                    <div class="midia-lock">🔒</div>
+                  `
+              }
+            </div>
+          `;
+        }).join("")}
       </div>
+
+      ${
+        precoAtual > 0
+          ? `
+            <div class="conteudo-info">
+              <span class="status-bloqueado">
+                ${todasLiberadas ? `🟢 ${quantidade} mídia(s)` : `✨ ${quantidade} mídia(s)`}
+              </span>
+              <span class="preco-bloqueado">
+                R$ ${precoAtual.toFixed(2)}
+              </span>
+            </div>
+          `
+          : ""
+      }
     `;
 
     if (todasLiberadas && midias.length > 0) {
       setTimeout(() => {
         abrirConteudo(messageId, 0);
-      }, 600);
+      }, 250);
     }
   } catch (err) {
     console.error("Erro liberar conteúdo:", err);
