@@ -395,7 +395,7 @@ async function montarStripePaymentElement({ metodo = "card" } = {}) {
     },
     fields: {
       billingDetails: {
-        name: "never",
+        name: "auto",
         email: "never",
         phone: "never",
         address: "auto"
