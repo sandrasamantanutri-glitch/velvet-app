@@ -1104,7 +1104,7 @@ whenSocketReady((socket) => {
     setTimeout(async () => {
       fecharPopupPagamento();
 
-      const res = await fetch(`/api/conteudo/liberado/${message_id}`, {
+      const res = await fetch(`/api/chat/conteudo/${messageId}`, {
         headers: {
           Authorization: "Bearer " + localStorage.getItem("token")
         }
@@ -1266,7 +1266,7 @@ function iniciarVerificacaoPix(orderId) {
 
           if (!messageId) return;
 
-          const resLiberado = await fetch(`/api/conteudo/liberado/${messageId}`, {
+          const resLiberado = await ffetch(`/api/chat/conteudo/${messageId}`, {
             headers: {
               Authorization: "Bearer " + localStorage.getItem("token")
             }
@@ -1423,7 +1423,7 @@ function iniciarPollingPagamento(paymentId, refId = null, metodo = "cartao") {
         setTimeout(async () => {
           fecharPopupPagamento();
 
-          const liberado = await fetch(`/api/conteudo/liberado/${messageId}`, {
+          const liberado = await fetch(`/api/chat/conteudo/${messageId}`, {
             headers: {
               Authorization: "Bearer " + localStorage.getItem("token")
             }
