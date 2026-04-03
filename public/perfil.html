@@ -431,12 +431,6 @@ fetch("modals-auth.html")
     window.registerRole = document.getElementById("registerRole");
     window.registerNome = document.getElementById("registerNome");
     window.registerNascimento = document.getElementById("registerNascimento");
-
-    if (typeof window.inicializarAuthModals === "function") {
-      window.inicializarAuthModals();
-    } else {
-      console.warn("inicializarAuthModals não encontrada");
-    }
   })
   .catch(err => {
     console.error("Erro ao carregar modals-auth.html:", err);

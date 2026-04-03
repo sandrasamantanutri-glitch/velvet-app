@@ -282,7 +282,10 @@ async function register() {
     localStorage.setItem("cliente_id", data.cliente_id);
   }
 
-const actionRaw = localStorage.getItem("post_login_action");
+const actionRaw =
+  localStorage.getItem("post_register_action") ||
+  localStorage.getItem("post_login_action");
+
 const redirect = localStorage.getItem("redirect_after_auth");
 
 let action = null;
@@ -290,11 +293,16 @@ let action = null;
 try {
   action = actionRaw ? JSON.parse(actionRaw) : null;
 } catch (e) {
-  console.warn("post_login_action inválido:", actionRaw);
+  console.warn("ação pós-auth inválida:", actionRaw);
 }
 
-if (redirect) {
-  window.location.href = redirect;
+const destinoFinal = redirect || action?.redirect;
+
+if (destinoFinal) {
+  localStorage.removeItem("redirect_after_auth");
+  localStorage.removeItem("post_login_action");
+  localStorage.removeItem("post_register_action");
+  window.location.href = destinoFinal;
   return;
 }
 
