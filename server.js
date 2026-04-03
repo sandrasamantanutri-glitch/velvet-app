@@ -10805,16 +10805,20 @@ app.post("/api/premium", auth, authModelo, uploadB2.array("files", 10), async (r
       `
       INSERT INTO premium_posts (
         modelo_id,
-        descricao,
+        url,
+        thumb_url,
+        tipo,
+        tipo_conteudo,
         preco,
+        descricao,
         ativo,
         created_at,
         updated_at
       )
-      VALUES ($1, $2, $3, true, NOW(), NOW())
-      RETURNING id, modelo_id, descricao, preco, ativo, created_at, updated_at
+      VALUES ($1, NULL, NULL, NULL, $2, $3, $4, true, NOW(), NOW())
+      RETURNING id, modelo_id, url, thumb_url, tipo, tipo_conteudo, preco, descricao, ativo, created_at, updated_at
       `,
-      [modelo_id, descricao || null, precoNum]
+      [modelo_id, "premium", precoNum, descricao || null]
     );
 
     const premium_post_id = Number(postRes.rows[0].id);
@@ -10879,19 +10883,51 @@ app.post("/api/premium", auth, authModelo, uploadB2.array("files", 10), async (r
       midiasCriadas.push(midiaRes.rows[0]);
     }
 
+    const primeiraMidia = midiasCriadas[0] || null;
+
+    await client.query(
+      `
+      UPDATE premium_posts
+      SET
+        url = $1,
+        thumb_url = $2,
+        tipo = $3,
+        updated_at = NOW()
+      WHERE id = $4
+      `,
+      [
+        primeiraMidia?.url || null,
+        primeiraMidia?.thumb_url || null,
+        primeiraMidia?.tipo || null,
+        premium_post_id
+      ]
+    );
+
     await client.query("COMMIT");
 
     return res.json({
       ...postRes.rows[0],
-      thumb_url: midiasCriadas[0]?.thumb_url || null,
-      tipo: midiasCriadas[0]?.tipo || null,
-      url: midiasCriadas[0]?.url || null,
+      url: primeiraMidia?.url || null,
+      thumb_url: primeiraMidia?.thumb_url || null,
+      tipo: primeiraMidia?.tipo || null,
+      tipo_conteudo: "premium",
       midias: midiasCriadas
     });
   } catch (err) {
     await client.query("ROLLBACK");
-    console.error("Erro criar premium:", err.response?.data || err.message || err);
-    return res.status(500).json({ error: "Erro ao criar premium" });
+    console.error("=================================");
+    console.error("Erro criar premium:");
+    console.error("message:", err.message);
+    console.error("code:", err.code);
+    console.error("detail:", err.detail);
+    console.error("table:", err.table);
+    console.error("constraint:", err.constraint);
+    console.error("stack:", err.stack);
+
+    return res.status(500).json({
+      error: "Erro ao criar premium",
+      debug: err.message
+    });
   } finally {
     client.release();
   }
