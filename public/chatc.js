@@ -740,15 +740,20 @@ function abrirPagamentoChat(valor, conteudoId) {
   abrirPopupPagamento();
 }
 
-async function carregarInfoModelo(modelo_id){
-
+async function carregarInfoModelo(modelo_id) {
   try {
-
-    const res = await fetch(`/api/modelo/chat/${modelo_id}`,{
-      headers:{ Authorization:"Bearer "+token }
+    await fetch(`/api/chat/cliente/marcar-lido/${modelo_id}`, {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + token
+      }
     });
 
-    if(!res.ok){
+    const res = await fetch(`/api/modelo/chat/${modelo_id}`, {
+      headers: { Authorization: "Bearer " + token }
+    });
+
+    if (!res.ok) {
       console.warn("Erro ao carregar modelo");
       return;
     }
@@ -756,36 +761,30 @@ async function carregarInfoModelo(modelo_id){
     const modelo = await res.json();
 
     const nome = document.getElementById("chatModeloNome");
-    if(nome) nome.innerText = modelo.nome_exibicao;
+    if (nome) nome.innerText = modelo.nome_exibicao || modelo.nome || "Modelo";
 
     const avatar = document.getElementById("chatModeloAvatar");
-    const status = document.getElementById("chatModeloStatus");
-
-    if(status) status.innerText = "online";
-
-    if (avatar && modelo.avatar_url) {
-
-      avatar.src = modelo.avatar_url; 
+    if (avatar) {
+      if (modelo.avatar_url) {
+        avatar.src = modelo.avatar_url;
+      }
 
       avatar.style.cursor = "pointer";
-
       avatar.onclick = () => {
-        abrirPreviewAvatar(modelo.avatar_url);
+        if (modelo.avatar_url) abrirPreviewAvatar(modelo.avatar_url);
       };
     }
 
+    const status = document.getElementById("chatModeloStatus");
     if (status) {
-      if (modelo.last_seen) {
-        status.innerText = `visto por último: ${formatarTempo(modelo.last_seen)}`;
-      } else {
-        status.innerText = "visto por último: agora";
-      }
+      status.innerText = modelo.last_seen
+        ? `visto por último: ${formatarTempo(modelo.last_seen)}`
+        : "visto por último: agora";
     }
 
-  } catch(err){
-    console.error("Erro carregarInfoModelo:",err);
+  } catch (err) {
+    console.error("Erro carregarInfoModelo:", err);
   }
-
 }
 
 function fecharEscolha() {
@@ -1208,7 +1207,6 @@ function resetarPixUI() {
 
 window.finalizarPagamentoEAbrirMidia = async function (messageId) {
   const popup = document.getElementById("popupPagamentoVelvet");
-  const modalMidia = document.getElementById("modalMidia");
 
   if (popup) {
     popup.classList.add("hidden");
@@ -1220,24 +1218,14 @@ window.finalizarPagamentoEAbrirMidia = async function (messageId) {
   if (!messageId) return;
 
   try {
-    const res = await fetch(`/api/chat/conteudo/${messageId}`, {
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token")
-      }
-    });
+    // 1) atualiza o card no chat imediatamente
+    await liberarConteudo(messageId);
 
-    if (!res.ok) return;
+    // 2) abre a primeira mídia já liberada
+    setTimeout(() => {
+      abrirConteudo(messageId, 0);
+    }, 150);
 
-    const midias = await res.json();
-    if (!midias.length) return;
-
-    const midia = midias[0];
-
-    if (modalMidia) {
-      modalMidia.classList.remove("hidden");
-    }
-
-    abrirModalMidia(midia.url);
   } catch (err) {
     console.error("Erro ao finalizar pagamento e abrir mídia:", err);
   }

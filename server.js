@@ -2854,6 +2854,15 @@ socket.on("getHistory", async ({ cliente_id, modelo_id, offset = 0, limit = 20 }
         [clienteIdNum, modeloIdNum]
       );
 
+       await db.query(
+    `
+    UPDATE clientes
+    SET last_seen = NOW()
+    WHERE id = $1
+    `,
+    [clienteIdNum]
+  );
+
       io.to(`inbox_modelo_${modeloIdNum}`).emit("mensagemLida", {
         cliente_id: clienteIdNum,
         modelo_id: modeloIdNum
@@ -3412,7 +3421,7 @@ app.get("/api/modelo/chat/:id", auth, async (req, res) => {
       SELECT
         id,
         nome_exibicao,
-        avatar,
+        avatar AS avatar_url,
         last_seen
       FROM modelos
       WHERE id = $1
@@ -10355,12 +10364,76 @@ app.post("/api/chat/modelo/marcar-lido/:cliente_id", authModelo, async (req, res
       [cliente_id, modelo_id]
     );
 
+    await db.query(
+      `
+      UPDATE modelos
+      SET last_seen = NOW()
+      WHERE id = $1
+      `,
+      [modelo_id]
+    );
+
     return res.json({
       success: true,
       atualizadas: updateRes.rowCount
     });
   } catch (err) {
     console.error("Erro marcar lido:", err);
+    return res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+// ===========================
+// MARCAR LIDO CLIENTE
+// ===========================
+
+app.post("/api/chat/cliente/marcar-lido/:modelo_id", authCliente, async (req, res) => {
+  const userId = req.user.id;
+  const modelo_id = Number(req.params.modelo_id);
+
+  if (!Number.isInteger(modelo_id) || modelo_id <= 0) {
+    return res.status(400).json({ error: "modelo_id inválido" });
+  }
+
+  try {
+    const clienteRes = await db.query(
+      "SELECT id FROM clientes WHERE user_id = $1",
+      [userId]
+    );
+
+    if (clienteRes.rowCount === 0) {
+      return res.status(404).json({ error: "Cliente não encontrado" });
+    }
+
+    const cliente_id = clienteRes.rows[0].id;
+
+    const updateRes = await db.query(
+      `
+      UPDATE messages
+      SET lida = true
+      WHERE cliente_id = $1
+        AND modelo_id = $2
+        AND sender = 'modelo'
+        AND COALESCE(lida, false) = false
+      `,
+      [cliente_id, modelo_id]
+    );
+
+    await db.query(
+      `
+      UPDATE clientes
+      SET last_seen = NOW()
+      WHERE id = $1
+      `,
+      [cliente_id]
+    );
+
+    return res.json({
+      success: true,
+      atualizadas: updateRes.rowCount
+    });
+  } catch (err) {
+    console.error("Erro marcar lido cliente:", err);
     return res.status(500).json({ error: "Erro interno" });
   }
 });

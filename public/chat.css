@@ -310,6 +310,7 @@ body.role-cliente .msg-cliente:has(.chat-conteudo) {
 
   width:25px !important;
   height:25px !important;
+  min-width: 0px !important;
 
   border:none !important;
   background:transparent !important;
