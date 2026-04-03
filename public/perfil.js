@@ -1101,55 +1101,48 @@ async function carregarPremium() {
       const descricao = escapeHtml(item.descricao || "");
 
       let mediaPrincipal = "";
-      let mediaHTML = "";
 
-      if (podeVer) {
-        const medias = item.midias?.length
-          ? item.midias
-          : [{
-              url:
-                item.url ||
-                item.thumbnail_url ||
-                item.thumb_url ||
-                ""
-            }];
+      const medias = podeVer
+        ? (
+            item.midias?.length
+              ? item.midias
+              : [{
+                  url:
+                    item.url ||
+                    item.thumbnail_url ||
+                    item.thumb_url ||
+                    ""
+                }]
+          )
+        : [{
+            url:
+              item.thumb_url ||
+              item.thumbnail_url ||
+              item.url ||
+              "/assets/premium-locked.jpg"
+          }];
 
-        mediaHTML = medias.map((m, i) => {
-          const url = m.url || "";
+      const mediaHTML = medias.map((m, i) => {
+        const url = m.url || "";
 
-          const ehVideo =
-            url.includes(".mp4") ||
-            url.includes(".webm") ||
-            url.includes(".mov") ||
-            url.includes("videodelivery.net");
+        const ehVideo =
+          url.includes(".mp4") ||
+          url.includes(".webm") ||
+          url.includes(".mov") ||
+          url.includes("videodelivery.net");
 
-          if (i === 0) mediaPrincipal = url;
+        if (i === 0) mediaPrincipal = url;
 
-          return `
-            <div class="carousel-item ${i === 0 ? "active" : ""}">
-              ${
-                ehVideo
-                  ? `<video src="${url}" muted playsinline preload="metadata"></video>`
-                  : `<img src="${url}" alt="Post premium">`
-              }
-            </div>
-          `;
-        }).join("");
-      } else {
-        const thumbBloqueada =
-          item.thumb_url ||
-          item.thumbnail_url ||
-          item.url ||
-          "/assets/premium-locked.jpg";
-
-        mediaPrincipal = thumbBloqueada;
-
-        mediaHTML = `
-          <div class="carousel-item active">
-            <img src="${thumbBloqueada}" alt="Premium bloqueado">
+        return `
+          <div class="carousel-item">
+            ${
+              ehVideo
+                ? `<video src="${url}" muted playsinline preload="metadata"></video>`
+                : `<img src="${url}" alt="Post premium">`
+            }
           </div>
         `;
-      }
+      }).join("");
 
       card.innerHTML = `
         <div class="premium-header">
@@ -1176,8 +1169,25 @@ async function carregarPremium() {
         </div>
 
         <div class="premium-media">
-          <div class="carousel">
-            ${mediaHTML}
+          <div class="carousel" data-index="0">
+            <div class="carousel-track">
+              ${mediaHTML}
+            </div>
+
+            ${medias.length > 1 ? `
+              <button class="carousel-arrow prev" type="button">‹</button>
+              <button class="carousel-arrow next" type="button">›</button>
+
+              <div class="carousel-dots">
+                ${medias.map((_, i) => `
+                  <button
+                    type="button"
+                    class="carousel-dot ${i === 0 ? "active" : ""}"
+                    data-index="${i}">
+                  </button>
+                `).join("")}
+              </div>
+            ` : ""}
           </div>
         </div>
 
@@ -1201,10 +1211,106 @@ async function carregarPremium() {
         });
       }
 
+      const carousel = card.querySelector(".carousel");
+      const track = card.querySelector(".carousel-track");
+      const slides = Array.from(card.querySelectorAll(".carousel-item"));
+      const dots = Array.from(card.querySelectorAll(".carousel-dot"));
+      const prevBtn = card.querySelector(".carousel-arrow.prev");
+      const nextBtn = card.querySelector(".carousel-arrow.next");
       const media = card.querySelector(".premium-media");
+
+      let houveArraste = false;
+
+      if (carousel && track && slides.length > 1) {
+        let currentIndex = 0;
+        let startX = 0;
+        let currentX = 0;
+        let isDragging = false;
+
+        function updateCarousel(index, animate = true) {
+          currentIndex = Math.max(0, Math.min(index, slides.length - 1));
+
+          track.style.transition = animate ? "transform .28s ease" : "none";
+          track.style.transform = `translateX(-${currentIndex * 100}%)`;
+
+          dots.forEach((dot, i) => {
+            dot.classList.toggle("active", i === currentIndex);
+          });
+        }
+
+        prevBtn?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          updateCarousel(currentIndex - 1);
+        });
+
+        nextBtn?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          updateCarousel(currentIndex + 1);
+        });
+
+        dots.forEach((dot, i) => {
+          dot.addEventListener("click", (e) => {
+            e.stopPropagation();
+            updateCarousel(i);
+          });
+        });
+
+        carousel.addEventListener("pointerdown", (e) => {
+          if (e.pointerType === "mouse" && e.button !== 0) return;
+
+          houveArraste = false;
+          isDragging = true;
+          startX = e.clientX;
+          currentX = e.clientX;
+          track.style.transition = "none";
+        });
+
+        carousel.addEventListener("pointermove", (e) => {
+          if (!isDragging) return;
+
+          currentX = e.clientX;
+          const deltaX = currentX - startX;
+
+          if (Math.abs(deltaX) > 8) {
+            houveArraste = true;
+          }
+
+          const base = -currentIndex * carousel.offsetWidth;
+          track.style.transform = `translateX(${base + deltaX}px)`;
+        });
+
+        function endDrag() {
+          if (!isDragging) return;
+
+          isDragging = false;
+          const deltaX = currentX - startX;
+          const threshold = carousel.offsetWidth * 0.18;
+
+          if (deltaX < -threshold && currentIndex < slides.length - 1) {
+            updateCarousel(currentIndex + 1);
+          } else if (deltaX > threshold && currentIndex > 0) {
+            updateCarousel(currentIndex - 1);
+          } else {
+            updateCarousel(currentIndex);
+          }
+           setTimeout(() => {
+    houveArraste = false;
+  }, 50);
+        }
+
+        carousel.addEventListener("pointerup", endDrag);
+        carousel.addEventListener("pointercancel", endDrag);
+        carousel.addEventListener("lostpointercapture", () => {
+  if (isDragging) endDrag();
+});
+
+        updateCarousel(0);
+      }
 
       if (media) {
         media.onclick = () => {
+          if (houveArraste) return;
+
           if (!podeVer) {
             if (!tratarAcaoProtegidaPremium()) return;
             abrirFluxoPremium(item);
