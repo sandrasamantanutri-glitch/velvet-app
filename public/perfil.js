@@ -524,16 +524,84 @@ if (capa) {
 
 }
 
-function abrirMidia(item){
+let modalLoadingTimer = null;
+let modalLoadingFakeProgress = 0;
 
+function mostrarLoadingModal() {
+  const loading = document.getElementById("modalLoading");
+  const fill = document.getElementById("modalLoadingFill");
+  const percent = document.getElementById("modalLoadingPercent");
+
+  if (!loading || !fill || !percent) return;
+
+  clearInterval(modalLoadingTimer);
+  modalLoadingFakeProgress = 0;
+
+  fill.style.width = "0%";
+  percent.textContent = "0%";
+  loading.classList.remove("hidden");
+
+  modalLoadingTimer = setInterval(() => {
+    if (modalLoadingFakeProgress >= 90) return;
+
+    modalLoadingFakeProgress += modalLoadingFakeProgress < 60 ? 8 : 3;
+
+    if (modalLoadingFakeProgress > 90) {
+      modalLoadingFakeProgress = 90;
+    }
+
+    fill.style.width = `${modalLoadingFakeProgress}%`;
+    percent.textContent = `${modalLoadingFakeProgress}%`;
+  }, 120);
+}
+
+function ocultarLoadingModal() {
+  const loading = document.getElementById("modalLoading");
+  const fill = document.getElementById("modalLoadingFill");
+  const percent = document.getElementById("modalLoadingPercent");
+
+  if (!loading || !fill || !percent) return;
+
+  clearInterval(modalLoadingTimer);
+
+  fill.style.width = "100%";
+  percent.textContent = "100%";
+
+  setTimeout(() => {
+    loading.classList.add("hidden");
+    fill.style.width = "0%";
+    percent.textContent = "0%";
+    modalLoadingFakeProgress = 0;
+  }, 180);
+}
+
+function erroLoadingModal() {
+  const fill = document.getElementById("modalLoadingFill");
+  const percent = document.getElementById("modalLoadingPercent");
+
+  clearInterval(modalLoadingTimer);
+
+  if (fill) fill.style.width = "100%";
+  if (percent) percent.textContent = "Erro ao carregar";
+}
+
+function abrirMidia(item) {
   const modal = document.getElementById("modalMidia");
   const img = document.getElementById("modalImg");
   const video = document.getElementById("modalVideo");
   const iframe = document.getElementById("modalIframe");
+  const dotsWrap = document.getElementById("modalDots");
 
   img.style.display = "none";
   video.style.display = "none";
   iframe.style.display = "none";
+
+  img.onload = null;
+  img.onerror = null;
+  video.onloadeddata = null;
+  video.onerror = null;
+  iframe.onload = null;
+  iframe.onerror = null;
 
   video.pause();
   video.src = "";
@@ -544,9 +612,48 @@ function abrirMidia(item){
     : [{ url: item.url }];
 
   let index = 0;
+  let startX = 0;
+  let currentX = 0;
+  let isDragging = false;
+  let houveArraste = false;
 
-  const mostrar = () => {
+  function renderDots() {
+    if (!dotsWrap) return;
 
+    if (midias.length <= 1) {
+      dotsWrap.classList.add("hidden");
+      dotsWrap.innerHTML = "";
+      return;
+    }
+
+    dotsWrap.innerHTML = midias.map((_, i) => `
+      <button
+        type="button"
+        class="modal-dot ${i === index ? "active" : ""}"
+        data-index="${i}"
+        aria-label="Ir para mídia ${i + 1}">
+      </button>
+    `).join("");
+
+    dotsWrap.classList.remove("hidden");
+
+    dotsWrap.querySelectorAll(".modal-dot").forEach(dot => {
+      dot.addEventListener("click", (e) => {
+        e.stopPropagation();
+        index = Number(dot.dataset.index);
+        mostrar();
+      });
+    });
+  }
+
+  function atualizarDots() {
+    if (!dotsWrap) return;
+    dotsWrap.querySelectorAll(".modal-dot").forEach((dot, i) => {
+      dot.classList.toggle("active", i === index);
+    });
+  }
+
+  function mostrar() {
     const media = midias[index];
     const url = media.url || "";
 
@@ -560,68 +667,140 @@ function abrirMidia(item){
     video.style.display = "none";
     iframe.style.display = "none";
 
+    img.onload = null;
+    img.onerror = null;
+    video.onloadeddata = null;
+    video.onerror = null;
+    iframe.onload = null;
+    iframe.onerror = null;
+
     video.pause();
     video.src = "";
     iframe.src = "";
 
+    mostrarLoadingModal();
+    atualizarDots();
+
     if (ehVideo) {
-
       if (url.includes("videodelivery.net")) {
+        const partes = url.split("/");
+        const videoId = partes[3];
 
-        const videoId = url.split("/")[3];
+        iframe.onload = () => {
+          ocultarLoadingModal();
+        };
 
-        iframe.src =
-        `https://iframe.videodelivery.net/${videoId}?autoplay=true`;
+        iframe.onerror = () => {
+          erroLoadingModal();
+        };
 
+        iframe.src = `https://iframe.videodelivery.net/${videoId}?autoplay=true`;
         iframe.style.display = "block";
-
       } else {
+        video.onloadeddata = () => {
+          ocultarLoadingModal();
+          video.play().catch(() => {});
+        };
+
+        video.onerror = () => {
+          erroLoadingModal();
+        };
 
         video.src = url;
         video.style.display = "block";
-
         video.currentTime = 0;
-        video.play().catch(()=>{});
-
       }
-
     } else {
+      img.onload = () => {
+        ocultarLoadingModal();
+      };
+
+      img.onerror = () => {
+        erroLoadingModal();
+      };
 
       img.src = url;
       img.style.display = "block";
-
     }
-
-  };
-
-  mostrar();
-
-  modal.classList.remove("hidden");
-
-  if(midias.length > 1){
-
-    modal.onclick = (e) => {
-
-      if(
-        e.target === img ||
-        e.target === video ||
-        e.target === iframe
-      ){
-
-        if(e.clientX > window.innerWidth / 2){
-          index = (index + 1) % midias.length;
-        }else{
-          index = (index - 1 + midias.length) % midias.length;
-        }
-
-        mostrar();
-
-      }
-
-    };
-
   }
 
+  function irProxima() {
+    if (midias.length <= 1) return;
+    index = (index + 1) % midias.length;
+    mostrar();
+  }
+
+  function irAnterior() {
+    if (midias.length <= 1) return;
+    index = (index - 1 + midias.length) % midias.length;
+    mostrar();
+  }
+
+  renderDots();
+  modal.classList.remove("hidden");
+  mostrar();
+
+  const areaInteracao = modal.querySelector(".modal-conteudo");
+
+  modal.onclick = (e) => {
+    if (houveArraste) return;
+
+    const clicouMidia =
+      e.target === img ||
+      e.target === video ||
+      e.target === iframe;
+
+    if (!clicouMidia || midias.length <= 1) return;
+
+    if (e.clientX > window.innerWidth / 2) {
+      irProxima();
+    } else {
+      irAnterior();
+    }
+  };
+
+  areaInteracao.onpointerdown = (e) => {
+    if (midias.length <= 1) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+
+    houveArraste = false;
+    isDragging = true;
+    startX = e.clientX;
+    currentX = e.clientX;
+  };
+
+  areaInteracao.onpointermove = (e) => {
+    if (!isDragging) return;
+
+    currentX = e.clientX;
+    const deltaX = currentX - startX;
+
+    if (Math.abs(deltaX) > 10) {
+      houveArraste = true;
+    }
+  };
+
+  function finalizarArraste() {
+    if (!isDragging) return;
+
+    isDragging = false;
+
+    const deltaX = currentX - startX;
+    const threshold = Math.max(50, window.innerWidth * 0.12);
+
+    if (deltaX < -threshold) {
+      irProxima();
+    } else if (deltaX > threshold) {
+      irAnterior();
+    }
+
+    setTimeout(() => {
+      houveArraste = false;
+    }, 60);
+  }
+
+  areaInteracao.onpointerup = finalizarArraste;
+  areaInteracao.onpointercancel = finalizarArraste;
 }
 
 function valorBRL(valor) {
@@ -1569,29 +1748,57 @@ function fecharModalMidia() {
   const img = document.getElementById("modalImg");
   const video = document.getElementById("modalVideo");
   const iframe = document.getElementById("modalIframe");
+  const dotsWrap = document.getElementById("modalDots");
+  const areaInteracao = modal?.querySelector(".modal-conteudo");
+
+  clearInterval(modalLoadingTimer);
 
   if (modal) {
     modal.classList.add("hidden");
     modal.onclick = null;
   }
 
-  if (video) {
-    video.pause();
-    video.currentTime = 0;
-    video.removeAttribute("src");
-    video.load();
-    video.style.display = "none";
-  }
-
-  if (iframe) {
-    iframe.src = "";
-    iframe.style.display = "none";
+  if (areaInteracao) {
+    areaInteracao.onpointerdown = null;
+    areaInteracao.onpointermove = null;
+    areaInteracao.onpointerup = null;
+    areaInteracao.onpointercancel = null;
   }
 
   if (img) {
-    img.removeAttribute("src");
     img.style.display = "none";
+    img.src = "";
+    img.onload = null;
+    img.onerror = null;
   }
+
+  if (video) {
+    video.pause();
+    video.style.display = "none";
+    video.src = "";
+    video.onloadeddata = null;
+    video.onerror = null;
+  }
+
+  if (iframe) {
+    iframe.style.display = "none";
+    iframe.src = "";
+    iframe.onload = null;
+    iframe.onerror = null;
+  }
+
+  if (dotsWrap) {
+    dotsWrap.innerHTML = "";
+    dotsWrap.classList.add("hidden");
+  }
+
+  const loading = document.getElementById("modalLoading");
+  const fill = document.getElementById("modalLoadingFill");
+  const percent = document.getElementById("modalLoadingPercent");
+
+  if (loading) loading.classList.add("hidden");
+  if (fill) fill.style.width = "0%";
+  if (percent) percent.textContent = "0%";
 }
 
 async function excluirPremium(id, elemento) {
