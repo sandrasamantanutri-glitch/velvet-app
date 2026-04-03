@@ -5224,10 +5224,6 @@ app.get("/api/modelo/publico/:modelo_id/premium", async (req, res) => {
       SELECT
         p.id,
         p.modelo_id,
-        p.url,
-        p.thumb_url,
-        p.tipo,
-        p.tipo_conteudo,
         p.preco,
         p.descricao,
         p.created_at,
@@ -5241,20 +5237,60 @@ app.get("/api/modelo/publico/:modelo_id/premium", async (req, res) => {
               AND pu.status = 'pago'
           ) THEN true
           ELSE false
-        END AS liberado
+        END AS liberado,
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'id', pm.id,
+              'url', CASE
+                WHEN $2 = true THEN pm.url
+                WHEN $3::bigint IS NOT NULL AND EXISTS (
+                  SELECT 1
+                  FROM premium_unlocks pu
+                  WHERE pu.premium_post_id = p.id
+                    AND pu.cliente_id = $3
+                    AND pu.status = 'pago'
+                ) THEN pm.url
+                ELSE NULL
+              END,
+              'thumb_url', pm.thumb_url,
+              'tipo', pm.tipo,
+              'ordem', pm.ordem
+            )
+            ORDER BY pm.ordem ASC, pm.id ASC
+          ) FILTER (WHERE pm.id IS NOT NULL),
+          '[]'::json
+        ) AS midias
       FROM premium_posts p
+      LEFT JOIN premium_post_midias pm
+        ON pm.premium_post_id = p.id
+       AND pm.ativo = true
       WHERE p.modelo_id = $1
         AND p.ativo = true
+      GROUP BY p.id
       ORDER BY p.created_at DESC
-      `,
+      `
+      ,
       [modelo_id, ehDona, cliente_id]
     );
 
-    const rows = result.rows.map(item => ({
-      ...item,
-      url: item.liberado ? item.url : null,
-      thumb_url: item.thumb_url || null
-    }));
+    const rows = result.rows.map(item => {
+      const midias = Array.isArray(item.midias) ? item.midias : [];
+      const primeiraMidia = midias[0] || null;
+
+      return {
+        id: item.id,
+        modelo_id: item.modelo_id,
+        preco: item.preco,
+        descricao: item.descricao,
+        created_at: item.created_at,
+        liberado: item.liberado,
+        thumb_url: primeiraMidia?.thumb_url || null,
+        tipo: primeiraMidia?.tipo || null,
+        url: item.liberado ? (primeiraMidia?.url || null) : null,
+        midias
+      };
+    });
 
     return res.json(rows);
   } catch (err) {
@@ -7303,6 +7339,15 @@ app.delete("/api/premium/:id", auth, authModelo, async (req, res) => {
       `,
       [premiumId]
     );
+
+    await db.query(
+  `
+  UPDATE premium_post_midias
+  SET ativo = false
+  WHERE premium_post_id = $1
+  `,
+  [premiumId]
+);
 
     return res.json({ ok: true });
   } catch (err) {
@@ -10721,14 +10766,16 @@ app.patch("/api/ofertas/:id/encerrar", authModelo, async (req, res) => {
 // PUBLI PREMIUM
 // ===========================
 
-app.post("/api/premium", auth, authModelo, uploadB2.single("file"), async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { descricao, preco } = req.body;
-    const file = req.file;
+app.post("/api/premium", auth, authModelo, uploadB2.array("files", 10), async (req, res) => {
+  const client = await db.connect();
 
-    if (!file) {
-      return res.status(400).json({ error: "Arquivo obrigatório" });
+  try {
+    const userId = Number(req.user?.id || 0);
+    const { descricao, preco } = req.body;
+    const files = req.files || [];
+
+    if (!files.length) {
+      return res.status(400).json({ error: "Envie ao menos uma mídia" });
     }
 
     const precoNum = Number(preco);
@@ -10736,7 +10783,7 @@ app.post("/api/premium", auth, authModelo, uploadB2.single("file"), async (req, 
       return res.status(400).json({ error: "Preço inválido" });
     }
 
-    const modeloRes = await db.query(
+    const modeloRes = await client.query(
       `
       SELECT id
       FROM modelos
@@ -10750,56 +10797,103 @@ app.post("/api/premium", auth, authModelo, uploadB2.single("file"), async (req, 
       return res.status(404).json({ error: "Modelo não encontrado" });
     }
 
-    const modelo_id = modeloRes.rows[0].id;
+    const modelo_id = Number(modeloRes.rows[0].id);
 
-    const mimetype = file.mimetype || "";
-    const tipo = mimetype.startsWith("video") ? "video" : "foto";
+    await client.query("BEGIN");
 
-    let url = null;
-    let thumb_url = null;
-
-    if (tipo === "foto") {
-      const imageResult = await uploadCloudflareImage(
-        file.buffer,
-        file.originalname || `premium-${Date.now()}.jpg`
-      );
-
-      url = imageResult?.variants?.[0] || null;
-      thumb_url = url;
-    } else {
-      const videoResult = await uploadVideoCloudflare(
-        file.buffer,
-        file.originalname || `premium-${Date.now()}.mp4`
-      );
-
-      const uid = videoResult?.uid || null;
-
-      url = uid ? `https://videodelivery.net/${uid}/manifest/video.m3u8` : null;
-      thumb_url = videoResult?.thumbnail || (uid
-        ? `https://videodelivery.net/${uid}/thumbnails/thumbnail.jpg`
-        : null);
-    }
-
-    if (!url) {
-      return res.status(500).json({ error: "Falha ao enviar arquivo para Cloudflare" });
-    }
-
-    const result = await db.query(
+    const postRes = await client.query(
       `
       INSERT INTO premium_posts (
-        modelo_id, url, thumb_url, tipo, tipo_conteudo,
-        preco, descricao, ativo
+        modelo_id,
+        descricao,
+        preco,
+        ativo,
+        created_at,
+        updated_at
       )
-      VALUES ($1,$2,$3,$4,'premium',$5,$6,true)
-      RETURNING *
+      VALUES ($1, $2, $3, true, NOW(), NOW())
+      RETURNING id, modelo_id, descricao, preco, ativo, created_at, updated_at
       `,
-      [modelo_id, url, thumb_url, tipo, precoNum, descricao || null]
+      [modelo_id, descricao || null, precoNum]
     );
 
-    return res.json(result.rows[0]);
+    const premium_post_id = Number(postRes.rows[0].id);
+    const midiasCriadas = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const mimetype = file.mimetype || "";
+      const tipo = mimetype.startsWith("video") ? "video" : "foto";
+
+      let url = null;
+      let thumb_url = null;
+
+      if (tipo === "foto") {
+        const imageResult = await uploadCloudflareImage(
+          file.buffer,
+          file.originalname || `premium-${Date.now()}-${i}.jpg`
+        );
+
+        url = imageResult?.variants?.[0] || null;
+        thumb_url = url;
+      } else {
+        const videoResult = await uploadVideoCloudflare(
+          file.buffer,
+          file.originalname || `premium-${Date.now()}-${i}.mp4`
+        );
+
+        const uid = videoResult?.uid || null;
+
+        url = uid
+          ? `https://videodelivery.net/${uid}/manifest/video.m3u8`
+          : null;
+
+        thumb_url = videoResult?.thumbnail || (
+          uid
+            ? `https://videodelivery.net/${uid}/thumbnails/thumbnail.jpg`
+            : null
+        );
+      }
+
+      if (!url) {
+        throw new Error(`Falha ao enviar arquivo ${i + 1} para Cloudflare`);
+      }
+
+      const midiaRes = await client.query(
+        `
+        INSERT INTO premium_post_midias (
+          premium_post_id,
+          url,
+          thumb_url,
+          tipo,
+          ordem,
+          ativo,
+          created_at
+        )
+        VALUES ($1, $2, $3, $4, $5, true, NOW())
+        RETURNING id, premium_post_id, url, thumb_url, tipo, ordem
+        `,
+        [premium_post_id, url, thumb_url, tipo, i]
+      );
+
+      midiasCriadas.push(midiaRes.rows[0]);
+    }
+
+    await client.query("COMMIT");
+
+    return res.json({
+      ...postRes.rows[0],
+      thumb_url: midiasCriadas[0]?.thumb_url || null,
+      tipo: midiasCriadas[0]?.tipo || null,
+      url: midiasCriadas[0]?.url || null,
+      midias: midiasCriadas
+    });
   } catch (err) {
+    await client.query("ROLLBACK");
     console.error("Erro criar premium:", err.response?.data || err.message || err);
     return res.status(500).json({ error: "Erro ao criar premium" });
+  } finally {
+    client.release();
   }
 });
 

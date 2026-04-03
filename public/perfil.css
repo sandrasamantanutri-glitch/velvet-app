@@ -939,18 +939,25 @@ transition:width 0.2s;
   }
 }
 
-.banner-seguranca-pagamento {
-  display: block;
-  margin-top: 18px;
-  text-align: center;
+#previewPremium{
+  margin-top:10px;
+  display:grid;
+  grid-template-columns:repeat(2, 1fr);
+  gap:10px;
 }
 
-.banner-seguranca-pagamento img {
-  display: block;
-  width: 100%;
-  max-width: 760px;
-  height: auto;
-  margin: 0 auto;
-  border-radius: 10px;
+.preview-premium-item{
+  width:100%;
+  aspect-ratio:1/1;
+  overflow:hidden;
+  border-radius:10px;
+  background:#f3f3f3;
 }
 
+.preview-premium-item img,
+.preview-premium-item video{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}

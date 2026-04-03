@@ -1268,162 +1268,7 @@ abrirPixConteudo(
 );
 }
 
-// async function pagarComCartao() {
 
-//   const cpf = obterCpfValido();
-//   if (!cpf) return;
-
-//   pagamentoAtual.cpf = cpf;
-
-//   if (pagamentoEmProcesso) return;
-//   pagamentoEmProcesso = true;
-
-//   document
-//     .getElementById("escolhaPagamento")
-//     .classList.add("hidden");
-
-//   if (!pagamentoAtual?.conteudo_id) {
-//     alert("Conteúdo inválido");
-//     pagamentoEmProcesso = false;
-//     return;
-//   }
-
-//   const conteudo_id = Number(pagamentoAtual.conteudo_id);
-
-//   try {
-
-//     const res = await fetch("/api/pagamento/midia/cartao", {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json",
-//         Authorization: "Bearer " + localStorage.getItem("token")
-//       },
-//       body: JSON.stringify({
-//         conteudo_id,
-//         cpf: pagamentoAtual.cpf
-//       })
-//     });
-
-//     const data = await res.json();
-
-//     if (!res.ok) {
-//       alert(data.error || "Erro no pagamento");
-//       pagamentoEmProcesso = false;
-//       return;
-//     }
-
-// const elValorConteudo = document.getElementById("cartaoValorConteudo");
-// if (elValorConteudo) {
-//   elValorConteudo.innerText = valorBRL(data.valorBase);
-// }
-
-// const elTaxaTransacao = document.getElementById("cartaoTaxaTransacao");
-// if (elTaxaTransacao) {
-//   elTaxaTransacao.innerText = valorBRL(data.taxaTransacao);
-// }
-
-// const elTaxaPlataforma = document.getElementById("cartaoTaxaPlataforma");
-// if (elTaxaPlataforma) {
-//   elTaxaPlataforma.innerText = valorBRL(data.taxaPlataforma);
-// }
-
-// const elValorTotal = document.getElementById("cartaoValorTotal");
-// if (elValorTotal) {
-//   elValorTotal.innerText = valorBRL(data.total);
-// }
-
-//     elements = stripe.elements({
-//       clientSecret: data.clientSecret
-//     });
-
-//     const paymentElement = elements.create("payment");
-//     paymentElement.mount("#payment-element");
-
-//     document
-//       .getElementById("paymentModal")
-//       .classList.remove("hidden");
-
-//   } catch (err) {
-
-//     console.error("Erro cartão:", err);
-//     alert("Erro inesperado");
-//     pagamentoEmProcesso = false;
-
-//   }
-// }
-
-function limparErrosCartao() {
-  const ids = [
-    "card_number_error",
-    "card_holder_error",
-    "card_exp_month_error",
-    "card_exp_year_error",
-    "card_cvv_error",
-    "card_phone_error",
-    "billing_line_1_error",
-    "billing_zip_code_error",
-    "billing_city_error",
-    "billing_state_error"
-  ];
-
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.innerText = "";
-  });
-}
-
-function mostrarErroCartao(campo, mensagem) {
-  const mapa = {
-    card_number: "card_number_error",
-    holder_name: "card_holder_error",
-    exp_month: "card_exp_month_error",
-    exp_year: "card_exp_year_error",
-    cvv: "card_cvv_error"
-  };
-
-  const el = document.getElementById(mapa[campo]);
-  if (el) el.innerText = mensagem;
-}
-
-function validarCamposCartao({ number, holder_name, exp_month, exp_year, cvv }) {
-  let ok = true;
-
-  limparErrosCartao();
-
-  const numeroLimpo = String(number || "").replace(/\D/g, "");
-  const nomeLimpo = String(holder_name || "").trim();
-  const mesLimpo = String(exp_month || "").replace(/\D/g, "");
-  const anoLimpo = String(exp_year || "").replace(/\D/g, "");
-  const cvvLimpo = String(cvv || "").replace(/\D/g, "");
-
-  if (numeroLimpo.length < 13 || numeroLimpo.length > 19) {
-    mostrarErroCartao("card_number", "Número do cartão inválido.");
-    ok = false;
-  }
-
-  if (!nomeLimpo || nomeLimpo.length < 3) {
-    mostrarErroCartao("holder_name", "Informe o nome impresso no cartão.");
-    ok = false;
-  }
-
-  const mesNum = Number(mesLimpo);
-  if (!mesLimpo || mesLimpo.length < 1 || mesNum < 1 || mesNum > 12) {
-    mostrarErroCartao("exp_month", "Mês inválido.");
-    ok = false;
-  }
-
-  if (!anoLimpo || anoLimpo.length !== 4) {
-    mostrarErroCartao("exp_year", "Ano inválido.");
-    ok = false;
-  }
-
-  if (!cvvLimpo || cvvLimpo.length < 3 || cvvLimpo.length > 4) {
-    mostrarErroCartao("cvv", "CVV inválido.");
-    ok = false;
-  }
-
-  return ok;
-}
 
 async function pagarComCartao() {
   const cpf = obterCpfValido();
@@ -2016,94 +1861,94 @@ function resetarPixUI() {
   }
 }
 
-function abrirModalCartao() {
-  const cpf = obterCpfValido();
-  if (!cpf) return;
+// function abrirModalCartao() {
+//   const cpf = obterCpfValido();
+//   if (!cpf) return;
 
-  if (!pagamentoAtual?.conteudo_id || !pagamentoAtual?.valor) {
-    alert("Conteúdo inválido");
-    return;
-  }
+//   if (!pagamentoAtual?.conteudo_id || !pagamentoAtual?.valor) {
+//     alert("Conteúdo inválido");
+//     return;
+//   }
 
-  pagamentoAtual.cpf = cpf;
+//   pagamentoAtual.cpf = cpf;
 
-  const valorMidia = Number(pagamentoAtual.valor || 0);
-  const taxaTransacao = Number((valorMidia * 0.10).toFixed(2));
-  const taxaPlataforma = Number((valorMidia * 0.05).toFixed(2));
-  const valorTotal = Number(
-    (valorMidia + taxaTransacao + taxaPlataforma).toFixed(2)
-  );
+//   const valorMidia = Number(pagamentoAtual.valor || 0);
+//   const taxaTransacao = Number((valorMidia * 0.10).toFixed(2));
+//   const taxaPlataforma = Number((valorMidia * 0.05).toFixed(2));
+//   const valorTotal = Number(
+//     (valorMidia + taxaTransacao + taxaPlataforma).toFixed(2)
+//   );
 
-  const elValorConteudo = document.getElementById("cartaoValorConteudo");
-  const elTaxaTransacao = document.getElementById("cartaoTaxaTransacao");
-  const elTaxaPlataforma = document.getElementById("cartaoTaxaPlataforma");
-  const elValorTotal = document.getElementById("cartaoValorTotal");
+//   const elValorConteudo = document.getElementById("cartaoValorConteudo");
+//   const elTaxaTransacao = document.getElementById("cartaoTaxaTransacao");
+//   const elTaxaPlataforma = document.getElementById("cartaoTaxaPlataforma");
+//   const elValorTotal = document.getElementById("cartaoValorTotal");
 
-  if (elValorConteudo) elValorConteudo.innerText = valorBRL(valorMidia);
-  if (elTaxaTransacao) elTaxaTransacao.innerText = valorBRL(taxaTransacao);
-  if (elTaxaPlataforma) elTaxaPlataforma.innerText = valorBRL(taxaPlataforma);
-  if (elValorTotal) elValorTotal.innerText = valorBRL(valorTotal);
+//   if (elValorConteudo) elValorConteudo.innerText = valorBRL(valorMidia);
+//   if (elTaxaTransacao) elTaxaTransacao.innerText = valorBRL(taxaTransacao);
+//   if (elTaxaPlataforma) elTaxaPlataforma.innerText = valorBRL(taxaPlataforma);
+//   if (elValorTotal) elValorTotal.innerText = valorBRL(valorTotal);
 
-  const btnConfirmar = document.getElementById("confirmarPagamento");
-  if (btnConfirmar) {
-    btnConfirmar.disabled = false;
-    btnConfirmar.innerText = "Confirmar desbloqueio";
-  }
+//   const btnConfirmar = document.getElementById("confirmarPagamento");
+//   if (btnConfirmar) {
+//     btnConfirmar.disabled = false;
+//     btnConfirmar.innerText = "Confirmar desbloqueio";
+//   }
 
-  atualizarStatusCartao("Confirmar desbloqueio");
+//   atualizarStatusCartao("Confirmar desbloqueio");
 
-  const escolha = document.getElementById("escolhaPagamento");
-  const modal = document.getElementById("paymentModal");
+//   const escolha = document.getElementById("escolhaPagamento");
+//   const modal = document.getElementById("paymentModal");
 
-  if (escolha) escolha.classList.add("hidden");
-  if (modal) modal.classList.remove("hidden"); // <- faltava isso
+//   if (escolha) escolha.classList.add("hidden");
+//   if (modal) modal.classList.remove("hidden"); // <- faltava isso
 
-  aplicarMascarasCamposCartao();
-  bindFormularioCartao();
-}
+//   aplicarMascarasCamposCartao();
+//   bindFormularioCartao();
+// }
 
-function bindFormularioCartao() {
-  const formCartao = document.getElementById("formCartao");
-  const btnConfirmar = document.getElementById("confirmarPagamento");
+// function bindFormularioCartao() {
+//   const formCartao = document.getElementById("formCartao");
+//   const btnConfirmar = document.getElementById("confirmarPagamento");
 
-  if (!formCartao || formCartao.dataset.bound === "true") return;
+//   if (!formCartao || formCartao.dataset.bound === "true") return;
 
-  formCartao.dataset.bound = "true";
+//   formCartao.dataset.bound = "true";
 
-  formCartao.addEventListener("submit", async (e) => {
-    e.preventDefault();
+//   formCartao.addEventListener("submit", async (e) => {
+//     e.preventDefault();
 
-    if (btnConfirmar) {
-      btnConfirmar.disabled = true;
-      btnConfirmar.innerText = "Processando...";
-    }
+//     if (btnConfirmar) {
+//       btnConfirmar.disabled = true;
+//       btnConfirmar.innerText = "Processando...";
+//     }
 
-    try {
-      const resultado = await pagarComCartao();
+//     try {
+//       const resultado = await pagarComCartao();
 
-      if (!resultado || !resultado.sucesso) {
-        if (btnConfirmar) {
-          btnConfirmar.disabled = false;
-          btnConfirmar.innerText = "Confirmar desbloqueio";
-        }
-        return;
-      }
+//       if (!resultado || !resultado.sucesso) {
+//         if (btnConfirmar) {
+//           btnConfirmar.disabled = false;
+//           btnConfirmar.innerText = "Confirmar desbloqueio";
+//         }
+//         return;
+//       }
 
-      if (btnConfirmar) {
-        btnConfirmar.disabled = true;
-        btnConfirmar.innerText = "Aguardando confirmação...";
-      }
-    } catch (err) {
-      console.error("Erro pagamento:", err);
-      alert("Erro ao processar pagamento");
+//       if (btnConfirmar) {
+//         btnConfirmar.disabled = true;
+//         btnConfirmar.innerText = "Aguardando confirmação...";
+//       }
+//     } catch (err) {
+//       console.error("Erro pagamento:", err);
+//       alert("Erro ao processar pagamento");
 
-      if (btnConfirmar) {
-        btnConfirmar.disabled = false;
-        btnConfirmar.innerText = "Confirmar desbloqueio";
-      }
-    }
-  });
-}
+//       if (btnConfirmar) {
+//         btnConfirmar.disabled = false;
+//         btnConfirmar.innerText = "Confirmar desbloqueio";
+//       }
+//     }
+//   });
+// }
 
 
 // const btnConfirmar = document.getElementById("confirmarPagamento");
@@ -2219,77 +2064,6 @@ function esconderToastPagamento() {
   const el = document.getElementById("toastPagamento");
   if (!el) return;
   el.className = "toast-pagamento hidden";
-}
-
-function aplicarMascarasCamposCartao() {
-  const numero = document.getElementById("card_number");
-  const mes = document.getElementById("card_exp_month");
-  const ano = document.getElementById("card_exp_year");
-  const cvv = document.getElementById("card_cvv");
-  const phone = document.getElementById("card_phone");
-  const zip = document.getElementById("billing_zip_code");
-  const state = document.getElementById("billing_state");
-
-  if (numero) {
-    numero.addEventListener("input", () => {
-      let v = numero.value.replace(/\D/g, "").slice(0, 19);
-      v = v.replace(/(\d{4})(?=\d)/g, "$1 ");
-      numero.value = v;
-    });
-  }
-
-  if (mes) {
-    mes.addEventListener("input", () => {
-      mes.value = mes.value.replace(/\D/g, "").slice(0, 2);
-    });
-  }
-
-  if (ano) {
-    ano.addEventListener("input", () => {
-      ano.value = ano.value.replace(/\D/g, "").slice(0, 4);
-    });
-  }
-
-  if (cvv) {
-    cvv.addEventListener("input", () => {
-      cvv.value = cvv.value.replace(/\D/g, "").slice(0, 4);
-    });
-  }
-
-  if (phone) {
-    phone.addEventListener("input", e => {
-      let v = e.target.value.replace(/\D/g, "").slice(0, 11);
-
-      if (v.length > 10) {
-        v = v.replace(/^(\d{2})(\d{5})(\d{0,4}).*/, "($1) $2-$3");
-      } else if (v.length > 6) {
-        v = v.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, "($1) $2-$3");
-      } else if (v.length > 2) {
-        v = v.replace(/^(\d{2})(\d{0,5}).*/, "($1) $2");
-      } else if (v.length > 0) {
-        v = v.replace(/^(\d*)/, "($1");
-      }
-
-      e.target.value = v;
-    });
-  }
-
-  if (zip) {
-    zip.addEventListener("input", e => {
-      let v = e.target.value.replace(/\D/g, "").slice(0, 8);
-      if (v.length > 5) v = v.replace(/^(\d{5})(\d{0,3}).*/, "$1-$2");
-      e.target.value = v;
-    });
-  }
-
-  if (state) {
-    state.addEventListener("input", e => {
-      e.target.value = e.target.value
-        .replace(/[^a-zA-Z]/g, "")
-        .toUpperCase()
-        .slice(0, 2);
-    });
-  }
 }
 
 // apenas log

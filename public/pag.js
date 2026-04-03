@@ -1127,11 +1127,6 @@ socket.on("conteudoVisto", async ({ message_id }) => {
 
 });
 
-// window.MIDIA_VENDA_ATUAL = null;
-// window.iniciarCartao = function () {
-//   mostrarMetodo("cartao");
-// };
-
 function pagamentoConfirmado() {
   // PIX
   document.getElementById("pixLoading")?.classList.add("hidden");

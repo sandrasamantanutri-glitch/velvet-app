@@ -363,62 +363,76 @@ document.getElementById("uploadAreaPremium")
 });
 
 filePremium?.addEventListener("change", () => {
+  const files = Array.from(filePremium.files || []);
+  previewPremium.innerHTML = "";
 
-  const file = filePremium.files[0];
-  if(!file) return;
+  if (!files.length) return;
 
-  const url = URL.createObjectURL(file);
+  files.forEach(file => {
+    const url = URL.createObjectURL(file);
 
-  previewPremium.innerHTML =
-    file.type.startsWith("video")
+    const item = document.createElement("div");
+    item.className = "preview-premium-item";
+
+    item.innerHTML = file.type.startsWith("video")
       ? `<video src="${url}" controls></video>`
-      : `<img src="${url}">`;
+      : `<img src="${url}" alt="Preview premium">`;
 
+    previewPremium.appendChild(item);
+  });
 });
 
 document.getElementById("btnEnviarPremium")
 ?.addEventListener("click", async () => {
-  const file = filePremium.files[0];
-  const descricao = document.getElementById("premiumTexto").value;
+  const files = Array.from(filePremium.files || []);
+  const descricao = document.getElementById("premiumTexto").value.trim();
   const preco = document.getElementById("premiumPreco").value;
 
-  if (!file) {
-    alert("Selecione uma mídia");
+  if (!files.length) {
+    alert("Selecione ao menos uma mídia");
     return;
   }
 
-  if (!preco) {
-    alert("Informe o preço");
+  if (!preco || Number(preco) <= 0) {
+    alert("Informe um preço válido");
     return;
   }
 
   const form = new FormData();
-  form.append("file", file);
   form.append("descricao", descricao);
   form.append("preco", preco);
 
-  const res = await fetch("/api/premium", {
-    method: "POST",
-    headers: {
-      Authorization: "Bearer " + token
-    },
-    body: form
+  files.forEach(file => {
+    form.append("files", file);
   });
 
-  const data = await res.json();
+  try {
+    const res = await fetch("/api/premium", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + token
+      },
+      body: form
+    });
 
-  if (!res.ok) {
-    alert(data.error || "Erro ao publicar");
-    return;
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || "Erro ao publicar");
+      return;
+    }
+
+    document.getElementById("popupUploadPremium").classList.add("hidden");
+    filePremium.value = "";
+    previewPremium.innerHTML = "";
+    document.getElementById("premiumTexto").value = "";
+    document.getElementById("premiumPreco").value = "";
+
+    carregarPremium();
+  } catch (err) {
+    console.error("Erro publicar premium:", err);
+    alert("Erro ao publicar premium");
   }
-
-  document.getElementById("popupUploadPremium").classList.add("hidden");
-  filePremium.value = "";
-  previewPremium.innerHTML = "";
-  document.getElementById("premiumTexto").value = "";
-  document.getElementById("premiumPreco").value = "";
-
-  carregarPremium();
 });
 
 // ===============================
