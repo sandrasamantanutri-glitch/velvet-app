@@ -226,7 +226,10 @@ btnAssinar = document.getElementById("btn-assinar");
     document.getElementById("popupUploadPremium").classList.add("hidden");
   });
 
-document.getElementById("fecharModal")?.addEventListener("click", fecharModalMidia);
+document.getElementById("fecharModal")?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  fecharModalMidia();
+});
 
   // fechar clicando fora
 document.querySelector("#modalMidia .modal-backdrop")
@@ -1680,8 +1683,6 @@ function fecharModalMidia() {
   const dotsWrap = document.getElementById("modalDots");
   const areaInteracao = modal?.querySelector(".modal-conteudo");
 
-  clearInterval(modalLoadingTimer);
-
   if (modal) {
     modal.classList.add("hidden");
     modal.onclick = null;
@@ -1720,14 +1721,6 @@ function fecharModalMidia() {
     dotsWrap.innerHTML = "";
     dotsWrap.classList.add("hidden");
   }
-
-  const loading = document.getElementById("modalLoading");
-  const fill = document.getElementById("modalLoadingFill");
-  const percent = document.getElementById("modalLoadingPercent");
-
-  if (loading) loading.classList.add("hidden");
-  if (fill) fill.style.width = "0%";
-  if (percent) percent.textContent = "0%";
 }
 
 async function excluirPremium(id, elemento) {
