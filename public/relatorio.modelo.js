@@ -346,10 +346,11 @@ const btnAlterar = document.getElementById("btnAlterarDados");
   }
 
   // 🔒 CONTROLE DE ESTADO
-  if (statusAtual === "aprovado") {
+if (statusAtual === "aprovado") {
+  bloquearFormulario(form);
   if (btnAlterar) {
-  btnAlterar.style.display = "inline-block";
-}
+    btnAlterar.style.display = "inline-block";
+  }
   return;
 }
 
@@ -479,10 +480,11 @@ if (!form) {
   document.getElementById("justificativaBox").style.display = "block";
  });
 
+form.addEventListener("submit", async e => {
+  e.preventDefault();
 
-  // 📤 SUBMIT ÚNICO
-  form.addEventListener("submit", async e => {
-    e.preventDefault();
+  try {
+    console.log("SUBMIT disparado");
 
     const endpoint =
       statusAtual === "aprovado"
@@ -500,13 +502,17 @@ if (!form) {
       titular_nome: titularNome.value,
       titular_documento: titularDocumento.value,
       confirmado_titular: confirmarTitular.checked,
-      justificativa: justificativa?.value || null
+      justificativa: justificativa?.value?.trim() || null
     };
 
-    if (statusAtual === "aprovado" && !justificativa.value.trim()) {
-  alert("Informe a justificativa para alteração dos dados.");
-  return;
-}
+    console.log("statusAtual:", statusAtual);
+    console.log("endpoint:", endpoint);
+    console.log("payload:", payload);
+
+    if (statusAtual === "aprovado" && !payload.justificativa) {
+      alert("Informe a justificativa para alteração dos dados.");
+      return;
+    }
 
     const res = await fetch(endpoint, {
       method: "POST",
@@ -517,33 +523,37 @@ if (!form) {
       body: JSON.stringify(payload)
     });
 
-    const r = await res.json();
+    let r = null;
+    try {
+      r = await res.json();
+    } catch {
+      throw new Error(`Resposta inválida do servidor (${res.status})`);
+    }
+
     if (!res.ok) {
-      alert(r.error);
+      alert(r?.error || "Erro ao enviar dados.");
       return;
     }
 
     alert("Dados enviados para validação");
 
-// 🔄 atualiza estado local
-statusAtual =
-  statusAtual === "aprovado"
-    ? "alteracao_pendente"
-    : "pendente";
+    statusAtual =
+      statusAtual === "aprovado"
+        ? "alteracao_pendente"
+        : "pendente";
 
-// 🔒 bloqueia novamente
-bloquearFormulario(form);
+    bloquearFormulario(form);
+    mostrarStatusDadosBancarios(statusAtual);
 
-// 🟡 atualiza status visual
-mostrarStatusDadosBancarios(statusAtual);
+    const justificativaBox = document.getElementById("justificativaBox");
+    if (justificativaBox) justificativaBox.style.display = "none";
 
-// 🧹 esconde justificativa
-const justificativaBox = document.getElementById("justificativaBox");
-if (justificativaBox) justificativaBox.style.display = "none";
+    await carregarDadosBancarios();
 
-// 🔁 recarrega dados (opcional, mas recomendado)
-await carregarDadosBancarios();
-
-  });
+  } catch (err) {
+    console.error("Erro no submit dos dados bancários:", err);
+    alert("Erro ao enviar os dados. Veja o console.");
+  }
+});
 });
 

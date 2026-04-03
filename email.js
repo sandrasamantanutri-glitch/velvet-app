@@ -20,7 +20,7 @@ async function enviarEmailValidacao(email) {
 }
 
 async function enviarEmailAprovacao(email) {
-const pdfPath = path.join(process.cwd(), "docs", "manual-velvet.pdf");
+const pdfPath = path.join(process.cwd(), "docs", "manual.pdf");
   const pdfBuffer = fs.readFileSync(pdfPath);
   console.log(pdfPath);
 
@@ -51,7 +51,7 @@ const pdfPath = path.join(process.cwd(), "docs", "manual-velvet.pdf");
     `,
     attachments: [
       {
-        filename: "Guia-Velvet.pdf",
+        filename: "manual.pdf",
         content: pdfBuffer
       }
     ]
