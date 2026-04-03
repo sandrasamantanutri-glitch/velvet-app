@@ -263,7 +263,7 @@ function alteracaoBloqueada() {
   const dia = hoje.getDate();
 
   // bloqueia do dia 5 até o dia do pagamento (10)
-  return dia >= 5 && dia <= 10;
+  return dia >= 1 && dia <= 5;
 }
 
 function mostrarStatusDadosBancarios(status) {
@@ -346,34 +346,49 @@ const btnAlterar = document.getElementById("btnAlterarDados");
   }
 
   // 🔒 CONTROLE DE ESTADO
-if (statusAtual === "aprovado") {
-  bloquearFormulario(form);
-  if (btnAlterar) {
-    btnAlterar.style.display = "inline-block";
-  }
-  return;
-}
+  if (alteracaoBloqueada()) {
+    bloquearFormulario(form);
 
-if (statusAtual === "pendente") {
-  if (btnAlterar) {
-  btnAlterar.style.display = "none";
-}
-  return;
-}
+    if (btnAlterar) {
+      btnAlterar.style.display = "none";
+    }
+
+    mostrarAviso(
+      "Alterações de dados bancários estão temporariamente bloqueadas no período de pagamento."
+    );
+    return;
+  }
+
+  if (statusAtual === "aprovado") {
+    bloquearFormulario(form);
+
+    if (btnAlterar) {
+      btnAlterar.style.display = "inline-block";
+    }
+    return;
+  }
+
+  if (statusAtual === "pendente") {
+    bloquearFormulario(form);
+
+    if (btnAlterar) {
+      btnAlterar.style.display = "none";
+    }
+    return;
+  }
 
   if (statusAtual === "alteracao_pendente") {
-  btnAlterar.style.display = "none";
-  mostrarAviso("Alteração enviada. Aguardando aprovação.");
-  return;
-}
- if (alteracaoBloqueada()) {
-  btnAlterar.style.display = "none";
-  mostrarAviso(
-    "Alterações de dados bancários estão temporariamente bloqueadas devido ao período de pagamento."
-  );
-  return;
-}
-  liberarFormulario(document.getElementById("formDadosBancarios"));
+    bloquearFormulario(form);
+
+    if (btnAlterar) {
+      btnAlterar.style.display = "none";
+    }
+
+    mostrarAviso("Alteração enviada. Aguardando aprovação.");
+    return;
+  }
+
+  liberarFormulario(form);
 }
 
 function mostrarAviso(texto) {
@@ -523,12 +538,17 @@ form.addEventListener("submit", async e => {
       body: JSON.stringify(payload)
     });
 
-    let r = null;
+    const text = await res.text();
+    let r = {};
+
     try {
-      r = await res.json();
+      r = text ? JSON.parse(text) : {};
     } catch {
-      throw new Error(`Resposta inválida do servidor (${res.status})`);
+      r = { error: text || `Resposta inválida do servidor (${res.status})` };
     }
+
+    console.log("status resposta:", res.status);
+    console.log("resposta backend:", r);
 
     if (!res.ok) {
       alert(r?.error || "Erro ao enviar dados.");
@@ -556,4 +576,3 @@ form.addEventListener("submit", async e => {
   }
 });
 });
-
