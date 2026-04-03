@@ -1989,3 +1989,11 @@ body.role-cliente .msg-modelo .msg-hora {
     max-width: 100%;
   }
 }
+
+#modalMidia {
+  z-index: 10000000 !important;
+}
+
+#modalMidia .modal-midia-box {
+  z-index: 10000001 !important;
+}
