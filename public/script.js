@@ -48,10 +48,10 @@ window.openAgeGate = function (action) {
 
   // 🔥 LOGIN NÃO PASSA PELO AGE GATE
   if (action === "login") {
-    closeAllModals();
-    document.getElementById("loginModal")?.classList.remove("hidden");
-    return;
-  }
+  closeAllModals();
+  openLoginModal();
+  return;
+}
 
   // 🔐 REGISTRO PASSA PELO AGE GATE
   pendingAction = action;
@@ -206,22 +206,26 @@ if (data.role === "modelo") {
   localStorage.setItem("modelo_id", data.modelo_id);
 }
 
-// 🔥 verifica se existe ação pós-login
-const action = localStorage.getItem("post_login_action");
+const actionRaw = localStorage.getItem("post_login_action");
+const redirect = localStorage.getItem("redirect_after_auth");
 
-if (action === "open_vip_payment") {
-  localStorage.removeItem("post_login_action");
+let action = null;
 
-
-  // pequeno delay para garantir DOM carregado
-  setTimeout(() => {
-    if (typeof window.abrirFluxoVIP === "function") {
-      window.abrirFluxoVIP();
-    }
-  }, 300);
-  } else {
-  window.location.href = "/feed.html";
+try {
+  action = actionRaw ? JSON.parse(actionRaw) : null;
+} catch (e) {
+  console.warn("post_login_action inválido:", actionRaw);
 }
+
+if (redirect) {
+  localStorage.removeItem("redirect_after_auth");
+  localStorage.removeItem("post_login_action");
+  localStorage.removeItem("post_register_action");
+  window.location.href = redirect;
+  return;
+}
+
+window.location.href = "/feed.html";
 }
 
 // ===============================
@@ -278,25 +282,24 @@ async function register() {
     localStorage.setItem("cliente_id", data.cliente_id);
   }
 
-  const action = localStorage.getItem("post_login_action");
+const actionRaw = localStorage.getItem("post_login_action");
+const redirect = localStorage.getItem("redirect_after_auth");
 
-if (action === "open_vip_payment") {
-  localStorage.removeItem("post_login_action");
+let action = null;
 
-  closeLoginModal?.();
-
-  setTimeout(() => {
-    if (typeof window.abrirFluxoVIP === "function") {
-      window.abrirFluxoVIP();
-    }
-  }, 300);
-
-} else {
-  // fluxo normal
-  window.location.href = "/feed.html";
-}
+try {
+  action = actionRaw ? JSON.parse(actionRaw) : null;
+} catch (e) {
+  console.warn("post_login_action inválido:", actionRaw);
 }
 
+if (redirect) {
+  window.location.href = redirect;
+  return;
+}
+
+window.location.href = "/feed.html";
+}
 
 // ===============================
 // MODAL LEGAL (TERMOS / POLÍTICAS)
