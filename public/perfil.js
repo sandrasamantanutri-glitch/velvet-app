@@ -308,7 +308,6 @@ iniciarVerificacaoVip();
 const btnEnviarFeed = document.getElementById("btnEnviarFeed");
 
 btnEnviarFeed?.addEventListener("click", async () => {
-
   const file = fileInput.files[0];
 
   if (!file) {
@@ -320,37 +319,41 @@ btnEnviarFeed?.addEventListener("click", async () => {
   formData.append("file", file);
   formData.append("tipo_conteudo", "feed");
 
-  try {
+  btnEnviarFeed.disabled = true;
+  btnEnviarFeed.textContent = "Enviando...";
+  atualizarBarraUpload("feed", 0);
 
-    const res = await fetch("/api/upload", {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer " + token
-      },
-      body: formData
+  try {
+    const res = await uploadComProgresso({
+      url: "/api/upload",
+      formData,
+      token,
+      tipo: "feed"
     });
 
-    const data = await res.json();
-
     if (!res.ok) {
-      alert(data.error || "Erro ao enviar");
+      alert(res.data?.error || "Erro ao enviar");
       return;
     }
 
+    atualizarBarraUpload("feed", 100);
     alert("Post publicado!");
 
     document.getElementById("popupUploadFeed").classList.add("hidden");
 
     fileInput.value = "";
     preview.innerHTML = "";
+    resetarBarraUpload("feed");
 
     carregarFeed();
-
   } catch (err) {
     console.error(err);
     alert("Erro no upload");
+    resetarBarraUpload("feed");
+  } finally {
+    btnEnviarFeed.disabled = false;
+    btnEnviarFeed.textContent = "Publicar no Feed";
   }
-
 });
 
 
@@ -384,6 +387,7 @@ filePremium?.addEventListener("change", () => {
 
 document.getElementById("btnEnviarPremium")
 ?.addEventListener("click", async () => {
+  const btnEnviarPremium = document.getElementById("btnEnviarPremium");
   const files = Array.from(filePremium.files || []);
   const descricao = document.getElementById("premiumTexto").value.trim();
   const preco = document.getElementById("premiumPreco").value;
@@ -406,32 +410,40 @@ document.getElementById("btnEnviarPremium")
     form.append("files", file);
   });
 
+  btnEnviarPremium.disabled = true;
+  btnEnviarPremium.textContent = "Enviando...";
+  atualizarBarraUpload("premium", 0);
+
   try {
-    const res = await fetch("/api/premium", {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer " + token
-      },
-      body: form
+    const res = await uploadComProgresso({
+      url: "/api/premium",
+      formData: form,
+      token,
+      tipo: "premium"
     });
 
-    const data = await res.json();
-
     if (!res.ok) {
-      alert(data.error || "Erro ao publicar");
+      alert(res.data?.error || "Erro ao publicar");
       return;
     }
+
+    atualizarBarraUpload("premium", 100);
 
     document.getElementById("popupUploadPremium").classList.add("hidden");
     filePremium.value = "";
     previewPremium.innerHTML = "";
     document.getElementById("premiumTexto").value = "";
     document.getElementById("premiumPreco").value = "";
+    resetarBarraUpload("premium");
 
     carregarPremium();
   } catch (err) {
     console.error("Erro publicar premium:", err);
     alert("Erro ao publicar premium");
+    resetarBarraUpload("premium");
+  } finally {
+    btnEnviarPremium.disabled = false;
+    btnEnviarPremium.textContent = "Publicar Premium";
   }
 });
 
@@ -524,67 +536,6 @@ if (capa) {
 
 }
 
-let modalLoadingTimer = null;
-let modalLoadingFakeProgress = 0;
-
-function mostrarLoadingModal() {
-  const loading = document.getElementById("modalLoading");
-  const fill = document.getElementById("modalLoadingFill");
-  const percent = document.getElementById("modalLoadingPercent");
-
-  if (!loading || !fill || !percent) return;
-
-  clearInterval(modalLoadingTimer);
-  modalLoadingFakeProgress = 0;
-
-  fill.style.width = "0%";
-  percent.textContent = "0%";
-  loading.classList.remove("hidden");
-
-  modalLoadingTimer = setInterval(() => {
-    if (modalLoadingFakeProgress >= 90) return;
-
-    modalLoadingFakeProgress += modalLoadingFakeProgress < 60 ? 8 : 3;
-
-    if (modalLoadingFakeProgress > 90) {
-      modalLoadingFakeProgress = 90;
-    }
-
-    fill.style.width = `${modalLoadingFakeProgress}%`;
-    percent.textContent = `${modalLoadingFakeProgress}%`;
-  }, 120);
-}
-
-function ocultarLoadingModal() {
-  const loading = document.getElementById("modalLoading");
-  const fill = document.getElementById("modalLoadingFill");
-  const percent = document.getElementById("modalLoadingPercent");
-
-  if (!loading || !fill || !percent) return;
-
-  clearInterval(modalLoadingTimer);
-
-  fill.style.width = "100%";
-  percent.textContent = "100%";
-
-  setTimeout(() => {
-    loading.classList.add("hidden");
-    fill.style.width = "0%";
-    percent.textContent = "0%";
-    modalLoadingFakeProgress = 0;
-  }, 180);
-}
-
-function erroLoadingModal() {
-  const fill = document.getElementById("modalLoadingFill");
-  const percent = document.getElementById("modalLoadingPercent");
-
-  clearInterval(modalLoadingTimer);
-
-  if (fill) fill.style.width = "100%";
-  if (percent) percent.textContent = "Erro ao carregar";
-}
-
 function abrirMidia(item) {
   const modal = document.getElementById("modalMidia");
   const img = document.getElementById("modalImg");
@@ -648,6 +599,7 @@ function abrirMidia(item) {
 
   function atualizarDots() {
     if (!dotsWrap) return;
+
     dotsWrap.querySelectorAll(".modal-dot").forEach((dot, i) => {
       dot.classList.toggle("active", i === index);
     });
@@ -678,7 +630,6 @@ function abrirMidia(item) {
     video.src = "";
     iframe.src = "";
 
-    mostrarLoadingModal();
     atualizarDots();
 
     if (ehVideo) {
@@ -686,39 +637,15 @@ function abrirMidia(item) {
         const partes = url.split("/");
         const videoId = partes[3];
 
-        iframe.onload = () => {
-          ocultarLoadingModal();
-        };
-
-        iframe.onerror = () => {
-          erroLoadingModal();
-        };
-
         iframe.src = `https://iframe.videodelivery.net/${videoId}?autoplay=true`;
         iframe.style.display = "block";
       } else {
-        video.onloadeddata = () => {
-          ocultarLoadingModal();
-          video.play().catch(() => {});
-        };
-
-        video.onerror = () => {
-          erroLoadingModal();
-        };
-
         video.src = url;
         video.style.display = "block";
         video.currentTime = 0;
+        video.play().catch(() => {});
       }
     } else {
-      img.onload = () => {
-        ocultarLoadingModal();
-      };
-
-      img.onerror = () => {
-        erroLoadingModal();
-      };
-
       img.src = url;
       img.style.display = "block";
     }
@@ -759,48 +686,50 @@ function abrirMidia(item) {
     }
   };
 
-  areaInteracao.onpointerdown = (e) => {
-    if (midias.length <= 1) return;
-    if (e.pointerType === "mouse" && e.button !== 0) return;
+  if (areaInteracao) {
+    areaInteracao.onpointerdown = (e) => {
+      if (midias.length <= 1) return;
+      if (e.pointerType === "mouse" && e.button !== 0) return;
 
-    houveArraste = false;
-    isDragging = true;
-    startX = e.clientX;
-    currentX = e.clientX;
-  };
-
-  areaInteracao.onpointermove = (e) => {
-    if (!isDragging) return;
-
-    currentX = e.clientX;
-    const deltaX = currentX - startX;
-
-    if (Math.abs(deltaX) > 10) {
-      houveArraste = true;
-    }
-  };
-
-  function finalizarArraste() {
-    if (!isDragging) return;
-
-    isDragging = false;
-
-    const deltaX = currentX - startX;
-    const threshold = Math.max(50, window.innerWidth * 0.12);
-
-    if (deltaX < -threshold) {
-      irProxima();
-    } else if (deltaX > threshold) {
-      irAnterior();
-    }
-
-    setTimeout(() => {
       houveArraste = false;
-    }, 60);
-  }
+      isDragging = true;
+      startX = e.clientX;
+      currentX = e.clientX;
+    };
 
-  areaInteracao.onpointerup = finalizarArraste;
-  areaInteracao.onpointercancel = finalizarArraste;
+    areaInteracao.onpointermove = (e) => {
+      if (!isDragging) return;
+
+      currentX = e.clientX;
+      const deltaX = currentX - startX;
+
+      if (Math.abs(deltaX) > 10) {
+        houveArraste = true;
+      }
+    };
+
+    function finalizarArraste() {
+      if (!isDragging) return;
+
+      isDragging = false;
+
+      const deltaX = currentX - startX;
+      const threshold = Math.max(50, window.innerWidth * 0.12);
+
+      if (deltaX < -threshold) {
+        irProxima();
+      } else if (deltaX > threshold) {
+        irAnterior();
+      }
+
+      setTimeout(() => {
+        houveArraste = false;
+      }, 60);
+    }
+
+    areaInteracao.onpointerup = finalizarArraste;
+    areaInteracao.onpointercancel = finalizarArraste;
+  }
 }
 
 function valorBRL(valor) {
@@ -1831,4 +1760,81 @@ async function excluirPremium(id, elemento) {
     console.error("Erro ao excluir premium:", err);
     alert("Erro ao excluir premium");
   }
+}
+
+function atualizarBarraUpload(tipo, percentual) {
+  const box = document.getElementById(
+    tipo === "feed" ? "uploadProgressBox" : "premiumProgressBox"
+  );
+  const fill = document.getElementById(
+    tipo === "feed" ? "uploadProgress" : "premiumProgress"
+  );
+  const text = document.getElementById(
+    tipo === "feed" ? "progressText" : "premiumProgressText"
+  );
+
+  if (!box || !fill || !text) return;
+
+  box.classList.remove("hidden");
+  fill.style.width = `${percentual}%`;
+  text.textContent = `${percentual}%`;
+}
+
+function resetarBarraUpload(tipo) {
+  const box = document.getElementById(
+    tipo === "feed" ? "uploadProgressBox" : "premiumProgressBox"
+  );
+  const fill = document.getElementById(
+    tipo === "feed" ? "uploadProgress" : "premiumProgress"
+  );
+  const text = document.getElementById(
+    tipo === "feed" ? "progressText" : "premiumProgressText"
+  );
+
+  if (!box || !fill || !text) return;
+
+  fill.style.width = "0%";
+  text.textContent = "0%";
+  box.classList.add("hidden");
+}
+
+function uploadComProgresso({ url, formData, token, tipo }) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+
+    xhr.open("POST", url, true);
+
+    if (token) {
+      xhr.setRequestHeader("Authorization", "Bearer " + token);
+    }
+
+    xhr.upload.addEventListener("progress", (e) => {
+      if (!e.lengthComputable) return;
+
+      const percentual = Math.round((e.loaded / e.total) * 100);
+      atualizarBarraUpload(tipo, percentual);
+    });
+
+    xhr.addEventListener("load", () => {
+      let data = {};
+
+      try {
+        data = JSON.parse(xhr.responseText || "{}");
+      } catch {
+        data = {};
+      }
+
+      resolve({
+        ok: xhr.status >= 200 && xhr.status < 300,
+        status: xhr.status,
+        data
+      });
+    });
+
+    xhr.addEventListener("error", () => {
+      reject(new Error("Erro de rede no upload"));
+    });
+
+    xhr.send(formData);
+  });
 }
