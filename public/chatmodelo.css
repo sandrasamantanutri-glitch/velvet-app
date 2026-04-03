@@ -354,7 +354,7 @@ h2 #modeloNome {
 
   border-radius: 10px;
   border: 1px solid #9E6BFF;
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .linha-topo {
@@ -489,7 +489,6 @@ h2 #modeloNome {
   gap: 6px;
   width: 100%;
   height: auto;
-  direction: rtl;
 }
 
 /* 5+ mídias → 4 por linha */

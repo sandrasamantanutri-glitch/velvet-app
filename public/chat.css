@@ -257,7 +257,7 @@ body.role-cliente .msg-cliente:has(.chat-conteudo) {
   border-radius: 30px;
   border: 1px solid #ddd;
   padding: 10px 14px;
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .btn-enviar1 {
@@ -686,7 +686,7 @@ body.role-cliente .msg-cliente:has(.chat-conteudo) {
   padding:12px;
   border-radius:10px;
   border:1px solid #ddd;
-  font-size:14px;
+  font-size:16px;
   text-align: center;
 }
 
@@ -1213,7 +1213,7 @@ font-weight:600;
 padding:10px;
 border-radius:8px;
 border:1px solid #ddd;
-font-size:14px;
+font-size:16px;
 width:100%;
 box-sizing:border-box;
 }
@@ -1799,7 +1799,7 @@ body.role-cliente .msg-modelo .msg-hora {
 .popup-pagamento input,
 .popup-pagamento select {
   height: 30px;
-  font-size: 12px;
+  font-size: 16px;
   border-radius: 10px;
 }
 
@@ -1906,7 +1906,7 @@ body.role-cliente .msg-modelo .msg-hora {
   padding:12px 14px;
   background:#faf7ff;
   color:#2e2340;
-  font-size:14px;
+  font-size:16px;
   box-sizing:border-box;
   transition:border-color .18s ease, box-shadow .18s ease, background .18s ease;
 }
