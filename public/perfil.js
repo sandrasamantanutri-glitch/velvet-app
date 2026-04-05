@@ -481,62 +481,295 @@ tabs.forEach(tab => {
 });
 
 
-async function carregarPerfil(){
+async function carregarPremium() {
+  const container = document.getElementById("midias-paid");
+  if (!container) return;
 
-  try{
+  container.innerHTML = "";
 
-    const res = await fetch(`/api/modelo/publico/${modelo_id}`);
+  try {
+    const headers = token
+      ? { Authorization: "Bearer " + token }
+      : {};
 
-    if(!res.ok) return;
+    const res = await fetch(`/api/modelo/publico/${modelo_id}/premium`, {
+      headers
+    });
 
-    const modelo = await res.json();
-
-    document.getElementById("profileName").textContent =
-      modelo.nome_exibicao || "";
-
-    document.getElementById("profileBio").textContent =
-      modelo.bio || "";
-
-      const avatar = document.getElementById("profileAvatar");
-const capa = document.getElementById("profileCapa");
-
-if (avatar) {
-  avatar.src = modelo.avatar || "/assets/avatar.png";
-  avatar.onerror = () => avatar.src = "/assets/avatar.png";
-}
-
-if (capa) {
-  capa.src = modelo.capa || "/assets/capa.png";
-  capa.onerror = () => capa.src = "/assets/capa.png";
-}
-
-    const localEl = document.getElementById("local-texto");
-
-    if(localEl){
-      localEl.textContent = modelo.local || "";
+    if (!res.ok) {
+      container.innerHTML =
+        "<p style='text-align:center;'>Não foi possível carregar o conteúdo premium.</p>";
+      return;
     }
 
-    const ig = document.getElementById("link-instagram");
-    const tt = document.getElementById("link-tiktok");
+    const midias = await res.json();
 
-    if(modelo.instagram){
-      ig.href = "https://instagram.com/" + modelo.instagram.replace("@","");
-      ig.style.display = "inline-block";
-    }else{
-      ig.style.display = "none";
+    if (!midias.length) {
+      container.innerHTML =
+        "<p style='text-align:center;'>Nenhum conteúdo premium ainda</p>";
+      return;
     }
 
-    if(modelo.tiktok){
-      tt.href = "https://tiktok.com/@" + modelo.tiktok.replace("@","");
-      tt.style.display = "inline-block";
-    }else{
-      tt.style.display = "none";
-    }
+    midias.forEach(item => {
+      const podeVer = podeVerPremiumLiberado(item);
+      const card = document.createElement("article");
+      card.className = "midia-card-premium";
 
-  }catch(e){
-    console.error("erro perfil",e);
+      if (!podeVer) {
+        card.classList.add("locked");
+      }
+
+      const criadoEm = item.criado_em || item.created_at || item.criadoem || null;
+
+      const avatar =
+        document.getElementById("profileAvatar")?.src || "/assets/avatar.png";
+
+      const nome =
+        document.getElementById("profileName")?.textContent?.trim() || "Perfil";
+
+      const descricao = escapeHtml(item.descricao || "");
+
+      let mediaPrincipal = "";
+
+      const mediasBase = item.midias?.length
+        ? item.midias
+        : [{
+            url: item.url || "",
+            thumbnail_url: item.thumbnail_url || "",
+            thumb_url: item.thumb_url || ""
+          }];
+
+      const medias = podeVer
+        ? mediasBase
+        : mediasBase.map(m => ({
+            ...m,
+            __somenteThumb: true
+          }));
+
+      const mediaHTML = medias.map((m, i) => {
+        const url = m.url || "";
+        const thumb = getThumbPremium(m, item);
+        const ehVideo = !m.__somenteThumb && ehVideoUrl(url);
+
+        if (i === 0) {
+          mediaPrincipal = ehVideo ? url : thumb;
+        }
+
+        return `
+          <div class="carousel-item">
+            ${
+              ehVideo
+                ? `
+                  <video
+                    src="${url}"
+                    poster="${thumb}"
+                    muted
+                    playsinline
+                    preload="none"
+                  ></video>
+                `
+                : `
+                  <img
+                    src="${thumb}"
+                    alt="Post premium"
+                    loading="eager"
+                    onerror="this.onerror=null;this.src='/assets/premium-locked.jpg';"
+                  >
+                `
+            }
+          </div>
+        `;
+      }).join("");
+
+      card.innerHTML = `
+        <div class="premium-header">
+          <img
+            class="premium-avatar"
+            src="${avatar}"
+            alt="Avatar da modelo"
+          >
+
+          <div class="premium-user">
+            <div class="premium-topline">
+              <span class="premium-username">${nome}</span>
+              <span class="premium-tempo">
+                ${criadoEm ? `${tempoAtras(criadoEm)} atrás` : ""}
+              </span>
+            </div>
+          </div>
+
+          ${
+            EH_DONA
+              ? `<button class="btn-excluir-premium" data-id="${item.id}" type="button">✕</button>`
+              : ""
+          }
+        </div>
+
+        <div class="premium-media">
+          <div class="carousel" data-index="0">
+            <div class="carousel-track">
+              ${mediaHTML}
+            </div>
+
+            ${medias.length > 1 ? `
+              <button class="carousel-arrow prev" type="button">‹</button>
+              <button class="carousel-arrow next" type="button">›</button>
+
+              <div class="carousel-dots">
+                ${medias.map((_, i) => `
+                  <button
+                    type="button"
+                    class="carousel-dot ${i === 0 ? "active" : ""}"
+                    data-index="${i}">
+                  </button>
+                `).join("")}
+              </div>
+            ` : ""}
+          </div>
+        </div>
+
+        <div class="premium-info">
+          <p class="premium-descricao">
+            <strong>${nome}:</strong> ${descricao}
+          </p>
+
+          <div class="premium-footer">
+            <span class="premium-preco">${valorBRL(item.preco)}</span>
+          </div>
+        </div>
+      `;
+
+      if (EH_DONA) {
+        const btnExcluir = card.querySelector(".btn-excluir-premium");
+
+        btnExcluir?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          excluirPremium(item.id, card);
+        });
+      }
+
+      const carousel = card.querySelector(".carousel");
+      const track = card.querySelector(".carousel-track");
+      const slides = Array.from(card.querySelectorAll(".carousel-item"));
+      const dots = Array.from(card.querySelectorAll(".carousel-dot"));
+      const prevBtn = card.querySelector(".carousel-arrow.prev");
+      const nextBtn = card.querySelector(".carousel-arrow.next");
+      const media = card.querySelector(".premium-media");
+
+      let houveArraste = false;
+
+      if (carousel && track && slides.length > 1) {
+        let currentIndex = 0;
+        let startX = 0;
+        let currentX = 0;
+        let isDragging = false;
+
+        function updateCarousel(index, animate = true) {
+          currentIndex = Math.max(0, Math.min(index, slides.length - 1));
+
+          track.style.transition = animate ? "transform .28s ease" : "none";
+          track.style.transform = `translateX(-${currentIndex * 100}%)`;
+
+          dots.forEach((dot, i) => {
+            dot.classList.toggle("active", i === currentIndex);
+          });
+        }
+
+        prevBtn?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          updateCarousel(currentIndex - 1);
+        });
+
+        nextBtn?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          updateCarousel(currentIndex + 1);
+        });
+
+        dots.forEach((dot, i) => {
+          dot.addEventListener("click", (e) => {
+            e.stopPropagation();
+            updateCarousel(i);
+          });
+        });
+
+        carousel.addEventListener("pointerdown", (e) => {
+          if (e.pointerType === "mouse" && e.button !== 0) return;
+
+          houveArraste = false;
+          isDragging = true;
+          startX = e.clientX;
+          currentX = e.clientX;
+          track.style.transition = "none";
+        });
+
+        carousel.addEventListener("pointermove", (e) => {
+          if (!isDragging) return;
+
+          currentX = e.clientX;
+          const deltaX = currentX - startX;
+
+          if (Math.abs(deltaX) > 8) {
+            houveArraste = true;
+          }
+
+          const base = -currentIndex * carousel.offsetWidth;
+          track.style.transform = `translateX(${base + deltaX}px)`;
+        });
+
+        function endDrag() {
+          if (!isDragging) return;
+
+          isDragging = false;
+          const deltaX = currentX - startX;
+          const threshold = carousel.offsetWidth * 0.18;
+
+          if (deltaX < -threshold && currentIndex < slides.length - 1) {
+            updateCarousel(currentIndex + 1);
+          } else if (deltaX > threshold && currentIndex > 0) {
+            updateCarousel(currentIndex - 1);
+          } else {
+            updateCarousel(currentIndex);
+          }
+
+          setTimeout(() => {
+            houveArraste = false;
+          }, 50);
+        }
+
+        carousel.addEventListener("pointerup", endDrag);
+        carousel.addEventListener("pointercancel", endDrag);
+        carousel.addEventListener("lostpointercapture", () => {
+          if (isDragging) endDrag();
+        });
+
+        updateCarousel(0);
+      }
+
+      if (media) {
+        media.onclick = () => {
+          if (houveArraste) return;
+
+          if (!podeVer) {
+            if (!tratarAcaoProtegidaPremium()) return;
+            abrirFluxoPremium(item);
+            return;
+          }
+
+          abrirMidia({
+            ...item,
+            url: mediaPrincipal || item.url || item.thumbnail_url || item.thumb_url
+          });
+        };
+      }
+
+      container.appendChild(card);
+    });
+
+  } catch (err) {
+    console.error("Erro carregar premium:", err);
+    container.innerHTML =
+      "<p style='text-align:center;'>Erro ao carregar premium</p>";
   }
-
 }
 
 function abrirMidia(item) {
@@ -1830,4 +2063,40 @@ function uploadComProgresso({ url, formData, token, tipo }) {
 
     xhr.send(formData);
   });
+}
+
+function ehVideoUrl(url = "") {
+  return (
+    url.includes(".mp4") ||
+    url.includes(".webm") ||
+    url.includes(".mov") ||
+    url.includes("videodelivery.net")
+  );
+}
+
+function getCloudflareVideoId(url = "") {
+  const match = url.match(/videodelivery\.net\/([^/?#]+)/);
+  return match?.[1] || null;
+}
+
+function getThumbPremium(media = {}, item = {}) {
+  const url = media.url || item.url || "";
+
+  const thumb =
+    media.thumbnail_url ||
+    media.thumb_url ||
+    item.thumbnail_url ||
+    item.thumb_url ||
+    "";
+
+  if (thumb) return thumb;
+
+  if (url.includes("videodelivery.net")) {
+    const videoId = getCloudflareVideoId(url);
+    if (videoId) {
+      return `https://videodelivery.net/${videoId}/thumbnails/thumbnail.jpg`;
+    }
+  }
+
+  return "/assets/premium-locked.jpg";
 }
