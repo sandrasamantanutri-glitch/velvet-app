@@ -1213,43 +1213,51 @@ async function carregarPremium() {
 
       let mediaPrincipal = "";
 
-      const medias = podeVer
-        ? (
-            item.midias?.length
-              ? item.midias
-              : [{
-                  url:
-                    item.url ||
-                    item.thumbnail_url ||
-                    item.thumb_url ||
-                    ""
-                }]
-          )
+      const mediasBase = item.midias?.length
+        ? item.midias
         : [{
-            url:
-              item.thumb_url ||
-              item.thumbnail_url ||
-              item.url ||
-              "/assets/premium-locked.jpg"
+            url: item.url || "",
+            thumbnail_url: item.thumbnail_url || "",
+            thumb_url: item.thumb_url || ""
           }];
+
+      const medias = podeVer
+        ? mediasBase
+        : mediasBase.map(m => ({
+            ...m,
+            __somenteThumb: true
+          }));
 
       const mediaHTML = medias.map((m, i) => {
         const url = m.url || "";
+        const thumb = getThumbPremium(m, item);
+        const ehVideo = !m.__somenteThumb && ehVideoUrl(url);
 
-        const ehVideo =
-          url.includes(".mp4") ||
-          url.includes(".webm") ||
-          url.includes(".mov") ||
-          url.includes("videodelivery.net");
-
-        if (i === 0) mediaPrincipal = url;
+        if (i === 0) {
+          mediaPrincipal = ehVideo ? url : thumb;
+        }
 
         return `
           <div class="carousel-item">
             ${
               ehVideo
-                ? `<video src="${url}" muted playsinline preload="metadata"></video>`
-                : `<img src="${url}" alt="Post premium">`
+                ? `
+                  <video
+                    src="${url}"
+                    poster="${thumb}"
+                    muted
+                    playsinline
+                    preload="none"
+                  ></video>
+                `
+                : `
+                  <img
+                    src="${thumb}"
+                    alt="Post premium"
+                    loading="eager"
+                    onerror="this.onerror=null;this.src='/assets/premium-locked.jpg';"
+                  >
+                `
             }
           </div>
         `;
@@ -1404,16 +1412,17 @@ async function carregarPremium() {
           } else {
             updateCarousel(currentIndex);
           }
-           setTimeout(() => {
-    houveArraste = false;
-  }, 50);
+
+          setTimeout(() => {
+            houveArraste = false;
+          }, 50);
         }
 
         carousel.addEventListener("pointerup", endDrag);
         carousel.addEventListener("pointercancel", endDrag);
         carousel.addEventListener("lostpointercapture", () => {
-  if (isDragging) endDrag();
-});
+          if (isDragging) endDrag();
+        });
 
         updateCarousel(0);
       }
@@ -1830,4 +1839,40 @@ function uploadComProgresso({ url, formData, token, tipo }) {
 
     xhr.send(formData);
   });
+}
+
+function ehVideoUrl(url = "") {
+  return (
+    url.includes(".mp4") ||
+    url.includes(".webm") ||
+    url.includes(".mov") ||
+    url.includes("videodelivery.net")
+  );
+}
+
+function getCloudflareVideoId(url = "") {
+  const match = url.match(/videodelivery\.net\/([^/?#]+)/);
+  return match?.[1] || null;
+}
+
+function getThumbPremium(media = {}, item = {}) {
+  const url = media.url || item.url || "";
+
+  const thumb =
+    media.thumbnail_url ||
+    media.thumb_url ||
+    item.thumbnail_url ||
+    item.thumb_url ||
+    "";
+
+  if (thumb) return thumb;
+
+  if (url.includes("videodelivery.net")) {
+    const videoId = getCloudflareVideoId(url);
+    if (videoId) {
+      return `https://videodelivery.net/${videoId}/thumbnails/thumbnail.jpg`;
+    }
+  }
+
+  return "/assets/premium-locked.jpg";
 }
