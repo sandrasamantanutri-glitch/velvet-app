@@ -197,6 +197,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   carregarHeader();  
 
   await carregarVapidPublicKey();
+  await sincronizarSubscriptionComServidor();
 
   atualizarUnreadClienteHeader();
   atualizarUnreadModeloHeader();
@@ -489,16 +490,23 @@ async function carregarVapidPublicKey() {
       return jaExiste;
     }
 
-    const API_BASE = "https://velvet-app.onrender.com";
-
-    const res = await fetch(`${API_BASE}/api/push/public-key`, {
+    let res = await fetch("/api/push/public-key", {
       method: "GET",
       headers: { Accept: "application/json" }
-    });
+    }).catch(() => null);
 
-    if (!res.ok) {
-      const texto = await res.text().catch(() => "");
-      console.error("Erro ao buscar VAPID public key:", res.status, texto);
+    if (!res || !res.ok) {
+      console.warn("[push] Falha na mesma origem, tentando fallback Render...");
+
+      res = await fetch("https://velvet-app.onrender.com/api/push/public-key", {
+        method: "GET",
+        headers: { Accept: "application/json" }
+      }).catch(() => null);
+    }
+
+    if (!res || !res.ok) {
+      const texto = await res?.text?.().catch(() => "");
+      console.error("Erro ao buscar VAPID public key:", res?.status, texto);
       return null;
     }
 
@@ -514,9 +522,68 @@ async function carregarVapidPublicKey() {
     localStorage.setItem("VAPID_PUBLIC_KEY", publicKey);
     localStorage.setItem("vapid_public_key", publicKey);
 
+    console.log("[push] VAPID public key carregada");
     return publicKey;
   } catch (err) {
     console.error("Erro ao carregar VAPID public key:", err);
     return null;
+  }
+}
+
+async function sincronizarSubscriptionComServidor() {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    if (!("serviceWorker" in navigator)) return;
+    if (!("PushManager" in window)) return;
+    if (!("Notification" in window)) return;
+
+    if (Notification.permission !== "granted") {
+      console.log("[push] Permissão ainda não concedida");
+      return;
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+    let subscription = await registration.pushManager.getSubscription();
+
+    if (!subscription) {
+      const publicKey = await carregarVapidPublicKey();
+
+      if (!publicKey) {
+        console.error("[push] Não foi possível obter a VAPID public key");
+        return;
+      }
+
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey)
+      });
+
+      console.log("[push] Nova subscription criada:", subscription?.endpoint);
+    } else {
+      console.log("[push] Subscription já existente:", subscription?.endpoint);
+    }
+
+    const res = await fetch("/api/notificacoes/inscrever", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token
+      },
+      body: JSON.stringify(subscription)
+    });
+
+    if (!res.ok) {
+      const erro = await res.text().catch(() => "");
+      console.error("[push] Erro ao sincronizar com servidor:", res.status, erro);
+      return;
+    }
+
+    localStorage.setItem("notificacoes_ativas", "true");
+    atualizarIconeNotificacoes(true);
+    console.log("[push] Subscription sincronizada com servidor");
+  } catch (err) {
+    console.error("Erro ao sincronizar subscription:", err);
   }
 }
