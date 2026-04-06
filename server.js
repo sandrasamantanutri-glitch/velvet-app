@@ -2255,10 +2255,6 @@ async function notificarNovaMensagem(userIdDestino, textoMensagem, url = "/inbox
       return;
     }
 
-    console.log("[push] notificarNovaMensagem chamada");
-    console.log("[push] userIdDestino:", userIdDestino);
-    console.log("[push] url:", url);
-
     const subRes = await db.query(
       `
       SELECT subscription_json
@@ -2269,32 +2265,24 @@ async function notificarNovaMensagem(userIdDestino, textoMensagem, url = "/inbox
       [userIdDestino]
     );
 
-    console.log("[push] subRes.rowCount:", subRes.rowCount);
-
     if (subRes.rowCount === 0) {
-      console.log("[push] Usuário sem subscription push:", userIdDestino);
+      console.log("Usuário sem subscription push:", userIdDestino);
       return;
     }
 
-    const rawSubscription = subRes.rows[0].subscription_json;
-    const subscription =
-      typeof rawSubscription === "string"
-        ? JSON.parse(rawSubscription)
-        : rawSubscription;
-
-    console.log("[push] endpoint:", subscription?.endpoint);
+    const subscription = subRes.rows[0].subscription_json;
 
     await enviarPush(subscription, textoMensagem, url);
-    console.log("[push] Push enviado para user_id:", userIdDestino);
+    console.log("Push enviado para user_id:", userIdDestino);
   } catch (err) {
-    console.error("[push] Erro ao enviar push:", err.statusCode, err.body || err.message || err);
+    console.error("Erro ao enviar push:", err);
 
     if (err.statusCode === 404 || err.statusCode === 410) {
       await db.query(
         `DELETE FROM push_subscriptions WHERE user_id = $1`,
         [userIdDestino]
       );
-      console.log("[push] Subscription removida por expiração:", userIdDestino);
+      console.log("Subscription removida por expiração:", userIdDestino);
     }
   }
 }
@@ -2771,16 +2759,13 @@ socket.on("sendMessage", async (data, callback) => {
       console.log("[push] modelo_id:", modeloIdNum);
       console.log("[push] userIdDestino:", userIdDestino);
 
-      const textoPush =
-  typeof text === "string" && text.trim()
-    ? text.trim().slice(0, 120)
-    : "Você recebeu uma nova mensagem";
-
-if (userIdDestino) {
-  await notificarNovaMensagem(userIdDestino, textoPush, pushUrl);
-} else {
-  console.log("[push] userIdDestino ausente");
-}
+      if (userIdDestino) {
+        await notificarNovaMensagem(
+          userIdDestino,
+          text.trim() ? text.trim().slice(0, 120) : "Você recebeu uma nova mensagem",
+          pushUrl
+        );
+      }
     } catch (pushErr) {
       console.error("Erro ao disparar push de mensagem:", pushErr);
     }
