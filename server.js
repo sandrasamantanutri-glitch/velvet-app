@@ -954,8 +954,8 @@ await client.query(
         `
         UPDATE pagamentos_pix
         SET status = 'pago',
-            pago_em = NOW()
-            pagarme_order_id = COALESCE(pagarme_order_id, $2),
+            pago_em = NOW(),
+            pagarme_order_id = COALESCE(pagarme_order_id, $2)
         WHERE id = $1
         `,
         [pagamento.id, orderId]
