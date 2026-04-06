@@ -489,11 +489,6 @@ async function carregarVapidPublicKey() {
       return jaExiste;
     }
 
-    const API_BASE =
-      window.location.hostname === "http://www.velvet.lat"
-        ? "https://velvet-app.onrender.com"
-        : "";
-
     const res = await fetch(`${API_BASE}/api/push/public-key`, {
       method: "GET",
       headers: { Accept: "application/json" }

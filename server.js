@@ -21,6 +21,8 @@ const fs = require("fs");
 const app = express();
 const FormData = require("form-data");
 const webpush = require("web-push");
+const vapidKeys = webpush.generateVAPIDKeys();
+console.log(vapidKeys);
 
 const os = require("os");
 const { exec } = require("child_process");
