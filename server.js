@@ -2311,51 +2311,6 @@ async function notificarNovaMensagem(userIdDestino, textoMensagem, url = "/inbox
   }
 }
 
-app.post("/api/push/teste", auth, async (req, res) => {
-  try {
-    console.log("[push teste] inicio para user:", req.user.id);
-
-    const subRes = await db.query(
-      `
-      SELECT id, subscription_json
-      FROM push_subscriptions
-      WHERE user_id = $1
-      `,
-      [req.user.id]
-    );
-
-    console.log("[push teste] rowCount:", subRes.rowCount);
-
-    if (!subRes.rowCount) {
-      return res.status(404).json({ error: "Sem subscription" });
-    }
-
-    for (const row of subRes.rows) {
-      const subscription =
-        typeof row.subscription_json === "string"
-          ? JSON.parse(row.subscription_json)
-          : row.subscription_json;
-
-      console.log("[push teste] enviando para:", row.id, subscription?.endpoint);
-
-      await enviarPush(subscription, "Teste de notificação", "/inbox.html");
-
-      console.log("[push teste] enviado com sucesso para:", row.id);
-    }
-
-    return res.json({ ok: true });
-  } catch (err) {
-    console.error("[push teste] statusCode:", err?.statusCode);
-    console.error("[push teste] body:", err?.body);
-    console.error("[push teste] message:", err?.message || err);
-
-    return res.status(500).json({
-      error: err?.body || err?.message || "Erro ao enviar push teste"
-    });
-  }
-});
-
-
 // function manutencaoClientes(req, res, next) {
 //   if (!MANUTENCAO_CLIENTES) return next();
 //   if (!req.user) return next();
@@ -2790,57 +2745,81 @@ socket.on("sendMessage", async (data, callback) => {
       created_at: message.created_at
     });
 
-    // 5️⃣ PUSH NOTIFICATION
-    try {
-      let userIdDestino = null;
-      let pushUrl = "/inbox.html";
+// 5️⃣ PUSH NOTIFICATION
+console.log("[sendMessage] chegou na etapa 5 de push");
 
-      if (sender === "cliente") {
-        const modeloDestinoRes = await db.query(
-          `
-          SELECT user_id
-          FROM modelos
-          WHERE id = $1
-          LIMIT 1
-          `,
-          [modeloIdNum]
-        );
+try {
+  console.log("[push] ===== INICIO BLOCO PUSH =====");
 
-        userIdDestino = modeloDestinoRes.rows[0]?.user_id || null;
-        pushUrl = "/inbox.html";
-      } else if (sender === "modelo") {
-        const clienteDestinoRes = await db.query(
-          `
-          SELECT user_id
-          FROM clientes
-          WHERE id = $1
-          LIMIT 1
-          `,
-          [clienteIdNum]
-        );
+  let userIdDestino = null;
+  let pushUrl = "/inbox.html";
 
-        userIdDestino = clienteDestinoRes.rows[0]?.user_id || null;
-        pushUrl = "/inboxc.html";
-      }
+  if (sender === "cliente") {
+    console.log("[push] Mensagem enviada por cliente. Buscando user_id da modelo...");
 
-      console.log("[push] sender:", sender);
-      console.log("[push] cliente_id:", clienteIdNum);
-      console.log("[push] modelo_id:", modeloIdNum);
-      console.log("[push] userIdDestino:", userIdDestino);
+    const modeloDestinoRes = await db.query(
+      `
+      SELECT user_id
+      FROM modelos
+      WHERE id = $1
+      LIMIT 1
+      `,
+      [modeloIdNum]
+    );
 
-      const textoPush =
-  typeof text === "string" && text.trim()
-    ? text.trim().slice(0, 120)
-    : "Você recebeu uma nova mensagem";
+    console.log("[push] modeloDestinoRes.rowCount:", modeloDestinoRes.rowCount);
+    console.log("[push] modeloDestinoRes.rows:", modeloDestinoRes.rows);
 
-if (userIdDestino) {
-  await notificarNovaMensagem(userIdDestino, textoPush, pushUrl);
-} else {
-  console.log("[push] userIdDestino ausente");
+    userIdDestino = modeloDestinoRes.rows[0]?.user_id || null;
+    pushUrl = "/inbox.html";
+
+  } else if (sender === "modelo") {
+    console.log("[push] Mensagem enviada por modelo. Buscando user_id do cliente...");
+
+    const clienteDestinoRes = await db.query(
+      `
+      SELECT user_id
+      FROM clientes
+      WHERE id = $1
+      LIMIT 1
+      `,
+      [clienteIdNum]
+    );
+
+    console.log("[push] clienteDestinoRes.rowCount:", clienteDestinoRes.rowCount);
+    console.log("[push] clienteDestinoRes.rows:", clienteDestinoRes.rows);
+
+    userIdDestino = clienteDestinoRes.rows[0]?.user_id || null;
+    pushUrl = "/inboxc.html";
+  } else {
+    console.log("[push] sender inesperado:", sender);
+  }
+
+  console.log("[push] sender:", sender);
+  console.log("[push] cliente_id:", clienteIdNum);
+  console.log("[push] modelo_id:", modeloIdNum);
+  console.log("[push] userIdDestino:", userIdDestino);
+  console.log("[push] pushUrl:", pushUrl);
+
+  const textoPush =
+    typeof text === "string" && text.trim()
+      ? text.trim().slice(0, 120)
+      : "Você recebeu uma nova mensagem";
+
+  console.log("[push] textoPush:", textoPush);
+
+  if (userIdDestino) {
+    console.log("[push] Chamando notificarNovaMensagem...");
+    await notificarNovaMensagem(userIdDestino, textoPush, pushUrl);
+    console.log("[push] notificarNovaMensagem finalizada");
+  } else {
+    console.log("[push] userIdDestino ausente");
+  }
+
+  console.log("[push] ===== FIM BLOCO PUSH =====");
+} catch (pushErr) {
+  console.error("[push] Erro ao disparar push de mensagem:", pushErr);
 }
-    } catch (pushErr) {
-      console.error("Erro ao disparar push de mensagem:", pushErr);
-    }
 
     // ✅ ACK PARA QUEM ENVIOU
     callback?.({
