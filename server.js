@@ -270,13 +270,13 @@ app.post("/api/webhook/pagarme", express.raw({ type: "*/*" }), async (req, res) 
       return res.status(200).send("ok");
     }
 
-    await client.query(
-      `
-      INSERT INTO pagarme_events (id, type)
-      VALUES ($1, $2)
-      `,
-      [eventId, event.type]
-    );
+await client.query(
+  `
+  INSERT INTO pagarme_events (id, type, payload, received_at)
+  VALUES ($1, $2, $3::jsonb, NOW())
+  `,
+  [eventId, event.type, JSON.stringify(event)]
+);
 
     console.log("Evento registrado em pagarme_events");
 
@@ -955,9 +955,10 @@ app.post("/api/webhook/pagarme", express.raw({ type: "*/*" }), async (req, res) 
         UPDATE pagamentos_pix
         SET status = 'pago',
             pago_em = NOW()
+            pagarme_order_id = COALESCE(pagarme_order_id, $2),
         WHERE id = $1
         `,
-        [pagamento.id]
+        [pagamento.id, orderId]
       );
     } else if (tabelaPagamento === "premium_unlocks") {
       console.log("premium_unlocks já foi atualizado no bloco premium");
@@ -7379,7 +7380,7 @@ app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
   const client = await db.connect();
 
   try {
-    const { modelo_id, cpf, telefone, aceitou_termos, fingerprint } = req.body;
+    const { modelo_id, cpf, telefone, aceitou_termos, aceitou_execucao_imediata, aceite_timestamp, versao_termos, fingerprint } = req.body;
     const userId = Number(req.user?.id || 0);
 
     console.log("User:", userId);
@@ -7388,6 +7389,25 @@ app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
     if (!aceitou_termos) {
       return res.status(400).json({ error: "É necessário aceitar os termos." });
     }
+
+    if (!aceitou_execucao_imediata) {
+  return res.status(400).json({
+    error: "É necessário declarar ciência sobre a execução imediata do serviço digital."
+  });
+}
+
+if (!aceite_timestamp) {
+  return res.status(400).json({
+    error: "Data de aceite obrigatória."
+  });
+}
+
+const dataAceite = new Date(aceite_timestamp);
+if (Number.isNaN(dataAceite.getTime())) {
+  return res.status(400).json({
+    error: "Data de aceite inválida."
+  });
+}
 
     if (!Number.isInteger(userId) || userId <= 0) {
       return res.status(401).json({ error: "Usuário inválido." });
@@ -7721,7 +7741,12 @@ app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
 
         aceite_ip: ip || "",
         fingerprint: fingerprint || "",
-        telefone: telefoneLimpo
+        telefone: telefoneLimpo,
+
+        aceitou_termos: String(!!aceitou_termos),
+        aceitou_execucao_imediata: String(!!aceitou_execucao_imediata),
+        aceite_timestamp: String(aceite_timestamp || ""),
+        versao_termos: String(versao_termos || "2026-04-06")
       }
     };
 
@@ -7784,10 +7809,14 @@ app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
         criado_em,
         aceite_ip,
         aceitou_termos,
+        aceitou_execucao_imediata,
+        aceite_timestamp,
+        versao_termos,
         cpf,
+        telefone,
         fingerprint
       )
-      VALUES ($1,$2,$3,'pendente','pagarme',$4,NOW(),$5,true,$6,$7)
+      VALUES ($1,$2,$3,'pendente','pagarme',$4,NOW(),$5,$6,$7,$8,$9,$10,$11,$12)
       `,
       [
         cliente_id,
@@ -7795,7 +7824,12 @@ app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
         amount / 100,
         order.id,
         ip,
+        !!aceitou_termos,
+        !!aceitou_execucao_imediata,
+        aceite_timestamp,
+        versao_termos || "2026-04-06",
         cpfLimpo,
+        telefoneLimpo,
         fingerprint || ""
       ]
     );
@@ -7851,7 +7885,7 @@ app.post("/api/pagamento/midia/pix", auth, async (req, res) => {
 
   try {
 
-    const { conteudo_id, cpf } = req.body;
+   const { conteudo_id, cpf, aceitou_termos, aceitou_execucao_imediata, aceite_timestamp, versao_termos, fingerprint } = req.body;
     const userId = req.user.id;
 
     const ip =
@@ -7871,6 +7905,31 @@ app.post("/api/pagamento/midia/pix", auth, async (req, res) => {
     if (!validarCPF(cpfLimpo)) {
       return res.status(400).json({ error: "CPF inválido." });
     }
+
+    if (!aceitou_termos) {
+  return res.status(400).json({
+    error: "É necessário aceitar os termos."
+  });
+}
+
+if (!aceitou_execucao_imediata) {
+  return res.status(400).json({
+    error: "É necessário declarar ciência sobre a execução imediata do conteúdo digital."
+  });
+}
+
+if (!aceite_timestamp) {
+  return res.status(400).json({
+    error: "Data de aceite obrigatória."
+  });
+}
+
+const dataAceite = new Date(aceite_timestamp);
+if (Number.isNaN(dataAceite.getTime())) {
+  return res.status(400).json({
+    error: "Data de aceite inválida."
+  });
+}
 
     /* ================================
        CLIENTE
@@ -8010,9 +8069,15 @@ app.post("/api/pagamento/midia/pix", auth, async (req, res) => {
           modelo_id,
           valor_base: precoNum,
           taxa_transacao: taxaTransacao,
-          taxa_plataforma: taxaPlataforma
+          taxa_plataforma: taxaPlataforma,
+          valor_total: String(valorTotal),
+          aceite_ip: String(ip || ""),
+          fingerprint: String(fingerprint || ""),
+          aceitou_termos: String(!!aceitou_termos),
+          aceitou_execucao_imediata: String(!!aceitou_execucao_imediata),
+          aceite_timestamp: String(aceite_timestamp || ""),
+          versao_termos: String(versao_termos || "2026-04-06")
         }
-
       },
       {
         headers: {
@@ -8059,19 +8124,49 @@ app.post("/api/pagamento/midia/pix", auth, async (req, res) => {
        SALVAR PIX
     ================================ */
 
-    await client.query(
-      `INSERT INTO pagamentos_pix
-      (cliente_id, modelo_id, message_id, qr_code, valor, status, gateway, pagarme_order_id, criado_em, expires_at)
-      VALUES ($1,$2,$3,$4,$5,'pendente','pagarme',$6,NOW(),NOW() + INTERVAL '15 minutes')`,
-      [
-        cliente_id,
-        modelo_id,
-        conteudo_id,
-        pixData.qr_code,
-        valorTotal,
-        order.id
-      ]
-    );
+await client.query(
+  `
+  INSERT INTO pagamentos_pix
+  (
+    cliente_id,
+    modelo_id,
+    message_id,
+    qr_code,
+    valor,
+    status,
+    gateway,
+    pagarme_order_id,
+    criado_em,
+    expires_at,
+    aceite_ip,
+    aceitou_termos,
+    aceitou_execucao_imediata,
+    aceite_timestamp,
+    versao_termos,
+    cpf,
+    fingerprint
+  )
+  VALUES (
+    $1,$2,$3,$4,$5,'pendente','pagarme',$6,NOW(),NOW() + INTERVAL '15 minutes',
+    $7,$8,$9,$10,$11,$12,$13
+  )
+  `,
+  [
+    cliente_id,
+    modelo_id,
+    conteudo_id,
+    pixData.qr_code,
+    valorTotal,
+    order.id,
+    ip || null,
+    !!aceitou_termos,
+    !!aceitou_execucao_imediata,
+    aceite_timestamp,
+    versao_termos || "2026-04-06",
+    cpfLimpo,
+    fingerprint || ""
+  ]
+);
 
     await client.query("COMMIT");
 
@@ -8115,6 +8210,9 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
       cpf,
       telefone,
       aceitou_termos,
+       aceitou_execucao_imediata,
+       aceite_timestamp,
+       versao_termos,
       fingerprint,
       apenas_intent
     } = req.body || {};
@@ -8166,6 +8264,28 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
       await client.query("ROLLBACK");
       return res.status(400).json({ error: "Você precisa aceitar os termos." });
     }
+
+    if (!aceitou_execucao_imediata) {
+  await client.query("ROLLBACK");
+  return res.status(400).json({
+    error: "Você precisa declarar ciência sobre a execução imediata do serviço digital."
+  });
+}
+
+if (!aceite_timestamp) {
+  await client.query("ROLLBACK");
+  return res.status(400).json({
+    error: "Data de aceite obrigatória."
+  });
+}
+
+const dataAceite = new Date(aceite_timestamp);
+if (Number.isNaN(dataAceite.getTime())) {
+  await client.query("ROLLBACK");
+  return res.status(400).json({
+    error: "Data de aceite inválida."
+  });
+}
 
     if (!apenas_intent) {
       await client.query("ROLLBACK");
@@ -8421,7 +8541,10 @@ const paymentIntent = await stripe.paymentIntents.create({
         aceite_ip: ip || "",
         fingerprint: fingerprint || "",
         telefone: telefoneLimpo,
-        aceitou_termos: aceitou_termos ? "true" : "false"
+        aceitou_termos: aceitou_termos ? "true" : "false",
+        aceitou_execucao_imediata: aceitou_execucao_imediata ? "true" : "false",
+        aceite_timestamp: String(aceite_timestamp || ""),
+        versao_termos: String(versao_termos || "2026-04-06")
       }
     });
 
@@ -8437,57 +8560,85 @@ const paymentIntent = await stripe.paymentIntents.create({
     /* =====================================================
        REGISTRAR PAGAMENTO LOCAL
     ===================================================== */
-    await client.query(
-      `
-      INSERT INTO pagamentos_cartao
-      (
-        cliente_id,
-        modelo_id,
-        gateway,
-        gateway_payment_id,
-        stripe_payment_intent_id,
-        valor,
-        tipo,
-        status,
-        created_at,
-        updated_at
-      )
-      VALUES ($1, $2, 'stripe', $3, $4, $5, $6, $7, NOW(), NOW())
-      `,
-      [
-        cliente_id,
-        modeloIdNum,
-        paymentIntent.id,
-        paymentIntent.id,
-        valorTotal,
-        "vip",
-        statusLocal
-      ]
-    );
+await client.query(
+  `
+  INSERT INTO pagamentos_cartao
+  (
+    cliente_id,
+    modelo_id,
+    gateway,
+    gateway_payment_id,
+    stripe_payment_intent_id,
+    valor,
+    tipo,
+    status,
+    cpf,
+    telefone,
+    aceite_ip,
+    aceitou_termos,
+    aceitou_execucao_imediata,
+    aceite_timestamp,
+    versao_termos,
+    fingerprint,
+    created_at,
+    updated_at
+  )
+  VALUES (
+    $1, $2, 'stripe', $3, $4, $5, $6, $7,
+    $8, $9, $10, $11, $12, $13, $14, $15,
+    NOW(), NOW()
+  )
+  `,
+  [
+    cliente_id,
+    modeloIdNum,
+    paymentIntent.id,
+    paymentIntent.id,
+    valorTotal,
+    "vip",
+    statusLocal,
+    cpfLimpo,
+    telefoneLimpo,
+    ip,
+    !!aceitou_termos,
+    !!aceitou_execucao_imediata,
+    aceite_timestamp,
+    versao_termos || "2026-04-06",
+    fingerprint || null
+  ]
+);
 
-    await client.query(
-      `
-      INSERT INTO pagamento_tentativas
-      (
-        cliente_id,
-        metodo,
-        fingerprint_pagamento,
-        status,
-        payment_intent_id,
-        cpf,
-        ip
-      )
-      VALUES ($1, 'cartao', $2, $3, $4, $5, $6)
-      `,
-      [
-        cliente_id,
-        fingerprint || null,
-        stripeStatusRaw,
-        paymentIntent.id,
-        cpfLimpo,
-        ip
-      ]
-    );
+await client.query(
+  `
+  INSERT INTO pagamento_tentativas
+  (
+    cliente_id,
+    metodo,
+    fingerprint_pagamento,
+    status,
+    payment_intent_id,
+    cpf,
+    ip,
+    aceitou_termos,
+    aceitou_execucao_imediata,
+    aceite_timestamp,
+    versao_termos
+  )
+  VALUES ($1, 'cartao', $2, $3, $4, $5, $6, $7, $8, $9, $10)
+  `,
+  [
+    cliente_id,
+    fingerprint || null,
+    stripeStatusRaw,
+    paymentIntent.id,
+    cpfLimpo,
+    ip,
+    !!aceitou_termos,
+    !!aceitou_execucao_imediata,
+    aceite_timestamp,
+    versao_termos || "2026-04-06"
+  ]
+);
 
     await client.query("COMMIT");
 
@@ -8583,7 +8734,10 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
       cpf,
       apenas_intent,
       telefone,
-      aceitou_termos
+      aceitou_termos,
+      aceitou_execucao_imediata,
+      aceite_timestamp,
+      versao_termos
     } = req.body || {};
 
     const userId = Number(req.user?.id || 0);
@@ -8623,6 +8777,25 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
     if (!aceitou_termos) {
       return res.status(400).json({ error: "Você precisa aceitar os termos." });
     }
+
+    if (!aceitou_execucao_imediata) {
+  return res.status(400).json({
+    error: "Você precisa declarar ciência sobre a execução imediata do conteúdo digital."
+  });
+}
+
+if (!aceite_timestamp) {
+  return res.status(400).json({
+    error: "Data de aceite obrigatória."
+  });
+}
+
+const dataAceite = new Date(aceite_timestamp);
+if (Number.isNaN(dataAceite.getTime())) {
+  return res.status(400).json({
+    error: "Data de aceite inválida."
+  });
+}
 
     if (!apenas_intent) {
       return res.status(400).json({
@@ -8804,7 +8977,10 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
         cpf: cpfLimpo,
         fingerprint: fingerprint || "",
         telefone: telefoneLimpo,
-        aceitou_termos: aceitou_termos ? "true" : "false"
+        aceitou_termos: aceitou_termos ? "true" : "false",
+         aceitou_execucao_imediata: aceitou_execucao_imediata ? "true" : "false",
+         aceite_timestamp: String(aceite_timestamp || ""),
+         versao_termos: String(versao_termos || "2026-04-06")
       }
     });
 
@@ -8820,76 +8996,108 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
     /* =====================================================
        REGISTRAR PAGAMENTO LOCAL
     ===================================================== */
-    await client.query(
-      `
-      INSERT INTO pagamentos_cartao
-      (
-        cliente_id,
-        modelo_id,
-        conteudo_id,
-        gateway,
-        gateway_payment_id,
-        stripe_payment_intent_id,
-        valor,
-        tipo,
-        status,
-        created_at,
-        updated_at
-      )
-      VALUES ($1, $2, $3, 'stripe', $4, $5, $6, $7, $8, NOW(), NOW())
-      `,
-      [
-        cliente_id,
-        modelo_id,
-        conteudoId,
-        paymentIntent.id,
-        paymentIntent.id,
-        total,
-        "conteudo",
-        statusLocal
-      ]
-    );
+await client.query(
+  `
+  INSERT INTO pagamentos_cartao
+  (
+    cliente_id,
+    modelo_id,
+    conteudo_id,
+    gateway,
+    gateway_payment_id,
+    stripe_payment_intent_id,
+    valor,
+    tipo,
+    status,
+    cpf,
+    telefone,
+    aceite_ip,
+    aceitou_termos,
+    aceitou_execucao_imediata,
+    aceite_timestamp,
+    versao_termos,
+    fingerprint,
+    created_at,
+    updated_at
+  )
+  VALUES (
+    $1, $2, $3, 'stripe', $4, $5, $6, $7, $8,
+    $9, $10, $11, $12, $13, $14, $15, $16,
+    NOW(), NOW()
+  )
+  `,
+  [
+    cliente_id,
+    modelo_id,
+    conteudoId,
+    paymentIntent.id,
+    paymentIntent.id,
+    total,
+    "conteudo",
+    statusLocal,
+    cpfLimpo,
+    telefoneLimpo,
+    ip,
+    !!aceitou_termos,
+    !!aceitou_execucao_imediata,
+    aceite_timestamp,
+    versao_termos || "2026-04-06",
+    fingerprint || null
+  ]
+);
 
-    await client.query(
-      `
-      INSERT INTO pagamento_tentativas
-      (
-        cliente_id,
-        metodo,
-        fingerprint_pagamento,
-        status,
-        payment_intent_id,
-        conteudo_id,
-        cpf,
-        ip
-      )
-      VALUES ($1, 'cartao', $2, $3, $4, $5, $6, $7)
-      `,
-      [
-        cliente_id,
-        fingerprint || null,
-        stripeStatusRaw,
-        paymentIntent.id,
-        conteudoId,
-        cpfLimpo,
-        ip
-      ]
-    );
+await client.query(
+  `
+  INSERT INTO pagamento_tentativas
+  (
+    cliente_id,
+    metodo,
+    fingerprint_pagamento,
+    status,
+    payment_intent_id,
+    conteudo_id,
+    cpf,
+    ip,
+    aceitou_termos,
+    aceitou_execucao_imediata,
+    aceite_timestamp,
+    versao_termos
+  )
+  VALUES ($1, 'cartao', $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+  `,
+  [
+    cliente_id,
+    fingerprint || null,
+    stripeStatusRaw,
+    paymentIntent.id,
+    conteudoId,
+    cpfLimpo,
+    ip,
+    !!aceitou_termos,
+    !!aceitou_execucao_imediata,
+    aceite_timestamp,
+    versao_termos || "2026-04-06"
+  ]
+);
 
     await client.query("COMMIT");
 
-    return res.json({
-      ok: true,
-      apenas_intent: true,
-      payment_intent_id: paymentIntent.id,
-      client_secret: paymentIntent.client_secret || null,
-      status: statusLocal,
-      raw_status: stripeStatusRaw,
-      requires_action: stripeStatusRaw === "requires_action",
-      total,
-      valorBase,
-      taxaTransacao,
-      taxaPlataforma
+return res.json({
+  ok: true,
+  apenas_intent: true,
+  payment_intent_id: paymentIntent.id,
+  client_secret: paymentIntent.client_secret || null,
+  status: statusLocal,
+  raw_status: stripeStatusRaw,
+  requires_action: stripeStatusRaw === "requires_action",
+  total,
+  valorBase,
+  taxaTransacao,
+  taxaPlataforma,
+  aceitou_termos: !!aceitou_termos,
+  aceitou_execucao_imediata: !!aceitou_execucao_imediata,
+  aceite_timestamp,
+  versao_termos: versao_termos || "2026-04-06"
     });
 
   } catch (err) {
@@ -8918,30 +9126,38 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
 
     try {
       if (client && cliente_id && req.body?.fingerprint) {
-        await client.query(
-          `
-          INSERT INTO pagamento_tentativas
-          (
-            cliente_id,
-            metodo,
-            fingerprint_pagamento,
-            status,
-            conteudo_id,
-            cpf,
-            ip
-          )
-          VALUES ($1, 'cartao', $2, 'recusado', $3, $4, $5)
-          `,
-          [
-            cliente_id,
-            req.body.fingerprint,
-            Number(req.body?.conteudo_id || 0) || null,
-            req.body?.cpf ? String(req.body.cpf).replace(/\D/g, "") : null,
-            req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
-              req.socket?.remoteAddress ||
-              null
-          ]
-        );
+await client.query(
+  `
+  INSERT INTO pagamento_tentativas
+  (
+    cliente_id,
+    metodo,
+    fingerprint_pagamento,
+    status,
+    conteudo_id,
+    cpf,
+    ip,
+    aceitou_termos,
+    aceitou_execucao_imediata,
+    aceite_timestamp,
+    versao_termos
+  )
+  VALUES ($1, 'cartao', $2, 'recusado', $3, $4, $5, $6, $7, $8, $9)
+  `,
+  [
+    cliente_id,
+    req.body.fingerprint,
+    Number(req.body?.conteudo_id || 0) || null,
+    req.body?.cpf ? String(req.body.cpf).replace(/\D/g, "") : null,
+    req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+      req.socket?.remoteAddress ||
+      null,
+    !!req.body?.aceitou_termos,
+    !!req.body?.aceitou_execucao_imediata,
+    req.body?.aceite_timestamp || null,
+    req.body?.versao_termos || "2026-04-06"
+  ]
+);
       }
     } catch (logErr) {
       console.error("❌ Erro ao registrar tentativa recusada:", logErr.message);
@@ -8975,13 +9191,16 @@ app.post("/api/pagamento/premium/pix", authCliente, async (req, res) => {
   const client = await db.connect();
 
   try {
-    const {
-      premium_post_id,
-      cpf,
-      telefone,
-      aceitou_termos,
-      fingerprint
-    } = req.body;
+const {
+  premium_post_id,
+  cpf,
+  telefone,
+  aceitou_termos,
+  aceitou_execucao_imediata,
+  aceite_timestamp,
+  versao_termos,
+  fingerprint
+} = req.body;
 
     const userId = Number(req.user?.id || 0);
 
@@ -8991,6 +9210,25 @@ app.post("/api/pagamento/premium/pix", authCliente, async (req, res) => {
     if (!aceitou_termos) {
       return res.status(400).json({ error: "É necessário aceitar os termos." });
     }
+
+    if (!aceitou_execucao_imediata) {
+  return res.status(400).json({
+    error: "É necessário declarar ciência sobre a execução imediata do conteúdo digital."
+  });
+}
+
+if (!aceite_timestamp) {
+  return res.status(400).json({
+    error: "Data de aceite obrigatória."
+  });
+}
+
+const dataAceite = new Date(aceite_timestamp);
+if (Number.isNaN(dataAceite.getTime())) {
+  return res.status(400).json({
+    error: "Data de aceite inválida."
+  });
+}
 
     if (!Number.isInteger(userId) || userId <= 0) {
       return res.status(401).json({ error: "Usuário inválido." });
@@ -9380,22 +9618,28 @@ app.post("/api/pagamento/premium/pix", authCliente, async (req, res) => {
           pix: { expires_in: 3600 }
         }
       ],
-      metadata: {
-        tipo: "premium",
-        premium_post_id: String(premiumPostIdNum),
-        cliente_id: String(cliente_id),
-        modelo_id: String(modeloIdNum),
+metadata: {
+  tipo: "premium",
+  premium_post_id: String(premiumPostIdNum),
+  cliente_id: String(cliente_id),
+  modelo_id: String(modeloIdNum),
 
-        valor_base: String(valorBase),
-        taxa_transacao: String(taxaTransacao),
-        taxa_plataforma: String(taxaPlataforma),
-        valor_total: String(valorTotal),
-        taxa_gateway: "0.15",
+  valor_base: String(valorBase),
+  taxa_transacao: String(taxaTransacao),
+  taxa_plataforma: String(taxaPlataforma),
+  valor_total: String(valorTotal),
+  taxa_gateway: "0.15",
 
-        aceite_ip: ip || "",
-        fingerprint: fingerprint || "",
-        telefone: telefoneLimpo
-      }
+  aceite_ip: ip || "",
+  fingerprint: fingerprint || "",
+  telefone: telefoneLimpo,
+  cpf: cpfLimpo,
+
+  aceitou_termos: String(!!aceitou_termos),
+  aceitou_execucao_imediata: String(!!aceitou_execucao_imediata),
+  aceite_timestamp: String(aceite_timestamp || ""),
+  versao_termos: String(versao_termos || "2026-04-06")
+}
     };
 
     console.log("Payload enviado ao pagarme:");
@@ -9461,6 +9705,14 @@ await client.query(
     pagarme_order_id,
     qr_code_url,
     pacote_ref,
+    aceite_ip,
+    aceitou_termos,
+    aceitou_execucao_imediata,
+    aceite_timestamp,
+    versao_termos,
+    cpf,
+    telefone,
+    fingerprint,
     created_at,
     updated_at
   )
@@ -9470,6 +9722,7 @@ await client.query(
     'pendente','pix',
     $4,$5,$6,$7,
     'pagarme',$8,$9,$10,
+    $11,$12,$13,$14,$15,$16,$17,$18,
     NOW(),NOW()
   )
   ON CONFLICT (premium_post_id, cliente_id)
@@ -9485,6 +9738,14 @@ await client.query(
     pagarme_order_id = EXCLUDED.pagarme_order_id,
     qr_code_url = EXCLUDED.qr_code_url,
     pacote_ref = EXCLUDED.pacote_ref,
+    aceite_ip = EXCLUDED.aceite_ip,
+    aceitou_termos = EXCLUDED.aceitou_termos,
+    aceitou_execucao_imediata = EXCLUDED.aceitou_execucao_imediata,
+    aceite_timestamp = EXCLUDED.aceite_timestamp,
+    versao_termos = EXCLUDED.versao_termos,
+    cpf = EXCLUDED.cpf,
+    telefone = EXCLUDED.telefone,
+    fingerprint = EXCLUDED.fingerprint,
     updated_at = NOW()
   `,
   [
@@ -9497,7 +9758,15 @@ await client.query(
     valorTotal,
     order.id,
     pixData.qr_code_url || null,
-    `premium_${premiumPostIdNum}_${cliente_id}`
+    `premium_${premiumPostIdNum}_${cliente_id}`,
+    ip || null,
+    !!aceitou_termos,
+    !!aceitou_execucao_imediata,
+    aceite_timestamp,
+    versao_termos || "2026-04-06",
+    cpfLimpo,
+    telefoneLimpo,
+    fingerprint || ""
   ]
 );
 
@@ -9570,14 +9839,17 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
     client = await db.connect();
     console.log("✅ db.connect OK");
 
-    const {
-      premium_post_id,
-      fingerprint,
-      cpf,
-      aceitou_termos,
-      telefone,
-      apenas_intent
-    } = req.body || {};
+   const {
+  premium_post_id,
+  fingerprint,
+  cpf,
+  aceitou_termos,
+  aceitou_execucao_imediata,
+  aceite_timestamp,
+  versao_termos,
+  telefone,
+  apenas_intent
+} = req.body || {};
 
     const userId = Number(req.user?.id || 0);
 
@@ -9588,6 +9860,25 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
     if (!aceitou_termos) {
       return res.status(400).json({ error: "É necessário aceitar os termos." });
     }
+
+    if (!aceitou_execucao_imediata) {
+  return res.status(400).json({
+    error: "É necessário declarar ciência sobre a execução imediata do conteúdo digital."
+  });
+}
+
+if (!aceite_timestamp) {
+  return res.status(400).json({
+    error: "Data de aceite obrigatória."
+  });
+}
+
+const dataAceite = new Date(aceite_timestamp);
+if (Number.isNaN(dataAceite.getTime())) {
+  return res.status(400).json({
+    error: "Data de aceite inválida."
+  });
+}
 
     if (!premium_post_id || !Number.isInteger(Number(premium_post_id))) {
       return res.status(400).json({ error: "premium_post_id inválido" });
@@ -9841,22 +10132,25 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
       receipt_email: String(email).trim().toLowerCase(),
       description: descricao || `Premium Velvet #${premium_id}`,
       metadata: {
-        tipo: "premium",
-        metodo_pagamento: "cartao",
-        premium_post_id: String(premium_id),
-        cliente_id: String(cliente_id),
-        modelo_id: String(modelo_id),
-        valor_base: String(valorBase),
-        taxa_transacao: String(taxaTransacao),
-        taxa_plataforma: String(taxaPlataforma),
-        valor_total: String(total),
-        taxa_gateway: "0.15",
-        aceite_ip: ip || "",
-        fingerprint: fingerprint || "",
-        telefone: telefoneLimpo,
-        cpf: cpfLimpo,
-        aceitou_termos: aceitou_termos ? "true" : "false"
-      }
+  tipo: "premium",
+  metodo_pagamento: "cartao",
+  premium_post_id: String(premium_id),
+  cliente_id: String(cliente_id),
+  modelo_id: String(modelo_id),
+  valor_base: String(valorBase),
+  taxa_transacao: String(taxaTransacao),
+  taxa_plataforma: String(taxaPlataforma),
+  valor_total: String(total),
+  taxa_gateway: "0.15",
+  aceite_ip: ip || "",
+  fingerprint: fingerprint || "",
+  telefone: telefoneLimpo,
+  cpf: cpfLimpo,
+  aceitou_termos: aceitou_termos ? "true" : "false",
+  aceitou_execucao_imediata: aceitou_execucao_imediata ? "true" : "false",
+  aceite_timestamp: String(aceite_timestamp || ""),
+  versao_termos: String(versao_termos || "2026-04-06")
+}
     });
     console.log("✅ paymentIntent criado:", paymentIntent.id);
 
@@ -9873,60 +10167,86 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
        REGISTRAR PAGAMENTO LOCAL
     ===================================================== */
     console.log("✅ antes insert premium_unlocks");
-    await client.query(
-      `
-      INSERT INTO premium_unlocks
-      (
-        premium_post_id,
-        cliente_id,
-        modelo_id,
-        status,
-        metodo_pagamento,
-        valor_base,
-        taxa_transacao,
-        taxa_plataforma,
-        valor_total,
-        gateway,
-        stripe_payment_intent_id,
-        pacote_ref,
-        created_at,
-        updated_at
-      )
-      VALUES
-      (
-        $1,$2,$3,$4,'cartao',$5,$6,$7,$8,
-        'stripe',$9,$10,NOW(),NOW()
-      )
-      ON CONFLICT (premium_post_id, cliente_id)
-      DO UPDATE SET
-        modelo_id = EXCLUDED.modelo_id,
-        status = EXCLUDED.status,
-        metodo_pagamento = 'cartao',
-        valor_base = EXCLUDED.valor_base,
-        taxa_transacao = EXCLUDED.taxa_transacao,
-        taxa_plataforma = EXCLUDED.taxa_plataforma,
-        valor_total = EXCLUDED.valor_total,
-        gateway = EXCLUDED.gateway,
-        stripe_payment_intent_id = EXCLUDED.stripe_payment_intent_id,
-        pacote_ref = EXCLUDED.pacote_ref,
-        updated_at = NOW()
-      `,
-      [
-        premium_id,
-        cliente_id,
-        modelo_id,
-        statusLocal,
-        valorBase,
-        taxaTransacao,
-        taxaPlataforma,
-        total,
-        paymentIntent.id,
-        `premium_${premium_id}_${cliente_id}`
-      ]
-    );
+await client.query(
+  `
+  INSERT INTO premium_unlocks
+  (
+    premium_post_id,
+    cliente_id,
+    modelo_id,
+    status,
+    metodo_pagamento,
+    valor_base,
+    taxa_transacao,
+    taxa_plataforma,
+    valor_total,
+    gateway,
+    stripe_payment_intent_id,
+    pacote_ref,
+    aceite_ip,
+    aceitou_termos,
+    aceitou_execucao_imediata,
+    aceite_timestamp,
+    versao_termos,
+    cpf,
+    telefone,
+    fingerprint,
+    created_at,
+    updated_at
+  )
+  VALUES
+  (
+    $1,$2,$3,$4,'cartao',$5,$6,$7,$8,
+    'stripe',$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,
+    NOW(),NOW()
+  )
+  ON CONFLICT (premium_post_id, cliente_id)
+  DO UPDATE SET
+    modelo_id = EXCLUDED.modelo_id,
+    status = EXCLUDED.status,
+    metodo_pagamento = 'cartao',
+    valor_base = EXCLUDED.valor_base,
+    taxa_transacao = EXCLUDED.taxa_transacao,
+    taxa_plataforma = EXCLUDED.taxa_plataforma,
+    valor_total = EXCLUDED.valor_total,
+    gateway = EXCLUDED.gateway,
+    stripe_payment_intent_id = EXCLUDED.stripe_payment_intent_id,
+    pacote_ref = EXCLUDED.pacote_ref,
+    aceite_ip = EXCLUDED.aceite_ip,
+    aceitou_termos = EXCLUDED.aceitou_termos,
+    aceitou_execucao_imediata = EXCLUDED.aceitou_execucao_imediata,
+    aceite_timestamp = EXCLUDED.aceite_timestamp,
+    versao_termos = EXCLUDED.versao_termos,
+    cpf = EXCLUDED.cpf,
+    telefone = EXCLUDED.telefone,
+    fingerprint = EXCLUDED.fingerprint,
+    updated_at = NOW()
+  `,
+  [
+    premium_id,
+    cliente_id,
+    modelo_id,
+    statusLocal,
+    valorBase,
+    taxaTransacao,
+    taxaPlataforma,
+    total,
+    paymentIntent.id,
+    `premium_${premium_id}_${cliente_id}`,
+    ip || null,
+    !!aceitou_termos,
+    !!aceitou_execucao_imediata,
+    aceite_timestamp,
+    versao_termos || "2026-04-06",
+    cpfLimpo,
+    telefoneLimpo,
+    fingerprint || null
+  ]
+);
     console.log("✅ premium_unlocks OK");
 
     console.log("✅ antes insert pagamento_tentativas");
+    
 await client.query(
   `
   INSERT INTO pagamento_tentativas
@@ -9938,9 +10258,13 @@ await client.query(
     payment_intent_id,
     cpf,
     ip,
-    gateway
+    gateway,
+    aceitou_termos,
+    aceitou_execucao_imediata,
+    aceite_timestamp,
+    versao_termos
   )
-  VALUES ($1, 'cartao', $2, $3, $4, $5, $6, 'stripe')
+  VALUES ($1, 'cartao', $2, $3, $4, $5, $6, 'stripe', $7, $8, $9, $10)
   `,
   [
     cliente_id,
@@ -9948,29 +10272,37 @@ await client.query(
     stripeStatusRaw,
     paymentIntent.id,
     cpfLimpo,
-    ip
+    ip,
+    !!aceitou_termos,
+    !!aceitou_execucao_imediata,
+    aceite_timestamp,
+    versao_termos || "2026-04-06"
   ]
 );
     console.log("✅ pagamento_tentativas OK");
 
     await client.query("COMMIT");
 
-    return res.json({
-      ok: true,
-      apenas_intent: true,
-      payment_intent_id: paymentIntent.id,
-      client_secret: paymentIntent.client_secret || null,
-      premium_post_id: premium_id,
-      modelo_id,
-      cliente_id,
-      status: statusLocal,
-      raw_status: stripeStatusRaw,
-      requires_action: stripeStatusRaw === "requires_action",
-      total,
-      valorBase,
-      taxaTransacao,
-      taxaPlataforma
-    });
+return res.json({
+  ok: true,
+  apenas_intent: true,
+  payment_intent_id: paymentIntent.id,
+  client_secret: paymentIntent.client_secret || null,
+  premium_post_id: premium_id,
+  modelo_id,
+  cliente_id,
+  status: statusLocal,
+  raw_status: stripeStatusRaw,
+  requires_action: stripeStatusRaw === "requires_action",
+  total,
+  valorBase,
+  taxaTransacao,
+  taxaPlataforma,
+  aceitou_termos: !!aceitou_termos,
+  aceitou_execucao_imediata: !!aceitou_execucao_imediata,
+  aceite_timestamp,
+  versao_termos: versao_termos || "2026-04-06"
+});
 
   } catch (err) {
     console.error("\n==============================");
@@ -9998,7 +10330,7 @@ await client.query(
 
     try {
       if (client && cliente_id && req.body?.fingerprint) {
-      await client.query(
+await client.query(
   `
   INSERT INTO pagamento_tentativas
   (
@@ -10008,9 +10340,13 @@ await client.query(
     status,
     cpf,
     ip,
-    gateway
+    gateway,
+    aceitou_termos,
+    aceitou_execucao_imediata,
+    aceite_timestamp,
+    versao_termos
   )
-  VALUES ($1, 'cartao', $2, 'recusado', $3, $4, 'stripe')
+  VALUES ($1, 'cartao', $2, 'recusado', $3, $4, 'stripe', $5, $6, $7, $8)
   `,
   [
     cliente_id,
@@ -10018,9 +10354,13 @@ await client.query(
     req.body?.cpf ? String(req.body.cpf).replace(/\D/g, "") : null,
     req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
       req.socket?.remoteAddress ||
-      null
+      null,
+    !!req.body?.aceitou_termos,
+    !!req.body?.aceitou_execucao_imediata,
+    req.body?.aceite_timestamp || null,
+    req.body?.versao_termos || "2026-04-06"
   ]
-);  
+); 
       }
     } catch (logErr) {
       console.error("❌ Erro ao registrar tentativa recusada:", logErr.message);

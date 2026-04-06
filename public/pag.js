@@ -53,18 +53,41 @@ function abrirPopupPagamento() {
 
 function validarDadosIniciaisPagamento() {
   const cpf = obterCpfValido();
-  if (!cpf) return false;
-
-  const telefone = obterTelefoneValido();
-  if (!telefone) return false;
-
-  const aceitou = !!document.getElementById("aceiteTermosPagamento")?.checked;
-  if (!aceitou) {
-    alert("Você precisa aceitar os termos para continuar.");
+  if (!cpf) {
     return false;
   }
 
+  const telefone = obterTelefoneValido();
+  if (!telefone) {
+    return false;
+  }
+
+  const aceites = obterAceitesPagamento();
+  if (!aceites) return false;
+
   return true;
+}
+
+function obterAceitesPagamento() {
+  const aceitouTermos = !!document.getElementById("aceiteTermosPagamento")?.checked;
+  const aceitouExecucaoImediata = !!document.getElementById("aceiteExecucaoImediata")?.checked;
+
+  if (!aceitouTermos) {
+    alert("Você precisa aceitar os Termos e Políticas da plataforma para continuar.");
+    return null;
+  }
+
+  if (!aceitouExecucaoImediata) {
+    alert("Você precisa declarar ciência sobre a liberação imediata do conteúdo/serviço digital para continuar.");
+    return null;
+  }
+
+  return {
+    aceitou_termos: aceitouTermos,
+    aceitou_execucao_imediata: aceitouExecucaoImediata,
+    aceite_timestamp: new Date().toISOString(),
+    versao_termos: "2026-04-06"
+  };
 }
 
 function irParaEtapaPagamento(tipo) {
@@ -246,16 +269,16 @@ function obterPayloadBaseStripe() {
   const telefone = obterTelefoneValido();
   if (!telefone) return null;
 
-  const aceitou_termos = !!document.getElementById("aceiteTermosPagamento")?.checked;
-  if (!aceitou_termos) {
-    alert("Você precisa aceitar os termos.");
-    return null;
-  }
+  const aceites = obterAceitesPagamento();
+  if (!aceites) return null;
 
   return {
     cpf,
     telefone,
-    aceitou_termos,
+    aceitou_termos: aceites.aceitou_termos,
+    aceitou_execucao_imediata: aceites.aceitou_execucao_imediata,
+    aceite_timestamp: aceites.aceite_timestamp,
+    versao_termos: aceites.versao_termos,
     fingerprint: gerarFingerprint()
   };
 }
@@ -272,14 +295,17 @@ async function criarIntentStripe({ metodo = "card" } = {}) {
   }
 
   let url = "";
-  let payload = {
-    cpf: base.cpf,
-    telefone: base.telefone,
-    aceitou_termos: base.aceitou_termos,
-    fingerprint: base.fingerprint,
-    apenas_intent: true,
-    metodo
-  };
+let payload = {
+  cpf: base.cpf,
+  telefone: base.telefone,
+  aceitou_termos: base.aceitou_termos,
+  aceitou_execucao_imediata: base.aceitou_execucao_imediata,
+  aceite_timestamp: base.aceite_timestamp,
+  versao_termos: base.versao_termos,
+  fingerprint: base.fingerprint,
+  apenas_intent: true,
+  metodo
+};
 
   if (tipo === "vip") {
     const modelo_id = Number(
@@ -879,14 +905,16 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
       ?.value
       ?.replace(/\D/g, "");
 
-    const aceitou_termos = document
-      .getElementById("aceiteTermosPagamento")
-      ?.checked;
-
-    if (!aceitou_termos || !cpf || cpf.length !== 11) {
-      alert("Você precisa indicar seu CPF e aceitar os termos para continuar.");
+    const aceites = obterAceitesPagamento();
+    if (!aceites || !cpf || cpf.length !== 11) {
+      alert("Você precisa informar um CPF válido e aceitar os campos obrigatórios para continuar.");
       return;
     }
+
+    const aceitou_termos = aceites.aceitou_termos;
+    const aceitou_execucao_imediata = aceites.aceitou_execucao_imediata;
+    const aceite_timestamp = aceites.aceite_timestamp;
+    const versao_termos = aceites.versao_termos;
 
     abrirPopupPagamentoPixLoading();
 
@@ -912,6 +940,9 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
         cpf,
         telefone: telefoneLimpo,
         aceitou_termos,
+        aceitou_execucao_imediata,
+        aceite_timestamp,
+        versao_termos,
         fingerprint: gerarFingerprint()
       };
     }
@@ -927,17 +958,27 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
         cpf,
         telefone: telefoneLimpo,
         aceitou_termos,
+        aceitou_execucao_imediata,
+        aceite_timestamp,
+        versao_termos,
         fingerprint: gerarFingerprint()
       };
     }
 
     if (tipo === "midia") {
+      const telefoneLimpo = obterTelefoneValido();
+      if (!telefoneLimpo) return;
+
       url = "/api/pagamento/midia/pix";
       body = {
         tipo: "midia",
         conteudo_id,
         cpf,
+        telefone: telefoneLimpo,
         aceitou_termos,
+        aceitou_execucao_imediata,
+        aceite_timestamp,
+        versao_termos,
         fingerprint: gerarFingerprint()
       };
     }
@@ -967,43 +1008,43 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
     const codigo = document.getElementById("pixCodigo");
     const btnCopiar = document.getElementById("btnCopiarPix");
 
-const qrCodeUrl =
-  data.qr_code_url ||
-  (data.qr_code_base64 ? `data:image/png;base64,${data.qr_code_base64}` : null);
+    const qrCodeUrl =
+      data.qr_code_url ||
+      (data.qr_code_base64 ? `data:image/png;base64,${data.qr_code_base64}` : null);
 
-const copiaCola =
-  data.copia_cola ||
-  data.qr_code ||
-  "";
+    const copiaCola =
+      data.copia_cola ||
+      data.qr_code ||
+      "";
 
-const orderId =
-  data.order_id ||
-  data.payment_id ||
-  null;
+    const orderId =
+      data.order_id ||
+      data.payment_id ||
+      null;
 
-if (!qrCodeUrl || !orderId) {
-  alert("Erro ao gerar QR Code PIX");
-  return;
-}
+    if (!qrCodeUrl || !orderId) {
+      alert("Erro ao gerar QR Code PIX");
+      return;
+    }
 
-if (qr) {
-  qr.src = qrCodeUrl;
-  qr.classList.remove("hidden");
-}
+    if (qr) {
+      qr.src = qrCodeUrl;
+      qr.classList.remove("hidden");
+    }
 
-if (codigo) {
-  codigo.value = copiaCola;
-  codigo.classList.remove("hidden");
-}
+    if (codigo) {
+      codigo.value = copiaCola;
+      codigo.classList.remove("hidden");
+    }
 
-btnCopiar?.classList.remove("hidden");
+    btnCopiar?.classList.remove("hidden");
 
-document.getElementById("pixLoading")?.classList.add("hidden");
-document.getElementById("pixAguardando")?.classList.remove("hidden");
+    document.getElementById("pixLoading")?.classList.add("hidden");
+    document.getElementById("pixAguardando")?.classList.remove("hidden");
 
-console.log("PIX RESPONSE:", data);
+    console.log("PIX RESPONSE:", data);
 
-iniciarVerificacaoPix(orderId);
+    iniciarVerificacaoPix(orderId);
 
   } catch (err) {
     document.getElementById("pixLoading")?.classList.add("hidden");
@@ -1321,8 +1362,6 @@ function marcarPagamentoConfirmado(id) {
 function limparPagamentoConfirmado() {
   window.__PAGAMENTO_CONFIRMADO_ATUAL__ = null;
 }
-
-let pollingCartaoInterval = null;
 
 function iniciarPollingPagamento(paymentId, refId = null, metodo = "cartao") {
   if (!paymentId) return;

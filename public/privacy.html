@@ -1,66 +1,177 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <meta charset="UTF-8" />
-  <title>Política de Privacidade – Velvet</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- Fonte -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
-
+  <title>Políticas de Privacidade | Velvet</title>
   <style>
-    body {
-    font-family: 'Poppins', sans-serif;
-      background:#fff ;
-      color: #7B2CFF;
-      margin: 0;
-      padding: 30px;
-      line-height: 1.8;
+    :root {
+      --primary: #6f3cff;
+      --primary-dark: #5a2fe0;
+      --text: #1e1b2e;
+      --text-soft: #5e5873;
+      --bg: #f7f7fb;
+      --card: #f1eef4;
+      --line: #ddd8e6;
+      --white: #ffffff;
     }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Poppins', Arial, Helvetica, sans-serif;
+  line-height: 1.8;
+}
 
     .container {
-      max-width: 900px;
-      margin: auto;
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
     }
 
-    h1 {
-      color: #7B2CFF;
-      font-size: 28px;
+    .page-title {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin: 0 0 22px;
+      line-height: 1.2;
+      text-align: center;
+    }
+
+    .intro {
+      font-size: 1.08rem;
+      color: var(--text);
+      margin-bottom: 28px;
+    }
+
+    .toc {
+      background: var(--card);
+      border-radius: 18px;
+      padding: 26px 28px;
+      margin: 28px 0 48px;
+    }
+
+    .toc h2 {
+      margin: 0 0 18px;
+      font-size: 1.5rem;
+      color: var(--text);
+    }
+
+    .toc ol {
+      margin: 0;
+      padding-left: 22px;
+      columns: 1;
+    }
+
+    .toc li {
       margin-bottom: 10px;
+      color: var(--text);
     }
 
-    h2 {
-      color: #7B2CFF;
-      font-size: 22px;
-      margin-top: 45px;
+    .toc a {
+      color: var(--text);
+      text-decoration: none;
+      transition: 0.2s ease;
     }
 
-    h3 {
-      color: #1E1E26;
-      font-size: 17px;
-      margin-top: 25px;
+    .toc a:hover {
+      color: var(--primary);
     }
 
-    p, li {
-      font-size: 14.5px;
-      color: #1E1E26;
+    .divider {
+      border: none;
+      border-top: 1px solid var(--line);
+      margin: 42px 0;
+    }
+
+    section {
+      scroll-margin-top: 30px;
+    }
+
+    .section-title {
+      font-size: 2rem;
+      font-weight: 600;
+      color: var(--primary);
+      margin: 0 0 20px;
+      line-height: 1.25;
+    }
+
+    .sub-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--text);
+      margin: 26px 0 10px;
+      line-height: 1.4;
+      text-transform: uppercase;
+    }
+
+    .item-title {
+      font-size: 1.12rem;
+      font-weight: 700;
+      color: var(--text);
+      margin: 22px 0 8px;
+    }
+
+    p {
+      margin: 0 0 14px;
+      color: var(--text);
+      font-size: 1.06rem;
     }
 
     ul {
-      padding-left: 20px;
+      margin: 10px 0 18px 0;
+      padding-left: 22px;
     }
 
-    hr {
-      border: none;
-      border-top: 1px solid #1E1E26;
-      margin: 50px 0;
+    li {
+      margin-bottom: 6px;
+      font-size: 1.04rem;
     }
 
-    strong {
-      color: #1E1E26;
+    .muted {
+      color: var(--text-soft);
     }
-    
-    .footer {
+
+    .contact-box {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 20px 22px;
+      margin-top: 16px;
+    }
+
+    a.inline-link {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    a.inline-link:hover {
+      text-decoration: underline;
+    }
+
+    .last-updated {
+
+  margin: 0 0 24px;
+  padding: 10px 16px;
+  background: #f3eff5;
+  color: #1e1b2e;
+  border-radius: 12px;
+  font-size: 1rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+  .footer {
   margin-top: 60px;
   padding: 20px;
   background:none;
@@ -89,185 +200,391 @@
   color: #1E1E26;
 }
 
-.voltar {
-   color: #1E1E26;
-  text-decoration: none;
-}
+    @media (max-width: 768px) {
+      .container {
+        padding: 28px 16px 60px;
+      }
+
+      .page-title {
+        font-size: 1.9rem;
+      }
+
+      .section-title {
+        font-size: 1.65rem;
+      }
+
+      .toc {
+        padding: 22px 20px;
+      }
+
+      p, li {
+        font-size: 1rem;
+      }
+    }
   </style>
 </head>
-
 <body>
-<div class="container">
+ <main class="container">
 
-  <h1>Política de Privacidade – Velvet</h1>
-  <p><strong>Última atualização:</strong> 07/01/2026</p>
+  <h1 class="page-title">Política de Privacidade – Velvet</h1>
 
-  <p>
-    A presente Política de Privacidade descreve como a plataforma
-    <strong>Velvet</strong> coleta, utiliza, armazena, compartilha e protege
-    os dados pessoais de seus usuários, em conformidade com a
-    <strong>Lei Geral de Proteção de Dados (LGPD – Lei nº 13.709/2018)</strong>.
+  <div class="last-updated">
+    <strong>Última atualização:</strong> 06/04/2026
+  </div>
+
+  <p class="intro">
+    Esta Política de Privacidade descreve como a Velvet Entertainment coleta, utiliza,
+    armazena, compartilha e protege os dados pessoais dos usuários da Plataforma.
   </p>
 
-  <p>
-    Ao acessar ou utilizar a Plataforma, o usuário declara que leu,
-    compreendeu e concorda integralmente com esta Política.
-  </p>
+  <nav class="toc" aria-label="Índice da Política de Privacidade">
+    <h2>Índice</h2>
+    <ol>
+      <li><a href="#secao-1">1. Introdução</a></li>
+      <li><a href="#secao-2">2. Identificação do Controlador</a></li>
+      <li><a href="#secao-3">3. Quem Pode Utilizar a Plataforma</a></li>
+      <li><a href="#secao-4">4. Dados Coletados</a></li>
+      <li><a href="#secao-5">5. Finalidade do Tratamento</a></li>
+      <li><a href="#secao-6">6. Bases Legais</a></li>
+      <li><a href="#secao-7">7. Decisões Automatizadas e Análise de Perfil</a></li>
+      <li><a href="#secao-8">8. Compartilhamento de Dados</a></li>
+      <li><a href="#secao-9">9. Transferência Internacional de Dados</a></li>
+      <li><a href="#secao-10">10. Retenção dos Dados</a></li>
+      <li><a href="#secao-11">11. Direitos dos Titulares</a></li>
+      <li><a href="#secao-12">12. Segurança da Informação</a></li>
+      <li><a href="#secao-13">13. Incidentes de Segurança</a></li>
+      <li><a href="#secao-14">14. Cookies e Tecnologias Semelhantes</a></li>
+      <li><a href="#secao-15">15. Verificação de Identidade (KYC)</a></li>
+      <li><a href="#secao-16">16. Conteúdo Adulto e Responsabilidade</a></li>
+      <li><a href="#secao-17">17. Governança e Proteção de Dados</a></li>
+      <li><a href="#secao-18">18. Alterações</a></li>
+      <li><a href="#secao-19">19. Contato</a></li>
+      <li><a href="#secao-20">20. Disposições Finais</a></li>
+    </ol>
+  </nav>
 
-    <h2>1. Identificação da Plataforma</h2>
+  <hr class="divider" />
+
+  <section id="secao-1">
+    <h2 class="section-title">1. Introdução</h2>
     <p>
-      <strong>Razão Social:</strong> Velvet Entertainment<br>
-      <strong>CPF:</strong> 64.320.030/0001-68<br>
-      <strong>Local:</strong> São Paulo – SP<br>
-      <strong>E-mail de contato:</strong> contato@velvet.com<br>
-      <strong>E-mail de suporte:</strong> suporte@velvet.com
+      A presente Política de Privacidade descreve como a <strong>Velvet Entertainment</strong>
+      coleta, utiliza, armazena, compartilha e protege os dados pessoais dos usuários da Plataforma.
     </p>
+    <p>Esta Política está em conformidade com:</p>
+    <ul>
+      <li>Lei Geral de Proteção de Dados (LGPD – Lei nº 13.709/2018);</li>
+      <li>Regulamento Geral de Proteção de Dados da União Europeia (GDPR – EU 2016/679);</li>
+      <li>Normas aplicáveis sobre cookies e comunicações eletrônicas.</li>
+    </ul>
+    <p>
+      Ao utilizar a Plataforma, o usuário declara que leu, compreendeu e concorda com esta Política.
+    </p>
+  </section>
 
-  <h2>2. Quem Pode Utilizar a Plataforma</h2>
-  <p>
-    A Velvet é destinada exclusivamente a pessoas maiores de 18 anos.
-  </p>
-  <p>
-    Não coletamos intencionalmente dados pessoais de menores de idade.
-    Caso seja identificado qualquer cadastro indevido, a conta será
-    imediatamente encerrada e os dados excluídos, conforme a legislação aplicável.
-  </p>
+  <hr class="divider" />
 
-  <h2>3. Dados Coletados</h2>
+  <section id="secao-2">
+    <h2 class="section-title">2. Identificação do Controlador</h2>
+    <p><strong>Velvet Entertainment</strong></p>
+    <p><strong>Responsável:</strong> Sandra Samanta da Silva</p>
+    <p><strong>CNPJ:</strong> 64.320.030/0001-68</p>
+    <p><strong>Local:</strong> São Paulo – SP</p>
+    <p>
+      <strong>E-mail:</strong>
+      <a class="inline-link" href="mailto:contato@velvet.lat">contato@velvet.lat</a>
+    </p>
+    <p>
+      O Encarregado de Proteção de Dados (DPO) pode ser contatado pelos canais acima.
+    </p>
+  </section>
 
-  <h3>3.1 Dados fornecidos pelo usuário</h3>
-  <ul>
-    <li>Nome ou nome artístico;</li>
-    <li>Endereço de e-mail;</li>
-    <li>Data de nascimento;</li>
-    <li>Informações relacionadas a pagamentos;</li>
-    <li>Documentos de verificação de identidade e idade, quando aplicável;</li>
-    <li>Mensagens e interações realizadas via chat.</li>
-  </ul>
+  <hr class="divider" />
 
-  <h3>3.2 Dados coletados automaticamente</h3>
-  <ul>
-    <li>Endereço IP;</li>
-    <li>Tipo de dispositivo, navegador e sistema operacional;</li>
-    <li>Registros de acesso, logs e interações na Plataforma;</li>
-    <li>Cookies e tecnologias semelhantes.</li>
-  </ul>
+  <section id="secao-3">
+    <h2 class="section-title">3. Quem Pode Utilizar a Plataforma</h2>
+    <p>
+      A Velvet é destinada exclusivamente a maiores de 18 anos.
+    </p>
+    <p>
+      Caso seja identificado cadastro de menor, a conta será removida e os dados excluídos,
+      conforme a legislação aplicável.
+    </p>
+  </section>
 
+  <hr class="divider" />
 
-  <h2>4. Finalidade do Tratamento dos Dados</h2>
-  <ul>
-    <li>Criação e gestão de contas;</li>
-    <li>Verificação de idade e identidade;</li>
-    <li>Processamento de assinaturas, compras e pagamentos;</li>
-    <li>Funcionamento do chat e entrega de conteúdos;</li>
-    <li>Prevenção de fraudes, abusos e atividades ilegais;</li>
-    <li>Cumprimento de obrigações legais e regulatórias;</li>
-    <li>Comunicação com usuários;</li>
-    <li>Melhoria da experiência e segurança da Plataforma.</li>
-  </ul>
+  <section id="secao-4">
+    <h2 class="section-title">4. Dados Coletados</h2>
 
-  <h2>5. Base Legal para o Tratamento</h2>
-  <p>
-    O tratamento de dados pessoais ocorre com fundamento nas seguintes bases legais:
-  </p>
-  <ul>
-    <li>Execução de contrato;</li>
-    <li>Consentimento do titular;</li>
-    <li>Cumprimento de obrigação legal ou regulatória;</li>
-    <li>Legítimo interesse da Plataforma, respeitando os direitos do titular.</li>
-  </ul>
+    <h3 class="item-title">4.1 Dados fornecidos pelo usuário</h3>
+    <ul>
+      <li>Nome ou nome artístico;</li>
+      <li>E-mail;</li>
+      <li>Data de nascimento;</li>
+      <li>Dados de pagamento;</li>
+      <li>Documentos de verificação (KYC);</li>
+      <li>Conteúdos, mensagens e interações.</li>
+    </ul>
 
-  <h2>6. Compartilhamento de Dados</h2>
-  <p>
-    A Velvet poderá compartilhar dados pessoais apenas quando necessário, com:
-  </p>
-  <ul>
-    <li>Processadores e intermediadores de pagamento;</li>
-    <li>Prestadores de serviços tecnológicos;</li>
-    <li>Autoridades competentes, mediante obrigação legal ou ordem judicial.</li>
-  </ul>
-  <p>
-    A Velvet <strong>não vende</strong> dados pessoais a terceiros.
-  </p>
+    <h3 class="item-title">4.2 Dados coletados automaticamente</h3>
+    <ul>
+      <li>Endereço IP;</li>
+      <li>Localização aproximada;</li>
+      <li>Tipo de dispositivo, navegador e sistema operacional;</li>
+      <li>Logs de acesso e uso;</li>
+      <li>Cookies e identificadores técnicos.</li>
+    </ul>
 
-  <h2>7. Armazenamento e Segurança</h2>
-  <p>
-    A Velvet adota medidas técnicas e organizacionais adequadas para proteger os dados
-    pessoais contra acesso não autorizado, perda, alteração ou divulgação indevida.
-  </p>
-  <p>
-    Os dados são armazenados apenas pelo período necessário para cumprir as finalidades
-    descritas nesta Política ou conforme exigido por lei.
-  </p>
+    <h3 class="item-title">4.3 Dados de terceiros</h3>
+    <ul>
+      <li>Provedores de pagamento;</li>
+      <li>Serviços antifraude e verificação de identidade.</li>
+    </ul>
+  </section>
 
-  <h2>8. Cookies e Tecnologias Semelhantes</h2>
-  <p>
-    A Plataforma utiliza cookies para garantir o funcionamento adequado,
-    melhorar a experiência do usuário e analisar padrões de uso.
-  </p>
-  <p>
-    O usuário pode gerenciar ou desativar cookies nas configurações do navegador,
-    ciente de que isso pode afetar algumas funcionalidades da Plataforma.
-  </p>
+  <hr class="divider" />
 
+  <section id="secao-5">
+    <h2 class="section-title">5. Finalidade do Tratamento</h2>
+    <p>Os dados são utilizados para:</p>
+    <ul>
+      <li>Criação e gestão de contas;</li>
+      <li>Verificação de identidade e idade;</li>
+      <li>Processamento de pagamentos e assinaturas;</li>
+      <li>Funcionamento da plataforma (chat, conteúdo, interações);</li>
+      <li>Prevenção de fraudes, abusos e atividades ilegais;</li>
+      <li>Cumprimento de obrigações legais;</li>
+      <li>Comunicação com usuários;</li>
+      <li>Personalização e melhoria da experiência.</li>
+    </ul>
+  </section>
 
-  <h2>9. Direitos dos Titulares de Dados</h2>
-  <p>
-    Nos termos da LGPD, o usuário poderá solicitar:
-  </p>
-  <ul>
-    <li>Confirmação da existência de tratamento de dados;</li>
-    <li>Acesso aos dados pessoais;</li>
-    <li>Correção de dados incompletos, inexatos ou desatualizados;</li>
-    <li>Exclusão de dados, quando aplicável;</li>
-    <li>Revogação do consentimento;</li>
-    <li>Informações sobre compartilhamento de dados.</li>
-  </ul>
-  <p>
-    As solicitações poderão ser feitas pelo e-mail:
-    <strong>privacidade@velvet.com</strong>
-  </p>
+  <hr class="divider" />
 
+  <section id="secao-6">
+    <h2 class="section-title">6. Bases Legais</h2>
+    <p>O tratamento é realizado com base em:</p>
+    <ul>
+      <li>Execução de contrato;</li>
+      <li>Consentimento;</li>
+      <li>Cumprimento de obrigação legal;</li>
+      <li>Legítimo interesse.</li>
+    </ul>
+    <p>
+      Quando aplicável, a Velvet realiza avaliação de balanceamento para garantir que
+      seus interesses não prejudiquem os direitos dos usuários.
+    </p>
+  </section>
 
-  <h2>10. Conteúdo Adulto e Privacidade</h2>
-  <p>
-    A Velvet adota medidas para proteger a privacidade dos usuários e criadoras,
-    contudo não garante anonimato absoluto na internet.
-  </p>
-  <p>
-    A Plataforma não se responsabiliza por conteúdos salvos, gravados ou compartilhados
-    indevidamente por terceiros, recomendando práticas seguras de navegação.
-  </p>
+  <hr class="divider" />
 
+  <section id="secao-7">
+    <h2 class="section-title">7. Decisões Automatizadas e Análise de Perfil</h2>
+    <p>A Plataforma pode utilizar sistemas automatizados para:</p>
+    <ul>
+      <li>Detecção de fraude;</li>
+      <li>Análise de comportamento;</li>
+      <li>Segurança da conta.</li>
+    </ul>
+    <p>
+      O usuário poderá solicitar revisão humana dessas decisões e obter informações
+      sobre os critérios utilizados.
+    </p>
+  </section>
 
-  <h2>11. Transferência Internacional de Dados</h2>
-  <p>
-    Os dados poderão ser armazenados ou processados em servidores localizados fora do Brasil,
-    desde que observadas as garantias exigidas pela legislação brasileira de proteção de dados.
-  </p>
+  <hr class="divider" />
 
+  <section id="secao-8">
+    <h2 class="section-title">8. Compartilhamento de Dados</h2>
+    <p>Os dados poderão ser compartilhados com:</p>
+    <ul>
+      <li>Processadores de pagamento;</li>
+      <li>Prestadores de serviços tecnológicos (cloud, segurança);</li>
+      <li>Serviços antifraude e compliance;</li>
+      <li>Autoridades públicas, quando exigido por lei.</li>
+    </ul>
+    <p>
+      A Velvet não comercializa dados pessoais.
+    </p>
+  </section>
 
-  <h2>12. Alterações nesta Política</h2>
-  <p>
-    Esta Política poderá ser atualizada a qualquer momento.
-    As alterações entrarão em vigor a partir da publicação na Plataforma.
-  </p>
-  <p>
-    O uso contínuo da Velvet após alterações implica aceitação da nova versão.
-  </p>
+  <hr class="divider" />
 
+  <section id="secao-9">
+    <h2 class="section-title">9. Transferência Internacional de Dados</h2>
+    <p>
+      Os dados podem ser armazenados ou processados fora do Brasil ou da União Europeia.
+    </p>
+    <p>Nesses casos, a Velvet adota medidas como:</p>
+    <ul>
+      <li>Cláusulas contratuais padrão (SCCs);</li>
+      <li>Avaliações de impacto (TIA);</li>
+      <li>Medidas de segurança adicionais.</li>
+    </ul>
+  </section>
 
-  <h2>13. Contato</h2>
-  <p>
-    Para dúvidas, solicitações ou exercício de direitos relacionados a dados pessoais:
-  </p>
-  <p>
-    📧 legal@velvet.lat<br>
-    📧 contato@velvet.lat<br>
-  </p>
+  <hr class="divider" />
 
-</div>
-    <footer class="footer">
+  <section id="secao-10">
+    <h2 class="section-title">10. Retenção dos Dados</h2>
+    <p>Os dados serão armazenados pelo tempo necessário para:</p>
+    <ul>
+      <li>Execução do contrato;</li>
+      <li>Cumprimento de obrigações legais;</li>
+      <li>Prevenção de fraudes;</li>
+      <li>Exercício de direitos em processos judiciais.</li>
+    </ul>
+  </section>
+
+  <hr class="divider" />
+
+  <section id="secao-11">
+    <h2 class="section-title">11. Direitos dos Titulares</h2>
+    <p>O usuário poderá, a qualquer momento:</p>
+    <ul>
+      <li>Confirmar a existência de tratamento;</li>
+      <li>Acessar seus dados;</li>
+      <li>Corrigir dados incompletos ou incorretos;</li>
+      <li>Solicitar exclusão de dados;</li>
+      <li>Revogar consentimento;</li>
+      <li>Solicitar portabilidade;</li>
+      <li>Opor-se ao tratamento;</li>
+      <li>Solicitar revisão de decisões automatizadas.</li>
+    </ul>
+    <p>
+      Solicitações:
+      <a class="inline-link" href="mailto:contato@velvet.com">privacidade@velvet.com</a>
+    </p>
+  </section>
+
+  <hr class="divider" />
+
+  <section id="secao-12">
+    <h2 class="section-title">12. Segurança da Informação</h2>
+    <p>A Velvet adota medidas técnicas e organizacionais como:</p>
+    <ul>
+      <li>Criptografia;</li>
+      <li>Controle de acesso;</li>
+      <li>Monitoramento contínuo;</li>
+      <li>Sistemas antifraude.</li>
+    </ul>
+    <p>
+      Apesar disso, nenhum sistema é totalmente seguro.
+    </p>
+  </section>
+
+  <hr class="divider" />
+
+  <section id="secao-13">
+    <h2 class="section-title">13. Incidentes de Segurança</h2>
+    <p>Em caso de violação de dados pessoais:</p>
+    <ul>
+      <li>Autoridades competentes poderão ser notificadas em até 72 horas, quando aplicável;</li>
+      <li>Usuários serão informados quando houver risco relevante;</li>
+      <li>Medidas corretivas serão adotadas imediatamente.</li>
+    </ul>
+  </section>
+
+  <hr class="divider" />
+
+  <section id="secao-14">
+    <h2 class="section-title">14. Cookies e Tecnologias Semelhantes</h2>
+
+    <h3 class="item-title">Tipos de cookies</h3>
+    <ul>
+      <li>Essenciais (necessários para funcionamento);</li>
+      <li>Desempenho (análise de uso);</li>
+      <li>Funcionais (preferências);</li>
+      <li>Marketing (personalização).</li>
+    </ul>
+
+    <h3 class="item-title">Consentimento</h3>
+    <p>
+      O uso de cookies não essenciais depende de consentimento prévio, obtido por meio
+      de banner de preferências.
+    </p>
+    <p>O usuário pode:</p>
+    <ul>
+      <li>Aceitar ou recusar categorias de cookies;</li>
+      <li>Alterar preferências a qualquer momento.</li>
+    </ul>
+  </section>
+
+  <hr class="divider" />
+
+  <section id="secao-15">
+    <h2 class="section-title">15. Verificação de Identidade (KYC)</h2>
+    <p>Para segurança e cumprimento legal, a Velvet poderá solicitar:</p>
+    <ul>
+      <li>Documentos de identificação;</li>
+      <li>Verificação de idade;</li>
+      <li>Validação de dados financeiros.</li>
+    </ul>
+  </section>
+
+  <hr class="divider" />
+
+  <section id="secao-16">
+    <h2 class="section-title">16. Conteúdo Adulto e Responsabilidade</h2>
+    <p>
+      A Plataforma pode conter conteúdo adulto.
+    </p>
+    <p>
+      A Velvet atua como intermediadora e não se responsabiliza por conteúdos gerados por usuários.
+    </p>
+    <p>
+      Recomenda-se o uso consciente e práticas seguras de navegação.
+    </p>
+  </section>
+
+  <hr class="divider" />
+
+  <section id="secao-17">
+    <h2 class="section-title">17. Governança e Proteção de Dados</h2>
+    <p>A Velvet adota práticas de governança, incluindo:</p>
+    <ul>
+      <li>Registro de operações de tratamento;</li>
+      <li>Avaliações de impacto quando aplicável;</li>
+      <li>Políticas internas de segurança;</li>
+      <li>Treinamento de equipe.</li>
+    </ul>
+  </section>
+
+  <hr class="divider" />
+
+  <section id="secao-18">
+    <h2 class="section-title">18. Alterações</h2>
+    <p>
+      Esta Política poderá ser atualizada a qualquer momento.
+    </p>
+    <p>
+      O uso contínuo da Plataforma implica aceitação das alterações.
+    </p>
+  </section>
+
+  <hr class="divider" />
+
+  <section id="secao-19">
+    <h2 class="section-title">19. Contato</h2>
+    <p>Para dúvidas ou solicitações:</p>
+    <p>
+      <a class="inline-link" href="mailto:contato@velvet.lat">contato@velvet.lat</a>
+    </p>
+  </section>
+
+  <hr class="divider" />
+
+  <section id="secao-20">
+    <h2 class="section-title">20. Disposições Finais</h2>
+    <p>
+      Esta Política deve ser interpretada em conjunto com os Termos de Uso e conforme
+      a legislação aplicável.
+    </p>
+  </section>
+
+</main>
+      <footer class="footer">
   <div class="footer-links">
     <a href="/terms.html">Termos de Uso</a>
     <a href="/privacy.html">Política de Privacidade</a>
@@ -276,6 +593,7 @@
   <div class="footer-copy">
     © 2026 Velvet. Todos os direitos reservados.
   </div>
+  </footer>
+
 </body>
 </html>
-
