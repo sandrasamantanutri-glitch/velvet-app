@@ -2261,9 +2261,10 @@ async function notificarNovaMensagem(userIdDestino, textoMensagem, url = "/inbox
 
     const subRes = await db.query(
       `
-      SELECT id, subscription_json
+      SELECT subscription_json
       FROM push_subscriptions
       WHERE user_id = $1
+      LIMIT 1
       `,
       [userIdDestino]
     );
@@ -2275,39 +2276,28 @@ async function notificarNovaMensagem(userIdDestino, textoMensagem, url = "/inbox
       return;
     }
 
-    for (const row of subRes.rows) {
-      try {
-        const subscription =
-          typeof row.subscription_json === "string"
-            ? JSON.parse(row.subscription_json)
-            : row.subscription_json;
+    const rawSubscription = subRes.rows[0].subscription_json;
+    const subscription =
+      typeof rawSubscription === "string"
+        ? JSON.parse(rawSubscription)
+        : rawSubscription;
 
-        console.log("[push] endpoint:", subscription?.endpoint);
+    console.log("[push] endpoint:", subscription?.endpoint);
 
-        await enviarPush(subscription, textoMensagem, url);
-        console.log("[push] Push enviado para subscription id:", row.id);
-      } catch (err) {
-        console.error(
-          "[push] Erro na subscription id",
-          row.id,
-          err.statusCode,
-          err.body || err.message || err
-        );
-
-        if (err.statusCode === 404 || err.statusCode === 410) {
-          await db.query(
-            `DELETE FROM push_subscriptions WHERE id = $1`,
-            [row.id]
-          );
-          console.log("[push] Subscription removida por expiração:", row.id);
-        }
-      }
-    }
+    await enviarPush(subscription, textoMensagem, url);
+    console.log("[push] Push enviado para user_id:", userIdDestino);
   } catch (err) {
-    console.error("[push] Erro ao enviar push:", err);
+    console.error("[push] Erro ao enviar push:", err.statusCode, err.body || err.message || err);
+
+    if (err.statusCode === 404 || err.statusCode === 410) {
+      await db.query(
+        `DELETE FROM push_subscriptions WHERE user_id = $1`,
+        [userIdDestino]
+      );
+      console.log("[push] Subscription removida por expiração:", userIdDestino);
+    }
   }
 }
-
 
 // function manutencaoClientes(req, res, next) {
 //   if (!MANUTENCAO_CLIENTES) return next();
