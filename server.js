@@ -2246,19 +2246,18 @@ async function enviarPush(subscription, mensagem, url = "/inbox.html") {
 
 async function notificarNovaMensagem(userIdDestino, textoMensagem, url = "/inbox.html") {
   try {
-    console.log("[push] ===== INICIO notificarNovaMensagem =====");
-    console.log("[push] userIdDestino:", userIdDestino);
-    console.log("[push] textoMensagem:", textoMensagem);
-    console.log("[push] url:", url);
-
     if (
       !process.env.VAPID_SUBJECT ||
       !process.env.VAPID_PUBLIC_KEY ||
       !process.env.VAPID_PRIVATE_KEY
     ) {
-      console.warn("[push] Push ignorado: VAPID não configurado");
+      console.warn("Push ignorado: VAPID não configurado");
       return;
     }
+
+    console.log("[push] notificarNovaMensagem chamada");
+    console.log("[push] userIdDestino:", userIdDestino);
+    console.log("[push] url:", url);
 
     const subRes = await db.query(
       `
@@ -2283,19 +2282,19 @@ async function notificarNovaMensagem(userIdDestino, textoMensagem, url = "/inbox
             ? JSON.parse(row.subscription_json)
             : row.subscription_json;
 
-        console.log("[push] subscription id:", row.id);
         console.log("[push] endpoint:", subscription?.endpoint);
 
         await enviarPush(subscription, textoMensagem, url);
-
-        console.log("[push] Push enviado com sucesso para subscription id:", row.id);
+        console.log("[push] Push enviado para subscription id:", row.id);
       } catch (err) {
-        console.error("[push] ERRO na subscription id:", row.id);
-        console.error("[push] statusCode:", err?.statusCode);
-        console.error("[push] body:", err?.body);
-        console.error("[push] message:", err?.message || err);
+        console.error(
+          "[push] Erro na subscription id",
+          row.id,
+          err.statusCode,
+          err.body || err.message || err
+        );
 
-        if (err?.statusCode === 404 || err?.statusCode === 410) {
+        if (err.statusCode === 404 || err.statusCode === 410) {
           await db.query(
             `DELETE FROM push_subscriptions WHERE id = $1`,
             [row.id]
@@ -2304,56 +2303,10 @@ async function notificarNovaMensagem(userIdDestino, textoMensagem, url = "/inbox
         }
       }
     }
-
-    console.log("[push] ===== FIM notificarNovaMensagem =====");
   } catch (err) {
-    console.error("[push] Erro geral ao enviar push:", err);
+    console.error("[push] Erro ao enviar push:", err);
   }
 }
-
-app.post("/api/push/teste", auth, async (req, res) => {
-  try {
-    console.log("[push teste] inicio para user:", req.user.id);
-
-    const subRes = await db.query(
-      `
-      SELECT id, subscription_json
-      FROM push_subscriptions
-      WHERE user_id = $1
-      `,
-      [req.user.id]
-    );
-
-    console.log("[push teste] rowCount:", subRes.rowCount);
-
-    if (!subRes.rowCount) {
-      return res.status(404).json({ error: "Sem subscription" });
-    }
-
-    for (const row of subRes.rows) {
-      const subscription =
-        typeof row.subscription_json === "string"
-          ? JSON.parse(row.subscription_json)
-          : row.subscription_json;
-
-      console.log("[push teste] enviando para:", row.id, subscription?.endpoint);
-
-      await enviarPush(subscription, "Teste de notificação", "/inbox.html");
-
-      console.log("[push teste] enviado com sucesso para:", row.id);
-    }
-
-    return res.json({ ok: true });
-  } catch (err) {
-    console.error("[push teste] statusCode:", err?.statusCode);
-    console.error("[push teste] body:", err?.body);
-    console.error("[push teste] message:", err?.message || err);
-
-    return res.status(500).json({
-      error: err?.body || err?.message || "Erro ao enviar push teste"
-    });
-  }
-});
 
 
 // function manutencaoClientes(req, res, next) {
