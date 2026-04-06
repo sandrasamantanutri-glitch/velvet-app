@@ -2547,11 +2547,7 @@ socket.on("joinInbox", async (payload, callback) => {
       onlineClientes.get(clienteIdReal).add(socket.id);
 
       console.log("🟢 Cliente online:", clienteIdReal, socket.id);
-
-      await db.query(
-        `UPDATE clientes SET online = true WHERE id = $1`,
-        [clienteIdReal]
-      );
+      
     } catch (err) {
       console.error("❌ Erro loginCliente:", err);
     }
@@ -2571,7 +2567,7 @@ socket.on("joinInbox", async (payload, callback) => {
             onlineClientes.delete(socket.cliente_id);
 
             await db.query(
-              `UPDATE clientes SET online = false, last_seen = NOW() WHERE id = $1`,
+              `UPDATE clientes SET last_seen = NOW() WHERE id = $1`,
               [socket.cliente_id]
             );
 
