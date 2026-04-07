@@ -240,13 +240,14 @@ body {
   margin: 0;
   line-height: 1.5;
   font-size: 14px;
-  color: #ddd;
+  color: #1E1E26;
   cursor: pointer;
 }
 
 .check-group a {
-  text-decoration: underline;
+  text-decoration: none;
   font-weight: 600;
+  color: #7b2cff;
 }
 
 .check-group a:hover {

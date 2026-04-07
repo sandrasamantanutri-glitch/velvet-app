@@ -19,10 +19,18 @@ async function enviarEmailValidacao(email) {
   });
 }
 
+const path = require("path");
+const fs = require("fs");
+
 async function enviarEmailAprovacao(email) {
-const pdfPath = path.join(process.cwd(), "docs", "manual.pdf");
-  const pdfBuffer = fs.readFileSync(pdfPath);
-  console.log(pdfPath);
+  const manualPath = path.join(process.cwd(), "docs", "manual.pdf");
+  const termosPath = path.join(process.cwd(), "docs", "creators_terms.pdf");
+
+  const manualBuffer = fs.readFileSync(manualPath);
+  const termosBuffer = fs.readFileSync(termosPath);
+
+  console.log("Manual:", manualPath);
+  console.log("Termos:", termosPath);
 
   await resend.emails.send({
     from: "Velvet <noreply@velvet.lat>",
@@ -34,17 +42,22 @@ const pdfPath = path.join(process.cwd(), "docs", "manual.pdf");
       <p>Olá,</p>
 
       <p>
-      Sua verificação foi aprovada e seu perfil já pode ser utilizado na Velvet.
+        Sua verificação foi aprovada e seu perfil já pode ser utilizado na Velvet.
       </p>
 
       <p>
-      No PDF anexado você encontra um guia rápido para começar.
+        No PDF anexado você encontra um guia rápido para começar.
       </p>
 
       <p>
-      Acesse sua conta:
-      <br>
-      https://www.velvet.lat
+        Antes de começar a faturar, relembre-se de que você aceitou os Termos de Uso do Criador,
+        que seguem em anexo. Se tiver qualquer dúvida, não hesite em nos contactar.
+      </p>
+
+      <p>
+        Acesse sua conta:
+        <br>
+        <a href="https://www.velvet.lat">https://www.velvet.lat</a>
       </p>
 
       <p>Bem-vindo(a) 💜</p>
@@ -52,7 +65,11 @@ const pdfPath = path.join(process.cwd(), "docs", "manual.pdf");
     attachments: [
       {
         filename: "manual.pdf",
-        content: pdfBuffer
+        content: manualBuffer
+      },
+      {
+        filename: "creators_terms.pdf",
+        content: termosBuffer
       }
     ]
   });
