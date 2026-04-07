@@ -108,55 +108,87 @@ document.addEventListener("DOMContentLoaded", async () => {
     statusContainer.style.display = "block";
   }
 
-  // ===============================
-  // CONTROLE DO FORMULÁRIO
-  // ===============================
   function controlarFormulario(status) {
-    if (!form) return;
+  if (!form) return;
 
-    if (status === "pendente" || status === "recusado") {
-      form.style.display = "block";
-    } else {
-      form.style.display = "none";
-    }
+  if (!status || status === "pendente" || status === "recusado") {
+    form.style.display = "block";
+  } else {
+    form.style.display = "none";
   }
+}
 
-  // ===============================
-  // SUBMIT REAL (ainda sem upload)
-  // ===============================
 form?.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const token = localStorage.getItem("token");
-  const formData = new FormData(form);
+  const btnSubmit = form.querySelector('button[type="submit"]');
 
-  const res = await fetch("/api/verificacao", {
-    method: "POST",
-    headers: {
-      Authorization: "Bearer " + token
-    },
-    body: formData
-  });
-
-  if (!res.ok) {
-    throw new Error("Falha no envio");
-  }
-
-  renderStatus({ status: "em_analise" });
-  controlarFormulario("em_analise");
-});
-
-
-  // ===============================
-  // INIT
-  // ===============================
   try {
-    const verificacao = await buscarStatusVerificacao();
-    renderStatus(verificacao);
-    controlarFormulario(verificacao.status);
+    const token = localStorage.getItem("token");
+
+    const confirmacaoIdentidade = document.getElementById("confirmacao_identidade")?.checked;
+    const aceitePrivacidade = document.getElementById("aceite_privacidade")?.checked;
+    const aceiteTermosCriador = document.getElementById("aceite_termos_criador")?.checked;
+
+    if (!confirmacaoIdentidade) {
+      alert("Você precisa confirmar sua identidade e maioridade.");
+      return;
+    }
+
+    if (!aceitePrivacidade) {
+      alert("Você precisa ler e aceitar a Política de Privacidade.");
+      return;
+    }
+
+    if (!aceiteTermosCriador) {
+      alert("Você precisa ler e aceitar os Termos e Condições para Criadores.");
+      return;
+    }
+
+    if (btnSubmit) btnSubmit.disabled = true;
+
+    const formData = new FormData(form);
+
+    formData.set("confirmacao_identidade", "true");
+    formData.set("aceite_privacidade", "true");
+    formData.set("aceite_termos_criador", "true");
+    formData.set("versao_privacidade", "2026-04-06");
+    formData.set("versao_termos_criador", "2026-04-06");
+
+    const res = await fetch("/api/verificacao", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + token
+      },
+      body: formData
+    });
+
+    const payload = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      throw new Error(payload?.erro || "Falha no envio");
+    }
+
+    renderStatus({ status: "em_analise" });
+    controlarFormulario("em_analise");
   } catch (err) {
     console.error(err);
+    alert(err.message || "Falha no envio");
+  } finally {
+    if (btnSubmit) btnSubmit.disabled = false;
   }
+});
+
+try {
+  const verificacao = await buscarStatusVerificacao();
+  renderStatus(verificacao);
+  controlarFormulario(verificacao?.status || "pendente");
+} catch (err) {
+  console.error(err);
+  controlarFormulario("pendente");
+}
+
+
 });
 
 function abrirConfirmacaoExclusao() {
@@ -179,7 +211,6 @@ function fecharModalExclusao() {
   if (senhaInput) senhaInput.value = "";
   if (erro) erro.classList.add("hidden");
 }
-
 
 async function confirmarExclusaoConta() {
   const token = localStorage.getItem("token");

@@ -10780,12 +10780,25 @@ app.post("/api/chat/cliente/marcar-lido/:modelo_id", authCliente, async (req, re
 // VERIFICACAO PERFIL
 // ===========================
 
-app.post("/api/verificacao", auth, uploadVerificacao.fields([ { name: "doc_frente", maxCount: 1 }, { name: "doc_verso", maxCount: 1 }, { name: "selfie", maxCount: 1 }]), async (req, res) => {
-
+app.post("/api/verificacao", auth, uploadVerificacao.fields([{ name: "doc_frente", maxCount: 1 },{ name: "doc_verso", maxCount: 1 },{ name: "selfie", maxCount: 1 }]),
+  async (req, res) => {
     try {
       const userId = req.user.id;
       const role = req.user.role;
-      const { documento_tipo } = req.body;
+
+      const {
+        documento_tipo,
+        confirmacao_identidade,
+        aceite_privacidade,
+        aceite_termos_criador,
+        versao_privacidade,
+        versao_termos_criador
+      } = req.body;
+
+      const ip =
+        req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+        req.socket?.remoteAddress ||
+        null;
 
       if (!documento_tipo) {
         return res.status(400).json({
@@ -10799,13 +10812,39 @@ app.post("/api/verificacao", auth, uploadVerificacao.fields([ { name: "doc_frent
         });
       }
 
+      if (
+        confirmacao_identidade !== true &&
+        confirmacao_identidade !== "true"
+      ) {
+        return res.status(400).json({
+          erro: "É obrigatório confirmar identidade, maioridade e autorização de verificação"
+        });
+      }
+
+      if (
+        aceite_privacidade !== true &&
+        aceite_privacidade !== "true"
+      ) {
+        return res.status(400).json({
+          erro: "É obrigatório aceitar a Política de Privacidade"
+        });
+      }
+
+      if (
+        aceite_termos_criador !== true &&
+        aceite_termos_criador !== "true"
+      ) {
+        return res.status(400).json({
+          erro: "É obrigatório aceitar os Termos e Condições para Criadores"
+        });
+      }
+
       const docFrenteUrl = req.files.doc_frente[0].key;
       const docVersoUrl = req.files.doc_verso?.[0]?.key || null;
       const selfieUrl = req.files.selfie[0].key;
 
       // MODELO
       if (role === "modelo") {
-
         const modeloRes = await db.query(
           "SELECT id FROM modelos WHERE user_id = $1",
           [userId]
@@ -10817,33 +10856,66 @@ app.post("/api/verificacao", auth, uploadVerificacao.fields([ { name: "doc_frent
 
         const modeloId = modeloRes.rows[0].id;
 
-        await db.query(`
-          INSERT INTO modelos_verificacao
-            (modelo_id, documento_tipo, doc_frente_url, doc_verso_url, selfie_url, status, criado_em)
-          VALUES
-            ($1,$2,$3,$4,$5,'em_analise', NOW())
+        await db.query(
+          `
+          INSERT INTO modelos_verificacao (
+            modelo_id,
+            documento_tipo,
+            doc_frente_url,
+            doc_verso_url,
+            selfie_url,
+            confirmacao_identidade,
+            aceite_privacidade,
+            aceite_termos_criador,
+            versao_privacidade,
+            versao_termos_criador,
+            aceite_em,
+            aceite_ip,
+            status,
+            criado_em,
+            atualizado_em
+          )
+          VALUES (
+            $1,$2,$3,$4,$5,
+            $6,$7,$8,$9,$10,
+            NOW(),$11,'em_analise', NOW(), NOW()
+          )
           ON CONFLICT (modelo_id)
           DO UPDATE SET
             documento_tipo = EXCLUDED.documento_tipo,
             doc_frente_url = EXCLUDED.doc_frente_url,
             doc_verso_url = EXCLUDED.doc_verso_url,
             selfie_url = EXCLUDED.selfie_url,
+            confirmacao_identidade = EXCLUDED.confirmacao_identidade,
+            aceite_privacidade = EXCLUDED.aceite_privacidade,
+            aceite_termos_criador = EXCLUDED.aceite_termos_criador,
+            versao_privacidade = EXCLUDED.versao_privacidade,
+            versao_termos_criador = EXCLUDED.versao_termos_criador,
+            aceite_em = NOW(),
+            aceite_ip = EXCLUDED.aceite_ip,
             status = 'em_analise',
             atualizado_em = NOW()
-        `, [
-          modeloId,
-          documento_tipo,
-          docFrenteUrl,
-          docVersoUrl,
-          selfieUrl
-        ]);
+          `,
+          [
+            modeloId,
+            documento_tipo,
+            docFrenteUrl,
+            docVersoUrl,
+            selfieUrl,
+            true,
+            true,
+            true,
+            versao_privacidade || "2026-04-06",
+            versao_termos_criador || "2026-04-06",
+            ip
+          ]
+        );
 
         return res.json({ ok: true });
       }
 
-      // 👤 CLIENTE
+      // CLIENTE
       if (role === "cliente") {
-
         const clienteRes = await db.query(
           "SELECT id FROM clientes WHERE user_id = $1",
           [userId]
@@ -10855,34 +10927,65 @@ app.post("/api/verificacao", auth, uploadVerificacao.fields([ { name: "doc_frent
 
         const clienteId = clienteRes.rows[0].id;
 
-        await db.query(`
-          INSERT INTO clientes_verificacao
-            (cliente_id, documento_tipo, doc_frente_url, doc_verso_url, selfie_url, status, criado_em)
-          VALUES
-            ($1,$2,$3,$4,$5,'em_analise', NOW())
+        await db.query(
+          `
+          INSERT INTO clientes_verificacao (
+            cliente_id,
+            documento_tipo,
+            doc_frente_url,
+            doc_verso_url,
+            selfie_url,
+            confirmacao_identidade,
+            aceite_privacidade,
+            aceite_termos_criador,
+            versao_privacidade,
+            versao_termos_criador,
+            aceite_em,
+            aceite_ip,
+            status,
+            criado_em,
+            atualizado_em
+          )
+          VALUES (
+            $1,$2,$3,$4,$5,
+            $6,$7,$8,$9,$10,
+            NOW(),$11,'em_analise', NOW(), NOW()
+          )
           ON CONFLICT (cliente_id)
           DO UPDATE SET
             documento_tipo = EXCLUDED.documento_tipo,
             doc_frente_url = EXCLUDED.doc_frente_url,
             doc_verso_url = EXCLUDED.doc_verso_url,
             selfie_url = EXCLUDED.selfie_url,
+            confirmacao_identidade = EXCLUDED.confirmacao_identidade,
+            aceite_privacidade = EXCLUDED.aceite_privacidade,
+            aceite_termos_criador = EXCLUDED.aceite_termos_criador,
+            versao_privacidade = EXCLUDED.versao_privacidade,
+            versao_termos_criador = EXCLUDED.versao_termos_criador,
+            aceite_em = NOW(),
+            aceite_ip = EXCLUDED.aceite_ip,
             status = 'em_analise',
             atualizado_em = NOW()
-        `, [
-          clienteId,
-          documento_tipo,
-          docFrenteUrl,
-          docVersoUrl,
-          selfieUrl
-        ]);
+          `,
+          [
+            clienteId,
+            documento_tipo,
+            docFrenteUrl,
+            docVersoUrl,
+            selfieUrl,
+            true,
+            true,
+            true,
+            versao_privacidade || "2026-04-06",
+            versao_termos_criador || "2026-04-06",
+            ip
+          ]
+        );
 
         return res.json({ ok: true });
       }
 
-
-      // ROLE INVÁLIDA
       return res.status(403).json({ erro: "Role inválida" });
-
     } catch (err) {
       console.error("❌ Erro upload verificação:", err);
       return res.status(500).json({ erro: "Erro ao enviar documentos" });

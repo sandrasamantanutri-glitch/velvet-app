@@ -17,108 +17,139 @@
     </button>
 
    <h3>Dados Pessoais</h3>
-    <div id="statusVerificacao" class="status-box" style="display:none;"></div>
+<div id="statusVerificacao" class="status-box" style="display:none;"></div>
 
-    <div class="verificacao-steps">
-     <span class="step ativo">1. Dados pessoais</span>
-     <span class="step">2. Documentos</span>
-     <br><br>
-    </div>
-
-    <form id="formDadosPessoais" class="form-area">
-      <span class="form-info" id="infoDadosPessoais">
-       🔒 Essas informações são confidenciais, usadas apenas para verificação de identidade
-       e processamento de pagamentos. Seu perfil de criador só será liberado após a aprovação dos seus dados e documentos.
-      </span>
-
-      <div class="form-grid">
-        <div class="form-group full"><label>Nome completo*</label><input type="text" name="nome_completo" placeholder="Nome e Sobrenome" required>
-      </div>
-
-      <div class="form-group">
-        <label>Data de nascimento*</label><input type="date" name="data_nascimento" required>
-      </div>
-
-      <div class="form-group">
-        <label>Telefone com DDD*</label> <input type="tel" name="telefone" placeholder="(11) 99999-9999" required>
-      </div>
-
-      <div class="form-group full"> 
-        <label>Endereço*</label> <textarea name="endereco" rows="2" placeholder="Rua, número e bairro" required></textarea>
-      </div>
-
-      <div class="form-group">
-        <label>Estado*</label> <input type="text" name="estado" required>
-      </div>
-
-      <div class="form-group">
-        <label>Cidade*</label> <input type="text" name="cidade" required>
-      </div>
-
-      <div class="form-group full">
-        <label>País*</label> <input type="text" name="pais" required> <small>*Informações obrigatórias</small>
-      </div>
-      </div>
-      <button type="submit" class="btn-salvar">
-       Salvar e continuar
-      </button>
-      <br><br>
-     <span class="form-info" id="infoDados"> ⏳ Após salvar, envie seus documentos na etapa 2 e sua conta entra em processo de verificação. O perfil público e a monetização são liberados após aprovação.</span>
-    </form>
-  
-  </section>
-
-  <section class="area-card">
-
-    <h3>Verificação de Identidade</h3>
-    <div class="verificacao-steps">
-   <span class="step concluido">1. Dados pessoais</span>
-   <span class="step ativo">2. Documentos</span>
+<div class="verificacao-steps">
+  <span class="step ativo">1. Dados pessoais</span>
+  <span class="step">2. Documentos</span>
+  <br><br>
 </div>
 
-     <div class="form-info" id="infoDocumentos">
-  <div id="statusContainer">Para proteger você e a plataforma, confirmamos sua identidade com um documento oficial válido. Seus documentos são analisados de forma confidencial e <strong>nunca</strong> ficam visíveis para outros usuários.
+<form id="formDadosPessoais" class="form-area">
+  <span class="form-info" id="infoDadosPessoais">
+    🔒 Essas informações são confidenciais, usadas apenas para verificação de identidade
+    e processamento de pagamentos. Seu perfil de criador só será liberado após a aprovação dos seus dados e documentos.
+  </span>
+
+  <div class="form-grid">
+    <div class="form-group full">
+      <label>Nome completo*</label>
+      <input type="text" name="nome_completo" placeholder="Nome e Sobrenome" required>
+    </div>
+
+    <div class="form-group">
+      <label>Data de nascimento*</label>
+      <input type="date" name="data_nascimento" required>
+    </div>
+
+    <div class="form-group">
+      <label>Telefone com DDD*</label>
+      <input type="tel" name="telefone" placeholder="(11) 99999-9999" required>
+    </div>
+
+    <div class="form-group full">
+      <label>Endereço*</label>
+      <textarea name="endereco" rows="2" placeholder="Rua, número e bairro" required></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>Estado*</label>
+      <input type="text" name="estado" required>
+    </div>
+
+    <div class="form-group">
+      <label>Cidade*</label>
+      <input type="text" name="cidade" required>
+    </div>
+
+    <div class="form-group full">
+      <label>País*</label>
+      <input type="text" name="pais" required>
+      <small>*Informações obrigatórias</small>
+    </div>
   </div>
-</div>
 
-<p class="status-descricao" id="descricaoAnalise">
-O processo de análise pode levar até <strong>48 horas</strong>, dependendo do volume de solicitações.
-</p> 
-      <form id="formDocumentos" class="form-area" enctype="multipart/form-data">
-        <div class="form-group full">
-         <label>Tipo de documento*</label> 
-         <select name="documento_tipo" required> <option value="">Selecione</option>
-          <option value="rg">RG</option>
-          <option value="cnh">CNH</option>
-          <option value="passaporte">Passaporte</option>
-          </select>
-        </div>
+  <button type="submit" class="btn-salvar">Salvar e continuar</button>
+  <br><br>
+  <span class="form-info" id="infoDados">
+    ⏳ Após salvar, envie seus documentos na etapa 2 e sua conta entra em processo de verificação. O perfil público e a monetização são liberados após aprovação.
+  </span>
+</form>
 
-       <div class="form-group full">
-         <label>Documento (frente)*</label>
-         <input type="file" name="doc_frente" accept="image/*,.pdf"  required>
-         <small>Envie uma foto nítida e legível</small>
-       </div>
+<section class="area-card">
+  <h3>Verificação de Identidade</h3>
 
-       <div class="form-group full">
-         <label>Documento (verso)</label>
-         <input type="file" name="doc_verso" accept="image/*,.pdf">
-         <small>Obrigatório apenas se houver informações no verso</small>
-       </div>
+  <div class="verificacao-steps">
+    <span class="step concluido">1. Dados pessoais</span>
+    <span class="step ativo">2. Documentos</span>
+  </div>
 
-       <div class="form-group full">
-         <label>Selfie segurando o documento*</label> <input type="file" name="selfie" accept="image/*" required>
-         <small> Mostre claramente seu rosto e o documento. Não utilize óculos escuros ou filtros.</small>
-       </div>
-
-       <div class="form-group full check-group">
-       <input type="checkbox" id="confirmacao" name="confirmacao" required> <label for="confirmacao"> Declaro que sou a pessoa do documento enviado, sou maior de 18 anos e autorizo a verificação da minha identidade.</label>
-       </div>
-       
-       <button type="submit" class="btn-salvar"> Enviar documentos para análise </button>
-      </form>
+  <div class="form-info" id="infoDocumentos">
+    <div id="statusContainer">
+      Para proteger você e a plataforma, confirmamos sua identidade com um documento oficial válido. Seus documentos são analisados de forma confidencial e <strong>nunca</strong> ficam visíveis para outros usuários.
     </div>
-  </section>
+  </div>
+
+  <p class="status-descricao" id="descricaoAnalise">
+    O processo de análise pode levar até <strong>48 horas</strong>, dependendo do volume de solicitações.
+  </p>
+
+  <form id="formDocumentos" class="form-area" enctype="multipart/form-data">
+    <div class="form-group full">
+      <label>Tipo de documento*</label>
+      <select name="documento_tipo" required>
+        <option value="">Selecione</option>
+        <option value="rg">RG</option>
+        <option value="cnh">CNH</option>
+        <option value="passaporte">Passaporte</option>
+      </select>
+    </div>
+
+    <div class="form-group full">
+      <label>Documento (frente)*</label>
+      <input type="file" name="doc_frente" accept="image/*,.pdf" required>
+      <small>Envie uma foto nítida e legível</small>
+    </div>
+
+    <div class="form-group full">
+      <label>Documento (verso)</label>
+      <input type="file" name="doc_verso" accept="image/*,.pdf">
+      <small>Obrigatório apenas se houver informações no verso</small>
+    </div>
+
+    <div class="form-group full">
+      <label>Selfie segurando o documento*</label>
+      <input type="file" name="selfie" accept="image/*" required>
+      <small>Mostre claramente seu rosto e o documento. Não utilize óculos escuros ou filtros.</small>
+    </div>
+
+    <div class="form-group full check-group">
+      <input type="checkbox" id="confirmacao_identidade" name="confirmacao_identidade" required>
+      <label for="confirmacao_identidade">
+        Declaro, sob minha responsabilidade, que sou a pessoa titular do documento enviado, que possuo mais de 18 anos e que autorizo a verificação da minha identidade, incluindo o tratamento dos meus dados pessoais e documentos para fins de validação, segurança, prevenção à fraude e cumprimento de obrigações legais, nos termos da Política de Privacidade.
+      </label>
+    </div>
+
+    <div class="form-group full check-group">
+      <input type="checkbox" id="aceite_privacidade" name="aceite_privacidade" required>
+      <label for="aceite_privacidade">
+        Declaro que li, compreendi e concordo com a <a href="/privacy.pdf" target="_blank" rel="noopener noreferrer">Política de Privacidade</a>, incluindo o tratamento dos meus dados pessoais conforme descrito.
+      </label>
+    </div>
+
+    <div class="form-group full check-group">
+      <input type="checkbox" id="aceite_termos_criador" name="aceite_termos_criador" required>
+      <label for="aceite_termos_criador">
+        Declaro que li, compreendi e concordo integralmente com os <a href="/creators_terms.pdf" target="_blank" rel="noopener noreferrer">Termos e Condições para Criadores</a>.
+      </label>
+    </div>
+
+    <input type="hidden" name="versao_privacidade" value="2026-04-06">
+    <input type="hidden" name="versao_termos_criador" value="2026-04-06">
+
+    <button type="submit" class="btn-salvar">Enviar documentos para análise</button>
+  </form>
+</section>
 
   <section class="area-section">
 

@@ -619,28 +619,35 @@ formPessoais?.addEventListener("submit", async (e) => {
     pais: formPessoais.pais.value.trim()
   };
 
-  const res = await fetch("/api/usuario/dados", {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + localStorage.getItem("token")
-    },
-    body: JSON.stringify(dados)
-  });
+  try {
+    const res = await fetch("/api/usuario/dados", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + localStorage.getItem("token")
+      },
+      body: JSON.stringify(dados)
+    });
 
-if (res.status === 403) {
-  alert("Seus dados pessoais já foram aprovados e não podem ser alterados.");
-  bloquearFormulario(formPessoais);
-  mostrarStatusVerificacao("aprovado");
-  return;
-}
+    if (res.status === 403) {
+      alert("Seus dados pessoais já foram aprovados e não podem ser alterados.");
+      bloquearFormulario(formPessoais);
+      mostrarStatusVerificacao("aprovado");
+      return;
+    }
 
-if (!res.ok) {
-  alert("Erro ao salvar dados pessoais");
-  return;
-}
+    if (!res.ok) {
+      const erro = await res.text().catch(() => "");
+      console.error("Erro ao salvar dados pessoais:", erro);
+      alert("Erro ao salvar dados pessoais");
+      return;
+    }
 
-  alert("Dados pessoais salvos com sucesso");
+    alert("Dados pessoais salvos com sucesso");
+  } catch (err) {
+    console.error("Erro na requisição:", err);
+    alert("Erro de conexão ao salvar os dados");
+  }
 });
 
 const formModelo = document.getElementById("formDadosUsuario");

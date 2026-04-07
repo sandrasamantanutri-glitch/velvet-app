@@ -217,25 +217,70 @@ body {
   line-height: 1.4;
 }
 
-
 .check-group {
   display: flex;
-  align-items: flx-start;
-  gap: 12px;
-  font-size: 16px;
-  line-height: 1.5;
-  margin-top: 15px;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.03);
 }
 
 .check-group input[type="checkbox"] {
   margin-top: 4px;
-  transform: scale(1.1);
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
   cursor: pointer;
 }
 
 .check-group label {
+  margin: 0;
+  line-height: 1.5;
+  font-size: 14px;
+  color: #ddd;
   cursor: pointer;
 }
+
+.check-group a {
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.check-group a:hover {
+  opacity: 0.9;
+}
+
+.form-info {
+  display: block;
+  line-height: 1.5;
+}
+
+.status-descricao {
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .check-group {
+    gap: 8px;
+  }
+
+  .check-group label {
+    font-size: 13px;
+  }
+
+  .check-group input[type="checkbox"] {
+    width: 17px;
+    height: 17px;
+  }
+}
+
+
+
+
+
 
 /* ===============================
    BOTÃO SALVAR
