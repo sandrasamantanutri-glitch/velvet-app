@@ -7052,6 +7052,13 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
     return res.status(400).json({ error: "Senha obrigatória" });
   }
 
+  const ip =
+    req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+    req.socket?.remoteAddress ||
+    null;
+
+  const userAgent = req.headers["user-agent"] || null;
+
   const client = await db.connect();
 
   try {
@@ -7083,19 +7090,34 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
 
     await client.query("BEGIN");
 
+    let modelo_id = null;
+    let cliente_id = null;
+    let detalhes = {
+      desativacao_logica: true,
+      users: true,
+      modelos: false,
+      modelos_dados: false,
+      clientes: false,
+      clientes_dados: false,
+      conteudos: false,
+      messages_marcadas_deletadas: false,
+      vip_subscriptions_encerradas: false
+    };
+
     // ===========================
     // MODELO
     // ===========================
     if (role === "modelo") {
       const modeloRes = await client.query(
-        `SELECT id FROM modelos WHERE user_id = $1`,
+        `SELECT id
+         FROM modelos
+         WHERE user_id = $1`,
         [userId]
       );
 
       if (modeloRes.rowCount > 0) {
-        const modelo_id = modeloRes.rows[0].id;
+        modelo_id = modeloRes.rows[0].id;
 
-        // 🔥 IMPORTANTE: messages usa deletada
         await client.query(
           `UPDATE messages
            SET deletada = true
@@ -7103,18 +7125,15 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
           [modelo_id]
         );
 
-        // Encerrar VIPs
         await client.query(
           `UPDATE vip_subscriptions
            SET ativo = false,
-               expiration_at = NOW(),
                updated_at = NOW()
            WHERE modelo_id = $1
              AND ativo = true`,
           [modelo_id]
         );
 
-        // Desativar conteúdos
         await client.query(
           `UPDATE conteudos
            SET ativo = false,
@@ -7123,7 +7142,6 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
           [modelo_id]
         );
 
-        // Dados modelo
         await client.query(
           `UPDATE modelos_dados
            SET ativo = false,
@@ -7132,7 +7150,6 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
           [modelo_id]
         );
 
-        // Modelo
         await client.query(
           `UPDATE modelos
            SET ativo = false,
@@ -7140,6 +7157,12 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
            WHERE id = $1`,
           [modelo_id]
         );
+
+        detalhes.modelos = true;
+        detalhes.modelos_dados = true;
+        detalhes.conteudos = true;
+        detalhes.messages_marcadas_deletadas = true;
+        detalhes.vip_subscriptions_encerradas = true;
       }
     }
 
@@ -7148,14 +7171,15 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
     // ===========================
     if (role === "cliente") {
       const clienteRes = await client.query(
-        `SELECT id FROM clientes WHERE user_id = $1`,
+        `SELECT id
+         FROM clientes
+         WHERE user_id = $1`,
         [userId]
       );
 
       if (clienteRes.rowCount > 0) {
-        const cliente_id = clienteRes.rows[0].id;
+        cliente_id = clienteRes.rows[0].id;
 
-        // 🔥 messages usa deletada
         await client.query(
           `UPDATE messages
            SET deletada = true
@@ -7163,18 +7187,15 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
           [cliente_id]
         );
 
-        // Encerrar VIPs
         await client.query(
           `UPDATE vip_subscriptions
            SET ativo = false,
-               expiration_at = NOW(),
                updated_at = NOW()
            WHERE cliente_id = $1
              AND ativo = true`,
           [cliente_id]
         );
 
-        // Dados cliente
         await client.query(
           `UPDATE clientes_dados
            SET ativo = false,
@@ -7183,7 +7204,6 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
           [cliente_id]
         );
 
-        // Cliente
         await client.query(
           `UPDATE clientes
            SET ativo = false,
@@ -7191,6 +7211,11 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
            WHERE id = $1`,
           [cliente_id]
         );
+
+        detalhes.clientes = true;
+        detalhes.clientes_dados = true;
+        detalhes.messages_marcadas_deletadas = true;
+        detalhes.vip_subscriptions_encerradas = true;
       }
     }
 
@@ -7200,9 +7225,43 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
     await client.query(
       `UPDATE users
        SET ativo = false,
-           desativado_em = NOW()
+           desativado_em = NOW(),
+           autoexcluida_em = NOW(),
+           motivo_desativacao = $2,
+           desativado_por = $3
        WHERE id = $1`,
-      [userId]
+      [userId, "autoexclusao", "proprio_usuario"]
+    );
+
+    // ===========================
+    // LOG
+    // ===========================
+    await client.query(
+      `INSERT INTO conta_exclusoes_log
+       (
+         user_id,
+         role,
+         modelo_id,
+         cliente_id,
+         motivo,
+         solicitado_em,
+         ip,
+         user_agent,
+         origem,
+         detalhes
+       )
+       VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8, $9)`,
+      [
+        userId,
+        role,
+        modelo_id,
+        cliente_id,
+        "autoexclusao",
+        ip,
+        userAgent,
+        "/api/conta/excluir",
+        JSON.stringify(detalhes)
+      ]
     );
 
     await client.query("COMMIT");
@@ -7211,7 +7270,6 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
       ok: true,
       message: "Conta desativada com sucesso"
     });
-
   } catch (err) {
     await client.query("ROLLBACK");
     console.error("ERRO DESATIVAR CONTA:", err);

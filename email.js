@@ -4,7 +4,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function enviarEmailValidacao(email) {
   await resend.emails.send({
-    from: "Velvet <noreply@velvet.lat>",
+    from: "Velvet <no-reply@velvet.lat>",
     to: email,
     subject: "Envio de documentos para aprovação",
     html: `
@@ -64,7 +64,7 @@ async function enviarEmailValidacao(email) {
 
 async function enviarEmailAprovacao(email) {
   await resend.emails.send({
-    from: "Velvet <noreply@velvet.lat>",
+    from: "Velvet <no-reply@velvet.lat>",
     to: email,
     subject: "Sua conta foi aprovada 🎉",
    html: `
@@ -115,7 +115,7 @@ async function enviarEmailAprovacao(email) {
 
 async function enviarEmailRejeicao(email, motivo) {
   await resend.emails.send({
-    from: "Velvet <noreply@velvet.lat>",
+    from: "Velvet <no-reply@velvet.lat>",
     to: email,
     subject: "Verificação de conta não aprovada",
     html: `
