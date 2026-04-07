@@ -51,10 +51,11 @@ const translations = {
     name_required: "O nome é obrigatório",
     data_save_error: "Erro ao salvar dados",
     data_saved: "Dados salvos com sucesso",
-     profile_cover_alt: "Capa do perfil",
+    profile_cover_alt: "Capa do perfil",
     change_cover_title: "Alterar capa",
     profile_avatar_alt: "Foto de Perfil",
-    change_avatar_title: "Alterar avatar"
+    change_avatar_title: "Alterar avatar",
+    vip_subscribers_desc: "Acompanhe de perto seus seguidores"
   },
 
   en: {
@@ -108,7 +109,8 @@ const translations = {
     profile_cover_alt: "Profile cover",
     change_cover_title: "Change cover",
     profile_avatar_alt: "Profile picture",
-    change_avatar_title: "Change profile picture"
+    change_avatar_title: "Change profile picture",
+    vip_subscribers_desc: "Follow your subscribers closely"
   },
 
   es: {
@@ -162,7 +164,8 @@ const translations = {
     profile_cover_alt: "Portada del perfil",
     change_cover_title: "Cambiar portada",
     profile_avatar_alt: "Foto de perfil",
-    change_avatar_title: "Cambiar foto de perfil"
+    change_avatar_title: "Cambiar foto de perfil",
+    vip_subscribers_desc: "Sigue de cerca a tus suscriptores"
   }
 };
 

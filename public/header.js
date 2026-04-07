@@ -569,11 +569,11 @@ es: {
 };
 
 function getCurrentLanguage() {
-  return localStorage.getItem("language") || "pt";
+  return localStorage.getItem("idioma") || "pt";
 }
 
 function setCurrentLanguage(lang) {
-  localStorage.setItem("language", lang);
+  localStorage.setItem("idioma", lang);
 }
 
 function t(key) {
@@ -606,10 +606,6 @@ function initLanguageSwitcher() {
 
   select.addEventListener("change", () => {
     setCurrentLanguage(select.value);
-    applyTranslations();
-
-    if (typeof window.renderFeed === "function") {
-      window.renderFeed();
-    }
+    location.reload();
   });
 }
