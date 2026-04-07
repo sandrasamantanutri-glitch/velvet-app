@@ -145,7 +145,6 @@ body {
 
 @media (max-width: 380px) {
   .header-inner {
-    padding: 0 6px;
     gap: 6px;
   }
 
@@ -188,10 +187,10 @@ body {
 
 #languageSwitcher {
   height: 30px;
-  border: 1px solid #ddd;
+  border: 1px solid #7b2cff;
   border-radius: 999px;
   background: #fff;
-  color: #1E1E26;
+  color: #7b2cff;
   font-size: 12px;
   font-weight: 600;
   padding: 0 10px;
