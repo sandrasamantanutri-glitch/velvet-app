@@ -90,42 +90,43 @@
         <input id="phonePagamento" type="text" maxlength="16">
       </div>
 
-<div class="termos-pagamento">
-  <p class="termos-aviso">
-    Ao efetuar o pagamento, você confirma que está de acordo com os
-    <a href="/terms.html" target="_blank" rel="noopener noreferrer">Termos de Uso</a>
-    e com a
-    <a href="/policies.html" target="_blank" rel="noopener noreferrer">Política de Privacidade</a>.
-  </p>
+      <div class="termos-pagamento">
+        <p class="termos-aviso">
+          Ao efetuar o pagamento, você confirma que está de acordo com os
+          <a href="/terms.html" target="_blank" rel="noopener noreferrer">Termos de Uso</a>
+          e com a
+          <a href="/policies.html" target="_blank" rel="noopener noreferrer">Política de Privacidade</a>.
+        </p>
 
-  <label class="termos-check-linha" for="aceiteTermosPagamento">
-    <input type="checkbox" id="aceiteTermosPagamento" required />
-    <span>Li e aceito os Termos de Uso e a Política de Privacidade da plataforma.</span>
-  </label>
+        <label class="termos-check-linha" for="aceiteTermosPagamento">
+          <input type="checkbox" id="aceiteTermosPagamento" required />
+          <span>Li e aceito os Termos de Uso e a Política de Privacidade da plataforma.</span>
+        </label>
 
-  <label class="termos-check-linha" for="aceiteExecucaoImediata">
-    <input type="checkbox" id="aceiteExecucaoImediata" required />
-    <span>
-      Declaro ciência de que o acesso ao conteúdo ou serviço digital é imediato após o pagamento e que, com isso, posso perder o direito de arrependimento.
-    </span>
-  </label>
-</div>
+        <label class="termos-check-linha" for="aceiteExecucaoImediata">
+          <input type="checkbox" id="aceiteExecucaoImediata" required />
+          <span>
+            Declaro ciência de que o acesso ao conteúdo ou serviço digital é imediato após o pagamento e que, com isso, posso perder o direito de arrependimento.
+          </span>
+        </label>
+      </div>
 
-<button
-  type="button"
-  class="btn-principal"
-  onclick="mostrarMetodo('pix')"
->
-  Pagar com Pix
-</button>
+      <button
+        type="button"
+        class="btn-principal"
+        onclick="mostrarMetodo('pix')"
+      >
+        Pagar com Pix
+      </button>
 
-<button
-  type="button"
-  class="btn-principal"
-  onclick="mostrarMetodo('cartao')"
->
-  Pagar com Cartão
-</button>
+      <button
+        type="button"
+        class="btn-principal"
+        onclick="mostrarMetodo('cartao')"
+      >
+        Pagar com Cartão
+      </button>
+    </div> <!-- FECHAMENTO CORRETO DA ETAPA INICIAL -->
 
     <!-- ETAPA PIX -->
     <div id="etapaPagamentoPix" class="etapa-pagamento hidden">
