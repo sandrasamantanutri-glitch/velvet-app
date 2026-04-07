@@ -1,55 +1,110 @@
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/header.css">
-<link rel="icon" href="/favicon.ico" sizes="any">
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
-</head>
-
 <header class="app-header">
-
-  
   <div class="header-inner">
-    <img src="assets/velvet.png" width="150" height="150"alt="Velvet" class="velvet-logo">
+    <img
+      src="assets/velvet.png"
+      width="150"
+      height="150"
+      alt="Velvet"
+      class="velvet-logo"
+    >
 
-    <a href="/perfil.html" id="linkPerfil" title="Perfil">
-  <img
-    id="headerAvatar"
-    src="assets/avatar.png"
-    width="30"
-    height="30"
-    alt="Perfil"
-    class="header-avatar"
-  >
-</a>
-
-    <a href="/feed.html" title="Feed">
-      <img src="assets/feed.png" width="30" height="30" alt="Feed">
+    <a
+      href="/perfil.html"
+      id="linkPerfil"
+      title="Perfil"
+      data-i18n-title="header.profile"
+    >
+      <img
+        id="headerAvatar"
+        src="assets/avatar.png"
+        width="30"
+        height="30"
+        alt="Perfil"
+        data-i18n-alt="header.profile"
+        class="header-avatar"
+      >
     </a>
 
-    <a href="/areaUsuario.html" title="Area de Usuario">
-      <img src="assets/perfil.png" width="30" height="30" alt="Area de Usuario">
+    <a
+      href="/feed.html"
+      title="Feed"
+      data-i18n-title="header.feed"
+    >
+      <img
+        src="assets/feed.png"
+        width="30"
+        height="30"
+        alt="Feed"
+        data-i18n-alt="header.feed"
+      >
     </a>
 
-    <a href="#" onclick="irParaInbox()" title="Chat">
-      <img src="assets/chat.png" width="30" height="30" alt="Chat">
+    <a
+      href="/areaUsuario.html"
+      title="Área de Usuário"
+      data-i18n-title="header.userArea"
+    >
+      <img
+        src="assets/perfil.png"
+        width="30"
+        height="30"
+        alt="Área de Usuário"
+        data-i18n-alt="header.userArea"
+      >
     </a>
 
-    <a href="#" id="btnNotificacoes" title="Ativar/desativar notificações">
-  <img
-    id="iconNotificacoes"
-    src="assets/notoff.png"
-    width="30"
-    height="30"
-    alt="Notificações"
-  >
-</a>
+    <a
+      href="#"
+      onclick="irParaInbox()"
+      title="Chat"
+      data-i18n-title="header.chat"
+    >
+      <img
+        src="assets/chat.png"
+        width="30"
+        height="30"
+        alt="Chat"
+        data-i18n-alt="header.chat"
+      >
+    </a>
 
-    <a href="#" id="btnLogout" title="Sair">
-      <img src="assets/logout.png" width="30" height="30" alt="Sair">
+    <a
+      href="#"
+      id="btnNotificacoes"
+      title="Ativar/desativar notificações"
+      data-i18n-title="header.notifications"
+    >
+      <img
+        id="iconNotificacoes"
+        src="assets/notoff.png"
+        width="30"
+        height="30"
+        alt="Notificações"
+        data-i18n-alt="header.notifications"
+      >
+    </a>
+
+    <div class="language-switcher">
+      <select id="languageSwitcher" aria-label="Selecionar idioma">
+        <option value="pt">PT</option>
+        <option value="en">EN</option>
+        <option value="es">ES</option>
+      </select>
+    </div>
+
+    <a
+      href="#"
+      id="btnLogout"
+      title="Sair"
+      data-i18n-title="header.logout"
+    >
+      <img
+        src="assets/logout.png"
+        width="30"
+        height="30"
+        alt="Sair"
+        data-i18n-alt="header.logout"
+      >
     </a>
   </div>
-
+</header>

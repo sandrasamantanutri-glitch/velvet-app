@@ -14,7 +14,6 @@ if ("serviceWorker" in navigator) {
 // ===============================
 // SOCKET GLOBAL
 function carregarHeader() {
-  // evita duplicar
   if (document.querySelector(".app-header")) {
     return;
   }
@@ -29,15 +28,17 @@ function carregarHeader() {
     .then(res => res.text())
     .then(html => {
       container.insertAdjacentHTML("afterbegin", html);
-    const user = {
+
+      const user = {
         avatar_url: localStorage.getItem("avatar_url"),
         avatar: localStorage.getItem("avatar")
       };
 
       atualizarAvatarHeader(user);
+      initLanguageSwitcher();
+      applyTranslations();
       sincronizarIconeNotificacoes();
     })
-
     .catch(err => console.error("Erro ao carregar header:", err));
 }
 
@@ -207,7 +208,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 // LOGO → HOME POR ROLE
 
 document.addEventListener("click", (e) => {
-  const logo = e.target.closest(".logo-app");
+ const logo = e.target.closest(".velvet-logo");
   if (!logo) return;
 
   const role = localStorage.getItem("role");
@@ -341,8 +342,8 @@ function atualizarIconeNotificacoes(ativo) {
   if (!icon) return;
 
   icon.src = ativo ? "assets/noton.png" : "assets/notoff.png";
-  icon.alt = ativo ? "Notificações ativadas" : "Notificações desativadas";
-  icon.title = ativo ? "Desativar notificações" : "Ativar notificações";
+  icon.alt = ativo ? t("header.notificationsOn") : t("header.notificationsOff");
+  icon.title = ativo ? t("header.disableNotifications") : t("header.enableNotifications");
 }
 
 async function obterEstadoRealNotificacoes() {
@@ -517,4 +518,98 @@ async function carregarVapidPublicKey() {
     console.error("Erro ao carregar VAPID public key:", err);
     return null;
   }
+}
+
+const i18n = {
+pt: {
+  "header.profile": "Perfil",
+  "header.feed": "Feed",
+  "header.userArea": "Área de Usuário",
+  "header.chat": "Chat",
+  "header.notifications": "Ativar/desativar notificações",
+  "header.notificationsOn": "Notificações ativadas",
+  "header.notificationsOff": "Notificações desativadas",
+  "header.enableNotifications": "Ativar notificações",
+  "header.disableNotifications": "Desativar notificações",
+  "header.logout": "Sair",
+  "feed.empty": "Nenhuma modelo disponível",
+  "feed.error": "Erro ao carregar o feed.",
+  "feed.fetchError": "Erro ao buscar modelos"
+},
+en: {
+  "header.profile": "Profile",
+  "header.feed": "Feed",
+  "header.userArea": "User Area",
+  "header.chat": "Chat",
+  "header.notifications": "Enable/disable notifications",
+  "header.notificationsOn": "Notifications enabled",
+  "header.notificationsOff": "Notifications disabled",
+  "header.enableNotifications": "Enable notifications",
+  "header.disableNotifications": "Disable notifications",
+  "header.logout": "Log out",
+  "feed.empty": "No creators available",
+  "feed.error": "Error loading the feed.",
+  "feed.fetchError": "Error fetching creators"
+},
+es: {
+  "header.profile": "Perfil",
+  "header.feed": "Feed",
+  "header.userArea": "Área de usuario",
+  "header.chat": "Chat",
+  "header.notifications": "Activar/desactivar notificaciones",
+  "header.notificationsOn": "Notificaciones activadas",
+  "header.notificationsOff": "Notificaciones desactivadas",
+  "header.enableNotifications": "Activar notificaciones",
+  "header.disableNotifications": "Desactivar notificaciones",
+  "header.logout": "Salir",
+  "feed.empty": "No hay creadoras disponibles",
+  "feed.error": "Error al cargar el feed.",
+  "feed.fetchError": "Error al buscar creadoras"
+}
+};
+
+function getCurrentLanguage() {
+  return localStorage.getItem("language") || "pt";
+}
+
+function setCurrentLanguage(lang) {
+  localStorage.setItem("language", lang);
+}
+
+function t(key) {
+  const lang = getCurrentLanguage();
+  return i18n[lang]?.[key] || i18n.pt?.[key] || key;
+}
+
+function applyTranslations() {
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const key = el.dataset.i18n;
+    el.textContent = t(key);
+  });
+
+  document.querySelectorAll("[data-i18n-title]").forEach(el => {
+    const key = el.dataset.i18nTitle;
+    el.title = t(key);
+  });
+
+  document.querySelectorAll("[data-i18n-alt]").forEach(el => {
+    const key = el.dataset.i18nAlt;
+    el.alt = t(key);
+  });
+}
+
+function initLanguageSwitcher() {
+  const select = document.getElementById("languageSwitcher");
+  if (!select) return;
+
+  select.value = getCurrentLanguage();
+
+  select.addEventListener("change", () => {
+    setCurrentLanguage(select.value);
+    applyTranslations();
+
+    if (typeof window.renderFeed === "function") {
+      window.renderFeed();
+    }
+  });
 }

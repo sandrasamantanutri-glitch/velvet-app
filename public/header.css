@@ -180,3 +180,29 @@ body {
     height: 18px;
   }
 }
+
+.language-switcher {
+  display: flex;
+  align-items: center;
+}
+
+#languageSwitcher {
+  height: 30px;
+  border: 1px solid #ddd;
+  border-radius: 999px;
+  background: #fff;
+  color: #1E1E26;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0 10px;
+  outline: none;
+  cursor: pointer;
+}
+
+@media (max-width: 480px) {
+  #languageSwitcher {
+    height: 24px;
+    font-size: 11px;
+    padding: 0 8px;
+  }
+}

@@ -517,7 +517,7 @@ body.modal-open {
 }
 
 .language-switcher select {
-  background: none;
+  background: #f0f0f0;
   color: #7B2CFF;
   border: 1px solid rgba(255,255,255,0.2);
   border-radius: 10px;
