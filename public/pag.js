@@ -13,6 +13,9 @@ let stripePaymentElement = null;
 let stripeClientSecret = null;
 let stripeMetodoAtual = null;
 
+let pollingPixInterval = null;
+let pollingCartaoInterval = null;
+
 function whenSocketReady(cb, { timeoutMs = 8000, intervalMs = 50 } = {}) {
   if (window.socket) {
     cb(window.socket);
@@ -637,14 +640,18 @@ window.fecharPopupPagamento = function () {
   const popup = document.getElementById("popupPagamentoVelvet");
   if (!popup) return;
 
-  if (pollingPixInterval) {
-    clearInterval(pollingPixInterval);
-    pollingPixInterval = null;
-  }
+  try {
+    if (typeof pollingPixInterval !== "undefined" && pollingPixInterval) {
+      clearInterval(pollingPixInterval);
+      pollingPixInterval = null;
+    }
 
-  if (pollingCartaoInterval) {
-    clearInterval(pollingCartaoInterval);
-    pollingCartaoInterval = null;
+    if (typeof pollingCartaoInterval !== "undefined" && pollingCartaoInterval) {
+      clearInterval(pollingCartaoInterval);
+      pollingCartaoInterval = null;
+    }
+  } catch (err) {
+    console.error("Erro ao limpar intervals do popup:", err);
   }
 
   popup.classList.add("hidden");
@@ -1217,8 +1224,6 @@ function gerarFingerprint() {
     new Date().getTimezoneOffset()
   );
 }
-
-let pollingPixInterval = null;
 
 function iniciarVerificacaoPix(orderId) {
   if (pollingPixInterval) {
