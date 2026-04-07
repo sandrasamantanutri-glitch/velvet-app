@@ -19,9 +19,6 @@ async function enviarEmailValidacao(email) {
   });
 }
 
-const path = require("path");
-const fs = require("fs");
-
 async function enviarEmailAprovacao(email) {
   const manualPath = path.join(process.cwd(), "docs", "manual.pdf");
   const termosPath = path.join(process.cwd(), "docs", "creators_terms.pdf");
