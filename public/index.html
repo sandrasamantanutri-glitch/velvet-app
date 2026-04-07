@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt">
 <head>
   <meta charset="UTF-8" />
   <title>Velvet</title>
@@ -27,27 +27,35 @@
     <!-- LOGIN -->
     <div class="landing-login">
 
+      <div class="language-switcher">
+  <select id="languageSwitcher" aria-label="Selecionar idioma">
+    <option value="pt">Português</option>
+    <option value="en">English</option>
+    <option value="es">Español</option>
+  </select>
+</div>
+
       <img src="assets/velvet.png" class="logo" alt="Velvet">
 
       <div class="login-box">
-        <button class="btn btn-Login" onclick="selectRole()">
-          ENTRAR
-        </button>
+<button class="btn btn-Login" onclick="selectRole()" data-i18n="enter">
+  ENTRAR
+</button>
 
-        <button class="btn btn-cadastro" onclick="startRegister()">
-          Criar Conta
-        </button>
+<button class="btn btn-cadastro" onclick="startRegister()" data-i18n="createAccount">
+  Criar Conta
+</button>
       </div>
 
        <div class="footer-linksC">
-        <a href="#" onclick="openForgot(); return false;">Esqueci minha senha</a><br>
+        <a href="#" onclick="openForgot(); return false;" data-i18n="forgotPassword">Esqueci minha senha</a><br>
         </div>
 
       <div class="footer-links">
-        <a href="contato.html">Contato</a>
-        <a href="/terms.html" target="_blank" rel="noopener noreferrer">Termos de Uso</a>
-        <a href="/policies.html" target="_blank" rel="noopener noreferrer">Políticas de Utilização</a>
-        <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Políticas de Privacidade</a>
+        <a href="contato.html" data-i18n="contact">Contato</a>
+        <a href="/terms.html" target="_blank" rel="noopener noreferrer" data-i18n="termsOfUse">Termos de Uso</a>
+        <a href="/policies.html" target="_blank" rel="noopener noreferrer" data-i18n="usagePolicies">Políticas de Utilização</a>
+        <a href="/privacy.html" target="_blank" rel="noopener noreferrer" data-i18n="privacyPolicies">Políticas de Privacidade</a>
       </div>
     </div> <!-- landing-login -->
   </div>
@@ -58,48 +66,32 @@
   <div class="modal-overlay" onclick="closeForgotModal()"></div>
 
   <div class="modal-box velvet">
-    <h2 id="forgotTitle">Recuperar senha</h2>
+    <h2 id="forgotTitle" data-i18n="forgotTitle">Recuperar senha</h2>
 
     <!-- STEP 1 -->
     <div id="forgotStepEmail">
-      <input
-        id="forgotEmail"
-        type="email"
-        placeholder="Seu email cadastrado"
-      />
+<input id="forgotEmail" type="email" placeholder="Seu email cadastrado" data-i18n-placeholder="registeredEmailPlaceholder"/>
 
-      <button class="btn btn-primary" onclick="sendResetCode()">
-        Enviar código
-      </button>
-      <p id="forgotSpamHint" class="modal-switch hidden">
-  Se não encontrar o email, verifique o <strong>lixo eletrônico</strong> ou
-  <strong>spam</strong>.
+<button class="btn btn-primary" onclick="sendResetCode()" data-i18n="sendCode">
+  Enviar código
+</button>
+
+<p id="forgotSpamHint" class="modal-switch hidden" data-i18n="spamHint">
+  Se não encontrar o email, verifique o lixo eletrônico ou spam.
 </p>
 
-      <p class="modal-switch">
-        Lembrou da senha?
-        <span onclick="closeForgotModal()">Voltar ao login</span>
-      </p>
+<p class="modal-switch">
+  <span data-i18n="rememberedPassword">Lembrou da senha?</span>
+  <span onclick="closeForgotModal()" data-i18n="backToLogin">Voltar ao login</span>
+</p>
     </div>
 
     <!-- STEP 2 -->
     <div id="forgotStepCode" class="hidden">
-      <input
-        id="forgotCode"
-        type="text"
-        placeholder="Código de 6 dígitos"
-      />
-
-      <input
-        id="forgotNewPassword"
-        type="password"
-        placeholder="Nova senha"
-      />
-      <input id="forgotConfirmPassword" type="password" placeholder="Confirmar nova senha"/>
-
-      <button class="btn btn-primary" onclick="confirmReset()">
-        Alterar senha
-      </button>
+    <input id="forgotCode" type="text" placeholder="Código de 6 dígitos" data-i18n-placeholder="codePlaceholder"/>
+    <input id="forgotNewPassword" type="password" placeholder="Nova senha" data-i18n-placeholder="newPasswordPlaceholder"/>
+    <input id="forgotConfirmPassword" type="password" placeholder="Confirmar nova senha" data-i18n-placeholder="confirmNewPasswordPlaceholder"/>
+    <button class="btn btn-primary" onclick="confirmReset()" data-i18n="changePassword"> Alterar senha </button>
     </div>
 
     <button class="modal-close" onclick="closeForgotModal()">✕</button>
@@ -120,56 +112,55 @@
   <div class="modal-overlay" onclick="closeLoginModal()"></div>
 
   <div class="modal-box">
-    <h2 id="modalTitle">Entrar</h2>
+    <h2 id="modalTitle" data-i18n="loginTitle">Entrar</h2>
 
     <!-- CAMPOS COMUNS -->
-    <label for="loginEmail">Email</label>
-    <input id="loginEmail" type="email" placeholder="Email">
+    <label for="loginEmail" data-i18n="email">Email</label>
+    <input id="loginEmail" type="email" placeholder="Email" data-i18n-placeholder="emailPlaceholder">
 
-    <label for="loginSenha">Senha</label>
-    <input id="loginSenha" type="password" placeholder="Senha">
+    <label for="loginSenha" data-i18n="password">Senha</label>
+    <input id="loginSenha" type="password" placeholder="Senha" data-i18n-placeholder="passwordPlaceholder">
 
     <!-- REGISTRO -->
     <div class="field hidden" id="fieldSenha">
-      <label for="registerSenhaConfirm">Repita a sua senha</label>
-      <input id="registerSenhaConfirm" type="password">
+      <label for="registerSenhaConfirm" data-i18n="repeatPassword">Repita a sua senha</label>
+      <input id="registerSenhaConfirm" type="password" data-i18n-placeholder="registerRepeatPasswordPlaceholder">
     </div>
 
     <div class="field hidden" id="fieldNome">
-      <label for="registerNome">Nome Completo</label>
-      <input id="registerNome" type="text">
+      <label for="registerNome" data-i18n="fullName">Nome Completo</label>
+      <input id="registerNome" type="text" data-i18n-placeholder="fullNamePlaceholder">
     </div>
 
     <div class="field hidden" id="fieldNascimento">
-      <label for="registerNascimento">Data de Nascimento</label>
+      <label for="registerNascimento" data-i18n="birthDate">Data de Nascimento</label>
       <input id="registerNascimento" type="date">
     </div>
 
     <div class="field hidden" id="fieldPerfil">
       <select id="registerRole">
-        <option value="cliente">Quero ser membro</option>
-        <option value="modelo">Quero criar conteúdo</option>
+        <option value="cliente" data-i18n="wantMember">Quero ser membro</option>
+        <option value="modelo" data-i18n="wantCreator">Quero criar conteúdo</option>
       </select>
     </div>
 
     <!-- TEXTO LEGAL -->
-    <p id="registerLegal" class="field hidden">
-      Ao criar meu registro, declaro ter mais de
-      <strong>18 anos</strong> e estar de acordo com os
-      <a href="/terms.html" target="_blank">Termos e Condições de Uso</a>.
-    </p>
+<p id="registerLegal" class="field hidden">
+  <span data-i18n="registerLegalText"></span>
+  <a href="/terms.html" target="_blank" data-i18n="termsOfUse"></a>
+</p>
 
-    <button id="modalSubmit" class="btn btn-primary">
-      Entrar
-    </button>
+<button id="modalSubmit" class="btn btn-primary" data-i18n="loginAction">
+  Entrar
+</button>
 
-    <p class="modal-switch hidden" id="switchToLogin">
-      Já tem conta?
-      <span onclick="switchToLogin()">Entrar</span>
-    </p>
-    <p class="modal-switch hidden" id="switchToLogin">
-      Não tem conta??
-      <span onclick="startRegister()">Criar conta</span>
+<p class="modal-switch hidden" id="switchToLogin">
+  <span data-i18n="alreadyHaveAccount">Já tem conta?</span>
+  <span onclick="switchToLogin()" data-i18n="loginAction">Entrar</span>
+</p>
+<p class="modal-switch hidden" id="switchToRegister">
+  <span data-i18n="noAccount">Não tem conta?</span>
+      <span onclick="startRegister()" data-i18n="registerAction">Criar conta</span>
     </p>
 
     <button class="modal-close" onclick="closeLoginModal()">✕</button>
@@ -181,21 +172,20 @@
   <div class="modal-overlay"></div>
 
   <div class="modal-box">
-    <h2>Plataforma exclusiva para maiores de 18 anos</h2>
+    <h2 data-i18n="ageGateTitle">Plataforma exclusiva para maiores de 18 anos</h2>
 
-    <p>
-      Ao continuar, você declara que possui <strong>18 anos ou mais</strong>
-      e concorda com os Termos e Políticas da Velvet disponíveis para consulta em nossa pagina inicial.
-    </p>
+  <p data-i18n="ageGateText">
+  Ao continuar, você declara que possui 18 anos ou mais e concorda com os Termos e Políticas da Velvet disponíveis para consulta em nossa página inicial.
+</p>
 
-    <div style="display:flex; gap:12px; margin-top:20px;">
-      <button class="btn btn-primary" onclick="confirmAge(true)">
-        Sou maior de 18
-      </button>
+<button class="btn btn-primary" onclick="confirmAge(true)" data-i18n="ageGateConfirm">
+  Sou maior de 18
+</button>
 
-      <button class="btn btn-secondary" onclick="confirmAge(false)">
-        Sou menor
-      </button>
+<button class="btn btn-secondary" onclick="confirmAge(false)" data-i18n="ageGateDeny">
+  Sou menor
+</button>
+
     </div>
   </div>
 </div>
