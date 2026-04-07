@@ -517,13 +517,13 @@ body.modal-open {
 }
 
 .language-switcher select {
-  background: #111;
-  color: #fff;
+  background: none;
+  color: #7B2CFF;
   border: 1px solid rgba(255,255,255,0.2);
   border-radius: 10px;
-  padding: 8px 12px;
+  padding: 8px 8px;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 12px;
   cursor: pointer;
 }
 
