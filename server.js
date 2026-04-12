@@ -63,7 +63,8 @@ const allowedOrigins = [
   "https://www.velvet.lat",
   "https://velvet-test-production.up.railway.app",
   "https://velvet-app-production.up.railway.app",
-  "https://velvet-app.onrender.com"
+  "https://velvet-app.onrender.com",
+  "https://bio.mypagess.workers.dev"
 ];
 
 const io = new Server(server, {
