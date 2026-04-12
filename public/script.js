@@ -97,7 +97,8 @@ const TRANSLATIONS = {
     stepCreateAccount: "Cria a tua conta",
     stepDiscover: "Descobre criadores",
     stepConnect: "Conecta e interage",
-    stepMedia: "Acede ás mídias do criador"
+    stepMedia: "Acede ás mídias do criador",
+    footerAbout: "Sobre Nós"
     },
 
   en: {
@@ -157,7 +158,8 @@ const TRANSLATIONS = {
     stepCreateAccount: "Create your account",
     stepDiscover: "Discover creators",
     stepConnect: "Connect and interact",
-    stepMedia: "Access the creator's media"
+    stepMedia: "Access the creator's media",
+    footerAbout: "About Us"
     
   },
 
@@ -217,7 +219,8 @@ const TRANSLATIONS = {
     stepCreateAccount: "Crea tu cuenta",
     stepDiscover: "Descubre creadores",
     stepConnect: "Conecta e interactúa",
-    stepMedia: "Accede a las mídias del creador"
+    stepMedia: "Accede a las mídias del creador",
+    footerAbout: "Sobre Nosotros"
     }
 };
 
