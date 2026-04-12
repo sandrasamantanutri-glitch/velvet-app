@@ -36,6 +36,8 @@ body.modal-open {
   max-width: 1400px;
   display: flex;
   flex-direction: row-reverse;
+  align-items: stretch; 
+  min-height: 562px; 
 }
 
 /* =========================
@@ -45,6 +47,8 @@ body.modal-open {
   flex: 1;
   overflow: hidden;
   border-radius: 24px 0 0 24px;
+  aspect-ratio: 696 / 562;  
+  min-height: 0;            
 }
 
 .landing-cover img {
