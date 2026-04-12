@@ -78,11 +78,11 @@ const TRANSLATIONS = {
     registerRepeatPasswordPlaceholder: "Repita a sua senha",
     fullNamePlaceholder: "Nome completo",
     birthDatePlaceholder: "",
-    ageGateTitle: "Plataforma exclusiva para maiores de 18 anos",
+    ageGateTitle: "Alguns conteúdos desta plataforma podem não ser adequados para menores de 18 anos",
     ageGateText: "Ao continuar, você declara que possui 18 anos ou mais e concorda com os Termos e Políticas da Velvet disponíveis para consulta em nossa pagina inicial.",
     ageGateConfirm: "Sou maior de 18",
     ageGateDeny: "Sou menor",
-    mustBeAdult: "Você precisa ter 18 anos ou mais para acessar a Plataforma.",
+    mustBeAdult: "Para respeitar os termos legais, você deve ter 18 anos ou mais para acessar a plataforma.",
     fillEmailPassword: "Preencha email e senha",
     invalidLogin: "Login e/ou senha inválidos",
     passwordMismatch: "As senhas não coincidem",
@@ -91,7 +91,13 @@ const TRANSLATIONS = {
     registerError: "Erro ao criar conta",
     enterYourEmail: "Digite seu email",
     resetError: "Erro ao redefinir senha",
-    passwordChangedSuccess: "Senha alterada com sucesso! Faça login."
+    passwordChangedSuccess: "Senha alterada com sucesso! Faça login.",
+    wantCreator: "Quero ser criador",
+    howItWorks: "Como funciona",
+    stepCreateAccount: "Cria a tua conta",
+    stepDiscover: "Descobre criadores",
+    stepConnect: "Conecta e interage",
+    stepMedia: "Acede ás mídias do criador"
     },
 
   en: {
@@ -131,11 +137,12 @@ const TRANSLATIONS = {
     registerRepeatPasswordPlaceholder: "Repeat your password",
     fullNamePlaceholder: "Full name",
     birthDatePlaceholder: "",
-    ageGateTitle: "Platform exclusively for adults over 18",
-    ageGateText: "By continuing, you declare that you are 18 years old or older and agree to Velvet's Terms and Policies available on our homepage.",
-    ageGateConfirm: "I am over 18",
+    birthDatePlaceholder: "",
+    ageGateTitle: "Some content on this platform may not be suitable for users under 18 years old",
+    ageGateText: "By continuing, you confirm that you are 18 years of age or older and agree to Velvet's Terms and Policies available on our homepage.",
+    ageGateConfirm: "I am 18 or older",
     ageGateDeny: "I am under 18",
-    mustBeAdult: "You must be 18 years old or older to access the platform.",
+    mustBeAdult: "To comply with legal terms, you must be 18 years of age or older to access the platform.",
     fillEmailPassword: "Enter your email and password",
     invalidLogin: "Invalid email and/or password",
     passwordMismatch: "Passwords do not match",
@@ -144,7 +151,13 @@ const TRANSLATIONS = {
     registerError: "Error creating account",
     enterYourEmail: "Enter your email",
     resetError: "Error resetting password",
-    passwordChangedSuccess: "Password changed successfully! Please sign in."
+    passwordChangedSuccess: "Password changed successfully! Please sign in.",
+    wantCreator: "I want to be a creator",
+    howItWorks: "How it works",
+    stepCreateAccount: "Create your account",
+    stepDiscover: "Discover creators",
+    stepConnect: "Connect and interact",
+    stepMedia: "Access the creator's media"
     
   },
 
@@ -185,11 +198,11 @@ const TRANSLATIONS = {
     registerRepeatPasswordPlaceholder: "Repite tu contraseña",
     fullNamePlaceholder: "Nombre completo",
     birthDatePlaceholder: "",
-    ageGateTitle: "Plataforma exclusiva para mayores de 18 años",
-    ageGateText: "Al continuar, declaras que tienes 18 años o más y que aceptas los Términos y Políticas de Velvet disponibles en nuestra página principal.",
+    ageGateTitle: "Algunos contenidos de esta plataforma pueden no ser adecuados para menores de 18 años",
+    ageGateText: "Al continuar, declaras que tienes 18 años o más y aceptas los Términos y Políticas de Velvet disponibles para consulta en nuestra página de inicio.",
     ageGateConfirm: "Soy mayor de 18",
     ageGateDeny: "Soy menor",
-    mustBeAdult: "Debes tener 18 años o más para acceder a la plataforma.",
+    mustBeAdult: "Para cumplir con los términos legales, debes tener 18 años o más para acceder a la plataforma.",
     fillEmailPassword: "Completa correo y contraseña",
     invalidLogin: "Correo y/o contraseña inválidos",
     passwordMismatch: "Las contraseñas no coinciden",
@@ -198,7 +211,13 @@ const TRANSLATIONS = {
     registerError: "Error al crear la cuenta",
     enterYourEmail: "Escribe tu correo",
     resetError: "Error al restablecer la contraseña",
-    passwordChangedSuccess: "¡Contraseña cambiada con éxito! Inicia sesión."
+    passwordChangedSuccess: "¡Contraseña cambiada con éxito! Inicia sesión.",
+    wantCreator: "Quiero ser creador",
+    howItWorks: "Cómo funciona",
+    stepCreateAccount: "Crea tu cuenta",
+    stepDiscover: "Descubre creadores",
+    stepConnect: "Conecta e interactúa",
+    stepMedia: "Accede a las mídias del creador"
     }
 };
 
