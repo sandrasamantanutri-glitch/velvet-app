@@ -47,6 +47,7 @@ const crypto = require("crypto");
 const axios = require("axios");
 
 const { Resend } = require("resend");
+const resend = new Resend(process.env.RESEND_API_KEY);
 const { enviarEmailValidacao } = require("./email");
 const rateLimit = require("express-rate-limit");
 const compression = require('compression');
@@ -56,9 +57,6 @@ module.exports = uploadVideoCloudflare;
 
 app.set("trust proxy", 1);
 ffmpeg.setFfmpegPath(ffmpegPath);
-
-const sgMail = require("@sendgrid/mail");
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 const allowedOrigins = [
   "https://www.velvet.lat",
@@ -10556,9 +10554,9 @@ app.post("/api/password/forgot", async (req, res) => {
 
     await client.query("COMMIT");
 
-    await sgMail.send({
-      to: email,
-      from: process.env.EMAIL_FROM,
+    await resend.emails.send({
+      from: "Velvet <contato@velvet.lat>",
+      to: [email],
       subject: "Recuperação de senha – Velvet",
       html: `
         <p>Seu código de recuperação é:</p>
@@ -10571,7 +10569,7 @@ app.post("/api/password/forgot", async (req, res) => {
 
   } catch (error) {
     await client.query("ROLLBACK");
-    console.error("❌ ERRO PASSWORD FORGOT:", error.response?.body || error);
+    console.error("❌ ERRO PASSWORD FORGOT:", error);
     return res.status(500).json({ error: "Erro ao enviar código" });
   } finally {
     client.release();
@@ -10688,7 +10686,6 @@ app.post("/api/contato", async (req, res) => {
     assunto = assunto.trim().slice(0, 150);
     mensagem = mensagem.trim().slice(0, 2000);
 
-    // 🔒 validação simples de email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({ error: "Email inválido" });
@@ -10702,9 +10699,9 @@ app.post("/api/contato", async (req, res) => {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 
-    await sgMail.send({
-      to: process.env.EMAIL_FROM,
-      from: process.env.EMAIL_FROM,
+    await resend.emails.send({
+      from: "Velvet <contato@velvet.lat>",
+      to: [process.env.EMAIL_TO],        // email onde recebes os contatos
       replyTo: email,
       subject: `[Contato] ${escape(assunto)}`,
       html: `
@@ -10720,9 +10717,7 @@ app.post("/api/contato", async (req, res) => {
     return res.json({ success: true });
 
   } catch (error) {
-
-    console.error("❌ Erro contato:", error.response?.body || error);
-
+    console.error("❌ Erro contato:", error);
     return res.status(500).json({ error: "Erro ao enviar mensagem" });
   }
 });
