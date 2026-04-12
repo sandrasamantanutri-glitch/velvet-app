@@ -48,7 +48,10 @@ body.modal-open {
 }
 
 .landing-cover img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
+  display: block;
 }
 
 /* =========================
@@ -208,7 +211,10 @@ body.modal-open {
 }
 
 .modal-overlay {
+  position: absolute;
+  inset: 0;
   z-index: 1;
+  background: rgba(0,0,0,0.5);
 }
 
 /* CAIXA */
@@ -240,7 +246,8 @@ body.modal-open {
 
 /* INPUTS */
 .modal-box input {
-  padding: 10px 50px;
+  padding: 10px 14px;
+  width: 100%;
   border-radius: 12px;
   border: 1px solid #ddd;
   font-size: 15px;
