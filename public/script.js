@@ -394,7 +394,7 @@ submit.textContent = t("registerAction");
 // ===============================
 // LOGIN
 async function login() {
-  const email = loginEmail.value.trim();
+  const email = loginEmail.value.trim().toLowerCase();
   const senha = loginSenha.value.trim();
 
   // validação básica
@@ -449,7 +449,7 @@ window.location.href = "/feed.html";
 // ===============================
 // REGISTER
 async function register() {
-  const email = loginEmail.value.trim();
+  const email = loginEmail.value.trim().toLowerCase();
   const senha = loginSenha.value.trim();
   const senhaConfirm = registerSenhaConfirm.value.trim();
   const role = registerRole.value;
@@ -576,7 +576,7 @@ function closeForgotModal() {
 }
 
 async function sendResetCode() {
-  const email = document.getElementById("forgotEmail").value.trim();
+  const email = document.getElementById("forgotEmail").value.trim().toLowerCase();
   if (!email) {
     alert(t("enterYourEmail"));
     return;
@@ -595,7 +595,7 @@ async function sendResetCode() {
 }
 
 async function confirmReset() {
-  const email = document.getElementById("forgotEmail").value.trim();
+  const email = document.getElementById("forgotEmail").value.trim().toLowerCase();
   const codigo = document.getElementById("forgotCode").value.trim();
   const novaSenha = document
     .getElementById("forgotNewPassword")
