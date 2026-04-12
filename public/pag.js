@@ -81,7 +81,7 @@ function obterAceitesPagamento() {
   }
 
   if (!aceitouExecucaoImediata) {
-    alert("Você precisa declarar ciência sobre a liberação imediata do conteúdo/serviço digital para continuar.");
+    alert("Você precisa declarar ciência sobre a liberação imediata da mídia/serviço digital para continuar.");
     return null;
   }
 
@@ -470,6 +470,16 @@ async function inicializarFluxoCartaoStripe() {
   }
 }
 
+function carregarStripe() {
+  return new Promise((resolve) => {
+    if (window.Stripe) return resolve();
+    const script = document.createElement("script");
+    script.src = "https://js.stripe.com/v3/";
+    script.onload = resolve;
+    document.head.appendChild(script);
+  });
+}
+
 async function mostrarMetodo(tipo) {
   if (!validarDadosIniciaisPagamento()) return;
 
@@ -483,6 +493,8 @@ async function mostrarMetodo(tipo) {
   if (tipo === "cartao") {
     resetarEstadoPix();
     irParaEtapaPagamento("cartao");
+
+    await carregarStripe();
 
     if (window.PAGAMENTO_TIPO_ATUAL === "vip") iniciarCartaoVip();
     if (window.PAGAMENTO_TIPO_ATUAL === "midia") iniciarCartaoMidia();
