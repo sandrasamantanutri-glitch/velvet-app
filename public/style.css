@@ -70,11 +70,6 @@ body.modal-open {
    justify-content: space-between;
 }
 
-/* LOGO */
-.logo {
-  width: 250px; 
-}
-
 /* =========================
    BOTÕES
 ========================= */
@@ -438,7 +433,6 @@ body.modal-open {
   }
 
   .logo {
-    width: 180px;
     margin: 10px auto 10px;
   }
 
