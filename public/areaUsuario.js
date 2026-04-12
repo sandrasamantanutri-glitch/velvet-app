@@ -492,7 +492,7 @@ function formatarData(data) {
 }
 
 function gerarLinks(modelo_id) {
-  const base = `https://www.velvet.lat/perfil.html?modelo_id=${modelo_id}`;
+  const base = `https://bio.mypagess.workers.dev/?id=${modelo_id}`;
 
   document.getElementById("linkInstagram").value =
     `${base}&src=instagram`;
