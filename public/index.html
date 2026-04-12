@@ -28,6 +28,8 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.json">
 
+  <link rel="preload" as="image" href="assets/cap.webp" fetchpriority="high">
+
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -48,7 +50,7 @@
 
     <!-- CAPA -->
     <div class="landing-cover">
-      <img src="assets/cap.webp" alt="Velvet">
+      <img src="assets/cap.webp" alt="Velvet" fetchpriority="high" width="696" height="562">
   
     <!-- COMO FUNCIONA -->
       <div class="how-section">
@@ -86,7 +88,7 @@
         </select>
       </div>
 
-      <img src="assets/velvet.webp" class="logo" alt="Velvet">
+      <img src="assets/velvet.webp" class="logo" alt="Velvet" width="250" height="75">
 
       <div class="login-box">
         <button class="btn btn-Login" onclick="selectRole()" data-i18n="enter">ENTRAR</button>

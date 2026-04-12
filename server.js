@@ -49,6 +49,7 @@ const axios = require("axios");
 const { Resend } = require("resend");
 const { enviarEmailValidacao } = require("./email");
 const rateLimit = require("express-rate-limit");
+const compression = require('compression');
 
 module.exports = uploadCloudflareImage;
 module.exports = uploadVideoCloudflare;
@@ -1944,6 +1945,7 @@ app.use((req, res, next) => {
   console.log("➡️ REQ:", req.method, req.url);
   next();
 });
+app.use(compression());
 
 app.use(cors({
   origin: function (origin, callback) {
