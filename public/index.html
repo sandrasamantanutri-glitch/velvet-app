@@ -20,22 +20,8 @@
   <meta name="twitter:title" content="Velvet — Plataforma Social para Criadores">
   <meta name="twitter:description" content="Conecta-te com os teus criadores favoritos.">
 
-   <style>
-    body { margin: 0; background: #dbcafa; font-family: sans-serif; }
-    .landing-cover { display: none; }
-    .logo { width: 180px; display: block; margin: 40px auto; }
-    .hidden { display: none; }
-    .page-wrapper { min-height: 100vh; display: flex; justify-content: center; align-items: center; }
-    .landing-login { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 24px; }
-  </style>
-  
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"></noscript>
-
-  <link rel="preload" as="style" href="style.css" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="style.css"></noscript>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -62,10 +48,7 @@
 
     <!-- CAPA -->
     <div class="landing-cover">
-      <img src="assets/cap.webp"
-     srcset="assets/cap.webp 715w, assets/cap.png 2169w"
-     sizes="(max-width: 768px) 100vw, 715px"
-     alt="Velvet">
+      <img src="assets/cap.webp" alt="Velvet">
   
     <!-- COMO FUNCIONA -->
       <div class="how-section">
@@ -102,10 +85,8 @@
           <option value="es">Español</option>
         </select>
       </div>
-      <img src="assets/velvet.webp" 
-     srcset="assets/velvet.webp 500w, assets/velvet.png 813w"
-     sizes="250px"
-     class="logo" alt="Velvet">
+
+      <img src="assets/velvet.png" class="logo" alt="Velvet">
 
       <div class="login-box">
         <button class="btn btn-Login" onclick="selectRole()" data-i18n="enter">ENTRAR</button>
