@@ -243,7 +243,8 @@ body.modal-open {
 }
 
 /* INPUTS */
-.modal-box input {
+.modal-box input,
+.modal-box select {
   padding: 10px 14px;
   width: 100%;
   border-radius: 12px;
@@ -288,13 +289,6 @@ body.modal-open {
   color: #7B2CFF;
   cursor: pointer;
   font-weight: 600;
-}
-
-.modal-box select {
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid #ddd;
-  font-size: 15px;
 }
 
 .modal-hint {
