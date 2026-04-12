@@ -32,7 +32,7 @@ body.modal-open {
    LAYOUT PRINCIPAL
 ========================= */
 .landing {
-  width: 100%;
+  width: 70%;
   max-width: 1400px;
   display: flex;
   flex-direction: row-reverse;
