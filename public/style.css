@@ -612,6 +612,7 @@ body.modal-open {
   box-sizing: border-box !important;
   background: #fff !important;
   color: #333 !important;
+  align-items: center !important;
 }
 
 .field input:focus,
@@ -622,16 +623,19 @@ body.modal-open {
 }
 
 #fieldPerfil select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237B2CFF' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 14px center;
-  padding-right: 36px;
-  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237B2CFF' d='M6 8L1 3h10z'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 14px center !important;
+  padding-right: 36px !important;
+  cursor: pointer !important;
+}
+#field label {
+  text-align: center;
 }
 
 .btn-secondary {
   background: linear-gradient(135deg, #ebebeb, #c7c7c7);
-  color: white;
+  color: #555;
   font-size: 14px;
   border: none;
   padding: 12px;
