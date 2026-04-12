@@ -313,6 +313,8 @@ function proceedAfterAge() {
 function closeAllModals() {
   document.getElementById("loginModal")?.classList.add("hidden");
   document.getElementById("legalModal")?.classList.add("hidden");
+  document.getElementById("ageModal")?.classList.add("hidden");
+  document.getElementById("forgotModal")?.classList.add("hidden");
 }
 
 
