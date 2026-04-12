@@ -578,19 +578,20 @@ function closeForgotModal() {
 async function sendResetCode() {
   const email = document.getElementById("forgotEmail").value.trim();
   if (!email) {
-   alert(t("enterYourEmail"));
+    alert(t("enterYourEmail"));
     return;
   }
 
-  await fetch("/api/password/forgot", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email })
-  });
-
+  // troca o step PRIMEIRO, independente do servidor
   document.getElementById("forgotSpamHint").classList.remove("hidden");
   document.getElementById("forgotStepEmail").classList.add("hidden");
   document.getElementById("forgotStepCode").classList.remove("hidden");
+
+  fetch("/api/password/forgot", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email })
+  }).catch(() => {});
 }
 
 async function confirmReset() {

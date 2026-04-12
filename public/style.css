@@ -598,18 +598,20 @@ body.modal-open {
   margin-bottom: 10px;
 }
 
+.field {
+  width: 100%;
+}
+
 .field input,
 .field select {
-  width: 100%;
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid #ddd;
-  font-size: 15px;
-  box-sizing: border-box;
-  background: #fff;
-  color: #333;
-  appearance: none;
-  -webkit-appearance: none;
+  width: 100% !important;
+  padding: 12px 14px !important;
+  border-radius: 12px !important;
+  border: 1px solid #ddd !important;
+  font-size: 15px !important;
+  box-sizing: border-box !important;
+  background: #fff !important;
+  color: #333 !important;
 }
 
 .field input:focus,
@@ -625,6 +627,18 @@ body.modal-open {
   background-position: right 14px center;
   padding-right: 36px;
   cursor: pointer;
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, #ebebeb, #c7c7c7);
+  color: white;
+  font-size: 14px;
+  border: none;
+  padding: 12px;
+  border-radius: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
 }
 
 
