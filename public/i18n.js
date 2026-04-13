@@ -59,8 +59,8 @@ async function carregarIdioma(idioma) {
   if (!IDIOMAS_DISPONIVEIS.includes(idioma)) idioma = IDIOMA_PADRAO;
 
   try {
-    const res = await fetch(`/locales/${idioma}.json`);
-    if (!res.ok) throw new Error(`Erro ao carregar /locales/${idioma}.json`);
+    const res = await fetch(`/${idioma}.json`);
+    if (!res.ok) throw new Error(`Erro ao carregar /${idioma}.json`);
 
     _traducoes = await res.json();
     localStorage.setItem("idioma", idioma);
