@@ -43,6 +43,8 @@ body{margin:0;background:#f6f7fb}
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.json">
 
+  <script src="/i18n.js"></script>
+
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -67,23 +69,23 @@ body{margin:0;background:#f6f7fb}
   
     <!-- COMO FUNCIONA -->
       <div class="how-section">
-        <p class="how-title" data-i18n="howItWorks">Como funciona</p>
+        <p class="how-title" data-i18n="index.howItWorks">Como funciona</p>
         <div class="how-steps">
           <div class="how-step">
             <div class="how-icon">👤</div>
-            <span data-i18n="stepCreateAccount">Cria a tua conta</span>
+            <span data-i18n="index.stepCreateAccount">Cria a tua conta</span>
           </div>
           <div class="how-step">
             <div class="how-icon">🔍</div>
-            <span data-i18n="stepDiscover">Descobre criadores</span>
+            <span data-i18n="index.stepDiscover">Descobre criadores</span>
           </div>
           <div class="how-step">
             <div class="how-icon">💬</div>
-            <span data-i18n="stepConnect">Conecta e interage</span>
+            <span data-i18n="index.stepConnect">Conecta e interage</span>
           </div>
           <div class="how-step">
             <div class="how-icon">⭐</div>
-            <span data-i18n="stepMedia">Acede às mídias do criador</span>
+            <span data-i18n="index.stepMedia">Acede às mídias do criador</span>
           </div>
         </div>
       </div>
@@ -104,20 +106,20 @@ body{margin:0;background:#f6f7fb}
       <img src="assets/velvet.webp" class="logo" alt="Velvet" width="250" height="75">
 
       <div class="login-box">
-        <button class="btn btn-Login" onclick="selectRole()" data-i18n="enter">ENTRAR</button>
-        <button class="btn btn-cadastro" onclick="startRegister()" data-i18n="createAccount">Criar Conta</button>
+        <button class="btn btn-Login" onclick="selectRole()" data-i18n="index.enter">ENTRAR</button>
+        <button class="btn btn-cadastro" onclick="startRegister()" data-i18n="index.createAccount">Criar Conta</button>
       </div>
 
       <div class="footer-linksC">
-        <a href="#" onclick="openForgot(); return false;" data-i18n="forgotPassword">Esqueci minha senha</a><br>
+        <a href="#" onclick="openForgot(); return false;" data-i18n="index.forgotPassword">Esqueci minha senha</a><br>
       </div>
 
       <div class="footer-links">
-        <a href="about.html" target="_blank" rel="noopener noreferrer" data-i18n="footerAbout">Sobre Nós</a>
-        <a href="contato.html" target="_blank" rel="noopener noreferrer" data-i18n="contact">Contato</a>
-        <a href="/terms.html" target="_blank" rel="noopener noreferrer" data-i18n="termsOfUse">Termos de Uso</a>
-        <a href="/policies.html" target="_blank" rel="noopener noreferrer" data-i18n="usagePolicies">Políticas de Utilização</a>
-        <a href="/privacy.html" target="_blank" rel="noopener noreferrer" data-i18n="privacyPolicies">Políticas de Privacidade</a>
+        <a href="about.html" target="_blank" rel="noopener noreferrer" data-i18n="index.footerAbout">Sobre Nós</a>
+        <a href="contato.html" target="_blank" rel="noopener noreferrer" data-i18n="index.contact">Contato</a>
+        <a href="/terms.html" target="_blank" rel="noopener noreferrer" data-i18n="index.termsOfUse">Termos de Uso</a>
+        <a href="/policies.html" target="_blank" rel="noopener noreferrer" data-i18n="index.usagePolicies">Políticas de Utilização</a>
+        <a href="/privacy.html" target="_blank" rel="noopener noreferrer" data-i18n="index.privacyPolicies">Políticas de Privacidade</a>
       </div>
 
     </div>
@@ -128,23 +130,23 @@ body{margin:0;background:#f6f7fb}
 <div id="forgotModal" class="modal hidden">
   <div class="modal-overlay" onclick="closeForgotModal()"></div>
   <div class="modal-box velvet">
-    <h2 id="forgotTitle" data-i18n="forgotTitle">Recuperar senha</h2>
+    <h2 id="forgotTitle" data-i18n="index.forgotTitle">Recuperar senha</h2>
     <div id="forgotStepEmail">
-      <input id="forgotEmail" type="email" placeholder="Seu email cadastrado" data-i18n-placeholder="registeredEmailPlaceholder"/>
-      <button class="btn btn-primary" onclick="sendResetCode()" data-i18n="sendCode">Enviar código</button>
-      <p id="forgotSpamHint" class="modal-switch hidden" data-i18n="spamHint">
+      <input id="forgotEmail" type="email" placeholder="Seu email cadastrado" data-i18n-placeholder="index.registeredEmailPlaceholder"/>
+      <button class="btn btn-primary" onclick="sendResetCode()" data-i18n="index.sendCode">Enviar código</button>
+      <p id="forgotSpamHint" class="modal-switch hidden" data-i18n="index.spamHint">
         Se não encontrar o email, verifique o lixo eletrônico ou spam.
       </p>
       <p class="modal-switch">
-        <span data-i18n="rememberedPassword">Lembrou da senha?</span>
-        <span onclick="closeForgotModal()" data-i18n="backToLogin">Voltar ao login</span>
+        <span data-i18n="index.rememberedPassword">Lembrou da senha?</span>
+        <span onclick="closeForgotModal()" data-i18n="index.backToLogin">Voltar ao login</span>
       </p>
     </div>
     <div id="forgotStepCode" class="hidden">
-      <input id="forgotCode" type="text" placeholder="Código de 6 dígitos" data-i18n-placeholder="codePlaceholder"/>
-      <input id="forgotNewPassword" type="password" placeholder="Nova senha" data-i18n-placeholder="newPasswordPlaceholder"/>
-      <input id="forgotConfirmPassword" type="password" placeholder="Confirmar nova senha" data-i18n-placeholder="confirmNewPasswordPlaceholder"/>
-      <button class="btn btn-primary" onclick="confirmReset()" data-i18n="changePassword">Alterar senha</button>
+      <input id="forgotCode" type="text" placeholder="Código de 6 dígitos" data-i18n-placeholder="index.codePlaceholder"/>
+      <input id="forgotNewPassword" type="password" placeholder="Nova senha" data-i18n-placeholder="index.newPasswordPlaceholder"/>
+      <input id="forgotConfirmPassword" type="password" placeholder="Confirmar nova senha" data-i18n-placeholder="index.confirmNewPasswordPlaceholder"/>
+      <button class="btn btn-primary" onclick="confirmReset()" data-i18n="index.changePassword">Alterar senha</button>
     </div>
     <button class="modal-close" onclick="closeForgotModal()">✕</button>
   </div>
@@ -163,50 +165,50 @@ body{margin:0;background:#f6f7fb}
 <div id="loginModal" class="modal hidden">
   <div class="modal-overlay" onclick="closeLoginModal()"></div>
   <div class="modal-box">
-    <h2 id="modalTitle" data-i18n="loginTitle">Entrar</h2>
+    <h2 id="modalTitle" data-i18n="index.loginTitle">Entrar</h2>
 
-    <label for="loginEmail" data-i18n="email">Email</label>
-    <input id="loginEmail" type="email" placeholder="Email" data-i18n-placeholder="emailPlaceholder">
+    <label for="loginEmail" data-i18n="index.email">Email</label>
+    <input id="loginEmail" type="email" placeholder="Email" data-i18n-placeholder="index.emailPlaceholder">
 
-    <label for="loginSenha" data-i18n="password">Senha</label>
-    <input id="loginSenha" type="password" placeholder="Senha" data-i18n-placeholder="passwordPlaceholder">
+    <label for="loginSenha" data-i18n="index.password">Senha</label>
+    <input id="loginSenha" type="password" placeholder="Senha" data-i18n-placeholder="index.passwordPlaceholder">
 
     <div class="field hidden" id="fieldSenha">
-      <label for="registerSenhaConfirm" data-i18n="repeatPassword">Repita a sua senha</label>
-      <input id="registerSenhaConfirm" type="password" data-i18n-placeholder="registerRepeatPasswordPlaceholder">
+      <label for="registerSenhaConfirm" data-i18n="index.repeatPassword">Repita a sua senha</label>
+      <input id="registerSenhaConfirm" type="password" data-i18n-placeholder="index.registerRepeatPasswordPlaceholder">
     </div>
 
     <div class="field hidden" id="fieldNome">
-      <label for="registerNome" data-i18n="fullName">Nome Completo</label>
-      <input id="registerNome" type="text" data-i18n-placeholder="fullNamePlaceholder">
+      <label for="registerNome" data-i18n="index.fullName">Nome Completo</label>
+      <input id="registerNome" type="text" data-i18n-placeholder="index.fullNamePlaceholder">
     </div>
 
     <div class="field hidden" id="fieldNascimento">
-      <label for="registerNascimento" data-i18n="birthDate">Data de Nascimento</label>
+      <label for="registerNascimento" data-i18n="index.birthDate">Data de Nascimento</label>
       <input id="registerNascimento" type="date">
     </div>
 
     <div class="field hidden" id="fieldPerfil">
       <select id="registerRole">
-        <option value="cliente" data-i18n="wantMember">Quero ser membro</option>
-        <option value="modelo" data-i18n="wantCreator">Quero ser criador</option>
+        <option value="cliente" data-i18n="index.wantMember">Quero ser membro</option>
+        <option value="modelo" data-i18n="index.wantCreator">Quero ser criador</option>
       </select>
     </div>
 
     <p id="registerLegal" class="field hidden">
-      <span data-i18n="registerLegalText"></span>
-      <a href="/terms.html" target="_blank" data-i18n="termsOfUse"></a>
+      <span data-i18n="index.registerLegalText"></span>
+      <a href="/terms.html" target="_blank" data-i18n="index.termsOfUse"></a>
     </p>
 
-    <button id="modalSubmit" class="btn btn-primary" data-i18n="loginAction">Entrar</button>
+    <button id="modalSubmit" class="btn btn-primary" data-i18n="index.loginAction">Entrar</button>
 
     <p class="modal-switch hidden" id="switchToLogin">
-      <span data-i18n="alreadyHaveAccount">Já tem conta?</span>
-      <span onclick="switchToLogin()" data-i18n="loginAction">Entrar</span>
+      <span data-i18n="index.alreadyHaveAccount">Já tem conta?</span>
+      <span onclick="switchToLogin()" data-i18n="index.loginAction">Entrar</span>
     </p>
     <p class="modal-switch hidden" id="switchToRegister">
-      <span data-i18n="noAccount">Não tem conta?</span>
-      <span onclick="startRegister()" data-i18n="registerAction">Criar conta</span>
+      <span data-i18n="index.noAccount">Não tem conta?</span>
+      <span onclick="startRegister()" data-i18n="index.registerAction">Criar conta</span>
     </p>
 
     <button class="modal-close" onclick="closeLoginModal()">✕</button>
@@ -220,11 +222,11 @@ body{margin:0;background:#f6f7fb}
 
 <script>
   document.getElementById("ageModalBox").innerHTML = `
-    <h2 data-i18n="ageGateTitle">Confirmar idade</h2>
-    <p data-i18n="ageGateText" style="margin-top:10px;">Esta plataforma é destinada a utilizadores com idade legal no seu país de residência. Confirmas que tens essa idade?</p>
+    <h2 data-i18n="index.ageGateTitle">Confirmar idade</h2>
+    <p data-i18n="index.ageGateText" style="margin-top:10px;">Esta plataforma é destinada a utilizadores com idade legal no seu país de residência. Confirmas que tens essa idade?</p>
     <div style="display:flex; gap:12px; margin-top:20px;">
-      <button class="btn btn-primary" onclick="confirmAge(true)" data-i18n="ageGateConfirm">Sim, confirmo</button>
-      <button class="btn btn-secondary" onclick="confirmAge(false)" data-i18n="ageGateDeny">Não</button>
+      <button class="btn btn-primary" onclick="confirmAge(true)" data-i18n="index.ageGateConfirm">Sim, confirmo</button>
+      <button class="btn btn-secondary" onclick="confirmAge(false)" data-i18n="index.ageGateDeny">Não</button>
     </div>
   `;
 </script>
