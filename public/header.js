@@ -177,6 +177,10 @@ function initHeaderSocketModelo() {
     atualizarUnreadModeloHeader();
   });
 
+  socket.on("mensagemLida", () => {
+  atualizarUnreadModeloHeader();
+});
+
   socket.on("connect_error", (err) => {
     console.error("❌ Erro socket header modelo:", err.message);
   });
