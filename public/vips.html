@@ -22,23 +22,27 @@
     </button>
 
     <h3 data-i18n="vips.titulo">Meus Assinantes VIP</h3>
-   <div class="table-wrapper">
-      <table class="table"> 
-       <thead> 
-          <tr>
-            <th data-i18n="vips.col_assinante">Assinante</th>
-            <th data-i18n="vips.col_status_vip">Status VIP</th>
-            <th data-i18n="vips.col_expira_em">Expira em</th>
-            <th data-i18n="vips.col_criado_em">Criado em</th>
-            <th data-i18n="vips.col_assinaturas">Assinaturas</th>
-            <th data-i18n="vips.col_midias">Mídias</th>
-            <th data-i18n="vips.col_total">Total</th>
-          </tr>
-        </thead>
+  <div class="table-wrapper">
+  <table class="table">
+    <thead>
+      <tr>
+        <th data-i18n="vips.col_assinante">Assinante</th>
+        <th data-i18n="vips.col_status_vip">Status VIP</th>
+        <th data-i18n="vips.col_expira_em">Expira em</th>
+        <th data-i18n="vips.col_criado_em">Criado em</th>
+        <th data-i18n="vips.col_assinaturas">Assinaturas</th>
+        <th data-i18n="vips.col_midias">Mídias</th>
+        <th data-i18n="vips.col_total">Total</th>
+      </tr>
+    </thead>
+    <tbody id="listaAssinantes">
+      <tr>
+        <td colspan="7" data-i18n="vips.carregando">Carregando...</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
-        <td colspan="7" data-i18n="vips.carregando">Carregando...</td></tr></tbody>
-      </table>
-    </div>
     <div class="paginacao" id="paginacaoVIP">
  <button id="btnAnterior" disabled data-i18n="vips.btn_anterior">← Anterior</button>
   <span id="paginaAtual">1</span>
@@ -56,15 +60,6 @@
       © 2026 Velvet. Todos os direitos reservados.
     </div>
   </footer>
-
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    window.location.href = "/index.html";
-  }
-});
-</script>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/header.js"></script>
