@@ -1930,6 +1930,8 @@ app.post("/api/webhook/stripe", express.raw({ type: "application/json" }), async
 app.use(express.json());
 const { router: servercontentRouter, calcularValores } = require('./servercontent');
 app.use("/api", servercontentRouter);
+const adminDashboardRouter = require('./routes/adminDashboard');
+app.use("/admin/dashboard", adminDashboardRouter);
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/admin", express.static(path.join(__dirname, "admin-pages")));

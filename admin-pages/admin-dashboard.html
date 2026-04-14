@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Velvet Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin-dashboard.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-top">
+    <div class="logo">
+      <span class="logo-icon">V</span>
+      <span class="logo-text">Velvet Admin</span>
+    </div>
+    <button class="sidebar-toggle" id="sidebarToggle">&#9776;</button>
+  </div>
+
+  <nav class="nav">
+    <a class="nav-item active" data-page="overview">
+      <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+      <span>Visão Geral</span>
+    </a>
+    <a class="nav-item" data-page="acessos">
+      <svg viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
+      <span>Acessos</span>
+    </a>
+    <a class="nav-item" data-page="admins">
+      <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+      <span>Admins</span>
+    </a>
+    <a class="nav-item" data-page="seguranca">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+      <span>Segurança</span>
+    </a>
+    <a class="nav-item" data-page="bloqueios">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.69L5.69 16.9C4.63 15.55 4 13.85 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.69L18.31 7.1C19.37 8.45 20 10.15 20 12c0 4.42-3.58 8-8 8z"/></svg>
+      <span>Bloqueios</span>
+    </a>
+    <a class="nav-item" data-page="verificacoes">
+      <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+      <span>Verificações</span>
+    </a>
+    <a class="nav-item" data-page="fechamento">
+      <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+      <span>Fechamento</span>
+    </a>
+    <a class="nav-item" data-page="bancarios">
+      <svg viewBox="0 0 24 24"><path d="M4 10v7h3v-7H4zm6 0v7h3v-7h-3zM2 22h19v-3H2v3zm14-12v7h3v-7h-3zm-4.5-9L2 6v2h19V6l-9.5-5z"/></svg>
+      <span>Dados Bancários</span>
+    </a>
+    <a class="nav-item" data-page="modelos">
+      <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      <span>Modelos</span>
+    </a>
+    <a class="nav-item" data-page="ranking">
+      <svg viewBox="0 0 24 24"><path d="M7.5 21H2V9h5.5v12zm7.25-18h-5.5v18h5.5V3zM22 11h-5.5v10H22V11z"/></svg>
+      <span>Ranking</span>
+    </a>
+    <a class="nav-item" data-page="financeiro">
+      <svg viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+      <span>Financeiro</span>
+    </a>
+    <a class="nav-item" data-page="transacoes">
+      <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg>
+      <span>Transações</span>
+    </a>
+    <a class="nav-item" data-page="password">
+      <svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+      <span>Senhas</span>
+    </a>
+    <a class="nav-item" data-page="vip">
+      <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+      <span>VIP Subs</span>
+    </a>
+    <a class="nav-item" data-page="pagamentos-modelo">
+      <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
+      <span>Pgto Modelos</span>
+    </a>
+    <a class="nav-item" data-page="agencias">
+      <svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>
+      <span>Agências</span>
+    </a>
+    <a class="nav-item" data-page="feed">
+      <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9h-4v4h-2v-4H9V9h4V5h2v4h4v2z"/></svg>
+      <span>Feed</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-bottom">
+    <button class="btn-logout" onclick="logout()">
+      <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+      <span>Sair</span>
+    </button>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main class="main" id="main">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <h2 id="pageTitle">Visão Geral</h2>
+    </div>
+    <div class="topbar-right">
+      <div class="global-search">
+        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <input type="text" id="globalSearch" placeholder="Buscar por nome, email ou ID...">
+      </div>
+      <div class="admin-badge" id="adminBadge">Admin</div>
+    </div>
+  </header>
+
+  <!-- ==================== PAGES ==================== -->
+
+  <!-- OVERVIEW -->
+  <section class="page active" id="page-overview">
+    <div class="kpi-row">
+      <div class="kpi-card purple"><span>Modelos</span><strong id="kpi-modelos">--</strong></div>
+      <div class="kpi-card blue"><span>Clientes</span><strong id="kpi-clientes">--</strong></div>
+      <div class="kpi-card green"><span>Assinaturas Ativas</span><strong id="kpi-vips">--</strong></div>
+      <div class="kpi-card orange"><span>Faturamento Mês</span><strong id="kpi-fat">--</strong></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Faturamento (últimos 12 meses)</h3>
+        <canvas id="chartOverviewFat"></canvas>
+      </div>
+      <div class="card">
+        <h3>Acessos por Origem</h3>
+        <canvas id="chartOverviewAcessos"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Top 5 Modelos do Mês</h3>
+      <table class="table" id="tableTopModelos">
+        <thead><tr><th>#</th><th>Modelo</th><th>Ganhos</th><th>Assinantes</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ACESSOS -->
+  <section class="page" id="page-acessos">
+    <div class="page-actions">
+      <select id="acessosMes" class="input-select"></select>
+    </div>
+    <div class="kpi-row">
+      <div class="kpi-card purple"><span>Instagram</span><strong id="kpi-insta">--</strong></div>
+      <div class="kpi-card blue"><span>TikTok</span><strong id="kpi-tiktok">--</strong></div>
+      <div class="kpi-card green"><span>Acesso Direto</span><strong id="kpi-direto">--</strong></div>
+      <div class="kpi-card orange"><span>Total Mês</span><strong id="kpi-totalAcessos">--</strong></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Comparativo Mensal</h3>
+        <canvas id="chartAcessosBar"></canvas>
+      </div>
+      <div class="card">
+        <h3>Distribuição por Origem</h3>
+        <canvas id="chartAcessosPie"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Top 5 Modelos com Mais Acessos</h3>
+      <table class="table" id="tableAcessosTop">
+        <thead><tr><th>#</th><th>Modelo</th><th>Instagram</th><th>TikTok</th><th>Direto</th><th>Total</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ADMINS -->
+  <section class="page" id="page-admins">
+    <div class="page-actions">
+      <button class="btn btn-primary" onclick="openModal('modalAdmin')">+ Novo Admin</button>
+    </div>
+    <div class="card">
+      <h3>Administradores</h3>
+      <table class="table" id="tableAdmins">
+        <thead><tr><th>ID</th><th>Email</th><th>Criado em</th><th>Ações</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- SEGURANÇA -->
+  <section class="page" id="page-seguranca">
+    <div class="page-actions">
+      <select id="segurancaMes" class="input-select"></select>
+    </div>
+    <div class="card">
+      <h3>Histórico de Segurança (Mês Atual)</h3>
+      <table class="table" id="tableSeguranca">
+        <thead><tr><th>ID</th><th>Modelo</th><th>Admin</th><th>Motivo</th><th>Data</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="pagination" id="paginationSeguranca"></div>
+    </div>
+    <div class="card" style="margin-top:20px">
+      <h3>Log de Exclusões de Contas</h3>
+      <table class="table" id="tableExclusoes">
+        <thead><tr><th>ID</th><th>Email</th><th>Nome</th><th>Motivo</th><th>Data</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="pagination" id="paginationExclusoes"></div>
+    </div>
+  </section>
+
+  <!-- BLOQUEIOS -->
+  <section class="page" id="page-bloqueios">
+    <div class="tabs" id="bloqueiosTabs">
+      <button class="tab active" data-tab="risco">Cliente Risco</button>
+      <button class="tab" data-tab="bloqueados">Clientes Bloqueados</button>
+      <button class="tab" data-tab="cpfs">CPFs Bloqueados</button>
+      <button class="tab" data-tab="ips">IPs Bloqueados</button>
+    </div>
+
+    <!-- CLIENTE RISCO -->
+    <div class="tab-content active" id="tab-risco">
+      <div class="page-actions">
+        <button class="btn btn-primary" onclick="openModal('modalRisco')">+ Adicionar</button>
+      </div>
+      <div class="card">
+        <table class="table" id="tableRisco">
+          <thead><tr><th>Cliente ID</th><th>Bloqueio IP</th><th>Bloqueio CPF</th><th>Até</th><th>Criado</th><th>Ações</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="pagination" id="paginationRisco"></div>
+      </div>
+    </div>
+
+    <!-- CLIENTES BLOQUEADOS -->
+    <div class="tab-content" id="tab-bloqueados">
+      <div class="page-actions">
+        <button class="btn btn-primary" onclick="openModal('modalBloqueado')">+ Adicionar</button>
+      </div>
+      <div class="card">
+        <table class="table" id="tableBloqueados">
+          <thead><tr><th>ID</th><th>Email</th><th>Nome</th><th>Nascimento</th><th>Motivo</th><th>Ações</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="pagination" id="paginationBloqueados"></div>
+      </div>
+    </div>
+
+    <!-- CPFs BLOQUEADOS -->
+    <div class="tab-content" id="tab-cpfs">
+      <div class="page-actions">
+        <button class="btn btn-primary" onclick="openModal('modalCpf')">+ Adicionar</button>
+      </div>
+      <div class="card">
+        <table class="table" id="tableCpfs">
+          <thead><tr><th>CPF</th><th>Motivo</th><th>Criado</th><th>Ações</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="pagination" id="paginationCpfs"></div>
+      </div>
+    </div>
+
+    <!-- IPs BLOQUEADOS -->
+    <div class="tab-content" id="tab-ips">
+      <div class="page-actions">
+        <button class="btn btn-primary" onclick="openModal('modalIp')">+ Adicionar</button>
+      </div>
+      <div class="card">
+        <table class="table" id="tableIps">
+          <thead><tr><th>ID</th><th>IP</th><th>Criado</th><th>Ações</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="pagination" id="paginationIps"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VERIFICAÇÕES -->
+  <section class="page" id="page-verificacoes">
+    <div class="tabs" id="verificacoesTabs">
+      <button class="tab active" data-tab="ver-modelos">Modelos</button>
+      <button class="tab" data-tab="ver-clientes">Clientes</button>
+    </div>
+
+    <div class="tab-content active" id="tab-ver-modelos">
+      <div class="card">
+        <h3>Verificações de Modelos</h3>
+        <table class="table" id="tableVerModelos">
+          <thead><tr><th>ID</th><th>Modelo</th><th>Tipo Doc</th><th>Status</th><th>Criado</th><th>Ações</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="pagination" id="paginationVerModelos"></div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-ver-clientes">
+      <div class="card">
+        <h3>Verificações de Clientes</h3>
+        <table class="table" id="tableVerClientes">
+          <thead><tr><th>ID</th><th>Cliente</th><th>Tipo Doc</th><th>Status</th><th>Criado</th><th>Ações</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="pagination" id="paginationVerClientes"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FECHAMENTO MENSAL -->
+  <section class="page" id="page-fechamento">
+    <div class="page-actions">
+      <button class="btn btn-primary" onclick="criarFechamento()">+ Criar Fechamento</button>
+    </div>
+    <div class="card">
+      <h3>Fechamentos Mensais</h3>
+      <table class="table" id="tableFechamento">
+        <thead><tr><th>Ano</th><th>Mês</th><th>Bruto</th><th>Taxas</th><th>Velvet</th><th>Modelos</th><th>Subs</th><th>Mídias</th><th>Fechado em</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- DADOS BANCÁRIOS -->
+  <section class="page" id="page-bancarios">
+    <div class="page-actions">
+      <select id="bancariosFiltro" class="input-select">
+        <option value="">Todos</option>
+        <option value="pendente">Pendente</option>
+        <option value="aprovado">Aprovado</option>
+        <option value="rejeitado">Rejeitado</option>
+      </select>
+    </div>
+    <div class="card">
+      <h3>Dados Bancários das Modelos</h3>
+      <table class="table" id="tableBancarios">
+        <thead><tr><th>ID</th><th>Modelo</th><th>Tipo</th><th>Chave PIX</th><th>Titular</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="pagination" id="paginationBancarios"></div>
+    </div>
+  </section>
+
+  <!-- MODELOS -->
+  <section class="page" id="page-modelos">
+    <div class="page-actions">
+      <input type="text" class="input-search" id="modelosBusca" placeholder="Buscar modelo por nome ou ID...">
+    </div>
+    <div class="card">
+      <h3>Modelos Cadastradas</h3>
+      <table class="table" id="tableModelos">
+        <thead><tr><th>ID</th><th>Nome</th><th>Email</th><th>Verificada</th><th>Feed</th><th>Agência</th><th>Ações</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="pagination" id="paginationModelos"></div>
+    </div>
+  </section>
+
+  <!-- RANKING -->
+  <section class="page" id="page-ranking">
+    <div class="card">
+      <h3>Ranking de Modelos por Ganhos</h3>
+      <canvas id="chartRanking" style="max-height:300px"></canvas>
+    </div>
+    <div class="card" style="margin-top:20px">
+      <table class="table" id="tableRanking">
+        <thead><tr><th>Posição</th><th>Modelo</th><th>Ganhos Total</th><th>Atualizado</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- FINANCEIRO (rastreio geral) -->
+  <section class="page" id="page-financeiro">
+    <div class="tabs" id="financeiroTabs">
+      <button class="tab active" data-tab="fin-cartao">Cartão</button>
+      <button class="tab" data-tab="fin-pix">PIX</button>
+      <button class="tab" data-tab="fin-tentativas">Tentativas</button>
+      <button class="tab" data-tab="fin-pagarme">Pagar.me</button>
+      <button class="tab" data-tab="fin-stripe">Stripe</button>
+      <button class="tab" data-tab="fin-pacotes">Pacotes</button>
+      <button class="tab" data-tab="fin-premium">Premium</button>
+    </div>
+
+    <div class="tab-content active" id="tab-fin-cartao">
+      <div class="card">
+        <div class="table-search"><input type="text" class="input-search" id="buscaCartao" placeholder="Buscar por ID, cliente, modelo..."></div>
+        <table class="table" id="tableCartao">
+          <thead><tr><th>ID</th><th>Cliente</th><th>Modelo</th><th>Valor</th><th>Tipo</th><th>Gateway</th><th>Status</th><th>Data</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="pagination" id="paginationCartao"></div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-fin-pix">
+      <div class="card">
+        <div class="table-search"><input type="text" class="input-search" id="buscaPix" placeholder="Buscar..."></div>
+        <table class="table" id="tablePix">
+          <thead><tr><th>ID</th><th>Cliente</th><th>Modelo</th><th>Valor</th><th>Status</th><th>Gateway</th><th>Criado</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="pagination" id="paginationPix"></div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-fin-tentativas">
+      <div class="card">
+        <table class="table" id="tableTentativas">
+          <thead><tr><th>ID</th><th>Cliente</th><th>Método</th><th>Status</th><th>Gateway</th><th>CPF</th><th>IP</th><th>Criado</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="pagination" id="paginationTentativas"></div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-fin-pagarme">
+      <div class="card">
+        <table class="table" id="tablePagarme">
+          <thead><tr><th>ID</th><th>Tipo</th><th>Criado</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="pagination" id="paginationPagarme"></div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-fin-stripe">
+      <div class="card">
+        <table class="table" id="tableStripe">
+          <thead><tr><th>ID</th><th>Tipo</th><th>Criado</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="pagination" id="paginationStripe"></div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-fin-pacotes">
+      <div class="card">
+        <table class="table" id="tablePacotes">
+          <thead><tr><th>ID</th><th>Modelo</th><th>Cliente</th><th>Preço</th><th>Status</th><th>Método</th><th>Criado</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="pagination" id="paginationPacotes"></div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-fin-premium">
+      <div class="card">
+        <table class="table" id="tablePremium">
+          <thead><tr><th>ID</th><th>Post</th><th>Cliente</th><th>Modelo</th><th>Valor</th><th>Status</th><th>Método</th><th>Criado</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="pagination" id="paginationPremium"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRANSAÇÕES (por modelo) -->
+  <section class="page" id="page-transacoes">
+    <div class="page-actions">
+      <select id="transacoesModelo" class="input-select"><option value="">Todas as modelos</option></select>
+      <select id="transacoesMes" class="input-select"></select>
+    </div>
+    <div class="kpi-row">
+      <div class="kpi-card purple"><span>Total Bruto</span><strong id="kpi-bruto">--</strong></div>
+      <div class="kpi-card blue"><span>Modelo</span><strong id="kpi-modelo">--</strong></div>
+      <div class="kpi-card green"><span>Velvet Fee</span><strong id="kpi-velvet">--</strong></div>
+      <div class="kpi-card orange"><span>Agency Fee</span><strong id="kpi-agency">--</strong></div>
+    </div>
+    <div class="card">
+      <table class="table" id="tableTransacoes">
+        <thead><tr><th>ID</th><th>Modelo</th><th>Cliente</th><th>Tipo</th><th>Bruto</th><th>Modelo</th><th>Velvet</th><th>Agency</th><th>Status</th><th>Data</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="pagination" id="paginationTransacoes"></div>
+    </div>
+  </section>
+
+  <!-- PASSWORD RESETS -->
+  <section class="page" id="page-password">
+    <div class="page-actions">
+      <button class="btn btn-primary" onclick="openModal('modalResetSenha')">Resetar Senha de Usuário</button>
+    </div>
+    <div class="card">
+      <h3>Histórico de Resets de Senha</h3>
+      <table class="table" id="tablePassword">
+        <thead><tr><th>ID</th><th>User ID</th><th>Código</th><th>Expira em</th><th>Usado</th><th>Criado</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="pagination" id="paginationPassword"></div>
+    </div>
+  </section>
+
+  <!-- VIP SUBSCRIPTIONS -->
+  <section class="page" id="page-vip">
+    <div class="page-actions">
+      <input type="text" class="input-search" id="vipBusca" placeholder="Buscar por cliente ou modelo ID...">
+    </div>
+    <div class="card">
+      <h3>Assinaturas VIP</h3>
+      <table class="table" id="tableVip">
+        <thead><tr><th>ID</th><th>Cliente</th><th>Modelo</th><th>Valor</th><th>Ativo</th><th>Expira</th><th>Recorrente</th><th>Ações</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="pagination" id="paginationVip"></div>
+    </div>
+  </section>
+
+  <!-- PAGAMENTOS MODELO -->
+  <section class="page" id="page-pagamentos-modelo">
+    <div class="page-actions">
+      <button class="btn btn-primary" onclick="openModal('modalPagModelo')">+ Registrar Pagamento</button>
+      <select id="pgtoModeloFiltro" class="input-select"><option value="">Todas as modelos</option></select>
+    </div>
+    <div class="card">
+      <h3>Pagamentos Realizados</h3>
+      <table class="table" id="tablePgtoModelo">
+        <thead><tr><th>ID</th><th>Modelo</th><th>Mês</th><th>Mídias</th><th>Assinaturas</th><th>Total</th><th>Status</th><th>Pago em</th><th>Ações</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="pagination" id="paginationPgtoModelo"></div>
+    </div>
+  </section>
+
+  <!-- AGÊNCIAS -->
+  <section class="page" id="page-agencias">
+    <div class="card">
+      <h3>Agências</h3>
+      <table class="table" id="tableAgencias">
+        <thead><tr><th>ID</th><th>Nome</th><th>Email</th><th>% Agência</th><th>% Modelo</th><th>% Plataforma</th><th>Criado</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="card" style="margin-top:20px">
+      <h3>Modelos por Agência</h3>
+      <div class="page-actions">
+        <select id="agenciaFiltro" class="input-select"><option value="">Selecione a agência</option></select>
+      </div>
+      <table class="table" id="tableModelosAgencia">
+        <thead><tr><th>Modelo ID</th><th>Nome</th><th>Agência Desde</th><th>Ações</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- FEED -->
+  <section class="page" id="page-feed">
+    <div class="card">
+      <h3>Modelos no Feed</h3>
+      <div class="page-actions">
+        <input type="text" class="input-search" id="feedBusca" placeholder="Buscar modelo...">
+      </div>
+      <table class="table" id="tableFeed">
+        <thead><tr><th>ID</th><th>Nome</th><th>No Feed</th><th>Verificada</th><th>Ações</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="pagination" id="paginationFeed"></div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ==================== MODALS ==================== -->
+
+<!-- Modal genérico -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeAllModals()"></div>
+
+<!-- Admin -->
+<div class="modal" id="modalAdmin">
+  <h3>Novo Admin</h3>
+  <form id="formAdmin" onsubmit="salvarAdmin(event)">
+    <label>Email<input type="email" name="email" required></label>
+    <label>Senha<input type="password" name="senha" required></label>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" onclick="closeAllModals()">Cancelar</button>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+  </form>
+</div>
+
+<!-- Cliente Risco -->
+<div class="modal" id="modalRisco">
+  <h3>Adicionar Cliente Risco</h3>
+  <form id="formRisco" onsubmit="salvarRisco(event)">
+    <label>Cliente ID<input type="number" name="cliente_id" required></label>
+    <label class="checkbox-label"><input type="checkbox" name="bloqueio_ip"> Bloqueio IP</label>
+    <label class="checkbox-label"><input type="checkbox" name="bloqueio_cpf"> Bloqueio CPF</label>
+    <label>Bloqueado até<input type="datetime-local" name="bloqueado_ate"></label>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" onclick="closeAllModals()">Cancelar</button>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+  </form>
+</div>
+
+<!-- Cliente Bloqueado -->
+<div class="modal" id="modalBloqueado">
+  <h3>Adicionar Cliente Bloqueado</h3>
+  <form id="formBloqueado" onsubmit="salvarBloqueado(event)">
+    <label>Email<input type="email" name="email"></label>
+    <label>Nome Completo<input type="text" name="nome_completo"></label>
+    <label>Data Nascimento<input type="date" name="data_nascimento"></label>
+    <label>Cliente ID Original<input type="number" name="cliente_id_original"></label>
+    <label>Motivo<textarea name="motivo"></textarea></label>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" onclick="closeAllModals()">Cancelar</button>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+  </form>
+</div>
+
+<!-- CPF Bloqueado -->
+<div class="modal" id="modalCpf">
+  <h3>Adicionar CPF Bloqueado</h3>
+  <form id="formCpf" onsubmit="salvarCpf(event)">
+    <label>CPF<input type="text" name="cpf" required maxlength="11" placeholder="Apenas números"></label>
+    <label>Motivo<textarea name="motivo"></textarea></label>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" onclick="closeAllModals()">Cancelar</button>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+  </form>
+</div>
+
+<!-- IP Bloqueado -->
+<div class="modal" id="modalIp">
+  <h3>Adicionar IP Bloqueado</h3>
+  <form id="formIp" onsubmit="salvarIp(event)">
+    <label>IP<input type="text" name="ip" required placeholder="Ex: 192.168.0.1"></label>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" onclick="closeAllModals()">Cancelar</button>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+  </form>
+</div>
+
+<!-- Reset Senha -->
+<div class="modal" id="modalResetSenha">
+  <h3>Resetar Senha de Usuário</h3>
+  <form id="formResetSenha" onsubmit="resetarSenha(event)">
+    <label>User ID<input type="number" name="user_id" required></label>
+    <label>Nova Senha<input type="password" name="nova_senha" required minlength="6"></label>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" onclick="closeAllModals()">Cancelar</button>
+      <button type="submit" class="btn btn-danger">Resetar</button>
+    </div>
+  </form>
+</div>
+
+<!-- Pagamento Modelo -->
+<div class="modal" id="modalPagModelo">
+  <h3>Registrar Pagamento</h3>
+  <form id="formPagModelo" onsubmit="salvarPagModelo(event)">
+    <label>Modelo ID<input type="number" name="modelo_id" required></label>
+    <label>Mês referência<input type="month" name="mes" required></label>
+    <label>Total Mídias<input type="number" name="total_midias" step="0.01" value="0"></label>
+    <label>Total Assinaturas<input type="number" name="total_assinaturas" step="0.01" value="0"></label>
+    <label>Total Geral<input type="number" name="total_geral" step="0.01" value="0"></label>
+    <label>Recibo URL<input type="text" name="recibo_url"></label>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" onclick="closeAllModals()">Cancelar</button>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+  </form>
+</div>
+
+<!-- Modal Edição Genérica -->
+<div class="modal modal-lg" id="modalEdit">
+  <h3 id="modalEditTitle">Editar</h3>
+  <form id="formEdit" onsubmit="salvarEdicao(event)">
+    <div id="modalEditFields"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" onclick="closeAllModals()">Cancelar</button>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+  </form>
+</div>
+
+<!-- Modal Verificação -->
+<div class="modal modal-lg" id="modalVerificacao">
+  <h3 id="modalVerTitle">Verificação</h3>
+  <div id="modalVerContent"></div>
+  <div class="modal-actions">
+    <button class="btn btn-ghost" onclick="closeAllModals()">Fechar</button>
+    <button class="btn btn-danger" id="btnRejeitar" onclick="rejeitarVerificacao()">Rejeitar</button>
+    <button class="btn btn-success" id="btnAprovar" onclick="aprovarVerificacao()">Aprovar</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script src="admin-dashboard.js"></script>
+</body>
+</html>
