@@ -39,10 +39,7 @@ body {
 .velvet-logo {
   margin-right: auto;
   display: block;
-  width: auto;
-  height: 42px;
-  max-width: 100%;
-  min-width: 0;
+  max-width: 120px;
   flex-shrink: 1;
 }
 
