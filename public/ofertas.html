@@ -104,15 +104,6 @@
     <div class="footer-copy" data-i18n="footer.copy">© 2026 Velvet. Todos os direitos reservados.</div>
   </footer>
 
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        window.location.href = "/index.html";
-      }
-    });
-  </script>
-
   <script src="/socket.io/socket.io.js"></script>
   <script src="/header.js" defer></script>
   <script src="/ofertas.js" defer></script>
