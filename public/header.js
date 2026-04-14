@@ -30,7 +30,12 @@ async function carregarHeader() {
 
     container.insertAdjacentHTML("afterbegin", html);
 
-    atualizarAvatarHeader();
+    const user = {
+      avatar_url: localStorage.getItem("avatar_url"),
+      avatar: localStorage.getItem("avatar")
+    };
+
+    atualizarAvatarHeader(user);
 
     await inicializarIdioma();
     initLanguageSwitcher();
@@ -63,22 +68,17 @@ async function initUsuario() {
 
     const user = await res.json();
 
+    // 🔑 SEMPRE atualiza
     localStorage.setItem("role", user.role);
     localStorage.setItem("nome", user.nome);
 
     if (user.avatar_url) {
-      localStorage.setItem("avatar_url", user.avatar_url);
-      localStorage.setItem("avatar", user.avatar_url);
-    } else if (user.avatar) {
-      localStorage.setItem("avatar_url", user.avatar);
-      localStorage.setItem("avatar", user.avatar);
-    } else {
-      localStorage.removeItem("avatar_url");
-      localStorage.removeItem("avatar");
-    }
+  localStorage.setItem("avatar_url", user.avatar_url);
+} else if (user.avatar) {
+  localStorage.setItem("avatar_url", user.avatar);
+}
 
-    atualizarAvatarHeader(user);
-
+    // limpa flag pós-registro sem afetar lógica
     if (localStorage.getItem("post_register_action") === "just_registered") {
       setTimeout(() => {
         localStorage.removeItem("post_register_action");
@@ -97,7 +97,7 @@ async function initUsuario() {
 }
 
 // =========================================================
-//BADGE GLOBAL DE MENSAGENS NÃO LIDAS
+// BADGE GLOBAL DE MENSAGENS NÃO LIDAS
 function atualizarBadgeHeader(total) {
   const badge = document.getElementById("badgeUnread");
   if (!badge) return;
@@ -111,6 +111,33 @@ function atualizarBadgeHeader(total) {
   }
 }
 
+// =========================================================
+// SOM DE NOTIFICAÇÃO GLOBAL
+function tocarSomNotificacaoHeader() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.setValueAtTime(660, ctx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.3);
+  } catch (e) {
+    // silencia — áudio pode ser bloqueado antes de interação do usuário
+  }
+}
+
+// =========================================================
+// SOCKET HEADER — MODELO
+// Ativo em todas as páginas exceto inbox.html e chat.html
+// (que já têm socket próprio)
 function initHeaderSocketModelo() {
   const token = localStorage.getItem("token");
   const role = localStorage.getItem("role");
@@ -118,11 +145,8 @@ function initHeaderSocketModelo() {
   if (!token || role !== "modelo") return;
 
   const path = window.location.pathname || "";
-  if (
-    path.includes("/inbox.html") ||
-    path.includes("/chat.html")
-  ) {
-    return;
+  if (path.includes("/inbox.html") || path.includes("/chat.html")) {
+    return; // inbox.js e chat.js já gerenciam o socket nessas páginas
   }
 
   if (typeof io === "undefined") {
@@ -135,15 +159,74 @@ function initHeaderSocketModelo() {
     auth: { token }
   });
 
+  socket.on("connect", () => {
+    // entra na sala inbox para receber inboxMessage em qualquer página
+    socket.emit("joinInbox", (res) => {
+      if (res?.ok) {
+        console.log("📬 Header modelo na inbox:", res.sala);
+      }
+    });
+  });
+
+  socket.on("inboxMessage", () => {
+    tocarSomNotificacaoHeader();
+    atualizarUnreadModeloHeader();
+  });
+
   socket.on("unreadUpdate", () => {
     atualizarUnreadModeloHeader();
   });
 
   socket.on("connect_error", (err) => {
-    console.error("❌ Erro socket header:", err.message, err);
+    console.error("❌ Erro socket header modelo:", err.message);
   });
 }
 
+// =========================================================
+// SOCKET HEADER — CLIENTE
+// Ativo em todas as páginas exceto inboxc.html e chatc.html
+// (que já têm socket próprio)
+function initHeaderSocketCliente() {
+  const token = localStorage.getItem("token");
+  const role = localStorage.getItem("role");
+
+  if (!token || role !== "cliente") return;
+
+  const path = window.location.pathname || "";
+  if (path.includes("/inboxc.html") || path.includes("/chatc.html")) {
+    return; // inboxc.js e chatc.js já gerenciam o socket nessas páginas
+  }
+
+  if (typeof io === "undefined") {
+    console.warn("Socket.IO não carregado — notificações desativadas");
+    return;
+  }
+
+  const socket = io({
+    transports: ["websocket", "polling"],
+    auth: { token }
+  });
+
+  socket.on("connect", () => {
+    // entra na sala inbox para receber inboxMessage em qualquer página
+    socket.emit("joinInbox", (res) => {
+      if (res?.ok) {
+        console.log("📬 Header cliente na inbox:", res.sala);
+      }
+    });
+  });
+
+  socket.on("inboxMessage", () => {
+    tocarSomNotificacaoHeader();
+    atualizarUnreadClienteHeader();
+  });
+
+  socket.on("connect_error", (err) => {
+    console.error("❌ Erro socket header cliente:", err.message);
+  });
+}
+
+// =========================================================
 
 async function atualizarUnreadClienteHeader() {
   const role = localStorage.getItem("role");
@@ -187,12 +270,12 @@ async function atualizarUnreadModeloHeader() {
 
     const unreadIds = await res.json();
 
-    // unreadIds 
     atualizarBadgeHeader(unreadIds.length);
   } catch (e) {
     console.warn("Erro ao buscar unread modelo");
   }
 }
+
 // =========================================================
 // INIT HEADER (ORDEM CORRETA)
 
@@ -204,7 +287,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   atualizarUnreadClienteHeader();
   atualizarUnreadModeloHeader();
+
+  // socket global — toca som e atualiza badge em qualquer página
   initHeaderSocketModelo();
+  initHeaderSocketCliente();
 });
 
 // =========================================================
@@ -226,17 +312,15 @@ document.addEventListener("click", (e) => {
 });
 
 // =========================================================
-// LOGOUT 
+// LOGOUT
 document.addEventListener("click", (e) => {
   const btn = e.target.closest("#btnLogout");
   if (!btn) return;
 
   e.preventDefault();
 
-  // limpa tudo da sessão
   localStorage.clear();
 
-  // vai para o index
   window.location.href = "/index.html";
 });
 
@@ -324,6 +408,7 @@ function atualizarAvatarHeader(user = {}) {
     avatar.src = "assets/avatar.png";
   };
 }
+
 function urlBase64ToUint8Array(base64String) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding)
@@ -388,7 +473,7 @@ async function ativarNotificacoes() {
 
     const token = localStorage.getItem("token");
     if (!token) {
-      alert("Você precisa estar logada para ativar notificações.");
+      alert("Você precisa estar logado para ativar notificações.");
       return;
     }
 
@@ -405,20 +490,20 @@ async function ativarNotificacoes() {
     let subscription = await registration.pushManager.getSubscription();
 
     if (!subscription) {
-let vapidPublicKey =
-  window.VAPID_PUBLIC_KEY ||
-  localStorage.getItem("VAPID_PUBLIC_KEY") ||
-  localStorage.getItem("vapid_public_key");
+      let vapidPublicKey =
+        window.VAPID_PUBLIC_KEY ||
+        localStorage.getItem("VAPID_PUBLIC_KEY") ||
+        localStorage.getItem("vapid_public_key");
 
-if (!vapidPublicKey) {
-  vapidPublicKey = await carregarVapidPublicKey();
-}
+      if (!vapidPublicKey) {
+        vapidPublicKey = await carregarVapidPublicKey();
+      }
 
-if (!vapidPublicKey) {
-  console.error("VAPID public key não encontrada.");
-  alert("Chave pública de notificação não configurada.");
-  return;
-}
+      if (!vapidPublicKey) {
+        console.error("VAPID public key não encontrada.");
+        alert("Chave pública de notificação não configurada.");
+        return;
+      }
 
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
