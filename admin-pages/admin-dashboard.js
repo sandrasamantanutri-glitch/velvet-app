@@ -16,11 +16,14 @@ async function authFetch(url, opts = {}) {
       ...(opts.headers || {})
     }
   });
-  if (res.status === 401 || res.status === 403) {
-    toast('Sessão expirada. Faça login novamente.', 'error');
-    setTimeout(() => window.location.href = '/admin/login', 1500);
-    throw new Error('Unauthorized');
+
+  if (!res.ok) {
+    if (res.status === 401 || res.status === 403) {
+      window.location.href = '/admin/login.html';
+    }
+    throw new Error(`HTTP ${res.status}`);
   }
+
   return res;
 }
 
@@ -205,7 +208,7 @@ function closeAllModals() {
 
 function logout() {
   localStorage.removeItem('token');
-  window.location.href = '/admin/login';
+  window.location.href = '/admin/login.html';
 }
 
 // ========== 1. OVERVIEW ==========
