@@ -1,4 +1,3 @@
-
 //===========================
 // AUTH
 // ===============================
@@ -13,6 +12,9 @@ const LIMITE_INICIAL = 30;
 let offset = 0;
 let listaCompleta = [];
 const chatsMap = new Map();
+
+// ✅ CORRIGIDO: declarar clienteId com let para evitar variável global implícita
+let clienteId = null;
 
 const params = new URLSearchParams(window.location.search);
 const modelo_id = params.get("modelo_id");
@@ -49,18 +51,21 @@ const socket = io({
 });
 
 function entrarInbox() {
-  if (!clienteId) return;
-
-  socket.emit("joinInbox", {
-    sala: `inbox_cliente_${clienteId}`
+  // ✅ CORRIGIDO: não passa payload — o servidor descobre a sala pelo socket.user
+  socket.emit("joinInbox", (res) => {
+    if (!res?.ok) {
+      console.warn("⚠️ Falha ao entrar na inbox cliente:", res?.error);
+      return;
+    }
+    console.log("📬 Inbox cliente conectada:", res.sala);
   });
 }
 
 socket.on("connect", () => {
-  console.log("🟢 Inbox conectado:", socket.id);
- if (clienteId) {
-    entrarInbox();
-  }
+  console.log("🟢 Inbox cliente conectado:", socket.id);
+  // ✅ CORRIGIDO: sempre chama entrarInbox no connect — o servidor autentica pelo token
+  // clienteId pode ainda ser null aqui, mas o servidor usa socket.user (do token JWT)
+  entrarInbox();
 });
 
 socket.on("connect_error", (err) => {
@@ -68,6 +73,7 @@ socket.on("connect_error", (err) => {
 });
 
 socket.on("inboxMessage", dados => {
+  tocarSomNotificacao();
   atualizarChatLocal(dados);
 
   // fallback segurança
@@ -99,6 +105,8 @@ async function initClienteInbox() {
   const me = await res.json();
   clienteId = me.id;
 
+  // ✅ CORRIGIDO: se o socket já conectou antes do clienteId ser definido,
+  // chama entrarInbox novamente agora que temos o id (o servidor vai fazer join na sala certa)
   if (socket.connected) {
     entrarInbox();
   }
@@ -335,6 +343,27 @@ function preloadAvatars(modelos) {
 
   });
 
+}
+
+function tocarSomNotificacao() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.setValueAtTime(660, ctx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.3);
+  } catch (e) {
+    // silencia erros — áudio pode ser bloqueado antes de interação do usuário
+  }
 }
 
 // ===============================

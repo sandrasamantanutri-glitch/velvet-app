@@ -42,6 +42,7 @@ socket.on("connect_error", (err) => {
 });
 
 socket.on("inboxMessage", async (dados) => {
+  tocarSomNotificacao();
   const chatId = dados.cliente_id || dados.modelo_id;
   const jaExisteNaTela = chatsMap.has(chatId);
 
@@ -449,6 +450,28 @@ function rerenderizarInboxCompleta() {
       element: div
     });
   });
+}
+
+function tocarSomNotificacao() {
+  try {
+    // Usa AudioContext para funcionar mesmo sem interação prévia no iOS
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.setValueAtTime(660, ctx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.3);
+  } catch (e) {
+    // silencia erros — áudio pode ser bloqueado antes de interação do usuário
+  }
 }
 
 // ===============================

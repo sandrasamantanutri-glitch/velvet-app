@@ -1,46 +1,51 @@
-self.addEventListener("push", (event) => {
-  let data = {
-    title: "Nova mensagem",
-    body: "Você recebeu uma mensagem",
-    url: "/"
+// service-worker.js
+const CACHE_NAME = 'velvet-v1';
+
+self.addEventListener('install', e => {
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(self.clients.claim());
+});
+
+// ← ESTE É O HANDLER QUE MOSTRA A NOTIFICAÇÃO
+self.addEventListener('push', e => {
+  if (!e.data) return;
+
+  let data = {};
+  try { data = e.data.json(); } catch { data = { title: 'Nova mensagem', body: e.data.text() }; }
+
+  const options = {
+    body: data.body || 'Você recebeu uma nova mensagem.',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    vibrate: [200, 100, 200],
+    data: { url: data.url || '/' },
+    requireInteraction: false,
+    tag: 'nova-mensagem', // agrupa notificações do mesmo tipo
+    renotify: true
   };
 
-  try {
-    if (event.data) {
-      data = event.data.json();
-    }
-  } catch (e) {
-    console.error("Erro ao ler payload do push:", e);
-  }
-
-  event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: "/icon-192.png",
-      badge: "/icon-192.png",
-      data: { url: data.url }
-    })
+  e.waitUntil(
+    self.registration.showNotification(data.title || 'Velvet', options)
   );
 });
 
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close();
+// Ao clicar na notificação, abre a URL correta
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
 
-  const url = event.notification.data?.url || "/";
+  const url = e.notification.data?.url || '/';
 
-  event.waitUntil(
-    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
-        if ("focus" in client) {
-          if (client.url.includes(url)) {
-            return client.focus();
-          }
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
+      for (const client of windowClients) {
+        if (client.url.includes(url) && 'focus' in client) {
+          return client.focus();
         }
       }
-
-      if (clients.openWindow) {
-        return clients.openWindow(url);
-      }
+      return clients.openWindow(url);
     })
   );
 });
