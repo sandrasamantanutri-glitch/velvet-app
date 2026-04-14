@@ -176,8 +176,10 @@ body.role-cliente .area-saldos {
 }
 
 .area-banner img {
-  width: 100%;
-  object-fit: cover;
+width: 50%;
+object-fit: cover;
+position: relative;
+left: 25%;
 
 }
 
