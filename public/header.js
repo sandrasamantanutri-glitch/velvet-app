@@ -30,12 +30,7 @@ async function carregarHeader() {
 
     container.insertAdjacentHTML("afterbegin", html);
 
-    const user = {
-      avatar_url: localStorage.getItem("avatar_url"),
-      avatar: localStorage.getItem("avatar")
-    };
-
-    atualizarAvatarHeader(user);
+    atualizarAvatarHeader();
 
     await inicializarIdioma();
     initLanguageSwitcher();
@@ -68,17 +63,22 @@ async function initUsuario() {
 
     const user = await res.json();
 
-    // 🔑 SEMPRE atualiza
     localStorage.setItem("role", user.role);
     localStorage.setItem("nome", user.nome);
 
     if (user.avatar_url) {
-  localStorage.setItem("avatar_url", user.avatar_url);
-} else if (user.avatar) {
-  localStorage.setItem("avatar_url", user.avatar);
-}
+      localStorage.setItem("avatar_url", user.avatar_url);
+      localStorage.setItem("avatar", user.avatar_url);
+    } else if (user.avatar) {
+      localStorage.setItem("avatar_url", user.avatar);
+      localStorage.setItem("avatar", user.avatar);
+    } else {
+      localStorage.removeItem("avatar_url");
+      localStorage.removeItem("avatar");
+    }
 
-    // limpa flag pós-registro sem afetar lógica
+    atualizarAvatarHeader(user);
+
     if (localStorage.getItem("post_register_action") === "just_registered") {
       setTimeout(() => {
         localStorage.removeItem("post_register_action");

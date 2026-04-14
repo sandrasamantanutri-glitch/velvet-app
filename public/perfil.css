@@ -409,8 +409,8 @@ a{
 
 .video-icon {
 position: absolute;
-    top: 40%;
-    left: 40%;
+    top: 45%;
+    left: 45%;
     background: rgba(0, 0, 0, 0.6);
     color: white;
     border-radius: 50%;
@@ -451,10 +451,10 @@ font-size:9px;
 .midia-thumb.locked::after{
   content:"🔒";
   position:absolute;
-  top:50%;
+  top:48%;
   left:50%;
   transform:translate(-50%,-50%);
-  font-size:28px;
+  font-size:50px;
 }
 
 .upload-box{
