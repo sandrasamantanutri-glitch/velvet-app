@@ -385,29 +385,29 @@ function normalizarInstagram(username) {
     .replace(/\s+/g, ""); // remove espaços
 }
 
-async function carregarVipCountModelo(modelo_id) {
-  console.log("🔥 carregarVipCountModelo chamada com:", modelo_id);
-
+async function carregarVipCountModelo() {
   const token = localStorage.getItem("token");
-  console.log("🔐 token existe?", !!token);
-  if (!token || !modelo_id) {
-    console.warn("VIP count: dados insuficientes");
+  if (!token) {
+    console.warn("VIP count: token ausente");
     return;
   }
 
   try {
     const res = await fetch("/api/modelo/me/vip-count", {
-  headers: {
-    Authorization: "Bearer " + token
-  }
-});
-    if (!res.ok) return;
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
 
-    const {total} = await res.json();
+    if (!res.ok) {
+      console.error("Erro VIP count:", res.status);
+      return;
+    }
+
+    const { total } = await res.json();
 
     const el = document.getElementById("vip-total");
     if (el) el.textContent = total;
-
   } catch (err) {
     console.error("Erro ao carregar VIP count:", err);
   }
@@ -454,7 +454,7 @@ if (capa) {
   // ===============================
   // 👑 VIP COUNT
   // ===============================
-  carregarVipCountModelo(modelo.user_id ?? modelo.id);
+carregarVipCountModelo();
 
   // 🔗 LINKS DO PERFIL
 const linkInstagram = document.getElementById("linkInstagram");
