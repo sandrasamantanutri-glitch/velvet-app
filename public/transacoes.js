@@ -1,136 +1,196 @@
 let todasTransacoes = [];
+let transacoesFiltradas = [];
 let paginaAtual = 1;
 const itensPorPagina = 10;
 
-const token = localStorage.getItem("token");
+function getToken() {
+  return localStorage.getItem("token");
+}
+
+function getLocaleAtual() {
+  if (typeof getCurrentLanguage === "function") {
+    return getCurrentLanguage();
+  }
+  return localStorage.getItem("idioma") || "pt";
+}
+
+function formatarData(data) {
+  if (!data) return "—";
+
+  const d = new Date(data);
+  if (Number.isNaN(d.getTime())) return "—";
+
+  return d.toLocaleString(getLocaleAtual());
+}
+
+function formatarValor(valor) {
+  const numero = Number(valor);
+
+  if (Number.isNaN(numero)) return "R$ 0,00";
+
+  return numero.toLocaleString(getLocaleAtual(), {
+    style: "currency",
+    currency: "BRL"
+  });
+}
 
 document.addEventListener("DOMContentLoaded", async () => {
-const tabs = document.querySelectorAll(".tab-btn");
+  await whenI18nReady();
+  
+  const token = getToken();
+  if (!token) {
+    alert(t("transacoes.login_necessario"));
+    window.location.href = "/index.html";
+    return;
+  }
 
-tabs.forEach(btn => {
-  btn.addEventListener("click", () => {
+  const filtroTipo = document.getElementById("filtroTipo");
+  if (filtroTipo) {
+    const optionTodos = filtroTipo.querySelector('option[value=""]');
+    const optionConteudo = filtroTipo.querySelector('option[value="conteudo"]');
+    const optionAssinatura = filtroTipo.querySelector('option[value="assinatura"]');
 
-    document.querySelectorAll(".tab-btn")
-      .forEach(b => b.classList.remove("ativa"));
+    if (optionTodos) optionTodos.textContent = t("transacoes.filtro_todos");
+    if (optionConteudo) optionConteudo.textContent = t("transacoes.filtro_conteudos");
+    if (optionAssinatura) optionAssinatura.textContent = t("transacoes.filtro_assinaturas");
 
-    document.querySelectorAll(".tab-content")
-      .forEach(c => c.classList.remove("ativa"));
+    filtroTipo.addEventListener("change", aplicarFiltros);
+  }
 
-    btn.classList.add("ativa");
+  const tabs = document.querySelectorAll(".tab-btn");
 
-    const tab = btn.dataset.tab;
+  tabs.forEach(btn => {
+    btn.addEventListener("click", async () => {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("ativa"));
+      document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("ativa"));
 
-    const content = document.getElementById("tab-" + tab);
+      btn.classList.add("ativa");
 
-    if (content) {
-      content.classList.add("ativa");
-    }
+      const tab = btn.dataset.tab;
+      const content = document.getElementById("tab-" + tab);
 
-    if (tab === "subscricoes") {
-      carregarSubscricoes();
-    }
+      if (content) {
+        content.classList.add("ativa");
+      }
 
-  });
+      if (tab === "subscricoes") {
+        await carregarSubscricoes();
+      }
+
+      if (tab === "transacoes") {
+        aplicarFiltros();
+      }
+    });
   });
 
   await carregarTransacoes();
 
   const abaAtiva = document.querySelector(".tab-btn.ativa");
-if (abaAtiva && abaAtiva.dataset.tab === "subscricoes") {
-  await carregarSubscricoes();
-}
-
-  // ================================
-  // FILTRO (com proteção)
-  // ================================
-  const filtro = document.getElementById("filtroTipo");
-
-  if (filtro) {
-    filtro.addEventListener("change", aplicarFiltros);
+  if (abaAtiva && abaAtiva.dataset.tab === "subscricoes") {
+    await carregarSubscricoes();
   }
-
 });
 
 // ================================
-// CARREGAR
+// TRANSAÇÕES
 // ================================
 async function carregarTransacoes() {
   const lista = document.getElementById("listaTransacoes");
+  const token = getToken();
 
-  const res = await fetch("/api/cliente/transacoes", {
-    headers: {
-      Authorization: "Bearer " + token
+  if (!lista) return;
+
+  try {
+    const res = await fetch("/api/cliente/transacoes", {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
+
+    if (!res.ok) {
+      lista.innerHTML = `
+        <div class="erro-transacoes">
+          ${t("transacoes.erro_sem_transacoes")}
+        </div>
+      `;
+      return;
     }
-  });
 
-  if (!res.ok) {
+    const data = await res.json();
+    todasTransacoes = Array.isArray(data) ? data : [];
+    paginaAtual = 1;
+
+    aplicarFiltros();
+  } catch (err) {
+    console.error("Erro ao carregar transações:", err);
     lista.innerHTML = `
-  <div class="erro-transacoes">
-   Não existem transações a exibir<br>
-  </div>
-`;
-    return;
+      <div class="erro-transacoes">
+        ${t("transacoes.erro_sem_transacoes")}
+      </div>
+    `;
   }
-
-  todasTransacoes = await res.json();
-
-  renderTransacoes(todasTransacoes);
 }
 
 function aplicarFiltros() {
-  const tipoSelecionado =
-    document.getElementById("filtroTipo").value;
+  const filtro = document.getElementById("filtroTipo");
+  const tipoSelecionado = filtro ? filtro.value : "";
 
-  let filtradas = todasTransacoes;
+  paginaAtual = 1;
 
-  if (tipoSelecionado) {
-    filtradas = filtradas.filter(t =>
-      t.tipo === tipoSelecionado
-    );
-  }
+  transacoesFiltradas = !tipoSelecionado
+    ? [...todasTransacoes]
+    : todasTransacoes.filter(tr => tr.tipo === tipoSelecionado);
 
-  renderTransacoes(filtradas);
+  renderTransacoes(transacoesFiltradas);
 }
 
 function renderTransacoes(transacoes) {
   const lista = document.getElementById("listaTransacoes");
   const paginacao = document.getElementById("paginacao");
 
-  if (!transacoes.length) {
-    lista.innerHTML = "Nenhuma transação encontrada.";
+  if (!lista || !paginacao) return;
+
+  if (!Array.isArray(transacoes) || !transacoes.length) {
+    lista.innerHTML = t("transacoes.nenhuma_transacao");
     paginacao.innerHTML = "";
     return;
   }
 
-  lista.innerHTML = "";
+  const totalPaginas = Math.ceil(transacoes.length / itensPorPagina);
+
+  if (paginaAtual > totalPaginas) {
+    paginaAtual = totalPaginas;
+  }
 
   const inicio = (paginaAtual - 1) * itensPorPagina;
   const fim = inicio + itensPorPagina;
   const paginaItems = transacoes.slice(inicio, fim);
 
-  paginaItems.forEach(t => {
+  lista.innerHTML = "";
+
+  paginaItems.forEach(tr => {
     const card = document.createElement("div");
     card.className = "transacao-card";
 
+    const tipoTraduzido =
+      tr.tipo === "assinatura"
+        ? t("transacoes.tipo_assinatura")
+        : t("transacoes.tipo_conteudo");
+
     card.innerHTML = `
       <div class="transacao-info">
-        <div class="transacao-tipo">
-          ${t.tipo === "assinatura"
-            ? "Assinatura VIP"
-            : "Conteúdo Premium"}
-        </div>
+        <div class="transacao-tipo">${tipoTraduzido}</div>
 
         <div class="transacao-data">
-          ${new Date(t.created_at).toLocaleString()}
+          ${formatarData(tr.created_at)}
         </div>
 
         <div class="transacao-valor">
-          R$ ${Number(t.valor).toFixed(2)}
+          ${formatarValor(tr.valor)}
         </div>
 
-        <button class="btn-reclamar"
-          onclick="reclamar(${t.id}, '${t.tipo}')">
-          Reclamar pagamento
+        <button class="btn-reclamar" onclick="reclamar(${tr.id}, '${tr.tipo}')">
+          ${t("transacoes.btn_reclamar")}
         </button>
       </div>
     `;
@@ -138,17 +198,22 @@ function renderTransacoes(transacoes) {
     lista.appendChild(card);
   });
 
-  gerarPaginacao(transacoes.length);
+  gerarPaginacao(transacoes);
 }
 
-function gerarPaginacao(totalItens) {
+function gerarPaginacao(transacoes) {
   const paginacao = document.getElementById("paginacao");
+  if (!paginacao) return;
+
   paginacao.innerHTML = "";
 
-  const totalPaginas = Math.ceil(totalItens / itensPorPagina);
+  const totalPaginas = Math.ceil(transacoes.length / itensPorPagina);
+
+  if (totalPaginas <= 1) return;
 
   for (let i = 1; i <= totalPaginas; i++) {
     const btn = document.createElement("button");
+    btn.type = "button";
     btn.textContent = i;
 
     if (i === paginaAtual) {
@@ -157,7 +222,7 @@ function gerarPaginacao(totalItens) {
 
     btn.addEventListener("click", () => {
       paginaAtual = i;
-      renderTransacoes(todasTransacoes);
+      renderTransacoes(transacoesFiltradas);
     });
 
     paginacao.appendChild(btn);
@@ -165,156 +230,143 @@ function gerarPaginacao(totalItens) {
 }
 
 function reclamar(id, tipo) {
-  window.location.href =
-    `/contato.html?transacao_id=${id}&tipo=${tipo}`;
+  window.location.href = `/contato.html?transacao_id=${id}&tipo=${tipo}`;
 }
 
+window.reclamar = reclamar;
+
+// ================================
+// SUBSCRIÇÕES
+// ================================
 async function carregarSubscricoes() {
- const lista = document.getElementById("listaSubscricoes");
+  const lista = document.getElementById("listaSubscricoes");
+  const token = getToken();
 
-  const res = await fetch("/api/cliente/subscricoes", {
-    headers: {
-      Authorization: "Bearer " + token
+  if (!lista) return;
+
+  try {
+    const res = await fetch("/api/cliente/subscricoes", {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
+
+    if (!res.ok) {
+      lista.innerHTML = t("transacoes.erro_sem_subscricoes");
+      return;
     }
-  });
 
-  if (!res.ok) {
-    lista.innerHTML = "Não existem assinaturas vips a exibir.";
-    return;
+    const data = await res.json();
+    const subscricoes = Array.isArray(data) ? data : [];
+
+    renderSubscricoes(subscricoes);
+  } catch (err) {
+    console.error("Erro ao carregar subscrições:", err);
+    lista.innerHTML = t("transacoes.erro_sem_subscricoes");
   }
-
-  const subscricoes = await res.json();
-
-  renderSubscricoes(subscricoes);
 }
 
 function renderSubscricoes(subscricoes) {
   const lista = document.getElementById("listaSubscricoes");
+  if (!lista) return;
+
   lista.innerHTML = "";
 
-  if (!subscricoes.length) {
-    lista.innerHTML = "Você não possui subscrições.";
+  if (!Array.isArray(subscricoes) || !subscricoes.length) {
+    lista.innerHTML = t("transacoes.nenhuma_subscricao");
     return;
   }
 
   subscricoes.forEach(v => {
-
-    const ativa = v.ativo && new Date(v.expiration_at) > new Date();
+    const ativa = Boolean(v.ativo) && new Date(v.expiration_at) > new Date();
 
     const statusBadge = ativa
-      ? `<span class="badge-status badge-ativa">Ativa</span>`
-      : `<span class="badge-status badge-expirada">Expirada</span>`;
+      ? `<span class="badge-status badge-ativa">${t("transacoes.badge_ativa")}</span>`
+      : `<span class="badge-status badge-expirada">${t("transacoes.badge_expirada")}</span>`;
 
     const card = document.createElement("div");
     card.className = "sub-vip-card";
 
     card.innerHTML = `
       <div class="sub-vip-info">
-
         ${statusBadge}
-
-        <div class="transacao-tipo">
-          Subscrição VIP
-        </div>
-
-        <div>
-          <strong>Criadora:</strong> ${v.modelo}
-        </div>
-
-        <div>
-         <strong>Data da assinatura/renovação:</strong>
-         ${new Date(v.updated_at || v.created_at).toLocaleDateString()}
-        </div>
-
-        <div>
-          <strong>Termina em:</strong>
-          ${new Date(v.expiration_at).toLocaleDateString()}
-        </div>
-
-        <div>
-          <strong>Renovação automática:</strong>
-          ${v.recorrente ? "Sim" : "Não"}
-        </div>
+        <div class="transacao-tipo">${t("transacoes.tipo_subscricao_vip")}</div>
+        <div><strong>${t("transacoes.label_criadora")}</strong> ${v.modelo || "—"}</div>
+        <div><strong>${t("transacoes.label_data_assinatura")}</strong> ${formatarData(v.updated_at || v.created_at)}</div>
+        <div><strong>${t("transacoes.label_termina")}</strong> ${formatarData(v.expiration_at)}</div>
+        <div><strong>${t("transacoes.label_renovacao")}</strong> ${v.recorrente ? t("transacoes.sim") : t("transacoes.nao")}</div>
 
         ${
           ativa
-            ? `<button class="btn-cancelar"
-                 onclick="cancelarSubscricao(${v.id})">
-                 Cancelar subscrição
-               </button>`
-            : `<button class="btn-renovar"
-                 onclick="renovarSubscricao(${v.modelo_id})">
-                 Renovar subscrição
-               </button>`
+            ? `<button class="btn-cancelar" onclick="cancelarSubscricao(${v.id})">${t("transacoes.btn_cancelar")}</button>`
+            : `<button class="btn-renovar" onclick="renovarSubscricao(${v.modelo_id})">${t("transacoes.btn_renovar")}</button>`
         }
-
       </div>
     `;
 
     lista.appendChild(card);
-
   });
-
 }
 
 async function cancelarSubscricao(id) {
+  const token = getToken();
 
-  if (!confirm("Tem certeza que deseja cancelar esta subscrição?")) {
-    return;
-  }
+  if (!confirm(t("transacoes.confirm_cancelar"))) return;
 
   try {
-
-    const res = await fetch(
-      `/api/cliente/subscricoes/${id}/cancelar`,
-      {
-        method: "PUT",
-        headers: {
-          Authorization: "Bearer " + token
-        }
+    const res = await fetch(`/api/cliente/subscricoes/${id}/cancelar`, {
+      method: "PUT",
+      headers: {
+        Authorization: "Bearer " + token
       }
-    );
+    });
 
-    const data = await res.json();
+    let data = {};
+    try {
+      data = await res.json();
+    } catch {
+      data = {};
+    }
 
     if (!res.ok) {
-      mostrarMensagem(data.error || "Erro ao cancelar.", "erro");
+      mostrarMensagem(data.error || t("transacoes.erro_cancelar"), "erro");
       return;
     }
 
-    mostrarMensagem(data.message || "Cancelada com sucesso.");
-
-    // 🔄 Atualizar imediatamente
+    mostrarMensagem(data.message || t("transacoes.sucesso_cancelar"), "sucesso");
     await carregarSubscricoes();
-
   } catch (err) {
-    mostrarMensagem("Erro inesperado.", "erro");
+    console.error("Erro ao cancelar subscrição:", err);
+    mostrarMensagem(t("transacoes.erro_inesperado"), "erro");
   }
 }
+
 window.cancelarSubscricao = cancelarSubscricao;
-
-function mostrarMensagem(texto, tipo = "sucesso") {
-
-  let msg = document.getElementById("msgSub");
-
-  if (!msg) {
-    msg = document.createElement("div");
-    msg.id = "msgSub";
-    msg.className = "msg-feedback";
-    document.querySelector("#tab-subscricoes")
-      .prepend(msg);
-  }
-
-  msg.innerText = texto;
-  msg.className = "msg-feedback " + tipo;
-
-  setTimeout(() => {
-    msg.remove();
-  }, 3000);
-}
 
 function renovarSubscricao(modeloId) {
   window.location.href = `/perfil.html?id=${modeloId}`;
 }
 
 window.renovarSubscricao = renovarSubscricao;
+
+function mostrarMensagem(texto, tipo = "sucesso") {
+  const tab = document.querySelector("#tab-subscricoes");
+  if (!tab) return;
+
+  let msg = document.getElementById("msgSub");
+
+  if (!msg) {
+    msg = document.createElement("div");
+    msg.id = "msgSub";
+    tab.prepend(msg);
+  }
+
+  msg.innerText = texto;
+  msg.className = `msg-feedback ${tipo}`;
+
+  setTimeout(() => {
+    if (msg && msg.parentNode) {
+      msg.remove();
+    }
+  }, 3000);
+}

@@ -1,15 +1,3 @@
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", async () => {
-    try {
-      const reg = await navigator.serviceWorker.register("/service-worker.js", {
-        scope: "/"
-      });
-      console.log("Service worker registrado:", reg.scope);
-    } catch (err) {
-      console.error("Erro ao registrar service worker:", err);
-    }
-  });
-}
 
 // ===============================
 // AUTH
@@ -249,25 +237,21 @@ async function carregarListaClientes() {
 // TEMPO
 // ===============================
 function formatarTempo(data) {
-
   if (!data) return "";
 
   const d = new Date(data);
-
   const diff = Math.floor((Date.now() - d.getTime()) / 86400000);
 
   if (diff === 0) {
-
-    return d.toLocaleTimeString("pt-BR", {
-      hour: "2-digit",
-      minute: "2-digit"
-    });
-
+    return d.toLocaleTimeString(
+      localStorage.getItem("lang") || "pt",
+      { hour: "2-digit", minute: "2-digit" }
+    );
   }
 
-  if (diff === 1) return "1 dia";
+  if (diff === 1) return t("inbox.day_singular");
 
-  return `${diff} dias`;
+  return t("inbox.day_plural").replace("{n}", diff);
 }
 
 // ===============================
@@ -312,11 +296,11 @@ function atualizarChatLocal(dados) {
 
 function gerarStatus(c) {
   if (c.nao_lido) {
-    return `<span class="status status-unseen">Não lida</span>`;
+    return `<span class="status status-unseen">${t("inbox.chat_unread")}</span>`;
   }
 
   if (c.por_responder) {
-    return `<span class="status status-reply">Por responder</span>`;
+    return `<span class="status status-reply">${t("inbox.chat_reply_needed")}</span>`;
   }
 
   if (c.cliente_visualizou) {
@@ -436,8 +420,8 @@ function rerenderizarInboxCompleta() {
       <div class="chat-body">
         <div class="chat-top">
         <span class="chat-name">
-  ${c.username || c.nome || "Cliente"}
-  ${c.resumo_curto ? `<span class="chat-resumo-curto">${c.resumo_curto}</span>` : ""}
+        ${c.username || c.nome || t("inbox.chat_client")}
+        ${c.resumo_curto ? `<span class="chat-resumo-curto">${c.resumo_curto}</span>` : ""}
   <span class="spend-level">${c.spend_level || ""}</span>
 </span>
 

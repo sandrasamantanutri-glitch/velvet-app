@@ -578,7 +578,7 @@ html, body {
 
 .chat-topo {
   position: fixed !important;
-  top: 0;
+  top: 64px;
   left: 0;
   right: 0;
   height: 64px;          /* 🔥 altura real do header */

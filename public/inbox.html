@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt">
 
 <head>
   <meta charset="UTF-8">
@@ -10,17 +10,19 @@
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="/header.css">
   <link rel="stylesheet" href="/inbox.css">
+
+  <script src="/i18n.js"></script> 
 </head>
 
 <body>
  <div id="header-container"></div>
 
  <section class="area-card">
-<button type="button" class="btn-voltar" id="btnVoltarPerfil">
-  <img src="/assets/voltar.png" alt="Voltar">
-</button>
+    <button type="button" class="btn-voltar" id="btnVoltarPerfil">
+      <img src="/assets/voltar.png" alt="Voltar" data-i18n-alt="inbox.back">
+    </button>
 
-   <h3>Conversas</h3>
+ <h3 data-i18n="inbox.title">Conversas</h3>
 
   <div class="content">
     <main id="inbox" class="inbox">
@@ -70,7 +72,8 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/inbox.js" defer></script>
   <script src="/header.js"></script>
+  <script src="/inbox.js" defer></script>
+
 </body>
 </html>

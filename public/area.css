@@ -80,7 +80,8 @@ body.role-cliente .area-saldos {
 .area-assinantes span {
   color: #1E1E26;
   font-weight: 600;
-  margin: 30px 10px 5px 20px;
+  margin: auto;
+  margin-left: 20px;
 }
 
 .btn-camera {
@@ -265,7 +266,7 @@ font-size: 10px;
 }
 
 .area-section {
-  max-width: 900px;
+  max-width: 1100px;
   margin: 0 auto 30px;
   background: #fff;
   border-radius: 18px;

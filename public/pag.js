@@ -75,15 +75,15 @@ function obterAceitesPagamento() {
   const aceitouTermos = !!document.getElementById("aceiteTermosPagamento")?.checked;
   const aceitouExecucaoImediata = !!document.getElementById("aceiteExecucaoImediata")?.checked;
 
-  if (!aceitouTermos) {
-    alert("Você precisa aceitar os Termos e Políticas da plataforma para continuar.");
-    return null;
-  }
+if (!aceitouTermos) {
+  alert(t("pag.aceite_termos_obrigatorio"));
+  return null;
+}
 
-  if (!aceitouExecucaoImediata) {
-    alert("Você precisa declarar ciência sobre a liberação imediata da mídia/serviço digital para continuar.");
-    return null;
-  }
+if (!aceitouExecucaoImediata) {
+  alert(t("pag.aceite_execucao_obrigatorio"));
+  return null;
+}
 
   return {
     aceitou_termos: aceitouTermos,
@@ -221,7 +221,7 @@ function resetarEstadoCartao() {
   const btn = document.getElementById("btnConfirmarStripe");
   if (btn) {
     btn.disabled = false;
-    btn.innerText = "Confirmar pagamento";
+    btn.innerText = t("pagamento.btn_confirmar_stripe");
   }
 
   if (stripePaymentElement) {
@@ -293,7 +293,7 @@ async function criarIntentStripe({ metodo = "card" } = {}) {
   const tipo = pagamentoAtual?.tipo || window.PAGAMENTO_TIPO_ATUAL;
 
   if (!tipo) {
-    alert("Tipo de pagamento não identificado.");
+   alert(t("pag.tipo_pagamento_nao_identificado"));
     return null;
   }
 
@@ -316,7 +316,7 @@ let payload = {
     );
 
     if (!modelo_id) {
-      alert("Modelo inválido.");
+     alert(t("pag.modelo_invalido"));
       return null;
     }
 
@@ -328,7 +328,7 @@ let payload = {
     const premium_post_id = Number(pagamentoAtual?.premium_post_id || 0);
 
     if (!premium_post_id) {
-      alert("Post premium inválido.");
+      alert(t("pag.post_premium_invalido"));
       return null;
     }
 
@@ -340,7 +340,7 @@ let payload = {
     const conteudo_id = Number(pagamentoAtual?.conteudo_id || 0);
 
     if (!conteudo_id) {
-      alert("Conteúdo inválido.");
+      alert(t("pag.conteudo_invalido"));
       return null;
     }
 
@@ -460,13 +460,13 @@ async function inicializarFluxoCartaoStripe() {
     if (btn) {
       btn.disabled = false;
     }
-    atualizarStatusCartao("Confirmar pagamento");
+    atualizarStatusCartao(t("pagamento.btn_confirmar_stripe")); 
 
     await criarIntentStripe({ metodo: "card" });
     await montarStripePaymentElement({ metodo: "card" });
   } catch (err) {
     console.error("Erro ao inicializar fluxo Stripe cartão:", err);
-    alert(err.message || "Erro ao preparar pagamento com cartão.");
+    alert(err.message || t("pag.erro_preparar_cartao"));
   }
 }
 
@@ -487,6 +487,11 @@ async function mostrarMetodo(tipo) {
     resetarEstadoCartao();
     resetarEstadoPix();
     irParaEtapaPagamento("pix");
+
+    setTimeout(() => {
+      confirmarPix();
+    }, 200);
+
     return;
   }
 
@@ -519,7 +524,7 @@ async function confirmarPagamentoStripeCartao() {
     }
 
     mostrarLoadingCartao();
-    atualizarStatusCartao("⏳ Confirmando pagamento...");
+    atualizarStatusCartao(t("pag.confirmando_pagamento"));
 
     const telefone = String(
       document.getElementById("phonePagamento")?.value || ""
@@ -544,8 +549,8 @@ async function confirmarPagamentoStripeCartao() {
       document.getElementById("cartaoLoading")?.classList.add("hidden");
       document.getElementById("formStripePagamento")?.classList.remove("hidden");
 
-      atualizarStatusCartao("❌ Falha no pagamento");
-      alert(error.message || "Erro ao confirmar pagamento.");
+      atualizarStatusCartao(t("pag.falha_pagamento"));
+      alert(error.message || t("pag.erro_confirmar_pagamento"));
 
       pagamentoEmProcesso = false;
       return { sucesso: false };
@@ -563,7 +568,7 @@ if (
   status === "requires_capture" ||
   status === "requires_action"
 ) {
-  atualizarStatusCartao("⏳ Aguardando confirmação...");
+  atualizarStatusCartao(t("pag.aguardando_confirmacao"));
 
   if (pagamentoAtual.payment_id) {
     iniciarPollingPagamento(
@@ -581,8 +586,8 @@ if (
     document.getElementById("cartaoLoading")?.classList.add("hidden");
     document.getElementById("formStripePagamento")?.classList.remove("hidden");
 
-    atualizarStatusCartao("❌ Falha no pagamento");
-    alert("Pagamento não concluído.");
+    atualizarStatusCartao(t("pag.falha_pagamento")); 
+    alert(t("pag.pagamento_nao_concluido"));
 
     pagamentoEmProcesso = false;
     return { sucesso: false };
@@ -593,8 +598,8 @@ if (
     document.getElementById("cartaoLoading")?.classList.add("hidden");
     document.getElementById("formStripePagamento")?.classList.remove("hidden");
 
-    atualizarStatusCartao("❌ Falha no pagamento");
-    alert(err.message || "Erro inesperado no pagamento.");
+    atualizarStatusCartao(t("pag.falha_pagamento")); 
+    alert(err.message || t("pag.erro_inesperado_pagamento"));
 
     pagamentoEmProcesso = false;
     return { sucesso: false };
@@ -615,24 +620,24 @@ function bindFormularioStripePagamento() {
     if (btn) {
       btn.disabled = true;
     }
-    atualizarStatusCartao("Processando...");
+    atualizarStatusCartao(t("pag.processando"));
 
     try {
       const resultado = await confirmarPagamentoStripeCartao();
 
       if (!resultado?.sucesso) {
         if (btn) btn.disabled = false;
-        atualizarStatusCartao("Confirmar pagamento");
+        atualizarStatusCartao(t("pagamento.btn_confirmar_stripe")); 
         return;
       }
 
       if (btn) btn.disabled = true;
-      atualizarStatusCartao("Aguardando confirmação...");
+     atualizarStatusCartao(t("pag.aguardando_confirmacao"));
     } catch (err) {
       console.error("Erro submit Stripe:", err);
 
       if (btn) btn.disabled = false;
-      atualizarStatusCartao("Confirmar pagamento");
+      atualizarStatusCartao(t("pagamento.btn_confirmar_stripe")); 
     }
   });
 }
@@ -825,14 +830,14 @@ function obterCpfValido() {
     document.getElementById("cpfEscolha");
 
   if (!input) {
-    alert("Campo de CPF não encontrado.");
+   alert(t("pag.cpf_campo_nao_encontrado"));
     return null;
   }
 
   const cpf = String(input.value || "").replace(/\D/g, "");
 
   if (cpf.length !== 11) {
-    alert("Informe um CPF válido para continuar.");
+   alert(t("pag.cpf_invalido"));
     input.focus();
     return null;
   }
@@ -847,14 +852,14 @@ function obterTelefoneValido() {
     document.getElementById("phone");
 
   if (!input) {
-    alert("Campo de telefone não encontrado.");
+    alert(t("pag.telefone_campo_nao_encontrado"));
     return null;
   }
 
   const telefone = String(input.value || "").replace(/\D/g, "");
 
   if (telefone.length < 10 || telefone.length > 11) {
-    alert("Informe um telefone válido com DDD.");
+    alert(t("pag.telefone_invalido"));
     input.focus();
     return null;
   }
@@ -915,7 +920,7 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
   try {
     const token = localStorage.getItem("token");
     if (!token) {
-      alert("Sessão expirada. Faça login novamente.");
+    alert(t("pag.sessao_expirada"));
       return;
     }
 
@@ -926,7 +931,7 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
 
     const aceites = obterAceitesPagamento();
     if (!aceites || !cpf || cpf.length !== 11) {
-      alert("Você precisa informar um CPF válido e aceitar os campos obrigatórios para continuar.");
+    alert(t("pag.cpf_aceites_obrigatorios"));
       return;
     }
 
@@ -945,7 +950,7 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
 
       if (!modeloIdFinal) {
         console.error("modelo_id inválido:", modelo_id, window.MODELO_ID_ATUAL);
-        alert("Erro interno: modelo não identificado.");
+        alert(t("pag.modelo_nao_identificado"));
         return;
       }
 
@@ -1003,7 +1008,7 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
     }
 
     if (!url) {
-      alert("Tipo de pagamento inválido.");
+      alert(t("pag.tipo_pagamento_invalido"));
       return;
     }
 
@@ -1042,7 +1047,7 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
       null;
 
     if (!qrCodeUrl || !orderId) {
-      alert("Erro ao gerar QR Code PIX");
+     alert(t("pag.erro_gerar_qr"));
       return;
     }
 
@@ -1067,7 +1072,7 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
 
   } catch (err) {
     document.getElementById("pixLoading")?.classList.add("hidden");
-    alert(err.message || "Erro ao gerar Pix");
+    alert(err.message || t("pag.erro_gerar_pix"));
   }
 };
 
@@ -1075,7 +1080,7 @@ async function copiarPix() {
   const input = document.getElementById("pixCodigo");
 
   if (!input || !input.value) {
-    alert("Código Pix indisponível no momento.");
+   alert(t("pag.pix_indisponivel"));
     return;
   }
 
@@ -1083,10 +1088,10 @@ async function copiarPix() {
     input.select?.();
     input.setSelectionRange?.(0, 99999);
     await navigator.clipboard.writeText(input.value);
-    alert("Código Pix copiado 💜");
+    alert(t("pag.pix_copiado"));
   } catch (err) {
     console.error("Erro ao copiar Pix:", err);
-    alert("Não foi possível copiar o código Pix.");
+    alert(t("pag.erro_copiar_pix"));
   }
 }
 
@@ -1346,7 +1351,7 @@ function iniciarVerificacaoPix(orderId) {
 
         document.getElementById("pixAguardando")?.classList.add("hidden");
 
-        alert("Este Pix expirou. Gere um novo.");
+       alert(t("pag.pix_expirado"));
         return;
       }
 
@@ -1359,7 +1364,7 @@ function iniciarVerificacaoPix(orderId) {
 
         document.getElementById("pixAguardando")?.classList.add("hidden");
 
-        alert("Pagamento não aprovado.");
+       alert(t("pag.pagamento_nao_aprovado"));
         return;
       }
 
@@ -1500,7 +1505,7 @@ function iniciarPollingPagamento(paymentId, refId = null, metodo = "cartao") {
 
         document.getElementById("cartaoLoading")?.classList.add("hidden");
         document.getElementById("formStripePagamento")?.classList.remove("hidden");
-        atualizarStatusCartao("❌ Falha no pagamento");
+        atualizarStatusCartao(t("pag.falha_pagamento"));
       }
 
     } catch (err) {

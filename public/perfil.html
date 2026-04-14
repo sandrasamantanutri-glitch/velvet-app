@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt">
 
 <head>
   <meta charset="UTF-8">
-   <meta name="viewport" content="width=device-width, initial-scale=1">
-   <title>Velvet</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Velvet</title>
+  <link rel="stylesheet" href="/style.css">
   <link rel="stylesheet" href="/header.css">
   <link rel="stylesheet" href="/pag.css">
-  <link rel="stylesheet" href="/footer.css">
-  <link rel="stylesheet" href="/style.css">
   <link rel="stylesheet" href="/perfil.css">
-   
+  <link rel="stylesheet" href="/footer.css">
 
+  <script src="/i18n.js"></script>
 </head>
 
 <body>
@@ -44,38 +44,33 @@
   
   <div class="oferta-card" id="oferta-card">
 
-  <div class="oferta-titulo">💎 Oferta Assinatura</div>
+<div class="oferta-titulo" data-i18n="perfil.oferta_titulo">💎 Oferta Assinatura</div>
 
-  <div class="oferta-botao-wrapper">
-  <span class="oferta-balao" id="oferta-desconto"></span>
+<button class="oferta-botao" id="btn-assinar">
+  <span data-i18n="perfil.btn_assinar_prefix">Assinar agora por</span> <span id="preco-desconto"></span>
+</button>
 
-    <button class="oferta-botao" id="btn-assinar">
-      Assinar agora por <span id="preco-desconto"></span>
-    </button>
-  </div>
-
-  <div class="oferta-preco-original">
-    Preço original:
-    <span id="preco-original"></span>
-  </div>
+<div class="oferta-preco-original">
+  <span data-i18n="perfil.oferta_preco_original_label">Preço original:</span>
+  <span id="preco-original"></span>
+</div>
   </div>
 
 <!-- CARD EXCLUSIVO VIP -->
 <div class="vip-card hidden" id="vip-card">
   <div class="vip-card-content">
-    <div class="vip-badge">👑 VIP ATIVO</div>
-
-    <button class="vip-chat-btn" id="btn-vip-chat">
-      💬 Vem falar comigo
-    </button>
+<div class="vip-badge" data-i18n="perfil.vip_badge">👑 VIP ATIVO</div>
+<button class="vip-chat-btn" id="btn-vip-chat" data-i18n="perfil.btn_vip_chat">
+  💬 Vem falar comigo
+</button>
   </div>
 </div>
 
 <div class="midias-section">
-  <div class="midias-tabs">
-    <button class="tab active" data-tab="free">📷 Feed</button>
-    <button class="tab" data-tab="paid">🔒 Premium</button>
-  </div>
+<div class="midias-tabs">
+  <button class="tab active" data-tab="free" data-i18n="perfil.tab_feed">📷 Feed</button>
+  <button class="tab" data-tab="paid" data-i18n="perfil.tab_premium">🔒 Premium</button>
+</div>
 
 <div class="midias-grid active" id="listaMidias"></div>
 <div id="midias-paid" class="premium-list"></div>
@@ -113,177 +108,158 @@
 
     <!-- ETAPA 1 -->
     <div id="etapaPagamentoInicial" class="etapa-pagamento">
-      <!-- DETALHES VIP -->
-      <div class="vip-detalhes hidden">
-        <div class="vip-beneficios">
-          <h2 class="velvet-title">ATIVAÇÃO VIP</h2>
-          <div><strong>Vantagens:</strong></div>
-          <div>- Conversar com a criadora no chat</div>
-          <div>- Acessar mídias do FEED</div>
-          <div>- Benefícios e promoções especiais</div>
-        </div>
+<div class="vip-detalhes hidden">
+  <div class="vip-beneficios">
+    <h2 class="velvet-title" data-i18n="pagamento.titulo_vip">ATIVAÇÃO VIP</h2>
+    <div><strong data-i18n="pagamento.vantagens">Vantagens:</strong></div>
+    <div data-i18n="pagamento.vantagem_chat">- Conversar com a criadora no chat</div>
+    <div data-i18n="pagamento.vantagem_feed">- Acessar mídias do FEED</div>
+    <div data-i18n="pagamento.vantagem_beneficios">- Benefícios e promoções especiais</div>
 
-        <div class="vip-valores">
-          <div class="linha">
-            <span>Valor da assinatura:</span>
-            <span>R$ <span id="vipValorBase">0,00</span></span>
-          </div>
+    <div class="linha">
+      <span data-i18n="pagamento.linha_assinatura">Valor da assinatura:</span>
+      <span>R$ <span id="vipValorBase">0,00</span></span>
+    </div>
+    <div class="linha desconto">
+      <span data-i18n="pagamento.linha_desconto">Desconto:</span>
+      <span>R$ <span id="vipDesconto">0,00</span></span>
+    </div>
+    <div class="linha">
+      <span data-i18n="pagamento.linha_taxa">Taxa de transação:</span>
+      <span>R$ <span id="vipTaxa">0,00</span></span>
+    </div>
+    <div class="linha total">
+      <span data-i18n="pagamento.linha_total">Total:</span>
+      <span>R$ <span id="vipTotal">0,00</span></span>
+    </div>
+  </div><!-- fecha vip-beneficios -->
 
-          <div class="linha desconto">
-            <span>Desconto:</span>
-            <span>R$ <span id="vipDesconto">0,00</span></span>
-          </div>
+  <small class="vip-info">
+    <span data-i18n="pagamento.info_renovacao">- A assinatura é sujeita a renovação automática e tem validade de <strong>30 dias,</strong> você pode cancelar quando quiser.</span><br>
+    <span data-i18n="pagamento.info_reembolso">- Pagamentos realizados não são reembolsados, exceto em casos de erros na plataforma, analisamos o caso através do</span>
+    <a href="/contato.html"><strong data-i18n="pagamento.info_reembolso_link">formulário de contato.</strong></a><br>
+  </small>
+</div>
 
-          <div class="linha">
-            <span>Taxa de transação:</span>
-            <span>R$ <span id="vipTaxa">0,00</span></span>
-          </div>
+<!-- DETALHES MÍDIA -->
+<div class="midia-detalhes hidden">
+  <div class="midia-info">
+    <strong data-i18n="pagamento.midia_titulo">Desbloqueie esta mídia premium agora</strong><br>
+    <span data-i18n="pagamento.midia_desc">Tenha acesso imediato a esta mídia da criadora após a confirmação do pagamento.</span><br><br>
 
-          <div class="linha total">
-            <span>Total:</span>
-            <span>R$ <span id="vipTotal">0,00</span></span>
-          </div>
-        </div>
-         <small class="vip-info">
-        - A assinatura é sujeita a renovação automática e tem validade de <strong>30 dias,</strong> você pode cancelar quando quiser.<br>
-        - Pagamentos realizados não são reembolsados, exceto em casos de erros na plataforma, analisamos o caso atraves do <a href="contato.html">formulário de <strong>contato.</strong></a><br>
-      </small>
-      </div>
+    <strong data-i18n="pagamento.midia_inclui">Este desbloqueio inclui:</strong><br>
+    <span data-i18n="pagamento.midia_item1">- Acesso somente a esta mídia premium</span><br>
+    <span data-i18n="pagamento.midia_item2">- Liberação permanente desta mídia na sua conta</span>
+  </div>
 
-      <!-- DETALHES MÍDIA -->
-      <div class="midia-detalhes hidden">
-        <div class="midia-info">
-          <strong>Desbloqueie esta mídia premium agora</strong><br>
-          Tenha acesso imediato a esta mídia da criadora após a confirmação do pagamento.<br><br>
-
-          <strong>Este desbloqueio inclui:</strong><br>
-          - Acesso somente a esta mídia premium<br>
-          - Liberação permanente desta mídia na sua conta
-        </div>
-
-        <div class="midia-valores">
-          <div class="linha">
-            <span>Valor da mídia</span>
-            <span>R$ <span id="midiaValorBase">0,00</span></span>
-          </div>
-
-          <div class="linha">
-            <span>Taxa de transação</span>
-            <span>R$ <span id="midiaTaxa">0,00</span></span>
-          </div>
-
-          <div class="linha total">
-            <span>Total</span>
-            <strong>R$ <span id="midiaTotal">0,00</span></strong>
-          </div>
-        </div>
-      </div>
-
-<!-- DADOS OBRIGATÓRIOS -->
-<div class="dados-pagamento-box">
-  <label for="cpfPagamento" class="campo-label"><strong>CPF</strong></label>
-  <input
-    type="text"
-    id="cpfPagamento"
-    class="campo-input"
-    placeholder="000.000.000-00"
-    maxlength="14"
-  />
-
-  <label for="phonePagamento" class="campo-label"><strong>Telefone</strong></label>
-  <input
-    type="text"
-    id="phonePagamento"
-    class="campo-input"
-    placeholder="(11) 99999-9999"
-  />
-
-  <div class="termos-pagamento">
-    <p class="termos-aviso">
-      Ao efetuar o pagamento, você confirma que está de acordo com os
-      <a href="/terms.html" target="_blank" rel="noopener noreferrer">Termos de uso e </a>
-      e com as
-      <a href="/policies.html" target="_blank" rel="noopener noreferrer">Políticas de Utilização</a>.
-    </p>
-
-<label class="termos-check-linha" for="aceiteTermosPagamento">
-  <input type="checkbox" id="aceiteTermosPagamento" required />
-  <span>Li e aceito os Termos de Uso e as Políticas da plataforma.</span>
-</label>
-
-<label class="termos-check-linha" for="aceiteExecucaoImediata">
-  <input type="checkbox" id="aceiteExecucaoImediata" required />
-  <span>
-  Declaro ciência de que o acesso à mídia/serviço digital é imediato após o pagamento e que, com isso, posso perder o direito de arrependimento.
-  </span>
-</label>
+  <div class="midia-valores">
+    <div class="linha">
+      <span data-i18n="pagamento.midia_linha_valor">Valor da mídia</span>
+      <span>R$ <span id="midiaValorBase">0,00</span></span>
+    </div>
+    <div class="linha">
+      <span data-i18n="pagamento.midia_linha_taxa">Taxa de transação</span>
+      <span>R$ <span id="midiaTaxa">0,00</span></span>
+    </div>
+    <div class="linha total">
+      <span data-i18n="pagamento.linha_total">Total</span>
+      <strong>R$ <span id="midiaTotal">0,00</span></strong>
+    </div>
   </div>
 </div>
 
-      <!-- ESCOLHA DO MÉTODO -->
-      <div class="acoes-metodo">
-<button id="btnEscolherPix" type="button" class="btn-principal" onclick="mostrarMetodo('pix')">
+<!-- DADOS OBRIGATÓRIOS -->
+<div class="dados-pagamento-box">
+  <label for="cpfPagamento" class="campo-label"><strong data-i18n="pagamento.cpf_label">CPF</strong></label>
+  <input type="text" id="cpfPagamento" class="campo-input" data-i18n-placeholder="pagamento.cpf_placeholder" placeholder="000.000.000-00" maxlength="14"/>
+
+  <label for="phonePagamento" class="campo-label"><strong data-i18n="pagamento.telefone_label">Telefone</strong></label>
+  <input type="text" id="phonePagamento" class="campo-input" data-i18n-placeholder="pagamento.telefone_placeholder" placeholder="(11) 99999-9999"/>
+
+  <div class="termos-pagamento">
+    <p class="termos-aviso">
+      <span data-i18n="pagamento.termos_aviso">Ao efetuar o pagamento, você confirma que está de acordo com os</span>
+      <a href="/terms.html" target="_blank" rel="noopener noreferrer" data-i18n="pagamento.termos_link1">Termos de uso</a>
+      <span data-i18n="pagamento.termos_e">e com as</span>
+      <a href="/policies.html" target="_blank" rel="noopener noreferrer" data-i18n="pagamento.termos_link2">Políticas de Utilização</a>.
+    </p>
+
+    <label class="termos-check-linha" for="aceiteTermosPagamento">
+      <input type="checkbox" id="aceiteTermosPagamento" required />
+      <span data-i18n="pagamento.aceite_termos">Li e aceito os Termos de Uso e as Políticas da plataforma.</span>
+    </label>
+
+    <label class="termos-check-linha" for="aceiteExecucaoImediata">
+      <input type="checkbox" id="aceiteExecucaoImediata" required />
+      <span data-i18n="pagamento.aceite_execucao">Declaro ciência de que o acesso à mídia/serviço digital é imediato após o pagamento e que, com isso, posso perder o direito de arrependimento.</span>
+    </label>
+  </div>
+</div>
+ 
+
+<div class="acoes-metodo">
+<button id="btnEscolherPix" type="button" class="btn-principal" onclick="mostrarMetodo('pix')" data-i18n="pagamento.btn_pix">
   ⚡ Desbloquear com Pix
 </button>
 
-<button id="btnEscolherCartao" type="button" class="btn-principal" onclick="mostrarMetodo('cartao')">
+<button id="btnEscolherCartao" type="button" class="btn-principal" onclick="mostrarMetodo('cartao')" data-i18n="pagamento.btn_cartao">
   💳 Desbloquear com cartão
 </button>
-      </div>
-    </div>
+</div>
+</div>
 
-    <!-- ETAPA 2 PIX -->
-    <div id="etapaPagamentoPix" class="etapa-pagamento hidden">
-<button type="button" class="btn-voltar" onclick="voltarEtapaPagamento()">
-  ← Voltar
-</button>
 
-      <div id="pixLoading" class="pix-loading hidden">
-        <strong>⏳ Aguarde…</strong>
-      </div>
+<!-- ETAPA 2 PIX -->
+<div id="etapaPagamentoPix" class="etapa-pagamento hidden">
+  <button type="button" class="btn-voltar" onclick="voltarEtapaPagamento()" data-i18n="pagamento.btn_voltar">
+    ← Voltar
+  </button>
 
-      <div id="pixAguardando" class="pix-aguardando hidden">
-        <strong>⌛ Aguardando confirmação do pagamento...</strong>
-        <p>Não feche esta janela nem atualize a página até a confirmação.</p>
-      </div>
+  <div id="pixLoading" class="pix-loading hidden">
+    <strong data-i18n="pagamento.pix_loading">⏳ Aguarde…</strong>
+  </div>
 
-      <div id="pixSucesso" class="pix-sucesso hidden">
-        <strong>✅ Pagamento confirmado!</strong>
-      </div>
+  <div id="pixAguardando" class="pix-aguardando hidden">
+    <strong data-i18n="pagamento.pix_aguardando">⌛ Aguardando confirmação do pagamento...</strong>
+    <p data-i18n="pagamento.pix_aguardando_aviso">Não feche esta janela nem atualize a página até a confirmação.</p>
+  </div>
 
-      <img id="pixQr" class="hidden" alt="QR Code Pix">
-      <input type="text" id="pixCodigo" readonly class="hidden">
-      <button id="btnGerarPix" type="button" class="btn-principal">
-  Gerar QR Code Pix
-</button>
-      <button id="btnCopiarPix" class="btn-copiar hidden" onclick="copiarPix()">
-        Copiar código
-      </button>
-    </div>
-   <!-- ETAPA 3 CARTÃO -->
+  <div id="pixSucesso" class="pix-sucesso hidden">
+    <strong data-i18n="pagamento.pix_sucesso">✅ Pagamento confirmado!</strong>
+  </div>
+
+  <img id="pixQr" class="hidden" alt="QR Code Pix">
+  <input type="text" id="pixCodigo" readonly class="hidden">
+
+  <button id="btnCopiarPix" class="btn-copiar hidden" onclick="copiarPix()" data-i18n="pagamento.btn_copiar_pix">
+    Copiar código
+  </button>
+</div>
+
+<!-- ETAPA 3 CARTÃO -->
 <div id="etapaPagamentoCartao" class="etapa-pagamento hidden">
-  <button type="button" class="btn-voltar" onclick="voltarEtapaPagamento()">
+  <button type="button" class="btn-voltar" onclick="voltarEtapaPagamento()" data-i18n="pagamento.btn_voltar">
     ← Voltar
   </button>
 
   <div id="cartaoLoading" class="cartao-loading hidden">
-    <strong>⏳ Processando pagamento…</strong>
-    <p>Não feche esta janela nem atualize a página até a confirmação.</p>
+    <strong data-i18n="pagamento.cartao_processando">⏳ Processando pagamento…</strong>
+    <p data-i18n="pagamento.cartao_aviso">Não feche esta janela nem atualize a página até a confirmação.</p>
   </div>
 
   <div id="cartaoSucesso" class="cartao-sucesso hidden">
-    <strong>✅ Pagamento confirmado!</strong>
+    <strong data-i18n="pagamento.cartao_sucesso">✅ Pagamento confirmado!</strong>
   </div>
 
   <form id="formStripePagamento" class="form-cartao-vip">
     <div class="linha">
       <div class="form-group full">
-        <label>Dados do pagamento</label>
+        <label data-i18n="pagamento.cartao_label">Dados do pagamento</label>
         <div id="stripe-payment-element"></div>
       </div>
     </div>
 
-    <button type="submit" id="btnConfirmarStripe" class="btn-principal">
+    <button type="submit" id="btnConfirmarStripe" class="btn-principal" data-i18n="pagamento.btn_confirmar_stripe">
       Confirmar pagamento
     </button>
   </form>
@@ -292,8 +268,80 @@
 </div>
 
 <input type="file" id="inputUploadMidia" accept="image/*,video/*" hidden>
-<div class="modelo-footer only-modelo">
 
+<!-- POPUP UPLOAD FEED -->
+<div id="popupUploadFeed" class="velvet-modal hidden">
+
+<div class="velvet-backdrop" id="uploadBackdrop"></div>
+
+  <div class="velvet-box">
+
+<button class="velvet-close" id="uploadClose">×</button>
+
+<h2 class="velvet-title" data-i18n="perfil.upload_feed_titulo">Postar no Feed</h2>
+
+<div class="upload-area" id="uploadArea">
+<input type="file" id="fileFeed" accept="image/*,video/*" hidden>
+<div class="upload-placeholder" id="uploadPlaceholder" data-i18n="perfil.upload_feed_placeholder">
+  Arraste uma mídia ou clique para selecionar
+</div>
+
+<div id="previewContainer"></div>
+</div>
+
+<div class="upload-progress hidden" id="uploadProgressBox">
+<div class="progress-bar">
+<div class="progress-fill" id="uploadProgress"></div>
+</div>
+<span id="progressText">0%</span>
+</div>
+<button id="btnEnviarFeed" class="btn-principal" data-i18n="perfil.upload_feed_btn">
+  Publicar no Feed
+</button>
+</div>
+</div>
+
+<!-- POPUP UPLOAD PREMIUM -->
+<div id="popupUploadPremium" class="velvet-modal hidden">
+<div class="velvet-backdrop" id="premiumBackdrop"></div>
+<div class="velvet-box">
+<button class="velvet-close" id="premiumClose">×</button>
+<h2 class="velvet-title" data-i18n="perfil.upload_premium_titulo">Postar no Premium</h2>
+
+<textarea id="premiumTexto" data-i18n-placeholder="perfil.upload_premium_texto_placeholder"
+  placeholder="Escreva algo sobre esta mídia..."
+  style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px;">
+</textarea>
+
+<input type="number" id="premiumPreco" data-i18n-placeholder="perfil.upload_premium_preco_placeholder"
+  placeholder="Preço da mídia (R$)"
+  style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;margin-bottom:15px;">
+
+<div class="upload-area" id="uploadAreaPremium">
+<input type="file" id="filePremium" accept="image/*,video/*" multiple hidden>
+
+<div class="upload-placeholder" data-i18n="perfil.upload_premium_placeholder">
+  Clique para selecionar mídia
+</div>
+<div id="previewPremium"></div>
+</div>
+
+
+<div class="upload-progress hidden" id="premiumProgressBox">
+<div class="progress-bar">
+<div class="progress-fill" id="premiumProgress"></div>
+</div>
+<span id="premiumProgressText">0%</span>
+</div>
+
+<button id="btnEnviarPremium" class="btn-principal" data-i18n="perfil.upload_premium_btn">
+  Publicar Premium
+</button>
+</div>
+</div>
+<div id="footerSubMenu"></div>
+
+<div id="footerModelo">
 <button class="footer-btn" id="btnAvatar">
   <img
     id="footerAvatar"
@@ -320,101 +368,6 @@
   </button>
 
 </div>
-
-<!-- POPUP UPLOAD FEED -->
-<div id="popupUploadFeed" class="velvet-modal hidden">
-
-<div class="velvet-backdrop" id="uploadBackdrop"></div>
-
-  <div class="velvet-box">
-
-<button class="velvet-close" id="uploadClose">×</button>
-
-    <h2 class="velvet-title">Postar no Feed</h2>
-
-    <div class="upload-area" id="uploadArea">
-
-      <input type="file" id="fileFeed" accept="image/*,video/*" hidden>
-
-      <div class="upload-placeholder" id="uploadPlaceholder">
-        Arraste uma mídia ou clique para selecionar
-      </div>
-
-      <div id="previewContainer"></div>
-
-    </div>
-
-    <div class="upload-progress hidden" id="uploadProgressBox">
-      <div class="progress-bar">
-        <div class="progress-fill" id="uploadProgress"></div>
-      </div>
-      <span id="progressText">0%</span>
-    </div>
-
-    <button id="btnEnviarFeed" class="btn-principal">
-      Publicar no Feed
-    </button>
-
-  </div>
-
-</div>
-
-<!-- POPUP UPLOAD PREMIUM -->
-<div id="popupUploadPremium" class="velvet-modal hidden">
-
-  <div class="velvet-backdrop" id="premiumBackdrop"></div>
-
-  <div class="velvet-box">
-
-    <button class="velvet-close" id="premiumClose">×</button>
-
-    <h2 class="velvet-title">Postar no Premium</h2>
-
-    <!-- TEXTO POST -->
-    <textarea 
-      id="premiumTexto"
-      placeholder="Escreva algo sobre esta mídia..."
-      style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px;"
-    ></textarea>
-
-    <!-- PREÇO -->
-    <input 
-      type="number"
-      id="premiumPreco"
-      placeholder="Preço da mídia (R$)"
-      style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;margin-bottom:15px;"
-    >
-
-    <!-- AREA UPLOAD -->
-    <div class="upload-area" id="uploadAreaPremium">
-
-      <input type="file" id="filePremium" accept="image/*,video/*" multiple hidden>
-
-      <div class="upload-placeholder">
-        Clique para selecionar mídia
-      </div>
-
-      <div id="previewPremium"></div>
-
-    </div>
-
-    <!-- PROGRESS -->
-    <div class="upload-progress hidden" id="premiumProgressBox">
-      <div class="progress-bar">
-        <div class="progress-fill" id="premiumProgress"></div>
-      </div>
-      <span id="premiumProgressText">0%</span>
-    </div>
-
-    <button id="btnEnviarPremium" class="btn-principal">
-      Publicar Premium
-    </button>
-
-  </div>
-
-</div>
-
-<div id="footerModelo" class="footer-menu hidden"></div>
 
 </main>
 

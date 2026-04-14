@@ -28,7 +28,6 @@ const observerLazy = new IntersectionObserver(entries=>{
 
 
 document.addEventListener("DOMContentLoaded", async () => {
-
   await carregarModelo();
 
   document
@@ -86,7 +85,7 @@ async function carregarModelo() {
 
   document.getElementById("modeloSelect").innerHTML = `
     <option value="${modelo.id}">
-      ${modelo.nome_exibicao || "Modelo"}
+      ${modelo.nome_exibicao || t("allmessage.modelo_padrao")}
     </option>
   `;
 }
@@ -145,12 +144,12 @@ async function enviar(modoTeste) {
   const conteudos = [...conteudosSelecionados];
 
   if (!texto) {
-    alert("Digite a mensagem");
+    alert(t("allmessage.erro_mensagem_vazia"));
     return;
   }
 
   if (!modoTeste) {
-    const ok = confirm("Enviar esta mensagem para TODOS os assinantes VIP?");
+   const ok = confirm(t("allmessage.confirm_enviar_todos"));
     if (!ok) return;
   }
 
@@ -178,7 +177,7 @@ const data = await parseJsonSafe(res);
 
 if (!res.ok) {
   fecharPopupEnvioPPV();
-  alert(data?.error || "Erro ao iniciar envio");
+  alert(data?.error || t("allmessage.erro_iniciar_envio"));
   return;
 }
 
@@ -186,7 +185,7 @@ if (!res.ok) {
 
     if (!jobId) {
       fecharPopupEnvioPPV();
-      alert("O backend não retornou jobId para acompanhar o progresso.");
+     alert(t("allmessage.erro_sem_job"));
       return;
     }
 
@@ -195,7 +194,7 @@ if (!res.ok) {
   } catch (err) {
     console.error(err);
     fecharPopupEnvioPPV();
-    alert("Erro ao enviar mensagem");
+    alert(t("allmessage.erro_enviar"));
   }
 }
 
@@ -206,7 +205,7 @@ function confirmarConteudosSelecionados(){
 
   if(conteudosSelecionados.size === 0){
     container.innerHTML =
-      "<span style='opacity:.6'>Nenhuma mídia selecionada</span>";
+   `<span style='opacity:.6'>${t("allmessage.nenhuma_midia")}</span>`
     fecharPopupConteudos();
     return;
   }
@@ -328,7 +327,8 @@ function atualizarContadorMidias(){
   const contador = document.getElementById("contadorSelecionados");
   if(!contador) return;
 
-  contador.textContent = `Selecionadas: ${conteudosSelecionados.size}`;
+contador.textContent = t("allmessage.contador_dinamico")
+  .replace("{count}", conteudosSelecionados.size);
 
 }
 
@@ -336,7 +336,7 @@ function abrirPopupEnvioPPV() {
   document.getElementById("popupEnvioPPV")?.classList.remove("hidden");
   atualizarProgressoEnvio({
     percentual: 0,
-    texto: "Preparando envio..."
+   texto: t("allmessage.status_preparando")
   });
 }
 
@@ -370,7 +370,7 @@ const data = await parseJsonSafe(res);
 
 if (!res.ok) {
   fecharPopupEnvioPPV();
-  alert(data?.error || "Erro ao acompanhar progresso");
+  alert(data?.error || t("allmessage.erro_progresso"));
   return;
 }
 
@@ -385,13 +385,18 @@ if (!res.ok) {
 
     atualizarProgressoEnvio({
       percentual,
-      texto: `Enviando ${processados}/${total} • enviados: ${enviados} • falhas: ${falhas}`
+     texto: t("allmessage.status_enviando")
+     .replace("{processados}", processados)
+     .replace("{total}", total)
+     .replace("{enviados}", enviados)
+     .replace("{falhas}", falhas)
     });
 
     if (data.status === "concluido") {
       atualizarProgressoEnvio({
         percentual: 100,
-        texto: `Enviado com sucesso para ${enviados} assinantes`
+       texto: t("allmessage.status_sucesso")
+       .replace("{enviados}", enviados)
       });
 
       await new Promise(resolve => setTimeout(resolve, 900));
@@ -399,8 +404,8 @@ if (!res.ok) {
 
       alert(
         modoTeste
-          ? "Mensagem enviada com sucesso 💜"
-          : `Mensagem enviada para ${enviados} assinantes 💜`
+        ? t("allmessage.sucesso_teste")
+       : t("allmessage.sucesso_envio").replace("{enviados}", enviados)
       );
 
       window.location.reload();
@@ -409,7 +414,7 @@ if (!res.ok) {
 
     if (data.status === "erro") {
       fecharPopupEnvioPPV();
-      alert(data.error || "Erro durante o envio");
+      alert(data.error || t("allmessage.erro_durante_envio"));
       return;
     }
   }

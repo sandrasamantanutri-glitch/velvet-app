@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", async () => {
-
+  await whenI18nReady();
   const token = localStorage.getItem("token");
   if (!token) return;
 
@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!resCliente.ok) return;
 
     const cliente = await resCliente.json();
-    verificada = cliente.verificada; // 👈 precisa existir no backend
+    verificada = cliente.verificada;
     perfilId = cliente.cliente_id;
   }
 
@@ -67,24 +67,19 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 function mostrarAvisoValidacao(role) {
-
-  const tipo = role === "modelo" ? "perfil público" : "conta";
-
   const modal = document.createElement("div");
   modal.className = "modal-validacao";
 
   modal.innerHTML = `
     <div class="modal-backdrop"></div>
     <div class="modal-box">
-      <h3>Acesso indisponível</h3>
+      <h3>${t("dados.modal_aviso_titulo")}</h3>
+      <p>${t("dados.modal_aviso_desc")}</p>
       <p>
-        Seu perfil só fica disponível para todos usuários após a validação da conta.
+        ${t("dados.modal_aviso_validar")}
+        <a href="/conta.html">${t("dados.modal_aviso_link")}</a>.
       </p>
-      <p>
-        Para validar,
-        <a href="/conta.html">clique aqui</a>.
-      </p>
-      <button class="btn-fechar">Fechar</button>
+      <button class="btn-fechar">${t("dados.modal_aviso_fechar")}</button>
     </div>
   `;
 

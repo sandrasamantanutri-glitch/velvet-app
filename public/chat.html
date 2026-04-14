@@ -4,9 +4,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-   <title>Chat</title>
+  <title>Chat</title>
   <link rel="stylesheet" href="/chat.css">
   <link rel="stylesheet" href="/chatmodelo.css">
+  <link rel="stylesheet" href="/header.css">
+
+  <script src="/i18n.js"></script>
 </head>
 
 <body class="role-modelo">
@@ -14,15 +17,15 @@
 
 <header class="chat-topo">
   <button type="button" class="btn-voltar" onclick="window.location.href='/inbox.html'">
-    <img src="/assets/voltar.png" alt="Voltar">
+    <img src="/assets/voltar.png" data-i18n-alt="chat.back_alt" alt="Voltar">
   </button>
 
   <div class="chat-cliente-info">
-    <img id="chatClienteAvatar" class="chat-avatar" src="/assets/avatar.png" alt="Avatar cliente" />
+    <img id="chatClienteAvatar" class="chat-avatar" src="/assets/avatar.png" data-i18n-alt="chat.client_avatar_alt" alt="Avatar cliente" />
 
     <div class="chat-cliente-texto">
       <div class="chat-nome-linha">
-        <div id="chatClienteNome" class="chat-nome">Cliente</div>
+        <div id="chatClienteNome" class="chat-nome" data-i18n="chat.client_name_placeholder">Cliente</div>
 
         <span id="chatClienteResumo" class="chat-cliente-resumo" style="display:none;"></span>
 
@@ -30,12 +33,13 @@
           id="btnAnotacoesCliente"
           type="button"
           class="btn-anotacoes-cliente"
+          data-i18n-title="chat.btn_notes_title"
           title="Anotações privadas">
           ✎
         </button>
       </div>
 
-      <div id="chatClienteStatus" class="chat-status">carregando…</div>
+      <div id="chatClienteStatus" class="chat-status" data-i18n="chat.status_loading">carregando…</div>
     </div>
   </div>
 
@@ -43,6 +47,7 @@
     id="btnTransacoesCliente"
     type="button"
     class="btn-transacoes-cliente"
+    data-i18n-title="chat.btn_transactions_title"
     title="Ver transações do cliente">
     $
   </button>
@@ -59,43 +64,46 @@
     id="btnEnviarConteudo1"
     class="btn-midia"
     onclick="abrirPopupConteudos()"
+    data-i18n-aria-label="chat.btn_media_label"
     aria-label="Enviar mídia"
   >
-    <img src="/assets/midia.png" alt="Mídia" />
+    <img src="/assets/midia.png" data-i18n-alt="chat.btn_media_label" alt="Mídia" />
   </button>
 
   <input
     id="msgInput"
     type="text"
+    data-i18n-placeholder="chat.input_placeholder"
     placeholder="Digite uma mensagem..."
     autocomplete="off"/>
 
   <button
     class="btn-enviar1"
     onclick="enviarMensagem()"
+    data-i18n-aria-label="chat.btn_send_label"
     aria-label="Enviar mensagem"
   >
-    <img src="/assets/enviar.png" alt="Enviar" />
+    <img src="/assets/enviar.png" data-i18n-alt="chat.btn_send_label" alt="Enviar" />
   </button>
 </footer>
 
 <div id="popupConteudos" class="hidden">
   <div class="popup-backdrop" onclick="fecharPopupConteudos()"></div>
   <div class="popup-box">
-    <h3>Enviar conteúdo</h3>
+    <h3 data-i18n="chat.popup_send_content_title">Enviar conteúdo</h3>
 
     <div class="preview-scroll">
       <div id="previewConteudos" class="preview-grid"></div>
     </div>
 
     <div class="popup-preco">
-      <label>Preço (R$)</label>
+      <label data-i18n="chat.popup_price_label">Preço (R$)</label>
       <input type="number" id="precoConteudo" value="0" min="0" />
     </div>
 
     <div class="popup-actions">
-      <button class="btn-cancelar" onclick="fecharPopupConteudos()">Cancelar</button>
-      <button class="btn-enviar" onclick="confirmarEnvioConteudo()">Enviar</button>
+      <button class="btn-cancelar" onclick="fecharPopupConteudos()" data-i18n="chat.btn_cancel">Cancelar</button>
+      <button class="btn-enviar" onclick="confirmarEnvioConteudo()" data-i18n="chat.btn_send">Enviar</button>
     </div>
   </div>
 
@@ -105,14 +113,14 @@
   <div class="popup-backdrop" onclick="fecharMenuMensagem()"></div>
 
   <div class="popup-box">
-    <h3>Mensagem</h3>
+    <h3 data-i18n="chat.popup_message_title">Mensagem</h3>
 
-    <textarea id="editarTexto" placeholder="Editar mensagem..."></textarea>
+    <textarea id="editarTexto" data-i18n-placeholder="chat.edit_placeholder" placeholder="Editar mensagem..."></textarea>
 
     <div class="popup-actions">
-      <button onclick="salvarEdicao()">Salvar</button>
-      <button onclick="excluirMensagem()">Excluir</button>
-      <button onclick="fecharMenuMensagem()">Cancelar</button>
+      <button onclick="salvarEdicao()" data-i18n="chat.btn_save">Salvar</button>
+      <button onclick="excluirMensagem()" data-i18n="chat.btn_delete">Excluir</button>
+      <button onclick="fecharMenuMensagem()" data-i18n="chat.btn_cancel">Cancelar</button>
     </div>
   </div>
  </div>
@@ -123,23 +131,25 @@
     <div class="popup-anotacoes-box">
       <button id="fecharPopupAnotacoes" class="popup-anotacoes-fechar" type="button">×</button>
 
-      <h3>Anotações privadas</h3>
+      <h3 data-i18n="chat.notes_title">Anotações privadas</h3>
 
-      <label for="inputResumoCliente">Resumo curto</label>
+      <label for="inputResumoCliente" data-i18n="chat.notes_summary_label">Resumo curto</label>
       <input
         id="inputResumoCliente"
         type="text"
         maxlength="120"
+        data-i18n-placeholder="chat.notes_summary_placeholder"
         placeholder="Ex: compra VIP, gosta de áudio, responde à noite">
 
-      <label for="textareaNotaCliente">Informações privadas</label>
+      <label for="textareaNotaCliente" data-i18n="chat.notes_private_label">Informações privadas</label>
       <textarea
         id="textareaNotaCliente"
         rows="8"
+        data-i18n-placeholder="chat.notes_private_placeholder"
         placeholder="Escreve aqui observações que só a modelo pode ver..."></textarea>
 
       <div class="popup-anotacoes-acoes">
-        <button id="salvarAnotacoesCliente" type="button">Salvar</button>
+        <button id="salvarAnotacoesCliente" type="button" data-i18n="chat.btn_save">Salvar</button>
       </div>
     </div>
   </div>

@@ -7,14 +7,13 @@
 
 body {
   margin: 0;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Poppins', 'Inter', sans-serif;
   background: #f1f1f1;
   color: #7B2CFF;
 }
 
 .area-card {
-  max-width: 900px;
-  margin: 0px auto 0px;
+  max-width: 1100px;
   background: #ffffff;
   border-radius: 20px;
   padding: 20px;

@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="/chatmodelo.css">
   <link rel="stylesheet" href="/chat.css">
   <link rel="stylesheet" href="/pag.css">
+  
+<script src="/i18n.js"></script>
 </head>
 
 <body class="role-cliente">
@@ -16,14 +18,14 @@
   <div id="header-container"></div>
 <header class="chat-topo">
 <button type="button" class="btn-voltar" onclick="window.location.href='/inboxc.html'">
-  <img src="/assets/voltar.png" alt="Voltar">
+  <img src="/assets/voltar.png" data-i18n-alt="chatc.back_alt" alt="Voltar">
 </button>
 
   <div class="chat-cliente-info">
-    <img id="chatModeloAvatar" class="chat-avatar" src="/assets/avatar.png" alt="Avatar Modelo" />
+    <img id="chatModeloAvatar" class="chat-avatar" src="/assets/avatar.png" data-i18n-alt="chatc.model_avatar_alt" alt="Avatar Modelo" />
     <div class="chat-modelo-texto">
-      <div id="chatModeloNome" class="chat-nome">Criadora</div>
-      <div id="chatModeloStatus" class="chat-status">carregando status…</div>
+      <div id="chatModeloNome" class="chat-nome" data-i18n="chatc.model_name_placeholder">Criadora</div>
+      <div id="chatModeloStatus" class="chat-status" data-i18n="chatc.status_loading">carregando status…</div>
     </div>
   </div>
 </header>
@@ -37,19 +39,22 @@
  <input
     id="msgInput"
     type="text"
+    data-i18n-placeholder="chatc.input_placeholder"
     placeholder="Digite uma mensagem..."
     autocomplete="off"/>
 
       <button
     class="btn-enviar1"
     onclick="enviarMensagem()"
+    data-i18n-aria-label="chatc.btn_send_label"
     aria-label="Enviar mensagem"
   >
-    <img src="/assets/enviar.png" alt="Enviar" />
+    <img src="/assets/enviar.png" data-i18n-alt="chatc.btn_send_label" alt="Enviar" />
   </button>
 
 </footer>
-<!-- =============********==== POPUPS ================= -->
+
+<!-- ================= POPUPS ================= -->
 
 <div id="popupPagamentoVelvet" class="velvet-modal hidden">
   <div class="velvet-backdrop" onclick="fecharPopupPagamento()"></div>
@@ -57,22 +62,22 @@
   <div class="velvet-box">
     <button class="velvet-close" type="button" onclick="fecharPopupPagamento()">×</button>
 
-    <h2 class="velvet-title">Desbloquear mídias</h2>
+    <h2 class="velvet-title" data-i18n="chatc.popup_unlock_title">Desbloquear mídias</h2>
 
     <!-- ETAPA INICIAL -->
     <div id="etapaPagamentoInicial">
       <div class="midia-detalhes hidden">
         <div class="midia-valores">
           <div class="linha">
-            <span>Conteúdo: R$</span>
+            <span data-i18n="chatc.label_content">Conteúdo: R$</span>
             <span id="midiaValorBase">0,00</span>
           </div>
           <div class="linha">
-            <span>Taxa de Transação: R$</span>
+            <span data-i18n="chatc.label_fee">Taxa de Transação: R$</span>
             <span id="midiaTaxa">0,00</span>
           </div>
           <div class="linha total">
-            <span>Total: R$</span>
+            <span data-i18n="chatc.label_total">Total: R$</span>
             <span id="midiaTotal">0,00</span>
           </div>
         </div>
@@ -81,49 +86,39 @@
       </div>
 
       <div class="campo-cpf">
-        <label for="cpfPagamento">CPF</label>
+        <label for="cpfPagamento" data-i18n="chatc.label_cpf">CPF</label>
         <input id="cpfPagamento" type="text" maxlength="14">
       </div>
 
       <div class="campo-cpf">
-        <label for="phonePagamento">Telefone</label>
+        <label for="phonePagamento" data-i18n="chatc.label_phone">Telefone</label>
         <input id="phonePagamento" type="text" maxlength="16">
       </div>
 
       <div class="termos-pagamento">
         <p class="termos-aviso">
-          Ao efetuar o pagamento, você confirma que está de acordo com os
-          <a href="/terms.html" target="_blank" rel="noopener noreferrer">Termos de Uso</a>
-          e com a
-          <a href="/policies.html" target="_blank" rel="noopener noreferrer">Política de Privacidade</a>.
+          <span data-i18n="chatc.terms_intro">Ao efetuar o pagamento, você confirma que está de acordo com os</span>
+          <a href="/terms.html" target="_blank" rel="noopener noreferrer" data-i18n="chatc.terms_link1">Termos de Uso</a>
+          <span data-i18n="chatc.terms_and">e com a</span>
+          <a href="/policies.html" target="_blank" rel="noopener noreferrer" data-i18n="chatc.terms_link2">Política de Privacidade</a>.
         </p>
 
         <label class="termos-check-linha" for="aceiteTermosPagamento">
           <input type="checkbox" id="aceiteTermosPagamento" required />
-          <span>Li e aceito os Termos de Uso e a Política de Privacidade da plataforma.</span>
+          <span data-i18n="chatc.terms_accept">Li e aceito os Termos de Uso e a Política de Privacidade da plataforma.</span>
         </label>
 
         <label class="termos-check-linha" for="aceiteExecucaoImediata">
           <input type="checkbox" id="aceiteExecucaoImediata" required />
-          <span>
-            Declaro ciência de que o acesso à mídia ou serviço digital é imediato após o pagamento e que, com isso, posso perder o direito de arrependimento.
-          </span>
+          <span data-i18n="chatc.terms_immediate">Declaro ciência de que o acesso à mídia ou serviço digital é imediato após o pagamento e que, com isso, posso perder o direito de arrependimento.</span>
         </label>
       </div>
 
-      <button
-        type="button"
-        class="btn-principal"
-        onclick="mostrarMetodo('pix')"
-      >
-        Pagar com Pix
-      </button>
+<button type="button" class="btn-principal" onclick="mostrarMetodoPixChat()" data-i18n="chatc.btn_pay_pix">
+  Pagar com Pix
+</button>
 
-      <button
-        type="button"
-        class="btn-principal"
-        onclick="mostrarMetodo('cartao')"
-      >
+      <button type="button" class="btn-principal" onclick="mostrarMetodo('cartao')" data-i18n="chatc.btn_pay_card">
         Pagar com Cartão
       </button>
     </div> <!-- FECHAMENTO CORRETO DA ETAPA INICIAL -->
@@ -132,40 +127,32 @@
     <div id="etapaPagamentoPix" class="etapa-pagamento hidden">
 
       <div id="pixLoading" class="pix-loading hidden">
-        <strong>⏳ Aguarde…</strong>
+        <strong data-i18n="chatc.pix_loading">⏳ Aguarde…</strong>
       </div>
 
       <div id="pixAguardando" class="pix-aguardando hidden">
-        <strong>⌛ Aguardando confirmação do pagamento...</strong>
-        <p>Não feche esta janela nem atualize a página até a confirmação.</p>
+        <strong data-i18n="chatc.pix_waiting">⌛ Aguardando confirmação do pagamento...</strong>
+        <p data-i18n="chatc.pix_dont_close">Não feche esta janela nem atualize a página até a confirmação.</p>
       </div>
 
       <div id="pixSucesso" class="pix-sucesso hidden">
-        <strong>✅ Pagamento confirmado!</strong>
+        <strong data-i18n="chatc.pix_success">✅ Pagamento confirmado!</strong>
       </div>
 
       <img id="pixQr" class="hidden" alt="QR Code Pix">
       <input type="text" id="pixCodigo" readonly class="hidden">
 
-      <button
-        id="btnGerarPix"
-        type="button"
-        class="btn-principal"
+      <button id="btnGerarPix" type="button" class="btn-principal" style="display:none;"
         onclick="pagarComPix({ tipo: 'midia', conteudo_id: window.MIDIA_VENDA_ATUAL?.conteudo_id })"
-      >
+        data-i18n="chatc.btn_generate_pix">
         Gerar QR Code Pix
       </button>
 
-      <button
-        id="btnCopiarPix"
-        type="button"
-        class="btn-copiar hidden"
-        onclick="copiarPix()"
-      >
+      <button id="btnCopiarPix" type="button" class="btn-copiar hidden" onclick="copiarPix()" data-i18n="chatc.btn_copy_pix">
         Copiar código
       </button>
 
-<button type="button" class="btn-secundario" onclick="voltarEtapaPagamento()">
+      <button type="button" class="btn-secundario" onclick="voltarEtapaPagamento()" data-i18n="chatc.btn_back">
         Voltar
       </button>
       
@@ -174,12 +161,12 @@
     <!-- ETAPA CARTÃO -->
     <div id="etapaPagamentoCartao" class="hidden">
       <div id="cartaoLoading" class="cartao-loading hidden">
-        <strong>⏳ Processando pagamento…</strong>
-        <p>Não feche esta janela nem atualize a página até a confirmação.</p>
+        <strong data-i18n="chatc.card_processing">⏳ Processando pagamento…</strong>
+        <p data-i18n="chatc.pix_dont_close">Não feche esta janela nem atualize a página até a confirmação.</p>
       </div>
 
       <div id="cartaoSucesso" class="cartao-sucesso hidden">
-        <strong>✅ Pagamento confirmado!</strong>
+        <strong data-i18n="chatc.card_success">✅ Pagamento confirmado!</strong>
       </div>
 
       <form id="formStripePagamento" class="form-cartao-vip">
@@ -191,12 +178,12 @@
           </div>
         </div>
 
-        <button type="submit" id="btnConfirmarStripe" class="btn-principal">
+        <button type="submit" id="btnConfirmarStripe" class="btn-principal" data-i18n="chatc.btn_confirm">
           Confirmar
         </button>
       </form>
 
-      <button type="button" class="btn-secundario" onclick="voltarEtapaPagamento()">
+      <button type="button" class="btn-secundario" onclick="voltarEtapaPagamento()" data-i18n="chatc.btn_back">
         Voltar
       </button>
     </div>
@@ -223,7 +210,6 @@
   </div>
 
 </div>
-
 <script src="/socket.io/socket.io.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 <script src="/pag.js"></script>

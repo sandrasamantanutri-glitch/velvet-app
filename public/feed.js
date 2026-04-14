@@ -55,7 +55,7 @@ function renderListaModelos(modelos) {
         <img
           src="${modelo.avatar || "/assets/avatar.png"}"
           class="foto-principal"
-          alt="${modelo.nome_exibicao || "Modelo"}"
+          alt="${modelo.nome_exibicao || getFeedText("feed.modelo", "Modelo")}"
         >
       </div>
 

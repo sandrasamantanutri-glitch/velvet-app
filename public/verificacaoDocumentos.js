@@ -28,86 +28,62 @@ document.addEventListener("DOMContentLoaded", async () => {
   // ===============================
   // RENDERIZA STATUS
   // ===============================
-  function renderStatus(verificacao) {
-    if (!statusContainer) return;
+function renderStatus(verificacao) {
+  if (!statusContainer) return;
 
-    statusContainer.innerHTML = "";
-    statusContainer.className = "";
+  statusContainer.innerHTML = "";
+  statusContainer.className = "";
 
-    let html = "";
+  let html = "";
 
-    switch (verificacao.status) {
-      case "em_analise":
-        statusContainer.classList.add(
-          "status-verificacao",
-          "status-em-analise"
-        );
-        html = `
-          <strong>Status da verificação:</strong>
-          <span class="status-texto">Em análise</span>
-          <p class="status-descricao">
-            Seus documentos foram recebidos e estão sendo analisados.
-          </p>
-        `;
-        break;
+  switch (verificacao.status) {
+    case "em_analise":
+      statusContainer.classList.add("status-verificacao", "status-em-analise");
+      html = `
+        <strong>${t("verificacao.status_label")}</strong>
+        <span class="status-texto">${t("verificacao.status_em_analise")}</span>
+        <p class="status-descricao">${t("verificacao.desc_em_analise")}</p>
+      `;
+      break;
 
-      case "aprovado":
-        statusContainer.classList.add(
-          "status-verificacao",
-          "status-aprovado"
-        );
-        html = `
-          <strong>Status da verificação:</strong>
-          <span class="status-texto">Aprovada</span>
-          <p class="status-descricao">
-            Sua identidade foi verificada com sucesso.
-          </p>
-        `;
-        break;
+    case "aprovado":
+      statusContainer.classList.add("status-verificacao", "status-aprovado");
+      html = `
+        <strong>${t("verificacao.status_label")}</strong>
+        <span class="status-texto">${t("verificacao.status_aprovado")}</span>
+        <p class="status-descricao">${t("verificacao.desc_aprovado")}</p>
+      `;
+      break;
 
-      case "recusado":
-        statusContainer.classList.add(
-          "status-verificacao",
-          "status-recusado"
-        );
-        html = `
-          <strong>Status da verificação:</strong>
-          <span class="status-texto">Recusada</span>
-          <p class="status-descricao">
-            Não foi possível validar seus documentos.
-          </p>
-          ${
-            verificacao.motivo
-              ? `<p class="status-motivo">Motivo: ${verificacao.motivo}</p>`
-              : ""
-          }
-        `;
-        break;
+    case "recusado":
+      statusContainer.classList.add("status-verificacao", "status-recusado");
+      html = `
+        <strong>${t("verificacao.status_label")}</strong>
+        <span class="status-texto">${t("verificacao.status_recusado")}</span>
+        <p class="status-descricao">${t("verificacao.desc_recusado")}</p>
+        ${verificacao.motivo
+          ? `<p class="status-motivo">${t("verificacao.motivo_label")} ${verificacao.motivo}</p>`
+          : ""}
+      `;
+      break;
 
-      case "bloqueado":
-        statusContainer.classList.add(
-          "status-verificacao",
-          "status-bloqueado"
-        );
-        html = `
-          <strong>Status da verificação:</strong>
-          <span class="status-texto">Conta bloqueada</span>
-          <p class="status-descricao">
-            Entre em contato com o suporte.
-          </p>
-        `;
-        break;
+    case "bloqueado":
+      statusContainer.classList.add("status-verificacao", "status-bloqueado");
+      html = `
+        <strong>${t("verificacao.status_label")}</strong>
+        <span class="status-texto">${t("verificacao.status_bloqueado")}</span>
+        <p class="status-descricao">${t("verificacao.desc_bloqueado")}</p>
+      `;
+      break;
 
-      default:
-        // pendente → não exibe bloco
-        statusContainer.style.display = "none";
-        return;
-    }
-
-    statusContainer.innerHTML = html;
-    statusContainer.style.display = "block";
+    default:
+      statusContainer.style.display = "none";
+      return;
   }
 
+  statusContainer.innerHTML = html;
+  statusContainer.style.display = "block";
+}
   function controlarFormulario(status) {
   if (!form) return;
 
@@ -131,19 +107,19 @@ form?.addEventListener("submit", async (e) => {
     const aceiteTermosCriador = document.getElementById("aceite_termos_criador")?.checked;
 
     if (!confirmacaoIdentidade) {
-      alert("Você precisa confirmar sua identidade e maioridade.");
-      return;
-    }
+  alert(t("verificacao.alert_confirmar_identidade"));
+  return;
+}
 
-    if (!aceitePrivacidade) {
-      alert("Você precisa ler e aceitar a Política de Privacidade.");
-      return;
-    }
+if (!aceitePrivacidade) {
+  alert(t("verificacao.alert_aceite_privacidade"));
+  return;
+}
 
-    if (!aceiteTermosCriador) {
-      alert("Você precisa ler e aceitar os Termos e Condições para Criadores.");
-      return;
-    }
+if (!aceiteTermosCriador) {
+  alert(t("verificacao.alert_aceite_termos"));
+  return;
+}
 
     if (btnSubmit) btnSubmit.disabled = true;
 
@@ -166,14 +142,14 @@ form?.addEventListener("submit", async (e) => {
     const payload = await res.json().catch(() => null);
 
     if (!res.ok) {
-      throw new Error(payload?.erro || "Falha no envio");
+      throw new Error(payload?.erro || t("verificacao.alert_falha_envio"));
     }
 
     renderStatus({ status: "em_analise" });
     controlarFormulario("em_analise");
   } catch (err) {
     console.error(err);
-    alert(err.message || "Falha no envio");
+    alert(err.message || t("verificacao.alert_falha_envio"));
   } finally {
     if (btnSubmit) btnSubmit.disabled = false;
   }
@@ -219,11 +195,11 @@ async function confirmarExclusaoConta() {
 
   erro.classList.add("hidden");
 
-  if (!senha || senha.length < 4) {
-    erro.textContent = "Digite sua senha para continuar.";
-    erro.classList.remove("hidden");
-    return;
-  }
+if (!senha || senha.length < 4) {
+  erro.textContent = t("conta.erro_senha_curta");
+  erro.classList.remove("hidden");
+  return;
+}
 
   try {
     const res = await fetch("/api/conta/excluir", {
@@ -241,14 +217,13 @@ async function confirmarExclusaoConta() {
     } else {
    const data = await res.json().catch(() => ({}));
 
-   erro.textContent =
-    data.error || "Erro interno ao excluir conta.";
+   erro.textContent = data.error || t("conta.erro_excluir_interno");
    erro.classList.remove("hidden");
   }
 
 
   } catch (err) {
-    erro.textContent = "Erro de conexão.";
+    erro.textContent = t("conta.erro_conexao");
     erro.classList.remove("hidden");
   }
 }

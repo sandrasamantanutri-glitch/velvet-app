@@ -1,15 +1,3 @@
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", async () => {
-    try {
-      const reg = await navigator.serviceWorker.register("/service-worker.js", {
-        scope: "/"
-      });
-      console.log("Service worker registrado:", reg.scope);
-    } catch (err) {
-      console.error("Erro ao registrar service worker:", err);
-    }
-  });
-}
 
 //===========================
 // AUTH
@@ -185,25 +173,21 @@ renderizarMais();
 // TEMPO
 // ===============================
 function formatarTempo(data) {
-
   if (!data) return "";
 
   const d = new Date(data);
-
   const diff = Math.floor((Date.now() - d.getTime()) / 86400000);
 
   if (diff === 0) {
-
-    return d.toLocaleTimeString("pt-BR", {
-      hour: "2-digit",
-      minute: "2-digit"
-    });
-
+    return d.toLocaleTimeString(
+      localStorage.getItem("lang") || "pt",
+      { hour: "2-digit", minute: "2-digit" }
+    );
   }
 
-  if (diff === 1) return "1 dia";
+  if (diff === 1) return t("inboxc.day_singular");
 
-  return `${diff} dias`;
+  return t("inboxc.day_plural").replace("{n}", diff);
 }
 
 // ===============================
@@ -256,7 +240,7 @@ function moverChatParaTopo(el) {
 
 function gerarStatus(c) {
   if (c.sender === "modelo" && c.lida === false) {
-    return `<span class="status status-unseen">Não lida</span>`;
+    return `<span class="status status-unseen">${t("inboxc.chat_unread")}</span>`;
   }
 
   if (c.sender === "modelo" && c.lida === true) {
@@ -279,7 +263,7 @@ function renderizarMais() {
     let statusHTML = "";
 
     if (m.sender === "modelo" && m.lida === false) {
-      statusHTML = `<span class="status status-unseen">Não lida</span>`;
+      statusHTML = `<span class="status status-unseen">${t("inboxc.chat_unread")}</span>`;
     } else if (m.sender === "modelo" && m.lida === true) {
       statusHTML = `<span class="status status-read">✓✓</span>`;
     } else if (m.sender === "cliente") {
@@ -306,7 +290,7 @@ function renderizarMais() {
     <div class="chat-body">
       <div class="chat-top">
         <span class="chat-name">
-          ${m.nome_exibicao || "Modelo"}
+          ${m.nome_exibicao || t("inboxc.chat_model")}
         </span>
 
         <span class="chat-time">

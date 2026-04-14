@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt">
 
 <head>
   <meta charset="UTF-8">
@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="/header.css">
   <link rel="stylesheet" href="/vips.css">
   <link rel="stylesheet" href="/area.css">
+
+   <script src="/i18n.js"></script>
 </head>
 
 <body>
@@ -15,57 +17,52 @@
  <div id="header-container"></div>
 
  <section class="area-card">
-    <button type="button" class="btn-voltar" onclick="history.back()"> <img src="/assets/voltar.png" alt="Voltar"> </button>
+       <button type="button"class="btn-voltar" onclick="history.back()" data-i18n-title="vips.voltar" data-i18n-aria-label="vips.voltar">
+      <img src="/assets/voltar.png" alt="Voltar" data-i18n-alt="vips.voltar">
+    </button>
 
-   <h3>Meus Assinantes VIP</h3>
+    <h3 data-i18n="vips.titulo">Meus Assinantes VIP</h3>
    <div class="table-wrapper">
       <table class="table"> 
        <thead> 
-         <tr>
-         <th>Assinante</th>
-         <th>Status VIP</th>
-         <th>Expira em</th>
-         <th>Criado em</th>
-         <th>Assinaturas</th>
-         <th>Mídias</th>
-         <th>Total</th>
-         </tr>
+          <tr>
+            <th data-i18n="vips.col_assinante">Assinante</th>
+            <th data-i18n="vips.col_status_vip">Status VIP</th>
+            <th data-i18n="vips.col_expira_em">Expira em</th>
+            <th data-i18n="vips.col_criado_em">Criado em</th>
+            <th data-i18n="vips.col_assinaturas">Assinaturas</th>
+            <th data-i18n="vips.col_midias">Mídias</th>
+            <th data-i18n="vips.col_total">Total</th>
+          </tr>
         </thead>
 
-       <tbody id="listaAssinantes"> <tr> <td colspan="7">Carregando...</td></tr></tbody>
+        <td colspan="7" data-i18n="vips.carregando">Carregando...</td></tr></tbody>
       </table>
     </div>
     <div class="paginacao" id="paginacaoVIP">
-  <button id="btnAnterior" disabled>← Anterior</button>
+ <button id="btnAnterior" disabled data-i18n="vips.btn_anterior">← Anterior</button>
   <span id="paginaAtual">1</span>
-  <button id="btnProximo">Próxima →</button>
+ <button id="btnProximo" data-i18n="vips.btn_proximo">Próxima →</button>
 </div>
-
-
   </section>
 
-    <footer class="footer">
-  <div class="footer-links">
-    <a href="/terms.html">Termos de Uso</a>
-    <a href="/privacy.html">Política de Privacidade</a>
-    <a href="/policies.html">Política de Utilização</a>
-  </div>
-  <div class="footer-copy">
-    © 2026 Velvet. Todos os direitos reservados.
-  </div>
+  <footer class="footer">
+    <div class="footer-links">
+      <a href="/terms.html" data-i18n="footer.termos">Termos de Uso</a>
+      <a href="/privacy.html" data-i18n="footer.privacidade">Política de Privacidade</a>
+      <a href="/policies.html" data-i18n="footer.politicas">Política de Utilização</a>
+    </div>
+    <div class="footer-copy" data-i18n="footer.copy">
+      © 2026 Velvet. Todos os direitos reservados.
+    </div>
+  </footer>
 
-      <script>
+<script>
 document.addEventListener("DOMContentLoaded", () => {
-
   const token = localStorage.getItem("token");
-
   if (!token) {
-    alert("Para ter acesso a essa página deve fazer seu login ou seu cadastro.");
-
     window.location.href = "/index.html";
-    return;
   }
-
 });
 </script>
 

@@ -6,6 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="/header.css">
   <link rel="stylesheet" href="/feed.css">
+
+  <script src="/i18n.js"></script>
 </head>
 
 <body>
@@ -13,20 +15,6 @@
 <div class="container">
 <div id="listaModelos"></div>
 </div>
-
-<script>
-  (function () {
-    const lang = localStorage.getItem("language") || "pt";
-
-    const map = {
-      pt: "pt",
-      en: "en",
-      es: "es"
-    };
-
-    document.documentElement.lang = map[lang] || "pt";
-  })();
-</script>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/header.js"></script>

@@ -13,78 +13,66 @@ let paginaAtual = 1;
 const limite = 10;
 let totalPaginas = 1;
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   carregarConteudos();
   iniciarLazyLoading();
-
-
 
   const btnNovo = document.getElementById("btnNovoConteudo");
   const modal = document.getElementById("modalNovoConteudo");
   const btnFechar = document.getElementById("btnFecharModal");
   const btnEnviar = document.getElementById("btnEnviarConteudo");
 
-  // 🔥 NOVO — mostrar nome do ficheiro
+  // =========================
+  // CONTEUDOS (PÁGINA)
+  // =========================
+
   const fileInput = document.getElementById("fileConteudo");
   const fileName = document.getElementById("fileName");
 
   if (fileInput) {
-  fileInput.addEventListener("change", () => {
+    fileInput.addEventListener("change", () => {
+      const files = fileInput.files;
+
+      if (!files || files.length === 0) {
+        fileName.textContent = t("conteudos.nenhum_arquivo");
+        return;
+      }
+
+      if (files.length > 10) {
+        alert(t("conteudos.max_arquivos"));
+        fileInput.value = "";
+        fileName.textContent = t("conteudos.nenhum_arquivo");
+        return;
+      }
+
+      if (files.length === 1) {
+        fileName.textContent = files[0].name;
+      } else {
+        fileName.textContent = t("conteudos.arquivos_selecionados").replace("{count}", files.length);
+      }
+    });
+  }
+
+  btnNovo?.addEventListener("click", () => modal.classList.remove("hidden"));
+  btnFechar?.addEventListener("click", fecharModalNovoConteudo);
+
+  btnEnviar?.addEventListener("click", () => {
+    if (!fileInput) {
+      alert(t("conteudos.erro_upload_campo"));
+      return;
+    }
 
     const files = fileInput.files;
 
     if (!files || files.length === 0) {
-      fileName.textContent = "Nenhum ficheiro selecionado";
+      alert(t("conteudos.selecione_arquivo"));
       return;
     }
 
     if (files.length > 10) {
-      alert("Você pode selecionar no máximo 10 arquivos.");
-      fileInput.value = "";
-      fileName.textContent = "Nenhum ficheiro selecionado";
+      alert(t("conteudos.max_arquivos"));
       return;
     }
-
-if (files.length === 1) {
-  if (fileName) fileName.textContent = files[0].name;
-} else {
-  if (fileName) fileName.textContent = `${files.length} arquivos selecionados`;
-}
-
-  });
-}
-
-  if (btnNovo) {
-    btnNovo.addEventListener("click", () => {
-      modal.classList.remove("hidden");
-    });
-  }
-
-  if (btnFechar) {
-    btnFechar.addEventListener("click", fecharModalNovoConteudo);
-  }
-
-if (btnEnviar) {
-  btnEnviar.addEventListener("click", () => {
-
-    if (!fileInput) {
-  alert("Campo de upload não encontrado.");
-  return;
-}
-
-const files = fileInput.files;
-
-    if (!files || files.length === 0) {
-      alert("Selecione pelo menos um arquivo.");
-      return;
-    }
-
-    if (files.length > 10) {
-      alert("Você pode enviar no máximo 10 arquivos.");
-      return;
-    }
-
-    const token = localStorage.getItem("token");
 
     const formData = new FormData();
     for (const file of files) {
@@ -95,9 +83,10 @@ const files = fileInput.files;
     const progressBar = document.getElementById("uploadProgressBar");
     const progressText = document.getElementById("uploadPercent");
 
-    progressContainer.classList.remove("hidden");
+    progressContainer?.classList.remove("hidden");
+
     btnEnviar.disabled = true;
-    btnEnviar.textContent = "Enviando...";
+    btnEnviar.textContent = t("conteudos.enviando");
 
     const xhr = new XMLHttpRequest();
 
@@ -107,82 +96,259 @@ const files = fileInput.files;
     xhr.upload.onprogress = function (e) {
       if (e.lengthComputable) {
         const percent = Math.round((e.loaded / e.total) * 100);
-        progressBar.style.width = percent + "%";
-        progressText.textContent = percent + "%";
+        if (progressBar) progressBar.style.width = percent + "%";
+        if (progressText) progressText.textContent = percent + "%";
       }
     };
 
-    xhr.onload = function () {
+    xhr.onload = async function () {
       if (xhr.status >= 200 && xhr.status < 300) {
-
-        progressBar.style.width = "100%";
-        progressText.textContent = "100%";
+        if (progressBar) progressBar.style.width = "100%";
+        if (progressText) progressText.textContent = "100%";
 
         setTimeout(async () => {
-
           fecharModalNovoConteudo();
           await carregarConteudos();
 
           fileInput.value = "";
-          fileName.textContent = "Nenhum ficheiro selecionado";
+          if (fileName) fileName.textContent = t("conteudos.nenhum_arquivo");
 
-          progressBar.style.width = "0%";
-          progressText.textContent = "0%";
-          progressContainer.classList.add("hidden");
+          if (progressBar) progressBar.style.width = "0%";
+          if (progressText) progressText.textContent = "0%";
+          progressContainer?.classList.add("hidden");
 
           btnEnviar.disabled = false;
-          btnEnviar.textContent = "Enviar";
-
+          btnEnviar.textContent = t("conteudos.btn_enviar");
         }, 500);
-
       } else {
-        alert("Erro ao enviar conteúdo");
+        alert(t("conteudos.erro_upload"));
         btnEnviar.disabled = false;
-        btnEnviar.textContent = "Enviar";
+        btnEnviar.textContent = t("conteudos.btn_enviar");
       }
     };
 
     xhr.onerror = function () {
-      alert("Erro na conexão");
+      alert(t("conteudos.erro_conexao"));
       btnEnviar.disabled = false;
-      btnEnviar.textContent = "Enviar";
+      btnEnviar.textContent = t("conteudos.btn_enviar");
     };
 
     xhr.send(formData);
-
   });
-}
+
+  // =========================
+  // FEED (PADRÃO FOOTER)
+  // =========================
+
+  const uploadArea = document.getElementById("uploadArea");
+  const fileFeed = document.getElementById("fileFeed");
+  const previewContainer = document.getElementById("previewContainer");
+
+  uploadArea?.addEventListener("click", () => {
+    fileFeed?.click();
+  });
+
+  fileFeed?.addEventListener("change", () => {
+    const file = fileFeed.files?.[0];
+    if (!file) return;
+
+    previewContainer.innerHTML = "";
+
+    const url = URL.createObjectURL(file);
+
+    if (file.type.startsWith("video")) {
+      previewContainer.innerHTML = `<video src="${url}" controls></video>`;
+    } else {
+      previewContainer.innerHTML = `<img src="${url}">`;
+    }
+  });
+
+  // =========================
+  // ENVIAR FEED
+  // =========================
+
+  const btnEnviarFeed = document.getElementById("btnEnviarFeed");
+
+  btnEnviarFeed?.addEventListener("click", async () => {
+    const file = fileFeed?.files?.[0];
+
+    if (!file) {
+      alert(t("perfil.alert_selecione_midia"));
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("tipo_conteudo", "feed");
+
+    btnEnviarFeed.disabled = true;
+    btnEnviarFeed.textContent = t("perfil.enviando");
+
+    try {
+      const res = await uploadComProgresso({
+        url: "/api/upload",
+        formData,
+        token,
+        tipo: "feed"
+      });
+
+      if (!res.ok) {
+        alert(res.data?.error || t("perfil.erro_upload"));
+        return;
+      }
+
+      document.getElementById("popupUploadFeed")?.classList.add("hidden");
+
+      fileFeed.value = "";
+      previewContainer.innerHTML = "";
+
+    } catch (err) {
+      console.error(err);
+      alert(t("perfil.erro_upload"));
+    } finally {
+      btnEnviarFeed.disabled = false;
+      btnEnviarFeed.textContent = t("perfil.upload_feed_btn");
+    }
+  });
+
+  // =========================
+  // PREMIUM (PADRÃO FOOTER)
+  // =========================
+
+  const filePremium = document.getElementById("filePremium");
+  const previewPremium = document.getElementById("previewPremium");
+  const btnEnviarPremium = document.getElementById("btnEnviarPremium");
+
+  document.getElementById("uploadAreaPremium")
+    ?.addEventListener("click", () => filePremium?.click());
+
+  filePremium?.addEventListener("change", () => {
+    const files = Array.from(filePremium.files || []);
+    previewPremium.innerHTML = "";
+
+    files.forEach(file => {
+      const url = URL.createObjectURL(file);
+
+      const item = document.createElement("div");
+      item.innerHTML = file.type.startsWith("video")
+        ? `<video src="${url}" controls></video>`
+        : `<img src="${url}">`;
+
+      previewPremium.appendChild(item);
+    });
+  });
+
+  btnEnviarPremium?.addEventListener("click", async () => {
+    const files = Array.from(filePremium.files || []);
+    const descricao = document.getElementById("premiumTexto").value.trim();
+    const preco = document.getElementById("premiumPreco").value;
+
+    if (!files.length) {
+      alert(t("perfil.alert_selecione_ao_menos"));
+      return;
+    }
+
+    if (!preco || Number(preco) <= 0) {
+      alert(t("perfil.alert_preco_invalido"));
+      return;
+    }
+
+    const form = new FormData();
+    form.append("descricao", descricao);
+    form.append("preco", preco);
+
+    files.forEach(file => {
+      form.append("files", file);
+    });
+
+    btnEnviarPremium.disabled = true;
+    btnEnviarPremium.textContent = t("perfil.enviando");
+    atualizarBarraUpload("premium", 0);
+
+    try {
+      const res = await uploadComProgresso({
+        url: "/api/premium",
+        formData: form,
+        token,
+        tipo: "premium"
+      });
+
+      if (!res.ok) {
+        alert(res.data?.error || t("perfil.erro_publicar_premium"));
+        return;
+      }
+
+      atualizarBarraUpload("premium", 100);
+
+      document.getElementById("popupUploadPremium")?.classList.add("hidden");
+      filePremium.value = "";
+      previewPremium.innerHTML = "";
+      document.getElementById("premiumTexto").value = "";
+      document.getElementById("premiumPreco").value = "";
+      resetarBarraUpload("premium");
+
+    } catch (err) {
+      console.error("Erro publicar premium:", err);
+      alert(t("perfil.erro_publicar_premium"));
+      resetarBarraUpload("premium");
+    } finally {
+      btnEnviarPremium.disabled = false;
+      btnEnviarPremium.textContent = t("perfil.upload_premium_btn");
+    }
+  });
+
+  // =========================
+  // VIEWER
+  // =========================
 
   const btnFecharViewer = document.getElementById("btnFecharViewer");
   const modalViewer = document.getElementById("modalVisualizarConteudo");
 
-  if (btnFecharViewer) {
-    btnFecharViewer.addEventListener("click", fecharViewer);
-  }
+  btnFecharViewer?.addEventListener("click", fecharViewer);
 
-  if (modalViewer) {
-    modalViewer.addEventListener("click", (e) => {
-      if (e.target.classList.contains("modal-backdrop")) {
-        fecharViewer();
-      }
-    });
-  }
+  modalViewer?.addEventListener("click", (e) => {
+    if (e.target.classList.contains("modal-backdrop")) {
+      fecharViewer();
+    }
+  });
 
-  document.getElementById("btnAnterior").addEventListener("click",()=>{
-  if(paginaAtual > 1){
+  // =========================
+  // FECHAR POPUPS
+  // =========================
+
+  document.getElementById("uploadClose")?.addEventListener("click", () => {
+    document.getElementById("popupUploadFeed")?.classList.add("hidden");
+  });
+
+  document.getElementById("uploadBackdrop")?.addEventListener("click", () => {
+    document.getElementById("popupUploadFeed")?.classList.add("hidden");
+  });
+
+  document.getElementById("premiumClose")?.addEventListener("click", () => {
+    document.getElementById("popupUploadPremium")?.classList.add("hidden");
+  });
+
+  document.getElementById("premiumBackdrop")?.addEventListener("click", () => {
+    document.getElementById("popupUploadPremium")?.classList.add("hidden");
+  });
+
+  // =========================
+// PAGINAÇÃO
+// =========================
+
+document.getElementById("btnAnterior")?.addEventListener("click", () => {
+  if (paginaAtual > 1) {
     paginaAtual--;
     carregarConteudos();
   }
 });
 
-document.getElementById("btnProxima").addEventListener("click",()=>{
-  if(paginaAtual < totalPaginas){
+document.getElementById("btnProxima")?.addEventListener("click", () => {
+  if (paginaAtual < totalPaginas) {
     paginaAtual++;
     carregarConteudos();
   }
 });
-
-
 
 });
 
@@ -313,16 +479,12 @@ if (videoId) {
 
       e.stopPropagation();
 
-      const ok = confirm("Deseja excluir este conteúdo?");
+      const ok = confirm(t("conteudos.confirm_excluir"));
       if (!ok) return;
 
       await excluirConteudo(c.id);
 
     });
-
-    // ===============================
-    // ABRIR VIEWER
-    // ===============================
 
     card.addEventListener("click", () => {
       abrirViewer(c);
@@ -432,7 +594,7 @@ async function excluirConteudo(conteudoId) {
 
   } catch (err) {
     console.error("Erro ao excluir:", err.message);
-    alert("Erro ao excluir conteúdo");
+    alert(t("conteudos.erro_excluir"));
   }
 }
 
@@ -478,3 +640,79 @@ function atualizarPaginacao(){
 
 }
 
+function atualizarBarraUpload(tipo, percentual) {
+  const box = document.getElementById(
+    tipo === "feed" ? "uploadProgressBox" : "premiumProgressBox"
+  );
+  const fill = document.getElementById(
+    tipo === "feed" ? "uploadProgress" : "premiumProgress"
+  );
+  const text = document.getElementById(
+    tipo === "feed" ? "progressText" : "premiumProgressText"
+  );
+
+  if (!box || !fill || !text) return;
+
+  box.classList.remove("hidden");
+  fill.style.width = `${percentual}%`;
+  text.textContent = `${percentual}%`;
+}
+
+function resetarBarraUpload(tipo) {
+  const box = document.getElementById(
+    tipo === "feed" ? "uploadProgressBox" : "premiumProgressBox"
+  );
+  const fill = document.getElementById(
+    tipo === "feed" ? "uploadProgress" : "premiumProgress"
+  );
+  const text = document.getElementById(
+    tipo === "feed" ? "progressText" : "premiumProgressText"
+  );
+
+  if (!box || !fill || !text) return;
+
+  fill.style.width = "0%";
+  text.textContent = "0%";
+  box.classList.add("hidden");
+}
+
+function uploadComProgresso({ url, formData, token, tipo }) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+
+    xhr.open("POST", url, true);
+
+    if (token) {
+      xhr.setRequestHeader("Authorization", "Bearer " + token);
+    }
+
+    xhr.upload.addEventListener("progress", (e) => {
+      if (!e.lengthComputable) return;
+
+      const percentual = Math.round((e.loaded / e.total) * 100);
+      atualizarBarraUpload(tipo, percentual);
+    });
+
+    xhr.addEventListener("load", () => {
+      let data = {};
+
+      try {
+        data = JSON.parse(xhr.responseText || "{}");
+      } catch {
+        data = {};
+      }
+
+      resolve({
+        ok: xhr.status >= 200 && xhr.status < 300,
+        status: xhr.status,
+        data
+      });
+    });
+
+    xhr.addEventListener("error", () => {
+      reject(new Error("Erro de rede no upload"));
+    });
+
+    xhr.send(formData);
+  });
+}

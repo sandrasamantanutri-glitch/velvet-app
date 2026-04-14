@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="/header.css">
   <link rel="stylesheet" href="/dados.css">
 
+  <script src="/i18n.js"></script>
+
 </head>
 
 <body>
@@ -15,32 +17,30 @@
 
  <section class="area-card">
  <div class="perfil-capa">
-  <img id="profileCapa" src="assets/capa.png" alt="Capa do perfil">
-  <button class="btn-camera capa" id="btnCapa" title="Alterar capa">📷</button>
+<img id="profileCapa" src="assets/capa.png" data-i18n-alt="dados.alt_capa">
+<button class="btn-camera capa" id="btnCapa" data-i18n-title="dados.title_capa">📷</button>
   <input type="file" id="inputCapa" accept="image/*" hidden>
 </div>
 
-  </div>
-
   <div class="perfil-avatar">
-   <img id="profileAvatar" src="assets/avatar.png" alt="Foto de Perfil">
-  <button class="btn-camera avatar" id="btnAvatar" title="Alterar avatar">📷 </button>
+<img id="profileAvatar" src="assets/avatar.png" data-i18n-alt="dados.alt_avatar">
+<button class="btn-camera avatar" id="btnAvatar" data-i18n-title="dados.title_avatar">📷</button>
   <input type="file" id="inputAvatar" accept="image/*" hidden>
   </div>
 
-      <button type="button" class="btn-voltar" onclick="history.back()">
-      <img src="/assets/voltar.png" alt="Voltar">
-    </button>
+<button type="button" class="btn-voltar" onclick="history.back()">
+  <img src="/assets/voltar.png" data-i18n-alt="dados.voltar">
+</button>
 
 <div class="perfil-completo-wrapper">
-  <a href="#" class="btn-perfil-completo">
-    ✨ Ver Perfil Completo
-  </a>
+<a href="#" class="btn-perfil-completo" data-i18n="dados.ver_perfil">
+  ✨ Ver Perfil Completo
+</a>
 </div>
 
 </div>
 <div class="titulo-area">
-  <h3>Meus Dados de Usuário</h3>
+<h3 data-i18n="dados.titulo">Meus Dados de Usuário</h3>
 </div>
  
  <form id="formDadosUsuario" class="form-area">
@@ -48,63 +48,45 @@
 
   <div class="form-grid">
     <div class="form-group">
-      <label>Como quer ser chamado *</label>
-      <input type="text" name="nome_exibicao" placeholder="Como quer ser chamado(a) na plataforma" required>
+    <label data-i18n="dados.label_nome_exibicao">Como quer ser chamado*</label>
+<input type="text" name="nome_exibicao" data-i18n-placeholder="dados.placeholder_nome_exibicao" placeholder="Como quer ser chamado(a) na plataforma" required>
     </div>
 
     <div class="form-group">
-      <label>Instagram</label>
-      <input type="text" name="instagram" placeholder="@seuinstagram">
+<label data-i18n="dados.label_instagram">Instagram</label>
+<input type="text" name="instagram" data-i18n-placeholder="dados.placeholder_instagram" placeholder="@seuinstagram">
     </div>
 
     <div class="form-group">
-      <label>TikTok</label>
-      <input type="text" name="tiktok" placeholder="@seutiktok">
+     <label data-i18n="dados.label_tiktok">TikTok</label>
+     <input type="text" name="tiktok" data-i18n-placeholder="dados.placeholder_tiktok" placeholder="@seutiktok">
     </div>
 
     <div class="form-group">
-      <label>Localização*</label>
-      <input type="text" name="local" placeholder="Estado - Cidade">
+      <label data-i18n="dados.label_local">Localização*</label>
+      <input type="text" name="local" data-i18n-placeholder="dados.placeholder_local" placeholder="Estado - Cidade">
     </div>
 
     <div class="form-group full">
-      <label>Sua Bio*</label>
-      <textarea name="bio" rows="4" placeholder="Escreva sua biografia aqui!"></textarea>
-      <label>*Informações obrigatórias</label>
+<label data-i18n="dados.label_bio">Sua Bio*</label>
+<textarea name="bio" rows="4" data-i18n-placeholder="dados.placeholder_bio" placeholder="Escreva sua biografia aqui!"></textarea>
+<label data-i18n="dados.obrigatorios">*Informações obrigatórias</label>
     </div>
     </div>
     <div class="btn-salvar-wrap">
-    <button type="submit" class="btn-salvar">Salvar</button>
+    <button type="submit" class="btn-salvar" data-i18n="dados.btn_salvar">Salvar</button>
     </div>
    </form>
   </section>
- </section>
 
-<hr class="separator">
-
-  <footer class="footer">
-   <div class="footer-links">
-      <a href="/terms.html" target="_blank" rel="noopener noreferrer">Termos de Uso</a>
-     <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Política de Privacidade</a>
-      <a href="/policies.html">Política de Utilização</a>
-    </div>
-   <div class="footer-copy"> © 2026 Velvet. Todos os direitos reservados.</div>
-  </footer>
-
-  <script>
-document.addEventListener("DOMContentLoaded", () => {
-
-  const token = localStorage.getItem("token");
-
-  if (!token) {
-    alert("Para ter acesso a essa página deve fazer seu login ou seu cadastro.");
-
-    window.location.href = "/index.html";
-    return;
-  }
-
-});
-</script>
+<footer class="footer">
+  <div class="footer-links">
+    <a href="/terms.html" target="_blank" rel="noopener noreferrer" data-i18n="footer.termos">Termos de Uso</a>
+    <a href="/privacy.html" target="_blank" rel="noopener noreferrer" data-i18n="footer.privacidade">Política de Privacidade</a>
+    <a href="/policies.html" data-i18n="footer.politicas">Política de Utilização</a>
+  </div>
+  <div class="footer-copy" data-i18n="footer.copy">© 2026 Velvet. Todos os direitos reservados.</div>
+</footer>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/header.js"></script>

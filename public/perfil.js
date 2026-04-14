@@ -82,12 +82,12 @@ function tratarAcaoProtegidaPremium() {
   }
 
   if (s.ehModeloVisitandoOutra) {
-    alert("No momento, modelo não pode assinar nem comprar premium de outra modelo.");
+    alert(t("perfil.alert_modelo_premium"));
     return false;
   }
 
   if (!s.ehVip) {
-    alert("Apenas clientes VIP podem comprar conteúdo premium. Torne-se VIP para continuar.");
+    alert(t("perfil.alert_so_vip_premium"));
     abrirFluxoVIP();
     return false;
   }
@@ -102,13 +102,13 @@ function abrirPopupPremiumBloqueadoVisitante() {
   modal.innerHTML = `
     <div class="modal-backdrop"></div>
     <div class="modal-box-login">
-      <h3>🔒 Conteúdo premium</h3>
-      <p>Apenas clientes VIP podem comprar conteúdo premium.</p>
-      <p style="margin-top:-10px;">Faça login ou crie a sua conta para tornar-se VIP.</p>
+      <h3>${t("perfil.modal_premium_titulo")}</h3>
+      <p>${t("perfil.modal_premium_desc1")}</p>
+      <p style="margin-top:-10px;">${t("perfil.modal_premium_desc2")}</p>
 
       <div class="login-acoes">
-        <button class="btn-login">Ja tenho conta</button>
-        <button class="btn-register">Criar conta</button>
+        <button class="btn-login">${t("perfil.btn_ja_tenho_conta")}</button>
+        <button class="btn-register">${t("perfil.btn_criar_conta")}</button>
       </div>
     </div>
   `;
@@ -118,19 +118,13 @@ function abrirPopupPremiumBloqueadoVisitante() {
   modal.querySelector(".btn-login").onclick = () => {
     modal.remove();
     salvarRetornoPerfilAcao("vip");
-
-    if (typeof openAgeGate === "function") {
-      openAgeGate("login");
-    }
+    if (typeof openAgeGate === "function") openAgeGate("login");
   };
 
   modal.querySelector(".btn-register").onclick = () => {
     modal.remove();
     salvarRetornoPerfilAcao("vip");
-
-    if (typeof openAgeGate === "function") {
-      openAgeGate("register");
-    }
+    if (typeof openAgeGate === "function") openAgeGate("register");
   };
 
   document.body.appendChild(modal);
@@ -145,7 +139,7 @@ function tratarAcaoProtegidaFeedOuChat() {
   }
 
   if (s.ehModeloVisitandoOutra) {
-    alert("No momento, modelo não pode ver conteúdo exclusivo de outra modelo.");
+    alert(t("perfil.alert_modelo_feed"));
     return false;
   }
 
@@ -182,8 +176,8 @@ function atualizarBotaoVip(expiration_at) {
   const vipCard = document.getElementById("vip-card");
   const vipChatBtn = document.getElementById("btn-vip-chat");
 
-  if (btn) {
-    btn.innerText = "VIP ativo";
+ if (btn) {
+    btn.innerText = t("perfil.vip_ativo_btn");
     btn.disabled = true;
     btn.classList.add("vip-ativo");
     btn.style.cursor = "default";
@@ -202,11 +196,8 @@ function atualizarBotaoVip(expiration_at) {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+  await whenI18nReady();
 btnAssinar = document.getElementById("btn-assinar");
-
-  // =========================
-  // FECHAR POPUPS
-  // =========================
 
   // FEED
   document.getElementById("uploadClose")?.addEventListener("click", () => {
@@ -269,8 +260,8 @@ btnAssinar?.addEventListener("click", () => {
     return;
   }
 
-  if (s.ehModeloVisitandoOutra) {
-    alert("No momento, modelo não pode assinar outra modelo.");
+if (s.ehModeloVisitandoOutra) {
+    alert(t("perfil.alert_modelo_assinar"));
     return;
   }
 
@@ -314,7 +305,7 @@ btnEnviarFeed?.addEventListener("click", async () => {
   const file = fileInput.files[0];
 
   if (!file) {
-    alert("Selecione uma mídia");
+    alert(t("perfil.alert_selecione_midia"));
     return;
   }
 
@@ -323,7 +314,7 @@ btnEnviarFeed?.addEventListener("click", async () => {
   formData.append("tipo_conteudo", "feed");
 
   btnEnviarFeed.disabled = true;
-  btnEnviarFeed.textContent = "Enviando...";
+  btnEnviarFeed.textContent = t("perfil.enviando");
   atualizarBarraUpload("feed", 0);
 
   try {
@@ -335,12 +326,12 @@ btnEnviarFeed?.addEventListener("click", async () => {
     });
 
     if (!res.ok) {
-      alert(res.data?.error || "Erro ao enviar");
+      alert(res.data?.error || t("perfil.erro_upload"));
       return;
     }
 
     atualizarBarraUpload("feed", 100);
-    alert("Post publicado!");
+    alert(t("perfil.post_publicado"));
 
     document.getElementById("popupUploadFeed").classList.add("hidden");
 
@@ -351,11 +342,11 @@ btnEnviarFeed?.addEventListener("click", async () => {
     carregarFeed();
   } catch (err) {
     console.error(err);
-    alert("Erro no upload");
+    alert(t("perfil.erro_upload"));
     resetarBarraUpload("feed");
   } finally {
     btnEnviarFeed.disabled = false;
-    btnEnviarFeed.textContent = "Publicar no Feed";
+    btnEnviarFeed.textContent = t("perfil.upload_feed_btn");
   }
 });
 
@@ -395,15 +386,15 @@ document.getElementById("btnEnviarPremium")
   const descricao = document.getElementById("premiumTexto").value.trim();
   const preco = document.getElementById("premiumPreco").value;
 
-  if (!files.length) {
-    alert("Selecione ao menos uma mídia");
+    if (!files.length) {
+    alert(t("perfil.alert_selecione_ao_menos"));
     return;
-  }
+    }
 
-  if (!preco || Number(preco) <= 0) {
-    alert("Informe um preço válido");
+   if (!preco || Number(preco) <= 0) {
+    alert(t("perfil.alert_preco_invalido"));
     return;
-  }
+    }
 
   const form = new FormData();
   form.append("descricao", descricao);
@@ -414,7 +405,7 @@ document.getElementById("btnEnviarPremium")
   });
 
   btnEnviarPremium.disabled = true;
-  btnEnviarPremium.textContent = "Enviando...";
+  btnEnviarPremium.textContent = t("perfil.enviando");
   atualizarBarraUpload("premium", 0);
 
   try {
@@ -426,7 +417,7 @@ document.getElementById("btnEnviarPremium")
     });
 
     if (!res.ok) {
-      alert(res.data?.error || "Erro ao publicar");
+     alert(res.data?.error || t("perfil.erro_publicar_premium"));
       return;
     }
 
@@ -442,11 +433,11 @@ document.getElementById("btnEnviarPremium")
     carregarPremium();
   } catch (err) {
     console.error("Erro publicar premium:", err);
-    alert("Erro ao publicar premium");
+    alert(t("perfil.erro_publicar_premium"));
     resetarBarraUpload("premium");
   } finally {
     btnEnviarPremium.disabled = false;
-    btnEnviarPremium.textContent = "Publicar Premium";
+    btnEnviarPremium.textContent = t("perfil.upload_premium_btn");
   }
 });
 
@@ -782,7 +773,7 @@ async function aplicarRegrasDeAcesso() {
       btnAssinar.disabled = false;
       btnAssinar.style.display = "block";
       btnAssinar.textContent =
-        `Assinar VIP por ${valorBRL(window.OFERTA_ATUAL.valor_promocional)}`;
+    `${t("perfil.btn_assinar_prefix")} ${valorBRL(window.OFERTA_ATUAL.valor_promocional)}`;
     }
 
     return;
@@ -796,7 +787,7 @@ async function aplicarRegrasDeAcesso() {
       btnAssinar.disabled = true;
       btnAssinar.style.display = "block";
       btnAssinar.style.cursor = "not-allowed";
-      btnAssinar.textContent = "Assinatura indisponível para modelos";
+      btnAssinar.textContent = t("perfil.btn_assinar_modelo_bloqueado");
     }
 
     return;
@@ -833,7 +824,7 @@ async function aplicarRegrasDeAcesso() {
       btnAssinar.style.display = "block";
       btnAssinar.style.cursor = "pointer";
       btnAssinar.textContent =
-        `Assinar VIP por ${valorBRL(window.OFERTA_ATUAL.valor_promocional)}`;
+        `${t("perfil.btn_assinar_prefix")} ${valorBRL(window.OFERTA_ATUAL.valor_promocional)}`;
     }
   } catch (err) {
     console.error("Erro ao aplicar regras de acesso:", err);
@@ -888,7 +879,7 @@ async function carregarOfertaAtiva() {
 
   if (btnAssinar)
     btnAssinar.textContent =
-      `Assinar VIP por ${valorBRL(valor)}`;
+    `${t("perfil.btn_assinar_prefix")} ${valorBRL(valor)}`;
 
   ofertaCard.style.display = "block";
   return;
@@ -903,7 +894,7 @@ async function carregarOfertaAtiva() {
     };
 
     if (descontoEl && window.OFERTA_ATUAL.desconto_percentual > 0) {
-      descontoEl.textContent = `Economize ${window.OFERTA_ATUAL.desconto_percentual}%`;
+      descontoEl.textContent = `${t("perfil.oferta_economize")} ${window.OFERTA_ATUAL.desconto_percentual}%`;
       descontoEl.style.display = "inline-block";
     } else if (descontoEl) {
       descontoEl.style.display = "none";
@@ -924,7 +915,7 @@ if (precoOriginalEl) {
     if (btnAssinar) {
   btnAssinar.disabled = false;
   btnAssinar.textContent =
-    `Assinar VIP por ${valorBRL(window.OFERTA_ATUAL.valor_promocional)}`;
+  `${t("perfil.btn_assinar_prefix")} ${valorBRL(window.OFERTA_ATUAL.valor_promocional)}`;
 }
 
   } catch (err) {
@@ -938,15 +929,15 @@ function abrirPopupLoginObrigatorio() {
   const modal = document.createElement("div");
   modal.className = "modal-login-obrigatorio";
 
-  modal.innerHTML = `
+modal.innerHTML = `
     <div class="modal-backdrop"></div>
     <div class="modal-box-login">
-      <h3>🔒 Acesso necessário</h3>
-      <p>É necessário estar logado para esta ação.</p>
+      <h3>${t("perfil.modal_acesso_titulo")}</h3>
+      <p>${t("perfil.modal_acesso_desc")}</p>
 
       <div class="login-acoes">
-        <button class="btn-login">Ja tenho conta</button>
-        <button class="btn-register">Não tenho conta</button>
+        <button class="btn-login">${t("perfil.btn_ja_tenho_conta")}</button>
+        <button class="btn-register">${t("perfil.btn_nao_tenho_conta")}</button>
       </div>
     </div>
   `;
@@ -986,8 +977,8 @@ function abrirFluxoVIP() {
     return;
   }
 
-  if (!modelo_id) {
-    alert("Erro ao identificar modelo.");
+ if (!modelo_id) {
+    alert(t("perfil.alert_erro_modelo"));
     return;
   }
 
@@ -1024,7 +1015,7 @@ async function carregarFeed() {
 
     if (!midias.length) {
       grid.innerHTML =
-        "<p style='grid-column:1/-1;text-align:center;'>Sem posts ainda</p>";
+        `<p style='grid-column:1/-1;text-align:center;'>${t("perfil.sem_posts_feed")}</p>`;
       return;
     }
 
@@ -1134,7 +1125,7 @@ fileInput?.addEventListener("change", () => {
 
 async function excluirMidia(id, elemento) {
 
-  if (!confirm("Excluir esta mídia?")) return;
+  if (!confirm(t("perfil.confirm_excluir_midia"))) return;
 
   try {
 
@@ -1148,7 +1139,7 @@ async function excluirMidia(id, elemento) {
     const data = await res.json();
 
     if (!res.ok) {
-      alert(data.error || "Erro ao excluir");
+      alert(data.error || t("perfil.erro_excluir_midia"));
       return;
     }
 
@@ -1157,7 +1148,7 @@ async function excluirMidia(id, elemento) {
   } catch (err) {
 
     console.error("Erro ao excluir mídia:", err);
-    alert("Erro ao excluir mídia");
+    alert(t("perfil.erro_excluir_midia"));
 
   }
 
@@ -1179,16 +1170,16 @@ async function carregarPremium() {
     });
 
     if (!res.ok) {
-      container.innerHTML =
-        "<p style='text-align:center;'>Não foi possível carregar o conteúdo premium.</p>";
+     container.innerHTML =
+    `<p style='text-align:center;'>${t("perfil.erro_carregar_premium")}</p>`;
       return;
     }
 
     const midias = await res.json();
 
     if (!midias.length) {
-      container.innerHTML =
-        "<p style='text-align:center;'>Nenhum conteúdo premium ainda</p>";
+  container.innerHTML =
+    `<p style='text-align:center;'>${t("perfil.sem_premium")}</p>`;
       return;
     }
 
@@ -1450,7 +1441,7 @@ async function carregarPremium() {
   } catch (err) {
     console.error("Erro carregar premium:", err);
     container.innerHTML =
-      "<p style='text-align:center;'>Erro ao carregar premium</p>";
+      `<p style='text-align:center;'>${t("perfil.erro_carregar_premium")}</p>`;
   }
 }
 
@@ -1684,6 +1675,18 @@ async function atualizarPerfilPosPagamento() {
 
 window.atualizarPerfilPosPagamento = atualizarPerfilPosPagamento;
 
+window.addEventListener("languageChanged", async () => {
+  await carregarOfertaAtiva();
+  await aplicarRegrasDeAcesso();
+  await carregarFeed();
+  await carregarPremium();
+
+  const btnAssinar = document.getElementById("btn-assinar");
+  if (btnAssinar && window.__CLIENTE_VIP__) {
+    btnAssinar.textContent = t("perfil.vip_ativo_btn");
+  }
+});
+
 function fecharModalMidia() {
   const modal = document.getElementById("modalMidia");
   const img = document.getElementById("modalImg");
@@ -1733,7 +1736,7 @@ function fecharModalMidia() {
 }
 
 async function excluirPremium(id, elemento) {
-  if (!confirm("Excluir esta postagem premium?")) return;
+  if (!confirm(t("perfil.confirm_excluir_premium"))) return;
 
   try {
     const res = await fetch(`/api/premium/${id}`, {
@@ -1746,7 +1749,7 @@ async function excluirPremium(id, elemento) {
     const data = await res.json();
 
     if (!res.ok) {
-      alert(data.error || "Erro ao excluir premium");
+      alert(data.error || t("perfil.erro_excluir_premium"));
       return;
     }
 
@@ -1755,12 +1758,12 @@ async function excluirPremium(id, elemento) {
     const container = document.getElementById("midias-paid");
     if (container && !container.querySelector(".midia-card-premium")) {
       container.innerHTML =
-        "<p style='text-align:center;'>Nenhum conteúdo premium ainda</p>";
+        `<p style='text-align:center;'>${t("perfil.sem_premium")}</p>`;
     }
 
   } catch (err) {
     console.error("Erro ao excluir premium:", err);
-    alert("Erro ao excluir premium");
+    alert(t("perfil.erro_excluir_premium"));
   }
 }
 

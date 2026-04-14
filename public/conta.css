@@ -318,7 +318,6 @@ body {
 ================================ */
 
 .danger-zone {
-  margin-top: 50px;
   padding: 25px;
   background: #fff;
  justify-content: center;
@@ -536,6 +535,10 @@ body {
   text-decoration: none !important;
   border-bottom: none;
 
+}
+
+.hidden {
+  display: none !important;
 }
 
 

@@ -6439,13 +6439,15 @@ app.post("/api/register", authLimiter, async (req, res) => {
       src
     } = req.body;
 
-    if (!email || !senha || !role || !nome_completo || !data_nascimento) {
+    const emailNormalizado = email?.trim().toLowerCase();
+
+    if (!emailNormalizado || !senha || !role || !nome_completo || !data_nascimento) {
       return res.status(400).json({
         erro: "Todos os campos obrigatórios devem ser preenchidos"
       });
     }
 
-    if (!emailValido(email)) {
+    if (!emailValido(emailNormalizado)) {
       return res.status(400).json({ erro: "Email inválido" });
     }
 
@@ -6488,7 +6490,7 @@ app.post("/api/register", authLimiter, async (req, res) => {
         ($1, $2, $3, true, NOW())
       RETURNING id
       `,
-      [email, hash, role]
+      [emailNormalizado, hash, role]
     );
 
     const userId = userResult.rows[0].id;
@@ -6525,8 +6527,8 @@ app.post("/api/register", authLimiter, async (req, res) => {
         [modeloId, nome_completo, data_nascimento]
       );
 
-      console.log("📩 Tentando enviar email para:", email);
-      await enviarEmailValidacao(email);
+      console.log("📩 Tentando enviar email para:", emailNormalizado);
+      await enviarEmailValidacao(emailNormalizado);
     }
 
     // CLIENTE
@@ -6571,7 +6573,7 @@ app.post("/api/register", authLimiter, async (req, res) => {
     const token = jwt.sign(
       {
         id: userId,
-        email,
+        email: emailNormalizado,
         role
       },
       process.env.JWT_SECRET,
@@ -6601,10 +6603,12 @@ app.post("/api/register", authLimiter, async (req, res) => {
 // ===========================
 // LOGIN
 // ===========================
-
 app.post("/api/login", authLimiter, async (req, res) => {
   try {
-    const { email, senha } = req.body;
+    let { email, senha } = req.body;
+
+    email = email?.trim().toLowerCase();
+    senha = senha?.trim();
 
     if (!email || !senha) {
       return res.status(400).json({ error: "Dados incompletos" });
@@ -6613,7 +6617,7 @@ app.post("/api/login", authLimiter, async (req, res) => {
     const result = await db.query(
       `SELECT id, email, password_hash, role, ativo
        FROM public.users
-       WHERE email = $1
+       WHERE LOWER(email) = LOWER($1)
        LIMIT 1`,
       [email]
     );
@@ -6633,7 +6637,7 @@ app.post("/api/login", authLimiter, async (req, res) => {
       return res.status(401).json({ error: "Senha incorreta" });
     }
 
-    const role = user.role.toLowerCase();
+    const role = String(user.role || "").toLowerCase();
 
     if (role === "modelo") {
       const modeloRes = await db.query(
@@ -6653,11 +6657,7 @@ app.post("/api/login", authLimiter, async (req, res) => {
       }
 
       const token = jwt.sign(
-        {
-          id: user.id,
-          email: user.email,
-          role
-        },
+        { id: user.id, email: user.email, role },
         process.env.JWT_SECRET,
         { expiresIn: "60d" }
       );
@@ -6688,19 +6688,12 @@ app.post("/api/login", authLimiter, async (req, res) => {
     }
 
     const token = jwt.sign(
-      {
-        id: user.id,
-        email: user.email,
-        role
-      },
+      { id: user.id, email: user.email, role },
       process.env.JWT_SECRET,
       { expiresIn: "60d" }
     );
 
-    return res.json({
-      token,
-      role
-    });
+    return res.json({ token, role });
 
   } catch (err) {
     console.error("🔥 ERRO LOGIN:", err);

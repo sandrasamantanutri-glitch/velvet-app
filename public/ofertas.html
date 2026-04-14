@@ -1,115 +1,118 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt">
 
 <head>
   <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-   <title>Assinatura e Ofertas</title>
-    <link rel="stylesheet" href="/header.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Assinatura e Ofertas</title>
+  <link rel="stylesheet" href="/header.css">
   <link rel="stylesheet" href="/ofertas.css">
-
+  
+  <script src="/i18n.js"></script>
 </head>
 
 <body>
-   <div id="header-container"></div>
+  <div id="header-container"></div>
 
   <main class="page-container">
-       <button type="button" class="btn-voltar" onclick="history.back()">
-      <img src="/assets/voltar.png" alt="Voltar">
-     </button>
+    <button
+      type="button"
+      class="btn-voltar"
+      onclick="history.back()"
+      data-i18n-title="ofertas.voltar">
+      <img src="/assets/voltar.png" alt="Voltar" data-i18n-alt="ofertas.voltar">
+    </button>
 
-       <div class="ofertas-topo">
-     <h2>Assinaturas</h2>
-  </div>
-
-     <div class="plano-card">
-    <h3>💎 Plano de Assinatura</h3><br>
-
-  <div class="plano-grid">
-    <div class="plano-item">
-    <label>Escolha o valor mensal da sua assinatura</label><br>
-      <label>Valor Mensal</label>
-      <div class="input-preco">
-        <span>R$</span>
-        <input type="number" id="assinaturaMensal" min="20" step="0.01">
-      </div>
+    <div class="ofertas-topo">
+      <h2 data-i18n="ofertas.titulo_assinaturas">Assinaturas</h2>
     </div>
 
-    <div class="plano-item">
-      <label>Desconto Trimestral (%)</label>
-      <div class="input-preco">
-      <input type="number" id="descontoTrimestral" min="0" max="30">
+    <div class="plano-card">
+      <h3 data-i18n="ofertas.titulo_plano">💎 Plano de Assinatura</h3><br>
+
+      <div class="plano-grid">
+        <div class="plano-item">
+          <label data-i18n="ofertas.label_escolha_valor">
+            Escolha o valor mensal da sua assinatura
+          </label><br>
+
+          <label for="assinaturaMensal" data-i18n="ofertas.label_valor_mensal">
+            Valor Mensal
+          </label>
+
+          <div class="input-preco">
+            <span>R$</span>
+            <input type="number" id="assinaturaMensal" min="20" step="0.01">
+          </div>
+        </div>
+
+        <div class="plano-item">
+          <label for="descontoTrimestral" data-i18n="ofertas.label_desconto_trimestral">
+            Desconto Trimestral (%)
+          </label>
+
+          <div class="input-preco">
+            <input type="number" id="descontoTrimestral" min="0" max="30">
+          </div>
+        </div>
+
+        <div class="plano-item">
+          <label for="assinaturaTrimestral" data-i18n="ofertas.label_valor_trimestral_final">
+            Valor Trimestral Final
+          </label>
+
+          <div class="input-preco">
+            <span>R$</span>
+            <input type="text" id="assinaturaTrimestral" readonly>
+          </div>
+        </div>
       </div>
+
+      <button id="salvarPlanos" class="btn-plano-salvar" data-i18n="ofertas.btn_salvar_plano">
+        Salvar Plano
+      </button>
     </div>
 
-    <div class="plano-item">
-      <label>Valor Trimestral Final</label>
-      <div class="input-preco">
-        <span>R$</span>
-        <input type="text" id="assinaturaTrimestral" readonly>
-      </div>
+    <div class="ofertas-topo">
+      <h2 data-i18n="ofertas.titulo_descontos">Descontos na Assinatura</h2>
     </div>
-  </div>
 
-  <button id="salvarPlanos" class="btn-plano-salvar">
-    Salvar Plano
-  </button>
-</div>
+    <div class="ofertas-container">
+      <div class="ofertas-tabs">
+        <button class="tab active" data-tab="ativas" data-i18n="ofertas.tab_ativas">Ativas</button>
+        <button class="tab" data-tab="inativas" data-i18n="ofertas.tab_inativas">Inativas</button>
+      </div>
 
-  <div class="ofertas-topo">
-     <h2>Descontos na Assinatura</h2>
-  </div>
+      <div class="ofertas-criar">
+        <button class="btn-criar-oferta" id="btnCriarOferta" data-i18n="ofertas.btn_criar_oferta">
+          + Criar oferta
+        </button>
+      </div>
 
-<div class="ofertas-container">
-
-  <!-- TABS -->
-  <div class="ofertas-tabs">
-    <button class="tab active" data-tab="ativas">Ativas</button>
-    <button class="tab" data-tab="inativas">Inativas</button>
-  </div>
-
-  <div class="ofertas-criar">
-  <button class="btn-criar-oferta" id="btnCriarOferta">
-    + Criar oferta
-  </button>
-</div>
-
-  <!-- LISTA -->
-  <div class="ofertas-lista" id="ofertasLista"></div>
-
-</div>
-
-</main>
+      <div class="ofertas-lista" id="ofertasLista"></div>
+    </div>
+  </main>
 
   <footer class="footer">
-   <div class="footer-links">
-      <a href="/terms.html" target="_blank" rel="noopener noreferrer">Termos de Uso</a>
-     <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Política de Privacidade</a>
-      <a href="/policies.html">Política de Utilização</a>
+    <div class="footer-links">
+      <a href="/terms.html" target="_blank" rel="noopener noreferrer" data-i18n="footer.termos">Termos de Uso</a>
+      <a href="/privacy.html" target="_blank" rel="noopener noreferrer" data-i18n="footer.privacidade">Política de Privacidade</a>
+      <a href="/policies.html" data-i18n="footer.politicas">Política de Utilização</a>
     </div>
-   <div class="footer-copy"> © 2026 Velvet. Todos os direitos reservados.</div>
+    <div class="footer-copy" data-i18n="footer.copy">© 2026 Velvet. Todos os direitos reservados.</div>
   </footer>
 
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        window.location.href = "/index.html";
+      }
+    });
+  </script>
 
-    <script>
-document.addEventListener("DOMContentLoaded", () => {
-
-  const token = localStorage.getItem("token");
-
-  if (!token) {
-    alert("Para ter acesso a essa página deve fazer seu login ou seu cadastro.");
-
-    window.location.href = "/index.html";
-    return;
-  }
-
-});
-</script>
-
-<script src="/socket.io/socket.io.js"></script>
-<script src="/header.js" defer></script>
-<script src="/ofertas.js" defer></script>
-
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/header.js" defer></script>
+  <script src="/ofertas.js" defer></script>
 </body>
 </html>
-

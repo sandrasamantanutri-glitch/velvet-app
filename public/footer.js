@@ -25,17 +25,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
  atualizarAvatarFooter();
 
-   const role = localStorage.getItem("role");
-
- const menu = document.getElementById("footerModelo");
+const role = localStorage.getItem("role");
+const menu = document.getElementById("footerModelo");
+const subMenu = document.getElementById("footerSubMenu");
 
   if (!menu) return;
 
-  if (role === "modelo") {
-    menu.style.display = "flex";
+const modeloLogado = Number(localStorage.getItem("modelo_id"));
+
+  const params = new URLSearchParams(window.location.search);
+  const modeloIdUrl = Number(params.get("modelo_id") || params.get("id"));
+
+  const ehPaginaDePerfil = !!modeloIdUrl;
+  const ehDonaDoPerfil = role === "modelo" && modeloLogado === modeloIdUrl;
+
+  if (ehPaginaDePerfil) {
+    if (ehDonaDoPerfil) {
+      menu.style.display = "flex";
+    } else {
+      menu.style.display = "none";
+      return;
+    }
   } else {
-    menu.style.display = "none";
-    return;
+    if (role === "modelo") {
+      menu.style.display = "flex";
+    } else {
+      menu.style.display = "none";
+      return;
+    }
   }
 
   const btnPerfil = document.getElementById("btnAvatar");
@@ -49,7 +66,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // =========================
 
   document.addEventListener("click", (e) => {
-    if (!menu.contains(e.target) && !e.target.closest(".footer-btn")) {
+    if (!subMenu.contains(e.target) && !e.target.closest(".footer-btn")) {
       fecharMenu();
     }
   });
@@ -58,14 +75,12 @@ document.addEventListener("DOMContentLoaded", () => {
   // BOTÃO POST
   // =========================
 
-  btnMedia?.addEventListener("click", () => {
-
-    abrirMenu(`
-      <button id="menuPostFeed">Postar no Feed</button>
-      <button id="menuPostPremium">Postar no Premium</button>
-    `);
-
-  });
+btnMedia?.addEventListener("click", () => {
+  abrirMenu(`
+    <button id="menuPostFeed">${t("footer.postar_feed")}</button>
+    <button id="menuPostPremium">${t("footer.postar_premium")}</button>
+  `);
+});
 
   // =========================
   // CONTEÚDOS
@@ -112,18 +127,16 @@ document.addEventListener("DOMContentLoaded", () => {
   // ABRIR MENU
   // =========================
 
-  function abrirMenu(html) {
+function abrirMenu(html) {
+  subMenu.innerHTML = html;
+  subMenu.style.display = "flex";
+  registrarEventosMenu();
+}
 
-    menu.innerHTML = html;
-    menu.classList.remove("hidden");
-
-    registrarEventosMenu();
-
-  }
-
-  function fecharMenu() {
-    menu.classList.add("hidden");
-  }
+function fecharMenu() {
+  subMenu.style.display = "none";
+  subMenu.innerHTML = "";
+}
 
   // =========================
   // REGISTRAR EVENTOS DO MENU
@@ -154,33 +167,6 @@ function postarPremium() {
   popup.classList.remove("hidden");
 }
 
-  // =========================
-  // POSTAR NO FEED
-  // =========================
-
-  function postarFeed(){
-
-    const popup = document.getElementById("popupUploadFeed");
-
-    if(!popup) return;
-
-    popup.classList.remove("hidden");
-
-  }
-
-  // =========================
-  // POSTAR PREMIUM
-  // =========================
-
-// function postarPremium(){
-
-//   const popup = document.getElementById("popupUploadPremium");
-
-//   if(!popup) return;
-
-//   popup.classList.remove("hidden");
-
-// }
 
 });
 

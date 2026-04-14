@@ -70,13 +70,13 @@ async function carregarTransacoes(pagina = 1) {
     return;
   }
 
-  lista.innerHTML = "Carregando transações...";
+  lista.innerHTML = t("relatorio.carregando_transacoes");
   if (paginacao) paginacao.innerHTML = "";
 
   const token = localStorage.getItem("token");
-  if (!token) {
-    lista.innerText = "Você não está logada.";
-    return;
+if (!token) {
+  lista.innerText = t("relatorio.nao_autenticada");
+  return;
   }
 
   function obterMesAtualSP() {
@@ -112,10 +112,10 @@ async function carregarTransacoes(pagina = 1) {
       }
     });
 
-    if (!res.ok) {
-      lista.innerText = "Erro ao carregar transações.";
-      return;
-    }
+if (!res.ok) {
+  lista.innerText = t("relatorio.erro_transacoes");
+  return;
+}
 
     const data = await res.json();
     const dados = data.registros || [];
@@ -123,30 +123,30 @@ async function carregarTransacoes(pagina = 1) {
     lista.innerHTML = "";
 
     if (!dados.length) {
-      lista.innerText = "Nenhuma transação encontrada.";
+    lista.innerText = t("relatorio.sem_transacoes");
       return;
     }
 
     paginaAtualTransacoes = data.paginaAtual;
 
-    dados.forEach(t => {
-      lista.innerHTML += `
-        <div class="transacao">
-          <strong>#${t.codigo}</strong> · ${t.tipo}<br>
-          ${formatarDataHoraSP(t.created_at)}<br>
-          Valor: ${emReais(t.valor)}
-        </div>
-      `;
-    });
+dados.forEach(tr => {
+  lista.innerHTML += `
+    <div class="transacao">
+      <strong>#${tr.codigo}</strong> · ${tr.tipo}<br>
+      ${formatarDataHoraSP(tr.created_at)}<br>
+      ${t("relatorio.valor")}: ${emReais(tr.valor)}
+    </div>
+  `;
+});
 
     if (paginacao && data.totalPaginas > 1) {
       renderizarPaginacaoTransacoes(data.totalPaginas);
     }
 
-  } catch (err) {
-    console.error(err);
-    lista.innerText = "Erro inesperado.";
-  }
+} catch (err) {
+  console.error(err);
+  lista.innerText = t("relatorio.erro_inesperado");
+}
 }
 
 function renderizarPaginacaoTransacoes(totalPaginas) {
@@ -158,7 +158,7 @@ function renderizarPaginacaoTransacoes(totalPaginas) {
       class="pag-btn"
       ${paginaAtualTransacoes === 1 ? "disabled" : ""}
       onclick="carregarTransacoes(${paginaAtualTransacoes - 1})">
-      ← Anterior
+      ${t("relatorio.anterior")}
     </button>
 
     <span class="pag-info">
@@ -169,7 +169,7 @@ function renderizarPaginacaoTransacoes(totalPaginas) {
       class="pag-btn"
       ${paginaAtualTransacoes === totalPaginas ? "disabled" : ""}
       onclick="carregarTransacoes(${paginaAtualTransacoes + 1})">
-      Próxima →
+      ${t("relatorio.proxima")}
     </button>
   `;
 }
@@ -186,13 +186,13 @@ async function carregarPagamentos() {
   const lista = document.getElementById("listaPagamentos");
   if (!lista) return;
 
-  lista.innerHTML = "Carregando pagamentos...";
+  lista.innerHTML = t("relatorio.carregando_pagamentos");
 
   const token = localStorage.getItem("token");
-  if (!token) {
-    lista.innerText = "Não autenticada.";
-    return;
-  }
+if (!token) {
+  lista.innerText = t("relatorio.nao_autenticada");
+  return;
+}
 
   try {
     const res = await fetch("/api/modelo/pagamentos", {
@@ -205,7 +205,7 @@ async function carregarPagamentos() {
     lista.innerHTML = "";
 
     if (!dados.length) {
-      lista.innerText = "Nenhum pagamento encontrado.";
+      lista.innerText = t("relatorio.sem_pagamentos");
       return;
     }
 
@@ -215,46 +215,49 @@ async function carregarPagamentos() {
       fim.setMonth(fim.getMonth() + 1);
       fim.setDate(fim.getDate() - 1);
 
-      const statusTexto = p.status === "pago" ? "Pago" : "Pendente";
-      const pagoEm = p.pago_em
-        ? new Date(p.pago_em).toLocaleDateString("pt-BR")
-        : "—";
+      const statusTexto = p.status === "pago"
+  ? t("relatorio.status_pago")
+  : t("relatorio.status_pendente");
 
-      lista.innerHTML += `
-        <div class="transacao">
-          <div class="linha">
-            <strong>Período:</strong>
-            ${inicio.toLocaleDateString("pt-BR")}
-            até
-            ${fim.toLocaleDateString("pt-BR")}
-          </div>
+const pagoEm = p.pago_em
+  ? new Date(p.pago_em).toLocaleDateString("pt-BR")
+  : t("relatorio.nao_aplicavel");
 
-          <div class="linha">
-            <strong>Status:</strong> ${statusTexto}
-          </div>
+lista.innerHTML += `
+  <div class="transacao">
+    <div class="linha">
+      <strong>${t("relatorio.periodo")}:</strong>
+      ${inicio.toLocaleDateString("pt-BR")}
+      ${t("relatorio.ate")}
+      ${fim.toLocaleDateString("pt-BR")}
+    </div>
 
-          <div class="linha">
-            <strong>Pago em:</strong> ${pagoEm}
-          </div>
+    <div class="linha">
+      <strong>${t("relatorio.status")}:</strong> ${statusTexto}
+    </div>
 
-          <div class="linha">
-            <strong>Mídias:</strong> R$ ${Number(p.total_midias).toFixed(2)}
-          </div>
+    <div class="linha">
+      <strong>${t("relatorio.pago_em")}:</strong> ${pagoEm}
+    </div>
 
-          <div class="linha">
-            <strong>Assinaturas:</strong> R$ ${Number(p.total_assinaturas).toFixed(2)}
-          </div>
+    <div class="linha">
+      <strong>${t("relatorio.midias")}:</strong> R$ ${Number(p.total_midias).toFixed(2)}
+    </div>
 
-          <div class="linha">
-            <strong>Total:</strong> R$ ${Number(p.total_geral).toFixed(2)}
-          </div>
-        </div>
-      `;
+    <div class="linha">
+      <strong>${t("relatorio.assinaturas")}:</strong> R$ ${Number(p.total_assinaturas).toFixed(2)}
+    </div>
+
+    <div class="linha">
+      <strong>${t("relatorio.total")}:</strong> R$ ${Number(p.total_geral).toFixed(2)}
+    </div>
+  </div>
+`;
     });
 
   } catch (err) {
     console.error(err);
-    lista.innerText = "Erro ao carregar pagamentos.";
+    lista.innerText = t("relatorio.erro_pagamentos");
   }
 }
 
@@ -273,11 +276,11 @@ function mostrarStatusDadosBancarios(status) {
   box.style.display = "block";
   box.className = "status-box";
 
-  if (status === "aprovado") {
-    box.classList.add("status-aprovado");
-    box.innerText = "Status: Aprovado";
-    return;
-  }
+if (status === "aprovado") {
+  box.classList.add("status-aprovado");
+  box.innerText = t("relatorio.status_aprovado");
+  return;
+}
 
   box.style.display = "none";
 }
@@ -352,10 +355,8 @@ const btnAlterar = document.getElementById("btnAlterarDados");
     if (btnAlterar) {
       btnAlterar.style.display = "none";
     }
-
-    mostrarAviso(
-      "Alterações de dados bancários estão temporariamente bloqueadas no período de pagamento."
-    );
+    
+    mostrarAviso(t("relatorio.bloqueio_periodo"));
     return;
   }
 
@@ -384,7 +385,7 @@ const btnAlterar = document.getElementById("btnAlterarDados");
       btnAlterar.style.display = "none";
     }
 
-    mostrarAviso("Alteração enviada. Aguardando aprovação.");
+    mostrarAviso(t("relatorio.alteracao_pendente"));
     return;
   }
 
@@ -422,7 +423,9 @@ function bloquearFormulario(form) {
 
 let paginaAtualTransacoes = 1;
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  await inicializarIdioma()
+
   carregarResumoModelo();
 
   // ===============================
@@ -524,10 +527,10 @@ form.addEventListener("submit", async e => {
     console.log("endpoint:", endpoint);
     console.log("payload:", payload);
 
-    if (statusAtual === "aprovado" && !payload.justificativa) {
-      alert("Informe a justificativa para alteração dos dados.");
-      return;
-    }
+if (statusAtual === "aprovado" && !payload.justificativa) {
+  alert(t("relatorio.justificativa_obrigatoria"));
+  return;
+}
 
     const res = await fetch(endpoint, {
       method: "POST",
@@ -544,18 +547,18 @@ form.addEventListener("submit", async e => {
     try {
       r = text ? JSON.parse(text) : {};
     } catch {
-      r = { error: text || `Resposta inválida do servidor (${res.status})` };
+      r = { error: text || `${t("relatorio.resposta_invalida_servidor")} (${res.status})` };
     }
 
     console.log("status resposta:", res.status);
     console.log("resposta backend:", r);
 
     if (!res.ok) {
-      alert(r?.error || "Erro ao enviar dados.");
+      alert(t("relatorio.erro_envio"));
       return;
     }
 
-    alert("Dados enviados para validação");
+    alert(t("relatorio.sucesso_envio"));
 
     statusAtual =
       statusAtual === "aprovado"
@@ -570,9 +573,9 @@ form.addEventListener("submit", async e => {
 
     await carregarDadosBancarios();
 
-  } catch (err) {
-    console.error("Erro no submit dos dados bancários:", err);
-    alert("Erro ao enviar os dados. Veja o console.");
-  }
+} catch (err) {
+  console.error("Erro no submit dos dados bancários:", err);
+  alert(t("relatorio.erro_envio_console"));
+}
 });
 });

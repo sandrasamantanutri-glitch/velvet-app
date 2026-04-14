@@ -115,7 +115,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     modelo_id = Number(params.get("modelo_id"));
 
     if (!modelo_id) {
-      alert("Modelo inválida.");
+      alert(t("chatc.invalid_model"));
       return;
     }
 
@@ -353,7 +353,7 @@ function enviarMensagem(e){
   if(!text) return;
 
   if(!socket.connected){
-    alert("Conexão perdida. Aguarde reconectar.");
+    alert(t("chatc.connection_lost"));
     return;
   }
 
@@ -484,7 +484,7 @@ socket.on("conteudoVisto", async ({ message_id, cliente_id: cid }) => {
 // FORMATAR HORA
 // ===============================
 function formatarTempo(timestamp) {
-  if (!timestamp || timestamp === "0") return "agora";
+  if (!timestamp || timestamp === "0") return t("chatc.time_now");
 
   // aceita número OU string ISO
   const time =
@@ -492,7 +492,7 @@ function formatarTempo(timestamp) {
       ? timestamp
       : new Date(timestamp).getTime();
 
-  if (isNaN(time)) return "agora";
+  if (isNaN(time)) return t("chatc.time_now");
 
   const diff = Date.now() - time;
 
@@ -500,11 +500,11 @@ function formatarTempo(timestamp) {
   const h   = Math.floor(diff / 3600000);
   const d   = Math.floor(diff / 86400000);
 
-  if (min < 1) return "agora";
-  if (min < 60) return `há ${min} min`;
-  if (h < 24) return `há ${h} h`;
-  if (d === 1) return "ontem";
-  return `há ${d} dias`;
+  if (min < 1) return t("chatc.time_now");
+  if (min < 60) return t("chatc.time_minutes").replace("{n}", min);
+  if (h < 24) return t("chatc.time_hours").replace("{n}", h);
+  if (d === 1) return t("chatc.time_yesterday");
+  return t("chatc.time_days").replace("{n}", d);
 }
 
 
@@ -660,7 +660,7 @@ async function abrirConteudo(message_id, index = 0) {
     });
 
     if (!res.ok) {
-      alert("Erro ao carregar mídia");
+      alert(t("chatc.error_load_media"));
       return;
     }
 
@@ -698,7 +698,7 @@ async function abrirConteudo(message_id, index = 0) {
 
 function abrirPagamentoChat(valor, conteudoId) {
   if (!valor || !conteudoId) {
-    alert("Erro: dados inválidos");
+    alert(t("chatc.error_invalid_data"));
     return;
   }
 
@@ -733,7 +733,7 @@ function abrirPagamentoChat(valor, conteudoId) {
 
   if (typeof abrirPopupPagamento !== "function") {
     console.error("abrirPopupPagamento não está disponível.");
-    alert("Erro ao abrir pagamento.");
+    alert(t("chatc.error_open_payment"));
     return;
   }
 
@@ -761,7 +761,7 @@ async function carregarInfoModelo(modelo_id) {
     const modelo = await res.json();
 
     const nome = document.getElementById("chatModeloNome");
-    if (nome) nome.innerText = modelo.nome_exibicao || modelo.nome || "Modelo";
+    if (nome) nome.innerText = modelo.nome_exibicao || modelo.nome || t("chatc.model_name_placeholder");
 
     const avatar = document.getElementById("chatModeloAvatar");
     if (avatar) {
@@ -778,8 +778,8 @@ async function carregarInfoModelo(modelo_id) {
     const status = document.getElementById("chatModeloStatus");
     if (status) {
       status.innerText = modelo.last_seen
-        ? `visto por último: ${formatarTempo(modelo.last_seen)}`
-        : "visto por último: agora";
+        ? t("chatc.last_seen").replace("{time}", formatarTempo(modelo.last_seen))
+        : t("chatc.last_seen").replace("{time}", t("chatc.time_now"));
     }
 
   } catch (err) {
@@ -1270,3 +1270,14 @@ socket.on("disconnect", reason => {
 
 });
 
+function mostrarMetodoPixChat() {
+  if (!validarDadosIniciaisPagamento()) return;
+
+  resetarEstadoCartao();
+  resetarEstadoPix();
+  irParaEtapaPagamento("pix");
+
+  setTimeout(() => {
+    document.getElementById("btnGerarPix")?.click();
+  }, 200);
+}

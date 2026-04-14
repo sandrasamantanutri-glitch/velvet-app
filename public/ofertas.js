@@ -39,33 +39,58 @@ function renderOfertas() {
 
         <div class="status ${o.ativa ? "status-ativa" : "status-inativa"}">
           <span class="dot"></span>
-          ${o.ativa ? "Oferta ativa" : "Oferta encerrada"}
+          ${o.ativa ? t("ofertas.status_ativa") : t("ofertas.status_encerrada")}
         </div>
 
         <div class="oferta-info">
           ${
             o.ativa
-              ? `Termina em ${dias} dias (${formatarData(o.fim)})`
-              : `Encerrada em ${formatarData(o.fim)}`
+              ? t("ofertas.termina_em")
+                  .replace("{dias}", dias)
+                  .replace("{data}", formatarData(o.fim))
+              : t("ofertas.encerrada_em")
+                  .replace("{data}", formatarData(o.fim))
           }
         </div>
 
         <div class="valores-box">
-          <div><span>Valor original: </span><strong> R$ ${(o.valor_original || 0).toFixed(2)}</strong></div>
-          <div class="desconto"><span>Desconto: </span><strong> -${o.desconto}%</strong></div>
-          <div><span>Valor final: </span><strong> R$ ${o.valor_final.toFixed(2)}</strong></div>
+          <div>
+            <span>${t("ofertas.valor_original")} </span>
+            <strong>R$ ${(o.valor_original || 0).toFixed(2)}</strong>
+          </div>
+
+          <div class="desconto">
+            <span>${t("ofertas.desconto")} </span>
+            <strong>-${o.desconto}%</strong>
+          </div>
+
+          <div>
+            <span>${t("ofertas.valor_final")} </span>
+            <strong>R$ ${o.valor_final.toFixed(2)}</strong>
+          </div>
         </div>
 
         <div class="oferta-detalhes">
-          <div><span>Início:</span><span>${formatarData(o.inicio)}</span></div>
-          <div><span>Fim:</span><span>${formatarData(o.fim)}</span></div>
-          <div><span>Participantes:</span><span>${o.usadas}/${o.limite}</span></div>
+          <div>
+            <span>${t("ofertas.inicio")}</span>
+            <span>${formatarData(o.inicio)}</span>
+          </div>
+
+          <div>
+            <span>${t("ofertas.fim")}</span>
+            <span>${formatarData(o.fim)}</span>
+          </div>
+
+          <div>
+            <span>${t("ofertas.participantes")}</span>
+            <span>${o.usadas}/${o.limite}</span>
+          </div>
         </div>
 
         ${
           o.ativa
             ? `<button class="btn-encerrar" onclick="encerrarOferta(${o.id})">
-                 Encerrar oferta
+                 ${t("ofertas.btn_encerrar")}
                </button>`
             : ""
         }
@@ -79,7 +104,7 @@ function renderOfertas() {
    AÇÕES
 =============================== */
 async function encerrarOferta(id) {
-  if (!confirm("Tem certeza que deseja encerrar esta oferta?")) return;
+  if (!confirm(t("ofertas.confirm_encerrar"))) return;
 
   try {
     const token = localStorage.getItem("token");
@@ -95,7 +120,7 @@ async function encerrarOferta(id) {
     const data = await res.json();
 
     if (!res.ok) {
-      alert(data.erro || "Erro ao encerrar oferta");
+      alert(data.erro || t("ofertas.erro_encerrar"));
       return;
     }
 
@@ -103,7 +128,7 @@ async function encerrarOferta(id) {
 
   } catch (err) {
     console.error(err);
-    alert("Erro ao encerrar oferta");
+    alert(t("ofertas.erro_encerrar"));
   }
 }
 
@@ -132,17 +157,11 @@ document.querySelectorAll(".tab").forEach(tab => {
   };
 });
 
-/* ===============================
-   BOTÃO CRIAR OFERTA
-=============================== */
 if (btnCriar) {
   btnCriar.onclick = abrirModalCriarOferta;
 }
 
-carregarOfertasDoBanco();
-
 async function abrirModalCriarOferta() {
-
   const resPlano = await fetch("/api/modelo/planos/me", {
     headers: {
       Authorization: "Bearer " + localStorage.getItem("token")
@@ -150,19 +169,19 @@ async function abrirModalCriarOferta() {
   });
 
   if (!resPlano.ok) {
-  alert("Erro ao buscar plano.");
-  return;
-}
+    alert(t("ofertas.erro_buscar_plano"));
+    return;
+  }
 
   const plano = await resPlano.json();
 
   if (!plano || !plano.valor_mensal) {
-    alert("Defina primeiro o valor da assinatura mensal.");
+    alert(t("ofertas.erro_sem_plano"));
     return;
   }
 
   const VALOR_BASE = Number(plano.valor_mensal);
-  const VALOR_MINIMO = VALOR_BASE * 0.5; // mínimo 50% do plano
+  const VALOR_MINIMO = VALOR_BASE * 0.5;
 
   let etapa = 1;
 
@@ -184,8 +203,8 @@ async function abrirModalCriarOferta() {
       <div class="wizard-content"></div>
 
       <div class="wizard-acoes">
-        <button class="btn-voltar" disabled>Voltar</button>
-        <button class="btn-avancar">Avançar</button>
+        <button class="btn-voltar" disabled>${t("ofertas.btn_voltar")}</button>
+        <button class="btn-avancar">${t("ofertas.btn_avancar")}</button>
       </div>
     </div>
   `;
@@ -196,29 +215,41 @@ async function abrirModalCriarOferta() {
 
   modal.querySelector(".modal-backdrop").onclick = () => modal.remove();
 
- function calcularValor() {
-  const v = VALOR_BASE * (1 - dados.desconto / 100);
-  return v < VALOR_MINIMO ? VALOR_MINIMO : v;
-}
+  function calcularValor() {
+    const v = VALOR_BASE * (1 - dados.desconto / 100);
+    return v < VALOR_MINIMO ? VALOR_MINIMO : v;
+  }
 
-function render() {
+  function render() {
     btnVoltar.disabled = etapa === 1;
+
+    btnVoltar.textContent = t("ofertas.btn_voltar");
     btnAvancar.textContent =
-  etapa === 4 ? "Criar oferta" :
-  etapa === 5 ? "Fechar" :
-  "Avançar";
+      etapa === 4 ? t("ofertas.btn_criar") :
+      etapa === 5 ? t("ofertas.btn_fechar") :
+      t("ofertas.btn_avancar");
 
     if (etapa === 1) {
       content.innerHTML = `
-        <h3>Nome da oferta</h3>
-        <input id="nome" placeholder="Ex: Oferta especial">
+        <h3>${t("ofertas.titulo_nome")}</h3>
+        <input
+          id="nome"
+          placeholder="${t("ofertas.placeholder_nome")}"
+          value="${dados.nome || ""}"
+        >
       `;
     }
 
     if (etapa === 2) {
       content.innerHTML = `
-        <h3>Número máximo de assinaturas</h3>
-        <input id="limite" type="number" min="1" placeholder="Ex: 10">
+        <h3>${t("ofertas.titulo_limite")}</h3>
+        <input
+          id="limite"
+          type="number"
+          min="1"
+          placeholder="${t("ofertas.placeholder_limite")}"
+          value="${dados.limite || ""}"
+        >
       `;
     }
 
@@ -227,11 +258,10 @@ function render() {
       fim.setDate(fim.getDate() + dados.dias);
 
       content.innerHTML = `
-        <h3>Quanto tempo ficará ativa</h3>
+        <h3>${t("ofertas.titulo_tempo")}</h3>
         <input type="range" min="1" max="15" value="${dados.dias}" id="dias">
         <p class="info">
-          Sua oferta ficará ativa até
-          <strong>${fim.toLocaleDateString("pt-BR")}</strong>
+          ${t("ofertas.info_ativa_ate").replace("{data}", fim.toLocaleDateString("pt-BR"))}
         </p>
       `;
 
@@ -243,10 +273,10 @@ function render() {
 
     if (etapa === 4) {
       content.innerHTML = `
-        <h3>Desconto ideal da oferta</h3>
+        <h3>${t("ofertas.titulo_desconto")}</h3>
 
         <div class="descontos">
-          ${[5,10,15,20].map(p => `
+          ${[5, 10, 15, 20].map(p => `
             <button class="btn-desc ${dados.desconto === p ? "active" : ""}" data-p="${p}">
               ${p}%
             </button>
@@ -254,13 +284,17 @@ function render() {
         </div>
 
         <p class="info">
-          Desconto válido para 1 mês<br>
-          Valor mínimo: <strong>R$ 15,00</strong>
+          ${t("ofertas.info_desconto_mes")}<br>
+          ${t("ofertas.info_valor_minimo")} <strong>R$ 15,00</strong>
         </p>
 
         <div class="precos">
-          <div>Valor normal: <strong>R$ ${VALOR_BASE.toFixed(2)}</strong></div>
-          <div>Valor promocional:
+          <div>
+            ${t("ofertas.valor_normal")}
+            <strong>R$ ${VALOR_BASE.toFixed(2)}</strong>
+          </div>
+          <div>
+            ${t("ofertas.valor_promocional")}
             <strong>R$ ${calcularValor().toFixed(2)}</strong>
           </div>
         </div>
@@ -276,8 +310,8 @@ function render() {
 
     if (etapa === 5) {
       content.innerHTML = `
-        <h3>🎉 Parabéns!</h3>
-        <p>Você criou sua oferta com sucesso.</p>
+        <h3>${t("ofertas.parabens")}</h3>
+        <p>${t("ofertas.sucesso_modal")}</p>
       `;
     }
   }
@@ -287,43 +321,48 @@ function render() {
     if (etapa === 2) dados.limite = Number(content.querySelector("#limite").value);
 
     if (etapa < 4) {
-  etapa++;
-  render();
-  return;
-}
+      etapa++;
+      render();
+      return;
+    }
+
+    if (etapa === 5) {
+      modal.remove();
+      return;
+    }
 
     try {
       const token = localStorage.getItem("token");
 
-     const res = await fetch("/api/ofertas", {
-      method: "POST",
-      headers: {
-       "Content-Type": "application/json",
-       Authorization: "Bearer " + token
-      },
-     body: JSON.stringify({
-       nome: dados.nome,
-       limite: dados.limite,
-      dias: dados.dias,
-      desconto: dados.desconto
-       })
-     });
+      const res = await fetch("/api/ofertas", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token
+        },
+        body: JSON.stringify({
+          nome: dados.nome,
+          limite: dados.limite,
+          dias: dados.dias,
+          desconto: dados.desconto
+        })
+      });
 
       const data = await res.json();
 
       if (!res.ok) {
-  console.error("ERRO BACKEND:", data);
-  alert(JSON.stringify(data));
-  return;
-}
-      modal.remove();
-      carregarOfertasDoBanco();
+        console.error("ERRO BACKEND:", data);
+        alert(data?.erro || t("ofertas.erro_criar"));
+        return;
+      }
 
-      alert("🎉 Oferta criada com sucesso!");
+      etapa = 5;
+      render();
+      carregarOfertasDoBanco();
 
     } catch (err) {
       console.error(err);
-      alert("Erro ao salvar oferta");
+      alert(t("ofertas.erro_criar"));
     }
   };
 
@@ -381,7 +420,7 @@ function validarAssinatura() {
   const valor = parseFloat(input.value);
 
   if (isNaN(valor) || valor < 20) {
-    alert("O valor mínimo da assinatura é R$ 20,00");
+    alert(t("ofertas.erro_valor_minimo"));
     input.focus();
     return false;
   }
@@ -390,7 +429,8 @@ function validarAssinatura() {
 }
 
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  carregarOfertasDoBanco();
 
   const mensalInput = document.getElementById("assinaturaMensal");
   const descontoTriInput = document.getElementById("descontoTrimestral");
@@ -437,12 +477,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const desconto = parseFloat(descontoTriInput.value) || 0;
 
     if (isNaN(mensal) || mensal < 20) {
-      alert("Valor mínimo mensal é R$ 20");
+      alert(t("ofertas.erro_valor_minimo"));
       return;
     }
 
     btnSalvar.disabled = true;
-    btnSalvar.textContent = "Salvando...";
+    btnSalvar.textContent = t("ofertas.salvando");
 
     try {
       const res = await fetch("/api/modelo/planos", {
@@ -462,22 +502,22 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!res.ok) {
         alert(data.erro);
         btnSalvar.disabled = false;
-        btnSalvar.textContent = "Salvar Plano";
+        btnSalvar.textContent = t("ofertas.btn_salvar_plano");
         return;
       }
 
-      btnSalvar.textContent = "Salvo ✓";
+      btnSalvar.textContent = t("ofertas.salvo");
 
       setTimeout(() => {
         btnSalvar.disabled = false;
-        btnSalvar.textContent = "Salvar Plano";
+        btnSalvar.textContent = t("ofertas.btn_salvar_plano");
       }, 1500);
 
     } catch (err) {
       console.error(err);
-      alert("Erro ao salvar plano");
+      alert(t("ofertas.erro_salvar_plano"));
       btnSalvar.disabled = false;
-      btnSalvar.textContent = "Salvar Plano";
+      btnSalvar.textContent = t("ofertas.btn_salvar_plano");
     }
 
   });

@@ -13,7 +13,7 @@ if ("serviceWorker" in navigator) {
 
 // ===============================
 // SOCKET GLOBAL
-function carregarHeader() {
+async function carregarHeader() {
   if (document.querySelector(".app-header")) {
     return;
   }
@@ -24,22 +24,25 @@ function carregarHeader() {
     return;
   }
 
-  fetch("/header.html")
-    .then(res => res.text())
-    .then(html => {
-      container.insertAdjacentHTML("afterbegin", html);
+  try {
+    const res = await fetch("/header.html");
+    const html = await res.text();
 
-      const user = {
-        avatar_url: localStorage.getItem("avatar_url"),
-        avatar: localStorage.getItem("avatar")
-      };
+    container.insertAdjacentHTML("afterbegin", html);
 
-      atualizarAvatarHeader(user);
-      initLanguageSwitcher();
-      applyTranslations();
-      sincronizarIconeNotificacoes();
-    })
-    .catch(err => console.error("Erro ao carregar header:", err));
+    const user = {
+      avatar_url: localStorage.getItem("avatar_url"),
+      avatar: localStorage.getItem("avatar")
+    };
+
+    atualizarAvatarHeader(user);
+
+    await inicializarIdioma();
+    initLanguageSwitcher();
+    sincronizarIconeNotificacoes();
+  } catch (err) {
+    console.error("Erro ao carregar header:", err);
+  }
 }
 
 const menuVisitante = `
@@ -192,18 +195,18 @@ async function atualizarUnreadModeloHeader() {
 }
 // =========================================================
 // INIT HEADER (ORDEM CORRETA)
-document.addEventListener("DOMContentLoaded", async () => {
 
-  await initUsuario();        // 🔑 carrega dados do usuário
-  carregarHeader();  
+document.addEventListener("DOMContentLoaded", async () => {
+  await initUsuario();
+  await carregarHeader();
 
   await carregarVapidPublicKey();
 
   atualizarUnreadClienteHeader();
   atualizarUnreadModeloHeader();
   initHeaderSocketModelo();
-
 });
+
 // =========================================================
 // LOGO → HOME POR ROLE
 
@@ -518,94 +521,4 @@ async function carregarVapidPublicKey() {
     console.error("Erro ao carregar VAPID public key:", err);
     return null;
   }
-}
-
-const i18n = {
-pt: {
-  "header.profile": "Perfil",
-  "header.feed": "Feed",
-  "header.userArea": "Área de Usuário",
-  "header.chat": "Chat",
-  "header.notifications": "Ativar/desativar notificações",
-  "header.notificationsOn": "Notificações ativadas",
-  "header.notificationsOff": "Notificações desativadas",
-  "header.enableNotifications": "Ativar notificações",
-  "header.disableNotifications": "Desativar notificações",
-  "header.logout": "Sair",
-  "feed.empty": "Nenhuma modelo disponível",
-  "feed.error": "Erro ao carregar o feed.",
-  "feed.fetchError": "Erro ao buscar modelos"
-},
-en: {
-  "header.profile": "Profile",
-  "header.feed": "Feed",
-  "header.userArea": "User Area",
-  "header.chat": "Chat",
-  "header.notifications": "Enable/disable notifications",
-  "header.notificationsOn": "Notifications enabled",
-  "header.notificationsOff": "Notifications disabled",
-  "header.enableNotifications": "Enable notifications",
-  "header.disableNotifications": "Disable notifications",
-  "header.logout": "Log out",
-  "feed.empty": "No creators available",
-  "feed.error": "Error loading the feed.",
-  "feed.fetchError": "Error fetching creators"
-},
-es: {
-  "header.profile": "Perfil",
-  "header.feed": "Feed",
-  "header.userArea": "Área de usuario",
-  "header.chat": "Chat",
-  "header.notifications": "Activar/desactivar notificaciones",
-  "header.notificationsOn": "Notificaciones activadas",
-  "header.notificationsOff": "Notificaciones desactivadas",
-  "header.enableNotifications": "Activar notificaciones",
-  "header.disableNotifications": "Desactivar notificaciones",
-  "header.logout": "Salir",
-  "feed.empty": "No hay creadoras disponibles",
-  "feed.error": "Error al cargar el feed.",
-  "feed.fetchError": "Error al buscar creadoras"
-}
-};
-
-function getCurrentLanguage() {
-  return localStorage.getItem("idioma") || "pt";
-}
-
-function setCurrentLanguage(lang) {
-  localStorage.setItem("idioma", lang);
-}
-
-function t(key) {
-  const lang = getCurrentLanguage();
-  return i18n[lang]?.[key] || i18n.pt?.[key] || key;
-}
-
-function applyTranslations() {
-  document.querySelectorAll("[data-i18n]").forEach(el => {
-    const key = el.dataset.i18n;
-    el.textContent = t(key);
-  });
-
-  document.querySelectorAll("[data-i18n-title]").forEach(el => {
-    const key = el.dataset.i18nTitle;
-    el.title = t(key);
-  });
-
-  document.querySelectorAll("[data-i18n-alt]").forEach(el => {
-    const key = el.dataset.i18nAlt;
-    el.alt = t(key);
-  });
-}
-
-function initLanguageSwitcher() {
-  const select = document.getElementById("languageSwitcher");
-  if (!select) return;
-
-  select.value = getCurrentLanguage();
-
-  select.addEventListener("change", () => {
-    setCurrentLanguage(select.value);
-    location.reload();
-  });
 }

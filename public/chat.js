@@ -119,7 +119,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     cliente_id = Number(params.get("cliente_id"));
 
     if (!cliente_id) {
-      alert("cliente inválido");
+      alert(t("chat.invalid_client"));
       return;
     }
 
@@ -329,7 +329,7 @@ function enviarMensagem(e){
   if(!text) return;
 
   if(!socket.connected){
-    alert("Conexão perdida. Aguarde reconectar.");
+    alert(t("chat.connection_lost"));
     return;
   }
 
@@ -441,7 +441,7 @@ socket.on("conteudoVisto", ({ message_id, conteudo_ids }) => {
     el.classList.add("visto");
 
     const status = el.querySelector(".status-bloqueado");
-    if (status) status.innerText = "Visualizado";
+    if (status) status.innerText = t("chat.content_viewed");
   }
 
   // 🔒 Atualiza lista local para bloquear no popup
@@ -457,7 +457,7 @@ socket.on("conteudoVisto", ({ message_id, conteudo_ids }) => {
 // FORMATAR HORA
 // ===============================
 function formatarTempo(timestamp) {
-  if (!timestamp || timestamp === "0") return "agora";
+  if (!timestamp || timestamp === "0") return t("chat.time_now");
 
   // aceita número OU string ISO
   const time =
@@ -465,7 +465,7 @@ function formatarTempo(timestamp) {
       ? timestamp
       : new Date(timestamp).getTime();
 
-  if (isNaN(time)) return "agora";
+  if (isNaN(time)) return t("chat.time_now");
 
   const diff = Date.now() - time;
 
@@ -473,11 +473,11 @@ function formatarTempo(timestamp) {
   const h   = Math.floor(diff / 3600000);
   const d   = Math.floor(diff / 86400000);
 
-  if (min < 1) return "agora";
-  if (min < 60) return `há ${min} min`;
-  if (h < 24) return `há ${h} h`;
-  if (d === 1) return "ontem";
-  return `há ${d} dias`;
+  if (min < 1) return t("chat.time_now");
+  if (min < 60) return t("chat.time_minutes").replace("{n}", min);
+  if (h < 24) return t("chat.time_hours").replace("{n}", h);
+  if (d === 1) return t("chat.time_yesterday");
+  return t("chat.time_days").replace("{n}", d);
 }
 
 // ===============================
@@ -658,7 +658,7 @@ async function carregarInfoCliente(cliente_id) {
     const status = document.getElementById("chatClienteStatus");
 
     if (nome) {
-      nome.innerText = cliente.nome || "Cliente";
+      nome.innerText = cliente.nome || t("chat.client_name_placeholder");
     }
 
     const avatarUrl = cliente.avatar || "/assets/avatar.png";
@@ -674,9 +674,9 @@ async function carregarInfoCliente(cliente_id) {
 
     if (status) {
       if (cliente.last_seen) {
-        status.innerText = `visto por último: ${formatarTempo(cliente.last_seen)}`;
+        status.innerText = t("chat.last_seen").replace("{time}", formatarTempo(cliente.last_seen));
       } else {
-        status.innerText = "visto por último: agora";
+        status.innerText = t("chat.last_seen").replace("{time}", t("chat.time_now"));
       }
     }
 
@@ -736,7 +736,7 @@ async function abrirPopupConteudos() {
     if (!popup || !grid) return;
 
     popup.classList.remove("hidden");
-    grid.innerHTML = `<div class="popup-loading">Carregando...</div>`;
+    grid.innerHTML = `<div class="popup-loading">${t("chat.loading")}</div>`;
 
    if (!window.conteudosVistosCliente) {
       window.conteudosVistosCliente = new Set();
@@ -747,7 +747,7 @@ async function abrirPopupConteudos() {
     const token = localStorage.getItem("token");
 
     if (!token) {
-      grid.innerHTML = "Sessão expirada.";
+      grid.innerHTML = t("chat.session_expired");
       return;
     }
 
@@ -758,7 +758,7 @@ async function abrirPopupConteudos() {
     });
 
     if (!res.ok) {
-      grid.innerHTML = "Erro ao carregar conteúdos.";
+      grid.innerHTML = t("chat.error_load_content");
       return;
     }
 
@@ -766,7 +766,7 @@ async function abrirPopupConteudos() {
     const conteudos = Array.isArray(data) ? data : data.conteudos;
 
     if (!Array.isArray(conteudos) || conteudos.length === 0) {
-      grid.innerHTML = "<p>Nenhum conteúdo enviado ainda.</p>";
+      grid.innerHTML = `<p>${t("chat.no_content")}</p>`;
       return;
     }
 
@@ -811,9 +811,9 @@ item.dataset.thumb = thumb;
       item.dataset.full  = c.url;
       item.dataset.tipo  = tipo;
 
-  item.innerHTML = `
+      item.innerHTML = `
         <div class="popup-placeholder"></div>
-        ${jaVisto ? `<span class="badge-visto">Visto</span>` : ""}
+        ${jaVisto ? `<span class="badge-visto">${t("chat.badge_seen")}</span>` : ""}
       `;
       // 👁 BOTÃO DE PREVIEW (não altera seleção)
 const btnPreview = document.createElement("button");
@@ -844,7 +844,7 @@ item.appendChild(btnPreview);
 
 if (jaVisto) {
         item.addEventListener("click", () => {
-          alert("Este conteúdo já foi visto por este cliente e não pode ser reenviado.");
+          alert(t("chat.content_already_seen"));
         });
       } else {
         item.addEventListener("click", () => {
@@ -884,7 +884,7 @@ function confirmarEnvioConteudo() {
   try {
 
     if (!Number.isInteger(cliente_id) || !Number.isInteger(modelo_id)) {
-      alert("Selecione um cliente válido primeiro.");
+      alert(t("chat.invalid_client"));
       return;
     }
 
@@ -893,7 +893,7 @@ function confirmarEnvioConteudo() {
     ];
 
     if (!selecionados.length) {
-      alert("Selecione ao menos um conteúdo.");
+      alert(t("chat.select_at_least_one"));
       return;
     }
 
@@ -902,7 +902,7 @@ function confirmarEnvioConteudo() {
       .filter(id => Number.isInteger(id) && id > 0);
 
     if (!conteudos_ids.length) {
-      alert("Conteúdos inválidos.");
+      alert(t("chat.invalid_content"));
       return;
     }
 
@@ -1182,7 +1182,7 @@ async function excluirPacoteConteudo(messageId){
   const id = Number(messageId);
   if(!Number.isInteger(id)) return;
 
-  if(!confirm("Excluir este pacote de conteúdo?")) return;
+  if(!confirm(t("chat.confirm_delete_package"))) return;
 
   const token = localStorage.getItem("token");
   if(!token) return;
@@ -1199,7 +1199,7 @@ async function excluirPacoteConteudo(messageId){
     const data = await res.json().catch(()=>({}));
 
     if(!res.ok){
-      alert(data.error || "Não foi possível excluir.");
+      alert(data.error || t("chat.error_delete"));
       return;
     }
 
@@ -1208,7 +1208,7 @@ async function excluirPacoteConteudo(messageId){
 
   }catch(err){
     console.error(err);
-    alert("Erro ao excluir pacote.");
+    alert(t("chat.error_delete_package"));
   }
 
 }
@@ -1519,7 +1519,7 @@ async function salvarAnotacoesCliente() {
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      alert(data.error || "Erro ao salvar anotações");
+      alert(data.error || t("chat.error_save_notes"));
       return;
     }
 
@@ -1533,7 +1533,7 @@ async function salvarAnotacoesCliente() {
 
   } catch (err) {
     console.error("Erro salvarAnotacoesCliente:", err);
-    alert("Erro ao salvar anotações");
+    alert(t("chat.error_save_notes"));
   }
 }
 

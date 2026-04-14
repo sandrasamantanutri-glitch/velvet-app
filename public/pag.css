@@ -1,3 +1,14 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
+
+:root {
+  --font-primary: "Poppins", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, Arial, sans-serif !important;
+}
+
+body {
+  font-family: 'Poppins', 'Inter', sans-serif !important;
+}
+
 .velvet-modal {
   position: fixed;       /* 🔥 ESSENCIAL */
   inset: 0;              /* top:0 right:0 bottom:0 left:0 */
@@ -207,6 +218,7 @@ max-height: 80%;
 
 }
 
+
 #popupPagamentoVelvet {
   pointer-events: auto;
 }
@@ -301,6 +313,7 @@ max-height: 80%;
   padding-left: 18px;
   color: #1E1E26;
   margin: 10px 0;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
 }
 
 .vip-beneficios li {
@@ -708,7 +721,7 @@ max-height: 80%;
 
 .termos-aviso {
   margin: 0;
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.45;
   text-align: center;
   color: #666;
@@ -732,7 +745,7 @@ max-height: 80%;
   width: 100%;
   text-align: center;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 10px;
   color: #444;
   line-height: 1.4;
 }
