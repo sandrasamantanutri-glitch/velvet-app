@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "admin-preview",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["http-server", "admin-pages", "-p", "3999", "-c-1", "--cors"],
+      "port": 3999
+    }
+  ]
+}

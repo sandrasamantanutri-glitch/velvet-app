@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E \"\\\\.\\(js|ts\\)$\")",
+      "Bash(node -e \"try { require\\('./routes/adminDashboard'\\); console.log\\('OK - sem erros de sintaxe'\\); } catch\\(e\\) { console.error\\(e.message\\); }\")",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(git add:*)",
+      "Bash(git commit -m 'Fix admin dashboard login token storage key mismatch:*)",
+      "Bash(git push:*)"
+    ]
+  }
+}
