@@ -2838,6 +2838,10 @@ socket.on("getHistory", async ({ cliente_id, modelo_id, offset = 0, limit = 20 }
       [clienteIdNum, modeloIdNum, socket.user.role]
     );
 
+     if (socket.user.role === "modelo") {
+      io.to(`inbox_modelo_${modeloIdNum}`).emit("unreadUpdate");
+    }
+
     // 2️⃣ MARCAR COMO LIDA (SE CLIENTE)
     if (socket.user.role === "cliente") {
       await db.query(
