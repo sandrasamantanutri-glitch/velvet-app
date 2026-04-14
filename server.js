@@ -2234,17 +2234,16 @@ async function buscarConteudosJaPossuidosPorCliente(client, { cliente_id, modelo
 // ENVIAR PUSH
 // ===========================
 
-async function enviarPush(subscription, mensagem, url = "/inbox.html") {
+async function enviarPush(subscription, mensagem, url = "/inbox.html", remetente = "Nova mensagem") {
   const payload = JSON.stringify({
-    title: "Nova mensagem",
+    title: remetente,
     body: mensagem,
     url
   });
-
   await webpush.sendNotification(subscription, payload);
 }
 
-async function notificarNovaMensagem(userIdDestino, textoMensagem, url = "/inbox.html") {
+async function notificarNovaMensagem(userIdDestino, textoMensagem, url = "/inbox.html", remetente = "Nova mensagem") {
   try {
     if (
       !process.env.VAPID_SUBJECT ||
@@ -2256,12 +2255,7 @@ async function notificarNovaMensagem(userIdDestino, textoMensagem, url = "/inbox
     }
 
     const subRes = await db.query(
-      `
-      SELECT subscription_json
-      FROM push_subscriptions
-      WHERE user_id = $1
-      LIMIT 1
-      `,
+      `SELECT subscription_json FROM push_subscriptions WHERE user_id = $1 LIMIT 1`,
       [userIdDestino]
     );
 
@@ -2271,21 +2265,17 @@ async function notificarNovaMensagem(userIdDestino, textoMensagem, url = "/inbox
     }
 
     const subscription = subRes.rows[0].subscription_json;
-
-    await enviarPush(subscription, textoMensagem, url);
+    await enviarPush(subscription, textoMensagem, url, remetente);
     console.log("Push enviado para user_id:", userIdDestino);
   } catch (err) {
     console.error("Erro ao enviar push:", err);
-
     if (err.statusCode === 404 || err.statusCode === 410) {
-      await db.query(
-        `DELETE FROM push_subscriptions WHERE user_id = $1`,
-        [userIdDestino]
-      );
+      await db.query(`DELETE FROM push_subscriptions WHERE user_id = $1`, [userIdDestino]);
       console.log("Subscription removida por expiração:", userIdDestino);
     }
   }
 }
+
 
 // function manutencaoClientes(req, res, next) {
 //   if (!MANUTENCAO_CLIENTES) return next();
@@ -2717,56 +2707,57 @@ socket.on("sendMessage", async (data, callback) => {
       created_at: message.created_at
     });
 
-    // 5️⃣ PUSH NOTIFICATION
-    try {
-      let userIdDestino = null;
-      let pushUrl = "/inbox.html";
+// 5️⃣ PUSH NOTIFICATION
+try {
+  let userIdDestino = null;
+  let pushUrl = "/inbox.html";
+  let remetente = "Nova mensagem";
 
-      if (sender === "cliente") {
-        const modeloDestinoRes = await db.query(
-          `
-          SELECT user_id
-          FROM modelos
-          WHERE id = $1
-          LIMIT 1
-          `,
-          [modeloIdNum]
-        );
+  if (sender === "cliente") {
+    const modeloDestinoRes = await db.query(
+      `SELECT user_id FROM modelos WHERE id = $1 LIMIT 1`,
+      [modeloIdNum]
+    );
+    userIdDestino = modeloDestinoRes.rows[0]?.user_id || null;
+    pushUrl = "/inbox.html";
 
-        userIdDestino = modeloDestinoRes.rows[0]?.user_id || null;
-        pushUrl = "/inbox.html";
-      } else if (sender === "modelo") {
-        const clienteDestinoRes = await db.query(
-          `
-          SELECT user_id
-          FROM clientes
-          WHERE id = $1
-          LIMIT 1
-          `,
-          [clienteIdNum]
-        );
+    const nomeRes = await db.query(
+      `SELECT nome FROM clientes WHERE id = $1 LIMIT 1`,
+      [clienteIdNum]
+    );
+    remetente = nomeRes.rows[0]?.nome || "Cliente";
 
-        userIdDestino = clienteDestinoRes.rows[0]?.user_id || null;
-        pushUrl = "/inboxc.html";
-      }
+  } else if (sender === "modelo") {
+    const clienteDestinoRes = await db.query(
+      `SELECT user_id FROM clientes WHERE id = $1 LIMIT 1`,
+      [clienteIdNum]
+    );
+    userIdDestino = clienteDestinoRes.rows[0]?.user_id || null;
+    pushUrl = "/inboxc.html";
 
-      console.log("[push] sender:", sender);
-      console.log("[push] cliente_id:", clienteIdNum);
-      console.log("[push] modelo_id:", modeloIdNum);
-      console.log("[push] userIdDestino:", userIdDestino);
+    const nomeRes = await db.query(
+      `SELECT nome_exibicao FROM modelos WHERE id = $1 LIMIT 1`,
+      [modeloIdNum]
+    );
+    remetente = nomeRes.rows[0]?.nome_exibicao || "Mensagem";
+  }
 
-      if (userIdDestino) {
-        await notificarNovaMensagem(
-          userIdDestino,
-          text.trim() ? text.trim().slice(0, 120) : "Você recebeu uma nova mensagem",
-          pushUrl
-        );
-      }
-    } catch (pushErr) {
-      console.error("Erro ao disparar push de mensagem:", pushErr);
-    }
+  console.log("[push] sender:", sender);
+  console.log("[push] cliente_id:", clienteIdNum);
+  console.log("[push] modelo_id:", modeloIdNum);
+  console.log("[push] userIdDestino:", userIdDestino);
 
-    // ✅ ACK PARA QUEM ENVIOU
+  if (userIdDestino) {
+    await notificarNovaMensagem(
+      userIdDestino,
+      text.trim() ? text.trim().slice(0, 120) : "Você recebeu uma nova mensagem",
+      pushUrl,
+      remetente
+    );
+  }
+} catch (pushErr) {
+  console.error("Erro ao disparar push de mensagem:", pushErr);
+}
     callback?.({
       ok: true,
       message_id: message.id,
