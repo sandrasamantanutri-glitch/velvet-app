@@ -2830,6 +2830,15 @@ socket.on("getHistory", async ({ cliente_id, modelo_id, offset = 0, limit = 20 }
     );
 
      if (socket.user.role === "modelo") {
+       await db.query(
+    `UPDATE messages
+     SET lida = true
+     WHERE cliente_id = $1
+       AND modelo_id = $2
+       AND sender = 'cliente'
+       AND lida = false`,
+    [clienteIdNum, modeloIdNum]
+  );
       io.to(`inbox_modelo_${modeloIdNum}`).emit("unreadUpdate");
     }
 
