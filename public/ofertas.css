@@ -80,7 +80,7 @@ body {
 /* ===============================
    CARD PADRÃO (PLANO + OFERTA)
 ================================ */
-.oferta-card,
+.ofertas-card,
 .plano-card {
   background: #ffffff;
   border-radius: 16px;
@@ -91,7 +91,7 @@ body {
   transition: 0.2s ease;
 }
 
-.oferta-card:hover,
+.oferts-card:hover,
 .plano-card:hover {
   transform: translateY(-2px);
 }
