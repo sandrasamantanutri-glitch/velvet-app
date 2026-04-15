@@ -105,7 +105,7 @@ async function login(){
 
   if(res.ok){
     localStorage.setItem("token_admin", data.token);
-    window.location.href="/admin/dashboard.html";
+    window.location.href="/admin/admin-dashboard.html";
   }else{
     alert(data.error || "Erro ao fazer login");
   }
