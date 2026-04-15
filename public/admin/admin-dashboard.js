@@ -9,6 +9,16 @@ if (!token) {
   throw new Error("Sem token admin");
 }
 
+async function authFetch(url, options = {}) {
+  return fetch(url, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      Authorization: token ? `Bearer ${token}` : ""
+    }
+  });
+}
+
 async function fetchJSON(url) {
   const res = await authFetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
