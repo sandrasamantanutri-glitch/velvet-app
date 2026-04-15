@@ -2,29 +2,11 @@
    VELVET ADMIN DASHBOARD — JS
    ======================================== */
 
-const API = '';
-const token = localStorage.getItem('token');
+  const token = localStorage.getItem("token_admin");
 
-// ========== AUTH FETCH ==========
-
-async function authFetch(url, opts = {}) {
-  const res = await fetch(API + url, {
-    ...opts,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: 'Bearer ' + token,
-      ...(opts.headers || {})
-    }
-  });
-
-  if (!res.ok) {
-    if (res.status === 401 || res.status === 403) {
-      window.location.href = '/admin/login.html';
-    }
-    throw new Error(`HTTP ${res.status}`);
-  }
-
-  return res;
+if (!token) {
+  window.location.href = "/admin/login.html";
+  throw new Error("Sem token admin");
 }
 
 async function fetchJSON(url) {
