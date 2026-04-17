@@ -133,7 +133,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     // CLIENTE NÃO PODE VALIDAR PERFIL
     if (user.role === "cliente") {
       bloquearPaginaValidacaoCliente();
-      return;
     }
 
     if (user.role === "modelo") {
@@ -174,12 +173,25 @@ function irParaFeed() {
 }
 
 function bloquearPaginaValidacaoCliente() {
-  // esconde área de verificação
-  document.querySelectorAll(".area-card").forEach(el => {
-    el.style.display = "none";
-  });
+  const formDadosPessoais = document.getElementById("formDadosPessoais");
+  const formDocumentos = document.getElementById("formDocumentos");
 
-  // se quiser manter header/footer visíveis, tudo bem
+  if (formDadosPessoais) {
+    formDadosPessoais.querySelectorAll("input, select, textarea, button").forEach(el => {
+      el.disabled = true;
+    });
+    formDadosPessoais.style.pointerEvents = "none";
+    formDadosPessoais.style.opacity = "0.6";
+  }
+
+  if (formDocumentos) {
+    formDocumentos.querySelectorAll("input, select, textarea, button").forEach(el => {
+      el.disabled = true;
+    });
+    formDocumentos.style.pointerEvents = "none";
+    formDocumentos.style.opacity = "0.6";
+  }
+
   abrirModalContaCliente();
 }
 
