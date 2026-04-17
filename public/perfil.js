@@ -33,6 +33,13 @@ function getEstadoAcessoPerfil() {
   const tokenAtual = localStorage.getItem("token");
   const roleAtual = localStorage.getItem("role");
   const modeloLogado = Number(localStorage.getItem("modelo_id"));
+  
+  if (typeof registrarOrigemTrafego === "function") {
+  registrarOrigemTrafego({
+    modelo_id,
+    pagina: "perfil"
+  });
+}
 
   const ehVisitante = !tokenAtual;
   const ehModelo = roleAtual === "modelo";

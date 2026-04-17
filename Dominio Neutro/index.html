@@ -26,7 +26,6 @@
       overflow: hidden;
     }
 
-    /* FUNDO GRADIENTE ANIMADO */
     body::before {
       content: '';
       position: fixed;
@@ -48,7 +47,6 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    /* AVATAR */
     .avatar-wrap {
       position: relative;
       width: 110px;
@@ -95,7 +93,6 @@
       margin-bottom: 28px;
     }
 
-    /* BARRA DE PROGRESSO */
     .progress-wrap {
       background: rgba(255,255,255,0.1);
       border-radius: 99px;
@@ -123,7 +120,6 @@
       font-weight: 600;
     }
 
-    /* BOTÃO */
     .btn {
       display: inline-block;
       background: linear-gradient(135deg, #7B2CFF, #ff6ec7);
@@ -142,7 +138,6 @@
 
     .btn:hover { opacity: .85; transform: scale(1.02); }
 
-    /* LOADING */
     .loading {
       display: flex;
       flex-direction: column;
@@ -163,7 +158,6 @@
 
     .loading p { font-size: 13px; color: #888; }
 
-    /* ERRO */
     .erro { color: #ff6b6b; font-size: 13px; }
   </style>
 </head>
@@ -180,9 +174,21 @@
   const API_BASE = "https://www.velvet.lat";
   const REDIRECT_SECS = 3;
 
-  // Pega o ID da URL: ?id=123
   const params = new URLSearchParams(window.location.search);
+
   const modeloId = params.get("id");
+  const src = params.get("src") || "direto";
+  const utmSource = params.get("utm_source") || src;
+  const utmMedium = params.get("utm_medium") || "social";
+  const utmCampaign = params.get("utm_campaign") || "";
+
+  function montarDestino() {
+    return `${API_BASE}/perfil.html?modelo_id=${encodeURIComponent(modeloId)}` +
+      `&src=${encodeURIComponent(src)}` +
+      `&utm_source=${encodeURIComponent(utmSource)}` +
+      `&utm_medium=${encodeURIComponent(utmMedium)}` +
+      `&utm_campaign=${encodeURIComponent(utmCampaign)}`;
+  }
 
   async function init() {
     const card = document.getElementById("card");
@@ -194,32 +200,45 @@
 
     try {
       const res = await fetch(`${API_BASE}/api/modelo/publico/${modeloId}`);
-      if (!res.ok) throw new Error("not found");
+
+      if (!res.ok) {
+        throw new Error("not found");
+      }
+
       const m = await res.json();
       renderPerfil(m);
     } catch {
-      // Se API falhar, redireciona mesmo assim
       renderFallback();
     }
   }
 
   function renderPerfil(m) {
     const card = document.getElementById("card");
-    const nome  = m.nome  || "Influencer";
-    const bio   = m.bio   || "Bio e midias disponíveis de mim para você.";
+
+    const nome = m.nome || m.nome_exibicao || "Influencer";
+    const bio = m.bio || "Bio e midias disponíveis de mim para você.";
     const avatar = m.avatar || "https://www.velvet.lat/assets/avatar.png";
     const local = [m.cidade, m.estado].filter(Boolean).join(" • ");
-    const destino = `${API_BASE}/perfil.html?id=${modeloId}`;
+    const destino = montarDestino();
 
     card.innerHTML = `
       <div class="avatar-wrap">
         <img src="${avatar}" onerror="this.src='https://www.velvet.lat/assets/avatar.png'" alt="Avatar">
       </div>
+
       <div class="nome">${esc(nome)}</div>
       <div class="bio">${esc(bio)}</div>
+
       ${local ? `<div class="local">📍 ${esc(local)}</div>` : ""}
-      <div class="progress-wrap"><div class="progress-bar" id="bar"></div></div>
-      <div class="redirect-msg">A entrar em <span id="count">${REDIRECT_SECS}</span>s…</div>
+
+      <div class="progress-wrap">
+        <div class="progress-bar" id="bar"></div>
+      </div>
+
+      <div class="redirect-msg">
+        A entrar em <span id="count">${REDIRECT_SECS}</span>s…
+      </div>
+
       <a class="btn" href="${destino}" id="btn">Ver mais →</a>
     `;
 
@@ -227,15 +246,22 @@
   }
 
   function renderFallback() {
-    const destino = `${API_BASE}/perfil.html?id=${modeloId}`;
     const card = document.getElementById("card");
+    const destino = montarDestino();
 
     card.innerHTML = `
       <div class="nome">Conteúdo Exclusivo</div>
       <div class="bio" style="margin-top:12px">Clica para aceder ao perfil.</div>
       <br>
-      <div class="progress-wrap"><div class="progress-bar" id="bar"></div></div>
-      <div class="redirect-msg">A entrar em <span id="count">${REDIRECT_SECS}</span>s…</div>
+
+      <div class="progress-wrap">
+        <div class="progress-bar" id="bar"></div>
+      </div>
+
+      <div class="redirect-msg">
+        A entrar em <span id="count">${REDIRECT_SECS}</span>s…
+      </div>
+
       <a class="btn" href="${destino}" id="btn">Ver mais →</a>
     `;
 
@@ -243,7 +269,6 @@
   }
 
   function iniciarContagem(destino) {
-    let secs = REDIRECT_SECS;
     const total = REDIRECT_SECS * 1000;
     const start = Date.now();
 
@@ -251,11 +276,16 @@
       const elapsed = Date.now() - start;
       const pct = Math.min((elapsed / total) * 100, 100);
 
-      const bar   = document.getElementById("bar");
+      const bar = document.getElementById("bar");
       const count = document.getElementById("count");
 
-      if (bar)   bar.style.width = pct + "%";
-      if (count) count.textContent = Math.max(0, Math.ceil((total - elapsed) / 1000));
+      if (bar) {
+        bar.style.width = pct + "%";
+      }
+
+      if (count) {
+        count.textContent = Math.max(0, Math.ceil((total - elapsed) / 1000));
+      }
 
       if (elapsed >= total) {
         clearInterval(iv);
@@ -266,13 +296,14 @@
 
   function esc(str) {
     return String(str)
-      .replace(/&/g,"&amp;")
-      .replace(/</g,"&lt;")
-      .replace(/>/g,"&gt;")
-      .replace(/"/g,"&quot;");
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
   }
 
   init();
 </script>
+
 </body>
 </html>

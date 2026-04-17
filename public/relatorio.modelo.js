@@ -393,15 +393,21 @@ const btnAlterar = document.getElementById("btnAlterarDados");
 }
 
 function mostrarAviso(texto) {
-  const aviso = document.createElement("div");
-  aviso.className = "card";
-  aviso.style.background = "#fff7e6";
-  aviso.style.marginBottom = "16px";
-  aviso.innerText = texto;
+  let aviso = document.getElementById("avisoDadosBancarios");
 
-  document
-    .getElementById("tab-dados-bancarios")
-    .prepend(aviso);
+  if (!aviso) {
+    aviso = document.createElement("div");
+    aviso.id = "avisoDadosBancarios";
+    aviso.className = "card";
+    aviso.style.background = "#fff7e6";
+    aviso.style.marginBottom = "16px";
+
+    document
+      .getElementById("tab-dados-bancarios")
+      .prepend(aviso);
+  }
+
+  aviso.innerText = texto;
 }
 
 function liberarFormulario(form) {

@@ -407,6 +407,65 @@ const confirmarSenha = document.getElementById("forgotConfirmPassword").value;
   openLoginModal();
 }
 
+function capturarOrigemTrafego() {
+  const params = new URLSearchParams(window.location.search);
+
+  const origem = {
+    ref_modelo: params.get("ref") || params.get("modelo_id") || params.get("id"),
+    origem_trafego:
+      params.get("src") ||
+      params.get("utm_source") ||
+      document.referrer ||
+      "direto",
+
+    utm_source: params.get("utm_source"),
+    utm_medium: params.get("utm_medium"),
+    utm_campaign: params.get("utm_campaign"),
+    utm_content: params.get("utm_content"),
+    utm_term: params.get("utm_term"),
+
+    referer: document.referrer || null,
+    landing_page: window.location.pathname,
+    current_url: window.location.href
+  };
+
+  if (origem.ref_modelo) {
+    localStorage.setItem("ref_modelo", origem.ref_modelo);
+  }
+
+  if (origem.origem_trafego) {
+    localStorage.setItem("origem_trafego", origem.origem_trafego);
+  }
+
+  localStorage.setItem("origem_payload", JSON.stringify(origem));
+
+  return origem;
+}
+
+async function registrarOrigemTrafego(extra = {}) {
+  const origem = capturarOrigemTrafego();
+
+  try {
+    await fetch("/api/acessos-origem", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(localStorage.getItem("token")
+          ? { Authorization: "Bearer " + localStorage.getItem("token") }
+          : {})
+      },
+      body: JSON.stringify({
+        ...origem,
+        ...extra
+      })
+    });
+  } catch (err) {
+    console.warn("Erro ao registrar origem:", err);
+  }
+}
+
+registrarOrigemTrafego();
+
 document.addEventListener("DOMContentLoaded", async () => {
   await whenI18nReady();
   updateModal();

@@ -194,6 +194,45 @@
     <div class="footer-copy" data-i18n="footer.copy">© 2026 Velvet. Todos os direitos reservados.</div>
   </footer>
 
+  <div id="modalContaCliente" class="modal hidden">
+  <div class="modal-overlay"></div>
+
+  <div class="modal-box modal-box-role">
+    <h3>Não é possível validar seu perfil</h3>
+
+    <p>
+      Esta conta foi criada no modo <strong>cliente</strong>.
+    </p>
+
+    <p>
+      Contas de cliente são exclusivas para usuários que desejam
+      <strong>conversar</strong> e <strong>acessar o perfil das influenciadoras</strong>.
+      Para esse tipo de conta, <strong>não é necessário enviar documentações</strong>.
+    </p>
+
+    <p>
+      Se você deseja validar a conta e criar conteúdo como criador(a),
+      será necessário criar uma <strong>nova conta</strong> e, no registro,
+      selecionar a opção <strong>“Quero ser criador”</strong>.
+    </p>
+
+    <img
+      src="/assets/criar-conta-criador.png"
+      alt="Opção correta para criar conta de criador"
+      class="popup-print-role"
+    >
+
+    <div class="modal-actions">
+<button type="button" class="btn-cancelar" onclick="irParaFeed()">
+  Fechar
+</button>
+<button type="button" id="btnCriarNovaConta" class="btn-confirmar">
+  Criar nova conta
+</button>
+    </div>
+  </div>
+</div>
+
   <script src="/socket.io/socket.io.js"></script>
   <script src="/header.js"></script>
   <script src="/areaUsuario.js"></script>

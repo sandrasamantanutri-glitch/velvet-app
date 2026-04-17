@@ -4,10 +4,25 @@
 
 const express = require("express");
 const router = express.Router();
+const AWS = require("aws-sdk");
 const db = require("../db");
 const auth = require("../middleware/auth");
 const authAdmin = require("../middleware/authAdmin");
 const bcrypt = require("bcrypt");
+const { enviarEmailAprovacao } = require("../email");
+const { enviarEmailRejeicao } = require("../email");
+const multer = require("multer");
+const upload = multer({ storage: multer.memoryStorage() });
+
+const s3Privado = new AWS.S3({
+  endpoint: new AWS.Endpoint(process.env.B2_ENDPOINT),
+  accessKeyId: process.env.B2_KEY_ID_PRIVATE,
+  secretAccessKey: process.env.B2_APP_KEY_PRIVATE,
+  region: process.env.B2_REGION,
+
+  signatureVersion: "v4",
+  s3ForcePathStyle: true
+});
 
 // All routes require admin auth
 router.use(auth, authAdmin);
@@ -21,60 +36,132 @@ function parseMes(mesStr) {
   return { ano: Number(ano), mes: Number(mes) };
 }
 
-function paginate(query, page = 1, limit = 20) {
+function paginate(query, defaultPage = 1, defaultLimit = 20) {
+  let page = parseInt(query.page, 10);
+  let limit = parseInt(query.limit, 10);
+
+  if (!Number.isFinite(page) || page < 1) page = defaultPage;
+  if (!Number.isFinite(limit) || limit < 1) limit = defaultLimit;
+
+  limit = Math.min(limit, 100);
+
   const offset = (page - 1) * limit;
+
   return { limit, offset, page };
+}
+
+function assinarArquivoPrivado(key) {
+  if (!key) return null;
+
+  return s3Privado.getSignedUrl("getObject", {
+    Bucket: process.env.B2_BUCKET_PRIVATE,
+    Key: key,
+    Expires: 60 * 10
+  });
 }
 
 // ========== 1. OVERVIEW ==========
 
-router.get("/overview", async (req, res) => {
+router.get("/overview", authAdmin, async (req, res) => {
   try {
     const [modelos, clientes, vips, fat, fat12m, acessos, top] = await Promise.all([
-      db.query("SELECT COUNT(*) FROM modelos WHERE ativo = true"),
-      db.query("SELECT COUNT(*) FROM clientes WHERE ativo = true"),
-      db.query("SELECT COUNT(*) FROM vip_subscriptions WHERE ativo = true"),
       db.query(`
-        SELECT COALESCE(SUM(valor_bruto), 0) AS total
-        FROM transacoes_agency
-        WHERE status = 'normal'
-        AND EXTRACT(MONTH FROM created_at) = EXTRACT(MONTH FROM NOW())
-        AND EXTRACT(YEAR FROM created_at) = EXTRACT(YEAR FROM NOW())
+        SELECT COUNT(*) AS total
+        FROM modelos
+        WHERE ativo = true
+          AND verificada = true
       `),
+
       db.query(`
-        SELECT TO_CHAR(created_at, 'YYYY-MM') AS mes, COALESCE(SUM(valor_bruto), 0) AS total
-        FROM transacoes_agency
-        WHERE status = 'normal' AND created_at >= NOW() - INTERVAL '12 months'
-        GROUP BY mes ORDER BY mes
+        SELECT COUNT(*) AS total
+        FROM clientes
+        WHERE ativo = true
       `),
+
       db.query(`
-        SELECT origem, COUNT(*) AS total
-        FROM acessos_origem
-        WHERE criado_em >= NOW() - INTERVAL '30 days'
-        GROUP BY origem ORDER BY total DESC LIMIT 5
+        SELECT COUNT(*) AS total
+        FROM vip_subscriptions
+        WHERE ativo = true
       `),
+
       db.query(`
-        SELECT t.modelo_id, m.nome,
-          SUM(t.valor_bruto) AS ganhos,
-          (SELECT COUNT(*) FROM vip_subscriptions v WHERE v.modelo_id = t.modelo_id AND v.ativo = true) AS assinantes
+        SELECT COALESCE(SUM(t.valor_bruto), 0) AS total
         FROM transacoes_agency t
-        JOIN modelos m ON m.id = t.modelo_id
-        WHERE t.status = 'normal'
-        AND EXTRACT(MONTH FROM t.created_at) = EXTRACT(MONTH FROM NOW())
-        AND EXTRACT(YEAR FROM t.created_at) = EXTRACT(YEAR FROM NOW())
+        WHERE t.created_at >= date_trunc('month', NOW())
+          AND t.created_at < (date_trunc('month', NOW()) + INTERVAL '1 month')
+          AND COALESCE(t.status, 'pago') NOT IN ('falhou', 'cancelado', 'estornado', 'chargeback')
+      `),
+
+      db.query(`
+        SELECT
+          TO_CHAR(meses.mes, 'YYYY-MM') AS mes,
+          COALESCE(SUM(t.valor_bruto), 0) AS total
+        FROM generate_series(
+          date_trunc('month', NOW()) - INTERVAL '11 months',
+          date_trunc('month', NOW()),
+          INTERVAL '1 month'
+        ) AS meses(mes)
+        LEFT JOIN transacoes_agency t
+          ON date_trunc('month', t.created_at) = meses.mes
+          AND COALESCE(t.status, 'pago') NOT IN ('falhou', 'cancelado', 'estornado', 'chargeback')
+        GROUP BY meses.mes
+        ORDER BY meses.mes ASC
+      `),
+
+      db.query(`
+        SELECT
+          COALESCE(origem, 'Desconhecida') AS origem,
+          COUNT(*) AS total
+        FROM acessos_origem
+        WHERE created_at >= date_trunc('month', NOW())
+          AND created_at < (date_trunc('month', NOW()) + INTERVAL '1 month')
+        GROUP BY COALESCE(origem, 'Desconhecida')
+        ORDER BY total DESC
+      `),
+
+      db.query(`
+        SELECT
+          t.modelo_id,
+          m.nome,
+          ROUND(COALESCE(SUM(t.valor_modelo), 0)::numeric, 2) AS ganhos,
+          MAX(t.created_at) AS atualizado_em,
+          (
+            SELECT COUNT(*)
+            FROM vip_subscriptions v
+            WHERE v.modelo_id = t.modelo_id
+              AND v.ativo = true
+          ) AS assinantes
+        FROM transacoes_agency t
+        LEFT JOIN modelos m ON m.id = t.modelo_id
+        WHERE t.modelo_id IS NOT NULL
+          AND t.created_at >= date_trunc('month', NOW())
+          AND t.created_at < (date_trunc('month', NOW()) + INTERVAL '1 month')
+          AND COALESCE(t.status, 'pago') NOT IN ('falhou', 'cancelado', 'estornado', 'chargeback')
         GROUP BY t.modelo_id, m.nome
-        ORDER BY ganhos DESC LIMIT 5
+        ORDER BY ganhos DESC, atualizado_em DESC
+        LIMIT 5
       `)
     ]);
 
     res.json({
-      total_modelos: modelos.rows[0].count,
-      total_clientes: clientes.rows[0].count,
-      vips_ativos: vips.rows[0].count,
-      faturamento_mes: fat.rows[0].total,
-      faturamento_12m: fat12m.rows,
-      acessos_origem: acessos.rows,
-      top_modelos: top.rows
+      total_modelos: Number(modelos.rows[0]?.total || 0),
+      total_clientes: Number(clientes.rows[0]?.total || 0),
+      vips_ativos: Number(vips.rows[0]?.total || 0),
+      faturamento_mes: Number(fat.rows[0]?.total || 0),
+      faturamento_12m: (fat12m.rows || []).map(r => ({
+        mes: r.mes,
+        total: Number(r.total || 0)
+      })),
+      acessos_origem: (acessos.rows || []).map(r => ({
+        origem: r.origem,
+        total: Number(r.total || 0)
+      })),
+      top_modelos: (top.rows || []).map(r => ({
+        modelo_id: r.modelo_id,
+        nome: r.nome,
+        ganhos: Number(r.ganhos || 0),
+        assinantes: Number(r.assinantes || 0)
+      }))
     });
   } catch (err) {
     console.error("Erro overview:", err);
@@ -82,59 +169,202 @@ router.get("/overview", async (req, res) => {
   }
 });
 
-// ========== 2. ACESSOS ==========
+// ========== 2. TRAFEGO ==========
 
-router.get("/acessos", async (req, res) => {
+router.post("/acessos-origem", async (req, res) => {
   try {
-    const m = parseMes(req.query.mes);
-    const where = m
-      ? `AND EXTRACT(MONTH FROM criado_em) = ${m.mes} AND EXTRACT(YEAR FROM criado_em) = ${m.ano}`
-      : `AND criado_em >= NOW() - INTERVAL '30 days'`;
+    const {
+      modelo_id,
+      ref_modelo,
+      origem_trafego,
+      utm_source,
+      utm_medium,
+      utm_campaign,
+      utm_content,
+      utm_term,
+      referer,
+      landing_page,
+      current_url,
+      pagina
+    } = req.body;
 
-    const [totais, diario, topModelos] = await Promise.all([
-      db.query(`
-        SELECT
-          COUNT(*) FILTER (WHERE LOWER(origem) LIKE '%instagram%') AS instagram,
-          COUNT(*) FILTER (WHERE LOWER(origem) LIKE '%tiktok%') AS tiktok,
-          COUNT(*) FILTER (WHERE LOWER(origem) = 'direto' OR origem IS NULL) AS direto,
-          COUNT(*) AS total
-        FROM acessos_origem WHERE 1=1 ${where}
-      `),
-      db.query(`
-        SELECT criado_em::date AS dia,
-          COUNT(*) FILTER (WHERE LOWER(origem) LIKE '%instagram%') AS instagram,
-          COUNT(*) FILTER (WHERE LOWER(origem) LIKE '%tiktok%') AS tiktok,
-          COUNT(*) FILTER (WHERE LOWER(origem) = 'direto' OR origem IS NULL) AS direto
-        FROM acessos_origem WHERE 1=1 ${where}
-        GROUP BY dia ORDER BY dia
-      `),
-      db.query(`
-        SELECT a.modelo_id, m.nome,
-          COUNT(*) FILTER (WHERE LOWER(a.origem) LIKE '%instagram%') AS instagram,
-          COUNT(*) FILTER (WHERE LOWER(a.origem) LIKE '%tiktok%') AS tiktok,
-          COUNT(*) FILTER (WHERE LOWER(a.origem) = 'direto' OR a.origem IS NULL) AS direto,
-          COUNT(*) AS total
-        FROM acessos_origem a
-        JOIN modelos m ON m.id = a.modelo_id
-        WHERE 1=1 ${where}
-        GROUP BY a.modelo_id, m.nome
-        ORDER BY total DESC LIMIT 5
-      `)
-    ]);
+    const ip =
+      req.headers["cf-connecting-ip"] ||
+      req.headers["x-forwarded-for"]?.split(",")[0] ||
+      req.ip;
 
-    const t = totais.rows[0];
-    res.json({
-      instagram: Number(t.instagram),
-      tiktok: Number(t.tiktok),
-      direto: Number(t.direto),
-      total: Number(t.total),
-      distribuicao: true,
-      diario: diario.rows,
-      top_modelos: topModelos.rows
-    });
+    const userAgent = req.headers["user-agent"];
+
+    await db.query(
+      `
+      INSERT INTO acessos_origem (
+        user_id,
+        cliente_id,
+        modelo_id,
+        ref_modelo,
+        origem,
+        utm_source,
+        utm_medium,
+        utm_campaign,
+        utm_content,
+        utm_term,
+        referer,
+        landing_page,
+        current_url,
+        pagina,
+        ip,
+        user_agent,
+        created_at
+      )
+      VALUES (
+        $1,$2,$3,$4,$5,
+        $6,$7,$8,$9,$10,
+        $11,$12,$13,$14,$15,$16,NOW()
+      )
+      `,
+      [
+        req.user?.id || null,
+        req.user?.cliente_id || null,
+        modelo_id || ref_modelo || null,
+        ref_modelo || null,
+        origem_trafego || null,
+        utm_source || null,
+        utm_medium || null,
+        utm_campaign || null,
+        utm_content || null,
+        utm_term || null,
+        referer || null,
+        landing_page || null,
+        current_url || null,
+        pagina || null,
+        ip || null,
+        userAgent || null
+      ]
+    );
+
+    res.json({ ok: true });
   } catch (err) {
-    console.error("Erro acessos:", err);
-    res.status(500).json({ erro: "Erro interno" });
+    console.error("Erro ao registrar origem:", err);
+    res.status(500).json({ error: "Erro ao registrar origem" });
+  }
+});
+
+router.get("/acessos-origem", authAdmin, async (req, res) => {
+  try {
+    const mes = req.query.mes; // exemplo: 2026-04
+
+    const inicio = `${mes}-01`;
+    const fim = new Date(inicio);
+    fim.setMonth(fim.getMonth() + 1);
+
+    const params = [inicio, fim];
+
+    const totalRes = await db.query(
+      `
+      SELECT
+        COUNT(*)::int AS total,
+
+        COUNT(*) FILTER (
+          WHERE LOWER(COALESCE(origem, utm_source, referer, '')) LIKE '%instagram%'
+             OR LOWER(COALESCE(origem, utm_source, referer, '')) LIKE '%insta%'
+        )::int AS instagram,
+
+        COUNT(*) FILTER (
+          WHERE LOWER(COALESCE(origem, utm_source, referer, '')) LIKE '%tiktok%'
+        )::int AS tiktok,
+
+        COUNT(*) FILTER (
+          WHERE origem IS NULL
+             OR origem = ''
+             OR LOWER(origem) = 'direto'
+        )::int AS direto
+
+      FROM acessos_origem
+      WHERE criado_em >= $1
+        AND criado_em < $2
+      `,
+      params
+    );
+
+    const diarioRes = await db.query(
+      `
+      SELECT
+        TO_CHAR(criado_em::date, 'DD/MM') AS dia,
+
+        COUNT(*) FILTER (
+          WHERE LOWER(COALESCE(origem, utm_source, referer, '')) LIKE '%instagram%'
+             OR LOWER(COALESCE(origem, utm_source, referer, '')) LIKE '%insta%'
+        )::int AS instagram,
+
+        COUNT(*) FILTER (
+          WHERE LOWER(COALESCE(origem, utm_source, referer, '')) LIKE '%tiktok%'
+        )::int AS tiktok,
+
+        COUNT(*) FILTER (
+          WHERE origem IS NULL
+             OR origem = ''
+             OR LOWER(origem) = 'direto'
+        )::int AS direto
+
+      FROM acessos_origem
+      WHERE criado_em >= $1
+        AND criado_em < $2
+      GROUP BY criado_em::date
+      ORDER BY criado_em::date ASC
+      `,
+      params
+    );
+
+    const topModelosRes = await db.query(
+      `
+      SELECT
+        a.modelo_id,
+        COALESCE(m.nome_exibicao, m.nome, 'Modelo #' || a.modelo_id) AS nome,
+
+        COUNT(*) FILTER (
+          WHERE LOWER(COALESCE(a.origem, a.utm_source, a.referer, '')) LIKE '%instagram%'
+             OR LOWER(COALESCE(a.origem, a.utm_source, a.referer, '')) LIKE '%insta%'
+        )::int AS instagram,
+
+        COUNT(*) FILTER (
+          WHERE LOWER(COALESCE(a.origem, a.utm_source, a.referer, '')) LIKE '%tiktok%'
+        )::int AS tiktok,
+
+        COUNT(*) FILTER (
+          WHERE a.origem IS NULL
+             OR a.origem = ''
+             OR LOWER(a.origem) = 'direto'
+        )::int AS direto,
+
+        COUNT(*)::int AS total
+
+      FROM acessos_origem a
+      LEFT JOIN modelos m ON m.id = a.modelo_id
+      WHERE a.criado_em >= $1
+        AND a.criado_em < $2
+        AND a.modelo_id IS NOT NULL
+      GROUP BY a.modelo_id, m.nome_exibicao, m.nome
+      ORDER BY total DESC
+      LIMIT 20
+      `,
+      params
+    );
+
+    const totais = totalRes.rows[0];
+
+    res.json({
+      total: totais.total || 0,
+      instagram: totais.instagram || 0,
+      tiktok: totais.tiktok || 0,
+      direto: totais.direto || 0,
+      distribuicao: true,
+      diario: diarioRes.rows,
+      top_modelos: topModelosRes.rows
+    });
+
+  } catch (err) {
+    console.error("Erro /admin/dashboard/acessos:", err);
+    res.status(500).json({ error: "Erro ao carregar acessos" });
   }
 });
 
@@ -150,25 +380,108 @@ router.get("/admins", async (req, res) => {
   }
 });
 
-router.post("/admins", async (req, res) => {
+router.post("/admins", authAdmin, async (req, res) => {
   try {
     const { email, senha } = req.body;
-    if (!email || !senha) return res.status(400).json({ erro: "Email e senha obrigatórios" });
+
+    if (!email || !senha) {
+      return res.status(400).json({ erro: "Email e senha obrigatórios" });
+    }
+
+    const adminLogadoId = req.admin.id;
+
+    const emailNormalizado = email.trim().toLowerCase();
     const hash = await bcrypt.hash(senha, 10);
+
     const { rows } = await db.query(
-      "INSERT INTO admin (email, senha) VALUES ($1, $2) RETURNING id, email, created_at",
-      [email, hash]
+      `
+      INSERT INTO admin (email, senha)
+      VALUES ($1, $2)
+      RETURNING id, email, created_at
+      `,
+      [emailNormalizado, hash]
     );
-    res.json(rows[0]);
+
+    const novoAdmin = rows[0];
+
+    await db.query(
+  `
+  INSERT INTO admin_seguranca_historico (
+    user_id,
+    tipo_user,
+    admin_id,
+    acao,
+    motivo,
+    data
+  )
+  VALUES ($1, $2, $3, $4, $5, NOW())
+  `,
+  [
+    novoAdmin.id,
+    "admin",
+    adminLogadoId,
+    "criacao",
+    `Criou novo administrador: ${novoAdmin.email} (#${novoAdmin.id})`
+  ]
+);
+
+    res.json(novoAdmin);
   } catch (err) {
     console.error("Erro criar admin:", err);
     res.status(500).json({ erro: "Erro interno" });
   }
 });
 
-router.delete("/admins/:id", async (req, res) => {
+router.delete("/admins/:id", authAdmin, async (req, res) => {
   try {
-    await db.query("DELETE FROM admin WHERE id = $1", [req.params.id]);
+    const { id } = req.params;
+    const adminLogadoId = req.admin.id;
+
+    if (Number(id) === Number(adminLogadoId)) {
+      return res.status(400).json({ erro: "Você não pode excluir seu próprio admin logado" });
+    }
+
+    const adminExistente = await db.query(
+      "SELECT id, email FROM admin WHERE id = $1",
+      [id]
+    );
+
+    if (!adminExistente.rows.length) {
+      return res.status(404).json({ erro: "Admin não encontrado" });
+    }
+
+    const adminRemovido = adminExistente.rows[0];
+
+    await db.query(
+      "DELETE FROM admin WHERE id = $1",
+      [id]
+    );
+
+    await db.query(
+  `
+  INSERT INTO admin_seguranca_historico (
+    user_id,
+    tipo_user,
+    admin_id,
+    acao,
+    motivo,
+    data
+  )
+  VALUES ($1, $2, $3, $4, $5, NOW())
+  `,
+  [
+    adminRemovido.id,
+    "admin",
+    adminLogadoId,
+    "exclusao",
+    `Excluiu administrador: ${adminRemovido.email} (#${adminRemovido.id})`
+  ]
+);
+
+await db.query(
+  "DELETE FROM admin WHERE id = $1",
+  [id]
+);
     res.json({ ok: true });
   } catch (err) {
     console.error("Erro excluir admin:", err);
@@ -178,294 +491,1264 @@ router.delete("/admins/:id", async (req, res) => {
 
 // ========== 4. SEGURANÇA ==========
 
-router.get("/seguranca", async (req, res) => {
+router.get("/seguranca", authAdmin, async (req, res) => {
   try {
     const m = parseMes(req.query.mes);
-    const { limit, offset, page } = paginate(req.query, Number(req.query.page) || 1, Number(req.query.limit) || 20);
+    const { limit, offset, page } = paginate(
+      req.query,
+      Number(req.query.page) || 1,
+      Number(req.query.limit) || 20
+    );
 
+    const params = [];
     let where = "1=1";
-    if (m) where = `EXTRACT(MONTH FROM h.data) = ${m.mes} AND EXTRACT(YEAR FROM h.data) = ${m.ano}`;
 
-    const countQ = await db.query(`SELECT COUNT(*) FROM admin_seguranca_historico h WHERE ${where}`);
+    if (m) {
+      params.push(m.mes, m.ano);
+      where += ` AND EXTRACT(MONTH FROM h.data) = $${params.length - 1}
+                 AND EXTRACT(YEAR FROM h.data) = $${params.length}`;
+    }
+
+    const countQ = await db.query(
+      `SELECT COUNT(*) FROM admin_seguranca_historico h WHERE ${where}`,
+      params
+    );
+
     const total = Number(countQ.rows[0].count);
 
+    params.push(limit, offset);
+
     const { rows } = await db.query(`
-      SELECT h.*, m.nome AS modelo_nome, a.email AS admin_email
+      SELECT 
+        h.id,
+        h.user_id,
+        h.tipo_user,
+        h.acao,
+        h.motivo,
+        h.data,
+        h.admin_id,
+        a.email AS admin_email
       FROM admin_seguranca_historico h
-      LEFT JOIN modelos m ON m.id = h.modelo_id
       LEFT JOIN admin a ON a.id = h.admin_id
       WHERE ${where}
       ORDER BY h.data DESC
-      LIMIT $1 OFFSET $2
-    `, [limit, offset]);
+      LIMIT $${params.length - 1} OFFSET $${params.length}
+    `, params);
 
-    res.json({ rows, totalPages: Math.ceil(total / limit), page });
+    res.json({
+      rows,
+      totalPages: Math.ceil(total / limit),
+      page
+    });
+
   } catch (err) {
     console.error("Erro segurança:", err);
     res.status(500).json({ erro: "Erro interno" });
   }
 });
 
-router.get("/exclusoes", async (req, res) => {
+// ========== 5. CLIENTE RISCO ==========
+
+router.get("/cliente-risco", authAdmin, async (req, res) => {
   try {
     const { limit, offset, page } = paginate(req.query, Number(req.query.page) || 1, Number(req.query.limit) || 20);
-    const countQ = await db.query("SELECT COUNT(*) FROM clientes_bloqueados_cadastro");
+
+  const countQ = await db.query(`
+  SELECT COUNT(*) 
+  FROM cliente_risco
+  WHERE ativo = true
+`);
     const total = Number(countQ.rows[0].count);
-    const { rows } = await db.query(
-      "SELECT * FROM clientes_bloqueados_cadastro ORDER BY criado_em DESC LIMIT $1 OFFSET $2",
-      [limit, offset]
-    );
-    res.json({ rows, totalPages: Math.ceil(total / limit), page });
-  } catch (err) {
-    console.error("Erro exclusões:", err);
-    res.status(500).json({ erro: "Erro interno" });
-  }
-});
 
-// ========== 5. BLOQUEIOS ==========
-
-// Cliente Risco
-router.get("/cliente-risco", async (req, res) => {
-  try {
-    const { limit, offset, page } = paginate(req.query, Number(req.query.page) || 1, Number(req.query.limit) || 20);
-    const countQ = await db.query("SELECT COUNT(*) FROM cliente_risco");
-    const total = Number(countQ.rows[0].count);
-    const { rows } = await db.query("SELECT * FROM cliente_risco ORDER BY criado_em DESC LIMIT $1 OFFSET $2", [limit, offset]);
-    res.json({ rows, totalPages: Math.ceil(total / limit), page });
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
-});
-
-router.get("/cliente-risco/:id", async (req, res) => {
-  try {
-    const { rows } = await db.query("SELECT * FROM cliente_risco WHERE cliente_id = $1", [req.params.id]);
-    if (!rows.length) return res.status(404).json({ erro: "Não encontrado" });
-    res.json(rows[0]);
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
-});
-
-router.post("/cliente-risco", async (req, res) => {
-  try {
-    const { cliente_id, bloqueio_ip, bloqueio_cpf, bloqueado_ate } = req.body;
-    const { rows } = await db.query(
-      `INSERT INTO cliente_risco (cliente_id, bloqueio_ip, bloqueio_cpf, bloqueado_ate)
-       VALUES ($1, $2, $3, $4) RETURNING *`,
-      [cliente_id, bloqueio_ip || false, bloqueio_cpf || false, bloqueado_ate]
-    );
-    res.json(rows[0]);
-  } catch (err) {
-    console.error("Erro criar risco:", err);
-    res.status(500).json({ erro: "Erro interno" });
-  }
-});
-
-router.put("/cliente-risco/:id", async (req, res) => {
-  try {
-    const { bloqueio_ip, bloqueio_cpf, bloqueado_ate } = req.body;
-    const { rows } = await db.query(
-      `UPDATE cliente_risco SET bloqueio_ip = $1, bloqueio_cpf = $2, bloqueado_ate = $3
-       WHERE cliente_id = $4 RETURNING *`,
-      [bloqueio_ip, bloqueio_cpf, bloqueado_ate, req.params.id]
-    );
-    res.json(rows[0]);
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
-});
-
-router.delete("/cliente-risco/:id", async (req, res) => {
-  try {
-    await db.query("DELETE FROM cliente_risco WHERE cliente_id = $1", [req.params.id]);
-    res.json({ ok: true });
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
-});
-
-// Clientes Bloqueados
-router.get("/clientes-bloqueados", async (req, res) => {
-  try {
-    const { limit, offset, page } = paginate(req.query, Number(req.query.page) || 1, Number(req.query.limit) || 20);
-    const countQ = await db.query("SELECT COUNT(*) FROM clientes_bloqueados_cadastro");
-    const total = Number(countQ.rows[0].count);
-    const { rows } = await db.query("SELECT * FROM clientes_bloqueados_cadastro ORDER BY criado_em DESC LIMIT $1 OFFSET $2", [limit, offset]);
-    res.json({ rows, totalPages: Math.ceil(total / limit), page });
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
-});
-
-router.get("/clientes-bloqueados/:id", async (req, res) => {
-  try {
-    const { rows } = await db.query("SELECT * FROM clientes_bloqueados_cadastro WHERE id = $1", [req.params.id]);
-    if (!rows.length) return res.status(404).json({ erro: "Não encontrado" });
-    res.json(rows[0]);
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
-});
-
-router.post("/clientes-bloqueados", async (req, res) => {
-  try {
-    const { email, nome_completo, data_nascimento, cliente_id_original, motivo } = req.body;
-    const { rows } = await db.query(
-      `INSERT INTO clientes_bloqueados_cadastro (email, nome_completo, data_nascimento, cliente_id_original, motivo)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [email, nome_completo, data_nascimento, cliente_id_original, motivo]
-    );
-    res.json(rows[0]);
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
-});
-
-router.put("/clientes-bloqueados/:id", async (req, res) => {
-  try {
-    const { email, nome_completo, motivo } = req.body;
-    const { rows } = await db.query(
-      `UPDATE clientes_bloqueados_cadastro SET email = $1, nome_completo = $2, motivo = $3 WHERE id = $4 RETURNING *`,
-      [email, nome_completo, motivo, req.params.id]
-    );
-    res.json(rows[0]);
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
-});
-
-router.delete("/clientes-bloqueados/:id", async (req, res) => {
-  try {
-    await db.query("DELETE FROM clientes_bloqueados_cadastro WHERE id = $1", [req.params.id]);
-    res.json({ ok: true });
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
-});
-
-// CPFs Bloqueados
-router.get("/cpfs-bloqueados", async (req, res) => {
-  try {
-    const { limit, offset, page } = paginate(req.query, Number(req.query.page) || 1, Number(req.query.limit) || 20);
-    const countQ = await db.query("SELECT COUNT(*) FROM cpfs_bloqueados");
-    const total = Number(countQ.rows[0].count);
-    const { rows } = await db.query("SELECT * FROM cpfs_bloqueados ORDER BY created_at DESC LIMIT $1 OFFSET $2", [limit, offset]);
-    res.json({ rows, totalPages: Math.ceil(total / limit), page });
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
-});
-
-router.post("/cpfs-bloqueados", async (req, res) => {
-  try {
-    const { cpf, motivo } = req.body;
-    if (!cpf) return res.status(400).json({ erro: "CPF obrigatório" });
-    const { rows } = await db.query(
-      "INSERT INTO cpfs_bloqueados (cpf, motivo) VALUES ($1, $2) RETURNING *",
-      [cpf, motivo]
-    );
-    res.json(rows[0]);
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
-});
-
-router.delete("/cpfs-bloqueados/:cpf", async (req, res) => {
-  try {
-    await db.query("DELETE FROM cpfs_bloqueados WHERE cpf = $1", [req.params.cpf]);
-    res.json({ ok: true });
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
-});
-
-// IPs Bloqueados
-router.get("/ips-bloqueados", async (req, res) => {
-  try {
-    const { limit, offset, page } = paginate(req.query, Number(req.query.page) || 1, Number(req.query.limit) || 20);
-    const countQ = await db.query("SELECT COUNT(*) FROM ips_bloqueados");
-    const total = Number(countQ.rows[0].count);
-    const { rows } = await db.query("SELECT * FROM ips_bloqueados ORDER BY criado_em DESC LIMIT $1 OFFSET $2", [limit, offset]);
-    res.json({ rows, totalPages: Math.ceil(total / limit), page });
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
-});
-
-router.post("/ips-bloqueados", async (req, res) => {
-  try {
-    const { ip } = req.body;
-    if (!ip) return res.status(400).json({ erro: "IP obrigatório" });
-    const { rows } = await db.query("INSERT INTO ips_bloqueados (ip) VALUES ($1) RETURNING *", [ip]);
-    res.json(rows[0]);
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
-});
-
-router.delete("/ips-bloqueados/:id", async (req, res) => {
-  try {
-    await db.query("DELETE FROM ips_bloqueados WHERE id = $1", [req.params.id]);
-    res.json({ ok: true });
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
-});
-
-// ========== 6. VERIFICAÇÕES ==========
-
-// Modelos
-router.get("/verificacoes/modelos", async (req, res) => {
-  try {
-    const { limit, offset, page } = paginate(req.query, Number(req.query.page) || 1, Number(req.query.limit) || 20);
-    const countQ = await db.query("SELECT COUNT(*) FROM modelos_verificacao");
-    const total = Number(countQ.rows[0].count);
     const { rows } = await db.query(`
-      SELECT v.*, m.nome AS modelo_nome
-      FROM modelos_verificacao v
-      LEFT JOIN modelos m ON m.id = v.modelo_id
-      ORDER BY CASE WHEN v.status = 'pendente' THEN 0 ELSE 1 END, v.criado_em DESC
+      SELECT *
+      FROM cliente_risco
+      WHERE ativo = true
+      ORDER BY criado_em DESC
       LIMIT $1 OFFSET $2
     `, [limit, offset]);
+
     res.json({ rows, totalPages: Math.ceil(total / limit), page });
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
+  } catch (err) {
+    console.error("Erro cliente-risco:", err);
+    res.status(500).json({ erro: "Erro interno", details: err.message });
+  }
 });
 
-router.get("/verificacoes/modelo/:id", async (req, res) => {
+router.get("/cliente-risco/lookup/:id", authAdmin, async (req, res) => {
   try {
-    const { rows } = await db.query("SELECT * FROM modelos_verificacao WHERE id = $1", [req.params.id]);
-    if (!rows.length) return res.status(404).json({ erro: "Não encontrado" });
-    res.json(rows[0]);
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
-});
-
-router.put("/verificacoes/modelo/:id", async (req, res) => {
-  try {
-    const { status, motivo_rejeicao } = req.body;
     const { rows } = await db.query(`
-      UPDATE modelos_verificacao
-      SET status = $1, motivo_rejeicao = $2, verificado_em = NOW(), atualizado_em = NOW()
-      WHERE id = $3 RETURNING *
-    `, [status, motivo_rejeicao || null, req.params.id]);
+      SELECT
+        cliente_id,
+        cpf,
+        aceite_ip AS ip,
+        fingerprint
+      FROM pagamentos_pix
+      WHERE cliente_id = $1
+      ORDER BY criado_em DESC
+      LIMIT 1
+    `, [req.params.id]);
 
-    // If approved, also mark modelo as verified
-    if (status === "aprovado" && rows[0]) {
-      await db.query("UPDATE modelos SET verificada = true WHERE id = $1", [rows[0].modelo_id]);
+    if (!rows.length) {
+      return res.status(404).json({ erro: "Nenhum pagamento encontrado para este cliente" });
     }
 
     res.json(rows[0]);
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
+
+  } catch (err) {
+    console.error("Erro lookup cliente risco:", err);
+    res.status(500).json({ erro: "Erro interno", details: err.message });
+  }
 });
 
-// Clientes
-router.get("/verificacoes/clientes", async (req, res) => {
+router.get("/cliente-risco/:id", authAdmin, async (req, res) => {
   try {
-    const { limit, offset, page } = paginate(req.query, Number(req.query.page) || 1, Number(req.query.limit) || 20);
-    const countQ = await db.query("SELECT COUNT(*) FROM clientes_verificacao");
-    const total = Number(countQ.rows[0].count);
+    const clienteId = Number(req.params.id);
+
     const { rows } = await db.query(`
-      SELECT v.*, c.nome AS cliente_nome
-      FROM clientes_verificacao v
-      LEFT JOIN clientes c ON c.id = v.cliente_id
-      ORDER BY CASE WHEN v.status = 'em_analise' THEN 0 WHEN v.status = 'pendente' THEN 0 ELSE 1 END, v.criado_em DESC
+      SELECT
+        cliente_id,
+        bloqueio_ip,
+        bloqueio_cpf,
+        bloqueio_fingerprint,
+        criado_em,
+        cpf,
+        ip,
+        fingerprint,
+        nivel,
+        motivo,
+        ativo,
+        expira_em,
+        admin
+      FROM cliente_risco
+      WHERE cliente_id = $1
+      LIMIT 1
+    `, [clienteId]);
+
+    if (!rows.length) {
+      return res.status(404).json({ erro: "Cliente de risco não encontrado" });
+    }
+
+    res.json(rows[0]);
+
+  } catch (err) {
+    console.error("Erro buscar cliente-risco:", err);
+    res.status(500).json({ erro: "Erro interno", details: err.message });
+  }
+});
+
+router.post("/cliente-risco", authAdmin, async (req, res) => {
+  try {
+    const {
+      cliente_id,
+      cpf,
+      ip,
+      fingerprint,
+      nivel,
+      motivo,
+      expira_em,
+      bloqueio_ip,
+      bloqueio_cpf,
+      bloqueio_fingerprint
+    } = req.body;
+
+    const admin = req.session?.user?.email || req.admin?.email || "Admin";
+
+    const { rows } = await db.query(`
+      INSERT INTO cliente_risco (
+        cliente_id,
+        cpf,
+        ip,
+        fingerprint,
+        nivel,
+        motivo,
+        expira_em,
+        bloqueio_ip,
+        bloqueio_cpf,
+        bloqueio_fingerprint,
+        admin,
+        criado_em
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW())
+      RETURNING *
+    `, [
+      cliente_id,
+      cpf || null,
+      ip || null,
+      fingerprint || null,
+      nivel || null,
+      motivo || null,
+      expira_em || null,
+      !!bloqueio_ip,
+      !!bloqueio_cpf,
+      !!bloqueio_fingerprint,
+      admin
+    ]);
+
+    res.json(rows[0]);
+
+  } catch (err) {
+    console.error("Erro criar cliente risco:", err);
+    res.status(500).json({ erro: "Erro interno", details: err.message });
+  }
+});
+
+router.get("/dados-clientes-bloqueados", authAdmin, async (req, res) => {
+  try {
+    const { limit, offset, page } = paginate(
+      req.query,
+      Number(req.query.page) || 1,
+      Number(req.query.limit) || 20
+    );
+
+    const countQ = await db.query(`
+      SELECT COUNT(*)
+      FROM cliente_risco
+    `);
+
+    const total = Number(countQ.rows[0].count);
+
+    const { rows } = await db.query(`
+      SELECT
+        cr.cliente_id,
+        cr.cpf,
+        cr.ip,
+        cr.fingerprint,
+        cr.motivo,
+        cr.criado_em,
+        cr.admin_id,
+        cr.admin,
+        a.email AS admin_email
+      FROM cliente_risco cr
+      LEFT JOIN admin a ON a.id = cr.admin_id
+      ORDER BY cr.criado_em DESC
       LIMIT $1 OFFSET $2
     `, [limit, offset]);
-    res.json({ rows, totalPages: Math.ceil(total / limit), page });
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
+
+    res.json({
+      rows,
+      totalPages: Math.ceil(total / limit),
+      page
+    });
+
+  } catch (err) {
+    console.error("Erro dados-clientes-bloqueados:", err);
+    res.status(500).json({ erro: "Erro interno", details: err.message });
+  }
 });
 
-router.get("/verificacoes/cliente/:id", async (req, res) => {
+router.put("/cliente-risco/:id", authAdmin, async (req, res) => {
   try {
-    const { rows } = await db.query("SELECT * FROM clientes_verificacao WHERE id = $1", [req.params.id]);
-    if (!rows.length) return res.status(404).json({ erro: "Não encontrado" });
-    res.json(rows[0]);
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
-});
+    const clienteId = req.params.id;
 
-router.put("/verificacoes/cliente/:id", async (req, res) => {
-  try {
-    const { status, motivo_rejeicao } = req.body;
+    const atualQ = await db.query(
+      `SELECT * FROM cliente_risco WHERE cliente_id = $1 LIMIT 1`,
+      [clienteId]
+    );
+
+    if (!atualQ.rows.length) {
+      return res.status(404).json({ erro: "Não encontrado" });
+    }
+
+    const atual = atualQ.rows[0];
+
+    const nivel = req.body.nivel ?? atual.nivel;
+    const motivo = req.body.motivo ?? atual.motivo;
+
+    const bloqueio_ip =
+      Object.prototype.hasOwnProperty.call(req.body, "bloqueio_ip")
+        ? req.body.bloqueio_ip === true || req.body.bloqueio_ip === "on" || req.body.bloqueio_ip === "true"
+        : atual.bloqueio_ip;
+
+    const bloqueio_cpf =
+      Object.prototype.hasOwnProperty.call(req.body, "bloqueio_cpf")
+        ? req.body.bloqueio_cpf === true || req.body.bloqueio_cpf === "on" || req.body.bloqueio_cpf === "true"
+        : atual.bloqueio_cpf;
+
+    const bloqueio_fingerprint =
+      Object.prototype.hasOwnProperty.call(req.body, "bloqueio_fingerprint")
+        ? req.body.bloqueio_fingerprint === true || req.body.bloqueio_fingerprint === "on" || req.body.bloqueio_fingerprint === "true"
+        : atual.bloqueio_fingerprint;
+
+    const expira_em =
+      Object.prototype.hasOwnProperty.call(req.body, "expira_em")
+        ? req.body.expira_em || null
+        : atual.expira_em;
+
+    const admin =
+      req.admin?.email ||
+      req.session?.user?.email ||
+      req.session?.user?.name ||
+      atual.admin ||
+      "Admin";
+
     const { rows } = await db.query(`
-      UPDATE clientes_verificacao
-      SET status = $1, motivo_rejeicao = $2, verificado_em = NOW(), atualizado_em = NOW()
-      WHERE id = $3 RETURNING *
-    `, [status, motivo_rejeicao || null, req.params.id]);
+      UPDATE cliente_risco SET
+        nivel = $1,
+        bloqueio_ip = $2,
+        bloqueio_cpf = $3,
+        bloqueio_fingerprint = $4,
+        motivo = $5,
+        expira_em = $6,
+        admin = $7
+      WHERE cliente_id = $8
+      RETURNING *
+    `, [
+      nivel,
+      bloqueio_ip,
+      bloqueio_cpf,
+      bloqueio_fingerprint,
+      motivo,
+      expira_em,
+      admin,
+      clienteId
+    ]);
+
     res.json(rows[0]);
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
+
+  } catch (err) {
+    console.error("Erro atualizar cliente-risco:", err);
+    res.status(500).json({ erro: "Erro interno", details: err.message });
+  }
 });
 
-// ========== 7. FECHAMENTO ==========
+router.delete("/cliente-risco/:id", authAdmin, async (req, res) => {
+  try {
+    const clienteId = req.params.id;
+
+    const admin =
+      req.admin?.email ||
+      req.session?.user?.email ||
+      req.session?.user?.name ||
+      "Admin";
+
+    const { rows } = await db.query(`
+      UPDATE cliente_risco
+      SET
+        ativo = false,
+        admin = $1
+      WHERE cliente_id = $2
+      RETURNING *
+    `, [admin, clienteId]);
+
+    if (!rows.length) {
+      return res.status(404).json({ erro: "Não encontrado" });
+    }
+
+    res.json({ ok: true, row: rows[0] });
+
+  } catch (err) {
+    console.error("Erro desativar cliente-risco:", err);
+    res.status(500).json({ erro: "Erro interno", details: err.message });
+  }
+});
+
+router.get("/logs-clientes-risco", authAdmin, async (req, res) => {
+  try {
+    const { limit, offset, page } = paginate(req.query, 1, 20);
+
+    const countQ = await db.query(`
+      SELECT COUNT(*)
+      FROM cliente_risco
+    `);
+
+    const total = Number(countQ.rows[0].count);
+
+    const { rows } = await db.query(`
+      SELECT
+        cliente_id,
+        cpf,
+        ip,
+        fingerprint,
+        motivo,
+        ativo,
+        criado_em,
+        admin
+      FROM cliente_risco
+      ORDER BY criado_em DESC
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+
+    res.json({
+      rows,
+      page,
+      total,
+      totalPages: Math.ceil(total / limit)
+    });
+
+  } catch (err) {
+    console.error("Erro logs-clientes-risco:", err);
+    res.status(500).json({ error: "Erro ao buscar logs de clientes risco" });
+  }
+});
+
+// ========== 6. CLIENTE BLOQUEADO ==========
+
+router.get("/clientes-bloqueados/lookup/:id", authAdmin, async (req, res) => {
+  try {
+    const clienteId = req.params.id;
+
+    const { rows } = await db.query(`
+      SELECT
+        c.id AS cliente_id,
+        u.id AS user_id,
+        u.email,
+        u.ativo,
+        u.desativado_em,
+        u.bloqueado,
+
+        cd.nome_completo,
+        cd.data_nascimento,
+
+        pp.aceite_ip AS ip,
+        pp.fingerprint,
+        pp.cpf
+      FROM clientes c
+      LEFT JOIN users u ON u.id = c.user_id
+      LEFT JOIN clientes_dados cd ON cd.cliente_id = c.id
+      LEFT JOIN LATERAL (
+        SELECT aceite_ip, fingerprint, cpf
+        FROM pagamentos_pix
+        WHERE cliente_id = c.id
+        ORDER BY criado_em DESC
+        LIMIT 1
+      ) pp ON true
+      WHERE c.id = $1
+      LIMIT 1
+    `, [clienteId]);
+
+    if (!rows.length) {
+      return res.status(404).json({ erro: "Cliente não encontrado" });
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Erro lookup cliente bloqueado:", err);
+    res.status(500).json({ erro: "Erro interno", details: err.message });
+  }
+});
+
+router.get("/clientes-bloqueados", authAdmin, async (req, res) => {
+  try {
+    const { limit, offset, page } = paginate(req.query, 1, 20);
+
+    const countQ = await db.query(`
+      SELECT COUNT(*)
+      FROM clientes_bloqueados_cadastro
+      WHERE COALESCE(bloqueado, true) = true
+    `);
+
+    const total = Number(countQ.rows[0].count);
+
+    const { rows } = await db.query(`
+      SELECT
+        id,
+        cliente_id,
+        user_id,
+        email,
+        nome_completo,
+        data_nascimento,
+        ativo,
+        desativado_em,
+        bloqueado,
+        ip,
+        fingerprint,
+        cpf,
+        nivel,
+        motivo,
+        bloqueio_ip,
+        bloqueio_cpf,
+        bloqueio_fingerprint,
+        admin,
+        criado_em
+      FROM clientes_bloqueados_cadastro
+      WHERE COALESCE(bloqueado, true) = true
+      ORDER BY criado_em DESC
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+
+    res.json({
+      rows,
+      totalPages: Math.ceil(total / limit),
+      page
+    });
+  } catch (err) {
+    console.error("Erro clientes-bloqueados:", err);
+    res.status(500).json({ erro: "Erro interno", details: err.message });
+  }
+});
+
+router.post("/clientes-bloqueados", authAdmin, async (req, res) => {
+  const client = await db.connect();
+
+  try {
+    const {
+      cliente_id,
+      user_id,
+      email,
+      nome_completo,
+      data_nascimento,
+      ativo,
+      bloqueado,
+      ip,
+      fingerprint,
+      cpf,
+      nivel,
+      motivo,
+      bloqueio_ip,
+      bloqueio_cpf,
+      bloqueio_fingerprint
+    } = req.body;
+
+    const admin =
+      req.admin?.email ||
+      req.session?.user?.email ||
+      req.session?.user?.name ||
+      "Admin";
+
+    await client.query("BEGIN");
+
+    const ativoFinal = ativo === true || ativo === "true";
+    const bloqueadoFinal = bloqueado === true || bloqueado === "true";
+
+    const { rows } = await client.query(`
+      INSERT INTO clientes_bloqueados_cadastro (
+        cliente_id,
+        cliente_id_original,
+        user_id,
+        email,
+        nome_completo,
+        data_nascimento,
+        ativo,
+        desativado_em,
+        bloqueado,
+        ip,
+        fingerprint,
+        cpf,
+        nivel,
+        motivo,
+        bloqueio_ip,
+        bloqueio_cpf,
+        bloqueio_fingerprint,
+        admin,
+        criado_em
+      )
+      VALUES (
+        $1,$1,$2,$3,$4,$5,$6,NOW(),$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,NOW()
+      )
+      RETURNING *
+    `, [
+      cliente_id,
+      user_id || null,
+      email || null,
+      nome_completo || null,
+      data_nascimento || null,
+      ativoFinal,
+      bloqueadoFinal,
+      ip || null,
+      fingerprint || null,
+      cpf || null,
+      nivel || null,
+      motivo || null,
+      !!bloqueio_ip,
+      !!bloqueio_cpf,
+      !!bloqueio_fingerprint,
+      admin
+    ]);
+
+    if (user_id) {
+      await client.query(`
+        UPDATE users
+        SET
+          ativo = $1,
+          bloqueado = $2,
+          updated_at = NOW()
+        WHERE id = $3
+      `, [
+        ativoFinal,
+        bloqueadoFinal,
+        user_id
+      ]);
+    }
+
+    await client.query("COMMIT");
+
+    res.json(rows[0]);
+
+} catch (err) {
+  await client.query("ROLLBACK");
+
+  if (err.code === "23505") {
+    return res.status(409).json({
+      erro: "Cliente já está cadastrado na lista de bloqueados"
+    });
+  }
+
+  console.error("Erro salvar cliente bloqueado:", err);
+  res.status(500).json({ erro: "Erro interno", details: err.message });
+} finally {
+    client.release();
+  }
+});
+
+router.get("/clientes-bloqueados/:id", authAdmin, async (req, res) => {
+  try {
+    const { rows } = await db.query(`
+      SELECT *
+      FROM clientes_bloqueados_cadastro
+      WHERE cliente_id = $1
+        AND COALESCE(bloqueado, true) = true
+      LIMIT 1
+    `, [req.params.id]);
+
+    if (!rows.length) {
+      return res.status(404).json({ erro: "Não encontrado" });
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Erro buscar cliente bloqueado:", err);
+    res.status(500).json({ erro: "Erro interno", details: err.message });
+  }
+});
+
+router.put("/clientes-bloqueados/:id", authAdmin, async (req, res) => {
+  const client = await db.connect();
+
+  try {
+    const {
+      nivel,
+      motivo,
+      bloqueio_ip,
+      bloqueio_cpf,
+      bloqueio_fingerprint
+    } = req.body;
+
+    const admin =
+      req.admin?.email ||
+      req.session?.user?.email ||
+      req.session?.user?.name ||
+      "Admin";
+
+    await client.query("BEGIN");
+
+    const { rows } = await client.query(`
+      UPDATE clientes_bloqueados_cadastro
+      SET
+        nivel = $1,
+        motivo = $2,
+        bloqueio_ip = $3,
+        bloqueio_cpf = $4,
+        bloqueio_fingerprint = $5,
+        admin = $6,
+        ativo = false,
+        bloqueado = true,
+        desativado_em = COALESCE(desativado_em, NOW())
+      WHERE cliente_id = $7
+      RETURNING *
+    `, [
+      nivel || null,
+      motivo || null,
+      !!bloqueio_ip,
+      !!bloqueio_cpf,
+      !!bloqueio_fingerprint,
+      admin,
+      req.params.id
+    ]);
+
+    if (!rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ erro: "Não encontrado" });
+    }
+
+    const bloqueado = rows[0];
+
+    if (bloqueado.user_id) {
+      await client.query(`
+        UPDATE users
+        SET
+          ativo = false,
+          bloqueado = true,
+          updated_at = NOW()
+        WHERE id = $1
+      `, [bloqueado.user_id]);
+    }
+
+    await client.query("COMMIT");
+
+    res.json(bloqueado);
+
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("Erro atualizar cliente bloqueado:", err);
+    res.status(500).json({ erro: "Erro interno", details: err.message });
+  } finally {
+    client.release();
+  }
+});
+
+router.delete("/clientes-bloqueados/:id", authAdmin, async (req, res) => {
+  const client = await db.connect();
+
+  try {
+    const admin =
+      req.admin?.email ||
+      req.session?.user?.email ||
+      req.session?.user?.name ||
+      "Admin";
+
+    await client.query("BEGIN");
+
+    const { rows } = await client.query(`
+      UPDATE clientes_bloqueados_cadastro
+      SET
+        ativo = true,
+        bloqueado = false,
+        admin = $1
+      WHERE cliente_id = $2
+      RETURNING *
+    `, [admin, req.params.id]);
+
+    if (!rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ erro: "Não encontrado" });
+    }
+
+    const bloqueado = rows[0];
+
+    if (bloqueado.user_id) {
+      await client.query(`
+        UPDATE users
+        SET
+          ativo = true,
+          bloqueado = false,
+          updated_at = NOW()
+        WHERE id = $1
+      `, [bloqueado.user_id]);
+    }
+
+    await client.query("COMMIT");
+
+    res.json({ ok: true, row: bloqueado });
+
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("Erro remover cliente bloqueado:", err);
+    res.status(500).json({ erro: "Erro interno", details: err.message });
+  } finally {
+    client.release();
+  }
+});
+
+router.get("/logs-clientes-bloqueados", authAdmin, async (req, res) => {
+  try {
+    const { limit, offset, page } = paginate(req.query, 1, 20);
+
+    const countQ = await db.query(`
+      SELECT COUNT(*)
+      FROM clientes_bloqueados_cadastro
+    `);
+
+    const total = Number(countQ.rows[0].count);
+
+    const { rows } = await db.query(`
+      SELECT
+        user_id,
+        cpf,
+        ip,
+        fingerprint,
+        email,
+        motivo,
+        bloqueado,
+        criado_em,
+        admin AS admin_email
+      FROM clientes_bloqueados_cadastro
+      ORDER BY criado_em DESC
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+
+    res.json({
+      rows,
+      page,
+      total,
+      totalPages: Math.ceil(total / limit)
+    });
+
+  } catch (err) {
+    console.error("Erro logs-clientes-bloqueados:", err);
+    res.status(500).json({ error: "Erro ao buscar logs de clientes bloqueados" });
+  }
+});
+
+// ========== 7. VERIFICAÇÕES ==========
+
+router.get("/verificacoes/modelos", auth, authAdmin, async (req, res) => {
+  try {
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const limit = Math.max(Number(req.query.limit) || 20, 1);
+    const offset = (page - 1) * limit;
+
+    const countQ = await db.query(`
+      SELECT COUNT(*)::int AS total
+      FROM modelos_verificacao mv
+      JOIN modelos m ON m.id = mv.modelo_id
+    `);
+
+    const total = countQ.rows[0]?.total || 0;
+    const totalPages = Math.max(Math.ceil(total / limit), 1);
+
+    const { rows } = await db.query(`
+      SELECT
+        mv.modelo_id,
+        mv.modelo_id AS id,
+        m.nome_exibicao AS modelo_nome,
+        mv.documento_tipo,
+        mv.status,
+        mv.criado_em,
+        mv.verificado_em
+      FROM modelos_verificacao mv
+      JOIN modelos m ON m.id = mv.modelo_id
+      ORDER BY
+        CASE
+          WHEN mv.status = 'pendente' THEN 0
+          WHEN mv.status = 'em_analise' THEN 1
+          WHEN mv.status = 'rejeitado' THEN 2
+          WHEN mv.status = 'aprovado' THEN 3
+          ELSE 4
+        END,
+        mv.criado_em DESC
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+
+    res.json({
+      rows,
+      total,
+      totalPages,
+      page
+    });
+
+  } catch (err) {
+    console.error("Erro listar verificações de modelos:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+router.get("/verificacoes/modelo/:id", auth, authAdmin, async (req, res) => {
+  try {
+    const modelo_id = Number(req.params.id);
+
+    const { rows } = await db.query(`
+      SELECT
+        mv.modelo_id,
+        mv.documento_tipo,
+        mv.doc_frente_url,
+        mv.doc_verso_url,
+        mv.selfie_url,
+        mv.status,
+        mv.motivo_rejeicao,
+        mv.declaracao,
+        mv.criado_em,
+        mv.verificado_em,
+
+        m.nome_exibicao,
+        m.bio,
+        m.local,
+        m.avatar,
+        m.capa,
+        m.agencia_id,
+        m.verificada,
+        m.feed,
+        m.agencia_desde,
+        m.atualizado_em,
+
+        md.nome_completo,
+        md.data_nascimento,
+        md.telefone,
+        md.endereco,
+        md.pais,
+        md.estado,
+        md.cidade,
+        md.instagram,
+        md.tiktok,
+        md.vip_preco,
+
+        a.nome AS agencia_nome
+
+      FROM modelos_verificacao mv
+      JOIN modelos m ON m.id = mv.modelo_id
+      LEFT JOIN modelos_dados md ON md.modelo_id = m.id
+      LEFT JOIN users u ON u.id = m.user_id
+      LEFT JOIN agencias a ON a.id = m.agencia_id
+      WHERE mv.modelo_id = $1
+      LIMIT 1
+    `, [modelo_id]);
+
+    if (!rows.length) {
+      return res.status(404).json({ error: "Verificação não encontrada" });
+    }
+
+    const v = rows[0];
+
+    res.json({
+      ...v,
+      avatar_url: assinarArquivoPrivado(v.avatar),
+      capa_url: assinarArquivoPrivado(v.capa),
+      doc_frente_url: assinarArquivoPrivado(v.doc_frente_url),
+      doc_verso_url: assinarArquivoPrivado(v.doc_verso_url),
+      selfie_url: assinarArquivoPrivado(v.selfie_url)
+    });
+
+  } catch (err) {
+    console.error("Erro detalhe verificação modelo:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+router.put("/verificacoes/modelo/:id", auth, authAdmin, async (req, res) => {
+  const client = await db.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const modelo_id = Number(req.params.id);
+    const { status, motivo_rejeicao, dados = {} } = req.body;
+
+    if (!["aprovado", "rejeitado"].includes(status)) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Status inválido" });
+    }
+
+    if (status === "rejeitado" && (!motivo_rejeicao || !motivo_rejeicao.trim())) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Motivo da rejeição é obrigatório" });
+    }
+
+    const modeloRes = await client.query(`
+      SELECT
+        m.id,
+        m.user_id,
+        m.agencia_id AS agencia_id_atual,
+        u.email
+      FROM modelos m
+      JOIN users u ON u.id = m.user_id
+      WHERE m.id = $1
+      LIMIT 1
+    `, [modelo_id]);
+
+    if (!modeloRes.rowCount) {
+      throw new Error("Modelo não encontrado");
+    }
+
+    const user_id = modeloRes.rows[0].user_id;
+    const email = modeloRes.rows[0].email;
+    const agencia_id_atual = modeloRes.rows[0].agencia_id_atual;
+
+    const novaAgenciaId =
+      dados.agencia_id !== undefined &&
+      dados.agencia_id !== null &&
+      String(dados.agencia_id).trim() !== ''
+        ? Number(dados.agencia_id)
+        : null;
+
+    const agenciaMudou = String(agencia_id_atual || '') !== String(novaAgenciaId || '');
+    const atualizarAgenciaDesde = agenciaMudou && novaAgenciaId !== null;
+
+    await client.query(`
+      UPDATE modelos
+      SET
+        nome_exibicao = $1,
+        local = $2,
+        bio = $3,
+        agencia_id = $4,
+        atualizado_em = NOW(),
+        verificada = $5,
+        feed = CASE WHEN $5 = true THEN true ELSE feed END,
+        agencia_desde = CASE
+          WHEN $6 = true THEN NOW()
+          ELSE agencia_desde
+        END
+      WHERE id = $7
+    `, [
+      dados.nome_exibicao || null,
+      dados.local || null,
+      dados.bio || null,
+      novaAgenciaId,
+      status === "aprovado",
+      atualizarAgenciaDesde,
+      modelo_id
+    ]);
+
+    await client.query(`
+      INSERT INTO modelos_dados (
+        modelo_id,
+        nome_completo,
+        data_nascimento,
+        telefone,
+        endereco,
+        pais,
+        estado,
+        cidade,
+        instagram,
+        tiktok,
+        vip_preco
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+      ON CONFLICT (modelo_id)
+      DO UPDATE SET
+        nome_completo = EXCLUDED.nome_completo,
+        data_nascimento = EXCLUDED.data_nascimento,
+        telefone = EXCLUDED.telefone,
+        endereco = EXCLUDED.endereco,
+        pais = EXCLUDED.pais,
+        estado = EXCLUDED.estado,
+        cidade = EXCLUDED.cidade,
+        instagram = EXCLUDED.instagram,
+        tiktok = EXCLUDED.tiktok,
+        vip_preco = EXCLUDED.vip_preco
+    `, [
+      modelo_id,
+      dados.nome_completo || null,
+      dados.data_nascimento || null,
+      dados.telefone || null,
+      dados.endereco || null,
+      dados.pais || null,
+      dados.estado || null,
+      dados.cidade || null,
+      dados.instagram || null,
+      dados.tiktok || null,
+      dados.vip_preco || null
+    ]);
+
+    await client.query(`
+      UPDATE modelos_verificacao
+      SET
+        status = $1,
+        motivo_rejeicao = $2,
+        verificado_em = NOW()
+      WHERE modelo_id = $3
+    `, [
+      status,
+      status === "rejeitado" ? motivo_rejeicao.trim() : null,
+      modelo_id
+    ]);
+
+    await client.query("COMMIT");
+
+    if (status === "aprovado" && email) {
+      try {
+        await enviarEmailAprovacao(email);
+      } catch (e) {
+        console.error("Erro enviar email aprovação:", e);
+      }
+    }
+
+    if (status === "rejeitado" && email) {
+      try {
+        await enviarEmailRejeicao(email, motivo_rejeicao.trim());
+      } catch (e) {
+        console.error("Erro enviar email rejeição:", e);
+      }
+    }
+
+    res.json({ message: "Processo concluído" });
+
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("Erro atualizar verificação modelo:", err);
+    res.status(500).json({ error: "Erro ao validar modelo", detail: err.message });
+  } finally {
+    client.release();
+  }
+});
+
+router.get("/verificacoes-aprovadas", auth, authAdmin, async (req, res) => {
+  try {
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const limit = 10;
+    const offset = (page - 1) * limit;
+
+    const totalRes = await db.query(`
+      SELECT COUNT(*)::int AS total
+      FROM modelos_verificacao
+      WHERE status = 'aprovado'
+    `);
+
+    const total = totalRes.rows[0]?.total || 0;
+    const totalPages = Math.max(Math.ceil(total / limit), 1);
+
+    const result = await db.query(`
+      SELECT
+        mv.modelo_id AS id,
+        'modelo' AS tipo,
+        m.nome_exibicao,
+        mv.documento_tipo,
+        mv.doc_frente_url,
+        mv.doc_verso_url,
+        mv.selfie_url,
+        mv.verificado_em
+      FROM modelos_verificacao mv
+      JOIN modelos m ON m.id = mv.modelo_id
+      WHERE mv.status = 'aprovado'
+      ORDER BY mv.verificado_em DESC
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+
+    const dados = result.rows.map(p => ({
+      ...p,
+      doc_frente_url: assinarArquivoPrivado(p.doc_frente_url),
+      doc_verso_url: assinarArquivoPrivado(p.doc_verso_url),
+      selfie_url: assinarArquivoPrivado(p.selfie_url)
+    }));
+
+    res.json({
+      dados,
+      totalPages,
+      page
+    });
+
+  } catch (err) {
+    console.error("Erro buscar aprovados:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+router.get("/verificacoes-rejeitadas", auth, authAdmin, async (req, res) => {
+  try {
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const limit = 10;
+    const offset = (page - 1) * limit;
+
+    const totalRes = await db.query(`
+      SELECT COUNT(*)::int AS total
+      FROM modelos_verificacao
+      WHERE status = 'rejeitado'
+    `);
+
+    const total = totalRes.rows[0]?.total || 0;
+    const totalPages = Math.max(Math.ceil(total / limit), 1);
+
+    const result = await db.query(`
+      SELECT
+        mv.modelo_id AS id,
+        'modelo' AS tipo,
+        m.nome_exibicao,
+        mv.documento_tipo,
+        mv.doc_frente_url,
+        mv.doc_verso_url,
+        mv.selfie_url,
+        mv.motivo_rejeicao,
+        mv.verificado_em AS rejeitado_em
+      FROM modelos_verificacao mv
+      JOIN modelos m ON m.id = mv.modelo_id
+      WHERE mv.status = 'rejeitado'
+      ORDER BY mv.verificado_em DESC
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+
+    const dados = result.rows.map(p => ({
+      ...p,
+      doc_frente_url: assinarArquivoPrivado(p.doc_frente_url),
+      doc_verso_url: assinarArquivoPrivado(p.doc_verso_url),
+      selfie_url: assinarArquivoPrivado(p.selfie_url)
+    }));
+
+    res.json({
+      dados,
+      totalPages,
+      page
+    });
+
+  } catch (err) {
+    console.error("Erro rejeitados:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+router.put("/perfis/:id/editar", auth, authAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { dados } = req.body;
+
+  try {
+    await db.query(`
+      UPDATE modelos
+      SET nome_exibicao = $1,
+          local = $2,
+          bio = $3,
+          agencia_id = $4
+      WHERE id = $5
+    `, [
+      dados.nome_exibicao || null,
+      dados.local || null,
+      dados.bio || null,
+      dados.agencia_id || null,
+      id
+    ]);
+
+    await db.query(`
+      INSERT INTO modelos_dados (
+        modelo_id,
+        nome_completo,
+        data_nascimento,
+        telefone,
+        endereco,
+        pais,
+        estado,
+        cidade,
+        instagram,
+        tiktok,
+        vip_preco
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+      ON CONFLICT (modelo_id)
+      DO UPDATE SET
+        nome_completo = EXCLUDED.nome_completo,
+        data_nascimento = EXCLUDED.data_nascimento,
+        telefone = EXCLUDED.telefone,
+        endereco = EXCLUDED.endereco,
+        pais = EXCLUDED.pais,
+        estado = EXCLUDED.estado,
+        cidade = EXCLUDED.cidade,
+        instagram = EXCLUDED.instagram,
+        tiktok = EXCLUDED.tiktok,
+        vip_preco = EXCLUDED.vip_preco
+    `, [
+      id,
+      dados.nome_completo || null,
+      dados.data_nascimento || null,
+      dados.telefone || null,
+      dados.endereco || null,
+      dados.pais || null,
+      dados.estado || null,
+      dados.cidade || null,
+      dados.instagram || null,
+      dados.tiktok || null,
+      dados.vip_preco || null
+    ]);
+
+    res.json({ message: "Atualizado com sucesso" });
+
+  } catch (err) {
+    console.error("Erro ao atualizar perfil modelo:", err);
+    res.status(500).json({ error: "Erro ao atualizar dados" });
+  }
+});
+
+router.get("/agencias-lista", auth, authAdmin, async (req, res) => {
+  try {
+    const { rows } = await db.query(`
+      SELECT id, nome
+      FROM agencias
+      ORDER BY nome ASC
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Erro listar agências:", err);
+    res.status(500).json({ error: "Erro ao buscar agências" });
+  }
+});
+
+// ========== 8. FECHAMENTO ==========FALTA
 
 router.get("/fechamento", async (req, res) => {
   try {
@@ -514,7 +1797,7 @@ router.post("/fechamento", async (req, res) => {
   }
 });
 
-// ========== 8. DADOS BANCÁRIOS ==========
+// ========== 9. DADOS BANCÁRIOS ==========
 
 router.get("/dados-bancarios", async (req, res) => {
   try {
@@ -552,38 +1835,87 @@ router.get("/dados-bancarios/:id", async (req, res) => {
   } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
 });
 
-router.put("/dados-bancarios/:id", async (req, res) => {
+router.put("/dados-bancarios/:id", authAdmin, async (req, res) => {
   try {
+    const beforeQ = await db.query(
+      `SELECT * 
+         FROM modelo_dados_bancarios 
+        WHERE id = $1 
+        LIMIT 1`,
+      [req.params.id]
+    );
+
+    if (!beforeQ.rows.length) {
+      return res.status(404).json({ erro: "Registro bancário não encontrado" });
+    }
+
+    const anterior = beforeQ.rows[0];
     const fields = req.body;
     const sets = [];
     const vals = [];
     let i = 1;
 
     for (const [key, val] of Object.entries(fields)) {
-      if (["id", "modelo_id", "criado_em"].includes(key)) continue;
+      if (["id", "modelo_id", "criado_em", "aprovado_em", "atualizado_em"].includes(key)) continue;
       sets.push(`${key} = $${i}`);
       vals.push(val);
       i++;
     }
 
-    if (fields.status === "aprovado") {
+    if (!sets.length) {
+      return res.status(400).json({ erro: "Nenhum campo válido para atualizar" });
+    }
+
+    if (fields.status === "aprovado" && anterior.status !== "aprovado") {
       sets.push(`aprovado_em = NOW()`);
     }
-    sets.push(`atualizado_em = NOW()`);
 
+    sets.push(`atualizado_em = NOW()`);
     vals.push(req.params.id);
+
     const { rows } = await db.query(
-      `UPDATE modelo_dados_bancarios SET ${sets.join(", ")} WHERE id = $${i} RETURNING *`,
+      `UPDATE modelo_dados_bancarios
+          SET ${sets.join(", ")}
+        WHERE id = $${i}
+      RETURNING *`,
       vals
     );
-    res.json(rows[0]);
+
+    const atualizado = rows[0];
+
+    let acao = "atualizacao_dados_bancarios";
+    let motivo = `Dados bancários atualizados pelo admin. Status anterior: ${anterior.status || "null"}; novo status: ${atualizado.status || "null"}.`;
+
+    if (anterior.status !== atualizado.status && atualizado.status === "aprovado") {
+      acao = "aprovacao_dados_bancarios";
+      motivo = `Dados bancários aprovados pelo admin. Status anterior: ${anterior.status || "null"}; novo status: aprovado.`;
+    } else if (anterior.status !== atualizado.status && atualizado.status === "rejeitado") {
+      acao = "rejeicao_dados_bancarios";
+      motivo = `Dados bancários rejeitados pelo admin. Status anterior: ${anterior.status || "null"}; novo status: rejeitado.`;
+    }
+
+    await db.query(
+      `INSERT INTO admin_seguranca_historico
+        (user_id, tipo_user, acao, motivo, data, admin_id)
+       VALUES
+        ($1, $2, $3, $4, NOW(), $5)`,
+      [
+        atualizado.modelo_id,
+        "modelo",
+        acao,
+        motivo,
+        req.admin?.id || req.user?.id || null
+      ]
+    );
+
+    res.json(atualizado);
   } catch (err) {
     console.error("Erro atualizar bancário:", err);
     res.status(500).json({ erro: "Erro interno" });
   }
 });
 
-// ========== 9. MODELOS ==========
+// ========== 10. MODELOS ==========
 
 router.get("/modelos-lista", async (req, res) => {
   try {
@@ -592,39 +1924,82 @@ router.get("/modelos-lista", async (req, res) => {
   } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
 });
 
-router.get("/modelos", async (req, res) => {
+router.get("/modelos", authAdmin, async (req, res) => {
   try {
-    const { limit, offset, page } = paginate(req.query, Number(req.query.page) || 1, Number(req.query.limit) || 20);
-    const busca = req.query.busca || "";
+    const { limit, offset, page } = paginate(
+      req.query,
+      Number(req.query.page) || 1,
+      Number(req.query.limit) || 20
+    );
 
-    let where = "1=1";
-    const params = [limit, offset];
+    const busca = req.query.busca || "";
+    const params = [];
+    let where = "COALESCE(m.ativo, true) = true";
 
     if (busca) {
-      where = "(m.nome ILIKE $3 OR m.id::text = $4 OR u.email ILIKE $3)";
-      params.push(`%${busca}%`, busca);
+      params.push(`%${busca}%`);
+      params.push(busca);
+      where += ` AND (m.nome ILIKE $${params.length - 1} OR m.id::text = $${params.length} OR u.email ILIKE $${params.length - 1})`;
     }
 
-    const countParams = busca ? [`%${busca}%`, busca] : [];
-    const countWhere = busca ? "(m.nome ILIKE $1 OR m.id::text = $2 OR u.email ILIKE $1)" : "1=1";
     const countQ = await db.query(`
-      SELECT COUNT(*) FROM modelos m LEFT JOIN users u ON u.id = m.user_id WHERE ${countWhere}
-    `, countParams);
+      SELECT COUNT(*)
+      FROM modelos m
+      LEFT JOIN users u ON u.id = m.user_id
+      WHERE ${where}
+    `, params);
+
     const total = Number(countQ.rows[0].count);
 
+    params.push(limit, offset);
+
     const { rows } = await db.query(`
-      SELECT m.*, u.email, ag.nome AS agencia_nome
+      SELECT
+        m.id,
+        m.user_id,
+        m.nome,
+        m.nome_exibicao,
+        m.verificada,
+        m.local,
+        m.bio,
+        m.feed,
+        m.agencia_id,
+        m.ativo,
+        m.created_at,
+        m.atualizado_em,
+        m.desativado_em,
+        u.email,
+        ag.nome AS agencia_nome
       FROM modelos m
       LEFT JOIN users u ON u.id = m.user_id
       LEFT JOIN agencias ag ON ag.id = m.agencia_id
       WHERE ${where}
       ORDER BY m.id DESC
-      LIMIT $1 OFFSET $2
+      LIMIT $${params.length - 1} OFFSET $${params.length}
     `, params);
 
-    res.json({ rows, totalPages: Math.ceil(total / limit), page });
+    res.json({
+      rows,
+      totalPages: Math.ceil(total / limit),
+      page
+    });
   } catch (err) {
     console.error("Erro modelos:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.get("/agencias", authAdmin, async (req, res) => {
+  try {
+    const { rows } = await db.query(`
+      SELECT id, nome
+      FROM agencias
+      ORDER BY nome ASC
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Erro listar agências:", err);
     res.status(500).json({ erro: "Erro interno" });
   }
 });
@@ -637,38 +2012,91 @@ router.get("/modelos/:id", async (req, res) => {
   } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
 });
 
-router.put("/modelos/:id", async (req, res) => {
+router.put("/modelos/:id", authAdmin, async (req, res) => {
   try {
+    const modeloId = req.params.id;
+    const adminId = req.admin?.id || req.user?.id || null;
     const fields = req.body;
     const sets = [];
     const vals = [];
     let i = 1;
-    const allowed = ["nome", "nome_exibicao", "verificada", "feed", "bio", "local", "agencia_id", "ativo"];
+
+    const allowed = [
+      "nome",
+      "nome_exibicao",
+      "verificada",
+      "feed",
+      "bio",
+      "local",
+      "agencia_id",
+      "ativo"
+    ];
+
+    const antesQ = await db.query(`
+      SELECT id, nome, ativo, feed, bio, verificada, agencia_id
+      FROM modelos
+      WHERE id = $1
+    `, [modeloId]);
+
+    if (!antesQ.rows.length) {
+      return res.status(404).json({ erro: "Modelo não encontrado" });
+    }
+
+    const antes = antesQ.rows[0];
 
     for (const [key, val] of Object.entries(fields)) {
       if (!allowed.includes(key)) continue;
       sets.push(`${key} = $${i}`);
-      vals.push(val);
+      vals.push(val === "" ? null : val);
       i++;
     }
 
-    if (!sets.length) return res.status(400).json({ erro: "Nenhum campo para atualizar" });
+    if (!sets.length) {
+      return res.status(400).json({ erro: "Nenhum campo para atualizar" });
+    }
+
+    if (Object.prototype.hasOwnProperty.call(fields, "ativo")) {
+      if (fields.ativo === false || fields.ativo === "false") {
+        sets.push(`desativado_em = NOW()`);
+      } else if (fields.ativo === true || fields.ativo === "true") {
+        sets.push(`desativado_em = NULL`);
+      }
+    }
 
     sets.push(`atualizado_em = NOW()`);
-    vals.push(req.params.id);
+    vals.push(modeloId);
 
-    const { rows } = await db.query(
-      `UPDATE modelos SET ${sets.join(", ")} WHERE id = $${i} RETURNING *`,
-      vals
-    );
-    res.json(rows[0]);
+    const { rows } = await db.query(`
+      UPDATE modelos
+      SET ${sets.join(", ")}
+      WHERE id = $${i}
+      RETURNING *
+    `, vals);
+
+    const depois = rows[0];
+
+    // log de desativação / reativação
+    if (String(antes.ativo) !== String(depois.ativo)) {
+      await db.query(`
+        INSERT INTO admin_seguranca_historico
+          (user_id, tipo_user, acao, motivo, data, admin_id)
+        VALUES
+          ($1, 'modelo', $2, $3, NOW(), $4)
+      `, [
+        modeloId,
+        (depois.ativo === false ? "desativacao_modelo" : "reativacao_modelo"),
+        `Modelo ${depois.nome || "#" + modeloId} teve status alterado para ativo=${depois.ativo}`,
+        adminId
+      ]);
+    }
+
+    res.json(depois);
   } catch (err) {
     console.error("Erro atualizar modelo:", err);
     res.status(500).json({ erro: "Erro interno" });
   }
 });
 
-// Modelos Dados
 router.get("/modelos-dados/:id", async (req, res) => {
   try {
     const { rows } = await db.query("SELECT * FROM modelos_dados WHERE modelo_id = $1", [req.params.id]);
@@ -677,59 +2105,164 @@ router.get("/modelos-dados/:id", async (req, res) => {
   } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
 });
 
-router.put("/modelos-dados/:id", async (req, res) => {
+router.put("/modelos-dados/:id", authAdmin, async (req, res) => {
   try {
+    const modeloId = req.params.id;
+    const adminId = req.admin?.id || req.user?.id || null;
     const fields = req.body;
     const sets = [];
     const vals = [];
     let i = 1;
-    const allowed = ["nome_completo", "data_nascimento", "telefone", "endereco", "pais", "estado", "cidade", "instagram", "tiktok", "vip_preco"];
+
+    const allowed = [
+      "nome_completo",
+      "data_nascimento",
+      "telefone",
+      "endereco",
+      "pais",
+      "estado",
+      "cidade",
+      "instagram",
+      "tiktok",
+      "vip_preco"
+    ];
+
+    const antesQ = await db.query(`
+      SELECT modelo_id, vip_preco
+      FROM modelos_dados
+      WHERE modelo_id = $1
+    `, [modeloId]);
+
+    if (!antesQ.rows.length) {
+      return res.status(404).json({ erro: "Dados do modelo não encontrados" });
+    }
+
+    const antes = antesQ.rows[0];
 
     for (const [key, val] of Object.entries(fields)) {
       if (!allowed.includes(key)) continue;
       sets.push(`${key} = $${i}`);
-      vals.push(val);
+      vals.push(val === "" ? null : val);
       i++;
     }
 
-    if (!sets.length) return res.status(400).json({ erro: "Nenhum campo para atualizar" });
+    if (!sets.length) {
+      return res.status(400).json({ erro: "Nenhum campo para atualizar" });
+    }
 
     sets.push(`atualizado_em = NOW()`);
-    vals.push(req.params.id);
+    vals.push(modeloId);
 
-    const { rows } = await db.query(
-      `UPDATE modelos_dados SET ${sets.join(", ")} WHERE modelo_id = $${i} RETURNING *`,
-      vals
-    );
-    res.json(rows[0]);
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
-});
-
-// ========== 10. RANKING ==========
-
-router.get("/ranking", async (req, res) => {
-  try {
     const { rows } = await db.query(`
-      SELECT r.*, m.nome
-      FROM modelos_ranking r
-      LEFT JOIN modelos m ON m.id = r.modelo_id
-      ORDER BY r.ganhos_total DESC
-      LIMIT 50
-    `);
-    res.json(rows);
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
+      UPDATE modelos_dados
+      SET ${sets.join(", ")}
+      WHERE modelo_id = $${i}
+      RETURNING *
+    `, vals);
+
+    const depois = rows[0];
+
+    if (
+      Object.prototype.hasOwnProperty.call(fields, "vip_preco") &&
+      String(antes.vip_preco) !== String(depois.vip_preco)
+    ) {
+      await db.query(`
+        INSERT INTO admin_seguranca_historico
+          (user_id, tipo_user, acao, motivo, data, admin_id)
+        VALUES
+          ($1, 'modelo', 'alteracao_vip_preco', $2, NOW(), $3)
+      `, [
+        modeloId,
+        `VIP alterado de ${antes.vip_preco ?? "null"} para ${depois.vip_preco ?? "null"}`,
+        adminId
+      ]);
+    }
+
+    res.json(depois);
+  } catch (err) {
+    console.error("Erro atualizar modelos_dados:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
 });
 
-// ========== 11. FINANCEIRO (RASTREIO) ==========
+// ========== 11. RANKING ==========
 
-function makeGenericList(table, orderBy = "id DESC") {
+router.get("/ranking", authAdmin, async (req, res) => {
+  try {
+    const mes = String(req.query.mes || '').trim(); // YYYY-MM
+    const params = [];
+    let whereMes = `
+      t.created_at >= date_trunc('month', NOW())
+      AND t.created_at < (date_trunc('month', NOW()) + INTERVAL '1 month')
+    `;
+
+    if (mes) {
+      const match = mes.match(/^(\d{4})-(\d{2})$/);
+      if (!match) {
+        return res.status(400).json({ erro: "Parâmetro mes inválido. Use YYYY-MM" });
+      }
+
+      params.push(`${mes}-01`);
+      whereMes = `
+        t.created_at >= $1::date
+        AND t.created_at < ($1::date + INTERVAL '1 month')
+      `;
+    }
+
+    const { rows } = await db.query(`
+      SELECT
+        t.modelo_id,
+        m.nome,
+        ROUND(COALESCE(SUM(t.valor_modelo), 0)::numeric, 2) AS ganhos_total,
+        MAX(t.created_at) AS atualizado_em
+      FROM transacoes_agency t
+      LEFT JOIN modelos m ON m.id = t.modelo_id
+      WHERE t.modelo_id IS NOT NULL
+        AND ${whereMes}
+        AND COALESCE(t.status, 'pago') NOT IN ('falhou', 'cancelado', 'estornado', 'chargeback')
+      GROUP BY t.modelo_id, m.nome
+      ORDER BY ganhos_total DESC, atualizado_em DESC
+      LIMIT 50
+    `, params);
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Erro ranking:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// ========== 12. FINANCEIRO (RASTREIO) ==========
+
+function makeGenericList(table, orderBy = "id DESC", dateColumn = null) {
   return async (req, res) => {
     try {
-      const { limit, offset, page } = paginate(req.query, Number(req.query.page) || 1, Number(req.query.limit) || 20);
-      const countQ = await db.query(`SELECT COUNT(*) FROM ${table}`);
+      const { limit, offset, page } = paginate(
+        req.query,
+        Number(req.query.page) || 1,
+        Number(req.query.limit) || 20
+      );
+
+      const m = parseMes(req.query.mes);
+
+      let where = "1=1";
+      if (dateColumn && m && Number.isInteger(m.mes) && Number.isInteger(m.ano)) {
+        where = `EXTRACT(MONTH FROM ${dateColumn}) = ${m.mes} AND EXTRACT(YEAR FROM ${dateColumn}) = ${m.ano}`;
+      }
+
+      const countQ = await db.query(`SELECT COUNT(*) FROM ${table} WHERE ${where}`);
       const total = Number(countQ.rows[0].count);
-      const { rows } = await db.query(`SELECT * FROM ${table} ORDER BY ${orderBy} LIMIT $1 OFFSET $2`, [limit, offset]);
-      res.json({ rows, totalPages: Math.ceil(total / limit), page });
+
+      const { rows } = await db.query(
+        `SELECT * FROM ${table} WHERE ${where} ORDER BY ${orderBy} LIMIT $1 OFFSET $2`,
+        [limit, offset]
+      );
+
+      res.json({
+        rows,
+        totalPages: Math.ceil(total / limit),
+        page
+      });
     } catch (err) {
       console.error(`Erro ${table}:`, err);
       res.status(500).json({ erro: "Erro interno" });
@@ -737,23 +2270,29 @@ function makeGenericList(table, orderBy = "id DESC") {
   };
 }
 
-router.get("/pagamentos-cartao", makeGenericList("pagamentos_cartao", "created_at DESC"));
-router.get("/pagamentos-pix", makeGenericList("pagamentos_pix", "criado_em DESC"));
-router.get("/pagamento-tentativas", makeGenericList("pagamento_tentativas", "criado_em DESC"));
-router.get("/pagarme-events", makeGenericList("pagarme_events", "created_at DESC"));
-router.get("/stripe-events", makeGenericList("stripe_events", "created_at DESC"));
-router.get("/conteudo-pacotes", makeGenericList("conteudo_pacotes", "criado_em DESC"));
-router.get("/premium-unlocks", makeGenericList("premium_unlocks", "created_at DESC"));
+router.get("/pagamentos-cartao", makeGenericList("pagamentos_cartao", "created_at DESC", "created_at"));
+router.get("/pagamentos-pix", makeGenericList("pagamentos_pix", "criado_em DESC", "criado_em"));
+router.get("/pagamento-tentativas", makeGenericList("pagamento_tentativas", "criado_em DESC", "criado_em"));
+router.get("/pagarme-events", makeGenericList("pagarme_events", "created_at DESC", "created_at"));
+router.get("/stripe-events", makeGenericList("stripe_events", "created_at DESC", "created_at"));
+router.get("/conteudo-pacotes", makeGenericList("conteudo_pacotes", "criado_em DESC", "criado_em"));
+router.get("/premium-unlocks", makeGenericList("premium_unlocks", "created_at DESC", "created_at"));
+router.get("/vip-subscriptions", makeGenericList("vip_subscriptions", "updated_at DESC", "updated_at"));
 
-// ========== 12. TRANSAÇÕES AGENCY ==========
+// ========== 13. TRANSAÇÕES AGENCY ==========
 
 router.get("/transacoes-agency", async (req, res) => {
   try {
-    const { limit, offset, page } = paginate(req.query, Number(req.query.page) || 1, Number(req.query.limit) || 20);
+    const { limit, offset, page } = paginate(
+      req.query,
+      Number(req.query.page) || 1,
+      Number(req.query.limit) || 20
+    );
+
     const modelo_id = req.query.modelo_id;
     const m = parseMes(req.query.mes);
 
-    let where = "1=1";
+    let where = "m.verificada = true AND m.ativo = true";
     const params = [limit, offset];
     let paramIdx = 3;
 
@@ -762,20 +2301,38 @@ router.get("/transacoes-agency", async (req, res) => {
       params.push(modelo_id);
       paramIdx++;
     }
+
     if (m) {
-      where += ` AND EXTRACT(MONTH FROM t.created_at) = $${paramIdx} AND EXTRACT(YEAR FROM t.created_at) = $${paramIdx + 1}`;
+      where += ` AND EXTRACT(MONTH FROM t.created_at) = $${paramIdx}
+                 AND EXTRACT(YEAR FROM t.created_at) = $${paramIdx + 1}`;
       params.push(m.mes, m.ano);
       paramIdx += 2;
     }
 
-    // Build count params (same conditions but different param indices)
-    let countWhere = "1=1";
+    let countWhere = "m.verificada = true AND m.ativo = true";
     const countParams = [];
     let ci = 1;
-    if (modelo_id) { countWhere += ` AND t.modelo_id = $${ci}`; countParams.push(modelo_id); ci++; }
-    if (m) { countWhere += ` AND EXTRACT(MONTH FROM t.created_at) = $${ci} AND EXTRACT(YEAR FROM t.created_at) = $${ci + 1}`; countParams.push(m.mes, m.ano); ci += 2; }
 
-    const countQ = await db.query(`SELECT COUNT(*) FROM transacoes_agency t WHERE ${countWhere}`, countParams);
+    if (modelo_id) {
+      countWhere += ` AND t.modelo_id = $${ci}`;
+      countParams.push(modelo_id);
+      ci++;
+    }
+
+    if (m) {
+      countWhere += ` AND EXTRACT(MONTH FROM t.created_at) = $${ci}
+                     AND EXTRACT(YEAR FROM t.created_at) = $${ci + 1}`;
+      countParams.push(m.mes, m.ano);
+      ci += 2;
+    }
+
+    const countQ = await db.query(`
+      SELECT COUNT(*)
+      FROM transacoes_agency t
+      INNER JOIN modelos m ON m.id = t.modelo_id
+      WHERE ${countWhere}
+    `, countParams);
+
     const total = Number(countQ.rows[0].count);
 
     const totaisQ = await db.query(`
@@ -784,13 +2341,17 @@ router.get("/transacoes-agency", async (req, res) => {
         COALESCE(SUM(t.valor_modelo), 0) AS modelo,
         COALESCE(SUM(t.velvet_fee), 0) AS velvet,
         COALESCE(SUM(t.agency_fee), 0) AS agency
-      FROM transacoes_agency t WHERE ${countWhere}
+      FROM transacoes_agency t
+      INNER JOIN modelos m ON m.id = t.modelo_id
+      WHERE ${countWhere}
     `, countParams);
 
     const { rows } = await db.query(`
-      SELECT t.*, m.nome AS modelo_nome
+      SELECT
+        t.*,
+        m.nome AS modelo_nome
       FROM transacoes_agency t
-      LEFT JOIN modelos m ON m.id = t.modelo_id
+      INNER JOIN modelos m ON m.id = t.modelo_id
       WHERE ${where}
       ORDER BY t.created_at DESC
       LIMIT $1 OFFSET $2
@@ -808,41 +2369,81 @@ router.get("/transacoes-agency", async (req, res) => {
   }
 });
 
-// ========== 13. PASSWORD RESETS ==========
+// ========== 14. PASSWORD RESETS ==========
 
-router.get("/password-resets", async (req, res) => {
+router.post("/password-reset", authAdmin, async (req, res) => {
   try {
-    const { limit, offset, page } = paginate(req.query, Number(req.query.page) || 1, Number(req.query.limit) || 20);
-    const countQ = await db.query("SELECT COUNT(*) FROM password_resets");
-    const total = Number(countQ.rows[0].count);
-    const { rows } = await db.query("SELECT * FROM password_resets ORDER BY criado_em DESC LIMIT $1 OFFSET $2", [limit, offset]);
-    res.json({ rows, totalPages: Math.ceil(total / limit), page });
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
-});
+    const { user_id, email, nova_senha } = req.body;
 
-router.post("/password-reset", async (req, res) => {
-  try {
-    const { user_id, nova_senha } = req.body;
-    if (!user_id || !nova_senha) return res.status(400).json({ erro: "user_id e nova_senha obrigatórios" });
-    if (nova_senha.length < 6) return res.status(400).json({ erro: "Senha deve ter no mínimo 6 caracteres" });
+    if ((!user_id && !email) || !nova_senha) {
+      return res.status(400).json({ erro: "Informe user_id ou email, e nova_senha" });
+    }
+
+    if (nova_senha.length < 6) {
+      return res.status(400).json({ erro: "Senha deve ter no mínimo 6 caracteres" });
+    }
+
+    let uid = user_id;
+
+    if (!uid && email) {
+      const found = await db.query(
+        "SELECT id FROM users WHERE LOWER(email) = $1",
+        [email.trim().toLowerCase()]
+      );
+
+      if (!found.rows.length) {
+        return res.status(404).json({ erro: "Nenhum usuário encontrado com esse e-mail" });
+      }
+
+      uid = found.rows[0].id;
+    }
 
     const hash = await bcrypt.hash(nova_senha, 10);
-    await db.query("UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2", [hash, user_id]);
 
-    // Log in security history
-    await db.query(
-      "INSERT INTO admin_seguranca_historico (admin_id, motivo) VALUES ($1, $2)",
-      [req.user.id, `Reset de senha do user #${user_id}`]
+    const upd = await db.query(
+      "UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2 RETURNING id",
+      [hash, uid]
     );
 
-    res.json({ ok: true });
+    if (!upd.rows.length) {
+      return res.status(404).json({ erro: "Usuário não encontrado" });
+    }
+
+    await db.query(
+      "INSERT INTO admin_seguranca_historico (admin_id, motivo) VALUES ($1, $2)",
+      [req.user.id, `Reset de senha do user #${uid}${email ? ` (${email})` : ''}`]
+    );
+
+    res.json({ ok: true, mensagem: "Senha resetada com sucesso" });
   } catch (err) {
     console.error("Erro reset senha:", err);
     res.status(500).json({ erro: "Erro interno" });
   }
 });
 
-// ========== 14. VIP SUBSCRIPTIONS ==========
+router.get("/password-resets", authAdmin, async (req, res) => {
+  try {
+    const { limit, offset, page } = paginate(
+      req.query,
+      Number(req.query.page) || 1,
+      Number(req.query.limit) || 20
+    );
+
+    const countQ = await db.query("SELECT COUNT(*) FROM password_resets");
+    const total = Number(countQ.rows[0].count);
+
+    const { rows } = await db.query(
+      "SELECT * FROM password_resets ORDER BY criado_em DESC LIMIT $1 OFFSET $2",
+      [limit, offset]
+    );
+
+    res.json({ rows, totalPages: Math.ceil(total / limit), page });
+  } catch (err) {
+    console.error("Erro password-resets:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+// ========== 15. VIP SUBSCRIPTIONS ==========
 
 router.get("/vip-subscriptions", async (req, res) => {
   try {
@@ -897,24 +2498,47 @@ router.put("/vip-subscriptions/:id", async (req, res) => {
   } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
 });
 
-// ========== 15. MODELO PAGAMENTOS ==========
+// ========== 16. MODELO PAGAMENTOS ==========
 
-router.get("/modelo-pagamentos", async (req, res) => {
+router.get("/modelo-pagamentos", authAdmin, async (req, res) => {
   try {
-    const { limit, offset, page } = paginate(req.query, Number(req.query.page) || 1, Number(req.query.limit) || 20);
+    const { limit, offset, page } = paginate(
+      req.query,
+      Number(req.query.page) || 1,
+      Number(req.query.limit) || 20
+    );
+
     const modelo_id = req.query.modelo_id;
 
     let where = "1=1";
     const params = [limit, offset];
-    if (modelo_id) { where = "p.modelo_id = $3"; params.push(modelo_id); }
+    let idx = 3;
 
-    const countParams = modelo_id ? [modelo_id] : [];
-    const countWhere = modelo_id ? "p.modelo_id = $1" : "1=1";
-    const countQ = await db.query(`SELECT COUNT(*) FROM modelo_pagamentos p WHERE ${countWhere}`, countParams);
+    if (modelo_id) {
+      where += ` AND p.modelo_id = $${idx}`;
+      params.push(modelo_id);
+      idx++;
+    }
+
+    let countWhere = "1=1";
+    const countParams = [];
+    let cidx = 1;
+
+    if (modelo_id) {
+      countWhere += ` AND p.modelo_id = $${cidx}`;
+      countParams.push(modelo_id);
+      cidx++;
+    }
+
+    const countQ = await db.query(
+      `SELECT COUNT(*) FROM modelo_pagamentos p WHERE ${countWhere}`,
+      countParams
+    );
+
     const total = Number(countQ.rows[0].count);
 
     const { rows } = await db.query(`
-      SELECT p.*, m.nome AS modelo_nome
+      SELECT p.*, m.nome AS modelo_nome, m.nome_exibicao
       FROM modelo_pagamentos p
       LEFT JOIN modelos m ON m.id = p.modelo_id
       WHERE ${where}
@@ -922,28 +2546,161 @@ router.get("/modelo-pagamentos", async (req, res) => {
       LIMIT $1 OFFSET $2
     `, params);
 
-    res.json({ rows, totalPages: Math.ceil(total / limit), page });
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
+    for (const row of rows) {
+      if (row.recibo_url) {
+        row.recibo_signed_url = s3Privado.getSignedUrl("getObject", {
+          Bucket: process.env.B2_BUCKET_PRIVATE,
+          Key: row.recibo_url,
+          Expires: 300
+        });
+      } else {
+        row.recibo_signed_url = null;
+      }
+    }
+
+    res.json({
+      rows,
+      totalPages: Math.ceil(total / limit),
+      page
+    });
+  } catch (err) {
+    console.error("Erro modelo-pagamentos:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
 });
 
-router.get("/modelo-pagamentos/:id", async (req, res) => {
+router.get("/modelo-pagamentos/:id", authAdmin, async (req, res) => {
   try {
-    const { rows } = await db.query("SELECT * FROM modelo_pagamentos WHERE id = $1", [req.params.id]);
-    if (!rows.length) return res.status(404).json({ erro: "Não encontrado" });
-    res.json(rows[0]);
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
+    const { rows } = await db.query(
+      `SELECT * FROM modelo_pagamentos WHERE id = $1`,
+      [req.params.id]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ erro: "Não encontrado" });
+    }
+
+    const row = rows[0];
+
+    if (row.recibo_url) {
+      row.recibo_signed_url = s3Privado.getSignedUrl("getObject", {
+        Bucket: process.env.B2_BUCKET_PRIVATE,
+        Key: row.recibo_url,
+        Expires: 300
+      });
+    } else {
+      row.recibo_signed_url = null;
+    }
+
+    res.json(row);
+  } catch (err) {
+    console.error("Erro detalhe modelo-pagamentos:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
 });
 
-router.post("/modelo-pagamentos", async (req, res) => {
+router.get("/modelos-select", async (req, res) => {
   try {
-    const { modelo_id, mes, total_midias, total_assinaturas, total_geral, recibo_url } = req.body;
-    if (!modelo_id || !mes) return res.status(400).json({ erro: "modelo_id e mês obrigatórios" });
-
-    const mesDate = mes + "-01";
     const { rows } = await db.query(`
-      INSERT INTO modelo_pagamentos (modelo_id, mes, total_midias, total_assinaturas, total_geral, status, recibo_url)
-      VALUES ($1, $2, $3, $4, $5, 'pendente', $6) RETURNING *
-    `, [modelo_id, mesDate, total_midias || 0, total_assinaturas || 0, total_geral || 0, recibo_url]);
+      SELECT id, nome, nome_exibicao
+      FROM modelos
+      WHERE verificada = true
+        AND ativo = true
+      ORDER BY COALESCE(nome_exibicao, nome) ASC
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Erro ao buscar modelos do select:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.post("/modelo-pagamentos", authAdmin, upload.single("recibo"), async (req, res) => {
+  try {
+    const {
+      modelo_id,
+      mes,
+      total_midias,
+      total_assinaturas,
+      total_geral
+    } = req.body;
+
+    if (!modelo_id || !mes) {
+      return res.status(400).json({ erro: "modelo_id e mês obrigatórios" });
+    }
+
+    const modeloIdNum = Number(modelo_id);
+    const midias = Number(total_midias || 0);
+    const assinaturas = Number(total_assinaturas || 0);
+    let total = Number(total_geral || 0);
+
+    if (!total) {
+      total = midias + assinaturas;
+    }
+
+    const mesDate = `${mes}-01`;
+
+    const ganhosRes = await db.query(`
+      SELECT COALESCE(SUM(valor_modelo), 0) AS ganhos
+      FROM transacoes_agency
+      WHERE modelo_id = $1
+        AND status = 'pago'
+    `, [modeloIdNum]);
+
+    const pagosRes = await db.query(`
+      SELECT COALESCE(SUM(total_geral), 0) AS pagos
+      FROM modelo_pagamentos
+      WHERE modelo_id = $1
+        AND status = 'pago'
+    `, [modeloIdNum]);
+
+    const ganhos = Number(ganhosRes.rows[0].ganhos || 0);
+    const pagos = Number(pagosRes.rows[0].pagos || 0);
+    const saldo = ganhos - pagos;
+
+    if (total > saldo) {
+      return res.status(400).json({
+        erro: `Saldo insuficiente para este pagamento. Saldo disponível: ${saldo.toFixed(2)}`
+      });
+    }
+
+    let recibo_url = null;
+
+    if (req.file) {
+      const key = `recibos/${modeloIdNum}/${Date.now()}-${req.file.originalname}`;
+
+      await s3Privado.putObject({
+        Bucket: process.env.B2_BUCKET_PRIVATE,
+        Key: key,
+        Body: req.file.buffer,
+        ContentType: req.file.mimetype
+      }).promise();
+
+      recibo_url = key;
+    }
+
+    const { rows } = await db.query(`
+      INSERT INTO modelo_pagamentos
+      (
+        modelo_id,
+        mes,
+        total_midias,
+        total_assinaturas,
+        total_geral,
+        status,
+        recibo_url
+      )
+      VALUES ($1, $2, $3, $4, $5, 'pendente', $6)
+      RETURNING *
+    `, [
+      modeloIdNum,
+      mesDate,
+      midias,
+      assinaturas,
+      total,
+      recibo_url
+    ]);
 
     res.json(rows[0]);
   } catch (err) {
@@ -952,68 +2709,188 @@ router.post("/modelo-pagamentos", async (req, res) => {
   }
 });
 
-router.put("/modelo-pagamentos/:id", async (req, res) => {
+router.get("/modelo-pagamentos/saldo/:modelo_id", authAdmin, async (req, res) => {
+  try {
+    const modelo_id = Number(req.params.modelo_id);
+
+    if (!modelo_id) {
+      return res.status(400).json({ erro: "modelo_id inválido" });
+    }
+
+    const ganhosRes = await db.query(`
+      SELECT COALESCE(SUM(valor_modelo), 0) AS ganhos
+      FROM transacoes_agency
+      WHERE modelo_id = $1
+        AND status = 'pago'
+    `, [modelo_id]);
+
+    const pagosRes = await db.query(`
+      SELECT COALESCE(SUM(total_geral), 0) AS pagos
+      FROM modelo_pagamentos
+      WHERE modelo_id = $1
+        AND status = 'pago'
+    `, [modelo_id]);
+
+    const ganhos = Number(ganhosRes.rows[0].ganhos || 0);
+    const pagos = Number(pagosRes.rows[0].pagos || 0);
+    const saldo = ganhos - pagos;
+
+    res.json({
+      ganhos,
+      pagos,
+      saldo
+    });
+  } catch (err) {
+    console.error("Erro saldo modelo-pagamentos:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.post("/modelo-pagamentos/:id/pagar", authAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await db.query(`
+      UPDATE modelo_pagamentos
+      SET
+        status = 'pago',
+        pago_em = NOW()
+      WHERE id = $1
+    `, [id]);
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Erro pagar modelo-pagamento:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.put("/modelo-pagamentos/:id", authAdmin, async (req, res) => {
   try {
     const { total_midias, total_assinaturas, total_geral, status, recibo_url } = req.body;
-    const pagoEm = status === "pago" ? "NOW()" : "pago_em";
+
     const { rows } = await db.query(`
       UPDATE modelo_pagamentos
-      SET total_midias = $1, total_assinaturas = $2, total_geral = $3, status = $4, recibo_url = $5,
-          pago_em = ${status === "pago" ? "NOW()" : "pago_em"}
-      WHERE id = $6 RETURNING *
-    `, [total_midias, total_assinaturas, total_geral, status, recibo_url, req.params.id]);
+      SET
+        total_midias = $1,
+        total_assinaturas = $2,
+        total_geral = $3,
+        status = $4,
+        recibo_url = $5,
+        pago_em = CASE
+          WHEN $4 = 'pago' AND pago_em IS NULL THEN NOW()
+          WHEN $4 <> 'pago' THEN NULL
+          ELSE pago_em
+        END
+      WHERE id = $6
+      RETURNING *
+    `, [
+      Number(total_midias || 0),
+      Number(total_assinaturas || 0),
+      Number(total_geral || 0),
+      status,
+      recibo_url || null,
+      req.params.id
+    ]);
+
+    if (!rows.length) {
+      return res.status(404).json({ erro: "Pagamento não encontrado" });
+    }
+
     res.json(rows[0]);
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
+  } catch (err) {
+    console.error("Erro atualizar modelo-pagamento:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
 });
 
 // ========== 16. AGÊNCIAS ==========
 
 router.get("/agencias", async (req, res) => {
   try {
-    const { rows } = await db.query("SELECT * FROM agencias ORDER BY id");
+    const { rows } = await db.query(`
+      SELECT
+        id,
+        nome,
+        COALESCE(email, '') AS email,
+        COALESCE(percentual_agencia, 0) AS percentual_agencia,
+        COALESCE(percentual_modelo, 0) AS percentual_modelo,
+        COALESCE(percentual_plataforma, 0) AS percentual_plataforma,
+        created_at
+      FROM agencias
+      ORDER BY id DESC
+    `);
+
     res.json(rows);
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
+  } catch (err) {
+    console.error("Erro /agencias:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
 });
 
 router.get("/modelos-agencia/:agenciaId", async (req, res) => {
   try {
-    const { rows } = await db.query(
-      "SELECT id, nome, agencia_desde FROM modelos WHERE agencia_id = $1 ORDER BY nome",
-      [req.params.agenciaId]
-    );
+    const { rows } = await db.query(`
+      SELECT
+        id,
+        nome,
+        agencia_id,
+        agencia_desde
+      FROM modelos
+      WHERE agencia_id = $1
+      ORDER BY nome
+    `, [req.params.agenciaId]);
+
     res.json(rows);
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
+  } catch (err) {
+    console.error("Erro /modelos-agencia/:agenciaId:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
 });
 
-// ========== 17. FEED ==========
-
-router.get("/feed", async (req, res) => {
+router.put("/modelos/:id/agencia", async (req, res) => {
   try {
-    const { limit, offset, page } = paginate(req.query, Number(req.query.page) || 1, Number(req.query.limit) || 20);
-    const busca = req.query.busca || "";
+    const modeloId = Number(req.params.id);
+    const agencia_id = req.body.agencia_id ? Number(req.body.agencia_id) : null;
 
-    let where = "1=1";
-    const params = [limit, offset];
-    if (busca) {
-      where = "(m.nome ILIKE $3 OR m.id::text = $4)";
-      params.push(`%${busca}%`, busca);
+    if (!modeloId) {
+      return res.status(400).json({ erro: "Modelo inválido" });
     }
 
-    const countParams = busca ? [`%${busca}%`, busca] : [];
-    const countWhere = busca ? "(m.nome ILIKE $1 OR m.id::text = $2)" : "1=1";
-    const countQ = await db.query(`SELECT COUNT(*) FROM modelos m WHERE ${countWhere}`, countParams);
-    const total = Number(countQ.rows[0].count);
+    if (agencia_id !== null) {
+      const agenciaExiste = await db.query(
+        `SELECT id FROM agencias WHERE id = $1 LIMIT 1`,
+        [agencia_id]
+      );
+
+      if (!agenciaExiste.rows.length) {
+        return res.status(404).json({ erro: "Agência não encontrada" });
+      }
+    }
 
     const { rows } = await db.query(`
-      SELECT m.id, m.nome, m.feed, m.verificada
-      FROM modelos m
-      WHERE ${where}
-      ORDER BY m.feed DESC, m.nome
-      LIMIT $1 OFFSET $2
-    `, params);
+      UPDATE modelos
+      SET
+        agencia_id = $1,
+        agencia_desde = CASE
+          WHEN $1 IS NULL THEN NULL
+          WHEN agencia_id IS DISTINCT FROM $1 THEN NOW()
+          ELSE agencia_desde
+        END,
+        atualizado_em = NOW()
+      WHERE id = $2
+      RETURNING id, nome, agencia_id, agencia_desde
+    `, [agencia_id, modeloId]);
 
-    res.json({ rows, totalPages: Math.ceil(total / limit), page });
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
+    if (!rows.length) {
+      return res.status(404).json({ erro: "Modelo não encontrada" });
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Erro ao alterar agência da modelo:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
 });
 
 module.exports = router;

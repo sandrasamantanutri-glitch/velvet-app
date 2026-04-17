@@ -306,6 +306,14 @@ job.finalizado_em = new Date().toISOString();
   }
 }
 
+async function podeAlterarDadosBancarios() {
+  const hoje = new Date();
+  const dia = hoje.getDate();
+
+  // bloqueia do dia 1 ao 5
+  return !(dia >= 1 && dia <= 5);
+}
+
 // ======================================
 // ROTAS POST
 // ======================================
@@ -315,13 +323,12 @@ job.finalizado_em = new Date().toISOString();
 // ===============================
 
 router.post("/modelo/dados-bancarios", authModelo, async (req, res) => {
+  if (!podeAlterarDadosBancarios()) {
+    return res.status(403).json({
+      error: "Alterações bloqueadas no período de pagamento"
+    });
+  }
 
- if (!(await podeAlterarDadosBancarios(req.modelo_id))) {
-
-  return res.status(403).json({
-    error: "Alterações bloqueadas no período de pagamento"
-  });
-}
   const {
     tipo,
     pix_tipo,
@@ -340,57 +347,57 @@ router.post("/modelo/dados-bancarios", authModelo, async (req, res) => {
       error: "Confirmação de titularidade obrigatória"
     });
   }
-try{
-  await db.query(`
-    INSERT INTO modelo_dados_bancarios (
-      modelo_id, tipo,
-      pix_tipo, pix_chave,
-      banco, agencia, conta, conta_tipo,
-      titular_nome, titular_documento,
-      confirmado_titular, status
-    )
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,true,'pendente')
 
-    ON CONFLICT (modelo_id)
-    DO UPDATE SET
-      tipo = EXCLUDED.tipo,
-      pix_tipo = EXCLUDED.pix_tipo,
-      pix_chave = EXCLUDED.pix_chave,
-      banco = EXCLUDED.banco,
-      agencia = EXCLUDED.agencia,
-      conta = EXCLUDED.conta,
-      conta_tipo = EXCLUDED.conta_tipo,
-      titular_nome = EXCLUDED.titular_nome,
-      titular_documento = EXCLUDED.titular_documento,
-      status = 'alteracao_pendente',
-      atualizado_em = NOW()
-  `, [
-    req.modelo_id,
-    tipo,
-    pix_tipo,
-    pix_chave,
-    banco,
-    agencia,
-    conta,
-    conta_tipo,
-    titular_nome,
-    titular_documento
-  ]);
+  try {
+    await db.query(`
+      INSERT INTO modelo_dados_bancarios (
+        modelo_id, tipo,
+        pix_tipo, pix_chave,
+        banco, agencia, conta, conta_tipo,
+        titular_nome, titular_documento,
+        confirmado_titular, status
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,true,'pendente')
+      ON CONFLICT (modelo_id)
+      DO UPDATE SET
+        tipo = EXCLUDED.tipo,
+        pix_tipo = EXCLUDED.pix_tipo,
+        pix_chave = EXCLUDED.pix_chave,
+        banco = EXCLUDED.banco,
+        agencia = EXCLUDED.agencia,
+        conta = EXCLUDED.conta,
+        conta_tipo = EXCLUDED.conta_tipo,
+        titular_nome = EXCLUDED.titular_nome,
+        titular_documento = EXCLUDED.titular_documento,
+        confirmado_titular = true,
+        status = 'alteracao_pendente',
+        atualizado_em = NOW()
+    `, [
+      req.modelo_id,
+      tipo,
+      pix_tipo,
+      pix_chave,
+      banco,
+      agencia,
+      conta,
+      conta_tipo,
+      titular_nome,
+      titular_documento
+    ]);
 
-  res.json({ ok: true });
-   } catch (err) {
+    res.json({ ok: true });
+  } catch (err) {
     console.error("ERRO DADOS BANCÁRIOS:", err);
     res.status(500).json({ error: "Erro interno ao salvar dados bancários" });
   }
 });
 
 router.post("/modelo/dados-bancarios/alterar", authModelo, async (req, res) => {
-
-  if (!(await podeAlterarDadosBancarios(req.modelo_id))) {
-  return res.status(403).json({
-    error: "Alterações bloqueadas no período de pagamento"
-  });
-}
+  if (!podeAlterarDadosBancarios()) {
+    return res.status(403).json({
+      error: "Alterações bloqueadas no período de pagamento"
+    });
+  }
 
   const {
     justificativa,
@@ -410,39 +417,40 @@ router.post("/modelo/dados-bancarios/alterar", authModelo, async (req, res) => {
       error: "Justificativa obrigatória"
     });
   }
-  try{
-  await db.query(`
-    UPDATE modelo_dados_bancarios
-    SET
-      tipo = $1,
-      pix_tipo = $2,
-      pix_chave = $3,
-      banco = $4,
-      agencia = $5,
-      conta = $6,
-      conta_tipo = $7,
-      titular_nome = $8,
-      titular_documento = $9,
-      justificativa = $10,
-      status = 'alteracao_pendente',
-      atualizado_em = NOW()
-    WHERE modelo_id = $11
-  `, [
-    tipo,
-    pix_tipo,
-    pix_chave,
-    banco,
-    agencia,
-    conta,
-    conta_tipo,
-    titular_nome,
-    titular_documento,
-    justificativa,
-    req.modelo_id
-  ]);
 
-  res.json({ ok: true });
-   } catch (err) {
+  try {
+    await db.query(`
+      UPDATE modelo_dados_bancarios
+      SET
+        tipo = $1,
+        pix_tipo = $2,
+        pix_chave = $3,
+        banco = $4,
+        agencia = $5,
+        conta = $6,
+        conta_tipo = $7,
+        titular_nome = $8,
+        titular_documento = $9,
+        justificativa = $10,
+        status = 'alteracao_pendente',
+        atualizado_em = NOW()
+      WHERE modelo_id = $11
+    `, [
+      tipo,
+      pix_tipo,
+      pix_chave,
+      banco,
+      agencia,
+      conta,
+      conta_tipo,
+      titular_nome,
+      titular_documento,
+      justificativa,
+      req.modelo_id
+    ]);
+
+    res.json({ ok: true });
+  } catch (err) {
     console.error("ERRO DADOS BANCÁRIOS:", err);
     res.status(500).json({ error: "Erro interno ao salvar dados bancários" });
   }
@@ -1142,202 +1150,202 @@ router.get("/admin/perfis", auth, authAdmin, async (req,res)=>{
   }
 });
 
-router.get("/admin/verificacoes-aprovadas", auth, authAdmin, async (req, res) => {
-  try {
+// router.get("/admin/verificacoes-aprovadas", auth, authAdmin, async (req, res) => {
+//   try {
 
-    const page = Math.max(Number(req.query.page) || 1, 1);
-    const limit = 10;
-    const offset = (page - 1) * limit;
+//     const page = Math.max(Number(req.query.page) || 1, 1);
+//     const limit = 10;
+//     const offset = (page - 1) * limit;
 
-    const totalRes = await db.query(`
-      SELECT COUNT(*) FROM (
-        SELECT id FROM modelos_verificacao WHERE status='aprovado'
-        UNION ALL
-        SELECT id FROM clientes_verificacao WHERE status='aprovado'
-      ) t
-    `);
+//     const totalRes = await db.query(`
+//       SELECT COUNT(*) FROM (
+//         SELECT id FROM modelos_verificacao WHERE status='aprovado'
+//         UNION ALL
+//         SELECT id FROM clientes_verificacao WHERE status='aprovado'
+//       ) t
+//     `);
 
-    const total = Number(totalRes.rows[0].count);
-    const totalPages = Math.max(Math.ceil(total / limit), 1);
+//     const total = Number(totalRes.rows[0].count);
+//     const totalPages = Math.max(Math.ceil(total / limit), 1);
 
-    const result = await db.query(`
-      (
-        SELECT 
-          mv.modelo_id AS id,
-          'modelo' AS tipo,
-          m.nome_exibicao,
-          mv.doc_frente_url,
-          mv.doc_verso_url,
-          mv.selfie_url,
-          mv.verificado_em
-        FROM modelos_verificacao mv
-        JOIN modelos m ON m.id = mv.modelo_id
-        WHERE mv.status='aprovado'
-      )
+//     const result = await db.query(`
+//       (
+//         SELECT 
+//           mv.modelo_id AS id,
+//           'modelo' AS tipo,
+//           m.nome_exibicao,
+//           mv.doc_frente_url,
+//           mv.doc_verso_url,
+//           mv.selfie_url,
+//           mv.verificado_em
+//         FROM modelos_verificacao mv
+//         JOIN modelos m ON m.id = mv.modelo_id
+//         WHERE mv.status='aprovado'
+//       )
 
-      UNION ALL
+//       UNION ALL
 
-      (
-        SELECT
-          cv.cliente_id AS id,
-          'cliente' AS tipo,
-          cd.nome_exibicao,
-          cv.doc_frente_url,
-          cv.doc_verso_url,
-          cv.selfie_url,
-          cv.verificado_em
-        FROM clientes_verificacao cv
-        JOIN clientes c ON c.id = cv.cliente_id
-        LEFT JOIN clientes_dados cd ON cd.cliente_id = c.id
-        WHERE cv.status='aprovado'
-      )
+//       (
+//         SELECT
+//           cv.cliente_id AS id,
+//           'cliente' AS tipo,
+//           cd.nome_exibicao,
+//           cv.doc_frente_url,
+//           cv.doc_verso_url,
+//           cv.selfie_url,
+//           cv.verificado_em
+//         FROM clientes_verificacao cv
+//         JOIN clientes c ON c.id = cv.cliente_id
+//         LEFT JOIN clientes_dados cd ON cd.cliente_id = c.id
+//         WHERE cv.status='aprovado'
+//       )
 
-      ORDER BY verificado_em DESC
-      LIMIT $1 OFFSET $2
-    `, [limit, offset]);
+//       ORDER BY verificado_em DESC
+//       LIMIT $1 OFFSET $2
+//     `, [limit, offset]);
 
-    const perfisAssinados = result.rows.map(p => ({
-      ...p,
+//     const perfisAssinados = result.rows.map(p => ({
+//       ...p,
 
-      doc_frente_url: p.doc_frente_url
-        ? s3Privado.getSignedUrl("getObject", {
-            Bucket: process.env.B2_BUCKET_PRIVATE,
-            Key: p.doc_frente_url,
-            Expires: 60 * 10
-          })
-        : null,
+//       doc_frente_url: p.doc_frente_url
+//         ? s3Privado.getSignedUrl("getObject", {
+//             Bucket: process.env.B2_BUCKET_PRIVATE,
+//             Key: p.doc_frente_url,
+//             Expires: 60 * 10
+//           })
+//         : null,
 
-      doc_verso_url: p.doc_verso_url
-        ? s3Privado.getSignedUrl("getObject", {
-            Bucket: process.env.B2_BUCKET_PRIVATE,
-            Key: p.doc_verso_url,
-            Expires: 60 * 10
-          })
-        : null,
+//       doc_verso_url: p.doc_verso_url
+//         ? s3Privado.getSignedUrl("getObject", {
+//             Bucket: process.env.B2_BUCKET_PRIVATE,
+//             Key: p.doc_verso_url,
+//             Expires: 60 * 10
+//           })
+//         : null,
 
-      selfie_url: p.selfie_url
-        ? s3Privado.getSignedUrl("getObject", {
-            Bucket: process.env.B2_BUCKET_PRIVATE,
-            Key: p.selfie_url,
-            Expires: 60 * 10
-          })
-        : null
-    }));
+//       selfie_url: p.selfie_url
+//         ? s3Privado.getSignedUrl("getObject", {
+//             Bucket: process.env.B2_BUCKET_PRIVATE,
+//             Key: p.selfie_url,
+//             Expires: 60 * 10
+//           })
+//         : null
+//     }));
 
-    res.json({
-      dados: perfisAssinados,
-      totalPages,
-      page
-    });
+//     res.json({
+//       dados: perfisAssinados,
+//       totalPages,
+//       page
+//     });
 
-  } catch (err) {
-    console.error("Erro buscar aprovados:", err);
-    res.status(500).json({ error: "Erro interno" });
-  }
-});
+//   } catch (err) {
+//     console.error("Erro buscar aprovados:", err);
+//     res.status(500).json({ error: "Erro interno" });
+//   }
+// });
 
-router.get("/admin/verificacoes-rejeitadas", auth, authAdmin, async (req,res)=>{
+// router.get("/admin/verificacoes-rejeitadas", auth, authAdmin, async (req,res)=>{
 
-  const page = Math.max(Number(req.query.page) || 1, 1);
-  const limit = 10;
-  const offset = (page - 1) * limit;
+//   const page = Math.max(Number(req.query.page) || 1, 1);
+//   const limit = 10;
+//   const offset = (page - 1) * limit;
 
-  try{
+//   try{
 
-    // TOTAL (modelos + clientes)
-    const totalRes = await db.query(`
-      SELECT COUNT(*) FROM (
-        SELECT id FROM modelos_verificacao WHERE status = 'rejeitado'
-        UNION ALL
-        SELECT id FROM clientes_verificacao WHERE status = 'rejeitado'
-      ) AS total
-    `);
+//     // TOTAL (modelos + clientes)
+//     const totalRes = await db.query(`
+//       SELECT COUNT(*) FROM (
+//         SELECT id FROM modelos_verificacao WHERE status = 'rejeitado'
+//         UNION ALL
+//         SELECT id FROM clientes_verificacao WHERE status = 'rejeitado'
+//       ) AS total
+//     `);
 
-    const total = Number(totalRes.rows[0].count);
-    const totalPages = Math.ceil(total / limit);
+//     const total = Number(totalRes.rows[0].count);
+//     const totalPages = Math.ceil(total / limit);
 
-    // DADOS PAGINADOS
-    const result = await db.query(`
-      SELECT * FROM (
+//     // DADOS PAGINADOS
+//     const result = await db.query(`
+//       SELECT * FROM (
 
-        -- 🔹 MODELOS
-        SELECT
-          m.id,
-          m.nome_exibicao,
-          mv.documento_tipo,
-          mv.doc_frente_url,
-          mv.doc_verso_url,
-          mv.selfie_url,
-          mv.motivo_rejeicao,
-          mv.verificado_em AS rejeitado_em,
-          'modelo' AS tipo
-        FROM modelos_verificacao mv
-        JOIN modelos m ON m.id = mv.modelo_id
-        WHERE mv.status = 'rejeitado'
+//         -- 🔹 MODELOS
+//         SELECT
+//           m.id,
+//           m.nome_exibicao,
+//           mv.documento_tipo,
+//           mv.doc_frente_url,
+//           mv.doc_verso_url,
+//           mv.selfie_url,
+//           mv.motivo_rejeicao,
+//           mv.verificado_em AS rejeitado_em,
+//           'modelo' AS tipo
+//         FROM modelos_verificacao mv
+//         JOIN modelos m ON m.id = mv.modelo_id
+//         WHERE mv.status = 'rejeitado'
 
-        UNION ALL
+//         UNION ALL
 
-        -- 🔹 CLIENTES
-        SELECT
-          c.id,
-          c.nome AS nome_exibicao,
-          cv.documento_tipo,
-          cv.doc_frente_url,
-          cv.doc_verso_url,
-          cv.selfie_url,
-          cv.motivo_rejeicao,
-          cv.verificado_em AS rejeitado_em,
-          'cliente' AS tipo
-        FROM clientes_verificacao cv
-        JOIN clientes c ON c.id = cv.cliente_id
-        JOIN users u ON u.id = c.user_id
-        WHERE cv.status = 'rejeitado'
+//         -- 🔹 CLIENTES
+//         SELECT
+//           c.id,
+//           c.nome AS nome_exibicao,
+//           cv.documento_tipo,
+//           cv.doc_frente_url,
+//           cv.doc_verso_url,
+//           cv.selfie_url,
+//           cv.motivo_rejeicao,
+//           cv.verificado_em AS rejeitado_em,
+//           'cliente' AS tipo
+//         FROM clientes_verificacao cv
+//         JOIN clientes c ON c.id = cv.cliente_id
+//         JOIN users u ON u.id = c.user_id
+//         WHERE cv.status = 'rejeitado'
 
-      ) AS rejeitados
-      ORDER BY rejeitado_em DESC
-      LIMIT $1 OFFSET $2
-    `,[limit, offset]);
+//       ) AS rejeitados
+//       ORDER BY rejeitado_em DESC
+//       LIMIT $1 OFFSET $2
+//     `,[limit, offset]);
 
-     const perfisAssinados = result.rows.map(p => ({
-      ...p,
+//      const perfisAssinados = result.rows.map(p => ({
+//       ...p,
 
-      doc_frente_url: p.doc_frente_url
-        ? s3Privado.getSignedUrl("getObject", {
-            Bucket: process.env.B2_BUCKET_PRIVATE,
-            Key: p.doc_frente_url,
-            Expires: 60 * 10
-          })
-        : null,
+//       doc_frente_url: p.doc_frente_url
+//         ? s3Privado.getSignedUrl("getObject", {
+//             Bucket: process.env.B2_BUCKET_PRIVATE,
+//             Key: p.doc_frente_url,
+//             Expires: 60 * 10
+//           })
+//         : null,
 
-      doc_verso_url: p.doc_verso_url
-        ? s3Privado.getSignedUrl("getObject", {
-            Bucket: process.env.B2_BUCKET_PRIVATE,
-            Key: p.doc_verso_url,
-            Expires: 60 * 10
-          })
-        : null,
+//       doc_verso_url: p.doc_verso_url
+//         ? s3Privado.getSignedUrl("getObject", {
+//             Bucket: process.env.B2_BUCKET_PRIVATE,
+//             Key: p.doc_verso_url,
+//             Expires: 60 * 10
+//           })
+//         : null,
 
-      selfie_url: p.selfie_url
-        ? s3Privado.getSignedUrl("getObject", {
-            Bucket: process.env.B2_BUCKET_PRIVATE,
-            Key: p.selfie_url,
-            Expires: 60 * 10
-          })
-        : null
-    }));
+//       selfie_url: p.selfie_url
+//         ? s3Privado.getSignedUrl("getObject", {
+//             Bucket: process.env.B2_BUCKET_PRIVATE,
+//             Key: p.selfie_url,
+//             Expires: 60 * 10
+//           })
+//         : null
+//     }));
 
-    res.json({
-      dados: perfisAssinados,
-     totalPages,
-      page
-    });
+//     res.json({
+//       dados: perfisAssinados,
+//      totalPages,
+//       page
+//     });
 
-  }catch(err){
-    console.error("Erro rejeitados:", err);
-    res.status(500).json({error:"Erro interno"});
-  }
+//   }catch(err){
+//     console.error("Erro rejeitados:", err);
+//     res.status(500).json({error:"Erro interno"});
+//   }
 
-});
+// });
 
 router.get("/admin/modelo/:id/gestao", auth, authAdmin, async (req,res)=>{
 
@@ -1399,6 +1407,7 @@ res.status(500).json({error:"Erro ao carregar dados bancários"});
 }
 
 });
+
 
 router.get("/admin/modelo/:id/historico-bancario", auth, authAdmin, async (req,res)=>{
 
@@ -2267,19 +2276,17 @@ const modelo_id = modeloRes.rows[0].id;
 
 router.get("/modelo/dados-bancarios", authModelo, async (req, res) => {
   try {
-    const { rows } = await db.query(
-      `SELECT * 
-       FROM modelo_dados_bancarios 
-       WHERE modelo_id = $1`,
-      [req.modelo_id]
-    );
+    const { rows } = await db.query(`
+      SELECT *
+      FROM modelo_dados_bancarios
+      WHERE modelo_id = $1
+    `, [req.modelo_id]);
 
     if (!rows.length) {
       return res.json(null);
     }
 
     res.json(rows[0]);
-
   } catch (err) {
     console.error("Erro buscar dados bancários:", err);
     res.status(500).json({ error: "Erro interno" });
@@ -2757,7 +2764,7 @@ router.get("/admin/agencias", auth, authAdmin, async (req,res)=>{
 });
 
 // ===========================
-// ORIGEM DOS ACESSOS
+// transacoes origem
 // ===========================
 
 router.get("/transacoes/origem",
@@ -2776,6 +2783,129 @@ router.get("/transacoes/origem",
     res.json(result.rows);
   }
 );
+
+// ===========================
+// TRAFEGO ORIGEM
+// ===========================
+
+router.get("/admin/dashboard/acessos", authAdmin, async (req, res) => {
+  try {
+    const mes = req.query.mes; // exemplo: 2026-04
+
+    const inicio = `${mes}-01`;
+    const fim = new Date(inicio);
+    fim.setMonth(fim.getMonth() + 1);
+
+    const params = [inicio, fim];
+
+    const totalRes = await db.query(
+      `
+      SELECT
+        COUNT(*)::int AS total,
+
+        COUNT(*) FILTER (
+          WHERE LOWER(COALESCE(origem, utm_source, referer, '')) LIKE '%instagram%'
+             OR LOWER(COALESCE(origem, utm_source, referer, '')) LIKE '%insta%'
+        )::int AS instagram,
+
+        COUNT(*) FILTER (
+          WHERE LOWER(COALESCE(origem, utm_source, referer, '')) LIKE '%tiktok%'
+        )::int AS tiktok,
+
+        COUNT(*) FILTER (
+          WHERE origem IS NULL
+             OR origem = ''
+             OR LOWER(origem) = 'direto'
+        )::int AS direto
+
+      FROM acessos_origem
+      WHERE criado_em >= $1
+        AND criado_em < $2
+      `,
+      params
+    );
+
+    const diarioRes = await db.query(
+      `
+      SELECT
+        TO_CHAR(criado_em::date, 'DD/MM') AS dia,
+
+        COUNT(*) FILTER (
+          WHERE LOWER(COALESCE(origem, utm_source, referer, '')) LIKE '%instagram%'
+             OR LOWER(COALESCE(origem, utm_source, referer, '')) LIKE '%insta%'
+        )::int AS instagram,
+
+        COUNT(*) FILTER (
+          WHERE LOWER(COALESCE(origem, utm_source, referer, '')) LIKE '%tiktok%'
+        )::int AS tiktok,
+
+        COUNT(*) FILTER (
+          WHERE origem IS NULL
+             OR origem = ''
+             OR LOWER(origem) = 'direto'
+        )::int AS direto
+
+      FROM acessos_origem
+      WHERE criado_em >= $1
+        AND criado_em < $2
+      GROUP BY criado_em::date
+      ORDER BY criado_em::date ASC
+      `,
+      params
+    );
+
+    const topModelosRes = await db.query(
+      `
+      SELECT
+        a.modelo_id,
+        COALESCE(m.nome_exibicao, m.nome, 'Modelo #' || a.modelo_id) AS nome,
+
+        COUNT(*) FILTER (
+          WHERE LOWER(COALESCE(a.origem, a.utm_source, a.referer, '')) LIKE '%instagram%'
+             OR LOWER(COALESCE(a.origem, a.utm_source, a.referer, '')) LIKE '%insta%'
+        )::int AS instagram,
+
+        COUNT(*) FILTER (
+          WHERE LOWER(COALESCE(a.origem, a.utm_source, a.referer, '')) LIKE '%tiktok%'
+        )::int AS tiktok,
+
+        COUNT(*) FILTER (
+          WHERE a.origem IS NULL
+             OR a.origem = ''
+             OR LOWER(a.origem) = 'direto'
+        )::int AS direto,
+
+        COUNT(*)::int AS total
+
+      FROM acessos_origem a
+      LEFT JOIN modelos m ON m.id = a.modelo_id
+      WHERE a.criado_em >= $1
+        AND a.criado_em < $2
+        AND a.modelo_id IS NOT NULL
+      GROUP BY a.modelo_id, m.nome_exibicao, m.nome
+      ORDER BY total DESC
+      LIMIT 20
+      `,
+      params
+    );
+
+    const totais = totalRes.rows[0];
+
+    res.json({
+      total: totais.total || 0,
+      instagram: totais.instagram || 0,
+      tiktok: totais.tiktok || 0,
+      direto: totais.direto || 0,
+      distribuicao: true,
+      diario: diarioRes.rows,
+      top_modelos: topModelosRes.rows
+    });
+
+  } catch (err) {
+    console.error("Erro /admin/dashboard/acessos:", err);
+    res.status(500).json({ error: "Erro ao carregar acessos" });
+  }
+});
 
 // ===========================
 // PUTS - ALTERACOES

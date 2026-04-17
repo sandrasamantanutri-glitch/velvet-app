@@ -97,51 +97,99 @@ async function irParaInbox() {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const token = localStorage.getItem("token");
-  if (!token) return;
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
-  const res = await fetch("/api/me", {
-    headers: {
-      Authorization: "Bearer " + token
-    }
-  });
-
-  if (!res.ok) return;
-
-  const user = await res.json();
-
-  // 🔒 role REAL e confiável
-  document.body.classList.add(`role-${user.role}`);
-
-   if (user.role === "modelo") {
-    const resDados = await fetch("/api/usuario/dados", {
-      headers: { Authorization: "Bearer " + token }
+    const res = await fetch("/api/me", {
+      headers: {
+        Authorization: "Bearer " + token
+      }
     });
 
-    if (resDados.ok) {
-      const dados = await resDados.json();
+    if (!res.ok) return;
 
-      if (dados.status === "aprovado") {
-        document.getElementById("areaBanner")?.classList.add("hidden");
+    const user = await res.json();
+
+    // role REAL e confiável
+    document.body.classList.add(`role-${user.role}`);
+
+     document.addEventListener("click", (e) => {
+    const btn = e.target.closest("#btnCriarNovaConta");
+    if (!btn) return;
+
+    e.preventDefault();
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("role");
+    localStorage.removeItem("modeloId");
+    localStorage.removeItem("clienteId");
+    sessionStorage.clear();
+
+    window.location.href = "/index.html";
+  });
+
+    // CLIENTE NÃO PODE VALIDAR PERFIL
+    if (user.role === "cliente") {
+      bloquearPaginaValidacaoCliente();
+      return;
+    }
+
+    if (user.role === "modelo") {
+      const resDados = await fetch("/api/usuario/dados", {
+        headers: { Authorization: "Bearer " + token }
+      });
+
+      if (resDados.ok) {
+        const dados = await resDados.json();
+
+        if (dados.status === "aprovado") {
+          document.getElementById("areaBanner")?.classList.add("hidden");
+        }
       }
     }
-  }
 
-  // PERFIL VISUAL
-  carregarPerfilBase(user);
-  carregarDadosUsuario();
-  carregarDadosPessoais();
+    // PERFIL VISUAL
+    carregarPerfilBase(user);
+    carregarDadosUsuario();
+    carregarDadosPessoais();
 
-  // SOMENTE MODELO
-  if (user.role === "modelo") {
-    carregarResumoModelo();
-    carregarAreaModelo(user.id);
+    // SOMENTE MODELO
+    if (user.role === "modelo") {
+      carregarResumoModelo();
+      carregarAreaModelo(user.id);
 
-    if (document.getElementById("listaAssinantes")) {
-      carregarAssinantes();
+      if (document.getElementById("listaAssinantes")) {
+        carregarAssinantes();
+      }
     }
+  } catch (err) {
+    console.error("Erro ao carregar página conta:", err);
   }
 });
+
+function irParaFeed() {
+  window.location.href = "/feed.html";
+}
+
+function bloquearPaginaValidacaoCliente() {
+  // esconde área de verificação
+  document.querySelectorAll(".area-card").forEach(el => {
+    el.style.display = "none";
+  });
+
+  // se quiser manter header/footer visíveis, tudo bem
+  abrirModalContaCliente();
+}
+
+function abrirModalContaCliente() {
+  document.getElementById("modalContaCliente")?.classList.remove("hidden");
+}
+
+function fecharModalContaCliente() {
+  document.getElementById("modalContaCliente")?.classList.add("hidden");
+}
 
 
 let assinantesCache = [];
