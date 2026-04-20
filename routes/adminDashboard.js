@@ -2691,63 +2691,44 @@ router.get("/password-resets", authAdmin, async (req, res) => {
 });
 // ========== 15. VIP SUBSCRIPTIONS ==========
 
-router.get("/vip-subscriptions", async (req, res) => {
+router.get("/vips", async (req, res) => {
   try {
-    const { limit, offset, page } = paginate(
-      req.query,
-      Number(req.query.page) || 1,
-      Number(req.query.limit) || 20
-    );
-    
-    const busca = (req.query.busca || "").toString().trim();
+    const { limit, offset, page } = paginate(req.query, Number(req.query.page) || 1, Number(req.query.limit) || 20);
+    const busca = req.query.busca || "";
 
-    let rows, total;
+    let where = "1=1";
+    const params = [];
 
     if (busca) {
-      const countRes = await db.query(
-        `SELECT COUNT(*) AS count FROM vip_subscriptions WHERE cliente_id::text LIKE $1`,
-        [busca + '%']
-      );
-      total = Number(countRes.rows[0]?.count || 0);
-
-      const dataRes = await db.query(
-        `SELECT v.*, m.nome AS modelo_nome
-         FROM vip_subscriptions v
-         LEFT JOIN modelos m ON m.id = v.modelo_id
-         WHERE v.cliente_id::text LIKE $1
-         ORDER BY v.id DESC
-         LIMIT $2 OFFSET $3`,
-        [busca + '%', limit, offset]
-      );
-      rows = dataRes.rows;
-    } else {
-      // SEM FILTRO
-      const countRes = await db.query(`SELECT COUNT(*) AS count FROM vip_subscriptions`);
-      total = Number(countRes.rows[0]?.count || 0);
-      
-      const dataRes = await db.query(
-        `SELECT v.*, m.nome AS modelo_nome 
-         FROM vip_subscriptions v
-         LEFT JOIN modelos m ON m.id = v.modelo_id
-         ORDER BY v.id DESC
-         LIMIT $1 OFFSET $2`,
-        [limit, offset]
-      );
-      rows = dataRes.rows;
+      where = "v.cliente_id::text = $1";
+      params.push(busca);
     }
 
-    res.json({ 
-      rows, 
-      totalPages: Math.ceil(total / limit), 
-      page 
-    });
-  } catch (err) { 
-    console.error("❌ Erro vip-subscriptions:", err);
-    res.status(500).json({ erro: "Erro interno", details: err.message }); 
-  }
+    // COUNT
+    const countParams = busca ? [busca] : [];
+    const countWhere = busca ? "v.cliente_id::text = $1" : "1=1";
+    const countQ = await db.query(`
+      SELECT COUNT(*) FROM vip_subscriptions v WHERE ${countWhere}
+    `, countParams);
+    const total = Number(countQ.rows[0].count);
+
+    // DATA
+    params.push(limit, offset);
+    const paramIndex = busca ? 2 : 1;
+    const { rows } = await db.query(`
+      SELECT v.*, m.nome AS modelo_nome
+      FROM vip_subscriptions v
+      LEFT JOIN modelos m ON m.id = v.modelo_id
+      WHERE ${where}
+      ORDER BY v.created_at DESC
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `, params);
+
+    res.json({ rows, totalPages: Math.ceil(total / limit), page });
+  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
 });
 
-router.get("/vip-subscriptions/:id", async (req, res) => {
+router.get("/vips/:id", async (req, res) => {
   try {
     const { rows } = await db.query("SELECT * FROM vip_subscriptions WHERE id = $1", [req.params.id]);
     if (!rows.length) return res.status(404).json({ erro: "Não encontrado" });

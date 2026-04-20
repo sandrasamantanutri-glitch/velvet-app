@@ -1838,9 +1838,8 @@ pageLoaders.vip = function () {
 
 async function carregarVip(page) {
   try {
-    const busca = ($('vipBusca')?.value || "").trim();
-    const data = await fetchJSON(`/admin/dashboard/vip-subscriptions?page=${page}&limit=20&busca=${encodeURIComponent(busca)}`);
-
+    const busca = $('vipBusca').value;
+    const data = await fetchJSON(`/admin/dashboard/vips?page=${page}&limit=20&busca=${encodeURIComponent(busca)}`);
     const tbody = $('tableVip').querySelector('tbody');
     tbody.innerHTML = (data.rows || []).map(r => `
       <tr>
@@ -1857,15 +1856,13 @@ async function carregarVip(page) {
       </tr>
     `).join('') || emptyRow(8);
     buildPagination('paginationVip', page, data.totalPages || 1, 'carregarVip');
-  } catch (err) { 
-    console.error('❌ Erro vip:', err); 
-  }
+  } catch (err) { console.error('Erro vip:', err); }
 }
 
 async function editarVip(id) {
   try {
-    const data = await fetchJSON('/admin/dashboard/vip-subscriptions/' + id);
-    openEditModal('Editar VIP #' + id, '/admin/dashboard/vip-subscriptions/' + id, 'PUT', [
+    const data = await fetchJSON('/admin/dashboard/vips/' + id);
+    openEditModal('Editar VIP #' + id, '/admin/dashboard/vips/' + id, 'PUT', [
       { name: 'ativo', label: 'Ativo', type: 'checkbox', value: data.ativo },
       { name: 'recorrente', label: 'Recorrente', type: 'checkbox', value: data.recorrente },
       { name: 'valor_assinatura', label: 'Valor Assinatura', type: 'number', value: data.valor_assinatura },

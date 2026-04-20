@@ -583,11 +583,10 @@
   <!-- VIP SUBSCRIPTIONS -->
   <section class="page" id="page-vip">
     <div class="page-actions">
-      <input type="text" class="input-search" id="vipBusca" placeholder="Buscar por cliente ID..." onkeydown="if(event.key==='Enter') carregarVip(1)">
-      <button class="btn btn-primary" onclick="carregarVip(1)">Buscar</button>
+      <input type="text" class="input-search" id="vipBusca" placeholder="Buscar por cliente ID...">
     </div>
     <div class="card">
-      <h3>Assinaturas</h3>
+      <h3>Assinaturas VIP</h3>
       <table class="table" id="tableVip">
         <thead><tr><th>ID</th><th>Cliente</th><th>Modelo</th><th>Valor</th><th>Ativo</th><th>Expira</th><th>Recorrente</th><th>Ações</th></tr></thead>
         <tbody></tbody>
@@ -1040,6 +1039,6 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="admin-dashboard.js?v=2"></script>
+<script src="admin-dashboard.js"></script>
 </body>
 </html>
