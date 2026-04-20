@@ -2050,7 +2050,7 @@ async function abrirModalPagModelo() {
 
 pageLoaders.agenciasID = async function () {
   try {
-    const data = await fetchJSON('/admin/dashboard/agenciasID');
+    const data = await fetchJSON('/admin/dashboard/agencias-list');
     console.log('AGENCIAS JSON:', data);
 
     agenciasCache = data || [];
@@ -2080,23 +2080,23 @@ pageLoaders.agenciasID = async function () {
       select.appendChild(opt);
     });
 
-    $('agenciaFiltro').onchange = carregarModelosAgencia;
+    $('agenciaFiltro').onchange = carregarModelosAgenciasID;
   } catch (err) {
     console.error('Erro agências:', err);
   }
 };
 
 async function carregarModelosAgenciasID() {
-  const agenciasID = $('agenciaFiltro').value;
+  const agenciaId = $('agenciaFiltro').value;
   const tbody = $('tableModelosAgenciasID').querySelector('tbody');
 
-  if (!agenciasID) {
+  if (!agenciaId) {
     tbody.innerHTML = emptyRow(4);
     return;
   }
 
   try {
-    const data = await fetchJSON('/admin/dashboard/modelos-agenciasID/' + agenciasID);
+    const data = await fetchJSON('/admin/dashboard/agencias/' + agenciaId + '/modelos');
 
     tbody.innerHTML = (data || []).map(r => `
       <tr>
@@ -2125,10 +2125,10 @@ async function abrirModalAlterarAgenciaModelo(btn) {
   try {
     const modeloId = btn.dataset.modeloId;
     const nome = btn.dataset.modeloNome;
-    const agenciaAtualID = btn.dataset.agenciasID || null;
+    const agenciaAtualId = btn.dataset.agenciaId || null;
 
     if (!agenciasCache.length) {
-      agenciasCache = await fetchJSON('/admin/dashboard/agenciasID');
+      agenciasCache = await fetchJSON('/admin/dashboard/agencias-list');
     }
 
     $('alterarAgenciaModeloId').value = modeloId;
@@ -2141,7 +2141,7 @@ async function abrirModalAlterarAgenciaModelo(btn) {
       const opt = document.createElement('option');
       opt.value = a.id;
       opt.textContent = a.nome;
-      if (agenciaAtualID && Number(agenciaAtualID) === Number(a.id)) {
+      if (agenciaAtualId && Number(agenciaAtualId) === Number(a.id)) {
         opt.selected = true;
       }
       select.appendChild(opt);
@@ -2161,15 +2161,15 @@ async function salvarAlteracaoAgenciaModelo(event) {
   const agencia_id = $('alterarAgenciaSelect').value;
 
   try {
-    await putJSON(`/admin/dashboard/modelos/${modeloId}/agenciasID`, {
+    await putJSON(`/admin/dashboard/modelos/${modeloId}/agencia`, {
       agencia_id: agencia_id ? Number(agencia_id) : null
     });
 
     toast('Agência da modelo atualizada com sucesso!', 'success');
     closeModal('modalAlterarAgenciaModelo');
 
-    await pageLoaders.agencias();
-    await carregarModelosAgencia();
+    await pageLoaders.agenciasID();
+    await carregarModelosAgenciasID();
   } catch (err) {
     console.error('Erro ao salvar alteração de agência:', err);
     toast('Erro: ' + err.message, 'error');
