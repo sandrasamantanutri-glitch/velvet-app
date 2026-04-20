@@ -3056,7 +3056,7 @@ router.put("/modelo-pagamentos/:id", authAdmin, async (req, res) => {
 
 // ========== 16. AGÊNCIAS ==========
 
-router.get("/agencias", async (req, res) => {
+router.get("/agenciasID", async (req, res) => {
   try {
     const { rows } = await db.query(`
       SELECT
@@ -3078,7 +3078,7 @@ router.get("/agencias", async (req, res) => {
   }
 });
 
-router.get("/modelos-agencia/:agenciaId", async (req, res) => {
+router.get("/modelos-agenciasID/:agenciasID", async (req, res) => {
   try {
     const { rows } = await db.query(`
       SELECT
@@ -3089,19 +3089,22 @@ router.get("/modelos-agencia/:agenciaId", async (req, res) => {
       FROM modelos
       WHERE agencia_id = $1
       ORDER BY nome
-    `, [req.params.agenciaId]);
+    `, [req.params.agenciasID]);
 
     res.json(rows);
   } catch (err) {
-    console.error("Erro /modelos-agencia/:agenciaId:", err);
+    console.error("Erro /modelos-agencia/:agenciasID:", err);
     res.status(500).json({ erro: "Erro interno" });
   }
 });
 
-router.put("/modelos/:id/agencia", async (req, res) => {
+router.put("/modelos/:id/agenciasID", authAdmin, async (req, res) => {
   try {
     const modeloId = Number(req.params.id);
     const agencia_id = req.body.agencia_id ? Number(req.body.agencia_id) : null;
+    
+    const admin_id = req.user?.id;
+    const user_id = req.user?.id;
 
     if (!modeloId) {
       return res.status(400).json({ erro: "Modelo inválido" });
@@ -3118,6 +3121,20 @@ router.put("/modelos/:id/agencia", async (req, res) => {
       }
     }
 
+    // Buscar agência anterior para log
+    const modeloAtual = await db.query(
+      `SELECT agencia_id, nome FROM modelos WHERE id = $1`,
+      [modeloId]
+    );
+    
+    if (!modeloAtual.rows.length) {
+      return res.status(404).json({ erro: "Modelo não encontrada" });
+    }
+
+    const agenciaAnterior = modeloAtual.rows[0]?.agencia_id;
+    const nomeModelo = modeloAtual.rows[0]?.nome;
+
+    // Atualizar modelo
     const { rows } = await db.query(`
       UPDATE modelos
       SET
@@ -3132,9 +3149,13 @@ router.put("/modelos/:id/agencia", async (req, res) => {
       RETURNING id, nome, agencia_id, agencia_desde
     `, [agencia_id, modeloId]);
 
-    if (!rows.length) {
-      return res.status(404).json({ erro: "Modelo não encontrada" });
-    }
+    // Registrar no log
+    const motivo = `Alteração de agência da modelo ${nomeModelo}: ${agenciaAnterior || 'Sem agência'} → ${agencia_id || 'Sem agência'}`;
+    
+    await db.query(`
+      INSERT INTO admin_seguranca_historico (admin_id, motivo, data, user_id, tipo_user, acao)
+      VALUES ($1, $2, NOW(), $3, $4, $5)
+    `, [admin_id, motivo, user_id, 'admin', 'alteracao_agencia_modelo']);
 
     res.json(rows[0]);
   } catch (err) {
