@@ -16,25 +16,25 @@ const multerS3 = require('multer-s3');
 const upload = multer({ storage: multer.memoryStorage() });
 
 const s3Privado = new AWS.S3({
-  endpoint: 'https://s3.us-east-005.backblazeb2.com',
-  accessKeyId: process.env.B2_APPLICATION_KEY_ID,
-  secretAccessKey: process.env.B2_APPLICATION_KEY,
-  region: 'us-east-005',
+  endpoint: process.env.B2_ENDPOINT,
+  accessKeyId: process.env.B2_KEY_ID_PRIVATE,
+  secretAccessKey: process.env.B2_APP_KEY_PRIVATE,
+  region: process.env.B2_REGION,
   s3ForcePathStyle: true
 });
 
 const s3Publico = new AWS.S3({
-  endpoint: 'https://s3.us-east-005.backblazeb2.com',
-  accessKeyId: process.env.B2_APPLICATION_KEY_ID,
-  secretAccessKey: process.env.B2_APPLICATION_KEY,
-  region: 'us-east-005',
+  endpoint: process.env.B2_ENDPOINT,
+  accessKeyId: process.env.B2_KEY_ID,
+  secretAccessKey: process.env.B2_APP_KEY,
+  region: process.env.B2_REGION,
   s3ForcePathStyle: true
 });
 
 const uploadPublico = multer({
   storage: multerS3({
     s3: s3Publico,
-    bucket: process.env.B2_BUCKET_PUBLIC,
+    bucket: process.env.B2_BUCKET,
     acl: "public-read",
     contentType: multerS3.AUTO_CONTENT_TYPE,
     key: (req, file, cb) => {
@@ -47,7 +47,7 @@ const uploadPublico = multer({
     fileSize: 10 * 1024 * 1024 // 10MB
   }
 });
-
+ 
 const uploadPrivado = multer({
   storage: multerS3({
     s3: s3Privado,
