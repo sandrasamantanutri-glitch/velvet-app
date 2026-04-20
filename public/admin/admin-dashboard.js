@@ -2048,9 +2048,9 @@ async function abrirModalPagModelo() {
 
 // ========== 16. AGÊNCIAS ==========
 
-pageLoaders.agenciasID = async function () {
+pageLoaders.agencias = async function () {
   try {
-    const data = await fetchJSON('/admin/dashboard/agenciasID');
+    const data = await fetchJSON('/admin/dashboard/agencias');
     console.log('AGENCIAS JSON:', data);
 
     agenciasCache = data || [];
@@ -2086,17 +2086,17 @@ pageLoaders.agenciasID = async function () {
   }
 };
 
-async function carregarModelosAgenciasID() {
-  const agenciasID = $('agenciaFiltro').value;
-  const tbody = $('tableModelosAgenciasID').querySelector('tbody');
+async function carregarModelosAgencia() {
+  const agenciaId = $('agenciaFiltro').value;
+  const tbody = $('tableModelosAgencia').querySelector('tbody');
 
-  if (!agenciasID) {
+  if (!agenciaId) {
     tbody.innerHTML = emptyRow(4);
     return;
   }
 
   try {
-    const data = await fetchJSON('/admin/dashboard/modelos-agenciasID/' + agenciasID);
+    const data = await fetchJSON('/admin/dashboard/modelos-agencia/' + agenciaId);
 
     tbody.innerHTML = (data || []).map(r => `
       <tr>
@@ -2125,10 +2125,10 @@ async function abrirModalAlterarAgenciaModelo(btn) {
   try {
     const modeloId = btn.dataset.modeloId;
     const nome = btn.dataset.modeloNome;
-    const agenciaAtualID = btn.dataset.agenciasID || null;
+    const agenciaAtualId = btn.dataset.agenciaId || null;
 
     if (!agenciasCache.length) {
-      agenciasCache = await fetchJSON('/admin/dashboard/agenciasID');
+      agenciasCache = await fetchJSON('/admin/dashboard/agencias');
     }
 
     $('alterarAgenciaModeloId').value = modeloId;
@@ -2141,7 +2141,7 @@ async function abrirModalAlterarAgenciaModelo(btn) {
       const opt = document.createElement('option');
       opt.value = a.id;
       opt.textContent = a.nome;
-      if (agenciaAtualID && Number(agenciaAtualID) === Number(a.id)) {
+      if (agenciaAtualId && Number(agenciaAtualId) === Number(a.id)) {
         opt.selected = true;
       }
       select.appendChild(opt);
@@ -2161,7 +2161,7 @@ async function salvarAlteracaoAgenciaModelo(event) {
   const agencia_id = $('alterarAgenciaSelect').value;
 
   try {
-    await putJSON(`/admin/dashboard/modelos/${modeloId}/agenciasID`, {
+    await putJSON(`/admin/dashboard/modelos/${modeloId}/agencia`, {
       agencia_id: agencia_id ? Number(agencia_id) : null
     });
 
