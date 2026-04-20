@@ -2699,56 +2699,47 @@ router.get("/vip-subscriptions", async (req, res) => {
       Number(req.query.limit) || 20
     );
     
-    const busca = req.query.busca || "";
-    const params = [];
-    let where = "1=1";
+    const busca = (req.query.busca || "").toString().trim();
+    
+    console.log("🔍 Backend - Buscando:", busca);
 
-    console.log("🔍 VIP-subscriptions called");
-    console.log("🔍 Query busca:", req.query.busca);
-    console.log("🔍 Busca var:", busca);
+    let rows, total;
 
     if (busca) {
-      params.push(busca);
-      where += ` AND v.cliente_id::text = $1`;
-      console.log("✅ Adicionado filtro - params:", params, "where:", where);
+      // COM FILTRO
+      const countRes = await db.query(
+        `SELECT COUNT(*) AS count FROM vip_subscriptions WHERE cliente_id::text = $1`,
+        [busca]
+      );
+      total = Number(countRes.rows[0]?.count || 0);
+      console.log("📊 Count com filtro:", total);
+      
+      const dataRes = await db.query(
+        `SELECT v.*, m.nome AS modelo_nome 
+         FROM vip_subscriptions v
+         LEFT JOIN modelos m ON m.id = v.modelo_id
+         WHERE v.cliente_id::text = $1
+         ORDER BY v.id DESC
+         LIMIT $2 OFFSET $3`,
+        [busca, limit, offset]
+      );
+      rows = dataRes.rows;
+      console.log("✔️ Rows com filtro:", rows.length);
     } else {
-      console.log("❌ Sem busca");
+      // SEM FILTRO
+      const countRes = await db.query(`SELECT COUNT(*) AS count FROM vip_subscriptions`);
+      total = Number(countRes.rows[0]?.count || 0);
+      
+      const dataRes = await db.query(
+        `SELECT v.*, m.nome AS modelo_nome 
+         FROM vip_subscriptions v
+         LEFT JOIN modelos m ON m.id = v.modelo_id
+         ORDER BY v.id DESC
+         LIMIT $1 OFFSET $2`,
+        [limit, offset]
+      );
+      rows = dataRes.rows;
     }
-
-    const countQ = await db.query(`
-      SELECT COUNT(*) AS count 
-      FROM vip_subscriptions v 
-      WHERE ${where}
-    `, params);
-    
-    console.log("📊 Count:", countQ.rows[0].count);
-    
-    const total = Number(countQ.rows[0]?.count || 0);
-
-    params.push(limit, offset);
-    console.log("📦 Params finais:", params);
-
-    const { rows } = await db.query(`
-      SELECT 
-        v.id,
-        v.cliente_id,
-        v.modelo_id,
-        v.ativo,
-        v.valor_assinatura,
-        v.valor_total,
-        v.created_at,
-        v.updated_at,
-        v.expiration_at,
-        v.recorrente,
-        m.nome AS modelo_nome
-      FROM vip_subscriptions v
-      LEFT JOIN modelos m ON m.id = v.modelo_id
-      WHERE ${where}
-      ORDER BY v.id DESC
-      LIMIT $${params.length - 1} OFFSET $${params.length}
-    `, params);
-
-    console.log("✔️ Rows retornadas:", rows.length);
 
     res.json({ 
       rows, 
