@@ -3161,8 +3161,14 @@ router.put("/modelos/:id/agencia", authAdmin, async (req, res) => {
     const admin_id = req.user?.id;
     const user_id = req.user?.id;
 
+    console.log("DEBUG - admin_id:", admin_id, "user_id:", user_id);
+
     if (!modeloId) {
       return res.status(400).json({ erro: "Modelo inválido" });
+    }
+
+    if (!admin_id || !user_id) {
+      return res.status(401).json({ erro: "Usuário não autenticado" });
     }
 
     if (agencia_id !== null) {
@@ -3202,17 +3208,27 @@ router.put("/modelos/:id/agencia", authAdmin, async (req, res) => {
       RETURNING id, nome, agencia_id, agencia_desde
     `, [agencia_id, modeloId]);
 
+    if (!rows.length) {
+      return res.status(500).json({ erro: "Falha ao atualizar modelo" });
+    }
+
+    // Registrar no log
     const motivo = `Alteração de agência da modelo ${nomeModelo}: ${agenciaAnterior || 'Sem agência'} → ${agencia_id || 'Sem agência'}`;
 
-    await db.query(`
-      INSERT INTO admin_seguranca_historico (admin_id, motivo, data, user_id, tipo_user, acao)
-      VALUES ($1, $2, NOW(), $3, $4, $5)
-    `, [admin_id, motivo, user_id, 'admin', 'alteracao_agencia_modelo']);
+    try {
+      await db.query(`
+        INSERT INTO admin_seguranca_historico (admin_id, motivo, data, user_id, tipo_user, acao)
+        VALUES ($1, $2, NOW(), $3, $4, $5)
+      `, [admin_id, motivo, user_id, 'admin', 'alteracao_agencia_modelo']);
+    } catch (logErr) {
+      console.error("Erro ao registrar no log:", logErr);
+      // Não falha a requisição se o log falhar
+    }
 
     res.json(rows[0]);
   } catch (err) {
-    console.error("Erro ao alterar agência da modelo:", err);
-    res.status(500).json({ erro: "Erro interno" });
+    console.error("Erro ao alterar agência da modelo:", err.message);
+    res.status(500).json({ erro: "Erro interno: " + err.message });
   }
 });
 
