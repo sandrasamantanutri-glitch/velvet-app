@@ -3110,7 +3110,6 @@ router.put("/agencias/:id", authAdmin, async (req, res) => {
       return res.status(400).json({ erro: "Agência inválida" });
     }
 
-    // Buscar agência anterior para log
     const agenciaAtual = await db.query(
       `SELECT nome, percentual_agencia, percentual_modelo, percentual_plataforma FROM agencias WHERE id = $1`,
       [agenciaId]
@@ -3122,7 +3121,6 @@ router.put("/agencias/:id", authAdmin, async (req, res) => {
 
     const { nome, percentual_agencia: percAntigo, percentual_modelo: percModeloAntigo, percentual_plataforma: percPlatAntigo } = agenciaAtual.rows[0];
 
-    // Dividir por 100 antes de salvar no banco (convertendo de % para decimal)
     const { rows } = await db.query(`
       UPDATE agencias
       SET
@@ -3138,7 +3136,6 @@ router.put("/agencias/:id", authAdmin, async (req, res) => {
       agenciaId
     ]);
 
-    // Registrar no log
     const motivo = `Alteração de percentuais da agência ${nome}: Agência ${(percAntigo * 100).toFixed(0)}% → ${percentual_agencia}%, Modelo ${(percModeloAntigo * 100).toFixed(0)}% → ${percentual_modelo}%, Plataforma ${(percPlatAntigo * 100).toFixed(0)}% → ${percentual_plataforma}%`;
 
     await db.query(`
@@ -3161,7 +3158,7 @@ router.put("/modelos/:id/agencia", authAdmin, async (req, res) => {
     const admin_id = req.user?.id;
     const user_id = req.user?.id;
 
-    console.log("DEBUG - admin_id:", admin_id, "user_id:", user_id);
+    console.log("DEBUG - modeloId:", modeloId, "agencia_id:", agencia_id, "admin_id:", admin_id);
 
     if (!modeloId) {
       return res.status(400).json({ erro: "Modelo inválido" });
@@ -3197,10 +3194,10 @@ router.put("/modelos/:id/agencia", authAdmin, async (req, res) => {
     const { rows } = await db.query(`
       UPDATE modelos
       SET
-        agencia_id = $1,
+        agencia_id = $1::integer,
         agencia_desde = CASE
-          WHEN $1 IS NULL THEN NULL
-          WHEN agencia_id IS DISTINCT FROM $1 THEN NOW()
+          WHEN $1::integer IS NULL THEN NULL
+          WHEN agencia_id IS DISTINCT FROM $1::integer THEN NOW()
           ELSE agencia_desde
         END,
         atualizado_em = NOW()
@@ -3212,7 +3209,6 @@ router.put("/modelos/:id/agencia", authAdmin, async (req, res) => {
       return res.status(500).json({ erro: "Falha ao atualizar modelo" });
     }
 
-    // Registrar no log
     const motivo = `Alteração de agência da modelo ${nomeModelo}: ${agenciaAnterior || 'Sem agência'} → ${agencia_id || 'Sem agência'}`;
 
     try {
@@ -3222,12 +3218,74 @@ router.put("/modelos/:id/agencia", authAdmin, async (req, res) => {
       `, [admin_id, motivo, user_id, 'admin', 'alteracao_agencia_modelo']);
     } catch (logErr) {
       console.error("Erro ao registrar no log:", logErr);
-      // Não falha a requisição se o log falhar
     }
 
     res.json(rows[0]);
   } catch (err) {
     console.error("Erro ao alterar agência da modelo:", err.message);
+    res.status(500).json({ erro: "Erro interno: " + err.message });
+  }
+});
+
+router.post("/agencias", authAdmin, async (req, res) => {
+  try {
+    let { nome, email, percentual_agencia, percentual_modelo, percentual_plataforma } = req.body;
+
+    const admin_id = req.user?.id;
+    const user_id = req.user?.id;
+
+    // Validações
+    if (!nome || nome.trim() === '') {
+      return res.status(400).json({ erro: "Nome da agência é obrigatório" });
+    }
+
+    // Converter percentuais para números
+    percentual_agencia = percentual_agencia !== undefined && percentual_agencia !== null && percentual_agencia !== '' 
+      ? Number(percentual_agencia) 
+      : 0;
+    percentual_modelo = percentual_modelo !== undefined && percentual_modelo !== null && percentual_modelo !== '' 
+      ? Number(percentual_modelo) 
+      : 0;
+    percentual_plataforma = percentual_plataforma !== undefined && percentual_plataforma !== null && percentual_plataforma !== '' 
+      ? Number(percentual_plataforma) 
+      : 0;
+
+    if (isNaN(percentual_agencia) || isNaN(percentual_modelo) || isNaN(percentual_plataforma)) {
+      return res.status(400).json({ erro: "Percentuais devem ser números válidos" });
+    }
+
+    // Inserir nova agência
+    const { rows } = await db.query(`
+      INSERT INTO agencias (nome, email, percentual_agencia, percentual_modelo, percentual_plataforma)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING id, nome, email, percentual_agencia, percentual_modelo, percentual_plataforma, created_at
+    `, [
+      nome.trim(),
+      email || null,
+      percentual_agencia / 100,
+      percentual_modelo / 100,
+      percentual_plataforma / 100
+    ]);
+
+    if (!rows.length) {
+      return res.status(500).json({ erro: "Falha ao criar agência" });
+    }
+
+    // Registrar no log
+    const motivo = `Nova agência criada: ${nome}. Percentuais - Agência: ${percentual_agencia}%, Modelo: ${percentual_modelo}%, Plataforma: ${percentual_plataforma}%`;
+
+    try {
+      await db.query(`
+        INSERT INTO admin_seguranca_historico (admin_id, motivo, data, user_id, tipo_user, acao)
+        VALUES ($1, $2, NOW(), $3, $4, $5)
+      `, [admin_id, motivo, user_id, 'admin', 'criacao_agencia']);
+    } catch (logErr) {
+      console.error("Erro ao registrar no log:", logErr);
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Erro ao criar agência:", err.message);
     res.status(500).json({ erro: "Erro interno: " + err.message });
   }
 });
