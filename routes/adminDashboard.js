@@ -117,22 +117,33 @@ router.get("/overview", authAdmin, async (req, res) => {
       `),
 
       db.query(`
-        SELECT
-          CASE
-            WHEN LOWER(COALESCE(origem_trafego, '')) LIKE '%instagram%'
-              OR LOWER(COALESCE(origem_trafego, '')) LIKE '%insta%' THEN 'Instagram'
-            WHEN LOWER(COALESCE(origem_trafego, '')) LIKE '%tiktok%' THEN 'TikTok'
-            WHEN origem_trafego IS NULL
-              OR origem_trafego = ''
-              OR LOWER(TRIM(origem_trafego)) IN ('direto','direct','none','unknown','(direct)','(none)') THEN 'Direto'
-            ELSE 'Outros'
-          END AS origem,
-          COUNT(*) AS total
-        FROM clientes
-        WHERE created_at >= date_trunc('month', NOW())
-          AND created_at < (date_trunc('month', NOW()) + INTERVAL '1 month')
-        GROUP BY origem
-        ORDER BY total DESC
+SELECT
+  CASE
+    WHEN LOWER(origem_trafego) LIKE '%instagram%' 
+      OR LOWER(origem_trafego) LIKE '%insta%'
+      OR LOWER(origem_trafego) LIKE '%src=instagram%' THEN 'Instagram'
+    WHEN LOWER(origem_trafego) LIKE '%tiktok%'
+      OR LOWER(origem_trafego) LIKE '%src=tiktok%' THEN 'TikTok'
+    WHEN LOWER(origem_trafego) IN ('direto','direct','none','unknown','(direct)','(none)') THEN 'Direto'
+    ELSE 'Outros'
+  END AS origem,
+  COUNT(*) AS total
+FROM clientes
+WHERE created_at >= date_trunc('month', NOW())
+  AND created_at < (date_trunc('month', NOW()) + INTERVAL '1 month')
+  AND origem_trafego IS NOT NULL
+  AND origem_trafego != ''
+GROUP BY 
+  CASE
+    WHEN LOWER(origem_trafego) LIKE '%instagram%' 
+      OR LOWER(origem_trafego) LIKE '%insta%'
+      OR LOWER(origem_trafego) LIKE '%src=instagram%' THEN 'Instagram'
+    WHEN LOWER(origem_trafego) LIKE '%tiktok%'
+      OR LOWER(origem_trafego) LIKE '%src=tiktok%' THEN 'TikTok'
+    WHEN LOWER(origem_trafego) IN ('direto','direct','none','unknown','(direct)','(none)') THEN 'Direto'
+    ELSE 'Outros'
+  END
+ORDER BY total DESC;
       `),
 
       db.query(`
@@ -287,23 +298,25 @@ router.get("/acessos-origem", authAdmin, async (req, res) => {
         COUNT(*)::int AS total,
 
         COUNT(*) FILTER (
-          WHERE LOWER(COALESCE(origem_trafego, '')) LIKE '%instagram%'
-             OR LOWER(COALESCE(origem_trafego, '')) LIKE '%insta%'
+          WHERE LOWER(origem_trafego) LIKE '%instagram%'
+             OR LOWER(origem_trafego) LIKE '%insta%'
+             OR LOWER(origem_trafego) LIKE '%src=instagram%'
         )::int AS instagram,
 
         COUNT(*) FILTER (
-          WHERE LOWER(COALESCE(origem_trafego, '')) LIKE '%tiktok%'
+          WHERE LOWER(origem_trafego) LIKE '%tiktok%'
+             OR LOWER(origem_trafego) LIKE '%src=tiktok%'
         )::int AS tiktok,
 
         COUNT(*) FILTER (
-          WHERE origem_trafego IS NULL
-             OR origem_trafego = ''
-             OR LOWER(origem_trafego) IN ('direto','direct','none','unknown')
+          WHERE LOWER(origem_trafego) IN ('direto','direct','none','unknown')
         )::int AS direto
 
       FROM clientes
       WHERE created_at >= $1
         AND created_at < $2
+        AND origem_trafego IS NOT NULL
+        AND origem_trafego != ''
       `,
       params
     );
@@ -315,23 +328,25 @@ router.get("/acessos-origem", authAdmin, async (req, res) => {
         TO_CHAR(created_at::date, 'DD/MM') AS dia,
 
         COUNT(*) FILTER (
-          WHERE LOWER(COALESCE(origem_trafego, '')) LIKE '%instagram%'
-             OR LOWER(COALESCE(origem_trafego, '')) LIKE '%insta%'
+          WHERE LOWER(origem_trafego) LIKE '%instagram%'
+             OR LOWER(origem_trafego) LIKE '%insta%'
+             OR LOWER(origem_trafego) LIKE '%src=instagram%'
         )::int AS instagram,
 
         COUNT(*) FILTER (
-          WHERE LOWER(COALESCE(origem_trafego, '')) LIKE '%tiktok%'
+          WHERE LOWER(origem_trafego) LIKE '%tiktok%'
+             OR LOWER(origem_trafego) LIKE '%src=tiktok%'
         )::int AS tiktok,
 
         COUNT(*) FILTER (
-          WHERE origem_trafego IS NULL
-             OR origem_trafego = ''
-             OR LOWER(origem_trafego) IN ('direto','direct','none','unknown')
+          WHERE LOWER(origem_trafego) IN ('direto','direct','none','unknown')
         )::int AS direto
 
       FROM clientes
       WHERE created_at >= $1
         AND created_at < $2
+        AND origem_trafego IS NOT NULL
+        AND origem_trafego != ''
       GROUP BY created_at::date
       ORDER BY created_at::date ASC
       `,
@@ -346,18 +361,18 @@ router.get("/acessos-origem", authAdmin, async (req, res) => {
         COALESCE(m.nome_exibicao, m.nome, 'Modelo #' || c.ref_modelo) AS nome,
 
         COUNT(*) FILTER (
-          WHERE LOWER(COALESCE(c.origem_trafego, '')) LIKE '%instagram%'
-             OR LOWER(COALESCE(c.origem_trafego, '')) LIKE '%insta%'
+          WHERE LOWER(c.origem_trafego) LIKE '%instagram%'
+             OR LOWER(c.origem_trafego) LIKE '%insta%'
+             OR LOWER(c.origem_trafego) LIKE '%src=instagram%'
         )::int AS instagram,
 
         COUNT(*) FILTER (
-          WHERE LOWER(COALESCE(c.origem_trafego, '')) LIKE '%tiktok%'
+          WHERE LOWER(c.origem_trafego) LIKE '%tiktok%'
+             OR LOWER(c.origem_trafego) LIKE '%src=tiktok%'
         )::int AS tiktok,
 
         COUNT(*) FILTER (
-          WHERE c.origem_trafego IS NULL
-             OR c.origem_trafego = ''
-             OR LOWER(c.origem_trafego) IN ('direto','direct','none','unknown')
+          WHERE LOWER(c.origem_trafego) IN ('direto','direct','none','unknown')
         )::int AS direto,
 
         COUNT(*)::int AS total
@@ -367,6 +382,8 @@ router.get("/acessos-origem", authAdmin, async (req, res) => {
       WHERE c.created_at >= $1
         AND c.created_at < $2
         AND c.ref_modelo IS NOT NULL
+        AND c.origem_trafego IS NOT NULL
+        AND c.origem_trafego != ''
       GROUP BY c.ref_modelo, m.nome_exibicao, m.nome
       ORDER BY total DESC
       LIMIT 20
