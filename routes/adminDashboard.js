@@ -1062,6 +1062,67 @@ router.get("/clientes-bloqueados", authAdmin, async (req, res) => {
   }
 });
 
+router.get("/clientes-bloqueados/:id", authAdmin, async (req, res) => {
+  try {
+    const { rows } = await db.query(`
+      SELECT *
+      FROM clientes_bloqueados_cadastro
+      WHERE cliente_id = $1
+        AND COALESCE(bloqueado, true) = true
+      LIMIT 1
+    `, [req.params.id]);
+
+    if (!rows.length) {
+      return res.status(404).json({ erro: "Não encontrado" });
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Erro buscar cliente bloqueado:", err);
+    res.status(500).json({ erro: "Erro interno", details: err.message });
+  }
+});
+
+router.get("/logs-clientes-bloqueados", authAdmin, async (req, res) => {
+  try {
+    const { limit, offset, page } = paginate(req.query, 1, 20);
+
+    const countQ = await db.query(`
+      SELECT COUNT(*)
+      FROM clientes_bloqueados_cadastro
+    `);
+
+    const total = Number(countQ.rows[0].count);
+
+    const { rows } = await db.query(`
+      SELECT
+        user_id,
+        cpf,
+        ip,
+        fingerprint,
+        email,
+        motivo,
+        bloqueado,
+        criado_em,
+        admin AS admin_email
+      FROM clientes_bloqueados_cadastro
+      ORDER BY criado_em DESC
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+
+    res.json({
+      rows,
+      page,
+      total,
+      totalPages: Math.ceil(total / limit)
+    });
+
+  } catch (err) {
+    console.error("Erro logs-clientes-bloqueados:", err);
+    res.status(500).json({ error: "Erro ao buscar logs de clientes bloqueados" });
+  }
+});
+
 router.post("/clientes-bloqueados", authAdmin, async (req, res) => {
   const client = await db.connect();
 
@@ -1090,11 +1151,14 @@ router.post("/clientes-bloqueados", authAdmin, async (req, res) => {
       req.session?.user?.name ||
       "Admin";
 
+    const admin_id = req.session?.user?.id || req.admin?.id;
+
     await client.query("BEGIN");
 
     const ativoFinal = ativo === true || ativo === "true";
     const bloqueadoFinal = bloqueado === true || bloqueado === "true";
 
+    // 1️⃣ Inserir em clientes_bloqueados_cadastro
     const { rows } = await client.query(`
       INSERT INTO clientes_bloqueados_cadastro (
         cliente_id,
@@ -1140,6 +1204,7 @@ router.post("/clientes-bloqueados", authAdmin, async (req, res) => {
       admin
     ]);
 
+    // 2️⃣ Atualizar users (dispara o trigger automaticamente)
     if (user_id) {
       await client.query(`
         UPDATE users
@@ -1155,44 +1220,76 @@ router.post("/clientes-bloqueados", authAdmin, async (req, res) => {
       ]);
     }
 
+    // 3️⃣ Atualizar clientes (caso o trigger não execute)
+    await client.query(`
+      UPDATE clientes
+      SET
+        bloqueado = $1,
+        ativo = $2,
+        updated_at = NOW()
+      WHERE id = $3
+    `, [bloqueadoFinal, ativoFinal, cliente_id]);
+
+    // 4️⃣ Atualizar clientes_dados
+    await client.query(`
+      UPDATE clientes_dados
+      SET
+        ativo = $1,
+        atualizado_em = NOW()
+      WHERE cliente_id = $2
+    `, [ativoFinal, cliente_id]);
+
+    // 5️⃣ Atualizar vip_subscriptions
+    await client.query(`
+      UPDATE vip_subscriptions
+      SET
+        ativo = $1,
+        updated_at = NOW()
+      WHERE cliente_id = $2
+    `, [ativoFinal, cliente_id]);
+
+    // 6️⃣ Registrar no histórico de segurança
+    const descricaoAcao = `Cliente #${cliente_id} adicionado à lista de bloqueados. Nível: ${nivel || 'sem nível'}. ${motivo ? `Motivo: ${motivo}` : ''} Bloqueios: ${[
+      bloqueio_ip && 'IP',
+      bloqueio_cpf && 'CPF',
+      bloqueio_fingerprint && 'Fingerprint'
+    ].filter(Boolean).join(', ') || 'Nenhum'}`;
+
+    await client.query(`
+      INSERT INTO admin_seguranca_historico (
+        admin_id,
+        motivo,
+        data,
+        user_id,
+        tipo_user,
+        acao
+      )
+      VALUES ($1, $2, NOW(), $3, $4, $5)
+    `, [
+      admin_id,
+      descricaoAcao,
+      cliente_id,
+      'cliente',
+      'bloqueio_cadastro'
+    ]);
+
     await client.query("COMMIT");
 
     res.json(rows[0]);
 
-} catch (err) {
-  await client.query("ROLLBACK");
+  } catch (err) {
+    await client.query("ROLLBACK");
 
-  if (err.code === "23505") {
-    return res.status(409).json({
-      erro: "Cliente já está cadastrado na lista de bloqueados"
-    });
-  }
-
-  console.error("Erro salvar cliente bloqueado:", err);
-  res.status(500).json({ erro: "Erro interno", details: err.message });
-} finally {
-    client.release();
-  }
-});
-
-router.get("/clientes-bloqueados/:id", authAdmin, async (req, res) => {
-  try {
-    const { rows } = await db.query(`
-      SELECT *
-      FROM clientes_bloqueados_cadastro
-      WHERE cliente_id = $1
-        AND COALESCE(bloqueado, true) = true
-      LIMIT 1
-    `, [req.params.id]);
-
-    if (!rows.length) {
-      return res.status(404).json({ erro: "Não encontrado" });
+    if (err.code === "23505") {
+      return res.status(409).json({
+        erro: "Cliente já está cadastrado na lista de bloqueados"
+      });
     }
 
-    res.json(rows[0]);
-  } catch (err) {
-    console.error("Erro buscar cliente bloqueado:", err);
+    console.error("Erro salvar cliente bloqueado:", err);
     res.status(500).json({ erro: "Erro interno", details: err.message });
+  } finally {
+    client.release();
   }
 });
 
@@ -1214,8 +1311,11 @@ router.put("/clientes-bloqueados/:id", authAdmin, async (req, res) => {
       req.session?.user?.name ||
       "Admin";
 
+    const admin_id = req.session?.user?.id || req.admin?.id;
+
     await client.query("BEGIN");
 
+    // 1️⃣ Atualizar clientes_bloqueados_cadastro
     const { rows } = await client.query(`
       UPDATE clientes_bloqueados_cadastro
       SET
@@ -1247,6 +1347,7 @@ router.put("/clientes-bloqueados/:id", authAdmin, async (req, res) => {
 
     const bloqueado = rows[0];
 
+    // 2️⃣ Atualizar users (dispara o trigger automaticamente)
     if (bloqueado.user_id) {
       await client.query(`
         UPDATE users
@@ -1257,6 +1358,59 @@ router.put("/clientes-bloqueados/:id", authAdmin, async (req, res) => {
         WHERE id = $1
       `, [bloqueado.user_id]);
     }
+
+    // 3️⃣ Atualizar clientes (caso o trigger não execute)
+    await client.query(`
+      UPDATE clientes
+      SET
+        bloqueado = true,
+        ativo = false,
+        updated_at = NOW()
+      WHERE id = $1
+    `, [req.params.id]);
+
+    // 4️⃣ Atualizar clientes_dados
+    await client.query(`
+      UPDATE clientes_dados
+      SET
+        ativo = false,
+        atualizado_em = NOW()
+      WHERE cliente_id = $1
+    `, [req.params.id]);
+
+    // 5️⃣ Atualizar vip_subscriptions
+    await client.query(`
+      UPDATE vip_subscriptions
+      SET
+        ativo = false,
+        updated_at = NOW()
+      WHERE cliente_id = $1
+    `, [req.params.id]);
+
+    // 6️⃣ Registrar no histórico de segurança
+    const descricaoAcao = `Cliente #${req.params.id} atualizado na lista de bloqueados. Nível: ${nivel || 'sem nível'}. ${motivo ? `Motivo: ${motivo}` : ''} Bloqueios: ${[
+      bloqueio_ip && 'IP',
+      bloqueio_cpf && 'CPF',
+      bloqueio_fingerprint && 'Fingerprint'
+    ].filter(Boolean).join(', ') || 'Nenhum'}`;
+
+    await client.query(`
+      INSERT INTO admin_seguranca_historico (
+        admin_id,
+        motivo,
+        data,
+        user_id,
+        tipo_user,
+        acao
+      )
+      VALUES ($1, $2, NOW(), $3, $4, $5)
+    `, [
+      admin_id,
+      descricaoAcao,
+      req.params.id,
+      'cliente',
+      'atualizar_bloqueio'
+    ]);
 
     await client.query("COMMIT");
 
@@ -1281,8 +1435,11 @@ router.delete("/clientes-bloqueados/:id", authAdmin, async (req, res) => {
       req.session?.user?.name ||
       "Admin";
 
+    const admin_id = req.session?.user?.id || req.admin?.id;
+
     await client.query("BEGIN");
 
+    // 1️⃣ Atualizar clientes_bloqueados_cadastro
     const { rows } = await client.query(`
       UPDATE clientes_bloqueados_cadastro
       SET
@@ -1300,6 +1457,7 @@ router.delete("/clientes-bloqueados/:id", authAdmin, async (req, res) => {
 
     const bloqueado = rows[0];
 
+    // 2️⃣ Atualizar users (dispara o trigger automaticamente)
     if (bloqueado.user_id) {
       await client.query(`
         UPDATE users
@@ -1311,6 +1469,55 @@ router.delete("/clientes-bloqueados/:id", authAdmin, async (req, res) => {
       `, [bloqueado.user_id]);
     }
 
+    // 3️⃣ Atualizar clientes (caso o trigger não execute)
+    await client.query(`
+      UPDATE clientes
+      SET
+        bloqueado = false,
+        ativo = true,
+        updated_at = NOW()
+      WHERE id = $1
+    `, [req.params.id]);
+
+    // 4️⃣ Atualizar clientes_dados
+    await client.query(`
+      UPDATE clientes_dados
+      SET
+        ativo = true,
+        atualizado_em = NOW()
+      WHERE cliente_id = $1
+    `, [req.params.id]);
+
+    // 5️⃣ Atualizar vip_subscriptions
+    await client.query(`
+      UPDATE vip_subscriptions
+      SET
+        ativo = true,
+        updated_at = NOW()
+      WHERE cliente_id = $1
+    `, [req.params.id]);
+
+    // 6️⃣ Registrar no histórico de segurança
+    const descricaoAcao = `Cliente #${req.params.id} removido da lista de bloqueados. Nível anterior: ${bloqueado.nivel || 'sem nível'}. Motivo anterior: ${bloqueado.motivo || 'sem motivo'}`;
+
+    await client.query(`
+      INSERT INTO admin_seguranca_historico (
+        admin_id,
+        motivo,
+        data,
+        user_id,
+        tipo_user,
+        acao
+      )
+      VALUES ($1, $2, NOW(), $3, $4, $5)
+    `, [
+      admin_id,
+      descricaoAcao,
+      req.params.id,
+      'cliente',
+      'remover_bloqueio'
+    ]);
+
     await client.query("COMMIT");
 
     res.json({ ok: true, row: bloqueado });
@@ -1321,46 +1528,6 @@ router.delete("/clientes-bloqueados/:id", authAdmin, async (req, res) => {
     res.status(500).json({ erro: "Erro interno", details: err.message });
   } finally {
     client.release();
-  }
-});
-
-router.get("/logs-clientes-bloqueados", authAdmin, async (req, res) => {
-  try {
-    const { limit, offset, page } = paginate(req.query, 1, 20);
-
-    const countQ = await db.query(`
-      SELECT COUNT(*)
-      FROM clientes_bloqueados_cadastro
-    `);
-
-    const total = Number(countQ.rows[0].count);
-
-    const { rows } = await db.query(`
-      SELECT
-        user_id,
-        cpf,
-        ip,
-        fingerprint,
-        email,
-        motivo,
-        bloqueado,
-        criado_em,
-        admin AS admin_email
-      FROM clientes_bloqueados_cadastro
-      ORDER BY criado_em DESC
-      LIMIT $1 OFFSET $2
-    `, [limit, offset]);
-
-    res.json({
-      rows,
-      page,
-      total,
-      totalPages: Math.ceil(total / limit)
-    });
-
-  } catch (err) {
-    console.error("Erro logs-clientes-bloqueados:", err);
-    res.status(500).json({ error: "Erro ao buscar logs de clientes bloqueados" });
   }
 });
 
@@ -2003,9 +2170,13 @@ router.put("/dados-bancarios/:id", authAdmin, async (req, res) => {
 
 router.get("/modelos-lista", async (req, res) => {
   try {
-    const { rows } = await db.query("SELECT id, nome FROM modelos WHERE ativo = true ORDER BY nome");
+    const { rows } = await db.query(
+      "SELECT id, nome FROM modelos WHERE ativo = true AND verificada = true ORDER BY nome"
+    );
     res.json(rows);
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
+  } catch (err) { 
+    res.status(500).json({ erro: "Erro interno" }); 
+  }
 });
 
 router.get("/modelos", authAdmin, async (req, res) => {
@@ -2018,22 +2189,23 @@ router.get("/modelos", authAdmin, async (req, res) => {
 
     const busca = req.query.busca || "";
     const params = [];
-    let where = "COALESCE(m.ativo, true) = true";
+    let where = "m.ativo = true AND m.verificada = true";
 
     if (busca) {
       params.push(`%${busca}%`);
+      params.push(`%${busca}%`);
       params.push(busca);
-      where += ` AND (m.nome ILIKE $${params.length - 1} OR m.id::text = $${params.length} OR u.email ILIKE $${params.length - 1})`;
+      where += ` AND (m.nome ILIKE $1 OR u.email ILIKE $2 OR m.id::text = $3)`;
     }
 
     const countQ = await db.query(`
-      SELECT COUNT(*)
+      SELECT COUNT(*) AS count
       FROM modelos m
       LEFT JOIN users u ON u.id = m.user_id
       WHERE ${where}
     `, params);
 
-    const total = Number(countQ.rows[0].count);
+    const total = Number(countQ.rows[0]?.count || 0);
 
     params.push(limit, offset);
 
