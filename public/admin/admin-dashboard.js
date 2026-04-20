@@ -2111,15 +2111,18 @@ function abrirAdicionarAgencia() {
   );
 }
 
-function abrirEditarAgencia(id, nome, percAgencia, percModelo, percPlataforma) {
+function abrirAdicionarAgencia() {
   openEditModal(
-    `Editar Agência: ${nome}`,
-    `/admin/dashboard/agencias/${id}`,
-    'PUT',
+    'Adicionar Agência',
+    '/admin/dashboard/agencias',
+    'POST',
     [
-      { name: 'percentual_agencia', label: '% Agência', type: 'number', value: percAgencia, step: '0.01' },
-      { name: 'percentual_modelo', label: '% Modelo', type: 'number', value: percModelo, step: '0.01' },
-      { name: 'percentual_plataforma', label: '% Plataforma', type: 'number', value: percPlataforma, step: '0.01' }
+      { name: 'nome', label: 'Nome', type: 'text', value: '', required: true },
+      { name: 'email', label: 'Email', type: 'email', value: '', required: false },
+      { name: 'senha', label: 'Senha', type: 'password', value: '', required: true },
+      { name: 'percentual_agencia', label: '% Agência', type: 'number', value: 0 },
+      { name: 'percentual_modelo', label: '% Modelo', type: 'number', value: 0 },
+      { name: 'percentual_plataforma', label: '% Plataforma', type: 'number', value: 0 }
     ],
     () => pageLoaders.agencias()
   );

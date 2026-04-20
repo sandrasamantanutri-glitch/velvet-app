@@ -3229,17 +3229,18 @@ router.put("/modelos/:id/agencia", authAdmin, async (req, res) => {
 
 router.post("/agencias", authAdmin, async (req, res) => {
   try {
-    let { nome, email, percentual_agencia, percentual_modelo, percentual_plataforma } = req.body;
+    let { nome, email, senha, percentual_agencia, percentual_modelo, percentual_plataforma } = req.body;
 
     const admin_id = req.user?.id;
     const user_id = req.user?.id;
 
-    console.log("DEBUG POST - body:", req.body);
-    console.log("DEBUG POST - admin_id:", admin_id, "user_id:", user_id);
-
     // Validações
     if (!nome || nome.trim() === '') {
       return res.status(400).json({ erro: "Nome da agência é obrigatório" });
+    }
+
+    if (!senha || senha.trim() === '') {
+      return res.status(400).json({ erro: "Senha é obrigatória" });
     }
 
     if (!admin_id || !user_id) {
@@ -3257,20 +3258,22 @@ router.post("/agencias", authAdmin, async (req, res) => {
       ? Number(percentual_plataforma) 
       : 0;
 
-    console.log("DEBUG POST - percentuais parseados:", percentual_agencia, percentual_modelo, percentual_plataforma);
-
     if (isNaN(percentual_agencia) || isNaN(percentual_modelo) || isNaN(percentual_plataforma)) {
       return res.status(400).json({ erro: "Percentuais devem ser números válidos" });
     }
 
+    // Hash da senha com bcrypt
+    const senhaHash = await bcrypt.hash(senha, 10);
+
     // Inserir nova agência
     const { rows } = await db.query(`
-      INSERT INTO agencias (nome, email, percentual_agencia, percentual_modelo, percentual_plataforma)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO agencias (nome, email, senha, percentual_agencia, percentual_modelo, percentual_plataforma)
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING id, nome, email, percentual_agencia, percentual_modelo, percentual_plataforma, created_at
     `, [
       nome.trim(),
       email && email.trim() ? email.trim() : null,
+      senhaHash,
       percentual_agencia / 100,
       percentual_modelo / 100,
       percentual_plataforma / 100
@@ -3294,7 +3297,7 @@ router.post("/agencias", authAdmin, async (req, res) => {
 
     res.json(rows[0]);
   } catch (err) {
-    console.error("Erro ao criar agência:", err.message, err);
+    console.error("Erro ao criar agência:", err.message);
     res.status(500).json({ erro: "Erro interno: " + err.message });
   }
 });

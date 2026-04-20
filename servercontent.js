@@ -460,32 +460,32 @@ router.post("/modelo/dados-bancarios/alterar", authModelo, async (req, res) => {
 // PAGAMENTOS
 // ===========================
 
-router.post("/admin/pagamentos/:id/pagar", auth, async (req, res) => { 
+// router.post("/admin/pagamentos/:id/pagar", auth, async (req, res) => { 
   
-  const { id } = req.params;
-    await db.query(
-      `
-      UPDATE modelo_pagamentos
-      SET
-        status = 'pago',
-        pago_em = NOW()
-      WHERE id = $1
-      `,
-      [id]
-    );
+//   const { id } = req.params;
+//     await db.query(
+//       `
+//       UPDATE modelo_pagamentos
+//       SET
+//         status = 'pago',
+//         pago_em = NOW()
+//       WHERE id = $1
+//       `,
+//       [id]
+//     );
 
-    res.json({ ok: true });
-  }
-);
+//     res.json({ ok: true });
+//   }
+// );
 
-router.post("/admin/fechar-pagamentos-modelo/:modeloId", auth, async (req, res) => {
-  const { modeloId } = req.params;
+// router.post("/admin/fechar-pagamentos-modelo/:modeloId", auth, async (req, res) => {
+//   const { modeloId } = req.params;
 
-  await db.query(`/* SQL acima */`, [modeloId]);
+//   await db.query(`/* SQL acima */`, [modeloId]);
 
-    res.json({ ok: true });
-  }
-);
+//     res.json({ ok: true });
+//   }
+// );
 
 // ===========================
 // PPV
@@ -643,512 +643,512 @@ router.post("/admin/login", async (req, res) => {
 // ===========================
 // APROVAR BANCO
 // ===========================
-router.post("/admin/modelo/:id/validar-banco", auth, authAdmin, async (req,res)=>{
+// router.post("/admin/modelo/:id/validar-banco", auth, authAdmin, async (req,res)=>{
 
-const modelo_id = Number(req.params.id);
-const { status, motivo } = req.body;
+// const modelo_id = Number(req.params.id);
+// const { status, motivo } = req.body;
 
-await db.query(`
-UPDATE modelo_dados_bancarios
-SET
-status = $1,
-motivo_rejeicao = $2,
-aprovado_em = CASE WHEN $4::text = 'aprovado' THEN NOW() ELSE NULL END
-WHERE modelo_id = $3
-`,[
-status,
-motivo || null,
-modelo_id,
-status === "aprovado"
-]);
+// await db.query(`
+// UPDATE modelo_dados_bancarios
+// SET
+// status = $1,
+// motivo_rejeicao = $2,
+// aprovado_em = CASE WHEN $4::text = 'aprovado' THEN NOW() ELSE NULL END
+// WHERE modelo_id = $3
+// `,[
+// status,
+// motivo || null,
+// modelo_id,
+// status === "aprovado"
+// ]);
 
-res.json({ ok:true });
+// res.json({ ok:true });
 
-});
+// });
 
 // ===========================
 // REGISTRAR PGMT
 // ===========================
 
-router.post("/admin/modelo/:id/registrar-pagamento", auth, authAdmin, upload.single("recibo"), async (req,res)=>{
+// router.post("/admin/modelo/:id/registrar-pagamento", auth, authAdmin, upload.single("recibo"), async (req,res)=>{
 
-const modelo_id = Number(req.params.id);
+// const modelo_id = Number(req.params.id);
 
-const { mes, midias, assinaturas } = req.body;
+// const { mes, midias, assinaturas } = req.body;
 
-const mesFormatado = mes ? mes + "-01" : null;
+// const mesFormatado = mes ? mes + "-01" : null;
 
-let recibo_url = null;
+// let recibo_url = null;
 
-if(req.file){
+// if(req.file){
 
-const key = `recibos/${modelo_id}/${Date.now()}-${req.file.originalname}`;
+// const key = `recibos/${modelo_id}/${Date.now()}-${req.file.originalname}`;
 
-await s3Privado.putObject({
-Bucket: process.env.B2_BUCKET_PRIVATE,
-Key: key,
-Body: req.file.buffer,
-ContentType: req.file.mimetype
-}).promise();
+// await s3Privado.putObject({
+// Bucket: process.env.B2_BUCKET_PRIVATE,
+// Key: key,
+// Body: req.file.buffer,
+// ContentType: req.file.mimetype
+// }).promise();
 
-recibo_url = key;
+// recibo_url = key;
 
-}
-const total_geral =
-Number(midias || 0) + Number(assinaturas || 0);
+// }
+// const total_geral =
+// Number(midias || 0) + Number(assinaturas || 0);
 
-try{
+// try{
 
-await db.query(`
-INSERT INTO modelo_pagamentos
-(modelo_id, mes, total_midias, total_assinaturas, total_geral, status, recibo_url)
-VALUES ($1,$2,$3,$4,$5,'pago', $6)
-`,[
-modelo_id,
-mesFormatado,
-midias,
-assinaturas,
-total_geral,
-recibo_url
-]);
+// await db.query(`
+// INSERT INTO modelo_pagamentos
+// (modelo_id, mes, total_midias, total_assinaturas, total_geral, status, recibo_url)
+// VALUES ($1,$2,$3,$4,$5,'pago', $6)
+// `,[
+// modelo_id,
+// mesFormatado,
+// midias,
+// assinaturas,
+// total_geral,
+// recibo_url
+// ]);
 
-res.json({ok:true});
+// res.json({ok:true});
 
-}catch(err){
-console.error("Erro registrar pagamento:",err);
-res.status(500).json({error:"Erro registrar pagamento"});
-}
+// }catch(err){
+// console.error("Erro registrar pagamento:",err);
+// res.status(500).json({error:"Erro registrar pagamento"});
+// }
 
-});
+// });
 
 // ===========================
 // GETS - ADMIN
 // ===========================
 
-router.get("/relatorios", auth, requireRole("admin"), (req, res) => { 
+// router.get("/relatorios", auth, requireRole("admin"), (req, res) => { 
 
-  res.sendFile(
-    path.join(__dirname, "admin-pages", "chart.html")
-    );
-  }
-);
+//   res.sendFile(
+//     path.join(__dirname, "admin-pages", "chart.html")
+//     );
+//   }
+// );
 
-router.get("/admin/dashboard", auth, authAdmin, async (req, res) => {
-  try {
-    const mesParam = req.query.mes;
-    let ano = null;
-    let mes = null;
+// router.get("/admin/dashboard", auth, authAdmin, async (req, res) => {
+//   try {
+//     const mesParam = req.query.mes;
+//     let ano = null;
+//     let mes = null;
 
-    if (mesParam) {
-      const partes = mesParam.split("-");
-      if (
-        partes.length !== 2 ||
-        !/^\d{4}$/.test(partes[0]) ||
-        !/^(0[1-9]|1[0-2])$/.test(partes[1])
-      ) {
-        return res.status(400).json({ error: "Formato de mês inválido (YYYY-MM)" });
-      }
+//     if (mesParam) {
+//       const partes = mesParam.split("-");
+//       if (
+//         partes.length !== 2 ||
+//         !/^\d{4}$/.test(partes[0]) ||
+//         !/^(0[1-9]|1[0-2])$/.test(partes[1])
+//       ) {
+//         return res.status(400).json({ error: "Formato de mês inválido (YYYY-MM)" });
+//       }
 
-      ano = Number(partes[0]);
-      mes = Number(partes[1]);
-    }
+//       ano = Number(partes[0]);
+//       mes = Number(partes[1]);
+//     }
 
-    const result = await db.query(
-      `
-      WITH base AS (
-        SELECT
-          valor_modelo,
-          velvet_fee,
-          agency_fee,
-          taxa_gateway,
-          (created_at AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
-        FROM transacoes_agency
-        WHERE status = 'pago'
-      )
-      SELECT
+//     const result = await db.query(
+//       `
+//       WITH base AS (
+//         SELECT
+//           valor_modelo,
+//           velvet_fee,
+//           agency_fee,
+//           taxa_gateway,
+//           (created_at AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
+//         FROM transacoes_agency
+//         WHERE status = 'pago'
+//       )
+//       SELECT
 
-        /* ================= HOJE (São Paulo) ================= */
-        COALESCE(SUM(CASE WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date THEN velvet_fee END), 0) AS velvet_hoje,
-        COALESCE(SUM(CASE WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date THEN agency_fee END), 0) AS agencia_hoje,
-        COALESCE(SUM(CASE WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date THEN taxa_gateway END), 0) AS gateway_hoje,
-        COALESCE(SUM(CASE WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date THEN valor_modelo END), 0) AS modelo_hoje,
+//         /* ================= HOJE (São Paulo) ================= */
+//         COALESCE(SUM(CASE WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date THEN velvet_fee END), 0) AS velvet_hoje,
+//         COALESCE(SUM(CASE WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date THEN agency_fee END), 0) AS agencia_hoje,
+//         COALESCE(SUM(CASE WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date THEN taxa_gateway END), 0) AS gateway_hoje,
+//         COALESCE(SUM(CASE WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date THEN valor_modelo END), 0) AS modelo_hoje,
 
-        /* ================= MÊS SELECIONADO ================= */
-        COALESCE(SUM(CASE
-          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
-           AND EXTRACT(MONTH FROM data_sp) = COALESCE($2, EXTRACT(MONTH FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
-          THEN velvet_fee END), 0) AS velvet_mes,
+//         /* ================= MÊS SELECIONADO ================= */
+//         COALESCE(SUM(CASE
+//           WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+//            AND EXTRACT(MONTH FROM data_sp) = COALESCE($2, EXTRACT(MONTH FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+//           THEN velvet_fee END), 0) AS velvet_mes,
 
-        COALESCE(SUM(CASE
-          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
-           AND EXTRACT(MONTH FROM data_sp) = COALESCE($2, EXTRACT(MONTH FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
-          THEN agency_fee END), 0) AS agencia_mes,
+//         COALESCE(SUM(CASE
+//           WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+//            AND EXTRACT(MONTH FROM data_sp) = COALESCE($2, EXTRACT(MONTH FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+//           THEN agency_fee END), 0) AS agencia_mes,
 
-        COALESCE(SUM(CASE
-          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
-           AND EXTRACT(MONTH FROM data_sp) = COALESCE($2, EXTRACT(MONTH FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
-          THEN taxa_gateway END), 0) AS gateway_mes,
+//         COALESCE(SUM(CASE
+//           WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+//            AND EXTRACT(MONTH FROM data_sp) = COALESCE($2, EXTRACT(MONTH FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+//           THEN taxa_gateway END), 0) AS gateway_mes,
 
-        COALESCE(SUM(CASE
-          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
-           AND EXTRACT(MONTH FROM data_sp) = COALESCE($2, EXTRACT(MONTH FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
-          THEN valor_modelo END), 0) AS totalm_mes,
+//         COALESCE(SUM(CASE
+//           WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+//            AND EXTRACT(MONTH FROM data_sp) = COALESCE($2, EXTRACT(MONTH FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+//           THEN valor_modelo END), 0) AS totalm_mes,
 
-        COALESCE(SUM(CASE
-          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
-           AND EXTRACT(MONTH FROM data_sp) = COALESCE($2, EXTRACT(MONTH FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
-          THEN (velvet_fee + agency_fee + taxa_gateway)
-        END), 0) AS total_mes,
+//         COALESCE(SUM(CASE
+//           WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+//            AND EXTRACT(MONTH FROM data_sp) = COALESCE($2, EXTRACT(MONTH FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+//           THEN (velvet_fee + agency_fee + taxa_gateway)
+//         END), 0) AS total_mes,
 
-        /* ================= ANO DO MÊS SELECIONADO ================= */
-        COALESCE(SUM(CASE
-          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
-          THEN velvet_fee END), 0) AS velvet_ano,
+//         /* ================= ANO DO MÊS SELECIONADO ================= */
+//         COALESCE(SUM(CASE
+//           WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+//           THEN velvet_fee END), 0) AS velvet_ano,
 
-        COALESCE(SUM(CASE
-          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
-          THEN agency_fee END), 0) AS agencia_ano,
+//         COALESCE(SUM(CASE
+//           WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+//           THEN agency_fee END), 0) AS agencia_ano,
 
-        COALESCE(SUM(CASE
-          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
-          THEN taxa_gateway END), 0) AS gateway_ano,
+//         COALESCE(SUM(CASE
+//           WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+//           THEN taxa_gateway END), 0) AS gateway_ano,
 
-        COALESCE(SUM(CASE
-          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
-          THEN valor_modelo END), 0) AS modelo_ano
+//         COALESCE(SUM(CASE
+//           WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($1, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+//           THEN valor_modelo END), 0) AS modelo_ano
 
-      FROM base
-      `,
-      [ano, mes]
-    );
+//       FROM base
+//       `,
+//       [ano, mes]
+//     );
 
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error("Erro dashboard admin:", err);
-    res.status(500).json({ error: "Erro ao carregar dashboard" });
-  }
-});
+//     res.json(result.rows[0]);
+//   } catch (err) {
+//     console.error("Erro dashboard admin:", err);
+//     res.status(500).json({ error: "Erro ao carregar dashboard" });
+//   }
+// });
 
-router.get("/admin/modelos", auth, authAdmin, async (req,res)=>{
+// router.get("/admin/modelos", auth, authAdmin, async (req,res)=>{
 
-  const result = await db.query(`
-    SELECT m.id, m.nome
-    FROM modelos m
-    JOIN modelos_verificacao mv
-      ON mv.modelo_id = m.id
-    WHERE mv.status = 'aprovado'
-    ORDER BY m.nome ASC
-  `);
+//   const result = await db.query(`
+//     SELECT m.id, m.nome
+//     FROM modelos m
+//     JOIN modelos_verificacao mv
+//       ON mv.modelo_id = m.id
+//     WHERE mv.status = 'aprovado'
+//     ORDER BY m.nome ASC
+//   `);
 
-  res.json(result.rows);
-});
+//   res.json(result.rows);
+// });
 
-router.get("/admin/modelo/:id", auth, authAdmin, async (req, res) => {
-  try {
-    const modelo_id = Number(req.params.id);
+// router.get("/admin/modelo/:id", auth, authAdmin, async (req, res) => {
+//   try {
+//     const modelo_id = Number(req.params.id);
 
-    if (!Number.isInteger(modelo_id) || modelo_id <= 0) {
-      return res.status(400).json({ error: "Modelo inválida" });
-    }
+//     if (!Number.isInteger(modelo_id) || modelo_id <= 0) {
+//       return res.status(400).json({ error: "Modelo inválida" });
+//     }
 
-    const mesParam = req.query.mes; // ex: 2026-03
-    let ano = null;
-    let mes = null;
+//     const mesParam = req.query.mes; // ex: 2026-03
+//     let ano = null;
+//     let mes = null;
 
-    if (mesParam) {
-      const partes = mesParam.split("-");
+//     if (mesParam) {
+//       const partes = mesParam.split("-");
 
-      if (
-        partes.length !== 2 ||
-        !/^\d{4}$/.test(partes[0]) ||
-        !/^(0[1-9]|1[0-2])$/.test(partes[1])
-      ) {
-        return res.status(400).json({ error: "Formato de mês inválido (YYYY-MM)" });
-      }
+//       if (
+//         partes.length !== 2 ||
+//         !/^\d{4}$/.test(partes[0]) ||
+//         !/^(0[1-9]|1[0-2])$/.test(partes[1])
+//       ) {
+//         return res.status(400).json({ error: "Formato de mês inválido (YYYY-MM)" });
+//       }
 
-      ano = Number(partes[0]);
-      mes = Number(partes[1]);
-    }
+//       ano = Number(partes[0]);
+//       mes = Number(partes[1]);
+//     }
 
-    const result = await db.query(
-      `
-      WITH base AS (
-        SELECT
-          valor_modelo,
-          velvet_fee,
-          agency_fee,
-          taxa_gateway,
-          (created_at AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
-        FROM transacoes_agency
-        WHERE status = 'pago'
-          AND modelo_id = $1
-      )
+//     const result = await db.query(
+//       `
+//       WITH base AS (
+//         SELECT
+//           valor_modelo,
+//           velvet_fee,
+//           agency_fee,
+//           taxa_gateway,
+//           (created_at AT TIME ZONE 'America/Sao_Paulo')::date AS data_sp
+//         FROM transacoes_agency
+//         WHERE status = 'pago'
+//           AND modelo_id = $1
+//       )
 
-      SELECT
-        m.nome,
+//       SELECT
+//         m.nome,
 
-        /* ================= DIA (São Paulo) ================= */
+//         /* ================= DIA (São Paulo) ================= */
 
-        COALESCE(SUM(CASE
-          WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
-          THEN valor_modelo END), 0) AS modelo_dia,
+//         COALESCE(SUM(CASE
+//           WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+//           THEN valor_modelo END), 0) AS modelo_dia,
 
-        COALESCE(SUM(CASE
-          WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
-          THEN agency_fee END), 0) AS agencia_dia,
+//         COALESCE(SUM(CASE
+//           WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+//           THEN agency_fee END), 0) AS agencia_dia,
 
-        COALESCE(SUM(CASE
-          WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
-          THEN velvet_fee END), 0) AS velvet_dia,
+//         COALESCE(SUM(CASE
+//           WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+//           THEN velvet_fee END), 0) AS velvet_dia,
 
-        COALESCE(SUM(CASE
-          WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
-          THEN taxa_gateway END), 0) AS gateway_dia,
+//         COALESCE(SUM(CASE
+//           WHEN data_sp = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+//           THEN taxa_gateway END), 0) AS gateway_dia,
 
-        /* ================= MÊS SELECIONADO ================= */
+//         /* ================= MÊS SELECIONADO ================= */
 
-        COALESCE(SUM(CASE
-          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($2, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
-           AND EXTRACT(MONTH FROM data_sp) = COALESCE($3, EXTRACT(MONTH FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
-          THEN valor_modelo END), 0) AS modelo_mes,
+//         COALESCE(SUM(CASE
+//           WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($2, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+//            AND EXTRACT(MONTH FROM data_sp) = COALESCE($3, EXTRACT(MONTH FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+//           THEN valor_modelo END), 0) AS modelo_mes,
 
-        COALESCE(SUM(CASE
-          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($2, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
-           AND EXTRACT(MONTH FROM data_sp) = COALESCE($3, EXTRACT(MONTH FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
-          THEN agency_fee END), 0) AS agencia_mes,
+//         COALESCE(SUM(CASE
+//           WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($2, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+//            AND EXTRACT(MONTH FROM data_sp) = COALESCE($3, EXTRACT(MONTH FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+//           THEN agency_fee END), 0) AS agencia_mes,
 
-        COALESCE(SUM(CASE
-          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($2, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
-           AND EXTRACT(MONTH FROM data_sp) = COALESCE($3, EXTRACT(MONTH FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
-          THEN velvet_fee END), 0) AS velvet_mes,
+//         COALESCE(SUM(CASE
+//           WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($2, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+//            AND EXTRACT(MONTH FROM data_sp) = COALESCE($3, EXTRACT(MONTH FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+//           THEN velvet_fee END), 0) AS velvet_mes,
 
-        COALESCE(SUM(CASE
-          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($2, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
-           AND EXTRACT(MONTH FROM data_sp) = COALESCE($3, EXTRACT(MONTH FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
-          THEN taxa_gateway END), 0) AS gateway_mes,
+//         COALESCE(SUM(CASE
+//           WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($2, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+//            AND EXTRACT(MONTH FROM data_sp) = COALESCE($3, EXTRACT(MONTH FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+//           THEN taxa_gateway END), 0) AS gateway_mes,
 
-        /* ================= ANO DO MÊS SELECIONADO ================= */
+//         /* ================= ANO DO MÊS SELECIONADO ================= */
 
-        COALESCE(SUM(CASE
-          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($2, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
-          THEN valor_modelo END), 0) AS modelo_ano,
+//         COALESCE(SUM(CASE
+//           WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($2, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+//           THEN valor_modelo END), 0) AS modelo_ano,
 
-        COALESCE(SUM(CASE
-          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($2, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
-          THEN agency_fee END), 0) AS agencia_ano,
+//         COALESCE(SUM(CASE
+//           WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($2, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+//           THEN agency_fee END), 0) AS agencia_ano,
 
-        COALESCE(SUM(CASE
-          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($2, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
-          THEN velvet_fee END), 0) AS velvet_ano,
+//         COALESCE(SUM(CASE
+//           WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($2, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+//           THEN velvet_fee END), 0) AS velvet_ano,
 
-        COALESCE(SUM(CASE
-          WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($2, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
-          THEN taxa_gateway END), 0) AS gateway_ano
+//         COALESCE(SUM(CASE
+//           WHEN EXTRACT(YEAR FROM data_sp) = COALESCE($2, EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'America/Sao_Paulo')))
+//           THEN taxa_gateway END), 0) AS gateway_ano
 
-      FROM modelos m
-      LEFT JOIN base ON TRUE
-      WHERE m.id = $1
-      GROUP BY m.nome
-      `,
-      [modelo_id, ano, mes]
-    );
+//       FROM modelos m
+//       LEFT JOIN base ON TRUE
+//       WHERE m.id = $1
+//       GROUP BY m.nome
+//       `,
+//       [modelo_id, ano, mes]
+//     );
 
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: "Modelo não encontrada" });
-    }
+//     if (result.rowCount === 0) {
+//       return res.status(404).json({ error: "Modelo não encontrada" });
+//     }
 
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error("Erro /admin/modelo/:id:", err);
-    res.status(500).json({ error: "Erro ao buscar dados da modelo" });
-  }
-});
+//     res.json(result.rows[0]);
+//   } catch (err) {
+//     console.error("Erro /admin/modelo/:id:", err);
+//     res.status(500).json({ error: "Erro ao buscar dados da modelo" });
+//   }
+// });
 
-router.get("/admin/perfis", auth, authAdmin, async (req,res)=>{
+// router.get("/admin/perfis", auth, authAdmin, async (req,res)=>{
 
-  const status = req.query.status || "em_analise";
+//   const status = req.query.status || "em_analise";
 
-  const page = Math.max(Number(req.query.page) || 1, 1);
-  const limit = 10;
-  const offset = (page - 1) * limit;
+//   const page = Math.max(Number(req.query.page) || 1, 1);
+//   const limit = 10;
+//   const offset = (page - 1) * limit;
 
-  try {
+//   try {
 
-    // TOTAL (CLIENTES + MODELOS)
-    const totalRes = await db.query(`
-      SELECT COUNT(*) FROM (
-        SELECT id FROM modelos_verificacao WHERE status = $1
-        UNION ALL
-        SELECT id FROM clientes_verificacao WHERE status = $1
-      ) t
-    `,[status]);
+//     // TOTAL (CLIENTES + MODELOS)
+//     const totalRes = await db.query(`
+//       SELECT COUNT(*) FROM (
+//         SELECT id FROM modelos_verificacao WHERE status = $1
+//         UNION ALL
+//         SELECT id FROM clientes_verificacao WHERE status = $1
+//       ) t
+//     `,[status]);
 
-    const total = Number(totalRes.rows[0].count);
-    const totalPages = Math.max(Math.ceil(total / limit), 1);
+//     const total = Number(totalRes.rows[0].count);
+//     const totalPages = Math.max(Math.ceil(total / limit), 1);
 
   
-    // BUSCA UNIFICADA 
-    const result = await db.query(`
-      (
-        -- ================= MODELOS =================
-        SELECT
-          mv.modelo_id AS id,
-          'modelo' AS tipo,
-          m.nome_exibicao,
-          mv.status,
-          mv.doc_frente_url,
-          mv.doc_verso_url,
-          mv.selfie_url,
-          mv.motivo_rejeicao,
-          mv.criado_em,
+//     // BUSCA UNIFICADA 
+//     const result = await db.query(`
+//       (
+//         -- ================= MODELOS =================
+//         SELECT
+//           mv.modelo_id AS id,
+//           'modelo' AS tipo,
+//           m.nome_exibicao,
+//           mv.status,
+//           mv.doc_frente_url,
+//           mv.doc_verso_url,
+//           mv.selfie_url,
+//           mv.motivo_rejeicao,
+//           mv.criado_em,
 
-          -- MODELO
-          m.avatar,
-          m.capa,
-          m.bio,
-          m.local,
-          m.verificada,
-          m.agencia_id,
+//           -- MODELO
+//           m.avatar,
+//           m.capa,
+//           m.bio,
+//           m.local,
+//           m.verificada,
+//           m.agencia_id,
 
-          -- MODELOS_DADOS
-          md.nome_completo,
-          md.data_nascimento,
-          md.telefone,
-          md.endereco,
-          md.pais,
-          md.estado,
-          md.cidade,
-          md.instagram,
-          md.tiktok,
-          md.vip_preco,
+//           -- MODELOS_DADOS
+//           md.nome_completo,
+//           md.data_nascimento,
+//           md.telefone,
+//           md.endereco,
+//           md.pais,
+//           md.estado,
+//           md.cidade,
+//           md.instagram,
+//           md.tiktok,
+//           md.vip_preco,
 
-          -- CLIENTE DONO
-          u.email,
+//           -- CLIENTE DONO
+//           u.email,
 
-          -- CLIENTES_DADOS
-          cd.telefone AS cliente_telefone,
-          cd.endereco AS cliente_endereco,
-          cd.pais AS cliente_pais,
-          cd.estado AS cliente_estado,
-          cd.cidade AS cliente_cidade,
-          cd.nome_exibicao AS cliente_nome_exibicao,
-          cd.instagram AS cliente_instagram,
-          cd.tiktok AS cliente_tiktok,
-          cd.local AS cliente_local,
-          cd.bio AS cliente_bio
+//           -- CLIENTES_DADOS
+//           cd.telefone AS cliente_telefone,
+//           cd.endereco AS cliente_endereco,
+//           cd.pais AS cliente_pais,
+//           cd.estado AS cliente_estado,
+//           cd.cidade AS cliente_cidade,
+//           cd.nome_exibicao AS cliente_nome_exibicao,
+//           cd.instagram AS cliente_instagram,
+//           cd.tiktok AS cliente_tiktok,
+//           cd.local AS cliente_local,
+//           cd.bio AS cliente_bio
 
-        FROM modelos_verificacao mv
-        JOIN modelos m ON m.id = mv.modelo_id
-        LEFT JOIN modelos_dados md ON md.modelo_id = m.id
-        LEFT JOIN users u ON u.id = m.user_id
-        LEFT JOIN clientes c ON c.user_id = u.id
-        LEFT JOIN clientes_dados cd ON cd.cliente_id = c.id
+//         FROM modelos_verificacao mv
+//         JOIN modelos m ON m.id = mv.modelo_id
+//         LEFT JOIN modelos_dados md ON md.modelo_id = m.id
+//         LEFT JOIN users u ON u.id = m.user_id
+//         LEFT JOIN clientes c ON c.user_id = u.id
+//         LEFT JOIN clientes_dados cd ON cd.cliente_id = c.id
 
-        WHERE mv.status = $1
-      )
+//         WHERE mv.status = $1
+//       )
 
-      UNION ALL
+//       UNION ALL
 
-      (
-        -- ================= CLIENTES =================
+//       (
+//         -- ================= CLIENTES =================
 
-  SELECT
-    cv.cliente_id AS id,
-    'cliente' AS tipo,
-    cd.nome_exibicao,
-    cv.status,
-    cv.doc_frente_url,
-    cv.doc_verso_url,
-    cv.selfie_url,
-    cv.motivo_rejeicao,
-    cv.criado_em,
+//   SELECT
+//     cv.cliente_id AS id,
+//     'cliente' AS tipo,
+//     cd.nome_exibicao,
+//     cv.status,
+//     cv.doc_frente_url,
+//     cv.doc_verso_url,
+//     cv.selfie_url,
+//     cv.motivo_rejeicao,
+//     cv.criado_em,
 
-    -- CAMPOS PADRÃO (MODELO → NULL PARA CLIENTE)
-    cd.avatar,
-    cd.capa,
-    cd.bio,
-    cd.local,
-    NULL AS verificada,
-    NULL AS agencia_id,
+//     -- CAMPOS PADRÃO (MODELO → NULL PARA CLIENTE)
+//     cd.avatar,
+//     cd.capa,
+//     cd.bio,
+//     cd.local,
+//     NULL AS verificada,
+//     NULL AS agencia_id,
 
-    -- DADOS PRINCIPAIS
-    cd.nome_completo,
-    cd.data_nascimento,
-    cd.telefone,
-    cd.endereco,
-    cd.pais,
-    cd.estado,
-    cd.cidade,
-    cd.instagram,
-    cd.tiktok,
-    cd.vip_preco,
+//     -- DADOS PRINCIPAIS
+//     cd.nome_completo,
+//     cd.data_nascimento,
+//     cd.telefone,
+//     cd.endereco,
+//     cd.pais,
+//     cd.estado,
+//     cd.cidade,
+//     cd.instagram,
+//     cd.tiktok,
+//     cd.vip_preco,
 
-    -- EMAIL
-    u.email,
+//     -- EMAIL
+//     u.email,
 
-    -- CAMPOS ESPECÍFICOS CLIENTE
-    cd.telefone AS cliente_telefone,
-    cd.endereco AS cliente_endereco,
-    cd.pais AS cliente_pais,
-    cd.estado AS cliente_estado,
-    cd.cidade AS cliente_cidade,
-    cd.nome_exibicao AS cliente_nome_exibicao,
-    cd.instagram AS cliente_instagram,
-    cd.tiktok AS cliente_tiktok,
-    cd.local AS cliente_local,
-    cd.bio AS cliente_bio
+//     -- CAMPOS ESPECÍFICOS CLIENTE
+//     cd.telefone AS cliente_telefone,
+//     cd.endereco AS cliente_endereco,
+//     cd.pais AS cliente_pais,
+//     cd.estado AS cliente_estado,
+//     cd.cidade AS cliente_cidade,
+//     cd.nome_exibicao AS cliente_nome_exibicao,
+//     cd.instagram AS cliente_instagram,
+//     cd.tiktok AS cliente_tiktok,
+//     cd.local AS cliente_local,
+//     cd.bio AS cliente_bio
 
-  FROM clientes_verificacao cv
-  JOIN clientes c ON c.id = cv.cliente_id
-  JOIN users u ON u.id = c.user_id
-  LEFT JOIN clientes_dados cd ON cd.cliente_id = c.id
+//   FROM clientes_verificacao cv
+//   JOIN clientes c ON c.id = cv.cliente_id
+//   JOIN users u ON u.id = c.user_id
+//   LEFT JOIN clientes_dados cd ON cd.cliente_id = c.id
 
-  WHERE cv.status = $1
-)
-      ORDER BY criado_em DESC NULLS LAST
-      LIMIT $2 OFFSET $3
-    `,[status, limit, offset]);
+//   WHERE cv.status = $1
+// )
+//       ORDER BY criado_em DESC NULLS LAST
+//       LIMIT $2 OFFSET $3
+//     `,[status, limit, offset]);
 
-    // URLS PRIVADAS
-    const perfisFormatados = result.rows.map(p => ({
-      ...p,
+//     // URLS PRIVADAS
+//     const perfisFormatados = result.rows.map(p => ({
+//       ...p,
 
-      doc_frente_url: p.doc_frente_url
-        ? s3Privado.getSignedUrl("getObject", {
-            Bucket: process.env.B2_BUCKET_PRIVATE,
-            Key: p.doc_frente_url,
-            Expires: 60 * 10
-          })
-        : null,
+//       doc_frente_url: p.doc_frente_url
+//         ? s3Privado.getSignedUrl("getObject", {
+//             Bucket: process.env.B2_BUCKET_PRIVATE,
+//             Key: p.doc_frente_url,
+//             Expires: 60 * 10
+//           })
+//         : null,
 
-      doc_verso_url: p.doc_verso_url
-        ? s3Privado.getSignedUrl("getObject", {
-            Bucket: process.env.B2_BUCKET_PRIVATE,
-            Key: p.doc_verso_url,
-            Expires: 60 * 10
-          })
-        : null,
+//       doc_verso_url: p.doc_verso_url
+//         ? s3Privado.getSignedUrl("getObject", {
+//             Bucket: process.env.B2_BUCKET_PRIVATE,
+//             Key: p.doc_verso_url,
+//             Expires: 60 * 10
+//           })
+//         : null,
 
-      selfie_url: p.selfie_url
-        ? s3Privado.getSignedUrl("getObject", {
-            Bucket: process.env.B2_BUCKET_PRIVATE,
-            Key: p.selfie_url,
-            Expires: 60 * 10
-          })
-        : null
-    }));
+//       selfie_url: p.selfie_url
+//         ? s3Privado.getSignedUrl("getObject", {
+//             Bucket: process.env.B2_BUCKET_PRIVATE,
+//             Key: p.selfie_url,
+//             Expires: 60 * 10
+//           })
+//         : null
+//     }));
 
-    res.json({
-      dados: perfisFormatados,
-      totalPages,
-      page
-    });
+//     res.json({
+//       dados: perfisFormatados,
+//       totalPages,
+//       page
+//     });
 
-  } catch(err){
-    console.error("Erro buscar perfis:", err);
-    res.status(500).json({ error:"Erro ao buscar perfis" });
-  }
-});
+//   } catch(err){
+//     console.error("Erro buscar perfis:", err);
+//     res.status(500).json({ error:"Erro ao buscar perfis" });
+//   }
+// });
 
 // router.get("/admin/verificacoes-aprovadas", auth, authAdmin, async (req, res) => {
 //   try {
@@ -1347,66 +1347,66 @@ router.get("/admin/perfis", auth, authAdmin, async (req,res)=>{
 
 // });
 
-router.get("/admin/modelo/:id/gestao", auth, authAdmin, async (req,res)=>{
+// router.get("/admin/modelo/:id/gestao", auth, authAdmin, async (req,res)=>{
 
-const modelo_id = Number(req.params.id);
+// const modelo_id = Number(req.params.id);
 
-if(!modelo_id){
-return res.status(400).json({error:"Modelo inválida"});
-}
+// if(!modelo_id){
+// return res.status(400).json({error:"Modelo inválida"});
+// }
 
-try{
+// try{
 
-const bancoRes = await db.query(`
-SELECT
-titular_nome,
-titular_documento,
-banco,
-agencia,
-conta,
-conta_tipo,
-pix_tipo,
-pix_chave,
-status,
-aprovado_em
-FROM modelo_dados_bancarios
-WHERE modelo_id = $1
-ORDER BY criado_em DESC
-LIMIT 1
-`,[modelo_id]);
+// const bancoRes = await db.query(`
+// SELECT
+// titular_nome,
+// titular_documento,
+// banco,
+// agencia,
+// conta,
+// conta_tipo,
+// pix_tipo,
+// pix_chave,
+// status,
+// aprovado_em
+// FROM modelo_dados_bancarios
+// WHERE modelo_id = $1
+// ORDER BY criado_em DESC
+// LIMIT 1
+// `,[modelo_id]);
 
-const agenciaRes = await db.query(`
-SELECT
-a.id,
-a.nome,
-m.agencia_desde AS desde
-FROM modelos m
-LEFT JOIN agencias a
-ON a.id = m.agencia_id
-WHERE m.id = $1
-`,[modelo_id]);
+// const agenciaRes = await db.query(`
+// SELECT
+// a.id,
+// a.nome,
+// m.agencia_desde AS desde
+// FROM modelos m
+// LEFT JOIN agencias a
+// ON a.id = m.agencia_id
+// WHERE m.id = $1
+// `,[modelo_id]);
 
-const feedRes = await db.query(`
-SELECT feed
-FROM modelos
-WHERE id = $1
-`,[modelo_id]);
+// const feedRes = await db.query(`
+// SELECT feed
+// FROM modelos
+// WHERE id = $1
+// `,[modelo_id]);
 
-const feed = feedRes.rows.length ? feedRes.rows[0].feed : false;
+// const feed = feedRes.rows.length ? feedRes.rows[0].feed : false;
 
-res.json({
-banco: bancoRes.rows[0] || null,
-agencia: agenciaRes.rows[0] || null,
-feed,
-pagamentos: []
-});
+// res.json({
+// banco: bancoRes.rows[0] || null,
+// agencia: agenciaRes.rows[0] || null,
+// feed,
+// pagamentos: []
+// });
 
-}catch(err){
-console.error("Erro carregar gestão:", err);
-res.status(500).json({error:"Erro ao carregar dados bancários"});
-}
+// }catch(err){
+// console.error("Erro carregar gestão:", err);
+// res.status(500).json({error:"Erro ao carregar dados bancários"});
+// }
 
-});
+// });
 
 
 router.get("/admin/modelo/:id/historico-bancario", auth, authAdmin, async (req,res)=>{
@@ -1456,154 +1456,154 @@ res.status(500).json({error:"Erro ao buscar histórico"});
 
 });
 
-router.get("/admin/modelo/:id/pagamentos", auth, authAdmin, async (req,res)=>{
+// router.get("/admin/modelo/:id/pagamentos", auth, authAdmin, async (req,res)=>{
 
-const modelo_id = Number(req.params.id);
+// const modelo_id = Number(req.params.id);
 
-const page = Number(req.query.page) || 1;
-const limit = 10;
-const offset = (page - 1) * limit;
+// const page = Number(req.query.page) || 1;
+// const limit = 10;
+// const offset = (page - 1) * limit;
 
-try{
+// try{
 
-const totalRes = await db.query(`
-SELECT COUNT(*)
-FROM modelo_pagamentos
-WHERE modelo_id=$1
-`,[modelo_id]);
+// const totalRes = await db.query(`
+// SELECT COUNT(*)
+// FROM modelo_pagamentos
+// WHERE modelo_id=$1
+// `,[modelo_id]);
 
-const total = Number(totalRes.rows[0].count);
-const totalPages = Math.ceil(total / limit);
+// const total = Number(totalRes.rows[0].count);
+// const totalPages = Math.ceil(total / limit);
 
-const result = await db.query(`
-SELECT
-id,
-mes,
-total_midias,
-total_assinaturas,
-total_geral,
-status,
-pago_em,
-recibo_url
-FROM modelo_pagamentos
-WHERE modelo_id=$1
-ORDER BY mes DESC
-LIMIT $2 OFFSET $3
-`,[modelo_id,limit,offset]);
+// const result = await db.query(`
+// SELECT
+// id,
+// mes,
+// total_midias,
+// total_assinaturas,
+// total_geral,
+// status,
+// pago_em,
+// recibo_url
+// FROM modelo_pagamentos
+// WHERE modelo_id=$1
+// ORDER BY mes DESC
+// LIMIT $2 OFFSET $3
+// `,[modelo_id,limit,offset]);
 
-const pagamentos = result.rows;
+// const pagamentos = result.rows;
 
-for(const p of pagamentos){
+// for(const p of pagamentos){
 
-if(p.recibo_url){
+// if(p.recibo_url){
 
-p.recibo_url = s3Privado.getSignedUrl("getObject",{
-Bucket: process.env.B2_BUCKET_PRIVATE,
-Key: p.recibo_url,
-Expires: 300
-});
+// p.recibo_url = s3Privado.getSignedUrl("getObject",{
+// Bucket: process.env.B2_BUCKET_PRIVATE,
+// Key: p.recibo_url,
+// Expires: 300
+// });
 
-}
+// }
 
-}
+// }
 
-res.json({
-dados: pagamentos,
-page,
-totalPages
-});
+// res.json({
+// dados: pagamentos,
+// page,
+// totalPages
+// });
 
-}catch(err){
-console.error("Erro listar pagamentos:",err);
-res.status(500).json({error:"Erro listar pagamentos"});
-}
+// }catch(err){
+// console.error("Erro listar pagamentos:",err);
+// res.status(500).json({error:"Erro listar pagamentos"});
+// }
 
-});
+// });
 
-router.get("/admin/modelo/:id/saldo", auth, authAdmin, async (req,res)=>{
+// router.get("/admin/modelo/:id/saldo", auth, authAdmin, async (req,res)=>{
 
-const modelo_id = Number(req.params.id);
+// const modelo_id = Number(req.params.id);
 
-try{
+// try{
 
-const ganhosRes = await db.query(`
-SELECT
-COALESCE(SUM(valor_modelo),0) AS ganhos
-FROM transacoes_agency
-WHERE modelo_id = $1
-AND status = 'pago'
-`,[modelo_id]);
+// const ganhosRes = await db.query(`
+// SELECT
+// COALESCE(SUM(valor_modelo),0) AS ganhos
+// FROM transacoes_agency
+// WHERE modelo_id = $1
+// AND status = 'pago'
+// `,[modelo_id]);
 
-const pagosRes = await db.query(`
-SELECT
-COALESCE(SUM(total_geral),0) AS pagos
-FROM modelo_pagamentos
-WHERE modelo_id = $1
-AND status = 'pago'
-`,[modelo_id]);
+// const pagosRes = await db.query(`
+// SELECT
+// COALESCE(SUM(total_geral),0) AS pagos
+// FROM modelo_pagamentos
+// WHERE modelo_id = $1
+// AND status = 'pago'
+// `,[modelo_id]);
 
-const ganhos = Number(ganhosRes.rows[0].ganhos);
-const pagos = Number(pagosRes.rows[0].pagos);
+// const ganhos = Number(ganhosRes.rows[0].ganhos);
+// const pagos = Number(pagosRes.rows[0].pagos);
 
-const saldo = ganhos - pagos;
+// const saldo = ganhos - pagos;
 
-res.json({
-ganhos,
-pagos,
-saldo
-});
+// res.json({
+// ganhos,
+// pagos,
+// saldo
+// });
 
-}catch(err){
-console.error("Erro calcular saldo:", err);
-res.status(500).json({error:"Erro calcular saldo"});
-}
+// }catch(err){
+// console.error("Erro calcular saldo:", err);
+// res.status(500).json({error:"Erro calcular saldo"});
+// }
 
-});
+// });
 
-router.get("/admin/modelo/:id/historico-seguranca", auth, authAdmin, async (req,res)=>{
+// router.get("/admin/modelo/:id/historico-seguranca", auth, authAdmin, async (req,res)=>{
 
-const modelo_id = Number(req.params.id);
+// const modelo_id = Number(req.params.id);
 
-const page = Number(req.query.page) || 1;
-const limit = 10;
-const offset = (page - 1) * limit;
+// const page = Number(req.query.page) || 1;
+// const limit = 10;
+// const offset = (page - 1) * limit;
 
-try{
+// try{
 
-const totalRes = await db.query(`
-SELECT COUNT(*)
-FROM admin_seguranca_historico
-WHERE modelo_id=$1
-`,[modelo_id]);
+// const totalRes = await db.query(`
+// SELECT COUNT(*)
+// FROM admin_seguranca_historico
+// WHERE modelo_id=$1
+// `,[modelo_id]);
 
-const total = Number(totalRes.rows[0].count);
-const totalPages = Math.ceil(total / limit);
+// const total = Number(totalRes.rows[0].count);
+// const totalPages = Math.ceil(total / limit);
 
-const result = await db.query(`
-SELECT
-h.data,
-a.email AS admin,
-h.motivo
-FROM admin_seguranca_historico h
-LEFT JOIN admin a
-ON a.id = h.admin_id
-WHERE h.modelo_id=$1
-ORDER BY h.data DESC
-LIMIT $2 OFFSET $3
-`,[modelo_id,limit,offset]);
+// const result = await db.query(`
+// SELECT
+// h.data,
+// a.email AS admin,
+// h.motivo
+// FROM admin_seguranca_historico h
+// LEFT JOIN admin a
+// ON a.id = h.admin_id
+// WHERE h.modelo_id=$1
+// ORDER BY h.data DESC
+// LIMIT $2 OFFSET $3
+// `,[modelo_id,limit,offset]);
 
-res.json({
-dados: result.rows,
-page,
-totalPages
-});
+// res.json({
+// dados: result.rows,
+// page,
+// totalPages
+// });
 
-}catch(err){
-console.error("Erro histórico segurança:",err);
-res.status(500).json({error:"Erro histórico segurança"});
-}
+// }catch(err){
+// console.error("Erro histórico segurança:",err);
+// res.status(500).json({error:"Erro histórico segurança"});
+// }
 
-});
+// });
 
 
 // ===========================
@@ -2788,450 +2788,450 @@ router.get("/transacoes/origem",
 // PUTS - ALTERACOES
 // ===========================
 
-router.put("/admin/modelo/:id/feed", auth, authAdmin, async (req,res)=>{
+// router.put("/admin/modelo/:id/feed", auth, authAdmin, async (req,res)=>{
 
-const modelo_id = Number(req.params.id);
-const { feed } = req.body;
+// const modelo_id = Number(req.params.id);
+// const { feed } = req.body;
 
-try{
+// try{
 
-await db.query(`
-UPDATE modelos
-SET feed = $1
-WHERE id = $2
-`,[feed, modelo_id]);
+// await db.query(`
+// UPDATE modelos
+// SET feed = $1
+// WHERE id = $2
+// `,[feed, modelo_id]);
 
-res.json({ feed });
+// res.json({ feed });
 
-}catch(err){
-console.error("Erro alterar feed:",err);
-res.status(500).json({ error:"Erro alterar feed" });
-}
+// }catch(err){
+// console.error("Erro alterar feed:",err);
+// res.status(500).json({ error:"Erro alterar feed" });
+// }
 
-});
+// });
 
-router.put("/admin/validar-modelo/:id", auth, authAdmin, async (req,res)=>{
-  const client = await db.connect();
+// router.put("/admin/validar-modelo/:id", auth, authAdmin, async (req,res)=>{
+//   const client = await db.connect();
 
-  try {
-    await client.query("BEGIN");
+//   try {
+//     await client.query("BEGIN");
 
-    const modelo_id = Number(req.params.id);
-    const { status, motivo_rejeicao } = req.body;
+//     const modelo_id = Number(req.params.id);
+//     const { status, motivo_rejeicao } = req.body;
 
-const modeloRes = await client.query(
-  "SELECT user_id, nome_exibicao FROM modelos WHERE id=$1",
-  [modelo_id]
-);
+// const modeloRes = await client.query(
+//   "SELECT user_id, nome_exibicao FROM modelos WHERE id=$1",
+//   [modelo_id]
+// );
 
-    if(!modeloRes.rowCount){
-      throw new Error("Modelo não encontrada");
-    }
+//     if(!modeloRes.rowCount){
+//       throw new Error("Modelo não encontrada");
+//     }
 
-const user_id = modeloRes.rows[0].user_id;
-const nome_modelo = modeloRes.rows[0].nome_exibicao;
+// const user_id = modeloRes.rows[0].user_id;
+// const nome_modelo = modeloRes.rows[0].nome_exibicao;
 
-    const userRes = await client.query(
-      "SELECT role FROM users WHERE id=$1",
-      [user_id]
-    );
+//     const userRes = await client.query(
+//       "SELECT role FROM users WHERE id=$1",
+//       [user_id]
+//     );
 
-    const roleAtual = userRes.rows[0].role;
+//     const roleAtual = userRes.rows[0].role;
 
-    const emailRes = await client.query(
-  "SELECT email FROM users WHERE id=$1",
-  [user_id]
-);
+//     const emailRes = await client.query(
+//   "SELECT email FROM users WHERE id=$1",
+//   [user_id]
+// );
 
-const email = emailRes.rows[0]?.email;
+// const email = emailRes.rows[0]?.email;
 
-    if(status === "aprovado"){
+//     if(status === "aprovado"){
 
-      // 🟣 Se for cliente → migrar
-      if(roleAtual === "cliente"){
+//       // 🟣 Se for cliente → migrar
+//       if(roleAtual === "cliente"){
 
-        // 1️⃣ Atualizar role
-        await client.query(
-          "UPDATE users SET role='modelo' WHERE id=$1",
-          [user_id]
-        );
+//         // 1️⃣ Atualizar role
+//         await client.query(
+//           "UPDATE users SET role='modelo' WHERE id=$1",
+//           [user_id]
+//         );
 
-        // 2️⃣ Criar registro em modelos
-        await client.query(`
-          INSERT INTO modelos (user_id, nome_exibicao, created_at)
-          SELECT user_id, nome, NOW()
-          FROM clientes
-          WHERE user_id=$1
-          ON CONFLICT (user_id) DO NOTHING
-        `,[user_id]);
+//         // 2️⃣ Criar registro em modelos
+//         await client.query(`
+//           INSERT INTO modelos (user_id, nome_exibicao, created_at)
+//           SELECT user_id, nome, NOW()
+//           FROM clientes
+//           WHERE user_id=$1
+//           ON CONFLICT (user_id) DO NOTHING
+//         `,[user_id]);
 
-        // 3️⃣ Copiar clientes_dados → modelos_dados
-        await client.query(`
-          INSERT INTO modelos_dados (
-            modelo_id,
-            nome_completo,
-            data_nascimento,
-            telefone,
-            endereco,
-            pais,
-            cidade,
-            estado,
-            instagram,
-            tiktok
-          )
-          SELECT
-            m.id,
-            cd.nome_completo,
-            cd.data_nascimento,
-            cd.telefone,
-            cd.endereco,
-            cd.pais,
-            cd.cidade,
-            cd.estado,
-            cd.instagram,
-            cd.tiktok
-          FROM clientes_dados cd
-          JOIN modelos m ON m.user_id = cd.cliente_id
-          WHERE cd.cliente_id=$1
-          ON CONFLICT (modelo_id) DO NOTHING
-        `,[user_id]);
-      }
+//         // 3️⃣ Copiar clientes_dados → modelos_dados
+//         await client.query(`
+//           INSERT INTO modelos_dados (
+//             modelo_id,
+//             nome_completo,
+//             data_nascimento,
+//             telefone,
+//             endereco,
+//             pais,
+//             cidade,
+//             estado,
+//             instagram,
+//             tiktok
+//           )
+//           SELECT
+//             m.id,
+//             cd.nome_completo,
+//             cd.data_nascimento,
+//             cd.telefone,
+//             cd.endereco,
+//             cd.pais,
+//             cd.cidade,
+//             cd.estado,
+//             cd.instagram,
+//             cd.tiktok
+//           FROM clientes_dados cd
+//           JOIN modelos m ON m.user_id = cd.cliente_id
+//           WHERE cd.cliente_id=$1
+//           ON CONFLICT (modelo_id) DO NOTHING
+//         `,[user_id]);
+//       }
 
-      // 🔹 Marcar como verificada
-      await client.query(
-        "UPDATE modelos SET verificada=true WHERE id=$1",
-        [modelo_id]
-      );
-    }
+//       // 🔹 Marcar como verificada
+//       await client.query(
+//         "UPDATE modelos SET verificada=true WHERE id=$1",
+//         [modelo_id]
+//       );
+//     }
 
-    // 🔹 Atualizar status da verificação
-await client.query(`
-  UPDATE modelos_verificacao
-  SET
-    status = $1,
-    motivo_rejeicao = $2,
-    verificado_em = NOW()
-  WHERE modelo_id = $3
-`,[
-  status,
-  motivo_rejeicao || null,
-  modelo_id
-]);
+//     // 🔹 Atualizar status da verificação
+// await client.query(`
+//   UPDATE modelos_verificacao
+//   SET
+//     status = $1,
+//     motivo_rejeicao = $2,
+//     verificado_em = NOW()
+//   WHERE modelo_id = $3
+// `,[
+//   status,
+//   motivo_rejeicao || null,
+//   modelo_id
+// ]);
 
-    await client.query("COMMIT");
+//     await client.query("COMMIT");
   
 
-if(status === "aprovado" && email){
-  try{
-    await enviarEmailAprovacao(email);
-  }catch(e){
-    console.error("Erro enviar email aprovação:", e);
-  }
-}
+// if(status === "aprovado" && email){
+//   try{
+//     await enviarEmailAprovacao(email);
+//   }catch(e){
+//     console.error("Erro enviar email aprovação:", e);
+//   }
+// }
 
-if(status === "rejeitado" && email){
-  try{
-    await enviarEmailRejeicao(email, motivo_rejeicao);
-  }catch(e){
-    console.error("Erro enviar email rejeição:", e);
-  }
-}
-    res.json({ message:"Processo concluído" });
+// if(status === "rejeitado" && email){
+//   try{
+//     await enviarEmailRejeicao(email, motivo_rejeicao);
+//   }catch(e){
+//     console.error("Erro enviar email rejeição:", e);
+//   }
+// }
+//     res.json({ message:"Processo concluído" });
 
-  } catch(err){
-    await client.query("ROLLBACK");
-    console.error(err);
-    res.status(500).json({ error:"Erro ao validar modelo" });
-  } finally {
-    client.release();
-  }
-});
+//   } catch(err){
+//     await client.query("ROLLBACK");
+//     console.error(err);
+//     res.status(500).json({ error:"Erro ao validar modelo" });
+//   } finally {
+//     client.release();
+//   }
+// });
 
-router.put("/admin/validar-cliente/:id", auth, authAdmin, async (req,res)=>{
+// router.put("/admin/validar-cliente/:id", auth, authAdmin, async (req,res)=>{
 
-  const cliente_id = Number(req.params.id);
-  const { status, motivo_rejeicao } = req.body;
+//   const cliente_id = Number(req.params.id);
+//   const { status, motivo_rejeicao } = req.body;
 
-  const client = await db.connect();
-   let email = null;
-  let nome_cliente = null;
+//   const client = await db.connect();
+//    let email = null;
+//   let nome_cliente = null;
 
-  try {
-    await client.query("BEGIN");
+//   try {
+//     await client.query("BEGIN");
 
-    // 🔹 Atualiza status da verificação
-    await client.query(`
-      UPDATE clientes_verificacao
-      SET
-        status = $2,
+//     // 🔹 Atualiza status da verificação
+//     await client.query(`
+//       UPDATE clientes_verificacao
+//       SET
+//         status = $2,
 
-        motivo_rejeicao = $3,
-        verificado_em = NOW(),
-        atualizado_em = NOW()
-      WHERE cliente_id = $1
-    `,[cliente_id, status, motivo_rejeicao || "Não informado"]);
+//         motivo_rejeicao = $3,
+//         verificado_em = NOW(),
+//         atualizado_em = NOW()
+//       WHERE cliente_id = $1
+//     `,[cliente_id, status, motivo_rejeicao || "Não informado"]);
 
-    if (status === "aprovado") {
+//     if (status === "aprovado") {
 
-  // 🔹 1️⃣ Buscar user_id do cliente
-  const userRes = await client.query(
-    "SELECT user_id, nome FROM clientes WHERE id = $1",
-    [cliente_id]
-  );
+//   // 🔹 1️⃣ Buscar user_id do cliente
+//   const userRes = await client.query(
+//     "SELECT user_id, nome FROM clientes WHERE id = $1",
+//     [cliente_id]
+//   );
 
-  if (!userRes.rowCount) {
-    throw new Error("Cliente não encontrado");
-  }
+//   if (!userRes.rowCount) {
+//     throw new Error("Cliente não encontrado");
+//   }
 
-  const user_id = userRes.rows[0].user_id;
-  nome_cliente = userRes.rows[0].nome;
+//   const user_id = userRes.rows[0].user_id;
+//   nome_cliente = userRes.rows[0].nome;
 
-  const emailRes = await client.query(
-  "SELECT email FROM users WHERE id=$1",
-  [user_id]
-);
+//   const emailRes = await client.query(
+//   "SELECT email FROM users WHERE id=$1",
+//   [user_id]
+// );
 
-email = emailRes.rows[0]?.email;
+// email = emailRes.rows[0]?.email;
 
-  // 🔹 2️⃣ Atualizar role no users
-  await client.query(
-    "UPDATE users SET role = 'modelo' WHERE id = $1",
-    [user_id]
-  );
+//   // 🔹 2️⃣ Atualizar role no users
+//   await client.query(
+//     "UPDATE users SET role = 'modelo' WHERE id = $1",
+//     [user_id]
+//   );
 
-  // 🔹 3️⃣ Criar registro em modelos (copiando clientes → modelos)
-  await client.query(`
-    INSERT INTO modelos (
-      user_id,
-      nome,
-      nome_exibicao,
-      local,
-      bio,
-      avatar,
-      capa,
-      created_at,
-      verificada
-    )
-    SELECT
-      c.user_id,
-      c.nome,
-      cd.nome_exibicao,
-      cd.local,
-      cd.bio,
-      cd.avatar,
-      cd.capa,
-      NOW(),
-      true
-    FROM clientes c
-    LEFT JOIN clientes_dados cd ON cd.cliente_id = c.id
-    WHERE c.id = $1
-    ON CONFLICT (user_id) DO NOTHING
-  `, [cliente_id]);
+//   // 🔹 3️⃣ Criar registro em modelos (copiando clientes → modelos)
+//   await client.query(`
+//     INSERT INTO modelos (
+//       user_id,
+//       nome,
+//       nome_exibicao,
+//       local,
+//       bio,
+//       avatar,
+//       capa,
+//       created_at,
+//       verificada
+//     )
+//     SELECT
+//       c.user_id,
+//       c.nome,
+//       cd.nome_exibicao,
+//       cd.local,
+//       cd.bio,
+//       cd.avatar,
+//       cd.capa,
+//       NOW(),
+//       true
+//     FROM clientes c
+//     LEFT JOIN clientes_dados cd ON cd.cliente_id = c.id
+//     WHERE c.id = $1
+//     ON CONFLICT (user_id) DO NOTHING
+//   `, [cliente_id]);
 
-  // 🔹 4️⃣ Buscar modelo_id recém criado
-  const modeloRes = await client.query(
-    "SELECT id FROM modelos WHERE user_id = $1",
-    [user_id]
-  );
+//   // 🔹 4️⃣ Buscar modelo_id recém criado
+//   const modeloRes = await client.query(
+//     "SELECT id FROM modelos WHERE user_id = $1",
+//     [user_id]
+//   );
 
-  const modelo_id = modeloRes.rows[0].id;
+//   const modelo_id = modeloRes.rows[0].id;
 
-  // 🔹 5️⃣ Copiar clientes_dados → modelos_dados
-  await client.query(`
-    INSERT INTO modelos_dados (
-      modelo_id,
-      nome_completo,
-      data_nascimento,
-      telefone,
-      endereco,
-      pais,
-      cidade,
-      estado,
-      instagram,
-      tiktok,
-      vip_preco
-    )
-    SELECT
-      $1,
-      cd.nome_completo,
-      cd.data_nascimento,
-      cd.telefone,
-      cd.endereco,
-      cd.pais,
-      cd.cidade,
-      cd.estado,
-      cd.instagram,
-      cd.tiktok,
-      cd.vip_preco
-    FROM clientes_dados cd
-    WHERE cd.cliente_id = $2
-    ON CONFLICT (modelo_id) DO NOTHING
-  `, [modelo_id, cliente_id]);
+//   // 🔹 5️⃣ Copiar clientes_dados → modelos_dados
+//   await client.query(`
+//     INSERT INTO modelos_dados (
+//       modelo_id,
+//       nome_completo,
+//       data_nascimento,
+//       telefone,
+//       endereco,
+//       pais,
+//       cidade,
+//       estado,
+//       instagram,
+//       tiktok,
+//       vip_preco
+//     )
+//     SELECT
+//       $1,
+//       cd.nome_completo,
+//       cd.data_nascimento,
+//       cd.telefone,
+//       cd.endereco,
+//       cd.pais,
+//       cd.cidade,
+//       cd.estado,
+//       cd.instagram,
+//       cd.tiktok,
+//       cd.vip_preco
+//     FROM clientes_dados cd
+//     WHERE cd.cliente_id = $2
+//     ON CONFLICT (modelo_id) DO NOTHING
+//   `, [modelo_id, cliente_id]);
 
-   await client.query(
-    "UPDATE clientes SET convertido_para_modelo = true WHERE id = $1",
-    [cliente_id]
-  );
-} 
-    await client.query("COMMIT");
+//    await client.query(
+//     "UPDATE clientes SET convertido_para_modelo = true WHERE id = $1",
+//     [cliente_id]
+//   );
+// } 
+//     await client.query("COMMIT");
 
-    if(status === "aprovado" && email){
-  try{
-    await enviarEmailAprovacao(email);
-  }catch(e){
-    console.error("Erro enviar email aprovação:", e);
-  }
-}
+//     if(status === "aprovado" && email){
+//   try{
+//     await enviarEmailAprovacao(email);
+//   }catch(e){
+//     console.error("Erro enviar email aprovação:", e);
+//   }
+// }
 
-    res.json({ success:true });
+//     res.json({ success:true });
 
-  } catch (err) {
+//   } catch (err) {
 
-    await client.query("ROLLBACK");
-    console.error("Erro validar cliente:", err);
-    res.status(500).json({ error:"Erro ao validar cliente" });
+//     await client.query("ROLLBACK");
+//     console.error("Erro validar cliente:", err);
+//     res.status(500).json({ error:"Erro ao validar cliente" });
 
-  } finally {
-    client.release();
-  }
-});
+//   } finally {
+//     client.release();
+//   }
+// });
 
-router.put("/admin/perfis/:id/editar", auth, authAdmin, async (req,res)=>{
+// router.put("/admin/perfis/:id/editar", auth, authAdmin, async (req,res)=>{
 
-  const { id } = req.params;
-  const { tipo, dados } = req.body;
+//   const { id } = req.params;
+//   const { tipo, dados } = req.body;
 
-  try{
+//   try{
 
-    if(tipo === "modelo"){
+//     if(tipo === "modelo"){
 
-      // Atualiza tabela modelos
-      await db.query(`
-        UPDATE modelos
-        SET nome_exibicao=$1,
-            local=$2,
-            bio=$3
-        WHERE id=$4
-      `,[
-        dados.nome_exibicao,
-        dados.local,
-        dados.bio,
-        id
-      ]);
+//       // Atualiza tabela modelos
+//       await db.query(`
+//         UPDATE modelos
+//         SET nome_exibicao=$1,
+//             local=$2,
+//             bio=$3
+//         WHERE id=$4
+//       `,[
+//         dados.nome_exibicao,
+//         dados.local,
+//         dados.bio,
+//         id
+//       ]);
 
-      // Atualiza modelos_dados
-      await db.query(`
-        UPDATE modelos_dados
-        SET nome_completo=$1,
-            data_nascimento=$2,
-            telefone=$3,
-            endereco=$4,
-            pais=$5,
-            estado=$6,
-            cidade=$7,
-            instagram=$8,
-            tiktok=$9,
-            vip_preco=$10
-        WHERE modelo_id=$11
-      `,[
-        dados.nome_completo,
-        dados.data_nascimento,
-        dados.telefone,
-        dados.endereco,
-        dados.pais,
-        dados.estado,
-        dados.cidade,
-        dados.instagram,
-        dados.tiktok,
-        dados.vip_preco,
-        id
-      ]);
+//       // Atualiza modelos_dados
+//       await db.query(`
+//         UPDATE modelos_dados
+//         SET nome_completo=$1,
+//             data_nascimento=$2,
+//             telefone=$3,
+//             endereco=$4,
+//             pais=$5,
+//             estado=$6,
+//             cidade=$7,
+//             instagram=$8,
+//             tiktok=$9,
+//             vip_preco=$10
+//         WHERE modelo_id=$11
+//       `,[
+//         dados.nome_completo,
+//         dados.data_nascimento,
+//         dados.telefone,
+//         dados.endereco,
+//         dados.pais,
+//         dados.estado,
+//         dados.cidade,
+//         dados.instagram,
+//         dados.tiktok,
+//         dados.vip_preco,
+//         id
+//       ]);
 
-    } else {
-      await db.query(`
-         UPDATE clientes_dados
-        SET nome_completo=$1,
-            data_nascimento=$2,
-            telefone=$3,
-            endereco=$4,
-            pais=$5,
-            estado=$6,
-            cidade=$7,
-            instagram=$8,
-            tiktok=$9,
-            vip_preco=$10,
-            nome_exibicao=$11,
-            local=$12,
-            bio=$13
-        WHERE cliente_id=$14
-      `,[
-        dados.nome_completo,
-        dados.data_nascimento,
-        dados.telefone,
-        dados.endereco,
-        dados.pais,
-        dados.estado,
-        dados.cidade,
-        dados.instagram,
-        dados.tiktok,
-        dados.vip_preco,
-        dados.nome_exibicao,
-        dados.local,
-        dados.bio,
-        id
-      ]);
-    }
+//     } else {
+//       await db.query(`
+//          UPDATE clientes_dados
+//         SET nome_completo=$1,
+//             data_nascimento=$2,
+//             telefone=$3,
+//             endereco=$4,
+//             pais=$5,
+//             estado=$6,
+//             cidade=$7,
+//             instagram=$8,
+//             tiktok=$9,
+//             vip_preco=$10,
+//             nome_exibicao=$11,
+//             local=$12,
+//             bio=$13
+//         WHERE cliente_id=$14
+//       `,[
+//         dados.nome_completo,
+//         dados.data_nascimento,
+//         dados.telefone,
+//         dados.endereco,
+//         dados.pais,
+//         dados.estado,
+//         dados.cidade,
+//         dados.instagram,
+//         dados.tiktok,
+//         dados.vip_preco,
+//         dados.nome_exibicao,
+//         dados.local,
+//         dados.bio,
+//         id
+//       ]);
+//     }
 
-    res.json({ message:"Atualizado com sucesso" });
+//     res.json({ message:"Atualizado com sucesso" });
 
-  }catch(err){
-    console.error(err);
-    res.status(500).json({ error:"Erro ao atualizar dados" });
-  }
-});
+//   }catch(err){
+//     console.error(err);
+//     res.status(500).json({ error:"Erro ao atualizar dados" });
+//   }
+// });
 
-router.put("/admin/modelo/:id/agencia", auth, authAdmin, async (req,res)=>{
+// router.put("/admin/modelo/:id/agencia", auth, authAdmin, async (req,res)=>{
 
-const modelo_id = Number(req.params.id);
-const { agencia_id } = req.body;
+// const modelo_id = Number(req.params.id);
+// const { agencia_id } = req.body;
 
-try{
+// try{
 
-await db.query(`
-UPDATE modelos
-SET agencia_id = $1
-WHERE id = $2
-`,[
-agencia_id || null,
-modelo_id
-]);
+// await db.query(`
+// UPDATE modelos
+// SET agencia_id = $1
+// WHERE id = $2
+// `,[
+// agencia_id || null,
+// modelo_id
+// ]);
 
-let nome_agencia = "Sem agência";
+// let nome_agencia = "Sem agência";
 
-if(agencia_id){
+// if(agencia_id){
 
-const ag = await db.query(`
-SELECT nome
-FROM agencias
-WHERE id=$1
-`,[agencia_id]);
+// const ag = await db.query(`
+// SELECT nome
+// FROM agencias
+// WHERE id=$1
+// `,[agencia_id]);
 
-nome_agencia = ag.rows[0]?.nome || "Agência";
+// nome_agencia = ag.rows[0]?.nome || "Agência";
 
-}
+// }
 
-res.json({
-ok:true,
-nome_agencia,
-data:new Date()
-});
+// res.json({
+// ok:true,
+// nome_agencia,
+// data:new Date()
+// });
 
-}catch(err){
-console.error("Erro alterar agência:",err);
-res.status(500).json({error:"Erro alterar agência"});
-}
+// }catch(err){
+// console.error("Erro alterar agência:",err);
+// res.status(500).json({error:"Erro alterar agência"});
+// }
 
-});
+// });
 
 // ===========================
 // EXPORT PARA SERVER
