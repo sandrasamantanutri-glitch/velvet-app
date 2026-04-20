@@ -2061,9 +2061,9 @@ pageLoaders.agencias = async function () {
         <td>${r.id ?? '—'}</td>
         <td>${r.nome ?? '—'}</td>
         <td>${r.email ?? '—'}</td>
-        <td>${(Number(r.percentual_agencia ?? 0) * 100).toFixed(0)}%</td>
-        <td>${(Number(r.percentual_modelo ?? 0) * 100).toFixed(0)}%</td>
-        <td>${(Number(r.percentual_plataforma ?? 0) * 100).toFixed(0)}%</td>
+        <td>${Number(r.percentual_agencia ?? 0).toFixed(0)}%</td>
+        <td>${Number(r.percentual_modelo ?? 0).toFixed(0)}%</td>
+        <td>${Number(r.percentual_plataforma ?? 0).toFixed(0)}%</td>
         <td>${r.created_at ? fmtDateTime(r.created_at) : '—'}</td>
       </tr>
     `).join('') || emptyRow(7);
@@ -2106,7 +2106,10 @@ async function carregarModelosAgencia() {
         <td>
           <button
             class="btn btn-sm btn-primary"
-            onclick="abrirModalAlterarAgenciaModelo(${r.id}, ${JSON.stringify(r.nome)}, ${r.agencia_id ?? 'null'})">
+            data-modelo-id="${r.id}"
+            data-modelo-nome="${(r.nome || '').replace(/"/g, '&quot;')}"
+            data-agencia-id="${r.agencia_id ?? ''}"
+            onclick="abrirModalAlterarAgenciaModelo(this)">
             Alterar Agência
           </button>
         </td>
@@ -2118,8 +2121,12 @@ async function carregarModelosAgencia() {
   }
 }
 
-async function abrirModalAlterarAgenciaModelo(modeloId, nome, agenciaAtualId) {
+async function abrirModalAlterarAgenciaModelo(btn) {
   try {
+    const modeloId = btn.dataset.modeloId;
+    const nome = btn.dataset.modeloNome;
+    const agenciaAtualId = btn.dataset.agenciaId || null;
+
     if (!agenciasCache.length) {
       agenciasCache = await fetchJSON('/admin/dashboard/agencias');
     }
@@ -2134,7 +2141,7 @@ async function abrirModalAlterarAgenciaModelo(modeloId, nome, agenciaAtualId) {
       const opt = document.createElement('option');
       opt.value = a.id;
       opt.textContent = a.nome;
-      if (Number(agenciaAtualId) === Number(a.id)) {
+      if (agenciaAtualId && Number(agenciaAtualId) === Number(a.id)) {
         opt.selected = true;
       }
       select.appendChild(opt);

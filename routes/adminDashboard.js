@@ -3063,9 +3063,9 @@ router.get("/agencias", async (req, res) => {
         id,
         nome,
         COALESCE(email, '') AS email,
-        COALESCE(percentual_agencia, 0) AS percentual_agencia,
-        COALESCE(percentual_modelo, 0) AS percentual_modelo,
-        COALESCE(percentual_plataforma, 0) AS percentual_plataforma,
+        COALESCE(percentual_agencia, 0) * 100 AS percentual_agencia,
+        COALESCE(percentual_modelo, 0) * 100 AS percentual_modelo,
+        COALESCE(percentual_plataforma, 0) * 100 AS percentual_plataforma,
         created_at
       FROM agencias
       ORDER BY id DESC
