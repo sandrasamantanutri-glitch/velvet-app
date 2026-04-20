@@ -24,6 +24,27 @@ const s3Privado = new AWS.S3({
   s3ForcePathStyle: true
 });
 
+// ===============================
+// BACKBLAZE B2 (UPLOADS - PÚBLICO)
+// ===============================
+const uploadPublico = multer({
+  storage: multerS3({
+    s3: s3Publico,
+    bucket: process.env.B2_BUCKET_PUBLIC,
+    acl: "public-read",
+    contentType: multerS3.AUTO_CONTENT_TYPE,
+    key: (req, file, cb) => {
+      const ext = file.originalname.split(".").pop();
+      const nome = `uploads/${req.user.id}/${Date.now()}-${file.fieldname}.${ext}`;
+      cb(null, nome);
+    }
+  }),
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB
+  }
+});
+
+
 // All routes require admin auth
 router.use(auth, authAdmin);
 
@@ -3480,10 +3501,10 @@ router.get("/chargebacks-list", async (req, res) => {
   }
 });
 
-router.post("/chargebacks", authAdmin, async (req, res) => {
+router.post("/chargebacks", authAdmin, uploadPublico.single('comprovante'), async (req, res) => {
   try {
     let { plataforma, valor, data, motivo } = req.body;
-    const comprovante = req.file ? req.file.filename : null;
+    const comprovante = req.file ? req.file.location : null;
 
     const admin_id = req.user?.id;
     const user_id = req.user?.id;
@@ -3586,7 +3607,7 @@ router.delete("/chargebacks/:id", authAdmin, async (req, res) => {
 });
 
 // ==================== 18. FATURAMENTOS ====================
-
+ 
 router.get("/faturamentos-list", async (req, res) => {
   try {
     const { rows } = await db.query(`
@@ -3602,60 +3623,60 @@ router.get("/faturamentos-list", async (req, res) => {
       FROM faturamentos
       ORDER BY mes DESC
     `);
-
+ 
     res.json(rows);
   } catch (err) {
     console.error("Erro /faturamentos-list:", err);
     res.status(500).json({ erro: "Erro interno" });
   }
 });
-
-router.post("/faturamentos", authAdmin, async (req, res) => {
+ 
+router.post("/faturamentos", authAdmin, uploadPublico.single('arquivo'), async (req, res) => {
   try {
     let { plataforma, mes, valor_total, taxas } = req.body;
-    const arquivo = req.file ? req.file.filename : null;
-
+    const arquivo = req.file ? req.file.location : null;
+ 
     const admin_id = req.user?.id;
     const user_id = req.user?.id;
-
+ 
     // Validações
     if (!plataforma || !['pagarme', 'stripe'].includes(plataforma)) {
       return res.status(400).json({ erro: "Plataforma inválida" });
     }
-
+ 
     if (!mes) {
       return res.status(400).json({ erro: "Mês é obrigatório" });
     }
-
+ 
     if (!valor_total || isNaN(valor_total) || valor_total <= 0) {
       return res.status(400).json({ erro: "Valor total inválido" });
     }
-
+ 
     if (!arquivo) {
       return res.status(400).json({ erro: "Arquivo é obrigatório" });
     }
-
+ 
     if (!admin_id || !user_id) {
       return res.status(401).json({ erro: "Usuário não autenticado" });
     }
-
+ 
     valor_total = Number(valor_total);
     taxas = taxas ? Number(taxas) : 0;
     const valor_liquido = valor_total - taxas;
-
+ 
     const { rows } = await db.query(`
       INSERT INTO faturamentos (plataforma, mes, valor_total, taxas, valor_liquido, arquivo)
       VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING id, plataforma, mes, valor_total, taxas, valor_liquido, arquivo, criado_em
     `, [plataforma, mes, valor_total, taxas, valor_liquido, arquivo]);
-
+ 
     if (!rows.length) {
       return res.status(500).json({ erro: "Falha ao registrar faturamento" });
     }
-
+ 
     // Registrar no log
     const motevoLog = `Faturamento registrado: ${plataforma} - ${mes} - R$ ${valor_liquido.toFixed(2)} (líquido)`;
-
+ 
     try {
       await db.query(`
         INSERT INTO admin_seguranca_historico (admin_id, motivo, data, user_id, tipo_user, acao)
@@ -3664,43 +3685,43 @@ router.post("/faturamentos", authAdmin, async (req, res) => {
     } catch (logErr) {
       console.error("Erro ao registrar no log:", logErr);
     }
-
+ 
     res.json(rows[0]);
   } catch (err) {
     console.error("Erro ao criar faturamento:", err.message);
     res.status(500).json({ erro: "Erro interno: " + err.message });
   }
 });
-
+ 
 router.delete("/faturamentos/:id", authAdmin, async (req, res) => {
   try {
     const faturamentoId = Number(req.params.id);
-
+ 
     const admin_id = req.user?.id;
     const user_id = req.user?.id;
-
+ 
     if (!faturamentoId) {
       return res.status(400).json({ erro: "Faturamento inválido" });
     }
-
+ 
     if (!admin_id || !user_id) {
       return res.status(401).json({ erro: "Usuário não autenticado" });
     }
-
+ 
     const faturamento = await db.query(
       `SELECT plataforma, mes, valor_liquido FROM faturamentos WHERE id = $1`,
       [faturamentoId]
     );
-
+ 
     if (!faturamento.rows.length) {
       return res.status(404).json({ erro: "Faturamento não encontrado" });
     }
-
+ 
     await db.query(`DELETE FROM faturamentos WHERE id = $1`, [faturamentoId]);
-
+ 
     // Registrar no log
     const motevoLog = `Faturamento deletado: ${faturamento.rows[0].plataforma} - ${faturamento.rows[0].mes} - R$ ${faturamento.rows[0].valor_liquido.toFixed(2)}`;
-
+ 
     try {
       await db.query(`
         INSERT INTO admin_seguranca_historico (admin_id, motivo, data, user_id, tipo_user, acao)
@@ -3709,16 +3730,16 @@ router.delete("/faturamentos/:id", authAdmin, async (req, res) => {
     } catch (logErr) {
       console.error("Erro ao registrar no log:", logErr);
     }
-
+ 
     res.json({ success: true });
   } catch (err) {
     console.error("Erro ao deletar faturamento:", err.message);
     res.status(500).json({ erro: "Erro interno: " + err.message });
   }
 });
-
+ 
 // ==================== 19. DESPESAS ====================
-
+ 
 router.get("/despesas-list", async (req, res) => {
   try {
     const { rows } = await db.query(`
@@ -3733,65 +3754,65 @@ router.get("/despesas-list", async (req, res) => {
       FROM despesas
       ORDER BY data DESC
     `);
-
+ 
     res.json(rows);
   } catch (err) {
     console.error("Erro /despesas-list:", err);
     res.status(500).json({ erro: "Erro interno" });
   }
 });
-
-router.post("/despesas", authAdmin, async (req, res) => {
+ 
+router.post("/despesas", authAdmin, uploadPublico.single('comprovante'), async (req, res) => {
   try {
     let { categoria, descricao, valor, data } = req.body;
-    const comprovante = req.file ? req.file.filename : null;
-
+    const comprovante = req.file ? req.file.location : null;
+ 
     const admin_id = req.user?.id;
     const user_id = req.user?.id;
-
+ 
     // Validações
     const categoriasValidas = ['banco_dados', 'render', 'cloudflare', 'hostinger', 'claude', 'email', 'salario', 'outro'];
     
     if (!categoria || !categoriasValidas.includes(categoria)) {
       return res.status(400).json({ erro: "Categoria inválida" });
     }
-
+ 
     if (!descricao || descricao.trim() === '') {
       return res.status(400).json({ erro: "Descrição é obrigatória" });
     }
-
+ 
     if (!valor || isNaN(valor) || valor <= 0) {
       return res.status(400).json({ erro: "Valor inválido" });
     }
-
+ 
     if (!data) {
       return res.status(400).json({ erro: "Data é obrigatória" });
     }
-
+ 
     if (!comprovante) {
       return res.status(400).json({ erro: "Comprovante é obrigatório" });
     }
-
+ 
     if (!admin_id || !user_id) {
       return res.status(401).json({ erro: "Usuário não autenticado" });
     }
-
+ 
     valor = Number(valor);
     descricao = descricao.trim();
-
+ 
     const { rows } = await db.query(`
       INSERT INTO despesas (categoria, descricao, valor, data, comprovante)
       VALUES ($1, $2, $3, $4, $5)
       RETURNING id, categoria, descricao, valor, data, comprovante, criado_em
     `, [categoria, descricao, valor, data, comprovante]);
-
+ 
     if (!rows.length) {
       return res.status(500).json({ erro: "Falha ao registrar despesa" });
     }
-
+ 
     // Registrar no log
     const motevoLog = `Despesa registrada: ${categoria} - ${descricao} - R$ ${valor.toFixed(2)}`;
-
+ 
     try {
       await db.query(`
         INSERT INTO admin_seguranca_historico (admin_id, motivo, data, user_id, tipo_user, acao)
@@ -3800,43 +3821,43 @@ router.post("/despesas", authAdmin, async (req, res) => {
     } catch (logErr) {
       console.error("Erro ao registrar no log:", logErr);
     }
-
+ 
     res.json(rows[0]);
   } catch (err) {
     console.error("Erro ao criar despesa:", err.message);
     res.status(500).json({ erro: "Erro interno: " + err.message });
   }
 });
-
+ 
 router.delete("/despesas/:id", authAdmin, async (req, res) => {
   try {
     const despesaId = Number(req.params.id);
-
+ 
     const admin_id = req.user?.id;
     const user_id = req.user?.id;
-
+ 
     if (!despesaId) {
       return res.status(400).json({ erro: "Despesa inválida" });
     }
-
+ 
     if (!admin_id || !user_id) {
       return res.status(401).json({ erro: "Usuário não autenticado" });
     }
-
+ 
     const despesa = await db.query(
       `SELECT categoria, descricao, valor FROM despesas WHERE id = $1`,
       [despesaId]
     );
-
+ 
     if (!despesa.rows.length) {
       return res.status(404).json({ erro: "Despesa não encontrada" });
     }
-
+ 
     await db.query(`DELETE FROM despesas WHERE id = $1`, [despesaId]);
-
+ 
     // Registrar no log
     const motevoLog = `Despesa deletada: ${despesa.rows[0].categoria} - ${despesa.rows[0].descricao} - R$ ${despesa.rows[0].valor.toFixed(2)}`;
-
+ 
     try {
       await db.query(`
         INSERT INTO admin_seguranca_historico (admin_id, motivo, data, user_id, tipo_user, acao)
@@ -3845,13 +3866,12 @@ router.delete("/despesas/:id", authAdmin, async (req, res) => {
     } catch (logErr) {
       console.error("Erro ao registrar no log:", logErr);
     }
-
+ 
     res.json({ success: true });
   } catch (err) {
     console.error("Erro ao deletar despesa:", err.message);
     res.status(500).json({ erro: "Erro interno: " + err.message });
   }
 });
-
 
 module.exports = router;
