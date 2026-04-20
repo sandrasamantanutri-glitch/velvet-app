@@ -2703,16 +2703,15 @@ router.get("/vip-subscriptions", async (req, res) => {
     const params = [];
     let where = "1=1";
     let paramIdx = 1;
-
+ 
     if (busca) {
-      where = `v.cliente_id::text = $${paramIdx}`;
-      params.push(busca);
+      where = `v.cliente_id::text LIKE $${paramIdx}`;
+      params.push(`%${busca}%`);
       paramIdx++;
     }
 
-    // Count query
-    const countParams = busca ? [busca] : [];
-    const countWhere = busca ? `v.cliente_id::text = $1` : "1=1";
+    const countParams = busca ? [`%${busca}%`] : [];
+    const countWhere = busca ? `v.cliente_id::text LIKE $1` : "1=1";
     
     const countQ = await db.query(`
       SELECT COUNT(*) AS count 
@@ -2721,10 +2720,9 @@ router.get("/vip-subscriptions", async (req, res) => {
     `, countParams);
     
     const total = Number(countQ.rows[0]?.count || 0);
-
-    // Adicionar limit e offset
+ 
     params.push(limit, offset);
-
+ 
     const { rows } = await db.query(`
       SELECT 
         v.id,
@@ -2732,6 +2730,7 @@ router.get("/vip-subscriptions", async (req, res) => {
         v.modelo_id,
         v.ativo,
         v.valor_assinatura,
+        v.valor_total,
         v.created_at,
         v.updated_at,
         v.expiration_at,
@@ -2740,10 +2739,10 @@ router.get("/vip-subscriptions", async (req, res) => {
       FROM vip_subscriptions v
       LEFT JOIN modelos m ON m.id = v.modelo_id
       WHERE ${where}
-      ORDER BY v.created_at DESC
+      ORDER BY v.id DESC
       LIMIT $${paramIdx} OFFSET $${paramIdx + 1}
     `, params);
-
+ 
     res.json({ 
       rows, 
       totalPages: Math.ceil(total / limit), 
