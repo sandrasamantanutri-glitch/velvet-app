@@ -3056,7 +3056,7 @@ router.put("/modelo-pagamentos/:id", authAdmin, async (req, res) => {
 
 // ========== 16. AGÊNCIAS ==========
 
-router.get("/agencias-list", async (req, res) => {
+router.get("/agenciasID", async (req, res) => {
   try {
     const { rows } = await db.query(`
       SELECT
@@ -3073,12 +3073,12 @@ router.get("/agencias-list", async (req, res) => {
 
     res.json(rows);
   } catch (err) {
-    console.error("Erro /agencias-list:", err);
+    console.error("Erro /agencias:", err);
     res.status(500).json({ erro: "Erro interno" });
   }
 });
 
-router.get("/agencias/:agenciaId/modelos", async (req, res) => {
+router.get("/modelos-agenciasID/:agenciasID", async (req, res) => {
   try {
     const { rows } = await db.query(`
       SELECT
@@ -3089,16 +3089,16 @@ router.get("/agencias/:agenciaId/modelos", async (req, res) => {
       FROM modelos
       WHERE agencia_id = $1
       ORDER BY nome
-    `, [req.params.agenciaId]);
+    `, [req.params.agenciasID]);
 
     res.json(rows);
   } catch (err) {
-    console.error("Erro /agencias/:agenciaId/modelos:", err);
+    console.error("Erro /modelos-agencia/:agenciasID:", err);
     res.status(500).json({ erro: "Erro interno" });
   }
 });
 
-router.put("/modelos/:id/agencia", authAdmin, async (req, res) => {
+router.put("/modelos/:id/agenciasID", authAdmin, async (req, res) => {
   try {
     const modeloId = Number(req.params.id);
     const agencia_id = req.body.agencia_id ? Number(req.body.agencia_id) : null;
@@ -3121,6 +3121,7 @@ router.put("/modelos/:id/agencia", authAdmin, async (req, res) => {
       }
     }
 
+    // Buscar agência anterior para log
     const modeloAtual = await db.query(
       `SELECT agencia_id, nome FROM modelos WHERE id = $1`,
       [modeloId]
@@ -3133,6 +3134,7 @@ router.put("/modelos/:id/agencia", authAdmin, async (req, res) => {
     const agenciaAnterior = modeloAtual.rows[0]?.agencia_id;
     const nomeModelo = modeloAtual.rows[0]?.nome;
 
+    // Atualizar modelo
     const { rows } = await db.query(`
       UPDATE modelos
       SET
@@ -3147,6 +3149,7 @@ router.put("/modelos/:id/agencia", authAdmin, async (req, res) => {
       RETURNING id, nome, agencia_id, agencia_desde
     `, [agencia_id, modeloId]);
 
+    // Registrar no log
     const motivo = `Alteração de agência da modelo ${nomeModelo}: ${agenciaAnterior || 'Sem agência'} → ${agencia_id || 'Sem agência'}`;
     
     await db.query(`
