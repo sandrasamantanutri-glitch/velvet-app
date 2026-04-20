@@ -183,8 +183,7 @@ const pageTitles = {
   agencias: 'Agencias',
   chargebacks = 'Chargebacks',
   faturamento = 'Faturamentos Pagarme & Stripe',
-  despesas = 'Despesas Operacionais',
-  feed: 'Feed'
+  despesas = 'Despesas Operacionais'
 };
 
 const pageLoaders = {};
@@ -2223,7 +2222,7 @@ async function salvarAlteracaoAgenciaModelo(event) {
 
 pageLoaders.chargebacks = async function () {
   try {
-    const data = await fetchJSON('/api/chargebacks');
+    const data = await fetchJSON('/admin/dashboard/chargebacks');
     renderChargebacks(data);
   } catch (err) {
     console.error('Erro ao carregar chargebacks:', err);
@@ -2261,7 +2260,7 @@ async function salvarChargeback(event) {
   const formData = new FormData(form);
 
   try {
-    const res = await authFetch('/api/chargebacks', {
+    const res = await authFetch('/admin/dashboard/chargebacks', {
       method: 'POST',
       body: formData
     });
@@ -2284,7 +2283,7 @@ async function deletarChargeback(id) {
   if (!confirm('Tem certeza que deseja deletar este chargeback?')) return;
 
   try {
-    await deleteJSON(`/api/chargebacks/${id}`);
+    await deleteJSON(`/admin/dashboard/chargebacks/${id}`);
     toast('Chargeback deletado com sucesso!', 'success');
     pageLoaders.chargebacks();
   } catch (err) {
@@ -2297,7 +2296,7 @@ async function deletarChargeback(id) {
 
 pageLoaders.faturamento = async function () {
   try {
-    const data = await fetchJSON('/api/faturamentos');
+    const data = await fetchJSON('/admin/dashboard/faturamentos');
     renderFaturamentos(data);
   } catch (err) {
     console.error('Erro ao carregar faturamentos:', err);
@@ -2341,7 +2340,7 @@ async function salvarFaturamento(event) {
   formData.set('valor_liquido', (valorTotal - taxas).toFixed(2));
 
   try {
-    const res = await authFetch('/api/faturamentos', {
+    const res = await authFetch('/admin/dashboard/faturamentos', {
       method: 'POST',
       body: formData
     });
@@ -2364,7 +2363,7 @@ async function deletarFaturamento(id) {
   if (!confirm('Tem certeza que deseja deletar este faturamento?')) return;
 
   try {
-    await deleteJSON(`/api/faturamentos/${id}`);
+    await deleteJSON(`/admin/dashboard/faturamentos/${id}`);
     toast('Faturamento deletado com sucesso!', 'success');
     pageLoaders.faturamento();
   } catch (err) {
@@ -2377,7 +2376,7 @@ async function deletarFaturamento(id) {
 
 pageLoaders.despesas = async function () {
   try {
-    const data = await fetchJSON('/api/despesas');
+    const data = await fetchJSON('/admin/dashboard/despesas');
     renderDespesas(data);
   } catch (err) {
     console.error('Erro ao carregar despesas:', err);
@@ -2426,7 +2425,7 @@ async function salvarDespesa(event) {
   const formData = new FormData(form);
 
   try {
-    const res = await authFetch('/api/despesas', {
+    const res = await authFetch('/admin/dashboard/despesas', {
       method: 'POST',
       body: formData
     });
@@ -2449,7 +2448,7 @@ async function deletarDespesa(id) {
   if (!confirm('Tem certeza que deseja deletar esta despesa?')) return;
 
   try {
-    await deleteJSON(`/api/despesas/${id}`);
+    await deleteJSON(`/admin/dashboard/despesas/${id}`);
     toast('Despesa deletada com sucesso!', 'success');
     pageLoaders.despesas();
   } catch (err) {
