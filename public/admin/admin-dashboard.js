@@ -181,7 +181,9 @@ const pageTitles = {
   vip: 'Assinaturas VIP',
   'pagamentos-modelo': 'Pagamentos a Modelos',
   agencias: 'Agencias',
-  feed: 'Feed'
+  chargebacks = 'Chargebacks',
+  faturamento = 'Faturamentos Pagarme & Stripe',
+  despesas = 'Despesas Operacionais'
 };
 
 const pageLoaders = {};
@@ -2048,8 +2050,6 @@ async function abrirModalPagModelo() {
 
 // ========== 16. AGÊNCIAS ==========
 
-// ========== 16. AGÊNCIAS ==========
-
 pageLoaders.agencias = async function () {
   try {
     const data = await fetchJSON('/admin/dashboard/agencias-list');
@@ -2215,6 +2215,245 @@ async function salvarAlteracaoAgenciaModelo(event) {
   } catch (err) {
     console.error('Erro ao salvar alteração de agência:', err);
     toast('Erro: ' + err.message, 'error');
+  }
+}
+
+// ==================== 17. CHARGEBACKS ====================
+
+pageLoaders.chargebacks = async function () {
+  try {
+    const data = await fetchJSON('/api/chargebacks');
+    renderChargebacks(data);
+  } catch (err) {
+    console.error('Erro ao carregar chargebacks:', err);
+    toast('Erro ao carregar chargebacks', 'error');
+  }
+};
+
+function renderChargebacks(chargebacks) {
+  const tbody = document.querySelector('#tableChargebacks tbody');
+  if (!chargebacks || chargebacks.length === 0) {
+    tbody.innerHTML = emptyRow(7);
+    return;
+  }
+
+  tbody.innerHTML = chargebacks.map((cb, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td><strong>${cb.plataforma === 'pagarme' ? 'Pagarme' : 'Stripe'}</strong></td>
+      <td>${money(cb.valor)}</td>
+      <td>${fmtDate(cb.data)}</td>
+      <td>${badgeStatus(cb.status || 'ativo')}</td>
+      <td>
+        ${cb.comprovante ? `<a href="/uploads/${cb.comprovante}" target="_blank" class="link">Ver</a>` : '—'}
+      </td>
+      <td>
+        <button class="btn-small btn-ghost" onclick="deletarChargeback(${cb.id})">Deletar</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function salvarChargeback(event) {
+  event.preventDefault();
+  const form = event.target;
+  const formData = new FormData(form);
+
+  try {
+    const res = await authFetch('/api/chargebacks', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+
+    toast('Chargeback registrado com sucesso!', 'success');
+    closeAllModals();
+    form.reset();
+    pageLoaders.chargebacks();
+  } catch (err) {
+    console.error('Erro ao salvar chargeback:', err);
+    toast('Erro ao salvar chargeback: ' + err.message, 'error');
+  }
+}
+
+async function deletarChargeback(id) {
+  if (!confirm('Tem certeza que deseja deletar este chargeback?')) return;
+
+  try {
+    await deleteJSON(`/api/chargebacks/${id}`);
+    toast('Chargeback deletado com sucesso!', 'success');
+    pageLoaders.chargebacks();
+  } catch (err) {
+    console.error('Erro ao deletar:', err);
+    toast('Erro ao deletar chargeback', 'error');
+  }
+}
+
+// ==================== 18. FATURAMENTO PAGARME/STRIPE ====================
+
+pageLoaders.faturamento = async function () {
+  try {
+    const data = await fetchJSON('/api/faturamentos');
+    renderFaturamentos(data);
+  } catch (err) {
+    console.error('Erro ao carregar faturamentos:', err);
+    toast('Erro ao carregar faturamentos', 'error');
+  }
+};
+
+function renderFaturamentos(faturamentos) {
+  const tbody = document.querySelector('#tableFaturamento tbody');
+  if (!faturamentos || faturamentos.length === 0) {
+    tbody.innerHTML = emptyRow(8);
+    return;
+  }
+
+  tbody.innerHTML = faturamentos.map((fat, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td><strong>${fat.plataforma === 'pagarme' ? 'Pagarme' : 'Stripe'}</strong></td>
+      <td>${fat.mes}</td>
+      <td>${money(fat.valor_total)}</td>
+      <td>${money(fat.taxas)}</td>
+      <td><strong>${money(fat.valor_liquido)}</strong></td>
+      <td>
+        ${fat.arquivo ? `<a href="/uploads/${fat.arquivo}" target="_blank" class="link">Baixar</a>` : '—'}
+      </td>
+      <td>
+        <button class="btn-small btn-ghost" onclick="deletarFaturamento(${fat.id})">Deletar</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function salvarFaturamento(event) {
+  event.preventDefault();
+  const form = event.target;
+  const formData = new FormData(form);
+
+  // Calcular valor líquido automaticamente
+  const valorTotal = parseFloat(formData.get('valor_total')) || 0;
+  const taxas = parseFloat(formData.get('taxas')) || 0;
+  formData.set('valor_liquido', (valorTotal - taxas).toFixed(2));
+
+  try {
+    const res = await authFetch('/api/faturamentos', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+
+    toast('Faturamento registrado com sucesso!', 'success');
+    closeAllModals();
+    form.reset();
+    pageLoaders.faturamento();
+  } catch (err) {
+    console.error('Erro ao salvar faturamento:', err);
+    toast('Erro ao salvar faturamento: ' + err.message, 'error');
+  }
+}
+
+async function deletarFaturamento(id) {
+  if (!confirm('Tem certeza que deseja deletar este faturamento?')) return;
+
+  try {
+    await deleteJSON(`/api/faturamentos/${id}`);
+    toast('Faturamento deletado com sucesso!', 'success');
+    pageLoaders.faturamento();
+  } catch (err) {
+    console.error('Erro ao deletar:', err);
+    toast('Erro ao deletar faturamento', 'error');
+  }
+}
+
+// ==================== 19. DESPESAS OPERACIONAIS ====================
+
+pageLoaders.despesas = async function () {
+  try {
+    const data = await fetchJSON('/api/despesas');
+    renderDespesas(data);
+  } catch (err) {
+    console.error('Erro ao carregar despesas:', err);
+    toast('Erro ao carregar despesas', 'error');
+  }
+};
+
+function renderDespesas(despesas) {
+  const tbody = document.querySelector('#tableDespesas tbody');
+  if (!despesas || despesas.length === 0) {
+    tbody.innerHTML = emptyRow(7);
+    return;
+  }
+
+  const categorias = {
+    banco_dados: 'Banco de Dados',
+    render: 'Render',
+    cloudflare: 'Cloudflare',
+    hostinger: 'Hostinger',
+    claude: 'Claude API',
+    email: 'Email/Envio',
+    salario: 'Salário Equipe',
+    outro: 'Outro'
+  };
+
+  tbody.innerHTML = despesas.map((desp, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td><strong>${categorias[desp.categoria] || desp.categoria}</strong></td>
+      <td>${desp.descricao}</td>
+      <td>${money(desp.valor)}</td>
+      <td>${fmtDate(desp.data)}</td>
+      <td>
+        ${desp.comprovante ? `<a href="/uploads/${desp.comprovante}" target="_blank" class="link">Ver</a>` : '—'}
+      </td>
+      <td>
+        <button class="btn-small btn-ghost" onclick="deletarDespesa(${desp.id})">Deletar</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function salvarDespesa(event) {
+  event.preventDefault();
+  const form = event.target;
+  const formData = new FormData(form);
+
+  try {
+    const res = await authFetch('/api/despesas', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+
+    toast('Despesa registrada com sucesso!', 'success');
+    closeAllModals();
+    form.reset();
+    pageLoaders.despesas();
+  } catch (err) {
+    console.error('Erro ao salvar despesa:', err);
+    toast('Erro ao salvar despesa: ' + err.message, 'error');
+  }
+}
+
+async function deletarDespesa(id) {
+  if (!confirm('Tem certeza que deseja deletar esta despesa?')) return;
+
+  try {
+    await deleteJSON(`/api/despesas/${id}`);
+    toast('Despesa deletada com sucesso!', 'success');
+    pageLoaders.despesas();
+  } catch (err) {
+    console.error('Erro ao deletar:', err);
+    toast('Erro ao deletar despesa', 'error');
   }
 }
 

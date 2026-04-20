@@ -710,66 +710,109 @@ router.post("/cliente-risco", authAdmin, async (req, res) => {
     const admin = req.session?.user?.email || req.admin?.email || "Admin";
     const admin_id = req.session?.user?.id || req.admin?.id;
 
-    // 🔹 INSERIR CLIENTE RISCO
-    const { rows } = await db.query(`
-      INSERT INTO cliente_risco (
+    const client = await db.connect();
+
+    try {
+      await client.query("BEGIN");
+
+      // 🔹 INSERIR CLIENTE RISCO
+      const { rows } = await client.query(`
+        INSERT INTO cliente_risco (
+          cliente_id,
+          cpf,
+          ip,
+          fingerprint,
+          nivel,
+          motivo,
+          expira_em,
+          bloqueio_ip,
+          bloqueio_cpf,
+          bloqueio_fingerprint,
+          admin,
+          criado_em
+        )
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW())
+        RETURNING *
+      `, [
         cliente_id,
-        cpf,
-        ip,
-        fingerprint,
-        nivel,
-        motivo,
-        expira_em,
-        bloqueio_ip,
-        bloqueio_cpf,
-        bloqueio_fingerprint,
-        admin,
-        criado_em
-      )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW())
-      RETURNING *
-    `, [
-      cliente_id,
-      cpf || null,
-      ip || null,
-      fingerprint || null,
-      nivel || null,
-      motivo || null,
-      expira_em || null,
-      !!bloqueio_ip,
-      !!bloqueio_cpf,
-      !!bloqueio_fingerprint,
-      admin
-    ]);
+        cpf || null,
+        ip || null,
+        fingerprint || null,
+        nivel || null,
+        motivo || null,
+        expira_em || null,
+        !!bloqueio_ip,
+        !!bloqueio_cpf,
+        !!bloqueio_fingerprint,
+        admin
+      ]);
 
-    const clienteRisco = rows[0];
+      const clienteRisco = rows[0];
 
-    // 🔹 REGISTRAR NO HISTÓRICO DE SEGURANÇA
-    const descricaoAcao = `Cliente #${cliente_id} marcado como RISCO (${nivel || 'sem nível'}). ${motivo ? `Motivo: ${motivo}` : ''} Bloqueios: ${[
-      bloqueio_ip && 'IP',
-      bloqueio_cpf && 'CPF',
-      bloqueio_fingerprint && 'Fingerprint'
-    ].filter(Boolean).join(', ') || 'Nenhum'}`;
+      // 🔹 INSERIR IP BLOQUEADO
+      if (bloqueio_ip && ip) {
+        await client.query(`
+          INSERT INTO ips_bloqueados (ip, cliente_id, motivo, criado_em, expires_at)
+          VALUES ($1, $2, $3, NOW(), $4)
+          ON CONFLICT DO NOTHING
+        `, [ip, cliente_id, motivo || null, expira_em || null]);
+      }
 
-    await db.query(`
-      INSERT INTO admin_seguranca_historico (
+      // 🔹 INSERIR CPF BLOQUEADO
+      if (bloqueio_cpf && cpf) {
+        await client.query(`
+          INSERT INTO cpfs_bloqueados (cpf, cliente_id, motivo, created_at, expires_at)
+          VALUES ($1, $2, $3, NOW(), $4)
+          ON CONFLICT DO NOTHING
+        `, [cpf, cliente_id, motivo || null, expira_em || null]);
+      }
+
+      // 🔹 INSERIR FINGERPRINT BLOQUEADO
+      if (bloqueio_fingerprint && fingerprint) {
+        await client.query(`
+          INSERT INTO fingerprint_bloqueados (fingerprint, cliente_id, motivo, created_at, expires_at)
+          VALUES ($1, $2, $3, NOW(), $4)
+          ON CONFLICT DO NOTHING
+        `, [fingerprint, cliente_id, motivo || null, expira_em || null]);
+      }
+
+      // 🔹 REGISTRAR NO HISTÓRICO DE SEGURANÇA
+      const bloqueiosList = [
+        bloqueio_ip && 'IP',
+        bloqueio_cpf && 'CPF',
+        bloqueio_fingerprint && 'Fingerprint'
+      ].filter(Boolean).join(', ') || 'Nenhum';
+
+      const descricaoAcao = `Cliente #${cliente_id} marcado como RISCO (${nivel || 'sem nível'}). ${motivo ? `Motivo: ${motivo}` : ''} Bloqueios: ${bloqueiosList}`;
+
+      await client.query(`
+        INSERT INTO admin_seguranca_historico (
+          admin_id,
+          motivo,
+          data,
+          user_id,
+          tipo_user,
+          acao
+        )
+        VALUES ($1, $2, NOW(), $3, $4, $5)
+      `, [
         admin_id,
-        motivo,
-        data,
-        user_id,
-        tipo_user,
-        acao
-      )
-      VALUES ($1, $2, NOW(), $3, $4, $5)
-    `, [
-      admin_id,
-      descricaoAcao,
-      cliente_id,
-      'cliente',
-      'criar_cliente_risco'
-    ]);
+        descricaoAcao,
+        cliente_id,
+        'cliente',
+        'criar_cliente_risco'
+      ]);
 
-    res.json(clienteRisco);
+      await client.query("COMMIT");
+
+      res.json(clienteRisco);
+
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
 
   } catch (err) {
     console.error("Erro criar cliente risco:", err);
@@ -824,6 +867,7 @@ router.get("/dados-clientes-bloqueados", authAdmin, async (req, res) => {
 router.put("/cliente-risco/:id", authAdmin, async (req, res) => {
   try {
     const clienteId = req.params.id;
+    const admin_id = req.user?.id;
 
     const atualQ = await db.query(
       `SELECT * FROM cliente_risco WHERE cliente_id = $1 LIMIT 1`,
@@ -838,6 +882,9 @@ router.put("/cliente-risco/:id", authAdmin, async (req, res) => {
 
     const nivel = req.body.nivel ?? atual.nivel;
     const motivo = req.body.motivo ?? atual.motivo;
+    const expira_em = Object.prototype.hasOwnProperty.call(req.body, "expira_em")
+      ? req.body.expira_em || null
+      : atual.expira_em;
 
     const bloqueio_ip =
       Object.prototype.hasOwnProperty.call(req.body, "bloqueio_ip")
@@ -854,11 +901,6 @@ router.put("/cliente-risco/:id", authAdmin, async (req, res) => {
         ? req.body.bloqueio_fingerprint === true || req.body.bloqueio_fingerprint === "on" || req.body.bloqueio_fingerprint === "true"
         : atual.bloqueio_fingerprint;
 
-    const expira_em =
-      Object.prototype.hasOwnProperty.call(req.body, "expira_em")
-        ? req.body.expira_em || null
-        : atual.expira_em;
-
     const admin =
       req.admin?.email ||
       req.session?.user?.email ||
@@ -866,29 +908,102 @@ router.put("/cliente-risco/:id", authAdmin, async (req, res) => {
       atual.admin ||
       "Admin";
 
-    const { rows } = await db.query(`
-      UPDATE cliente_risco SET
-        nivel = $1,
-        bloqueio_ip = $2,
-        bloqueio_cpf = $3,
-        bloqueio_fingerprint = $4,
-        motivo = $5,
-        expira_em = $6,
-        admin = $7
-      WHERE cliente_id = $8
-      RETURNING *
-    `, [
-      nivel,
-      bloqueio_ip,
-      bloqueio_cpf,
-      bloqueio_fingerprint,
-      motivo,
-      expira_em,
-      admin,
-      clienteId
-    ]);
+    const client = await db.connect();
 
-    res.json(rows[0]);
+    try {
+      await client.query("BEGIN");
+
+      // 🔹 ATUALIZAR CLIENTE RISCO
+      const { rows } = await client.query(`
+        UPDATE cliente_risco SET
+          nivel = $1,
+          bloqueio_ip = $2,
+          bloqueio_cpf = $3,
+          bloqueio_fingerprint = $4,
+          motivo = $5,
+          expira_em = $6,
+          admin = $7
+        WHERE cliente_id = $8
+        RETURNING *
+      `, [
+        nivel,
+        bloqueio_ip,
+        bloqueio_cpf,
+        bloqueio_fingerprint,
+        motivo,
+        expira_em,
+        admin,
+        clienteId
+      ]);
+
+      // 🔹 ATUALIZAR IP BLOQUEADO
+      if (bloqueio_ip && atual.ip) {
+        // Se foi marcado agora, insere
+        await client.query(`
+          INSERT INTO ips_bloqueados (ip, cliente_id, motivo, criado_em, expires_at)
+          VALUES ($1, $2, $3, NOW(), $4)
+          ON CONFLICT DO NOTHING
+        `, [atual.ip, clienteId, motivo || null, expira_em || null]);
+      } else if (!bloqueio_ip && atual.ip) {
+        // Se foi desmarcado, remove
+        await client.query(`
+          DELETE FROM ips_bloqueados
+          WHERE ip = $1 AND cliente_id = $2
+        `, [atual.ip, clienteId]);
+      }
+
+      // 🔹 ATUALIZAR CPF BLOQUEADO
+      if (bloqueio_cpf && atual.cpf) {
+        await client.query(`
+          INSERT INTO cpfs_bloqueados (cpf, cliente_id, motivo, created_at, expires_at)
+          VALUES ($1, $2, $3, NOW(), $4)
+          ON CONFLICT DO NOTHING
+        `, [atual.cpf, clienteId, motivo || null, expira_em || null]);
+      } else if (!bloqueio_cpf && atual.cpf) {
+        await client.query(`
+          DELETE FROM cpfs_bloqueados
+          WHERE cpf = $1 AND cliente_id = $2
+        `, [atual.cpf, clienteId]);
+      }
+
+      // 🔹 ATUALIZAR FINGERPRINT BLOQUEADO
+      if (bloqueio_fingerprint && atual.fingerprint) {
+        await client.query(`
+          INSERT INTO fingerprint_bloqueados (fingerprint, cliente_id, motivo, created_at, expires_at)
+          VALUES ($1, $2, $3, NOW(), $4)
+          ON CONFLICT DO NOTHING
+        `, [atual.fingerprint, clienteId, motivo || null, expira_em || null]);
+      } else if (!bloqueio_fingerprint && atual.fingerprint) {
+        await client.query(`
+          DELETE FROM fingerprint_bloqueados
+          WHERE fingerprint = $1 AND cliente_id = $2
+        `, [atual.fingerprint, clienteId]);
+      }
+
+      // 🔹 REGISTRAR NO LOG
+      const bloqueiosList = [
+        bloqueio_ip && 'IP',
+        bloqueio_cpf && 'CPF',
+        bloqueio_fingerprint && 'Fingerprint'
+      ].filter(Boolean).join(', ') || 'Nenhum';
+
+      const descricaoAcao = `Cliente #${clienteId} atualizado em RISCO. Nível: ${nivel}, Bloqueios: ${bloqueiosList}`;
+
+      await client.query(`
+        INSERT INTO admin_seguranca_historico (admin_id, motivo, data, user_id, tipo_user, acao)
+        VALUES ($1, $2, NOW(), $3, $4, $5)
+      `, [admin_id, descricaoAcao, clienteId, 'cliente', 'editar_cliente_risco']);
+
+      await client.query("COMMIT");
+
+      res.json(rows[0]);
+
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
 
   } catch (err) {
     console.error("Erro atualizar cliente-risco:", err);
@@ -899,27 +1014,65 @@ router.put("/cliente-risco/:id", authAdmin, async (req, res) => {
 router.delete("/cliente-risco/:id", authAdmin, async (req, res) => {
   try {
     const clienteId = req.params.id;
+    const admin_id = req.user?.id;
+    const admin = req.admin?.email || req.session?.user?.email || "Admin";
 
-    const admin =
-      req.admin?.email ||
-      req.session?.user?.email ||
-      req.session?.user?.name ||
-      "Admin";
+    const client = await db.connect();
 
-    const { rows } = await db.query(`
-      UPDATE cliente_risco
-      SET
-        ativo = false,
-        admin = $1
-      WHERE cliente_id = $2
-      RETURNING *
-    `, [admin, clienteId]);
+    try {
+      await client.query("BEGIN");
 
-    if (!rows.length) {
-      return res.status(404).json({ erro: "Não encontrado" });
+      // 🔹 BUSCAR DADOS ANTES DE DELETAR
+      const dodoRes = await client.query(
+        `SELECT ip, cpf, fingerprint FROM cliente_risco WHERE cliente_id = $1`,
+        [clienteId]
+      );
+
+      if (dodoRes.rows.length === 0) {
+        return res.status(404).json({ erro: "Não encontrado" });
+      }
+
+      const { ip, cpf, fingerprint } = dodoRes.rows[0];
+
+      // 🔹 DESATIVAR CLIENTE RISCO
+      const { rows } = await client.query(`
+        UPDATE cliente_risco
+        SET
+          ativo = false,
+          admin = $1
+        WHERE cliente_id = $2
+        RETURNING *
+      `, [admin, clienteId]);
+
+      // 🔹 REMOVER DOS BLOQUEIOS
+      if (ip) {
+        await client.query(`DELETE FROM ips_bloqueados WHERE ip = $1 AND cliente_id = $2`, [ip, clienteId]);
+      }
+      if (cpf) {
+        await client.query(`DELETE FROM cpfs_bloqueados WHERE cpf = $1 AND cliente_id = $2`, [cpf, clienteId]);
+      }
+      if (fingerprint) {
+        await client.query(`DELETE FROM fingerprint_bloqueados WHERE fingerprint = $1 AND cliente_id = $2`, [fingerprint, clienteId]);
+      }
+
+      // 🔹 REGISTRAR NO LOG
+      const descricaoAcao = `Cliente #${clienteId} removido da lista de risco`;
+
+      await client.query(`
+        INSERT INTO admin_seguranca_historico (admin_id, motivo, data, user_id, tipo_user, acao)
+        VALUES ($1, $2, NOW(), $3, $4, $5)
+      `, [admin_id, descricaoAcao, clienteId, 'cliente', 'remover_cliente_risco']);
+
+      await client.query("COMMIT");
+
+      res.json({ ok: true, row: rows[0] });
+
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
     }
-
-    res.json({ ok: true, row: rows[0] });
 
   } catch (err) {
     console.error("Erro desativar cliente-risco:", err);
@@ -3301,5 +3454,404 @@ router.post("/agencias", authAdmin, async (req, res) => {
     res.status(500).json({ erro: "Erro interno: " + err.message });
   }
 });
+
+// ==================== 17. CHARGEBACKS ====================
+
+router.get("/chargebacks-list", async (req, res) => {
+  try {
+    const { rows } = await db.query(`
+      SELECT
+        id,
+        plataforma,
+        valor,
+        data,
+        status,
+        motivo,
+        comprovante,
+        criado_em
+      FROM chargebacks
+      ORDER BY data DESC
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Erro /chargebacks-list:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.post("/chargebacks", authAdmin, async (req, res) => {
+  try {
+    let { plataforma, valor, data, motivo } = req.body;
+    const comprovante = req.file ? req.file.filename : null;
+
+    const admin_id = req.user?.id;
+    const user_id = req.user?.id;
+
+    // Validações
+    if (!plataforma || !['pagarme', 'stripe'].includes(plataforma)) {
+      return res.status(400).json({ erro: "Plataforma inválida" });
+    }
+
+    if (!valor || isNaN(valor) || valor <= 0) {
+      return res.status(400).json({ erro: "Valor inválido" });
+    }
+
+    if (!data) {
+      return res.status(400).json({ erro: "Data é obrigatória" });
+    }
+
+    if (!comprovante) {
+      return res.status(400).json({ erro: "Comprovante é obrigatório" });
+    }
+
+    if (!admin_id || !user_id) {
+      return res.status(401).json({ erro: "Usuário não autenticado" });
+    }
+
+    valor = Number(valor);
+
+    const { rows } = await db.query(`
+      INSERT INTO chargebacks (plataforma, valor, data, motivo, comprovante)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING id, plataforma, valor, data, status, motivo, comprovante, criado_em
+    `, [plataforma, valor, data, motivo || null, comprovante]);
+
+    if (!rows.length) {
+      return res.status(500).json({ erro: "Falha ao registrar chargeback" });
+    }
+
+    // Registrar no log
+    const motevoLog = `Chargeback registrado: ${plataforma} - R$ ${valor.toFixed(2)}`;
+
+    try {
+      await db.query(`
+        INSERT INTO admin_seguranca_historico (admin_id, motivo, data, user_id, tipo_user, acao)
+        VALUES ($1, $2, NOW(), $3, $4, $5)
+      `, [admin_id, motevoLog, user_id, 'admin', 'chargeback_novo']);
+    } catch (logErr) {
+      console.error("Erro ao registrar no log:", logErr);
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Erro ao criar chargeback:", err.message);
+    res.status(500).json({ erro: "Erro interno: " + err.message });
+  }
+});
+
+router.delete("/chargebacks/:id", authAdmin, async (req, res) => {
+  try {
+    const chargebackId = Number(req.params.id);
+
+    const admin_id = req.user?.id;
+    const user_id = req.user?.id;
+
+    if (!chargebackId) {
+      return res.status(400).json({ erro: "Chargeback inválido" });
+    }
+
+    if (!admin_id || !user_id) {
+      return res.status(401).json({ erro: "Usuário não autenticado" });
+    }
+
+    const chargeback = await db.query(
+      `SELECT plataforma, valor FROM chargebacks WHERE id = $1`,
+      [chargebackId]
+    );
+
+    if (!chargeback.rows.length) {
+      return res.status(404).json({ erro: "Chargeback não encontrado" });
+    }
+
+    await db.query(`DELETE FROM chargebacks WHERE id = $1`, [chargebackId]);
+
+    // Registrar no log
+    const motevoLog = `Chargeback deletado: ${chargeback.rows[0].plataforma} - R$ ${chargeback.rows[0].valor.toFixed(2)}`;
+
+    try {
+      await db.query(`
+        INSERT INTO admin_seguranca_historico (admin_id, motivo, data, user_id, tipo_user, acao)
+        VALUES ($1, $2, NOW(), $3, $4, $5)
+      `, [admin_id, motevoLog, user_id, 'admin', 'chargeback_deletado']);
+    } catch (logErr) {
+      console.error("Erro ao registrar no log:", logErr);
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Erro ao deletar chargeback:", err.message);
+    res.status(500).json({ erro: "Erro interno: " + err.message });
+  }
+});
+
+// ==================== 18. FATURAMENTOS ====================
+
+router.get("/faturamentos-list", async (req, res) => {
+  try {
+    const { rows } = await db.query(`
+      SELECT
+        id,
+        plataforma,
+        mes,
+        valor_total,
+        taxas,
+        valor_liquido,
+        arquivo,
+        criado_em
+      FROM faturamentos
+      ORDER BY mes DESC
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Erro /faturamentos-list:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.post("/faturamentos", authAdmin, async (req, res) => {
+  try {
+    let { plataforma, mes, valor_total, taxas } = req.body;
+    const arquivo = req.file ? req.file.filename : null;
+
+    const admin_id = req.user?.id;
+    const user_id = req.user?.id;
+
+    // Validações
+    if (!plataforma || !['pagarme', 'stripe'].includes(plataforma)) {
+      return res.status(400).json({ erro: "Plataforma inválida" });
+    }
+
+    if (!mes) {
+      return res.status(400).json({ erro: "Mês é obrigatório" });
+    }
+
+    if (!valor_total || isNaN(valor_total) || valor_total <= 0) {
+      return res.status(400).json({ erro: "Valor total inválido" });
+    }
+
+    if (!arquivo) {
+      return res.status(400).json({ erro: "Arquivo é obrigatório" });
+    }
+
+    if (!admin_id || !user_id) {
+      return res.status(401).json({ erro: "Usuário não autenticado" });
+    }
+
+    valor_total = Number(valor_total);
+    taxas = taxas ? Number(taxas) : 0;
+    const valor_liquido = valor_total - taxas;
+
+    const { rows } = await db.query(`
+      INSERT INTO faturamentos (plataforma, mes, valor_total, taxas, valor_liquido, arquivo)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id, plataforma, mes, valor_total, taxas, valor_liquido, arquivo, criado_em
+    `, [plataforma, mes, valor_total, taxas, valor_liquido, arquivo]);
+
+    if (!rows.length) {
+      return res.status(500).json({ erro: "Falha ao registrar faturamento" });
+    }
+
+    // Registrar no log
+    const motevoLog = `Faturamento registrado: ${plataforma} - ${mes} - R$ ${valor_liquido.toFixed(2)} (líquido)`;
+
+    try {
+      await db.query(`
+        INSERT INTO admin_seguranca_historico (admin_id, motivo, data, user_id, tipo_user, acao)
+        VALUES ($1, $2, NOW(), $3, $4, $5)
+      `, [admin_id, motevoLog, user_id, 'admin', 'faturamento_novo']);
+    } catch (logErr) {
+      console.error("Erro ao registrar no log:", logErr);
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Erro ao criar faturamento:", err.message);
+    res.status(500).json({ erro: "Erro interno: " + err.message });
+  }
+});
+
+router.delete("/faturamentos/:id", authAdmin, async (req, res) => {
+  try {
+    const faturamentoId = Number(req.params.id);
+
+    const admin_id = req.user?.id;
+    const user_id = req.user?.id;
+
+    if (!faturamentoId) {
+      return res.status(400).json({ erro: "Faturamento inválido" });
+    }
+
+    if (!admin_id || !user_id) {
+      return res.status(401).json({ erro: "Usuário não autenticado" });
+    }
+
+    const faturamento = await db.query(
+      `SELECT plataforma, mes, valor_liquido FROM faturamentos WHERE id = $1`,
+      [faturamentoId]
+    );
+
+    if (!faturamento.rows.length) {
+      return res.status(404).json({ erro: "Faturamento não encontrado" });
+    }
+
+    await db.query(`DELETE FROM faturamentos WHERE id = $1`, [faturamentoId]);
+
+    // Registrar no log
+    const motevoLog = `Faturamento deletado: ${faturamento.rows[0].plataforma} - ${faturamento.rows[0].mes} - R$ ${faturamento.rows[0].valor_liquido.toFixed(2)}`;
+
+    try {
+      await db.query(`
+        INSERT INTO admin_seguranca_historico (admin_id, motivo, data, user_id, tipo_user, acao)
+        VALUES ($1, $2, NOW(), $3, $4, $5)
+      `, [admin_id, motevoLog, user_id, 'admin', 'faturamento_deletado']);
+    } catch (logErr) {
+      console.error("Erro ao registrar no log:", logErr);
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Erro ao deletar faturamento:", err.message);
+    res.status(500).json({ erro: "Erro interno: " + err.message });
+  }
+});
+
+// ==================== 19. DESPESAS ====================
+
+router.get("/despesas-list", async (req, res) => {
+  try {
+    const { rows } = await db.query(`
+      SELECT
+        id,
+        categoria,
+        descricao,
+        valor,
+        data,
+        comprovante,
+        criado_em
+      FROM despesas
+      ORDER BY data DESC
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Erro /despesas-list:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.post("/despesas", authAdmin, async (req, res) => {
+  try {
+    let { categoria, descricao, valor, data } = req.body;
+    const comprovante = req.file ? req.file.filename : null;
+
+    const admin_id = req.user?.id;
+    const user_id = req.user?.id;
+
+    // Validações
+    const categoriasValidas = ['banco_dados', 'render', 'cloudflare', 'hostinger', 'claude', 'email', 'salario', 'outro'];
+    
+    if (!categoria || !categoriasValidas.includes(categoria)) {
+      return res.status(400).json({ erro: "Categoria inválida" });
+    }
+
+    if (!descricao || descricao.trim() === '') {
+      return res.status(400).json({ erro: "Descrição é obrigatória" });
+    }
+
+    if (!valor || isNaN(valor) || valor <= 0) {
+      return res.status(400).json({ erro: "Valor inválido" });
+    }
+
+    if (!data) {
+      return res.status(400).json({ erro: "Data é obrigatória" });
+    }
+
+    if (!comprovante) {
+      return res.status(400).json({ erro: "Comprovante é obrigatório" });
+    }
+
+    if (!admin_id || !user_id) {
+      return res.status(401).json({ erro: "Usuário não autenticado" });
+    }
+
+    valor = Number(valor);
+    descricao = descricao.trim();
+
+    const { rows } = await db.query(`
+      INSERT INTO despesas (categoria, descricao, valor, data, comprovante)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING id, categoria, descricao, valor, data, comprovante, criado_em
+    `, [categoria, descricao, valor, data, comprovante]);
+
+    if (!rows.length) {
+      return res.status(500).json({ erro: "Falha ao registrar despesa" });
+    }
+
+    // Registrar no log
+    const motevoLog = `Despesa registrada: ${categoria} - ${descricao} - R$ ${valor.toFixed(2)}`;
+
+    try {
+      await db.query(`
+        INSERT INTO admin_seguranca_historico (admin_id, motivo, data, user_id, tipo_user, acao)
+        VALUES ($1, $2, NOW(), $3, $4, $5)
+      `, [admin_id, motevoLog, user_id, 'admin', 'despesa_nova']);
+    } catch (logErr) {
+      console.error("Erro ao registrar no log:", logErr);
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Erro ao criar despesa:", err.message);
+    res.status(500).json({ erro: "Erro interno: " + err.message });
+  }
+});
+
+router.delete("/despesas/:id", authAdmin, async (req, res) => {
+  try {
+    const despesaId = Number(req.params.id);
+
+    const admin_id = req.user?.id;
+    const user_id = req.user?.id;
+
+    if (!despesaId) {
+      return res.status(400).json({ erro: "Despesa inválida" });
+    }
+
+    if (!admin_id || !user_id) {
+      return res.status(401).json({ erro: "Usuário não autenticado" });
+    }
+
+    const despesa = await db.query(
+      `SELECT categoria, descricao, valor FROM despesas WHERE id = $1`,
+      [despesaId]
+    );
+
+    if (!despesa.rows.length) {
+      return res.status(404).json({ erro: "Despesa não encontrada" });
+    }
+
+    await db.query(`DELETE FROM despesas WHERE id = $1`, [despesaId]);
+
+    // Registrar no log
+    const motevoLog = `Despesa deletada: ${despesa.rows[0].categoria} - ${despesa.rows[0].descricao} - R$ ${despesa.rows[0].valor.toFixed(2)}`;
+
+    try {
+      await db.query(`
+        INSERT INTO admin_seguranca_historico (admin_id, motivo, data, user_id, tipo_user, acao)
+        VALUES ($1, $2, NOW(), $3, $4, $5)
+      `, [admin_id, motevoLog, user_id, 'admin', 'despesa_deletada']);
+    } catch (logErr) {
+      console.error("Erro ao registrar no log:", logErr);
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Erro ao deletar despesa:", err.message);
+    res.status(500).json({ erro: "Erro interno: " + err.message });
+  }
+});
+
 
 module.exports = router;

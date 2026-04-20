@@ -7090,6 +7090,7 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
 
     let modelo_id = null;
     let cliente_id = null;
+    let agencia_id = null;
     let detalhes = {
       desativacao_logica: true,
       users: true,
@@ -7218,6 +7219,32 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
     }
 
     // ===========================
+    // AGÊNCIA
+    // ===========================
+    if (role === "agencia") {
+      const agenciaRes = await client.query(
+        `SELECT id
+         FROM agencias
+         WHERE user_id = $1`,
+        [userId]
+      );
+
+      if (agenciaRes.rowCount > 0) {
+        agencia_id = agenciaRes.rows[0].id;
+
+        await client.query(
+          `UPDATE agencias
+           SET ativo = false,
+               desativado_em = NOW()
+           WHERE id = $1`,
+          [agencia_id]
+        );
+
+        detalhes.agencias = true;
+      }
+    }
+
+    // ===========================
     // USER
     // ===========================
     await client.query(
@@ -7232,7 +7259,7 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
     );
 
     // ===========================
-    // LOG
+    // LOG - CONTA_EXCLUSOES_LOG
     // ===========================
     await client.query(
       `INSERT INTO conta_exclusoes_log
@@ -7259,6 +7286,23 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
         userAgent,
         "/api/conta/excluir",
         JSON.stringify(detalhes)
+      ]
+    );
+
+    // ===========================
+    // LOG - ADMIN_SEGURANCA_HISTORICO
+    // ===========================
+    const motivo = `Autoexclusão de conta - Role: ${role}${modelo_id ? `, Modelo ID: ${modelo_id}` : ''}${cliente_id ? `, Cliente ID: ${cliente_id}` : ''}${agencia_id ? `, Agência ID: ${agencia_id}` : ''}`;
+
+    await client.query(
+      `INSERT INTO admin_seguranca_historico (admin_id, motivo, data, user_id, tipo_user, acao)
+       VALUES ($1, $2, NOW(), $3, $4, $5)`,
+      [
+        userId, 
+        motivo,
+        userId,
+        role,
+        "autoexclusao"
       ]
     );
 
