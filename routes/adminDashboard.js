@@ -2700,31 +2700,26 @@ router.get("/vip-subscriptions", async (req, res) => {
     );
     
     const busca = (req.query.busca || "").toString().trim();
-    
-    console.log("🔍 Backend - Buscando:", busca);
 
     let rows, total;
 
     if (busca) {
-      // COM FILTRO
       const countRes = await db.query(
-        `SELECT COUNT(*) AS count FROM vip_subscriptions WHERE cliente_id::text = $1`,
-        [busca]
+        `SELECT COUNT(*) AS count FROM vip_subscriptions WHERE cliente_id::text LIKE $1`,
+        [busca + '%']
       );
       total = Number(countRes.rows[0]?.count || 0);
-      console.log("📊 Count com filtro:", total);
-      
+
       const dataRes = await db.query(
-        `SELECT v.*, m.nome AS modelo_nome 
+        `SELECT v.*, m.nome AS modelo_nome
          FROM vip_subscriptions v
          LEFT JOIN modelos m ON m.id = v.modelo_id
-         WHERE v.cliente_id::text = $1
+         WHERE v.cliente_id::text LIKE $1
          ORDER BY v.id DESC
          LIMIT $2 OFFSET $3`,
-        [busca, limit, offset]
+        [busca + '%', limit, offset]
       );
       rows = dataRes.rows;
-      console.log("✔️ Rows com filtro:", rows.length);
     } else {
       // SEM FILTRO
       const countRes = await db.query(`SELECT COUNT(*) AS count FROM vip_subscriptions`);

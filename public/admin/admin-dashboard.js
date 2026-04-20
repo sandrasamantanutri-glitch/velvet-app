@@ -1829,46 +1829,18 @@ async function submitResetSenha() {
 let vipSearchTimeout;
 
 pageLoaders.vip = function () {
-  console.log('🚀 pageLoaders.vip iniciando...');
-  
   carregarVip(1);
-  
-  const vipBuscaInput = $('vipBusca');
-  console.log('📍 vipBuscaInput:', vipBuscaInput); // DEBUG
-  
-  if (!vipBuscaInput) {
-    console.error('❌ Elemento vipBusca não encontrado!');
-    return;
-  }
-  
-  // Remove listener antigo
-  if (vipBuscaInput._oldListener) {
-    vipBuscaInput.removeEventListener('input', vipBuscaInput._oldListener);
-    console.log('🗑️ Removido listener antigo');
-  }
-  
-  // Cria novo listener
-  const newListener = (e) => {
-    console.log('⌨️ Input detectado:', e.target.value); // DEBUG
+  $('vipBusca').oninput = () => {
     clearTimeout(vipSearchTimeout);
-    vipSearchTimeout = setTimeout(() => {
-      console.log('⏱️ Timeout executando busca...');
-      carregarVip(1);
-    }, 400);
+    vipSearchTimeout = setTimeout(() => carregarVip(1), 400);
   };
-  
-  vipBuscaInput._oldListener = newListener;
-  vipBuscaInput.addEventListener('input', newListener);
-  console.log('✅ Listener adicionado');
 };
 
 async function carregarVip(page) {
   try {
-    const busca = $('vipBusca').value || "";
-    console.log('🔍 Buscando VIP:', busca); 
+    const busca = ($('vipBusca')?.value || "").trim();
     const data = await fetchJSON(`/admin/dashboard/vip-subscriptions?page=${page}&limit=20&busca=${encodeURIComponent(busca)}`);
-    console.log('📊 Resultado:', data.rows.length, 'registros'); 
-    
+
     const tbody = $('tableVip').querySelector('tbody');
     tbody.innerHTML = (data.rows || []).map(r => `
       <tr>
