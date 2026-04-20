@@ -183,7 +183,8 @@ const pageTitles = {
   agencias: 'Agencias',
   chargebacks = 'Chargebacks',
   faturamento = 'Faturamentos Pagarme & Stripe',
-  despesas = 'Despesas Operacionais'
+  despesas = 'Despesas Operacionais',
+  feed: 'Feed'
 };
 
 const pageLoaders = {};
