@@ -181,9 +181,9 @@ const pageTitles = {
   vip: 'Assinaturas VIP',
   'pagamentos-modelo': 'Pagamentos a Modelos',
   agencias: 'Agencias',
-  chargebacks = 'Chargebacks',
-  faturamento = 'Faturamentos Pagarme & Stripe',
-  despesas = 'Despesas Operacionais'
+  chargebacks: 'Chargebacks',
+  faturamento: 'Faturamentos Pagarme & Stripe',
+  despesas: 'Despesas Operacionais'
 };
 
 const pageLoaders = {};
