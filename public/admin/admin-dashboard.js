@@ -2050,7 +2050,7 @@ async function abrirModalPagModelo() {
 
 pageLoaders.agencias = async function () {
   try {
-    const data = await fetchJSON('/admin/dashboard/agencias');
+    const data = await fetchJSON('/admin/dashboard/agencias-list');
     console.log('AGENCIAS JSON:', data);
 
     agenciasCache = data || [];

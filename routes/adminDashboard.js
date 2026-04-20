@@ -3056,7 +3056,7 @@ router.put("/modelo-pagamentos/:id", authAdmin, async (req, res) => {
 
 // ========== 16. AGÊNCIAS ==========
 
-router.get("/agencias", async (req, res) => {
+router.get("/agencias-list", async (req, res) => {
   try {
     const { rows } = await db.query(`
       SELECT
