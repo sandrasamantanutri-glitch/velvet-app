@@ -118,12 +118,20 @@ router.get("/overview", authAdmin, async (req, res) => {
 
       db.query(`
         SELECT
-          COALESCE(origem, 'Desconhecida') AS origem,
+          CASE
+            WHEN LOWER(COALESCE(origem_trafego, '')) LIKE '%instagram%'
+              OR LOWER(COALESCE(origem_trafego, '')) LIKE '%insta%' THEN 'Instagram'
+            WHEN LOWER(COALESCE(origem_trafego, '')) LIKE '%tiktok%' THEN 'TikTok'
+            WHEN origem_trafego IS NULL
+              OR origem_trafego = ''
+              OR LOWER(origem_trafego) IN ('direto','direct','none','unknown') THEN 'Direto'
+            ELSE COALESCE(origem_trafego, 'Desconhecida')
+          END AS origem,
           COUNT(*) AS total
-        FROM acessos_origem
+        FROM clientes
         WHERE created_at >= date_trunc('month', NOW())
           AND created_at < (date_trunc('month', NOW()) + INTERVAL '1 month')
-        GROUP BY COALESCE(origem, 'Desconhecida')
+        GROUP BY origem
         ORDER BY total DESC
       `),
 
@@ -180,87 +188,91 @@ router.get("/overview", authAdmin, async (req, res) => {
 
 // ========== 2. TRAFEGO ==========
 
-router.post("/acessos-origem", async (req, res) => {
-  try {
-    const {
-      modelo_id,
-      ref_modelo,
-      origem_trafego,
-      utm_source,
-      utm_medium,
-      utm_campaign,
-      utm_content,
-      utm_term,
-      referer,
-      landing_page,
-      current_url,
-      pagina
-    } = req.body;
+// router.post("/acessos-origem", async (req, res) => {
+//   try {
+//     const {
+//       modelo_id,
+//       ref_modelo,
+//       origem_trafego,
+//       utm_source,
+//       utm_medium,
+//       utm_campaign,
+//       utm_content,
+//       utm_term,
+//       referer,
+//       landing_page,
+//       current_url,
+//       pagina
+//     } = req.body;
 
-    const ip =
-      req.headers["cf-connecting-ip"] ||
-      req.headers["x-forwarded-for"]?.split(",")[0] ||
-      req.ip;
+//     const ip =
+//       req.headers["cf-connecting-ip"] ||
+//       req.headers["x-forwarded-for"]?.split(",")[0] ||
+//       req.ip;
 
-    const userAgent = req.headers["user-agent"];
+//     const userAgent = req.headers["user-agent"];
 
-    await db.query(
-      `
-      INSERT INTO acessos_origem (
-        user_id,
-        cliente_id,
-        modelo_id,
-        ref_modelo,
-        origem,
-        utm_source,
-        utm_medium,
-        utm_campaign,
-        utm_content,
-        utm_term,
-        referer,
-        landing_page,
-        current_url,
-        pagina,
-        ip,
-        user_agent,
-        created_at
-      )
-      VALUES (
-        $1,$2,$3,$4,$5,
-        $6,$7,$8,$9,$10,
-        $11,$12,$13,$14,$15,$16,NOW()
-      )
-      `,
-      [
-        req.user?.id || null,
-        req.user?.cliente_id || null,
-        modelo_id || ref_modelo || null,
-        ref_modelo || null,
-        origem_trafego || null,
-        utm_source || null,
-        utm_medium || null,
-        utm_campaign || null,
-        utm_content || null,
-        utm_term || null,
-        referer || null,
-        landing_page || null,
-        current_url || null,
-        pagina || null,
-        ip || null,
-        userAgent || null
-      ]
-    );
+//     await db.query(
+//       `
+//       INSERT INTO acessos_origem (
+//         user_id,
+//         cliente_id,
+//         modelo_id,
+//         ref_modelo,
+//         origem,
+//         utm_source,
+//         utm_medium,
+//         utm_campaign,
+//         utm_content,
+//         utm_term,
+//         referer,
+//         landing_page,
+//         current_url,
+//         pagina,
+//         ip,
+//         user_agent,
+//         created_at
+//       )
+//       VALUES (
+//         $1,$2,$3,$4,$5,
+//         $6,$7,$8,$9,$10,
+//         $11,$12,$13,$14,$15,$16,NOW()
+//       )
+//       `,
+//       [
+//         req.user?.id || null,
+//         req.user?.cliente_id || null,
+//         modelo_id || ref_modelo || null,
+//         ref_modelo || null,
+//         origem_trafego || null,
+//         utm_source || null,
+//         utm_medium || null,
+//         utm_campaign || null,
+//         utm_content || null,
+//         utm_term || null,
+//         referer || null,
+//         landing_page || null,
+//         current_url || null,
+//         pagina || null,
+//         ip || null,
+//         userAgent || null
+//       ]
+//     );
 
-    res.json({ ok: true });
-  } catch (err) {
-    console.error("Erro ao registrar origem:", err);
-    res.status(500).json({ error: "Erro ao registrar origem" });
-  }
-});
+//     res.json({ ok: true });
+//   } catch (err) {
+//     console.error("Erro ao registrar origem:", err);
+//     res.status(500).json({ error: "Erro ao registrar origem" });
+//   }
+// });
 
 router.get("/acessos-origem", authAdmin, async (req, res) => {
   try {
-    const mes = req.query.mes; // exemplo: 2026-04
+    const mes = req.query.mes; // formato: YYYY-MM
+
+    if (!mes || !/^\d{4}-\d{2}$/.test(mes)) {
+      return res.status(400).json({ error: "Parâmetro 'mes' inválido. Use YYYY-MM" });
+    }
 
     const inicio = `${mes}-01`;
     const fim = new Date(inicio);
@@ -268,107 +280,124 @@ router.get("/acessos-origem", authAdmin, async (req, res) => {
 
     const params = [inicio, fim];
 
+    // 🔹 TOTAL
     const totalRes = await db.query(
       `
       SELECT
         COUNT(*)::int AS total,
 
         COUNT(*) FILTER (
-          WHERE LOWER(COALESCE(origem, utm_source, referer, '')) LIKE '%instagram%'
-             OR LOWER(COALESCE(origem, utm_source, referer, '')) LIKE '%insta%'
+          WHERE LOWER(COALESCE(origem_trafego, '')) LIKE '%instagram%'
+             OR LOWER(COALESCE(origem_trafego, '')) LIKE '%insta%'
         )::int AS instagram,
 
         COUNT(*) FILTER (
-          WHERE LOWER(COALESCE(origem, utm_source, referer, '')) LIKE '%tiktok%'
+          WHERE LOWER(COALESCE(origem_trafego, '')) LIKE '%tiktok%'
         )::int AS tiktok,
 
         COUNT(*) FILTER (
-          WHERE origem IS NULL
-             OR origem = ''
-             OR LOWER(origem) = 'direto'
+          WHERE origem_trafego IS NULL
+             OR origem_trafego = ''
+             OR LOWER(origem_trafego) IN ('direto','direct','none','unknown')
         )::int AS direto
 
-      FROM acessos_origem
-      WHERE criado_em >= $1
-        AND criado_em < $2
+      FROM clientes
+      WHERE created_at >= $1
+        AND created_at < $2
       `,
       params
     );
 
+    // 🔹 DIÁRIO
     const diarioRes = await db.query(
       `
       SELECT
-        TO_CHAR(criado_em::date, 'DD/MM') AS dia,
+        TO_CHAR(created_at::date, 'DD/MM') AS dia,
 
         COUNT(*) FILTER (
-          WHERE LOWER(COALESCE(origem, utm_source, referer, '')) LIKE '%instagram%'
-             OR LOWER(COALESCE(origem, utm_source, referer, '')) LIKE '%insta%'
+          WHERE LOWER(COALESCE(origem_trafego, '')) LIKE '%instagram%'
+             OR LOWER(COALESCE(origem_trafego, '')) LIKE '%insta%'
         )::int AS instagram,
 
         COUNT(*) FILTER (
-          WHERE LOWER(COALESCE(origem, utm_source, referer, '')) LIKE '%tiktok%'
+          WHERE LOWER(COALESCE(origem_trafego, '')) LIKE '%tiktok%'
         )::int AS tiktok,
 
         COUNT(*) FILTER (
-          WHERE origem IS NULL
-             OR origem = ''
-             OR LOWER(origem) = 'direto'
+          WHERE origem_trafego IS NULL
+             OR origem_trafego = ''
+             OR LOWER(origem_trafego) IN ('direto','direct','none','unknown')
         )::int AS direto
 
-      FROM acessos_origem
-      WHERE criado_em >= $1
-        AND criado_em < $2
-      GROUP BY criado_em::date
-      ORDER BY criado_em::date ASC
+      FROM clientes
+      WHERE created_at >= $1
+        AND created_at < $2
+      GROUP BY created_at::date
+      ORDER BY created_at::date ASC
       `,
       params
     );
 
+    // 🔹 TOP MODELOS
     const topModelosRes = await db.query(
       `
       SELECT
-        a.modelo_id,
-        COALESCE(m.nome_exibicao, m.nome, 'Modelo #' || a.modelo_id) AS nome,
+        c.ref_modelo AS modelo_id,
+        COALESCE(m.nome_exibicao, m.nome, 'Modelo #' || c.ref_modelo) AS nome,
 
         COUNT(*) FILTER (
-          WHERE LOWER(COALESCE(a.origem, a.utm_source, a.referer, '')) LIKE '%instagram%'
-             OR LOWER(COALESCE(a.origem, a.utm_source, a.referer, '')) LIKE '%insta%'
+          WHERE LOWER(COALESCE(c.origem_trafego, '')) LIKE '%instagram%'
+             OR LOWER(COALESCE(c.origem_trafego, '')) LIKE '%insta%'
         )::int AS instagram,
 
         COUNT(*) FILTER (
-          WHERE LOWER(COALESCE(a.origem, a.utm_source, a.referer, '')) LIKE '%tiktok%'
+          WHERE LOWER(COALESCE(c.origem_trafego, '')) LIKE '%tiktok%'
         )::int AS tiktok,
 
         COUNT(*) FILTER (
-          WHERE a.origem IS NULL
-             OR a.origem = ''
-             OR LOWER(a.origem) = 'direto'
+          WHERE c.origem_trafego IS NULL
+             OR c.origem_trafego = ''
+             OR LOWER(c.origem_trafego) IN ('direto','direct','none','unknown')
         )::int AS direto,
 
         COUNT(*)::int AS total
 
-      FROM acessos_origem a
-      LEFT JOIN modelos m ON m.id = a.modelo_id
-      WHERE a.criado_em >= $1
-        AND a.criado_em < $2
-        AND a.modelo_id IS NOT NULL
-      GROUP BY a.modelo_id, m.nome_exibicao, m.nome
+      FROM clientes c
+      LEFT JOIN modelos m ON m.id = c.ref_modelo
+      WHERE c.created_at >= $1
+        AND c.created_at < $2
+        AND c.ref_modelo IS NOT NULL
+      GROUP BY c.ref_modelo, m.nome_exibicao, m.nome
       ORDER BY total DESC
       LIMIT 20
       `,
       params
     );
 
-    const totais = totalRes.rows[0];
+    const totais = totalRes.rows[0] || {};
 
     res.json({
-      total: totais.total || 0,
-      instagram: totais.instagram || 0,
-      tiktok: totais.tiktok || 0,
-      direto: totais.direto || 0,
+      total: Number(totais.total || 0),
+      instagram: Number(totais.instagram || 0),
+      tiktok: Number(totais.tiktok || 0),
+      direto: Number(totais.direto || 0),
       distribuicao: true,
-      diario: diarioRes.rows,
-      top_modelos: topModelosRes.rows
+
+      diario: (diarioRes.rows || []).map(r => ({
+        dia: r.dia,
+        instagram: Number(r.instagram || 0),
+        tiktok: Number(r.tiktok || 0),
+        direto: Number(r.direto || 0)
+      })),
+
+      top_modelos: (topModelosRes.rows || []).map(r => ({
+        modelo_id: r.modelo_id,
+        nome: r.nome,
+        instagram: Number(r.instagram || 0),
+        tiktok: Number(r.tiktok || 0),
+        direto: Number(r.direto || 0),
+        total: Number(r.total || 0)
+      }))
     });
 
   } catch (err) {
