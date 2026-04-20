@@ -64,7 +64,7 @@ function assinarArquivoPrivado(key) {
 
 router.get("/overview", authAdmin, async (req, res) => {
   try {
-    const [modelos, clientes, vips, fat, fat12m, acessos, top] = await Promise.all([
+    const [modelos, clientes, vips, fatd, fatm, fat12m, acessos, top] = await Promise.all([
       db.query(`
         SELECT COUNT(*) AS total
         FROM modelos
@@ -83,6 +83,14 @@ router.get("/overview", authAdmin, async (req, res) => {
         FROM vip_subscriptions
         WHERE ativo = true
       `),
+
+      db.query(`
+  SELECT COALESCE(SUM(t.valor_bruto), 0) AS total
+  FROM transacoes_agency t
+  WHERE t.created_at >= date_trunc('day', NOW())
+    AND t.created_at < (date_trunc('day', NOW()) + INTERVAL '1 day')
+    AND COALESCE(t.status, 'pago') NOT IN ('falhou', 'cancelado', 'estornado', 'chargeback')
+`),
 
       db.query(`
         SELECT COALESCE(SUM(t.valor_bruto), 0) AS total
@@ -147,7 +155,8 @@ router.get("/overview", authAdmin, async (req, res) => {
       total_modelos: Number(modelos.rows[0]?.total || 0),
       total_clientes: Number(clientes.rows[0]?.total || 0),
       vips_ativos: Number(vips.rows[0]?.total || 0),
-      faturamento_mes: Number(fat.rows[0]?.total || 0),
+      faturamento_dia: Number(fatd.rows[0]?.total || 0),
+      faturamento_mes: Number(fatm.rows[0]?.total || 0),
       faturamento_12m: (fat12m.rows || []).map(r => ({
         mes: r.mes,
         total: Number(r.total || 0)

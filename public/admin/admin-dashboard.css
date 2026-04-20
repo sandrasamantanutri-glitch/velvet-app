@@ -320,6 +320,8 @@ body {
 .kpi-card.green strong { color: var(--green); }
 .kpi-card.orange { border-left-color: var(--orange); }
 .kpi-card.orange strong { color: var(--orange); }
+.kpi-card.red { border-left-color: var(--red); }
+.kpi-card.red strong { color: var(--red); }
 
 /* ========== CARDS ========== */
 

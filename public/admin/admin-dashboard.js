@@ -261,7 +261,8 @@ pageLoaders.overview = async function () {
     $('kpi-modelos').textContent = Number(data.total_modelos ?? 0);
     $('kpi-clientes').textContent = Number(data.total_clientes ?? 0);
     $('kpi-vips').textContent = Number(data.vips_ativos ?? 0);
-    $('kpi-fat').textContent = money(Number(data.faturamento_mes ?? 0));
+    $('kpi-fatd').textContent = money(Number(data.faturamento_dia ?? 0));
+    $('kpi-fatm').textContent = money(Number(data.faturamento_mes ?? 0));
 
     // Chart faturamento últimos 12 meses
     if (chartFat) {
