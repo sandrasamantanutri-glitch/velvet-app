@@ -3073,12 +3073,12 @@ router.get("/agencias-list", async (req, res) => {
 
     res.json(rows);
   } catch (err) {
-    console.error("Erro /agencias:", err);
+    console.error("Erro /agencias-list:", err);
     res.status(500).json({ erro: "Erro interno" });
   }
 });
 
-router.get("/modelos-agencia/:agenciaId", async (req, res) => {
+router.get("/agencias/:agenciaId/modelos", async (req, res) => {
   try {
     const { rows } = await db.query(`
       SELECT
@@ -3093,15 +3093,73 @@ router.get("/modelos-agencia/:agenciaId", async (req, res) => {
 
     res.json(rows);
   } catch (err) {
-    console.error("Erro /modelos-agencia/:agenciaId:", err);
+    console.error("Erro /agencias/:agenciaId/modelos:", err);
     res.status(500).json({ erro: "Erro interno" });
   }
 });
 
-router.put("/modelos/:id/agencia", async (req, res) => {
+router.put("/agencias/:id", authAdmin, async (req, res) => {
+  try {
+    const agenciaId = Number(req.params.id);
+    const { percentual_agencia, percentual_modelo, percentual_plataforma } = req.body;
+
+    const admin_id = req.user?.id;
+    const user_id = req.user?.id;
+
+    if (!agenciaId) {
+      return res.status(400).json({ erro: "Agência inválida" });
+    }
+
+    // Buscar agência anterior para log
+    const agenciaAtual = await db.query(
+      `SELECT nome, percentual_agencia, percentual_modelo, percentual_plataforma FROM agencias WHERE id = $1`,
+      [agenciaId]
+    );
+
+    if (!agenciaAtual.rows.length) {
+      return res.status(404).json({ erro: "Agência não encontrada" });
+    }
+
+    const { nome, percentual_agencia: percAntigo, percentual_modelo: percModeloAntigo, percentual_plataforma: percPlatAntigo } = agenciaAtual.rows[0];
+
+    // Dividir por 100 antes de salvar no banco (convertendo de % para decimal)
+    const { rows } = await db.query(`
+      UPDATE agencias
+      SET
+        percentual_agencia = $1,
+        percentual_modelo = $2,
+        percentual_plataforma = $3
+      WHERE id = $4
+      RETURNING id, nome, percentual_agencia, percentual_modelo, percentual_plataforma
+    `, [
+      percentual_agencia ? Number(percentual_agencia) / 100 : 0,
+      percentual_modelo ? Number(percentual_modelo) / 100 : 0,
+      percentual_plataforma ? Number(percentual_plataforma) / 100 : 0,
+      agenciaId
+    ]);
+
+    // Registrar no log
+    const motivo = `Alteração de percentuais da agência ${nome}: Agência ${(percAntigo * 100).toFixed(0)}% → ${percentual_agencia}%, Modelo ${(percModeloAntigo * 100).toFixed(0)}% → ${percentual_modelo}%, Plataforma ${(percPlatAntigo * 100).toFixed(0)}% → ${percentual_plataforma}%`;
+
+    await db.query(`
+      INSERT INTO admin_seguranca_historico (admin_id, motivo, data, user_id, tipo_user, acao)
+      VALUES ($1, $2, NOW(), $3, $4, $5)
+    `, [admin_id, motivo, user_id, 'admin', 'alteracao_percentuais_agencia']);
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Erro ao alterar agência:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.put("/modelos/:id/agencia", authAdmin, async (req, res) => {
   try {
     const modeloId = Number(req.params.id);
     const agencia_id = req.body.agencia_id ? Number(req.body.agencia_id) : null;
+
+    const admin_id = req.user?.id;
+    const user_id = req.user?.id;
 
     if (!modeloId) {
       return res.status(400).json({ erro: "Modelo inválido" });
@@ -3118,6 +3176,18 @@ router.put("/modelos/:id/agencia", async (req, res) => {
       }
     }
 
+    const modeloAtual = await db.query(
+      `SELECT agencia_id, nome FROM modelos WHERE id = $1`,
+      [modeloId]
+    );
+
+    if (!modeloAtual.rows.length) {
+      return res.status(404).json({ erro: "Modelo não encontrada" });
+    }
+
+    const agenciaAnterior = modeloAtual.rows[0]?.agencia_id;
+    const nomeModelo = modeloAtual.rows[0]?.nome;
+
     const { rows } = await db.query(`
       UPDATE modelos
       SET
@@ -3132,9 +3202,12 @@ router.put("/modelos/:id/agencia", async (req, res) => {
       RETURNING id, nome, agencia_id, agencia_desde
     `, [agencia_id, modeloId]);
 
-    if (!rows.length) {
-      return res.status(404).json({ erro: "Modelo não encontrada" });
-    }
+    const motivo = `Alteração de agência da modelo ${nomeModelo}: ${agenciaAnterior || 'Sem agência'} → ${agencia_id || 'Sem agência'}`;
+
+    await db.query(`
+      INSERT INTO admin_seguranca_historico (admin_id, motivo, data, user_id, tipo_user, acao)
+      VALUES ($1, $2, NOW(), $3, $4, $5)
+    `, [admin_id, motivo, user_id, 'admin', 'alteracao_agencia_modelo']);
 
     res.json(rows[0]);
   } catch (err) {

@@ -2048,6 +2048,8 @@ async function abrirModalPagModelo() {
 
 // ========== 16. AGÊNCIAS ==========
 
+// ========== 16. AGÊNCIAS ==========
+
 pageLoaders.agencias = async function () {
   try {
     const data = await fetchJSON('/admin/dashboard/agencias-list');
@@ -2065,8 +2067,15 @@ pageLoaders.agencias = async function () {
         <td>${Number(r.percentual_modelo ?? 0).toFixed(0)}%</td>
         <td>${Number(r.percentual_plataforma ?? 0).toFixed(0)}%</td>
         <td>${r.created_at ? fmtDateTime(r.created_at) : '—'}</td>
+        <td>
+          <button
+            class="btn btn-sm btn-primary"
+            onclick="abrirEditarAgencia(${r.id}, '${(r.nome || '').replace(/'/g, "\\'")}', ${r.percentual_agencia ?? 0}, ${r.percentual_modelo ?? 0}, ${r.percentual_plataforma ?? 0})">
+            Editar
+          </button>
+        </td>
       </tr>
-    `).join('') || emptyRow(7);
+    `).join('') || emptyRow(8);
 
     const select = $('agenciaFiltro');
     const valorAtual = select.value;
@@ -2086,6 +2095,20 @@ pageLoaders.agencias = async function () {
   }
 };
 
+function abrirEditarAgencia(id, nome, percAgencia, percModelo, percPlataforma) {
+  openEditModal(
+    `Editar Agência: ${nome}`,
+    `/admin/dashboard/agencias/${id}`,
+    'PUT',
+    [
+      { name: 'percentual_agencia', label: '% Agência', type: 'number', value: percAgencia, step: '0.01' },
+      { name: 'percentual_modelo', label: '% Modelo', type: 'number', value: percModelo, step: '0.01' },
+      { name: 'percentual_plataforma', label: '% Plataforma', type: 'number', value: percPlataforma, step: '0.01' }
+    ],
+    () => pageLoaders.agencias()
+  );
+}
+
 async function carregarModelosAgencia() {
   const agenciaId = $('agenciaFiltro').value;
   const tbody = $('tableModelosAgencia').querySelector('tbody');
@@ -2096,7 +2119,7 @@ async function carregarModelosAgencia() {
   }
 
   try {
-    const data = await fetchJSON('/admin/dashboard/modelos-agencia/' + agenciaId);
+    const data = await fetchJSON('/admin/dashboard/agencias/' + agenciaId + '/modelos');
 
     tbody.innerHTML = (data || []).map(r => `
       <tr>
@@ -2128,7 +2151,7 @@ async function abrirModalAlterarAgenciaModelo(btn) {
     const agenciaAtualId = btn.dataset.agenciaId || null;
 
     if (!agenciasCache.length) {
-      agenciasCache = await fetchJSON('/admin/dashboard/agencias');
+      agenciasCache = await fetchJSON('/admin/dashboard/agencias-list');
     }
 
     $('alterarAgenciaModeloId').value = modeloId;
