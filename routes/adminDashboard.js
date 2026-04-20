@@ -708,7 +708,9 @@ router.post("/cliente-risco", authAdmin, async (req, res) => {
     } = req.body;
 
     const admin = req.session?.user?.email || req.admin?.email || "Admin";
+    const admin_id = req.session?.user?.id || req.admin?.id;
 
+    // 🔹 INSERIR CLIENTE RISCO
     const { rows } = await db.query(`
       INSERT INTO cliente_risco (
         cliente_id,
@@ -740,7 +742,34 @@ router.post("/cliente-risco", authAdmin, async (req, res) => {
       admin
     ]);
 
-    res.json(rows[0]);
+    const clienteRisco = rows[0];
+
+    // 🔹 REGISTRAR NO HISTÓRICO DE SEGURANÇA
+    const descricaoAcao = `Cliente #${cliente_id} marcado como RISCO (${nivel || 'sem nível'}). ${motivo ? `Motivo: ${motivo}` : ''} Bloqueios: ${[
+      bloqueio_ip && 'IP',
+      bloqueio_cpf && 'CPF',
+      bloqueio_fingerprint && 'Fingerprint'
+    ].filter(Boolean).join(', ') || 'Nenhum'}`;
+
+    await db.query(`
+      INSERT INTO admin_seguranca_historico (
+        admin_id,
+        motivo,
+        data,
+        user_id,
+        tipo_user,
+        acao
+      )
+      VALUES ($1, $2, NOW(), $3, $4, $5)
+    `, [
+      admin_id,
+      descricaoAcao,
+      cliente_id,
+      'cliente',
+      'criar_cliente_risco'
+    ]);
+
+    res.json(clienteRisco);
 
   } catch (err) {
     console.error("Erro criar cliente risco:", err);
