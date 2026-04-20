@@ -2693,35 +2693,66 @@ router.get("/password-resets", authAdmin, async (req, res) => {
 
 router.get("/vip-subscriptions", async (req, res) => {
   try {
-    const { limit, offset, page } = paginate(req.query, Number(req.query.page) || 1, Number(req.query.limit) || 20);
+    const { limit, offset, page } = paginate(
+      req.query,
+      Number(req.query.page) || 1,
+      Number(req.query.limit) || 20
+    );
+    
     const busca = req.query.busca || "";
-
+    const params = [];
     let where = "1=1";
-    const params = [limit, offset];
+    let paramIdx = 1;
 
     if (busca) {
-      where = "(v.cliente_id::text = $3 OR v.modelo_id::text = $3 OR m.nome ILIKE $4)";
-      params.push(busca, `%${busca}%`);
+      where = `v.cliente_id::text = $${paramIdx}`;
+      params.push(busca);
+      paramIdx++;
     }
 
-    const countParams = busca ? [busca, `%${busca}%`] : [];
-    const countWhere = busca ? "(v.cliente_id::text = $1 OR v.modelo_id::text = $1 OR m.nome ILIKE $2)" : "1=1";
+    // Count query
+    const countParams = busca ? [busca] : [];
+    const countWhere = busca ? `v.cliente_id::text = $1` : "1=1";
+    
     const countQ = await db.query(`
-      SELECT COUNT(*) FROM vip_subscriptions v LEFT JOIN modelos m ON m.id = v.modelo_id WHERE ${countWhere}
+      SELECT COUNT(*) AS count 
+      FROM vip_subscriptions v 
+      WHERE ${countWhere}
     `, countParams);
-    const total = Number(countQ.rows[0].count);
+    
+    const total = Number(countQ.rows[0]?.count || 0);
+
+    // Adicionar limit e offset
+    params.push(limit, offset);
 
     const { rows } = await db.query(`
-      SELECT v.*, m.nome AS modelo_nome
+      SELECT 
+        v.id,
+        v.cliente_id,
+        v.modelo_id,
+        v.ativo,
+        v.valor_assinatura,
+        v.created_at,
+        v.updated_at,
+        v.expiration_at,
+        v.recorrente,
+        m.nome AS modelo_nome
       FROM vip_subscriptions v
       LEFT JOIN modelos m ON m.id = v.modelo_id
       WHERE ${where}
       ORDER BY v.created_at DESC
-      LIMIT $1 OFFSET $2
+      LIMIT $${paramIdx} OFFSET $${paramIdx + 1}
     `, params);
 
-    res.json({ rows, totalPages: Math.ceil(total / limit), page });
-  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
+    res.json({ 
+      rows, 
+      totalPages: Math.ceil(total / limit), 
+      page 
+    });
+  } catch (err) { 
+    console.error("Erro vip-subscriptions:", err);
+    res.status(500).json({ erro: "Erro interno" }); 
+  }
 });
 
 router.get("/vip-subscriptions/:id", async (req, res) => {
