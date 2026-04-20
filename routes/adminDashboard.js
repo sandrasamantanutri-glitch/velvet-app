@@ -2549,8 +2549,8 @@ router.get("/transacoes-agency", async (req, res) => {
     const m = parseMes(req.query.mes);
 
     let where = "m.verificada = true AND m.ativo = true";
-    const params = [limit, offset];
-    let paramIdx = 3;
+    const params = [];
+    let paramIdx = 1;
 
     if (modelo_id) {
       where += ` AND t.modelo_id = $${paramIdx}`;
@@ -2565,43 +2565,32 @@ router.get("/transacoes-agency", async (req, res) => {
       paramIdx += 2;
     }
 
-    let countWhere = "m.verificada = true AND m.ativo = true";
-    const countParams = [];
-    let ci = 1;
-
-    if (modelo_id) {
-      countWhere += ` AND t.modelo_id = $${ci}`;
-      countParams.push(modelo_id);
-      ci++;
-    }
-
-    if (m) {
-      countWhere += ` AND EXTRACT(MONTH FROM t.created_at) = $${ci}
-                     AND EXTRACT(YEAR FROM t.created_at) = $${ci + 1}`;
-      countParams.push(m.mes, m.ano);
-      ci += 2;
-    }
+    // Copiar params para countParams
+    const countParams = [...params];
 
     const countQ = await db.query(`
-      SELECT COUNT(*)
+      SELECT COUNT(*) AS count
       FROM transacoes_agency t
       INNER JOIN modelos m ON m.id = t.modelo_id
-      WHERE ${countWhere}
+      WHERE ${where}
     `, countParams);
 
-    const total = Number(countQ.rows[0].count);
+    const total = Number(countQ.rows[0]?.count || 0);
 
     const totaisQ = await db.query(`
       SELECT
         COALESCE(SUM(t.valor_bruto), 0) AS bruto,
         COALESCE(SUM(t.valor_modelo), 0) AS modelo,
         COALESCE(SUM(t.velvet_fee), 0) AS velvet,
-        COALESCE(SUM(t.agency_fee), 0) AS agency
+        COALESCE(SUM(t.agency_fee), 0) AS agency,
         COALESCE(SUM(t.taxa_gateway), 0) AS gateway
       FROM transacoes_agency t
       INNER JOIN modelos m ON m.id = t.modelo_id
-      WHERE ${countWhere}
+      WHERE ${where}
     `, countParams);
+
+    // Adicionar limit e offset para a query de rows
+    const rowsParams = [...params, limit, offset];
 
     const { rows } = await db.query(`
       SELECT
@@ -2611,8 +2600,8 @@ router.get("/transacoes-agency", async (req, res) => {
       INNER JOIN modelos m ON m.id = t.modelo_id
       WHERE ${where}
       ORDER BY t.created_at DESC
-      LIMIT $1 OFFSET $2
-    `, params);
+      LIMIT $${paramIdx} OFFSET $${paramIdx + 1}
+    `, rowsParams);
 
     res.json({
       rows,
