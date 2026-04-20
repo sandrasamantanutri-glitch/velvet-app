@@ -3234,9 +3234,16 @@ router.post("/agencias", authAdmin, async (req, res) => {
     const admin_id = req.user?.id;
     const user_id = req.user?.id;
 
+    console.log("DEBUG POST - body:", req.body);
+    console.log("DEBUG POST - admin_id:", admin_id, "user_id:", user_id);
+
     // Validações
     if (!nome || nome.trim() === '') {
       return res.status(400).json({ erro: "Nome da agência é obrigatório" });
+    }
+
+    if (!admin_id || !user_id) {
+      return res.status(401).json({ erro: "Usuário não autenticado" });
     }
 
     // Converter percentuais para números
@@ -3250,6 +3257,8 @@ router.post("/agencias", authAdmin, async (req, res) => {
       ? Number(percentual_plataforma) 
       : 0;
 
+    console.log("DEBUG POST - percentuais parseados:", percentual_agencia, percentual_modelo, percentual_plataforma);
+
     if (isNaN(percentual_agencia) || isNaN(percentual_modelo) || isNaN(percentual_plataforma)) {
       return res.status(400).json({ erro: "Percentuais devem ser números válidos" });
     }
@@ -3261,7 +3270,7 @@ router.post("/agencias", authAdmin, async (req, res) => {
       RETURNING id, nome, email, percentual_agencia, percentual_modelo, percentual_plataforma, created_at
     `, [
       nome.trim(),
-      email || null,
+      email && email.trim() ? email.trim() : null,
       percentual_agencia / 100,
       percentual_modelo / 100,
       percentual_plataforma / 100
@@ -3285,7 +3294,7 @@ router.post("/agencias", authAdmin, async (req, res) => {
 
     res.json(rows[0]);
   } catch (err) {
-    console.error("Erro ao criar agência:", err.message);
+    console.error("Erro ao criar agência:", err.message, err);
     res.status(500).json({ erro: "Erro interno: " + err.message });
   }
 });
