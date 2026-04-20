@@ -4,24 +4,30 @@
 
 const express = require("express");
 const router = express.Router();
-const AWS = require("aws-sdk");
 const db = require("../db");
 const auth = require("../middleware/auth");
 const authAdmin = require("../middleware/authAdmin");
 const bcrypt = require("bcrypt");
 const { enviarEmailAprovacao } = require("../email");
 const { enviarEmailRejeicao } = require("../email");
-const multer = require("multer");
+const AWS = require('aws-sdk');
+const multer = require('multer');
+const multerS3 = require('multer-s3');
 const upload = multer({ storage: multer.memoryStorage() });
-const multerS3 = require("multer-s3");
 
 const s3Privado = new AWS.S3({
-  endpoint: new AWS.Endpoint(process.env.B2_ENDPOINT),
-  accessKeyId: process.env.B2_KEY_ID_PRIVATE,
-  secretAccessKey: process.env.B2_APP_KEY_PRIVATE,
-  region: process.env.B2_REGION,
+  endpoint: 'https://s3.us-east-005.backblazeb2.com',
+  accessKeyId: process.env.B2_APPLICATION_KEY_ID,
+  secretAccessKey: process.env.B2_APPLICATION_KEY,
+  region: 'us-east-005',
+  s3ForcePathStyle: true
+});
 
-  signatureVersion: "v4",
+const s3Publico = new AWS.S3({
+  endpoint: 'https://s3.us-east-005.backblazeb2.com',
+  accessKeyId: process.env.B2_APPLICATION_KEY_ID,
+  secretAccessKey: process.env.B2_APPLICATION_KEY,
+  region: 'us-east-005',
   s3ForcePathStyle: true
 });
 
@@ -34,6 +40,23 @@ const uploadPublico = multer({
     key: (req, file, cb) => {
       const ext = file.originalname.split(".").pop();
       const nome = `uploads/${req.user.id}/${Date.now()}-${file.fieldname}.${ext}`;
+      cb(null, nome);
+    }
+  }),
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB
+  }
+});
+
+const uploadPrivado = multer({
+  storage: multerS3({
+    s3: s3Privado,
+    bucket: process.env.B2_BUCKET_PRIVATE,
+    acl: "private",
+    contentType: multerS3.AUTO_CONTENT_TYPE,
+    key: (req, file, cb) => {
+      const ext = file.originalname.split(".").pop();
+      const nome = `privado/${req.user.id}/${Date.now()}-${file.fieldname}.${ext}`;
       cb(null, nome);
     }
   }),
