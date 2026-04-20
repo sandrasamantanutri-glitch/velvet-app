@@ -2703,12 +2703,16 @@ router.get("/vip-subscriptions", async (req, res) => {
     const params = [];
     let where = "1=1";
 
-    console.log("📍 VIP Busca:", busca); // DEBUG
+    console.log("🔍 VIP-subscriptions called");
+    console.log("🔍 Query busca:", req.query.busca);
+    console.log("🔍 Busca var:", busca);
 
     if (busca) {
-      params.push(`%${busca}%`);
-      where += ` AND (v.cliente_id::text ILIKE $1)`;
-      console.log("📍 Where:", where, "Params:", params); // DEBUG
+      params.push(busca);
+      where += ` AND v.cliente_id::text = $1`;
+      console.log("✅ Adicionado filtro - params:", params, "where:", where);
+    } else {
+      console.log("❌ Sem busca");
     }
 
     const countQ = await db.query(`
@@ -2717,11 +2721,12 @@ router.get("/vip-subscriptions", async (req, res) => {
       WHERE ${where}
     `, params);
     
-    console.log("📍 Count result:", countQ.rows[0]); // DEBUG
+    console.log("📊 Count:", countQ.rows[0].count);
     
     const total = Number(countQ.rows[0]?.count || 0);
 
     params.push(limit, offset);
+    console.log("📦 Params finais:", params);
 
     const { rows } = await db.query(`
       SELECT 
@@ -2743,7 +2748,7 @@ router.get("/vip-subscriptions", async (req, res) => {
       LIMIT $${params.length - 1} OFFSET $${params.length}
     `, params);
 
-    console.log("📍 Rows found:", rows.length); // DEBUG
+    console.log("✔️ Rows retornadas:", rows.length);
 
     res.json({ 
       rows, 
