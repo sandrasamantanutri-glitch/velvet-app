@@ -2222,7 +2222,7 @@ async function salvarAlteracaoAgenciaModelo(event) {
 
 pageLoaders.chargebacks = async function () {
   try {
-    const data = await fetchJSON('/admin/dashboard/chargebacks');
+    const data = await fetchJSON('/admin/dashboard/chargebacks-list');
     renderChargebacks(data);
   } catch (err) {
     console.error('Erro ao carregar chargebacks:', err);
@@ -2296,7 +2296,7 @@ async function deletarChargeback(id) {
 
 pageLoaders.faturamento = async function () {
   try {
-    const data = await fetchJSON('/admin/dashboard/faturamentos');
+   const data = await fetchJSON('/admin/dashboard/faturamentos-list');
     renderFaturamentos(data);
   } catch (err) {
     console.error('Erro ao carregar faturamentos:', err);
@@ -2376,7 +2376,7 @@ async function deletarFaturamento(id) {
 
 pageLoaders.despesas = async function () {
   try {
-    const data = await fetchJSON('/admin/dashboard/despesas');
+    const data = await fetchJSON('/admin/dashboard/despesas-list');
     renderDespesas(data);
   } catch (err) {
     console.error('Erro ao carregar despesas:', err);
