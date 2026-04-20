@@ -1830,16 +1830,29 @@ let vipSearchTimeout;
 
 pageLoaders.vip = function () {
   carregarVip(1);
-  $('vipBusca').oninput = () => {
+  
+  const vipBuscaInput = $('vipBusca');
+  
+  if (vipBuscaInput._oldListener) {
+    vipBuscaInput.removeEventListener('input', vipBuscaInput._oldListener);
+  }
+  
+  const newListener = () => {
     clearTimeout(vipSearchTimeout);
     vipSearchTimeout = setTimeout(() => carregarVip(1), 400);
   };
+  
+  vipBuscaInput._oldListener = newListener;
+  vipBuscaInput.addEventListener('input', newListener);
 };
 
 async function carregarVip(page) {
   try {
-    const busca = $('vipBusca').value;
+    const busca = $('vipBusca').value || "";
+    console.log('📍 Buscando VIP:', busca); 
     const data = await fetchJSON(`/admin/dashboard/vip-subscriptions?page=${page}&limit=20&busca=${encodeURIComponent(busca)}`);
+    console.log('📍 Resultado:', data.rows.length, 'registros'); 
+    
     const tbody = $('tableVip').querySelector('tbody');
     tbody.innerHTML = (data.rows || []).map(r => `
       <tr>
@@ -1856,7 +1869,9 @@ async function carregarVip(page) {
       </tr>
     `).join('') || emptyRow(8);
     buildPagination('paginationVip', page, data.totalPages || 1, 'carregarVip');
-  } catch (err) { console.error('Erro vip:', err); }
+  } catch (err) { 
+    console.error('❌ Erro vip:', err); 
+  }
 }
 
 async function editarVip(id) {
@@ -2231,7 +2246,6 @@ async function salvarEdicao(e) {
   const form = new FormData(e.target);
   const body = {};
 
-  // Process form data, handling checkboxes
   const container = $('modalEditFields');
   container.querySelectorAll('input, textarea, select').forEach(el => {
     if (el.type === 'checkbox') {
@@ -2258,21 +2272,6 @@ async function salvarEdicao(e) {
     toast('Erro: ' + err.message, 'error');
   }
 }
-
-// ========== GLOBAL SEARCH ==========
-
-let globalSearchTimeout;
-$('globalSearch').addEventListener('input', (e) => {
-  clearTimeout(globalSearchTimeout);
-  globalSearchTimeout = setTimeout(() => {
-    const q = e.target.value.trim();
-    if (!q) return;
-    // Navigate to modelos page and search
-    document.querySelector('[data-page="modelos"]').click();
-    $('modelosBusca').value = q;
-    carregarModelos(1);
-  }, 600);
-});
 
 // ========== INIT ==========
 
