@@ -266,143 +266,127 @@ router.get("/overview", authAdmin, async (req, res) => {
 //   }
 // });
 
-router.get("/acessos-origem", authAdmin, async (req, res) => {
+router.get("/overview", authAdmin, async (req, res) => {
   try {
-    const mes = req.query.mes; // formato: YYYY-MM
+    const [modelos, clientes, vips, fatd, fatm, fat12m, acessos, top] = await Promise.all([
+      db.query(`
+        SELECT COUNT(*) AS total
+        FROM modelos
+        WHERE ativo = true
+          AND verificada = true
+      `),
 
-    if (!mes || !/^\d{4}-\d{2}$/.test(mes)) {
-      return res.status(400).json({ error: "Parâmetro 'mes' inválido. Use YYYY-MM" });
-    }
+      db.query(`
+        SELECT COUNT(*) AS total
+        FROM clientes
+        WHERE ativo = true
+      `),
 
-    const inicio = `${mes}-01`;
-    const fim = new Date(inicio);
-    fim.setMonth(fim.getMonth() + 1);
+      db.query(`
+        SELECT COUNT(*) AS total
+        FROM vip_subscriptions
+        WHERE ativo = true
+      `),
 
-    const params = [inicio, fim];
+      db.query(`
+        SELECT COALESCE(SUM(t.valor_bruto), 0) AS total
+        FROM transacoes_agency t
+        WHERE t.created_at >= date_trunc('day', NOW())
+          AND t.created_at < (date_trunc('day', NOW()) + INTERVAL '1 day')
+          AND COALESCE(t.status, 'pago') NOT IN ('falhou', 'cancelado', 'estornado', 'chargeback')
+      `),
 
-    // 🔹 TOTAL
-    const totalRes = await db.query(
-      `
-      SELECT
-        COUNT(*)::int AS total,
+      db.query(`
+        SELECT COALESCE(SUM(t.valor_bruto), 0) AS total
+        FROM transacoes_agency t
+        WHERE t.created_at >= date_trunc('month', NOW())
+          AND t.created_at < (date_trunc('month', NOW()) + INTERVAL '1 month')
+          AND COALESCE(t.status, 'pago') NOT IN ('falhou', 'cancelado', 'estornado', 'chargeback')
+      `),
 
-        COUNT(*) FILTER (
-          WHERE LOWER(COALESCE(origem_trafego, '')) LIKE '%instagram%'
-             OR LOWER(COALESCE(origem_trafego, '')) LIKE '%insta%'
-        )::int AS instagram,
+      db.query(`
+        SELECT
+          TO_CHAR(meses.mes, 'YYYY-MM') AS mes,
+          COALESCE(SUM(t.valor_bruto), 0) AS total
+        FROM generate_series(
+          date_trunc('month', NOW()) - INTERVAL '11 months',
+          date_trunc('month', NOW()),
+          INTERVAL '1 month'
+        ) AS meses(mes)
+        LEFT JOIN transacoes_agency t
+          ON date_trunc('month', t.created_at) = meses.mes
+          AND COALESCE(t.status, 'pago') NOT IN ('falhou', 'cancelado', 'estornado', 'chargeback')
+        GROUP BY meses.mes
+        ORDER BY meses.mes ASC
+      `),
 
-        COUNT(*) FILTER (
-          WHERE LOWER(COALESCE(origem_trafego, '')) LIKE '%tiktok%'
-        )::int AS tiktok,
+      db.query(`
+        SELECT
+          CASE
+            WHEN LOWER(COALESCE(origem_trafego, '')) LIKE '%instagram%'
+              OR LOWER(COALESCE(origem_trafego, '')) LIKE '%insta%' THEN 'Instagram'
+            WHEN LOWER(COALESCE(origem_trafego, '')) LIKE '%tiktok%' THEN 'TikTok'
+            WHEN origem_trafego IS NULL
+              OR origem_trafego = ''
+              OR LOWER(TRIM(origem_trafego)) IN ('direto','direct','none','unknown','(direct)','(none)') THEN 'Direto'
+            ELSE 'Outros'
+          END AS origem,
+          COUNT(*) AS total
+        FROM clientes
+        WHERE created_at >= date_trunc('month', NOW())
+          AND created_at < (date_trunc('month', NOW()) + INTERVAL '1 month')
+        GROUP BY origem
+        ORDER BY total DESC
+      `),
 
-        COUNT(*) FILTER (
-          WHERE origem_trafego IS NULL
-             OR origem_trafego = ''
-             OR LOWER(origem_trafego) IN ('direto','direct','none','unknown')
-        )::int AS direto
-
-      FROM clientes
-      WHERE created_at >= $1
-        AND created_at < $2
-      `,
-      params
-    );
-
-    // 🔹 DIÁRIO
-    const diarioRes = await db.query(
-      `
-      SELECT
-        TO_CHAR(created_at::date, 'DD/MM') AS dia,
-
-        COUNT(*) FILTER (
-          WHERE LOWER(COALESCE(origem_trafego, '')) LIKE '%instagram%'
-             OR LOWER(COALESCE(origem_trafego, '')) LIKE '%insta%'
-        )::int AS instagram,
-
-        COUNT(*) FILTER (
-          WHERE LOWER(COALESCE(origem_trafego, '')) LIKE '%tiktok%'
-        )::int AS tiktok,
-
-        COUNT(*) FILTER (
-          WHERE origem_trafego IS NULL
-             OR origem_trafego = ''
-             OR LOWER(origem_trafego) IN ('direto','direct','none','unknown')
-        )::int AS direto
-
-      FROM clientes
-      WHERE created_at >= $1
-        AND created_at < $2
-      GROUP BY created_at::date
-      ORDER BY created_at::date ASC
-      `,
-      params
-    );
-
-    // 🔹 TOP MODELOS
-    const topModelosRes = await db.query(
-      `
-      SELECT
-        c.ref_modelo AS modelo_id,
-        COALESCE(m.nome_exibicao, m.nome, 'Modelo #' || c.ref_modelo) AS nome,
-
-        COUNT(*) FILTER (
-          WHERE LOWER(COALESCE(c.origem_trafego, '')) LIKE '%instagram%'
-             OR LOWER(COALESCE(c.origem_trafego, '')) LIKE '%insta%'
-        )::int AS instagram,
-
-        COUNT(*) FILTER (
-          WHERE LOWER(COALESCE(c.origem_trafego, '')) LIKE '%tiktok%'
-        )::int AS tiktok,
-
-        COUNT(*) FILTER (
-          WHERE c.origem_trafego IS NULL
-             OR c.origem_trafego = ''
-             OR LOWER(c.origem_trafego) IN ('direto','direct','none','unknown')
-        )::int AS direto,
-
-        COUNT(*)::int AS total
-
-      FROM clientes c
-      LEFT JOIN modelos m ON m.id = c.ref_modelo
-      WHERE c.created_at >= $1
-        AND c.created_at < $2
-        AND c.ref_modelo IS NOT NULL
-      GROUP BY c.ref_modelo, m.nome_exibicao, m.nome
-      ORDER BY total DESC
-      LIMIT 20
-      `,
-      params
-    );
-
-    const totais = totalRes.rows[0] || {};
+      db.query(`
+        SELECT
+          t.modelo_id,
+          m.nome,
+          ROUND(COALESCE(SUM(t.valor_modelo), 0)::numeric, 2) AS ganhos,
+          MAX(t.created_at) AS atualizado_em,
+          (
+            SELECT COUNT(*)
+            FROM vip_subscriptions v
+            WHERE v.modelo_id = t.modelo_id
+              AND v.ativo = true
+          ) AS assinantes
+        FROM transacoes_agency t
+        LEFT JOIN modelos m ON m.id = t.modelo_id
+        WHERE t.modelo_id IS NOT NULL
+          AND t.created_at >= date_trunc('month', NOW())
+          AND t.created_at < (date_trunc('month', NOW()) + INTERVAL '1 month')
+          AND COALESCE(t.status, 'pago') NOT IN ('falhou', 'cancelado', 'estornado', 'chargeback')
+        GROUP BY t.modelo_id, m.nome
+        ORDER BY ganhos DESC, atualizado_em DESC
+        LIMIT 5
+      `)
+    ]);
 
     res.json({
-      total: Number(totais.total || 0),
-      instagram: Number(totais.instagram || 0),
-      tiktok: Number(totais.tiktok || 0),
-      direto: Number(totais.direto || 0),
-      distribuicao: true,
-
-      diario: (diarioRes.rows || []).map(r => ({
-        dia: r.dia,
-        instagram: Number(r.instagram || 0),
-        tiktok: Number(r.tiktok || 0),
-        direto: Number(r.direto || 0)
+      total_modelos: Number(modelos.rows[0]?.total || 0),
+      total_clientes: Number(clientes.rows[0]?.total || 0),
+      vips_ativos: Number(vips.rows[0]?.total || 0),
+      faturamento_dia: Number(fatd.rows[0]?.total || 0),
+      faturamento_mes: Number(fatm.rows[0]?.total || 0),
+      faturamento_12m: (fat12m.rows || []).map(r => ({
+        mes: r.mes,
+        total: Number(r.total || 0)
       })),
-
-      top_modelos: (topModelosRes.rows || []).map(r => ({
+      acessos_origem: (acessos.rows || []).map(r => ({
+        origem: r.origem,
+        total: Number(r.total || 0)
+      })),
+      top_modelos: (top.rows || []).map(r => ({
         modelo_id: r.modelo_id,
         nome: r.nome,
-        instagram: Number(r.instagram || 0),
-        tiktok: Number(r.tiktok || 0),
-        direto: Number(r.direto || 0),
-        total: Number(r.total || 0)
+        ganhos: Number(r.ganhos || 0),
+        assinantes: Number(r.assinantes || 0)
       }))
     });
-
   } catch (err) {
-    console.error("Erro /admin/dashboard/acessos:", err);
-    res.status(500).json({ error: "Erro ao carregar acessos" });
+    console.error("Erro overview:", err);
+    res.status(500).json({ erro: "Erro interno" });
   }
 });
 
