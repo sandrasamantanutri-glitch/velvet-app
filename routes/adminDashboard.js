@@ -2703,9 +2703,12 @@ router.get("/vip-subscriptions", async (req, res) => {
     const params = [];
     let where = "1=1";
 
+    console.log("📍 VIP Busca:", busca); // DEBUG
+
     if (busca) {
       params.push(`%${busca}%`);
       where += ` AND (v.cliente_id::text ILIKE $1)`;
+      console.log("📍 Where:", where, "Params:", params); // DEBUG
     }
 
     const countQ = await db.query(`
@@ -2713,6 +2716,8 @@ router.get("/vip-subscriptions", async (req, res) => {
       FROM vip_subscriptions v 
       WHERE ${where}
     `, params);
+    
+    console.log("📍 Count result:", countQ.rows[0]); // DEBUG
     
     const total = Number(countQ.rows[0]?.count || 0);
 
@@ -2738,14 +2743,16 @@ router.get("/vip-subscriptions", async (req, res) => {
       LIMIT $${params.length - 1} OFFSET $${params.length}
     `, params);
 
+    console.log("📍 Rows found:", rows.length); // DEBUG
+
     res.json({ 
       rows, 
       totalPages: Math.ceil(total / limit), 
       page 
     });
   } catch (err) { 
-    console.error("Erro vip-subscriptions:", err);
-    res.status(500).json({ erro: "Erro interno" }); 
+    console.error("❌ Erro vip-subscriptions:", err);
+    res.status(500).json({ erro: "Erro interno", details: err.message }); 
   }
 });
 
