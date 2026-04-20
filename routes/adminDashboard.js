@@ -2597,6 +2597,7 @@ router.get("/transacoes-agency", async (req, res) => {
         COALESCE(SUM(t.valor_modelo), 0) AS modelo,
         COALESCE(SUM(t.velvet_fee), 0) AS velvet,
         COALESCE(SUM(t.agency_fee), 0) AS agency
+        COALESCE(SUM(t.taxa_gateway), 0) AS gateway
       FROM transacoes_agency t
       INNER JOIN modelos m ON m.id = t.modelo_id
       WHERE ${countWhere}

@@ -1677,7 +1677,6 @@ document.querySelectorAll('#financeiroTabs .tab').forEach(tab => {
     const content = document.getElementById(`tab-${tab.dataset.tab}`);
     if (content) content.classList.add('active');
 
-    // Chama o loader da aba — CORRIGIDO: era só `window` sem chamar a função
     const fn = tabLoaderMap[tab.dataset.tab];
     if (fn && window[fn]) window[fn](1);
   });
@@ -1704,7 +1703,6 @@ function popularSelectMesFinanceiro(qtdMeses = 12) {
 function recarregarAbaFinanceiroAtual() {
   const aba = document.querySelector('#financeiroTabs .tab.active')?.dataset.tab;
   const fn = tabLoaderMap[aba];
-  // CORRIGIDO: era só `window` sem chamar a função
   if (fn && window[fn]) window[fn](1);
 }
 
@@ -1744,6 +1742,7 @@ async function carregarTransacoes(page) {
     $('kpi-modelo').textContent = money(data.totais?.modelo);
     $('kpi-velvet').textContent = money(data.totais?.velvet);
     $('kpi-agency').textContent = money(data.totais?.agency);
+    $('kpi-gateway').textContent = money(data.totais?.gateway);
 
     const tbody = $('tableTransacoes').querySelector('tbody');
     tbody.innerHTML = (data.rows || []).map(r => `
@@ -1756,7 +1755,7 @@ async function carregarTransacoes(page) {
         <td>${money(r.valor_modelo)}</td>
         <td>${money(r.velvet_fee)}</td>
         <td>${money(r.agency_fee)}</td>
-        <td>${badgeStatus(r.status)}</td>
+        <td>${money(r.taxa_gateway)}</td>
         <td>${fmtDateTime(r.created_at)}</td>
       </tr>
     `).join('') || emptyRow(10);
