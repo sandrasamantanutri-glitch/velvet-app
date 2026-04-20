@@ -1829,29 +1829,45 @@ async function submitResetSenha() {
 let vipSearchTimeout;
 
 pageLoaders.vip = function () {
+  console.log('🚀 pageLoaders.vip iniciando...');
+  
   carregarVip(1);
   
   const vipBuscaInput = $('vipBusca');
+  console.log('📍 vipBuscaInput:', vipBuscaInput); // DEBUG
   
-  if (vipBuscaInput._oldListener) {
-    vipBuscaInput.removeEventListener('input', vipBuscaInput._oldListener);
+  if (!vipBuscaInput) {
+    console.error('❌ Elemento vipBusca não encontrado!');
+    return;
   }
   
-  const newListener = () => {
+  // Remove listener antigo
+  if (vipBuscaInput._oldListener) {
+    vipBuscaInput.removeEventListener('input', vipBuscaInput._oldListener);
+    console.log('🗑️ Removido listener antigo');
+  }
+  
+  // Cria novo listener
+  const newListener = (e) => {
+    console.log('⌨️ Input detectado:', e.target.value); // DEBUG
     clearTimeout(vipSearchTimeout);
-    vipSearchTimeout = setTimeout(() => carregarVip(1), 400);
+    vipSearchTimeout = setTimeout(() => {
+      console.log('⏱️ Timeout executando busca...');
+      carregarVip(1);
+    }, 400);
   };
   
   vipBuscaInput._oldListener = newListener;
   vipBuscaInput.addEventListener('input', newListener);
+  console.log('✅ Listener adicionado');
 };
 
 async function carregarVip(page) {
   try {
     const busca = $('vipBusca').value || "";
-    console.log('📍 Buscando VIP:', busca); 
+    console.log('🔍 Buscando VIP:', busca); 
     const data = await fetchJSON(`/admin/dashboard/vip-subscriptions?page=${page}&limit=20&busca=${encodeURIComponent(busca)}`);
-    console.log('📍 Resultado:', data.rows.length, 'registros'); 
+    console.log('📊 Resultado:', data.rows.length, 'registros'); 
     
     const tbody = $('tableVip').querySelector('tbody');
     tbody.innerHTML = (data.rows || []).map(r => `
@@ -1886,7 +1902,6 @@ async function editarVip(id) {
     ], () => carregarVip(1));
   } catch (err) { toast('Erro: ' + err.message, 'error'); }
 }
-
 // ========== 15. PAGAMENTOS A MODELOS ==========
 
 pageLoaders['pagamentos-modelo'] = async function () {
