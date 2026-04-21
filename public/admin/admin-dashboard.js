@@ -2245,7 +2245,7 @@ function renderChargebacks(chargebacks) {
       <td>${fmtDate(cb.data)}</td>
       <td>${badgeStatus(cb.status || 'ativo')}</td>
       <td>
-        ${cb.comprovante ? `<a href="/uploads/${cb.comprovante}" target="_blank" class="link">Ver</a>` : '—'}
+        ${cb.comprovante ? `<a href="${cb.comprovante}" target="_blank" class="link">Ver</a>` : '—'}
       </td>
       <td>
         <button class="btn-small btn-ghost" onclick="deletarChargeback(${cb.id})">Deletar</button>
