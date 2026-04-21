@@ -206,6 +206,17 @@ $('sidebarToggle').addEventListener('click', () => {
   $('sidebar').classList.toggle('collapsed');
 });
 
+// Mobile sidebar toggle
+document.querySelector('.topbar-menu-btn')?.addEventListener('click', () => {
+  document.querySelector('.sidebar').classList.toggle('mobile-open');
+  document.querySelector('.sidebar-overlay').classList.toggle('active');
+});
+
+document.querySelector('.sidebar-overlay')?.addEventListener('click', () => {
+  document.querySelector('.sidebar').classList.remove('mobile-open');
+  document.querySelector('.sidebar-overlay').classList.remove('active');
+});
+
 // Tab handling
 document.querySelectorAll('.tabs').forEach(tabGroup => {
   tabGroup.querySelectorAll('.tab').forEach(tab => {

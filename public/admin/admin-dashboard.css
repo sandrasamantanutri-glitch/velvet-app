@@ -53,7 +53,7 @@ body {
   left: 0;
   bottom: 0;
   z-index: 100;
-  transition: width var(--transition);
+  transition: width var(--transition), transform var(--transition);
   overflow: hidden;
 }
 
@@ -183,6 +183,20 @@ body {
 .btn-logout svg { width: 20px; height: 20px; fill: currentColor; flex-shrink: 0; }
 .btn-logout:hover { background: rgba(255,255,255,0.12); color: #fff; }
 
+/* ========== SIDEBAR OVERLAY (mobile) ========== */
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 99;
+}
+
+.sidebar-overlay.active {
+  display: block;
+}
+
 /* ========== MAIN ========== */
 
 .main {
@@ -190,6 +204,7 @@ body {
   flex: 1;
   min-height: 100vh;
   transition: margin-left var(--transition);
+  min-width: 0;
 }
 
 .sidebar.collapsed ~ .main {
@@ -209,18 +224,21 @@ body {
   position: sticky;
   top: 0;
   z-index: 50;
+  gap: 12px;
 }
 
 .topbar h2 {
   font-size: 20px;
   font-weight: 600;
   color: var(--purple);
+  white-space: nowrap;
 }
 
 .topbar-right {
   display: flex;
   align-items: center;
   gap: 16px;
+  flex-shrink: 0;
 }
 
 .global-search {
@@ -257,6 +275,24 @@ body {
   border-radius: 8px;
   font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Botão de menu mobile na topbar */
+.topbar-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--purple);
+  padding: 4px;
+  flex-shrink: 0;
+}
+
+.topbar-menu-btn svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
 }
 
 /* ========== PAGES ========== */
@@ -331,6 +367,7 @@ body {
   padding: 22px;
   box-shadow: var(--shadow);
   margin-bottom: 20px;
+  overflow: hidden;
 }
 
 .card h3 {
@@ -349,10 +386,16 @@ body {
 
 /* ========== TABLE ========== */
 
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
+  min-width: 600px;
 }
 
 .table thead {
@@ -438,6 +481,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
 }
 
 .btn-primary {
@@ -527,6 +571,7 @@ body {
   padding: 4px;
   box-shadow: var(--shadow);
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .tab {
@@ -601,6 +646,7 @@ body {
   padding: 20px;
   z-index: 201;
   width: 420px;
+  max-width: calc(100vw - 32px);
   max-height: 90vh;
   overflow-y: auto;
   display: none;
@@ -654,6 +700,7 @@ body {
   justify-content: flex-end;
   padding: 20px;
   border-top: 1px solid var(--border);
+  flex-wrap: wrap;
 }
 
 .modal h3 {
@@ -715,6 +762,7 @@ body {
   gap: 10px;
   justify-content: flex-end;
   margin-top: 20px;
+  flex-wrap: wrap;
 }
 
 .risco-checks {
@@ -754,11 +802,6 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
   vertical-align: bottom;
-}
-
-@media (max-width: 900px) {
-  .modal { width: 90%; }
-  .modal-lg { width: 90%; }
 }
 
 /* ========== TOAST ========== */
@@ -879,13 +922,6 @@ body {
   width: 100%;
 }
 
-@media (max-width: 700px) {
-  .ver-form-grid,
-  .ver-readonly-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
 /* ========== CHART ========== */
 
 canvas {
@@ -912,7 +948,11 @@ canvas {
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ========== RESPONSIVE ========== */
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+
+/* --- Tablet (≤900px) --- */
 
 @media (max-width: 900px) {
   .sidebar {
@@ -936,17 +976,194 @@ canvas {
   .modal-lg { width: 90%; }
 }
 
-@media (max-width: 600px) {
+/* --- Mobile (≤640px) --- */
+
+@media (max-width: 640px) {
+  /* Sidebar fica oculta e abre como overlay */
+  .sidebar {
+    transform: translateX(-100%);
+    width: var(--sidebar-w) !important;
+  }
+
+  .sidebar .logo-text,
+  .sidebar .nav-item span,
+  .sidebar .btn-logout span {
+    display: unset;
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  /* Main ocupa largura total */
+  .main {
+    margin-left: 0 !important;
+  }
+
+  /* Topbar mobile */
   .topbar {
     padding: 0 14px;
+    gap: 8px;
   }
+
+  .topbar h2 {
+    font-size: 16px;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .topbar-menu-btn {
+    display: flex;
+  }
+
+  .global-search {
+    display: none;
+  }
+
+  .admin-badge {
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+
+  /* Página */
   .page {
     padding: 16px 14px;
   }
+
+  /* KPI cards: 2 colunas */
   .kpi-row {
     grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
   }
+
+  .kpi-card {
+    padding: 14px;
+  }
+
   .kpi-card strong {
     font-size: 20px;
+  }
+
+  /* Cards */
+  .card {
+    padding: 16px;
+  }
+
+  /* Tabelas com scroll horizontal */
+  .card > .table,
+  .table-wrapper .table {
+    min-width: 480px;
+  }
+
+  /* Wraps tables automatically */
+  .card > .table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Page actions empilhadas */
+  .page-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .page-actions .btn,
+  .page-actions .input-select,
+  .page-actions .input-search {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .input-search {
+    min-width: unset;
+    width: 100%;
+  }
+
+  /* Tabs scroll */
+  .tabs {
+    padding: 3px;
+  }
+
+  .tab {
+    padding: 7px 14px;
+    font-size: 12px;
+  }
+
+  /* Modal */
+  .modal {
+    width: 100% !important;
+    max-width: 100%;
+    max-height: 95vh;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    transform: none;
+    border-radius: 20px 20px 0 0;
+    padding: 16px;
+  }
+
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding: 14px;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+  }
+
+  .modal-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Grids de verificação */
+  .ver-form-grid,
+  .ver-readonly-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Toast */
+  .toast {
+    left: 14px;
+    right: 14px;
+    bottom: 16px;
+    max-width: unset;
+  }
+
+  /* Paginação */
+  .pagination button {
+    width: 30px;
+    height: 30px;
+    font-size: 12px;
+  }
+}
+
+/* --- Telas muito pequenas (≤380px) --- */
+
+@media (max-width: 380px) {
+  .kpi-row {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar h2 {
+    font-size: 14px;
+  }
+
+  .admin-badge {
+    display: none;
   }
 }
