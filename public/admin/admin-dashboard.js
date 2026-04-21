@@ -2320,7 +2320,7 @@ function renderFaturamentos(faturamentos) {
       <td>${money(fat.taxas)}</td>
       <td><strong>${money(fat.valor_liquido)}</strong></td>
       <td>
-        ${fat.arquivo ? `<a href="/uploads/${fat.arquivo}" target="_blank" class="link">Baixar</a>` : '—'}
+        ${fat.arquivo ? `<a href="${fat.arquivo}" target="_blank" class="link">Baixar</a>` : '—'}
       </td>
       <td>
         <button class="btn-small btn-ghost" onclick="deletarFaturamento(${fat.id})">Deletar</button>
@@ -2410,7 +2410,7 @@ function renderDespesas(despesas) {
       <td>${money(desp.valor)}</td>
       <td>${fmtDate(desp.data)}</td>
       <td>
-        ${desp.comprovante ? `<a href="/uploads/${desp.comprovante}" target="_blank" class="link">Ver</a>` : '—'}
+        ${desp.comprovante ? `<a href="${desp.comprovante}" target="_blank" class="link">Ver</a>` : '—'}
       </td>
       <td>
         <button class="btn-small btn-ghost" onclick="deletarDespesa(${desp.id})">Deletar</button>
