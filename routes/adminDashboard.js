@@ -3831,7 +3831,7 @@ router.post("/despesas", authAdmin, uploadPublico.single('comprovante'), async (
     }
  
     // Registrar no log
-    const motevoLog = `Despesa registrada: ${categoria} - ${descricao} - R$ ${valor.toFixed(2)}`;
+    const motevoLog = `Despesa registrada: ${categoria} - ${descricao} - $ ${valor.toFixed(2)}`;
  
     try {
       await db.query(`
