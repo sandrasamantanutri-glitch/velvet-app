@@ -2095,17 +2095,15 @@ pageLoaders.agencias = async function () {
   }
 };
 
-function abrirAdicionarAgencia() {
+function abrirEditarAgencia(id, nome, percAg, percMod, percPlat) {
   openEditModal(
-    'Adicionar Agência',
-    '/admin/dashboard/agencias',
-    'POST',
+    'Editar Agência',
+    `/admin/dashboard/agencias/${id}`,
+    'PUT',
     [
-      { name: 'nome', label: 'Nome', type: 'text', value: '', required: true },
-      { name: 'email', label: 'Email', type: 'email', value: '', required: false },
-      { name: 'percentual_agencia', label: '% Agência', type: 'number', value: 0 },
-      { name: 'percentual_modelo', label: '% Modelo', type: 'number', value: 0 },
-      { name: 'percentual_plataforma', label: '% Plataforma', type: 'number', value: 0 }
+      { name: 'percentual_agencia', label: '% Agência', type: 'number', value: percAg },
+      { name: 'percentual_modelo', label: '% Modelo', type: 'number', value: percMod },
+      { name: 'percentual_plataforma', label: '% Plataforma', type: 'number', value: percPlat }
     ],
     () => pageLoaders.agencias()
   );
@@ -2471,9 +2469,28 @@ function openEditModal(title, url, method, fields, callback) {
   $('modalEditTitle').textContent = title;
   const container = $('modalEditFields');
 
+  function escapeHtml(v) {
+    return String(v ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function formatDate(v) {
+    if (!v) return '';
+    try {
+      return new Date(v).toISOString().split('T')[0];
+    } catch {
+      return '';
+    }
+  }
+
   container.innerHTML = fields.map(f => {
     const disabled = f.disabled ? 'disabled' : '';
+    const required = f.required ? 'required' : '';
 
+    // ✔️ CHECKBOX
     if (f.type === 'checkbox') {
       return `<label class="checkbox-label">
         <input type="checkbox" name="${f.name}" ${f.value ? 'checked' : ''} ${disabled}>
@@ -2481,31 +2498,49 @@ function openEditModal(title, url, method, fields, callback) {
       </label>`;
     }
 
+    // ✔️ TEXTAREA
     if (f.type === 'textarea') {
       return `<label>${f.label}
-        <textarea name="${f.name}" ${disabled}>${f.value ?? ''}</textarea>
+        <textarea name="${f.name}" ${disabled} ${required}>${escapeHtml(f.value)}</textarea>
       </label>`;
     }
 
+    // ✔️ SELECT
     if (f.type === 'select') {
       return `<label>${f.label}
-        <select name="${f.name}" ${disabled}>
+        <select name="${f.name}" ${disabled} ${required}>
           ${(f.options || []).map(o => {
             const val = typeof o === 'object' ? o.value : o;
             const label = typeof o === 'object' ? o.label : o;
-            return `<option value="${val}" ${String(val) === String(f.value ?? '') ? 'selected' : ''}>${label}</option>`;
+            return `<option value="${escapeHtml(val)}"
+              ${String(val) === String(f.value ?? '') ? 'selected' : ''}>
+              ${escapeHtml(label)}
+            </option>`;
           }).join('')}
         </select>
       </label>`;
+    }
+
+    // ✔️ DATE FIX (CRÍTICO)
+    let value = f.value ?? '';
+    if (f.type === 'date') {
+      value = formatDate(value);
+    }
+
+    // ✔️ NUMBER STEP DINÂMICO
+    let step = '';
+    if (f.type === 'number') {
+      step = f.step ? `step="${f.step}"` : 'step="any"';
     }
 
     return `<label>${f.label}
       <input
         type="${f.type || 'text'}"
         name="${f.name}"
-        value="${f.value ?? ''}"
-        step="${f.type === 'number' ? '0.01' : ''}"
+        value="${escapeHtml(value)}"
+        ${step}
         ${disabled}
+        ${required}
       >
     </label>`;
   }).join('');
