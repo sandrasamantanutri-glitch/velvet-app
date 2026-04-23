@@ -147,7 +147,7 @@ router.get("/overview", authAdmin, async (req, res) => {
       `),
 
       db.query(`
-        SELECT COALESCE(SUM(t.txa_gateway), 0) AS total
+        SELECT COALESCE(SUM(t.taxa_gateway), 0) AS total
         FROM transacoes_agency t
         WHERE t.created_at >= date_trunc('day', NOW())
           AND t.created_at < (date_trunc('day', NOW()) + INTERVAL '1 day')
