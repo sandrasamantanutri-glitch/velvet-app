@@ -464,7 +464,7 @@ function capturarOrigemTrafego() {
 //   }
 // }
 
-registrarOrigemTrafego();
+// registrarOrigemTrafego();
 
 document.addEventListener("DOMContentLoaded", async () => {
   await whenI18nReady();

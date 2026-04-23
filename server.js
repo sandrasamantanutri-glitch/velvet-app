@@ -1693,9 +1693,12 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
 
       const primeiraAssinatura = vipExistente.rowCount === 0;
 
+      // valor_base_brl é sempre o preço original em BRL, independente da moeda cobrada
       let valorBase = Number(
+        metadata.valor_base_brl ??
         metadata.valor_assinatura ??
         metadata.valor_base ??
+        pagamento.valor_brl ??
         pagamento.valor ??
         0
       );
@@ -1708,11 +1711,15 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
 
       valorBase = Number(valorBase.toFixed(2));
 
+      const taxaCambioVip = Number(metadata.taxa_cambio) || null;
       const taxaTransacao = Number(metadata.taxa_transacao || 0);
       const taxaPlataforma = Number(metadata.taxa_plataforma || 0);
 
       const taxaGateway = Number((valorBase * 0.15).toFixed(2));
       const valorBruto = valorBase;
+      const valorTotalBrl = taxaCambioVip
+        ? Number((valorPago * taxaCambioVip).toFixed(2))
+        : valorPago;
 
       const valores = await calcularValores({
         modelo_id,
@@ -1762,7 +1769,7 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
             valorBase,
             taxaTransacao,
             taxaPlataforma,
-            valorPago,
+            valorTotalBrl,
             paymentIntentId || chargeId
           ]
         );
@@ -1797,7 +1804,7 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
             valorBase,
             taxaTransacao,
             taxaPlataforma,
-            valorPago,
+            valorTotalBrl,
             paymentIntentId || chargeId
           ]
         );
