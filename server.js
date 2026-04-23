@@ -1,4 +1,4 @@
-console.log("SERVIDOR INICIADO - O SENHOR EH MEU PASTOR E NADA ME FALTARA!")
+﻿console.log("SERVIDOR INICIADO - O SENHOR EH MEU PASTOR E NADA ME FALTARA!")
 
 // ===============================
 // VARIAVEIS
@@ -1078,13 +1078,16 @@ app.post("/api/webhook/stripe", express.raw({ type: "application/json" }), async
   let metadata = {};
   let amountCentavos = 0;
   let gatewayStatus = "";
+  let currency = null;
 
   if (eventType === "checkout.session.completed") {
+    currency = obj.currency || null;
     paymentIntentId = obj.payment_intent || null;
     metadata = obj.metadata || {};
     amountCentavos = Number(obj.amount_total || 0);
     gatewayStatus = String(obj.payment_status || "").toLowerCase();
   } else if (eventType.startsWith("payment_intent.")) {
+    currency = obj.currency || null;
     paymentIntentId = obj.id || null;
     metadata = obj.metadata || {};
     amountCentavos = Number(obj.amount_received || obj.amount || 0);
@@ -1094,6 +1097,7 @@ app.post("/api/webhook/stripe", express.raw({ type: "application/json" }), async
       obj.charges?.data?.[0]?.id ||
       null;
   } else if (eventType.startsWith("charge.")) {
+    currency = obj.currency || null;
     chargeId = obj.id || null;
     paymentIntentId = obj.payment_intent || null;
     metadata = obj.metadata || {};
@@ -1415,11 +1419,20 @@ app.post("/api/webhook/stripe", express.raw({ type: "application/json" }), async
        VALIDAÇÃO DE VALOR
     ===================================================== */
 
-    if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0.01) {
-      console.log("🚨 Valor divergente", valorPago, valorEsperado);
-      await client.query("ROLLBACK");
-      return res.status(200).send("ok");
-    }
+const moedaEsperada = String(pagamento.currency || metadata.currency || "").toLowerCase();
+const moedaRecebida = String(currency || "").toLowerCase();
+
+if (moedaEsperada && moedaRecebida && moedaEsperada !== moedaRecebida) {
+  console.log("🚨 Moeda divergente:", moedaRecebida, moedaEsperada);
+  await client.query("ROLLBACK");
+  return res.status(200).send("ok");
+}
+
+if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0.01) {
+  console.log("🚨 Valor divergente", valorPago, valorEsperado);
+  await client.query("ROLLBACK");
+  return res.status(200).send("ok");
+}
 
     console.log("Valor validado");
 
@@ -2280,6 +2293,35 @@ async function notificarNovaMensagem(userIdDestino, textoMensagem, url = "/inbox
   }
 }
 
+// ===========================
+// CONVERSAO MOEDA R$/$
+// ===========================
+let _rateCache = { rate: null, at: 0 };
+
+async function getBRLtoUSDRate() {
+  const age = Date.now() - _rateCache.at;
+  if (_rateCache.rate && age < 4 * 60 * 60 * 1000) return _rateCache.rate;
+  const resp = await fetch("https://api.exchangerate-api.com/v4/latest/USD");
+  if (!resp.ok) throw new Error("Falha ao buscar taxa de câmbio");
+  const data = await resp.json();
+  const rate = data.rates?.BRL;
+  if (!rate) throw new Error("Taxa BRL não encontrada na resposta de câmbio");
+  _rateCache = { rate, at: Date.now() };
+  return rate;
+}
+
+async function calcStripeAmount(valorBRL, currency) {
+  if (currency === "brl") {
+    return { amountCents: Math.round(valorBRL * 100), valorConvertido: valorBRL, taxaCambio: null };
+  }
+  const rate = await getBRLtoUSDRate();
+  const valorUSD = valorBRL / rate;
+  return {
+    amountCents: Math.round(valorUSD * 100),
+    valorConvertido: Number(valorUSD.toFixed(2)),
+    taxaCambio: rate
+  };
+}
 
 // function manutencaoClientes(req, res, next) {
 //   if (!MANUTENCAO_CLIENTES) return next();
@@ -4910,7 +4952,6 @@ app.get("/api/pagamento/status/:paymentRef", auth, async (req, res) => {
       }
 
       if (s === "succeeded") {
-        // Stripe pode marcar como succeeded antes do webhook terminar
         return "pendente";
       }
 
@@ -4928,7 +4969,8 @@ app.get("/api/pagamento/status/:paymentRef", auth, async (req, res) => {
         modelo_id,
         metodo_pagamento AS metodo,
         'premium' AS tipo,
-        gateway
+        gateway,
+        currency
       FROM premium_unlocks
       WHERE pagarme_order_id = $1
          OR stripe_payment_intent_id = $1
@@ -4946,6 +4988,7 @@ app.get("/api/pagamento/status/:paymentRef", auth, async (req, res) => {
         tipo: row.tipo,
         metodo: row.metodo || null,
         gateway: row.gateway || null,
+        currency: row.currency || null,
         message_id: null,
         premium_post_id: row.premium_post_id || null,
         modelo_id: row.modelo_id || null
@@ -4962,7 +5005,8 @@ app.get("/api/pagamento/status/:paymentRef", auth, async (req, res) => {
         modelo_id,
         'pix' AS metodo,
         'vip' AS tipo,
-        gateway
+        gateway,
+        currency
       FROM pagamentos_pix
       WHERE pagarme_order_id = $1
         AND message_id IS NULL
@@ -4980,6 +5024,7 @@ app.get("/api/pagamento/status/:paymentRef", auth, async (req, res) => {
         tipo: row.tipo,
         metodo: row.metodo,
         gateway: row.gateway || "pagarme",
+        currency: row.currency || null,
         message_id: null,
         premium_post_id: null,
         modelo_id: row.modelo_id || null
@@ -4996,7 +5041,8 @@ app.get("/api/pagamento/status/:paymentRef", auth, async (req, res) => {
         modelo_id,
         'cartao' AS metodo,
         'vip' AS tipo,
-        gateway
+        gateway,
+        currency
       FROM pagamentos_cartao
       WHERE (
         stripe_payment_intent_id = $1
@@ -5018,6 +5064,7 @@ app.get("/api/pagamento/status/:paymentRef", auth, async (req, res) => {
         tipo: row.tipo,
         metodo: row.metodo,
         gateway: row.gateway || "stripe",
+        currency: row.currency || null,
         message_id: null,
         premium_post_id: null,
         modelo_id: row.modelo_id || null
@@ -5035,7 +5082,8 @@ app.get("/api/pagamento/status/:paymentRef", auth, async (req, res) => {
         modelo_id,
         'pix' AS metodo,
         'midia' AS tipo,
-        gateway
+        gateway,
+        currency
       FROM pagamentos_pix
       WHERE pagarme_order_id = $1
         AND message_id IS NOT NULL
@@ -5053,6 +5101,7 @@ app.get("/api/pagamento/status/:paymentRef", auth, async (req, res) => {
         tipo: row.tipo,
         metodo: row.metodo,
         gateway: row.gateway || "pagarme",
+        currency: row.currency || null,
         message_id: row.message_id || null,
         premium_post_id: null,
         modelo_id: row.modelo_id || null
@@ -5070,7 +5119,8 @@ app.get("/api/pagamento/status/:paymentRef", auth, async (req, res) => {
         modelo_id,
         'cartao' AS metodo,
         'midia' AS tipo,
-        gateway
+        gateway,
+        currency
       FROM pagamentos_cartao
       WHERE (
         stripe_payment_intent_id = $1
@@ -5091,6 +5141,7 @@ app.get("/api/pagamento/status/:paymentRef", auth, async (req, res) => {
         tipo: row.tipo,
         metodo: row.metodo,
         gateway: row.gateway || "stripe",
+        currency: row.currency || null,
         message_id: row.message_id || null,
         premium_post_id: null,
         modelo_id: row.modelo_id || null
@@ -5106,6 +5157,7 @@ app.get("/api/pagamento/status/:paymentRef", auth, async (req, res) => {
       tipo: null,
       metodo: null,
       gateway: null,
+      currency: null,
       message_id: null,
       premium_post_id: null,
       modelo_id: null
@@ -8118,21 +8170,61 @@ if (Number.isNaN(dataAceite.getTime())) {
       AND message_id = $2
       AND status = 'pendente'
       AND expires_at > NOW()
+      ORDER BY criado_em DESC
       LIMIT 1
       `,
       [cliente_id, conteudo_id]
     );
 
     if (pixExistente.rowCount > 0) {
+      const pagarmeOrderId = pixExistente.rows[0].pagarme_order_id;
 
+      try {
+        const orderRes = await axios.get(
+          `https://api.pagar.me/core/v5/orders/${pagarmeOrderId}`,
+          {
+            headers: {
+              Authorization: `Basic ${Buffer
+                .from(process.env.PAGARME_SECRET_KEY + ":")
+                .toString("base64")}`
+            }
+          }
+        );
+
+        const orderExistente = orderRes.data;
+        const chargeExistente = orderExistente?.charges?.[0];
+        const pixData = chargeExistente?.last_transaction;
+        const chargeStatus = String(chargeExistente?.status || "").toLowerCase();
+
+        if (
+          pixData?.qr_code &&
+          chargeStatus !== "paid" &&
+          chargeStatus !== "canceled" &&
+          chargeStatus !== "failed"
+        ) {
+          await client.query("ROLLBACK");
+          return res.json({
+            qr_code_url: pixData.qr_code_url,
+            copia_cola: pixData.qr_code,
+            qr_code: pixData.qr_code,
+            payment_id: orderExistente.id,
+            order_id: orderExistente.id,
+            reutilizado: true
+          });
+        }
+      } catch (reuseErr) {
+        console.warn("Erro ao reutilizar PIX MIDIA:", reuseErr.message);
+      }
+
+      // Fallback: sem reconsulta, usa dados do DB (só copia-cola, sem QR image)
       await client.query("ROLLBACK");
-
       return res.json({
         qr_code: pixExistente.rows[0].qr_code,
-        payment_id: pixExistente.rows[0].pagarme_order_id,
-        status: "pendente"
+        copia_cola: pixExistente.rows[0].qr_code,
+        payment_id: pagarmeOrderId,
+        order_id: pagarmeOrderId,
+        reutilizado: true
       });
-
     }
 
     /* ================================
@@ -8290,991 +8382,6 @@ await client.query(
 
   }
 
-});
-
-// ===========================
-// VIP CARTAO
-// ===========================
-
-app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
-  const client = await db.connect();
-  let cliente_id = null;
-
-  try {
-    await client.query("BEGIN");
-
-    const {
-      modelo_id,
-      cpf,
-      telefone,
-      aceitou_termos,
-       aceitou_execucao_imediata,
-       aceite_timestamp,
-       versao_termos,
-      fingerprint,
-      apenas_intent
-    } = req.body || {};
-
-    const userId = Number(req.user?.id || 0);
-
-    /* =====================================================
-       VALIDAÇÕES INICIAIS
-    ===================================================== */
-    if (!Number.isInteger(userId) || userId <= 0) {
-      await client.query("ROLLBACK");
-      return res.status(401).json({ error: "Usuário inválido." });
-    }
-
-    const modeloIdNum = Number(modelo_id);
-    if (!Number.isInteger(modeloIdNum) || modeloIdNum <= 0) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ error: "modelo_id inválido" });
-    }
-
-    const cpfLimpo = String(cpf || "").replace(/\D/g, "");
-    if (!cpfLimpo) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ error: "CPF obrigatório." });
-    }
-
-    if (!validarCPF(cpfLimpo)) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ error: "CPF inválido." });
-    }
-
-    const telefoneLimpo = String(telefone || "").replace(/\D/g, "");
-    if (!telefoneLimpo) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ error: "Telefone obrigatório." });
-    }
-
-    if (telefoneLimpo.length < 10 || telefoneLimpo.length > 11) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ error: "Telefone inválido." });
-    }
-
-    if (!fingerprint) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ error: "Fingerprint obrigatório." });
-    }
-
-    if (!aceitou_termos) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ error: "Você precisa aceitar os termos." });
-    }
-
-    if (!aceitou_execucao_imediata) {
-  await client.query("ROLLBACK");
-  return res.status(400).json({
-    error: "Você precisa declarar ciência sobre a execução imediata do serviço digital."
-  });
-}
-
-if (!aceite_timestamp) {
-  await client.query("ROLLBACK");
-  return res.status(400).json({
-    error: "Data de aceite obrigatória."
-  });
-}
-
-const dataAceite = new Date(aceite_timestamp);
-if (Number.isNaN(dataAceite.getTime())) {
-  await client.query("ROLLBACK");
-  return res.status(400).json({
-    error: "Data de aceite inválida."
-  });
-}
-
-    if (!apenas_intent) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({
-        error: "Fluxo inválido. Esta rota deve ser chamada apenas para criar o PaymentIntent."
-      });
-    }
-
-    const ip =
-      req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
-      req.socket.remoteAddress ||
-      null;
-
-    /* =====================================================
-       BLOQUEIOS
-    ===================================================== */
-    const ipBloqueado = await client.query(
-      `SELECT 1 FROM ips_bloqueados WHERE ip = $1 LIMIT 1`,
-      [ip]
-    );
-
-    if (ipBloqueado.rowCount > 0) {
-      await client.query("ROLLBACK");
-      return res.status(403).json({ error: "IP bloqueado." });
-    }
-
-    const cpfBloqueado = await client.query(
-      `SELECT 1 FROM cpfs_bloqueados WHERE cpf = $1 LIMIT 1`,
-      [cpfLimpo]
-    );
-
-    if (cpfBloqueado.rowCount > 0) {
-      await client.query("ROLLBACK");
-      return res.status(403).json({ error: "CPF bloqueado." });
-    }
-
-    /* =====================================================
-       CLIENTE
-    ===================================================== */
-    const clienteRes = await client.query(
-      `
-      SELECT
-        c.id,
-        c.nome,
-        c.bloqueado,
-        u.email
-      FROM clientes c
-      JOIN users u
-        ON u.id = c.user_id
-      WHERE c.user_id = $1
-      LIMIT 1
-      `,
-      [userId]
-    );
-
-    if (!clienteRes.rowCount) {
-      await client.query("ROLLBACK");
-      return res.status(404).json({ error: "Cliente não encontrado" });
-    }
-
-    cliente_id = Number(clienteRes.rows[0].id);
-
-    const nomeCliente =
-      String(clienteRes.rows[0].nome || "").trim() || "Cliente Velvet";
-    const emailCliente = String(clienteRes.rows[0].email || "")
-      .trim()
-      .toLowerCase();
-
-    if (clienteRes.rows[0].bloqueado) {
-      await client.query("ROLLBACK");
-      return res.status(403).json({ error: "Conta bloqueada." });
-    }
-
-    if (!emailCliente || !emailCliente.includes("@")) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ error: "E-mail do cliente inválido." });
-    }
-
-    /* =====================================================
-       IMPEDIR ASSINAR O PRÓPRIO PERFIL
-    ===================================================== */
-    const donaRes = await client.query(
-      `
-      SELECT id
-      FROM modelos
-      WHERE user_id = $1
-        AND id = $2
-      LIMIT 1
-      `,
-      [userId, modeloIdNum]
-    );
-
-    if (donaRes.rowCount) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({
-        error: "Não é possível assinar o próprio perfil."
-      });
-    }
-
-    /* =====================================================
-       VALIDAR MODELO
-    ===================================================== */
-    const modeloRes = await client.query(
-      `
-      SELECT id
-      FROM modelos
-      WHERE id = $1
-      LIMIT 1
-      `,
-      [modeloIdNum]
-    );
-
-    if (!modeloRes.rowCount) {
-      await client.query("ROLLBACK");
-      return res.status(404).json({ error: "Modelo não encontrada." });
-    }
-
-    /* =====================================================
-       ATUALIZAR CLIENTE
-    ===================================================== */
-    await client.query(
-      `
-      UPDATE clientes
-      SET cpf = $1, ultimo_ip = $2
-      WHERE id = $3
-      `,
-      [cpfLimpo, ip, cliente_id]
-    );
-
-    /* =====================================================
-       EVITAR TENTATIVA RECENTE
-    ===================================================== */
-    const tentativaVipRecenteRes = await client.query(
-      `
-      SELECT 1
-      FROM pagamentos_cartao
-      WHERE cliente_id = $1
-        AND modelo_id = $2
-        AND tipo = 'vip'
-        AND gateway = 'stripe'
-        AND created_at > NOW() - INTERVAL '3 minutes'
-        AND LOWER(COALESCE(status, '')) IN
-          ('pending', 'pendente', 'processing', 'requires_action', 'requires_confirmation', 'iniciado')
-      LIMIT 1
-      `,
-      [cliente_id, modeloIdNum]
-    );
-
-    if (tentativaVipRecenteRes.rowCount > 0) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({
-        error: "Já existe uma tentativa recente de pagamento para este VIP."
-      });
-    }
-
-    /* =====================================================
-       BUSCAR PLANO
-    ===================================================== */
-    const planoRes = await client.query(
-      `
-      SELECT valor_mensal
-      FROM modelos_planos
-      WHERE modelo_id = $1
-      LIMIT 1
-      `,
-      [modeloIdNum]
-    );
-
-    if (!planoRes.rowCount) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ error: "Plano VIP não definido" });
-    }
-
-    let valorBasePlano = Number(planoRes.rows[0].valor_mensal) || 0;
-
-    /* =====================================================
-       OFERTA
-    ===================================================== */
-    const ofertaRes = await client.query(
-      `
-      SELECT id, desconto_percentual, valor_promocional
-      FROM ofertas
-      WHERE modelo_id = $1
-        AND ativa = true
-        AND (data_inicio IS NULL OR data_inicio <= NOW())
-        AND (data_fim IS NULL OR data_fim >= NOW())
-      ORDER BY created_at DESC
-      LIMIT 1
-      `,
-      [modeloIdNum]
-    );
-
-    let valorAssinatura = valorBasePlano;
-    let oferta_id = null;
-
-    if (ofertaRes.rowCount) {
-      oferta_id = ofertaRes.rows[0].id;
-
-      if (ofertaRes.rows[0].valor_promocional) {
-        valorAssinatura = Number(ofertaRes.rows[0].valor_promocional);
-      } else if (ofertaRes.rows[0].desconto_percentual) {
-        const desconto = Number(ofertaRes.rows[0].desconto_percentual);
-        valorAssinatura = valorBasePlano - (valorBasePlano * desconto / 100);
-      }
-    }
-
-    valorAssinatura = Number(valorAssinatura.toFixed(2));
-
-    if (!valorAssinatura || valorAssinatura <= 0) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ error: "Valor inválido" });
-    }
-
-    /* =====================================================
-       CÁLCULO
-    ===================================================== */
-    const valorCentavos = Math.round(valorAssinatura * 100);
-    const taxaTransacaoCentavos = Math.round(valorCentavos * 0.10);
-    const taxaPlataformaCentavos = Math.round(valorCentavos * 0.05);
-
-    const amount =
-      valorCentavos +
-      taxaTransacaoCentavos +
-      taxaPlataformaCentavos;
-
-    const taxaTransacao = Number((taxaTransacaoCentavos / 100).toFixed(2));
-    const taxaPlataforma = Number((taxaPlataformaCentavos / 100).toFixed(2));
-    const valorTotal = Number((amount / 100).toFixed(2));
-
-    /* =====================================================
-       CRIAR PAYMENT INTENT
-    ===================================================== */
-const paymentIntent = await stripe.paymentIntents.create({
-  amount,
-  currency: "brl",
-  payment_method_types: ["card"],
-  confirmation_method: "automatic",
-  confirm: false,
-  receipt_email: emailCliente,
-  description: `Assinatura VIP modelo ${modeloIdNum}`,
-  metadata: {
-        tipo: "vip",
-        cliente_id: String(cliente_id),
-        modelo_id: String(modeloIdNum),
-        oferta_id: oferta_id ? String(oferta_id) : "",
-        valor_base: String(valorAssinatura),
-        valor_assinatura: String(valorAssinatura),
-        taxa_transacao: String(taxaTransacao),
-        taxa_plataforma: String(taxaPlataforma),
-        valor_total: String(valorTotal),
-        taxa_gateway: "0.15",
-        cpf: cpfLimpo,
-        aceite_ip: ip || "",
-        fingerprint: fingerprint || "",
-        telefone: telefoneLimpo,
-        aceitou_termos: aceitou_termos ? "true" : "false",
-        aceitou_execucao_imediata: aceitou_execucao_imediata ? "true" : "false",
-        aceite_timestamp: String(aceite_timestamp || ""),
-        versao_termos: String(versao_termos || "2026-04-06")
-      }
-    });
-
-    const stripeStatusRaw = String(
-      paymentIntent.status || "requires_payment_method"
-    ).toLowerCase();
-
-    const statusLocal =
-      stripeStatusRaw === "requires_payment_method"
-        ? "iniciado"
-        : stripeStatusRaw;
-
-    /* =====================================================
-       REGISTRAR PAGAMENTO LOCAL
-    ===================================================== */
-await client.query(
-  `
-  INSERT INTO pagamentos_cartao
-  (
-    cliente_id,
-    modelo_id,
-    gateway,
-    gateway_payment_id,
-    stripe_payment_intent_id,
-    valor,
-    tipo,
-    status,
-    cpf,
-    telefone,
-    aceite_ip,
-    aceitou_termos,
-    aceitou_execucao_imediata,
-    aceite_timestamp,
-    versao_termos,
-    fingerprint,
-    created_at,
-    updated_at
-  )
-  VALUES (
-    $1, $2, 'stripe', $3, $4, $5, $6, $7,
-    $8, $9, $10, $11, $12, $13, $14, $15,
-    NOW(), NOW()
-  )
-  `,
-  [
-    cliente_id,
-    modeloIdNum,
-    paymentIntent.id,
-    paymentIntent.id,
-    valorTotal,
-    "vip",
-    statusLocal,
-    cpfLimpo,
-    telefoneLimpo,
-    ip,
-    !!aceitou_termos,
-    !!aceitou_execucao_imediata,
-    aceite_timestamp,
-    versao_termos || "2026-04-06",
-    fingerprint || null
-  ]
-);
-
-await client.query(
-  `
-  INSERT INTO pagamento_tentativas
-  (
-    cliente_id,
-    metodo,
-    fingerprint_pagamento,
-    status,
-    payment_intent_id,
-    cpf,
-    ip,
-    aceitou_termos,
-    aceitou_execucao_imediata,
-    aceite_timestamp,
-    versao_termos
-  )
-  VALUES ($1, 'cartao', $2, $3, $4, $5, $6, $7, $8, $9, $10)
-  `,
-  [
-    cliente_id,
-    fingerprint || null,
-    stripeStatusRaw,
-    paymentIntent.id,
-    cpfLimpo,
-    ip,
-    !!aceitou_termos,
-    !!aceitou_execucao_imediata,
-    aceite_timestamp,
-    versao_termos || "2026-04-06"
-  ]
-);
-
-    await client.query("COMMIT");
-
-    return res.json({
-      ok: true,
-      apenas_intent: true,
-      payment_intent_id: paymentIntent.id,
-      client_secret: paymentIntent.client_secret || null,
-      status: statusLocal,
-      raw_status: stripeStatusRaw,
-      modelo_id: modeloIdNum,
-      valor_assinatura: valorAssinatura,
-      taxa_transacao: taxaTransacao,
-      taxa_plataforma: taxaPlataforma,
-      valor_total: valorTotal,
-      oferta_id
-    });
-  } catch (err) {
-    try {
-      await client.query("ROLLBACK");
-    } catch (_) {}
-
-    console.error("Erro VIP Stripe:", err.raw || err);
-
-    try {
-      if (cliente_id && req.body?.fingerprint) {
-        await client.query(
-          `
-          INSERT INTO pagamento_tentativas
-          (
-            cliente_id,
-            metodo,
-            fingerprint_pagamento,
-            status,
-            cpf,
-            ip
-          )
-          VALUES ($1, 'cartao', $2, 'recusado', $3, $4)
-          `,
-          [
-            cliente_id,
-            req.body.fingerprint,
-            req.body?.cpf
-              ? String(req.body.cpf).replace(/\D/g, "")
-              : null,
-            req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
-              req.socket.remoteAddress ||
-              null
-          ]
-        );
-      }
-    } catch (logErr) {
-      console.error("Erro ao registrar tentativa recusada:", logErr);
-    }
-
-    return res.status(500).json({
-      error: err.message || "Erro ao criar pagamento com cartão",
-      stripe_code: err.code || null,
-      stripe_type: err.type || null,
-      stripe_raw: err.raw || null
-    });
-  } finally {
-    client.release();
-  }
-});
-
-// ===========================
-// MIDIA CARTAO
-// ===========================
-
-app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
-  const requestId =
-    "stripe_cartao_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
-
-  const startedAt = Date.now();
-  let client = null;
-  let cliente_id = null;
-
-  try {
-    console.log("\n==============================");
-    console.log("🔥 INICIO /api/pagamento/midia/cartao [STRIPE]");
-    console.log("requestId:", requestId);
-    console.log("timestamp:", new Date().toISOString());
-    console.log("BODY bruto:", req.body);
-    console.log("USER bruto:", req.user);
-
-    client = await db.connect();
-    console.log("✅ db.connect OK");
-
-    const {
-      conteudo_id,
-      fingerprint,
-      cpf,
-      apenas_intent,
-      telefone,
-      aceitou_termos,
-      aceitou_execucao_imediata,
-      aceite_timestamp,
-      versao_termos
-    } = req.body || {};
-
-    const userId = Number(req.user?.id || 0);
-
-    if (!Number.isInteger(userId) || userId <= 0) {
-      return res.status(401).json({ error: "Usuário não autenticado" });
-    }
-
-    if (!conteudo_id || !Number.isInteger(Number(conteudo_id))) {
-      return res.status(400).json({ error: "conteudo_id inválido" });
-    }
-
-    const conteudoId = Number(conteudo_id);
-
-    const cpfLimpo = String(cpf || "").replace(/\D/g, "");
-    if (!cpfLimpo) {
-      return res.status(400).json({ error: "CPF obrigatório." });
-    }
-
-    if (!validarCPF(cpfLimpo)) {
-      return res.status(400).json({ error: "CPF inválido." });
-    }
-
-    const telefoneLimpo = String(telefone || "").replace(/\D/g, "");
-    if (!telefoneLimpo) {
-      return res.status(400).json({ error: "Telefone obrigatório." });
-    }
-
-    if (telefoneLimpo.length < 10 || telefoneLimpo.length > 11) {
-      return res.status(400).json({ error: "Telefone inválido." });
-    }
-
-    if (!fingerprint) {
-      return res.status(400).json({ error: "Fingerprint obrigatório." });
-    }
-
-    if (!aceitou_termos) {
-      return res.status(400).json({ error: "Você precisa aceitar os termos." });
-    }
-
-    if (!aceitou_execucao_imediata) {
-  return res.status(400).json({
-    error: "Você precisa declarar ciência sobre a execução imediata do conteúdo digital."
-  });
-}
-
-if (!aceite_timestamp) {
-  return res.status(400).json({
-    error: "Data de aceite obrigatória."
-  });
-}
-
-const dataAceite = new Date(aceite_timestamp);
-if (Number.isNaN(dataAceite.getTime())) {
-  return res.status(400).json({
-    error: "Data de aceite inválida."
-  });
-}
-
-    if (!apenas_intent) {
-      return res.status(400).json({
-        error: "Fluxo inválido. Esta rota deve ser chamada apenas para criar o PaymentIntent."
-      });
-    }
-
-    const ip =
-      req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
-      req.socket?.remoteAddress ||
-      null;
-
-    await client.query("BEGIN");
-    console.log("✅ BEGIN OK");
-
-    /* =====================================================
-       CLIENTE
-    ===================================================== */
-    const clienteRes = await client.query(
-      `
-      SELECT
-        c.id,
-        c.bloqueado,
-        COALESCE(NULLIF(TRIM(c.nome), ''), split_part(u.email, '@', 1)) AS nome,
-        u.email
-      FROM clientes c
-      JOIN users u ON u.id = c.user_id
-      WHERE c.user_id = $1
-      LIMIT 1
-      `,
-      [userId]
-    );
-
-    if (!clienteRes.rowCount) {
-      await client.query("ROLLBACK");
-      return res.status(404).json({ error: "Cliente não encontrado" });
-    }
-
-    cliente_id = Number(clienteRes.rows[0].id);
-
-    const {
-      bloqueado,
-      email,
-      nome
-    } = clienteRes.rows[0];
-
-    if (bloqueado) {
-      await client.query("ROLLBACK");
-      return res.status(403).json({ error: "Conta bloqueada." });
-    }
-
-    const nomeCompleto = String(nome || "").trim();
-    if (!nomeCompleto || nomeCompleto.length < 3) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ error: "Nome do cliente inválido." });
-    }
-
-    if (!email || !String(email).includes("@")) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ error: "E-mail do cliente inválido." });
-    }
-
-    /* =====================================================
-       CONTEÚDO
-    ===================================================== */
-    const messageRes = await client.query(
-      `
-      SELECT preco, modelo_id
-      FROM messages
-      WHERE id = $1
-        AND cliente_id = $2
-      LIMIT 1
-      `,
-      [conteudoId, cliente_id]
-    );
-
-    if (!messageRes.rowCount) {
-      await client.query("ROLLBACK");
-      return res.status(404).json({ error: "Conteúdo não encontrado" });
-    }
-
-    const { preco, modelo_id } = messageRes.rows[0];
-
-    if (!preco || Number(preco) <= 0) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ error: "Conteúdo não está à venda." });
-    }
-
-    /* =====================================================
-       JÁ COMPRADO
-    ===================================================== */
-    const jaComprado = await client.query(
-      `
-      SELECT 1
-      FROM conteudo_pacotes
-      WHERE message_id = $1
-        AND cliente_id = $2
-        AND status = 'pago'
-      LIMIT 1
-      `,
-      [conteudoId, cliente_id]
-    );
-
-    if (jaComprado.rowCount > 0) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ error: "Conteúdo já adquirido." });
-    }
-
-    /* =====================================================
-       TENTATIVA PENDENTE RECENTE
-    ===================================================== */
-    const pedidoPendente = await client.query(
-      `
-      SELECT 1
-      FROM pagamentos_cartao
-      WHERE cliente_id = $1
-        AND conteudo_id = $2
-        AND gateway = 'stripe'
-        AND status IN (
-          'iniciado',
-          'pending',
-          'processing',
-          'pendente',
-          'requires_action',
-          'requires_confirmation'
-        )
-      LIMIT 1
-      `,
-      [cliente_id, conteudoId]
-    );
-
-    if (pedidoPendente.rowCount > 0) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({
-        error: "Já existe um pagamento em processamento para este conteúdo."
-      });
-    }
-
-    /* =====================================================
-       CÁLCULO
-    ===================================================== */
-    const valorCentavos = Math.round(Number(preco) * 100);
-    const taxaTransacaoCentavos = Math.round(valorCentavos * 0.10);
-    const taxaPlataformaCentavos = Math.round(valorCentavos * 0.05);
-    const amount =
-      valorCentavos + taxaTransacaoCentavos + taxaPlataformaCentavos;
-
-    if (!Number.isInteger(amount) || amount <= 0) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ error: "Valor do pagamento inválido." });
-    }
-
-    const valorBase = Number((valorCentavos / 100).toFixed(2));
-    const taxaTransacao = Number((taxaTransacaoCentavos / 100).toFixed(2));
-    const taxaPlataforma = Number((taxaPlataformaCentavos / 100).toFixed(2));
-    const total = Number((amount / 100).toFixed(2));
-
-    /* =====================================================
-       PAYMENT INTENT
-    ===================================================== */
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount,
-      currency: "brl",
-      payment_method_types: ["card"],
-      confirmation_method: "automatic",
-      confirm: false,
-      receipt_email: String(email).trim().toLowerCase(),
-      description: `Conteúdo premium #${conteudoId}`,
-      metadata: {
-        tipo: "conteudo",
-        message_id: String(conteudoId),
-        cliente_id: String(cliente_id),
-        modelo_id: String(modelo_id),
-        valor_midia: String(valorBase),
-        taxa_transacao: String(taxaTransacao),
-        taxa_plataforma: String(taxaPlataforma),
-        valor_total: String(total),
-        aceite_ip: ip || "",
-        cpf: cpfLimpo,
-        fingerprint: fingerprint || "",
-        telefone: telefoneLimpo,
-        aceitou_termos: aceitou_termos ? "true" : "false",
-         aceitou_execucao_imediata: aceitou_execucao_imediata ? "true" : "false",
-         aceite_timestamp: String(aceite_timestamp || ""),
-         versao_termos: String(versao_termos || "2026-04-06")
-      }
-    });
-
-    const stripeStatusRaw = String(
-      paymentIntent.status || "requires_payment_method"
-    ).toLowerCase().trim();
-
-    const statusLocal =
-      stripeStatusRaw === "requires_payment_method"
-        ? "iniciado"
-        : stripeStatusRaw;
-
-    /* =====================================================
-       REGISTRAR PAGAMENTO LOCAL
-    ===================================================== */
-await client.query(
-  `
-  INSERT INTO pagamentos_cartao
-  (
-    cliente_id,
-    modelo_id,
-    conteudo_id,
-    gateway,
-    gateway_payment_id,
-    stripe_payment_intent_id,
-    valor,
-    tipo,
-    status,
-    cpf,
-    telefone,
-    aceite_ip,
-    aceitou_termos,
-    aceitou_execucao_imediata,
-    aceite_timestamp,
-    versao_termos,
-    fingerprint,
-    created_at,
-    updated_at
-  )
-  VALUES (
-    $1, $2, $3, 'stripe', $4, $5, $6, $7, $8,
-    $9, $10, $11, $12, $13, $14, $15, $16,
-    NOW(), NOW()
-  )
-  `,
-  [
-    cliente_id,
-    modelo_id,
-    conteudoId,
-    paymentIntent.id,
-    paymentIntent.id,
-    total,
-    "conteudo",
-    statusLocal,
-    cpfLimpo,
-    telefoneLimpo,
-    ip,
-    !!aceitou_termos,
-    !!aceitou_execucao_imediata,
-    aceite_timestamp,
-    versao_termos || "2026-04-06",
-    fingerprint || null
-  ]
-);
-
-await client.query(
-  `
-  INSERT INTO pagamento_tentativas
-  (
-    cliente_id,
-    metodo,
-    fingerprint_pagamento,
-    status,
-    payment_intent_id,
-    conteudo_id,
-    cpf,
-    ip,
-    aceitou_termos,
-    aceitou_execucao_imediata,
-    aceite_timestamp,
-    versao_termos
-  )
-  VALUES ($1, 'cartao', $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-  `,
-  [
-    cliente_id,
-    fingerprint || null,
-    stripeStatusRaw,
-    paymentIntent.id,
-    conteudoId,
-    cpfLimpo,
-    ip,
-    !!aceitou_termos,
-    !!aceitou_execucao_imediata,
-    aceite_timestamp,
-    versao_termos || "2026-04-06"
-  ]
-);
-
-    await client.query("COMMIT");
-
-return res.json({
-  ok: true,
-  apenas_intent: true,
-  payment_intent_id: paymentIntent.id,
-  client_secret: paymentIntent.client_secret || null,
-  status: statusLocal,
-  raw_status: stripeStatusRaw,
-  requires_action: stripeStatusRaw === "requires_action",
-  total,
-  valorBase,
-  taxaTransacao,
-  taxaPlataforma,
-  aceitou_termos: !!aceitou_termos,
-  aceitou_execucao_imediata: !!aceitou_execucao_imediata,
-  aceite_timestamp,
-  versao_termos: versao_termos || "2026-04-06"
-    });
-
-  } catch (err) {
-    console.error("\n==============================");
-    console.error("💥 ERRO EM /api/pagamento/midia/cartao [STRIPE]");
-    console.error("requestId:", requestId);
-    console.error("tempo até erro ms:", Date.now() - startedAt);
-    console.error("err.message:", err.message);
-
-    if (err.raw) {
-      console.error("stripe.raw:", JSON.stringify(err.raw, null, 2));
-    }
-
-    if (err.payment_intent) {
-      console.error(
-        "stripe.payment_intent:",
-        JSON.stringify(err.payment_intent, null, 2)
-      );
-    }
-
-    try {
-      if (client) await client.query("ROLLBACK");
-    } catch (e) {
-      console.error("❌ Erro no rollback:", e.message);
-    }
-
-    try {
-      if (client && cliente_id && req.body?.fingerprint) {
-await client.query(
-  `
-  INSERT INTO pagamento_tentativas
-  (
-    cliente_id,
-    metodo,
-    fingerprint_pagamento,
-    status,
-    conteudo_id,
-    cpf,
-    ip,
-    aceitou_termos,
-    aceitou_execucao_imediata,
-    aceite_timestamp,
-    versao_termos
-  )
-  VALUES ($1, 'cartao', $2, 'recusado', $3, $4, $5, $6, $7, $8, $9)
-  `,
-  [
-    cliente_id,
-    req.body.fingerprint,
-    Number(req.body?.conteudo_id || 0) || null,
-    req.body?.cpf ? String(req.body.cpf).replace(/\D/g, "") : null,
-    req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
-      req.socket?.remoteAddress ||
-      null,
-    !!req.body?.aceitou_termos,
-    !!req.body?.aceitou_execucao_imediata,
-    req.body?.aceite_timestamp || null,
-    req.body?.versao_termos || "2026-04-06"
-  ]
-);
-      }
-    } catch (logErr) {
-      console.error("❌ Erro ao registrar tentativa recusada:", logErr.message);
-    }
-
-    return res.status(500).json({
-      error: "Erro interno ao processar pagamento com cartão",
-      detalhe: err.message,
-      stripe_code: err.code || null,
-      stripe_type: err.type || null,
-      requestId
-    });
-  } finally {
-    if (client) {
-      try {
-        client.release();
-      } catch (_) {}
-    }
-  }
 });
 
 // ===========================
@@ -9915,12 +9022,495 @@ await client.query(
 });
 
 // ===========================
-// PREMIUM CARTAO
+// VIP CARTAO
 // ===========================
 
-app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
+app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
+  const client = await db.connect();
+  let cliente_id = null;
+
+  try {
+    await client.query("BEGIN");
+
+    const {
+      modelo_id,
+      aceitou_termos,
+      aceitou_execucao_imediata,
+      aceite_timestamp,
+      versao_termos,
+      fingerprint,
+      apenas_intent
+    } = req.body || {};
+
+    const userId = Number(req.user?.id || 0);
+
+    /* =====================================================
+       VALIDAÇÕES INICIAIS
+    ===================================================== */
+    if (!Number.isInteger(userId) || userId <= 0) {
+      await client.query("ROLLBACK");
+      return res.status(401).json({ error: "Usuário inválido." });
+    }
+
+    const modeloIdNum = Number(modelo_id);
+    if (!Number.isInteger(modeloIdNum) || modeloIdNum <= 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "modelo_id inválido" });
+    }
+
+    if (!fingerprint) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Fingerprint obrigatório." });
+    }
+
+    if (!aceitou_termos) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Você precisa aceitar os termos." });
+    }
+
+    if (!aceitou_execucao_imediata) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        error: "Você precisa declarar ciência sobre a execução imediata do serviço digital."
+      });
+    }
+
+    if (!aceite_timestamp) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Data de aceite obrigatória." });
+    }
+
+    const dataAceite = new Date(aceite_timestamp);
+    if (Number.isNaN(dataAceite.getTime())) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Data de aceite inválida." });
+    }
+
+    if (!apenas_intent) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        error: "Fluxo inválido. Esta rota deve ser chamada apenas para criar o PaymentIntent."
+      });
+    }
+
+    const ip =
+      req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+      req.socket.remoteAddress ||
+      null;
+
+    const currency = req.body.currency === "usd" ? "usd" : "brl";
+
+    /* =====================================================
+       BLOQUEIOS
+    ===================================================== */
+    const ipBloqueado = await client.query(
+      `SELECT 1 FROM ips_bloqueados WHERE ip = $1 LIMIT 1`,
+      [ip]
+    );
+
+    if (ipBloqueado.rowCount > 0) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ error: "IP bloqueado." });
+    }
+
+    /* =====================================================
+       CLIENTE
+    ===================================================== */
+    const clienteRes = await client.query(
+      `
+      SELECT
+        c.id,
+        c.nome,
+        c.bloqueado,
+        u.email
+      FROM clientes c
+      JOIN users u
+        ON u.id = c.user_id
+      WHERE c.user_id = $1
+      LIMIT 1
+      `,
+      [userId]
+    );
+
+    if (!clienteRes.rowCount) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Cliente não encontrado" });
+    }
+
+    cliente_id = Number(clienteRes.rows[0].id);
+
+    const nomeCliente =
+      String(clienteRes.rows[0].nome || "").trim() || "Cliente Velvet";
+    const emailCliente = String(clienteRes.rows[0].email || "")
+      .trim()
+      .toLowerCase();
+
+    if (clienteRes.rows[0].bloqueado) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ error: "Conta bloqueada." });
+    }
+
+    if (!emailCliente || !emailCliente.includes("@")) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "E-mail do cliente inválido." });
+    }
+
+    /* =====================================================
+       IMPEDIR ASSINAR O PRÓPRIO PERFIL
+    ===================================================== */
+    const donaRes = await client.query(
+      `
+      SELECT id
+      FROM modelos
+      WHERE user_id = $1
+        AND id = $2
+      LIMIT 1
+      `,
+      [userId, modeloIdNum]
+    );
+
+    if (donaRes.rowCount) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        error: "Não é possível assinar o próprio perfil."
+      });
+    }
+
+    /* =====================================================
+       VALIDAR MODELO
+    ===================================================== */
+    const modeloRes = await client.query(
+      `
+      SELECT id
+      FROM modelos
+      WHERE id = $1
+      LIMIT 1
+      `,
+      [modeloIdNum]
+    );
+
+    if (!modeloRes.rowCount) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Modelo não encontrada." });
+    }
+
+    /* =====================================================
+       ATUALIZAR CLIENTE
+    ===================================================== */
+    await client.query(
+      `UPDATE clientes SET ultimo_ip = $1 WHERE id = $2`,
+      [ip, cliente_id]
+    );
+
+    /* =====================================================
+       REAPROVEITAR TENTATIVA PENDENTE (VIP)
+    ===================================================== */
+    const tentativaVipRecenteRes = await client.query(
+      `
+      SELECT stripe_payment_intent_id, currency, valor
+      FROM pagamentos_cartao
+      WHERE cliente_id = $1
+        AND modelo_id = $2
+        AND tipo = 'vip'
+        AND gateway = 'stripe'
+        AND stripe_payment_intent_id IS NOT NULL
+        AND LOWER(COALESCE(status, '')) IN
+          ('pending', 'pendente', 'requires_action', 'requires_confirmation', 'iniciado')
+      ORDER BY created_at DESC
+      LIMIT 1
+      `,
+      [cliente_id, modeloIdNum]
+    );
+
+    if (tentativaVipRecenteRes.rowCount > 0) {
+      const existente = tentativaVipRecenteRes.rows[0];
+      try {
+        const piExistente = await stripe.paymentIntents.retrieve(existente.stripe_payment_intent_id);
+        const piStatus = String(piExistente.status || "").toLowerCase();
+        if (["requires_payment_method", "requires_action", "requires_confirmation"].includes(piStatus)) {
+          await client.query("ROLLBACK");
+          return res.json({
+            ok: true,
+            reaproveitado: true,
+            apenas_intent: true,
+            payment_intent_id: piExistente.id,
+            client_secret: piExistente.client_secret,
+            status: piStatus === "requires_payment_method" ? "iniciado" : piStatus,
+            raw_status: piStatus,
+            modelo_id: modeloIdNum,
+            currency: existente.currency || "brl",
+            valor_total: Number(existente.valor || 0)
+          });
+        }
+      } catch (reuseErr) {
+        console.warn("Não foi possível reaproveitar intent VIP:", reuseErr.message);
+      }
+    }
+
+    /* =====================================================
+       BUSCAR PLANO
+    ===================================================== */
+    const planoRes = await client.query(
+      `
+      SELECT valor_mensal
+      FROM modelos_planos
+      WHERE modelo_id = $1
+      LIMIT 1
+      `,
+      [modeloIdNum]
+    );
+
+    if (!planoRes.rowCount) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Plano VIP não definido" });
+    }
+
+    let valorBasePlano = Number(planoRes.rows[0].valor_mensal) || 0;
+
+    /* =====================================================
+       OFERTA
+    ===================================================== */
+    const ofertaRes = await client.query(
+      `
+      SELECT id, desconto_percentual, valor_promocional
+      FROM ofertas
+      WHERE modelo_id = $1
+        AND ativa = true
+        AND (data_inicio IS NULL OR data_inicio <= NOW())
+        AND (data_fim IS NULL OR data_fim >= NOW())
+      ORDER BY created_at DESC
+      LIMIT 1
+      `,
+      [modeloIdNum]
+    );
+
+    let valorAssinatura = valorBasePlano;
+    let oferta_id = null;
+
+    if (ofertaRes.rowCount) {
+      oferta_id = ofertaRes.rows[0].id;
+
+      if (ofertaRes.rows[0].valor_promocional) {
+        valorAssinatura = Number(ofertaRes.rows[0].valor_promocional);
+      } else if (ofertaRes.rows[0].desconto_percentual) {
+        const desconto = Number(ofertaRes.rows[0].desconto_percentual);
+        valorAssinatura = valorBasePlano - (valorBasePlano * desconto / 100);
+      }
+    }
+
+    valorAssinatura = Number(valorAssinatura.toFixed(2));
+
+    if (!valorAssinatura || valorAssinatura <= 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Valor inválido" });
+    }
+
+    /* =====================================================
+       CÁLCULO (converte BRL → moeda do cartão quando necessário)
+    ===================================================== */
+    const { amountCents: baseAmountCents, valorConvertido, taxaCambio } =
+      await calcStripeAmount(valorAssinatura, currency);
+
+    const taxaTransacaoCentavos = Math.round(baseAmountCents * 0.10);
+    const taxaPlataformaCentavos = Math.round(baseAmountCents * 0.05);
+
+    const amount = baseAmountCents + taxaTransacaoCentavos + taxaPlataformaCentavos;
+
+    const taxaTransacao  = Number((taxaTransacaoCentavos / 100).toFixed(2));
+    const taxaPlataforma = Number((taxaPlataformaCentavos / 100).toFixed(2));
+    const valorTotal     = Number((amount / 100).toFixed(2));
+
+    /* =====================================================
+       CRIAR PAYMENT INTENT
+    ===================================================== */
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount,
+      currency,
+      payment_method_types: ["card"],
+      confirmation_method: "automatic",
+      confirm: false,
+      receipt_email: emailCliente,
+      description: `Assinatura VIP modelo ${modeloIdNum}`,
+      metadata: {
+        tipo: "vip",
+        currency,
+        cliente_id: String(cliente_id),
+        modelo_id: String(modeloIdNum),
+        oferta_id: oferta_id ? String(oferta_id) : "",
+        valor_base_brl: String(valorAssinatura),
+        valor_assinatura: String(valorConvertido),
+        taxa_transacao: String(taxaTransacao),
+        taxa_plataforma: String(taxaPlataforma),
+        valor_total: String(valorTotal),
+        taxa_gateway: "0.15",
+        taxa_cambio: taxaCambio ? String(taxaCambio) : "",
+        aceite_ip: ip || "",
+        fingerprint: fingerprint || "",
+        aceitou_termos: aceitou_termos ? "true" : "false",
+        aceitou_execucao_imediata: aceitou_execucao_imediata ? "true" : "false",
+        aceite_timestamp: String(aceite_timestamp || ""),
+        versao_termos: String(versao_termos || "2026-04-06")
+      }
+    });
+
+    const stripeStatusRaw = String(
+      paymentIntent.status || "requires_payment_method"
+    ).toLowerCase();
+
+    const statusLocal =
+      stripeStatusRaw === "requires_payment_method"
+        ? "iniciado"
+        : stripeStatusRaw;
+
+    /* =====================================================
+       REGISTRAR PAGAMENTO LOCAL
+    ===================================================== */
+    await client.query(
+      `
+      INSERT INTO pagamentos_cartao
+      (
+        cliente_id,
+        modelo_id,
+        gateway,
+        gateway_payment_id,
+        stripe_payment_intent_id,
+        valor,
+        tipo,
+        currency,
+        status,
+        aceite_ip,
+        aceitou_termos,
+        aceitou_execucao_imediata,
+        aceite_timestamp,
+        versao_termos,
+        fingerprint,
+        created_at,
+        updated_at
+      )
+      VALUES (
+        $1, $2, 'stripe', $3, $4, $5, $6, $7, $8,
+        $9, $10, $11, $12, $13, $14,
+        NOW(), NOW()
+      )
+      `,
+      [
+        cliente_id,
+        modeloIdNum,
+        paymentIntent.id,
+        paymentIntent.id,
+        valorTotal,
+        "vip",
+        currency,
+        statusLocal,
+        ip,
+        !!aceitou_termos,
+        !!aceitou_execucao_imediata,
+        aceite_timestamp,
+        versao_termos || "2026-04-06",
+        fingerprint || null
+      ]
+    );
+
+    await client.query(
+      `
+      INSERT INTO pagamento_tentativas
+      (
+        cliente_id,
+        metodo,
+        fingerprint_pagamento,
+        status,
+        payment_intent_id,
+        ip,
+        aceitou_termos,
+        aceitou_execucao_imediata,
+        aceite_timestamp,
+        versao_termos
+      )
+      VALUES ($1, 'cartao', $2, $3, $4, $5, $6, $7, $8, $9)
+      `,
+      [
+        cliente_id,
+        fingerprint || null,
+        stripeStatusRaw,
+        paymentIntent.id,
+        ip,
+        !!aceitou_termos,
+        !!aceitou_execucao_imediata,
+        aceite_timestamp,
+        versao_termos || "2026-04-06"
+      ]
+    );
+
+    await client.query("COMMIT");
+
+    return res.json({
+      ok: true,
+      apenas_intent: true,
+      payment_intent_id: paymentIntent.id,
+      client_secret: paymentIntent.client_secret || null,
+      status: statusLocal,
+      raw_status: stripeStatusRaw,
+      modelo_id: modeloIdNum,
+      currency,
+      taxa_cambio: taxaCambio || null,
+      valor_assinatura: valorConvertido,
+      taxa_transacao: taxaTransacao,
+      taxa_plataforma: taxaPlataforma,
+      valor_total: valorTotal,
+      oferta_id
+    });
+  } catch (err) {
+    try {
+      await client.query("ROLLBACK");
+    } catch (_) {}
+
+    console.error("Erro VIP Stripe:", err.raw || err);
+
+    try {
+      if (cliente_id && req.body?.fingerprint) {
+        await client.query(
+          `
+          INSERT INTO pagamento_tentativas
+          (
+            cliente_id,
+            metodo,
+            fingerprint_pagamento,
+            status,
+            ip
+          )
+          VALUES ($1, 'cartao', $2, 'recusado', $3)
+          `,
+          [
+            cliente_id,
+            req.body.fingerprint,
+            req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+              req.socket.remoteAddress ||
+              null
+          ]
+        );
+      }
+    } catch (logErr) {
+      console.error("Erro ao registrar tentativa recusada:", logErr);
+    }
+
+    return res.status(500).json({
+      error: err.message || "Erro ao criar pagamento com cartão",
+      stripe_code: err.code || null,
+      stripe_type: err.type || null,
+      stripe_raw: err.raw || null
+    });
+  } finally {
+    client.release();
+  }
+});
+
+// ===========================
+// MIDIA CARTAO
+// ===========================
+
+app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
   const requestId =
-    "premium_cartao_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+    "stripe_cartao_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
 
   const startedAt = Date.now();
   let client = null;
@@ -9928,7 +9518,7 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
 
   try {
     console.log("\n==============================");
-    console.log("🔥 INICIO /api/pagamento/premium/cartao [STRIPE]");
+    console.log("🔥 INICIO /api/pagamento/midia/cartao [STRIPE]");
     console.log("requestId:", requestId);
     console.log("timestamp:", new Date().toISOString());
     console.log("BODY bruto:", req.body);
@@ -9937,17 +9527,15 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
     client = await db.connect();
     console.log("✅ db.connect OK");
 
-   const {
-  premium_post_id,
-  fingerprint,
-  cpf,
-  aceitou_termos,
-  aceitou_execucao_imediata,
-  aceite_timestamp,
-  versao_termos,
-  telefone,
-  apenas_intent
-} = req.body || {};
+    const {
+      conteudo_id,
+      fingerprint,
+      apenas_intent,
+      aceitou_termos,
+      aceitou_execucao_imediata,
+      aceite_timestamp,
+      versao_termos
+    } = req.body || {};
 
     const userId = Number(req.user?.id || 0);
 
@@ -9955,53 +9543,33 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
       return res.status(401).json({ error: "Usuário não autenticado" });
     }
 
-    if (!aceitou_termos) {
-      return res.status(400).json({ error: "É necessário aceitar os termos." });
+    if (!conteudo_id || !Number.isInteger(Number(conteudo_id))) {
+      return res.status(400).json({ error: "conteudo_id inválido" });
     }
 
-    if (!aceitou_execucao_imediata) {
-  return res.status(400).json({
-    error: "É necessário declarar ciência sobre a execução imediata do conteúdo digital."
-  });
-}
-
-if (!aceite_timestamp) {
-  return res.status(400).json({
-    error: "Data de aceite obrigatória."
-  });
-}
-
-const dataAceite = new Date(aceite_timestamp);
-if (Number.isNaN(dataAceite.getTime())) {
-  return res.status(400).json({
-    error: "Data de aceite inválida."
-  });
-}
-
-    if (!premium_post_id || !Number.isInteger(Number(premium_post_id))) {
-      return res.status(400).json({ error: "premium_post_id inválido" });
-    }
-
-    const cpfLimpo = String(cpf || "").replace(/\D/g, "");
-    if (!cpfLimpo) {
-      return res.status(400).json({ error: "CPF obrigatório." });
-    }
-
-    if (!validarCPF(cpfLimpo)) {
-      return res.status(400).json({ error: "CPF inválido" });
-    }
-
-    const telefoneLimpo = String(telefone || "").replace(/\D/g, "");
-    if (!telefoneLimpo) {
-      return res.status(400).json({ error: "Telefone obrigatório." });
-    }
-
-    if (telefoneLimpo.length < 10 || telefoneLimpo.length > 11) {
-      return res.status(400).json({ error: "Telefone inválido." });
-    }
+    const conteudoId = Number(conteudo_id);
 
     if (!fingerprint) {
       return res.status(400).json({ error: "Fingerprint obrigatório." });
+    }
+
+    if (!aceitou_termos) {
+      return res.status(400).json({ error: "Você precisa aceitar os termos." });
+    }
+
+    if (!aceitou_execucao_imediata) {
+      return res.status(400).json({
+        error: "Você precisa declarar ciência sobre a execução imediata do conteúdo digital."
+      });
+    }
+
+    if (!aceite_timestamp) {
+      return res.status(400).json({ error: "Data de aceite obrigatória." });
+    }
+
+    const dataAceite = new Date(aceite_timestamp);
+    if (Number.isNaN(dataAceite.getTime())) {
+      return res.status(400).json({ error: "Data de aceite inválida." });
     }
 
     if (!apenas_intent) {
@@ -10010,12 +9578,12 @@ if (Number.isNaN(dataAceite.getTime())) {
       });
     }
 
-    const premiumPostId = Number(premium_post_id);
-
     const ip =
       req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
       req.socket?.remoteAddress ||
       null;
+
+    const currency = req.body.currency === "usd" ? "usd" : "brl";
 
     await client.query("BEGIN");
     console.log("✅ BEGIN OK");
@@ -10045,11 +9613,471 @@ if (Number.isNaN(dataAceite.getTime())) {
 
     cliente_id = Number(clienteRes.rows[0].id);
 
+    const { bloqueado, email, nome } = clienteRes.rows[0];
+
+    if (bloqueado) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ error: "Conta bloqueada." });
+    }
+
+    const nomeCompleto = String(nome || "").trim();
+    if (!nomeCompleto || nomeCompleto.length < 3) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Nome do cliente inválido." });
+    }
+
+    if (!email || !String(email).includes("@")) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "E-mail do cliente inválido." });
+    }
+
+    /* =====================================================
+       CONTEÚDO
+    ===================================================== */
+    const messageRes = await client.query(
+      `
+      SELECT preco, modelo_id
+      FROM messages
+      WHERE id = $1
+        AND cliente_id = $2
+      LIMIT 1
+      `,
+      [conteudoId, cliente_id]
+    );
+
+    if (!messageRes.rowCount) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Conteúdo não encontrado" });
+    }
+
+    const { preco, modelo_id } = messageRes.rows[0];
+
+    if (!preco || Number(preco) <= 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Conteúdo não está à venda." });
+    }
+
+    /* =====================================================
+       JÁ COMPRADO
+    ===================================================== */
+    const jaComprado = await client.query(
+      `
+      SELECT 1
+      FROM conteudo_pacotes
+      WHERE message_id = $1
+        AND cliente_id = $2
+        AND status = 'pago'
+      LIMIT 1
+      `,
+      [conteudoId, cliente_id]
+    );
+
+    if (jaComprado.rowCount > 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Conteúdo já adquirido." });
+    }
+
+    /* =====================================================
+       REAPROVEITAR TENTATIVA PENDENTE (MIDIA)
+    ===================================================== */
+    const pedidoPendente = await client.query(
+      `
+      SELECT stripe_payment_intent_id, currency, valor
+      FROM pagamentos_cartao
+      WHERE cliente_id = $1
+        AND conteudo_id = $2
+        AND gateway = 'stripe'
+        AND stripe_payment_intent_id IS NOT NULL
+        AND status IN (
+          'iniciado',
+          'pending',
+          'pendente',
+          'requires_action',
+          'requires_confirmation'
+        )
+      ORDER BY created_at DESC
+      LIMIT 1
+      `,
+      [cliente_id, conteudoId]
+    );
+
+    if (pedidoPendente.rowCount > 0) {
+      const existente = pedidoPendente.rows[0];
+      try {
+        const piExistente = await stripe.paymentIntents.retrieve(existente.stripe_payment_intent_id);
+        const piStatus = String(piExistente.status || "").toLowerCase();
+        if (["requires_payment_method", "requires_action", "requires_confirmation"].includes(piStatus)) {
+          await client.query("ROLLBACK");
+          return res.json({
+            ok: true,
+            reaproveitado: true,
+            apenas_intent: true,
+            payment_intent_id: piExistente.id,
+            client_secret: piExistente.client_secret,
+            status: piStatus === "requires_payment_method" ? "iniciado" : piStatus,
+            raw_status: piStatus,
+            currency: existente.currency || "brl",
+            total: Number(existente.valor || 0)
+          });
+        }
+      } catch (reuseErr) {
+        console.warn("Não foi possível reaproveitar intent MIDIA:", reuseErr.message);
+      }
+    }
+
+    /* =====================================================
+       CÁLCULO (converte BRL → moeda do cartão quando necessário)
+    ===================================================== */
+    const { amountCents: baseAmountCents, valorConvertido, taxaCambio } =
+      await calcStripeAmount(Number(preco), currency);
+
+    const taxaTransacaoCentavos  = Math.round(baseAmountCents * 0.10);
+    const taxaPlataformaCentavos = Math.round(baseAmountCents * 0.05);
+    const amount = baseAmountCents + taxaTransacaoCentavos + taxaPlataformaCentavos;
+
+    if (!Number.isInteger(amount) || amount <= 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Valor do pagamento inválido." });
+    }
+
+    const valorBase      = valorConvertido;
+    const taxaTransacao  = Number((taxaTransacaoCentavos / 100).toFixed(2));
+    const taxaPlataforma = Number((taxaPlataformaCentavos / 100).toFixed(2));
+    const total          = Number((amount / 100).toFixed(2));
+
+    /* =====================================================
+       PAYMENT INTENT
+    ===================================================== */
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount,
+      currency,
+      payment_method_types: ["card"],
+      confirmation_method: "automatic",
+      confirm: false,
+      receipt_email: String(email).trim().toLowerCase(),
+      description: `Conteúdo premium #${conteudoId}`,
+      metadata: {
+        tipo: "conteudo",
+        currency,
+        message_id: String(conteudoId),
+        cliente_id: String(cliente_id),
+        modelo_id: String(modelo_id),
+        valor_midia_brl: String(Number(preco)),
+        valor_midia: String(valorBase),
+        taxa_transacao: String(taxaTransacao),
+        taxa_plataforma: String(taxaPlataforma),
+        valor_total: String(total),
+        taxa_cambio: taxaCambio ? String(taxaCambio) : "",
+        aceite_ip: ip || "",
+        fingerprint: fingerprint || "",
+        aceitou_termos: aceitou_termos ? "true" : "false",
+        aceitou_execucao_imediata: aceitou_execucao_imediata ? "true" : "false",
+        aceite_timestamp: String(aceite_timestamp || ""),
+        versao_termos: String(versao_termos || "2026-04-06")
+      }
+    });
+
+    const stripeStatusRaw = String(
+      paymentIntent.status || "requires_payment_method"
+    ).toLowerCase().trim();
+
+    const statusLocal =
+      stripeStatusRaw === "requires_payment_method"
+        ? "iniciado"
+        : stripeStatusRaw;
+
+    /* =====================================================
+       REGISTRAR PAGAMENTO LOCAL
+    ===================================================== */
+    await client.query(
+      `
+      INSERT INTO pagamentos_cartao
+      (
+        cliente_id,
+        modelo_id,
+        conteudo_id,
+        gateway,
+        gateway_payment_id,
+        stripe_payment_intent_id,
+        valor,
+        tipo,
+        currency,
+        status,
+        aceite_ip,
+        aceitou_termos,
+        aceitou_execucao_imediata,
+        aceite_timestamp,
+        versao_termos,
+        fingerprint,
+        created_at,
+        updated_at
+      )
+      VALUES (
+        $1, $2, $3, 'stripe', $4, $5, $6, $7, $8, $9,
+        $10, $11, $12, $13, $14, $15,
+        NOW(), NOW()
+      )
+      `,
+      [
+        cliente_id,
+        modelo_id,
+        conteudoId,
+        paymentIntent.id,
+        paymentIntent.id,
+        total,
+        "conteudo",
+        currency,
+        statusLocal,
+        ip,
+        !!aceitou_termos,
+        !!aceitou_execucao_imediata,
+        aceite_timestamp,
+        versao_termos || "2026-04-06",
+        fingerprint || null
+      ]
+    );
+
+    await client.query(
+      `
+      INSERT INTO pagamento_tentativas
+      (
+        cliente_id,
+        metodo,
+        fingerprint_pagamento,
+        status,
+        payment_intent_id,
+        conteudo_id,
+        ip,
+        aceitou_termos,
+        aceitou_execucao_imediata,
+        aceite_timestamp,
+        versao_termos
+      )
+      VALUES ($1, 'cartao', $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `,
+      [
+        cliente_id,
+        fingerprint || null,
+        stripeStatusRaw,
+        paymentIntent.id,
+        conteudoId,
+        ip,
+        !!aceitou_termos,
+        !!aceitou_execucao_imediata,
+        aceite_timestamp,
+        versao_termos || "2026-04-06"
+      ]
+    );
+
+    await client.query("COMMIT");
+
+    return res.json({
+      ok: true,
+      apenas_intent: true,
+      payment_intent_id: paymentIntent.id,
+      client_secret: paymentIntent.client_secret || null,
+      status: statusLocal,
+      raw_status: stripeStatusRaw,
+      requires_action: stripeStatusRaw === "requires_action",
+      currency,
+      taxa_cambio: taxaCambio || null,
+      total,
+      valorBase,
+      taxaTransacao,
+      taxaPlataforma,
+      aceitou_termos: !!aceitou_termos,
+      aceitou_execucao_imediata: !!aceitou_execucao_imediata,
+      aceite_timestamp,
+      versao_termos: versao_termos || "2026-04-06"
+    });
+
+  } catch (err) {
+    console.error("\n==============================");
+    console.error("💥 ERRO EM /api/pagamento/midia/cartao [STRIPE]");
+    console.error("requestId:", requestId);
+    console.error("tempo até erro ms:", Date.now() - startedAt);
+    console.error("err.message:", err.message);
+
+    if (err.raw) {
+      console.error("stripe.raw:", JSON.stringify(err.raw, null, 2));
+    }
+
+    if (err.payment_intent) {
+      console.error(
+        "stripe.payment_intent:",
+        JSON.stringify(err.payment_intent, null, 2)
+      );
+    }
+
+    try {
+      if (client) await client.query("ROLLBACK");
+    } catch (e) {
+      console.error("❌ Erro no rollback:", e.message);
+    }
+
+    try {
+      if (client && cliente_id && req.body?.fingerprint) {
+        await client.query(
+          `
+          INSERT INTO pagamento_tentativas
+          (
+            cliente_id,
+            metodo,
+            fingerprint_pagamento,
+            status,
+            conteudo_id,
+            ip,
+            aceitou_termos,
+            aceitou_execucao_imediata,
+            aceite_timestamp,
+            versao_termos
+          )
+          VALUES ($1, 'cartao', $2, 'recusado', $3, $4, $5, $6, $7, $8)
+          `,
+          [
+            cliente_id,
+            req.body.fingerprint,
+            Number(req.body?.conteudo_id || 0) || null,
+            req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+              req.socket?.remoteAddress ||
+              null,
+            !!req.body?.aceitou_termos,
+            !!req.body?.aceitou_execucao_imediata,
+            req.body?.aceite_timestamp || null,
+            req.body?.versao_termos || "2026-04-06"
+          ]
+        );
+      }
+    } catch (logErr) {
+      console.error("❌ Erro ao registrar tentativa recusada:", logErr.message);
+    }
+
+    return res.status(500).json({
+      error: "Erro interno ao processar pagamento com cartão",
+      detalhe: err.message,
+      stripe_code: err.code || null,
+      stripe_type: err.type || null,
+      requestId
+    });
+  } finally {
+    if (client) {
+      try {
+        client.release();
+      } catch (_) {}
+    }
+  }
+});
+
+// ===========================
+// PREMIUM CARTAO
+// ===========================
+
+app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
+  const requestId =
+    "premium_cartao_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+
+  const startedAt = Date.now();
+  let client = null;
+  let cliente_id = null;
+
+  try {
+    console.log("\n==============================");
+    console.log("🔥 INICIO /api/pagamento/premium/cartao [STRIPE]");
+    console.log("requestId:", requestId);
+    console.log("timestamp:", new Date().toISOString());
+    console.log("BODY bruto:", req.body);
+    console.log("USER bruto:", req.user);
+
+    client = await db.connect();
+    console.log("✅ db.connect OK");
+
     const {
-      bloqueado,
-      email,
-      nome
-    } = clienteRes.rows[0];
+      premium_post_id,
+      fingerprint,
+      aceitou_termos,
+      aceitou_execucao_imediata,
+      aceite_timestamp,
+      versao_termos,
+      apenas_intent
+    } = req.body || {};
+
+    const userId = Number(req.user?.id || 0);
+
+    if (!Number.isInteger(userId) || userId <= 0) {
+      return res.status(401).json({ error: "Usuário não autenticado" });
+    }
+
+    if (!aceitou_termos) {
+      return res.status(400).json({ error: "É necessário aceitar os termos." });
+    }
+
+    if (!aceitou_execucao_imediata) {
+      return res.status(400).json({
+        error: "É necessário declarar ciência sobre a execução imediata do conteúdo digital."
+      });
+    }
+
+    if (!aceite_timestamp) {
+      return res.status(400).json({ error: "Data de aceite obrigatória." });
+    }
+
+    const dataAceite = new Date(aceite_timestamp);
+    if (Number.isNaN(dataAceite.getTime())) {
+      return res.status(400).json({ error: "Data de aceite inválida." });
+    }
+
+    if (!premium_post_id || !Number.isInteger(Number(premium_post_id))) {
+      return res.status(400).json({ error: "premium_post_id inválido" });
+    }
+
+    if (!fingerprint) {
+      return res.status(400).json({ error: "Fingerprint obrigatório." });
+    }
+
+    if (!apenas_intent) {
+      return res.status(400).json({
+        error: "Fluxo inválido. Esta rota deve ser chamada apenas para criar o PaymentIntent."
+      });
+    }
+
+    const premiumPostId = Number(premium_post_id);
+
+    const ip =
+      req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+      req.socket?.remoteAddress ||
+      null;
+
+    const currency = req.body.currency === "usd" ? "usd" : "brl";
+
+    await client.query("BEGIN");
+    console.log("✅ BEGIN OK");
+
+    /* =====================================================
+       CLIENTE
+    ===================================================== */
+    const clienteRes = await client.query(
+      `
+      SELECT
+        c.id,
+        c.bloqueado,
+        COALESCE(NULLIF(TRIM(c.nome), ''), split_part(u.email, '@', 1)) AS nome,
+        u.email
+      FROM clientes c
+      JOIN users u ON u.id = c.user_id
+      WHERE c.user_id = $1
+      LIMIT 1
+      `,
+      [userId]
+    );
+
+    if (!clienteRes.rowCount) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Cliente não encontrado" });
+    }
+
+    cliente_id = Number(clienteRes.rows[0].id);
+
+    const { bloqueado, email, nome } = clienteRes.rows[0];
 
     if (bloqueado) {
       await client.query("ROLLBACK");
@@ -10090,13 +10118,7 @@ if (Number.isNaN(dataAceite.getTime())) {
       return res.status(404).json({ error: "Conteúdo premium não encontrado" });
     }
 
-    const {
-      id: premium_id,
-      preco,
-      modelo_id,
-      descricao,
-      ativo
-    } = premiumRes.rows[0];
+    const { id: premium_id, preco, modelo_id, descricao, ativo } = premiumRes.rows[0];
 
     const donaRes = await client.query(
       `
@@ -10167,55 +10189,73 @@ if (Number.isNaN(dataAceite.getTime())) {
     }
 
     /* =====================================================
-       TENTATIVA PENDENTE RECENTE
+       REAPROVEITAR TENTATIVA PENDENTE (PREMIUM)
     ===================================================== */
     const pedidoPendente = await client.query(
       `
-      SELECT 1
+      SELECT stripe_payment_intent_id, currency, valor_total
       FROM premium_unlocks
       WHERE premium_post_id = $1
         AND cliente_id = $2
+        AND stripe_payment_intent_id IS NOT NULL
         AND status IN (
           'iniciado',
           'pending',
-          'processing',
           'pendente',
           'requires_action',
           'requires_confirmation'
         )
+      ORDER BY created_at DESC
       LIMIT 1
       `,
       [premium_id, cliente_id]
     );
 
     if (pedidoPendente.rowCount > 0) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({
-        error: "Já existe um pagamento em processamento para este premium."
-      });
+      const existente = pedidoPendente.rows[0];
+      try {
+        const piExistente = await stripe.paymentIntents.retrieve(existente.stripe_payment_intent_id);
+        const piStatus = String(piExistente.status || "").toLowerCase();
+        if (["requires_payment_method", "requires_action", "requires_confirmation"].includes(piStatus)) {
+          await client.query("ROLLBACK");
+          return res.json({
+            ok: true,
+            reaproveitado: true,
+            apenas_intent: true,
+            payment_intent_id: piExistente.id,
+            client_secret: piExistente.client_secret,
+            status: piStatus === "requires_payment_method" ? "iniciado" : piStatus,
+            raw_status: piStatus,
+            premium_post_id: premium_id,
+            currency: existente.currency || "brl",
+            valor_total: Number(existente.valor_total || 0)
+          });
+        }
+      } catch (reuseErr) {
+        console.warn("Não foi possível reaproveitar intent PREMIUM:", reuseErr.message);
+      }
     }
 
     /* =====================================================
-       CÁLCULO
+       CÁLCULO (converte BRL → moeda do cartão quando necessário)
     ===================================================== */
-    const valorCentavos = Math.round(Number(preco) * 100);
-    const taxaTransacaoCentavos = Math.round(valorCentavos * 0.10);
-    const taxaPlataformaCentavos = Math.round(valorCentavos * 0.05);
+    const { amountCents: baseAmountCents, valorConvertido, taxaCambio } =
+      await calcStripeAmount(Number(preco), currency);
 
-    const amount =
-      valorCentavos +
-      taxaTransacaoCentavos +
-      taxaPlataformaCentavos;
+    const taxaTransacaoCentavos  = Math.round(baseAmountCents * 0.10);
+    const taxaPlataformaCentavos = Math.round(baseAmountCents * 0.05);
+
+    const amount = baseAmountCents + taxaTransacaoCentavos + taxaPlataformaCentavos;
 
     if (!Number.isInteger(amount) || amount <= 0) {
       await client.query("ROLLBACK");
       return res.status(400).json({ error: "Valor do pagamento inválido." });
     }
 
-    const valorBase = Number((valorCentavos / 100).toFixed(2));
-    const taxaTransacao = Number((taxaTransacaoCentavos / 100).toFixed(2));
+    const valorBase      = valorConvertido;
+    const taxaTransacao  = Number((taxaTransacaoCentavos / 100).toFixed(2));
     const taxaPlataforma = Number((taxaPlataformaCentavos / 100).toFixed(2));
-    const total = Number((amount / 100).toFixed(2));
+    const total          = Number((amount / 100).toFixed(2));
 
     /* =====================================================
        PAYMENT INTENT
@@ -10223,32 +10263,33 @@ if (Number.isNaN(dataAceite.getTime())) {
     console.log("✅ antes stripe.paymentIntents.create");
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
-      currency: "brl",
+      currency,
       payment_method_types: ["card"],
       confirmation_method: "automatic",
       confirm: false,
       receipt_email: String(email).trim().toLowerCase(),
       description: descricao || `Premium Velvet #${premium_id}`,
       metadata: {
-  tipo: "premium",
-  metodo_pagamento: "cartao",
-  premium_post_id: String(premium_id),
-  cliente_id: String(cliente_id),
-  modelo_id: String(modelo_id),
-  valor_base: String(valorBase),
-  taxa_transacao: String(taxaTransacao),
-  taxa_plataforma: String(taxaPlataforma),
-  valor_total: String(total),
-  taxa_gateway: "0.15",
-  aceite_ip: ip || "",
-  fingerprint: fingerprint || "",
-  telefone: telefoneLimpo,
-  cpf: cpfLimpo,
-  aceitou_termos: aceitou_termos ? "true" : "false",
-  aceitou_execucao_imediata: aceitou_execucao_imediata ? "true" : "false",
-  aceite_timestamp: String(aceite_timestamp || ""),
-  versao_termos: String(versao_termos || "2026-04-06")
-}
+        tipo: "premium",
+        metodo_pagamento: "cartao",
+        currency,
+        premium_post_id: String(premium_id),
+        cliente_id: String(cliente_id),
+        modelo_id: String(modelo_id),
+        valor_base_brl: String(Number(preco)),
+        valor_base: String(valorBase),
+        taxa_transacao: String(taxaTransacao),
+        taxa_plataforma: String(taxaPlataforma),
+        valor_total: String(total),
+        taxa_gateway: "0.15",
+        taxa_cambio: taxaCambio ? String(taxaCambio) : "",
+        aceite_ip: ip || "",
+        fingerprint: fingerprint || "",
+        aceitou_termos: aceitou_termos ? "true" : "false",
+        aceitou_execucao_imediata: aceitou_execucao_imediata ? "true" : "false",
+        aceite_timestamp: String(aceite_timestamp || ""),
+        versao_termos: String(versao_termos || "2026-04-06")
+      }
     });
     console.log("✅ paymentIntent criado:", paymentIntent.id);
 
@@ -10265,142 +10306,137 @@ if (Number.isNaN(dataAceite.getTime())) {
        REGISTRAR PAGAMENTO LOCAL
     ===================================================== */
     console.log("✅ antes insert premium_unlocks");
-await client.query(
-  `
-  INSERT INTO premium_unlocks
-  (
-    premium_post_id,
-    cliente_id,
-    modelo_id,
-    status,
-    metodo_pagamento,
-    valor_base,
-    taxa_transacao,
-    taxa_plataforma,
-    valor_total,
-    gateway,
-    stripe_payment_intent_id,
-    pacote_ref,
-    aceite_ip,
-    aceitou_termos,
-    aceitou_execucao_imediata,
-    aceite_timestamp,
-    versao_termos,
-    cpf,
-    telefone,
-    fingerprint,
-    created_at,
-    updated_at
-  )
-  VALUES
-  (
-    $1,$2,$3,$4,'cartao',$5,$6,$7,$8,
-    'stripe',$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,
-    NOW(),NOW()
-  )
-  ON CONFLICT (premium_post_id, cliente_id)
-  DO UPDATE SET
-    modelo_id = EXCLUDED.modelo_id,
-    status = EXCLUDED.status,
-    metodo_pagamento = 'cartao',
-    valor_base = EXCLUDED.valor_base,
-    taxa_transacao = EXCLUDED.taxa_transacao,
-    taxa_plataforma = EXCLUDED.taxa_plataforma,
-    valor_total = EXCLUDED.valor_total,
-    gateway = EXCLUDED.gateway,
-    stripe_payment_intent_id = EXCLUDED.stripe_payment_intent_id,
-    pacote_ref = EXCLUDED.pacote_ref,
-    aceite_ip = EXCLUDED.aceite_ip,
-    aceitou_termos = EXCLUDED.aceitou_termos,
-    aceitou_execucao_imediata = EXCLUDED.aceitou_execucao_imediata,
-    aceite_timestamp = EXCLUDED.aceite_timestamp,
-    versao_termos = EXCLUDED.versao_termos,
-    cpf = EXCLUDED.cpf,
-    telefone = EXCLUDED.telefone,
-    fingerprint = EXCLUDED.fingerprint,
-    updated_at = NOW()
-  `,
-  [
-    premium_id,
-    cliente_id,
-    modelo_id,
-    statusLocal,
-    valorBase,
-    taxaTransacao,
-    taxaPlataforma,
-    total,
-    paymentIntent.id,
-    `premium_${premium_id}_${cliente_id}`,
-    ip || null,
-    !!aceitou_termos,
-    !!aceitou_execucao_imediata,
-    aceite_timestamp,
-    versao_termos || "2026-04-06",
-    cpfLimpo,
-    telefoneLimpo,
-    fingerprint || null
-  ]
-);
+    await client.query(
+      `
+      INSERT INTO premium_unlocks
+      (
+        premium_post_id,
+        cliente_id,
+        modelo_id,
+        status,
+        metodo_pagamento,
+        valor_base,
+        taxa_transacao,
+        taxa_plataforma,
+        valor_total,
+        gateway,
+        stripe_payment_intent_id,
+        pacote_ref,
+        currency,
+        aceite_ip,
+        aceitou_termos,
+        aceitou_execucao_imediata,
+        aceite_timestamp,
+        versao_termos,
+        fingerprint,
+        created_at,
+        updated_at
+      )
+      VALUES
+      (
+        $1, $2, $3, $4, 'cartao', $5, $6, $7, $8,
+        'stripe', $9, $10, $11, $12, $13, $14, $15, $16, $17,
+        NOW(), NOW()
+      )
+      ON CONFLICT (premium_post_id, cliente_id)
+      DO UPDATE SET
+        modelo_id = EXCLUDED.modelo_id,
+        status = EXCLUDED.status,
+        metodo_pagamento = 'cartao',
+        valor_base = EXCLUDED.valor_base,
+        taxa_transacao = EXCLUDED.taxa_transacao,
+        taxa_plataforma = EXCLUDED.taxa_plataforma,
+        valor_total = EXCLUDED.valor_total,
+        gateway = EXCLUDED.gateway,
+        stripe_payment_intent_id = EXCLUDED.stripe_payment_intent_id,
+        pacote_ref = EXCLUDED.pacote_ref,
+        aceite_ip = EXCLUDED.aceite_ip,
+        aceitou_termos = EXCLUDED.aceitou_termos,
+        aceitou_execucao_imediata = EXCLUDED.aceitou_execucao_imediata,
+        aceite_timestamp = EXCLUDED.aceite_timestamp,
+        versao_termos = EXCLUDED.versao_termos,
+        fingerprint = EXCLUDED.fingerprint,
+        updated_at = NOW()
+      `,
+      [
+        premium_id,                              
+        cliente_id,                              
+        modelo_id,                               
+        statusLocal,                            
+        valorBase,                               
+        taxaTransacao,                           
+        taxaPlataforma,                          
+        total,                                   
+        paymentIntent.id,                        
+        `premium_${premium_id}_${cliente_id}`,  
+        currency,                                
+        ip || null,                              
+        !!aceitou_termos,                        
+        !!aceitou_execucao_imediata,             
+        aceite_timestamp,                        
+        versao_termos || "2026-04-06",           
+        fingerprint || null                      
+      ]
+    );
     console.log("✅ premium_unlocks OK");
 
     console.log("✅ antes insert pagamento_tentativas");
-    
-await client.query(
-  `
-  INSERT INTO pagamento_tentativas
-  (
-    cliente_id,
-    metodo,
-    fingerprint_pagamento,
-    status,
-    payment_intent_id,
-    cpf,
-    ip,
-    gateway,
-    aceitou_termos,
-    aceitou_execucao_imediata,
-    aceite_timestamp,
-    versao_termos
-  )
-  VALUES ($1, 'cartao', $2, $3, $4, $5, $6, 'stripe', $7, $8, $9, $10)
-  `,
-  [
-    cliente_id,
-    fingerprint || null,
-    stripeStatusRaw,
-    paymentIntent.id,
-    cpfLimpo,
-    ip,
-    !!aceitou_termos,
-    !!aceitou_execucao_imediata,
-    aceite_timestamp,
-    versao_termos || "2026-04-06"
-  ]
-);
+    await client.query(
+      `
+      INSERT INTO pagamento_tentativas
+      (
+        cliente_id,
+        metodo,
+        fingerprint_pagamento,
+        status,
+        payment_intent_id,
+        ip,
+        gateway,
+        aceitou_termos,
+        aceitou_execucao_imediata,
+        aceite_timestamp,
+        versao_termos
+      )
+      VALUES ($1, 'cartao', $2, $3, $4, $5, 'stripe', $6, $7, $8, $9)
+      `,
+      [
+        cliente_id,
+        fingerprint || null,
+        stripeStatusRaw,
+        paymentIntent.id,
+        ip,
+        !!aceitou_termos,
+        !!aceitou_execucao_imediata,
+        aceite_timestamp,
+        versao_termos || "2026-04-06"
+      ]
+    );
     console.log("✅ pagamento_tentativas OK");
 
     await client.query("COMMIT");
 
-return res.json({
-  ok: true,
-  apenas_intent: true,
-  payment_intent_id: paymentIntent.id,
-  client_secret: paymentIntent.client_secret || null,
-  premium_post_id: premium_id,
-  modelo_id,
-  cliente_id,
-  status: statusLocal,
-  raw_status: stripeStatusRaw,
-  requires_action: stripeStatusRaw === "requires_action",
-  total,
-  valorBase,
-  taxaTransacao,
-  taxaPlataforma,
-  aceitou_termos: !!aceitou_termos,
-  aceitou_execucao_imediata: !!aceitou_execucao_imediata,
-  aceite_timestamp,
-  versao_termos: versao_termos || "2026-04-06"
-});
+    return res.json({
+      ok: true,
+      apenas_intent: true,
+      payment_intent_id: paymentIntent.id,
+      client_secret: paymentIntent.client_secret || null,
+      premium_post_id: premium_id,
+      modelo_id,
+      cliente_id,
+      status: statusLocal,
+      raw_status: stripeStatusRaw,
+      requires_action: stripeStatusRaw === "requires_action",
+      currency,
+      taxa_cambio: taxaCambio || null,
+      total,
+      valorBase,
+      taxaTransacao,
+      taxaPlataforma,
+      aceitou_termos: !!aceitou_termos,
+      aceitou_execucao_imediata: !!aceitou_execucao_imediata,
+      aceite_timestamp,
+      versao_termos: versao_termos || "2026-04-06"
+    });
 
   } catch (err) {
     console.error("\n==============================");
@@ -10428,37 +10464,35 @@ return res.json({
 
     try {
       if (client && cliente_id && req.body?.fingerprint) {
-await client.query(
-  `
-  INSERT INTO pagamento_tentativas
-  (
-    cliente_id,
-    metodo,
-    fingerprint_pagamento,
-    status,
-    cpf,
-    ip,
-    gateway,
-    aceitou_termos,
-    aceitou_execucao_imediata,
-    aceite_timestamp,
-    versao_termos
-  )
-  VALUES ($1, 'cartao', $2, 'recusado', $3, $4, 'stripe', $5, $6, $7, $8)
-  `,
-  [
-    cliente_id,
-    req.body.fingerprint,
-    req.body?.cpf ? String(req.body.cpf).replace(/\D/g, "") : null,
-    req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
-      req.socket?.remoteAddress ||
-      null,
-    !!req.body?.aceitou_termos,
-    !!req.body?.aceitou_execucao_imediata,
-    req.body?.aceite_timestamp || null,
-    req.body?.versao_termos || "2026-04-06"
-  ]
-); 
+        await client.query(
+          `
+          INSERT INTO pagamento_tentativas
+          (
+            cliente_id,
+            metodo,
+            fingerprint_pagamento,
+            status,
+            ip,
+            gateway,
+            aceitou_termos,
+            aceitou_execucao_imediata,
+            aceite_timestamp,
+            versao_termos
+          )
+          VALUES ($1, 'cartao', $2, 'recusado', $3, 'stripe', $4, $5, $6, $7)
+          `,
+          [
+            cliente_id,
+            req.body.fingerprint,
+            req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+              req.socket?.remoteAddress ||
+              null,
+            !!req.body?.aceitou_termos,
+            !!req.body?.aceitou_execucao_imediata,
+            req.body?.aceite_timestamp || null,
+            req.body?.versao_termos || "2026-04-06"
+          ]
+        );
       }
     } catch (logErr) {
       console.error("❌ Erro ao registrar tentativa recusada:", logErr.message);

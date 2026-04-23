@@ -166,7 +166,10 @@
     "cartao_aviso": "Não feche esta janela nem atualize a página até a confirmação.",
     "cartao_sucesso": "✅ Pagamento confirmado!",
     "cartao_label": "Dados do pagamento",
-    "btn_confirmar_stripe": "Confirmar pagamento"
+    "btn_confirmar_stripe": "Confirmar pagamento",
+    "voce_sera_cobrado": "Você será cobrado:",
+    "moeda_label": "Moeda de pagamento:",
+    "acesso_imediato": "Acesso imediato após pagamento"
   },
 
   "pag": {
@@ -198,7 +201,8 @@
   "pix_copiado": "Código Pix copiado 💜",
   "erro_copiar_pix": "Não foi possível copiar o código Pix.",
   "pix_expirado": "Este Pix expirou. Gere um novo.",
-  "pagamento_nao_aprovado": "Pagamento não aprovado."
+  "pagamento_nao_aprovado": "Pagamento não aprovado.",
+  "acesso_imediato": "Acesso imediato após pagamento"
 },
 
 "verificacao": {
@@ -745,7 +749,8 @@
   "time_minutes": "há {n} min",
   "time_hours": "há {n} h",
   "time_yesterday": "ontem",
-  "time_days": "há {n} dias"
+  "time_days": "há {n} dias",
+  "acesso_imediato": "Acesso imediato após pagamento"
  }
 
 }

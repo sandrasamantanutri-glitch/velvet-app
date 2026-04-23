@@ -5,6 +5,7 @@ let pagamentoAtual = window.pagamentoAtual || {};
 let pagamentoEmProcesso = false;
 window.pagamentoAtual = pagamentoAtual;
 window.__PAGAMENTO_CONFIRMADO_ATUAL__ = null;
+window.CURRENCY_ATUAL = "brl";
 
 const STRIPE_PUBLIC_KEY = "pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz";
 let stripe = null;
@@ -38,11 +39,45 @@ function whenSocketReady(cb, { timeoutMs = 8000, intervalMs = 50 } = {}) {
   }, intervalMs);
 }
 
+function selecionarMoeda(moeda) {
+  window.CURRENCY_ATUAL = moeda === "usd" ? "usd" : "brl";
+
+  document.querySelectorAll(".btn-moeda").forEach(btn => {
+    btn.classList.toggle("ativo", btn.dataset.moeda === window.CURRENCY_ATUAL);
+  });
+
+  // PIX só disponível em BRL
+  const btnPix = document.getElementById("btnEscolherPix") || document.querySelector("[onclick*='pix']");
+  if (btnPix) {
+    btnPix.disabled = window.CURRENCY_ATUAL === "usd";
+    btnPix.style.opacity = window.CURRENCY_ATUAL === "usd" ? "0.4" : "1";
+    btnPix.title = window.CURRENCY_ATUAL === "usd" ? "Pix disponível apenas em Real (R$)" : "";
+  }
+
+  // CPF e telefone só visíveis em BRL
+  const isUsd = window.CURRENCY_ATUAL === "usd";
+  document.getElementById("campoCpf")?.classList.toggle("hidden", isUsd);
+  document.getElementById("campoTelefone")?.classList.toggle("hidden", isUsd);
+}
+
 function abrirPopupPagamento() {
   const popup = document.getElementById("popupPagamentoVelvet");
   if (!popup) return;
 
   popup.classList.remove("hidden");
+
+  // reset moeda para BRL ao abrir
+  window.CURRENCY_ATUAL = "brl";
+  document.querySelectorAll(".btn-moeda").forEach(btn => {
+    btn.classList.toggle("ativo", btn.dataset.moeda === "brl");
+  });
+
+  const btnPix = document.getElementById("btnEscolherPix") || document.querySelector("[onclick*='pix']");
+  if (btnPix) {
+    btnPix.disabled = false;
+    btnPix.style.opacity = "1";
+    btnPix.title = "";
+  }
 
   resetarEstadoPix();
   resetarEstadoCartao();
@@ -111,11 +146,15 @@ function voltarEtapaPagamento() {
   resetarEstadoPix();
   resetarEstadoCartao();
 
+  // Restaura visibilidade de CPF/telefone conforme moeda atual
+  const isUsd = window.CURRENCY_ATUAL === "usd";
+  document.getElementById("campoCpf")?.classList.toggle("hidden", isUsd);
+  document.getElementById("campoTelefone")?.classList.toggle("hidden", isUsd);
+
   document.getElementById("etapaPagamentoPix")?.classList.add("hidden");
   document.getElementById("etapaPagamentoCartao")?.classList.add("hidden");
   document.getElementById("etapaPagamentoInicial")?.classList.remove("hidden");
 }
-
 function iniciarCartaoVip() {
   const oferta = window.OFERTA_ATUAL || null;
   const plano = window.PLANO_VIP_ATUAL || window.MODELO_VIP_ATUAL || null;
@@ -266,18 +305,10 @@ function inicializarStripe() {
 }
 
 function obterPayloadBaseStripe() {
-  const cpf = obterCpfValido();
-  if (!cpf) return null;
-
-  const telefone = obterTelefoneValido();
-  if (!telefone) return null;
-
   const aceites = obterAceitesPagamento();
   if (!aceites) return null;
 
   return {
-    cpf,
-    telefone,
     aceitou_termos: aceites.aceitou_termos,
     aceitou_execucao_imediata: aceites.aceitou_execucao_imediata,
     aceite_timestamp: aceites.aceite_timestamp,
@@ -299,15 +330,14 @@ async function criarIntentStripe({ metodo = "card" } = {}) {
 
   let url = "";
 let payload = {
-  cpf: base.cpf,
-  telefone: base.telefone,
   aceitou_termos: base.aceitou_termos,
   aceitou_execucao_imediata: base.aceitou_execucao_imediata,
   aceite_timestamp: base.aceite_timestamp,
   versao_termos: base.versao_termos,
   fingerprint: base.fingerprint,
   apenas_intent: true,
-  metodo
+  metodo,
+  currency: window.CURRENCY_ATUAL || "brl"
 };
 
   if (tipo === "vip") {
@@ -404,23 +434,13 @@ async function montarStripePaymentElement({ metodo = "card" } = {}) {
     }
   }
 
-  const telefone = String(
-    document.getElementById("phonePagamento")?.value || ""
-  ).replace(/\D/g, "");
-
-  const cpf = String(
-    document.getElementById("cpfPagamento")?.value || ""
-  ).replace(/\D/g, "");
-
   stripeElements = stripeInstance.elements({
     clientSecret: stripeClientSecret
   });
 
   stripePaymentElement = stripeElements.create("payment", {
-    defaultValues: {
-      billingDetails: {
-        phone: telefone || undefined
-      }
+defaultValues: {
+  billingDetails: {}
     },
     fields: {
       billingDetails: {
@@ -430,13 +450,10 @@ async function montarStripePaymentElement({ metodo = "card" } = {}) {
         address: "auto"
       }
     },
-    paymentMethodOrder: metodo === "pix" ? ["pix", "card"] : ["card", "pix"]
+    paymentMethodOrder: ["card"]
   });
 
   stripePaymentElement.mount("#stripe-payment-element");
-
-  const cpfHidden = document.getElementById("stripeCpfHidden");
-  if (cpfHidden) cpfHidden.value = cpf;
 }
 
 async function inicializarFluxoCartaoStripe() {
@@ -462,8 +479,14 @@ async function inicializarFluxoCartaoStripe() {
     }
     atualizarStatusCartao(t("pagamento.btn_confirmar_stripe")); 
 
-    await criarIntentStripe({ metodo: "card" });
-    await montarStripePaymentElement({ metodo: "card" });
+    document.getElementById("cartaoResumoValor")?.classList.add("hidden");
+
+    const data = await criarIntentStripe({ metodo: "card" });
+     if (data) {
+      atualizarResumoCartaoComDadosServidor(data);
+    }
+
+      await montarStripePaymentElement({ metodo: "card" });
   } catch (err) {
     console.error("Erro ao inicializar fluxo Stripe cartão:", err);
     alert(err.message || t("pag.erro_preparar_cartao"));
@@ -481,9 +504,11 @@ function carregarStripe() {
 }
 
 async function mostrarMetodo(tipo) {
-  if (!validarDadosIniciaisPagamento()) return;
 
+alternarCamposPorMetodo(tipo);
   if (tipo === "pix") {
+    if (!validarDadosIniciaisPagamento()) return;
+
     resetarEstadoCartao();
     resetarEstadoPix();
     irParaEtapaPagamento("pix");
@@ -496,6 +521,33 @@ async function mostrarMetodo(tipo) {
   }
 
   if (tipo === "cartao") {
+    const continuar = await new Promise((resolve) => {
+      const overlay = document.createElement("div");
+      overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999999;display:flex;align-items:center;justify-content:center;padding:16px";
+      overlay.innerHTML = `
+        <div style="background:#fff;border-radius:12px;max-width:420px;width:100%;padding:24px;font-family:inherit;box-shadow:0 8px 32px rgba(0,0,0,0.25)">
+          <h3 style="margin:0 0 12px;font-size:1.1rem;color:#b45309;">⚠️ Aviso sobre pagamentos com cartão</h3>
+          <p style="margin:0 0 20px;font-size:0.95rem;line-height:1.5;color:#374151;">
+            Estamos implantando pagamentos com cartões internacionais e podem ocorrer constrangimentos.
+            Opte por pagar via <strong>Pix</strong>, ou aguarde até o fim das implantações.<br><br>
+            Se preferir continuar e ocorrer algum erro, envie um e-mail para
+            <a href="mailto:contato@velvet.lat" style="color:#6d28d9;">contato@velvet.lat</a>.<br><br>
+            <strong>Obrigado!</strong>
+          </p>
+          <div style="display:flex;gap:10px;justify-content:flex-end">
+            <button id="aviso-cancelar" style="padding:8px 16px;border-radius:8px;border:1px solid #d1d5db;background:#f3f4f6;cursor:pointer;font-size:0.9rem">Cancelar</button>
+            <button id="aviso-continuar" style="padding:8px 16px;border-radius:8px;border:none;background:#6d28d9;color:#fff;cursor:pointer;font-size:0.9rem">Continuar com Cartão</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+      overlay.querySelector("#aviso-continuar").onclick = () => { document.body.removeChild(overlay); resolve(true); };
+      overlay.querySelector("#aviso-cancelar").onclick = () => { document.body.removeChild(overlay); resolve(false); };
+    });
+    if (!continuar) return;
+
+    const aceites = obterAceitesPagamento();
+    if (!aceites) return;
+
     resetarEstadoPix();
     irParaEtapaPagamento("cartao");
 
@@ -526,17 +578,11 @@ async function confirmarPagamentoStripeCartao() {
     mostrarLoadingCartao();
     atualizarStatusCartao(t("pag.confirmando_pagamento"));
 
-    const telefone = String(
-      document.getElementById("phonePagamento")?.value || ""
-    ).replace(/\D/g, "");
-
     const { error, paymentIntent } = await stripeInstance.confirmPayment({
       elements: stripeElements,
       confirmParams: {
         payment_method_data: {
-          billing_details: {
-            phone: telefone || undefined
-          }
+          billing_details: {}
         },
         return_url: window.location.href
       },
@@ -812,7 +858,7 @@ const boxMidia =
 
 if (boxMidia) {
   boxMidia.innerHTML = `
-    ${descricao || "Acesso imediato após pagamento"}
+    ${descricao || "Acesso Imediato"}
   `;
   }
 }
@@ -1568,6 +1614,48 @@ async function lerErroResposta(res) {
   }
 }
 
+function alternarCamposPorMetodo(tipo) {
+  const blocoCPF = document.getElementById("campoCpf");
+  const blocoTelefone = document.getElementById("campoTelefone");
+
+  if (tipo === "pix") {
+    blocoCPF?.classList.remove("hidden");
+    blocoTelefone?.classList.remove("hidden");
+  } else {
+    blocoCPF?.classList.add("hidden");
+    blocoTelefone?.classList.add("hidden");
+  }
+}
+
+// formata valor na moeda correta (BRL ou USD)
+function formatarMoeda(valor, currency = "brl") {
+  const locale = currency === "usd" ? "en-US" : "pt-BR";
+  const currencyCode = currency === "usd" ? "USD" : "BRL";
+
+  return Number(valor || 0).toLocaleString(locale, {
+    style: "currency",
+    currency: currencyCode
+  });
+}
+
+function atualizarResumoCartaoComDadosServidor(data) {
+  const currency   = data.currency || "brl";
+  const valorBase  = Number(data.valor_assinatura || data.valorBase || 0);
+  const total      = Number(data.valor_total || data.total || 0);
+
+  const resumoBox   = document.getElementById("cartaoResumoValor");
+  const resumoTotal = document.getElementById("cartaoResumoTotal");
+
+  if (resumoTotal) {
+    resumoTotal.textContent = formatarMoeda(total, currency);
+  }
+
+  if (resumoBox) {
+    resumoBox.classList.remove("hidden");
+  }
+}
+
+
 document.addEventListener("DOMContentLoaded", () => {
   bindFormularioStripePagamento();
 
@@ -1575,7 +1663,6 @@ document.addEventListener("DOMContentLoaded", () => {
     confirmarPix();
   });
 });
-
 
 
 

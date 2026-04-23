@@ -798,6 +798,36 @@ max-height: 80%;
   margin-bottom: 16px;
 }
 
+/* ── Seleção de moeda ── */
+.selecao-moeda {
+  margin-bottom: 12px;
+}
+
+.btn-moeda {
+  flex: 1;
+  padding: 8px 12px;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  background: #f9f9f9;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+  color: #555;
+}
+
+.btn-moeda.ativo {
+  border-color: #7b2cff;
+  background: #f0e8ff;
+  color: #7b2cff;
+  font-weight: 600;
+}
+
+.btn-moeda:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 
 
 

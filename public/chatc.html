@@ -86,12 +86,12 @@
         <div class="midia-beneficios"></div>
       </div>
 
-      <div class="campo-cpf">
+      <div class="campo-cpf" id="campoCpf">
         <label for="cpfPagamento" data-i18n="chatc.label_cpf">CPF</label>
         <input id="cpfPagamento" type="text" maxlength="14">
       </div>
 
-      <div class="campo-cpf">
+      <div class="campo-cpf" id="campoTelefone">
         <label for="phonePagamento" data-i18n="chatc.label_phone">Telefone</label>
         <input id="phonePagamento" type="text" maxlength="16">
       </div>
@@ -115,7 +115,19 @@
         </label>
       </div>
 
-<button type="button" class="btn-principal" onclick="mostrarMetodoPixChat()" data-i18n="chatc.btn_pay_pix">
+<div class="selecao-moeda">
+  <span style="font-size:0.85rem;color:#666;display:block;margin-bottom:6px;" data-i18n="pagamento.moeda_label">Moeda do pagamento:</span>
+  <div style="display:flex;gap:8px;margin-bottom:12px;">
+    <button type="button" class="btn-moeda ativo" data-moeda="brl" onclick="selecionarMoeda('brl')">
+      🇧🇷 Real (R$)
+    </button>
+    <button type="button" class="btn-moeda" data-moeda="usd" onclick="selecionarMoeda('usd')">
+      🇺🇸 Dólar ($)
+    </button>
+  </div>
+</div>
+
+<button type="button" id="btnEscolherPix" class="btn-principal" onclick="mostrarMetodoPixChat()" data-i18n="chatc.btn_pay_pix">
   Pagar com Pix
 </button>
 
@@ -161,6 +173,12 @@
 
     <!-- ETAPA CARTÃO -->
     <div id="etapaPagamentoCartao" class="hidden">
+
+      <div id="cartaoResumoValor" class="hidden" style="text-align:center;margin-bottom:12px;font-size:0.95rem;">
+        <span data-i18n="pagamento.voce_sera_cobrado">Você será cobrado:</span>
+        <strong id="cartaoResumoTotal" style="font-size:1.1rem;margin-left:6px;"></strong>
+      </div>
+
       <div id="cartaoLoading" class="cartao-loading hidden">
         <strong data-i18n="chatc.card_processing">⏳ Processando pagamento…</strong>
         <p data-i18n="chatc.pix_dont_close">Não feche esta janela nem atualize a página até a confirmação.</p>

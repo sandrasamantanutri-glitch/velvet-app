@@ -263,6 +263,20 @@ function logout() {
   window.location.href = '/admin/login.html';
 }
 
+async function carregarAdmin() {
+  const res = await fetch("/admin/dashboard/name-admin", {
+    headers: {
+      Authorization: "Bearer " + localStorage.getItem("token_admin")
+    }
+  });
+
+  const data = await res.json();
+
+  document.querySelector(".admin-badge").textContent = data.nome;
+}
+
+carregarAdmin();
+
 // ========== 1. OVERVIEW ==========
 
 let chartFat, chartAcessosOverview;

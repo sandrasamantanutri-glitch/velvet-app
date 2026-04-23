@@ -129,10 +129,10 @@
     "vantagem_chat": "- Chat with the creator",
     "vantagem_feed": "- Access FEED media",
     "vantagem_beneficios": "- Special benefits and promotions",
-    "linha_assinatura": "Subscription value:",
-    "linha_desconto": "Discount:",
-    "linha_taxa": "Transaction fee:",
-    "linha_total": "Total:",
+    "linha_assinatura": "Subscription value: R$",
+    "linha_desconto": "Discount: R$",
+    "linha_taxa": "Transaction fee: R$",
+    "linha_total": "Total: R$",
     "info_renovacao": "- The subscription is subject to automatic renewal and is valid for 30 days, you can cancel anytime.",
     "info_reembolso": "- Payments are non-refundable, except in cases of platform errors, which we review through the",
     "info_reembolso_link": "contact form.",
@@ -143,10 +143,10 @@
     "midia_item2": "- Permanent release of this media in your account",
     "midia_linha_valor": "Media value",
     "midia_linha_taxa": "Transaction fee",
-    "cpf_label": "CPF",
+    "cpf_label": "Tax ID",
     "cpf_placeholder": "000.000.000-00",
     "telefone_label": "Phone",
-    "telefone_placeholder": "(11) 99999-9999",
+    "telefone_placeholder": "999 999 999",
     "termos_aviso": "By making the payment, you confirm that you agree with the",
     "termos_link1": "Terms of use",
     "termos_e": "and the",
@@ -166,7 +166,11 @@
     "cartao_aviso": "Do not close this window or refresh the page until confirmation.",
     "cartao_sucesso": "✅ Payment confirmed!",
     "cartao_label": "Payment details",
-    "btn_confirmar_stripe": "Confirm payment"
+    "btn_confirmar_stripe": "Confirm payment",
+    "voce_sera_cobrado": "You will be charged:",
+    "moeda_label": "Payment currency:",
+    "acesso_imediato": "Immediate access after payment"
+    
   },
   "pag": {
   "aceite_termos_obrigatorio": "You must accept the Terms and Platform Policies to continue.",
@@ -197,7 +201,8 @@
   "pix_copiado": "Pix code copied 💜",
   "erro_copiar_pix": "Could not copy the Pix code.",
   "pix_expirado": "This Pix has expired. Generate a new one.",
-  "pagamento_nao_aprovado": "Payment not approved."
+  "pagamento_nao_aprovado": "Payment not approved.",
+  "acesso_imediato": "Immediate access after payment"
 },
 "verificacao": {
   "status_label": "Verification status:",
@@ -463,7 +468,7 @@
     "sucesso_criar": "🎉 Offer created successfully!",
     "erro_criar": "Error creating offer",
     "erro_salvar_plano": "Error saving plan",
-    "erro_valor_minimo": "Minimum monthly value is $20",
+    "erro_valor_minimo": "Minimum monthly value is R$20",
     "login_necessario": "To access this page, you must log in or sign up."
   },
   "links": {
@@ -710,7 +715,7 @@
   "label_content": "Content: R$",
   "label_fee": "Transaction Fee: R$",
   "label_total": "Total: R$",
-  "label_cpf": "CPF",
+  "label_cpf": "Tax ID",
   "label_phone": "Phone",
   "terms_intro": "By making the payment, you confirm that you agree with the",
   "terms_link1": "Terms of Use",
@@ -719,7 +724,7 @@
   "terms_accept": "I have read and accept the Terms of Use and Privacy Policy of the platform.",
   "terms_immediate": "I acknowledge that access to the media or digital service is immediate after payment and that I may lose my right of withdrawal.",
   "btn_pay_pix": "Pay with Pix",
-  "btn_pay_card": "Pay with Card",
+  "btn_pay_card": "Pay with Card 🌍",
   "pix_loading": "⏳ Please wait…",
   "pix_waiting": "⌛ Waiting for payment confirmation...",
   "pix_dont_close": "Do not close this window or refresh the page until confirmation.",
@@ -740,7 +745,8 @@
   "time_minutes": "{n} min ago",
   "time_hours": "{n} h ago",
   "time_yesterday": "yesterday",
-  "time_days": "{n} days ago"
+  "time_days": "{n} days ago",
+  "acesso_imediato": "Immediate access after payment"
 }
 
 }

@@ -12,6 +12,7 @@ const AWS = require('aws-sdk');
 const multer = require('multer');
 const multerS3 = require('multer-s3');
 const upload = multer({ storage: multer.memoryStorage() });
+const jwt = require("jsonwebtoken");
 
 const s3Privado = new AWS.S3({
   endpoint: process.env.B2_ENDPOINT,
@@ -101,6 +102,19 @@ function assinarArquivoPrivado(key) {
 
 // ========== 1. OVERVIEW ==========
 
+router.get("/name-agency", authAgencia, async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      "SELECT id, nome FROM agencias WHERE id = $1",
+      [req.user.id]
+    );
+
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
 router.get("/overview", authAgencia, async (req, res) => {
   try {
     const agenciaId = req.agencia.id;
@@ -171,7 +185,7 @@ router.get("/overview", authAgencia, async (req, res) => {
       db.query(`
         SELECT
           CASE
-            WHEN LOWER(origem_trafego) LIKE '%instagram%' 
+            WHEN LOWER(origem_trafego) LIKE '%instagram%'
               OR LOWER(origem_trafego) LIKE '%insta%'
               OR LOWER(origem_trafego) LIKE '%src=instagram%' THEN 'Instagram'
             WHEN LOWER(origem_trafego) LIKE '%tiktok%'
@@ -180,22 +194,30 @@ router.get("/overview", authAgencia, async (req, res) => {
             ELSE 'Outros'
           END AS origem,
           COUNT(*) AS total
-        FROM vw_clientes_agencia
+        FROM vw_acessos_agencia
         WHERE agencia_id = $1
           AND created_at >= date_trunc('month', NOW())
           AND created_at < date_trunc('month', NOW()) + INTERVAL '1 month'
           AND origem_trafego IS NOT NULL
-          AND origem_trafego != ''
-        GROUP BY origem
+        GROUP BY
+          CASE
+            WHEN LOWER(origem_trafego) LIKE '%instagram%'
+              OR LOWER(origem_trafego) LIKE '%insta%'
+              OR LOWER(origem_trafego) LIKE '%src=instagram%' THEN 'Instagram'
+            WHEN LOWER(origem_trafego) LIKE '%tiktok%'
+              OR LOWER(origem_trafego) LIKE '%src=tiktok%' THEN 'TikTok'
+            WHEN LOWER(origem_trafego) IN ('direto','direct','none','unknown','(direct)','(none)') THEN 'Direto'
+            ELSE 'Outros'
+          END
         ORDER BY total DESC
       `, [agenciaId]),
 
-      // TOP MODELOS (via view)
       db.query(`
         SELECT
           t.modelo_id,
           COALESCE(m.nome_exibicao, m.nome) AS nome,
           ROUND(COALESCE(SUM(t.valor_modelo), 0)::numeric, 2) AS ganhos,
+          ROUND(COALESCE(SUM(t.agency_fee), 0)::numeric, 2) AS ganhos_agencia,
           MAX(t.created_at) AS atualizado_em,
           (
             SELECT COUNT(*)
@@ -234,6 +256,7 @@ router.get("/overview", authAgencia, async (req, res) => {
         modelo_id: r.modelo_id,
         nome: r.nome,
         ganhos: Number(r.ganhos || 0),
+        ganhos_agencia: Number(r.ganhos_agencia || 0),
         assinantes: Number(r.assinantes || 0)
       }))
     });
@@ -390,19 +413,22 @@ router.get("/acessos-origem", authAgencia, async (req, res) => {
 
 router.get("/agency", authAgencia, async (req, res) => {
   try {
-    const agenciaId = req.agencia.id;
+    const agenciaId = req.agencia?.id;
+    if (!agenciaId) return res.status(400).json({ erro: "Agência ID não fornecido" });
 
     const { rows } = await db.query(`
-      SELECT id, email, nome, created_at
-      FROM agency
+      SELECT id, email, nome, percentual_agencia, percentual_modelo, percentual_plataforma, created_at
+      FROM agencias
       WHERE id = $1
       LIMIT 1
     `, [agenciaId]);
 
-    res.json(rows);
+    if (!rows.length) return res.status(404).json({ erro: "Agência não encontrada" });
+
+    res.json([rows[0]]);
   } catch (err) {
-    console.error("Erro agency:", err);
-    res.status(500).json({ erro: "Erro interno" });
+    console.error("Erro GET agency:", err);
+    res.status(500).json({ erro: "Erro interno", message: err.message });
   }
 });
 
@@ -418,24 +444,91 @@ router.put("/agency/reset-password", authAgencia, async (req, res) => {
     const hash = await bcrypt.hash(senha, 10);
 
     await db.query(`
-      UPDATE agency
-      SET senha = $1
-      WHERE id = $2
+      UPDATE agencias SET senha = $1 WHERE id = $2
     `, [hash, agenciaId]);
 
-    res.json({ ok: true });
+    await db.query(`
+      INSERT INTO admin_seguranca_historico (user_id, tipo_user, acao, motivo, data)
+      VALUES ($1, 'agencia', 'reset_senha_agencia', $2, NOW())
+    `, [agenciaId, `Agência #${agenciaId} redefiniu a própria senha`]);
 
+    res.json({ ok: true });
   } catch (err) {
     console.error("Erro reset senha:", err);
     res.status(500).json({ erro: "Erro interno" });
   }
 });
 
-// ========== 8. FECHAMENTO ==========FALTA
+router.put("/agency/percentuais", authAgencia, async (req, res) => {
+  try {
+    const agenciaId = req.agencia.id;
+    const { percentual_agencia, percentual_modelo } = req.body;
+
+    // valores vindos do frontend (em %)
+    const ag = Number(percentual_agencia);
+    const mod = Number(percentual_modelo);
+
+    // plataforma fixa (20%)
+    const pPlat = 0.2;
+
+    // validação básica
+    if (isNaN(ag) || ag < 0 || ag > 80) {
+      return res.status(400).json({ erro: "Percentual da agência inválido (0–80%)" });
+    }
+
+    if (isNaN(mod) || mod < 0 || mod > 80) {
+      return res.status(400).json({ erro: "Percentual do modelo inválido (0–80%)" });
+    }
+
+    // validação em % (mais intuitivo)
+    if (ag + mod > 80) {
+      return res.status(400).json({
+        erro: `A soma não pode ultrapassar 100%. Velvet: 20% + Agência: ${ag}% + Modelo: ${mod}% = ${20 + ag + mod}%`
+      });
+    }
+
+    // conversão para decimal (para salvar no banco)
+    const pAg = ag / 100;
+    const pMod = mod / 100;
+
+    const antes = await db.query(
+      `SELECT percentual_agencia, percentual_modelo FROM agencias WHERE id = $1`,
+      [agenciaId]
+    );
+
+    await db.query(`
+      UPDATE agencias
+      SET percentual_agencia = $1, percentual_modelo = $2
+      WHERE id = $3
+    `, [pAg, pMod, agenciaId]);
+
+    const ant = antes.rows[0];
+
+    await db.query(`
+      INSERT INTO admin_seguranca_historico (user_id, tipo_user, acao, motivo, data)
+      VALUES ($1, 'agencia', 'alteracao_percentual', $2, NOW())
+    `, [
+      agenciaId,
+      `Agência #${agenciaId} alterou percentuais. Antes: agência=${(ant.percentual_agencia * 100).toFixed(2)}% modelo=${(ant.percentual_modelo * 100).toFixed(2)}%. Depois: agência=${ag}% modelo=${mod}%`
+    ]);
+
+    res.json({
+      ok: true,
+      percentual_agencia: pAg,
+      percentual_modelo: pMod
+    });
+
+  } catch (err) {
+    console.error("Erro percentuais:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// ========== 8. FECHAMENTO ==========
 
 router.get("/fechamentos-agency", authAgencia, async (req, res) => {
   try {
-    const agenciaId = req.agencia.id; // vem do middleware authAgencia
+    const agenciaId = req.agencia.id;
 
     const { rows } = await db.query(
       `SELECT * FROM fechamento_mensal_agency 
@@ -451,101 +544,57 @@ router.get("/fechamentos-agency", authAgencia, async (req, res) => {
   }
 });
 
-router.post("/fechamentos-agency", authAgencia, async (req, res) => {
-  try {
-    const agenciaId = req.agencia.id; // vem do middleware authAgencia
-    const now = new Date();
-    const ano = now.getFullYear();
-    const mes = now.getMonth() + 1;
-
-    // Verifica se já existe fechamento para esta agência neste mês
-    const existing = await db.query(
-      `SELECT id FROM fechamento_mensal_agency 
-       WHERE ano = $1 AND mes = $2 AND agencia_id = $3`,
-      [ano, mes, agenciaId]
-    );
-    if (existing.rows.length) {
-      return res.status(400).json({ erro: "Fechamento já existe para este mês" });
-    }
-
-    // Busca os totais da view filtrada pela agência logada
-    const result = await db.query(`
-      SELECT
-        COALESCE(SUM(valor_bruto), 0)                                                  AS total_bruto,
-        COALESCE(SUM(agency_fee), 0)                                                   AS total_agencia,
-        COALESCE(SUM(valor_modelo), 0)                                                 AS total_modelo,
-        COALESCE(SUM(CASE WHEN tipo = 'midia'      THEN valor_bruto ELSE 0 END), 0)   AS total_bruto_midia,
-        COALESCE(SUM(CASE WHEN tipo = 'assinatura' THEN valor_bruto ELSE 0 END), 0)   AS total_bruto_assinatura
-      FROM vw_transacoes_agencia
-      WHERE status    = 'pago'
-        AND agencia_id = $1
-        AND EXTRACT(MONTH FROM created_at) = $2
-        AND EXTRACT(YEAR  FROM created_at) = $3
-    `, [agenciaId, mes, ano]);
-
-    const r = result.rows[0];
-
-    const { rows } = await db.query(`
-      INSERT INTO fechamento_mensal_agency
-        (agencia_id, ano, mes, total_bruto, total_agencia, total_modelo, total_bruto_midia, total_bruto_assinatura)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING *
-    `, [
-      agenciaId,
-      ano,
-      mes,
-      r.total_bruto,
-      r.total_agencia,
-      r.total_modelo,
-      r.total_bruto_midia,
-      r.total_bruto_assinatura,
-    ]);
-
-    res.status(201).json(rows[0]);
-  } catch (err) {
-    console.error("Erro fechamento:", err);
-    res.status(500).json({ erro: "Erro interno" });
-  }
-});
-
 // ========== 9. DADOS BANCÁRIOS ==========
 
 router.get("/dados-bancarios", authAgencia, async (req, res) => {
   try {
     const agenciaId = req.agencia.id;
-    const { limit, offset, page } = paginate(req.query, Number(req.query.page) || 1, Number(req.query.limit) || 20);
+    const { limit, offset, page } = paginate(req.query);
+
     const status = req.query.status;
 
-    let where = "m.agencia_id = $3";
-    const params = [limit, offset, agenciaId];
-    
+    let where = "m.agencia_id = $1";
+    const params = [agenciaId];
+
     if (status) {
-      where += " AND b.status = $4";
+      where += " AND b.status = $2";
       params.push(status);
     }
 
+    // COUNT
     const countQ = await db.query(`
       SELECT COUNT(*) 
       FROM modelo_dados_bancarios b
       JOIN modelos m ON m.id = b.modelo_id
       WHERE ${where}
-    `, status ? [agenciaId, status] : [agenciaId]);
-    
+    `, params);
+
     const total = Number(countQ.rows[0].count);
+
+    // DATA
+    const dataParams = [...params, limit, offset];
 
     const { rows } = await db.query(`
       SELECT b.*, m.nome AS modelo_nome
       FROM modelo_dados_bancarios b
       JOIN modelos m ON m.id = b.modelo_id
       WHERE ${where}
-      ORDER BY CASE WHEN b.status = 'pendente' THEN 0 ELSE 1 END, b.criado_em DESC
-      LIMIT $1 OFFSET $2
-    `, params);
+      ORDER BY 
+        CASE WHEN b.status = 'pendente' THEN 0 ELSE 1 END,
+        b.criado_em DESC
+      LIMIT $${params.length + 1}
+      OFFSET $${params.length + 2}
+    `, dataParams);
 
-    res.json({ rows, totalPages: Math.ceil(total / limit), page });
-  } catch (err) { 
+    res.json({
+      rows,
+      totalPages: Math.ceil(total / limit),
+      page
+    });
+
+  } catch (err) {
     console.error("Erro ao buscar dados bancários:", err);
-    res.status(500).json({ erro: "Erro interno" }); 
+    res.status(500).json({ erro: "Erro interno" });
   }
 });
 
@@ -1001,6 +1050,7 @@ router.get("/ranking", authAgencia, async (req, res) => {
         t.modelo_id,
         m.nome,
         ROUND(COALESCE(SUM(t.valor_modelo), 0)::numeric, 2) AS ganhos_total,
+        ROUND(COALESCE(SUM(t.agency_fee), 0)::numeric, 2) AS ganhos_agencia,
         MAX(t.created_at) AS atualizado_em
       FROM transacoes_agency t
       JOIN modelos m ON m.id = t.modelo_id
@@ -1020,21 +1070,61 @@ router.get("/ranking", authAgencia, async (req, res) => {
   }
 });
 
-// ========== 16. MODELO PAGAMENTOS ==========
+// ========== 16. agencias PAGAMENTOS ==========
 
+// SALDO
+router.get("/agencia-pagamentos/saldo", authAgencia, async (req, res) => {
+  try {
+    const agenciaId = Number(req.agencia?.id);
+    if (!agenciaId) {
+      return res.status(400).json({ erro: "Agência inválida" });
+    }
+
+    const ganhosRes = await db.query(`
+      SELECT COALESCE(SUM(agency_fee), 0) AS ganhos
+      FROM vw_transacoes_agencia t
+      JOIN modelos m ON m.id = t.modelo_id
+      WHERE m.agencia_id = $1::int
+        AND t.status = 'pago'
+    `, [agenciaId]);
+
+    const pagosRes = await db.query(`
+      SELECT COALESCE(SUM(total_agencia), 0) AS pagos
+      FROM agencia_pagamentos
+      WHERE agencia_id = $1::int
+        AND status = 'pago'
+    `, [agenciaId]);
+
+    const ganhos = Number(ganhosRes.rows[0].ganhos || 0);
+    const pagos = Number(pagosRes.rows[0].pagos || 0);
+
+    res.json({
+      ganhos,
+      pagos,
+      saldo: ganhos - pagos
+    });
+
+  } catch (err) {
+    console.error("Erro saldo agencia-pagamentos:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+
+// LISTAGEM
 router.get("/agencia-pagamentos", authAgencia, async (req, res) => {
   try {
-    const agenciaId = req.agencia.id;
-    const { limit, offset, page } = paginate(
-      req.query,
-      Number(req.query.page) || 1,
-      Number(req.query.limit) || 20
-    );
+    const agenciaId = Number(req.agencia?.id);
+    if (!agenciaId) {
+      return res.status(400).json({ erro: "Agência inválida" });
+    }
+
+    const { limit, offset, page } = paginate(req.query);
 
     const countQ = await db.query(`
       SELECT COUNT(*) 
       FROM agencia_pagamentos
-      WHERE agencia_id = $1
+      WHERE agencia_id = $1::int
     `, [agenciaId]);
 
     const total = Number(countQ.rows[0].count);
@@ -1045,21 +1135,19 @@ router.get("/agencia-pagamentos", authAgencia, async (req, res) => {
         a.nome AS agencia_nome
       FROM agencia_pagamentos p
       JOIN agencias a ON a.id = p.agencia_id
-      WHERE p.agencia_id = $1
+      WHERE p.agencia_id = $1::int
       ORDER BY p.created_at DESC
       LIMIT $2 OFFSET $3
     `, [agenciaId, limit, offset]);
 
     for (const row of rows) {
-      if (row.recibo_url) {
-        row.recibo_signed_url = s3Privado.getSignedUrl("getObject", {
-          Bucket: process.env.B2_BUCKET_PRIVATE,
-          Key: row.recibo_url,
-          Expires: 300
-        });
-      } else {
-        row.recibo_signed_url = null;
-      }
+      row.recibo_signed_url = row.recibo_url
+        ? s3Privado.getSignedUrl("getObject", {
+            Bucket: process.env.B2_BUCKET_PRIVATE,
+            Key: row.recibo_url,
+            Expires: 300
+          })
+        : null;
     }
 
     res.json({
@@ -1067,22 +1155,26 @@ router.get("/agencia-pagamentos", authAgencia, async (req, res) => {
       totalPages: Math.ceil(total / limit),
       page
     });
+
   } catch (err) {
     console.error("Erro agencia-pagamentos:", err);
     res.status(500).json({ erro: "Erro interno" });
   }
 });
 
+
+// DETALHE
 router.get("/agencia-pagamentos/:id", authAgencia, async (req, res) => {
   try {
-    const agenciaId = req.agencia.id;
-    
+    const agenciaId = Number(req.agencia?.id);
+    const id = Number(req.params.id);
+
     const { rows } = await db.query(`
       SELECT p.*, a.nome AS agencia_nome
       FROM agencia_pagamentos p
       JOIN agencias a ON a.id = p.agencia_id
-      WHERE p.id = $1 AND p.agencia_id = $2
-    `, [req.params.id, agenciaId]);
+      WHERE p.id = $1::int AND p.agencia_id = $2::int
+    `, [id, agenciaId]);
 
     if (!rows.length) {
       return res.status(404).json({ erro: "Não encontrado" });
@@ -1090,216 +1182,20 @@ router.get("/agencia-pagamentos/:id", authAgencia, async (req, res) => {
 
     const row = rows[0];
 
-    if (row.recibo_url) {
-      row.recibo_signed_url = s3Privado.getSignedUrl("getObject", {
-        Bucket: process.env.B2_BUCKET_PRIVATE,
-        Key: row.recibo_url,
-        Expires: 300
-      });
-    } else {
-      row.recibo_signed_url = null;
-    }
+    row.recibo_signed_url = row.recibo_url
+      ? s3Privado.getSignedUrl("getObject", {
+          Bucket: process.env.B2_BUCKET_PRIVATE,
+          Key: row.recibo_url,
+          Expires: 300
+        })
+      : null;
 
     res.json(row);
+
   } catch (err) {
     console.error("Erro detalhe agencia-pagamentos:", err);
     res.status(500).json({ erro: "Erro interno" });
   }
 });
-
-router.post("/agencia-pagamentos", authAgencia, upload.single("recibo"), async (req, res) => {
-  try {
-    const agenciaId = req.agencia.id;
-    const {
-      mes,
-      total_bruto,
-      total_agencia,
-      total_modelos
-    } = req.body;
-
-    if (!mes) {
-      return res.status(400).json({ erro: "Mês obrigatório" });
-    }
-
-    const mesDate = `${mes}-01`;
-    const totalBruto = Number(total_bruto || 0);
-    const totalAgencia = Number(total_agencia || 0);
-    const totalModelos = Number(total_modelos || 0);
-
-    // Busca o saldo devedor da agência
-    const ganhosRes = await db.query(`
-      SELECT COALESCE(SUM(agency_fee), 0) AS ganhos
-      FROM transacoes_agency t
-      JOIN modelos m ON m.id = t.modelo_id
-      WHERE m.agencia_id = $1
-        AND t.status = 'pago'
-    `, [agenciaId]);
-
-    const pagosRes = await db.query(`
-      SELECT COALESCE(SUM(total_agencia), 0) AS pagos
-      FROM agencia_pagamentos
-      WHERE agencia_id = $1
-        AND status = 'pago'
-    `, [agenciaId]);
-
-    const ganhos = Number(ganhosRes.rows[0].ganhos || 0);
-    const pagos = Number(pagosRes.rows[0].pagos || 0);
-    const saldo = ganhos - pagos;
-
-    if (totalAgencia > saldo) {
-      return res.status(400).json({
-        erro: `Saldo insuficiente para este pagamento. Saldo disponível: ${saldo.toFixed(2)}`
-      });
-    }
-
-    let recibo_url = null;
-
-    if (req.file) {
-      const key = `recibos/agencia-${agenciaId}/${Date.now()}-${req.file.originalname}`;
-
-      await s3Privado.putObject({
-        Bucket: process.env.B2_BUCKET_PRIVATE,
-        Key: key,
-        Body: req.file.buffer,
-        ContentType: req.file.mimetype
-      }).promise();
-
-      recibo_url = key;
-    }
-
-    const { rows } = await db.query(`
-      INSERT INTO agencia_pagamentos
-      (
-        agencia_id,
-        mes,
-        total_bruto,
-        total_agencia,
-        total_modelos,
-        status,
-        recibo_url
-      )
-      VALUES ($1, $2, $3, $4, $5, 'pendente', $6)
-      RETURNING *
-    `, [
-      agenciaId,
-      mesDate,
-      totalBruto,
-      totalAgencia,
-      totalModelos,
-      recibo_url
-    ]);
-
-    res.json(rows[0]);
-  } catch (err) {
-    console.error("Erro criar pgto agencia:", err);
-    res.status(500).json({ erro: "Erro interno" });
-  }
-});
-
-router.get("/agencia-pagamentos/saldo", authAgencia, async (req, res) => {
-  try {
-    const agenciaId = req.agencia.id;
-
-    const ganhosRes = await db.query(`
-      SELECT COALESCE(SUM(agency_fee), 0) AS ganhos
-      FROM transacoes_agency t
-      JOIN modelos m ON m.id = t.modelo_id
-      WHERE m.agencia_id = $1
-        AND t.status = 'pago'
-    `, [agenciaId]);
-
-    const pagosRes = await db.query(`
-      SELECT COALESCE(SUM(total_agencia), 0) AS pagos
-      FROM agencia_pagamentos
-      WHERE agencia_id = $1
-        AND status = 'pago'
-    `, [agenciaId]);
-
-    const ganhos = Number(ganhosRes.rows[0].ganhos || 0);
-    const pagos = Number(pagosRes.rows[0].pagos || 0);
-    const saldo = ganhos - pagos;
-
-    res.json({
-      ganhos,
-      pagos,
-      saldo
-    });
-  } catch (err) {
-    console.error("Erro saldo agencia-pagamentos:", err);
-    res.status(500).json({ erro: "Erro interno" });
-  }
-});
-
-router.post("/agencia-pagamentos/:id/pagar", authAgencia, async (req, res) => {
-  try {
-    const agenciaId = req.agencia.id;
-    const { id } = req.params;
-
-    // Verifica se o pagamento pertence à agência
-    const check = await db.query(`
-      SELECT id FROM agencia_pagamentos 
-      WHERE id = $1 AND agencia_id = $2
-    `, [id, agenciaId]);
-
-    if (!check.rows.length) {
-      return res.status(404).json({ erro: "Pagamento não encontrado" });
-    }
-
-    await db.query(`
-      UPDATE agencia_pagamentos
-      SET
-        status = 'pago',
-        pago_em = NOW()
-      WHERE id = $1
-    `, [id]);
-
-    res.json({ ok: true });
-  } catch (err) {
-    console.error("Erro pagar agencia-pagamento:", err);
-    res.status(500).json({ erro: "Erro interno" });
-  }
-});
-
-router.put("/agencia-pagamentos/:id", authAgencia, async (req, res) => {
-  try {
-    const agenciaId = req.agencia.id;
-    const { total_bruto, total_agencia, total_modelos, status, recibo_url } = req.body;
-
-    const { rows } = await db.query(`
-      UPDATE agencia_pagamentos
-      SET
-        total_bruto = $1,
-        total_agencia = $2,
-        total_modelos = $3,
-        status = $4,
-        recibo_url = $5,
-        pago_em = CASE
-          WHEN $4 = 'pago' AND pago_em IS NULL THEN NOW()
-          WHEN $4 <> 'pago' THEN NULL
-          ELSE pago_em
-        END
-      WHERE id = $6 AND agencia_id = $7
-      RETURNING *
-    `, [
-      Number(total_bruto || 0),
-      Number(total_agencia || 0),
-      Number(total_modelos || 0),
-      status,
-      recibo_url || null,
-      req.params.id,
-      agenciaId
-    ]);
-
-    if (!rows.length) {
-      return res.status(404).json({ erro: "Pagamento não encontrado" });
-    }
-
-    res.json(rows[0]);
-  } catch (err) {
-    console.error("Erro atualizar agencia-pagamento:", err);
-    res.status(500).json({ erro: "Erro interno" });
-  }
-});
-
 
 module.exports = router;

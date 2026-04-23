@@ -103,7 +103,7 @@
     <div class="card">
       <h3>Top 5 Modelos do Mês</h3>
       <table class="table" id="tableTopModelos">
-        <thead><tr><th>#</th><th>Modelo</th><th>Ganhos</th><th>Assinantes</th></tr></thead>
+        <thead><tr><th>#</th><th>Modelo</th><th>Ganhos Modelo</th><th>Ganhos Agência</th><th>Assinantes</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -141,27 +141,72 @@
 
   <!-- agency -->
   <section class="page" id="page-agency">
-    <div class="page-actions">
-      <button class="btn btn-primary" onclick="openModal('modalAgency')">Resetar Senha</button>
-    </div>
     <div class="card">
       <h3>Infos Agência</h3>
       <table class="table" id="tableAgency">
-        <thead><tr><th>ID</th><th>Email</th><th>Criado em</th><th>Ações</th></tr></thead>
+        <thead><tr><th>ID</th><th>Nome</th><th>Email</th><th>Criado em</th><th>Ações</th></tr></thead>
         <tbody></tbody>
       </table>
+    </div>
+    <div class="card" style="margin-top:20px">
+      <h3>Distribuição de Percentuais</h3>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
+        O percentual da Velvet é fixo em <strong>20%</strong> e não pode ser alterado.
+        A soma de Agência + Modelo não pode ultrapassar 80%.
+      </p>
+     <form id="formPercentuais" onsubmit="salvarPercentuais(event)" style="display:grid;gap:14px;max-width:400px;">
+
+  <!-- Velvet fixo -->
+  <label style="font-size:13px;font-weight:500;color:var(--text-muted);">
+    Velvet (fixo)
+    <input type="number" value="20" disabled
+      style="background:var(--bg);margin-top:4px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;width:100%;font-size:13px;">
+  </label>
+
+  <!-- Agência -->
+  <label style="font-size:13px;font-weight:500;color:var(--text-muted);">
+    % Agência
+    <input type="number"
+      id="inputPercentualAgencia"
+      name="percentual_agencia"
+      min="0"
+      max="80"
+      step="0.01"
+      required
+      oninput="atualizarSoma()"
+      style="margin-top:4px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;width:100%;font-size:13px;outline:none;">
+  </label>
+
+  <!-- Modelo -->
+  <label style="font-size:13px;font-weight:500;color:var(--text-muted);">
+    % Modelo
+    <input type="number"
+      id="inputPercentualModelo"
+      name="percentual_modelo"
+      min="0"
+      max="80"
+      step="0.01"
+      required
+      oninput="atualizarSoma()"
+      style="margin-top:4px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;width:100%;font-size:13px;outline:none;">
+  </label>
+
+  <!-- Info soma -->
+  <div id="percentualSomaInfo" style="font-size:12px;color:var(--text-muted);"></div>
+
+  <button type="submit" class="btn btn-primary" style="width:fit-content;">
+    Salvar Percentuais
+  </button>
+</form>
     </div>
   </section>
 
   <!-- FECHAMENTO MENSAL -->
   <section class="page" id="page-fechamento">
-    <div class="page-actions">
-      <button class="btn btn-primary" onclick="criarFechamento()">+ Criar Fechamento</button>
-    </div>
     <div class="card">
       <h3>Fechamentos Mensais</h3>
       <table class="table" id="tableFechamento">
-        <thead><tr><th>Ano</th><th>Mês</th><th>Total</th><th>Agência</th><th>Modelos</th><th>Total Midias</th><th>Total Assinaturas</th><th>Fechado em</th></tr></thead>
+        <thead><tr><th>Ano</th><th>Mês</th><th>Total</th><th>Agência</th><th>Modelos</th><th>Midias</th><th>Assinaturas</th><th>Data</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -220,6 +265,7 @@
           <th>Posição</th>
           <th>Modelo</th>
           <th>Ganhos do Mês</th>
+          <th>Ganhos Agência</th>
           <th>Última Transação</th>
         </tr>
       </thead>
@@ -230,25 +276,17 @@
 
  <!-- PAGAMENTOS AGÊNCIA -->
 <section class="page" id="page-pagamentos-agencia">
-  <div class="page-actions">
-    <button class="btn btn-primary" onclick="abrirModalPagAgencia()">+ Registrar Recebimento</button>
-    <div class="stats-inline">
-      <div class="stat-item">
-        <span class="stat-label">Saldo a Receber:</span>
-        <span class="stat-value" id="saldoAgenciaGeral">—</span>
-      </div>
-    </div>
-  </div>
   <div class="card">
-    <h3>Recebimentos da Agência</h3>
+    <h3>Saldo a Receber:</h3>
+    <span class="stat-value" id="saldoAgenciaGeral">—</span>
     <table class="table" id="tablePagAgencia">
       <thead>
         <tr>
           <th>ID</th>
           <th>Mês</th>
           <th>Total Bruto</th>
-          <th>Comissão Agência</th>
-          <th>Total Modelos</th>
+          <th>Agência</th>
+          <th>Modelos</th>
           <th>Status</th>
           <th>Recebido em</th>
           <th>Ações</th>
@@ -367,18 +405,6 @@
 
 <!-- Modal genérico -->
 <div class="modal-overlay" id="modalOverlay" onclick="closeAllModals()"></div>
-
-<div class="modal" id="modalAgency">
-  <h3>Novo Agency</h3>
-  <form id="formAgency" onsubmit="salvarAgency(event)">
-    <label>Email<input type="email" name="email" required></label>
-    <label>Senha<input type="password" name="senha" required></label>
-    <div class="modal-actions">
-      <button type="button" class="btn btn-ghost" onclick="closeAllModals()">Cancelar</button>
-      <button type="submit" class="btn btn-primary">Salvar</button>
-    </div>
-  </form>
-</div>
 
 <!-- Modal Edição Genérica -->
 <div class="modal modal-lg" id="modalEdit">

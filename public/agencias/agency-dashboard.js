@@ -160,19 +160,33 @@ function formatDateInput(value) {
   return d.toISOString().slice(0, 10);
 }
 
+async function carregarAgencia() {
+  const res = await fetch("/agency/dashboard/name-agency", {
+    headers: {
+      Authorization: "Bearer " + localStorage.getItem("token_agency")
+    }
+  });
+
+  const data = await res.json();
+
+  document.querySelector(".agency-badge").textContent = data.nome;
+}
+
+carregarAgencia();
+
 // ========== NAVIGATION ==========
 
 const navItems = document.querySelectorAll('.nav-item');
 const pages = document.querySelectorAll('.page');
 const pageTitles = {
-  overview: 'Visao Geral',
+  overview: 'Visão Geral',
   acessos: 'Acessos por Origem',
   agency: 'Agência',
-  fechamentos: 'Fechamentos Mensais',
-  bancarios: 'Dados Bancarios',
+  fechamento: 'Fechamentos Mensais',
+  bancarios: 'Dados Bancários',
   modelos: 'Modelos',
   ranking: 'Ranking',
-  pagamentos: 'Pagamentos a Agência'
+  'pagamentos-agencia': 'Recebimentos da Agência'
 };
 
 const pageLoaders = {};
@@ -248,8 +262,14 @@ function closeAllModals() {
 }
 
 function logout() {
-  localStorage.removeItem('token');
+  localStorage.removeItem('token_agency');
   window.location.href = '/agencias/login.html';
+}
+
+function abrirResetSenha() {
+  const el = document.getElementById('novaSenha');
+  if (el) el.value = '';
+  openModal('modalAgency');
 }
 
 // ========== 1. OVERVIEW ==========
@@ -329,19 +349,21 @@ pageLoaders.overview = async function () {
         <td>${i + 1}</td>
         <td>${m.nome || 'Modelo #' + m.modelo_id}</td>
         <td>${money(Number(m.ganhos || 0))}</td>
+        <td>${money(Number(m.ganhos_agencia || 0))}</td>
         <td>${Number(m.assinantes || 0)}</td>
       </tr>
-    `).join('') || emptyRow(4);
+    `).join('') || emptyRow(5);
 
   } catch (err) {
     console.error('Erro overview:', err);
 
     $('kpi-modelos').textContent = '--';
     $('kpi-vips').textContent = '--';
-    $('kpi-fat').textContent = '--';
+    $('kpi-fatd').textContent = '--';
+    $('kpi-fatm').textContent = '--';
 
     const tbody = $('tableTopModelos')?.querySelector('tbody');
-    if (tbody) tbody.innerHTML = emptyRow(4);
+    if (tbody) tbody.innerHTML = emptyRow(5);
   }
 };
 
@@ -419,43 +441,97 @@ pageLoaders.agency = async function () {
   try {
     const data = await fetchJSON('/agency/dashboard/agency');
     const tbody = $('tableAgency').querySelector('tbody');
+    const agencia = (data || [])[0];
 
-    tbody.innerHTML = (data || []).map(a => `
+    tbody.innerHTML = agencia ? `
       <tr>
-        <td>${a.id}</td>
-        <td>${a.email}</td>
-        <td>${fmtDateTime(a.created_at)}</td>
+        <td>${agencia.id}</td>
+        <td>${escapeHtml(agencia.nome || '—')}</td>
+        <td>${agencia.email}</td>
+        <td>${fmtDateTime(agencia.created_at)}</td>
         <td>
-          <button class="btn btn-sm btn-danger" onclick="abrirResetSenha()">Resetar</button>
+          <button class="btn btn-sm btn-danger" onclick="abrirResetSenha()">Resetar Senha</button>
         </td>
       </tr>
-    `).join('') || emptyRow(4);
+    ` : emptyRow(5);
 
+    if (agencia) {
+      const inpAg = $('inputPercentualAgencia');
+      const inpMod = $('inputPercentualModelo');
+if (inpAg) inpAg.value = (agencia.percentual_agencia * 100).toFixed(2);
+if (inpMod) inpMod.value = (agencia.percentual_modelo * 100).toFixed(2);
+      atualizarSoma();
+    }
   } catch (err) {
     console.error('Erro agency:', err);
   }
 };
 
-async function resetSenha() {
-  const senha = document.getElementById('novaSenha').value;
+function atualizarSoma() {
+  const ag  = Number($('inputPercentualAgencia')?.value || 0);
+  const mod = Number($('inputPercentualModelo')?.value || 0);
 
-  if (!senha || senha.length < 6) {
-    alert('Senha inválida');
+  const velvet = 20;
+  const total = velvet + ag + mod;
+
+  const info = $('percentualSomaInfo');
+  if (!info) return;
+
+  if (ag + mod > 80) {
+    info.style.color = 'var(--red)';
+    info.textContent = `❌ Excede limite: ${total.toFixed(2)}% (máx: 100%)`;
+  } else if (ag + mod === 80) {
+    info.style.color = 'var(--green)';
+    info.textContent = `✔ Perfeito: ${total.toFixed(2)}%`;
+  } else {
+    info.style.color = 'var(--text-muted)';
+    info.textContent = `Total: ${total.toFixed(2)}% (Velvet ${velvet}% + Agência ${ag}% + Modelo ${mod}%)`;
+  }
+}
+
+async function salvarPercentuais(e) {
+  e.preventDefault();
+
+  const ag  = Number($('inputPercentualAgencia').value);
+  const mod = Number($('inputPercentualModelo').value);
+
+  const velvet = 20;
+
+  if (ag + mod > (100 - velvet)) {
+    toast(
+      `Soma inválida: Velvet ${velvet}% + Agência ${ag}% + Modelo ${mod}% = ${velvet + ag + mod}%`,
+      'error'
+    );
     return;
   }
 
   try {
-    await fetchJSON('/agency/dashboard/agency/reset-password', {
-      method: 'PUT',
-      body: JSON.stringify({ senha })
+    await putJSON('/agency/dashboard/agency/percentuais', {
+      percentual_agencia: ag,
+      percentual_modelo: mod
     });
 
-    alert('Senha atualizada com sucesso');
-    closeModal('modalAgency');
+    toast('Percentuais atualizados com sucesso!', 'success');
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  }
+}
 
+async function resetSenha() {
+  const senha = document.getElementById('novaSenha').value;
+
+  if (!senha || senha.length < 6) {
+    toast('Senha inválida (mínimo 6 caracteres)', 'error');
+    return;
+  }
+
+  try {
+    await putJSON('/agency/dashboard/agency/reset-password', { senha });
+    toast('Senha atualizada com sucesso', 'success');
+    closeModal('modalAgency');
   } catch (err) {
     console.error('Erro reset senha:', err);
-    alert('Erro ao atualizar senha');
+    toast('Erro ao atualizar senha', 'error');
   }
 }
 
@@ -661,9 +737,10 @@ async function carregarRanking() {
         <td><strong>${i + 1}</strong></td>
         <td>${r.nome || 'Modelo #' + r.modelo_id}</td>
         <td>${money(r.ganhos_total)}</td>
+        <td>${money(r.ganhos_agencia)}</td>
         <td>${fmtDateTime(r.atualizado_em)}</td>
       </tr>
-    `).join('') || emptyRow(4);
+    `).join('') || emptyRow(5);
 
     const top10 = (data || []).slice(0, 10);
 
@@ -979,5 +1056,9 @@ document.addEventListener('DOMContentLoaded', () => {
     window.location.href = '/agency/login';
     return;
   }
+
+  document.getElementById('inputPercentualAgencia')?.addEventListener('input', atualizarSoma);
+  document.getElementById('inputPercentualModelo')?.addEventListener('input', atualizarSoma);
+
   pageLoaders.overview();
 });

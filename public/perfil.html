@@ -115,24 +115,26 @@
     <div data-i18n="pagamento.vantagem_chat">- Conversar com a criadora no chat</div>
     <div data-i18n="pagamento.vantagem_feed">- Acessar mídias do FEED</div>
     <div data-i18n="pagamento.vantagem_beneficios">- Benefícios e promoções especiais</div>
+  </div>
 
+  <div class = "vip-valores" class= "vip-valores">
     <div class="linha">
       <span data-i18n="pagamento.linha_assinatura">Valor da assinatura:</span>
-      <span>R$ <span id="vipValorBase">0,00</span></span>
+      <span id="vipValorBase">0,00</span>
     </div>
     <div class="linha desconto">
       <span data-i18n="pagamento.linha_desconto">Desconto:</span>
-      <span>R$ <span id="vipDesconto">0,00</span></span>
+      <span id="vipDesconto">0,00</span>
     </div>
     <div class="linha">
       <span data-i18n="pagamento.linha_taxa">Taxa de transação:</span>
-      <span>R$ <span id="vipTaxa">0,00</span></span>
+      <span id="vipTaxa">0,00</span>
     </div>
     <div class="linha total">
       <span data-i18n="pagamento.linha_total">Total:</span>
-      <span>R$ <span id="vipTotal">0,00</span></span>
+      <span id="vipTotal">0,00</span>
     </div>
-  </div><!-- fecha vip-beneficios -->
+  </div>
 
   <small class="vip-info">
     <span data-i18n="pagamento.info_renovacao">- A assinatura é sujeita a renovação automática e tem validade de <strong>30 dias,</strong> você pode cancelar quando quiser.</span><br>
@@ -155,26 +157,31 @@
   <div class="midia-valores">
     <div class="linha">
       <span data-i18n="pagamento.midia_linha_valor">Valor da mídia</span>
-      <span>R$ <span id="midiaValorBase">0,00</span></span>
+      <span id="midiaValorBase">0,00</span>
     </div>
     <div class="linha">
       <span data-i18n="pagamento.midia_linha_taxa">Taxa de transação</span>
-      <span>R$ <span id="midiaTaxa">0,00</span></span>
+      <span id="midiaTaxa">0,00</span>
     </div>
     <div class="linha total">
       <span data-i18n="pagamento.linha_total">Total</span>
-      <strong>R$ <span id="midiaTotal">0,00</span></strong>
+      <strong><span id="midiaTotal">0,00</span></strong>
     </div>
   </div>
 </div>
 
 <!-- DADOS OBRIGATÓRIOS -->
 <div class="dados-pagamento-box">
-  <label for="cpfPagamento" class="campo-label"><strong data-i18n="pagamento.cpf_label">CPF</strong></label>
-  <input type="text" id="cpfPagamento" class="campo-input" data-i18n-placeholder="pagamento.cpf_placeholder" placeholder="000.000.000-00" maxlength="14"/>
 
-  <label for="phonePagamento" class="campo-label"><strong data-i18n="pagamento.telefone_label">Telefone</strong></label>
-  <input type="text" id="phonePagamento" class="campo-input" data-i18n-placeholder="pagamento.telefone_placeholder" placeholder="(11) 99999-9999"/>
+  <div id="campoCpf">
+    <label for="cpfPagamento" class="campo-label"><strong data-i18n="pagamento.cpf_label">CPF</strong></label>
+    <input type="text" id="cpfPagamento" class="campo-input" data-i18n-placeholder="pagamento.cpf_placeholder" placeholder="000.000.000-00" maxlength="14"/>
+  </div>
+
+  <div id="campoTelefone">
+    <label for="phonePagamento" class="campo-label"><strong data-i18n="pagamento.telefone_label">Telefone</strong></label>
+    <input type="text" id="phonePagamento" class="campo-input" data-i18n-placeholder="pagamento.telefone_placeholder" placeholder="(11) 99999-9999"/>
+  </div>
 
   <div class="termos-pagamento">
     <p class="termos-aviso">
@@ -195,7 +202,18 @@
     </label>
   </div>
 </div>
- 
+
+<div class="selecao-moeda">
+  <span style="font-size:0.85rem;color:#666;display:block;margin-bottom:10px;" data-i18n="pagamento.moeda_label"><strong>Moeda do pagamento:</strong></span>
+  <div style="display:flex;gap:8px;margin-bottom:12px;">
+    <button type="button" class="btn-moeda ativo" data-moeda="brl" onclick="selecionarMoeda('brl')">
+      🇧🇷 Real (R$)
+    </button>
+    <button type="button" class="btn-moeda" data-moeda="usd" onclick="selecionarMoeda('usd')">
+      🇺🇸 Dólar ($)
+    </button>
+  </div>
+</div>
 
 <div class="acoes-metodo">
 <button id="btnEscolherPix" type="button" class="btn-principal" onclick="mostrarMetodo('pix')" data-i18n="pagamento.btn_pix">
@@ -241,6 +259,11 @@
   <button type="button" class="btn-voltar" onclick="voltarEtapaPagamento()" data-i18n="pagamento.btn_voltar">
     ← Voltar
   </button>
+
+   <div id="cartaoResumoValor" class="hidden" style="text-align:center;margin-bottom:12px;font-size:0.95rem;">
+    <span data-i18n="pagamento.voce_sera_cobrado">Você será cobrado:</span>
+    <strong id="cartaoResumoTotal" style="font-size:1.1rem;margin-left:6px;"></strong>
+  </div>
 
   <div id="cartaoLoading" class="cartao-loading hidden">
     <strong data-i18n="pagamento.cartao_processando">⏳ Processando pagamento…</strong>

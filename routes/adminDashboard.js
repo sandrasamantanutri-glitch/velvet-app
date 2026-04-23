@@ -103,6 +103,19 @@ function assinarArquivoPrivado(key) {
 
 // ========== 1. OVERVIEW ==========
 
+router.get("/name-admin", authAdmin, async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      "SELECT id, nome FROM admin WHERE id = $1",
+      [req.user.id]
+    );
+
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
 router.get("/overview", authAdmin, async (req, res) => {
   try {
     const [modelos, clientes, vips, fatd, fatm, fat12m, acessos, top] = await Promise.all([

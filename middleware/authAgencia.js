@@ -1,3 +1,5 @@
+const jwt = require("jsonwebtoken");
+
 function authAgencia(req, res, next) {
   const token = req.headers.authorization?.split(" ")[1];
   

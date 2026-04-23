@@ -1,31 +1,4 @@
-preciso criar as views no BD para filtros de agencia
 
-CREATE OR REPLACE VIEW vw_transacoes_agencia AS
-SELECT
-  t.*,
-  m.agencia_id
-FROM transacoes_agency t
-JOIN modelos m ON m.id = t.modelo_id;
 
-CREATE OR REPLACE VIEW vw_vips_agencia AS
-SELECT
-  v.*,
-  m.agencia_id
-FROM vip_subscriptions v
-JOIN modelos m ON m.id = v.modelo_id;
 
-CREATE OR REPLACE VIEW vw_modelos_ativos AS
-SELECT *
-FROM modelos
-WHERE ativo = true AND verificada = true;
 
-CREATE OR REPLACE VIEW vw_acessos_agencia AS
-SELECT
-  c.created_at,
-  c.origem_trafego,
-  c.ref_modelo,
-  m.agencia_id,
-  m.nome,
-  m.nome_exibicao
-FROM clientes c
-JOIN modelos m ON m.id = c.ref_modelo;
