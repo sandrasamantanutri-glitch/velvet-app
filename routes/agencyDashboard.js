@@ -140,7 +140,7 @@ router.get("/overview", authAgencia, async (req, res) => {
 
       // FATURAMENTO DIA (via view)
       db.query(`
-        SELECT COALESCE(SUM(valor_bruto), 0) AS total
+        SELECT COALESCE(SUM(agency_fee), 0) AS total
         FROM vw_transacoes_agencia
         WHERE agencia_id = $1
           AND created_at >= date_trunc('day', NOW())
@@ -150,7 +150,7 @@ router.get("/overview", authAgencia, async (req, res) => {
 
       // FATURAMENTO MÊS (via view)
       db.query(`
-        SELECT COALESCE(SUM(valor_bruto), 0) AS total
+        SELECT COALESCE(SUM(agency_fee), 0) AS total
         FROM vw_transacoes_agencia
         WHERE agencia_id = $1
           AND created_at >= date_trunc('month', NOW())
@@ -162,7 +162,7 @@ router.get("/overview", authAgencia, async (req, res) => {
       db.query(`
         SELECT
           TO_CHAR(meses.mes, 'YYYY-MM') AS mes,
-          COALESCE(SUM(t.valor_bruto), 0) AS total
+          COALESCE(SUM(t.agency_fee), 0) AS total
         FROM generate_series(
           date_trunc('month', NOW()) - INTERVAL '11 months',
           date_trunc('month', NOW()),

@@ -139,7 +139,7 @@ router.get("/overview", authAdmin, async (req, res) => {
       `),
 
       db.query(`
-        SELECT COALESCE(SUM(t.valor_bruto), 0) AS total
+        SELECT COALESCE(SUM(t.velvet_fee), 0) AS total
         FROM transacoes_agency t
         WHERE t.created_at >= date_trunc('day', NOW())
           AND t.created_at < (date_trunc('day', NOW()) + INTERVAL '1 day')
@@ -147,17 +147,17 @@ router.get("/overview", authAdmin, async (req, res) => {
       `),
 
       db.query(`
-        SELECT COALESCE(SUM(t.valor_bruto), 0) AS total
+        SELECT COALESCE(SUM(t.txa_gateway), 0) AS total
         FROM transacoes_agency t
-        WHERE t.created_at >= date_trunc('month', NOW())
-          AND t.created_at < (date_trunc('month', NOW()) + INTERVAL '1 month')
+        WHERE t.created_at >= date_trunc('day', NOW())
+          AND t.created_at < (date_trunc('day', NOW()) + INTERVAL '1 day')
           AND COALESCE(t.status, 'pago') NOT IN ('falhou', 'cancelado', 'estornado', 'chargeback')
       `),
 
       db.query(`
         SELECT
           TO_CHAR(meses.mes, 'YYYY-MM') AS mes,
-          COALESCE(SUM(t.valor_bruto), 0) AS total
+          COALESCE(SUM(t.velvet_fee), 0) AS total
         FROM generate_series(
           date_trunc('month', NOW()) - INTERVAL '11 months',
           date_trunc('month', NOW()),
