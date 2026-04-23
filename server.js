@@ -537,15 +537,21 @@ await client.query(
           valor_total,
           status,
           metodo_pagamento,
-          pago_em
+          pago_em,
+          currency,
+          valor_cobrado,
+          taxa_cambio
         )
-        VALUES ($1,$2,$3,$4,$4,$5,'pago',$6,NOW())
+        VALUES ($1,$2,$3,$4,$4,$5,'pago',$6,NOW(),'brl',$5,NULL)
         ON CONFLICT (message_id,cliente_id)
         DO UPDATE SET
           status='pago',
           metodo_pagamento=$6,
           pago_em=NOW(),
-          valor_total=$5
+          valor_total=$5,
+          currency='brl',
+          valor_cobrado=$5,
+          taxa_cambio=NULL
         `,
         [
           message_id,
@@ -1469,6 +1475,12 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
         taxa_gateway: taxaGateway
       });
 
+      const taxaCambioMeta = Number(metadata?.taxa_cambio) || null;
+      const currencyPago = String(pagamento?.currency || metadata?.currency || 'brl').toLowerCase();
+      const valorTotalBrl = taxaCambioMeta
+        ? Number((valorPago * taxaCambioMeta).toFixed(2))
+        : valorPago;
+
       await client.query(
         `
         INSERT INTO conteudo_pacotes (
@@ -1480,23 +1492,32 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
           valor_total,
           status,
           metodo_pagamento,
-          pago_em
+          pago_em,
+          currency,
+          valor_cobrado,
+          taxa_cambio
         )
-        VALUES ($1,$2,$3,$4,$4,$5,'pago',$6,NOW())
+        VALUES ($1,$2,$3,$4,$4,$5,'pago',$6,NOW(),$7,$8,$9)
         ON CONFLICT (message_id,cliente_id)
         DO UPDATE SET
           status='pago',
           metodo_pagamento=$6,
           pago_em=NOW(),
-          valor_total=$5
+          valor_total=$5,
+          currency=$7,
+          valor_cobrado=$8,
+          taxa_cambio=$9
         `,
         [
           message_id,
           cliente_id,
           modelo_id,
           valorBase,
+          valorTotalBrl,
+          metodoPagamento,
+          currencyPago,
           valorPago,
-          metodoPagamento
+          taxaCambioMeta
         ]
       );
 
@@ -1863,6 +1884,11 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
     console.log("Marcando pagamento como pago");
 
     if (tabelaPagamento === "pagamentos_cartao") {
+      const taxaCambioWebhook = Number(metadata?.taxa_cambio) || null;
+      const valorBrlWebhook = taxaCambioWebhook
+        ? Number((valorPago * taxaCambioWebhook).toFixed(2))
+        : valorPago;
+
       await client.query(
         `
         UPDATE pagamentos_cartao
@@ -1871,14 +1897,18 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
             updated_at = NOW(),
             stripe_payment_intent_id = COALESCE($2, stripe_payment_intent_id),
             stripe_charge_id = COALESCE($3, stripe_charge_id),
-            stripe_checkout_session_id = COALESCE($4, stripe_checkout_session_id)
+            stripe_checkout_session_id = COALESCE($4, stripe_checkout_session_id),
+            valor_brl = COALESCE(valor_brl, $5),
+            taxa_cambio = COALESCE(taxa_cambio, $6)
         WHERE id = $1
         `,
         [
           pagamento.id,
           paymentIntentId,
           chargeId,
-          eventType === "checkout.session.completed" ? obj.id : null
+          eventType === "checkout.session.completed" ? obj.id : null,
+          valorBrlWebhook,
+          taxaCambioWebhook
         ]
       );
     } else if (tabelaPagamento === "premium_unlocks") {
@@ -9384,12 +9414,14 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
         aceite_timestamp,
         versao_termos,
         fingerprint,
+        valor_brl,
+        taxa_cambio,
         created_at,
         updated_at
       )
       VALUES (
         $1, $2, 'stripe', $3, $4, $5, $6, $7, $8,
-        $9, $10, $11, $12, $13, $14,
+        $9, $10, $11, $12, $13, $14, $15, $16,
         NOW(), NOW()
       )
       `,
@@ -9407,7 +9439,9 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
         !!aceitou_execucao_imediata,
         aceite_timestamp,
         versao_termos || "2026-04-06",
-        fingerprint || null
+        fingerprint || null,
+        taxaCambio ? Number((valorTotal * taxaCambio).toFixed(2)) : valorTotal,
+        taxaCambio || null
       ]
     );
 
@@ -9809,12 +9843,14 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
         aceite_timestamp,
         versao_termos,
         fingerprint,
+        valor_brl,
+        taxa_cambio,
         created_at,
         updated_at
       )
       VALUES (
         $1, $2, $3, 'stripe', $4, $5, $6, $7, $8, $9,
-        $10, $11, $12, $13, $14, $15,
+        $10, $11, $12, $13, $14, $15, $16, $17,
         NOW(), NOW()
       )
       `,
@@ -9833,7 +9869,9 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
         !!aceitou_execucao_imediata,
         aceite_timestamp,
         versao_termos || "2026-04-06",
-        fingerprint || null
+        fingerprint || null,
+        taxaCambio ? Number((total * taxaCambio).toFixed(2)) : total,
+        taxaCambio || null
       ]
     );
 
@@ -10329,13 +10367,15 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
         aceite_timestamp,
         versao_termos,
         fingerprint,
+        valor_cobrado,
+        taxa_cambio,
         created_at,
         updated_at
       )
       VALUES
       (
         $1, $2, $3, $4, 'cartao', $5, $6, $7, $8,
-        'stripe', $9, $10, $11, $12, $13, $14, $15, $16, $17,
+        'stripe', $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19,
         NOW(), NOW()
       )
       ON CONFLICT (premium_post_id, cliente_id)
@@ -10356,26 +10396,30 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
         aceite_timestamp = EXCLUDED.aceite_timestamp,
         versao_termos = EXCLUDED.versao_termos,
         fingerprint = EXCLUDED.fingerprint,
+        valor_cobrado = EXCLUDED.valor_cobrado,
+        taxa_cambio = EXCLUDED.taxa_cambio,
         updated_at = NOW()
       `,
       [
-        premium_id,                              
-        cliente_id,                              
-        modelo_id,                               
-        statusLocal,                            
-        valorBase,                               
-        taxaTransacao,                           
-        taxaPlataforma,                          
-        total,                                   
-        paymentIntent.id,                        
-        `premium_${premium_id}_${cliente_id}`,  
-        currency,                                
-        ip || null,                              
-        !!aceitou_termos,                        
-        !!aceitou_execucao_imediata,             
-        aceite_timestamp,                        
-        versao_termos || "2026-04-06",           
-        fingerprint || null                      
+        premium_id,
+        cliente_id,
+        modelo_id,
+        statusLocal,
+        valorBase,
+        taxaTransacao,
+        taxaPlataforma,
+        total,
+        paymentIntent.id,
+        `premium_${premium_id}_${cliente_id}`,
+        currency,
+        ip || null,
+        !!aceitou_termos,
+        !!aceitou_execucao_imediata,
+        aceite_timestamp,
+        versao_termos || "2026-04-06",
+        fingerprint || null,
+        total,
+        taxaCambio || null
       ]
     );
     console.log("✅ premium_unlocks OK");
