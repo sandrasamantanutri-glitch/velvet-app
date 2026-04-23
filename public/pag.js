@@ -521,30 +521,6 @@ alternarCamposPorMetodo(tipo);
   }
 
   if (tipo === "cartao") {
-    const continuar = await new Promise((resolve) => {
-      const overlay = document.createElement("div");
-      overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999999;display:flex;align-items:center;justify-content:center;padding:16px";
-      overlay.innerHTML = `
-        <div style="background:#fff;border-radius:12px;max-width:420px;width:100%;padding:24px;font-family:inherit;box-shadow:0 8px 32px rgba(0,0,0,0.25)">
-          <h3 style="margin:0 0 12px;font-size:1.1rem;color:#b45309;">⚠️ Aviso sobre pagamentos com cartão</h3>
-          <p style="margin:0 0 20px;font-size:0.95rem;line-height:1.5;color:#374151;">
-            Estamos implantando pagamentos com cartões internacionais e podem ocorrer constrangimentos.
-            Opte por pagar via <strong>Pix</strong>, ou aguarde até o fim das implantações.<br><br>
-            Se preferir continuar e ocorrer algum erro, envie um e-mail para
-            <a href="mailto:contato@velvet.lat" style="color:#6d28d9;">contato@velvet.lat</a>.<br><br>
-            <strong>Obrigado!</strong>
-          </p>
-          <div style="display:flex;gap:10px;justify-content:flex-end">
-            <button id="aviso-cancelar" style="padding:8px 16px;border-radius:8px;border:1px solid #d1d5db;background:#f3f4f6;cursor:pointer;font-size:0.9rem">Cancelar</button>
-            <button id="aviso-continuar" style="padding:8px 16px;border-radius:8px;border:none;background:#6d28d9;color:#fff;cursor:pointer;font-size:0.9rem">Continuar com Cartão</button>
-          </div>
-        </div>`;
-      document.body.appendChild(overlay);
-      overlay.querySelector("#aviso-continuar").onclick = () => { document.body.removeChild(overlay); resolve(true); };
-      overlay.querySelector("#aviso-cancelar").onclick = () => { document.body.removeChild(overlay); resolve(false); };
-    });
-    if (!continuar) return;
-
     const aceites = obterAceitesPagamento();
     if (!aceites) return;
 

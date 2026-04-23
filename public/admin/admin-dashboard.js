@@ -1888,8 +1888,8 @@ async function carregarVip(page) {
 
 async function editarVip(id) {
   try {
-    const data = await fetchJSON('/admin/dashboard/vips/' + id);
-    openEditModal('Editar VIP #' + id, '/admin/dashboard/vips/' + id, 'PUT', [
+    const data = await fetchJSON('/admin/dashboard/vip-subscriptions/' + id);
+    openEditModal('Editar VIP #' + id, '/admin/dashboard/vip-subscriptions/' + id, 'PUT', [
       { name: 'ativo', label: 'Ativo', type: 'checkbox', value: data.ativo },
       { name: 'recorrente', label: 'Recorrente', type: 'checkbox', value: data.recorrente },
       { name: 'valor_assinatura', label: 'Valor Assinatura', type: 'number', value: data.valor_assinatura },
