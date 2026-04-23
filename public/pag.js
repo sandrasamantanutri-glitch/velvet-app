@@ -446,7 +446,7 @@ defaultValues: {
       billingDetails: {
         name: "auto",
         email: "auto",
-        phone: "never",
+        phone: "auto",
         address: "auto"
       }
     },
@@ -581,9 +581,6 @@ async function confirmarPagamentoStripeCartao() {
     const { error, paymentIntent } = await stripeInstance.confirmPayment({
       elements: stripeElements,
       confirmParams: {
-        payment_method_data: {
-          billing_details: {}
-        },
         return_url: window.location.href
       },
       redirect: "if_required"

@@ -442,27 +442,27 @@ function capturarOrigemTrafego() {
   return origem;
 }
 
-async function registrarOrigemTrafego(extra = {}) {
-  const origem = capturarOrigemTrafego();
+// async function registrarOrigemTrafego(extra = {}) {
+//   const origem = capturarOrigemTrafego();
 
-  try {
-    await fetch("/api/acessos-origem", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(localStorage.getItem("token")
-          ? { Authorization: "Bearer " + localStorage.getItem("token") }
-          : {})
-      },
-      body: JSON.stringify({
-        ...origem,
-        ...extra
-      })
-    });
-  } catch (err) {
-    console.warn("Erro ao registrar origem:", err);
-  }
-}
+//   try {
+//     await fetch("/api/acessos-origem", {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//         ...(localStorage.getItem("token")
+//           ? { Authorization: "Bearer " + localStorage.getItem("token") }
+//           : {})
+//       },
+//       body: JSON.stringify({
+//         ...origem,
+//         ...extra
+//       })
+//     });
+//   } catch (err) {
+//     console.warn("Erro ao registrar origem:", err);
+//   }
+// }
 
 registrarOrigemTrafego();
 
