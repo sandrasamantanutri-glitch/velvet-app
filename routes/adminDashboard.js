@@ -2935,7 +2935,7 @@ router.get("/vips", async (req, res) => {
   } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
 });
 
-router.get("/vips/:id", async (req, res) => {
+router.get("/vip-subscriptions/:id", async (req, res) => {
   try {
     const { rows } = await db.query("SELECT * FROM vip_subscriptions WHERE id = $1", [req.params.id]);
     if (!rows.length) return res.status(404).json({ erro: "Não encontrado" });
