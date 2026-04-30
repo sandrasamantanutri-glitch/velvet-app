@@ -686,23 +686,41 @@ router.get("/cliente-risco", authAdmin, async (req, res) => {
 
 router.get("/cliente-risco/lookup/:id", authAdmin, async (req, res) => {
   try {
+    const clienteId = req.params.id;
+
+    // Busca nas duas tabelas de pagamento, pega o mais recente
     const { rows } = await db.query(`
-      SELECT
-        cliente_id,
-        cpf,
-        aceite_ip AS ip,
-        fingerprint
+      SELECT cliente_id, cpf, aceite_ip AS ip, fingerprint
       FROM pagamentos_pix
-      WHERE cliente_id = $1
+      WHERE cliente_id = $1 AND aceite_ip IS NOT NULL
       ORDER BY criado_em DESC
       LIMIT 1
-    `, [req.params.id]);
+    `, [clienteId]);
 
-    if (!rows.length) {
-      return res.status(404).json({ erro: "Nenhum pagamento encontrado para este cliente" });
-    }
+    if (rows.length) return res.json(rows[0]);
 
-    res.json(rows[0]);
+    const { rows: rows2 } = await db.query(`
+      SELECT cliente_id, cpf, aceite_ip AS ip, fingerprint
+      FROM pagamentos_cartao
+      WHERE cliente_id = $1 AND aceite_ip IS NOT NULL
+      ORDER BY created_at DESC
+      LIMIT 1
+    `, [clienteId]);
+
+    if (rows2.length) return res.json(rows2[0]);
+
+    // Fallback sem IP mas com CPF/fingerprint
+    const { rows: rows3 } = await db.query(`
+      SELECT cliente_id, cpf, aceite_ip AS ip, fingerprint
+      FROM pagamentos_cartao
+      WHERE cliente_id = $1
+      ORDER BY created_at DESC
+      LIMIT 1
+    `, [clienteId]);
+
+    if (rows3.length) return res.json(rows3[0]);
+
+    return res.status(404).json({ erro: "Nenhum dado encontrado para este cliente" });
 
   } catch (err) {
     console.error("Erro lookup cliente risco:", err);
