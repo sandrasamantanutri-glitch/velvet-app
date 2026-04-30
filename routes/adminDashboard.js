@@ -1579,7 +1579,7 @@ router.put("/clientes-bloqueados/:id", authAdmin, async (req, res) => {
       SET
         bloqueado = true,
         ativo = false,
-        updated_at = NOW()
+        desativado_em = NOW()
       WHERE id = $1
     `, [req.params.id]);
 
