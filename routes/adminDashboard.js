@@ -20,6 +20,7 @@ const s3Privado = new AWS.S3({
   accessKeyId: process.env.B2_KEY_ID_PRIVATE,
   secretAccessKey: process.env.B2_APP_KEY_PRIVATE,
   region: process.env.B2_REGION,
+  signatureVersion: "v4",
   s3ForcePathStyle: true
 });
 
