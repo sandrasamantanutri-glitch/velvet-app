@@ -1434,7 +1434,7 @@ router.post("/clientes-bloqueados", authAdmin, async (req, res) => {
       SET
         bloqueado = $1,
         ativo = $2,
-        updated_at = NOW()
+        desativado_em = NOW()
       WHERE id = $3
     `, [bloqueadoFinal, ativoFinal, cliente_id]);
 
