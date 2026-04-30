@@ -831,7 +831,7 @@ async function salvarBloqueado(e) {
       user_id: form.get('user_id') || null,
       email: form.get('email') || null,
       nome_completo: form.get('nome_completo') || null,
-      data_nascimento: form.get('data_nascimento') || null,
+      data_nascimento: form.get('data_nascimento')?.trim() || null,
 
       ativo: false,
       bloqueado: true,

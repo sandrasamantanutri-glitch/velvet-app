@@ -1333,6 +1333,7 @@ router.get("/logs-clientes-bloqueados", authAdmin, async (req, res) => {
 router.post("/clientes-bloqueados", authAdmin, async (req, res) => {
   const client = await db.connect();
 
+ console.log("BODY recebido:", JSON.stringify(req.body));
   try {
     const {
       cliente_id,
@@ -1485,19 +1486,25 @@ router.post("/clientes-bloqueados", authAdmin, async (req, res) => {
     res.json(rows[0]);
 
   } catch (err) {
-    await client.query("ROLLBACK");
+  await client.query("ROLLBACK");
 
-    if (err.code === "23505") {
-      return res.status(409).json({
-        erro: "Cliente já está cadastrado na lista de bloqueados"
-      });
-    }
+  console.error("ERRO COMPLETO:", {
+    message: err.message,
+    code: err.code,
+    detail: err.detail,
+    table: err.table,
+    column: err.column,
+    constraint: err.constraint
+  });
 
-    console.error("Erro salvar cliente bloqueado:", err);
-    res.status(500).json({ erro: "Erro interno", details: err.message });
-  } finally {
-    client.release();
+  if (err.code === "23505") {
+    return res.status(409).json({
+      erro: "Cliente já está cadastrado na lista de bloqueados"
+    });
   }
+
+  res.status(500).json({ erro: "Erro interno", details: err.message });
+}
 });
 
 router.put("/clientes-bloqueados/:id", authAdmin, async (req, res) => {
