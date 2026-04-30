@@ -1689,7 +1689,7 @@ router.delete("/clientes-bloqueados/:id", authAdmin, async (req, res) => {
       SET
         bloqueado = false,
         ativo = true,
-        updated_at = NOW()
+        desativado_em = NOW()
       WHERE id = $1
     `, [req.params.id]);
 
