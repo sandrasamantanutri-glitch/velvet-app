@@ -1193,6 +1193,55 @@ router.get("/logs-clientes-risco", authAdmin, async (req, res) => {
 
 // ========== 6. CLIENTE BLOQUEADO ==========
 
+router.get("/clientes-bloqueados/lookup/:id", authAdmin, async (req, res) => {
+  try {
+    const clienteId = req.params.id;
+
+    const { rows } = await db.query(`
+      SELECT
+        c.id AS cliente_id,
+        u.id AS user_id,
+        u.email,
+        u.ativo,
+        u.desativado_em,
+        u.bloqueado,
+        cd.nome_completo,
+        cd.data_nascimento,
+        COALESCE(pp.aceite_ip, pc.aceite_ip) AS ip,
+        COALESCE(pp.fingerprint, pc.fingerprint) AS fingerprint,
+        COALESCE(pp.cpf, pc.cpf) AS cpf
+      FROM clientes c
+      LEFT JOIN users u ON u.id = c.user_id
+      LEFT JOIN clientes_dados cd ON cd.cliente_id = c.id
+      LEFT JOIN LATERAL (
+        SELECT aceite_ip, fingerprint, cpf
+        FROM pagamentos_pix
+        WHERE cliente_id = c.id AND aceite_ip IS NOT NULL
+        ORDER BY criado_em DESC
+        LIMIT 1
+      ) pp ON true
+      LEFT JOIN LATERAL (
+        SELECT aceite_ip, fingerprint, cpf
+        FROM pagamentos_cartao
+        WHERE cliente_id = c.id AND aceite_ip IS NOT NULL
+        ORDER BY created_at DESC
+        LIMIT 1
+      ) pc ON true
+      WHERE c.id = $1
+      LIMIT 1
+    `, [clienteId]);
+
+    if (!rows.length) {
+      return res.status(404).json({ erro: "Cliente não encontrado" });
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Erro lookup cliente bloqueado:", err);
+    res.status(500).json({ erro: "Erro interno", details: err.message });
+  }
+});
+
 router.get("/clientes-bloqueados", authAdmin, async (req, res) => {
   try {
     const { limit, offset, page } = paginate(req.query, 1, 20);
@@ -1264,52 +1313,59 @@ router.get("/clientes-bloqueados/:id", authAdmin, async (req, res) => {
   }
 });
 
-router.get("/clientes-bloqueados/lookup/:id", authAdmin, async (req, res) => {
+router.get("/logs-clientes-bloqueados", authAdmin, async (req, res) => {
   try {
-    const clienteId = req.params.id;
+    const { limit, offset, page } = paginate(req.query, 1, 20);
+
+    const countQ = await db.query(`
+      SELECT COUNT(*) FROM clientes_bloqueados_cadastro
+    `);
+    const total = Number(countQ.rows[0].count);
 
     const { rows } = await db.query(`
       SELECT
-        c.id AS cliente_id,
-        u.id AS user_id,
-        u.email,
-        u.ativo,
-        u.desativado_em,
-        u.bloqueado,
-        cd.nome_completo,
-        cd.data_nascimento,
-        COALESCE(pp.aceite_ip, pc.aceite_ip) AS ip,
-        COALESCE(pp.fingerprint, pc.fingerprint) AS fingerprint,
-        COALESCE(pp.cpf, pc.cpf) AS cpf
-      FROM clientes c
-      LEFT JOIN users u ON u.id = c.user_id
-      LEFT JOIN clientes_dados cd ON cd.cliente_id = c.id
+        cb.cliente_id,
+        cb.user_id,
+        cb.email,
+        cb.nome_completo,
+        cb.cpf,
+        cb.ip,
+        cb.fingerprint,
+        cb.motivo,
+        cb.nivel,
+        cb.bloqueado,
+        cb.bloqueio_ip,
+        cb.bloqueio_cpf,
+        cb.bloqueio_fingerprint,
+        cb.criado_em,
+        cb.admin AS admin_email,
+        COALESCE(cb.ip, pp.aceite_ip, pc.aceite_ip) AS ip_resolvido,
+        COALESCE(cb.fingerprint, pp.fingerprint, pc.fingerprint) AS fingerprint_resolvido,
+        COALESCE(cb.cpf, pp.cpf, pc.cpf) AS cpf_resolvido
+      FROM clientes_bloqueados_cadastro cb
       LEFT JOIN LATERAL (
         SELECT aceite_ip, fingerprint, cpf
         FROM pagamentos_pix
-        WHERE cliente_id = c.id AND aceite_ip IS NOT NULL
+        WHERE cliente_id = cb.cliente_id AND aceite_ip IS NOT NULL
         ORDER BY criado_em DESC
         LIMIT 1
       ) pp ON true
       LEFT JOIN LATERAL (
         SELECT aceite_ip, fingerprint, cpf
         FROM pagamentos_cartao
-        WHERE cliente_id = c.id AND aceite_ip IS NOT NULL
+        WHERE cliente_id = cb.cliente_id AND aceite_ip IS NOT NULL
         ORDER BY created_at DESC
         LIMIT 1
       ) pc ON true
-      WHERE c.id = $1
-      LIMIT 1
-    `, [clienteId]);
+      ORDER BY cb.criado_em DESC
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
 
-    if (!rows.length) {
-      return res.status(404).json({ erro: "Cliente não encontrado" });
-    }
+    res.json({ rows, page, total, totalPages: Math.ceil(total / limit) });
 
-    res.json(rows[0]);
   } catch (err) {
-    console.error("Erro lookup cliente bloqueado:", err);
-    res.status(500).json({ erro: "Erro interno", details: err.message });
+    console.error("Erro logs-clientes-bloqueados:", err);
+    res.status(500).json({ error: "Erro ao buscar logs de clientes bloqueados" });
   }
 });
 
