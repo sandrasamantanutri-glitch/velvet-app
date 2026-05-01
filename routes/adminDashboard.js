@@ -3697,6 +3697,8 @@ router.get("/faturamentos-list", async (req, res) => {
         mes,
         valor_total,
         taxas,
+        chargeback,
+        estornos,
         valor_liquido,
         arquivo,
         criado_em
@@ -3710,16 +3712,15 @@ router.get("/faturamentos-list", async (req, res) => {
     res.status(500).json({ erro: "Erro interno" });
   }
 });
- 
+
 router.post("/faturamentos", authAdmin, uploadPublico.single('arquivo'), async (req, res) => {
   try {
-    let { plataforma, mes, valor_total, taxas } = req.body;
+    let { plataforma, mes, valor_total, taxas, chargeback, estornos } = req.body;
     const arquivo = req.file ? req.file.location : null;
  
     const admin_id = req.user?.id;
     const user_id = req.user?.id;
  
-    // Validações
     if (!plataforma || !['pagarme', 'stripe'].includes(plataforma)) {
       return res.status(400).json({ erro: "Plataforma inválida" });
     }
@@ -3742,19 +3743,20 @@ router.post("/faturamentos", authAdmin, uploadPublico.single('arquivo'), async (
  
     valor_total = Number(valor_total);
     taxas = taxas ? Number(taxas) : 0;
-    const valor_liquido = valor_total - taxas;
+    chargeback = chargeback ? Number(chargeback) : 0;
+    estornos = estornos ? Number(estornos) : 0;
+    const valor_liquido = valor_total - taxas - chargeback - estornos;
  
     const { rows } = await db.query(`
-      INSERT INTO faturamentos (plataforma, mes, valor_total, taxas, valor_liquido, arquivo)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING id, plataforma, mes, valor_total, taxas, valor_liquido, arquivo, criado_em
-    `, [plataforma, mes, valor_total, taxas, valor_liquido, arquivo]);
+      INSERT INTO faturamentos (plataforma, mes, valor_total, taxas, chargeback, estornos, valor_liquido, arquivo)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING id, plataforma, mes, valor_total, taxas, chargeback, estornos, valor_liquido, arquivo, criado_em
+    `, [plataforma, mes, valor_total, taxas, chargeback, estornos, valor_liquido, arquivo]);
  
     if (!rows.length) {
       return res.status(500).json({ erro: "Falha ao registrar faturamento" });
     }
  
-    // Registrar no log
     const motevoLog = `Faturamento registrado: ${plataforma} - ${mes} - R$ ${valor_liquido.toFixed(2)} (líquido)`;
  
     try {
@@ -3772,7 +3774,7 @@ router.post("/faturamentos", authAdmin, uploadPublico.single('arquivo'), async (
     res.status(500).json({ erro: "Erro interno: " + err.message });
   }
 });
- 
+
 router.delete("/faturamentos/:id", authAdmin, async (req, res) => {
   try {
     const faturamentoId = Number(req.params.id);
@@ -3799,7 +3801,6 @@ router.delete("/faturamentos/:id", authAdmin, async (req, res) => {
  
     await db.query(`DELETE FROM faturamentos WHERE id = $1`, [faturamentoId]);
  
-    // Registrar no log
     const motevoLog = `Faturamento deletado: ${faturamento.rows[0].plataforma} - ${faturamento.rows[0].mes} - R$ ${faturamento.rows[0].valor_liquido.toFixed(2)}`;
  
     try {

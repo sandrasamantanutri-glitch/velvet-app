@@ -701,11 +701,54 @@
   <div class="card">
     <h3>Faturamentos Pagarme & Stripe</h3>
     <table class="table" id="tableFaturamento">
-      <thead><tr><th>#</th><th>Plataforma</th><th>Mês</th><th>Valor Total</th><th>Taxas</th><th>Líquido</th><th>Arquivo</th><th>Ações</th></tr></thead>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Plataforma</th>
+          <th>Mês</th>
+          <th>Valor Total</th>
+          <th>Taxas</th>
+          <th>Chargeback</th>
+          <th>Estornos</th>
+          <th>Líquido</th>
+          <th>Arquivo</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
       <tbody></tbody>
     </table>
   </div>
 </section>
+
+<!-- MODAL FATURAMENTO -->
+<div class="modal" id="modalFaturamento">
+  <div class="modal-content">
+    <span class="modal-close" onclick="closeAllModals()">×</span>
+    <h2>Novo Faturamento</h2>
+    <form onsubmit="salvarFaturamento(event)">
+      <select name="plataforma" required>
+        <option value="">Selecione a plataforma</option>
+        <option value="pagarme">Pagarme</option>
+        <option value="stripe">Stripe</option>
+      </select>
+
+      <input type="month" name="mes" required>
+
+      <input type="number" name="valor_total" placeholder="Valor Total" step="0.01" required>
+      <input type="number" name="taxas" placeholder="Taxas" step="0.01" value="0">
+      <input type="number" name="chargeback" placeholder="Chargeback" step="0.01" value="0">
+      <input type="number" name="estornos" placeholder="Estornos" step="0.01" value="0">
+      
+      <div style="background: #f0f0f0; padding: 10px; border-radius: 4px; margin: 10px 0;">
+        <strong>Valor Líquido: R$ <span id="previewLiquido">0,00</span></strong>
+      </div>
+
+      <input type="file" name="arquivo" required accept=".pdf,.xlsx,.xls,.csv">
+
+      <button type="submit" class="btn btn-primary">Salvar Faturamento</button>
+    </form>
+  </div>
+</div>
  
 <!-- ===== DESPESAS ===== -->
 <section class="page" id="page-despesas">

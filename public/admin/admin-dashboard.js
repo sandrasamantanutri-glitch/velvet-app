@@ -2319,7 +2319,7 @@ async function deletarChargeback(id) {
 
 pageLoaders.faturamento = async function () {
   try {
-   const data = await fetchJSON('/admin/dashboard/faturamentos-list');
+    const data = await fetchJSON('/admin/dashboard/faturamentos-list');
     renderFaturamentos(data);
   } catch (err) {
     console.error('Erro ao carregar faturamentos:', err);
@@ -2330,7 +2330,7 @@ pageLoaders.faturamento = async function () {
 function renderFaturamentos(faturamentos) {
   const tbody = document.querySelector('#tableFaturamento tbody');
   if (!faturamentos || faturamentos.length === 0) {
-    tbody.innerHTML = emptyRow(8);
+    tbody.innerHTML = emptyRow(10);
     return;
   }
 
@@ -2341,7 +2341,9 @@ function renderFaturamentos(faturamentos) {
       <td>${fat.mes}</td>
       <td>${money(fat.valor_total)}</td>
       <td>${money(fat.taxas)}</td>
-      <td><strong>${money(fat.valor_liquido)}</strong></td>
+      <td>${money(fat.chargeback)}</td>
+      <td>${money(fat.estornos)}</td>
+      <td><strong style="color: #27ae60;">${money(fat.valor_liquido)}</strong></td>
       <td>
         ${fat.arquivo ? `<a href="${fat.arquivo}" target="_blank" class="link">Baixar</a>` : '—'}
       </td>
@@ -2352,15 +2354,35 @@ function renderFaturamentos(faturamentos) {
   `).join('');
 }
 
+document.addEventListener('input', function(e) {
+  if (['valor_total', 'taxas', 'chargeback', 'estornos'].includes(e.target.name)) {
+    const form = e.target.closest('form');
+    if (form && form.onsubmit === salvarFaturamento) {
+      const valorTotal = parseFloat(form.valor_total.value) || 0;
+      const taxas = parseFloat(form.taxas.value) || 0;
+      const chargeback = parseFloat(form.chargeback.value) || 0;
+      const estornos = parseFloat(form.estornos.value) || 0;
+      const liquido = valorTotal - taxas - chargeback - estornos;
+      document.getElementById('previewLiquido').textContent = liquido.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+  }
+});
+
 async function salvarFaturamento(event) {
   event.preventDefault();
   const form = event.target;
   const formData = new FormData(form);
 
-  // Calcular valor líquido automaticamente
   const valorTotal = parseFloat(formData.get('valor_total')) || 0;
   const taxas = parseFloat(formData.get('taxas')) || 0;
-  formData.set('valor_liquido', (valorTotal - taxas).toFixed(2));
+  const chargeback = parseFloat(formData.get('chargeback')) || 0;
+  const estornos = parseFloat(formData.get('estornos')) || 0;
+  const valorLiquido = valorTotal - taxas - chargeback - estornos;
+
+  if (valorLiquido < 0) {
+    toast('Valor líquido não pode ser negativo', 'error');
+    return;
+  }
 
   try {
     const res = await authFetch('/admin/dashboard/faturamentos', {
