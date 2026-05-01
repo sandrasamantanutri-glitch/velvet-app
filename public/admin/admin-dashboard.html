@@ -725,31 +725,42 @@
   <div class="modal-content">
     <span class="modal-close" onclick="closeAllModals()">×</span>
     <h2>Novo Faturamento</h2>
-    <form onsubmit="salvarFaturamento(event)">
+    <form id="formFaturamento" onsubmit="salvarFaturamento(event)">
+      <label>Plataforma *</label>
       <select name="plataforma" required>
         <option value="">Selecione a plataforma</option>
         <option value="pagarme">Pagarme</option>
         <option value="stripe">Stripe</option>
       </select>
 
+      <label>Mês *</label>
       <input type="month" name="mes" required>
 
-      <input type="number" name="valor_total" placeholder="Valor Total" step="0.01" required>
-      <input type="number" name="taxas" placeholder="Taxas" step="0.01" value="0">
-      <input type="number" name="chargeback" placeholder="Chargeback" step="0.01" value="0">
-      <input type="number" name="estornos" placeholder="Estornos" step="0.01" value="0">
+      <label>Valor Total *</label>
+      <input type="number" name="valor_total" placeholder="Ex: 1000.00" step="0.01" required oninput="atualizarLiquido()">
+      
+      <label>Taxas</label>
+      <input type="number" name="taxas" placeholder="Ex: 50.00" step="0.01" value="0" oninput="atualizarLiquido()">
+      
+      <label>Chargeback</label>
+      <input type="number" name="chargeback" placeholder="Ex: 30.00" step="0.01" value="0" oninput="atualizarLiquido()">
+      
+      <label>Estornos</label>
+      <input type="number" name="estornos" placeholder="Ex: 20.00" step="0.01" value="0" oninput="atualizarLiquido()">
       
       <div style="background: #f0f0f0; padding: 10px; border-radius: 4px; margin: 10px 0;">
         <strong>Valor Líquido: R$ <span id="previewLiquido">0,00</span></strong>
       </div>
 
+      <label>Arquivo *</label>
       <input type="file" name="arquivo" required accept=".pdf,.xlsx,.xls,.csv">
 
       <button type="submit" class="btn btn-primary">Salvar Faturamento</button>
     </form>
   </div>
 </div>
- 
+
+
 <!-- ===== DESPESAS ===== -->
 <section class="page" id="page-despesas">
   <div class="page-actions">
@@ -1182,44 +1193,6 @@
   </form>
 </div>
  
-<!-- ===== MODAL FATURAMENTO ===== -->
-<div class="modal" id="modalFaturamento">
-  <h3>Registrar Faturamento</h3>
-  <form id="formFaturamento" onsubmit="salvarFaturamento(event)">
-    <label>
-      Plataforma
-      <select name="plataforma" required>
-        <option value="">Selecionar...</option>
-        <option value="pagarme">Pagarme</option>
-        <option value="stripe">Stripe</option>
-      </select>
-    </label>
-    <label>
-      Mês referência
-      <input type="month" name="mes" required>
-    </label>
-    <label>
-      Valor Total (R$)
-      <input type="number" name="valor_total" step="0.01" min="0" required>
-    </label>
-    <label>
-      Taxas (R$)
-      <input type="number" name="taxas" step="0.01" min="0" value="0">
-    </label>
-    <label>
-      Valor Líquido (R$)
-      <input type="number" name="valor_liquido" step="0.01" min="0" readonly>
-    </label>
-    <label>
-      Arquivo de Faturamento
-      <input type="file" name="arquivo" accept=".pdf,.xlsx,.xls,.csv" required>
-    </label>
-    <div class="modal-actions">
-      <button type="button" class="btn btn-ghost" onclick="closeAllModals()">Cancelar</button>
-      <button type="submit" class="btn btn-primary">Salvar</button>
-    </div>
-  </form>
-</div>
  
 <!-- ===== MODAL DESPESA ===== -->
 <div class="modal" id="modalDespesa">

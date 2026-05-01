@@ -2354,19 +2354,26 @@ function renderFaturamentos(faturamentos) {
   `).join('');
 }
 
-document.addEventListener('input', function(e) {
-  if (['valor_total', 'taxas', 'chargeback', 'estornos'].includes(e.target.name)) {
-    const form = e.target.closest('form');
-    if (form && form.onsubmit === salvarFaturamento) {
-      const valorTotal = parseFloat(form.valor_total.value) || 0;
-      const taxas = parseFloat(form.taxas.value) || 0;
-      const chargeback = parseFloat(form.chargeback.value) || 0;
-      const estornos = parseFloat(form.estornos.value) || 0;
-      const liquido = valorTotal - taxas - chargeback - estornos;
-      document.getElementById('previewLiquido').textContent = liquido.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
+// Função para atualizar valor líquido em tempo real
+function atualizarLiquido() {
+  const form = document.getElementById('formFaturamento');
+  if (!form) return;
+
+  const valorTotal = parseFloat(form.valor_total.value) || 0;
+  const taxas = parseFloat(form.taxas.value) || 0;
+  const chargeback = parseFloat(form.chargeback.value) || 0;
+  const estornos = parseFloat(form.estornos.value) || 0;
+  
+  const liquido = valorTotal - taxas - chargeback - estornos;
+  
+  const preview = document.getElementById('previewLiquido');
+  if (preview) {
+    preview.textContent = liquido.toLocaleString('pt-BR', { 
+      minimumFractionDigits: 2, 
+      maximumFractionDigits: 2 
+    });
   }
-});
+}
 
 async function salvarFaturamento(event) {
   event.preventDefault();
@@ -2397,6 +2404,7 @@ async function salvarFaturamento(event) {
     toast('Faturamento registrado com sucesso!', 'success');
     closeAllModals();
     form.reset();
+    atualizarLiquido(); // Reseta o preview também
     pageLoaders.faturamento();
   } catch (err) {
     console.error('Erro ao salvar faturamento:', err);
