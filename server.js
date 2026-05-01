@@ -814,7 +814,7 @@ await client.query(
             taxa_plataforma = $6,
             valor_total = $7,
             recorrente = false,
-            gateway_subscription_id = $8
+            gateway_subscription_id = $8,
              aviso_7_dias_enviado = false,
             aviso_24h_enviado = false
           WHERE cliente_id = $1
@@ -1760,7 +1760,7 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
             taxa_plataforma = $6,
             valor_total = $7,
             recorrente = false,
-            gateway_subscription_id = $8
+            gateway_subscription_id = $8,
              aviso_7_dias_enviado = false,
              aviso_24h_enviado = false
           WHERE cliente_id = $1
