@@ -139,47 +139,50 @@ router.post('/disconnect', async (req, res) => {
 });
 
 router.post('/sync', async (req, res) => {
-  try {
-    const adminId = req.user?.id;
-    if (!adminId) return res.status(401).json({ erro: 'Não autenticado' });
+  const adminId = req.user?.id;
+  if (!adminId) return res.status(401).json({ erro: 'Não autenticado' });
 
-    let config = ADMIN_EMAIL_CONFIG[adminId];
+  let config = ADMIN_EMAIL_CONFIG[adminId];
+  if (!config) {
+    config = await getEmailConfig(adminId);
     if (!config) {
-      config = await getEmailConfig(adminId);
-      if (!config) {
-        return res.status(400).json({ erro: 'Email não configurado' });
-      }
+      return res.status(400).json({ erro: 'Email não configurado' });
     }
+  }
 
-    const emails = [];
+  const emails = [];
+  let imap;
 
-    await new Promise((resolve, reject) => {
-      const imap = new Imap({
+  try {
+    // Timeout total de 25 segundos
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Sincronização excedeu tempo limite')), 25000)
+    );
+
+    const syncPromise = new Promise((resolve, reject) => {
+      imap = new Imap({
         user: config.email,
         password: config.senha,
         host: config.imap_host,
         port: config.imap_port,
         tls: config.use_tls,
         tlsOptions: { rejectUnauthorized: false },
-        connTimeout: 10000,
-        authTimeout: 10000
+        connTimeout: 8000,
+        authTimeout: 8000
       });
 
-      imap.on('error', (err) => {
-        console.error('[EMAIL SYNC] Erro IMAP:', err.message);
-        reject(err);
-      });
+      imap.on('error', reject);
 
       imap.on('ready', () => {
-        console.log('[EMAIL SYNC] Conectado ao IMAP, abrindo INBOX...');
+        console.log('[EMAIL SYNC] Conectado, abrindo INBOX...');
 
-        imap.openBox('INBOX', false, async (err, box) => {
+        imap.openBox('INBOX', false, (err, box) => {
           if (err) {
             imap.end();
             return reject(err);
           }
 
-          console.log('[EMAIL SYNC] INBOX aberta, total de mensagens:', box.messages.total);
+          console.log('[EMAIL SYNC] INBOX aberta, mensagens:', box.messages.total);
 
           if (box.messages.total === 0) {
             imap.end();
@@ -190,14 +193,16 @@ router.post('/sync', async (req, res) => {
             ? box.messages.total - 19 + ':' + box.messages.total
             : '1:*';
 
-          console.log('[EMAIL SYNC] Buscando range:', range);
-
           const f = imap.seq.fetch(range, { bodies: '' });
+          let parseCount = 0;
+          let parseFinished = 0;
 
           f.on('message', (msg, seqno) => {
-            simpleParser(msg, async (err, parsed) => {
+            parseCount++;
+            simpleParser(msg, (err, parsed) => {
+              parseFinished++;
               if (err) {
-                console.error('[EMAIL SYNC] Erro ao fazer parse:', err.message);
+                console.error('[EMAIL SYNC] Parse error:', err.message);
                 return;
               }
 
@@ -212,29 +217,40 @@ router.post('/sync', async (req, res) => {
                 full_text: parsed.text || '',
                 full_html: parsed.html || ''
               });
+
+              if (parseFinished === parseCount) {
+                console.log('[EMAIL SYNC] Parse completo, encerrando...');
+                imap.end();
+                resolve();
+              }
             });
           });
 
           f.on('error', reject);
           f.on('end', () => {
-            console.log('[EMAIL SYNC] Fetch finalizado, encontrados:', emails.length, 'emails');
-            imap.end();
-            setTimeout(resolve, 500);
+            if (parseCount === 0) {
+              imap.end();
+              resolve();
+            }
           });
         });
       });
 
-      console.log('[EMAIL SYNC] Conectando ao IMAP...');
       imap.connect();
     });
 
-    console.log('[EMAIL SYNC] Retornando', emails.length, 'emails');
+    // Race condition: executa o que terminar primeiro (sucesso ou timeout)
+    await Promise.race([syncPromise, timeoutPromise]);
+
+    console.log('[EMAIL SYNC] ✓ Sincronizado:', emails.length, 'emails');
     res.json({ sucesso: true, emails });
+
   } catch (err) {
-    console.error('[EMAIL SYNC] Erro geral:', err.message, err.stack);
+    console.error('[EMAIL SYNC] ✗ Erro:', err.message);
+    if (imap) imap.end();
+
     res.status(400).json({
-      erro: err.message || 'Erro ao sincronizar emails',
-      debug: err.message
+      erro: err.message || 'Erro ao sincronizar emails'
     });
   }
 });
