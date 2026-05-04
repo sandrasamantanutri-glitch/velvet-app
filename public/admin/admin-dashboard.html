@@ -1378,7 +1378,11 @@
       <p><strong>Para:</strong> <span id="emailPara"></span></p>
       <p><strong>Data:</strong> <span id="emailData"></span></p>
     </div>
-    <div id="emailCorpo" style="border-top:1px solid #ddd; padding-top:15px; line-height:1.6;"></div>
+    <div id="emailCorpo" style="border-top:1px solid #ddd; padding-top:15px; line-height:1.6; max-height:400px; overflow-y:auto;"></div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary" onclick="closeModal('modalVerEmail')">Fechar</button>
+    <button class="btn btn-primary" id="btnResponderEmail" onclick="responderEmail()">💬 Responder</button>
   </div>
 </div>
 

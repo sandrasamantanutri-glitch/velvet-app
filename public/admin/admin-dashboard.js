@@ -2744,7 +2744,10 @@ async function sincronizarEmails() {
   }
 }
 
+let emailAtualAberto = null;
+
 function verEmailDetalhes(email) {
+  emailAtualAberto = email;
   document.getElementById('emailAssunto').textContent = email.subject || '(sem assunto)';
   document.getElementById('emailDe').textContent = email.from || 'Desconhecido';
   document.getElementById('emailPara').textContent = email.to || '—';
@@ -2753,6 +2756,34 @@ function verEmailDetalhes(email) {
 
   openModal('modalVerEmail');
 }
+
+function responderEmail() {
+  if (!emailAtualAberto) return;
+
+  const emailDe = emailAtualAberto.from || '';
+  const assunto = emailAtualAberto.subject || '';
+  const assuntoRe = assunto.startsWith('Re:') ? assunto : 'Re: ' + assunto;
+
+  // Extrair endereço de email
+  const emailMatch = emailDe.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+  const paraEmail = emailMatch ? emailMatch[1] : emailDe;
+
+  // Preencher o composer
+  document.getElementById('emailPara2').value = paraEmail;
+  document.getElementById('emailAssunto2').value = assuntoRe;
+
+  // Adicionar citação no corpo
+  const corpoOriginal = emailAtualAberto.full_text || emailAtualAberto.text || '';
+  const citacao = '\n\n---\nEm ' + fmtDateTime(emailAtualAberto.date) + ', ' + emailDe + ' escreveu:\n\n> ' +
+    corpoOriginal.split('\n').join('\n> ');
+
+  document.getElementById('emailMsg').value = '\n' + citacao;
+
+  // Fechar email atual e abrir composer
+  closeModal('modalVerEmail');
+  abrirComposer();
+}
+
 
 function abrirComposer() {
   document.getElementById('formEnviarEmail').reset();
