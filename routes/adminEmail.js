@@ -6,6 +6,7 @@ const { simpleParser } = require('mailparser');
 const db = require('../db');
 
 const ADMIN_EMAIL_CONFIG = {};
+const ADMIN_EMAIL_IMAP = {}; // Manter conexões ativas
 
 async function getEmailConfig(adminId) {
   try {
@@ -328,6 +329,75 @@ router.post('/send', async (req, res) => {
     res.status(400).json({
       erro: err.message || 'Erro ao enviar email'
     });
+  }
+});
+
+router.post('/archive', async (req, res) => {
+  try {
+    const adminId = req.user?.id;
+    if (!adminId) return res.status(401).json({ erro: 'Não autenticado' });
+
+    const { id } = req.body;
+    if (!id) return res.status(400).json({ erro: 'ID do email é obrigatório' });
+
+    let config = ADMIN_EMAIL_CONFIG[adminId];
+    if (!config) {
+      config = await getEmailConfig(adminId);
+      if (!config) {
+        return res.status(400).json({ erro: 'Email não configurado' });
+      }
+    }
+
+    await new Promise((resolve, reject) => {
+      const imap = new Imap({
+        user: config.email,
+        password: config.senha,
+        host: config.imap_host,
+        port: config.imap_port,
+        tls: config.use_tls,
+        tlsOptions: { rejectUnauthorized: false },
+        connTimeout: 8000,
+        authTimeout: 8000
+      });
+
+      imap.on('error', reject);
+      imap.on('ready', () => {
+        console.log('[EMAIL ARCHIVE] Conectado, abrindo INBOX...');
+
+        imap.openBox('INBOX', false, (err, box) => {
+          if (err) {
+            imap.end();
+            return reject(err);
+          }
+
+          console.log('[EMAIL ARCHIVE] Marcando email', id, 'para mover...');
+
+          imap.addFlags(id, ['\\Deleted'], (err) => {
+            if (err) {
+              imap.end();
+              return reject(err);
+            }
+
+            console.log('[EMAIL ARCHIVE] Expurgando (deletando)...');
+            imap.expunge((err) => {
+              imap.end();
+              if (err) reject(err);
+              else {
+                console.log('[EMAIL ARCHIVE] ✓ Email arquivado');
+                resolve();
+              }
+            });
+          });
+        });
+      });
+
+      imap.connect();
+    });
+
+    res.json({ sucesso: true, mensagem: 'Email arquivado' });
+  } catch (err) {
+    console.error('[EMAIL ARCHIVE] Erro:', err.message);
+    res.status(400).json({ erro: err.message || 'Erro ao arquivar email' });
   }
 });
 

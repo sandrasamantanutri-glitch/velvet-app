@@ -2730,7 +2730,6 @@ async function sincronizarEmails() {
             <td style="cursor:pointer;" onclick="verEmailDetalhes(${JSON.stringify(email).replace(/"/g, '&quot;')})">${escapeHtml(email.subject || '(sem assunto)')}</td>
             <td style="cursor:pointer;" onclick="verEmailDetalhes(${JSON.stringify(email).replace(/"/g, '&quot;')})">${fmtDate(email.date)}</td>
             <td>
-              <button class="btn btn-sm btn-primary" onclick="responderEmailDireto('${escapeHtml(emailFrom)}', '${escapeHtml(email.subject || '')}')">💬 Responder</button>
               <button class="btn btn-sm btn-danger" onclick="arquivarEmail(${email.id})">🗑️ Arquivar</button>
             </td>
           </tr>
@@ -2765,7 +2764,26 @@ function verEmailDetalhes(email) {
 
 function responderEmail() {
   if (!emailAtualAberto) return;
-  responderEmailDireto(emailAtualAberto.from, emailAtualAberto.subject);
+
+  const emailDe = emailAtualAberto.from || '';
+  const assunto = emailAtualAberto.subject || '';
+
+  // Extrair endereço de email
+  const emailMatch = emailDe.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+  const paraEmail = emailMatch ? emailMatch[1] : emailDe;
+
+  const assuntoRe = assunto.startsWith('Re:') ? assunto : 'Re: ' + assunto;
+
+  // Preencher o composer ANTES de abrir
+  setTimeout(() => {
+    document.getElementById('emailPara2').value = paraEmail;
+    document.getElementById('emailAssunto2').value = assuntoRe;
+    document.getElementById('emailMsg').value = '';
+    document.getElementById('emailPara2').focus();
+  }, 100);
+
+  closeModal('modalVerEmail');
+  abrirComposer();
 }
 
 function responderEmailDireto(emailDe, assunto) {
@@ -2787,11 +2805,28 @@ function responderEmailDireto(emailDe, assunto) {
   toast('Respondendo para: ' + paraEmail, 'success');
 }
 
-function arquivarEmail(emailId) {
-  if (confirm('Tem certeza que deseja arquivar este email?')) {
+async function arquivarEmail(emailId) {
+  if (!confirm('Tem certeza que deseja arquivar este email?')) return;
+
+  try {
+    await postJSON('/api/admin/email/archive', { id: emailId });
     toast('Email arquivado!', 'success');
-    // Sincronizar novamente para remover da lista
-    setTimeout(() => sincronizarEmails(), 500);
+
+    // Remover linha da tabela imediatamente
+    const tbody = document.querySelector('#tableEmails tbody');
+    const rows = tbody.querySelectorAll('tr');
+    rows.forEach((row, idx) => {
+      // Encontrar e remover a linha do email arquivado
+      const button = row.querySelector('button[onclick*="arquivarEmail"]');
+      if (button && button.onclick.toString().includes(emailId)) {
+        row.remove();
+      }
+    });
+
+    // Recarregar após 1 segundo
+    setTimeout(() => sincronizarEmails(), 1000);
+  } catch (err) {
+    toast('Erro ao arquivar: ' + err.message, 'error');
   }
 }
 
