@@ -2721,12 +2721,18 @@ async function sincronizarEmails() {
       tbody.innerHTML = '';
 
       data.emails.forEach(email => {
+        const emailFromMatch = email.from.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+        const emailFrom = emailFromMatch ? emailFromMatch[1] : email.from;
+
         const row = `
-          <tr onclick="verEmailDetalhes(${JSON.stringify(email).replace(/"/g, '&quot;')})">
-            <td>${escapeHtml(email.from || 'Desconhecido')}</td>
-            <td>${escapeHtml(email.subject || '(sem assunto)')}</td>
-            <td>${fmtDate(email.date)}</td>
-            <td><button class="btn btn-sm btn-primary" onclick="event.stopPropagation()">Ver</button></td>
+          <tr>
+            <td style="cursor:pointer;" onclick="verEmailDetalhes(${JSON.stringify(email).replace(/"/g, '&quot;')})">${escapeHtml(email.from || 'Desconhecido')}</td>
+            <td style="cursor:pointer;" onclick="verEmailDetalhes(${JSON.stringify(email).replace(/"/g, '&quot;')})">${escapeHtml(email.subject || '(sem assunto)')}</td>
+            <td style="cursor:pointer;" onclick="verEmailDetalhes(${JSON.stringify(email).replace(/"/g, '&quot;')})">${fmtDate(email.date)}</td>
+            <td>
+              <button class="btn btn-sm btn-primary" onclick="responderEmailDireto('${escapeHtml(emailFrom)}', '${escapeHtml(email.subject || '')}')">💬 Responder</button>
+              <button class="btn btn-sm btn-danger" onclick="arquivarEmail(${email.id})">🗑️ Arquivar</button>
+            </td>
           </tr>
         `;
         tbody.innerHTML += row;
@@ -2759,10 +2765,11 @@ function verEmailDetalhes(email) {
 
 function responderEmail() {
   if (!emailAtualAberto) return;
+  responderEmailDireto(emailAtualAberto.from, emailAtualAberto.subject);
+}
 
-  const emailDe = emailAtualAberto.from || '';
-  const assunto = emailAtualAberto.subject || '';
-  const assuntoRe = assunto.startsWith('Re:') ? assunto : 'Re: ' + assunto;
+function responderEmailDireto(emailDe, assunto) {
+  const assuntoRe = assunto && !assunto.startsWith('Re:') ? 'Re: ' + assunto : assunto;
 
   // Extrair endereço de email
   const emailMatch = emailDe.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
@@ -2770,18 +2777,22 @@ function responderEmail() {
 
   // Preencher o composer
   document.getElementById('emailPara2').value = paraEmail;
-  document.getElementById('emailAssunto2').value = assuntoRe;
+  document.getElementById('emailAssunto2').value = assuntoRe || '';
+  document.getElementById('emailMsg').value = '';
 
-  // Adicionar citação no corpo
-  const corpoOriginal = emailAtualAberto.full_text || emailAtualAberto.text || '';
-  const citacao = '\n\n---\nEm ' + fmtDateTime(emailAtualAberto.date) + ', ' + emailDe + ' escreveu:\n\n> ' +
-    corpoOriginal.split('\n').join('\n> ');
-
-  document.getElementById('emailMsg').value = '\n' + citacao;
-
-  // Fechar email atual e abrir composer
+  // Fechar modal anterior se aberto
   closeModal('modalVerEmail');
   abrirComposer();
+
+  toast('Respondendo para: ' + paraEmail, 'success');
+}
+
+function arquivarEmail(emailId) {
+  if (confirm('Tem certeza que deseja arquivar este email?')) {
+    toast('Email arquivado!', 'success');
+    // Sincronizar novamente para remover da lista
+    setTimeout(() => sincronizarEmails(), 500);
+  }
 }
 
 
@@ -2803,8 +2814,49 @@ async function enviarEmail(e) {
 
     toast('Email enviado com sucesso!', 'success');
     closeAllModals();
+    document.getElementById('formEnviarEmail').reset();
+
+    // Recarregar enviados após 1 segundo
+    setTimeout(() => carregarEnviados(), 1000);
   } catch (err) {
     toast('Erro ao enviar: ' + err.message, 'error');
+  }
+}
+
+async function carregarEnviados() {
+  try {
+    const data = await fetchJSON('/api/admin/email/sent');
+
+    if (data.emails && Array.isArray(data.emails)) {
+      const tbody = document.querySelector('#tableEnviados tbody');
+      tbody.innerHTML = '';
+
+      if (data.emails.length === 0) {
+        document.getElementById('enviadosVazio').style.display = 'block';
+        document.getElementById('tableEnviados').style.display = 'none';
+        return;
+      }
+
+      data.emails.forEach(email => {
+        const row = `
+          <tr>
+            <td>${escapeHtml(email.to || 'Desconhecido')}</td>
+            <td>${escapeHtml(email.subject || '(sem assunto)')}</td>
+            <td>${fmtDate(email.date)}</td>
+            <td><span class="badge" style="background:#4CAF50; color:white; padding:4px 8px; border-radius:4px;">Enviado</span></td>
+          </tr>
+        `;
+        tbody.innerHTML += row;
+      });
+
+      document.getElementById('tableEnviados').style.display = 'table';
+      document.getElementById('enviadosVazio').style.display = 'none';
+    }
+  } catch (err) {
+    console.error('Erro ao carregar enviados:', err);
+    // Mostrar vazio se der erro
+    document.getElementById('enviadosVazio').style.display = 'block';
+    document.getElementById('tableEnviados').style.display = 'none';
   }
 }
 

@@ -331,4 +331,129 @@ router.post('/send', async (req, res) => {
   }
 });
 
+router.get('/sent', async (req, res) => {
+  try {
+    const adminId = req.user?.id;
+    if (!adminId) return res.status(401).json({ erro: 'Não autenticado' });
+
+    let config = ADMIN_EMAIL_CONFIG[adminId];
+    if (!config) {
+      config = await getEmailConfig(adminId);
+      if (!config) {
+        return res.status(400).json({ erro: 'Email não configurado' });
+      }
+    }
+
+    const emails = [];
+
+    await new Promise((resolve, reject) => {
+      const imap = new Imap({
+        user: config.email,
+        password: config.senha,
+        host: config.imap_host,
+        port: config.imap_port,
+        tls: config.use_tls,
+        tlsOptions: { rejectUnauthorized: false },
+        connTimeout: 8000,
+        authTimeout: 8000
+      });
+
+      imap.on('error', reject);
+
+      imap.on('ready', () => {
+        console.log('[EMAIL SENT] Abrindo pasta Sent...');
+
+        // Tentar diferentes nomes de pasta
+        const sentFolders = ['Sent', '[Gmail]/Sent Mail', 'Enviados', 'INBOX.Sent'];
+        let folderFound = false;
+
+        imap.getBoxes((err, boxes) => {
+          if (err) return reject(err);
+
+          let targetFolder = null;
+          const searchFolder = (box, path = '') => {
+            Object.keys(box).forEach(key => {
+              const fullPath = path ? path + box[key].delimiter + key : key;
+              if (sentFolders.some(f => fullPath.includes(f) || fullPath.toUpperCase().includes('SENT'))) {
+                targetFolder = fullPath;
+              }
+              if (box[key].children) {
+                searchFolder(box[key].children, fullPath);
+              }
+            });
+          };
+
+          searchFolder(boxes);
+
+          if (!targetFolder) {
+            console.warn('[EMAIL SENT] Pasta Sent não encontrada, retornando vazio');
+            imap.end();
+            return resolve();
+          }
+
+          console.log('[EMAIL SENT] Abrindo pasta:', targetFolder);
+
+          imap.openBox(targetFolder, false, (err, box) => {
+            if (err) {
+              imap.end();
+              return reject(err);
+            }
+
+            console.log('[EMAIL SENT] Pasta aberta, mensagens:', box.messages.total);
+
+            if (box.messages.total === 0) {
+              imap.end();
+              return resolve();
+            }
+
+            const range = box.messages.total > 20
+              ? box.messages.total - 19 + ':' + box.messages.total
+              : '1:*';
+
+            const f = imap.seq.fetch(range, { bodies: '' });
+
+            f.on('message', (msg, seqno) => {
+              const chunks = [];
+              msg.on('body', (stream) => {
+                stream.on('data', (chunk) => chunks.push(chunk));
+                stream.on('end', async () => {
+                  try {
+                    const buffer = Buffer.concat(chunks);
+                    const parsed = await simpleParser(buffer);
+
+                    emails.push({
+                      id: seqno,
+                      to: parsed.to?.text || 'Desconhecido',
+                      subject: parsed.subject || '(sem assunto)',
+                      date: parsed.date
+                    });
+                  } catch (err) {
+                    console.error('[EMAIL SENT] Erro parsing:', err.message);
+                  }
+                });
+              });
+            });
+
+            f.on('error', reject);
+            f.on('end', () => {
+              imap.end();
+              resolve();
+            });
+          });
+        });
+      });
+
+      imap.connect();
+    });
+
+    console.log('[EMAIL SENT] Retornando', emails.length, 'emails enviados');
+    res.json({ sucesso: true, emails });
+  } catch (err) {
+    console.error('[EMAIL SENT] Erro:', err.message);
+    res.status(400).json({
+      erro: err.message || 'Erro ao buscar emails enviados'
+    });
+  }
+});
+
 module.exports = router;
