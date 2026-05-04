@@ -1987,7 +1987,6 @@ app.use("/api", servercontentRouter);
 const adminDashboardRouter = require('./routes/adminDashboard');
 const agencyDashboardRouter = require('./routes/agencyDashboard');
 const adminEmailRouter = require('./routes/adminEmail');
-const auth = require('./middleware/auth');
 const authAdmin = require('./middleware/authAdmin');
 
 app.use("/admin/dashboard", adminDashboardRouter);
