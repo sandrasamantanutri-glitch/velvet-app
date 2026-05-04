@@ -192,6 +192,7 @@ router.post('/sync', async (req, res) => {
 
           if (box.messages.total === 0) {
             imap.end();
+            console.log('[EMAIL SYNC] INBOX vazia');
             return resolve();
           }
 
@@ -199,23 +200,39 @@ router.post('/sync', async (req, res) => {
             ? box.messages.total - 19 + ':' + box.messages.total
             : '1:*';
 
+          console.log('[EMAIL SYNC] Range a buscar:', range, '(total:', box.messages.total, ')');
+
           const f = imap.seq.fetch(range, { bodies: '' });
           const messagesToParse = [];
           let fetchEnded = false;
 
           f.on('message', (msg, seqno) => {
+            console.log('[EMAIL SYNC] Mensagem encontrada - seqno:', seqno);
             messagesToParse.push({ msg, seqno });
           });
 
-          f.on('error', reject);
+          f.on('error', (err) => {
+            console.error('[EMAIL SYNC] Erro no fetch:', err.message);
+            reject(err);
+          });
+
           f.on('end', async () => {
             fetchEnded = true;
-            console.log('[EMAIL SYNC] Fetch ended, parsing', messagesToParse.length, 'mensagens...');
+            console.log('[EMAIL SYNC] Fetch ended, encontradas', messagesToParse.length, 'mensagens');
+
+            if (messagesToParse.length === 0) {
+              console.warn('[EMAIL SYNC] ⚠️ AVISO: Nenhuma mensagem foi encontrada no fetch!');
+              imap.end();
+              return resolve();
+            }
 
             // Processar mensagens sequencialmente para evitar sobrecarga
             for (const { msg, seqno } of messagesToParse) {
               try {
+                console.log('[EMAIL SYNC] Parsing mensagem', seqno, '...');
                 const parsed = await simpleParser(msg);
+
+                console.log('[EMAIL SYNC] ✓ Parsed seqno:', seqno, 'subject:', parsed.subject?.substring(0, 50));
 
                 emails.push({
                   id: seqno,
@@ -229,11 +246,11 @@ router.post('/sync', async (req, res) => {
                   full_html: parsed.html || ''
                 });
               } catch (parseErr) {
-                console.error('[EMAIL SYNC] Erro parsing mensagem', seqno, ':', parseErr.message);
+                console.error('[EMAIL SYNC] ✗ Erro parsing mensagem', seqno, ':', parseErr.message);
               }
             }
 
-            console.log('[EMAIL SYNC] Parse completo, encerrando...');
+            console.log('[EMAIL SYNC] Parse completo, total no array:', emails.length);
             imap.end();
             resolve();
           });
@@ -246,8 +263,14 @@ router.post('/sync', async (req, res) => {
     // Race condition: executa o que terminar primeiro (sucesso ou timeout)
     await Promise.race([syncPromise, timeoutPromise]);
 
-    console.log('[EMAIL SYNC] ✓ Sincronizado:', emails.length, 'emails');
-    res.json({ sucesso: true, emails });
+    console.log('[EMAIL SYNC] ✓ Sincronizado com sucesso:', emails.length, 'emails retornados');
+    console.log('[EMAIL SYNC] Dados:', JSON.stringify(emails.slice(0, 2), null, 2));
+
+    res.json({
+      sucesso: true,
+      total: emails.length,
+      emails
+    });
 
   } catch (err) {
     console.error('[EMAIL SYNC] ✗ Erro:', err.message);
