@@ -38,9 +38,13 @@ async function saveEmailConfig(adminId, config) {
 router.post('/config', async (req, res) => {
   try {
     const adminId = req.user?.id;
+    console.log('[EMAIL] Config request - adminId:', adminId, 'body:', req.body);
+
     if (!adminId) return res.status(401).json({ erro: 'Não autenticado' });
 
     const { email, senha, imap_host, imap_port, smtp_host, smtp_port, use_tls } = req.body;
+
+    console.log('[EMAIL] Dados recebidos:', { email, senha: '***', imap_host, imap_port, smtp_host, smtp_port, use_tls });
 
     if (!email || !senha) {
       return res.status(400).json({ erro: 'Email e senha são obrigatórios' });
@@ -56,6 +60,13 @@ router.post('/config', async (req, res) => {
       use_tls: use_tls !== false
     };
 
+    console.log('[EMAIL] Testando config:', {
+      email: testConfig.email,
+      host: testConfig.imap_host,
+      port: testConfig.imap_port,
+      tls: testConfig.use_tls
+    });
+
     const imap = new Imap({
       user: testConfig.email,
       password: testConfig.senha,
@@ -66,11 +77,16 @@ router.post('/config', async (req, res) => {
     });
 
     await new Promise((resolve, reject) => {
-      imap.openBox('INBOX', false, (err, box) => {
-        imap.end();
-        if (err) reject(err);
-        else resolve();
+      imap.on('error', reject);
+      imap.on('ready', () => {
+        console.log('[EMAIL] Conectado com sucesso');
+        imap.openBox('INBOX', false, (err, box) => {
+          imap.end();
+          if (err) reject(err);
+          else resolve();
+        });
       });
+      imap.connect();
     });
 
     await saveEmailConfig(adminId, testConfig);
@@ -82,9 +98,10 @@ router.post('/config', async (req, res) => {
       email: testConfig.email
     });
   } catch (err) {
-    console.error('Erro ao configurar email:', err);
+    console.error('[EMAIL] Erro ao configurar email:', err.message, err.stack);
     res.status(400).json({
-      erro: err.message || 'Erro ao conectar ao email. Verifique suas credenciais.'
+      erro: err.message || 'Erro ao conectar ao email. Verifique suas credenciais.',
+      debug: err.message
     });
   }
 });
