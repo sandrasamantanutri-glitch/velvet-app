@@ -78,7 +78,9 @@ router.post('/config', async (req, res) => {
       host: testConfig.imap_host,
       port: testConfig.imap_port,
       tls: testConfig.use_tls,
-      tlsOptions: { rejectUnauthorized: false }
+      tlsOptions: { rejectUnauthorized: false },
+      connTimeout: 10000,
+      authTimeout: 10000
     });
 
     await new Promise((resolve, reject) => {
@@ -158,7 +160,9 @@ router.post('/sync', async (req, res) => {
         host: config.imap_host,
         port: config.imap_port,
         tls: config.use_tls,
-        tlsOptions: { rejectUnauthorized: false }
+        tlsOptions: { rejectUnauthorized: false },
+        connTimeout: 10000,
+        authTimeout: 10000
       });
 
       imap.on('error', (err) => {
