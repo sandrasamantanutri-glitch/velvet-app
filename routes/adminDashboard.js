@@ -66,6 +66,7 @@ const uploadPrivado = multer({
   }
 });
 
+
 // All routes require admin auth
 router.use(auth, authAdmin);
 
@@ -3172,16 +3173,21 @@ router.post("/modelo-pagamentos", authAdmin, upload.single("recibo"), async (req
     let recibo_url = null;
 
     if (req.file) {
-      const key = `recibos/${modeloIdNum}/${Date.now()}-${req.file.originalname}`;
+      try {
+        const key = `recibos/${modeloIdNum}/${Date.now()}-${req.file.originalname}`;
 
-      await s3Privado.putObject({
-        Bucket: process.env.B2_BUCKET_PRIVATE,
-        Key: key,
-        Body: req.file.buffer,
-        ContentType: req.file.mimetype
-      }).promise();
+        await s3Privado.putObject({
+          Bucket: process.env.B2_BUCKET_PRIVATE,
+          Key: key,
+          Body: req.file.buffer,
+          ContentType: req.file.mimetype
+        }).promise();
 
-      recibo_url = key;
+        recibo_url = key;
+      } catch (uploadErr) {
+        console.warn("Aviso: upload de comprovativo falhou (B2 não configurado?):", uploadErr.message);
+        // Continua sem o ficheiro — pagamento é registado na mesma
+      }
     }
 
     const { rows } = await db.query(`
@@ -3266,6 +3272,94 @@ router.post("/modelo-pagamentos/:id/pagar", authAdmin, async (req, res) => {
   } catch (err) {
     console.error("Erro pagar modelo-pagamento:", err);
     res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// ===== RECIBO DE PAGAMENTO =====
+router.get("/modelo-pagamentos/:id/recibo", authAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+
+    const { rows } = await db.query(`
+      SELECT mp.id, mp.modelo_id, mp.mes, mp.total_midias, mp.total_assinaturas,
+             mp.total_geral, mp.status, mp.pago_em,
+             m.nome AS modelo_nome, m.nome_exibicao,
+             md.nome_completo, md.cpf, md.endereco, md.cidade, md.estado,
+             mdb.tipo AS pgto_tipo, mdb.pix_tipo, mdb.pix_chave,
+             mdb.banco, mdb.agencia, mdb.conta, mdb.conta_tipo, mdb.titular_documento
+      FROM modelo_pagamentos mp
+      LEFT JOIN modelos m ON m.id = mp.modelo_id
+      LEFT JOIN modelos_dados md ON md.modelo_id = mp.modelo_id
+      LEFT JOIN modelo_dados_bancarios mdb ON mdb.modelo_id = mp.modelo_id
+      WHERE mp.id = $1
+    `, [id]);
+
+    if (!rows.length) return res.status(404).send('<h3>Pagamento não encontrado</h3>');
+
+    const p = rows[0];
+    const nomeCompleto = p.nome_completo || p.nome_exibicao || p.modelo_nome || `Modelo #${p.modelo_id}`;
+    const cpf = p.cpf || p.titular_documento || '—';
+    const endereco = p.endereco || '—';
+    const local = [p.cidade, p.estado].filter(Boolean).join(' - ') || '—';
+    const dataEmissao = new Date().toLocaleDateString('pt-BR');
+    const mesRefRaw = new Date(p.mes).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+    const mesRefLabel = mesRefRaw.charAt(0).toUpperCase() + mesRefRaw.slice(1);
+    const reciboNum = String(p.id).padStart(6, '0');
+    let tipoPagamento = '—';
+    if (p.pgto_tipo === 'pix') tipoPagamento = `PIX — ${(p.pix_tipo || '').toUpperCase()}: ${p.pix_chave || '—'}`;
+    else if (p.pgto_tipo === 'transferencia') tipoPagamento = `TED — Banco: ${p.banco || '—'} | Ag: ${p.agencia || '—'} | Conta: ${p.conta || '—'}${p.conta_tipo ? ' (' + p.conta_tipo + ')' : ''}`;
+    const dataPagamento = p.pago_em ? new Date(p.pago_em).toLocaleDateString('pt-BR') : '—';
+    const fmtBRL = v => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const linhas = [];
+    if (Number(p.total_midias) > 0) linhas.push({ descricao: 'Repasse de receitas de Mídias geradas na plataforma Velvet', periodo: mesRefLabel, valor: Number(p.total_midias) });
+    if (Number(p.total_assinaturas) > 0) linhas.push({ descricao: 'Repasse de receitas de Assinaturas geradas na plataforma Velvet', periodo: mesRefLabel, valor: Number(p.total_assinaturas) });
+    if (linhas.length === 0) linhas.push({ descricao: 'Repasse de receitas geradas na plataforma Velvet', periodo: mesRefLabel, valor: Number(p.total_geral) });
+    const linhasHtml = linhas.map(l => `<tr><td class="c">1</td><td>${l.descricao}</td><td class="c">${l.periodo}</td><td class="r">R$ ${fmtBRL(l.valor)}</td></tr>`).join('');
+    const totalFmt = fmtBRL(p.total_geral);
+    try { await db.query(`INSERT INTO recibos_pagamento (pagamento_id, modelo_id, numero_recibo) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING`, [p.id, p.modelo_id, reciboNum]); } catch (_) {}
+
+    res.send(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+<base href="${baseUrl}/">
+<title>Recibo #${reciboNum} — Velvet</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f0f0;padding:20px;color:#222;font-size:13px}
+.page{background:#fff;max-width:800px;margin:0 auto;padding:40px 50px;box-shadow:0 4px 20px rgba(0,0,0,.15)}
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #6c2eb9;padding-bottom:20px;margin-bottom:24px}
+.logo img{width:140px}.ei{text-align:right}.ei h2{color:#6c2eb9;font-size:17px;font-weight:700}.ei p{color:#555;font-size:11px;line-height:1.7;margin-top:4px}
+.ts{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px}.ts h1{font-size:24px;font-weight:700;letter-spacing:1px}
+.rm{text-align:right}.rm table{border-collapse:collapse;margin-left:auto}.rm td{padding:3px 8px;font-size:12px}.rm td:first-child{color:#888;font-weight:600}.rm td:last-child{font-weight:700}
+.stamp{display:inline-block;border:2px solid #6c2eb9;color:#6c2eb9;padding:3px 14px;font-size:10px;font-weight:700;letter-spacing:2px;border-radius:3px;margin-top:8px}
+.cs{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;background:#f9f5ff;padding:16px 20px;border-radius:8px;border-left:4px solid #6c2eb9}
+.cs h4{color:#6c2eb9;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}.cs p{font-size:12px;color:#333;line-height:1.8}.cs p strong{color:#111}
+table.pt{width:100%;border-collapse:collapse;margin-bottom:20px}table.pt th{background:#6c2eb9;color:#fff;padding:10px 12px;text-align:left;font-size:12px;font-weight:600}
+table.pt th.c,table.pt td.c{text-align:center}table.pt th.r,table.pt td.r{text-align:right}table.pt td{padding:10px 12px;border-bottom:1px solid #eee;font-size:12px}table.pt tr:nth-child(even) td{background:#faf7ff}
+.tot{display:flex;justify-content:flex-end;margin-bottom:24px}.totbox{border:2px solid #6c2eb9;border-radius:6px;padding:12px 20px;min-width:240px}
+.totrow{display:flex;justify-content:space-between;padding:4px 0;font-size:13px}.totrow.f{border-top:2px solid #6c2eb9;margin-top:8px;padding-top:10px;font-size:16px;font-weight:700;color:#6c2eb9}
+.pi{background:#f0f9f0;border:1px solid #c3e6cb;border-radius:6px;padding:14px 18px;margin-bottom:24px}.pi h4{color:#27a745;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}.pi p{font-size:12px;color:#333;line-height:1.8}
+.ft{border-top:1px solid #ddd;padding-top:14px;text-align:center;color:#888;font-size:10px;line-height:1.7}
+.pbtn{display:block;margin:20px auto 0;padding:10px 32px;background:#6c2eb9;color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer;font-weight:600}
+@media print{body{background:#fff;padding:0}.page{box-shadow:none;padding:20px}.pbtn{display:none}}
+</style></head><body>
+<div class="page">
+  <div class="hdr"><div class="logo"><img src="assets/velvet.png" alt="Velvet"></div>
+    <div class="ei"><h2>Velvet Entertainment</h2><p>CNPJ: 64.320.030/0001-68<br>Travessa Dona Paula, 13 — Higienópolis<br>São Paulo — SP — Brasil<br>Tel: (11) 97752-7031</p></div></div>
+  <div class="ts"><h1>RECIBO DE PAGAMENTO</h1>
+    <div class="rm"><table><tr><td>RECIBO Nº</td><td>#${reciboNum}</td></tr><tr><td>DATA</td><td>${dataEmissao}</td></tr><tr><td>REFERÊNCIA</td><td>${mesRefLabel}</td></tr></table><div class="stamp">ORIGINAL</div></div></div>
+  <div class="cs">
+    <div><h4>Dados do Beneficiário</h4><p><strong>Nº Cliente:</strong> ${p.modelo_id}<br><strong>Nome:</strong> ${nomeCompleto}<br><strong>CPF/Doc:</strong> ${cpf}<br><strong>Endereço:</strong> ${endereco}<br><strong>Local:</strong> ${local}</p></div>
+    <div><h4>Emissor</h4><p><strong>Empresa:</strong> Velvet Entertainment<br><strong>CNPJ:</strong> 64.320.030/0001-68<br><strong>Endereço:</strong> Travessa Dona Paula, 13<br><strong>Local:</strong> Higienópolis — São Paulo/SP</p></div>
+  </div>
+  <table class="pt"><thead><tr><th class="c" style="width:50px">QTD</th><th>Descrição</th><th class="c" style="width:150px">Período</th><th class="r" style="width:110px">Valor</th></tr></thead><tbody>${linhasHtml}</tbody></table>
+  <div class="tot"><div class="totbox"><div class="totrow f"><span>VALOR TOTAL</span><span>R$ ${totalFmt}</span></div></div></div>
+  <div class="pi"><h4>Dados do Pagamento</h4><p><strong>Data:</strong> ${dataPagamento} &nbsp; <strong>Valor:</strong> R$ ${totalFmt} &nbsp; <strong>Forma:</strong> ${tipoPagamento}</p></div>
+  <div class="ft"><p>Este documento comprova o repasse de receitas geradas na plataforma Velvet.</p><p>Velvet Entertainment — CNPJ: 64.320.030/0001-68 — Travessa Dona Paula, 13, Higienópolis, São Paulo/SP</p></div>
+</div>
+<button class="pbtn" onclick="window.print()">🖨️ Salvar / Imprimir PDF</button>
+</body></html>`);
+  } catch (err) {
+    console.error("Erro recibo:", err);
+    res.status(500).send('<h3>Erro ao gerar recibo</h3>');
   }
 });
 

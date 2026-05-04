@@ -1947,18 +1947,21 @@ async function carregarPgtoModelo(page) {
         <td>${badgeStatus(r.status)}</td>
         <td>${fmtDateTime(r.pago_em)}</td>
         <td>
+          <button class="btn btn-sm btn-primary" onclick="abrirRecibo(${r.id})">Emitir Recibo</button>
+        </td>
+        <td>
           ${r.recibo_signed_url
-            ? `<a href="${r.recibo_signed_url}" target="_blank" class="btn btn-sm btn-ghost">Comprovativo</a>`
-            : `<span class="badge badge-muted">Sem comprovativo</span>`}
-
+            ? `<a href="${r.recibo_signed_url}" target="_blank" class="btn btn-sm btn-ghost">Ver</a>`
+            : `<span class="badge badge-muted">—</span>`}
+        </td>
+        <td>
           ${r.status !== 'pago'
             ? `<button class="btn btn-sm btn-success" onclick="marcarPgtoModeloPago(${r.id})">Marcar pago</button>`
             : ''}
-
-          <button class="btn btn-sm btn-primary" onclick="editarPgtoModelo(${r.id})">Editar</button>
+          <button class="btn btn-sm btn-ghost" onclick="editarPgtoModelo(${r.id})">Editar</button>
         </td>
       </tr>
-    `).join('') || emptyRow(9);
+    `).join('') || emptyRow(11);
 
     buildPagination('paginationPgtoModelo', page, data.totalPages || 1, 'carregarPgtoModelo');
   } catch (err) {
@@ -2029,11 +2032,15 @@ async function salvarPagModelo(e) {
       throw new Error(data.erro || data.message || `HTTP ${res.status}`);
     }
 
-    toast('Pagamento registrado!', 'success');
+    toast('Pagamento registrado! Abrindo recibo...', 'success');
     closeAllModals();
     form.reset();
     $('saldoDisponivelPgModelo').textContent = '—';
     carregarPgtoModelo(1);
+
+    if (data.id) {
+      abrirRecibo(data.id);
+    }
   } catch (err) {
     toast('Erro: ' + err.message, 'error');
   }
@@ -2063,6 +2070,31 @@ async function marcarPgtoModeloPago(id) {
     carregarPgtoModelo(1);
   } catch (err) {
     toast('Erro: ' + err.message, 'error');
+  }
+}
+
+async function abrirRecibo(id) {
+  // Abre a janela IMEDIATAMENTE (dentro do gesto do utilizador)
+  // para não ser bloqueada como popup
+  const win = window.open('', '_blank');
+  if (!win) {
+    toast('Permita pop-ups neste site para ver o recibo', 'warning');
+    return;
+  }
+  win.document.write('<html><body style="font-family:sans-serif;padding:40px;color:#555">A carregar recibo...</body></html>');
+
+  try {
+    const res = await authFetch(`/admin/dashboard/modelo-pagamentos/${id}/recibo`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const html = await res.text();
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+  } catch (err) {
+    win.document.open();
+    win.document.write('<html><body style="font-family:sans-serif;padding:40px"><h2>Erro ao gerar recibo</h2><p>' + err.message + '</p></body></html>');
+    win.document.close();
+    toast('Erro ao gerar recibo: ' + err.message, 'error');
   }
 }
 
