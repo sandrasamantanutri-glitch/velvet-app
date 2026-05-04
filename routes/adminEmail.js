@@ -14,7 +14,12 @@ async function getEmailConfig(adminId) {
       [adminId]
     );
     if (res.rows.length && res.rows[0].email_config) {
-      return JSON.parse(res.rows[0].email_config);
+      const config = res.rows[0].email_config;
+      // JSONB retorna como objeto, não como string
+      if (typeof config === 'string') {
+        return JSON.parse(config);
+      }
+      return config;
     }
   } catch (err) {
     console.error('Erro ao recuperar config de email:', err);
