@@ -77,15 +77,26 @@ router.post('/config', async (req, res) => {
     });
 
     await new Promise((resolve, reject) => {
-      imap.on('error', reject);
+      imap.on('error', (err) => {
+        console.error('[EMAIL CONFIG] Erro IMAP:', err.message);
+        reject(err);
+      });
+
       imap.on('ready', () => {
-        console.log('[EMAIL] Conectado com sucesso');
+        console.log('[EMAIL CONFIG] Conectado com sucesso, testando acesso...');
         imap.openBox('INBOX', false, (err, box) => {
-          imap.end();
-          if (err) reject(err);
-          else resolve();
+          if (err) {
+            imap.end();
+            reject(err);
+          } else {
+            console.log('[EMAIL CONFIG] INBOX acessível');
+            imap.end();
+            resolve();
+          }
         });
       });
+
+      console.log('[EMAIL CONFIG] Conectando ao IMAP...');
       imap.connect();
     });
 
@@ -145,56 +156,76 @@ router.post('/sync', async (req, res) => {
         tlsOptions: { rejectUnauthorized: false }
       });
 
-      imap.openBox('INBOX', false, async (err, box) => {
-        if (err) {
-          imap.end();
-          return reject(err);
-        }
+      imap.on('error', (err) => {
+        console.error('[EMAIL SYNC] Erro IMAP:', err.message);
+        reject(err);
+      });
 
-        const range = box.messages.total > 20
-          ? box.messages.total - 19 + ':' + box.messages.total
-          : '1:*';
+      imap.on('ready', () => {
+        console.log('[EMAIL SYNC] Conectado ao IMAP, abrindo INBOX...');
 
-        const f = imap.seq.fetch(range, { bodies: '' });
+        imap.openBox('INBOX', false, async (err, box) => {
+          if (err) {
+            imap.end();
+            return reject(err);
+          }
 
-        f.on('message', (msg, seqno) => {
-          simpleParser(msg, async (err, parsed) => {
-            if (err) {
-              console.error('Erro ao fazer parse de email:', err);
-              return;
-            }
+          console.log('[EMAIL SYNC] INBOX aberta, total de mensagens:', box.messages.total);
 
-            emails.push({
-              id: seqno,
-              from: parsed.from?.text || 'Desconhecido',
-              to: parsed.to?.text || '',
-              subject: parsed.subject || '(sem assunto)',
-              text: parsed.text?.substring(0, 200) || '',
-              html: parsed.html?.substring(0, 500) || '',
-              date: parsed.date,
-              full_text: parsed.text || '',
-              full_html: parsed.html || ''
+          if (box.messages.total === 0) {
+            imap.end();
+            return resolve();
+          }
+
+          const range = box.messages.total > 20
+            ? box.messages.total - 19 + ':' + box.messages.total
+            : '1:*';
+
+          console.log('[EMAIL SYNC] Buscando range:', range);
+
+          const f = imap.seq.fetch(range, { bodies: '' });
+
+          f.on('message', (msg, seqno) => {
+            simpleParser(msg, async (err, parsed) => {
+              if (err) {
+                console.error('[EMAIL SYNC] Erro ao fazer parse:', err.message);
+                return;
+              }
+
+              emails.push({
+                id: seqno,
+                from: parsed.from?.text || 'Desconhecido',
+                to: parsed.to?.text || '',
+                subject: parsed.subject || '(sem assunto)',
+                text: parsed.text?.substring(0, 200) || '',
+                html: parsed.html?.substring(0, 500) || '',
+                date: parsed.date,
+                full_text: parsed.text || '',
+                full_html: parsed.html || ''
+              });
             });
           });
-        });
 
-        f.on('error', reject);
-        f.on('end', () => {
-          imap.end();
-          setTimeout(resolve, 500);
+          f.on('error', reject);
+          f.on('end', () => {
+            console.log('[EMAIL SYNC] Fetch finalizado, encontrados:', emails.length, 'emails');
+            imap.end();
+            setTimeout(resolve, 500);
+          });
         });
       });
 
-      imap.openBox('INBOX', false, (err) => {
-        if (err) reject(err);
-      });
+      console.log('[EMAIL SYNC] Conectando ao IMAP...');
+      imap.connect();
     });
 
+    console.log('[EMAIL SYNC] Retornando', emails.length, 'emails');
     res.json({ sucesso: true, emails });
   } catch (err) {
-    console.error('Erro ao sincronizar emails:', err);
+    console.error('[EMAIL SYNC] Erro geral:', err.message, err.stack);
     res.status(400).json({
-      erro: err.message || 'Erro ao sincronizar emails'
+      erro: err.message || 'Erro ao sincronizar emails',
+      debug: err.message
     });
   }
 });
