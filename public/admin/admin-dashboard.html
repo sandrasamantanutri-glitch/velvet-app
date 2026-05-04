@@ -100,6 +100,11 @@
   <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S15.33 8 14.5 8 13 8.67 13 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S8.33 8 7.5 8 6 8.67 6 9.5 6.67 11 7.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg>
   <span>Despesas</span>
 </a>
+
+<a class="nav-item" data-page="emails">
+  <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+  <span>Emails</span>
+</a>
 </nav>
 
   <div class="sidebar-bottom">
@@ -1233,6 +1238,179 @@
       <button type="submit" class="btn btn-primary">Salvar</button>
     </div>
   </form>
+</div>
+
+<!-- EMAILS HOSTINGER -->
+<section class="page" id="page-emails">
+  <div class="tabs" id="emailsTabs">
+    <button class="tab active" data-tab="config-email">Configuração</button>
+    <button class="tab" data-tab="inbox-email">Caixa de Entrada</button>
+    <button class="tab" data-tab="enviados-email">Enviados</button>
+  </div>
+
+  <!-- ABA CONFIGURAÇÃO -->
+  <div class="tab-content active" id="tab-config-email">
+    <div class="card">
+      <h3>Configurar Email Hostinger</h3>
+      <p style="color: #666; margin-bottom: 20px; font-size: 14px;">Configure suas credenciais de email IMAP/SMTP da Hostinger. As credenciais serão armazenadas de forma segura.</p>
+
+      <form id="formConfigEmail" onsubmit="salvarConfigEmail(event)">
+        <div class="form-group">
+          <label>Email Hostinger *</label>
+          <input type="email" id="configEmail" name="email" placeholder="seu.email@seudominio.com" required>
+        </div>
+
+        <div class="form-group">
+          <label>Senha da Caixa Postal *</label>
+          <input type="password" id="configSenha" name="senha" placeholder="Senha do email" required>
+        </div>
+
+        <div class="form-group">
+          <label>Servidor IMAP *</label>
+          <input type="text" id="configImap" name="imap_host" placeholder="imap.seudominio.com" value="mail.seudominio.com" required>
+        </div>
+
+        <div class="form-group">
+          <label>Porta IMAP *</label>
+          <input type="number" id="configImapPort" name="imap_port" placeholder="993" value="993" required>
+        </div>
+
+        <div class="form-group">
+          <label>Servidor SMTP *</label>
+          <input type="text" id="configSmtp" name="smtp_host" placeholder="smtp.seudominio.com" value="mail.seudominio.com" required>
+        </div>
+
+        <div class="form-group">
+          <label>Porta SMTP *</label>
+          <input type="number" id="configSmtpPort" name="smtp_port" placeholder="587" value="587" required>
+        </div>
+
+        <div class="form-group">
+          <label style="display:flex; gap:8px; cursor:pointer;">
+            <input type="checkbox" id="configTLS" name="use_tls" checked>
+            <span>Usar TLS/SSL</span>
+          </label>
+        </div>
+
+        <p style="color: #666; font-size: 13px; margin: 15px 0;">
+          <strong>Dica Hostinger:</strong> Para emails na Hostinger, use o servidor <code>mail.seudominio.com</code> (substitua seudominio.com pelo seu domínio)
+        </p>
+
+        <button type="submit" class="btn btn-primary">Conectar Email</button>
+      </form>
+
+      <div id="configStatus" style="margin-top:20px; display:none;"></div>
+    </div>
+
+    <!-- Email Conectado -->
+    <div class="card" style="margin-top:20px; display:none;" id="emailConectado">
+      <h3>Email Conectado ✓</h3>
+      <p id="emailConectadoInfo"></p>
+      <button class="btn btn-danger" onclick="desconectarEmail()">Desconectar</button>
+    </div>
+  </div>
+
+  <!-- ABA CAIXA DE ENTRADA -->
+  <div class="tab-content" id="tab-inbox-email">
+    <div class="page-actions">
+      <button class="btn btn-primary" onclick="sincronizarEmails()" id="btnSincronizar">🔄 Sincronizar</button>
+      <input type="text" class="input-search" id="buscaEmails" placeholder="Buscar emails...">
+    </div>
+
+    <div class="card">
+      <h3>Caixa de Entrada</h3>
+      <div id="emailsLoading" style="text-align:center; padding:20px; display:none;">
+        <p>Carregando emails...</p>
+      </div>
+      <table class="table" id="tableEmails" style="display:none;">
+        <thead>
+          <tr>
+            <th>De</th>
+            <th>Assunto</th>
+            <th>Data</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div id="emailsVazio" style="text-align:center; padding:40px; color:#999;">
+        <p>Configure seu email para ver a caixa de entrada</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABA ENVIADOS -->
+  <div class="tab-content" id="tab-enviados-email">
+    <div class="page-actions">
+      <button class="btn btn-primary" onclick="abrirComposer()">✏️ Novo Email</button>
+      <input type="text" class="input-search" id="buscaEnviados" placeholder="Buscar enviados...">
+    </div>
+
+    <div class="card">
+      <h3>Emails Enviados</h3>
+      <table class="table" id="tableEnviados">
+        <thead>
+          <tr>
+            <th>Para</th>
+            <th>Assunto</th>
+            <th>Data</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div id="enviadosVazio" style="text-align:center; padding:40px; color:#999; display:none;">
+        <p>Nenhum email enviado</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MODAL VISUALIZAR EMAIL -->
+<div class="modal modal-lg" id="modalVerEmail">
+  <div class="modal-header">
+    <h3 id="emailAssunto">Email</h3>
+    <button class="modal-close" onclick="closeModal('modalVerEmail')">&times;</button>
+  </div>
+  <div class="modal-body">
+    <div style="margin-bottom:15px;">
+      <p><strong>De:</strong> <span id="emailDe"></span></p>
+      <p><strong>Para:</strong> <span id="emailPara"></span></p>
+      <p><strong>Data:</strong> <span id="emailData"></span></p>
+    </div>
+    <div id="emailCorpo" style="border-top:1px solid #ddd; padding-top:15px; line-height:1.6;"></div>
+  </div>
+</div>
+
+<!-- MODAL COMPOSER -->
+<div class="modal modal-lg" id="modalComposer">
+  <div class="modal-header">
+    <h3>Novo Email</h3>
+    <button class="modal-close" onclick="closeModal('modalComposer')">&times;</button>
+  </div>
+  <div class="modal-body">
+    <form id="formEnviarEmail" onsubmit="enviarEmail(event)">
+      <div class="form-group">
+        <label>Para *</label>
+        <input type="email" id="emailPara2" name="para" placeholder="destinatario@example.com" required>
+      </div>
+
+      <div class="form-group">
+        <label>Assunto *</label>
+        <input type="text" id="emailAssunto2" name="assunto" placeholder="Assunto do email" required>
+      </div>
+
+      <div class="form-group">
+        <label>Mensagem *</label>
+        <textarea id="emailMsg" name="corpo" rows="8" placeholder="Escreva sua mensagem..." required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; font-family:sans-serif;"></textarea>
+      </div>
+
+      <div style="display:flex; gap:10px;">
+        <button type="submit" class="btn btn-primary">Enviar</button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalComposer')">Cancelar</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <!-- Toast -->

@@ -3285,7 +3285,7 @@ router.get("/modelo-pagamentos/:id/recibo", authAdmin, async (req, res) => {
       SELECT mp.id, mp.modelo_id, mp.mes, mp.total_midias, mp.total_assinaturas,
              mp.total_geral, mp.status, mp.pago_em,
              m.nome AS modelo_nome, m.nome_exibicao,
-             md.nome_completo, md.cpf, md.endereco, md.cidade, md.estado,
+             md.nome_completo, md.endereco, md.cidade, md.estado,
              mdb.tipo AS pgto_tipo, mdb.pix_tipo, mdb.pix_chave,
              mdb.banco, mdb.agencia, mdb.conta, mdb.conta_tipo, mdb.titular_documento
       FROM modelo_pagamentos mp
@@ -3299,7 +3299,7 @@ router.get("/modelo-pagamentos/:id/recibo", authAdmin, async (req, res) => {
 
     const p = rows[0];
     const nomeCompleto = p.nome_completo || p.nome_exibicao || p.modelo_nome || `Modelo #${p.modelo_id}`;
-    const cpf = p.cpf || p.titular_documento || '—';
+    const cpf = p.titular_documento || '—';
     const endereco = p.endereco || '—';
     const local = [p.cidade, p.estado].filter(Boolean).join(' - ') || '—';
     const dataEmissao = new Date().toLocaleDateString('pt-BR');
@@ -3325,20 +3325,20 @@ router.get("/modelo-pagamentos/:id/recibo", authAdmin, async (req, res) => {
 <style>
 *{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f0f0;padding:20px;color:#222;font-size:13px}
 .page{background:#fff;max-width:800px;margin:0 auto;padding:40px 50px;box-shadow:0 4px 20px rgba(0,0,0,.15)}
-.hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #6c2eb9;padding-bottom:20px;margin-bottom:24px}
-.logo img{width:140px}.ei{text-align:right}.ei h2{color:#6c2eb9;font-size:17px;font-weight:700}.ei p{color:#555;font-size:11px;line-height:1.7;margin-top:4px}
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #7B2CFF;padding-bottom:20px;margin-bottom:24px}
+.logo img{width:140px}.ei{text-align:right}.ei h2{color:#7B2CFF;font-size:17px;font-weight:700}.ei p{color:#555;font-size:11px;line-height:1.7;margin-top:4px}
 .ts{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px}.ts h1{font-size:24px;font-weight:700;letter-spacing:1px}
 .rm{text-align:right}.rm table{border-collapse:collapse;margin-left:auto}.rm td{padding:3px 8px;font-size:12px}.rm td:first-child{color:#888;font-weight:600}.rm td:last-child{font-weight:700}
-.stamp{display:inline-block;border:2px solid #6c2eb9;color:#6c2eb9;padding:3px 14px;font-size:10px;font-weight:700;letter-spacing:2px;border-radius:3px;margin-top:8px}
-.cs{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;background:#f9f5ff;padding:16px 20px;border-radius:8px;border-left:4px solid #6c2eb9}
-.cs h4{color:#6c2eb9;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}.cs p{font-size:12px;color:#333;line-height:1.8}.cs p strong{color:#111}
-table.pt{width:100%;border-collapse:collapse;margin-bottom:20px}table.pt th{background:#6c2eb9;color:#fff;padding:10px 12px;text-align:left;font-size:12px;font-weight:600}
+.stamp{display:inline-block;border:2px solid #7B2CFF;color:#7B2CFF;padding:3px 14px;font-size:10px;font-weight:700;letter-spacing:2px;border-radius:3px;margin-top:8px}
+.cs{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;background:#f9f5ff;padding:16px 20px;border-radius:8px;border-left:4px solid #7B2CFF}
+.cs h4{color:#7B2CFF;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}.cs p{font-size:12px;color:#333;line-height:1.8}.cs p strong{color:#111}
+table.pt{width:100%;border-collapse:collapse;margin-bottom:20px}table.pt th{background:#7B2CFF;color:#fff;padding:10px 12px;text-align:left;font-size:12px;font-weight:600}
 table.pt th.c,table.pt td.c{text-align:center}table.pt th.r,table.pt td.r{text-align:right}table.pt td{padding:10px 12px;border-bottom:1px solid #eee;font-size:12px}table.pt tr:nth-child(even) td{background:#faf7ff}
-.tot{display:flex;justify-content:flex-end;margin-bottom:24px}.totbox{border:2px solid #6c2eb9;border-radius:6px;padding:12px 20px;min-width:240px}
-.totrow{display:flex;justify-content:space-between;padding:4px 0;font-size:13px}.totrow.f{border-top:2px solid #6c2eb9;margin-top:8px;padding-top:10px;font-size:16px;font-weight:700;color:#6c2eb9}
+.tot{display:flex;justify-content:flex-end;margin-bottom:24px}.totbox{border:2px solid #7B2CFF;border-radius:6px;padding:12px 20px;min-width:240px}
+.totrow{display:flex;justify-content:space-between;padding:4px 0;font-size:13px}.totrow.f{border-top:2px solid #7B2CFF;margin-top:8px;padding-top:10px;font-size:16px;font-weight:700;color:#7B2CFF}
 .pi{background:#f0f9f0;border:1px solid #c3e6cb;border-radius:6px;padding:14px 18px;margin-bottom:24px}.pi h4{color:#27a745;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}.pi p{font-size:12px;color:#333;line-height:1.8}
 .ft{border-top:1px solid #ddd;padding-top:14px;text-align:center;color:#888;font-size:10px;line-height:1.7}
-.pbtn{display:block;margin:20px auto 0;padding:10px 32px;background:#6c2eb9;color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer;font-weight:600}
+.pbtn{display:block;margin:20px auto 0;padding:10px 32px;background:#7B2CFF;color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer;font-weight:600}
 @media print{body{background:#fff;padding:0}.page{box-shadow:none;padding:20px}.pbtn{display:none}}
 </style></head><body>
 <div class="page">

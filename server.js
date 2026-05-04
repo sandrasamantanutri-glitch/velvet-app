@@ -1986,8 +1986,12 @@ const { router: servercontentRouter, calcularValores } = require('./serverconten
 app.use("/api", servercontentRouter);
 const adminDashboardRouter = require('./routes/adminDashboard');
 const agencyDashboardRouter = require('./routes/agencyDashboard');
+const adminEmailRouter = require('./routes/adminEmail');
+const authAdmin = require('./middleware/authAdmin');
+
 app.use("/admin/dashboard", adminDashboardRouter);
 app.use('/agency/dashboard', agencyDashboardRouter);
+app.use('/api/admin/email', authAdmin, adminEmailRouter);
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/admin", express.static(path.join(__dirname, "admin-pages")));

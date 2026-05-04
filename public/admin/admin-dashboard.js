@@ -2667,6 +2667,123 @@ async function salvarEdicao(e) {
   }
 }
 
+// ========== EMAILS HOSTINGER ==========
+
+async function salvarConfigEmail(e) {
+  e.preventDefault();
+  const form = new FormData(e.target);
+  const body = {
+    email: form.get('email'),
+    senha: form.get('senha'),
+    imap_host: form.get('imap_host'),
+    imap_port: Number(form.get('imap_port')),
+    smtp_host: form.get('smtp_host'),
+    smtp_port: Number(form.get('smtp_port')),
+    use_tls: document.getElementById('configTLS').checked
+  };
+
+  try {
+    const res = await postJSON('/api/admin/email/config', body);
+    toast('Email configurado com sucesso!', 'success');
+
+    document.getElementById('emailConectado').style.display = 'block';
+    document.getElementById('emailConectadoInfo').textContent = `Conectado em: ${body.email}`;
+
+    setTimeout(() => sincronizarEmails(), 1000);
+  } catch (err) {
+    toast('Erro ao configurar: ' + err.message, 'error');
+  }
+}
+
+async function desconectarEmail() {
+  if (confirm('Tem certeza que deseja desconectar?')) {
+    try {
+      await postJSON('/api/admin/email/disconnect', {});
+      document.getElementById('emailConectado').style.display = 'none';
+      document.getElementById('formConfigEmail').reset();
+      toast('Email desconectado', 'success');
+    } catch (err) {
+      toast('Erro: ' + err.message, 'error');
+    }
+  }
+}
+
+async function sincronizarEmails() {
+  const btnSync = document.getElementById('btnSincronizar');
+  btnSync.disabled = true;
+  btnSync.textContent = '⏳ Sincronizando...';
+
+  try {
+    const data = await postJSON('/api/admin/email/sync', {});
+
+    if (data.emails && Array.isArray(data.emails)) {
+      const tbody = document.querySelector('#tableEmails tbody');
+      tbody.innerHTML = '';
+
+      data.emails.forEach(email => {
+        const row = `
+          <tr onclick="verEmailDetalhes(${JSON.stringify(email).replace(/"/g, '&quot;')})">
+            <td>${escapeHtml(email.from || 'Desconhecido')}</td>
+            <td>${escapeHtml(email.subject || '(sem assunto)')}</td>
+            <td>${fmtDate(email.date)}</td>
+            <td><button class="btn btn-sm btn-primary" onclick="event.stopPropagation()">Ver</button></td>
+          </tr>
+        `;
+        tbody.innerHTML += row;
+      });
+
+      document.getElementById('tableEmails').style.display = 'table';
+      document.getElementById('emailsVazio').style.display = 'none';
+      toast('Emails sincronizados!', 'success');
+    }
+  } catch (err) {
+    toast('Erro ao sincronizar: ' + err.message, 'error');
+  } finally {
+    btnSync.disabled = false;
+    btnSync.textContent = '🔄 Sincronizar';
+  }
+}
+
+function verEmailDetalhes(email) {
+  document.getElementById('emailAssunto').textContent = email.subject || '(sem assunto)';
+  document.getElementById('emailDe').textContent = email.from || 'Desconhecido';
+  document.getElementById('emailPara').textContent = email.to || '—';
+  document.getElementById('emailData').textContent = fmtDateTime(email.date);
+  document.getElementById('emailCorpo').innerHTML = email.html || escapeHtml(email.text || '');
+
+  openModal('modalVerEmail');
+}
+
+function abrirComposer() {
+  document.getElementById('formEnviarEmail').reset();
+  openModal('modalComposer');
+}
+
+async function enviarEmail(e) {
+  e.preventDefault();
+  const form = new FormData(e.target);
+
+  try {
+    await postJSON('/api/admin/email/send', {
+      para: form.get('para'),
+      assunto: form.get('assunto'),
+      corpo: form.get('corpo')
+    });
+
+    toast('Email enviado com sucesso!', 'success');
+    closeAllModals();
+  } catch (err) {
+    toast('Erro ao enviar: ' + err.message, 'error');
+  }
+}
+
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
 // ========== INIT ==========
 
 document.addEventListener('DOMContentLoaded', () => {
