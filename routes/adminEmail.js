@@ -144,7 +144,13 @@ router.post('/sync', async (req, res) => {
 
   let config = ADMIN_EMAIL_CONFIG[adminId];
   if (!config) {
-    config = await getEmailConfig(adminId);
+    try {
+      config = await getEmailConfig(adminId);
+    } catch (err) {
+      console.error('[EMAIL SYNC] Erro ao carregar config:', err.message);
+      return res.status(500).json({ erro: 'Erro ao carregar configuração' });
+    }
+
     if (!config) {
       return res.status(400).json({ erro: 'Email não configurado' });
     }
@@ -194,44 +200,42 @@ router.post('/sync', async (req, res) => {
             : '1:*';
 
           const f = imap.seq.fetch(range, { bodies: '' });
-          let parseCount = 0;
-          let parseFinished = 0;
+          const messagesToParse = [];
+          let fetchEnded = false;
 
           f.on('message', (msg, seqno) => {
-            parseCount++;
-            simpleParser(msg, (err, parsed) => {
-              parseFinished++;
-              if (err) {
-                console.error('[EMAIL SYNC] Parse error:', err.message);
-                return;
-              }
-
-              emails.push({
-                id: seqno,
-                from: parsed.from?.text || 'Desconhecido',
-                to: parsed.to?.text || '',
-                subject: parsed.subject || '(sem assunto)',
-                text: parsed.text?.substring(0, 200) || '',
-                html: parsed.html?.substring(0, 500) || '',
-                date: parsed.date,
-                full_text: parsed.text || '',
-                full_html: parsed.html || ''
-              });
-
-              if (parseFinished === parseCount) {
-                console.log('[EMAIL SYNC] Parse completo, encerrando...');
-                imap.end();
-                resolve();
-              }
-            });
+            messagesToParse.push({ msg, seqno });
           });
 
           f.on('error', reject);
-          f.on('end', () => {
-            if (parseCount === 0) {
-              imap.end();
-              resolve();
+          f.on('end', async () => {
+            fetchEnded = true;
+            console.log('[EMAIL SYNC] Fetch ended, parsing', messagesToParse.length, 'mensagens...');
+
+            // Processar mensagens sequencialmente para evitar sobrecarga
+            for (const { msg, seqno } of messagesToParse) {
+              try {
+                const parsed = await simpleParser(msg);
+
+                emails.push({
+                  id: seqno,
+                  from: parsed.from?.text || 'Desconhecido',
+                  to: parsed.to?.text || '',
+                  subject: parsed.subject || '(sem assunto)',
+                  text: parsed.text?.substring(0, 200) || '',
+                  html: parsed.html?.substring(0, 500) || '',
+                  date: parsed.date,
+                  full_text: parsed.text || '',
+                  full_html: parsed.html || ''
+                });
+              } catch (parseErr) {
+                console.error('[EMAIL SYNC] Erro parsing mensagem', seqno, ':', parseErr.message);
+              }
             }
+
+            console.log('[EMAIL SYNC] Parse completo, encerrando...');
+            imap.end();
+            resolve();
           });
         });
       });
