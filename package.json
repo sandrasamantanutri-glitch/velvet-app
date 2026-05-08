@@ -4,12 +4,26 @@
   "description": "Backend Velvet - ambiente de teste",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "cap:sync": "npx cap sync",
+    "cap:ios": "npx cap open ios",
+    "cap:android": "npx cap open android",
+    "cap:build:ios": "npx cap sync ios",
+    "cap:build:android": "npx cap sync android"
   },
   "engines": {
     "node": ">=18"
   },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0"
+  },
   "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/ios": "^6.0.0",
+    "@capacitor/push-notifications": "^6.0.0",
+    "@capacitor/splash-screen": "^6.0.0",
+    "@capacitor/status-bar": "^6.0.0",
     "@sendgrid/mail": "^8.1.6",
     "aws-sdk": "^2.1500.0",
     "axios": "^1.13.6",
