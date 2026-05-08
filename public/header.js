@@ -458,8 +458,62 @@ async function sincronizarIconeNotificacoes() {
   atualizarIconeNotificacoes(ativo);
 }
 
+function isCapacitorNative() {
+  return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+}
+
+async function ativarNotificacoesNativas() {
+  const { PushNotifications } = window.Capacitor.Plugins;
+  const token = localStorage.getItem("token");
+  if (!token) {
+    alert("Você precisa estar logado para ativar notificações.");
+    return;
+  }
+
+  const permResult = await PushNotifications.requestPermissions();
+  if (permResult.receive !== "granted") {
+    atualizarIconeNotificacoes(false);
+    localStorage.setItem("notificacoes_ativas", "false");
+    return;
+  }
+
+  await PushNotifications.register();
+
+  await new Promise((resolve, reject) => {
+    PushNotifications.addListener("registration", async (regToken) => {
+      try {
+        const res = await fetch("/api/notificacoes/inscrever-dispositivo", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + token
+          },
+          body: JSON.stringify({ token: regToken.value, platform: window.Capacitor.getPlatform() })
+        });
+        if (!res.ok) throw new Error("Falha ao registrar token");
+        localStorage.setItem("notificacoes_ativas", "true");
+        atualizarIconeNotificacoes(true);
+        resolve();
+      } catch (err) {
+        reject(err);
+      }
+    });
+
+    PushNotifications.addListener("registrationError", (err) => {
+      reject(new Error(err.error));
+    });
+
+    setTimeout(() => reject(new Error("Timeout ao registrar notificações")), 10000);
+  });
+}
+
 async function ativarNotificacoes() {
   try {
+    if (isCapacitorNative()) {
+      await ativarNotificacoesNativas();
+      return;
+    }
+
     if (!("Notification" in window)) {
       alert("Este navegador não suporta notificações.");
       return;
@@ -543,10 +597,12 @@ async function desativarNotificacoes() {
   try {
     const token = localStorage.getItem("token");
 
-    if ("serviceWorker" in navigator) {
+    if (isCapacitorNative()) {
+      const { PushNotifications } = window.Capacitor.Plugins;
+      await PushNotifications.removeAllListeners();
+    } else if ("serviceWorker" in navigator) {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
-
       if (subscription) {
         await subscription.unsubscribe();
       }

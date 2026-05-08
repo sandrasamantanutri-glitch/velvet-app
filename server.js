@@ -21,6 +21,18 @@ const fs = require("fs");
 const app = express();
 const FormData = require("form-data");
 const webpush = require("web-push");
+const admin = require("firebase-admin");
+
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+  try {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    if (!admin.apps.length) {
+      admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+    }
+  } catch (e) {
+    console.warn("Firebase Admin não inicializado:", e.message);
+  }
+}
 
 const os = require("os");
 const { exec } = require("child_process");
@@ -2322,36 +2334,69 @@ async function enviarPush(subscription, mensagem, url = "/inbox.html", remetente
   await webpush.sendNotification(subscription, payload);
 }
 
+async function enviarFCM(deviceToken, titulo, mensagem, url) {
+  if (!admin.apps.length) return;
+  await admin.messaging().send({
+    token: deviceToken,
+    notification: { title: titulo, body: mensagem },
+    data: { url: url || "/inbox.html" },
+    android: { priority: "high" },
+    apns: { payload: { aps: { sound: "default" } } }
+  });
+}
+
 async function notificarNovaMensagem(userIdDestino, textoMensagem, url = "/inbox.html", remetente = "Nova mensagem") {
-  try {
-    if (
-      !process.env.VAPID_SUBJECT ||
-      !process.env.VAPID_PUBLIC_KEY ||
-      !process.env.VAPID_PRIVATE_KEY
-    ) {
-      console.warn("Push ignorado: VAPID não configurado");
-      return;
-    }
+  const erros = [];
 
-    const subRes = await db.query(
-      `SELECT subscription_json FROM push_subscriptions WHERE user_id = $1 LIMIT 1`,
-      [userIdDestino]
-    );
-
-    if (subRes.rowCount === 0) {
-      console.log("Usuário sem subscription push:", userIdDestino);
-      return;
+  // Web push (navegador)
+  if (process.env.VAPID_SUBJECT && process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+    try {
+      const subRes = await db.query(
+        `SELECT subscription_json FROM push_subscriptions WHERE user_id = $1 LIMIT 1`,
+        [userIdDestino]
+      );
+      if (subRes.rowCount > 0) {
+        await enviarPush(subRes.rows[0].subscription_json, textoMensagem, url, remetente);
+        console.log("Web push enviado para user_id:", userIdDestino);
+      }
+    } catch (err) {
+      if (err.statusCode === 404 || err.statusCode === 410) {
+        await db.query(`DELETE FROM push_subscriptions WHERE user_id = $1`, [userIdDestino]);
+      } else {
+        erros.push(err);
+      }
     }
+  }
 
-    const subscription = subRes.rows[0].subscription_json;
-    await enviarPush(subscription, textoMensagem, url, remetente);
-    console.log("Push enviado para user_id:", userIdDestino);
-  } catch (err) {
-    console.error("Erro ao enviar push:", err);
-    if (err.statusCode === 404 || err.statusCode === 410) {
-      await db.query(`DELETE FROM push_subscriptions WHERE user_id = $1`, [userIdDestino]);
-      console.log("Subscription removida por expiração:", userIdDestino);
+  // FCM push (app Android/iOS)
+  if (admin.apps.length) {
+    try {
+      const tokRes = await db.query(
+        `SELECT token, platform FROM device_push_tokens WHERE user_id = $1`,
+        [userIdDestino]
+      );
+      for (const row of tokRes.rows) {
+        try {
+          await enviarFCM(row.token, remetente, textoMensagem, url);
+          console.log(`FCM enviado (${row.platform}) para user_id:`, userIdDestino);
+        } catch (err) {
+          if (err.code === "messaging/registration-token-not-registered") {
+            await db.query(
+              `DELETE FROM device_push_tokens WHERE user_id = $1 AND platform = $2`,
+              [userIdDestino, row.platform]
+            );
+          } else {
+            erros.push(err);
+          }
+        }
+      }
+    } catch (err) {
+      erros.push(err);
     }
+  }
+
+  if (erros.length) {
+    console.error("Erros ao enviar push:", erros);
   }
 }
 
@@ -11430,6 +11475,38 @@ app.post("/api/notificacoes/inscrever", auth, async (req, res) => {
   } catch (err) {
     console.error("Erro ao salvar subscription:", err);
     return res.status(500).json({ error: "Erro ao salvar subscription" });
+  }
+});
+
+// ===========================
+// ATIVAR PUSH NATIVO (CAPACITOR - FCM/APNs)
+// ===========================
+
+app.post("/api/notificacoes/inscrever-dispositivo", auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { token, platform } = req.body;
+
+    if (!token || !platform) {
+      return res.status(400).json({ error: "Token ou plataforma inválidos" });
+    }
+
+    await db.query(
+      `
+      INSERT INTO device_push_tokens (user_id, token, platform, created_at, updated_at)
+      VALUES ($1, $2, $3, NOW(), NOW())
+      ON CONFLICT (user_id, platform)
+      DO UPDATE SET
+        token = EXCLUDED.token,
+        updated_at = NOW()
+      `,
+      [userId, token, platform]
+    );
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error("Erro ao salvar device token:", err);
+    return res.status(500).json({ error: "Erro ao salvar token do dispositivo" });
   }
 });
 
