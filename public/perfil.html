@@ -427,6 +427,16 @@ fetch("modals-auth.html")
 <script src="/perfil.js"></script>
 <script src="/pag.js"></script>
 <script src="/footer.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/app/js/suporte-widget.js"></script>
+<script>
+  if (localStorage.getItem("role") !== "cliente") {
+    var _sb = document.getElementById("sp-btn");
+    var _sx = document.getElementById("sp-box");
+    if (_sb) _sb.remove();
+    if (_sx) _sx.remove();
+  }
+</script>
 
 </body>
 </html>
