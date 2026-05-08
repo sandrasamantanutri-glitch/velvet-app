@@ -50,8 +50,6 @@ const { enviarEmailValidacao } = require("./email");
 const rateLimit = require("express-rate-limit");
 const compression = require('compression');
 
-module.exports = uploadCloudflareImage;
-module.exports = uploadVideoCloudflare;
 
 app.set("trust proxy", 1);
 ffmpeg.setFfmpegPath(ffmpegPath);
