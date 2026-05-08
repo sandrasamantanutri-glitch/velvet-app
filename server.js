@@ -171,22 +171,6 @@ app.post("/api/webhook/pagarme", express.raw({ type: "*/*" }), async (req, res) 
   console.log("URL:", req.originalUrl);
   console.log("METHOD:", req.method);
 
-  // Validação de assinatura: garante que o request veio realmente do Pagarme
-  const pagarmeSecret = process.env.PAGARME_WEBHOOK_SECRET;
-  if (pagarmeSecret) {
-    const signature = req.headers["x-hub-signature"];
-    if (!signature) {
-      console.log("🚨 Assinatura do Pagarme ausente");
-      return res.status(400).send("missing signature");
-    }
-    const raw = req.body?.toString("utf8") || "";
-    const expected = "sha1=" + crypto.createHmac("sha1", pagarmeSecret).update(raw).digest("hex");
-    if (signature !== expected) {
-      console.log("🚨 Assinatura do Pagarme inválida");
-      return res.status(401).send("invalid signature");
-    }
-  }
-
   let event = null;
 
   try {
@@ -563,21 +547,15 @@ await client.query(
           valor_total,
           status,
           metodo_pagamento,
-          pago_em,
-          currency,
-          valor_cobrado,
-          taxa_cambio
+          pago_em
         )
-        VALUES ($1,$2,$3,$4,$4,$5,'pago',$6,NOW(),'brl',$5,NULL)
+        VALUES ($1,$2,$3,$4,$4,$5,'pago',$6,NOW())
         ON CONFLICT (message_id,cliente_id)
         DO UPDATE SET
           status='pago',
           metodo_pagamento=$6,
           pago_em=NOW(),
-          valor_total=$5,
-          currency='brl',
-          valor_cobrado=$5,
-          taxa_cambio=NULL
+          valor_total=$5
         `,
         [
           message_id,
@@ -840,9 +818,7 @@ await client.query(
             taxa_plataforma = $6,
             valor_total = $7,
             recorrente = false,
-            gateway_subscription_id = $8,
-             aviso_7_dias_enviado = false,
-            aviso_24h_enviado = false
+            gateway_subscription_id = $8
           WHERE cliente_id = $1
             AND modelo_id = $2
           `,
