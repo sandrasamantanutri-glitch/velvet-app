@@ -240,6 +240,14 @@
     {
       palavras: ["esqueci senha", "esqueci a senha", "recuperar senha", "não consigo entrar", "nao consigo entrar", "esqueci minha senha", "resetar senha"],
       texto: "Para recuperar sua senha:\n1. Acesse velvet.lat\n2. Clique em \"Esqueci minha senha\"\n3. Digite o e-mail cadastrado\n4. Verifique também a pasta de spam\n\nSe não receber o e-mail, entre em contato pelo contato@velvet.lat."
+    },
+     {
+      palavras: ["tipo de conteudo"],
+      texto: "Olá! Aqui é o suporte da plataforma, para ter acesso ao chat da modelo deve assinar o VIP!💜"
+    },
+     {
+      palavras: ["Nao consigo pagar", "Não consigo pagar", "problema no pagamento", "problema para pagar", "erro no pagamento"],
+      texto: "Lamentamos o ocorrido. Para analisarmos o problema, envie um e-mail para contato@velvet.lat com:\n• Print do erro\n• Nome da modelo\n• E-mail da sua conta\n\nNossa equipe verificará e resolverá o issue o mais rápido possível."
     }
   ];
 
