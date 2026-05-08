@@ -20,6 +20,11 @@ async function limparModelos() {
     await db.query("BEGIN");
 
     await db.query(
+      "DELETE FROM modelo_dados_bancarios WHERE modelo_id = $1",
+      [modelo.modelo_id]
+    );
+
+    await db.query(
       "DELETE FROM modelos_dados WHERE modelo_id = $1",
       [modelo.modelo_id]
     );
