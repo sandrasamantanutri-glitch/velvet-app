@@ -10,7 +10,7 @@ const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
 
 const JWT_SECRET = process.env.JWT_SECRET;
-console.log("JWT_SECRET carregado?", JWT_SECRET);
+if (!JWT_SECRET) console.error("⚠️  JWT_SECRET não configurado!");
 
 const cors = require("cors");
 const express = require("express");
