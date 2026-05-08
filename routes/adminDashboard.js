@@ -2825,9 +2825,10 @@ router.get("/midias-admin", async (req, res) => {
     const total = Number(countQ.rows[0].count);
 
     const { rows } = await db.query(
-      `SELECT c.id, c.modelo_id, c.tipo, c.tipo_conteudo, c.url, c.thumbnail_url,
+      `SELECT c.id, c.modelo_id, c.tipo, c.tipo_conteudo, c.url,
+              COALESCE(c.thumbnail_url, c.thumb_url) AS thumbnail_url,
               c.preco, c.descricao, c.criado_em,
-              m.nome AS modelo_nome, m.username AS modelo_username
+              COALESCE(m.nome_exibicao, m.nome) AS modelo_nome
        FROM conteudos c
        LEFT JOIN modelos m ON m.id = c.modelo_id
        WHERE ${where}
@@ -2846,10 +2847,10 @@ router.get("/midias-admin", async (req, res) => {
 router.get("/midias-admin/modelos", async (req, res) => {
   try {
     const { rows } = await db.query(
-      `SELECT m.id, m.nome, m.username, COUNT(c.id)::int AS total_midias
+      `SELECT m.id, COALESCE(m.nome_exibicao, m.nome) AS nome, COUNT(c.id)::int AS total_midias
        FROM modelos m
        INNER JOIN conteudos c ON c.modelo_id = m.id AND c.ativo = TRUE
-       GROUP BY m.id, m.nome, m.username
+       GROUP BY m.id, m.nome_exibicao, m.nome
        ORDER BY total_midias DESC`
     );
     res.json(rows);

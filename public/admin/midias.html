@@ -562,7 +562,7 @@
       data.rows.forEach(m => {
         const card = document.createElement('div');
         card.className = 'card';
-        card.title = `${m.modelo_nome || m.modelo_username || 'Modelo #' + m.modelo_id} — ${m.tipo_conteudo}`;
+        card.title = `${m.modelo_nome || 'Modelo #' + m.modelo_id} — ${m.tipo_conteudo}`;
 
         const isVideo = m.tipo === 'video';
         const thumb = obterThumb(m);
