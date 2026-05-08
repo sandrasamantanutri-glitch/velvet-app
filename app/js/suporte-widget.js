@@ -200,7 +200,8 @@
     const div = document.createElement("div");
     div.className = `sp-msg ${msg.remetente}`;
     const hora = new Date(msg.criado_em).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-    div.innerHTML = `${escapeHtml(msg.texto)}<div class="sp-hora">${hora}</div>`;
+    const textoHtml = escapeHtml(msg.texto).replace(/\n/g, "<br>");
+    div.innerHTML = `${textoHtml}<div class="sp-hora">${hora}</div>`;
     msgsEl.appendChild(div);
   }
 
@@ -210,6 +211,56 @@
 
   function escapeHtml(t) {
     return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  // ─── AUTO-RESPOSTA ───────────────────────────────────────────────────────────
+  const RESPOSTAS = [
+    {
+      palavras: ["reembolso", "dinheiro de volta", "estorno", "enganado", "golpe", "não condiz", "nao condiz", "comprei por engano"],
+      texto: "Olá! Entendemos sua solicitação de reembolso. Conforme nossos Termos de Uso, avaliamos cada caso individualmente.\n\nPara dar andamento, envie um e-mail para contato@velvet.lat com:\n• E-mail utilizado na compra\n• Data da cobrança\n• Motivo do pedido\n• Prints ou comprovantes\n\nUm agente humano também irá analisar sua conversa em breve."
+    },
+    {
+      palavras: ["excluir conta", "apagar conta", "deletar conta", "exclusão de conta", "exclusao de conta", "excluir minha conta"],
+      texto: "Para excluir sua conta, siga os passos:\n1. Acesse a área do usuário\n2. Vá em Configurações da conta\n3. Role até o final da página\n4. Clique em \"Excluir conta permanentemente\"\n\nSe tiver dificuldades, envie um e-mail para contato@velvet.lat."
+    },
+    {
+      palavras: ["não liberou", "nao liberou", "não ativou", "nao ativou", "paguei e não", "paguei e nao", "vip não ativou", "vip nao ativou", "pagamento não liberou", "pagamento nao liberou", "liberação", "liberacao"],
+      texto: "Lamentamos o transtorno! Para resolver, envie um e-mail para contato@velvet.lat com:\n• Comprovante do pagamento\n• Nome da modelo\n• E-mail da sua conta\n\nNossa equipe verificará e ativará o acesso o mais rápido possível."
+    },
+    {
+      palavras: ["esqueci senha", "esqueci a senha", "recuperar senha", "não consigo entrar", "nao consigo entrar", "esqueci minha senha", "resetar senha"],
+      texto: "Para recuperar sua senha:\n1. Acesse velvet.lat\n2. Clique em \"Esqueci minha senha\"\n3. Digite o e-mail cadastrado\n4. Verifique também a pasta de spam\n\nSe não receber o e-mail, entre em contato pelo contato@velvet.lat."
+    }
+  ];
+
+  const RESPOSTA_FALLBACK = "Olá! Recebemos sua mensagem e um agente irá responder em breve.\n\nEnquanto isso, se precisar de ajuda urgente, entre em contato pelo e-mail: contato@velvet.lat";
+
+  function detectarResposta(texto) {
+    const t = texto.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+    for (const r of RESPOSTAS) {
+      const match = r.palavras.some(p => {
+        const pn = p.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+        return t.includes(pn);
+      });
+      if (match) return r.texto;
+    }
+    return null;
+  }
+
+  function mostrarAutoResposta(texto) {
+    typingEl.style.display = "block";
+    scrollBaixo();
+    setTimeout(() => {
+      typingEl.style.display = "none";
+      const msg = { remetente: "admin", texto, criado_em: new Date().toISOString() };
+      adicionarMensagem(msg);
+      scrollBaixo();
+      if (!aberto) {
+        const n = parseInt(badge.textContent || "0") + 1;
+        badge.textContent = n;
+        badge.style.display = "flex";
+      }
+    }, 1200);
   }
 
   // ─── ENVIAR MENSAGEM ─────────────────────────────────────────────────────────
@@ -231,6 +282,9 @@
         body: JSON.stringify({ texto })
       });
     } catch (_) {}
+
+    const autoResp = detectarResposta(texto) || RESPOSTA_FALLBACK;
+    mostrarAutoResposta(autoResp);
 
     sendBtn.disabled = false;
     inputEl.focus();
