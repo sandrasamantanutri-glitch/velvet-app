@@ -104,7 +104,7 @@ router.get("/conversa/:id/mensagens", async (req, res) => {
 });
 
 // ─── ADMIN: lista todas as conversas ─────────────────────────────────────────
-router.get("/admin/conversas", auth, async (req, res) => {
+router.get("/admin/conversas", async (req, res) => {
   try {
     const { rows } = await db.query(`
       SELECT
@@ -123,7 +123,7 @@ router.get("/admin/conversas", auth, async (req, res) => {
 });
 
 // ─── ADMIN: mensagens de uma conversa ────────────────────────────────────────
-router.get("/admin/conversa/:id/mensagens", auth, async (req, res) => {
+router.get("/admin/conversa/:id/mensagens", async (req, res) => {
   try {
     const conversa_id = parseInt(req.params.id);
     const { rows } = await db.query(
@@ -144,7 +144,7 @@ router.get("/admin/conversa/:id/mensagens", auth, async (req, res) => {
 });
 
 // ─── ADMIN: responde ─────────────────────────────────────────────────────────
-router.post("/admin/conversa/:id/responder", auth, async (req, res) => {
+router.post("/admin/conversa/:id/responder", async (req, res) => {
   try {
     const conversa_id = parseInt(req.params.id);
     const { texto } = req.body;
@@ -175,7 +175,7 @@ router.post("/admin/conversa/:id/responder", auth, async (req, res) => {
 });
 
 // ─── ADMIN: fecha conversa ───────────────────────────────────────────────────
-router.patch("/admin/conversa/:id/fechar", auth, async (req, res) => {
+router.patch("/admin/conversa/:id/fechar", async (req, res) => {
   try {
     await db.query(
       "UPDATE suporte_conversas SET status = 'fechada', updated_at = NOW() WHERE id = $1",
