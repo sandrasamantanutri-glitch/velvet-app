@@ -86,6 +86,7 @@
     }
     #sp-send:disabled { opacity: .5; cursor: default; }
     .sp-typing { color: #888; font-size: 12px; padding: 0 14px 8px; font-style: italic; }
+    .sp-msg.admin a { color: #c0a060; text-decoration: underline; }
   `;
   document.head.appendChild(style);
 
@@ -200,7 +201,10 @@
     const div = document.createElement("div");
     div.className = `sp-msg ${msg.remetente}`;
     const hora = new Date(msg.criado_em).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-    const textoHtml = escapeHtml(msg.texto).replace(/\n/g, "<br>");
+    // mensagens de admin podem ter links; mensagens de cliente são sempre escapadas
+    const textoHtml = msg.remetente === "admin"
+      ? msg.texto.replace(/\n/g, "<br>")
+      : escapeHtml(msg.texto).replace(/\n/g, "<br>");
     div.innerHTML = `${textoHtml}<div class="sp-hora">${hora}</div>`;
     msgsEl.appendChild(div);
   }
@@ -217,7 +221,7 @@
   const RESPOSTAS = [
     {
       palavras: ["reembolso", "dinheiro de volta", "estorno", "enganado", "golpe", "não condiz", "nao condiz", "comprei por engano"],
-      texto: "Olá! Entendemos sua solicitação de reembolso. Conforme nossos Termos de Uso, avaliamos cada caso individualmente.\n\nPara dar andamento, envie um e-mail para contato@velvet.lat com:\n• E-mail utilizado na compra\n• Data da cobrança\n• Motivo do pedido\n• Prints ou comprovantes\n\nUm agente humano também irá analisar sua conversa em breve."
+      texto: "Olá! Entendemos sua solicitação de reembolso. Conforme nossos Termos de Uso, avaliamos cada caso individualmente.\n\nPara dar andamento, envie um e-mail para contato@velvet.lat com:\n• E-mail utilizado na compra\n• Data da cobrança\n• Motivo do pedido\n• Prints ou comprovantes\n\nO prazo de resposta é de 24 a 48 horas úteis."
     },
     {
       palavras: ["excluir conta", "apagar conta", "deletar conta", "exclusão de conta", "exclusao de conta", "excluir minha conta"],
@@ -233,7 +237,7 @@
     }
   ];
 
-  const RESPOSTA_FALLBACK = "Olá! Recebemos sua mensagem e um agente irá responder em breve.\n\nEnquanto isso, se precisar de ajuda urgente, entre em contato pelo e-mail: contato@velvet.lat";
+  const RESPOSTA_FALLBACK = "Olá! No momento não temos uma resposta automática para essa dúvida.\n\nEntre em contato pelo e-mail <a href=\"mailto:contato@velvet.lat\">contato@velvet.lat</a> ou acesse a <a href=\"/contato.html\" target=\"_blank\">página de contato</a>.\n\nO prazo de resposta é de 24 a 48 horas úteis.";
 
   function detectarResposta(texto) {
     const t = texto.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
