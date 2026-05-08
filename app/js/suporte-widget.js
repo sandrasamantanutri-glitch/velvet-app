@@ -256,9 +256,10 @@
   function mostrarAutoResposta(texto) {
     typingEl.style.display = "block";
     scrollBaixo();
-    setTimeout(() => {
+    setTimeout(async () => {
       typingEl.style.display = "none";
-      const msg = { remetente: "admin", texto, criado_em: new Date().toISOString() };
+      const agora = new Date().toISOString();
+      const msg = { remetente: "admin", texto, criado_em: agora };
       adicionarMensagem(msg);
       scrollBaixo();
       if (!aberto) {
@@ -266,6 +267,14 @@
         badge.textContent = n;
         badge.style.display = "flex";
       }
+      // salva no banco para persistir após reload
+      try {
+        await fetch(`${API}/api/suporte/admin/conversa/${conversaId}/responder`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ texto })
+        });
+      } catch (_) {}
     }, 1200);
   }
 
