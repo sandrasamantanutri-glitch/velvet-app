@@ -192,7 +192,8 @@ const pageLoaders = {};
 pageLoaders.suporte = function () {
   const iframe = document.getElementById('suporte-iframe');
   if (!iframe.src || iframe.src === window.location.href) {
-    iframe.src = '/admin/suporte.html';
+    const tok = localStorage.getItem('token') || '';
+    iframe.src = '/admin/suporte.html?t=' + encodeURIComponent(tok);
   }
 };
 
