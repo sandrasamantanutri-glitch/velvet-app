@@ -159,6 +159,22 @@ app.post("/api/webhook/pagarme", express.raw({ type: "*/*" }), async (req, res) 
   console.log("URL:", req.originalUrl);
   console.log("METHOD:", req.method);
 
+  // Validação de assinatura: garante que o request veio realmente do Pagarme
+  const pagarmeSecret = process.env.PAGARME_WEBHOOK_SECRET;
+  if (pagarmeSecret) {
+    const signature = req.headers["x-hub-signature"];
+    if (!signature) {
+      console.log("🚨 Assinatura do Pagarme ausente");
+      return res.status(400).send("missing signature");
+    }
+    const raw = req.body?.toString("utf8") || "";
+    const expected = "sha1=" + crypto.createHmac("sha1", pagarmeSecret).update(raw).digest("hex");
+    if (signature !== expected) {
+      console.log("🚨 Assinatura do Pagarme inválida");
+      return res.status(401).send("invalid signature");
+    }
+  }
+
   let event = null;
 
   try {
