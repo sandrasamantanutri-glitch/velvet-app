@@ -12,8 +12,8 @@
     #sp-btn {
       position: fixed; bottom: 24px; right: 24px; z-index: 9999;
       width: 56px; height: 56px; border-radius: 50%;
-      background: #c0a060; border: none; cursor: pointer;
-      box-shadow: 0 4px 16px rgba(0,0,0,.35);
+      background: #7b2cff; border: none; cursor: pointer;
+      box-shadow: 0 4px 16px rgba(123,44,255,.4);
       display: flex; align-items: center; justify-content: center;
       transition: transform .2s;
     }
@@ -28,14 +28,14 @@
     #sp-box {
       position: fixed; bottom: 90px; right: 24px; z-index: 9998;
       width: 320px; max-height: 460px;
-      background: #1a1a1a; border-radius: 14px;
-      box-shadow: 0 8px 32px rgba(0,0,0,.5);
+      background: #fff; border-radius: 14px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.15);
       display: none; flex-direction: column;
       overflow: hidden; font-family: sans-serif;
     }
     #sp-box.aberto { display: flex; }
     #sp-header {
-      background: #c0a060; padding: 14px 16px;
+      background: #7b2cff; padding: 14px 16px;
       display: flex; align-items: center; justify-content: space-between;
     }
     #sp-header span { color: #fff; font-weight: 600; font-size: 15px; }
@@ -43,50 +43,52 @@
       background: none; border: none; color: #fff;
       cursor: pointer; font-size: 20px; line-height: 1;
     }
-    #sp-status { font-size: 11px; color: rgba(255,255,255,.75); margin-top: 2px; }
+    #sp-status { font-size: 11px; color: rgba(255,255,255,.8); margin-top: 2px; }
     #sp-msgs {
       flex: 1; overflow-y: auto; padding: 14px;
       display: flex; flex-direction: column; gap: 8px;
+      background: #f6f6f6;
     }
     #sp-msgs::-webkit-scrollbar { width: 4px; }
-    #sp-msgs::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+    #sp-msgs::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
     .sp-msg {
       max-width: 80%; padding: 9px 13px; border-radius: 12px;
       font-size: 13px; line-height: 1.4; word-break: break-word;
     }
-    .sp-msg.cliente { background: #c0a060; color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
-    .sp-msg.admin   { background: #2a2a2a; color: #e0e0e0; align-self: flex-start; border-bottom-left-radius: 4px; }
+    .sp-msg.cliente { background: #7b2cff; color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+    .sp-msg.admin   { background: #fff; color: #333; align-self: flex-start; border-bottom-left-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
     .sp-hora { font-size: 10px; opacity: .6; margin-top: 3px; text-align: right; }
     #sp-form-nome {
       padding: 16px; display: flex; flex-direction: column; gap: 10px;
+      background: #fff;
     }
     #sp-form-nome input {
-      background: #2a2a2a; border: 1px solid #444; border-radius: 8px;
-      color: #fff; padding: 10px 12px; font-size: 13px; outline: none;
+      background: #f6f6f6; border: 1px solid #ddd; border-radius: 8px;
+      color: #333; padding: 10px 12px; font-size: 13px; outline: none;
     }
-    #sp-form-nome input:focus { border-color: #c0a060; }
+    #sp-form-nome input:focus { border-color: #7b2cff; }
     #sp-form-nome button {
-      background: #c0a060; border: none; border-radius: 8px;
+      background: #7b2cff; border: none; border-radius: 8px;
       color: #fff; padding: 10px; font-size: 14px;
       cursor: pointer; font-weight: 600;
     }
     #sp-input-area {
       display: flex; gap: 8px; padding: 10px 12px;
-      border-top: 1px solid #2a2a2a;
+      border-top: 1px solid #eee; background: #fff;
     }
     #sp-input {
-      flex: 1; background: #2a2a2a; border: 1px solid #444;
-      border-radius: 8px; color: #fff; padding: 9px 12px;
+      flex: 1; background: #f6f6f6; border: 1px solid #ddd;
+      border-radius: 8px; color: #333; padding: 9px 12px;
       font-size: 13px; outline: none; resize: none;
     }
-    #sp-input:focus { border-color: #c0a060; }
+    #sp-input:focus { border-color: #7b2cff; }
     #sp-send {
-      background: #c0a060; border: none; border-radius: 8px;
+      background: #7b2cff; border: none; border-radius: 8px;
       color: #fff; padding: 0 14px; cursor: pointer; font-size: 18px;
     }
     #sp-send:disabled { opacity: .5; cursor: default; }
-    .sp-typing { color: #888; font-size: 12px; padding: 0 14px 8px; font-style: italic; }
-    .sp-msg.admin a { color: #c0a060; text-decoration: underline; }
+    .sp-typing { color: #999; font-size: 12px; padding: 0 14px 8px; font-style: italic; background: #f6f6f6; }
+    .sp-msg.admin a { color: #7b2cff; text-decoration: underline; }
   `;
   document.head.appendChild(style);
 
