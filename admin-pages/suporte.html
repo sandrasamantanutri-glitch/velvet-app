@@ -121,16 +121,6 @@
 </head>
 <body>
 
-<!-- TELA DE LOGIN -->
-<div id="login-screen">
-  <div id="login-box">
-    <h2>Suporte — Admin</h2>
-    <input id="login-email" type="email" placeholder="E-mail" />
-    <input id="login-senha" type="password" placeholder="Senha" />
-    <button id="login-btn">Entrar</button>
-    <div id="login-erro">E-mail ou senha incorretos</div>
-  </div>
-</div>
 
 <!-- LISTA DE CONVERSAS -->
 <div id="lista">
@@ -167,50 +157,8 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-  let token = localStorage.getItem("adminToken") || localStorage.getItem("token") || "";
+  let token = "";
   let conversaAtiva = null;
-
-  // ─── LOGIN ────────────────────────────────────────────────────────────────
-  const loginScreen = document.getElementById("login-screen");
-
-  function verificarLogin() {
-    if (token) { loginScreen.style.display = "none"; return; }
-    loginScreen.style.display = "flex";
-  }
-
-  document.getElementById("login-btn").addEventListener("click", async () => {
-    const email = document.getElementById("login-email").value.trim();
-    const senha = document.getElementById("login-senha").value;
-    const erro  = document.getElementById("login-erro");
-    const btn   = document.getElementById("login-btn");
-
-    if (!email || !senha) return;
-    btn.textContent = "Entrando…"; btn.disabled = true;
-    erro.style.display = "none";
-
-    try {
-      const r = await fetch("/admin/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, senha })
-      });
-      const data = await r.json();
-      if (!r.ok) throw new Error();
-      token = data.token;
-      localStorage.setItem("adminToken", token);
-      loginScreen.style.display = "none";
-      iniciarApp();
-    } catch {
-      erro.style.display = "block";
-    }
-    btn.textContent = "Entrar"; btn.disabled = false;
-  });
-
-  document.getElementById("login-senha").addEventListener("keydown", e => {
-    if (e.key === "Enter") document.getElementById("login-btn").click();
-  });
-
-  verificarLogin();
   let filtroAtual = "todas";
   let socket = null;
   let todasConversas = [];
@@ -371,7 +319,7 @@
     setInterval(carregarLista, 15000);
   }
 
-  if (token) iniciarApp();
+  iniciarApp();
 </script>
 </body>
 </html>
