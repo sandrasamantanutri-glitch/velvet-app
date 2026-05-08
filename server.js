@@ -2001,11 +2001,14 @@ app.use("/api", servercontentRouter);
 const adminDashboardRouter = require('./routes/adminDashboard');
 const agencyDashboardRouter = require('./routes/agencyDashboard');
 const adminEmailRouter = require('./routes/adminEmail');
+const suporteRouter = require('./routes/suporte');
 const authAdmin = require('./middleware/authAdmin');
 
 app.use("/admin/dashboard", adminDashboardRouter);
 app.use('/agency/dashboard', agencyDashboardRouter);
 app.use('/api/admin/email', auth, authAdmin, adminEmailRouter);
+app.use('/api/suporte', suporteRouter);
+app.set('io', io);
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/admin", express.static(path.join(__dirname, "admin-pages")));
@@ -2455,6 +2458,28 @@ io.use((socket, next) => {
 
 io.on("connection", (socket) => {
   console.log("🔥 Socket conectado:", socket.id, socket.user);
+
+  // ─── SUPORTE AO CLIENTE ──────────────────────────────────────────────────
+  socket.on("suporte:entrar", ({ conversa_id }) => {
+    if (conversa_id) socket.join(`suporte_${conversa_id}`);
+  });
+
+  socket.on("suporte:admin_entrar", () => {
+    if (socket.user?.role === "admin") socket.join("suporte_admin");
+  });
+
+  socket.on("suporte:admin_entrar_conversa", ({ conversa_id }) => {
+    if (socket.user?.role === "admin" && conversa_id) {
+      socket.join(`suporte_${conversa_id}`);
+    }
+  });
+
+  socket.on("suporte:typing", ({ conversa_id }) => {
+    if (socket.user?.role === "admin" && conversa_id) {
+      io.to(`suporte_${conversa_id}`).emit("suporte:typing");
+    }
+  });
+  // ────────────────────────────────────────────────────────────────────────
 
   socket.on("loginModelo", async () => {
     try {
