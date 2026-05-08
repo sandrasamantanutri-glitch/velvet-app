@@ -7,6 +7,27 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: #111; color: #e0e0e0; font-family: sans-serif; display: flex; height: 100vh; }
+    #login-screen {
+      position: fixed; inset: 0; background: #111; z-index: 9999;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #login-box {
+      background: #1a1a1a; border-radius: 14px; padding: 32px;
+      width: 320px; display: flex; flex-direction: column; gap: 14px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.5);
+    }
+    #login-box h2 { color: #c0a060; font-size: 18px; text-align: center; }
+    #login-box input {
+      background: #2a2a2a; border: 1px solid #444; border-radius: 8px;
+      color: #fff; padding: 10px 14px; font-size: 14px; outline: none;
+    }
+    #login-box input:focus { border-color: #c0a060; }
+    #login-box button {
+      background: #c0a060; border: none; border-radius: 8px;
+      color: #fff; padding: 11px; font-size: 14px;
+      font-weight: 600; cursor: pointer;
+    }
+    #login-erro { color: #e53e3e; font-size: 12px; text-align: center; display: none; }
 
     /* LISTA */
     #lista {
@@ -100,6 +121,17 @@
 </head>
 <body>
 
+<!-- TELA DE LOGIN -->
+<div id="login-screen">
+  <div id="login-box">
+    <h2>Suporte — Admin</h2>
+    <input id="login-email" type="email" placeholder="E-mail" />
+    <input id="login-senha" type="password" placeholder="Senha" />
+    <button id="login-btn">Entrar</button>
+    <div id="login-erro">E-mail ou senha incorretos</div>
+  </div>
+</div>
+
 <!-- LISTA DE CONVERSAS -->
 <div id="lista">
   <div id="lista-header">
@@ -135,21 +167,54 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-  const token = localStorage.getItem("adminToken") || localStorage.getItem("token") || "";
+  let token = localStorage.getItem("adminToken") || localStorage.getItem("token") || "";
   let conversaAtiva = null;
+
+  // ─── LOGIN ────────────────────────────────────────────────────────────────
+  const loginScreen = document.getElementById("login-screen");
+
+  function verificarLogin() {
+    if (token) { loginScreen.style.display = "none"; return; }
+    loginScreen.style.display = "flex";
+  }
+
+  document.getElementById("login-btn").addEventListener("click", async () => {
+    const email = document.getElementById("login-email").value.trim();
+    const senha = document.getElementById("login-senha").value;
+    const erro  = document.getElementById("login-erro");
+    const btn   = document.getElementById("login-btn");
+
+    if (!email || !senha) return;
+    btn.textContent = "Entrando…"; btn.disabled = true;
+    erro.style.display = "none";
+
+    try {
+      const r = await fetch("/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, senha })
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error();
+      token = data.token;
+      localStorage.setItem("adminToken", token);
+      loginScreen.style.display = "none";
+      iniciarApp();
+    } catch {
+      erro.style.display = "block";
+    }
+    btn.textContent = "Entrar"; btn.disabled = false;
+  });
+
+  document.getElementById("login-senha").addEventListener("keydown", e => {
+    if (e.key === "Enter") document.getElementById("login-btn").click();
+  });
+
+  verificarLogin();
   let filtroAtual = "todas";
   let socket = null;
   let todasConversas = [];
 
-  // ─── SOCKET ───────────────────────────────────────────────────────────────
-  if (window.io) {
-    socket = io({ auth: { token }, transports: ["websocket"] });
-    socket.on("connect", () => socket.emit("suporte:admin_entrar"));
-    socket.on("suporte:nova_mensagem", ({ conversa_id, mensagem }) => {
-      carregarLista();
-      if (conversaAtiva === conversa_id) adicionarMsg(mensagem);
-    });
-  }
 
   // ─── LISTA ────────────────────────────────────────────────────────────────
   async function carregarLista() {
@@ -293,8 +358,20 @@
   }
 
   // ─── INIT ─────────────────────────────────────────────────────────────────
-  carregarLista();
-  setInterval(carregarLista, 15000);
+  function iniciarApp() {
+    if (window.io) {
+      socket = io({ auth: { token }, transports: ["websocket"] });
+      socket.on("connect", () => socket.emit("suporte:admin_entrar"));
+      socket.on("suporte:nova_mensagem", ({ conversa_id, mensagem }) => {
+        carregarLista();
+        if (conversaAtiva === conversa_id) adicionarMsg(mensagem);
+      });
+    }
+    carregarLista();
+    setInterval(carregarLista, 15000);
+  }
+
+  if (token) iniciarApp();
 </script>
 </body>
 </html>
