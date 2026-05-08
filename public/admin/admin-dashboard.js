@@ -192,7 +192,7 @@ const pageLoaders = {};
 pageLoaders.suporte = function () {
   const iframe = document.getElementById('suporte-iframe');
   if (!iframe.src || iframe.src === window.location.href) {
-    const tok = localStorage.getItem('token') || '';
+    const tok = localStorage.getItem('token_admin') || localStorage.getItem('token') || '';
     iframe.src = '/admin/suporte.html?t=' + encodeURIComponent(tok);
   }
 };

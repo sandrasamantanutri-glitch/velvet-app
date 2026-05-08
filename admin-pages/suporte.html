@@ -138,7 +138,7 @@
 <script src="/socket.io/socket.io.js"></script>
 <script>
   const _urlToken = new URLSearchParams(window.location.search).get("t");
-  const token = _urlToken || localStorage.getItem("token") || "";
+  const token = _urlToken || localStorage.getItem("token_admin") || localStorage.getItem("token") || "";
   if (!token) { document.body.innerHTML = '<p style="color:#c00;padding:20px">Acesso restrito. Faça login como administrador.</p>'; throw new Error("sem token"); }
 
   let conversaAtiva = null;
