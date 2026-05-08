@@ -137,7 +137,9 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-  let token = "";
+  const token = localStorage.getItem("token") || "";
+  if (!token) { window.location.href = "/app/index.html"; }
+
   let conversaAtiva = null;
   let filtroAtual = "todas";
   let socket = null;

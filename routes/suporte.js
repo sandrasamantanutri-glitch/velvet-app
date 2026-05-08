@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require("../db");
 const authCliente = require("../middleware/authCliente");
 const auth = require("../middleware/auth");
+const authAdmin = require("../middleware/authAdmin");
 
 // ─── CLIENTE: abre ou retoma conversa ───────────────────────────────────────
 router.post("/conversa", async (req, res) => {
@@ -103,8 +104,40 @@ router.get("/conversa/:id/mensagens", async (req, res) => {
   }
 });
 
+// ─── CLIENTE: auto-resposta automática (sem auth, salva como admin) ──────────
+router.post("/conversa/:id/auto-resposta", async (req, res) => {
+  try {
+    const conversa_id = parseInt(req.params.id);
+    const { texto } = req.body;
+
+    if (!texto?.trim()) return res.status(400).json({ error: "Mensagem vazia" });
+
+    const { rows: conv } = await db.query(
+      "SELECT id FROM suporte_conversas WHERE id = $1 AND status != 'fechada'",
+      [conversa_id]
+    );
+    if (!conv.length) return res.status(404).json({ error: "Conversa não encontrada" });
+
+    const { rows } = await db.query(
+      `INSERT INTO suporte_mensagens (conversa_id, remetente, texto)
+       VALUES ($1, 'admin', $2) RETURNING *`,
+      [conversa_id, texto.trim()]
+    );
+
+    await db.query(
+      "UPDATE suporte_conversas SET updated_at = NOW(), status = 'respondida' WHERE id = $1",
+      [conversa_id]
+    );
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Erro ao salvar auto-resposta:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
 // ─── ADMIN: lista todas as conversas ─────────────────────────────────────────
-router.get("/admin/conversas", async (req, res) => {
+router.get("/admin/conversas", auth, authAdmin, async (req, res) => {
   try {
     const { rows } = await db.query(`
       SELECT
@@ -123,7 +156,7 @@ router.get("/admin/conversas", async (req, res) => {
 });
 
 // ─── ADMIN: mensagens de uma conversa ────────────────────────────────────────
-router.get("/admin/conversa/:id/mensagens", async (req, res) => {
+router.get("/admin/conversa/:id/mensagens", auth, authAdmin, async (req, res) => {
   try {
     const conversa_id = parseInt(req.params.id);
     const { rows } = await db.query(
@@ -144,7 +177,7 @@ router.get("/admin/conversa/:id/mensagens", async (req, res) => {
 });
 
 // ─── ADMIN: responde ─────────────────────────────────────────────────────────
-router.post("/admin/conversa/:id/responder", async (req, res) => {
+router.post("/admin/conversa/:id/responder", auth, authAdmin, async (req, res) => {
   try {
     const conversa_id = parseInt(req.params.id);
     const { texto } = req.body;
@@ -175,7 +208,7 @@ router.post("/admin/conversa/:id/responder", async (req, res) => {
 });
 
 // ─── ADMIN: fecha conversa ───────────────────────────────────────────────────
-router.patch("/admin/conversa/:id/fechar", async (req, res) => {
+router.patch("/admin/conversa/:id/fechar", auth, authAdmin, async (req, res) => {
   try {
     await db.query(
       "UPDATE suporte_conversas SET status = 'fechada', updated_at = NOW() WHERE id = $1",

@@ -269,7 +269,7 @@
       }
       // salva no banco para persistir após reload
       try {
-        await fetch(`${API}/api/suporte/admin/conversa/${conversaId}/responder`, {
+        await fetch(`${API}/api/suporte/conversa/${conversaId}/auto-resposta`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ texto })
