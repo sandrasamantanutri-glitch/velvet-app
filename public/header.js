@@ -463,24 +463,23 @@ function isCapacitorNative() {
 }
 
 async function ativarNotificacoesNativas() {
-  const { PushNotifications } = window.Capacitor.Plugins;
-  const token = localStorage.getItem("token");
-  if (!token) {
-    alert("Você precisa estar logado para ativar notificações.");
-    return;
-  }
+  try {
+    const { PushNotifications } = window.Capacitor.Plugins;
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Você precisa estar logado para ativar notificações.");
+      return;
+    }
 
-  const permResult = await PushNotifications.requestPermissions();
-  if (permResult.receive !== "granted") {
-    atualizarIconeNotificacoes(false);
-    localStorage.setItem("notificacoes_ativas", "false");
-    return;
-  }
+    const permResult = await PushNotifications.requestPermissions();
+    if (permResult.receive !== "granted") {
+      atualizarIconeNotificacoes(false);
+      localStorage.setItem("notificacoes_ativas", "false");
+      return;
+    }
 
-  await PushNotifications.register();
-
-  await new Promise((resolve, reject) => {
-    PushNotifications.addListener("registration", async (regToken) => {
+    // Listeners ANTES de register() — o evento pode chegar imediatamente
+    await PushNotifications.addListener("registration", async (regToken) => {
       try {
         const res = await fetch("/api/notificacoes/inscrever-dispositivo", {
           method: "POST",
@@ -490,21 +489,27 @@ async function ativarNotificacoesNativas() {
           },
           body: JSON.stringify({ token: regToken.value, platform: window.Capacitor.getPlatform() })
         });
-        if (!res.ok) throw new Error("Falha ao registrar token");
-        localStorage.setItem("notificacoes_ativas", "true");
-        atualizarIconeNotificacoes(true);
-        resolve();
+        if (res.ok) {
+          localStorage.setItem("notificacoes_ativas", "true");
+          atualizarIconeNotificacoes(true);
+        }
       } catch (err) {
-        reject(err);
+        console.error("Erro ao registrar token FCM:", err);
       }
     });
 
-    PushNotifications.addListener("registrationError", (err) => {
-      reject(new Error(err.error));
+    await PushNotifications.addListener("registrationError", (err) => {
+      console.error("Erro de registro FCM:", err);
+      localStorage.setItem("notificacoes_ativas", "false");
+      atualizarIconeNotificacoes(false);
     });
 
-    setTimeout(() => reject(new Error("Timeout ao registrar notificações")), 10000);
-  });
+    await PushNotifications.register();
+  } catch (err) {
+    console.error("Erro ao ativar notificações nativas:", err);
+    localStorage.setItem("notificacoes_ativas", "false");
+    atualizarIconeNotificacoes(false);
+  }
 }
 
 async function ativarNotificacoes() {
