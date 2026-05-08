@@ -2860,6 +2860,54 @@ router.get("/midias-admin/modelos", async (req, res) => {
   }
 });
 
+router.delete("/midias-admin/:id", async (req, res) => {
+  const conteudo_id = Number(req.params.id);
+  if (!conteudo_id) return res.status(400).json({ erro: "ID inválido" });
+
+  try {
+    const { rows } = await db.query(
+      `SELECT id, url, tipo FROM conteudos WHERE id = $1`,
+      [conteudo_id]
+    );
+
+    if (!rows.length) return res.status(404).json({ erro: "Mídia não encontrada" });
+
+    const { url, tipo } = rows[0];
+    const axios = require("axios");
+
+    // Extrai ID do Cloudflare e chama API de deleção
+    if (tipo === "imagem" || tipo === "image") {
+      const match = url && url.match(/imagedelivery\.net\/[^/]+\/([^/]+)/);
+      if (match) {
+        const imageId = match[1];
+        await axios.delete(
+          `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT_ID}/images/v1/${imageId}`,
+          { headers: { Authorization: `Bearer ${process.env.CF_IMAGES_TOKEN}` } }
+        ).catch(e => console.warn("CF Images delete warn:", e.response?.data || e.message));
+      }
+    } else if (tipo === "video") {
+      const match = url && url.match(/videodelivery\.net\/([^/?]+)|iframe\.videodelivery\.net\/([^/?]+)/);
+      if (match) {
+        const videoId = match[1] || match[2];
+        await axios.delete(
+          `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT_ID}/stream/${videoId}`,
+          { headers: { Authorization: `Bearer ${process.env.CF_STREAM_TOKEN}` } }
+        ).catch(e => console.warn("CF Stream delete warn:", e.response?.data || e.message));
+      }
+    }
+
+    await db.query(
+      `UPDATE conteudos SET ativo = FALSE, deletado_em = NOW() WHERE id = $1`,
+      [conteudo_id]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Erro deletar midia-admin:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
 // ========== 13. TRANSAÇÕES AGENCY ==========
 
 router.get("/transacoes-agency", async (req, res) => {

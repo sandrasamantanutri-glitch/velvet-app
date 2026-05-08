@@ -243,6 +243,25 @@
       pointer-events: none;
     }
 
+    .card-del {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      background: #cc000099;
+      border: none;
+      border-radius: 4px;
+      color: #fff;
+      font-size: 14px;
+      line-height: 1;
+      padding: 4px 7px;
+      cursor: pointer;
+      display: none;
+      z-index: 2;
+    }
+
+    .card:hover .card-del { display: block; }
+    .card-del:hover { background: #cc0000; }
+
     /* ===== PAGINAÇÃO ===== */
     .pagination {
       display: flex;
@@ -457,7 +476,10 @@
         <h3 id="modalTitulo">Mídia</h3>
         <div class="modal-meta" id="modalMeta"></div>
       </div>
-      <button class="modal-close" onclick="fecharModal()">×</button>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button id="modalBtnDel" style="background:#cc0000;border:none;border-radius:6px;color:#fff;cursor:pointer;padding:7px 14px;font-size:13px;">🗑 Excluir</button>
+        <button class="modal-close" onclick="fecharModal()">×</button>
+      </div>
     </div>
     <div class="modal-media" id="modalMedia"></div>
     <div class="modal-info" id="modalInfo"></div>
@@ -574,12 +596,17 @@
             : `<img src="${thumb}" alt="mídia" onerror="this.src='/assets/avatar.png'">`
           }
           ${isVideo ? '<div class="play-icon">▶</div>' : ''}
+          <button class="card-del" title="Excluir mídia">🗑</button>
           <span class="card-type ${m.tipo}">${m.tipo}</span>
           <div class="card-overlay">
-            <div>${m.modelo_nome || m.modelo_username || '#' + m.modelo_id}</div>
+            <div>${m.modelo_nome || '#' + m.modelo_id}</div>
             <div style="color:#aaa;font-size:10px;">${m.tipo_conteudo}</div>
           </div>
         `;
+        card.querySelector('.card-del').addEventListener('click', e => {
+          e.stopPropagation();
+          excluirMidia(m.id, card);
+        });
         card.onclick = () => abrirViewer(m);
         grid.appendChild(card);
       });
@@ -608,8 +635,10 @@
   }
 
   function abrirViewer(m) {
+    midiaAberta = m;
+    document.getElementById('modalBtnDel').onclick = () => excluirMidia(m.id, null);
     document.getElementById('modalTitulo').textContent =
-      m.modelo_nome || m.modelo_username || 'Modelo #' + m.modelo_id;
+      m.modelo_nome || 'Modelo #' + m.modelo_id;
 
     document.getElementById('modalMeta').textContent =
       `Modelo ID: ${m.modelo_id} · ${m.tipo} · ${m.tipo_conteudo} · ${new Date(m.criado_em).toLocaleDateString('pt-BR')}`;
@@ -655,6 +684,41 @@
     if (e && e.target !== document.getElementById('modalBackdrop')) return;
     document.getElementById('modalBackdrop').classList.remove('open');
     document.getElementById('modalMedia').innerHTML = '';
+    midiaAberta = null;
+  }
+
+  let midiaAberta = null;
+
+  async function excluirMidia(id, cardEl) {
+    if (!confirm('Excluir esta mídia do banco e do Cloudflare?')) return;
+
+    try {
+      const res = await fetch('/admin/dashboard/midias-admin/' + id, {
+        method: 'DELETE',
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+
+      // Remove o card do grid se existir
+      if (cardEl) cardEl.remove();
+
+      // Fecha o modal se for a mídia aberta
+      if (midiaAberta && midiaAberta.id === id) {
+        document.getElementById('modalBackdrop').classList.remove('open');
+        document.getElementById('modalMedia').innerHTML = '';
+        midiaAberta = null;
+      }
+
+      // Atualiza contagem
+      const totalEl = document.getElementById('totalInfo');
+      const atual = parseInt(totalEl.textContent) || 0;
+      if (atual > 0) totalEl.textContent = (atual - 1) + ' mídia(s)';
+
+      // Recarrega sidebar de modelos para atualizar contagens
+      carregarModelos();
+    } catch (e) {
+      alert('Erro ao excluir: ' + e.message);
+    }
   }
 
   function resetFiltros() {
