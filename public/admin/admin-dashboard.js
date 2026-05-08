@@ -183,10 +183,18 @@ const pageTitles = {
   agencias: 'Agencias',
   chargebacks: 'Chargebacks',
   faturamento: 'Faturamentos Pagarme & Stripe',
-  despesas: 'Despesas Operacionais'
+  despesas: 'Despesas Operacionais',
+  suporte: 'Suporte ao Cliente'
 };
 
 const pageLoaders = {};
+
+pageLoaders.suporte = function () {
+  const iframe = document.getElementById('suporte-iframe');
+  if (!iframe.src || iframe.src === window.location.href) {
+    iframe.src = '/admin/suporte.html';
+  }
+};
 
 navItems.forEach(item => {
   item.addEventListener('click', () => {
