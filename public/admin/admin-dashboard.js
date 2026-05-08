@@ -184,7 +184,8 @@ const pageTitles = {
   chargebacks: 'Chargebacks',
   faturamento: 'Faturamentos Pagarme & Stripe',
   despesas: 'Despesas Operacionais',
-  suporte: 'Suporte ao Cliente'
+  suporte: 'Suporte ao Cliente',
+  midias: 'Gestão de Mídias'
 };
 
 const pageLoaders = {};
@@ -194,6 +195,14 @@ pageLoaders.suporte = function () {
   if (!iframe.src || iframe.src === window.location.href) {
     const tok = localStorage.getItem('token_admin') || localStorage.getItem('token') || '';
     iframe.src = '/admin/suporte.html?t=' + encodeURIComponent(tok);
+  }
+};
+
+pageLoaders.midias = function () {
+  const iframe = document.getElementById('midias-iframe');
+  if (!iframe.src || iframe.src === window.location.href) {
+    const tok = localStorage.getItem('token_admin') || localStorage.getItem('token') || '';
+    iframe.src = '/admin/midias.html?t=' + encodeURIComponent(tok);
   }
 };
 

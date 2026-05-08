@@ -2790,6 +2790,75 @@ router.get("/conteudo-pacotes", makeGenericList("conteudo_pacotes", "criado_em D
 router.get("/premium-unlocks", makeGenericList("premium_unlocks", "created_at DESC", "created_at"));
 router.get("/vip-subscriptions", makeGenericList("vip_subscriptions", "updated_at DESC", "updated_at"));
 
+// ========== MÍDIAS ADMIN ==========
+
+router.get("/midias-admin", async (req, res) => {
+  try {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 24;
+    const offset = (page - 1) * limit;
+    const modelo_id = req.query.modelo_id || null;
+    const tipo = req.query.tipo || null;
+    const tipo_conteudo = req.query.tipo_conteudo || null;
+
+    const params = [];
+    let paramIdx = 1;
+    let where = "c.ativo = TRUE";
+
+    if (modelo_id) {
+      where += ` AND c.modelo_id = $${paramIdx++}`;
+      params.push(modelo_id);
+    }
+    if (tipo) {
+      where += ` AND c.tipo = $${paramIdx++}`;
+      params.push(tipo);
+    }
+    if (tipo_conteudo) {
+      where += ` AND c.tipo_conteudo = $${paramIdx++}`;
+      params.push(tipo_conteudo);
+    }
+
+    const countQ = await db.query(
+      `SELECT COUNT(*) FROM conteudos c WHERE ${where}`,
+      params
+    );
+    const total = Number(countQ.rows[0].count);
+
+    const { rows } = await db.query(
+      `SELECT c.id, c.modelo_id, c.tipo, c.tipo_conteudo, c.url, c.thumbnail_url,
+              c.preco, c.descricao, c.criado_em,
+              m.nome AS modelo_nome, m.username AS modelo_username
+       FROM conteudos c
+       LEFT JOIN modelos m ON m.id = c.modelo_id
+       WHERE ${where}
+       ORDER BY c.criado_em DESC
+       LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`,
+      [...params, limit, offset]
+    );
+
+    res.json({ rows, total, totalPages: Math.ceil(total / limit), page });
+  } catch (err) {
+    console.error("Erro midias-admin:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.get("/midias-admin/modelos", async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT m.id, m.nome, m.username, COUNT(c.id)::int AS total_midias
+       FROM modelos m
+       INNER JOIN conteudos c ON c.modelo_id = m.id AND c.ativo = TRUE
+       GROUP BY m.id, m.nome, m.username
+       ORDER BY total_midias DESC`
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("Erro midias-admin modelos:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
 // ========== 13. TRANSAÇÕES AGENCY ==========
 
 router.get("/transacoes-agency", async (req, res) => {
