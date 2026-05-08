@@ -503,7 +503,8 @@
         el.dataset.id = m.id;
         el.dataset.nome = (m.nome || m.username || '').toLowerCase();
         el.innerHTML = `
-          <span class="nome" title="${m.nome || m.username}">${m.nome || m.username}</span>
+          <span class="nome" title="${m.nome}">${m.nome}</span>
+          <span style="color:#666;font-size:10px;flex-shrink:0;margin-left:4px;">#${m.id}</span>
           <span class="badge">${m.total_midias}</span>
         `;
         el.onclick = () => selecionarModelo(m.id, el);
