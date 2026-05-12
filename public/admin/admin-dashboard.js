@@ -248,6 +248,39 @@ async function enviarNewsletter(e) {
   }
 }
 
+function preVisualizarNewsletter() {
+  const assunto = document.getElementById('nlAssunto').value.trim();
+  const mensagem = document.getElementById('nlMensagem').value.trim();
+
+  if (!mensagem) {
+    toast('Escreva o conteúdo do email antes de pré-visualizar.', 'error');
+    return;
+  }
+
+  // Se o conteúdo parece ser HTML completo, usa direto; senão envolve num wrapper simples
+  const isHtml = /^\s*<!DOCTYPE|^\s*<html/i.test(mensagem);
+  const html = isHtml
+    ? mensagem
+    : `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="font-family:Arial,sans-serif;padding:16px;">${mensagem}</body></html>`;
+
+  document.getElementById('nlPreviewAssunto').textContent = assunto ? `Assunto: ${assunto}` : '';
+  document.getElementById('nlPreviewFrame').srcdoc = html;
+
+  const modal = document.getElementById('modalPreviewNewsletter');
+  modal.style.display = 'flex';
+}
+
+function fecharPreviewNewsletter() {
+  const modal = document.getElementById('modalPreviewNewsletter');
+  modal.style.display = 'none';
+  document.getElementById('nlPreviewFrame').srcdoc = '';
+}
+
+// Fechar preview ao clicar fora
+document.getElementById('modalPreviewNewsletter')?.addEventListener('click', function (e) {
+  if (e.target === this) fecharPreviewNewsletter();
+});
+
 pageLoaders.suporte = function () {
   const iframe = document.getElementById('suporte-iframe');
   if (!iframe.src || iframe.src === window.location.href) {
