@@ -6,7 +6,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 async function enviarEmail(to, assunto, html) {
 
   const response = await resend.emails.send({
-    from: "Velvet <no-reply@velvet.lat>",
+    from: "Velvet <contato@velvet.lat>",
     to,
     subject: assunto,
     html
