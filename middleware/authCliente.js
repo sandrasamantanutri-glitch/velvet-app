@@ -18,7 +18,7 @@ module.exports = async function authCliente(req, res, next) {
     }
 
     const result = await db.query(
-      `SELECT c.id, u.ativo, u.bloqueado
+      `SELECT c.id, u.ativo, u.bloqueado, u.token_version
        FROM clientes c
        JOIN users u ON u.id = c.user_id
        WHERE c.user_id = $1`,
@@ -29,7 +29,7 @@ module.exports = async function authCliente(req, res, next) {
       return res.status(404).json({ error: "Cliente não encontrado" });
     }
 
-    const { id, ativo, bloqueado } = result.rows[0];
+    const { id, ativo, bloqueado, token_version } = result.rows[0];
 
     if (!ativo) {
       return res.status(403).json({ error: "Conta desativada" });
@@ -37,6 +37,10 @@ module.exports = async function authCliente(req, res, next) {
 
     if (bloqueado) {
       return res.status(403).json({ error: "Conta bloqueada" });
+    }
+
+    if (decoded.tv !== token_version) {
+      return res.status(401).json({ error: "Sessão expirada. Faça login novamente." });
     }
 
     req.user = decoded;

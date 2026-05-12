@@ -18,7 +18,7 @@ module.exports = async function authModelo(req, res, next) {
     }
 
     const result = await db.query(
-      `SELECT m.id, u.ativo, u.bloqueado
+      `SELECT m.id, u.ativo, u.bloqueado, u.token_version
        FROM modelos m
        JOIN users u ON u.id = m.user_id
        WHERE m.user_id = $1`,
@@ -29,7 +29,7 @@ module.exports = async function authModelo(req, res, next) {
       return res.status(404).json({ error: "Modelo não encontrado" });
     }
 
-    const { id, ativo, bloqueado } = result.rows[0];
+    const { id, ativo, bloqueado, token_version } = result.rows[0];
 
     if (!ativo) {
       return res.status(403).json({ error: "Conta desativada" });
@@ -37,6 +37,10 @@ module.exports = async function authModelo(req, res, next) {
 
     if (bloqueado) {
       return res.status(403).json({ error: "Conta bloqueada" });
+    }
+
+    if (decoded.tv !== token_version) {
+      return res.status(401).json({ error: "Sessão expirada. Faça login novamente." });
     }
 
     req.user = decoded;
