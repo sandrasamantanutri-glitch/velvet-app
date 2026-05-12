@@ -68,6 +68,7 @@
     "disableNotifications": "Disable notifications",
     "logout": "Log out"
   },
+  
 "feed": {
   "page_title": "Velvet",
   "empty": "No models available",
@@ -78,9 +79,9 @@
   "sec_recomendadas": "⭐ Recommended for you",
   "sec_emalta": "🔥 Trending",
   "sec_novas": "✨ New on the platform",
-  "badge_online": "● Online",
-  "badge_responsiva": "💬 Responsive",
-  "badge_ativa": "🔥 Active",
+  "badge_online": "🟢 Online",
+  "badge_responsiva": "💬 Active chat",
+  "badge_ativa": "📸 Updates often",
   "badge_nova": "✨ New",
   "badge_premium": "💎 Premium",
   "fas_contador": "❤️ {n} fans",
