@@ -73,7 +73,18 @@
   "empty": "No hay modelos disponibles",
   "fetchError": "Error al obtener modelos",
   "error": "Error al cargar el feed",
-  "modelo": "Modelo"
+  "modelo": "Modelo",
+  "sec_online": "🟢 En línea ahora",
+  "sec_recomendadas": "⭐ Recomendadas para ti",
+  "sec_emalta": "🔥 Tendencia",
+  "sec_novas": "✨ Nuevas en la plataforma",
+  "badge_online": "● En línea",
+  "badge_responsiva": "💬 Activa en el chat",
+  "badge_ativa": "🔥 Activa",
+  "badge_nova": "✨ Nueva",
+  "badge_premium": "💎 Premium",
+  "fas_contador": "❤️ {n} fans",
+  "loading": "Cargando..."
 },
   "perfil": {
     "tab_feed": "📷 Feed",

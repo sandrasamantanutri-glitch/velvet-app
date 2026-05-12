@@ -73,7 +73,18 @@
   "empty": "No models available",
   "fetchError": "Error fetching models",
   "error": "Error loading feed",
-  "modelo": "Model"
+  "modelo": "Model",
+  "sec_online": "🟢 Online now",
+  "sec_recomendadas": "⭐ Recommended for you",
+  "sec_emalta": "🔥 Trending",
+  "sec_novas": "✨ New on the platform",
+  "badge_online": "● Online",
+  "badge_responsiva": "💬 Responsive",
+  "badge_ativa": "🔥 Active",
+  "badge_nova": "✨ New",
+  "badge_premium": "💎 Premium",
+  "fas_contador": "❤️ {n} fans",
+  "loading": "Loading..."
 },
 
   "perfil": {

@@ -34,17 +34,19 @@ function criarCard(modelo) {
   else if (modelo.top2) badgeRank = `<span class="badge badge-top2">🥈 #2</span>`;
   else if (modelo.top3) badgeRank = `<span class="badge badge-top3">🥉 #3</span>`;
 
-  // badges de destaque
+  // badges de destaque — textos via i18n
   const badges = [];
-  if (modelo.online)          badges.push(`<span class="badge badge-online">● Online</span>`);
-  if (modelo.responsiva)      badges.push(`<span class="badge badge-responsiva">💬 Responsiva</span>`);
-  if (modelo.ativa_conteudo)  badges.push(`<span class="badge badge-conteudo">🔥 Ativa</span>`);
-  if (modelo.is_new)          badges.push(`<span class="badge badge-new">✨ Nova</span>`);
-  if (modelo.total_premium > 0) badges.push(`<span class="badge badge-premium">💎 Premium</span>`);
+  if (modelo.online)            badges.push(`<span class="badge badge-online">${t("feed.badge_online")}</span>`);
+  if (modelo.responsiva)        badges.push(`<span class="badge badge-responsiva">${t("feed.badge_responsiva")}</span>`);
+  if (modelo.ativa_conteudo)    badges.push(`<span class="badge badge-conteudo">${t("feed.badge_ativa")}</span>`);
+  if (modelo.is_new)            badges.push(`<span class="badge badge-new">${t("feed.badge_nova")}</span>`);
+  if (modelo.total_premium > 0) badges.push(`<span class="badge badge-premium">${t("feed.badge_premium")}</span>`);
 
   const fasFormatado = modelo.total_fas >= 1000
     ? (modelo.total_fas / 1000).toFixed(1) + "k"
     : modelo.total_fas;
+
+  const fasTexto = t("feed.fas_contador").replace("{n}", fasFormatado);
 
   card.innerHTML = `
     <div class="modelo-foto" style="background-image:url('${foto}')">
@@ -60,7 +62,7 @@ function criarCard(modelo) {
       </div>
       <div class="modelo-bio">${modelo.bio || ""}</div>
       <div class="modelo-footer">
-        <span class="fas-contador">❤️ ${fasFormatado} fãs</span>
+        <span class="fas-contador">${fasTexto}</span>
       </div>
     </div>
   `;
@@ -97,7 +99,7 @@ window.renderFeed = async function () {
   const wrapper = document.getElementById("listaModelos");
   if (!wrapper) return;
 
-  wrapper.innerHTML = `<div class="feed-loading">Carregando...</div>`;
+  wrapper.innerHTML = `<div class="feed-loading">${t("feed.loading")}</div>`;
 
   try {
     const res = await fetch("/api/modelos", {
@@ -111,24 +113,24 @@ window.renderFeed = async function () {
     wrapper.innerHTML = `
       ${online.length ? `
       <section class="feed-secao">
-        <h2 class="feed-secao-titulo">🟢 Online agora</h2>
+        <h2 class="feed-secao-titulo">${t("feed.sec_online")}</h2>
         <div class="feed-grid" id="sec-online"></div>
       </section>` : ""}
 
       ${recomendadas.length ? `
       <section class="feed-secao">
-        <h2 class="feed-secao-titulo">⭐ Recomendadas para você</h2>
+        <h2 class="feed-secao-titulo">${t("feed.sec_recomendadas")}</h2>
         <div class="feed-grid" id="sec-recomendadas"></div>
       </section>` : ""}
 
       <section class="feed-secao">
-        <h2 class="feed-secao-titulo">🔥 Em alta</h2>
+        <h2 class="feed-secao-titulo">${t("feed.sec_emalta")}</h2>
         <div class="feed-grid" id="sec-emalta"></div>
       </section>
 
       ${novas.length ? `
       <section class="feed-secao">
-        <h2 class="feed-secao-titulo">✨ Novas na plataforma</h2>
+        <h2 class="feed-secao-titulo">${t("feed.sec_novas")}</h2>
         <div class="feed-grid" id="sec-novas"></div>
       </section>` : ""}
     `;
@@ -144,6 +146,11 @@ window.renderFeed = async function () {
   }
 };
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  // aguarda i18n carregar antes de renderizar os textos dos badges/seções
+  if (typeof whenI18nReady === "function") await whenI18nReady();
   window.renderFeed();
+
+  // re-renderiza se o usuário trocar o idioma com o feed aberto
+  window.addEventListener("languageChanged", () => window.renderFeed());
 });
