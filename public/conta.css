@@ -362,7 +362,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 16px;
   z-index: 9999;
+  box-sizing: border-box;
 }
 
 .modal.hidden {
@@ -543,54 +545,36 @@ body {
 
 .modal-box-role {
   max-width: 460px;
-  width: calc(100% - 32px);
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
   text-align: left;
 }
 
 .popup-print-role {
   display: block;
   width: 100%;
-  max-width: 320px;
-  margin: 16px auto;
-  border-radius: 12px;
+  max-width: 300px;
+  margin: 14px auto;
+  border-radius: 10px;
   border: 1px solid #ddd;
   box-shadow: 0 8px 24px rgba(0,0,0,.08);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 480px) {
   .modal-box-role {
-    width: calc(100vw - 20px);
-    max-height: calc(100vh - 20px);
-    padding: 16px;
+    max-height: 88vh;
+    padding: 18px;
     border-radius: 14px;
   }
 
   .popup-print-role {
     max-width: 100%;
-    margin: 14px auto 0;
-    border-radius: 10px;
-  }
-}
-
-@media (max-width: 480px) {
-  .modal-box-role {
-    width: calc(100vw - 16px);
-    max-height: calc(100vh - 16px);
-    padding: 14px;
-    border-radius: 12px;
-  }
-
-  .popup-print-role {
-    width: 100%;
-    max-width: 100%;
     margin-top: 12px;
     border-radius: 8px;
   }
-}
 
-@media (max-width: 480px) {
   .modal-box-role .modal-actions {
-    display: flex;
     flex-direction: column;
     gap: 10px;
   }
