@@ -2059,13 +2059,35 @@ process.on("uncaughtException", (err) => {
 });
 
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 10, // 10 tentativas
+  windowMs: 15 * 60 * 1000,
+  max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  message: {
-    error: "Muitas tentativas. Tente novamente em alguns minutos."
-  }
+  message: { error: "Muitas tentativas. Tente novamente em alguns minutos." }
+});
+
+const uploadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Muitos uploads. Aguarde alguns minutos e tente novamente." }
+});
+
+const uploadAvatarLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Muitas atualizações de perfil. Tente novamente em alguns minutos." }
+});
+
+const uploadVerificacaoLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Limite de envio de documentos atingido. Tente novamente em 1 hora." }
 });
 
 // app.use("/api", manutencaoClientes);
@@ -6255,7 +6277,7 @@ app.put("/api/chat/cliente/:cliente_id/anotacoes", authModelo, async (req, res) 
 // UPLOAD MIDIA - FEED
 // ===========================
 
-app.post("/api/upload", auth, authModelo, uploadB2.array("file", 10), async (req, res) => {
+app.post("/api/upload", auth, authModelo, uploadLimiter, uploadB2.array("file", 10), async (req, res) => {
 
     try {
 
@@ -6871,7 +6893,7 @@ app.post("/api/login", authLimiter, async (req, res) => {
 // AVATAR
 // ===========================
 
-app.post( "/uploadAvatar", auth, uploadB2.single("avatar"), async (req, res) => {
+app.post( "/uploadAvatar", auth, uploadAvatarLimiter, uploadB2.single("avatar"), async (req, res) => {
 
     try {
       if (!req.file) {
@@ -6961,7 +6983,7 @@ app.post( "/uploadAvatar", auth, uploadB2.single("avatar"), async (req, res) => 
 // CAPA
 // ===========================
 
-app.post( "/uploadCapa", auth, uploadB2.single("capa"),  async (req, res) => {
+app.post( "/uploadCapa", auth, uploadAvatarLimiter, uploadB2.single("capa"),  async (req, res) => {
 
     try {
       if (!req.file) {
@@ -11035,7 +11057,7 @@ app.post("/api/chat/cliente/marcar-lido/:modelo_id", authCliente, async (req, re
 // VERIFICACAO PERFIL
 // ===========================
 
-app.post("/api/verificacao", auth, uploadVerificacao.fields([{ name: "doc_frente", maxCount: 1 },{ name: "doc_verso", maxCount: 1 },{ name: "selfie", maxCount: 1 }]),
+app.post("/api/verificacao", auth, uploadVerificacaoLimiter, uploadVerificacao.fields([{ name: "doc_frente", maxCount: 1 },{ name: "doc_verso", maxCount: 1 },{ name: "selfie", maxCount: 1 }]),
   async (req, res) => {
     try {
       const userId = req.user.id;
@@ -11252,7 +11274,7 @@ app.post("/api/verificacao", auth, uploadVerificacao.fields([{ name: "doc_frente
 // CARREGAR MIDIAS CONTEUDOS
 // ===========================
 
-app.post("/api/conteudos", authModelo, uploadB2.array("file", 10), async (req, res) => {
+app.post("/api/conteudos", authModelo, uploadLimiter, uploadB2.array("file", 10), async (req, res) => {
 
     const userId = req.user.id;
     const { preco, descricao } = req.body;
@@ -11567,7 +11589,7 @@ app.patch("/api/ofertas/:id/encerrar", authModelo, async (req, res) => {
 // PUBLI PREMIUM
 // ===========================
 
-app.post("/api/premium", auth, authModelo, uploadB2.array("files", 10), async (req, res) => {
+app.post("/api/premium", auth, authModelo, uploadLimiter, uploadB2.array("files", 10), async (req, res) => {
   const client = await db.connect();
 
   try {
