@@ -190,6 +190,64 @@ const pageTitles = {
 
 const pageLoaders = {};
 
+// ========== NEWSLETTER ==========
+
+pageLoaders.newsletter = async function () {
+  try {
+    const data = await fetchJSON('/admin/dashboard/newsletter/resumo');
+    document.getElementById('newsletter-resumo').innerHTML =
+      `📬 <strong>${data.total}</strong> modelos verificadas receberão o email.`;
+  } catch {
+    document.getElementById('newsletter-resumo').textContent = 'Erro ao carregar total.';
+  }
+  carregarHistoricoNewsletter();
+};
+
+async function carregarHistoricoNewsletter() {
+  const el = document.getElementById('newsletter-historico-lista');
+  try {
+    const data = await fetchJSON('/admin/dashboard/newsletter/historico');
+    if (!data.length) { el.textContent = 'Nenhum envio registado ainda.'; return; }
+    el.innerHTML = data.map(n => `
+      <div style="padding:10px 0; border-bottom:1px solid #eee;">
+        <strong>${escapeHtml(n.assunto)}</strong>
+        <span style="color:#aaa; margin-left:8px; font-size:12px;">${new Date(n.criado_em).toLocaleString('pt-BR')}</span><br>
+        <span style="color:#6f42c1;">${n.total_enviados} destinatárias</span>
+        ${n.erro ? `<span style="color:#e53e3e; margin-left:8px;">${escapeHtml(n.erro)}</span>` : ''}
+      </div>`).join('');
+  } catch {
+    el.textContent = 'Erro ao carregar histórico.';
+  }
+}
+
+async function enviarNewsletter(e) {
+  e.preventDefault();
+  const assunto = document.getElementById('nlAssunto').value.trim();
+  const mensagem = document.getElementById('nlMensagem').value.trim();
+  const btn = document.getElementById('btnEnviarNewsletter');
+  const status = document.getElementById('newsletter-status');
+
+  if (!confirm(`Confirma o envio da newsletter para todas as modelos verificadas?`)) return;
+
+  btn.disabled = true;
+  btn.textContent = 'A enviar…';
+  status.textContent = '';
+
+  try {
+    const res = await postJSON('/admin/dashboard/newsletter/enviar', { assunto, mensagem });
+    toast(`Newsletter enviada para ${res.total} modelos!`, 'success');
+    status.textContent = `✓ Enviado para ${res.total} modelos`;
+    document.getElementById('formNewsletter').reset();
+    carregarHistoricoNewsletter();
+  } catch (err) {
+    toast('Erro ao enviar newsletter: ' + err.message, 'error');
+    status.textContent = '✗ Falha no envio';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Enviar para todas';
+  }
+}
+
 pageLoaders.suporte = function () {
   const iframe = document.getElementById('suporte-iframe');
   if (!iframe.src || iframe.src === window.location.href) {

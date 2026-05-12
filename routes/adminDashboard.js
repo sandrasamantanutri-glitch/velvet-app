@@ -4167,4 +4167,112 @@ router.delete("/despesas/:id", authAdmin, async (req, res) => {
   }
 });
 
+// ========================================
+// NEWSLETTER
+// ========================================
+
+const { Resend } = require("resend");
+const _resendNewsletter = new Resend(process.env.RESEND_API_KEY);
+
+router.get("/newsletter/resumo", authAdmin, async (req, res) => {
+  try {
+    const { rows } = await db.query(`
+      SELECT COUNT(*) AS total
+      FROM modelos m
+      JOIN users u ON u.id = m.user_id
+      WHERE m.verificada = true AND m.ativo = true AND u.email IS NOT NULL
+    `);
+    res.json({ total: Number(rows[0].total) });
+  } catch (err) {
+    res.status(500).json({ erro: err.message });
+  }
+});
+
+router.get("/newsletter/historico", authAdmin, async (req, res) => {
+  try {
+    const { rows } = await db.query(`
+      SELECT id, assunto, total_enviados, erro, criado_em
+      FROM newsletter_envios
+      ORDER BY criado_em DESC
+      LIMIT 20
+    `);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ erro: err.message });
+  }
+});
+
+router.post("/newsletter/enviar", authAdmin, async (req, res) => {
+  const { assunto, mensagem } = req.body;
+  if (!assunto || !mensagem) {
+    return res.status(400).json({ erro: "Assunto e mensagem são obrigatórios." });
+  }
+
+  try {
+    const { rows } = await db.query(`
+      SELECT u.email
+      FROM modelos m
+      JOIN users u ON u.id = m.user_id
+      WHERE m.verificada = true AND m.ativo = true AND u.email IS NOT NULL
+    `);
+
+    if (rows.length === 0) {
+      return res.status(400).json({ erro: "Nenhuma modelo verificada encontrada." });
+    }
+
+    const emails = rows.map(r => r.email);
+    const html = `
+      <div style="font-family: Arial, Helvetica, sans-serif; background:#f6f3fb; padding:24px; color:#2d1f3d;">
+        <div style="max-width:600px; margin:0 auto; background:#ffffff; padding:32px; border-radius:12px;">
+          <h2 style="margin-top:0; margin-bottom:20px; color:#6f42c1; text-align:center;">
+            ${assunto}
+          </h2>
+          <div style="line-height:1.7; font-size:15px;">
+            ${mensagem}
+          </div>
+          <div style="text-align:center; margin:32px 0 8px;">
+            <a href="https://www.velvet.lat"
+               style="display:inline-block; background:#6f42c1; color:#ffffff; text-decoration:none; padding:14px 28px; border-radius:10px; font-weight:bold; font-size:15px;">
+              Acessar a plataforma
+            </a>
+          </div>
+          <p style="margin:24px 0 0; text-align:center; color:#6b5a7d;">
+            Equipe Velvet 💜
+          </p>
+        </div>
+      </div>
+    `;
+
+    // Envia em lotes de 50 para não sobrecarregar a API
+    const LOTE = 50;
+    let enviados = 0;
+    for (let i = 0; i < emails.length; i += LOTE) {
+      const lote = emails.slice(i, i + LOTE);
+      await Promise.all(lote.map(email =>
+        _resendNewsletter.emails.send({
+          from: "Velvet <no-reply@velvet.lat>",
+          to: email,
+          subject: assunto,
+          html
+        })
+      ));
+      enviados += lote.length;
+    }
+
+    await db.query(
+      `INSERT INTO newsletter_envios (assunto, mensagem, total_enviados, admin_id) VALUES ($1, $2, $3, $4)`,
+      [assunto, mensagem, enviados, req.user.id]
+    );
+
+    res.json({ ok: true, total: enviados });
+  } catch (err) {
+    console.error("Erro newsletter:", err);
+    await db.query(
+      `INSERT INTO newsletter_envios (assunto, mensagem, total_enviados, erro, admin_id) VALUES ($1, $2, 0, $3, $4)`,
+      [assunto, mensagem, err.message, req.user?.id]
+    ).catch(() => {});
+    res.status(500).json({ erro: "Erro ao enviar newsletter." });
+  }
+});
+
 module.exports = router;
