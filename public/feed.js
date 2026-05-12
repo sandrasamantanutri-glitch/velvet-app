@@ -1,11 +1,8 @@
 // ===============================
-// AUTH GUARD — CLIENT HOME
+// AUTH GUARD
 // ===============================
 const token = localStorage.getItem("token");
-
-if (!token) {
-  window.location.href = "/index.html";
-}
+if (!token) window.location.href = "/index.html";
 
 async function logout() {
   const token = localStorage.getItem("token");
@@ -17,106 +14,133 @@ async function logout() {
 }
 
 function getFeedText(key, fallback = "") {
-  if (typeof t === "function") {
-    return t(key);
-  }
+  if (typeof t === "function") return t(key);
   return fallback;
 }
 
-function renderListaModelos(modelos) {
-  const lista = document.getElementById("listaModelos");
+// ===============================
+// RENDER CARD
+// ===============================
+function criarCard(modelo) {
+  const card = document.createElement("div");
+  card.className = "modelo-card";
 
-  if (!lista) {
-    console.error("❌ listaModelos não encontrada");
-    return;
-  }
+  const foto = modelo.capa || modelo.avatar || "/assets/avatar.png";
+  const avatar = modelo.avatar || "/assets/avatar.png";
 
-  lista.innerHTML = "";
+  // badge de ranking
+  let badgeRank = "";
+  if (modelo.top1) badgeRank = `<span class="badge badge-top1">🥇 #1</span>`;
+  else if (modelo.top2) badgeRank = `<span class="badge badge-top2">🥈 #2</span>`;
+  else if (modelo.top3) badgeRank = `<span class="badge badge-top3">🥉 #3</span>`;
 
-  if (!Array.isArray(modelos) || modelos.length === 0) {
-    lista.innerHTML = `<p>${getFeedText("feed.empty", "Nenhuma modelo disponível")}</p>`;
-    return;
-  }
+  // badges de destaque
+  const badges = [];
+  if (modelo.online)          badges.push(`<span class="badge badge-online">● Online</span>`);
+  if (modelo.responsiva)      badges.push(`<span class="badge badge-responsiva">💬 Responsiva</span>`);
+  if (modelo.ativa_conteudo)  badges.push(`<span class="badge badge-conteudo">🔥 Ativa</span>`);
+  if (modelo.is_new)          badges.push(`<span class="badge badge-new">✨ Nova</span>`);
+  if (modelo.total_premium > 0) badges.push(`<span class="badge badge-premium">💎 Premium</span>`);
 
-  modelos.forEach(modelo => {
-    const card = document.createElement("div");
-    card.className = "modelo-card";
+  const fasFormatado = modelo.total_fas >= 1000
+    ? (modelo.total_fas / 1000).toFixed(1) + "k"
+    : modelo.total_fas;
 
-    let avatarIcon = modelo.avatar || "/assets/avatar.png";
-
-    if (modelo.top1) {
-      avatarIcon = "/assets/top1.png";
-    } else if (modelo.top2) {
-      avatarIcon = "/assets/top2.png";
-    } else if (modelo.top3) {
-      avatarIcon = "/assets/top3.png";
-    } else if (modelo.is_new) {
-      avatarIcon = "/assets/new.png";
-    }
-
-    card.innerHTML = `
-      <div class="modelo-foto">
-        <img
-          src="${modelo.avatar || "/assets/avatar.png"}"
-          class="foto-principal"
-          alt="${modelo.nome_exibicao || getFeedText("feed.modelo", "Modelo")}"
-        >
+  card.innerHTML = `
+    <div class="modelo-foto" style="background-image:url('${foto}')">
+      <div class="modelo-foto-overlay"></div>
+      ${badgeRank}
+      <div class="card-badges">${badges.join("")}</div>
+      <img class="avatar-flutuante" src="${avatar}" alt="${modelo.nome_exibicao || ""}">
+    </div>
+    <div class="modelo-info">
+      <div class="modelo-header">
+        <span class="modelo-nome">${modelo.nome_exibicao || ""}</span>
+        ${modelo.online ? '<span class="dot-online"></span>' : ''}
       </div>
-
-      <div class="modelo-info">
-        <div class="modelo-header">
-          <img
-            src="${avatarIcon}"
-            class="avatar-mini"
-            alt=""
-          >
-
-          <span class="modelo-nome">
-            ${modelo.nome_exibicao || ""}
-          </span>
-        </div>
-
-        <div class="modelo-bio">
-          ${modelo.bio || ""}
-        </div>
+      <div class="modelo-bio">${modelo.bio || ""}</div>
+      <div class="modelo-footer">
+        <span class="fas-contador">❤️ ${fasFormatado} fãs</span>
       </div>
-    `;
+    </div>
+  `;
 
-    card.onclick = () => {
-      const modeloId = Number(modelo.modelo_id);
-      if (!modeloId) return;
+  card.onclick = () => {
+    const modeloId = Number(modelo.modelo_id);
+    if (!modeloId) return;
+    window.location.href = `perfil.html?modelo_id=${modeloId}`;
+  };
 
-      window.location.href = `perfil.html?modelo_id=${modeloId}`;
-    };
-
-    lista.appendChild(card);
-  });
+  return card;
 }
 
-window.renderFeed = async function () {
-  const lista = document.getElementById("listaModelos");
+// ===============================
+// RENDER SEÇÃO
+// ===============================
+function renderSecao(containerId, modelos, emptyMsg) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = "";
 
-  if (!lista) {
-    console.error("❌ listaModelos não encontrada");
+  if (!modelos || modelos.length === 0) {
+    container.closest(".feed-secao")?.classList.add("feed-secao--vazia");
     return;
   }
+
+  modelos.forEach(m => container.appendChild(criarCard(m)));
+}
+
+// ===============================
+// RENDER FEED COMPLETO
+// ===============================
+window.renderFeed = async function () {
+  const wrapper = document.getElementById("listaModelos");
+  if (!wrapper) return;
+
+  wrapper.innerHTML = `<div class="feed-loading">Carregando...</div>`;
 
   try {
     const res = await fetch("/api/modelos", {
-      headers: {
-        Authorization: "Bearer " + token
-      }
+      headers: { Authorization: "Bearer " + token }
     });
 
-    if (!res.ok) {
-      throw new Error(getFeedText("feed.fetchError", "Erro ao buscar modelos"));
-    }
+    if (!res.ok) throw new Error("Erro ao buscar modelos");
 
-    const modelos = await res.json();
-    renderListaModelos(modelos);
+    const { online, novas, emAlta, recomendadas } = await res.json();
+
+    wrapper.innerHTML = `
+      ${online.length ? `
+      <section class="feed-secao">
+        <h2 class="feed-secao-titulo">🟢 Online agora</h2>
+        <div class="feed-grid" id="sec-online"></div>
+      </section>` : ""}
+
+      ${recomendadas.length ? `
+      <section class="feed-secao">
+        <h2 class="feed-secao-titulo">⭐ Recomendadas para você</h2>
+        <div class="feed-grid" id="sec-recomendadas"></div>
+      </section>` : ""}
+
+      <section class="feed-secao">
+        <h2 class="feed-secao-titulo">🔥 Em alta</h2>
+        <div class="feed-grid" id="sec-emalta"></div>
+      </section>
+
+      ${novas.length ? `
+      <section class="feed-secao">
+        <h2 class="feed-secao-titulo">✨ Novas na plataforma</h2>
+        <div class="feed-grid" id="sec-novas"></div>
+      </section>` : ""}
+    `;
+
+    renderSecao("sec-online", online);
+    renderSecao("sec-recomendadas", recomendadas);
+    renderSecao("sec-emalta", emAlta, "Nenhuma modelo disponível");
+    renderSecao("sec-novas", novas);
+
   } catch (err) {
     console.error("Erro ao carregar o feed:", err);
-    lista.innerHTML = `<p>${getFeedText("feed.error", "Erro ao carregar o feed.")}</p>`;
+    wrapper.innerHTML = `<p class="feed-erro">Erro ao carregar o feed.</p>`;
   }
 };
 
