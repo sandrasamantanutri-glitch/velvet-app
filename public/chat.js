@@ -156,7 +156,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     document.getElementById("btnTransacoesCliente")?.addEventListener("click", () => {
   if (!cliente_id) return;
-  window.open(`/cliente-transacoes.html?cliente_id=${cliente_id}`, "_blank");
+  window.location.href = `/cliente-transacoes.html?cliente_id=${cliente_id}`;
     });
     
     await carregarInfoCliente(cliente_id);
