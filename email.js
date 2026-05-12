@@ -203,7 +203,7 @@ async function enviarEmailBoasVindasCliente(email, nomeCompleto) {
 
           <div style="background:#f8f4ff; padding:16px 20px; border-radius:10px; margin:0 0 12px;">
             <p style="margin:0; line-height:1.6;">
-              💬 <strong>Assine e converse</strong> — ao assinar um perfil, você tem acesso ao chat direto e ao conteúdo exclusivo do criador.
+              💬 <strong>Assine e converse</strong> — ao assinar um perfil, você tem acesso ao chat direto e ao conteúdo do criador.
             </p>
           </div>
 
@@ -244,7 +244,7 @@ async function enviarEmailBoasVindasModelo(email, nomeCompleto) {
   await resend.emails.send({
     from: "Velvet <no-reply@velvet.lat>",
     to: email,
-    subject: "Seu perfil de criador foi criado! Próximos passos ✨",
+    subject: "Bem vindo(a) à Velvet!!💜",
     html: `
       <div style="font-family: Arial, Helvetica, sans-serif; background:#f6f3fb; padding:24px; color:#2d1f3d;">
         <div style="max-width:600px; margin:0 auto; background:#ffffff; padding:32px; border-radius:12px;">
@@ -261,7 +261,7 @@ async function enviarEmailBoasVindasModelo(email, nomeCompleto) {
           </p>
 
           <p style="margin:0 0 20px; line-height:1.6;">
-            Sua conta de criador foi criada com sucesso. A Velvet existe para conectar criadores com os seus fãs de forma autêntica, segura e sustentável — e estamos felizes em ter você aqui.
+            Sua conta foi criada com sucesso. A Velvet existe para conectar criadores com os seus fãs de forma autêntica, segura e sustentável — e estamos felizes em ter você aqui.
           </p>
 
           <div style="background:#f8f4ff; padding:16px 20px; border-radius:10px; margin:0 0 16px;">
@@ -286,7 +286,7 @@ async function enviarEmailBoasVindasModelo(email, nomeCompleto) {
           <ul style="margin:0 0 20px; padding-left:20px; line-height:1.9; color:#2d1f3d;">
             <li>Criar um perfil personalizado com bio, capa e avatar</li>
             <li>Receber assinaturas mensais dos seus fãs</li>
-            <li>Publicar conteúdo exclusivo e premium</li>
+            <li>Publicar mídias</li>
             <li>Conversar diretamente com quem assina o seu perfil</li>
             <li>Acompanhar seus ganhos de forma transparente</li>
           </ul>
