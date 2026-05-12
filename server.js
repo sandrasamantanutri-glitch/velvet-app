@@ -6763,6 +6763,47 @@ app.post("/api/register", authLimiter, async (req, res) => {
       });
     }
 
+    // ── Verificação de email existente ──────────────────────────────────────
+    const emailCheck = await db.query(
+      `SELECT id, ativo, motivo_desativacao, autoexcluida_em
+       FROM users
+       WHERE email = $1`,
+      [emailNormalizado]
+    );
+
+    if (emailCheck.rowCount > 0) {
+      const existing = emailCheck.rows[0];
+
+      // Conta ativa → bloqueado sempre
+      if (existing.ativo !== false) {
+        return res.status(409).json({ erro: "Email já registrado" });
+      }
+
+      // Desativada por admin / bloqueada → bloqueado sempre
+      if (existing.motivo_desativacao !== "autoexclusao" || !existing.autoexcluida_em) {
+        return res.status(409).json({ erro: "Email já registrado" });
+      }
+
+      // Autoexclusão: verificar carência de 30 dias
+      const diasDesdeExclusao = Math.floor(
+        (Date.now() - new Date(existing.autoexcluida_em).getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      if (diasDesdeExclusao < 30) {
+        const diasRestantes = 30 - diasDesdeExclusao;
+        return res.status(409).json({
+          erro: `Conta excluída recentemente. Você poderá criar uma nova conta em ${diasRestantes} dia${diasRestantes > 1 ? "s" : ""}.`
+        });
+      }
+
+      // 30+ dias após autoexclusão → anonimiza o email antigo e libera o cadastro
+      await db.query(
+        `UPDATE users SET email = $1 WHERE id = $2`,
+        [`deleted_${existing.id}@velvet.lat`, existing.id]
+      );
+    }
+    // ────────────────────────────────────────────────────────────────────────
+
     const hash = await bcrypt.hash(senha, 10);
 
     const userResult = await db.query(
