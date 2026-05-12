@@ -10933,13 +10933,46 @@ app.post("/api/password/forgot", async (req, res) => {
     await client.query("COMMIT");
 
     await resend.emails.send({
-      from: "Velvet <contato@velvet.lat>",
+      from: "Velvet <no-reply@velvet.lat>",
       to: [email],
       subject: "Recuperação de senha – Velvet",
       html: `
-        <p>Seu código de recuperação é:</p>
-        <h2>${codigo}</h2>
-        <p>Este código expira em 15 minutos.</p>
+        <div style="font-family: Arial, Helvetica, sans-serif; background:#f6f3fb; padding:24px; color:#2d1f3d;">
+          <div style="max-width:600px; margin:0 auto; background:#ffffff; padding:32px; border-radius:12px;">
+
+            <h2 style="margin-top:0; margin-bottom:20px; color:#6f42c1; text-align:center;">
+              Recuperação de senha 🔐
+            </h2>
+
+            <p style="margin:0 0 16px; line-height:1.6;">
+              Olá,
+            </p>
+
+            <p style="margin:0 0 20px; line-height:1.6;">
+              Recebemos uma solicitação para redefinir a senha da sua conta na Velvet. Use o código abaixo para continuar.
+            </p>
+
+            <div style="background:#f8f4ff; padding:24px 16px; border-radius:10px; margin:20px 0; text-align:center;">
+              <p style="margin:0 0 8px; font-size:13px; color:#6b5a7d; letter-spacing:0.5px; text-transform:uppercase;">
+                Seu código de verificação
+              </p>
+              <p style="margin:0; font-size:36px; font-weight:bold; color:#6f42c1; letter-spacing:8px;">
+                ${codigo}
+              </p>
+            </div>
+
+            <div style="background:#fff7fb; padding:14px 16px; border-radius:10px; margin:20px 0;">
+              <p style="margin:0; line-height:1.6; font-size:13px; color:#7a1f52;">
+                ⏳ Este código expira em <strong>15 minutos</strong>. Se você não solicitou a recuperação de senha, ignore este email — sua conta está segura.
+              </p>
+            </div>
+
+            <p style="margin:24px 0 0; line-height:1.6; text-align:center; color:#6b5a7d;">
+              Equipe Velvet 💜
+            </p>
+
+          </div>
+        </div>
       `
     });
 
