@@ -10933,7 +10933,7 @@ app.post("/api/password/forgot", async (req, res) => {
     await client.query("COMMIT");
 
     await resend.emails.send({
-      from: "Velvet <no-reply@velvet.lat>",
+      from: "Velvet <contato@velvet.lat>",
       to: [email],
       subject: "Recuperação de senha – Velvet",
       html: `

@@ -4,7 +4,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function enviarEmailValidacao(email) {
   await resend.emails.send({
-    from: "Velvet <no-reply@velvet.lat>",
+    from: "Velvet <contato@velvet.lat>",
     to: email,
     subject: "Envio de documentos para aprovação",
     html: `
@@ -64,7 +64,7 @@ async function enviarEmailValidacao(email) {
 
 async function enviarEmailAprovacao(email) {
   await resend.emails.send({
-    from: "Velvet <no-reply@velvet.lat>",
+    from: "Velvet <contato@velvet.lat>",
     to: email,
     subject: "Sua conta foi aprovada 🎉",
     html: `
@@ -130,7 +130,7 @@ async function enviarEmailAprovacao(email) {
 
 async function enviarEmailRejeicao(email, motivo) {
   await resend.emails.send({
-    from: "Velvet <no-reply@velvet.lat>",
+    from: "Velvet <contato@velvet.lat>",
     to: email,
     subject: "Verificação de conta não aprovada",
     html: `
@@ -188,7 +188,7 @@ async function enviarEmailRejeicao(email, motivo) {
 async function enviarEmailBoasVindasCliente(email, nomeCompleto) {
   const nome = (nomeCompleto || "").split(" ")[0] || "Olá";
   await resend.emails.send({
-    from: "Velvet <no-reply@velvet.lat>",
+    from: "Velvet <contato@velvet.lat>",
     to: email,
     subject: "Bem-vindo(a) à Velvet! 💜",
     html: `
@@ -259,7 +259,7 @@ async function enviarEmailBoasVindasCliente(email, nomeCompleto) {
 async function enviarEmailBoasVindasModelo(email, nomeCompleto) {
   const nome = (nomeCompleto || "").split(" ")[0] || "Olá";
   await resend.emails.send({
-    from: "Velvet <no-reply@velvet.lat>",
+    from: "Velvet <contato@velvet.lat>",
     to: email,
     subject: "Bem vindo(a) à Velvet!!💜",
     html: `

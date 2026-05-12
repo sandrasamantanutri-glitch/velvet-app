@@ -4250,7 +4250,7 @@ router.post("/newsletter/enviar", authAdmin, async (req, res) => {
       const lote = emails.slice(i, i + LOTE);
       await Promise.all(lote.map(email =>
         _resendNewsletter.emails.send({
-          from: "Velvet <no-reply@velvet.lat>",
+          from: "Velvet <contato@velvet.lat>",
           to: email,
           subject: assunto,
           html
