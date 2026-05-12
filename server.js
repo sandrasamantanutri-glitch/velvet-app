@@ -75,6 +75,20 @@ const allowedOrigins = [
   "https://bio.mypagess.workers.dev"
 ];
 
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false
+}));
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error("CORS bloqueado: " + origin));
+  },
+  credentials: true
+}));
+
 const io = new Server(server, {
   cors: {
     origin: [
@@ -2011,23 +2025,6 @@ app.use((req, res, next) => {
 });
 app.use(compression());
 
-app.use(helmet({
-  contentSecurityPolicy: false,   // desabilitado para não quebrar assets/inline scripts existentes
-  crossOriginEmbedderPolicy: false
-}));
-
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-
-    return callback(new Error("CORS bloqueado: " + origin));
-  },
-  credentials: true
-}));
 
 
 app.use((err, req, res, next) => {
