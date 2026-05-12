@@ -4131,11 +4131,14 @@ app.get("/api/modelos", auth, async (req, res) => {
       return res.status(403).json([]);
     }
 
+    const clienteId = req.user.role === "cliente" ? req.user.id : null;
+
     const result = await db.query(`
       SELECT
         m.id AS modelo_id,
         m.nome_exibicao,
         m.avatar,
+        m.capa,
         m.bio,
 
         COALESCE(r.ganhos_mes, 0) AS ganhos_total,
@@ -4143,10 +4146,37 @@ app.get("/api/modelos", auth, async (req, res) => {
         ver.verificado_em AS aprovado_em,
 
         CASE
-          WHEN ver.verificado_em >= NOW() - INTERVAL '5 days'
-          THEN true
-          ELSE false
-        END AS is_new
+          WHEN ver.verificado_em >= NOW() - INTERVAL '14 days'
+          THEN true ELSE false
+        END AS is_new,
+
+        -- total de fãs (assinantes ativos)
+        COALESCE(fas.total, 0) AS total_fas,
+
+        -- responsiva: >70% das msgs de clientes respondidas nos últimos 7 dias
+        CASE
+          WHEN COALESCE(resp.total_recebidas, 0) >= 5
+           AND COALESCE(resp.total_respondidas, 0)::float
+             / NULLIF(resp.total_recebidas, 0) >= 0.7
+          THEN true ELSE false
+        END AS responsiva,
+
+        -- ativa no conteúdo: postou nos últimos 7 dias ou tem conteúdo premium
+        CASE
+          WHEN COALESCE(cont.recente, 0) > 0 OR COALESCE(cont.premium, 0) > 0
+          THEN true ELSE false
+        END AS ativa_conteudo,
+
+        COALESCE(cont.premium, 0) AS total_premium,
+
+        -- recomendada para este cliente (tem interação prévia ou assinatura ativa)
+        CASE
+          WHEN $1::int IS NOT NULL AND (
+            COALESCE(inter.msgs, 0) > 0
+            OR COALESCE(assin.ativa, false) = true
+          )
+          THEN true ELSE false
+        END AS recomendada
 
       FROM modelos m
 
@@ -4165,26 +4195,91 @@ app.get("/api/modelos", auth, async (req, res) => {
           AND date_trunc('month', t.created_at) = date_trunc('month', NOW())
       ) r ON true
 
+      LEFT JOIN LATERAL (
+        SELECT COUNT(*) AS total
+        FROM vip_subscriptions v
+        WHERE v.modelo_id = m.id AND v.ativo = true AND v.expiration_at > NOW()
+      ) fas ON true
+
+      LEFT JOIN LATERAL (
+        SELECT
+          COUNT(*) FILTER (WHERE sender = 'cliente') AS total_recebidas,
+          COUNT(*) FILTER (
+            WHERE sender = 'modelo'
+            AND EXISTS (
+              SELECT 1 FROM messages m2
+              WHERE m2.modelo_id = m.id
+                AND m2.cliente_id = messages.cliente_id
+                AND m2.sender = 'cliente'
+                AND m2.created_at < messages.created_at
+                AND m2.created_at >= NOW() - INTERVAL '7 days'
+            )
+          ) AS total_respondidas
+        FROM messages
+        WHERE modelo_id = m.id
+          AND created_at >= NOW() - INTERVAL '7 days'
+          AND deletada IS NOT TRUE
+      ) resp ON true
+
+      LEFT JOIN LATERAL (
+        SELECT
+          COUNT(*) FILTER (WHERE criado_em >= NOW() - INTERVAL '7 days') AS recente,
+          COUNT(*) FILTER (WHERE tipo_conteudo = 'venda' AND preco > 0) AS premium
+        FROM conteudos
+        WHERE modelo_id = m.id
+      ) cont ON true
+
+      LEFT JOIN LATERAL (
+        SELECT COUNT(*) AS msgs
+        FROM messages
+        WHERE modelo_id = m.id AND cliente_id = $1
+          AND deletada IS NOT TRUE
+        LIMIT 1
+      ) inter ON ($1::int IS NOT NULL)
+
+      LEFT JOIN LATERAL (
+        SELECT true AS ativa
+        FROM vip_subscriptions
+        WHERE modelo_id = m.id AND cliente_id = $1
+          AND ativo = true AND expiration_at > NOW()
+        LIMIT 1
+      ) assin ON ($1::int IS NOT NULL)
+
       WHERE ver.status = 'aprovado'
         AND m.feed = true
         AND m.ativo = true
-
-      ORDER BY ganhos_total DESC
-    `);
+    `,
+    [clienteId]
+    );
 
     const modelos = result.rows;
+    const onlineIds = new Set(onlineModelos.keys());
 
-    modelos.forEach((m, i) => {
+    // marca online
+    modelos.forEach(m => {
+      m.online = onlineIds.has(Number(m.modelo_id));
+    });
+
+    // seções
+    const online      = modelos.filter(m => m.online);
+    const novas       = modelos.filter(m => m.is_new);
+    const emAlta      = [...modelos].sort((a, b) => b.ganhos_total - a.ganhos_total).slice(0, 20);
+    const recomendadas = clienteId
+      ? modelos.filter(m => m.recomendada)
+      : [...modelos].sort(() => Math.random() - 0.5).slice(0, 10);
+
+    // badges top1/2/3 na seção em alta
+    emAlta.forEach((m, i) => {
       if (i === 0) m.top1 = true;
       if (i === 1) m.top2 = true;
       if (i === 2) m.top3 = true;
     });
 
-    res.json(modelos);
+    res.json({ online, novas, emAlta, recomendadas });
 
   } catch (err) {
     console.error("Erro feed modelos:", err);
-    res.status(500).json([]);
+    res.status(500).json({ online: [], novas: [], emAlta: [], recomendadas: [] });
   }
 });
 
