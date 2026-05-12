@@ -89,6 +89,11 @@
     #sp-send:disabled { opacity: .5; cursor: default; }
     .sp-typing { color: #999; font-size: 12px; padding: 0 14px 8px; font-style: italic; background: #f6f6f6; }
     .sp-msg.admin a { color: #7b2cff; text-decoration: underline; }
+    #sp-boas-vindas {
+      background: #f6f0ff; border-bottom: 1px solid #e8daff;
+      padding: 14px 16px; font-size: 13px; color: #4a2a7a; line-height: 1.5;
+    }
+    #sp-boas-vindas strong { display: block; margin-bottom: 4px; font-size: 14px; }
   `;
   document.head.appendChild(style);
 
@@ -109,6 +114,10 @@
         <div id="sp-status">Online</div>
       </div>
       <button id="sp-fechar" title="Fechar">✕</button>
+    </div>
+    <div id="sp-boas-vindas">
+      <strong>👋 Olá! Este é o suporte da Velvet.</strong>
+      Aqui você pode tirar dúvidas sobre pagamentos, assinaturas ou qualquer problema com sua conta. Nossa equipe responde em até 48 horas úteis.
     </div>
     <div id="sp-form-nome">
       <input id="sp-nome" placeholder="Seu nome" maxlength="60" />
