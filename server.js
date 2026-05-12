@@ -59,7 +59,7 @@ const axios = require("axios");
 
 const { Resend } = require("resend");
 const resend = new Resend(process.env.RESEND_API_KEY);
-const { enviarEmailValidacao } = require("./email");
+const { enviarEmailValidacao, enviarEmailBoasVindasCliente, enviarEmailBoasVindasModelo } = require("./email");
 const rateLimit = require("express-rate-limit");
 const compression = require('compression');
 
@@ -6812,7 +6812,7 @@ app.post("/api/register", authLimiter, async (req, res) => {
       );
 
       console.log("📩 Tentando enviar email para:", emailNormalizado);
-      await enviarEmailValidacao(emailNormalizado);
+      await enviarEmailBoasVindasModelo(emailNormalizado, nome_completo);
     }
 
     // CLIENTE
@@ -6850,6 +6850,9 @@ app.post("/api/register", authLimiter, async (req, res) => {
           data_nascimento
         ]
       );
+
+      console.log("📩 Tentando enviar email de boas-vindas para:", emailNormalizado);
+      await enviarEmailBoasVindasCliente(emailNormalizado, nome_completo);
     }
 
     // GERAR TOKEN

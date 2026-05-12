@@ -168,7 +168,161 @@ async function enviarEmailRejeicao(email, motivo) {
   });
 }
 
-module.exports = { 
+async function enviarEmailBoasVindasCliente(email, nomeCompleto) {
+  const nome = (nomeCompleto || "").split(" ")[0] || "Olá";
+  await resend.emails.send({
+    from: "Velvet <no-reply@velvet.lat>",
+    to: email,
+    subject: "Bem-vindo(a) à Velvet! 💜",
+    html: `
+      <div style="font-family: Arial, Helvetica, sans-serif; background:#f6f3fb; padding:24px; color:#2d1f3d;">
+        <div style="max-width:600px; margin:0 auto; background:#ffffff; padding:32px; border-radius:12px;">
+
+          <h2 style="margin-top:0; margin-bottom:8px; color:#6f42c1; text-align:center;">
+            Bem-vindo(a) à Velvet! 💜
+          </h2>
+          <p style="text-align:center; margin:0 0 28px; color:#6b5a7d; font-size:15px;">
+            Conectando fãs e criadores de forma autêntica e segura.
+          </p>
+
+          <p style="margin:0 0 16px; line-height:1.6;">
+            Olá, <strong>${nome}</strong>!
+          </p>
+
+          <p style="margin:0 0 24px; line-height:1.6;">
+            Sua conta foi criada com sucesso. Agora você tem acesso a um espaço pensado para quem quer se conectar de verdade com os criadores que admira.
+          </p>
+
+          <p style="margin:0 0 12px; font-weight:bold; color:#4b2a7b;">Como funciona:</p>
+
+          <div style="background:#f8f4ff; padding:16px 20px; border-radius:10px; margin:0 0 12px;">
+            <p style="margin:0; line-height:1.6;">
+              🔍 <strong>Descubra criadores</strong> — explore perfis de artistas, influenciadores e produtores de conteúdo das mais diversas áreas.
+            </p>
+          </div>
+
+          <div style="background:#f8f4ff; padding:16px 20px; border-radius:10px; margin:0 0 12px;">
+            <p style="margin:0; line-height:1.6;">
+              💬 <strong>Assine e converse</strong> — ao assinar um perfil, você tem acesso ao chat direto e ao conteúdo exclusivo do criador.
+            </p>
+          </div>
+
+          <div style="background:#f8f4ff; padding:16px 20px; border-radius:10px; margin:0 0 12px;">
+            <p style="margin:0; line-height:1.6;">
+              🎁 <strong>Conteúdo premium</strong> — adquira fotos e vídeos avulsos diretamente no perfil de cada criador.
+            </p>
+          </div>
+
+          <div style="background:#f8f4ff; padding:16px 20px; border-radius:10px; margin:0 0 24px;">
+            <p style="margin:0; line-height:1.6;">
+              🤝 <strong>Interação direta</strong> — aqui você não é só mais um seguidor. A Velvet existe para criar conexões reais entre criadores e fãs.
+            </p>
+          </div>
+
+          <div style="text-align:center; margin:24px 0 8px;">
+            <a href="https://www.velvet.lat"
+               style="display:inline-block; background:#6f42c1; color:#ffffff; text-decoration:none; padding:14px 28px; border-radius:10px; font-weight:bold; font-size:15px;">
+              Explorar a plataforma
+            </a>
+          </div>
+
+          <p style="margin:28px 0 0; line-height:1.6; text-align:center; color:#6b5a7d; font-size:13px;">
+            Dúvidas? Fale com a gente em <a href="mailto:contato@velvet.lat" style="color:#6f42c1;">contato@velvet.lat</a>
+          </p>
+          <p style="margin:8px 0 0; line-height:1.6; text-align:center; color:#6b5a7d;">
+            Equipe Velvet 💜
+          </p>
+
+        </div>
+      </div>
+    `
+  });
+}
+
+async function enviarEmailBoasVindasModelo(email, nomeCompleto) {
+  const nome = (nomeCompleto || "").split(" ")[0] || "Olá";
+  await resend.emails.send({
+    from: "Velvet <no-reply@velvet.lat>",
+    to: email,
+    subject: "Seu perfil de criador foi criado! Próximos passos ✨",
+    html: `
+      <div style="font-family: Arial, Helvetica, sans-serif; background:#f6f3fb; padding:24px; color:#2d1f3d;">
+        <div style="max-width:600px; margin:0 auto; background:#ffffff; padding:32px; border-radius:12px;">
+
+          <h2 style="margin-top:0; margin-bottom:8px; color:#6f42c1; text-align:center;">
+            Bem-vindo(a) à Velvet! ✨
+          </h2>
+          <p style="text-align:center; margin:0 0 28px; color:#6b5a7d; font-size:15px;">
+            Um espaço criado para quem leva o próprio conteúdo a sério.
+          </p>
+
+          <p style="margin:0 0 16px; line-height:1.6;">
+            Olá, <strong>${nome}</strong>!
+          </p>
+
+          <p style="margin:0 0 20px; line-height:1.6;">
+            Sua conta de criador foi criada com sucesso. A Velvet existe para conectar criadores com os seus fãs de forma autêntica, segura e sustentável — e estamos felizes em ter você aqui.
+          </p>
+
+          <div style="background:#f8f4ff; padding:16px 20px; border-radius:10px; margin:0 0 16px;">
+            <p style="margin:0 0 8px; font-weight:bold; color:#4b2a7b;">
+              📋 Próximo passo: validação da conta
+            </p>
+            <p style="margin:0; line-height:1.6;">
+              Para ativar seu perfil e começar a receber assinantes, envie sua documentação pela página <strong>Conta</strong> na plataforma.
+            </p>
+          </div>
+
+          <div style="background:#fff7fb; padding:16px 20px; border-radius:10px; margin:0 0 20px;">
+            <p style="margin:0 0 8px; font-weight:bold; color:#7a1f52;">
+              ⏳ Prazo de 14 dias
+            </p>
+            <p style="margin:0; line-height:1.6;">
+              Você tem <strong>14 dias</strong> para concluir a validação. Após esse período, contas não validadas são removidas automaticamente.
+            </p>
+          </div>
+
+          <p style="margin:0 0 8px; font-weight:bold; color:#4b2a7b;">O que você pode fazer na Velvet:</p>
+          <ul style="margin:0 0 20px; padding-left:20px; line-height:1.9; color:#2d1f3d;">
+            <li>Criar um perfil personalizado com bio, capa e avatar</li>
+            <li>Receber assinaturas mensais dos seus fãs</li>
+            <li>Publicar conteúdo exclusivo e premium</li>
+            <li>Conversar diretamente com quem assina o seu perfil</li>
+            <li>Acompanhar seus ganhos de forma transparente</li>
+          </ul>
+
+          <div style="background:#f8f4ff; padding:14px 20px; border-radius:10px; margin:0 0 24px;">
+            <p style="margin:0; line-height:1.6; font-size:13px; color:#4b2a7b;">
+              Registrou-se por engano como criador(a)? Envie um email para
+              <a href="mailto:contato@velvet.lat" style="color:#6f42c1; font-weight:bold;">contato@velvet.lat</a>
+              e solicite a alteração para conta de fã.
+            </p>
+          </div>
+
+          <div style="text-align:center; margin:24px 0 8px;">
+            <a href="https://www.velvet.lat"
+               style="display:inline-block; background:#6f42c1; color:#ffffff; text-decoration:none; padding:14px 28px; border-radius:10px; font-weight:bold; font-size:15px;">
+              Acessar a plataforma
+            </a>
+          </div>
+
+          <p style="margin:28px 0 0; line-height:1.6; text-align:center; color:#6b5a7d; font-size:13px;">
+            Dúvidas? Fale com a gente em <a href="mailto:contato@velvet.lat" style="color:#6f42c1;">contato@velvet.lat</a>
+          </p>
+          <p style="margin:8px 0 0; line-height:1.6; text-align:center; color:#6b5a7d;">
+            Equipe Velvet 💜
+          </p>
+
+        </div>
+      </div>
+    `
+  });
+}
+
+module.exports = {
   enviarEmailValidacao,
   enviarEmailAprovacao,
-  enviarEmailRejeicao };
+  enviarEmailRejeicao,
+  enviarEmailBoasVindasCliente,
+  enviarEmailBoasVindasModelo
+};
