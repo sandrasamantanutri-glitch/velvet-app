@@ -6765,7 +6765,7 @@ app.post("/api/register", authLimiter, async (req, res) => {
         role
       },
       process.env.JWT_SECRET,
-      { expiresIn: "24h" }
+      { expiresIn: "30d" }
     );
 
     return res.status(201).json({
@@ -6847,7 +6847,7 @@ app.post("/api/login", authLimiter, async (req, res) => {
       const token = jwt.sign(
         { id: user.id, email: user.email, role },
         process.env.JWT_SECRET,
-        { expiresIn: "60d" }
+        { expiresIn: "30d" }
       );
 
       return res.json({
@@ -6878,7 +6878,7 @@ app.post("/api/login", authLimiter, async (req, res) => {
     const token = jwt.sign(
       { id: user.id, email: user.email, role },
       process.env.JWT_SECRET,
-      { expiresIn: "60d" }
+      { expiresIn: "30d" }
     );
 
     return res.json({ token, role });
