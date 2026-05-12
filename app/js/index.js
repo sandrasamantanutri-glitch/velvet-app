@@ -285,7 +285,11 @@ window.closeLegalModal = function () {
 // ===============================
 // LOGOUT (UTIL)
 // ===============================
-window.logout = function () {
+window.logout = async function () {
+  const token = localStorage.getItem("token");
+  if (token) {
+    try { await fetch("/api/logout", { method: "POST", headers: { Authorization: "Bearer " + token } }); } catch (_) {}
+  }
   localStorage.removeItem("token");
   localStorage.removeItem("role");
   localStorage.removeItem("ageConfirmed");

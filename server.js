@@ -6676,12 +6676,13 @@ app.post("/api/register", authLimiter, async (req, res) => {
         (email, password_hash, role, age_confirmed, age_confirmed_at)
       VALUES
         ($1, $2, $3, true, NOW())
-      RETURNING id
+      RETURNING id, token_version
       `,
       [emailNormalizado, hash, role]
     );
 
     const userId = userResult.rows[0].id;
+    const tokenVersion = userResult.rows[0].token_version;
 
     let modeloId = null;
     let clienteId = null;
@@ -6762,7 +6763,8 @@ app.post("/api/register", authLimiter, async (req, res) => {
       {
         id: userId,
         email: emailNormalizado,
-        role
+        role,
+        tv: tokenVersion
       },
       process.env.JWT_SECRET,
       { expiresIn: "30d" }
@@ -6789,6 +6791,22 @@ app.post("/api/register", authLimiter, async (req, res) => {
 });
 
 // ===========================
+// LOGOUT
+// ===========================
+app.post("/api/logout", auth, async (req, res) => {
+  try {
+    await db.query(
+      `UPDATE users SET token_version = token_version + 1 WHERE id = $1`,
+      [req.user.id]
+    );
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error("Erro logout:", err);
+    return res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+// ===========================
 // LOGIN
 // ===========================
 app.post("/api/login", authLimiter, async (req, res) => {
@@ -6803,7 +6821,7 @@ app.post("/api/login", authLimiter, async (req, res) => {
     }
 
     const result = await db.query(
-      `SELECT id, email, password_hash, role, ativo
+      `SELECT id, email, password_hash, role, ativo, token_version
        FROM public.users
        WHERE LOWER(email) = LOWER($1)
        LIMIT 1`,
@@ -6845,7 +6863,7 @@ app.post("/api/login", authLimiter, async (req, res) => {
       }
 
       const token = jwt.sign(
-        { id: user.id, email: user.email, role },
+        { id: user.id, email: user.email, role, tv: user.token_version },
         process.env.JWT_SECRET,
         { expiresIn: "30d" }
       );
@@ -6876,7 +6894,7 @@ app.post("/api/login", authLimiter, async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, role },
+      { id: user.id, email: user.email, role, tv: user.token_version },
       process.env.JWT_SECRET,
       { expiresIn: "30d" }
     );
