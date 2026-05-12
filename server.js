@@ -13,6 +13,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) console.error("⚠️  JWT_SECRET não configurado!");
 
 const cors = require("cors");
+const helmet = require("helmet");
 const express = require("express");
 const db = require("./db");
 const bcrypt = require("bcrypt");
@@ -2009,6 +2010,11 @@ app.use((req, res, next) => {
   next();
 });
 app.use(compression());
+
+app.use(helmet({
+  contentSecurityPolicy: false,   // desabilitado para não quebrar assets/inline scripts existentes
+  crossOriginEmbedderPolicy: false
+}));
 
 app.use(cors({
   origin: function (origin, callback) {
