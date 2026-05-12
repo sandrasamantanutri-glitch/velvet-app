@@ -17,9 +17,11 @@ module.exports = async function authModelo(req, res, next) {
       return res.status(403).json({ error: "Apenas modelo" });
     }
 
-    // 🔥 Converter users.id → modelos.id
     const result = await db.query(
-      `SELECT id FROM modelos WHERE user_id = $1`,
+      `SELECT m.id, u.ativo, u.bloqueado
+       FROM modelos m
+       JOIN users u ON u.id = m.user_id
+       WHERE m.user_id = $1`,
       [decoded.id]
     );
 
@@ -27,9 +29,18 @@ module.exports = async function authModelo(req, res, next) {
       return res.status(404).json({ error: "Modelo não encontrado" });
     }
 
-    // salva tudo já pronto
+    const { id, ativo, bloqueado } = result.rows[0];
+
+    if (!ativo) {
+      return res.status(403).json({ error: "Conta desativada" });
+    }
+
+    if (bloqueado) {
+      return res.status(403).json({ error: "Conta bloqueada" });
+    }
+
     req.user = decoded;
-    req.modelo_id = result.rows[0].id;
+    req.modelo_id = id;
 
     next();
 

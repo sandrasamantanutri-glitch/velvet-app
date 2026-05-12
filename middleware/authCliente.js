@@ -17,9 +17,11 @@ module.exports = async function authCliente(req, res, next) {
       return res.status(403).json({ error: "Apenas cliente" });
     }
 
-    // 🔥 Converter users.id → clientes.id
     const result = await db.query(
-      `SELECT id FROM clientes WHERE user_id = $1`,
+      `SELECT c.id, u.ativo, u.bloqueado
+       FROM clientes c
+       JOIN users u ON u.id = c.user_id
+       WHERE c.user_id = $1`,
       [decoded.id]
     );
 
@@ -27,9 +29,18 @@ module.exports = async function authCliente(req, res, next) {
       return res.status(404).json({ error: "Cliente não encontrado" });
     }
 
-    // salvar identidade real
+    const { id, ativo, bloqueado } = result.rows[0];
+
+    if (!ativo) {
+      return res.status(403).json({ error: "Conta desativada" });
+    }
+
+    if (bloqueado) {
+      return res.status(403).json({ error: "Conta bloqueada" });
+    }
+
     req.user = decoded;
-    req.cliente_id = result.rows[0].id;
+    req.cliente_id = id;
 
     next();
 
