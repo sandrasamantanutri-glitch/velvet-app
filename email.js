@@ -67,49 +67,64 @@ async function enviarEmailAprovacao(email) {
     from: "Velvet <no-reply@velvet.lat>",
     to: email,
     subject: "Sua conta foi aprovada 🎉",
-   html: `
-  <div style="font-family: Arial, Helvetica, sans-serif; background:#f6f3fb; padding:24px;">
-    <div style="max-width:600px; margin:0 auto; background:#ffffff; padding:32px; border-radius:12px;">
-      <h2 style="margin-top:0; color:#6f42c1; text-align:center;">
-        Conta aprovada! 🎉
-      </h2>
+    html: `
+      <div style="font-family: Arial, Helvetica, sans-serif; background:#f6f3fb; padding:24px; color:#2d1f3d;">
+        <div style="max-width:600px; margin:0 auto; background:#ffffff; padding:32px; border-radius:12px;">
 
-      <p>Olá,</p>
+          <h2 style="margin-top:0; margin-bottom:20px; color:#6f42c1; text-align:center;">
+            Conta aprovada! 🎉
+          </h2>
 
-      <p>Sua verificação foi aprovada e seu perfil já pode ser utilizado na Velvet.</p>
+          <p style="margin:0 0 16px; line-height:1.6;">
+            Olá,
+          </p>
 
-      <div style="background:#f8f4ff; padding:16px; border-radius:10px; margin:20px 0;">
-        <p style="margin-top:0;"><strong>Manual do Utilizador</strong></p>
-        <p>Consulte o guia rápido para começar a usar a plataforma.</p>
-        <p style="margin-bottom:0;">
-          <a href="https://www.velvet.lat/docs/manual.pdf" style="color:#6f42c1; font-weight:bold;">
-            Ver Manual do Utilizador
-          </a>
-        </p>
+          <p style="margin:0 0 20px; line-height:1.6;">
+            Sua verificação foi aprovada e seu perfil já pode ser utilizado na Velvet. Estamos felizes em ter você aqui!
+          </p>
+
+          <div style="background:#f8f4ff; padding:16px 20px; border-radius:10px; margin:0 0 12px;">
+            <p style="margin:0 0 6px; font-weight:bold; color:#4b2a7b;">
+              📄 Manual do Utilizador
+            </p>
+            <p style="margin:0 0 8px; line-height:1.6;">
+              Consulte o guia rápido para começar a usar a plataforma.
+            </p>
+            <a href="https://www.velvet.lat/docs/manual.pdf" style="color:#6f42c1; font-weight:bold;">
+              Ver Manual do Utilizador
+            </a>
+          </div>
+
+          <div style="background:#fff7fb; padding:16px 20px; border-radius:10px; margin:0 0 24px;">
+            <p style="margin:0 0 6px; font-weight:bold; color:#7a1f52;">
+              📋 Termos de Uso do Criador
+            </p>
+            <p style="margin:0 0 8px; line-height:1.6;">
+              Antes de começar a faturar, relembre os termos aceitos no seu registo.
+            </p>
+            <a href="https://www.velvet.lat/docs/creators_terms.pdf" style="color:#b0307d; font-weight:bold;">
+              Ver Termos de Uso do Criador
+            </a>
+          </div>
+
+          <p style="margin:0 0 24px; line-height:1.6;">
+            Se tiver qualquer dúvida, entre em contato em <a href="mailto:contato@velvet.lat" style="color:#6f42c1;">contato@velvet.lat</a>.
+          </p>
+
+          <div style="text-align:center; margin:24px 0 8px;">
+            <a href="https://www.velvet.lat"
+               style="display:inline-block; background:#6f42c1; color:#ffffff; text-decoration:none; padding:14px 28px; border-radius:10px; font-weight:bold; font-size:15px;">
+              Acessar minha conta
+            </a>
+          </div>
+
+          <p style="margin:24px 0 0; line-height:1.6; text-align:center; color:#6b5a7d;">
+            Equipe Velvet 💜
+          </p>
+
+        </div>
       </div>
-
-      <div style="background:#fff7fb; padding:16px; border-radius:10px; margin:20px 0;">
-        <p style="margin-top:0;"><strong>Termos de Uso do Criador</strong></p>
-        <p>Antes de começar a faturar, relembre os termos aceitos no seu registo.</p>
-        <p style="margin-bottom:0;">
-          <a href="https://www.velvet.lat/docs/creators_terms.pdf" style="color:#b0307d; font-weight:bold;">
-            Ver Termos de Uso do Criador
-          </a>
-        </p>
-      </div>
-
-      <p>Se tiver qualquer dúvida, não hesite em nos contactar.</p>
-
-      <p>
-        <a href="https://www.velvet.lat" style="color:#6f42c1; font-weight:bold;">
-          Acessar minha conta
-        </a>
-      </p>
-
-      <p>Bem-vindo(a) 💜</p>
-    </div>
-  </div>
-`
+    `
   });
 }
 
@@ -134,29 +149,31 @@ async function enviarEmailRejeicao(email, motivo) {
             Infelizmente não foi possível aprovar sua verificação nesta análise.
           </p>
 
-          <div style="background:#fff7fb; padding:16px; border-radius:10px; margin:20px 0;">
+          <div style="background:#fff7fb; padding:16px 20px; border-radius:10px; margin:0 0 20px;">
             <p style="margin:0 0 8px; font-weight:bold; color:#7a1f52;">
-              Motivo da reprovação
+              ❌ Motivo da reprovação
             </p>
             <p style="margin:0; line-height:1.6;">
               ${motivo}
             </p>
           </div>
 
-          <p style="margin:20px 0; line-height:1.6;">
-            Você pode acessar sua conta, preencher todos os dados necessários, anexar os documentos e reenviar para nova análise.
+          <div style="background:#f8f4ff; padding:16px 20px; border-radius:10px; margin:0 0 24px;">
+            <p style="margin:0; line-height:1.6; color:#4b2a7b;">
+              📤 Você pode acessar sua conta, preencher todos os dados necessários, anexar os documentos e <strong>reenviar para nova análise</strong>.
+            </p>
+          </div>
+
+          <p style="margin:0 0 24px; line-height:1.6;">
+            Caso tenha dúvidas, entre em contato em <a href="mailto:contato@velvet.lat" style="color:#6f42c1;">contato@velvet.lat</a>.
           </p>
 
-          <div style="text-align:center; margin:24px 0;">
+          <div style="text-align:center; margin:24px 0 8px;">
             <a href="https://www.velvet.lat"
-               style="display:inline-block; background:#6f42c1; color:#ffffff; text-decoration:none; padding:14px 22px; border-radius:10px; font-weight:bold;">
+               style="display:inline-block; background:#6f42c1; color:#ffffff; text-decoration:none; padding:14px 28px; border-radius:10px; font-weight:bold; font-size:15px;">
               Acessar a plataforma
             </a>
           </div>
-
-          <p style="margin:20px 0; line-height:1.6;">
-            Caso tenha dúvidas, entre em contato com nosso suporte.
-          </p>
 
           <p style="margin:24px 0 0; line-height:1.6; text-align:center; color:#6b5a7d;">
             Equipe Velvet 💜
