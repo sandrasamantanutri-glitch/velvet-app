@@ -332,7 +332,11 @@ window.closeLegalModal = function () {
   if (modal) modal.classList.add("hidden");
 };
 
-window.logout = function () {
+window.logout = async function () {
+  const token = localStorage.getItem("token");
+  if (token) {
+    try { await fetch("/api/logout", { method: "POST", headers: { Authorization: "Bearer " + token } }); } catch (_) {}
+  }
   localStorage.removeItem("token");
   localStorage.removeItem("role");
   window.location.href = "/index.html";

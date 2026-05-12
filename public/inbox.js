@@ -275,7 +275,11 @@ function abrirChat(clienteId) {
   window.location.href = `/chat.html?cliente_id=${clienteId}`;
 }
 
-function logout() {
+async function logout() {
+  const token = localStorage.getItem("token");
+  if (token) {
+    try { await fetch("/api/logout", { method: "POST", headers: { Authorization: "Bearer " + token } }); } catch (_) {}
+  }
   localStorage.clear();
   location.href = "/index.html";
 }

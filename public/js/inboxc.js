@@ -222,7 +222,11 @@ function abrirChat(modeloId) {
   window.location.href = `/chatc.html?modelo_id=${modeloId}`;
 }
 
-function logout() {
+async function logout() {
+  const token = localStorage.getItem("token");
+  if (token) {
+    try { await fetch("/api/logout", { method: "POST", headers: { Authorization: "Bearer " + token } }); } catch (_) {}
+  }
   localStorage.clear();
   location.href = "/index.html";
 }

@@ -7,7 +7,11 @@ if (!token) {
   window.location.href = "/index.html";
 }
 
-function logout() {
+async function logout() {
+  const token = localStorage.getItem("token");
+  if (token) {
+    try { await fetch("/api/logout", { method: "POST", headers: { Authorization: "Bearer " + token } }); } catch (_) {}
+  }
   localStorage.clear();
   window.location.href = "/index.html";
 }
