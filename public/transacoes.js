@@ -230,7 +230,12 @@ function gerarPaginacao(transacoes) {
 }
 
 function reclamar(id, tipo) {
-  window.location.href = `/contato.html?transacao_id=${id}&tipo=${tipo}`;
+  const btn = document.getElementById("sp-btn");
+  const box = document.getElementById("sp-box");
+  if (btn && box && !box.classList.contains("aberto")) {
+    btn.click();
+  }
+  box?.scrollIntoView({ behavior: "smooth", block: "end" });
 }
 
 window.reclamar = reclamar;
