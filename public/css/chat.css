@@ -91,7 +91,7 @@ body, html {
 #chatBox {
   position: fixed;
   top: 120px;
-  bottom: 80px;
+  bottom: calc(60px + env(safe-area-inset-bottom, 0px));
   left: 0;
   right: 0;
   align-items: stretch;
@@ -107,16 +107,17 @@ body, html {
   position: fixed;
   bottom: 0;
   left: 0;
-  right: 5px;
-  height: 50px;
+  right: 0;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 14px;
+  padding-top: 10px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(14px, env(safe-area-inset-left, 14px));
+  padding-right: max(14px, env(safe-area-inset-right, 14px));
   background: #fff;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
   font-size: 16px;
-
 }
 
 .msg {
