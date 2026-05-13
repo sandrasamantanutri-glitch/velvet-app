@@ -6,8 +6,11 @@
   <title>Meus Dados de Usuário</title>
   <link rel="stylesheet" href="/header.css">
   <link rel="stylesheet" href="/testes/pages.css">
+
   <script src="/i18n.js"></script>
+
 </head>
+
 <body>
   <div id="header-container"></div>
 
@@ -25,7 +28,9 @@
       <input type="file" id="inputAvatar" accept="image/*" hidden>
     </div>
 
-    <button type="button" class="btn-voltar" onclick="history.back()" data-i18n-title="dados.voltar"></button>
+    <button type="button" class="btn-voltar" onclick="history.back()" data-i18n-title="dados.voltar">
+      <img src="/assets/voltar.png" alt="Voltar">
+    </button>
 
     <div class="perfil-completo-wrapper">
       <a href="#" class="btn-perfil-completo" data-i18n="dados.ver_perfil">✨ Ver Perfil Completo</a>

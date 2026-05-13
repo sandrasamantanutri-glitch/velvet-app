@@ -12,7 +12,9 @@
   <div id="header-container"></div>
 
   <section class="area-card">
-    <button type="button" class="btn-voltar" onclick="history.back()" data-i18n-title="conta.voltar"></button>
+    <button type="button" class="btn-voltar" onclick="history.back()" data-i18n-title="conta.voltar">
+      <img src="/assets/voltar.png" alt="Voltar">
+    </button>
 
     <h3 data-i18n="conta.titulo_dados_pessoais">Dados Pessoais</h3>
 
@@ -86,7 +88,7 @@
     <div id="statusContainer" class="form-info" data-i18n="conta.info_documentos">
       Para proteger você e a plataforma, confirmamos sua identidade com um documento oficial válido.
     </div>
-
+    <br>
     <p class="status-descricao" id="descricaoAnalise" data-i18n="conta.info_prazo_analise">
       O processo de análise pode levar até 48 horas, dependendo do volume de solicitações.
     </p>
@@ -152,7 +154,7 @@
 
   <section class="area-card">
     <div class="danger-zone">
-      <h4 data-i18n="conta.excluir_titulo">Excluir minha Conta</h4>
+      <h3 data-i18n="conta.excluir_titulo">Excluir minha Conta</h3>
       <button class="btn-danger" onclick="abrirConfirmacaoExclusao()" data-i18n="conta.btn_excluir">
         Excluir conta permanentemente
       </button>
