@@ -5041,15 +5041,15 @@ app.get("/api/modelo/assinantes", authModelo, async (req, res) => {
   try {
     const result = await db.query(
       `
-      WITH vip_status AS (
+      WITH vip_ativos AS (
         SELECT
           v.cliente_id,
           v.modelo_id,
-          BOOL_OR(v.ativo) AS ativo,
-          MAX(v.expiration_at) AS expiration_at,
-          MAX(v.created_at) AS criado_em
+          MAX(v.expiration_at) AS expiration_at
         FROM vip_subscriptions v
         WHERE v.modelo_id = $1
+          AND v.ativo = true
+          AND v.expiration_at > NOW()
         GROUP BY v.cliente_id, v.modelo_id
       ),
       financeiros AS (
@@ -5082,29 +5082,18 @@ app.get("/api/modelo/assinantes", authModelo, async (req, res) => {
       SELECT
         c.id AS cliente_id,
         c.nome AS nome_cliente,
-
-        CASE
-          WHEN vs.ativo = true THEN 'Ativo'
-          ELSE 'Inativo'
-        END AS status_vip,
-
-        vs.ativo,
-        vs.expiration_at,
-        vs.criado_em,
-
+        va.expiration_at,
         COALESCE(f.total_assinaturas, 0)::numeric(10,2) AS total_assinaturas,
         COALESCE(f.total_midias, 0)::numeric(10,2) AS total_midias
 
-      FROM vip_status vs
+      FROM vip_ativos va
       JOIN clientes c
-        ON c.id = vs.cliente_id
+        ON c.id = va.cliente_id
       LEFT JOIN financeiros f
-        ON f.cliente_id = vs.cliente_id
-       AND f.modelo_id = vs.modelo_id
+        ON f.cliente_id = va.cliente_id
+       AND f.modelo_id = va.modelo_id
 
-      ORDER BY
-        vs.criado_em DESC NULLS LAST,
-        c.nome ASC
+      ORDER BY va.expiration_at ASC, c.nome ASC
       `,
       [req.modelo_id]
     );
