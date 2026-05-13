@@ -22,15 +22,18 @@ body {
 }
 
 .table thead {
-  background: #f6f3ff;
+  background: #fafafa;
+  border-bottom: 1px solid #e8e8e8;
 }
 
 .table th {
   text-align: left;
-  padding: 12px 10px;
-  font-weight: 600;
-  color: #6b3dff;
-  font-size: 13px;
+  padding: 10px 10px;
+  font-weight: 500;
+  color: #888;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .table td {

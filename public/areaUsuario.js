@@ -297,7 +297,7 @@ function renderizarPagina() {
   if (pagina.length === 0) {
     tbody.innerHTML = `
       <tr>
-       <td colspan="7">${t("areaUsuario.no_subscribers_found")}</td>
+       <td colspan="5">${t("areaUsuario.no_subscribers_found")}</td>
       </tr>
     `;
     return;
@@ -310,13 +310,7 @@ function renderizarPagina() {
     tbody.innerHTML += `
       <tr>
         <td class="assinante-nome">${a.nome_cliente}</td>
-<td>
-  <span class="status-badge ${a.ativo ? "ativo" : "inativo"}">
-    ${a.status_vip}
-  </span>
-</td>
         <td>${formatarData(a.expiration_at)}</td>
-        <td>${formatarData(a.criado_em)}</td>
         <td>R$ ${Number(a.total_assinaturas).toFixed(2)}</td>
         <td>R$ ${Number(a.total_midias).toFixed(2)}</td>
         <td class="total-geral">R$ ${total.toFixed(2)}</td>
