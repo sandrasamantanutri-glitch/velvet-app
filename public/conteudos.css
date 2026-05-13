@@ -29,8 +29,9 @@ body {
 
 .grid-conteudos {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
+  align-items: start;
 }
 
 .card-info {
@@ -259,9 +260,10 @@ body {
 
 .grid-conteudos {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 20px; 
-  margin-top: 10px; 
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 10px;
+  align-items: start;
 }
 
 .file-upload {
@@ -360,6 +362,10 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.area-card {
+  padding-bottom: 100px;
 }
 
 .paginacao{
@@ -616,6 +622,18 @@ transition:width 0.2s;
     background: none;
     font-size: 26px;
     cursor: pointer;
+}
+
+@media (max-width: 680px) {
+  .grid-conteudos {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 400px) {
+  .grid-conteudos {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 480px) {
