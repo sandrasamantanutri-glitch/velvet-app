@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meus Ganhos | Velvet</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/header.css">
+  <link rel="stylesheet" href="/testes/pages.css">
+</head>
+<body>
+  <div id="header-container"></div>
+
+  <section class="area-card">
+
+    <button type="button" class="btn-voltar" onclick="history.back()"></button>
+
+    <span class="page-title">Meus Ganhos</span>
+
+    <section class="cards-row">
+      <div class="card highlight">
+        <span>Hoje · Mídias</span>
+        <strong id="hojeMidias">R$0.00</strong>
+      </div>
+      <div class="card highlight">
+        <span>Hoje · Assinaturas</span>
+        <strong id="hojeAssinaturas">R$0.00</strong>
+      </div>
+    </section>
+
+    <section class="cards-row">
+      <div class="card">
+        <span>Assinantes · Total</span>
+        <strong id="totalAssinantes">0</strong>
+      </div>
+      <div class="card">
+        <span>Assinantes · Hoje</span>
+        <strong id="assinantesHoje">0</strong>
+      </div>
+    </section>
+
+    <section class="cards-row">
+      <div class="card">
+        <span>Mês atual · Mídias</span>
+        <strong id="mesMidias">R$0.00</strong>
+      </div>
+      <div class="card">
+        <span>Mês atual · Assinaturas</span>
+        <strong id="mesAssinaturas">R$0.00</strong>
+      </div>
+    </section>
+
+    <section class="cards-row single">
+      <div class="card total">
+        <span>Acumulados de 2026</span>
+        <strong id="acumuladoAnterior">R$0.00</strong>
+      </div>
+    </section>
+
+    <div class="links-abaixo-cards">
+      <a href="/content/transacoes" class="link-card">Transações</a>
+      <span class="link-card disabled">Meus pagamentos <small>(Breve)</small></span>
+      <span class="link-card disabled">Links de rastreamento <small>(Breve)</small></span>
+    </div>
+
+  </section>
+
+  <div id="footer-container"></div>
+
+  <script src="/admin/relatorio.modelo.js"></script>
+  <script src="/header.js"></script>
+  <script src="/testes/footer-shared.js"></script>
+</body>
+</html>

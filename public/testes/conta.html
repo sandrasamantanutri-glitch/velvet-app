@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Minha Conta</title>
+  <link rel="stylesheet" href="/header.css">
+  <link rel="stylesheet" href="/testes/pages.css">
+  <script src="/i18n.js"></script>
+</head>
+<body>
+  <div id="header-container"></div>
+
+  <section class="area-card">
+    <button type="button" class="btn-voltar" onclick="history.back()" data-i18n-title="conta.voltar"></button>
+
+    <h3 data-i18n="conta.titulo_dados_pessoais">Dados Pessoais</h3>
+
+    <div class="verificacao-steps">
+      <span class="step ativo" data-i18n="conta.step1">1. Dados pessoais</span>
+      <span class="step" data-i18n="conta.step2">2. Documentos</span>
+    </div>
+
+    <form id="formDadosPessoais" class="form-area">
+      <span class="form-info" id="infoDadosPessoais" data-i18n="conta.info_confidencial">
+        🔒 Essas informações são confidenciais, usadas apenas para verificação de identidade e processamento de pagamentos.
+      </span>
+
+      <div class="form-grid">
+        <div class="form-group full">
+          <label data-i18n="conta.label_nome">Nome completo*</label>
+          <input type="text" name="nome_completo" placeholder="Nome e Sobrenome" required>
+        </div>
+
+        <div class="form-group">
+          <label data-i18n="conta.label_nascimento">Data de nascimento*</label>
+          <input type="date" name="data_nascimento" required>
+        </div>
+
+        <div class="form-group">
+          <label data-i18n="conta.label_telefone">Telefone com DDD*</label>
+          <input type="tel" name="telefone" placeholder="(11) 99999-9999" required>
+        </div>
+
+        <div class="form-group full">
+          <label data-i18n="conta.label_endereco">Endereço*</label>
+          <textarea name="endereco" rows="2" placeholder="Rua, número e bairro" required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label data-i18n="conta.label_estado">Estado*</label>
+          <input type="text" name="estado" required>
+        </div>
+
+        <div class="form-group">
+          <label data-i18n="conta.label_cidade">Cidade*</label>
+          <input type="text" name="cidade" required>
+        </div>
+
+        <div class="form-group full">
+          <label data-i18n="conta.label_pais">País*</label>
+          <input type="text" name="pais" required>
+        </div>
+
+        <div class="form-group full">
+          <small data-i18n="conta.obrigatorios">*Informações obrigatórias</small>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-salvar" data-i18n="conta.btn_salvar_continuar">Salvar e continuar</button>
+
+      <span class="form-info" id="infoDados" style="margin-top:20px;" data-i18n="conta.info_apos_salvar">
+        ⏳ Após salvar, envie seus documentos na etapa 2 e sua conta entra em processo de verificação.
+      </span>
+    </form>
+  </section>
+
+  <section class="area-card">
+    <h3 data-i18n="conta.titulo_verificacao">Verificação de Identidade</h3>
+
+    <div class="verificacao-steps">
+      <span class="step concluido" data-i18n="conta.step1">1. Dados pessoais</span>
+      <span class="step ativo" data-i18n="conta.step2">2. Documentos</span>
+    </div>
+
+    <div id="statusContainer" class="form-info" data-i18n="conta.info_documentos">
+      Para proteger você e a plataforma, confirmamos sua identidade com um documento oficial válido.
+    </div>
+
+    <p class="status-descricao" id="descricaoAnalise" data-i18n="conta.info_prazo_analise">
+      O processo de análise pode levar até 48 horas, dependendo do volume de solicitações.
+    </p>
+
+    <form id="formDocumentos" class="form-area" enctype="multipart/form-data">
+      <div class="form-group full">
+        <label data-i18n="conta.label_tipo_doc">Tipo de documento*</label>
+        <select name="documento_tipo" required>
+          <option value="">Selecione</option>
+          <option value="rg">RG</option>
+          <option value="cnh">CNH</option>
+          <option value="passaporte">Passaporte</option>
+        </select>
+      </div>
+
+      <div class="form-group full">
+        <label data-i18n="conta.label_doc_frente">Documento (frente)*</label>
+        <input type="file" name="doc_frente" accept="image/*,.pdf" required>
+        <small data-i18n="conta.small_foto_nitida">Envie uma foto nítida e legível</small>
+      </div>
+
+      <div class="form-group full">
+        <label data-i18n="conta.label_doc_verso">Documento (verso)</label>
+        <input type="file" name="doc_verso" accept="image/*,.pdf">
+        <small data-i18n="conta.small_verso_obrigatorio">Obrigatório apenas se houver informações no verso</small>
+      </div>
+
+      <div class="form-group full">
+        <label data-i18n="conta.label_selfie">Selfie segurando o documento*</label>
+        <input type="file" name="selfie" accept="image/*" required>
+        <small data-i18n="conta.small_selfie">Mostre claramente seu rosto e o documento. Não utilize óculos escuros ou filtros.</small>
+      </div>
+
+      <div class="form-group full check-group">
+        <input type="checkbox" id="confirmacao_identidade" name="confirmacao_identidade" required>
+        <label for="confirmacao_identidade" data-i18n="conta.aceite_identidade">
+          Declaro, sob minha responsabilidade, que sou a pessoa titular do documento enviado.
+        </label>
+      </div>
+
+      <div class="form-group full check-group">
+        <input type="checkbox" id="aceite_privacidade" name="aceite_privacidade" required>
+        <label for="aceite_privacidade">
+          <span data-i18n="conta.aceite_privacidade_prefix">Declaro que li e concordo com a</span>
+          <a href="/privacy.pdf" target="_blank" rel="noopener noreferrer" data-i18n="conta.link_privacidade">Política de Privacidade</a>.
+        </label>
+      </div>
+
+      <div class="form-group full check-group">
+        <input type="checkbox" id="aceite_termos_criador" name="aceite_termos_criador" required>
+        <label for="aceite_termos_criador">
+          <span data-i18n="conta.aceite_termos_prefix">Declaro que li e concordo com os</span>
+          <a href="/creators_terms.pdf" target="_blank" rel="noopener noreferrer" data-i18n="conta.link_termos_criador">Termos e Condições para Criadores</a>.
+        </label>
+      </div>
+
+      <input type="hidden" name="versao_privacidade" value="2026-04-06">
+      <input type="hidden" name="versao_termos_criador" value="2026-04-06">
+
+      <button type="submit" class="btn-salvar" data-i18n="conta.btn_enviar_docs">Enviar documentos para análise</button>
+    </form>
+  </section>
+
+  <section class="area-card">
+    <div class="danger-zone">
+      <h4 data-i18n="conta.excluir_titulo">Excluir minha Conta</h4>
+      <button class="btn-danger" onclick="abrirConfirmacaoExclusao()" data-i18n="conta.btn_excluir">
+        Excluir conta permanentemente
+      </button>
+    </div>
+  </section>
+
+  <!-- Modais preservados sem alteração de estilo -->
+  <div id="modalExcluirConta" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-box">
+      <h3 data-i18n="conta.modal_excluir_titulo">Excluir conta permanentemente</h3>
+      <p data-i18n="conta.modal_excluir_aviso">Esta ação é irreversível. Todos os seus dados serão apagados permanentemente.</p>
+      <label class="label-danger" data-i18n="conta.modal_excluir_label">Digite sua senha para confirmar</label>
+      <input type="password" id="senhaConfirmacao" placeholder="Digite sua senha" class="input-danger">
+      <p id="erroExclusao" class="erro-danger hidden" data-i18n="conta.modal_excluir_erro">Senha incorreta.</p>
+      <div class="modal-actions">
+        <button class="btn-cancelar" onclick="fecharModalExclusao()" data-i18n="conta.btn_cancelar">Cancelar</button>
+        <button class="btn-confirmar" onclick="confirmarExclusaoConta()" data-i18n="conta.btn_confirmar_exclusao">Sim, excluir minha conta</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer-container"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/header.js"></script>
+  <script src="/areaUsuario.js"></script>
+  <script src="/verificacaoDocumentos.js"></script>
+  <script src="/testes/footer-shared.js"></script>
+</body>
+</html>
