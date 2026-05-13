@@ -6,16 +6,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Meus Dados Pessoais</title>
   <link rel="stylesheet" href="/header.css">
-  <link rel="stylesheet" href="/conta.css">
+  <link rel="stylesheet" href="/css/pages.css">
   <script src="/i18n.js"></script>
 </head>
 
 <body>
+  
   <div id="header-container"></div>
 
-  <section class="area-card">
-    <button type="button" class="btn-voltar" onclick="history.back()">
-      <img src="/assets/voltar.png" data-i18n-alt="conta.voltar" alt="Voltar">
+    <section class="area-card">
+    <button type="button" class="btn-voltar" onclick="history.back()" data-i18n-title="conta.voltar">
+      <img src="/assets/voltar.png" alt="Voltar">
     </button>
 
     <h3 data-i18n="conta.titulo_dados_pessoais">Dados Pessoais</h3>
@@ -27,14 +28,13 @@
 
     <form id="formDadosPessoais" class="form-area">
       <span class="form-info" id="infoDadosPessoais" data-i18n="conta.info_confidencial">
-        🔒 Essas informações são confidenciais, usadas apenas para verificação de identidade
-        e processamento de pagamentos. Seu perfil de criador só será liberado após a aprovação dos seus dados e documentos.
+        🔒 Essas informações são confidenciais, usadas apenas para verificação de identidade e processamento de pagamentos.
       </span>
 
       <div class="form-grid">
         <div class="form-group full">
           <label data-i18n="conta.label_nome">Nome completo*</label>
-          <input type="text" name="nome_completo" data-i18n-placeholder="conta.placeholder_nome" placeholder="Nome e Sobrenome" required>
+          <input type="text" name="nome_completo" placeholder="Nome e Sobrenome" required>
         </div>
 
         <div class="form-group">
@@ -44,12 +44,12 @@
 
         <div class="form-group">
           <label data-i18n="conta.label_telefone">Telefone com DDD*</label>
-          <input type="tel" name="telefone" data-i18n-placeholder="conta.placeholder_telefone" placeholder="(11) 99999-9999" required>
+          <input type="tel" name="telefone" placeholder="(11) 99999-9999" required>
         </div>
 
         <div class="form-group full">
           <label data-i18n="conta.label_endereco">Endereço*</label>
-          <textarea name="endereco" rows="2" data-i18n-placeholder="conta.placeholder_endereco" placeholder="Rua, número e bairro" required></textarea>
+          <textarea name="endereco" rows="2" placeholder="Rua, número e bairro" required></textarea>
         </div>
 
         <div class="form-group">
@@ -74,8 +74,8 @@
 
       <button type="submit" class="btn-salvar" data-i18n="conta.btn_salvar_continuar">Salvar e continuar</button>
 
-      <span class="form-info" id="infoDados" data-i18n="conta.info_apos_salvar">
-        ⏳ Após salvar, envie seus documentos na etapa 2 e sua conta entra em processo de verificação. O perfil público e a monetização são liberados após aprovação.
+      <span class="form-info" id="infoDados" style="margin-top:20px;" data-i18n="conta.info_apos_salvar">
+        ⏳ Após salvar, envie seus documentos na etapa 2 e sua conta entra em processo de verificação.
       </span>
     </form>
   </section>
@@ -89,9 +89,9 @@
     </div>
 
     <div id="statusContainer" class="form-info" data-i18n="conta.info_documentos">
-      Para proteger você e a plataforma, confirmamos sua identidade com um documento oficial válido. Seus documentos são analisados de forma confidencial e nunca ficam visíveis para outros usuários.
+      Para proteger você e a plataforma, confirmamos sua identidade com um documento oficial válido.
     </div>
-
+    <br>
     <p class="status-descricao" id="descricaoAnalise" data-i18n="conta.info_prazo_analise">
       O processo de análise pode levar até 48 horas, dependendo do volume de solicitações.
     </p>
@@ -128,22 +128,22 @@
       <div class="form-group full check-group">
         <input type="checkbox" id="confirmacao_identidade" name="confirmacao_identidade" required>
         <label for="confirmacao_identidade" data-i18n="conta.aceite_identidade">
-          Declaro, sob minha responsabilidade, que sou a pessoa titular do documento enviado...
+          Declaro, sob minha responsabilidade, que sou a pessoa titular do documento enviado.
         </label>
       </div>
 
       <div class="form-group full check-group">
         <input type="checkbox" id="aceite_privacidade" name="aceite_privacidade" required>
         <label for="aceite_privacidade">
-          <span data-i18n="conta.aceite_privacidade_prefix">Declaro que li, compreendi e concordo com a</span>
-          <a href="/privacy.pdf" target="_blank" rel="noopener noreferrer" data-i18n="conta.link_privacidade">Política de Privacidade</a><span data-i18n="conta.aceite_privacidade_suffix">, incluindo o tratamento dos meus dados pessoais conforme descrito.</span>
+          <span data-i18n="conta.aceite_privacidade_prefix">Declaro que li e concordo com a</span>
+          <a href="/privacy.pdf" target="_blank" rel="noopener noreferrer" data-i18n="conta.link_privacidade">Política de Privacidade</a>.
         </label>
       </div>
 
       <div class="form-group full check-group">
         <input type="checkbox" id="aceite_termos_criador" name="aceite_termos_criador" required>
         <label for="aceite_termos_criador">
-          <span data-i18n="conta.aceite_termos_prefix">Declaro que li, compreendi e concordo integralmente com os</span>
+          <span data-i18n="conta.aceite_termos_prefix">Declaro que li e concordo com os</span>
           <a href="/creators_terms.pdf" target="_blank" rel="noopener noreferrer" data-i18n="conta.link_termos_criador">Termos e Condições para Criadores</a>.
         </label>
       </div>
@@ -155,14 +155,18 @@
     </form>
   </section>
 
-  <section class="area-card area-section">
+  <section class="area-card">
     <div class="danger-zone">
-      <h4 data-i18n="conta.excluir_titulo">Excluir minha Conta</h4>
+      <h3 data-i18n="conta.excluir_titulo">Excluir minha Conta</h3>
       <button class="btn-danger" onclick="abrirConfirmacaoExclusao()" data-i18n="conta.btn_excluir">
         Excluir conta permanentemente
       </button>
     </div>
+  </section>
 
+  <div id="footer-container"></div>
+
+   <!-- Modais -->
     <div id="modalExcluirConta" class="modal hidden">
       <div class="modal-overlay"></div>
       <div class="modal-box">
@@ -181,61 +185,35 @@
         </div>
       </div>
     </div>
-  </section>
-
-  <hr class="separator">
-
-  <footer class="footer">
-    <div class="footer-links">
-      <a href="/terms.html" target="_blank" rel="noopener noreferrer" data-i18n="footer.termos">Termos de Uso</a>
-      <a href="/privacy.html" target="_blank" rel="noopener noreferrer" data-i18n="footer.privacidade">Política de Privacidade</a>
-      <a href="/policies.html" data-i18n="footer.politicas">Política de Utilização</a>
-    </div>
-    <div class="footer-copy" data-i18n="footer.copy">© 2026 Velvet. Todos os direitos reservados.</div>
-  </footer>
 
   <div id="modalContaCliente" class="modal hidden">
   <div class="modal-overlay"></div>
 
   <div class="modal-box modal-box-role">
     <h3>Não é possível validar seu perfil</h3>
+    <p>Esta conta foi criada no modo <strong>cliente</strong>.</p>
 
-    <p>
-      Esta conta foi criada no modo <strong>cliente</strong>.
-    </p>
+    <p>Contas de cliente são exclusivas para usuários que desejam<strong>conversar</strong> e <strong>acessar o perfil das influenciadoras</strong>.
+      Para esse tipo de conta, <strong>não é necessário enviar documentações</strong>.</p>
 
-    <p>
-      Contas de cliente são exclusivas para usuários que desejam
-      <strong>conversar</strong> e <strong>acessar o perfil das influenciadoras</strong>.
-      Para esse tipo de conta, <strong>não é necessário enviar documentações</strong>.
-    </p>
+    <p>Se você deseja validar a conta e criar conteúdo como criador(a), será necessário criar uma <strong>nova conta</strong> e, no registro,
+      selecionar a opção <strong>“Quero ser criador”</strong>.</p>
 
-    <p>
-      Se você deseja validar a conta e criar conteúdo como criador(a),
-      será necessário criar uma <strong>nova conta</strong> e, no registro,
-      selecionar a opção <strong>“Quero ser criador”</strong>.
-    </p>
-
-    <img
-      src="/assets/criar-conta-criador.png"
-      alt="Opção correta para criar conta de criador"
-      class="popup-print-role"
-    >
+  <img src="/assets/criar-conta-criador.png" alt="Opção correta para criar conta de criador" class="popup-print-role">
 
     <div class="modal-actions">
-<button type="button" class="btn-cancelar" onclick="fecharModalContaCliente()">
-  Fechar
-</button>
-<button type="button" id="btnCriarNovaConta" class="btn-confirmar">
-  Criar nova conta
-</button>
+      <button type="button" class="btn-cancelar" onclick="fecharModalContaCliente()">Fechar</button>
+      <button type="button" id="btnCriarNovaConta" class="btn-confirmar">Criar nova conta</button>
     </div>
   </div>
 </div>
+
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="/header.js"></script>
   <script src="/areaUsuario.js"></script>
   <script src="/verificacaoDocumentos.js"></script>
+  <script src="/js/footer-shared.js"></script>
+
 </body>
 </html>
