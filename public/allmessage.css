@@ -578,7 +578,6 @@ textarea {
   overflow-x: hidden;
   padding-right: 4px;
   min-height: 0;
-  flex: 1 1 auto;
 }
 
 .preview-item {
@@ -644,23 +643,34 @@ textarea {
 @media (max-width: 768px) {
   .modal {
     padding: 12px;
+    align-items: flex-start;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .modal-box {
     width: 100%;
-    max-height: 92vh;
+    max-height: none;
     padding: 16px;
     border-radius: 16px;
+    overflow: visible;
   }
 
   #conteudosGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
-    max-height: 58vh;
+    max-height: none;
+    overflow-y: visible;
+    flex: none;
   }
 
   .modal-actions {
     flex-direction: column;
+    position: sticky;
+    bottom: 0;
+    background: #fff;
+    padding-bottom: 12px;
+    z-index: 1;
   }
 
   .modal-actions .btn {
