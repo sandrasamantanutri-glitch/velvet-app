@@ -26,14 +26,6 @@ body {
 }
 
 /* ================= GRID ================= */
-
-.grid-conteudos {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  align-items: start;
-}
-
 .card-info {
   padding: 12px;
 }
@@ -627,6 +619,9 @@ transition:width 0.2s;
 @media (max-width: 680px) {
   .grid-conteudos {
     grid-template-columns: repeat(2, 1fr);
+  }
+  .area-card {
+    padding-bottom: 100px !important;
   }
 }
 

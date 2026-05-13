@@ -724,6 +724,14 @@ select {
   font-family: inherit;
 }
 
+/* ===== GRID-CONTEUDOS ===== */
+.grid-conteudos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
 /* ===== FOOTER ===== */
 .footer {
   max-width: 900px;

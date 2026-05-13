@@ -10,7 +10,7 @@ if (!token) {
 }
 
 let paginaAtual = 1;
-const limite = 10;
+const limite = 9;
 let totalPaginas = 1;
 
 document.addEventListener("DOMContentLoaded", async () => {
