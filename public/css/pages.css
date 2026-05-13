@@ -566,7 +566,7 @@ select {
   border: none;
   border-radius: 12px;
   padding: 12px 16px;
-  background: var(--input-bg);
+  background: #7b2cff21;
   font-size: 14px;
   color: var(--text-muted);
   outline: none;

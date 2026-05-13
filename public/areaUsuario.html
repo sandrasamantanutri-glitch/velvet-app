@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Área de Usuário</title>
   <link rel="stylesheet" href="/header.css">
-  <link rel="stylesheet" href="/area.css"> 
+  <link rel="stylesheet" href="/css/area.css"> 
 
   <script src="/i18n.js"></script>
 
@@ -135,29 +135,16 @@
 
  </main>
 
-  <footer class="footer">
-  <div class="footer-links">
-<a href="/terms.html" target="_blank" rel="noopener noreferrer" data-i18n="areaUsuario.terms_of_use">
-  Termos de Uso
-</a>
-<a href="/privacy.html" target="_blank" rel="noopener noreferrer" data-i18n="areaUsuario.privacy_policy">
-  Política de Privacidade
-</a>
-<a href="/policies.html" target="_blank" rel="noopener noreferrer" data-i18n="areaUsuario.usage_policy">
-  Política de Utilização
-</a>
-  </div>
+ <div id="footer-container"></div>
 
-<div class="footer-copy" data-i18n="areaUsuario.footer_copy">
-  © 2026 Velvet. Todos os direitos reservados.
-</div>
-</footer>
 
 
 <script src="socket.io/socket.io.js"></script>
 <script src="/header.js"></script>
 <script src="/areaUsuario.js"></script>
 <script src="/app/js/suporte-widget.js"></script>
+<script src="/js/footer-shared.js"></script>
+
 <script>
   if (localStorage.getItem("role") !== "cliente") {
     var _sb = document.getElementById("sp-btn");

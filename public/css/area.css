@@ -185,7 +185,7 @@ left: 25%;
 
 /*ITENS (LINKS) */
 .area-item {
-  background: #f1f1f1;
+  background: #7b2cff21;
   border-radius: 14px;
   padding: 15px 18px;
   margin-bottom: 12px;
@@ -230,31 +230,32 @@ left: 25%;
   background: #7b2cff;
 }
 
-/* ===============================
-   FOOTER
-================================ */
+/* ===== FOOTER ===== */
 .footer {
-max-width: 900px;
- margin: 40px auto 30px;
-text-align: center;
-opacity: .6;
-font-size: 10px;
- margin-bottom: 8px;
+  max-width: 900px;
+  margin: 40px auto 30px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
 }
 
 .footer-links {
   display: flex;
   justify-content: center;
-  gap: 15px;
+  gap: 18px;
   margin-bottom: 8px;
+  flex-wrap: wrap;
 }
 
-.footer-links a:hover {
-  color: #9e6bff;
+.footer-links a {
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.2s;
 }
-.footer-copy {
-  font-size: 11px;
-}
+
+.footer-links a:hover { color: var(--primary); }
+
+.footer-copy { opacity: 0.7; }
 
 
 .area-card {
