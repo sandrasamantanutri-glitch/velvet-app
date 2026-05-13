@@ -7,14 +7,13 @@
 
 body {
   margin: 0;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Poppins', 'Inter', sans-serif;
   background: #f1f1f1;
   color: #7B2CFF;
 }
 
 .area-card {
-  max-width: 900px;
-  margin: 0px auto 0px;
+  max-width: 1100px;
   background: #ffffff;
   border-radius: 20px;
   padding: 20px;
@@ -23,11 +22,11 @@ body {
 }
 
 .area-card h3 {
-  font-size: 26px;
+  font-size: 24px;
   text-align: center;
   margin: 10px 0 10px;
   font-weight: 700;
-  color: #1E1E26;
+  color: #7B2CFF;
 }
 
 .btn-voltar {
@@ -105,7 +104,6 @@ body {
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: #9E6BFF;
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -220,3 +218,39 @@ body {
 .inbox {
   padding-bottom: 72px;
 }
+
+/* ===============================
+   BOTÃO CARREGAR MAIS
+================================ */
+.load-more-container{
+  display:flex;
+  justify-content:center;
+  padding:20px;
+}
+
+#loadMoreChats{
+  background:#6c3cff;
+  color:white;
+  border:none;
+  padding:10px 20px;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+.spend-level{
+  margin-left:6px;
+  font-size:14px;
+  color:#7B2CFF;
+  padding:2px 6px;
+  border-radius:6px;
+}
+
+.chat-resumo-curto {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  color: #7c3aed;
+  font-weight: 500;
+  margin-left: 4px;
+}
+

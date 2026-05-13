@@ -5,243 +5,459 @@
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
 
-if (!token) {
-  window.location.href = "/index.html";
-  throw new Error("Sem token");
-}
-
 const socket = io({
-  transports: ["websocket"],
+  transports: ["websocket", "polling"],
+  auth: { token },
   reconnection: true,
   reconnectionAttempts: Infinity,
   reconnectionDelay: 1000,
   reconnectionDelayMax: 5000
 });
 
+window.socket = socket;
+
+// ===============================
+// VARIÁVEIS CHAT
+// ===============================
+
 let autenticado = false;
 let salaPronta = false;
-let modelo_id = null;
+
 let cliente_id = null;
+let modelo_id = null;
 
-setInterval(() => {
-  if (!socket.connected) {
-    console.warn("⚠️ Forçando reconexão...");
-    socket.connect();
-  }
-}, 10000);
+let offsetMensagens = 0;
+const LIMIT_MENSAGENS = 20;
 
+let carregandoHistorico = false;
+let enviandoConteudo = false;
+let historicoInicialCarregado = false;
 
-function autenticar() {
-  socket.emit("auth", { token });
-}
+const mensagensRenderizadas = new Set();
 
-function fazerLogin() {
-  if (role === "cliente") {
-    socket.emit("loginCliente");
-  }
-  if (role === "modelo") {
-    socket.emit("loginModelo");
-  }
-}
+const chatBox = document.getElementById("chatBox");
 
-function entrarSala() {
-  if (cliente_id && modelo_id) {
-    socket.emit("joinChat", { cliente_id, modelo_id });
-    socket.emit("getHistory", { cliente_id, modelo_id });
-  }
-}
+let paginaConteudos = 1;
+const limiteConteudos = 12;
 
-socket.on("connect", () => {
-  console.log("🟢 Conectado:", socket.id);
-  autenticado = false;
-  salaPronta = false; 
-  autenticar();
-});
+let carregandoConteudos = false;
+let fimConteudos = false;
 
-// 🔐 Após autenticar
-socket.on("authOk", () => {
-  if (autenticado) return;
+// ===============================
+// AUTENTICAR
+// ===============================
+socket.on("connect", async () => {
   autenticado = true;
+  salaPronta = false;
 
-if (role === "modelo") socket.emit("loginModelo");
-if (role === "cliente") socket.emit("loginCliente");
+  socket.emit("loginModelo");
 
-  setTimeout(tentarEntrarSala, 200);
+  if (cliente_id) {
+    await carregarInfoCliente(cliente_id);
+  }
+
+  tentarEntrarSala();
 });
 
-function tentarEntrarSala() {
+socket.on("connect_error", (err) => {
+  autenticado = false;
+  salaPronta = false;
+  console.error("❌ connect_error socket:", err.message, err);
+});
+
+
+
+// ===============================
+// ENTRAR NA SALA
+function tentarEntrarSala(){
+
   if (!autenticado) return;
-  if (!modelo_id || !cliente_id) return;
+  if (!cliente_id || !modelo_id) return;
   if (salaPronta) return;
 
   salaPronta = true;
 
-  socket.emit("joinChat", { cliente_id, modelo_id });
-  socket.emit("getHistory", { cliente_id, modelo_id });
-
-  console.log("🟪 Sala conectada");
-}
-
-// ===============================
-// 📌 VARIÁVEIS GLOBAIS DO CHAT
-// ===============================
-let chatAtivo = null;
-window.conteudosVistosCliente = new Set();
-let carregandoHistorico = false;
-let historicoInicialCarregado = false;
-let socketAutenticado = false;
-
-// ===============================
-// 📎 PARAMETROS URL
-// ===============================
-
-const params = new URLSearchParams(location.search);
-
-if (role === "modelo") {
-  cliente_id = Number(params.get("cliente_id"));
-
-  if (!Number.isInteger(cliente_id) || cliente_id <= 0) {
-    console.warn("cliente_id inválido na URL");
-    cliente_id = null;
-  }
-}
-
-// ===============================
-// 📦 ELEMENTOS DOM
-// ===============================
-
-const chatBox = document.getElementById("chatBox");
-const input = document.getElementById("msgInput");
-
-// ===============================
-// ⬆️ SCROLL PARA CARREGAR MAIS
-// ===============================
-
-if (chatBox) {
-  chatBox.addEventListener("scroll", () => {
-    if (
-  historicoInicialCarregado &&
-  chatBox.scrollTop === 0 &&
-  !carregandoHistorico
-) {
- carregarMensagensAntigas();
-    }
+  socket.emit("joinChat",{
+    cliente_id,
+    modelo_id
   });
+
+  socket.emit("getHistory",{
+    cliente_id,
+    modelo_id,
+    offset: offsetMensagens,
+    limit: LIMIT_MENSAGENS
+  });
+
 }
+
+// ===============================
+// DOM
+// ===============================
+
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    const res = await fetch("/api/modelo/me", {
+      headers: { Authorization: "Bearer " + token }
+    });
+
+    if (!res.ok) {
+      console.error("Erro ao buscar modelo");
+      return;
+    }
+
+    const modelo = await res.json();
+
+    modelo_id = modelo.modelo_id;
+
+    if (!modelo_id) {
+      console.error("modelo_id indefinido");
+      return;
+    }
+
+    const params = new URLSearchParams(location.search);
+    cliente_id = Number(params.get("cliente_id"));
+
+    if (!cliente_id) {
+      alert(t("chat.invalid_client"));
+      return;
+    }
+
+    const modal = document.getElementById("modalMidia");
+
+    if (modal) {
+      modal.addEventListener("click", function (e) {
+        if (e.target.classList.contains("modal-backdrop")) {
+          fecharModalMidia();
+        }
+      });
+    }
+
+    const sendBtn = document.getElementById("sendBtn");
+    const msgInput = document.getElementById("msgInput");
+
+    if (sendBtn) {
+      sendBtn.addEventListener("click", enviarMensagem);
+    }
+
+    if (msgInput) {
+      msgInput.addEventListener("keydown", e => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          enviarMensagem(e);
+        }
+      });
+    }
+
+    document.getElementById("btnAnotacoesCliente")?.addEventListener("click", abrirPopupAnotacoesCliente);
+    document.getElementById("fecharPopupAnotacoes")?.addEventListener("click", fecharPopupAnotacoesCliente);
+    document.getElementById("salvarAnotacoesCliente")?.addEventListener("click", salvarAnotacoesCliente);
+    document.querySelector(".popup-anotacoes-backdrop")?.addEventListener("click", fecharPopupAnotacoesCliente);
+    
+    document.getElementById("btnTransacoesCliente")?.addEventListener("click", () => {
+  if (!cliente_id) return;
+  window.location.href = `/cliente-transacoes.html?cliente_id=${cliente_id}`;
+    });
+    
+    await carregarInfoCliente(cliente_id);
+
+    await marcarComoLido(cliente_id);
+
+    tentarEntrarSala();
+
+  } catch (err) {
+    console.error("Erro DOMContentLoaded:", err);
+  }
+});
+
+  // ===============================
+  // SCROLL HISTÓRICO
+  // ===============================
+if (chatBox) {
+
+  chatBox.addEventListener("scroll", () => {
+
+    if (
+      historicoInicialCarregado &&
+      chatBox.scrollTop <= 100 &&
+      !carregandoHistorico
+    ) {
+      carregarMensagensAntigas();
+    }
+
+  });
+
+}
+
+document.addEventListener("click", e => {
+
+  const btn = e.target.closest(".msg-menu");
+  if (!btn) return;
+
+  const messageId = btn.dataset.id;
+  const text = decodeURIComponent(btn.dataset.text || "");
+
+  const textarea = document.getElementById("editarTexto");
+
+  if (textarea) {
+    textarea.value = text;
+  }
+
+  window.mensagemSelecionada = messageId;
+
+  const menu = document.getElementById("menuMensagem");
+  if (menu) menu.classList.remove("hidden");
+
+ });
+
+document.addEventListener("click", e => {
+  const midia = e.target.closest(".midia-item");
+  if (!midia) return;
+
+  const conteudo = midia.closest(".chat-conteudo");
+  if (!conteudo) return;
+
+  if (role === "modelo") {
+    abrirMidia(midia);
+    return;
+  }
+
+  const bloqueado = conteudo.classList.contains("bloqueado");
+  const messageId = conteudo.dataset.id;
+
+  if (bloqueado) {
+    abrirPopupPagamento(messageId);
+    return;
+  }
+
+  abrirMidia(midia);
+});
+
+
+// ===============================
+// HISTÓRICO
+// ===============================
 
 socket.on("chatHistory", mensagens => {
-  const chat = document.getElementById("chatBox");
-  if (!chat || !Array.isArray(mensagens)) return;
 
-  chat.innerHTML = "";
+  if (!chatBox || !Array.isArray(mensagens)) return;
 
-  mensagens.forEach(m => renderMensagem(m));
+  const primeiraCarga = offsetMensagens === 0;
 
-  requestAnimationFrame(() => {
-    chat.scrollTop = chat.scrollHeight;
-  });
+  if (primeiraCarga) {
+
+    chatBox.innerHTML = "";
+    mensagensRenderizadas.clear();
+
+    mensagens.forEach(m => renderMensagem(m));
+
+    // 🔧 esperar DOM + imagens renderizarem
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        chatBox.scrollTop = chatBox.scrollHeight;
+      });
+    });
+
+  } else {
+
+    const alturaAntes = chatBox.scrollHeight;
+
+    mensagens.reverse().forEach(m => {
+
+      if (mensagensRenderizadas.has(m.id)) return;
+      mensagensRenderizadas.add(m.id);
+
+      const div = criarMensagemElemento(m);
+      chatBox.prepend(div);
+
+    });
+
+    requestAnimationFrame(() => {
+      const alturaDepois = chatBox.scrollHeight;
+      chatBox.scrollTop += (alturaDepois - alturaAntes);
+    });
+
+  }
+
+  offsetMensagens += mensagens.length;
+  historicoInicialCarregado = true;
+  carregandoHistorico = false;
+
 });
 
-// 💬 NOVA MENSAGEM
+// ===============================
+// NOVA MENSAGEM
+// ===============================
+
 socket.on("newMessage", msg => {
+
+  if (
+    Number(msg.modelo_id) !== Number(modelo_id) ||
+    Number(msg.cliente_id) !== Number(cliente_id)
+  ) return;
+
+  const temp = document.querySelector(`[data-id="${msg.tempId}"]`);
+
+  if (temp) {
+    temp.dataset.id = msg.id;
+    mensagensRenderizadas.add(msg.id);
+    return;
+  }
+
+  if (mensagensRenderizadas.has(msg.id)) return;
+
   renderMensagem(msg);
   scrollParaFinal();
+
+  if (msg.sender === "cliente") {
+    carregarInfoCliente(cliente_id);
+  }
+
 });
 
-// ✏️ Edição
+// ===============================
+// ENVIAR MENSAGEM
+// ===============================
+function enviarMensagem(e){
+
+  if(e) e.preventDefault();
+
+  const campo = document.getElementById("msgInput");
+  if(!campo) return;
+
+  const text = campo.value.trim();
+  if(!text) return;
+
+  if(!socket.connected){
+    alert(t("chat.connection_lost"));
+    return;
+  }
+
+  const tempId = "temp-" + Date.now();
+
+  renderMensagem({
+    id: tempId,
+    sender:"modelo",
+    text,
+    created_at:Date.now()
+  });
+
+  scrollParaFinal();
+
+  socket.emit(
+    "sendMessage",
+    {
+      cliente_id,
+      modelo_id,
+      text,
+      tempId
+    },
+    resposta => {
+
+      if(!resposta?.ok) return;
+
+      const el = document.querySelector(`[data-id="${tempId}"]`);
+      if(el) el.dataset.id = resposta.message_id;
+
+       localStorage.removeItem(`inbox_modelo_lido_${cliente_id}`);
+
+    }
+  );
+
+  campo.value = "";
+
+}
+
+// ===============================
+// SCROLL
+// ===============================
+
+function scrollParaFinal(){
+  if(!chatBox) return;
+
+  requestAnimationFrame(()=>{
+    chatBox.scrollTop = chatBox.scrollHeight;
+  });
+}
+// ===============================
+// CARREGAR MENSAGENS ANTIGAS
+// ===============================
+
+function carregarMensagensAntigas(){
+
+  if(carregandoHistorico) return;
+
+  carregandoHistorico = true;
+
+  socket.emit("getHistory",{
+    cliente_id,
+    modelo_id,
+    offset: offsetMensagens,
+    limit: LIMIT_MENSAGENS
+  });
+}
+
+// ===============================
+// EDIÇÃO
+// ===============================
+
 socket.on("mensagemEditada", ({ id, text }) => {
-  const msgEl = document
-    .querySelector(`.msg-menu[data-id="${id}"]`)
-    ?.closest(".msg");
+
+  const msgEl = document.querySelector(`.msg[data-id="${id}"]`);
 
   if (!msgEl) return;
 
   const textoDiv = msgEl.querySelector(".msg-texto");
+
   if (textoDiv) textoDiv.innerText = text;
+
 });
 
-// 🗑️ Exclusão
+// ===============================
+// EXCLUSÃO
+// ===============================
 socket.on("mensagemExcluida", ({ id }) => {
-  const msgEl = document
-    .querySelector(`.msg-menu[data-id="${id}"]`)
-    ?.closest(".msg");
+
+  const msgEl = document.querySelector(`.msg[data-id="${id}"]`);
 
   if (msgEl) msgEl.remove();
+
 });
 
-// 🔓 Conteúdo visto
-socket.on("conteudoVisto", ({ message_id }) => {
+// ===============================
+// CONTEÚDO VENDIDO
+// ===============================
+// 🔔 Atualiza a mensagem de conteúdo quando cliente já viu
+socket.on("conteudoVisto", ({ message_id, conteudo_ids }) => {
+
   if (!message_id) return;
 
   const el = document.querySelector(
     `.chat-conteudo[data-id="${message_id}"]`
   );
 
-  if (!el) return;
+  if (el) {
+    el.classList.remove("bloqueado");
+    el.classList.add("visto");
 
-  el.classList.remove("bloqueado");
-  el.classList.add("visto");
+    const status = el.querySelector(".status-bloqueado");
+    if (status) status.innerText = t("chat.content_viewed");
+  }
 
-  const status = el.querySelector(".status-bloqueado");
-  if (status) status.innerText = "🟢 Vendido";
-});
-
-socket.on("disconnect", (reason) => {
-  console.warn("🔴 Socket desconectado:", reason);
-});
-
-// ===============================
-// INIT
-// ===============================
-document.addEventListener("DOMContentLoaded", async () => {
-  const res = await fetch("/api/modelo/me", {
-    headers: { Authorization: "Bearer " + token }
-  });
-
-  if (!res.ok) {
-  console.error("Erro ao buscar modelo");
-  return;
-}
-
-  const modelo = await res.json();
-
- modelo_id = modelo.modelo_id;
-if (!modelo_id) {
-  console.error("modelo_id indefinido");
-  return;
-}
-
-  await carregarInfoCliente(cliente_id);
-  tentarEntrarSala();
-
-  sala = `chat_${cliente_id}_${modelo_id}`;
-  marcarComoLido(cliente_id);
-
-  const input = document.getElementById("msgInput");
-  input.addEventListener("keydown", e => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      enviarMensagem();
-    }
-  });
+  // 🔒 Atualiza lista local para bloquear no popup
+  if (Array.isArray(conteudo_ids)) {
+    conteudo_ids.forEach(id => {
+      window.conteudosVistosCliente.add(Number(id));
+    });
+  }
 
 });
 
 // ===============================
-// FUNÇÕES
+// FORMATAR HORA
 // ===============================
-
-function scrollParaFinal() {
-  const chat = document.getElementById("chatBox");
-  if (!chat) return;
-
-  requestAnimationFrame(() => {
-    chat.scrollTop = chat.scrollHeight;
-  });
-}
-
 function formatarTempo(timestamp) {
-  if (!timestamp || timestamp === "0") return "agora";
+  if (!timestamp || timestamp === "0") return t("chat.time_now");
 
   // aceita número OU string ISO
   const time =
@@ -249,7 +465,7 @@ function formatarTempo(timestamp) {
       ? timestamp
       : new Date(timestamp).getTime();
 
-  if (isNaN(time)) return "agora";
+  if (isNaN(time)) return t("chat.time_now");
 
   const diff = Date.now() - time;
 
@@ -257,191 +473,142 @@ function formatarTempo(timestamp) {
   const h   = Math.floor(diff / 3600000);
   const d   = Math.floor(diff / 86400000);
 
-  if (min < 1) return "agora";
-  if (min < 60) return `há ${min} min`;
-  if (h < 24) return `há ${h} h`;
-  if (d === 1) return "ontem";
-  return `há ${d} dias`;
+  if (min < 1) return t("chat.time_now");
+  if (min < 60) return t("chat.time_minutes").replace("{n}", min);
+  if (h < 24) return t("chat.time_hours").replace("{n}", h);
+  if (d === 1) return t("chat.time_yesterday");
+  return t("chat.time_days").replace("{n}", d);
 }
 
-
-
-function atualizarBadgeComTempo(li) {
-  const badge = li.querySelector(".badge");
-  const tempo = li.querySelector(".tempo");
-
-  const status = li.dataset.status;
-  const lastTime = Number(li.dataset.lastTime || 0);
-
-  // 🔔 BADGE
-  if (badge) {
-    if (status === "novo") {
-      badge.innerText = "Novo";
-      badge.classList.remove("hidden");
-    }
-    else if (status === "nao-visto") {
-      badge.innerText = "Não visto";
-      badge.classList.remove("hidden");
-    }
-    else if (status === "por-responder") {
-      badge.innerText = "Por responder";
-      badge.classList.remove("hidden");
-    }
-    else {
-      badge.classList.add("hidden");
-    }
-  }
-
-  // ⏱ TEMPO
-  if (tempo) {
-    tempo.innerText = lastTime > 0 ? formatarTempo(lastTime) : "";
-  }
-}
-
-function enviarMensagem() {
- const text = input.value.trim();
-  if (!text) return;
-
-  const msgLocal = {
-    id: "temp-" + Date.now(),
-    sender: "modelo",
-    text,
-    created_at: Date.now()
-  };
-
-  socket.emit("sendMessage", {
-    cliente_id,
-    modelo_id,
-    text
-  });
-
-  const item = [...document.querySelectorAll("#listaClientes li")]
-  .find(li => Number(li.dataset.clienteId) === cliente_id);
-
-if (item) {
-  const badge = item.querySelector(".badge");
-  badge.classList.add("hidden");
-}
-
-if (item) {
-  item.dataset.lastTime = Date.now();
-  item.dataset.status = "normal";
-  atualizarBadgeComTempo(item);
-  organizarListaClientes();
-}
-
-  input.value = "";
-}
-
-function abrirPreviewMidiaDireto(message, index) {
-  try {
-    if (!message) return;
-
-    // 🔒 Só funciona para mensagens de conteúdo
-    if (message.tipo !== "conteudo") return;
-
-    // 🔒 Verifica se existe array de mídias
-    if (!Array.isArray(message.midias)) return;
-
-    const midia = message.midias[index];
-    if (!midia) return;
-
-    // 🔒 Se estiver bloqueado (conteúdo pago não comprado)
-    if (message.bloqueado) {
-      if (typeof abrirFluxoPagamentoConteudo === "function") {
-        abrirFluxoPagamentoConteudo(message);
-      }
-      return;
-    }
-
-    // ✅ Abrir preview normalmente
-    abrirPreviewMidia(midia);
-
-  } catch (err) {
-    console.error("Erro ao abrir preview:", err);
-  }
-}
-
+// ===============================
+// RENDER MENSAGEM
+// ===============================
 
 function renderMensagem(msg) {
-  const chat = document.getElementById("chatBox");
-  if (!chat) return;
+  if (!chatBox) return;
+
+  if (mensagensRenderizadas.has(msg.id)) return;
+  mensagensRenderizadas.add(msg.id);
 
   const div = document.createElement("div");
 
   div.className =
-    msg.sender === "modelo" ? "msg msg-modelo" : "msg msg-cliente";
+    msg.sender === "modelo"
+      ? "msg msg-modelo"
+      : "msg msg-cliente";
 
-  // ===============================
-  // 📦 MENSAGEM DE CONTEÚDO
-  // ===============================
-  if (msg.tipo === "conteudo") {
+  div.dataset.id = msg.id;
 
-    const quantidade = msg.quantidade ?? (msg.midias?.length || 0);
-    const bloqueado = Number(msg.preco) > 0 && !msg.visto;
+ if (ehMensagemConteudo(msg)) {
+  const quantidade = getQuantidadeMidias(msg);
+  const bloqueado = mensagemEstaBloqueada(msg);
+  const foiVisto = !!(msg.visto || msg.liberado);
 
-div.innerHTML = `
-  <div class="chat-conteudo premium ${bloqueado ? "bloqueado" : "visto"}"
-       data-id="${msg.id}"
-       data-qtd="${quantidade}">
-
-    ${msg.sender === "modelo" && !msg.visto ? `
-      <button
-        class="btn-excluir-pacote"
-        data-id="${msg.id}">
-        ⋮
-      </button>
-    ` : ""}
-
-    <div class="pacote-grid">
-      ${(msg.midias || []).map((m, index) => `
-        <div class="midia-item lazy-midia"
-             data-thumb="${m.thumbnail_url || m.url}"
-             data-full="${m.url}"
-             data-index="${index}">
-             <div class="midia-placeholder"></div>
-        </div>
-      `).join("")}
-    </div>
-
-    ${
-      msg.preco > 0
-        ? `
-        <div class="conteudo-info">
-          <span class="status-bloqueado">
-            ${
-              msg.visto
-                ? `🟢 Vendido · ${quantidade} mídia(s)`
-                : `🔒 ${quantidade} mídia(s)`
-            }
-          </span>
-          <span class="preco-bloqueado">
-            R$ ${Number(msg.preco).toFixed(2)}
-          </span>
-        </div>
-      `
-        : ""
-    }
-  </div>
-  <span class="msg-hora">${formatarHora(msg.created_at)}</span>
-`;
-const btnConteudo = div.querySelector(".btn-excluir-pacote");
-
-if (btnConteudo) {
-  btnConteudo.addEventListener("click", (e) => {
-    e.stopPropagation(); // 🔥 impede abrir preview ao clicar no botão
-    excluirPacoteConteudo(btnConteudo.dataset.id);
-  });
-}
-    ativarLazyLoadingModelo(div, msg, bloqueado);
+  let estadoClasse = "";
+  if (bloqueado) {
+    estadoClasse = "bloqueado";
+  } else if (foiVisto) {
+    estadoClasse = "visto";
+  } else {
+    estadoClasse = "livre";
   }
 
-  // ===============================
-  // 💬 MENSAGEM DE TEXTO
-  // ===============================
-  else {
+  div.innerHTML = `
+    <div class="chat-conteudo premium ${estadoClasse}"
+         data-id="${msg.id}"
+         data-qtd="${quantidade}"
+         data-preco="${msg.preco || 0}">
+
+      <div class="pacote-grid">
+        ${(msg.midias || []).map((m, index) => `
+          <div class="midia-item lazy-midia"
+            data-thumb="${m.thumbnail_url || m.url}"
+            data-full="${m.url}"
+            data-index="${index}"
+            style="background-image:url('${m.thumbnail_url || m.url}')">
+          </div>
+        `).join("")}
+      </div>
+
+      <div class="msg-meta">
+        <span class="meta-midias">
+          ${bloqueado
+            ? `🔒${quantidade} mídia(s)`
+            : foiVisto
+              ? `🟢${quantidade} mídia(s)`
+              : `📩${quantidade} mídia(s)`}
+        </span>
+
+        <span class="meta-valor">
+          R$ ${Number(msg.preco || 0).toFixed(2)}
+        </span>
+
+        <span class="msg-hora">
+          ${formatarTempo(msg.created_at)}
+
+          ${msg.sender === "modelo" && !msg.liberado ? `
+            <button
+              class="btn-excluir-pacote"
+              data-id="${msg.id}">
+              ⋮
+            </button>
+          ` : ""}
+        </span>
+      </div>
+    </div>
+  `;
+
+    const btnConteudo = div.querySelector(".btn-excluir-pacote");
+
+    if (btnConteudo) {
+      btnConteudo.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const btn = e.currentTarget;
+
+        console.log("[btn-excluir-pacote click]", {
+          messageId: btn.dataset.id,
+          socketConnected: !!socket?.connected,
+          cliente_id,
+          modelo_id,
+        });
+
+        excluirPacoteConteudo(btn.dataset.id);
+      });
+    }
+
+    ativarLazyLoadingModelo(div, msg, bloqueado);
+
+    div.querySelectorAll(".midia-item").forEach(el => {
+      el.addEventListener("click", (e) => {
+        console.log("[midia-item click]", {
+          target: e.target,
+          el,
+          idMsg: msg.id,
+          bloqueado,
+          full: el.dataset.full,
+          thumb: el.dataset.thumb,
+          index: el.dataset.index,
+        });
+
+        if (role === "modelo") {
+          abrirMidia(el);
+          return;
+        }
+
+        if (bloqueado) {
+          abrirPopupPagamento(msg.id);
+          return;
+        }
+
+        abrirMidia(el);
+      });
+    });
+
+  } else {
     div.innerHTML = `
-      <div class="msg-texto">${msg.text}</div>
+      <div class="msg-texto">${msg.text || ""}</div>
 
       ${msg.sender === "modelo" ? `
         <button
@@ -452,7 +619,7 @@ if (btnConteudo) {
         </button>
       ` : ""}
 
-      <span class="msg-hora">${formatarHora(msg.created_at)}</span>
+      <span class="msg-hora">${formatarTempo(msg.created_at)}</span>
     `;
 
     const btn = div.querySelector(".msg-menu");
@@ -466,8 +633,392 @@ if (btnConteudo) {
     }
   }
 
-  chat.appendChild(div);
+  chatBox.appendChild(div);
 }
+
+async function carregarInfoCliente(cliente_id) {
+  if (!cliente_id) return;
+
+  try {
+    const res = await fetch(`/api/chat/cliente/${cliente_id}`, {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
+
+    if (!res.ok) {
+      console.warn("Erro ao carregar cliente");
+      return;
+    }
+
+    const cliente = await res.json();
+
+    const nome = document.getElementById("chatClienteNome");
+    const avatar = document.getElementById("chatClienteAvatar");
+    const status = document.getElementById("chatClienteStatus");
+
+    if (nome) {
+      nome.innerText = cliente.nome || t("chat.client_name_placeholder");
+    }
+
+    const avatarUrl = cliente.avatar || "/assets/avatar.png";
+
+    if (avatar) {
+      avatar.src = avatarUrl;
+      avatar.style.cursor = "pointer";
+
+      avatar.onclick = () => {
+        abrirPreviewAvatar(avatarUrl);
+      };
+    }
+
+    if (status) {
+      if (cliente.last_seen) {
+        status.innerText = t("chat.last_seen").replace("{time}", formatarTempo(cliente.last_seen));
+      } else {
+        status.innerText = t("chat.last_seen").replace("{time}", t("chat.time_now"));
+      }
+    }
+
+    await carregarAnotacoesCliente(cliente_id);
+
+  } catch (err) {
+    console.error("Erro carregarInfoCliente:", err);
+  }
+}
+
+function fecharMenuMensagem(){
+  const menu = document.getElementById("menuMensagem");
+  if(menu) menu.classList.add("hidden");
+}
+
+function salvarEdicao(){
+
+  const text = document.getElementById("editarTexto").value.trim();
+
+  if(!text || !window.mensagemSelecionada) return;
+
+  socket.emit("editarMensagem",{
+    id: window.mensagemSelecionada,
+    text
+  });
+
+  fecharMenuMensagem();
+}
+
+function excluirMensagem(){
+
+  if(!window.mensagemSelecionada) return;
+
+  socket.emit("excluirMensagem",{
+    id: window.mensagemSelecionada
+  });
+
+  fecharMenuMensagem();
+}
+
+// ===============================
+// POPUP ENVIAR CONTEÚDO
+// ===============================
+
+async function abrirPopupConteudos() {
+  try {
+
+    // 🔒 validar IDs
+    if (!Number.isInteger(cliente_id) || !Number.isInteger(modelo_id)) {
+      console.warn("IDs inválidos para abrir popup.");
+      return;
+    }
+
+    const popup = document.getElementById("popupConteudos");
+    const grid  = document.getElementById("previewConteudos");
+
+    if (!popup || !grid) return;
+
+    popup.classList.remove("hidden");
+    grid.innerHTML = `<div class="popup-loading">${t("chat.loading")}</div>`;
+
+   if (!window.conteudosVistosCliente) {
+      window.conteudosVistosCliente = new Set();
+    }
+
+    await carregarConteudosVistos(cliente_id);
+
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      grid.innerHTML = t("chat.session_expired");
+      return;
+    }
+
+    const res = await fetch("/api/conteudos?limit=1000", {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
+
+    if (!res.ok) {
+      grid.innerHTML = t("chat.error_load_content");
+      return;
+    }
+
+    const data = await res.json();
+    const conteudos = Array.isArray(data) ? data : data.conteudos;
+
+    if (!Array.isArray(conteudos) || conteudos.length === 0) {
+      grid.innerHTML = `<p>${t("chat.no_content")}</p>`;
+      return;
+    }
+
+    grid.innerHTML = "";
+
+    conteudos.forEach(c => {
+
+      if (!c?.id || !c?.url) return;
+
+      const id = Number(c.id);
+      const tipo = c.tipo || "imagem";
+
+      const jaVisto = window.conteudosVistosCliente.has(Number(c.id));
+
+      const item = document.createElement("div");
+
+      item.className =
+        "preview-item lazy-popup" +
+        (jaVisto ? " visto desabilitado" : "");
+
+      item.dataset.conteudoId = c.id;
+      let thumb = c.thumbnail_url;
+
+if (!thumb) {
+
+  if (c.tipo === "video") {
+
+    if (c.url.includes("videodelivery.net")) {
+      thumb = c.url.replace("iframe.videodelivery.net", "videodelivery.net") + "/thumbnails/thumbnail.jpg";
+    } else {
+      thumb = "/assets/video-thumb.jpg"; // fallback
+    }
+
+  } else {
+    thumb = c.url;
+  }
+
+}
+
+item.dataset.thumb = thumb;
+
+      item.dataset.full  = c.url;
+      item.dataset.tipo  = tipo;
+
+      item.innerHTML = `
+        <div class="popup-placeholder"></div>
+        ${jaVisto ? `<span class="badge-visto">${t("chat.badge_seen")}</span>` : ""}
+      `;
+      // 👁 BOTÃO DE PREVIEW (não altera seleção)
+const btnPreview = document.createElement("button");
+btnPreview.className = "btn-preview";
+btnPreview.innerHTML = "👁";
+
+btnPreview.addEventListener("click", (e) => {
+  e.stopPropagation(); // 🔥 impede de selecionar/desselecionar
+
+  abrirPreviewMidia({
+    url: item.dataset.full,
+    tipo: item.dataset.tipo
+  });
+});
+
+item.appendChild(btnPreview);   
+        // ▶ OVERLAY PARA VÍDEO
+  if (c.tipo === "video") {
+    const overlay = document.createElement("div");
+    overlay.className = "play-overlay";
+
+    const icon = document.createElement("span");
+    icon.textContent = "▶";
+
+    overlay.appendChild(icon);
+    item.appendChild(overlay);
+  }
+
+if (jaVisto) {
+        item.addEventListener("click", () => {
+          alert(t("chat.content_already_seen"));
+        });
+      } else {
+        item.addEventListener("click", () => {
+          item.classList.toggle("selected");
+        });
+      }
+
+      grid.appendChild(item);
+    });
+
+     ativarLazyPopup(grid);
+
+  } catch (err) {
+    console.error("Erro abrirPopupConteudos:", err);
+    const grid = document.getElementById("previewConteudos");
+    if (grid) grid.innerHTML = "Erro inesperado.";
+  }
+}
+
+function fecharPopupConteudos() {
+  const popup = document.getElementById("popupConteudos");
+  if (!popup) return;
+
+  popup.classList.add("hidden");
+
+  document
+    .querySelectorAll(".preview-item.selected")
+    .forEach(el => el.classList.remove("selected"));
+
+  const precoInput = document.getElementById("precoConteudo");
+  if (precoInput) precoInput.value = 0;
+
+  window.conteudosSelecionados = [];
+}
+
+function confirmarEnvioConteudo() {
+  try {
+
+    if (!Number.isInteger(cliente_id) || !Number.isInteger(modelo_id)) {
+      alert(t("chat.invalid_client"));
+      return;
+    }
+
+    const selecionados = [
+      ...document.querySelectorAll(".preview-item.selected")
+    ];
+
+    if (!selecionados.length) {
+      alert(t("chat.select_at_least_one"));
+      return;
+    }
+
+    const conteudos_ids = selecionados
+      .map(item => Number(item.dataset.conteudoId || 0))
+      .filter(id => Number.isInteger(id) && id > 0);
+
+    if (!conteudos_ids.length) {
+      alert(t("chat.invalid_content"));
+      return;
+    }
+
+    let preco = Number(document.getElementById("precoConteudo")?.value || 0);
+    if (!Number.isFinite(preco) || preco < 0) preco = 0;
+    preco = Number(preco.toFixed(2));
+
+    if (!socket || !socket.connected) {
+      console.error("Socket não conectado!");
+      return;
+    }
+
+    socket.emit("sendConteudo", {
+      cliente_id,
+      modelo_id,
+      conteudos_ids,
+      preco
+    });
+
+    fecharPopupConteudos();
+
+  } catch (err) {
+    console.error("Erro confirmar envio de conteúdo:", err);
+  }
+}
+
+function fecharModalMidia(){
+
+  const modal  = document.getElementById("modalMidia");
+  const video  = document.getElementById("modalVideo");
+  const iframe = document.getElementById("modalIframe");
+
+  if(video){
+    video.pause();
+    video.src = "";
+  }
+
+  if(iframe){
+    iframe.src = "";
+  }
+
+  modal.classList.add("hidden");
+}
+
+function abrirMidia(midia){
+
+  if (!midia) return;
+
+  const src = midia.dataset.full || midia.dataset.thumb;
+  if (!src) return;
+
+  const isVideo =
+    src.includes(".mp4") ||
+    src.includes(".webm") ||
+    src.includes(".mov") ||
+    src.includes(".m3u8") ||
+    src.includes("videodelivery.net");
+
+  abrirModalMidia(src, isVideo);
+}
+
+
+function abrirModalMidia(src){
+
+  const modal  = document.getElementById("modalMidia");
+  const img    = document.getElementById("modalImg");
+  const video  = document.getElementById("modalVideo");
+  const iframe = document.getElementById("modalIframe");
+
+  if(!modal || !src) return;
+
+  modal.classList.remove("hidden");
+
+  /* reset */
+  if(img){
+    img.style.display = "none";
+    img.src = "";
+  }
+
+  if(video){
+    video.pause();
+    video.removeAttribute("src");
+    video.load();
+    video.style.display = "none";
+  }
+
+  if(iframe){
+    iframe.src = "";
+    iframe.style.display = "none";
+  }
+
+  /* CLOUDFlARE STREAM */
+  if(src.includes("iframe.videodelivery.net")){
+
+    iframe.src = src;
+    iframe.style.display = "block";
+    return;
+  }
+
+  /* VIDEO NORMAL */
+  if(
+    src.includes(".mp4") ||
+    src.includes(".webm") ||
+    src.includes(".mov")
+  ){
+    video.src = src;
+    video.style.display = "block";
+    video.play().catch(()=>{});
+    return;
+  }
+
+  /* IMAGEM */
+  img.src = src;
+  img.style.display = "block";
+}
+
 
 
 function abrirPreviewAvatar(url) {
@@ -522,322 +1073,69 @@ function abrirPreviewAvatar(url) {
   });
 }
 
-function abrirPreviewMidia(midia) {
-  if (!midia || !midia.url) return;
+async function marcarComoLido(cliente_id) {
+  if (!cliente_id) return;
 
-  let modal = document.getElementById("midiaPreviewModal");
-
-  if (!modal) {
-    modal = document.createElement("div");
-    modal.id = "midiaPreviewModal";
-    modal.className = "preview-modal";
-
-    modal.innerHTML = `
-      <div class="preview-backdrop"></div>
-      <div class="preview-box">
-        <span class="preview-close">×</span>
-        <div id="midiaPreviewContainer"></div>
-      </div>
-    `;
-
-    document.body.appendChild(modal);
-
-    const fechar = () => {
-      modal.classList.remove("open");
-      setTimeout(() => modal.remove(), 200);
-      document.removeEventListener("keydown", escListener);
-    };
-
-    const escListener = (e) => {
-      if (e.key === "Escape") fechar();
-    };
-
-    modal.querySelector(".preview-backdrop").onclick = fechar;
-    modal.querySelector(".preview-close").onclick = fechar;
-
-    document.addEventListener("keydown", escListener);
-  }
-
-  const container = modal.querySelector("#midiaPreviewContainer");
-  container.innerHTML = "";
-
-  if (midia.tipo_media === "video" || midia.tipo === "video") {
-    container.innerHTML = `
-      <video src="${midia.url}" controls autoplay playsinline></video>
-    `;
-  } else {
-    container.innerHTML = `
-      <img src="${midia.url}" />
-    `;
-  }
-
-  requestAnimationFrame(() => {
-    modal.classList.add("open");
-  });
-}
-
-
-function enviarConteudosSelecionados() {
-  if (!window.socket) return;
-
-  const selecionados = [
-    ...document.querySelectorAll(".preview-item.selected")
-  ];
-
-  if (selecionados.length === 0) {
-    alert("Selecione ao menos um conteúdo.");
-    return;
-  }
-
-  // 🔒 Sanitizar IDs
-  const conteudos_ids = selecionados
-    .map(el => Number(el.dataset.conteudoId))
-    .filter(id => Number.isInteger(id) && id > 0);
-
-  if (conteudos_ids.length === 0) {
-    alert("Conteúdos inválidos.");
-    return;
-  }
-
-  // 🔒 Sanitizar preço
-  let preco = Number(
-    document.getElementById("precoConteudo")?.value || 0
-  );
-
-  if (!Number.isFinite(preco) || preco < 0) {
-    preco = 0;
-  }
-
-  preco = Number(preco.toFixed(2));
-
-  // 🔒 Garantir IDs globais válidos
-  if (
-    !Number.isInteger(cliente_id) ||
-    !Number.isInteger(modelo_id)
-  ) {
-    console.error("cliente_id ou modelo_id inválido");
-    return;
-  }
-
-  socket.emit("sendConteudo", {
-    cliente_id,
-    modelo_id,
-    conteudos_ids,
-    preco
-  });
-
-  fecharPopupConteudos();
-}
-
-
-async function abrirPopupConteudos() {
   try {
-    if (!Number.isInteger(cliente_id)) return;
-
-    const popup = document.getElementById("popupConteudos");
-    const grid = document.getElementById("previewConteudos");
-
-    if (!popup || !grid) return;
-
-    popup.classList.remove("hidden");
-    grid.innerHTML = `<div class="popup-loading">Carregando...</div>`;
-
-    if (!window.conteudosVistosCliente) {
-      window.conteudosVistosCliente = new Set();
-    }
-
-    await carregarConteudosVistos(cliente_id);
-
-    const token = localStorage.getItem("token");
-    if (!token) {
-      grid.innerHTML = "Sessão expirada.";
-      return;
-    }
-
-    const res = await fetch("/api/conteudos", {
+    const res = await fetch(`/api/chat/modelo/marcar-lido/${cliente_id}`, {
+      method: "POST",
       headers: {
         Authorization: "Bearer " + token
       }
     });
 
     if (!res.ok) {
-      grid.innerHTML = "Erro ao carregar conteúdos.";
+      console.warn("Não foi possível marcar como lido");
       return;
     }
 
-    const conteudos = await res.json();
+  } catch (err) {
+    console.error("Erro marcar como lido:", err);
+  }
+}
 
-    if (!Array.isArray(conteudos) || conteudos.length === 0) {
-      grid.innerHTML = "<p>Nenhum conteúdo enviado ainda.</p>";
-      return;
-    }
+function ativarLazyLoadingModelo(div){
 
-    grid.innerHTML = "";
+  const midias = div.querySelectorAll(".lazy-midia");
 
-    conteudos.forEach(c => {
-      if (!c?.id || !c?.url) return;
+  midias.forEach(el => {
 
-      const jaVisto = window.conteudosVistosCliente.has(c.id);
+    const thumb = el.dataset.thumb;
+    if(!thumb) return;
 
-      const item = document.createElement("div");
-      item.className =
-        "preview-item lazy-popup" +
-        (jaVisto ? " visto desabilitado" : "");
+    const img = document.createElement("img");
 
-        item.dataset.conteudoId = c.id;
-item.dataset.thumb = c.thumbnail_url || c.url;
-item.dataset.full = c.url;
-item.dataset.tipo = c.tipo; 
+    img.src = thumb;
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.className = "midia-thumb";
+    img.style.pointerEvents = "none";
 
-      item.innerHTML = `
-        <div class="popup-placeholder"></div>
-        ${jaVisto ? `<span class="badge-visto">Visto</span>` : ""}
-      `;
-// 👁 BOTÃO DE PREVIEW (não altera seleção)
-const btnPreview = document.createElement("button");
-btnPreview.className = "btn-preview";
-btnPreview.innerHTML = "👁";
+    el.innerHTML = "";
+    el.appendChild(img);
 
-btnPreview.addEventListener("click", (e) => {
-  e.stopPropagation(); // 🔥 impede de selecionar/desselecionar
-
-  abrirPreviewMidia({
-    url: item.dataset.full,
-    tipo: item.dataset.tipo
   });
-});
 
-item.appendChild(btnPreview);   
-        // ▶ OVERLAY PARA VÍDEO
-  if (c.tipo === "video") {
-    const overlay = document.createElement("div");
-    overlay.className = "play-overlay";
-
-    const icon = document.createElement("span");
-    icon.textContent = "▶";
-
-    overlay.appendChild(icon);
-    item.appendChild(overlay);
-  }
-
-      if (jaVisto) {
-        item.addEventListener("click", () => {
-          alert("Este conteúdo já foi visto por este cliente e não pode ser reenviado.");
-        });
-      } else {
-        item.addEventListener("click", () => {
-          item.classList.toggle("selected");
-        });
-      }
-
-      grid.appendChild(item);
-    });
-
-    ativarLazyPopup(grid);
-
-  } catch (err) {
-    console.error("Erro abrirPopupConteudos:", err);
-    const grid = document.getElementById("previewConteudos");
-    if (grid) grid.innerHTML = "Erro inesperado.";
-  }
 }
 
-function fecharPopupConteudos() {
-  const popup = document.getElementById("popupConteudos");
-  if (!popup) return;
+function abrirMenuMensagem(id, text){
 
-  popup.classList.add("hidden");
+  window.mensagemSelecionada = id;
 
-  // limpa seleção
-  document
-    .querySelectorAll(".preview-item.selected")
-    .forEach(el => el.classList.remove("selected"));
+  const textarea = document.getElementById("editarTexto");
+  if (textarea) textarea.value = text || "";
 
-  // reseta preço
-  const precoInput = document.getElementById("precoConteudo");
-  if (precoInput) precoInput.value = 0;
+  const menu = document.getElementById("menuMensagem");
+  if (menu) menu.classList.remove("hidden");
+
 }
 
-function confirmarEnvioConteudo() {
-  try {
-    // 🔒 Validar IDs globais
-    if (!Number.isInteger(cliente_id) || !Number.isInteger(modelo_id)) {
-      alert("Selecione um cliente válido primeiro.");
-      return;
-    }
 
-    const selecionados = [
-      ...document.querySelectorAll(".preview-item.selected")
-    ];
-
-    if (!selecionados.length) {
-      alert("Selecione ao menos um conteúdo.");
-      return;
-    }
-
-    // 🔒 Sanitizar IDs dos conteúdos
-    const conteudos_ids = selecionados
-      .map(item => Number(item.dataset.conteudoId))
-      .filter(id => Number.isInteger(id) && id > 0);
-
-    if (!conteudos_ids.length) {
-      alert("Conteúdos inválidos.");
-      return;
-    }
-
-    // 🔒 Sanitizar preço
-    let preco = Number(document.getElementById("precoConteudo")?.value || 0);
-    if (!Number.isFinite(preco) || preco < 0) preco = 0;
-    preco = Number(preco.toFixed(2));
-
-if (!socket || !socket.connected) {
-  console.error("Socket não conectado!");
-  return;
-}
-
-    // 🔥 Garantir join na sala antes de enviar
-    socket.emit("joinChat", { cliente_id, modelo_id });
-
-    // 🔥 Delay mínimo para join
-    setTimeout(() => {
-      socket.emit("sendConteudo", {
-        cliente_id,
-        modelo_id,
-        conteudos_ids,
-        preco
-      });
-    }, 50);
-
-    // 🔄 Fechar popup
-    fecharPopupConteudos();
-
-  } catch (err) {
-    console.error("Erro confirmar envio de conteúdo:", err);
-  }
-}
-
-// 🔔 Atualiza a mensagem de conteúdo quando cliente já viu
-socket.on("conteudoVisto", ({ message_id }) => {
-  if (!message_id) return;
-
-  // 🔒 Garantir que o seletor funcione mesmo com string/number
-  const el = document.querySelector(`.chat-conteudo[data-id="${message_id}"]`);
-  if (!el) return;
-
-  el.classList.remove("bloqueado");
-  el.classList.add("visto");
-
-  const status = el.querySelector(".status-bloqueado");
-  if (status) status.innerText = "🟢 Vendido";
-});
-
-// 🔄 Carrega os conteúdos já vistos pelo cliente
 async function carregarConteudosVistos(cliente_id) {
-  if (!Number.isInteger(cliente_id)) return;
 
   try {
+
     const token = localStorage.getItem("token");
-    if (!token) return;
 
     const res = await fetch(`/api/chat/conteudos-vistos/${cliente_id}`, {
       headers: {
@@ -845,23 +1143,20 @@ async function carregarConteudosVistos(cliente_id) {
       }
     });
 
-    if (!res.ok) {
-      console.warn("Falha ao buscar conteúdos vistos:", res.status);
-      window.conteudosVistosCliente = new Set();
-      return;
-    }
+    if (!res.ok) return;
 
-    const ids = await res.json();
+    const vistos = await res.json();
 
-    // 🔒 Sempre cria Set para evitar erro no frontend
     window.conteudosVistosCliente = new Set(
-      Array.isArray(ids) ? ids.map(id => Number(id)).filter(id => Number.isInteger(id)) : []
+      Array.isArray(vistos)
+        ? vistos.map(id => Number(id)).filter(id => Number.isInteger(id))
+        : []
     );
 
   } catch (err) {
-    console.error("Erro carregarConteudosVistos:", err);
-    window.conteudosVistosCliente = new Set();
+    console.error("Erro carregar conteúdos vistos:", err);
   }
+
 }
 
 function formatarHora(data) {
@@ -874,361 +1169,384 @@ function formatarHora(data) {
   });
 }
 
-// 🔒 Marca todas as mensagens de um cliente como lidas pelo modelo
-async function marcarComoLido(cliente_id) {
-  try {
-    if (!Number.isInteger(cliente_id)) {
-      console.warn("cliente_id inválido:", cliente_id);
-      return;
-    }
+function abrirPreviewMidia({ url }) {
 
-    const token = localStorage.getItem("token");
-    if (!token) {
-      console.warn("Token não encontrado para marcar como lido");
-      return;
-    }
+  if (!url) return;
 
-    const res = await fetch(`/api/chat/modelo/marcar-lido/${cliente_id}`, {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer " + token
+  abrirModalMidia(url);
+
+}
+
+async function excluirPacoteConteudo(messageId){
+
+  const id = Number(messageId);
+  if(!Number.isInteger(id)) return;
+
+  if(!confirm(t("chat.confirm_delete_package"))) return;
+
+  const token = localStorage.getItem("token");
+  if(!token) return;
+
+  try{
+
+    const res = await fetch(`/api/chat/pacote/${id}`,{
+      method:"DELETE",
+      headers:{
+        Authorization:"Bearer " + token
       }
     });
 
-    if (!res.ok) {
-      console.error("Falha ao marcar mensagens como lidas:", res.status);
-    } else {
-      console.log("Mensagens marcadas como lidas para cliente_id:", cliente_id);
-    }
+    const data = await res.json().catch(()=>({}));
 
-  } catch (err) {
-    console.error("Erro ao marcar como lido:", err);
-  }
-}
-
-// ===============================
-// Variáveis globais para edição de mensagem
-// ===============================
-let mensagemEditandoId = null;
-let elementoMensagemEditando = null;
-
-
-function abrirMenuMensagem(id, texto) {
-  if (!id) {
-    console.warn("ID da mensagem inválido:", id);
-    return;
-  }
-
-  mensagemEditandoId = id;
-
-  // 🔒 Acha a mensagem no DOM de forma segura
-  const btnMenu = document.querySelector(`.msg-menu[data-id="${id}"]`);
-  if (!btnMenu) {
-    console.warn("Botão de menu da mensagem não encontrado:", id);
-    elementoMensagemEditando = null;
-  } else {
-    elementoMensagemEditando = btnMenu.closest(".msg") || null;
-  }
-
-  // 🔒 Preenche input de edição se existir
-  const inputEditar = document.getElementById("editarTexto");
-  if (inputEditar) {
-    inputEditar.value = texto || "";
-  }
-
-  // 🔒 Mostra menu apenas se existir
-  const menu = document.getElementById("menuMensagem");
-  if (menu) {
-    menu.classList.remove("hidden");
-  }
-}
-
-
-
-function fecharMenuMensagem() {
-  // 🔒 Resetar variáveis globais
-  mensagemEditandoId = null;
-  elementoMensagemEditando = null;
-
-  // 🔒 Fechar menu apenas se existir
-  const menu = document.getElementById("menuMensagem");
-  if (menu) {
-    menu.classList.add("hidden");
-  }
-}
-
-
-function salvarEdicao() {
-  const inputEditar = document.getElementById("editarTexto");
-  if (!inputEditar) return;
-
-  const novoTexto = inputEditar.value.trim();
-
-  if (!novoTexto) {
-    alert("Mensagem vazia não é permitida.");
-    return;
-  }
-
-  if (!mensagemEditandoId) {
-    console.warn("Nenhuma mensagem selecionada para edição.");
-    return;
-  }
-
-  // 🔥 Atualiza o DOM localmente
-  if (elementoMensagemEditando) {
-    const textoDiv = elementoMensagemEditando.querySelector(".msg-texto");
-    if (textoDiv) {
-      textoDiv.innerText = novoTexto;
-    }
-  }
-
-  // 🔒 Emite para o backend apenas se ID válido
-if (socket && socket.connected) {
-    socket.emit("editarMensagem", {
-      id: mensagemEditandoId,
-      text: novoTexto
-    });
-  } else {
-    console.warn("Socket não conectado. Edição não enviada.");
-  }
-
-  fecharMenuMensagem();
-}
-
-function excluirMensagem() {
-  if (!mensagemEditandoId) {
-    console.warn("Nenhuma mensagem selecionada para exclusão.");
-    return;
-  }
-
-  if (!confirm("Tem certeza que deseja excluir esta mensagem?")) return;
-
-  if (elementoMensagemEditando) {
-    elementoMensagemEditando.remove();
-  }
-
- if (socket && socket.connected && socketAutenticado) {
-  socket.emit("excluirMensagem", { id: mensagemEditandoId });
-  } else {
-    console.warn("Socket não conectado. Exclusão não enviada.");
-  }
-
-  // 🔄 Fecha menu
-  fecharMenuMensagem();
-}
-
-
-async function carregarInfoCliente(cliente_id) {
-  try {
-    if (!Number.isInteger(cliente_id)) {
-      console.warn("cliente_id inválido:", cliente_id);
+    if(!res.ok){
+      alert(data.error || t("chat.error_delete"));
       return;
     }
 
-    const token = localStorage.getItem("token");
-    if (!token) {
-      console.warn("Token não encontrado.");
-      return;
-    }
+    // ❌ NÃO remove aqui
+    // o socket fará isso para todos
 
-    // 🔒 Rota real do server
-    const res = await fetch(`/api/cliente/${cliente_id}`, {
-      headers: {
-        Authorization: "Bearer " + token
-      }
-    });
-
-    if (!res.ok) {
-      console.warn("Falha ao buscar info do cliente:", res.status);
-      return;
-    }
-
-    const cliente = await res.json();
-
-    const avatar = document.getElementById("chatClienteAvatar");
-    const nome = document.getElementById("chatClienteNome");
-    const status = document.getElementById("chatClienteStatus");
-
-    if (avatar) {
-      avatar.style.cursor = "pointer";
-
-      // 🔄 remove listener antigo
-      avatar.replaceWith(avatar.cloneNode(true));
-      const novoAvatar = document.getElementById("chatClienteAvatar");
-      
-      if (cliente.avatar) {
-        novoAvatar.addEventListener("click", () => abrirPreviewAvatar(cliente.avatar));
-      }
-    }
-
-    if (nome) {
-      nome.innerText = cliente.username || cliente.nome || "Cliente";
-    }
-
-    if (status) {
-      if (cliente.last_seen) {
-        status.innerText = `visto por último: ${formatarTempo(cliente.last_seen)}`;
-      } else {
-        status.innerText = "visto por último: agora";
-      }
-    }
-
-  } catch (err) {
-    console.error("Erro carregar cliente:", err);
+  }catch(err){
+    console.error(err);
+    alert(t("chat.error_delete_package"));
   }
+
 }
 
-function prioridadeChat(c) {
+function ativarLazyPopup(container){
 
-  // 1️⃣ NOVO (cliente nunca recebeu resposta da modelo)
-  if (!c.modelo_respondeu) {
-    return 1;
-  }
+  const items = container.querySelectorAll(".lazy-popup");
 
-  // 2️⃣ NÃO LIDO (cliente enviou e você não viu)
-  if (c.ultimo_sender === "cliente" && c.visto === false) {
-    return 2;
-  }
+  const observer = new IntersectionObserver((entries)=>{
 
-  // 3️⃣ NECESSITA RESPOSTA (cliente enviou, você viu mas não respondeu)
-  if (c.ultimo_sender === "cliente" && c.visto === true) {
-    return 3;
-  }
+    entries.forEach(entry=>{
 
-  // 4️⃣ Demais
-  return 4;
-}
-
-//OTIMIZACAO CHAT
-const observerModelo = new IntersectionObserver((entries) => {
-
-  entries.forEach(entry => {
-
-    if (!entry.isIntersecting) return;
-
-    const el = entry.target;
-    const thumb = el.dataset.thumb;
-
-    if (!thumb) return;
-
-    const img = document.createElement("img");
-    img.src = thumb;
-    img.loading = "lazy";
-    img.decoding = "async";
-    img.style.width = "100%";
-    img.style.height = "100%";
-    img.style.objectFit = "cover";
-
-    el.innerHTML = "";
-    el.appendChild(img);
-
-    observerModelo.unobserve(el);
-
-  });
-
-}, {
-  root: document.getElementById("chatBox"),
-  threshold: 0.1
-});
-
-function ativarLazyLoadingModelo(container, msg, bloqueado) {
-
-  const midias = container.querySelectorAll(".lazy-midia");
-
-  midias.forEach((el) => {
-
-    observerModelo.observe(el);
-
-    el.style.cursor = "pointer";
-
-    el.addEventListener("click", (e) => {
-      e.stopPropagation();
-
-      if (bloqueado) {
-        if (typeof abrirFluxoPagamentoConteudo === "function") {
-          abrirFluxoPagamentoConteudo(msg);
-        }
-        return;
-      }
-
-      const index = Number(el.dataset.index);
-      abrirPreviewMidiaDireto(msg, index);
-    });
-
-  });
-}
-
-let popupObserver;
-
-function ativarLazyPopup(container) {
-
-  if (popupObserver) {
-    popupObserver.disconnect();
-  }
-
-  popupObserver = new IntersectionObserver((entries) => {
-
-    entries.forEach(entry => {
-
-      if (!entry.isIntersecting) return;
+      if(!entry.isIntersecting) return;
 
       const el = entry.target;
       const thumb = el.dataset.thumb;
-      if (!thumb) return;
+
+      if(!thumb) return;
 
       const img = document.createElement("img");
-      img.src = thumb;
+
+      img.className = "popup-thumb";
       img.loading = "lazy";
-      img.decoding = "async";
-      img.style.width = "100%";
-      img.style.height = "100%";
-      img.style.objectFit = "cover";
 
-      el.querySelector(".popup-placeholder")?.remove();
-      el.prepend(img);
+      // lazy igual à página conteúdos
+      img.dataset.src = thumb;
+      img.src = "/assets/thumb-default.png";
 
-      popupObserver.unobserve(el);
+      const placeholder = el.querySelector(".popup-placeholder");
+      if(placeholder) placeholder.remove();
+
+      el.appendChild(img);
+
+      // quando imagem entrar no viewport
+      const imgObserver = new IntersectionObserver((entries2)=>{
+
+        entries2.forEach(entry2=>{
+
+          if(entry2.isIntersecting){
+
+            const image = entry2.target;
+
+            const src = image.dataset.src;
+
+            if(src){
+              image.src = src;
+              image.removeAttribute("data-src");
+            }
+
+            imgObserver.unobserve(image);
+
+          }
+
+        });
+
+      },{
+        rootMargin:"200px"
+      });
+
+      imgObserver.observe(img);
+
+      observer.unobserve(el);
 
     });
 
-  }, {
-    root: container,   // 🔥 AGORA USA O GRID CORRETO
-    threshold: 0.1
+  },{
+    rootMargin:"200px"
   });
 
-  const items = container.querySelectorAll(".lazy-popup");
-  items.forEach(el => popupObserver.observe(el));
+  items.forEach(el=>observer.observe(el));
+
 }
 
-async function excluirPacoteConteudo(message_id) {
+function criarMensagemElemento(msg) {
+  const div = document.createElement("div");
 
-  if (!confirm("Tem certeza que deseja excluir este pacote?")) return;
+  div.className =
+    msg.sender === "modelo"
+      ? "msg msg-modelo"
+      : "msg msg-cliente";
+
+  div.dataset.id = msg.id;
+
+  if (ehMensagemConteudo(msg)) {
+    const quantidade = getQuantidadeMidias(msg);
+    const bloqueado = mensagemEstaBloqueada(msg);
+    const foiVisto = !!(msg.visto || msg.liberado);
+
+    let estadoClasse = "";
+    if (bloqueado) {
+      estadoClasse = "bloqueado";
+    } else if (foiVisto) {
+      estadoClasse = "visto";
+    } else {
+      estadoClasse = "livre";
+    }
+
+    div.innerHTML = `
+      <div class="chat-conteudo premium ${estadoClasse}"
+           data-id="${msg.id}"
+           data-preco="${msg.preco || 0}"
+           data-qtd="${quantidade}">
+
+        <div class="pacote-grid">
+          ${(msg.midias || []).map((m, index) => `
+            <div class="midia-item lazy-midia"
+              data-thumb="${m.thumbnail_url || m.url}"
+              data-full="${m.url}"
+              data-index="${index}"
+              style="background-image:url('${m.thumbnail_url || m.url}')">
+            </div>
+          `).join("")}
+        </div>
+
+        <div class="msg-meta">
+          <span class="meta-midias">
+            ${bloqueado
+              ? `🔒${quantidade} mídia(s)`
+              : foiVisto
+                ? `🟢${quantidade} mídia(s)`
+                : `📩${quantidade} mídia(s)`}
+          </span>
+
+          <span class="meta-valor">
+            R$ ${Number(msg.preco || 0).toFixed(2)}
+          </span>
+
+          <span class="msg-hora">
+            ${formatarTempo(msg.created_at)}
+
+            ${msg.sender === "modelo" && !msg.liberado ? `
+              <button
+                class="btn-excluir-pacote"
+                data-id="${msg.id}">
+                ⋮
+              </button>
+            ` : ""}
+          </span>
+        </div>
+      </div>
+    `;
+
+    ativarLazyLoadingModelo(div);
+
+    const btnConteudo = div.querySelector(".btn-excluir-pacote");
+    if (btnConteudo) {
+      btnConteudo.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        excluirPacoteConteudo(btnConteudo.dataset.id);
+      });
+    }
+
+    div.querySelectorAll(".midia-item").forEach(el => {
+      el.addEventListener("click", () => {
+        if (role === "modelo") {
+          abrirMidia(el);
+          return;
+        }
+
+        if (mensagemEstaBloqueada(msg)) {
+          abrirPopupPagamento(msg.id);
+          return;
+        }
+
+        abrirMidia(el);
+      });
+    });
+
+  } else {
+    div.innerHTML = `
+      <div class="msg-texto">${msg.text || ""}</div>
+
+      ${msg.sender === "modelo" ? `
+        <button
+          class="msg-menu"
+          data-id="${msg.id}"
+          data-text="${encodeURIComponent(msg.text || "")}">
+          ⋮
+        </button>
+      ` : ""}
+
+      <span class="msg-hora">${formatarTempo(msg.created_at)}</span>
+    `;
+
+    const btn = div.querySelector(".msg-menu");
+    if (btn) {
+      btn.addEventListener("click", () => {
+        abrirMenuMensagem(
+          btn.dataset.id,
+          decodeURIComponent(btn.dataset.text)
+        );
+      });
+    }
+  }
+
+  return div;
+}
+
+function ehMensagemConteudo(msg) {
+  if (!msg) return false;
+
+  // aceita tipos antigos e novos
+  const tiposConteudo = [
+    "conteudo",
+    "ppv",
+    "conteudo_ppv",
+    "midia_ppv",
+    "pacote",
+    "pacote_ppv"
+  ];
+
+  if (tiposConteudo.includes(msg.tipo)) return true;
+
+  // fallback: se vier com mídias, também trata como conteúdo
+  if (Array.isArray(msg.midias) && msg.midias.length > 0) return true;
+
+  return false;
+}
+
+function getQuantidadeMidias(msg) {
+  if (msg?.quantidade != null) return Number(msg.quantidade) || 0;
+  return Array.isArray(msg?.midias) ? msg.midias.length : 0;
+}
+
+function mensagemEstaBloqueada(msg) {
+  // modelo nunca deve ficar bloqueada no próprio chat
+  if (role === "modelo") return false;
+
+  return Number(msg.preco || 0) > 0 && !msg.liberado && !msg.visto;
+}
+
+function aplicarEstadoLocalInboxModelo(chat) {
+  if (!chat) return chat;
+
+  const foiLidoNoChat =
+    localStorage.getItem(`inbox_modelo_lido_${chat.cliente_id}`) === "1";
+
+  if (
+    foiLidoNoChat &&
+    chat.ultimo_sender === "cliente"
+  ) {
+    return {
+      ...chat,
+      lida: true
+    };
+  }
+
+  return chat;
+}
+
+async function carregarAnotacoesCliente(cliente_id) {
+  if (!cliente_id) return;
 
   try {
-
-    const res = await fetch(`/api/chat/pacote/${message_id}`, {
-      method: "DELETE",
+    const res = await fetch(`/api/chat/cliente/${cliente_id}/anotacoes`, {
       headers: {
-        Authorization: "Bearer " + localStorage.getItem("token")
+        Authorization: "Bearer " + token
       }
     });
 
-    const data = await res.json();
-
     if (!res.ok) {
-      alert(data.error || "Erro ao excluir pacote.");
+      console.warn("Erro ao carregar anotações do cliente");
       return;
     }
 
-    // 🔥 remove do DOM
-    const el = document.querySelector(
-      `.chat-conteudo[data-id="${message_id}"]`
-    )?.closest(".msg");
+    const data = await res.json();
 
-    if (el) el.remove();
+    const resumoEl = document.getElementById("chatClienteResumo");
+    const inputResumo = document.getElementById("inputResumoCliente");
+    const textareaNota = document.getElementById("textareaNotaCliente");
+
+    if (resumoEl) {
+      resumoEl.innerText = data?.resumo_curto || "";
+      resumoEl.style.display = data?.resumo_curto ? "inline-flex" : "none";
+    }
+
+    if (inputResumo) inputResumo.value = data?.resumo_curto || "";
+    if (textareaNota) textareaNota.value = data?.nota_privada || "";
 
   } catch (err) {
-    console.error("Erro excluir pacote:", err);
-    alert("Erro inesperado.");
+    console.error("Erro carregarAnotacoesCliente:", err);
   }
 }
+
+async function salvarAnotacoesCliente() {
+  if (!cliente_id) return;
+
+  const inputResumo = document.getElementById("inputResumoCliente");
+  const textareaNota = document.getElementById("textareaNotaCliente");
+
+  const resumo_curto = String(inputResumo?.value || "").trim();
+  const nota_privada = String(textareaNota?.value || "").trim();
+
+  try {
+    const res = await fetch(`/api/chat/cliente/${cliente_id}/anotacoes`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token
+      },
+      body: JSON.stringify({
+        resumo_curto,
+        nota_privada
+      })
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      alert(data.error || t("chat.error_save_notes"));
+      return;
+    }
+
+    const resumoEl = document.getElementById("chatClienteResumo");
+    if (resumoEl) {
+      resumoEl.innerText = data?.resumo_curto || "";
+      resumoEl.style.display = data?.resumo_curto ? "inline-flex" : "none";
+    }
+
+    fecharPopupAnotacoesCliente();
+
+  } catch (err) {
+    console.error("Erro salvarAnotacoesCliente:", err);
+    alert(t("chat.error_save_notes"));
+  }
+}
+
+function abrirPopupAnotacoesCliente() {
+  document.getElementById("popupAnotacoesCliente")?.classList.remove("hidden");
+}
+
+function fecharPopupAnotacoesCliente() {
+  document.getElementById("popupAnotacoesCliente")?.classList.add("hidden");
+}
+
+// apenas log
+socket.on("disconnect", reason => {
+  console.warn("🔴 Socket desconectado:", reason);
+
+});

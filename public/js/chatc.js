@@ -1,340 +1,436 @@
+// ===============================
+// 🔐 AUTENTICAÇÃO
+// ===============================
+
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
 
-if (!token) {
-  window.location.href = "/index.html";
-  throw new Error("Sem token");
-}
-
 const socket = io({
-  transports: ["websocket"],
+  transports: ["websocket", "polling"],
+  auth: { token },
   reconnection: true,
   reconnectionAttempts: Infinity,
   reconnectionDelay: 1000,
   reconnectionDelayMax: 5000
 });
 
+window.socket = socket;
+
 let autenticado = false;
 let salaPronta = false;
+
 let cliente_id = null;
 let modelo_id = null;
 
-setInterval(() => {
-  if (!socket.connected) {
-    console.warn("Tentando reconectar...");
-    socket.connect();
-  }
-}, 10000);
+let offsetMensagens = 0;
+const LIMIT_MENSAGENS = 20;
+
+let carregandoHistorico = false;
+let enviandoConteudo = false;
+let historicoInicialCarregado = false;
+
+const mensagensRenderizadas = new Set();
+const chatBox = document.getElementById("chatBox");
 
 const conteudosLiberados = new Set();
-let pagamentoAtual = null;
-let intervaloConfirmacaoPagamento = null;
-let pagamentoEmProcesso = false;
-const stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
-let elements = null;
+let chatPagamentoAtual = null;
+let chatPagamentoEmProcesso = false;
 
+const PAGARME_PUBLIC_KEY = "pk_oQW43ZaU7HPVnbj8";
+// const stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
+
+// // ===============================
+// // SOCKET
+// ===============================
+
+socket.on("connect", async () => {
+  autenticado = true;
+  salaPronta = false;
+
+  socket.emit("loginCliente");
+
+  if (modelo_id) {
+    await carregarInfoModelo(modelo_id);
+  }
+
+  tentarEntrarSala();
+});
+
+socket.on("connect_error", (err) => {
+  autenticado = false;
+  salaPronta = false;
+  console.error("❌ connect_error socket:", err.message, err);
+});
+
+// ===============================
+// ENTRAR NA SALA
+// ===============================
 
 function tentarEntrarSala() {
+
   if (!autenticado) return;
   if (!cliente_id || !modelo_id) return;
   if (salaPronta) return;
 
   salaPronta = true;
 
-  socket.emit("joinChat", { cliente_id, modelo_id });
-  socket.emit("getHistory", { cliente_id, modelo_id });
-
-  console.log("🟪 Sala cliente conectada");
-}
-
-socket.on("connect", () => {
-  autenticado = false;
-  salaPronta = false;
-  socket.emit("auth", { token });
-});
-
-socket.on("authOk", async () => {
-  if (autenticado) return;
-  autenticado = true;
-
-  socket.emit("loginCliente");
-
-  await carregarCliente();     // define cliente_id
-  await carregarInfoModelo(modelo_id);
-
-  tentarEntrarSala();
-});
-
-document.addEventListener("DOMContentLoaded", () => {
-  const params = new URLSearchParams(window.location.search);
-  modelo_id = Number(params.get("modelo_id"));
-
-  if (!modelo_id) {
-    alert("Modelo inválida.");
-    return;
-  }
-
-  tentarEntrarSala();
-
-  const sendBtn = document.getElementById("sendBtn");
-  const input   = document.getElementById("messageInput");
-
-  if (sendBtn) {
-    sendBtn.onclick = enviarMensagem;
-  }
-
-  if (input) {
-    input.addEventListener("keydown", e => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        enviarMensagem();
-      }
-    });
-  }
-
-document.addEventListener("click", (e) => {
-  const btn = e.target.closest(".btn-desbloquear");
-  if (btn) {
-    e.stopPropagation(); // impede duplicação
-    const preco = btn.dataset.preco;
-    const messageId = btn.dataset.messageId;
-    abrirPagamentoChat(preco, messageId);
-    return;
-  }
-
-  const card = e.target.closest(".chat-conteudo.bloqueado");
-  if (card) {
-    const preco = card.dataset.preco;
-    const messageId = card.dataset.id;
-    abrirPagamentoChat(preco, messageId);
-  }
-
-});
-
-document.addEventListener("click", e => {
-  if (
-    e.target.classList.contains("modal-backdrop") ||
-    e.target.classList.contains("modal-fechar")
-  ) {
-    fecharConteudo();
-  }
-});
-
-document.getElementById("confirmarPagamento").onclick = async () => {
-
-  const { error, paymentIntent } = await stripe.confirmPayment({
-    elements,
-    redirect: "if_required"
+  socket.emit("joinChat", {
+    cliente_id,
+    modelo_id
   });
 
-  if (error) {
-    alert(error.message);
-    return;
-  }
-
-  document.getElementById("paymentModal").classList.add("hidden");
-  document.getElementById("payment-element").innerHTML = "";
-
-  if (!pagamentoAtual?.message_id) return;
-
-  const conteudo_id = pagamentoAtual.message_id;
-
-};
-
-});
-
-function formatarTempo(timestamp) {
-  if (!timestamp || timestamp === "0") return "agora";
-
-  // aceita número OU string ISO
-  const time =
-    typeof timestamp === "number"
-      ? timestamp
-      : new Date(timestamp).getTime();
-
-  if (isNaN(time)) return "agora";
-
-  const diff = Date.now() - time;
-
-  const min = Math.floor(diff / 60000);
-  const h   = Math.floor(diff / 3600000);
-  const d   = Math.floor(diff / 86400000);
-
-  if (min < 1) return "agora";
-  if (min < 60) return `há ${min} min`;
-  if (h < 24) return `há ${h} h`;
-  if (d === 1) return "ontem";
-  return `há ${d} dias`;
-}
-
-
-// 📜 HISTÓRICO
-socket.on("chatHistory", mensagens => {
-  const chat = document.getElementById("chatBox");
-  if (!chat) return;
-
-  chat.innerHTML = "";
-
-  mensagens.forEach(m => {
-
-    // 🔓 marca como liberado
-    if (m.tipo === "conteudo") {
-      if (m.liberado === true || Number(m.preco) === 0){
-        conteudosLiberados.add(Number(m.id));
-      }
-    }
-
-    renderMensagem(m);
+  socket.emit("getHistory", {
+    cliente_id,
+    modelo_id,
+    offset: offsetMensagens,
+    limit: LIMIT_MENSAGENS
   });
 
-  // 🔥 força scroll para o final
-  requestAnimationFrame(() => {
-    chat.scrollTop = chat.scrollHeight;
-  });
-});
-
-// 💬 NOVA MENSAGEM
-socket.on("newMessage", msg => {
-if (
-  Number(msg.modelo_id) !== Number(modelo_id) ||
-  Number(msg.cliente_id) !== Number(cliente_id)
-) return;
-
-  renderMensagem(msg);
- if (msg.sender === "modelo") {
-    const status = document.getElementById("chatModeloStatus");
-    if (status) status.innerText = "online";
-  }
-
-  scrollParaFinal();
-});
-
-
-socket.on("conteudoVisto", async ({ message_id }) => {
-  const status = document.getElementById("pixStatus");
-
-if (status) {
-  status.innerText = "✅ Pagamento confirmado!";
-}
-
-  console.log("🔓 Conteúdo liberado:", message_id);
-  conteudosLiberados.add(Number(message_id));
-
-  fecharPopupPix();
-
-  const card = document.querySelector(`[data-id="${message_id}"]`);
-  if (!card) {
-  console.warn("Card não encontrado, forçando refresh do histórico");
-  socket.emit("getHistory", { cliente_id, modelo_id });
-  return;
-}
-
-  const res = await fetch(`/api/chat/conteudo/${message_id}`, {
-    headers: {
-      Authorization: "Bearer " + localStorage.getItem("token")
-    }
-  });
-
-  if (!res.ok) return;
-
-  const midias = await res.json();
-
-  card.classList.remove("bloqueado");
-  card.classList.add("livre");
-
-card.innerHTML = `
-  <div class="pacote-grid">
-    ${midias.map((m, index) => `
-  <div class="midia-item"
-       onclick="abrirConteudoSeguro(${message_id}, ${index})">
-    ${
-      m.tipo_media === "video"
-        ? `<video src="${m.url}" muted playsinline></video>`
-        : `<img src="${m.url}" />`
-    }
-  </div>
-`).join("")}
-
-  </div>
- `;
- const toast = document.getElementById("toastPagamento");
-
-if (toast) {
-  toast.classList.remove("hidden");
-
-  setTimeout(() => {
-    toast.classList.add("hidden");
-  }, 3000);
-}
-
-card.removeAttribute("data-preco");
-});
-
-socket.on("vipAtivado", () => {
-  fecharPopup();
-  atualizarPerfil();
-});
-
-socket.on("disconnect", (reason) => {
-  console.warn("🔴 Socket desconectado:", reason);
-});
-
-async function carregarCliente() {
-  const res = await fetch("/api/cliente/me", {
-    headers: { Authorization: "Bearer " + token }
-  });
-
-  if (!res.ok) return;
-
-  const data = await res.json();
-  cliente_id = data.cliente_id;
-
-  socket.emit("loginCliente", cliente_id);
-}
-
-function fecharPopupPix() {
-  const popup = document.getElementById("popupPix");
-  if (popup) popup.classList.add("hidden");
-  pagamentoAtual = {};
-  const cpf = document.getElementById("pixCpf");
-if (cpf) cpf.value = "";
 }
 
 // ===============================
-// FUNÇÕES
-function valorBRL(valor) {
-  return Number(valor).toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL"
-  });
+// DOM READY
+// ===============================
+
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    const res = await fetch("/api/cliente/me", {
+      headers: { Authorization: "Bearer " + token }
+    });
+
+    if (!res.ok) {
+      console.error("Erro ao buscar cliente");
+      return;
+    }
+
+    const cliente = await res.json();
+    cliente_id = cliente.cliente_id;
+
+    if (!cliente_id) {
+      console.error("cliente_id indefinido");
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    modelo_id = Number(params.get("modelo_id"));
+
+    if (!modelo_id) {
+      alert(t("chatc.invalid_model"));
+      return;
+    }
+
+    await carregarInfoModelo(modelo_id);
+    tentarEntrarSala();
+
+    const sendBtn = document.getElementById("sendBtn");
+    const input = document.getElementById("msgInput");
+
+    if (sendBtn) {
+      sendBtn.addEventListener("click", enviarMensagem);
+    }
+
+    if (input) {
+      input.addEventListener("keydown", e => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          enviarMensagem();
+        }
+      });
+    }
+
+if (typeof bindFormularioStripePagamento === "function") {
+  bindFormularioStripePagamento();
 }
 
-function abrirPagamentoChat(valor, conteudoId) {
+  } catch (err) {
+    console.error("Erro DOMContentLoaded:", err);
+  }
 
-  if (!valor || !conteudoId) {
-    alert("Erro: dados inválidos");
+});
+
+// ===============================
+// SCROLL HISTÓRICO
+// ===============================
+
+if (chatBox) {
+
+  chatBox.addEventListener("scroll", () => {
+
+    if (
+      historicoInicialCarregado &&
+      chatBox.scrollTop <= 100 &&
+      !carregandoHistorico
+    ) {
+      carregarMensagensAntigas();
+    }
+
+  });
+
+}
+
+// 👇 EVENTO GLOBAL DE CLIQUE (CAPTURE)
+document.addEventListener(
+  "click",
+  (e) => {
+    const card = e.target.closest(".chat-conteudo");
+    if (!card) return;
+
+    const grid = e.target.closest(".pacote-grid");
+    if (!grid) return;
+
+    const preco = Number(card.dataset.preco || 0);
+    const messageId = Number(card.dataset.id || 0);
+    const todasMidias = [...grid.querySelectorAll(".midia-item[data-index]")];
+
+    if (!todasMidias.length) return;
+
+    const pacoteTotalmenteLiberado =
+      preco === 0 ||
+      card.classList.contains("livre") ||
+      conteudosLiberados.has(messageId) ||
+      todasMidias.every(
+        (m) =>
+          m.classList.contains("midia-livre") ||
+          m.dataset.liberado === "true"
+      );
+
+    // se NÃO estiver 100% liberado, qualquer clique no pacote abre pagamento
+    if (preco > 0 && !pacoteTotalmenteLiberado) {
+      e.preventDefault();
+      e.stopPropagation();
+      abrirPagamentoChat(preco, messageId);
+      return;
+    }
+
+    // daqui para baixo: pacote 100% liberado
+    e.preventDefault();
+    e.stopPropagation();
+
+    // tenta primeiro pelo elemento
+    let midiaClicada = e.target.closest(".midia-item[data-index]");
+
+    // fallback: identifica pela posição do clique
+ if (!midiaClicada) {
+      const x = e.clientX;
+      const y = e.clientY;
+
+      midiaClicada = todasMidias.find((m) => {
+        const r = m.getBoundingClientRect();
+        const margem = 8; // tolerância pequena
+        return (
+          x >= r.left - margem &&
+          x <= r.right + margem &&
+          y >= r.top - margem &&
+          y <= r.bottom + margem
+        );
+      });
+    }
+    
+    if (!midiaClicada) {
+      const gridRect = grid.getBoundingClientRect();
+      const x = e.clientX;
+      const y = e.clientY;
+
+      const clicouDentroDoGrid =
+        x >= gridRect.left &&
+        x <= gridRect.right &&
+        y >= gridRect.top &&
+        y <= gridRect.bottom;
+
+      if (clicouDentroDoGrid) {
+        let menorDistancia = Infinity;
+
+        todasMidias.forEach((m) => {
+          const r = m.getBoundingClientRect();
+          const cx = r.left + r.width / 2;
+          const cy = r.top + r.height / 2;
+          const distancia = Math.hypot(x - cx, y - cy);
+
+          if (distancia < menorDistancia) {
+            menorDistancia = distancia;
+            midiaClicada = m;
+          }
+        });
+      }
+    }
+    if (!midiaClicada) return;
+
+    const index = Number(midiaClicada.dataset.index || 0);
+    abrirConteudo(messageId, index);
+  },
+  true
+);
+    
+
+// ===============================
+// HISTÓRICO
+// ===============================
+
+socket.on("chatHistory", mensagens => {
+
+  if (!chatBox || !Array.isArray(mensagens)) return;
+
+  const primeiraCarga = offsetMensagens === 0;
+
+  if (primeiraCarga) {
+
+    chatBox.innerHTML = "";
+    mensagensRenderizadas.clear();
+
+    mensagens.forEach(m => renderMensagem(m));
+
+    // 🔧 esperar DOM + imagens renderizarem
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        chatBox.scrollTop = chatBox.scrollHeight;
+      });
+    });
+
+  } else {
+
+    const alturaAntes = chatBox.scrollHeight;
+
+    mensagens.reverse().forEach(m => {
+
+      if (mensagensRenderizadas.has(m.id)) return;
+      mensagensRenderizadas.add(m.id);
+
+      const div = criarMensagemElemento(m);
+      chatBox.prepend(div);
+
+    });
+
+    requestAnimationFrame(() => {
+      const alturaDepois = chatBox.scrollHeight;
+      chatBox.scrollTop += (alturaDepois - alturaAntes);
+    });
+
+  }
+
+  offsetMensagens += mensagens.length;
+  historicoInicialCarregado = true;
+  carregandoHistorico = false;
+
+});
+
+// ===============================
+// NOVA MENSAGEM
+// ===============================
+
+socket.on("newMessage", msg => {
+
+  if (
+    Number(msg.modelo_id) !== Number(modelo_id) ||
+    Number(msg.cliente_id) !== Number(cliente_id)
+  ) return;
+
+  const temp = document.querySelector(`[data-id="${msg.tempId}"]`);
+
+  if (temp) {
+    temp.dataset.id = msg.id;
+    mensagensRenderizadas.add(msg.id);
     return;
   }
 
-  pagamentoAtual = {
-    conteudo_id: Number(conteudoId),
-    valor: Number(valor)
-  };
+  if (mensagensRenderizadas.has(msg.id)) return;
 
-  document
-    .getElementById("escolhaPagamento")
-    .classList.remove("hidden");
+  renderMensagem(msg);
+  scrollParaFinal();
+
+});
+
+// ===============================
+// ENVIAR MENSAGEM
+// ===============================
+function enviarMensagem(e){
+
+  if(e) e.preventDefault();
+
+  const campo = document.getElementById("msgInput");
+  if(!campo) return;
+
+  const text = campo.value.trim();
+  if(!text) return;
+
+  if(!socket.connected){
+    alert(t("chatc.connection_lost"));
+    return;
+  }
+
+  const tempId = "temp-" + Date.now();
+
+  renderMensagem({
+    id: tempId,
+    sender:"cliente",
+    text,
+    created_at:Date.now()
+  });
+
+  scrollParaFinal();
+
+  socket.emit(
+    "sendMessage",
+    {
+      cliente_id,
+      modelo_id,
+      text,
+      tempId
+    },
+    resposta => {
+
+      if(!resposta?.ok) return;
+
+      const el = document.querySelector(`[data-id="${tempId}"]`);
+      if(el) el.dataset.id = resposta.message_id;
+
+    }
+  );
+
+  campo.value = "";
+
 }
 
-function fecharEscolha() {
-  document
-    .getElementById("escolhaPagamento")
-    .classList.add("hidden");
+// ===============================
+// SCROLL
+// ===============================
+
+function scrollParaFinal(){
+  if(!chatBox) return;
+
+  requestAnimationFrame(()=>{
+    chatBox.scrollTop = chatBox.scrollHeight;
+  });
 }
 
-async function carregarInfoModelo(modelo_id) {
+// ===============================
+// CARREGAR HISTÓRICO ANTIGO
+// ===============================
+
+function carregarMensagensAntigas(){
+
+  if(carregandoHistorico) return;
+
+  carregandoHistorico = true;
+
+  socket.emit("getHistory",{
+    cliente_id,
+    modelo_id,
+    offset: offsetMensagens,
+    limit: LIMIT_MENSAGENS
+  });
+}
+
+socket.on("conteudoVisto", async ({ message_id, cliente_id: cid }) => {
+  console.log("📩 conteudoVisto recebido:", { message_id, cid, cliente_id });
+
+  if (!message_id) return;
+  if (cid != null && Number(cid) !== Number(cliente_id)) return;
+
+  const el = document.querySelector(`.chat-conteudo[data-id="${message_id}"]`);
+  if (!el) return;
+
   try {
-    const res = await fetch(`/api/modelo/chat/${modelo_id}`, {
+    const res = await fetch(`/api/chat/conteudo/${message_id}`, {
       headers: {
         Authorization: "Bearer " + token
       }
@@ -342,52 +438,467 @@ async function carregarInfoModelo(modelo_id) {
 
     if (!res.ok) return;
 
-    const modelo = await res.json();
+    const midias = await res.json();
 
-    const avatar = document.getElementById("chatModeloAvatar");
-    const nome   = document.getElementById("chatModeloNome");
-    const status = document.getElementById("chatModeloStatus");
+    const todasLiberadas = midias.every(m => m.liberado !== false);
 
-   if (avatar) {
-  avatar.style.cursor = "pointer";
+    el.classList.remove("bloqueado");
 
-   if (modelo.avatar) {
-    avatar.src = modelo.avatar; 
-  } else {
-    avatar.src = "/assets/avatar.png";
-  }
-
-  avatar.addEventListener("click", () => {
-    if (modelo.avatar) {
-      abrirPreviewAvatar(modelo.avatar);
+    if (todasLiberadas) {
+      el.classList.add("livre");
+      conteudosLiberados.add(Number(message_id));
     }
-  });
+
+    el.innerHTML = `
+      <div class="pacote-grid">
+        ${midias.map((m, index) => {
+          const liberado = m.liberado !== false;
+
+          return `
+            <div class="midia-item ${liberado ? "midia-livre" : "midia-bloqueada"}"
+                 data-index="${index}"
+                 data-liberado="${liberado ? "true" : "false"}">
+              ${
+                liberado
+                  ? (
+                      m.tipo_media === "video"
+                        ? `<video src="${m.url}" muted playsinline></video>`
+                        : `<img src="${m.url}">`
+                    )
+                  : `
+                    <div class="midia-preview" style="background-image:url('${m.thumbnail_url || m.url}')"></div>
+                  `
+              }
+            </div>
+          `;
+        }).join("")}
+      </div>
+    `;
+  } catch (err) {
+    console.error("Erro liberar conteúdo:", err);
+  }
+});
+
+
+// ===============================
+// FORMATAR HORA
+// ===============================
+function formatarTempo(timestamp) {
+  if (!timestamp || timestamp === "0") return t("chatc.time_now");
+
+  // aceita número OU string ISO
+  const time =
+    typeof timestamp === "number"
+      ? timestamp
+      : new Date(timestamp).getTime();
+
+  if (isNaN(time)) return t("chatc.time_now");
+
+  const diff = Date.now() - time;
+
+  const min = Math.floor(diff / 60000);
+  const h   = Math.floor(diff / 3600000);
+  const d   = Math.floor(diff / 86400000);
+
+  if (min < 1) return t("chatc.time_now");
+  if (min < 60) return t("chatc.time_minutes").replace("{n}", min);
+  if (h < 24) return t("chatc.time_hours").replace("{n}", h);
+  if (d === 1) return t("chatc.time_yesterday");
+  return t("chatc.time_days").replace("{n}", d);
 }
 
-    if (nome) {
-      nome.innerText = modelo.nome_exibicao || "Modelo";
+
+// ===============================
+// RENDER MENSAGEM
+// ===============================
+
+function renderMensagem(msg){
+
+  if (!chatBox) return;
+
+  // evitar duplicação
+  if (mensagensRenderizadas.has(msg.id)) return;
+  mensagensRenderizadas.add(msg.id);
+
+  const div = document.createElement("div");
+
+  div.className =
+    msg.sender === "modelo"
+      ? "msg msg-modelo"
+      : "msg msg-cliente";
+
+  div.dataset.id = msg.id;
+
+  // ===============================
+  // 📦 MENSAGEM DE CONTEÚDO
+  // ===============================
+if (msg.tipo === "conteudo" || msg.tipo === "conteudo_ppv_mass") {
+  const quantidade =
+    msg.quantidade ?? (msg.midias?.length || 0);
+
+const cardLiberado =
+  Number(msg.preco) === 0 ||
+  msg.liberado === true;
+
+ div.innerHTML = `
+  <div class="msg-conteudo-wrap ${
+        msg.sender === "modelo" ? "lado-modelo" : "lado-cliente"
+  }">
+
+<div class="chat-conteudo premium ${
+  cardLiberado ? "visto" : (msg.preco > 0 ? "bloqueado" : "")
+}" data-id="${msg.id}" data-preco="${msg.preco || 0}">
+
+  <div class="pacote-grid">
+    ${(msg.midias || []).map((m, index) => {
+      const midiaLiberada =
+        Number(msg.preco) === 0 ||
+        m.liberado === true ||
+        cardLiberado;
+
+      return `
+ <div class="midia-item lazy-midia ${
+          midiaLiberada ? "midia-livre" : "midia-bloqueada"
+        }"
+          data-thumb="${m.thumbnail_url || m.url}"
+          data-full="${m.url}"
+          data-index="${index}"
+          data-conteudo-id="${m.conteudo_id || ""}"
+          data-ja-possuia="${m.ja_possuia === true ? "true" : "false"}"
+          data-liberado="${midiaLiberada ? "true" : "false"}"
+          style="background-image:url('${m.thumbnail_url || m.url}')">
+        </div>
+      `;
+    }).join("")}
+  </div>
+
+  ${
+    msg.preco > 0
+      ? `
+      <div class="conteudo-info">
+        <span class="status-bloqueado">
+          ${
+            msg.liberado
+              ? `🟢 ${quantidade} mídia(s)`
+              : msg.tem_parcial_liberado
+                ? `✨ ${quantidade} mídia(s) · parcial`
+                : `✨ ${quantidade} mídia(s)`
+          }
+        </span>
+
+        <span class="preco-bloqueado">
+          R$ ${Number(msg.preco).toFixed(2)}
+        </span>
+      </div>
+    `
+      : ""
+  }
+
+</div>
+</div>
+`;
+
+    const bloqueadoTotal =
+      Number(msg.preco) > 0 &&
+      msg.liberado !== true &&
+      !msg.tem_parcial_liberado;
+
+    ativarLazyLoadingModelo(div, msg, bloqueadoTotal);
+}
+
+  // ===============================
+  // 💬 MENSAGEM DE TEXTO
+  // ===============================
+  else {
+
+    div.innerHTML = `
+<div class="msg-texto">${msg.text}</div>
+
+${msg.sender === "modelo" ? `
+  <button
+    class="msg-menu"
+    data-id="${msg.id}"
+    data-text="${encodeURIComponent(msg.text || "")}">
+    ⋮
+  </button>
+` : ""}
+
+<span class="msg-hora">
+  ${formatarTempo(msg.created_at)}
+</span>
+`;
+
+    const btn = div.querySelector(".msg-menu");
+
+    if (btn) {
+
+      btn.addEventListener("click", () => {
+
+        abrirMenuMensagem(
+          btn.dataset.id,
+          decodeURIComponent(btn.dataset.text)
+        );
+
+      });
+
     }
 
-        if (status) {
-      if (modelo.last_seen) {
-        status.innerText = `visto por último: ${formatarTempo(modelo.last_seen)}`;
-      } else {
-        status.innerText = "visto por último: agora";
+  }
+
+  chatBox.appendChild(div);
+
+}
+
+// // ===============================
+// // ABRIR CONTEÚDO
+// // ===============================
+
+async function abrirConteudo(message_id, index = 0) {
+  try {
+    const res = await fetch(`/api/chat/conteudo/${message_id}`, {
+      headers: { Authorization: "Bearer " + token }
+    });
+
+    if (!res.ok) {
+      alert(t("chatc.error_load_media"));
+      return;
+    }
+
+    const midias = await res.json();
+    const midia = midias[index];
+
+    if (!midia) return;
+
+    if (midia.liberado === false) {
+      const card = document.querySelector(`.chat-conteudo[data-id="${message_id}"]`);
+      const preco = Number(card?.dataset.preco || 0);
+
+      if (preco > 0) {
+        abrirPagamentoChat(preco, message_id);
       }
+      return;
+    }
+
+    if (!midia.url) {
+      console.warn("Mídia sem URL:", { message_id, index, midia });
+      return;
+    }
+
+    abrirModalMidia(midia.url);
+    marcarConteudoVisto(message_id);
+
+  } catch (err) {
+    console.error("Erro ao abrir conteúdo:", err);
+  }
+}
+
+// ===============================
+// PAGAMENTO CHAT
+// ===============================
+
+function abrirPagamentoChat(valor, conteudoId) {
+  if (!valor || !conteudoId) {
+    alert(t("chatc.error_invalid_data"));
+    return;
+  }
+
+  const conteudo_id = Number(conteudoId);
+  const preco = Number(valor);
+
+  // mantém compatibilidade com qualquer trecho antigo do chat
+  chatPagamentoAtual = {
+    conteudo_id,
+    valor: preco
+  };
+
+  // alimenta o fluxo novo do pag.js
+  window.PAGAMENTO_TIPO_ATUAL = "midia";
+  window.MIDIA_VENDA_ATUAL = {
+    conteudo_id,
+    preco,
+    descricao: ""
+  };
+
+  // sincroniza também o objeto global que o pag.js usa
+  window.pagamentoAtual = {
+    tipo: "midia",
+    conteudo_id,
+    valor: preco,
+    preco
+  };
+
+  // se o modal antigo estiver aberto por qualquer motivo, fecha
+  document.getElementById("escolhaPagamento")?.classList.add("hidden");
+  document.getElementById("paymentModal")?.classList.add("hidden");
+
+  if (typeof abrirPopupPagamento !== "function") {
+    console.error("abrirPopupPagamento não está disponível.");
+    alert(t("chatc.error_open_payment"));
+    return;
+  }
+
+  abrirPopupPagamento();
+}
+
+async function carregarInfoModelo(modelo_id) {
+  try {
+    await fetch(`/api/chat/cliente/marcar-lido/${modelo_id}`, {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
+
+    const res = await fetch(`/api/modelo/chat/${modelo_id}`, {
+      headers: { Authorization: "Bearer " + token }
+    });
+
+    if (!res.ok) {
+      console.warn("Erro ao carregar modelo");
+      return;
+    }
+
+    const modelo = await res.json();
+
+    const nome = document.getElementById("chatModeloNome");
+    if (nome) nome.innerText = modelo.nome_exibicao || modelo.nome || t("chatc.model_name_placeholder");
+
+    const avatar = document.getElementById("chatModeloAvatar");
+    if (avatar) {
+      if (modelo.avatar_url) {
+        avatar.src = modelo.avatar_url;
+      }
+
+      avatar.style.cursor = "pointer";
+      avatar.onclick = () => {
+        if (modelo.avatar_url) abrirPreviewAvatar(modelo.avatar_url);
+      };
+    }
+
+    const status = document.getElementById("chatModeloStatus");
+    if (status) {
+      status.innerText = modelo.last_seen
+        ? t("chatc.last_seen").replace("{time}", formatarTempo(modelo.last_seen))
+        : t("chatc.last_seen").replace("{time}", t("chatc.time_now"));
     }
 
   } catch (err) {
-    console.error("Erro carregar modelo:", err);
+    console.error("Erro carregarInfoModelo:", err);
   }
 }
 
+function fecharEscolha() {
+  document
+.getElementById("escolhaPagamento")
+    .classList.add("hidden");
+}
+
+function fecharModalMidia(){
+
+  const modal  = document.getElementById("modalMidia");
+  const video  = document.getElementById("modalVideo");
+  const iframe = document.getElementById("modalIframe");
+
+  if(video){
+    video.pause();
+    video.src = "";
+  }
+
+  if(iframe){
+    iframe.src = "";
+  }
+
+  modal.classList.add("hidden");
+}
+
+
+function abrirMidia(midia) {
+  if (!midia) return;
+
+  const src = midia.dataset.full || midia.dataset.src || midia.dataset.thumb;
+  if (!src) return;
+
+  abrirModalMidia(src);
+
+  const conteudo = midia.closest(".chat-conteudo");
+  if (!conteudo) return;
+
+  const message_id = Number(conteudo.dataset.id);
+
+  if (message_id && socket) {
+    socket.emit("marcarConteudoVisto", {
+      message_id,
+      cliente_id,
+      modelo_id
+    });
+  }
+}
+
+function abrirModalMidia(src) {
+  const modal  = document.getElementById("modalMidia");
+  const img    = document.getElementById("modalImg");
+  const video  = document.getElementById("modalVideo");
+  const iframe = document.getElementById("modalIframe");
+
+  if (!modal || !src) return;
+
+  modal.classList.remove("hidden");
+
+  // reset de tudo
+  if (img) {
+    img.style.display = "none";
+    img.removeAttribute("src");
+  }
+
+  if (video) {
+    video.pause();
+    video.removeAttribute("src");
+    video.style.display = "none";
+    video.load();
+  }
+
+  if (iframe) {
+    iframe.removeAttribute("src");
+    iframe.style.display = "none";
+  }
+
+  if (src.includes("iframe.videodelivery.net")) {
+    if (iframe) {
+      iframe.src = src;
+      iframe.style.display = "block";
+    }
+    return;
+  }
+
+  if (
+    src.includes(".mp4") ||
+    src.includes(".webm") ||
+    src.includes(".mov")
+  ) {
+    if (video) {
+      video.src = src;
+      video.style.display = "block";
+      video.play().catch(() => {});
+    }
+    return;
+  }
+
+  if (img) {
+    img.src = src;
+    img.style.display = "block";
+  }
+}
+
+
 function abrirPreviewAvatar(url) {
+  if (!url || typeof url !== "string") return;
+
   let modal = document.getElementById("avatarPreviewModal");
 
   if (!modal) {
     modal = document.createElement("div");
     modal.id = "avatarPreviewModal";
-    modal.className = "preview-modal open";
+    modal.className = "preview-modal";
 
     modal.innerHTML = `
       <div class="preview-backdrop"></div>
@@ -399,545 +910,374 @@ function abrirPreviewAvatar(url) {
 
     document.body.appendChild(modal);
 
-    const fechar = () => modal.remove();
+    const fechar = () => {
+      modal.classList.remove("open");
+      setTimeout(() => modal.remove(), 200);
+      document.removeEventListener("keydown", escListener);
+    };
+
+    const escListener = (e) => {
+      if (e.key === "Escape") fechar();
+    };
+
     modal.querySelector(".preview-backdrop").onclick = fechar;
     modal.querySelector(".preview-close").onclick = fechar;
+
+    document.addEventListener("keydown", escListener);
   }
 
   const img = modal.querySelector("#avatarPreviewImg");
-  img.src = url;
 
-  modal.classList.add("open");
-}
-
-function enviarMensagem() {
-  const input = document.getElementById("messageInput");
-  const text = input?.value.trim();
-  if (!text) return;
-
-  socket.emit("sendMessage", {
-    cliente_id,
-    modelo_id,
-    text
-  });
-
-  input.value = "";
-}
-
-
-function renderMensagem(msg) {
-  const chat = document.getElementById("chatBox");
-  if (!chat) return;
-
-  const div = document.createElement("div");
-  div.className =
-    msg.sender === "modelo"
-      ? "msg modelo"
-      : "msg cliente";
-
-  /* ✉️ TEXTO */
-  if (msg.tipo === "texto") {
-    div.innerText = msg.text;
-  }
-
-  /* 📦 CONTEÚDO */
-  else if (msg.tipo === "conteudo") {
-
-   const liberado =
-  msg.liberado === true ||
-  Number(msg.preco) === 0;
-
-    /* ===========================
-       🔓 CONTEÚDO LIBERADO
-    ============================ */
-    if (liberado) {
-
-      div.innerHTML = `
-        <div class="chat-conteudo livre premium"
-             data-id="${msg.id}"
-             data-qtd="${msg.quantidade ?? msg.midias.length}">
-          <div class="pacote-grid">
-            ${msg.midias.map((m, index) => `
-              <div class="midia-item lazy-midia"
-                   data-full="${m.url}"
-                   data-thumb="${m.thumbnail_url || m.url}"
-                   data-index="${index}"
-                   data-message-id="${msg.id}">
-                   
-                   <div class="midia-placeholder"></div>
-
-              </div>
-            `).join("")}
-          </div>
-        </div>
-      `;
-
-    }
-
-    /* ===========================
-       🔒 CONTEÚDO BLOQUEADO
-    ============================ */
-    else {
-
-      div.innerHTML = `
-        <div class="chat-conteudo bloqueado premium"
-             data-id="${msg.id}"
-             data-preco="${msg.preco}"
-             data-qtd="${msg.quantidade ?? 1}">
-
-          <div class="pacote-grid">
-            ${Array(msg.quantidade ?? 1).fill("").map(() =>
-              `<div class="midia-item placeholder"></div>`
-            ).join("")}
-          </div>
-
-          <div class="conteudo-info">
-            <span class="status-bloqueado">
-              ${msg.quantidade ?? 1} mídia(s)
-            </span>
-
-            <span class="preco-bloqueado">
-              R$ ${Number(msg.preco).toFixed(2)}
-            </span>
-
-            <button class="btn-desbloquear"
-              data-preco="${msg.preco}"
-              data-message-id="${msg.id}">
-              Desbloquear
-            </button>
-          </div>
-        </div>
-      `;
-    }
-  }
-
-  chat.appendChild(div);
-
-  // 🔥 Ativar lazy loading somente se liberado
-if (msg.tipo === "conteudo" && 
-    (msg.liberado === true || 
-     conteudosLiberados.has(Number(msg.id)))) {
-
-  ativarLazyLoading(div, msg);
-}
-  chat.scrollTop = chat.scrollHeight;
-}
-
-function scrollParaFinal() {
-  const chat = document.getElementById("chatBox");
-  if (!chat) return;
-
-  requestAnimationFrame(() => {
-    chat.scrollTop = chat.scrollHeight;
-  });
-}
-
-async function abrirConteudoSeguro(message_id, index = 0) {
-
-  const modal = document.getElementById("modalConteudo");
-  const midiaBox = document.getElementById("modalMidia");
-
-  if (!modal || !midiaBox) {
-    console.error("❌ Modal não encontrado");
-    return;
-  }
-
-  modal.classList.remove("hidden");
-  midiaBox.innerHTML = "<p>Carregando...</p>";
-
-  try {
-
-    const res = await fetch(`/api/chat/conteudo/${message_id}`, {
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token")
-      }
-    });
-
-    if (!res.ok) {
-      midiaBox.innerHTML = "<p>Acesso não autorizado.</p>";
-      return;
-    }
-
-    const midias = await res.json();
-    const midia = midias[index];
-
-    if (!midia) {
-      midiaBox.innerHTML = "<p>Erro ao abrir mídia.</p>";
-      return;
-    }
-
-    // 🔓 só marca como liberado DEPOIS de validar backend
-    conteudosLiberados.add(Number(message_id));
-
-    socket.emit("marcarConteudoVisto", {
-      message_id,
-      cliente_id,
-      modelo_id
-    });
-
-    midiaBox.innerHTML =
-      (midia.tipo_media || midia.tipo) === "video"
-        ? `<video src="${midia.url}" controls autoplay></video>`
-        : `<img src="${midia.url}" />`;
-
-  } catch (err) {
-    console.error("Erro abrir conteúdo:", err);
-    midiaBox.innerHTML = "<p>Erro inesperado.</p>";
-  }
-}
-
-function fecharConteudo() {
-  const modal = document.getElementById("modalConteudo");
-  const midia = document.getElementById("modalMidia");
-
-  modal.classList.add("hidden");
-  midia.innerHTML = "";
-}
-
-
-function pagarComPix() {
-
-  document
-    .getElementById("escolhaPagamento")
-    .classList.add("hidden");
-
-  if (!pagamentoAtual?.conteudo_id || !pagamentoAtual?.valor) {
-    alert("Conteúdo inválido");
-    return;
-  }
-
-  abrirPixConteudo(
-    pagamentoAtual.conteudo_id,
-    pagamentoAtual.valor
-  );
-}
-
-function abrirPixConteudo(conteudo_id, preco) {
-
-  if (!conteudo_id || Number(preco) <= 0) {
-    alert("Conteúdo inválido");
-    return;
-  }
-
-  pagamentoAtual = {
-    conteudo_id: Number(conteudo_id),
-    valor: Number(preco)
+  //Evita mostrar imagem quebrada
+  img.onerror = () => {
+    console.warn("Erro ao carregar avatar preview");
+    modal.remove();
   };
 
-  const taxaTransacao  = Number((preco * 0.10).toFixed(2));
-  const taxaPlataforma = Number((preco * 0.05).toFixed(2));
-  const valorTotal     = Number(
-    (preco + taxaTransacao + taxaPlataforma).toFixed(2)
-  );
+  img.src = url;
 
-  document.getElementById("pixValorBase").innerText =
-    valorBRL(preco);
-  document.getElementById("pixTaxaTransacao").innerText =
-    valorBRL(taxaTransacao);
-  document.getElementById("pixTaxaPlataforma").innerText =
-    valorBRL(taxaPlataforma);
-  document.getElementById("pixValorTotal").innerText =
-    valorBRL(valorTotal);
-
-  document.getElementById("popupPix")
-    .classList.remove("hidden");
+  // 🔥 Abrir
+  requestAnimationFrame(() => {
+    modal.classList.add("open");
+  });
 }
 
-async function gerarPix() {
+function ativarLazyLoadingModelo(div){
 
-  if (!pagamentoAtual || !pagamentoAtual.conteudo_id) {
-    alert("Conteúdo inválido.");
-    return;
-  }
+  const midias = div.querySelectorAll(".lazy-midia");
 
-  const cpfInput = document.getElementById("pixCpf");
-  if (!cpfInput) {
-    alert("Campo CPF não encontrado.");
-    return;
-  }
-
-  const cpfLimpo = cpfInput.value.replace(/\D/g, "");
-
-  if (cpfLimpo.length !== 11) {
-    alert("Digite um CPF válido.");
-    return;
-  }
-
-  const conteudo_id = Number(pagamentoAtual.conteudo_id);
-
-  const fingerprint = btoa(
-    navigator.userAgent + navigator.language + screen.width
-  );
-
-  try {
-
-    const res = await fetch("/api/pagamento/midia/pix", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + localStorage.getItem("token")
-      },
-      body: JSON.stringify({
-        conteudo_id,
-        aceitou_termos: true,
-        fingerprint,
-        cpf: cpfLimpo  
-      })
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      alert(data.error || "Erro ao gerar PIX");
-      return;
-    }
-
-    const imgQr = document.getElementById("pixQr");
-    const inputCopia = document.getElementById("pixCopia");
-
-    if (!imgQr || !inputCopia) {
-      console.error("Elementos do Pix não encontrados no HTML");
-      return;
-    }
-
-    if (data.qr_code_url) {
-      imgQr.src = data.qr_code_url;
-      imgQr.classList.remove("hidden");
-    }
-
-    if (data.copia_cola) {
-      inputCopia.value = data.copia_cola;
-    }
-
-  } catch (err) {
-    console.error("Erro Pix:", err);
-    alert("Erro inesperado no Pix");
-  }
-}
-
-async function pagarComCartao() {
-
-  if (pagamentoEmProcesso) return;
-  pagamentoEmProcesso = true;
-
-  document
-    .getElementById("escolhaPagamento")
-    .classList.add("hidden");
-
-  if (!pagamentoAtual?.conteudo_id) {
-    alert("Conteúdo inválido");
-    pagamentoEmProcesso = false;
-    return;
-  }
-
-  const conteudo_id = Number(pagamentoAtual.conteudo_id);
-
-  try {
-
-    const res = await fetch(
-      "/api/pagamento/midia/cartao",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization:
-            "Bearer " + localStorage.getItem("token")
-        },
-        body: JSON.stringify({ conteudo_id })
-      }
-    );
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      alert(data.error || "Erro no pagamento");
-      pagamentoEmProcesso = false;
-      return;
-    }
-
-document.getElementById("cartaoValorConteudo")
-  .innerText = valorBRL(data.valorBase);
-
-document.getElementById("cartaoTaxaTransacao")
-  .innerText = valorBRL(data.taxaTransacao);
-
-document.getElementById("cartaoTaxaPlataforma")
-  .innerText = valorBRL(data.taxaPlataforma);
-
-document.getElementById("cartaoValorTotal")
-  .innerText = valorBRL(data.total);
-
-    elements = stripe.elements({
-      clientSecret: data.clientSecret
-    });
-
-    const paymentElement =
-      elements.create("payment");
-
-    paymentElement.mount("#payment-element");
-
-    document.getElementById("paymentModal")
-      .classList.remove("hidden");
-
-  } catch (err) {
-    console.error("Erro cartão:", err);
-    alert("Erro inesperado");
-  }
-
-  pagamentoEmProcesso = false;
-}
-
-function fecharPagamento() {
-
-  const modal = document.getElementById("paymentModal");
-  if (modal) modal.classList.add("hidden");
-
-  if (elements) {
-    try {
-      elements = null;
-    } catch (err) {
-      console.warn("Erro limpando Stripe Elements:", err);
-    }
-  }
-
-  const el = document.getElementById("payment-element");
-  if (el) el.innerHTML = "";
-}
-
-async function copiarPix() {
-  const input = document.getElementById("pixCopia");
-
-  if (!input || !input.value) {
-    mostrarToast("Código Pix indisponível");
-    return;
-  }
-
-  try {
-
-    // método moderno
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(input.value);
-    } else {
-      // fallback seguro
-      const textarea = document.createElement("textarea");
-      textarea.value = input.value;
-      textarea.style.position = "fixed";
-      textarea.style.opacity = "0";
-      document.body.appendChild(textarea);
-      textarea.focus();
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-    }
-
-    mostrarToast("Código Pix copiado!");
-
-  } catch (err) {
-    console.error("Erro copiar Pix:", err);
-    mostrarToast("Não foi possível copiar");
-  }
-}
-
-function mostrarToast(texto) {
-
-  let toast = document.getElementById("toastPix");
-
-  if (!toast) {
-    toast = document.createElement("div");
-    toast.id = "toastPix";
-    toast.style.position = "fixed";
-    toast.style.bottom = "30px";
-    toast.style.left = "50%";
-    toast.style.transform = "translateX(-50%)";
-    toast.style.background = "#7b2cff";
-    toast.style.color = "#fff";
-    toast.style.padding = "12px 22px";
-    toast.style.borderRadius = "30px";
-    toast.style.fontWeight = "600";
-    toast.style.boxShadow = "0 8px 25px rgba(0,0,0,0.3)";
-    toast.style.zIndex = "999999";
-    toast.style.fontSize = "14px";
-    toast.style.transition = "opacity .3s ease, transform .3s ease";
-    document.body.appendChild(toast);
-  }
-
-  toast.innerText = texto;
-
-  toast.style.opacity = "1";
-  toast.style.transform = "translateX(-50%) translateY(0)";
-
-  setTimeout(() => {
-    toast.style.opacity = "0";
-    toast.style.transform = "translateX(-50%) translateY(10px)";
-  }, 2500);
-}
-
-//OTIMIZACAO CHAT
-const observerMidia = new IntersectionObserver((entries) => {
-
-  entries.forEach(entry => {
-
-    if (!entry.isIntersecting) return;
-
-    const el = entry.target;
+  midias.forEach(el => {
 
     const thumb = el.dataset.thumb;
-    if (!thumb) return;
+    if(!thumb) return;
 
     const img = document.createElement("img");
+
     img.src = thumb;
     img.loading = "lazy";
     img.decoding = "async";
-    img.style.width = "100%";
-    img.style.height = "100%";
-    img.style.objectFit = "cover";
+    img.className = "midia-thumb";
+    img.style.pointerEvents = "none";
 
     el.innerHTML = "";
     el.appendChild(img);
 
-    observerMidia.unobserve(el);
-
   });
 
-}, {
-  root: document.getElementById("chatBox"),
-  threshold: 0.1
-});
+}
 
-function ativarLazyLoading(container, msg) {
+function formatarHora(data) {
+  if (!data) return "";
 
-  const midias = container.querySelectorAll(".lazy-midia");
+  const d = new Date(data);
+  return d.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
 
-  midias.forEach(el => {
+function abrirPreviewMidia({ url }){
 
-    observerMidia.observe(el);
+  if(!url) return;
 
-    el.addEventListener("click", () => {
+  abrirModalMidia(url);
 
-      const index = Number(el.dataset.index);
-      abrirConteudoSeguro(msg.id, index);
+}
 
+function criarMensagemElemento(msg){
+
+  const div = document.createElement("div");
+
+  div.className =
+    msg.sender === "modelo"
+      ? "msg msg-modelo"
+      : "msg msg-cliente";
+
+  div.dataset.id = msg.id;
+
+if (msg.tipo === "conteudo" || msg.tipo === "conteudo_ppv_mass") {
+  const quantidade =
+    msg.quantidade ?? (msg.midias?.length || 0);
+
+const cardLiberado =
+  Number(msg.preco) === 0 ||
+  msg.liberado === true;
+
+div.innerHTML = `
+  <div class="msg-conteudo-wrap ${
+    msg.sender === "modelo" ? "lado-modelo" : "lado-cliente"
+  }">
+<div class="chat-conteudo premium ${
+  cardLiberado ? "visto" : (msg.preco > 0 ? "bloqueado" : "")
+}" data-id="${msg.id}" data-preco="${msg.preco || 0}">
+
+  <div class="pacote-grid">
+    ${(msg.midias || []).map((m, index) => {
+      const midiaLiberada =
+        Number(msg.preco) === 0 ||
+        m.liberado === true ||
+        cardLiberado;
+
+      return `
+       <div class="midia-item lazy-midia ${
+  midiaLiberada ? "midia-livre" : "midia-bloqueada"
+}"
+  data-thumb="${m.thumbnail_url || m.url}"
+  data-full="${m.url}"
+  data-index="${index}"
+  data-conteudo-id="${m.conteudo_id || ""}"
+  data-ja-possuia="${m.ja_possuia === true ? "true" : "false"}"
+  data-liberado="${midiaLiberada ? "true" : "false"}">
+</div>
+      `;
+    }).join("")}
+  </div>
+
+  ${
+    msg.preco > 0
+      ? `
+      <div class="conteudo-info">
+        <span class="status-bloqueado">
+          ${
+            msg.liberado
+              ? `🟢 ${quantidade} mídia(s)`
+              : msg.tem_parcial_liberado
+                ? `✨ ${quantidade} mídia(s) · parcial`
+                : `✨ ${quantidade} mídia(s)`
+          }
+        </span>
+
+        <span class="preco-bloqueado">
+          R$ ${Number(msg.preco).toFixed(2)}
+        </span>
+      </div>
+      `
+      : ""
+  }
+</div>
+
+<div class="msg-meta">
+  <span class="msg-hora">${formatarTempo(msg.created_at)}</span>
+</div>
+</div>
+`;
+}
+
+  return div;
+
+}
+
+function valorBRLChat(valor) {
+  return Number(valor).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  });
+}
+
+async function liberarConteudo(messageId) {
+  if (!messageId) return;
+
+  console.log("Conteúdo confirmado pelo backend:", messageId);
+
+  const el = document.querySelector(`.chat-conteudo[data-id="${messageId}"]`);
+  if (!el) return;
+
+  try {
+    const res = await fetch(`/api/chat/conteudo/${messageId}`, {
+      headers: {
+        Authorization: "Bearer " + token
+      }
     });
 
+    if (!res.ok) return;
+
+    const midias = await res.json();
+    const todasLiberadas = midias.every(m => m.liberado !== false);
+
+    // marca estado do card
+    el.classList.remove("bloqueado");
+    el.classList.remove("visto");
+
+    if (todasLiberadas) {
+      conteudosLiberados.add(Number(messageId));
+      el.classList.add("livre");
+    } else {
+      el.classList.remove("livre");
+    }
+
+    const precoAtual = Number(el.dataset.preco || 0);
+    const quantidade = midias.length || 0;
+
+    el.innerHTML = `
+      <div class="pacote-grid">
+        ${midias.map((m, index) => {
+          const liberado = m.liberado !== false;
+
+          return `
+            <div
+              class="midia-item ${liberado ? "midia-livre" : "midia-bloqueada"}"
+              data-index="${index}"
+              data-full="${m.url || ""}"
+              data-thumb="${m.thumbnail_url || m.url || ""}"
+              data-liberado="${liberado ? "true" : "false"}"
+              style="${!liberado ? `background-image:url('${m.thumbnail_url || m.url || ""}')` : ""}"
+            >
+              ${
+                liberado
+                  ? (
+                      m.tipo_media === "video"
+                        ? `<video src="${m.url}" muted playsinline preload="metadata"></video>`
+                        : `<img src="${m.url}" alt="">`
+                    )
+                  : `
+                    <div class="midia-preview" style="background-image:url('${m.thumbnail_url || m.url || ""}')"></div>
+                    <div class="midia-lock">🔒</div>
+                  `
+              }
+            </div>
+          `;
+        }).join("")}
+      </div>
+
+      ${
+        precoAtual > 0
+          ? `
+            <div class="conteudo-info">
+              <span class="status-bloqueado">
+                ${todasLiberadas ? `🟢 ${quantidade} mídia(s)` : `✨ ${quantidade} mídia(s)`}
+              </span>
+              <span class="preco-bloqueado">
+                R$ ${precoAtual.toFixed(2)}
+              </span>
+            </div>
+          `
+          : ""
+      }
+    `;
+
+    if (todasLiberadas && midias.length > 0) {
+      setTimeout(() => {
+        abrirConteudo(messageId, 0);
+      }, 250);
+    }
+  } catch (err) {
+    console.error("Erro liberar conteúdo:", err);
+  }
+}
+
+async function marcarConteudoVisto(messageId){
+
+  await fetch("/api/conteudo/visto",{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      Authorization:"Bearer "+localStorage.getItem("token")
+    },
+    body:JSON.stringify({message_id:messageId})
   });
 }
 
-const inputCpf = document.getElementById("pixCpf");
+function resetarPixUI() {
+  pararPollingPagamento();
 
-if (inputCpf) {
-  inputCpf.addEventListener("input", (e) => {
-    let v = e.target.value.replace(/\D/g, "");
+  const imgQr = document.getElementById("pixQr");
+  if (imgQr) {
+    imgQr.src = "";
+    imgQr.classList.add("hidden");
+  }
 
-    if (v.length > 11) v = v.slice(0, 11);
+  const inputNovo = document.getElementById("pixCodigo");
+  if (inputNovo) inputNovo.value = "";
 
-    v = v.replace(/(\d{3})(\d)/, "$1.$2");
-    v = v.replace(/(\d{3})(\d)/, "$1.$2");
-    v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+  const inputAntigo = document.getElementById("pixCopia");
+  if (inputAntigo) inputAntigo.value = "";
 
-    e.target.value = v;
-  });
+  const statusPix = document.getElementById("pixStatus");
+  if (statusPix) {
+    statusPix.innerText = "";
+    statusPix.className = "pix-status aguardando";
+  }
+
+  if (chatPagamentoAtual) {
+    chatPagamentoAtual.orderId = null;
+    chatPagamentoAtual.payment_id = null;
+    chatPagamentoAtual.message_id = null;
+  }
 }
 
+window.finalizarPagamentoEAbrirMidia = async function (messageId) {
+  const popup = document.getElementById("popupPagamentoVelvet");
 
+  if (popup) {
+    popup.classList.add("hidden");
+    popup.style.display = "none";
+    popup.style.visibility = "hidden";
+    popup.style.pointerEvents = "none";
+  }
 
+  if (!messageId) return;
 
+  try {
+    // 1) atualiza o card no chat imediatamente
+    await liberarConteudo(messageId);
+
+    // 2) abre a primeira mídia já liberada
+    setTimeout(() => {
+      abrirConteudo(messageId, 0);
+    }, 150);
+
+  } catch (err) {
+    console.error("Erro ao finalizar pagamento e abrir mídia:", err);
+  }
+};
+
+function garantirToastPagamento() {
+  let el = document.getElementById("toastPagamento");
+
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "toastPagamento";
+    el.className = "toast-pagamento hidden";
+    document.body.appendChild(el);
+  }
+
+  return el;
+}
+
+function mostrarToastPagamento(texto, tipo = "info", autoHide = false) {
+  const el = garantirToastPagamento();
+
+  el.innerText = texto;
+  el.className = `toast-pagamento ${tipo}`;
+
+  if (autoHide) {
+    clearTimeout(el._hideTimer);
+    el._hideTimer = setTimeout(() => {
+      el.className = "toast-pagamento hidden";
+    }, 3500);
+  }
+}
+
+function esconderToastPagamento() {
+  const el = document.getElementById("toastPagamento");
+  if (!el) return;
+  el.className = "toast-pagamento hidden";
+}
+
+// apenas log
+socket.on("disconnect", reason => {
+  console.warn("🔴 Socket desconectado:", reason);
+
+});
+
+function mostrarMetodoPixChat() {
+  if (!validarDadosIniciaisPagamento()) return;
+
+  resetarEstadoCartao();
+  resetarEstadoPix();
+  irParaEtapaPagamento("pix");
+
+  setTimeout(() => {
+    document.getElementById("btnGerarPix")?.click();
+  }, 200);
+}
