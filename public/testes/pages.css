@@ -439,6 +439,7 @@ select {
   gap: 8px;
   margin: 20px 0;
   overflow-x: auto;
+  justify-content: center;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -586,7 +587,7 @@ select {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--input-bg);
+  background: #7b2cff21;
   border-radius: var(--radius-input);
   padding: 4px 12px;
 }
