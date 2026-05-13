@@ -34,7 +34,7 @@
 .perfil-avatar {
   position: absolute;
   top: 130px;
-  left: 30px;
+  left: 50px;
   bottom: -45px;
   width: 120px;
   height: 120px;
@@ -162,10 +162,11 @@ body {
     width: 220px;
     color: rgb(255, 255, 255);
     box-shadow: rgba(123, 44, 255, 0.25) 0px 8px 18px;
-    padding: 12px 28px;
+    padding: 12px 12px;
     border-radius: 999px;
     background: linear-gradient(135deg, rgb(158, 107, 255), rgb(123, 44, 255));
     transition: 0.3s;
+    text-decoration: none;
 }
 
 /* ===== TÍTULOS ===== */
@@ -305,6 +306,7 @@ label,
   color: var(--text);
   display: block;
   margin-bottom: 4px;
+  text-align: center;
 }
 
 /* Inputs, textareas, selects */
@@ -318,12 +320,13 @@ select {
   border-radius: var(--radius-input);
   padding: 12px 16px;
   font-size: 14px;
-  background: var(--input-bg);
+  background:#7b2cff21;
   color: var(--text);
   outline: none;
   transition: 0.2s ease;
   font-family: inherit;
   width: 100%;
+  text-align: center;
 }
 
 .form-group input:focus,
