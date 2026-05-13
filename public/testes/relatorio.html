@@ -31,7 +31,8 @@
     <section id="tab-ganhos" class="tab-content active">
       <h3 class="page-title" data-i18n="relatorio.titulo_ganhos">Meus Ganhos</h3>
 
-      <section class="cards-row">
+      <!-- Bloco: Hoje -->
+      <div class="cards-lista">
         <div class="card highlight">
           <span data-i18n="relatorio.hoje_midias">Hoje · Mídias</span>
           <strong id="hojeMidias">R$0.00</strong>
@@ -44,11 +45,12 @@
           <span data-i18n="relatorio.assinantes_hoje">Assinantes · Hoje</span>
           <strong id="assinantesHoje">0</strong>
         </div>
-      </section>
+      </div>
 
       <hr class="separator">
 
-      <section class="cards-row">
+      <!-- Bloco: Mês atual -->
+      <div class="cards-lista">
         <div class="card">
           <span data-i18n="relatorio.mes_midias">Mês atual · Mídias</span>
           <strong id="mesMidias">R$0.00</strong>
@@ -69,11 +71,18 @@
           <span data-i18n="relatorio.total_mes_anterior">Total do mês Anterior</span>
           <strong id="totalMesAnterior">R$0.00</strong>
         </div>
+      </div>
+
+      <hr class="separator">
+
+      <!-- Bloco: Total anual -->
+      <div class="cards-lista">
         <div class="card highlight">
           <span data-i18n="relatorio.total_ano">Total de 2026</span>
           <strong id="acumuladoAnterior">R$0.00</strong>
         </div>
-      </section>
+      </div>
+
     </section>
 
     <section id="tab-pagamentos" class="tab-content">

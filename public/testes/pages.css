@@ -618,43 +618,51 @@ select {
 }
 
 /* ===== CARDS (relatorio.html) ===== */
-.cards-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
-  margin-bottom: 24px;
-}
 
-.cards-row.single { grid-template-columns: 1fr; }
-
-.card {
-  background: var(--card-bg);
-  border-radius: 18px;
-  padding: 24px;
-  box-shadow: 0 8px 24px rgba(123, 44, 255, 0.07);
+/* lista vertical centralizada, um card por linha */
+.cards-lista {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.card {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  border-radius: 18px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   text-align: center;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+  /* roxo claro — texto roxo */
+  background: #ede5ff;
+  box-shadow: 0 4px 16px rgba(123, 44, 255, 0.10);
 }
 
 .card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(123, 44, 255, 0.12);
+  box-shadow: 0 8px 24px rgba(123, 44, 255, 0.16);
 }
 
-.card span { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+/* roxo claro: label e valor em roxo */
+.card span   { font-size: 13px; font-weight: 500; color: var(--primary); }
 .card strong { font-size: 22px; font-weight: 700; color: var(--primary); }
 
+/* roxo escuro — texto branco */
 .card.highlight {
-  background: linear-gradient(135deg, #cabcf3, #b79cff);
+  background: var(--primary-grad);
+  box-shadow: 0 6px 20px rgba(123, 44, 255, 0.30);
 }
 
-.card.highlight span  { color: rgba(30,30,38,0.75); }
-.card.highlight strong { color: var(--text); }
+.card.highlight span   { color: rgba(255, 255, 255, 0.85); }
+.card.highlight strong { color: #ffffff; }
 
-.card.total strong { font-size: 28px; color: var(--primary); }
+.card.total strong { font-size: 26px; }
 
 .page-title {
   display: block;
