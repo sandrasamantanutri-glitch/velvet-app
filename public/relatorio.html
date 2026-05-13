@@ -7,7 +7,7 @@
   <title>Meus Ganhos</title>
   <link rel="stylesheet" href="/header.css">
   <link rel="stylesheet" href="/relatorio.css">
-  <link rel="stylesheet" href="/area.css">
+  <link rel="stylesheet" href="/css/pages.css">
 
   <script src="/i18n.js"></script>
 </head>
@@ -16,7 +16,7 @@
 
   <div id="header-container"></div>
 
-  <section class="area-card">
+   <section class="area-card">
     <button
       type="button"
       class="btn-voltar"
@@ -26,69 +26,67 @@
     </button>
 
     <div class="tabs">
-      <button class="tab active" data-tab="ganhos" data-i18n="relatorio.tab_ganhos">Ganhos</button>
-      <button class="tab" data-tab="pagamentos" data-i18n="relatorio.tab_pagamentos">Pagamentos</button>
-      <button class="tab" data-tab="transacoes" data-i18n="relatorio.tab_transacoes">Transações</button>
-      <button class="tab" data-tab="dados-bancarios" data-i18n="relatorio.tab_dados_bancarios">Dados Bancários</button>
+      <button class="tab-btn active" data-tab="ganhos" data-i18n="relatorio.tab_ganhos">Ganhos</button>
+      <button class="tab-btn" data-tab="pagamentos" data-i18n="relatorio.tab_pagamentos">Pagamentos</button>
+      <button class="tab-btn" data-tab="transacoes" data-i18n="relatorio.tab_transacoes">Transações</button>
+      <button class="tab-btn" data-tab="dados-bancarios" data-i18n="relatorio.tab_dados_bancarios">Dados Bancários</button>
     </div>
 
     <section id="tab-ganhos" class="tab-content active">
-      <main class="container">
+      <h3 class="page-title" data-i18n="relatorio.titulo_ganhos">Meus Ganhos</h3>
 
-     <h3 class="page-title" data-i18n="relatorio.titulo_ganhos">Meus Ganhos</h3>
-        <section class="cards-row destaque">
-          <div class="card highlight">
-            <span data-i18n="relatorio.hoje_midias">Hoje · Mídias</span>
-            <strong id="hojeMidias">R$0.00</strong>
-          </div>
+      <!-- Bloco: Hoje -->
+      <div class="cards-lista">
+        <div class="card highlight">
+          <span data-i18n="relatorio.hoje_midias">Hoje · Mídias</span>
+          <strong id="hojeMidias">R$0.00</strong>
+        </div>
+        <div class="card">
+          <span data-i18n="relatorio.hoje_assinaturas">Hoje · Assinaturas</span>
+          <strong id="hojeAssinaturas">R$0.00</strong>
+        </div>
+        <div class="card highlight">
+          <span data-i18n="relatorio.assinantes_hoje">Assinantes · Hoje</span>
+          <strong id="assinantesHoje">0</strong>
+        </div>
+      </div>
 
-          <div class="card">
-            <span data-i18n="relatorio.hoje_assinaturas">Hoje · Assinaturas</span>
-            <strong id="hojeAssinaturas">R$0.00</strong>
-          </div>
+      <hr class="separator">
 
-          <div class="card highlight">
-            <span data-i18n="relatorio.assinantes_hoje">Assinantes · Hoje</span>
-            <strong id="assinantesHoje">0</strong>
-          </div>
-        </section>
+      <!-- Bloco: Mês atual -->
+      <div class="cards-lista">
+        <div class="card">
+          <span data-i18n="relatorio.mes_midias">Mês atual · Mídias</span>
+          <strong id="mesMidias">R$0.00</strong>
+        </div>
+        <div class="card highlight">
+          <span data-i18n="relatorio.mes_assinaturas">Mês atual · Assinaturas</span>
+          <strong id="mesAssinaturas">R$0.00</strong>
+        </div>
+        <div class="card">
+          <span data-i18n="relatorio.mes_assinantes">Mês Atual · Assinantes</span>
+          <strong id="totalAssinantes">0</strong>
+        </div>
+        <div class="card highlight">
+          <span data-i18n="relatorio.total_mes_atual">Total do mês atual</span>
+          <strong id="totalMesAtual">R$0.00</strong>
+        </div>
+        <div class="card">
+          <span data-i18n="relatorio.total_mes_anterior">Total do mês Anterior</span>
+          <strong id="totalMesAnterior">R$0.00</strong>
+        </div>
+      </div>
 
-        <hr class="separador">
+      <hr class="separator">
 
-        <section class="cards-row">
-          <div class="card">
-            <span data-i18n="relatorio.mes_midias">Mês atual · Mídias</span>
-            <strong id="mesMidias">R$0.00</strong>
-          </div>
+      <!-- Bloco: Total anual -->
+      <div class="cards-lista">
+        <div class="card highlight">
+          <span data-i18n="relatorio.total_ano">Total de 2026</span>
+          <strong id="acumuladoAnterior">R$0.00</strong>
+        </div>
+      </div>
 
-          <div class="card highlight">
-            <span data-i18n="relatorio.mes_assinaturas">Mês atual · Assinaturas</span>
-            <strong id="mesAssinaturas">R$0.00</strong>
-          </div>
-
-          <div class="card">
-            <span data-i18n="relatorio.mes_assinantes">Mês Atual · Assinantes</span>
-            <strong id="totalAssinantes">0</strong>
-          </div>
-
-          <div class="card card highlight">
-            <span data-i18n="relatorio.total_mes_atual">Total do mês atual</span>
-            <strong id="totalMesAtual">R$0.00</strong>
-          </div>
-
-          <div class="card">
-            <span data-i18n="relatorio.total_mes_anterior">Total do mês Anterior</span>
-            <strong id="totalMesAnterior">R$0.00</strong>
-          </div>
-
-          <hr class="separador">
-
-          <div class="card highlight">
-            <span data-i18n="relatorio.total_ano">Total de 2026</span>
-            <strong id="acumuladoAnterior">R$0.00</strong>
-          </div>
-        </section>
-      </main>
     </section>
 
     <section id="tab-pagamentos" class="tab-content">
@@ -176,29 +174,14 @@
       </form>
     </div>
   </section>
-
-  <footer class="footer">
-    <div class="footer-links">
-      <a href="/terms.html" target="_blank" rel="noopener noreferrer" data-i18n="footer.termos">Termos de Uso</a>
-      <a href="/privacy.html" target="_blank" rel="noopener noreferrer" data-i18n="footer.privacidade">Política de Privacidade</a>
-      <a href="/policies.html" data-i18n="footer.politicas">Política de Utilização</a>
-    </div>
-    <div class="footer-copy" data-i18n="footer.copy">© 2026 Velvet. Todos os direitos reservados.</div>
-  </footer>
-
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        window.location.href = "/index.html";
-      }
-    });
-  </script>
+  
+  <div id="footer-container"></div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="/relatorio.modelo.js"></script>
   <script src="/header.js"></script>
+  <script src="/js/footer-shared.js"></script>
 
 </body>
 </html>

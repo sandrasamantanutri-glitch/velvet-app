@@ -8,7 +8,7 @@
   <title>Links do meu Perfil</title>
 
   <link rel="stylesheet" href="/header.css">
-  <link rel="stylesheet" href="/links.css">
+  <link rel="stylesheet" href="/css/pages.css">
 
   <script src="/i18n.js"></script>
 </head>
@@ -16,64 +16,44 @@
 <body>
  <div id="header-container"></div>
 
- <section class="area-card">
-   <button type="button" class="btn-voltar" onclick="history.back()" data-i18n-title="links.voltar">
-     <img src="/assets/voltar.png" alt="Voltar" data-i18n-alt="links.voltar">
-   </button>
+  <section class="area-card">
 
-   <h2 data-i18n="links.titulo">Links do meu perfil</h2>
+    <button type="button" class="btn-voltar" onclick="history.back()" data-i18n-title="links.voltar">
+      <img src="/assets/voltar.png" alt="Voltar">
+    </button>
 
-   <p class="sub" data-i18n="links.sub">
-     Use estes links para divulgar seu perfil. Eles são gerados automaticamente para você.
-   </p>
+    <h3 data-i18n="links.titulo">Links do meu perfil</h3>
 
-   <label data-i18n="links.instagram">Instagram</label>
+    <p class="page-subtitle" data-i18n="links.sub">
+      Use estes links para divulgar seu perfil. Eles são gerados automaticamente para você.
+    </p>
 
-   <div class="copy-field">
-     <input type="text" id="linkInstagram" readonly />
-     <button type="button" onclick="copiarLink('linkInstagram')" data-i18n="links.copiar">Copiar</button>
-   </div>
+    <label data-i18n="links.instagram">Instagram</label>
+    <div class="copy-field">
+      <input type="text" id="linkInstagram" readonly />
+      <button type="button" onclick="copiarLink('linkInstagram')" data-i18n="links.copiar">Copiar</button>
+    </div>
 
-   <label data-i18n="links.tiktok">TikTok</label>
+    <label data-i18n="links.tiktok">TikTok</label>
+    <div class="copy-field">
+      <input type="text" id="linkTiktok" readonly />
+      <button type="button" onclick="copiarLink('linkTiktok')" data-i18n="links.copiar">Copiar</button>
+    </div>
 
-   <div class="copy-field">
-     <input type="text" id="linkTiktok" readonly />
-     <button type="button" onclick="copiarLink('linkTiktok')" data-i18n="links.copiar">Copiar</button>
-   </div>
+    <label data-i18n="links.link_direto">Link de Acesso Direto</label>
+    <div class="copy-field">
+      <input type="text" id="linkDireto" readonly />
+      <button type="button" onclick="copiarLink('linkDireto')" data-i18n="links.copiar">Copiar</button>
+    </div>
 
-   <label data-i18n="links.link_direto">Link de Acesso Direto</label>
+  </section>
 
-   <div class="copy-field">
-     <input type="text" id="linkDireto" readonly />
-     <button type="button" onclick="copiarLink('linkDireto')" data-i18n="links.copiar">Copiar</button>
-   </div>
-
- </section>
-
- <footer class="footer">
-   <div class="footer-links">
-     <a href="/terms.html" target="_blank" rel="noopener noreferrer" data-i18n="footer.termos">Termos de Uso</a>
-     <a href="/privacy.html" target="_blank" rel="noopener noreferrer" data-i18n="footer.privacidade">Política de Privacidade</a>
-     <a href="/policies.html" data-i18n="footer.politicas">Política de Utilização</a>
-   </div>
-
-   <div class="footer-copy" data-i18n="footer.copy">
-     © 2026 Velvet. Todos os direitos reservados.
-   </div>
- </footer>
-
- <script>
-document.addEventListener("DOMContentLoaded", () => {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    window.location.href = "/index.html";
-  }
-});
-</script>
+  <div id="footer-container"></div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/header.js" defer></script>
 <script src="/areaUsuario.js"></script>
+<script src="/js/footer-shared.js" defer></script>
 
 </body>
 </html>
