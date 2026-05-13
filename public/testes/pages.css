@@ -34,8 +34,7 @@
 .perfil-avatar {
   position: absolute;
   top: 130px;
-  left: 50px;
-  bottom: -45px;
+  left: calc(50% - 60px);
   width: 120px;
   height: 120px;
   border-radius: 50%;
@@ -151,6 +150,13 @@ body {
 .btn-voltar:hover {
   opacity: 0.7;
   transform: translateX(-3px);
+}
+
+.perfil-completo-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 70px;
+  margin-bottom: 8px;
 }
 
 .btn-perfil-completo {
