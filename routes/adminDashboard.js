@@ -3461,17 +3461,17 @@ table.pt th.c,table.pt td.c{text-align:center}table.pt th.r,table.pt td.r{text-a
 </style></head><body>
 <div class="page">
   <div class="hdr"><div class="logo"><img src="assets/velvet.png" alt="Velvet"></div>
-    <div class="ei"><h2>Velvet Entertainment</h2><p>CNPJ: 64.320.030/0001-68<br>Travessa Dona Paula, 13 — Higienópolis<br>São Paulo — SP — Brasil<br>Tel: (11) 97752-7031</p></div></div>
+    <div class="ei"><h2>Velvet Entertainment Ltda</h2><p>CNPJ: 66.615.892/0001-43<br>R Cel José Eusébio, 95 casa 13 — Higienópolis<br>São Paulo — SP — CEP 01.239-030<br>Tel: (11) 97752-7031</p></div></div>
   <div class="ts"><h1>RECIBO DE PAGAMENTO</h1>
     <div class="rm"><table><tr><td>RECIBO Nº</td><td>#${reciboNum}</td></tr><tr><td>DATA</td><td>${dataEmissao}</td></tr><tr><td>REFERÊNCIA</td><td>${mesRefLabel}</td></tr></table><div class="stamp">ORIGINAL</div></div></div>
   <div class="cs">
     <div><h4>Dados do Beneficiário</h4><p><strong>Nº Cliente:</strong> ${p.modelo_id}<br><strong>Nome:</strong> ${nomeCompleto}<br><strong>CPF/Doc:</strong> ${cpf}<br><strong>Endereço:</strong> ${endereco}<br><strong>Local:</strong> ${local}</p></div>
-    <div><h4>Emissor</h4><p><strong>Empresa:</strong> Velvet Entertainment<br><strong>CNPJ:</strong> 64.320.030/0001-68<br><strong>Endereço:</strong> Travessa Dona Paula, 13<br><strong>Local:</strong> Higienópolis — São Paulo/SP</p></div>
+    <div><h4>Emissor</h4><p><strong>Empresa:</strong> Velvet Entertainment Ltda<br><strong>CNPJ:</strong> 66.615.892/0001-43<br><strong>Endereço:</strong> R Cel José Eusébio, 95 casa 13<br><strong>Local:</strong> Higienópolis — São Paulo/SP — CEP 01.239-030</p></div>
   </div>
   <table class="pt"><thead><tr><th class="c" style="width:50px">QTD</th><th>Descrição</th><th class="c" style="width:150px">Período</th><th class="r" style="width:110px">Valor</th></tr></thead><tbody>${linhasHtml}</tbody></table>
   <div class="tot"><div class="totbox"><div class="totrow f"><span>VALOR TOTAL</span><span>R$ ${totalFmt}</span></div></div></div>
   <div class="pi"><h4>Dados do Pagamento</h4><p><strong>Data:</strong> ${dataPagamento} &nbsp; <strong>Valor:</strong> R$ ${totalFmt} &nbsp; <strong>Forma:</strong> ${tipoPagamento}</p></div>
-  <div class="ft"><p>Este documento comprova o repasse de receitas geradas na plataforma Velvet.</p><p>Velvet Entertainment — CNPJ: 64.320.030/0001-68 — Travessa Dona Paula, 13, Higienópolis, São Paulo/SP</p></div>
+  <div class="ft"><p>Este documento comprova o repasse de receitas geradas na plataforma Velvet.</p><p>Velvet Entertainment Ltda — CNPJ: 66.615.892/0001-43 — R Cel José Eusébio, 95 casa 13, Higienópolis, São Paulo/SP — CEP 01.239-030</p></div>
 </div>
 <button class="pbtn" onclick="window.print()">🖨️ Salvar / Imprimir PDF</button>
 </body></html>`);
