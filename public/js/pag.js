@@ -7,12 +7,7 @@ window.pagamentoAtual = pagamentoAtual;
 window.__PAGAMENTO_CONFIRMADO_ATUAL__ = null;
 window.CURRENCY_ATUAL = "brl";
 
-const STRIPE_PUBLIC_KEY = "pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz";
-let stripe = null;
-let stripeElements = null;
-let stripePaymentElement = null;
-let stripeClientSecret = null;
-let stripeMetodoAtual = null;
+// Asaas — gateway de pagamentos
 
 let pollingPixInterval = null;
 let pollingCartaoInterval = null;
@@ -263,23 +258,11 @@ function resetarEstadoCartao() {
     btn.innerText = t("pagamento.btn_confirmar_stripe");
   }
 
-  if (stripePaymentElement) {
-    try {
-      stripePaymentElement.unmount();
-    } catch (err) {
-      console.warn("Erro ao desmontar stripePaymentElement:", err);
-    }
-  }
-
-  const container = document.getElementById("stripe-payment-element");
+  const container = document.getElementById("asaas-card-form");
   if (container) {
     container.innerHTML = "";
+    delete container.dataset.rendered;
   }
-
-  stripePaymentElement = null;
-  stripeElements = null;
-  stripeClientSecret = null;
-  stripeMetodoAtual = null;
 }
 
 function mostrarLoadingCartao() {
@@ -288,375 +271,231 @@ function mostrarLoadingCartao() {
   document.getElementById("formStripePagamento")?.classList.add("hidden");
 }
 
-function inicializarStripe() {
-  if (stripe) return stripe;
+function renderFormAsaasCartao() {
+  const container = document.getElementById("asaas-card-form");
+  if (!container || container.dataset.rendered === "true") return;
+  container.dataset.rendered = "true";
 
-  if (!window.Stripe) {
-    throw new Error("Stripe.js não foi carregado.");
-  }
+  container.innerHTML = `
+    <div class="card-field-group" style="margin-bottom:10px;">
+      <label class="campo-label" style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Nome no cartão</label>
+      <input type="text" id="asaas-holder-name" class="campo-input" placeholder="Como está no cartão" autocomplete="cc-name" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:0.9rem;" />
+    </div>
+    <div class="card-field-group" style="margin-bottom:10px;">
+      <label class="campo-label" style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Número do cartão</label>
+      <input type="text" id="asaas-card-number" class="campo-input" placeholder="0000 0000 0000 0000" maxlength="19" autocomplete="cc-number" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:0.9rem;" />
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:10px;">
+      <div style="flex:1;">
+        <label class="campo-label" style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Validade</label>
+        <input type="text" id="asaas-expiry" class="campo-input" placeholder="MM/AA" maxlength="5" autocomplete="cc-exp" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:0.9rem;" />
+      </div>
+      <div style="flex:1;">
+        <label class="campo-label" style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">CVV</label>
+        <input type="text" id="asaas-cvv" class="campo-input" placeholder="000" maxlength="4" autocomplete="cc-csc" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:0.9rem;" />
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:10px;">
+      <div style="flex:1;">
+        <label class="campo-label" style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">CEP</label>
+        <input type="text" id="asaas-postal-code" class="campo-input" placeholder="00000-000" maxlength="9" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:0.9rem;" />
+      </div>
+      <div style="flex:1;">
+        <label class="campo-label" style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Nº endereço</label>
+        <input type="text" id="asaas-address-number" class="campo-input" placeholder="Ex: 100" maxlength="20" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:0.9rem;" />
+      </div>
+    </div>
+  `;
 
-  stripe = window.Stripe(STRIPE_PUBLIC_KEY);
-
-  if (!stripe) {
-    throw new Error("Não foi possível inicializar a Stripe.");
-  }
-
-  return stripe;
-}
-
-function obterPayloadBaseStripe() {
-  const aceites = obterAceitesPagamento();
-  if (!aceites) return null;
-
-  return {
-    aceitou_termos: aceites.aceitou_termos,
-    aceitou_execucao_imediata: aceites.aceitou_execucao_imediata,
-    aceite_timestamp: aceites.aceite_timestamp,
-    versao_termos: aceites.versao_termos,
-    fingerprint: gerarFingerprint()
-  };
-}
-
-async function criarIntentStripe({ metodo = "card" } = {}) {
-  const base = obterPayloadBaseStripe();
-  if (!base) return null;
-
-  const tipo = pagamentoAtual?.tipo || window.PAGAMENTO_TIPO_ATUAL;
-
-  if (!tipo) {
-   alert(t("pag.tipo_pagamento_nao_identificado"));
-    return null;
-  }
-
-  let url = "";
-let payload = {
-  aceitou_termos: base.aceitou_termos,
-  aceitou_execucao_imediata: base.aceitou_execucao_imediata,
-  aceite_timestamp: base.aceite_timestamp,
-  versao_termos: base.versao_termos,
-  fingerprint: base.fingerprint,
-  apenas_intent: true,
-  metodo,
-  currency: window.CURRENCY_ATUAL || "brl"
-};
-
-  if (tipo === "vip") {
-    const modelo_id = Number(
-      pagamentoAtual?.modelo_id || window.MODELO_ID_ATUAL || 0
-    );
-
-    if (!modelo_id) {
-     alert(t("pag.modelo_invalido"));
-      return null;
-    }
-
-    url = "/api/pagamento/vip/cartao";
-    payload.modelo_id = modelo_id;
-  }
-
-  if (tipo === "premium") {
-    const premium_post_id = Number(pagamentoAtual?.premium_post_id || 0);
-
-    if (!premium_post_id) {
-      alert(t("pag.post_premium_invalido"));
-      return null;
-    }
-
-    url = "/api/pagamento/premium/cartao";
-    payload.premium_post_id = premium_post_id;
-  }
-
-  if (tipo === "midia") {
-    const conteudo_id = Number(pagamentoAtual?.conteudo_id || 0);
-
-    if (!conteudo_id) {
-      alert(t("pag.conteudo_invalido"));
-      return null;
-    }
-
-    url = "/api/pagamento/midia/cartao";
-    payload.conteudo_id = conteudo_id;
-  }
-
-  if (!url) {
-    throw new Error("Tipo de pagamento inválido.");
-  }
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + localStorage.getItem("token")
-    },
-    body: JSON.stringify(payload)
+  document.getElementById("asaas-card-number")?.addEventListener("input", e => {
+    let v = e.target.value.replace(/\D/g, "").slice(0, 16);
+    e.target.value = v.replace(/(.{4})/g, "$1 ").trim();
   });
 
-  if (!res.ok) {
-    const erro = await lerErroResposta(res);
-    throw new Error(erro || "Erro ao criar intent Stripe.");
-  }
+  document.getElementById("asaas-expiry")?.addEventListener("input", e => {
+    let v = e.target.value.replace(/\D/g, "").slice(0, 4);
+    if (v.length >= 2) v = v.slice(0, 2) + "/" + v.slice(2);
+    e.target.value = v;
+  });
 
-  const data = await res.json();
-
-  if (!data?.client_secret) {
-    throw new Error("Resposta Stripe sem client_secret.");
-  }
-
-  stripeClientSecret = data.client_secret;
-  stripeMetodoAtual = metodo;
-
-  if (data.payment_intent_id) {
-    pagamentoAtual.payment_id = data.payment_intent_id;
-  }
-
-  if (data.order_id && !pagamentoAtual.payment_id) {
-    pagamentoAtual.payment_id = data.order_id;
-  }
-
-  if (data.premium_post_id) pagamentoAtual.premium_post_id = data.premium_post_id;
-  if (data.message_id) pagamentoAtual.message_id = data.message_id;
-
-  return data;
+  document.getElementById("asaas-postal-code")?.addEventListener("input", e => {
+    let v = e.target.value.replace(/\D/g, "").slice(0, 8);
+    if (v.length > 5) v = v.slice(0, 5) + "-" + v.slice(5);
+    e.target.value = v;
+  });
 }
 
-async function montarStripePaymentElement({ metodo = "card" } = {}) {
-  const stripeInstance = inicializarStripe();
+function obterDadosCartaoAsaas() {
+  const holderName = (document.getElementById("asaas-holder-name")?.value || "").trim();
+  const cardNumber = (document.getElementById("asaas-card-number")?.value || "").replace(/\s/g, "");
+  const expiry    = (document.getElementById("asaas-expiry")?.value || "");
+  const ccv       = (document.getElementById("asaas-cvv")?.value || "").trim();
+  const postalCode = (document.getElementById("asaas-postal-code")?.value || "").replace(/\D/g, "");
+  const addressNumber = (document.getElementById("asaas-address-number")?.value || "").trim();
 
-  if (!stripeClientSecret) {
-    throw new Error("client_secret Stripe não definido.");
-  }
+  const [expMonth = "", expRest = ""] = expiry.split("/");
+  const expYear = expRest.length === 2 ? "20" + expRest : expRest;
 
-  if (stripePaymentElement) {
-    try {
-      stripePaymentElement.unmount();
-    } catch (err) {
-      console.warn("Erro ao desmontar payment element anterior:", err);
+  if (!holderName)              { alert(t("pag.holder_name_obrigatorio") || "Informe o nome no cartão."); return null; }
+  if (cardNumber.length < 13)   { alert(t("pag.card_number_invalido")    || "Número do cartão inválido."); return null; }
+  if (expMonth.length !== 2 || expYear.length !== 4) { alert(t("pag.expiry_invalido") || "Validade inválida (MM/AA)."); return null; }
+  if (ccv.length < 3)           { alert(t("pag.cvv_invalido")            || "CVV inválido."); return null; }
+  if (postalCode.length !== 8)  { alert(t("pag.cep_invalido")            || "CEP inválido."); return null; }
+  if (!addressNumber)           { alert(t("pag.address_number_obrigatorio") || "Informe o número do endereço."); return null; }
+
+  return { holderName, cardNumber, expiryMonth: expMonth, expiryYear: expYear, ccv, postalCode, addressNumber };
+}
+
+async function confirmarPagamentoAsaasCartao() {
+  if (pagamentoEmProcesso) return { sucesso: false };
+  pagamentoEmProcesso = true;
+
+  try {
+    const cartao = obterDadosCartaoAsaas();
+    if (!cartao) { pagamentoEmProcesso = false; return { sucesso: false }; }
+
+    const aceites = obterAceitesPagamento();
+    if (!aceites) { pagamentoEmProcesso = false; return { sucesso: false }; }
+
+    const tipo = pagamentoAtual?.tipo || window.PAGAMENTO_TIPO_ATUAL;
+    if (!tipo) { alert(t("pag.tipo_pagamento_nao_identificado")); pagamentoEmProcesso = false; return { sucesso: false }; }
+
+    mostrarLoadingCartao();
+    atualizarStatusCartao(t("pag.confirmando_pagamento") || "Processando...");
+
+    const payload = {
+      ...aceites,
+      ...cartao,
+      cpf: obterCpfValido(),
+      telefone: window.CURRENCY_ATUAL !== "usd" ? obterTelefoneValido() : undefined,
+      currency: window.CURRENCY_ATUAL || "brl",
+      fingerprint: gerarFingerprint()
+    };
+
+    if (tipo === "vip")     { payload.modelo_id = pagamentoAtual.modelo_id; }
+    if (tipo === "midia")   { payload.conteudo_id = pagamentoAtual.conteudo_id; payload.modelo_id = pagamentoAtual.modelo_id; }
+    if (tipo === "premium") { payload.premium_post_id = pagamentoAtual.premium_post_id; payload.modelo_id = pagamentoAtual.modelo_id; }
+
+    const res = await fetch(`/api/pagamento/${tipo}/cartao`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || data.error) {
+      document.getElementById("cartaoLoading")?.classList.add("hidden");
+      document.getElementById("formStripePagamento")?.classList.remove("hidden");
+      atualizarStatusCartao(t("pag.falha_pagamento") || "Falha no pagamento");
+      alert(data.error || t("pag.erro_confirmar_pagamento") || "Erro no pagamento.");
+      pagamentoEmProcesso = false;
+      return { sucesso: false };
     }
+
+    if (data.payment_id) pagamentoAtual.payment_id = data.payment_id;
+
+    if (data.status === "pago" || data.status === "CONFIRMED") {
+      document.getElementById("cartaoLoading")?.classList.add("hidden");
+      document.getElementById("cartaoSucesso")?.classList.remove("hidden");
+    } else {
+      atualizarStatusCartao(t("pag.aguardando_confirmacao") || "Aguardando...");
+    }
+
+    if (pagamentoAtual.payment_id) {
+      iniciarPollingPagamento(
+        pagamentoAtual.payment_id,
+        pagamentoAtual.premium_post_id || pagamentoAtual.message_id || pagamentoAtual.modelo_id,
+        "cartao"
+      );
+    }
+
+    pagamentoEmProcesso = false;
+    return { sucesso: true, aguardando_confirmacao: data.status !== "pago" };
+
+  } catch (err) {
+    console.error("Erro confirmarPagamentoAsaasCartao:", err);
+    document.getElementById("cartaoLoading")?.classList.add("hidden");
+    document.getElementById("formStripePagamento")?.classList.remove("hidden");
+    atualizarStatusCartao(t("pag.falha_pagamento") || "Falha");
+    alert(err.message || t("pag.erro_inesperado_pagamento") || "Erro inesperado.");
+    pagamentoEmProcesso = false;
+    return { sucesso: false };
   }
-
-  stripeElements = stripeInstance.elements({
-    clientSecret: stripeClientSecret
-  });
-
-  stripePaymentElement = stripeElements.create("payment", {
-defaultValues: {
-  billingDetails: {}
-    },
-    fields: {
-      billingDetails: {
-        name: "auto",
-        email: "auto",
-        phone: "auto",
-        address: "auto"
-      }
-    },
-    paymentMethodOrder: ["card"]
-  });
-
-  stripePaymentElement.mount("#stripe-payment-element");
 }
 
-async function inicializarFluxoCartaoStripe() {
+async function inicializarFluxoCartaoAsaas() {
   try {
     resetarEstadoCartao();
 
     const form = document.getElementById("formStripePagamento");
-    const container = document.getElementById("stripe-payment-element");
+    const container = document.getElementById("asaas-card-form");
     const btn = document.getElementById("btnConfirmarStripe");
 
-    if (!form) {
-      throw new Error("Formulário Stripe não encontrado.");
-    }
-
-    if (!container) {
-      throw new Error("Container do Stripe Payment Element não encontrado.");
-    }
+    if (!form || !container) throw new Error("Formulário de cartão não encontrado.");
 
     form.classList.remove("hidden");
+    if (btn) btn.disabled = false;
+    atualizarStatusCartao(t("pagamento.btn_confirmar_stripe") || "Confirmar pagamento");
 
-    if (btn) {
-      btn.disabled = false;
-    }
-    atualizarStatusCartao(t("pagamento.btn_confirmar_stripe")); 
-
-    document.getElementById("cartaoResumoValor")?.classList.add("hidden");
-
-    const data = await criarIntentStripe({ metodo: "card" });
-     if (data) {
-      atualizarResumoCartaoComDadosServidor(data);
-    }
-
-      await montarStripePaymentElement({ metodo: "card" });
+    renderFormAsaasCartao();
+    bindFormularioAsaasPagamento();
   } catch (err) {
-    console.error("Erro ao inicializar fluxo Stripe cartão:", err);
-    alert(err.message || t("pag.erro_preparar_cartao"));
+    console.error("Erro ao inicializar fluxo cartão Asaas:", err);
+    alert(err.message || t("pag.erro_preparar_cartao") || "Erro ao preparar pagamento.");
   }
 }
 
-function carregarStripe() {
-  return new Promise((resolve) => {
-    if (window.Stripe) return resolve();
-    const script = document.createElement("script");
-    script.src = "https://js.stripe.com/v3/";
-    script.onload = resolve;
-    document.head.appendChild(script);
-  });
-}
-
 async function mostrarMetodo(tipo) {
+  alternarCamposPorMetodo(tipo);
 
-alternarCamposPorMetodo(tipo);
   if (tipo === "pix") {
     if (!validarDadosIniciaisPagamento()) return;
-
     resetarEstadoCartao();
     resetarEstadoPix();
     irParaEtapaPagamento("pix");
-
-    setTimeout(() => {
-      confirmarPix();
-    }, 200);
-
+    setTimeout(() => confirmarPix(), 200);
     return;
   }
 
   if (tipo === "cartao") {
     const aceites = obterAceitesPagamento();
     if (!aceites) return;
-
     resetarEstadoPix();
     irParaEtapaPagamento("cartao");
-
-    await carregarStripe();
-
-    if (window.PAGAMENTO_TIPO_ATUAL === "vip") iniciarCartaoVip();
-    if (window.PAGAMENTO_TIPO_ATUAL === "midia") iniciarCartaoMidia();
+    if (window.PAGAMENTO_TIPO_ATUAL === "vip")     iniciarCartaoVip();
+    if (window.PAGAMENTO_TIPO_ATUAL === "midia")   iniciarCartaoMidia();
     if (window.PAGAMENTO_TIPO_ATUAL === "premium") iniciarCartaoPremium();
-
-    await inicializarFluxoCartaoStripe();
+    await inicializarFluxoCartaoAsaas();
     return;
   }
 
   console.warn("Método de pagamento inválido:", tipo);
 }
 
-async function confirmarPagamentoStripeCartao() {
-  if (pagamentoEmProcesso) return { sucesso: false };
-  pagamentoEmProcesso = true;
-
-  try {
-    const stripeInstance = inicializarStripe();
-
-    if (!stripeElements || !stripeClientSecret) {
-      throw new Error("Stripe não inicializado.");
-    }
-
-    mostrarLoadingCartao();
-    atualizarStatusCartao(t("pag.confirmando_pagamento"));
-
-    const { error, paymentIntent } = await stripeInstance.confirmPayment({
-      elements: stripeElements,
-      confirmParams: {
-        return_url: window.location.href
-      },
-      redirect: "if_required"
-    });
-
-    if (error) {
-      console.error("Erro Stripe confirmPayment:", error);
-
-      document.getElementById("cartaoLoading")?.classList.add("hidden");
-      document.getElementById("formStripePagamento")?.classList.remove("hidden");
-
-      atualizarStatusCartao(t("pag.falha_pagamento"));
-      alert(error.message || t("pag.erro_confirmar_pagamento"));
-
-      pagamentoEmProcesso = false;
-      return { sucesso: false };
-    }
-
-    if (paymentIntent?.id) {
-      pagamentoAtual.payment_id = paymentIntent.id;
-    }
-
-    const status = String(paymentIntent?.status || "").toLowerCase();
-
-if (
-  status === "succeeded" ||
-  status === "processing" ||
-  status === "requires_capture" ||
-  status === "requires_action"
-) {
-  atualizarStatusCartao(t("pag.aguardando_confirmacao"));
-
-  if (pagamentoAtual.payment_id) {
-    iniciarPollingPagamento(
-      pagamentoAtual.payment_id,
-      pagamentoAtual.premium_post_id ||
-        pagamentoAtual.message_id ||
-        pagamentoAtual.modelo_id,
-      "cartao"
-    );
-  }
-
-  pagamentoEmProcesso = false;
-  return { sucesso: true, aguardando_confirmacao: true };
-}
-    document.getElementById("cartaoLoading")?.classList.add("hidden");
-    document.getElementById("formStripePagamento")?.classList.remove("hidden");
-
-    atualizarStatusCartao(t("pag.falha_pagamento")); 
-    alert(t("pag.pagamento_nao_concluido"));
-
-    pagamentoEmProcesso = false;
-    return { sucesso: false };
-
-  } catch (err) {
-    console.error("Erro em confirmarPagamentoStripeCartao:", err);
-
-    document.getElementById("cartaoLoading")?.classList.add("hidden");
-    document.getElementById("formStripePagamento")?.classList.remove("hidden");
-
-    atualizarStatusCartao(t("pag.falha_pagamento")); 
-    alert(err.message || t("pag.erro_inesperado_pagamento"));
-
-    pagamentoEmProcesso = false;
-    return { sucesso: false };
-  }
-}
-
-function bindFormularioStripePagamento() {
+function bindFormularioAsaasPagamento() {
   const form = document.getElementById("formStripePagamento");
-  const btn = document.getElementById("btnConfirmarStripe");
+  const btn  = document.getElementById("btnConfirmarStripe");
 
   if (!form || form.dataset.bound === "true") return;
-
   form.dataset.bound = "true";
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-
-    if (btn) {
-      btn.disabled = true;
-    }
-    atualizarStatusCartao(t("pag.processando"));
+    if (btn) btn.disabled = true;
+    atualizarStatusCartao(t("pag.processando") || "Processando...");
 
     try {
-      const resultado = await confirmarPagamentoStripeCartao();
-
+      const resultado = await confirmarPagamentoAsaasCartao();
       if (!resultado?.sucesso) {
         if (btn) btn.disabled = false;
-        atualizarStatusCartao(t("pagamento.btn_confirmar_stripe")); 
-        return;
+        atualizarStatusCartao(t("pagamento.btn_confirmar_stripe") || "Confirmar pagamento");
       }
-
-      if (btn) btn.disabled = true;
-     atualizarStatusCartao(t("pag.aguardando_confirmacao"));
     } catch (err) {
-      console.error("Erro submit Stripe:", err);
-
+      console.error("Erro submit Asaas:", err);
       if (btn) btn.disabled = false;
-      atualizarStatusCartao(t("pagamento.btn_confirmar_stripe")); 
+      atualizarStatusCartao(t("pagamento.btn_confirmar_stripe") || "Confirmar pagamento");
     }
   });
 }
