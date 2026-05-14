@@ -1326,6 +1326,12 @@ document.addEventListener("click", e => {
 });
 
 // ===========================
+// OVERRIDE — ícone inbox no header não deve sair da página agency
+// irParaInbox() em header.js navega para /inbox.html; aqui sobrescreve
+// ===========================
+window.irParaInbox = function () {};
+
+// ===========================
 // INIT
 // ===========================
 document.addEventListener("DOMContentLoaded", async () => {

@@ -11,13 +11,14 @@
   <link rel="stylesheet" href="/css/chatmodelo.css">
   <script src="/i18n.js"></script>
   <style>
-    html, body {
+    html {
       height: 100%;
-      margin: 0;
-      overflow: hidden;
     }
 
     body {
+      height: 100vh;
+      margin: 0;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
     }
@@ -31,6 +32,11 @@
       flex: 1;
       overflow: hidden;
       min-height: 0;
+    }
+
+    /* inbox.css pode adicionar overflow ao body — anula aqui */
+    body > *:not(.agency-body):not(#header-container) {
+      display: none !important;
     }
 
     /* ---- INBOX PANEL (left) ---- */

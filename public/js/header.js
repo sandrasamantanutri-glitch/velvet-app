@@ -145,8 +145,8 @@ function initHeaderSocketModelo() {
   if (!token || role !== "modelo") return;
 
   const path = window.location.pathname || "";
-  if (path.includes("/inbox.html") || path.includes("/chat.html")) {
-    return; // inbox.js e chat.js já gerenciam o socket nessas páginas
+  if (path.includes("/inbox.html") || path.includes("/chat.html") || path.includes("/chat-agency.html")) {
+    return; // inbox.js, chat.js e chat-agency.js já gerenciam o socket nessas páginas
   }
 
   if (typeof io === "undefined") {
