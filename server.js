@@ -265,7 +265,7 @@ app.post("/api/webhook/asaas", express.json(), async (req, res) => {
 
       await client.query(
         `UPDATE premium_unlocks
-         SET status = $1, pago_em = CASE WHEN $1 = 'pago' THEN NOW() ELSE pago_em END,
+         SET status = $1::text, pago_em = CASE WHEN $1::text = 'pago' THEN NOW() ELSE pago_em END,
              updated_at = NOW()
          WHERE id = $2`,
         [novoStatus, row.id]
