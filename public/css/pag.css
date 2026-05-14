@@ -813,9 +813,9 @@ max-height: 80%;
   margin-bottom: 16px;
 }
 
-/* ── Seleção de moeda ── */
+/* ── Seleção de moeda (oculta — Asaas só processa BRL) ── */
 .selecao-moeda {
-  margin-bottom: 12px;
+  display: none !important;
 }
 
 .btn-moeda {
@@ -841,6 +841,80 @@ max-height: 80%;
 .btn-moeda:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* ── Campos CPF / Telefone ── */
+#campoCpf,
+#campoTelefone {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  max-width: 320px;
+  text-align: left;
+  box-sizing: border-box;
+}
+
+#campoCpf label,
+#campoTelefone label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #444;
+  padding-left: 2px;
+  margin: 0;
+}
+
+#campoCpf input,
+#campoTelefone input {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid #d5d5d5;
+  border-radius: 10px;
+  font-size: 15px;
+  box-sizing: border-box;
+  outline: none;
+  background: #fff;
+  color: #1e1e26;
+  display: block;
+}
+
+#campoCpf input:focus,
+#campoTelefone input:focus {
+  border-color: #b38cff;
+  box-shadow: 0 0 0 3px rgba(122, 44, 255, 0.08);
+}
+
+/* ── Bloco de valores (VIP e Mídia) ── */
+.midia-valores {
+  margin: 12px 0;
+  font-size: 12px;
+}
+
+.midia-valores .linha {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: #1E1E26;
+  padding: 0 4px;
+}
+
+.midia-valores .linha span {
+  font-size: 12px;
+}
+
+.midia-valores .desconto span {
+  color: #1E1E26;
+}
+
+.midia-valores .linha.total span,
+.midia-valores .linha.total strong {
+  font-size: 16px;
+  font-weight: 700;
+  color: #7B2CFF;
 }
 
 
