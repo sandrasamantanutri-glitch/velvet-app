@@ -378,7 +378,10 @@ async function confirmarPagamentoAsaasCartao() {
 
     const res = await fetch(`/api/pagamento/${tipo}/cartao`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + localStorage.getItem("token")
+      },
       credentials: "include",
       body: JSON.stringify(payload)
     });
