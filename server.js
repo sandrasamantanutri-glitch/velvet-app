@@ -10027,6 +10027,17 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
 
     await client.query("COMMIT");
 
+    try {
+      await client.query(
+        `INSERT INTO pagamento_tentativas
+         (cliente_id, metodo, fingerprint_pagamento, status, ip)
+         VALUES ($1, 'cartao', $2, 'aprovado', $3)`,
+        [cliente_id, fingerprint || null, ip]
+      );
+    } catch (logErr) {
+      console.error("Erro ao registrar tentativa aprovada VIP:", logErr);
+    }
+
     return res.json({
       ok: true,
       payment_id: asaasPaymentId,
@@ -10376,6 +10387,27 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
     );
 
     await client.query("COMMIT");
+
+    try {
+      await client.query(
+        `INSERT INTO pagamento_tentativas
+         (cliente_id, metodo, fingerprint_pagamento, status, conteudo_id, ip,
+          aceitou_termos, aceitou_execucao_imediata, aceite_timestamp, versao_termos)
+         VALUES ($1, 'cartao', $2, 'aprovado', $3, $4, $5, $6, $7, $8)`,
+        [
+          cliente_id,
+          fingerprint || null,
+          conteudoId || null,
+          ip,
+          !!aceitou_termos,
+          !!aceitou_execucao_imediata,
+          aceite_timestamp || null,
+          versao_termos || "2026-04-06"
+        ]
+      );
+    } catch (logErr) {
+      console.error("Erro ao registrar tentativa aprovada mídia:", logErr);
+    }
 
     return res.json({
       ok: true,
@@ -10841,6 +10873,26 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
 
     await client.query("COMMIT");
 
+    try {
+      await client.query(
+        `INSERT INTO pagamento_tentativas
+         (cliente_id, metodo, fingerprint_pagamento, status, ip, gateway,
+          aceitou_termos, aceitou_execucao_imediata, aceite_timestamp, versao_termos)
+         VALUES ($1, 'cartao', $2, 'aprovado', $3, 'asaas', $4, $5, $6, $7)`,
+        [
+          cliente_id,
+          fingerprint || null,
+          ip,
+          !!aceitou_termos,
+          !!aceitou_execucao_imediata,
+          aceite_timestamp || null,
+          versao_termos || "2026-04-06"
+        ]
+      );
+    } catch (logErr) {
+      console.error("Erro ao registrar tentativa aprovada premium:", logErr);
+    }
+
     return res.json({
       ok: true,
       payment_id: asaasPaymentId,
@@ -10901,7 +10953,7 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
             aceite_timestamp,
             versao_termos
           )
-          VALUES ($1, 'cartao', $2, 'recusado', $3, 'stripe', $4, $5, $6, $7)
+          VALUES ($1, 'cartao', $2, 'recusado', $3, 'asaas', $4, $5, $6, $7)
           `,
           [
             cliente_id,
