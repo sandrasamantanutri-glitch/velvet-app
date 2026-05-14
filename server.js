@@ -10373,7 +10373,7 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
         asaasPaymentId,
         asaasPaymentId,
         total,
-        "conteudo",
+        "midia",
         statusLocal,
         ip,
         !!aceitou_termos,
