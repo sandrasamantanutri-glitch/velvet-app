@@ -201,7 +201,8 @@
       <div class="midia-detalhes hidden">
         <div class="midia-valores">
           <div class="linha"><span>Valor:</span><span id="midiaValorBase">0,00</span></div>
-          <div class="linha"><span>Taxa:</span><span id="midiaTaxa">0,00</span></div>
+          <div class="linha desconto"><span>Desconto:</span><span id="midiaDesconto">0,00</span></div>
+          <div class="linha"><span>Taxa de transação:</span><span id="midiaTaxa">0,00</span></div>
           <div class="linha total"><span>Total:</span><strong><span id="midiaTotal">0,00</span></strong></div>
         </div>
       </div>
@@ -393,17 +394,23 @@
 
     // Exibe o bloco de detalhes correto
     document.querySelectorAll('.vip-detalhes, .midia-detalhes').forEach(el => el.classList.add('hidden'));
+    // Cálculo da taxa: R$ 1,99 + 10% do valor (igual ao servidor)
+    const v = config[tipo].valor;
+    const taxa  = Number((1.99 + v * 0.10).toFixed(2));
+    const total = Number((v + taxa).toFixed(2));
+
     if (tipo === 'vip') {
       document.querySelector('.vip-detalhes')?.classList.remove('hidden');
-      document.getElementById('vipValorBase').textContent = config[tipo].valor.toFixed(2);
-      document.getElementById('vipDesconto').textContent = '0,00';
-      document.getElementById('vipTaxa').textContent = (config[tipo].valor * 0.10).toFixed(2);
-      document.getElementById('vipTotal').textContent = (config[tipo].valor * 1.10).toFixed(2);
+      document.getElementById('vipValorBase').textContent = v.toFixed(2);
+      document.getElementById('vipDesconto').textContent  = '0,00';
+      document.getElementById('vipTaxa').textContent      = taxa.toFixed(2);
+      document.getElementById('vipTotal').textContent     = total.toFixed(2);
     } else {
       document.querySelector('.midia-detalhes')?.classList.remove('hidden');
-      document.getElementById('midiaValorBase').textContent = config[tipo].valor.toFixed(2);
-      document.getElementById('midiaTaxa').textContent = (config[tipo].valor * 0.10).toFixed(2);
-      document.getElementById('midiaTotal').textContent = (config[tipo].valor * 1.10).toFixed(2);
+      document.getElementById('midiaValorBase').textContent = v.toFixed(2);
+      document.getElementById('midiaDesconto').textContent  = '0,00';
+      document.getElementById('midiaTaxa').textContent      = taxa.toFixed(2);
+      document.getElementById('midiaTotal').textContent     = total.toFixed(2);
     }
 
     // Abre popup e navega direto para o método escolhido se especificado

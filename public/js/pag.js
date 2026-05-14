@@ -625,16 +625,19 @@ function prepararPagamento() {
   }
 }
 
-function preencherResumoVIP({ valorBase = 0, desconto = 0 }) {
-  const taxaPerc =
-    typeof TAXA_TRANSACAO === "number" ? TAXA_TRANSACAO : 0.15;
+// Taxa Asaas: R$ 1,99 fixo + 10% do valor com desconto
+function calcTaxaAsaas(valorComDesconto) {
+  const taxa  = Number((1.99 + valorComDesconto * 0.10).toFixed(2));
+  const total = Number((valorComDesconto + taxa).toFixed(2));
+  return { taxa, total };
+}
 
+function preencherResumoVIP({ valorBase = 0, desconto = 0 }) {
   valorBase = Number(valorBase || 0);
-  desconto = Number(desconto || 0);
+  desconto  = Number(desconto  || 0);
 
   const valorComDesconto = Math.max(0, valorBase - desconto);
-  const taxa = valorComDesconto * taxaPerc;
-  const total = valorComDesconto + taxa;
+  const { taxa, total }  = calcTaxaAsaas(valorComDesconto);
 
   document.getElementById("vipValorBase").textContent =
     valorBase.toFixed(2).replace(".", ",");
@@ -649,14 +652,18 @@ function preencherResumoVIP({ valorBase = 0, desconto = 0 }) {
     total.toFixed(2).replace(".", ",");
 }
 
-function preencherResumoMidia({ valor = 0, descricao = "" }) {
-  valor = Number(valor || 0);
+function preencherResumoMidia({ valor = 0, desconto = 0, descricao = "" }) {
+  valor   = Number(valor   || 0);
+  desconto = Number(desconto || 0);
 
-  const taxa = valor * 0.15;
-  const total = valor + taxa;
+  const valorComDesconto = Math.max(0, valor - desconto);
+  const { taxa, total }  = calcTaxaAsaas(valorComDesconto);
 
   document.getElementById("midiaValorBase").textContent =
     valor.toFixed(2).replace(".", ",");
+
+  const elDesc = document.getElementById("midiaDesconto");
+  if (elDesc) elDesc.textContent = desconto.toFixed(2).replace(".", ",");
 
   document.getElementById("midiaTaxa").textContent =
     taxa.toFixed(2).replace(".", ",");

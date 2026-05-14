@@ -2638,6 +2638,17 @@ async function calcAsaasAmount(valorBRL, currency) {
   };
 }
 
+/**
+ * Calcula a taxa de transação Asaas: R$ 1,99 fixo + 10% do valor base.
+ * @param {number} valorBase  Valor do produto já com desconto aplicado (BRL).
+ * @returns {{ taxaTransacao: number, taxaPlataforma: number, valorTotal: number }}
+ */
+function calcTaxaAsaas(valorBase) {
+  const taxaTransacao = Number((1.99 + valorBase * 0.10).toFixed(2));
+  const valorTotal    = Number((valorBase + taxaTransacao).toFixed(2));
+  return { taxaTransacao, taxaPlataforma: 0, valorTotal };
+}
+
 // ── Asaas helpers ──────────────────────────────────────────────────────────
 const ASAAS_BASE = process.env.NODE_ENV === "production"
   ? "https://api.asaas.com/v3"
@@ -8317,21 +8328,9 @@ if (Number.isNaN(dataAceite.getTime())) {
        CÁLCULO
     ========================= */
 
-    const valorCentavos = Math.round(valorBase * 100);
-    const taxaTransacaoCentavos = Math.round(valorCentavos * 0.10);
-    const taxaPlataformaCentavos = Math.round(valorCentavos * 0.05);
-
-    const amount =
-      valorCentavos +
-      taxaTransacaoCentavos +
-      taxaPlataformaCentavos;
-
     const valorAssinatura = Number(valorBase.toFixed(2));
-    const taxaTransacao = Number((valorAssinatura * 0.10).toFixed(2));
-    const taxaPlataforma = Number((valorAssinatura * 0.05).toFixed(2));
-    const valorTotal = Number(
-      (valorAssinatura + taxaTransacao + taxaPlataforma).toFixed(2)
-    );
+    const { taxaTransacao, taxaPlataforma, valorTotal } = calcTaxaAsaas(valorAssinatura);
+    const amount = Math.round(valorTotal * 100);
 
     console.log("VALORES:");
     console.log("base:", valorAssinatura);
@@ -8550,13 +8549,7 @@ if (Number.isNaN(dataAceite.getTime())) {
 
     const precoNum = Number(preco);
 
-    const taxaTransacao = Number((precoNum * 0.10).toFixed(2));
-    const taxaPlataforma = Number((precoNum * 0.05).toFixed(2));
-
-    const valorTotal = Number(
-      (precoNum + taxaTransacao + taxaPlataforma).toFixed(2)
-    );
-
+    const { taxaTransacao, taxaPlataforma, valorTotal } = calcTaxaAsaas(precoNum);
     const valorCentavos = Math.round(valorTotal * 100);
 
     /* ================================
@@ -9119,21 +9112,9 @@ if (Number.isNaN(dataAceite.getTime())) {
        CÁLCULO
     ========================= */
 
-    const valorCentavos = Math.round(precoBase * 100);
-    const taxaTransacaoCentavos = Math.round(valorCentavos * 0.10);
-    const taxaPlataformaCentavos = Math.round(valorCentavos * 0.05);
-
-    const amount =
-      valorCentavos +
-      taxaTransacaoCentavos +
-      taxaPlataformaCentavos;
-
     const valorBase = Number(precoBase.toFixed(2));
-    const taxaTransacao = Number((valorBase * 0.10).toFixed(2));
-    const taxaPlataforma = Number((valorBase * 0.05).toFixed(2));
-    const valorTotal = Number(
-      (valorBase + taxaTransacao + taxaPlataforma).toFixed(2)
-    );
+    const { taxaTransacao, taxaPlataforma, valorTotal } = calcTaxaAsaas(valorBase);
+    const amount = Math.round(valorTotal * 100);
 
     console.log("VALORES:");
     console.log("base:", valorBase);
@@ -9563,12 +9544,7 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
     const { valorReais, valorConvertido, taxaCambio } =
       await calcAsaasAmount(valorAssinatura, currency);
 
-    const taxaTransacaoCentavos = Math.round(valorReais * 100 * 0.10);
-    const taxaPlataformaCentavos = Math.round(valorReais * 100 * 0.05);
-
-    const valorTotal = Number((valorReais + taxaTransacaoCentavos / 100 + taxaPlataformaCentavos / 100).toFixed(2));
-    const taxaTransacao = Number((taxaTransacaoCentavos / 100).toFixed(2));
-    const taxaPlataforma = Number((taxaPlataformaCentavos / 100).toFixed(2));
+    const { taxaTransacao, taxaPlataforma, valorTotal } = calcTaxaAsaas(valorReais);
 
     /* =====================================================
        CRIAR PAGAMENTO CARTÃO ASAAS
@@ -9909,20 +9885,14 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
     const { valorReais, valorConvertido, taxaCambio } =
       await calcAsaasAmount(Number(preco), currency);
 
-    const taxaTransacaoCentavos  = Math.round(valorReais * 100 * 0.10);
-    const taxaPlataformaCentavos = Math.round(valorReais * 100 * 0.05);
-
-    const valorTotal = Number((valorReais + taxaTransacaoCentavos / 100 + taxaPlataformaCentavos / 100).toFixed(2));
+    const valorBase = valorConvertido;
+    const { taxaTransacao, taxaPlataforma, valorTotal } = calcTaxaAsaas(valorBase);
+    const total = valorTotal;
 
     if (!valorTotal || valorTotal <= 0) {
       await client.query("ROLLBACK");
       return res.status(400).json({ error: "Valor do pagamento inválido." });
     }
-
-    const valorBase      = valorConvertido;
-    const taxaTransacao  = Number((taxaTransacaoCentavos / 100).toFixed(2));
-    const taxaPlataforma = Number((taxaPlataformaCentavos / 100).toFixed(2));
-    const total          = valorTotal;
 
     /* =====================================================
        CRIAR PAGAMENTO CARTÃO ASAAS (MÍDIA)
@@ -10347,20 +10317,14 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
     const { valorReais, valorConvertido, taxaCambio } =
       await calcAsaasAmount(Number(preco), currency);
 
-    const taxaTransacaoCentavos  = Math.round(valorReais * 100 * 0.10);
-    const taxaPlataformaCentavos = Math.round(valorReais * 100 * 0.05);
-
-    const valorTotal = Number((valorReais + taxaTransacaoCentavos / 100 + taxaPlataformaCentavos / 100).toFixed(2));
+    const valorBase = valorConvertido;
+    const { taxaTransacao, taxaPlataforma, valorTotal } = calcTaxaAsaas(valorBase);
+    const total = valorTotal;
 
     if (!valorTotal || valorTotal <= 0) {
       await client.query("ROLLBACK");
       return res.status(400).json({ error: "Valor do pagamento inválido." });
     }
-
-    const valorBase      = valorConvertido;
-    const taxaTransacao  = Number((taxaTransacaoCentavos / 100).toFixed(2));
-    const taxaPlataforma = Number((taxaPlataformaCentavos / 100).toFixed(2));
-    const total          = valorTotal;
 
     /* =====================================================
        CRIAR PAGAMENTO CARTÃO ASAAS (PREMIUM)
