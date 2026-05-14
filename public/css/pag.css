@@ -285,9 +285,14 @@ max-height: 80%;
   border-radius: 10px;
 }
 
-.pix-qr {
-  width: 160px;            /* QR menor */
-  margin: 8px auto;
+.pix-qr,
+#pixQr {
+  display: block;
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+  margin: 12px auto;
+  border-radius: 8px;
 }
 
 .btn-copiar {
