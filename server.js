@@ -10029,7 +10029,99 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
       ]
     );
 
+    if (statusLocal === "pago") {
+      const calcularValores =
+        req.app.get("calcularValores") ||
+        (async ({ valor_bruto }) => ({
+          valor_modelo: valor_bruto * 0.7,
+          agency_fee: valor_bruto * 0.1,
+          velvet_fee: valor_bruto * 0.05
+        }));
+
+      const taxaGateway = Number((1.99 + valorReais * 0.10).toFixed(2));
+      const valores = await calcularValores({
+        modelo_id: modeloIdNum,
+        valor_bruto: valorReais,
+        taxa_gateway: taxaGateway
+      });
+
+      const vipExistente = await client.query(
+        `SELECT id, ativo, expiration_at FROM vip_subscriptions
+         WHERE cliente_id = $1 AND modelo_id = $2 LIMIT 1 FOR UPDATE`,
+        [cliente_id, modeloIdNum]
+      );
+      const primeiraAssinatura = vipExistente.rowCount === 0;
+
+      let novaExpiracao;
+      if (
+        vipExistente.rowCount > 0 &&
+        vipExistente.rows[0].expiration_at &&
+        new Date(vipExistente.rows[0].expiration_at) > new Date()
+      ) {
+        novaExpiracao = new Date(vipExistente.rows[0].expiration_at);
+        novaExpiracao.setMonth(novaExpiracao.getMonth() + 1);
+      } else {
+        novaExpiracao = new Date();
+        novaExpiracao.setMonth(novaExpiracao.getMonth() + 1);
+      }
+
+      if (vipExistente.rowCount > 0) {
+        await client.query(
+          `UPDATE vip_subscriptions
+           SET ativo = true, updated_at = NOW(), expiration_at = $3,
+               valor_assinatura = $4, taxa_transacao = $5, taxa_plataforma = 0,
+               valor_total = $6, recorrente = false, gateway_subscription_id = $7,
+               aviso_7_dias_enviado = false, aviso_24h_enviado = false
+           WHERE cliente_id = $1 AND modelo_id = $2`,
+          [cliente_id, modeloIdNum, novaExpiracao, valorReais, taxaGateway, valorTotal, asaasPaymentId]
+        );
+      } else {
+        await client.query(
+          `INSERT INTO vip_subscriptions
+             (cliente_id, modelo_id, ativo, created_at, updated_at, expiration_at,
+              valor_assinatura, taxa_transacao, taxa_plataforma, valor_total,
+              recorrente, gateway_subscription_id)
+           VALUES ($1,$2,true,NOW(),NOW(),$3,$4,$5,0,$6,false,$7)`,
+          [cliente_id, modeloIdNum, novaExpiracao, valorReais, taxaGateway, valorTotal, asaasPaymentId]
+        );
+      }
+
+      await client.query(
+        `INSERT INTO transacoes_agency
+           (modelo_id, cliente_id, tipo, valor_bruto, valor_modelo, agency_fee,
+            velvet_fee, taxa_gateway, status, created_at)
+         VALUES ($1,$2,'assinatura',$3,$4,$5,$6,$7,'pago',NOW())`,
+        [modeloIdNum, cliente_id, valorReais,
+         Number(valores.valor_modelo || 0),
+         Number(valores.agency_fee || 0),
+         Number(valores.velvet_fee || 0),
+         taxaGateway]
+      );
+
+      if (primeiraAssinatura) {
+        await client.query(
+          `INSERT INTO messages
+             (cliente_id, modelo_id, text, sender, tipo, created_at, lida, visto, deletada)
+           VALUES ($1,$2,$3,'modelo','texto',NOW(),false,false,false)`,
+          [cliente_id, modeloIdNum, "Oii!! Bem vindo, como vc chama?🔥"]
+        );
+      }
+    }
+
     await client.query("COMMIT");
+
+    if (statusLocal === "pago") {
+      try {
+        const io = req.app.get("io");
+        if (io) {
+          const sala = `chat_${cliente_id}_${modeloIdNum}`;
+          io.to(sala).emit("vipAtivado", {
+            cliente_id: Number(cliente_id),
+            modelo_id: Number(modeloIdNum)
+          });
+        }
+      } catch (e) { console.error("Erro socket vip cartão:", e); }
+    }
 
     try {
       await client.query(
@@ -10390,7 +10482,67 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
       ]
     );
 
+    let conteudo_ids_liberados = null;
+
+    if (statusLocal === "pago") {
+      const calcularValores =
+        req.app.get("calcularValores") ||
+        (async ({ valor_bruto }) => ({
+          valor_modelo: valor_bruto * 0.7,
+          agency_fee: valor_bruto * 0.1,
+          velvet_fee: valor_bruto * 0.05
+        }));
+
+      const taxaGateway = Number((1.99 + valorReais * 0.10).toFixed(2));
+      const valores = await calcularValores({
+        modelo_id,
+        valor_bruto: valorReais,
+        taxa_gateway: taxaGateway
+      });
+
+      await client.query(
+        `INSERT INTO conteudo_pacotes
+           (message_id, cliente_id, modelo_id, preco, valor_base, valor_total,
+            status, metodo_pagamento, pago_em, currency, valor_cobrado, taxa_cambio)
+         VALUES ($1,$2,$3,$4,$4,$5,'pago','cartao',NOW(),'brl',$5,NULL)
+         ON CONFLICT (message_id, cliente_id) DO UPDATE
+           SET status='pago', metodo_pagamento='cartao', pago_em=NOW(), valor_total=$5`,
+        [conteudoId, cliente_id, modelo_id, valorReais, total]
+      );
+
+      conteudo_ids_liberados = await marcarConteudoComoLiberadoPorPagamento(client, {
+        message_id: conteudoId,
+        cliente_id,
+        modelo_id
+      });
+
+      await client.query(
+        `INSERT INTO transacoes_agency
+           (modelo_id, cliente_id, tipo, valor_bruto, valor_modelo, agency_fee,
+            velvet_fee, taxa_gateway, status, created_at)
+         VALUES ($1,$2,'midia',$3,$4,$5,$6,$7,'pago',NOW())`,
+        [modelo_id, cliente_id, valorReais,
+         Number(valores.valor_modelo || 0),
+         Number(valores.agency_fee || 0),
+         Number(valores.velvet_fee || 0),
+         taxaGateway]
+      );
+    }
+
     await client.query("COMMIT");
+
+    if (statusLocal === "pago" && conteudo_ids_liberados) {
+      try {
+        const io = req.app.get("io");
+        if (io) {
+          const sala = `chat_${cliente_id}_${modelo_id}`;
+          io.to(sala).emit("conteudoLiberado", {
+            message_id: Number(conteudoId),
+            conteudo_ids: conteudo_ids_liberados || []
+          });
+        }
+      } catch (e) { console.error("Erro socket midia cartão:", e); }
+    }
 
     try {
       await client.query(
@@ -10875,7 +11027,50 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
     );
     console.log("✅ premium_unlocks OK");
 
+    if (statusLocal === "pago") {
+      const calcularValores =
+        req.app.get("calcularValores") ||
+        (async ({ valor_bruto }) => ({
+          valor_modelo: valor_bruto * 0.7,
+          agency_fee: valor_bruto * 0.1,
+          velvet_fee: valor_bruto * 0.05
+        }));
+
+      const taxaGateway = Number((1.99 + valorReais * 0.10).toFixed(2));
+      const valores = await calcularValores({
+        modelo_id,
+        valor_bruto: valorReais,
+        taxa_gateway: taxaGateway
+      });
+
+      await client.query(
+        `INSERT INTO transacoes_agency
+           (modelo_id, cliente_id, tipo, valor_bruto, valor_modelo, agency_fee,
+            velvet_fee, taxa_gateway, status, created_at)
+         VALUES ($1,$2,'midia',$3,$4,$5,$6,$7,'pago',NOW())`,
+        [modelo_id, cliente_id, valorReais,
+         Number(valores.valor_modelo || 0),
+         Number(valores.agency_fee || 0),
+         Number(valores.velvet_fee || 0),
+         taxaGateway]
+      );
+    }
+
     await client.query("COMMIT");
+
+    if (statusLocal === "pago") {
+      try {
+        const io = req.app.get("io");
+        if (io) {
+          io.to(`user_${cliente_id}`).emit("pagamento_confirmado", {
+            tipo: "premium",
+            premium_post_id: premium_id,
+            modelo_id,
+            payment_id: asaasPaymentId
+          });
+        }
+      } catch (e) { console.error("Erro socket premium cartão:", e); }
+    }
 
     try {
       await client.query(
