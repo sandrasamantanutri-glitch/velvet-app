@@ -53,6 +53,21 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* Selo Asaas — obrigatório em fluxos financeiros (Resolução Conjunta Bacen nº 16/2025) */
+.asaas-selo {
+  text-align: center;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #eee;
+}
+
+.asaas-selo img {
+  display: inline-block;
+  height: 40px;
+  width: auto;
+  max-width: 200px;
+}
+
 .velvet-close {
   position: absolute;
   top: 12px;
