@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Agency Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="agencia.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<header class="topbar">
+  <div class="topbar-left">
+    <img src="/assets/velvet.png" alt="Velvet" class="logo-small">
+    <nav>
+      <a href="/agencia/dashboard.html" class="active">Dashboard</a>
+      <a href="/agencia/pagamentos.html">Pagamentos</a>
+    </nav>
+  </div>
+
+  <div class="topbar-right">
+    <select id="modeloSelect" onchange="irModelo()">
+      <option value="">Selecionar Modelo</option>
+    </select>
+  </div>
+</header>
+
+<div class="cards">
+<h2 id="nomeAgencia" class="nome-agencia"></h2>
+
+  <div class="card">
+    <h4>Mídias Hoje</h4>
+    <div class="valor" id="midiasHoje">R$ 0</div>
+  </div>
+
+   <div class="card">
+    <h4>Assinaturas Hoje</h4>
+    <div class="valor" id="assinaturasHoje">R$ 0</div>
+  </div>
+
+  <div class="card">
+    <h4>Mídias Mês</h4>
+    <div class="valor" id="midiasMes">R$ 0</div>
+  </div>
+
+    <div class="card">
+    <h4>Assinaturas Mês</h4>
+    <div class="valor" id="assinaturasMes">R$ 0</div>
+  </div>
+
+    <div class="card destaque-hoje">
+  <h4>Total Hoje</h4>
+  <div class="valor total-hoje" id="totalHoje">R$ 0</div>
+</div>
+
+  <div class="card destaque-mes">
+  <h4>Total Mês</h4>
+  <div class="valor total-mes" id="totalMes">R$ 0</div>
+</div>
+
+  <div class="card destaque-ano">
+    <h4>Total Ano 2026</h4>
+    <div class="valor total" id="totalAno">R$ 0</div>
+  </div>
+
+</div>
+
+<br><br>
+
+<div class="card">
+  <canvas id="grafico" height="100"></canvas>
+</div>
+
+</div>
+
+<script>
+const token = localStorage.getItem("token_agencia");
+
+async function carregarDashboard() {
+
+  // if (!token) {
+  //   window.location.href = "/agencia/login.html";
+  //   return;
+  // }
+
+  try {
+    const res = await fetch("/api/agencia/dashboard", {
+      headers: { Authorization: "Bearer " + token }
+    });
+
+    // if (!res.ok) {
+    //   console.error("Erro API dashboard:", res.status);
+    //   window.location.href = "/agencia/login.html";
+    //   return;
+    // }
+
+    const data = await res.json();
+
+    console.log("Dashboard API:", data);
+
+    document.getElementById("midiasHoje").innerText =
+      "R$ " + Number(data.midias_hoje || 0).toFixed(2);
+
+    document.getElementById("assinaturasHoje").innerText =
+      "R$ " + Number(data.assinaturas_hoje || 0).toFixed(2);
+
+    document.getElementById("assinaturasMes").innerText =
+      "R$ " + Number(data.assinaturas_mes || 0).toFixed(2);
+
+    document.getElementById("midiasMes").innerText =
+      "R$ " + Number(data.midias_mes || 0).toFixed(2);
+
+    document.getElementById("totalHoje").innerText =
+      "R$ " + Number(data.total_hoje || 0).toFixed(2);
+
+    document.getElementById("totalMes").innerText =
+      "R$ " + Number(data.total_mes || 0).toFixed(2);
+
+    document.getElementById("totalAno").innerText =
+      "R$ " + Number(data.total_ano || 0).toFixed(2);
+
+    criarGrafico(data);
+
+  } catch (err) {
+    console.error("Erro dashboard:", err);
+  }
+}
+
+let grafico;
+
+function criarGrafico(data){
+
+  if (grafico) grafico.destroy();
+
+  grafico = new Chart(document.getElementById("grafico"), {
+    type: 'bar',
+    data: {
+      labels: [
+        "Mídias Hoje",
+        "Assinaturas Hoje",
+        "Mídias Mês",
+        "Assinaturas Mês",
+        "Total Hoje",
+        "Total Mês",
+        "Total Ano"
+      ],
+      datasets: [{
+        label: "Receita Agência",
+        data: [
+          data.midias_hoje || 0,
+          data.assinaturas_hoje || 0,
+          data.midias_mes || 0,
+          data.assinaturas_mes || 0,
+          data.total_hoje || 0,
+          data.total_mes || 0,
+          data.total_ano || 0
+        ],
+        borderRadius: 8
+      }]
+    },
+    options:{
+      plugins:{ legend:{ display:false }},
+      scales:{
+        y:{ ticks:{ color:"#aaa" }},
+        x:{ ticks:{ color:"#aba" }}
+      }
+    }
+  });
+}
+
+
+async function carregarModelos(){
+  const res = await fetch("/api/agencia/modelos",{
+    headers:{ Authorization:"Bearer "+token }
+  });
+
+  if(!res.ok){
+    console.error("Erro ao carregar modelos");
+    return;
+  }
+
+  const modelos = await res.json();
+
+  const select = document.getElementById("modeloSelect");
+
+  select.innerHTML = `<option value="">Selecionar Modelo</option>`;
+
+  modelos.forEach(m=>{
+    select.innerHTML += `<option value="${m.id}">${m.nome}</option>`;
+  });
+}
+
+function irModelo(){
+  const id = document.getElementById("modeloSelect").value;
+  if(id) window.location.href="modelo.html?id="+id;
+}
+
+async function carregarAgencia(){
+  const res = await fetch("/api/agencia/me", {
+    headers:{ Authorization:"Bearer "+token }
+  });
+
+  if(!res.ok) return;
+
+  const data = await res.json();
+
+  const el = document.getElementById("nomeAgencia");
+  if(el){
+    el.innerText = data.nome;
+  }
+}
+
+carregarAgencia();
+carregarDashboard();
+carregarModelos();
+</script>
+
+</body>
+</html>

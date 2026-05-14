@@ -1,0 +1,13 @@
+node_modules/
+.env
+.DS_Store
+npm-debug.log*
+uploads/
+messages.json
+users.json
+unread.json
+subscriptions.json
+compras.json
+
+admin-pages/.claude/worktrees/elastic-knuth/
+.claude/worktrees/sweet-lamarr-c9442f/

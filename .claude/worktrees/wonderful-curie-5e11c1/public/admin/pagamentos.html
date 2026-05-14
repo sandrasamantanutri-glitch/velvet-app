@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="agencia.css">
+<title>Pagamentos - Agências</title>
+
+</head>
+
+<body>
+
+  <header class="topbar">
+  <div class="topbar-left">
+    <img src="/assets/velvet.png" alt="Velvet" class="logo-small">
+    <nav>
+      <a href="/agencia/dashboard.html">Dashboard</a>
+      <a href="/agencia/pagamentos.html" class="active">Pagamentos</a>
+    </nav>
+  </div>
+  </header>
+
+<h2>Pagamentos Recebidos - <strong>BREVE</strong></h2>
+
+<table>
+<thead>
+<tr>
+  <th>Modelo</th>
+  <th>Mês</th>
+  <th>Midias</th>
+  <th>Assinaturas</th>
+  <th>Total</th>
+  <th>Data Pagamento</th>
+</tr>
+</thead>
+
+<tbody id="tabela"></tbody>
+</table>
+
+<script>
+const token = localStorage.getItem("token_agencia");
+
+async function carregar(){
+  const res = await fetch("/api/agencia/pagamentos",{
+    headers:{ Authorization:"Bearer "+token }
+  });
+
+  const pagamentos = await res.json();
+
+  const tbody = document.getElementById("tabela");
+
+  pagamentos.forEach(p=>{
+    tbody.innerHTML += `
+      <tr>
+        <td>${p.modelo_nome}</td>
+        <td>${p.referencia_mes}</td>
+        <td>R$ ${Number(p.valor_midias).toFixed(2)}</td>
+        <td>R$ ${Number(p.valor_assinaturas).toFixed(2)}</td>
+        <td>R$ ${Number(p.valor_total).toFixed(2)}</td>
+        <td>${p.data_pagamento}</td>
+      </tr>
+    `;
+  });
+}
+
+carregar();
+</script>
+
+</body>
+</html>
