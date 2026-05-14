@@ -354,8 +354,12 @@ app.post("/api/webhook/asaas", express.json(), async (req, res) => {
         const modelo_id  = Number(row.modelo_id);
         const message_id = row.message_id ? Number(row.message_id) : null;
         const isVip      = !message_id;   // VIP não tem message_id
-        const valorBase  = Number(row.valor || valorPago);
-        const taxaGateway = Number((1.99 + valorBase * 0.10).toFixed(2));
+        // pagamentos_pix.valor armazena valorTotal (bruto cobrado ao cliente, ex: 34.99).
+        // Os splits devem ser calculados sobre o valor base da mídia/assinatura (ex: 30.00).
+        // Fórmula taxa Asaas: total = base * 1.10 + 1.99 → base = (total - 1.99) / 1.10
+        const valorBrutoTotal = Number(row.valor || valorPago);
+        const valorBase   = Number(((valorBrutoTotal - 1.99) / 1.10).toFixed(2));
+        const taxaGateway = Number((valorBrutoTotal - valorBase).toFixed(2));
 
         const valores = await calcularValores({
           modelo_id,
