@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Teste de Pagamentos — Ambiente de Homologação</title>
   <link rel="stylesheet" href="/css/pag.css" />
+  <script src="/i18n.js"></script>
   <style>
     body {
       font-family: 'Poppins', sans-serif;
@@ -349,13 +350,46 @@
     log('info', `── Iniciando teste: tipo=${tipo} método=${metodo} ──`);
 
     // Valores de teste por tipo
+    // IMPORTANTE: modelo_id, conteudo_id e premium_post_id devem ser IDs
+    // numéricos reais do banco sandbox. Use 1 ou ajuste conforme seu banco.
     const config = {
-      vip:     { valor: 49.90, modelo_id: 'MODELO_TESTE_ID' },
-      midia:   { valor: 19.90, conteudo_id: 'CONTEUDO_TESTE_ID', modelo_id: 'MODELO_TESTE_ID' },
-      premium: { valor: 29.90, post_id: 'POST_TESTE_ID', modelo_id: 'MODELO_TESTE_ID' },
+      vip:     { valor: 49.90, modelo_id: 1 },
+      midia:   { valor: 19.90, conteudo_id: 1, modelo_id: 1 },
+      premium: { valor: 29.90, premium_post_id: 1, modelo_id: 1 },
     };
 
+    // ─── Globals que pag.js usa para despachar o pagamento ───────────────────
+    window.PAGAMENTO_TIPO_ATUAL = tipo;   // ← ESSENCIAL: confirmarPix() lê isso
+    window.MODELO_ID_ATUAL      = config[tipo].modelo_id;
+
+    if (tipo === 'midia') {
+      window.MIDIA_VENDA_ATUAL = {
+        conteudo_id: config.midia.conteudo_id,
+        preco: config.midia.valor,
+        descricao: 'Mídia de teste'
+      };
+    } else {
+      window.MIDIA_VENDA_ATUAL = null;
+    }
+
+    if (tipo === 'premium') {
+      window.PREMIUM_ATUAL = {
+        premium_post_id: config.premium.premium_post_id,
+        preco: config.premium.valor,
+        descricao: 'Post premium de teste'
+      };
+    } else {
+      window.PREMIUM_ATUAL = null;
+    }
+
+    if (tipo === 'vip') {
+      window.OFERTA_ATUAL     = null;
+      window.PLANO_VIP_ATUAL  = { valor: config.vip.valor };
+    }
+
     window.pagamentoAtual = { tipo, ...config[tipo] };
+
+    log('info', `   PAGAMENTO_TIPO_ATUAL=${window.PAGAMENTO_TIPO_ATUAL}  MODELO_ID_ATUAL=${window.MODELO_ID_ATUAL}`);
 
     // Exibe o bloco de detalhes correto
     document.querySelectorAll('.vip-detalhes, .midia-detalhes').forEach(el => el.classList.add('hidden'));
