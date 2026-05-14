@@ -2640,12 +2640,19 @@ async function calcAsaasAmount(valorBRL, currency) {
 
 /**
  * Calcula a taxa de transação Asaas: R$ 1,99 fixo + 10% do valor base.
+ * Garante valorTotal >= R$ 5,00 (mínimo exigido pela Asaas).
  * @param {number} valorBase  Valor do produto já com desconto aplicado (BRL).
  * @returns {{ taxaTransacao: number, taxaPlataforma: number, valorTotal: number }}
  */
 function calcTaxaAsaas(valorBase) {
-  const taxaTransacao = Number((1.99 + valorBase * 0.10).toFixed(2));
-  const valorTotal    = Number((valorBase + taxaTransacao).toFixed(2));
+  const taxaCalculada = Number((1.99 + valorBase * 0.10).toFixed(2));
+  const totalBruto    = Number((valorBase + taxaCalculada).toFixed(2));
+
+  // Asaas exige mínimo de R$ 5,00 por cobrança
+  const MINIMO_ASAAS  = 5.00;
+  const valorTotal    = Number(Math.max(MINIMO_ASAAS, totalBruto).toFixed(2));
+  const taxaTransacao = Number((valorTotal - valorBase).toFixed(2));
+
   return { taxaTransacao, taxaPlataforma: 0, valorTotal };
 }
 
