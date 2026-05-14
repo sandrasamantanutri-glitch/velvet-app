@@ -388,6 +388,7 @@ body.modal-open {
 
   html, body {
     height: 100%;
+    background: #dbcafa;
   }
 
   body {
@@ -416,13 +417,15 @@ body.modal-open {
     width: 100%;
     height: 100vh;
     margin: 0;
-    padding: 32px 24px;
+    padding: 30px 30px;
     border-radius: 0; /* 🔑 tela cheia */
-    justify-content: space-between;
+    justify-content: center;
   }
 
   .logo {
     margin: 10px auto 10px;
+    width: 220px;
+
   }
 
   /* BOTÕES */
@@ -436,16 +439,9 @@ body.modal-open {
     border-radius: 14px;
   }
 
-  /* FOOTER */
-  .footer-links,
-  .footer-linksC {
-    margin-top: 32px;
-  }
-
   .footer-links a,
   .footer-linksC a {
     display: block;
-    margin: 8px 0;
   }
   /* inputs maiores (evita zoom iOS) */
   .modal-box input,
@@ -494,7 +490,6 @@ body.modal-open {
     gap: 14px;
     
   }
-}
 
 .language-switcher {
   display: flex;
@@ -646,3 +641,4 @@ body.modal-open {
 }
 
 
+}
