@@ -117,17 +117,8 @@ async function initClienteInbox() {
 // PRIORIDADE CHAT
 // ===============================
 function prioridadeChat(c) {
-
-  // mensagem da modelo não lida
-  if (c.sender === "modelo" && c.lida === false) return 1;
-
-  // modelo enviou e você leu
-  if (c.sender === "modelo" && c.lida === true) return 2;
-
-  // você enviou por último
-  if (c.sender === "cliente") return 3;
-
-  return 4;
+  if (c.sender === "modelo" && c.lida === false) return 1; // não lida pelo cliente
+  return 2; // restante: por horário
 }
 
 // ===============================

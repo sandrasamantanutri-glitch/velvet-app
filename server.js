@@ -5167,7 +5167,9 @@ app.get("/api/chat/cliente", authCliente, async (req, res) => {
       WHERE v.cliente_id = $1
         AND v.ativo = true
         AND v.expiration_at > NOW()
-         ORDER BY msg.created_at DESC NULLS LAST
+      ORDER BY
+        CASE WHEN msg.sender = 'modelo' AND COALESCE(msg.lida, false) = false THEN 1 ELSE 2 END,
+        msg.created_at DESC NULLS LAST
     `, [req.cliente_id]);
 
     res.json(rows);
