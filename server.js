@@ -2779,11 +2779,16 @@ async function buscarUnreadCliente(cliente_id) {
 
   const result = await db.query(
     `
-    SELECT modelo_id
-    FROM unread
-    WHERE cliente_id = $1
-      AND unread_for = 'cliente'
-      AND has_unread = true
+    SELECT u.modelo_id
+    FROM unread u
+    JOIN vip_subscriptions v
+      ON v.cliente_id = u.cliente_id
+     AND v.modelo_id  = u.modelo_id
+     AND v.ativo = true
+     AND v.expiration_at > NOW()
+    WHERE u.cliente_id  = $1
+      AND u.unread_for  = 'cliente'
+      AND u.has_unread  = true
     `,
     [cliente_id]
   );
@@ -2799,11 +2804,16 @@ async function buscarUnreadModelo(modelo_id) {
 
   const result = await db.query(
     `
-    SELECT cliente_id
-    FROM unread
-    WHERE modelo_id = $1
-      AND unread_for = 'modelo'
-      AND has_unread = true
+    SELECT u.cliente_id
+    FROM unread u
+    JOIN vip_subscriptions v
+      ON v.cliente_id = u.cliente_id
+     AND v.modelo_id  = u.modelo_id
+     AND v.ativo = true
+     AND v.expiration_at > NOW()
+    WHERE u.modelo_id  = $1
+      AND u.unread_for = 'modelo'
+      AND u.has_unread = true
     `,
     [modelo_id]
   );
