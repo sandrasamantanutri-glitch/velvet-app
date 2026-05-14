@@ -631,7 +631,7 @@ app.post("/api/webhook/asaas", express.json(), async (req, res) => {
 
           dadosParaEmitir = { tipo: "vip", cliente_id, modelo_id };
 
-        } else if (tipoPag === "midia") {
+        } else if (tipoPag === "conteudo" || tipoPag === "midia") {
           /* ── MÍDIA CARTÃO ── */
           const message_id = Number(row.message_id || row.conteudo_id || 0) || null;
 
