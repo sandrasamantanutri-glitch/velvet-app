@@ -255,7 +255,7 @@ function resetarEstadoCartao() {
   const btn = document.getElementById("btnConfirmarStripe");
   if (btn) {
     btn.disabled = false;
-    btn.innerText = t("pagamento.btn_confirmar_stripe");
+    btn.innerText = (typeof t === "function" ? t("pagamento.btn_confirmar_stripe") : null) || "Confirmar pagamento";
   }
 
   const container = document.getElementById("asaas-card-form");
@@ -1469,7 +1469,7 @@ function atualizarResumoCartaoComDadosServidor(data) {
 
 
 document.addEventListener("DOMContentLoaded", () => {
-  bindFormularioStripePagamento();
+  bindFormularioAsaasPagamento();
 
   document.getElementById("btnGerarPix")?.addEventListener("click", () => {
     confirmarPix();
