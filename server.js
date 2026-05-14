@@ -187,36 +187,53 @@ app.post("/api/webhook/asaas", express.json(), async (req, res) => {
   console.log("======================================");
   console.log("🔥 WEBHOOK ASAAS RECEBIDO");
 
-  // Verificação do token configurado no painel Asaas
+  // ── Verificação do token configurado no painel Asaas ──
   if (process.env.ASAAS_WEBHOOK_TOKEN) {
-    const tokenRecebido = req.headers["access_token"] || req.headers["asaas-access-token"] || "";
+    const tokenRecebido =
+      req.headers["access_token"] ||
+      req.headers["asaas-access-token"] || "";
     if (tokenRecebido !== process.env.ASAAS_WEBHOOK_TOKEN) {
       console.warn("🚨 Webhook Asaas: token inválido");
       return res.status(401).send("unauthorized");
     }
   }
 
-  const event = req.body;
-  const eventType = String(event?.event || "").toUpperCase();
-  const payment = event?.payment || {};
+  const event       = req.body;
+  const eventType   = String(event?.event || "").toUpperCase();
+  const payment     = event?.payment || {};
   const asaasPaymentId = payment?.id || null;
+  const valorPago   = Number(payment.value || 0);
 
-  console.log("Evento:", eventType);
-  console.log("PaymentID:", asaasPaymentId);
+  console.log("Evento:", eventType, "| PaymentID:", asaasPaymentId);
 
-  if (!asaasPaymentId) {
-    return res.status(200).send("ok");
-  }
+  if (!asaasPaymentId) return res.status(200).send("ok");
 
-  const isPaidEvent = ["PAYMENT_RECEIVED", "PAYMENT_CONFIRMED"].includes(eventType);
-  const isFailedEvent = ["PAYMENT_OVERDUE", "PAYMENT_DELETED", "PAYMENT_REFUNDED", "PAYMENT_CHARGEBACK_REQUESTED", "PAYMENT_CHARGEBACK_DISPUTE"].includes(eventType);
+  const isPaidEvent = [
+    "PAYMENT_RECEIVED",
+    "PAYMENT_CONFIRMED"
+  ].includes(eventType);
 
-  if (!isPaidEvent && !isFailedEvent) {
-    return res.status(200).send("ok");
-  }
+  const isFailedEvent = [
+    "PAYMENT_OVERDUE",
+    "PAYMENT_DELETED",
+    "PAYMENT_REFUNDED",
+    "PAYMENT_CHARGEBACK_REQUESTED",
+    "PAYMENT_CHARGEBACK_DISPUTE"
+  ].includes(eventType);
+
+  if (!isPaidEvent && !isFailedEvent) return res.status(200).send("ok");
 
   const novoStatus = isPaidEvent ? "pago" : "falhou";
-  const valorPago = Number(payment.value || 0);
+
+  // calcularValores é carregado após as rotas globais; acedemos via app.get
+  // como fallback seguro caso ainda não esteja disponível
+  const calcularValores =
+    req.app.get("calcularValores") ||
+    (async ({ valor_bruto }) => ({
+      valor_modelo: valor_bruto * 0.7,
+      agency_fee: valor_bruto * 0.1,
+      velvet_fee: valor_bruto * 0.05
+    }));
 
   const client = await db.connect();
   let dadosParaEmitir = null;
@@ -224,160 +241,521 @@ app.post("/api/webhook/asaas", express.json(), async (req, res) => {
   try {
     await client.query("BEGIN");
 
-    // Buscar em pagamentos_pix
-    const pixRes = await client.query(
-      `
-      SELECT id, cliente_id, modelo_id, status, tipo
-      FROM pagamentos_pix
-      WHERE pagarme_order_id = $1
-      LIMIT 1
-      FOR UPDATE
-      `,
-      [asaasPaymentId]
-    );
+    /* =======================================================
+       1. BUSCAR REGISTRO — prioridade: premium_unlocks →
+          pagamentos_pix → pagamentos_cartao
+    ======================================================= */
 
-    if (pixRes.rowCount > 0) {
-      const row = pixRes.rows[0];
-      if (row.status !== "pago") {
-        await client.query(
-          `UPDATE pagamentos_pix SET status = $1 WHERE pagarme_order_id = $2`,
-          [novoStatus, asaasPaymentId]
-        );
-
-        if (isPaidEvent) {
-          // Verificar se é VIP (sem message_id = VIP)
-          const isVip = !row.tipo || row.tipo === "vip";
-
-          if (isVip && row.cliente_id && row.modelo_id) {
-            await client.query(
-              `
-              INSERT INTO vip_assinaturas (cliente_id, modelo_id, ativo, validade, gateway)
-              VALUES ($1, $2, true, NOW() + INTERVAL '30 days', 'asaas')
-              ON CONFLICT (cliente_id, modelo_id)
-              DO UPDATE SET ativo = true, validade = NOW() + INTERVAL '30 days', gateway = 'asaas', updated_at = NOW()
-              `,
-              [row.cliente_id, row.modelo_id]
-            );
-          }
-
-          dadosParaEmitir = {
-            tipo: isVip ? "vip" : "midia",
-            cliente_id: row.cliente_id,
-            modelo_id: row.modelo_id,
-            valor: valorPago,
-            payment_id: asaasPaymentId
-          };
-        }
-      }
-
-      await client.query("COMMIT");
-
-      if (dadosParaEmitir) {
-        try {
-          const io = req.app.get("io");
-          if (io) {
-            io.to(`user_${dadosParaEmitir.cliente_id}`).emit("pagamento_confirmado", {
-              tipo: dadosParaEmitir.tipo,
-              modelo_id: dadosParaEmitir.modelo_id,
-              valor: dadosParaEmitir.valor,
-              payment_id: dadosParaEmitir.payment_id
-            });
-          }
-        } catch (e) {
-          console.error("Erro socket:", e);
-        }
-      }
-
-      return res.status(200).send("ok");
-    }
-
-    // Buscar em pagamentos_cartao
-    const cartaoRes = await client.query(
-      `
-      SELECT id, cliente_id, modelo_id, status, tipo
-      FROM pagamentos_cartao
-      WHERE gateway_payment_id = $1
-         OR stripe_payment_intent_id = $1
-      LIMIT 1
-      FOR UPDATE
-      `,
-      [asaasPaymentId]
-    );
-
-    if (cartaoRes.rowCount > 0) {
-      const row = cartaoRes.rows[0];
-      if (row.status !== "pago") {
-        await client.query(
-          `UPDATE pagamentos_cartao SET status = $1, updated_at = NOW() WHERE gateway_payment_id = $2`,
-          [novoStatus, asaasPaymentId]
-        );
-
-        if (isPaidEvent && row.tipo === "vip" && row.cliente_id && row.modelo_id) {
-          await client.query(
-            `
-            INSERT INTO vip_assinaturas (cliente_id, modelo_id, ativo, validade, gateway)
-            VALUES ($1, $2, true, NOW() + INTERVAL '30 days', 'asaas')
-            ON CONFLICT (cliente_id, modelo_id)
-            DO UPDATE SET ativo = true, validade = NOW() + INTERVAL '30 days', gateway = 'asaas', updated_at = NOW()
-            `,
-            [row.cliente_id, row.modelo_id]
-          );
-
-          dadosParaEmitir = {
-            tipo: row.tipo,
-            cliente_id: row.cliente_id,
-            modelo_id: row.modelo_id,
-            valor: valorPago,
-            payment_id: asaasPaymentId
-          };
-        }
-      }
-
-      await client.query("COMMIT");
-
-      if (dadosParaEmitir) {
-        try {
-          const io = req.app.get("io");
-          if (io) {
-            io.to(`user_${dadosParaEmitir.cliente_id}`).emit("pagamento_confirmado", {
-              tipo: dadosParaEmitir.tipo,
-              modelo_id: dadosParaEmitir.modelo_id,
-              valor: dadosParaEmitir.valor,
-              payment_id: dadosParaEmitir.payment_id
-            });
-          }
-        } catch (e) {
-          console.error("Erro socket:", e);
-        }
-      }
-
-      return res.status(200).send("ok");
-    }
-
-    // Buscar em premium_unlocks
+    // ── PREMIUM (PIX ou Cartão) ──────────────────────────
     const premiumRes = await client.query(
-      `
-      SELECT id, cliente_id, modelo_id, status
-      FROM premium_unlocks
-      WHERE pagarme_order_id = $1
-         OR stripe_payment_intent_id = $1
-      LIMIT 1
-      FOR UPDATE
-      `,
+      `SELECT * FROM premium_unlocks
+       WHERE pagarme_order_id = $1
+          OR stripe_payment_intent_id = $1
+       LIMIT 1 FOR UPDATE`,
       [asaasPaymentId]
     );
 
     if (premiumRes.rowCount > 0) {
       const row = premiumRes.rows[0];
-      if (row.status !== "pago") {
+
+      if (row.status === "pago") {
+        await client.query("ROLLBACK");
+        return res.status(200).send("ok");
+      }
+
+      await client.query(
+        `UPDATE premium_unlocks
+         SET status = $1, pago_em = CASE WHEN $1 = 'pago' THEN NOW() ELSE pago_em END,
+             updated_at = NOW()
+         WHERE id = $2`,
+        [novoStatus, row.id]
+      );
+
+      if (isPaidEvent) {
+        const cliente_id      = Number(row.cliente_id);
+        const modelo_id       = Number(row.modelo_id);
+        const premium_post_id = Number(row.premium_post_id);
+        const valorBase       = Number(row.valor_base || valorPago);
+
+        const taxaGateway = Number((1.99 + valorBase * 0.10).toFixed(2));
+
+        const valores = await calcularValores({
+          modelo_id,
+          valor_bruto: valorBase,
+          taxa_gateway: taxaGateway
+        });
+
         await client.query(
-          `UPDATE premium_unlocks SET status = $1 WHERE id = $2`,
-          [novoStatus, row.id]
+          `INSERT INTO transacoes_agency
+             (modelo_id, cliente_id, tipo, valor_bruto,
+              valor_modelo, agency_fee, velvet_fee, taxa_gateway, status, created_at)
+           VALUES ($1,$2,'midia',$3,$4,$5,$6,$7,'pago',NOW())`,
+          [
+            modelo_id, cliente_id, valorBase,
+            Number(valores.valor_modelo || 0),
+            Number(valores.agency_fee   || 0),
+            Number(valores.velvet_fee   || 0),
+            taxaGateway
+          ]
         );
+
+        dadosParaEmitir = {
+          tipo: "premium",
+          cliente_id,
+          modelo_id,
+          premium_post_id,
+          payment_id: asaasPaymentId
+        };
+      }
+
+      await client.query("COMMIT");
+
+      if (dadosParaEmitir) {
+        try {
+          const io = req.app.get("io");
+          if (io) {
+            io.to(`user_${dadosParaEmitir.cliente_id}`).emit("pagamento_confirmado", {
+              tipo: "premium",
+              premium_post_id: dadosParaEmitir.premium_post_id,
+              modelo_id: dadosParaEmitir.modelo_id,
+              payment_id: dadosParaEmitir.payment_id
+            });
+          }
+        } catch (e) { console.error("Erro socket premium webhook:", e); }
+      }
+
+      console.log("✅ WEBHOOK ASAAS PREMIUM FINALIZADO");
+      return res.status(200).send("ok");
+    }
+
+    // ── PIX (VIP ou Mídia) ───────────────────────────────
+    const pixRes = await client.query(
+      `SELECT * FROM pagamentos_pix
+       WHERE pagarme_order_id = $1
+       LIMIT 1 FOR UPDATE`,
+      [asaasPaymentId]
+    );
+
+    if (pixRes.rowCount > 0) {
+      const row = pixRes.rows[0];
+
+      if (row.status === "pago") {
+        await client.query("ROLLBACK");
+        return res.status(200).send("ok");
+      }
+
+      await client.query(
+        `UPDATE pagamentos_pix SET status = $1 WHERE pagarme_order_id = $2`,
+        [novoStatus, asaasPaymentId]
+      );
+
+      if (isPaidEvent) {
+        const cliente_id = Number(row.cliente_id);
+        const modelo_id  = Number(row.modelo_id);
+        const message_id = row.message_id ? Number(row.message_id) : null;
+        const isVip      = !message_id;   // VIP não tem message_id
+        const valorBase  = Number(row.valor || valorPago);
+        const taxaGateway = Number((1.99 + valorBase * 0.10).toFixed(2));
+
+        const valores = await calcularValores({
+          modelo_id,
+          valor_bruto: valorBase,
+          taxa_gateway: taxaGateway
+        });
+
+        if (isVip) {
+          /* ── VIP PIX ── */
+          const vipExistente = await client.query(
+            `SELECT id, ativo, expiration_at
+             FROM vip_subscriptions
+             WHERE cliente_id = $1 AND modelo_id = $2
+             LIMIT 1 FOR UPDATE`,
+            [cliente_id, modelo_id]
+          );
+
+          const primeiraAssinatura = vipExistente.rowCount === 0;
+
+          let novaExpiracao;
+          if (
+            vipExistente.rowCount > 0 &&
+            vipExistente.rows[0].expiration_at &&
+            new Date(vipExistente.rows[0].expiration_at) > new Date()
+          ) {
+            novaExpiracao = new Date(vipExistente.rows[0].expiration_at);
+            novaExpiracao.setMonth(novaExpiracao.getMonth() + 1);
+          } else {
+            novaExpiracao = new Date();
+            novaExpiracao.setMonth(novaExpiracao.getMonth() + 1);
+          }
+
+          if (vipExistente.rowCount > 0) {
+            await client.query(
+              `UPDATE vip_subscriptions
+               SET ativo = true, updated_at = NOW(), expiration_at = $3,
+                   valor_assinatura = $4, taxa_transacao = $5, taxa_plataforma = 0,
+                   valor_total = $6, recorrente = false,
+                   gateway_subscription_id = $7,
+                   aviso_7_dias_enviado = false, aviso_24h_enviado = false
+               WHERE cliente_id = $1 AND modelo_id = $2`,
+              [cliente_id, modelo_id, novaExpiracao,
+               valorBase, taxaGateway, valorPago, asaasPaymentId]
+            );
+          } else {
+            await client.query(
+              `INSERT INTO vip_subscriptions
+                 (cliente_id, modelo_id, ativo, created_at, updated_at,
+                  expiration_at, valor_assinatura, taxa_transacao, taxa_plataforma,
+                  valor_total, recorrente, gateway_subscription_id)
+               VALUES ($1,$2,true,NOW(),NOW(),$3,$4,$5,0,$6,false,$7)`,
+              [cliente_id, modelo_id, novaExpiracao,
+               valorBase, taxaGateway, valorPago, asaasPaymentId]
+            );
+          }
+
+          await client.query(
+            `INSERT INTO transacoes_agency
+               (modelo_id, cliente_id, tipo, valor_bruto,
+                valor_modelo, agency_fee, velvet_fee, taxa_gateway, status, created_at)
+             VALUES ($1,$2,'assinatura',$3,$4,$5,$6,$7,'pago',NOW())`,
+            [
+              modelo_id, cliente_id, valorBase,
+              Number(valores.valor_modelo || 0),
+              Number(valores.agency_fee   || 0),
+              Number(valores.velvet_fee   || 0),
+              taxaGateway
+            ]
+          );
+
+          if (primeiraAssinatura) {
+            await client.query(
+              `INSERT INTO messages
+                 (cliente_id, modelo_id, text, sender, tipo,
+                  created_at, lida, visto, deletada)
+               VALUES ($1,$2,$3,'modelo','texto',NOW(),false,false,false)`,
+              [cliente_id, modelo_id, "Oii!! Bem vindo, como vc chama?🔥"]
+            );
+          }
+
+          dadosParaEmitir = { tipo: "vip", cliente_id, modelo_id };
+
+        } else {
+          /* ── MÍDIA PIX ── */
+          await client.query(
+            `INSERT INTO conteudo_pacotes
+               (message_id, cliente_id, modelo_id, preco, valor_base,
+                valor_total, status, metodo_pagamento, pago_em, currency,
+                valor_cobrado, taxa_cambio)
+             VALUES ($1,$2,$3,$4,$4,$5,'pago','pix',NOW(),'brl',$5,NULL)
+             ON CONFLICT (message_id, cliente_id) DO UPDATE
+               SET status='pago', metodo_pagamento='pix',
+                   pago_em=NOW(), valor_total=$5`,
+            [message_id, cliente_id, modelo_id, valorBase, valorPago]
+          );
+
+          const conteudo_ids =
+            await marcarConteudoComoLiberadoPorPagamento(client, {
+              message_id,
+              cliente_id,
+              modelo_id
+            });
+
+          await client.query(
+            `INSERT INTO transacoes_agency
+               (modelo_id, cliente_id, tipo, valor_bruto,
+                valor_modelo, agency_fee, velvet_fee, taxa_gateway, status, created_at)
+             VALUES ($1,$2,'midia',$3,$4,$5,$6,$7,'pago',NOW())`,
+            [
+              modelo_id, cliente_id, valorBase,
+              Number(valores.valor_modelo || 0),
+              Number(valores.agency_fee   || 0),
+              Number(valores.velvet_fee   || 0),
+              taxaGateway
+            ]
+          );
+
+          dadosParaEmitir = {
+            tipo: "conteudo",
+            cliente_id,
+            modelo_id,
+            message_id,
+            conteudo_ids
+          };
+        }
+      }
+
+      await client.query("COMMIT");
+
+      // ── Emite socket para PIX ──
+      if (dadosParaEmitir) {
+        try {
+          const io = req.app.get("io");
+          if (io) {
+            if (dadosParaEmitir.tipo === "conteudo") {
+              const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
+              io.to(sala).emit("conteudoLiberado", {
+                message_id:   Number(dadosParaEmitir.message_id),
+                conteudo_ids: dadosParaEmitir.conteudo_ids || []
+              });
+            }
+            if (dadosParaEmitir.tipo === "vip") {
+              const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
+              io.to(sala).emit("vipAtivado", {
+                cliente_id: Number(dadosParaEmitir.cliente_id),
+                modelo_id:  Number(dadosParaEmitir.modelo_id)
+              });
+            }
+          }
+        } catch (e) { console.error("Erro socket pix webhook:", e); }
+      }
+
+      console.log("✅ WEBHOOK ASAAS PIX FINALIZADO");
+      return res.status(200).send("ok");
+
+    } // else: cartão
+    {
+      // ── CARTÃO (VIP, Mídia ou Premium) ──────────────────
+      const cartaoRes = await client.query(
+        `SELECT * FROM pagamentos_cartao
+         WHERE gateway_payment_id = $1
+            OR stripe_payment_intent_id = $1
+         LIMIT 1 FOR UPDATE`,
+        [asaasPaymentId]
+      );
+
+      if (cartaoRes.rowCount === 0) {
+        await client.query("ROLLBACK");
+        console.warn("Asaas webhook: pagamento não encontrado em nenhuma tabela:", asaasPaymentId);
+        return res.status(200).send("ok");
+      }
+
+      const row        = cartaoRes.rows[0];
+      const tipoPag    = String(row.tipo || "").toLowerCase();
+      const cliente_id = Number(row.cliente_id);
+      const modelo_id  = Number(row.modelo_id);
+
+      if (row.status === "pago") {
+        await client.query("ROLLBACK");
+        return res.status(200).send("ok");
+      }
+
+      await client.query(
+        `UPDATE pagamentos_cartao
+         SET status = $1, pago_em = CASE WHEN $1 = 'pago' THEN NOW() ELSE pago_em END,
+             updated_at = NOW()
+         WHERE gateway_payment_id = $2`,
+        [novoStatus, asaasPaymentId]
+      );
+
+      if (isPaidEvent) {
+        const valorBase   = Number(row.valor_brl || row.valor || valorPago);
+        const taxaGateway = Number((1.99 + valorBase * 0.10).toFixed(2));
+
+        const valores = await calcularValores({
+          modelo_id,
+          valor_bruto: valorBase,
+          taxa_gateway: taxaGateway
+        });
+
+        if (tipoPag === "vip") {
+          /* ── VIP CARTÃO ── */
+          const vipExistente = await client.query(
+            `SELECT id, ativo, expiration_at
+             FROM vip_subscriptions
+             WHERE cliente_id = $1 AND modelo_id = $2
+             LIMIT 1 FOR UPDATE`,
+            [cliente_id, modelo_id]
+          );
+
+          const primeiraAssinatura = vipExistente.rowCount === 0;
+
+          let novaExpiracao;
+          if (
+            vipExistente.rowCount > 0 &&
+            vipExistente.rows[0].expiration_at &&
+            new Date(vipExistente.rows[0].expiration_at) > new Date()
+          ) {
+            novaExpiracao = new Date(vipExistente.rows[0].expiration_at);
+            novaExpiracao.setMonth(novaExpiracao.getMonth() + 1);
+          } else {
+            novaExpiracao = new Date();
+            novaExpiracao.setMonth(novaExpiracao.getMonth() + 1);
+          }
+
+          if (vipExistente.rowCount > 0) {
+            await client.query(
+              `UPDATE vip_subscriptions
+               SET ativo = true, updated_at = NOW(), expiration_at = $3,
+                   valor_assinatura = $4, taxa_transacao = $5, taxa_plataforma = 0,
+                   valor_total = $6, recorrente = false,
+                   gateway_subscription_id = $7,
+                   aviso_7_dias_enviado = false, aviso_24h_enviado = false
+               WHERE cliente_id = $1 AND modelo_id = $2`,
+              [cliente_id, modelo_id, novaExpiracao,
+               valorBase, taxaGateway, valorPago, asaasPaymentId]
+            );
+          } else {
+            await client.query(
+              `INSERT INTO vip_subscriptions
+                 (cliente_id, modelo_id, ativo, created_at, updated_at,
+                  expiration_at, valor_assinatura, taxa_transacao, taxa_plataforma,
+                  valor_total, recorrente, gateway_subscription_id)
+               VALUES ($1,$2,true,NOW(),NOW(),$3,$4,$5,0,$6,false,$7)`,
+              [cliente_id, modelo_id, novaExpiracao,
+               valorBase, taxaGateway, valorPago, asaasPaymentId]
+            );
+          }
+
+          await client.query(
+            `INSERT INTO transacoes_agency
+               (modelo_id, cliente_id, tipo, valor_bruto,
+                valor_modelo, agency_fee, velvet_fee, taxa_gateway, status, created_at)
+             VALUES ($1,$2,'assinatura',$3,$4,$5,$6,$7,'pago',NOW())`,
+            [
+              modelo_id, cliente_id, valorBase,
+              Number(valores.valor_modelo || 0),
+              Number(valores.agency_fee   || 0),
+              Number(valores.velvet_fee   || 0),
+              taxaGateway
+            ]
+          );
+
+          if (primeiraAssinatura) {
+            await client.query(
+              `INSERT INTO messages
+                 (cliente_id, modelo_id, text, sender, tipo,
+                  created_at, lida, visto, deletada)
+               VALUES ($1,$2,$3,'modelo','texto',NOW(),false,false,false)`,
+              [cliente_id, modelo_id, "Oii!! Bem vindo, como vc chama?🔥"]
+            );
+          }
+
+          dadosParaEmitir = { tipo: "vip", cliente_id, modelo_id };
+
+        } else if (tipoPag === "midia") {
+          /* ── MÍDIA CARTÃO ── */
+          const message_id = Number(row.message_id || row.conteudo_id || 0) || null;
+
+          if (message_id) {
+            await client.query(
+              `INSERT INTO conteudo_pacotes
+                 (message_id, cliente_id, modelo_id, preco, valor_base,
+                  valor_total, status, metodo_pagamento, pago_em, currency,
+                  valor_cobrado, taxa_cambio)
+               VALUES ($1,$2,$3,$4,$4,$5,'pago','cartao',NOW(),'brl',$5,NULL)
+               ON CONFLICT (message_id, cliente_id) DO UPDATE
+                 SET status='pago', metodo_pagamento='cartao',
+                     pago_em=NOW(), valor_total=$5`,
+              [message_id, cliente_id, modelo_id, valorBase, valorPago]
+            );
+
+            const conteudo_ids =
+              await marcarConteudoComoLiberadoPorPagamento(client, {
+                message_id,
+                cliente_id,
+                modelo_id
+              });
+
+            dadosParaEmitir = {
+              tipo: "conteudo",
+              cliente_id,
+              modelo_id,
+              message_id,
+              conteudo_ids
+            };
+          }
+
+          await client.query(
+            `INSERT INTO transacoes_agency
+               (modelo_id, cliente_id, tipo, valor_bruto,
+                valor_modelo, agency_fee, velvet_fee, taxa_gateway, status, created_at)
+             VALUES ($1,$2,'midia',$3,$4,$5,$6,$7,'pago',NOW())`,
+            [
+              modelo_id, cliente_id, valorBase,
+              Number(valores.valor_modelo || 0),
+              Number(valores.agency_fee   || 0),
+              Number(valores.velvet_fee   || 0),
+              taxaGateway
+            ]
+          );
+
+        } else if (tipoPag === "premium") {
+          /* ── PREMIUM CARTÃO ── */
+          const premium_post_id = Number(row.premium_post_id || 0) || null;
+
+          if (premium_post_id) {
+            await client.query(
+              `UPDATE premium_unlocks
+               SET status = 'pago', pago_em = NOW(), updated_at = NOW()
+               WHERE premium_post_id = $1 AND cliente_id = $2`,
+              [premium_post_id, cliente_id]
+            );
+
+            await client.query(
+              `INSERT INTO transacoes_agency
+                 (modelo_id, cliente_id, tipo, valor_bruto,
+                  valor_modelo, agency_fee, velvet_fee, taxa_gateway, status, created_at)
+               VALUES ($1,$2,'midia',$3,$4,$5,$6,$7,'pago',NOW())`,
+              [
+                modelo_id, cliente_id, valorBase,
+                Number(valores.valor_modelo || 0),
+                Number(valores.agency_fee   || 0),
+                Number(valores.velvet_fee   || 0),
+                taxaGateway
+              ]
+            );
+
+            dadosParaEmitir = {
+              tipo: "premium",
+              cliente_id,
+              modelo_id,
+              premium_post_id,
+              payment_id: asaasPaymentId
+            };
+          }
+        }
+      }
+
+      await client.query("COMMIT");
+    }
+
+    /* =======================================================
+       SOCKET — emite após COMMIT
+    ======================================================= */
+    if (dadosParaEmitir) {
+      try {
+        const io = req.app.get("io");
+        if (io) {
+          if (dadosParaEmitir.tipo === "conteudo") {
+            const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
+            io.to(sala).emit("conteudoLiberado", {
+              message_id:   Number(dadosParaEmitir.message_id),
+              conteudo_ids: dadosParaEmitir.conteudo_ids || []
+            });
+          }
+
+          if (dadosParaEmitir.tipo === "vip") {
+            const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
+            io.to(sala).emit("vipAtivado", {
+              cliente_id: Number(dadosParaEmitir.cliente_id),
+              modelo_id:  Number(dadosParaEmitir.modelo_id)
+            });
+          }
+
+          if (dadosParaEmitir.tipo === "premium") {
+            io.to(`user_${dadosParaEmitir.cliente_id}`).emit("pagamento_confirmado", {
+              tipo:             "premium",
+              premium_post_id:  dadosParaEmitir.premium_post_id,
+              modelo_id:        dadosParaEmitir.modelo_id,
+              payment_id:       dadosParaEmitir.payment_id
+            });
+          }
+        }
+      } catch (e) {
+        console.error("Erro socket webhook Asaas:", e);
       }
     }
 
-    await client.query("COMMIT");
+    console.log("✅ WEBHOOK ASAAS FINALIZADO");
     return res.status(200).send("ok");
 
   } catch (err) {
@@ -2208,6 +2586,7 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
 app.use(express.json());
 const { router: servercontentRouter, calcularValores } = require('./servercontent');
 app.use("/api", servercontentRouter);
+app.set("calcularValores", calcularValores); // disponível no webhook Asaas
 const adminDashboardRouter = require('./routes/adminDashboard');
 const agencyDashboardRouter = require('./routes/agencyDashboard');
 const adminEmailRouter = require('./routes/adminEmail');
