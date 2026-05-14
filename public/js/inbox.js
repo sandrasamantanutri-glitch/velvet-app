@@ -154,19 +154,11 @@ async function recarregarInboxDoZero() {
 // ===============================
 
 function prioridadeChat(c) {
-  if (c.nao_lido) return 1;
-  if (c.por_responder) return 2;
-  if (c.cliente_visualizou) return 3;
-  return 4;
-}
-
-function pesoGasto(c) {
-  const total = Number(c.total_gasto || 0);
-
-  if (total >= 300) return 3; // $$$
-  if (total >= 200) return 2; // $$
-  if (total > 100) return 1;  // $
-  return 0;
+  if (c.nao_lido) return 1;           // cliente enviou, modelo não leu
+  if (c.por_responder) return 2;       // modelo leu, ainda não respondeu
+  if (c.cliente_visualizou) return 3;  // modelo enviou, cliente leu mas não respondeu
+  if (c.ultimo_sender === "modelo") return 4; // modelo enviou, cliente ainda não viu
+  return 5;
 }
 
 function compararChats(a, b) {
@@ -174,19 +166,6 @@ function compararChats(a, b) {
   const pb = prioridadeChat(b);
 
   if (pa !== pb) return pa - pb;
-
-  // só no grupo 3: cliente visualizou e não respondeu
-  if (pa === 3) {
-    const ga = pesoGasto(a);
-    const gb = pesoGasto(b);
-
-    if (ga !== gb) return gb - ga;
-
-    const va = Number(a.total_gasto || 0);
-    const vb = Number(b.total_gasto || 0);
-
-    if (va !== vb) return vb - va;
-  }
 
   const da = a.ultima_mensagem_em ? new Date(a.ultima_mensagem_em).getTime() : 0;
   const db = b.ultima_mensagem_em ? new Date(b.ultima_mensagem_em).getTime() : 0;

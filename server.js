@@ -5273,22 +5273,12 @@ app.get("/api/chat/modelo", authModelo, async (req, res) => {
 
       ORDER BY
         CASE
-          WHEN msg.sender = 'cliente' AND COALESCE(msg.lida, false) = false THEN 1
-          WHEN msg.sender = 'cliente' AND COALESCE(msg.lida, false) = true THEN 2
-          WHEN msg.sender = 'modelo' AND COALESCE(msg.visto, false) = true THEN 3
-          ELSE 4
+          WHEN msg.sender = 'cliente' AND COALESCE(msg.lida,  false) = false THEN 1
+          WHEN msg.sender = 'cliente' AND COALESCE(msg.lida,  false) = true  THEN 2
+          WHEN msg.sender = 'modelo'  AND COALESCE(msg.visto, false) = true  THEN 3
+          WHEN msg.sender = 'modelo'  AND COALESCE(msg.visto, false) = false THEN 4
+          ELSE 5
         END,
-        CASE
-          WHEN msg.sender = 'modelo' AND COALESCE(msg.visto, false) = true THEN
-            CASE
-              WHEN COALESCE(g.total_gasto, 0) >= 300 THEN 3
-              WHEN COALESCE(g.total_gasto, 0) >= 200 THEN 2
-              WHEN COALESCE(g.total_gasto, 0) > 100 THEN 1
-              ELSE 0
-            END
-          ELSE 0
-        END DESC,
-        COALESCE(g.total_gasto, 0) DESC,
         msg.created_at DESC NULLS LAST,
         c.id DESC
 
