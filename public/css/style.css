@@ -32,13 +32,14 @@ body.modal-open {
    LAYOUT PRINCIPAL
 ========================= */
 .landing {
-  width: 80%;
+  width: 90%;
   max-width: 1400px;
   display: flex;
   flex-direction: row-reverse;
   align-items: stretch; 
-  height: clamp(400px, 562px, 100vh); 
+  height: clamp(400px, 600px, 100vh); 
 }
+
 
 /* =========================
    CAPA
