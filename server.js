@@ -249,8 +249,8 @@ app.post("/api/webhook/asaas", express.json(), async (req, res) => {
     // ── PREMIUM (PIX ou Cartão) ──────────────────────────
     const premiumRes = await client.query(
       `SELECT * FROM premium_unlocks
-       WHERE pagarme_order_id = $1
-          OR stripe_payment_intent_id = $1
+       WHERE pagarme_order_id = $1::text
+          OR stripe_payment_intent_id = $1::text
        LIMIT 1 FOR UPDATE`,
       [asaasPaymentId]
     );
