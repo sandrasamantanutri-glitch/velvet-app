@@ -759,6 +759,149 @@ select {
 
 .footer-copy { opacity: 0.7; }
 
+/* ===== TRANSAÇÕES / SUBSCRIÇÕES (transacoes.html) ===== */
+.lista-transacoes {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.transacao-card {
+  background: var(--primary-soft);
+  border-radius: 16px;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  box-shadow: 0 4px 14px rgba(123, 44, 255, 0.07);
+  transition: transform 0.15s ease;
+}
+
+.transacao-card:hover { transform: translateY(-1px); }
+
+.transacao-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.transacao-tipo {
+  font-weight: 600;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.transacao-data {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.transacao-valor {
+  font-weight: 700;
+  color: var(--primary);
+  font-size: 15px;
+}
+
+.transacao-status {
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.status-pago { background: #E6F8ED; color: #2e7d32; }
+
+.btn-reclamar {
+  margin-top: 10px;
+  background: transparent;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  padding: 6px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  transition: 0.2s;
+}
+
+.btn-reclamar:hover { background: var(--primary-soft); }
+
+.erro-transacoes {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* Subscrições VIP */
+.sub-vip-card {
+  background: var(--primary-soft);
+  border-radius: 18px;
+  padding: 18px 20px;
+  box-shadow: 0 6px 20px rgba(123, 44, 255, 0.08);
+  transition: transform 0.15s ease;
+}
+
+.sub-vip-card:hover { transform: translateY(-2px); }
+
+.sub-vip-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.sub-vip-info strong { color: var(--text); }
+
+/* Badges de status */
+.badge-status {
+  font-size: 13px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  display: inline-block;
+  margin-bottom: 6px;
+}
+
+.badge-ativa  { background: #E6F8ED; color: #2e7d32; }
+.badge-expirada { background: #FFEAEA; color: #c62828; }
+
+/* Botões VIP */
+.btn-cancelar,
+.btn-renovar {
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  padding: 8px 18px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: 0.2s;
+  margin-top: 8px;
+}
+
+.btn-cancelar:hover { background: #ffeaea; border-color: #c62828; color: #c62828; }
+.btn-renovar:hover  { background: var(--primary-soft); }
+
+/* Mensagens de feedback inline */
+.msg-feedback {
+  padding: 12px 18px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.msg-feedback.sucesso { background: #E6F8ED; color: #2e7d32; }
+.msg-feedback.erro    { background: #FFEAEA; color: #c62828; }
+
 /* ===== UTILITÁRIOS ===== */
 .hidden { display: none !important; }
 
