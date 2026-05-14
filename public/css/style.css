@@ -490,6 +490,7 @@ body.modal-open {
     gap: 14px;
     
   }
+}
 
 .language-switcher {
   display: flex;
@@ -638,7 +639,4 @@ body.modal-open {
   font-weight: 600;
   cursor: pointer;
   margin-top: 10px;
-}
-
-
 }
