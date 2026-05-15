@@ -630,7 +630,7 @@ select {
 .cards-lista {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 20px;
   margin-bottom: 8px;
 }
 
@@ -954,7 +954,7 @@ select {
   .tab-btn,
   .tabs .tab {
     font-size: 13px;
-    padding: 8px 14px;
+    padding: 8px 10px;
   }
 
   .table { font-size: 13px; }
