@@ -132,26 +132,22 @@
     }
 
     /* ─── INPUT ─── */
-    /* #agencyChatInput {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 14px;
-      border-top: 1px solid #e9e9ef;
-      flex-shrink: 0;
-      background: #fff;
-    }
-
-    #agencyChatInput #msgInput {
-      flex: 1;
-      min-width: 0;
-      height: 40px;
-      padding: 0 14px;
-      border: 1px solid #ddd;
-      border-radius: 20px;
-      font-size: 14px;
-      outline: none; */
-    }
+    #agencyChatInput {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 10px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(14px, env(safe-area-inset-left, 14px));
+  padding-right: max(14px, env(safe-area-inset-right, 14px));
+  background: #fff;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+  font-size: 16px;
+  }
 
     /* ─── ITEM ACTIVO NA LISTA ─── */
     .chat-item-ativo {
