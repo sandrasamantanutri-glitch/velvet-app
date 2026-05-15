@@ -10,12 +10,14 @@ body {
 }
 
 .velvet-modal {
-  position: fixed;       /* 🔥 ESSENCIAL */
-  inset: 0;              /* top:0 right:0 bottom:0 left:0 */
-  z-index: 99999;        /* acima de tudo */
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow-y: auto;
+  padding: 16px 0;
 }
 
 .hidden {
@@ -33,18 +35,15 @@ body {
   position: relative;
   background: #fff;
   text-align: center;
-
   width: 92%;
   max-width: 600px;
-  max-height: 70vh;      /* 🔥 limita altura */
-  
+  max-height: 85vh;
   border-radius: 18px;
   padding: 20px;
-
   z-index: 2;
   animation: fadeUp .25s ease;
-
-  overflow-y: auto;      /* 🔥 scroll interno se precisar */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 
@@ -70,12 +69,20 @@ body {
 
 .velvet-close {
   position: absolute;
-  top: 12px;
-  right: 14px;
+  top: 6px;
+  right: 6px;
   border: none;
   background: none;
   font-size: 26px;
   cursor: pointer;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 50%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .velvet-title {
@@ -215,11 +222,11 @@ body {
 @media (max-width: 480px) {
 
   .velvet-box {
-    width: 95%;
-    max-width: 95%;
-    max-height: 88vh;
+    width: 96%;
+    max-width: 96%;
+    max-height: 90vh;
     border-radius: 16px;
-    padding: 18px;
+    padding: 14px 12px;
   }
 
   .asaas-linha {
@@ -228,12 +235,19 @@ body {
   }
 
   .velvet-title {
-    font-size: 18px;
+    font-size: 17px;
+    margin-bottom: 8px;
   }
 
   .btn-principal {
     font-size: 15px;
-    padding: 14px;
+    padding: 13px;
+    min-height: 44px;
+  }
+
+  .btn-copiar {
+    min-height: 44px;
+    padding: 10px 18px;
   }
 
 }
@@ -262,9 +276,11 @@ body {
 /* 🔥 POPUP MAIS COMPACTO E PREMIUM */
 
 .velvet-box {
-  max-width: 380px;        /* menor */
-  padding: 16px;           /* menos padding */
+  max-width: 380px;
+  padding: 16px;
   border-radius: 16px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .velvet-title {
@@ -278,23 +294,27 @@ body {
 }
 
 .info {
-  font-size: 10px;
+  font-size: 12px;
   color: #555;
   margin-bottom: 8px;
   text-align: center;
 }
 
 .velvet-tabs .tab {
-  padding: 8px;
-  font-size: 13px;
+  padding: 12px 8px;
+  font-size: 14px;
   border-radius: 10px;
+  min-height: 44px;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .pix-qr,
 #pixQr {
   display: block;
-  width: 200px;
-  height: 200px;
+  width: 180px;
+  height: 180px;
+  max-width: 70vw;
+  max-height: 70vw;
   object-fit: contain;
   margin: 12px auto;
   border-radius: 8px;
@@ -318,14 +338,18 @@ body {
 }
 
 .btn-principal {
-  font-size: 14px;
-  padding: 10px;
+  font-size: 15px;
+  padding: 12px;
   border-radius: 10px;
+  min-height: 44px;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .btn-secundario {
-  font-size: 13px;
-  padding: 8px;
+  font-size: 14px;
+  padding: 10px;
+  min-height: 44px;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .pix-status,
@@ -376,10 +400,10 @@ body {
 }
 
 .vip-info {
-  font-size: 10px;      
-  line-height: 1.4;     
-  color: #777;            
-  display: block;  
+  font-size: 12px;
+  line-height: 1.5;
+  color: #777;
+  display: block;
   margin-top: 10px;
 }
 
@@ -448,12 +472,12 @@ body {
 #formCartao select {
   width: 100%;
   box-sizing: border-box;
-  height: 42px;
+  height: 44px;
   padding: 0 12px;
   border: 1px solid #d8d8e2;
   border-radius: 10px;
   background: #fafafe;
-  font-size: 14px;
+  font-size: 16px;
   color: #1e1e26;
   outline: none;
   transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
@@ -547,9 +571,10 @@ body {
 
 /* botão principal mais compacto dentro do modal */
 .velvet-box .btn-principal {
-  height: 42px;
-  padding: 0 14px;
-  font-size: 14px;
+  min-height: 44px;
+  height: auto;
+  padding: 12px 14px;
+  font-size: 15px;
   font-weight: 700;
 }
 
@@ -590,8 +615,8 @@ body {
   .form-cartao-vip select,
   #formCartaoVip select,
   #formCartao select {
-    height: 40px;
-    font-size: 13px;
+    height: 44px;
+    font-size: 16px;
   }
 }
 
@@ -702,22 +727,20 @@ body {
 .campo-label {
   display: block;
   width: 100%;
-  max-width: 320px;
-  text-align: center;
-  font-size: 14px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
   color: #555;
   margin: 0;
 }
 
 .campo-input {
   width: 100%;
-  max-width: 320px;
-  height: 42px;
+  height: 44px;
   padding: 0 12px;
   border: 1px solid #d5d5d5;
   border-radius: 10px;
-  font-size: 15px;
-  text-align: center;
+  font-size: 16px;
   box-sizing: border-box;
   outline: none;
   background: #fff;
@@ -766,20 +789,24 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
-  text-align: center;
+  text-align: left;
   cursor: pointer;
-  font-size: 10px;
+  font-size: 13px;
   color: #444;
-  line-height: 1.4;
+  line-height: 1.5;
+  padding: 4px 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .termos-check-linha input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
   margin: 0;
   flex-shrink: 0;
+  cursor: pointer;
 }
 
 .termos-check-linha span {
@@ -860,7 +887,6 @@ body {
   flex-direction: column;
   gap: 4px;
   width: 100%;
-  max-width: 320px;
   text-align: left;
   box-sizing: border-box;
 }
@@ -878,11 +904,11 @@ body {
 #campoCpf input,
 #campoTelefone input {
   width: 100%;
-  height: 42px;
+  height: 44px;
   padding: 0 12px;
   border: 1px solid #d5d5d5;
   border-radius: 10px;
-  font-size: 15px;
+  font-size: 16px;
   box-sizing: border-box;
   outline: none;
   background: #fff;
@@ -959,12 +985,12 @@ body {
 .asaas-campo input {
   width: 100%;
   box-sizing: border-box;
-  height: 42px;
+  height: 44px;
   padding: 0 12px;
   border: 1px solid #d8d8e2;
   border-radius: 10px;
   background: #fafafe;
-  font-size: 14px;
+  font-size: 16px;
   color: #1e1e26;
   outline: none;
   transition: border-color .2s ease, box-shadow .2s ease;
@@ -978,7 +1004,7 @@ body {
 
 .asaas-campo input::placeholder {
   color: #9a9aaa;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 
