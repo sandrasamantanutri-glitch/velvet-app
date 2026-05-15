@@ -3,200 +3,208 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0f0f14">
+  <meta name="theme-color" content="#7B2CFF">
   <title>Agency Chat</title>
   <link rel="stylesheet" href="/css/header.css">
-  <link rel="stylesheet" href="/css/inbox.css">
-  <link rel="stylesheet" href="/css/chat.css">
   <link rel="stylesheet" href="/css/chatmodelo.css">
+  <link rel="stylesheet" href="/css/chat.css">
   <script src="/i18n.js"></script>
   <style>
-    html {
+    /* ── reset base ── */
+    html, body {
       height: 100%;
-    }
-
-    body {
-      height: 100vh;
       margin: 0;
       overflow: hidden;
       display: flex;
       flex-direction: column;
+      background: #f7f7fb;
     }
 
-    #header-container {
-      flex-shrink: 0;
-    }
+    #header-container { flex-shrink: 0; }
 
-    .agency-body {
-      display: flex;
+    /* ── pagina-chat ocupa o restante abaixo do header ── */
+    .pagina-chat {
       flex: 1;
-      overflow: hidden;
+      min-height: 0;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── dois painéis lado a lado ── */
+    .chat-layout {
+      flex: 1;
       min-height: 0;
     }
 
-    /* inbox.css pode adicionar overflow ao body — anula aqui */
-    body > *:not(.agency-body):not(#header-container) {
-      display: none !important;
-    }
-
-    /* ---- INBOX PANEL (left) ---- */
-    .agency-inbox-panel {
-      width: 340px;
-      min-width: 240px;
-      max-width: 400px;
-      border-right: 1px solid #2a2a35;
+    /* ── painel esquerdo: lista de conversas ── */
+    .lista-clientes {
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      flex-shrink: 0;
     }
 
-    .agency-inbox-header {
-      display: flex;
-      align-items: center;
-      padding: 12px 16px;
-      border-bottom: 1px solid #2a2a35;
+    .painel-header {
+      padding: 10px 14px 8px;
+      border-bottom: 1px solid #e9e9ef;
       flex-shrink: 0;
-    }
-
-    .agency-inbox-header h3 {
-      margin: 0;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 600;
+      color: #7B2CFF;
     }
 
-    .agency-inbox-scroll {
+    /* container scrollável da lista */
+    #inboxPanel {
       flex: 1;
       overflow-y: auto;
       min-height: 0;
+      padding: 8px 10px;
     }
 
-    #inbox {
-      /* inbox.css styles apply — remove any fixed height */
-    }
-
+    /* item activo */
     .chat-item-ativo {
-      background: rgba(255, 255, 255, 0.06);
+      background: rgba(123, 44, 255, 0.12) !important;
     }
 
-    /* ---- CHAT PANEL (right) ---- */
-    .agency-chat-panel {
-      flex: 1;
+    /* ── painel direito: chat ── */
+    .chat-area {
       display: flex;
       flex-direction: column;
-      overflow: hidden;
-      min-width: 0;
+      height: 100%;
+      position: relative;
     }
 
-    /* Empty state: hide chat chrome, show placeholder */
-    .agency-chat-panel.vazio .chat-topo { display: none; }
-    .agency-chat-panel.vazio #chatBox   { display: none; }
-    .agency-chat-panel.vazio .chat-input { display: none; }
-    .agency-chat-panel.vazio .chat-vazio { display: flex; }
-
-    .chat-vazio {
-      display: none;
-      flex: 1;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      gap: 8px;
-      color: #666;
-      font-size: 14px;
-    }
-
-    /* Chat chrome in flex column */
-    .chat-topo {
+    /* anula position:fixed do chat.css/chatmodelo.css dentro deste layout */
+    .chat-area .chat-topo,
+    .chat-area .chat-header {
+      position: static !important;
+      height: auto !important;
+      width: auto !important;
+      left: auto !important;
+      right: auto !important;
+      top: auto !important;
       flex-shrink: 0;
+      border-bottom: 1px solid #9E6BFF;
+      padding: 10px 14px;
+      margin-bottom: 0;
     }
 
+    /* mensagens com scroll */
     #chatBox {
       flex: 1;
       overflow-y: auto;
       min-height: 0;
-      /* override any fixed height from chat.css */
+      padding: 12px 14px;
       height: auto !important;
       max-height: none !important;
     }
 
-    .chat-input {
+    /* input fixo na base */
+    .chat-area .chat-input {
       flex-shrink: 0;
+      padding: 10px 14px;
+      border-top: 1px solid #e9e9ef;
     }
+
+    /* ── estado vazio (nenhum chat seleccionado) ── */
+    .chat-vazio {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: #aaa;
+      font-size: 14px;
+    }
+
+    #chatPanel.vazio .chat-header { display: none; }
+    #chatPanel.vazio #chatBox     { display: none; }
+    #chatPanel.vazio .chat-input  { display: none; }
+    #chatPanel.vazio .chat-vazio  { display: flex; }
   </style>
 </head>
 
-<body>
+<body class="role-modelo">
   <div id="header-container"></div>
 
-  <div class="agency-body">
+  <div class="pagina-chat">
+    <div class="chat-layout">
 
-    <!-- ======= LEFT: INBOX ======= -->
-    <div class="agency-inbox-panel">
-      <div class="agency-inbox-header">
-        <h3 data-i18n="inbox.title">Conversas</h3>
+      <!-- ===== ESQUERDA: LISTA DE CONVERSAS ===== -->
+      <div class="lista-clientes painel">
+        <div class="painel-header" data-i18n="inbox.title">Conversas</div>
+        <div id="inboxPanel">
+          <div id="inbox"></div>
+        </div>
       </div>
 
-      <div class="agency-inbox-scroll" id="inboxPanel">
-        <main id="inbox" class="inbox"></main>
-      </div>
-    </div>
+      <!-- ===== DIREITA: ÁREA DO CHAT ===== -->
+      <div class="chat-area painel vazio" id="chatPanel">
 
-    <!-- ======= RIGHT: CHAT ======= -->
-    <div class="agency-chat-panel vazio" id="chatPanel">
-
-      <!-- Placeholder when no chat is selected -->
-      <div class="chat-vazio" id="chatVazio">
-        <span style="font-size:32px;">💬</span>
-        <p>Selecione uma conversa</p>
-      </div>
-
-      <!-- Chat header -->
-      <header class="chat-topo">
-        <div class="chat-cliente-info">
-          <img id="chatClienteAvatar" class="chat-avatar" src="/assets/avatar.png"
-               data-i18n-alt="chat.client_avatar_alt" alt="Avatar cliente" />
-
-          <div class="chat-cliente-texto">
-            <div class="chat-nome-linha">
-              <div id="chatClienteNome" class="chat-nome" data-i18n="chat.client_name_placeholder">Cliente</div>
-              <span id="chatClienteResumo" class="chat-cliente-resumo" style="display:none;"></span>
-              <button id="btnAnotacoesCliente" type="button" class="btn-anotacoes-cliente"
-                      data-i18n-title="chat.btn_notes_title" title="Anotações privadas">✎</button>
-            </div>
-            <div id="chatClienteStatus" class="chat-status" data-i18n="chat.status_loading">carregando…</div>
-          </div>
+        <!-- Placeholder quando nenhum chat está seleccionado -->
+        <div class="chat-vazio" id="chatVazio">
+          <span style="font-size:36px;">💬</span>
+          <p>Selecione uma conversa</p>
         </div>
 
-        <button id="btnTransacoesCliente" type="button" class="btn-transacoes-cliente"
-                data-i18n-title="chat.btn_transactions_title" title="Ver transações do cliente">$</button>
-      </header>
+        <!-- Cabeçalho do chat -->
+        <div class="chat-header chat-topo">
+          <div class="chat-cliente-info">
+            <img id="chatClienteAvatar" class="chat-avatar" src="/assets/avatar.png"
+                 data-i18n-alt="chat.client_avatar_alt" alt="Avatar cliente" />
+            <div class="chat-cliente-texto">
+              <div class="chat-nome-linha">
+                <div id="chatClienteNome" class="chat-nome"
+                     data-i18n="chat.client_name_placeholder">Cliente</div>
+                <span id="chatClienteResumo" class="chat-cliente-resumo"
+                      style="display:none;"></span>
+                <button id="btnAnotacoesCliente" type="button"
+                        class="btn-anotacoes-cliente"
+                        data-i18n-title="chat.btn_notes_title"
+                        title="Anotações privadas">✎</button>
+              </div>
+              <div id="chatClienteStatus" class="chat-status"
+                   data-i18n="chat.status_loading">carregando…</div>
+            </div>
+          </div>
+          <button id="btnTransacoesCliente" type="button"
+                  class="btn-transacoes-cliente"
+                  data-i18n-title="chat.btn_transactions_title"
+                  title="Ver transações do cliente">$</button>
+        </div>
 
-      <!-- Messages -->
-      <main id="chatBox" class="chat-box"></main>
+        <!-- Mensagens -->
+        <div id="chatBox" class="chat-box"></div>
 
-      <!-- Input -->
-      <footer class="chat-input">
-        <button id="btnEnviarConteudo1" class="btn-midia" onclick="abrirPopupConteudos()"
-                data-i18n-aria-label="chat.btn_media_label" aria-label="Enviar mídia">
-          <img src="/assets/midia.png" data-i18n-alt="chat.btn_media_label" alt="Mídia" />
-        </button>
+        <!-- Input -->
+        <div class="chat-input">
+          <button id="btnEnviarConteudo1" class="btn-midia"
+                  onclick="abrirPopupConteudos()"
+                  data-i18n-aria-label="chat.btn_media_label"
+                  aria-label="Enviar mídia">
+            <img src="/assets/midia.png"
+                 data-i18n-alt="chat.btn_media_label" alt="Mídia" />
+          </button>
+          <input id="msgInput" type="text"
+                 data-i18n-placeholder="chat.input_placeholder"
+                 placeholder="Digite uma mensagem…"
+                 autocomplete="off" />
+          <button id="sendBtn" class="btn-enviar1"
+                  data-i18n-aria-label="chat.btn_send_label"
+                  aria-label="Enviar mensagem">
+            <img src="/assets/enviar.png"
+                 data-i18n-alt="chat.btn_send_label" alt="Enviar" />
+          </button>
+        </div>
 
-        <input id="msgInput" type="text"
-               data-i18n-placeholder="chat.input_placeholder"
-               placeholder="Digite uma mensagem…"
-               autocomplete="off" />
+      </div><!-- /.chat-area -->
 
-        <button id="sendBtn" class="btn-enviar1"
-                data-i18n-aria-label="chat.btn_send_label" aria-label="Enviar mensagem">
-          <img src="/assets/enviar.png" data-i18n-alt="chat.btn_send_label" alt="Enviar" />
-        </button>
-      </footer>
-    </div><!-- /.agency-chat-panel -->
+    </div><!-- /.chat-layout -->
+  </div><!-- /.pagina-chat -->
 
-  </div><!-- /.agency-body -->
 
-  <!-- ===== POPUPS (identical to chat.html) ===== -->
-
+  <!-- ===== POPUP: ENVIAR CONTEÚDO ===== -->
   <div id="popupConteudos" class="hidden">
     <div class="popup-backdrop" onclick="fecharPopupConteudos()"></div>
     <div class="popup-box">
@@ -209,51 +217,64 @@
         <input type="number" id="precoConteudo" value="0" min="0" />
       </div>
       <div class="popup-actions">
-        <button class="btn-cancelar" onclick="fecharPopupConteudos()" data-i18n="chat.btn_cancel">Cancelar</button>
-        <button class="btn-enviar" onclick="confirmarEnvioConteudo()" data-i18n="chat.btn_send">Enviar</button>
+        <button class="btn-cancelar" onclick="fecharPopupConteudos()"
+                data-i18n="chat.btn_cancel">Cancelar</button>
+        <button class="btn-enviar" onclick="confirmarEnvioConteudo()"
+                data-i18n="chat.btn_send">Enviar</button>
       </div>
     </div>
   </div>
 
+  <!-- ===== POPUP: MENU MENSAGEM ===== -->
   <div id="menuMensagem" class="hidden">
     <div class="popup-backdrop" onclick="fecharMenuMensagem()"></div>
     <div class="popup-box">
       <h3 data-i18n="chat.popup_message_title">Mensagem</h3>
-      <textarea id="editarTexto" data-i18n-placeholder="chat.edit_placeholder" placeholder="Editar mensagem…"></textarea>
+      <textarea id="editarTexto"
+                data-i18n-placeholder="chat.edit_placeholder"
+                placeholder="Editar mensagem…"></textarea>
       <div class="popup-actions">
-        <button onclick="salvarEdicao()" data-i18n="chat.btn_save">Salvar</button>
+        <button onclick="salvarEdicao()"   data-i18n="chat.btn_save">Salvar</button>
         <button onclick="excluirMensagem()" data-i18n="chat.btn_delete">Excluir</button>
         <button onclick="fecharMenuMensagem()" data-i18n="chat.btn_cancel">Cancelar</button>
       </div>
     </div>
   </div>
 
+  <!-- ===== POPUP: ANOTAÇÕES DO CLIENTE ===== -->
   <div id="popupAnotacoesCliente" class="popup-anotacoes hidden">
     <div class="popup-anotacoes-backdrop"></div>
     <div class="popup-anotacoes-box">
-      <button id="fecharPopupAnotacoes" class="popup-anotacoes-fechar" type="button">×</button>
+      <button id="fecharPopupAnotacoes" class="popup-anotacoes-fechar"
+              type="button">×</button>
       <h3 data-i18n="chat.notes_title">Anotações privadas</h3>
-      <label for="inputResumoCliente" data-i18n="chat.notes_summary_label">Resumo curto</label>
+      <label for="inputResumoCliente"
+             data-i18n="chat.notes_summary_label">Resumo curto</label>
       <input id="inputResumoCliente" type="text" maxlength="120"
              data-i18n-placeholder="chat.notes_summary_placeholder"
              placeholder="Ex: compra VIP, gosta de áudio, responde à noite">
-      <label for="textareaNotaCliente" data-i18n="chat.notes_private_label">Informações privadas</label>
+      <label for="textareaNotaCliente"
+             data-i18n="chat.notes_private_label">Informações privadas</label>
       <textarea id="textareaNotaCliente" rows="8"
                 data-i18n-placeholder="chat.notes_private_placeholder"
                 placeholder="Escreve aqui observações que só a modelo pode ver…"></textarea>
       <div class="popup-anotacoes-acoes">
-        <button id="salvarAnotacoesCliente" type="button" data-i18n="chat.btn_save">Salvar</button>
+        <button id="salvarAnotacoesCliente" type="button"
+                data-i18n="chat.btn_save">Salvar</button>
       </div>
     </div>
   </div>
 
+  <!-- ===== MODAL: MÍDIA ===== -->
   <div id="modalMidia" class="modal-midia hidden">
     <div class="modal-backdrop" onclick="fecharModalMidia()"></div>
     <div class="modal-box modal-midia-box">
       <button class="modal-close" onclick="fecharModalMidia()">✕</button>
       <img id="modalImg">
       <video id="modalVideo" controls playsinline preload="metadata"></video>
-      <iframe id="modalIframe" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+      <iframe id="modalIframe"
+              allow="autoplay; fullscreen; picture-in-picture"
+              allowfullscreen></iframe>
     </div>
   </div>
 
