@@ -2604,7 +2604,6 @@ app.use('/api/suporte', suporteRouter);
 app.set('io', io);
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
-app.use("/admin", express.static(path.join(__dirname, "admin-pages")));
 app.use("/icons", express.static(path.join(__dirname, "icons")));
 app.use(express.urlencoded({ extended: true }));
 app.use("/app", express.static("app"));
