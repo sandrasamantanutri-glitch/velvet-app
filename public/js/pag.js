@@ -277,32 +277,34 @@ function renderFormAsaasCartao() {
   container.dataset.rendered = "true";
 
   container.innerHTML = `
-    <div class="card-field-group" style="margin-bottom:10px;">
-      <label class="campo-label" style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Nome no cartão</label>
-      <input type="text" id="asaas-holder-name" class="campo-input" placeholder="Como está no cartão" autocomplete="cc-name" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:0.9rem;" />
-    </div>
-    <div class="card-field-group" style="margin-bottom:10px;">
-      <label class="campo-label" style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Número do cartão</label>
-      <input type="text" id="asaas-card-number" class="campo-input" placeholder="0000 0000 0000 0000" maxlength="19" autocomplete="cc-number" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:0.9rem;" />
-    </div>
-    <div style="display:flex;gap:10px;margin-bottom:10px;">
-      <div style="flex:1;">
-        <label class="campo-label" style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Validade</label>
-        <input type="text" id="asaas-expiry" class="campo-input" placeholder="MM/AA" maxlength="5" autocomplete="cc-exp" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:0.9rem;" />
+    <div class="asaas-form-grid">
+      <div class="asaas-campo">
+        <label>Nome no cartão</label>
+        <input type="text" id="asaas-holder-name" placeholder="Como está no cartão" autocomplete="cc-name" />
       </div>
-      <div style="flex:1;">
-        <label class="campo-label" style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">CVV</label>
-        <input type="text" id="asaas-cvv" class="campo-input" placeholder="000" maxlength="4" autocomplete="cc-csc" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:0.9rem;" />
+      <div class="asaas-campo">
+        <label>Número do cartão</label>
+        <input type="text" id="asaas-card-number" placeholder="0000 0000 0000 0000" maxlength="19" autocomplete="cc-number" inputmode="numeric" />
       </div>
-    </div>
-    <div style="display:flex;gap:10px;margin-bottom:10px;">
-      <div style="flex:1;">
-        <label class="campo-label" style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">CEP</label>
-        <input type="text" id="asaas-postal-code" class="campo-input" placeholder="00000-000" maxlength="9" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:0.9rem;" />
+      <div class="asaas-linha">
+        <div class="asaas-campo">
+          <label>Validade</label>
+          <input type="text" id="asaas-expiry" placeholder="MM/AA" maxlength="5" autocomplete="cc-exp" inputmode="numeric" />
+        </div>
+        <div class="asaas-campo">
+          <label>CVV</label>
+          <input type="text" id="asaas-cvv" placeholder="000" maxlength="4" autocomplete="cc-csc" inputmode="numeric" />
+        </div>
       </div>
-      <div style="flex:1;">
-        <label class="campo-label" style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Nº endereço</label>
-        <input type="text" id="asaas-address-number" class="campo-input" placeholder="Ex: 100" maxlength="20" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:0.9rem;" />
+      <div class="asaas-linha">
+        <div class="asaas-campo">
+          <label>CEP</label>
+          <input type="text" id="asaas-postal-code" placeholder="00000-000" maxlength="9" inputmode="numeric" />
+        </div>
+        <div class="asaas-campo">
+          <label>Nº / Complemento</label>
+          <input type="text" id="asaas-address-number" placeholder="Ex: 59 casa 1" maxlength="30" />
+        </div>
       </div>
     </div>
   `;
