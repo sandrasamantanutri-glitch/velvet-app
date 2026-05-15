@@ -1285,6 +1285,8 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
         COUNT(DISTINCT CASE
           WHEN tipo = 'assinatura'
            AND status = 'pago'
+           AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
+               = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
           THEN cliente_id
         END) AS assinantes_total,
 
