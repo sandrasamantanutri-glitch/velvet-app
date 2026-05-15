@@ -263,29 +263,21 @@ document.querySelector("#modalMidia .modal-backdrop")
     if (meRes.ok) {
       const me = await meRes.json();
       if (!me.verificada) {
-        const btnUpload = document.getElementById("btn-upload");
-        if (btnUpload) {
-          btnUpload.disabled = true;
-          btnUpload.title = "Verifique a sua conta para fazer uploads";
-          btnUpload.style.opacity = "0.4";
-          btnUpload.style.cursor = "not-allowed";
-          btnUpload.style.pointerEvents = "none";
-        }
-        ["btnEnviarFeed", "btnEnviarPremium"].forEach(id => {
+        // Deixa os botões visíveis mas intercepta o clique com popup
+        ["btn-upload", "btnEnviarFeed", "btnEnviarPremium"].forEach(id => {
           const el = document.getElementById(id);
-          if (el) { el.disabled = true; el.style.opacity = "0.4"; el.style.cursor = "not-allowed"; }
+          if (!el) return;
+          el.style.opacity = "0.55";
+          el.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            abrirPopupContaNaoVerificada();
+          }, true);
         });
         ["fileFeed", "filePremium"].forEach(id => {
           const el = document.getElementById(id);
-          if (el) el.disabled = true;
+          if (el) el.addEventListener("click", (e) => { e.preventDefault(); abrirPopupContaNaoVerificada(); }, true);
         });
-
-        const aviso = document.createElement("div");
-        aviso.id = "aviso-nao-verificada";
-        aviso.style.cssText = "background:#fff3cd;color:#856404;border:1px solid #ffc107;border-radius:10px;padding:12px 16px;font-size:14px;text-align:center;margin:12px 0;";
-        aviso.textContent = "⚠️ Verifique a sua conta para poder fazer uploads de mídia.";
-        const uploadArea = document.getElementById("btn-upload")?.closest(".upload-area") || document.querySelector(".section-feed");
-        uploadArea?.prepend(aviso);
       }
     }
   }
@@ -1918,6 +1910,47 @@ function getThumbPremium(media = {}, item = {}) {
       return `https://videodelivery.net/${videoId}/thumbnails/thumbnail.jpg`;
     }
   }
+}
+
+// ===============================
+// POPUP CONTA NÃO VERIFICADA
+// ===============================
+function abrirPopupContaNaoVerificada() {
+  let popup = document.getElementById("popupContaNaoVerificada");
+  if (popup) { popup.classList.remove("hidden"); return; }
+
+  popup = document.createElement("div");
+  popup.id = "popupContaNaoVerificada";
+  popup.style.cssText = "position:fixed;inset:0;z-index:999999;display:flex;align-items:center;justify-content:center;padding:16px;";
+  popup.innerHTML = `
+    <div style="position:absolute;inset:0;background:rgba(0,0,0,0.55);" id="popupNVOverlay"></div>
+    <div style="
+      position:relative;z-index:2;background:#fff;border-radius:18px;
+      padding:32px 24px;max-width:380px;width:100%;text-align:center;
+      box-shadow:0 20px 60px rgba(0,0,0,0.25);display:flex;flex-direction:column;gap:16px;
+    ">
+      <div style="font-size:44px;">🔒</div>
+      <h3 style="margin:0;color:#7B2CFF;font-size:18px;">Conta não verificada</h3>
+      <p style="margin:0;color:#555;font-size:14px;line-height:1.6;">
+        Apenas modelos com conta verificada podem fazer upload de mídia.<br>
+        Acede à tua conta para completar a verificação.
+      </p>
+      <a href="/conta.html" style="
+        background:linear-gradient(135deg,#7B2CFF,#9B5CFF);color:#fff;
+        text-decoration:none;padding:14px 24px;border-radius:14px;
+        font-size:15px;font-weight:600;display:block;
+      ">Verificar conta agora</a>
+      <button id="popupNVFechar" style="
+        background:none;border:none;color:#999;font-size:13px;cursor:pointer;padding:4px;
+      ">Fechar</button>
+    </div>
+  `;
+  document.body.appendChild(popup);
+
+  const fechar = () => popup.classList.add("hidden");
+  popup.querySelector("#popupNVOverlay").addEventListener("click", fechar);
+  popup.querySelector("#popupNVFechar").addEventListener("click", fechar);
+}
 
   return "/assets/premium-locked.jpg";
 }

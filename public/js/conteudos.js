@@ -24,17 +24,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (meRes.ok) {
         const me = await meRes.json();
         if (!me.verificada) {
+          // Botões ficam visíveis mas ao clicar abre popup de verificação
           ["btnNovoConteudo", "btnEnviarConteudo"].forEach(id => {
             const el = document.getElementById(id);
-            if (el) { el.disabled = true; el.style.opacity = "0.4"; el.style.cursor = "not-allowed"; el.style.pointerEvents = "none"; }
+            if (!el) return;
+            el.style.opacity = "0.55";
+            el.addEventListener("click", (e) => {
+              e.preventDefault();
+              e.stopImmediatePropagation();
+              abrirPopupContaNaoVerificada();
+            }, true);
           });
           const fi = document.getElementById("fileConteudo");
-          if (fi) fi.disabled = true;
-
-          const aviso = document.createElement("div");
-          aviso.style.cssText = "background:#fff3cd;color:#856404;border:1px solid #ffc107;border-radius:10px;padding:12px 16px;font-size:14px;text-align:center;margin:16px 0;";
-          aviso.textContent = "⚠️ Verifique a sua conta para poder fazer uploads de conteúdo.";
-          document.querySelector("main, .conteudos-container, body")?.prepend(aviso);
+          if (fi) fi.addEventListener("click", (e) => { e.preventDefault(); abrirPopupContaNaoVerificada(); }, true);
         }
       }
     } catch (e) { /* silently ignore */ }
@@ -738,4 +740,44 @@ function uploadComProgresso({ url, formData, token, tipo }) {
 
     xhr.send(formData);
   });
+}
+
+// ===============================
+// POPUP CONTA NÃO VERIFICADA
+// ===============================
+function abrirPopupContaNaoVerificada() {
+  let popup = document.getElementById("popupContaNaoVerificada");
+  if (popup) { popup.classList.remove("hidden"); return; }
+
+  popup = document.createElement("div");
+  popup.id = "popupContaNaoVerificada";
+  popup.style.cssText = "position:fixed;inset:0;z-index:999999;display:flex;align-items:center;justify-content:center;padding:16px;";
+  popup.innerHTML = `
+    <div style="position:absolute;inset:0;background:rgba(0,0,0,0.55);" id="popupNVOverlay"></div>
+    <div style="
+      position:relative;z-index:2;background:#fff;border-radius:18px;
+      padding:32px 24px;max-width:380px;width:100%;text-align:center;
+      box-shadow:0 20px 60px rgba(0,0,0,0.25);display:flex;flex-direction:column;gap:16px;
+    ">
+      <div style="font-size:44px;">🔒</div>
+      <h3 style="margin:0;color:#7B2CFF;font-size:18px;">Conta não verificada</h3>
+      <p style="margin:0;color:#555;font-size:14px;line-height:1.6;">
+        Apenas modelos com conta verificada podem fazer upload de conteúdo.<br>
+        Acede à tua conta para completar a verificação.
+      </p>
+      <a href="/conta.html" style="
+        background:linear-gradient(135deg,#7B2CFF,#9B5CFF);color:#fff;
+        text-decoration:none;padding:14px 24px;border-radius:14px;
+        font-size:15px;font-weight:600;display:block;
+      ">Verificar conta agora</a>
+      <button id="popupNVFechar" style="
+        background:none;border:none;color:#999;font-size:13px;cursor:pointer;padding:4px;
+      ">Fechar</button>
+    </div>
+  `;
+  document.body.appendChild(popup);
+
+  const fechar = () => popup.classList.add("hidden");
+  popup.querySelector("#popupNVOverlay").addEventListener("click", fechar);
+  popup.querySelector("#popupNVFechar").addEventListener("click", fechar);
 }
