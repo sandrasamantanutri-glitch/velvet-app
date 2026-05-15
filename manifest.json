@@ -1,12 +1,17 @@
 {
-  "name": "Velvet Test",
+  "name": "Velvet",
   "short_name": "Velvet",
-  "start_url": "/",
+  "start_url": "/index.html",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#FFFFFF",
+  "background_color": "#000000",
   "theme_color": "#7B2CFF",
   "icons": [
+    {
+      "src": "/assets/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
     {
       "src": "/icon-192.png",
       "sizes": "192x192",

@@ -8,6 +8,12 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Velvet">
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <script>
+    // Se aberto como PWA (standalone), redireciona para a app
+    if (window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches) {
+      window.location.replace('/index.html');
+    }
+  </script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
