@@ -469,7 +469,6 @@ function rerenderizarInboxCompleta() {
 
   inboxLista.forEach(c => {
     const statusHTML = gerarStatus(c);
-    const avatarSrc  = c.avatar_thumb || c.avatar || "assets/avatar.png";
 
     const div = document.createElement("div");
     div.className = "chat-item";
@@ -477,23 +476,12 @@ function rerenderizarInboxCompleta() {
     div.onclick = () => abrirChat(c.cliente_id);
 
     div.innerHTML = `
-      <div class="avatar">
-        <img src="${avatarSrc}" width="40" height="40"
-             onerror="this.onerror=null; this.src='assets/avatar.png';">
+      <div class="chat-row-top">
+        <span class="chat-name">${c.username || c.nome || t("inbox.chat_client")}</span>
+        <span class="chat-time">${formatarTempoInbox(c.ultima_mensagem_em)}</span>
       </div>
-      <div class="chat-body">
-        <div class="chat-top">
-          <span class="chat-name">
-            ${c.username || c.nome || t("inbox.chat_client")}
-            ${c.resumo_curto ? `<span class="chat-resumo-curto">${c.resumo_curto}</span>` : ""}
-            <span class="spend-level">${c.spend_level || ""}</span>
-          </span>
-          <span class="chat-time">${formatarTempoInbox(c.ultima_mensagem_em)}</span>
-        </div>
-        <div class="chat-bottom">
-          <span class="chat-last">${c.ultima_mensagem || ""}</span>
-          <div class="chat-status">${statusHTML}</div>
-        </div>
+      <div class="chat-row-bottom">
+        <div class="chat-status">${statusHTML}</div>
       </div>
     `;
 
@@ -508,7 +496,7 @@ function rerenderizarInboxCompleta() {
 setInterval(async () => {
   if (document.visibilityState !== "visible") return;
   await recarregarInboxDoZero();
-}, 30000);
+}, 60000);
 
 // ===========================
 // CHAT — ENTRAR NA SALA
