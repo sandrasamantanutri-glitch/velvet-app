@@ -440,15 +440,22 @@ function atualizarIconeNotificacoes(ativo) {
 
 async function obterEstadoRealNotificacoes() {
   try {
-    if (!("serviceWorker" in navigator)) return false;
+    if (isCapacitorNative()) {
+      // No APK nativo, a Web Push API não funciona — usa localStorage + verifica permissão nativa
+      const stored = localStorage.getItem("notificacoes_ativas") === "true";
+      if (!stored) return false;
+      const { PushNotifications } = window.Capacitor.Plugins;
+      const status = await PushNotifications.checkPermissions();
+      return status.receive === "granted";
+    }
 
+    if (!("serviceWorker" in navigator)) return false;
     const registration = await navigator.serviceWorker.ready;
     const subscription = await registration.pushManager.getSubscription();
-
     return !!subscription;
   } catch (err) {
     console.warn("Erro ao verificar subscription push:", err);
-    return false;
+    return localStorage.getItem("notificacoes_ativas") === "true";
   }
 }
 
