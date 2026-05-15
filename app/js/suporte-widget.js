@@ -231,7 +231,7 @@
   // ─── AUTO-RESPOSTA ───────────────────────────────────────────────────────────
   const RESPOSTAS = [
     {
-      palavras: ["reembolso", "dinheiro de volta", "estorno"],
+      palavras: ["reembolso", "dinheiro de volta", "estorno", "não devolveu", "reembolsar"],
       texto: "Olá! As solicitações de reembolso, são avaliadas individualmente e conforme nossos Termos de Uso. Indicamos que leia novamente os termos: <a href=\"/terms.html\" target=\"_blank\">Termos de Uso</a>, e verifique se seu pedido se enquadra nas situações elegiveis. Caso acredite que sim, pode dar andamento a seu pedido.\n\nPara isso, envie um e-mail para contato@velvet.lat com:\n• E-mail utilizado na compra(login)\n• Data da cobrança\n• Motivo do pedido\n• Prints que comprovam sua elegibilidade ao reembolso e/ou comprovantes de pagamento.\n\nO prazo de resposta é de 24 a 48 horas úteis!💜"
     },
      {
