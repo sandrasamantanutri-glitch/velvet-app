@@ -17,6 +17,29 @@ document.addEventListener("DOMContentLoaded", async () => {
   carregarConteudos();
   iniciarLazyLoading();
 
+  // Bloquear uploads para modelos não verificadas
+  if (role === "modelo") {
+    try {
+      const meRes = await fetch("/api/modelo/me", { headers: { Authorization: "Bearer " + token } });
+      if (meRes.ok) {
+        const me = await meRes.json();
+        if (!me.verificada) {
+          ["btnNovoConteudo", "btnEnviarConteudo"].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) { el.disabled = true; el.style.opacity = "0.4"; el.style.cursor = "not-allowed"; el.style.pointerEvents = "none"; }
+          });
+          const fi = document.getElementById("fileConteudo");
+          if (fi) fi.disabled = true;
+
+          const aviso = document.createElement("div");
+          aviso.style.cssText = "background:#fff3cd;color:#856404;border:1px solid #ffc107;border-radius:10px;padding:12px 16px;font-size:14px;text-align:center;margin:16px 0;";
+          aviso.textContent = "⚠️ Verifique a sua conta para poder fazer uploads de conteúdo.";
+          document.querySelector("main, .conteudos-container, body")?.prepend(aviso);
+        }
+      }
+    } catch (e) { /* silently ignore */ }
+  }
+
   const btnNovo = document.getElementById("btnNovoConteudo");
   const modal = document.getElementById("modalNovoConteudo");
   const btnFechar = document.getElementById("btnFecharModal");

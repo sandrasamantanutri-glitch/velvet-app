@@ -3247,6 +3247,20 @@ socket.on("joinChat", async ({ cliente_id, modelo_id } = {}, callback) => {
           callback?.({ ok: false, error: "Cliente inválido" });
           return;
         }
+
+        // 🔒 VIP check — cliente só pode entrar na sala se tiver VIP ativo
+        const vipRes = await db.query(
+          `SELECT 1 FROM vip_subscriptions
+           WHERE cliente_id = $1 AND modelo_id = $2
+             AND ativo = true AND expiration_at > NOW()
+           LIMIT 1`,
+          [clienteIdReal, modelo_id]
+        );
+        if (vipRes.rowCount === 0) {
+          callback?.({ ok: false, error: "vip_required" });
+          return;
+        }
+
       } else if (socket.user.role === "modelo") {
         const modeloRes = await db.query(
           "SELECT id FROM modelos WHERE user_id = $1",
@@ -3456,6 +3470,19 @@ socket.on("sendMessage", async (data, callback) => {
 
       if (clienteIdReal !== clienteIdNum) {
         callback?.({ ok: false });
+        return;
+      }
+
+      // 🔒 VIP check — cliente só pode enviar mensagem se tiver VIP ativo
+      const vipCheck = await db.query(
+        `SELECT 1 FROM vip_subscriptions
+         WHERE cliente_id = $1 AND modelo_id = $2
+           AND ativo = true AND expiration_at > NOW()
+         LIMIT 1`,
+        [clienteIdReal, modeloIdNum]
+      );
+      if (vipCheck.rowCount === 0) {
+        callback?.({ ok: false, error: "vip_required" });
         return;
       }
 
@@ -7013,12 +7040,16 @@ app.post("/api/upload", auth, authModelo, uploadLimiter, uploadB2.array("file", 
       }
 
       const modeloRes = await db.query(
-        `SELECT id FROM modelos WHERE user_id = $1`,
+        `SELECT id, verificada FROM modelos WHERE user_id = $1`,
         [req.user.id]
       );
 
       if (modeloRes.rowCount === 0) {
         return res.status(404).json({ error: "Modelo não encontrado" });
+      }
+
+      if (!modeloRes.rows[0].verificada) {
+        return res.status(403).json({ error: "Conta não verificada. Apenas modelos verificadas podem fazer upload de mídia." });
       }
 
       const modelo_id = modeloRes.rows[0].id;
@@ -11852,7 +11883,7 @@ app.post("/api/conteudos", authModelo, uploadLimiter, uploadB2.array("file", 10)
     try {
 
       const modeloRes = await db.query(
-        "SELECT id FROM modelos WHERE user_id = $1",
+        "SELECT id, verificada FROM modelos WHERE user_id = $1",
         [userId]
       );
 
@@ -11860,6 +11891,10 @@ app.post("/api/conteudos", authModelo, uploadLimiter, uploadB2.array("file", 10)
         return res.status(404).json({
           error: "Modelo não encontrado"
         });
+      }
+
+      if (!modeloRes.rows[0].verificada) {
+        return res.status(403).json({ error: "Conta não verificada. Apenas modelos verificadas podem fazer upload de conteúdos." });
       }
 
       const modelo_id = modeloRes.rows[0].id;
@@ -12172,7 +12207,7 @@ app.post("/api/premium", auth, authModelo, uploadLimiter, uploadB2.array("files"
 
     const modeloRes = await client.query(
       `
-      SELECT id
+      SELECT id, verificada
       FROM modelos
       WHERE user_id = $1
       LIMIT 1
@@ -12182,6 +12217,10 @@ app.post("/api/premium", auth, authModelo, uploadLimiter, uploadB2.array("files"
 
     if (!modeloRes.rowCount) {
       return res.status(404).json({ error: "Modelo não encontrado" });
+    }
+
+    if (!modeloRes.rows[0].verificada) {
+      return res.status(403).json({ error: "Conta não verificada. Apenas modelos verificadas podem publicar conteúdo premium." });
     }
 
     const modelo_id = Number(modeloRes.rows[0].id);

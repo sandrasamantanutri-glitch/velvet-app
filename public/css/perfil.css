@@ -311,6 +311,9 @@ a{
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 #modalMidia video,

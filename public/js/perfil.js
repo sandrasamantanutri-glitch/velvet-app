@@ -257,6 +257,39 @@ document.querySelector("#modalMidia .modal-backdrop")
   if (!EH_DONA) {
     document.getElementById("btn-upload")?.remove();
   }
+
+  if (EH_DONA) {
+    const meRes = await fetch("/api/modelo/me", { headers: { Authorization: "Bearer " + token } });
+    if (meRes.ok) {
+      const me = await meRes.json();
+      if (!me.verificada) {
+        const btnUpload = document.getElementById("btn-upload");
+        if (btnUpload) {
+          btnUpload.disabled = true;
+          btnUpload.title = "Verifique a sua conta para fazer uploads";
+          btnUpload.style.opacity = "0.4";
+          btnUpload.style.cursor = "not-allowed";
+          btnUpload.style.pointerEvents = "none";
+        }
+        ["btnEnviarFeed", "btnEnviarPremium"].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) { el.disabled = true; el.style.opacity = "0.4"; el.style.cursor = "not-allowed"; }
+        });
+        ["fileFeed", "filePremium"].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.disabled = true;
+        });
+
+        const aviso = document.createElement("div");
+        aviso.id = "aviso-nao-verificada";
+        aviso.style.cssText = "background:#fff3cd;color:#856404;border:1px solid #ffc107;border-radius:10px;padding:12px 16px;font-size:14px;text-align:center;margin:12px 0;";
+        aviso.textContent = "⚠️ Verifique a sua conta para poder fazer uploads de mídia.";
+        const uploadArea = document.getElementById("btn-upload")?.closest(".upload-area") || document.querySelector(".section-feed");
+        uploadArea?.prepend(aviso);
+      }
+    }
+  }
+
 btnAssinar?.addEventListener("click", () => {
   const s = getEstadoAcessoPerfil();
 
@@ -696,6 +729,7 @@ function abrirMidia(item) {
       isDragging = true;
       startX = e.clientX;
       currentX = e.clientX;
+      areaInteracao.setPointerCapture(e.pointerId);
     };
 
     areaInteracao.onpointermove = (e) => {
@@ -704,8 +738,9 @@ function abrirMidia(item) {
       currentX = e.clientX;
       const deltaX = currentX - startX;
 
-      if (Math.abs(deltaX) > 10) {
+      if (Math.abs(deltaX) > 8) {
         houveArraste = true;
+        e.preventDefault();
       }
     };
 

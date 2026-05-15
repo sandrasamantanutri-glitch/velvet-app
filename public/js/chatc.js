@@ -119,6 +119,18 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
+    // 🔒 Verificar VIP ativo antes de permitir o chat
+    const vipRes = await fetch(`/api/vip/status/${modelo_id}`, {
+      headers: { Authorization: "Bearer " + token }
+    });
+    if (vipRes.ok) {
+      const vipData = await vipRes.json();
+      if (!vipData.vip) {
+        bloquearChatSemVip(modelo_id);
+        return;
+      }
+    }
+
     await carregarInfoModelo(modelo_id);
     tentarEntrarSala();
 
@@ -1280,4 +1292,40 @@ function mostrarMetodoPixChat() {
   setTimeout(() => {
     document.getElementById("btnGerarPix")?.click();
   }, 200);
+}
+
+// ===============================
+// BLOQUEIO SEM VIP
+// ===============================
+function bloquearChatSemVip(modeloId) {
+  // Ocultar área de input
+  const inputArea = document.querySelector(".chat-input, .chat-input-area, .input-area, #chatFooter, .chat-footer");
+  if (inputArea) { inputArea.style.display = "none"; }
+
+  const sendBtn = document.getElementById("sendBtn");
+  if (sendBtn) sendBtn.style.display = "none";
+
+  const msgInput = document.getElementById("msgInput");
+  if (msgInput) msgInput.style.display = "none";
+
+  // Mostrar banner no lugar do chat
+  const chatBox = document.getElementById("chatBox");
+  if (chatBox) {
+    chatBox.innerHTML = `
+      <div style="
+        display:flex;flex-direction:column;align-items:center;justify-content:center;
+        height:100%;min-height:200px;gap:16px;padding:32px;text-align:center;
+      ">
+        <div style="font-size:48px;">🔒</div>
+        <p style="font-size:16px;color:#555;margin:0;line-height:1.5;">
+          Para conversar com esta modelo é necessário ter uma assinatura VIP ativa.
+        </p>
+        <button onclick="window.location.href='/perfil.html?id=${modeloId}'" style="
+          background:linear-gradient(135deg,#7B2CFF,#9B5CFF);color:#fff;
+          border:none;padding:14px 28px;border-radius:14px;font-size:15px;
+          font-weight:600;cursor:pointer;
+        ">Assinar VIP</button>
+      </div>
+    `;
+  }
 }
