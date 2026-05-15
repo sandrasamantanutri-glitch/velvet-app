@@ -1910,6 +1910,8 @@ function getThumbPremium(media = {}, item = {}) {
       return `https://videodelivery.net/${videoId}/thumbnails/thumbnail.jpg`;
     }
   }
+
+  return "/assets/premium-locked.jpg";
 }
 
 // ===============================
@@ -1950,7 +1952,4 @@ function abrirPopupContaNaoVerificada() {
   const fechar = () => popup.classList.add("hidden");
   popup.querySelector("#popupNVOverlay").addEventListener("click", fechar);
   popup.querySelector("#popupNVFechar").addEventListener("click", fechar);
-}
-
-  return "/assets/premium-locked.jpg";
 }
