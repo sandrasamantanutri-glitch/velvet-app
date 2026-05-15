@@ -423,11 +423,6 @@ body.modal-open {
     justify-content: space-between;
   }
 
-  .logo {
-    margin: 0 auto;
-    width: 200px;
-  }
-
   /* BOTÕES */
   .login-box {
     width: 100%;
