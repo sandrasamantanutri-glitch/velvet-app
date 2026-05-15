@@ -388,11 +388,9 @@ body.modal-open {
 
   html, body {
     height: 100%;
-    background: #dbcafa;
   }
 
   body {
-    background: #f6f7fb;
     overflow-x: hidden;
   }
 
