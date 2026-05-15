@@ -1335,6 +1335,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (!modelo_id) { logout(); return; }
 
+    const inboxHeader = document.getElementById("agencyInboxHeader");
+    if (inboxHeader && modelo.nome_exibicao) {
+      inboxHeader.textContent = modelo.nome_exibicao;
+    }
+
     // Chat input handlers
     document.getElementById("sendBtn")?.addEventListener("click", enviarMensagem);
     document.getElementById("msgInput")?.addEventListener("keydown", e => {
