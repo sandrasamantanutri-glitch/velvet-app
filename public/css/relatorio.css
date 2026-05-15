@@ -268,22 +268,36 @@ body {
 
 .tabs {
   display: flex;
-  gap: 10px;
-  margin: 20px 0;
+  gap: 8px;
+  margin: 16px 0 20px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+  scrollbar-width: none;
 }
 
-.tab {
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab,
+.tab-btn {
+  flex: 0 0 auto;
   background: #f2f2f8;
   border: none;
   padding: 10px 18px;
   border-radius: 20px;
   font-weight: 600;
+  font-size: 13px;
   cursor: pointer;
   color: #555;
+  white-space: nowrap;
+  font-family: inherit;
 }
 
-.tab.active {
-  background: #6b3dff;
+.tab.active,
+.tab-btn.active {
+  background: #7B2CFF;
   color: #fff;
 }
 
@@ -313,6 +327,7 @@ body {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
   color: #333;
+  text-align: start;
 }
 
 .transacao:hover {
@@ -460,38 +475,57 @@ body {
   transform: scale(1.08);
 }
 
-.separador{
+.separador,
+.separator {
   border: none;
   height: 1px;
   background: linear-gradient(to right, transparent, #7B2CFF, transparent);
-  margin: 18px 0;
+  margin: 24px 0;
+}
+
+/* ===============================
+   LISTA DE CARDS (coluna única)
+================================ */
+.cards-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+/* container da página */
+.area-card {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 16px 16px 40px;
 }
 
 /* ===============================
    TABS MOBILE
 ================================ */
-@media (max-width: 600px){
-
-  .tabs{
-    display:flex;
-    flex-wrap:nowrap;
-    overflow-x:auto;
-    -webkit-overflow-scrolling: touch;
-    gap:8px;
-    padding-bottom:4px;
+@media (max-width: 600px) {
+  .tab,
+  .tab-btn {
+    font-size: 12px;
+    padding: 9px 14px;
   }
 
-  .tabs::-webkit-scrollbar{
-    display:none;
+  .area-card {
+    padding: 12px 12px 40px;
   }
 
-  .tab{
-    flex:0 0 auto;
-    white-space:nowrap;
-    font-size:10px;
-    padding:8px 4px;
+  .card {
+    padding: 18px 16px;
+    border-radius: 16px;
   }
 
+  .card span {
+    font-size: 12px;
+  }
+
+  .card strong {
+    font-size: 20px;
+  }
 }
 
 #paginacaoTransacoes{

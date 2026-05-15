@@ -902,6 +902,20 @@ select {
 .msg-feedback.sucesso { background: #E6F8ED; color: #2e7d32; }
 .msg-feedback.erro    { background: #FFEAEA; color: #c62828; }
 
+.cardbank {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  border-radius: 18px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  background: none;
+  box-shadow: 0 4px 16px rgba(123, 44, 255, 0.10);
+}
 /* ===== UTILITÁRIOS ===== */
 .hidden { display: none !important; }
 
