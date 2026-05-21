@@ -21,12 +21,16 @@
   <!-- Mostrado apenas se a modelo ainda não aceitou os termos   -->
   <!-- ========================================================== -->
   <section class="area-card" id="secaoTermos">
+
+        <button type="button" class="btn-voltar" onclick="history.back()" data-i18n-title="conta.voltar">
+      <img src="/assets/voltar.png" alt="Voltar">
+    </button>
+    
     <div class="termos-header">
       <span class="termos-badge">⚖️ Passo 1 de 3</span>
-      <h3>Termo de Aceite Digital</h3>
+      <h3>Conta</h3>
       <p class="termos-intro">
-        Antes de activar a tua conta, precisamos que leia e aceite cada uma das seguintes declarações.
-        O teu aceite é registado com data, hora, IP e versão do termo — com validade jurídica.
+        Antes de ativar a tua conta, precisamos que leia e aceite cada uma das seguintes declarações abaixo.
       </p>
     </div>
 
@@ -53,12 +57,10 @@
           <span class="declaracao-icon">🪪</span>
           <div>
             <div class="declaracao-titulo">Declaração de Maioridade</div>
-            <div class="declaracao-essencial">OBRIGATÓRIO para plataformas adultas</div>
           </div>
         </div>
         <p class="declaracao-texto">
-          Declaro que sou maior de 18 anos e possuo plena capacidade legal para utilizar esta plataforma
-          e publicar conteúdo para adultos.
+          Declaro que sou maior de 18 anos e possuo plena capacidade legal para utilizar esta plataforma.
         </p>
         <div class="form-group full check-group declaracao-check">
           <input type="checkbox" id="aceite_maioridade" name="aceite_maioridade" required>
@@ -90,7 +92,6 @@
           <span class="declaracao-icon">🧾</span>
           <div>
             <div class="declaracao-titulo">Responsabilidade Tributária</div>
-            <div class="declaracao-essencial">MUITO IMPORTANTE</div>
           </div>
         </div>
         <p class="declaracao-texto">
@@ -109,7 +110,6 @@
           <span class="declaracao-icon">🤝</span>
           <div>
             <div class="declaracao-titulo">Relação Independente</div>
-            <div class="declaracao-essencial">ESSENCIAL — evita vínculo empregatício</div>
           </div>
         </div>
         <p class="declaracao-texto">
@@ -141,12 +141,6 @@
       </div>
 
       <input type="hidden" name="versao_termos" value="2026-05">
-
-      <div class="termos-rodape">
-        <p class="termos-aviso">
-          🔐 O teu aceite é registado de forma segura com data, hora, endereço IP e versão do documento.
-          Este registo tem validade jurídica nos termos da legislação aplicável.
-        </p>
         <button type="submit" class="btn-salvar" id="btnAceitarTermos">
           Aceitar todos os termos e continuar
         </button>
@@ -159,9 +153,6 @@
   <!-- STEP 1 — DADOS PESSOAIS                                    -->
   <!-- ========================================================== -->
   <section class="area-card" id="secaoDadosPessoais">
-    <button type="button" class="btn-voltar" onclick="history.back()" data-i18n-title="conta.voltar">
-      <img src="/assets/voltar.png" alt="Voltar">
-    </button>
 
     <h3 data-i18n="conta.titulo_dados_pessoais">Dados Pessoais</h3>
 
