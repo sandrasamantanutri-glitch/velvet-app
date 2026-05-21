@@ -192,7 +192,22 @@ const pageLoaders = {};
 
 // ========== NEWSLETTER ==========
 
+// ── Newsletter state ──
+let _nlTodosModelos = [];
+let _nlSelecionadas = new Set();
+let _nlModoEspecifico = false;
+
 pageLoaders.newsletter = async function () {
+  _nlSelecionadas.clear();
+  _nlModoEspecifico = false;
+  _nlTodosModelos = [];
+  const radio = document.querySelector('input[name="nlDestinatarias"][value="todas"]');
+  if (radio) radio.checked = true;
+  const painel = document.getElementById('nl-selecao-painel');
+  if (painel) painel.style.display = 'none';
+  const btn = document.getElementById('btnEnviarNewsletter');
+  if (btn) btn.textContent = 'Enviar para todas';
+
   try {
     const data = await fetchJSON('/admin/dashboard/newsletter/resumo');
     document.getElementById('newsletter-resumo').innerHTML =
@@ -202,6 +217,114 @@ pageLoaders.newsletter = async function () {
   }
   carregarHistoricoNewsletter();
 };
+
+async function alternarDestinatarias(modo) {
+  _nlModoEspecifico = (modo === 'especificas');
+  const painel = document.getElementById('nl-selecao-painel');
+  const btn = document.getElementById('btnEnviarNewsletter');
+
+  if (_nlModoEspecifico) {
+    painel.style.display = 'block';
+    btn.textContent = 'Enviar para selecionadas';
+    if (_nlTodosModelos.length === 0) await carregarModelosNewsletter();
+  } else {
+    painel.style.display = 'none';
+    btn.textContent = 'Enviar para todas';
+    _nlSelecionadas.clear();
+    renderizarChips();
+  }
+}
+
+async function carregarModelosNewsletter() {
+  const lista = document.getElementById('nl-lista-modelos');
+  lista.innerHTML = '<div style="padding:12px; color:#aaa; text-align:center;">A carregar…</div>';
+  try {
+    _nlTodosModelos = await fetchJSON('/admin/dashboard/newsletter/modelos');
+    renderizarListaModelos(_nlTodosModelos);
+  } catch {
+    lista.innerHTML = '<div style="padding:12px; color:#e53e3e; text-align:center;">Erro ao carregar modelos.</div>';
+  }
+}
+
+function renderizarListaModelos(modelos) {
+  const lista = document.getElementById('nl-lista-modelos');
+  if (!modelos.length) {
+    lista.innerHTML = '<div style="padding:12px; color:#aaa; text-align:center;">Nenhuma modelo encontrada.</div>';
+    return;
+  }
+  lista.innerHTML = modelos.map(m => `
+    <label style="display:flex; align-items:center; gap:8px; padding:7px 12px; cursor:pointer; transition:background .15s;"
+      onmouseover="this.style.background='#f5f0ff'" onmouseout="this.style.background=''">
+      <input type="checkbox" value="${m.id}" ${_nlSelecionadas.has(m.id) ? 'checked' : ''}
+        onchange="toggleModeloNewsletter(${m.id}, '${escapeHtml(m.nome)}', this.checked)">
+      <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+        <strong>${escapeHtml(m.nome)}</strong>
+        <span style="color:#aaa; margin-left:6px; font-size:12px;">${escapeHtml(m.email)}</span>
+      </span>
+    </label>`).join('');
+}
+
+function filtrarModelosNewsletter() {
+  const q = document.getElementById('nl-busca-modelo').value.toLowerCase();
+  const filtrados = _nlTodosModelos.filter(m =>
+    m.nome.toLowerCase().includes(q) || m.email.toLowerCase().includes(q)
+  );
+  renderizarListaModelos(filtrados);
+}
+
+function toggleModeloNewsletter(id, nome, checked) {
+  if (checked) _nlSelecionadas.add(id);
+  else _nlSelecionadas.delete(id);
+  renderizarChips();
+  atualizarBotaoEnviar();
+}
+
+function selecionarTodasVisiveis() {
+  const checkboxes = document.querySelectorAll('#nl-lista-modelos input[type=checkbox]');
+  checkboxes.forEach(cb => {
+    cb.checked = true;
+    const id = Number(cb.value);
+    const modelo = _nlTodosModelos.find(m => m.id === id);
+    if (modelo) _nlSelecionadas.add(id);
+  });
+  renderizarChips();
+  atualizarBotaoEnviar();
+}
+
+function limparSelecaoModelos() {
+  _nlSelecionadas.clear();
+  document.querySelectorAll('#nl-lista-modelos input[type=checkbox]').forEach(cb => cb.checked = false);
+  renderizarChips();
+  atualizarBotaoEnviar();
+}
+
+function renderizarChips() {
+  const container = document.getElementById('nl-selecionadas-chips');
+  const vazio = document.getElementById('nl-chips-vazio');
+  if (_nlSelecionadas.size === 0) {
+    container.innerHTML = '<span style="font-size:12px; color:#aaa;" id="nl-chips-vazio">Nenhuma selecionada</span>';
+    return;
+  }
+  const chips = [..._nlSelecionadas].map(id => {
+    const m = _nlTodosModelos.find(x => x.id === id);
+    const nome = m ? escapeHtml(m.nome) : id;
+    return `<span style="background:#ede7f6; color:#4b2a7b; border-radius:20px; padding:3px 10px; font-size:12px; display:flex; align-items:center; gap:4px;">
+      ${nome}
+      <button type="button" onclick="toggleModeloNewsletter(${id},'',false); document.querySelector('#nl-lista-modelos input[value=\\'${id}\\']') && (document.querySelector('#nl-lista-modelos input[value=\\'${id}\\']').checked=false)"
+        style="background:none; border:none; cursor:pointer; color:#9b59b6; font-size:14px; line-height:1; padding:0 0 0 2px;">&times;</button>
+    </span>`;
+  }).join('');
+  container.innerHTML = chips;
+}
+
+function atualizarBotaoEnviar() {
+  const btn = document.getElementById('btnEnviarNewsletter');
+  if (_nlModoEspecifico) {
+    btn.textContent = _nlSelecionadas.size > 0
+      ? `Enviar para ${_nlSelecionadas.size} modelo${_nlSelecionadas.size > 1 ? 's' : ''}`
+      : 'Enviar para selecionadas';
+  }
+}
 
 async function carregarHistoricoNewsletter() {
   const el = document.getElementById('newsletter-historico-lista');
@@ -227,24 +350,38 @@ async function enviarNewsletter(e) {
   const btn = document.getElementById('btnEnviarNewsletter');
   const status = document.getElementById('newsletter-status');
 
-  if (!confirm(`Confirma o envio da newsletter para todas as modelos verificadas?`)) return;
+  if (_nlModoEspecifico && _nlSelecionadas.size === 0) {
+    toast('Seleciona pelo menos uma modelo.', 'error');
+    return;
+  }
 
+  const confirmMsg = _nlModoEspecifico
+    ? `Confirma o envio para ${_nlSelecionadas.size} modelo(s) selecionada(s)?`
+    : `Confirma o envio para todas as modelos verificadas?`;
+  if (!confirm(confirmMsg)) return;
+
+  const payload = { assunto, mensagem };
+  if (_nlModoEspecifico) payload.modelo_ids = [..._nlSelecionadas];
+
+  const textoOriginal = btn.textContent;
   btn.disabled = true;
   btn.textContent = 'A enviar…';
   status.textContent = '';
 
   try {
-    const res = await postJSON('/admin/dashboard/newsletter/enviar', { assunto, mensagem });
-    toast(`Newsletter enviada para ${res.total} modelos!`, 'success');
-    status.textContent = `✓ Enviado para ${res.total} modelos`;
+    const res = await postJSON('/admin/dashboard/newsletter/enviar', payload);
+    toast(`Newsletter enviada para ${res.total} modelo(s)!`, 'success');
+    status.textContent = `✓ Enviado para ${res.total} modelo(s)`;
     document.getElementById('formNewsletter').reset();
+    _nlSelecionadas.clear();
+    renderizarChips();
     carregarHistoricoNewsletter();
   } catch (err) {
     toast('Erro ao enviar newsletter: ' + err.message, 'error');
     status.textContent = '✗ Falha no envio';
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Enviar para todas';
+    btn.textContent = textoOriginal;
   }
 }
 

@@ -4187,6 +4187,21 @@ router.get("/newsletter/resumo", authAdmin, async (req, res) => {
   }
 });
 
+router.get("/newsletter/modelos", authAdmin, async (req, res) => {
+  try {
+    const { rows } = await db.query(`
+      SELECT m.id, COALESCE(m.nome_exibicao, m.nome, u.email) AS nome, u.email
+      FROM modelos m
+      JOIN users u ON u.id = m.user_id
+      WHERE m.verificada = true AND m.ativo = true AND u.email IS NOT NULL
+      ORDER BY nome ASC
+    `);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ erro: err.message });
+  }
+});
+
 router.get("/newsletter/historico", authAdmin, async (req, res) => {
   try {
     const { rows } = await db.query(`
@@ -4202,21 +4217,33 @@ router.get("/newsletter/historico", authAdmin, async (req, res) => {
 });
 
 router.post("/newsletter/enviar", authAdmin, async (req, res) => {
-  const { assunto, mensagem } = req.body;
+  const { assunto, mensagem, modelo_ids } = req.body;
   if (!assunto || !mensagem) {
     return res.status(400).json({ erro: "Assunto e mensagem são obrigatórios." });
   }
 
   try {
-    const { rows } = await db.query(`
-      SELECT u.email
-      FROM modelos m
-      JOIN users u ON u.id = m.user_id
-      WHERE m.verificada = true AND m.ativo = true AND u.email IS NOT NULL
-    `);
+    let rows;
+    if (Array.isArray(modelo_ids) && modelo_ids.length > 0) {
+      const result = await db.query(`
+        SELECT u.email
+        FROM modelos m
+        JOIN users u ON u.id = m.user_id
+        WHERE m.id = ANY($1) AND u.email IS NOT NULL
+      `, [modelo_ids]);
+      rows = result.rows;
+    } else {
+      const result = await db.query(`
+        SELECT u.email
+        FROM modelos m
+        JOIN users u ON u.id = m.user_id
+        WHERE m.verificada = true AND m.ativo = true AND u.email IS NOT NULL
+      `);
+      rows = result.rows;
+    }
 
     if (rows.length === 0) {
-      return res.status(400).json({ erro: "Nenhuma modelo verificada encontrada." });
+      return res.status(400).json({ erro: "Nenhuma modelo encontrada para envio." });
     }
 
     const emails = rows.map(r => r.email);
