@@ -2310,10 +2310,37 @@ async function editarPgtoModelo(id) {
   }
 }
 
-async function marcarPgtoModeloPago(id) {
-  if (!confirm('Confirmar este pagamento como pago? O recibo PDF será gerado e enviado por email à modelo.')) return;
+// ── Pré-visualização antes de marcar como pago ──────────────────────────────
+let _pagamentoIdPendente = null;
 
-  // Abrir janela ANTES da chamada async — evita bloqueio de popup pelo browser
+function marcarPgtoModeloPago(id) {
+  _pagamentoIdPendente = id;
+
+  // Carregar pré-visualização no iframe
+  const iframe = document.getElementById('iframePreviewRecibo');
+  const btn    = document.getElementById('btnConfirmarPagamento');
+
+  if (iframe) iframe.src = `/admin/dashboard/modelo-pagamentos/${id}/recibo`;
+  if (btn)    btn.disabled = false;
+
+  openModal('modalPreviewRecibo');
+}
+
+function fecharPreviewRecibo() {
+  const iframe = document.getElementById('iframePreviewRecibo');
+  if (iframe) iframe.src = '';
+  _pagamentoIdPendente = null;
+  closeModal('modalPreviewRecibo');
+}
+
+async function confirmarPagamentoComEmail() {
+  const id = _pagamentoIdPendente;
+  if (!id) return;
+
+  const btn = document.getElementById('btnConfirmarPagamento');
+  if (btn) { btn.disabled = true; btn.textContent = 'A processar...'; }
+
+  // Abrir janela ANTES da chamada async — evita bloqueio de popup
   const win = window.open('', '_blank');
   if (win) {
     win.document.write(`
@@ -2327,20 +2354,18 @@ async function marcarPgtoModeloPago(id) {
   try {
     const data = await postJSON(`/admin/dashboard/modelo-pagamentos/${id}/pagar`, {});
 
-    toast('Pagamento marcado como pago! Recibo enviado por email.', 'success');
+    fecharPreviewRecibo();
+    toast('Pagamento confirmado! Recibo enviado por email à modelo.', 'success');
     carregarPgtoModelo(1);
 
-    // Abrir PDF gerado (URL assinada devolvida pelo servidor)
+    // Abrir PDF gerado
     if (win && !win.closed) {
-      if (data.recibo_pdf_signed_url) {
-        win.location.href = data.recibo_pdf_signed_url;
-      } else {
-        // Fallback: recibo HTML imprimível
-        win.location.href = `/admin/dashboard/modelo-pagamentos/${id}/recibo`;
-      }
+      win.location.href = data.recibo_pdf_signed_url
+        || `/admin/dashboard/modelo-pagamentos/${id}/recibo`;
     }
   } catch (err) {
     if (win && !win.closed) win.close();
+    if (btn) { btn.disabled = false; btn.textContent = '✅ Confirmar e enviar email à modelo'; }
     toast('Erro: ' + err.message, 'error');
   }
 }

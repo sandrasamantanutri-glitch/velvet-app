@@ -43,7 +43,8 @@
       <div class="verificacao-steps">
         <span class="step ativo">1. Termos</span>
         <span class="step">2. Dados pessoais</span>
-        <span class="step">3. Documentos</span>
+        <span class="step">3. Contrato</span>
+        <span class="step">4. Documentos</span>
       </div>
 
       <!-- 1. Declaração de Maioridade -->
@@ -167,7 +168,8 @@
     <div class="verificacao-steps">
       <span class="step concluido" id="stepTermosIndicator1">1. Termos</span>
       <span class="step ativo">2. Dados pessoais</span>
-      <span class="step">3. Documentos</span>
+      <span class="step">3. Contrato</span>
+      <span class="step">4. Documentos</span>
     </div>
 
     <form id="formDadosPessoais" class="form-area">
@@ -224,13 +226,79 @@
     </form>
   </section>
 
-  <section class="area-card">
+  <!-- ========================================================== -->
+  <!-- STEP 3 — CONTRATO DIGITAL (ZapSign)                       -->
+  <!-- ========================================================== -->
+  <section class="area-card" id="secaoContrato">
+    <h3>Contrato de Parceria Digital</h3>
+
+    <div class="verificacao-steps">
+      <span class="step concluido">1. Termos</span>
+      <span class="step concluido">2. Dados pessoais</span>
+      <span class="step ativo">3. Contrato</span>
+      <span class="step">4. Documentos</span>
+    </div>
+
+    <!-- Estado: já assinado -->
+    <div id="contratoJaAssinado" class="termos-aceitos-banner hidden">
+      <span class="termos-aceitos-icon">✅</span>
+      <div>
+        <strong>Contrato assinado com sucesso</strong>
+        <small id="contratoAssinadoData"></small>
+      </div>
+    </div>
+
+    <!-- Estado: a assinar -->
+    <div id="contratoAAssinar">
+      <p class="form-info" style="margin-bottom:16px;">
+        📋 Lê e assina o Contrato de Parceria Digital com a Velvet antes de enviar os documentos.
+        Podes assinar directamente no ecrã — sem necessidade de impressão.
+      </p>
+
+      <div id="contratoLoadingMsg" style="text-align:center; padding:24px; color:#888;">
+        <div class="spinner" style="margin: 0 auto 12px;"></div>
+        <p>A preparar o contrato...</p>
+      </div>
+
+      <!-- Iframe ZapSign para assinatura -->
+      <div id="contratoIframeWrap" class="hidden" style="border:1px solid #333; border-radius:12px; overflow:hidden; margin-bottom:16px;">
+        <iframe
+          id="iframeContrato"
+          src=""
+          style="width:100%; height:600px; border:none; display:block;"
+          allow="camera; microphone"
+          title="Assinatura do contrato ZapSign">
+        </iframe>
+      </div>
+
+      <div id="contratoAcoesExternas" class="hidden" style="text-align:center; margin-bottom:16px;">
+        <p style="color:#aaa; font-size:14px; margin-bottom:12px;">
+          Preferes assinar noutro dispositivo? Abre o link abaixo:
+        </p>
+        <a id="linkAssinaturaExterno" href="#" target="_blank" class="btn-salvar" style="display:inline-block; text-decoration:none;">
+          🔗 Abrir link de assinatura
+        </a>
+      </div>
+
+      <div id="contratoPollingMsg" class="hidden" style="text-align:center; padding:12px; color:#aaa; font-size:13px;">
+        ⏳ A verificar assinatura...
+      </div>
+
+      <p id="contratoErro" class="form-info" style="color:#e74c3c; display:none;"></p>
+    </div>
+  </section>
+
+  <!-- ========================================================== -->
+  <!-- STEP 4 — DOCUMENTOS                                        -->
+  <!-- ========================================================== -->
+  <section class="area-card" id="secaoDocumentos">
     <h3 data-i18n="conta.titulo_verificacao">Verificação de Identidade</h3>
 
     <div class="verificacao-steps">
       <span class="step concluido">1. Termos</span>
       <span class="step concluido">2. Dados pessoais</span>
-      <span class="step ativo">3. Documentos</span>
+      <span class="step concluido">3. Contrato</span>
+      <span class="step ativo">4. Documentos</span>
     </div>
 
     <div id="statusContainer" class="form-info" data-i18n="conta.info_documentos">
@@ -357,6 +425,7 @@
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/header.js"></script>
   <script src="/js/aceite-termos.js"></script>
+  <script src="/js/contrato-assinatura.js"></script>
   <script src="/js/areaUsuario.js"></script>
   <script src="/js/verificacaoDocumentos.js"></script>
   <script src="/js/footer-shared.js"></script>

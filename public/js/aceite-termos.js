@@ -77,8 +77,13 @@
 
   // ── Bloquear / desbloquear passos seguintes ──────────────────────────────
   function bloquearPassosSeguintes() {
-    // Adiciona overlay de bloqueio nas secções de dados e documentos
-    [secaoDados, document.querySelector(".area-card:nth-of-type(4)")].forEach(s => {
+    // Adiciona overlay de bloqueio em todos os passos seguintes
+    const secoes = [
+      secaoDados,
+      document.getElementById("secaoContrato"),
+      document.getElementById("secaoDocumentos")
+    ];
+    secoes.forEach(s => {
       if (!s) return;
       s.classList.add("secao-bloqueada");
       if (!s.querySelector(".bloqueio-overlay")) {

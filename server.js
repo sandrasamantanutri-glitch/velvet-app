@@ -54,6 +54,7 @@ const auth = require("./middleware/auth");
 
 const crypto = require("crypto");
 const axios = require("axios");
+const PDFDocument = require("pdfkit");
 
 const { Resend } = require("resend");
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -177,6 +178,54 @@ const uploadVerificacao = multer({
 // ===============================
 // WEBHOOKS
 // ===============================
+
+// ===============================
+// WEBHOOK ZAPSIGN — Contrato assinado
+// ===============================
+
+app.post("/api/webhook/zapsign", express.json(), async (req, res) => {
+  try {
+    console.log("[ZapSign Webhook]", JSON.stringify(req.body).slice(0, 400));
+    const event = req.body;
+
+    // ZapSign envia: { event_type: "sign_doc" | "signer_signed" | ..., document: { token, ... }, signer: { token, ... } }
+    const eventType = event?.event_type || event?.type || "";
+    const docToken = event?.document?.token || event?.doc?.token || event?.token || null;
+    const signerStatus = event?.signer?.status || event?.document?.status || "";
+
+    // Considera assinatura completa quando o documento fica "signed" ou o signatário "signed"
+    const foiAssinado =
+      eventType === "sign_doc" ||
+      eventType === "signer_signed" ||
+      signerStatus === "signed" ||
+      event?.document?.status === "signed";
+
+    if (!foiAssinado || !docToken) {
+      return res.status(200).json({ ok: true, ignorado: true });
+    }
+
+    // Actualiza a modelo correspondente
+    const upd = await db.query(
+      `UPDATE modelos
+          SET contrato_assinado = true,
+              contrato_assinado_em = NOW()
+        WHERE contrato_token = $1
+       RETURNING id`,
+      [docToken]
+    );
+
+    if (upd.rowCount > 0) {
+      console.log(`[ZapSign] Contrato assinado — modelo id ${upd.rows[0].id}`);
+    } else {
+      console.warn(`[ZapSign] Webhook: nenhuma modelo com token ${docToken}`);
+    }
+
+    res.status(200).json({ ok: true });
+  } catch (err) {
+    console.error("[ZapSign Webhook] Erro:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
 
 // ===============================
 // WEBHOOK ASAAS
@@ -11643,6 +11692,370 @@ app.post("/api/chat/cliente/marcar-lido/:modelo_id", authCliente, async (req, re
 });
 
 // ===========================
+// CONTRATO DIGITAL — ZapSign
+// ===========================
+
+// Gera o buffer do PDF do contrato de parceria com o texto completo das 16 cláusulas
+function gerarContratoPDFBuffer(dados) {
+  // dados: { nome, email, dataHoje }
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: "A4", margin: 60, bufferPages: true });
+    const chunks = [];
+    doc.on("data", c => chunks.push(c));
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+
+    const L = 60;  // left margin
+    const W = doc.page.width - L * 2; // usable width
+
+    // ── Helpers ──────────────────────────────────────────────────────
+    function titulo(txt) {
+      doc.moveDown(0.6)
+         .font("Helvetica-Bold").fontSize(10)
+         .text(txt, L, doc.y, { width: W })
+         .font("Helvetica").fontSize(9);
+    }
+    function corpo(txt) {
+      doc.font("Helvetica").fontSize(9)
+         .text(txt, L, doc.y, { width: W, lineGap: 2 });
+    }
+    function lista(itens) {
+      itens.forEach(it => {
+        doc.font("Helvetica").fontSize(9)
+           .text(`• ${it}`, L + 12, doc.y, { width: W - 12, lineGap: 1 });
+      });
+    }
+
+    // ── Cabeçalho ────────────────────────────────────────────────────
+    doc.font("Helvetica-Bold").fontSize(12)
+       .text("CONTRATO DE PARCERIA DIGITAL, INTERMEDIAÇÃO TECNOLÓGICA", L, L, { width: W, align: "center" })
+       .text("E USO DA PLATAFORMA VELVET", L, doc.y, { width: W, align: "center" });
+    doc.moveDown(0.8);
+
+    doc.font("Helvetica").fontSize(9)
+       .text("Pelo presente instrumento particular, de um lado:", L, doc.y, { width: W });
+    doc.moveDown(0.5);
+    doc.font("Helvetica-Bold").fontSize(9)
+       .text("VELVET ENTERTAINMENT LTDA", L, doc.y, { width: W, continued: true })
+       .font("Helvetica")
+       .text(", pessoa jurídica de direito privado, inscrita no CNPJ sob nº 66.615.892/0001-43, com sede na Rua Cel. José Eusébio, nº 95, Casa 13, Higienópolis, São Paulo/SP, CEP 01.239-030, doravante denominada simplesmente "VELVET";", { width: W });
+    doc.moveDown(0.5);
+    doc.font("Helvetica").fontSize(9).text("e, de outro lado,", L, doc.y, { width: W });
+    doc.moveDown(0.5);
+    doc.font("Helvetica-Bold").fontSize(9)
+       .text("CRIADORA DE CONTEÚDO / MODELO / INFLUENCER", L, doc.y, { width: W, continued: true })
+       .font("Helvetica")
+       .text(`, pessoa física maior de 18 (dezoito) anos, devidamente cadastrada na plataforma digital Velvet, doravante denominada simplesmente "CRIADORA";`, { width: W });
+    doc.moveDown(0.5);
+    doc.font("Helvetica").fontSize(9)
+       .text("resolvem celebrar o presente CONTRATO DE PARCERIA DIGITAL E INTERMEDIAÇÃO TECNOLÓGICA, mediante as cláusulas e condições abaixo:", L, doc.y, { width: W });
+
+    // ── Cláusulas ─────────────────────────────────────────────────────
+    titulo("CLÁUSULA 1 – OBJETO");
+    corpo("1.1. O presente contrato regula a utilização da plataforma digital Velvet pela CRIADORA para:");
+    lista(["publicação;", "hospedagem;", "monetização;", "comercialização;", "distribuição digital;", "disponibilização de conteúdo online."]);
+    corpo("1.2. A VELVET atua exclusivamente como:");
+    lista(["plataforma tecnológica;", "marketplace digital;", "intermediadora de pagamentos;", "hospedeira de conteúdo;", "facilitadora de monetização digital."]);
+    corpo("1.3. A VELVET NÃO:");
+    lista(["produz conteúdo;", "dirige atividades da CRIADORA;", "mantém controle artístico;", "impõe metas;", "determina horários;", "realiza contratação empregatícia;", "atua como empresária individual da CRIADORA."]);
+    corpo("1.4. A relação entre as partes possui natureza exclusivamente civil, comercial, tecnológica e autônoma.");
+
+    titulo("CLÁUSULA 2 – NATUREZA AUTÔNOMA DA RELAÇÃO");
+    corpo("2.1. A CRIADORA reconhece expressamente que exerce atividade autônoma e independente.");
+    corpo("2.2. O presente contrato não caracteriza: vínculo empregatício, relação trabalhista, sociedade, representação comercial, associação, franquia, mandato ou relação de emprego de qualquer natureza.");
+    corpo("2.3. Não há: subordinação jurídica, pessoalidade obrigatória, controle de jornada, habitualidade dirigida, salário fixo ou exclusividade.");
+    corpo("2.4. A CRIADORA possui liberdade integral para definir horários, escolher conteúdos, atuar em outras plataformas, prestar serviços a terceiros, trabalhar com outras agências e interromper atividades quando desejar.");
+    corpo("2.5. A utilização da plataforma ocorre por livre iniciativa da própria CRIADORA.");
+
+    titulo("CLÁUSULA 3 – COMISSÃO E REPASSES");
+    corpo("3.1. Os valores pagos pelos usuários da plataforma pertencem originariamente à CRIADORA.");
+    corpo("3.2. Pela disponibilização da infraestrutura tecnológica e operacional, a VELVET fará jus à comissão de 20% (vinte por cento) sobre os valores líquidos efetivamente recebidos pela plataforma.");
+    corpo("3.3. O percentual remanescente pertencerá integralmente à CRIADORA.");
+    corpo("3.4. Caso a CRIADORA esteja vinculada a agência parceira, poderá haver retenção adicional de percentual contratualmente ajustado entre a agência e a própria CRIADORA.");
+    corpo("3.5. A VELVET não integra eventual relação contratual privada entre agência, empresária, assessoria, intermediadores externos e a CRIADORA.");
+    corpo("3.6. Os pagamentos observarão: políticas antifraude, disponibilidade bancária, compliance financeiro, regras operacionais da plataforma e prazos internos de processamento.");
+
+    titulo("CLÁUSULA 4 – CLÁUSULA FISCAL E TRIBUTÁRIA");
+    corpo("4.1. A CRIADORA é exclusivamente responsável pelo recolhimento de tributos, obrigações fiscais, declarações tributárias, contribuições previdenciárias e emissão de notas fiscais quando exigidas.");
+    corpo("4.2. A VELVET atua exclusivamente como intermediadora tecnológica e financeira.");
+    corpo("4.3. Os valores transitados pela plataforma incluem quantias pertencentes às CRIADORAS, sendo receita própria da VELVET exclusivamente a comissão de intermediação tecnológica prevista contratualmente.");
+    corpo("4.4. Os valores destinados às CRIADORAS não constituem: salário, folha de pagamento, remuneração trabalhista ou contraprestação empregatícia.");
+    corpo("4.5. Cada parte responderá individualmente perante: Receita Federal, órgãos trabalhistas, autoridades previdenciárias e administrativas, pelas próprias obrigações legais.");
+
+    titulo("CLÁUSULA 5 – OBJETO SOCIAL E ATIVIDADE DA VELVET");
+    corpo("5.1. A CRIADORA reconhece que a VELVET possui como atividade empresarial: portais e provedores de conteúdo na internet, intermediação de serviços e negócios, publicidade digital, tecnologia e desenvolvimento de software.");
+    corpo("5.2. A atuação da VELVET limita-se à disponibilização de: ambiente virtual, infraestrutura tecnológica, sistemas digitais, monetização online e intermediação operacional.");
+
+    titulo("CLÁUSULA 6 – COMPLIANCE DE CONTEÚDO");
+    corpo("6.1. É proibida a publicação de: conteúdo envolvendo menores, violência real, exploração sexual ilegal, pornografia não consensual, tráfico humano, conteúdo criminoso, conteúdo obtido sem autorização, material protegido por direitos autorais sem licença, conteúdo discriminatório e vazamentos íntimos.");
+    corpo("6.2. A CRIADORA declara: ser maior de 18 anos, possuir plena capacidade civil, deter autorização sobre os conteúdos publicados e possuir consentimento de terceiros eventualmente participantes.");
+    corpo("6.3. A CRIADORA responsabiliza-se integralmente pelos conteúdos disponibilizados.");
+
+    titulo("CLÁUSULA 7 – KYC E VERIFICAÇÃO DE IDENTIDADE");
+    corpo("7.1. A CRIADORA deverá fornecer: documento oficial com foto, selfie de verificação, prova de maioridade e informações cadastrais verdadeiras.");
+    corpo("7.2. A VELVET poderá: solicitar documentação complementar, realizar verificações antifraude, suspender contas irregulares e bloquear acessos suspeitos.");
+    corpo("7.3. Os dados serão tratados conforme a Lei Geral de Proteção de Dados e o Marco Civil da Internet.");
+
+    titulo("CLÁUSULA 8 – LICENÇA DE USO DE CONTEÚDO");
+    corpo("8.1. A titularidade dos conteúdos permanece pertencendo exclusivamente à CRIADORA.");
+    corpo("8.2. A CRIADORA concede à VELVET licença não exclusiva, limitada, revogável e temporária para: hospedagem, distribuição interna, exibição na plataforma, reprodução técnica e divulgação operacional.");
+    corpo("8.3. A presente licença não transfere propriedade intelectual à VELVET.");
+
+    titulo("CLÁUSULA 9 – MODERAÇÃO E REMOÇÃO");
+    corpo("9.1. A VELVET poderá remover conteúdos ou suspender contas em caso de: violação legal, descumprimento contratual, risco regulatório, fraude, ordem judicial ou violação das políticas internas.");
+    corpo("9.2. A moderação realizada pela VELVET não caracteriza: direção da atividade, ingerência artística, vínculo trabalhista ou responsabilidade editorial integral.");
+
+    titulo("CLÁUSULA 10 – RESPONSABILIDADE CIVIL");
+    corpo("10.1. A CRIADORA responderá integralmente por: danos a terceiros, violações legais, uso indevido de imagem, infrações autorais e conteúdos ilícitos.");
+    corpo("10.2. A CRIADORA obriga-se a indenizar a VELVET por quaisquer prejuízos, condenações, multas, despesas judiciais e danos reputacionais decorrentes dos conteúdos publicados pela própria CRIADORA.");
+
+    titulo("CLÁUSULA 11 – PROPRIEDADE INTELECTUAL");
+    corpo("11.1. A VELVET permanece titular da plataforma, do software, da marca, da identidade visual e da infraestrutura tecnológica.");
+    corpo("11.2. É vedada qualquer utilização indevida da marca Velvet sem autorização expressa.");
+
+    titulo("CLÁUSULA 12 – PRIVACIDADE E DADOS");
+    corpo("12.1. As partes comprometem-se a observar integralmente a LGPD.");
+    corpo("12.2. Os dados coletados poderão ser utilizados para: autenticação, prevenção à fraude, processamento de pagamentos, segurança da plataforma, cumprimento regulatório e ordens judiciais.");
+
+    titulo("CLÁUSULA 13 – PROVAS DIGITAIS");
+    corpo("13.1. As partes reconhecem validade jurídica de: assinatura eletrônica, aceite digital, logs, registros de IP, geolocalização, autenticação multifator e comprovantes eletrônicos.");
+    corpo("13.2. Os registros digitais poderão ser utilizados como prova judicial e extrajudicial.");
+
+    titulo("CLÁUSULA 14 – RESCISÃO");
+    corpo("14.1. O contrato vigorará por prazo indeterminado.");
+    corpo("14.2. Qualquer das partes poderá rescindir o contrato a qualquer momento.");
+    corpo("14.3. A VELVET poderá rescindir imediatamente em caso de: fraude, atividade ilícita, violação contratual, risco regulatório ou determinação judicial.");
+
+    titulo("CLÁUSULA 15 – INEXISTÊNCIA DE EXCLUSIVIDADE");
+    corpo("15.1. O presente contrato não estabelece exclusividade entre as partes.");
+    corpo("15.2. A CRIADORA poderá utilizar outras plataformas e prestar serviços para terceiros livremente.");
+
+    titulo("CLÁUSULA 16 – FORO");
+    corpo("16.1. Fica eleito o foro da Comarca de São Paulo/SP para resolução de quaisquer controvérsias oriundas deste contrato.");
+
+    // ── Declaração Final ─────────────────────────────────────────────
+    doc.moveDown(0.8);
+    doc.font("Helvetica-Bold").fontSize(10)
+       .text("DECLARAÇÃO FINAL DA CRIADORA", L, doc.y, { width: W, align: "center" });
+    doc.moveDown(0.4);
+    doc.font("Helvetica").fontSize(9)
+       .text("Ao aceitar este contrato, a CRIADORA declara expressamente que:", L, doc.y, { width: W });
+    doc.moveDown(0.3);
+    lista([
+      "I – atua de forma autônoma e independente;",
+      "II – compreende que a VELVET é apenas plataforma digital e marketplace tecnológico;",
+      "III – reconhece inexistência de vínculo empregatício;",
+      "IV – é maior de 18 anos;",
+      "V – assume responsabilidade integral pelos conteúdos publicados;",
+      "VI – concorda com a comissão de 20% da plataforma;",
+      "VII – responsabiliza-se por suas obrigações fiscais e tributárias;",
+      "VIII – aceita as políticas internas da plataforma."
+    ]);
+
+    // ── Assinaturas ────────────────────────────────────────────────────
+    doc.moveDown(1.2);
+    doc.font("Helvetica").fontSize(9)
+       .text(`São Paulo/SP, ${dados.dataHoje}.`, L, doc.y, { width: W });
+    doc.moveDown(1.2);
+
+    const metade = (W - 40) / 2;
+    const col2 = L + metade + 40;
+
+    // Velvet lado esquerdo
+    doc.font("Helvetica-Bold").fontSize(9)
+       .text("VELVET ENTERTAINMENT LTDA", L, doc.y, { width: metade });
+    const yAssin = doc.y;
+    doc.font("Helvetica").fontSize(9)
+       .text("CNPJ: 66.615.892/0001-43", L, doc.y, { width: metade })
+       .text("Representante Legal: _________________________", L, doc.y, { width: metade });
+
+    // Criadora lado direito
+    doc.font("Helvetica-Bold").fontSize(9)
+       .text("CRIADORA / MODELO / INFLUENCER", col2, yAssin, { width: metade });
+    doc.font("Helvetica").fontSize(9)
+       .text(`Nome: ${dados.nome || "________________________________"}`, col2, doc.y + 4, { width: metade })
+       .text(`E-mail: ${dados.email || "______________________________"}`, col2, doc.y, { width: metade })
+       .text("Assinatura Eletrônica: [ZapSign]", col2, doc.y, { width: metade });
+
+    doc.end();
+  });
+}
+
+// Envia PDF para ZapSign e devolve { token, signerToken, signUrl }
+async function enviarContratoZapSign(pdfBuffer, nomeModelo, emailModelo) {
+  const base64Pdf = pdfBuffer.toString("base64");
+  const resp = await axios.post(
+    "https://api.zapsign.com.br/api/v1/docs/",
+    {
+      name: `Contrato Velvet — ${nomeModelo}`,
+      base64_pdf: base64Pdf,
+      signers: [
+        {
+          name: nomeModelo,
+          email: emailModelo,
+          auth_mode: "assinaturaTela",
+          send_automatic_email: false
+        }
+      ],
+      lang: "pt-br",
+      disable_signer_emails: true
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.ZAPSIGN_API_TOKEN}`,
+        "Content-Type": "application/json"
+      },
+      timeout: 30000
+    }
+  );
+  const doc = resp.data;
+  const signer = doc.signers?.[0];
+  if (!signer) throw new Error("ZapSign não retornou signatário");
+  const signUrl = `https://app.zapsign.com.br/verificar/${signer.token}`;
+  return {
+    token: doc.token,
+    signerToken: signer.token,
+    signUrl
+  };
+}
+
+// GET /api/verificacao/contrato/status
+// Devolve se o contrato já foi assinado e a URL de assinatura actual
+app.get("/api/verificacao/contrato/status", auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const modeloRes = await db.query(
+      `SELECT id, contrato_assinado, contrato_sign_url, contrato_assinado_em, contrato_token, contrato_signer_token
+         FROM modelos WHERE user_id = $1`,
+      [userId]
+    );
+    if (modeloRes.rowCount === 0) return res.status(404).json({ erro: "Modelo não encontrado" });
+    const m = modeloRes.rows[0];
+
+    // Se já marcado como assinado — devolve direto
+    if (m.contrato_assinado) {
+      return res.json({ assinado: true, assinado_em: m.contrato_assinado_em });
+    }
+
+    // Se tem signer_token, pollar ZapSign para ver se já assinou
+    if (m.contrato_signer_token && process.env.ZAPSIGN_API_TOKEN) {
+      try {
+        const zapResp = await axios.get(
+          `https://api.zapsign.com.br/api/v1/signers/${m.contrato_signer_token}/`,
+          {
+            headers: { Authorization: `Bearer ${process.env.ZAPSIGN_API_TOKEN}` },
+            timeout: 10000
+          }
+        );
+        const status = zapResp.data?.status;
+        if (status === "signed") {
+          // Actualiza BD
+          await db.query(
+            "UPDATE modelos SET contrato_assinado = true, contrato_assinado_em = NOW() WHERE id = $1",
+            [m.id]
+          );
+          return res.json({ assinado: true, assinado_em: new Date().toISOString() });
+        }
+      } catch (pollErr) {
+        console.warn("[ZapSign] Erro ao pollar status:", pollErr.message);
+      }
+    }
+
+    return res.json({
+      assinado: false,
+      sign_url: m.contrato_sign_url || null,
+      tem_contrato: !!m.contrato_token
+    });
+  } catch (err) {
+    console.error("Erro ao verificar status contrato:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// POST /api/verificacao/contrato
+// Gera o contrato PDF, envia ao ZapSign, guarda tokens, devolve URL de assinatura
+const contratoLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: { erro: "Muitas tentativas. Tente novamente em 1 hora." }
+});
+
+app.post("/api/verificacao/contrato", auth, contratoLimiter, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    if (req.user.role !== "modelo") {
+      return res.status(403).json({ erro: "Apenas modelos podem assinar o contrato" });
+    }
+
+    // Buscar dados da modelo
+    const modeloRes = await db.query(
+      `SELECT m.id, m.contrato_assinado, m.contrato_sign_url, m.contrato_token,
+              md.nome_completo,
+              u.email
+         FROM modelos m
+         LEFT JOIN modelos_dados md ON md.modelo_id = m.id AND md.ativo = true
+         JOIN users u ON u.id = m.user_id
+        WHERE m.user_id = $1`,
+      [userId]
+    );
+    if (modeloRes.rowCount === 0) return res.status(404).json({ erro: "Modelo não encontrada" });
+    const m = modeloRes.rows[0];
+
+    // Se já assinou — devolve URL existente
+    if (m.contrato_assinado) {
+      return res.json({ ok: true, ja_assinado: true });
+    }
+
+    // Se já tem documento criado no ZapSign — devolve URL existente
+    if (m.contrato_token && m.contrato_sign_url) {
+      return res.json({ ok: true, sign_url: m.contrato_sign_url });
+    }
+
+    if (!m.nome_completo) {
+      return res.status(400).json({ erro: "Preencha primeiro os dados pessoais (Passo 2) antes de assinar o contrato." });
+    }
+
+    // Data formatada em português
+    const hoje = new Date();
+    const dataHoje = hoje.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+
+    // Gerar PDF
+    const pdfBuffer = await gerarContratoPDFBuffer({
+      nome: m.nome_completo,
+      email: m.email,
+      dataHoje
+    });
+
+    // Enviar ao ZapSign
+    if (!process.env.ZAPSIGN_API_TOKEN) {
+      return res.status(500).json({ erro: "ZapSign não configurado. Contacte o suporte." });
+    }
+
+    const { token, signerToken, signUrl } = await enviarContratoZapSign(
+      pdfBuffer,
+      m.nome_completo,
+      m.email
+    );
+
+    // Guardar tokens no BD
+    await db.query(
+      `UPDATE modelos
+          SET contrato_token = $1,
+              contrato_signer_token = $2,
+              contrato_sign_url = $3
+        WHERE id = $4`,
+      [token, signerToken, signUrl, m.id]
+    );
+
+    console.log(`[CONTRATO] Modelo ${m.id} — ZapSign doc ${token}`);
+    res.json({ ok: true, sign_url: signUrl });
+  } catch (err) {
+    console.error("Erro ao criar contrato ZapSign:", err.response?.data || err.message);
+    res.status(500).json({ erro: "Erro ao gerar contrato. Tente novamente." });
+  }
+});
+
+// ===========================
 // VERIFICACAO PERFIL
 // ===========================
 
@@ -11712,7 +12125,7 @@ app.post("/api/verificacao", auth, uploadVerificacaoLimiter, uploadVerificacao.f
       // MODELO
       if (role === "modelo") {
         const modeloRes = await db.query(
-          "SELECT id FROM modelos WHERE user_id = $1",
+          "SELECT id, contrato_assinado FROM modelos WHERE user_id = $1",
           [userId]
         );
 
@@ -11720,7 +12133,15 @@ app.post("/api/verificacao", auth, uploadVerificacaoLimiter, uploadVerificacao.f
           return res.status(400).json({ erro: "Modelo não encontrado" });
         }
 
-        const modeloId = modeloRes.rows[0].id;
+        const { id: modeloId, contrato_assinado } = modeloRes.rows[0];
+
+        // Verificar se o contrato foi assinado antes de aceitar documentos
+        if (!contrato_assinado) {
+          return res.status(403).json({
+            erro: "CONTRACT_NOT_SIGNED",
+            message: "O contrato de parceria ainda não foi assinado. Conclua o Passo 3 antes de enviar os documentos."
+          });
+        }
 
         await db.query(
           `

@@ -700,6 +700,8 @@ formPessoais?.addEventListener("submit", async (e) => {
     }
 
     alert(t("areaUsuario.personal_data_saved"));
+    // Notificar o módulo de contrato que os dados pessoais foram guardados
+    document.dispatchEvent(new CustomEvent("dadosPessoaisGuardados"));
   } catch (err) {
     console.error("Erro na requisição:", err);
    alert(t("areaUsuario.personal_data_connection_error"));

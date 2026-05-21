@@ -142,7 +142,14 @@ if (!aceiteTermosCriador) {
     const payload = await res.json().catch(() => null);
 
     if (!res.ok) {
-      throw new Error(payload?.erro || t("verificacao.alert_falha_envio"));
+      // Contrato ainda não assinado — redirecionar para a secção de contrato
+      if (payload?.erro === "CONTRACT_NOT_SIGNED") {
+        alert("Tens de assinar o contrato de parceria antes de enviar os documentos. Conclui o Passo 3.");
+        const secaoContrato = document.getElementById("secaoContrato");
+        if (secaoContrato) secaoContrato.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+      throw new Error(payload?.message || payload?.erro || t("verificacao.alert_falha_envio"));
     }
 
     renderStatus({ status: "em_analise" });
