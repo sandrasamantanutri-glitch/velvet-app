@@ -14,6 +14,9 @@ const AWS = require('aws-sdk');
 const multer = require('multer');
 const multerS3 = require('multer-s3');
 const upload = multer({ storage: multer.memoryStorage() });
+const PDFDocument = require('pdfkit');
+const { Resend: ResendPagamentos } = require('resend');
+const _resendPagamentos = new ResendPagamentos(process.env.RESEND_API_KEY);
 
 const s3Privado = new AWS.S3({
   endpoint: new AWS.Endpoint(process.env.R2_ENDPOINT),
@@ -3245,7 +3248,9 @@ router.post("/modelo-pagamentos", authAdmin, upload.single("recibo"), async (req
       mes,
       total_midias,
       total_assinaturas,
-      total_geral
+      total_geral,
+      comissao_velvet,
+      valor_liquido
     } = req.body;
 
     if (!modelo_id || !mes) {
@@ -3307,6 +3312,9 @@ router.post("/modelo-pagamentos", authAdmin, upload.single("recibo"), async (req
       }
     }
 
+    const comissao = Number(comissao_velvet || 0);
+    const liquido  = Number(valor_liquido   || 0);
+
     const { rows } = await db.query(`
       INSERT INTO modelo_pagamentos
       (
@@ -3316,9 +3324,11 @@ router.post("/modelo-pagamentos", authAdmin, upload.single("recibo"), async (req
         total_assinaturas,
         total_geral,
         status,
-        recibo_url
+        recibo_url,
+        comissao_velvet,
+        valor_liquido
       )
-      VALUES ($1, $2, $3, $4, $5, 'pendente', $6)
+      VALUES ($1, $2, $3, $4, $5, 'pendente', $6, $7, $8)
       RETURNING *
     `, [
       modeloIdNum,
@@ -3326,7 +3336,9 @@ router.post("/modelo-pagamentos", authAdmin, upload.single("recibo"), async (req
       midias,
       assinaturas,
       total,
-      recibo_url
+      recibo_url,
+      comissao,
+      liquido
     ]);
 
     res.json(rows[0]);
@@ -3373,17 +3385,268 @@ router.get("/modelo-pagamentos/saldo/:modelo_id", authAdmin, async (req, res) =>
   }
 });
 
+// ── Helper: gerar PDF do recibo com PDFKit ──
+function gerarReciboPDF(p) {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    const chunks = [];
+    doc.on('data', c => chunks.push(c));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+
+    const fmtBRL = v => `R$ ${Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const W = 495;
+    const reciboNum = String(p.id).padStart(6, '0');
+    const dataEmissao = new Date().toLocaleDateString('pt-BR');
+    const dataPagamento = p.pago_em ? new Date(p.pago_em).toLocaleDateString('pt-BR') : dataEmissao;
+    const mesRefRaw = new Date(p.mes).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+    const mesRef = mesRefRaw.charAt(0).toUpperCase() + mesRefRaw.slice(1);
+    const nomeCompleto = p.nome_completo || p.nome_exibicao || p.modelo_nome || `Modelo #${p.modelo_id}`;
+    const cpf = p.titular_documento || '—';
+    const endereco = [p.endereco, p.cidade, p.estado].filter(Boolean).join(', ') || '—';
+    const comissao = Number(p.comissao_velvet || 0);
+    const liquido = Number(p.valor_liquido || p.total_geral || 0);
+    const bruto = Number(p.total_geral || 0);
+
+    let tipoPagamento = '—';
+    if (p.pgto_tipo === 'pix') tipoPagamento = `PIX — ${(p.pix_tipo || '').toUpperCase()}: ${p.pix_chave || '—'}`;
+    else if (p.pgto_tipo === 'transferencia') tipoPagamento = `TED — Banco: ${p.banco || '—'} | Ag: ${p.agencia || '—'} | Conta: ${p.conta || '—'}`;
+
+    // ── Cabeçalho roxo ──
+    doc.rect(50, 50, W, 55).fill('#7B2CFF');
+    doc.fillColor('white').fontSize(16).font('Helvetica-Bold').text('VELVET ENTERTAINMENT LTDA', 65, 62);
+    doc.fontSize(9).font('Helvetica').text('CNPJ: 66.615.892/0001-43  •  contato@velvet.lat', 65, 82);
+    doc.fillColor('black');
+
+    // ── Título + número ──
+    doc.moveDown(3.5);
+    doc.fontSize(18).font('Helvetica-Bold').text('RECIBO DE PAGAMENTO', 50, 125, { width: W, align: 'center' });
+    doc.fontSize(10).font('Helvetica').fillColor('#555')
+      .text(`Nº ${reciboNum}  •  Emitido em ${dataEmissao}  •  Referência: ${mesRef}`, 50, 148, { width: W, align: 'center' });
+    doc.fillColor('black');
+
+    // ── Linha divisória ──
+    doc.moveTo(50, 168).lineTo(545, 168).strokeColor('#7B2CFF').lineWidth(1.5).stroke();
+
+    // ── Dados beneficiário ──
+    doc.rect(50, 178, W, 90).fill('#f9f5ff').stroke('#e0d4ff');
+    doc.fontSize(8).font('Helvetica-Bold').fillColor('#7B2CFF').text('BENEFICIÁRIO', 65, 188);
+    doc.fillColor('#222').fontSize(10).font('Helvetica-Bold').text(nomeCompleto, 65, 200);
+    doc.fontSize(9).font('Helvetica')
+      .text(`CPF/Doc: ${cpf}`, 65, 215)
+      .text(`Endereço: ${endereco}`, 65, 228)
+      .text(`ID Modelo: #${p.modelo_id}`, 65, 241);
+
+    // ── Emissor (lado direito) ──
+    doc.fontSize(8).font('Helvetica-Bold').fillColor('#7B2CFF').text('EMISSOR', 320, 188);
+    doc.fillColor('#222').fontSize(9).font('Helvetica')
+      .text('Velvet Entertainment Ltda', 320, 200)
+      .text('CNPJ: 66.615.892/0001-43', 320, 213)
+      .text('R Cel José Eusébio, 95 casa 13', 320, 226)
+      .text('Higienópolis — São Paulo/SP', 320, 239)
+      .text('CEP 01.239-030', 320, 252);
+    doc.fillColor('black');
+
+    // ── Tabela de itens ──
+    const tY = 280;
+    doc.rect(50, tY, W, 20).fill('#7B2CFF');
+    doc.fillColor('white').fontSize(9).font('Helvetica-Bold')
+      .text('DESCRIÇÃO', 65, tY + 6)
+      .text('PERÍODO', 310, tY + 6)
+      .text('VALOR BRUTO', 430, tY + 6, { width: 100, align: 'right' });
+    doc.fillColor('black');
+
+    let rowY = tY + 20;
+    const linhas = [];
+    if (Number(p.total_midias) > 0) linhas.push({ desc: 'Repasse de receitas — Mídias', valor: Number(p.total_midias) });
+    if (Number(p.total_assinaturas) > 0) linhas.push({ desc: 'Repasse de receitas — Assinaturas', valor: Number(p.total_assinaturas) });
+    if (!linhas.length) linhas.push({ desc: 'Repasse de receitas — Plataforma Velvet', valor: bruto });
+
+    linhas.forEach((l, i) => {
+      if (i % 2 === 0) doc.rect(50, rowY, W, 20).fill('#f9f5ff');
+      doc.fillColor('#222').fontSize(9).font('Helvetica')
+        .text(l.desc, 65, rowY + 5)
+        .text(mesRef, 310, rowY + 5)
+        .text(fmtBRL(l.valor), 430, rowY + 5, { width: 100, align: 'right' });
+      rowY += 20;
+    });
+
+    // ── Breakdown financeiro ──
+    const bY = rowY + 10;
+    doc.rect(310, bY, W - 260, 70).fill('#f9f5ff').stroke('#e0d4ff');
+    doc.fontSize(9).font('Helvetica').fillColor('#555')
+      .text('Valor bruto:', 320, bY + 8).text(fmtBRL(bruto), 430, bY + 8, { width: 110, align: 'right' });
+    if (comissao > 0) {
+      doc.text('Comissão Velvet:', 320, bY + 24).text(`- ${fmtBRL(comissao)}`, 430, bY + 24, { width: 110, align: 'right' });
+    }
+    doc.moveTo(320, bY + 42).lineTo(540, bY + 42).strokeColor('#7B2CFF').lineWidth(0.8).stroke();
+    doc.fontSize(11).font('Helvetica-Bold').fillColor('#7B2CFF')
+      .text('VALOR LÍQUIDO PAGO:', 320, bY + 48)
+      .text(fmtBRL(liquido), 430, bY + 48, { width: 110, align: 'right' });
+    doc.fillColor('black');
+
+    // ── Dados do pagamento ──
+    const pY = bY + 90;
+    doc.rect(50, pY, W, 45).fill('#f0fff4').stroke('#c3e6cb');
+    doc.fontSize(8).font('Helvetica-Bold').fillColor('#27a745').text('DADOS DO PAGAMENTO', 65, pY + 7);
+    doc.fillColor('#222').fontSize(9).font('Helvetica')
+      .text(`Data: ${dataPagamento}`, 65, pY + 20)
+      .text(`Forma: ${tipoPagamento}`, 65, pY + 33);
+    doc.fillColor('black');
+
+    // ── Rodapé ──
+    const fY = pY + 65;
+    doc.moveTo(50, fY).lineTo(545, fY).strokeColor('#ddd').lineWidth(0.5).stroke();
+    doc.fontSize(8).fillColor('#888').font('Helvetica')
+      .text('Este documento comprova o repasse de receitas geradas na plataforma Velvet.', 50, fY + 8, { width: W, align: 'center' })
+      .text('Velvet Entertainment Ltda — CNPJ: 66.615.892/0001-43 — São Paulo/SP', 50, fY + 20, { width: W, align: 'center' })
+      .text(`Documento gerado automaticamente em ${dataEmissao} — Guardar por 10 anos (obrigação fiscal)`, 50, fY + 32, { width: W, align: 'center' });
+
+    doc.end();
+  });
+}
+
 router.post("/modelo-pagamentos/:id/pagar", authAdmin, async (req, res) => {
   try {
     const { id } = req.params;
+    const { comissao_velvet, valor_liquido } = req.body;
 
+    // 1. Buscar todos os dados do pagamento + modelo
+    const { rows } = await db.query(`
+      SELECT
+        mp.*,
+        m.nome AS modelo_nome, m.nome_exibicao,
+        md.nome_completo, md.endereco, md.cidade, md.estado,
+        mdb.tipo AS pgto_tipo, mdb.pix_tipo, mdb.pix_chave,
+        mdb.banco, mdb.agencia, mdb.conta, mdb.conta_tipo, mdb.titular_documento,
+        u.email AS modelo_email,
+        au.email AS admin_email
+      FROM modelo_pagamentos mp
+      LEFT JOIN modelos m ON m.id = mp.modelo_id
+      LEFT JOIN modelos_dados md ON md.modelo_id = mp.modelo_id
+      LEFT JOIN modelo_dados_bancarios mdb ON mdb.modelo_id = mp.modelo_id AND mdb.status = 'aprovado'
+      LEFT JOIN users u ON u.id = m.user_id
+      LEFT JOIN users au ON au.id = $2
+      WHERE mp.id = $1
+    `, [id, req.user.id]);
+
+    if (!rows.length) return res.status(404).json({ erro: 'Pagamento não encontrado' });
+
+    const p = rows[0];
+    const bruto = Number(p.total_geral || 0);
+    const comissao = Number(comissao_velvet ?? (bruto * 0.3));
+    const liquido = Number(valor_liquido ?? (bruto - comissao));
+
+    // 2. Gerar PDF
+    const dadosPDF = {
+      ...p,
+      comissao_velvet: comissao,
+      valor_liquido: liquido,
+      pago_em: new Date()
+    };
+    const pdfBuffer = await gerarReciboPDF(dadosPDF);
+
+    // 3. Guardar PDF no R2 privado
+    let pdfKey = null;
+    try {
+      pdfKey = `recibos/${p.modelo_id}/${id}-recibo-${Date.now()}.pdf`;
+      await s3Privado.putObject({
+        Bucket: process.env.R2_BUCKET_PRIVATE,
+        Key: pdfKey,
+        Body: pdfBuffer,
+        ContentType: 'application/pdf'
+      }).promise();
+    } catch (uploadErr) {
+      console.warn('Aviso: upload do PDF falhou:', uploadErr.message);
+      pdfKey = null;
+    }
+
+    // 4. Atualizar DB com todos os campos de compliance
     await db.query(`
       UPDATE modelo_pagamentos
       SET
-        status = 'pago',
-        pago_em = NOW()
+        status         = 'pago',
+        pago_em        = NOW(),
+        comissao_velvet = $2,
+        valor_liquido  = $3,
+        admin_id       = $4,
+        pago_por       = $5,
+        recibo_url     = COALESCE($6, recibo_url)
       WHERE id = $1
-    `, [id]);
+    `, [id, comissao, liquido, req.user.id, p.admin_email || `admin#${req.user.id}`, pdfKey]);
+
+    // 5. Registar no histórico de recibos
+    try {
+      const reciboNum = String(p.id).padStart(6, '0');
+      await db.query(
+        `INSERT INTO recibos_pagamento (pagamento_id, modelo_id, numero_recibo) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING`,
+        [p.id, p.modelo_id, reciboNum]
+      );
+    } catch (_) {}
+
+    // 6. Enviar email à modelo com PDF em anexo
+    if (p.modelo_email) {
+      try {
+        const mesRefRaw = new Date(p.mes).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+        const mesRef = mesRefRaw.charAt(0).toUpperCase() + mesRefRaw.slice(1);
+        const fmtBRL = v => `R$ ${Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const nomeModelo = p.nome_completo || p.nome_exibicao || p.modelo_nome || 'Modelo';
+        const reciboNum = String(p.id).padStart(6, '0');
+
+        await _resendPagamentos.emails.send({
+          from: 'Velvet <contato@velvet.lat>',
+          to: p.modelo_email,
+          subject: `💜 Recibo de pagamento — ${mesRef}`,
+          html: `
+            <div style="font-family:Arial,Helvetica,sans-serif;background:#f0ebfa;padding:32px 16px;color:#2d1f3d;">
+              <div style="max-width:600px;margin:0 auto;">
+                <div style="background:linear-gradient(135deg,#7B2CFF 0%,#a94cff 100%);border-radius:14px 14px 0 0;padding:20px 32px;text-align:center;">
+                  <span style="color:#fff;font-size:20px;font-weight:800;letter-spacing:1px;">💜 Velvet</span>
+                </div>
+                <div style="background:#fff;padding:32px;border-radius:0 0 14px 14px;border:1px solid #e5d9ff;border-top:none;">
+                  <h2 style="color:#7B2CFF;margin:0 0 16px;">Olá, ${nomeModelo}!</h2>
+                  <p style="margin:0 0 16px;line-height:1.6;">O seu pagamento referente a <strong>${mesRef}</strong> foi processado. Segue o recibo em anexo.</p>
+                  <table style="width:100%;border-collapse:collapse;margin:20px 0;font-size:14px;">
+                    <tr style="background:#f9f5ff;">
+                      <td style="padding:10px 14px;font-weight:600;color:#7B2CFF;">Recibo Nº</td>
+                      <td style="padding:10px 14px;">#${reciboNum}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:10px 14px;font-weight:600;color:#7B2CFF;">Referência</td>
+                      <td style="padding:10px 14px;">${mesRef}</td>
+                    </tr>
+                    <tr style="background:#f9f5ff;">
+                      <td style="padding:10px 14px;font-weight:600;color:#7B2CFF;">Valor bruto</td>
+                      <td style="padding:10px 14px;">${fmtBRL(bruto)}</td>
+                    </tr>
+                    ${comissao > 0 ? `
+                    <tr>
+                      <td style="padding:10px 14px;font-weight:600;color:#7B2CFF;">Comissão Velvet</td>
+                      <td style="padding:10px 14px;">- ${fmtBRL(comissao)}</td>
+                    </tr>` : ''}
+                    <tr style="background:#f0fff4;">
+                      <td style="padding:12px 14px;font-weight:700;color:#27a745;font-size:15px;">Valor recebido</td>
+                      <td style="padding:12px 14px;font-weight:700;color:#27a745;font-size:15px;">${fmtBRL(liquido)}</td>
+                    </tr>
+                  </table>
+                  <p style="margin:16px 0 0;font-size:13px;color:#888;">Guarde este recibo para os seus registos fiscais. Em caso de dúvidas, contacte <a href="mailto:contato@velvet.lat" style="color:#7B2CFF;">contato@velvet.lat</a></p>
+                  <div style="margin-top:28px;padding-top:18px;border-top:1px solid #f0ebfa;text-align:center;">
+                    <p style="margin:0 0 4px;color:#6b5a7d;">Equipe Velvet 💜</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `,
+          attachments: [{
+            filename: `recibo-velvet-${reciboNum}.pdf`,
+            content: pdfBuffer.toString('base64')
+          }]
+        });
+      } catch (emailErr) {
+        console.warn('Email de recibo não enviado:', emailErr.message);
+        // Não falha o pagamento se o email falhar
+      }
+    }
 
     res.json({ ok: true });
   } catch (err) {
