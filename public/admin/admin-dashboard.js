@@ -2320,9 +2320,8 @@ function marcarPgtoModeloPago(id) {
   // Carregar pré-visualização no iframe — token via query param porque iframes não enviam headers
   const iframe = document.getElementById('iframePreviewRecibo');
   const btn    = document.getElementById('btnConfirmarPagamento');
-  const token  = localStorage.getItem('token') || '';
 
-  if (iframe) iframe.src = `/admin/dashboard/modelo-pagamentos/${id}/recibo?token=${encodeURIComponent(token)}`;
+  if (iframe) iframe.src = `/admin/dashboard/modelo-pagamentos/${id}/recibo?token=${encodeURIComponent(token_admin)}`;
   if (btn)    btn.disabled = false;
 
   openModal('modalPreviewRecibo');
