@@ -2193,17 +2193,20 @@ async function carregarPgtoModelo(page) {
         <td>${badgeStatus(r.status)}</td>
         <td>${fmtDateTime(r.pago_em)}</td>
         <td>
-          <button class="btn btn-sm btn-primary" onclick="abrirRecibo(${r.id})">Emitir Recibo</button>
+          ${r.recibo_pdf_signed_url
+            ? `<a href="${r.recibo_pdf_signed_url}" target="_blank" class="btn btn-sm btn-primary">📄 Ver PDF</a>`
+            : `<span class="badge badge-muted">—</span>`}
         </td>
         <td>
-          ${r.recibo_signed_url
-            ? `<a href="${r.recibo_signed_url}" target="_blank" class="btn btn-sm btn-ghost">Ver</a>`
+          ${r.comprovativo_signed_url
+            ? `<a href="${r.comprovativo_signed_url}" target="_blank" class="btn btn-sm btn-ghost">🧾 Ver</a>`
             : `<span class="badge badge-muted">—</span>`}
         </td>
         <td>
           ${r.status !== 'pago'
             ? `<button class="btn btn-sm btn-success" onclick="marcarPgtoModeloPago(${r.id})">Marcar pago</button>`
             : ''}
+          <button class="btn btn-sm btn-ghost" onclick="abrirRecibo(${r.id})" title="Abrir recibo HTML">🖨️</button>
           <button class="btn btn-sm btn-ghost" onclick="editarPgtoModelo(${r.id})">Editar</button>
         </td>
       </tr>
@@ -2308,13 +2311,36 @@ async function editarPgtoModelo(id) {
 }
 
 async function marcarPgtoModeloPago(id) {
-  if (!confirm('Confirmar este pagamento como pago?')) return;
+  if (!confirm('Confirmar este pagamento como pago? O recibo PDF será gerado e enviado por email à modelo.')) return;
+
+  // Abrir janela ANTES da chamada async — evita bloqueio de popup pelo browser
+  const win = window.open('', '_blank');
+  if (win) {
+    win.document.write(`
+      <html><body style="font-family:sans-serif;padding:60px 40px;color:#555;text-align:center;">
+        <div style="font-size:32px;margin-bottom:16px;">💜</div>
+        <p style="font-size:16px;">A processar pagamento e gerar recibo PDF...</p>
+      </body></html>
+    `);
+  }
 
   try {
-    await postJSON(`/admin/dashboard/modelo-pagamentos/${id}/pagar`, {});
-    toast('Pagamento marcado como pago!', 'success');
+    const data = await postJSON(`/admin/dashboard/modelo-pagamentos/${id}/pagar`, {});
+
+    toast('Pagamento marcado como pago! Recibo enviado por email.', 'success');
     carregarPgtoModelo(1);
+
+    // Abrir PDF gerado (URL assinada devolvida pelo servidor)
+    if (win && !win.closed) {
+      if (data.recibo_pdf_signed_url) {
+        win.location.href = data.recibo_pdf_signed_url;
+      } else {
+        // Fallback: recibo HTML imprimível
+        win.location.href = `/admin/dashboard/modelo-pagamentos/${id}/recibo`;
+      }
+    }
   } catch (err) {
+    if (win && !win.closed) win.close();
     toast('Erro: ' + err.message, 'error');
   }
 }

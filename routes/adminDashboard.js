@@ -3172,15 +3172,23 @@ router.get("/modelo-pagamentos", authAdmin, async (req, res) => {
     `, params);
 
     for (const row of rows) {
-      if (row.recibo_url) {
-        row.recibo_signed_url = s3Privado.getSignedUrl("getObject", {
-          Bucket: process.env.R2_BUCKET_PRIVATE,
-          Key: row.recibo_url,
-          Expires: 300
-        });
-      } else {
-        row.recibo_signed_url = null;
-      }
+      // Comprovativo de transferência/PIX carregado pelo admin
+      row.comprovativo_signed_url = row.recibo_url
+        ? s3Privado.getSignedUrl("getObject", {
+            Bucket: process.env.R2_BUCKET_PRIVATE,
+            Key: row.recibo_url,
+            Expires: 300
+          })
+        : null;
+
+      // PDF de recibo gerado automaticamente ao marcar como pago
+      row.recibo_pdf_signed_url = row.recibo_pdf_url
+        ? s3Privado.getSignedUrl("getObject", {
+            Bucket: process.env.R2_BUCKET_PRIVATE,
+            Key: row.recibo_pdf_url,
+            Expires: 300
+          })
+        : null;
     }
 
     res.json({
@@ -3207,15 +3215,21 @@ router.get("/modelo-pagamentos/:id", authAdmin, async (req, res) => {
 
     const row = rows[0];
 
-    if (row.recibo_url) {
-      row.recibo_signed_url = s3Privado.getSignedUrl("getObject", {
-        Bucket: process.env.R2_BUCKET_PRIVATE,
-        Key: row.recibo_url,
-        Expires: 300
-      });
-    } else {
-      row.recibo_signed_url = null;
-    }
+    row.comprovativo_signed_url = row.recibo_url
+      ? s3Privado.getSignedUrl("getObject", {
+          Bucket: process.env.R2_BUCKET_PRIVATE,
+          Key: row.recibo_url,
+          Expires: 300
+        })
+      : null;
+
+    row.recibo_pdf_signed_url = row.recibo_pdf_url
+      ? s3Privado.getSignedUrl("getObject", {
+          Bucket: process.env.R2_BUCKET_PRIVATE,
+          Key: row.recibo_pdf_url,
+          Expires: 300
+        })
+      : null;
 
     res.json(row);
   } catch (err) {
@@ -3562,16 +3576,17 @@ router.post("/modelo-pagamentos/:id/pagar", authAdmin, async (req, res) => {
     }
 
     // 4. Atualizar DB com todos os campos de compliance
+    //    recibo_pdf_url = PDF gerado; recibo_url = comprovativo carregado (não tocar)
     await db.query(`
       UPDATE modelo_pagamentos
       SET
-        status         = 'pago',
-        pago_em        = NOW(),
+        status          = 'pago',
+        pago_em         = NOW(),
         comissao_velvet = $2,
-        valor_liquido  = $3,
-        admin_id       = $4,
-        pago_por       = $5,
-        recibo_url     = COALESCE($6, recibo_url)
+        valor_liquido   = $3,
+        admin_id        = $4,
+        pago_por        = $5,
+        recibo_pdf_url  = COALESCE($6, recibo_pdf_url)
       WHERE id = $1
     `, [id, comissao, liquido, req.user.id, p.admin_email || `admin#${req.user.id}`, pdfKey]);
 
@@ -3648,7 +3663,16 @@ router.post("/modelo-pagamentos/:id/pagar", authAdmin, async (req, res) => {
       }
     }
 
-    res.json({ ok: true });
+    // Gerar URL assinada do PDF para abrir directamente no frontend
+    const recibo_pdf_signed_url = pdfKey
+      ? s3Privado.getSignedUrl("getObject", {
+          Bucket: process.env.R2_BUCKET_PRIVATE,
+          Key: pdfKey,
+          Expires: 300
+        })
+      : null;
+
+    res.json({ ok: true, id: Number(id), recibo_pdf_signed_url });
   } catch (err) {
     console.error("Erro pagar modelo-pagamento:", err);
     res.status(500).json({ erro: "Erro interno" });
