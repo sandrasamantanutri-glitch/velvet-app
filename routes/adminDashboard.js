@@ -3264,7 +3264,8 @@ router.post("/modelo-pagamentos", authAdmin, upload.single("recibo"), async (req
       total_assinaturas,
       total_geral,
       comissao_velvet,
-      valor_liquido
+      valor_liquido,
+      chargebacks
     } = req.body;
 
     if (!modelo_id || !mes) {
@@ -3326,8 +3327,9 @@ router.post("/modelo-pagamentos", authAdmin, upload.single("recibo"), async (req
       }
     }
 
-    const comissao = Number(comissao_velvet || 0);
-    const liquido  = Number(valor_liquido   || 0);
+    const comissao    = Number(comissao_velvet || 0);
+    const liquido     = Number(valor_liquido   || 0);
+    const chargebacksVal = Number(chargebacks  || 0);
 
     const { rows } = await db.query(`
       INSERT INTO modelo_pagamentos
@@ -3340,9 +3342,10 @@ router.post("/modelo-pagamentos", authAdmin, upload.single("recibo"), async (req
         status,
         recibo_url,
         comissao_velvet,
-        valor_liquido
+        valor_liquido,
+        chargebacks
       )
-      VALUES ($1, $2, $3, $4, $5, 'pendente', $6, $7, $8)
+      VALUES ($1, $2, $3, $4, $5, 'pendente', $6, $7, $8, $9)
       RETURNING *
     `, [
       modeloIdNum,
@@ -3352,7 +3355,8 @@ router.post("/modelo-pagamentos", authAdmin, upload.single("recibo"), async (req
       total,
       recibo_url,
       comissao,
-      liquido
+      liquido,
+      chargebacksVal
     ]);
 
     res.json(rows[0]);
@@ -3418,9 +3422,15 @@ function gerarReciboPDF(p) {
     const nomeCompleto = p.nome_completo || p.nome_exibicao || p.modelo_nome || `Modelo #${p.modelo_id}`;
     const cpf = p.titular_documento || '—';
     const endereco = [p.endereco, p.cidade, p.estado].filter(Boolean).join(', ') || '—';
-    const comissao = Number(p.comissao_velvet || 0);
-    const liquido = Number(p.valor_liquido || p.total_geral || 0);
-    const bruto = Number(p.total_geral || 0);
+    const modeloShare    = Number(p.total_geral      || 0);
+    const taxaPlataforma = Number(p.taxa_plataforma  || p.comissao_velvet || 0);
+    const taxaAgencia    = Number(p.taxa_agencia     || 0);
+    const chargebacksVal = Number(p.chargebacks      || 0);
+    const valorBruto     = Number(p.valor_bruto      || (modeloShare + taxaPlataforma + taxaAgencia));
+    const liquido        = Number(p.valor_liquido    || (modeloShare - chargebacksVal));
+    const pctAgenciaPct  = Number(p.pct_agencia_pct  || 0);
+    // alias para retrocompatibilidade
+    const comissao = taxaPlataforma;
 
     let tipoPagamento = '—';
     if (p.pgto_tipo === 'pix') tipoPagamento = `PIX — ${(p.pix_tipo || '').toUpperCase()}: ${p.pix_chave || '—'}`;
@@ -3472,9 +3482,9 @@ function gerarReciboPDF(p) {
 
     let rowY = tY + 20;
     const linhas = [];
-    if (Number(p.total_midias) > 0) linhas.push({ desc: 'Repasse de receitas — Mídias', valor: Number(p.total_midias) });
-    if (Number(p.total_assinaturas) > 0) linhas.push({ desc: 'Repasse de receitas — Assinaturas', valor: Number(p.total_assinaturas) });
-    if (!linhas.length) linhas.push({ desc: 'Repasse de receitas — Plataforma Velvet', valor: bruto });
+    if (Number(p.total_midias) > 0) linhas.push({ desc: 'Receitas brutas — Mídias', valor: Number(p.total_midias) > 0 ? valorBruto * (Number(p.total_midias) / modeloShare) : 0 });
+    if (Number(p.total_assinaturas) > 0) linhas.push({ desc: 'Receitas brutas — Assinaturas', valor: valorBruto * (Number(p.total_assinaturas) / modeloShare) });
+    if (!linhas.length) linhas.push({ desc: 'Receitas brutas — Plataforma Velvet', valor: valorBruto });
 
     linhas.forEach((l, i) => {
       if (i % 2 === 0) doc.rect(50, rowY, W, 20).fill('#f9f5ff');
@@ -3487,20 +3497,57 @@ function gerarReciboPDF(p) {
 
     // ── Breakdown financeiro ──
     const bY = rowY + 10;
-    doc.rect(310, bY, W - 260, 70).fill('#f9f5ff').stroke('#e0d4ff');
-    doc.fontSize(9).font('Helvetica').fillColor('#555')
-      .text('Valor bruto:', 320, bY + 8).text(fmtBRL(bruto), 430, bY + 8, { width: 110, align: 'right' });
-    if (comissao > 0) {
-      doc.text('Comissão Velvet:', 320, bY + 24).text(`- ${fmtBRL(comissao)}`, 430, bY + 24, { width: 110, align: 'right' });
+
+    // calcular altura dinâmica conforme linhas visíveis
+    let bLinhas = 1; // valor bruto sempre
+    if (taxaPlataforma > 0) bLinhas++;
+    if (taxaAgencia    > 0) bLinhas++;
+    if (chargebacksVal > 0) bLinhas++;
+    const bH = 18 + bLinhas * 16 + 24; // header + linhas + separador + total
+
+    doc.rect(310, bY, W - 260, bH).fill('#f9f5ff').stroke('#e0d4ff');
+
+    let bLineY = bY + 8;
+    doc.fontSize(9).font('Helvetica').fillColor('#555');
+
+    // Valor bruto
+    doc.text('Valor bruto:', 320, bLineY)
+       .text(fmtBRL(valorBruto), 430, bLineY, { width: 110, align: 'right' });
+    bLineY += 16;
+
+    // Taxa de funcionamento da plataforma (20%)
+    if (taxaPlataforma > 0) {
+      doc.text('Taxa de funcionamento da plataforma (20%):', 320, bLineY)
+         .text(`- ${fmtBRL(taxaPlataforma)}`, 430, bLineY, { width: 110, align: 'right' });
+      bLineY += 16;
     }
-    doc.moveTo(320, bY + 42).lineTo(540, bY + 42).strokeColor('#7B2CFF').lineWidth(0.8).stroke();
+
+    // Taxa de agência (% variável)
+    if (taxaAgencia > 0) {
+      const pctLabel = pctAgenciaPct > 0 ? ` (${pctAgenciaPct}%)` : '';
+      doc.text(`Taxa de agência${pctLabel}:`, 320, bLineY)
+         .text(`- ${fmtBRL(taxaAgencia)}`, 430, bLineY, { width: 110, align: 'right' });
+      bLineY += 16;
+    }
+
+    // Chargebacks / estornos
+    if (chargebacksVal > 0) {
+      doc.text('Chargebacks / estornos:', 320, bLineY)
+         .text(`- ${fmtBRL(chargebacksVal)}`, 430, bLineY, { width: 110, align: 'right' });
+      bLineY += 16;
+    }
+
+    // Separador + total líquido
+    doc.moveTo(320, bLineY + 2).lineTo(540, bLineY + 2).strokeColor('#7B2CFF').lineWidth(0.8).stroke();
     doc.fontSize(11).font('Helvetica-Bold').fillColor('#7B2CFF')
-      .text('VALOR LÍQUIDO PAGO:', 320, bY + 48)
-      .text(fmtBRL(liquido), 430, bY + 48, { width: 110, align: 'right' });
+      .text('VALOR LÍQUIDO PAGO:', 320, bLineY + 8)
+      .text(fmtBRL(liquido), 430, bLineY + 8, { width: 110, align: 'right' });
     doc.fillColor('black');
 
+    const bBoxBottom = bLineY + 30;
+
     // ── Dados do pagamento ──
-    const pY = bY + 90;
+    const pY = bBoxBottom + 10;
     doc.rect(50, pY, W, 45).fill('#f0fff4').stroke('#c3e6cb');
     doc.fontSize(8).font('Helvetica-Bold').fillColor('#27a745').text('DADOS DO PAGAMENTO', 65, pY + 7);
     doc.fillColor('#222').fontSize(9).font('Helvetica')
@@ -3514,7 +3561,7 @@ function gerarReciboPDF(p) {
     doc.fontSize(8).fillColor('#888').font('Helvetica')
       .text('Este documento comprova o repasse de receitas geradas na plataforma Velvet.', 50, fY + 8, { width: W, align: 'center' })
       .text('Velvet Entertainment Ltda — CNPJ: 66.615.892/0001-43 — São Paulo/SP', 50, fY + 20, { width: W, align: 'center' })
-      .text(`Documento gerado automaticamente em ${dataEmissao} — Guardar por 10 anos (obrigação fiscal)`, 50, fY + 32, { width: W, align: 'center' });
+      .text(`Documento gerado automaticamente em ${dataEmissao}`, 50, fY + 32, { width: W, align: 'center' });
 
     doc.end();
   });
@@ -3525,38 +3572,59 @@ router.post("/modelo-pagamentos/:id/pagar", authAdmin, async (req, res) => {
     const { id } = req.params;
     const { comissao_velvet, valor_liquido } = req.body;
 
-    // 1. Buscar todos os dados do pagamento + modelo
+    // 1. Buscar todos os dados do pagamento + modelo + agência
     const { rows } = await db.query(`
       SELECT
         mp.*,
         m.nome AS modelo_nome, m.nome_exibicao,
         md.nome_completo, md.endereco, md.cidade, md.estado,
         mdb.tipo AS pgto_tipo, mdb.pix_tipo, mdb.pix_chave,
-        mdb.banco, mdb.agencia, mdb.conta, mdb.conta_tipo, mdb.titular_documento,
+        mdb.banco, mdb.agencia AS banco_agencia, mdb.conta, mdb.conta_tipo, mdb.titular_documento,
         u.email AS modelo_email,
-        au.email AS admin_email
+        au.email AS admin_email,
+        COALESCE(ag.percentual_agencia, 0)    AS pct_agencia,
+        COALESCE(ag.percentual_plataforma, 0.20) AS pct_plataforma,
+        ag.nome AS agencia_nome
       FROM modelo_pagamentos mp
       LEFT JOIN modelos m ON m.id = mp.modelo_id
       LEFT JOIN modelos_dados md ON md.modelo_id = mp.modelo_id
       LEFT JOIN modelo_dados_bancarios mdb ON mdb.modelo_id = mp.modelo_id AND mdb.status = 'aprovado'
       LEFT JOIN users u ON u.id = m.user_id
       LEFT JOIN users au ON au.id = $2
+      LEFT JOIN agencias ag ON ag.id = m.agencia_id
       WHERE mp.id = $1
     `, [id, req.user.id]);
 
     if (!rows.length) return res.status(404).json({ erro: 'Pagamento não encontrado' });
 
     const p = rows[0];
-    const bruto = Number(p.total_geral || 0);
-    const comissao = Number(comissao_velvet ?? (bruto * 0.3));
-    const liquido = Number(valor_liquido ?? (bruto - comissao));
+
+    // ── Breakdown financeiro ────────────────────────────────────────────
+    // total_geral = valor_modelo_share (saldo líquido já sem taxas)
+    // valor_bruto = gross que os clientes pagaram pelo conteúdo da modelo
+    const pctPlataforma = Number(p.pct_plataforma || 0.20);   // sempre 20%
+    const pctAgencia    = Number(p.pct_agencia    || 0);       // 0 se sem agência
+    const pctModelo     = 1 - pctPlataforma - pctAgencia;      // ex: 0.70 ou 0.80
+
+    const modeloShare  = Number(p.total_geral || 0);           // saldo líquido da modelo
+    const valorBruto   = pctModelo > 0 ? modeloShare / pctModelo : modeloShare;
+    const taxaPlataforma = valorBruto * pctPlataforma;          // 20% do bruto
+    const taxaAgencia    = valorBruto * pctAgencia;             // % da agência (0 se sem agência)
+    const chargebacksVal = Number(p.chargebacks || 0);          // deduções manuais
+    const comissao       = taxaPlataforma;                      // alias para compatibilidade
+    const liquido        = modeloShare - chargebacksVal;        // valor efectivamente transferido
 
     // 2. Gerar PDF
     const dadosPDF = {
       ...p,
-      comissao_velvet: comissao,
-      valor_liquido: liquido,
-      pago_em: new Date()
+      valor_bruto:      valorBruto,
+      taxa_plataforma:  taxaPlataforma,
+      taxa_agencia:     taxaAgencia,
+      pct_agencia_pct:  pctAgencia * 100,   // ex: 10 (%)
+      chargebacks:      chargebacksVal,
+      comissao_velvet:  comissao,
+      valor_liquido:    liquido,
+      pago_em:          new Date()
     };
     const pdfBuffer = await gerarReciboPDF(dadosPDF);
 
@@ -3583,12 +3651,15 @@ router.post("/modelo-pagamentos/:id/pagar", authAdmin, async (req, res) => {
         status          = 'pago',
         pago_em         = NOW(),
         comissao_velvet = $2,
-        valor_liquido   = $3,
-        admin_id        = $4,
-        pago_por        = $5,
-        recibo_pdf_url  = COALESCE($6, recibo_pdf_url)
+        taxa_agencia    = $3,
+        chargebacks     = $4,
+        valor_liquido   = $5,
+        admin_id        = $6,
+        pago_por        = $7,
+        recibo_pdf_url  = COALESCE($8, recibo_pdf_url)
       WHERE id = $1
-    `, [id, comissao, liquido, req.user.id, p.admin_email || `admin#${req.user.id}`, pdfKey]);
+    `, [id, taxaPlataforma, taxaAgencia, chargebacksVal, liquido,
+        req.user.id, p.admin_email || `admin#${req.user.id}`, pdfKey]);
 
     // 5. Registar no histórico de recibos
     try {
@@ -3688,14 +3759,19 @@ router.get("/modelo-pagamentos/:id/recibo", authAdmin, async (req, res) => {
     const { rows } = await db.query(`
       SELECT mp.id, mp.modelo_id, mp.mes, mp.total_midias, mp.total_assinaturas,
              mp.total_geral, mp.status, mp.pago_em,
+             mp.comissao_velvet, mp.taxa_agencia, mp.chargebacks, mp.valor_liquido,
              m.nome AS modelo_nome, m.nome_exibicao,
              md.nome_completo, md.endereco, md.cidade, md.estado,
              mdb.tipo AS pgto_tipo, mdb.pix_tipo, mdb.pix_chave,
-             mdb.banco, mdb.agencia, mdb.conta, mdb.conta_tipo, mdb.titular_documento
+             mdb.banco, mdb.agencia, mdb.conta, mdb.conta_tipo, mdb.titular_documento,
+             COALESCE(ag.percentual_agencia, 0)      AS pct_agencia,
+             COALESCE(ag.percentual_plataforma, 0.20) AS pct_plataforma,
+             ag.nome AS agencia_nome
       FROM modelo_pagamentos mp
       LEFT JOIN modelos m ON m.id = mp.modelo_id
       LEFT JOIN modelos_dados md ON md.modelo_id = mp.modelo_id
       LEFT JOIN modelo_dados_bancarios mdb ON mdb.modelo_id = mp.modelo_id
+      LEFT JOIN agencias ag ON ag.id = m.agencia_id
       WHERE mp.id = $1
     `, [id]);
 
@@ -3703,24 +3779,48 @@ router.get("/modelo-pagamentos/:id/recibo", authAdmin, async (req, res) => {
 
     const p = rows[0];
     const nomeCompleto = p.nome_completo || p.nome_exibicao || p.modelo_nome || `Modelo #${p.modelo_id}`;
-    const cpf = p.titular_documento || '—';
-    const endereco = p.endereco || '—';
-    const local = [p.cidade, p.estado].filter(Boolean).join(' - ') || '—';
-    const dataEmissao = new Date().toLocaleDateString('pt-BR');
-    const mesRefRaw = new Date(p.mes).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
-    const mesRefLabel = mesRefRaw.charAt(0).toUpperCase() + mesRefRaw.slice(1);
-    const reciboNum = String(p.id).padStart(6, '0');
+    const cpf           = p.titular_documento || '—';
+    const endereco      = p.endereco || '—';
+    const local         = [p.cidade, p.estado].filter(Boolean).join(' - ') || '—';
+    const dataEmissao   = new Date().toLocaleDateString('pt-BR');
+    const mesRefRaw     = new Date(p.mes).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+    const mesRefLabel   = mesRefRaw.charAt(0).toUpperCase() + mesRefRaw.slice(1);
+    const reciboNum     = String(p.id).padStart(6, '0');
+    const dataPagamento = p.pago_em ? new Date(p.pago_em).toLocaleDateString('pt-BR') : '—';
+    const fmtBRL = v => `R$ ${Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
     let tipoPagamento = '—';
     if (p.pgto_tipo === 'pix') tipoPagamento = `PIX — ${(p.pix_tipo || '').toUpperCase()}: ${p.pix_chave || '—'}`;
     else if (p.pgto_tipo === 'transferencia') tipoPagamento = `TED — Banco: ${p.banco || '—'} | Ag: ${p.agencia || '—'} | Conta: ${p.conta || '—'}${p.conta_tipo ? ' (' + p.conta_tipo + ')' : ''}`;
-    const dataPagamento = p.pago_em ? new Date(p.pago_em).toLocaleDateString('pt-BR') : '—';
-    const fmtBRL = v => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    // ── Breakdown financeiro ──
+    const modeloShare    = Number(p.total_geral    || 0);
+    const pctPlataforma  = Number(p.pct_plataforma || 0.20);
+    const pctAgencia     = Number(p.pct_agencia    || 0);
+    const pctModelo      = 1 - pctPlataforma - pctAgencia;
+    const taxaPlataforma = Number(p.comissao_velvet || 0) || (pctModelo > 0 ? (modeloShare / pctModelo) * pctPlataforma : 0);
+    const taxaAgencia    = Number(p.taxa_agencia    || 0) || (pctModelo > 0 ? (modeloShare / pctModelo) * pctAgencia : 0);
+    const chargebacksVal = Number(p.chargebacks     || 0);
+    const valorBruto     = modeloShare + taxaPlataforma + taxaAgencia;
+    const liquido        = Number(p.valor_liquido   || 0) || (modeloShare - chargebacksVal);
+    const pctAgenciaPct  = Math.round(pctAgencia * 100);
+
+    // Linhas da tabela — usar valor bruto proporcional
     const linhas = [];
-    if (Number(p.total_midias) > 0) linhas.push({ descricao: 'Repasse de receitas de Mídias geradas na plataforma Velvet', periodo: mesRefLabel, valor: Number(p.total_midias) });
-    if (Number(p.total_assinaturas) > 0) linhas.push({ descricao: 'Repasse de receitas de Assinaturas geradas na plataforma Velvet', periodo: mesRefLabel, valor: Number(p.total_assinaturas) });
-    if (linhas.length === 0) linhas.push({ descricao: 'Repasse de receitas geradas na plataforma Velvet', periodo: mesRefLabel, valor: Number(p.total_geral) });
-    const linhasHtml = linhas.map(l => `<tr><td class="c">1</td><td>${l.descricao}</td><td class="c">${l.periodo}</td><td class="r">R$ ${fmtBRL(l.valor)}</td></tr>`).join('');
-    const totalFmt = fmtBRL(p.total_geral);
+    if (Number(p.total_midias) > 0) linhas.push({ descricao: 'Receitas brutas — Mídias', periodo: mesRefLabel, valor: modeloShare > 0 ? valorBruto * (Number(p.total_midias) / modeloShare) : 0 });
+    if (Number(p.total_assinaturas) > 0) linhas.push({ descricao: 'Receitas brutas — Assinaturas', periodo: mesRefLabel, valor: modeloShare > 0 ? valorBruto * (Number(p.total_assinaturas) / modeloShare) : 0 });
+    if (linhas.length === 0) linhas.push({ descricao: 'Receitas brutas — Plataforma Velvet', periodo: mesRefLabel, valor: valorBruto });
+    const linhasHtml = linhas.map(l => `<tr><td class="c">1</td><td>${l.descricao}</td><td class="c">${l.periodo}</td><td class="r">${fmtBRL(l.valor)}</td></tr>`).join('');
+
+    // Linhas do breakdown de deduções
+    const deducoesHtml = [
+      `<div class="totrow"><span>Valor bruto</span><span>${fmtBRL(valorBruto)}</span></div>`,
+      `<div class="totrow ded"><span>Taxa de funcionamento da plataforma (20%)</span><span>- ${fmtBRL(taxaPlataforma)}</span></div>`,
+      taxaAgencia > 0 ? `<div class="totrow ded"><span>Taxa de agência${pctAgenciaPct > 0 ? ` (${pctAgenciaPct}%)` : ''}</span><span>- ${fmtBRL(taxaAgencia)}</span></div>` : '',
+      chargebacksVal > 0 ? `<div class="totrow ded"><span>Chargebacks / estornos</span><span>- ${fmtBRL(chargebacksVal)}</span></div>` : '',
+      `<div class="totrow f"><span>VALOR LÍQUIDO PAGO</span><span>${fmtBRL(liquido)}</span></div>`
+    ].filter(Boolean).join('');
+
     try { await db.query(`INSERT INTO recibos_pagamento (pagamento_id, modelo_id, numero_recibo) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING`, [p.id, p.modelo_id, reciboNum]); } catch (_) {}
 
     res.send(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
@@ -3738,8 +3838,10 @@ router.get("/modelo-pagamentos/:id/recibo", authAdmin, async (req, res) => {
 .cs h4{color:#7B2CFF;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}.cs p{font-size:12px;color:#333;line-height:1.8}.cs p strong{color:#111}
 table.pt{width:100%;border-collapse:collapse;margin-bottom:20px}table.pt th{background:#7B2CFF;color:#fff;padding:10px 12px;text-align:left;font-size:12px;font-weight:600}
 table.pt th.c,table.pt td.c{text-align:center}table.pt th.r,table.pt td.r{text-align:right}table.pt td{padding:10px 12px;border-bottom:1px solid #eee;font-size:12px}table.pt tr:nth-child(even) td{background:#faf7ff}
-.tot{display:flex;justify-content:flex-end;margin-bottom:24px}.totbox{border:2px solid #7B2CFF;border-radius:6px;padding:12px 20px;min-width:240px}
-.totrow{display:flex;justify-content:space-between;padding:4px 0;font-size:13px}.totrow.f{border-top:2px solid #7B2CFF;margin-top:8px;padding-top:10px;font-size:16px;font-weight:700;color:#7B2CFF}
+.tot{display:flex;justify-content:flex-end;margin-bottom:24px}.totbox{border:2px solid #7B2CFF;border-radius:6px;padding:14px 20px;min-width:300px}
+.totrow{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;gap:16px}
+.totrow.ded{color:#c0392b;font-size:12px}
+.totrow.f{border-top:2px solid #7B2CFF;margin-top:8px;padding-top:10px;font-size:15px;font-weight:700;color:#7B2CFF}
 .pi{background:#f0f9f0;border:1px solid #c3e6cb;border-radius:6px;padding:14px 18px;margin-bottom:24px}.pi h4{color:#27a745;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}.pi p{font-size:12px;color:#333;line-height:1.8}
 .ft{border-top:1px solid #ddd;padding-top:14px;text-align:center;color:#888;font-size:10px;line-height:1.7}
 .pbtn{display:block;margin:20px auto 0;padding:10px 32px;background:#7B2CFF;color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer;font-weight:600}
@@ -3754,9 +3856,9 @@ table.pt th.c,table.pt td.c{text-align:center}table.pt th.r,table.pt td.r{text-a
     <div><h4>Dados do Beneficiário</h4><p><strong>Nº Cliente:</strong> ${p.modelo_id}<br><strong>Nome:</strong> ${nomeCompleto}<br><strong>CPF/Doc:</strong> ${cpf}<br><strong>Endereço:</strong> ${endereco}<br><strong>Local:</strong> ${local}</p></div>
     <div><h4>Emissor</h4><p><strong>Empresa:</strong> Velvet Entertainment Ltda<br><strong>CNPJ:</strong> 66.615.892/0001-43<br><strong>Endereço:</strong> R Cel José Eusébio, 95 casa 13<br><strong>Local:</strong> Higienópolis — São Paulo/SP — CEP 01.239-030</p></div>
   </div>
-  <table class="pt"><thead><tr><th class="c" style="width:50px">QTD</th><th>Descrição</th><th class="c" style="width:150px">Período</th><th class="r" style="width:110px">Valor</th></tr></thead><tbody>${linhasHtml}</tbody></table>
-  <div class="tot"><div class="totbox"><div class="totrow f"><span>VALOR TOTAL</span><span>R$ ${totalFmt}</span></div></div></div>
-  <div class="pi"><h4>Dados do Pagamento</h4><p><strong>Data:</strong> ${dataPagamento} &nbsp; <strong>Valor:</strong> R$ ${totalFmt} &nbsp; <strong>Forma:</strong> ${tipoPagamento}</p></div>
+  <table class="pt"><thead><tr><th class="c" style="width:50px">QTD</th><th>Descrição</th><th class="c" style="width:150px">Período</th><th class="r" style="width:110px">Valor Bruto</th></tr></thead><tbody>${linhasHtml}</tbody></table>
+  <div class="tot"><div class="totbox">${deducoesHtml}</div></div>
+  <div class="pi"><h4>Dados do Pagamento</h4><p><strong>Data:</strong> ${dataPagamento} &nbsp; <strong>Valor líquido:</strong> ${fmtBRL(liquido)} &nbsp; <strong>Forma:</strong> ${tipoPagamento}</p></div>
   <div class="ft"><p>Este documento comprova o repasse de receitas geradas na plataforma Velvet.</p><p>Velvet Entertainment Ltda — CNPJ: 66.615.892/0001-43 — R Cel José Eusébio, 95 casa 13, Higienópolis, São Paulo/SP — CEP 01.239-030</p></div>
 </div>
 <button class="pbtn" onclick="window.print()">🖨️ Salvar / Imprimir PDF</button>

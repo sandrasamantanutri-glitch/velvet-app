@@ -3,7 +3,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 const HEADER = `
   <div style="background:linear-gradient(135deg,#7B2CFF 0%,#a94cff 100%);border-radius:14px 14px 0 0;padding:20px 32px;text-align:center;">
-    <span style="color:#fff;font-size:20px;font-weight:800;letter-spacing:1px;">💜 Velvet</span>
+    <span style="color:#7B2CFF;font-size:20px;font-weight:800;letter-spacing:1px;">💜 Velvet</span>
   </div>
 `;
 
@@ -61,7 +61,7 @@ async function enviarEmailValidacao(email) {
     subject: "Envio de documentos para aprovação",
     html: wrapEmail(`
       <h2 style="margin:0 0 6px;color:#6f42c1;text-align:center;font-size:21px;">
-        Seu perfil de criador foi criado! ✨
+        Seu perfil foi criado! ✨
       </h2>
       <p style="text-align:center;margin:0 0 24px;color:#7a6a9a;font-size:14px;">
         Falta pouco para começar a ganhar
@@ -121,7 +121,7 @@ async function enviarEmailAprovacao(email) {
 
       ${infoBox("pink", `
         <p style="margin:0 0 6px;font-weight:bold;color:#7a1f52;">📋 Termos de Uso do Criador</p>
-        <p style="margin:0 0 8px;line-height:1.6;">Antes de começar a faturar, relembre os termos aceitos no seu registo.</p>
+        <p style="margin:0 0 8px;line-height:1.6;">Antes de começar a faturar, relembre os termos aceitos no seu cadastro.</p>
         <a href="https://www.velvet.lat/docs/creators_terms.pdf" style="color:#b0307d;font-weight:bold;">Ver Termos de Uso do Criador</a>
       `)}
 

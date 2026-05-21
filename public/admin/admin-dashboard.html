@@ -1141,6 +1141,20 @@
     </label>
 
     <label>
+      Chargebacks / estornos a deduzir
+      <input
+        type="number"
+        name="chargebacks"
+        step="0.01"
+        value="0"
+        min="0"
+        placeholder="0.00"
+        title="Valor de chargebacks a deduzir do pagamento. Deixar 0 se não houver."
+      >
+      <small style="color:#888;font-size:11px;">Deduzido do valor líquido final. As taxas da plataforma e agência são calculadas automaticamente ao marcar como pago.</small>
+    </label>
+
+    <label>
       Comprovativo da transferência
       <input type="file" name="recibo" accept=".jpg,.jpeg,.png,.pdf,.webp">
     </label>
