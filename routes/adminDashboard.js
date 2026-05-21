@@ -4269,19 +4269,19 @@ router.post("/newsletter/enviar", authAdmin, async (req, res) => {
       </div>
     `;
 
-    // Envia em lotes de 50 para não sobrecarregar a API
-    const LOTE = 50;
+    // Envia em lotes de 100 via Resend Batch API (uma chamada por lote, sem rate limit)
+    const LOTE = 100;
     let enviados = 0;
     for (let i = 0; i < emails.length; i += LOTE) {
       const lote = emails.slice(i, i + LOTE);
-      await Promise.all(lote.map(email =>
-        _resendNewsletter.emails.send({
+      await _resendNewsletter.batch.send(
+        lote.map(email => ({
           from: "Velvet <contato@velvet.lat>",
           to: email,
           subject: assunto,
           html
-        })
-      ));
+        }))
+      );
       enviados += lote.length;
     }
 
