@@ -1415,9 +1415,10 @@ async function verVerificacao(id, tipo) {
 }
 
     const docs = [
-      { label: 'Documento Frente', url: data.doc_frente_url },
-      { label: 'Documento Verso', url: data.doc_verso_url },
-      { label: 'Selfie', url: data.selfie_url }
+      { label: '📄 Contrato Assinado', url: data.contrato_pdf_url },
+      { label: '🪪 Documento Frente', url: data.doc_frente_url },
+      { label: '🪪 Documento Verso', url: data.doc_verso_url },
+      { label: '🤳 Selfie', url: data.selfie_url }
     ];
 
     if (showActions) {

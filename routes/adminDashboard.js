@@ -1852,6 +1852,7 @@ router.get("/verificacoes/modelo/:id", auth, authAdmin, async (req, res) => {
         mv.doc_frente_url,
         mv.doc_verso_url,
         mv.selfie_url,
+        mv.contrato_pdf_url,
         mv.status,
         mv.motivo_rejeicao,
         mv.declaracao,
@@ -1903,7 +1904,8 @@ router.get("/verificacoes/modelo/:id", auth, authAdmin, async (req, res) => {
       capa_url: assinarArquivoPrivado(v.capa),
       doc_frente_url: assinarArquivoPrivado(v.doc_frente_url),
       doc_verso_url: assinarArquivoPrivado(v.doc_verso_url),
-      selfie_url: assinarArquivoPrivado(v.selfie_url)
+      selfie_url: assinarArquivoPrivado(v.selfie_url),
+      contrato_pdf_url: assinarArquivoPrivado(v.contrato_pdf_url)
     });
 
   } catch (err) {

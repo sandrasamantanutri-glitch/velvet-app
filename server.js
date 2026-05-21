@@ -214,10 +214,55 @@ app.post("/api/webhook/zapsign", express.json(), async (req, res) => {
       [docToken]
     );
 
-    if (upd.rowCount > 0) {
-      console.log(`[ZapSign] Contrato assinado — modelo id ${upd.rows[0].id}`);
-    } else {
+    if (upd.rowCount === 0) {
       console.warn(`[ZapSign] Webhook: nenhuma modelo com token ${docToken}`);
+      return res.status(200).json({ ok: true });
+    }
+
+    const modeloId = upd.rows[0].id;
+    console.log(`[ZapSign] Contrato assinado — modelo id ${modeloId}`);
+
+    // Descarregar o PDF assinado do ZapSign e guardar no R2
+    try {
+      // Buscar detalhes do documento no ZapSign (inclui URL do PDF assinado)
+      const zapDoc = await axios.get(
+        `https://api.zapsign.com.br/api/v1/docs/${docToken}/`,
+        {
+          headers: { Authorization: `Bearer ${process.env.ZAPSIGN_API_TOKEN}` },
+          timeout: 15000
+        }
+      );
+
+      const signedFileUrl = zapDoc.data?.signed_file || zapDoc.data?.original_file || null;
+
+      if (signedFileUrl) {
+        // Descarregar o PDF
+        const pdfResp = await axios.get(signedFileUrl, {
+          responseType: "arraybuffer",
+          timeout: 30000
+        });
+        const pdfBuffer = Buffer.from(pdfResp.data);
+
+        // Guardar no R2 (bucket privado)
+        const r2Key = `contratos/${modeloId}/contrato-assinado-${Date.now()}.pdf`;
+        await s3Privado.putObject({
+          Bucket: process.env.R2_BUCKET_PRIVATE,
+          Key: r2Key,
+          Body: pdfBuffer,
+          ContentType: "application/pdf"
+        }).promise();
+
+        // Actualizar coluna contrato_pdf_url na tabela modelos
+        await db.query(
+          "UPDATE modelos SET contrato_pdf_url = $1 WHERE id = $2",
+          [r2Key, modeloId]
+        );
+
+        console.log(`[ZapSign] PDF assinado guardado em R2: ${r2Key}`);
+      }
+    } catch (pdfErr) {
+      // Não bloqueia o webhook — o contrato já está marcado como assinado
+      console.warn(`[ZapSign] Aviso: não foi possível guardar o PDF assinado: ${pdfErr.message}`);
     }
 
     res.status(200).json({ ok: true });
@@ -12134,7 +12179,7 @@ app.post("/api/verificacao", auth, uploadVerificacaoLimiter, uploadVerificacao.f
           return res.status(400).json({ erro: "Modelo não encontrado" });
         }
 
-        const { id: modeloId, contrato_assinado } = modeloRes.rows[0];
+        const { id: modeloId, contrato_assinado, contrato_pdf_url } = modeloRes.rows[0];
 
         // Verificar se o contrato foi assinado antes de aceitar documentos
         if (!contrato_assinado) {
@@ -12160,13 +12205,14 @@ app.post("/api/verificacao", auth, uploadVerificacaoLimiter, uploadVerificacao.f
             aceite_em,
             aceite_ip,
             status,
+            contrato_pdf_url,
             criado_em,
             atualizado_em
           )
           VALUES (
             $1,$2,$3,$4,$5,
             $6,$7,$8,$9,$10,
-            NOW(),$11,'em_analise', NOW(), NOW()
+            NOW(),$11,'em_analise',$12, NOW(), NOW()
           )
           ON CONFLICT (modelo_id)
           DO UPDATE SET
@@ -12182,6 +12228,7 @@ app.post("/api/verificacao", auth, uploadVerificacaoLimiter, uploadVerificacao.f
             aceite_em = NOW(),
             aceite_ip = EXCLUDED.aceite_ip,
             status = 'em_analise',
+            contrato_pdf_url = EXCLUDED.contrato_pdf_url,
             atualizado_em = NOW()
           `,
           [
@@ -12195,7 +12242,8 @@ app.post("/api/verificacao", auth, uploadVerificacaoLimiter, uploadVerificacao.f
             true,
             versao_privacidade || "2026-04-06",
             versao_termos_criador || "2026-04-06",
-            ip
+            ip,
+            contrato_pdf_url || null
           ]
         );
 
