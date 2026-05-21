@@ -223,46 +223,12 @@ app.post("/api/webhook/zapsign", express.json(), async (req, res) => {
     console.log(`[ZapSign] Contrato assinado — modelo id ${modeloId}`);
 
     // Descarregar o PDF assinado do ZapSign e guardar no R2
-    try {
-      // Buscar detalhes do documento no ZapSign (inclui URL do PDF assinado)
-      const zapDoc = await axios.get(
-        `https://api.zapsign.com.br/api/v1/docs/${docToken}/`,
-        {
-          headers: { Authorization: `Bearer ${process.env.ZAPSIGN_API_TOKEN}` },
-          timeout: 15000
-        }
+    // (a função é definida mais abaixo no ficheiro mas é hoisted no module scope só se for declaração)
+    // Como é uma async function expression, fazemos a chamada async sem bloquear
+    if (typeof descarregarPDFAssinadoZapSign === "function") {
+      descarregarPDFAssinadoZapSign(docToken, modeloId).catch(err =>
+        console.warn(`[ZapSign Webhook] Falha ao descarregar PDF: ${err.message}`)
       );
-
-      const signedFileUrl = zapDoc.data?.signed_file || zapDoc.data?.original_file || null;
-
-      if (signedFileUrl) {
-        // Descarregar o PDF
-        const pdfResp = await axios.get(signedFileUrl, {
-          responseType: "arraybuffer",
-          timeout: 30000
-        });
-        const pdfBuffer = Buffer.from(pdfResp.data);
-
-        // Guardar no R2 (bucket privado)
-        const r2Key = `contratos/${modeloId}/contrato-assinado-${Date.now()}.pdf`;
-        await s3Privado.putObject({
-          Bucket: process.env.R2_BUCKET_PRIVATE,
-          Key: r2Key,
-          Body: pdfBuffer,
-          ContentType: "application/pdf"
-        }).promise();
-
-        // Actualizar coluna contrato_pdf_url na tabela modelos
-        await db.query(
-          "UPDATE modelos SET contrato_pdf_url = $1 WHERE id = $2",
-          [r2Key, modeloId]
-        );
-
-        console.log(`[ZapSign] PDF assinado guardado em R2: ${r2Key}`);
-      }
-    } catch (pdfErr) {
-      // Não bloqueia o webhook — o contrato já está marcado como assinado
-      console.warn(`[ZapSign] Aviso: não foi possível guardar o PDF assinado: ${pdfErr.message}`);
     }
 
     res.status(200).json({ ok: true });
@@ -11965,6 +11931,62 @@ async function enviarContratoZapSign(pdfBuffer, nomeModelo, emailModelo) {
   };
 }
 
+// Descarrega o PDF assinado do ZapSign e guarda no R2 privado
+// Devolve a key do R2 ou null se falhar
+async function descarregarPDFAssinadoZapSign(docToken, modeloId) {
+  try {
+    if (!process.env.ZAPSIGN_API_TOKEN) return null;
+
+    const zapDoc = await axios.get(
+      `https://api.zapsign.com.br/api/v1/docs/${docToken}/`,
+      {
+        headers: { Authorization: `Bearer ${process.env.ZAPSIGN_API_TOKEN}` },
+        timeout: 15000
+      }
+    );
+
+    const signedFileUrl = zapDoc.data?.signed_file || zapDoc.data?.original_file || null;
+    if (!signedFileUrl) {
+      console.warn(`[ZapSign] Documento ${docToken} não tem signed_file ainda`);
+      return null;
+    }
+
+    const pdfResp = await axios.get(signedFileUrl, {
+      responseType: "arraybuffer",
+      timeout: 30000
+    });
+    const pdfBuffer = Buffer.from(pdfResp.data);
+
+    const r2Key = `contratos/${modeloId}/contrato-assinado-${Date.now()}.pdf`;
+    await s3Privado.putObject({
+      Bucket: process.env.R2_BUCKET_PRIVATE,
+      Key: r2Key,
+      Body: pdfBuffer,
+      ContentType: "application/pdf"
+    }).promise();
+
+    await db.query(
+      "UPDATE modelos SET contrato_pdf_url = $1 WHERE id = $2",
+      [r2Key, modeloId]
+    );
+
+    // Se a modelo já submeteu a verificação, actualizar também esse registo
+    await db.query(
+      `UPDATE modelos_verificacao
+          SET contrato_pdf_url = $1
+        WHERE modelo_id = $2
+          AND (contrato_pdf_url IS NULL OR contrato_pdf_url = '')`,
+      [r2Key, modeloId]
+    );
+
+    console.log(`[ZapSign] PDF assinado guardado em R2: ${r2Key}`);
+    return r2Key;
+  } catch (err) {
+    console.warn(`[ZapSign] Erro ao descarregar PDF assinado: ${err.message}`);
+    return null;
+  }
+}
+
 // GET /api/verificacao/contrato/status
 // Devolve se o contrato já foi assinado e a URL de assinatura actual
 app.get("/api/verificacao/contrato/status", auth, async (req, res) => {
@@ -11978,8 +12000,19 @@ app.get("/api/verificacao/contrato/status", auth, async (req, res) => {
     if (modeloRes.rowCount === 0) return res.status(404).json({ erro: "Modelo não encontrado" });
     const m = modeloRes.rows[0];
 
-    // Se já marcado como assinado — devolve direto
+    // Buscar contrato_pdf_url também para sabermos se precisamos baixar
+    const pdfRes = await db.query(
+      "SELECT contrato_pdf_url FROM modelos WHERE id = $1",
+      [m.id]
+    );
+    const jaTemPdf = !!pdfRes.rows[0]?.contrato_pdf_url;
+
+    // Se já marcado como assinado — devolve direto (mas se não temos PDF, tentar baixar)
     if (m.contrato_assinado) {
+      if (!jaTemPdf && m.contrato_token) {
+        // PDF ainda não foi descarregado — tentar agora
+        descarregarPDFAssinadoZapSign(m.contrato_token, m.id).catch(() => {});
+      }
       return res.json({ assinado: true, assinado_em: m.contrato_assinado_em });
     }
 
@@ -12000,6 +12033,10 @@ app.get("/api/verificacao/contrato/status", auth, async (req, res) => {
             "UPDATE modelos SET contrato_assinado = true, contrato_assinado_em = NOW() WHERE id = $1",
             [m.id]
           );
+          // Baixar o PDF assinado e guardar no R2
+          if (m.contrato_token) {
+            await descarregarPDFAssinadoZapSign(m.contrato_token, m.id);
+          }
           return res.json({ assinado: true, assinado_em: new Date().toISOString() });
         }
       } catch (pollErr) {
@@ -12171,7 +12208,7 @@ app.post("/api/verificacao", auth, uploadVerificacaoLimiter, uploadVerificacao.f
       // MODELO
       if (role === "modelo") {
         const modeloRes = await db.query(
-          "SELECT id, contrato_assinado FROM modelos WHERE user_id = $1",
+          "SELECT id, contrato_assinado, contrato_pdf_url FROM modelos WHERE user_id = $1",
           [userId]
         );
 
