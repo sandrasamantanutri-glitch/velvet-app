@@ -11900,7 +11900,7 @@ async function enviarContratoZapSign(pdfBuffer, nomeModelo, emailModelo) {
     {
       name: `Contrato Velvet — ${nomeModelo}`,
       base64_pdf: base64Pdf,
-      sandbox: process.env.ZAPSIGN_SANDBOX !== "false",
+      sandbox: process.env.ZAPSIGN_SANDBOX === "true",
       signers: [
         {
           name: nomeModelo,
