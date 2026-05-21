@@ -11738,7 +11738,7 @@ function gerarContratoPDFBuffer(dados) {
     doc.font("Helvetica-Bold").fontSize(9)
        .text("VELVET ENTERTAINMENT LTDA", L, doc.y, { width: W, continued: true })
        .font("Helvetica")
-       .text(", pessoa jurídica de direito privado, inscrita no CNPJ sob nº 66.615.892/0001-43, com sede na Rua Cel. José Eusébio, nº 95, Casa 13, Higienópolis, São Paulo/SP, CEP 01.239-030, doravante denominada simplesmente "VELVET";", { width: W });
+       .text(`, pessoa jurídica de direito privado, inscrita no CNPJ sob nº 66.615.892/0001-43, com sede na Rua Cel. José Eusébio, nº 95, Casa 13, Higienópolis, São Paulo/SP, CEP 01.239-030, doravante denominada simplesmente "VELVET";`, { width: W });
     doc.moveDown(0.5);
     doc.font("Helvetica").fontSize(9).text("e, de outro lado,", L, doc.y, { width: W });
     doc.moveDown(0.5);
