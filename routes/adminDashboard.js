@@ -3443,9 +3443,10 @@ function gerarReciboPDF(p) {
     // alias para retrocompatibilidade
     const comissao = taxaPlataforma;
 
+    const pgtoTipoPDF = (p.pgto_tipo || '').toLowerCase() || (p.pix_chave ? 'pix' : p.banco ? 'transferencia' : null);
     let tipoPagamento = '—';
-    if (p.pgto_tipo === 'pix') tipoPagamento = `PIX — ${(p.pix_tipo || '').toUpperCase()}: ${p.pix_chave || '—'}`;
-    else if (p.pgto_tipo === 'transferencia') tipoPagamento = `TED — Banco: ${p.banco || '—'} | Ag: ${p.agencia || '—'} | Conta: ${p.conta || '—'}`;
+    if (pgtoTipoPDF === 'pix') tipoPagamento = `PIX — ${(p.pix_tipo || '').toUpperCase()}: ${p.pix_chave || '—'}`;
+    else if (pgtoTipoPDF === 'transferencia') tipoPagamento = `TED — Banco: ${p.banco || '—'} | Ag: ${p.agencia || '—'} | Conta: ${p.conta || '—'}`;
 
     // ── Cabeçalho roxo ──
     doc.rect(50, 50, W, 55).fill('#7B2CFF');
@@ -3714,7 +3715,7 @@ router.post("/modelo-pagamentos/:id/pagar", authAdmin, async (req, res) => {
                     </tr>
                     <tr style="background:#f9f5ff;">
                       <td style="padding:10px 14px;font-weight:600;color:#7B2CFF;">Valor bruto</td>
-                      <td style="padding:10px 14px;">${fmtBRL(bruto)}</td>
+                      <td style="padding:10px 14px;">${fmtBRL(valorBruto)}</td>
                     </tr>
                     ${comissao > 0 ? `
                     <tr>

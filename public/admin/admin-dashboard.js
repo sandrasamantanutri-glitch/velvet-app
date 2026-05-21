@@ -2194,11 +2194,6 @@ async function carregarPgtoModelo(page) {
         <td>${badgeStatus(r.status)}</td>
         <td>${fmtDateTime(r.pago_em)}</td>
         <td>
-          ${r.recibo_pdf_signed_url
-            ? `<a href="${r.recibo_pdf_signed_url}" target="_blank" class="btn btn-sm btn-primary">📄 Ver PDF</a>`
-            : `<span class="badge badge-muted">—</span>`}
-        </td>
-        <td>
           ${r.comprovativo_signed_url
             ? `<a href="${r.comprovativo_signed_url}" target="_blank" class="btn btn-sm btn-ghost">🧾 Ver</a>`
             : `<span class="badge badge-muted">—</span>`}
@@ -2211,7 +2206,7 @@ async function carregarPgtoModelo(page) {
           <button class="btn btn-sm btn-ghost" onclick="editarPgtoModelo(${r.id})">Editar</button>
         </td>
       </tr>
-    `).join('') || emptyRow(11);
+    `).join('') || emptyRow(10);
 
     buildPagination('paginationPgtoModelo', page, data.totalPages || 1, 'carregarPgtoModelo');
   } catch (err) {
@@ -2360,10 +2355,9 @@ async function confirmarPagamentoComEmail() {
     toast('Pagamento confirmado! Recibo enviado por email à modelo.', 'success');
     carregarPgtoModelo(1);
 
-    // Abrir PDF gerado
+    // Abrir recibo HTML (único formato visível)
     if (win && !win.closed) {
-      win.location.href = data.recibo_pdf_signed_url
-        || `/admin/dashboard/modelo-pagamentos/${id}/recibo`;
+      win.location.href = `/admin/dashboard/modelo-pagamentos/${id}/recibo`;
     }
   } catch (err) {
     if (win && !win.closed) win.close();
