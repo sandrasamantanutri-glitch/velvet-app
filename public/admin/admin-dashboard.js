@@ -2317,11 +2317,12 @@ let _pagamentoIdPendente = null;
 function marcarPgtoModeloPago(id) {
   _pagamentoIdPendente = id;
 
-  // Carregar pré-visualização no iframe
+  // Carregar pré-visualização no iframe — token via query param porque iframes não enviam headers
   const iframe = document.getElementById('iframePreviewRecibo');
   const btn    = document.getElementById('btnConfirmarPagamento');
+  const token  = localStorage.getItem('token') || '';
 
-  if (iframe) iframe.src = `/admin/dashboard/modelo-pagamentos/${id}/recibo`;
+  if (iframe) iframe.src = `/admin/dashboard/modelo-pagamentos/${id}/recibo?token=${encodeURIComponent(token)}`;
   if (btn)    btn.disabled = false;
 
   openModal('modalPreviewRecibo');

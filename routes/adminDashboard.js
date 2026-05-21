@@ -69,6 +69,14 @@ const uploadPrivado = multer({
 });
 
 
+// Suporte a token via query param (necessário para iframes — o browser não envia headers)
+router.use((req, res, next) => {
+  if (!req.headers.authorization && req.query.token) {
+    req.headers.authorization = `Bearer ${req.query.token}`;
+  }
+  next();
+});
+
 // All routes require admin auth
 router.use(auth, authAdmin);
 
