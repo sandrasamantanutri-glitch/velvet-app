@@ -2368,7 +2368,8 @@ router.put("/dados-bancarios/:id", authAdmin, async (req, res) => {
     }
 
     const anterior = beforeQ.rows[0];
-    const fields = req.body;
+    const fields = { ...req.body };
+    if (fields.tipo) fields.tipo = fields.tipo.toLowerCase();
     const sets = [];
     const vals = [];
     let i = 1;
@@ -3799,7 +3800,7 @@ router.get("/modelo-pagamentos/:id/recibo", authAdmin, async (req, res) => {
     const dataPagamento = p.pago_em ? new Date(p.pago_em).toLocaleDateString('pt-BR') : '—';
     const fmtBRL = v => `R$ ${Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-    const pgtoTipo = p.pgto_tipo || (p.pix_chave ? 'pix' : p.banco ? 'transferencia' : null);
+    const pgtoTipo = (p.pgto_tipo || '').toLowerCase() || (p.pix_chave ? 'pix' : p.banco ? 'transferencia' : null);
     let tipoPagamento = '—';
     if (pgtoTipo === 'pix') tipoPagamento = `PIX — ${(p.pix_tipo || '').toUpperCase()}: ${p.pix_chave || '—'}`;
     else if (pgtoTipo === 'transferencia') tipoPagamento = `TED — Banco: ${p.banco || '—'} | Ag: ${p.agencia || '—'} | Conta: ${p.conta || '—'}${p.conta_tipo ? ' (' + p.conta_tipo + ')' : ''}`;

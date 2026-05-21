@@ -329,7 +329,6 @@ router.post("/modelo/dados-bancarios", authModelo, async (req, res) => {
   }
 
   const {
-    tipo,
     pix_tipo,
     pix_chave,
     banco,
@@ -340,6 +339,7 @@ router.post("/modelo/dados-bancarios", authModelo, async (req, res) => {
     titular_documento,
     confirmado_titular
   } = req.body;
+  const tipo = (req.body.tipo || '').toLowerCase() || null;
 
   if (!confirmado_titular) {
     return res.status(400).json({
@@ -400,7 +400,6 @@ router.post("/modelo/dados-bancarios/alterar", authModelo, async (req, res) => {
 
   const {
     justificativa,
-    tipo,
     pix_tipo,
     pix_chave,
     banco,
@@ -410,6 +409,7 @@ router.post("/modelo/dados-bancarios/alterar", authModelo, async (req, res) => {
     titular_nome,
     titular_documento
   } = req.body;
+  const tipo = (req.body.tipo || '').toLowerCase() || null;
 
   if (!justificativa) {
     return res.status(400).json({
