@@ -1,11 +1,12 @@
 const AWS = require("aws-sdk");
 
 const s3 = new AWS.S3({
-  endpoint: process.env.B2_ENDPOINT,
-  accessKeyId: process.env.B2_KEY_ID,
-  secretAccessKey: process.env.B2_APP_KEY,
-  region: process.env.B2_REGION,
-  signatureVersion: "v4"
+  endpoint: new AWS.Endpoint(process.env.R2_ENDPOINT),
+  accessKeyId: process.env.R2_ACCESS_KEY_ID,
+  secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+  region: "auto",
+  signatureVersion: "v4",
+  s3ForcePathStyle: true
 });
 
 module.exports = s3;

@@ -15,26 +15,27 @@ const upload = multer({ storage: multer.memoryStorage() });
 const jwt = require("jsonwebtoken");
 
 const s3Privado = new AWS.S3({
-  endpoint: process.env.B2_ENDPOINT,
-  accessKeyId: process.env.B2_KEY_ID_PRIVATE,
-  secretAccessKey: process.env.B2_APP_KEY_PRIVATE,
-  region: process.env.B2_REGION,
+  endpoint: new AWS.Endpoint(process.env.R2_ENDPOINT),
+  accessKeyId: process.env.R2_ACCESS_KEY_ID,
+  secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+  region: "auto",
+  signatureVersion: "v4",
   s3ForcePathStyle: true
 });
 
 const s3Publico = new AWS.S3({
-  endpoint: process.env.B2_ENDPOINT,
-  accessKeyId: process.env.B2_KEY_ID,
-  secretAccessKey: process.env.B2_APP_KEY,
-  region: process.env.B2_REGION,
+  endpoint: new AWS.Endpoint(process.env.R2_ENDPOINT),
+  accessKeyId: process.env.R2_ACCESS_KEY_ID,
+  secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+  region: "auto",
+  signatureVersion: "v4",
   s3ForcePathStyle: true
 });
 
 const uploadPublico = multer({
   storage: multerS3({
     s3: s3Publico,
-    bucket: process.env.B2_BUCKET,
-    acl: "public-read",
+    bucket: process.env.R2_BUCKET,
     contentType: multerS3.AUTO_CONTENT_TYPE,
     key: (req, file, cb) => {
       const ext = file.originalname.split(".").pop();
@@ -46,12 +47,11 @@ const uploadPublico = multer({
     fileSize: 10 * 1024 * 1024 // 10MB
   }
 });
- 
+
 const uploadPrivado = multer({
   storage: multerS3({
     s3: s3Privado,
-    bucket: process.env.B2_BUCKET_PRIVATE,
-    acl: "private",
+    bucket: process.env.R2_BUCKET_PRIVATE,
     contentType: multerS3.AUTO_CONTENT_TYPE,
     key: (req, file, cb) => {
       const ext = file.originalname.split(".").pop();
@@ -94,7 +94,7 @@ function assinarArquivoPrivado(key) {
   if (!key) return null;
 
   return s3Privado.getSignedUrl("getObject", {
-    Bucket: process.env.B2_BUCKET_PRIVATE,
+    Bucket: process.env.R2_BUCKET_PRIVATE,
     Key: key,
     Expires: 60 * 10
   });
@@ -1143,7 +1143,7 @@ router.get("/agencia-pagamentos", authAgencia, async (req, res) => {
     for (const row of rows) {
       row.recibo_signed_url = row.recibo_url
         ? s3Privado.getSignedUrl("getObject", {
-            Bucket: process.env.B2_BUCKET_PRIVATE,
+            Bucket: process.env.R2_BUCKET_PRIVATE,
             Key: row.recibo_url,
             Expires: 300
           })
@@ -1184,7 +1184,7 @@ router.get("/agencia-pagamentos/:id", authAgencia, async (req, res) => {
 
     row.recibo_signed_url = row.recibo_url
       ? s3Privado.getSignedUrl("getObject", {
-          Bucket: process.env.B2_BUCKET_PRIVATE,
+          Bucket: process.env.R2_BUCKET_PRIVATE,
           Key: row.recibo_url,
           Expires: 300
         })

@@ -122,22 +122,22 @@ if (
 }
 
 // ===============================
-// BACKBLAZE B2 (UPLOAD NOVO)
+// CLOUDFLARE R2 (UPLOAD)
 // ===============================
 const s3 = new AWS.S3({
-  endpoint: new AWS.Endpoint(process.env.B2_ENDPOINT),
-  accessKeyId: process.env.B2_KEY_ID,
-  secretAccessKey: process.env.B2_APP_KEY,
-  region: process.env.B2_REGION,
+  endpoint: new AWS.Endpoint(process.env.R2_ENDPOINT),
+  accessKeyId: process.env.R2_ACCESS_KEY_ID,
+  secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+  region: "auto",
   signatureVersion: "v4",
   s3ForcePathStyle: true
 });
 
 const s3Privado = new AWS.S3({
-  endpoint: new AWS.Endpoint(process.env.B2_ENDPOINT),
-  accessKeyId: process.env.B2_KEY_ID_PRIVATE,
-  secretAccessKey: process.env.B2_APP_KEY_PRIVATE,
-  region: process.env.B2_REGION,
+  endpoint: new AWS.Endpoint(process.env.R2_ENDPOINT),
+  accessKeyId: process.env.R2_ACCESS_KEY_ID,
+  secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+  region: "auto",
   signatureVersion: "v4",
   s3ForcePathStyle: true
 });
@@ -150,13 +150,12 @@ const uploadB2 = multer({
 });
 
 // ===============================
-// BACKBLAZE B2 (VERIFICAÇÃO - PRIVADO)
+// CLOUDFLARE R2 (VERIFICAÇÃO - PRIVADO)
 // ===============================
 const uploadVerificacao = multer({
   storage: multerS3({
     s3: s3Privado,
-    bucket: process.env.B2_BUCKET_PRIVATE,
-    acl: "private",
+    bucket: process.env.R2_BUCKET_PRIVATE,
     contentType: multerS3.AUTO_CONTENT_TYPE,
     key: (req, file, cb) => {
       const ext = file.originalname.split(".").pop();
@@ -7725,16 +7724,14 @@ app.post( "/uploadAvatar", auth, uploadAvatarLimiter, uploadB2.single("avatar"),
 
       const caminho = `velvet/avatars/${userId}/${Date.now()}-${originalname}`;
 
-      // 🚀 Upload manual para Backblaze (igual conteudos)
       const uploadResult = await s3.upload({
-        Bucket: process.env.B2_BUCKET,
+        Bucket: process.env.R2_BUCKET,
         Key: caminho,
         Body: buffer,
-        ContentType: mimetype,
-        ACL: "public-read"
+        ContentType: mimetype
       }).promise();
 
-      const avatarUrl = uploadResult.Location;
+      const avatarUrl = `${process.env.R2_PUBLIC_URL}/${caminho}`;
 
       // ==============================
       // MODELO
@@ -7815,17 +7812,15 @@ app.post( "/uploadCapa", auth, uploadAvatarLimiter, uploadB2.single("capa"),  as
       // 🔥 caminho único (evita cache)
       const caminho = `velvet/capas/${userId}/${Date.now()}-${originalname}`;
 
-      // 🚀 Upload manual para Backblaze (igual avatar)
       const uploadResult = await s3.upload({
-        Bucket: process.env.B2_BUCKET,
+        Bucket: process.env.R2_BUCKET,
         Key: caminho,
         Body: buffer,
         ContentType: mimetype,
-        ACL: "public-read",
         CacheControl: "no-cache"
       }).promise();
 
-      const url = uploadResult.Location;
+      const url = `${process.env.R2_PUBLIC_URL}/${caminho}`;
 
       // ==============================
       // MODELO

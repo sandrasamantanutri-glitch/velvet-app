@@ -27,15 +27,14 @@ const cron = require("node-cron");
 const requireRole = require("./middleware/requireRole");
 
 // ===========================
-// BACKBLAZE
+// CLOUDFLARE R2
 // ===========================
 
 const s3Privado = new AWS.S3({
-  endpoint: new AWS.Endpoint(process.env.B2_ENDPOINT),
-  accessKeyId: process.env.B2_KEY_ID_PRIVATE,
-  secretAccessKey: process.env.B2_APP_KEY_PRIVATE,
-  region: process.env.B2_REGION,
-
+  endpoint: new AWS.Endpoint(process.env.R2_ENDPOINT),
+  accessKeyId: process.env.R2_ACCESS_KEY_ID,
+  secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+  region: "auto",
   signatureVersion: "v4",
   s3ForcePathStyle: true
 });
