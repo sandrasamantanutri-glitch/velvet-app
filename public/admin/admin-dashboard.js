@@ -2321,7 +2321,8 @@ function marcarPgtoModeloPago(id) {
   const iframe = document.getElementById('iframePreviewRecibo');
   const btn    = document.getElementById('btnConfirmarPagamento');
 
-  if (iframe) iframe.src = `/admin/dashboard/modelo-pagamentos/${id}/recibo?token=${encodeURIComponent(token_admin)}`;
+  const tk = localStorage.getItem('token_admin') || '';
+  if (iframe) iframe.src = `/admin/dashboard/modelo-pagamentos/${id}/recibo?token=${encodeURIComponent(tk)}`;
   if (btn)    btn.disabled = false;
 
   openModal('modalPreviewRecibo');
