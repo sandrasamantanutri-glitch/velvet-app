@@ -11860,6 +11860,124 @@ app.post("/api/verificacao", auth, uploadVerificacaoLimiter, uploadVerificacao.f
 );
 
 // ===========================
+// ACEITE DE TERMOS (MODELO)
+// ===========================
+
+const VERSAO_TERMOS_ATUAL = "2026-05";
+
+// GET /api/modelo/aceite-termos/status
+// Verifica se a modelo já aceitou a versão atual dos termos
+app.get("/api/modelo/aceite-termos/status", auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const modeloRes = await db.query(
+      "SELECT id, termos_aceites, termos_versao FROM modelos WHERE user_id = $1",
+      [userId]
+    );
+
+    if (!modeloRes.rowCount) {
+      return res.status(404).json({ erro: "Modelo não encontrado" });
+    }
+
+    const { id: modeloId, termos_aceites, termos_versao } = modeloRes.rows[0];
+    const precisaAceitar = !termos_aceites || termos_versao !== VERSAO_TERMOS_ATUAL;
+
+    let aceite = null;
+    if (!precisaAceitar) {
+      const aceiteRes = await db.query(
+        "SELECT aceite_em, versao FROM modelo_aceite_termos WHERE modelo_id = $1 AND versao = $2",
+        [modeloId, VERSAO_TERMOS_ATUAL]
+      );
+      aceite = aceiteRes.rows[0] || null;
+    }
+
+    res.json({
+      aceito: !precisaAceitar,
+      versao_atual: VERSAO_TERMOS_ATUAL,
+      versao_aceite: termos_versao || null,
+      aceite_em: aceite?.aceite_em || null
+    });
+  } catch (err) {
+    console.error("Erro ao verificar aceite de termos:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// POST /api/modelo/aceite-termos
+// Regista o aceite das 5 declarações com evidência forense (IP, UA, versão, timestamp)
+app.post("/api/modelo/aceite-termos", auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const {
+      aceite_maioridade,
+      aceite_conteudo,
+      aceite_tributario,
+      aceite_independente,
+      aceite_financeiro,
+      user_agent: uaFromBody
+    } = req.body;
+
+    // Todos os 5 aceites são obrigatórios
+    const todos = [aceite_maioridade, aceite_conteudo, aceite_tributario, aceite_independente, aceite_financeiro];
+    if (todos.some(v => v !== true && v !== "true")) {
+      return res.status(400).json({ erro: "Todas as declarações são obrigatórias" });
+    }
+
+    const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim()
+      || req.socket?.remoteAddress
+      || null;
+
+    const ua = uaFromBody || req.headers["user-agent"] || null;
+
+    const modeloRes = await db.query(
+      "SELECT id FROM modelos WHERE user_id = $1",
+      [userId]
+    );
+
+    if (!modeloRes.rowCount) {
+      return res.status(404).json({ erro: "Modelo não encontrado" });
+    }
+
+    const modeloId = modeloRes.rows[0].id;
+
+    // Registo auditável com UPSERT (garante que re-aceite actualiza o registo)
+    await db.query(`
+      INSERT INTO modelo_aceite_termos (
+        modelo_id, versao,
+        aceite_maioridade, aceite_conteudo, aceite_tributario,
+        aceite_independente, aceite_financeiro,
+        aceite_ip, aceite_user_agent, aceite_em
+      )
+      VALUES ($1, $2, true, true, true, true, true, $3, $4, NOW())
+      ON CONFLICT (modelo_id, versao) DO UPDATE SET
+        aceite_maioridade   = true,
+        aceite_conteudo     = true,
+        aceite_tributario   = true,
+        aceite_independente = true,
+        aceite_financeiro   = true,
+        aceite_ip           = EXCLUDED.aceite_ip,
+        aceite_user_agent   = EXCLUDED.aceite_user_agent,
+        aceite_em           = NOW()
+    `, [modeloId, VERSAO_TERMOS_ATUAL, ip, ua]);
+
+    // Actualizar atalho na tabela modelos
+    await db.query(
+      "UPDATE modelos SET termos_aceites = true, termos_versao = $1 WHERE id = $2",
+      [VERSAO_TERMOS_ATUAL, modeloId]
+    );
+
+    console.log(`[TERMOS] Modelo ${modeloId} aceitou termos v${VERSAO_TERMOS_ATUAL} | IP: ${ip}`);
+
+    res.json({ ok: true, versao: VERSAO_TERMOS_ATUAL, aceite_em: new Date().toISOString() });
+  } catch (err) {
+    console.error("Erro ao registar aceite de termos:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// ===========================
 // CARREGAR MIDIAS CONTEUDOS
 // ===========================
 
