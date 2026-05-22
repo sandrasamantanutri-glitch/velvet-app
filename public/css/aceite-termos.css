@@ -213,6 +213,112 @@
   background: #8e24aa;
 }
 
+/* ── Status de verificação (em análise / aprovado) ──────────── */
+.status-verificacao {
+  display: block;
+  padding: 14px 18px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.status-verificacao strong {
+  display: block;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 4px;
+  opacity: 0.7;
+}
+
+.status-texto {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.status-em-analise {
+  background: #fffbeb;
+  border: 1.5px solid #f59e0b;
+  color: #92400e;
+}
+
+.status-em-analise .status-texto { color: #b45309; }
+
+.status-aprovado {
+  background: #eafaf1;
+  border: 1.5px solid #27ae60;
+  color: #1e6b40;
+}
+
+.status-aprovado .status-texto { color: #15803d; }
+
+.status-bloqueado {
+  background: #fef2f2;
+  border: 1.5px solid #ef4444;
+  color: #7f1d1d;
+}
+
+/* ── Banner de rejeição destacado ───────────────────────────── */
+.banner-rejeicao {
+  background: #fff1f2;
+  border: 2px solid #e11d48;
+  border-radius: 14px;
+  padding: 20px 22px;
+  margin-bottom: 20px;
+}
+
+.banner-rejeicao.hidden {
+  display: none;
+}
+
+.banner-rejeicao-topo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.banner-rejeicao-icon {
+  font-size: 26px;
+  flex-shrink: 0;
+}
+
+.banner-rejeicao-topo strong {
+  display: block;
+  color: #be123c;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.banner-rejeicao-topo small {
+  color: #9f1239;
+  font-size: 12px;
+}
+
+.banner-rejeicao-motivo {
+  background: #ffe4e6;
+  border-left: 4px solid #e11d48;
+  border-radius: 0 8px 8px 0;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #881337;
+  line-height: 1.6;
+}
+
+.banner-rejeicao-label {
+  font-weight: 700;
+  margin-right: 6px;
+}
+
+.banner-rejeicao-instrucao {
+  margin: 0;
+  font-size: 14px;
+  color: #9f1239;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
 /* ── Responsivo ─────────────────────────────────────────────── */
 @media (max-width: 480px) {
   .declaracao-texto,

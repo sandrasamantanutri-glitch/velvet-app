@@ -301,6 +301,24 @@
       <span class="step ativo">4. Documentos</span>
     </div>
 
+    <!-- Banner de rejeição — só aparece quando status = rejeitado -->
+    <div id="bannerRejeicao" class="banner-rejeicao hidden">
+      <div class="banner-rejeicao-topo">
+        <span class="banner-rejeicao-icon">❌</span>
+        <div>
+          <strong>Verificação não aprovada</strong>
+          <small id="bannerRejeicaoData"></small>
+        </div>
+      </div>
+      <div class="banner-rejeicao-motivo">
+        <span class="banner-rejeicao-label">Motivo:</span>
+        <span id="bannerRejeicaoMotivo"></span>
+      </div>
+      <p class="banner-rejeicao-instrucao">
+        📋 Corrija as informações abaixo e reenvie seus documentos para nova análise.
+      </p>
+    </div>
+
     <div id="statusContainer" class="form-info" data-i18n="conta.info_documentos">
       Para proteger você e a plataforma, confirmamos sua identidade com um documento oficial válido.
     </div>

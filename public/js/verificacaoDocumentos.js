@@ -34,6 +34,14 @@ function renderStatus(verificacao) {
   statusContainer.innerHTML = "";
   statusContainer.className = "";
 
+  // Banner de rejeição separado e destacado
+  const bannerRejeicao   = document.getElementById("bannerRejeicao");
+  const bannerMotivo     = document.getElementById("bannerRejeicaoMotivo");
+  const bannerData       = document.getElementById("bannerRejeicaoData");
+
+  // Esconder banner por defeito
+  if (bannerRejeicao) bannerRejeicao.classList.add("hidden");
+
   let html = "";
 
   switch (verificacao.status) {
@@ -55,17 +63,24 @@ function renderStatus(verificacao) {
       `;
       break;
 
-    case "recusado":
-      statusContainer.classList.add("status-verificacao", "status-recusado");
-      html = `
-        <strong>${t("verificacao.status_label")}</strong>
-        <span class="status-texto">${t("verificacao.status_recusado")}</span>
-        <p class="status-descricao">${t("verificacao.desc_recusado")}</p>
-        ${verificacao.motivo
-          ? `<p class="status-motivo">${t("verificacao.motivo_label")} ${verificacao.motivo}</p>`
-          : ""}
-      `;
-      break;
+    // ── BUG 1 CORRIGIDO: DB usa "rejeitado", não "recusado" ──────────
+    case "rejeitado":
+      // Esconder o statusContainer genérico e usar o banner destacado
+      statusContainer.style.display = "none";
+
+      if (bannerRejeicao) {
+        // BUG 2 CORRIGIDO: campo é motivo_rejeicao, não motivo
+        const motivo = verificacao.motivo_rejeicao || verificacao.motivo || "";
+        if (bannerMotivo) bannerMotivo.textContent = motivo || "Não especificado";
+        if (bannerData && verificacao.verificado_em) {
+          const d = new Date(verificacao.verificado_em);
+          bannerData.textContent = "em " + d.toLocaleDateString("pt-BR");
+        }
+        bannerRejeicao.classList.remove("hidden");
+        // Scroll suave para o banner
+        setTimeout(() => bannerRejeicao.scrollIntoView({ behavior: "smooth", block: "nearest" }), 300);
+      }
+      return;
 
     case "bloqueado":
       statusContainer.classList.add("status-verificacao", "status-bloqueado");
@@ -84,10 +99,12 @@ function renderStatus(verificacao) {
   statusContainer.innerHTML = html;
   statusContainer.style.display = "block";
 }
+
   function controlarFormulario(status) {
   if (!form) return;
 
-  if (!status || status === "pendente" || status === "recusado") {
+  // BUG 1 CORRIGIDO: usar "rejeitado" (valor real do DB), não "recusado"
+  if (!status || status === "pendente" || status === "rejeitado") {
     form.style.display = "block";
   } else {
     form.style.display = "none";
