@@ -4631,7 +4631,9 @@ router.post("/newsletter/enviar", authAdmin, async (req, res) => {
         SELECT u.email
         FROM modelos m
         JOIN users u ON u.id = m.user_id
-        WHERE m.id = ANY($1) AND u.email IS NOT NULL
+        WHERE m.id = ANY($1)
+          AND u.email IS NOT NULL
+          AND TRIM(u.email) != ''
       `, [modelo_ids]);
       rows = result.rows;
     } else {
@@ -4639,7 +4641,9 @@ router.post("/newsletter/enviar", authAdmin, async (req, res) => {
         SELECT u.email
         FROM modelos m
         JOIN users u ON u.id = m.user_id
-        WHERE m.verificada = true AND m.ativo = true AND u.email IS NOT NULL
+        WHERE m.verificada = true AND m.ativo = true
+          AND u.email IS NOT NULL
+          AND TRIM(u.email) != ''
       `);
       rows = result.rows;
     }
@@ -4648,7 +4652,11 @@ router.post("/newsletter/enviar", authAdmin, async (req, res) => {
       return res.status(400).json({ erro: "Nenhuma modelo encontrada para envio." });
     }
 
-    const emails = rows.map(r => r.email);
+    // Validação extra: filtrar emails com formato inválido antes de enviar ao Resend
+    const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emails = rows
+      .map(r => r.email.trim())
+      .filter(e => EMAIL_REGEX.test(e));
     const html = `
       <div style="font-family: Arial, Helvetica, sans-serif; background:#f6f3fb; padding:24px; color:#2d1f3d;">
         <div style="max-width:600px; margin:0 auto; background:#ffffff; padding:32px; border-radius:12px;">
@@ -4670,6 +4678,10 @@ router.post("/newsletter/enviar", authAdmin, async (req, res) => {
         </div>
       </div>
     `;
+
+    if (emails.length === 0) {
+      return res.status(400).json({ erro: "Nenhum email válido encontrado para envio." });
+    }
 
     // Envia em lotes de 100 via Resend Batch API (uma chamada por lote, sem rate limit)
     const LOTE = 100;
