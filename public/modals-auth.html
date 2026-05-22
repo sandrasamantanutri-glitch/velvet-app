@@ -1,26 +1,26 @@
 <!-- AGE GATE +18 -->
 <div id="ageModal" class="modal hidden">
-  <div class="modal-overlay"></div>
-
-  <div class="modal-box">
-    <h2>Plataforma exclusiva para maiores de 18 anos</h2>
-
-    <p>
-      Ao continuar, você declara que possui <strong>18 anos ou mais</strong>
-      e concorda com os Termos e Políticas da Velvet disponíveis para consulta em nossa pagina inicial.
-    </p>
-
-    <div style="display:flex; gap:12px; margin-top:20px;">
-      <button class="btn btn-primary" onclick="confirmAge(true)">
-        Sou maior de 18
-      </button>
-
-      <button class="btn btn-secondary" onclick="confirmAge(false)">
-        Sou menor
-      </button>
-    </div>
-  </div>
+  <div class="modal-overlay" onclick="confirmAge(false)"></div>
+  <div class="modal-box" id="ageModalBox"></div>
 </div>
+
+<script>
+  (function () {
+    const box = document.getElementById("ageModalBox");
+    if (box) {
+      box.innerHTML = `
+        <h2 data-i18n="index.ageGateTitle">A Velvet é uma plataforma social destinada para usuários maiores de idade.</h2>
+        <p data-i18n="index.ageGateText" style="margin-top:10px;">
+          Ao continuar, você declara que possui 18 anos ou mais e concorda com os Termos e Políticas da Velvet disponíveis para consulta em nossa pagina inicial.
+        </p>
+        <div style="display:flex; gap:12px; margin-top:20px;">
+          <button class="btn btn-primary" onclick="confirmAge(true)" data-i18n="index.ageGateConfirm">Continuar</button>
+          <button class="btn btn-secondary" onclick="confirmAge(false)" data-i18n="index.ageGateDeny">Sair</button>
+        </div>`;
+      if (typeof applyTranslations === "function") applyTranslations();
+    }
+  })();
+</script>
 
 <!-- LOGIN / REGISTER MODAL -->
 <div id="loginModal" class="modal hidden">
@@ -78,12 +78,17 @@
     <!-- MENSAGEM DE ERRO MODAL -->
     <div id="modalError" style="display:none;background:#fff0f0;border:1px solid #ffb3b3;border-radius:8px;padding:10px 14px;font-size:13px;color:#c0392b;margin-bottom:4px;"></div>
 
-    <!-- TEXTO LEGAL -->
-    <p id="registerLegal" class="field hidden" style="font-size:12px;color:#9b87b8;margin-top:4px;">
-      Ao criar meu registo, declaro ter mais de
-      <strong>18 anos</strong> e estar de acordo com os
-      <a href="/terms.html" target="_blank">Termos e Condições de Uso</a>.
-    </p>
+    <!-- Confirmação de idade + termos (etapa 3) -->
+    <div id="registerLegal" class="hidden" style="margin-top:8px;margin-bottom:4px;">
+      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;">
+        <input type="checkbox" id="registerAgeConfirm"
+               style="width:18px;height:18px;min-width:18px;margin-top:2px;accent-color:#7B2CFF;cursor:pointer;">
+        <span style="font-size:12px;color:#666;line-height:1.6;">
+          Confirmo que tenho mais de <strong style="color:#333;">18 anos</strong> e concordo com os
+          <a href="/terms.html" target="_blank" style="color:#7B2CFF;font-weight:600;white-space:nowrap;">Termos e Condições de Uso</a>.
+        </span>
+      </label>
+    </div>
 
     <button id="modalSubmit" class="btn btn-primary">
       Entrar

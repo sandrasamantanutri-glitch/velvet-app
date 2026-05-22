@@ -284,6 +284,9 @@ function updateModal() {
       fieldPerfil?.classList.remove("hidden");
       fieldOtp.classList.add("hidden");
       registerLegal?.classList.remove("hidden");
+      // Resetar checkbox ao chegar à etapa 3
+      const cbAge = document.getElementById("registerAgeConfirm");
+      if (cbAge) cbAge.checked = false;
       emailInput?.setAttribute("readonly", "true");
       setTimeout(() => document.getElementById("loginSenha")?.focus(), 50);
     }
@@ -461,6 +464,12 @@ async function register() {
     showModalError("Verificação de email necessária. Inicia o processo novamente.");
     registerStage = "email";
     updateModal();
+    return;
+  }
+
+  const ageConfirmed = document.getElementById("registerAgeConfirm")?.checked === true;
+  if (!ageConfirmed) {
+    showModalError("Deves confirmar que tens mais de 18 anos e aceitar os Termos de Uso.");
     return;
   }
 
