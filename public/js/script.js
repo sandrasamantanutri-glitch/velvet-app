@@ -134,9 +134,20 @@ window.switchToLogin = function () {
 };
 
 // ── Mensagens de erro inline no modal ────────────────────────────────────────
+function getOrCreateModalError() {
+  let el = document.getElementById("modalError");
+  if (!el) {
+    // Criar dinamicamente se o HTML ainda estiver em cache sem o elemento
+    el = document.createElement("div");
+    el.id = "modalError";
+    el.style.cssText = "display:none;background:#fff0f0;border:1px solid #ffb3b3;border-radius:8px;padding:10px 14px;font-size:13px;color:#c0392b;margin-bottom:4px;";
+    const submit = document.getElementById("modalSubmit");
+    if (submit) submit.insertAdjacentElement("beforebegin", el);
+  }
+  return el;
+}
 function showModalError(msg) {
-  const el = document.getElementById("modalError");
-  if (!el) { alert(msg); return; }
+  const el = getOrCreateModalError();
   el.textContent = msg;
   el.style.display = "block";
 }
@@ -146,17 +157,55 @@ function clearModalError() {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ── Controla visibilidade do bloco Senha (label + input) ─────────────────────
+// Funciona com e sem o wrapper #fieldSenhaComum (compatibilidade com HTML cacheado)
+function setSenhaVisivel(visivel) {
+  const wrapper = document.getElementById("fieldSenhaComum");
+  const input   = document.getElementById("loginSenha");
+  if (wrapper) {
+    visivel ? wrapper.classList.remove("hidden") : wrapper.classList.add("hidden");
+  } else if (input) {
+    // HTML antigo sem wrapper — esconder/mostrar input e o label anterior
+    input.style.display = visivel ? "" : "none";
+    const label = input.previousElementSibling;
+    if (label && label.tagName === "LABEL") label.style.display = visivel ? "" : "none";
+  }
+}
+
+// ── Garante que o campo OTP existe no DOM (HTML antigo sem #fieldOtp) ─────────
+function getOrCreateFieldOtp() {
+  let el = document.getElementById("fieldOtp");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "fieldOtp";
+    el.className = "field hidden";
+    el.innerHTML = `
+      <p id="otpInfo" style="font-size:13px;color:#7a6a9a;margin:0 0 10px;line-height:1.5;"></p>
+      <label for="registerOtp">Código de verificação</label>
+      <input id="registerOtp" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+             placeholder="000000" autocomplete="one-time-code"
+             style="letter-spacing:8px;font-size:22px;text-align:center;font-weight:700;">
+      <p id="otpReenviar" style="font-size:12px;color:#9b87b8;margin-top:8px;text-align:right;display:none;">
+        Não recebeste? <span onclick="enviarOTP()" style="color:#7B2CFF;cursor:pointer;font-weight:600;">Reenviar código</span>
+      </p>`;
+    // Inserir depois do campo de email
+    const emailInput = document.getElementById("loginEmail");
+    if (emailInput) emailInput.insertAdjacentElement("afterend", el);
+  }
+  return el;
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 function updateModal() {
   const title           = document.getElementById("modalTitle");
   const submit          = document.getElementById("modalSubmit");
   const switchLogin     = document.getElementById("switchToLogin");
   const switchRegister  = document.getElementById("switchToRegister");
-  const fieldSenhaComum = document.getElementById("fieldSenhaComum");
   const fieldSenha      = document.getElementById("fieldSenha");
   const fieldNome       = document.getElementById("fieldNome");
   const fieldNascimento = document.getElementById("fieldNascimento");
   const fieldPerfil     = document.getElementById("fieldPerfil");
-  const fieldOtp        = document.getElementById("fieldOtp");
+  const fieldOtp        = getOrCreateFieldOtp();
   const otpInfoEl       = document.getElementById("otpInfo");
   const otpReenviar     = document.getElementById("otpReenviar");
   const registerLegal   = document.getElementById("registerLegal");
@@ -170,12 +219,12 @@ function updateModal() {
     submit.onclick     = login;
     submit.disabled    = false;
 
-    fieldSenhaComum?.classList.remove("hidden");
+    setSenhaVisivel(true);
     fieldSenha?.classList.add("hidden");
     fieldNome?.classList.add("hidden");
     fieldNascimento?.classList.add("hidden");
     fieldPerfil?.classList.add("hidden");
-    fieldOtp?.classList.add("hidden");
+    fieldOtp.classList.add("hidden");
     registerLegal?.classList.add("hidden");
     switchRegister?.classList.remove("hidden");
     switchLogin?.classList.add("hidden");
@@ -192,12 +241,12 @@ function updateModal() {
       submit.onclick     = enviarOTP;
       submit.disabled    = false;
 
-      fieldSenhaComum?.classList.add("hidden");
+      setSenhaVisivel(false);
       fieldSenha?.classList.add("hidden");
       fieldNome?.classList.add("hidden");
       fieldNascimento?.classList.add("hidden");
       fieldPerfil?.classList.add("hidden");
-      fieldOtp?.classList.add("hidden");
+      fieldOtp.classList.add("hidden");
       registerLegal?.classList.add("hidden");
       emailInput?.removeAttribute("readonly");
 
@@ -207,12 +256,12 @@ function updateModal() {
       submit.onclick     = verificarOTP;
       submit.disabled    = false;
 
-      fieldSenhaComum?.classList.add("hidden");
+      setSenhaVisivel(false);
       fieldSenha?.classList.add("hidden");
       fieldNome?.classList.add("hidden");
       fieldNascimento?.classList.add("hidden");
       fieldPerfil?.classList.add("hidden");
-      fieldOtp?.classList.remove("hidden");
+      fieldOtp.classList.remove("hidden");
       registerLegal?.classList.add("hidden");
       emailInput?.setAttribute("readonly", "true");
 
@@ -228,12 +277,12 @@ function updateModal() {
       submit.onclick     = register;
       submit.disabled    = false;
 
-      fieldSenhaComum?.classList.remove("hidden");
+      setSenhaVisivel(true);
       fieldSenha?.classList.remove("hidden");
       fieldNome?.classList.remove("hidden");
       fieldNascimento?.classList.remove("hidden");
       fieldPerfil?.classList.remove("hidden");
-      fieldOtp?.classList.add("hidden");
+      fieldOtp.classList.add("hidden");
       registerLegal?.classList.remove("hidden");
       emailInput?.setAttribute("readonly", "true");
       setTimeout(() => document.getElementById("loginSenha")?.focus(), 50);

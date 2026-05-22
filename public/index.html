@@ -176,20 +176,37 @@ body{margin:0;background:#f6f7fb}
   <div class="modal-box">
     <h2 id="modalTitle" data-i18n="index.loginTitle">Entrar</h2>
 
+    <!-- Email (sempre visível) -->
     <label for="loginEmail" data-i18n="index.email">Email</label>
-    <input id="loginEmail" type="email" placeholder="Email" data-i18n-placeholder="index.emailPlaceholder">
+    <input id="loginEmail" type="email" placeholder="Email" autocomplete="email" data-i18n-placeholder="index.emailPlaceholder">
 
-    <label for="loginSenha" data-i18n="index.password">Senha</label>
-    <input id="loginSenha" type="password" placeholder="Senha" data-i18n-placeholder="index.passwordPlaceholder">
+    <!-- Etapa 2: verificação OTP -->
+    <div class="field hidden" id="fieldOtp">
+      <p id="otpInfo" style="font-size:13px;color:#7a6a9a;margin:0 0 10px;line-height:1.5;"></p>
+      <label for="registerOtp">Código de verificação</label>
+      <input id="registerOtp" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+             placeholder="000000" autocomplete="one-time-code"
+             style="letter-spacing:8px;font-size:22px;text-align:center;font-weight:700;">
+      <p id="otpReenviar" style="font-size:12px;color:#9b87b8;margin-top:8px;text-align:right;display:none;">
+        Não recebeste? <span onclick="enviarOTP()" style="color:#7B2CFF;cursor:pointer;font-weight:600;">Reenviar código</span>
+      </p>
+    </div>
 
+    <!-- Senha (login + etapa 3 registo) -->
+    <div id="fieldSenhaComum">
+      <label for="loginSenha" data-i18n="index.password">Senha</label>
+      <input id="loginSenha" type="password" placeholder="Senha" autocomplete="current-password" data-i18n-placeholder="index.passwordPlaceholder">
+    </div>
+
+    <!-- Campos apenas na etapa 3 do registo -->
     <div class="field hidden" id="fieldSenha">
       <label for="registerSenhaConfirm" data-i18n="index.repeatPassword">Repita a sua senha</label>
-      <input id="registerSenhaConfirm" type="password" data-i18n-placeholder="index.registerRepeatPasswordPlaceholder">
+      <input id="registerSenhaConfirm" type="password" autocomplete="new-password" data-i18n-placeholder="index.registerRepeatPasswordPlaceholder">
     </div>
 
     <div class="field hidden" id="fieldNome">
       <label for="registerNome" data-i18n="index.fullName">Nome Completo</label>
-      <input id="registerNome" type="text" data-i18n-placeholder="index.fullNamePlaceholder">
+      <input id="registerNome" type="text" autocomplete="name" data-i18n-placeholder="index.fullNamePlaceholder">
     </div>
 
     <div class="field hidden" id="fieldNascimento">
@@ -198,13 +215,17 @@ body{margin:0;background:#f6f7fb}
     </div>
 
     <div class="field hidden" id="fieldPerfil">
+      <label for="registerRole" data-i18n="index.accountType">Tipo de conta</label>
       <select id="registerRole">
         <option value="cliente" data-i18n="index.wantMember">Quero ser membro</option>
         <option value="modelo" data-i18n="index.wantCreator">Quero ser criador</option>
       </select>
     </div>
 
-    <p id="registerLegal" class="field hidden">
+    <!-- Erro inline -->
+    <div id="modalError" style="display:none;background:#fff0f0;border:1px solid #ffb3b3;border-radius:8px;padding:10px 14px;font-size:13px;color:#c0392b;margin-bottom:4px;"></div>
+
+    <p id="registerLegal" class="field hidden" style="font-size:12px;color:#9b87b8;margin-top:4px;">
       <span data-i18n="index.registerLegalText"></span>
       <a href="/terms.html" target="_blank" data-i18n="index.termsOfUse"></a>
     </p>

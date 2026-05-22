@@ -401,8 +401,8 @@ async function enviarEmailVerificacao(email, nomeCompleto, token) {
 async function enviarEmailOTP(email, codigo) {
   const html = wrapEmail(`
     <h2 style="font-size:22px;font-weight:700;color:#2d1f3d;margin:0 0 8px;">Verificação de Email 💜</h2>
-    <p style="color:#7a6a9a;font-size:15px;line-height:1.7;margin:0 0 28px;">
-      Usa o código abaixo para confirmar o teu email e concluir o registo na <strong>Velvet</strong>.
+    <p style="color:#4b2a7b;font-size:15px;line-height:1.7;margin:0 0 28px;">
+      Usa o código abaixo para confirmar o teu email e concluir o cadastro na <strong>Velvet</strong>.
     </p>
 
     <div style="text-align:center;margin:32px 0;">
