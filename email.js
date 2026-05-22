@@ -406,9 +406,13 @@ async function enviarEmailOTP(email, codigo) {
     </p>
 
     <div style="text-align:center;margin:32px 0;">
-      <div style="display:inline-block;background:linear-gradient(135deg,#7B2CFF,#a94cff);border-radius:16px;padding:24px 44px;">
-        <span style="color:#fff;font-size:42px;font-weight:800;letter-spacing:14px;font-family:monospace;">${codigo}</span>
-      </div>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;">
+        <tr>
+          <td bgcolor="#7B2CFF" style="background-color:#7B2CFF;border-radius:16px;padding:20px 40px;text-align:center;">
+            <span style="color:#ffffff;font-size:40px;font-weight:800;letter-spacing:14px;font-family:'Courier New',Courier,monospace;">${codigo}</span>
+          </td>
+        </tr>
+      </table>
     </div>
 
     ${infoBox("purple", `
