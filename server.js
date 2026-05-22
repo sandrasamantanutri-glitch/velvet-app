@@ -5034,7 +5034,18 @@ app.get("/api/modelos", auth, async (req, res) => {
       if (i === 2) m.top3 = true;
     });
 
-    res.json({ online, novas, emAlta, recomendadas });
+    // Secção "Descubra mais": modelos que não aparecem em nenhuma outra secção
+    const idsDestaque = new Set([
+      ...online.map(m => m.modelo_id),
+      ...novas.map(m => m.modelo_id),
+      ...emAlta.map(m => m.modelo_id),
+      ...recomendadas.map(m => m.modelo_id)
+    ]);
+    const descubraMais = modelos
+      .filter(m => !idsDestaque.has(m.modelo_id))
+      .sort((a, b) => (a.nome_exibicao || "").localeCompare(b.nome_exibicao || "", "pt-BR"));
+
+    res.json({ online, novas, emAlta, recomendadas, descubraMais });
 
   } catch (err) {
     console.error("Erro feed modelos:", err);

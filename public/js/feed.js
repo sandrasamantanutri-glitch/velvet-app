@@ -108,7 +108,7 @@ window.renderFeed = async function () {
 
     if (!res.ok) throw new Error("Erro ao buscar modelos");
 
-    const { online, novas, emAlta, recomendadas } = await res.json();
+    const { online, novas, emAlta, recomendadas, descubraMais } = await res.json();
 
     wrapper.innerHTML = `
       ${online.length ? `
@@ -133,12 +133,19 @@ window.renderFeed = async function () {
         <h2 class="feed-secao-titulo">${t("feed.sec_novas")}</h2>
         <div class="feed-grid" id="sec-novas"></div>
       </section>` : ""}
+
+      ${descubraMais && descubraMais.length ? `
+      <section class="feed-secao">
+        <h2 class="feed-secao-titulo">${t("feed.sec_descubra") || "✨ Descubra mais"}</h2>
+        <div class="feed-grid" id="sec-descubra"></div>
+      </section>` : ""}
     `;
 
     renderSecao("sec-online", online);
     renderSecao("sec-recomendadas", recomendadas);
     renderSecao("sec-emalta", emAlta, "Nenhuma modelo disponível");
     renderSecao("sec-novas", novas);
+    renderSecao("sec-descubra", descubraMais || []);
 
   } catch (err) {
     console.error("Erro ao carregar o feed:", err);
