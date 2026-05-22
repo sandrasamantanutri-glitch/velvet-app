@@ -675,6 +675,30 @@ formPessoais?.addEventListener("submit", async (e) => {
     pais: formPessoais.pais.value.trim()
   };
 
+  // Elementos de feedback
+  const banner     = document.getElementById("dadosPessoaisSalvosBanner");
+  const bannerData = document.getElementById("dadosPessoaisSalvosData");
+  const btnSalvar  = formPessoais.querySelector(".btn-salvar");
+
+  function mostrarErroPessoais(msg) {
+    let erroEl = document.getElementById("erroDadosPessoais");
+    if (!erroEl) {
+      erroEl = document.createElement("p");
+      erroEl.id = "erroDadosPessoais";
+      erroEl.style.cssText = "color:#c0392b;font-size:14px;margin:10px 0 0;text-align:center;";
+      formPessoais.appendChild(erroEl);
+    }
+    erroEl.textContent = msg;
+    erroEl.style.display = "block";
+  }
+
+  function esconderErroPessoais() {
+    const erroEl = document.getElementById("erroDadosPessoais");
+    if (erroEl) erroEl.style.display = "none";
+  }
+
+  if (btnSalvar) { btnSalvar.disabled = true; btnSalvar.textContent = "A salvar..."; }
+
   try {
     const res = await fetch("/api/usuario/dados", {
       method: "PUT",
@@ -686,7 +710,6 @@ formPessoais?.addEventListener("submit", async (e) => {
     });
 
     if (res.status === 403) {
-      alert(t("areaUsuario.personal_data_locked"));
       bloquearFormulario(formPessoais);
       mostrarStatusVerificacao("aprovado");
       return;
@@ -695,16 +718,36 @@ formPessoais?.addEventListener("submit", async (e) => {
     if (!res.ok) {
       const erro = await res.text().catch(() => "");
       console.error("Erro ao salvar dados pessoais:", erro);
-      alert(t("areaUsuario.personal_data_save_error"));
+      mostrarErroPessoais(t("areaUsuario.personal_data_save_error") || "❌ Erro ao salvar. Tenta novamente.");
+      if (btnSalvar) { btnSalvar.disabled = false; btnSalvar.textContent = "Salvar e continuar"; }
       return;
     }
 
-    alert(t("areaUsuario.personal_data_saved"));
+    // ✅ Sucesso — mostrar banner verde igual ao dos termos
+    esconderErroPessoais();
+    if (banner) {
+      const agora = new Date().toLocaleString("pt-BR", {
+        day: "2-digit", month: "long", year: "numeric",
+        hour: "2-digit", minute: "2-digit"
+      });
+      if (bannerData) bannerData.textContent = "Salvo em " + agora;
+      banner.classList.remove("hidden");
+      banner.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+    if (btnSalvar) { btnSalvar.disabled = false; btnSalvar.textContent = "Salvar e continuar"; }
+
     // Notificar o módulo de contrato que os dados pessoais foram guardados
     document.dispatchEvent(new CustomEvent("dadosPessoaisGuardados"));
+
+    // Scroll suave para o passo seguinte (contrato) após breve pausa
+    setTimeout(() => {
+      document.getElementById("secaoContrato")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 800);
+
   } catch (err) {
     console.error("Erro na requisição:", err);
-   alert(t("areaUsuario.personal_data_connection_error"));
+    mostrarErroPessoais(t("areaUsuario.personal_data_connection_error") || "❌ Sem ligação. Verifica a tua internet.");
+    if (btnSalvar) { btnSalvar.disabled = false; btnSalvar.textContent = "Salvar e continuar"; }
   }
 });
 
