@@ -606,7 +606,7 @@ if (
    if (dados.status === "aprovado") {
     bloquearFormulario(form);
     mostrarStatusVerificacao("aprovado");
-    document.querySelector(".btn-salvar")?.remove();
+    form.querySelector(".btn-salvar")?.remove();
   }
 }
 

@@ -58,7 +58,7 @@ const PDFDocument = require("pdfkit");
 
 const { Resend } = require("resend");
 const resend = new Resend(process.env.RESEND_API_KEY);
-const { enviarEmailValidacao, enviarEmailBoasVindasCliente, enviarEmailBoasVindasModelo } = require("./email");
+const { enviarEmailValidacao, enviarEmailBoasVindasCliente, enviarEmailBoasVindasModelo, enviarEmailContratoModelos, enviarEmailNotificacaoContratoAssinado } = require("./email");
 const rateLimit = require("express-rate-limit");
 const compression = require('compression');
 
@@ -222,13 +222,36 @@ app.post("/api/webhook/zapsign", express.json(), async (req, res) => {
     const modeloId = upd.rows[0].id;
     console.log(`[ZapSign] Contrato assinado — modelo id ${modeloId}`);
 
-    // Descarregar o PDF assinado do ZapSign e guardar no R2
-    // (a função é definida mais abaixo no ficheiro mas é hoisted no module scope só se for declaração)
-    // Como é uma async function expression, fazemos a chamada async sem bloquear
+    // Descarregar o PDF assinado do ZapSign e guardar no R2, depois notificar admin
     if (typeof descarregarPDFAssinadoZapSign === "function") {
-      descarregarPDFAssinadoZapSign(docToken, modeloId).catch(err =>
-        console.warn(`[ZapSign Webhook] Falha ao descarregar PDF: ${err.message}`)
-      );
+      descarregarPDFAssinadoZapSign(docToken, modeloId)
+        .then(async (pdfR2Key) => {
+          try {
+            // Buscar dados da modelo para o email de notificação
+            const mInfo = await db.query(
+              `SELECT m.nome_completo, m.nome_exibicao, u.email, m.contrato_assinado_em
+                 FROM modelos m
+                 JOIN users u ON u.id = m.user_id
+                WHERE m.id = $1`,
+              [modeloId]
+            );
+            const info = mInfo.rows[0] || {};
+            await enviarEmailNotificacaoContratoAssinado({
+              nomeCompleto:  info.nome_completo,
+              nomeExibicao:  info.nome_exibicao,
+              emailModelo:   info.email,
+              modeloId,
+              assinadoEm:    info.contrato_assinado_em,
+              pdfR2Key
+            });
+            console.log(`[ZapSign] Notificação de contrato assinado enviada para contato@velvet.lat`);
+          } catch (emailErr) {
+            console.warn(`[ZapSign Webhook] Falha ao enviar email de notificação: ${emailErr.message}`);
+          }
+        })
+        .catch(err =>
+          console.warn(`[ZapSign Webhook] Falha ao descarregar PDF: ${err.message}`)
+        );
     }
 
     res.status(200).json({ ok: true });
