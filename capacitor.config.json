@@ -1,5 +1,5 @@
 {
-  "appId": "lat.velvet.app",
+  "appId": "velvet.app",
   "appName": "Velvet",
   "webDir": "public",
   "server": {

@@ -1,4 +1,4 @@
-package lat.velvet.app;
+package velvet.app;
 
 import com.getcapacitor.BridgeActivity;
 

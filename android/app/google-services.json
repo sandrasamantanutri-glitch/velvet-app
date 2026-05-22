@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:263534922838:android:98bd115ec6d53b94c9fff7",
+        "mobilesdk_app_id": "1:263534922838:android:8fae0f675ba66090c9fff7",
         "android_client_info": {
-          "package_name": "lat.velvet.app"
+          "package_name": "velvet.app"
         }
       },
       "oauth_client": [],
