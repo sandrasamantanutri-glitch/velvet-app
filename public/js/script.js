@@ -35,8 +35,11 @@ const srcOrigem = localStorage.getItem("origem_trafego");
 
 // ESTADO GLOBAL
 
-let modalMode = "login"; 
-let pendingAction = null; 
+let modalMode     = "login";   // login | register
+let registerStage = "email";   // email | otp | form
+let otpPreToken   = null;
+let otpEmail      = null;
+let pendingAction = null;
 
 window.openAgeGate = function (action) {
 
@@ -114,197 +117,361 @@ window.closeLoginModal = function () {
 };
 
 function setRegisterMode() {
-  modalMode = "register";
+  modalMode     = "register";
+  registerStage = "email";
+  otpPreToken   = null;
+  otpEmail      = null;
   localStorage.removeItem("ageConfirmed");
   updateModal();
 }
 
 window.switchToLogin = function () {
-  modalMode = "login";
+  modalMode     = "login";
+  registerStage = "email";
+  otpPreToken   = null;
+  otpEmail      = null;
   updateModal();
 };
 
-function updateModal() {
-  const title = document.getElementById("modalTitle");
-  const submit = document.getElementById("modalSubmit");
-  const switchLogin = document.getElementById("switchToLogin");
-  const switchRegister = document.getElementById("switchToRegister");
+// ── Mensagens de erro inline no modal ────────────────────────────────────────
+function showModalError(msg) {
+  const el = document.getElementById("modalError");
+  if (!el) { alert(msg); return; }
+  el.textContent = msg;
+  el.style.display = "block";
+}
+function clearModalError() {
+  const el = document.getElementById("modalError");
+  if (el) el.style.display = "none";
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
-  const registerFields = [
-    "fieldSenha",
-    "fieldNome",
-    "fieldNascimento",
-    "fieldPerfil"
-  ];
+function updateModal() {
+  const title           = document.getElementById("modalTitle");
+  const submit          = document.getElementById("modalSubmit");
+  const switchLogin     = document.getElementById("switchToLogin");
+  const switchRegister  = document.getElementById("switchToRegister");
+  const fieldSenhaComum = document.getElementById("fieldSenhaComum");
+  const fieldSenha      = document.getElementById("fieldSenha");
+  const fieldNome       = document.getElementById("fieldNome");
+  const fieldNascimento = document.getElementById("fieldNascimento");
+  const fieldPerfil     = document.getElementById("fieldPerfil");
+  const fieldOtp        = document.getElementById("fieldOtp");
+  const otpInfoEl       = document.getElementById("otpInfo");
+  const otpReenviar     = document.getElementById("otpReenviar");
+  const registerLegal   = document.getElementById("registerLegal");
+  const emailInput      = document.getElementById("loginEmail");
+
+  clearModalError();
 
   if (modalMode === "login") {
-title.textContent = t("index.loginTitle");
-submit.textContent = t("index.loginAction");
-    submit.onclick = login;
+    title.textContent  = t("index.loginTitle");
+    submit.textContent = t("index.loginAction");
+    submit.onclick     = login;
+    submit.disabled    = false;
 
-    // 🔒 esconder TODOS os campos de registo
-    registerFields.forEach(id =>
-      document.getElementById(id)?.classList.add("hidden")
-    );
-
-    switchRegister.classList.remove("hidden");
-    switchLogin.classList.add("hidden");
+    fieldSenhaComum?.classList.remove("hidden");
+    fieldSenha?.classList.add("hidden");
+    fieldNome?.classList.add("hidden");
+    fieldNascimento?.classList.add("hidden");
+    fieldPerfil?.classList.add("hidden");
+    fieldOtp?.classList.add("hidden");
+    registerLegal?.classList.add("hidden");
+    switchRegister?.classList.remove("hidden");
+    switchLogin?.classList.add("hidden");
+    emailInput?.removeAttribute("readonly");
 
   } else {
-title.textContent = t("index.registerTitle");
-submit.textContent = t("index.registerAction");
-    submit.onclick = register;
+    // ── Modo registo — 3 etapas ──────────────────────────────────────────────
+    switchRegister?.classList.add("hidden");
+    switchLogin?.classList.remove("hidden");
 
-    // 🔓 mostrar TODOS os campos de registo
-    registerFields.forEach(id =>
-      document.getElementById(id)?.classList.remove("hidden")
-    );
+    if (registerStage === "email") {
+      title.textContent  = t("index.registerTitle");
+      submit.textContent = "Enviar código de verificação";
+      submit.onclick     = enviarOTP;
+      submit.disabled    = false;
 
-    switchRegister.classList.add("hidden");
-    switchLogin.classList.remove("hidden");
+      fieldSenhaComum?.classList.add("hidden");
+      fieldSenha?.classList.add("hidden");
+      fieldNome?.classList.add("hidden");
+      fieldNascimento?.classList.add("hidden");
+      fieldPerfil?.classList.add("hidden");
+      fieldOtp?.classList.add("hidden");
+      registerLegal?.classList.add("hidden");
+      emailInput?.removeAttribute("readonly");
+
+    } else if (registerStage === "otp") {
+      title.textContent  = "Verificar Email";
+      submit.textContent = "Verificar código";
+      submit.onclick     = verificarOTP;
+      submit.disabled    = false;
+
+      fieldSenhaComum?.classList.add("hidden");
+      fieldSenha?.classList.add("hidden");
+      fieldNome?.classList.add("hidden");
+      fieldNascimento?.classList.add("hidden");
+      fieldPerfil?.classList.add("hidden");
+      fieldOtp?.classList.remove("hidden");
+      registerLegal?.classList.add("hidden");
+      emailInput?.setAttribute("readonly", "true");
+
+      if (otpInfoEl && otpEmail) {
+        otpInfoEl.textContent = `📩 Código enviado para ${otpEmail}. Verifica a tua caixa de entrada (e o spam).`;
+      }
+      if (otpReenviar) otpReenviar.style.display = "block";
+      setTimeout(() => document.getElementById("registerOtp")?.focus(), 50);
+
+    } else if (registerStage === "form") {
+      title.textContent  = t("index.registerTitle");
+      submit.textContent = t("index.registerAction");
+      submit.onclick     = register;
+      submit.disabled    = false;
+
+      fieldSenhaComum?.classList.remove("hidden");
+      fieldSenha?.classList.remove("hidden");
+      fieldNome?.classList.remove("hidden");
+      fieldNascimento?.classList.remove("hidden");
+      fieldPerfil?.classList.remove("hidden");
+      fieldOtp?.classList.add("hidden");
+      registerLegal?.classList.remove("hidden");
+      emailInput?.setAttribute("readonly", "true");
+      setTimeout(() => document.getElementById("loginSenha")?.focus(), 50);
+    }
   }
 }
 
 async function login() {
+  clearModalError();
   const email = loginEmail.value.trim();
   const senha = loginSenha.value;
 
   if (!email || !senha) {
-    alert(t("index.fillEmailPassword"));
+    showModalError(t("index.fillEmailPassword"));
     return;
   }
 
-  const res = await fetch("/api/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, senha })
-  });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    alert(data.error || t("index.invalidLogin"));
-    return;
-  }
-
-  localStorage.setItem("token", data.token);
-  localStorage.setItem("role", data.role);
-  localStorage.setItem("ageConfirmed", "true");
-
-  if (data.role === "modelo" && data.modelo_id) {
-    localStorage.setItem("modelo_id", data.modelo_id);
-  }
-
-  if (data.role === "cliente" && data.cliente_id) {
-    localStorage.setItem("cliente_id", data.cliente_id);
-  }
-
-  const actionRaw = localStorage.getItem("post_login_action");
-  const redirect = localStorage.getItem("redirect_after_auth");
-
-  let action = null;
+  const submit = document.getElementById("modalSubmit");
+  submit.disabled    = true;
+  submit.textContent = "A entrar...";
 
   try {
-    action = actionRaw ? JSON.parse(actionRaw) : null;
-  } catch (e) {
-    console.warn("post_login_action inválido:", actionRaw);
-  }
+    const res  = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, senha })
+    });
+    const data = await res.json();
 
-  if (redirect) {
-    localStorage.removeItem("redirect_after_auth");
-    localStorage.removeItem("post_login_action");
-    localStorage.removeItem("post_register_action");
-    window.location.href = redirect;
-    return;
-  }
+    if (!res.ok) {
+      showModalError(data.erro || data.error || t("index.invalidLogin"));
+      submit.disabled    = false;
+      submit.textContent = t("index.loginAction");
+      return;
+    }
 
-  window.location.href = "/feed.html";
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("role", data.role);
+    localStorage.setItem("ageConfirmed", "true");
+
+    if (data.role === "modelo" && data.modelo_id) {
+      localStorage.setItem("modelo_id", data.modelo_id);
+    }
+    if (data.role === "cliente" && data.cliente_id) {
+      localStorage.setItem("cliente_id", data.cliente_id);
+    }
+
+    const actionRaw = localStorage.getItem("post_login_action");
+    const redirect  = localStorage.getItem("redirect_after_auth");
+    let action = null;
+    try { action = actionRaw ? JSON.parse(actionRaw) : null; } catch (_) {}
+
+    if (redirect) {
+      localStorage.removeItem("redirect_after_auth");
+      localStorage.removeItem("post_login_action");
+      localStorage.removeItem("post_register_action");
+      window.location.href = redirect;
+      return;
+    }
+
+    window.location.href = "/feed.html";
+
+  } catch (_) {
+    showModalError("Erro de ligação. Verifica a tua internet.");
+    submit.disabled    = false;
+    submit.textContent = t("index.loginAction");
+  }
 }
 
-async function register() {
-  const email = loginEmail.value.trim();
-  const senha = loginSenha.value;
-  const senhaConfirm = registerSenhaConfirm.value;
-  const nome = registerNome.value.trim();
-  const nascimento = registerNascimento.value;
-  const role = document.getElementById("registerRole")?.value;
-  const ref = localStorage.getItem("ref_modelo");
-  const src = localStorage.getItem("origem_trafego");
+// ── Etapa 1: enviar OTP ───────────────────────────────────────────────────────
+window.enviarOTP = async function enviarOTP() {
+  clearModalError();
+  const email = document.getElementById("loginEmail").value.trim();
 
-  if (senha !== senhaConfirm) {
-    alert(t("index.passwordMismatch"));
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showModalError("Introduz um email válido.");
     return;
   }
 
-  if (senha.length < 6) {
-    alert(t("index.passwordMinLength"));
-    return;
-  }
-
-  if (!email || !senha || !senhaConfirm || !role || !nome || !nascimento) {
-    alert(t("index.fillAllFields"));
-    return;
-  }
-
-  const res = await fetch("/api/register", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      email,
-      senha,
-      role,
-      nome_completo: nome,
-      data_nascimento: nascimento,
-      ageConfirmed: true,
-      ref,
-      src
-    })
-  });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    alert(data.erro || data.error || t("index.registerError"));
-    return;
-  }
-
-  localStorage.setItem("token", data.token);
-  localStorage.setItem("role", data.role);
-  localStorage.setItem("ageConfirmed", "true");
-
-  if (data.cliente_id) {
-    localStorage.setItem("cliente_id", data.cliente_id);
-  }
-
-  if (data.modelo_id) {
-    localStorage.setItem("modelo_id", data.modelo_id);
-  }
-
-  const actionRaw =
-    localStorage.getItem("post_register_action") ||
-    localStorage.getItem("post_login_action");
-
-  const redirect = localStorage.getItem("redirect_after_auth");
-
-  let action = null;
+  const submit = document.getElementById("modalSubmit");
+  submit.disabled    = true;
+  submit.textContent = "A enviar...";
 
   try {
-    action = actionRaw ? JSON.parse(actionRaw) : null;
-  } catch (e) {
-    console.warn("ação pós-auth inválida:", actionRaw);
+    const res  = await fetch("/api/pre-registro/enviar-codigo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      showModalError(data.erro || "Erro ao enviar código. Tenta novamente.");
+      submit.disabled    = false;
+      submit.textContent = "Enviar código de verificação";
+      return;
+    }
+
+    otpEmail      = email;
+    registerStage = "otp";
+    updateModal();
+
+  } catch (_) {
+    showModalError("Erro de ligação. Verifica a tua internet.");
+    submit.disabled    = false;
+    submit.textContent = "Enviar código de verificação";
   }
+};
 
-  const destinoFinal = redirect || action?.redirect;
+// ── Etapa 2: verificar OTP ────────────────────────────────────────────────────
+async function verificarOTP() {
+  clearModalError();
+  const email  = otpEmail || document.getElementById("loginEmail").value.trim();
+  const codigo = document.getElementById("registerOtp")?.value.trim();
 
-  if (destinoFinal) {
-    localStorage.removeItem("redirect_after_auth");
-    localStorage.removeItem("post_login_action");
-    localStorage.removeItem("post_register_action");
-    window.location.href = destinoFinal;
+  if (!codigo || codigo.length < 6) {
+    showModalError("Insere o código de 6 dígitos enviado para o teu email.");
     return;
   }
 
-  window.location.href = "/feed.html";
+  const submit = document.getElementById("modalSubmit");
+  submit.disabled    = true;
+  submit.textContent = "A verificar...";
+
+  try {
+    const res  = await fetch("/api/pre-registro/verificar-codigo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, codigo })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      showModalError(data.erro || "Código inválido. Tenta novamente.");
+      submit.disabled    = false;
+      submit.textContent = "Verificar código";
+      return;
+    }
+
+    otpPreToken   = data.preToken;
+    registerStage = "form";
+    updateModal();
+
+  } catch (_) {
+    showModalError("Erro de ligação. Verifica a tua internet.");
+    submit.disabled    = false;
+    submit.textContent = "Verificar código";
+  }
+}
+
+// ── Etapa 3: criar conta ──────────────────────────────────────────────────────
+async function register() {
+  clearModalError();
+  const email           = otpEmail || document.getElementById("loginEmail").value.trim();
+  const senha           = document.getElementById("loginSenha").value;
+  const senhaConfirm    = document.getElementById("registerSenhaConfirm").value;
+  const nome            = document.getElementById("registerNome").value.trim();
+  const nascimento      = document.getElementById("registerNascimento").value;
+  const role            = document.getElementById("registerRole")?.value;
+  const ref             = localStorage.getItem("ref_modelo");
+  const src             = localStorage.getItem("origem_trafego");
+
+  if (!email || !senha || !senhaConfirm || !role || !nome || !nascimento) {
+    showModalError(t("index.fillAllFields"));
+    return;
+  }
+  if (senha.length < 6) {
+    showModalError(t("index.passwordMinLength"));
+    return;
+  }
+  if (senha !== senhaConfirm) {
+    showModalError(t("index.passwordMismatch"));
+    return;
+  }
+  if (!otpPreToken) {
+    showModalError("Verificação de email necessária. Inicia o processo novamente.");
+    registerStage = "email";
+    updateModal();
+    return;
+  }
+
+  const submit = document.getElementById("modalSubmit");
+  submit.disabled    = true;
+  submit.textContent = "A criar conta...";
+
+  try {
+    const res  = await fetch("/api/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        senha,
+        role,
+        nome_completo: nome,
+        data_nascimento: nascimento,
+        ageConfirmed: true,
+        preToken: otpPreToken,
+        ref,
+        src
+      })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      showModalError(data.erro || data.error || t("index.registerError"));
+      submit.disabled    = false;
+      submit.textContent = t("index.registerAction");
+      return;
+    }
+
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("role", data.role);
+    localStorage.setItem("ageConfirmed", "true");
+
+    if (data.cliente_id) localStorage.setItem("cliente_id", data.cliente_id);
+    if (data.modelo_id)  localStorage.setItem("modelo_id",  data.modelo_id);
+
+    const actionRaw    = localStorage.getItem("post_register_action") || localStorage.getItem("post_login_action");
+    const redirect     = localStorage.getItem("redirect_after_auth");
+    let action = null;
+    try { action = actionRaw ? JSON.parse(actionRaw) : null; } catch (_) {}
+
+    const destinoFinal = redirect || action?.redirect;
+    if (destinoFinal) {
+      localStorage.removeItem("redirect_after_auth");
+      localStorage.removeItem("post_login_action");
+      localStorage.removeItem("post_register_action");
+      window.location.href = destinoFinal;
+      return;
+    }
+
+    window.location.href = "/feed.html";
+
+  } catch (_) {
+    showModalError("Erro de ligação. Verifica a tua internet.");
+    submit.disabled    = false;
+    submit.textContent = t("index.registerAction");
+  }
 }
 
 window.openLegalModal = function (event, url) {
