@@ -356,6 +356,77 @@ async function enviarEmailNotificacaoContratoAssinado({ nomeCompleto, nomeExibic
   });
 }
 
+// ─────────────────────────────────────────────────────────────
+// EMAIL DE VERIFICAÇÃO DE ENDEREÇO DE EMAIL
+// ─────────────────────────────────────────────────────────────
+async function enviarEmailVerificacao(email, nomeCompleto, token) {
+  const nome = (nomeCompleto || "").split(" ")[0] || "você";
+  const link = `https://velvet.lat/verificar-email.html?token=${token}`;
+
+  await resend.emails.send({
+    from: "Velvet <contato@velvet.lat>",
+    to: email,
+    subject: "✉️ Confirme o seu endereço de email — Velvet",
+    html: wrapEmail(`
+      <h2 style="margin:0 0 6px;color:#6f42c1;text-align:center;font-size:22px;font-weight:700;">
+        Confirme o seu email ✉️
+      </h2>
+      <p style="text-align:center;margin:0 0 28px;color:#7a6a9a;font-size:14px;">
+        Um passo rápido para ativar a sua conta
+      </p>
+
+      <p style="margin:0 0 16px;line-height:1.7;font-size:15px;">Olá, <strong>${nome}</strong>! 👋</p>
+
+      <p style="margin:0 0 20px;line-height:1.7;font-size:15px;">
+        Obrigado por se registar na Velvet! Para confirmar que este email é válido
+        e garantir que recebes todas as notificações importantes, clica no botão abaixo:
+      </p>
+
+      ${btnPrimary(link, "✅ Confirmar meu email")}
+
+      ${infoBox("purple", `
+        <p style="margin:0;font-size:13px;color:#4b2a7b;line-height:1.6;">
+          ⏳ Este link é válido por <strong>48 horas</strong>.<br>
+          Se não solicitaste este registo, podes ignorar este email.
+        </p>
+      `)}
+
+      <p style="margin:20px 0 0;font-size:12px;color:#b0a0c8;text-align:center;word-break:break-all;">
+        Link: ${link}
+      </p>
+    `)
+  });
+}
+
+async function enviarEmailOTP(email, codigo) {
+  const html = wrapEmail(`
+    <h2 style="font-size:22px;font-weight:700;color:#2d1f3d;margin:0 0 8px;">Verificação de Email 💜</h2>
+    <p style="color:#7a6a9a;font-size:15px;line-height:1.7;margin:0 0 28px;">
+      Usa o código abaixo para confirmar o teu email e concluir o registo na <strong>Velvet</strong>.
+    </p>
+
+    <div style="text-align:center;margin:32px 0;">
+      <div style="display:inline-block;background:linear-gradient(135deg,#7B2CFF,#a94cff);border-radius:16px;padding:24px 44px;">
+        <span style="color:#fff;font-size:42px;font-weight:800;letter-spacing:14px;font-family:monospace;">${codigo}</span>
+      </div>
+    </div>
+
+    ${infoBox("purple", `
+      <p style="margin:0;font-size:13px;color:#4b2a7b;">
+        ⏱️ <strong>Este código expira em 15 minutos.</strong><br>
+        Se não solicitaste este registo, podes ignorar este email com segurança.
+      </p>
+    `)}
+  `);
+
+  await resend.emails.send({
+    from: "Velvet <contato@velvet.lat>",
+    to: email,
+    subject: `${codigo} — Código de verificação Velvet`,
+    html
+  });
+}
+
 module.exports = {
   enviarEmailValidacao,
   enviarEmailAprovacao,
@@ -363,5 +434,7 @@ module.exports = {
   enviarEmailBoasVindasCliente,
   enviarEmailBoasVindasModelo,
   enviarEmailContratoModelos,
-  enviarEmailNotificacaoContratoAssinado
+  enviarEmailNotificacaoContratoAssinado,
+  enviarEmailVerificacao,
+  enviarEmailOTP
 };

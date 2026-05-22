@@ -56,9 +56,20 @@ const crypto = require("crypto");
 const axios = require("axios");
 const PDFDocument = require("pdfkit");
 
+// ── OTP pré-registo (em memória, TTL 15 min) ──────────────────────────────────
+const otpPreRegistro = new Map();
+// Limpar entradas expiradas a cada 10 minutos
+setInterval(() => {
+  const agora = Date.now();
+  for (const [email, entry] of otpPreRegistro.entries()) {
+    if (agora > entry.expiresAt) otpPreRegistro.delete(email);
+  }
+}, 10 * 60 * 1000);
+// ──────────────────────────────────────────────────────────────────────────────
+
 const { Resend } = require("resend");
 const resend = new Resend(process.env.RESEND_API_KEY);
-const { enviarEmailValidacao, enviarEmailBoasVindasCliente, enviarEmailBoasVindasModelo, enviarEmailContratoModelos, enviarEmailNotificacaoContratoAssinado } = require("./email");
+const { enviarEmailValidacao, enviarEmailBoasVindasCliente, enviarEmailBoasVindasModelo, enviarEmailContratoModelos, enviarEmailNotificacaoContratoAssinado, enviarEmailVerificacao, enviarEmailOTP } = require("./email");
 const rateLimit = require("express-rate-limit");
 const compression = require('compression');
 
@@ -4811,6 +4822,7 @@ app.get("/api/me", auth, async (req, res) => {
   }
 });
 
+
 // ===========================
 // FEED DO PERFIL
 // ===========================
@@ -7464,6 +7476,101 @@ app.post("/api/cliente/dados", authCliente, async (req, res) => {
 // CADASTRO
 // ===========================
 
+// ── POST /api/pre-registro/enviar-codigo ─────────────────────────────────────
+app.post("/api/pre-registro/enviar-codigo", authLimiter, async (req, res) => {
+  try {
+    const { email } = req.body;
+    const emailNormalizado = email?.trim().toLowerCase();
+
+    if (!emailNormalizado || !emailValido(emailNormalizado)) {
+      return res.status(400).json({ erro: "Email inválido" });
+    }
+
+    // Verificar se email já está registrado e ativo
+    const check = await db.query(
+      "SELECT id FROM users WHERE email = $1 AND ativo IS DISTINCT FROM false",
+      [emailNormalizado]
+    );
+    if (check.rowCount > 0) {
+      return res.status(409).json({ erro: "Este email já tem uma conta registada. Faz login." });
+    }
+
+    // Rate-limit: não reenviar se último envio foi há menos de 60 s
+    const existing = otpPreRegistro.get(emailNormalizado);
+    if (existing && existing.enviadoEm && (Date.now() - existing.enviadoEm) < 60_000) {
+      return res.status(429).json({ erro: "Aguarda 1 minuto antes de solicitar um novo código." });
+    }
+
+    const codigo = Math.floor(100_000 + Math.random() * 900_000).toString();
+
+    otpPreRegistro.set(emailNormalizado, {
+      codigo,
+      expiresAt:  Date.now() + 15 * 60 * 1_000,
+      enviadoEm:  Date.now(),
+      tentativas: 0,
+      verificado: false,
+      preToken:   null
+    });
+
+    await enviarEmailOTP(emailNormalizado, codigo);
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error("Erro ao enviar OTP:", err);
+    return res.status(500).json({ erro: "Erro ao enviar email de verificação. Tenta novamente." });
+  }
+});
+
+// ── POST /api/pre-registro/verificar-codigo ──────────────────────────────────
+app.post("/api/pre-registro/verificar-codigo", authLimiter, async (req, res) => {
+  try {
+    const { email, codigo } = req.body;
+    const emailNormalizado = email?.trim().toLowerCase();
+
+    if (!emailNormalizado || !codigo) {
+      return res.status(400).json({ erro: "Email e código são obrigatórios." });
+    }
+
+    const entry = otpPreRegistro.get(emailNormalizado);
+
+    if (!entry) {
+      return res.status(400).json({ erro: "Nenhum código foi enviado para este email. Solicita um novo." });
+    }
+
+    if (Date.now() > entry.expiresAt) {
+      otpPreRegistro.delete(emailNormalizado);
+      return res.status(400).json({ erro: "Código expirado. Solicita um novo." });
+    }
+
+    if (entry.tentativas >= 5) {
+      otpPreRegistro.delete(emailNormalizado);
+      return res.status(400).json({ erro: "Muitas tentativas incorretas. Solicita um novo código." });
+    }
+
+    if (entry.codigo !== codigo.trim()) {
+      entry.tentativas++;
+      const restantes = 5 - entry.tentativas;
+      return res.status(400).json({
+        erro: restantes > 0
+          ? `Código incorreto. ${restantes} tentativa${restantes > 1 ? "s" : ""} restante${restantes > 1 ? "s" : ""}.`
+          : "Código incorreto."
+      });
+    }
+
+    // OTP válido — gerar pre-token com validade de 30 min para preenchimento do formulário
+    const preToken = crypto.randomBytes(24).toString("hex");
+    entry.verificado = true;
+    entry.preToken   = preToken;
+    entry.expiresAt  = Date.now() + 30 * 60 * 1_000;
+
+    return res.json({ ok: true, preToken });
+  } catch (err) {
+    console.error("Erro ao verificar OTP:", err);
+    return res.status(500).json({ erro: "Erro interno. Tenta novamente." });
+  }
+});
+// ──────────────────────────────────────────────────────────────────────────────
+
 app.post("/api/register", authLimiter, async (req, res) => {
   try {
     const {
@@ -7473,6 +7580,7 @@ app.post("/api/register", authLimiter, async (req, res) => {
       nome_completo,
       data_nascimento,
       ageConfirmed,
+      preToken,
       ref,
       src
     } = req.body;
@@ -7488,6 +7596,21 @@ app.post("/api/register", authLimiter, async (req, res) => {
     if (!emailValido(emailNormalizado)) {
       return res.status(400).json({ erro: "Email inválido" });
     }
+
+    // ── Verificar pré-token OTP ───────────────────────────────────────────────
+    if (!preToken) {
+      return res.status(400).json({ erro: "Verificação de email obrigatória. Inicia o processo novamente." });
+    }
+    const otpEntry = otpPreRegistro.get(emailNormalizado);
+    if (
+      !otpEntry ||
+      !otpEntry.verificado ||
+      otpEntry.preToken !== preToken ||
+      Date.now() > otpEntry.expiresAt
+    ) {
+      return res.status(400).json({ erro: "Sessão de verificação expirada ou inválida. Inicia o processo novamente." });
+    }
+    // ──────────────────────────────────────────────────────────────────────────
 
     if (!["modelo", "cliente"].includes(role)) {
       return res.status(400).json({ erro: "Tipo de conta inválido" });
@@ -7564,9 +7687,9 @@ app.post("/api/register", authLimiter, async (req, res) => {
     const userResult = await db.query(
       `
       INSERT INTO public.users
-        (email, password_hash, role, age_confirmed, age_confirmed_at)
+        (email, password_hash, role, age_confirmed, age_confirmed_at, email_verificado)
       VALUES
-        ($1, $2, $3, true, NOW())
+        ($1, $2, $3, true, NOW(), TRUE)
       RETURNING id, token_version
       `,
       [emailNormalizado, hash, role]
@@ -7650,6 +7773,10 @@ app.post("/api/register", authLimiter, async (req, res) => {
       console.log("📩 Tentando enviar email de boas-vindas para:", emailNormalizado);
       await enviarEmailBoasVindasCliente(emailNormalizado, nome_completo);
     }
+
+    // ── Email verificado via OTP pré-registo — limpar entrada do mapa ────
+    otpPreRegistro.delete(emailNormalizado);
+    // ─────────────────────────────────────────────────────────────────────
 
     // GERAR TOKEN
 

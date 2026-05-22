@@ -31,20 +31,35 @@
 
     <!-- CAMPOS COMUNS -->
     <label for="loginEmail">Email</label>
-    <input id="loginEmail" type="email" placeholder="Email">
+    <input id="loginEmail" type="email" placeholder="Email" autocomplete="email">
 
-    <label for="loginSenha">Senha</label>
-    <input id="loginSenha" type="password" placeholder="Senha">
+    <!-- VERIFICAÇÃO OTP (etapa 2 do registo) -->
+    <div class="field hidden" id="fieldOtp">
+      <p id="otpInfo" style="font-size:13px;color:#7a6a9a;margin:0 0 10px;line-height:1.5;"></p>
+      <label for="registerOtp">Código de verificação</label>
+      <input id="registerOtp" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+             placeholder="000000" autocomplete="one-time-code"
+             style="letter-spacing:8px;font-size:22px;text-align:center;font-weight:700;">
+      <p id="otpReenviar" style="font-size:12px;color:#9b87b8;margin-top:8px;text-align:right;display:none;">
+        Não recebeste? <span onclick="enviarOTP()" style="color:#7B2CFF;cursor:pointer;font-weight:600;">Reenviar código</span>
+      </p>
+    </div>
 
-    <!-- REGISTRO -->
+    <!-- SENHA (etapa 1 login / etapa 3 registo) -->
+    <div id="fieldSenhaComum">
+      <label for="loginSenha">Senha</label>
+      <input id="loginSenha" type="password" placeholder="Senha" autocomplete="current-password">
+    </div>
+
+    <!-- CAMPOS APENAS NO REGISTO (etapa 3) -->
     <div class="field hidden" id="fieldSenha">
       <label for="registerSenhaConfirm">Repita a sua senha</label>
-      <input id="registerSenhaConfirm" type="password">
+      <input id="registerSenhaConfirm" type="password" autocomplete="new-password">
     </div>
 
     <div class="field hidden" id="fieldNome">
       <label for="registerNome">Nome Completo</label>
-      <input id="registerNome" type="text">
+      <input id="registerNome" type="text" autocomplete="name">
     </div>
 
     <div class="field hidden" id="fieldNascimento">
@@ -53,15 +68,19 @@
     </div>
 
     <div class="field hidden" id="fieldPerfil">
+      <label for="registerRole">Tipo de conta</label>
       <select id="registerRole">
         <option value="cliente">Quero ser membro</option>
         <option value="modelo">Quero criar conteúdo</option>
       </select>
     </div>
 
+    <!-- MENSAGEM DE ERRO MODAL -->
+    <div id="modalError" style="display:none;background:#fff0f0;border:1px solid #ffb3b3;border-radius:8px;padding:10px 14px;font-size:13px;color:#c0392b;margin-bottom:4px;"></div>
+
     <!-- TEXTO LEGAL -->
-    <p id="registerLegal" class="field hidden">
-      Ao criar meu registro, declaro ter mais de
+    <p id="registerLegal" class="field hidden" style="font-size:12px;color:#9b87b8;margin-top:4px;">
+      Ao criar meu registo, declaro ter mais de
       <strong>18 anos</strong> e estar de acordo com os
       <a href="/terms.html" target="_blank">Termos e Condições de Uso</a>.
     </p>

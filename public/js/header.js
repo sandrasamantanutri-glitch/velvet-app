@@ -85,6 +85,7 @@ async function initUsuario() {
       }, 1000);
     }
 
+
   } catch (e) {
     console.warn("Sessão inválida no header");
 
@@ -95,6 +96,7 @@ async function initUsuario() {
     }
   }
 }
+
 
 // =========================================================
 // BADGE GLOBAL DE MENSAGENS NÃO LIDAS
