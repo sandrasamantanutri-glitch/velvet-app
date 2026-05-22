@@ -193,7 +193,7 @@ body{margin:0;background:#f6f7fb}
     </div>
 
     <!-- Senha (login + etapa 3 registo) -->
-    <div id="fieldSenhaComum">
+    <div id="fieldSenhaComum" class="field">
       <label for="loginSenha" data-i18n="index.password">Senha</label>
       <input id="loginSenha" type="password" placeholder="Senha" autocomplete="current-password" data-i18n-placeholder="index.passwordPlaceholder">
     </div>
@@ -225,9 +225,8 @@ body{margin:0;background:#f6f7fb}
     <!-- Erro inline -->
     <div id="modalError" style="display:none;background:#fff0f0;border:1px solid #ffb3b3;border-radius:8px;padding:10px 14px;font-size:13px;color:#c0392b;margin-bottom:4px;"></div>
 
-    <p id="registerLegal" class="field hidden" style="font-size:12px;color:#9b87b8;margin-top:4px;">
-      <span data-i18n="index.registerLegalText"></span>
-      <a href="/terms.html" target="_blank" data-i18n="index.termsOfUse"></a>
+    <p id="registerLegal" class="field hidden" style="font-size:12px;color:#9b87b8;margin-top:4px;line-height:1.6;">
+      Ao criar meu registo, declaro ter mais de <strong>18 anos</strong> e estar de acordo com os <a href="/terms.html" target="_blank" style="color:#7B2CFF;font-weight:600;">Termos e Condições de Uso</a>.
     </p>
 
     <button id="modalSubmit" class="btn btn-primary" data-i18n="index.loginAction">Entrar</button>

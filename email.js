@@ -3,13 +3,13 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 const HEADER = `
   <div style="background:linear-gradient(135deg,#7B2CFF 0%,#a94cff 100%);border-radius:14px 14px 0 0;padding:20px 32px;text-align:center;">
-    <span style="color:#7B2CFF;font-size:20px;font-weight:800;letter-spacing:1px;">💜 Velvet</span>
+    <span style="color:#7B2CFF;font-size:20px;font-weight:800;letter-spacing:1px;">Velvet</span>
   </div>
 `;
 
 const FOOTER = `
   <div style="margin-top:28px;padding-top:18px;border-top:1px solid #f0ebfa;text-align:center;">
-    <p style="margin:0 0 4px;color:#6b5a7d;">Equipe Velvet 💜</p>
+    <p style="margin:0 0 4px;color:#6b5a7d;">Equipe Velvet</p>
     <p style="margin:0;font-size:13px;color:#9b87b8;">
       Dúvidas? <a href="mailto:contato@velvet.lat" style="color:#7B2CFF;">contato@velvet.lat</a>
     </p>
@@ -400,7 +400,7 @@ async function enviarEmailVerificacao(email, nomeCompleto, token) {
 
 async function enviarEmailOTP(email, codigo) {
   const html = wrapEmail(`
-    <h2 style="font-size:22px;font-weight:700;color:#2d1f3d;margin:0 0 8px;">Verificação de Email 💜</h2>
+    <h2 style="font-size:22px;font-weight:700;color:#2d1f3d;margin:0 0 8px;">Verificação de Email</h2>
     <p style="color:#4b2a7b;font-size:15px;line-height:1.7;margin:0 0 28px;">
       Usa o código abaixo para confirmar o teu email e concluir o cadastro na <strong>Velvet</strong>.
     </p>
