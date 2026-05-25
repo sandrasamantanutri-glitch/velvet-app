@@ -578,10 +578,16 @@ html, body {
 
 .chat-topo {
   position: fixed !important;
-  top: 64px;
+  top: calc(64px + env(safe-area-inset-top, 0px));
   left: 0;
   right: 0;
-  height: 64px;          /* 🔥 altura real do header */
+  height: 64px;
+}
+
+@media (max-width: 480px) {
+  .chat-topo {
+    top: calc(56px + env(safe-area-inset-top, 0px));
+  }
 }
 
 .chat-conteudo + .msg-meta{
