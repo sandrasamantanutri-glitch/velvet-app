@@ -21,6 +21,7 @@ body {
   right: 0;
   height: calc(64px + env(safe-area-inset-top, 0px));
   padding-top: env(safe-area-inset-top, 0px);
+  box-sizing: border-box;
   background: #f1f1f1;
   z-index: 1000;
 }
@@ -119,7 +120,7 @@ body {
 
 @media (max-width: 480px) {
   .app-header {
-    height: 56px;
+    height: calc(56px + env(safe-area-inset-top, 0px));
   }
 
   .header-inner {
