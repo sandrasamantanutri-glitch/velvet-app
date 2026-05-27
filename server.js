@@ -180,11 +180,27 @@ const uploadVerificacao = multer({
   }
 });
 
-// app.use((req, res, next) => {
-//   return res.sendFile(
-//     path.join(__dirname, "public", "manutencao.html")
-//   );
-// });
+// ===============================
+// MODO MANUTENÇÃO
+// ===============================
+app.use((req, res, next) => {
+  const MANUTENCAO = true; // mude para false para reativar o site
+
+  if (!MANUTENCAO) return next();
+
+  // Permite: página de manutenção, rotas de admin, webhooks críticos
+  const liberados = [
+    "/manutencao.html",
+    "/api/webhook/",
+    "/api/admin/",
+    "/admin/",
+    "/public/admin/",
+  ];
+  if (liberados.some((p) => req.path.startsWith(p))) return next();
+
+  // Retorna a página de manutenção
+  return res.status(503).sendFile(path.join(__dirname, "manutencao.html"));
+});
 
 // ===============================
 // WEBHOOKS
