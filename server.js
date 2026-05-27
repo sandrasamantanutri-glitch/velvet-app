@@ -887,12 +887,18 @@ app.post("/api/webhook/abacatepay", express.json(), async (req, res) => {
   console.log("🔥 WEBHOOK ABACATEPAY RECEBIDO");
 
   // Verificação de token — configure ABACATEPAY_WEBHOOK_SECRET no Render
+  console.log("Webhook headers:", JSON.stringify({
+    authorization: req.headers["authorization"],
+    "x-abacatepay-token": req.headers["x-abacatepay-token"]
+  }));
   if (process.env.ABACATEPAY_WEBHOOK_SECRET) {
     const tokenRecebido =
       req.headers["authorization"] ||
       req.headers["x-abacatepay-token"] || "";
     const esperado = process.env.ABACATEPAY_WEBHOOK_SECRET;
     const tokenLimpo = tokenRecebido.replace(/^Bearer\s+/i, "");
+    console.log("Token recebido:", tokenLimpo);
+    console.log("Token esperado:", esperado);
     if (tokenLimpo !== esperado) {
       console.warn("🚨 Webhook AbacatePay: token inválido");
       return res.status(401).send("unauthorized");
