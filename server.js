@@ -3165,9 +3165,8 @@ function calcTaxaAsaas(valorBase) {
 }
 
 function calcTaxaStripe(valorBase) {
-  const taxaCalculada = Number((valorBase * 0.10 + 1.99).toFixed(2));
-  const valorTotal    = Number((valorBase + taxaCalculada).toFixed(2));
-  const taxaTransacao = Number((valorTotal - valorBase).toFixed(2));
+  const taxaTransacao = Number((valorBase * 0.15).toFixed(2));
+  const valorTotal    = Number((valorBase + taxaTransacao).toFixed(2));
   return { taxaTransacao, taxaPlataforma: 0, valorTotal };
 }
 
