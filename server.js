@@ -69,6 +69,7 @@ setInterval(() => {
 
 const { Resend } = require("resend");
 const resend = new Resend(process.env.RESEND_API_KEY);
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const { enviarEmailValidacao, enviarEmailBoasVindasCliente, enviarEmailBoasVindasModelo, enviarEmailContratoModelos, enviarEmailNotificacaoContratoAssinado, enviarEmailVerificacao, enviarEmailOTP } = require("./email");
 const rateLimit = require("express-rate-limit");
 const compression = require('compression');
@@ -1746,7 +1747,7 @@ await client.query(
   }
 });
 
-app.post("/api/webhook/stripe_REMOVED", express.raw({ type: "application/json" }), async (req, res) => {
+app.post("/api/webhook/stripe", express.raw({ type: "application/json" }), async (req, res) => {
   console.log("======================================");
   console.log("🔥 WEBHOOK STRIPE RECEBIDO");
   console.log("URL:", req.originalUrl);
@@ -3154,6 +3155,13 @@ function calcTaxaAsaas(valorBase) {
   const valorTotal    = Number(Math.max(MINIMO_ASAAS, totalBruto).toFixed(2));
   const taxaTransacao = Number((valorTotal - valorBase).toFixed(2));
 
+  return { taxaTransacao, taxaPlataforma: 0, valorTotal };
+}
+
+function calcTaxaStripe(valorBase) {
+  const taxaCalculada = Number((valorBase * 0.10 + 1.99).toFixed(2));
+  const valorTotal    = Number((valorBase + taxaCalculada).toFixed(2));
+  const taxaTransacao = Number((valorTotal - valorBase).toFixed(2));
   return { taxaTransacao, taxaPlataforma: 0, valorTotal };
 }
 
@@ -9963,7 +9971,8 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
       aceitou_execucao_imediata,
       aceite_timestamp,
       versao_termos,
-      fingerprint
+      fingerprint,
+      paymentMethodId
     } = req.body || {};
 
     const userId = Number(req.user?.id || 0);
@@ -10010,19 +10019,9 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
       return res.status(400).json({ error: "Data de aceite inválida." });
     }
 
-    const {
-      holderName,
-      cardNumber,
-      expiryMonth,
-      expiryYear,
-      ccv,
-      postalCode,
-      addressNumber
-    } = req.body;
-
-    if (!holderName || !cardNumber || !expiryMonth || !expiryYear || !ccv || !postalCode || !addressNumber) {
+    if (!paymentMethodId) {
       await client.query("ROLLBACK");
-      return res.status(400).json({ error: "Dados do cartão incompletos." });
+      return res.status(400).json({ error: "paymentMethodId obrigatório." });
     }
 
     const ip =
@@ -10195,51 +10194,32 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
     /* =====================================================
        CÁLCULO
     ===================================================== */
-    const { valorReais, valorConvertido, taxaCambio } =
-      await calcAsaasAmount(valorAssinatura, currency);
-
-    const { taxaTransacao, taxaPlataforma, valorTotal } = calcTaxaAsaas(valorReais);
+    const { taxaTransacao, taxaPlataforma, valorTotal } = calcTaxaStripe(valorAssinatura);
 
     /* =====================================================
-       CRIAR PAGAMENTO CARTÃO ASAAS
+       CRIAR PAGAMENTO STRIPE
     ===================================================== */
-    const asaasClienteId = await criarOuBuscarClienteAsaas(
-      String(req.body.cpf || "").replace(/\D/g, "") || emailCliente,
-      nomeCliente,
-      emailCliente,
-      String(req.body.telefone || "").replace(/\D/g, "") || undefined
-    );
-
-    const dueDateCartao = new Date();
-    dueDateCartao.setDate(dueDateCartao.getDate() + 1);
-
-    const asaasPayment = await asaasRequest("POST", "/payments", {
-      customer: asaasClienteId,
-      billingType: "CREDIT_CARD",
-      value: valorTotal,
-      dueDate: dueDateCartao.toISOString().split("T")[0],
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(valorTotal * 100),
+      currency: "brl",
+      payment_method: paymentMethodId,
+      confirm: true,
+      automatic_payment_methods: { enabled: true, allow_redirects: "never" },
       description: "Assinatura VIP Velvet",
-      externalReference: `vip_cartao_${cliente_id}_${modeloIdNum}`,
-      creditCard: {
-        holderName,
-        number: cardNumber.replace(/\s/g, ""),
-        expiryMonth,
-        expiryYear,
-        ccv
-      },
-      creditCardHolderInfo: {
-        name: holderName,
-        email: emailCliente,
-        cpfCnpj: String(req.body.cpf || "").replace(/\D/g, "") || "",
-        postalCode: postalCode.replace(/\D/g, ""),
-        addressNumber,
-        phone: String(req.body.telefone || "").replace(/\D/g, "") || ""
+      receipt_email: emailCliente,
+      metadata: {
+        tipo: "vip",
+        cliente_id: String(cliente_id),
+        modelo_id: String(modeloIdNum),
+        valor_assinatura: String(valorAssinatura),
+        taxa_transacao: String(taxaTransacao),
+        taxa_plataforma: String(taxaPlataforma),
+        oferta_id: oferta_id ? String(oferta_id) : ""
       }
     });
 
-    const asaasPaymentId = asaasPayment.id;
-    const asaasStatus = String(asaasPayment.status || "").toUpperCase();
-    const statusLocal = asaasStatus === "CONFIRMED" ? "pago" : "pendente";
+    const paymentIntentId = paymentIntent.id;
+    const statusLocal = paymentIntent.status === "succeeded" ? "pago" : "pendente";
 
     /* =====================================================
        REGISTRAR PAGAMENTO LOCAL
@@ -10269,7 +10249,7 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
         updated_at
       )
       VALUES (
-        $1, $2, 'asaas', $3, $4, $5, $6, 'brl', $7,
+        $1, $2, 'stripe', $3, $4, $5, $6, 'brl', $7,
         $8, $9, $10, $11, $12, $13, $14, $15,
         NOW(), NOW()
       )
@@ -10277,8 +10257,8 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
       [
         cliente_id,
         modeloIdNum,
-        asaasPaymentId,
-        asaasPaymentId,
+        paymentIntentId,
+        paymentIntentId,
         valorTotal,
         "vip",
         statusLocal,
@@ -10288,8 +10268,8 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
         aceite_timestamp,
         versao_termos || "2026-04-06",
         fingerprint || null,
-        valorReais,
-        taxaCambio || null
+        valorAssinatura,
+        null
       ]
     );
 
@@ -10302,10 +10282,10 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
           velvet_fee: valor_bruto * 0.05
         }));
 
-      const taxaGateway = Number((1.99 + valorReais * 0.10).toFixed(2));
+      const taxaGateway = Number((valorAssinatura * 0.15).toFixed(2));
       const valores = await calcularValores({
         modelo_id: modeloIdNum,
-        valor_bruto: valorReais,
+        valor_bruto: valorAssinatura,
         taxa_gateway: taxaGateway
       });
 
@@ -10337,7 +10317,7 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
                valor_total = $6, recorrente = false, gateway_subscription_id = $7,
                aviso_7_dias_enviado = false, aviso_24h_enviado = false
            WHERE cliente_id = $1 AND modelo_id = $2`,
-          [cliente_id, modeloIdNum, novaExpiracao, valorReais, taxaGateway, valorTotal, asaasPaymentId]
+          [cliente_id, modeloIdNum, novaExpiracao, valorAssinatura, taxaGateway, valorTotal, paymentIntentId]
         );
       } else {
         await client.query(
@@ -10346,7 +10326,7 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
               valor_assinatura, taxa_transacao, taxa_plataforma, valor_total,
               recorrente, gateway_subscription_id)
            VALUES ($1,$2,true,NOW(),NOW(),$3,$4,$5,0,$6,false,$7)`,
-          [cliente_id, modeloIdNum, novaExpiracao, valorReais, taxaGateway, valorTotal, asaasPaymentId]
+          [cliente_id, modeloIdNum, novaExpiracao, valorAssinatura, taxaGateway, valorTotal, paymentIntentId]
         );
       }
 
@@ -10355,7 +10335,7 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
            (modelo_id, cliente_id, tipo, valor_bruto, valor_modelo, agency_fee,
             velvet_fee, taxa_gateway, status, created_at)
          VALUES ($1,$2,'assinatura',$3,$4,$5,$6,$7,'pago',NOW())`,
-        [modeloIdNum, cliente_id, valorReais,
+        [modeloIdNum, cliente_id, valorAssinatura,
          Number(valores.valor_modelo || 0),
          Number(valores.agency_fee || 0),
          Number(valores.velvet_fee || 0),
@@ -10398,38 +10378,39 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
       console.error("Erro ao registrar tentativa aprovada VIP:", logErr);
     }
 
-    return res.json({
+    const resposta = {
       ok: true,
-      payment_id: asaasPaymentId,
+      payment_id: paymentIntentId,
       status: statusLocal,
       modelo_id: modeloIdNum,
       currency: "brl",
-      taxa_cambio: taxaCambio || null,
-      valor_assinatura: valorConvertido,
+      taxa_cambio: null,
+      valor_assinatura: valorAssinatura,
       taxa_transacao: taxaTransacao,
       taxa_plataforma: taxaPlataforma,
       valor_total: valorTotal,
       oferta_id: oferta_id || null
-    });
+    };
+
+    if (paymentIntent.status === "requires_action") {
+      resposta.requires_action = true;
+      resposta.client_secret = paymentIntent.client_secret;
+    }
+
+    return res.json(resposta);
   } catch (err) {
     try {
       await client.query("ROLLBACK");
     } catch (_) {}
 
-    console.error("Erro VIP Asaas:", err.response?.data || err);
+    console.error("Erro VIP Stripe:", err);
 
     try {
       if (cliente_id && req.body?.fingerprint) {
         await client.query(
           `
           INSERT INTO pagamento_tentativas
-          (
-            cliente_id,
-            metodo,
-            fingerprint_pagamento,
-            status,
-            ip
-          )
+          (cliente_id, metodo, fingerprint_pagamento, status, ip)
           VALUES ($1, 'cartao', $2, 'recusado', $3)
           `,
           [
@@ -10448,8 +10429,7 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
     return res.status(500).json({
       error: err.message || "Erro ao criar pagamento com cartão",
       stripe_code: err.code || null,
-      stripe_type: err.type || null,
-      stripe_raw: err.raw || null
+      stripe_type: err.type || null
     });
   } finally {
     client.release();
@@ -10469,15 +10449,7 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
   let cliente_id = null;
 
   try {
-    console.log("\n==============================");
-    console.log("🔥 INICIO /api/pagamento/midia/cartao [ASAAS]");
-    console.log("requestId:", requestId);
-    console.log("timestamp:", new Date().toISOString());
-    console.log("BODY bruto:", req.body);
-    console.log("USER bruto:", req.user);
-
     client = await db.connect();
-    console.log("✅ db.connect OK");
 
     const {
       conteudo_id,
@@ -10485,7 +10457,8 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
       aceitou_termos,
       aceitou_execucao_imediata,
       aceite_timestamp,
-      versao_termos
+      versao_termos,
+      paymentMethodId
     } = req.body || {};
 
     const userId = Number(req.user?.id || 0);
@@ -10523,18 +10496,8 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
       return res.status(400).json({ error: "Data de aceite inválida." });
     }
 
-    const {
-      holderName,
-      cardNumber,
-      expiryMonth,
-      expiryYear,
-      ccv,
-      postalCode,
-      addressNumber
-    } = req.body;
-
-    if (!holderName || !cardNumber || !expiryMonth || !expiryYear || !ccv || !postalCode || !addressNumber) {
-      return res.status(400).json({ error: "Dados do cartão incompletos." });
+    if (!paymentMethodId) {
+      return res.status(400).json({ error: "paymentMethodId obrigatório." });
     }
 
     const ip =
@@ -10542,10 +10505,7 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
       req.socket?.remoteAddress ||
       null;
 
-    const currency = req.body.currency === "usd" ? "usd" : "brl";
-
     await client.query("BEGIN");
-    console.log("✅ BEGIN OK");
 
     /* =====================================================
        CLIENTE
@@ -10639,58 +10599,38 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
     /* =====================================================
        CÁLCULO
     ===================================================== */
-    const { valorReais, valorConvertido, taxaCambio } =
-      await calcAsaasAmount(Number(preco), currency);
-
-    const valorBase = valorConvertido;
-    const { taxaTransacao, taxaPlataforma, valorTotal } = calcTaxaAsaas(valorBase);
+    const valorBase = Number(Number(preco).toFixed(2));
+    const { taxaTransacao, taxaPlataforma, valorTotal } = calcTaxaStripe(valorBase);
     const total = valorTotal;
 
-    if (!valorTotal || valorTotal <= 0) {
+    if (!total || total <= 0) {
       await client.query("ROLLBACK");
       return res.status(400).json({ error: "Valor do pagamento inválido." });
     }
 
     /* =====================================================
-       CRIAR PAGAMENTO CARTÃO ASAAS (MÍDIA)
+       CRIAR PAGAMENTO STRIPE (MÍDIA)
     ===================================================== */
-    const asaasClienteId = await criarOuBuscarClienteAsaas(
-      String(req.body.cpf || "").replace(/\D/g, "") || email,
-      String(nome || "").trim(),
-      String(email).trim().toLowerCase(),
-      String(req.body.telefone || "").replace(/\D/g, "") || undefined
-    );
-
-    const dueDateCartao = new Date();
-    dueDateCartao.setDate(dueDateCartao.getDate() + 1);
-
-    const asaasPayment = await asaasRequest("POST", "/payments", {
-      customer: asaasClienteId,
-      billingType: "CREDIT_CARD",
-      value: total,
-      dueDate: dueDateCartao.toISOString().split("T")[0],
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(total * 100),
+      currency: "brl",
+      payment_method: paymentMethodId,
+      confirm: true,
+      automatic_payment_methods: { enabled: true, allow_redirects: "never" },
       description: "Mídia Premium Velvet",
-      externalReference: `midia_cartao_${cliente_id}_${conteudoId}`,
-      creditCard: {
-        holderName,
-        number: cardNumber.replace(/\s/g, ""),
-        expiryMonth,
-        expiryYear,
-        ccv
-      },
-      creditCardHolderInfo: {
-        name: holderName,
-        email: String(email).trim().toLowerCase(),
-        cpfCnpj: String(req.body.cpf || "").replace(/\D/g, "") || "",
-        postalCode: postalCode.replace(/\D/g, ""),
-        addressNumber,
-        phone: String(req.body.telefone || "").replace(/\D/g, "") || ""
+      receipt_email: String(email).trim().toLowerCase(),
+      metadata: {
+        tipo: "conteudo",
+        cliente_id: String(cliente_id),
+        modelo_id: String(modelo_id),
+        message_id: String(conteudoId),
+        taxa_transacao: String(taxaTransacao),
+        taxa_plataforma: String(taxaPlataforma)
       }
     });
 
-    const asaasPaymentId = asaasPayment.id;
-    const asaasStatus = String(asaasPayment.status || "").toUpperCase();
-    const statusLocal = asaasStatus === "CONFIRMED" ? "pago" : "pendente";
+    const paymentIntentId = paymentIntent.id;
+    const statusLocal = paymentIntent.status === "succeeded" ? "pago" : "pendente";
 
     /* =====================================================
        REGISTRAR PAGAMENTO LOCAL
@@ -10721,7 +10661,7 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
         updated_at
       )
       VALUES (
-        $1, $2, $3, 'asaas', $4, $5, $6, $7, 'brl', $8,
+        $1, $2, $3, 'stripe', $4, $5, $6, $7, 'brl', $8,
         $9, $10, $11, $12, $13, $14, $15, $16,
         NOW(), NOW()
       )
@@ -10730,8 +10670,8 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
         cliente_id,
         modelo_id,
         conteudoId,
-        asaasPaymentId,
-        asaasPaymentId,
+        paymentIntentId,
+        paymentIntentId,
         total,
         "midia",
         statusLocal,
@@ -10741,8 +10681,8 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
         aceite_timestamp,
         versao_termos || "2026-04-06",
         fingerprint || null,
-        valorReais,
-        taxaCambio || null
+        valorBase,
+        null
       ]
     );
 
@@ -10757,10 +10697,10 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
           velvet_fee: valor_bruto * 0.05
         }));
 
-      const taxaGateway = Number((1.99 + valorReais * 0.10).toFixed(2));
+      const taxaGateway = Number((valorBase * 0.15).toFixed(2));
       const valores = await calcularValores({
         modelo_id,
-        valor_bruto: valorReais,
+        valor_bruto: valorBase,
         taxa_gateway: taxaGateway
       });
 
@@ -10771,7 +10711,7 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
          VALUES ($1,$2,$3,$4,$4,$5,'pago','cartao',NOW(),'brl',$5,NULL)
          ON CONFLICT (message_id, cliente_id) DO UPDATE
            SET status='pago', metodo_pagamento='cartao', pago_em=NOW(), valor_total=$5`,
-        [conteudoId, cliente_id, modelo_id, valorReais, total]
+        [conteudoId, cliente_id, modelo_id, valorBase, total]
       );
 
       conteudo_ids_liberados = await marcarConteudoComoLiberadoPorPagamento(client, {
@@ -10785,7 +10725,7 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
            (modelo_id, cliente_id, tipo, valor_bruto, valor_modelo, agency_fee,
             velvet_fee, taxa_gateway, status, created_at)
          VALUES ($1,$2,'midia',$3,$4,$5,$6,$7,'pago',NOW())`,
-        [modelo_id, cliente_id, valorReais,
+        [modelo_id, cliente_id, valorBase,
          Number(valores.valor_modelo || 0),
          Number(valores.agency_fee || 0),
          Number(valores.velvet_fee || 0),
@@ -10829,12 +10769,12 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
       console.error("Erro ao registrar tentativa aprovada mídia:", logErr);
     }
 
-    return res.json({
+    const resposta = {
       ok: true,
-      payment_id: asaasPaymentId,
+      payment_id: paymentIntentId,
       status: statusLocal,
       currency: "brl",
-      taxa_cambio: taxaCambio || null,
+      taxa_cambio: null,
       total,
       valorBase,
       taxaTransacao,
@@ -10843,30 +10783,22 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
       aceitou_execucao_imediata: !!aceitou_execucao_imediata,
       aceite_timestamp,
       versao_termos: versao_termos || "2026-04-06"
-    });
+    };
+
+    if (paymentIntent.status === "requires_action") {
+      resposta.requires_action = true;
+      resposta.client_secret = paymentIntent.client_secret;
+    }
+
+    return res.json(resposta);
 
   } catch (err) {
-    console.error("\n==============================");
-    console.error("💥 ERRO EM /api/pagamento/midia/cartao [ASAAS]");
-    console.error("requestId:", requestId);
-    console.error("tempo até erro ms:", Date.now() - startedAt);
-    console.error("err.message:", err.message);
-
-    if (err.raw) {
-      console.error("stripe.raw:", JSON.stringify(err.raw, null, 2));
-    }
-
-    if (err.payment_intent) {
-      console.error(
-        "stripe.payment_intent:",
-        JSON.stringify(err.payment_intent, null, 2)
-      );
-    }
+    console.error("💥 ERRO /api/pagamento/midia/cartao [STRIPE]", err.message);
 
     try {
       if (client) await client.query("ROLLBACK");
     } catch (e) {
-      console.error("❌ Erro no rollback:", e.message);
+      console.error("Erro no rollback:", e.message);
     }
 
     try {
@@ -10874,18 +10806,8 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
         await client.query(
           `
           INSERT INTO pagamento_tentativas
-          (
-            cliente_id,
-            metodo,
-            fingerprint_pagamento,
-            status,
-            conteudo_id,
-            ip,
-            aceitou_termos,
-            aceitou_execucao_imediata,
-            aceite_timestamp,
-            versao_termos
-          )
+          (cliente_id, metodo, fingerprint_pagamento, status, conteudo_id, ip,
+           aceitou_termos, aceitou_execucao_imediata, aceite_timestamp, versao_termos)
           VALUES ($1, 'cartao', $2, 'recusado', $3, $4, $5, $6, $7, $8)
           `,
           [
@@ -10903,7 +10825,7 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
         );
       }
     } catch (logErr) {
-      console.error("❌ Erro ao registrar tentativa recusada:", logErr.message);
+      console.error("Erro ao registrar tentativa recusada:", logErr.message);
     }
 
     return res.status(500).json({
@@ -10930,20 +10852,11 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
   const requestId =
     "premium_cartao_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
 
-  const startedAt = Date.now();
   let client = null;
   let cliente_id = null;
 
   try {
-    console.log("\n==============================");
-    console.log("🔥 INICIO /api/pagamento/premium/cartao [ASAAS]");
-    console.log("requestId:", requestId);
-    console.log("timestamp:", new Date().toISOString());
-    console.log("BODY bruto:", req.body);
-    console.log("USER bruto:", req.user);
-
     client = await db.connect();
-    console.log("✅ db.connect OK");
 
     const {
       premium_post_id,
@@ -10951,7 +10864,8 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
       aceitou_termos,
       aceitou_execucao_imediata,
       aceite_timestamp,
-      versao_termos
+      versao_termos,
+      paymentMethodId
     } = req.body || {};
 
     const userId = Number(req.user?.id || 0);
@@ -10987,18 +10901,8 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
       return res.status(400).json({ error: "Fingerprint obrigatório." });
     }
 
-    const {
-      holderName,
-      cardNumber,
-      expiryMonth,
-      expiryYear,
-      ccv,
-      postalCode,
-      addressNumber
-    } = req.body;
-
-    if (!holderName || !cardNumber || !expiryMonth || !expiryYear || !ccv || !postalCode || !addressNumber) {
-      return res.status(400).json({ error: "Dados do cartão incompletos." });
+    if (!paymentMethodId) {
+      return res.status(400).json({ error: "paymentMethodId obrigatório." });
     }
 
     const premiumPostId = Number(premium_post_id);
@@ -11008,10 +10912,7 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
       req.socket?.remoteAddress ||
       null;
 
-    const currency = req.body.currency === "usd" ? "usd" : "brl";
-
     await client.query("BEGIN");
-    console.log("✅ BEGIN OK");
 
     /* =====================================================
        CLIENTE
@@ -11061,12 +10962,7 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
     ===================================================== */
     const premiumRes = await client.query(
       `
-      SELECT
-        id,
-        preco,
-        modelo_id,
-        descricao,
-        ativo
+      SELECT id, preco, modelo_id, descricao, ativo
       FROM premium_posts
       WHERE id = $1
       LIMIT 1
@@ -11082,13 +10978,7 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
     const { id: premium_id, preco, modelo_id, descricao, ativo } = premiumRes.rows[0];
 
     const donaRes = await client.query(
-      `
-      SELECT id
-      FROM modelos
-      WHERE user_id = $1
-        AND id = $2
-      LIMIT 1
-      `,
+      `SELECT id FROM modelos WHERE user_id = $1 AND id = $2 LIMIT 1`,
       [userId, modelo_id]
     );
 
@@ -11152,65 +11042,42 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
     /* =====================================================
        CÁLCULO
     ===================================================== */
-    const { valorReais, valorConvertido, taxaCambio } =
-      await calcAsaasAmount(Number(preco), currency);
-
-    const valorBase = valorConvertido;
-    const { taxaTransacao, taxaPlataforma, valorTotal } = calcTaxaAsaas(valorBase);
+    const valorBase = Number(Number(preco).toFixed(2));
+    const { taxaTransacao, taxaPlataforma, valorTotal } = calcTaxaStripe(valorBase);
     const total = valorTotal;
 
-    if (!valorTotal || valorTotal <= 0) {
+    if (!total || total <= 0) {
       await client.query("ROLLBACK");
       return res.status(400).json({ error: "Valor do pagamento inválido." });
     }
 
     /* =====================================================
-       CRIAR PAGAMENTO CARTÃO ASAAS (PREMIUM)
+       CRIAR PAGAMENTO STRIPE (PREMIUM)
     ===================================================== */
-    console.log("✅ antes asaasRequest criar pagamento premium cartão");
-    const asaasClienteId = await criarOuBuscarClienteAsaas(
-      String(req.body.cpf || "").replace(/\D/g, "") || email,
-      String(nome || "").trim(),
-      String(email).trim().toLowerCase(),
-      String(req.body.telefone || "").replace(/\D/g, "") || undefined
-    );
-
-    const dueDateCartao = new Date();
-    dueDateCartao.setDate(dueDateCartao.getDate() + 1);
-
-    const asaasPayment = await asaasRequest("POST", "/payments", {
-      customer: asaasClienteId,
-      billingType: "CREDIT_CARD",
-      value: total,
-      dueDate: dueDateCartao.toISOString().split("T")[0],
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(total * 100),
+      currency: "brl",
+      payment_method: paymentMethodId,
+      confirm: true,
+      automatic_payment_methods: { enabled: true, allow_redirects: "never" },
       description: descricao || `Premium Velvet #${premium_id}`,
-      externalReference: `premium_cartao_${cliente_id}_${premium_id}`,
-      creditCard: {
-        holderName,
-        number: cardNumber.replace(/\s/g, ""),
-        expiryMonth,
-        expiryYear,
-        ccv
-      },
-      creditCardHolderInfo: {
-        name: holderName,
-        email: String(email).trim().toLowerCase(),
-        cpfCnpj: String(req.body.cpf || "").replace(/\D/g, "") || "",
-        postalCode: postalCode.replace(/\D/g, ""),
-        addressNumber,
-        phone: String(req.body.telefone || "").replace(/\D/g, "") || ""
+      receipt_email: String(email).trim().toLowerCase(),
+      metadata: {
+        tipo: "premium",
+        cliente_id: String(cliente_id),
+        modelo_id: String(modelo_id),
+        premium_post_id: String(premium_id),
+        taxa_transacao: String(taxaTransacao),
+        taxa_plataforma: String(taxaPlataforma)
       }
     });
-    console.log("✅ asaasPayment criado:", asaasPayment.id);
 
-    const asaasPaymentId = asaasPayment.id;
-    const asaasStatus = String(asaasPayment.status || "").toUpperCase();
-    const statusLocal = asaasStatus === "CONFIRMED" ? "pago" : "pendente";
+    const paymentIntentId = paymentIntent.id;
+    const statusLocal = paymentIntent.status === "succeeded" ? "pago" : "pendente";
 
     /* =====================================================
        REGISTRAR PAGAMENTO LOCAL
     ===================================================== */
-    console.log("✅ antes insert premium_unlocks");
     await client.query(
       `
       INSERT INTO premium_unlocks
@@ -11242,7 +11109,7 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
       VALUES
       (
         $1, $2, $3, $4, 'cartao', $5, $6, $7, $8,
-        'asaas', $9, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18,
+        'stripe', $9, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18,
         NOW(), NOW()
       )
       ON CONFLICT (premium_post_id, cliente_id)
@@ -11277,7 +11144,7 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
         taxaTransacao,
         taxaPlataforma,
         total,
-        asaasPaymentId,
+        paymentIntentId,
         `premium_${premium_id}_${cliente_id}`,
         ip || null,
         !!aceitou_termos,
@@ -11286,10 +11153,9 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
         versao_termos || "2026-04-06",
         fingerprint || null,
         total,
-        taxaCambio || null
+        null
       ]
     );
-    console.log("✅ premium_unlocks OK");
 
     if (statusLocal === "pago") {
       const calcularValores =
@@ -11300,10 +11166,10 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
           velvet_fee: valor_bruto * 0.05
         }));
 
-      const taxaGateway = Number((1.99 + valorReais * 0.10).toFixed(2));
+      const taxaGateway = Number((valorBase * 0.15).toFixed(2));
       const valores = await calcularValores({
         modelo_id,
-        valor_bruto: valorReais,
+        valor_bruto: valorBase,
         taxa_gateway: taxaGateway
       });
 
@@ -11312,7 +11178,7 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
            (modelo_id, cliente_id, tipo, valor_bruto, valor_modelo, agency_fee,
             velvet_fee, taxa_gateway, status, created_at)
          VALUES ($1,$2,'midia',$3,$4,$5,$6,$7,'pago',NOW())`,
-        [modelo_id, cliente_id, valorReais,
+        [modelo_id, cliente_id, valorBase,
          Number(valores.valor_modelo || 0),
          Number(valores.agency_fee || 0),
          Number(valores.velvet_fee || 0),
@@ -11330,7 +11196,7 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
             tipo: "premium",
             premium_post_id: premium_id,
             modelo_id,
-            payment_id: asaasPaymentId
+            payment_id: paymentIntentId
           });
         }
       } catch (e) { console.error("Erro socket premium cartão:", e); }
@@ -11341,7 +11207,7 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
         `INSERT INTO pagamento_tentativas
          (cliente_id, metodo, fingerprint_pagamento, status, ip, gateway,
           aceitou_termos, aceitou_execucao_imediata, aceite_timestamp, versao_termos)
-         VALUES ($1, 'cartao', $2, 'aprovado', $3, 'asaas', $4, $5, $6, $7)`,
+         VALUES ($1, 'cartao', $2, 'aprovado', $3, 'stripe', $4, $5, $6, $7)`,
         [
           cliente_id,
           fingerprint || null,
@@ -11356,15 +11222,15 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
       console.error("Erro ao registrar tentativa aprovada premium:", logErr);
     }
 
-    return res.json({
+    const resposta = {
       ok: true,
-      payment_id: asaasPaymentId,
+      payment_id: paymentIntentId,
       premium_post_id: premium_id,
       modelo_id,
       cliente_id,
       status: statusLocal,
       currency: "brl",
-      taxa_cambio: taxaCambio || null,
+      taxa_cambio: null,
       total,
       valorBase,
       taxaTransacao,
@@ -11373,30 +11239,22 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
       aceitou_execucao_imediata: !!aceitou_execucao_imediata,
       aceite_timestamp,
       versao_termos: versao_termos || "2026-04-06"
-    });
+    };
+
+    if (paymentIntent.status === "requires_action") {
+      resposta.requires_action = true;
+      resposta.client_secret = paymentIntent.client_secret;
+    }
+
+    return res.json(resposta);
 
   } catch (err) {
-    console.error("\n==============================");
-    console.error("💥 ERRO EM /api/pagamento/premium/cartao [ASAAS]");
-    console.error("requestId:", requestId);
-    console.error("tempo até erro ms:", Date.now() - startedAt);
-    console.error("err.message:", err.message);
-
-    if (err.raw) {
-      console.error("stripe.raw:", JSON.stringify(err.raw, null, 2));
-    }
-
-    if (err.payment_intent) {
-      console.error(
-        "stripe.payment_intent:",
-        JSON.stringify(err.payment_intent, null, 2)
-      );
-    }
+    console.error("💥 ERRO /api/pagamento/premium/cartao [STRIPE]", err.message);
 
     try {
       if (client) await client.query("ROLLBACK");
     } catch (e) {
-      console.error("❌ Erro no rollback:", e.message);
+      console.error("Erro no rollback:", e.message);
     }
 
     try {
@@ -11404,19 +11262,9 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
         await client.query(
           `
           INSERT INTO pagamento_tentativas
-          (
-            cliente_id,
-            metodo,
-            fingerprint_pagamento,
-            status,
-            ip,
-            gateway,
-            aceitou_termos,
-            aceitou_execucao_imediata,
-            aceite_timestamp,
-            versao_termos
-          )
-          VALUES ($1, 'cartao', $2, 'recusado', $3, 'asaas', $4, $5, $6, $7)
+          (cliente_id, metodo, fingerprint_pagamento, status, ip, gateway,
+           aceitou_termos, aceitou_execucao_imediata, aceite_timestamp, versao_termos)
+          VALUES ($1, 'cartao', $2, 'recusado', $3, 'stripe', $4, $5, $6, $7)
           `,
           [
             cliente_id,
@@ -11432,7 +11280,7 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
         );
       }
     } catch (logErr) {
-      console.error("❌ Erro ao registrar tentativa recusada:", logErr.message);
+      console.error("Erro ao registrar tentativa recusada:", logErr.message);
     }
 
     return res.status(500).json({
