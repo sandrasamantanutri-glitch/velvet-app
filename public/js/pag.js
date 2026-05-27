@@ -869,10 +869,17 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
         return;
       }
 
+      const cpf = obterCpfValido();
+      if (!cpf) return;
+      const telefone = obterTelefoneValido();
+      if (!telefone) return;
+
       url = "/api/pagamento/vip/pix";
       body = {
         tipo: "vip",
         modelo_id: modeloIdFinal,
+        cpf,
+        telefone,
         aceitou_termos,
         aceitou_execucao_imediata,
         aceite_timestamp,
@@ -882,10 +889,17 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
     }
 
     if (tipo === "premium") {
+      const cpf = obterCpfValido();
+      if (!cpf) return;
+      const telefone = obterTelefoneValido();
+      if (!telefone) return;
+
       url = "/api/pagamento/premium/pix";
       body = {
         tipo: "premium",
         premium_post_id,
+        cpf,
+        telefone,
         aceitou_termos,
         aceitou_execucao_imediata,
         aceite_timestamp,

@@ -9075,8 +9075,10 @@ app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
   const client = await db.connect();
 
   try {
-    const { modelo_id, aceitou_termos, aceitou_execucao_imediata, aceite_timestamp, versao_termos, fingerprint } = req.body;
+    const { modelo_id, aceitou_termos, aceitou_execucao_imediata, aceite_timestamp, versao_termos, fingerprint, cpf, telefone } = req.body;
     const userId = Number(req.user?.id || 0);
+    const cpfVip = String(cpf || "").replace(/\D/g, "") || null;
+    const telefoneVip = String(telefone || "").replace(/\D/g, "") || null;
 
     console.log("User:", userId);
     console.log("Modelo:", modelo_id);
@@ -9293,12 +9295,14 @@ if (Number.isNaN(dataAceite.getTime())) {
 
     const abacateResVip = await abacatePayRequest("POST", "/transparents/create", {
       method: "PIX",
-      amount,
-      description: "Assinatura VIP Velvet",
-      expiresIn: 3600,
-      customer: { name: nomeFinal, email: emailFinal },
-      metadata: {},
-      externalId: `vip_${cliente_id}_${modeloIdNum}`
+      data: {
+        amount,
+        description: "Assinatura VIP Velvet",
+        expiresIn: 3600,
+        customer: cpfVip && telefoneVip ? { name: nomeFinal, email: emailFinal, taxId: cpfVip, cellphone: telefoneVip } : undefined,
+        metadata: {},
+        externalId: `vip_${cliente_id}_${modeloIdNum}`
+      }
     });
 
     const abacateId  = abacateResVip?.data?.id;
@@ -9562,12 +9566,13 @@ if (Number.isNaN(dataAceite.getTime())) {
 
     const abacatePayload = {
       method: "PIX",
-      amount: valorCentavos,
-      description: "Mídia Premium Velvet",
-      expiresIn: 3600,
-      customer: { name: nomeCliente, email: emailCliente },
-      metadata: {},
-      externalId: `midia_${cliente_id}_${conteudo_id}`
+      data: {
+        amount: valorCentavos,
+        description: "Mídia Premium Velvet",
+        expiresIn: 3600,
+        metadata: {},
+        externalId: `midia_${cliente_id}_${conteudo_id}`
+      }
     };
 
     console.log("AbacatePay PIX Mídia payload:", JSON.stringify(abacatePayload));
@@ -9672,10 +9677,14 @@ const {
   aceitou_execucao_imediata,
   aceite_timestamp,
   versao_termos,
-  fingerprint
+  fingerprint,
+  cpf,
+  telefone
 } = req.body;
 
     const userId = Number(req.user?.id || 0);
+    const cpfPremium = String(cpf || "").replace(/\D/g, "") || null;
+    const telefonePremium = String(telefone || "").replace(/\D/g, "") || null;
 
     console.log("User:", userId);
     console.log("Premium post:", premium_post_id);
@@ -9960,12 +9969,14 @@ if (Number.isNaN(dataAceite.getTime())) {
 
     const abacateResPremium = await abacatePayRequest("POST", "/transparents/create", {
       method: "PIX",
-      amount,
-      description: "Post Premium Velvet",
-      expiresIn: 3600,
-      customer: { name: nomeFinal, email: emailFinal },
-      metadata: {},
-      externalId: `premium_${cliente_id}_${premiumPostIdNum}`
+      data: {
+        amount,
+        description: "Post Premium Velvet",
+        expiresIn: 3600,
+        customer: cpfPremium && telefonePremium ? { name: nomeFinal, email: emailFinal, taxId: cpfPremium, cellphone: telefonePremium } : undefined,
+        metadata: {},
+        externalId: `premium_${cliente_id}_${premiumPostIdNum}`
+      }
     });
 
     const abacateIdPremium  = abacateResPremium?.data?.id;
