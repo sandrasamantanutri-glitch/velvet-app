@@ -9344,9 +9344,11 @@ if (Number.isNaN(dataAceite.getTime())) {
         aceitou_execucao_imediata,
         aceite_timestamp,
         versao_termos,
-        fingerprint
+        fingerprint,
+        cpf,
+        telefone
       )
-      VALUES ($1,$2,$3,'pendente','abacatepay',$4,NOW(),$5,$6,$7,$8,$9,$10)
+      VALUES ($1,$2,$3,'pendente','abacatepay',$4,NOW(),$5,$6,$7,$8,$9,$10,$11,$12)
       `,
       [
         cliente_id,
@@ -9358,7 +9360,9 @@ if (Number.isNaN(dataAceite.getTime())) {
         !!aceitou_execucao_imediata,
         aceite_timestamp,
         versao_termos || "2026-04-06",
-        fingerprint || ""
+        fingerprint || "",
+        cpfVip || null,
+        telefoneVip || null
       ]
     );
 
@@ -10142,8 +10146,15 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
       aceite_timestamp,
       versao_termos,
       fingerprint,
-      paymentMethodId
+      paymentMethodId,
+      cpf,
+      telefone,
+      nome_cartao
     } = req.body || {};
+
+    const cpfVip = String(cpf || "").replace(/\D/g, "") || null;
+    const telefoneVip = String(telefone || "").replace(/\D/g, "") || null;
+    const nomeCartaoVip = String(nome_cartao || "").trim() || null;
 
     const userId = Number(req.user?.id || 0);
 
@@ -10415,12 +10426,16 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
         fingerprint,
         valor_brl,
         taxa_cambio,
+        cpf,
+        telefone,
+        nome_cartao,
         created_at,
         updated_at
       )
       VALUES (
         $1, $2, 'stripe', $3, $4, $5, $6, 'brl', $7,
         $8, $9, $10, $11, $12, $13, $14, $15,
+        $16, $17, $18,
         NOW(), NOW()
       )
       `,
@@ -10439,7 +10454,10 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
         versao_termos || "2026-04-06",
         fingerprint || null,
         valorAssinatura,
-        null
+        null,
+        cpfVip || null,
+        telefoneVip || null,
+        nomeCartaoVip || null
       ]
     );
 
@@ -11035,8 +11053,15 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
       aceitou_execucao_imediata,
       aceite_timestamp,
       versao_termos,
-      paymentMethodId
+      paymentMethodId,
+      cpf,
+      telefone,
+      nome_cartao
     } = req.body || {};
+
+    const cpfPremiumCartao = String(cpf || "").replace(/\D/g, "") || null;
+    const telefonePremiumCartao = String(telefone || "").replace(/\D/g, "") || null;
+    const nomeCartaoPremium = String(nome_cartao || "").trim() || null;
 
     const userId = Number(req.user?.id || 0);
 

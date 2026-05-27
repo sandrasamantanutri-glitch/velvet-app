@@ -622,7 +622,7 @@ body {
 }
 
 .pix-aguardando {
-  margin-top: 12px;
+  margin-top: 30px;
   padding: 12px 14px;
   border-radius: 12px;
   background: #fff7e8;
@@ -660,6 +660,7 @@ body {
   font-size: 12px;
   line-height: 1.45;
   color: #555;
+  margin-top: 15px;
 }
 
 .midia-detalhes h3,

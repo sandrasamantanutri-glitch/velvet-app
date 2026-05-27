@@ -395,12 +395,25 @@ async function confirmarPagamentoAsaasCartao() {
     const payload = {
       ...aceites,
       paymentMethodId: paymentMethod.id,
-      fingerprint: gerarFingerprint()
+      fingerprint: gerarFingerprint(),
+      nome_cartao: holderName
     };
 
-    if (tipo === "vip")     { payload.modelo_id = pagamentoAtual.modelo_id; }
-    if (tipo === "midia")   { payload.conteudo_id = pagamentoAtual.conteudo_id; payload.modelo_id = pagamentoAtual.modelo_id; }
-    if (tipo === "premium") { payload.premium_post_id = pagamentoAtual.premium_post_id; payload.modelo_id = pagamentoAtual.modelo_id; }
+    if (tipo === "vip") {
+      payload.modelo_id = pagamentoAtual.modelo_id;
+      payload.cpf = obterCpfValido();
+      payload.telefone = obterTelefoneValido();
+    }
+    if (tipo === "midia") {
+      payload.conteudo_id = pagamentoAtual.conteudo_id;
+      payload.modelo_id = pagamentoAtual.modelo_id;
+    }
+    if (tipo === "premium") {
+      payload.premium_post_id = pagamentoAtual.premium_post_id;
+      payload.modelo_id = pagamentoAtual.modelo_id;
+      payload.cpf = obterCpfValido();
+      payload.telefone = obterTelefoneValido();
+    }
 
     const res = await fetch(`/api/pagamento/${tipo}/cartao`, {
       method: "POST",
