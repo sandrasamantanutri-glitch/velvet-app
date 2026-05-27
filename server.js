@@ -9364,7 +9364,7 @@ if (Number.isNaN(dataAceite.getTime())) {
     console.log("PIX criado com sucesso");
 
     return res.json({
-      qr_code_url: brCodeB64 ? `data:image/png;base64,${brCodeB64}` : null,
+      qr_code_url: brCodeB64 ? (brCodeB64.startsWith("data:") ? brCodeB64 : `data:image/png;base64,${brCodeB64}`) : null,
       copia_cola: brCode,
       expires_at: expiresAt,
       order_id: abacateId
@@ -10080,7 +10080,7 @@ await client.query(
     console.log("PIX premium criado com sucesso");
 
     return res.json({
-      qr_code_url: brCodeB64Premium ? `data:image/png;base64,${brCodeB64Premium}` : null,
+      qr_code_url: brCodeB64Premium ? (brCodeB64Premium.startsWith("data:") ? brCodeB64Premium : `data:image/png;base64,${brCodeB64Premium}`) : null,
       copia_cola: brCodePremium,
       expires_at: expiresAtPremium,
       order_id: abacateIdPremium,
