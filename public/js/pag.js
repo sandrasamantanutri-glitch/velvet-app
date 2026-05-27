@@ -7,7 +7,18 @@ window.pagamentoAtual = pagamentoAtual;
 window.__PAGAMENTO_CONFIRMADO_ATUAL__ = null;
 window.CURRENCY_ATUAL = "brl";
 
-// Asaas — gateway de pagamentos
+// Stripe — gateway de pagamentos
+let stripeInstance = null;
+let stripeCardElement = null;
+
+async function getStripeInstance() {
+  if (stripeInstance) return stripeInstance;
+  const res = await fetch("/api/stripe/pk");
+  if (!res.ok) throw new Error("Falha ao carregar configuração de pagamento.");
+  const { key } = await res.json();
+  stripeInstance = Stripe(key);
+  return stripeInstance;
+}
 
 let pollingPixInterval = null;
 let pollingCartaoInterval = null;
@@ -258,11 +269,19 @@ function resetarEstadoCartao() {
     btn.innerText = (typeof t === "function" ? t("pagamento.btn_confirmar_stripe") : null) || "Confirmar pagamento";
   }
 
+  if (stripeCardElement) {
+    try { stripeCardElement.unmount(); } catch (_) {}
+    stripeCardElement = null;
+  }
+
   const container = document.getElementById("asaas-card-form");
   if (container) {
     container.innerHTML = "";
     delete container.dataset.rendered;
   }
+
+  const form = document.getElementById("formStripePagamento");
+  if (form) delete form.dataset.bound;
 }
 
 function mostrarLoadingCartao() {
@@ -271,81 +290,49 @@ function mostrarLoadingCartao() {
   document.getElementById("formStripePagamento")?.classList.add("hidden");
 }
 
-function renderFormAsaasCartao() {
+async function renderFormAsaasCartao() {
   const container = document.getElementById("asaas-card-form");
   if (!container || container.dataset.rendered === "true") return;
   container.dataset.rendered = "true";
 
-  container.innerHTML = `
-    <div class="asaas-form-grid">
-      <div class="asaas-campo">
-        <label>Nome no cartão</label>
-        <input type="text" id="asaas-holder-name" placeholder="Como está no cartão" autocomplete="cc-name" />
-      </div>
-      <div class="asaas-campo">
-        <label>Número do cartão</label>
-        <input type="text" id="asaas-card-number" placeholder="0000 0000 0000 0000" maxlength="19" autocomplete="cc-number" inputmode="numeric" />
-      </div>
-      <div class="asaas-linha">
+  try {
+    const stripe = await getStripeInstance();
+    const elements = stripe.elements();
+
+    container.innerHTML = `
+      <div class="asaas-form-grid">
         <div class="asaas-campo">
-          <label>Validade</label>
-          <input type="text" id="asaas-expiry" placeholder="MM/AA" maxlength="5" autocomplete="cc-exp" inputmode="numeric" />
-        </div>
-        <div class="asaas-campo">
-          <label>CVV</label>
-          <input type="text" id="asaas-cvv" placeholder="000" maxlength="4" autocomplete="cc-csc" inputmode="numeric" />
+          <label style="display:block;margin-bottom:6px;font-size:0.85rem;">Dados do cartão</label>
+          <div id="stripe-card-element" style="padding:12px;background:#1a1a2e;border:1px solid #444;border-radius:8px;"></div>
+          <div id="stripe-card-error" style="color:#fa755a;font-size:0.8rem;margin-top:6px;"></div>
         </div>
       </div>
-      <div class="asaas-linha">
-        <div class="asaas-campo">
-          <label>CEP</label>
-          <input type="text" id="asaas-postal-code" placeholder="00000-000" maxlength="9" inputmode="numeric" />
-        </div>
-        <div class="asaas-campo">
-          <label>Nº / Complemento</label>
-          <input type="text" id="asaas-address-number" placeholder="Ex: 59 casa 1" maxlength="30" />
-        </div>
-      </div>
-    </div>
-  `;
+    `;
 
-  document.getElementById("asaas-card-number")?.addEventListener("input", e => {
-    let v = e.target.value.replace(/\D/g, "").slice(0, 16);
-    e.target.value = v.replace(/(.{4})/g, "$1 ").trim();
-  });
+    stripeCardElement = elements.create("card", {
+      style: {
+        base: {
+          color: "#ffffff",
+          fontSize: "16px",
+          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+          fontSmoothing: "antialiased",
+          "::placeholder": { color: "#888" }
+        },
+        invalid: { color: "#fa755a", iconColor: "#fa755a" }
+      },
+      hidePostalCode: true
+    });
 
-  document.getElementById("asaas-expiry")?.addEventListener("input", e => {
-    let v = e.target.value.replace(/\D/g, "").slice(0, 4);
-    if (v.length >= 2) v = v.slice(0, 2) + "/" + v.slice(2);
-    e.target.value = v;
-  });
+    stripeCardElement.mount("#stripe-card-element");
 
-  document.getElementById("asaas-postal-code")?.addEventListener("input", e => {
-    let v = e.target.value.replace(/\D/g, "").slice(0, 8);
-    if (v.length > 5) v = v.slice(0, 5) + "-" + v.slice(5);
-    e.target.value = v;
-  });
-}
-
-function obterDadosCartaoAsaas() {
-  const holderName = (document.getElementById("asaas-holder-name")?.value || "").trim();
-  const cardNumber = (document.getElementById("asaas-card-number")?.value || "").replace(/\s/g, "");
-  const expiry    = (document.getElementById("asaas-expiry")?.value || "");
-  const ccv       = (document.getElementById("asaas-cvv")?.value || "").trim();
-  const postalCode = (document.getElementById("asaas-postal-code")?.value || "").replace(/\D/g, "");
-  const addressNumber = (document.getElementById("asaas-address-number")?.value || "").trim();
-
-  const [expMonth = "", expRest = ""] = expiry.split("/");
-  const expYear = expRest.length === 2 ? "20" + expRest : expRest;
-
-  if (!holderName)              { alert(t("pag.holder_name_obrigatorio") || "Informe o nome no cartão."); return null; }
-  if (cardNumber.length < 13)   { alert(t("pag.card_number_invalido")    || "Número do cartão inválido."); return null; }
-  if (expMonth.length !== 2 || expYear.length !== 4) { alert(t("pag.expiry_invalido") || "Validade inválida (MM/AA)."); return null; }
-  if (ccv.length < 3)           { alert(t("pag.cvv_invalido")            || "CVV inválido."); return null; }
-  if (postalCode.length !== 8)  { alert(t("pag.cep_invalido")            || "CEP inválido."); return null; }
-  if (!addressNumber)           { alert(t("pag.address_number_obrigatorio") || "Informe o número do endereço."); return null; }
-
-  return { holderName, cardNumber, expiryMonth: expMonth, expiryYear: expYear, ccv, postalCode, addressNumber };
+    stripeCardElement.on("change", (event) => {
+      const errorEl = document.getElementById("stripe-card-error");
+      if (errorEl) errorEl.textContent = event.error ? event.error.message : "";
+    });
+  } catch (err) {
+    console.error("Erro ao montar Stripe Elements:", err);
+    if (container) container.innerHTML = `<p style="color:#fa755a;">Erro ao carregar formulário de cartão. Recarregue a página.</p>`;
+  }
 }
 
 async function confirmarPagamentoAsaasCartao() {
@@ -353,8 +340,11 @@ async function confirmarPagamentoAsaasCartao() {
   pagamentoEmProcesso = true;
 
   try {
-    const cartao = obterDadosCartaoAsaas();
-    if (!cartao) { pagamentoEmProcesso = false; return { sucesso: false }; }
+    if (!stripeInstance || !stripeCardElement) {
+      alert("Formulário de cartão não inicializado. Recarregue a página.");
+      pagamentoEmProcesso = false;
+      return { sucesso: false };
+    }
 
     const aceites = obterAceitesPagamento();
     if (!aceites) { pagamentoEmProcesso = false; return { sucesso: false }; }
@@ -365,12 +355,24 @@ async function confirmarPagamentoAsaasCartao() {
     mostrarLoadingCartao();
     atualizarStatusCartao(t("pag.confirmando_pagamento") || "Processando...");
 
+    // Criar PaymentMethod via Stripe.js (dados do cartão nunca passam pelo servidor)
+    const { paymentMethod, error: pmError } = await stripeInstance.createPaymentMethod({
+      type: "card",
+      card: stripeCardElement
+    });
+
+    if (pmError) {
+      document.getElementById("cartaoLoading")?.classList.add("hidden");
+      document.getElementById("formStripePagamento")?.classList.remove("hidden");
+      atualizarStatusCartao(t("pag.falha_pagamento") || "Falha no pagamento");
+      alert(pmError.message);
+      pagamentoEmProcesso = false;
+      return { sucesso: false };
+    }
+
     const payload = {
       ...aceites,
-      ...cartao,
-      cpf: obterCpfValido(),
-      telefone: window.CURRENCY_ATUAL !== "usd" ? obterTelefoneValido() : undefined,
-      currency: window.CURRENCY_ATUAL || "brl",
+      paymentMethodId: paymentMethod.id,
       fingerprint: gerarFingerprint()
     };
 
@@ -399,13 +401,27 @@ async function confirmarPagamentoAsaasCartao() {
       return { sucesso: false };
     }
 
+    // 3D Secure — raro mas necessário
+    if (data.requires_action && data.client_secret) {
+      atualizarStatusCartao("Autenticação 3D Secure…");
+      const { error: actionError } = await stripeInstance.handleCardAction(data.client_secret);
+      if (actionError) {
+        document.getElementById("cartaoLoading")?.classList.add("hidden");
+        document.getElementById("formStripePagamento")?.classList.remove("hidden");
+        atualizarStatusCartao(t("pag.falha_pagamento") || "Falha no pagamento");
+        alert(actionError.message);
+        pagamentoEmProcesso = false;
+        return { sucesso: false };
+      }
+    }
+
     if (data.payment_id) pagamentoAtual.payment_id = data.payment_id;
 
-    if (data.status === "pago" || data.status === "CONFIRMED") {
+    if (data.status === "pago") {
       document.getElementById("cartaoLoading")?.classList.add("hidden");
       document.getElementById("cartaoSucesso")?.classList.remove("hidden");
     } else {
-      atualizarStatusCartao(t("pag.aguardando_confirmacao") || "Aguardando...");
+      atualizarStatusCartao(t("pag.aguardando_confirmacao") || "Aguardando confirmação…");
     }
 
     if (pagamentoAtual.payment_id) {
@@ -444,7 +460,7 @@ async function inicializarFluxoCartaoAsaas() {
     if (btn) btn.disabled = false;
     atualizarStatusCartao(t("pagamento.btn_confirmar_stripe") || "Confirmar pagamento");
 
-    renderFormAsaasCartao();
+    await renderFormAsaasCartao();
     bindFormularioAsaasPagamento();
   } catch (err) {
     console.error("Erro ao inicializar fluxo cartão Asaas:", err);

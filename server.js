@@ -2707,6 +2707,12 @@ const adminEmailRouter = require('./routes/adminEmail');
 const suporteRouter = require('./routes/suporte');
 const authAdmin = require('./middleware/authAdmin');
 
+app.get("/api/stripe/pk", (req, res) => {
+  const key = process.env.STRIPE_PUBLIC_KEY || "";
+  if (!key) return res.status(500).json({ error: "Chave pública Stripe não configurada." });
+  res.json({ key });
+});
+
 app.use("/admin/dashboard", adminDashboardRouter);
 app.use('/agency/dashboard', agencyDashboardRouter);
 app.use('/api/admin/email', auth, authAdmin, adminEmailRouter);
