@@ -957,14 +957,23 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
       data.payment_id ||
       null;
 
-    if (!qrCodeUrl || !orderId) {
-     alert(t("pag.erro_gerar_qr"));
+    if (!orderId) {
+      alert(t("pag.erro_gerar_qr"));
       return;
     }
 
     if (qr) {
-      qr.src = qrCodeUrl;
-      qr.classList.remove("hidden");
+      if (qrCodeUrl) {
+        qr.src = qrCodeUrl;
+        qr.classList.remove("hidden");
+      } else if (copiaCola && typeof QRCode !== "undefined") {
+        QRCode.toDataURL(copiaCola, { width: 256, margin: 2 }, (err, url) => {
+          if (!err) {
+            qr.src = url;
+            qr.classList.remove("hidden");
+          }
+        });
+      }
     }
 
     if (codigo) {

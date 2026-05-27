@@ -1019,10 +1019,10 @@ body {
 }
 
 .btn-voltar-modal img {
-  height: 22px;
-  width: auto;
-  opacity: 0.7;
-  transition: opacity 0.15s;
+    height: 22px;
+    width: auto;
+    position: absolute;
+    top: 15px;
 }
 
 .btn-voltar-modal:hover img {
