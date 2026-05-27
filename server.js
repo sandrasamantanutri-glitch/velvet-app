@@ -881,6 +881,342 @@ app.post("/api/webhook/asaas", express.json(), async (req, res) => {
   }
 });
 
+// ── WEBHOOK WOOVI (OpenPix) ──────────────────────────────────────────────────
+app.post("/api/webhook/woovi", express.json(), async (req, res) => {
+  console.log("======================================");
+  console.log("🔥 WEBHOOK WOOVI RECEBIDO");
+
+  // Verificação de token — configure WOOVI_WEBHOOK_SECRET no Render
+  if (process.env.WOOVI_WEBHOOK_SECRET) {
+    const tokenRecebido =
+      req.headers["authorization"] ||
+      req.headers["x-openpix-signature"] || "";
+    if (tokenRecebido !== process.env.WOOVI_WEBHOOK_SECRET) {
+      console.warn("🚨 Webhook Woovi: token inválido");
+      return res.status(401).send("unauthorized");
+    }
+  }
+
+  const body      = req.body;
+  const eventType = String(body?.event || "").toUpperCase();
+
+  // Payload: { event, charge } ou { event, transaction: { charge } }
+  const charge        = body?.charge || body?.transaction?.charge || {};
+  const correlationID = charge?.correlationID || body?.transaction?.correlationID || null;
+  const valorCentavos = Number(charge?.value || body?.transaction?.value || 0);
+  const valorPago     = valorCentavos > 0 ? valorCentavos / 100 : 0;
+
+  console.log("Evento:", eventType, "| CorrelationID:", correlationID, "| Valor:", valorPago);
+
+  if (!correlationID) return res.status(200).send("ok");
+
+  const isPaidEvent = [
+    "OPENPIX:TRANSACTION_RECEIVED",
+    "OPENPIX:CHARGE_COMPLETED"
+  ].includes(eventType);
+
+  const isFailedEvent = ["OPENPIX:CHARGE_EXPIRED"].includes(eventType);
+
+  if (!isPaidEvent && !isFailedEvent) return res.status(200).send("ok");
+
+  const novoStatus = isPaidEvent ? "pago" : "falhou";
+
+  const calcularValores =
+    req.app.get("calcularValores") ||
+    (async ({ valor_bruto }) => ({
+      valor_modelo: valor_bruto * 0.7,
+      agency_fee:   valor_bruto * 0.1,
+      velvet_fee:   valor_bruto * 0.05
+    }));
+
+  const client = await db.connect();
+  let dadosParaEmitir = null;
+
+  try {
+    await client.query("BEGIN");
+
+    /* =====================================================
+       1. PREMIUM PIX
+    ===================================================== */
+    const premiumRes = await client.query(
+      `SELECT * FROM premium_unlocks
+       WHERE pagarme_order_id = $1::text
+       LIMIT 1 FOR UPDATE`,
+      [correlationID]
+    );
+
+    if (premiumRes.rowCount > 0) {
+      const row = premiumRes.rows[0];
+
+      if (row.status === "pago") {
+        await client.query("ROLLBACK");
+        return res.status(200).send("ok");
+      }
+
+      await client.query(
+        `UPDATE premium_unlocks
+         SET status = $1, pago_em = CASE WHEN $1 = 'pago' THEN NOW() ELSE pago_em END,
+             updated_at = NOW()
+         WHERE id = $2`,
+        [novoStatus, row.id]
+      );
+
+      if (isPaidEvent) {
+        const cliente_id      = Number(row.cliente_id);
+        const modelo_id       = Number(row.modelo_id);
+        const premium_post_id = Number(row.premium_post_id);
+        const valorBase       = Number(row.valor_base || valorPago);
+        const taxaGateway     = Number((valorBase * 0.15).toFixed(2));
+
+        const valores = await calcularValores({
+          modelo_id,
+          valor_bruto: valorBase,
+          taxa_gateway: taxaGateway
+        });
+
+        await client.query(
+          `INSERT INTO transacoes_agency
+             (modelo_id, cliente_id, tipo, valor_bruto,
+              valor_modelo, agency_fee, velvet_fee, taxa_gateway, status, created_at)
+           VALUES ($1,$2,'midia',$3,$4,$5,$6,$7,'pago',NOW())`,
+          [
+            modelo_id, cliente_id, valorBase,
+            Number(valores.valor_modelo || 0),
+            Number(valores.agency_fee   || 0),
+            Number(valores.velvet_fee   || 0),
+            taxaGateway
+          ]
+        );
+
+        dadosParaEmitir = {
+          tipo: "premium",
+          cliente_id,
+          modelo_id,
+          premium_post_id,
+          payment_id: correlationID
+        };
+      }
+
+      await client.query("COMMIT");
+
+      if (dadosParaEmitir) {
+        try {
+          const io = req.app.get("io");
+          if (io) {
+            io.to(`user_${dadosParaEmitir.cliente_id}`).emit("pagamento_confirmado", {
+              tipo:            "premium",
+              premium_post_id: dadosParaEmitir.premium_post_id,
+              modelo_id:       dadosParaEmitir.modelo_id,
+              payment_id:      dadosParaEmitir.payment_id
+            });
+          }
+        } catch (e) { console.error("Erro socket premium webhook Woovi:", e); }
+      }
+
+      console.log("✅ WEBHOOK WOOVI PREMIUM FINALIZADO");
+      return res.status(200).send("ok");
+    }
+
+    /* =====================================================
+       2. PIX — VIP ou Mídia
+    ===================================================== */
+    const pixRes = await client.query(
+      `SELECT * FROM pagamentos_pix
+       WHERE pagarme_order_id = $1
+       LIMIT 1 FOR UPDATE`,
+      [correlationID]
+    );
+
+    if (pixRes.rowCount === 0) {
+      await client.query("ROLLBACK");
+      console.warn("Woovi webhook: pagamento não encontrado:", correlationID);
+      return res.status(200).send("ok");
+    }
+
+    const row = pixRes.rows[0];
+
+    if (row.status === "pago") {
+      await client.query("ROLLBACK");
+      return res.status(200).send("ok");
+    }
+
+    await client.query(
+      `UPDATE pagamentos_pix SET status = $1 WHERE pagarme_order_id = $2`,
+      [novoStatus, correlationID]
+    );
+
+    if (isPaidEvent) {
+      const cliente_id      = Number(row.cliente_id);
+      const modelo_id       = Number(row.modelo_id);
+      const message_id      = row.message_id ? Number(row.message_id) : null;
+      const isVip           = !message_id;
+      // valor armazenado é valorTotal (base * 1.15); recupera o base
+      const valorBrutoTotal = Number(row.valor || valorPago);
+      const valorBase       = Number((valorBrutoTotal / 1.15).toFixed(2));
+      const taxaGateway     = Number((valorBrutoTotal - valorBase).toFixed(2));
+
+      const valores = await calcularValores({
+        modelo_id,
+        valor_bruto: valorBase,
+        taxa_gateway: taxaGateway
+      });
+
+      if (isVip) {
+        /* ── VIP PIX ── */
+        const vipExistente = await client.query(
+          `SELECT id, ativo, expiration_at
+           FROM vip_subscriptions
+           WHERE cliente_id = $1 AND modelo_id = $2
+           LIMIT 1 FOR UPDATE`,
+          [cliente_id, modelo_id]
+        );
+
+        const primeiraAssinatura = vipExistente.rowCount === 0;
+
+        let novaExpiracao;
+        if (
+          vipExistente.rowCount > 0 &&
+          vipExistente.rows[0].expiration_at &&
+          new Date(vipExistente.rows[0].expiration_at) > new Date()
+        ) {
+          novaExpiracao = new Date(vipExistente.rows[0].expiration_at);
+          novaExpiracao.setMonth(novaExpiracao.getMonth() + 1);
+        } else {
+          novaExpiracao = new Date();
+          novaExpiracao.setMonth(novaExpiracao.getMonth() + 1);
+        }
+
+        if (vipExistente.rowCount > 0) {
+          await client.query(
+            `UPDATE vip_subscriptions
+             SET ativo = true, updated_at = NOW(), expiration_at = $3,
+                 valor_assinatura = $4, taxa_transacao = $5, taxa_plataforma = 0,
+                 valor_total = $6, recorrente = false,
+                 gateway_subscription_id = $7,
+                 aviso_7_dias_enviado = false, aviso_24h_enviado = false
+             WHERE cliente_id = $1 AND modelo_id = $2`,
+            [cliente_id, modelo_id, novaExpiracao,
+             valorBase, taxaGateway, valorBrutoTotal, correlationID]
+          );
+        } else {
+          await client.query(
+            `INSERT INTO vip_subscriptions
+               (cliente_id, modelo_id, ativo, created_at, updated_at,
+                expiration_at, valor_assinatura, taxa_transacao, taxa_plataforma,
+                valor_total, recorrente, gateway_subscription_id)
+             VALUES ($1,$2,true,NOW(),NOW(),$3,$4,$5,0,$6,false,$7)`,
+            [cliente_id, modelo_id, novaExpiracao,
+             valorBase, taxaGateway, valorBrutoTotal, correlationID]
+          );
+        }
+
+        await client.query(
+          `INSERT INTO transacoes_agency
+             (modelo_id, cliente_id, tipo, valor_bruto,
+              valor_modelo, agency_fee, velvet_fee, taxa_gateway, status, created_at)
+           VALUES ($1,$2,'assinatura',$3,$4,$5,$6,$7,'pago',NOW())`,
+          [
+            modelo_id, cliente_id, valorBase,
+            Number(valores.valor_modelo || 0),
+            Number(valores.agency_fee   || 0),
+            Number(valores.velvet_fee   || 0),
+            taxaGateway
+          ]
+        );
+
+        if (primeiraAssinatura) {
+          await client.query(
+            `INSERT INTO messages
+               (cliente_id, modelo_id, text, sender, tipo,
+                created_at, lida, visto, deletada)
+             VALUES ($1,$2,$3,'modelo','texto',NOW(),false,false,false)`,
+            [cliente_id, modelo_id, "Oii!! Bem vindo, como vc chama?🔥"]
+          );
+        }
+
+        dadosParaEmitir = { tipo: "vip", cliente_id, modelo_id };
+
+      } else {
+        /* ── MÍDIA PIX ── */
+        await client.query(
+          `INSERT INTO conteudo_pacotes
+             (message_id, cliente_id, modelo_id, preco, valor_base,
+              valor_total, status, metodo_pagamento, pago_em, currency,
+              valor_cobrado, taxa_cambio)
+           VALUES ($1,$2,$3,$4,$4,$5,'pago','pix',NOW(),'brl',$5,NULL)
+           ON CONFLICT (message_id, cliente_id) DO UPDATE
+             SET status='pago', metodo_pagamento='pix',
+                 pago_em=NOW(), valor_total=$5`,
+          [message_id, cliente_id, modelo_id, valorBase, valorBrutoTotal]
+        );
+
+        const conteudo_ids =
+          await marcarConteudoComoLiberadoPorPagamento(client, {
+            message_id,
+            cliente_id,
+            modelo_id
+          });
+
+        await client.query(
+          `INSERT INTO transacoes_agency
+             (modelo_id, cliente_id, tipo, valor_bruto,
+              valor_modelo, agency_fee, velvet_fee, taxa_gateway, status, created_at)
+           VALUES ($1,$2,'midia',$3,$4,$5,$6,$7,'pago',NOW())`,
+          [
+            modelo_id, cliente_id, valorBase,
+            Number(valores.valor_modelo || 0),
+            Number(valores.agency_fee   || 0),
+            Number(valores.velvet_fee   || 0),
+            taxaGateway
+          ]
+        );
+
+        dadosParaEmitir = {
+          tipo: "conteudo",
+          cliente_id,
+          modelo_id,
+          message_id,
+          conteudo_ids
+        };
+      }
+    }
+
+    await client.query("COMMIT");
+
+    if (dadosParaEmitir) {
+      try {
+        const io = req.app.get("io");
+        if (io) {
+          if (dadosParaEmitir.tipo === "conteudo") {
+            const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
+            io.to(sala).emit("conteudoLiberado", {
+              message_id:   Number(dadosParaEmitir.message_id),
+              conteudo_ids: dadosParaEmitir.conteudo_ids || []
+            });
+          }
+          if (dadosParaEmitir.tipo === "vip") {
+            const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
+            io.to(sala).emit("vipAtivado", {
+              cliente_id: Number(dadosParaEmitir.cliente_id),
+              modelo_id:  Number(dadosParaEmitir.modelo_id)
+            });
+          }
+        }
+      } catch (e) { console.error("Erro socket webhook Woovi:", e); }
+    }
+
+    console.log("✅ WEBHOOK WOOVI FINALIZADO");
+    return res.status(200).send("ok");
+
+  } catch (err) {
+    try { await client.query("ROLLBACK"); } catch (_) {}
+    console.error("🔥 ERRO WEBHOOK WOOVI:", err);
+    return res.status(500).send("erro");
+  } finally {
+    client.release();
+  }
+});
+
 // ── PLACEHOLDER para o antigo webhook pagarme (removido) ──
 app.post("/api/webhook/pagarme_REMOVED", express.raw({ type: "*/*" }), async (req, res) => {
   console.log("======================================");
