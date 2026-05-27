@@ -96,39 +96,22 @@ function abrirPopupPagamento() {
 }
 
 function validarDadosIniciaisPagamento() {
-  const cpf = obterCpfValido();
-  if (!cpf) {
-    return false;
-  }
-
-  const telefone = obterTelefoneValido();
-  if (!telefone) {
-    return false;
-  }
-
   const aceites = obterAceitesPagamento();
   if (!aceites) return false;
-
   return true;
 }
 
 function obterAceitesPagamento() {
   const aceitouTermos = !!document.getElementById("aceiteTermosPagamento")?.checked;
-  const aceitouExecucaoImediata = !!document.getElementById("aceiteExecucaoImediata")?.checked;
 
-if (!aceitouTermos) {
-  alert(t("pag.aceite_termos_obrigatorio"));
-  return null;
-}
-
-if (!aceitouExecucaoImediata) {
-  alert(t("pag.aceite_execucao_obrigatorio"));
-  return null;
-}
+  if (!aceitouTermos) {
+    alert(t("pag.aceite_termos_obrigatorio"));
+    return null;
+  }
 
   return {
     aceitou_termos: aceitouTermos,
-    aceitou_execucao_imediata: aceitouExecucaoImediata,
+    aceitou_execucao_imediata: true,
     aceite_timestamp: new Date().toISOString(),
     versao_termos: "2026-04-06"
   };
@@ -864,16 +847,8 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
       return;
     }
 
-    const cpf = document
-      .getElementById("cpfPagamento")
-      ?.value
-      ?.replace(/\D/g, "");
-
     const aceites = obterAceitesPagamento();
-    if (!aceites || !cpf || cpf.length !== 11) {
-    alert(t("pag.cpf_aceites_obrigatorios"));
-      return;
-    }
+    if (!aceites) return;
 
     const aceitou_termos = aceites.aceitou_termos;
     const aceitou_execucao_imediata = aceites.aceitou_execucao_imediata;
@@ -894,15 +869,10 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
         return;
       }
 
-      const telefoneLimpo = obterTelefoneValido();
-      if (!telefoneLimpo) return;
-
       url = "/api/pagamento/vip/pix";
       body = {
         tipo: "vip",
         modelo_id: modeloIdFinal,
-        cpf,
-        telefone: telefoneLimpo,
         aceitou_termos,
         aceitou_execucao_imediata,
         aceite_timestamp,
@@ -912,15 +882,10 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
     }
 
     if (tipo === "premium") {
-      const telefoneLimpo = obterTelefoneValido();
-      if (!telefoneLimpo) return;
-
       url = "/api/pagamento/premium/pix";
       body = {
         tipo: "premium",
         premium_post_id,
-        cpf,
-        telefone: telefoneLimpo,
         aceitou_termos,
         aceitou_execucao_imediata,
         aceite_timestamp,
@@ -930,15 +895,10 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
     }
 
     if (tipo === "midia") {
-      const telefoneLimpo = obterTelefoneValido();
-      if (!telefoneLimpo) return;
-
       url = "/api/pagamento/midia/pix";
       body = {
         tipo: "midia",
         conteudo_id,
-        cpf,
-        telefone: telefoneLimpo,
         aceitou_termos,
         aceitou_execucao_imediata,
         aceite_timestamp,
@@ -1512,13 +1472,8 @@ function alternarCamposPorMetodo(tipo) {
   const blocoCPF = document.getElementById("campoCpf");
   const blocoTelefone = document.getElementById("campoTelefone");
 
-  if (tipo === "pix") {
-    blocoCPF?.classList.remove("hidden");
-    blocoTelefone?.classList.remove("hidden");
-  } else {
-    blocoCPF?.classList.add("hidden");
-    blocoTelefone?.classList.add("hidden");
-  }
+  blocoCPF?.classList.add("hidden");
+  blocoTelefone?.classList.add("hidden");
 }
 
 // formata valor na moeda correta (BRL ou USD)
@@ -1555,19 +1510,22 @@ let _metodoVIPPendente = null;
 
 function abrirConfirmacaoVIP(metodo) {
   _metodoVIPPendente = metodo;
+  document.getElementById("popupPagamentoVelvet")?.classList.add("hidden");
   const popup = document.getElementById("popupConfirmacaoVIP");
   if (popup) popup.classList.remove("hidden");
 }
 
 function fecharConfirmacaoVIP() {
   _metodoVIPPendente = null;
-  const popup = document.getElementById("popupConfirmacaoVIP");
-  if (popup) popup.classList.add("hidden");
+  document.getElementById("popupConfirmacaoVIP")?.classList.add("hidden");
+  document.getElementById("popupPagamentoVelvet")?.classList.remove("hidden");
 }
 
 function confirmarVIPEContinuar() {
   const metodo = _metodoVIPPendente;
-  fecharConfirmacaoVIP();
+  _metodoVIPPendente = null;
+  document.getElementById("popupConfirmacaoVIP")?.classList.add("hidden");
+  document.getElementById("popupPagamentoVelvet")?.classList.remove("hidden");
   if (metodo) mostrarMetodo(metodo);
 }
 

@@ -900,27 +900,20 @@ app.post("/api/webhook/abacatepay", express.json(), async (req, res) => {
   }
 
   const body      = req.body;
-  const eventType = String(body?.event || "").toUpperCase();
+  const eventType = String(body?.event || "");
 
-  // Payload AbacatePay: { event, data: { billing: { id, correlationID, amount, status } } }
-  const billing       = body?.data?.billing || body?.billing || {};
-  const correlationID = billing?.correlationID || billing?.id || null;
-  const valorCentavos = Number(billing?.amount || billing?.value || 0);
+  // AbacatePay v2 payload: { event: "transparent.completed", data: { transparent: { id, externalId, amount, paidAmount, status } } }
+  const transparent   = body?.data?.transparent || {};
+  const correlationID = transparent?.id || null;
+  const valorCentavos = Number(transparent?.paidAmount || transparent?.amount || 0);
   const valorPago     = valorCentavos > 0 ? valorCentavos / 100 : 0;
 
   console.log("Evento:", eventType, "| CorrelationID:", correlationID, "| Valor:", valorPago);
 
   if (!correlationID) return res.status(200).send("ok");
 
-  const isPaidEvent = [
-    "BILLING.PAID",
-    "BILLING.COMPLETED"
-  ].includes(eventType);
-
-  const isFailedEvent = [
-    "BILLING.EXPIRED",
-    "BILLING.CANCELLED"
-  ].includes(eventType);
+  const isPaidEvent   = eventType === "transparent.completed";
+  const isFailedEvent = ["transparent.refunded", "transparent.disputed"].includes(eventType);
 
   if (!isPaidEvent && !isFailedEvent) return res.status(200).send("ok");
 
@@ -3525,6 +3518,21 @@ async function asaasRequest(method, path, body) {
       "access_token": process.env.ASAAS_API_KEY,
       "Content-Type": "application/json",
       "User-Agent": "Velvet/1.0"
+    }
+  });
+  return res.data;
+}
+
+const ABACATEPAY_BASE = "https://api.abacatepay.com/v2";
+
+async function abacatePayRequest(method, path, body) {
+  const res = await axios({
+    method,
+    url: `${ABACATEPAY_BASE}${path}`,
+    data: body,
+    headers: {
+      "Authorization": `Bearer ${process.env.ABACATEPAY_API_KEY}`,
+      "Content-Type": "application/json"
     }
   });
   return res.data;
@@ -9065,7 +9073,7 @@ app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
   const client = await db.connect();
 
   try {
-    const { modelo_id, cpf, telefone, aceitou_termos, aceitou_execucao_imediata, aceite_timestamp, versao_termos, fingerprint } = req.body;
+    const { modelo_id, aceitou_termos, aceitou_execucao_imediata, aceite_timestamp, versao_termos, fingerprint } = req.body;
     const userId = Number(req.user?.id || 0);
 
     console.log("User:", userId);
@@ -9103,38 +9111,12 @@ if (Number.isNaN(dataAceite.getTime())) {
       return res.status(400).json({ error: "modelo_id inválido" });
     }
 
-    const cpfLimpo = String(cpf || "").replace(/\D/g, "");
-    if (!cpfLimpo) {
-      return res.status(400).json({ error: "CPF obrigatório." });
-    }
-
-    if (!validarCPF(cpfLimpo)) {
-      return res.status(400).json({ error: "CPF inválido." });
-    }
-
-    console.log("CPF limpo:", cpfLimpo);
-
-    const telefoneLimpo = String(telefone || "").replace(/\D/g, "");
-
-    if (!telefoneLimpo) {
-      return res.status(400).json({ error: "Telefone obrigatório." });
-    }
-
-    if (telefoneLimpo.length < 10 || telefoneLimpo.length > 11) {
-      return res.status(400).json({ error: "Telefone inválido." });
-    }
-
-    const area_code = telefoneLimpo.slice(0, 2);
-    const number = telefoneLimpo.slice(2);
-
     const ip =
       req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
       req.socket.remoteAddress ||
       null;
 
     console.log("IP:", ip);
-    console.log("Telefone:", telefoneLimpo);
-    console.log("ENV ASAAS API KEY EXISTE:", !!process.env.ASAAS_API_KEY);
 
     await client.query("BEGIN");
 
@@ -9233,49 +9215,6 @@ if (Number.isNaN(dataAceite.getTime())) {
        REUTILIZAR PIX PENDENTE RECENTE
     ========================= */
 
-    console.log("Buscando PIX pendente recente...");
-
-    const pendenteRes = await client.query(
-      `
-      SELECT pagarme_order_id, criado_em
-      FROM pagamentos_pix
-      WHERE cliente_id = $1
-        AND modelo_id = $2
-        AND gateway = 'asaas'
-        AND status = 'pendente'
-        AND criado_em >= NOW() - INTERVAL '55 minutes'
-      ORDER BY criado_em DESC
-      LIMIT 1
-      `,
-      [cliente_id, modeloIdNum]
-    );
-
-    if (pendenteRes.rowCount) {
-      const asaasPaymentId = pendenteRes.rows[0].pagarme_order_id;
-      try {
-        const paymentExistente = await asaasRequest("GET", `/payments/${asaasPaymentId}`);
-        const pixQr = await asaasRequest("GET", `/payments/${asaasPaymentId}/pixQrCode`);
-        if (
-          pixQr?.payload &&
-          paymentExistente.status !== "RECEIVED" &&
-          paymentExistente.status !== "CONFIRMED" &&
-          paymentExistente.status !== "OVERDUE" &&
-          paymentExistente.status !== "DELETED"
-        ) {
-          await client.query("COMMIT");
-          return res.json({
-            qr_code_url: `data:image/png;base64,${pixQr.encodedImage}`,
-            copia_cola: pixQr.payload,
-            expires_at: pixQr.expirationDate || null,
-            order_id: asaasPaymentId,
-            reutilizado: true
-          });
-        }
-      } catch (reuseErr) {
-        console.error("Erro ao reutilizar PIX Asaas pendente:", reuseErr.message);
-      }
-    }
-
     /* =========================
        PLANO VIP
     ========================= */
@@ -9337,7 +9276,7 @@ if (Number.isNaN(dataAceite.getTime())) {
     ========================= */
 
     const valorAssinatura = Number(valorBase.toFixed(2));
-    const { taxaTransacao, taxaPlataforma, valorTotal } = calcTaxaAsaas(valorAssinatura);
+    const { taxaTransacao, taxaPlataforma, valorTotal } = calcTaxaStripe(valorAssinatura);
     const amount = Math.round(valorTotal * 100);
 
     console.log("VALORES:");
@@ -9345,39 +9284,30 @@ if (Number.isNaN(dataAceite.getTime())) {
     console.log("centavos:", amount);
 
     /* =========================
-       CRIAR PIX ASAAS
+       CRIAR PIX ABACATEPAY
     ========================= */
 
-    console.log("Criando pagamento PIX no Asaas...");
+    console.log("Criando pagamento PIX no AbacatePay...");
 
-    const asaasClienteId = await criarOuBuscarClienteAsaas(
-      cpfLimpo,
-      nomeFinal,
-      emailFinal,
-      telefoneLimpo
-    );
-
-    const dueDatePix = new Date();
-    dueDatePix.setDate(dueDatePix.getDate() + 1);
-    const dueDateStr = dueDatePix.toISOString().split("T")[0];
-
-    const pixPayment = await asaasRequest("POST", "/payments", {
-      customer: asaasClienteId,
-      billingType: "PIX",
-      value: valorTotal,
-      dueDate: dueDateStr,
-      description: "Assinatura VIP Velvet",
-      externalReference: `vip_${cliente_id}_${modeloIdNum}`
+    const abacateResVip = await abacatePayRequest("POST", "/transparents/create", {
+      method: "PIX",
+      data: {
+        amount,
+        description: "Assinatura VIP Velvet",
+        expiresIn: 3600,
+        customer: { name: nomeFinal, email: emailFinal },
+        metadata: {},
+        externalId: `vip_${cliente_id}_${modeloIdNum}`
+      }
     });
 
-    const asaasPaymentId = pixPayment.id;
+    const abacateId  = abacateResVip?.data?.id;
+    const brCode     = abacateResVip?.data?.brCode;
+    const brCodeB64  = abacateResVip?.data?.brCodeBase64;
+    const expiresAt  = abacateResVip?.data?.expiresAt || null;
 
-    console.log("Pagamento Asaas criado:", asaasPaymentId);
-
-    const pixQrData = await asaasRequest("GET", `/payments/${asaasPaymentId}/pixQrCode`);
-
-    if (!pixQrData?.payload) {
-      console.error("QR PIX não gerado pelo Asaas:", pixQrData);
+    if (!abacateId || !brCode) {
+      console.error("PIX AbacatePay não gerado:", abacateResVip);
       await client.query("ROLLBACK");
       return res.status(500).json({ error: "Erro ao gerar QR PIX" });
     }
@@ -9404,24 +9334,20 @@ if (Number.isNaN(dataAceite.getTime())) {
         aceitou_execucao_imediata,
         aceite_timestamp,
         versao_termos,
-        cpf,
-        telefone,
         fingerprint
       )
-      VALUES ($1,$2,$3,'pendente','asaas',$4,NOW(),$5,$6,$7,$8,$9,$10,$11,$12)
+      VALUES ($1,$2,$3,'pendente','abacatepay',$4,NOW(),$5,$6,$7,$8,$9,$10)
       `,
       [
         cliente_id,
         modeloIdNum,
         valorTotal,
-        asaasPaymentId,
+        abacateId,
         ip,
         !!aceitou_termos,
         !!aceitou_execucao_imediata,
         aceite_timestamp,
         versao_termos || "2026-04-06",
-        cpfLimpo,
-        telefoneLimpo,
         fingerprint || ""
       ]
     );
@@ -9434,10 +9360,10 @@ if (Number.isNaN(dataAceite.getTime())) {
     console.log("PIX criado com sucesso");
 
     return res.json({
-      qr_code_url: `data:image/png;base64,${pixQrData.encodedImage}`,
-      copia_cola: pixQrData.payload,
-      expires_at: pixQrData.expirationDate || null,
-      order_id: asaasPaymentId
+      qr_code_url: brCodeB64 ? `data:image/png;base64,${brCodeB64}` : null,
+      copia_cola: brCode,
+      expires_at: expiresAt,
+      order_id: abacateId
     });
   } catch (err) {
     console.error("=================================");
@@ -9476,7 +9402,7 @@ app.post("/api/pagamento/midia/pix", auth, async (req, res) => {
 
   try {
 
-   const { conteudo_id, cpf, aceitou_termos, aceitou_execucao_imediata, aceite_timestamp, versao_termos, fingerprint } = req.body;
+   const { conteudo_id, aceitou_termos, aceitou_execucao_imediata, aceite_timestamp, versao_termos, fingerprint } = req.body;
     const userId = req.user.id;
 
     const ip =
@@ -9485,16 +9411,6 @@ app.post("/api/pagamento/midia/pix", auth, async (req, res) => {
 
     if (!conteudo_id) {
       return res.status(400).json({ error: "Conteúdo inválido." });
-    }
-
-    if (!cpf) {
-      return res.status(400).json({ error: "CPF obrigatório." });
-    }
-
-    const cpfLimpo = cpf.replace(/\D/g, "");
-
-    if (!validarCPF(cpfLimpo)) {
-      return res.status(400).json({ error: "CPF inválido." });
     }
 
     if (!aceitou_termos) {
@@ -9557,7 +9473,7 @@ if (Number.isNaN(dataAceite.getTime())) {
 
     const precoNum = Number(preco);
 
-    const { taxaTransacao, taxaPlataforma, valorTotal } = calcTaxaAsaas(precoNum);
+    const { taxaTransacao, taxaPlataforma, valorTotal } = calcTaxaStripe(precoNum);
     const valorCentavos = Math.round(valorTotal * 100);
 
     /* ================================
@@ -9603,7 +9519,7 @@ if (Number.isNaN(dataAceite.getTime())) {
       FROM pagamentos_pix
       WHERE cliente_id = $1
       AND message_id = $2
-      AND gateway = 'asaas'
+      AND gateway = 'abacatepay'
       AND status = 'pendente'
       AND expires_at > NOW()
       ORDER BY criado_em DESC
@@ -9612,72 +9528,43 @@ if (Number.isNaN(dataAceite.getTime())) {
       [cliente_id, conteudo_id]
     );
 
-    if (pixExistente.rowCount > 0) {
-      const asaasPaymentIdExistente = pixExistente.rows[0].pagarme_order_id;
-
-      try {
-        const paymentExistente = await asaasRequest("GET", `/payments/${asaasPaymentIdExistente}`);
-        const pixQr = await asaasRequest("GET", `/payments/${asaasPaymentIdExistente}/pixQrCode`);
-
-        if (
-          pixQr?.payload &&
-          paymentExistente.status !== "RECEIVED" &&
-          paymentExistente.status !== "CONFIRMED" &&
-          paymentExistente.status !== "OVERDUE" &&
-          paymentExistente.status !== "DELETED"
-        ) {
-          await client.query("ROLLBACK");
-          return res.json({
-            qr_code_url: `data:image/png;base64,${pixQr.encodedImage}`,
-            copia_cola: pixQr.payload,
-            qr_code: pixQr.payload,
-            payment_id: asaasPaymentIdExistente,
-            order_id: asaasPaymentIdExistente,
-            reutilizado: true
-          });
-        }
-      } catch (reuseErr) {
-        console.warn("Erro ao reutilizar PIX MIDIA Asaas:", reuseErr.message);
-      }
+    if (pixExistente.rowCount > 0 && pixExistente.rows[0].qr_code) {
+      await client.query("ROLLBACK");
+      return res.json({
+        qr_code: pixExistente.rows[0].qr_code,
+        qr_code_base64: null,
+        payment_id: pixExistente.rows[0].pagarme_order_id,
+        reutilizado: true
+      });
     }
 
     /* ================================
-       CRIAR PIX ASAAS
+       CRIAR PIX ABACATEPAY
     ================================ */
 
-    console.log("Criando pagamento PIX Mídia no Asaas...");
+    console.log("Criando pagamento PIX Mídia no AbacatePay...");
 
-    const nomeCliente = req.user.nome || "Cliente Velvet";
+    const nomeCliente  = req.user.nome || "Cliente Velvet";
     const emailCliente = req.user.email;
 
-    const asaasClienteId = await criarOuBuscarClienteAsaas(
-      cpfLimpo,
-      nomeCliente,
-      emailCliente,
-      undefined
-    );
-
-    const dueDatePix = new Date();
-    dueDatePix.setDate(dueDatePix.getDate() + 1);
-    const dueDateStr = dueDatePix.toISOString().split("T")[0];
-
-    const pixPayment = await asaasRequest("POST", "/payments", {
-      customer: asaasClienteId,
-      billingType: "PIX",
-      value: valorTotal,
-      dueDate: dueDateStr,
-      description: "Mídia Premium Velvet",
-      externalReference: `midia_${cliente_id}_${conteudo_id}`
+    const abacateResMidia = await abacatePayRequest("POST", "/transparents/create", {
+      method: "PIX",
+      data: {
+        amount: valorCentavos,
+        description: "Mídia Premium Velvet",
+        expiresIn: 3600,
+        customer: { name: nomeCliente, email: emailCliente },
+        metadata: {},
+        externalId: `midia_${cliente_id}_${conteudo_id}`
+      }
     });
 
-    const asaasPaymentId = pixPayment.id;
+    const abacateIdMidia  = abacateResMidia?.data?.id;
+    const brCodeMidia     = abacateResMidia?.data?.brCode;
+    const brCodeB64Midia  = abacateResMidia?.data?.brCodeBase64;
 
-    console.log("Pagamento Asaas criado:", asaasPaymentId);
-
-    const pixQrData = await asaasRequest("GET", `/payments/${asaasPaymentId}/pixQrCode`);
-
-    if (!pixQrData?.payload) {
-      throw new Error("Erro ao gerar PIX no Asaas");
+    if (!abacateIdMidia || !brCodeMidia) {
+      throw new Error("Erro ao gerar PIX no AbacatePay");
     }
 
     /* ================================
@@ -9703,27 +9590,25 @@ await client.query(
     aceitou_execucao_imediata,
     aceite_timestamp,
     versao_termos,
-    cpf,
     fingerprint
   )
   VALUES (
-    $1,$2,$3,$4,$5,'pendente','asaas',$6,NOW(),NOW() + INTERVAL '15 minutes',
-    $7,$8,$9,$10,$11,$12,$13
+    $1,$2,$3,$4,$5,'pendente','abacatepay',$6,NOW(),NOW() + INTERVAL '60 minutes',
+    $7,$8,$9,$10,$11,$12
   )
   `,
   [
     cliente_id,
     modelo_id,
     conteudo_id,
-    pixQrData.payload,
+    brCodeMidia,
     valorTotal,
-    asaasPaymentId,
+    abacateIdMidia,
     ip || null,
     !!aceitou_termos,
     !!aceitou_execucao_imediata,
     aceite_timestamp,
     versao_termos || "2026-04-06",
-    cpfLimpo,
     fingerprint || ""
   ]
 );
@@ -9731,9 +9616,9 @@ await client.query(
     await client.query("COMMIT");
 
     return res.json({
-      qr_code: pixQrData.payload,
-      qr_code_base64: pixQrData.encodedImage || null,
-      payment_id: asaasPaymentId
+      qr_code: brCodeMidia,
+      qr_code_base64: brCodeB64Midia || null,
+      payment_id: abacateIdMidia
     });
 
   } catch (err) {
@@ -9768,8 +9653,6 @@ app.post("/api/pagamento/premium/pix", authCliente, async (req, res) => {
   try {
 const {
   premium_post_id,
-  cpf,
-  telefone,
   aceitou_termos,
   aceitou_execucao_imediata,
   aceite_timestamp,
@@ -9814,38 +9697,12 @@ if (Number.isNaN(dataAceite.getTime())) {
       return res.status(400).json({ error: "premium_post_id inválido." });
     }
 
-    const cpfLimpo = String(cpf || "").replace(/\D/g, "");
-    if (!cpfLimpo) {
-      return res.status(400).json({ error: "CPF obrigatório." });
-    }
-
-    if (!validarCPF(cpfLimpo)) {
-      return res.status(400).json({ error: "CPF inválido." });
-    }
-
-    console.log("CPF limpo:", cpfLimpo);
-
-    const telefoneLimpo = String(telefone || "").replace(/\D/g, "");
-
-    if (!telefoneLimpo) {
-      return res.status(400).json({ error: "Telefone obrigatório." });
-    }
-
-    if (telefoneLimpo.length < 10 || telefoneLimpo.length > 11) {
-      return res.status(400).json({ error: "Telefone inválido." });
-    }
-
-    const area_code = telefoneLimpo.slice(0, 2);
-    const number = telefoneLimpo.slice(2);
-
     const ip =
       req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
       req.socket.remoteAddress ||
       null;
 
     console.log("IP:", ip);
-    console.log("Telefone:", telefoneLimpo);
-    console.log("ENV ASAAS API KEY EXISTE:", !!process.env.ASAAS_API_KEY);
 
     await client.query("BEGIN");
 
@@ -10068,60 +9925,12 @@ if (Number.isNaN(dataAceite.getTime())) {
        REUTILIZAR PIX PENDENTE RECENTE
     ========================= */
 
-    console.log("Buscando PIX pendente recente...");
-
-    const pendenteRes = await client.query(
-      `
-      SELECT pagarme_order_id, created_at
-      FROM premium_unlocks
-      WHERE premium_post_id = $1
-        AND cliente_id = $2
-        AND gateway = 'asaas'
-        AND status = 'pendente'
-        AND metodo_pagamento = 'pix'
-        AND created_at >= NOW() - INTERVAL '55 minutes'
-      ORDER BY created_at DESC
-      LIMIT 1
-      `,
-      [premiumPostIdNum, cliente_id]
-    );
-
-    if (pendenteRes.rowCount) {
-      const asaasPaymentId = pendenteRes.rows[0].pagarme_order_id;
-
-      console.log("PIX pendente encontrado:", asaasPaymentId);
-      console.log("Reconsultando pagamento no Asaas...");
-
-      try {
-        const paymentExistente = await asaasRequest("GET", `/payments/${asaasPaymentId}`);
-        const pixQr = await asaasRequest("GET", `/payments/${asaasPaymentId}/pixQrCode`);
-        if (
-          pixQr?.payload &&
-          paymentExistente.status !== "RECEIVED" &&
-          paymentExistente.status !== "CONFIRMED" &&
-          paymentExistente.status !== "OVERDUE" &&
-          paymentExistente.status !== "DELETED"
-        ) {
-          await client.query("COMMIT");
-          return res.json({
-            qr_code_url: `data:image/png;base64,${pixQr.encodedImage}`,
-            copia_cola: pixQr.payload,
-            expires_at: pixQr.expirationDate || null,
-            order_id: asaasPaymentId,
-            reutilizado: true
-          });
-        }
-      } catch (reuseErr) {
-        console.error("Erro ao reutilizar PIX Asaas pendente premium:", reuseErr.message);
-      }
-    }
-
     /* =========================
        CÁLCULO
     ========================= */
 
     const valorBase = Number(precoBase.toFixed(2));
-    const { taxaTransacao, taxaPlataforma, valorTotal } = calcTaxaAsaas(valorBase);
+    const { taxaTransacao, taxaPlataforma, valorTotal } = calcTaxaStripe(valorBase);
     const amount = Math.round(valorTotal * 100);
 
     console.log("VALORES:");
@@ -10129,39 +9938,30 @@ if (Number.isNaN(dataAceite.getTime())) {
     console.log("centavos:", amount);
 
     /* =========================
-       CRIAR PIX ASAAS
+       CRIAR PIX ABACATEPAY
     ========================= */
 
-    console.log("Criando pagamento PIX Premium no Asaas...");
+    console.log("Criando pagamento PIX Premium no AbacatePay...");
 
-    const asaasClienteId = await criarOuBuscarClienteAsaas(
-      cpfLimpo,
-      nomeFinal,
-      emailFinal,
-      telefoneLimpo
-    );
-
-    const dueDatePix = new Date();
-    dueDatePix.setDate(dueDatePix.getDate() + 1);
-    const dueDateStr = dueDatePix.toISOString().split("T")[0];
-
-    const pixPayment = await asaasRequest("POST", "/payments", {
-      customer: asaasClienteId,
-      billingType: "PIX",
-      value: valorTotal,
-      dueDate: dueDateStr,
-      description: "Post Premium Velvet",
-      externalReference: `premium_${cliente_id}_${premiumPostIdNum}`
+    const abacateResPremium = await abacatePayRequest("POST", "/transparents/create", {
+      method: "PIX",
+      data: {
+        amount,
+        description: "Post Premium Velvet",
+        expiresIn: 3600,
+        customer: { name: nomeFinal, email: emailFinal },
+        metadata: {},
+        externalId: `premium_${cliente_id}_${premiumPostIdNum}`
+      }
     });
 
-    const asaasPaymentId = pixPayment.id;
+    const abacateIdPremium  = abacateResPremium?.data?.id;
+    const brCodePremium     = abacateResPremium?.data?.brCode;
+    const brCodeB64Premium  = abacateResPremium?.data?.brCodeBase64;
+    const expiresAtPremium  = abacateResPremium?.data?.expiresAt || null;
 
-    console.log("Pagamento Asaas criado:", asaasPaymentId);
-
-    const pixQrData = await asaasRequest("GET", `/payments/${asaasPaymentId}/pixQrCode`);
-
-    if (!pixQrData?.payload) {
-      console.error("QR PIX não gerado pelo Asaas:", pixQrData);
+    if (!abacateIdPremium || !brCodePremium) {
+      console.error("PIX AbacatePay não gerado:", abacateResPremium);
       await client.query("ROLLBACK");
       return res.status(500).json({ error: "Erro ao gerar QR PIX" });
     }
@@ -10194,8 +9994,6 @@ await client.query(
     aceitou_execucao_imediata,
     aceite_timestamp,
     versao_termos,
-    cpf,
-    telefone,
     fingerprint,
     created_at,
     updated_at
@@ -10205,8 +10003,8 @@ await client.query(
     $1,$2,$3,
     'pendente','pix',
     $4,$5,$6,$7,
-    'asaas',$8,$9,$10,
-    $11,$12,$13,$14,$15,$16,$17,$18,
+    'abacatepay',$8,$9,$10,
+    $11,$12,$13,$14,$15,
     NOW(),NOW()
   )
   ON CONFLICT (premium_post_id, cliente_id)
@@ -10227,8 +10025,6 @@ await client.query(
     aceitou_execucao_imediata = EXCLUDED.aceitou_execucao_imediata,
     aceite_timestamp = EXCLUDED.aceite_timestamp,
     versao_termos = EXCLUDED.versao_termos,
-    cpf = EXCLUDED.cpf,
-    telefone = EXCLUDED.telefone,
     fingerprint = EXCLUDED.fingerprint,
     updated_at = NOW()
   `,
@@ -10240,16 +10036,14 @@ await client.query(
     taxaTransacao,
     taxaPlataforma,
     valorTotal,
-    asaasPaymentId,
-    pixQrData.encodedImage ? `data:image/png;base64,${pixQrData.encodedImage}` : null,
+    abacateIdPremium,
+    brCodeB64Premium ? `data:image/png;base64,${brCodeB64Premium}` : null,
     `premium_${premiumPostIdNum}_${cliente_id}`,
     ip || null,
     !!aceitou_termos,
     !!aceitou_execucao_imediata,
     aceite_timestamp,
     versao_termos || "2026-04-06",
-    cpfLimpo,
-    telefoneLimpo,
     fingerprint || ""
   ]
 );
@@ -10262,10 +10056,10 @@ await client.query(
     console.log("PIX premium criado com sucesso");
 
     return res.json({
-      qr_code_url: `data:image/png;base64,${pixQrData.encodedImage}`,
-      copia_cola: pixQrData.payload,
-      expires_at: pixQrData.expirationDate || null,
-      order_id: asaasPaymentId,
+      qr_code_url: brCodeB64Premium ? `data:image/png;base64,${brCodeB64Premium}` : null,
+      copia_cola: brCodePremium,
+      expires_at: expiresAtPremium,
+      order_id: abacateIdPremium,
       reutilizado: false
     });
   } catch (err) {
