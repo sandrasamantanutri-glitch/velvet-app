@@ -674,19 +674,13 @@ function prepararPagamento() {
   document.getElementById("blocoCpfTelefone")?.classList.remove("hidden");
 }
 
-// Taxa Asaas: R$ 1,99 fixo + 10% do valor com desconto
-function calcTaxaAsaas(valorComDesconto) {
-  const taxa  = Number((1.99 + valorComDesconto * 0.10).toFixed(2));
-  const total = Number((valorComDesconto + taxa).toFixed(2));
-  return { taxa, total };
-}
-
 function preencherResumoVIP({ valorBase = 0, desconto = 0 }) {
   valorBase = Number(valorBase || 0);
   desconto  = Number(desconto  || 0);
 
   const valorComDesconto = Math.max(0, valorBase - desconto);
-  const { taxa, total }  = calcTaxaAsaas(valorComDesconto);
+  const taxa  = Number((valorComDesconto * 0.15).toFixed(2));
+  const total = Number((valorComDesconto + taxa).toFixed(2));
 
   document.getElementById("vipValorBase").textContent =
     valorBase.toFixed(2).replace(".", ",");
@@ -1526,6 +1520,10 @@ function atualizarResumoCartaoComDadosServidor(data) {
 let _metodoVIPPendente = null;
 
 function abrirConfirmacaoVIP(metodo) {
+  if (window.PAGAMENTO_TIPO_ATUAL !== "vip") {
+    mostrarMetodo(metodo);
+    return;
+  }
   _metodoVIPPendente = metodo;
   document.getElementById("popupPagamentoVelvet")?.classList.add("hidden");
   const popup = document.getElementById("popupConfirmacaoVIP");

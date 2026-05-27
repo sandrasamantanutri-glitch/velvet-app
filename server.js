@@ -546,7 +546,7 @@ app.post("/api/webhook/asaas", express.json(), async (req, res) => {
                  (cliente_id, modelo_id, text, sender, tipo,
                   created_at, lida, visto, deletada)
                VALUES ($1,$2,$3,'modelo','texto',NOW(),false,false,false)`,
-              [cliente_id, modelo_id, "Oii!! Bem vindo, como vc chama?🔥"]
+              [cliente_id, modelo_id, "Oii!! Bem vindo(a), qual seu nome?🥰"]
             );
           }
 
@@ -739,7 +739,7 @@ app.post("/api/webhook/asaas", express.json(), async (req, res) => {
                  (cliente_id, modelo_id, text, sender, tipo,
                   created_at, lida, visto, deletada)
                VALUES ($1,$2,$3,'modelo','texto',NOW(),false,false,false)`,
-              [cliente_id, modelo_id, "Oii!! Bem vindo, como vc chama?🔥"]
+              [cliente_id, modelo_id, "Oii!! Bem vindo(a), qual seu nome?🥰"]
             );
           }
 
@@ -1134,7 +1134,7 @@ app.post("/api/webhook/abacatepay", express.json(), async (req, res) => {
                (cliente_id, modelo_id, text, sender, tipo,
                 created_at, lida, visto, deletada)
              VALUES ($1,$2,$3,'modelo','texto',NOW(),false,false,false)`,
-            [cliente_id, modelo_id, "Oii!! Bem vindo, como vc chama?🔥"]
+            [cliente_id, modelo_id, "Oii!! Bem vindo(a), qual seu nome?🥰🔥"]
           );
         }
 
@@ -1982,7 +1982,7 @@ await client.query(
           [
             cliente_id,
             modelo_id,
-            "Oii!! Bem vindo, como vc chama?🔥"
+            "Oii!! Bem vindo(a), qual seu nome?🥰"
           ]
         );
         console.log("Mensagem de boas-vindas enviada");
@@ -2919,7 +2919,7 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
           [
             cliente_id,
             modelo_id,
-            "Oii!! Bem vindo, como vc chama?🔥"
+            "Oii!! Bem vindo(a), qual seu nome?🥰"
           ]
         );
       }
@@ -10034,7 +10034,7 @@ await client.query(
     'pendente','pix',
     $4,$5,$6,$7,
     'abacatepay',$8,$9,$10,
-    $11,$12,$13,$14,$15,
+    $11,$12,$13,$14,$15,$16,
     NOW(),NOW()
   )
   ON CONFLICT (premium_post_id, cliente_id)
@@ -10517,7 +10517,7 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
           `INSERT INTO messages
              (cliente_id, modelo_id, text, sender, tipo, created_at, lida, visto, deletada)
            VALUES ($1,$2,$3,'modelo','texto',NOW(),false,false,false)`,
-          [cliente_id, modeloIdNum, "Oii!! Bem vindo, como vc chama?🔥"]
+          [cliente_id, modeloIdNum, "Oii!! Bem vindo(a), qual seu nome?🥰"]
         );
       }
     }

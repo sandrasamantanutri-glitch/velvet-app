@@ -131,17 +131,14 @@
         Pagar com Cartão
       </button>
 
-      <!-- Selo Asaas obrigatório — Resolução Conjunta Bacen nº 16/2025. Substituir URL pelo link enviado pelo suporte Asaas. -->
-      <div class="asaas-selo">
-        <span style="display:flex;align-items:center;gap:6px;opacity:0.7;font-size:0.72rem;color:#888;">
-          <img src="/assets/stripe.png" alt="Stripe" style="height:18px;width:auto;display:inline-block;vertical-align:middle;">
-          Pagamento processado com segurança pela Stripe
-        </span>
-      </div>
     </div> <!-- FECHAMENTO CORRETO DA ETAPA INICIAL -->
 
     <!-- ETAPA PIX -->
     <div id="etapaPagamentoPix" class="etapa-pagamento hidden">
+
+      <button type="button" class="btn-voltar-modal" onclick="voltarEtapaPagamento()">
+        <img src="/assets/voltar.png" alt="Voltar">
+      </button>
 
       <div id="pixLoading" class="pix-loading hidden">
         <strong data-i18n="chatc.pix_loading">⏳ Aguarde…</strong>
@@ -169,16 +166,6 @@
         Copiar código
       </button>
 
-      <button type="button" class="btn-secundario" onclick="voltarEtapaPagamento()" data-i18n="chatc.btn_back">
-        Voltar
-      </button>
-
-      <div class="asaas-selo">
-        <span style="display:flex;align-items:center;gap:6px;opacity:0.7;font-size:0.72rem;color:#888;">
-          <img src="/assets/stripe.png" alt="Stripe" style="height:18px;width:auto;display:inline-block;vertical-align:middle;">
-          Pagamento processado com segurança pela Stripe
-        </span>
-      </div>
     </div>
 
     <!-- ETAPA CARTÃO -->
