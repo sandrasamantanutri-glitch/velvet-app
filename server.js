@@ -9291,14 +9291,12 @@ if (Number.isNaN(dataAceite.getTime())) {
 
     const abacateResVip = await abacatePayRequest("POST", "/transparents/create", {
       method: "PIX",
-      data: {
-        amount,
-        description: "Assinatura VIP Velvet",
-        expiresIn: 3600,
-        customer: { name: nomeFinal, email: emailFinal },
-        metadata: {},
-        externalId: `vip_${cliente_id}_${modeloIdNum}`
-      }
+      amount,
+      description: "Assinatura VIP Velvet",
+      expiresIn: 3600,
+      customer: { name: nomeFinal, email: emailFinal },
+      metadata: {},
+      externalId: `vip_${cliente_id}_${modeloIdNum}`
     });
 
     const abacateId  = abacateResVip?.data?.id;
@@ -9562,14 +9560,12 @@ if (Number.isNaN(dataAceite.getTime())) {
 
     const abacatePayload = {
       method: "PIX",
-      data: {
-        amount: valorCentavos,
-        description: "Mídia Premium Velvet",
-        expiresIn: 3600,
-        customer: { name: nomeCliente, email: emailCliente },
-        metadata: {},
-        externalId: `midia_${cliente_id}_${conteudo_id}`
-      }
+      amount: valorCentavos,
+      description: "Mídia Premium Velvet",
+      expiresIn: 3600,
+      customer: { name: nomeCliente, email: emailCliente },
+      metadata: {},
+      externalId: `midia_${cliente_id}_${conteudo_id}`
     };
 
     console.log("AbacatePay PIX Mídia payload:", JSON.stringify(abacatePayload));
@@ -9962,14 +9958,12 @@ if (Number.isNaN(dataAceite.getTime())) {
 
     const abacateResPremium = await abacatePayRequest("POST", "/transparents/create", {
       method: "PIX",
-      data: {
-        amount,
-        description: "Post Premium Velvet",
-        expiresIn: 3600,
-        customer: { name: nomeFinal, email: emailFinal },
-        metadata: {},
-        externalId: `premium_${cliente_id}_${premiumPostIdNum}`
-      }
+      amount,
+      description: "Post Premium Velvet",
+      expiresIn: 3600,
+      customer: { name: nomeFinal, email: emailFinal },
+      metadata: {},
+      externalId: `premium_${cliente_id}_${premiumPostIdNum}`
     });
 
     const abacateIdPremium  = abacateResPremium?.data?.id;
