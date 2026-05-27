@@ -1763,8 +1763,14 @@ app.post("/api/webhook/stripe", express.raw({ type: "application/json" }), async
       return res.status(400).send("missing signature");
     }
 
-    // Stripe webhook removed - gateway migrated to Asaas
-    throw new Error("Stripe webhook disabled - use /api/webhook/asaas instead");
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      console.log("🚨 STRIPE_WEBHOOK_SECRET não configurado");
+      return res.status(500).send("webhook secret not configured");
+    }
+
+    event = stripe.webhooks.constructEvent(req.body, signature, webhookSecret);
+    console.log("✅ Assinatura Stripe válida");
   } catch (err) {
     console.error("Erro validando assinatura do webhook Stripe:", err.message);
     return res.status(400).send("invalid signature");
