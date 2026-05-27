@@ -3526,6 +3526,8 @@ async function asaasRequest(method, path, body) {
 const ABACATEPAY_BASE = "https://api.abacatepay.com/v2";
 
 async function abacatePayRequest(method, path, body) {
+  console.log(`[AbacatePay] ${method} ${path} body:`, JSON.stringify(body));
+  console.log(`[AbacatePay] API_KEY set:`, !!process.env.ABACATEPAY_API_KEY);
   const res = await axios({
     method,
     url: `${ABACATEPAY_BASE}${path}`,
