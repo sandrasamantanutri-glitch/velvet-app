@@ -9396,7 +9396,7 @@ if (Number.isNaN(dataAceite.getTime())) {
 // MIDIA PIX
 // ===========================
 
-app.post("/api/pagamento/midia/pix", auth, async (req, res) => {
+app.post("/api/pagamento/midia/pix", authCliente, async (req, res) => {
 
   const client = await db.connect();
 
@@ -9443,7 +9443,11 @@ if (Number.isNaN(dataAceite.getTime())) {
     ================================ */
 
     const clienteRes = await client.query(
-      "SELECT id FROM clientes WHERE user_id = $1",
+      `SELECT c.id, c.nome, c.bloqueado, u.email
+       FROM clientes c
+       LEFT JOIN users u ON u.id = c.user_id
+       WHERE c.user_id = $1
+       LIMIT 1`,
       [userId]
     );
 
@@ -9451,7 +9455,11 @@ if (Number.isNaN(dataAceite.getTime())) {
       return res.status(404).json({ error: "Cliente não encontrado" });
     }
 
-    const cliente_id = clienteRes.rows[0].id;
+    const { id: cliente_id, nome: nomeDB, bloqueado, email: emailDB } = clienteRes.rows[0];
+
+    if (bloqueado) {
+      return res.status(403).json({ error: "Conta bloqueada." });
+    }
 
     /* ================================
        BUSCAR MIDIA
@@ -9544,10 +9552,15 @@ if (Number.isNaN(dataAceite.getTime())) {
 
     console.log("Criando pagamento PIX Mídia no AbacatePay...");
 
-    const nomeCliente  = req.user.nome || "Cliente Velvet";
-    const emailCliente = req.user.email;
+    const nomeCliente  = String(nomeDB || "").trim() || "Cliente Velvet";
+    const emailCliente = String(emailDB || "").trim();
 
-    const abacateResMidia = await abacatePayRequest("POST", "/transparents/create", {
+    if (!emailCliente) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "E-mail do cliente não encontrado." });
+    }
+
+    const abacatePayload = {
       method: "PIX",
       data: {
         amount: valorCentavos,
@@ -9557,7 +9570,11 @@ if (Number.isNaN(dataAceite.getTime())) {
         metadata: {},
         externalId: `midia_${cliente_id}_${conteudo_id}`
       }
-    });
+    };
+
+    console.log("AbacatePay PIX Mídia payload:", JSON.stringify(abacatePayload));
+
+    const abacateResMidia = await abacatePayRequest("POST", "/transparents/create", abacatePayload);
 
     const abacateIdMidia  = abacateResMidia?.data?.id;
     const brCodeMidia     = abacateResMidia?.data?.brCode;

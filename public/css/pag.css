@@ -1140,9 +1140,9 @@ body {
 .stripe-element-box {
   height: 46px;
   padding: 13px 14px;
-  border: 1.5px solid #2e2e3e;
+  border: 1.5px solid #d8d8e2;
   border-radius: 10px;
-  background: #12121c;
+  background: #fafafe;
   box-sizing: border-box;
   transition: border-color .2s ease, box-shadow .2s ease;
 }
