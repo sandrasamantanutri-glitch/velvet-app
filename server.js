@@ -185,7 +185,7 @@ const uploadVerificacao = multer({
 // MODO MANUTENÇÃO
 // ===============================
 app.use((req, res, next) => {
-  const MANUTENCAO = true; // mude para false para reativar o site
+  const MANUTENCAO = false; // mude para false para reativar o site
 
   if (!MANUTENCAO) return next();
 

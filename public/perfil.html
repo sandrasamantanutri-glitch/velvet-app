@@ -210,9 +210,12 @@
 <!-- moeda fixa BRL — Asaas só processa BRL -->
 
 <div class="acoes-metodo">
-<button id="btnEscolherPix" type="button" class="btn-principal" onclick="mostrarMetodo('pix')" data-i18n="pagamento.btn_pix">
+<button id="btnEscolherPix" type="button" class="btn-principal" disabled style="opacity:0.45;cursor:not-allowed;">
   ⚡ Desbloquear com Pix
 </button>
+<p style="margin:4px 0 12px;font-size:0.78rem;color:#f59e0b;text-align:center;">
+  ⚠️ Pagamento via Pix temporariamente indisponível.
+</p>
 
 <button id="btnEscolherCartao" type="button" class="btn-principal" onclick="mostrarMetodo('cartao')" data-i18n="pagamento.btn_cartao">
   💳 Desbloquear com cartão
