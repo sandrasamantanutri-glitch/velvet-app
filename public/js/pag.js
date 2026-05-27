@@ -681,8 +681,14 @@ function prepararPagamento() {
     });
 
     document.querySelector(".midia-detalhes")?.classList.remove("hidden");
+
+    // Mídia não requer CPF/Telefone
+    document.getElementById("blocoCpfTelefone")?.classList.add("hidden");
     return;
   }
+
+  // VIP e premium podem precisar de CPF/Telefone (PIX)
+  document.getElementById("blocoCpfTelefone")?.classList.remove("hidden");
 }
 
 // Taxa Asaas: R$ 1,99 fixo + 10% do valor com desconto
@@ -713,17 +719,18 @@ function preencherResumoVIP({ valorBase = 0, desconto = 0 }) {
 }
 
 function preencherResumoMidia({ valor = 0, desconto = 0, descricao = "" }) {
-  valor   = Number(valor   || 0);
+  valor    = Number(valor   || 0);
   desconto = Number(desconto || 0);
 
   const valorComDesconto = Math.max(0, valor - desconto);
-  const { taxa, total }  = calcTaxaAsaas(valorComDesconto);
+  const taxa  = Number((valorComDesconto * 0.15).toFixed(2));
+  const total = Number((valorComDesconto + taxa).toFixed(2));
 
   document.getElementById("midiaValorBase").textContent =
     valor.toFixed(2).replace(".", ",");
 
   const elDesc = document.getElementById("midiaDesconto");
-  if (elDesc) elDesc.textContent = desconto.toFixed(2).replace(".", ",");
+  if (elDesc) elDesc.textContent = desconto > 0 ? desconto.toFixed(2).replace(".", ",") : "—";
 
   document.getElementById("midiaTaxa").textContent =
     taxa.toFixed(2).replace(".", ",");
@@ -731,14 +738,22 @@ function preencherResumoMidia({ valor = 0, desconto = 0, descricao = "" }) {
   document.getElementById("midiaTotal").textContent =
     total.toFixed(2).replace(".", ",");
 
-const boxMidia =
-  document.querySelector(".midia-beneficios") ||
-  document.querySelector(".vip-beneficios");
+  const boxMidia =
+    document.querySelector(".midia-beneficios") ||
+    document.querySelector(".vip-beneficios");
 
-if (boxMidia) {
-  boxMidia.innerHTML = `
-    ${descricao || "Acesso Imediato"}
-  `;
+  if (boxMidia) {
+    const extras = descricao ? `<li>✓ ${descricao}</li>` : "";
+    boxMidia.innerHTML = `
+      <div class="beneficios-card">
+        <span class="beneficios-titulo">Benefícios</span>
+        <ul class="beneficios-lista">
+          <li>✓ Acesso imediato à mídia enviada</li>
+          <li>✓ Conteúdo disponível no chat após confirmação</li>
+          ${extras}
+        </ul>
+      </div>
+    `;
   }
 }
 
@@ -1534,6 +1549,27 @@ function atualizarResumoCartaoComDadosServidor(data) {
   }
 }
 
+
+// ── Confirmação VIP (anti-chargeback) ────────────────────────────────────────
+let _metodoVIPPendente = null;
+
+function abrirConfirmacaoVIP(metodo) {
+  _metodoVIPPendente = metodo;
+  const popup = document.getElementById("popupConfirmacaoVIP");
+  if (popup) popup.classList.remove("hidden");
+}
+
+function fecharConfirmacaoVIP() {
+  _metodoVIPPendente = null;
+  const popup = document.getElementById("popupConfirmacaoVIP");
+  if (popup) popup.classList.add("hidden");
+}
+
+function confirmarVIPEContinuar() {
+  const metodo = _metodoVIPPendente;
+  fecharConfirmacaoVIP();
+  if (metodo) mostrarMetodo(metodo);
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   bindFormularioAsaasPagamento();

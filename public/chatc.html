@@ -71,34 +71,35 @@
       <div class="midia-detalhes hidden">
         <div class="midia-valores">
           <div class="linha">
-            <span data-i18n="chatc.label_content">Conteúdo</span>
-            <span id="midiaValorBase">0,00</span>
+            <span>Valor Mídia</span>
+            <span>R$ <span id="midiaValorBase">0,00</span></span>
           </div>
           <div class="linha desconto">
-            <span data-i18n="pagamento.linha_desconto">Desconto</span>
-            <span id="midiaDesconto">0,00</span>
+            <span>Desconto</span>
+            <span>− R$ <span id="midiaDesconto">0,00</span></span>
           </div>
-          <div class="linha">
-            <span data-i18n="chatc.label_fee">Taxa de Transação</span>
-            <span id="midiaTaxa">0,00</span>
+          <div class="linha taxa">
+            <span>Taxa de transação</span>
+            <span>R$ <span id="midiaTaxa">0,00</span></span>
           </div>
           <div class="linha total">
-            <span data-i18n="chatc.label_total">Total</span>
-            <span id="midiaTotal">0,00</span>
+            <span>Total</span>
+            <span>R$ <span id="midiaTotal">0,00</span></span>
           </div>
         </div>
 
         <div class="midia-beneficios"></div>
       </div>
 
-      <div class="campo-cpf" id="campoCpf">
-        <label for="cpfPagamento" data-i18n="chatc.label_cpf">CPF</label>
-        <input id="cpfPagamento" type="text" maxlength="14">
-      </div>
-
-      <div class="campo-cpf" id="campoTelefone">
-        <label for="phonePagamento" data-i18n="chatc.label_phone">Telefone</label>
-        <input id="phonePagamento" type="text" maxlength="16">
+      <div id="blocoCpfTelefone">
+        <div class="campo-cpf" id="campoCpf">
+          <label for="cpfPagamento" data-i18n="chatc.label_cpf">CPF</label>
+          <input id="cpfPagamento" type="text" maxlength="14">
+        </div>
+        <div class="campo-cpf" id="campoTelefone">
+          <label for="phonePagamento" data-i18n="chatc.label_phone">Telefone</label>
+          <input id="phonePagamento" type="text" maxlength="16">
+        </div>
       </div>
 
       <div class="termos-pagamento">
@@ -186,6 +187,10 @@
     <!-- ETAPA CARTÃO -->
     <div id="etapaPagamentoCartao" class="hidden">
 
+      <button type="button" class="btn-voltar-modal" onclick="voltarEtapaPagamento()">
+        <img src="/assets/voltar.png" alt="Voltar">
+      </button>
+
       <div id="cartaoResumoValor" class="hidden" style="text-align:center;margin-bottom:12px;font-size:0.95rem;">
         <span data-i18n="pagamento.voce_sera_cobrado">Você será cobrado:</span>
         <strong id="cartaoResumoTotal" style="font-size:1.1rem;margin-left:6px;"></strong>
@@ -213,10 +218,6 @@
           Confirmar
         </button>
       </form>
-
-      <button type="button" class="btn-secundario" onclick="voltarEtapaPagamento()" data-i18n="chatc.btn_back">
-        Voltar
-      </button>
 
       <div class="asaas-selo">
         <span style="display:flex;align-items:center;gap:6px;opacity:0.7;font-size:0.72rem;color:#888;">

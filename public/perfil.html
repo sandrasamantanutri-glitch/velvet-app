@@ -137,11 +137,6 @@
     </div>
   </div>
 
-  <small class="vip-info">
-    <span data-i18n="pagamento.info_renovacao">- A assinatura é sujeita a renovação automática e tem validade de <strong>30 dias,</strong> você pode cancelar quando quiser.</span><br>
-    <span data-i18n="pagamento.info_reembolso">- Pagamentos realizados não são reembolsados, exceto em casos de erros na plataforma, analisamos o caso através do</span>
-    <a href="/contato.html"><strong data-i18n="pagamento.info_reembolso_link">formulário de contato.</strong></a><br>
-  </small>
 </div>
 
 <!-- DETALHES MÍDIA -->
@@ -201,10 +196,6 @@
       <span data-i18n="pagamento.aceite_termos">Li e aceito os Termos de Uso e as Políticas da plataforma.</span>
     </label>
 
-    <label class="termos-check-linha" for="aceiteExecucaoImediata">
-      <input type="checkbox" id="aceiteExecucaoImediata" required />
-      <span data-i18n="pagamento.aceite_execucao">Declaro ciência de que o acesso à mídia/serviço digital é imediato após o pagamento e que, com isso, posso perder o direito de arrependimento.</span>
-    </label>
   </div>
 </div>
 
@@ -218,19 +209,11 @@
   ⚠️ Pagamento via Pix temporariamente indisponível.
 </p>
 
-<button id="btnEscolherCartao" type="button" class="btn-principal" onclick="mostrarMetodo('cartao')" data-i18n="pagamento.btn_cartao">
+<button id="btnEscolherCartao" type="button" class="btn-principal" onclick="abrirConfirmacaoVIP('cartao')">
   💳 Desbloquear com cartão
 </button>
 </div>
 
-<!-- Selo Asaas obrigatório — Resolução Conjunta Bacen nº 16/2025. Substituir URL pelo link enviado pelo suporte Asaas. -->
-<div class="asaas-selo">
-  <a href="https://asaas.com" target="_blank" rel="noopener noreferrer">
-    <img src="https://baas.asaas.com/selos/Servicos_financeiros_Asaas-Reduzida-Positivo.svg?id=33d6fe29-b807-4866-86aa-5098e022ef04"
-         alt="Serviços Financeiros Asaas"
-         width="160" height="48" />
-  </a>
-</div>
 </div>
 
 
@@ -260,13 +243,6 @@
     Copiar código
   </button>
 
-  <div class="asaas-selo">
-    <a href="https://asaas.com" target="_blank" rel="noopener noreferrer">
-      <img src="https://baas.asaas.com/selos/Servicos_financeiros_Asaas-Reduzida-Positivo.svg?id=33d6fe29-b807-4866-86aa-5098e022ef04"
-           alt="Serviços Financeiros Asaas"
-           width="160" height="48" />
-    </a>
-  </div>
 </div>
 
 <!-- ETAPA 3 CARTÃO -->
@@ -310,6 +286,33 @@
 </div>
 
 <input type="file" id="inputUploadMidia" accept="image/*,video/*" hidden>
+
+<!-- POPUP CONFIRMAÇÃO VIP -->
+<div id="popupConfirmacaoVIP" class="velvet-modal hidden">
+  <div class="velvet-backdrop" onclick="fecharConfirmacaoVIP()"></div>
+  <div class="velvet-box">
+    <button class="velvet-close" type="button" onclick="fecharConfirmacaoVIP()">×</button>
+
+    <h2 class="velvet-title">Confirmação de Assinatura VIP</h2>
+
+    <div class="vip-confirmacao-body">
+      <p class="vip-confirmacao-intro">Leia com atenção antes de prosseguir:</p>
+
+      <p>A assinatura VIP libera <strong>acesso imediato</strong> a todo o conteúdo exclusivo da criadora — mensagens no chat, fotos e vídeos do feed. O acesso é concedido no instante em que o pagamento é confirmado.</p>
+
+      <p>Por se tratar de um <strong>serviço digital com entrega imediata e irreversível</strong>, o valor pago <strong>não é reembolsado</strong> após a liberação do acesso. Isso inclui casos em que você já visualizou conteúdos ou iniciou conversa com a criadora, conforme previsto em nossos <a href="/terms.html" target="_blank" rel="noopener">Termos de Uso</a>.</p>
+
+      <p>Contestações de pagamento (chargebacks) serão analisadas com base nos registros de acesso e uso da plataforma, e poderão ser contestadas junto à operadora com as evidências disponíveis.</p>
+
+      <p class="vip-confirmacao-excecao">Se identificar um erro técnico real na plataforma, entre em contato com o nosso suporte <strong>antes</strong> de acionar sua operadora de cartão.</p>
+    </div>
+
+    <div class="vip-confirmacao-acoes">
+      <button type="button" class="btn-principal" onclick="confirmarVIPEContinuar()">Sim, quero continuar</button>
+      <button type="button" class="btn-secundario" onclick="fecharConfirmacaoVIP()">Voltar</button>
+    </div>
+  </div>
+</div>
 
 <!-- POPUP UPLOAD FEED -->
 <div id="popupUploadFeed" class="velvet-modal hidden">

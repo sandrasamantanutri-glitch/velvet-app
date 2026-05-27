@@ -925,8 +925,11 @@ body {
 
 /* ── Bloco de valores (VIP e Mídia) ── */
 .midia-valores {
+  background: #f5f4ff;
+  border: 1px solid #e4e0ff;
+  border-radius: 12px;
+  padding: 14px 16px;
   margin: 12px 0;
-  font-size: 12px;
 }
 
 .midia-valores .linha {
@@ -934,24 +937,97 @@ body {
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-  margin-bottom: 6px;
-  color: #1E1E26;
-  padding: 0 4px;
+  padding: 5px 0;
+  color: #4a4a6a;
+  font-size: 0.85rem;
+  border-bottom: 1px solid #ece9ff;
+}
+
+.midia-valores .linha:last-child {
+  border-bottom: none;
 }
 
 .midia-valores .linha span {
-  font-size: 12px;
+  font-size: 0.85rem;
 }
 
 .midia-valores .desconto span {
-  color: #1E1E26;
+  color: #22c55e;
 }
 
-.midia-valores .linha.total span,
-.midia-valores .linha.total strong {
-  font-size: 16px;
+.midia-valores .linha.taxa span {
+  color: #888;
+}
+
+.midia-valores .linha.total {
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 2px solid #d4ccff;
+  border-bottom: none;
+}
+
+.midia-valores .linha.total span {
+  font-size: 1rem;
   font-weight: 700;
   color: #7B2CFF;
+}
+
+/* ── Benefícios ── */
+.beneficios-card {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin: 10px 0 4px;
+}
+
+.beneficios-titulo {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #16a34a;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+
+.beneficios-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.beneficios-lista li {
+  font-size: 0.82rem;
+  color: #166534;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Botão voltar modal cartão ── */
+.btn-voltar-modal {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.btn-voltar-modal img {
+  height: 22px;
+  width: auto;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.btn-voltar-modal:hover img {
+  opacity: 1;
 }
 
 /* ── Form cartão Asaas ── */
@@ -1066,7 +1142,7 @@ body {
   padding: 13px 14px;
   border: 1.5px solid #2e2e3e;
   border-radius: 10px;
-  background: #fafafe;
+  background: #12121c;
   box-sizing: border-box;
   transition: border-color .2s ease, box-shadow .2s ease;
 }
@@ -1084,5 +1160,47 @@ body {
   color: #ff6b6b;
   font-size: 0.8rem;
   min-height: 18px;
+}
+
+/* ── Popup confirmação VIP ── */
+.vip-confirmacao-body {
+  font-size: 0.875rem;
+  color: #3a3a5c;
+  line-height: 1.6;
+  margin: 12px 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vip-confirmacao-intro {
+  font-weight: 700;
+  color: #1e1e26;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.vip-confirmacao-body p {
+  margin: 0;
+}
+
+.vip-confirmacao-body a {
+  color: #7B2CFF;
+  text-decoration: underline;
+}
+
+.vip-confirmacao-excecao {
+  background: #f0fdf4;
+  border-left: 3px solid #22c55e;
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: #166534;
+  font-size: 0.82rem;
+}
+
+.vip-confirmacao-acoes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 

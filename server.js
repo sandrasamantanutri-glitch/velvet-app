@@ -882,17 +882,19 @@ app.post("/api/webhook/asaas", express.json(), async (req, res) => {
 });
 
 // ── WEBHOOK WOOVI (OpenPix) ──────────────────────────────────────────────────
-app.post("/api/webhook/woovi", express.json(), async (req, res) => {
+app.post("/api/webhook/abacatepay", express.json(), async (req, res) => {
   console.log("======================================");
-  console.log("🔥 WEBHOOK WOOVI RECEBIDO");
+  console.log("🔥 WEBHOOK ABACATEPAY RECEBIDO");
 
-  // Verificação de token — configure WOOVI_WEBHOOK_SECRET no Render
-  if (process.env.WOOVI_WEBHOOK_SECRET) {
+  // Verificação de token — configure ABACATEPAY_WEBHOOK_SECRET no Render
+  if (process.env.ABACATEPAY_WEBHOOK_SECRET) {
     const tokenRecebido =
       req.headers["authorization"] ||
-      req.headers["x-openpix-signature"] || "";
-    if (tokenRecebido !== process.env.WOOVI_WEBHOOK_SECRET) {
-      console.warn("🚨 Webhook Woovi: token inválido");
+      req.headers["x-abacatepay-token"] || "";
+    const esperado = process.env.ABACATEPAY_WEBHOOK_SECRET;
+    const tokenLimpo = tokenRecebido.replace(/^Bearer\s+/i, "");
+    if (tokenLimpo !== esperado) {
+      console.warn("🚨 Webhook AbacatePay: token inválido");
       return res.status(401).send("unauthorized");
     }
   }
@@ -900,10 +902,10 @@ app.post("/api/webhook/woovi", express.json(), async (req, res) => {
   const body      = req.body;
   const eventType = String(body?.event || "").toUpperCase();
 
-  // Payload: { event, charge } ou { event, transaction: { charge } }
-  const charge        = body?.charge || body?.transaction?.charge || {};
-  const correlationID = charge?.correlationID || body?.transaction?.correlationID || null;
-  const valorCentavos = Number(charge?.value || body?.transaction?.value || 0);
+  // Payload AbacatePay: { event, data: { billing: { id, correlationID, amount, status } } }
+  const billing       = body?.data?.billing || body?.billing || {};
+  const correlationID = billing?.correlationID || billing?.id || null;
+  const valorCentavos = Number(billing?.amount || billing?.value || 0);
   const valorPago     = valorCentavos > 0 ? valorCentavos / 100 : 0;
 
   console.log("Evento:", eventType, "| CorrelationID:", correlationID, "| Valor:", valorPago);
@@ -911,11 +913,14 @@ app.post("/api/webhook/woovi", express.json(), async (req, res) => {
   if (!correlationID) return res.status(200).send("ok");
 
   const isPaidEvent = [
-    "OPENPIX:TRANSACTION_RECEIVED",
-    "OPENPIX:CHARGE_COMPLETED"
+    "BILLING.PAID",
+    "BILLING.COMPLETED"
   ].includes(eventType);
 
-  const isFailedEvent = ["OPENPIX:CHARGE_EXPIRED"].includes(eventType);
+  const isFailedEvent = [
+    "BILLING.EXPIRED",
+    "BILLING.CANCELLED"
+  ].includes(eventType);
 
   if (!isPaidEvent && !isFailedEvent) return res.status(200).send("ok");
 
@@ -1010,10 +1015,10 @@ app.post("/api/webhook/woovi", express.json(), async (req, res) => {
               payment_id:      dadosParaEmitir.payment_id
             });
           }
-        } catch (e) { console.error("Erro socket premium webhook Woovi:", e); }
+        } catch (e) { console.error("Erro socket premium webhook AbacatePay:", e); }
       }
 
-      console.log("✅ WEBHOOK WOOVI PREMIUM FINALIZADO");
+      console.log("✅ WEBHOOK ABACATEPAY PREMIUM FINALIZADO");
       return res.status(200).send("ok");
     }
 
@@ -1029,7 +1034,7 @@ app.post("/api/webhook/woovi", express.json(), async (req, res) => {
 
     if (pixRes.rowCount === 0) {
       await client.query("ROLLBACK");
-      console.warn("Woovi webhook: pagamento não encontrado:", correlationID);
+      console.warn("AbacatePay webhook: pagamento não encontrado:", correlationID);
       return res.status(200).send("ok");
     }
 
@@ -1202,15 +1207,15 @@ app.post("/api/webhook/woovi", express.json(), async (req, res) => {
             });
           }
         }
-      } catch (e) { console.error("Erro socket webhook Woovi:", e); }
+      } catch (e) { console.error("Erro socket webhook AbacatePay:", e); }
     }
 
-    console.log("✅ WEBHOOK WOOVI FINALIZADO");
+    console.log("✅ WEBHOOK ABACATEPAY FINALIZADO");
     return res.status(200).send("ok");
 
   } catch (err) {
     try { await client.query("ROLLBACK"); } catch (_) {}
-    console.error("🔥 ERRO WEBHOOK WOOVI:", err);
+    console.error("🔥 ERRO WEBHOOK ABACATEPAY:", err);
     return res.status(500).send("erro");
   } finally {
     client.release();
