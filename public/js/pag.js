@@ -946,9 +946,12 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
     const codigo = document.getElementById("pixCodigo");
     const btnCopiar = document.getElementById("btnCopiarPix");
 
+    const rawB64 = data.qr_code_base64 || null;
     const qrCodeUrl =
       data.qr_code_url ||
-      (data.qr_code_base64 ? `data:image/png;base64,${data.qr_code_base64}` : null);
+      (rawB64
+        ? (rawB64.startsWith("data:") ? rawB64 : `data:image/png;base64,${rawB64}`)
+        : null);
 
     const copiaCola =
       data.copia_cola ||
