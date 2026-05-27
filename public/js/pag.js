@@ -259,7 +259,7 @@ function resetarEstadoCartao() {
     stripeCardElement = null;
   }
 
-  const container = document.getElementById("asaas-card-form");
+  const container = document.getElementById("stripe-card-form");
   if (container) {
     container.innerHTML = "";
     delete container.dataset.rendered;
@@ -275,8 +275,8 @@ function mostrarLoadingCartao() {
   document.getElementById("formStripePagamento")?.classList.add("hidden");
 }
 
-async function renderFormAsaasCartao() {
-  const container = document.getElementById("asaas-card-form");
+async function renderFormCartao() {
+  const container = document.getElementById("stripe-card-form");
   if (!container || container.dataset.rendered === "true") return;
   container.dataset.rendered = "true";
 
@@ -346,7 +346,7 @@ async function renderFormAsaasCartao() {
   }
 }
 
-async function confirmarPagamentoAsaasCartao() {
+async function confirmarPagamentoCartao() {
   if (pagamentoEmProcesso) return { sucesso: false };
   pagamentoEmProcesso = true;
 
@@ -471,7 +471,7 @@ async function confirmarPagamentoAsaasCartao() {
     return { sucesso: true, aguardando_confirmacao: data.status !== "pago" };
 
   } catch (err) {
-    console.error("Erro confirmarPagamentoAsaasCartao:", err);
+    console.error("Erro confirmarPagamento:", err);
     document.getElementById("cartaoLoading")?.classList.add("hidden");
     document.getElementById("formStripePagamento")?.classList.remove("hidden");
     atualizarStatusCartao(t("pag.falha_pagamento") || "Falha");
@@ -481,12 +481,12 @@ async function confirmarPagamentoAsaasCartao() {
   }
 }
 
-async function inicializarFluxoCartaoAsaas() {
+async function inicializarFluxoCartao() {
   try {
     resetarEstadoCartao();
 
     const form = document.getElementById("formStripePagamento");
-    const container = document.getElementById("asaas-card-form");
+    const container = document.getElementById("stripe-card-form");
     const btn = document.getElementById("btnConfirmarStripe");
 
     if (!form || !container) throw new Error("Formulário de cartão não encontrado.");
@@ -495,10 +495,10 @@ async function inicializarFluxoCartaoAsaas() {
     if (btn) btn.disabled = false;
     atualizarStatusCartao(t("pagamento.btn_confirmar_stripe") || "Confirmar pagamento");
 
-    await renderFormAsaasCartao();
-    bindFormularioAsaasPagamento();
+    await renderFormCartao();
+    bindFormularioPagamento();
   } catch (err) {
-    console.error("Erro ao inicializar fluxo cartão Asaas:", err);
+    console.error("Erro ao inicializar fluxo cartão:", err);
     alert(err.message || t("pag.erro_preparar_cartao") || "Erro ao preparar pagamento.");
   }
 }
@@ -523,14 +523,14 @@ async function mostrarMetodo(tipo) {
     if (window.PAGAMENTO_TIPO_ATUAL === "vip")     iniciarCartaoVip();
     if (window.PAGAMENTO_TIPO_ATUAL === "midia")   iniciarCartaoMidia();
     if (window.PAGAMENTO_TIPO_ATUAL === "premium") iniciarCartaoPremium();
-    await inicializarFluxoCartaoAsaas();
+    await inicializarFluxoCartao();
     return;
   }
 
   console.warn("Método de pagamento inválido:", tipo);
 }
 
-function bindFormularioAsaasPagamento() {
+function bindFormularioPagamento() {
   const form = document.getElementById("formStripePagamento");
   const btn  = document.getElementById("btnConfirmarStripe");
 
@@ -543,13 +543,13 @@ function bindFormularioAsaasPagamento() {
     atualizarStatusCartao(t("pag.processando") || "Processando...");
 
     try {
-      const resultado = await confirmarPagamentoAsaasCartao();
+      const resultado = await confirmarPagamentoCartao();
       if (!resultado?.sucesso) {
         if (btn) btn.disabled = false;
         atualizarStatusCartao(t("pagamento.btn_confirmar_stripe") || "Confirmar pagamento");
       }
     } catch (err) {
-      console.error("Erro submit Asaas:", err);
+      console.error("Erro submit pagamento:", err);
       if (btn) btn.disabled = false;
       atualizarStatusCartao(t("pagamento.btn_confirmar_stripe") || "Confirmar pagamento");
     }
@@ -1567,7 +1567,7 @@ function confirmarVIPEContinuar() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  bindFormularioAsaasPagamento();
+  bindFormularioPagamento();
 
   document.getElementById("btnGerarPix")?.addEventListener("click", () => {
     confirmarPix();

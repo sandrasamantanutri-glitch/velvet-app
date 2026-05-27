@@ -239,7 +239,7 @@
       texto: "Olá! A Velvet é uma plataforma que permite a conexão entre criadores e seus fãs, e não somos responsáveis pelas ações de usuários, mas para manter a integridade do nosso circulo social, sua reclamação é considerada e avaliada individualmente.\n\nCaso acredite que a situação deve ser reportada: \n\nEnvie um e-mail para contato@velvet.lat com:\n• E-mail utilizado(login)\n• Motivo do pedido\n• Prints que comprovam seu relato.\n\nO prazo de resposta é de 24 a 48 horas úteis!💜"
     },
     {
-      palavras: ["desejo excluir permanente","excluir conta", "apagar conta", "deletar conta", "exclusão de conta", "exclusao de conta", "excluir minha conta"],
+      palavras: ["desejo excluir permanente","excluir conta", "apagar conta", "deletar conta", "exclusão de conta", "exclusao de conta", "excluir minha conta", "cancelar conta", "eliminar conta"],
       texto: "Para excluir sua conta, siga os passos:\n1. Acesse a área do usuário\n2. Vá em Configurações da conta\n3. Role até o final da página\n4. Clique em \"Excluir conta permanentemente\"\n\nSe tiver dificuldades, envie um e-mail para contato@velvet.lat."
     },
     {
@@ -261,6 +261,10 @@
      {
       palavras: ["Nao consigo pagar", "Não consigo pagar", "problema no pagamento", "problema para pagar", "erro no pagamento"],
       texto: "Lamentamos o ocorrido. Para analisarmos o problema, envie um e-mail para contato@velvet.lat com:\n• Print do erro\n• Nome da modelo\n• E-mail da sua conta\n\nNossa equipe verificará e resolverá o issue o mais rápido possível."
+    },
+    {
+      palavras: ["cancelar assinatura", "cancelar minha assinatura", "como cancelo", "quero cancelar", "cancelamento de assinatura", "desativar assinatura"],
+      texto: "Olá! Para cancelar sua assinatura basta ir em Assinaturas e Pagamentos e clicar em cancelar na assinatura que deseja."
     }
   ];
 

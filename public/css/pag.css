@@ -52,15 +52,15 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Selo Asaas — obrigatório em fluxos financeiros (Resolução Conjunta Bacen nº 16/2025) */
-.asaas-selo {
+/* Selo gateway de pagamento */
+.gateway-selo {
   text-align: center;
   margin-top: 18px;
   padding-top: 14px;
   border-top: 1px solid #eee;
 }
 
-.asaas-selo img {
+.gateway-selo img {
   display: inline-block;
   height: 40px;
   width: auto;
@@ -230,7 +230,7 @@ body {
     padding: 14px 12px;
   }
 
-  .asaas-linha {
+  .pagamento-linha {
     flex-direction: column;
     gap: 8px;
   }
@@ -852,7 +852,7 @@ body {
   margin-bottom: 16px;
 }
 
-/* ── Seleção de moeda (oculta — Asaas só processa BRL) ── */
+/* ── Seleção de moeda ── */
 .selecao-moeda {
   display: none !important;
 }
@@ -1030,8 +1030,8 @@ body {
   opacity: 1;
 }
 
-/* ── Form cartão Asaas ── */
-.asaas-form-grid {
+/* ── Form cartão ── */
+.pagamento-form-grid {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1039,12 +1039,12 @@ body {
   text-align: left;
 }
 
-.asaas-linha {
+.pagamento-linha {
   display: flex;
   gap: 10px;
 }
 
-.asaas-campo {
+.pagamento-campo {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -1052,14 +1052,14 @@ body {
   min-width: 0;
 }
 
-.asaas-campo label {
+.pagamento-campo label {
   font-size: 0.78rem;
   font-weight: 600;
   color: #3b3b46;
   margin: 0;
 }
 
-.asaas-campo input {
+.pagamento-campo input {
   width: 100%;
   box-sizing: border-box;
   height: 44px;
@@ -1073,13 +1073,13 @@ body {
   transition: border-color .2s ease, box-shadow .2s ease;
 }
 
-.asaas-campo input:focus {
+.pagamento-campo input:focus {
   border-color: #7B2CFF;
   box-shadow: 0 0 0 3px rgba(123, 44, 255, 0.10);
   background: #fff;
 }
 
-.asaas-campo input::placeholder {
+.pagamento-campo input::placeholder {
   color: #9a9aaa;
   font-size: 14px;
 }

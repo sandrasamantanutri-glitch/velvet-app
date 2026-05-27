@@ -134,7 +134,7 @@
 <!-- AVISO DE AMBIENTE DE TESTE -->
 <div class="teste-header">
   <h1>⚠️ Ambiente de Homologação — Pagamentos</h1>
-  <p>Esta página é exclusiva para testes. Nenhuma cobrança real será efetuada. Utilize dados fictícios ou do sandbox Asaas.</p>
+  <p>Esta página é exclusiva para testes. Nenhuma cobrança real será efetuada.</p>
 </div>
 
 <!-- CENÁRIOS DE TESTE -->
@@ -228,21 +228,12 @@
         </label>
       </div>
 
-      <!-- moeda fixa BRL — Asaas só processa BRL -->
 
       <div class="acoes-metodo">
         <button id="btnEscolherPix" type="button" class="btn-principal" onclick="mostrarMetodo('pix')">⚡ Pagar com Pix</button>
         <button id="btnEscolherCartao" type="button" class="btn-principal" onclick="mostrarMetodo('cartao')">💳 Pagar com Cartão</button>
       </div>
 
-      <!-- Selo Asaas obrigatório — Resolução Conjunta Bacen nº 16/2025. Substituir URL pelo link enviado pelo suporte Asaas. -->
-      <div class="asaas-selo">
-        <a href="https://asaas.com" target="_blank" rel="noopener noreferrer">
-          <img src="https://baas.asaas.com/selos/Servicos_financeiros_Asaas-Reduzida-Positivo.svg?id=33d6fe29-b807-4866-86aa-5098e022ef04"
-               alt="Serviços Financeiros Asaas"
-               width="160" height="48" />
-        </a>
-      </div>
     </div>
 
     <!-- ETAPA PIX -->
@@ -258,13 +249,6 @@
       <input type="text" id="pixCodigo" readonly class="hidden" />
       <button id="btnCopiarPix" class="btn-copiar hidden" onclick="copiarPix()">Copiar código</button>
 
-      <div class="asaas-selo">
-        <a href="https://asaas.com" target="_blank" rel="noopener noreferrer">
-          <img src="https://baas.asaas.com/selos/Servicos_financeiros_Asaas-Reduzida-Positivo.svg?id=33d6fe29-b807-4866-86aa-5098e022ef04"
-               alt="Serviços Financeiros Asaas"
-               width="160" height="48" />
-        </a>
-      </div>
     </div>
 
     <!-- ETAPA CARTÃO -->
@@ -280,19 +264,12 @@
         <div class="linha">
           <div class="form-group full">
             <label>Dados do pagamento</label>
-            <div id="asaas-card-form"></div>
+            <div id="stripe-card-form"></div>
           </div>
         </div>
         <button type="submit" id="btnConfirmarStripe" class="btn-principal">Confirmar pagamento</button>
       </form>
 
-      <div class="asaas-selo">
-        <a href="https://asaas.com" target="_blank" rel="noopener noreferrer">
-          <img src="https://baas.asaas.com/selos/Servicos_financeiros_Asaas-Reduzida-Positivo.svg?id=33d6fe29-b807-4866-86aa-5098e022ef04"
-               alt="Serviços Financeiros Asaas"
-               width="160" height="48" />
-        </a>
-      </div>
     </div>
 
   </div>
