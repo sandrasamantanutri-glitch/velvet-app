@@ -1007,6 +1007,81 @@ body {
   font-size: 14px;
 }
 
+/* ── Stripe Elements Form ─────────────────────────────── */
+.stripe-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+}
 
+.stripe-linha {
+  display: flex;
+  gap: 10px;
+}
 
+.stripe-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+
+.stripe-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #aaa;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.stripe-input {
+  width: 100%;
+  box-sizing: border-box;
+  height: 46px;
+  padding: 0 14px;
+  border: 1.5px solid #2e2e3e;
+  border-radius: 10px;
+  background: #12121c;
+  font-size: 15px;
+  color: #f0f0f0;
+  outline: none;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.stripe-input:focus {
+  border-color: #7B2CFF;
+  box-shadow: 0 0 0 3px rgba(123, 44, 255, 0.18);
+}
+
+.stripe-input::placeholder {
+  color: #555;
+}
+
+.stripe-element-box {
+  height: 46px;
+  padding: 13px 14px;
+  border: 1.5px solid #2e2e3e;
+  border-radius: 10px;
+  background: #12121c;
+  box-sizing: border-box;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.stripe-element-box.StripeElement--focus {
+  border-color: #7B2CFF;
+  box-shadow: 0 0 0 3px rgba(123, 44, 255, 0.18);
+}
+
+.stripe-element-box.StripeElement--invalid {
+  border-color: #ff6b6b;
+}
+
+.stripe-error {
+  color: #ff6b6b;
+  font-size: 0.8rem;
+  min-height: 18px;
+}
 

@@ -270,6 +270,8 @@ function resetarEstadoCartao() {
   }
 
   if (stripeCardElement) {
+    try { stripeCardElement._expiry?.unmount(); } catch (_) {}
+    try { stripeCardElement._cvc?.unmount(); } catch (_) {}
     try { stripeCardElement.unmount(); } catch (_) {}
     stripeCardElement = null;
   }
@@ -300,35 +302,61 @@ async function renderFormAsaasCartao() {
     const elements = stripe.elements();
 
     container.innerHTML = `
-      <div class="asaas-form-grid">
-        <div class="asaas-campo">
-          <label style="display:block;margin-bottom:6px;font-size:0.85rem;">Dados do cartão</label>
-          <div id="stripe-card-element" style="padding:12px;background:#1a1a2e;border:1px solid #444;border-radius:8px;"></div>
-          <div id="stripe-card-error" style="color:#fa755a;font-size:0.8rem;margin-top:6px;"></div>
+      <div class="stripe-form-grid">
+        <div class="stripe-campo">
+          <label class="stripe-label">Nome no cartão</label>
+          <input type="text" id="stripe-holder-name" class="stripe-input" placeholder="Como está no cartão" autocomplete="cc-name" />
         </div>
+        <div class="stripe-campo">
+          <label class="stripe-label">Número do cartão</label>
+          <div id="stripe-card-number" class="stripe-element-box"></div>
+        </div>
+        <div class="stripe-linha">
+          <div class="stripe-campo">
+            <label class="stripe-label">Validade</label>
+            <div id="stripe-card-expiry" class="stripe-element-box"></div>
+          </div>
+          <div class="stripe-campo">
+            <label class="stripe-label">CVV</label>
+            <div id="stripe-card-cvc" class="stripe-element-box"></div>
+          </div>
+        </div>
+        <div id="stripe-card-error" class="stripe-error"></div>
       </div>
     `;
 
-    stripeCardElement = elements.create("card", {
-      style: {
-        base: {
-          color: "#ffffff",
-          fontSize: "16px",
-          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-          fontSmoothing: "antialiased",
-          "::placeholder": { color: "#888" }
-        },
-        invalid: { color: "#fa755a", iconColor: "#fa755a" }
+    const elementStyle = {
+      base: {
+        color: "#f0f0f0",
+        fontSize: "15px",
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        fontSmoothing: "antialiased",
+        "::placeholder": { color: "#666" }
       },
-      hidePostalCode: true
-    });
+      invalid: { color: "#ff6b6b", iconColor: "#ff6b6b" }
+    };
 
-    stripeCardElement.mount("#stripe-card-element");
+    const cardNumber = elements.create("cardNumber", { style: elementStyle, placeholder: "0000 0000 0000 0000" });
+    const cardExpiry = elements.create("cardExpiry", { style: elementStyle });
+    const cardCvc   = elements.create("cardCvc",    { style: elementStyle, placeholder: "CVV" });
 
-    stripeCardElement.on("change", (event) => {
-      const errorEl = document.getElementById("stripe-card-error");
-      if (errorEl) errorEl.textContent = event.error ? event.error.message : "";
-    });
+    cardNumber.mount("#stripe-card-number");
+    cardExpiry.mount("#stripe-card-expiry");
+    cardCvc.mount("#stripe-card-cvc");
+
+    // Guarda referência principal para createPaymentMethod
+    stripeCardElement = cardNumber;
+    stripeCardElement._expiry = cardExpiry;
+    stripeCardElement._cvc = cardCvc;
+
+    const showError = (event) => {
+      const el = document.getElementById("stripe-card-error");
+      if (el) el.textContent = event.error ? event.error.message : "";
+    };
+    cardNumber.on("change", showError);
+    cardExpiry.on("change", showError);
+    cardCvc.on("change", showError);
+
   } catch (err) {
     console.error("Erro ao montar Stripe Elements:", err);
     if (container) container.innerHTML = `<p style="color:#fa755a;">Erro ao carregar formulário de cartão. Recarregue a página.</p>`;
@@ -356,9 +384,20 @@ async function confirmarPagamentoAsaasCartao() {
     atualizarStatusCartao(t("pag.confirmando_pagamento") || "Processando...");
 
     // Criar PaymentMethod via Stripe.js (dados do cartão nunca passam pelo servidor)
+    const holderName = (document.getElementById("stripe-holder-name")?.value || "").trim();
+    if (!holderName) {
+      document.getElementById("cartaoLoading")?.classList.add("hidden");
+      document.getElementById("formStripePagamento")?.classList.remove("hidden");
+      atualizarStatusCartao(t("pagamento.btn_confirmar_stripe") || "Confirmar pagamento");
+      alert("Informe o nome como está no cartão.");
+      pagamentoEmProcesso = false;
+      return { sucesso: false };
+    }
+
     const { paymentMethod, error: pmError } = await stripeInstance.createPaymentMethod({
       type: "card",
-      card: stripeCardElement
+      card: stripeCardElement,
+      billing_details: { name: holderName }
     });
 
     if (pmError) {
