@@ -1144,13 +1144,6 @@ function pagamentoConfirmado() {
 }
 
 window.confirmarPix = function () {
-  if (window.PAGAMENTO_TIPO_ATUAL === "vip") {
-    return pagarComPix({
-      tipo: "vip",
-      modelo_id: window.MODELO_ID_ATUAL
-    });
-  }
-
   if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
     return pagarComPix({
       tipo: "midia",
