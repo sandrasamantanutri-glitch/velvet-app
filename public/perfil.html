@@ -201,15 +201,47 @@
 
 
 <div class="acoes-metodo">
+<button id="btnEscolherPix" type="button" class="btn-principal" onclick="abrirConfirmacaoVIP('pix')">
+  ⚡ Pagar com Pix
+</button>
+
 <button id="btnEscolherCartao" type="button" class="btn-principal" onclick="abrirConfirmacaoVIP('cartao')">
-  💳 Desbloquear com cartão
+  💳 Pagar com cartão
 </button>
 </div>
 
 </div>
 
 
-<!-- ETAPA 2 CARTÃO -->
+<!-- ETAPA 2 PIX -->
+<div id="etapaPagamentoPix" class="etapa-pagamento hidden">
+  <button type="button" class="btn-voltar-modal" onclick="voltarEtapaPagamento()">
+    <img src="/assets/voltar.png" alt="Voltar">
+  </button>
+
+  <div id="pixLoading" class="pix-loading hidden">
+    <strong data-i18n="pagamento.pix_loading">⏳ Aguarde…</strong>
+  </div>
+
+  <div id="pixAguardando" class="pix-aguardando hidden">
+    <strong data-i18n="pagamento.pix_aguardando">⌛ Aguardando confirmação do pagamento...</strong>
+    <p data-i18n="pagamento.pix_aguardando_aviso">Não feche esta janela nem atualize a página até a confirmação.</p>
+  </div>
+
+  <div id="pixSucesso" class="pix-sucesso hidden">
+    <strong data-i18n="pagamento.pix_sucesso">✅ Pagamento confirmado!</strong>
+  </div>
+
+  <img id="pixQr" class="hidden" alt="QR Code Pix">
+  <input type="text" id="pixCodigo" readonly class="hidden">
+
+  <button id="btnCopiarPix" class="btn-copiar hidden" onclick="copiarPix()" data-i18n="pagamento.btn_copiar_pix">
+    Copiar código
+  </button>
+
+</div>
+
+<!-- ETAPA 3 CARTÃO -->
 <div id="etapaPagamentoCartao" class="etapa-pagamento hidden">
   <button type="button" class="btn-voltar-modal" onclick="voltarEtapaPagamento()">
     <img src="/assets/voltar.png" alt="Voltar">
