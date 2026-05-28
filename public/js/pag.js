@@ -643,14 +643,8 @@ function prepararPagamento() {
     });
 
     document.querySelector(".vip-detalhes")?.classList.remove("hidden");
-
-    // PIX não disponível para assinaturas VIP
-    document.getElementById("btnEscolherPix")?.classList.add("hidden");
     return;
   }
-
-  // midia e premium: garantir que o botão PIX esteja visível
-  document.getElementById("btnEscolherPix")?.classList.remove("hidden");
 
   if (window.PAGAMENTO_TIPO_ATUAL === "premium") {
     const premium = window.PREMIUM_ATUAL;
@@ -1150,6 +1144,13 @@ function pagamentoConfirmado() {
 }
 
 window.confirmarPix = function () {
+  if (window.PAGAMENTO_TIPO_ATUAL === "vip") {
+    return pagarComPix({
+      tipo: "vip",
+      modelo_id: window.MODELO_ID_ATUAL
+    });
+  }
+
   if (window.PAGAMENTO_TIPO_ATUAL === "midia") {
     return pagarComPix({
       tipo: "midia",
