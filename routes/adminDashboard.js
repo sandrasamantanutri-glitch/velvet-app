@@ -3527,21 +3527,6 @@ function gerarReciboPDF(p) {
        .text(fmtBRL(valorBruto), 430, bLineY, { width: 110, align: 'right' });
     bLineY += 16;
 
-    // Taxa de funcionamento da plataforma (20%)
-    if (taxaPlataforma > 0) {
-      doc.text('Taxa de funcionamento da plataforma (20%):', 320, bLineY)
-         .text(`- ${fmtBRL(taxaPlataforma)}`, 430, bLineY, { width: 110, align: 'right' });
-      bLineY += 16;
-    }
-
-    // Taxa de agência (% variável)
-    if (taxaAgencia > 0) {
-      const pctLabel = pctAgenciaPct > 0 ? ` (${pctAgenciaPct}%)` : '';
-      doc.text(`Taxa de agência${pctLabel}:`, 320, bLineY)
-         .text(`- ${fmtBRL(taxaAgencia)}`, 430, bLineY, { width: 110, align: 'right' });
-      bLineY += 16;
-    }
-
     // Chargebacks / estornos
     if (chargebacksVal > 0) {
       doc.text('Chargebacks / estornos:', 320, bLineY)
@@ -3828,8 +3813,6 @@ router.get("/modelo-pagamentos/:id/recibo", authAdmin, async (req, res) => {
     // Linhas do breakdown de deduções
     const deducoesHtml = [
       `<div class="totrow"><span>Valor bruto</span><span>${fmtBRL(valorBruto)}</span></div>`,
-      `<div class="totrow ded"><span>Taxa de funcionamento da plataforma (20%)</span><span>- ${fmtBRL(taxaPlataforma)}</span></div>`,
-      taxaAgencia > 0 ? `<div class="totrow ded"><span>Taxa de agência${pctAgenciaPct > 0 ? ` (${pctAgenciaPct}%)` : ''}</span><span>- ${fmtBRL(taxaAgencia)}</span></div>` : '',
       chargebacksVal > 0 ? `<div class="totrow ded"><span>Chargebacks / estornos</span><span>- ${fmtBRL(chargebacksVal)}</span></div>` : '',
       `<div class="totrow f"><span>VALOR LÍQUIDO PAGO</span><span>${fmtBRL(liquido)}</span></div>`
     ].filter(Boolean).join('');
