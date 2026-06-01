@@ -3494,9 +3494,9 @@ function gerarReciboPDF(p) {
 
     let rowY = tY + 20;
     const linhas = [];
-    if (Number(p.total_midias) > 0) linhas.push({ desc: 'Receitas brutas — Mídias', valor: Number(p.total_midias) > 0 ? valorBruto * (Number(p.total_midias) / modeloShare) : 0 });
-    if (Number(p.total_assinaturas) > 0) linhas.push({ desc: 'Receitas brutas — Assinaturas', valor: valorBruto * (Number(p.total_assinaturas) / modeloShare) });
-    if (!linhas.length) linhas.push({ desc: 'Receitas brutas — Plataforma Velvet', valor: valorBruto });
+    if (Number(p.total_midias) > 0) linhas.push({ desc: 'Receitas brutas — Mídias', valor: Number(p.total_midias) });
+    if (Number(p.total_assinaturas) > 0) linhas.push({ desc: 'Receitas brutas — Assinaturas', valor: Number(p.total_assinaturas) });
+    if (!linhas.length) linhas.push({ desc: 'Receitas brutas — Plataforma Velvet', valor: modeloShare });
 
     linhas.forEach((l, i) => {
       if (i % 2 === 0) doc.rect(50, rowY, W, 20).fill('#f9f5ff');
@@ -3512,8 +3512,6 @@ function gerarReciboPDF(p) {
 
     // calcular altura dinâmica conforme linhas visíveis
     let bLinhas = 1; // valor bruto sempre
-    if (taxaPlataforma > 0) bLinhas++;
-    if (taxaAgencia    > 0) bLinhas++;
     if (chargebacksVal > 0) bLinhas++;
     const bH = 18 + bLinhas * 16 + 24; // header + linhas + separador + total
 
@@ -3524,7 +3522,7 @@ function gerarReciboPDF(p) {
 
     // Valor bruto
     doc.text('Valor bruto:', 320, bLineY)
-       .text(fmtBRL(valorBruto), 430, bLineY, { width: 110, align: 'right' });
+       .text(fmtBRL(modeloShare), 430, bLineY, { width: 110, align: 'right' });
     bLineY += 16;
 
     // Chargebacks / estornos
@@ -3803,16 +3801,16 @@ router.get("/modelo-pagamentos/:id/recibo", authAdmin, async (req, res) => {
     const liquido        = Number(p.valor_liquido   || 0) || (modeloShare - chargebacksVal);
     const pctAgenciaPct  = Math.round(pctAgencia * 100);
 
-    // Linhas da tabela — usar valor bruto proporcional
+    // Linhas da tabela — ganhos da modelo
     const linhas = [];
-    if (Number(p.total_midias) > 0) linhas.push({ descricao: 'Receitas brutas — Mídias', periodo: mesRefLabel, valor: modeloShare > 0 ? valorBruto * (Number(p.total_midias) / modeloShare) : 0 });
-    if (Number(p.total_assinaturas) > 0) linhas.push({ descricao: 'Receitas brutas — Assinaturas', periodo: mesRefLabel, valor: modeloShare > 0 ? valorBruto * (Number(p.total_assinaturas) / modeloShare) : 0 });
-    if (linhas.length === 0) linhas.push({ descricao: 'Receitas brutas — Plataforma Velvet', periodo: mesRefLabel, valor: valorBruto });
+    if (Number(p.total_midias) > 0) linhas.push({ descricao: 'Receitas brutas — Mídias', periodo: mesRefLabel, valor: Number(p.total_midias) });
+    if (Number(p.total_assinaturas) > 0) linhas.push({ descricao: 'Receitas brutas — Assinaturas', periodo: mesRefLabel, valor: Number(p.total_assinaturas) });
+    if (linhas.length === 0) linhas.push({ descricao: 'Receitas brutas — Plataforma Velvet', periodo: mesRefLabel, valor: modeloShare });
     const linhasHtml = linhas.map(l => `<tr><td class="c">1</td><td>${l.descricao}</td><td class="c">${l.periodo}</td><td class="r">${fmtBRL(l.valor)}</td></tr>`).join('');
 
     // Linhas do breakdown de deduções
     const deducoesHtml = [
-      `<div class="totrow"><span>Valor bruto</span><span>${fmtBRL(valorBruto)}</span></div>`,
+      `<div class="totrow"><span>Valor bruto</span><span>${fmtBRL(modeloShare)}</span></div>`,
       chargebacksVal > 0 ? `<div class="totrow ded"><span>Chargebacks / estornos</span><span>- ${fmtBRL(chargebacksVal)}</span></div>` : '',
       `<div class="totrow f"><span>VALOR LÍQUIDO PAGO</span><span>${fmtBRL(liquido)}</span></div>`
     ].filter(Boolean).join('');
