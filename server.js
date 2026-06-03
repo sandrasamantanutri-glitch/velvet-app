@@ -2158,6 +2158,10 @@ app.post("/api/webhook/stripe", express.raw({ type: "application/json" }), async
   console.log("URL:", req.originalUrl);
   console.log("METHOD:", req.method);
 
+  // Gateway migrado para Asaas — aceitar e ignorar eventos Stripe para parar retentativas
+  console.log("⚠️  Webhook Stripe ignorado (gateway migrado para Asaas)");
+  return res.status(200).send("ok");
+
   let event = null;
 
   try {
@@ -2167,9 +2171,6 @@ app.post("/api/webhook/stripe", express.raw({ type: "application/json" }), async
       console.log("🚨 stripe-signature ausente");
       return res.status(400).send("missing signature");
     }
-
-    // Stripe webhook removed - gateway migrated to Asaas
-    throw new Error("Stripe webhook disabled - use /api/webhook/asaas instead");
   } catch (err) {
     console.error("Erro validando assinatura do webhook Stripe:", err.message);
     return res.status(400).send("invalid signature");
@@ -10669,6 +10670,15 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
     await client.query("COMMIT");
 
     if (statusLocal === "pago") {
+      registrarLog(db, {
+        tipo: 'assinatura_vip',
+        cliente_id,
+        modelo_id: modeloIdNum,
+        descricao: `Assinatura VIP confirmada via cartão (Stripe) — PaymentIntent ${paymentIntentId}`,
+        ip,
+        user_agent: req.headers['user-agent'] || null
+      });
+
       try {
         const io = req.app.get("io");
         if (io) {
@@ -11058,6 +11068,17 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
     }
 
     await client.query("COMMIT");
+
+    if (statusLocal === "pago") {
+      registrarLog(db, {
+        tipo: 'compra_midia_chat',
+        cliente_id,
+        modelo_id: modelo_id || null,
+        descricao: `Mídia do chat desbloqueada via cartão (Stripe) — message_id ${conteudoId} — PaymentIntent ${paymentIntentId}`,
+        ip,
+        user_agent: req.headers['user-agent'] || null
+      });
+    }
 
     if (statusLocal === "pago" && conteudo_ids_liberados) {
       try {
@@ -11530,6 +11551,15 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
     await client.query("COMMIT");
 
     if (statusLocal === "pago") {
+      registrarLog(db, {
+        tipo: 'compra_premium',
+        cliente_id,
+        modelo_id: modelo_id || null,
+        descricao: `Premium desbloqueado via cartão (Stripe) — premium_post_id ${premium_id} — PaymentIntent ${paymentIntentId}`,
+        ip,
+        user_agent: req.headers['user-agent'] || null
+      });
+
       try {
         const io = req.app.get("io");
         if (io) {
