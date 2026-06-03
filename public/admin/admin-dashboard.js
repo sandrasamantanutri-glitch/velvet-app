@@ -736,12 +736,103 @@ async function excluirAdmin(id) {
 // ========== 4. SEGURANÇA ==========
 
 let segurancaPage = 1;
+let securityLogsPage = 1;
 
 pageLoaders.seguranca = function () {
+  // Tabs da seção segurança
+  const tabs = document.querySelectorAll('#segurancaTabs .tab');
+  const contents = document.querySelectorAll('#page-seguranca .tab-content');
+  tabs.forEach(tab => {
+    tab.onclick = () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      contents.forEach(c => c.classList.remove('active'));
+      tab.classList.add('active');
+      const target = $('tab-' + tab.dataset.tab);
+      if (target) target.classList.add('active');
+    };
+  });
+
+  // Aba logs clientes
+  populateMonthSelect($('logMes'));
+  buscarSecurityLogs(1);
+
+  // Aba admin actions
   populateMonthSelect($('segurancaMes'));
   carregarSeguranca(1);
   $('segurancaMes').onchange = () => carregarSeguranca(1);
+
+  $('logClienteId').addEventListener('keydown', e => {
+    if (e.key === 'Enter') buscarSecurityLogs(1);
+  });
 };
+
+const TIPO_LABELS = {
+  assinatura_vip:          'Assinatura VIP',
+  cancelamento_assinatura: 'Cancelamento de Assinatura',
+  aceite_termos:           'Aceite de Termos',
+  visualizacao_midia_chat: 'Visualização Mídia Chat',
+  visualizacao_premium:    'Visualização Premium Feed',
+  compra_midia_chat:       'Compra Mídia Chat',
+  compra_premium:          'Compra Premium'
+};
+
+const TIPO_BADGES = {
+  assinatura_vip:          'badge-success',
+  cancelamento_assinatura: 'badge-error',
+  aceite_termos:           'badge-info',
+  visualizacao_midia_chat: 'badge-warning',
+  visualizacao_premium:    'badge-warning',
+  compra_midia_chat:       'badge-success',
+  compra_premium:          'badge-success'
+};
+
+async function buscarSecurityLogs(page) {
+  securityLogsPage = page;
+  try {
+    const cliente_id = ($('logClienteId').value || '').trim();
+    const tipo = $('logTipo').value || '';
+    const mes  = $('logMes').value || '';
+
+    let url = `/admin/dashboard/security-logs?page=${page}&limit=25`;
+    if (cliente_id) url += `&cliente_id=${encodeURIComponent(cliente_id)}`;
+    if (tipo)       url += `&tipo=${encodeURIComponent(tipo)}`;
+    if (mes)        url += `&mes=${encodeURIComponent(mes)}`;
+
+    const data = await fetchJSON(url);
+
+    const total = data.total || 0;
+    const totalEl = $('logTotal');
+    if (totalEl) totalEl.textContent = total ? `(${total} registros)` : '';
+
+    const tbody = $('tableSecurityLogs').querySelector('tbody');
+    tbody.innerHTML = (data.rows || []).map(r => {
+      const badgeClass = TIPO_BADGES[r.tipo] || 'badge-info';
+      const label = TIPO_LABELS[r.tipo] || r.tipo;
+      return `
+        <tr>
+          <td>${r.id}</td>
+          <td><span class="badge ${badgeClass}">${label}</span></td>
+          <td>${r.cliente_id || '—'}</td>
+          <td>${r.cliente_nome || '—'}</td>
+          <td>${r.modelo_id || '—'}</td>
+          <td style="max-width:320px;white-space:normal;font-size:12px;">${r.descricao || '—'}</td>
+          <td style="font-size:11px;">${r.ip || '—'}</td>
+          <td>${fmtDateTime(r.created_at)}</td>
+        </tr>
+      `;
+    }).join('') || emptyRow(8);
+
+    buildPagination('paginationSecurityLogs', page, data.totalPages || 1, 'buscarSecurityLogs');
+  } catch (err) {
+    console.error('Erro security logs:', err);
+  }
+}
+
+function limparFiltrosLogs() {
+  $('logClienteId').value = '';
+  $('logTipo').value = '';
+  buscarSecurityLogs(1);
+}
 
 async function carregarSeguranca(page) {
   segurancaPage = page;

@@ -220,16 +220,63 @@
 
   <!-- SEGURANÇA -->
   <section class="page" id="page-seguranca">
-    <div class="page-actions">
-      <select id="segurancaMes" class="input-select"></select>
+    <div class="tabs" id="segurancaTabs">
+      <button class="tab active" data-tab="logsClientes">Logs de Clientes</button>
+      <button class="tab" data-tab="adminActions">Ações Administrativas</button>
     </div>
-    <div class="card">
-      <h3>Histórico de Segurança (Mês Atual)</h3>
-      <table class="table" id="tableSeguranca">
-        <thead><tr><th>ID</th><th>Tipo User</th><th>Admin</th><th>Ação</th><th>Data</th></tr></thead>
-        <tbody></tbody>
-      </table>
-      <div class="pagination" id="paginationSeguranca"></div>
+
+    <!-- LOGS DE CLIENTES -->
+    <div class="tab-content active" id="tab-logsClientes">
+      <div class="page-actions" style="flex-wrap:wrap;gap:8px;">
+        <input type="text" id="logClienteId" placeholder="Buscar por cliente_id" class="input-text" style="width:180px;">
+        <select id="logTipo" class="input-select" style="width:220px;">
+          <option value="">Todos os tipos</option>
+          <option value="assinatura_vip">Assinatura VIP</option>
+          <option value="cancelamento_assinatura">Cancelamento de Assinatura</option>
+          <option value="aceite_termos">Aceite de Termos</option>
+          <option value="visualizacao_midia_chat">Visualização Mídia Chat</option>
+          <option value="visualizacao_premium">Visualização Premium Feed</option>
+          <option value="compra_midia_chat">Compra Mídia Chat</option>
+          <option value="compra_premium">Compra Premium</option>
+        </select>
+        <select id="logMes" class="input-select" style="width:160px;"></select>
+        <button class="btn btn-primary" onclick="buscarSecurityLogs(1)">Buscar</button>
+        <button class="btn" onclick="limparFiltrosLogs()">Limpar</button>
+      </div>
+      <div class="card">
+        <h3>Logs de Segurança — Clientes <span id="logTotal" style="font-size:13px;color:#aaa;margin-left:8px;"></span></h3>
+        <table class="table" id="tableSecurityLogs">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Tipo</th>
+              <th>Cliente ID</th>
+              <th>Cliente</th>
+              <th>Modelo ID</th>
+              <th>Descrição</th>
+              <th>IP</th>
+              <th>Data/Hora</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="pagination" id="paginationSecurityLogs"></div>
+      </div>
+    </div>
+
+    <!-- AÇÕES ADMINISTRATIVAS (existente) -->
+    <div class="tab-content" id="tab-adminActions">
+      <div class="page-actions">
+        <select id="segurancaMes" class="input-select"></select>
+      </div>
+      <div class="card">
+        <h3>Histórico de Ações Administrativas</h3>
+        <table class="table" id="tableSeguranca">
+          <thead><tr><th>ID</th><th>Tipo User</th><th>Admin</th><th>Ação</th><th>Data</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="pagination" id="paginationSeguranca"></div>
+      </div>
     </div>
   </section>
 

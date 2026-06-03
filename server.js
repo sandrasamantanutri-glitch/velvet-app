@@ -16,6 +16,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const express = require("express");
 const db = require("./db");
+const { registrarLog } = require("./utils/securityLog");
 const bcrypt = require("bcrypt");
 const path = require("path");
 const fs = require("fs");
@@ -599,6 +600,25 @@ app.post("/api/webhook/asaas", express.json(), async (req, res) => {
 
       await client.query("COMMIT");
 
+      // ── Log de segurança pós-COMMIT (PIX webhook Asaas) ──
+      if (dadosParaEmitir) {
+        if (dadosParaEmitir.tipo === "vip") {
+          registrarLog(db, {
+            tipo: 'assinatura_vip',
+            cliente_id: dadosParaEmitir.cliente_id,
+            modelo_id:  dadosParaEmitir.modelo_id,
+            descricao:  `Assinatura VIP confirmada via PIX (Asaas) — modelo_id ${dadosParaEmitir.modelo_id}`
+          });
+        } else if (dadosParaEmitir.tipo === "conteudo") {
+          registrarLog(db, {
+            tipo: 'compra_midia_chat',
+            cliente_id: dadosParaEmitir.cliente_id,
+            modelo_id:  dadosParaEmitir.modelo_id,
+            descricao:  `Mídia do chat desbloqueada via PIX (Asaas) — message_id ${dadosParaEmitir.message_id}`
+          });
+        }
+      }
+
       // ── Emite socket para PIX ──
       if (dadosParaEmitir) {
         try {
@@ -830,6 +850,32 @@ app.post("/api/webhook/asaas", express.json(), async (req, res) => {
       }
 
       await client.query("COMMIT");
+    }
+
+    // ── Log de segurança pós-COMMIT (cartão webhook Asaas) ──
+    if (dadosParaEmitir) {
+      if (dadosParaEmitir.tipo === "vip") {
+        registrarLog(db, {
+          tipo: 'assinatura_vip',
+          cliente_id: dadosParaEmitir.cliente_id,
+          modelo_id:  dadosParaEmitir.modelo_id,
+          descricao:  `Assinatura VIP confirmada via cartão (Asaas) — modelo_id ${dadosParaEmitir.modelo_id}`
+        });
+      } else if (dadosParaEmitir.tipo === "conteudo") {
+        registrarLog(db, {
+          tipo: 'compra_midia_chat',
+          cliente_id: dadosParaEmitir.cliente_id,
+          modelo_id:  dadosParaEmitir.modelo_id,
+          descricao:  `Mídia do chat desbloqueada via cartão (Asaas) — message_id ${dadosParaEmitir.message_id}`
+        });
+      } else if (dadosParaEmitir.tipo === "premium") {
+        registrarLog(db, {
+          tipo: 'compra_premium',
+          cliente_id: dadosParaEmitir.cliente_id,
+          modelo_id:  dadosParaEmitir.modelo_id,
+          descricao:  `Premium desbloqueado via cartão (Asaas) — premium_post_id ${dadosParaEmitir.premium_post_id}`
+        });
+      }
     }
 
     /* =======================================================
@@ -1186,6 +1232,25 @@ app.post("/api/webhook/abacatepay", express.json(), async (req, res) => {
     }
 
     await client.query("COMMIT");
+
+    // ── Log de segurança pós-COMMIT (AbacatePay webhook) ──
+    if (dadosParaEmitir) {
+      if (dadosParaEmitir.tipo === "vip") {
+        registrarLog(db, {
+          tipo: 'assinatura_vip',
+          cliente_id: dadosParaEmitir.cliente_id,
+          modelo_id:  dadosParaEmitir.modelo_id,
+          descricao:  `Assinatura VIP confirmada via PIX (AbacatePay) — modelo_id ${dadosParaEmitir.modelo_id}`
+        });
+      } else if (dadosParaEmitir.tipo === "conteudo") {
+        registrarLog(db, {
+          tipo: 'compra_midia_chat',
+          cliente_id: dadosParaEmitir.cliente_id,
+          modelo_id:  dadosParaEmitir.modelo_id,
+          descricao:  `Mídia do chat desbloqueada via PIX (AbacatePay) — message_id ${dadosParaEmitir.message_id}`
+        });
+      }
+    }
 
     if (dadosParaEmitir) {
       try {
@@ -5923,6 +5988,17 @@ app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
 
     // conteúdo grátis ou mensagem totalmente liberada
     if (preco <= 0 || mensagemLiberada) {
+      // Log de visualização de mídia paga (apenas se era paga e estava liberada)
+      if (preco > 0 && mensagemLiberada) {
+        registrarLog(db, {
+          tipo: 'visualizacao_midia_chat',
+          cliente_id: req.cliente_id,
+          modelo_id: Number(mensagem.modelo_id) || null,
+          descricao: `Mídia paga do chat visualizada — message_id ${message_id}`,
+          ip: req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket?.remoteAddress || null,
+          user_agent: req.headers['user-agent'] || null
+        });
+      }
       return res.json(
         result.rows.map(row => ({
           conteudo_id: Number(row.conteudo_id),
@@ -6732,6 +6808,16 @@ app.get("/api/modelo/publico/:modelo_id/premium", async (req, res) => {
         midias
       };
     });
+
+    // Log quando cliente visualiza conteúdo premium desbloqueado no feed
+    if (cliente_id && rows.some(r => r.liberado)) {
+      registrarLog(db, {
+        tipo: 'visualizacao_premium',
+        cliente_id,
+        modelo_id,
+        descricao: `Feed premium acessado — ${rows.filter(r => r.liberado).length} post(s) desbloqueado(s) — modelo_id ${modelo_id}`
+      });
+    }
 
     return res.json(rows);
   } catch (err) {
@@ -9182,6 +9268,16 @@ if (Number.isNaN(dataAceite.getTime())) {
       return res.status(400).json({ error: "E-mail do cliente não encontrado." });
     }
 
+    // Log de aceite de termos antes do pagamento VIP PIX
+    registrarLog(db, {
+      tipo: 'aceite_termos',
+      cliente_id,
+      modelo_id: modeloIdNum,
+      descricao: `Termos aceitos antes de pagamento VIP PIX — versão ${versao_termos || ''}`,
+      ip,
+      user_agent: req.headers['user-agent'] || null
+    });
+
     /* =========================
        IMPEDIR ASSINAR O PRÓPRIO PERFIL
     ========================= */
@@ -9474,6 +9570,16 @@ if (Number.isNaN(dataAceite.getTime())) {
     if (bloqueado) {
       return res.status(403).json({ error: "Conta bloqueada." });
     }
+
+    // Log de aceite de termos antes do pagamento mídia PIX
+    registrarLog(db, {
+      tipo: 'aceite_termos',
+      cliente_id,
+      modelo_id: null,
+      descricao: `Termos aceitos antes de pagamento Mídia PIX — conteudo_id ${conteudo_id} — versão ${versao_termos || ''}`,
+      ip,
+      user_agent: req.headers['user-agent'] || null
+    });
 
     /* ================================
        BUSCAR MIDIA
@@ -9791,6 +9897,16 @@ if (Number.isNaN(dataAceite.getTime())) {
       await client.query("ROLLBACK");
       return res.status(400).json({ error: "E-mail do cliente não encontrado." });
     }
+
+    // Log de aceite de termos antes do pagamento premium PIX
+    registrarLog(db, {
+      tipo: 'aceite_termos',
+      cliente_id,
+      modelo_id: null,
+      descricao: `Termos aceitos antes de pagamento Premium PIX — premium_post_id ${premiumPostIdNum} — versão ${versao_termos || ''}`,
+      ip,
+      user_agent: req.headers['user-agent'] || null
+    });
 
     /* =========================
        BUSCAR PREMIUM
@@ -10267,6 +10383,16 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
       return res.status(400).json({ error: "E-mail do cliente inválido." });
     }
 
+    // Log de aceite de termos antes do pagamento VIP cartão
+    registrarLog(db, {
+      tipo: 'aceite_termos',
+      cliente_id,
+      modelo_id: modeloIdNum,
+      descricao: `Termos aceitos antes de pagamento VIP cartão — versão ${versao_termos || ''}`,
+      ip,
+      user_agent: req.headers['user-agent'] || null
+    });
+
     /* =====================================================
        IMPEDIR ASSINAR O PRÓPRIO PERFIL
     ===================================================== */
@@ -10738,6 +10864,16 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
       return res.status(400).json({ error: "E-mail do cliente inválido." });
     }
 
+    // Log de aceite de termos antes do pagamento mídia cartão
+    registrarLog(db, {
+      tipo: 'aceite_termos',
+      cliente_id,
+      modelo_id: null,
+      descricao: `Termos aceitos antes de pagamento Mídia cartão — conteudo_id ${conteudoId} — versão ${versao_termos || ''}`,
+      ip,
+      user_agent: req.headers['user-agent'] || null
+    });
+
     /* =====================================================
        CONTEÚDO
     ===================================================== */
@@ -11152,6 +11288,16 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
       return res.status(400).json({ error: "E-mail do cliente inválido." });
     }
 
+    // Log de aceite de termos antes do pagamento premium cartão
+    registrarLog(db, {
+      tipo: 'aceite_termos',
+      cliente_id,
+      modelo_id: null,
+      descricao: `Termos aceitos antes de pagamento Premium cartão — premium_post_id ${premiumPostId} — versão ${versao_termos || ''}`,
+      ip,
+      user_agent: req.headers['user-agent'] || null
+    });
+
     /* =====================================================
        PREMIUM
     ===================================================== */
@@ -11543,6 +11689,20 @@ app.post("/api/vip/cancelar", auth, async (req, res) => {
       WHERE cliente_id = $1
         AND modelo_id = $2
     `, [cliente_id, modelo_id]);
+
+    const cancelIp =
+      req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+      req.socket?.remoteAddress ||
+      null;
+
+    registrarLog(db, {
+      tipo: 'cancelamento_assinatura',
+      cliente_id,
+      modelo_id: Number(modelo_id),
+      descricao: `Cliente cancelou assinatura VIP — modelo_id ${modelo_id}`,
+      ip: cancelIp,
+      user_agent: req.headers['user-agent'] || null
+    });
 
     res.json({ ok: true });
 

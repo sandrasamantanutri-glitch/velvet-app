@@ -668,6 +668,70 @@ router.get("/seguranca", authAdmin, async (req, res) => {
   }
 });
 
+// ========== 4b. SECURITY LOGS DE CLIENTES ==========
+
+router.get("/security-logs", authAdmin, async (req, res) => {
+  try {
+    const { cliente_id, tipo, mes } = req.query;
+    const { limit, offset, page } = paginate(req.query);
+
+    const params = [];
+    const conditions = [];
+
+    if (cliente_id && !isNaN(Number(cliente_id))) {
+      params.push(Number(cliente_id));
+      conditions.push(`sl.cliente_id = $${params.length}`);
+    }
+
+    if (tipo && typeof tipo === 'string' && tipo.trim()) {
+      params.push(tipo.trim());
+      conditions.push(`sl.tipo = $${params.length}`);
+    }
+
+    const m = parseMes(mes);
+    if (m) {
+      params.push(m.mes, m.ano);
+      conditions.push(
+        `EXTRACT(MONTH FROM sl.created_at) = $${params.length - 1}` +
+        ` AND EXTRACT(YEAR FROM sl.created_at) = $${params.length}`
+      );
+    }
+
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const countRes = await db.query(
+      `SELECT COUNT(*) FROM security_logs sl ${where}`,
+      params
+    );
+    const total = Number(countRes.rows[0].count);
+
+    params.push(limit, offset);
+
+    const { rows } = await db.query(`
+      SELECT
+        sl.id,
+        sl.tipo,
+        sl.cliente_id,
+        sl.modelo_id,
+        sl.descricao,
+        sl.ip,
+        sl.user_agent,
+        sl.created_at,
+        c.nome AS cliente_nome
+      FROM security_logs sl
+      LEFT JOIN clientes c ON c.id = sl.cliente_id
+      ${where}
+      ORDER BY sl.created_at DESC
+      LIMIT $${params.length - 1} OFFSET $${params.length}
+    `, params);
+
+    res.json({ rows, totalPages: Math.ceil(total / limit) || 1, page, total });
+  } catch (err) {
+    console.error("Erro security-logs:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
 // ========== 5. CLIENTE RISCO ==========
 
 router.get("/cliente-risco", authAdmin, async (req, res) => {
