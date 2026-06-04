@@ -3600,16 +3600,29 @@ const ABACATEPAY_BASE = "https://api.abacatepay.com/v2";
 async function abacatePayRequest(method, path, body) {
   console.log(`[AbacatePay] ${method} ${path} body:`, JSON.stringify(body));
   console.log(`[AbacatePay] API_KEY set:`, !!process.env.ABACATEPAY_API_KEY);
-  const res = await axios({
-    method,
-    url: `${ABACATEPAY_BASE}${path}`,
-    data: body,
-    headers: {
-      "Authorization": `Bearer ${process.env.ABACATEPAY_API_KEY}`,
-      "Content-Type": "application/json"
-    }
-  });
-  return res.data;
+  try {
+    const res = await axios({
+      method,
+      url: `${ABACATEPAY_BASE}${path}`,
+      data: body,
+      headers: {
+        "Authorization": `Bearer ${process.env.ABACATEPAY_API_KEY}`,
+        "Content-Type": "application/json"
+      }
+    });
+    return res.data;
+  } catch (err) {
+    console.error(`[AbacatePay] ERRO ${err?.response?.status}:`, JSON.stringify(err?.response?.data));
+    throw err;
+  }
+}
+
+function formatarTelefoneBR(digits) {
+  if (!digits) return undefined;
+  const d = String(digits).replace(/\D/g, "");
+  if (d.length === 11) return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
+  if (d.length === 10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`;
+  return d;
 }
 
 async function criarOuBuscarClienteAsaas(cpfCnpj, nome, email, telefone) {
@@ -9402,7 +9415,7 @@ if (Number.isNaN(dataAceite.getTime())) {
         amount,
         description: "Assinatura VIP Velvet",
         expiresIn: 3600,
-        customer: cpfVip && telefoneVip ? { name: nomeFinal, email: emailFinal, taxId: cpfVip, cellphone: telefoneVip } : undefined,
+        customer: cpfVip && telefoneVip ? { name: nomeFinal, email: emailFinal, taxId: cpfVip, cellphone: formatarTelefoneBR(telefoneVip) } : undefined,
         metadata: {},
         externalId: `vip_${cliente_id}_${modeloIdNum}`
       }
@@ -10100,7 +10113,7 @@ if (Number.isNaN(dataAceite.getTime())) {
         amount,
         description: "Post Premium Velvet",
         expiresIn: 3600,
-        customer: cpfPremium && telefonePremium ? { name: nomeFinal, email: emailFinal, taxId: cpfPremium, cellphone: telefonePremium } : undefined,
+        customer: cpfPremium && telefonePremium ? { name: nomeFinal, email: emailFinal, taxId: cpfPremium, cellphone: formatarTelefoneBR(telefonePremium) } : undefined,
         metadata: {},
         externalId: `premium_${cliente_id}_${premiumPostIdNum}`
       }
