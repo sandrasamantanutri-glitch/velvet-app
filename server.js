@@ -9507,8 +9507,11 @@ if (Number.isNaN(dataAceite.getTime())) {
       console.error("Erro no rollback:", rollbackErr);
     }
 
-    return res.status(500).json({
-      error: "Erro ao gerar pagamento"
+    const isAbacateError = err.response?.data?.error === "Erro ao criar QR Code PIX";
+    return res.status(isAbacateError ? 503 : 500).json({
+      error: isAbacateError
+        ? "O sistema de pagamentos está passando por manutenção e atualização. Tente novamente em alguns minutos."
+        : "Erro ao gerar pagamento"
     });
   } finally {
     client.release();
@@ -9777,8 +9780,11 @@ await client.query(
 
     try { await client.query("ROLLBACK"); } catch {}
 
-    return res.status(500).json({
-      error: "Erro ao gerar pagamento PIX"
+    const isAbacateErrorMidia = err.response?.data?.error === "Erro ao criar QR Code PIX";
+    return res.status(isAbacateErrorMidia ? 503 : 500).json({
+      error: isAbacateErrorMidia
+        ? "O sistema de pagamentos está passando por manutenção e atualização. Tente novamente em alguns minutos."
+        : "Erro ao gerar pagamento PIX"
     });
 
   } finally {
@@ -10249,8 +10255,11 @@ await client.query(
       console.error("Erro no rollback:", rollbackErr);
     }
 
-    return res.status(500).json({
-      error: "Erro ao gerar pagamento premium"
+    const isAbacateErrorPremium = err.response?.data?.error === "Erro ao criar QR Code PIX";
+    return res.status(isAbacateErrorPremium ? 503 : 500).json({
+      error: isAbacateErrorPremium
+        ? "O sistema de pagamentos está passando por manutenção e atualização. Tente novamente em alguns minutos."
+        : "Erro ao gerar pagamento premium"
     });
   } finally {
     client.release();
