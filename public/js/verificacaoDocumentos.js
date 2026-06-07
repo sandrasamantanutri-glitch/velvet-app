@@ -145,8 +145,8 @@ if (!aceiteTermosCriador) {
     formData.set("confirmacao_identidade", "true");
     formData.set("aceite_privacidade", "true");
     formData.set("aceite_termos_criador", "true");
-    formData.set("versao_privacidade", "2026-04-06");
-    formData.set("versao_termos_criador", "2026-04-06");
+    formData.set("versao_privacidade", "2026-06-07");
+    formData.set("versao_termos_criador", "2026-06-07");
 
     const res = await fetch("/api/verificacao", {
       method: "POST",

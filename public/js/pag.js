@@ -113,7 +113,7 @@ function obterAceitesPagamento() {
     aceitou_termos: aceitouTermos,
     aceitou_execucao_imediata: true,
     aceite_timestamp: new Date().toISOString(),
-    versao_termos: "2026-04-06"
+    versao_termos: "2026-06-07"
   };
 }
 

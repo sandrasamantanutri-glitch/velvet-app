@@ -9469,7 +9469,7 @@ if (Number.isNaN(dataAceite.getTime())) {
         !!aceitou_termos,
         !!aceitou_execucao_imediata,
         aceite_timestamp,
-        versao_termos || "2026-04-06",
+        versao_termos || "2026-06-07",
         fingerprint || "",
         cpfVip || null,
         telefoneVip || null
@@ -9761,7 +9761,7 @@ await client.query(
     !!aceitou_termos,
     !!aceitou_execucao_imediata,
     aceite_timestamp,
-    versao_termos || "2026-04-06",
+    versao_termos || "2026-06-07",
     fingerprint || ""
   ]
 );
@@ -10213,7 +10213,7 @@ await client.query(
     !!aceitou_termos,
     !!aceitou_execucao_imediata,
     aceite_timestamp,
-    versao_termos || "2026-04-06",
+    versao_termos || "2026-06-07",
     fingerprint || ""
   ]
 );
@@ -10600,7 +10600,7 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
         !!aceitou_termos,
         !!aceitou_execucao_imediata,
         aceite_timestamp,
-        versao_termos || "2026-04-06",
+        versao_termos || "2026-06-07",
         fingerprint || null,
         valorAssinatura,
         null,
@@ -11035,7 +11035,7 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
         !!aceitou_termos,
         !!aceitou_execucao_imediata,
         aceite_timestamp,
-        versao_termos || "2026-04-06",
+        versao_termos || "2026-06-07",
         fingerprint || null,
         valorBase,
         null
@@ -11129,7 +11129,7 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
           !!aceitou_termos,
           !!aceitou_execucao_imediata,
           aceite_timestamp || null,
-          versao_termos || "2026-04-06"
+          versao_termos || "2026-06-07"
         ]
       );
     } catch (logErr) {
@@ -11149,7 +11149,7 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
       aceitou_termos: !!aceitou_termos,
       aceitou_execucao_imediata: !!aceitou_execucao_imediata,
       aceite_timestamp,
-      versao_termos: versao_termos || "2026-04-06"
+      versao_termos: versao_termos || "2026-06-07"
     };
 
     if (paymentIntent.status === "requires_action") {
@@ -11187,7 +11187,7 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
             !!req.body?.aceitou_termos,
             !!req.body?.aceitou_execucao_imediata,
             req.body?.aceite_timestamp || null,
-            req.body?.versao_termos || "2026-04-06"
+            req.body?.versao_termos || "2026-06-07"
           ]
         );
       }
@@ -11534,7 +11534,7 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
         !!aceitou_termos,
         !!aceitou_execucao_imediata,
         aceite_timestamp,
-        versao_termos || "2026-04-06",
+        versao_termos || "2026-06-07",
         fingerprint || null,
         total,
         null
@@ -11608,7 +11608,7 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
           !!aceitou_termos,
           !!aceitou_execucao_imediata,
           aceite_timestamp || null,
-          versao_termos || "2026-04-06"
+          versao_termos || "2026-06-07"
         ]
       );
     } catch (logErr) {
@@ -11631,7 +11631,7 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
       aceitou_termos: !!aceitou_termos,
       aceitou_execucao_imediata: !!aceitou_execucao_imediata,
       aceite_timestamp,
-      versao_termos: versao_termos || "2026-04-06"
+      versao_termos: versao_termos || "2026-06-07"
     };
 
     if (paymentIntent.status === "requires_action") {
@@ -11668,7 +11668,7 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
             !!req.body?.aceitou_termos,
             !!req.body?.aceitou_execucao_imediata,
             req.body?.aceite_timestamp || null,
-            req.body?.versao_termos || "2026-04-06"
+            req.body?.versao_termos || "2026-06-07"
           ]
         );
       }
@@ -12709,8 +12709,8 @@ app.post("/api/verificacao", auth, uploadVerificacaoLimiter, uploadVerificacao.f
             true,
             true,
             true,
-            versao_privacidade || "2026-04-06",
-            versao_termos_criador || "2026-04-06",
+            versao_privacidade || "2026-06-07",
+            versao_termos_criador || "2026-06-07",
             ip,
             contrato_pdf_url || null
           ]
@@ -12781,8 +12781,8 @@ app.post("/api/verificacao", auth, uploadVerificacaoLimiter, uploadVerificacao.f
             true,
             true,
             true,
-            versao_privacidade || "2026-04-06",
-            versao_termos_criador || "2026-04-06",
+            versao_privacidade || "2026-06-07",
+            versao_termos_criador || "2026-06-07",
             ip
           ]
         );
