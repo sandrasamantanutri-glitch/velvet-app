@@ -644,6 +644,11 @@ function prepararPagamento() {
     });
 
     document.querySelector(".vip-detalhes")?.classList.remove("hidden");
+    // VIP: mostra CPF, telefone e endereço (obrigatórios para PIX)
+    document.getElementById("campoCpf")?.classList.remove("hidden");
+    document.getElementById("campoTelefone")?.classList.remove("hidden");
+    document.getElementById("blocoCpfTelefone")?.classList.remove("hidden");
+    document.getElementById("blocoEndereco")?.classList.remove("hidden");
     return;
   }
 
@@ -661,6 +666,11 @@ function prepararPagamento() {
     });
 
     document.querySelector(".midia-detalhes")?.classList.remove("hidden");
+    // Premium: mostra CPF, telefone e endereço (obrigatórios para PIX)
+    document.getElementById("campoCpf")?.classList.remove("hidden");
+    document.getElementById("campoTelefone")?.classList.remove("hidden");
+    document.getElementById("blocoCpfTelefone")?.classList.remove("hidden");
+    document.getElementById("blocoEndereco")?.classList.remove("hidden");
     return;
   }
 
@@ -678,16 +688,13 @@ function prepararPagamento() {
     });
 
     document.querySelector(".midia-detalhes")?.classList.remove("hidden");
-
-    // Mídia: CPF/telefone/endereço obrigatórios para PIX
+    // Mídia: mostra CPF, telefone e endereço (obrigatórios para PIX)
+    document.getElementById("campoCpf")?.classList.remove("hidden");
+    document.getElementById("campoTelefone")?.classList.remove("hidden");
     document.getElementById("blocoCpfTelefone")?.classList.remove("hidden");
     document.getElementById("blocoEndereco")?.classList.remove("hidden");
     return;
   }
-
-  // VIP e premium: CPF/telefone/endereço obrigatórios para PIX
-  document.getElementById("blocoCpfTelefone")?.classList.remove("hidden");
-  document.getElementById("blocoEndereco")?.classList.remove("hidden");
 }
 
 function preencherResumoVIP({ valorBase = 0, desconto = 0 }) {
@@ -957,20 +964,16 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
     const aceite_timestamp = aceites.aceite_timestamp;
     const versao_termos = aceites.versao_termos;
 
-    abrirPopupPagamentoPixLoading();
-
+    // ── Coletar e validar todos os campos ANTES de mostrar loading ──────────
     let url = "";
     let body = {};
 
     if (tipo === "vip") {
       const modeloIdFinal = Number(modelo_id || window.MODELO_ID_ATUAL);
-
       if (!modeloIdFinal) {
-        console.error("modelo_id inválido:", modelo_id, window.MODELO_ID_ATUAL);
         alert(t("pag.modelo_nao_identificado"));
         return;
       }
-
       const cpf = obterCpfValido();
       if (!cpf) return;
       const telefone = obterTelefoneValido();
@@ -979,18 +982,9 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
       if (!endereco) return;
 
       url = "/api/pagamento/vip/pix";
-      body = {
-        tipo: "vip",
-        modelo_id: modeloIdFinal,
-        cpf,
-        telefone,
-        endereco,
-        aceitou_termos,
-        aceitou_execucao_imediata,
-        aceite_timestamp,
-        versao_termos,
-        fingerprint: gerarFingerprint()
-      };
+      body = { tipo: "vip", modelo_id: modeloIdFinal, cpf, telefone, endereco,
+               aceitou_termos, aceitou_execucao_imediata, aceite_timestamp, versao_termos,
+               fingerprint: gerarFingerprint() };
     }
 
     if (tipo === "premium") {
@@ -1002,18 +996,9 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
       if (!endereco) return;
 
       url = "/api/pagamento/premium/pix";
-      body = {
-        tipo: "premium",
-        premium_post_id,
-        cpf,
-        telefone,
-        endereco,
-        aceitou_termos,
-        aceitou_execucao_imediata,
-        aceite_timestamp,
-        versao_termos,
-        fingerprint: gerarFingerprint()
-      };
+      body = { tipo: "premium", premium_post_id, cpf, telefone, endereco,
+               aceitou_termos, aceitou_execucao_imediata, aceite_timestamp, versao_termos,
+               fingerprint: gerarFingerprint() };
     }
 
     if (tipo === "midia") {
@@ -1025,24 +1010,18 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
       if (!endereco) return;
 
       url = "/api/pagamento/midia/pix";
-      body = {
-        tipo: "midia",
-        conteudo_id,
-        cpf,
-        telefone,
-        endereco,
-        aceitou_termos,
-        aceitou_execucao_imediata,
-        aceite_timestamp,
-        versao_termos,
-        fingerprint: gerarFingerprint()
-      };
+      body = { tipo: "midia", conteudo_id, cpf, telefone, endereco,
+               aceitou_termos, aceitou_execucao_imediata, aceite_timestamp, versao_termos,
+               fingerprint: gerarFingerprint() };
     }
 
     if (!url) {
       alert(t("pag.tipo_pagamento_invalido"));
       return;
     }
+
+    // Todos os campos válidos → avança para loading
+    abrirPopupPagamentoPixLoading();
 
     const res = await fetch(url, {
       method: "POST",
@@ -1621,11 +1600,11 @@ async function lerErroResposta(res) {
 }
 
 function alternarCamposPorMetodo(tipo) {
-  const blocoCPF = document.getElementById("campoCpf");
-  const blocoTelefone = document.getElementById("campoTelefone");
-
-  blocoCPF?.classList.add("hidden");
-  blocoTelefone?.classList.add("hidden");
+  if (tipo === "cartao") {
+    // Cartão não precisa de endereço PIX — esconde para não confundir
+    document.getElementById("blocoEndereco")?.classList.add("hidden");
+  }
+  // Para PIX os campos já estão visíveis desde que prepararPagamento() rodou
 }
 
 // formata valor na moeda correta (BRL ou USD)
