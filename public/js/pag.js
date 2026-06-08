@@ -60,10 +60,11 @@ function selecionarMoeda(moeda) {
     btnPix.title = window.CURRENCY_ATUAL === "usd" ? "Pix disponível apenas em Real (R$)" : "";
   }
 
-  // CPF e telefone só visíveis em BRL
+  // CPF, telefone e endereço só visíveis em BRL
   const isUsd = window.CURRENCY_ATUAL === "usd";
   document.getElementById("campoCpf")?.classList.toggle("hidden", isUsd);
   document.getElementById("campoTelefone")?.classList.toggle("hidden", isUsd);
+  document.getElementById("blocoEndereco")?.classList.toggle("hidden", isUsd);
 }
 
 function abrirPopupPagamento() {
@@ -678,13 +679,15 @@ function prepararPagamento() {
 
     document.querySelector(".midia-detalhes")?.classList.remove("hidden");
 
-    // Mídia não requer CPF/Telefone
-    document.getElementById("blocoCpfTelefone")?.classList.add("hidden");
+    // Mídia: CPF/telefone/endereço obrigatórios para PIX
+    document.getElementById("blocoCpfTelefone")?.classList.remove("hidden");
+    document.getElementById("blocoEndereco")?.classList.remove("hidden");
     return;
   }
 
-  // VIP e premium podem precisar de CPF/Telefone (PIX)
+  // VIP e premium: CPF/telefone/endereço obrigatórios para PIX
   document.getElementById("blocoCpfTelefone")?.classList.remove("hidden");
+  document.getElementById("blocoEndereco")?.classList.remove("hidden");
 }
 
 function preencherResumoVIP({ valorBase = 0, desconto = 0 }) {
@@ -797,6 +800,98 @@ function obterTelefoneValido() {
   return telefone;
 }
 
+async function buscarCepPagamento() {
+  const cepInput = document.getElementById("cepPagamento");
+  const feedback = document.getElementById("campoCepFeedback");
+  if (!cepInput) return;
+
+  const cep = String(cepInput.value).replace(/\D/g, "");
+  if (cep.length !== 8) {
+    alert("CEP deve ter 8 dígitos.");
+    cepInput.focus();
+    return;
+  }
+
+  if (feedback) { feedback.textContent = "Buscando CEP..."; feedback.classList.remove("hidden"); }
+
+  try {
+    const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    const data = await res.json();
+
+    if (data.erro) {
+      if (feedback) { feedback.textContent = "CEP não encontrado."; }
+      return;
+    }
+
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ""; };
+    set("ruaPagamento",    data.logradouro);
+    set("bairroPagamento", data.bairro);
+    set("cidadePagamento", data.localidade);
+    set("estadoPagamento", data.uf);
+
+    if (feedback) { feedback.textContent = ""; feedback.classList.add("hidden"); }
+    document.getElementById("numeroPagamento")?.focus();
+  } catch {
+    if (feedback) { feedback.textContent = "Erro ao buscar CEP. Verifique sua conexão."; }
+  }
+}
+
+// Aplica máscara CEP ao digitar e busca automaticamente quando completo
+(function bindCepInput() {
+  const el = document.getElementById("cepPagamento");
+  if (!el || el.dataset.bound) return;
+  el.dataset.bound = "true";
+  el.addEventListener("input", e => {
+    let v = e.target.value.replace(/\D/g, "").slice(0, 8);
+    if (v.length > 5) v = v.slice(0, 5) + "-" + v.slice(5);
+    e.target.value = v;
+    if (v.replace(/\D/g, "").length === 8) buscarCepPagamento();
+  });
+})();
+
+function obterEnderecoValido() {
+  const cep         = String(document.getElementById("cepPagamento")?.value      || "").replace(/\D/g, "");
+  const rua         = String(document.getElementById("ruaPagamento")?.value       || "").trim();
+  const numero      = String(document.getElementById("numeroPagamento")?.value    || "").trim();
+  const complemento = String(document.getElementById("complementoPagamento")?.value || "").trim();
+  const bairro      = String(document.getElementById("bairroPagamento")?.value    || "").trim();
+  const cidade      = String(document.getElementById("cidadePagamento")?.value    || "").trim();
+  const estado      = String(document.getElementById("estadoPagamento")?.value    || "").trim().toUpperCase();
+
+  if (cep.length !== 8) {
+    alert("Preencha o CEP corretamente.");
+    document.getElementById("cepPagamento")?.focus();
+    return null;
+  }
+  if (!rua) {
+    alert("Preencha o nome da rua.");
+    document.getElementById("ruaPagamento")?.focus();
+    return null;
+  }
+  if (!numero) {
+    alert("Preencha o número do endereço.");
+    document.getElementById("numeroPagamento")?.focus();
+    return null;
+  }
+  if (!bairro) {
+    alert("Preencha o bairro.");
+    document.getElementById("bairroPagamento")?.focus();
+    return null;
+  }
+  if (!cidade) {
+    alert("Preencha a cidade.");
+    document.getElementById("cidadePagamento")?.focus();
+    return null;
+  }
+  if (estado.length !== 2) {
+    alert("Preencha o estado com a sigla de 2 letras (ex: SP).");
+    document.getElementById("estadoPagamento")?.focus();
+    return null;
+  }
+
+  return { cep, rua, numero, complemento, bairro, cidade, estado };
+}
+
 const phonePix = document.getElementById("phonePagamento");
 
 function aplicarMascaraTelefone(input) {
@@ -880,6 +975,8 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
       if (!cpf) return;
       const telefone = obterTelefoneValido();
       if (!telefone) return;
+      const endereco = obterEnderecoValido();
+      if (!endereco) return;
 
       url = "/api/pagamento/vip/pix";
       body = {
@@ -887,6 +984,7 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
         modelo_id: modeloIdFinal,
         cpf,
         telefone,
+        endereco,
         aceitou_termos,
         aceitou_execucao_imediata,
         aceite_timestamp,
@@ -900,6 +998,8 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
       if (!cpf) return;
       const telefone = obterTelefoneValido();
       if (!telefone) return;
+      const endereco = obterEnderecoValido();
+      if (!endereco) return;
 
       url = "/api/pagamento/premium/pix";
       body = {
@@ -907,6 +1007,7 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
         premium_post_id,
         cpf,
         telefone,
+        endereco,
         aceitou_termos,
         aceitou_execucao_imediata,
         aceite_timestamp,
@@ -916,10 +1017,20 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
     }
 
     if (tipo === "midia") {
+      const cpf = obterCpfValido();
+      if (!cpf) return;
+      const telefone = obterTelefoneValido();
+      if (!telefone) return;
+      const endereco = obterEnderecoValido();
+      if (!endereco) return;
+
       url = "/api/pagamento/midia/pix";
       body = {
         tipo: "midia",
         conteudo_id,
+        cpf,
+        telefone,
+        endereco,
         aceitou_termos,
         aceitou_execucao_imediata,
         aceite_timestamp,

@@ -753,6 +753,63 @@ body {
   box-shadow: 0 0 0 3px rgba(122, 44, 255, 0.08);
 }
 
+#blocoEndereco {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+#blocoEndereco label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 2px;
+}
+
+.campo-cep-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  width: 100%;
+}
+
+.btn-buscar-cep {
+  height: 44px;
+  padding: 0 14px;
+  background: #7a2cff;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-buscar-cep:hover {
+  background: #6320d4;
+}
+
+.cep-feedback {
+  font-size: 12px;
+  color: #d32f2f;
+  margin-top: -4px;
+}
+
+.campo-row-duplo {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.campo-row-duplo > div {
+  flex: 1;
+}
+
 .termos-pagamento {
   width: 100%;
   max-width: 320px;

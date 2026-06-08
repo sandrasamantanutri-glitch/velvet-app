@@ -2899,18 +2899,49 @@ async function safe2payRequest(method, path, body) {
   return data;
 }
 
-async function criarPixSafe2Pay({ valorTotal, nome, email, cpf, telefone, referencia, descricao }) {
+async function criarPixSafe2Pay({ valorTotal, nome, email, cpf, telefone, endereco, referencia, descricao }) {
   const appUrl = process.env.APP_URL || "https://velvet.lat";
   return safe2payRequest("POST", "/payment", {
     IsSandbox: false,
     Application: "Velvet",
     CallbackUrl: `${appUrl}/api/webhook/safe2pay`,
     Reference: referencia,
-    Customer: { Name: nome, Email: email, Identity: cpf, Phone: telefone },
+    Customer: {
+      Name: nome,
+      Email: email,
+      Identity: cpf,
+      Phone: telefone,
+      Address: {
+        ZipCode:      endereco.cep,
+        Street:       endereco.rua,
+        Number:       endereco.numero,
+        Complement:   endereco.complemento || "",
+        District:     endereco.bairro,
+        StateInitials: endereco.estado,
+        CityName:     endereco.cidade,
+        CountryName:  "Brasil"
+      }
+    },
     Products: [{ Code: "001", Description: descricao, UnitPrice: valorTotal, Quantity: 1 }],
     PaymentMethod: "6",
     PaymentObject: {}
   });
+}
+
+async function salvarEnderecoClientePix(dbClient, { cliente_id, telefone, endereco }) {
+  const enderecoStr = [endereco.rua, endereco.numero, endereco.complemento, endereco.bairro]
+    .filter(Boolean).join(", ");
+  await dbClient.query(`
+    INSERT INTO clientes_dados (cliente_id, telefone, endereco, cidade, estado, pais, atualizado_em)
+    VALUES ($1, $2, $3, $4, $5, 'Brasil', NOW())
+    ON CONFLICT (cliente_id) DO UPDATE SET
+      telefone   = COALESCE(EXCLUDED.telefone, clientes_dados.telefone),
+      endereco   = EXCLUDED.endereco,
+      cidade     = EXCLUDED.cidade,
+      estado     = EXCLUDED.estado,
+      pais       = 'Brasil',
+      atualizado_em = NOW()
+  `, [cliente_id, telefone || null, enderecoStr, endereco.cidade, endereco.estado]);
 }
 
 // function manutencaoClientes(req, res, next) {
@@ -8455,10 +8486,14 @@ app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
   const client = await db.connect();
 
   try {
-    const { modelo_id, aceitou_termos, aceitou_execucao_imediata, aceite_timestamp, versao_termos, fingerprint, cpf, telefone } = req.body;
+    const { modelo_id, aceitou_termos, aceitou_execucao_imediata, aceite_timestamp, versao_termos, fingerprint, cpf, telefone, endereco } = req.body;
     const userId = Number(req.user?.id || 0);
     const cpfVip = String(cpf || "").replace(/\D/g, "") || null;
     const telefoneVip = String(telefone || "").replace(/\D/g, "") || null;
+
+    if (!endereco || !endereco.cep || !endereco.rua || !endereco.numero || !endereco.bairro || !endereco.cidade || !endereco.estado) {
+      return res.status(400).json({ error: "Endereço completo obrigatório para pagamento PIX." });
+    }
 
     console.log("User:", userId);
     console.log("Modelo:", modelo_id);
@@ -8703,6 +8738,7 @@ if (Number.isNaN(dataAceite.getTime())) {
       email:      emailFinal,
       cpf:        cpfVip      || "",
       telefone:   telefoneVip || "",
+      endereco,
       referencia: `vip_${cliente_id}_${modeloIdNum}_${Date.now()}`,
       descricao:  "Assinatura VIP Velvet"
     });
@@ -8717,6 +8753,8 @@ if (Number.isNaN(dataAceite.getTime())) {
       await client.query("ROLLBACK");
       return res.status(500).json({ error: "Erro ao gerar QR PIX" });
     }
+
+    await salvarEnderecoClientePix(client, { cliente_id, telefone: telefoneVip, endereco });
 
     /* =========================
        REGISTRAR PIX
@@ -8810,8 +8848,12 @@ app.post("/api/pagamento/midia/pix", authCliente, async (req, res) => {
 
   try {
 
-   const { conteudo_id, aceitou_termos, aceitou_execucao_imediata, aceite_timestamp, versao_termos, fingerprint } = req.body;
+   const { conteudo_id, cpf, telefone, endereco, aceitou_termos, aceitou_execucao_imediata, aceite_timestamp, versao_termos, fingerprint } = req.body;
     const userId = req.user.id;
+
+    if (!endereco || !endereco.cep || !endereco.rua || !endereco.numero || !endereco.bairro || !endereco.cidade || !endereco.estado) {
+      return res.status(400).json({ error: "Endereço completo obrigatório para pagamento PIX." });
+    }
 
     const ip =
       req.headers["x-forwarded-for"]?.split(",")[0] ||
@@ -8982,8 +9024,9 @@ if (Number.isNaN(dataAceite.getTime())) {
       valorTotal: valorTotal,
       nome:       nomeCliente,
       email:      emailCliente,
-      cpf:        "",
-      telefone:   "",
+      cpf:        String(cpf || "").replace(/\D/g, ""),
+      telefone:   String(telefone || "").replace(/\D/g, ""),
+      endereco,
       referencia: `midia_${cliente_id}_${conteudo_id}_${Date.now()}`,
       descricao:  "Mídia Velvet"
     });
@@ -9086,12 +9129,17 @@ const {
   versao_termos,
   fingerprint,
   cpf,
-  telefone
+  telefone,
+  endereco
 } = req.body;
 
     const userId = Number(req.user?.id || 0);
     const cpfPremium = String(cpf || "").replace(/\D/g, "") || null;
     const telefonePremium = String(telefone || "").replace(/\D/g, "") || null;
+
+    if (!endereco || !endereco.cep || !endereco.rua || !endereco.numero || !endereco.bairro || !endereco.cidade || !endereco.estado) {
+      return res.status(400).json({ error: "Endereço completo obrigatório para pagamento PIX." });
+    }
 
     console.log("User:", userId);
     console.log("Premium post:", premium_post_id);
@@ -9390,6 +9438,7 @@ if (Number.isNaN(dataAceite.getTime())) {
       email:      emailFinal,
       cpf:        cpfPremium      || "",
       telefone:   telefonePremium || "",
+      endereco,
       referencia: `premium_${cliente_id}_${premiumPostIdNum}_${Date.now()}`,
       descricao:  "Post Premium Velvet"
     });

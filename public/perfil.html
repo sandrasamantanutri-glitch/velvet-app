@@ -183,6 +183,47 @@
     <input type="text" id="phonePagamento" class="campo-input" data-i18n-placeholder="pagamento.telefone_placeholder" placeholder="(11) 99999-9999"/>
   </div>
 
+  <div id="blocoEndereco" class="hidden">
+    <div class="campo-cep-row">
+      <div style="flex:1">
+        <label for="cepPagamento" class="campo-label"><strong>CEP</strong></label>
+        <input type="text" id="cepPagamento" class="campo-input" placeholder="00000-000" maxlength="9"/>
+      </div>
+      <button type="button" class="btn-buscar-cep" onclick="buscarCepPagamento()">Buscar</button>
+    </div>
+    <div id="campoCepFeedback" class="cep-feedback hidden"></div>
+    <div id="camposEnderecoCompleto">
+      <div>
+        <label for="ruaPagamento" class="campo-label"><strong>Rua</strong></label>
+        <input type="text" id="ruaPagamento" class="campo-input" placeholder="Rua / Avenida"/>
+      </div>
+      <div class="campo-row-duplo">
+        <div>
+          <label for="numeroPagamento" class="campo-label"><strong>Número</strong></label>
+          <input type="text" id="numeroPagamento" class="campo-input" placeholder="Nº"/>
+        </div>
+        <div>
+          <label for="complementoPagamento" class="campo-label"><strong>Complemento</strong> <span style="font-weight:normal;font-size:0.85em">(opcional)</span></label>
+          <input type="text" id="complementoPagamento" class="campo-input" placeholder="Apto, Bloco..."/>
+        </div>
+      </div>
+      <div>
+        <label for="bairroPagamento" class="campo-label"><strong>Bairro</strong></label>
+        <input type="text" id="bairroPagamento" class="campo-input" placeholder="Bairro"/>
+      </div>
+      <div class="campo-row-duplo">
+        <div>
+          <label for="cidadePagamento" class="campo-label"><strong>Cidade</strong></label>
+          <input type="text" id="cidadePagamento" class="campo-input" placeholder="Cidade"/>
+        </div>
+        <div>
+          <label for="estadoPagamento" class="campo-label"><strong>Estado</strong></label>
+          <input type="text" id="estadoPagamento" class="campo-input" placeholder="UF" maxlength="2"/>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="termos-pagamento">
     <p class="termos-aviso">
       <span data-i18n="pagamento.termos_aviso">Ao efetuar o pagamento, você confirma que está de acordo com os</span>
@@ -201,9 +242,9 @@
 
 
 <div class="acoes-metodo">
-<button id="btnEscolherPix" type="button" class="btn-principal" onclick="abrirConfirmacaoVIP('pix')">
+<!-- <button id="btnEscolherPix" type="button" class="btn-principal" onclick="abrirConfirmacaoVIP('pix')">
   ⚡ Pagar com Pix
-</button>
+</button> -->
 
 <button id="btnEscolherCartao" type="button" class="btn-principal" onclick="abrirConfirmacaoVIP('cartao')">
   💳 Pagar com cartão
