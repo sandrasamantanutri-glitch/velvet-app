@@ -1286,6 +1286,332 @@ app.post("/api/webhook/abacatepay", express.json(), async (req, res) => {
   }
 });
 
+// ── WEBHOOK SAFE2PAY ────────────────────────────────────────────────────────
+app.post("/api/webhook/safe2pay", express.json(), async (req, res) => {
+  console.log("======================================");
+  console.log("🔥 WEBHOOK SAFE2PAY RECEBIDO");
+
+  if (process.env.SAFE2PAY_WEBHOOK_TOKEN) {
+    const tokenRecebido =
+      req.headers["x-api-key"] ||
+      req.headers["authorization"] || "";
+    const tokenLimpo = tokenRecebido.replace(/^Bearer\s+/i, "");
+    if (tokenLimpo !== process.env.SAFE2PAY_WEBHOOK_TOKEN) {
+      console.warn("🚨 Webhook Safe2Pay: token inválido");
+      return res.status(401).send("unauthorized");
+    }
+  }
+
+  const body        = req.body;
+  const idTx        = String(body?.IdTransaction || "");
+  const reference   = String(body?.Reference || "");
+  const statusCode  = String(body?.TransactionStatus?.Code || "");
+  const statusName  = String(body?.TransactionStatus?.Name || "").toUpperCase();
+  const valorPago   = Number(body?.Amount || 0);
+
+  console.log("IdTransaction:", idTx, "| Reference:", reference, "| Status:", statusCode, statusName);
+
+  if (!idTx) return res.status(200).send("ok");
+
+  const PAID_CODES   = ["3"];
+  const FAILED_CODES = ["6", "7", "8"];
+
+  const isPaidEvent   = PAID_CODES.includes(statusCode) || statusName.includes("AUTORIZ");
+  const isFailedEvent = FAILED_CODES.includes(statusCode) || statusName.includes("CANCEL") || statusName.includes("ESTORN");
+
+  if (!isPaidEvent && !isFailedEvent) {
+    console.log("Safe2Pay webhook: status ignorado:", statusCode, statusName);
+    return res.status(200).send("ok");
+  }
+
+  const novoStatus = isPaidEvent ? "pago" : "falhou";
+
+  const calcularValores =
+    req.app.get("calcularValores") ||
+    (async ({ valor_bruto }) => ({
+      valor_modelo: valor_bruto * 0.7,
+      agency_fee:   valor_bruto * 0.1,
+      velvet_fee:   valor_bruto * 0.05
+    }));
+
+  const client = await db.connect();
+  let dadosParaEmitir = null;
+
+  try {
+    await client.query("BEGIN");
+
+    /* ──────────────────────────────────────────────────
+       1. PREMIUM_UNLOCKS
+    ────────────────────────────────────────────────── */
+    const premiumRes = await client.query(
+      `SELECT * FROM premium_unlocks
+       WHERE pagarme_order_id = $1::text
+       LIMIT 1 FOR UPDATE`,
+      [idTx]
+    );
+
+    if (premiumRes.rowCount > 0) {
+      const row = premiumRes.rows[0];
+
+      if (row.status === "pago") {
+        await client.query("ROLLBACK");
+        return res.status(200).send("ok");
+      }
+
+      await client.query(
+        `UPDATE premium_unlocks
+         SET status = $1::text, pago_em = CASE WHEN $1::text = 'pago' THEN NOW() ELSE pago_em END,
+             updated_at = NOW()
+         WHERE id = $2`,
+        [novoStatus, row.id]
+      );
+
+      if (isPaidEvent) {
+        const cliente_id      = Number(row.cliente_id);
+        const modelo_id       = Number(row.modelo_id);
+        const premium_post_id = Number(row.premium_post_id);
+        const valorBase       = Number(row.valor_base || valorPago);
+        const taxaGateway     = Number((valorBase * 0.15).toFixed(2));
+
+        const valores = await calcularValores({
+          modelo_id, valor_bruto: valorBase, taxa_gateway: taxaGateway
+        });
+
+        await client.query(
+          `INSERT INTO transacoes_agency
+             (modelo_id, cliente_id, tipo, valor_bruto,
+              valor_modelo, agency_fee, velvet_fee, taxa_gateway, status, created_at)
+           VALUES ($1,$2,'midia',$3,$4,$5,$6,$7,'pago',NOW())`,
+          [modelo_id, cliente_id, valorBase,
+           Number(valores.valor_modelo || 0), Number(valores.agency_fee || 0),
+           Number(valores.velvet_fee || 0), taxaGateway]
+        );
+
+        dadosParaEmitir = { tipo: "premium", cliente_id, modelo_id, premium_post_id, payment_id: idTx };
+      }
+
+      await client.query("COMMIT");
+
+      if (dadosParaEmitir) {
+        try {
+          const io = req.app.get("io");
+          if (io) {
+            io.to(`user_${dadosParaEmitir.cliente_id}`).emit("pagamento_confirmado", {
+              tipo: "premium",
+              premium_post_id: dadosParaEmitir.premium_post_id,
+              modelo_id:       dadosParaEmitir.modelo_id,
+              payment_id:      dadosParaEmitir.payment_id
+            });
+          }
+        } catch (e) { console.error("Erro socket premium webhook Safe2Pay:", e); }
+      }
+
+      console.log("✅ WEBHOOK SAFE2PAY PREMIUM FINALIZADO");
+      return res.status(200).send("ok");
+    }
+
+    /* ──────────────────────────────────────────────────
+       2. PAGAMENTOS_PIX — VIP ou Mídia
+    ────────────────────────────────────────────────── */
+    const pixRes = await client.query(
+      `SELECT * FROM pagamentos_pix
+       WHERE pagarme_order_id = $1
+       LIMIT 1 FOR UPDATE`,
+      [idTx]
+    );
+
+    if (pixRes.rowCount === 0) {
+      await client.query("ROLLBACK");
+      console.warn("Safe2Pay webhook: pagamento não encontrado:", idTx);
+      return res.status(200).send("ok");
+    }
+
+    const row = pixRes.rows[0];
+
+    if (row.status === "pago") {
+      await client.query("ROLLBACK");
+      return res.status(200).send("ok");
+    }
+
+    await client.query(
+      `UPDATE pagamentos_pix SET status = $1 WHERE pagarme_order_id = $2`,
+      [novoStatus, idTx]
+    );
+
+    if (isPaidEvent) {
+      const cliente_id      = Number(row.cliente_id);
+      const modelo_id       = Number(row.modelo_id);
+      const message_id      = row.message_id ? Number(row.message_id) : null;
+      const isVip           = !message_id;
+      const valorBrutoTotal = Number(row.valor || valorPago);
+      const valorBase       = Number((valorBrutoTotal / 1.15).toFixed(2));
+      const taxaGateway     = Number((valorBrutoTotal - valorBase).toFixed(2));
+
+      const valores = await calcularValores({
+        modelo_id, valor_bruto: valorBase, taxa_gateway: taxaGateway
+      });
+
+      if (isVip) {
+        const vipExistente = await client.query(
+          `SELECT id, ativo, expiration_at
+           FROM vip_subscriptions
+           WHERE cliente_id = $1 AND modelo_id = $2
+           LIMIT 1 FOR UPDATE`,
+          [cliente_id, modelo_id]
+        );
+
+        let novaExpiracao;
+        if (
+          vipExistente.rowCount > 0 &&
+          vipExistente.rows[0].expiration_at &&
+          new Date(vipExistente.rows[0].expiration_at) > new Date()
+        ) {
+          novaExpiracao = new Date(vipExistente.rows[0].expiration_at);
+          novaExpiracao.setMonth(novaExpiracao.getMonth() + 1);
+        } else {
+          novaExpiracao = new Date();
+          novaExpiracao.setMonth(novaExpiracao.getMonth() + 1);
+        }
+
+        const primeiraAssinatura = vipExistente.rowCount === 0;
+
+        if (vipExistente.rowCount > 0) {
+          await client.query(
+            `UPDATE vip_subscriptions
+             SET ativo = true, updated_at = NOW(), expiration_at = $3,
+                 valor_assinatura = $4, taxa_transacao = $5, taxa_plataforma = 0,
+                 valor_total = $6, recorrente = false,
+                 gateway_subscription_id = $7,
+                 aviso_7_dias_enviado = false, aviso_24h_enviado = false
+             WHERE cliente_id = $1 AND modelo_id = $2`,
+            [cliente_id, modelo_id, novaExpiracao, valorBase, taxaGateway, valorBrutoTotal, idTx]
+          );
+        } else {
+          await client.query(
+            `INSERT INTO vip_subscriptions
+               (cliente_id, modelo_id, ativo, created_at, updated_at,
+                expiration_at, valor_assinatura, taxa_transacao, taxa_plataforma,
+                valor_total, recorrente, gateway_subscription_id)
+             VALUES ($1,$2,true,NOW(),NOW(),$3,$4,$5,0,$6,false,$7)`,
+            [cliente_id, modelo_id, novaExpiracao, valorBase, taxaGateway, valorBrutoTotal, idTx]
+          );
+        }
+
+        await client.query(
+          `INSERT INTO transacoes_agency
+             (modelo_id, cliente_id, tipo, valor_bruto,
+              valor_modelo, agency_fee, velvet_fee, taxa_gateway, status, created_at)
+           VALUES ($1,$2,'assinatura',$3,$4,$5,$6,$7,'pago',NOW())`,
+          [modelo_id, cliente_id, valorBase,
+           Number(valores.valor_modelo || 0), Number(valores.agency_fee || 0),
+           Number(valores.velvet_fee || 0), taxaGateway]
+        );
+
+        if (primeiraAssinatura) {
+          await client.query(
+            `INSERT INTO messages
+               (cliente_id, modelo_id, text, sender, tipo,
+                created_at, lida, visto, deletada)
+             VALUES ($1,$2,$3,'modelo','texto',NOW(),false,false,false)`,
+            [cliente_id, modelo_id, "Oii!! Bem vindo(a), qual seu nome?🥰🔥"]
+          );
+        }
+
+        dadosParaEmitir = { tipo: "vip", cliente_id, modelo_id, primeiraAssinatura };
+
+      } else {
+        await client.query(
+          `INSERT INTO conteudo_pacotes
+             (message_id, cliente_id, modelo_id, preco, valor_base,
+              valor_total, status, metodo_pagamento, pago_em, currency,
+              valor_cobrado, taxa_cambio)
+           VALUES ($1,$2,$3,$4,$4,$5,'pago','pix',NOW(),'brl',$5,NULL)
+           ON CONFLICT (message_id, cliente_id) DO UPDATE
+             SET status='pago', metodo_pagamento='pix',
+                 pago_em=NOW(), valor_total=$5`,
+          [message_id, cliente_id, modelo_id, valorBase, valorBrutoTotal]
+        );
+
+        const conteudo_ids =
+          await marcarConteudoComoLiberadoPorPagamento(client, {
+            message_id, cliente_id, modelo_id
+          });
+
+        await client.query(
+          `INSERT INTO transacoes_agency
+             (modelo_id, cliente_id, tipo, valor_bruto,
+              valor_modelo, agency_fee, velvet_fee, taxa_gateway, status, created_at)
+           VALUES ($1,$2,'midia',$3,$4,$5,$6,$7,'pago',NOW())`,
+          [modelo_id, cliente_id, valorBase,
+           Number(valores.valor_modelo || 0), Number(valores.agency_fee || 0),
+           Number(valores.velvet_fee || 0), taxaGateway]
+        );
+
+        dadosParaEmitir = { tipo: "conteudo", cliente_id, modelo_id, message_id, conteudo_ids };
+      }
+    }
+
+    await client.query("COMMIT");
+
+    if (dadosParaEmitir) {
+      if (dadosParaEmitir.tipo === "vip") {
+        registrarLog(db, {
+          tipo: 'assinatura_vip',
+          cliente_id: dadosParaEmitir.cliente_id,
+          modelo_id:  dadosParaEmitir.modelo_id,
+          descricao:  `Assinatura VIP confirmada via PIX (Safe2Pay) — modelo_id ${dadosParaEmitir.modelo_id}`
+        });
+      } else if (dadosParaEmitir.tipo === "conteudo") {
+        registrarLog(db, {
+          tipo: 'compra_midia_chat',
+          cliente_id: dadosParaEmitir.cliente_id,
+          modelo_id:  dadosParaEmitir.modelo_id,
+          descricao:  `Mídia do chat desbloqueada via PIX (Safe2Pay) — message_id ${dadosParaEmitir.message_id}`
+        });
+      } else if (dadosParaEmitir.tipo === "premium") {
+        registrarLog(db, {
+          tipo: 'compra_premium',
+          cliente_id: dadosParaEmitir.cliente_id,
+          modelo_id:  dadosParaEmitir.modelo_id,
+          descricao:  `Premium desbloqueado via PIX (Safe2Pay) — premium_post_id ${dadosParaEmitir.premium_post_id}`
+        });
+      }
+    }
+
+    if (dadosParaEmitir) {
+      try {
+        const io = req.app.get("io");
+        if (io) {
+          if (dadosParaEmitir.tipo === "conteudo") {
+            const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
+            io.to(sala).emit("conteudoLiberado", {
+              message_id:   Number(dadosParaEmitir.message_id),
+              conteudo_ids: dadosParaEmitir.conteudo_ids || []
+            });
+          }
+          if (dadosParaEmitir.tipo === "vip") {
+            const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
+            io.to(sala).emit("vipAtivado", {
+              cliente_id: Number(dadosParaEmitir.cliente_id),
+              modelo_id:  Number(dadosParaEmitir.modelo_id)
+            });
+          }
+        }
+      } catch (e) { console.error("Erro socket webhook Safe2Pay:", e); }
+    }
+
+    console.log("✅ WEBHOOK SAFE2PAY FINALIZADO");
+    return res.status(200).send("ok");
+
+  } catch (err) {
+    try { await client.query("ROLLBACK"); } catch (_) {}
+    console.error("🔥 ERRO WEBHOOK SAFE2PAY:", err);
+    return res.status(500).send("erro");
+  } finally {
+    client.release();
+  }
+});
+
 // ── PLACEHOLDER para o antigo webhook pagarme (removido) ──
 app.post("/api/webhook/pagarme_REMOVED", express.raw({ type: "*/*" }), async (req, res) => {
   console.log("======================================");
@@ -3615,6 +3941,62 @@ async function abacatePayRequest(method, path, body) {
     console.error(`[AbacatePay] ERRO ${err?.response?.status}:`, JSON.stringify(err?.response?.data));
     throw err;
   }
+}
+
+// ── Safe2Pay helpers ────────────────────────────────────────────────────────
+const SAFE2PAY_BASE = process.env.NODE_ENV === "production"
+  ? "https://payment.safe2pay.com.br/v2"
+  : "https://sandbox.safe2pay.com.br/v2";
+
+async function safe2payRequest(method, path, body) {
+  console.log(`[Safe2Pay] ${method} ${path}`);
+  try {
+    const res = await axios({
+      method,
+      url: `${SAFE2PAY_BASE}${path}`,
+      data: body,
+      headers: {
+        "x-api-key": process.env.SAFE2PAY_API_KEY,
+        "Content-Type": "application/json"
+      }
+    });
+    if (res.data?.HasError) {
+      console.error(`[Safe2Pay] Erro na resposta:`, JSON.stringify(res.data));
+      throw Object.assign(new Error("Safe2Pay error"), { safe2payData: res.data });
+    }
+    return res.data;
+  } catch (err) {
+    if (!err.safe2payData) {
+      console.error(`[Safe2Pay] ERRO ${err?.response?.status}:`, JSON.stringify(err?.response?.data));
+    }
+    throw err;
+  }
+}
+
+async function criarPixSafe2Pay({ valorTotal, nome, email, cpf, telefone, referencia, descricao }) {
+  const appUrl = process.env.APP_URL || "https://velvet.lat";
+  return safe2payRequest("POST", "/payment", {
+    IsSandbox:     process.env.NODE_ENV !== "production",
+    Application:   "Velvet",
+    CallbackUrl:   `${appUrl}/api/webhook/safe2pay`,
+    Reference:     referencia,
+    Customer: {
+      Name:     nome || "Cliente Velvet",
+      Email:    email,
+      Identity: cpf      || "",
+      Phone:    telefone || ""
+    },
+    Products: [
+      {
+        Code:        "001",
+        Description: descricao,
+        UnitPrice:   valorTotal,
+        Quantity:    1
+      }
+    ],
+    PaymentMethod: "6",
+    PaymentObject: {}
+  });
 }
 
 function formatarTelefoneBR(digits) {
@@ -9332,8 +9714,22 @@ if (Number.isNaN(dataAceite.getTime())) {
     }
 
     /* =========================
-       REUTILIZAR PIX PENDENTE RECENTE
+       BLOQUEAR PRIMEIRA ASSINATURA VIP VIA PIX
+       PIX só permitido para renovação (cliente já assinou antes)
     ========================= */
+
+    const vipAnteriorRes = await client.query(
+      `SELECT id FROM vip_subscriptions WHERE cliente_id = $1 AND modelo_id = $2 LIMIT 1`,
+      [cliente_id, modeloIdNum]
+    );
+
+    if (vipAnteriorRes.rowCount === 0) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({
+        error: "PIX disponível apenas para renovação VIP. Para a primeira assinatura, utilize cartão de crédito.",
+        primeiro_vip: true
+      });
+    }
 
     /* =========================
        PLANO VIP
@@ -9404,30 +9800,28 @@ if (Number.isNaN(dataAceite.getTime())) {
     console.log("centavos:", amount);
 
     /* =========================
-       CRIAR PIX ABACATEPAY
+       CRIAR PIX SAFE2PAY
     ========================= */
 
-    console.log("Criando pagamento PIX no AbacatePay...");
+    console.log("Criando pagamento PIX VIP no Safe2Pay...");
 
-    const abacateResVip = await abacatePayRequest("POST", "/transparents/create", {
-      method: "PIX",
-      data: {
-        amount,
-        description: "Assinatura VIP Velvet",
-        expiresIn: 3600,
-        customer: cpfVip && telefoneVip ? { name: nomeFinal, email: emailFinal, taxId: cpfVip, cellphone: formatarTelefoneBR(telefoneVip) } : undefined,
-        metadata: {},
-        externalId: `vip_${cliente_id}_${modeloIdNum}`
-      }
+    const safe2payResVip = await criarPixSafe2Pay({
+      valorTotal: valorTotal,
+      nome:       nomeFinal,
+      email:      emailFinal,
+      cpf:        cpfVip      || "",
+      telefone:   telefoneVip || "",
+      referencia: `vip_${cliente_id}_${modeloIdNum}_${Date.now()}`,
+      descricao:  "Assinatura VIP Velvet"
     });
 
-    const abacateId  = abacateResVip?.data?.id;
-    const brCode     = abacateResVip?.data?.brCode;
-    const brCodeB64  = abacateResVip?.data?.brCodeBase64;
-    const expiresAt  = abacateResVip?.data?.expiresAt || null;
+    const safe2payId = String(safe2payResVip?.ResponseDetail?.IdTransaction || "");
+    const brCode     = safe2payResVip?.ResponseDetail?.QrCode       || null;
+    const brCodeB64  = safe2payResVip?.ResponseDetail?.QrCodeImage  || null;
+    const expiresAt  = safe2payResVip?.ResponseDetail?.ExpirationDate || null;
 
-    if (!abacateId || !brCode) {
-      console.error("PIX AbacatePay não gerado:", abacateResVip);
+    if (!safe2payId || !brCode) {
+      console.error("PIX Safe2Pay não gerado:", safe2payResVip);
       await client.query("ROLLBACK");
       return res.status(500).json({ error: "Erro ao gerar QR PIX" });
     }
@@ -9458,13 +9852,13 @@ if (Number.isNaN(dataAceite.getTime())) {
         cpf,
         telefone
       )
-      VALUES ($1,$2,$3,'pendente','abacatepay',$4,NOW(),$5,$6,$7,$8,$9,$10,$11,$12)
+      VALUES ($1,$2,$3,'pendente','safe2pay',$4,NOW(),$5,$6,$7,$8,$9,$10,$11,$12)
       `,
       [
         cliente_id,
         modeloIdNum,
         valorTotal,
-        abacateId,
+        safe2payId,
         ip,
         !!aceitou_termos,
         !!aceitou_execucao_imediata,
@@ -9487,7 +9881,7 @@ if (Number.isNaN(dataAceite.getTime())) {
       qr_code_url: brCodeB64 ? (brCodeB64.startsWith("data:") ? brCodeB64 : `data:image/png;base64,${brCodeB64}`) : null,
       copia_cola: brCode,
       expires_at: expiresAt,
-      order_id: abacateId
+      order_id: safe2payId
     });
   } catch (err) {
     console.error("=================================");
@@ -9507,12 +9901,7 @@ if (Number.isNaN(dataAceite.getTime())) {
       console.error("Erro no rollback:", rollbackErr);
     }
 
-    const isAbacateError = err.response?.data?.error === "Erro ao criar QR Code PIX";
-    return res.status(isAbacateError ? 503 : 500).json({
-      error: isAbacateError
-        ? "O sistema de pagamentos está passando por manutenção e atualização. Tente novamente em alguns minutos."
-        : "Erro ao gerar pagamento"
-    });
+    return res.status(500).json({ error: "Erro ao gerar pagamento PIX" });
   } finally {
     client.release();
     console.log("Conexão DB liberada");
@@ -9664,7 +10053,7 @@ if (Number.isNaN(dataAceite.getTime())) {
       FROM pagamentos_pix
       WHERE cliente_id = $1
       AND message_id = $2
-      AND gateway = 'abacatepay'
+      AND gateway IN ('safe2pay', 'abacatepay')
       AND status = 'pendente'
       AND expires_at > NOW()
       ORDER BY criado_em DESC
@@ -9684,10 +10073,10 @@ if (Number.isNaN(dataAceite.getTime())) {
     }
 
     /* ================================
-       CRIAR PIX ABACATEPAY
+       CRIAR PIX SAFE2PAY
     ================================ */
 
-    console.log("Criando pagamento PIX Mídia no AbacatePay...");
+    console.log("Criando pagamento PIX Mídia no Safe2Pay...");
 
     const nomeCliente  = String(nomeDB || "").trim() || "Cliente Velvet";
     const emailCliente = String(emailDB || "").trim();
@@ -9697,27 +10086,22 @@ if (Number.isNaN(dataAceite.getTime())) {
       return res.status(400).json({ error: "E-mail do cliente não encontrado." });
     }
 
-    const abacatePayload = {
-      method: "PIX",
-      data: {
-        amount: valorCentavos,
-        description: "Mídia Premium Velvet",
-        expiresIn: 3600,
-        metadata: {},
-        externalId: `midia_${cliente_id}_${conteudo_id}`
-      }
-    };
+    const safe2payResMidia = await criarPixSafe2Pay({
+      valorTotal: valorTotal,
+      nome:       nomeCliente,
+      email:      emailCliente,
+      cpf:        "",
+      telefone:   "",
+      referencia: `midia_${cliente_id}_${conteudo_id}_${Date.now()}`,
+      descricao:  "Mídia Velvet"
+    });
 
-    console.log("AbacatePay PIX Mídia payload:", JSON.stringify(abacatePayload));
+    const safe2payIdMidia = String(safe2payResMidia?.ResponseDetail?.IdTransaction || "");
+    const brCodeMidia     = safe2payResMidia?.ResponseDetail?.QrCode      || null;
+    const brCodeB64Midia  = safe2payResMidia?.ResponseDetail?.QrCodeImage || null;
 
-    const abacateResMidia = await abacatePayRequest("POST", "/transparents/create", abacatePayload);
-
-    const abacateIdMidia  = abacateResMidia?.data?.id;
-    const brCodeMidia     = abacateResMidia?.data?.brCode;
-    const brCodeB64Midia  = abacateResMidia?.data?.brCodeBase64;
-
-    if (!abacateIdMidia || !brCodeMidia) {
-      throw new Error("Erro ao gerar PIX no AbacatePay");
+    if (!safe2payIdMidia || !brCodeMidia) {
+      throw new Error("Erro ao gerar PIX no Safe2Pay");
     }
 
     /* ================================
@@ -9746,7 +10130,7 @@ await client.query(
     fingerprint
   )
   VALUES (
-    $1,$2,$3,$4,$5,'pendente','abacatepay',$6,NOW(),NOW() + INTERVAL '60 minutes',
+    $1,$2,$3,$4,$5,'pendente','safe2pay',$6,NOW(),NOW() + INTERVAL '60 minutes',
     $7,$8,$9,$10,$11,$12
   )
   `,
@@ -9756,7 +10140,7 @@ await client.query(
     conteudo_id,
     brCodeMidia,
     valorTotal,
-    abacateIdMidia,
+    safe2payIdMidia,
     ip || null,
     !!aceitou_termos,
     !!aceitou_execucao_imediata,
@@ -9771,7 +10155,7 @@ await client.query(
     return res.json({
       qr_code: brCodeMidia,
       qr_code_base64: brCodeB64Midia || null,
-      payment_id: abacateIdMidia
+      payment_id: safe2payIdMidia
     });
 
   } catch (err) {
@@ -9780,12 +10164,7 @@ await client.query(
 
     try { await client.query("ROLLBACK"); } catch {}
 
-    const isAbacateErrorMidia = err.response?.data?.error === "Erro ao criar QR Code PIX";
-    return res.status(isAbacateErrorMidia ? 503 : 500).json({
-      error: isAbacateErrorMidia
-        ? "O sistema de pagamentos está passando por manutenção e atualização. Tente novamente em alguns minutos."
-        : "Erro ao gerar pagamento PIX"
-    });
+    return res.status(500).json({ error: "Erro ao gerar pagamento PIX" });
 
   } finally {
 
@@ -10108,30 +10487,28 @@ if (Number.isNaN(dataAceite.getTime())) {
     console.log("centavos:", amount);
 
     /* =========================
-       CRIAR PIX ABACATEPAY
+       CRIAR PIX SAFE2PAY
     ========================= */
 
-    console.log("Criando pagamento PIX Premium no AbacatePay...");
+    console.log("Criando pagamento PIX Premium no Safe2Pay...");
 
-    const abacateResPremium = await abacatePayRequest("POST", "/transparents/create", {
-      method: "PIX",
-      data: {
-        amount,
-        description: "Post Premium Velvet",
-        expiresIn: 3600,
-        customer: cpfPremium && telefonePremium ? { name: nomeFinal, email: emailFinal, taxId: cpfPremium, cellphone: formatarTelefoneBR(telefonePremium) } : undefined,
-        metadata: {},
-        externalId: `premium_${cliente_id}_${premiumPostIdNum}`
-      }
+    const safe2payResPremium = await criarPixSafe2Pay({
+      valorTotal: valorTotal,
+      nome:       nomeFinal,
+      email:      emailFinal,
+      cpf:        cpfPremium      || "",
+      telefone:   telefonePremium || "",
+      referencia: `premium_${cliente_id}_${premiumPostIdNum}_${Date.now()}`,
+      descricao:  "Post Premium Velvet"
     });
 
-    const abacateIdPremium  = abacateResPremium?.data?.id;
-    const brCodePremium     = abacateResPremium?.data?.brCode;
-    const brCodeB64Premium  = abacateResPremium?.data?.brCodeBase64;
-    const expiresAtPremium  = abacateResPremium?.data?.expiresAt || null;
+    const safe2payIdPremium  = String(safe2payResPremium?.ResponseDetail?.IdTransaction || "");
+    const brCodePremium      = safe2payResPremium?.ResponseDetail?.QrCode      || null;
+    const brCodeB64Premium   = safe2payResPremium?.ResponseDetail?.QrCodeImage || null;
+    const expiresAtPremium   = safe2payResPremium?.ResponseDetail?.ExpirationDate || null;
 
-    if (!abacateIdPremium || !brCodePremium) {
-      console.error("PIX AbacatePay não gerado:", abacateResPremium);
+    if (!safe2payIdPremium || !brCodePremium) {
+      console.error("PIX Safe2Pay não gerado:", safe2payResPremium);
       await client.query("ROLLBACK");
       return res.status(500).json({ error: "Erro ao gerar QR PIX" });
     }
@@ -10173,7 +10550,7 @@ await client.query(
     $1,$2,$3,
     'pendente','pix',
     $4,$5,$6,$7,
-    'abacatepay',$8,$9,$10,
+    'safe2pay',$8,$9,$10,
     $11,$12,$13,$14,$15,$16,
     NOW(),NOW()
   )
@@ -10206,7 +10583,7 @@ await client.query(
     taxaTransacao,
     taxaPlataforma,
     valorTotal,
-    abacateIdPremium,
+    safe2payIdPremium,
     brCodeB64Premium ? `data:image/png;base64,${brCodeB64Premium}` : null,
     `premium_${premiumPostIdNum}_${cliente_id}`,
     ip || null,
@@ -10229,7 +10606,7 @@ await client.query(
       qr_code_url: brCodeB64Premium ? (brCodeB64Premium.startsWith("data:") ? brCodeB64Premium : `data:image/png;base64,${brCodeB64Premium}`) : null,
       copia_cola: brCodePremium,
       expires_at: expiresAtPremium,
-      order_id: abacateIdPremium,
+      order_id: safe2payIdPremium,
       reutilizado: false
     });
   } catch (err) {
@@ -10255,12 +10632,7 @@ await client.query(
       console.error("Erro no rollback:", rollbackErr);
     }
 
-    const isAbacateErrorPremium = err.response?.data?.error === "Erro ao criar QR Code PIX";
-    return res.status(isAbacateErrorPremium ? 503 : 500).json({
-      error: isAbacateErrorPremium
-        ? "O sistema de pagamentos está passando por manutenção e atualização. Tente novamente em alguns minutos."
-        : "Erro ao gerar pagamento premium"
-    });
+    return res.status(500).json({ error: "Erro ao gerar pagamento premium PIX" });
   } finally {
     client.release();
     console.log("Conexão DB liberada");
