@@ -943,8 +943,16 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
     });
 
     if (!res.ok) {
-      const erro = await lerErroResposta(res);
-      throw new Error(erro);
+      let errData;
+      try { errData = await res.json(); } catch { errData = {}; }
+
+      if (errData.primeiro_vip) {
+        voltarEtapaPagamento();
+        alert("PIX disponível apenas para renovação VIP. Para assinar pela primeira vez, use o cartão de crédito. 💳");
+        return;
+      }
+
+      throw new Error(errData?.error || errData?.message || "Erro ao gerar PIX.");
     }
 
     const data = await res.json();
