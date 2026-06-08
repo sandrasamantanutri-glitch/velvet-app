@@ -2878,12 +2878,12 @@ function calcTaxaStripe(valorBase) {
 }
 
 // ── Safe2Pay PIX ─────────────────────────────────────────────────────────────
-const SAFE2PAY_BASE = process.env.NODE_ENV === "production"
-  ? "https://payment.safe2pay.com.br/v2"
-  : "https://sandbox.safe2pay.com.br/v2";
+const SAFE2PAY_BASE = "https://payment.safe2pay.com.br/v2";
 
 async function safe2payRequest(method, path, body) {
-  const resp = await fetch(`${SAFE2PAY_BASE}${path}`, {
+  const url = `${SAFE2PAY_BASE}${path}`;
+  console.log(`[Safe2Pay] ${method} ${url} | key_prefix=${(process.env.SAFE2PAY_API_KEY||"").slice(0,6)}`);
+  const resp = await fetch(url, {
     method,
     headers: {
       "Content-Type": "application/json",
@@ -2892,6 +2892,7 @@ async function safe2payRequest(method, path, body) {
     body: body ? JSON.stringify(body) : undefined
   });
   const data = await resp.json();
+  console.log(`[Safe2Pay] response HasError=${data.HasError} status=${resp.status}`);
   if (data.HasError) {
     throw new Error(`Safe2Pay error: ${JSON.stringify(data.Error || data)}`);
   }
@@ -2901,7 +2902,7 @@ async function safe2payRequest(method, path, body) {
 async function criarPixSafe2Pay({ valorTotal, nome, email, cpf, telefone, referencia, descricao }) {
   const appUrl = process.env.APP_URL || "https://velvet.lat";
   return safe2payRequest("POST", "/payment", {
-    IsSandbox: process.env.NODE_ENV !== "production",
+    IsSandbox: false,
     Application: "Velvet",
     CallbackUrl: `${appUrl}/api/webhook/safe2pay`,
     Reference: referencia,
