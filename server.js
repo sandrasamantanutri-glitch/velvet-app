@@ -2869,6 +2869,48 @@ async function getBRLtoUSDRate() {
   return rate;
 }
 
+// ── Taxa PIX (15%: 10% transação + 5% plataforma) ───────────────────────────
+function calcTaxaStripe(valorBase) {
+  const taxaTransacao  = Number((valorBase * 0.10).toFixed(2));
+  const taxaPlataforma = Number((valorBase * 0.05).toFixed(2));
+  const valorTotal     = Number((valorBase + taxaTransacao + taxaPlataforma).toFixed(2));
+  return { taxaTransacao, taxaPlataforma, valorTotal };
+}
+
+// ── Safe2Pay PIX ─────────────────────────────────────────────────────────────
+const SAFE2PAY_BASE = process.env.NODE_ENV === "production"
+  ? "https://payment.safe2pay.com.br/v2"
+  : "https://sandbox.safe2pay.com.br/v2";
+
+async function safe2payRequest(method, path, body) {
+  const resp = await fetch(`${SAFE2PAY_BASE}${path}`, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": process.env.SAFE2PAY_API_KEY
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const data = await resp.json();
+  if (data.HasError) {
+    throw new Error(`Safe2Pay error: ${JSON.stringify(data.Error || data)}`);
+  }
+  return data;
+}
+
+async function criarPixSafe2Pay({ valorTotal, nome, email, cpf, telefone, referencia, descricao }) {
+  const appUrl = process.env.APP_URL || "https://velvet.lat";
+  return safe2payRequest("POST", "/payment", {
+    IsSandbox: process.env.NODE_ENV !== "production",
+    Application: "Velvet",
+    CallbackUrl: `${appUrl}/api/webhook/safe2pay`,
+    Reference: referencia,
+    Customer: { Name: nome, Email: email, Identity: cpf, Phone: telefone },
+    Products: [{ Code: "001", Description: descricao, UnitPrice: valorTotal, Quantity: 1 }],
+    PaymentMethod: "6",
+    PaymentObject: {}
+  });
+}
 
 // function manutencaoClientes(req, res, next) {
 //   if (!MANUTENCAO_CLIENTES) return next();
