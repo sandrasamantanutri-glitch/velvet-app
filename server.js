@@ -8744,7 +8744,8 @@ if (Number.isNaN(dataAceite.getTime())) {
     });
 
     const safe2payId = String(safe2payResVip?.ResponseDetail?.IdTransaction || "");
-    const brCode     = safe2payResVip?.ResponseDetail?.QrCode       || null;
+    const brCode     = safe2payResVip?.ResponseDetail?.QrCode       || null; // URL da imagem PNG
+    const pixKey     = safe2payResVip?.ResponseDetail?.Key          || null; // código EMV copia-e-cola
     const brCodeB64  = safe2payResVip?.ResponseDetail?.QrCodeImage  || null;
     const expiresAt  = safe2payResVip?.ResponseDetail?.ExpirationDate || null;
 
@@ -8772,6 +8773,8 @@ if (Number.isNaN(dataAceite.getTime())) {
         status,
         gateway,
         pagarme_order_id,
+        qr_code,
+        copia_cola,
         criado_em,
         aceite_ip,
         aceitou_termos,
@@ -8782,13 +8785,15 @@ if (Number.isNaN(dataAceite.getTime())) {
         cpf,
         telefone
       )
-      VALUES ($1,$2,$3,'pendente','safe2pay',$4,NOW(),$5,$6,$7,$8,$9,$10,$11,$12)
+      VALUES ($1,$2,$3,'pendente','safe2pay',$4,$5,$6,NOW(),$7,$8,$9,$10,$11,$12,$13,$14)
       `,
       [
         cliente_id,
         modeloIdNum,
         valorTotal,
         safe2payId,
+        brCode,
+        pixKey,
         ip,
         !!aceitou_termos,
         !!aceitou_execucao_imediata,
@@ -8808,10 +8813,11 @@ if (Number.isNaN(dataAceite.getTime())) {
     console.log("PIX criado com sucesso");
 
     return res.json({
-      qr_code_url: brCodeB64 ? (brCodeB64.startsWith("data:") ? brCodeB64 : `data:image/png;base64,${brCodeB64}`) : null,
-      copia_cola: brCode,
-      expires_at: expiresAt,
-      order_id: safe2payId
+      qr_code_url:    brCode,
+      qr_code_base64: brCodeB64 ? (brCodeB64.startsWith("data:") ? brCodeB64 : `data:image/png;base64,${brCodeB64}`) : null,
+      copia_cola:     pixKey,
+      expires_at:     expiresAt,
+      order_id:       safe2payId
     });
   } catch (err) {
     console.error("=================================");
@@ -8983,7 +8989,7 @@ if (Number.isNaN(dataAceite.getTime())) {
 
     const pixExistente = await client.query(
       `
-      SELECT pagarme_order_id, qr_code
+      SELECT pagarme_order_id, qr_code, copia_cola
       FROM pagamentos_pix
       WHERE cliente_id = $1
       AND message_id = $2
@@ -8999,10 +9005,11 @@ if (Number.isNaN(dataAceite.getTime())) {
     if (pixExistente.rowCount > 0 && pixExistente.rows[0].qr_code) {
       await client.query("ROLLBACK");
       return res.json({
-        qr_code: pixExistente.rows[0].qr_code,
+        qr_code_url:    pixExistente.rows[0].qr_code,
         qr_code_base64: null,
-        payment_id: pixExistente.rows[0].pagarme_order_id,
-        reutilizado: true
+        copia_cola:     pixExistente.rows[0].copia_cola,
+        payment_id:     pixExistente.rows[0].pagarme_order_id,
+        reutilizado:    true
       });
     }
 
@@ -9032,7 +9039,8 @@ if (Number.isNaN(dataAceite.getTime())) {
     });
 
     const safe2payIdMidia = String(safe2payResMidia?.ResponseDetail?.IdTransaction || "");
-    const brCodeMidia     = safe2payResMidia?.ResponseDetail?.QrCode      || null;
+    const brCodeMidia     = safe2payResMidia?.ResponseDetail?.QrCode      || null; // URL da imagem PNG
+    const pixKeyMidia     = safe2payResMidia?.ResponseDetail?.Key         || null; // código EMV copia-e-cola
     const brCodeB64Midia  = safe2payResMidia?.ResponseDetail?.QrCodeImage || null;
 
     if (!safe2payIdMidia || !brCodeMidia) {
@@ -9057,6 +9065,7 @@ await client.query(
     modelo_id,
     message_id,
     qr_code,
+    copia_cola,
     valor,
     status,
     gateway,
@@ -9071,8 +9080,8 @@ await client.query(
     fingerprint
   )
   VALUES (
-    $1,$2,$3,$4,$5,'pendente','safe2pay',$6,NOW(),NOW() + INTERVAL '60 minutes',
-    $7,$8,$9,$10,$11,$12
+    $1,$2,$3,$4,$5,$6,'pendente','safe2pay',$7,NOW(),NOW() + INTERVAL '60 minutes',
+    $8,$9,$10,$11,$12,$13
   )
   `,
   [
@@ -9080,6 +9089,7 @@ await client.query(
     modelo_id,
     conteudo_id,
     brCodeMidia,
+    pixKeyMidia,
     valorTotal,
     safe2payIdMidia,
     ip || null,
@@ -9094,9 +9104,10 @@ await client.query(
     await client.query("COMMIT");
 
     return res.json({
-      qr_code: brCodeMidia,
-      qr_code_base64: brCodeB64Midia || null,
-      payment_id: safe2payIdMidia
+      qr_code_url:    brCodeMidia,
+      qr_code_base64: brCodeB64Midia ? (brCodeB64Midia.startsWith("data:") ? brCodeB64Midia : `data:image/png;base64,${brCodeB64Midia}`) : null,
+      copia_cola:     pixKeyMidia,
+      payment_id:     safe2payIdMidia
     });
 
   } catch (err) {
@@ -9450,7 +9461,8 @@ if (Number.isNaN(dataAceite.getTime())) {
     });
 
     const safe2payIdPremium  = String(safe2payResPremium?.ResponseDetail?.IdTransaction || "");
-    const brCodePremium      = safe2payResPremium?.ResponseDetail?.QrCode      || null;
+    const brCodePremium      = safe2payResPremium?.ResponseDetail?.QrCode      || null; // URL da imagem PNG
+    const pixKeyPremium      = safe2payResPremium?.ResponseDetail?.Key         || null; // código EMV copia-e-cola
     const brCodeB64Premium   = safe2payResPremium?.ResponseDetail?.QrCodeImage || null;
     const expiresAtPremium   = safe2payResPremium?.ResponseDetail?.ExpirationDate || null;
 
@@ -9488,6 +9500,7 @@ await client.query(
     gateway,
     pagarme_order_id,
     qr_code_url,
+    copia_cola,
     pacote_ref,
     aceite_ip,
     aceitou_termos,
@@ -9503,8 +9516,8 @@ await client.query(
     $1,$2,$3,
     'pendente','pix',
     $4,$5,$6,$7,
-    'safe2pay',$8,$9,$10,
-    $11,$12,$13,$14,$15,$16,
+    'safe2pay',$8,$9,$10,$11,
+    $12,$13,$14,$15,$16,$17,
     NOW(),NOW()
   )
   ON CONFLICT (premium_post_id, cliente_id)
@@ -9519,6 +9532,7 @@ await client.query(
     gateway = EXCLUDED.gateway,
     pagarme_order_id = EXCLUDED.pagarme_order_id,
     qr_code_url = EXCLUDED.qr_code_url,
+    copia_cola = EXCLUDED.copia_cola,
     pacote_ref = EXCLUDED.pacote_ref,
     aceite_ip = EXCLUDED.aceite_ip,
     aceitou_termos = EXCLUDED.aceitou_termos,
@@ -9537,7 +9551,8 @@ await client.query(
     taxaPlataforma,
     valorTotal,
     safe2payIdPremium,
-    brCodeB64Premium ? `data:image/png;base64,${brCodeB64Premium}` : null,
+    brCodePremium,
+    pixKeyPremium,
     `premium_${premiumPostIdNum}_${cliente_id}`,
     ip || null,
     !!aceitou_termos,
@@ -9556,11 +9571,12 @@ await client.query(
     console.log("PIX premium criado com sucesso");
 
     return res.json({
-      qr_code_url: brCodeB64Premium ? (brCodeB64Premium.startsWith("data:") ? brCodeB64Premium : `data:image/png;base64,${brCodeB64Premium}`) : null,
-      copia_cola: brCodePremium,
-      expires_at: expiresAtPremium,
-      order_id: safe2payIdPremium,
-      reutilizado: false
+      qr_code_url:    brCodePremium,
+      qr_code_base64: brCodeB64Premium ? (brCodeB64Premium.startsWith("data:") ? brCodeB64Premium : `data:image/png;base64,${brCodeB64Premium}`) : null,
+      copia_cola:     pixKeyPremium,
+      expires_at:     expiresAtPremium,
+      order_id:       safe2payIdPremium,
+      reutilizado:    false
     });
   } catch (err) {
     console.log("=================================");
