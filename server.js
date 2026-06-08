@@ -9039,6 +9039,12 @@ if (Number.isNaN(dataAceite.getTime())) {
       throw new Error("Erro ao gerar PIX no Safe2Pay");
     }
 
+    await salvarEnderecoClientePix(client, {
+      cliente_id,
+      telefone: String(telefone || "").replace(/\D/g, ""),
+      endereco
+    });
+
     /* ================================
        SALVAR PIX
     ================================ */
@@ -9453,6 +9459,12 @@ if (Number.isNaN(dataAceite.getTime())) {
       await client.query("ROLLBACK");
       return res.status(500).json({ error: "Erro ao gerar QR PIX" });
     }
+
+    await salvarEnderecoClientePix(client, {
+      cliente_id,
+      telefone: telefonePremium,
+      endereco
+    });
 
     /* =========================
        REGISTRAR / UPSERT PREMIUM_UNLOCKS
