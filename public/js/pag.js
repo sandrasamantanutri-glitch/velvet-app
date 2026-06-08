@@ -136,10 +136,12 @@ function voltarEtapaPagamento() {
   resetarEstadoPix();
   resetarEstadoCartao();
 
-  // Restaura visibilidade de CPF/telefone conforme moeda atual
+  // Restaura campos Brasil (PIX) conforme moeda — escondidos apenas em USD
   const isUsd = window.CURRENCY_ATUAL === "usd";
   document.getElementById("campoCpf")?.classList.toggle("hidden", isUsd);
   document.getElementById("campoTelefone")?.classList.toggle("hidden", isUsd);
+  document.getElementById("blocoCpfTelefone")?.classList.toggle("hidden", isUsd);
+  document.getElementById("blocoEndereco")?.classList.toggle("hidden", isUsd);
 
   document.getElementById("etapaPagamentoPix")?.classList.add("hidden");
   document.getElementById("etapaPagamentoCartao")?.classList.add("hidden");
@@ -1038,7 +1040,7 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
 
       if (errData.primeiro_vip) {
         voltarEtapaPagamento();
-        alert("PIX disponível apenas para renovação VIP. Para assinar pela primeira vez, use o cartão de crédito. 💳");
+        alert("PIX disponível apenas para renovação VIP. Para assinar pela primeira vez, use o cartão de crédito, ou peça autorização para cobrança via PIX ao suporte.");
         return;
       }
 
@@ -1601,10 +1603,13 @@ async function lerErroResposta(res) {
 
 function alternarCamposPorMetodo(tipo) {
   if (tipo === "cartao") {
-    // Cartão não precisa de endereço PIX — esconde para não confundir
+    // Cartão é internacional — esconde todos os campos exclusivos do Brasil (PIX)
     document.getElementById("blocoEndereco")?.classList.add("hidden");
+    document.getElementById("campoCpf")?.classList.add("hidden");
+    document.getElementById("campoTelefone")?.classList.add("hidden");
+    document.getElementById("blocoCpfTelefone")?.classList.add("hidden");
   }
-  // Para PIX os campos já estão visíveis desde que prepararPagamento() rodou
+  // Para PIX: campos já estão visíveis desde que prepararPagamento() rodou
 }
 
 // formata valor na moeda correta (BRL ou USD)

@@ -172,7 +172,7 @@
     "btn_voltar": "← Back",
     "pix_loading": "⏳ Please wait…",
     "pix_aguardando": "⌛ Awaiting payment confirmation...",
-    "pix_aguardando_aviso": "Do not close this window or refresh the page until confirmation.",
+    "pix_aguardando_aviso": "Do not close this window or refresh the page until confirmation, it may take up to 5 minutes.",
     "pix_sucesso": "✅ Payment confirmed!",
     "btn_gerar_pix": "Generate Pix QR Code",
     "btn_copiar_pix": "Copy code",
