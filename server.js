@@ -2892,7 +2892,7 @@ async function safe2payRequest(method, path, body) {
     body: body ? JSON.stringify(body) : undefined
   });
   const data = await resp.json();
-  console.log(`[Safe2Pay] response HasError=${data.HasError} status=${resp.status}`);
+  console.log(`[Safe2Pay] response status=${resp.status} body=${JSON.stringify(data)}`);
   if (data.HasError) {
     throw new Error(`Safe2Pay error: ${JSON.stringify(data.Error || data)}`);
   }
@@ -8618,7 +8618,7 @@ if (Number.isNaN(dataAceite.getTime())) {
     if (vipAnteriorRes.rowCount === 0) {
       await client.query("ROLLBACK");
       return res.status(403).json({
-        error: "PIX disponível apenas para renovação VIP. Para a primeira assinatura, utilize cartão de crédito.",
+        error: "PIX disponível apenas para renovação VIP. Para a primeira assinatura, utilize cartão de crédito, ou peça autorização para cobrança via PIX ao suporte.",
         primeiro_vip: true
       });
     }
