@@ -2881,6 +2881,36 @@ function calcTaxaStripe(valorBase) {
   return { taxaTransacao, taxaPlataforma, valorTotal };
 }
 
+// ── Validação de titularidade do cartão ─────────────────────────────────────
+function normalizarNome(nome) {
+  return String(nome || "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z\s]/g, "")
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
+// Verifica se o nome informado no cartão corresponde ao titular cadastrado,
+// exigindo que pelo menos o primeiro e o último nome coincidam.
+function nomesCorrespondem(nomeCadastro, nomeCartao) {
+  const palavrasCadastro = normalizarNome(nomeCadastro);
+  const palavrasCartao = normalizarNome(nomeCartao);
+
+  if (!palavrasCadastro.length || !palavrasCartao.length) return true;
+
+  const setCadastro = new Set(palavrasCadastro);
+  const setCartao = new Set(palavrasCartao);
+
+  const primeiroOk = setCadastro.has(palavrasCartao[0]) || setCartao.has(palavrasCadastro[0]);
+  const ultimoOk =
+    setCadastro.has(palavrasCartao[palavrasCartao.length - 1]) ||
+    setCartao.has(palavrasCadastro[palavrasCadastro.length - 1]);
+
+  return primeiroOk && ultimoOk;
+}
+
 // ── Safe2Pay PIX ─────────────────────────────────────────────────────────────
 const SAFE2PAY_BASE = "https://payment.safe2pay.com.br/v2";
 
@@ -9114,11 +9144,13 @@ await client.query(
     aceitou_execucao_imediata,
     aceite_timestamp,
     versao_termos,
-    fingerprint
+    fingerprint,
+    cpf,
+    telefone
   )
   VALUES (
     $1,$2,$3,$4,$5,$6,'pendente','safe2pay',$7,NOW(),NOW() + INTERVAL '60 minutes',
-    $8,$9,$10,$11,$12,$13
+    $8,$9,$10,$11,$12,$13,$14,$15
   )
   `,
   [
@@ -9134,7 +9166,9 @@ await client.query(
     !!aceitou_execucao_imediata,
     aceite_timestamp,
     versao_termos || "2026-06-07",
-    fingerprint || ""
+    fingerprint || "",
+    String(cpf || "").replace(/\D/g, ""),
+    String(telefone || "").replace(/\D/g, "")
   ]
 );
 
@@ -9545,6 +9579,8 @@ await client.query(
     aceite_timestamp,
     versao_termos,
     fingerprint,
+    cpf,
+    telefone,
     created_at,
     updated_at
   )
@@ -9554,7 +9590,7 @@ await client.query(
     'pendente','pix',
     $4,$5,$6,$7,
     'safe2pay',$8,$9,$10,$11,
-    $12,$13,$14,$15,$16,$17,
+    $12,$13,$14,$15,$16,$17,$18,$19,
     NOW(),NOW()
   )
   ON CONFLICT (premium_post_id, cliente_id)
@@ -9577,6 +9613,8 @@ await client.query(
     aceite_timestamp = EXCLUDED.aceite_timestamp,
     versao_termos = EXCLUDED.versao_termos,
     fingerprint = EXCLUDED.fingerprint,
+    cpf = EXCLUDED.cpf,
+    telefone = EXCLUDED.telefone,
     updated_at = NOW()
   `,
   [
@@ -9596,7 +9634,9 @@ await client.query(
     !!aceitou_execucao_imediata,
     aceite_timestamp,
     versao_termos || "2026-06-07",
-    fingerprint || ""
+    fingerprint || "",
+    cpfPremium,
+    telefonePremium
   ]
 );
 
@@ -9666,7 +9706,8 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
       paymentMethodId,
       cpf,
       telefone,
-      nome_cartao
+      nome_cartao,
+      endereco
     } = req.body || {};
 
     const cpfVip = String(cpf || "").replace(/\D/g, "") || null;
@@ -9782,6 +9823,26 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
     if (!emailCliente || !emailCliente.includes("@")) {
       await client.query("ROLLBACK");
       return res.status(400).json({ error: "E-mail do cliente inválido." });
+    }
+
+    // Validação de titularidade: o nome no cartão deve corresponder ao titular cadastrado
+    if (nomeCartaoVip) {
+      const dadosRes = await client.query(
+        `SELECT nome_completo FROM clientes_dados WHERE cliente_id = $1 LIMIT 1`,
+        [cliente_id]
+      );
+      const nomeCompletoCadastro = dadosRes.rows[0]?.nome_completo;
+
+      if (nomeCompletoCadastro && !nomesCorrespondem(nomeCompletoCadastro, nomeCartaoVip)) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          error: "O nome informado no cartão não corresponde ao titular cadastrado. Pagamentos só podem ser feitos com cartão em nome do titular da conta."
+        });
+      }
+    }
+
+    if (endereco) {
+      await salvarEnderecoClientePix(client, { cliente_id, telefone: telefoneVip, endereco });
     }
 
     // Log de aceite de termos antes do pagamento VIP cartão
@@ -10197,8 +10258,16 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
       aceitou_execucao_imediata,
       aceite_timestamp,
       versao_termos,
-      paymentMethodId
+      paymentMethodId,
+      nome_cartao,
+      cpf,
+      telefone,
+      endereco
     } = req.body || {};
+
+    const nomeCartaoMidia = String(nome_cartao || "").trim() || null;
+    const cpfMidia = String(cpf || "").replace(/\D/g, "") || null;
+    const telefoneMidia = String(telefone || "").replace(/\D/g, "") || null;
 
     const userId = Number(req.user?.id || 0);
 
@@ -10287,6 +10356,26 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
     if (!email || !String(email).includes("@")) {
       await client.query("ROLLBACK");
       return res.status(400).json({ error: "E-mail do cliente inválido." });
+    }
+
+    // Validação de titularidade: o nome no cartão deve corresponder ao titular cadastrado
+    if (nomeCartaoMidia) {
+      const dadosRes = await client.query(
+        `SELECT nome_completo FROM clientes_dados WHERE cliente_id = $1 LIMIT 1`,
+        [cliente_id]
+      );
+      const nomeCompletoCadastro = dadosRes.rows[0]?.nome_completo;
+
+      if (nomeCompletoCadastro && !nomesCorrespondem(nomeCompletoCadastro, nomeCartaoMidia)) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          error: "O nome informado no cartão não corresponde ao titular cadastrado. Pagamentos só podem ser feitos com cartão em nome do titular da conta."
+        });
+      }
+    }
+
+    if (endereco) {
+      await salvarEnderecoClientePix(client, { cliente_id, telefone: telefoneMidia, endereco });
     }
 
     // Log de aceite de termos antes do pagamento mídia cartão
@@ -10413,17 +10502,20 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
         fingerprint,
         valor_brl,
         taxa_cambio,
+        nome_cartao,
         card_brand,
         card_last4,
         card_exp_month,
         card_exp_year,
+        cpf,
+        telefone,
         created_at,
         updated_at
       )
       VALUES (
         $1, $2, $3, 'stripe', $4, $5, $6, $7, 'brl', $8,
         $9, $10, $11, $12, $13, $14, $15, $16,
-        $17, $18, $19, $20,
+        $17, $18, $19, $20, $21, $22, $23,
         NOW(), NOW()
       )
       `,
@@ -10444,10 +10536,13 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
         fingerprint || null,
         valorBase,
         null,
+        nomeCartaoMidia,
         cardBrand,
         cardLast4,
         cardExpMonth,
-        cardExpYear
+        cardExpYear,
+        cpfMidia,
+        telefoneMidia
       ]
     );
 
@@ -10644,7 +10739,8 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
       paymentMethodId,
       cpf,
       telefone,
-      nome_cartao
+      nome_cartao,
+      endereco
     } = req.body || {};
 
     const cpfPremiumCartao = String(cpf || "").replace(/\D/g, "") || null;
@@ -10738,6 +10834,26 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
     if (!email || !String(email).includes("@")) {
       await client.query("ROLLBACK");
       return res.status(400).json({ error: "E-mail do cliente inválido." });
+    }
+
+    // Validação de titularidade: o nome no cartão deve corresponder ao titular cadastrado
+    if (nomeCartaoPremium) {
+      const dadosRes = await client.query(
+        `SELECT nome_completo FROM clientes_dados WHERE cliente_id = $1 LIMIT 1`,
+        [cliente_id]
+      );
+      const nomeCompletoCadastro = dadosRes.rows[0]?.nome_completo;
+
+      if (nomeCompletoCadastro && !nomesCorrespondem(nomeCompletoCadastro, nomeCartaoPremium)) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          error: "O nome informado no cartão não corresponde ao titular cadastrado. Pagamentos só podem ser feitos com cartão em nome do titular da conta."
+        });
+      }
+    }
+
+    if (endereco) {
+      await salvarEnderecoClientePix(client, { cliente_id, telefone: telefonePremiumCartao, endereco });
     }
 
     // Log de aceite de termos antes do pagamento premium cartão

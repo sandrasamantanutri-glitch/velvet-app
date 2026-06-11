@@ -793,6 +793,18 @@ function cartaoLabel(p) {
   return '—';
 }
 
+function tipoPagamentoLabel(tipo) {
+  const map = {
+    vip: 'Assinatura',
+    midia: 'Mídia',
+    premium: 'Premium',
+    conteudo: 'Mídia',
+    conteudo_cartao: 'Mídia',
+    assinatura: 'Assinatura'
+  };
+  return map[tipo] || tipo || '—';
+}
+
 async function buscarContestacao() {
   const identificador = $('contestacaoIdentificador').value.trim();
   const resultado = $('contestacaoResultado');
@@ -905,8 +917,8 @@ function renderContestacao(data) {
 
   const cartaoRows = (data.pagamentos_cartao || []).map(p => `
     <tr>
-      <td>${p.id}</td>
-      <td>${p.tipo || '—'}</td>
+      <td>${p.modelo_id || '—'}</td>
+      <td>${tipoPagamentoLabel(p.tipo)}</td>
       <td>${p.status}</td>
       <td>${money(p.valor)} ${p.currency ? p.currency.toUpperCase() : ''}</td>
       <td>${cartaoLabel(p)}</td>
@@ -924,7 +936,8 @@ function renderContestacao(data) {
 
   const pixRows = (data.pagamentos_pix || []).map(p => `
     <tr>
-      <td>${p.id}</td>
+      <td>${p.modelo_id || '—'}</td>
+      <td>${tipoPagamentoLabel(p.tipo)}</td>
       <td>${p.status}</td>
       <td>${money(p.valor)} ${p.currency ? p.currency.toUpperCase() : ''}</td>
       <td>${p.gateway || '—'}</td>
@@ -937,20 +950,20 @@ function renderContestacao(data) {
       <td>${p.aceitou_execucao_imediata ? 'Sim' : 'Não'}</td>
       <td style="word-break:break-all;">${p.pagarme_order_id || p.gateway_order_id || '—'}</td>
     </tr>
-  `).join('') || emptyRow(12);
+  `).join('') || emptyRow(13);
 
   const pagamentos = `
     <div class="card contestacao-print">
       <h3>3. Pagamentos com Cartão</h3>
       <table class="table">
-        <thead><tr><th>ID</th><th>Tipo</th><th>Status</th><th>Valor</th><th>Cartão</th><th>Nome no cartão</th><th>Pago em</th><th>IP</th><th>Fingerprint</th><th>CPF</th><th>Telefone</th><th>Aceite Termos</th><th>Execução Imediata</th><th>Order ID</th></tr></thead>
+        <thead><tr><th>Modelo ID</th><th>Tipo</th><th>Status</th><th>Valor</th><th>Cartão</th><th>Nome no cartão</th><th>Pago em</th><th>IP</th><th>Fingerprint</th><th>CPF</th><th>Telefone</th><th>Aceite Termos</th><th>Execução Imediata</th><th>Order ID</th></tr></thead>
         <tbody>${cartaoRows}</tbody>
       </table>
     </div>
     <div class="card contestacao-print">
       <h3>3.1 Pagamentos via PIX</h3>
       <table class="table">
-        <thead><tr><th>ID</th><th>Status</th><th>Valor</th><th>Gateway</th><th>Pago em</th><th>IP</th><th>Fingerprint</th><th>CPF</th><th>Telefone</th><th>Aceite Termos</th><th>Execução Imediata</th><th>Order ID</th></tr></thead>
+        <thead><tr><th>Modelo ID</th><th>Tipo</th><th>Status</th><th>Valor</th><th>Gateway</th><th>Pago em</th><th>IP</th><th>Fingerprint</th><th>CPF</th><th>Telefone</th><th>Aceite Termos</th><th>Execução Imediata</th><th>Order ID</th></tr></thead>
         <tbody>${pixRows}</tbody>
       </table>
     </div>
@@ -975,7 +988,7 @@ function renderContestacao(data) {
     <div class="card contestacao-print">
       <h3>4. Assinaturas VIP</h3>
       <table class="table">
-        <thead><tr><th>Modelo</th><th>Status</th><th>Valor Assinatura</th><th>Valor Total</th><th>Recorrência</th><th>Início</th><th>Expira em</th><th>ID Assinatura</th><th>Visto em</th><th>IP</th></tr></thead>
+        <thead><tr><th>Modelo</th><th>Status</th><th>Valor Assinatura</th><th>Valor Total</th><th>Recorrência</th><th>Início</th><th>Expira em</th><th>ID Assinatura</th><th>Liberado Acesso</th><th>IP</th></tr></thead>
         <tbody>${vipRows}</tbody>
       </table>
     </div>
@@ -988,10 +1001,10 @@ function renderContestacao(data) {
       <td>${p.post_descricao || '—'}</td>
       <td>${p.status}</td>
       <td>${money(p.valor_total)} ${p.currency ? p.currency.toUpperCase() : ''}</td>
-      <td>${cartaoLabel(p)}</td>
       <td>${fmtDateTime(p.pago_em || p.created_at)}</td>
       <td>${p.aceite_ip || '—'}</td>
       <td>${fmtDateTime(p.visualizacao_em)}</td>
+      <td style="word-break:break-all;">${p.pagarme_order_id || '—'}</td>
     </tr>
   `).join('') || emptyRow(9);
 
@@ -999,7 +1012,7 @@ function renderContestacao(data) {
     <div class="card contestacao-print">
       <h3>5. Conteúdo Premium Desbloqueado</h3>
       <table class="table">
-        <thead><tr><th>Modelo</th><th>Tipo</th><th>Descrição</th><th>Status</th><th>Valor</th><th>Cartão</th><th>Pago em</th><th>IP</th><th>Visto em</th></tr></thead>
+        <thead><tr><th>Modelo</th><th>Tipo</th><th>Descrição</th><th>Status</th><th>Valor</th><th>Pago em</th><th>IP</th><th>Visto em</th><th>Order ID</th></tr></thead>
         <tbody>${premiumRows}</tbody>
       </table>
     </div>

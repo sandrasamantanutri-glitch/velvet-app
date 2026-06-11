@@ -111,7 +111,8 @@ router.get('/:identificador', async (req, res) => {
         `SELECT id, modelo_id, valor, currency, status, criado_em, pago_em, gateway,
                 aceite_ip, aceitou_termos, aceitou_execucao_imediata, aceite_timestamp,
                 versao_termos, fingerprint, cpf, telefone, user_agent,
-                pagarme_order_id, gateway_order_id
+                pagarme_order_id, gateway_order_id,
+                CASE WHEN message_id IS NOT NULL THEN 'midia' ELSE 'assinatura' END AS tipo
          FROM pagamentos_pix
          WHERE cliente_id = $1
            AND status IN ('pago', 'chargeback')
@@ -147,6 +148,7 @@ router.get('/:identificador', async (req, res) => {
                 pu.status, pu.valor_total, pu.currency, pu.gateway,
                 pu.created_at, pu.pago_em,
                 pu.stripe_charge_id, pu.card_brand, pu.card_last4, pu.card_exp_month, pu.card_exp_year,
+                pu.pagarme_order_id, pu.cpf, pu.telefone,
                 pu.aceite_ip, pu.aceitou_termos, pu.aceite_timestamp, pu.versao_termos,
                 pu.aceite_ip AS visualizacao_ip,
                 COALESCE(pu.pago_em, pu.aceite_timestamp) AS visualizacao_em
@@ -248,6 +250,25 @@ router.get('/:identificador', async (req, res) => {
         }
       })
     );
+
+    // Fallback: se CPF/telefone não estiverem em clientes/clientes_dados, buscar nos pagamentos
+    if (!cliente.cpf && !cliente.documento) {
+      const cpfPagto =
+        pagamentosCartao.find(p => p.cpf)?.cpf ||
+        pagamentosPixRes.rows.find(p => p.cpf)?.cpf ||
+        premiumUnlocks.find(p => p.cpf)?.cpf ||
+        null;
+      if (cpfPagto) cliente.cpf = cpfPagto;
+    }
+
+    if (!cliente.telefone) {
+      const telefonePagto =
+        pagamentosCartao.find(p => p.telefone)?.telefone ||
+        pagamentosPixRes.rows.find(p => p.telefone)?.telefone ||
+        premiumUnlocks.find(p => p.telefone)?.telefone ||
+        null;
+      if (telefonePagto) cliente.telefone = telefonePagto;
+    }
 
     res.json({
       cliente,

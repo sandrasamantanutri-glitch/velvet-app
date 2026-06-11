@@ -406,16 +406,21 @@ async function confirmarPagamentoCartao() {
       payload.modelo_id = pagamentoAtual.modelo_id;
       payload.cpf = obterCpfValido();
       payload.telefone = obterTelefoneValido();
+      payload.endereco = obterEnderecoValido();
     }
     if (tipo === "midia") {
       payload.conteudo_id = pagamentoAtual.conteudo_id;
       payload.modelo_id = pagamentoAtual.modelo_id;
+      payload.cpf = obterCpfValido();
+      payload.telefone = obterTelefoneValido();
+      payload.endereco = obterEnderecoValido();
     }
     if (tipo === "premium") {
       payload.premium_post_id = pagamentoAtual.premium_post_id;
       payload.modelo_id = pagamentoAtual.modelo_id;
       payload.cpf = obterCpfValido();
       payload.telefone = obterTelefoneValido();
+      payload.endereco = obterEnderecoValido();
     }
 
     const res = await fetch(`/api/pagamento/${tipo}/cartao`, {
