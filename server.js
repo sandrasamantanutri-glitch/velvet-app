@@ -119,6 +119,7 @@ app.use(helmet({
         "https://*.cloudflarestream.com",
         "https://videodelivery.net",
         "https://imagedelivery.net",
+        "https://s3.us-east-005.backblazeb2.com",
         "https://velvet-app-production.up.railway.app"
       ],
       mediaSrc: [
