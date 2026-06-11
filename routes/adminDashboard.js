@@ -18,8 +18,6 @@ const PDFDocument = require('pdfkit');
 const { Resend: ResendPagamentos } = require('resend');
 const _resendPagamentos = new ResendPagamentos(process.env.RESEND_API_KEY);
 
-router.use(auth, authAdmin);
-
 const s3Privado = new AWS.S3({
   endpoint: new AWS.Endpoint(process.env.R2_ENDPOINT),
   accessKeyId: process.env.R2_ACCESS_KEY_ID,
