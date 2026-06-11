@@ -110,7 +110,8 @@ router.get('/:identificador', async (req, res) => {
       db.query(
         `SELECT id, modelo_id, valor, currency, status, criado_em, pago_em, gateway,
                 aceite_ip, aceitou_termos, aceitou_execucao_imediata, aceite_timestamp,
-                versao_termos, fingerprint, cpf, telefone, user_agent
+                versao_termos, fingerprint, cpf, telefone, user_agent,
+                pagarme_order_id, gateway_order_id
          FROM pagamentos_pix
          WHERE cliente_id = $1
            AND status IN ('pago', 'chargeback')

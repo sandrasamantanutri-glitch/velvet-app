@@ -9923,11 +9923,18 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
         taxa_transacao: String(taxaTransacao),
         taxa_plataforma: String(taxaPlataforma),
         oferta_id: oferta_id ? String(oferta_id) : ""
-      }
+      },
+      expand: ["payment_method"]
     });
 
     const paymentIntentId = paymentIntent.id;
     const statusLocal = paymentIntent.status === "succeeded" ? "pago" : "pendente";
+
+    const cartaoInfo = paymentIntent.payment_method?.card || null;
+    const cardBrand = cartaoInfo?.brand || null;
+    const cardLast4 = cartaoInfo?.last4 || null;
+    const cardExpMonth = cartaoInfo?.exp_month || null;
+    const cardExpYear = cartaoInfo?.exp_year || null;
 
     /* =====================================================
        REGISTRAR PAGAMENTO LOCAL
@@ -9956,13 +9963,17 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
         cpf,
         telefone,
         nome_cartao,
+        card_brand,
+        card_last4,
+        card_exp_month,
+        card_exp_year,
         created_at,
         updated_at
       )
       VALUES (
         $1, $2, 'stripe', $3, $4, $5, $6, 'brl', $7,
         $8, $9, $10, $11, $12, $13, $14, $15,
-        $16, $17, $18,
+        $16, $17, $18, $19, $20, $21, $22,
         NOW(), NOW()
       )
       `,
@@ -9984,7 +9995,11 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
         null,
         cpfVip || null,
         telefoneVip || null,
-        nomeCartaoVip || null
+        nomeCartaoVip || null,
+        cardBrand,
+        cardLast4,
+        cardExpMonth,
+        cardExpYear
       ]
     );
 
@@ -10360,11 +10375,18 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
         message_id: String(conteudoId),
         taxa_transacao: String(taxaTransacao),
         taxa_plataforma: String(taxaPlataforma)
-      }
+      },
+      expand: ["payment_method"]
     });
 
     const paymentIntentId = paymentIntent.id;
     const statusLocal = paymentIntent.status === "succeeded" ? "pago" : "pendente";
+
+    const cartaoInfo = paymentIntent.payment_method?.card || null;
+    const cardBrand = cartaoInfo?.brand || null;
+    const cardLast4 = cartaoInfo?.last4 || null;
+    const cardExpMonth = cartaoInfo?.exp_month || null;
+    const cardExpYear = cartaoInfo?.exp_year || null;
 
     /* =====================================================
        REGISTRAR PAGAMENTO LOCAL
@@ -10391,12 +10413,17 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
         fingerprint,
         valor_brl,
         taxa_cambio,
+        card_brand,
+        card_last4,
+        card_exp_month,
+        card_exp_year,
         created_at,
         updated_at
       )
       VALUES (
         $1, $2, $3, 'stripe', $4, $5, $6, $7, 'brl', $8,
         $9, $10, $11, $12, $13, $14, $15, $16,
+        $17, $18, $19, $20,
         NOW(), NOW()
       )
       `,
@@ -10416,7 +10443,11 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
         versao_termos || "2026-06-07",
         fingerprint || null,
         valorBase,
-        null
+        null,
+        cardBrand,
+        cardLast4,
+        cardExpMonth,
+        cardExpYear
       ]
     );
 

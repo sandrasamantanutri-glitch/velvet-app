@@ -827,7 +827,7 @@ function renderContestacao(data) {
           <tr><td>Nome completo</td><td>${c.nome_completo || '—'}</td></tr>
           <tr><td>Email</td><td>${c.email || '—'}</td></tr>
           <tr><td>Cliente ID</td><td>${c.cliente_id}</td></tr>
-          <tr><td>CPF/Documento</td><td>${c.documento || c.cpf || '—'} (${c.tipo_documento || ''})</td></tr>
+          <tr><td>CPF/Documento</td><td>${c.documento || c.cpf || '—'}</td></tr>
           <tr><td>Telefone</td><td>${c.telefone || '—'}</td></tr>
           <tr><td>Data de Nascimento</td><td>${fmtDate(c.data_nascimento)}</td></tr>
           <tr><td>Endereço</td><td>${[c.endereco, c.cidade, c.estado, c.pais_endereco].filter(Boolean).join(', ') || '—'}</td></tr>
@@ -835,10 +835,9 @@ function renderContestacao(data) {
           <tr><td>Conta criada em</td><td>${fmtDateTime(c.user_criado_em || c.cliente_criado_em)}</td></tr>
           <tr><td>Confirmação de maioridade</td><td>${c.age_confirmed ? 'Sim, em ' + fmtDateTime(c.age_confirmed_at) : 'Não registrado'}</td></tr>
           <tr><td>Último IP conhecido</td><td>${c.ultimo_ip || '—'}</td></tr>
-          <tr><td>Última atividade</td><td>${fmtDateTime(c.last_seen)}</td></tr>
           <tr><td>Último acesso (login)</td><td>${fmtDateTime(c.ultimo_acesso)}</td></tr>
           <tr><td>Origem de tráfego</td><td>${c.origem_trafego || '—'}</td></tr>
-          <tr><td>Email verificado</td><td>${c.email_verificado ? 'Sim' : 'Não'}</td></tr>
+          <tr><td>Email verificado</td><td>${c.email_verificado ? 'Sim, em ' + fmtDateTime(c.user_criado_em) : 'Não'}</td></tr>
           <tr><td>Conta bloqueada</td><td>${c.bloqueado ? 'Sim' : 'Não'}</td></tr>
         </tbody>
       </table>
@@ -872,7 +871,7 @@ function renderContestacao(data) {
         Documentos completos: <a href="/terms.html" target="_blank">Termos de Uso</a> ·
         <a href="/policies.html" target="_blank">Política de Utilização</a>
       </p>
-      <div style="font-size:12px;line-height:1.6;background:#f9f9f9;padding:12px;border-radius:8px;max-height:400px;overflow:auto;">
+      <div class="termos-completos-box" style="font-size:12px;line-height:1.6;background:#f9f9f9;padding:12px;border-radius:8px;">
         <h4>25.1 Política de Reembolso</h4>
         <ul>
           <li>Assinaturas, Diamantes e conteúdos pagos não são reembolsáveis, exceto quando exigido por lei ou nos casos previstos abaixo;</li>
@@ -915,11 +914,13 @@ function renderContestacao(data) {
       <td>${fmtDateTime(p.pago_em || p.created_at)}</td>
       <td>${p.aceite_ip || '—'}</td>
       <td style="max-width:160px;word-break:break-all;">${p.fingerprint || '—'}</td>
+      <td>${p.cpf || p.documento || '—'}</td>
+      <td>${p.telefone || '—'}</td>
       <td>${p.aceitou_termos ? `Sim (v${p.versao_termos || '?'} em ${fmtDateTime(p.aceite_timestamp)})` : 'Não'}</td>
       <td>${p.aceitou_execucao_imediata ? 'Sim' : 'Não'}</td>
       <td style="word-break:break-all;">${p.stripe_payment_intent_id || p.stripe_charge_id || '—'}</td>
     </tr>
-  `).join('') || emptyRow(12);
+  `).join('') || emptyRow(14);
 
   const pixRows = (data.pagamentos_pix || []).map(p => `
     <tr>
@@ -930,24 +931,26 @@ function renderContestacao(data) {
       <td>${fmtDateTime(p.pago_em || p.criado_em)}</td>
       <td>${p.aceite_ip || '—'}</td>
       <td style="max-width:160px;word-break:break-all;">${p.fingerprint || '—'}</td>
+      <td>${p.cpf || '—'}</td>
+      <td>${p.telefone || '—'}</td>
       <td>${p.aceitou_termos ? `Sim (v${p.versao_termos || '?'} em ${fmtDateTime(p.aceite_timestamp)})` : 'Não'}</td>
       <td>${p.aceitou_execucao_imediata ? 'Sim' : 'Não'}</td>
-      <td style="max-width:240px;word-break:break-all;">${p.user_agent || '—'}</td>
+      <td style="word-break:break-all;">${p.pagarme_order_id || p.gateway_order_id || '—'}</td>
     </tr>
-  `).join('') || emptyRow(10);
+  `).join('') || emptyRow(12);
 
   const pagamentos = `
     <div class="card contestacao-print">
       <h3>3. Pagamentos com Cartão</h3>
       <table class="table">
-        <thead><tr><th>ID</th><th>Tipo</th><th>Status</th><th>Valor</th><th>Cartão</th><th>Nome no cartão</th><th>Pago em</th><th>IP</th><th>Fingerprint</th><th>Aceite Termos</th><th>Execução Imediata</th><th>Stripe ID</th></tr></thead>
+        <thead><tr><th>ID</th><th>Tipo</th><th>Status</th><th>Valor</th><th>Cartão</th><th>Nome no cartão</th><th>Pago em</th><th>IP</th><th>Fingerprint</th><th>CPF</th><th>Telefone</th><th>Aceite Termos</th><th>Execução Imediata</th><th>Order ID</th></tr></thead>
         <tbody>${cartaoRows}</tbody>
       </table>
     </div>
     <div class="card contestacao-print">
       <h3>3.1 Pagamentos via PIX</h3>
       <table class="table">
-        <thead><tr><th>ID</th><th>Status</th><th>Valor</th><th>Gateway</th><th>Pago em</th><th>IP</th><th>Fingerprint</th><th>Aceite Termos</th><th>Execução Imediata</th><th>User-Agent</th></tr></thead>
+        <thead><tr><th>ID</th><th>Status</th><th>Valor</th><th>Gateway</th><th>Pago em</th><th>IP</th><th>Fingerprint</th><th>CPF</th><th>Telefone</th><th>Aceite Termos</th><th>Execução Imediata</th><th>Order ID</th></tr></thead>
         <tbody>${pixRows}</tbody>
       </table>
     </div>
@@ -972,7 +975,7 @@ function renderContestacao(data) {
     <div class="card contestacao-print">
       <h3>4. Assinaturas VIP</h3>
       <table class="table">
-        <thead><tr><th>Modelo</th><th>Status</th><th>Valor Assinatura</th><th>Valor Total</th><th>Recorrência</th><th>Início</th><th>Expira em</th><th>ID Assinatura</th><th>Disponível desde</th><th>IP</th></tr></thead>
+        <thead><tr><th>Modelo</th><th>Status</th><th>Valor Assinatura</th><th>Valor Total</th><th>Recorrência</th><th>Início</th><th>Expira em</th><th>ID Assinatura</th><th>Visto em</th><th>IP</th></tr></thead>
         <tbody>${vipRows}</tbody>
       </table>
     </div>
@@ -996,7 +999,7 @@ function renderContestacao(data) {
     <div class="card contestacao-print">
       <h3>5. Conteúdo Premium Desbloqueado</h3>
       <table class="table">
-        <thead><tr><th>Modelo</th><th>Tipo</th><th>Descrição</th><th>Status</th><th>Valor</th><th>Cartão</th><th>Pago em</th><th>IP</th><th>Disponível desde</th></tr></thead>
+        <thead><tr><th>Modelo</th><th>Tipo</th><th>Descrição</th><th>Status</th><th>Valor</th><th>Cartão</th><th>Pago em</th><th>IP</th><th>Visto em</th></tr></thead>
         <tbody>${premiumRows}</tbody>
       </table>
     </div>
@@ -1022,7 +1025,7 @@ function renderContestacao(data) {
     <div class="card contestacao-print">
       <h3>6. Mídias Desbloqueadas no Chat</h3>
       <table class="table">
-        <thead><tr><th>Modelo</th><th>Conteúdo</th><th>Status</th><th>Valor</th><th>Método</th><th>Pago em</th><th>Disponível desde</th><th>IP</th></tr></thead>
+        <thead><tr><th>Modelo</th><th>Conteúdo</th><th>Status</th><th>Valor</th><th>Método</th><th>Pago em</th><th>Visto em</th><th>IP</th></tr></thead>
         <tbody>${midiaRows}</tbody>
       </table>
     </div>

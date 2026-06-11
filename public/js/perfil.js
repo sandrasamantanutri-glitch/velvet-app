@@ -508,7 +508,10 @@ async function carregarPerfil(){
 
   try{
 
-    const res = await fetch(`/api/modelo/publico/${modelo_id}`);
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+    const res = await fetch(`/api/modelo/publico/${modelo_id}`, { headers });
 
     if(!res.ok) return;
 
