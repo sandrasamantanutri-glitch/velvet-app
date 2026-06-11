@@ -115,7 +115,7 @@ function assinarArquivoPrivado(key) {
 
 // ========== 1. OVERVIEW ==========
 
-router.get("/name-admin", authAdmin, async (req, res) => {
+router.get("/name-admin", auth, authAdmin, async (req, res) => {
   try {
     const { rows } = await db.query(
       "SELECT id, nome FROM admin WHERE id = $1",
@@ -128,7 +128,7 @@ router.get("/name-admin", authAdmin, async (req, res) => {
   }
 });
 
-router.get("/overview", authAdmin, async (req, res) => {
+router.get("/overview", auth, authAdmin, async (req, res) => {
   try {
     const [modelos, clientes, vips, fatd, fatm, fat12m, acessos, top] = await Promise.all([
       db.query(`
