@@ -186,7 +186,8 @@ const pageTitles = {
   despesas: 'Despesas Operacionais',
   suporte: 'Suporte ao Cliente',
   midias: 'Gestão de Mídias',
-  'usuarios-confiaveis': 'Usuários Confiáveis'
+  'usuarios-confiaveis': 'Usuários Confiáveis',
+  contestacoes: 'Contestações'
 };
 
 const pageLoaders = {};
@@ -780,6 +781,278 @@ async function excluirUsuarioConfiavel(id) {
   } catch (err) {
     toast('Erro: ' + err.message, 'error');
   }
+}
+
+// ========== CONTESTAÇÕES ==========
+
+function cartaoLabel(p) {
+  if (p.card_brand && p.card_last4) {
+    const exp = (p.card_exp_month && p.card_exp_year) ? ` (val. ${String(p.card_exp_month).padStart(2,'0')}/${p.card_exp_year})` : '';
+    return `${p.card_brand.toUpperCase()} •••• ${p.card_last4}${exp}`;
+  }
+  return '—';
+}
+
+async function buscarContestacao() {
+  const identificador = $('contestacaoIdentificador').value.trim();
+  const resultado = $('contestacaoResultado');
+  const btnPdf = $('btnGerarPdfContestacao');
+
+  if (!identificador) {
+    toast('Informe um email ou cliente_id', 'error');
+    return;
+  }
+
+  resultado.innerHTML = '<div class="card"><p>Carregando...</p></div>';
+  btnPdf.style.display = 'none';
+
+  try {
+    const data = await fetchJSON('/api/admin/contestacoes/' + encodeURIComponent(identificador));
+    resultado.innerHTML = renderContestacao(data);
+    btnPdf.style.display = '';
+  } catch (err) {
+    resultado.innerHTML = `<div class="card"><p>Erro: ${err.message}</p></div>`;
+  }
+}
+
+function renderContestacao(data) {
+  const c = data.cliente;
+
+  const dadosPessoais = `
+    <div class="card contestacao-print">
+      <h3>1. Dados do Cliente</h3>
+      <table class="table">
+        <tbody>
+          <tr><td>Nome</td><td>${c.nome || '—'}</td></tr>
+          <tr><td>Email</td><td>${c.email || '—'}</td></tr>
+          <tr><td>Cliente ID</td><td>${c.cliente_id}</td></tr>
+          <tr><td>CPF/Documento</td><td>${c.documento || c.cpf || '—'} (${c.tipo_documento || '—'})</td></tr>
+          <tr><td>Telefone</td><td>${c.telefone || '—'}</td></tr>
+          <tr><td>Data de Nascimento</td><td>${fmtDate(c.data_nascimento)}</td></tr>
+          <tr><td>Endereço</td><td>${[c.endereco, c.cidade, c.estado, c.pais_endereco].filter(Boolean).join(', ') || '—'}</td></tr>
+          <tr><td>País (cadastro)</td><td>${c.pais_cliente || '—'}</td></tr>
+          <tr><td>Conta criada em</td><td>${fmtDateTime(c.user_criado_em || c.cliente_criado_em)}</td></tr>
+          <tr><td>Confirmação de maioridade</td><td>${c.age_confirmed ? 'Sim, em ' + fmtDateTime(c.age_confirmed_at) : 'Não registrado'}</td></tr>
+          <tr><td>Último IP conhecido</td><td>${c.ultimo_ip || '—'}</td></tr>
+          <tr><td>Última atividade</td><td>${fmtDateTime(c.last_seen)}</td></tr>
+          <tr><td>Origem de tráfego</td><td>${c.origem_trafego || '—'}</td></tr>
+          <tr><td>Score de risco</td><td>${c.risk_score ?? '—'}</td></tr>
+          <tr><td>Conta bloqueada</td><td>${c.bloqueado ? 'Sim' : 'Não'}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  const aceiteTermos = `
+    <div class="card contestacao-print">
+      <h3>2. Aceite de Termos de Uso</h3>
+      <table class="table">
+        <thead><tr><th>Data/Hora</th><th>Descrição</th><th>IP</th><th>User-Agent</th></tr></thead>
+        <tbody>
+          ${(data.aceite_termos || []).map(a => `
+            <tr>
+              <td>${fmtDateTime(a.created_at)}</td>
+              <td>${a.descricao || '—'}</td>
+              <td>${a.ip || '—'}</td>
+              <td style="max-width:300px;word-break:break-all;">${a.user_agent || '—'}</td>
+            </tr>
+          `).join('') || emptyRow(4)}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  const cartaoRows = (data.pagamentos_cartao || []).map(p => `
+    <tr>
+      <td>${p.id}</td>
+      <td>${p.tipo || '—'}</td>
+      <td>${p.status}</td>
+      <td>${money(p.valor)} ${p.currency ? p.currency.toUpperCase() : ''}</td>
+      <td>${cartaoLabel(p)}</td>
+      <td>${p.nome_cartao || '—'}</td>
+      <td>${fmtDateTime(p.pago_em || p.created_at)}</td>
+      <td>${p.aceite_ip || '—'}</td>
+      <td>${p.fingerprint || '—'}</td>
+      <td>${p.aceitou_termos ? `Sim (v${p.versao_termos || '?'} em ${fmtDateTime(p.aceite_timestamp)})` : 'Não'}</td>
+      <td>${p.aceitou_execucao_imediata ? 'Sim' : 'Não'}</td>
+      <td style="word-break:break-all;">${p.stripe_payment_intent_id || p.stripe_charge_id || '—'}</td>
+    </tr>
+  `).join('') || emptyRow(12);
+
+  const pixRows = (data.pagamentos_pix || []).map(p => `
+    <tr>
+      <td>${p.id}</td>
+      <td>${p.status}</td>
+      <td>${money(p.valor)} ${p.currency ? p.currency.toUpperCase() : ''}</td>
+      <td>${p.gateway || '—'}</td>
+      <td>${fmtDateTime(p.pago_em || p.criado_em)}</td>
+      <td>${p.aceite_ip || '—'}</td>
+      <td>${p.fingerprint || '—'}</td>
+      <td>${p.aceitou_termos ? `Sim (v${p.versao_termos || '?'} em ${fmtDateTime(p.aceite_timestamp)})` : 'Não'}</td>
+      <td>${p.aceitou_execucao_imediata ? 'Sim' : 'Não'}</td>
+      <td style="max-width:240px;word-break:break-all;">${p.user_agent || '—'}</td>
+    </tr>
+  `).join('') || emptyRow(10);
+
+  const pagamentos = `
+    <div class="card contestacao-print">
+      <h3>3. Pagamentos com Cartão</h3>
+      <table class="table">
+        <thead><tr><th>ID</th><th>Tipo</th><th>Status</th><th>Valor</th><th>Cartão</th><th>Nome no cartão</th><th>Pago em</th><th>IP</th><th>Fingerprint</th><th>Aceite Termos</th><th>Execução Imediata</th><th>Stripe ID</th></tr></thead>
+        <tbody>${cartaoRows}</tbody>
+      </table>
+    </div>
+    <div class="card contestacao-print">
+      <h3>3.1 Pagamentos via PIX</h3>
+      <table class="table">
+        <thead><tr><th>ID</th><th>Status</th><th>Valor</th><th>Gateway</th><th>Pago em</th><th>IP</th><th>Fingerprint</th><th>Aceite Termos</th><th>Execução Imediata</th><th>User-Agent</th></tr></thead>
+        <tbody>${pixRows}</tbody>
+      </table>
+    </div>
+  `;
+
+  const vipRows = (data.vip_subscriptions || []).map(v => `
+    <tr>
+      <td>${v.modelo_nome}</td>
+      <td>${v.ativo ? 'Ativa' : 'Inativa'}</td>
+      <td>${money(v.valor_assinatura)}</td>
+      <td>${money(v.valor_total)}</td>
+      <td>${v.recorrente ? 'Sim (renovação automática)' : 'Não'}</td>
+      <td>${fmtDateTime(v.created_at)}</td>
+      <td>${fmtDateTime(v.expiration_at)}</td>
+      <td style="word-break:break-all;">${v.stripe_subscription_id || v.gateway_subscription_id || '—'}</td>
+    </tr>
+  `).join('') || emptyRow(8);
+
+  const vip = `
+    <div class="card contestacao-print">
+      <h3>4. Assinaturas VIP</h3>
+      <table class="table">
+        <thead><tr><th>Modelo</th><th>Status</th><th>Valor Assinatura</th><th>Valor Total</th><th>Recorrência</th><th>Início</th><th>Expira em</th><th>ID Assinatura</th></tr></thead>
+        <tbody>${vipRows}</tbody>
+      </table>
+    </div>
+  `;
+
+  const premiumRows = (data.premium_unlocks || []).map(p => `
+    <tr>
+      <td>${p.modelo_nome}</td>
+      <td>${p.tipo_conteudo || '—'}</td>
+      <td>${p.post_descricao || '—'}</td>
+      <td>${p.status}</td>
+      <td>${money(p.valor_total)} ${p.currency ? p.currency.toUpperCase() : ''}</td>
+      <td>${cartaoLabel(p)}</td>
+      <td>${fmtDateTime(p.pago_em || p.created_at)}</td>
+      <td>${p.aceite_ip || '—'}</td>
+    </tr>
+  `).join('') || emptyRow(8);
+
+  const premium = `
+    <div class="card contestacao-print">
+      <h3>5. Conteúdo Premium Desbloqueado</h3>
+      <table class="table">
+        <thead><tr><th>Modelo</th><th>Tipo</th><th>Descrição</th><th>Status</th><th>Valor</th><th>Cartão</th><th>Pago em</th><th>IP</th></tr></thead>
+        <tbody>${premiumRows}</tbody>
+      </table>
+    </div>
+  `;
+
+  const midiaRows = (data.midias_chat || []).map(m => {
+    const conteudos = (m.conteudos || []).map(c => `${c.tipo_conteudo}${c.descricao ? ' - ' + c.descricao : ''}`).join('<br>') || '—';
+    return `
+      <tr>
+        <td>${m.modelo_nome}</td>
+        <td>${conteudos}</td>
+        <td>${m.status}</td>
+        <td>${money(m.valor_total)} ${m.currency ? m.currency.toUpperCase() : ''}</td>
+        <td>${m.metodo_pagamento || '—'}</td>
+        <td>${fmtDateTime(m.pago_em || m.criado_em)}</td>
+      </tr>
+    `;
+  }).join('') || emptyRow(6);
+
+  const midias = `
+    <div class="card contestacao-print">
+      <h3>6. Mídias Desbloqueadas no Chat</h3>
+      <table class="table">
+        <thead><tr><th>Modelo</th><th>Conteúdo</th><th>Status</th><th>Valor</th><th>Método</th><th>Pago em</th></tr></thead>
+        <tbody>${midiaRows}</tbody>
+      </table>
+    </div>
+  `;
+
+  const visitasRows = (data.visitas_perfil || []).map(v => `
+    <tr>
+      <td>${v.modelo_nome}</td>
+      <td>${v.total_visitas}</td>
+      <td>${fmtDateTime(v.primeira_visita)}</td>
+      <td>${fmtDateTime(v.ultima_visita)}</td>
+    </tr>
+  `).join('') || emptyRow(4);
+
+  const visitas = `
+    <div class="card contestacao-print">
+      <h3>7. Visitas a Perfis</h3>
+      <table class="table">
+        <thead><tr><th>Modelo</th><th>Total de Visitas</th><th>Primeira Visita</th><th>Última Visita</th></tr></thead>
+        <tbody>${visitasRows}</tbody>
+      </table>
+    </div>
+  `;
+
+  const suporteBlocos = (data.suporte || []).map(s => `
+    <div style="margin-bottom:12px;padding:8px;border:1px solid #333;border-radius:6px;">
+      <strong>Conversa #${s.conversa_id}</strong> — ${s.status} — aberta em ${fmtDateTime(s.conversa_criada_em)}
+      <ul style="margin:6px 0 0 16px;padding:0;">
+        ${(s.mensagens || []).map(m => `<li><strong>${m.remetente}</strong> (${fmtDateTime(m.criado_em)}): ${m.texto}</li>`).join('') || '<li>Sem mensagens</li>'}
+      </ul>
+    </div>
+  `).join('') || '<p>Nenhuma conversa de suporte encontrada.</p>';
+
+  const suporte = `
+    <div class="card contestacao-print">
+      <h3>8. Histórico de Suporte</h3>
+      ${suporteBlocos}
+    </div>
+  `;
+
+  const riscoRows = (data.risco || []).map(r => `
+    <tr>
+      <td>${r.nivel || '—'}</td>
+      <td>${r.motivo || '—'}</td>
+      <td>${r.ip || '—'}</td>
+      <td>${r.cpf || '—'}</td>
+      <td>${r.fingerprint || '—'}</td>
+      <td>${r.ativo ? 'Sim' : 'Não'}</td>
+      <td>${fmtDateTime(r.criado_em)}</td>
+    </tr>
+  `).join('') || emptyRow(7);
+
+  const risco = `
+    <div class="card contestacao-print">
+      <h3>9. Antifraude / Risco</h3>
+      <table class="table">
+        <thead><tr><th>Nível</th><th>Motivo</th><th>IP</th><th>CPF</th><th>Fingerprint</th><th>Ativo</th><th>Registrado em</th></tr></thead>
+        <tbody>${riscoRows}</tbody>
+      </table>
+    </div>
+  `;
+
+  return `
+    <div class="contestacao-header" style="margin:12px 0;">
+      <h2>Relatório de Contestação — ${c.nome || c.email} (Cliente #${c.cliente_id})</h2>
+      <p style="color:#aaa;">Gerado em ${fmtDateTime(new Date().toISOString())}</p>
+    </div>
+    ${dadosPessoais}
+    ${aceiteTermos}
+    ${pagamentos}
+    ${vip}
+    ${premium}
+    ${midias}
+    ${visitas}
+    ${suporte}
+    ${risco}
+  `;
 }
 
 // ========== 4. SEGURANÇA ==========
@@ -2910,13 +3183,16 @@ function renderDespesas(despesas) {
   }
 
   const categorias = {
-    banco_dados: 'Banco de Dados',
+    banco_dados: 'Supabase',
     render: 'Render',
     cloudflare: 'Cloudflare',
     hostinger: 'Hostinger',
     claude: 'Claude API',
-    email: 'Email/Envio',
+    email: 'Resender',
     salario: 'Salário Equipe',
+    endereco: 'Endereço Fiscal',
+    contabilidade: 'Contabilidade',
+    taxas_cnpj: 'TAXAS CNPJ',
     outro: 'Outro'
   };
 

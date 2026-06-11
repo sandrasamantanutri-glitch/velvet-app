@@ -4491,9 +4491,10 @@ router.get("/despesas-list", async (req, res) => {
         comprovante,
         criado_em
       FROM despesas
+      WHERE date_trunc('month', data) = date_trunc('month', CURRENT_DATE)
       ORDER BY data DESC
     `);
- 
+
     res.json(rows);
   } catch (err) {
     console.error("Erro /despesas-list:", err);
@@ -4510,7 +4511,7 @@ router.post("/despesas", authAdmin, uploadPublico.single('comprovante'), async (
     const user_id = req.user?.id;
  
     // Validações
-    const categoriasValidas = ['banco_dados', 'render', 'cloudflare', 'hostinger', 'claude', 'email', 'salario', 'outro'];
+    const categoriasValidas = ['banco_dados', 'render', 'cloudflare', 'hostinger', 'claude', 'email', 'salario', 'endereco', 'contabilidade', 'taxas_cnpj', 'outro'];
     
     if (!categoria || !categoriasValidas.includes(categoria)) {
       return res.status(400).json({ erro: "Categoria inválida" });

@@ -1167,3 +1167,36 @@ canvas {
     display: none;
   }
 }
+
+/* --- Impressão / PDF do relatório de contestação --- */
+
+@media print {
+  .sidebar,
+  .topbar,
+  .page-actions,
+  .sidebar-overlay,
+  .toast {
+    display: none !important;
+  }
+
+  .main,
+  #page-contestacoes {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .contestacao-print {
+    break-inside: avoid;
+    border: 1px solid #ccc;
+    color: #000;
+    background: #fff;
+  }
+
+  .contestacao-print table,
+  .contestacao-print th,
+  .contestacao-print td {
+    color: #000;
+    border-color: #ccc;
+  }
+}
