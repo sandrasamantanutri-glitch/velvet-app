@@ -128,7 +128,8 @@ app.use(helmet({
         "https://res.cloudinary.com",
         "https://*.r2.dev",
         "https://*.cloudflarestream.com",
-        "https://videodelivery.net"
+        "https://videodelivery.net",
+        "https://s3.us-east-005.backblazeb2.com"
       ],
       connectSrc: [
         "'self'",
