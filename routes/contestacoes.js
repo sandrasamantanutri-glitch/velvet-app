@@ -126,11 +126,13 @@ router.get('/:identificador', async (req, res) => {
          FROM vip_subscriptions vs
          JOIN modelos m ON m.id = vs.modelo_id
          LEFT JOIN LATERAL (
-           SELECT aceite_ip, pago_em FROM pagamentos_pix pp
-           WHERE pp.cliente_id = vs.cliente_id AND pp.modelo_id = vs.modelo_id AND pp.status = 'pago'
-           UNION ALL
-           SELECT aceite_ip, pago_em FROM pagamentos_cartao pc
-           WHERE pc.cliente_id = vs.cliente_id AND pc.modelo_id = vs.modelo_id AND pc.status = 'pago' AND pc.tipo = 'vip'
+           SELECT aceite_ip, pago_em FROM (
+             SELECT aceite_ip, pago_em FROM pagamentos_pix pp
+             WHERE pp.cliente_id = vs.cliente_id AND pp.modelo_id = vs.modelo_id AND pp.status = 'pago'
+             UNION ALL
+             SELECT aceite_ip, pago_em FROM pagamentos_cartao pc
+             WHERE pc.cliente_id = vs.cliente_id AND pc.modelo_id = vs.modelo_id AND pc.status = 'pago' AND pc.tipo = 'vip'
+           ) uniao
            ORDER BY ABS(EXTRACT(EPOCH FROM (pago_em - vs.created_at)))
            LIMIT 1
          ) pgto ON true
