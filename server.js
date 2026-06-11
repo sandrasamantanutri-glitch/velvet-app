@@ -98,6 +98,7 @@ app.use(helmet({
         "https://cdn.jsdelivr.net",
         "https://js.stripe.com"
       ],
+      scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc: [
         "'self'",
         "'unsafe-inline'",
