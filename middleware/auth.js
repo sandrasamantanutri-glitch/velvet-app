@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const db = require("../db");
-module.exports = function auth(req, res, next) {
+module.exports = async function auth(req, res, next) {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -14,6 +14,19 @@ module.exports = function auth(req, res, next) {
 
     if (!decoded || !decoded.id) {
       return res.status(401).json({ error: "Token inválido" });
+    }
+
+    const result = await db.query(
+      "SELECT token_version FROM users WHERE id = $1",
+      [decoded.id]
+    );
+
+    if (!result.rows.length) {
+      return res.status(401).json({ error: "Token inválido" });
+    }
+
+    if (decoded.tv !== result.rows[0].token_version) {
+      return res.status(401).json({ error: "Sessão expirada. Faça login novamente." });
     }
 
     req.user = decoded;

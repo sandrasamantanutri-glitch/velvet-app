@@ -89,7 +89,65 @@ const allowedOrigins = [
 ];
 
 app.use(helmet({
-  contentSecurityPolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: [
+        "'self'",
+        "'unsafe-inline'",
+        "https://cdn.jsdelivr.net",
+        "https://js.stripe.com"
+      ],
+      styleSrc: [
+        "'self'",
+        "'unsafe-inline'",
+        "https://fonts.googleapis.com"
+      ],
+      fontSrc: [
+        "'self'",
+        "https://fonts.gstatic.com",
+        "data:"
+      ],
+      imgSrc: [
+        "'self'",
+        "data:",
+        "blob:",
+        "https://res.cloudinary.com",
+        "https://*.r2.dev",
+        "https://*.cloudflarestream.com",
+        "https://imagedelivery.net",
+        "https://velvet-app-production.up.railway.app"
+      ],
+      mediaSrc: [
+        "'self'",
+        "blob:",
+        "https://res.cloudinary.com",
+        "https://*.r2.dev",
+        "https://*.cloudflarestream.com",
+        "https://videodelivery.net"
+      ],
+      connectSrc: [
+        "'self'",
+        "wss:",
+        "https://api.stripe.com",
+        "https://viacep.com.br",
+        "https://velvet-test-production.up.railway.app",
+        "https://velvet-app-production.up.railway.app",
+        "https://res.cloudinary.com",
+        "https://*.r2.dev"
+      ],
+      frameSrc: [
+        "'self'",
+        "https://js.stripe.com",
+        "https://hooks.stripe.com",
+        "https://iframe.videodelivery.net"
+      ],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'self'"]
+    }
+  },
   crossOriginEmbedderPolicy: false
 }));
 
@@ -1489,9 +1547,6 @@ app.post("/api/webhook/stripe", express.raw({ type: "application/json" }), async
   console.log("URL:", req.originalUrl);
   console.log("METHOD:", req.method);
 
-  console.log("⚠️  Webhook Stripe ignorado");
-  return res.status(200).send("ok");
-
   let event = null;
 
   try {
@@ -1501,6 +1556,12 @@ app.post("/api/webhook/stripe", express.raw({ type: "application/json" }), async
       console.log("🚨 stripe-signature ausente");
       return res.status(400).send("missing signature");
     }
+
+    event = stripe.webhooks.constructEvent(
+      req.body,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
   } catch (err) {
     console.error("Erro validando assinatura do webhook Stripe:", err.message);
     return res.status(400).send("invalid signature");
@@ -7637,7 +7698,7 @@ app.post("/api/register", authLimiter, async (req, res) => {
         tv: tokenVersion
       },
       process.env.JWT_SECRET,
-      { expiresIn: "30d" }
+      { expiresIn: "7d" }
     );
 
     return res.status(201).json({
@@ -7737,7 +7798,7 @@ app.post("/api/login", authLimiter, async (req, res) => {
       const token = jwt.sign(
         { id: user.id, email: user.email, role, tv: user.token_version },
         process.env.JWT_SECRET,
-        { expiresIn: "30d" }
+        { expiresIn: "7d" }
       );
 
       return res.json({
@@ -7768,7 +7829,7 @@ app.post("/api/login", authLimiter, async (req, res) => {
     const token = jwt.sign(
       { id: user.id, email: user.email, role, tv: user.token_version },
       process.env.JWT_SECRET,
-      { expiresIn: "30d" }
+      { expiresIn: "7d" }
     );
 
     return res.json({ token, role });
