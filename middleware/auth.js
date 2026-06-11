@@ -16,6 +16,13 @@ module.exports = async function auth(req, res, next) {
       return res.status(401).json({ error: "Token inválido" });
     }
 
+    // Tokens de admin (gerados em /api/admin/login) não têm tv/email
+    // e decoded.id refere-se a admin.id, não users.id.
+    if (decoded.role === "admin") {
+      req.user = decoded;
+      return next();
+    }
+
     const result = await db.query(
       "SELECT token_version FROM users WHERE id = $1",
       [decoded.id]

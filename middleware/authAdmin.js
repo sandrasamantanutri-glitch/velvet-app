@@ -9,8 +9,8 @@ async function authAdmin(req, res, next) {
   try {
 
     const admin = await db.query(
-      "SELECT id, email FROM admin WHERE email = $1 LIMIT 1",
-      [req.user.email]
+      "SELECT id, email FROM admin WHERE id = $1 LIMIT 1",
+      [req.user.id]
     );
 
     if (!admin.rowCount) {
