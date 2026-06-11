@@ -185,7 +185,8 @@ const pageTitles = {
   faturamento: 'Faturamentos Pagarme & Stripe',
   despesas: 'Despesas Operacionais',
   suporte: 'Suporte ao Cliente',
-  midias: 'Gestão de Mídias'
+  midias: 'Gestão de Mídias',
+  'usuarios-confiaveis': 'Usuários Confiáveis'
 };
 
 const pageLoaders = {};
@@ -728,6 +729,54 @@ async function excluirAdmin(id) {
     await deleteJSON('/admin/dashboard/admins/' + id);
     toast('Admin excluído', 'success');
     pageLoaders.admins();
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  }
+}
+
+// ========== USUÁRIOS CONFIÁVEIS ==========
+
+pageLoaders['usuarios-confiaveis'] = async function () {
+  try {
+    const data = await fetchJSON('/api/admin/usuarios-confiaveis');
+    const tbody = $('tableUsuariosConfiaveis').querySelector('tbody');
+    tbody.innerHTML = (data.usuarios || []).map(u => `
+      <tr>
+        <td>${u.id}</td>
+        <td>${u.email}</td>
+        <td>${u.motivo || '—'}</td>
+        <td>${fmtDateTime(u.criado_em)}</td>
+        <td><button class="btn btn-sm btn-danger" onclick="excluirUsuarioConfiavel(${u.id})">Excluir</button></td>
+      </tr>
+    `).join('') || emptyRow(5);
+  } catch (err) {
+    console.error('Erro usuarios-confiaveis:', err);
+  }
+};
+
+async function salvarUsuarioConfiavel(e) {
+  e.preventDefault();
+  const form = new FormData(e.target);
+  try {
+    await postJSON('/api/admin/usuarios-confiaveis', {
+      email: form.get('email'),
+      motivo: form.get('motivo')
+    });
+    toast('Usuário confiável adicionado!', 'success');
+    closeAllModals();
+    e.target.reset();
+    pageLoaders['usuarios-confiaveis']();
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  }
+}
+
+async function excluirUsuarioConfiavel(id) {
+  if (!confirm('Remover este usuário da lista de confiáveis?')) return;
+  try {
+    await deleteJSON('/api/admin/usuarios-confiaveis/' + id);
+    toast('Removido', 'success');
+    pageLoaders['usuarios-confiaveis']();
   } catch (err) {
     toast('Erro: ' + err.message, 'error');
   }

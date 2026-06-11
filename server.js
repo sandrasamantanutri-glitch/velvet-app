@@ -2440,6 +2440,7 @@ app.set("calcularValores", calcularValores);
 const adminDashboardRouter = require('./routes/adminDashboard');
 const agencyDashboardRouter = require('./routes/agencyDashboard');
 const adminEmailRouter = require('./routes/adminEmail');
+const usuariosConfiaveisRouter = require('./routes/usuariosConfiaveis');
 const suporteRouter = require('./routes/suporte');
 const authAdmin = require('./middleware/authAdmin');
 
@@ -2452,6 +2453,7 @@ app.get("/api/stripe/pk", (req, res) => {
 app.use("/admin/dashboard", adminDashboardRouter);
 app.use('/agency/dashboard', agencyDashboardRouter);
 app.use('/api/admin/email', auth, authAdmin, adminEmailRouter);
+app.use('/api/admin/usuarios-confiaveis', auth, authAdmin, usuariosConfiaveisRouter);
 app.use('/api/suporte', suporteRouter);
 app.set('io', io);
 app.use("/assets", express.static(path.join(__dirname, "assets")));
@@ -8651,11 +8653,18 @@ if (Number.isNaN(dataAceite.getTime())) {
     );
 
     if (vipAnteriorRes.rowCount === 0) {
-      await client.query("ROLLBACK");
-      return res.status(403).json({
-        error: "PIX disponível apenas para renovação VIP. Para a primeira assinatura, utilize cartão de crédito, ou peça autorização para cobrança via PIX ao suporte.",
-        primeiro_vip: true
-      });
+      const confiavelRes = await client.query(
+        `SELECT 1 FROM usuarios_confiaveis WHERE email = $1 LIMIT 1`,
+        [emailFinal.toLowerCase()]
+      );
+
+      if (confiavelRes.rowCount === 0) {
+        await client.query("ROLLBACK");
+        return res.status(403).json({
+          error: "PIX disponível apenas para renovação VIP. Para a primeira assinatura, utilize cartão de crédito, ou peça autorização para cobrança via PIX ao suporte.",
+          primeiro_vip: true
+        });
+      }
     }
 
     /* =========================
