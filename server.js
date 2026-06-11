@@ -117,6 +117,7 @@ app.use(helmet({
         "https://*.r2.dev",
         "https://images.safe2pay.com.br",
         "https://*.cloudflarestream.com",
+        "https://videodelivery.net",
         "https://imagedelivery.net",
         "https://velvet-app-production.up.railway.app"
       ],
