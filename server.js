@@ -7567,7 +7567,7 @@ app.post("/api/register", authLimiter, async (req, res) => {
           nomePublico,
           src || 'direto',
           ref ? Number(ref) : null,
-          'Brasil'
+          'BR'
         ]
       );
 
