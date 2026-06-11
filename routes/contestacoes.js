@@ -270,6 +270,16 @@ router.get('/:identificador', async (req, res) => {
       if (telefonePagto) cliente.telefone = telefonePagto;
     }
 
+    // Fallback: se IP não estiver em clientes, buscar o IP de aceite mais recente nos pagamentos
+    if (!cliente.ultimo_ip) {
+      const ipPagto =
+        pagamentosCartao.find(p => p.aceite_ip)?.aceite_ip ||
+        pagamentosPixRes.rows.find(p => p.aceite_ip)?.aceite_ip ||
+        premiumUnlocks.find(p => p.aceite_ip)?.aceite_ip ||
+        null;
+      if (ipPagto) cliente.ultimo_ip = ipPagto;
+    }
+
     res.json({
       cliente,
       aceite_termos: aceiteTermosRes.rows,
