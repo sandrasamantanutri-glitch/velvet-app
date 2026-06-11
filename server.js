@@ -136,7 +136,8 @@ app.use(helmet({
         "https://velvet-test-production.up.railway.app",
         "https://velvet-app-production.up.railway.app",
         "https://res.cloudinary.com",
-        "https://*.r2.dev"
+        "https://*.r2.dev",
+        "https://cdn.jsdelivr.net"
       ],
       frameSrc: [
         "'self'",
