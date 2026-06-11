@@ -9,13 +9,15 @@ async function authAdmin(req, res, next) {
   try {
 
     const admin = await db.query(
-      "SELECT id FROM admin WHERE id = $1 LIMIT 1",
-      [req.user.id]
+      "SELECT id, email FROM admin WHERE email = $1 LIMIT 1",
+      [req.user.email]
     );
 
     if (!admin.rowCount) {
       return res.status(403).json({ error: "Acesso restrito ao administrador" });
     }
+
+    req.admin = admin.rows[0];
 
     next();
 
