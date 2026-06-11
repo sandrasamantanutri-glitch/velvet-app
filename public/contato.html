@@ -28,7 +28,7 @@
         Preencha o formulário abaixo, e entraremos em contato o mais breve possível, ou se preferir envie um email para contato@velvet.lat
       </p>
 
-      <form id="contatoForm" class="form">
+      <form id="contatoForm" class="form" enctype="multipart/form-data">
 
         <div class="field">
           <label data-i18n="contato.name">Nome</label>
@@ -64,6 +64,16 @@
           </select>
         </div>
 
+        <div class="field campo-pagamento" id="campo-telefone" style="display:none">
+          <label data-i18n="contato.phone">Telefone</label>
+          <input
+            type="tel"
+            name="telefone"
+            placeholder="(00) 00000-0000"
+            data-i18n-placeholder="contato.your_phone"
+          />
+        </div>
+
         <div class="field">
           <label data-i18n="contato.message">Mensagem</label>
           <textarea
@@ -73,6 +83,18 @@
             data-i18n-placeholder="contato.write_your_message_here"
             required
           ></textarea>
+        </div>
+
+        <div class="field campo-pagamento" id="campo-documento" style="display:none">
+          <label data-i18n="contato.document">Documento de identidade (frente)</label>
+          <input
+            type="file"
+            name="documento"
+            accept="image/*,application/pdf"
+          />
+          <p class="subtitle" data-i18n="contato.document_hint">
+            Para pedidos de pagamento/reembolso, anexe um documento oficial com foto do titular do cartão utilizado na compra.
+          </p>
         </div>
 
         <button type="submit" class="btn" data-i18n="contato.send_message">
@@ -105,6 +127,18 @@
     </div>
   </footer>
 
+  <script>
+    (function () {
+      const select = document.querySelector('select[name="assunto"]');
+      const campos = document.querySelectorAll('.campo-pagamento');
+      function atualizarCampos() {
+        const exibir = select.value === 'pagamento';
+        campos.forEach(c => c.style.display = exibir ? '' : 'none');
+      }
+      select.addEventListener('change', atualizarCampos);
+      atualizarCampos();
+    })();
+  </script>
   <script src="/js/header.js"></script>
   <script src="/js/contato.js"></script>
   <script src="/socket.io/socket.io.js"></script>

@@ -49,8 +49,11 @@ router.get('/:identificador', async (req, res) => {
         u.id AS user_id,
         u.email,
         u.created_at AS user_criado_em,
+        u.updated_at AS ultimo_acesso,
         u.age_confirmed,
         u.age_confirmed_at,
+        u.email_verificado,
+        cd.nome_completo,
         cd.telefone,
         cd.data_nascimento,
         cd.endereco,
@@ -82,7 +85,8 @@ router.get('/:identificador', async (req, res) => {
       midiasChatRes,
       visitasRes,
       suporteRes,
-      riscoRes
+      riscoRes,
+      autoexclusaoRes
     ] = await Promise.all([
       db.query(
         `SELECT tipo, descricao, ip, user_agent, created_at
@@ -99,6 +103,7 @@ router.get('/:identificador', async (req, res) => {
                 card_brand, card_last4, card_exp_month, card_exp_year
          FROM pagamentos_cartao
          WHERE cliente_id = $1
+           AND status IN ('pago', 'chargeback')
          ORDER BY created_at DESC`,
         [clienteId]
       ),
@@ -108,15 +113,27 @@ router.get('/:identificador', async (req, res) => {
                 versao_termos, fingerprint, cpf, telefone, user_agent
          FROM pagamentos_pix
          WHERE cliente_id = $1
+           AND status IN ('pago', 'chargeback')
          ORDER BY criado_em DESC`,
         [clienteId]
       ),
       db.query(
         `SELECT vs.id, vs.modelo_id, m.nome AS modelo_nome, vs.ativo, vs.created_at,
                 vs.expiration_at, vs.recorrente, vs.valor_assinatura, vs.valor_total,
-                vs.gateway_subscription_id, vs.stripe_subscription_id
+                vs.gateway_subscription_id, vs.stripe_subscription_id,
+                pgto.aceite_ip AS visualizacao_ip,
+                pgto.pago_em AS visualizacao_em
          FROM vip_subscriptions vs
          JOIN modelos m ON m.id = vs.modelo_id
+         LEFT JOIN LATERAL (
+           SELECT aceite_ip, pago_em FROM pagamentos_pix pp
+           WHERE pp.cliente_id = vs.cliente_id AND pp.modelo_id = vs.modelo_id AND pp.status = 'pago'
+           UNION ALL
+           SELECT aceite_ip, pago_em FROM pagamentos_cartao pc
+           WHERE pc.cliente_id = vs.cliente_id AND pc.modelo_id = vs.modelo_id AND pc.status = 'pago' AND pc.tipo = 'vip'
+           ORDER BY ABS(EXTRACT(EPOCH FROM (pago_em - vs.created_at)))
+           LIMIT 1
+         ) pgto ON true
          WHERE vs.cliente_id = $1
          ORDER BY vs.created_at DESC`,
         [clienteId]
@@ -127,11 +144,14 @@ router.get('/:identificador', async (req, res) => {
                 pu.status, pu.valor_total, pu.currency, pu.gateway,
                 pu.created_at, pu.pago_em,
                 pu.stripe_charge_id, pu.card_brand, pu.card_last4, pu.card_exp_month, pu.card_exp_year,
-                pu.aceite_ip, pu.aceitou_termos, pu.aceite_timestamp, pu.versao_termos
+                pu.aceite_ip, pu.aceitou_termos, pu.aceite_timestamp, pu.versao_termos,
+                pu.aceite_ip AS visualizacao_ip,
+                COALESCE(pu.pago_em, pu.aceite_timestamp) AS visualizacao_em
          FROM premium_unlocks pu
          JOIN modelos m ON m.id = pu.modelo_id
          LEFT JOIN premium_posts pp ON pp.id = pu.premium_post_id
          WHERE pu.cliente_id = $1
+           AND pu.status IN ('pago', 'chargeback')
          ORDER BY pu.created_at DESC`,
         [clienteId]
       ),
@@ -143,10 +163,24 @@ router.get('/:identificador', async (req, res) => {
                   FROM messages_conteudos mc
                   JOIN conteudos co ON co.id = mc.conteudo_id
                   WHERE mc.message_id = cp.message_id
-                ) AS conteudos
+                ) AS conteudos,
+                COALESCE(ppx.aceite_ip, pcx.aceite_ip) AS visualizacao_ip,
+                COALESCE(cp.pago_em, ppx.pago_em, pcx.pago_em) AS visualizacao_em
          FROM conteudo_pacotes cp
          JOIN modelos m ON m.id = cp.modelo_id
+         LEFT JOIN LATERAL (
+           SELECT aceite_ip, pago_em FROM pagamentos_pix pp
+           WHERE pp.cliente_id = cp.cliente_id AND pp.message_id = cp.message_id AND pp.status = 'pago'
+           ORDER BY pp.pago_em DESC LIMIT 1
+         ) ppx ON true
+         LEFT JOIN LATERAL (
+           SELECT aceite_ip, pago_em FROM pagamentos_cartao pc
+           WHERE pc.cliente_id = cp.cliente_id AND pc.status = 'pago'
+             AND pc.conteudo_id IN (SELECT mc.conteudo_id FROM messages_conteudos mc WHERE mc.message_id = cp.message_id)
+           ORDER BY pc.pago_em DESC LIMIT 1
+         ) pcx ON true
          WHERE cp.cliente_id = $1
+           AND cp.status IN ('pago', 'chargeback')
          ORDER BY cp.criado_em DESC`,
         [clienteId]
       ),
@@ -180,6 +214,13 @@ router.get('/:identificador', async (req, res) => {
          FROM cliente_risco
          WHERE cliente_id = $1
          ORDER BY criado_em DESC`,
+        [clienteId]
+      ),
+      db.query(
+        `SELECT motivo, solicitado_em, ip, user_agent, origem, detalhes
+         FROM conta_exclusoes_log
+         WHERE cliente_id = $1
+         ORDER BY solicitado_em DESC`,
         [clienteId]
       )
     ]);
@@ -215,7 +256,8 @@ router.get('/:identificador', async (req, res) => {
       midias_chat: midiasChatRes.rows,
       visitas_perfil: visitasRes.rows,
       suporte: suporteRes.rows,
-      risco: riscoRes.rows
+      risco: riscoRes.rows,
+      autoexclusao: autoexclusaoRes.rows
     });
   } catch (err) {
     console.error('Erro ao gerar relatório de contestação:', err);

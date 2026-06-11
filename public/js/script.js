@@ -672,6 +672,7 @@ function capturarOrigemTrafego() {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+  capturarOrigemTrafego();
   await whenI18nReady();
   updateModal();
 });

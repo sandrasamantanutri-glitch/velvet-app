@@ -8,13 +8,12 @@ form.addEventListener("submit", async (e) => {
   status.textContent = t("contato.contact_sending");
   status.style.color = "#7B2CFF";
 
-  const data = Object.fromEntries(new FormData(form));
+  const formData = new FormData(form);
 
   try {
     const response = await fetch("/api/contato", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
+      body: formData
     });
 
     if (!response.ok) throw new Error();

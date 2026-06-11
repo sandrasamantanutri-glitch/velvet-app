@@ -207,6 +207,51 @@ router.post("/admin/conversa/:id/responder", auth, authAdmin, async (req, res) =
   }
 });
 
+// ─── ADMIN: registra atendimento recebido por email ──────────────────────────
+router.post("/admin/registro-manual", auth, authAdmin, async (req, res) => {
+  try {
+    const { email, cliente_id, tipo_pedido, descricao, data_hora } = req.body;
+
+    if (!tipo_pedido?.trim() || !descricao?.trim()) {
+      return res.status(400).json({ error: "tipo_pedido e descricao são obrigatórios" });
+    }
+
+    let clienteIdResolvido = cliente_id ? Number(cliente_id) : null;
+    const emailFinal = email ? String(email).trim().toLowerCase() : null;
+
+    if (!clienteIdResolvido && emailFinal) {
+      const { rows } = await db.query(
+        `SELECT c.id FROM clientes c JOIN users u ON u.id = c.user_id WHERE LOWER(u.email) = LOWER($1)`,
+        [emailFinal]
+      );
+      if (rows.length) clienteIdResolvido = rows[0].id;
+    }
+
+    if (!clienteIdResolvido) {
+      return res.status(404).json({ error: "Cliente não encontrado para o email/ID informado" });
+    }
+
+    const criadoEm = data_hora ? new Date(data_hora) : new Date();
+
+    const { rows: conv } = await db.query(
+      `INSERT INTO suporte_conversas (cliente_id, nome_visitante, email_visitante, status, created_at, updated_at)
+       VALUES ($1, $2, $3, 'fechada', $4, $4) RETURNING id`,
+      [clienteIdResolvido, 'Registro manual (email)', emailFinal, criadoEm]
+    );
+
+    await db.query(
+      `INSERT INTO suporte_mensagens (conversa_id, remetente, texto, criado_em)
+       VALUES ($1, 'admin', $2, $3)`,
+      [conv[0].id, `[${tipo_pedido.trim()}] ${descricao.trim()}`, criadoEm]
+    );
+
+    res.json({ ok: true, conversa_id: conv[0].id });
+  } catch (err) {
+    console.error("Erro ao registrar atendimento manual:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
 // ─── ADMIN: fecha conversa ───────────────────────────────────────────────────
 router.patch("/admin/conversa/:id/fechar", auth, authAdmin, async (req, res) => {
   try {

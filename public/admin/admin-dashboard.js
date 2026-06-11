@@ -824,9 +824,10 @@ function renderContestacao(data) {
       <table class="table">
         <tbody>
           <tr><td>Nome</td><td>${c.nome || '—'}</td></tr>
+          <tr><td>Nome completo</td><td>${c.nome_completo || '—'}</td></tr>
           <tr><td>Email</td><td>${c.email || '—'}</td></tr>
           <tr><td>Cliente ID</td><td>${c.cliente_id}</td></tr>
-          <tr><td>CPF/Documento</td><td>${c.documento || c.cpf || '—'} (${c.tipo_documento || '—'})</td></tr>
+          <tr><td>CPF/Documento</td><td>${c.documento || c.cpf || '—'} (${c.tipo_documento || ''})</td></tr>
           <tr><td>Telefone</td><td>${c.telefone || '—'}</td></tr>
           <tr><td>Data de Nascimento</td><td>${fmtDate(c.data_nascimento)}</td></tr>
           <tr><td>Endereço</td><td>${[c.endereco, c.cidade, c.estado, c.pais_endereco].filter(Boolean).join(', ') || '—'}</td></tr>
@@ -835,8 +836,9 @@ function renderContestacao(data) {
           <tr><td>Confirmação de maioridade</td><td>${c.age_confirmed ? 'Sim, em ' + fmtDateTime(c.age_confirmed_at) : 'Não registrado'}</td></tr>
           <tr><td>Último IP conhecido</td><td>${c.ultimo_ip || '—'}</td></tr>
           <tr><td>Última atividade</td><td>${fmtDateTime(c.last_seen)}</td></tr>
+          <tr><td>Último acesso (login)</td><td>${fmtDateTime(c.ultimo_acesso)}</td></tr>
           <tr><td>Origem de tráfego</td><td>${c.origem_trafego || '—'}</td></tr>
-          <tr><td>Score de risco</td><td>${c.risk_score ?? '—'}</td></tr>
+          <tr><td>Email verificado</td><td>${c.email_verificado ? 'Sim' : 'Não'}</td></tr>
           <tr><td>Conta bloqueada</td><td>${c.bloqueado ? 'Sim' : 'Não'}</td></tr>
         </tbody>
       </table>
@@ -862,6 +864,46 @@ function renderContestacao(data) {
     </div>
   `;
 
+  const termosCompletos = `
+    <div class="card contestacao-print">
+      <h3>2.1 Termos Aceitos — Texto Completo (Política de Pagamentos, Reembolso e Cancelamento)</h3>
+      <p style="font-size:12px;color:#666;margin-bottom:8px;">
+        Texto vigente referente às versões dos termos aceitas pelo cliente (ver tabela acima).
+        Documentos completos: <a href="/terms.html" target="_blank">Termos de Uso</a> ·
+        <a href="/policies.html" target="_blank">Política de Utilização</a>
+      </p>
+      <div style="font-size:12px;line-height:1.6;background:#f9f9f9;padding:12px;border-radius:8px;max-height:400px;overflow:auto;">
+        <h4>25.1 Política de Reembolso</h4>
+        <ul>
+          <li>Assinaturas, Diamantes e conteúdos pagos não são reembolsáveis, exceto quando exigido por lei ou nos casos previstos abaixo;</li>
+          <li>O usuário é informado previamente sobre as condições da compra e deve concordar com os Termos antes de concluir a transação;</li>
+          <li>O reembolso poderá ocorrer exclusivamente em casos de:</li>
+        </ul>
+        <ul>
+          <li>cobrança em duplicidade;</li>
+          <li>erro técnico comprovado;</li>
+          <li>falha no sistema;</li>
+          <li>não disponibilização do serviço após pagamento.</li>
+        </ul>
+        <p>A Velvet poderá solicitar comprovação para análise.</p>
+        <h4>25.2 Conteúdos Pagos (Pay-Per-View e Chat)</h4>
+        <ul>
+          <li>Conteúdos pagos são liberados mediante pagamento adicional;</li>
+          <li>Após o desbloqueio, o conteúdo é considerado entregue e consumido;</li>
+          <li>Não há reembolso por insatisfação subjetiva;</li>
+          <li>A Velvet não garante expectativa ou resultado em relação ao conteúdo adquirido.</li>
+        </ul>
+        <h4>25.3 Direito de Arrependimento</h4>
+        <ul>
+          <li>O usuário reconhece que os serviços e conteúdos digitais da Plataforma são disponibilizados de forma imediata após a confirmação do pagamento;</li>
+          <li>Ao concluir a compra, o usuário declara ciência e concordância com a execução imediata do serviço;</li>
+          <li>Dessa forma, o usuário concorda que o direito de arrependimento previsto no artigo 49 do Código de Defesa do Consumidor poderá não ser aplicável;</li>
+          <li>O usuário será previamente informado sobre: liberação imediata do conteúdo; natureza digital do serviço; possível perda do direito de arrependimento.</li>
+        </ul>
+      </div>
+    </div>
+  `;
+
   const cartaoRows = (data.pagamentos_cartao || []).map(p => `
     <tr>
       <td>${p.id}</td>
@@ -872,7 +914,7 @@ function renderContestacao(data) {
       <td>${p.nome_cartao || '—'}</td>
       <td>${fmtDateTime(p.pago_em || p.created_at)}</td>
       <td>${p.aceite_ip || '—'}</td>
-      <td>${p.fingerprint || '—'}</td>
+      <td style="max-width:160px;word-break:break-all;">${p.fingerprint || '—'}</td>
       <td>${p.aceitou_termos ? `Sim (v${p.versao_termos || '?'} em ${fmtDateTime(p.aceite_timestamp)})` : 'Não'}</td>
       <td>${p.aceitou_execucao_imediata ? 'Sim' : 'Não'}</td>
       <td style="word-break:break-all;">${p.stripe_payment_intent_id || p.stripe_charge_id || '—'}</td>
@@ -887,7 +929,7 @@ function renderContestacao(data) {
       <td>${p.gateway || '—'}</td>
       <td>${fmtDateTime(p.pago_em || p.criado_em)}</td>
       <td>${p.aceite_ip || '—'}</td>
-      <td>${p.fingerprint || '—'}</td>
+      <td style="max-width:160px;word-break:break-all;">${p.fingerprint || '—'}</td>
       <td>${p.aceitou_termos ? `Sim (v${p.versao_termos || '?'} em ${fmtDateTime(p.aceite_timestamp)})` : 'Não'}</td>
       <td>${p.aceitou_execucao_imediata ? 'Sim' : 'Não'}</td>
       <td style="max-width:240px;word-break:break-all;">${p.user_agent || '—'}</td>
@@ -921,14 +963,16 @@ function renderContestacao(data) {
       <td>${fmtDateTime(v.created_at)}</td>
       <td>${fmtDateTime(v.expiration_at)}</td>
       <td style="word-break:break-all;">${v.stripe_subscription_id || v.gateway_subscription_id || '—'}</td>
+      <td>${fmtDateTime(v.visualizacao_em)}</td>
+      <td>${v.visualizacao_ip || '—'}</td>
     </tr>
-  `).join('') || emptyRow(8);
+  `).join('') || emptyRow(10);
 
   const vip = `
     <div class="card contestacao-print">
       <h3>4. Assinaturas VIP</h3>
       <table class="table">
-        <thead><tr><th>Modelo</th><th>Status</th><th>Valor Assinatura</th><th>Valor Total</th><th>Recorrência</th><th>Início</th><th>Expira em</th><th>ID Assinatura</th></tr></thead>
+        <thead><tr><th>Modelo</th><th>Status</th><th>Valor Assinatura</th><th>Valor Total</th><th>Recorrência</th><th>Início</th><th>Expira em</th><th>ID Assinatura</th><th>Disponível desde</th><th>IP</th></tr></thead>
         <tbody>${vipRows}</tbody>
       </table>
     </div>
@@ -944,14 +988,15 @@ function renderContestacao(data) {
       <td>${cartaoLabel(p)}</td>
       <td>${fmtDateTime(p.pago_em || p.created_at)}</td>
       <td>${p.aceite_ip || '—'}</td>
+      <td>${fmtDateTime(p.visualizacao_em)}</td>
     </tr>
-  `).join('') || emptyRow(8);
+  `).join('') || emptyRow(9);
 
   const premium = `
     <div class="card contestacao-print">
       <h3>5. Conteúdo Premium Desbloqueado</h3>
       <table class="table">
-        <thead><tr><th>Modelo</th><th>Tipo</th><th>Descrição</th><th>Status</th><th>Valor</th><th>Cartão</th><th>Pago em</th><th>IP</th></tr></thead>
+        <thead><tr><th>Modelo</th><th>Tipo</th><th>Descrição</th><th>Status</th><th>Valor</th><th>Cartão</th><th>Pago em</th><th>IP</th><th>Disponível desde</th></tr></thead>
         <tbody>${premiumRows}</tbody>
       </table>
     </div>
@@ -967,15 +1012,17 @@ function renderContestacao(data) {
         <td>${money(m.valor_total)} ${m.currency ? m.currency.toUpperCase() : ''}</td>
         <td>${m.metodo_pagamento || '—'}</td>
         <td>${fmtDateTime(m.pago_em || m.criado_em)}</td>
+        <td>${fmtDateTime(m.visualizacao_em)}</td>
+        <td>${m.visualizacao_ip || '—'}</td>
       </tr>
     `;
-  }).join('') || emptyRow(6);
+  }).join('') || emptyRow(8);
 
   const midias = `
     <div class="card contestacao-print">
       <h3>6. Mídias Desbloqueadas no Chat</h3>
       <table class="table">
-        <thead><tr><th>Modelo</th><th>Conteúdo</th><th>Status</th><th>Valor</th><th>Método</th><th>Pago em</th></tr></thead>
+        <thead><tr><th>Modelo</th><th>Conteúdo</th><th>Status</th><th>Valor</th><th>Método</th><th>Pago em</th><th>Disponível desde</th><th>IP</th></tr></thead>
         <tbody>${midiaRows}</tbody>
       </table>
     </div>
@@ -1022,7 +1069,7 @@ function renderContestacao(data) {
       <td>${r.motivo || '—'}</td>
       <td>${r.ip || '—'}</td>
       <td>${r.cpf || '—'}</td>
-      <td>${r.fingerprint || '—'}</td>
+      <td style="max-width:160px;word-break:break-all;">${r.fingerprint || '—'}</td>
       <td>${r.ativo ? 'Sim' : 'Não'}</td>
       <td>${fmtDateTime(r.criado_em)}</td>
     </tr>
@@ -1038,6 +1085,26 @@ function renderContestacao(data) {
     </div>
   `;
 
+  const autoexclusaoRows = (data.autoexclusao || []).map(a => `
+    <tr>
+      <td>${a.motivo || '—'}</td>
+      <td>${fmtDateTime(a.solicitado_em)}</td>
+      <td>${a.ip || '—'}</td>
+      <td>${a.origem || '—'}</td>
+      <td style="max-width:300px;word-break:break-all;">${a.user_agent || '—'}</td>
+    </tr>
+  `).join('') || emptyRow(5);
+
+  const autoexclusao = `
+    <div class="card contestacao-print">
+      <h3>10. Pedidos de Autoexclusão da Conta</h3>
+      <table class="table">
+        <thead><tr><th>Motivo</th><th>Solicitado em</th><th>IP</th><th>Origem</th><th>User-Agent</th></tr></thead>
+        <tbody>${autoexclusaoRows}</tbody>
+      </table>
+    </div>
+  `;
+
   return `
     <div class="contestacao-header" style="margin:12px 0;">
       <h2>Relatório de Contestação — ${c.nome || c.email} (Cliente #${c.cliente_id})</h2>
@@ -1045,6 +1112,7 @@ function renderContestacao(data) {
     </div>
     ${dadosPessoais}
     ${aceiteTermos}
+    ${termosCompletos}
     ${pagamentos}
     ${vip}
     ${premium}
@@ -1052,6 +1120,7 @@ function renderContestacao(data) {
     ${visitas}
     ${suporte}
     ${risco}
+    ${autoexclusao}
   `;
 }
 

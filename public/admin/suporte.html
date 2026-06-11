@@ -106,6 +106,7 @@
 <div id="lista">
   <div id="lista-header">
     <span class="dot"></span> Suporte ao Cliente
+    <button id="btn-registro-manual" title="Registrar atendimento por email" style="margin-left:auto;background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;">+ E-mail</button>
   </div>
   <div id="filtros">
     <button class="filtro-btn ativo" data-status="todas">Todas</button>
@@ -132,6 +133,22 @@
   <div id="resposta-area">
     <textarea id="resposta-input" rows="2" placeholder="Responder…" maxlength="1000"></textarea>
     <button id="btn-enviar">Enviar</button>
+  </div>
+</div>
+
+<!-- MODAL: REGISTRO MANUAL DE ATENDIMENTO -->
+<div id="modal-registro-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:12px;padding:24px;width:360px;max-width:90vw;display:flex;flex-direction:column;gap:12px;">
+    <h3 style="font-size:15px;color:#222;">Registrar atendimento por e-mail</h3>
+    <input id="reg-email" type="email" placeholder="E-mail do cliente" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;">
+    <input id="reg-tipo" type="text" placeholder="Tipo de pedido (ex: reembolso, dúvida)" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;">
+    <input id="reg-data" type="datetime-local" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;">
+    <textarea id="reg-descricao" placeholder="Descrição do atendimento" rows="4" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;resize:vertical;"></textarea>
+    <div id="reg-erro" style="color:#d32f2f;font-size:12px;display:none;"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;">
+      <button id="reg-cancelar" class="btn-acao" style="background:#f0f0f0;color:#555;">Cancelar</button>
+      <button id="reg-salvar" class="btn-acao" style="background:#7b2cff;color:#fff;">Salvar</button>
+    </div>
   </div>
 </div>
 
@@ -279,6 +296,56 @@
       filtroAtual = btn.dataset.status;
       renderLista();
     });
+  });
+
+  // ─── REGISTRO MANUAL DE ATENDIMENTO ──────────────────────────────────────
+  const modalRegistro = document.getElementById("modal-registro-overlay");
+  document.getElementById("btn-registro-manual").addEventListener("click", () => {
+    document.getElementById("reg-email").value = "";
+    document.getElementById("reg-tipo").value = "";
+    document.getElementById("reg-data").value = "";
+    document.getElementById("reg-descricao").value = "";
+    document.getElementById("reg-erro").style.display = "none";
+    modalRegistro.style.display = "flex";
+  });
+  document.getElementById("reg-cancelar").addEventListener("click", () => {
+    modalRegistro.style.display = "none";
+  });
+  document.getElementById("reg-salvar").addEventListener("click", async () => {
+    const email = document.getElementById("reg-email").value.trim();
+    const tipo_pedido = document.getElementById("reg-tipo").value.trim();
+    const data_hora = document.getElementById("reg-data").value;
+    const descricao = document.getElementById("reg-descricao").value.trim();
+    const erroEl = document.getElementById("reg-erro");
+    erroEl.style.display = "none";
+
+    if (!email || !tipo_pedido || !descricao) {
+      erroEl.textContent = "Preencha e-mail, tipo de pedido e descrição.";
+      erroEl.style.display = "block";
+      return;
+    }
+
+    try {
+      const r = await fetch("/api/suporte/admin/registro-manual", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ email, tipo_pedido, descricao, data_hora: data_hora || undefined })
+      });
+      const data = await r.json();
+      if (!r.ok) {
+        erroEl.textContent = data.error || "Erro ao registrar atendimento.";
+        erroEl.style.display = "block";
+        return;
+      }
+      modalRegistro.style.display = "none";
+      carregarLista();
+    } catch (e) {
+      erroEl.textContent = "Erro de conexão.";
+      erroEl.style.display = "block";
+    }
   });
 
   // ─── UTILS ────────────────────────────────────────────────────────────────

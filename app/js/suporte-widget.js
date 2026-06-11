@@ -171,9 +171,13 @@
     iniciarBtn.textContent = "Aguarde…";
 
     try {
+      const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+      const headers = { "Content-Type": "application/json" };
+      if (token) headers.Authorization = `Bearer ${token}`;
+
       const r = await fetch(`${API}/api/suporte/conversa`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ nome, email: emailEl.value.trim() })
       });
       const data = await r.json();

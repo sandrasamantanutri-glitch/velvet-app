@@ -4894,6 +4894,28 @@ app.get("/api/modelo/publico/:modelo_id", async (req, res) => {
       });
     }
 
+    // Registra a visita ao perfil quando o visitante for um cliente autenticado
+    try {
+      const token = req.headers.authorization?.split(" ")[1];
+      if (token) {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (decoded?.id && decoded.role === "cliente") {
+          const clienteRes = await db.query(
+            "SELECT id FROM clientes WHERE user_id = $1",
+            [decoded.id]
+          );
+          if (clienteRes.rowCount) {
+            await db.query(
+              `INSERT INTO modelo_visitas (cliente_id, modelo_id, criado_em) VALUES ($1, $2, NOW())`,
+              [clienteRes.rows[0].id, modelo_id]
+            );
+          }
+        }
+      }
+    } catch (_) {
+      // token ausente/inválido — visita não é registrada, mas perfil continua sendo exibido
+    }
+
     res.json(result.rows[0]);
 
   } catch (err) {
@@ -7535,16 +7557,17 @@ app.post("/api/register", authLimiter, async (req, res) => {
       const clienteResult = await db.query(
         `
         INSERT INTO public.clientes
-          (user_id, nome, origem_trafego, ref_modelo)
+          (user_id, nome, origem_trafego, ref_modelo, pais)
         VALUES
-          ($1, $2, $3, $4)
+          ($1, $2, $3, $4, $5)
         RETURNING id
         `,
         [
           userId,
           nomePublico,
-          src || null,
-          ref ? Number(ref) : null
+          src || 'direto',
+          ref ? Number(ref) : null,
+          'Brasil'
         ]
       );
 
@@ -7553,15 +7576,16 @@ app.post("/api/register", authLimiter, async (req, res) => {
       await db.query(
         `
         INSERT INTO public.clientes_dados
-          (cliente_id, username, nome_completo, data_nascimento, criado_em, atualizado_em)
+          (cliente_id, username, nome_completo, data_nascimento, pais, criado_em, atualizado_em)
         VALUES
-          ($1, $2, $3, $4, NOW(), NOW())
+          ($1, $2, $3, $4, $5, NOW(), NOW())
         `,
         [
           clienteId,
           nomePublico,
           nome_completo,
-          data_nascimento
+          data_nascimento,
+          'Brasil'
         ]
       );
 
@@ -7658,6 +7682,8 @@ app.post("/api/login", authLimiter, async (req, res) => {
     if (!senhaOk) {
       return res.status(401).json({ error: "Senha incorreta" });
     }
+
+    await db.query(`UPDATE users SET updated_at = NOW() WHERE id = $1`, [user.id]);
 
     const role = String(user.role || "").toLowerCase();
 
@@ -8600,7 +8626,7 @@ if (Number.isNaN(dataAceite.getTime())) {
       tipo: 'aceite_termos',
       cliente_id,
       modelo_id: modeloIdNum,
-      descricao: `Termos aceitos antes de pagamento VIP PIX — versão ${versao_termos || ''}`,
+      descricao: `Termos aceitos antes de pagamento VIP PIX — modelo_id ${modeloIdNum} — versão ${versao_termos || ''}`,
       ip,
       user_agent: req.headers['user-agent'] || null
     });
@@ -11327,9 +11353,14 @@ app.post("/api/password/reset", async (req, res) => {
 // FALE CONOSCO / CONTATO
 // =============================
 
-app.post("/api/contato", async (req, res) => {
+const uploadContato = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 8 * 1024 * 1024 } // 8MB
+});
+
+app.post("/api/contato", uploadContato.single("documento"), async (req, res) => {
   try {
-    let { nome, email, assunto, mensagem } = req.body;
+    let { nome, email, assunto, mensagem, telefone } = req.body;
 
     if (!nome || !email || !assunto || !mensagem) {
       return res.status(400).json({ error: "Dados incompletos" });
@@ -11339,6 +11370,7 @@ app.post("/api/contato", async (req, res) => {
     email = email.trim().toLowerCase().slice(0, 150);
     assunto = assunto.trim().slice(0, 150);
     mensagem = mensagem.trim().slice(0, 2000);
+    telefone = (telefone || "").trim().slice(0, 30);
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -11353,6 +11385,14 @@ app.post("/api/contato", async (req, res) => {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 
+    const attachments = [];
+    if (req.file) {
+      attachments.push({
+        filename: req.file.originalname,
+        content: req.file.buffer.toString("base64")
+      });
+    }
+
     await resend.emails.send({
       from: "Velvet <contato@velvet.lat>",
       to: [process.env.EMAIL_TO],        // email onde recebes os contatos
@@ -11362,10 +11402,13 @@ app.post("/api/contato", async (req, res) => {
         <h3>Novo contato pelo site</h3>
         <p><b>Nome:</b> ${escape(nome)}</p>
         <p><b>Email:</b> ${escape(email)}</p>
+        ${telefone ? `<p><b>Telefone:</b> ${escape(telefone)}</p>` : ""}
         <p><b>Assunto:</b> ${escape(assunto)}</p>
         <p><b>Mensagem:</b></p>
         <p>${escape(mensagem).replace(/\n/g, "<br>")}</p>
-      `
+        ${req.file ? `<p><b>Anexo:</b> ${escape(req.file.originalname)}</p>` : ""}
+      `,
+      attachments: attachments.length ? attachments : undefined
     });
 
     return res.json({ success: true });
