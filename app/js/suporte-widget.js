@@ -269,10 +269,15 @@
     {
       palavras: ["cancelar assinatura", "cancelar minha assinatura", "como cancelo", "quero cancelar", "cancelamento de assinatura", "desativar assinatura"],
       texto: "Olá! Para cancelar sua assinatura basta ir em Assinaturas e Pagamentos e clicar em cancelar na assinatura que deseja."
+    },
+    {
+      palavras: ["pagamento via pix", "pagar com pix", "não tenho cartão", "poder pagar com pix", "liberar pix", "pix"],
+      texto: "Olá! Devido ao elevado número de contestações e fraudes em pagamentos via Pix, a primeira assinatura é realizada apenas por cartão de crédito. No entanto, dependendo da situação, poderemos analisar uma exceção para pagamento via Pix. Para isso, poderia explicar melhor o que procura na plataforma e informar qual o nome da modelo que deseja assinar? Envie seu email de cadastro também, a liberação ocorre em até 24 horas, e você será avisado por aqui!"
     }
+
   ];
 
-  const RESPOSTA_FALLBACK = "Olá! No momento não temos uma resposta automática para essa dúvida.\n\nEntre em contato pelo e-mail <a href=\"mailto:contato@velvet.lat\">contato@velvet.lat</a> ou acesse a <a href=\"/contato.html\" target=\"_blank\">página de contato</a>.\n\nO prazo de resposta é de 24 a 48 horas úteis.";
+  const RESPOSTA_FALLBACK = "Olá! No momento não temos uma resposta automática para essa dúvida.\n\nEntre em contato por email em: <a href=\"/contato.html\" target=\"_blank\">página de contato</a>, ou aguarde uma resposta aqui no chat.\n\nO prazo é de 24 a 48 horas úteis.";
 
   function detectarResposta(texto) {
     const t = texto.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
