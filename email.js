@@ -776,6 +776,60 @@ async function enviarEmailAviso24h(email, modelo_id) {
   });
 }
 
+// ─────────────────────────────────────────────────────────────
+// RESEND AUDIENCES — sincronização de VIPs por modelo
+// ─────────────────────────────────────────────────────────────
+
+async function obterOuCriarAudienceVIP(db, modelo_id, nome_modelo) {
+  const dbRes = await db.query(
+    'SELECT resend_audience_id FROM modelos WHERE id = $1',
+    [modelo_id]
+  );
+  const existingId = dbRes.rows[0]?.resend_audience_id;
+  if (existingId) return existingId;
+
+  const { data, error } = await resend.audiences.create({
+    name: `VIP — ${nome_modelo || 'Modelo ' + modelo_id}`
+  });
+  if (error || !data?.id) throw new Error(`Resend audience create: ${JSON.stringify(error)}`);
+
+  await db.query(
+    'UPDATE modelos SET resend_audience_id = $1 WHERE id = $2',
+    [data.id, modelo_id]
+  );
+  console.log(`[Audience] Criada para modelo ${modelo_id}: ${data.id}`);
+  return data.id;
+}
+
+async function adicionarContatoAudienceVIP(audience_id, email, nome) {
+  const partes = (nome || '').trim().split(/\s+/);
+  const { error } = await resend.contacts.create({
+    audience_id,
+    email,
+    first_name: partes[0] || '',
+    last_name:  partes.slice(1).join(' ') || undefined,
+    unsubscribed: false
+  });
+  if (error) console.warn(`[Audience] Aviso ao adicionar contato ${email}:`, error);
+}
+
+async function enviarCampanhaVIP({ audience_id, subject, html, nome_campanha }) {
+  const { data: bc, error: errCriar } = await resend.broadcasts.create({
+    audience_id,
+    from:    'Velvet <contato@velvet.lat>',
+    name:    nome_campanha || subject,
+    subject,
+    html
+  });
+  if (errCriar || !bc?.id) throw new Error(`Resend broadcast create: ${JSON.stringify(errCriar)}`);
+
+  const { error: errEnviar } = await resend.broadcasts.send(bc.id);
+  if (errEnviar) throw new Error(`Resend broadcast send: ${JSON.stringify(errEnviar)}`);
+
+  console.log(`[Campanha] Broadcast enviado: ${bc.id} → audience ${audience_id}`);
+  return bc.id;
+}
+
 module.exports = {
   enviarEmailValidacao,
   enviarEmailAprovacao,
@@ -790,5 +844,8 @@ module.exports = {
   enviarFaturaConteudo,
   enviarFaturaPremium,
   enviarEmailAviso7Dias,
-  enviarEmailAviso24h
+  enviarEmailAviso24h,
+  obterOuCriarAudienceVIP,
+  adicionarContatoAudienceVIP,
+  enviarCampanhaVIP
 };

@@ -71,7 +71,7 @@ setInterval(() => {
 const { Resend } = require("resend");
 const resend = new Resend(process.env.RESEND_API_KEY);
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-const { enviarEmailValidacao, enviarEmailBoasVindasCliente, enviarEmailBoasVindasModelo, enviarEmailContratoModelos, enviarEmailNotificacaoContratoAssinado, enviarEmailVerificacao, enviarEmailOTP, enviarFaturaVIP, enviarFaturaConteudo, enviarFaturaPremium } = require("./email");
+const { enviarEmailValidacao, enviarEmailBoasVindasCliente, enviarEmailBoasVindasModelo, enviarEmailContratoModelos, enviarEmailNotificacaoContratoAssinado, enviarEmailVerificacao, enviarEmailOTP, enviarFaturaVIP, enviarFaturaConteudo, enviarFaturaPremium, obterOuCriarAudienceVIP, adicionarContatoAudienceVIP, enviarCampanhaVIP } = require("./email");
 const rateLimit = require("express-rate-limit");
 const compression = require('compression');
 
@@ -712,6 +712,8 @@ app.post("/api/webhook/safe2pay", express.json(), async (req, res) => {
               primeiraAssinatura: dadosParaEmitir.primeiraAssinatura,
               novaExpiracao:     vipR.rows[0]?.expiration_at
             });
+            const audId = await obterOuCriarAudienceVIP(db, dadosParaEmitir.modelo_id, ci.modelo_nome);
+            await adicionarContatoAudienceVIP(audId, ci.email, ci.nome);
           } else if (dadosParaEmitir.tipo === 'conteudo') {
             await enviarFaturaConteudo(base);
           }
@@ -1621,6 +1623,8 @@ await client.query(
               primeiraAssinatura: dadosParaEmitir.primeiraAssinatura ?? true,
               novaExpiracao:      vipR.rows[0]?.expiration_at
             });
+            const audId = await obterOuCriarAudienceVIP(db, dadosParaEmitir.modelo_id, ci.modelo_nome);
+            await adicionarContatoAudienceVIP(audId, ci.email, ci.nome);
           } else if (dadosParaEmitir.tipo === 'conteudo') {
             await enviarFaturaConteudo(base);
           }
@@ -2638,6 +2642,8 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
               primeiraAssinatura: dadosParaEmitir.primeiraAssinatura ?? true,
               novaExpiracao:      vipR.rows[0]?.expiration_at
             });
+            const audId = await obterOuCriarAudienceVIP(db, dadosParaEmitir.modelo_id, ci.modelo_nome);
+            await adicionarContatoAudienceVIP(audId, ci.email, ci.nome);
           } else if (dadosParaEmitir.tipo === 'conteudo') {
             await enviarFaturaConteudo(base);
           } else if (dadosParaEmitir.tipo === 'premium') {
@@ -2691,6 +2697,53 @@ app.use('/api/admin/email', auth, authAdmin, adminEmailRouter);
 app.use('/api/admin/usuarios-confiaveis', auth, authAdmin, usuariosConfiaveisRouter);
 app.use('/api/admin/contestacoes', auth, authAdmin, contestacoesRouter);
 app.use('/api/suporte', suporteRouter);
+
+// ── CAMPANHAS VIP ─────────────────────────────────────────────
+// POST /api/admin/campanhas/vip
+// Body: { modelo_id, subject, html, nome_campanha }
+// Envia broadcast para todos os VIPs ativos do modelo via Resend
+app.post('/api/admin/campanhas/vip', auth, authAdmin, async (req, res) => {
+  const { modelo_id, subject, html, nome_campanha } = req.body;
+
+  if (!modelo_id || !subject || !html) {
+    return res.status(400).json({ error: 'modelo_id, subject e html são obrigatórios.' });
+  }
+
+  try {
+    const modeloRes = await db.query(
+      'SELECT nome_exibicao, resend_audience_id FROM modelos WHERE id = $1',
+      [modelo_id]
+    );
+    if (!modeloRes.rowCount) return res.status(404).json({ error: 'Modelo não encontrado.' });
+
+    const { nome_exibicao, resend_audience_id } = modeloRes.rows[0];
+
+    const audienceId = resend_audience_id
+      || await obterOuCriarAudienceVIP(db, modelo_id, nome_exibicao);
+
+    const totalVips = await db.query(
+      `SELECT COUNT(*) FROM vip_subscriptions WHERE modelo_id = $1 AND ativo = true AND expiration_at > NOW()`,
+      [modelo_id]
+    );
+
+    if (Number(totalVips.rows[0].count) === 0) {
+      return res.status(200).json({ enviado: false, motivo: 'Nenhum VIP ativo para este modelo.' });
+    }
+
+    const broadcastId = await enviarCampanhaVIP({ audience_id: audienceId, subject, html, nome_campanha });
+
+    registrarLog(db, {
+      tipo: 'campanha_vip',
+      modelo_id: Number(modelo_id),
+      descricao: `Campanha enviada → broadcast ${broadcastId} (${totalVips.rows[0].count} VIPs) — "${subject}"`
+    });
+
+    return res.json({ enviado: true, broadcast_id: broadcastId, audience_id: audienceId });
+  } catch (err) {
+    console.error('Erro campanha VIP:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+});
 app.set('io', io);
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
@@ -7352,6 +7405,44 @@ app.post("/api/upload", auth, authModelo, uploadLimiter, uploadB2.array("file", 
         );
       }
 
+      // Auto-campanha feed para assinantes VIP (fire-and-forget)
+      ;(async () => {
+        try {
+          const mRes = await db.query(`SELECT nome_exibicao FROM modelos WHERE id = $1`, [modelo_id]);
+          const nome_modelo = mRes.rows[0]?.nome_exibicao || "a criadora";
+          const audience_id = await obterOuCriarAudienceVIP(db, modelo_id, nome_modelo);
+          if (!audience_id) return;
+          const linkPerfil = `https://velvet.lat/perfil.html?modelo_id=${modelo_id}`;
+          await enviarCampanhaVIP({
+            audience_id,
+            subject: `✨ ${nome_modelo} publicou novidades no feed`,
+            nome_campanha: `feed_${modelo_id}_${Date.now()}`,
+            html: `<div style="font-family:Arial,sans-serif;background:#f0ebfa;padding:32px 16px;color:#2d1f3d;">
+              <div style="max-width:600px;margin:0 auto;">
+                <div style="background:linear-gradient(135deg,#7B2CFF,#a94cff);border-radius:14px 14px 0 0;padding:20px 32px;text-align:center;">
+                  <span style="color:#fff;font-size:20px;font-weight:800;letter-spacing:1px;">💜 Velvet</span>
+                </div>
+                <div style="background:#fff;padding:32px;border-radius:0 0 14px 14px;border:1px solid #e5d9ff;border-top:none;">
+                  <h2 style="color:#6f42c1;text-align:center;margin:0 0 8px;">Nova atualização no feed!</h2>
+                  <p style="text-align:center;color:#7a6a9a;margin:0 0 24px;">${nome_modelo} acabou de publicar novo conteúdo exclusivo para você.</p>
+                  <div style="text-align:center;margin:24px 0;">
+                    <a href="${linkPerfil}" style="display:inline-block;background:linear-gradient(135deg,#7B2CFF,#a94cff);color:#fff;text-decoration:none;padding:15px 32px;border-radius:10px;font-weight:bold;font-size:15px;">
+                      Ver agora
+                    </a>
+                  </div>
+                  <p style="text-align:center;font-size:12px;color:#9b87b8;margin-top:24px;">
+                    Você recebe este e-mail por ser assinante VIP.<br>
+                    <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#7B2CFF;">Cancelar inscrição</a>
+                  </p>
+                </div>
+              </div>
+            </div>`
+          });
+        } catch (e) {
+          console.error("Campanha feed erro:", e.message);
+        }
+      })();
+
       res.json({ success: true });
 
     } catch (err) {
@@ -7458,6 +7549,47 @@ RETURNING *
         dataFim
       ]
     );
+
+    // Auto-campanha promoção para assinantes VIP (fire-and-forget)
+    ;(async () => {
+      try {
+        const mRes = await db.query(`SELECT nome_exibicao FROM modelos WHERE id = $1`, [modeloId]);
+        const nome_modelo = mRes.rows[0]?.nome_exibicao || "a criadora";
+        const audience_id = await obterOuCriarAudienceVIP(db, modeloId, nome_modelo);
+        if (!audience_id) return;
+        const linkPerfil = `https://velvet.lat/perfil.html?modelo_id=${modeloId}`;
+        await enviarCampanhaVIP({
+          audience_id,
+          subject: `💜 ${nome_modelo} está com promoção especial`,
+          nome_campanha: `oferta_${modeloId}_${Date.now()}`,
+          html: `<div style="font-family:Arial,sans-serif;background:#f0ebfa;padding:32px 16px;color:#2d1f3d;">
+            <div style="max-width:600px;margin:0 auto;">
+              <div style="background:linear-gradient(135deg,#7B2CFF,#a94cff);border-radius:14px 14px 0 0;padding:20px 32px;text-align:center;">
+                <span style="color:#fff;font-size:20px;font-weight:800;letter-spacing:1px;">💜 Velvet</span>
+              </div>
+              <div style="background:#fff;padding:32px;border-radius:0 0 14px 14px;border:1px solid #e5d9ff;border-top:none;">
+                <h2 style="color:#6f42c1;text-align:center;margin:0 0 8px;">Promoção especial disponível!</h2>
+                <p style="text-align:center;color:#7a6a9a;margin:0 0 24px;">${nome_modelo} criou uma oferta com desconto exclusivo para renovar sua assinatura VIP.</p>
+                <div style="background:#f8f4ff;border-left:4px solid #7B2CFF;border-radius:0 10px 10px 0;padding:14px 18px;margin:0 0 24px;">
+                  <p style="margin:0;font-weight:bold;color:#6f42c1;">🎁 Aproveite antes que acabe!</p>
+                </div>
+                <div style="text-align:center;margin:24px 0;">
+                  <a href="${linkPerfil}" style="display:inline-block;background:linear-gradient(135deg,#7B2CFF,#a94cff);color:#fff;text-decoration:none;padding:15px 32px;border-radius:10px;font-weight:bold;font-size:15px;">
+                    Ver oferta agora
+                  </a>
+                </div>
+                <p style="text-align:center;font-size:12px;color:#9b87b8;margin-top:24px;">
+                  Você recebe este e-mail por ser assinante VIP.<br>
+                  <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#7B2CFF;">Cancelar inscrição</a>
+                </p>
+              </div>
+            </div>
+          </div>`
+        });
+      } catch (e) {
+        console.error("Campanha oferta erro:", e.message);
+      }
+    })();
 
     res.json(result.rows[0]);
 
@@ -13177,6 +13309,47 @@ app.post("/api/premium", auth, authModelo, uploadLimiter, uploadB2.array("files"
 
     await client.query("COMMIT");
 
+    // Auto-campanha premium para assinantes VIP (fire-and-forget)
+    ;(async () => {
+      try {
+        const mRes = await db.query(`SELECT nome_exibicao FROM modelos WHERE id = $1`, [modelo_id]);
+        const nome_modelo = mRes.rows[0]?.nome_exibicao || "a criadora";
+        const audience_id = await obterOuCriarAudienceVIP(db, modelo_id, nome_modelo);
+        if (!audience_id) return;
+        const linkPerfil = `https://velvet.lat/perfil.html?modelo_id=${modelo_id}`;
+        await enviarCampanhaVIP({
+          audience_id,
+          subject: `🔥 ${nome_modelo} publicou novo conteúdo premium`,
+          nome_campanha: `premium_${modelo_id}_${Date.now()}`,
+          html: `<div style="font-family:Arial,sans-serif;background:#f0ebfa;padding:32px 16px;color:#2d1f3d;">
+            <div style="max-width:600px;margin:0 auto;">
+              <div style="background:linear-gradient(135deg,#7B2CFF,#a94cff);border-radius:14px 14px 0 0;padding:20px 32px;text-align:center;">
+                <span style="color:#fff;font-size:20px;font-weight:800;letter-spacing:1px;">💜 Velvet</span>
+              </div>
+              <div style="background:#fff;padding:32px;border-radius:0 0 14px 14px;border:1px solid #e5d9ff;border-top:none;">
+                <h2 style="color:#6f42c1;text-align:center;margin:0 0 8px;">Novo conteúdo premium disponível!</h2>
+                <p style="text-align:center;color:#7a6a9a;margin:0 0 24px;">${nome_modelo} acabou de lançar novo conteúdo premium exclusivo para você.</p>
+                <div style="background:#f8f4ff;border-left:4px solid #7B2CFF;border-radius:0 10px 10px 0;padding:14px 18px;margin:0 0 24px;">
+                  <p style="margin:0;font-weight:bold;color:#6f42c1;">🔒 Disponível apenas para assinantes VIP</p>
+                </div>
+                <div style="text-align:center;margin:24px 0;">
+                  <a href="${linkPerfil}" style="display:inline-block;background:linear-gradient(135deg,#7B2CFF,#a94cff);color:#fff;text-decoration:none;padding:15px 32px;border-radius:10px;font-weight:bold;font-size:15px;">
+                    Acessar agora
+                  </a>
+                </div>
+                <p style="text-align:center;font-size:12px;color:#9b87b8;margin-top:24px;">
+                  Você recebe este e-mail por ser assinante VIP.<br>
+                  <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#7B2CFF;">Cancelar inscrição</a>
+                </p>
+              </div>
+            </div>
+          </div>`
+        });
+      } catch (e) {
+        console.error("Campanha premium erro:", e.message);
+      }
+    })();
+
     return res.json({
       ...postRes.rows[0],
       url: primeiraMidia?.url || null,
@@ -13214,6 +13387,10 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, "0.0.0.0", () => {
   console.log("🚀 Servidor rodando na porta", PORT);
 });
+
+// Garante coluna para Resend Audience (idempotente)
+db.query("ALTER TABLE modelos ADD COLUMN IF NOT EXISTS resend_audience_id TEXT")
+  .catch(err => console.error("Migração resend_audience_id:", err.message));
 
 // ── CRON: avisos VIP (a cada hora, substitui o cron do Render) ──
 const cron = require("node-cron");
