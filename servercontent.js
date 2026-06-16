@@ -1373,7 +1373,16 @@ router.get("/modelo/chargebacks", authModelo, async (req, res) => {
         WHERE cliente_id = ta.cliente_id AND modelo_id = ta.modelo_id AND status = 'chargeback'
         ORDER BY criado_em DESC LIMIT 1
       ) pp ON true
-      WHERE ta.modelo_id = $1 AND ta.status = 'chargeback'
+      WHERE ta.modelo_id = $1
+        AND ta.status = 'chargeback'
+        AND ta.created_at >= DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '1 month'
+        AND NOT EXISTS (
+          SELECT 1 FROM modelo_pagamentos mp
+          WHERE mp.modelo_id = ta.modelo_id
+            AND mp.status = 'pago'
+            AND DATE_TRUNC('month', ta.created_at AT TIME ZONE 'America/Sao_Paulo')
+                = DATE_TRUNC('month', mp.mes AT TIME ZONE 'America/Sao_Paulo')
+        )
       ORDER BY ta.created_at DESC
     `, [modelo_id]);
 

@@ -106,7 +106,7 @@ router.get("/name-agency", authAgencia, async (req, res) => {
   try {
     const { rows } = await db.query(
       "SELECT id, nome FROM agencias WHERE id = $1",
-      [req.user.id]
+      [req.agencia.id]
     );
 
     res.json(rows[0]);
