@@ -288,6 +288,13 @@ async function renderFormCartao() {
     const elements = stripe.elements();
 
     container.innerHTML = `
+      <div class="stripe-card-header">
+        <div class="stripe-card-icons">
+          <span>VISA</span>
+          <span>MC</span>
+          <span>ELO</span>
+        </div>
+      </div>
       <div class="stripe-form-grid">
         <div class="stripe-campo">
           <label class="stripe-label">Nome no cartão</label>
@@ -309,17 +316,21 @@ async function renderFormCartao() {
         </div>
         <div id="stripe-card-error" class="stripe-error"></div>
       </div>
+      <div class="stripe-secure-footer">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Pagamento processado com segurança pela Stripe
+      </div>
     `;
 
     const elementStyle = {
       base: {
-        color: "#f0f0f0",
+        color: "#1e1e26",
         fontSize: "15px",
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
         fontSmoothing: "antialiased",
-        "::placeholder": { color: "#666" }
+        "::placeholder": { color: "#b0b0c0" }
       },
-      invalid: { color: "#ff6b6b", iconColor: "#ff6b6b" }
+      invalid: { color: "#ef4444", iconColor: "#ef4444" }
     };
 
     const cardNumber = elements.create("cardNumber", { style: elementStyle, placeholder: "0000 0000 0000 0000" });

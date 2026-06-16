@@ -1145,78 +1145,129 @@ body {
 .stripe-form-grid {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   width: 100%;
   text-align: left;
 }
 
 .stripe-linha {
-  display: flex;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
 }
 
 .stripe-campo {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
   flex: 1;
   min-width: 0;
 }
 
 .stripe-label {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  color: #aaa;
-  letter-spacing: 0.03em;
+  color: #6b7280;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .stripe-input {
   width: 100%;
   box-sizing: border-box;
-  height: 46px;
+  height: 48px;
   padding: 0 14px;
-  border: 1.5px solid #2e2e3e;
-  border-radius: 10px;
-  background: #12121c;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
   font-size: 15px;
-  color: #f0f0f0;
+  font-family: 'Poppins', sans-serif;
+  color: #1e1e26;
   outline: none;
   transition: border-color .2s ease, box-shadow .2s ease;
 }
 
 .stripe-input:focus {
   border-color: #7B2CFF;
-  box-shadow: 0 0 0 3px rgba(123, 44, 255, 0.18);
+  box-shadow: 0 0 0 3px rgba(123, 44, 255, 0.10);
+  background: #fff;
 }
 
 .stripe-input::placeholder {
-  color: #555;
+  color: #b0b0c0;
 }
 
 .stripe-element-box {
-  height: 46px;
-  padding: 13px 14px;
-  border: 1.5px solid #d8d8e2;
-  border-radius: 10px;
-  background: #7b2cff8c;
+  height: 48px;
+  padding: 14px 14px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
   box-sizing: border-box;
   transition: border-color .2s ease, box-shadow .2s ease;
 }
 
 .stripe-element-box.StripeElement--focus {
   border-color: #7B2CFF;
-  box-shadow: 0 0 0 3px rgba(123, 44, 255, 0.18);
+  box-shadow: 0 0 0 3px rgba(123, 44, 255, 0.10);
 }
 
 .stripe-element-box.StripeElement--invalid {
-  border-color: #ff6b6b;
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.10);
 }
 
 .stripe-error {
-  color: #ff6b6b;
+  color: #ef4444;
   font-size: 0.8rem;
   min-height: 18px;
+}
+
+/* ── Card header no modal cartão ── */
+.stripe-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.stripe-card-icons {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.stripe-card-icons span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 24px;
+  border-radius: 5px;
+  background: #f3f0ff;
+  font-size: 11px;
+  font-weight: 700;
+  color: #7B2CFF;
+  border: 1px solid #e5e7eb;
+}
+
+/* ── Footer segurança ── */
+.stripe-secure-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #f0f0f5;
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.stripe-secure-footer svg {
+  flex-shrink: 0;
+  color: #22c55e;
 }
 
 /* ── Popup confirmação VIP ── */

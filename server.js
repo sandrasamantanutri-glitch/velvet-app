@@ -8094,41 +8094,26 @@ app.post("/api/agencia/login", authLimiter, async (req, res) => {
       return res.status(400).json({ error: "Dados incompletos" });
     }
 
-    const userRes = await db.query(
-      `SELECT id, email, password_hash, role, ativo, token_version
-       FROM users WHERE LOWER(email) = $1 LIMIT 1`,
+    // Busca direto na tabela agencias — igual ao fluxo do admin
+    const agenciaRes = await db.query(
+      `SELECT id, nome, email, senha, ativo FROM agencias WHERE LOWER(email) = $1 LIMIT 1`,
       [email]
     );
 
-    if (!userRes.rowCount) return res.status(401).json({ error: "Usuário não encontrado" });
+    if (!agenciaRes.rowCount) return res.status(401).json({ error: "Agência não encontrada" });
 
-    const user = userRes.rows[0];
-
-    if (user.ativo === false) return res.status(403).json({ error: "Conta desativada" });
-
-    if (String(user.role || "").toLowerCase() !== "agencia") {
-      return res.status(403).json({ error: "Acesso negado. Esta conta não é uma agência." });
-    }
-
-    const senhaOk = await bcrypt.compare(senha, user.password_hash);
-    if (!senhaOk) return res.status(401).json({ error: "Senha incorreta" });
-
-    const agenciaRes = await db.query(
-      `SELECT id, nome, ativo FROM agencias WHERE user_id = $1 LIMIT 1`,
-      [user.id]
-    );
-
-    if (!agenciaRes.rowCount) return res.status(404).json({ error: "Agência não encontrada" });
     const agencia = agenciaRes.rows[0];
+
     if (agencia.ativo === false) return res.status(403).json({ error: "Agência desativada" });
 
-    await db.query(`UPDATE users SET updated_at = NOW() WHERE id = $1`, [user.id]);
+    const senhaOk = await bcrypt.compare(senha, agencia.senha);
+    if (!senhaOk) return res.status(401).json({ error: "Senha incorreta" });
 
-    // id no token = agencias.id, para que req.agencia.id funcione nos routes
+    // JWT com id = agencias.id e role = "agencia" — igual ao padrão do admin
     const token = jwt.sign(
-      { id: agencia.id, user_id: user.id, email: user.email, role: "agencia", tv: user.token_version },
+      { id: agencia.id, role: "agencia" },
       process.env.JWT_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: "12h" }
     );
 
     return res.json({ token, role: "agencia", agencia_id: agencia.id, nome: agencia.nome });

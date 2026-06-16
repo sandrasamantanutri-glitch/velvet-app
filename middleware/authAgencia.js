@@ -1,30 +1,27 @@
-const jwt = require("jsonwebtoken");
+const db = require("../db");
 
-function authAgencia(req, res, next) {
-  const token = req.headers.authorization?.split(" ")[1];
-  
-  if (!token) {
-    return res.status(401).json({ erro: "Token não fornecido" });
+async function authAgencia(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({ erro: "Não autenticado" });
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // req.user.id = agencias.id (JWT gerado pelo /api/agencia/login)
+    const { rows } = await db.query(
+      "SELECT id, email, nome FROM agencias WHERE id = $1 LIMIT 1",
+      [req.user.id]
+    );
 
-    if (decoded.role !== "agencia") {
-      return res.status(403).json({ erro: "Acesso negado. Apenas agências podem acessar." });
+    if (!rows.length) {
+      return res.status(403).json({ erro: "Acesso negado. Agência não encontrada." });
     }
 
-    req.agencia = {
-      id: decoded.id,
-      email: decoded.email,
-      role: decoded.role
-    };
-    
+    req.agencia = rows[0];
     next();
 
   } catch (err) {
-    console.error("Erro auth agência:", err.message);
-    return res.status(401).json({ erro: "Token inválido ou expirado" });
+    console.error("Erro authAgencia:", err.message);
+    return res.status(500).json({ erro: "Erro interno de autenticação" });
   }
 }
 

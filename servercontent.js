@@ -1347,7 +1347,7 @@ router.get("/modelo/chargebacks", authModelo, async (req, res) => {
         ta.id,
         ta.tipo,
         ta.created_at,
-        TO_CHAR(ta.created_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS data_fmt,
+        TO_CHAR(ta.created_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY') AS data_fmt,
         ta.valor_modelo,
         ta.valor_bruto,
         COALESCE(ta.chargeback_motivo, cb.motivo)   AS motivo,
