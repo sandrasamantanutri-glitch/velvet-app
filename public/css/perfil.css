@@ -383,15 +383,18 @@ a{
 }
 
 .oferta-badge-desconto {
-  background: linear-gradient(135deg, #ff3c6e, #ff6b35);
+  background: linear-gradient(135deg, #22c55e, #16a34a);
   color: #fff;
   font-weight: 800;
   font-size: 15px;
   padding: 5px 13px;
   border-radius: 20px;
   letter-spacing: 0.5px;
-  box-shadow: 0 2px 8px rgba(255,60,110,0.35);
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.35);
   animation: pulseBadge 1.8s ease-in-out infinite;
+  position: absolute;
+  top: 45px;
+  right: 30px;
 }
 
 .oferta-botao-wrapper {

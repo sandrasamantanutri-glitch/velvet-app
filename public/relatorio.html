@@ -29,6 +29,7 @@
       <button class="tab-btn active" data-tab="ganhos" data-i18n="relatorio.tab_ganhos">Ganhos</button>
       <button class="tab-btn" data-tab="pagamentos" data-i18n="relatorio.tab_pagamentos">Pagamentos</button>
       <button class="tab-btn" data-tab="transacoes" data-i18n="relatorio.tab_transacoes">Transações</button>
+      <button class="tab-btn" data-tab="chargebacks">Chargebacks</button>
       <button class="tab-btn" data-tab="dados-bancarios" data-i18n="relatorio.tab_dados_bancarios">Dados Bancários</button>
     </div>
 
@@ -99,6 +100,12 @@
       <h3 class="page-title" data-i18n="relatorio.titulo_transacoes">Transações</h3>
       <div id="listaTransacoes" data-i18n="relatorio.carregando_transacoes">Carregando transações...</div>
       <div id="paginacaoTransacoes" class="paginacao"></div>
+    </section>
+
+    <section id="tab-chargebacks" class="tab-content">
+      <h3 class="page-title">Chargebacks</h3>
+      <div id="resumoChargebacks" class="cards-lista" style="margin-bottom:16px;"></div>
+      <div id="listaChargebacks">Carregando...</div>
     </section>
 
     <div id="tab-dados-bancarios" class="tab-content">

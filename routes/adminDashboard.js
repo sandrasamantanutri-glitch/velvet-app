@@ -4220,18 +4220,28 @@ router.get("/chargebacks-list", async (req, res) => {
   try {
     const { rows } = await db.query(`
       SELECT
-        id,
-        plataforma,
-        valor,
-        data,
-        status,
-        motivo,
-        comprovante,
-        criado_em
-      FROM chargebacks
-      ORDER BY data DESC
+        cb.id,
+        cb.plataforma,
+        cb.valor,
+        cb.data,
+        cb.status,
+        cb.motivo,
+        cb.comprovante,
+        cb.criado_em,
+        cb.tipo,
+        cb.gateway,
+        cb.cliente_id,
+        cb.modelo_id,
+        u.email  AS cliente_email,
+        COALESCE(cd.nome_completo, u.email) AS cliente_nome,
+        m.nome_exibicao AS modelo_nome
+      FROM chargebacks cb
+      LEFT JOIN clientes c   ON c.id  = cb.cliente_id
+      LEFT JOIN users u      ON u.id  = c.user_id
+      LEFT JOIN clientes_dados cd ON cd.cliente_id = cb.cliente_id
+      LEFT JOIN modelos m    ON m.id  = cb.modelo_id
+      ORDER BY cb.data DESC
     `);
-
     res.json(rows);
   } catch (err) {
     console.error("Erro /chargebacks-list:", err);
@@ -4241,56 +4251,63 @@ router.get("/chargebacks-list", async (req, res) => {
 
 router.post("/chargebacks", authAdmin, uploadPublico.single('comprovante'), async (req, res) => {
   try {
-    let { plataforma, valor, data, motivo } = req.body;
+    let { plataforma, valor, data, motivo, email, modelo_id, tipo, gateway } = req.body;
     const comprovante = req.file ? req.file.location : null;
 
     const admin_id = req.user?.id;
-    const user_id = req.user?.id;
+    const user_id  = req.user?.id;
 
-    // Validações
-    if (!plataforma || !['pagarme', 'stripe'].includes(plataforma)) {
-      return res.status(400).json({ erro: "Plataforma inválida" });
-    }
-
-    if (!valor || isNaN(valor) || valor <= 0) {
-      return res.status(400).json({ erro: "Valor inválido" });
-    }
-
-    if (!data) {
-      return res.status(400).json({ erro: "Data é obrigatória" });
-    }
-
-    if (!comprovante) {
-      return res.status(400).json({ erro: "Comprovante é obrigatório" });
-    }
-
-    if (!admin_id || !user_id) {
-      return res.status(401).json({ erro: "Usuário não autenticado" });
-    }
+    if (!plataforma) return res.status(400).json({ erro: "Plataforma obrigatória" });
+    if (!valor || isNaN(valor) || valor <= 0) return res.status(400).json({ erro: "Valor inválido" });
+    if (!data) return res.status(400).json({ erro: "Data é obrigatória" });
+    if (!motivo?.trim()) return res.status(400).json({ erro: "Motivo é obrigatório" });
+    if (!comprovante) return res.status(400).json({ erro: "Comprovante é obrigatório" });
+    if (!admin_id) return res.status(401).json({ erro: "Usuário não autenticado" });
 
     valor = Number(valor);
 
-    const { rows } = await db.query(`
-      INSERT INTO chargebacks (plataforma, valor, data, motivo, comprovante)
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING id, plataforma, valor, data, status, motivo, comprovante, criado_em
-    `, [plataforma, valor, data, motivo || null, comprovante]);
-
-    if (!rows.length) {
-      return res.status(500).json({ erro: "Falha ao registrar chargeback" });
+    // Resolve cliente_id a partir do email
+    let cliente_id = null;
+    if (email?.trim()) {
+      const { rows: cRows } = await db.query(
+        `SELECT c.id FROM clientes c JOIN users u ON u.id = c.user_id WHERE LOWER(u.email) = LOWER($1) LIMIT 1`,
+        [email.trim()]
+      );
+      if (cRows.length) cliente_id = cRows[0].id;
     }
 
-    // Registrar no log
-    const motevoLog = `Chargeback registrado: ${plataforma} - R$ ${valor.toFixed(2)}`;
+    const modeloIdNum = modelo_id ? Number(modelo_id) : null;
+    const tipoFinal   = tipo    || null;
+    const gatewayFinal = gateway || null;
+
+    const { rows } = await db.query(`
+      INSERT INTO chargebacks (plataforma, valor, data, motivo, comprovante, cliente_id, modelo_id, tipo, gateway)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      RETURNING *
+    `, [plataforma, valor, data, motivo.trim(), comprovante, cliente_id, modeloIdNum, tipoFinal, gatewayFinal]);
+
+    if (!rows.length) return res.status(500).json({ erro: "Falha ao registrar chargeback" });
+
+    // Marca transacao_agency como chargeback (se cliente e modelo forem conhecidos)
+    if (cliente_id && modeloIdNum && tipoFinal) {
+      await db.query(`
+        UPDATE transacoes_agency
+        SET status = 'chargeback', chargeback_motivo = $4
+        WHERE id = (
+          SELECT id FROM transacoes_agency
+          WHERE cliente_id = $1 AND modelo_id = $2 AND tipo = $3 AND status = 'pago'
+          ORDER BY created_at DESC
+          LIMIT 1
+        )
+      `, [cliente_id, modeloIdNum, tipoFinal, motivo.trim()]);
+    }
 
     try {
       await db.query(`
         INSERT INTO admin_seguranca_historico (admin_id, motivo, data, user_id, tipo_user, acao)
         VALUES ($1, $2, NOW(), $3, $4, $5)
-      `, [admin_id, motevoLog, user_id, 'admin', 'chargeback_novo']);
-    } catch (logErr) {
-      console.error("Erro ao registrar no log:", logErr);
-    }
+      `, [admin_id, `Chargeback: ${plataforma} R$ ${valor.toFixed(2)} — ${motivo}`, user_id, 'admin', 'chargeback_novo']);
+    } catch (_) {}
 
     res.json(rows[0]);
   } catch (err) {

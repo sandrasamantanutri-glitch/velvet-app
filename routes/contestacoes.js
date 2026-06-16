@@ -201,17 +201,25 @@ router.get('/:identificador', async (req, res) => {
       ),
       db.query(
         `SELECT sc.id AS conversa_id, sc.status, sc.created_at AS conversa_criada_em,
+                sc.nome_visitante, sc.email_visitante,
                 COALESCE(
                   (
-                    SELECT json_agg(json_build_object('remetente', sm.remetente, 'texto', sm.texto, 'criado_em', sm.criado_em) ORDER BY sm.criado_em)
+                    SELECT json_agg(
+                      json_build_object(
+                        'remetente', sm.remetente,
+                        'texto', sm.texto,
+                        'criado_em', sm.criado_em
+                      ) ORDER BY sm.criado_em
+                    )
                     FROM suporte_mensagens sm
                     WHERE sm.conversa_id = sc.id
                   ), '[]'
                 ) AS mensagens
          FROM suporte_conversas sc
          WHERE sc.cliente_id = $1
+            OR (sc.cliente_id IS NULL AND $2 <> '' AND LOWER(sc.email_visitante) = LOWER($2))
          ORDER BY sc.created_at DESC`,
-        [clienteId]
+        [clienteId, cliente.email || '']
       ),
       db.query(
         `SELECT cpf, ip, fingerprint, nivel, motivo, ativo, bloqueio_ip, bloqueio_cpf,

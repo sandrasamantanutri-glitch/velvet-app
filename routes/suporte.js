@@ -58,10 +58,33 @@ router.post("/conversa/:id/mensagem", async (req, res) => {
     if (!texto?.trim()) return res.status(400).json({ error: "Mensagem vazia" });
 
     const { rows: conv } = await db.query(
-      "SELECT id FROM suporte_conversas WHERE id = $1 AND status != 'fechada'",
+      "SELECT id, cliente_id FROM suporte_conversas WHERE id = $1 AND status != 'fechada'",
       [conversa_id]
     );
     if (!conv.length) return res.status(404).json({ error: "Conversa não encontrada" });
+
+    // Se a conversa ainda não tem cliente_id, tenta vincular pelo token
+    if (!conv[0].cliente_id) {
+      try {
+        const jwt = require("jsonwebtoken");
+        const token = req.headers.authorization?.split(" ")[1];
+        if (token) {
+          const decoded = jwt.verify(token, process.env.JWT_SECRET);
+          if (decoded?.id) {
+            const { rows: cRows } = await db.query(
+              "SELECT id FROM clientes WHERE user_id = $1",
+              [decoded.id]
+            );
+            if (cRows.length) {
+              await db.query(
+                "UPDATE suporte_conversas SET cliente_id = $1 WHERE id = $2",
+                [cRows[0].id, conversa_id]
+              );
+            }
+          }
+        }
+      } catch (_) {}
+    }
 
     const { rows } = await db.query(
       `INSERT INTO suporte_mensagens (conversa_id, remetente, texto)

@@ -1028,24 +1028,26 @@ await client.query(
 
       if (tabelaPagamento === "premium_unlocks") {
         await client.query(
-          `
-          UPDATE premium_unlocks
-          SET status = 'chargeback',
-              updated_at = NOW()
-          WHERE id = $1
-          `,
+          `UPDATE premium_unlocks SET status = 'chargeback', updated_at = NOW() WHERE id = $1`,
           [pagamento.id]
         );
       } else if (tabelaPagamento === "pagamentos_pix") {
         await client.query(
-          `
-          UPDATE pagamentos_pix
-          SET status = 'chargeback'
-          WHERE id = $1
-          `,
+          `UPDATE pagamentos_pix SET status = 'chargeback' WHERE id = $1`,
           [pagamento.id]
         );
       }
+
+      // Propaga chargeback para transacoes_agency
+      await client.query(`
+        UPDATE transacoes_agency
+        SET status = 'chargeback', gateway = 'pix'
+        WHERE id = (
+          SELECT id FROM transacoes_agency
+          WHERE cliente_id = $1 AND modelo_id = $2 AND status = 'pago'
+          ORDER BY created_at DESC LIMIT 1
+        )
+      `, [pagamento.cliente_id, pagamento.modelo_id]);
 
       await client.query("COMMIT");
       return res.status(200).send("ok");
@@ -2008,29 +2010,30 @@ app.post("/api/webhook/stripe", express.raw({ type: "application/json" }), async
 
       if (tabelaPagamento === "premium_unlocks") {
         await client.query(
-          `
-          UPDATE premium_unlocks
-          SET status = 'chargeback',
-              updated_at = NOW(),
-              stripe_payment_intent_id = COALESCE($2, stripe_payment_intent_id),
-              stripe_charge_id = COALESCE($3, stripe_charge_id)
-          WHERE id = $1
-          `,
+          `UPDATE premium_unlocks SET status='chargeback', updated_at=NOW(),
+           stripe_payment_intent_id=COALESCE($2,stripe_payment_intent_id),
+           stripe_charge_id=COALESCE($3,stripe_charge_id) WHERE id=$1`,
           [pagamento.id, paymentIntentId, chargeId]
         );
       } else {
         await client.query(
-          `
-          UPDATE pagamentos_cartao
-          SET status = 'chargeback',
-              updated_at = NOW(),
-              stripe_payment_intent_id = COALESCE($2, stripe_payment_intent_id),
-              stripe_charge_id = COALESCE($3, stripe_charge_id)
-          WHERE id = $1
-          `,
+          `UPDATE pagamentos_cartao SET status='chargeback', updated_at=NOW(),
+           stripe_payment_intent_id=COALESCE($2,stripe_payment_intent_id),
+           stripe_charge_id=COALESCE($3,stripe_charge_id) WHERE id=$1`,
           [pagamento.id, paymentIntentId, chargeId]
         );
       }
+
+      // Propaga chargeback para transacoes_agency
+      await client.query(`
+        UPDATE transacoes_agency
+        SET status = 'chargeback', gateway = 'cartao'
+        WHERE id = (
+          SELECT id FROM transacoes_agency
+          WHERE cliente_id = $1 AND modelo_id = $2 AND status = 'pago'
+          ORDER BY created_at DESC LIMIT 1
+        )
+      `, [pagamento.cliente_id, pagamento.modelo_id]);
 
       await client.query("COMMIT");
       return res.status(200).send("ok");
@@ -13412,6 +13415,22 @@ server.listen(PORT, "0.0.0.0", () => {
 // Garante coluna para Resend Audience (idempotente)
 db.query("ALTER TABLE modelos ADD COLUMN IF NOT EXISTS resend_audience_id TEXT")
   .catch(err => console.error("Migração resend_audience_id:", err.message));
+
+// Chargebacks: campos de vínculo com cliente/modelo
+db.query(`
+  ALTER TABLE chargebacks
+    ADD COLUMN IF NOT EXISTS cliente_id BIGINT,
+    ADD COLUMN IF NOT EXISTS modelo_id BIGINT,
+    ADD COLUMN IF NOT EXISTS tipo VARCHAR(50),
+    ADD COLUMN IF NOT EXISTS gateway VARCHAR(20)
+`).catch(err => console.error("Migração chargebacks cols:", err.message));
+
+// transacoes_agency: campos de chargeback
+db.query(`
+  ALTER TABLE transacoes_agency
+    ADD COLUMN IF NOT EXISTS gateway VARCHAR(20),
+    ADD COLUMN IF NOT EXISTS chargeback_motivo TEXT
+`).catch(err => console.error("Migração transacoes_agency cols:", err.message));
 
 // ── CRON: avisos VIP (a cada hora, substitui o cron do Render) ──
 const cron = require("node-cron");

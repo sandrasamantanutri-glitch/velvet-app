@@ -435,6 +435,88 @@ document.addEventListener("DOMContentLoaded", async () => {
   carregarResumoModelo();
 
   // ===============================
+  // CHARGEBACKS
+  // ===============================
+
+  async function carregarChargebacks() {
+    const lista   = document.getElementById("listaChargebacks");
+    const resumo  = document.getElementById("resumoChargebacks");
+    if (!lista) return;
+
+    lista.innerHTML = "Carregando chargebacks...";
+
+    try {
+      const res = await fetch("/api/modelo/chargebacks", {
+        headers: { Authorization: "Bearer " + localStorage.getItem("token") }
+      });
+
+      if (!res.ok) { lista.innerHTML = "Erro ao carregar chargebacks."; return; }
+
+      const dados = await res.json();
+
+      // Resumo
+      const totalCBs  = dados.length;
+      const totalValor = dados.reduce((s, r) => s + Number(r.valor_bruto || 0), 0);
+      if (resumo) {
+        resumo.innerHTML = `
+          <div class="card" style="border-left:4px solid #e53e3e;">
+            <span>Total de chargebacks</span>
+            <strong style="color:#e53e3e;">${totalCBs}</strong>
+          </div>
+          <div class="card" style="border-left:4px solid #e53e3e;">
+            <span>Valor total descontado</span>
+            <strong style="color:#e53e3e;">R$ ${totalValor.toFixed(2)}</strong>
+          </div>
+        `;
+      }
+
+      if (!dados.length) {
+        lista.innerHTML = '<p style="color:#888;text-align:center;padding:24px;">Nenhum chargeback registrado.</p>';
+        return;
+      }
+
+      const tipoLabel = { assinatura: "Assinatura VIP", midia: "Mídia/Chat", conteudo: "Mídia/Chat", premium: "Conteúdo Premium" };
+      const gatewayLabel = { cartao: "💳 Cartão", pix: "🏦 PIX", desconhecido: "—" };
+
+      lista.innerHTML = `
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:14px;">
+            <thead>
+              <tr style="background:#f3f0ff;color:#6f42c1;text-align:left;">
+                <th style="padding:10px 12px;">Data</th>
+                <th style="padding:10px 12px;">Tipo</th>
+                <th style="padding:10px 12px;">Gateway</th>
+                <th style="padding:10px 12px;">Cliente</th>
+                <th style="padding:10px 12px;">E-mail</th>
+                <th style="padding:10px 12px;">ID Cliente</th>
+                <th style="padding:10px 12px;">Valor</th>
+                <th style="padding:10px 12px;">Motivo</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${dados.map(r => `
+                <tr style="border-bottom:1px solid #eee;">
+                  <td style="padding:10px 12px;white-space:nowrap;">${r.data_fmt || '—'}</td>
+                  <td style="padding:10px 12px;">${tipoLabel[r.tipo] || r.tipo || '—'}</td>
+                  <td style="padding:10px 12px;">${gatewayLabel[r.gateway] || r.gateway || '—'}</td>
+                  <td style="padding:10px 12px;">${r.cliente_nome || '—'}</td>
+                  <td style="padding:10px 12px;">${r.cliente_email || '—'}</td>
+                  <td style="padding:10px 12px;color:#888;">#${r.cliente_id || '—'}</td>
+                  <td style="padding:10px 12px;color:#e53e3e;font-weight:600;">R$ ${Number(r.valor_bruto || 0).toFixed(2)}</td>
+                  <td style="padding:10px 12px;color:#666;">${r.motivo || '—'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    } catch (err) {
+      console.error("Erro chargebacks:", err);
+      lista.innerHTML = "Erro ao carregar chargebacks.";
+    }
+  }
+
+  // ===============================
   // TABS
   // ===============================
   document.querySelectorAll(".tabs .tab-btn").forEach(btn => {
@@ -448,8 +530,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         tabContent.classList.add("active");
       }
 
-      if (btn.dataset.tab === "transacoes") carregarTransacoes(1);
-      if (btn.dataset.tab === "pagamentos") carregarPagamentos();
+      if (btn.dataset.tab === "transacoes")    carregarTransacoes(1);
+      if (btn.dataset.tab === "pagamentos")    carregarPagamentos();
+      if (btn.dataset.tab === "chargebacks")   carregarChargebacks();
       if (btn.dataset.tab === "dados-bancarios") carregarDadosBancarios();
     });
   });

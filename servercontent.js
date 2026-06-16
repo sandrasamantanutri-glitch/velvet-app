@@ -1333,6 +1333,57 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
   }
 });
 
+router.get("/modelo/chargebacks", authModelo, async (req, res) => {
+  try {
+    const modeloRes = await db.query(
+      "SELECT id FROM modelos WHERE user_id = $1",
+      [req.user.id]
+    );
+    if (!modeloRes.rows.length) return res.status(404).json({ error: "Modelo não encontrada" });
+    const modelo_id = modeloRes.rows[0].id;
+
+    const { rows } = await db.query(`
+      SELECT
+        ta.id,
+        ta.tipo,
+        ta.created_at,
+        TO_CHAR(ta.created_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS data_fmt,
+        ta.valor_modelo,
+        ta.valor_bruto,
+        ta.chargeback_motivo AS motivo,
+        COALESCE(ta.gateway,
+          CASE WHEN pc.id IS NOT NULL THEN 'cartao' ELSE NULL END,
+          CASE WHEN pp.id IS NOT NULL THEN 'pix'    ELSE NULL END,
+          'desconhecido'
+        ) AS gateway,
+        ta.cliente_id,
+        u.email  AS cliente_email,
+        COALESCE(cd.nome_completo, u.email) AS cliente_nome
+      FROM transacoes_agency ta
+      LEFT JOIN clientes c    ON c.id  = ta.cliente_id
+      LEFT JOIN users u       ON u.id  = c.user_id
+      LEFT JOIN clientes_dados cd ON cd.cliente_id = ta.cliente_id
+      LEFT JOIN LATERAL (
+        SELECT id FROM pagamentos_cartao
+        WHERE cliente_id = ta.cliente_id AND modelo_id = ta.modelo_id AND status = 'chargeback'
+        ORDER BY created_at DESC LIMIT 1
+      ) pc ON true
+      LEFT JOIN LATERAL (
+        SELECT id FROM pagamentos_pix
+        WHERE cliente_id = ta.cliente_id AND modelo_id = ta.modelo_id AND status = 'chargeback'
+        ORDER BY criado_em DESC LIMIT 1
+      ) pp ON true
+      WHERE ta.modelo_id = $1 AND ta.status = 'chargeback'
+      ORDER BY ta.created_at DESC
+    `, [modelo_id]);
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Erro /modelo/chargebacks:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
 router.get("/modelo/pagamentos", authModelo, async (req, res) => {
   try {
 const modeloRes = await db.query(
