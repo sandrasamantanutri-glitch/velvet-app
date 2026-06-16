@@ -1350,11 +1350,10 @@ router.get("/modelo/chargebacks", authModelo, async (req, res) => {
         TO_CHAR(ta.created_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS data_fmt,
         ta.valor_modelo,
         ta.valor_bruto,
-        ta.chargeback_motivo AS motivo,
-        COALESCE(ta.gateway,
+        COALESCE(ta.chargeback_motivo, cb.motivo)   AS motivo,
+        COALESCE(ta.gateway, cb.gateway,
           CASE WHEN pc.id IS NOT NULL THEN 'cartao' ELSE NULL END,
-          CASE WHEN pp.id IS NOT NULL THEN 'pix'    ELSE NULL END,
-          'desconhecido'
+          CASE WHEN pp.id IS NOT NULL THEN 'pix'    ELSE NULL END
         ) AS gateway,
         ta.cliente_id,
         u.email  AS cliente_email,
@@ -1365,14 +1364,19 @@ router.get("/modelo/chargebacks", authModelo, async (req, res) => {
       LEFT JOIN clientes_dados cd ON cd.cliente_id = ta.cliente_id
       LEFT JOIN LATERAL (
         SELECT id FROM pagamentos_cartao
-        WHERE cliente_id = ta.cliente_id AND modelo_id = ta.modelo_id AND status = 'chargeback'
+        WHERE cliente_id = ta.cliente_id AND modelo_id = ta.modelo_id
         ORDER BY created_at DESC LIMIT 1
       ) pc ON true
       LEFT JOIN LATERAL (
         SELECT id FROM pagamentos_pix
-        WHERE cliente_id = ta.cliente_id AND modelo_id = ta.modelo_id AND status = 'chargeback'
+        WHERE cliente_id = ta.cliente_id AND modelo_id = ta.modelo_id
         ORDER BY criado_em DESC LIMIT 1
       ) pp ON true
+      LEFT JOIN LATERAL (
+        SELECT motivo, gateway FROM chargebacks
+        WHERE modelo_id = ta.modelo_id AND cliente_id = ta.cliente_id
+        ORDER BY criado_em DESC LIMIT 1
+      ) cb ON true
       WHERE ta.modelo_id = $1
         AND ta.status = 'chargeback'
         AND ta.created_at >= DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '1 month'
