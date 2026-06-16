@@ -447,7 +447,7 @@ async function confirmarPagamentoCartao() {
     // 3D Secure — raro mas necessário
     if (data.requires_action && data.client_secret) {
       atualizarStatusCartao("Autenticação 3D Secure…");
-      const { error: actionError } = await stripeInstance.handleCardAction(data.client_secret);
+      const { error: actionError } = await stripeInstance.confirmCardPayment(data.client_secret);
       if (actionError) {
         document.getElementById("cartaoLoading")?.classList.add("hidden");
         document.getElementById("formStripePagamento")?.classList.remove("hidden");
