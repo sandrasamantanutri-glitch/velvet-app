@@ -4361,6 +4361,72 @@ router.delete("/chargebacks/:id", authAdmin, async (req, res) => {
   }
 });
 
+router.patch("/chargebacks/:id", authAdmin, async (req, res) => {
+  try {
+    const chargebackId = Number(req.params.id);
+    if (!chargebackId) return res.status(400).json({ erro: "ID inválido" });
+
+    let { plataforma, valor, data, motivo, email, modelo_id, tipo, gateway } = req.body;
+    if (!plataforma) return res.status(400).json({ erro: "Plataforma obrigatória" });
+    if (!valor || isNaN(valor)) return res.status(400).json({ erro: "Valor inválido" });
+    if (!data) return res.status(400).json({ erro: "Data obrigatória" });
+
+    valor = Number(valor);
+    const modeloIdNum = modelo_id ? Number(modelo_id) : null;
+
+    let cliente_id = null;
+    if (email?.trim()) {
+      const { rows: cRows } = await db.query(
+        `SELECT c.id FROM clientes c JOIN users u ON u.id = c.user_id WHERE LOWER(u.email) = LOWER($1) LIMIT 1`,
+        [email.trim()]
+      );
+      if (cRows.length) cliente_id = cRows[0].id;
+    }
+
+    const { rows } = await db.query(`
+      UPDATE chargebacks
+      SET plataforma = $1, valor = $2, data = $3, motivo = $4,
+          cliente_id = COALESCE($5, cliente_id),
+          modelo_id  = COALESCE($6, modelo_id),
+          tipo       = COALESCE($7, tipo),
+          gateway    = COALESCE($8, gateway)
+      WHERE id = $9
+      RETURNING *
+    `, [plataforma, valor, data, motivo?.trim() || null, cliente_id, modeloIdNum, tipo || null, gateway || null, chargebackId]);
+
+    if (!rows.length) return res.status(404).json({ erro: "Chargeback não encontrado" });
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Erro ao editar chargeback:", err.message);
+    res.status(500).json({ erro: "Erro interno: " + err.message });
+  }
+});
+
+router.get("/chargebacks/:id/comprovante", authAdmin, async (req, res) => {
+  try {
+    const chargebackId = Number(req.params.id);
+    const { rows } = await db.query(`SELECT comprovante FROM chargebacks WHERE id = $1`, [chargebackId]);
+    if (!rows.length || !rows[0].comprovante) return res.status(404).json({ erro: "Comprovante não encontrado" });
+
+    const fileUrl = rows[0].comprovante;
+    // Extract S3 key from the full URL
+    const urlObj = new URL(fileUrl);
+    const key = urlObj.pathname.replace(/^\/[^/]+\//, ''); // remove leading /bucket/
+
+    const signedUrl = s3Privado.getSignedUrl('getObject', {
+      Bucket: process.env.R2_BUCKET,
+      Key: key,
+      Expires: 300
+    });
+
+    res.redirect(signedUrl);
+  } catch (err) {
+    console.error("Erro ao gerar signed URL:", err.message);
+    res.status(500).json({ erro: "Erro interno: " + err.message });
+  }
+});
+
 // ==================== 18. FATURAMENTOS ====================
  
 router.get("/faturamentos-list", async (req, res) => {

@@ -3066,9 +3066,12 @@ async function salvarAlteracaoAgenciaModelo(event) {
 
 // ==================== 17. CHARGEBACKS ====================
 
+let _chargebacksData = [];
+
 pageLoaders.chargebacks = async function () {
   try {
     const data = await fetchJSON('/admin/dashboard/chargebacks-list');
+    _chargebacksData = data;
     renderChargebacks(data);
   } catch (err) {
     console.error('Erro ao carregar chargebacks:', err);
@@ -3083,21 +3086,85 @@ function renderChargebacks(chargebacks) {
     return;
   }
 
-  tbody.innerHTML = chargebacks.map((cb, i) => `
+  tbody.innerHTML = chargebacks.map((cb, i) => {
+    const motivoTxt = cb.motivo ? cb.motivo.slice(0, 60) + (cb.motivo.length > 60 ? '…' : '') : '—';
+    const comproLink = cb.comprovante
+      ? `<a href="/admin/dashboard/chargebacks/${cb.id}/comprovante" target="_blank" class="link">Ver</a>`
+      : '—';
+    return `
     <tr>
       <td>${i + 1}</td>
-      <td><strong>${cb.plataforma === 'pagarme' ? 'Pagarme' : 'Stripe'}</strong></td>
+      <td><strong>${cb.plataforma || '—'}</strong></td>
       <td>${money(cb.valor)}</td>
       <td>${fmtDate(cb.data)}</td>
-      <td>${badgeStatus(cb.status || 'ativo')}</td>
+      <td title="${cb.motivo || ''}">${motivoTxt}</td>
+      <td>${comproLink}</td>
       <td>
-        ${cb.comprovante ? `<a href="${cb.comprovante}" target="_blank" class="link">Ver</a>` : '—'}
+        <button class="btn-small btn-primary" onclick="abrirEditarChargeback(${cb.id})">Editar</button>
       </td>
-      <td>
-        <button class="btn-small btn-ghost" onclick="deletarChargeback(${cb.id})">Deletar</button>
-      </td>
-    </tr>
-  `).join('');
+    </tr>`;
+  }).join('');
+}
+
+function abrirEditarChargeback(id) {
+  const cb = _chargebacksData.find(c => c.id === id);
+  if (!cb) { toast('Chargeback não encontrado', 'error'); return; }
+
+  const form = document.getElementById('formEditarChargeback');
+  form.id_chargeback = id;
+  form.elements['id'].value        = id;
+  form.elements['plataforma'].value = cb.plataforma || '';
+  form.elements['valor'].value      = cb.valor || '';
+  form.elements['data'].value       = cb.data ? cb.data.slice(0, 10) : '';
+  form.elements['motivo'].value     = cb.motivo || '';
+  form.elements['email'].value      = cb.cliente_email || '';
+  form.elements['modelo_id'].value  = cb.modelo_id || '';
+  form.elements['tipo'].value       = cb.tipo || '';
+  form.elements['gateway'].value    = cb.gateway || '';
+
+  openModal('modalEditarChargeback');
+}
+
+async function salvarEdicaoChargeback(event) {
+  event.preventDefault();
+  const form = event.target;
+  const id = form.elements['id'].value;
+  const body = {
+    plataforma: form.elements['plataforma'].value,
+    valor:      Number(form.elements['valor'].value),
+    data:       form.elements['data'].value,
+    motivo:     form.elements['motivo'].value,
+    email:      form.elements['email'].value,
+    modelo_id:  form.elements['modelo_id'].value || null,
+    tipo:       form.elements['tipo'].value || null,
+    gateway:    form.elements['gateway'].value || null,
+  };
+
+  try {
+    const res = await authFetch(`/admin/dashboard/chargebacks/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.erro || errData.message || `HTTP ${res.status}`);
+    }
+    toast('Chargeback atualizado!', 'success');
+    closeAllModals();
+    pageLoaders.chargebacks();
+  } catch (err) {
+    console.error('Erro ao editar chargeback:', err);
+    toast('Erro ao editar: ' + err.message, 'error');
+  }
+}
+
+async function confirmarDeletarChargeback() {
+  const form = document.getElementById('formEditarChargeback');
+  const id = form.elements['id'].value;
+  if (!id || !confirm('Tem certeza que deseja deletar este chargeback?')) return;
+  await deletarChargeback(Number(id));
+  closeAllModals();
 }
 
 async function salvarChargeback(event) {

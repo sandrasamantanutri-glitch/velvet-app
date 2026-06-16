@@ -759,7 +759,7 @@
   <div class="card">
     <h3>Registros de Chargebacks</h3>
     <table class="table" id="tableChargebacks">
-      <thead><tr><th>#</th><th>Plataforma</th><th>Valor</th><th>Data</th><th>Status</th><th>Comprovante</th><th>Ações</th></tr></thead>
+      <thead><tr><th>#</th><th>Plataforma</th><th>Valor</th><th>Data</th><th>Motivo</th><th>Comprovante</th><th>Ações</th></tr></thead>
       <tbody></tbody>
     </table>
   </div>
@@ -1320,6 +1320,69 @@
 </div>
  
  
+<!-- ===== MODAL EDITAR CHARGEBACK ===== -->
+<div class="modal" id="modalEditarChargeback">
+  <h3>Editar Chargeback</h3>
+  <form id="formEditarChargeback" onsubmit="salvarEdicaoChargeback(event)">
+    <input type="hidden" name="id">
+    <label>
+      Plataforma
+      <select name="plataforma" required>
+        <option value="">Selecionar...</option>
+        <option value="pagarme">Pagarme</option>
+        <option value="stripe">Stripe</option>
+        <option value="safe2pay">Safe2Pay</option>
+        <option value="pluggy">Pluggy</option>
+      </select>
+    </label>
+    <label>
+      Valor (R$)
+      <input type="number" name="valor" step="0.01" min="0" required>
+    </label>
+    <label>
+      Data
+      <input type="date" name="data" required>
+    </label>
+    <label>
+      Motivo
+      <textarea name="motivo" rows="3" placeholder="Descreva o motivo do chargeback"></textarea>
+    </label>
+    <label>
+      Email do cliente
+      <input type="email" name="email" placeholder="email@exemplo.com">
+    </label>
+    <label>
+      ID do modelo
+      <input type="number" name="modelo_id" placeholder="ID da modelo">
+    </label>
+    <label>
+      Tipo
+      <select name="tipo">
+        <option value="">—</option>
+        <option value="assinatura">Assinatura</option>
+        <option value="midia">Mídia</option>
+        <option value="premium">Premium</option>
+      </select>
+    </label>
+    <label>
+      Gateway
+      <select name="gateway">
+        <option value="">—</option>
+        <option value="cartao">Cartão</option>
+        <option value="pix">PIX</option>
+      </select>
+    </label>
+    <div class="modal-actions" style="justify-content:space-between;">
+      <button type="button" class="btn btn-danger" onclick="confirmarDeletarChargeback()">Deletar</button>
+      <div style="display:flex;gap:8px;">
+        <button type="button" class="btn btn-ghost" onclick="closeAllModals()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+
 <!-- ===== MODAL DESPESA ===== -->
 <div class="modal" id="modalDespesa">
   <h3>Registrar Despesa Operacional</h3>
