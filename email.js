@@ -431,6 +431,351 @@ async function enviarEmailOTP(email, codigo) {
   });
 }
 
+// ─────────────────────────────────────────────────────────────
+// HELPERS INTERNOS DE FATURA
+// ─────────────────────────────────────────────────────────────
+function _fmtData(d) {
+  if (!d) return '—';
+  try {
+    return new Date(d).toLocaleString('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    }) + ' (BRT)';
+  } catch { return String(d); }
+}
+
+function _fmtBRL(v) {
+  if (v === null || v === undefined || v === '') return '—';
+  try {
+    return 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  } catch { return String(v); }
+}
+
+function _row(label, value) {
+  if (value === null || value === undefined || value === '') return '';
+  return `<tr>
+    <td style="padding:5px 14px 5px 0;color:#6b5a7d;font-size:13px;white-space:nowrap;vertical-align:top;width:42%;">${label}</td>
+    <td style="padding:5px 0;color:#2d1f3d;font-size:13px;font-weight:600;word-break:break-all;">${value}</td>
+  </tr>`;
+}
+
+function _tabela(linhas) {
+  return `<table style="width:100%;border-collapse:collapse;"><tbody>${linhas.filter(Boolean).join('')}</tbody></table>`;
+}
+
+function _secao(titulo, icone, linhas, opts) {
+  const bg          = (opts && opts.bg)          || '#f8f4ff';
+  const border      = (opts && opts.border)      || '#e5d9ff';
+  const titleColor  = (opts && opts.titleColor)  || '#4b2a7b';
+  return `<div style="background:${bg};border:1px solid ${border};border-radius:10px;padding:14px 18px;margin-bottom:14px;">
+    <p style="margin:0 0 10px;font-weight:700;color:${titleColor};font-size:14px;">${icone} ${titulo}</p>
+    ${_tabela(linhas)}
+  </div>`;
+}
+
+function _cabecalhoFatura(tipo, ref) {
+  const label = ref ? ` #${String(ref).slice(-12).toUpperCase()}` : '';
+  return `<div style="text-align:center;margin-bottom:24px;">
+    <div style="display:inline-block;background:linear-gradient(135deg,#7B2CFF,#a94cff);color:#fff;border-radius:8px;padding:4px 16px;font-size:11px;font-weight:800;letter-spacing:1.5px;margin-bottom:12px;">
+      COMPROVANTE DE PAGAMENTO${label}
+    </div>
+    <h2 style="margin:8px 0 4px;font-size:20px;color:#2d1f3d;">${tipo}</h2>
+    <p style="margin:0;color:#9b87b8;font-size:12px;">Emitido automaticamente em ${_fmtData(new Date())}</p>
+  </div>`;
+}
+
+function _avisoNaoReembolso(versao_termos) {
+  const v = versao_termos || 'vigente';
+  return `<div style="background:#fff5f5;border:1px solid #ffc0c0;border-radius:10px;padding:14px 18px;margin-bottom:14px;">
+    <p style="margin:0 0 6px;font-weight:700;color:#8b1a1a;font-size:13px;">⚠️ Política de Não Reembolso</p>
+    <p style="margin:0;font-size:12px;color:#7a1a1a;line-height:1.7;">
+      Ao confirmar este pagamento, você concordou expressamente com os
+      <strong>Termos de Uso da Velvet (versão ${v})</strong>,
+      incluindo a cláusula de <strong>não reembolso</strong> de assinaturas e conteúdos digitais.
+      O acesso ao conteúdo foi imediatamente disponibilizado mediante solicitação,
+      conforme <strong>Art. 49, parágrafo único, do CDC</strong>.
+      Tentativas de chargeback indevido serão contestadas com as evidências registradas neste comprovante.
+    </p>
+  </div>`;
+}
+
+function _rodapeVelvet() {
+  return `<div style="background:#f0ebfa;border-radius:10px;padding:12px 16px;font-size:12px;color:#6b5a7d;line-height:1.8;">
+    <strong style="color:#4b2a7b;display:block;margin-bottom:2px;">Velvet Plataforma Digital</strong>
+    <a href="mailto:contato@velvet.lat" style="color:#7B2CFF;">contato@velvet.lat</a> &nbsp;·&nbsp;
+    <a href="https://www.velvet.lat" style="color:#7B2CFF;">www.velvet.lat</a><br>
+    Dúvidas? Responda este e-mail ou acesse o suporte na plataforma.
+  </div>`;
+}
+
+function _metodoTexto(metodo, card_info) {
+  if (metodo === 'pix') return 'PIX';
+  if (card_info) {
+    const brand = (card_info.brand || '').toUpperCase();
+    return `Cartão ${brand} ••••${card_info.last4} (${card_info.exp_month}/${card_info.exp_year})`;
+  }
+  return 'Cartão de Crédito';
+}
+
+function _cpfFmt(cpf) {
+  if (!cpf) return null;
+  const s = String(cpf).replace(/\D/g, '');
+  return s.length === 11 ? s.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4') : cpf;
+}
+
+// ─────────────────────────────────────────────────────────────
+// FATURA VIP — nova assinatura ou renovação
+// ─────────────────────────────────────────────────────────────
+async function enviarFaturaVIP({
+  nome, email, modelo_nome, valor,
+  metodo, card_info, cpf, telefone, ip,
+  endereco, novaExpiracao, primeiraAssinatura,
+  aceite_timestamp, versao_termos, payment_ref
+}) {
+  if (!email) return;
+
+  const isNova     = primeiraAssinatura !== false;
+  const tipoLabel  = isNova ? '✨ Nova Assinatura VIP' : '🔄 Renovação VIP';
+  const subject    = isNova
+    ? '✨ Assinatura VIP confirmada — Velvet'
+    : '🔄 Renovação VIP confirmada — Velvet';
+
+  const html = wrapEmail(`
+    ${_cabecalhoFatura(tipoLabel, payment_ref)}
+
+    ${_secao('Dados do Cliente', '👤', [
+      _row('Nome',      nome),
+      _row('E-mail',    email),
+      _row('CPF',       _cpfFmt(cpf)),
+      _row('Telefone',  telefone),
+      _row('Endereço',  endereco),
+    ])}
+
+    ${_secao('Detalhes do Pagamento', '💳', [
+      _row('Valor pago',            _fmtBRL(valor)),
+      _row('Método de pagamento',   _metodoTexto(metodo, card_info)),
+      _row('Data do pagamento',     _fmtData(aceite_timestamp)),
+      _row('Referência',            payment_ref),
+    ])}
+
+    ${_secao('Produto Adquirido', '✨', [
+      _row('Produto',              isNova ? 'Assinatura VIP — 1ª ativação' : 'Renovação VIP'),
+      _row('Criadora',             modelo_nome),
+      _row('Duração',              '30 dias'),
+      _row('Acesso válido até',    _fmtData(novaExpiracao)),
+    ])}
+
+    ${_secao('Registro de Aceite dos Termos', '🔒', [
+      _row('IP de acesso',              ip),
+      _row('Data/hora do aceite',       _fmtData(aceite_timestamp)),
+      _row('Versão dos termos',         versao_termos),
+      _row('Termos aceitos',            'Sim'),
+      _row('Confirmação de maioridade', 'Sim (+18)'),
+    ], { bg: '#fffbf0', border: '#ffe0a0', titleColor: '#7a4a00' })}
+
+    ${_avisoNaoReembolso(versao_termos)}
+    ${_rodapeVelvet()}
+  `);
+
+  await resend.emails.send({
+    from: 'Velvet <contato@velvet.lat>',
+    to: email,
+    subject,
+    html
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// FATURA CONTEÚDO — mídia no chat
+// ─────────────────────────────────────────────────────────────
+async function enviarFaturaConteudo({
+  nome, email, modelo_nome, valor,
+  metodo, card_info, cpf, telefone, ip,
+  aceite_timestamp, versao_termos, payment_ref
+}) {
+  if (!email) return;
+
+  const html = wrapEmail(`
+    ${_cabecalhoFatura('💬 Conteúdo no Chat Desbloqueado', payment_ref)}
+
+    ${_secao('Dados do Cliente', '👤', [
+      _row('Nome',      nome),
+      _row('E-mail',    email),
+      _row('CPF',       _cpfFmt(cpf)),
+      _row('Telefone',  telefone),
+    ])}
+
+    ${_secao('Detalhes do Pagamento', '💳', [
+      _row('Valor pago',           _fmtBRL(valor)),
+      _row('Método de pagamento',  _metodoTexto(metodo, card_info)),
+      _row('Data do pagamento',    _fmtData(aceite_timestamp)),
+      _row('Referência',           payment_ref),
+    ])}
+
+    ${_secao('Produto Adquirido', '💬', [
+      _row('Produto',  'Conteúdo no chat'),
+      _row('Criadora', modelo_nome),
+      _row('Acesso',   'Imediato — disponível no chat'),
+    ])}
+
+    ${_secao('Registro de Aceite dos Termos', '🔒', [
+      _row('IP de acesso',        ip),
+      _row('Data/hora do aceite', _fmtData(aceite_timestamp)),
+      _row('Versão dos termos',   versao_termos),
+      _row('Termos aceitos',      'Sim'),
+    ], { bg: '#fffbf0', border: '#ffe0a0', titleColor: '#7a4a00' })}
+
+    ${_avisoNaoReembolso(versao_termos)}
+    ${_rodapeVelvet()}
+  `);
+
+  await resend.emails.send({
+    from: 'Velvet <contato@velvet.lat>',
+    to: email,
+    subject: '💬 Conteúdo desbloqueado — Velvet',
+    html
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// FATURA PREMIUM — conteúdo premium do feed
+// ─────────────────────────────────────────────────────────────
+async function enviarFaturaPremium({
+  nome, email, modelo_nome, valor,
+  metodo, card_info, cpf, telefone, ip,
+  aceite_timestamp, versao_termos, payment_ref
+}) {
+  if (!email) return;
+
+  const html = wrapEmail(`
+    ${_cabecalhoFatura('💎 Conteúdo Premium Desbloqueado', payment_ref)}
+
+    ${_secao('Dados do Cliente', '👤', [
+      _row('Nome',      nome),
+      _row('E-mail',    email),
+      _row('CPF',       _cpfFmt(cpf)),
+      _row('Telefone',  telefone),
+    ])}
+
+    ${_secao('Detalhes do Pagamento', '💳', [
+      _row('Valor pago',           _fmtBRL(valor)),
+      _row('Método de pagamento',  _metodoTexto(metodo, card_info)),
+      _row('Data do pagamento',    _fmtData(aceite_timestamp)),
+      _row('Referência',           payment_ref),
+    ])}
+
+    ${_secao('Produto Adquirido', '💎', [
+      _row('Produto',  'Conteúdo premium exclusivo'),
+      _row('Criadora', modelo_nome),
+      _row('Acesso',   'Imediato — disponível no feed'),
+    ])}
+
+    ${_secao('Registro de Aceite dos Termos', '🔒', [
+      _row('IP de acesso',        ip),
+      _row('Data/hora do aceite', _fmtData(aceite_timestamp)),
+      _row('Versão dos termos',   versao_termos),
+      _row('Termos aceitos',      'Sim'),
+    ], { bg: '#fffbf0', border: '#ffe0a0', titleColor: '#7a4a00' })}
+
+    ${_avisoNaoReembolso(versao_termos)}
+    ${_rodapeVelvet()}
+  `);
+
+  await resend.emails.send({
+    from: 'Velvet <contato@velvet.lat>',
+    to: email,
+    subject: '💎 Conteúdo premium desbloqueado — Velvet',
+    html
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// AVISO VIP — 7 dias antes do vencimento
+// ─────────────────────────────────────────────────────────────
+async function enviarEmailAviso7Dias(email, modelo_id) {
+  const linkPerfil = `https://velvet.lat/perfil.html?modelo_id=${modelo_id}`;
+  await resend.emails.send({
+    from: 'Velvet <contato@velvet.lat>',
+    to: email,
+    subject: 'Seu VIP expira em 7 dias 💜',
+    html: wrapEmail(`
+      <h2 style="margin:0 0 6px;color:#6f42c1;text-align:center;font-size:20px;">
+        Sua assinatura VIP está chegando ao fim
+      </h2>
+      <p style="text-align:center;margin:0 0 24px;color:#7a6a9a;font-size:14px;">
+        Renove para manter seu acesso exclusivo
+      </p>
+
+      <div style="background:#f8f4ff;border-left:4px solid #7B2CFF;border-radius:0 10px 10px 0;padding:14px 18px;margin:0 0 20px;">
+        <p style="margin:0;font-weight:bold;color:#6f42c1;font-size:15px;">
+          ⏳ Faltam 7 dias para o vencimento
+        </p>
+      </div>
+
+      <p style="margin:0 0 20px;line-height:1.7;">
+        Olá! A sua assinatura VIP está próxima do vencimento. Renove agora para continuar com acesso ao conteúdo exclusivo e ao chat direto com a criadora.
+      </p>
+
+      ${infoBox('purple', `
+        <p style="margin:0 0 10px;font-weight:bold;color:#4b2a7b;font-size:14px;">Com o VIP ativo você tem acesso a:</p>
+        <p style="margin:0;line-height:2;font-size:14px;">
+          💬 Chat direto com a criadora<br>
+          🎁 Conteúdo exclusivo do perfil<br>
+          ✨ Benefícios especiais para assinantes
+        </p>
+      `)}
+
+      ${btnPrimary(linkPerfil, 'Renovar VIP agora')}
+    `)
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// AVISO VIP — 24 horas antes do vencimento
+// ─────────────────────────────────────────────────────────────
+async function enviarEmailAviso24h(email, modelo_id) {
+  const linkPerfil = `https://velvet.lat/perfil.html?modelo_id=${modelo_id}`;
+  await resend.emails.send({
+    from: 'Velvet <contato@velvet.lat>',
+    to: email,
+    subject: '⏰ Seu VIP expira amanhã — renove agora!',
+    html: wrapEmail(`
+      <h2 style="margin:0 0 6px;color:#b0307d;text-align:center;font-size:20px;">
+        Última chance de renovar seu VIP
+      </h2>
+      <p style="text-align:center;margin:0 0 24px;color:#7a6a9a;font-size:14px;">
+        Seu acesso expira em menos de 24 horas
+      </p>
+
+      <div style="background:#fff2f8;border-left:4px solid #b0307d;border-radius:0 10px 10px 0;padding:14px 18px;margin:0 0 20px;">
+        <p style="margin:0;font-weight:bold;color:#b0307d;font-size:15px;">
+          🚨 Expira amanhã — não perca seu acesso!
+        </p>
+      </div>
+
+      <p style="margin:0 0 20px;line-height:1.7;">
+        Olá! A sua assinatura VIP termina amanhã. Renove agora para não perder o acesso ao conteúdo exclusivo e ao chat direto com a criadora.
+      </p>
+
+      ${infoBox('pink', `
+        <p style="margin:0 0 10px;font-weight:bold;color:#7a1f52;font-size:14px;">O que você perde ao não renovar:</p>
+        <p style="margin:0;line-height:2;font-size:14px;">
+          💬 Acesso ao chat exclusivo<br>
+          🎁 Todo o conteúdo do perfil<br>
+          ✨ Seus benefícios de assinante
+        </p>
+      `)}
+
+      <div style="text-align:center;margin:24px 0 8px;">
+        <a href="${linkPerfil}" style="display:inline-block;background:linear-gradient(135deg,#b0307d,#d45fa0);color:#fff;text-decoration:none;padding:15px 32px;border-radius:10px;font-weight:bold;font-size:15px;">
+          Renovar VIP agora
+        </a>
+      </div>
+    `)
+  });
+}
+
 module.exports = {
   enviarEmailValidacao,
   enviarEmailAprovacao,
@@ -440,5 +785,10 @@ module.exports = {
   enviarEmailContratoModelos,
   enviarEmailNotificacaoContratoAssinado,
   enviarEmailVerificacao,
-  enviarEmailOTP
+  enviarEmailOTP,
+  enviarFaturaVIP,
+  enviarFaturaConteudo,
+  enviarFaturaPremium,
+  enviarEmailAviso7Dias,
+  enviarEmailAviso24h
 };

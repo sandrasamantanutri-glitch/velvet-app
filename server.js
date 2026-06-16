@@ -71,7 +71,7 @@ setInterval(() => {
 const { Resend } = require("resend");
 const resend = new Resend(process.env.RESEND_API_KEY);
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-const { enviarEmailValidacao, enviarEmailBoasVindasCliente, enviarEmailBoasVindasModelo, enviarEmailContratoModelos, enviarEmailNotificacaoContratoAssinado, enviarEmailVerificacao, enviarEmailOTP } = require("./email");
+const { enviarEmailValidacao, enviarEmailBoasVindasCliente, enviarEmailBoasVindasModelo, enviarEmailContratoModelos, enviarEmailNotificacaoContratoAssinado, enviarEmailVerificacao, enviarEmailOTP, enviarFaturaVIP, enviarFaturaConteudo, enviarFaturaPremium } = require("./email");
 const rateLimit = require("express-rate-limit");
 const compression = require('compression');
 
@@ -668,6 +668,59 @@ app.post("/api/webhook/safe2pay", express.json(), async (req, res) => {
         }
       } catch (e) { console.error("Erro socket webhook Safe2Pay:", e); }
     }
+
+    // ── EMAIL FATURA SAFE2PAY (fire-and-forget) ──────────────────
+    if (dadosParaEmitir) {
+      (async () => {
+        try {
+          const ci = await buscarDadosEmailPagamento(db, {
+            cliente_id: dadosParaEmitir.cliente_id,
+            modelo_id:  dadosParaEmitir.modelo_id
+          });
+          if (!ci?.email) return;
+
+          const pagPix = await db.query(
+            `SELECT aceite_ip, aceite_timestamp, versao_termos, cpf, telefone, valor
+             FROM pagamentos_pix WHERE pagarme_order_id = $1 LIMIT 1`,
+            [idTx]
+          );
+          const pp = pagPix.rows[0] || {};
+
+          const base = {
+            nome:             ci.nome,
+            email:            ci.email,
+            modelo_nome:      ci.modelo_nome,
+            valor:            Number(pp.valor || valorPago),
+            metodo:           'pix',
+            card_info:        null,
+            cpf:              pp.cpf,
+            telefone:         pp.telefone || ci.tel_cad,
+            ip:               pp.aceite_ip,
+            aceite_timestamp: pp.aceite_timestamp,
+            versao_termos:    pp.versao_termos,
+            payment_ref:      idTx
+          };
+
+          if (dadosParaEmitir.tipo === 'vip') {
+            const vipR = await db.query(
+              `SELECT expiration_at FROM vip_subscriptions WHERE cliente_id = $1 AND modelo_id = $2 LIMIT 1`,
+              [dadosParaEmitir.cliente_id, dadosParaEmitir.modelo_id]
+            );
+            await enviarFaturaVIP({
+              ...base,
+              endereco:          ci.endereco_fmt,
+              primeiraAssinatura: dadosParaEmitir.primeiraAssinatura,
+              novaExpiracao:     vipR.rows[0]?.expiration_at
+            });
+          } else if (dadosParaEmitir.tipo === 'conteudo') {
+            await enviarFaturaConteudo(base);
+          }
+        } catch (emailErr) {
+          console.error('Erro email fatura Safe2Pay:', emailErr.message);
+        }
+      })();
+    }
+    // ─────────────────────────────────────────────────────────────
 
     console.log("✅ WEBHOOK SAFE2PAY FINALIZADO");
     return res.status(200).send("ok");
@@ -1451,7 +1504,8 @@ await client.query(
       dadosParaEmitir = {
         tipo: "vip",
         cliente_id,
-        modelo_id
+        modelo_id,
+        primeiraAssinatura
       };
 
       fluxoProcessado = true;
@@ -1530,6 +1584,52 @@ await client.query(
     } catch (e) {
       console.error("Erro emitir socket:", e);
     }
+
+    // ── EMAIL FATURA PAGARME PIX (fire-and-forget) ───────────────
+    if (dadosParaEmitir) {
+      (async () => {
+        try {
+          const ci = await buscarDadosEmailPagamento(db, {
+            cliente_id: dadosParaEmitir.cliente_id,
+            modelo_id:  dadosParaEmitir.modelo_id
+          });
+          if (!ci?.email) return;
+
+          const base = {
+            nome:             ci.nome,
+            email:            ci.email,
+            modelo_nome:      ci.modelo_nome,
+            valor:            Number(pagamento?.valor || 0),
+            metodo:           'pix',
+            card_info:        null,
+            cpf:              pagamento?.cpf,
+            telefone:         pagamento?.telefone || ci.tel_cad,
+            ip:               pagamento?.aceite_ip,
+            aceite_timestamp: pagamento?.aceite_timestamp,
+            versao_termos:    pagamento?.versao_termos,
+            payment_ref:      orderId
+          };
+
+          if (dadosParaEmitir.tipo === 'vip') {
+            const vipR = await db.query(
+              `SELECT expiration_at FROM vip_subscriptions WHERE cliente_id = $1 AND modelo_id = $2 LIMIT 1`,
+              [dadosParaEmitir.cliente_id, dadosParaEmitir.modelo_id]
+            );
+            await enviarFaturaVIP({
+              ...base,
+              endereco:           ci.endereco_fmt,
+              primeiraAssinatura: dadosParaEmitir.primeiraAssinatura ?? true,
+              novaExpiracao:      vipR.rows[0]?.expiration_at
+            });
+          } else if (dadosParaEmitir.tipo === 'conteudo') {
+            await enviarFaturaConteudo(base);
+          }
+        } catch (emailErr) {
+          console.error('Erro email fatura Pagarme:', emailErr.message);
+        }
+      })();
+    }
+    // ─────────────────────────────────────────────────────────────
 
     console.log("✅ PAGAMENTO FINALIZADO");
     return res.status(200).send("ok");
@@ -2189,6 +2289,14 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
         ]
       );
 
+      dadosParaEmitir = {
+        tipo: "premium",
+        cliente_id,
+        modelo_id,
+        premium_post_id,
+        pagamento_id: pagamento.id
+      };
+
       fluxoProcessado = true;
       console.log("✅ Premium atualizado com sucesso");
     }
@@ -2390,7 +2498,8 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
       dadosParaEmitir = {
         tipo: "vip",
         cliente_id,
-        modelo_id
+        modelo_id,
+        primeiraAssinatura
       };
 
       fluxoProcessado = true;
@@ -2482,6 +2591,64 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
     } catch (e) {
       console.error("Erro emitir socket:", e);
     }
+
+    // ── EMAIL FATURA STRIPE (fire-and-forget) ────────────────────
+    if (dadosParaEmitir) {
+      (async () => {
+        try {
+          const ci = await buscarDadosEmailPagamento(db, {
+            cliente_id: dadosParaEmitir.cliente_id,
+            modelo_id:  dadosParaEmitir.modelo_id
+          });
+          if (!ci?.email) return;
+
+          const isCartao = tabelaPagamento === 'pagamentos_cartao';
+          const card_info = (isCartao && pagamento?.card_brand) ? {
+            brand:     pagamento.card_brand,
+            last4:     pagamento.card_last4,
+            exp_month: pagamento.card_exp_month,
+            exp_year:  pagamento.card_exp_year
+          } : null;
+
+          const metodo = isCartao ? 'cartao' : 'pix';
+
+          const base = {
+            nome:             ci.nome,
+            email:            ci.email,
+            modelo_nome:      ci.modelo_nome,
+            valor:            Number(pagamento?.valor || pagamento?.valor_total || valorPago),
+            metodo,
+            card_info,
+            cpf:              pagamento?.cpf,
+            telefone:         pagamento?.telefone || ci.tel_cad,
+            ip:               pagamento?.aceite_ip,
+            aceite_timestamp: pagamento?.aceite_timestamp,
+            versao_termos:    pagamento?.versao_termos,
+            payment_ref:      paymentIntentId || chargeId
+          };
+
+          if (dadosParaEmitir.tipo === 'vip') {
+            const vipR = await db.query(
+              `SELECT expiration_at FROM vip_subscriptions WHERE cliente_id = $1 AND modelo_id = $2 LIMIT 1`,
+              [dadosParaEmitir.cliente_id, dadosParaEmitir.modelo_id]
+            );
+            await enviarFaturaVIP({
+              ...base,
+              endereco:           ci.endereco_fmt,
+              primeiraAssinatura: dadosParaEmitir.primeiraAssinatura ?? true,
+              novaExpiracao:      vipR.rows[0]?.expiration_at
+            });
+          } else if (dadosParaEmitir.tipo === 'conteudo') {
+            await enviarFaturaConteudo(base);
+          } else if (dadosParaEmitir.tipo === 'premium') {
+            await enviarFaturaPremium(base);
+          }
+        } catch (emailErr) {
+          console.error('Erro email fatura Stripe:', emailErr.message);
+        }
+      })();
+    }
+    // ─────────────────────────────────────────────────────────────
 
     console.log("✅ PAGAMENTO FINALIZADO");
     return res.status(200).send("ok");
@@ -3043,6 +3210,22 @@ async function salvarEnderecoClientePix(dbClient, { cliente_id, telefone, endere
       pais       = 'Brasil',
       atualizado_em = NOW()
   `, [cliente_id, telefone || null, enderecoStr, endereco.cidade, endereco.estado]);
+}
+
+async function buscarDadosEmailPagamento(dbPool, { cliente_id, modelo_id }) {
+  const res = await dbPool.query(`
+    SELECT c.email,
+           COALESCE(cd.nome_completo, c.nome, '') AS nome,
+           cd.telefone AS tel_cad,
+           TRIM(CONCAT_WS(', ', cd.endereco, cd.cidade, cd.estado, cd.pais)) AS endereco_fmt,
+           m.nome_exibicao AS modelo_nome
+    FROM clientes c
+    LEFT JOIN clientes_dados cd ON cd.cliente_id = c.id
+    LEFT JOIN modelos m ON m.id = $2
+    WHERE c.id = $1
+    LIMIT 1
+  `, [cliente_id, modelo_id]);
+  return res.rows[0] || null;
 }
 
 // function manutencaoClientes(req, res, next) {
@@ -13031,3 +13214,68 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, "0.0.0.0", () => {
   console.log("🚀 Servidor rodando na porta", PORT);
 });
+
+// ── CRON: avisos VIP (a cada hora, substitui o cron do Render) ──
+const cron = require("node-cron");
+const { enviarEmailAviso7Dias, enviarEmailAviso24h } = require("./email");
+
+async function processarAvisosVip() {
+  console.log("🔔 [VIP Cron] Verificando assinaturas próximas do vencimento...");
+
+  try {
+    // 7 dias
+    const seteDias = await db.query(`
+      SELECT v.id, v.modelo_id, u.email
+      FROM vip_subscriptions v
+      JOIN clientes c ON c.id = v.cliente_id
+      JOIN users u ON u.id = c.user_id
+      WHERE v.ativo = true
+        AND v.aviso_7_dias_enviado = false
+        AND v.expiration_at BETWEEN NOW() + INTERVAL '6 days' AND NOW() + INTERVAL '7 days'
+    `);
+
+    for (const row of seteDias.rows) {
+      try {
+        await enviarEmailAviso7Dias(row.email, row.modelo_id);
+        await db.query(
+          "UPDATE vip_subscriptions SET aviso_7_dias_enviado = true WHERE id = $1",
+          [row.id]
+        );
+        console.log(`[VIP Cron] Aviso 7d enviado → ${row.email}`);
+      } catch (err) {
+        console.error("[VIP Cron] Erro aviso 7d:", err.message);
+      }
+    }
+
+    // 24 horas
+    const vinte4h = await db.query(`
+      SELECT v.id, v.modelo_id, u.email
+      FROM vip_subscriptions v
+      JOIN clientes c ON c.id = v.cliente_id
+      JOIN users u ON u.id = c.user_id
+      WHERE v.ativo = true
+        AND v.aviso_24h_enviado = false
+        AND v.expiration_at BETWEEN NOW() AND NOW() + INTERVAL '1 day'
+    `);
+
+    for (const row of vinte4h.rows) {
+      try {
+        await enviarEmailAviso24h(row.email, row.modelo_id);
+        await db.query(
+          "UPDATE vip_subscriptions SET aviso_24h_enviado = true WHERE id = $1",
+          [row.id]
+        );
+        console.log(`[VIP Cron] Aviso 24h enviado → ${row.email}`);
+      } catch (err) {
+        console.error("[VIP Cron] Erro aviso 24h:", err.message);
+      }
+    }
+
+    console.log("✅ [VIP Cron] Avisos processados.");
+  } catch (err) {
+    console.error("🔥 [VIP Cron] Erro geral:", err.message);
+  }
+}
+
+// Executa a cada hora (minuto 0 de cada hora)
+cron.schedule("0 * * * *", processarAvisosVip);
