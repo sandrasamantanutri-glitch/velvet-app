@@ -3286,12 +3286,13 @@ async function salvarEnderecoClientePix(dbClient, { cliente_id, telefone, endere
 
 async function buscarDadosEmailPagamento(dbPool, { cliente_id, modelo_id }) {
   const res = await dbPool.query(`
-    SELECT c.email,
+    SELECT u.email,
            COALESCE(cd.nome_completo, c.nome, '') AS nome,
            cd.telefone AS tel_cad,
            TRIM(CONCAT_WS(', ', cd.endereco, cd.cidade, cd.estado, cd.pais)) AS endereco_fmt,
            m.nome_exibicao AS modelo_nome
     FROM clientes c
+    JOIN users u ON u.id = c.user_id
     LEFT JOIN clientes_dados cd ON cd.cliente_id = c.id
     LEFT JOIN modelos m ON m.id = $2
     WHERE c.id = $1
