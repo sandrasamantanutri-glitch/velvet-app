@@ -4410,9 +4410,9 @@ router.get("/chargebacks/:id/comprovante", authAdmin, async (req, res) => {
     if (!rows.length || !rows[0].comprovante) return res.status(404).json({ erro: "Comprovante não encontrado" });
 
     const fileUrl = rows[0].comprovante;
-    // Extract S3 key from the full URL
     const urlObj = new URL(fileUrl);
-    const key = urlObj.pathname.replace(/^\/[^/]+\//, ''); // remove leading /bucket/
+    // path-style: /<bucket>/key  → remove leading /<bucket>/
+    const key = urlObj.pathname.replace(/^\/[^/]+\//, '');
 
     const signedUrl = s3Privado.getSignedUrl('getObject', {
       Bucket: process.env.R2_BUCKET,
@@ -4420,7 +4420,7 @@ router.get("/chargebacks/:id/comprovante", authAdmin, async (req, res) => {
       Expires: 300
     });
 
-    res.redirect(signedUrl);
+    res.json({ url: signedUrl });
   } catch (err) {
     console.error("Erro ao gerar signed URL:", err.message);
     res.status(500).json({ erro: "Erro interno: " + err.message });

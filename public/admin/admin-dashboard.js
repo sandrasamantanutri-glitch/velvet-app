@@ -3089,7 +3089,7 @@ function renderChargebacks(chargebacks) {
   tbody.innerHTML = chargebacks.map((cb, i) => {
     const motivoTxt = cb.motivo ? cb.motivo.slice(0, 60) + (cb.motivo.length > 60 ? '…' : '') : '—';
     const comproLink = cb.comprovante
-      ? `<a href="/admin/dashboard/chargebacks/${cb.id}/comprovante" target="_blank" class="link">Ver</a>`
+      ? `<button class="btn-small btn-ghost" onclick="abrirComprovante(${cb.id})">Ver</button>`
       : '—';
     return `
     <tr>
@@ -3104,6 +3104,17 @@ function renderChargebacks(chargebacks) {
       </td>
     </tr>`;
   }).join('');
+}
+
+async function abrirComprovante(id) {
+  try {
+    const res = await authFetch(`/admin/dashboard/chargebacks/${id}/comprovante`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const { url } = await res.json();
+    window.open(url, '_blank');
+  } catch (err) {
+    toast('Erro ao abrir comprovante: ' + err.message, 'error');
+  }
 }
 
 function abrirEditarChargeback(id) {
