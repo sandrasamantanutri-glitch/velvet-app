@@ -590,8 +590,7 @@ app.post("/api/webhook/safe2pay", express.json(), async (req, res) => {
         await client.query(`
           UPDATE ofertas
           SET assinaturas_usadas = assinaturas_usadas + 1,
-              ativa = CASE WHEN assinaturas_usadas + 1 >= limite_assinaturas THEN false ELSE ativa END,
-              atualizado_em = NOW()
+              ativa = CASE WHEN assinaturas_usadas + 1 >= limite_assinaturas THEN false ELSE ativa END
           WHERE modelo_id = $1 AND ativa = true AND (data_fim IS NULL OR data_fim >= NOW())
         `, [modelo_id]);
 
@@ -2515,8 +2514,7 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
       await client.query(`
         UPDATE ofertas
         SET assinaturas_usadas = assinaturas_usadas + 1,
-            ativa = CASE WHEN assinaturas_usadas + 1 >= limite_assinaturas THEN false ELSE ativa END,
-            atualizado_em = NOW()
+            ativa = CASE WHEN assinaturas_usadas + 1 >= limite_assinaturas THEN false ELSE ativa END
         WHERE modelo_id = $1 AND ativa = true AND (data_fim IS NULL OR data_fim >= NOW())
       `, [modelo_id]);
 
@@ -13537,7 +13535,7 @@ async function processarOfertasExpirando() {
   try {
     // Desativa ofertas vencidas
     await db.query(`
-      UPDATE ofertas SET ativa = false, atualizado_em = NOW()
+      UPDATE ofertas SET ativa = false
       WHERE ativa = true AND data_fim < NOW()
     `);
 
@@ -13564,7 +13562,7 @@ async function processarOfertasExpirando() {
           limite_assinaturas: row.limite_assinaturas
         });
         await db.query(
-          "UPDATE ofertas SET aviso_expiracao_enviado = true, atualizado_em = NOW() WHERE id = $1",
+          "UPDATE ofertas SET aviso_expiracao_enviado = true WHERE id = $1",
           [row.id]
         );
         console.log(`[Ofertas Cron] Aviso expiração enviado → ${row.email} (oferta #${row.id})`);
