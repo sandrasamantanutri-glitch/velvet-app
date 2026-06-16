@@ -815,9 +815,9 @@ async function adicionarContatoAudienceVIP(audience_id, email, nome) {
 
 async function enviarCampanhaVIP({ audience_id, subject, html, nome_campanha }) {
   const { data: bc, error: errCriar } = await resend.broadcasts.create({
-    audience_id,
-    from:    'Velvet <contato@velvet.lat>',
-    name:    nome_campanha || subject,
+    audienceId: audience_id,
+    from:       'Velvet <contato@velvet.lat>',
+    name:       nome_campanha || subject,
     subject,
     html
   });
