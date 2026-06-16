@@ -259,7 +259,7 @@ async function abrirModalCriarOferta() {
 
       content.innerHTML = `
         <h3>${t("ofertas.titulo_tempo")}</h3>
-        <input type="range" min="1" max="15" value="${dados.dias}" id="dias">
+        <input type="range" min="1" max="30" value="${dados.dias}" id="dias">
         <p class="info">
           ${t("ofertas.info_ativa_ate").replace("{data}", fim.toLocaleDateString("pt-BR"))}
         </p>

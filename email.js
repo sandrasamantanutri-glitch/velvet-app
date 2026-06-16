@@ -824,10 +824,53 @@ async function enviarCampanhaVIP({ audience_id, subject, html, nome_campanha }) 
   if (errCriar || !bc?.id) throw new Error(`Resend broadcast create: ${JSON.stringify(errCriar)}`);
 
   const { error: errEnviar } = await resend.broadcasts.send(bc.id);
-  if (errEnviar) throw new Error(`Resend broadcast send: ${JSON.stringify(errEnviar)}`);
+  if (errEnviar) {
+    if (errEnviar.message?.includes('no contacts')) {
+      console.log(`[Campanha] Audience ${audience_id} sem contatos — broadcast ignorado.`);
+      return null;
+    }
+    throw new Error(`Resend broadcast send: ${JSON.stringify(errEnviar)}`);
+  }
 
   console.log(`[Campanha] Broadcast enviado: ${bc.id} → audience ${audience_id}`);
   return bc.id;
+}
+
+async function enviarEmailOfertaExpirando({ email, nome_modelo, nome_oferta, data_fim, assinaturas_usadas, limite_assinaturas }) {
+  const dataFmt = new Date(data_fim).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const aproveitaram = Number(assinaturas_usadas) || 0;
+  const limite = Number(limite_assinaturas) || 0;
+  const restantes = Math.max(0, limite - aproveitaram);
+
+  const html = wrapEmail(`
+    <h2 style="color:#b0307d;text-align:center;margin:0 0 6px;">⏳ Sua oferta expira em breve</h2>
+    <p style="text-align:center;color:#7a6a9a;margin:0 0 24px;">A oferta <strong>${nome_oferta}</strong> termina em <strong>${dataFmt}</strong>.</p>
+
+    ${infoBox(`
+      <p style="margin:0 0 8px;font-weight:bold;color:#6f42c1;">📊 Resumo da oferta:</p>
+      <p style="margin:0;line-height:2;">
+        👥 Clientes que aproveitaram: <strong>${aproveitaram}</strong><br>
+        🎯 Limite total: <strong>${limite}</strong><br>
+        🔓 Vagas restantes: <strong>${restantes}</strong>
+      </p>
+    `)}
+
+    <p style="margin:16px 0;line-height:1.7;">
+      Após a expiração, os clientes voltarão a ver o valor original da assinatura.
+      Que tal criar uma nova oferta para continuar atraindo novos assinantes?
+    </p>
+
+    ${btnPrimary("https://velvet.lat/ofertas.html", "Criar nova oferta")}
+  `);
+
+  const { error } = await resend.emails.send({
+    from: "Velvet <contato@velvet.lat>",
+    to: email,
+    subject: `⏳ Sua oferta "${nome_oferta}" expira hoje — ${aproveitaram} cliente(s) aproveitaram`,
+    html
+  });
+
+  if (error) throw new Error(JSON.stringify(error));
 }
 
 module.exports = {
@@ -847,5 +890,6 @@ module.exports = {
   enviarEmailAviso24h,
   obterOuCriarAudienceVIP,
   adicionarContatoAudienceVIP,
-  enviarCampanhaVIP
+  enviarCampanhaVIP,
+  enviarEmailOfertaExpirando
 };

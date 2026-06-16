@@ -937,6 +937,17 @@ async function carregarOfertaAtiva() {
       descontoEl.style.display = "none";
     }
 
+    // Badge de % desconto
+    const badgeEl = document.getElementById("oferta-badge-desconto");
+    if (badgeEl) {
+      if (window.OFERTA_ATUAL.desconto_percentual > 0) {
+        badgeEl.textContent = `-${Math.round(window.OFERTA_ATUAL.desconto_percentual)}%`;
+        badgeEl.style.display = "inline-block";
+      } else {
+        badgeEl.style.display = "none";
+      }
+    }
+
     if (precoDescontoEl) {
   precoDescontoEl.textContent =
     valorBRL(window.OFERTA_ATUAL.valor_promocional);

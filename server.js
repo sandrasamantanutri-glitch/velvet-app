@@ -586,6 +586,15 @@ app.post("/api/webhook/safe2pay", express.json(), async (req, res) => {
           );
         }
 
+        // Incrementa uso da oferta ativa (desativa se atingiu limite)
+        await client.query(`
+          UPDATE ofertas
+          SET assinaturas_usadas = assinaturas_usadas + 1,
+              ativa = CASE WHEN assinaturas_usadas + 1 >= limite_assinaturas THEN false ELSE ativa END,
+              atualizado_em = NOW()
+          WHERE modelo_id = $1 AND ativa = true AND (data_fim IS NULL OR data_fim >= NOW())
+        `, [modelo_id]);
+
         dadosParaEmitir = { tipo: "vip", cliente_id, modelo_id, primeiraAssinatura };
 
       } else {
@@ -2498,6 +2507,15 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
           ]
         );
       }
+
+      // Incrementa uso da oferta ativa (desativa se atingiu limite)
+      await client.query(`
+        UPDATE ofertas
+        SET assinaturas_usadas = assinaturas_usadas + 1,
+            ativa = CASE WHEN assinaturas_usadas + 1 >= limite_assinaturas THEN false ELSE ativa END,
+            atualizado_em = NOW()
+        WHERE modelo_id = $1 AND ativa = true AND (data_fim IS NULL OR data_fim >= NOW())
+      `, [modelo_id]);
 
       dadosParaEmitir = {
         tipo: "vip",
@@ -7489,7 +7507,7 @@ app.post("/api/ofertas", authModelo, async (req, res) => {
     }
 
     const VALOR_BASE = Number(planoRes.rows[0].valor_mensal);
-    const VALOR_MINIMO = Number((VALOR_BASE * 0.5).toFixed(2));
+    const VALOR_MINIMO = Math.max(18.00, Number((VALOR_BASE * 0.5).toFixed(2)));
 
     const { nome, limite, dias, desconto } = req.body;
 
@@ -7500,10 +7518,10 @@ app.post("/api/ofertas", authModelo, async (req, res) => {
     if (
       !nome ||
       !Number.isFinite(limiteNum) || limiteNum <= 0 ||
-      !Number.isFinite(diasNum) || diasNum <= 0 ||
-      !Number.isFinite(descontoNum) || descontoNum < 0 || descontoNum > 50
+      !Number.isFinite(diasNum) || diasNum <= 0 || diasNum > 30 ||
+      !Number.isFinite(descontoNum) || descontoNum < 0 || descontoNum > 99
     ) {
-      return res.status(400).json({ erro: "Dados inválidos" });
+      return res.status(400).json({ erro: "Dados inválidos. Prazo máximo: 30 dias." });
     }
 
     let valorPromocional = Number(
@@ -7511,7 +7529,9 @@ app.post("/api/ofertas", authModelo, async (req, res) => {
     );
 
     if (valorPromocional < VALOR_MINIMO) {
-      valorPromocional = VALOR_MINIMO;
+      return res.status(400).json({
+        erro: `O valor com desconto não pode ser menor que R$ ${VALOR_MINIMO.toFixed(2).replace(".", ",")}.`
+      });
     }
 
     const dataFim = new Date();
@@ -13140,6 +13160,7 @@ app.patch("/api/ofertas/:id/encerrar", authModelo, async (req, res) => {
       `
       UPDATE ofertas
       SET ativa = false,
+          data_fim = NOW(),
           atualizado_em = NOW()
       WHERE id = $1
         AND modelo_id = $2
@@ -13394,7 +13415,7 @@ db.query("ALTER TABLE modelos ADD COLUMN IF NOT EXISTS resend_audience_id TEXT")
 
 // ── CRON: avisos VIP (a cada hora, substitui o cron do Render) ──
 const cron = require("node-cron");
-const { enviarEmailAviso7Dias, enviarEmailAviso24h } = require("./email");
+const { enviarEmailAviso7Dias, enviarEmailAviso24h, enviarEmailOfertaExpirando } = require("./email");
 
 async function processarAvisosVip() {
   console.log("🔔 [VIP Cron] Verificando assinaturas próximas do vencimento...");
@@ -13454,5 +13475,54 @@ async function processarAvisosVip() {
   }
 }
 
+async function processarOfertasExpirando() {
+  try {
+    // Desativa ofertas vencidas
+    await db.query(`
+      UPDATE ofertas SET ativa = false, atualizado_em = NOW()
+      WHERE ativa = true AND data_fim < NOW()
+    `);
+
+    // Envia aviso para modelos com oferta expirando em até 24h
+    const expirando = await db.query(`
+      SELECT o.id, o.nome, o.data_fim, o.assinaturas_usadas, o.limite_assinaturas,
+             m.nome_exibicao, u.email
+      FROM ofertas o
+      JOIN modelos m ON m.id = o.modelo_id
+      JOIN users u ON u.id = m.user_id
+      WHERE o.ativa = true
+        AND o.data_fim BETWEEN NOW() AND NOW() + INTERVAL '24 hours'
+        AND (o.aviso_expiracao_enviado IS NULL OR o.aviso_expiracao_enviado = false)
+    `);
+
+    for (const row of expirando.rows) {
+      try {
+        await enviarEmailOfertaExpirando({
+          email: row.email,
+          nome_modelo: row.nome_exibicao,
+          nome_oferta: row.nome,
+          data_fim: row.data_fim,
+          assinaturas_usadas: row.assinaturas_usadas,
+          limite_assinaturas: row.limite_assinaturas
+        });
+        await db.query(
+          "UPDATE ofertas SET aviso_expiracao_enviado = true, atualizado_em = NOW() WHERE id = $1",
+          [row.id]
+        );
+        console.log(`[Ofertas Cron] Aviso expiração enviado → ${row.email} (oferta #${row.id})`);
+      } catch (err) {
+        console.error("[Ofertas Cron] Erro aviso expiração:", err.message);
+      }
+    }
+  } catch (err) {
+    console.error("[Ofertas Cron] Erro geral:", err.message);
+  }
+}
+
 // Executa a cada hora (minuto 0 de cada hora)
 cron.schedule("0 * * * *", processarAvisosVip);
+cron.schedule("0 * * * *", processarOfertasExpirando);
+
+// Migração: coluna de controle do aviso de expiração
+db.query("ALTER TABLE ofertas ADD COLUMN IF NOT EXISTS aviso_expiracao_enviado BOOLEAN DEFAULT false")
+  .catch(err => console.error("Migração aviso_expiracao_enviado:", err.message));

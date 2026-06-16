@@ -369,10 +369,29 @@ a{
   position: relative;
 }
 
+.oferta-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
 .oferta-titulo {
   font-weight: 700;
-  margin-bottom: 28px;
   font-size: 18px;
+  margin: 0;
+}
+
+.oferta-badge-desconto {
+  background: linear-gradient(135deg, #ff3c6e, #ff6b35);
+  color: #fff;
+  font-weight: 800;
+  font-size: 15px;
+  padding: 5px 13px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(255,60,110,0.35);
+  animation: pulseBadge 1.8s ease-in-out infinite;
 }
 
 .oferta-botao-wrapper {
@@ -496,6 +515,11 @@ color:#888;
 max-width:100%;
 border-radius:8px;
 margin-top:10px;
+}
+
+@keyframes pulseBadge {
+  0%, 100% { transform: scale(1); box-shadow: 0 2px 8px rgba(255,60,110,0.35); }
+  50%       { transform: scale(1.07); box-shadow: 0 4px 16px rgba(255,60,110,0.55); }
 }
 
 .upload-progress{
