@@ -2546,8 +2546,31 @@ function renderFechamento(d) {
     row('(-) Despesas bancárias', b.despesas, '#ef4444') +
     sep('= Saldo banco (disponível real)', b.saldo, b.saldo >= 0 ? '#22c55e' : '#ef4444') +
 
-    // Bloco 3: Diferença e explicação pelos retidos
-    blk('3. Diferença e conciliação') +
+    // Bloco 3: Reconciliação de repasses (plataforma vs banco)
+    (() => {
+      const dModelos  = b.modelos - Number(f.total_modelos);   // + banco pagou mais; - banco pagou menos
+      const dAgencias = b.agencias - Number(f.total_agency);
+      const repRow = (label, plat, banco, delta) => {
+        const cor = Math.abs(delta) < 5 ? '#22c55e' : Math.abs(delta) < 100 ? '#f59e0b' : '#ef4444';
+        const sinal = delta >= 0 ? '+' : '';
+        return `<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:4px 12px;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;">
+          <span style="color:var(--text-muted);">${label}</span>
+          <span style="text-align:right;color:#888;">plat: <b>${money(plat)}</b></span>
+          <span style="text-align:right;color:#555;">banco: <b>${money(banco)}</b></span>
+          <span style="text-align:right;font-weight:700;color:${cor};">${sinal}${money(Math.abs(delta))}</span>
+        </div>`;
+      };
+      return blk('3. Reconciliação de repasses (plataforma vs banco)') +
+        repRow('Modelos', f.total_modelos, b.modelos, dModelos) +
+        repRow('Agências', f.total_agency, b.agencias, dAgencias) +
+        `<div style="font-size:11px;color:var(--text-muted);padding:6px 2px;line-height:1.6;">
+          Diferença esperada quando chargebacks são registrados após o pagamento às modelos/agências,
+          ou quando há repasses de meses anteriores. Não é erro — é a diferença entre o calculado e o pago.
+        </div>`;
+    })() +
+
+    // Bloco 4: Diferença e explicação pelos retidos
+    blk('4. Diferença e conciliação') +
     row('Saldo banco', b.saldo) +
     row('(-) Velvet líquido estimado', d.velvet_liquido, '#6366f1') +
     `<div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--border);">
