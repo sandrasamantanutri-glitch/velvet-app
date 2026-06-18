@@ -468,6 +468,10 @@
         <div id="lancTotalModelos" style="font-size:22px;font-weight:700;color:#f97316;">R$ 0,00</div>
       </div>
       <div class="card" style="padding:16px;text-align:center;">
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">PAGTO AGÊNCIAS</div>
+        <div id="lancTotalAgencias" style="font-size:22px;font-weight:700;color:#a855f7;">R$ 0,00</div>
+      </div>
+      <div class="card" style="padding:16px;text-align:center;">
         <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">DESPESAS</div>
         <div id="lancTotalDespesas" style="font-size:22px;font-weight:700;color:#ef4444;">R$ 0,00</div>
       </div>
@@ -523,6 +527,7 @@
             <select id="lancCategoria" class="input-select" style="width:100%;" onchange="atualizarCamposModal()">
               <option value="repasse_gateway">Repasse Gateway</option>
               <option value="pagamento_modelo">Pagamento Modelo</option>
+              <option value="pagamento_agencia">Pagamento Agência</option>
               <option value="despesa">Despesa</option>
               <option value="outro">Outro</option>
             </select>
@@ -540,11 +545,14 @@
           <label style="font-size:12px;color:var(--text-muted);">Nome da Modelo</label>
           <input type="text" id="lancModeloNome" class="input-text" placeholder="Nome da modelo" style="width:100%;">
         </div>
+        <div id="campoAgencia" style="display:none;">
+          <label style="font-size:12px;color:var(--text-muted);">Agência</label>
+          <select id="lancAgenciaSelect" class="input-select" style="width:100%;"></select>
+        </div>
         <div id="campoDespesa" style="display:none;">
-          <label style="font-size:12px;color:var(--text-muted);">Despesa cadastrada</label>
-          <select id="lancDespesaSelect" class="input-select" style="width:100%;" onchange="preencherDespesa(this)">
-            <option value="">— Selecione ou preencha manualmente —</option>
-          </select>
+          <label style="font-size:12px;color:var(--text-muted);">Despesas cadastradas — selecione uma ou mais</label>
+          <div id="lancDespesaLista" style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:6px;display:flex;flex-direction:column;gap:4px;"></div>
+          <div id="lancDespesaTotal" style="text-align:right;font-size:13px;font-weight:600;color:var(--primary);margin-top:6px;display:none;"></div>
         </div>
         <div>
           <label style="font-size:12px;color:var(--text-muted);">Observação (opcional)</label>
@@ -853,6 +861,65 @@
       </thead>
       <tbody></tbody>
     </table>
+  </div>
+
+  <!-- Pagamentos a Agências -->
+  <div class="card" style="margin-top:20px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <h3 style="margin:0">Pagamentos a Agências</h3>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <select id="pagAgMes" class="input-select" style="width:120px;">
+          <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+          <option value="3">Março</option><option value="4">Abril</option>
+          <option value="5">Maio</option><option value="6">Junho</option>
+          <option value="7">Julho</option><option value="8">Agosto</option>
+          <option value="9">Setembro</option><option value="10">Outubro</option>
+          <option value="11">Novembro</option><option value="12">Dezembro</option>
+        </select>
+        <select id="pagAgAno" class="input-select" style="width:85px;">
+          <option value="2025">2025</option>
+          <option value="2026" selected>2026</option>
+        </select>
+        <button class="btn btn-secondary" onclick="carregarPagamentosAgencias()">Filtrar</button>
+        <button class="btn btn-primary" onclick="abrirModalPagAgencia()">+ Registrar Pagamento</button>
+      </div>
+    </div>
+    <table class="table" id="tablePagAgencias">
+      <thead><tr><th>Data</th><th>Agência</th><th>Valor</th><th>Descrição</th><th>Ações</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div id="totalPagAgencias" style="text-align:right;font-weight:700;padding:8px 0;font-size:15px;"></div>
+  </div>
+
+  <!-- Modal pagamento agência -->
+  <div id="modalPagAgencia" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;align-items:center;justify-content:center;">
+    <div class="card" style="width:100%;max-width:420px;padding:24px;">
+      <h3 style="margin-bottom:16px;">Registrar Pagamento à Agência</h3>
+      <div style="display:grid;gap:10px;">
+        <div>
+          <label style="font-size:12px;color:var(--text-muted);">Agência</label>
+          <select id="pagAgSelect" class="input-select" style="width:100%;"></select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <label style="font-size:12px;color:var(--text-muted);">Data</label>
+            <input type="date" id="pagAgData" class="input-text" style="width:100%;">
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--text-muted);">Valor (R$)</label>
+            <input type="number" id="pagAgValor" class="input-text" step="0.01" min="0.01" style="width:100%;">
+          </div>
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--text-muted);">Descrição (opcional)</label>
+          <input type="text" id="pagAgDescricao" class="input-text" placeholder="Ex: Repasse maio 2026" style="width:100%;">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="fecharModalPagAgencia()">Cancelar</button>
+        <button class="btn btn-primary" onclick="salvarPagAgencia()">Salvar</button>
+      </div>
+    </div>
   </div>
 
   <div class="card" style="margin-top:20px">

@@ -2077,6 +2077,7 @@ async function carregarLancamentos() {
     const t = data.totais || {};
     $('lancTotalEntradas').textContent = money(t.entradas);
     $('lancTotalModelos').textContent = money(t.modelos);
+    $('lancTotalAgencias').textContent = money(t.agencias);
     $('lancTotalDespesas').textContent = money(t.despesas);
     $('lancTotalSaldo').textContent = money(t.saldo);
     $('lancTotalSaldo').style.color = t.saldo >= 0 ? '#22c55e' : '#ef4444';
@@ -2103,6 +2104,11 @@ function abrirModalLancamento(dados) {
 
 function fecharModalLancamento() {
   $('modalLancamento').style.display = 'none';
+  [$('lancData'), $('lancValor'), $('lancDescricao')].forEach(el => {
+    el.disabled = false;
+    if (el.closest('div')) el.closest('div').style.opacity = '';
+  });
+  $('lancDespesaTotal').style.display = 'none';
 }
 
 function atualizarCamposModal() {
@@ -2125,8 +2131,20 @@ function atualizarCamposModal() {
   const catAtual = $('lancCategoria').value;
   $('campoBanco').style.display = catAtual === 'repasse_gateway' ? '' : 'none';
   $('campoModelo').style.display = catAtual === 'pagamento_modelo' ? '' : 'none';
+  $('campoAgencia').style.display = catAtual === 'pagamento_agencia' ? '' : 'none';
   $('campoDespesa').style.display = catAtual === 'despesa' ? '' : 'none';
   if (catAtual === 'despesa') carregarDespesasSelect();
+  if (catAtual === 'pagamento_agencia') carregarAgenciasSelect();
+}
+
+async function carregarAgenciasSelect() {
+  const sel = $('lancAgenciaSelect');
+  if (sel.options.length > 1) return; // já carregado
+  try {
+    const rows = await fetchJSON('/admin/dashboard/agencias-list');
+    sel.innerHTML = '<option value="">— Selecione —</option>' +
+      rows.map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
+  } catch (e) { console.error('Erro ao carregar agências:', e); }
 }
 
 async function carregarDespesasSelect() {
@@ -2140,33 +2158,85 @@ async function carregarDespesasSelect() {
     mes = $('lancMes').value;
     ano = $('lancAno').value;
   }
-  const sel = $('lancDespesaSelect');
+  const lista = $('lancDespesaLista');
+  lista.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:4px;">Carregando...</div>';
   try {
     const rows = await fetchJSON(`/admin/dashboard/despesas-list?mes=${mes}&ano=${ano}`);
-    sel.innerHTML = '<option value="">— Selecione ou preencha manualmente —</option>' +
-      rows.map(r => `<option value="${r.id}" data-descricao="${r.categoria} — ${r.descricao}" data-valor="${r.valor}" data-data="${r.data?.split('T')[0]}">${r.data?.split('T')[0].split('-').reverse().join('/')} · ${r.categoria} — ${r.descricao} (${money(r.valor)})</option>`).join('');
+    if (!rows.length) {
+      lista.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:4px;">Nenhuma despesa cadastrada neste mês.</div>';
+      return;
+    }
+    lista.innerHTML = rows.map(r => {
+      const dataFmt = (r.data||'').split('T')[0].split('-').reverse().join('/');
+      const label = `${dataFmt} · ${r.categoria} — ${r.descricao} (${money(r.valor)})`;
+      return `<label style="display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:4px;cursor:pointer;font-size:13px;" onmouseover="this.style.background='var(--hover)'" onmouseout="this.style.background=''">
+        <input type="checkbox" value="${r.id}" data-descricao="${r.categoria} — ${r.descricao}" data-valor="${r.valor}" data-data="${(r.data||'').split('T')[0]}" onchange="atualizarTotalDespesas()" style="width:15px;height:15px;flex-shrink:0;">
+        <span>${label}</span>
+      </label>`;
+    }).join('');
+    atualizarTotalDespesas();
   } catch (e) { console.error('Erro ao carregar despesas:', e); }
 }
 
-function preencherDespesa(sel) {
-  const opt = sel.options[sel.selectedIndex];
-  if (!opt.value) return;
-  $('lancDescricao').value = opt.dataset.descricao || '';
-  $('lancValor').value = opt.dataset.valor || '';
-  if (opt.dataset.data) $('lancData').value = opt.dataset.data;
+function atualizarTotalDespesas() {
+  const checks = $('lancDespesaLista').querySelectorAll('input[type=checkbox]:checked');
+  const totalEl = $('lancDespesaTotal');
+  const camposManual = [$('lancData'), $('lancValor'), $('lancDescricao')];
+  if (checks.length > 0) {
+    const total = Array.from(checks).reduce((s, c) => s + Number(c.dataset.valor), 0);
+    totalEl.textContent = `${checks.length} selecionada(s) · Total: ${money(total)}`;
+    totalEl.style.display = '';
+    camposManual.forEach(el => { el.closest('div') && (el.closest('div').style.opacity = '0.4'); el.disabled = true; });
+  } else {
+    totalEl.style.display = 'none';
+    camposManual.forEach(el => { el.closest('div') && (el.closest('div').style.opacity = ''); el.disabled = false; });
+  }
 }
 
 async function salvarLancamento() {
   const id = $('lancEditId').value;
+  const categoria = $('lancCategoria').value;
+
+  // Modo multi-despesa: checkboxes marcados
+  if (categoria === 'despesa' && !id) {
+    const checks = Array.from($('lancDespesaLista').querySelectorAll('input[type=checkbox]:checked'));
+    if (checks.length > 0) {
+      try {
+        for (const c of checks) {
+          const d = new Date(c.dataset.data + 'T12:00:00');
+          await postJSON('/admin/dashboard/lancamentos-bancarios', {
+            data: c.dataset.data,
+            descricao: c.dataset.descricao,
+            tipo: 'saida',
+            categoria: 'despesa',
+            banco: null,
+            modelo_nome: null,
+            valor: parseFloat(c.dataset.valor),
+            observacao: null,
+            mes: d.getMonth() + 1,
+            ano: d.getFullYear()
+          });
+        }
+        toast(`${checks.length} lançamento(s) criado(s)!`, 'success');
+        fecharModalLancamento();
+        carregarLancamentos();
+      } catch (err) { toast('Erro: ' + err.message, 'error'); }
+      return;
+    }
+  }
+
+  // Modo manual (lançamento único)
   const mes = parseInt($('lancMes').value);
   const ano = parseInt($('lancAno').value);
   const body = {
     data: $('lancData').value,
     descricao: $('lancDescricao').value.trim(),
     tipo: $('lancTipo').value,
-    categoria: $('lancCategoria').value,
+    categoria,
     banco: $('lancBanco').value || null,
-    modelo_nome: $('lancModeloNome').value.trim() || null,
+    modelo_nome: categoria === 'pagamento_agencia'
+      ? ($('lancAgenciaSelect').options[$('lancAgenciaSelect').selectedIndex]?.text || null)
+      : ($('lancModeloNome').value.trim() || null),
     valor: parseFloat($('lancValor').value),
     observacao: $('lancObservacao').value.trim() || null,
     mes, ano
@@ -2208,8 +2278,9 @@ function imprimirRelatorio() {
   const linhas = {
     entradas: data.rows.filter(r => r.tipo === 'entrada'),
     modelos:  data.rows.filter(r => r.categoria === 'pagamento_modelo'),
+    agencias: data.rows.filter(r => r.categoria === 'pagamento_agencia'),
     despesas: data.rows.filter(r => r.categoria === 'despesa'),
-    outros:   data.rows.filter(r => r.tipo === 'saida' && !['pagamento_modelo','despesa'].includes(r.categoria)),
+    outros:   data.rows.filter(r => r.tipo === 'saida' && !['pagamento_modelo','pagamento_agencia','despesa'].includes(r.categoria)),
   };
 
   const tabelaHtml = (rows) => rows.map(r => `
@@ -2248,6 +2319,7 @@ function imprimirRelatorio() {
     <div class="resumo">
       <div class="card"><div class="card-label">Entradas (Líquido Recebido)</div><div class="card-value green">${money(t.entradas)}</div></div>
       <div class="card"><div class="card-label">Pagamentos a Modelos</div><div class="card-value orange">${money(t.modelos)}</div></div>
+      <div class="card"><div class="card-label">Pagamentos a Agências</div><div class="card-value" style="color:#a855f7">${money(t.agencias)}</div></div>
       <div class="card"><div class="card-label">Despesas Operacionais</div><div class="card-value red">${money(t.despesas)}</div></div>
       <div class="card"><div class="card-label">Saldo da Empresa</div><div class="card-value purple">${money(t.saldo)}</div></div>
     </div>
@@ -2262,6 +2334,12 @@ function imprimirRelatorio() {
     <table><thead><tr><th>Data</th><th>Modelo</th><th style="text-align:right;">Valor</th></tr></thead>
     <tbody>${tabelaHtml(linhas.modelos)}</tbody>
     <tfoot><tr class="total-row"><td colspan="2">Total Modelos</td><td style="text-align:right;">${money(t.modelos)}</td></tr></tfoot>
+    </table>` : ''}
+
+    ${linhas.agencias.length ? `<h2>Pagamentos a Agências</h2>
+    <table><thead><tr><th>Data</th><th>Agência</th><th style="text-align:right;">Valor</th></tr></thead>
+    <tbody>${tabelaHtml(linhas.agencias)}</tbody>
+    <tfoot><tr class="total-row"><td colspan="2">Total Agências</td><td style="text-align:right;">${money(t.agencias)}</td></tr></tfoot>
     </table>` : ''}
 
     ${linhas.despesas.length ? `<h2>Despesas Operacionais</h2>
@@ -3167,9 +3245,22 @@ async function abrirModalPagModelo() {
 pageLoaders.agencias = async function () {
   try {
     const data = await fetchJSON('/admin/dashboard/agencias-list');
-    console.log('AGENCIAS JSON:', data);
 
     agenciasCache = data || [];
+
+    // Preenche select de agências no modal de pagamento e no modal de lançamento
+    const optsAgencias = '<option value="">— Selecione —</option>' +
+      (data || []).map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
+    if ($('pagAgSelect')) $('pagAgSelect').innerHTML = optsAgencias;
+    if ($('lancAgenciaSelect')) $('lancAgenciaSelect').innerHTML = optsAgencias;
+
+    // Inicializa filtro de mês/ano do painel de pagamentos
+    const now = new Date();
+    if ($('pagAgMes') && !$('pagAgMes')._init) {
+      $('pagAgMes').value = now.getMonth() + 1;
+      $('pagAgMes')._init = true;
+    }
+    carregarPagamentosAgencias();
 
     const tbody = $('tableAgencias').querySelector('tbody');
     tbody.innerHTML = (data || []).map(r => `
@@ -3208,6 +3299,65 @@ pageLoaders.agencias = async function () {
     console.error('Erro agências:', err);
   }
 };
+
+async function carregarPagamentosAgencias() {
+  const mes = $('pagAgMes').value;
+  const ano = $('pagAgAno').value;
+  try {
+    const rows = await fetchJSON(`/admin/dashboard/pagamentos-agencias?mes=${mes}&ano=${ano}`);
+    const tbody = $('tablePagAgencias').querySelector('tbody');
+    tbody.innerHTML = (rows || []).map(r => `
+      <tr>
+        <td>${fmtDate(r.data)}</td>
+        <td>${r.agencia_nome}</td>
+        <td style="font-weight:600;">${money(r.valor)}</td>
+        <td style="font-size:12px;color:var(--text-muted);">${r.descricao || '—'}</td>
+        <td><button class="btn btn-sm btn-danger" onclick="deletarPagAgencia(${r.id})">🗑</button></td>
+      </tr>
+    `).join('') || emptyRow(5);
+    const total = (rows || []).reduce((s, r) => s + Number(r.valor), 0);
+    $('totalPagAgencias').textContent = total > 0 ? 'Total: ' + money(total) : '';
+  } catch (err) { console.error('Erro pagamentos agências:', err); }
+}
+
+function abrirModalPagAgencia() {
+  const now = new Date().toISOString().split('T')[0];
+  $('pagAgData').value = now;
+  $('pagAgValor').value = '';
+  $('pagAgDescricao').value = '';
+  $('pagAgSelect').value = '';
+  $('modalPagAgencia').style.display = 'flex';
+}
+
+function fecharModalPagAgencia() {
+  $('modalPagAgencia').style.display = 'none';
+}
+
+async function salvarPagAgencia() {
+  const agencia_id = $('pagAgSelect').value;
+  const valor = parseFloat($('pagAgValor').value);
+  const data = $('pagAgData').value;
+  const descricao = $('pagAgDescricao').value.trim();
+  if (!agencia_id || !valor || !data) { toast('Preencha agência, data e valor', 'error'); return; }
+  const d = new Date(data + 'T12:00:00');
+  const mes = d.getMonth() + 1;
+  const ano = d.getFullYear();
+  try {
+    await postJSON('/admin/dashboard/pagamentos-agencias', { agencia_id, valor, data, mes, ano, descricao });
+    toast('Pagamento registrado!', 'success');
+    fecharModalPagAgencia();
+    carregarPagamentosAgencias();
+  } catch (err) { toast('Erro: ' + err.message, 'error'); }
+}
+
+async function deletarPagAgencia(id) {
+  if (!confirm('Excluir este pagamento?')) return;
+  try {
+    await deleteJSON(`/admin/dashboard/pagamentos-agencias/${id}`);
+    toast('Pagamento excluído', 'success');
+    carregarPagamentosAgencias();
+  } catch (err) { toast('Erro: ' + err.message, 'error'); }
+}
 
 function abrirEditarAgencia(id, nome, percAg, percMod, percPlat) {
   openEditModal(

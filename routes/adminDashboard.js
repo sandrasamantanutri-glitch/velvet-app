@@ -2396,12 +2396,13 @@ router.get("/lancamentos-bancarios", async (req, res) => {
       const v = Number(r.valor);
       if (r.tipo === 'entrada') acc.entradas += v;
       else if (r.categoria === 'pagamento_modelo') acc.modelos += v;
+      else if (r.categoria === 'pagamento_agencia') acc.agencias += v;
       else if (r.categoria === 'despesa') acc.despesas += v;
       else acc.outros += v;
       return acc;
-    }, { entradas: 0, modelos: 0, despesas: 0, outros: 0 });
+    }, { entradas: 0, modelos: 0, agencias: 0, despesas: 0, outros: 0 });
 
-    totais.saldo = totais.entradas - totais.modelos - totais.despesas - totais.outros;
+    totais.saldo = totais.entradas - totais.modelos - totais.agencias - totais.despesas - totais.outros;
 
     res.json({ rows, totais, mes, ano });
   } catch (err) {
@@ -4037,6 +4038,51 @@ router.put("/modelo-pagamentos/:id", authAdmin, async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error("Erro atualizar modelo-pagamento:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// ========== 16. PAGAMENTOS DE AGÊNCIAS ==========
+
+router.get("/pagamentos-agencias", async (req, res) => {
+  try {
+    const mes = parseInt(req.query.mes) || new Date().getMonth() + 1;
+    const ano = parseInt(req.query.ano) || new Date().getFullYear();
+    const { rows } = await db.query(`
+      SELECT p.*, a.nome AS agencia_nome
+      FROM pagamentos_agencias p
+      JOIN agencias a ON a.id = p.agencia_id
+      WHERE p.mes = $1 AND p.ano = $2
+      ORDER BY p.data DESC
+    `, [mes, ano]);
+    res.json(rows);
+  } catch (err) {
+    console.error("Erro pagamentos-agencias:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.post("/pagamentos-agencias", async (req, res) => {
+  try {
+    const { agencia_id, valor, data, mes, ano, descricao } = req.body;
+    if (!agencia_id || !valor || !data) return res.status(400).json({ erro: "agencia_id, valor e data são obrigatórios" });
+    const { rows } = await db.query(`
+      INSERT INTO pagamentos_agencias (agencia_id, valor, data, mes, ano, descricao)
+      VALUES ($1,$2,$3,$4,$5,$6) RETURNING *
+    `, [agencia_id, valor, data, mes, ano, descricao || null]);
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Erro criar pagamento-agencia:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.delete("/pagamentos-agencias/:id", async (req, res) => {
+  try {
+    await db.query("DELETE FROM pagamentos_agencias WHERE id=$1", [req.params.id]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Erro deletar pagamento-agencia:", err);
     res.status(500).json({ erro: "Erro interno" });
   }
 });
