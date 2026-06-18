@@ -2064,7 +2064,7 @@ async function carregarLancamentos() {
         <td>${r.descricao}</td>
         <td><span style="color:${cores[r.tipo]};font-weight:600;">${r.tipo === 'entrada' ? '↑ Entrada' : '↓ Saída'}</span></td>
         <td>${nomes[r.categoria] || r.categoria}</td>
-        <td>${r.gateway ? r.gateway.charAt(0).toUpperCase() + r.gateway.slice(1) : (r.modelo_nome || '—')}</td>
+        <td>${r.banco ? r.banco.charAt(0).toUpperCase() + r.banco.slice(1) : (r.modelo_nome || '—')}</td>
         <td style="font-weight:600;">${money(r.valor)}</td>
         <td style="font-size:12px;color:var(--text-muted);">${r.observacao || '—'}</td>
         <td>
@@ -2095,7 +2095,7 @@ function abrirModalLancamento(dados) {
   $('lancDescricao').value = dados?.descricao || '';
   $('lancTipo').value = dados?.tipo || 'entrada';
   $('lancCategoria').value = dados?.categoria || 'repasse_gateway';
-  $('lancGateway').value = dados?.gateway || '';
+  $('lancBanco').value = dados?.banco || '';
   $('lancModeloNome').value = dados?.modelo_nome || '';
   $('lancObservacao').value = dados?.observacao || '';
   atualizarCamposModal();
@@ -2123,7 +2123,7 @@ function atualizarCamposModal() {
   }
 
   const catAtual = $('lancCategoria').value;
-  $('campoGateway').style.display = catAtual === 'repasse_gateway' ? '' : 'none';
+  $('campoBanco').style.display = catAtual === 'repasse_gateway' ? '' : 'none';
   $('campoModelo').style.display = catAtual === 'pagamento_modelo' ? '' : 'none';
 }
 
@@ -2136,7 +2136,7 @@ async function salvarLancamento() {
     descricao: $('lancDescricao').value.trim(),
     tipo: $('lancTipo').value,
     categoria: $('lancCategoria').value,
-    gateway: $('lancGateway').value || null,
+    banco: $('lancBanco').value || null,
     modelo_nome: $('lancModeloNome').value.trim() || null,
     valor: parseFloat($('lancValor').value),
     observacao: $('lancObservacao').value.trim() || null,
@@ -2186,7 +2186,7 @@ function imprimirRelatorio() {
   const tabelaHtml = (rows) => rows.map(r => `
     <tr>
       <td>${fmtDate(r.data)}</td>
-      <td>${r.descricao}${r.modelo_nome ? ' — ' + r.modelo_nome : ''}${r.gateway ? ' (' + r.gateway + ')' : ''}</td>
+      <td>${r.descricao}${r.modelo_nome ? ' — ' + r.modelo_nome : ''}${r.banco ? ' (' + r.banco.charAt(0).toUpperCase() + r.banco.slice(1) + ')' : ''}</td>
       <td style="text-align:right;">${money(r.valor)}</td>
     </tr>
   `).join('');

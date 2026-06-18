@@ -2412,14 +2412,14 @@ router.get("/lancamentos-bancarios", async (req, res) => {
 
 router.post("/lancamentos-bancarios", async (req, res) => {
   try {
-    const { data, descricao, tipo, categoria, gateway, modelo_nome, valor, mes, ano, observacao } = req.body;
+    const { data, descricao, tipo, categoria, banco, modelo_nome, valor, mes, ano, observacao } = req.body;
     if (!data || !descricao || !tipo || !categoria || !valor) {
       return res.status(400).json({ erro: "Campos obrigatórios: data, descricao, tipo, categoria, valor" });
     }
     const { rows } = await db.query(
-      `INSERT INTO lancamentos_bancarios (data, descricao, tipo, categoria, gateway, modelo_nome, valor, mes, ano, observacao)
+      `INSERT INTO lancamentos_bancarios (data, descricao, tipo, categoria, banco, modelo_nome, valor, mes, ano, observacao)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
-      [data, descricao, tipo, categoria, gateway || null, modelo_nome || null, valor, mes, ano, observacao || null]
+      [data, descricao, tipo, categoria, banco || null, modelo_nome || null, valor, mes, ano, observacao || null]
     );
     res.json(rows[0]);
   } catch (err) {
@@ -2430,11 +2430,11 @@ router.post("/lancamentos-bancarios", async (req, res) => {
 
 router.put("/lancamentos-bancarios/:id", async (req, res) => {
   try {
-    const { data, descricao, tipo, categoria, gateway, modelo_nome, valor, observacao } = req.body;
+    const { data, descricao, tipo, categoria, banco, modelo_nome, valor, observacao } = req.body;
     const { rows } = await db.query(
-      `UPDATE lancamentos_bancarios SET data=$1, descricao=$2, tipo=$3, categoria=$4, gateway=$5, modelo_nome=$6, valor=$7, observacao=$8
+      `UPDATE lancamentos_bancarios SET data=$1, descricao=$2, tipo=$3, categoria=$4, banco=$5, modelo_nome=$6, valor=$7, observacao=$8
        WHERE id=$9 RETURNING *`,
-      [data, descricao, tipo, categoria, gateway || null, modelo_nome || null, valor, observacao || null, req.params.id]
+      [data, descricao, tipo, categoria, banco || null, modelo_nome || null, valor, observacao || null, req.params.id]
     );
     if (!rows.length) return res.status(404).json({ erro: "Não encontrado" });
     res.json(rows[0]);
