@@ -2197,11 +2197,11 @@ function atualizarCamposModal() {
 
 async function carregarAgenciasSelect() {
   const sel = $('lancAgenciaSelect');
-  if (sel.options.length > 1) return; // já carregado
+  if (!sel) return;
   try {
     const rows = await fetchJSON('/admin/dashboard/agencias-list');
     sel.innerHTML = '<option value="">— Selecione —</option>' +
-      rows.map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
+      (rows || []).map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
   } catch (e) { console.error('Erro ao carregar agências:', e); }
 }
 
