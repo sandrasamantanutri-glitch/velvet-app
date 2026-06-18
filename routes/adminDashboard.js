@@ -3265,18 +3265,38 @@ router.get("/transacoes-agency", async (req, res) => {
 
     const total = Number(countQ.rows[0]?.count || 0);
 
+    // Totais financeiros (só status='pago', filtrado por created_at BRT)
     const totaisQ = await db.query(`
       SELECT
         COALESCE(SUM(CASE WHEN t.status='pago' THEN t.valor_bruto ELSE 0 END), 0) AS bruto,
         COALESCE(SUM(CASE WHEN t.status='pago' THEN t.valor_modelo ELSE 0 END), 0) AS modelo,
         COALESCE(SUM(CASE WHEN t.status='pago' THEN t.velvet_fee ELSE 0 END), 0) AS velvet,
         COALESCE(SUM(CASE WHEN t.status='pago' THEN t.agency_fee ELSE 0 END), 0) AS agency,
-        COALESCE(SUM(CASE WHEN t.status='pago' THEN t.taxa_gateway ELSE 0 END), 0) AS gateway,
-        COALESCE(SUM(CASE WHEN t.status='chargeback' THEN t.valor_bruto ELSE 0 END), 0) AS chargebacks
+        COALESCE(SUM(CASE WHEN t.status='pago' THEN t.taxa_gateway ELSE 0 END), 0) AS gateway
       FROM transacoes_agency t
       INNER JOIN modelos m ON m.id = t.modelo_id
       WHERE ${where}
     `, countParams);
+
+    // Chargebacks separado: usa tabela chargebacks filtrada por criado_em (data de registro)
+    const cbWhere = ['1=1'];
+    const cbParams = [];
+    let cbIdx = 1;
+    if (modelo_id) {
+      cbWhere.push(`modelo_id = $${cbIdx}`);
+      cbParams.push(modelo_id);
+      cbIdx++;
+    }
+    if (m) {
+      cbWhere.push(`EXTRACT(YEAR  FROM criado_em AT TIME ZONE 'America/Sao_Paulo') = $${cbIdx}`);
+      cbWhere.push(`EXTRACT(MONTH FROM criado_em AT TIME ZONE 'America/Sao_Paulo') = $${cbIdx + 1}`);
+      cbParams.push(m.ano, m.mes);
+      cbIdx += 2;
+    }
+    const cbTotaisQ = await db.query(
+      `SELECT COALESCE(SUM(valor), 0) AS chargebacks FROM chargebacks WHERE ${cbWhere.join(' AND ')}`,
+      cbParams
+    );
 
     // Adicionar limit e offset para a query de rows
     const rowsParams = [...params, limit, offset];
@@ -3296,7 +3316,7 @@ router.get("/transacoes-agency", async (req, res) => {
       rows,
       totalPages: Math.ceil(total / limit),
       page,
-      totais: totaisQ.rows[0]
+      totais: { ...totaisQ.rows[0], chargebacks: cbTotaisQ.rows[0].chargebacks }
     });
   } catch (err) {
     console.error("Erro transações:", err);
