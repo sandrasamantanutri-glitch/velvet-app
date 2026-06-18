@@ -2562,9 +2562,58 @@ function renderFechamento(d) {
     `<div style="font-size:12px;margin-top:6px;padding:8px 10px;border-radius:6px;background:var(--bg-secondary);line-height:1.5;">${diffMsg}</div>`;
 
   // ── ANÁLISE ─────────────────────────────────────────────────────────────────
-  $('fechAnalise').innerHTML = (d.analise && d.analise.length)
-    ? d.analise.map(a => `<div style="padding:8px 12px;border-radius:6px;background:var(--bg-secondary);line-height:1.5;">${a}</div>`).join('')
+  const tipoStyle = {
+    ok:      { bg:'#f0fdf4', border:'#22c55e', icon:'✅', color:'#15803d' },
+    aviso:   { bg:'#fffbeb', border:'#f59e0b', icon:'⚠️', color:'#92400e' },
+    alerta:  { bg:'#fef2f2', border:'#ef4444', icon:'🚨', color:'#991b1b' },
+    critico: { bg:'#fef2f2', border:'#dc2626', icon:'🔴', color:'#7f1d1d' },
+    info:    { bg:'#f0f9ff', border:'#3b82f6', icon:'ℹ️', color:'#1e40af' },
+  };
+
+  const alertasHtml = (d.analise && d.analise.length)
+    ? d.analise.map(a => {
+        const s = tipoStyle[a.tipo] || tipoStyle.info;
+        return `<div style="padding:10px 14px;border-radius:8px;border-left:4px solid ${s.border};background:${s.bg};color:${s.color};line-height:1.5;font-size:13px;">${s.icon} ${a.texto}</div>`;
+      }).join('')
     : `<div style="color:var(--text-muted);font-size:13px;">Sem alertas — dados dentro do esperado.</div>`;
+
+  // Distribuição financeira recomendada
+  let distribHtml = '';
+  if (d.distrib && d.velvet_liquido > 0) {
+    const vl = d.velvet_liquido;
+    const dist = d.distrib;
+    distribHtml = `
+      <div style="margin-top:16px;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);padding:8px 0 10px;">Distribuição recomendada do líquido Velvet</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div style="padding:12px;border-radius:10px;background:#f0fdf4;border:1px solid #bbf7d0;">
+            <div style="font-size:11px;color:#15803d;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">🏦 Caixa / Reserva empresa</div>
+            <div style="font-size:18px;font-weight:700;color:#15803d;margin:4px 0;">${money(dist.caixa)}</div>
+            <div style="font-size:11px;color:#166534;">20% — meta: 3–6 meses de despesas em caixa</div>
+          </div>
+          <div style="padding:12px;border-radius:10px;background:#faf5ff;border:1px solid #e9d5ff;">
+            <div style="font-size:11px;color:#7c3aed;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">💼 Pró-labore (sócia/dona)</div>
+            <div style="font-size:18px;font-weight:700;color:#7c3aed;margin:4px 0;">${money(dist.prolabore)}</div>
+            <div style="font-size:11px;color:#6d28d9;">50% — remuneração mensal da empresa</div>
+          </div>
+          <div style="padding:12px;border-radius:10px;background:#fff7ed;border:1px solid #fed7aa;">
+            <div style="font-size:11px;color:#c2410c;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">🔄 Reinvestimento</div>
+            <div style="font-size:18px;font-weight:700;color:#c2410c;margin:4px 0;">${money(dist.reinvestimento)}</div>
+            <div style="font-size:11px;color:#9a3412;">15% — marketing, infra, melhorias</div>
+          </div>
+          <div style="padding:12px;border-radius:10px;background:#eff6ff;border:1px solid #bfdbfe;">
+            <div style="font-size:11px;color:#1d4ed8;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">📈 Investimento longo prazo</div>
+            <div style="font-size:18px;font-weight:700;color:#1d4ed8;margin:4px 0;">${money(dist.investimento)}</div>
+            <div style="font-size:11px;color:#1e40af;">15% — mínimo 10% — patrimônio pessoal</div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:8px;padding:0 2px;">
+          Base: ${money(vl)} líquido Velvet · Percentuais são referência — ajuste conforme mês e metas pessoais.
+        </div>
+      </div>`;
+  }
+
+  $('fechAnalise').innerHTML = alertasHtml + distribHtml;
 }
 
 async function salvarObservacoes() {
@@ -3731,7 +3780,7 @@ function renderChargebacks(chargebacks) {
     return `
     <tr>
       <td>${i + 1}</td>
-      <td><strong>${cb.plataforma || '—'}</strong></td>
+      <td><strong>${{safe2pay:'Safe2Pay',stripe:'Stripe',pluggy:'Pluggy',pagarme:'Pagarme'}[cb.plataforma] || cb.plataforma || '—'}</strong></td>
       <td>${money(cb.valor)}</td>
       <td style="color:var(--text-muted);font-size:12px;">${fmtDate(cb.data)}</td>
       <td style="font-weight:600;">${cb.criado_em ? fmtDate(cb.criado_em) : '—'}</td>

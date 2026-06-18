@@ -2432,18 +2432,47 @@ router.get("/fechamento/detalhe/:ano/:mes", async (req, res) => {
     // Análise inteligente
     const bruto = Number(f.total_bruto);
     const analise = [];
-    const cbRate = bruto > 0 ? (Number(cbQ.rows[0].total) / bruto * 100) : 0;
-    if (cbRate > 1) analise.push(`⚠️ Chargebacks em ${cbRate.toFixed(1)}% do bruto — acima do limite saudável de 1%.`);
-    else if (cbRate > 0) analise.push(`✅ Chargebacks em ${cbRate.toFixed(1)}% do bruto — dentro do limite.`);
-    const modeloRate = bruto > 0 ? (Number(f.total_modelos) / bruto * 100) : 0;
-    if (modeloRate > 80) analise.push(`ℹ️ Repasse a modelos representa ${modeloRate.toFixed(1)}% do bruto.`);
-    const agRate = bruto > 0 ? (Number(f.total_agency) / bruto * 100) : 0;
-    if (agRate > 10) analise.push(`ℹ️ Fees de agências representam ${agRate.toFixed(1)}% do bruto.`);
-    if (Math.abs(diferenca) > 1000) analise.push(`⚠️ Diferença de ${Number(diferenca).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})} entre estimativa e realidade — verifique taxas e retenções.`);
-    else if (Math.abs(diferenca) < 100) analise.push(`✅ Conciliação ok — diferença menor que R$ 100.`);
-    if (banco.despesas > Number(f.total_velvet) * 0.3) analise.push(`⚠️ Despesas operacionais representam mais de 30% do fee Velvet.`);
 
-    res.json({ fechamento: f, chargebacks: { qtd: cbQ.rows[0].qtd, total: cbQ.rows[0].total }, banco, ajustes, total_taxas_reais, total_retencoes, velvet_liquido, diferenca, analise });
+    // Chargebacks — usa criado_em (já filtrado acima por mês de registro, não de compra)
+    const cbTotal = Number(cbQ.rows[0].total);
+    const cbRate  = bruto > 0 ? (cbTotal / bruto * 100) : 0;
+    if (cbRate > 1) analise.push({ tipo: 'alerta', texto: `Chargebacks em ${cbRate.toFixed(1)}% do bruto — acima do limite saudável de 1%.` });
+    else if (cbRate > 0.5) analise.push({ tipo: 'aviso', texto: `Chargebacks em ${cbRate.toFixed(1)}% do bruto — atenção: próximo do limite de 1%.` });
+    else if (cbRate > 0) analise.push({ tipo: 'ok', texto: `Chargebacks em ${cbRate.toFixed(2)}% do bruto — dentro do limite saudável (< 1%).` });
+
+    // Conciliação — diferença inexplicada (após retidos)
+    const difInexplicada = diferenca + total_retencoes;
+    const difPct = velvet_liquido > 0 ? Math.abs(difInexplicada / velvet_liquido * 100) : 0;
+    if (Math.abs(difInexplicada) < 50) {
+      analise.push({ tipo: 'ok', texto: `Conciliação perfeita — diferença inexplicada menor que R$ 50.` });
+    } else if (difPct <= 3) {
+      analise.push({ tipo: 'aviso', texto: `Diferença inexplicada de ${Math.abs(difInexplicada).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})} (${difPct.toFixed(1)}% do líquido) — aceitável, mas vale conferir retenções.` });
+    } else if (difPct <= 8) {
+      analise.push({ tipo: 'alerta', texto: `Diferença inexplicada de ${Math.abs(difInexplicada).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})} (${difPct.toFixed(1)}% do líquido) — acima do esperado. Verifique taxas e retenções não lançadas.` });
+    } else {
+      analise.push({ tipo: 'critico', texto: `Diferença inexplicada de ${Math.abs(difInexplicada).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})} (${difPct.toFixed(1)}% do líquido) — crítico. Reconciliação manual necessária.` });
+    }
+
+    // Despesas
+    const despesaPct = Number(f.total_velvet) > 0 ? (banco.despesas / Number(f.total_velvet) * 100) : 0;
+    if (despesaPct > 50) analise.push({ tipo: 'alerta', texto: `Despesas operacionais representam ${despesaPct.toFixed(0)}% do fee Velvet — muito elevado.` });
+    else if (despesaPct > 30) analise.push({ tipo: 'aviso', texto: `Despesas operacionais representam ${despesaPct.toFixed(0)}% do fee Velvet — acima do ideal (< 30%).` });
+
+    // Repasses
+    const modeloRate = bruto > 0 ? (Number(f.total_modelos) / bruto * 100) : 0;
+    if (modeloRate > 85) analise.push({ tipo: 'info', texto: `Repasse a modelos representa ${modeloRate.toFixed(1)}% do bruto — margem Velvet muito apertada.` });
+    const agRate = bruto > 0 ? (Number(f.total_agency) / bruto * 100) : 0;
+    if (agRate > 15) analise.push({ tipo: 'info', texto: `Fees de agências representam ${agRate.toFixed(1)}% do bruto.` });
+
+    // Distribuição financeira recomendada sobre o velvet_liquido
+    const distrib = velvet_liquido > 0 ? {
+      caixa:        Math.round(velvet_liquido * 0.20 * 100) / 100,  // 20% reserva empresa
+      prolabore:    Math.round(velvet_liquido * 0.50 * 100) / 100,  // 50% pró-labore sócia
+      reinvestimento: Math.round(velvet_liquido * 0.15 * 100) / 100, // 15% reinvestimento
+      investimento: Math.round(velvet_liquido * 0.15 * 100) / 100,  // 15% investimento LP (mín. 10%)
+    } : null;
+
+    res.json({ fechamento: f, chargebacks: { qtd: cbQ.rows[0].qtd, total: cbQ.rows[0].total }, banco, ajustes, total_taxas_reais, total_retencoes, velvet_liquido, diferenca, difInexplicada, analise, distrib });
   } catch (err) {
     console.error("Erro detalhe fechamento:", err);
     res.status(500).json({ erro: "Erro interno" });
