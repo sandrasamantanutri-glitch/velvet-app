@@ -4664,7 +4664,7 @@ router.post("/despesas", authAdmin, uploadPublico.single('comprovante'), async (
     const user_id = req.user?.id;
  
     // Validações
-    const categoriasValidas = ['banco_dados', 'render', 'cloudflare', 'hostinger', 'claude', 'email', 'salario', 'endereco', 'contabilidade', 'taxas_cnpj', 'outro'];
+    const categoriasValidas = ['banco_dados', 'render', 'cloudflare', 'hostinger', 'claude', 'email', 'salario', 'endereco', 'contabilidade', 'taxas_cnpj', 'agua', 'luz', 'telefone', 'gas', 'outro'];
     
     if (!categoria || !categoriasValidas.includes(categoria)) {
       return res.status(400).json({ erro: "Categoria inválida" });
