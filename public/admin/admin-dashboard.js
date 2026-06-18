@@ -2125,6 +2125,27 @@ function atualizarCamposModal() {
   const catAtual = $('lancCategoria').value;
   $('campoBanco').style.display = catAtual === 'repasse_gateway' ? '' : 'none';
   $('campoModelo').style.display = catAtual === 'pagamento_modelo' ? '' : 'none';
+  $('campoDespesa').style.display = catAtual === 'despesa' ? '' : 'none';
+  if (catAtual === 'despesa') carregarDespesasSelect();
+}
+
+async function carregarDespesasSelect() {
+  const mes = $('lancMes').value;
+  const ano = $('lancAno').value;
+  const sel = $('lancDespesaSelect');
+  try {
+    const rows = await fetchJSON(`/admin/dashboard/despesas-list?mes=${mes}&ano=${ano}`);
+    sel.innerHTML = '<option value="">— Selecione ou preencha manualmente —</option>' +
+      rows.map(r => `<option value="${r.id}" data-descricao="${r.categoria} — ${r.descricao}" data-valor="${r.valor}" data-data="${r.data?.split('T')[0]}">${r.data?.split('T')[0].split('-').reverse().join('/')} · ${r.categoria} — ${r.descricao} (${money(r.valor)})</option>`).join('');
+  } catch (e) { console.error('Erro ao carregar despesas:', e); }
+}
+
+function preencherDespesa(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt.value) return;
+  $('lancDescricao').value = opt.dataset.descricao || '';
+  $('lancValor').value = opt.dataset.valor || '';
+  if (opt.dataset.data) $('lancData').value = opt.dataset.data;
 }
 
 async function salvarLancamento() {

@@ -4639,19 +4639,14 @@ router.delete("/faturamentos/:id", authAdmin, async (req, res) => {
  
 router.get("/despesas-list", async (req, res) => {
   try {
+    const mes = parseInt(req.query.mes) || new Date().getMonth() + 1;
+    const ano = parseInt(req.query.ano) || new Date().getFullYear();
     const { rows } = await db.query(`
-      SELECT
-        id,
-        categoria,
-        descricao,
-        valor,
-        data,
-        comprovante,
-        criado_em
+      SELECT id, categoria, descricao, valor, data, comprovante, criado_em
       FROM despesas
-      WHERE date_trunc('month', data) = date_trunc('month', CURRENT_DATE)
+      WHERE EXTRACT(MONTH FROM data) = $1 AND EXTRACT(YEAR FROM data) = $2
       ORDER BY data DESC
-    `);
+    `, [mes, ano]);
 
     res.json(rows);
   } catch (err) {
