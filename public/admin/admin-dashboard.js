@@ -2452,10 +2452,6 @@ function renderFechamento(d) {
   const f = d.fechamento;
   $('fechamentoVazio').style.display = 'none';
   $('fechamentoDetalhe').style.display = '';
-
-  // Preench ajustes editáveis
-  $('fechAjusteTaxas').value = f.ajuste_taxas || '';
-  $('fechValorBloqueado').value = f.valor_bloqueado || '';
   $('fechObservacoes').value = f.observacoes || '';
 
   const row = (label, val, cor) =>
@@ -2470,68 +2466,104 @@ function renderFechamento(d) {
       <span style="font-weight:700;font-size:15px;${cor ? 'color:'+cor : ''}">${money(val)}</span>
     </div>`;
 
-  // PLATAFORMA
-  const velvetLiq = Number(f.total_velvet) - Number(f.total_agency || 0);
+  // ── PLATAFORMA ─────────────────────────────────────────────────────────────
+  const brutoExpandId = 'fechBrutoDetalhe';
   $('fechPlataforma').innerHTML =
-    row('Bruto processado', f.total_bruto) +
-    row('(-) Taxas gateway (estimada)', f.total_taxas, '#ef4444') +
+    // Bruto processado (expansível)
+    `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="document.getElementById('${brutoExpandId}').style.display=document.getElementById('${brutoExpandId}').style.display==='none'?'block':'none'">
+      <span style="color:var(--text-muted);font-size:13px;">▶ Bruto processado</span>
+      <span style="font-weight:600;">${money(f.total_bruto)}</span>
+    </div>
+    <div id="${brutoExpandId}" style="display:none;padding:4px 0 4px 14px;">
+      ${row('Assinaturas', f.total_assinaturas)}
+      ${row('Mídias', f.total_midias)}
+    </div>` +
+    row('(+) Taxa gateway coletada', f.total_taxas, '#22c55e') +
+    row('(+) Fee Velvet', f.total_velvet, '#6366f1') +
     row('(-) Fees agências', f.total_agency, '#ef4444') +
-    row('(-) Repasse modelos', f.total_modelos, '#f97316') +
-    row('Assinaturas', f.total_assinaturas) +
-    row('Mídias', f.total_midias) +
-    sep('Fee Velvet (bruto)', f.total_velvet, '#6366f1');
+    row('(-) Repasse modelos', f.total_modelos, '#f97316');
 
-  // SAÍDAS
+  // ── SAÍDAS ──────────────────────────────────────────────────────────────────
   const cb = d.chargebacks;
   $('fechSaidas').innerHTML =
-    row(`Chargebacks (${cb.qtd} ocorrência${cb.qtd!=1?'s':''})`, cb.total, '#ef4444') +
-    row('Despesas operacionais', f.total_despesas, '#ef4444') +
-    row('Taxas reais (ajustável abaixo)', f.ajuste_taxas || 0, '#ef4444') +
-    sep('Velvet líquido estimado', d.estimativa_velvet, d.estimativa_velvet >= 0 ? '#22c55e' : '#ef4444');
+    row(`(-) Chargebacks (${cb.qtd} ocorr.)`, cb.total, '#ef4444') +
+    row('(-) Despesas bancárias', d.banco.despesas, '#ef4444');
 
-  // BANCO
+  // Listas dinâmicas de ajustes
+  const taxas = (d.ajustes || []).filter(a => a.tipo === 'taxa_gateway');
+  const retencoes = (d.ajustes || []).filter(a => a.tipo === 'retencao');
+
+  const renderAjusteLista = (items) => items.map(a =>
+    `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:12px;">
+      <span style="color:var(--text-muted);flex:1;">${a.descricao}</span>
+      <span style="font-weight:600;margin:0 8px;">${money(a.valor)}</span>
+      <button onclick="deletarAjuste(${a.id})" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:14px;padding:0;">×</button>
+    </div>`
+  ).join('') || `<div style="font-size:12px;color:var(--text-muted);padding:3px 0;">Nenhuma entrada</div>`;
+
+  $('listaFechTaxas').innerHTML = renderAjusteLista(taxas);
+  $('listaFechRetencoes').innerHTML = renderAjusteLista(retencoes);
+
+  // ── BANCO ────────────────────────────────────────────────────────────────────
   const b = d.banco;
   $('fechBanco').innerHTML =
-    row('Entradas recebidas', b.entradas, '#22c55e') +
+    row('(+) Entradas recebidas', b.entradas, '#22c55e') +
     row('(-) Pago modelos', b.modelos, '#f97316') +
     row('(-) Pago agências', b.agencias, '#a855f7') +
     row('(-) Despesas lançadas', b.despesas, '#ef4444') +
     sep('Saldo banco', b.saldo, b.saldo >= 0 ? '#22c55e' : '#ef4444') +
-    row('(-) Retido/bloqueado gateway', f.valor_bloqueado || 0, '#ef4444') +
+    row(`(-) Retido/bloqueado (${retencoes.length} lançamento${retencoes.length!==1?'s':''})`, d.total_retencoes, '#ef4444') +
     sep('Disponível real', b.disponivel, b.disponivel >= 0 ? '#22c55e' : '#ef4444');
 
-  // CONCILIAÇÃO
+  // ── CONCILIAÇÃO ─────────────────────────────────────────────────────────────
   const diff = d.diferenca;
-  const diffColor = Math.abs(diff) < 1 ? '#22c55e' : (diff < 0 ? '#ef4444' : '#f97316');
+  const diffColor = Math.abs(diff) < 100 ? '#22c55e' : (diff < 0 ? '#ef4444' : '#f97316');
   $('fechConciliacao').innerHTML =
-    row('Velvet líquido estimado (plataforma)', d.estimativa_velvet) +
-    row('Disponível real (banco - retido)', b.disponivel) +
-    sep('Diferença', diff, diffColor) +
-    `<div style="font-size:11px;color:var(--text-muted);margin-top:8px;line-height:1.5;">
-      A diferença é geralmente causada por:<br>
-      • Taxas reais vs estimadas dos gateways<br>
-      • Valores retidos na virada do mês<br>
-      • Chargebacks ainda não processados
-    </div>`;
+    row('Velvet líquido (plataforma)', d.velvet_liquido, '#6366f1') +
+    row('Disponível real (banco)', b.disponivel) +
+    sep('Diferença', diff, diffColor);
 
-  // DESPESAS TABELA
-  const tbody = $('tableFechDespesas').querySelector('tbody');
-  tbody.innerHTML = (d.despesas || []).map(r =>
-    `<tr><td>${fmtDate(r.data)}</td><td>${r.categoria}</td><td>${r.descricao}</td><td style="text-align:right;font-weight:600;">${money(r.valor)}</td></tr>`
-  ).join('') || `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">Nenhuma despesa cadastrada</td></tr>`;
+  // ── ANÁLISE ─────────────────────────────────────────────────────────────────
+  $('fechAnalise').innerHTML = (d.analise && d.analise.length)
+    ? d.analise.map(a => `<div style="padding:8px 12px;border-radius:6px;background:var(--bg-secondary);line-height:1.5;">${a}</div>`).join('')
+    : `<div style="color:var(--text-muted);font-size:13px;">Sem alertas — dados dentro do esperado.</div>`;
 }
 
-async function salvarAjustesFechamento() {
+async function salvarObservacoes() {
   const d = window._fechamentoAtual;
   if (!d) return;
-  const id = d.fechamento.id;
   try {
-    await putJSON(`/admin/dashboard/fechamento/${id}`, {
-      ajuste_taxas:    parseFloat($('fechAjusteTaxas').value) || 0,
-      valor_bloqueado: parseFloat($('fechValorBloqueado').value) || 0,
-      observacoes:     $('fechObservacoes').value.trim() || null
+    await putJSON(`/admin/dashboard/fechamento/${d.fechamento.id}`, {
+      observacoes: $('fechObservacoes').value.trim() || null
     });
-    toast('Ajustes salvos!', 'success');
+    toast('Observações salvas!', 'success');
+  } catch (err) { toast('Erro: ' + err.message, 'error'); }
+}
+
+async function adicionarAjuste(tipo) {
+  const d = window._fechamentoAtual;
+  if (!d) return;
+  const isTaxa = tipo === 'taxa_gateway';
+  const descEl = isTaxa ? $('novaFechTaxaDesc') : $('novaFechRetDesc');
+  const valEl  = isTaxa ? $('novaFechTaxaValor') : $('novaFechRetValor');
+  const desc = descEl.value.trim();
+  const valor = parseFloat(valEl.value);
+  if (!desc || !valor) return toast('Preencha descrição e valor', 'error');
+  try {
+    await postJSON('/admin/dashboard/fechamento-ajustes', {
+      fechamento_id: d.fechamento.id, tipo, descricao: desc, valor,
+    });
+    descEl.value = '';
+    valEl.value = '';
+    toast('Adicionado!', 'success');
+    carregarFechamento();
+  } catch (err) { toast('Erro: ' + err.message, 'error'); }
+}
+
+async function deletarAjuste(id) {
+  try {
+    await fetch(`/admin/dashboard/fechamento-ajustes/${id}`, { method: 'DELETE' });
+    toast('Removido!', 'success');
     carregarFechamento();
   } catch (err) { toast('Erro: ' + err.message, 'error'); }
 }

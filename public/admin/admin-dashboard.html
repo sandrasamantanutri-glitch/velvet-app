@@ -590,61 +590,65 @@
     <!-- Painel principal de fechamento -->
     <div id="fechamentoDetalhe" style="display:none;">
 
-      <!-- Linha 1: Plataforma -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
 
+        <!-- PLATAFORMA -->
         <div class="card" style="padding:20px;">
-          <h4 style="margin-bottom:14px;font-size:14px;text-transform:uppercase;color:var(--text-muted);letter-spacing:.5px;">Plataforma — Processado</h4>
+          <h4 style="margin-bottom:14px;font-size:13px;text-transform:uppercase;color:var(--text-muted);letter-spacing:.5px;">Plataforma — Processado</h4>
           <div id="fechPlataforma"></div>
         </div>
 
+        <!-- SAÍDAS -->
         <div class="card" style="padding:20px;">
-          <h4 style="margin-bottom:14px;font-size:14px;text-transform:uppercase;color:var(--text-muted);letter-spacing:.5px;">Saídas & Deduções</h4>
+          <h4 style="margin-bottom:14px;font-size:13px;text-transform:uppercase;color:var(--text-muted);letter-spacing:.5px;">Saídas & Deduções</h4>
           <div id="fechSaidas"></div>
-          <!-- Ajuste taxas -->
-          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-            <label style="font-size:12px;color:var(--text-muted);">Taxas gateways (valor real descontado — ajustável)</label>
-            <div style="display:flex;gap:8px;margin-top:4px;">
-              <input type="number" id="fechAjusteTaxas" class="input-text" step="0.01" placeholder="0,00" style="flex:1;">
-              <button class="btn btn-secondary" onclick="salvarAjustesFechamento()">Salvar</button>
+
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;font-weight:600;">Taxas reais dos gateways</div>
+            <div id="listaFechTaxas"></div>
+            <div style="display:flex;gap:6px;margin-top:6px;">
+              <input type="text" id="novaFechTaxaDesc" class="input-text" placeholder="Ex: Stripe taxas maio" style="flex:2;">
+              <input type="number" id="novaFechTaxaValor" class="input-text" step="0.01" placeholder="0,00" style="flex:1;">
+              <button class="btn btn-primary" onclick="adicionarAjuste('taxa_gateway')" style="white-space:nowrap;">+ Add</button>
+            </div>
+          </div>
+
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;font-weight:600;">Valores retidos / bloqueados</div>
+            <div id="listaFechRetencoes"></div>
+            <div style="display:flex;gap:6px;margin-top:6px;">
+              <input type="text" id="novaFechRetDesc" class="input-text" placeholder="Ex: Stripe retenção virada" style="flex:2;">
+              <input type="number" id="novaFechRetValor" class="input-text" step="0.01" placeholder="0,00" style="flex:1;">
+              <button class="btn btn-primary" onclick="adicionarAjuste('retencao')" style="white-space:nowrap;">+ Add</button>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Linha 2: Conta Bancária vs Estimativa -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
 
+        <!-- CONTA BANCÁRIA -->
         <div class="card" style="padding:20px;">
-          <h4 style="margin-bottom:14px;font-size:14px;text-transform:uppercase;color:var(--text-muted);letter-spacing:.5px;">Conta Bancária — Real</h4>
+          <h4 style="margin-bottom:14px;font-size:13px;text-transform:uppercase;color:var(--text-muted);letter-spacing:.5px;">Conta Bancária — Real</h4>
           <div id="fechBanco"></div>
         </div>
 
+        <!-- CONCILIAÇÃO -->
         <div class="card" style="padding:20px;">
-          <h4 style="margin-bottom:14px;font-size:14px;text-transform:uppercase;color:var(--text-muted);letter-spacing:.5px;">Conciliação</h4>
+          <h4 style="margin-bottom:14px;font-size:13px;text-transform:uppercase;color:var(--text-muted);letter-spacing:.5px;">Conciliação</h4>
           <div id="fechConciliacao"></div>
-          <!-- Ajuste valor bloqueado -->
-          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-            <label style="font-size:12px;color:var(--text-muted);">Valor retido/bloqueado pelo gateway</label>
-            <div style="display:flex;gap:8px;margin-top:4px;">
-              <input type="number" id="fechValorBloqueado" class="input-text" step="0.01" placeholder="0,00" style="flex:1;">
-              <button class="btn btn-secondary" onclick="salvarAjustesFechamento()">Salvar</button>
-            </div>
-          </div>
-          <div style="margin-top:8px;">
+          <div style="margin-top:12px;">
             <label style="font-size:12px;color:var(--text-muted);">Observações</label>
-            <textarea id="fechObservacoes" class="input-text" rows="2" style="width:100%;resize:vertical;margin-top:4px;" placeholder="Ex: Stripe reteve R$ X referente a vendas de 28-31/05..."></textarea>
+            <textarea id="fechObservacoes" class="input-text" rows="2" style="width:100%;resize:vertical;margin-top:4px;" placeholder="Ex: Stripe reteve R$ X referente às vendas de 28-31/05..."></textarea>
+            <button class="btn btn-secondary" style="margin-top:6px;" onclick="salvarObservacoes()">Salvar obs.</button>
           </div>
         </div>
       </div>
 
-      <!-- Despesas detalhadas -->
-      <div class="card" style="padding:20px;">
-        <h4 style="margin-bottom:14px;font-size:14px;text-transform:uppercase;color:var(--text-muted);letter-spacing:.5px;">Despesas do Mês</h4>
-        <table class="table" id="tableFechDespesas">
-          <thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th style="text-align:right;">Valor</th></tr></thead>
-          <tbody></tbody>
-        </table>
+      <!-- ANÁLISE INTELIGENTE -->
+      <div class="card" style="padding:20px;margin-bottom:16px;">
+        <h4 style="margin-bottom:12px;font-size:13px;text-transform:uppercase;color:var(--text-muted);letter-spacing:.5px;">Análise</h4>
+        <div id="fechAnalise" style="display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.6;"></div>
       </div>
     </div>
 

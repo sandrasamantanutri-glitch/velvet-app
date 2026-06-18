@@ -2384,35 +2384,26 @@ router.get("/fechamento/detalhe/:ano/:mes", async (req, res) => {
   try {
     const { ano, mes } = req.params;
 
-    const [fechQ, cbQ, despQ, lancQ] = await Promise.all([
+    const [fechQ, cbQ, lancQ, ajustesQ] = await Promise.all([
       db.query("SELECT * FROM fechamento_mensal WHERE ano=$1 AND mes=$2", [ano, mes]),
-
       db.query(`
         SELECT COUNT(*) AS qtd, COALESCE(SUM(valor_bruto),0) AS total
         FROM transacoes_agency
         WHERE status='chargeback'
-          AND EXTRACT(YEAR FROM created_at)=$1
-          AND EXTRACT(MONTH FROM created_at)=$2
+          AND EXTRACT(YEAR FROM created_at)=$1 AND EXTRACT(MONTH FROM created_at)=$2
       `, [ano, mes]),
-
-      db.query(`
-        SELECT id, categoria, descricao, valor, data
-        FROM despesas
-        WHERE EXTRACT(YEAR FROM data)=$1 AND EXTRACT(MONTH FROM data)=$2
-        ORDER BY data
-      `, [ano, mes]),
-
       db.query(`
         SELECT tipo, categoria, COALESCE(SUM(valor),0) AS total
-        FROM lancamentos_bancarios
-        WHERE ano=$1 AND mes=$2
-        GROUP BY tipo, categoria
+        FROM lancamentos_bancarios WHERE ano=$1 AND mes=$2 GROUP BY tipo, categoria
       `, [ano, mes]),
+      db.query("SELECT * FROM fechamento_ajustes WHERE fechamento_id=(SELECT id FROM fechamento_mensal WHERE ano=$1 AND mes=$2) ORDER BY tipo, created_at", [ano, mes]),
     ]);
 
     if (!fechQ.rows.length) return res.status(404).json({ erro: "Fechamento não encontrado" });
 
     const f = fechQ.rows[0];
+
+    // Banco
     const banco = { entradas: 0, modelos: 0, agencias: 0, despesas: 0, outros: 0 };
     lancQ.rows.forEach(r => {
       const v = Number(r.total);
@@ -2423,18 +2414,40 @@ router.get("/fechamento/detalhe/:ano/:mes", async (req, res) => {
       else banco.outros += v;
     });
     banco.saldo = banco.entradas - banco.modelos - banco.agencias - banco.despesas - banco.outros;
-    banco.disponivel = banco.saldo - Number(f.valor_bloqueado || 0);
 
-    const estimativa_velvet = Number(f.total_velvet) - Number(f.total_despesas) - Number(f.ajuste_taxas);
+    // Ajustes
+    const ajustes = ajustesQ.rows;
+    const total_taxas_reais = ajustes.filter(a => a.tipo === 'taxa_gateway').reduce((s,a) => s + Number(a.valor), 0);
+    const total_retencoes   = ajustes.filter(a => a.tipo === 'retencao').reduce((s,a) => s + Number(a.valor), 0);
 
-    res.json({
-      fechamento: f,
-      chargebacks: { qtd: cbQ.rows[0].qtd, total: cbQ.rows[0].total },
-      despesas: despQ.rows,
-      banco,
-      estimativa_velvet,
-      diferenca: banco.disponivel - estimativa_velvet
-    });
+    // Velvet líquido: fee velvet + taxa coletada dos clientes - taxas reais pagas - chargebacks - despesas banco
+    const velvet_liquido =
+      Number(f.total_velvet) +
+      Number(f.total_taxas) -
+      total_taxas_reais -
+      Number(cbQ.rows[0].total) -
+      banco.despesas;
+
+    // Disponível real: saldo banco - retenções
+    banco.disponivel = banco.saldo - total_retencoes;
+
+    const diferenca = banco.disponivel - velvet_liquido;
+
+    // Análise inteligente
+    const bruto = Number(f.total_bruto);
+    const analise = [];
+    const cbRate = bruto > 0 ? (Number(cbQ.rows[0].total) / bruto * 100) : 0;
+    if (cbRate > 1) analise.push(`⚠️ Chargebacks em ${cbRate.toFixed(1)}% do bruto — acima do limite saudável de 1%.`);
+    else if (cbRate > 0) analise.push(`✅ Chargebacks em ${cbRate.toFixed(1)}% do bruto — dentro do limite.`);
+    const modeloRate = bruto > 0 ? (Number(f.total_modelos) / bruto * 100) : 0;
+    if (modeloRate > 80) analise.push(`ℹ️ Repasse a modelos representa ${modeloRate.toFixed(1)}% do bruto.`);
+    const agRate = bruto > 0 ? (Number(f.total_agency) / bruto * 100) : 0;
+    if (agRate > 10) analise.push(`ℹ️ Fees de agências representam ${agRate.toFixed(1)}% do bruto.`);
+    if (Math.abs(diferenca) > 1000) analise.push(`⚠️ Diferença de ${Number(diferenca).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})} entre estimativa e realidade — verifique taxas e retenções.`);
+    else if (Math.abs(diferenca) < 100) analise.push(`✅ Conciliação ok — diferença menor que R$ 100.`);
+    if (banco.despesas > Number(f.total_velvet) * 0.3) analise.push(`⚠️ Despesas operacionais representam mais de 30% do fee Velvet.`);
+
+    res.json({ fechamento: f, chargebacks: { qtd: cbQ.rows[0].qtd, total: cbQ.rows[0].total }, banco, ajustes, total_taxas_reais, total_retencoes, velvet_liquido, diferenca, analise });
   } catch (err) {
     console.error("Erro detalhe fechamento:", err);
     res.status(500).json({ erro: "Erro interno" });
@@ -2443,18 +2456,33 @@ router.get("/fechamento/detalhe/:ano/:mes", async (req, res) => {
 
 router.put("/fechamento/:id", async (req, res) => {
   try {
-    const { ajuste_taxas, valor_bloqueado, observacoes } = req.body;
-    const { rows } = await db.query(`
-      UPDATE fechamento_mensal
-      SET ajuste_taxas=$1, valor_bloqueado=$2, observacoes=$3
-      WHERE id=$4 RETURNING *
-    `, [ajuste_taxas || 0, valor_bloqueado || 0, observacoes || null, req.params.id]);
+    const { observacoes } = req.body;
+    const { rows } = await db.query(
+      "UPDATE fechamento_mensal SET observacoes=$1 WHERE id=$2 RETURNING *",
+      [observacoes || null, req.params.id]
+    );
     if (!rows.length) return res.status(404).json({ erro: "Não encontrado" });
     res.json(rows[0]);
-  } catch (err) {
-    console.error("Erro editar fechamento:", err);
-    res.status(500).json({ erro: "Erro interno" });
-  }
+  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
+});
+
+router.post("/fechamento-ajustes", async (req, res) => {
+  try {
+    const { fechamento_id, tipo, descricao, valor } = req.body;
+    if (!fechamento_id || !tipo || !descricao || !valor) return res.status(400).json({ erro: "Campos obrigatórios" });
+    const { rows } = await db.query(
+      "INSERT INTO fechamento_ajustes (fechamento_id, tipo, descricao, valor) VALUES ($1,$2,$3,$4) RETURNING *",
+      [fechamento_id, tipo, descricao, valor]
+    );
+    res.json(rows[0]);
+  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
+});
+
+router.delete("/fechamento-ajustes/:id", async (req, res) => {
+  try {
+    await db.query("DELETE FROM fechamento_ajustes WHERE id=$1", [req.params.id]);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
 });
 
 // atualiza chargebacks e despesas ao recriar
