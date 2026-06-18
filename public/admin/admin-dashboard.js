@@ -2130,8 +2130,16 @@ function atualizarCamposModal() {
 }
 
 async function carregarDespesasSelect() {
-  const mes = $('lancMes').value;
-  const ano = $('lancAno').value;
+  const dataVal = $('lancData').value;
+  let mes, ano;
+  if (dataVal) {
+    const d = new Date(dataVal + 'T12:00:00');
+    mes = d.getMonth() + 1;
+    ano = d.getFullYear();
+  } else {
+    mes = $('lancMes').value;
+    ano = $('lancAno').value;
+  }
   const sel = $('lancDespesaSelect');
   try {
     const rows = await fetchJSON(`/admin/dashboard/despesas-list?mes=${mes}&ano=${ano}`);
