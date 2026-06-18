@@ -2455,6 +2455,8 @@ function renderFechamento(d) {
   $('fechamentoVazio').style.display = 'none';
   $('fechamentoDetalhe').style.display = '';
   $('fechObservacoes').value = f.observacoes || '';
+  const btnImprimir = $('btnImprimirFechamento');
+  if (btnImprimir) btnImprimir.style.display = '';
 
   const row = (label, val, cor) =>
     `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);">
@@ -2637,6 +2639,98 @@ function renderFechamento(d) {
   }
 
   $('fechAnalise').innerHTML = alertasHtml + distribHtml;
+}
+
+function imprimirFechamento() {
+  const d = window._fechamentoAtual;
+  if (!d) return;
+  const f = d.fechamento;
+  const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const titulo = `Fechamento Mensal — ${meses[f.mes - 1]} / ${f.ano}`;
+
+  const secPlat  = $('fechPlataforma')?.innerHTML || '';
+  const secSaidas = $('fechSaidas')?.innerHTML || '';
+  const secTaxas  = $('listaFechTaxas')?.innerHTML || '';
+  const secRet    = $('listaFechRetencoes')?.innerHTML || '';
+  const secBanco  = $('fechBanco')?.innerHTML || '';
+  const secConc   = $('fechConciliacao')?.innerHTML || '';
+  const secAnal   = $('fechAnalise')?.innerHTML || '';
+  const obs       = $('fechObservacoes')?.value?.trim() || '';
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>${titulo}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; color: #1a1a2e; background: #fff; padding: 32px 40px; }
+    h1 { font-size: 22px; font-weight: 800; color: #6f42c1; margin-bottom: 4px; }
+    .subtitle { font-size: 12px; color: #888; margin-bottom: 24px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+    .card { border: 1px solid #e5e5f0; border-radius: 10px; padding: 16px; break-inside: avoid; }
+    .card h4 { font-size: 10px; text-transform: uppercase; letter-spacing: .6px; color: #888; margin-bottom: 12px; font-weight: 700; }
+    .full { grid-column: 1 / -1; }
+    /* neutraliza cores inline do DOM */
+    div { line-height: 1.5; }
+    /* botões e inputs: esconder */
+    button, input, textarea, select { display: none !important; }
+    /* separadores de totais */
+    .sep-row { border-top: 2px solid #e5e5f0 !important; }
+    .obs-box { background: #f8f7ff; border: 1px solid #e0d9ff; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #444; margin-top: 8px; white-space: pre-wrap; }
+    .no-print { display: none !important; }
+    .footer { margin-top: 32px; border-top: 1px solid #eee; padding-top: 12px; font-size: 11px; color: #bbb; text-align: right; }
+    @media print {
+      body { padding: 16px 20px; }
+      .card { border: 1px solid #ccc; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Velvet — ${titulo}</h1>
+  <div class="subtitle">Gerado em ${new Date().toLocaleString('pt-BR')} · Documento interno — não compartilhar</div>
+
+  <div class="grid">
+    <div class="card">
+      <h4>Plataforma — Processado</h4>
+      ${secPlat}
+    </div>
+    <div class="card">
+      <h4>Saídas &amp; Deduções</h4>
+      ${secSaidas}
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid #eee;">
+        <div style="font-size:10px;color:#888;font-weight:700;text-transform:uppercase;margin-bottom:6px;">Taxas reais dos gateways</div>
+        ${secTaxas}
+      </div>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #eee;">
+        <div style="font-size:10px;color:#888;font-weight:700;text-transform:uppercase;margin-bottom:6px;">Valores retidos / bloqueados</div>
+        ${secRet}
+      </div>
+    </div>
+    <div class="card">
+      <h4>Conta Bancária — Real</h4>
+      ${secBanco}
+    </div>
+    <div class="card">
+      <h4>Conciliação</h4>
+      ${secConc}
+      ${obs ? `<div class="obs-box"><strong>Observações:</strong> ${obs}</div>` : ''}
+    </div>
+    <div class="card full">
+      <h4>Análise</h4>
+      ${secAnal}
+    </div>
+  </div>
+
+  <div class="footer">Velvet App · Fechamento ${meses[f.mes - 1]}/${f.ano} · Uso interno</div>
+
+  <script>window.onload = function(){ window.print(); };<\/script>
+</body>
+</html>`;
+
+  const win = window.open('', '_blank', 'width=1000,height=800');
+  win.document.write(html);
+  win.document.close();
 }
 
 async function salvarObservacoes() {
