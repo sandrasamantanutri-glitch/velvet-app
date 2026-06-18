@@ -2048,16 +2048,55 @@ pageLoaders.lancamentos = function () {
   carregarLancamentos();
 };
 
-async function carregarLancamentos() {
-  const mes = $('lancMes').value;
-  const ano = $('lancAno').value;
-  try {
-    const data = await fetchJSON(`/admin/dashboard/lancamentos-bancarios?mes=${mes}&ano=${ano}`);
-    const tbody = $('tableLancamentos').querySelector('tbody');
+let _lancViewAgrupado = false;
 
-    const nomes = { repasse_gateway: 'Repasse Gateway', pagamento_modelo: 'Pgto Modelo', despesa: 'Despesa', outro: 'Outro' };
-    const cores = { entrada: '#22c55e', saida: '#ef4444' };
+function toggleViewLancamentos() {
+  _lancViewAgrupado = !_lancViewAgrupado;
+  $('btnToggleView').textContent = _lancViewAgrupado ? '☰ Detalhado' : '▤ Agrupado';
+  if (window._lancamentosData) renderLancamentos(window._lancamentosData);
+}
 
+function renderLancamentos(data) {
+  const tbody = $('tableLancamentos').querySelector('tbody');
+  const nomes = { repasse_gateway: 'Repasse Gateway', pagamento_modelo: 'Pgto Modelo', pagamento_agencia: 'Pgto Agência', despesa: 'Despesa', outro: 'Outro' };
+  const cores = { entrada: '#22c55e', saida: '#ef4444' };
+
+  if (_lancViewAgrupado) {
+    const grupos = {};
+    (data.rows || []).forEach(r => {
+      const key = r.categoria;
+      if (!grupos[key]) grupos[key] = { categoria: r.categoria, tipo: r.tipo, itens: [], total: 0 };
+      grupos[key].itens.push(r);
+      grupos[key].total += Number(r.valor);
+    });
+    tbody.innerHTML = Object.values(grupos).map(g => `
+      <tr style="cursor:pointer;" onclick="expandirGrupo('${g.categoria}')">
+        <td colspan="2" style="font-weight:600;">${nomes[g.categoria] || g.categoria}
+          <span style="font-size:11px;color:var(--text-muted);margin-left:6px;">(${g.itens.length} item${g.itens.length > 1 ? 's' : ''})</span>
+        </td>
+        <td><span style="color:${cores[g.tipo]};font-weight:600;">${g.tipo === 'entrada' ? '↑ Entrada' : '↓ Saída'}</span></td>
+        <td colspan="3" style="font-weight:700;">${money(g.total)}</td>
+        <td>—</td>
+        <td><span style="font-size:11px;color:var(--primary);" id="seta-${g.categoria}">▼ ver</span></td>
+      </tr>
+      <tr id="grupo-${g.categoria}" style="display:none;background:var(--hover);">
+        <td colspan="8" style="padding:0;">
+          <table style="width:100%;border-collapse:collapse;">
+            ${g.itens.map(r => `<tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:6px 16px;width:110px;color:var(--text-muted);font-size:13px;">${fmtDate(r.data)}</td>
+              <td style="padding:6px 8px;font-size:13px;">${r.descricao}</td>
+              <td style="padding:6px 8px;font-size:13px;">${r.banco ? r.banco.charAt(0).toUpperCase() + r.banco.slice(1) : (r.modelo_nome || '—')}</td>
+              <td style="padding:6px 8px;font-weight:600;font-size:13px;">${money(r.valor)}</td>
+              <td colspan="4" style="padding:6px 8px;">
+                <button class="btn btn-sm" onclick="event.stopPropagation();editarLancamento(${r.id})">✏️</button>
+                <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deletarLancamento(${r.id})">🗑</button>
+              </td>
+            </tr>`).join('')}
+          </table>
+        </td>
+      </tr>
+    `).join('') || emptyRow(8);
+  } else {
     tbody.innerHTML = (data.rows || []).map(r => `
       <tr>
         <td>${fmtDate(r.data)}</td>
@@ -2073,6 +2112,25 @@ async function carregarLancamentos() {
         </td>
       </tr>
     `).join('') || emptyRow(8);
+  }
+}
+
+function expandirGrupo(categoria) {
+  const row = $(`grupo-${categoria}`);
+  const seta = $(`seta-${categoria}`);
+  if (!row) return;
+  const aberto = row.style.display !== 'none';
+  row.style.display = aberto ? 'none' : '';
+  if (seta) seta.textContent = aberto ? '▼ ver' : '▲ fechar';
+}
+
+async function carregarLancamentos() {
+  const mes = $('lancMes').value;
+  const ano = $('lancAno').value;
+  try {
+    const data = await fetchJSON(`/admin/dashboard/lancamentos-bancarios?mes=${mes}&ano=${ano}`);
+
+    renderLancamentos(data);
 
     const t = data.totais || {};
     $('lancTotalEntradas').textContent = money(t.entradas);

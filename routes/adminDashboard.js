@@ -2413,10 +2413,13 @@ router.get("/lancamentos-bancarios", async (req, res) => {
 
 router.post("/lancamentos-bancarios", async (req, res) => {
   try {
-    const { data, descricao, tipo, categoria, banco, modelo_nome, valor, mes, ano, observacao } = req.body;
+    const { data, descricao, tipo, categoria, banco, modelo_nome, valor, observacao } = req.body;
     if (!data || !descricao || !tipo || !categoria || !valor) {
       return res.status(400).json({ erro: "Campos obrigatórios: data, descricao, tipo, categoria, valor" });
     }
+    const d = new Date(data + 'T12:00:00');
+    const mes = d.getMonth() + 1;
+    const ano = d.getFullYear();
     const { rows } = await db.query(
       `INSERT INTO lancamentos_bancarios (data, descricao, tipo, categoria, banco, modelo_nome, valor, mes, ano, observacao)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
