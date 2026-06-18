@@ -2075,7 +2075,9 @@ function renderLancamentos(data) {
           <span style="font-size:11px;color:var(--text-muted);margin-left:6px;">(${g.itens.length} item${g.itens.length > 1 ? 's' : ''})</span>
         </td>
         <td><span style="color:${cores[g.tipo]};font-weight:600;">${g.tipo === 'entrada' ? '↑ Entrada' : '↓ Saída'}</span></td>
-        <td colspan="3" style="font-weight:700;">${money(g.total)}</td>
+        <td></td>
+        <td></td>
+        <td style="font-weight:700;">${money(g.total)}</td>
         <td>—</td>
         <td><span style="font-size:11px;color:var(--primary);" id="seta-${g.categoria}">▼ ver</span></td>
       </tr>
