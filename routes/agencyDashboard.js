@@ -143,9 +143,8 @@ router.get("/overview", authAgencia, async (req, res) => {
         SELECT COALESCE(SUM(agency_fee), 0) AS total
         FROM vw_transacoes_agencia
         WHERE agencia_id = $1
-          AND created_at >= date_trunc('day', NOW())
-          AND created_at < date_trunc('day', NOW()) + INTERVAL '1 day'
-          AND COALESCE(status, 'pago') NOT IN ('falhou','cancelado','estornado','chargeback')
+          AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo') = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+          AND status = 'pago'
       `, [agenciaId]),
 
       // FATURAMENTO MÊS (via view)
@@ -153,30 +152,27 @@ router.get("/overview", authAgencia, async (req, res) => {
         SELECT COALESCE(SUM(agency_fee), 0) AS total
         FROM vw_transacoes_agencia
         WHERE agencia_id = $1
-          AND created_at >= date_trunc('month', NOW())
-          AND created_at < date_trunc('month', NOW()) + INTERVAL '1 month'
-          AND COALESCE(status, 'pago') NOT IN ('falhou','cancelado','estornado','chargeback')
+          AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+          AND status = 'pago'
       `, [agenciaId]),
 
-      // FATURAMENTO 12 MESES (via view — versão correta)
+      // FATURAMENTO 12 MESES (via view)
       db.query(`
         SELECT
           TO_CHAR(meses.mes, 'YYYY-MM') AS mes,
           COALESCE(SUM(t.agency_fee), 0) AS total
         FROM generate_series(
-          date_trunc('month', NOW()) - INTERVAL '11 months',
-          date_trunc('month', NOW()),
+          DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '11 months',
+          DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo'),
           INTERVAL '1 month'
         ) AS meses(mes)
-
         LEFT JOIN (
           SELECT *
           FROM vw_transacoes_agencia
           WHERE agencia_id = $1
-            AND COALESCE(status, 'pago') NOT IN ('falhou','cancelado','estornado','chargeback')
+            AND status = 'pago'
         ) t
-          ON date_trunc('month', t.created_at) = meses.mes
-
+          ON DATE_TRUNC('month', t.created_at AT TIME ZONE 'America/Sao_Paulo') = meses.mes
         GROUP BY meses.mes
         ORDER BY meses.mes ASC
       `, [agenciaId]),
@@ -196,8 +192,7 @@ router.get("/overview", authAgencia, async (req, res) => {
           COUNT(*) AS total
         FROM vw_acessos_agencia
         WHERE agencia_id = $1
-          AND created_at >= date_trunc('month', NOW())
-          AND created_at < date_trunc('month', NOW()) + INTERVAL '1 month'
+          AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND origem_trafego IS NOT NULL
         GROUP BY
           CASE
@@ -229,9 +224,8 @@ router.get("/overview", authAgencia, async (req, res) => {
         FROM vw_transacoes_agencia t
         JOIN modelos m ON m.id = t.modelo_id
         WHERE t.agencia_id = $1
-          AND t.created_at >= date_trunc('month', NOW())
-          AND t.created_at < date_trunc('month', NOW()) + INTERVAL '1 month'
-          AND COALESCE(t.status, 'pago') NOT IN ('falhou','cancelado','estornado','chargeback')
+          AND DATE_TRUNC('month', t.created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+          AND t.status = 'pago'
         GROUP BY t.modelo_id, m.nome_exibicao, m.nome
         ORDER BY ganhos DESC, atualizado_em DESC
         LIMIT 5
@@ -1027,21 +1021,21 @@ router.get("/ranking", authAgencia, async (req, res) => {
     const agenciaId = req.agencia.id;
     const mes = String(req.query.mes || '').trim(); // YYYY-MM
     const params = [agenciaId];
-    let whereMes = `
-      t.created_at >= date_trunc('month', NOW())
-      AND t.created_at < (date_trunc('month', NOW()) + INTERVAL '1 month')
-    `;
+    let whereMes;
 
     if (mes) {
       const match = mes.match(/^(\d{4})-(\d{2})$/);
       if (!match) {
         return res.status(400).json({ erro: "Parâmetro mes inválido. Use YYYY-MM" });
       }
-
-      params.push(`${mes}-01`);
+      params.push(Number(match[1]), Number(match[2]));
       whereMes = `
-        t.created_at >= $2::date
-        AND t.created_at < ($2::date + INTERVAL '1 month')
+        EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $2
+        AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $3
+      `;
+    } else {
+      whereMes = `
+        DATE_TRUNC('month', t.created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
       `;
     }
 
@@ -1056,8 +1050,8 @@ router.get("/ranking", authAgencia, async (req, res) => {
       JOIN modelos m ON m.id = t.modelo_id
       WHERE t.modelo_id IS NOT NULL
         AND m.agencia_id = $1
+        AND t.status = 'pago'
         AND ${whereMes}
-        AND COALESCE(t.status, 'pago') NOT IN ('falhou', 'cancelado', 'estornado', 'chargeback')
       GROUP BY t.modelo_id, m.nome
       ORDER BY ganhos_total DESC, atualizado_em DESC
       LIMIT 50

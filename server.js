@@ -5092,7 +5092,8 @@ app.get("/api/modelos", auth, async (req, res) => {
         SELECT SUM(valor_modelo) AS ganhos_mes
         FROM transacoes_agency t
         WHERE t.modelo_id = m.id
-          AND date_trunc('month', t.created_at) = date_trunc('month', NOW())
+          AND t.status = 'pago'
+          AND DATE_TRUNC('month', t.created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
       ) r ON true
 
       LEFT JOIN LATERAL (

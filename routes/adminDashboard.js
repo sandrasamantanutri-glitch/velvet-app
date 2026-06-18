@@ -153,17 +153,15 @@ router.get("/overview", auth, authAdmin, async (req, res) => {
       db.query(`
         SELECT COALESCE(SUM(t.velvet_fee), 0) AS total
         FROM transacoes_agency t
-        WHERE t.created_at >= date_trunc('day', NOW())
-          AND t.created_at < (date_trunc('day', NOW()) + INTERVAL '1 day')
-          AND COALESCE(t.status, 'pago') NOT IN ('falhou', 'cancelado', 'estornado', 'chargeback')
+        WHERE DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo') = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+          AND t.status = 'pago'
       `),
 
       db.query(`
         SELECT COALESCE(SUM(t.taxa_gateway), 0) AS total
         FROM transacoes_agency t
-        WHERE t.created_at >= date_trunc('day', NOW())
-          AND t.created_at < (date_trunc('day', NOW()) + INTERVAL '1 day')
-          AND COALESCE(t.status, 'pago') NOT IN ('falhou', 'cancelado', 'estornado', 'chargeback')
+        WHERE DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo') = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+          AND t.status = 'pago'
       `),
 
       db.query(`
@@ -171,13 +169,13 @@ router.get("/overview", auth, authAdmin, async (req, res) => {
           TO_CHAR(meses.mes, 'YYYY-MM') AS mes,
           COALESCE(SUM(t.velvet_fee), 0) AS total
         FROM generate_series(
-          date_trunc('month', NOW()) - INTERVAL '11 months',
-          date_trunc('month', NOW()),
+          DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '11 months',
+          DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo'),
           INTERVAL '1 month'
         ) AS meses(mes)
         LEFT JOIN transacoes_agency t
-          ON date_trunc('month', t.created_at) = meses.mes
-          AND COALESCE(t.status, 'pago') NOT IN ('falhou', 'cancelado', 'estornado', 'chargeback')
+          ON DATE_TRUNC('month', t.created_at AT TIME ZONE 'America/Sao_Paulo') = meses.mes
+          AND t.status = 'pago'
         GROUP BY meses.mes
         ORDER BY meses.mes ASC
       `),
@@ -195,8 +193,7 @@ SELECT
   END AS origem,
   COUNT(*) AS total
 FROM clientes
-WHERE created_at >= date_trunc('month', NOW())
-  AND created_at < (date_trunc('month', NOW()) + INTERVAL '1 month')
+WHERE DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
   AND origem_trafego IS NOT NULL
   AND origem_trafego != ''
 GROUP BY 
@@ -227,9 +224,8 @@ ORDER BY total DESC;
         FROM transacoes_agency t
         LEFT JOIN modelos m ON m.id = t.modelo_id
         WHERE t.modelo_id IS NOT NULL
-          AND t.created_at >= date_trunc('month', NOW())
-          AND t.created_at < (date_trunc('month', NOW()) + INTERVAL '1 month')
-          AND COALESCE(t.status, 'pago') NOT IN ('falhou', 'cancelado', 'estornado', 'chargeback')
+          AND DATE_TRUNC('month', t.created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+          AND t.status = 'pago'
         GROUP BY t.modelo_id, m.nome
         ORDER BY ganhos DESC, atualizado_em DESC
         LIMIT 5
@@ -690,10 +686,10 @@ router.get("/security-logs", authAdmin, async (req, res) => {
 
     const m = parseMes(mes);
     if (m) {
-      params.push(m.mes, m.ano);
+      params.push(m.ano, m.mes);
       conditions.push(
-        `EXTRACT(MONTH FROM sl.created_at) = $${params.length - 1}` +
-        ` AND EXTRACT(YEAR FROM sl.created_at) = $${params.length}`
+        `EXTRACT(YEAR  FROM sl.created_at AT TIME ZONE 'America/Sao_Paulo') = $${params.length - 1}` +
+        ` AND EXTRACT(MONTH FROM sl.created_at AT TIME ZONE 'America/Sao_Paulo') = $${params.length}`
       );
     }
 
@@ -2363,9 +2359,9 @@ router.post("/fechamento", async (req, res) => {
         COALESCE(SUM(CASE WHEN tipo != 'assinatura' THEN valor_bruto ELSE 0 END), 0) AS total_midias
       FROM transacoes_agency
       WHERE status = 'pago'
-      AND EXTRACT(MONTH FROM created_at) = $1
-      AND EXTRACT(YEAR FROM created_at) = $2
-    `, [mes, ano]);
+      AND EXTRACT(YEAR  FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $1
+      AND EXTRACT(MONTH FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $2
+    `, [ano, mes]);
 
     const r = result.rows[0];
     const { rows } = await db.query(`
@@ -2390,7 +2386,8 @@ router.get("/fechamento/detalhe/:ano/:mes", async (req, res) => {
         SELECT COUNT(*) AS qtd, COALESCE(SUM(valor_bruto),0) AS total
         FROM transacoes_agency
         WHERE status='chargeback'
-          AND EXTRACT(YEAR FROM created_at)=$1 AND EXTRACT(MONTH FROM created_at)=$2
+          AND EXTRACT(YEAR  FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $1
+          AND EXTRACT(MONTH FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $2
       `, [ano, mes]),
       db.query(`
         SELECT tipo, categoria, COALESCE(SUM(valor),0) AS total
@@ -2491,17 +2488,19 @@ router.post("/fechamento/:id/recalcular", async (req, res) => {
     const fq = await db.query("SELECT ano, mes FROM fechamento_mensal WHERE id=$1", [req.params.id]);
     if (!fq.rows.length) return res.status(404).json({ erro: "Não encontrado" });
     const { ano, mes } = fq.rows[0];
+    const brtYear  = `EXTRACT(YEAR  FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $1`;
+    const brtMonth = `EXTRACT(MONTH FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $2`;
     const { rows } = await db.query(`
       UPDATE fechamento_mensal SET
-        total_bruto = (SELECT COALESCE(SUM(valor_bruto),0) FROM transacoes_agency WHERE status='pago' AND EXTRACT(MONTH FROM created_at)=$2 AND EXTRACT(YEAR FROM created_at)=$1),
-        total_taxas = (SELECT COALESCE(SUM(taxa_gateway),0) FROM transacoes_agency WHERE status='pago' AND EXTRACT(MONTH FROM created_at)=$2 AND EXTRACT(YEAR FROM created_at)=$1),
-        total_agency = (SELECT COALESCE(SUM(agency_fee),0) FROM transacoes_agency WHERE status='pago' AND EXTRACT(MONTH FROM created_at)=$2 AND EXTRACT(YEAR FROM created_at)=$1),
-        total_velvet = (SELECT COALESCE(SUM(velvet_fee),0) FROM transacoes_agency WHERE status='pago' AND EXTRACT(MONTH FROM created_at)=$2 AND EXTRACT(YEAR FROM created_at)=$1),
-        total_modelos = (SELECT COALESCE(SUM(valor_modelo),0) FROM transacoes_agency WHERE status='pago' AND EXTRACT(MONTH FROM created_at)=$2 AND EXTRACT(YEAR FROM created_at)=$1),
-        total_assinaturas = (SELECT COALESCE(SUM(CASE WHEN tipo='assinatura' THEN valor_bruto ELSE 0 END),0) FROM transacoes_agency WHERE status='pago' AND EXTRACT(MONTH FROM created_at)=$2 AND EXTRACT(YEAR FROM created_at)=$1),
-        total_midias = (SELECT COALESCE(SUM(CASE WHEN tipo!='assinatura' THEN valor_bruto ELSE 0 END),0) FROM transacoes_agency WHERE status='pago' AND EXTRACT(MONTH FROM created_at)=$2 AND EXTRACT(YEAR FROM created_at)=$1),
-        total_chargebacks = (SELECT COALESCE(SUM(valor_bruto),0) FROM transacoes_agency WHERE status='chargeback' AND EXTRACT(MONTH FROM created_at)=$2 AND EXTRACT(YEAR FROM created_at)=$1),
-        total_despesas = (SELECT COALESCE(SUM(valor),0) FROM despesas WHERE EXTRACT(MONTH FROM data)=$2 AND EXTRACT(YEAR FROM data)=$1)
+        total_bruto        = (SELECT COALESCE(SUM(valor_bruto),0)  FROM transacoes_agency WHERE status='pago'       AND ${brtYear} AND ${brtMonth}),
+        total_taxas        = (SELECT COALESCE(SUM(taxa_gateway),0) FROM transacoes_agency WHERE status='pago'       AND ${brtYear} AND ${brtMonth}),
+        total_agency       = (SELECT COALESCE(SUM(agency_fee),0)   FROM transacoes_agency WHERE status='pago'       AND ${brtYear} AND ${brtMonth}),
+        total_velvet       = (SELECT COALESCE(SUM(velvet_fee),0)   FROM transacoes_agency WHERE status='pago'       AND ${brtYear} AND ${brtMonth}),
+        total_modelos      = (SELECT COALESCE(SUM(valor_modelo),0) FROM transacoes_agency WHERE status='pago'       AND ${brtYear} AND ${brtMonth}),
+        total_assinaturas  = (SELECT COALESCE(SUM(CASE WHEN tipo='assinatura'  THEN valor_bruto ELSE 0 END),0) FROM transacoes_agency WHERE status='pago' AND ${brtYear} AND ${brtMonth}),
+        total_midias       = (SELECT COALESCE(SUM(CASE WHEN tipo!='assinatura' THEN valor_bruto ELSE 0 END),0) FROM transacoes_agency WHERE status='pago' AND ${brtYear} AND ${brtMonth}),
+        total_chargebacks  = (SELECT COALESCE(SUM(valor_bruto),0)  FROM transacoes_agency WHERE status='chargeback' AND ${brtYear} AND ${brtMonth}),
+        total_despesas     = (SELECT COALESCE(SUM(valor),0) FROM despesas WHERE EXTRACT(YEAR FROM data)=$1 AND EXTRACT(MONTH FROM data)=$2)
       WHERE id=$3 RETURNING *
     `, [ano, mes, req.params.id]);
     res.json(rows[0]);
@@ -2989,21 +2988,22 @@ router.get("/ranking", authAdmin, async (req, res) => {
   try {
     const mes = String(req.query.mes || '').trim(); // YYYY-MM
     const params = [];
-    let whereMes = `
-      t.created_at >= date_trunc('month', NOW())
-      AND t.created_at < (date_trunc('month', NOW()) + INTERVAL '1 month')
-    `;
+    let whereMes;
 
     if (mes) {
       const match = mes.match(/^(\d{4})-(\d{2})$/);
       if (!match) {
         return res.status(400).json({ erro: "Parâmetro mes inválido. Use YYYY-MM" });
       }
-
-      params.push(`${mes}-01`);
+      params.push(Number(match[1]), Number(match[2]));
       whereMes = `
-        t.created_at >= $1::date
-        AND t.created_at < ($1::date + INTERVAL '1 month')
+        EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $1
+        AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $2
+      `;
+    } else {
+      whereMes = `
+        EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = EXTRACT(YEAR  FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
+        AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = EXTRACT(MONTH FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
       `;
     }
 
@@ -3016,8 +3016,8 @@ router.get("/ranking", authAdmin, async (req, res) => {
       FROM transacoes_agency t
       LEFT JOIN modelos m ON m.id = t.modelo_id
       WHERE t.modelo_id IS NOT NULL
+        AND t.status = 'pago'
         AND ${whereMes}
-        AND COALESCE(t.status, 'pago') NOT IN ('falhou', 'cancelado', 'estornado', 'chargeback')
       GROUP BY t.modelo_id, m.nome
       ORDER BY ganhos_total DESC, atualizado_em DESC
       LIMIT 50
@@ -3219,9 +3219,9 @@ router.get("/transacoes-agency", async (req, res) => {
     }
 
     if (m) {
-      where += ` AND EXTRACT(MONTH FROM t.created_at) = $${paramIdx}
-                 AND EXTRACT(YEAR FROM t.created_at) = $${paramIdx + 1}`;
-      params.push(m.mes, m.ano);
+      where += ` AND EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${paramIdx}
+                 AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${paramIdx + 1}`;
+      params.push(m.ano, m.mes);
       paramIdx += 2;
     }
 
