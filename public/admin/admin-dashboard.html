@@ -49,6 +49,10 @@
       <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
       <span>Fechamento</span>
     </a>
+    <a class="nav-item" data-page="lancamentos">
+      <svg viewBox="0 0 24 24"><path d="M4 10v7h3v-7H4zm6 0v7h3v-7h-3zM2 22h19v-3H2v3zm14-12v7h3v-7h-3zm-4.5-9L2 6v2h19V6l-9.5-5z"/></svg>
+      <span>Conta Bancária</span>
+    </a>
     <a class="nav-item" data-page="bancarios">
       <svg viewBox="0 0 24 24"><path d="M4 10v7h3v-7H4zm6 0v7h3v-7h-3zM2 22h19v-3H2v3zm14-12v7h3v-7h-3zm-4.5-9L2 6v2h19V6l-9.5-5z"/></svg>
       <span>Dados Bancários</span>
@@ -431,6 +435,125 @@
     </div>
   </div>
 </section>
+
+  <!-- CONTA BANCÁRIA / LANÇAMENTOS -->
+  <section class="page" id="page-lancamentos">
+    <!-- Filtro de mês -->
+    <div class="page-actions" style="gap:8px;flex-wrap:wrap;">
+      <select id="lancMes" class="input-select" style="width:130px;">
+        <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+        <option value="3">Março</option><option value="4">Abril</option>
+        <option value="5" selected>Maio</option><option value="6">Junho</option>
+        <option value="7">Julho</option><option value="8">Agosto</option>
+        <option value="9">Setembro</option><option value="10">Outubro</option>
+        <option value="11">Novembro</option><option value="12">Dezembro</option>
+      </select>
+      <select id="lancAno" class="input-select" style="width:90px;">
+        <option value="2025">2025</option>
+        <option value="2026" selected>2026</option>
+      </select>
+      <button class="btn btn-secondary" onclick="carregarLancamentos()">Filtrar</button>
+      <button class="btn btn-primary" onclick="abrirModalLancamento()">+ Novo Lançamento</button>
+      <button class="btn btn-secondary" onclick="imprimirRelatorio()">&#128438; Relatório Contador</button>
+    </div>
+
+    <!-- Cards de resumo -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px;">
+      <div class="card" style="padding:16px;text-align:center;">
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">ENTRADAS</div>
+        <div id="lancTotalEntradas" style="font-size:22px;font-weight:700;color:#22c55e;">R$ 0,00</div>
+      </div>
+      <div class="card" style="padding:16px;text-align:center;">
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">PAGTO MODELOS</div>
+        <div id="lancTotalModelos" style="font-size:22px;font-weight:700;color:#f97316;">R$ 0,00</div>
+      </div>
+      <div class="card" style="padding:16px;text-align:center;">
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">DESPESAS</div>
+        <div id="lancTotalDespesas" style="font-size:22px;font-weight:700;color:#ef4444;">R$ 0,00</div>
+      </div>
+      <div class="card" style="padding:16px;text-align:center;">
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">SALDO EMPRESA</div>
+        <div id="lancTotalSaldo" style="font-size:22px;font-weight:700;color:#6366f1;">R$ 0,00</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <table class="table" id="tableLancamentos">
+        <thead>
+          <tr>
+            <th>Data</th><th>Descrição</th><th>Tipo</th><th>Categoria</th>
+            <th>Gateway</th><th>Valor</th><th>Obs</th><th>Ações</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- MODAL LANÇAMENTO -->
+  <div id="modalLancamento" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;align-items:center;justify-content:center;">
+    <div class="card" style="width:100%;max-width:480px;padding:24px;position:relative;">
+      <h3 id="modalLancTitulo" style="margin-bottom:16px;">Novo Lançamento</h3>
+      <input type="hidden" id="lancEditId">
+      <div style="display:grid;gap:10px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <label style="font-size:12px;color:var(--text-muted);">Data</label>
+            <input type="date" id="lancData" class="input-text" style="width:100%;">
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--text-muted);">Valor (R$)</label>
+            <input type="number" id="lancValor" class="input-text" step="0.01" min="0.01" placeholder="0,00" style="width:100%;">
+          </div>
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--text-muted);">Descrição</label>
+          <input type="text" id="lancDescricao" class="input-text" placeholder="Ex: Repasse Stripe semana 1" style="width:100%;">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <label style="font-size:12px;color:var(--text-muted);">Tipo</label>
+            <select id="lancTipo" class="input-select" style="width:100%;" onchange="atualizarCamposModal()">
+              <option value="entrada">Entrada</option>
+              <option value="saida">Saída</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--text-muted);">Categoria</label>
+            <select id="lancCategoria" class="input-select" style="width:100%;" onchange="atualizarCamposModal()">
+              <option value="repasse_gateway">Repasse Gateway</option>
+              <option value="pagamento_modelo">Pagamento Modelo</option>
+              <option value="despesa">Despesa</option>
+              <option value="outro">Outro</option>
+            </select>
+          </div>
+        </div>
+        <div id="campoGateway">
+          <label style="font-size:12px;color:var(--text-muted);">Gateway</label>
+          <select id="lancGateway" class="input-select" style="width:100%;">
+            <option value="">— Selecione —</option>
+            <option value="stripe">Stripe</option>
+            <option value="asaas">Asaas</option>
+            <option value="abacatepay">AbacatePay</option>
+            <option value="safe2pay">Safe2Pay</option>
+            <option value="pluggy">Pluggy</option>
+          </select>
+        </div>
+        <div id="campoModelo" style="display:none;">
+          <label style="font-size:12px;color:var(--text-muted);">Nome da Modelo</label>
+          <input type="text" id="lancModeloNome" class="input-text" placeholder="Nome da modelo" style="width:100%;">
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--text-muted);">Observação (opcional)</label>
+          <input type="text" id="lancObservacao" class="input-text" placeholder="Notas adicionais" style="width:100%;">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="fecharModalLancamento()">Cancelar</button>
+        <button class="btn btn-primary" onclick="salvarLancamento()">Salvar</button>
+      </div>
+    </div>
+  </div>
 
   <!-- FECHAMENTO MENSAL -->
   <section class="page" id="page-fechamento">

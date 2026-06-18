@@ -171,6 +171,7 @@ const pageTitles = {
   seguranca: 'Seguranca & Historico',
   bloqueios: 'Bloqueios',
   verificacoes: 'Verificacoes',
+  lancamentos: 'Conta Bancária',
   fechamento: 'Fechamento Mensal',
   bancarios: 'Dados Bancarios',
   modelos: 'Modelos',
@@ -2033,7 +2034,225 @@ function coletarDadosModeloModal() {
   };
 }
 
-// ========== 7. FECHAMENTO ==========
+// ========== 7. LANÇAMENTOS BANCÁRIOS ==========
+
+pageLoaders.lancamentos = function () {
+  const now = new Date();
+  const mesEl = $('lancMes');
+  const anoEl = $('lancAno');
+  if (!mesEl._init) {
+    mesEl.value = now.getMonth() + 1;
+    anoEl.value = now.getFullYear();
+    mesEl._init = true;
+  }
+  carregarLancamentos();
+};
+
+async function carregarLancamentos() {
+  const mes = $('lancMes').value;
+  const ano = $('lancAno').value;
+  try {
+    const data = await fetchJSON(`/admin/dashboard/lancamentos-bancarios?mes=${mes}&ano=${ano}`);
+    const tbody = $('tableLancamentos').querySelector('tbody');
+
+    const nomes = { repasse_gateway: 'Repasse Gateway', pagamento_modelo: 'Pgto Modelo', despesa: 'Despesa', outro: 'Outro' };
+    const cores = { entrada: '#22c55e', saida: '#ef4444' };
+
+    tbody.innerHTML = (data.rows || []).map(r => `
+      <tr>
+        <td>${fmtDate(r.data)}</td>
+        <td>${r.descricao}</td>
+        <td><span style="color:${cores[r.tipo]};font-weight:600;">${r.tipo === 'entrada' ? '↑ Entrada' : '↓ Saída'}</span></td>
+        <td>${nomes[r.categoria] || r.categoria}</td>
+        <td>${r.gateway ? r.gateway.charAt(0).toUpperCase() + r.gateway.slice(1) : (r.modelo_nome || '—')}</td>
+        <td style="font-weight:600;">${money(r.valor)}</td>
+        <td style="font-size:12px;color:var(--text-muted);">${r.observacao || '—'}</td>
+        <td>
+          <button class="btn btn-sm" onclick="editarLancamento(${r.id})">✏️</button>
+          <button class="btn btn-sm btn-danger" onclick="deletarLancamento(${r.id})">🗑</button>
+        </td>
+      </tr>
+    `).join('') || emptyRow(8);
+
+    const t = data.totais || {};
+    $('lancTotalEntradas').textContent = money(t.entradas);
+    $('lancTotalModelos').textContent = money(t.modelos);
+    $('lancTotalDespesas').textContent = money(t.despesas);
+    $('lancTotalSaldo').textContent = money(t.saldo);
+    $('lancTotalSaldo').style.color = t.saldo >= 0 ? '#22c55e' : '#ef4444';
+
+    window._lancamentosData = data;
+  } catch (err) { console.error('Erro lancamentos:', err); }
+}
+
+function abrirModalLancamento(dados) {
+  const modal = $('modalLancamento');
+  modal.style.display = 'flex';
+  $('lancEditId').value = dados?.id || '';
+  $('modalLancTitulo').textContent = dados ? 'Editar Lançamento' : 'Novo Lançamento';
+  $('lancData').value = dados?.data ? dados.data.split('T')[0] : new Date().toISOString().split('T')[0];
+  $('lancValor').value = dados?.valor || '';
+  $('lancDescricao').value = dados?.descricao || '';
+  $('lancTipo').value = dados?.tipo || 'entrada';
+  $('lancCategoria').value = dados?.categoria || 'repasse_gateway';
+  $('lancGateway').value = dados?.gateway || '';
+  $('lancModeloNome').value = dados?.modelo_nome || '';
+  $('lancObservacao').value = dados?.observacao || '';
+  atualizarCamposModal();
+}
+
+function fecharModalLancamento() {
+  $('modalLancamento').style.display = 'none';
+}
+
+function atualizarCamposModal() {
+  const tipo = $('lancTipo').value;
+  const cat = $('lancCategoria').value;
+
+  // Filtra categorias por tipo
+  const opcs = $('lancCategoria').options;
+  for (const op of opcs) {
+    if (tipo === 'entrada') op.hidden = op.value !== 'repasse_gateway' && op.value !== 'outro';
+    else op.hidden = op.value === 'repasse_gateway';
+  }
+  if (tipo === 'entrada' && !['repasse_gateway','outro'].includes($('lancCategoria').value)) {
+    $('lancCategoria').value = 'repasse_gateway';
+  }
+  if (tipo === 'saida' && $('lancCategoria').value === 'repasse_gateway') {
+    $('lancCategoria').value = 'pagamento_modelo';
+  }
+
+  const catAtual = $('lancCategoria').value;
+  $('campoGateway').style.display = catAtual === 'repasse_gateway' ? '' : 'none';
+  $('campoModelo').style.display = catAtual === 'pagamento_modelo' ? '' : 'none';
+}
+
+async function salvarLancamento() {
+  const id = $('lancEditId').value;
+  const mes = parseInt($('lancMes').value);
+  const ano = parseInt($('lancAno').value);
+  const body = {
+    data: $('lancData').value,
+    descricao: $('lancDescricao').value.trim(),
+    tipo: $('lancTipo').value,
+    categoria: $('lancCategoria').value,
+    gateway: $('lancGateway').value || null,
+    modelo_nome: $('lancModeloNome').value.trim() || null,
+    valor: parseFloat($('lancValor').value),
+    observacao: $('lancObservacao').value.trim() || null,
+    mes, ano
+  };
+  if (!body.data || !body.descricao || !body.valor) {
+    toast('Preencha data, descrição e valor', 'error'); return;
+  }
+  try {
+    if (id) await putJSON(`/admin/dashboard/lancamentos-bancarios/${id}`, body);
+    else await postJSON('/admin/dashboard/lancamentos-bancarios', body);
+    toast('Lançamento salvo!', 'success');
+    fecharModalLancamento();
+    carregarLancamentos();
+  } catch (err) { toast('Erro: ' + err.message, 'error'); }
+}
+
+async function editarLancamento(id) {
+  const data = window._lancamentosData?.rows?.find(r => r.id === id);
+  if (data) abrirModalLancamento(data);
+}
+
+async function deletarLancamento(id) {
+  if (!confirm('Excluir este lançamento?')) return;
+  try {
+    await deleteJSON(`/admin/dashboard/lancamentos-bancarios/${id}`);
+    toast('Lançamento excluído', 'success');
+    carregarLancamentos();
+  } catch (err) { toast('Erro: ' + err.message, 'error'); }
+}
+
+function imprimirRelatorio() {
+  const data = window._lancamentosData;
+  if (!data) { toast('Carregue os dados primeiro', 'error'); return; }
+
+  const meses = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const nomes = { repasse_gateway: 'Repasse Gateway', pagamento_modelo: 'Pagamento de Modelo', despesa: 'Despesa', outro: 'Outro' };
+  const t = data.totais;
+
+  const linhas = {
+    entradas: data.rows.filter(r => r.tipo === 'entrada'),
+    modelos:  data.rows.filter(r => r.categoria === 'pagamento_modelo'),
+    despesas: data.rows.filter(r => r.categoria === 'despesa'),
+    outros:   data.rows.filter(r => r.tipo === 'saida' && !['pagamento_modelo','despesa'].includes(r.categoria)),
+  };
+
+  const tabelaHtml = (rows) => rows.map(r => `
+    <tr>
+      <td>${fmtDate(r.data)}</td>
+      <td>${r.descricao}${r.modelo_nome ? ' — ' + r.modelo_nome : ''}${r.gateway ? ' (' + r.gateway + ')' : ''}</td>
+      <td style="text-align:right;">${money(r.valor)}</td>
+    </tr>
+  `).join('');
+
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html lang="pt-BR"><head>
+    <meta charset="UTF-8">
+    <title>Relatório Velvet — ${meses[data.mes]}/${data.ano}</title>
+    <style>
+      * { margin:0; padding:0; box-sizing:border-box; }
+      body { font-family: Arial, sans-serif; font-size:13px; color:#111; padding:40px; }
+      h1 { font-size:20px; margin-bottom:4px; }
+      .sub { color:#666; font-size:12px; margin-bottom:32px; }
+      h2 { font-size:14px; font-weight:700; margin:24px 0 8px; padding-bottom:4px; border-bottom:2px solid #111; }
+      table { width:100%; border-collapse:collapse; }
+      td, th { padding:6px 8px; border-bottom:1px solid #e5e7eb; }
+      th { background:#f3f4f6; font-weight:600; font-size:12px; text-align:left; }
+      .total-row td { font-weight:700; border-top:2px solid #111; background:#f9fafb; }
+      .resumo { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin:32px 0; }
+      .card { border:1px solid #e5e7eb; border-radius:8px; padding:16px; }
+      .card-label { font-size:11px; color:#666; text-transform:uppercase; margin-bottom:4px; }
+      .card-value { font-size:20px; font-weight:700; }
+      .green { color:#16a34a; } .orange { color:#ea580c; } .red { color:#dc2626; } .purple { color:#6366f1; }
+      @media print { body { padding:20px; } }
+    </style>
+  </head><body>
+    <h1>Velvet — Relatório Financeiro</h1>
+    <div class="sub">${meses[data.mes]} de ${data.ano} &nbsp;·&nbsp; Gerado em ${new Date().toLocaleDateString('pt-BR')}</div>
+
+    <div class="resumo">
+      <div class="card"><div class="card-label">Entradas (Líquido Recebido)</div><div class="card-value green">${money(t.entradas)}</div></div>
+      <div class="card"><div class="card-label">Pagamentos a Modelos</div><div class="card-value orange">${money(t.modelos)}</div></div>
+      <div class="card"><div class="card-label">Despesas Operacionais</div><div class="card-value red">${money(t.despesas)}</div></div>
+      <div class="card"><div class="card-label">Saldo da Empresa</div><div class="card-value purple">${money(t.saldo)}</div></div>
+    </div>
+
+    ${linhas.entradas.length ? `<h2>Entradas</h2>
+    <table><thead><tr><th>Data</th><th>Descrição</th><th style="text-align:right;">Valor</th></tr></thead>
+    <tbody>${tabelaHtml(linhas.entradas)}</tbody>
+    <tfoot><tr class="total-row"><td colspan="2">Total Entradas</td><td style="text-align:right;">${money(t.entradas)}</td></tr></tfoot>
+    </table>` : ''}
+
+    ${linhas.modelos.length ? `<h2>Pagamentos a Modelos</h2>
+    <table><thead><tr><th>Data</th><th>Modelo</th><th style="text-align:right;">Valor</th></tr></thead>
+    <tbody>${tabelaHtml(linhas.modelos)}</tbody>
+    <tfoot><tr class="total-row"><td colspan="2">Total Modelos</td><td style="text-align:right;">${money(t.modelos)}</td></tr></tfoot>
+    </table>` : ''}
+
+    ${linhas.despesas.length ? `<h2>Despesas Operacionais</h2>
+    <table><thead><tr><th>Data</th><th>Descrição</th><th style="text-align:right;">Valor</th></tr></thead>
+    <tbody>${tabelaHtml(linhas.despesas)}</tbody>
+    <tfoot><tr class="total-row"><td colspan="2">Total Despesas</td><td style="text-align:right;">${money(t.despesas)}</td></tr></tfoot>
+    </table>` : ''}
+
+    ${linhas.outros.length ? `<h2>Outros</h2>
+    <table><thead><tr><th>Data</th><th>Descrição</th><th style="text-align:right;">Valor</th></tr></thead>
+    <tbody>${tabelaHtml(linhas.outros)}</tbody>
+    <tfoot><tr class="total-row"><td colspan="2">Total Outros</td><td style="text-align:right;">${money(t.outros)}</td></tr></tfoot>
+    </table>` : ''}
+
+    <script>window.print();<\/script>
+  </body></html>`);
+  win.document.close();
+}
+
+// ========== 8. FECHAMENTO ==========
 
 pageLoaders.fechamento = async function () {
   try {
@@ -2056,9 +2275,27 @@ pageLoaders.fechamento = async function () {
 };
 
 async function criarFechamento() {
-  if (!confirm('Criar fechamento para o mês atual?')) return;
+  const now = new Date();
+  const anoAtual = now.getFullYear();
+  const mesAtual = now.getMonth() + 1;
+
+  const anoInput = prompt('Ano do fechamento:', anoAtual);
+  if (!anoInput) return;
+  const mesInput = prompt('Mês do fechamento (1-12):', mesAtual);
+  if (!mesInput) return;
+
+  const ano = parseInt(anoInput);
+  const mes = parseInt(mesInput);
+  if (isNaN(ano) || isNaN(mes) || mes < 1 || mes > 12) {
+    toast('Mês ou ano inválido', 'error');
+    return;
+  }
+
+  const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  if (!confirm(`Criar fechamento de ${meses[mes-1]}/${ano}?`)) return;
+
   try {
-    await postJSON('/admin/dashboard/fechamento', {});
+    await postJSON('/admin/dashboard/fechamento', { ano, mes });
     toast('Fechamento criado!', 'success');
     pageLoaders.fechamento();
   } catch (err) { toast('Erro: ' + err.message, 'error'); }

@@ -2342,10 +2342,11 @@ router.get("/fechamento", async (req, res) => {
 router.post("/fechamento", async (req, res) => {
   try {
     const now = new Date();
-    const ano = now.getFullYear();
-    const mes = now.getMonth() + 1;
+    const ano = Number(req.body.ano) || now.getFullYear();
+    const mes = Number(req.body.mes) || (now.getMonth() + 1);
 
-    // Check if already exists
+    if (mes < 1 || mes > 12 || ano < 2020) return res.status(400).json({ erro: "Mês ou ano inválido" });
+
     const existing = await db.query(
       "SELECT id FROM fechamento_mensal WHERE ano = $1 AND mes = $2", [ano, mes]
     );
@@ -2361,7 +2362,7 @@ router.post("/fechamento", async (req, res) => {
         COALESCE(SUM(CASE WHEN tipo = 'assinatura' THEN valor_bruto ELSE 0 END), 0) AS total_assinaturas,
         COALESCE(SUM(CASE WHEN tipo != 'assinatura' THEN valor_bruto ELSE 0 END), 0) AS total_midias
       FROM transacoes_agency
-      WHERE status = 'normal'
+      WHERE status = 'pago'
       AND EXTRACT(MONTH FROM created_at) = $1
       AND EXTRACT(YEAR FROM created_at) = $2
     `, [mes, ano]);
@@ -2379,7 +2380,81 @@ router.post("/fechamento", async (req, res) => {
   }
 });
 
-// ========== 9. DADOS BANCÁRIOS ==========
+// ========== 9. LANÇAMENTOS BANCÁRIOS ==========
+
+router.get("/lancamentos-bancarios", async (req, res) => {
+  try {
+    const mes = parseInt(req.query.mes) || new Date().getMonth() + 1;
+    const ano = parseInt(req.query.ano) || new Date().getFullYear();
+
+    const { rows } = await db.query(
+      `SELECT * FROM lancamentos_bancarios WHERE mes = $1 AND ano = $2 ORDER BY data ASC, id ASC`,
+      [mes, ano]
+    );
+
+    const totais = rows.reduce((acc, r) => {
+      const v = Number(r.valor);
+      if (r.tipo === 'entrada') acc.entradas += v;
+      else if (r.categoria === 'pagamento_modelo') acc.modelos += v;
+      else if (r.categoria === 'despesa') acc.despesas += v;
+      else acc.outros += v;
+      return acc;
+    }, { entradas: 0, modelos: 0, despesas: 0, outros: 0 });
+
+    totais.saldo = totais.entradas - totais.modelos - totais.despesas - totais.outros;
+
+    res.json({ rows, totais, mes, ano });
+  } catch (err) {
+    console.error("Erro lancamentos:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.post("/lancamentos-bancarios", async (req, res) => {
+  try {
+    const { data, descricao, tipo, categoria, gateway, modelo_nome, valor, mes, ano, observacao } = req.body;
+    if (!data || !descricao || !tipo || !categoria || !valor) {
+      return res.status(400).json({ erro: "Campos obrigatórios: data, descricao, tipo, categoria, valor" });
+    }
+    const { rows } = await db.query(
+      `INSERT INTO lancamentos_bancarios (data, descricao, tipo, categoria, gateway, modelo_nome, valor, mes, ano, observacao)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+      [data, descricao, tipo, categoria, gateway || null, modelo_nome || null, valor, mes, ano, observacao || null]
+    );
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Erro criar lancamento:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.put("/lancamentos-bancarios/:id", async (req, res) => {
+  try {
+    const { data, descricao, tipo, categoria, gateway, modelo_nome, valor, observacao } = req.body;
+    const { rows } = await db.query(
+      `UPDATE lancamentos_bancarios SET data=$1, descricao=$2, tipo=$3, categoria=$4, gateway=$5, modelo_nome=$6, valor=$7, observacao=$8
+       WHERE id=$9 RETURNING *`,
+      [data, descricao, tipo, categoria, gateway || null, modelo_nome || null, valor, observacao || null, req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ erro: "Não encontrado" });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Erro editar lancamento:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.delete("/lancamentos-bancarios/:id", async (req, res) => {
+  try {
+    await db.query("DELETE FROM lancamentos_bancarios WHERE id=$1", [req.params.id]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Erro deletar lancamento:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// ========== 10. DADOS BANCÁRIOS ==========
 
 router.get("/dados-bancarios", async (req, res) => {
   try {
