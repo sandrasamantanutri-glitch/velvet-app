@@ -2513,17 +2513,53 @@ function renderFechamento(d) {
     row('(-) Pago modelos', b.modelos, '#f97316') +
     row('(-) Pago agências', b.agencias, '#a855f7') +
     row('(-) Despesas lançadas', b.despesas, '#ef4444') +
-    sep('Saldo banco', b.saldo, b.saldo >= 0 ? '#22c55e' : '#ef4444') +
-    row(`(-) Retido/bloqueado (${retencoes.length} lançamento${retencoes.length!==1?'s':''})`, d.total_retencoes, '#ef4444') +
-    sep('Disponível real', b.disponivel, b.disponivel >= 0 ? '#22c55e' : '#ef4444');
+    sep('Saldo banco (disponível real)', b.saldo, b.saldo >= 0 ? '#22c55e' : '#ef4444');
 
   // ── CONCILIAÇÃO ─────────────────────────────────────────────────────────────
-  const diff = d.diferenca;
-  const diffColor = Math.abs(diff) < 100 ? '#22c55e' : (diff < 0 ? '#ef4444' : '#f97316');
+  const diff = d.diferenca; // banco.saldo - velvet_liquido
+  const difInexplicada = diff + d.total_retencoes; // se ≈ 0, retidos explicam tudo
+  const diffColor = Math.abs(difInexplicada) < 100 ? '#22c55e' : (difInexplicada < 0 ? '#ef4444' : '#f97316');
+  const diffMsg = Math.abs(difInexplicada) < 100
+    ? '✅ Os valores retidos/bloqueados explicam toda a diferença.'
+    : difInexplicada < 0
+      ? `⚠️ Ainda faltam ${money(Math.abs(difInexplicada))} não explicados — há retenções não lançadas ou taxas adicionais.`
+      : `ℹ️ O banco tem ${money(difInexplicada)} a mais que o esperado após retenções.`;
+
+  const blk = (title) =>
+    `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);padding:10px 0 4px;">${title}</div>`;
+
   $('fechConciliacao').innerHTML =
-    row('Velvet líquido (plataforma)', d.velvet_liquido, '#6366f1') +
-    row('Disponível real (banco)', b.disponivel) +
-    sep('Diferença', diff, diffColor);
+    // Bloco 1: Velvet líquido estimado
+    blk('1. O que a Velvet deveria ter ficado') +
+    row('(+) Fee Velvet', f.total_velvet, '#6366f1') +
+    row('(+) Taxa gateway coletada', f.total_taxas, '#22c55e') +
+    row('(-) Taxas reais pagas aos gateways', d.total_taxas_reais, '#ef4444') +
+    row(`(-) Chargebacks (${d.chargebacks.qtd})`, d.chargebacks.total, '#ef4444') +
+    row('(-) Despesas bancárias', b.despesas, '#ef4444') +
+    sep('= Velvet líquido estimado', d.velvet_liquido, d.velvet_liquido >= 0 ? '#6366f1' : '#ef4444') +
+
+    // Bloco 2: O que ficou no banco
+    blk('2. O que ficou no banco') +
+    row('(+) Entradas recebidas', b.entradas, '#22c55e') +
+    row('(-) Pago a modelos', b.modelos, '#f97316') +
+    row('(-) Pago a agências', b.agencias, '#a855f7') +
+    row('(-) Despesas bancárias', b.despesas, '#ef4444') +
+    sep('= Saldo banco (disponível real)', b.saldo, b.saldo >= 0 ? '#22c55e' : '#ef4444') +
+
+    // Bloco 3: Diferença e explicação pelos retidos
+    blk('3. Diferença e conciliação') +
+    row('Saldo banco', b.saldo) +
+    row('(-) Velvet líquido estimado', d.velvet_liquido, '#6366f1') +
+    `<div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--border);">
+      <span style="font-weight:600;font-size:13px;color:var(--text-muted);">Diferença bruta</span>
+      <span style="font-weight:600;color:${diff < 0 ? '#ef4444' : '#22c55e'};">${money(diff)}</span>
+    </div>` +
+    row(`(+) Retido/bloqueado nos gateways (${retencoes.length} lançamento${retencoes.length !== 1 ? 's' : ''})`, d.total_retencoes, '#f97316') +
+    `<div style="display:flex;justify-content:space-between;padding:8px 0;border-top:2px solid var(--border);margin-top:4px;">
+      <span style="font-weight:800;font-size:14px;">Diferença inexplicada</span>
+      <span style="font-weight:800;font-size:15px;color:${diffColor};">${money(difInexplicada)}</span>
+    </div>` +
+    `<div style="font-size:12px;margin-top:6px;padding:8px 10px;border-radius:6px;background:var(--bg-secondary);line-height:1.5;">${diffMsg}</div>`;
 
   // ── ANÁLISE ─────────────────────────────────────────────────────────────────
   $('fechAnalise').innerHTML = (d.analise && d.analise.length)
@@ -3683,7 +3719,7 @@ pageLoaders.chargebacks = async function () {
 function renderChargebacks(chargebacks) {
   const tbody = document.querySelector('#tableChargebacks tbody');
   if (!chargebacks || chargebacks.length === 0) {
-    tbody.innerHTML = emptyRow(7);
+    tbody.innerHTML = emptyRow(8);
     return;
   }
 
@@ -3697,7 +3733,8 @@ function renderChargebacks(chargebacks) {
       <td>${i + 1}</td>
       <td><strong>${cb.plataforma || '—'}</strong></td>
       <td>${money(cb.valor)}</td>
-      <td>${fmtDate(cb.data)}</td>
+      <td style="color:var(--text-muted);font-size:12px;">${fmtDate(cb.data)}</td>
+      <td style="font-weight:600;">${cb.criado_em ? fmtDate(cb.criado_em) : '—'}</td>
       <td title="${cb.motivo || ''}">${motivoTxt}</td>
       <td>${comproLink}</td>
       <td>

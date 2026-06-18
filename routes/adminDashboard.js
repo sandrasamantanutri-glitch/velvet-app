@@ -2383,11 +2383,10 @@ router.get("/fechamento/detalhe/:ano/:mes", async (req, res) => {
     const [fechQ, cbQ, lancQ, ajustesQ] = await Promise.all([
       db.query("SELECT * FROM fechamento_mensal WHERE ano=$1 AND mes=$2", [ano, mes]),
       db.query(`
-        SELECT COUNT(*) AS qtd, COALESCE(SUM(valor_bruto),0) AS total
-        FROM transacoes_agency
-        WHERE status='chargeback'
-          AND EXTRACT(YEAR  FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $1
-          AND EXTRACT(MONTH FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $2
+        SELECT COUNT(*) AS qtd, COALESCE(SUM(valor),0) AS total
+        FROM chargebacks
+        WHERE EXTRACT(YEAR  FROM criado_em AT TIME ZONE 'America/Sao_Paulo') = $1
+          AND EXTRACT(MONTH FROM criado_em AT TIME ZONE 'America/Sao_Paulo') = $2
       `, [ano, mes]),
       db.query(`
         SELECT tipo, categoria, COALESCE(SUM(valor),0) AS total
@@ -2425,8 +2424,8 @@ router.get("/fechamento/detalhe/:ano/:mes", async (req, res) => {
       Number(cbQ.rows[0].total) -
       banco.despesas;
 
-    // Disponível real: saldo banco - retenções
-    banco.disponivel = banco.saldo - total_retencoes;
+    // Disponível real = saldo banco (retidos nunca chegaram ao banco, explicam a diferença)
+    banco.disponivel = banco.saldo;
 
     const diferenca = banco.disponivel - velvet_liquido;
 
@@ -2499,7 +2498,7 @@ router.post("/fechamento/:id/recalcular", async (req, res) => {
         total_modelos      = (SELECT COALESCE(SUM(valor_modelo),0) FROM transacoes_agency WHERE status='pago'       AND ${brtYear} AND ${brtMonth}),
         total_assinaturas  = (SELECT COALESCE(SUM(CASE WHEN tipo='assinatura'  THEN valor_bruto ELSE 0 END),0) FROM transacoes_agency WHERE status='pago' AND ${brtYear} AND ${brtMonth}),
         total_midias       = (SELECT COALESCE(SUM(CASE WHEN tipo!='assinatura' THEN valor_bruto ELSE 0 END),0) FROM transacoes_agency WHERE status='pago' AND ${brtYear} AND ${brtMonth}),
-        total_chargebacks  = (SELECT COALESCE(SUM(valor_bruto),0)  FROM transacoes_agency WHERE status='chargeback' AND ${brtYear} AND ${brtMonth}),
+        total_chargebacks  = (SELECT COALESCE(SUM(valor),0) FROM chargebacks WHERE EXTRACT(YEAR FROM criado_em AT TIME ZONE 'America/Sao_Paulo')=$1 AND EXTRACT(MONTH FROM criado_em AT TIME ZONE 'America/Sao_Paulo')=$2),
         total_despesas     = (SELECT COALESCE(SUM(valor),0) FROM despesas WHERE EXTRACT(YEAR FROM data)=$1 AND EXTRACT(MONTH FROM data)=$2)
       WHERE id=$3 RETURNING *
     `, [ano, mes, req.params.id]);
@@ -4496,7 +4495,7 @@ router.get("/chargebacks-list", async (req, res) => {
       LEFT JOIN users u      ON u.id  = c.user_id
       LEFT JOIN clientes_dados cd ON cd.cliente_id = cb.cliente_id
       LEFT JOIN modelos m    ON m.id  = cb.modelo_id
-      ORDER BY cb.data DESC
+      ORDER BY cb.criado_em DESC
     `);
     res.json(rows);
   } catch (err) {

@@ -455,17 +455,28 @@ document.addEventListener("DOMContentLoaded", async () => {
       const dados = await res.json();
 
       // Resumo
-      const totalCBs  = dados.length;
-      const totalValor = dados.reduce((s, r) => s + Number(r.valor_bruto || 0), 0);
+      const agora = new Date();
+      const mesFmt = `${String(agora.getMonth()+1).padStart(2,'0')}/${agora.getFullYear()}`;
+
+      // Resumo: totais gerais + totais do mês de registro
+      const totalCBs   = dados.length;
+      const totalValor = dados.reduce((s, r) => s + Number(r.valor || 0), 0);
+      const mesCBs     = dados.filter(r => r.data_fmt && r.data_fmt.slice(3) === mesFmt);
+      const mesValor   = mesCBs.reduce((s, r) => s + Number(r.valor || 0), 0);
+
       if (resumo) {
         resumo.innerHTML = `
           <div class="card" style="border-left:4px solid #e53e3e;">
-            <span>Total de chargebacks</span>
-            <strong style="color:#e53e3e;">${totalCBs}</strong>
+            <span>Registrados este mês</span>
+            <strong style="color:#e53e3e;">${mesCBs.length}</strong>
           </div>
           <div class="card" style="border-left:4px solid #e53e3e;">
-            <span>Valor total descontado</span>
-            <strong style="color:#e53e3e;">R$ ${totalValor.toFixed(2)}</strong>
+            <span>Valor este mês</span>
+            <strong style="color:#e53e3e;">R$ ${mesValor.toFixed(2)}</strong>
+          </div>
+          <div class="card" style="border-left:4px solid #888;">
+            <span>Total histórico</span>
+            <strong style="color:#888;">${totalCBs} — R$ ${totalValor.toFixed(2)}</strong>
           </div>
         `;
       }
@@ -483,29 +494,31 @@ document.addEventListener("DOMContentLoaded", async () => {
           <table style="width:100%;border-collapse:collapse;font-size:14px;">
             <thead>
               <tr style="background:#f3f0ff;color:#6f42c1;text-align:left;">
-                <th style="padding:10px 12px;">Data</th>
+                <th style="padding:10px 12px;">Registro</th>
+                <th style="padding:10px 12px;">Data compra</th>
                 <th style="padding:10px 12px;">Tipo</th>
                 <th style="padding:10px 12px;">Gateway</th>
                 <th style="padding:10px 12px;">Cliente</th>
                 <th style="padding:10px 12px;">E-mail</th>
-                <th style="padding:10px 12px;">ID Cliente</th>
                 <th style="padding:10px 12px;">Valor</th>
                 <th style="padding:10px 12px;">Motivo</th>
               </tr>
             </thead>
             <tbody>
-              ${dados.map(r => `
-                <tr style="border-bottom:1px solid #eee;">
-                  <td style="padding:10px 12px;white-space:nowrap;">${r.data_fmt || '—'}</td>
+              ${dados.map(r => {
+                const eMesAtual = r.data_fmt && r.data_fmt.slice(3) === mesFmt;
+                return `
+                <tr style="border-bottom:1px solid #eee;${eMesAtual ? 'background:#fff8f8;' : ''}">
+                  <td style="padding:10px 12px;white-space:nowrap;font-weight:600;">${r.data_fmt || '—'}</td>
+                  <td style="padding:10px 12px;white-space:nowrap;color:#888;font-size:12px;">${r.data_compra_fmt || '—'}</td>
                   <td style="padding:10px 12px;">${tipoLabel[r.tipo] || r.tipo || '—'}</td>
                   <td style="padding:10px 12px;">${gatewayLabel[r.gateway] || r.gateway || '—'}</td>
                   <td style="padding:10px 12px;">${r.cliente_nome || '—'}</td>
                   <td style="padding:10px 12px;">${r.cliente_email || '—'}</td>
-                  <td style="padding:10px 12px;color:#888;">#${r.cliente_id || '—'}</td>
-                  <td style="padding:10px 12px;color:#e53e3e;font-weight:600;">R$ ${Number(r.valor_bruto || 0).toFixed(2)}</td>
+                  <td style="padding:10px 12px;color:#e53e3e;font-weight:600;">R$ ${Number(r.valor || 0).toFixed(2)}</td>
                   <td style="padding:10px 12px;color:#666;">${r.motivo || '—'}</td>
-                </tr>
-              `).join('')}
+                </tr>`;
+              }).join('')}
             </tbody>
           </table>
         </div>

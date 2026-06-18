@@ -1344,50 +1344,30 @@ router.get("/modelo/chargebacks", authModelo, async (req, res) => {
 
     const { rows } = await db.query(`
       SELECT
-        ta.id,
-        ta.tipo,
-        ta.created_at,
-        TO_CHAR(ta.created_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY') AS data_fmt,
-        ta.valor_modelo,
-        ta.valor_bruto,
-        COALESCE(ta.chargeback_motivo, cb.motivo)   AS motivo,
-        COALESCE(ta.gateway, cb.gateway,
-          CASE WHEN pc.id IS NOT NULL THEN 'cartao' ELSE NULL END,
-          CASE WHEN pp.id IS NOT NULL THEN 'pix'    ELSE NULL END
-        ) AS gateway,
-        ta.cliente_id,
-        u.email  AS cliente_email,
-        COALESCE(cd.nome_completo, u.email) AS cliente_nome
-      FROM transacoes_agency ta
-      LEFT JOIN clientes c    ON c.id  = ta.cliente_id
-      LEFT JOIN users u       ON u.id  = c.user_id
-      LEFT JOIN clientes_dados cd ON cd.cliente_id = ta.cliente_id
+        cb.id,
+        cb.tipo,
+        cb.data                                                                      AS data_compra,
+        TO_CHAR(cb.data, 'DD/MM/YYYY')                                               AS data_compra_fmt,
+        cb.criado_em                                                                 AS data_registro,
+        TO_CHAR(cb.criado_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY')        AS data_fmt,
+        cb.valor,
+        cb.motivo,
+        cb.gateway,
+        cb.cliente_id,
+        u.email                                                                      AS cliente_email,
+        COALESCE(cd.nome_completo, u.email)                                         AS cliente_nome,
+        ta.valor_modelo
+      FROM chargebacks cb
+      LEFT JOIN clientes c         ON c.id  = cb.cliente_id
+      LEFT JOIN users u            ON u.id  = c.user_id
+      LEFT JOIN clientes_dados cd  ON cd.cliente_id = cb.cliente_id
       LEFT JOIN LATERAL (
-        SELECT id FROM pagamentos_cartao
-        WHERE cliente_id = ta.cliente_id AND modelo_id = ta.modelo_id
+        SELECT valor_modelo FROM transacoes_agency
+        WHERE cliente_id = cb.cliente_id AND modelo_id = cb.modelo_id AND status = 'chargeback'
         ORDER BY created_at DESC LIMIT 1
-      ) pc ON true
-      LEFT JOIN LATERAL (
-        SELECT id FROM pagamentos_pix
-        WHERE cliente_id = ta.cliente_id AND modelo_id = ta.modelo_id
-        ORDER BY criado_em DESC LIMIT 1
-      ) pp ON true
-      LEFT JOIN LATERAL (
-        SELECT motivo, gateway FROM chargebacks
-        WHERE modelo_id = ta.modelo_id AND cliente_id = ta.cliente_id
-        ORDER BY criado_em DESC LIMIT 1
-      ) cb ON true
-      WHERE ta.modelo_id = $1
-        AND ta.status = 'chargeback'
-        AND ta.created_at >= DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '1 month'
-        AND NOT EXISTS (
-          SELECT 1 FROM modelo_pagamentos mp
-          WHERE mp.modelo_id = ta.modelo_id
-            AND mp.status = 'pago'
-            AND DATE_TRUNC('month', ta.created_at AT TIME ZONE 'America/Sao_Paulo')
-                = DATE_TRUNC('month', mp.mes AT TIME ZONE 'America/Sao_Paulo')
-        )
-      ORDER BY ta.created_at DESC
+      ) ta ON true
+      WHERE cb.modelo_id = $1
+      ORDER BY cb.criado_em DESC
     `, [modelo_id]);
 
     res.json(rows);
