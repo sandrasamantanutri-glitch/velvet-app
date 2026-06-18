@@ -3239,11 +3239,12 @@ router.get("/transacoes-agency", async (req, res) => {
 
     const totaisQ = await db.query(`
       SELECT
-        COALESCE(SUM(t.valor_bruto), 0) AS bruto,
-        COALESCE(SUM(t.valor_modelo), 0) AS modelo,
-        COALESCE(SUM(t.velvet_fee), 0) AS velvet,
-        COALESCE(SUM(t.agency_fee), 0) AS agency,
-        COALESCE(SUM(t.taxa_gateway), 0) AS gateway
+        COALESCE(SUM(CASE WHEN t.status='pago' THEN t.valor_bruto ELSE 0 END), 0) AS bruto,
+        COALESCE(SUM(CASE WHEN t.status='pago' THEN t.valor_modelo ELSE 0 END), 0) AS modelo,
+        COALESCE(SUM(CASE WHEN t.status='pago' THEN t.velvet_fee ELSE 0 END), 0) AS velvet,
+        COALESCE(SUM(CASE WHEN t.status='pago' THEN t.agency_fee ELSE 0 END), 0) AS agency,
+        COALESCE(SUM(CASE WHEN t.status='pago' THEN t.taxa_gateway ELSE 0 END), 0) AS gateway,
+        COALESCE(SUM(CASE WHEN t.status='chargeback' THEN t.valor_bruto ELSE 0 END), 0) AS chargebacks
       FROM transacoes_agency t
       INNER JOIN modelos m ON m.id = t.modelo_id
       WHERE ${where}

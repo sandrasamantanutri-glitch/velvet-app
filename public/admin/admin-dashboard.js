@@ -3043,6 +3043,7 @@ async function carregarTransacoes(page) {
     $('kpi-velvet').textContent = money(data.totais?.velvet);
     $('kpi-agency').textContent = money(data.totais?.agency);
     $('kpi-gateway').textContent = money(data.totais?.gateway);
+    $('kpi-chargebacks').textContent = money(data.totais?.chargebacks);
 
     const tbody = $('tableTransacoes').querySelector('tbody');
     tbody.innerHTML = (data.rows || []).map(r => `
