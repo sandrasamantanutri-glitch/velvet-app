@@ -140,13 +140,15 @@ app.use(helmet({
         "https://velvet-app-production.up.railway.app",
         "https://res.cloudinary.com",
         "https://*.r2.dev",
-        "https://cdn.jsdelivr.net"
+        "https://cdn.jsdelivr.net",
+        "https://app.zapsign.com.br"
       ],
       frameSrc: [
         "'self'",
         "https://js.stripe.com",
         "https://hooks.stripe.com",
-        "https://iframe.videodelivery.net"
+        "https://iframe.videodelivery.net",
+        "https://app.zapsign.com.br"
       ],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
