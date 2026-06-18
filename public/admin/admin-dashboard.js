@@ -2423,50 +2423,138 @@ function imprimirRelatorio() {
 
 // ========== 8. FECHAMENTO ==========
 
-pageLoaders.fechamento = async function () {
-  try {
-    const data = await fetchJSON('/admin/dashboard/fechamento');
-    const tbody = $('tableFechamento').querySelector('tbody');
-    tbody.innerHTML = (data || []).map(r => `
-      <tr>
-        <td>${r.ano}</td>
-        <td>${r.mes}</td>
-        <td>${money(r.total_bruto)}</td>
-        <td>${money(r.total_taxas)}</td>
-        <td>${money(r.total_velvet)}</td>
-        <td>${money(r.total_modelos)}</td>
-        <td>${money(r.total_assinaturas)}</td>
-        <td>${money(r.total_midias)}</td>
-        <td>${fmtDateTime(r.fechado_em)}</td>
-      </tr>
-    `).join('') || emptyRow(9);
-  } catch (err) { console.error('Erro fechamento:', err); }
+const MESES_NOMES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+pageLoaders.fechamento = function () {
+  const now = new Date();
+  if (!$('fechMes')._init) {
+    $('fechMes').value = now.getMonth() + 1;
+    $('fechMes')._init = true;
+  }
+  carregarFechamento();
 };
 
-async function criarFechamento() {
-  const now = new Date();
-  const anoAtual = now.getFullYear();
-  const mesAtual = now.getMonth() + 1;
-
-  const anoInput = prompt('Ano do fechamento:', anoAtual);
-  if (!anoInput) return;
-  const mesInput = prompt('Mês do fechamento (1-12):', mesAtual);
-  if (!mesInput) return;
-
-  const ano = parseInt(anoInput);
-  const mes = parseInt(mesInput);
-  if (isNaN(ano) || isNaN(mes) || mes < 1 || mes > 12) {
-    toast('Mês ou ano inválido', 'error');
-    return;
+async function carregarFechamento() {
+  const mes = $('fechMes').value;
+  const ano = $('fechAno').value;
+  try {
+    const d = await fetchJSON(`/admin/dashboard/fechamento/detalhe/${ano}/${mes}`);
+    window._fechamentoAtual = d;
+    renderFechamento(d);
+  } catch (err) {
+    $('fechamentoDetalhe').style.display = 'none';
+    $('fechamentoVazio').style.display = '';
+    $('fechamentoVazio').innerHTML = `Nenhum fechamento encontrado para ${MESES_NOMES[mes]}/${ano}. <br><button class="btn btn-primary" style="margin-top:10px" onclick="criarFechamento()">+ Criar agora</button>`;
   }
+}
 
-  const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  if (!confirm(`Criar fechamento de ${meses[mes-1]}/${ano}?`)) return;
+function renderFechamento(d) {
+  const f = d.fechamento;
+  $('fechamentoVazio').style.display = 'none';
+  $('fechamentoDetalhe').style.display = '';
 
+  // Preench ajustes editáveis
+  $('fechAjusteTaxas').value = f.ajuste_taxas || '';
+  $('fechValorBloqueado').value = f.valor_bloqueado || '';
+  $('fechObservacoes').value = f.observacoes || '';
+
+  const row = (label, val, cor) =>
+    `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);">
+      <span style="color:var(--text-muted);font-size:13px;">${label}</span>
+      <span style="font-weight:600;${cor ? 'color:'+cor : ''}">${money(val)}</span>
+    </div>`;
+
+  const sep = (label, val, cor) =>
+    `<div style="display:flex;justify-content:space-between;padding:7px 0;margin-top:4px;">
+      <span style="font-weight:700;font-size:14px;">${label}</span>
+      <span style="font-weight:700;font-size:15px;${cor ? 'color:'+cor : ''}">${money(val)}</span>
+    </div>`;
+
+  // PLATAFORMA
+  const velvetLiq = Number(f.total_velvet) - Number(f.total_agency || 0);
+  $('fechPlataforma').innerHTML =
+    row('Bruto processado', f.total_bruto) +
+    row('(-) Taxas gateway (estimada)', f.total_taxas, '#ef4444') +
+    row('(-) Fees agências', f.total_agency, '#ef4444') +
+    row('(-) Repasse modelos', f.total_modelos, '#f97316') +
+    row('Assinaturas', f.total_assinaturas) +
+    row('Mídias', f.total_midias) +
+    sep('Fee Velvet (bruto)', f.total_velvet, '#6366f1');
+
+  // SAÍDAS
+  const cb = d.chargebacks;
+  $('fechSaidas').innerHTML =
+    row(`Chargebacks (${cb.qtd} ocorrência${cb.qtd!=1?'s':''})`, cb.total, '#ef4444') +
+    row('Despesas operacionais', f.total_despesas, '#ef4444') +
+    row('Taxas reais (ajustável abaixo)', f.ajuste_taxas || 0, '#ef4444') +
+    sep('Velvet líquido estimado', d.estimativa_velvet, d.estimativa_velvet >= 0 ? '#22c55e' : '#ef4444');
+
+  // BANCO
+  const b = d.banco;
+  $('fechBanco').innerHTML =
+    row('Entradas recebidas', b.entradas, '#22c55e') +
+    row('(-) Pago modelos', b.modelos, '#f97316') +
+    row('(-) Pago agências', b.agencias, '#a855f7') +
+    row('(-) Despesas lançadas', b.despesas, '#ef4444') +
+    sep('Saldo banco', b.saldo, b.saldo >= 0 ? '#22c55e' : '#ef4444') +
+    row('(-) Retido/bloqueado gateway', f.valor_bloqueado || 0, '#ef4444') +
+    sep('Disponível real', b.disponivel, b.disponivel >= 0 ? '#22c55e' : '#ef4444');
+
+  // CONCILIAÇÃO
+  const diff = d.diferenca;
+  const diffColor = Math.abs(diff) < 1 ? '#22c55e' : (diff < 0 ? '#ef4444' : '#f97316');
+  $('fechConciliacao').innerHTML =
+    row('Velvet líquido estimado (plataforma)', d.estimativa_velvet) +
+    row('Disponível real (banco - retido)', b.disponivel) +
+    sep('Diferença', diff, diffColor) +
+    `<div style="font-size:11px;color:var(--text-muted);margin-top:8px;line-height:1.5;">
+      A diferença é geralmente causada por:<br>
+      • Taxas reais vs estimadas dos gateways<br>
+      • Valores retidos na virada do mês<br>
+      • Chargebacks ainda não processados
+    </div>`;
+
+  // DESPESAS TABELA
+  const tbody = $('tableFechDespesas').querySelector('tbody');
+  tbody.innerHTML = (d.despesas || []).map(r =>
+    `<tr><td>${fmtDate(r.data)}</td><td>${r.categoria}</td><td>${r.descricao}</td><td style="text-align:right;font-weight:600;">${money(r.valor)}</td></tr>`
+  ).join('') || `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">Nenhuma despesa cadastrada</td></tr>`;
+}
+
+async function salvarAjustesFechamento() {
+  const d = window._fechamentoAtual;
+  if (!d) return;
+  const id = d.fechamento.id;
+  try {
+    await putJSON(`/admin/dashboard/fechamento/${id}`, {
+      ajuste_taxas:    parseFloat($('fechAjusteTaxas').value) || 0,
+      valor_bloqueado: parseFloat($('fechValorBloqueado').value) || 0,
+      observacoes:     $('fechObservacoes').value.trim() || null
+    });
+    toast('Ajustes salvos!', 'success');
+    carregarFechamento();
+  } catch (err) { toast('Erro: ' + err.message, 'error'); }
+}
+
+async function recalcularFechamento() {
+  const d = window._fechamentoAtual;
+  if (!d) { toast('Carregue um fechamento primeiro', 'error'); return; }
+  if (!confirm('Recalcular os totais com os dados atuais da plataforma e despesas?')) return;
+  try {
+    await postJSON(`/admin/dashboard/fechamento/${d.fechamento.id}/recalcular`, {});
+    toast('Recalculado!', 'success');
+    carregarFechamento();
+  } catch (err) { toast('Erro: ' + err.message, 'error'); }
+}
+
+async function criarFechamento() {
+  const mes = parseInt($('fechMes').value);
+  const ano = parseInt($('fechAno').value);
+  if (!confirm(`Criar fechamento de ${MESES_NOMES[mes]}/${ano}?`)) return;
   try {
     await postJSON('/admin/dashboard/fechamento', { ano, mes });
     toast('Fechamento criado!', 'success');
-    pageLoaders.fechamento();
+    carregarFechamento();
   } catch (err) { toast('Erro: ' + err.message, 'error'); }
 }
 

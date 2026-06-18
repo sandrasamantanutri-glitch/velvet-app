@@ -2380,6 +2380,109 @@ router.post("/fechamento", async (req, res) => {
   }
 });
 
+router.get("/fechamento/detalhe/:ano/:mes", async (req, res) => {
+  try {
+    const { ano, mes } = req.params;
+
+    const [fechQ, cbQ, despQ, lancQ] = await Promise.all([
+      db.query("SELECT * FROM fechamento_mensal WHERE ano=$1 AND mes=$2", [ano, mes]),
+
+      db.query(`
+        SELECT COUNT(*) AS qtd, COALESCE(SUM(valor_bruto),0) AS total
+        FROM transacoes_agency
+        WHERE status='chargeback'
+          AND EXTRACT(YEAR FROM created_at)=$1
+          AND EXTRACT(MONTH FROM created_at)=$2
+      `, [ano, mes]),
+
+      db.query(`
+        SELECT id, categoria, descricao, valor, data
+        FROM despesas
+        WHERE EXTRACT(YEAR FROM data)=$1 AND EXTRACT(MONTH FROM data)=$2
+        ORDER BY data
+      `, [ano, mes]),
+
+      db.query(`
+        SELECT tipo, categoria, COALESCE(SUM(valor),0) AS total
+        FROM lancamentos_bancarios
+        WHERE ano=$1 AND mes=$2
+        GROUP BY tipo, categoria
+      `, [ano, mes]),
+    ]);
+
+    if (!fechQ.rows.length) return res.status(404).json({ erro: "Fechamento não encontrado" });
+
+    const f = fechQ.rows[0];
+    const banco = { entradas: 0, modelos: 0, agencias: 0, despesas: 0, outros: 0 };
+    lancQ.rows.forEach(r => {
+      const v = Number(r.total);
+      if (r.tipo === 'entrada') banco.entradas += v;
+      else if (r.categoria === 'pagamento_modelo') banco.modelos += v;
+      else if (r.categoria === 'pagamento_agencia') banco.agencias += v;
+      else if (r.categoria === 'despesa') banco.despesas += v;
+      else banco.outros += v;
+    });
+    banco.saldo = banco.entradas - banco.modelos - banco.agencias - banco.despesas - banco.outros;
+    banco.disponivel = banco.saldo - Number(f.valor_bloqueado || 0);
+
+    const estimativa_velvet = Number(f.total_velvet) - Number(f.total_despesas) - Number(f.ajuste_taxas);
+
+    res.json({
+      fechamento: f,
+      chargebacks: { qtd: cbQ.rows[0].qtd, total: cbQ.rows[0].total },
+      despesas: despQ.rows,
+      banco,
+      estimativa_velvet,
+      diferenca: banco.disponivel - estimativa_velvet
+    });
+  } catch (err) {
+    console.error("Erro detalhe fechamento:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.put("/fechamento/:id", async (req, res) => {
+  try {
+    const { ajuste_taxas, valor_bloqueado, observacoes } = req.body;
+    const { rows } = await db.query(`
+      UPDATE fechamento_mensal
+      SET ajuste_taxas=$1, valor_bloqueado=$2, observacoes=$3
+      WHERE id=$4 RETURNING *
+    `, [ajuste_taxas || 0, valor_bloqueado || 0, observacoes || null, req.params.id]);
+    if (!rows.length) return res.status(404).json({ erro: "Não encontrado" });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Erro editar fechamento:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// atualiza chargebacks e despesas ao recriar
+router.post("/fechamento/:id/recalcular", async (req, res) => {
+  try {
+    const fq = await db.query("SELECT ano, mes FROM fechamento_mensal WHERE id=$1", [req.params.id]);
+    if (!fq.rows.length) return res.status(404).json({ erro: "Não encontrado" });
+    const { ano, mes } = fq.rows[0];
+    const { rows } = await db.query(`
+      UPDATE fechamento_mensal SET
+        total_bruto = (SELECT COALESCE(SUM(valor_bruto),0) FROM transacoes_agency WHERE status='pago' AND EXTRACT(MONTH FROM created_at)=$2 AND EXTRACT(YEAR FROM created_at)=$1),
+        total_taxas = (SELECT COALESCE(SUM(taxa_gateway),0) FROM transacoes_agency WHERE status='pago' AND EXTRACT(MONTH FROM created_at)=$2 AND EXTRACT(YEAR FROM created_at)=$1),
+        total_agency = (SELECT COALESCE(SUM(agency_fee),0) FROM transacoes_agency WHERE status='pago' AND EXTRACT(MONTH FROM created_at)=$2 AND EXTRACT(YEAR FROM created_at)=$1),
+        total_velvet = (SELECT COALESCE(SUM(velvet_fee),0) FROM transacoes_agency WHERE status='pago' AND EXTRACT(MONTH FROM created_at)=$2 AND EXTRACT(YEAR FROM created_at)=$1),
+        total_modelos = (SELECT COALESCE(SUM(valor_modelo),0) FROM transacoes_agency WHERE status='pago' AND EXTRACT(MONTH FROM created_at)=$2 AND EXTRACT(YEAR FROM created_at)=$1),
+        total_assinaturas = (SELECT COALESCE(SUM(CASE WHEN tipo='assinatura' THEN valor_bruto ELSE 0 END),0) FROM transacoes_agency WHERE status='pago' AND EXTRACT(MONTH FROM created_at)=$2 AND EXTRACT(YEAR FROM created_at)=$1),
+        total_midias = (SELECT COALESCE(SUM(CASE WHEN tipo!='assinatura' THEN valor_bruto ELSE 0 END),0) FROM transacoes_agency WHERE status='pago' AND EXTRACT(MONTH FROM created_at)=$2 AND EXTRACT(YEAR FROM created_at)=$1),
+        total_chargebacks = (SELECT COALESCE(SUM(valor_bruto),0) FROM transacoes_agency WHERE status='chargeback' AND EXTRACT(MONTH FROM created_at)=$2 AND EXTRACT(YEAR FROM created_at)=$1),
+        total_despesas = (SELECT COALESCE(SUM(valor),0) FROM despesas WHERE EXTRACT(MONTH FROM data)=$2 AND EXTRACT(YEAR FROM data)=$1)
+      WHERE id=$3 RETURNING *
+    `, [ano, mes, req.params.id]);
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Erro recalcular:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
 // ========== 9. LANÇAMENTOS BANCÁRIOS ==========
 
 router.get("/lancamentos-bancarios", async (req, res) => {

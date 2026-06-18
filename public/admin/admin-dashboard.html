@@ -569,15 +569,87 @@
 
   <!-- FECHAMENTO MENSAL -->
   <section class="page" id="page-fechamento">
-    <div class="page-actions">
+    <div class="page-actions" style="gap:8px;flex-wrap:wrap;">
+      <select id="fechMes" class="input-select" style="width:130px;">
+        <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+        <option value="3">Março</option><option value="4">Abril</option>
+        <option value="5">Maio</option><option value="6">Junho</option>
+        <option value="7">Julho</option><option value="8">Agosto</option>
+        <option value="9">Setembro</option><option value="10">Outubro</option>
+        <option value="11">Novembro</option><option value="12">Dezembro</option>
+      </select>
+      <select id="fechAno" class="input-select" style="width:90px;">
+        <option value="2025">2025</option>
+        <option value="2026" selected>2026</option>
+      </select>
+      <button class="btn btn-secondary" onclick="carregarFechamento()">Ver</button>
       <button class="btn btn-primary" onclick="criarFechamento()">+ Criar Fechamento</button>
+      <button class="btn btn-secondary" onclick="recalcularFechamento()">↺ Recalcular</button>
     </div>
-    <div class="card">
-      <h3>Fechamentos Mensais</h3>
-      <table class="table" id="tableFechamento">
-        <thead><tr><th>Ano</th><th>Mês</th><th>Bruto</th><th>Taxas</th><th>Velvet</th><th>Modelos</th><th>Subs</th><th>Mídias</th><th>Fechado em</th></tr></thead>
-        <tbody></tbody>
-      </table>
+
+    <!-- Painel principal de fechamento -->
+    <div id="fechamentoDetalhe" style="display:none;">
+
+      <!-- Linha 1: Plataforma -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+
+        <div class="card" style="padding:20px;">
+          <h4 style="margin-bottom:14px;font-size:14px;text-transform:uppercase;color:var(--text-muted);letter-spacing:.5px;">Plataforma — Processado</h4>
+          <div id="fechPlataforma"></div>
+        </div>
+
+        <div class="card" style="padding:20px;">
+          <h4 style="margin-bottom:14px;font-size:14px;text-transform:uppercase;color:var(--text-muted);letter-spacing:.5px;">Saídas & Deduções</h4>
+          <div id="fechSaidas"></div>
+          <!-- Ajuste taxas -->
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+            <label style="font-size:12px;color:var(--text-muted);">Taxas gateways (valor real descontado — ajustável)</label>
+            <div style="display:flex;gap:8px;margin-top:4px;">
+              <input type="number" id="fechAjusteTaxas" class="input-text" step="0.01" placeholder="0,00" style="flex:1;">
+              <button class="btn btn-secondary" onclick="salvarAjustesFechamento()">Salvar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Linha 2: Conta Bancária vs Estimativa -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+
+        <div class="card" style="padding:20px;">
+          <h4 style="margin-bottom:14px;font-size:14px;text-transform:uppercase;color:var(--text-muted);letter-spacing:.5px;">Conta Bancária — Real</h4>
+          <div id="fechBanco"></div>
+        </div>
+
+        <div class="card" style="padding:20px;">
+          <h4 style="margin-bottom:14px;font-size:14px;text-transform:uppercase;color:var(--text-muted);letter-spacing:.5px;">Conciliação</h4>
+          <div id="fechConciliacao"></div>
+          <!-- Ajuste valor bloqueado -->
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+            <label style="font-size:12px;color:var(--text-muted);">Valor retido/bloqueado pelo gateway</label>
+            <div style="display:flex;gap:8px;margin-top:4px;">
+              <input type="number" id="fechValorBloqueado" class="input-text" step="0.01" placeholder="0,00" style="flex:1;">
+              <button class="btn btn-secondary" onclick="salvarAjustesFechamento()">Salvar</button>
+            </div>
+          </div>
+          <div style="margin-top:8px;">
+            <label style="font-size:12px;color:var(--text-muted);">Observações</label>
+            <textarea id="fechObservacoes" class="input-text" rows="2" style="width:100%;resize:vertical;margin-top:4px;" placeholder="Ex: Stripe reteve R$ X referente a vendas de 28-31/05..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Despesas detalhadas -->
+      <div class="card" style="padding:20px;">
+        <h4 style="margin-bottom:14px;font-size:14px;text-transform:uppercase;color:var(--text-muted);letter-spacing:.5px;">Despesas do Mês</h4>
+        <table class="table" id="tableFechDespesas">
+          <thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th style="text-align:right;">Valor</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="fechamentoVazio" class="card" style="padding:40px;text-align:center;color:var(--text-muted);">
+      Selecione mês/ano e clique em <strong>Ver</strong>, ou crie um novo fechamento.
     </div>
   </section>
 
