@@ -2217,6 +2217,10 @@ async function salvarLancamento() {
             ano: d.getFullYear()
           });
         }
+        // Ajusta o filtro para o mês dos dados salvos antes de recarregar
+        const primeiraData = new Date(checks[0].dataset.data + 'T12:00:00');
+        $('lancMes').value = primeiraData.getMonth() + 1;
+        $('lancAno').value = primeiraData.getFullYear();
         toast(`${checks.length} lançamento(s) criado(s)!`, 'success');
         fecharModalLancamento();
         carregarLancamentos();
