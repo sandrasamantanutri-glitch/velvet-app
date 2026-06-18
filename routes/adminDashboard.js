@@ -2464,12 +2464,14 @@ router.get("/fechamento/detalhe/:ano/:mes", async (req, res) => {
     const agRate = bruto > 0 ? (Number(f.total_agency) / bruto * 100) : 0;
     if (agRate > 15) analise.push({ tipo: 'info', texto: `Fees de agências representam ${agRate.toFixed(1)}% do bruto.` });
 
-    // Distribuição financeira recomendada sobre o velvet_liquido
-    const distrib = velvet_liquido > 0 ? {
-      caixa:        Math.round(velvet_liquido * 0.20 * 100) / 100,  // 20% reserva empresa
-      prolabore:    Math.round(velvet_liquido * 0.50 * 100) / 100,  // 50% pró-labore sócia
-      reinvestimento: Math.round(velvet_liquido * 0.15 * 100) / 100, // 15% reinvestimento
-      investimento: Math.round(velvet_liquido * 0.15 * 100) / 100,  // 15% investimento LP (mín. 10%)
+    // Distribuição financeira recomendada sobre o saldo real do banco
+    const saldoReal = banco.saldo;
+    const distrib = saldoReal > 0 ? {
+      base:         saldoReal,
+      caixa:        Math.round(saldoReal * 0.20 * 100) / 100,
+      prolabore:    Math.round(saldoReal * 0.50 * 100) / 100,
+      reinvestimento: Math.round(saldoReal * 0.15 * 100) / 100,
+      investimento: Math.round(saldoReal * 0.15 * 100) / 100,
     } : null;
 
     res.json({ fechamento: f, chargebacks: { qtd: cbQ.rows[0].qtd, total: cbQ.rows[0].total }, banco, ajustes, total_taxas_reais, total_retencoes, velvet_liquido, diferenca, difInexplicada, analise, distrib });
@@ -3696,6 +3698,28 @@ router.post("/modelo-pagamentos", authAdmin, upload.single("recibo"), async (req
     res.json(rows[0]);
   } catch (err) {
     console.error("Erro criar pgto modelo:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.get("/chargebacks-total-modelo", authAdmin, async (req, res) => {
+  try {
+    const modelo_id = Number(req.query.modelo_id);
+    const ano       = Number(req.query.ano);
+    const mes       = Number(req.query.mes);
+    if (!modelo_id || !ano || !mes) return res.status(400).json({ erro: "modelo_id, ano e mes são obrigatórios" });
+
+    const { rows } = await db.query(`
+      SELECT COALESCE(SUM(valor), 0) AS total, COUNT(*) AS qtd
+      FROM chargebacks
+      WHERE modelo_id = $1
+        AND EXTRACT(YEAR  FROM criado_em AT TIME ZONE 'America/Sao_Paulo') = $2
+        AND EXTRACT(MONTH FROM criado_em AT TIME ZONE 'America/Sao_Paulo') = $3
+    `, [modelo_id, ano, mes]);
+
+    res.json({ total: Number(rows[0].total), qtd: Number(rows[0].qtd) });
+  } catch (err) {
+    console.error("Erro chargebacks-total-modelo:", err);
     res.status(500).json({ erro: "Erro interno" });
   }
 });

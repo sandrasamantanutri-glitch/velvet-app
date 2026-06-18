@@ -2604,8 +2604,7 @@ function renderFechamento(d) {
 
   // Distribuição financeira recomendada
   let distribHtml = '';
-  if (d.distrib && d.velvet_liquido > 0) {
-    const vl = d.velvet_liquido;
+  if (d.distrib && d.distrib.base > 0) {
     const dist = d.distrib;
     distribHtml = `
       <div style="margin-top:16px;">
@@ -2633,7 +2632,7 @@ function renderFechamento(d) {
           </div>
         </div>
         <div style="font-size:11px;color:var(--text-muted);margin-top:8px;padding:0 2px;">
-          Base: ${money(vl)} líquido Velvet · Percentuais são referência — ajuste conforme mês e metas pessoais.
+          Base: ${money(dist.base)} saldo banco real · Percentuais são referência — ajuste conforme mês e metas pessoais.
         </div>
       </div>`;
   }
@@ -3617,6 +3616,28 @@ async function abrirRecibo(id) {
     win.document.write('<html><body style="font-family:sans-serif;padding:40px"><h2>Erro ao gerar recibo</h2><p>' + err.message + '</p></body></html>');
     win.document.close();
     toast('Erro ao gerar recibo: ' + err.message, 'error');
+  }
+}
+
+async function autoPreencherChargebacks() {
+  const modeloId = $('pagModeloId')?.value;
+  const mes      = $('pagMesRef')?.value; // formato YYYY-MM
+  const input    = $('pagChargebacks');
+  const info     = $('pagChargebacksInfo');
+  if (!modeloId || !mes || !input) return;
+
+  const [ano, mesNum] = mes.split('-').map(Number);
+  try {
+    const d = await fetchJSON(`/admin/dashboard/chargebacks-total-modelo?modelo_id=${modeloId}&ano=${ano}&mes=${mesNum}`);
+    input.value = d.total.toFixed(2);
+    if (info) {
+      info.textContent = d.qtd > 0
+        ? `${d.qtd} chargeback(s) registrado(s) neste mês — total preenchido automaticamente. Ajuste se necessário.`
+        : 'Nenhum chargeback registrado neste mês para esta modelo.';
+      info.style.color = d.qtd > 0 ? '#e53e3e' : '#888';
+    }
+  } catch (_) {
+    if (info) info.textContent = 'Não foi possível buscar chargebacks automaticamente.';
   }
 }
 

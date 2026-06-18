@@ -1429,7 +1429,7 @@
   <form id="formPagModelo" onsubmit="salvarPagModelo(event)">
     <label>
       Modelo
-      <select name="modelo_id" id="pagModeloId" required onchange="carregarSaldoPagModelo()">
+      <select name="modelo_id" id="pagModeloId" required onchange="carregarSaldoPagModelo(); autoPreencherChargebacks()">
         <option value="">Selecione</option>
       </select>
     </label>
@@ -1441,7 +1441,7 @@
 
     <label>
       Mês referência
-      <input type="month" name="mes" required>
+      <input type="month" name="mes" id="pagMesRef" required onchange="autoPreencherChargebacks()">
     </label>
 
     <label>
@@ -1484,14 +1484,15 @@
       Chargebacks / estornos a deduzir
       <input
         type="number"
+        id="pagChargebacks"
         name="chargebacks"
         step="0.01"
         value="0"
         min="0"
         placeholder="0.00"
-        title="Valor de chargebacks a deduzir do pagamento. Deixar 0 se não houver."
+        title="Valor de chargebacks a deduzir do pagamento."
       >
-      <small style="color:#888;font-size:11px;">Deduzido do valor líquido final. As taxas da plataforma e agência são calculadas automaticamente ao marcar como pago.</small>
+      <small id="pagChargebacksInfo" style="color:#888;font-size:11px;">Preenchido automaticamente com chargebacks registrados no mês (por data de registro). Ajuste se necessário.</small>
     </label>
 
     <label>
