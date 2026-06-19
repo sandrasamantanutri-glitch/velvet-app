@@ -171,7 +171,7 @@ const pageTitles = {
   seguranca: 'Seguranca & Historico',
   bloqueios: 'Bloqueios',
   verificacoes: 'Verificacoes',
-  lancamentos: 'Conta Bancária',
+  lancamentos: 'Faturamentos',
   fechamento: 'Fechamento Mensal',
   bancarios: 'Dados Bancarios',
   modelos: 'Modelos',
@@ -183,7 +183,6 @@ const pageTitles = {
   'pagamentos-modelo': 'Pagamentos a Modelos',
   agencias: 'Agencias',
   chargebacks: 'Chargebacks',
-  faturamento: 'Faturamentos Pagarme & Stripe',
   despesas: 'Despesas Operacionais',
   suporte: 'Suporte ao Cliente',
   midias: 'Gestão de Mídias',
@@ -2807,7 +2806,7 @@ async function carregarBancarios(page) {
     const tbody = $('tableBancarios').querySelector('tbody');
     tbody.innerHTML = (data.rows || []).map(r => `
       <tr>
-        <td>${r.id}</td>
+        <td>${r.modelo_id}</td>
         <td>${r.modelo_nome || 'Modelo #' + r.modelo_id}</td>
         <td>${r.tipo}</td>
         <td>${r.pix_chave || '—'}</td>
@@ -3073,7 +3072,7 @@ makeFinLoader('pagamentos-cartao', 'tableCartao', 'paginationCartao', r => `
     <td>${r.modelo_id || '—'}</td>
     <td>${money(r.valor)}</td>
     <td>${r.tipo || '—'}</td>
-    <td>${r.gateway || '—'}</td>
+    <td>${r.status === 'falhou' ? (r.motivo_recusa || '—') : '—'}</td>
     <td>${badgeStatus(r.status)}</td>
     <td>${fmtDateTime(r.created_at)}</td>
   </tr>
@@ -3091,27 +3090,6 @@ makeFinLoader('pagamentos-pix', 'tablePix', 'paginationPix', r => `
   </tr>
 `, 'carregarPix');
 
-makeFinLoader('pagamento-tentativas', 'tableTentativas', 'paginationTentativas', r => `
-  <tr>
-    <td>${r.id}</td>
-    <td>${r.cliente_id}</td>
-    <td>${r.metodo || '—'}</td>
-    <td>${badgeStatus(r.status)}</td>
-    <td>${r.gateway || '—'}</td>
-    <td>${r.cpf || '—'}</td>
-    <td>${r.ip || '—'}</td>
-    <td>${fmtDateTime(r.criado_em)}</td>
-  </tr>
-`, 'carregarTentativas');
-
-makeFinLoader('pagarme-events', 'tablePagarme', 'paginationPagarme', r => `
-  <tr>
-    <td>${r.id}</td>
-    <td>${r.type || '—'}</td>
-    <td>${fmtDateTime(r.created_at)}</td>
-  </tr>
-`, 'carregarPagarme');
-
 makeFinLoader('stripe-events', 'tableStripe', 'paginationStripe', r => `
   <tr>
     <td>${r.id}</td>
@@ -3119,6 +3097,16 @@ makeFinLoader('stripe-events', 'tableStripe', 'paginationStripe', r => `
     <td>${fmtDateTime(r.created_at)}</td>
   </tr>
 `, 'carregarStripeEvents');
+
+makeFinLoader('safe2pay-events', 'tableSafe2pay', 'paginationSafe2pay', r => `
+  <tr>
+    <td>${r.id}</td>
+    <td>${r.cliente_id ?? '—'}</td>
+    <td>${r.modelo_id ?? '—'}</td>
+    <td>${r.type || '—'}</td>
+    <td>${fmtDateTime(r.created_at)}</td>
+  </tr>
+`, 'carregarSafe2payEvents');
 
 makeFinLoader('conteudo-pacotes', 'tablePacotes', 'paginationPacotes', r => `
   <tr>
@@ -3160,9 +3148,8 @@ makeFinLoader('vip-subscriptions', 'tableVips', 'paginationVips', r => `
 const tabLoaderMap = {
   'fin-cartao':     'carregarCartao',
   'fin-pix':        'carregarPix',
-  'fin-tentativas': 'carregarTentativas',
-  'fin-pagarme':    'carregarPagarme',
   'fin-stripe':     'carregarStripeEvents',
+  'fin-safe2pay':   'carregarSafe2payEvents',
   'fin-pacotes':    'carregarPacotes',
   'fin-premium':    'carregarPremium',
   'fin-vips':       'carregarVips'
@@ -3235,9 +3222,11 @@ async function carregarModelosSelect(selectId) {
 
 async function carregarTransacoes(page) {
   try {
-    const modelo = $('transacoesModelo').value;
+    const modeloSelect = $('transacoesModelo');
+    const modelo = modeloSelect.value;
+    const modeloNome = modelo ? (modeloSelect.options[modeloSelect.selectedIndex]?.textContent || ('#' + modelo)) : 'Acumulado (todas)';
     const mes = $('transacoesMes').value;
-    const data = await fetchJSON(`/admin/dashboard/transacoes-agency?page=${page}&limit=20&modelo_id=${modelo}&mes=${mes}`);
+    const data = await fetchJSON(`/admin/dashboard/transacoes-agency?page=${page}&limit=31&modelo_id=${modelo}&mes=${mes}`);
 
     $('kpi-bruto').textContent = money(data.totais?.bruto);
     $('kpi-modelo').textContent = money(data.totais?.modelo);
@@ -3249,18 +3238,15 @@ async function carregarTransacoes(page) {
     const tbody = $('tableTransacoes').querySelector('tbody');
     tbody.innerHTML = (data.rows || []).map(r => `
       <tr>
-        <td>${r.id}</td>
-        <td>${r.modelo_nome || r.modelo_id}</td>
-        <td>${r.cliente_id}</td>
-        <td>${r.tipo}</td>
-        <td>${money(r.valor_bruto)}</td>
-        <td>${money(r.valor_modelo)}</td>
-        <td>${money(r.velvet_fee)}</td>
-        <td>${money(r.agency_fee)}</td>
-        <td>${money(r.taxa_gateway)}</td>
-        <td>${fmtDateTime(r.created_at)}</td>
+        <td>${fmtDate(r.dia)}</td>
+        <td>${modeloNome}</td>
+        <td>${money(r.ganhos_dia)}</td>
+        <td>${money(r.ganhos_modelo)}</td>
+        <td>${money(r.ganhos_velvet)}</td>
+        <td>${money(r.ganhos_agencia)}</td>
+        <td>${money(r.ganhos_gateway)}</td>
       </tr>
-    `).join('') || emptyRow(10);
+    `).join('') || emptyRow(7);
     buildPagination('paginationTransacoes', page, data.totalPages || 1, 'carregarTransacoes');
   } catch (err) { console.error('Erro transações:', err); }
 }
@@ -3377,8 +3363,10 @@ async function editarVip(id) {
 
 pageLoaders['pagamentos-modelo'] = async function () {
   await carregarModelosSelect('pgtoModeloFiltro');
+  populateMonthSelect($('pgtoModeloMes'));
   await carregarPgtoModelo(1);
   $('pgtoModeloFiltro').onchange = () => carregarPgtoModelo(1);
+  $('pgtoModeloMes').onchange = () => carregarPgtoModelo(1);
 };
 
 async function carregarModelosSelect(selectId, placeholder = 'Todos os modelos') {
@@ -3404,9 +3392,10 @@ async function carregarModelosSelect(selectId, placeholder = 'Todos os modelos')
 async function carregarPgtoModelo(page) {
   try {
     const modelo = $('pgtoModeloFiltro')?.value || '';
+    const mes = $('pgtoModeloMes')?.value || '';
 
     const data = await fetchJSON(
-      `/admin/dashboard/modelo-pagamentos?page=${page}&limit=20&modelo_id=${encodeURIComponent(modelo)}`
+      `/admin/dashboard/modelo-pagamentos?page=${page}&limit=20&modelo_id=${encodeURIComponent(modelo)}&mes=${encodeURIComponent(mes)}`
     );
 
     const tbody = $('tablePgtoModelo').querySelector('tbody');
@@ -3893,8 +3882,18 @@ async function salvarAlteracaoAgenciaModelo(event) {
 let _chargebacksData = [];
 
 pageLoaders.chargebacks = async function () {
+  const select = $('chargebacksMes');
+  if (select && !select.dataset.bound) {
+    populateMonthSelect(select);
+    select.value = '';
+    select.insertAdjacentHTML('afterbegin', '<option value="">Todos os meses</option>');
+    select.value = '';
+    select.addEventListener('change', () => pageLoaders.chargebacks());
+    select.dataset.bound = '1';
+  }
   try {
-    const data = await fetchJSON('/admin/dashboard/chargebacks-list');
+    const mes = $('chargebacksMes')?.value || '';
+    const data = await fetchJSON(`/admin/dashboard/chargebacks-list?mes=${encodeURIComponent(mes)}`);
     _chargebacksData = data;
     renderChargebacks(data);
   } catch (err) {
@@ -4041,121 +4040,19 @@ async function deletarChargeback(id) {
   }
 }
 
-// ==================== 18. FATURAMENTO PAGARME/STRIPE ====================
-
-pageLoaders.faturamento = async function () {
-  try {
-    const data = await fetchJSON('/admin/dashboard/faturamentos-list');
-    renderFaturamentos(data);
-  } catch (err) {
-    console.error('Erro ao carregar faturamentos:', err);
-    toast('Erro ao carregar faturamentos', 'error');
-  }
-};
-
-function renderFaturamentos(faturamentos) {
-  const tbody = document.querySelector('#tableFaturamento tbody');
-  if (!faturamentos || faturamentos.length === 0) {
-    tbody.innerHTML = emptyRow(10);
-    return;
-  }
-
-  tbody.innerHTML = faturamentos.map((fat, i) => `
-    <tr>
-      <td>${i + 1}</td>
-      <td><strong>${fat.plataforma === 'pagarme' ? 'Pagarme' : 'Stripe'}</strong></td>
-      <td>${fat.mes}</td>
-      <td>${money(fat.valor_total)}</td>
-      <td>${money(fat.taxas)}</td>
-      <td>${money(fat.chargeback)}</td>
-      <td>${money(fat.estornos)}</td>
-      <td><strong style="color: #27ae60;">${money(fat.valor_liquido)}</strong></td>
-      <td>
-        ${fat.arquivo ? `<a href="${fat.arquivo}" target="_blank" class="link">Baixar</a>` : '—'}
-      </td>
-      <td>
-        <button class="btn-small btn-ghost" onclick="deletarFaturamento(${fat.id})">Deletar</button>
-      </td>
-    </tr>
-  `).join('');
-}
-
-// Função para atualizar valor líquido em tempo real
-function atualizarLiquido() {
-  const form = document.getElementById('formFaturamento');
-  if (!form) return;
-
-  const valorTotal = parseFloat(form.valor_total.value) || 0;
-  const taxas = parseFloat(form.taxas.value) || 0;
-  const chargeback = parseFloat(form.chargeback.value) || 0;
-  const estornos = parseFloat(form.estornos.value) || 0;
-  
-  const liquido = valorTotal - taxas - chargeback - estornos;
-  
-  const preview = document.getElementById('previewLiquido');
-  if (preview) {
-    preview.textContent = liquido.toLocaleString('pt-BR', { 
-      minimumFractionDigits: 2, 
-      maximumFractionDigits: 2 
-    });
-  }
-}
-
-async function salvarFaturamento(event) {
-  event.preventDefault();
-  const form = event.target;
-  const formData = new FormData(form);
-
-  const valorTotal = parseFloat(formData.get('valor_total')) || 0;
-  const taxas = parseFloat(formData.get('taxas')) || 0;
-  const chargeback = parseFloat(formData.get('chargeback')) || 0;
-  const estornos = parseFloat(formData.get('estornos')) || 0;
-  const valorLiquido = valorTotal - taxas - chargeback - estornos;
-
-  if (valorLiquido < 0) {
-    toast('Valor líquido não pode ser negativo', 'error');
-    return;
-  }
-
-  try {
-    const res = await authFetch('/admin/dashboard/faturamentos', {
-      method: 'POST',
-      body: formData
-    });
-
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}`);
-    }
-
-    toast('Faturamento registrado com sucesso!', 'success');
-    closeAllModals();
-    form.reset();
-    atualizarLiquido(); // Reseta o preview também
-    pageLoaders.faturamento();
-  } catch (err) {
-    console.error('Erro ao salvar faturamento:', err);
-    toast('Erro ao salvar faturamento: ' + err.message, 'error');
-  }
-}
-
-async function deletarFaturamento(id) {
-  if (!confirm('Tem certeza que deseja deletar este faturamento?')) return;
-
-  try {
-    await deleteJSON(`/admin/dashboard/faturamentos/${id}`);
-    toast('Faturamento deletado com sucesso!', 'success');
-    pageLoaders.faturamento();
-  } catch (err) {
-    console.error('Erro ao deletar:', err);
-    toast('Erro ao deletar faturamento', 'error');
-  }
-}
-
 // ==================== 19. DESPESAS OPERACIONAIS ====================
 
 pageLoaders.despesas = async function () {
+  const select = $('despesasMes');
+  if (select && !select.dataset.bound) {
+    populateMonthSelect(select);
+    select.addEventListener('change', () => pageLoaders.despesas());
+    select.dataset.bound = '1';
+  }
   try {
-    const data = await fetchJSON('/admin/dashboard/despesas-list');
+    const [ano, mes] = (select?.value || '').split('-');
+    const qs = (ano && mes) ? `?mes=${Number(mes)}&ano=${Number(ano)}` : '';
+    const data = await fetchJSON(`/admin/dashboard/despesas-list${qs}`);
     renderDespesas(data);
   } catch (err) {
     console.error('Erro ao carregar despesas:', err);

@@ -3100,9 +3100,8 @@ function makeGenericList(table, orderBy = "id DESC", dateColumn = null) {
 
 router.get("/pagamentos-cartao", makeGenericList("pagamentos_cartao", "created_at DESC", "created_at"));
 router.get("/pagamentos-pix", makeGenericList("pagamentos_pix", "criado_em DESC", "criado_em"));
-router.get("/pagamento-tentativas", makeGenericList("pagamento_tentativas", "criado_em DESC", "criado_em"));
-router.get("/pagarme-events", makeGenericList("pagarme_events", "created_at DESC", "created_at"));
 router.get("/stripe-events", makeGenericList("stripe_events", "created_at DESC", "created_at"));
+router.get("/safe2pay-events", makeGenericList("safe2pay_events", "created_at DESC", "created_at"));
 router.get("/conteudo-pacotes", makeGenericList("conteudo_pacotes", "criado_em DESC", "criado_em"));
 router.get("/premium-unlocks", makeGenericList("premium_unlocks", "created_at DESC", "created_at"));
 router.get("/vip-subscriptions", makeGenericList("vip_subscriptions", "updated_at DESC", "updated_at"));
@@ -3258,15 +3257,6 @@ router.get("/transacoes-agency", async (req, res) => {
     // Copiar params para countParams
     const countParams = [...params];
 
-    const countQ = await db.query(`
-      SELECT COUNT(*) AS count
-      FROM transacoes_agency t
-      INNER JOIN modelos m ON m.id = t.modelo_id
-      WHERE ${where}
-    `, countParams);
-
-    const total = Number(countQ.rows[0]?.count || 0);
-
     // Totais financeiros (só status='pago', filtrado por created_at BRT)
     const totaisQ = await db.query(`
       SELECT
@@ -3300,23 +3290,37 @@ router.get("/transacoes-agency", async (req, res) => {
       cbParams
     );
 
-    // Adicionar limit e offset para a query de rows
+    // Contagem de dias distintos (para paginação da visão diária)
+    const countDiasQ = await db.query(`
+      SELECT COUNT(DISTINCT DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo')) AS count
+      FROM transacoes_agency t
+      INNER JOIN modelos m ON m.id = t.modelo_id
+      WHERE ${where}
+    `, countParams);
+    const totalDias = Number(countDiasQ.rows[0]?.count || 0);
+
+    // Ganhos agrupados por dia (acumulado geral, ou apenas da modelo filtrada)
     const rowsParams = [...params, limit, offset];
 
     const { rows } = await db.query(`
       SELECT
-        t.*,
-        m.nome AS modelo_nome
+        DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo') AS dia,
+        COALESCE(SUM(CASE WHEN t.status='pago' THEN t.valor_bruto  ELSE 0 END), 0) AS ganhos_dia,
+        COALESCE(SUM(CASE WHEN t.status='pago' THEN t.valor_modelo ELSE 0 END), 0) AS ganhos_modelo,
+        COALESCE(SUM(CASE WHEN t.status='pago' THEN t.velvet_fee  ELSE 0 END), 0) AS ganhos_velvet,
+        COALESCE(SUM(CASE WHEN t.status='pago' THEN t.agency_fee  ELSE 0 END), 0) AS ganhos_agencia,
+        COALESCE(SUM(CASE WHEN t.status='pago' THEN t.taxa_gateway ELSE 0 END), 0) AS ganhos_gateway
       FROM transacoes_agency t
       INNER JOIN modelos m ON m.id = t.modelo_id
       WHERE ${where}
-      ORDER BY t.created_at DESC
+      GROUP BY DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo')
+      ORDER BY dia DESC
       LIMIT $${paramIdx} OFFSET $${paramIdx + 1}
     `, rowsParams);
 
     res.json({
       rows,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.ceil(totalDias / limit),
       page,
       totais: { ...totaisQ.rows[0], chargebacks: cbTotaisQ.rows[0].chargebacks }
     });
@@ -3470,6 +3474,7 @@ router.get("/modelo-pagamentos", authAdmin, async (req, res) => {
     );
 
     const modelo_id = req.query.modelo_id;
+    const m = parseMes(req.query.mes);
 
     let where = "1=1";
     const params = [limit, offset];
@@ -3481,6 +3486,12 @@ router.get("/modelo-pagamentos", authAdmin, async (req, res) => {
       idx++;
     }
 
+    if (m) {
+      where += ` AND EXTRACT(YEAR FROM p.mes) = $${idx} AND EXTRACT(MONTH FROM p.mes) = $${idx + 1}`;
+      params.push(m.ano, m.mes);
+      idx += 2;
+    }
+
     let countWhere = "1=1";
     const countParams = [];
     let cidx = 1;
@@ -3489,6 +3500,12 @@ router.get("/modelo-pagamentos", authAdmin, async (req, res) => {
       countWhere += ` AND p.modelo_id = $${cidx}`;
       countParams.push(modelo_id);
       cidx++;
+    }
+
+    if (m) {
+      countWhere += ` AND EXTRACT(YEAR FROM p.mes) = $${cidx} AND EXTRACT(MONTH FROM p.mes) = $${cidx + 1}`;
+      countParams.push(m.ano, m.mes);
+      cidx += 2;
     }
 
     const countQ = await db.query(
@@ -4546,6 +4563,15 @@ router.post("/agencias", authAdmin, async (req, res) => {
 
 router.get("/chargebacks-list", async (req, res) => {
   try {
+    const m = parseMes(req.query.mes);
+    const params = [];
+    let where = "1=1";
+
+    if (m) {
+      where += " AND EXTRACT(YEAR FROM cb.data) = $1 AND EXTRACT(MONTH FROM cb.data) = $2";
+      params.push(m.ano, m.mes);
+    }
+
     const { rows } = await db.query(`
       SELECT
         cb.id,
@@ -4568,8 +4594,9 @@ router.get("/chargebacks-list", async (req, res) => {
       LEFT JOIN users u      ON u.id  = c.user_id
       LEFT JOIN clientes_dados cd ON cd.cliente_id = cb.cliente_id
       LEFT JOIN modelos m    ON m.id  = cb.modelo_id
+      WHERE ${where}
       ORDER BY cb.criado_em DESC
-    `);
+    `, params);
     res.json(rows);
   } catch (err) {
     console.error("Erro /chargebacks-list:", err);
@@ -4755,138 +4782,6 @@ router.get("/chargebacks/:id/comprovante", authAdmin, async (req, res) => {
   }
 });
 
-// ==================== 18. FATURAMENTOS ====================
- 
-router.get("/faturamentos-list", async (req, res) => {
-  try {
-    const { rows } = await db.query(`
-      SELECT
-        id,
-        plataforma,
-        mes,
-        valor_total,
-        taxas,
-        chargeback,
-        estornos,
-        valor_liquido,
-        arquivo,
-        criado_em
-      FROM faturamentos
-      ORDER BY mes DESC
-    `);
- 
-    res.json(rows);
-  } catch (err) {
-    console.error("Erro /faturamentos-list:", err);
-    res.status(500).json({ erro: "Erro interno" });
-  }
-});
-
-router.post("/faturamentos", authAdmin, uploadPublico.single('arquivo'), async (req, res) => {
-  try {
-    let { plataforma, mes, valor_total, taxas, chargeback, estornos } = req.body;
-    const arquivo = req.file ? req.file.location : null;
- 
-    const admin_id = req.user?.id;
-    const user_id = req.user?.id;
- 
-    if (!plataforma || !['pagarme', 'stripe'].includes(plataforma)) {
-      return res.status(400).json({ erro: "Plataforma inválida" });
-    }
- 
-    if (!mes) {
-      return res.status(400).json({ erro: "Mês é obrigatório" });
-    }
- 
-    if (!valor_total || isNaN(valor_total) || valor_total <= 0) {
-      return res.status(400).json({ erro: "Valor total inválido" });
-    }
- 
-    if (!arquivo) {
-      return res.status(400).json({ erro: "Arquivo é obrigatório" });
-    }
- 
-    if (!admin_id || !user_id) {
-      return res.status(401).json({ erro: "Usuário não autenticado" });
-    }
- 
-    valor_total = Number(valor_total);
-    taxas = taxas ? Number(taxas) : 0;
-    chargeback = chargeback ? Number(chargeback) : 0;
-    estornos = estornos ? Number(estornos) : 0;
-    const valor_liquido = valor_total - taxas - chargeback - estornos;
- 
-    const { rows } = await db.query(`
-      INSERT INTO faturamentos (plataforma, mes, valor_total, taxas, chargeback, estornos, valor_liquido, arquivo)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING id, plataforma, mes, valor_total, taxas, chargeback, estornos, valor_liquido, arquivo, criado_em
-    `, [plataforma, mes, valor_total, taxas, chargeback, estornos, valor_liquido, arquivo]);
- 
-    if (!rows.length) {
-      return res.status(500).json({ erro: "Falha ao registrar faturamento" });
-    }
- 
-    const motevoLog = `Faturamento registrado: ${plataforma} - ${mes} - R$ ${valor_liquido.toFixed(2)} (líquido)`;
- 
-    try {
-      await db.query(`
-        INSERT INTO admin_seguranca_historico (admin_id, motivo, data, user_id, tipo_user, acao)
-        VALUES ($1, $2, NOW(), $3, $4, $5)
-      `, [admin_id, motevoLog, user_id, 'admin', 'faturamento_novo']);
-    } catch (logErr) {
-      console.error("Erro ao registrar no log:", logErr);
-    }
- 
-    res.json(rows[0]);
-  } catch (err) {
-    console.error("Erro ao criar faturamento:", err.message);
-    res.status(500).json({ erro: "Erro interno: " + err.message });
-  }
-});
-
-router.delete("/faturamentos/:id", authAdmin, async (req, res) => {
-  try {
-    const faturamentoId = Number(req.params.id);
- 
-    const admin_id = req.user?.id;
-    const user_id = req.user?.id;
- 
-    if (!faturamentoId) {
-      return res.status(400).json({ erro: "Faturamento inválido" });
-    }
- 
-    if (!admin_id || !user_id) {
-      return res.status(401).json({ erro: "Usuário não autenticado" });
-    }
- 
-    const faturamento = await db.query(
-      `SELECT plataforma, mes, valor_liquido FROM faturamentos WHERE id = $1`,
-      [faturamentoId]
-    );
- 
-    if (!faturamento.rows.length) {
-      return res.status(404).json({ erro: "Faturamento não encontrado" });
-    }
- 
-    await db.query(`DELETE FROM faturamentos WHERE id = $1`, [faturamentoId]);
- 
-    const motevoLog = `Faturamento deletado: ${faturamento.rows[0].plataforma} - ${faturamento.rows[0].mes} - R$ ${faturamento.rows[0].valor_liquido.toFixed(2)}`;
- 
-    try {
-      await db.query(`
-        INSERT INTO admin_seguranca_historico (admin_id, motivo, data, user_id, tipo_user, acao)
-        VALUES ($1, $2, NOW(), $3, $4, $5)
-      `, [admin_id, motevoLog, user_id, 'admin', 'faturamento_deletado']);
-    } catch (logErr) {
-      console.error("Erro ao registrar no log:", logErr);
-    }
- 
-    res.json({ success: true });
-  } catch (err) {
-    console.error("Erro ao deletar faturamento:", err.message);
-    res.status(500).json({ erro: "Erro interno: " + err.message });
-  }
-});
  
 // ==================== 19. DESPESAS ====================
  

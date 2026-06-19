@@ -437,6 +437,13 @@ app.post("/api/webhook/safe2pay", express.json(), async (req, res) => {
         [novoStatus, row.id]
       );
 
+      await client.query(
+        `INSERT INTO safe2pay_events (id, type, cliente_id, modelo_id, created_at)
+         VALUES ($1, $2, $3, $4, NOW())
+         ON CONFLICT (id) DO UPDATE SET type = excluded.type, cliente_id = excluded.cliente_id, modelo_id = excluded.modelo_id`,
+        [idTx, novoStatus, row.cliente_id || null, row.modelo_id || null]
+      );
+
       if (isPaidEvent) {
         const cliente_id      = Number(row.cliente_id);
         const modelo_id       = Number(row.modelo_id);
@@ -507,6 +514,13 @@ app.post("/api/webhook/safe2pay", express.json(), async (req, res) => {
     await client.query(
       `UPDATE pagamentos_pix SET status = $1 WHERE pagarme_order_id = $2`,
       [novoStatus, idTx]
+    );
+
+    await client.query(
+      `INSERT INTO safe2pay_events (id, type, cliente_id, modelo_id, created_at)
+       VALUES ($1, $2, $3, $4, NOW())
+       ON CONFLICT (id) DO UPDATE SET type = excluded.type, cliente_id = excluded.cliente_id, modelo_id = excluded.modelo_id`,
+      [idTx, novoStatus, row.cliente_id || null, row.modelo_id || null]
     );
 
     if (isPaidEvent) {
@@ -1943,6 +1957,13 @@ app.post("/api/webhook/stripe", express.raw({ type: "application/json" }), async
     if (isFailedEvent) {
       console.log("❌ Evento de falha");
 
+      const motivoRecusa =
+        obj.last_payment_error?.message ||
+        obj.last_payment_error?.decline_code ||
+        obj.failure_message ||
+        obj.outcome?.seller_message ||
+        null;
+
       if (tabelaPagamento === "premium_unlocks") {
         await client.query(
           `
@@ -1962,10 +1983,11 @@ app.post("/api/webhook/stripe", express.raw({ type: "application/json" }), async
           SET status = 'falhou',
               updated_at = NOW(),
               stripe_payment_intent_id = COALESCE($2, stripe_payment_intent_id),
-              stripe_charge_id = COALESCE($3, stripe_charge_id)
+              stripe_charge_id = COALESCE($3, stripe_charge_id),
+              motivo_recusa = COALESCE($4, motivo_recusa)
           WHERE id = $1
           `,
-          [pagamento.id, paymentIntentId, chargeId]
+          [pagamento.id, paymentIntentId, chargeId, motivoRecusa]
         );
       }
 
