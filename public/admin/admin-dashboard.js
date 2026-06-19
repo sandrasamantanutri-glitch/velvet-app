@@ -4369,13 +4369,22 @@ async function carregarPastasEmail() {
       pastaEmailAtualId = (inbox || pastasEmailCache[0]).id;
     }
 
+    const ICONE_PASTA_PAPEL = {
+      inbox: '📥',
+      enviados: '📤',
+      spam: '⚠️',
+      lixeira: '🗑️'
+    };
+
     const lista = document.getElementById('listaPastasEmail');
     lista.innerHTML = pastasEmailCache.map(p => `
-      <button class="btn-small ${p.id === pastaEmailAtualId ? 'btn-primary' : 'btn-ghost'}"
-        style="width:100%; text-align:left; margin-bottom:4px; display:flex; justify-content:space-between;"
+      <button class="email-folder ${p.id === pastaEmailAtualId ? 'active' : ''}"
         onclick="selecionarPastaEmail(${p.id})">
-        <span>${escapeHtml(NOME_PASTA_PAPEL[p.papel] || p.nome_imap)}</span>
-        ${p.nao_lidas > 0 ? `<span class="notif-badge" style="position:static;">${p.nao_lidas}</span>` : ''}
+        <span class="email-folder-name">
+          <span class="email-folder-icon">${ICONE_PASTA_PAPEL[p.papel] || '📁'}</span>
+          <span>${escapeHtml(NOME_PASTA_PAPEL[p.papel] || p.nome_imap)}</span>
+        </span>
+        ${p.nao_lidas > 0 ? `<span class="email-folder-badge">${p.nao_lidas}</span>` : ''}
       </button>
     `).join('');
 
@@ -4411,13 +4420,21 @@ async function carregarMensagensEmail(page) {
     const data = await fetchJSON(`/api/admin/email/mensagens?pasta_id=${pastaEmailAtualId}&page=${page}&busca=${encodeURIComponent(busca)}`);
 
     const tbody = document.querySelector('#tableEmails tbody');
-    tbody.innerHTML = (data.rows || []).map(m => `
-      <tr style="cursor:pointer; ${m.lida ? '' : 'font-weight:600;'}" onclick="abrirEmail(${m.id})">
-        <td>${escapeHtml(m.remetente_nome || m.remetente_email || 'Desconhecido')}</td>
-        <td>${escapeHtml(m.assunto || '(sem assunto)')}${m.tem_anexos ? ' 📎' : ''}</td>
-        <td>${fmtDate(m.data_email)}</td>
+    tbody.innerHTML = (data.rows || []).map(m => {
+      const nome = m.remetente_nome || m.remetente_email || 'Desconhecido';
+      const inicial = nome.trim().charAt(0) || '?';
+      return `
+      <tr class="${m.lida ? '' : 'unread'}" onclick="abrirEmail(${m.id})">
+        <td class="email-avatar">${escapeHtml(inicial)}</td>
+        <td class="email-from"><span class="email-from-name">${escapeHtml(nome)}</span></td>
+        <td class="email-subject">
+          <span class="email-subject-text">${escapeHtml(m.assunto || '(sem assunto)')}</span>
+          ${m.tem_anexos ? '<span class="email-attach-icon">📎</span>' : ''}
+        </td>
+        <td class="email-date">${fmtDate(m.data_email)}</td>
       </tr>
-    `).join('') || emptyRow(3);
+    `;
+    }).join('') || emptyRow(4);
 
     buildPagination('paginationEmails', page, data.totalPages || 1, 'carregarMensagensEmail');
   } catch (err) {

@@ -1638,106 +1638,100 @@
 <!-- EMAILS HOSTINGER -->
 <section class="page" id="page-emails">
   <div class="tabs" id="emailsTabs">
-    <button class="tab active" data-tab="config-email">Configuração</button>
-    <button class="tab" data-tab="caixa-email">Caixa de Email</button>
+    <button class="tab active" data-tab="caixa-email">📥 Caixa de Email</button>
+    <button class="tab" data-tab="config-email">⚙️ Configurações</button>
+  </div>
+
+  <!-- ABA CAIXA DE EMAIL -->
+  <div class="tab-content active email-client" id="tab-caixa-email">
+    <div class="email-sidebar">
+      <button class="email-compose-btn" onclick="abrirComposer()">✏️ Novo Email</button>
+      <button class="email-sync-btn" onclick="sincronizarEmails()" id="btnSincronizar">🔄 Sincronizar</button>
+      <div class="email-folder-list" id="listaPastasEmail"></div>
+    </div>
+
+    <div class="email-list-panel">
+      <div class="email-list-toolbar">
+        <input type="text" class="input-search" id="buscaEmails" placeholder="Buscar emails..." oninput="buscarEmailsDebounced()">
+      </div>
+      <div id="emailsLoading" class="email-loading" style="display:none;">
+        <p>Carregando emails...</p>
+      </div>
+      <table class="table email-table" id="tableEmails">
+        <tbody></tbody>
+      </table>
+      <div class="pagination" id="paginationEmails"></div>
+    </div>
   </div>
 
   <!-- ABA CONFIGURAÇÃO -->
-  <div class="tab-content active" id="tab-config-email">
-    <div class="card">
-      <h3>Configurar Email Hostinger</h3>
-      <p style="color: #666; margin-bottom: 20px; font-size: 14px;">Configure suas credenciais de email IMAP/SMTP da Hostinger (contato@velvet.lat). O Gmail deve ser reencaminhado para esse mesmo endereço.</p>
-
-      <form id="formConfigEmail" onsubmit="salvarConfigEmail(event)">
-        <div class="form-group">
-          <label>Email Hostinger *</label>
-          <input type="email" id="configEmail" name="email" placeholder="contato@velvet.lat" required>
-        </div>
-
-        <div class="form-group">
-          <label>Senha da Caixa Postal *</label>
-          <input type="password" id="configSenha" name="senha" placeholder="Senha do email" required>
-        </div>
-
-        <div class="form-group">
-          <label>Servidor IMAP *</label>
-          <input type="text" id="configImap" name="imap_host" placeholder="imap.seudominio.com" value="mail.seudominio.com" required>
-        </div>
-
-        <div class="form-group">
-          <label>Porta IMAP *</label>
-          <input type="number" id="configImapPort" name="imap_port" placeholder="993" value="993" required>
-        </div>
-
-        <div class="form-group">
-          <label>Servidor SMTP *</label>
-          <input type="text" id="configSmtp" name="smtp_host" placeholder="smtp.seudominio.com" value="mail.seudominio.com" required>
-        </div>
-
-        <div class="form-group">
-          <label>Porta SMTP *</label>
-          <input type="number" id="configSmtpPort" name="smtp_port" placeholder="587" value="587" required>
-        </div>
-
-        <div class="form-group">
-          <label style="display:flex; gap:8px; cursor:pointer;">
-            <input type="checkbox" id="configTLS" name="use_tls" checked>
-            <span>Usar TLS/SSL</span>
-          </label>
-        </div>
-
-        <p style="color: #666; font-size: 13px; margin: 15px 0;">
-          <strong>Dica Hostinger:</strong> Para emails na Hostinger, use o servidor <code>mail.seudominio.com</code> (substitua seudominio.com pelo seu domínio)
-        </p>
-
-        <button type="submit" class="btn btn-primary">Conectar Email</button>
-      </form>
-
-      <div id="configStatus" style="margin-top:20px; display:none;"></div>
-    </div>
-
-    <!-- Email Conectado -->
-    <div class="card" style="margin-top:20px; display:none;" id="emailConectado">
+  <div class="tab-content" id="tab-config-email">
+    <div class="card email-status-card" id="emailConectado" style="display:none;">
       <h3>Email Conectado ✓</h3>
       <p id="emailConectadoInfo"></p>
       <button class="btn btn-danger" onclick="desconectarEmail()">Desconectar</button>
     </div>
 
-    <!-- Assinatura -->
-    <div class="card" style="margin-top:20px;">
-      <h3>Assinatura</h3>
-      <p style="color:#666; font-size:13px; margin-bottom:10px;">Inserida automaticamente ao compor ou responder (você pode editá-la antes de enviar).</p>
-      <div id="assinaturaEditor" contenteditable="true" style="min-height:100px; border:1px solid #ddd; border-radius:6px; padding:10px; margin-bottom:10px;"></div>
-      <button class="btn btn-primary" onclick="salvarAssinatura()">Salvar assinatura</button>
-    </div>
-  </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Configurar Email Hostinger</h3>
+        <p style="color: #666; margin-bottom: 20px; font-size: 14px;">Configure suas credenciais de email IMAP/SMTP da Hostinger (contato@velvet.lat). O Gmail deve ser reencaminhado para esse mesmo endereço.</p>
 
-  <!-- ABA CAIXA DE EMAIL -->
-  <div class="tab-content" id="tab-caixa-email" style="display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap;">
-    <div class="card" style="width:220px; flex-shrink:0;">
-      <button class="btn btn-primary" style="width:100%; margin-bottom:8px;" onclick="abrirComposer()">✏️ Novo Email</button>
-      <button class="btn btn-secondary" style="width:100%; margin-bottom:12px;" onclick="sincronizarEmails()" id="btnSincronizar">🔄 Sincronizar</button>
-      <div id="listaPastasEmail"></div>
-    </div>
+        <form id="formConfigEmail" onsubmit="salvarConfigEmail(event)">
+          <div class="form-group">
+            <label>Email Hostinger *</label>
+            <input type="email" id="configEmail" name="email" placeholder="contato@velvet.lat" required>
+          </div>
 
-    <div class="card" style="flex:1; min-width:300px;">
-      <div class="page-actions">
-        <input type="text" class="input-search" id="buscaEmails" placeholder="Buscar emails..." oninput="buscarEmailsDebounced()">
+          <div class="form-group">
+            <label>Senha da Caixa Postal *</label>
+            <input type="password" id="configSenha" name="senha" placeholder="Senha do email" required>
+          </div>
+
+          <div class="form-group">
+            <label>Servidor IMAP *</label>
+            <input type="text" id="configImap" name="imap_host" placeholder="imap.seudominio.com" value="mail.seudominio.com" required>
+          </div>
+
+          <div class="form-group">
+            <label>Porta IMAP *</label>
+            <input type="number" id="configImapPort" name="imap_port" placeholder="993" value="993" required>
+          </div>
+
+          <div class="form-group">
+            <label>Servidor SMTP *</label>
+            <input type="text" id="configSmtp" name="smtp_host" placeholder="smtp.seudominio.com" value="mail.seudominio.com" required>
+          </div>
+
+          <div class="form-group">
+            <label>Porta SMTP *</label>
+            <input type="number" id="configSmtpPort" name="smtp_port" placeholder="587" value="587" required>
+          </div>
+
+          <div class="form-group">
+            <label style="display:flex; gap:8px; cursor:pointer;">
+              <input type="checkbox" id="configTLS" name="use_tls" checked>
+              <span>Usar TLS/SSL</span>
+            </label>
+          </div>
+
+          <p style="color: #666; font-size: 13px; margin: 15px 0;">
+            <strong>Dica Hostinger:</strong> Para emails na Hostinger, use o servidor <code>mail.seudominio.com</code> (substitua seudominio.com pelo seu domínio)
+          </p>
+
+          <button type="submit" class="btn btn-primary">Conectar Email</button>
+        </form>
+
+        <div id="configStatus" style="margin-top:20px; display:none;"></div>
       </div>
-      <div id="emailsLoading" style="text-align:center; padding:20px; display:none;">
-        <p>Carregando emails...</p>
+
+      <!-- Assinatura -->
+      <div class="card">
+        <h3>Assinatura</h3>
+        <p style="color:#666; font-size:13px; margin-bottom:10px;">Inserida automaticamente ao compor ou responder (você pode editá-la antes de enviar).</p>
+        <div id="assinaturaEditor" contenteditable="true" style="min-height:100px; border:1px solid #ddd; border-radius:6px; padding:10px; margin-bottom:10px;"></div>
+        <button class="btn btn-primary" onclick="salvarAssinatura()">Salvar assinatura</button>
       </div>
-      <table class="table" id="tableEmails">
-        <thead>
-          <tr>
-            <th>De</th>
-            <th>Assunto</th>
-            <th>Data</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-      <div class="pagination" id="paginationEmails"></div>
     </div>
   </div>
 </section>

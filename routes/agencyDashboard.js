@@ -523,6 +523,13 @@ router.put("/agency/percentuais", authAgencia, async (req, res) => {
 
 const DESPESA_CHATTER_PADRAO = 1400;
 
+// Hoje só a Silva Talents tem custo de chatter; as demais agências não têm essa despesa por padrão.
+async function obterDespesaChatterPadrao(agenciaId) {
+  const { rows } = await db.query("SELECT nome FROM agencias WHERE id = $1", [agenciaId]);
+  const nome = (rows[0]?.nome || "").toLowerCase();
+  return nome.includes("silva talents") ? DESPESA_CHATTER_PADRAO : 0;
+}
+
 // Calcula os totais (agência + por modelo) de um ano/mês para uma agência, sem gravar nada.
 async function calcularFechamentoAgencia(agenciaId, ano, mes) {
   const totaisQ = await db.query(`
@@ -557,7 +564,11 @@ async function calcularFechamentoAgencia(agenciaId, ano, mes) {
 }
 
 // Gera (grava) o fechamento de um ano/mês para uma agência. Não duplica se já existir.
-async function gerarFechamentoAgencia(agenciaId, ano, mes, despesaChatter = DESPESA_CHATTER_PADRAO) {
+async function gerarFechamentoAgencia(agenciaId, ano, mes, despesaChatter = null) {
+  if (despesaChatter == null) {
+    despesaChatter = await obterDespesaChatterPadrao(agenciaId);
+  }
+
   const existente = await db.query(
     "SELECT id FROM fechamento_mensal_agency WHERE agencia_id = $1 AND ano = $2 AND mes = $3",
     [agenciaId, ano, mes]
@@ -629,7 +640,9 @@ router.post("/fechamentos-agency", authAgencia, async (req, res) => {
     const now = new Date();
     const ano = Number(req.body.ano) || now.getFullYear();
     const mes = Number(req.body.mes) || (now.getMonth() + 1);
-    const despesaChatter = req.body.despesa_chatter != null ? Number(req.body.despesa_chatter) : DESPESA_CHATTER_PADRAO;
+    const despesaChatter = req.body.despesa_chatter != null && req.body.despesa_chatter !== ''
+      ? Number(req.body.despesa_chatter)
+      : null;
 
     if (mes < 1 || mes > 12 || ano < 2020) {
       return res.status(400).json({ erro: "Mês ou ano inválido" });
@@ -2026,6 +2039,29 @@ router.put("/perfil", authAgencia, async (req, res) => {
   }
 });
 
+// Gera o fechamento de ano/mês para todas as agências (usado pelo cron do dia 1 e
+// pelo gatilho automático quando o admin gera o fechamento geral). Ignora agências
+// que já possuem fechamento para o período.
+async function gerarFechamentosTodasAgencias(ano, mes) {
+  const { rows: agencias } = await db.query("SELECT id FROM agencias");
+  const resultado = { geradas: 0, ignoradas: 0 };
+
+  for (const ag of agencias) {
+    try {
+      await gerarFechamentoAgencia(ag.id, ano, mes);
+      resultado.geradas++;
+    } catch (err) {
+      resultado.ignoradas++;
+      if (!/já existe/i.test(err.message)) {
+        console.error(`[Fechamento Agência] Erro agência #${ag.id}:`, err.message);
+      }
+    }
+  }
+
+  return resultado;
+}
+
 module.exports = router;
 module.exports.gerarFechamentoAgencia = gerarFechamentoAgencia;
+module.exports.gerarFechamentosTodasAgencias = gerarFechamentosTodasAgencias;
 module.exports.DESPESA_CHATTER_PADRAO = DESPESA_CHATTER_PADRAO;

@@ -2369,6 +2369,15 @@ router.post("/fechamento", async (req, res) => {
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *
     `, [ano, mes, r.total_bruto, r.total_taxas, r.total_agency, r.total_velvet, r.total_modelos, r.total_assinaturas, r.total_midias]);
 
+    // Dispara automaticamente o fechamento das agências para o mesmo período
+    try {
+      const agencyDashboardRouter = require("./agencyDashboard");
+      const resultadoAgencias = await agencyDashboardRouter.gerarFechamentosTodasAgencias(ano, mes);
+      console.log(`[Fechamento] Agências: ${resultadoAgencias.geradas} geradas, ${resultadoAgencias.ignoradas} ignoradas`);
+    } catch (err) {
+      console.error("Erro ao gerar fechamentos das agências:", err.message);
+    }
+
     res.json(rows[0]);
   } catch (err) {
     console.error("Erro fechamento:", err);

@@ -13634,6 +13634,7 @@ cron.schedule("0 * * * *", processarAvisosVip);
 cron.schedule("0 * * * *", processarOfertasExpirando);
 
 // Gera automaticamente o fechamento do mês anterior para todas as agências, todo dia 1º às 03h
+// (fallback: o fechamento das agências também é disparado quando o admin gera o fechamento geral)
 async function gerarFechamentosAutomaticosAgencias() {
   try {
     const hoje = new Date();
@@ -13641,18 +13642,8 @@ async function gerarFechamentosAutomaticosAgencias() {
     const ano = mesAnterior.getFullYear();
     const mes = mesAnterior.getMonth() + 1;
 
-    const { rows: agencias } = await db.query("SELECT id FROM agencias");
-
-    for (const ag of agencias) {
-      try {
-        await agencyDashboardRouter.gerarFechamentoAgencia(ag.id, ano, mes);
-        console.log(`[Fechamento Agência Cron] Gerado fechamento ${mes}/${ano} para agência #${ag.id}`);
-      } catch (err) {
-        if (!/já existe/i.test(err.message)) {
-          console.error(`[Fechamento Agência Cron] Erro agência #${ag.id}:`, err.message);
-        }
-      }
-    }
+    const resultado = await agencyDashboardRouter.gerarFechamentosTodasAgencias(ano, mes);
+    console.log(`[Fechamento Agência Cron] ${mes}/${ano}: ${resultado.geradas} geradas, ${resultado.ignoradas} ignoradas`);
   } catch (err) {
     console.error("[Fechamento Agência Cron] Erro geral:", err.message);
   }
