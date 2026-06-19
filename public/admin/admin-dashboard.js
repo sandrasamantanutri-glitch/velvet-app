@@ -4263,6 +4263,22 @@ async function salvarEdicao(e) {
 
 // ========== EMAILS HOSTINGER ==========
 
+const NOME_PASTA_PAPEL = {
+  inbox: 'Caixa de Entrada',
+  enviados: 'Enviados',
+  spam: 'Spam',
+  lixeira: 'Lixeira'
+};
+
+let pastaEmailAtualId = null;
+let emailAtualId = null;
+let pastasEmailCache = [];
+
+pageLoaders.emails = function () {
+  carregarPastasEmail();
+  carregarAssinatura();
+};
+
 async function salvarConfigEmail(e) {
   e.preventDefault();
   const form = new FormData(e.target);
@@ -4277,7 +4293,7 @@ async function salvarConfigEmail(e) {
   };
 
   try {
-    const res = await postJSON('/api/admin/email/config', body);
+    await postJSON('/api/admin/email/config', body);
     toast('Email configurado com sucesso!', 'success');
 
     document.getElementById('emailConectado').style.display = 'block';
@@ -4302,39 +4318,34 @@ async function desconectarEmail() {
   }
 }
 
+async function carregarAssinatura() {
+  try {
+    const data = await fetchJSON('/api/admin/email/assinatura');
+    document.getElementById('assinaturaEditor').innerHTML = data.assinatura || '';
+  } catch (err) {
+    console.error('Erro ao carregar assinatura:', err);
+  }
+}
+
+async function salvarAssinatura() {
+  try {
+    const assinatura = document.getElementById('assinaturaEditor').innerHTML;
+    await putJSON('/api/admin/email/assinatura', { assinatura });
+    toast('Assinatura salva!', 'success');
+  } catch (err) {
+    toast('Erro ao salvar assinatura: ' + err.message, 'error');
+  }
+}
+
 async function sincronizarEmails() {
   const btnSync = document.getElementById('btnSincronizar');
   btnSync.disabled = true;
   btnSync.textContent = '⏳ Sincronizando...';
 
   try {
-    const data = await postJSON('/api/admin/email/sync', {});
-
-    if (data.emails && Array.isArray(data.emails)) {
-      const tbody = document.querySelector('#tableEmails tbody');
-      tbody.innerHTML = '';
-
-      data.emails.forEach(email => {
-        const emailFromMatch = email.from.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
-        const emailFrom = emailFromMatch ? emailFromMatch[1] : email.from;
-
-        const row = `
-          <tr>
-            <td style="cursor:pointer;" onclick="verEmailDetalhes(${JSON.stringify(email).replace(/"/g, '&quot;')})">${escapeHtml(email.from || 'Desconhecido')}</td>
-            <td style="cursor:pointer;" onclick="verEmailDetalhes(${JSON.stringify(email).replace(/"/g, '&quot;')})">${escapeHtml(email.subject || '(sem assunto)')}</td>
-            <td style="cursor:pointer;" onclick="verEmailDetalhes(${JSON.stringify(email).replace(/"/g, '&quot;')})">${fmtDate(email.date)}</td>
-            <td>
-              <button class="btn btn-sm btn-danger" onclick="arquivarEmail(${email.id})">🗑️ Arquivar</button>
-            </td>
-          </tr>
-        `;
-        tbody.innerHTML += row;
-      });
-
-      document.getElementById('tableEmails').style.display = 'table';
-      document.getElementById('emailsVazio').style.display = 'none';
-      toast('Emails sincronizados!', 'success');
-    }
+    await postJSON('/api/admin/email/sincronizar', {});
+    await carregarPastasEmail();
+    toast('Emails sincronizados!', 'success');
   } catch (err) {
     toast('Erro ao sincronizar: ' + err.message, 'error');
   } finally {
@@ -4343,149 +4354,220 @@ async function sincronizarEmails() {
   }
 }
 
-let emailAtualAberto = null;
-
-function verEmailDetalhes(email) {
-  emailAtualAberto = email;
-  document.getElementById('emailAssunto').textContent = email.subject || '(sem assunto)';
-  document.getElementById('emailDe').textContent = email.from || 'Desconhecido';
-  document.getElementById('emailPara').textContent = email.to || '—';
-  document.getElementById('emailData').textContent = fmtDateTime(email.date);
-  document.getElementById('emailCorpo').innerHTML = email.html || escapeHtml(email.text || '');
-
-  openModal('modalVerEmail');
-}
-
-function responderEmail() {
-  if (!emailAtualAberto) return;
-
-  const emailDe = emailAtualAberto.from || '';
-  const assunto = emailAtualAberto.subject || '';
-
-  // Extrair endereço de email
-  const emailMatch = emailDe.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
-  const paraEmail = emailMatch ? emailMatch[1] : emailDe;
-
-  const assuntoRe = assunto.startsWith('Re:') ? assunto : 'Re: ' + assunto;
-
-  // Preencher o composer ANTES de abrir
-  setTimeout(() => {
-    document.getElementById('emailPara2').value = paraEmail;
-    document.getElementById('emailAssunto2').value = assuntoRe;
-    document.getElementById('emailMsg').value = '';
-    document.getElementById('emailPara2').focus();
-  }, 100);
-
-  closeModal('modalVerEmail');
-  abrirComposer();
-}
-
-function responderEmailDireto(emailDe, assunto) {
-  const assuntoRe = assunto && !assunto.startsWith('Re:') ? 'Re: ' + assunto : assunto;
-
-  // Extrair endereço de email
-  const emailMatch = emailDe.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
-  const paraEmail = emailMatch ? emailMatch[1] : emailDe;
-
-  // Preencher o composer
-  document.getElementById('emailPara2').value = paraEmail;
-  document.getElementById('emailAssunto2').value = assuntoRe || '';
-  document.getElementById('emailMsg').value = '';
-
-  // Fechar modal anterior se aberto
-  closeModal('modalVerEmail');
-  abrirComposer();
-
-  toast('Respondendo para: ' + paraEmail, 'success');
-}
-
-async function arquivarEmail(emailId) {
-  if (!confirm('Tem certeza que deseja arquivar este email?')) return;
-
+async function carregarPastasEmail() {
   try {
-    await postJSON('/api/admin/email/archive', { id: emailId });
-    toast('Email arquivado!', 'success');
+    const pastas = await fetchJSON('/api/admin/email/pastas');
+    pastasEmailCache = pastas || [];
 
-    // Remover linha da tabela imediatamente
-    const tbody = document.querySelector('#tableEmails tbody');
-    const rows = tbody.querySelectorAll('tr');
-    rows.forEach((row, idx) => {
-      // Encontrar e remover a linha do email arquivado
-      const button = row.querySelector('button[onclick*="arquivarEmail"]');
-      if (button && button.onclick.toString().includes(emailId)) {
-        row.remove();
-      }
-    });
+    if (!pastasEmailCache.length) {
+      document.getElementById('listaPastasEmail').innerHTML = '<p style="font-size:13px;color:#999;">Clique em Sincronizar para carregar as pastas.</p>';
+      return;
+    }
 
-    // Recarregar após 1 segundo
-    setTimeout(() => sincronizarEmails(), 1000);
+    if (!pastaEmailAtualId) {
+      const inbox = pastasEmailCache.find(p => p.papel === 'inbox');
+      pastaEmailAtualId = (inbox || pastasEmailCache[0]).id;
+    }
+
+    const lista = document.getElementById('listaPastasEmail');
+    lista.innerHTML = pastasEmailCache.map(p => `
+      <button class="btn-small ${p.id === pastaEmailAtualId ? 'btn-primary' : 'btn-ghost'}"
+        style="width:100%; text-align:left; margin-bottom:4px; display:flex; justify-content:space-between;"
+        onclick="selecionarPastaEmail(${p.id})">
+        <span>${escapeHtml(NOME_PASTA_PAPEL[p.papel] || p.nome_imap)}</span>
+        ${p.nao_lidas > 0 ? `<span class="notif-badge" style="position:static;">${p.nao_lidas}</span>` : ''}
+      </button>
+    `).join('');
+
+    const select = document.getElementById('moverPastaSelect');
+    if (select) {
+      select.innerHTML = pastasEmailCache.map(p => `<option value="${p.id}">${escapeHtml(NOME_PASTA_PAPEL[p.papel] || p.nome_imap)}</option>`).join('');
+    }
+
+    carregarMensagensEmail(1);
   } catch (err) {
-    toast('Erro ao arquivar: ' + err.message, 'error');
+    console.error('Erro ao carregar pastas:', err);
   }
 }
 
+function selecionarPastaEmail(pastaId) {
+  pastaEmailAtualId = pastaId;
+  carregarPastasEmail();
+}
+
+let buscaEmailsTimeout = null;
+function buscarEmailsDebounced() {
+  clearTimeout(buscaEmailsTimeout);
+  buscaEmailsTimeout = setTimeout(() => carregarMensagensEmail(1), 350);
+}
+
+async function carregarMensagensEmail(page) {
+  if (!pastaEmailAtualId) return;
+  const loading = document.getElementById('emailsLoading');
+  loading.style.display = 'block';
+
+  try {
+    const busca = document.getElementById('buscaEmails')?.value || '';
+    const data = await fetchJSON(`/api/admin/email/mensagens?pasta_id=${pastaEmailAtualId}&page=${page}&busca=${encodeURIComponent(busca)}`);
+
+    const tbody = document.querySelector('#tableEmails tbody');
+    tbody.innerHTML = (data.rows || []).map(m => `
+      <tr style="cursor:pointer; ${m.lida ? '' : 'font-weight:600;'}" onclick="abrirEmail(${m.id})">
+        <td>${escapeHtml(m.remetente_nome || m.remetente_email || 'Desconhecido')}</td>
+        <td>${escapeHtml(m.assunto || '(sem assunto)')}${m.tem_anexos ? ' 📎' : ''}</td>
+        <td>${fmtDate(m.data_email)}</td>
+      </tr>
+    `).join('') || emptyRow(3);
+
+    buildPagination('paginationEmails', page, data.totalPages || 1, 'carregarMensagensEmail');
+  } catch (err) {
+    console.error('Erro ao carregar mensagens:', err);
+  } finally {
+    loading.style.display = 'none';
+  }
+}
+
+async function abrirEmail(id) {
+  try {
+    const msg = await fetchJSON(`/api/admin/email/mensagens/${id}`);
+    emailAtualId = id;
+
+    document.getElementById('emailAssunto').textContent = msg.assunto || '(sem assunto)';
+    document.getElementById('emailDe').textContent = `${msg.remetente_nome || ''} <${msg.remetente_email || ''}>`;
+    document.getElementById('emailPara').textContent = msg.destinatario || '—';
+    document.getElementById('emailData').textContent = fmtDateTime(msg.data_email);
+    document.getElementById('emailCorpo').innerHTML = msg.corpo_html || escapeHtml(msg.corpo_texto || '');
+
+    const anexosEl = document.getElementById('emailAnexos');
+    const anexos = msg.anexos || [];
+    anexosEl.innerHTML = anexos.length
+      ? '<strong>Anexos:</strong><br>' + anexos.map((a, idx) => `
+          <a href="#" onclick="baixarAnexoEmail(${id}, ${idx}, '${escapeHtml(a.filename).replace(/'/g, "\\'")}'); return false;" style="margin-right:10px;">📎 ${escapeHtml(a.filename)}</a>
+        `).join('')
+      : '';
+
+    document.getElementById('moverPastaSelect').value = String(pastaEmailAtualId);
+
+    openModal('modalVerEmail');
+    carregarPastasEmail(); // atualiza badge de não lidas
+  } catch (err) {
+    toast('Erro ao abrir email: ' + err.message, 'error');
+  }
+}
+
+async function baixarAnexoEmail(msgId, idx, filename) {
+  try {
+    const res = await authFetch(`/api/admin/email/mensagens/${msgId}/anexos/${idx}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'anexo';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    toast('Erro ao baixar anexo: ' + err.message, 'error');
+  }
+}
+
+async function moverEmailAtual() {
+  if (!emailAtualId) return;
+  const pastaDestinoId = Number(document.getElementById('moverPastaSelect').value);
+
+  try {
+    await postJSON(`/api/admin/email/mensagens/${emailAtualId}/mover`, { pasta_destino_id: pastaDestinoId });
+    toast('Email movido!', 'success');
+    closeModal('modalVerEmail');
+    carregarPastasEmail();
+  } catch (err) {
+    toast('Erro ao mover: ' + err.message, 'error');
+  }
+}
+
+async function excluirEmailAtual() {
+  if (!emailAtualId) return;
+  if (!confirm('Mover este email para a Lixeira?')) return;
+
+  try {
+    const pastaAtual = pastasEmailCache.find(p => p.id === pastaEmailAtualId);
+    if (pastaAtual && pastaAtual.papel === 'lixeira') {
+      await deleteJSON(`/api/admin/email/mensagens/${emailAtualId}`);
+      toast('Email excluído definitivamente!', 'success');
+    } else {
+      await postJSON(`/api/admin/email/mensagens/${emailAtualId}/excluir`, {});
+      toast('Email movido para a Lixeira!', 'success');
+    }
+    closeModal('modalVerEmail');
+    carregarPastasEmail();
+  } catch (err) {
+    toast('Erro ao excluir: ' + err.message, 'error');
+  }
+}
 
 function abrirComposer() {
   document.getElementById('formEnviarEmail').reset();
+  document.getElementById('emailRespostaA').value = '';
+  document.getElementById('composerTitulo').textContent = 'Novo Email';
+  const assinatura = document.getElementById('assinaturaEditor').innerHTML;
+  document.getElementById('composerCorpo').innerHTML = assinatura ? `<br><br>${assinatura}` : '';
   openModal('modalComposer');
+}
+
+function inserirLinkComposer() {
+  const url = prompt('URL do link:');
+  if (url) document.execCommand('createLink', false, url);
+}
+
+async function responderEmail() {
+  try {
+    const msg = await fetchJSON(`/api/admin/email/mensagens/${emailAtualId}`);
+    const assuntoRe = (msg.assunto || '').startsWith('Re:') ? msg.assunto : 'Re: ' + (msg.assunto || '');
+    const assinatura = document.getElementById('assinaturaEditor').innerHTML;
+
+    document.getElementById('formEnviarEmail').reset();
+    document.getElementById('emailRespostaA').value = emailAtualId;
+    document.getElementById('composerTitulo').textContent = 'Responder Email';
+    document.getElementById('emailPara2').value = msg.remetente_email || '';
+    document.getElementById('emailAssunto2').value = assuntoRe;
+    document.getElementById('composerCorpo').innerHTML = `
+      <br><br>${assinatura}
+      <br><hr>
+      <p>Em ${fmtDateTime(msg.data_email)}, ${escapeHtml(msg.remetente_nome || msg.remetente_email)} escreveu:</p>
+      <blockquote style="border-left:2px solid #ddd; padding-left:10px; color:#666;">${msg.corpo_html || escapeHtml(msg.corpo_texto || '')}</blockquote>
+    `;
+
+    closeModal('modalVerEmail');
+    openModal('modalComposer');
+  } catch (err) {
+    toast('Erro ao preparar resposta: ' + err.message, 'error');
+  }
 }
 
 async function enviarEmail(e) {
   e.preventDefault();
-  const form = new FormData(e.target);
 
   try {
-    await postJSON('/api/admin/email/send', {
-      para: form.get('para'),
-      assunto: form.get('assunto'),
-      corpo: form.get('corpo')
+    await postJSON('/api/admin/email/enviar', {
+      para: document.getElementById('emailPara2').value,
+      assunto: document.getElementById('emailAssunto2').value,
+      corpo: document.getElementById('composerCorpo').innerHTML,
+      em_resposta_a: document.getElementById('emailRespostaA').value || undefined
     });
 
     toast('Email enviado com sucesso!', 'success');
     closeAllModals();
     document.getElementById('formEnviarEmail').reset();
 
-    // Recarregar enviados após 1 segundo
-    setTimeout(() => carregarEnviados(), 1000);
-  } catch (err) {
-    toast('Erro ao enviar: ' + err.message, 'error');
-  }
-}
-
-async function carregarEnviados() {
-  try {
-    const data = await fetchJSON('/api/admin/email/sent');
-
-    if (data.emails && Array.isArray(data.emails)) {
-      const tbody = document.querySelector('#tableEnviados tbody');
-      tbody.innerHTML = '';
-
-      if (data.emails.length === 0) {
-        document.getElementById('enviadosVazio').style.display = 'block';
-        document.getElementById('tableEnviados').style.display = 'none';
-        return;
-      }
-
-      data.emails.forEach(email => {
-        const row = `
-          <tr>
-            <td>${escapeHtml(email.to || 'Desconhecido')}</td>
-            <td>${escapeHtml(email.subject || '(sem assunto)')}</td>
-            <td>${fmtDate(email.date)}</td>
-            <td><span class="badge" style="background:#4CAF50; color:white; padding:4px 8px; border-radius:4px;">Enviado</span></td>
-          </tr>
-        `;
-        tbody.innerHTML += row;
-      });
-
-      document.getElementById('tableEnviados').style.display = 'table';
-      document.getElementById('enviadosVazio').style.display = 'none';
+    const enviados = pastasEmailCache.find(p => p.papel === 'enviados');
+    if (enviados) {
+      pastaEmailAtualId = enviados.id;
+      setTimeout(() => carregarPastasEmail(), 1500);
     }
   } catch (err) {
-    console.error('Erro ao carregar enviados:', err);
-    // Mostrar vazio se der erro
-    document.getElementById('enviadosVazio').style.display = 'block';
-    document.getElementById('tableEnviados').style.display = 'none';
+    toast('Erro ao enviar: ' + err.message, 'error');
   }
 }
 
@@ -4641,12 +4723,20 @@ function initNotificacoes() {
 
   if (window.io) {
     const socket = window.io({ auth: { token }, transports: ['websocket'] });
+    window.dashboardSocket = socket;
+
     socket.on('admin:notificacao', (notif) => {
       tocarSomNotificacao();
       bellBtn.classList.add('ringing');
       setTimeout(() => bellBtn.classList.remove('ringing'), 1300);
       carregarNotificacoes();
       toast(notif.titulo, 'info');
+    });
+
+    socket.on('email:novo', () => {
+      if (document.getElementById('page-emails')?.classList.contains('active')) {
+        carregarPastasEmail();
+      }
     });
   }
 }

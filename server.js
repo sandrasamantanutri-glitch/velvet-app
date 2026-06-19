@@ -3404,6 +3404,7 @@ io.on("connection", (socket) => {
   // ─── NOTIFICAÇÕES ADMIN (sino do dashboard) ─────────────────────────────
   if (socket.user?.role === "admin") {
     socket.join("admin_notificacoes");
+    socket.join(`email_${socket.user.id}`);
   }
 
   // ─── SUPORTE AO CLIENTE ──────────────────────────────────────────────────
