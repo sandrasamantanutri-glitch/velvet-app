@@ -4506,21 +4506,44 @@ const NOTIF_PAGINA_POR_TIPO = {
   email: 'emails'
 };
 
+let _notifAudioCtx = null;
+
+function getNotifAudioCtx() {
+  if (!_notifAudioCtx) {
+    _notifAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return _notifAudioCtx;
+}
+
+// Navegadores suspendem o AudioContext até haver interação do usuário.
+// Criamos/retomamos no primeiro gesto para garantir que o som toque depois.
+function destravarAudioNotificacao() {
+  const ctx = getNotifAudioCtx();
+  if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+}
+
 function tocarSomNotificacao() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(880, ctx.currentTime);
-    osc.frequency.setValueAtTime(660, ctx.currentTime + 0.12);
-    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.35);
+    const ctx = getNotifAudioCtx();
+    const iniciarTom = () => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.setValueAtTime(660, ctx.currentTime + 0.12);
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.35);
+    };
+    if (ctx.state === 'suspended') {
+      ctx.resume().then(iniciarTom).catch(() => {});
+    } else {
+      iniciarTom();
+    }
   } catch (err) {
     console.error('Erro ao tocar som de notificação:', err);
   }
@@ -4637,4 +4660,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   pageLoaders.overview();
   initNotificacoes();
+  document.addEventListener('click', destravarAudioNotificacao, { once: true });
+  document.addEventListener('keydown', destravarAudioNotificacao, { once: true });
 });
