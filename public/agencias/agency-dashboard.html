@@ -53,6 +53,38 @@
       <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
       <span>Pagamentos</span>
     </a>
+    <a class="nav-item" data-page="ofertas">
+      <svg viewBox="0 0 24 24"><path d="M21.41 11.41l-8.83-8.83A2 2 0 0 0 11.17 2H4a2 2 0 0 0-2 2v7.17a2 2 0 0 0 .59 1.41l8.83 8.83a2 2 0 0 0 2.82 0l7.17-7.17a2 2 0 0 0 0-2.83zM6.5 8A1.5 1.5 0 1 1 8 6.5 1.5 1.5 0 0 1 6.5 8z"/></svg>
+      <span>Ofertas</span>
+    </a>
+    <a class="nav-item" data-page="assinaturas">
+      <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+      <span>Assinaturas</span>
+    </a>
+    <a class="nav-item" data-page="feed">
+      <svg viewBox="0 0 24 24"><path d="M4 4h16v2H4zm0 7h16v2H4zm0 7h16v2H4z"/></svg>
+      <span>Feed</span>
+    </a>
+    <a class="nav-item" data-page="premium">
+      <svg viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11zm0 2h14v2H5z"/></svg>
+      <span>Premium</span>
+    </a>
+    <a class="nav-item" data-page="conteudos">
+      <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4zm2 2v12h12V6z"/></svg>
+      <span>Conteúdos</span>
+    </a>
+    <a class="nav-item" data-page="links">
+      <svg viewBox="0 0 24 24"><path d="M3.9 12a5 5 0 0 1 5-5h4v2h-4a3 3 0 0 0 0 6h4v2h-4a5 5 0 0 1-5-5zm7-1h4v2h-4zm5-4h-4v2h4a3 3 0 0 1 0 6h-4v2h4a5 5 0 0 0 0-10z"/></svg>
+      <span>Links</span>
+    </a>
+    <a class="nav-item" data-page="avatar-capa">
+      <svg viewBox="0 0 24 24"><path d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5z"/></svg>
+      <span>Avatar e Capa</span>
+    </a>
+    <a class="nav-item" data-page="bio-perfil">
+      <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      <span>Bio e Perfil</span>
+    </a>
 </nav>
 
   <div class="sidebar-bottom">
@@ -203,14 +235,37 @@
 
   <!-- FECHAMENTO MENSAL -->
   <section class="page" id="page-fechamento">
+    <div class="kpi-row">
+      <div class="kpi-card purple"><span>Faturamento Geral Modelos</span><strong id="kpi-fat-geral-modelo">--</strong></div>
+      <div class="kpi-card blue"><span>Faturamento Geral Agência</span><strong id="kpi-fat-geral-agencia">--</strong></div>
+    </div>
+
     <div class="card">
+      <div class="page-actions">
+        <input type="month" id="novoFechamentoMes" class="input-select">
+        <input type="number" id="novoFechamentoDespesaChatter" class="input-select" style="max-width:160px;" value="1400" step="0.01" title="Despesa salário chatter">
+        <button class="btn btn-primary" onclick="gerarFechamentoAgency()">+ Gerar Fechamento</button>
+      </div>
       <h3>Fechamentos Mensais</h3>
       <table class="table" id="tableFechamento">
-        <thead><tr><th>Ano</th><th>Mês</th><th>Total</th><th>Agência</th><th>Modelos</th><th>Midias</th><th>Assinaturas</th><th>Data</th></tr></thead>
+        <thead><tr><th>Ano</th><th>Mês</th><th>Total</th><th>Agência</th><th>Modelos</th><th>Midias</th><th>Assinaturas</th><th>Data</th><th>Ações</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
   </section>
+
+  <!-- DETALHE FECHAMENTO (impressão) -->
+  <div class="modal modal-lg" id="modalFechamentoDetalhe">
+    <div class="modal-header">
+      <h3 id="fechDetalheTitulo">Fechamento</h3>
+      <button class="modal-close" onclick="closeModal('modalFechamentoDetalhe')">&times;</button>
+    </div>
+    <div class="modal-body" id="fechDetalheCorpo"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalFechamentoDetalhe')">Fechar</button>
+      <button class="btn btn-primary" onclick="imprimirFechamentoAgency()">🖨️ Imprimir</button>
+    </div>
+  </div>
 
   <!-- DADOS BANCÁRIOS -->
   <section class="page" id="page-bancarios">
@@ -221,6 +276,7 @@
         <option value="aprovado">Aprovado</option>
         <option value="rejeitado">Rejeitado</option>
       </select>
+      <button class="btn btn-primary" onclick="abrirModalNovoDadoBancario()">+ Adicionar</button>
     </div>
     <div class="card">
       <h3>Dados Bancários das Modelos</h3>
@@ -274,27 +330,194 @@
   </div>
 </section>
 
- <!-- PAGAMENTOS AGÊNCIA -->
+ <!-- PAGAMENTOS -->
 <section class="page" id="page-pagamentos-agencia">
+  <div class="tabs" id="pagamentosTabs">
+    <button class="tab active" data-tab="pag-agencia">Agência</button>
+    <button class="tab" data-tab="pag-modelos">Modelos</button>
+  </div>
+
+  <div class="tab-content active" id="tab-pag-agencia">
+    <div class="card">
+      <h3>Pagamentos Recebidos pela Agência</h3>
+      <table class="table" id="tablePagAgencia">
+        <thead><tr><th>Valor</th><th>Mês de Referência</th><th>Data de Pagamento</th><th>Descrição</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-pag-modelos">
+    <div class="card">
+      <h3>Pagamentos Recebidos pelas Modelos</h3>
+      <table class="table" id="tablePagModelos">
+        <thead><tr><th>Modelo</th><th>Mês</th><th>Mídias</th><th>Assinaturas</th><th>Total</th><th>Status</th><th>Pago em</th><th>Recibo</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- OFERTAS -->
+<section class="page" id="page-ofertas">
+  <div class="page-actions">
+    <select id="ofertasModeloSelect" class="input-select" onchange="carregarOfertasAgency()"></select>
+    <button class="btn btn-primary" onclick="abrirFormNovaOferta()">+ Nova Oferta</button>
+  </div>
+  <div class="card" id="formNovaOfertaCard" style="display:none;">
+    <h3>Nova Oferta</h3>
+    <form id="formNovaOferta" onsubmit="salvarNovaOferta(event)">
+      <div class="form-group"><label>Nome *</label><input type="text" name="nome" class="input" required></div>
+      <div class="form-group"><label>Limite de assinaturas *</label><input type="number" name="limite" class="input" min="1" required></div>
+      <div class="form-group"><label>Validade (dias, máx 30) *</label><input type="number" name="dias" class="input" min="1" max="30" required></div>
+      <div class="form-group"><label>Desconto % *</label><input type="number" name="desconto" class="input" min="0" max="99" required></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="$('formNovaOfertaCard').style.display='none'">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Criar Oferta</button>
+      </div>
+    </form>
+  </div>
   <div class="card">
-    <h3>Saldo a Receber:</h3>
-    <span class="stat-value" id="saldoAgenciaGeral">—</span>
-    <table class="table" id="tablePagAgencia">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Mês</th>
-          <th>Total Bruto</th>
-          <th>Agência</th>
-          <th>Modelos</th>
-          <th>Status</th>
-          <th>Recebido em</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
+    <h3>Ofertas</h3>
+    <table class="table" id="tableOfertas">
+      <thead><tr><th>Nome</th><th>Desconto</th><th>Valor Promocional</th><th>Limite</th><th>Usadas</th><th>Validade</th><th>Status</th><th>Ações</th></tr></thead>
       <tbody></tbody>
     </table>
-    <div class="pagination" id="paginationPagAgencia"></div>
+  </div>
+</section>
+
+<!-- ASSINATURAS -->
+<section class="page" id="page-assinaturas">
+  <div class="page-actions">
+    <select id="assinaturasModeloSelect" class="input-select" onchange="carregarAssinaturaAgency()"></select>
+  </div>
+  <div class="card" style="max-width:420px;">
+    <h3>Valor da Assinatura VIP</h3>
+    <form id="formAssinatura" onsubmit="salvarAssinaturaAgency(event)">
+      <div class="form-group"><label>Valor mensal (mín. R$ 20) *</label><input type="number" step="0.01" id="assinaturaValorMensal" name="valor_mensal" class="input" required></div>
+      <div class="form-group"><label>Desconto trimestral % (0-30)</label><input type="number" step="0.01" id="assinaturaDesconto" name="desconto_trimestral" class="input"></div>
+      <div class="form-group"><label>Valor trimestral (calculado)</label><input type="text" id="assinaturaValorTrimestral" class="input" disabled></div>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </form>
+  </div>
+</section>
+
+<!-- FEED -->
+<section class="page" id="page-feed">
+  <div class="page-actions">
+    <select id="feedModeloSelect" class="input-select" onchange="carregarFeedAgency()"></select>
+  </div>
+  <div class="card">
+    <h3>Novo Post no Feed</h3>
+    <form id="formNovoFeed" onsubmit="salvarNovoFeed(event)">
+      <div class="form-group"><label>Arquivos (imagem/vídeo) *</label><input type="file" name="file" multiple accept="image/*,video/*" required></div>
+      <div class="form-group"><label>Descrição</label><input type="text" name="descricao" class="input"></div>
+      <button type="submit" class="btn btn-primary">Publicar</button>
+    </form>
+  </div>
+  <div class="card">
+    <h3>Posts no Feed</h3>
+    <div class="grid-media" id="gridFeed"></div>
+  </div>
+</section>
+
+<!-- PREMIUM -->
+<section class="page" id="page-premium">
+  <div class="page-actions">
+    <select id="premiumModeloSelect" class="input-select" onchange="carregarPremiumAgency()"></select>
+  </div>
+  <div class="card">
+    <h3>Novo Post Premium</h3>
+    <form id="formNovoPremium" onsubmit="salvarNovoPremium(event)">
+      <div class="form-group"><label>Arquivos (imagem/vídeo) *</label><input type="file" name="files" multiple accept="image/*,video/*" required></div>
+      <div class="form-group"><label>Preço *</label><input type="number" step="0.01" name="preco" class="input" required></div>
+      <div class="form-group"><label>Descrição</label><input type="text" name="descricao" class="input"></div>
+      <button type="submit" class="btn btn-primary">Publicar</button>
+    </form>
+  </div>
+  <div class="card">
+    <h3>Posts Premium</h3>
+    <div class="grid-media" id="gridPremium"></div>
+  </div>
+</section>
+
+<!-- CONTEÚDOS -->
+<section class="page" id="page-conteudos">
+  <div class="page-actions">
+    <select id="conteudosModeloSelect" class="input-select" onchange="carregarConteudosAgency()"></select>
+  </div>
+  <div class="card">
+    <h3>Novo Conteúdo de Venda</h3>
+    <form id="formNovoConteudo" onsubmit="salvarNovoConteudo(event)">
+      <div class="form-group"><label>Arquivos (imagem/vídeo) *</label><input type="file" name="file" multiple accept="image/*,video/*" required></div>
+      <div class="form-group"><label>Preço *</label><input type="number" step="0.01" name="preco" class="input" required></div>
+      <div class="form-group"><label>Descrição</label><input type="text" name="descricao" class="input"></div>
+      <button type="submit" class="btn btn-primary">Publicar</button>
+    </form>
+  </div>
+  <div class="card">
+    <h3>Conteúdos de Venda</h3>
+    <div class="grid-media" id="gridConteudos"></div>
+  </div>
+</section>
+
+<!-- LINKS -->
+<section class="page" id="page-links">
+  <div class="page-actions">
+    <select id="linksModeloSelect" class="input-select" onchange="carregarLinksAgency()"></select>
+  </div>
+  <div class="card" style="max-width:520px;">
+    <h3>Links da Modelo</h3>
+    <div id="listaLinksAgency"></div>
+  </div>
+</section>
+
+<!-- AVATAR E CAPA -->
+<section class="page" id="page-avatar-capa">
+  <div class="page-actions">
+    <select id="avatarCapaModeloSelect" class="input-select" onchange="carregarAvatarCapaAgency()"></select>
+  </div>
+  <div class="tabs" id="avatarCapaTabs">
+    <button class="tab active" data-tab="avatar-tab">Avatar</button>
+    <button class="tab" data-tab="capa-tab">Capa</button>
+  </div>
+  <div class="tab-content active" id="tab-avatar-tab">
+    <div class="card" style="max-width:420px;">
+      <h3>Avatar</h3>
+      <img id="previewAvatarAgency" style="width:160px;height:160px;border-radius:50%;object-fit:cover;display:block;margin-bottom:12px;">
+      <form id="formAvatarAgency" onsubmit="salvarAvatarAgency(event)">
+        <input type="file" name="avatar" accept="image/*" required>
+        <button type="submit" class="btn btn-primary" style="margin-top:10px;">Salvar Avatar</button>
+      </form>
+    </div>
+  </div>
+  <div class="tab-content" id="tab-capa-tab">
+    <div class="card" style="max-width:520px;">
+      <h3>Capa</h3>
+      <img id="previewCapaAgency" style="width:100%;max-height:200px;object-fit:cover;display:block;margin-bottom:12px;border-radius:8px;">
+      <form id="formCapaAgency" onsubmit="salvarCapaAgency(event)">
+        <input type="file" name="capa" accept="image/*" required>
+        <button type="submit" class="btn btn-primary" style="margin-top:10px;">Salvar Capa</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- BIO E PERFIL -->
+<section class="page" id="page-bio-perfil">
+  <div class="page-actions">
+    <select id="perfilModeloSelect" class="input-select" onchange="carregarPerfilAgency()"></select>
+  </div>
+  <div class="card" style="max-width:520px;">
+    <h3>Bio e Perfil</h3>
+    <form id="formPerfilAgency" onsubmit="salvarPerfilAgency(event)">
+      <div class="form-group"><label>Nome de Exibição *</label><input type="text" name="nome_exibicao" class="input" required></div>
+      <div class="form-group"><label>Localização</label><input type="text" name="local" class="input"></div>
+      <div class="form-group"><label>Bio</label><textarea name="bio" class="input" rows="4"></textarea></div>
+      <div class="form-group"><label>Instagram</label><input type="text" name="instagram" class="input"></div>
+      <div class="form-group"><label>TikTok</label><input type="text" name="tiktok" class="input"></div>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </form>
   </div>
 </section>
 
@@ -336,68 +559,64 @@
   </form>
 </div>
 
-<!-- Modal Registrar Pagamento Agência -->
-<div id="modalPagAgencia" class="modal">
+<!-- Modal Novo Dado Bancário -->
+<div id="modalNovoDadoBancario" class="modal">
   <div class="modal-content">
-    <span class="modal-close" onclick="closeModal('modalPagAgencia')">&times;</span>
-    <h3>Registrar Recebimento</h3>
-    <form id="formPagAgencia" onsubmit="salvarPagAgencia(event)">
+    <span class="modal-close" onclick="closeModal('modalNovoDadoBancario')">&times;</span>
+    <h3>Adicionar Dados Bancários</h3>
+    <form id="formNovoDadoBancario" onsubmit="salvarNovoDadoBancario(event)">
       <div class="form-group">
-        <label>Mês (YYYY-MM)</label>
-        <input type="month" name="mes" id="pagAgenciaMes" class="input" required />
+        <label>Modelo *</label>
+        <select name="modelo_id" id="novoBancarioModeloId" class="input-select" required></select>
       </div>
-
       <div class="form-group">
-        <label>Total Bruto</label>
-        <input 
-          type="number" 
-          step="0.01" 
-          name="total_bruto" 
-          id="pagamentoTotalBruto" 
-          class="input" 
-          oninput="atualizarTotalPagAgencia()"
-          required 
-        />
+        <label>Tipo *</label>
+        <select name="tipo" class="input-select" required>
+          <option value="pix">PIX</option>
+          <option value="banco">Conta Bancária</option>
+        </select>
       </div>
-
       <div class="form-group">
-        <label>Comissão Agência</label>
-        <input 
-          type="number" 
-          step="0.01" 
-          name="total_agencia" 
-          id="pagamentoTotalAgencia" 
-          class="input"
-          oninput="atualizarTotalPagAgencia()"
-          required 
-        />
+        <label>Tipo de Chave PIX</label>
+        <input type="text" name="pix_tipo" class="input" placeholder="email, cpf, telefone, aleatoria">
       </div>
-
       <div class="form-group">
-        <label>Total Modelos</label>
-        <input 
-          type="number" 
-          step="0.01" 
-          name="total_modelos" 
-          id="pagamentoTotalModelos" 
-          class="input"
-          readonly
-        />
+        <label>Chave PIX</label>
+        <input type="text" name="pix_chave" class="input">
       </div>
-
       <div class="form-group">
-        <label>Comprovativo (opcional)</label>
-        <input type="file" name="recibo" class="input" accept=".pdf,.jpg,.jpeg,.png" />
+        <label>Banco</label>
+        <input type="text" name="banco" class="input">
       </div>
-
-      <div class="stat-box">
-        <span>Saldo Disponível: </span>
-        <strong id="saldoDisponivelPagAgencia">—</strong>
+      <div class="form-group">
+        <label>Agência</label>
+        <input type="text" name="agencia" class="input">
       </div>
-
+      <div class="form-group">
+        <label>Conta</label>
+        <input type="text" name="conta" class="input">
+      </div>
+      <div class="form-group">
+        <label>Tipo de Conta</label>
+        <input type="text" name="conta_tipo" class="input" placeholder="corrente, poupanca">
+      </div>
+      <div class="form-group">
+        <label>Nome do Titular *</label>
+        <input type="text" name="titular_nome" class="input" required>
+      </div>
+      <div class="form-group">
+        <label>Documento do Titular *</label>
+        <input type="text" name="titular_documento" class="input" required>
+      </div>
+      <div class="form-group">
+        <label style="display:flex; gap:8px; cursor:pointer;">
+          <input type="checkbox" name="confirmado_titular" required>
+          <span>Confirmo que os dados acima pertencem à própria modelo</span>
+        </label>
+      </div>
       <div class="modal-actions">
-        <button type="button" class="btn btn-ghost" onclick="closeModal('modalPagAgencia')">Cancelar</button>
-        <button type="submit" class="btn btn-primary">Registrar</button>
+        <button type="button" class="btn btn-ghost" onclick="closeModal('modalNovoDadoBancario')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar</button>
       </div>
     </form>
   </div>

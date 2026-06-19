@@ -186,7 +186,15 @@ const pageTitles = {
   bancarios: 'Dados Bancários',
   modelos: 'Modelos',
   ranking: 'Ranking',
-  'pagamentos-agencia': 'Recebimentos da Agência'
+  'pagamentos-agencia': 'Pagamentos',
+  ofertas: 'Ofertas',
+  assinaturas: 'Assinaturas',
+  feed: 'Feed',
+  premium: 'Premium',
+  conteudos: 'Conteúdos',
+  links: 'Links',
+  'avatar-capa': 'Avatar e Capa',
+  'bio-perfil': 'Bio e Perfil'
 };
 
 const pageLoaders = {};
@@ -538,11 +546,18 @@ async function resetSenha() {
 
 // ========== 7. FECHAMENTO ==========
 
+let fechamentosAgencyCache = [];
+
 pageLoaders.fechamento = async function () {
   try {
     const data = await fetchJSON('/agency/dashboard/fechamentos-agency');
+    fechamentosAgencyCache = data.rows || [];
+
+    $('kpi-fat-geral-modelo').textContent = money(data.totais_gerais?.faturamento_modelo);
+    $('kpi-fat-geral-agencia').textContent = money(data.totais_gerais?.faturamento_agencia);
+
     const tbody = $('tableFechamento').querySelector('tbody');
-    tbody.innerHTML = (data || []).map(r => `
+    tbody.innerHTML = fechamentosAgencyCache.map(r => `
       <tr>
         <td>${r.ano}</td>
         <td>${r.mes}</td>
@@ -552,23 +567,123 @@ pageLoaders.fechamento = async function () {
         <td>${money(r.total_bruto_midia)}</td>
         <td>${money(r.total_bruto_assinatura)}</td>
         <td>${fmtDateTime(r.created_at)}</td>
+        <td><button class="btn-small btn-ghost" onclick="abrirDetalheFechamentoAgency(${r.id})">Ver detalhe</button></td>
       </tr>
-    `).join('') || emptyRow(8);
-  } catch (err) { 
-    console.error('Erro fechamento:', err); 
+    `).join('') || emptyRow(9);
+  } catch (err) {
+    console.error('Erro fechamento:', err);
     toast('Erro ao carregar fechamentos', 'error');
   }
 };
 
-async function criarFechamento() {
-  if (!confirm('Criar fechamento para o mês atual?')) return;
+async function gerarFechamentoAgency() {
+  const mesInput = $('novoFechamentoMes').value;
+  if (!mesInput) return toast('Selecione o mês', 'error');
+  const [ano, mes] = mesInput.split('-').map(Number);
+  const despesaChatter = Number($('novoFechamentoDespesaChatter').value) || 1400;
+
   try {
-    await postJSON('/agency/dashboard/fechamentos-agency', {});
-    toast('Fechamento criado!', 'success');
+    await postJSON('/agency/dashboard/fechamentos-agency', { ano, mes, despesa_chatter: despesaChatter });
+    toast('Fechamento gerado!', 'success');
     pageLoaders.fechamento();
-  } catch (err) { 
-    toast('Erro: ' + (err.message || 'Não foi possível criar fechamento'), 'error'); 
+  } catch (err) {
+    toast('Erro: ' + (err.message || 'Não foi possível gerar o fechamento'), 'error');
   }
+}
+
+let fechamentoDetalheAtual = null;
+
+async function abrirDetalheFechamentoAgency(id) {
+  try {
+    const f = await fetchJSON(`/agency/dashboard/fechamentos-agency/${id}`);
+    fechamentoDetalheAtual = f;
+
+    const meses = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    $('fechDetalheTitulo').textContent = `Fechamento — ${meses[f.mes]}/${f.ano}`;
+
+    const liquido = Number(f.total_agencia) - Number(f.despesa_chatter);
+
+    $('fechDetalheCorpo').innerHTML = `
+      <div class="kpi-row">
+        <div class="kpi-card purple"><span>Faturado Agência</span><strong>${money(f.total_agencia)}</strong></div>
+        <div class="kpi-card red"><span>Despesa Chatter</span><strong>${money(f.despesa_chatter)}</strong></div>
+        <div class="kpi-card green"><span>Líquido Agência</span><strong>${money(liquido)}</strong></div>
+      </div>
+      <table class="table">
+        <thead><tr><th>Modelo</th><th>Mídias</th><th>Assinaturas</th><th>Total</th></tr></thead>
+        <tbody>
+          ${(f.modelos || []).map(m => `
+            <tr>
+              <td>${escapeHtml(m.nome_exibicao || m.nome || ('Modelo #' + m.modelo_id))}</td>
+              <td>${money(m.total_midias)}</td>
+              <td>${money(m.total_assinaturas)}</td>
+              <td>${money(m.total_geral)}</td>
+            </tr>
+          `).join('') || emptyRow(4)}
+        </tbody>
+      </table>
+    `;
+
+    openModal('modalFechamentoDetalhe');
+  } catch (err) {
+    toast('Erro ao abrir detalhe: ' + err.message, 'error');
+  }
+}
+
+function imprimirFechamentoAgency() {
+  const f = fechamentoDetalheAtual;
+  if (!f) return;
+
+  const meses = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+  const liquido = Number(f.total_agencia) - Number(f.despesa_chatter);
+
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html lang="pt-BR"><head>
+    <meta charset="UTF-8">
+    <title>Fechamento — ${meses[f.mes]}/${f.ano}</title>
+    <style>
+      * { margin:0; padding:0; box-sizing:border-box; }
+      body { font-family: Arial, sans-serif; font-size:13px; color:#111; padding:40px; }
+      h1 { font-size:20px; margin-bottom:4px; }
+      .sub { color:#666; font-size:12px; margin-bottom:32px; }
+      table { width:100%; border-collapse:collapse; margin-top:16px; }
+      td, th { padding:6px 8px; border-bottom:1px solid #e5e7eb; }
+      th { background:#f3f4f6; font-weight:600; font-size:12px; text-align:left; }
+      .resumo { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:24px 0; }
+      .card { border:1px solid #e5e7eb; border-radius:8px; padding:16px; }
+      .card-label { font-size:11px; color:#666; text-transform:uppercase; margin-bottom:4px; }
+      .card-value { font-size:20px; font-weight:700; }
+      .green { color:#16a34a; } .red { color:#dc2626; } .purple { color:#6366f1; }
+      @media print { body { padding:20px; } }
+    </style>
+  </head><body>
+    <h1>Velvet Agências — Fechamento Mensal</h1>
+    <div class="sub">${meses[f.mes]} de ${f.ano} &nbsp;·&nbsp; Gerado em ${new Date().toLocaleDateString('pt-BR')}</div>
+
+    <div class="resumo">
+      <div class="card"><div class="card-label">Faturado Agência</div><div class="card-value purple">${money(f.total_agencia)}</div></div>
+      <div class="card"><div class="card-label">Despesa Chatter</div><div class="card-value red">${money(f.despesa_chatter)}</div></div>
+      <div class="card"><div class="card-label">Líquido Agência</div><div class="card-value green">${money(liquido)}</div></div>
+    </div>
+
+    <h2>Detalhamento por Modelo</h2>
+    <table>
+      <thead><tr><th>Modelo</th><th>Mídias</th><th>Assinaturas</th><th>Total</th></tr></thead>
+      <tbody>
+        ${(f.modelos || []).map(m => `
+          <tr>
+            <td>${m.nome_exibicao || m.nome || ('Modelo #' + m.modelo_id)}</td>
+            <td>${money(m.total_midias)}</td>
+            <td>${money(m.total_assinaturas)}</td>
+            <td>${money(m.total_geral)}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  </body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(() => win.print(), 300);
 }
 
 // ========== 8. DADOS BANCÁRIOS ==========
@@ -585,7 +700,7 @@ async function carregarBancarios(page) {
     const tbody = $('tableBancarios').querySelector('tbody');
     tbody.innerHTML = (data.rows || []).map(r => `
       <tr>
-        <td>${r.id}</td>
+        <td>${r.modelo_id}</td>
         <td>${r.modelo_nome || 'Modelo #' + r.modelo_id}</td>
         <td>${r.tipo}</td>
         <td>${r.pix_chave || '—'}</td>
@@ -602,6 +717,44 @@ async function carregarBancarios(page) {
     `).join('') || emptyRow(7);
     buildPagination('paginationBancarios', page, data.totalPages || 1, 'carregarBancarios');
   } catch (err) { console.error('Erro bancários:', err); }
+}
+
+async function abrirModalNovoDadoBancario() {
+  try {
+    const modelos = await fetchJSON('/agency/dashboard/modelos-lista');
+    const select = $('novoBancarioModeloId');
+    select.innerHTML = modelos.map(m => `<option value="${m.id}">${escapeHtml(m.nome)}</option>`).join('');
+    $('formNovoDadoBancario').reset();
+    openModal('modalNovoDadoBancario');
+  } catch (err) {
+    toast('Erro ao carregar modelos: ' + err.message, 'error');
+  }
+}
+
+async function salvarNovoDadoBancario(e) {
+  e.preventDefault();
+  const form = new FormData(e.target);
+
+  try {
+    await postJSON('/agency/dashboard/dados-bancarios', {
+      modelo_id: Number(form.get('modelo_id')),
+      tipo: form.get('tipo'),
+      pix_tipo: form.get('pix_tipo'),
+      pix_chave: form.get('pix_chave'),
+      banco: form.get('banco'),
+      agencia: form.get('agencia'),
+      conta: form.get('conta'),
+      conta_tipo: form.get('conta_tipo'),
+      titular_nome: form.get('titular_nome'),
+      titular_documento: form.get('titular_documento'),
+      confirmado_titular: form.get('confirmado_titular') === 'on'
+    });
+    toast('Dados bancários cadastrados!', 'success');
+    closeModal('modalNovoDadoBancario');
+    carregarBancarios(1);
+  } catch (err) {
+    toast('Erro ao salvar: ' + err.message, 'error');
+  }
 }
 
 async function aprovarBancario(id) {
@@ -773,156 +926,51 @@ async function carregarRanking() {
 // ========== 15. PAGAMENTOS ==========
 
 pageLoaders['pagamentos-agencia'] = async function () {
-  await carregarSaldoAgenciaGeral();
-  await carregarPagAgencia(1);
+  await carregarPagamentosAgenciaRecebidos();
+  await carregarPagamentosModelosRecebidos();
 };
 
-async function carregarSaldoAgenciaGeral() {
+async function carregarPagamentosAgenciaRecebidos() {
   try {
-    const data = await fetchJSON('/agency/dashboard/agencia-pagamentos/saldo');
-    $('saldoAgenciaGeral').textContent = money(data.saldo || 0);
+    const rows = await fetchJSON('/agency/dashboard/pagamentos-recebidos');
+    const tbody = $('tablePagAgencia').querySelector('tbody');
+    tbody.innerHTML = (rows || []).map(r => `
+      <tr>
+        <td>${money(r.valor)}</td>
+        <td>${String(r.mes).padStart(2, '0')}/${r.ano}</td>
+        <td>${fmtDate(r.data)}</td>
+        <td>${escapeHtml(r.descricao || '—')}</td>
+      </tr>
+    `).join('') || emptyRow(4);
   } catch (err) {
-    console.error('Erro saldo agência:', err);
-    $('saldoAgenciaGeral').textContent = '—';
+    console.error('Erro pagamentos recebidos agência:', err);
   }
 }
 
-async function carregarPagAgencia(page) {
+async function carregarPagamentosModelosRecebidos() {
   try {
-    const data = await fetchJSON(
-      `/agency/dashboard/agencia-pagamentos?page=${page}&limit=20`
-    );
-
-    const tbody = $('tablePagAgencia').querySelector('tbody');
-
-    tbody.innerHTML = (data.rows || []).map(r => `
+    const rows = await fetchJSON('/agency/dashboard/pagamentos-modelos-recebidos');
+    const tbody = $('tablePagModelos').querySelector('tbody');
+    tbody.innerHTML = (rows || []).map(r => `
       <tr>
-        <td>${r.id}</td>
+        <td>${escapeHtml(r.nome_exibicao || r.nome || ('Modelo #' + r.modelo_id))}</td>
         <td>${fmtDate(r.mes)}</td>
-        <td>${money(r.total_bruto)}</td>
-        <td>${money(r.total_agencia)}</td>
-        <td>${money(r.total_modelos)}</td>
+        <td>${money(r.total_midias)}</td>
+        <td>${money(r.total_assinaturas)}</td>
+        <td>${money(r.total_geral)}</td>
         <td>${badgeStatus(r.status)}</td>
         <td>${fmtDateTime(r.pago_em)}</td>
         <td>
-          ${r.recibo_signed_url
-            ? `<a href="${r.recibo_signed_url}" target="_blank" class="btn btn-sm btn-ghost">Comprovativo</a>`
-            : `<span class="badge badge-muted">Sem comprovativo</span>`}
-
-          ${r.status !== 'pago'
-            ? `<button class="btn btn-sm btn-success" onclick="marcarPagAgenciaPago(${r.id})">Marcar Recebido</button>`
-            : ''}
-
-          <button class="btn btn-sm btn-primary" onclick="editarPagAgencia(${r.id})">Editar</button>
+          ${r.recibo_pdf_signed_url
+            ? `<a href="${r.recibo_pdf_signed_url}" target="_blank" class="btn btn-sm btn-ghost">Abrir Recibo</a>`
+            : `<span class="badge badge-muted">Sem recibo</span>`}
         </td>
       </tr>
     `).join('') || emptyRow(8);
-
-    buildPagination('paginationPagAgencia', page, data.totalPages || 1, 'carregarPagAgencia');
   } catch (err) {
-    console.error('Erro pgto agência:', err);
+    console.error('Erro pagamentos recebidos modelos:', err);
   }
 }
-
-async function carregarSaldoPagAgencia() {
-  try {
-    const data = await fetchJSON('/agency/dashboard/agencia-pagamentos/saldo');
-    $('saldoDisponivelPagAgencia').textContent = money(data.saldo);
-  } catch (err) {
-    console.error('Erro saldo pgto agência:', err);
-    $('saldoDisponivelPagAgencia').textContent = '—';
-  }
-}
-
-function atualizarTotalPagAgencia() {
-  const bruto = Number($('pagamentoTotalBruto').value || 0);
-  const agencia = Number($('pagamentoTotalAgencia').value || 0);
-  $('pagamentoTotalModelos').value = (bruto - agencia).toFixed(2);
-}
-
-async function salvarPagAgencia(e) {
-  e.preventDefault();
-
-  try {
-    const form = $('formPagAgencia');
-    const formData = new FormData(form);
-
-    const bruto = Number(formData.get('total_bruto') || 0);
-    const agencia = Number(formData.get('total_agencia') || 0);
-    const modelos = bruto - agencia;
-
-    if (modelos < 0) {
-      toast('Comissão da agência não pode ser maior que o total bruto', 'error');
-      return;
-    }
-
-    formData.set('total_modelos', modelos);
-
-    const resSaldo = await fetchJSON('/agency/dashboard/agencia-pagamentos/saldo');
-
-    if (agencia > Number(resSaldo.saldo || 0)) {
-      toast(`Saldo insuficiente. Disponível: ${money(resSaldo.saldo)}`, 'error');
-      return;
-    }
-
-    const res = await authFetch('/agency/dashboard/agencia-pagamentos', {
-      method: 'POST',
-      body: formData
-    });
-
-    const data = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      throw new Error(data.erro || data.message || `HTTP ${res.status}`);
-    }
-
-    toast('Recebimento registrado!', 'success');
-    closeAllModals();
-    form.reset();
-    carregarSaldoAgenciaGeral();
-    carregarPagAgencia(1);
-  } catch (err) {
-    toast('Erro: ' + err.message, 'error');
-  }
-}
-
-async function editarPagAgencia(id) {
-  try {
-    const data = await fetchJSON('/agency/dashboard/agencia-pagamentos/' + id);
-    openEditModal('Editar Recebimento #' + id, '/agency/dashboard/agencia-pagamentos/' + id, 'PUT', [
-      { name: 'total_bruto', label: 'Total Bruto', type: 'number', value: data.total_bruto },
-      { name: 'total_agencia', label: 'Comissão Agência', type: 'number', value: data.total_agencia },
-      { name: 'total_modelos', label: 'Total Modelos', type: 'number', value: data.total_modelos },
-      { name: 'status', label: 'Status', type: 'select', value: data.status, options: ['pendente', 'pago'] },
-      { name: 'recibo_url', label: 'Recibo URL', value: data.recibo_url || '' }
-    ], () => {
-      carregarSaldoAgenciaGeral();
-      carregarPagAgencia(1);
-    });
-  } catch (err) {
-    toast('Erro: ' + err.message, 'error');
-  }
-}
-
-async function marcarPagAgenciaPago(id) {
-  if (!confirm('Confirmar este recebimento como pago?')) return;
-
-  try {
-    await postJSON(`/agency/dashboard/agencia-pagamentos/${id}/pagar`, {});
-    toast('Recebimento marcado como pago!', 'success');
-    carregarSaldoAgenciaGeral();
-    carregarPagAgencia(1);
-  } catch (err) {
-    toast('Erro: ' + err.message, 'error');
-  }
-}
-
-async function abrirModalPagAgencia() {
-  await carregarSaldoPagAgencia();
-  $('formPagAgencia').reset();
-  openModal('modalPagAgencia');
-}
-
 
 // ========== GENERIC EDIT MODAL ==========
 
@@ -1044,6 +1092,441 @@ async function salvarEdicao(e) {
     toast('Salvo com sucesso!', 'success');
     closeAllModals();
     if (editCallback) editCallback();
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  }
+}
+
+// ========== 16. GESTÃO DE MODELOS (Ofertas, Assinaturas, Feed, Premium, Conteúdos, Links, Avatar/Capa, Bio/Perfil) ==========
+
+async function popularSelectModeloSeVazio(selectId) {
+  const select = $(selectId);
+  if (!select.options.length) {
+    const modelos = await fetchJSON('/agency/dashboard/modelos-lista');
+    select.innerHTML = modelos.map(m => `<option value="${m.id}">${escapeHtml(m.nome)}</option>`).join('');
+  }
+  return Number(select.value) || null;
+}
+
+// ---------- OFERTAS ----------
+
+pageLoaders.ofertas = async function () {
+  await popularSelectModeloSeVazio('ofertasModeloSelect');
+  carregarOfertasAgency();
+};
+
+function abrirFormNovaOferta() {
+  $('formNovaOferta').reset();
+  $('formNovaOfertaCard').style.display = 'block';
+}
+
+async function carregarOfertasAgency() {
+  const modeloId = Number($('ofertasModeloSelect').value);
+  if (!modeloId) return;
+
+  try {
+    const rows = await fetchJSON(`/agency/dashboard/ofertas?modelo_id=${modeloId}`);
+    const tbody = $('tableOfertas').querySelector('tbody');
+    tbody.innerHTML = (rows || []).map(o => `
+      <tr>
+        <td>${escapeHtml(o.nome)}</td>
+        <td>${o.desconto_percentual}%</td>
+        <td>${money(o.valor_promocional)}</td>
+        <td>${o.limite_assinaturas}</td>
+        <td>${o.assinaturas_usadas}</td>
+        <td>${fmtDateTime(o.data_fim)}</td>
+        <td>${o.ativa ? '<span class="badge badge-success">Ativa</span>' : '<span class="badge badge-muted">Encerrada</span>'}</td>
+        <td>
+          ${o.ativa ? `<button class="btn-small btn-ghost" onclick="encerrarOfertaAgency(${o.id})">Encerrar</button>` : ''}
+          <button class="btn-small btn-ghost" onclick="excluirOfertaAgency(${o.id})">Excluir</button>
+        </td>
+      </tr>
+    `).join('') || emptyRow(8);
+  } catch (err) {
+    toast('Erro ao carregar ofertas: ' + err.message, 'error');
+  }
+}
+
+async function salvarNovaOferta(e) {
+  e.preventDefault();
+  const modeloId = Number($('ofertasModeloSelect').value);
+  const form = new FormData(e.target);
+
+  try {
+    await postJSON('/agency/dashboard/ofertas', {
+      modelo_id: modeloId,
+      nome: form.get('nome'),
+      limite: form.get('limite'),
+      dias: form.get('dias'),
+      desconto: form.get('desconto')
+    });
+    toast('Oferta criada!', 'success');
+    $('formNovaOfertaCard').style.display = 'none';
+    carregarOfertasAgency();
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  }
+}
+
+async function encerrarOfertaAgency(id) {
+  if (!confirm('Encerrar esta oferta?')) return;
+  try {
+    await putJSON(`/agency/dashboard/ofertas/${id}/encerrar`, {});
+    toast('Oferta encerrada!', 'success');
+    carregarOfertasAgency();
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  }
+}
+
+async function excluirOfertaAgency(id) {
+  if (!confirm('Excluir esta oferta permanentemente?')) return;
+  try {
+    await deleteJSON(`/agency/dashboard/ofertas/${id}`);
+    toast('Oferta excluída!', 'success');
+    carregarOfertasAgency();
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  }
+}
+
+// ---------- ASSINATURAS ----------
+
+pageLoaders.assinaturas = async function () {
+  await popularSelectModeloSeVazio('assinaturasModeloSelect');
+  carregarAssinaturaAgency();
+};
+
+async function carregarAssinaturaAgency() {
+  const modeloId = Number($('assinaturasModeloSelect').value);
+  if (!modeloId) return;
+
+  try {
+    const data = await fetchJSON(`/agency/dashboard/assinaturas?modelo_id=${modeloId}`);
+    $('assinaturaValorMensal').value = data.valor_mensal;
+    $('assinaturaDesconto').value = data.desconto_trimestral || 0;
+    $('assinaturaValorTrimestral').value = data.valor_trimestral ? money(data.valor_trimestral) : '—';
+  } catch (err) {
+    toast('Erro ao carregar assinatura: ' + err.message, 'error');
+  }
+}
+
+async function salvarAssinaturaAgency(e) {
+  e.preventDefault();
+  const modeloId = Number($('assinaturasModeloSelect').value);
+  const form = new FormData(e.target);
+
+  try {
+    await putJSON('/agency/dashboard/assinaturas', {
+      modelo_id: modeloId,
+      valor_mensal: form.get('valor_mensal'),
+      desconto_trimestral: form.get('desconto_trimestral')
+    });
+    toast('Assinatura atualizada!', 'success');
+    carregarAssinaturaAgency();
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  }
+}
+
+// ---------- FEED ----------
+
+pageLoaders.feed = async function () {
+  await popularSelectModeloSeVazio('feedModeloSelect');
+  carregarFeedAgency();
+};
+
+async function carregarFeedAgency() {
+  const modeloId = Number($('feedModeloSelect').value);
+  if (!modeloId) return;
+
+  try {
+    const rows = await fetchJSON(`/agency/dashboard/feed?modelo_id=${modeloId}`);
+    $('gridFeed').innerHTML = (rows || []).map(c => `
+      <div class="grid-media-item">
+        ${c.tipo === 'video' ? `<video src="${c.url}" controls></video>` : `<img src="${c.thumbnail_url || c.url}">`}
+        <div class="grid-media-footer">
+          <span>${fmtDate(c.criado_em)}</span>
+          <button onclick="excluirFeedAgency(${c.id})">Excluir</button>
+        </div>
+      </div>
+    `).join('') || '<p style="color:var(--text-muted);font-size:13px;">Nenhum post no feed.</p>';
+  } catch (err) {
+    toast('Erro ao carregar feed: ' + err.message, 'error');
+  }
+}
+
+async function salvarNovoFeed(e) {
+  e.preventDefault();
+  const modeloId = Number($('feedModeloSelect').value);
+  const form = new FormData(e.target);
+  form.set('modelo_id', modeloId);
+
+  try {
+    const res = await authFetch('/agency/dashboard/feed', { method: 'POST', body: form });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.erro || `HTTP ${res.status}`);
+    toast('Publicado no feed!', 'success');
+    e.target.reset();
+    carregarFeedAgency();
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  }
+}
+
+async function excluirFeedAgency(id) {
+  if (!confirm('Excluir este post do feed?')) return;
+  try {
+    await deleteJSON(`/agency/dashboard/feed/${id}`);
+    toast('Post excluído!', 'success');
+    carregarFeedAgency();
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  }
+}
+
+// ---------- PREMIUM ----------
+
+pageLoaders.premium = async function () {
+  await popularSelectModeloSeVazio('premiumModeloSelect');
+  carregarPremiumAgency();
+};
+
+async function carregarPremiumAgency() {
+  const modeloId = Number($('premiumModeloSelect').value);
+  if (!modeloId) return;
+
+  try {
+    const rows = await fetchJSON(`/agency/dashboard/premium?modelo_id=${modeloId}`);
+    $('gridPremium').innerHTML = (rows || []).map(p => `
+      <div class="grid-media-item">
+        ${p.tipo === 'video' ? `<video src="${p.url}" controls></video>` : `<img src="${p.thumb_url || p.url}">`}
+        <div class="grid-media-footer">
+          <span>${money(p.preco)}</span>
+          <button onclick="excluirPremiumAgency(${p.id})">Excluir</button>
+        </div>
+      </div>
+    `).join('') || '<p style="color:var(--text-muted);font-size:13px;">Nenhum post premium.</p>';
+  } catch (err) {
+    toast('Erro ao carregar premium: ' + err.message, 'error');
+  }
+}
+
+async function salvarNovoPremium(e) {
+  e.preventDefault();
+  const modeloId = Number($('premiumModeloSelect').value);
+  const form = new FormData(e.target);
+  form.set('modelo_id', modeloId);
+
+  try {
+    const res = await authFetch('/agency/dashboard/premium', { method: 'POST', body: form });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.erro || `HTTP ${res.status}`);
+    toast('Publicado no premium!', 'success');
+    e.target.reset();
+    carregarPremiumAgency();
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  }
+}
+
+async function excluirPremiumAgency(id) {
+  if (!confirm('Excluir este post premium?')) return;
+  try {
+    await deleteJSON(`/agency/dashboard/premium/${id}`);
+    toast('Post excluído!', 'success');
+    carregarPremiumAgency();
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  }
+}
+
+// ---------- CONTEÚDOS (VENDA) ----------
+
+pageLoaders.conteudos = async function () {
+  await popularSelectModeloSeVazio('conteudosModeloSelect');
+  carregarConteudosAgency();
+};
+
+async function carregarConteudosAgency() {
+  const modeloId = Number($('conteudosModeloSelect').value);
+  if (!modeloId) return;
+
+  try {
+    const rows = await fetchJSON(`/agency/dashboard/conteudos?modelo_id=${modeloId}`);
+    $('gridConteudos').innerHTML = (rows || []).map(c => `
+      <div class="grid-media-item">
+        ${c.tipo === 'video' ? `<video src="${c.url}" controls></video>` : `<img src="${c.thumbnail_url || c.url}">`}
+        <div class="grid-media-footer">
+          <span>${money(c.preco)}</span>
+          <button onclick="excluirConteudoAgency(${c.id})">Excluir</button>
+        </div>
+      </div>
+    `).join('') || '<p style="color:var(--text-muted);font-size:13px;">Nenhum conteúdo cadastrado.</p>';
+  } catch (err) {
+    toast('Erro ao carregar conteúdos: ' + err.message, 'error');
+  }
+}
+
+async function salvarNovoConteudo(e) {
+  e.preventDefault();
+  const modeloId = Number($('conteudosModeloSelect').value);
+  const form = new FormData(e.target);
+  form.set('modelo_id', modeloId);
+
+  try {
+    const res = await authFetch('/agency/dashboard/conteudos', { method: 'POST', body: form });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.erro || `HTTP ${res.status}`);
+    toast('Conteúdo publicado!', 'success');
+    e.target.reset();
+    carregarConteudosAgency();
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  }
+}
+
+async function excluirConteudoAgency(id) {
+  if (!confirm('Excluir este conteúdo?')) return;
+  try {
+    await deleteJSON(`/agency/dashboard/conteudos/${id}`);
+    toast('Conteúdo excluído!', 'success');
+    carregarConteudosAgency();
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  }
+}
+
+// ---------- LINKS ----------
+
+pageLoaders.links = async function () {
+  await popularSelectModeloSeVazio('linksModeloSelect');
+  carregarLinksAgency();
+};
+
+function copiarTextoAgency(texto) {
+  navigator.clipboard.writeText(texto).then(() => toast('Copiado!', 'success'));
+}
+
+async function carregarLinksAgency() {
+  const modeloId = Number($('linksModeloSelect').value);
+  if (!modeloId) return;
+
+  try {
+    const data = await fetchJSON(`/agency/dashboard/links?modelo_id=${modeloId}`);
+    const linhas = [
+      { label: 'Link do Perfil', valor: data.link_perfil },
+      { label: 'Instagram', valor: data.instagram },
+      { label: 'TikTok', valor: data.tiktok }
+    ];
+
+    $('listaLinksAgency').innerHTML = linhas.map(l => `
+      <div class="link-copy-row">
+        <div>
+          <strong>${l.label}</strong><br>
+          <span style="color:var(--text-muted);font-size:13px;">${escapeHtml(l.valor || 'Não informado')}</span>
+        </div>
+        ${l.valor ? `<button class="btn-small btn-ghost" onclick="copiarTextoAgency('${escapeHtml(l.valor).replace(/'/g, "\\'")}')">Copiar</button>` : ''}
+      </div>
+    `).join('');
+  } catch (err) {
+    toast('Erro ao carregar links: ' + err.message, 'error');
+  }
+}
+
+// ---------- AVATAR E CAPA ----------
+
+pageLoaders['avatar-capa'] = async function () {
+  await popularSelectModeloSeVazio('avatarCapaModeloSelect');
+  carregarAvatarCapaAgency();
+};
+
+async function carregarAvatarCapaAgency() {
+  const modeloId = Number($('avatarCapaModeloSelect').value);
+  if (!modeloId) return;
+
+  try {
+    const data = await fetchJSON(`/agency/dashboard/perfil?modelo_id=${modeloId}`);
+    $('previewAvatarAgency').src = data.avatar || '';
+    $('previewCapaAgency').src = data.capa || '';
+  } catch (err) {
+    toast('Erro ao carregar avatar/capa: ' + err.message, 'error');
+  }
+}
+
+async function salvarAvatarAgency(e) {
+  e.preventDefault();
+  const modeloId = Number($('avatarCapaModeloSelect').value);
+  const form = new FormData(e.target);
+  form.set('modelo_id', modeloId);
+
+  try {
+    const res = await authFetch('/agency/dashboard/avatar', { method: 'POST', body: form });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.erro || `HTTP ${res.status}`);
+    toast('Avatar atualizado!', 'success');
+    $('previewAvatarAgency').src = data.avatar;
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  }
+}
+
+async function salvarCapaAgency(e) {
+  e.preventDefault();
+  const modeloId = Number($('avatarCapaModeloSelect').value);
+  const form = new FormData(e.target);
+  form.set('modelo_id', modeloId);
+
+  try {
+    const res = await authFetch('/agency/dashboard/capa', { method: 'POST', body: form });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.erro || `HTTP ${res.status}`);
+    toast('Capa atualizada!', 'success');
+    $('previewCapaAgency').src = data.capa;
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  }
+}
+
+// ---------- BIO E PERFIL ----------
+
+pageLoaders['bio-perfil'] = async function () {
+  await popularSelectModeloSeVazio('perfilModeloSelect');
+  carregarPerfilAgency();
+};
+
+async function carregarPerfilAgency() {
+  const modeloId = Number($('perfilModeloSelect').value);
+  if (!modeloId) return;
+
+  try {
+    const data = await fetchJSON(`/agency/dashboard/perfil?modelo_id=${modeloId}`);
+    const form = $('formPerfilAgency');
+    form.nome_exibicao.value = data.nome_exibicao || '';
+    form.local.value = data.local || '';
+    form.bio.value = data.bio || '';
+    form.instagram.value = data.instagram || '';
+    form.tiktok.value = data.tiktok || '';
+  } catch (err) {
+    toast('Erro ao carregar perfil: ' + err.message, 'error');
+  }
+}
+
+async function salvarPerfilAgency(e) {
+  e.preventDefault();
+  const modeloId = Number($('perfilModeloSelect').value);
+  const form = new FormData(e.target);
+
+  try {
+    await putJSON('/agency/dashboard/perfil', {
+      modelo_id: modeloId,
+      nome_exibicao: form.get('nome_exibicao'),
+      local: form.get('local'),
+      bio: form.get('bio'),
+      instagram: form.get('instagram'),
+      tiktok: form.get('tiktok')
+    });
+    toast('Perfil atualizado!', 'success');
   } catch (err) {
     toast('Erro: ' + err.message, 'error');
   }

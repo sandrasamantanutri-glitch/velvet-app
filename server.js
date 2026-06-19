@@ -13633,6 +13633,33 @@ async function processarOfertasExpirando() {
 cron.schedule("0 * * * *", processarAvisosVip);
 cron.schedule("0 * * * *", processarOfertasExpirando);
 
+// Gera automaticamente o fechamento do mês anterior para todas as agências, todo dia 1º às 03h
+async function gerarFechamentosAutomaticosAgencias() {
+  try {
+    const hoje = new Date();
+    const mesAnterior = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
+    const ano = mesAnterior.getFullYear();
+    const mes = mesAnterior.getMonth() + 1;
+
+    const { rows: agencias } = await db.query("SELECT id FROM agencias");
+
+    for (const ag of agencias) {
+      try {
+        await agencyDashboardRouter.gerarFechamentoAgencia(ag.id, ano, mes);
+        console.log(`[Fechamento Agência Cron] Gerado fechamento ${mes}/${ano} para agência #${ag.id}`);
+      } catch (err) {
+        if (!/já existe/i.test(err.message)) {
+          console.error(`[Fechamento Agência Cron] Erro agência #${ag.id}:`, err.message);
+        }
+      }
+    }
+  } catch (err) {
+    console.error("[Fechamento Agência Cron] Erro geral:", err.message);
+  }
+}
+
+cron.schedule("0 3 1 * *", gerarFechamentosAutomaticosAgencias);
+
 // Migração: coluna de controle do aviso de expiração
 db.query("ALTER TABLE ofertas ADD COLUMN IF NOT EXISTS aviso_expiracao_enviado BOOLEAN DEFAULT false")
   .catch(err => console.error("Migração aviso_expiracao_enviado:", err.message));

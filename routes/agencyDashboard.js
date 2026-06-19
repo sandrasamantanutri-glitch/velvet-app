@@ -13,6 +13,7 @@ const multer = require('multer');
 const multerS3 = require('multer-s3');
 const upload = multer({ storage: multer.memoryStorage() });
 const jwt = require("jsonwebtoken");
+const { podeAlterarDadosBancarios } = require("../utils/dadosBancarios");
 
 const s3Privado = new AWS.S3({
   endpoint: new AWS.Endpoint(process.env.R2_ENDPOINT),
@@ -520,20 +521,149 @@ router.put("/agency/percentuais", authAgencia, async (req, res) => {
 
 // ========== 8. FECHAMENTO ==========
 
+const DESPESA_CHATTER_PADRAO = 1400;
+
+// Calcula os totais (agência + por modelo) de um ano/mês para uma agência, sem gravar nada.
+async function calcularFechamentoAgencia(agenciaId, ano, mes) {
+  const totaisQ = await db.query(`
+    SELECT
+      COALESCE(SUM(t.valor_bruto), 0) AS total_bruto,
+      COALESCE(SUM(t.agency_fee), 0) AS total_agencia,
+      COALESCE(SUM(t.valor_modelo), 0) AS total_modelo,
+      COALESCE(SUM(CASE WHEN t.tipo != 'assinatura' THEN t.valor_bruto ELSE 0 END), 0) AS total_bruto_midia,
+      COALESCE(SUM(CASE WHEN t.tipo = 'assinatura' THEN t.valor_bruto ELSE 0 END), 0) AS total_bruto_assinatura
+    FROM vw_transacoes_agencia t
+    WHERE t.agencia_id = $1
+      AND t.status = 'pago'
+      AND EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $2
+      AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $3
+  `, [agenciaId, ano, mes]);
+
+  const porModeloQ = await db.query(`
+    SELECT
+      t.modelo_id,
+      COALESCE(SUM(CASE WHEN t.tipo != 'assinatura' THEN t.valor_modelo ELSE 0 END), 0) AS total_midias,
+      COALESCE(SUM(CASE WHEN t.tipo = 'assinatura' THEN t.valor_modelo ELSE 0 END), 0) AS total_assinaturas,
+      COALESCE(SUM(t.valor_modelo), 0) AS total_geral
+    FROM vw_transacoes_agencia t
+    WHERE t.agencia_id = $1
+      AND t.status = 'pago'
+      AND EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $2
+      AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $3
+    GROUP BY t.modelo_id
+  `, [agenciaId, ano, mes]);
+
+  return { totais: totaisQ.rows[0], porModelo: porModeloQ.rows };
+}
+
+// Gera (grava) o fechamento de um ano/mês para uma agência. Não duplica se já existir.
+async function gerarFechamentoAgencia(agenciaId, ano, mes, despesaChatter = DESPESA_CHATTER_PADRAO) {
+  const existente = await db.query(
+    "SELECT id FROM fechamento_mensal_agency WHERE agencia_id = $1 AND ano = $2 AND mes = $3",
+    [agenciaId, ano, mes]
+  );
+  if (existente.rows.length) {
+    throw Object.assign(new Error("Fechamento já existe para este mês"), { status: 400 });
+  }
+
+  const { totais, porModelo } = await calcularFechamentoAgencia(agenciaId, ano, mes);
+
+  const { rows } = await db.query(`
+    INSERT INTO fechamento_mensal_agency
+      (agencia_id, ano, mes, total_bruto, total_agencia, total_modelo, total_bruto_midia, total_bruto_assinatura, despesa_chatter)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+    RETURNING *
+  `, [
+    agenciaId, ano, mes,
+    totais.total_bruto, totais.total_agencia, totais.total_modelo,
+    totais.total_bruto_midia, totais.total_bruto_assinatura,
+    despesaChatter
+  ]);
+
+  const fechamento = rows[0];
+
+  for (const m of porModelo) {
+    await db.query(`
+      INSERT INTO fechamento_mensal_agency_modelos (fechamento_id, modelo_id, total_midias, total_assinaturas, total_geral)
+      VALUES ($1, $2, $3, $4, $5)
+    `, [fechamento.id, m.modelo_id, m.total_midias, m.total_assinaturas, m.total_geral]);
+  }
+
+  return fechamento;
+}
+
 router.get("/fechamentos-agency", authAgencia, async (req, res) => {
   try {
     const agenciaId = req.agencia.id;
 
-    const { rows } = await db.query(
-      `SELECT * FROM fechamento_mensal_agency 
-       WHERE agencia_id = $1 
-       ORDER BY ano DESC, mes DESC`,
-      [agenciaId]
-    );
+    const [listaQ, totaisGeraisQ] = await Promise.all([
+      db.query(
+        `SELECT * FROM fechamento_mensal_agency
+         WHERE agencia_id = $1
+         ORDER BY ano DESC, mes DESC`,
+        [agenciaId]
+      ),
+      db.query(
+        `SELECT
+           COALESCE(SUM(agency_fee), 0) AS faturamento_agencia,
+           COALESCE(SUM(valor_modelo), 0) AS faturamento_modelo
+         FROM vw_transacoes_agencia
+         WHERE agencia_id = $1 AND status = 'pago'`,
+        [agenciaId]
+      )
+    ]);
 
-    res.json(rows);
+    res.json({
+      rows: listaQ.rows,
+      totais_gerais: totaisGeraisQ.rows[0]
+    });
   } catch (err) {
     console.error("Erro ao buscar fechamentos:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.post("/fechamentos-agency", authAgencia, async (req, res) => {
+  try {
+    const agenciaId = req.agencia.id;
+    const now = new Date();
+    const ano = Number(req.body.ano) || now.getFullYear();
+    const mes = Number(req.body.mes) || (now.getMonth() + 1);
+    const despesaChatter = req.body.despesa_chatter != null ? Number(req.body.despesa_chatter) : DESPESA_CHATTER_PADRAO;
+
+    if (mes < 1 || mes > 12 || ano < 2020) {
+      return res.status(400).json({ erro: "Mês ou ano inválido" });
+    }
+
+    const fechamento = await gerarFechamentoAgencia(agenciaId, ano, mes, despesaChatter);
+    res.json(fechamento);
+  } catch (err) {
+    console.error("Erro ao gerar fechamento:", err);
+    res.status(err.status || 500).json({ erro: err.message || "Erro interno" });
+  }
+});
+
+router.get("/fechamentos-agency/:id", authAgencia, async (req, res) => {
+  try {
+    const agenciaId = req.agencia.id;
+
+    const fechQ = await db.query(
+      "SELECT * FROM fechamento_mensal_agency WHERE id = $1 AND agencia_id = $2",
+      [req.params.id, agenciaId]
+    );
+    if (!fechQ.rows.length) return res.status(404).json({ erro: "Fechamento não encontrado" });
+
+    const modelosQ = await db.query(`
+      SELECT fm.modelo_id, m.nome_exibicao, m.nome, fm.total_midias, fm.total_assinaturas, fm.total_geral
+      FROM fechamento_mensal_agency_modelos fm
+      JOIN modelos m ON m.id = fm.modelo_id
+      WHERE fm.fechamento_id = $1
+      ORDER BY fm.total_geral DESC
+    `, [req.params.id]);
+
+    res.json({ ...fechQ.rows[0], modelos: modelosQ.rows });
+  } catch (err) {
+    console.error("Erro ao buscar detalhe do fechamento:", err);
     res.status(500).json({ erro: "Erro interno" });
   }
 });
@@ -611,6 +741,68 @@ router.get("/dados-bancarios/:id", authAgencia, async (req, res) => {
   } catch (err) { 
     console.error("Erro ao buscar dado bancário:", err);
     res.status(500).json({ erro: "Erro interno" }); 
+  }
+});
+
+router.post("/dados-bancarios", authAgencia, async (req, res) => {
+  if (!podeAlterarDadosBancarios()) {
+    return res.status(403).json({ erro: "Alterações bloqueadas no período de pagamento (dias 1 a 5)" });
+  }
+
+  try {
+    const agenciaId = req.agencia.id;
+    const {
+      modelo_id, tipo, pix_tipo, pix_chave,
+      banco, agencia, conta, conta_tipo,
+      titular_nome, titular_documento, confirmado_titular
+    } = req.body;
+
+    if (!modelo_id || !confirmado_titular) {
+      return res.status(400).json({ erro: "modelo_id e confirmação de titularidade são obrigatórios" });
+    }
+
+    const modeloQ = await db.query(
+      "SELECT id FROM modelos WHERE id = $1 AND agencia_id = $2",
+      [modelo_id, agenciaId]
+    );
+    if (!modeloQ.rows.length) {
+      return res.status(404).json({ erro: "Modelo não encontrada nesta agência" });
+    }
+
+    const { rows } = await db.query(`
+      INSERT INTO modelo_dados_bancarios (
+        modelo_id, tipo,
+        pix_tipo, pix_chave,
+        banco, agencia, conta, conta_tipo,
+        titular_nome, titular_documento,
+        confirmado_titular, status
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,true,'pendente')
+      ON CONFLICT (modelo_id)
+      DO UPDATE SET
+        tipo = EXCLUDED.tipo,
+        pix_tipo = EXCLUDED.pix_tipo,
+        pix_chave = EXCLUDED.pix_chave,
+        banco = EXCLUDED.banco,
+        agencia = EXCLUDED.agencia,
+        conta = EXCLUDED.conta,
+        conta_tipo = EXCLUDED.conta_tipo,
+        titular_nome = EXCLUDED.titular_nome,
+        titular_documento = EXCLUDED.titular_documento,
+        confirmado_titular = true,
+        status = 'alteracao_pendente',
+        atualizado_em = NOW()
+      RETURNING *
+    `, [
+      modelo_id, tipo, pix_tipo, pix_chave,
+      banco, agencia, conta, conta_tipo,
+      titular_nome, titular_documento
+    ]);
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Erro ao criar dados bancários (agência):", err);
+    res.status(500).json({ erro: "Erro interno" });
   }
 });
 
@@ -1192,4 +1384,648 @@ router.get("/agencia-pagamentos/:id", authAgencia, async (req, res) => {
   }
 });
 
+// ========== 11. PAGAMENTOS RECEBIDOS (somente leitura, espelha o admin) ==========
+
+router.get("/pagamentos-recebidos", authAgencia, async (req, res) => {
+  try {
+    const agenciaId = req.agencia.id;
+    const { rows } = await db.query(`
+      SELECT id, valor, mes, ano, data, descricao, comprovante, created_at
+      FROM pagamentos_agencias
+      WHERE agencia_id = $1
+      ORDER BY ano DESC, mes DESC, data DESC
+    `, [agenciaId]);
+    res.json(rows);
+  } catch (err) {
+    console.error("Erro pagamentos-recebidos:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.get("/pagamentos-modelos-recebidos", authAgencia, async (req, res) => {
+  try {
+    const agenciaId = req.agencia.id;
+    const { rows } = await db.query(`
+      SELECT mp.id, mp.modelo_id, m.nome_exibicao, m.nome, mp.mes, mp.total_midias, mp.total_assinaturas,
+             mp.total_geral, mp.status, mp.pago_em, mp.recibo_pdf_url
+      FROM modelo_pagamentos mp
+      JOIN modelos m ON m.id = mp.modelo_id
+      WHERE m.agencia_id = $1
+      ORDER BY mp.mes DESC, m.nome ASC
+    `, [agenciaId]);
+
+    const comSignedUrl = rows.map(r => ({
+      ...r,
+      recibo_pdf_signed_url: r.recibo_pdf_url
+        ? s3Privado.getSignedUrl("getObject", {
+            Bucket: process.env.R2_BUCKET_PRIVATE,
+            Key: r.recibo_pdf_url,
+            Expires: 300
+          })
+        : null
+    }));
+
+    res.json(comSignedUrl);
+  } catch (err) {
+    console.error("Erro pagamentos-modelos-recebidos:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// ========================================
+// GESTÃO DE MODELOS PELA AGÊNCIA
+// (espelha as rotas de modelo em server.js, com validação de agencia_id)
+// ========================================
+
+const axios = require("axios");
+const FormData = require("form-data");
+
+async function modeloPertenceAgencia(agenciaId, modeloId) {
+  const { rows } = await db.query(
+    "SELECT id FROM modelos WHERE id = $1 AND agencia_id = $2",
+    [modeloId, agenciaId]
+  );
+  return rows.length > 0;
+}
+
+// Upload de imagem/vídeo para Cloudflare Images/Stream (mesmo pipeline de /api/conteudos)
+async function uploadMidiaCloudflare(buffer, originalname, mimetype) {
+  let tipo;
+  if (mimetype.startsWith("image/")) tipo = "imagem";
+  else if (mimetype.startsWith("video/")) tipo = "video";
+  else throw new Error("Tipo de arquivo não suportado");
+
+  let url = null;
+  let thumbnailUrl = null;
+
+  if (tipo === "imagem") {
+    const form = new FormData();
+    form.append("file", buffer, originalname);
+    const response = await axios.post(
+      `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT_ID}/images/v1`,
+      form,
+      { headers: { Authorization: `Bearer ${process.env.CF_IMAGES_TOKEN}`, ...form.getHeaders() } }
+    );
+    const imageId = response.data.result.id;
+    url = `https://imagedelivery.net/${process.env.CF_ACCOUNT_HASH}/${imageId}/public`;
+    thumbnailUrl = url;
+  } else {
+    const form = new FormData();
+    form.append("file", buffer, originalname);
+    const response = await axios.post(
+      `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT_ID}/stream`,
+      form,
+      {
+        headers: { Authorization: `Bearer ${process.env.CF_STREAM_TOKEN}`, ...form.getHeaders() },
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity
+      }
+    );
+    const videoId = response.data.result.uid;
+    url = `https://iframe.videodelivery.net/${videoId}`;
+    thumbnailUrl = `https://videodelivery.net/${videoId}/thumbnails/thumbnail.jpg`;
+  }
+
+  return { tipo, url, thumbnailUrl };
+}
+
+// ========== 12. OFERTAS ==========
+
+router.get("/ofertas", authAgencia, async (req, res) => {
+  try {
+    const agenciaId = req.agencia.id;
+    const modeloId = Number(req.query.modelo_id);
+    if (!modeloId || !(await modeloPertenceAgencia(agenciaId, modeloId))) {
+      return res.status(404).json({ erro: "Modelo não encontrada nesta agência" });
+    }
+
+    await db.query("SELECT encerrar_ofertas_expiradas()").catch(() => {});
+
+    const { rows } = await db.query(
+      "SELECT * FROM ofertas WHERE modelo_id = $1 ORDER BY created_at DESC LIMIT 20",
+      [modeloId]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("Erro listar ofertas (agência):", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.post("/ofertas", authAgencia, async (req, res) => {
+  try {
+    const agenciaId = req.agencia.id;
+    const modeloId = Number(req.body.modelo_id);
+    if (!modeloId || !(await modeloPertenceAgencia(agenciaId, modeloId))) {
+      return res.status(404).json({ erro: "Modelo não encontrada nesta agência" });
+    }
+
+    const planoRes = await db.query("SELECT valor_mensal FROM modelos_planos WHERE modelo_id = $1", [modeloId]);
+    if (!planoRes.rows.length) {
+      return res.status(400).json({ erro: "Defina primeiro o plano de assinatura desta modelo." });
+    }
+
+    const VALOR_BASE = Number(planoRes.rows[0].valor_mensal);
+    const VALOR_MINIMO = Math.max(18.00, Number((VALOR_BASE * 0.5).toFixed(2)));
+
+    const { nome, limite, dias, desconto } = req.body;
+    const limiteNum = Number(limite);
+    const diasNum = Number(dias);
+    const descontoNum = Number(desconto);
+
+    if (
+      !nome ||
+      !Number.isFinite(limiteNum) || limiteNum <= 0 ||
+      !Number.isFinite(diasNum) || diasNum <= 0 || diasNum > 30 ||
+      !Number.isFinite(descontoNum) || descontoNum < 0 || descontoNum > 99
+    ) {
+      return res.status(400).json({ erro: "Dados inválidos. Prazo máximo: 30 dias." });
+    }
+
+    const valorPromocional = Number((VALOR_BASE * (1 - descontoNum / 100)).toFixed(2));
+    if (valorPromocional < VALOR_MINIMO) {
+      return res.status(400).json({ erro: `O valor com desconto não pode ser menor que R$ ${VALOR_MINIMO.toFixed(2).replace(".", ",")}.` });
+    }
+
+    const dataFim = new Date();
+    dataFim.setDate(dataFim.getDate() + diasNum);
+
+    await db.query("UPDATE ofertas SET ativa = false WHERE modelo_id = $1", [modeloId]);
+
+    const { rows } = await db.query(`
+      INSERT INTO ofertas (modelo_id, nome, limite_assinaturas, assinaturas_usadas, desconto_percentual, valor_base, valor_promocional, data_inicio, data_fim, ativa)
+      VALUES ($1,$2,$3,0,$4,$5,$6,NOW(),$7,true)
+      RETURNING *
+    `, [modeloId, nome, limiteNum, descontoNum, VALOR_BASE, valorPromocional, dataFim]);
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Erro criar oferta (agência):", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.put("/ofertas/:id/encerrar", authAgencia, async (req, res) => {
+  try {
+    const agenciaId = req.agencia.id;
+    const { rows } = await db.query(`
+      UPDATE ofertas SET ativa = false, data_fim = NOW()
+      WHERE id = $1 AND ativa = true
+        AND modelo_id IN (SELECT id FROM modelos WHERE agencia_id = $2)
+      RETURNING *
+    `, [req.params.id, agenciaId]);
+
+    if (!rows.length) return res.status(404).json({ erro: "Oferta não encontrada ou já encerrada" });
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Erro encerrar oferta (agência):", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.delete("/ofertas/:id", authAgencia, async (req, res) => {
+  try {
+    const agenciaId = req.agencia.id;
+    const { rows } = await db.query(`
+      DELETE FROM ofertas
+      WHERE id = $1 AND modelo_id IN (SELECT id FROM modelos WHERE agencia_id = $2)
+      RETURNING id
+    `, [req.params.id, agenciaId]);
+
+    if (!rows.length) return res.status(404).json({ erro: "Oferta não encontrada" });
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Erro excluir oferta (agência):", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// ========== 13. ASSINATURAS (valor do plano VIP) ==========
+
+router.get("/assinaturas", authAgencia, async (req, res) => {
+  try {
+    const agenciaId = req.agencia.id;
+    const modeloId = Number(req.query.modelo_id);
+    if (!modeloId || !(await modeloPertenceAgencia(agenciaId, modeloId))) {
+      return res.status(404).json({ erro: "Modelo não encontrada nesta agência" });
+    }
+
+    const { rows } = await db.query(
+      "SELECT COALESCE(valor_mensal, 20.00) AS valor_mensal, desconto_trimestral, valor_trimestral FROM modelos_planos WHERE modelo_id = $1",
+      [modeloId]
+    );
+    res.json(rows[0] || { valor_mensal: 20, desconto_trimestral: 0, valor_trimestral: null });
+  } catch (err) {
+    console.error("Erro buscar assinatura (agência):", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.put("/assinaturas", authAgencia, async (req, res) => {
+  try {
+    const agenciaId = req.agencia.id;
+    const modeloId = Number(req.body.modelo_id);
+    if (!modeloId || !(await modeloPertenceAgencia(agenciaId, modeloId))) {
+      return res.status(404).json({ erro: "Modelo não encontrada nesta agência" });
+    }
+
+    const mensal = Number(req.body.valor_mensal);
+    const desconto = Number(req.body.desconto_trimestral) || 0;
+
+    if (!mensal || mensal < 20) return res.status(400).json({ erro: "Valor mínimo R$ 20" });
+    if (desconto < 0 || desconto > 30) return res.status(400).json({ erro: "Desconto inválido" });
+
+    const valorTrimestral = (mensal * 3) * (1 - desconto / 100);
+
+    const existe = await db.query("SELECT modelo_id FROM modelos_planos WHERE modelo_id = $1", [modeloId]);
+    if (existe.rows.length) {
+      await db.query(`
+        UPDATE modelos_planos SET valor_mensal = $1, desconto_trimestral = $2, valor_trimestral = $3, updated_at = NOW()
+        WHERE modelo_id = $4
+      `, [mensal, desconto, valorTrimestral, modeloId]);
+    } else {
+      await db.query(`
+        INSERT INTO modelos_planos (modelo_id, valor_mensal, desconto_trimestral, valor_trimestral)
+        VALUES ($1, $2, $3, $4)
+      `, [modeloId, mensal, desconto, valorTrimestral]);
+    }
+
+    res.json({ sucesso: true });
+  } catch (err) {
+    console.error("Erro salvar assinatura (agência):", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// ========== 14. FEED ==========
+
+router.get("/feed", authAgencia, async (req, res) => {
+  try {
+    const agenciaId = req.agencia.id;
+    const modeloId = Number(req.query.modelo_id);
+    if (!modeloId || !(await modeloPertenceAgencia(agenciaId, modeloId))) {
+      return res.status(404).json({ erro: "Modelo não encontrada nesta agência" });
+    }
+
+    const { rows } = await db.query(`
+      SELECT * FROM conteudos
+      WHERE modelo_id = $1 AND tipo_conteudo = 'feed' AND ativo = true
+      ORDER BY criado_em DESC
+    `, [modeloId]);
+    res.json(rows);
+  } catch (err) {
+    console.error("Erro listar feed (agência):", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.post("/feed", authAgencia, upload.array("file", 10), async (req, res) => {
+  try {
+    const agenciaId = req.agencia.id;
+    const modeloId = Number(req.body.modelo_id);
+    if (!modeloId || !(await modeloPertenceAgencia(agenciaId, modeloId))) {
+      return res.status(404).json({ erro: "Modelo não encontrada nesta agência" });
+    }
+    if (!req.files || !req.files.length) return res.status(400).json({ erro: "Arquivo obrigatório" });
+
+    const resultados = [];
+    for (const file of req.files) {
+      const { tipo, url, thumbnailUrl } = await uploadMidiaCloudflare(file.buffer, file.originalname, file.mimetype);
+      const { rows } = await db.query(`
+        INSERT INTO conteudos (modelo_id, url, thumbnail_url, tipo, tipo_conteudo, preco, descricao, criado_em)
+        VALUES ($1,$2,$3,$4,'feed',0,$5,NOW())
+        RETURNING *
+      `, [modeloId, url, thumbnailUrl, tipo, req.body.descricao || null]);
+      resultados.push(rows[0]);
+    }
+
+    res.json(resultados);
+  } catch (err) {
+    console.error("Erro criar post de feed (agência):", err);
+    res.status(500).json({ erro: "Erro ao carregar conteúdo" });
+  }
+});
+
+router.delete("/feed/:id", authAgencia, async (req, res) => {
+  try {
+    const agenciaId = req.agencia.id;
+    const { rows } = await db.query(`
+      UPDATE conteudos SET ativo = false, deletado_em = NOW()
+      WHERE id = $1 AND tipo_conteudo = 'feed'
+        AND modelo_id IN (SELECT id FROM modelos WHERE agencia_id = $2)
+      RETURNING id
+    `, [req.params.id, agenciaId]);
+
+    if (!rows.length) return res.status(404).json({ erro: "Post de feed não encontrado" });
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Erro excluir post de feed (agência):", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// ========== 15. PREMIUM ==========
+
+router.get("/premium", authAgencia, async (req, res) => {
+  try {
+    const agenciaId = req.agencia.id;
+    const modeloId = Number(req.query.modelo_id);
+    if (!modeloId || !(await modeloPertenceAgencia(agenciaId, modeloId))) {
+      return res.status(404).json({ erro: "Modelo não encontrada nesta agência" });
+    }
+
+    const { rows } = await db.query(`
+      SELECT * FROM premium_posts
+      WHERE modelo_id = $1 AND ativo = true
+      ORDER BY created_at DESC
+    `, [modeloId]);
+    res.json(rows);
+  } catch (err) {
+    console.error("Erro listar premium (agência):", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.post("/premium", authAgencia, upload.array("files", 10), async (req, res) => {
+  const client = await db.connect();
+  try {
+    const agenciaId = req.agencia.id;
+    const modeloId = Number(req.body.modelo_id);
+    if (!modeloId || !(await modeloPertenceAgencia(agenciaId, modeloId))) {
+      client.release();
+      return res.status(404).json({ erro: "Modelo não encontrada nesta agência" });
+    }
+
+    const files = req.files || [];
+    if (!files.length) { client.release(); return res.status(400).json({ erro: "Envie ao menos uma mídia" }); }
+
+    const precoNum = Number(req.body.preco);
+    if (!precoNum || precoNum <= 0) { client.release(); return res.status(400).json({ erro: "Preço inválido" }); }
+
+    await client.query("BEGIN");
+
+    const postRes = await client.query(`
+      INSERT INTO premium_posts (modelo_id, url, thumb_url, tipo, tipo_conteudo, preco, descricao, ativo, created_at, updated_at)
+      VALUES ($1, NULL, NULL, NULL, 'premium', $2, $3, true, NOW(), NOW())
+      RETURNING id
+    `, [modeloId, precoNum, req.body.descricao || null]);
+
+    const premiumPostId = postRes.rows[0].id;
+    const midiasCriadas = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const { tipo, url, thumbnailUrl } = await uploadMidiaCloudflare(file.buffer, file.originalname, file.mimetype);
+      const tipoMidia = tipo === "imagem" ? "foto" : "video";
+
+      const midiaRes = await client.query(`
+        INSERT INTO premium_post_midias (premium_post_id, url, thumb_url, tipo, ordem, ativo, created_at)
+        VALUES ($1,$2,$3,$4,$5,true,NOW())
+        RETURNING *
+      `, [premiumPostId, url, thumbnailUrl, tipoMidia, i]);
+
+      midiasCriadas.push(midiaRes.rows[0]);
+    }
+
+    const primeira = midiasCriadas[0];
+    await client.query(
+      "UPDATE premium_posts SET url=$1, thumb_url=$2, tipo=$3, updated_at=NOW() WHERE id=$4",
+      [primeira.url, primeira.thumb_url, primeira.tipo, premiumPostId]
+    );
+
+    await client.query("COMMIT");
+    res.json({ id: premiumPostId, midias: midiasCriadas });
+  } catch (err) {
+    await client.query("ROLLBACK").catch(() => {});
+    console.error("Erro criar premium (agência):", err);
+    res.status(500).json({ erro: "Erro ao carregar conteúdo" });
+  } finally {
+    client.release();
+  }
+});
+
+router.delete("/premium/:id", authAgencia, async (req, res) => {
+  try {
+    const agenciaId = req.agencia.id;
+    const { rows } = await db.query(`
+      UPDATE premium_posts SET ativo = false, updated_at = NOW()
+      WHERE id = $1 AND modelo_id IN (SELECT id FROM modelos WHERE agencia_id = $2)
+      RETURNING id
+    `, [req.params.id, agenciaId]);
+
+    if (!rows.length) return res.status(404).json({ erro: "Post premium não encontrado" });
+
+    await db.query("UPDATE premium_post_midias SET ativo = false WHERE premium_post_id = $1", [req.params.id]);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Erro excluir premium (agência):", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// ========== 16. CONTEÚDOS (DE VENDA) ==========
+
+router.get("/conteudos", authAgencia, async (req, res) => {
+  try {
+    const agenciaId = req.agencia.id;
+    const modeloId = Number(req.query.modelo_id);
+    if (!modeloId || !(await modeloPertenceAgencia(agenciaId, modeloId))) {
+      return res.status(404).json({ erro: "Modelo não encontrada nesta agência" });
+    }
+
+    const { rows } = await db.query(`
+      SELECT * FROM conteudos
+      WHERE modelo_id = $1 AND tipo_conteudo = 'venda' AND ativo = true
+      ORDER BY criado_em DESC
+    `, [modeloId]);
+    res.json(rows);
+  } catch (err) {
+    console.error("Erro listar conteúdos (agência):", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.post("/conteudos", authAgencia, upload.array("file", 10), async (req, res) => {
+  try {
+    const agenciaId = req.agencia.id;
+    const modeloId = Number(req.body.modelo_id);
+    if (!modeloId || !(await modeloPertenceAgencia(agenciaId, modeloId))) {
+      return res.status(404).json({ erro: "Modelo não encontrada nesta agência" });
+    }
+    if (!req.files || !req.files.length) return res.status(400).json({ erro: "Arquivo obrigatório" });
+
+    const resultados = [];
+    for (const file of req.files) {
+      const { tipo, url, thumbnailUrl } = await uploadMidiaCloudflare(file.buffer, file.originalname, file.mimetype);
+      const { rows } = await db.query(`
+        INSERT INTO conteudos (modelo_id, url, thumbnail_url, tipo, tipo_conteudo, preco, descricao, criado_em)
+        VALUES ($1,$2,$3,$4,'venda',$5,$6,NOW())
+        RETURNING *
+      `, [modeloId, url, thumbnailUrl, tipo, req.body.preco || 0, req.body.descricao || null]);
+      resultados.push(rows[0]);
+    }
+
+    res.json(resultados);
+  } catch (err) {
+    console.error("Erro criar conteúdo de venda (agência):", err);
+    res.status(500).json({ erro: "Erro ao carregar conteúdo" });
+  }
+});
+
+router.delete("/conteudos/:id", authAgencia, async (req, res) => {
+  try {
+    const agenciaId = req.agencia.id;
+    const { rows } = await db.query(`
+      UPDATE conteudos SET ativo = false, deletado_em = NOW()
+      WHERE id = $1 AND tipo_conteudo = 'venda'
+        AND modelo_id IN (SELECT id FROM modelos WHERE agencia_id = $2)
+      RETURNING id
+    `, [req.params.id, agenciaId]);
+
+    if (!rows.length) return res.status(404).json({ erro: "Conteúdo não encontrado" });
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Erro excluir conteúdo (agência):", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// ========== 17. LINKS ==========
+
+router.get("/links", authAgencia, async (req, res) => {
+  try {
+    const agenciaId = req.agencia.id;
+    const modeloId = Number(req.query.modelo_id);
+    if (!modeloId || !(await modeloPertenceAgencia(agenciaId, modeloId))) {
+      return res.status(404).json({ erro: "Modelo não encontrada nesta agência" });
+    }
+
+    const { rows } = await db.query(`
+      SELECT m.id AS modelo_id, md.instagram, md.tiktok
+      FROM modelos m
+      LEFT JOIN modelos_dados md ON md.modelo_id = m.id
+      WHERE m.id = $1
+    `, [modeloId]);
+
+    const r = rows[0] || {};
+    res.json({
+      link_perfil: `https://velvet.lat/perfil.html?modelo_id=${modeloId}`,
+      instagram: r.instagram || null,
+      tiktok: r.tiktok || null
+    });
+  } catch (err) {
+    console.error("Erro buscar links (agência):", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// ========== 18. AVATAR E CAPA ==========
+
+router.post("/avatar", authAgencia, upload.single("avatar"), async (req, res) => {
+  try {
+    const agenciaId = req.agencia.id;
+    const modeloId = Number(req.body.modelo_id);
+    if (!modeloId || !(await modeloPertenceAgencia(agenciaId, modeloId))) {
+      return res.status(404).json({ erro: "Modelo não encontrada nesta agência" });
+    }
+    if (!req.file) return res.status(400).json({ erro: "Arquivo não enviado" });
+
+    const { mimetype, originalname, buffer } = req.file;
+    const caminho = `velvet/avatars/${modeloId}/${Date.now()}-${originalname}`;
+
+    await s3Publico.upload({ Bucket: process.env.R2_BUCKET, Key: caminho, Body: buffer, ContentType: mimetype }).promise();
+    const avatarUrl = `${process.env.R2_PUBLIC_URL}/${caminho}`;
+
+    await db.query("UPDATE modelos SET avatar = $1 WHERE id = $2", [avatarUrl, modeloId]);
+    res.json({ avatar: avatarUrl });
+  } catch (err) {
+    console.error("Erro upload avatar (agência):", err);
+    res.status(500).json({ erro: "Erro ao atualizar avatar" });
+  }
+});
+
+router.post("/capa", authAgencia, upload.single("capa"), async (req, res) => {
+  try {
+    const agenciaId = req.agencia.id;
+    const modeloId = Number(req.body.modelo_id);
+    if (!modeloId || !(await modeloPertenceAgencia(agenciaId, modeloId))) {
+      return res.status(404).json({ erro: "Modelo não encontrada nesta agência" });
+    }
+    if (!req.file) return res.status(400).json({ erro: "Arquivo não enviado" });
+
+    const { mimetype, originalname, buffer } = req.file;
+    const caminho = `velvet/capas/${modeloId}/${Date.now()}-${originalname}`;
+
+    await s3Publico.upload({ Bucket: process.env.R2_BUCKET, Key: caminho, Body: buffer, ContentType: mimetype, CacheControl: "no-cache" }).promise();
+    const capaUrl = `${process.env.R2_PUBLIC_URL}/${caminho}`;
+
+    await db.query("UPDATE modelos SET capa = $1 WHERE id = $2", [capaUrl, modeloId]);
+    res.json({ capa: capaUrl });
+  } catch (err) {
+    console.error("Erro upload capa (agência):", err);
+    res.status(500).json({ erro: "Erro ao atualizar capa" });
+  }
+});
+
+// ========== 19. BIO E PERFIL ==========
+
+router.get("/perfil", authAgencia, async (req, res) => {
+  try {
+    const agenciaId = req.agencia.id;
+    const modeloId = Number(req.query.modelo_id);
+    if (!modeloId || !(await modeloPertenceAgencia(agenciaId, modeloId))) {
+      return res.status(404).json({ erro: "Modelo não encontrada nesta agência" });
+    }
+
+    const { rows } = await db.query(`
+      SELECT m.id AS modelo_id, m.nome_exibicao, m.bio, m.avatar, m.capa, m.local,
+             md.instagram, md.tiktok
+      FROM modelos m
+      LEFT JOIN modelos_dados md ON md.modelo_id = m.id AND md.ativo = true
+      WHERE m.id = $1
+    `, [modeloId]);
+
+    if (!rows.length) return res.status(404).json({ erro: "Perfil não encontrado" });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Erro buscar perfil (agência):", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.put("/perfil", authAgencia, async (req, res) => {
+  try {
+    const agenciaId = req.agencia.id;
+    const modeloId = Number(req.body.modelo_id);
+    if (!modeloId || !(await modeloPertenceAgencia(agenciaId, modeloId))) {
+      return res.status(404).json({ erro: "Modelo não encontrada nesta agência" });
+    }
+
+    const { nome_exibicao, instagram, tiktok, local, bio } = req.body;
+    if (!nome_exibicao || !nome_exibicao.trim()) {
+      return res.status(400).json({ erro: "nome_exibicao é obrigatório" });
+    }
+
+    await db.query(
+      "UPDATE modelos SET nome_exibicao = $1, local = $2, bio = $3 WHERE id = $4",
+      [nome_exibicao.trim(), local?.trim() || null, bio?.trim() || null, modeloId]
+    );
+
+    await db.query(`
+      INSERT INTO modelos_dados (modelo_id, instagram, tiktok)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (modelo_id)
+      DO UPDATE SET instagram = EXCLUDED.instagram, tiktok = EXCLUDED.tiktok
+    `, [modeloId, instagram?.trim() || null, tiktok?.trim() || null]);
+
+    res.json({ sucesso: true });
+  } catch (err) {
+    console.error("Erro salvar perfil (agência):", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
 module.exports = router;
+module.exports.gerarFechamentoAgencia = gerarFechamentoAgencia;
+module.exports.DESPESA_CHATTER_PADRAO = DESPESA_CHATTER_PADRAO;

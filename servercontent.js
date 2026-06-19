@@ -306,13 +306,7 @@ job.finalizado_em = new Date().toISOString();
   }
 }
 
-async function podeAlterarDadosBancarios() {
-  const hoje = new Date();
-  const dia = hoje.getDate();
-
-  // bloqueia do dia 1 ao 5
-  return !(dia >= 1 && dia <= 5);
-}
+const { podeAlterarDadosBancarios } = require("./utils/dadosBancarios");
 
 // ======================================
 // ROTAS POST
