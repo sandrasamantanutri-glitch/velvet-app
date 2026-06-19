@@ -17,6 +17,7 @@ const helmet = require("helmet");
 const express = require("express");
 const db = require("./db");
 const { registrarLog } = require("./utils/securityLog");
+const { criarNotificacaoAdmin } = require("./utils/notificacoesAdmin");
 const bcrypt = require("bcrypt");
 const path = require("path");
 const fs = require("fs");
@@ -2788,6 +2789,7 @@ app.post('/api/admin/campanhas/vip', auth, authAdmin, async (req, res) => {
   }
 });
 app.set('io', io);
+adminEmailRouter.iniciarMonitoramentoEmails(io);
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/icons", express.static(path.join(__dirname, "icons")));
@@ -3398,6 +3400,11 @@ io.use((socket, next) => {
 
 io.on("connection", (socket) => {
   console.log("🔥 Socket conectado:", socket.id, socket.user);
+
+  // ─── NOTIFICAÇÕES ADMIN (sino do dashboard) ─────────────────────────────
+  if (socket.user?.role === "admin") {
+    socket.join("admin_notificacoes");
+  }
 
   // ─── SUPORTE AO CLIENTE ──────────────────────────────────────────────────
   socket.on("suporte:entrar", ({ conversa_id }) => {
@@ -12729,6 +12736,19 @@ app.post("/api/verificacao", auth, uploadVerificacaoLimiter, uploadVerificacao.f
           ]
         );
 
+        const { rows: modeloNomeRows } = await db.query(
+          "SELECT nome_exibicao, nome FROM modelos WHERE id = $1",
+          [modeloId]
+        );
+        const nomeModelo = modeloNomeRows[0]?.nome_exibicao || modeloNomeRows[0]?.nome || `Modelo #${modeloId}`;
+
+        await criarNotificacaoAdmin(db, req.app.get("io"), {
+          tipo: "verificacao_modelo",
+          referencia_id: modeloId,
+          titulo: "Nova verificação em análise",
+          mensagem: `Modelo ${nomeModelo} enviou documentos para verificação.`
+        });
+
         return res.json({ ok: true });
       }
 
@@ -12799,6 +12819,13 @@ app.post("/api/verificacao", auth, uploadVerificacaoLimiter, uploadVerificacao.f
             ip
           ]
         );
+
+        await criarNotificacaoAdmin(db, req.app.get("io"), {
+          tipo: "verificacao_cliente",
+          referencia_id: clienteId,
+          titulo: "Nova verificação em análise",
+          mensagem: `Cliente #${clienteId} enviou documentos para verificação.`
+        });
 
         return res.json({ ok: true });
       }

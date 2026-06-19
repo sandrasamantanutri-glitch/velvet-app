@@ -4,6 +4,7 @@ const db = require("../db");
 const authCliente = require("../middleware/authCliente");
 const auth = require("../middleware/auth");
 const authAdmin = require("../middleware/authAdmin");
+const { criarNotificacaoAdmin } = require("../utils/notificacoesAdmin");
 
 // ─── CLIENTE: abre ou retoma conversa ───────────────────────────────────────
 router.post("/conversa", async (req, res) => {
@@ -41,6 +42,13 @@ router.post("/conversa", async (req, res) => {
        VALUES ($1, $2, $3) RETURNING id`,
       [cliente_id, nome || null, email || null]
     );
+
+    await criarNotificacaoAdmin(db, req.app.get("io"), {
+      tipo: "chat_suporte",
+      referencia_id: rows[0].id,
+      titulo: "Novo chat de suporte aberto",
+      mensagem: `${nome || email || "Visitante"} abriu um novo chat de suporte.`
+    });
 
     res.json({ conversa_id: rows[0].id, status: "aberta" });
   } catch (err) {

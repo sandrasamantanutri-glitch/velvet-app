@@ -436,17 +436,17 @@ pageLoaders.midias = function () {
   }
 };
 
+function irParaPagina(page) {
+  navItems.forEach(n => n.classList.toggle('active', n.dataset.page === page));
+  pages.forEach(p => p.classList.remove('active'));
+  const pageEl = $('page-' + page);
+  if (pageEl) pageEl.classList.add('active');
+  $('pageTitle').textContent = pageTitles[page] || page;
+  if (pageLoaders[page]) pageLoaders[page]();
+}
+
 navItems.forEach(item => {
-  item.addEventListener('click', () => {
-    const page = item.dataset.page;
-    navItems.forEach(n => n.classList.remove('active'));
-    item.classList.add('active');
-    pages.forEach(p => p.classList.remove('active'));
-    const pageEl = $('page-' + page);
-    if (pageEl) pageEl.classList.add('active');
-    $('pageTitle').textContent = pageTitles[page] || page;
-    if (pageLoaders[page]) pageLoaders[page]();
-  });
+  item.addEventListener('click', () => irParaPagina(item.dataset.page));
 });
 
 // Sidebar toggle
@@ -4496,6 +4496,138 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+// ========== NOTIFICAÇÕES (SINO) ==========
+
+const NOTIF_PAGINA_POR_TIPO = {
+  verificacao_modelo: 'verificacoes',
+  verificacao_cliente: 'verificacoes',
+  dados_bancarios: 'bancarios',
+  chat_suporte: 'suporte',
+  email: 'emails'
+};
+
+function tocarSomNotificacao() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.setValueAtTime(660, ctx.currentTime + 0.12);
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.35);
+  } catch (err) {
+    console.error('Erro ao tocar som de notificação:', err);
+  }
+}
+
+function fmtNotifData(d) {
+  if (!d) return '';
+  const date = new Date(d);
+  return date.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
+function renderNotifList(rows) {
+  const list = $('notifList');
+  if (!rows || !rows.length) {
+    list.innerHTML = '<div class="notif-empty">Nenhuma notificação por aqui.</div>';
+    return;
+  }
+  list.innerHTML = rows.map(n => `
+    <div class="notif-item ${n.lida ? '' : 'unread'}" data-id="${n.id}" data-tipo="${n.tipo}">
+      <span class="notif-titulo">${escapeHtml(n.titulo)}</span>
+      ${n.mensagem ? `<span class="notif-mensagem">${escapeHtml(n.mensagem)}</span>` : ''}
+      <span class="notif-data">${fmtNotifData(n.criado_em)}</span>
+    </div>
+  `).join('');
+}
+
+function atualizarNotifBadge(totalNaoLidas) {
+  const badge = $('notifBadge');
+  if (totalNaoLidas > 0) {
+    badge.textContent = totalNaoLidas > 99 ? '99+' : totalNaoLidas;
+    badge.style.display = 'flex';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+async function carregarNotificacoes() {
+  try {
+    const data = await fetchJSON('/admin/dashboard/notificacoes?limit=30');
+    renderNotifList(data.rows);
+    atualizarNotifBadge(data.total_nao_lidas || 0);
+  } catch (err) {
+    console.error('Erro ao carregar notificações:', err);
+  }
+}
+
+async function marcarNotificacaoLida(id) {
+  try {
+    await authFetch(`/admin/dashboard/notificacoes/${id}/lida`, { method: 'POST' });
+  } catch (err) {
+    console.error('Erro ao marcar notificação lida:', err);
+  }
+}
+
+function initNotificacoes() {
+  const bellBtn = $('notifBellBtn');
+  const dropdown = $('notifDropdown');
+  const wrap = $('notifBellWrap');
+
+  carregarNotificacoes();
+
+  bellBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const aberto = dropdown.style.display !== 'none';
+    dropdown.style.display = aberto ? 'none' : 'block';
+    if (!aberto) carregarNotificacoes();
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target)) dropdown.style.display = 'none';
+  });
+
+  $('notifList').addEventListener('click', async (e) => {
+    const item = e.target.closest('.notif-item');
+    if (!item) return;
+    const id = item.dataset.id;
+    const tipo = item.dataset.tipo;
+    item.classList.remove('unread');
+    await marcarNotificacaoLida(id);
+    carregarNotificacoes();
+    dropdown.style.display = 'none';
+    const pagina = NOTIF_PAGINA_POR_TIPO[tipo];
+    if (pagina) irParaPagina(pagina);
+  });
+
+  $('notifMarcarTodasLidas').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    try {
+      await authFetch('/admin/dashboard/notificacoes/marcar-todas-lidas', { method: 'POST' });
+      carregarNotificacoes();
+    } catch (err) {
+      console.error('Erro ao marcar todas como lidas:', err);
+    }
+  });
+
+  if (window.io) {
+    const socket = window.io({ auth: { token }, transports: ['websocket'] });
+    socket.on('admin:notificacao', (notif) => {
+      tocarSomNotificacao();
+      bellBtn.classList.add('ringing');
+      setTimeout(() => bellBtn.classList.remove('ringing'), 1300);
+      carregarNotificacoes();
+      toast(notif.titulo, 'info');
+    });
+  }
+}
+
 // ========== INIT ==========
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -4504,4 +4636,5 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
   pageLoaders.overview();
+  initNotificacoes();
 });

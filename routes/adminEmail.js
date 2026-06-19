@@ -4,6 +4,7 @@ const nodemailer = require('nodemailer');
 const Imap = require('imap');
 const { simpleParser } = require('mailparser');
 const db = require('../db');
+const { criarNotificacaoAdmin } = require('../utils/notificacoesAdmin');
 
 const ADMIN_EMAIL_CONFIG = {};
 const ADMIN_EMAIL_IMAP = {}; // Manter conexões ativas
@@ -526,4 +527,80 @@ router.get('/sent', async (req, res) => {
   }
 });
 
+// ===========================
+// MONITORAMENTO DE NOVOS EMAILS (notificação admin)
+// ===========================
+
+const ULTIMO_UNSEEN = {}; // adminId -> quantidade de não lidos na última verificação
+
+function contarNaoLidos(config) {
+  return new Promise((resolve, reject) => {
+    const imap = new Imap({
+      user: config.email,
+      password: config.senha,
+      host: config.imap_host,
+      port: config.imap_port,
+      tls: config.use_tls,
+      tlsOptions: { rejectUnauthorized: false },
+      connTimeout: 8000,
+      authTimeout: 8000
+    });
+
+    imap.once('error', reject);
+    imap.once('ready', () => {
+      imap.openBox('INBOX', true, (err, box) => {
+        if (err) { imap.end(); return reject(err); }
+        imap.search(['UNSEEN'], (err, results) => {
+          imap.end();
+          if (err) return reject(err);
+          resolve((results || []).length);
+        });
+      });
+    });
+    imap.connect();
+  });
+}
+
+async function verificarNovosEmails(io) {
+  try {
+    const { rows } = await db.query(
+      `SELECT id, email_config FROM admin WHERE email_config IS NOT NULL`
+    );
+
+    for (const admRow of rows) {
+      const adminId = admRow.id;
+      let config = admRow.email_config;
+      if (typeof config === 'string') {
+        try { config = JSON.parse(config); } catch { continue; }
+      }
+      if (!config?.email || !config?.senha) continue;
+
+      try {
+        const unseen = await contarNaoLidos(config);
+        const anterior = ULTIMO_UNSEEN[adminId];
+
+        if (anterior !== undefined && unseen > anterior) {
+          await criarNotificacaoAdmin(db, io, {
+            tipo: 'email',
+            referencia_id: null,
+            titulo: 'Novo email recebido',
+            mensagem: `${unseen - anterior} novo(s) email(s) na caixa de entrada (${config.email}).`
+          });
+        }
+
+        ULTIMO_UNSEEN[adminId] = unseen;
+      } catch (err) {
+        console.error('[EMAIL MONITOR] Erro ao verificar admin', adminId, '-', err.message);
+      }
+    }
+  } catch (err) {
+    console.error('[EMAIL MONITOR] Erro geral:', err.message);
+  }
+}
+
+function iniciarMonitoramentoEmails(io) {
+  setInterval(() => verificarNovosEmails(io), 3 * 60 * 1000);
+}
+
 module.exports = router;
+module.exports.iniciarMonitoramentoEmails = iniciarMonitoramentoEmails;

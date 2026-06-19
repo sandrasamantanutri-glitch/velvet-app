@@ -5062,4 +5062,55 @@ router.post("/newsletter/enviar", authAdmin, async (req, res) => {
   }
 });
 
+// ==================== 20. NOTIFICAÇÕES ADMIN (SINO) ====================
+
+router.get("/notificacoes", auth, authAdmin, async (req, res) => {
+  try {
+    const apenasNaoLidas = req.query.apenas_nao_lidas === "true";
+    const limit = Math.min(Number(req.query.limit) || 30, 100);
+
+    const where = apenasNaoLidas ? "WHERE lida = false" : "";
+
+    const { rows } = await db.query(
+      `SELECT * FROM admin_notificacoes ${where} ORDER BY criado_em DESC LIMIT $1`,
+      [limit]
+    );
+
+    const totalNaoLidasQ = await db.query(
+      `SELECT COUNT(*)::int AS total FROM admin_notificacoes WHERE lida = false`
+    );
+
+    res.json({
+      rows,
+      total_nao_lidas: totalNaoLidasQ.rows[0]?.total || 0
+    });
+  } catch (err) {
+    console.error("Erro /notificacoes:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.post("/notificacoes/:id/lida", auth, authAdmin, async (req, res) => {
+  try {
+    await db.query(
+      `UPDATE admin_notificacoes SET lida = true WHERE id = $1`,
+      [Number(req.params.id)]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Erro marcar notificação lida:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.post("/notificacoes/marcar-todas-lidas", auth, authAdmin, async (req, res) => {
+  try {
+    await db.query(`UPDATE admin_notificacoes SET lida = true WHERE lida = false`);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Erro marcar todas notificações lidas:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
 module.exports = router;

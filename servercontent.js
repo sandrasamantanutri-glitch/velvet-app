@@ -13,6 +13,7 @@ const AWS = require("aws-sdk");
 const fs = require("fs");
 const { enviarEmailAprovacao } = require("./email");
 const { enviarEmailRejeicao } = require("./email");
+const { criarNotificacaoAdmin } = require("./utils/notificacoesAdmin");
 const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -384,6 +385,19 @@ router.post("/modelo/dados-bancarios", authModelo, async (req, res) => {
       titular_documento
     ]);
 
+    const { rows: modeloNomeRows } = await db.query(
+      "SELECT nome_exibicao, nome FROM modelos WHERE id = $1",
+      [req.modelo_id]
+    );
+    const nomeModelo = modeloNomeRows[0]?.nome_exibicao || modeloNomeRows[0]?.nome || `Modelo #${req.modelo_id}`;
+
+    await criarNotificacaoAdmin(db, req.app.get("io"), {
+      tipo: "dados_bancarios",
+      referencia_id: req.modelo_id,
+      titulo: "Novos dados bancários pendentes",
+      mensagem: `Modelo ${nomeModelo} enviou dados bancários para análise.`
+    });
+
     res.json({ ok: true });
   } catch (err) {
     console.error("ERRO DADOS BANCÁRIOS:", err);
@@ -447,6 +461,19 @@ router.post("/modelo/dados-bancarios/alterar", authModelo, async (req, res) => {
       justificativa,
       req.modelo_id
     ]);
+
+    const { rows: modeloNomeRows } = await db.query(
+      "SELECT nome_exibicao, nome FROM modelos WHERE id = $1",
+      [req.modelo_id]
+    );
+    const nomeModelo = modeloNomeRows[0]?.nome_exibicao || modeloNomeRows[0]?.nome || `Modelo #${req.modelo_id}`;
+
+    await criarNotificacaoAdmin(db, req.app.get("io"), {
+      tipo: "dados_bancarios",
+      referencia_id: req.modelo_id,
+      titulo: "Alteração de dados bancários pendente",
+      mensagem: `Modelo ${nomeModelo} solicitou alteração de dados bancários.`
+    });
 
     res.json({ ok: true });
   } catch (err) {
