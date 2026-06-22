@@ -92,7 +92,8 @@
   "filtro_mulheres": "Mulheres",
   "filtro_homens": "Homens",
   "filtro_nao_binarios": "Não binários",
-  "busca_placeholder": "Buscar por nome..."
+  "busca_placeholder": "Buscar por nome...",
+  "sem_resultados": "Nenhum resultado encontrado para essa busca."
   },
 
   "perfil": {

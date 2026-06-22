@@ -5085,9 +5085,6 @@ app.get("/api/modelos", auth, async (req, res) => {
           THEN true ELSE false
         END AS is_new,
 
-        -- total de fãs (assinantes ativos)
-        COALESCE(fas.total, 0) AS total_fas,
-
         -- responsiva: >70% das msgs de clientes respondidas nos últimos 7 dias
         CASE
           WHEN COALESCE(resp.total_recebidas, 0) >= 5

@@ -326,6 +326,13 @@ body {
   color: #e33;
 }
 
+.feed-sem-resultados {
+  text-align: center;
+  padding: 60px 0;
+  color: #999;
+  font-size: 15px;
+}
+
 /* ===============================
    RESPONSIVE
 =============================== */

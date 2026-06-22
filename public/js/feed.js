@@ -41,12 +41,6 @@ function criarCard(modelo) {
   if (modelo.is_new)            badges.push(`<span class="badge badge-new">${t("feed.badge_nova")}</span>`);
   if (modelo.total_premium > 0) badges.push(`<span class="badge badge-premium">${t("feed.badge_premium")}</span>`);
 
-  const fasFormatado = modelo.total_fas >= 1000
-    ? (modelo.total_fas / 1000).toFixed(1) + "k"
-    : modelo.total_fas;
-
-  const fasTexto = t("feed.fas_contador").replace("{n}", fasFormatado);
-
   card.innerHTML = `
     <div class="modelo-foto" style="background-image:url('${foto}')">
       <div class="modelo-foto-overlay"></div>
@@ -59,9 +53,6 @@ function criarCard(modelo) {
         ${modelo.online ? '<span class="dot-online"></span>' : ''}
       </div>
       <div class="modelo-bio">${modelo.bio || ""}</div>
-      <div class="modelo-footer">
-        <span class="fas-contador">${fasTexto}</span>
-      </div>
     </div>
   `;
 
@@ -114,6 +105,13 @@ window.renderFeed = async function () {
     if (!res.ok) throw new Error("Erro ao buscar modelos");
 
     const { online, novas, emAlta, recomendadas, descubraMais } = await res.json();
+
+    const totalResultados = online.length + recomendadas.length + emAlta.length + novas.length + (descubraMais?.length || 0);
+
+    if (totalResultados === 0) {
+      wrapper.innerHTML = `<p class="feed-sem-resultados">${t("feed.sem_resultados")}</p>`;
+      return;
+    }
 
     wrapper.innerHTML = `
       ${online.length ? `
