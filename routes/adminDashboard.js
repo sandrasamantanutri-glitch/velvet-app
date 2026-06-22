@@ -2954,6 +2954,7 @@ router.put("/modelos-dados/:id", authAdmin, async (req, res) => {
       "nome_completo",
       "data_nascimento",
       "telefone",
+      "genero",
       "endereco",
       "pais",
       "estado",
@@ -3473,6 +3474,16 @@ router.put("/vip-subscriptions/:id", async (req, res) => {
 });
 
 // ========== 16. MODELO PAGAMENTOS ==========
+
+router.get("/modelo-pagamentos/ultimo-mes", authAdmin, async (req, res) => {
+  try {
+    const { rows } = await db.query("SELECT mes FROM modelo_pagamentos ORDER BY mes DESC LIMIT 1");
+    res.json({ mes: rows[0]?.mes || null });
+  } catch (err) {
+    console.error("Erro modelo-pagamentos/ultimo-mes:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
 
 router.get("/modelo-pagamentos", authAdmin, async (req, res) => {
   try {

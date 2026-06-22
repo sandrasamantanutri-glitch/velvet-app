@@ -87,7 +87,13 @@
   "badge_nova": "✨ New",
   "badge_premium": "💎 Premium",
   "fas_contador": "❤️ {n} fans",
-  "loading": "Loading..."
+  "loading": "Loading...",
+  "filtro_interesses": "Interests",
+  "filtro_todos": "All",
+  "filtro_mulheres": "Women",
+  "filtro_homens": "Men",
+  "filtro_nao_binarios": "Non-binary",
+  "busca_placeholder": "Search by name..."
 },
 
   "perfil": {
@@ -246,6 +252,10 @@
   "label_nascimento": "Date of birth*",
   "label_telefone": "Phone with area code*",
   "placeholder_telefone": "(11) 99999-9999",
+  "label_genero": "Gender*",
+  "genero_mulher": "Woman",
+  "genero_homem": "Man",
+  "genero_nao_binario": "Non-binary",
   "label_endereco": "Address*",
   "placeholder_endereco": "Street, number and neighborhood",
   "label_estado": "State*",

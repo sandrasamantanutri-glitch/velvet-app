@@ -411,7 +411,6 @@
     <h3>Novo Post no Feed</h3>
     <form id="formNovoFeed" onsubmit="salvarNovoFeed(event)">
       <div class="form-group"><label>Arquivos (imagem/vídeo) *</label><input type="file" name="file" multiple accept="image/*,video/*" required></div>
-      <div class="form-group"><label>Descrição</label><input type="text" name="descricao" class="input"></div>
       <button type="submit" class="btn btn-primary">Publicar</button>
     </form>
   </div>
@@ -466,9 +465,27 @@
   <div class="page-actions">
     <select id="linksModeloSelect" class="input-select" onchange="carregarLinksAgency()"></select>
   </div>
-  <div class="card" style="max-width:520px;">
+  <div class="card" style="max-width:560px;">
     <h3>Links da Modelo</h3>
-    <div id="listaLinksAgency"></div>
+    <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">Use estes links para divulgar o perfil. São gerados automaticamente.</p>
+
+    <label style="display:block;font-size:13px;font-weight:500;color:var(--text-muted);margin:12px 0 5px;">Instagram</label>
+    <div class="copy-field">
+      <input type="text" id="linkInstagramAgency" readonly>
+      <button type="button" onclick="copiarLinkAgency('linkInstagramAgency')">Copiar</button>
+    </div>
+
+    <label style="display:block;font-size:13px;font-weight:500;color:var(--text-muted);margin:12px 0 5px;">TikTok</label>
+    <div class="copy-field">
+      <input type="text" id="linkTiktokAgency" readonly>
+      <button type="button" onclick="copiarLinkAgency('linkTiktokAgency')">Copiar</button>
+    </div>
+
+    <label style="display:block;font-size:13px;font-weight:500;color:var(--text-muted);margin:12px 0 5px;">Link de Acesso Direto</label>
+    <div class="copy-field">
+      <input type="text" id="linkDiretoAgency" readonly>
+      <button type="button" onclick="copiarLinkAgency('linkDiretoAgency')">Copiar</button>
+    </div>
   </div>
 </section>
 
@@ -620,6 +637,15 @@
       </div>
     </form>
   </div>
+</div>
+
+<!-- Lightbox de mídia (Feed/Premium/Conteúdos) -->
+<div class="modal modal-lg" id="modalLightboxMidia">
+  <div class="modal-header">
+    <h3>Visualizar</h3>
+    <button class="modal-close" onclick="closeModal('modalLightboxMidia')">&times;</button>
+  </div>
+  <div class="modal-body" id="lightboxMidiaCorpo" style="text-align:center;"></div>
 </div>
 
 <!-- Modal genérico -->

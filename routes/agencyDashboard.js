@@ -1904,35 +1904,6 @@ router.delete("/conteudos/:id", authAgencia, async (req, res) => {
   }
 });
 
-// ========== 17. LINKS ==========
-
-router.get("/links", authAgencia, async (req, res) => {
-  try {
-    const agenciaId = req.agencia.id;
-    const modeloId = Number(req.query.modelo_id);
-    if (!modeloId || !(await modeloPertenceAgencia(agenciaId, modeloId))) {
-      return res.status(404).json({ erro: "Modelo não encontrada nesta agência" });
-    }
-
-    const { rows } = await db.query(`
-      SELECT m.id AS modelo_id, md.instagram, md.tiktok
-      FROM modelos m
-      LEFT JOIN modelos_dados md ON md.modelo_id = m.id
-      WHERE m.id = $1
-    `, [modeloId]);
-
-    const r = rows[0] || {};
-    res.json({
-      link_perfil: `https://velvet.lat/perfil.html?modelo_id=${modeloId}`,
-      instagram: r.instagram || null,
-      tiktok: r.tiktok || null
-    });
-  } catch (err) {
-    console.error("Erro buscar links (agência):", err);
-    res.status(500).json({ erro: "Erro interno" });
-  }
-});
-
 // ========== 18. AVATAR E CAPA ==========
 
 router.post("/avatar", authAgencia, upload.single("avatar"), async (req, res) => {

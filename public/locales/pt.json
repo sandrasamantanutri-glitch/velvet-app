@@ -86,7 +86,13 @@
   "badge_nova": "✨ Novidade",
   "badge_premium": "💎 Premium",
   "fas_contador": "❤️ {n} fãs",
-  "loading": "Carregando..."
+  "loading": "Carregando...",
+  "filtro_interesses": "Interesses",
+  "filtro_todos": "Todos",
+  "filtro_mulheres": "Mulheres",
+  "filtro_homens": "Homens",
+  "filtro_nao_binarios": "Não binários",
+  "busca_placeholder": "Buscar por nome..."
   },
 
   "perfil": {
@@ -246,6 +252,10 @@
   "label_nascimento": "Data de nascimento*",
   "label_telefone": "Telefone com DDD*",
   "placeholder_telefone": "(11) 99999-9999",
+  "label_genero": "Gênero*",
+  "genero_mulher": "Mulher",
+  "genero_homem": "Homem",
+  "genero_nao_binario": "Não binário",
   "label_endereco": "Endereço*",
   "placeholder_endereco": "Rua, número e bairro",
   "label_estado": "Estado*",

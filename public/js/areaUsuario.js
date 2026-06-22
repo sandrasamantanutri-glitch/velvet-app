@@ -598,6 +598,7 @@ if (
     ? dados.data_nascimento.split("T")[0]
     : "";
   form.telefone.value = dados.telefone || "";
+  if (form.genero) form.genero.value = dados.genero || "";
   form.endereco.value = dados.endereco || "";
   form.estado.value   = dados.estado || "";
   form.cidade.value   = dados.cidade || "";
@@ -669,6 +670,7 @@ formPessoais?.addEventListener("submit", async (e) => {
     nome_completo: formPessoais.nome_completo.value.trim(),
     data_nascimento: formPessoais.data_nascimento.value,
     telefone: formPessoais.telefone.value.trim(),
+    genero: formPessoais.genero?.value || "",
     endereco: formPessoais.endereco.value.trim(),
     estado: formPessoais.estado.value.trim(),
     cidade: formPessoais.cidade.value.trim(),

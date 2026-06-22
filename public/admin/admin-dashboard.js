@@ -2946,6 +2946,18 @@ async function verDadosModelo(id) {
       { name: 'nome_completo', label: 'Nome Completo', value: data.nome_completo },
       { name: 'data_nascimento', label: 'Nascimento', type: 'date', value: data.data_nascimento },
       { name: 'telefone', label: 'Telefone', value: data.telefone },
+      {
+        name: 'genero',
+        label: 'Gênero',
+        type: 'select',
+        value: data.genero || '',
+        options: [
+          { value: '', label: 'Selecione' },
+          { value: 'mulher', label: 'Mulher' },
+          { value: 'homem', label: 'Homem' },
+          { value: 'nao_binario', label: 'Não binário' }
+        ]
+      },
       { name: 'endereco', label: 'Endereço', value: data.endereco },
       { name: 'pais', label: 'País', value: data.pais },
       { name: 'estado', label: 'Estado', value: data.estado },
@@ -3364,6 +3376,20 @@ async function editarVip(id) {
 pageLoaders['pagamentos-modelo'] = async function () {
   await carregarModelosSelect('pgtoModeloFiltro');
   populateMonthSelect($('pgtoModeloMes'));
+
+  try {
+    const ultimo = await fetchJSON('/admin/dashboard/modelo-pagamentos/ultimo-mes');
+    if (ultimo.mes) {
+      const d = new Date(ultimo.mes);
+      const valor = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+      if ($('pgtoModeloMes').querySelector(`option[value="${valor}"]`)) {
+        $('pgtoModeloMes').value = valor;
+      }
+    }
+  } catch (err) {
+    console.error('Erro ao buscar último mês de pagamento:', err);
+  }
+
   await carregarPgtoModelo(1);
   $('pgtoModeloFiltro').onchange = () => carregarPgtoModelo(1);
   $('pgtoModeloMes').onchange = () => carregarPgtoModelo(1);

@@ -25,8 +25,7 @@ function criarCard(modelo) {
   const card = document.createElement("div");
   card.className = "modelo-card";
 
-  const foto = modelo.capa || modelo.avatar || "/assets/avatar.png";
-  const avatar = modelo.avatar || "/assets/avatar.png";
+  const foto = modelo.avatar || "/assets/avatar.png";
 
   // badge de ranking
   let badgeRank = "";
@@ -53,7 +52,6 @@ function criarCard(modelo) {
       <div class="modelo-foto-overlay"></div>
       ${badgeRank}
       <div class="card-badges">${badges.join("")}</div>
-      <img class="avatar-flutuante" src="${avatar}" alt="${modelo.nome_exibicao || ""}">
     </div>
     <div class="modelo-info">
       <div class="modelo-header">
@@ -95,6 +93,9 @@ function renderSecao(containerId, modelos, emptyMsg) {
 // ===============================
 // RENDER FEED COMPLETO
 // ===============================
+let feedFiltroGenero = "";
+let feedFiltroBusca = "";
+
 window.renderFeed = async function () {
   const wrapper = document.getElementById("listaModelos");
   if (!wrapper) return;
@@ -102,7 +103,11 @@ window.renderFeed = async function () {
   wrapper.innerHTML = `<div class="feed-loading">${t("feed.loading")}</div>`;
 
   try {
-    const res = await fetch("/api/modelos", {
+    const params = new URLSearchParams();
+    if (feedFiltroGenero) params.set("genero", feedFiltroGenero);
+    if (feedFiltroBusca) params.set("q", feedFiltroBusca);
+
+    const res = await fetch("/api/modelos?" + params.toString(), {
       headers: { Authorization: "Bearer " + token }
     });
 
@@ -153,9 +158,38 @@ window.renderFeed = async function () {
   }
 };
 
+// ===============================
+// FILTROS (interesses + busca)
+// ===============================
+function initFiltrosFeed() {
+  const chipsContainer = document.getElementById("feedChipsGenero");
+  const inputBusca = document.getElementById("feedBuscaNome");
+
+  chipsContainer?.addEventListener("click", (e) => {
+    const chip = e.target.closest(".feed-chip");
+    if (!chip) return;
+
+    chipsContainer.querySelectorAll(".feed-chip").forEach(c => c.classList.remove("feed-chip--ativo"));
+    chip.classList.add("feed-chip--ativo");
+
+    feedFiltroGenero = chip.dataset.genero || "";
+    window.renderFeed();
+  });
+
+  let debounceTimer;
+  inputBusca?.addEventListener("input", () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      feedFiltroBusca = inputBusca.value.trim();
+      window.renderFeed();
+    }, 300);
+  });
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   // aguarda i18n carregar antes de renderizar os textos dos badges/seções
   if (typeof whenI18nReady === "function") await whenI18nReady();
+  initFiltrosFeed();
   window.renderFeed();
 
   // re-renderiza se o usuário trocar o idioma com o feed aberto

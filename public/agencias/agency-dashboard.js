@@ -580,7 +580,8 @@ async function gerarFechamentoAgency() {
   const mesInput = $('novoFechamentoMes').value;
   if (!mesInput) return toast('Selecione o mês', 'error');
   const [ano, mes] = mesInput.split('-').map(Number);
-  const despesaChatter = Number($('novoFechamentoDespesaChatter').value) || 1400;
+  const despesaChatterRaw = $('novoFechamentoDespesaChatter').value;
+  const despesaChatter = despesaChatterRaw !== '' ? Number(despesaChatterRaw) : null;
 
   try {
     await postJSON('/agency/dashboard/fechamentos-agency', { ano, mes, despesa_chatter: despesaChatter });
@@ -1229,6 +1230,28 @@ async function salvarAssinaturaAgency(e) {
   }
 }
 
+// ---------- GALERIA / LIGHTBOX (Feed, Premium, Conteúdos) ----------
+
+function htmlThumbMidia(url, thumb, isVideo) {
+  const thumbSrc = thumb || url;
+  const playIcon = isVideo
+    ? `<div class="play-icon-overlay"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>`
+    : '';
+  return `
+    <div class="grid-media-thumb-wrap" onclick="abrirLightboxMidia('${url}', '${isVideo ? 'video' : 'imagem'}')">
+      <img src="${thumbSrc}">
+      ${playIcon}
+    </div>
+  `;
+}
+
+function abrirLightboxMidia(url, tipo) {
+  $('lightboxMidiaCorpo').innerHTML = tipo === 'video'
+    ? `<video src="${url}" controls autoplay></video>`
+    : `<img src="${url}">`;
+  openModal('modalLightboxMidia');
+}
+
 // ---------- FEED ----------
 
 pageLoaders.feed = async function () {
@@ -1244,7 +1267,7 @@ async function carregarFeedAgency() {
     const rows = await fetchJSON(`/agency/dashboard/feed?modelo_id=${modeloId}`);
     $('gridFeed').innerHTML = (rows || []).map(c => `
       <div class="grid-media-item">
-        ${c.tipo === 'video' ? `<video src="${c.url}" controls></video>` : `<img src="${c.thumbnail_url || c.url}">`}
+        ${htmlThumbMidia(c.url, c.thumbnail_url, c.tipo === 'video')}
         <div class="grid-media-footer">
           <span>${fmtDate(c.criado_em)}</span>
           <button onclick="excluirFeedAgency(${c.id})">Excluir</button>
@@ -1300,7 +1323,7 @@ async function carregarPremiumAgency() {
     const rows = await fetchJSON(`/agency/dashboard/premium?modelo_id=${modeloId}`);
     $('gridPremium').innerHTML = (rows || []).map(p => `
       <div class="grid-media-item">
-        ${p.tipo === 'video' ? `<video src="${p.url}" controls></video>` : `<img src="${p.thumb_url || p.url}">`}
+        ${htmlThumbMidia(p.url, p.thumb_url, p.tipo === 'video')}
         <div class="grid-media-footer">
           <span>${money(p.preco)}</span>
           <button onclick="excluirPremiumAgency(${p.id})">Excluir</button>
@@ -1356,7 +1379,7 @@ async function carregarConteudosAgency() {
     const rows = await fetchJSON(`/agency/dashboard/conteudos?modelo_id=${modeloId}`);
     $('gridConteudos').innerHTML = (rows || []).map(c => `
       <div class="grid-media-item">
-        ${c.tipo === 'video' ? `<video src="${c.url}" controls></video>` : `<img src="${c.thumbnail_url || c.url}">`}
+        ${htmlThumbMidia(c.url, c.thumbnail_url, c.tipo === 'video')}
         <div class="grid-media-footer">
           <span>${money(c.preco)}</span>
           <button onclick="excluirConteudoAgency(${c.id})">Excluir</button>
@@ -1404,34 +1427,19 @@ pageLoaders.links = async function () {
   carregarLinksAgency();
 };
 
-function copiarTextoAgency(texto) {
-  navigator.clipboard.writeText(texto).then(() => toast('Copiado!', 'success'));
+function copiarLinkAgency(inputId) {
+  const input = $(inputId);
+  navigator.clipboard.writeText(input.value).then(() => toast('Copiado!', 'success'));
 }
 
-async function carregarLinksAgency() {
+function carregarLinksAgency() {
   const modeloId = Number($('linksModeloSelect').value);
   if (!modeloId) return;
 
-  try {
-    const data = await fetchJSON(`/agency/dashboard/links?modelo_id=${modeloId}`);
-    const linhas = [
-      { label: 'Link do Perfil', valor: data.link_perfil },
-      { label: 'Instagram', valor: data.instagram },
-      { label: 'TikTok', valor: data.tiktok }
-    ];
-
-    $('listaLinksAgency').innerHTML = linhas.map(l => `
-      <div class="link-copy-row">
-        <div>
-          <strong>${l.label}</strong><br>
-          <span style="color:var(--text-muted);font-size:13px;">${escapeHtml(l.valor || 'Não informado')}</span>
-        </div>
-        ${l.valor ? `<button class="btn-small btn-ghost" onclick="copiarTextoAgency('${escapeHtml(l.valor).replace(/'/g, "\\'")}')">Copiar</button>` : ''}
-      </div>
-    `).join('');
-  } catch (err) {
-    toast('Erro ao carregar links: ' + err.message, 'error');
-  }
+  const base = `https://bio.mypagess.workers.dev/?id=${modeloId}`;
+  $('linkInstagramAgency').value = `${base}&src=instagram`;
+  $('linkTiktokAgency').value = `${base}&src=tiktok`;
+  $('linkDiretoAgency').value = base;
 }
 
 // ---------- AVATAR E CAPA ----------

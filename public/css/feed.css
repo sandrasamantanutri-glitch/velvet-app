@@ -13,7 +13,95 @@ body {
 #listaModelos {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 90px 16px 40px;
+  padding: 20px 16px 40px;
+}
+
+/* ===============================
+   FILTROS
+=============================== */
+.feed-filtros {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 90px 16px 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.feed-filtros-interesses {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.feed-filtros-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #777;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.feed-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.feed-chip {
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #1E1E26;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.feed-chip:hover {
+  border-color: #6a00ff;
+}
+
+.feed-chip--ativo {
+  background: #6a00ff;
+  border-color: #6a00ff;
+  color: #fff;
+}
+
+.feed-busca {
+  flex: 1 1 240px;
+  max-width: 320px;
+}
+
+.feed-busca input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 14px;
+  border-radius: 20px;
+  border: 1px solid #ddd;
+  font-size: 13px;
+  outline: none;
+}
+
+.feed-busca input:focus {
+  border-color: #6a00ff;
+}
+
+@media (max-width: 600px) {
+  .feed-filtros {
+    padding: 80px 12px 0;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .feed-busca {
+    max-width: none;
+  }
 }
 
 /* ===============================
@@ -75,19 +163,6 @@ body {
   position: absolute;
   inset: 0;
   background: linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.45) 100%);
-}
-
-.avatar-flutuante {
-  position: absolute;
-  bottom: -20px;
-  left: 16px;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  z-index: 2;
 }
 
 /* ===============================
@@ -183,7 +258,7 @@ body {
    INFO DO CARD
 =============================== */
 .modelo-info {
-  padding: 28px 14px 14px;
+  padding: 14px;
 }
 
 .modelo-header {

@@ -5063,6 +5063,10 @@ app.get("/api/modelos", auth, async (req, res) => {
 
     const clienteId = req.user.role === "cliente" ? req.user.id : null;
 
+    const generosValidos = ["mulher", "homem", "nao_binario"];
+    const genero = generosValidos.includes(req.query.genero) ? req.query.genero : null;
+    const busca = req.query.q ? String(req.query.q).trim() : null;
+
     const result = await db.query(`
       SELECT
         m.id AS modelo_id,
@@ -5070,6 +5074,7 @@ app.get("/api/modelos", auth, async (req, res) => {
         m.avatar,
         m.capa,
         m.bio,
+        md2.genero,
 
         COALESCE(r.ganhos_mes, 0) AS ganhos_total,
 
@@ -5109,6 +5114,10 @@ app.get("/api/modelos", auth, async (req, res) => {
         END AS recomendada
 
       FROM modelos m
+
+      LEFT JOIN modelos_dados md2
+        ON md2.modelo_id = m.id
+       AND md2.ativo = true
 
       JOIN LATERAL (
         SELECT status, verificado_em
@@ -5179,8 +5188,10 @@ app.get("/api/modelos", auth, async (req, res) => {
       WHERE ver.status = 'aprovado'
         AND m.feed = true
         AND m.ativo = true
+        AND ($2::text IS NULL OR md2.genero = $2)
+        AND ($3::text IS NULL OR m.nome_exibicao ILIKE '%' || $3 || '%')
     `,
-    [clienteId]
+    [clienteId, genero, busca]
     );
 
     const modelos = result.rows;
@@ -7014,6 +7025,7 @@ app.put("/api/usuario/dados", auth, async (req, res) => {
       nome_completo,
       data_nascimento,
       telefone,
+      genero,
       endereco,
       estado,
       cidade,
@@ -7021,6 +7033,8 @@ app.put("/api/usuario/dados", auth, async (req, res) => {
     } = req.body;
 
     const userId = req.user.id;
+    const generosValidos = ["mulher", "homem", "nao_binario"];
+    const generoNormalizado = generosValidos.includes(genero) ? genero : null;
 
  // MODELO
     if (req.user.role === "modelo") {
@@ -7055,14 +7069,15 @@ app.put("/api/usuario/dados", auth, async (req, res) => {
 
       await db.query(`
         INSERT INTO modelos_dados
-          (modelo_id, nome_completo, data_nascimento, telefone, endereco, estado, cidade, pais, atualizado_em)
+          (modelo_id, nome_completo, data_nascimento, telefone, genero, endereco, estado, cidade, pais, atualizado_em)
         VALUES
-          ($1,$2,$3,$4,$5,$6,$7,$8,NOW())
+          ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW())
         ON CONFLICT (modelo_id)
         DO UPDATE SET
           nome_completo = EXCLUDED.nome_completo,
           data_nascimento = EXCLUDED.data_nascimento,
           telefone = EXCLUDED.telefone,
+          genero = EXCLUDED.genero,
           endereco = EXCLUDED.endereco,
           estado = EXCLUDED.estado,
           cidade = EXCLUDED.cidade,
@@ -7073,6 +7088,7 @@ app.put("/api/usuario/dados", auth, async (req, res) => {
         nome_completo?.trim() || null,
         data_nascimento || null,
         telefone?.trim() || null,
+        generoNormalizado,
         endereco?.trim() || null,
         estado?.trim() || null,
         cidade?.trim() || null,

@@ -193,6 +193,16 @@
           <input type="tel" name="telefone" placeholder="(11) 99999-9999" required>
         </div>
 
+        <div class="form-group">
+          <label data-i18n="conta.label_genero">Gênero*</label>
+          <select name="genero" required>
+            <option value="">Selecione</option>
+            <option value="mulher" data-i18n="conta.genero_mulher">Mulher</option>
+            <option value="homem" data-i18n="conta.genero_homem">Homem</option>
+            <option value="nao_binario" data-i18n="conta.genero_nao_binario">Não binário</option>
+          </select>
+        </div>
+
         <div class="form-group full">
           <label data-i18n="conta.label_endereco">Endereço*</label>
           <textarea name="endereco" rows="2" placeholder="Rua, número e bairro" required></textarea>
