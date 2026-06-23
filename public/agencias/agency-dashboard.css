@@ -503,9 +503,12 @@ body {
 .btn-success:hover { background: #059669; }
 
 .btn-ghost {
-  background: none;
-  color: var(--text-muted);
-  border: 1px solid var(--border);
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 6px;
+  background: #7b2cff;
+  color: #fff;
+  text-decoration: none;
 }
 .btn-ghost:hover { background: var(--bg); }
 
@@ -513,7 +516,11 @@ body {
   padding: 4px 10px;
   font-size: 12px;
   border-radius: 6px;
+  background: #7b2cff;
+  color: #fff;
+  text-decoration: none;
 }
+
 
 .btn-icon {
   padding: 6px;
@@ -1286,9 +1293,12 @@ select.input:focus {
 }
 
 .form-group input[type="file"] {
-  display: block;
-  font-size: 13px;
-  padding: 6px 0;
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 6px;
+  background: #7b2cff;
+  color: #fff;
+  text-decoration: none;
 }
 
 .form-group label[style*="display:flex"] {

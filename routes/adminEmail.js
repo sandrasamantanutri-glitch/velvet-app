@@ -252,64 +252,114 @@ async function salvarMensagemCache(adminId, pastaId, uid, lida, parsed) {
   return rows[0] || null;
 }
 
-// Sincronização incremental por UID de uma pasta
+// Busca apenas os UIDs+flags de um conjunto de mensagens (sem corpo) — usado para reconciliar lida/não lida
+function buscarFlags(imap, uids) {
+  return new Promise((resolve, reject) => {
+    if (!uids.length) return resolve([]);
+    const resultados = [];
+    const f = imap.fetch(uids, {});
+
+    f.on('message', (msg) => {
+      msg.on('attributes', (attrs) => {
+        resultados.push({ uid: attrs.uid, lida: (attrs.flags || []).includes('\\Seen') });
+      });
+    });
+
+    f.once('error', reject);
+    f.once('end', () => resolve(resultados));
+  });
+}
+
+// Sincronização completa de uma pasta: insere mensagens novas, reconcilia lida/não lida
+// e remove do cache local mensagens que não existem mais na pasta no servidor
+// (ex.: movidas/excluídas/respondidas por outro cliente de email, como o Resend).
 function sincronizarPasta(adminId, pastaRow, imap) {
   return new Promise((resolve, reject) => {
-    imap.openBox(pastaRow.nome_imap, false, (err) => {
+    imap.openBox(pastaRow.nome_imap, false, async (err) => {
       if (err) return reject(err);
 
-      const proximoUid = pastaRow.ultimo_uid + 1;
+      try {
+        const uidsServidor = await new Promise((res, rej) => {
+          imap.search([['UID', '1:*']], (err, uids) => (err ? rej(err) : res(uids || [])));
+        });
 
-      imap.search([['UID', `${proximoUid}:*`]], (err, uids) => {
-        if (err) return reject(err);
+        const { rows: cacheRows } = await db.query(
+          'SELECT uid, lida FROM email_mensagens WHERE pasta_id = $1',
+          [pastaRow.id]
+        );
+        const cacheMap = new Map(cacheRows.map((r) => [Number(r.uid), r.lida]));
+        const uidsServidorSet = new Set(uidsServidor);
 
-        const uidsNovos = (uids || []).filter((uid) => uid >= proximoUid);
-        if (!uidsNovos.length) {
-          return resolve({ novas: 0, inseridas: [] });
+        const uidsRemovidos = cacheRows
+          .map((r) => Number(r.uid))
+          .filter((uid) => !uidsServidorSet.has(uid));
+        if (uidsRemovidos.length) {
+          await db.query(
+            'DELETE FROM email_mensagens WHERE pasta_id = $1 AND uid = ANY($2::bigint[])',
+            [pastaRow.id, uidsRemovidos]
+          );
         }
 
-        const pendentes = [];
+        const uidsNovos = uidsServidor.filter((uid) => !cacheMap.has(uid));
+        const uidsExistentes = uidsServidor.filter((uid) => cacheMap.has(uid));
+
+        const flagsExistentes = await buscarFlags(imap, uidsExistentes);
+        for (const { uid, lida } of flagsExistentes) {
+          if (cacheMap.get(uid) !== lida) {
+            await db.query('UPDATE email_mensagens SET lida = $1 WHERE pasta_id = $2 AND uid = $3', [lida, pastaRow.id, uid]);
+          }
+        }
+
         let maiorUid = pastaRow.ultimo_uid;
         const inseridas = [];
 
-        const f = imap.fetch(uidsNovos, { bodies: '', struct: true });
+        if (uidsNovos.length) {
+          const pendentes = [];
+          const f = imap.fetch(uidsNovos, { bodies: '', struct: true });
 
-        f.on('message', (msg) => {
-          let uidAtual = null;
-          let lidaAtual = false;
-          const chunks = [];
+          f.on('message', (msg) => {
+            let uidAtual = null;
+            let lidaAtual = false;
+            const chunks = [];
 
-          msg.on('attributes', (attrs) => {
-            uidAtual = attrs.uid;
-            lidaAtual = (attrs.flags || []).includes('\\Seen');
+            msg.on('attributes', (attrs) => {
+              uidAtual = attrs.uid;
+              lidaAtual = (attrs.flags || []).includes('\\Seen');
+            });
+            msg.on('body', (stream) => {
+              stream.on('data', (chunk) => chunks.push(chunk));
+            });
+
+            msg.once('end', () => {
+              const p = (async () => {
+                try {
+                  const buffer = Buffer.concat(chunks);
+                  const parsed = await simpleParser(buffer);
+                  const inserida = await salvarMensagemCache(adminId, pastaRow.id, uidAtual, lidaAtual, parsed);
+                  if (uidAtual > maiorUid) maiorUid = uidAtual;
+                  if (inserida) inseridas.push(inserida);
+                } catch (err) {
+                  console.error('[EMAIL SYNC] erro ao processar mensagem:', err.message);
+                }
+              })();
+              pendentes.push(p);
+            });
           });
-          msg.on('body', (stream) => {
-            stream.on('data', (chunk) => chunks.push(chunk));
-          });
 
-          msg.once('end', () => {
-            const p = (async () => {
-              try {
-                const buffer = Buffer.concat(chunks);
-                const parsed = await simpleParser(buffer);
-                const inserida = await salvarMensagemCache(adminId, pastaRow.id, uidAtual, lidaAtual, parsed);
-                if (uidAtual > maiorUid) maiorUid = uidAtual;
-                if (inserida) inseridas.push(inserida);
-              } catch (err) {
-                console.error('[EMAIL SYNC] erro ao processar mensagem:', err.message);
-              }
-            })();
-            pendentes.push(p);
+          await new Promise((res, rej) => {
+            f.once('error', rej);
+            f.once('end', async () => {
+              await Promise.all(pendentes);
+              res();
+            });
           });
-        });
+        }
 
-        f.once('error', reject);
-        f.once('end', async () => {
-          await Promise.all(pendentes);
-          await db.query('UPDATE email_pastas SET ultimo_uid = $1 WHERE id = $2', [maiorUid, pastaRow.id]);
-          resolve({ novas: inseridas.length, inseridas });
-        });
-      });
+        await db.query('UPDATE email_pastas SET ultimo_uid = $1 WHERE id = $2', [maiorUid, pastaRow.id]);
+        resolve({ novas: inseridas.length, inseridas, removidas: uidsRemovidos.length });
+      } catch (err) {
+        reject(err);
+      }
     });
   });
 }

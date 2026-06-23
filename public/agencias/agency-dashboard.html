@@ -372,7 +372,7 @@
       <div class="form-group"><label>Validade (dias, máx 30) *</label><input type="number" name="dias" class="input" min="1" max="30" required></div>
       <div class="form-group"><label>Desconto % *</label><input type="number" name="desconto" class="input" min="0" max="99" required></div>
       <div class="modal-actions">
-        <button type="button" class="btn btn-ghost" onclick="$('formNovaOfertaCard').style.display='none'">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="$('formNovaOfertaCard').style.display='none'">Cancelar</button>
         <button type="submit" class="btn btn-primary">Criar Oferta</button>
       </div>
     </form>
@@ -391,7 +391,7 @@
   <div class="page-actions">
     <select id="assinaturasModeloSelect" class="input-select" onchange="carregarAssinaturaAgency()"></select>
   </div>
-  <div class="card" style="max-width:420px;">
+  <div class="card">
     <h3>Valor da Assinatura VIP</h3>
     <form id="formAssinatura" onsubmit="salvarAssinaturaAgency(event)">
       <div class="form-group"><label>Valor mensal (mín. R$ 20) *</label><input type="number" step="0.01" id="assinaturaValorMensal" name="valor_mensal" class="input" required></div>
@@ -465,7 +465,7 @@
   <div class="page-actions">
     <select id="linksModeloSelect" class="input-select" onchange="carregarLinksAgency()"></select>
   </div>
-  <div class="card" style="max-width:560px;">
+  <div class="card">
     <h3>Links da Modelo</h3>
     <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">Use estes links para divulgar o perfil. São gerados automaticamente.</p>
 
@@ -499,7 +499,7 @@
     <button class="tab" data-tab="capa-tab">Capa</button>
   </div>
   <div class="tab-content active" id="tab-avatar-tab">
-    <div class="card" style="max-width:420px;">
+    <div class="card">
       <h3>Avatar</h3>
       <img id="previewAvatarAgency" style="width:160px;height:160px;border-radius:50%;object-fit:cover;display:block;margin-bottom:12px;">
       <form id="formAvatarAgency" onsubmit="salvarAvatarAgency(event)">
@@ -509,7 +509,7 @@
     </div>
   </div>
   <div class="tab-content" id="tab-capa-tab">
-    <div class="card" style="max-width:520px;">
+    <div class="card">
       <h3>Capa</h3>
       <img id="previewCapaAgency" style="width:100%;max-height:200px;object-fit:cover;display:block;margin-bottom:12px;border-radius:8px;">
       <form id="formCapaAgency" onsubmit="salvarCapaAgency(event)">
@@ -525,7 +525,7 @@
   <div class="page-actions">
     <select id="perfilModeloSelect" class="input-select" onchange="carregarPerfilAgency()"></select>
   </div>
-  <div class="card" style="max-width:520px;">
+  <div class="card">
     <h3>Bio e Perfil</h3>
     <form id="formPerfilAgency" onsubmit="salvarPerfilAgency(event)">
       <div class="form-group"><label>Nome de Exibição *</label><input type="text" name="nome_exibicao" class="input" required></div>
