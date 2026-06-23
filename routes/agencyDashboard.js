@@ -2018,7 +2018,7 @@ const result = await db.query(
   `UPDATE modelos_dados
    SET instagram = $1,
        tiktok = $2,
-       updated_at = NOW()
+       atualizado_em = NOW()
    WHERE modelo_id = $3`,
   [
     instagram?.trim() || null,
