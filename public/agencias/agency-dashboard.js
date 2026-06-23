@@ -1246,8 +1246,11 @@ function htmlThumbMidia(url, thumb, isVideo) {
 }
 
 function abrirLightboxMidia(url, tipo) {
+  const isStreamPlayer = /iframe\.videodelivery\.net|cloudflarestream\.com/.test(url);
   $('lightboxMidiaCorpo').innerHTML = tipo === 'video'
-    ? `<video src="${url}" controls autoplay></video>`
+    ? (isStreamPlayer
+        ? `<iframe src="${url}" style="width:100%;height:100%;border:0;" allow="autoplay; fullscreen" allowfullscreen></iframe>`
+        : `<video src="${url}" controls autoplay></video>`)
     : `<img src="${url}">`;
   openModal('modalLightboxMidia');
 }

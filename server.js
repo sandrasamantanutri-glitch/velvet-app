@@ -5234,6 +5234,207 @@ app.get("/api/modelos", auth, async (req, res) => {
 });
 
 // ===========================
+// FEED DE NOVIDADES (UPDATES)
+// ===========================
+
+const MODELO_APROVADO_JOIN = `
+  JOIN LATERAL (
+    SELECT status FROM modelos_verificacao
+    WHERE modelo_id = m.id
+    ORDER BY verificado_em DESC
+    LIMIT 1
+  ) ver ON true
+`;
+
+async function buscarEventosUpdates(clienteId) {
+  const [feedRes, chatRes, premiumRes, ofertaRes] = await Promise.all([
+    // Novo conteúdo no Feed VIP
+    db.query(`
+      SELECT
+        'feed' AS tipo,
+        m.id AS modelo_id,
+        m.nome_exibicao,
+        m.avatar,
+        (vs.id IS NOT NULL) AS is_vip,
+        COALESCE(of.valor_promocional, NULLIF(mp.valor_mensal,0), NULLIF(md.vip_preco,0), 20.00) AS valor_assinatura,
+        sub.qtd,
+        sub.thumbs,
+        sub.evento_em
+      FROM (
+        SELECT modelo_id, COUNT(*) AS qtd, MAX(criado_em) AS evento_em,
+               array_agg(COALESCE(thumbnail_url, url) ORDER BY criado_em DESC) AS thumbs
+        FROM conteudos
+        WHERE tipo_conteudo = 'feed' AND ativo = true
+          AND criado_em > NOW() - INTERVAL '14 days'
+        GROUP BY modelo_id, date_trunc('hour', criado_em)
+      ) sub
+      JOIN modelos m ON m.id = sub.modelo_id
+      ${MODELO_APROVADO_JOIN}
+      LEFT JOIN vip_subscriptions vs ON vs.modelo_id = m.id AND vs.cliente_id = $1 AND vs.ativo = true AND vs.expiration_at > NOW()
+      LEFT JOIN modelos_planos mp ON mp.modelo_id = m.id
+      LEFT JOIN modelos_dados md ON md.modelo_id = m.id AND md.ativo = true
+      LEFT JOIN LATERAL (
+        SELECT valor_promocional FROM ofertas o2
+        WHERE o2.modelo_id = m.id AND o2.ativa = true AND o2.data_fim > NOW()
+        LIMIT 1
+      ) of ON true
+      WHERE ver.status = 'aprovado' AND m.feed = true AND m.ativo = true
+      ORDER BY sub.evento_em DESC
+      LIMIT 40
+    `, [clienteId]),
+
+    // Nova mídia disponível para desbloqueio no chat (conteúdos "à venda")
+    db.query(`
+      SELECT
+        'chat' AS tipo,
+        m.id AS modelo_id,
+        m.nome_exibicao,
+        m.avatar,
+        (vs.id IS NOT NULL) AS is_vip,
+        sub.qtd,
+        sub.thumbs,
+        sub.evento_em
+      FROM (
+        SELECT modelo_id, COUNT(*) AS qtd, MAX(criado_em) AS evento_em,
+               array_agg(COALESCE(thumbnail_url, url) ORDER BY criado_em DESC) AS thumbs
+        FROM conteudos
+        WHERE tipo_conteudo = 'venda' AND ativo = true
+          AND criado_em > NOW() - INTERVAL '14 days'
+        GROUP BY modelo_id, date_trunc('hour', criado_em)
+      ) sub
+      JOIN modelos m ON m.id = sub.modelo_id
+      ${MODELO_APROVADO_JOIN}
+      LEFT JOIN vip_subscriptions vs ON vs.modelo_id = m.id AND vs.cliente_id = $1 AND vs.ativo = true AND vs.expiration_at > NOW()
+      WHERE ver.status = 'aprovado' AND m.feed = true AND m.ativo = true
+      ORDER BY sub.evento_em DESC
+      LIMIT 40
+    `, [clienteId]),
+
+    // Novo conteúdo Premium (venda avulsa)
+    db.query(`
+      SELECT
+        'premium' AS tipo,
+        m.id AS modelo_id,
+        m.nome_exibicao,
+        m.avatar,
+        p.id AS premium_post_id,
+        p.descricao,
+        p.preco,
+        (SELECT COUNT(*) FROM premium_post_midias pm WHERE pm.premium_post_id = p.id AND pm.ativo = true) AS qtd,
+        (SELECT array_agg(pm.thumb_url ORDER BY pm.ordem) FROM premium_post_midias pm WHERE pm.premium_post_id = p.id AND pm.ativo = true) AS thumbs,
+        p.created_at AS evento_em
+      FROM premium_posts p
+      JOIN modelos m ON m.id = p.modelo_id
+      ${MODELO_APROVADO_JOIN}
+      WHERE ver.status = 'aprovado' AND m.feed = true AND m.ativo = true
+        AND p.ativo = true AND p.created_at > NOW() - INTERVAL '14 days'
+      ORDER BY p.created_at DESC
+      LIMIT 40
+    `),
+
+    // Nova oferta/desconto na assinatura VIP
+    db.query(`
+      SELECT
+        'oferta' AS tipo,
+        m.id AS modelo_id,
+        m.nome_exibicao,
+        m.avatar,
+        (vs.id IS NOT NULL) AS is_vip,
+        o.desconto_percentual,
+        o.valor_base,
+        o.valor_promocional,
+        o.mensagem,
+        o.data_fim,
+        o.created_at AS evento_em
+      FROM ofertas o
+      JOIN modelos m ON m.id = o.modelo_id
+      ${MODELO_APROVADO_JOIN}
+      LEFT JOIN vip_subscriptions vs ON vs.modelo_id = m.id AND vs.cliente_id = $1 AND vs.ativo = true AND vs.expiration_at > NOW()
+      WHERE ver.status = 'aprovado' AND m.feed = true AND m.ativo = true
+        AND o.ativa = true AND o.created_at > NOW() - INTERVAL '14 days'
+      ORDER BY o.created_at DESC
+      LIMIT 20
+    `, [clienteId])
+  ]);
+
+  const eventos = [
+    ...feedRes.rows,
+    ...chatRes.rows,
+    ...premiumRes.rows,
+    ...ofertaRes.rows
+  ].sort((a, b) => new Date(b.evento_em) - new Date(a.evento_em));
+
+  return eventos;
+}
+
+app.get("/api/updates", auth, async (req, res) => {
+  try {
+    if (req.user.role !== "cliente") {
+      return res.json({ eventos: [], naoVistos: 0 });
+    }
+
+    const clienteRes = await db.query(
+      "SELECT id, updates_visto_em FROM clientes WHERE user_id = $1",
+      [req.user.id]
+    );
+    if (!clienteRes.rowCount) return res.json({ eventos: [], naoVistos: 0 });
+
+    const { id: clienteId, updates_visto_em: ultimaVisita } = clienteRes.rows[0];
+
+    const eventos = await buscarEventosUpdates(clienteId);
+
+    const naoVistos = ultimaVisita
+      ? eventos.filter(e => new Date(e.evento_em) > new Date(ultimaVisita)).length
+      : eventos.length;
+
+    res.json({ eventos: eventos.slice(0, 60), naoVistos, ultimaVisita });
+  } catch (err) {
+    console.error("Erro ao buscar updates:", err);
+    res.status(500).json({ eventos: [], naoVistos: 0 });
+  }
+});
+
+app.get("/api/updates/contador", auth, async (req, res) => {
+  try {
+    if (req.user.role !== "cliente") return res.json({ naoVistos: 0 });
+
+    const clienteRes = await db.query(
+      "SELECT id, updates_visto_em FROM clientes WHERE user_id = $1",
+      [req.user.id]
+    );
+    if (!clienteRes.rowCount) return res.json({ naoVistos: 0 });
+
+    const { id: clienteId, updates_visto_em: ultimaVisita } = clienteRes.rows[0];
+    const eventos = await buscarEventosUpdates(clienteId);
+
+    const naoVistos = ultimaVisita
+      ? eventos.filter(e => new Date(e.evento_em) > new Date(ultimaVisita)).length
+      : eventos.length;
+
+    res.json({ naoVistos });
+  } catch (err) {
+    console.error("Erro ao buscar contador de updates:", err);
+    res.status(500).json({ naoVistos: 0 });
+  }
+});
+
+app.post("/api/updates/marcar-visto", auth, async (req, res) => {
+  try {
+    if (req.user.role !== "cliente") return res.json({ sucesso: true });
+
+    await db.query(
+      "UPDATE clientes SET updates_visto_em = NOW() WHERE user_id = $1",
+      [req.user.id]
+    );
+
+    res.json({ sucesso: true });
+  } catch (err) {
+    console.error("Erro ao marcar updates como visto:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// ===========================
 // PERFIL PUBLICO MODELO
 // ===========================
 
