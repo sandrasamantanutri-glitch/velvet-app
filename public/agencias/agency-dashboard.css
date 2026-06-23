@@ -1293,12 +1293,9 @@ select.input:focus {
 }
 
 .form-group input[type="file"] {
-  padding: 4px 10px;
-  font-size: 12px;
-  border-radius: 6px;
-  background: #7b2cff;
-  color: #fff;
-  text-decoration: none;
+  display: block;
+  font-size: 13px;
+  padding: 6px 0;
 }
 
 .form-group label[style*="display:flex"] {

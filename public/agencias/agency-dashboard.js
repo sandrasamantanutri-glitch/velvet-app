@@ -567,7 +567,7 @@ pageLoaders.fechamento = async function () {
         <td>${money(r.total_bruto_midia)}</td>
         <td>${money(r.total_bruto_assinatura)}</td>
         <td>${fmtDateTime(r.created_at)}</td>
-        <td><button class="btn-small btn-ghost" onclick="abrirDetalheFechamentoAgency(${r.id})">Ver detalhe</button></td>
+        <td><button class="btn btn-primary" onclick="abrirDetalheFechamentoAgency(${r.id})">Ver detalhe</button></td>
       </tr>
     `).join('') || emptyRow(9);
   } catch (err) {
@@ -1138,8 +1138,8 @@ async function carregarOfertasAgency() {
         <td>${fmtDateTime(o.data_fim)}</td>
         <td>${o.ativa ? '<span class="badge badge-success">Ativa</span>' : '<span class="badge badge-muted">Encerrada</span>'}</td>
         <td>
-          ${o.ativa ? `<button class="btn-small btn-ghost" onclick="encerrarOfertaAgency(${o.id})">Encerrar</button>` : ''}
-          <button class="btn-small btn-ghost" onclick="excluirOfertaAgency(${o.id})">Excluir</button>
+          ${o.ativa ? `<button class="btn btn-primary" onclick="encerrarOfertaAgency(${o.id})">Encerrar</button>` : ''}
+          <button class="btn btn-primary" onclick="excluirOfertaAgency(${o.id})">Excluir</button>
         </td>
       </tr>
     `).join('') || emptyRow(8);

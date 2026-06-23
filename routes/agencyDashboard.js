@@ -1979,35 +1979,66 @@ router.get("/perfil", authAgencia, async (req, res) => {
 });
 
 router.put("/perfil", authAgencia, async (req, res) => {
-  try {
-    const agenciaId = req.agencia.id;
-    const modeloId = Number(req.body.modelo_id);
-    if (!modeloId || !(await modeloPertenceAgencia(agenciaId, modeloId))) {
-      return res.status(404).json({ erro: "Modelo não encontrada nesta agência" });
-    }
+try {
+const agenciaId = req.agencia.id;
+const modeloId = Number(req.body.modelo_id);
 
-    const { nome_exibicao, instagram, tiktok, local, bio } = req.body;
-    if (!nome_exibicao || !nome_exibicao.trim()) {
-      return res.status(400).json({ erro: "nome_exibicao é obrigatório" });
-    }
+if (!modeloId || !(await modeloPertenceAgencia(agenciaId, modeloId))) {
+  return res.status(404).json({ erro: "Modelo não encontrada nesta agência" });
+}
 
-    await db.query(
-      "UPDATE modelos SET nome_exibicao = $1, local = $2, bio = $3 WHERE id = $4",
-      [nome_exibicao.trim(), local?.trim() || null, bio?.trim() || null, modeloId]
-    );
+const {
+  nome_exibicao,
+  instagram,
+  tiktok,
+  local,
+  bio
+} = req.body;
 
-    await db.query(`
-      INSERT INTO modelos_dados (modelo_id, instagram, tiktok)
-      VALUES ($1, $2, $3)
-      ON CONFLICT (modelo_id)
-      DO UPDATE SET instagram = EXCLUDED.instagram, tiktok = EXCLUDED.tiktok
-    `, [modeloId, instagram?.trim() || null, tiktok?.trim() || null]);
+if (!nome_exibicao || !nome_exibicao.trim()) {
+  return res.status(400).json({ erro: "nome_exibicao é obrigatório" });
+}
 
-    res.json({ sucesso: true });
-  } catch (err) {
-    console.error("Erro salvar perfil (agência):", err);
-    res.status(500).json({ erro: "Erro interno" });
-  }
+
+await db.query(
+  `UPDATE modelos
+   SET nome_exibicao = $1,
+       local = $2,
+       bio = $3
+   WHERE id = $4`,
+  [
+    nome_exibicao.trim(),
+    local?.trim() || null,
+    bio?.trim() || null,
+    modeloId
+  ]
+);
+
+const result = await db.query(
+  `UPDATE modelos_dados
+   SET instagram = $1,
+       tiktok = $2,
+       updated_at = NOW()
+   WHERE modelo_id = $3`,
+  [
+    instagram?.trim() || null,
+    tiktok?.trim() || null,
+    modeloId
+  ]
+);
+
+if (result.rowCount === 0) {
+  return res.status(404).json({
+    erro: "Registro não encontrado em modelos_dados"
+  });
+}
+
+res.json({ sucesso: true });
+
+} catch (err) {
+console.error("Erro salvar perfil (agência):", err);
+res.status(500).json({ erro: "Erro interno" });
+}
 });
 
 // Gera o fechamento de ano/mês para todas as agências (usado pelo cron do dia 1 e
