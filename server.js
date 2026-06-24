@@ -9896,7 +9896,7 @@ if (Number.isNaN(dataAceite.getTime())) {
 
     if (pixConfigVipRes.rowCount > 0 && pixConfigVipRes.rows[0].pix_vip === false) {
       await client.query("ROLLBACK");
-      return res.status(403).json({ error: "Pagamento via PIX não disponível para esta modelo." });
+      return res.status(403).json({ error: "Pagamento via PIX não disponível. Solicite autorização ao suporte." });
     }
 
     /* =========================
