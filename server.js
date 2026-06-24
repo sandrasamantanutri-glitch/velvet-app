@@ -358,41 +358,463 @@ app.post("/api/webhook/zapsign", express.json(), async (req, res) => {
 });
 
 
-// ── WEBHOOK SAFE2PAY ────────────────────────────────────────────────────────
-app.post("/api/webhook/safe2pay", express.json(), async (req, res) => {
-  console.log("======================================");
-  console.log("🔥 WEBHOOK SAFE2PAY RECEBIDO");
+// ── WEBHOOK SAFE2PAY (DESATIVADO — migrado para iPag, ver /api/webhook/ipag) ─
+// app.post("/api/webhook/safe2pay", express.json(), async (req, res) => {
+//   console.log("======================================");
+//   console.log("🔥 WEBHOOK SAFE2PAY RECEBIDO");
+//
+//   if (process.env.SAFE2PAY_WEBHOOK_TOKEN) {
+//     const tokenRecebido =
+//       req.headers["x-api-key"] ||
+//       req.headers["authorization"] || "";
+//     const tokenLimpo = tokenRecebido.replace(/^Bearer\s+/i, "");
+//     if (tokenLimpo !== process.env.SAFE2PAY_WEBHOOK_TOKEN) {
+//       console.warn("🚨 Webhook Safe2Pay: token inválido");
+//       return res.status(401).send("unauthorized");
+//     }
+//   }
+//
+//   const body        = req.body;
+//   const idTx        = String(body?.IdTransaction || "");
+//   const reference   = String(body?.Reference || "");
+//   const statusCode  = String(body?.TransactionStatus?.Code || "");
+//   const statusName  = String(body?.TransactionStatus?.Name || "").toUpperCase();
+//   const valorPago   = Number(body?.Amount || 0);
+//
+//   console.log("IdTransaction:", idTx, "| Reference:", reference, "| Status:", statusCode, statusName);
+//
+//   if (!idTx) return res.status(200).send("ok");
+//
+//   const PAID_CODES   = ["3"];
+//   const FAILED_CODES = ["6", "7", "8"];
+//
+//   const isPaidEvent   = PAID_CODES.includes(statusCode) || statusName.includes("AUTORIZ");
+//   const isFailedEvent = FAILED_CODES.includes(statusCode) || statusName.includes("CANCEL") || statusName.includes("ESTORN");
+//
+//   if (!isPaidEvent && !isFailedEvent) {
+//     console.log("Safe2Pay webhook: status ignorado:", statusCode, statusName);
+//     return res.status(200).send("ok");
+//   }
+//
+//   const novoStatus = isPaidEvent ? "pago" : "falhou";
+//
+//   const calcularValores =
+//     req.app.get("calcularValores") ||
+//     (async ({ valor_bruto }) => ({
+//       valor_modelo: valor_bruto * 0.7,
+//       agency_fee:   valor_bruto * 0.1,
+//       velvet_fee:   valor_bruto * 0.05
+//     }));
+//
+//   const client = await db.connect();
+//   let dadosParaEmitir = null;
+//
+//   try {
+//     await client.query("BEGIN");
+//
+//     /* ──────────────────────────────────────────────────
+//        1. PREMIUM_UNLOCKS
+//     ────────────────────────────────────────────────── */
+//     const premiumRes = await client.query(
+//       `SELECT * FROM premium_unlocks
+//        WHERE pagarme_order_id = $1::text
+//        LIMIT 1 FOR UPDATE`,
+//       [idTx]
+//     );
+//
+//     if (premiumRes.rowCount > 0) {
+//       const row = premiumRes.rows[0];
+//
+//       if (row.status === "pago") {
+//         await client.query("ROLLBACK");
+//         return res.status(200).send("ok");
+//       }
+//
+//       await client.query(
+//         `UPDATE premium_unlocks
+//          SET status = $1::text, pago_em = CASE WHEN $1::text = 'pago' THEN NOW() ELSE pago_em END,
+//              updated_at = NOW()
+//          WHERE id = $2`,
+//         [novoStatus, row.id]
+//       );
+//
+//       await client.query(
+//         `INSERT INTO safe2pay_events (id, type, cliente_id, modelo_id, created_at)
+//          VALUES ($1, $2, $3, $4, NOW())
+//          ON CONFLICT (id) DO UPDATE SET type = excluded.type, cliente_id = excluded.cliente_id, modelo_id = excluded.modelo_id`,
+//         [idTx, novoStatus, row.cliente_id || null, row.modelo_id || null]
+//       );
+//
+//       if (isPaidEvent) {
+//         const cliente_id      = Number(row.cliente_id);
+//         const modelo_id       = Number(row.modelo_id);
+//         const premium_post_id = Number(row.premium_post_id);
+//         const valorBase       = Number(row.valor_base || valorPago);
+//         const taxaGateway     = Number((valorBase * 0.15).toFixed(2));
+//
+//         const valores = await calcularValores({
+//           modelo_id, valor_bruto: valorBase, taxa_gateway: taxaGateway
+//         });
+//
+//         await client.query(
+//           `INSERT INTO transacoes_agency
+//              (modelo_id, cliente_id, tipo, valor_bruto,
+//               valor_modelo, agency_fee, velvet_fee, taxa_gateway, status, created_at)
+//            VALUES ($1,$2,'midia',$3,$4,$5,$6,$7,'pago',NOW())`,
+//           [modelo_id, cliente_id, valorBase,
+//            Number(valores.valor_modelo || 0), Number(valores.agency_fee || 0),
+//            Number(valores.velvet_fee || 0), taxaGateway]
+//         );
+//
+//         dadosParaEmitir = { tipo: "premium", cliente_id, modelo_id, premium_post_id, payment_id: idTx };
+//       }
+//
+//       await client.query("COMMIT");
+//
+//       if (dadosParaEmitir) {
+//         try {
+//           const io = req.app.get("io");
+//           if (io) {
+//             io.to(`user_${dadosParaEmitir.cliente_id}`).emit("pagamento_confirmado", {
+//               tipo: "premium",
+//               premium_post_id: dadosParaEmitir.premium_post_id,
+//               modelo_id:       dadosParaEmitir.modelo_id,
+//               payment_id:      dadosParaEmitir.payment_id
+//             });
+//           }
+//         } catch (e) { console.error("Erro socket premium webhook Safe2Pay:", e); }
+//       }
+//
+//       console.log("✅ WEBHOOK SAFE2PAY PREMIUM FINALIZADO");
+//       return res.status(200).send("ok");
+//     }
+//
+//     /* ──────────────────────────────────────────────────
+//        2. PAGAMENTOS_PIX — VIP ou Mídia
+//     ────────────────────────────────────────────────── */
+//     const pixRes = await client.query(
+//       `SELECT * FROM pagamentos_pix
+//        WHERE pagarme_order_id = $1
+//        LIMIT 1 FOR UPDATE`,
+//       [idTx]
+//     );
+//
+//     if (pixRes.rowCount === 0) {
+//       await client.query("ROLLBACK");
+//       console.warn("Safe2Pay webhook: pagamento não encontrado:", idTx);
+//       return res.status(200).send("ok");
+//     }
+//
+//     const row = pixRes.rows[0];
+//
+//     if (row.status === "pago") {
+//       await client.query("ROLLBACK");
+//       return res.status(200).send("ok");
+//     }
+//
+//     await client.query(
+//       `UPDATE pagamentos_pix SET status = $1 WHERE pagarme_order_id = $2`,
+//       [novoStatus, idTx]
+//     );
+//
+//     await client.query(
+//       `INSERT INTO safe2pay_events (id, type, cliente_id, modelo_id, created_at)
+//        VALUES ($1, $2, $3, $4, NOW())
+//        ON CONFLICT (id) DO UPDATE SET type = excluded.type, cliente_id = excluded.cliente_id, modelo_id = excluded.modelo_id`,
+//       [idTx, novoStatus, row.cliente_id || null, row.modelo_id || null]
+//     );
+//
+//     if (isPaidEvent) {
+//       const cliente_id      = Number(row.cliente_id);
+//       const modelo_id       = Number(row.modelo_id);
+//       const message_id      = row.message_id ? Number(row.message_id) : null;
+//       const isVip           = !message_id;
+//       const valorBrutoTotal = Number(row.valor || valorPago);
+//       const valorBase       = Number((valorBrutoTotal / 1.15).toFixed(2));
+//       const taxaGateway     = Number((valorBrutoTotal - valorBase).toFixed(2));
+//
+//       const valores = await calcularValores({
+//         modelo_id, valor_bruto: valorBase, taxa_gateway: taxaGateway
+//       });
+//
+//       if (isVip) {
+//         const vipExistente = await client.query(
+//           `SELECT id, ativo, expiration_at
+//            FROM vip_subscriptions
+//            WHERE cliente_id = $1 AND modelo_id = $2
+//            LIMIT 1 FOR UPDATE`,
+//           [cliente_id, modelo_id]
+//         );
+//
+//         let novaExpiracao;
+//         if (
+//           vipExistente.rowCount > 0 &&
+//           vipExistente.rows[0].expiration_at &&
+//           new Date(vipExistente.rows[0].expiration_at) > new Date()
+//         ) {
+//           novaExpiracao = new Date(vipExistente.rows[0].expiration_at);
+//           novaExpiracao.setMonth(novaExpiracao.getMonth() + 1);
+//         } else {
+//           novaExpiracao = new Date();
+//           novaExpiracao.setMonth(novaExpiracao.getMonth() + 1);
+//         }
+//
+//         const primeiraAssinatura = vipExistente.rowCount === 0;
+//
+//         if (vipExistente.rowCount > 0) {
+//           await client.query(
+//             `UPDATE vip_subscriptions
+//              SET ativo = true, updated_at = NOW(), expiration_at = $3,
+//                  valor_assinatura = $4, taxa_transacao = $5, taxa_plataforma = 0,
+//                  valor_total = $6, recorrente = false,
+//                  gateway_subscription_id = $7,
+//                  aviso_7_dias_enviado = false, aviso_24h_enviado = false
+//              WHERE cliente_id = $1 AND modelo_id = $2`,
+//             [cliente_id, modelo_id, novaExpiracao, valorBase, taxaGateway, valorBrutoTotal, idTx]
+//           );
+//         } else {
+//           await client.query(
+//             `INSERT INTO vip_subscriptions
+//                (cliente_id, modelo_id, ativo, created_at, updated_at,
+//                 expiration_at, valor_assinatura, taxa_transacao, taxa_plataforma,
+//                 valor_total, recorrente, gateway_subscription_id)
+//              VALUES ($1,$2,true,NOW(),NOW(),$3,$4,$5,0,$6,false,$7)`,
+//             [cliente_id, modelo_id, novaExpiracao, valorBase, taxaGateway, valorBrutoTotal, idTx]
+//           );
+//         }
+//
+//         await client.query(
+//           `INSERT INTO transacoes_agency
+//              (modelo_id, cliente_id, tipo, valor_bruto,
+//               valor_modelo, agency_fee, velvet_fee, taxa_gateway, status, created_at)
+//            VALUES ($1,$2,'assinatura',$3,$4,$5,$6,$7,'pago',NOW())`,
+//           [modelo_id, cliente_id, valorBase,
+//            Number(valores.valor_modelo || 0), Number(valores.agency_fee || 0),
+//            Number(valores.velvet_fee || 0), taxaGateway]
+//         );
+//
+//         if (primeiraAssinatura) {
+//           await client.query(
+//             `INSERT INTO messages
+//                (cliente_id, modelo_id, text, sender, tipo,
+//                 created_at, lida, visto, deletada)
+//              VALUES ($1,$2,$3,'modelo','texto',NOW(),false,false,false)`,
+//             [cliente_id, modelo_id, "Oii!! Bem vindo(a), qual seu nome?🥰🔥"]
+//           );
+//         }
+//
+//         // Incrementa uso da oferta ativa (desativa se atingiu limite)
+//         await client.query(`
+//           UPDATE ofertas
+//           SET assinaturas_usadas = assinaturas_usadas + 1,
+//               ativa = CASE WHEN assinaturas_usadas + 1 >= limite_assinaturas THEN false ELSE ativa END
+//           WHERE modelo_id = $1 AND ativa = true AND (data_fim IS NULL OR data_fim >= NOW())
+//         `, [modelo_id]);
+//
+//         dadosParaEmitir = { tipo: "vip", cliente_id, modelo_id, primeiraAssinatura };
+//
+//       } else {
+//         await client.query(
+//           `INSERT INTO conteudo_pacotes
+//              (message_id, cliente_id, modelo_id, preco, valor_base,
+//               valor_total, status, metodo_pagamento, pago_em, currency,
+//               valor_cobrado, taxa_cambio)
+//            VALUES ($1,$2,$3,$4,$4,$5,'pago','pix',NOW(),'brl',$5,NULL)
+//            ON CONFLICT (message_id, cliente_id) DO UPDATE
+//              SET status='pago', metodo_pagamento='pix',
+//                  pago_em=NOW(), valor_total=$5`,
+//           [message_id, cliente_id, modelo_id, valorBase, valorBrutoTotal]
+//         );
+//
+//         const conteudo_ids =
+//           await marcarConteudoComoLiberadoPorPagamento(client, {
+//             message_id, cliente_id, modelo_id
+//           });
+//
+//         await client.query(
+//           `INSERT INTO transacoes_agency
+//              (modelo_id, cliente_id, tipo, valor_bruto,
+//               valor_modelo, agency_fee, velvet_fee, taxa_gateway, status, created_at)
+//            VALUES ($1,$2,'midia',$3,$4,$5,$6,$7,'pago',NOW())`,
+//           [modelo_id, cliente_id, valorBase,
+//            Number(valores.valor_modelo || 0), Number(valores.agency_fee || 0),
+//            Number(valores.velvet_fee || 0), taxaGateway]
+//         );
+//
+//         dadosParaEmitir = { tipo: "conteudo", cliente_id, modelo_id, message_id, conteudo_ids };
+//       }
+//     }
+//
+//     await client.query("COMMIT");
+//
+//     if (dadosParaEmitir) {
+//       if (dadosParaEmitir.tipo === "vip") {
+//         registrarLog(db, {
+//           tipo: 'assinatura_vip',
+//           cliente_id: dadosParaEmitir.cliente_id,
+//           modelo_id:  dadosParaEmitir.modelo_id,
+//           descricao:  `Assinatura VIP confirmada via PIX (Safe2Pay) — modelo_id ${dadosParaEmitir.modelo_id}`
+//         });
+//       } else if (dadosParaEmitir.tipo === "conteudo") {
+//         registrarLog(db, {
+//           tipo: 'compra_midia_chat',
+//           cliente_id: dadosParaEmitir.cliente_id,
+//           modelo_id:  dadosParaEmitir.modelo_id,
+//           descricao:  `Mídia do chat desbloqueada via PIX (Safe2Pay) — message_id ${dadosParaEmitir.message_id}`
+//         });
+//       } else if (dadosParaEmitir.tipo === "premium") {
+//         registrarLog(db, {
+//           tipo: 'compra_premium',
+//           cliente_id: dadosParaEmitir.cliente_id,
+//           modelo_id:  dadosParaEmitir.modelo_id,
+//           descricao:  `Premium desbloqueado via PIX (Safe2Pay) — premium_post_id ${dadosParaEmitir.premium_post_id}`
+//         });
+//       }
+//     }
+//
+//     if (dadosParaEmitir) {
+//       try {
+//         const io = req.app.get("io");
+//         if (io) {
+//           if (dadosParaEmitir.tipo === "conteudo") {
+//             const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
+//             io.to(sala).emit("conteudoLiberado", {
+//               message_id:   Number(dadosParaEmitir.message_id),
+//               conteudo_ids: dadosParaEmitir.conteudo_ids || []
+//             });
+//           }
+//           if (dadosParaEmitir.tipo === "vip") {
+//             const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
+//             io.to(sala).emit("vipAtivado", {
+//               cliente_id: Number(dadosParaEmitir.cliente_id),
+//               modelo_id:  Number(dadosParaEmitir.modelo_id)
+//             });
+//           }
+//         }
+//       } catch (e) { console.error("Erro socket webhook Safe2Pay:", e); }
+//     }
+//
+//     // ── EMAIL FATURA SAFE2PAY (fire-and-forget) ──────────────────
+//     if (dadosParaEmitir) {
+//       (async () => {
+//         try {
+//           const ci = await buscarDadosEmailPagamento(db, {
+//             cliente_id: dadosParaEmitir.cliente_id,
+//             modelo_id:  dadosParaEmitir.modelo_id
+//           });
+//           if (!ci?.email) return;
+//
+//           const pagPix = await db.query(
+//             `SELECT aceite_ip, aceite_timestamp, versao_termos, cpf, telefone, valor
+//              FROM pagamentos_pix WHERE pagarme_order_id = $1 LIMIT 1`,
+//             [idTx]
+//           );
+//           const pp = pagPix.rows[0] || {};
+//
+//           const base = {
+//             nome:             ci.nome,
+//             email:            ci.email,
+//             modelo_nome:      ci.modelo_nome,
+//             valor:            Number(pp.valor || valorPago),
+//             metodo:           'pix',
+//             card_info:        null,
+//             cpf:              pp.cpf,
+//             telefone:         pp.telefone || ci.tel_cad,
+//             ip:               pp.aceite_ip,
+//             aceite_timestamp: pp.aceite_timestamp,
+//             versao_termos:    pp.versao_termos,
+//             payment_ref:      idTx
+//           };
+//
+//           if (dadosParaEmitir.tipo === 'vip') {
+//             const vipR = await db.query(
+//               `SELECT expiration_at FROM vip_subscriptions WHERE cliente_id = $1 AND modelo_id = $2 LIMIT 1`,
+//               [dadosParaEmitir.cliente_id, dadosParaEmitir.modelo_id]
+//             );
+//             await enviarFaturaVIP({
+//               ...base,
+//               endereco:          ci.endereco_fmt,
+//               primeiraAssinatura: dadosParaEmitir.primeiraAssinatura,
+//               novaExpiracao:     vipR.rows[0]?.expiration_at
+//             });
+//             const audId = await obterOuCriarAudienceVIP(db, dadosParaEmitir.modelo_id, ci.modelo_nome);
+//             await adicionarContatoAudienceVIP(audId, ci.email, ci.nome);
+//           } else if (dadosParaEmitir.tipo === 'conteudo') {
+//             await enviarFaturaConteudo(base);
+//           }
+//         } catch (emailErr) {
+//           console.error('Erro email fatura Safe2Pay:', emailErr.message);
+//         }
+//       })();
+//     }
+//     // ─────────────────────────────────────────────────────────────
+//
+//     console.log("✅ WEBHOOK SAFE2PAY FINALIZADO");
+//     return res.status(200).send("ok");
+//
+//   } catch (err) {
+//     try { await client.query("ROLLBACK"); } catch (_) {}
+//     console.error("🔥 ERRO WEBHOOK SAFE2PAY:", err);
+//     return res.status(500).send("erro");
+//   } finally {
+//     client.release();
+//   }
+// });
 
-  if (process.env.SAFE2PAY_WEBHOOK_TOKEN) {
-    const tokenRecebido =
-      req.headers["x-api-key"] ||
-      req.headers["authorization"] || "";
-    const tokenLimpo = tokenRecebido.replace(/^Bearer\s+/i, "");
-    if (tokenLimpo !== process.env.SAFE2PAY_WEBHOOK_TOKEN) {
-      console.warn("🚨 Webhook Safe2Pay: token inválido");
-      return res.status(401).send("unauthorized");
+// ── WEBHOOK IPAG ─────────────────────────────────────────────────────────────
+app.post("/api/webhook/ipag", express.raw({ type: "*/*" }), async (req, res) => {
+  console.log("======================================");
+  console.log("🔥 WEBHOOK IPAG RECEBIDO");
+
+  const rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.from(JSON.stringify(req.body || {}));
+
+  if (process.env.IPAG_API_KEY) {
+    const assinaturaRecebida = String(req.headers["x-ipag-signature"] || "");
+    const assinaturaCalculada = crypto
+      .createHmac("sha256", process.env.IPAG_API_KEY)
+      .update(rawBody)
+      .digest("hex");
+
+    let assinaturaValida = false;
+    try {
+      assinaturaValida =
+        assinaturaRecebida.length === assinaturaCalculada.length &&
+        crypto.timingSafeEqual(Buffer.from(assinaturaRecebida), Buffer.from(assinaturaCalculada));
+    } catch (_) {
+      assinaturaValida = false;
+    }
+
+    if (!assinaturaValida) {
+      console.warn("🚨 Webhook iPag: assinatura inválida");
+      return res.status(400).send("invalid signature");
     }
   }
 
-  const body        = req.body;
-  const idTx        = String(body?.IdTransaction || "");
-  const reference   = String(body?.Reference || "");
-  const statusCode  = String(body?.TransactionStatus?.Code || "");
-  const statusName  = String(body?.TransactionStatus?.Name || "").toUpperCase();
-  const valorPago   = Number(body?.Amount || 0);
+  let body;
+  try {
+    body = JSON.parse(rawBody.toString("utf8"));
+  } catch (e) {
+    console.error("🔥 ERRO WEBHOOK IPAG: body inválido", e);
+    return res.status(400).send("invalid body");
+  }
 
-  console.log("IdTransaction:", idTx, "| Reference:", reference, "| Status:", statusCode, statusName);
+  const idTx        = String(body?.id || "");
+  const statusCode  = String(body?.attributes?.status?.code || "");
+  const statusName  = String(body?.attributes?.status?.message || "").toUpperCase();
+  const valorPago   = Number(body?.attributes?.amount || 0);
+
+  console.log("Id:", idTx, "| Order:", body?.attributes?.order_id, "| Status:", statusCode, statusName);
 
   if (!idTx) return res.status(200).send("ok");
 
-  const PAID_CODES   = ["3"];
-  const FAILED_CODES = ["6", "7", "8"];
+  const PAID_CODES   = ["8"];        // CAPTURED
+  const FAILED_CODES = ["3", "7", "9"]; // CANCELED, DECLINED, CHARGEDBACK
 
-  const isPaidEvent   = PAID_CODES.includes(statusCode) || statusName.includes("AUTORIZ");
-  const isFailedEvent = FAILED_CODES.includes(statusCode) || statusName.includes("CANCEL") || statusName.includes("ESTORN");
+  const isPaidEvent   = PAID_CODES.includes(statusCode);
+  const isFailedEvent = FAILED_CODES.includes(statusCode);
 
   if (!isPaidEvent && !isFailedEvent) {
-    console.log("Safe2Pay webhook: status ignorado:", statusCode, statusName);
+    console.log("iPag webhook: status ignorado:", statusCode, statusName);
     return res.status(200).send("ok");
   }
 
@@ -482,10 +904,10 @@ app.post("/api/webhook/safe2pay", express.json(), async (req, res) => {
               payment_id:      dadosParaEmitir.payment_id
             });
           }
-        } catch (e) { console.error("Erro socket premium webhook Safe2Pay:", e); }
+        } catch (e) { console.error("Erro socket premium webhook iPag:", e); }
       }
 
-      console.log("✅ WEBHOOK SAFE2PAY PREMIUM FINALIZADO");
+      console.log("✅ WEBHOOK IPAG PREMIUM FINALIZADO");
       return res.status(200).send("ok");
     }
 
@@ -501,7 +923,7 @@ app.post("/api/webhook/safe2pay", express.json(), async (req, res) => {
 
     if (pixRes.rowCount === 0) {
       await client.query("ROLLBACK");
-      console.warn("Safe2Pay webhook: pagamento não encontrado:", idTx);
+      console.warn("iPag webhook: pagamento não encontrado:", idTx);
       return res.status(200).send("ok");
     }
 
@@ -653,21 +1075,21 @@ app.post("/api/webhook/safe2pay", express.json(), async (req, res) => {
           tipo: 'assinatura_vip',
           cliente_id: dadosParaEmitir.cliente_id,
           modelo_id:  dadosParaEmitir.modelo_id,
-          descricao:  `Assinatura VIP confirmada via PIX (Safe2Pay) — modelo_id ${dadosParaEmitir.modelo_id}`
+          descricao:  `Assinatura VIP confirmada via PIX (iPag) — modelo_id ${dadosParaEmitir.modelo_id}`
         });
       } else if (dadosParaEmitir.tipo === "conteudo") {
         registrarLog(db, {
           tipo: 'compra_midia_chat',
           cliente_id: dadosParaEmitir.cliente_id,
           modelo_id:  dadosParaEmitir.modelo_id,
-          descricao:  `Mídia do chat desbloqueada via PIX (Safe2Pay) — message_id ${dadosParaEmitir.message_id}`
+          descricao:  `Mídia do chat desbloqueada via PIX (iPag) — message_id ${dadosParaEmitir.message_id}`
         });
       } else if (dadosParaEmitir.tipo === "premium") {
         registrarLog(db, {
           tipo: 'compra_premium',
           cliente_id: dadosParaEmitir.cliente_id,
           modelo_id:  dadosParaEmitir.modelo_id,
-          descricao:  `Premium desbloqueado via PIX (Safe2Pay) — premium_post_id ${dadosParaEmitir.premium_post_id}`
+          descricao:  `Premium desbloqueado via PIX (iPag) — premium_post_id ${dadosParaEmitir.premium_post_id}`
         });
       }
     }
@@ -691,10 +1113,10 @@ app.post("/api/webhook/safe2pay", express.json(), async (req, res) => {
             });
           }
         }
-      } catch (e) { console.error("Erro socket webhook Safe2Pay:", e); }
+      } catch (e) { console.error("Erro socket webhook iPag:", e); }
     }
 
-    // ── EMAIL FATURA SAFE2PAY (fire-and-forget) ──────────────────
+    // ── EMAIL FATURA IPAG (fire-and-forget) ──────────────────
     if (dadosParaEmitir) {
       (async () => {
         try {
@@ -743,18 +1165,18 @@ app.post("/api/webhook/safe2pay", express.json(), async (req, res) => {
             await enviarFaturaConteudo(base);
           }
         } catch (emailErr) {
-          console.error('Erro email fatura Safe2Pay:', emailErr.message);
+          console.error('Erro email fatura iPag:', emailErr.message);
         }
       })();
     }
     // ─────────────────────────────────────────────────────────────
 
-    console.log("✅ WEBHOOK SAFE2PAY FINALIZADO");
+    console.log("✅ WEBHOOK IPAG FINALIZADO");
     return res.status(200).send("ok");
 
   } catch (err) {
     try { await client.query("ROLLBACK"); } catch (_) {}
-    console.error("🔥 ERRO WEBHOOK SAFE2PAY:", err);
+    console.error("🔥 ERRO WEBHOOK IPAG:", err);
     return res.status(500).send("erro");
   } finally {
     client.release();
@@ -3243,7 +3665,8 @@ function nomesCorrespondem(nomeCadastro, nomeCartao) {
   return primeiroOk && ultimoOk;
 }
 
-// ── Safe2Pay PIX ─────────────────────────────────────────────────────────────
+// ── Safe2Pay PIX (DESATIVADO — migrado para iPag) ────────────────────────────
+/*
 const SAFE2PAY_BASE = "https://payment.safe2pay.com.br/v2";
 
 async function safe2payRequest(method, path, body) {
@@ -3291,6 +3714,62 @@ async function criarPixSafe2Pay({ valorTotal, nome, email, cpf, telefone, endere
     Products: [{ Code: "001", Description: descricao, UnitPrice: valorTotal, Quantity: 1 }],
     PaymentMethod: "6",
     PaymentObject: {}
+  });
+}
+*/
+
+// ── iPag PIX ──────────────────────────────────────────────────────────────────
+const IPAG_BASE = process.env.IPAG_BASE_URL || "https://api.ipag.com.br";
+
+async function ipagRequest(method, path, body) {
+  const url = `${IPAG_BASE}${path}`;
+  const auth = Buffer.from(`${process.env.IPAG_API_ID || ""}:${process.env.IPAG_API_KEY || ""}`).toString("base64");
+  console.log(`[iPag] ${method} ${url} | api_id=${process.env.IPAG_API_ID || ""}`);
+  const resp = await fetch(url, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Basic ${auth}`,
+      "x-api-version": "2"
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const data = await resp.json();
+  console.log(`[iPag] response status=${resp.status} body=${JSON.stringify(data)}`);
+  if (!resp.ok || data?.errors) {
+    throw new Error(`iPag error: ${JSON.stringify(data)}`);
+  }
+  return data;
+}
+
+async function criarPixIpag({ valorTotal, nome, email, cpf, telefone, endereco, referencia }) {
+  const appUrl = process.env.APP_URL || "https://velvet.lat";
+  const orderId = String(referencia || Date.now()).replace(/\D/g, "").slice(-16) || String(Date.now()).slice(-16);
+  return ipagRequest("POST", "/service/payment", {
+    amount: Number(valorTotal),
+    order_id: orderId,
+    callback_url: `${appUrl}/api/webhook/ipag`,
+    payment: {
+      type: "pix",
+      method: "pix",
+      pix_expires_in: 60
+    },
+    customer: {
+      name: nome,
+      email: email,
+      cpf_cnpj: cpf,
+      phone: telefone,
+      billing_address: {
+        street:     endereco.rua,
+        number:     endereco.numero,
+        complement: endereco.complemento || "",
+        district:   endereco.bairro,
+        city:       endereco.cidade,
+        state:      endereco.estado,
+        zipcode:    endereco.cep,
+        country:    "BR"
+      }
+    }
   });
 }
 
@@ -9485,30 +9964,29 @@ if (Number.isNaN(dataAceite.getTime())) {
     console.log("centavos:", amount);
 
     /* =========================
-       CRIAR PIX SAFE2PAY
+       CRIAR PIX IPAG
     ========================= */
 
-    console.log("Criando pagamento PIX VIP no Safe2Pay...");
+    console.log("Criando pagamento PIX VIP no iPag...");
 
-    const safe2payResVip = await criarPixSafe2Pay({
+    const ipagResVip = await criarPixIpag({
       valorTotal: valorTotal,
       nome:       nomeFinal,
       email:      emailFinal,
       cpf:        cpfVip      || "",
       telefone:   telefoneVip || "",
       endereco,
-      referencia: `vip_${cliente_id}_${modeloIdNum}_${Date.now()}`,
-      descricao:  "Assinatura VIP Velvet"
+      referencia: `vip_${cliente_id}_${modeloIdNum}_${Date.now()}`
     });
 
-    const safe2payId = String(safe2payResVip?.ResponseDetail?.IdTransaction || "");
-    const brCode     = safe2payResVip?.ResponseDetail?.QrCode       || null; // URL da imagem PNG
-    const pixKey     = safe2payResVip?.ResponseDetail?.Key          || null; // código EMV copia-e-cola
-    const brCodeB64  = safe2payResVip?.ResponseDetail?.QrCodeImage  || null;
-    const expiresAt  = safe2payResVip?.ResponseDetail?.ExpirationDate || null;
+    const ipagId    = String(ipagResVip?.id || "");
+    const pixKey    = ipagResVip?.attributes?.pix?.qrcode   || null; // código EMV copia-e-cola
+    const brCodeB64 = ipagResVip?.attributes?.pix?.qrcode64 || null;
+    const brCode    = ipagResVip?.attributes?.pix?.link     || null; // link da página de pagamento
+    const expiresAt = ipagResVip?.attributes?.pix?.expires_at || null;
 
-    if (!safe2payId || !brCode) {
-      console.error("PIX Safe2Pay não gerado:", safe2payResVip);
+    if (!ipagId || !pixKey) {
+      console.error("PIX iPag não gerado:", ipagResVip);
       await client.query("ROLLBACK");
       return res.status(500).json({ error: "Erro ao gerar QR PIX" });
     }
@@ -9543,13 +10021,13 @@ if (Number.isNaN(dataAceite.getTime())) {
         cpf,
         telefone
       )
-      VALUES ($1,$2,$3,'pendente','safe2pay',$4,$5,$6,NOW(),$7,$8,$9,$10,$11,$12,$13,$14)
+      VALUES ($1,$2,$3,'pendente','ipag',$4,$5,$6,NOW(),$7,$8,$9,$10,$11,$12,$13,$14)
       `,
       [
         cliente_id,
         modeloIdNum,
         valorTotal,
-        safe2payId,
+        ipagId,
         brCode,
         pixKey,
         ip,
@@ -9575,7 +10053,7 @@ if (Number.isNaN(dataAceite.getTime())) {
       qr_code_base64: brCodeB64 ? (brCodeB64.startsWith("data:") ? brCodeB64 : `data:image/png;base64,${brCodeB64}`) : null,
       copia_cola:     pixKey,
       expires_at:     expiresAt,
-      order_id:       safe2payId
+      order_id:       ipagId
     });
   } catch (err) {
     console.error("=================================");
@@ -9751,7 +10229,7 @@ if (Number.isNaN(dataAceite.getTime())) {
       FROM pagamentos_pix
       WHERE cliente_id = $1
       AND message_id = $2
-      AND gateway = 'safe2pay'
+      AND gateway = 'ipag'
       AND status = 'pendente'
       AND expires_at > NOW()
       ORDER BY criado_em DESC
@@ -9772,10 +10250,10 @@ if (Number.isNaN(dataAceite.getTime())) {
     }
 
     /* ================================
-       CRIAR PIX SAFE2PAY
+       CRIAR PIX IPAG
     ================================ */
 
-    console.log("Criando pagamento PIX Mídia no Safe2Pay...");
+    console.log("Criando pagamento PIX Mídia no iPag...");
 
     const nomeCliente  = String(nomeDB || "").trim() || "Cliente Velvet";
     const emailCliente = String(emailDB || "").trim();
@@ -9785,24 +10263,23 @@ if (Number.isNaN(dataAceite.getTime())) {
       return res.status(400).json({ error: "E-mail do cliente não encontrado." });
     }
 
-    const safe2payResMidia = await criarPixSafe2Pay({
+    const ipagResMidia = await criarPixIpag({
       valorTotal: valorTotal,
       nome:       nomeCliente,
       email:      emailCliente,
       cpf:        String(cpf || "").replace(/\D/g, ""),
       telefone:   String(telefone || "").replace(/\D/g, ""),
       endereco,
-      referencia: `midia_${cliente_id}_${conteudo_id}_${Date.now()}`,
-      descricao:  "Mídia Velvet"
+      referencia: `midia_${cliente_id}_${conteudo_id}_${Date.now()}`
     });
 
-    const safe2payIdMidia = String(safe2payResMidia?.ResponseDetail?.IdTransaction || "");
-    const brCodeMidia     = safe2payResMidia?.ResponseDetail?.QrCode      || null; // URL da imagem PNG
-    const pixKeyMidia     = safe2payResMidia?.ResponseDetail?.Key         || null; // código EMV copia-e-cola
-    const brCodeB64Midia  = safe2payResMidia?.ResponseDetail?.QrCodeImage || null;
+    const ipagIdMidia    = String(ipagResMidia?.id || "");
+    const pixKeyMidia    = ipagResMidia?.attributes?.pix?.qrcode   || null; // código EMV copia-e-cola
+    const brCodeB64Midia = ipagResMidia?.attributes?.pix?.qrcode64 || null;
+    const brCodeMidia    = ipagResMidia?.attributes?.pix?.link     || null; // link da página de pagamento
 
-    if (!safe2payIdMidia || !brCodeMidia) {
-      throw new Error("Erro ao gerar PIX no Safe2Pay");
+    if (!ipagIdMidia || !pixKeyMidia) {
+      throw new Error("Erro ao gerar PIX no iPag");
     }
 
     await salvarEnderecoClientePix(client, {
@@ -9840,7 +10317,7 @@ await client.query(
     telefone
   )
   VALUES (
-    $1,$2,$3,$4,$5,$6,'pendente','safe2pay',$7,NOW(),NOW() + INTERVAL '60 minutes',
+    $1,$2,$3,$4,$5,$6,'pendente','ipag',$7,NOW(),NOW() + INTERVAL '60 minutes',
     $8,$9,$10,$11,$12,$13,$14,$15
   )
   `,
@@ -9851,7 +10328,7 @@ await client.query(
     brCodeMidia,
     pixKeyMidia,
     valorTotal,
-    safe2payIdMidia,
+    ipagIdMidia,
     ip || null,
     !!aceitou_termos,
     !!aceitou_execucao_imediata,
@@ -9869,7 +10346,7 @@ await client.query(
       qr_code_url:    brCodeMidia,
       qr_code_base64: brCodeB64Midia ? (brCodeB64Midia.startsWith("data:") ? brCodeB64Midia : `data:image/png;base64,${brCodeB64Midia}`) : null,
       copia_cola:     pixKeyMidia,
-      payment_id:     safe2payIdMidia
+      payment_id:     ipagIdMidia
     });
 
   } catch (err) {
@@ -10206,30 +10683,29 @@ if (Number.isNaN(dataAceite.getTime())) {
     console.log("centavos:", amount);
 
     /* =========================
-       CRIAR PIX SAFE2PAY
+       CRIAR PIX IPAG
     ========================= */
 
-    console.log("Criando pagamento PIX Premium no Safe2Pay...");
+    console.log("Criando pagamento PIX Premium no iPag...");
 
-    const safe2payResPremium = await criarPixSafe2Pay({
+    const ipagResPremium = await criarPixIpag({
       valorTotal: valorTotal,
       nome:       nomeFinal,
       email:      emailFinal,
       cpf:        cpfPremium      || "",
       telefone:   telefonePremium || "",
       endereco,
-      referencia: `premium_${cliente_id}_${premiumPostIdNum}_${Date.now()}`,
-      descricao:  "Post Premium Velvet"
+      referencia: `premium_${cliente_id}_${premiumPostIdNum}_${Date.now()}`
     });
 
-    const safe2payIdPremium  = String(safe2payResPremium?.ResponseDetail?.IdTransaction || "");
-    const brCodePremium      = safe2payResPremium?.ResponseDetail?.QrCode      || null; // URL da imagem PNG
-    const pixKeyPremium      = safe2payResPremium?.ResponseDetail?.Key         || null; // código EMV copia-e-cola
-    const brCodeB64Premium   = safe2payResPremium?.ResponseDetail?.QrCodeImage || null;
-    const expiresAtPremium   = safe2payResPremium?.ResponseDetail?.ExpirationDate || null;
+    const ipagIdPremium    = String(ipagResPremium?.id || "");
+    const pixKeyPremium    = ipagResPremium?.attributes?.pix?.qrcode   || null; // código EMV copia-e-cola
+    const brCodeB64Premium = ipagResPremium?.attributes?.pix?.qrcode64 || null;
+    const brCodePremium    = ipagResPremium?.attributes?.pix?.link     || null; // link da página de pagamento
+    const expiresAtPremium = ipagResPremium?.attributes?.pix?.expires_at || null;
 
-    if (!safe2payIdPremium || !brCodePremium) {
-      console.error("PIX Safe2Pay não gerado:", safe2payResPremium);
+    if (!ipagIdPremium || !pixKeyPremium) {
+      console.error("PIX iPag não gerado:", ipagResPremium);
       await client.query("ROLLBACK");
       return res.status(500).json({ error: "Erro ao gerar QR PIX" });
     }
@@ -10280,7 +10756,7 @@ await client.query(
     $1,$2,$3,
     'pendente','pix',
     $4,$5,$6,$7,
-    'safe2pay',$8,$9,$10,$11,
+    'ipag',$8,$9,$10,$11,
     $12,$13,$14,$15,$16,$17,$18,$19,
     NOW(),NOW()
   )
@@ -10316,7 +10792,7 @@ await client.query(
     taxaTransacao,
     taxaPlataforma,
     valorTotal,
-    safe2payIdPremium,
+    ipagIdPremium,
     brCodePremium,
     pixKeyPremium,
     `premium_${premiumPostIdNum}_${cliente_id}`,
@@ -10343,7 +10819,7 @@ await client.query(
       qr_code_base64: brCodeB64Premium ? (brCodeB64Premium.startsWith("data:") ? brCodeB64Premium : `data:image/png;base64,${brCodeB64Premium}`) : null,
       copia_cola:     pixKeyPremium,
       expires_at:     expiresAtPremium,
-      order_id:       safe2payIdPremium,
+      order_id:       ipagIdPremium,
       reutilizado:    false
     });
   } catch (err) {
