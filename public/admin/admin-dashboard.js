@@ -187,6 +187,7 @@ const pageTitles = {
   suporte: 'Suporte ao Cliente',
   midias: 'Gestão de Mídias',
   'usuarios-confiaveis': 'Usuários Confiáveis',
+  'pix-modelos': 'PIX por Modelo',
   contestacoes: 'Contestações'
 };
 
@@ -778,6 +779,115 @@ async function excluirUsuarioConfiavel(id) {
     await deleteJSON('/api/admin/usuarios-confiaveis/' + id);
     toast('Removido', 'success');
     pageLoaders['usuarios-confiaveis']();
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  }
+}
+
+// ========== PIX POR MODELO ==========
+
+let _pixModeloEditando = null;
+
+pageLoaders['pix-modelos'] = async function () {
+  try {
+    const data = await fetchJSON('/api/admin/modelos-pix-config');
+    const tbody = $('tablePixModelos').querySelector('tbody');
+    tbody.innerHTML = (data.configs || []).map(c => `
+      <tr>
+        <td>${c.modelo_id}</td>
+        <td>${c.nome_exibicao || c.nome}</td>
+        <td>${c.pix_vip ? '<span class="badge badge-success">Sim</span>' : '<span class="badge badge-danger">Não</span>'}</td>
+        <td>${c.pix_chat ? '<span class="badge badge-success">Sim</span>' : '<span class="badge badge-danger">Não</span>'}</td>
+        <td>${c.pix_premium ? '<span class="badge badge-success">Sim</span>' : '<span class="badge badge-danger">Não</span>'}</td>
+        <td>${fmtDateTime(c.atualizado_em)}</td>
+        <td>
+          <button class="btn btn-sm btn-primary" onclick="editarPixModelo(${c.modelo_id})">Editar</button>
+          <button class="btn btn-sm btn-danger" onclick="excluirPixModelo(${c.modelo_id})">Remover</button>
+        </td>
+      </tr>
+    `).join('') || emptyRow(7);
+  } catch (err) {
+    console.error('Erro pix-modelos:', err);
+  }
+};
+
+function abrirModalPixModelo() {
+  _pixModeloEditando = null;
+  const form = $('formPixModelo');
+  form.reset();
+  form.querySelector('[name="modelo_id"]').disabled = false;
+  $('pixModeloNomePreview').textContent = '';
+  openModal('modalPixModelo');
+}
+
+async function editarPixModelo(modelo_id) {
+  try {
+    const data = await fetchJSON('/api/admin/modelos-pix-config/buscar-modelo/' + modelo_id);
+    _pixModeloEditando = modelo_id;
+    const form = $('formPixModelo');
+    form.reset();
+    form.querySelector('[name="modelo_id"]').value = modelo_id;
+    form.querySelector('[name="modelo_id"]').disabled = true;
+    form.querySelector('[name="pix_vip"]').checked = !!data.config.pix_vip;
+    form.querySelector('[name="pix_chat"]').checked = !!data.config.pix_chat;
+    form.querySelector('[name="pix_premium"]').checked = !!data.config.pix_premium;
+    const preview = $('pixModeloNomePreview');
+    preview.textContent = '✓ ' + (data.modelo.nome_exibicao || data.modelo.nome);
+    preview.style.color = '#2e7d32';
+    openModal('modalPixModelo');
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  }
+}
+
+let _pixModeloBuscaTimeout;
+function buscarNomeModeloPix() {
+  clearTimeout(_pixModeloBuscaTimeout);
+  _pixModeloBuscaTimeout = setTimeout(async () => {
+    const id = Number($('pixModeloIdInput').value);
+    const preview = $('pixModeloNomePreview');
+    if (!Number.isInteger(id) || id <= 0) { preview.textContent = ''; return; }
+    try {
+      const data = await fetchJSON('/api/admin/modelos-pix-config/buscar-modelo/' + id);
+      preview.textContent = '✓ ' + (data.modelo.nome_exibicao || data.modelo.nome);
+      preview.style.color = '#2e7d32';
+    } catch {
+      preview.textContent = 'Modelo não encontrada';
+      preview.style.color = '#c62828';
+    }
+  }, 400);
+}
+
+async function salvarPixModelo(e) {
+  e.preventDefault();
+  const form = new FormData(e.target);
+  const modelo_id = _pixModeloEditando || Number(form.get('modelo_id'));
+
+  if (!Number.isInteger(modelo_id) || modelo_id <= 0) {
+    toast('Modelo ID inválido', 'error');
+    return;
+  }
+
+  try {
+    await putJSON('/api/admin/modelos-pix-config/' + modelo_id, {
+      pix_vip: e.target.querySelector('[name="pix_vip"]').checked,
+      pix_chat: e.target.querySelector('[name="pix_chat"]').checked,
+      pix_premium: e.target.querySelector('[name="pix_premium"]').checked
+    });
+    toast('Configuração de PIX salva!', 'success');
+    closeAllModals();
+    pageLoaders['pix-modelos']();
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  }
+}
+
+async function excluirPixModelo(modelo_id) {
+  if (!confirm('Remover restrição de PIX desta modelo? Ela voltará ao padrão (PIX liberado nos 3 tipos).')) return;
+  try {
+    await deleteJSON('/api/admin/modelos-pix-config/' + modelo_id);
+    toast('Removido', 'success');
+    pageLoaders['pix-modelos']();
   } catch (err) {
     toast('Erro: ' + err.message, 'error');
   }

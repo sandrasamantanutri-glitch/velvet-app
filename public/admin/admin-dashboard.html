@@ -120,6 +120,10 @@
   <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
   <span>Usuários Confiáveis</span>
 </a>
+<a class="nav-item" data-page="pix-modelos">
+  <svg viewBox="0 0 24 24"><path d="M3 5h18v4H3V5zm0 6h8v8H3v-8zm10 0h8v3h-8v-3zm0 5h8v3h-8v-3z"/></svg>
+  <span>PIX por Modelo</span>
+</a>
 <a class="nav-item" data-page="contestacoes">
   <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
   <span>Contestações</span>
@@ -1111,6 +1115,24 @@
   </form>
 </div>
 
+<!-- PIX por Modelo -->
+<div class="modal" id="modalPixModelo">
+  <h3>Configurar PIX por Modelo</h3>
+  <form id="formPixModelo" onsubmit="salvarPixModelo(event)">
+    <label>Modelo ID
+      <input type="number" name="modelo_id" id="pixModeloIdInput" required oninput="buscarNomeModeloPix()">
+    </label>
+    <div id="pixModeloNomePreview" style="font-size:13px;margin:-8px 0 8px;"></div>
+    <label class="checkbox-label"><input type="checkbox" name="pix_vip" checked> PIX para VIP</label>
+    <label class="checkbox-label"><input type="checkbox" name="pix_chat" checked> PIX para Chat (mídia)</label>
+    <label class="checkbox-label"><input type="checkbox" name="pix_premium" checked> PIX para Premium</label>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" onclick="closeAllModals()">Cancelar</button>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+  </form>
+</div>
+
 <!-- Cliente Risco -->
 <div class="modal" id="modalRisco">
   <h3>Adicionar Cliente Risco</h3>
@@ -1914,6 +1936,20 @@
     <h3>Usuários Confiáveis (liberados para PIX na primeira assinatura VIP)</h3>
     <table class="table" id="tableUsuariosConfiaveis">
       <thead><tr><th>ID</th><th>Email</th><th>Motivo</th><th>Adicionado em</th><th>Ações</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- PIX POR MODELO -->
+<section class="page" id="page-pix-modelos">
+  <div class="page-actions">
+    <button class="btn btn-primary" onclick="abrirModalPixModelo()">+ Configurar PIX por Modelo</button>
+  </div>
+  <div class="card">
+    <h3>Restrições de PIX por Modelo (sem registro na lista = PIX liberado nos 3 tipos)</h3>
+    <table class="table" id="tablePixModelos">
+      <thead><tr><th>ID</th><th>Modelo</th><th>VIP</th><th>Chat</th><th>Premium</th><th>Atualizado em</th><th>Ações</th></tr></thead>
       <tbody></tbody>
     </table>
   </div>

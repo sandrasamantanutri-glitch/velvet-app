@@ -3148,6 +3148,7 @@ const adminDashboardRouter = require('./routes/adminDashboard');
 const agencyDashboardRouter = require('./routes/agencyDashboard');
 const adminEmailRouter = require('./routes/adminEmail');
 const usuariosConfiaveisRouter = require('./routes/usuariosConfiaveis');
+const modelosPixConfigRouter = require('./routes/modelosPixConfig');
 const contestacoesRouter = require('./routes/contestacoes');
 const suporteRouter = require('./routes/suporte');
 const authAdmin = require('./middleware/authAdmin');
@@ -3162,6 +3163,7 @@ app.use("/admin/dashboard", adminDashboardRouter);
 app.use('/agency/dashboard', agencyDashboardRouter);
 app.use('/api/admin/email', auth, authAdmin, adminEmailRouter);
 app.use('/api/admin/usuarios-confiaveis', auth, authAdmin, usuariosConfiaveisRouter);
+app.use('/api/admin/modelos-pix-config', auth, authAdmin, modelosPixConfigRouter);
 app.use('/api/admin/contestacoes', auth, authAdmin, contestacoesRouter);
 app.use('/api/suporte', suporteRouter);
 
@@ -9884,6 +9886,20 @@ if (Number.isNaN(dataAceite.getTime())) {
     }
 
     /* =========================
+       BLOQUEAR PIX SE DESABILITADO PARA ESTA MODELO
+    ========================= */
+
+    const pixConfigVipRes = await client.query(
+      `SELECT pix_vip FROM modelos_pix_config WHERE modelo_id = $1 LIMIT 1`,
+      [modeloIdNum]
+    );
+
+    if (pixConfigVipRes.rowCount > 0 && pixConfigVipRes.rows[0].pix_vip === false) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ error: "Pagamento via PIX não disponível para esta modelo." });
+    }
+
+    /* =========================
        BLOQUEAR PRIMEIRA ASSINATURA VIP VIA PIX
        PIX só permitido para renovação (cliente já assinou antes)
        ou para emails cadastrados em usuarios_confiaveis
@@ -10199,6 +10215,19 @@ if (Number.isNaN(dataAceite.getTime())) {
 
     const { taxaTransacao, taxaPlataforma, valorTotal } = calcTaxaStripe(precoNum);
     const valorCentavos = Math.round(valorTotal * 100);
+
+    /* ================================
+       BLOQUEAR PIX SE DESABILITADO PARA ESTA MODELO
+    ================================ */
+
+    const pixConfigChatRes = await client.query(
+      `SELECT pix_chat FROM modelos_pix_config WHERE modelo_id = $1 LIMIT 1`,
+      [modelo_id]
+    );
+
+    if (pixConfigChatRes.rowCount > 0 && pixConfigChatRes.rows[0].pix_chat === false) {
+      return res.status(403).json({ error: "Pagamento via PIX não disponível para esta modelo." });
+    }
 
     /* ================================
        VERIFICAR SE JA COMPROU
@@ -10605,6 +10634,20 @@ if (Number.isNaN(dataAceite.getTime())) {
     if (!modeloRes.rowCount) {
       await client.query("ROLLBACK");
       return res.status(404).json({ error: "Modelo não encontrada." });
+    }
+
+    /* =========================
+       BLOQUEAR PIX SE DESABILITADO PARA ESTA MODELO
+    ========================= */
+
+    const pixConfigPremiumRes = await client.query(
+      `SELECT pix_premium FROM modelos_pix_config WHERE modelo_id = $1 LIMIT 1`,
+      [modeloIdNum]
+    );
+
+    if (pixConfigPremiumRes.rowCount > 0 && pixConfigPremiumRes.rows[0].pix_premium === false) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ error: "Pagamento via PIX não disponível para esta modelo." });
     }
 
     /* =========================
