@@ -813,6 +813,11 @@ async function adicionarContatoAudienceVIP(audience_id, email, nome) {
   if (error) console.warn(`[Audience] Aviso ao adicionar contato ${email}:`, error);
 }
 
+async function removerContatoAudienceVIP(audience_id, email) {
+  const { error } = await resend.contacts.remove({ audienceId: audience_id, email });
+  if (error) console.warn(`[Audience] Aviso ao remover contato ${email}:`, error);
+}
+
 async function enviarCampanhaVIP({ audience_id, subject, html, nome_campanha }) {
   const { data: bc, error: errCriar } = await resend.broadcasts.create({
     audienceId: audience_id,
@@ -873,6 +878,165 @@ async function enviarEmailOfertaExpirando({ email, nome_modelo, nome_oferta, dat
   if (error) throw new Error(JSON.stringify(error));
 }
 
+async function enviarCampanhaNovidadeFeed({ audience_id, nome_modelo, modelo_id, qtd }) {
+  const plural = Number(qtd) === 1 ? "foto nova" : "fotos novas";
+
+  const html = wrapEmail(`
+    <h2 style="color:#7B2CFF;text-align:center;margin:0 0 6px;">📸 ${nome_modelo} postou novidades!</h2>
+    <p style="text-align:center;color:#6b5a7d;margin:0 0 24px;">
+      ${qtd} ${plural} exclusivas no feed VIP, só pra quem já é assinante.
+    </p>
+    ${btnPrimary(`https://velvet.lat/perfil.html?modelo_id=${modelo_id}`, "Ver no perfil")}
+  `);
+
+  return enviarCampanhaVIP({
+    audience_id,
+    subject: `📸 ${nome_modelo} postou ${qtd} ${plural}!`,
+    html,
+    nome_campanha: `Novidade feed — ${nome_modelo}`
+  });
+}
+
+async function enviarCampanhaNovidadePremium({ audience_id, nome_modelo, modelo_id, qtd, preco, descricao }) {
+  const precoFmt = Number(preco || 0).toFixed(2).replace(".", ",");
+  const plural = Number(qtd) === 1 ? "mídia exclusiva" : `${qtd} mídias exclusivas`;
+
+  const html = wrapEmail(`
+    <h2 style="color:#7B2CFF;text-align:center;margin:0 0 6px;">💎 ${nome_modelo} lançou um conteúdo Premium</h2>
+    ${infoBox("purple", `
+      <p style="margin:0 0 8px;">${descricao || plural}</p>
+      <p style="margin:0;font-weight:bold;">Preço: R$ ${precoFmt}</p>
+    `)}
+    ${btnPrimary(`https://velvet.lat/perfil.html?modelo_id=${modelo_id}&tab=paid`, "Desbloquear agora")}
+  `);
+
+  return enviarCampanhaVIP({
+    audience_id,
+    subject: `💎 ${nome_modelo} lançou um conteúdo Premium novo!`,
+    html,
+    nome_campanha: `Novidade premium — ${nome_modelo}`
+  });
+}
+
+async function enviarCampanhaNovidadeChat({ audience_id, nome_modelo, modelo_id, qtd }) {
+  const plural = Number(qtd) === 1 ? "mídia nova" : "mídias novas";
+
+  const html = wrapEmail(`
+    <h2 style="color:#7B2CFF;text-align:center;margin:0 0 6px;">🔥 ${nome_modelo} tem fotos novas no chat</h2>
+    <p style="text-align:center;color:#6b5a7d;margin:0 0 24px;">
+      ${qtd} ${plural} disponíveis para desbloqueio direto na sua conversa.
+    </p>
+    ${btnPrimary(`https://velvet.lat/chatc.html?modelo_id=${modelo_id}`, "Ver no chat")}
+  `);
+
+  return enviarCampanhaVIP({
+    audience_id,
+    subject: `🔥 ${nome_modelo} tem novidades esperando no seu chat`,
+    html,
+    nome_campanha: `Novidade chat — ${nome_modelo}`
+  });
+}
+
+async function enviarCampanhaNovidadeOferta({ audience_id, nome_modelo, modelo_id, desconto_percentual, mensagem, data_fim }) {
+  const dataFmt = new Date(data_fim).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+
+  const html = wrapEmail(`
+    <h2 style="color:#7B2CFF;text-align:center;margin:0 0 6px;">🎉 ${nome_modelo} lançou uma oferta especial</h2>
+    ${infoBox("pink", `
+      <p style="margin:0 0 8px;font-weight:bold;">${desconto_percentual}% de desconto na assinatura</p>
+      ${mensagem ? `<p style="margin:0 0 8px;">${mensagem}</p>` : ""}
+      <p style="margin:0;color:#7a6a9a;">Válido até ${dataFmt}</p>
+    `)}
+    ${btnPrimary(`https://velvet.lat/perfil.html?modelo_id=${modelo_id}`, "Ver oferta")}
+  `);
+
+  return enviarCampanhaVIP({
+    audience_id,
+    subject: `🎉 ${nome_modelo} liberou ${desconto_percentual}% de desconto pra você`,
+    html,
+    nome_campanha: `Novidade oferta — ${nome_modelo}`
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// AUDIENCE GLOBAL — clientes que ainda não são VIP de ninguém
+// ─────────────────────────────────────────────────────────────
+
+async function obterOuCriarAudienceNaoAssinantes(db) {
+  const dbRes = await db.query(
+    "SELECT value FROM app_settings WHERE key = 'resend_audience_nao_assinantes_id'"
+  );
+  const existingId = dbRes.rows[0]?.value;
+  if (existingId) return existingId;
+
+  const { data, error } = await resend.audiences.create({
+    name: "Não Assinantes"
+  });
+  if (error || !data?.id) throw new Error(`Resend audience create: ${JSON.stringify(error)}`);
+
+  await db.query(
+    `INSERT INTO app_settings (key, value, atualizado_em)
+     VALUES ('resend_audience_nao_assinantes_id', $1, NOW())
+     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, atualizado_em = NOW()`,
+    [data.id]
+  );
+  console.log(`[Audience] "Não Assinantes" criada: ${data.id}`);
+  return data.id;
+}
+
+function blocoDestaqueModelo(d) {
+  const partes = [];
+
+  if (d.feed_qtd > 0) {
+    partes.push(`<p style="margin:0 0 6px;">📸 ${d.feed_qtd} ${d.feed_qtd === 1 ? "foto nova" : "fotos novas"} no feed VIP</p>`);
+  }
+
+  for (const p of d.premiums || []) {
+    const precoFmt = Number(p.preco || 0).toFixed(2).replace(".", ",");
+    partes.push(`<p style="margin:0 0 6px;">💎 Premium novo: ${p.descricao || "mídia exclusiva"} — R$ ${precoFmt}</p>`);
+  }
+
+  if (d.oferta) {
+    const dataFmt = new Date(d.oferta.data_fim).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+    partes.push(`<p style="margin:0 0 6px;">🎉 ${d.oferta.desconto_percentual}% de desconto na assinatura até ${dataFmt}</p>`);
+  }
+
+  if (!partes.length) return "";
+
+  return `
+    <div style="display:flex;align-items:center;gap:10px;margin:0 0 10px;">
+      <img src="${d.avatar || ""}" alt="${d.nome_exibicao}" width="40" height="40" style="border-radius:50%;object-fit:cover;background:#e5d9ff;">
+      <strong style="color:#2d1f3d;font-size:15px;">${d.nome_exibicao}</strong>
+    </div>
+    <div style="margin:0 0 20px 50px;color:#4b2a7b;font-size:14px;line-height:1.6;">
+      ${partes.join("")}
+      <a href="https://velvet.lat/perfil.html?modelo_id=${d.modelo_id}" style="color:#7B2CFF;font-weight:bold;text-decoration:none;font-size:13px;">Ver perfil →</a>
+    </div>
+  `;
+}
+
+async function enviarCampanhaNovidadesSemanais({ audience_id, destaques }) {
+  const corpo = destaques.map(blocoDestaqueModelo).filter(Boolean).join("");
+
+  const html = wrapEmail(`
+    <h2 style="color:#7B2CFF;text-align:center;margin:0 0 6px;">✨ As novidades da semana na Velvet</h2>
+    <p style="text-align:center;color:#6b5a7d;margin:0 0 28px;">
+      Separamos o que rolou de melhor essa semana pra você não perder nada.
+    </p>
+
+    ${corpo}
+
+    ${btnPrimary("https://velvet.lat/feed.html", "Explorar a plataforma")}
+  `);
+
+  return enviarCampanhaVIP({
+    audience_id,
+    subject: "✨ As novidades da semana na Velvet",
+    html,
+    nome_campanha: `Novidades semanais — ${new Date().toLocaleDateString("pt-BR")}`
+  });
+}
+
 module.exports = {
   enviarEmailValidacao,
   enviarEmailAprovacao,
@@ -890,6 +1054,13 @@ module.exports = {
   enviarEmailAviso24h,
   obterOuCriarAudienceVIP,
   adicionarContatoAudienceVIP,
+  removerContatoAudienceVIP,
   enviarCampanhaVIP,
-  enviarEmailOfertaExpirando
+  enviarEmailOfertaExpirando,
+  enviarCampanhaNovidadeFeed,
+  enviarCampanhaNovidadePremium,
+  enviarCampanhaNovidadeChat,
+  enviarCampanhaNovidadeOferta,
+  obterOuCriarAudienceNaoAssinantes,
+  enviarCampanhaNovidadesSemanais
 };

@@ -258,6 +258,40 @@ async function atualizarUnreadClienteHeader() {
   }
 }
 
+async function atualizarBadgeUpdatesHeader(total) {
+  const badge = document.getElementById("badgeUpdates");
+  if (!badge) return;
+
+  if (!total || total <= 0) {
+    badge.classList.add("hidden");
+    badge.innerText = "0";
+  } else {
+    badge.innerText = total > 9 ? "9+" : total;
+    badge.classList.remove("hidden");
+  }
+}
+
+async function atualizarContadorUpdatesHeader() {
+  const role = localStorage.getItem("role");
+  if (role !== "cliente") return;
+
+  const token = localStorage.getItem("token");
+  if (!token) return;
+
+  try {
+    const res = await fetch("/api/updates/contador", {
+      headers: { Authorization: "Bearer " + token }
+    });
+
+    if (!res.ok) return;
+
+    const data = await res.json();
+    atualizarBadgeUpdatesHeader(data.naoVistos);
+  } catch (e) {
+    console.warn("Erro ao buscar contador de updates");
+  }
+}
+
 async function atualizarUnreadModeloHeader() {
   const role = localStorage.getItem("role");
   if (role !== "modelo") return;
@@ -293,6 +327,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   atualizarUnreadClienteHeader();
   atualizarUnreadModeloHeader();
+  atualizarContadorUpdatesHeader();
 
   // socket global — toca som e atualiza badge em qualquer página
   initHeaderSocketModelo();

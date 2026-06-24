@@ -13739,7 +13739,18 @@ db.query(`
 
 // ── CRON: avisos VIP (a cada hora, substitui o cron do Render) ──
 const cron = require("node-cron");
-const { enviarEmailAviso7Dias, enviarEmailAviso24h, enviarEmailOfertaExpirando } = require("./email");
+const {
+  enviarEmailAviso7Dias,
+  enviarEmailAviso24h,
+  enviarEmailOfertaExpirando,
+  enviarCampanhaNovidadeFeed,
+  enviarCampanhaNovidadePremium,
+  enviarCampanhaNovidadeChat,
+  enviarCampanhaNovidadeOferta,
+  obterOuCriarAudienceNaoAssinantes,
+  enviarCampanhaNovidadesSemanais,
+  removerContatoAudienceVIP
+} = require("./email");
 
 async function processarAvisosVip() {
   console.log("🔔 [VIP Cron] Verificando assinaturas próximas do vencimento...");
@@ -13846,6 +13857,261 @@ async function processarOfertasExpirando() {
 // Executa a cada hora (minuto 0 de cada hora)
 cron.schedule("0 * * * *", processarAvisosVip);
 cron.schedule("0 * * * *", processarOfertasExpirando);
+
+// ===========================
+// NOVIDADES → EMAIL PARA VIPS
+// ===========================
+
+async function notificarModeloPorEmail(modelo_id, enviarFn) {
+  const modeloRes = await db.query("SELECT nome_exibicao FROM modelos WHERE id = $1", [modelo_id]);
+  if (!modeloRes.rowCount) return;
+
+  const nome_modelo = modeloRes.rows[0].nome_exibicao;
+  const audience_id = await obterOuCriarAudienceVIP(db, modelo_id, nome_modelo);
+  await enviarFn(audience_id, nome_modelo);
+}
+
+async function processarNovidadesParaEmail() {
+  console.log("📣 [Novidades Cron] Verificando conteúdo novo para notificar VIPs...");
+
+  try {
+    // FEED VIP — conteudos tipo 'feed'
+    const feedPendente = await db.query(`
+      SELECT modelo_id, COUNT(*) AS qtd, array_agg(id) AS ids
+      FROM conteudos
+      WHERE tipo_conteudo = 'feed' AND ativo = true AND email_novidade_enviado = false
+      GROUP BY modelo_id
+    `);
+
+    for (const row of feedPendente.rows) {
+      try {
+        await notificarModeloPorEmail(row.modelo_id, (audience_id, nome_modelo) =>
+          enviarCampanhaNovidadeFeed({ audience_id, nome_modelo, modelo_id: row.modelo_id, qtd: row.qtd })
+        );
+        await db.query(`UPDATE conteudos SET email_novidade_enviado = true WHERE id = ANY($1)`, [row.ids]);
+        console.log(`[Novidades Cron] Feed → modelo ${row.modelo_id} (${row.qtd} itens)`);
+      } catch (err) {
+        console.error(`[Novidades Cron] Erro feed modelo ${row.modelo_id}:`, err.message);
+      }
+    }
+
+    // CHAT — conteudos tipo 'venda' (mídia para desbloqueio em conversa)
+    const chatPendente = await db.query(`
+      SELECT modelo_id, COUNT(*) AS qtd, array_agg(id) AS ids
+      FROM conteudos
+      WHERE tipo_conteudo = 'venda' AND ativo = true AND email_novidade_enviado = false
+      GROUP BY modelo_id
+    `);
+
+    for (const row of chatPendente.rows) {
+      try {
+        await notificarModeloPorEmail(row.modelo_id, (audience_id, nome_modelo) =>
+          enviarCampanhaNovidadeChat({ audience_id, nome_modelo, modelo_id: row.modelo_id, qtd: row.qtd })
+        );
+        await db.query(`UPDATE conteudos SET email_novidade_enviado = true WHERE id = ANY($1)`, [row.ids]);
+        console.log(`[Novidades Cron] Chat → modelo ${row.modelo_id} (${row.qtd} itens)`);
+      } catch (err) {
+        console.error(`[Novidades Cron] Erro chat modelo ${row.modelo_id}:`, err.message);
+      }
+    }
+
+    // PREMIUM — premium_posts
+    const premiumPendente = await db.query(`
+      SELECT p.id, p.modelo_id, p.descricao, p.preco,
+        (SELECT COUNT(*) FROM premium_post_midias pm WHERE pm.premium_post_id = p.id AND pm.ativo = true) AS qtd
+      FROM premium_posts p
+      WHERE p.ativo = true AND p.email_novidade_enviado = false
+    `);
+
+    for (const row of premiumPendente.rows) {
+      try {
+        await notificarModeloPorEmail(row.modelo_id, (audience_id, nome_modelo) =>
+          enviarCampanhaNovidadePremium({
+            audience_id, nome_modelo, modelo_id: row.modelo_id,
+            qtd: row.qtd, preco: row.preco, descricao: row.descricao
+          })
+        );
+        await db.query(`UPDATE premium_posts SET email_novidade_enviado = true WHERE id = $1`, [row.id]);
+        console.log(`[Novidades Cron] Premium → modelo ${row.modelo_id} (post #${row.id})`);
+      } catch (err) {
+        console.error(`[Novidades Cron] Erro premium post ${row.id}:`, err.message);
+      }
+    }
+
+    // OFERTA — descontos na assinatura VIP
+    const ofertaPendente = await db.query(`
+      SELECT id, modelo_id, desconto_percentual, mensagem, data_fim
+      FROM ofertas
+      WHERE ativa = true AND data_fim > NOW() AND email_novidade_enviado = false
+    `);
+
+    for (const row of ofertaPendente.rows) {
+      try {
+        await notificarModeloPorEmail(row.modelo_id, (audience_id, nome_modelo) =>
+          enviarCampanhaNovidadeOferta({
+            audience_id, nome_modelo, modelo_id: row.modelo_id,
+            desconto_percentual: row.desconto_percentual, mensagem: row.mensagem, data_fim: row.data_fim
+          })
+        );
+        await db.query(`UPDATE ofertas SET email_novidade_enviado = true WHERE id = $1`, [row.id]);
+        console.log(`[Novidades Cron] Oferta → modelo ${row.modelo_id} (oferta #${row.id})`);
+      } catch (err) {
+        console.error(`[Novidades Cron] Erro oferta ${row.id}:`, err.message);
+      }
+    }
+
+    console.log("✅ [Novidades Cron] Processamento concluído.");
+  } catch (err) {
+    console.error("🔥 [Novidades Cron] Erro geral:", err.message);
+  }
+}
+
+// Executa a cada 6 horas (00h, 06h, 12h, 18h)
+cron.schedule("0 */6 * * *", processarNovidadesParaEmail);
+
+// ===========================
+// DIGEST SEMANAL → NÃO ASSINANTES
+// ===========================
+
+async function sincronizarAudienceNaoAssinantes(audience_id) {
+  // adiciona clientes ativos que ainda não são VIP de ninguém e nunca foram sincronizados
+  const novos = await db.query(`
+    SELECT c.id, u.email, cd.nome_completo
+    FROM clientes c
+    JOIN users u ON u.id = c.user_id
+    LEFT JOIN clientes_dados cd ON cd.cliente_id = c.id AND cd.ativo = true
+    WHERE c.ativo = true
+      AND c.resend_naoassinante_em IS NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM vip_subscriptions v
+        WHERE v.cliente_id = c.id AND v.ativo = true AND v.expiration_at > NOW()
+      )
+  `);
+
+  for (const row of novos.rows) {
+    try {
+      await adicionarContatoAudienceVIP(audience_id, row.email, row.nome_completo);
+      await db.query("UPDATE clientes SET resend_naoassinante_em = NOW() WHERE id = $1", [row.id]);
+    } catch (err) {
+      console.error(`[Novidades Semanais] Erro ao adicionar cliente ${row.id} à audience:`, err.message);
+    }
+  }
+
+  // remove quem virou assinante VIP de alguém desde que entrou na audience
+  const promovidos = await db.query(`
+    SELECT c.id, u.email
+    FROM clientes c
+    JOIN users u ON u.id = c.user_id
+    WHERE c.resend_naoassinante_em IS NOT NULL
+      AND EXISTS (
+        SELECT 1 FROM vip_subscriptions v
+        WHERE v.cliente_id = c.id AND v.ativo = true AND v.expiration_at > NOW()
+      )
+  `);
+
+  for (const row of promovidos.rows) {
+    try {
+      await removerContatoAudienceVIP(audience_id, row.email);
+      await db.query("UPDATE clientes SET resend_naoassinante_em = NULL WHERE id = $1", [row.id]);
+    } catch (err) {
+      console.error(`[Novidades Semanais] Erro ao remover cliente ${row.id} da audience:`, err.message);
+    }
+  }
+
+  console.log(`[Novidades Semanais] Audience sincronizada: +${novos.rowCount} / -${promovidos.rowCount}`);
+}
+
+async function montarDestaquesSemanais() {
+  // top 3 por faturamento (ranking já consolidado)
+  const top3Res = await db.query(`
+    SELECT m.id, m.nome_exibicao, m.avatar
+    FROM modelos_ranking r
+    JOIN modelos m ON m.id = r.modelo_id
+    JOIN LATERAL (
+      SELECT status FROM modelos_verificacao WHERE modelo_id = m.id ORDER BY verificado_em DESC LIMIT 1
+    ) ver ON true
+    WHERE ver.status = 'aprovado' AND m.feed = true AND m.ativo = true
+    ORDER BY r.ganhos_total DESC
+    LIMIT 3
+  `);
+  const idsTop3 = top3Res.rows.map(r => r.id);
+
+  // +3 modelos que mais postaram na última semana (excluindo as já escolhidas)
+  const maisAtivasRes = await db.query(`
+    SELECT m.id, m.nome_exibicao, m.avatar, COUNT(*) AS posts_7d
+    FROM conteudos c
+    JOIN modelos m ON m.id = c.modelo_id
+    JOIN LATERAL (
+      SELECT status FROM modelos_verificacao WHERE modelo_id = m.id ORDER BY verificado_em DESC LIMIT 1
+    ) ver ON true
+    WHERE ver.status = 'aprovado' AND m.feed = true AND m.ativo = true
+      AND c.ativo = true AND c.criado_em > NOW() - INTERVAL '7 days'
+      AND m.id != ALL($1::int[])
+    GROUP BY m.id, m.nome_exibicao, m.avatar
+    ORDER BY posts_7d DESC
+    LIMIT 3
+  `, [idsTop3.length ? idsTop3 : [0]]);
+
+  const modelos = [...top3Res.rows, ...maisAtivasRes.rows];
+  const destaques = [];
+
+  for (const m of modelos) {
+    const feedRes = await db.query(`
+      SELECT COUNT(*) AS qtd FROM conteudos
+      WHERE modelo_id = $1 AND tipo_conteudo = 'feed' AND ativo = true
+        AND criado_em > NOW() - INTERVAL '7 days'
+    `, [m.id]);
+
+    const premiumRes = await db.query(`
+      SELECT descricao, preco FROM premium_posts
+      WHERE modelo_id = $1 AND ativo = true AND created_at > NOW() - INTERVAL '7 days'
+      ORDER BY created_at DESC
+      LIMIT 2
+    `, [m.id]);
+
+    const ofertaRes = await db.query(`
+      SELECT desconto_percentual, data_fim FROM ofertas
+      WHERE modelo_id = $1 AND ativa = true AND data_fim > NOW()
+      ORDER BY created_at DESC
+      LIMIT 1
+    `, [m.id]);
+
+    destaques.push({
+      modelo_id: m.id,
+      nome_exibicao: m.nome_exibicao,
+      avatar: m.avatar,
+      feed_qtd: Number(feedRes.rows[0]?.qtd || 0),
+      premiums: premiumRes.rows,
+      oferta: ofertaRes.rows[0] || null
+    });
+  }
+
+  // só entram no email modelos com pelo menos uma novidade real
+  return destaques.filter(d => d.feed_qtd > 0 || d.premiums.length > 0 || d.oferta);
+}
+
+async function processarNovidadesSemanais() {
+  console.log("📰 [Novidades Semanais] Iniciando digest semanal...");
+
+  try {
+    const audience_id = await obterOuCriarAudienceNaoAssinantes(db);
+    await sincronizarAudienceNaoAssinantes(audience_id);
+
+    const destaques = await montarDestaquesSemanais();
+    if (!destaques.length) {
+      console.log("[Novidades Semanais] Nenhuma novidade relevante esta semana — email não enviado.");
+      return;
+    }
+
+    await enviarCampanhaNovidadesSemanais({ audience_id, destaques });
+    console.log(`[Novidades Semanais] Digest enviado com ${destaques.length} modelo(s) em destaque.`);
+  } catch (err) {
+    console.error("🔥 [Novidades Semanais] Erro geral:", err.message);
+  }
+}
+
+// Toda terça-feira às 9h
+cron.schedule("0 9 * * 2", processarNovidadesSemanais);
 
 // Gera automaticamente o fechamento do mês anterior para todas as agências, todo dia 1º às 03h
 // (fallback: o fechamento das agências também é disparado quando o admin gera o fechamento geral)

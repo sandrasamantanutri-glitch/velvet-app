@@ -500,6 +500,12 @@ tabs.forEach(tab => {
   });
 });
 
+// abrir direto na aba Premium via ?tab=paid (ex.: vindo do feed de novidades)
+const tabInicial = new URLSearchParams(window.location.search).get("tab");
+if (tabInicial === "paid") {
+  document.querySelector('.midias-tabs .tab[data-tab="paid"]')?.click();
+}
+
 
 });
 

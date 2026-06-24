@@ -62,6 +62,7 @@
     "feed": "Feed",
     "userArea": "User Area",
     "chat": "Chat",
+    "updates": "Updates",
     "notifications": "Enable/disable notifications",
     "notificationsOn": "Notifications enabled",
     "notificationsOff": "Notifications disabled",
@@ -96,6 +97,35 @@
   "busca_placeholder": "Search by name...",
   "sem_resultados": "No results found for this search."
 },
+
+  "updates": {
+    "titulo": "Updates since your last visit",
+    "loading": "Loading...",
+    "erro": "Error loading updates.",
+    "vazio": "No updates here yet. Check back later!",
+    "tag_vip": "VIP",
+    "tag_premium": "Premium",
+    "tag_chat": "Chat",
+    "tag_oferta": "Offer",
+    "texto_feed": "📸 Posted {n} new photos",
+    "texto_premium": "📸 Posted {n} new photos",
+    "texto_chat": "📸 Added {n} new photos and videos to unlock in chat",
+    "preco_label": "Price: R$ {preco}",
+    "lock_vip": "🔒 Subscribers only",
+    "lock_premium": "🔒 Premium content",
+    "lock_chat": "🔒 Chat exclusive",
+    "cta_assinar": "Subscribe for R$ {valor}",
+    "cta_perfil": "Go to profile",
+    "cta_desbloquear": "Unlock",
+    "cta_chat": "View in chat",
+    "cta_oferta": "View offer",
+    "oferta_texto": "🎉 {nome} launched a special offer!",
+    "oferta_desconto": "{percentual}% off the subscription for a limited time",
+    "tempo_agora": "just now",
+    "tempo_minutos": "{n} min ago",
+    "tempo_horas": "{n}h ago",
+    "tempo_dias": "{n}d ago"
+  },
 
   "perfil": {
     "tab_feed": "📷 Feed",

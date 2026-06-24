@@ -62,6 +62,7 @@
     "feed": "Feed",
     "userArea": "Área de Usuário",
     "chat": "Chat",
+    "updates": "Novidades",
     "notifications": "Ativar/desativar notificações",
     "notificationsOn": "Notificações ativadas",
     "notificationsOff": "Notificações desativadas",
@@ -94,6 +95,35 @@
   "filtro_nao_binarios": "Não binários",
   "busca_placeholder": "Buscar por nome...",
   "sem_resultados": "Nenhum resultado encontrado para essa busca."
+  },
+
+  "updates": {
+    "titulo": "Novidades desde sua última visita",
+    "loading": "Carregando...",
+    "erro": "Erro ao carregar as novidades.",
+    "vazio": "Nenhuma novidade por aqui ainda. Volte mais tarde!",
+    "tag_vip": "VIP",
+    "tag_premium": "Premium",
+    "tag_chat": "Chat",
+    "tag_oferta": "Oferta",
+    "texto_feed": "📸 Publicou {n} novas fotos",
+    "texto_premium": "📸 Publicou {n} novas fotos",
+    "texto_chat": "📸 Atualizou novas: {n} fotos e vídeos para desbloqueio no chat",
+    "preco_label": "Preço: R$ {preco}",
+    "lock_vip": "🔒 Exclusivo para assinantes",
+    "lock_premium": "🔒 Conteúdo Premium",
+    "lock_chat": "🔒 Exclusivo no chat",
+    "cta_assinar": "Assinar por R$ {valor}",
+    "cta_perfil": "Ir para o perfil",
+    "cta_desbloquear": "Desbloquear",
+    "cta_chat": "Ver no chat",
+    "cta_oferta": "Ver oferta",
+    "oferta_texto": "🎉 {nome} lançou uma oferta especial!",
+    "oferta_desconto": "{percentual}% de desconto na assinatura por tempo limitado",
+    "tempo_agora": "agora mesmo",
+    "tempo_minutos": "há {n} min",
+    "tempo_horas": "há {n}h",
+    "tempo_dias": "há {n}d"
   },
 
   "perfil": {
