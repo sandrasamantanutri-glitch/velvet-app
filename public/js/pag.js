@@ -1070,11 +1070,9 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
     const btnCopiar = document.getElementById("btnCopiarPix");
 
     const rawB64 = data.qr_code_base64 || null;
-    const qrCodeUrl =
-      (rawB64
-        ? (rawB64.startsWith("data:") ? rawB64 : `data:image/png;base64,${rawB64}`)
-        : null) ||
-      data.qr_code_url;
+    const qrCodeImg = rawB64
+      ? (rawB64.startsWith("data:") ? rawB64 : `data:image/png;base64,${rawB64}`)
+      : null;
 
     const copiaCola =
       data.copia_cola ||
@@ -1092,8 +1090,8 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
     }
 
     if (qr) {
-      if (qrCodeUrl) {
-        qr.src = qrCodeUrl;
+      if (qrCodeImg) {
+        qr.src = qrCodeImg;
         qr.classList.remove("hidden");
       } else if (copiaCola && typeof QRCode !== "undefined") {
         QRCode.toDataURL(copiaCola, { width: 256, margin: 2 }, (err, url) => {
