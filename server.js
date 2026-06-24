@@ -9393,30 +9393,28 @@ if (Number.isNaN(dataAceite.getTime())) {
     /* =========================
        BLOQUEAR PRIMEIRA ASSINATURA VIP VIA PIX
        PIX só permitido para renovação (cliente já assinou antes)
-       TEMPORARIAMENTE DESATIVADO — para reativar, remova o comentário do bloco abaixo
+       ou para emails cadastrados em usuarios_confiaveis
     ========================= */
 
-    // [INICIO_BLOQUEIO_PIX_PRIMEIRA_ASSINATURA]
-    // const vipAnteriorRes = await client.query(
-    //   `SELECT id FROM vip_subscriptions WHERE cliente_id = $1 AND modelo_id = $2 LIMIT 1`,
-    //   [cliente_id, modeloIdNum]
-    // );
+    const vipAnteriorRes = await client.query(
+      `SELECT id FROM vip_subscriptions WHERE cliente_id = $1 AND modelo_id = $2 LIMIT 1`,
+      [cliente_id, modeloIdNum]
+    );
 
-    // if (vipAnteriorRes.rowCount === 0) {
-    //   const confiavelRes = await client.query(
-    //     `SELECT 1 FROM usuarios_confiaveis WHERE email = $1 LIMIT 1`,
-    //     [emailFinal.toLowerCase()]
-    //   );
+    if (vipAnteriorRes.rowCount === 0) {
+      const confiavelRes = await client.query(
+        `SELECT 1 FROM usuarios_confiaveis WHERE email = $1 LIMIT 1`,
+        [emailFinal.toLowerCase()]
+      );
 
-    //   if (confiavelRes.rowCount === 0) {
-    //     await client.query("ROLLBACK");
-    //     return res.status(403).json({
-    //       error: "PIX disponível apenas para renovação VIP. Para a primeira assinatura, utilize cartão de crédito, ou peça autorização para cobrança via PIX ao suporte.",
-    //       primeiro_vip: true
-    //     });
-    //   }
-    // }
-    // [FIM_BLOQUEIO_PIX_PRIMEIRA_ASSINATURA]
+      if (confiavelRes.rowCount === 0) {
+        await client.query("ROLLBACK");
+        return res.status(403).json({
+          error: "PIX disponível apenas para renovação VIP. Para a primeira assinatura, utilize cartão de crédito, ou peça autorização para cobrança via PIX ao suporte.",
+          primeiro_vip: true
+        });
+      }
+    }
 
     /* =========================
        PLANO VIP
