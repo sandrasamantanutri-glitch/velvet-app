@@ -273,7 +273,7 @@ async function atualizarBadgeUpdatesHeader(total) {
 
 async function atualizarContadorUpdatesHeader() {
   const role = localStorage.getItem("role");
-  if (role !== "cliente") return;
+  if (role !== "cliente" && role !== "modelo") return;
 
   const token = localStorage.getItem("token");
   if (!token) return;

@@ -117,6 +117,7 @@ app.use(helmet({
         "https://res.cloudinary.com",
         "https://*.r2.dev",
         "https://images.safe2pay.com.br",
+        "https://api.ipag.com.br",
         "https://*.cloudflarestream.com",
         "https://videodelivery.net",
         "https://imagedelivery.net",
@@ -5846,20 +5847,33 @@ async function buscarEventosUpdates(clienteId) {
   return eventos;
 }
 
-app.get("/api/updates", auth, async (req, res) => {
-  try {
-    if (req.user.role !== "cliente") {
-      return res.json({ eventos: [], naoVistos: 0 });
-    }
-
-    const clienteRes = await db.query(
+async function buscarIdentidadeUpdates(req) {
+  if (req.user.role === "cliente") {
+    const r = await db.query(
       "SELECT id, updates_visto_em FROM clientes WHERE user_id = $1",
       [req.user.id]
     );
-    if (!clienteRes.rowCount) return res.json({ eventos: [], naoVistos: 0 });
+    if (!r.rowCount) return null;
+    return { clienteId: r.rows[0].id, ultimaVisita: r.rows[0].updates_visto_em };
+  }
+  if (req.user.role === "modelo") {
+    const r = await db.query(
+      "SELECT id, updates_visto_em FROM modelos WHERE user_id = $1",
+      [req.user.id]
+    );
+    if (!r.rowCount) return null;
+    // Modelos ainda não assinam outras modelos: clienteId nulo apenas para visualização.
+    return { clienteId: null, ultimaVisita: r.rows[0].updates_visto_em };
+  }
+  return null;
+}
 
-    const { id: clienteId, updates_visto_em: ultimaVisita } = clienteRes.rows[0];
+app.get("/api/updates", auth, async (req, res) => {
+  try {
+    const identidade = await buscarIdentidadeUpdates(req);
+    if (!identidade) return res.json({ eventos: [], naoVistos: 0 });
 
+    const { clienteId, ultimaVisita } = identidade;
     const eventos = await buscarEventosUpdates(clienteId);
 
     const naoVistos = ultimaVisita
@@ -5875,15 +5889,10 @@ app.get("/api/updates", auth, async (req, res) => {
 
 app.get("/api/updates/contador", auth, async (req, res) => {
   try {
-    if (req.user.role !== "cliente") return res.json({ naoVistos: 0 });
+    const identidade = await buscarIdentidadeUpdates(req);
+    if (!identidade) return res.json({ naoVistos: 0 });
 
-    const clienteRes = await db.query(
-      "SELECT id, updates_visto_em FROM clientes WHERE user_id = $1",
-      [req.user.id]
-    );
-    if (!clienteRes.rowCount) return res.json({ naoVistos: 0 });
-
-    const { id: clienteId, updates_visto_em: ultimaVisita } = clienteRes.rows[0];
+    const { clienteId, ultimaVisita } = identidade;
     const eventos = await buscarEventosUpdates(clienteId);
 
     const naoVistos = ultimaVisita
@@ -5899,12 +5908,17 @@ app.get("/api/updates/contador", auth, async (req, res) => {
 
 app.post("/api/updates/marcar-visto", auth, async (req, res) => {
   try {
-    if (req.user.role !== "cliente") return res.json({ sucesso: true });
-
-    await db.query(
-      "UPDATE clientes SET updates_visto_em = NOW() WHERE user_id = $1",
-      [req.user.id]
-    );
+    if (req.user.role === "cliente") {
+      await db.query(
+        "UPDATE clientes SET updates_visto_em = NOW() WHERE user_id = $1",
+        [req.user.id]
+      );
+    } else if (req.user.role === "modelo") {
+      await db.query(
+        "UPDATE modelos SET updates_visto_em = NOW() WHERE user_id = $1",
+        [req.user.id]
+      );
+    }
 
     res.json({ sucesso: true });
   } catch (err) {
