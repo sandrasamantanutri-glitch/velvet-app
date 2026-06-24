@@ -1,4 +1,4 @@
-// ========================================
+﻿// ========================================
 // ADMIN DASHBOARD — API ROUTES
 // ========================================
 
@@ -156,7 +156,7 @@ router.get("/overview", auth, authAdmin, async (req, res) => {
         FROM transacoes_agency t
         WHERE DATE(COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo') = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND t.status = 'pago'
-          AND (t.disponivel_em IS NULL OR t.disponivel_em <= NOW())
+          AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
       `),
 
       db.query(`
@@ -164,7 +164,7 @@ router.get("/overview", auth, authAdmin, async (req, res) => {
         FROM transacoes_agency t
         WHERE DATE(COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo') = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND t.status = 'pago'
-          AND (t.disponivel_em IS NULL OR t.disponivel_em <= NOW())
+          AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
       `),
 
       db.query(`
@@ -179,7 +179,7 @@ router.get("/overview", auth, authAdmin, async (req, res) => {
         LEFT JOIN transacoes_agency t
           ON DATE_TRUNC('month', COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo') = meses.mes
           AND t.status = 'pago'
-          AND (t.disponivel_em IS NULL OR t.disponivel_em <= NOW())
+          AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
         GROUP BY meses.mes
         ORDER BY meses.mes ASC
       `),
@@ -230,7 +230,7 @@ ORDER BY total DESC;
         WHERE t.modelo_id IS NOT NULL
           AND DATE_TRUNC('month', COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND t.status = 'pago'
-          AND (t.disponivel_em IS NULL OR t.disponivel_em <= NOW())
+          AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
         GROUP BY t.modelo_id, m.nome
         ORDER BY ganhos DESC, atualizado_em DESC
         LIMIT 5
@@ -3062,7 +3062,7 @@ router.get("/ranking", authAdmin, async (req, res) => {
       LEFT JOIN modelos m ON m.id = t.modelo_id
       WHERE t.modelo_id IS NOT NULL
         AND t.status = 'pago'
-        AND (t.disponivel_em IS NULL OR t.disponivel_em <= NOW())
+        AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
         AND ${whereMes}
       GROUP BY t.modelo_id, m.nome
       ORDER BY ganhos_total DESC, atualizado_em DESC
@@ -3144,7 +3144,7 @@ function makeGenericListComDisponibilidade(table, orderBy, dateColumn, joinColum
         `SELECT t.*,
            CASE
              WHEN ta.id IS NULL THEN NULL
-             WHEN ta.disponivel_em IS NOT NULL AND ta.disponivel_em > NOW() THEN 'pendente'
+             WHEN ta.disponivel_em IS NULL OR ta.disponivel_em > NOW() THEN 'pendente'
              ELSE 'liberado'
            END AS disponibilidade
          FROM ${table} t
@@ -3327,7 +3327,7 @@ router.get("/transacoes-agency", async (req, res) => {
     const countParams = [...params];
 
     // Totais financeiros (só status='pago' E disponível para saque — PIX é sempre disponível, cartão depende do disponivel_em)
-    const DISPONIVEL = "(t.disponivel_em IS NULL OR t.disponivel_em <= NOW())";
+    const DISPONIVEL = "(t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))";
     const totaisQ = await db.query(`
       SELECT
         COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISPONIVEL} THEN t.valor_bruto ELSE 0 END), 0) AS bruto,
@@ -3721,8 +3721,8 @@ router.post("/modelo-pagamentos", authAdmin, upload.single("recibo"), async (req
 
     const ganhosRes = await db.query(`
       SELECT
-        COALESCE(SUM(valor_modelo) FILTER (WHERE disponivel_em IS NULL OR disponivel_em <= NOW()), 0) AS ganhos_disponiveis,
-        COALESCE(SUM(valor_modelo) FILTER (WHERE disponivel_em IS NOT NULL AND disponivel_em > NOW()), 0) AS ganhos_pendentes
+        COALESCE(SUM(valor_modelo) FILTER (WHERE gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW())), 0) AS ganhos_disponiveis,
+        COALESCE(SUM(valor_modelo) FILTER (WHERE gateway = 'stripe' AND (disponivel_em IS NULL OR disponivel_em > NOW())), 0) AS ganhos_pendentes
       FROM transacoes_agency
       WHERE modelo_id = $1
         AND status = 'pago'
@@ -3836,8 +3836,8 @@ router.get("/modelo-pagamentos/saldo/:modelo_id", authAdmin, async (req, res) =>
 
     const ganhosRes = await db.query(`
       SELECT
-        COALESCE(SUM(valor_modelo) FILTER (WHERE disponivel_em IS NULL OR disponivel_em <= NOW()), 0) AS ganhos_disponiveis,
-        COALESCE(SUM(valor_modelo) FILTER (WHERE disponivel_em IS NOT NULL AND disponivel_em > NOW()), 0) AS ganhos_pendentes
+        COALESCE(SUM(valor_modelo) FILTER (WHERE gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW())), 0) AS ganhos_disponiveis,
+        COALESCE(SUM(valor_modelo) FILTER (WHERE gateway = 'stripe' AND (disponivel_em IS NULL OR disponivel_em > NOW())), 0) AS ganhos_pendentes
       FROM transacoes_agency
       WHERE modelo_id = $1
         AND status = 'pago'

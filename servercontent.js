@@ -1,4 +1,4 @@
-// ===========================
+﻿// ===========================
 // VARIAVEIS
 // ===========================
 const express = require("express");
@@ -988,7 +988,7 @@ router.get("/transacoes", authModelo, async (req, res) => {
         gateway,
         disponivel_em,
         CASE
-          WHEN gateway = 'stripe' AND disponivel_em IS NOT NULL AND disponivel_em > NOW() THEN 'pendente'
+          WHEN gateway = 'stripe' AND (disponivel_em IS NULL OR disponivel_em > NOW()) THEN 'pendente'
           ELSE 'liberado'
         END AS disponibilidade,
         NULL AS message_id
@@ -1012,9 +1012,9 @@ router.get("/transacoes", authModelo, async (req, res) => {
     // Totais liberado/pendente do recorte filtrado (mês selecionado, ou tudo se sem filtro)
     const resumoSql = `
       SELECT
-        COALESCE(SUM(CASE WHEN gateway = 'stripe' AND disponivel_em IS NOT NULL AND disponivel_em > NOW()
+        COALESCE(SUM(CASE WHEN gateway = 'stripe' AND (disponivel_em IS NULL OR disponivel_em > NOW())
                           THEN valor_modelo ELSE 0 END), 0) AS total_pendente,
-        COALESCE(SUM(CASE WHEN NOT (gateway = 'stripe' AND disponivel_em IS NOT NULL AND disponivel_em > NOW())
+        COALESCE(SUM(CASE WHEN NOT (gateway = 'stripe' AND (disponivel_em IS NULL OR disponivel_em > NOW()))
                           THEN valor_modelo ELSE 0 END), 0) AS total_liberado
       FROM transacoes_agency
       WHERE modelo_id = $1
@@ -1281,7 +1281,7 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
       SELECT
         COALESCE(SUM(CASE
           WHEN tipo IN ('midia', 'conteudo')
-           AND (disponivel_em IS NULL OR disponivel_em <= NOW())
+           AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
            AND DATE(COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo')
                = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
           THEN valor_modelo
@@ -1289,7 +1289,7 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
 
         COALESCE(SUM(CASE
           WHEN tipo = 'assinatura'
-           AND (disponivel_em IS NULL OR disponivel_em <= NOW())
+           AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
            AND DATE(COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo')
                = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
           THEN valor_modelo
@@ -1297,7 +1297,7 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
 
         COALESCE(SUM(CASE
           WHEN tipo IN ('midia', 'conteudo')
-           AND (disponivel_em IS NULL OR disponivel_em <= NOW())
+           AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
            AND DATE_TRUNC('month', COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo')
                = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
           THEN valor_modelo
@@ -1305,7 +1305,7 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
 
         COALESCE(SUM(CASE
           WHEN tipo = 'assinatura'
-           AND (disponivel_em IS NULL OR disponivel_em <= NOW())
+           AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
            AND DATE_TRUNC('month', COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo')
                = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
           THEN valor_modelo
@@ -1313,7 +1313,7 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
 
         COALESCE(SUM(CASE
           WHEN tipo IN ('midia', 'conteudo')
-           AND (disponivel_em IS NULL OR disponivel_em <= NOW())
+           AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
            AND DATE_TRUNC('month', COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo')
                = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '1 month'
           THEN valor_modelo
@@ -1321,14 +1321,14 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
 
         COALESCE(SUM(CASE
           WHEN tipo = 'assinatura'
-           AND (disponivel_em IS NULL OR disponivel_em <= NOW())
+           AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
            AND DATE_TRUNC('month', COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo')
                = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '1 month'
           THEN valor_modelo
         END), 0) AS mes_anterior_assinaturas,
 
         COALESCE(SUM(CASE
-          WHEN (disponivel_em IS NULL OR disponivel_em <= NOW())
+          WHEN (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
            AND EXTRACT(YEAR FROM COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo')
                = EXTRACT(YEAR FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
           THEN valor_modelo

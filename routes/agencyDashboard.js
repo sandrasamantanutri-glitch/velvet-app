@@ -1,4 +1,4 @@
-// ========================================
+﻿// ========================================
 // AGENCY DASHBOARD — API ROUTES
 // ========================================
 
@@ -147,7 +147,7 @@ router.get("/overview", authAgencia, async (req, res) => {
         WHERE agencia_id = $1
           AND DATE(COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND status = 'pago'
-          AND (disponivel_em IS NULL OR disponivel_em <= NOW())
+          AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
       `, [agenciaId]),
 
       // FATURAMENTO MÊS (via view)
@@ -157,7 +157,7 @@ router.get("/overview", authAgencia, async (req, res) => {
         WHERE agencia_id = $1
           AND DATE_TRUNC('month', COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND status = 'pago'
-          AND (disponivel_em IS NULL OR disponivel_em <= NOW())
+          AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
       `, [agenciaId]),
 
       // FATURAMENTO 12 MESES (via view)
@@ -175,7 +175,7 @@ router.get("/overview", authAgencia, async (req, res) => {
           FROM vw_transacoes_agencia
           WHERE agencia_id = $1
             AND status = 'pago'
-            AND (disponivel_em IS NULL OR disponivel_em <= NOW())
+            AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
         ) t
           ON DATE_TRUNC('month', COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo') = meses.mes
         GROUP BY meses.mes
@@ -231,7 +231,7 @@ router.get("/overview", authAgencia, async (req, res) => {
         WHERE t.agencia_id = $1
           AND DATE_TRUNC('month', COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND t.status = 'pago'
-          AND (t.disponivel_em IS NULL OR t.disponivel_em <= NOW())
+          AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
         GROUP BY t.modelo_id, m.nome_exibicao, m.nome
         ORDER BY ganhos DESC, atualizado_em DESC
         LIMIT 5
@@ -1261,7 +1261,7 @@ router.get("/ranking", authAgencia, async (req, res) => {
       WHERE t.modelo_id IS NOT NULL
         AND m.agencia_id = $1
         AND t.status = 'pago'
-        AND (t.disponivel_em IS NULL OR t.disponivel_em <= NOW())
+        AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
         AND ${whereMes}
       GROUP BY t.modelo_id, m.nome
       ORDER BY ganhos_total DESC, atualizado_em DESC
@@ -1291,7 +1291,7 @@ router.get("/agencia-pagamentos/saldo", authAgencia, async (req, res) => {
       JOIN modelos m ON m.id = t.modelo_id
       WHERE m.agencia_id = $1::int
         AND t.status = 'pago'
-        AND (t.disponivel_em IS NULL OR t.disponivel_em <= NOW())
+        AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
     `, [agenciaId]);
 
     const pagosRes = await db.query(`

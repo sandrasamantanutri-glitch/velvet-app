@@ -6780,7 +6780,7 @@ app.get("/api/modelo/assinantes", authModelo, async (req, res) => {
         COALESCE(f.total_midias, 0)::numeric(10,2) AS total_midias,
         CASE
           WHEN ta.id IS NULL THEN NULL
-          WHEN ta.disponivel_em IS NOT NULL AND ta.disponivel_em > NOW() THEN 'pendente'
+          WHEN ta.disponivel_em IS NULL OR ta.disponivel_em > NOW() THEN 'pendente'
           ELSE 'liberado'
         END AS disponibilidade_ultimo_pagamento
 
