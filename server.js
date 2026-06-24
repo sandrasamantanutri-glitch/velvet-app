@@ -3744,7 +3744,7 @@ async function ipagRequest(method, path, body) {
 }
 
 async function criarPixIpag({ valorTotal, nome, email, cpf, telefone, endereco, referencia }) {
-  const appUrl = process.env.APP_URL || "https://velvet.lat";
+  const appUrl = process.env.APP_URL || "https://www.velvet.lat";
   const orderId = String(referencia || Date.now()).replace(/\D/g, "").slice(-16) || String(Date.now()).slice(-16);
   return ipagRequest("POST", "/service/payment", {
     amount: Number(valorTotal),
