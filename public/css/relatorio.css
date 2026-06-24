@@ -387,6 +387,35 @@ body {
   }
 }
 
+.resumo-disponibilidade {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.resumo-disponibilidade .resumo-liberado {
+  color: #2e7d32;
+}
+
+.resumo-disponibilidade .resumo-pendente {
+  color: #b26a00;
+}
+
+.status-liberado {
+  color: #2e7d32;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.status-pendente {
+  color: #b26a00;
+  font-weight: 600;
+  font-size: 13px;
+}
+
 #paginacaoTransacoes {
   display: grid;
   justify-content: center;

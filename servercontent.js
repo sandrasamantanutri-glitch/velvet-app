@@ -985,6 +985,12 @@ router.get("/transacoes", authModelo, async (req, res) => {
         ) AS data_sp,
         valor_modelo AS valor,
         status,
+        gateway,
+        disponivel_em,
+        CASE
+          WHEN gateway = 'stripe' AND disponivel_em IS NOT NULL AND disponivel_em > NOW() THEN 'pendente'
+          ELSE 'liberado'
+        END AS disponibilidade,
         NULL AS message_id
       FROM transacoes_agency
       WHERE modelo_id = $1
@@ -1003,9 +1009,23 @@ router.get("/transacoes", authModelo, async (req, res) => {
         ${monthFilter}
     `;
 
-    const [dados, total] = await Promise.all([
+    // Totais liberado/pendente do recorte filtrado (mês selecionado, ou tudo se sem filtro)
+    const resumoSql = `
+      SELECT
+        COALESCE(SUM(CASE WHEN gateway = 'stripe' AND disponivel_em IS NOT NULL AND disponivel_em > NOW()
+                          THEN valor_modelo ELSE 0 END), 0) AS total_pendente,
+        COALESCE(SUM(CASE WHEN NOT (gateway = 'stripe' AND disponivel_em IS NOT NULL AND disponivel_em > NOW())
+                          THEN valor_modelo ELSE 0 END), 0) AS total_liberado
+      FROM transacoes_agency
+      WHERE modelo_id = $1
+        AND status = 'pago'
+        ${monthFilter}
+    `;
+
+    const [dados, total, resumo] = await Promise.all([
       db.query(sql, dataValues),
-      db.query(countSql, values)
+      db.query(countSql, values),
+      db.query(resumoSql, values)
     ]);
 
     const totalRegistros = parseInt(total.rows[0].count, 10);
@@ -1015,7 +1035,9 @@ router.get("/transacoes", authModelo, async (req, res) => {
       registros: dados.rows,
       paginaAtual: page,
       totalPaginas,
-      totalRegistros
+      totalRegistros,
+      totalLiberado: Number(resumo.rows[0]?.total_liberado || 0),
+      totalPendente: Number(resumo.rows[0]?.total_pendente || 0)
     });
 
   } catch (err) {
@@ -1251,53 +1273,63 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
 
     const modelo_id = modeloRes.rows[0].id;
 
+    // Competência: cartão (Stripe) só conta no mês/dia em que o Stripe libera o
+    // valor para saque (disponivel_em); PIX é sempre imediato (disponivel_em = created_at).
+    // Por isso agrupamos por COALESCE(disponivel_em, created_at), não por created_at puro.
     const result = await db.query(
       `
       SELECT
         COALESCE(SUM(CASE
           WHEN tipo IN ('midia', 'conteudo')
-           AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
+           AND (disponivel_em IS NULL OR disponivel_em <= NOW())
+           AND DATE(COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo')
                = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
           THEN valor_modelo
         END), 0) AS hoje_midias,
 
         COALESCE(SUM(CASE
           WHEN tipo = 'assinatura'
-           AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
+           AND (disponivel_em IS NULL OR disponivel_em <= NOW())
+           AND DATE(COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo')
                = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
           THEN valor_modelo
         END), 0) AS hoje_assinaturas,
 
         COALESCE(SUM(CASE
           WHEN tipo IN ('midia', 'conteudo')
-           AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
+           AND (disponivel_em IS NULL OR disponivel_em <= NOW())
+           AND DATE_TRUNC('month', COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo')
                = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
           THEN valor_modelo
         END), 0) AS mes_midias,
 
         COALESCE(SUM(CASE
           WHEN tipo = 'assinatura'
-           AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
+           AND (disponivel_em IS NULL OR disponivel_em <= NOW())
+           AND DATE_TRUNC('month', COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo')
                = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
           THEN valor_modelo
         END), 0) AS mes_assinaturas,
 
         COALESCE(SUM(CASE
           WHEN tipo IN ('midia', 'conteudo')
-           AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
+           AND (disponivel_em IS NULL OR disponivel_em <= NOW())
+           AND DATE_TRUNC('month', COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo')
                = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '1 month'
           THEN valor_modelo
         END), 0) AS mes_anterior_midias,
 
         COALESCE(SUM(CASE
           WHEN tipo = 'assinatura'
-           AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
+           AND (disponivel_em IS NULL OR disponivel_em <= NOW())
+           AND DATE_TRUNC('month', COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo')
                = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '1 month'
           THEN valor_modelo
         END), 0) AS mes_anterior_assinaturas,
 
         COALESCE(SUM(CASE
-          WHEN EXTRACT(YEAR FROM created_at AT TIME ZONE 'America/Sao_Paulo')
+          WHEN (disponivel_em IS NULL OR disponivel_em <= NOW())
+           AND EXTRACT(YEAR FROM COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo')
                = EXTRACT(YEAR FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
           THEN valor_modelo
         END), 0) AS acumulado_ano_atual,

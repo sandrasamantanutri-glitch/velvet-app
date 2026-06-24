@@ -90,6 +90,12 @@ function toast(msg, type = '') {
   setTimeout(() => t.className = 'toast', 3500);
 }
 
+function badgeDisponibilidade(d) {
+  if (d === 'pendente') return '<span class="badge badge-warning">Pendente (cartão)</span>';
+  if (d === 'liberado') return '<span class="badge badge-success">Liberado</span>';
+  return '—';
+}
+
 function emptyRow(cols) {
   return `<tr class="empty-row"><td colspan="${cols}">Nenhum registro encontrado</td></tr>`;
 }
@@ -3238,6 +3244,7 @@ makeFinLoader('conteudo-pacotes', 'tablePacotes', 'paginationPacotes', r => `
     <td>${money(r.preco)}</td>
     <td>${badgeStatus(r.status)}</td>
     <td>${r.metodo_pagamento || '—'}</td>
+    <td>${badgeDisponibilidade(r.disponibilidade)}</td>
     <td>${fmtDateTime(r.criado_em)}</td>
   </tr>
 `, 'carregarPacotes');
@@ -3251,6 +3258,7 @@ makeFinLoader('premium-unlocks', 'tablePremium', 'paginationPremium', r => `
     <td>${money(r.valor_base)}</td>
     <td>${badgeStatus(r.status)}</td>
     <td>${r.metodo_pagamento || '—'}</td>
+    <td>${badgeDisponibilidade(r.disponibilidade)}</td>
     <td>${fmtDateTime(r.created_at)}</td>
   </tr>
 `, 'carregarPremium');
@@ -3263,6 +3271,7 @@ makeFinLoader('vip-subscriptions', 'tableVips', 'paginationVips', r => `
     <td>${money(r.valor_assinatura)}</td>
     <td>${badgeStatus(r.ativo ? 'ativo' : 'inativo')}</td>
     <td>${r.gateway_subscription_id || '—'}</td>
+    <td>${badgeDisponibilidade(r.disponibilidade)}</td>
     <td>${fmtDateTime(r.updated_at)}</td>
   </tr>
 `, 'carregarVips');
@@ -3356,6 +3365,7 @@ async function carregarTransacoes(page) {
     $('kpi-agency').textContent = money(data.totais?.agency);
     $('kpi-gateway').textContent = money(data.totais?.gateway);
     $('kpi-chargebacks').textContent = money(data.totais?.chargebacks);
+    $('kpi-bruto-pendente').textContent = money(data.totais?.bruto_pendente);
 
     const tbody = $('tableTransacoes').querySelector('tbody');
     tbody.innerHTML = (data.rows || []).map(r => `
@@ -3367,8 +3377,9 @@ async function carregarTransacoes(page) {
         <td>${money(r.ganhos_velvet)}</td>
         <td>${money(r.ganhos_agencia)}</td>
         <td>${money(r.ganhos_gateway)}</td>
+        <td>${Number(r.ganhos_pendente) > 0 ? `<span class="badge badge-warning">${money(r.ganhos_pendente)}</span>` : '—'}</td>
       </tr>
-    `).join('') || emptyRow(7);
+    `).join('') || emptyRow(8);
     buildPagination('paginationTransacoes', page, data.totalPages || 1, 'carregarTransacoes');
   } catch (err) { console.error('Erro transações:', err); }
 }

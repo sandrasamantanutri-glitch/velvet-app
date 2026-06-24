@@ -139,13 +139,15 @@ router.get("/overview", authAgencia, async (req, res) => {
           AND agencia_id = $1
       `, [agenciaId]),
 
-      // FATURAMENTO DIA (via view)
+      // FATURAMENTO DIA (via view) — só conta cartão já liberado (PIX é sempre liberado);
+      // o valor entra no dia/mês em que foi liberado, não no dia da venda.
       db.query(`
         SELECT COALESCE(SUM(agency_fee), 0) AS total
         FROM vw_transacoes_agencia
         WHERE agencia_id = $1
-          AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo') = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+          AND DATE(COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND status = 'pago'
+          AND (disponivel_em IS NULL OR disponivel_em <= NOW())
       `, [agenciaId]),
 
       // FATURAMENTO MÊS (via view)
@@ -153,8 +155,9 @@ router.get("/overview", authAgencia, async (req, res) => {
         SELECT COALESCE(SUM(agency_fee), 0) AS total
         FROM vw_transacoes_agencia
         WHERE agencia_id = $1
-          AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+          AND DATE_TRUNC('month', COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND status = 'pago'
+          AND (disponivel_em IS NULL OR disponivel_em <= NOW())
       `, [agenciaId]),
 
       // FATURAMENTO 12 MESES (via view)
@@ -172,8 +175,9 @@ router.get("/overview", authAgencia, async (req, res) => {
           FROM vw_transacoes_agencia
           WHERE agencia_id = $1
             AND status = 'pago'
+            AND (disponivel_em IS NULL OR disponivel_em <= NOW())
         ) t
-          ON DATE_TRUNC('month', t.created_at AT TIME ZONE 'America/Sao_Paulo') = meses.mes
+          ON DATE_TRUNC('month', COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo') = meses.mes
         GROUP BY meses.mes
         ORDER BY meses.mes ASC
       `, [agenciaId]),
@@ -225,8 +229,9 @@ router.get("/overview", authAgencia, async (req, res) => {
         FROM vw_transacoes_agencia t
         JOIN modelos m ON m.id = t.modelo_id
         WHERE t.agencia_id = $1
-          AND DATE_TRUNC('month', t.created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+          AND DATE_TRUNC('month', COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND t.status = 'pago'
+          AND (t.disponivel_em IS NULL OR t.disponivel_em <= NOW())
         GROUP BY t.modelo_id, m.nome_exibicao, m.nome
         ORDER BY ganhos DESC, atualizado_em DESC
         LIMIT 5
@@ -1235,12 +1240,12 @@ router.get("/ranking", authAgencia, async (req, res) => {
       }
       params.push(Number(match[1]), Number(match[2]));
       whereMes = `
-        EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $2
-        AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $3
+        EXTRACT(YEAR  FROM COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo') = $2
+        AND EXTRACT(MONTH FROM COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo') = $3
       `;
     } else {
       whereMes = `
-        DATE_TRUNC('month', t.created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+        DATE_TRUNC('month', COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
       `;
     }
 
@@ -1256,6 +1261,7 @@ router.get("/ranking", authAgencia, async (req, res) => {
       WHERE t.modelo_id IS NOT NULL
         AND m.agencia_id = $1
         AND t.status = 'pago'
+        AND (t.disponivel_em IS NULL OR t.disponivel_em <= NOW())
         AND ${whereMes}
       GROUP BY t.modelo_id, m.nome
       ORDER BY ganhos_total DESC, atualizado_em DESC
@@ -1285,6 +1291,7 @@ router.get("/agencia-pagamentos/saldo", authAgencia, async (req, res) => {
       JOIN modelos m ON m.id = t.modelo_id
       WHERE m.agencia_id = $1::int
         AND t.status = 'pago'
+        AND (t.disponivel_em IS NULL OR t.disponivel_em <= NOW())
     `, [agenciaId]);
 
     const pagosRes = await db.query(`

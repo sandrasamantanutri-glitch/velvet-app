@@ -120,6 +120,14 @@ if (!res.ok) {
     const data = await res.json();
     const dados = data.registros || [];
 
+    const resumoEl = document.getElementById("resumoDisponibilidadeTransacoes");
+    if (resumoEl) {
+      resumoEl.innerHTML = `
+        <span class="resumo-liberado">${t("relatorio.transacoes_liberadas")}: ${emReais(data.totalLiberado || 0)}</span>
+        <span class="resumo-pendente">${t("relatorio.transacoes_pendentes")}: ${emReais(data.totalPendente || 0)}</span>
+      `;
+    }
+
     lista.innerHTML = "";
 
     if (!dados.length) {
@@ -130,11 +138,15 @@ if (!res.ok) {
     paginaAtualTransacoes = data.paginaAtual;
 
 dados.forEach(tr => {
+  const pendente = tr.disponibilidade === "pendente";
   lista.innerHTML += `
     <div class="transacao">
       <strong>#${tr.codigo}</strong> · ${tr.tipo}<br>
       ${formatarDataHoraSP(tr.created_at)}<br>
-      ${t("relatorio.valor")}: ${emReais(tr.valor)}
+      ${t("relatorio.valor")}: ${emReais(tr.valor)}<br>
+      <span class="${pendente ? 'status-pendente' : 'status-liberado'}">
+        ${pendente ? t("relatorio.status_pendente") : t("relatorio.status_liberado")}
+      </span>
     </div>
   `;
 });

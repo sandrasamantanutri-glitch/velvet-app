@@ -882,8 +882,9 @@ app.post("/api/webhook/ipag", express.raw({ type: "*/*" }), async (req, res) => 
         await client.query(
           `INSERT INTO transacoes_agency
              (modelo_id, cliente_id, tipo, valor_bruto,
-              valor_modelo, agency_fee, velvet_fee, taxa_gateway, status, created_at)
-           VALUES ($1,$2,'midia',$3,$4,$5,$6,$7,'pago',NOW())`,
+              valor_modelo, agency_fee, velvet_fee, taxa_gateway, status, created_at,
+              gateway, disponivel_em)
+           VALUES ($1,$2,'midia',$3,$4,$5,$6,$7,'pago',NOW(),'ipag',NOW())`,
           [modelo_id, cliente_id, valorBase,
            Number(valores.valor_modelo || 0), Number(valores.agency_fee || 0),
            Number(valores.velvet_fee || 0), taxaGateway]
@@ -1009,8 +1010,9 @@ app.post("/api/webhook/ipag", express.raw({ type: "*/*" }), async (req, res) => 
         await client.query(
           `INSERT INTO transacoes_agency
              (modelo_id, cliente_id, tipo, valor_bruto,
-              valor_modelo, agency_fee, velvet_fee, taxa_gateway, status, created_at)
-           VALUES ($1,$2,'assinatura',$3,$4,$5,$6,$7,'pago',NOW())`,
+              valor_modelo, agency_fee, velvet_fee, taxa_gateway, status, created_at,
+              gateway, disponivel_em)
+           VALUES ($1,$2,'assinatura',$3,$4,$5,$6,$7,'pago',NOW(),'ipag',NOW())`,
           [modelo_id, cliente_id, valorBase,
            Number(valores.valor_modelo || 0), Number(valores.agency_fee || 0),
            Number(valores.velvet_fee || 0), taxaGateway]
@@ -1057,8 +1059,9 @@ app.post("/api/webhook/ipag", express.raw({ type: "*/*" }), async (req, res) => 
         await client.query(
           `INSERT INTO transacoes_agency
              (modelo_id, cliente_id, tipo, valor_bruto,
-              valor_modelo, agency_fee, velvet_fee, taxa_gateway, status, created_at)
-           VALUES ($1,$2,'midia',$3,$4,$5,$6,$7,'pago',NOW())`,
+              valor_modelo, agency_fee, velvet_fee, taxa_gateway, status, created_at,
+              gateway, disponivel_em)
+           VALUES ($1,$2,'midia',$3,$4,$5,$6,$7,'pago',NOW(),'ipag',NOW())`,
           [modelo_id, cliente_id, valorBase,
            Number(valores.valor_modelo || 0), Number(valores.agency_fee || 0),
            Number(valores.velvet_fee || 0), taxaGateway]
@@ -2579,9 +2582,10 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
           pago_em,
           currency,
           valor_cobrado,
-          taxa_cambio
+          taxa_cambio,
+          payment_id
         )
-        VALUES ($1,$2,$3,$4,$4,$5,'pago',$6,NOW(),$7,$8,$9)
+        VALUES ($1,$2,$3,$4,$4,$5,'pago',$6,NOW(),$7,$8,$9,$10)
         ON CONFLICT (message_id,cliente_id)
         DO UPDATE SET
           status='pago',
@@ -2590,7 +2594,8 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
           valor_total=$5,
           currency=$7,
           valor_cobrado=$8,
-          taxa_cambio=$9
+          taxa_cambio=$9,
+          payment_id=$10
         `,
         [
           message_id,
@@ -2601,7 +2606,8 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
           metodoPagamento,
           currencyPago,
           valorPago,
-          taxaCambioMeta
+          taxaCambioMeta,
+          paymentIntentId
         ]
       );
 
@@ -2624,11 +2630,15 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
           velvet_fee,
           taxa_gateway,
           status,
-          created_at
+          created_at,
+          gateway,
+          disponivel_em,
+          stripe_payment_intent_id
         )
         VALUES (
           $1,$2,'midia',
-          $3,$4,$5,$6,$7,'pago',NOW()
+          $3,$4,$5,$6,$7,'pago',NOW(),
+          'stripe',NULL,$8
         )
         `,
         [
@@ -2638,7 +2648,8 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
           Number(valores.valor_modelo || 0),
           Number(valores.agency_fee || 0),
           Number(valores.velvet_fee || 0),
-          taxaGateway
+          taxaGateway,
+          paymentIntentId
         ]
       );
 
@@ -2734,11 +2745,15 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
           velvet_fee,
           taxa_gateway,
           status,
-          created_at
+          created_at,
+          gateway,
+          disponivel_em,
+          stripe_payment_intent_id
         )
         VALUES (
           $1,$2,'midia',
-          $3,$4,$5,$6,$7,'pago',NOW()
+          $3,$4,$5,$6,$7,'pago',NOW(),
+          'stripe',NULL,$8
         )
         `,
         [
@@ -2748,7 +2763,8 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
           Number(valores.valor_modelo || 0),
           Number(valores.agency_fee || 0),
           Number(valores.velvet_fee || 0),
-          taxaGateway
+          taxaGateway,
+          paymentIntentId
         ]
       );
 
@@ -2916,11 +2932,15 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
           velvet_fee,
           taxa_gateway,
           status,
-          created_at
+          created_at,
+          gateway,
+          disponivel_em,
+          stripe_payment_intent_id
         )
         VALUES (
           $1,$2,'assinatura',
-          $3,$4,$5,$6,$7,'pago',NOW()
+          $3,$4,$5,$6,$7,'pago',NOW(),
+          'stripe',NULL,$8
         )
         `,
         [
@@ -2930,7 +2950,8 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
           valorModelo,
           agencyFee,
           velvetFee,
-          taxaGateway
+          taxaGateway,
+          paymentIntentId
         ]
       );
 
@@ -6716,7 +6737,8 @@ app.get("/api/modelo/assinantes", authModelo, async (req, res) => {
         SELECT
           v.cliente_id,
           v.modelo_id,
-          MAX(v.expiration_at) AS expiration_at
+          MAX(v.expiration_at) AS expiration_at,
+          MAX(v.gateway_subscription_id) AS gateway_subscription_id
         FROM vip_subscriptions v
         WHERE v.modelo_id = $1
           AND v.ativo = true
@@ -6755,7 +6777,12 @@ app.get("/api/modelo/assinantes", authModelo, async (req, res) => {
         c.nome AS nome_cliente,
         va.expiration_at,
         COALESCE(f.total_assinaturas, 0)::numeric(10,2) AS total_assinaturas,
-        COALESCE(f.total_midias, 0)::numeric(10,2) AS total_midias
+        COALESCE(f.total_midias, 0)::numeric(10,2) AS total_midias,
+        CASE
+          WHEN ta.id IS NULL THEN NULL
+          WHEN ta.disponivel_em IS NOT NULL AND ta.disponivel_em > NOW() THEN 'pendente'
+          ELSE 'liberado'
+        END AS disponibilidade_ultimo_pagamento
 
       FROM vip_ativos va
       JOIN clientes c
@@ -6763,6 +6790,9 @@ app.get("/api/modelo/assinantes", authModelo, async (req, res) => {
       LEFT JOIN financeiros f
         ON f.cliente_id = va.cliente_id
        AND f.modelo_id = va.modelo_id
+      LEFT JOIN transacoes_agency ta
+        ON ta.stripe_payment_intent_id = va.gateway_subscription_id
+       AND ta.gateway = 'stripe'
 
       ORDER BY va.expiration_at ASC, c.nome ASC
       `,
@@ -11348,13 +11378,14 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
       await client.query(
         `INSERT INTO transacoes_agency
            (modelo_id, cliente_id, tipo, valor_bruto, valor_modelo, agency_fee,
-            velvet_fee, taxa_gateway, status, created_at)
-         VALUES ($1,$2,'assinatura',$3,$4,$5,$6,$7,'pago',NOW())`,
+            velvet_fee, taxa_gateway, status, created_at, gateway, disponivel_em, stripe_payment_intent_id)
+         VALUES ($1,$2,'assinatura',$3,$4,$5,$6,$7,'pago',NOW(),'stripe',NULL,$8)`,
         [modeloIdNum, cliente_id, valorAssinatura,
          Number(valores.valor_modelo || 0),
          Number(valores.agency_fee || 0),
          Number(valores.velvet_fee || 0),
-         taxaGateway]
+         taxaGateway,
+         paymentIntentId]
       );
 
       if (primeiraAssinatura) {
@@ -11791,11 +11822,11 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
       await client.query(
         `INSERT INTO conteudo_pacotes
            (message_id, cliente_id, modelo_id, preco, valor_base, valor_total,
-            status, metodo_pagamento, pago_em, currency, valor_cobrado, taxa_cambio)
-         VALUES ($1,$2,$3,$4,$4,$5,'pago','cartao',NOW(),'brl',$5,NULL)
+            status, metodo_pagamento, pago_em, currency, valor_cobrado, taxa_cambio, payment_id)
+         VALUES ($1,$2,$3,$4,$4,$5,'pago','cartao',NOW(),'brl',$5,NULL,$6)
          ON CONFLICT (message_id, cliente_id) DO UPDATE
-           SET status='pago', metodo_pagamento='cartao', pago_em=NOW(), valor_total=$5`,
-        [conteudoId, cliente_id, modelo_id, valorBase, total]
+           SET status='pago', metodo_pagamento='cartao', pago_em=NOW(), valor_total=$5, payment_id=$6`,
+        [conteudoId, cliente_id, modelo_id, valorBase, total, paymentIntentId]
       );
 
       conteudo_ids_liberados = await marcarConteudoComoLiberadoPorPagamento(client, {
@@ -11807,13 +11838,14 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
       await client.query(
         `INSERT INTO transacoes_agency
            (modelo_id, cliente_id, tipo, valor_bruto, valor_modelo, agency_fee,
-            velvet_fee, taxa_gateway, status, created_at)
-         VALUES ($1,$2,'midia',$3,$4,$5,$6,$7,'pago',NOW())`,
+            velvet_fee, taxa_gateway, status, created_at, gateway, disponivel_em, stripe_payment_intent_id)
+         VALUES ($1,$2,'midia',$3,$4,$5,$6,$7,'pago',NOW(),'stripe',NULL,$8)`,
         [modelo_id, cliente_id, valorBase,
          Number(valores.valor_modelo || 0),
          Number(valores.agency_fee || 0),
          Number(valores.velvet_fee || 0),
-         taxaGateway]
+         taxaGateway,
+         paymentIntentId]
       );
     }
 
@@ -12309,13 +12341,14 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
       await client.query(
         `INSERT INTO transacoes_agency
            (modelo_id, cliente_id, tipo, valor_bruto, valor_modelo, agency_fee,
-            velvet_fee, taxa_gateway, status, created_at)
-         VALUES ($1,$2,'midia',$3,$4,$5,$6,$7,'pago',NOW())`,
+            velvet_fee, taxa_gateway, status, created_at, gateway, disponivel_em, stripe_payment_intent_id)
+         VALUES ($1,$2,'midia',$3,$4,$5,$6,$7,'pago',NOW(),'stripe',NULL,$8)`,
         [modelo_id, cliente_id, valorBase,
          Number(valores.valor_modelo || 0),
          Number(valores.agency_fee || 0),
          Number(valores.velvet_fee || 0),
-         taxaGateway]
+         taxaGateway,
+         paymentIntentId]
       );
     }
 
@@ -14268,6 +14301,13 @@ db.query(`
     ADD COLUMN IF NOT EXISTS chargeback_motivo TEXT
 `).catch(err => console.error("Migração transacoes_agency cols:", err.message));
 
+// transacoes_agency: disponibilidade de saque (Stripe balance/reserve)
+db.query(`
+  ALTER TABLE transacoes_agency
+    ADD COLUMN IF NOT EXISTS stripe_payment_intent_id TEXT,
+    ADD COLUMN IF NOT EXISTS disponivel_em TIMESTAMPTZ
+`).catch(err => console.error("Migração transacoes_agency disponivel_em:", err.message));
+
 // ── CRON: avisos VIP (a cada hora, substitui o cron do Render) ──
 const cron = require("node-cron");
 const {
@@ -14661,6 +14701,59 @@ async function gerarFechamentosAutomaticosAgencias() {
 }
 
 cron.schedule("0 3 1 * *", gerarFechamentosAutomaticosAgencias);
+
+// ── CRON: sincroniza disponibilidade de saque das transações de cartão (Stripe) ──
+// Roda 1x ao dia: busca o `available_on` real (Balance Transaction) de cada
+// transacoes_agency com gateway='stripe' ainda sem disponivel_em definido.
+async function sincronizarDisponibilidadeStripe() {
+  console.log("💳 [Sync Stripe] Verificando disponibilidade de saque das transações de cartão...");
+
+  try {
+    const pendentes = await db.query(`
+      SELECT id, stripe_payment_intent_id
+      FROM transacoes_agency
+      WHERE gateway = 'stripe'
+        AND disponivel_em IS NULL
+        AND stripe_payment_intent_id IS NOT NULL
+      ORDER BY created_at ASC
+      LIMIT 200
+    `);
+
+    let atualizadas = 0;
+    let semSaldoAinda = 0;
+
+    for (const row of pendentes.rows) {
+      try {
+        const pi = await stripe.paymentIntents.retrieve(row.stripe_payment_intent_id, {
+          expand: ["latest_charge.balance_transaction"]
+        });
+
+        const bt = pi?.latest_charge?.balance_transaction;
+
+        if (!bt || !bt.available_on) {
+          semSaldoAinda++;
+          continue;
+        }
+
+        const disponivelEm = new Date(bt.available_on * 1000);
+
+        await db.query(
+          `UPDATE transacoes_agency SET disponivel_em = $1 WHERE id = $2`,
+          [disponivelEm, row.id]
+        );
+        atualizadas++;
+      } catch (err) {
+        console.error(`[Sync Stripe] Erro na transacao_agency id=${row.id}:`, err.message);
+      }
+    }
+
+    console.log(`✅ [Sync Stripe] ${atualizadas} atualizadas, ${semSaldoAinda} ainda sem balance_transaction, ${pendentes.rowCount} verificadas.`);
+  } catch (err) {
+    console.error("🔥 [Sync Stripe] Erro geral:", err.message);
+  }
+}
+
+cron.schedule("0 4 * * *", sincronizarDisponibilidadeStripe);
 
 // Migração: coluna de controle do aviso de expiração
 db.query("ALTER TABLE ofertas ADD COLUMN IF NOT EXISTS aviso_expiracao_enviado BOOLEAN DEFAULT false")

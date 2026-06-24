@@ -440,6 +440,18 @@ select {
   color: var(--text);
 }
 
+.status-liberado {
+  color: #2e7d32;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.status-pendente {
+  color: #b26a00;
+  font-weight: 600;
+  font-size: 13px;
+}
+
 /* ===== TABS ===== */
 .tabs {
   display: flex;

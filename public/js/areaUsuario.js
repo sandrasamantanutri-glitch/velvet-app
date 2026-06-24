@@ -307,6 +307,14 @@ function renderizarPagina() {
     const total =
       Number(a.total_assinaturas) + Number(a.total_midias);
 
+    const disponibilidade = a.disponibilidade_ultimo_pagamento;
+    const badgeDisponibilidade =
+      disponibilidade === 'pendente'
+        ? `<span class="status-pendente">${t("relatorio.status_pendente")}</span>`
+        : disponibilidade === 'liberado'
+          ? `<span class="status-liberado">${t("relatorio.status_liberado")}</span>`
+          : '—';
+
     tbody.innerHTML += `
       <tr>
         <td class="assinante-nome">${a.nome_cliente}</td>
@@ -314,6 +322,7 @@ function renderizarPagina() {
         <td>R$ ${Number(a.total_assinaturas).toFixed(2)}</td>
         <td>R$ ${Number(a.total_midias).toFixed(2)}</td>
         <td class="total-geral">R$ ${total.toFixed(2)}</td>
+        <td>${badgeDisponibilidade}</td>
       </tr>
     `;
   });
