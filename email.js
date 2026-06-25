@@ -804,10 +804,10 @@ async function obterOuCriarAudienceVIP(db, modelo_id, nome_modelo) {
 async function adicionarContatoAudienceVIP(audience_id, email, nome) {
   const partes = (nome || '').trim().split(/\s+/);
   const { error } = await resend.contacts.create({
-    audience_id,
+    audienceId: audience_id,
     email,
-    first_name: partes[0] || '',
-    last_name:  partes.slice(1).join(' ') || undefined,
+    firstName: partes[0] || '',
+    lastName:  partes.slice(1).join(' ') || undefined,
     unsubscribed: false
   });
   if (error) console.warn(`[Audience] Aviso ao adicionar contato ${email}:`, error);
