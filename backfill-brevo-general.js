@@ -32,7 +32,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     for (let i = 0; i < validos.length; i += CONCURRENCIA) {
       const lote = validos.slice(i, i + CONCURRENCIA);
       const resultados = await Promise.allSettled(
-        lote.map(r => adicionarContatoLista(GENERAL_LIST_ID, r.email, r.nome))
+        lote.map(r => adicionarContatoLista(GENERAL_LIST_ID, r.email, r.nome, "novidades_plataforma"))
       );
       resultados.forEach((r, idx) => {
         const email = lote[idx].email;

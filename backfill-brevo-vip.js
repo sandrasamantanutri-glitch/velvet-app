@@ -46,7 +46,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             listaCache.set(r.modelo_id, listPromise);
           }
           const listId = await listPromise;
-          await adicionarContatoLista(listId, r.email, r.nome);
+          await adicionarContatoLista(listId, r.email, r.nome, "novidades_criadoras");
           return { email: r.email, modelo: r.modelo_nome };
         })
       );

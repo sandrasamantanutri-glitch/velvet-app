@@ -3,7 +3,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 const HEADER = `
   <div style="background:linear-gradient(135deg,#7B2CFF 0%,#a94cff 100%);border-radius:14px 14px 0 0;padding:20px 32px;text-align:center;">
-    <span style="color:#7B2CFF;font-size:20px;font-weight:800;letter-spacing:1px;">Velvet</span>
+    <img src="https://www.velvet.lat/assets/velvet.png" alt="Velvet" width="40" height="40" style="display:inline-block;vertical-align:middle;border-radius:8px;">
   </div>
 `;
 
@@ -32,11 +32,15 @@ function wrapEmail(content) {
 
 function btnPrimary(href, texto) {
   return `
-    <div style="text-align:center;margin:28px 0 8px;">
-      <a href="${href}" style="display:inline-block;background:linear-gradient(135deg,#7B2CFF,#a94cff);color:#fff;text-decoration:none;padding:15px 32px;border-radius:10px;font-weight:bold;font-size:15px;">
-        ${texto}
-      </a>
-    </div>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:28px auto 8px;">
+      <tr>
+        <td bgcolor="#7B2CFF" style="border-radius:10px;">
+          <a href="${href}" style="display:inline-block;padding:15px 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:10px;">
+            ${texto}
+          </a>
+        </td>
+      </tr>
+    </table>
   `;
 }
 
@@ -790,7 +794,7 @@ async function obterOuCriarAudienceVIP(db, modelo_id, nome_modelo) {
 
 async function adicionarContatoAudienceVIP(audience_id, email, nome) {
   try {
-    await brevo.adicionarContatoLista(audience_id, email, nome);
+    await brevo.adicionarContatoLista(audience_id, email, nome, "novidades_criadoras");
   } catch (e) {
     console.warn(`[Lista Brevo] Aviso ao adicionar contato ${email}:`, e.message);
   }

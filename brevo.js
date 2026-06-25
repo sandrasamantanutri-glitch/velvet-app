@@ -1,4 +1,5 @@
 const https = require("https");
+const jwt = require("jsonwebtoken");
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -60,14 +61,22 @@ async function obterOuCriarListaVIP(db, folderId, modelo_id, nome_modelo) {
   return lista.id;
 }
 
-async function adicionarContatoLista(listId, email, nome) {
+function gerarTokenDesinscricao(email, tipo) {
+  return jwt.sign({ email, tipo, action: "unsub_email" }, process.env.JWT_SECRET);
+}
+
+async function adicionarContatoLista(listId, email, nome, tipoPref) {
   const partes = (nome || "").trim().split(/\s+/);
+  const attributes = {
+    FIRSTNAME: partes[0] || "",
+    LASTNAME: partes.slice(1).join(" ") || ""
+  };
+  if (tipoPref) {
+    attributes.UNSUB_TOKEN = gerarTokenDesinscricao(email.trim(), tipoPref);
+  }
   await request("POST", "/v3/contacts", {
     email: email.trim(),
-    attributes: {
-      FIRSTNAME: partes[0] || "",
-      LASTNAME: partes.slice(1).join(" ") || ""
-    },
+    attributes,
     listIds: [listId],
     updateEnabled: true
   });
@@ -113,5 +122,7 @@ module.exports = {
   adicionarContatoLista,
   removerContatoLista,
   enviarCampanha,
-  FOLDER_ID_VELVET: 3
+  gerarTokenDesinscricao,
+  FOLDER_ID_VELVET: 3,
+  GENERAL_LIST_ID: 4
 };

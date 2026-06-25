@@ -8212,18 +8212,23 @@ app.post("/api/upload", auth, authModelo, uploadLimiter, uploadB2.array("file", 
             html: `<div style="font-family:Arial,sans-serif;background:#f0ebfa;padding:32px 16px;color:#2d1f3d;">
               <div style="max-width:600px;margin:0 auto;">
                 <div style="background:linear-gradient(135deg,#7B2CFF,#a94cff);border-radius:14px 14px 0 0;padding:20px 32px;text-align:center;">
-                  <span style="color:#fff;font-size:20px;font-weight:800;letter-spacing:1px;">💜 Velvet</span>
+                  <img src="https://www.velvet.lat/assets/velvet.png" alt="Velvet" width="40" height="40" style="display:inline-block;vertical-align:middle;border-radius:8px;">
                 </div>
                 <div style="background:#fff;padding:32px;border-radius:0 0 14px 14px;border:1px solid #e5d9ff;border-top:none;">
                   <h2 style="color:#6f42c1;text-align:center;margin:0 0 8px;">Nova atualização no feed!</h2>
                   <p style="text-align:center;color:#7a6a9a;margin:0 0 24px;">${nome_modelo} acabou de publicar conteúdo no feed para você.</p>
-                  <div style="text-align:center;margin:24px 0;">
-                    <a href="${linkPerfil}" style="display:inline-block;background:linear-gradient(135deg,#7B2CFF,#a94cff);color:#fff;text-decoration:none;padding:15px 32px;border-radius:10px;font-weight:bold;font-size:15px;">
-                      Ver agora
-                    </a>
-                  </div>
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:24px auto;">
+                    <tr>
+                      <td bgcolor="#7B2CFF" style="border-radius:10px;">
+                        <a href="${linkPerfil}" style="display:inline-block;padding:15px 32px;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:10px;">
+                          Ver agora
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
                   <p style="text-align:center;font-size:12px;color:#9b87b8;margin-top:24px;">
-                    Você recebe este e-mail por ser assinante VIP.
+                    Você recebe este e-mail por ser assinante VIP.<br>
+                    // <a href="https://www.velvet.lat/api/email/desinscrever?token={{contact.UNSUB_TOKEN}}" target="_blank" style="color:#7B2CFF;">Não desejo receber mais e-mails desse tipo</a>
                   </p>
                 </div>
               </div>
@@ -8358,7 +8363,7 @@ RETURNING *
           html: `<div style="font-family:Arial,sans-serif;background:#f0ebfa;padding:32px 16px;color:#2d1f3d;">
             <div style="max-width:600px;margin:0 auto;">
               <div style="background:linear-gradient(135deg,#7B2CFF,#a94cff);border-radius:14px 14px 0 0;padding:20px 32px;text-align:center;">
-                <span style="color:#fff;font-size:20px;font-weight:800;letter-spacing:1px;">💜 Velvet</span>
+                <img src="https://www.velvet.lat/assets/velvet.png" alt="Velvet" width="40" height="40" style="display:inline-block;vertical-align:middle;border-radius:8px;">
               </div>
               <div style="background:#fff;padding:32px;border-radius:0 0 14px 14px;border:1px solid #e5d9ff;border-top:none;">
                 <h2 style="color:#6f42c1;text-align:center;margin:0 0 8px;">Promoção especial disponível!</h2>
@@ -8366,13 +8371,18 @@ RETURNING *
                 <div style="background:#f8f4ff;border-left:4px solid #7B2CFF;border-radius:0 10px 10px 0;padding:14px 18px;margin:0 0 24px;">
                   <p style="margin:0;font-weight:bold;color:#6f42c1;">🎁 Aproveite antes que acabe!</p>
                 </div>
-                <div style="text-align:center;margin:24px 0;">
-                  <a href="${linkPerfil}" style="display:inline-block;background:linear-gradient(135deg,#7B2CFF,#a94cff);color:#fff;text-decoration:none;padding:15px 32px;border-radius:10px;font-weight:bold;font-size:15px;">
-                    Ver oferta agora
-                  </a>
-                </div>
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:24px auto;">
+                  <tr>
+                    <td bgcolor="#7B2CFF" style="border-radius:10px;">
+                      <a href="${linkPerfil}" style="display:inline-block;padding:15px 32px;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:10px;">
+                        Ver oferta agora
+                      </a>
+                    </td>
+                  </tr>
+                </table>
                 <p style="text-align:center;font-size:12px;color:#9b87b8;margin-top:24px;">
-                  Você recebe este e-mail por ser assinante VIP.
+                  Você recebe este e-mail por ser assinante VIP.<br>
+                  <a href="https://www.velvet.lat/cliente-dados.html" style="color:#7B2CFF;">Gerenciar preferências de email</a>
                 </p>
               </div>
             </div>
@@ -14215,7 +14225,7 @@ app.post("/api/premium", auth, authModelo, uploadLimiter, uploadB2.array("files"
           html: `<div style="font-family:Arial,sans-serif;background:#f0ebfa;padding:32px 16px;color:#2d1f3d;">
             <div style="max-width:600px;margin:0 auto;">
               <div style="background:linear-gradient(135deg,#7B2CFF,#a94cff);border-radius:14px 14px 0 0;padding:20px 32px;text-align:center;">
-                <span style="color:#fff;font-size:20px;font-weight:800;letter-spacing:1px;">💜 Velvet</span>
+                <img src="https://www.velvet.lat/assets/velvet.png" alt="Velvet" width="40" height="40" style="display:inline-block;vertical-align:middle;border-radius:8px;">
               </div>
               <div style="background:#fff;padding:32px;border-radius:0 0 14px 14px;border:1px solid #e5d9ff;border-top:none;">
                 <h2 style="color:#6f42c1;text-align:center;margin:0 0 8px;">Novo conteúdo premium disponível!</h2>
@@ -14223,13 +14233,18 @@ app.post("/api/premium", auth, authModelo, uploadLimiter, uploadB2.array("files"
                 <div style="background:#f8f4ff;border-left:4px solid #7B2CFF;border-radius:0 10px 10px 0;padding:14px 18px;margin:0 0 24px;">
                   <p style="margin:0;font-weight:bold;color:#6f42c1;">🔒 Disponível apenas para assinantes VIP</p>
                 </div>
-                <div style="text-align:center;margin:24px 0;">
-                  <a href="${linkPerfil}" style="display:inline-block;background:linear-gradient(135deg,#7B2CFF,#a94cff);color:#fff;text-decoration:none;padding:15px 32px;border-radius:10px;font-weight:bold;font-size:15px;">
-                    Acessar agora
-                  </a>
-                </div>
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:24px auto;">
+                  <tr>
+                    <td bgcolor="#7B2CFF" style="border-radius:10px;">
+                      <a href="${linkPerfil}" style="display:inline-block;padding:15px 32px;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:10px;">
+                        Acessar agora
+                      </a>
+                    </td>
+                  </tr>
+                </table>
                 <p style="text-align:center;font-size:12px;color:#9b87b8;margin-top:24px;">
-                  Você recebe este e-mail por ser assinante VIP.
+                  Você recebe este e-mail por ser assinante VIP.<br>
+                  <a href="https://www.velvet.lat/cliente-dados.html" style="color:#7B2CFF;">Gerenciar preferências de email</a>
                 </p>
               </div>
             </div>
@@ -14265,6 +14280,66 @@ app.post("/api/premium", auth, authModelo, uploadLimiter, uploadB2.array("files"
     });
   } finally {
     client.release();
+  }
+});
+
+// ===============================
+// CANCELAMENTO DE EMAIL (1 clique, via link assinado no Brevo)
+// ===============================
+
+app.get("/api/email/desinscrever", async (req, res) => {
+  const paginaResultado = (titulo, mensagem) => `<!DOCTYPE html>
+    <html lang="pt"><head><meta charset="utf-8"><title>${titulo}</title></head>
+    <body style="font-family:Arial,Helvetica,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#f0ebfa;">
+      <div style="text-align:center;background:#fff;padding:40px;border-radius:14px;max-width:420px;box-shadow:0 2px 10px rgba(0,0,0,0.08);">
+        <h2 style="color:#6f42c1;margin:0 0 12px;">${titulo}</h2>
+        <p style="color:#7a6a9a;margin:0;">${mensagem}</p>
+      </div>
+    </body></html>`;
+
+  try {
+    const { token } = req.query;
+    if (!token) throw new Error("token ausente");
+
+    const { email, tipo } = jwt.verify(token, process.env.JWT_SECRET);
+
+    const colunasValidas = {
+      novidades_plataforma: "pref_novidades_plataforma",
+      novidades_criadoras: "pref_novidades_criadoras",
+      ofertas: "pref_ofertas"
+    };
+    const coluna = colunasValidas[tipo] || "pref_novidades_criadoras";
+
+    const clienteRes = await db.query(
+      `UPDATE clientes c SET ${coluna} = false
+       FROM users u
+       WHERE u.id = c.user_id AND u.email = $1
+       RETURNING c.id`,
+      [email]
+    );
+
+    if (clienteRes.rowCount) {
+      const cliente_id = clienteRes.rows[0].id;
+
+      if (coluna === "pref_novidades_criadoras") {
+        const vips = await db.query(`
+          SELECT m.brevo_list_id
+          FROM vip_subscriptions v
+          JOIN modelos m ON m.id = v.modelo_id
+          WHERE v.cliente_id = $1 AND v.ativo = true AND m.brevo_list_id IS NOT NULL
+        `, [cliente_id]);
+        for (const row of vips.rows) {
+          try { await removerContatoAudienceVIP(row.brevo_list_id, email); } catch (e) { console.error("Erro ao remover de lista VIP:", e.message); }
+        }
+      } else if (coluna === "pref_novidades_plataforma") {
+        try { await removerContatoAudienceVIP(4, email); } catch (e) { console.error("Erro ao remover da lista geral:", e.message); }
+      }
+    }
+
+    res.send(paginaResultado("✅ Sua preferência foi salva com sucesso", "Você não vai mais receber esse tipo de email."));
+  } catch (err) {
+    console.error("Erro /api/email/desinscrever:", err.message);
+    res.status(400).send(paginaResultado("Link inválido", "Esse link de cancelamento não é válido ou já expirou."));
   }
 });
 
