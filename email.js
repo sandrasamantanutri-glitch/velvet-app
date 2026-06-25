@@ -666,7 +666,7 @@ async function enviarFaturaPremium({
     ])}
 
     ${_secao('Produto Adquirido', '💎', [
-      _row('Produto',  'Conteúdo premium exclusivo'),
+      _row('Produto',  'Conteúdo premium'),
       _row('Criadora', modelo_nome),
       _row('Acesso',   'Imediato — disponível no feed'),
     ])}
@@ -721,7 +721,7 @@ async function enviarEmailAviso7Dias(email, modelo_id) {
         <p style="margin:0 0 10px;font-weight:bold;color:#4b2a7b;font-size:14px;">Com o VIP ativo você tem acesso a:</p>
         <p style="margin:0;line-height:2;font-size:14px;">
           💬 Chat direto com a criadora<br>
-          🎁 Conteúdo exclusivo do perfil<br>
+          🎁 Mídias do perfil<br>
           ✨ Benefícios especiais para assinantes
         </p>
       `)}
@@ -755,14 +755,14 @@ async function enviarEmailAviso24h(email, modelo_id) {
       </div>
 
       <p style="margin:0 0 20px;line-height:1.7;">
-        Olá! A sua assinatura VIP termina amanhã. Renove agora para não perder o acesso ao conteúdo exclusivo e ao chat direto com a criadora.
+        Olá! A sua assinatura VIP termina amanhã. Renove agora para não perder o acesso às mídias do perfil e ao chat direto com a criadora.
       </p>
 
       ${infoBox('pink', `
         <p style="margin:0 0 10px;font-weight:bold;color:#7a1f52;font-size:14px;">O que você perde ao não renovar:</p>
         <p style="margin:0;line-height:2;font-size:14px;">
           💬 Acesso ao chat exclusivo<br>
-          🎁 Todo o conteúdo do perfil<br>
+          🎁 Mídias do perfil<br>
           ✨ Seus benefícios de assinante
         </p>
       `)}

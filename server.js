@@ -8216,7 +8216,7 @@ app.post("/api/upload", auth, authModelo, uploadLimiter, uploadB2.array("file", 
                 </div>
                 <div style="background:#fff;padding:32px;border-radius:0 0 14px 14px;border:1px solid #e5d9ff;border-top:none;">
                   <h2 style="color:#6f42c1;text-align:center;margin:0 0 8px;">Nova atualização no feed!</h2>
-                  <p style="text-align:center;color:#7a6a9a;margin:0 0 24px;">${nome_modelo} acabou de publicar novo conteúdo exclusivo para você.</p>
+                  <p style="text-align:center;color:#7a6a9a;margin:0 0 24px;">${nome_modelo} acabou de publicar conteúdo no feed para você.</p>
                   <div style="text-align:center;margin:24px 0;">
                     <a href="${linkPerfil}" style="display:inline-block;background:linear-gradient(135deg,#7B2CFF,#a94cff);color:#fff;text-decoration:none;padding:15px 32px;border-radius:10px;font-weight:bold;font-size:15px;">
                       Ver agora
@@ -14219,7 +14219,7 @@ app.post("/api/premium", auth, authModelo, uploadLimiter, uploadB2.array("files"
               </div>
               <div style="background:#fff;padding:32px;border-radius:0 0 14px 14px;border:1px solid #e5d9ff;border-top:none;">
                 <h2 style="color:#6f42c1;text-align:center;margin:0 0 8px;">Novo conteúdo premium disponível!</h2>
-                <p style="text-align:center;color:#7a6a9a;margin:0 0 24px;">${nome_modelo} acabou de lançar novo conteúdo premium exclusivo para você.</p>
+                <p style="text-align:center;color:#7a6a9a;margin:0 0 24px;">${nome_modelo} acabou de lançar uma nova mídia premium para você.</p>
                 <div style="background:#f8f4ff;border-left:4px solid #7B2CFF;border-radius:0 10px 10px 0;padding:14px 18px;margin:0 0 24px;">
                   <p style="margin:0;font-weight:bold;color:#6f42c1;">🔒 Disponível apenas para assinantes VIP</p>
                 </div>
