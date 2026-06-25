@@ -172,8 +172,11 @@
     "upload_premium_texto_placeholder": "Write something about this media...",
     "upload_premium_preco_placeholder": "Media price (R$)",
     "upload_premium_placeholder": "Click to select media",
-    "upload_premium_btn": "Publish Premium"
+    "upload_premium_btn": "Publish Premium",
+    "continuar_vip": "Continue. I understand that Velvet is a social platform for content creators and that each model independently decides what content to share with their subscribers.",
+    "cancelar_vip": "Cancel. I am looking for a platform focused exclusively on explicit content."
   },
+  
   "pagamento": {
     "titulo_vip": "VIP ACTIVATION",
     "vantagens": "Benefits:",
@@ -202,7 +205,7 @@
     "termos_link1": "Terms of use",
     "termos_e": "and the",
     "termos_link2": "Usage Policies",
-    "aceite_termos": "I have read and accept the Terms of Use and Platform Policies.",
+    "aceite_termos": "I have read and accept the Terms of Use and the platform's Policies. I acknowledge that a subscription does not guarantee access to explicit content, nudity, or exclusive content, as each creator is free to decide what type of content they publish and share.",
     "aceite_execucao": "I acknowledge that access to the digital media/service is immediate after payment and that I may therefore waive my right of withdrawal.",
     "btn_pix": "⚡ Unlock with Pix",
     "btn_cartao": "💳 Unlock with card",

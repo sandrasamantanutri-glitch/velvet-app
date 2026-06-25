@@ -171,8 +171,11 @@
     "upload_premium_texto_placeholder": "Escribe algo sobre este contenido...",
     "upload_premium_preco_placeholder": "Precio del contenido (R$)",
     "upload_premium_placeholder": "Haz clic para seleccionar contenido",
-    "upload_premium_btn": "Publicar Premium"
+    "upload_premium_btn": "Publicar Premium",
+    "continuar_vip": "Continuar. Entiendo que Velvet es una plataforma social para creadores de contenido y que cada modelo decide, de forma independiente, qué contenidos comparte con sus suscriptores.",
+    "cancelar_vip": "Cancelar. Estoy buscando una plataforma enfocada exclusivamente en contenido explícito."
   },
+  
   "pagamento": {
     "titulo_vip": "ACTIVACIÓN VIP",
     "vantagens": "Beneficios:",
@@ -201,7 +204,7 @@
     "termos_link1": "Términos de uso",
     "termos_e": "y con las",
     "termos_link2": "Políticas de uso",
-    "aceite_termos": "He leído y acepto los Términos de Uso y las Políticas de la plataforma.",
+    "aceite_termos": "He leído y acepto los Términos de Uso y las Políticas de la plataforma. Declaro estar consciente de que la suscripción no garantiza acceso a contenido explícito, desnudos ni contenido exclusivo, ya que cada creadora es libre de decidir qué tipo de contenido publica y comparte.",
     "aceite_execucao": "Declaro que soy consciente de que el acceso al contenido/servicio digital es inmediato tras el pago y que, por ello, puedo perder el derecho de desistimiento.",
     "btn_pix": "⚡ Desbloquear con Pix",
     "btn_cartao": "💳 Desbloquear con tarjeta",

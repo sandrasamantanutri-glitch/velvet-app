@@ -237,7 +237,9 @@
 
     <label class="termos-check-linha" for="aceiteTermosPagamento">
       <input type="checkbox" id="aceiteTermosPagamento" required />
-      <span data-i18n="pagamento.aceite_termos">Li e aceito os Termos de Uso e as Políticas da plataforma.</span>
+      <span data-i18n="pagamento.aceite_termos">
+Li e aceito os Termos de Uso e as Políticas da plataforma. Declaro estar ciente de que a assinatura não garante acesso a conteúdo explícito, nudez ou conteúdo exclusivo, sendo cada criadora livre para definir o tipo de conteúdo que publica e compartilha.
+</span>
     </label>
 
   </div>
@@ -348,8 +350,13 @@
     </div>
 
     <div class="vip-confirmacao-acoes">
-      <button type="button" class="btn-principal" onclick="confirmarVIPEContinuar()">Sim, quero continuar</button>
-      <button type="button" class="btn-secundario" onclick="fecharConfirmacaoVIP()">Voltar</button>
+<button type="button" class="btn-principal" onclick="confirmarVIPEContinuar()">
+    <span data-i18n="perfil.continuar_vip"></span>
+</button>
+
+<button type="button" class="btn-secundario" onclick="fecharConfirmacaoVIP()">
+    <span data-i18n="perfil.cancelar_vip"></span>
+</button>
     </div>
   </div>
 </div>
