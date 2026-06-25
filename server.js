@@ -8223,8 +8223,7 @@ app.post("/api/upload", auth, authModelo, uploadLimiter, uploadB2.array("file", 
                     </a>
                   </div>
                   <p style="text-align:center;font-size:12px;color:#9b87b8;margin-top:24px;">
-                    Você recebe este e-mail por ser assinante VIP.<br>
-                    <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#7B2CFF;">Cancelar inscrição</a>
+                    Você recebe este e-mail por ser assinante VIP.
                   </p>
                 </div>
               </div>
@@ -8373,8 +8372,7 @@ RETURNING *
                   </a>
                 </div>
                 <p style="text-align:center;font-size:12px;color:#9b87b8;margin-top:24px;">
-                  Você recebe este e-mail por ser assinante VIP.<br>
-                  <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#7B2CFF;">Cancelar inscrição</a>
+                  Você recebe este e-mail por ser assinante VIP.
                 </p>
               </div>
             </div>
@@ -14231,8 +14229,7 @@ app.post("/api/premium", auth, authModelo, uploadLimiter, uploadB2.array("files"
                   </a>
                 </div>
                 <p style="text-align:center;font-size:12px;color:#9b87b8;margin-top:24px;">
-                  Você recebe este e-mail por ser assinante VIP.<br>
-                  <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#7B2CFF;">Cancelar inscrição</a>
+                  Você recebe este e-mail por ser assinante VIP.
                 </p>
               </div>
             </div>
