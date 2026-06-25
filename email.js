@@ -931,24 +931,24 @@ async function enviarCampanhaNovidadeOferta({ audience_id, nome_modelo, modelo_i
 
 async function obterOuCriarAudienceNaoAssinantes(db) {
   const dbRes = await db.query(
-    "SELECT value FROM app_settings WHERE key = 'resend_audience_nao_assinantes_id'"
+    "SELECT value FROM app_settings WHERE key = 'brevo_lista_nao_assinantes_id'"
   );
   const existingId = dbRes.rows[0]?.value;
-  if (existingId) return existingId;
+  if (existingId) return Number(existingId);
 
-  const { data, error } = await resend.audiences.create({
-    name: "Não Assinantes"
+  const lista = await brevo.request("POST", "/v3/contacts/lists", {
+    name: "Não Assinantes",
+    folderId: brevo.FOLDER_ID_VELVET
   });
-  if (error || !data?.id) throw new Error(`Resend audience create: ${JSON.stringify(error)}`);
 
   await db.query(
     `INSERT INTO app_settings (key, value, atualizado_em)
-     VALUES ('resend_audience_nao_assinantes_id', $1, NOW())
+     VALUES ('brevo_lista_nao_assinantes_id', $1, NOW())
      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, atualizado_em = NOW()`,
-    [data.id]
+    [String(lista.id)]
   );
-  console.log(`[Audience] "Não Assinantes" criada: ${data.id}`);
-  return data.id;
+  console.log(`[Lista Brevo] "Não Assinantes" criada: ${lista.id}`);
+  return lista.id;
 }
 
 function blocoDestaqueModelo(d) {
