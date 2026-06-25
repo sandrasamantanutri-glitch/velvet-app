@@ -79,7 +79,7 @@ async function removerContatoLista(listId, email) {
   });
 }
 
-const REMETENTE = { name: "Velvet", email: "contato.velvetapp@gmail.com" };
+const REMETENTE = { name: "Velvet", email: "contato@velvet.lat" };
 
 async function contagemLista(listId) {
   const lista = await request("GET", `/v3/contacts/lists/${listId}`);
