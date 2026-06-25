@@ -3201,14 +3201,14 @@ app.post('/api/admin/campanhas/vip', auth, authAdmin, async (req, res) => {
 
   try {
     const modeloRes = await db.query(
-      'SELECT nome_exibicao, resend_audience_id FROM modelos WHERE id = $1',
+      'SELECT nome_exibicao, brevo_list_id FROM modelos WHERE id = $1',
       [modelo_id]
     );
     if (!modeloRes.rowCount) return res.status(404).json({ error: 'Modelo não encontrado.' });
 
-    const { nome_exibicao, resend_audience_id } = modeloRes.rows[0];
+    const { nome_exibicao, brevo_list_id } = modeloRes.rows[0];
 
-    const audienceId = resend_audience_id
+    const audienceId = brevo_list_id
       || await obterOuCriarAudienceVIP(db, modelo_id, nome_exibicao);
 
     const totalVips = await db.query(

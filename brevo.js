@@ -79,4 +79,39 @@ async function removerContatoLista(listId, email) {
   });
 }
 
-module.exports = { request, obterOuCriarListaVIP, adicionarContatoLista, removerContatoLista };
+const REMETENTE = { name: "Velvet", email: "contato.velvetapp@gmail.com" };
+
+async function contagemLista(listId) {
+  const lista = await request("GET", `/v3/contacts/lists/${listId}`);
+  return lista.totalSubscribers || 0;
+}
+
+async function enviarCampanha({ listId, subject, html, nomeCampanha }) {
+  const total = await contagemLista(listId);
+  if (!total) {
+    console.log(`[Campanha Brevo] Lista ${listId} sem contatos — campanha ignorada.`);
+    return null;
+  }
+
+  const campanha = await request("POST", "/v3/emailCampaigns", {
+    name: nomeCampanha || subject,
+    subject,
+    sender: REMETENTE,
+    type: "classic",
+    htmlContent: html,
+    recipients: { listIds: [listId] }
+  });
+
+  await request("POST", `/v3/emailCampaigns/${campanha.id}/sendNow`);
+  console.log(`[Campanha Brevo] Campanha enviada: ${campanha.id} → lista ${listId}`);
+  return campanha.id;
+}
+
+module.exports = {
+  request,
+  obterOuCriarListaVIP,
+  adicionarContatoLista,
+  removerContatoLista,
+  enviarCampanha,
+  FOLDER_ID_VELVET: 3
+};

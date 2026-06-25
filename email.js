@@ -777,68 +777,35 @@ async function enviarEmailAviso24h(email, modelo_id) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// RESEND AUDIENCES — sincronização de VIPs por modelo
+// BREVO LISTS — sincronização de VIPs por modelo
+// (mantém os nomes antigos de função para não exigir mudanças
+// nos pontos de chamada em server.js; "audience_id" agora é
+// um list id do Brevo, não mais um audience id do Resend)
 // ─────────────────────────────────────────────────────────────
+const brevo = require('./brevo');
 
 async function obterOuCriarAudienceVIP(db, modelo_id, nome_modelo) {
-  const dbRes = await db.query(
-    'SELECT resend_audience_id FROM modelos WHERE id = $1',
-    [modelo_id]
-  );
-  const existingId = dbRes.rows[0]?.resend_audience_id;
-  if (existingId) return existingId;
-
-  const { data, error } = await resend.audiences.create({
-    name: `VIP — ${nome_modelo || 'Modelo ' + modelo_id}`
-  });
-  if (error || !data?.id) throw new Error(`Resend audience create: ${JSON.stringify(error)}`);
-
-  await db.query(
-    'UPDATE modelos SET resend_audience_id = $1 WHERE id = $2',
-    [data.id, modelo_id]
-  );
-  console.log(`[Audience] Criada para modelo ${modelo_id}: ${data.id}`);
-  return data.id;
+  return brevo.obterOuCriarListaVIP(db, brevo.FOLDER_ID_VELVET, modelo_id, nome_modelo);
 }
 
 async function adicionarContatoAudienceVIP(audience_id, email, nome) {
-  const partes = (nome || '').trim().split(/\s+/);
-  const { error } = await resend.contacts.create({
-    audienceId: audience_id,
-    email,
-    firstName: partes[0] || '',
-    lastName:  partes.slice(1).join(' ') || undefined,
-    unsubscribed: false
-  });
-  if (error) console.warn(`[Audience] Aviso ao adicionar contato ${email}:`, error);
+  try {
+    await brevo.adicionarContatoLista(audience_id, email, nome);
+  } catch (e) {
+    console.warn(`[Lista Brevo] Aviso ao adicionar contato ${email}:`, e.message);
+  }
 }
 
 async function removerContatoAudienceVIP(audience_id, email) {
-  const { error } = await resend.contacts.remove({ audienceId: audience_id, email });
-  if (error) console.warn(`[Audience] Aviso ao remover contato ${email}:`, error);
+  try {
+    await brevo.removerContatoLista(audience_id, email);
+  } catch (e) {
+    console.warn(`[Lista Brevo] Aviso ao remover contato ${email}:`, e.message);
+  }
 }
 
 async function enviarCampanhaVIP({ audience_id, subject, html, nome_campanha }) {
-  const { data: bc, error: errCriar } = await resend.broadcasts.create({
-    audienceId: audience_id,
-    from:       'Velvet <contato@velvet.lat>',
-    name:       nome_campanha || subject,
-    subject,
-    html
-  });
-  if (errCriar || !bc?.id) throw new Error(`Resend broadcast create: ${JSON.stringify(errCriar)}`);
-
-  const { error: errEnviar } = await resend.broadcasts.send(bc.id);
-  if (errEnviar) {
-    if (errEnviar.message?.includes('no contacts')) {
-      console.log(`[Campanha] Audience ${audience_id} sem contatos — broadcast ignorado.`);
-      return null;
-    }
-    throw new Error(`Resend broadcast send: ${JSON.stringify(errEnviar)}`);
-  }
-
-  console.log(`[Campanha] Broadcast enviado: ${bc.id} → audience ${audience_id}`);
-  return bc.id;
+  return brevo.enviarCampanha({ listId: audience_id, subject, html, nomeCampanha: nome_campanha });
 }
 
 async function enviarEmailOfertaExpirando({ email, nome_modelo, nome_oferta, data_fim, assinaturas_usadas, limite_assinaturas }) {
