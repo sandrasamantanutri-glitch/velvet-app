@@ -2,8 +2,8 @@ const { Resend } = require("resend");
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const HEADER = `
-  <div style="background:linear-gradient(135deg,#7B2CFF 0%,#a94cff 100%);border-radius:14px 14px 0 0;padding:20px 32px;text-align:center;">
-    <img src="https://www.velvet.lat/assets/velvet.png" alt="Velvet" width="40" height="40" style="display:inline-block;vertical-align:middle;border-radius:8px;">
+  <div style="background:#ffffff;border-radius:14px 14px 0 0;padding:20px 32px;text-align:center;border-bottom:1px solid #e5d9ff;">
+    <img src="https://www.velvet.lat/assets/velvet.png" alt="Velvet" width="116" height="32" style="display:inline-block;">
   </div>
 `;
 

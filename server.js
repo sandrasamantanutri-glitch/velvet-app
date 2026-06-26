@@ -8211,8 +8211,8 @@ app.post("/api/upload", auth, authModelo, uploadLimiter, uploadB2.array("file", 
             nome_campanha: `feed_${modelo_id}_${Date.now()}`,
             html: `<div style="font-family:Arial,sans-serif;background:#f0ebfa;padding:32px 16px;color:#2d1f3d;">
               <div style="max-width:600px;margin:0 auto;">
-                <div style="background:linear-gradient(135deg,#7B2CFF,#a94cff);border-radius:14px 14px 0 0;padding:20px 32px;text-align:center;">
-                  <img src="https://www.velvet.lat/assets/velvet.png" alt="Velvet" width="40" height="40" style="display:inline-block;vertical-align:middle;border-radius:8px;">
+                <div style="background:#ffffff;border-radius:14px 14px 0 0;padding:20px 32px;text-align:center;border-bottom:1px solid #e5d9ff;">
+                  <img src="https://www.velvet.lat/assets/velvet.png" alt="Velvet" width="116" height="32" style="display:inline-block;">
                 </div>
                 <div style="background:#fff;padding:32px;border-radius:0 0 14px 14px;border:1px solid #e5d9ff;border-top:none;">
                   <h2 style="color:#6f42c1;text-align:center;margin:0 0 8px;">Nova atualização no feed!</h2>
@@ -8227,8 +8227,8 @@ app.post("/api/upload", auth, authModelo, uploadLimiter, uploadB2.array("file", 
                     </tr>
                   </table>
                   <p style="text-align:center;font-size:12px;color:#9b87b8;margin-top:24px;">
-                    Você recebe este e-mail por ser assinante VIP.<br>
-                    // <a href="https://www.velvet.lat/api/email/desinscrever?token={{contact.UNSUB_TOKEN}}" target="_blank" style="color:#7B2CFF;">Não desejo receber mais e-mails desse tipo</a>
+                    Você recebe este e-mail por ser assinante VIP.<br><br>
+                    // <a href="https://www.velvet.lat/api/email/desinscrever?token={{contact.UNSUB_TOKEN}}" target="_blank" style="color:#7B2CFF; font-size:8px">Clique aqui se não desejo receber mais e-mails desse tipo</a>
                   </p>
                 </div>
               </div>
@@ -8362,8 +8362,8 @@ RETURNING *
           nome_campanha: `oferta_${modeloId}_${Date.now()}`,
           html: `<div style="font-family:Arial,sans-serif;background:#f0ebfa;padding:32px 16px;color:#2d1f3d;">
             <div style="max-width:600px;margin:0 auto;">
-              <div style="background:linear-gradient(135deg,#7B2CFF,#a94cff);border-radius:14px 14px 0 0;padding:20px 32px;text-align:center;">
-                <img src="https://www.velvet.lat/assets/velvet.png" alt="Velvet" width="40" height="40" style="display:inline-block;vertical-align:middle;border-radius:8px;">
+              <div style="background:#ffffff;border-radius:14px 14px 0 0;padding:20px 32px;text-align:center;border-bottom:1px solid #e5d9ff;">
+                <img src="https://www.velvet.lat/assets/velvet.png" alt="Velvet" width="116" height="32" style="display:inline-block;">
               </div>
               <div style="background:#fff;padding:32px;border-radius:0 0 14px 14px;border:1px solid #e5d9ff;border-top:none;">
                 <h2 style="color:#6f42c1;text-align:center;margin:0 0 8px;">Promoção especial disponível!</h2>
@@ -8382,7 +8382,7 @@ RETURNING *
                 </table>
                 <p style="text-align:center;font-size:12px;color:#9b87b8;margin-top:24px;">
                   Você recebe este e-mail por ser assinante VIP.<br>
-                  <a href="https://www.velvet.lat/cliente-dados.html" style="color:#7B2CFF;">Gerenciar preferências de email</a>
+                  <a href="https://www.velvet.lat/api/email/desinscrever?token={{contact.UNSUB_TOKEN}}" target="_blank" style="color:#7B2CFF;">Não desejo receber mais e-mails desse tipo</a>
                 </p>
               </div>
             </div>
@@ -14224,8 +14224,8 @@ app.post("/api/premium", auth, authModelo, uploadLimiter, uploadB2.array("files"
           nome_campanha: `premium_${modelo_id}_${Date.now()}`,
           html: `<div style="font-family:Arial,sans-serif;background:#f0ebfa;padding:32px 16px;color:#2d1f3d;">
             <div style="max-width:600px;margin:0 auto;">
-              <div style="background:linear-gradient(135deg,#7B2CFF,#a94cff);border-radius:14px 14px 0 0;padding:20px 32px;text-align:center;">
-                <img src="https://www.velvet.lat/assets/velvet.png" alt="Velvet" width="40" height="40" style="display:inline-block;vertical-align:middle;border-radius:8px;">
+              <div style="background:#ffffff;border-radius:14px 14px 0 0;padding:20px 32px;text-align:center;border-bottom:1px solid #e5d9ff;">
+                <img src="https://www.velvet.lat/assets/velvet.png" alt="Velvet" width="116" height="32" style="display:inline-block;">
               </div>
               <div style="background:#fff;padding:32px;border-radius:0 0 14px 14px;border:1px solid #e5d9ff;border-top:none;">
                 <h2 style="color:#6f42c1;text-align:center;margin:0 0 8px;">Novo conteúdo premium disponível!</h2>
@@ -14244,7 +14244,7 @@ app.post("/api/premium", auth, authModelo, uploadLimiter, uploadB2.array("files"
                 </table>
                 <p style="text-align:center;font-size:12px;color:#9b87b8;margin-top:24px;">
                   Você recebe este e-mail por ser assinante VIP.<br>
-                  <a href="https://www.velvet.lat/cliente-dados.html" style="color:#7B2CFF;">Gerenciar preferências de email</a>
+                  <a href="https://www.velvet.lat/api/email/desinscrever?token={{contact.UNSUB_TOKEN}}" target="_blank" style="color:#7B2CFF;">Não desejo receber mais e-mails desse tipo</a>
                 </p>
               </div>
             </div>
