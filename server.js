@@ -8228,7 +8228,7 @@ app.post("/api/upload", auth, authModelo, uploadLimiter, uploadB2.array("file", 
                   </table>
                   <p style="text-align:center;font-size:12px;color:#9b87b8;margin-top:24px;">
                     Você recebe este e-mail por ser assinante VIP.<br><br>
-                    // <a href="https://www.velvet.lat/api/email/desinscrever?token={{contact.UNSUB_TOKEN}}" target="_blank" style="color:#7B2CFF; font-size:8px">Clique aqui se não desejo receber mais e-mails desse tipo</a>
+                    <a href="https://www.velvet.lat/api/email/desinscrever?token={{contact.UNSUB_TOKEN}}" target="_blank" style="color:#7B2CFF; font-size:8px">Clique aqui se não deseja mais receber e-mails desse tipo</a>
                   </p>
                 </div>
               </div>
@@ -8382,7 +8382,7 @@ RETURNING *
                 </table>
                 <p style="text-align:center;font-size:12px;color:#9b87b8;margin-top:24px;">
                   Você recebe este e-mail por ser assinante VIP.<br>
-                  <a href="https://www.velvet.lat/api/email/desinscrever?token={{contact.UNSUB_TOKEN}}" target="_blank" style="color:#7B2CFF;">Não desejo receber mais e-mails desse tipo</a>
+                  <a href="https://www.velvet.lat/api/email/desinscrever?token={{contact.UNSUB_TOKEN}}" target="_blank" style="color:#7B2CFF; font-size:8px">Clique aqui se não deseja mais receber e-mails desse tipo</a>
                 </p>
               </div>
             </div>
@@ -14244,7 +14244,7 @@ app.post("/api/premium", auth, authModelo, uploadLimiter, uploadB2.array("files"
                 </table>
                 <p style="text-align:center;font-size:12px;color:#9b87b8;margin-top:24px;">
                   Você recebe este e-mail por ser assinante VIP.<br>
-                  <a href="https://www.velvet.lat/api/email/desinscrever?token={{contact.UNSUB_TOKEN}}" target="_blank" style="color:#7B2CFF;">Não desejo receber mais e-mails desse tipo</a>
+                  <a href="https://www.velvet.lat/api/email/desinscrever?token={{contact.UNSUB_TOKEN}}" target="_blank" style="color:#7B2CFF; font-size:8px">Clique aqui se não deseja mais receber e-mails desse tipo</a>
                 </p>
               </div>
             </div>
