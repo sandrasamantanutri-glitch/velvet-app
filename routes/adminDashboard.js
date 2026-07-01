@@ -3853,7 +3853,7 @@ router.post("/modelo-pagamentos", authAdmin, upload.single("recibo"), async (req
         ag.nome AS agencia_nome
       FROM modelos m
       LEFT JOIN modelos_dados md ON md.modelo_id = m.id
-      LEFT JOIN modelos_dados_bancarios mdb ON mdb.modelo_id = m.id
+      LEFT JOIN modelo_dados_bancarios mdb ON mdb.modelo_id = m.id
       LEFT JOIN users u ON u.id = m.user_id
       LEFT JOIN agencias ag ON ag.id = m.agencia_id
       WHERE m.id = $1
