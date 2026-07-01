@@ -4651,8 +4651,7 @@ router.get("/modelo-pagamentos/:id/recibo", authAdmin, async (req, res) => {
     const assinaturas_bruto = Number(brutoRes.rows[0]?.assinaturas_bruto || 0);
     const total_bruto       = midias_bruto + assinaturas_bruto;
 
-    // Chargeback = diferença bruto - líquido (ou valor armazenado, o que for maior)
-    const cbMostrar = Math.max(chargebacksVal, total_bruto - (midias_liq + assinaturas_liq));
+    const cbMostrar = chargebacksVal;
 
     const saldoLiquido = midias_liq + assinaturas_liq;
     const totalPagar   = Number(p.valor_liquido || 0) || totalGeral;
