@@ -3701,7 +3701,9 @@ router.post("/modelo-pagamentos", authAdmin, upload.single("recibo"), async (req
       total_geral,
       comissao_velvet,
       valor_liquido,
-      chargebacks
+      chargebacks,
+      bonus,
+      bonus_tipo
     } = req.body;
 
     if (!modelo_id || !mes) {
@@ -3765,9 +3767,11 @@ router.post("/modelo-pagamentos", authAdmin, upload.single("recibo"), async (req
       }
     }
 
-    const comissao    = Number(comissao_velvet || 0);
-    const liquido     = Number(valor_liquido   || 0);
-    const chargebacksVal = Number(chargebacks  || 0);
+    const comissao       = Number(comissao_velvet || 0);
+    const liquido        = Number(valor_liquido   || 0);
+    const chargebacksVal = Number(chargebacks     || 0);
+    const bonusVal       = Number(bonus           || 0);
+    const bonusTipoVal   = bonus_tipo === 'velvet' ? 'velvet' : 'saldo';
 
     const { rows } = await db.query(`
       INSERT INTO modelo_pagamentos
@@ -3781,9 +3785,11 @@ router.post("/modelo-pagamentos", authAdmin, upload.single("recibo"), async (req
         recibo_url,
         comissao_velvet,
         valor_liquido,
-        chargebacks
+        chargebacks,
+        bonus,
+        bonus_tipo
       )
-      VALUES ($1, $2, $3, $4, $5, 'pendente', $6, $7, $8, $9)
+      VALUES ($1, $2, $3, $4, $5, 'pendente', $6, $7, $8, $9, $10, $11)
       RETURNING *
     `, [
       modeloIdNum,
@@ -3794,7 +3800,9 @@ router.post("/modelo-pagamentos", authAdmin, upload.single("recibo"), async (req
       recibo_url,
       comissao,
       liquido,
-      chargebacksVal
+      chargebacksVal,
+      bonusVal,
+      bonusTipoVal
     ]);
 
     res.json(rows[0]);
@@ -4337,6 +4345,7 @@ router.get("/modelo-pagamentos/:id/recibo", authAdmin, async (req, res) => {
       SELECT mp.id, mp.modelo_id, mp.mes, mp.total_midias, mp.total_assinaturas,
              mp.total_geral, mp.status, mp.pago_em,
              mp.comissao_velvet, mp.taxa_agencia, mp.chargebacks, mp.valor_liquido,
+             mp.bonus, mp.bonus_tipo,
              m.nome AS modelo_nome, m.nome_exibicao,
              md.nome_completo, md.endereco, md.cidade, md.estado,
              mdb.tipo AS pgto_tipo, mdb.pix_tipo, mdb.pix_chave,
@@ -4372,28 +4381,33 @@ router.get("/modelo-pagamentos/:id/recibo", authAdmin, async (req, res) => {
     else if (pgtoTipo === 'transferencia') tipoPagamento = `TED — Banco: ${p.banco || '—'} | Ag: ${p.agencia || '—'} | Conta: ${p.conta || '—'}${p.conta_tipo ? ' (' + p.conta_tipo + ')' : ''}`;
 
     // ── Breakdown financeiro ──
-    const modeloShare    = Number(p.total_geral    || 0);
-    const pctPlataforma  = Number(p.pct_plataforma || 0.20);
-    const pctAgencia     = Number(p.pct_agencia    || 0);
-    const pctModelo      = 1 - pctPlataforma - pctAgencia;
-    const taxaPlataforma = Number(p.comissao_velvet || 0) || (pctModelo > 0 ? (modeloShare / pctModelo) * pctPlataforma : 0);
-    const taxaAgencia    = Number(p.taxa_agencia    || 0) || (pctModelo > 0 ? (modeloShare / pctModelo) * pctAgencia : 0);
-    const chargebacksVal = Number(p.chargebacks     || 0);
-    const valorBruto     = modeloShare + taxaPlataforma + taxaAgencia;
-    const liquido        = Number(p.valor_liquido   || 0) || (modeloShare - chargebacksVal);
-    const pctAgenciaPct  = Math.round(pctAgencia * 100);
+    const midias         = Number(p.total_midias     || 0);
+    const assinaturas    = Number(p.total_assinaturas || 0);
+    const chargebacksVal = Number(p.chargebacks       || 0);
+    const bonusVal       = Number(p.bonus             || 0);
+    const bonusTipo      = p.bonus_tipo || 'saldo';
+    const totalGeral     = Number(p.total_geral       || 0);
+
+    // Valor bruto = midias + assinaturas (sem chargebacks ou bônus)
+    const valorBrutoMod  = midias + assinaturas;
+    // Valor a pagar = total_geral (já calculado com chargebacks deduzidos e bônus incluído)
+    const liquido        = Number(p.valor_liquido     || 0) || totalGeral;
+
+    const pctAgenciaPct  = Math.round(Number(p.pct_agencia || 0) * 100);
 
     // Linhas da tabela — ganhos da modelo
     const linhas = [];
-    if (Number(p.total_midias) > 0) linhas.push({ descricao: 'Receitas brutas — Mídias', periodo: mesRefLabel, valor: Number(p.total_midias) });
-    if (Number(p.total_assinaturas) > 0) linhas.push({ descricao: 'Receitas brutas — Assinaturas', periodo: mesRefLabel, valor: Number(p.total_assinaturas) });
-    if (linhas.length === 0) linhas.push({ descricao: 'Receitas brutas — Plataforma Velvet', periodo: mesRefLabel, valor: modeloShare });
+    if (midias > 0) linhas.push({ descricao: 'Receitas brutas — Mídias', periodo: mesRefLabel, valor: midias });
+    if (assinaturas > 0) linhas.push({ descricao: 'Receitas brutas — Assinaturas', periodo: mesRefLabel, valor: assinaturas });
+    if (linhas.length === 0) linhas.push({ descricao: 'Receitas brutas — Plataforma Velvet', periodo: mesRefLabel, valor: totalGeral });
     const linhasHtml = linhas.map(l => `<tr><td class="c">1</td><td>${l.descricao}</td><td class="c">${l.periodo}</td><td class="r">${fmtBRL(l.valor)}</td></tr>`).join('');
 
     // Linhas do breakdown de deduções
+    const bonusLabel = 'Bônus';
     const deducoesHtml = [
-      `<div class="totrow"><span>Valor bruto</span><span>${fmtBRL(modeloShare)}</span></div>`,
+      valorBrutoMod > 0 ? `<div class="totrow"><span>Valor bruto</span><span>${fmtBRL(valorBrutoMod)}</span></div>` : '',
       chargebacksVal > 0 ? `<div class="totrow ded"><span>Chargebacks / estornos</span><span>- ${fmtBRL(chargebacksVal)}</span></div>` : '',
+      bonusVal > 0 ? `<div class="totrow bon"><span>${bonusLabel}</span><span>+ ${fmtBRL(bonusVal)}</span></div>` : '',
       `<div class="totrow f"><span>VALOR LÍQUIDO PAGO</span><span>${fmtBRL(liquido)}</span></div>`
     ].filter(Boolean).join('');
 
@@ -4417,6 +4431,7 @@ table.pt th.c,table.pt td.c{text-align:center}table.pt th.r,table.pt td.r{text-a
 .tot{display:flex;justify-content:flex-end;margin-bottom:24px}.totbox{border:2px solid #7B2CFF;border-radius:6px;padding:14px 20px;min-width:300px}
 .totrow{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;gap:16px}
 .totrow.ded{color:#c0392b;font-size:12px}
+.totrow.bon{color:#1a7f37;font-size:12px}
 .totrow.f{border-top:2px solid #7B2CFF;margin-top:8px;padding-top:10px;font-size:15px;font-weight:700;color:#7B2CFF}
 .pi{background:#f0f9f0;border:1px solid #c3e6cb;border-radius:6px;padding:14px 18px;margin-bottom:24px}.pi h4{color:#27a745;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}.pi p{font-size:12px;color:#333;line-height:1.8}
 .ft{border-top:1px solid #ddd;padding-top:14px;text-align:center;color:#888;font-size:10px;line-height:1.7}

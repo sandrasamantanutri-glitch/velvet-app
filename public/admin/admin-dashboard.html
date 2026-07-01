@@ -1426,18 +1426,6 @@
     </label>
 
     <label>
-      Total Geral
-      <input
-        type="number"
-        id="pagamentoTotalGeral"
-        name="total_geral"
-        step="0.01"
-        value="0"
-        readonly
-      >
-    </label>
-
-    <label>
       Chargebacks / estornos a deduzir
       <input
         type="number"
@@ -1447,9 +1435,48 @@
         value="0"
         min="0"
         placeholder="0.00"
+        oninput="atualizarTotalPagModelo()"
         title="Valor de chargebacks a deduzir do pagamento."
       >
       <small id="pagChargebacksInfo" style="color:#888;font-size:11px;">Preenchido automaticamente com chargebacks registrados no mês (por data de registro). Ajuste se necessário.</small>
+    </label>
+
+    <label>
+      Bônus
+      <input
+        type="number"
+        id="pagBonus"
+        name="bonus"
+        step="0.01"
+        value="0"
+        min="0"
+        placeholder="0.00"
+        oninput="atualizarTotalPagModelo()"
+      >
+    </label>
+    <div style="margin:-8px 0 12px;display:flex;gap:16px;font-size:13px;">
+      <label style="display:flex;align-items:center;gap:6px;font-weight:normal;margin:0;">
+        <input type="radio" name="bonus_tipo" value="saldo" checked onchange="atualizarTotalPagModelo()">
+        Do saldo da modelo
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-weight:normal;margin:0;">
+        <input type="radio" name="bonus_tipo" value="velvet" onchange="atualizarTotalPagModelo()">
+        Extra por conta da Velvet
+      </label>
+    </div>
+
+    <label>
+      Total a Pagar
+      <input
+        type="number"
+        id="pagamentoTotalGeral"
+        name="total_geral"
+        step="0.01"
+        value="0"
+        readonly
+        style="font-weight:700;font-size:15px;background:#f3f0ff;"
+      >
+      <small style="color:#888;font-size:11px;">Mídias + Assinaturas − Chargebacks + Bônus (quando do saldo)</small>
     </label>
 
     <label>

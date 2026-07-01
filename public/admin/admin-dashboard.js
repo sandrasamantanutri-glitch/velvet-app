@@ -3656,9 +3656,16 @@ async function carregarSaldoPagModelo() {
 }
 
 function atualizarTotalPagModelo() {
-  const midias = Number($('pagamentoTotalMidias').value || 0);
+  const midias      = Number($('pagamentoTotalMidias').value || 0);
   const assinaturas = Number($('pagamentoTotalAssinaturas').value || 0);
-  $('pagamentoTotalGeral').value = (midias + assinaturas).toFixed(2);
+  const chargebacks = Number($('pagChargebacks').value || 0);
+  const bonus       = Number($('pagBonus').value || 0);
+  const bonusTipo   = document.querySelector('input[name="bonus_tipo"]:checked')?.value || 'saldo';
+
+  // Total a pagar = bruto - chargebacks + bônus do saldo (bônus extra da Velvet não entra no total do saldo)
+  const bonusNoTotal = bonusTipo === 'saldo' ? bonus : 0;
+  const total = Math.max(0, midias + assinaturas - chargebacks + bonusNoTotal);
+  $('pagamentoTotalGeral').value = total.toFixed(2);
 }
 
 async function salvarPagModelo(e) {
@@ -3668,10 +3675,13 @@ async function salvarPagModelo(e) {
     const form = $('formPagModelo');
     const formData = new FormData(form);
 
-    const modeloId = Number(formData.get('modelo_id'));
-    const midias = Number(formData.get('total_midias') || 0);
+    const modeloId    = Number(formData.get('modelo_id'));
+    const midias      = Number(formData.get('total_midias') || 0);
     const assinaturas = Number(formData.get('total_assinaturas') || 0);
-    let total = Number(formData.get('total_geral') || 0);
+    const chargebacks = Number(formData.get('chargebacks') || 0);
+    const bonus       = Number(formData.get('bonus') || 0);
+    const bonusTipo   = formData.get('bonus_tipo') || 'saldo';
+    let total         = Number(formData.get('total_geral') || 0);
 
     if (!modeloId) {
       toast('Selecione uma modelo', 'error');
@@ -3679,15 +3689,22 @@ async function salvarPagModelo(e) {
     }
 
     if (!total) {
-      total = midias + assinaturas;
+      const bonusNoTotal = bonusTipo === 'saldo' ? bonus : 0;
+      total = Math.max(0, midias + assinaturas - chargebacks + bonusNoTotal);
       formData.set('total_geral', total);
     }
 
+    // Bônus extra da Velvet não vem do saldo — só validamos o total_geral (que já exclui bônus Velvet)
     const resSaldo = await fetchJSON(`/admin/dashboard/modelo-pagamentos/saldo/${modeloId}`);
 
-    if (total > Number(resSaldo.saldo || 0)) {
+    if (total > Number(resSaldo.saldo || 0) + 0.01) {
       toast(`Saldo insuficiente. Disponível: ${money(resSaldo.saldo)}`, 'error');
       return;
+    }
+
+    // Se há bônus extra da Velvet, incluir no total final (acima do saldo)
+    if (bonusTipo === 'velvet' && bonus > 0) {
+      formData.set('total_geral', (total + bonus).toFixed(2));
     }
 
     const res = await authFetch('/admin/dashboard/modelo-pagamentos', {
@@ -3826,6 +3843,7 @@ async function autoPreencherChargebacks() {
   try {
     const d = await fetchJSON(`/admin/dashboard/chargebacks-total-modelo?modelo_id=${modeloId}&ano=${ano}&mes=${mesNum}`);
     input.value = d.total.toFixed(2);
+    atualizarTotalPagModelo();
     if (info) {
       info.textContent = d.qtd > 0
         ? `${d.qtd} chargeback(s) registrado(s) neste mês — total preenchido automaticamente. Ajuste se necessário.`
