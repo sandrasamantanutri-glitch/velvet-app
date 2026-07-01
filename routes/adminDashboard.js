@@ -3868,6 +3868,60 @@ router.get("/modelo-pagamentos/saldo/:modelo_id", authAdmin, async (req, res) =>
   }
 });
 
+// ── Conciliação mensal: compara o que transacoes_agency mostra como pago vs o que modelo_pagamentos registrou
+router.get("/conciliacao-modelo/:modelo_id", authAdmin, async (req, res) => {
+  try {
+    const modelo_id = Number(req.params.modelo_id);
+    if (!modelo_id) return res.status(400).json({ erro: "modelo_id inválido" });
+
+    // Busca todos os meses que têm pagamento registrado
+    const pagamentosRes = await db.query(`
+      SELECT
+        mes,
+        total_geral AS pago,
+        status,
+        pago_em
+      FROM modelo_pagamentos
+      WHERE modelo_id = $1
+      ORDER BY mes DESC
+    `, [modelo_id]);
+
+    const resultados = await Promise.all(pagamentosRes.rows.map(async (mp) => {
+      const ano  = new Date(mp.mes).getUTCFullYear();
+      const mes  = new Date(mp.mes).getUTCMonth() + 1;
+
+      const { rows } = await db.query(`
+        SELECT
+          ROUND(COALESCE(SUM(CASE WHEN status='pago' AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
+                THEN valor_modelo ELSE 0 END), 0)::numeric, 2) AS total_transacoes
+        FROM transacoes_agency
+        WHERE modelo_id = $1
+          AND EXTRACT(YEAR  FROM COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') = $2
+          AND EXTRACT(MONTH FROM COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') = $3
+      `, [modelo_id, ano, mes]);
+
+      const total_transacoes = Number(rows[0].total_transacoes);
+      const pago = Number(mp.pago);
+      const diferenca = Number((total_transacoes - pago).toFixed(2));
+
+      return {
+        mes: mp.mes,
+        status: mp.status,
+        pago_em: mp.pago_em,
+        total_transacoes,
+        pago,
+        diferenca,
+        ok: Math.abs(diferenca) <= 1
+      };
+    }));
+
+    res.json(resultados);
+  } catch (err) {
+    console.error("Erro conciliacao-modelo:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
 // ── Backfill: liga transações de cartão antigas (sem stripe_payment_intent_id)
 //    aos PaymentIntents reais do Stripe, usando a metadata (cliente_id/modelo_id)
 //    gravada na criação do pagamento, e preenche o disponivel_em real.

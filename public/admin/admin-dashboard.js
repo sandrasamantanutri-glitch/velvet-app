@@ -3512,9 +3512,69 @@ pageLoaders['pagamentos-modelo'] = async function () {
   }
 
   await carregarPgtoModelo(1);
-  $('pgtoModeloFiltro').onchange = () => carregarPgtoModelo(1);
+  $('pgtoModeloFiltro').onchange = () => { carregarPgtoModelo(1); carregarConciliacao(); };
   $('pgtoModeloMes').onchange = () => carregarPgtoModelo(1);
 };
+
+async function carregarConciliacao() {
+  const modeloId = $('pgtoModeloFiltro')?.value;
+  const panel = $('conciliacaoPanel');
+  if (!panel) return;
+
+  if (!modeloId) {
+    panel.style.display = 'none';
+    panel.innerHTML = '';
+    return;
+  }
+
+  try {
+    const dados = await fetchJSON(`/admin/dashboard/conciliacao-modelo/${modeloId}`);
+    const divergencias = dados.filter(d => !d.ok);
+
+    if (!divergencias.length) {
+      panel.style.display = 'none';
+      panel.innerHTML = '';
+      return;
+    }
+
+    const linhas = divergencias.map(d => {
+      const mes = new Date(d.mes).toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric', timeZone: 'UTC' });
+      const cor = Math.abs(d.diferenca) > 100 ? '#dc2626' : '#d97706';
+      return `
+        <tr style="border-bottom:1px solid #fca5a5;">
+          <td style="padding:8px 12px;font-weight:600;">${mes}</td>
+          <td style="padding:8px 12px;">${money(d.total_transacoes)}</td>
+          <td style="padding:8px 12px;">${money(d.pago)}</td>
+          <td style="padding:8px 12px;font-weight:700;color:${cor};">${d.diferenca > 0 ? '+' : ''}${money(d.diferenca)}</td>
+          <td style="padding:8px 12px;color:#888;font-size:12px;">${d.diferenca > 0 ? 'BD mostra mais do que foi pago' : 'BD mostra menos do que foi pago'}</td>
+        </tr>`;
+    }).join('');
+
+    panel.style.display = 'block';
+    panel.innerHTML = `
+      <div style="background:#fff8f8;border:1px solid #fca5a5;border-radius:8px;padding:16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+          <span style="font-size:18px;">⚠️</span>
+          <strong style="color:#dc2626;">Divergência de conciliação encontrada</strong>
+          <span style="color:#666;font-size:13px;">— diferença entre transacoes_agency e modelo_pagamentos</span>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead>
+            <tr style="background:#fee2e2;color:#7f1d1d;text-align:left;">
+              <th style="padding:8px 12px;">Mês</th>
+              <th style="padding:8px 12px;">Transações (BD)</th>
+              <th style="padding:8px 12px;">Pago</th>
+              <th style="padding:8px 12px;">Diferença</th>
+              <th style="padding:8px 12px;">Observação</th>
+            </tr>
+          </thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      </div>`;
+  } catch (err) {
+    console.error('Erro conciliação:', err);
+  }
+}
 
 async function carregarModelosSelect(selectId, placeholder = 'Todos os modelos') {
   try {
