@@ -3812,7 +3812,7 @@ router.get("/chargebacks-total-modelo", authAdmin, async (req, res) => {
     if (!modelo_id || !ano || !mes) return res.status(400).json({ erro: "modelo_id, ano e mes são obrigatórios" });
 
     const { rows } = await db.query(`
-      SELECT COALESCE(SUM(valor), 0) AS total, COUNT(*) AS qtd
+      SELECT COALESCE(SUM(COALESCE(valor_modelo, valor)), 0) AS total, COUNT(*) AS qtd
       FROM chargebacks
       WHERE modelo_id = $1
         AND EXTRACT(YEAR  FROM criado_em AT TIME ZONE 'America/Sao_Paulo') = $2
@@ -4756,6 +4756,7 @@ router.get("/chargebacks-list", async (req, res) => {
         cb.gateway,
         cb.cliente_id,
         cb.modelo_id,
+        cb.valor_modelo,
         u.email  AS cliente_email,
         COALESCE(cd.nome_completo, u.email) AS cliente_nome,
         m.nome_exibicao AS modelo_nome
@@ -4776,7 +4777,7 @@ router.get("/chargebacks-list", async (req, res) => {
 
 router.post("/chargebacks", authAdmin, uploadPublico.single('comprovante'), async (req, res) => {
   try {
-    let { plataforma, valor, data, motivo, email, modelo_id, tipo, gateway } = req.body;
+    let { plataforma, valor, data, motivo, email, modelo_id, tipo, gateway, valor_modelo } = req.body;
     const comprovante = req.file ? req.file.location : null;
 
     const admin_id = req.user?.id;
@@ -4790,6 +4791,7 @@ router.post("/chargebacks", authAdmin, uploadPublico.single('comprovante'), asyn
     if (!admin_id) return res.status(401).json({ erro: "Usuário não autenticado" });
 
     valor = Number(valor);
+    const valorModeloNum = (valor_modelo !== undefined && valor_modelo !== null && valor_modelo !== '') ? Number(valor_modelo) : null;
 
     // Resolve cliente_id a partir do email
     let cliente_id = null;
@@ -4806,10 +4808,10 @@ router.post("/chargebacks", authAdmin, uploadPublico.single('comprovante'), asyn
     const gatewayFinal = gateway || null;
 
     const { rows } = await db.query(`
-      INSERT INTO chargebacks (plataforma, valor, data, motivo, comprovante, cliente_id, modelo_id, tipo, gateway)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      INSERT INTO chargebacks (plataforma, valor, data, motivo, comprovante, cliente_id, modelo_id, tipo, gateway, valor_modelo)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *
-    `, [plataforma, valor, data, motivo.trim(), comprovante, cliente_id, modeloIdNum, tipoFinal, gatewayFinal]);
+    `, [plataforma, valor, data, motivo.trim(), comprovante, cliente_id, modeloIdNum, tipoFinal, gatewayFinal, valorModeloNum]);
 
     if (!rows.length) return res.status(500).json({ erro: "Falha ao registrar chargeback" });
 
@@ -4891,13 +4893,14 @@ router.patch("/chargebacks/:id", authAdmin, async (req, res) => {
     const chargebackId = Number(req.params.id);
     if (!chargebackId) return res.status(400).json({ erro: "ID inválido" });
 
-    let { plataforma, valor, data, motivo, email, modelo_id, tipo, gateway } = req.body;
+    let { plataforma, valor, data, motivo, email, modelo_id, tipo, gateway, valor_modelo } = req.body;
     if (!plataforma) return res.status(400).json({ erro: "Plataforma obrigatória" });
     if (!valor || isNaN(valor)) return res.status(400).json({ erro: "Valor inválido" });
     if (!data) return res.status(400).json({ erro: "Data obrigatória" });
 
     valor = Number(valor);
     const modeloIdNum = modelo_id ? Number(modelo_id) : null;
+    const valorModeloNum = (valor_modelo !== undefined && valor_modelo !== null && valor_modelo !== '') ? Number(valor_modelo) : null;
 
     let cliente_id = null;
     if (email?.trim()) {
@@ -4911,13 +4914,14 @@ router.patch("/chargebacks/:id", authAdmin, async (req, res) => {
     const { rows } = await db.query(`
       UPDATE chargebacks
       SET plataforma = $1, valor = $2, data = $3, motivo = $4,
-          cliente_id = COALESCE($5, cliente_id),
-          modelo_id  = COALESCE($6, modelo_id),
-          tipo       = COALESCE($7, tipo),
-          gateway    = COALESCE($8, gateway)
-      WHERE id = $9
+          cliente_id   = COALESCE($5, cliente_id),
+          modelo_id    = COALESCE($6, modelo_id),
+          tipo         = COALESCE($7, tipo),
+          gateway      = COALESCE($8, gateway),
+          valor_modelo = $9
+      WHERE id = $10
       RETURNING *
-    `, [plataforma, valor, data, motivo?.trim() || null, cliente_id, modeloIdNum, tipo || null, gateway || null, chargebackId]);
+    `, [plataforma, valor, data, motivo?.trim() || null, cliente_id, modeloIdNum, tipo || null, gateway || null, valorModeloNum, chargebackId]);
 
     if (!rows.length) return res.status(404).json({ erro: "Chargeback não encontrado" });
 

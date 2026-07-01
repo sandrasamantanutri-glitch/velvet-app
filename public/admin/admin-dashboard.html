@@ -1036,7 +1036,7 @@
   <div class="card">
     <h3>Registros de Chargebacks</h3>
     <table class="table" id="tableChargebacks">
-      <thead><tr><th>#</th><th>Plataforma</th><th>Modelo</th><th>Valor</th><th>Data compra</th><th>Registro</th><th>Motivo</th><th>Comprovante</th><th>Ações</th></tr></thead>
+      <thead><tr><th>#</th><th>Plataforma</th><th>Modelo</th><th>Valor</th><th>Valor Modelo</th><th>Data compra</th><th>Registro</th><th>Motivo</th><th>Comprovante</th><th>Ações</th></tr></thead>
       <tbody></tbody>
     </table>
   </div>
@@ -1530,6 +1530,10 @@
       <input type="number" name="valor" step="0.01" min="0" required>
     </label>
     <label>
+      Valor repassado à modelo (R$)
+      <input type="number" name="valor_modelo" step="0.01" min="0" placeholder="Parte que cabia à modelo nessa transação">
+    </label>
+    <label>
       Data
       <input type="date" name="data" required>
     </label>
@@ -1566,6 +1570,10 @@
     <label>
       Valor (R$)
       <input type="number" name="valor" step="0.01" min="0" required>
+    </label>
+    <label>
+      Valor repassado à modelo (R$)
+      <input type="number" name="valor_modelo" step="0.01" min="0" placeholder="Parte que cabia à modelo nessa transação">
     </label>
     <label>
       Data

@@ -470,11 +470,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       const agora = new Date();
       const mesFmt = `${String(agora.getMonth()+1).padStart(2,'0')}/${agora.getFullYear()}`;
 
-      // Resumo: totais gerais + totais do mês de registro
+      // Resumo: totais gerais + totais do mês de registro (usa o valor repassado à modelo, não o valor total da transação)
+      const valorModeloOf = r => Number(r.valor_modelo ?? r.valor ?? 0);
       const totalCBs   = dados.length;
-      const totalValor = dados.reduce((s, r) => s + Number(r.valor || 0), 0);
+      const totalValor = dados.reduce((s, r) => s + valorModeloOf(r), 0);
       const mesCBs     = dados.filter(r => r.data_fmt && r.data_fmt.slice(3) === mesFmt);
-      const mesValor   = mesCBs.reduce((s, r) => s + Number(r.valor || 0), 0);
+      const mesValor   = mesCBs.reduce((s, r) => s + valorModeloOf(r), 0);
 
       if (resumo) {
         resumo.innerHTML = `
@@ -512,7 +513,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 <th style="padding:10px 12px;">Gateway</th>
                 <th style="padding:10px 12px;">Cliente</th>
                 <th style="padding:10px 12px;">E-mail</th>
-                <th style="padding:10px 12px;">Valor</th>
+                <th style="padding:10px 12px;">Valor deduzido</th>
                 <th style="padding:10px 12px;">Motivo</th>
               </tr>
             </thead>
@@ -527,7 +528,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                   <td style="padding:10px 12px;">${gatewayLabel[r.gateway] || r.gateway || '—'}</td>
                   <td style="padding:10px 12px;">${r.cliente_nome || '—'}</td>
                   <td style="padding:10px 12px;">${r.cliente_email || '—'}</td>
-                  <td style="padding:10px 12px;color:#e53e3e;font-weight:600;">R$ ${Number(r.valor || 0).toFixed(2)}</td>
+                  <td style="padding:10px 12px;color:#e53e3e;font-weight:600;">R$ ${valorModeloOf(r).toFixed(2)}</td>
                   <td style="padding:10px 12px;color:#666;">${r.motivo || '—'}</td>
                 </tr>`;
               }).join('')}

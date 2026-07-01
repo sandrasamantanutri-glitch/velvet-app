@@ -1409,16 +1409,11 @@ router.get("/modelo/chargebacks", authModelo, async (req, res) => {
         cb.cliente_id,
         u.email                                                                      AS cliente_email,
         COALESCE(cd.nome_completo, u.email)                                         AS cliente_nome,
-        ta.valor_modelo
+        cb.valor_modelo
       FROM chargebacks cb
       LEFT JOIN clientes c         ON c.id  = cb.cliente_id
       LEFT JOIN users u            ON u.id  = c.user_id
       LEFT JOIN clientes_dados cd  ON cd.cliente_id = cb.cliente_id
-      LEFT JOIN LATERAL (
-        SELECT valor_modelo FROM transacoes_agency
-        WHERE cliente_id = cb.cliente_id AND modelo_id = cb.modelo_id AND status = 'chargeback'
-        ORDER BY created_at DESC LIMIT 1
-      ) ta ON true
       WHERE cb.modelo_id = $1
       ORDER BY cb.criado_em DESC
     `, [modelo_id]);

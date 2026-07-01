@@ -4059,7 +4059,7 @@ pageLoaders.chargebacks = async function () {
 function renderChargebacks(chargebacks) {
   const tbody = document.querySelector('#tableChargebacks tbody');
   if (!chargebacks || chargebacks.length === 0) {
-    tbody.innerHTML = emptyRow(9);
+    tbody.innerHTML = emptyRow(10);
     return;
   }
 
@@ -4074,6 +4074,7 @@ function renderChargebacks(chargebacks) {
       <td><strong>${{safe2pay:'Safe2Pay',stripe:'Stripe',pluggy:'Pluggy',pagarme:'Pagarme'}[cb.plataforma] || cb.plataforma || '—'}</strong></td>
       <td>${cb.modelo_nome || (cb.modelo_id ? '#' + cb.modelo_id : '—')}</td>
       <td>${money(cb.valor)}</td>
+      <td>${cb.valor_modelo != null ? money(cb.valor_modelo) : '—'}</td>
       <td style="color:var(--text-muted);font-size:12px;">${fmtDate(cb.data)}</td>
       <td style="font-weight:600;">${cb.criado_em ? fmtDate(cb.criado_em) : '—'}</td>
       <td title="${cb.motivo || ''}">${motivoTxt}</td>
@@ -4105,6 +4106,7 @@ function abrirEditarChargeback(id) {
   form.elements['id'].value        = id;
   form.elements['plataforma'].value = cb.plataforma || '';
   form.elements['valor'].value      = cb.valor || '';
+  form.elements['valor_modelo'].value = cb.valor_modelo ?? '';
   form.elements['data'].value       = cb.data ? cb.data.slice(0, 10) : '';
   form.elements['motivo'].value     = cb.motivo || '';
   form.elements['email'].value      = cb.cliente_email || '';
@@ -4120,14 +4122,15 @@ async function salvarEdicaoChargeback(event) {
   const form = event.target;
   const id = form.elements['id'].value;
   const body = {
-    plataforma: form.elements['plataforma'].value,
-    valor:      Number(form.elements['valor'].value),
-    data:       form.elements['data'].value,
-    motivo:     form.elements['motivo'].value,
-    email:      form.elements['email'].value,
-    modelo_id:  form.elements['modelo_id'].value || null,
-    tipo:       form.elements['tipo'].value || null,
-    gateway:    form.elements['gateway'].value || null,
+    plataforma:   form.elements['plataforma'].value,
+    valor:        Number(form.elements['valor'].value),
+    valor_modelo: form.elements['valor_modelo'].value !== '' ? Number(form.elements['valor_modelo'].value) : null,
+    data:         form.elements['data'].value,
+    motivo:       form.elements['motivo'].value,
+    email:        form.elements['email'].value,
+    modelo_id:    form.elements['modelo_id'].value || null,
+    tipo:         form.elements['tipo'].value || null,
+    gateway:      form.elements['gateway'].value || null,
   };
 
   try {
