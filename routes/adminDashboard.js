@@ -154,7 +154,7 @@ router.get("/overview", auth, authAdmin, async (req, res) => {
       db.query(`
         SELECT COALESCE(SUM(t.velvet_fee), 0) AS total
         FROM transacoes_agency t
-        WHERE DATE(COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo') = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+        WHERE (CASE WHEN t.disponivel_em IS NOT NULL THEN DATE(t.disponivel_em) ELSE DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo') END) = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND t.status = 'pago'
           AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
       `),
@@ -162,7 +162,7 @@ router.get("/overview", auth, authAdmin, async (req, res) => {
       db.query(`
         SELECT COALESCE(SUM(t.taxa_gateway), 0) AS total
         FROM transacoes_agency t
-        WHERE DATE(COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo') = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+        WHERE (CASE WHEN t.disponivel_em IS NOT NULL THEN DATE(t.disponivel_em) ELSE DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo') END) = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND t.status = 'pago'
           AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
       `),
@@ -177,7 +177,7 @@ router.get("/overview", auth, authAdmin, async (req, res) => {
           INTERVAL '1 month'
         ) AS meses(mes)
         LEFT JOIN transacoes_agency t
-          ON DATE_TRUNC('month', COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo') = meses.mes
+          ON DATE_TRUNC('month', CASE WHEN t.disponivel_em IS NOT NULL THEN DATE(t.disponivel_em)::timestamp ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = meses.mes
           AND t.status = 'pago'
           AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
         GROUP BY meses.mes
@@ -228,7 +228,7 @@ ORDER BY total DESC;
         FROM transacoes_agency t
         LEFT JOIN modelos m ON m.id = t.modelo_id
         WHERE t.modelo_id IS NOT NULL
-          AND DATE_TRUNC('month', COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+          AND DATE_TRUNC('month', CASE WHEN t.disponivel_em IS NOT NULL THEN DATE(t.disponivel_em)::timestamp ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND t.status = 'pago'
           AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
         GROUP BY t.modelo_id, m.nome
@@ -3042,13 +3042,13 @@ router.get("/ranking", authAdmin, async (req, res) => {
       }
       params.push(Number(match[1]), Number(match[2]));
       whereMes = `
-        EXTRACT(YEAR  FROM COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo') = $1
-        AND EXTRACT(MONTH FROM COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo') = $2
+        EXTRACT(YEAR  FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $1
+        AND EXTRACT(MONTH FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $2
       `;
     } else {
       whereMes = `
-        EXTRACT(YEAR  FROM COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo') = EXTRACT(YEAR  FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
-        AND EXTRACT(MONTH FROM COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo') = EXTRACT(MONTH FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
+        EXTRACT(YEAR  FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = EXTRACT(YEAR  FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
+        AND EXTRACT(MONTH FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = EXTRACT(MONTH FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
       `;
     }
 
@@ -3395,12 +3395,13 @@ router.get("/transacoes-agency", async (req, res) => {
     if (m) {
       const libParams = [];
       let libIdx = 1;
+      // disponivel_em é sempre meia-noite UTC (data de calendário do Stripe) — sem conversão de fuso
       let libWhere = `t.gateway = 'stripe'
         AND t.status = 'pago'
         AND t.disponivel_em IS NOT NULL
         AND t.disponivel_em <= NOW()
-        AND EXTRACT(YEAR  FROM t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') = $${libIdx}
-        AND EXTRACT(MONTH FROM t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') = $${libIdx + 1}
+        AND EXTRACT(YEAR  FROM t.disponivel_em) = $${libIdx}
+        AND EXTRACT(MONTH FROM t.disponivel_em) = $${libIdx + 1}
         AND (
           EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') != $${libIdx}
           OR EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') != $${libIdx + 1}
@@ -3414,7 +3415,7 @@ router.get("/transacoes-agency", async (req, res) => {
       }
       const libQ = await db.query(`
         SELECT
-          DATE(t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') AS dia_liberacao,
+          DATE(t.disponivel_em) AS dia_liberacao,
           DATE(t.created_at   AT TIME ZONE 'America/Sao_Paulo') AS dia_compra,
           COALESCE(SUM(t.valor_bruto),  0) AS valor_bruto,
           COALESCE(SUM(t.valor_modelo), 0) AS valor_modelo,
@@ -3945,8 +3946,8 @@ router.get("/conciliacao-modelo/:modelo_id", authAdmin, async (req, res) => {
                 THEN valor_modelo ELSE 0 END), 0)::numeric, 2) AS total_transacoes
         FROM transacoes_agency
         WHERE modelo_id = $1
-          AND EXTRACT(YEAR  FROM COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') = $2
-          AND EXTRACT(MONTH FROM COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') = $3
+          AND EXTRACT(YEAR  FROM CASE WHEN disponivel_em IS NOT NULL THEN disponivel_em ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) = $2
+          AND EXTRACT(MONTH FROM CASE WHEN disponivel_em IS NOT NULL THEN disponivel_em ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) = $3
       `, [modelo_id, ano, mes]);
 
       const total_transacoes = Number(rows[0].total_transacoes);
@@ -3967,6 +3968,82 @@ router.get("/conciliacao-modelo/:modelo_id", authAdmin, async (req, res) => {
     res.json(resultados);
   } catch (err) {
     console.error("Erro conciliacao-modelo:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// ── Auditoria Stripe ─────────────────────────────────────────────────────────
+router.get("/auditoria-stripe", authAdmin, async (req, res) => {
+  try {
+    const [resumoQ, pendentesQ, orfaosQ, semDisponQ] = await Promise.all([
+
+      // Resumo geral
+      db.query(`
+        SELECT
+          COUNT(*)  FILTER (WHERE gateway='stripe' AND status='pago')                                                          AS total_stripe,
+          COUNT(*)  FILTER (WHERE gateway='stripe' AND status='pago' AND disponivel_em IS NOT NULL AND disponivel_em <= NOW()) AS liberados,
+          COUNT(*)  FILTER (WHERE gateway='stripe' AND status='pago' AND (disponivel_em IS NULL OR disponivel_em > NOW()))     AS pendentes,
+          COUNT(*)  FILTER (WHERE gateway='stripe' AND status='pago' AND disponivel_em IS NULL)                                AS sem_data,
+          COALESCE(SUM(valor_bruto)  FILTER (WHERE gateway='stripe' AND status='pago' AND (disponivel_em IS NULL OR disponivel_em > NOW())), 0) AS bruto_pendente,
+          COALESCE(SUM(valor_modelo) FILTER (WHERE gateway='stripe' AND status='pago' AND (disponivel_em IS NULL OR disponivel_em > NOW())), 0) AS modelo_pendente,
+          COALESCE(SUM(valor_bruto)  FILTER (WHERE gateway='stripe' AND status='pago' AND disponivel_em IS NOT NULL AND disponivel_em <= NOW()), 0) AS bruto_liberado
+        FROM transacoes_agency
+      `),
+
+      // Pendentes agrupados por modelo
+      db.query(`
+        SELECT
+          t.modelo_id,
+          m.nome_exibicao AS modelo_nome,
+          COUNT(*)                              AS qtd,
+          COALESCE(SUM(t.valor_bruto),  0)      AS bruto_pendente,
+          COALESCE(SUM(t.valor_modelo), 0)      AS modelo_pendente,
+          MIN(t.disponivel_em) AT TIME ZONE 'America/Sao_Paulo' AS proxima_liberacao,
+          MAX(t.disponivel_em) AT TIME ZONE 'America/Sao_Paulo' AS ultima_liberacao
+        FROM transacoes_agency t
+        JOIN modelos m ON m.id = t.modelo_id
+        WHERE t.gateway = 'stripe'
+          AND t.status = 'pago'
+          AND (t.disponivel_em IS NULL OR t.disponivel_em > NOW())
+        GROUP BY t.modelo_id, m.nome_exibicao
+        ORDER BY bruto_pendente DESC
+      `),
+
+      // Órfãos: pagamentos_cartao aprovados sem transacao_agency correspondente
+      db.query(`
+        SELECT
+          pc.id,
+          pc.stripe_payment_intent_id,
+          pc.valor,
+          pc.created_at AT TIME ZONE 'America/Sao_Paulo' AS created_brt,
+          pc.modelo_id,
+          m.nome_exibicao AS modelo_nome
+        FROM pagamentos_cartao pc
+        LEFT JOIN transacoes_agency ta ON ta.stripe_payment_intent_id = pc.stripe_payment_intent_id
+        LEFT JOIN modelos m ON m.id = pc.modelo_id
+        WHERE pc.gateway = 'stripe'
+          AND pc.status = 'pago'
+          AND ta.id IS NULL
+        ORDER BY pc.created_at DESC
+        LIMIT 50
+      `),
+
+      // Transações Stripe sem disponivel_em (webhook de payout não chegou)
+      db.query(`
+        SELECT COUNT(*) AS qtd, COALESCE(SUM(valor_bruto), 0) AS bruto
+        FROM transacoes_agency
+        WHERE gateway = 'stripe' AND status = 'pago' AND disponivel_em IS NULL
+      `)
+    ]);
+
+    res.json({
+      resumo:    resumoQ.rows[0],
+      pendentes: pendentesQ.rows,
+      orfaos:    orfaosQ.rows,
+      sem_data:  semDisponQ.rows[0]
+    });
+  } catch (err) {
+    console.error("Erro auditoria stripe:", err);
     res.status(500).json({ erro: "Erro interno" });
   }
 });
@@ -4455,8 +4532,8 @@ router.get("/modelo-pagamentos/:id/recibo", authAdmin, async (req, res) => {
       FROM transacoes_agency
       WHERE modelo_id = $1
         AND status IN ('pago', 'chargeback')
-        AND EXTRACT(YEAR  FROM COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') = $2
-        AND EXTRACT(MONTH FROM COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') = $3
+        AND EXTRACT(YEAR  FROM CASE WHEN disponivel_em IS NOT NULL THEN disponivel_em ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) = $2
+        AND EXTRACT(MONTH FROM CASE WHEN disponivel_em IS NOT NULL THEN disponivel_em ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) = $3
     `, [p.modelo_id, anoMes, mesMes]);
 
     const nomeCompleto = p.nome_completo || p.nome_exibicao || p.modelo_nome || `Modelo #${p.modelo_id}`;
