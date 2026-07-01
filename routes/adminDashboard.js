@@ -3315,10 +3315,11 @@ router.get("/transacoes-agency", async (req, res) => {
     }
 
     if (m) {
-      // Aqui filtramos pela data real da venda (created_at) — esta é uma lista/ledger
-      // de transações, não um totalizador de ganhos reconhecidos (esse é o overview/ranking).
-      where += ` AND EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${paramIdx}
-                 AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${paramIdx + 1}`;
+      // Filtra pelo mês de disponibilidade: Stripe usa disponivel_em (data de liberação),
+      // outros usam created_at. Pagamentos Stripe pendentes ficam fora do filtro de mês
+      // e só entram no mês em que o Stripe os libera.
+      where += ` AND EXTRACT(YEAR  FROM COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo') = $${paramIdx}
+                 AND EXTRACT(MONTH FROM COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo') = $${paramIdx + 1}`;
       params.push(m.ano, m.mes);
       paramIdx += 2;
     }
@@ -3361,9 +3362,8 @@ router.get("/transacoes-agency", async (req, res) => {
       cbParams
     );
 
-    // Contagem de dias distintos (para paginação da visão diária) — pela data da venda
     const countDiasQ = await db.query(`
-      SELECT COUNT(DISTINCT DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo')) AS count
+      SELECT COUNT(DISTINCT DATE(COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo')) AS count
       FROM transacoes_agency t
       INNER JOIN modelos m ON m.id = t.modelo_id
       WHERE ${where}
@@ -3376,7 +3376,7 @@ router.get("/transacoes-agency", async (req, res) => {
 
     const { rows } = await db.query(`
       SELECT
-        DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo') AS dia,
+        DATE(COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo') AS dia,
         COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISPONIVEL} THEN t.valor_bruto  ELSE 0 END), 0) AS ganhos_dia,
         COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISPONIVEL} THEN t.valor_modelo ELSE 0 END), 0) AS ganhos_modelo,
         COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISPONIVEL} THEN t.velvet_fee  ELSE 0 END), 0) AS ganhos_velvet,
@@ -3386,7 +3386,7 @@ router.get("/transacoes-agency", async (req, res) => {
       FROM transacoes_agency t
       INNER JOIN modelos m ON m.id = t.modelo_id
       WHERE ${where}
-      GROUP BY DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo')
+      GROUP BY DATE(COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo')
       ORDER BY dia DESC
       LIMIT $${paramIdx} OFFSET $${paramIdx + 1}
     `, rowsParams);

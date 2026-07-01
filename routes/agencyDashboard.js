@@ -547,8 +547,8 @@ async function calcularFechamentoAgencia(agenciaId, ano, mes) {
     FROM vw_transacoes_agencia t
     WHERE t.agencia_id = $1
       AND t.status = 'pago'
-      AND EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $2
-      AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $3
+      AND EXTRACT(YEAR  FROM COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo') = $2
+      AND EXTRACT(MONTH FROM COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo') = $3
   `, [agenciaId, ano, mes]);
 
   const porModeloQ = await db.query(`
@@ -560,8 +560,8 @@ async function calcularFechamentoAgencia(agenciaId, ano, mes) {
     FROM vw_transacoes_agencia t
     WHERE t.agencia_id = $1
       AND t.status = 'pago'
-      AND EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $2
-      AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $3
+      AND EXTRACT(YEAR  FROM COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo') = $2
+      AND EXTRACT(MONTH FROM COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo') = $3
     GROUP BY t.modelo_id
   `, [agenciaId, ano, mes]);
 

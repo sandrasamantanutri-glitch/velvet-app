@@ -959,11 +959,8 @@ router.get("/transacoes", authModelo, async (req, res) => {
       values.push(ano, mesNum);
 
       monthFilter = `
-        AND created_at >= make_timestamptz($2, $3, 1, 0, 0, 0, 'America/Sao_Paulo')
-        AND created_at < (
-          make_timestamptz($2, $3, 1, 0, 0, 0, 'America/Sao_Paulo')
-          + interval '1 month'
-        )
+        AND EXTRACT(YEAR  FROM COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') = $2
+        AND EXTRACT(MONTH FROM COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') = $3
       `;
     }
 
@@ -1069,11 +1066,8 @@ router.get("/transacoes/diario", auth, requireRole("admin", "modelo", "agente"),
       let values = [ano, mesNum];
       let where = `
         status = 'pago'
-        AND created_at >= make_timestamptz($1, $2, 1, 0, 0, 0, 'America/Sao_Paulo')
-        AND created_at < (
-          make_timestamptz($1, $2, 1, 0, 0, 0, 'America/Sao_Paulo')
-          + interval '1 month'
-        )
+        AND EXTRACT(YEAR  FROM COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') = $1
+        AND EXTRACT(MONTH FROM COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') = $2
       `;
 
       if (role === "modelo") {
@@ -1094,7 +1088,7 @@ router.get("/transacoes/diario", auth, requireRole("admin", "modelo", "agente"),
       const result = await db.query(
         `
         SELECT
-          DATE(created_at AT TIME ZONE 'America/Sao_Paulo') AS dia,
+          DATE(COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') AS dia,
 
           COALESCE(SUM(
             CASE WHEN tipo = 'midia' THEN valor_modelo END
@@ -1136,11 +1130,8 @@ router.get("/transacoes/resumo-mensal", auth, requireRole("admin", "modelo", "ag
       let values = [ano, mesNum];
       let where = `
         status = 'pago'
-        AND created_at >= make_timestamptz($1, $2, 1, 0, 0, 0, 'America/Sao_Paulo')
-        AND created_at < (
-          make_timestamptz($1, $2, 1, 0, 0, 0, 'America/Sao_Paulo')
-          + interval '1 month'
-        )
+        AND EXTRACT(YEAR  FROM COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') = $1
+        AND EXTRACT(MONTH FROM COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') = $2
       `;
 
       if (role === "modelo") {
@@ -1199,8 +1190,7 @@ router.get("/transacoes/resumo-anual", auth, requireRole("admin", "modelo"), asy
       let values = [anoNum];
       let where = `
         status = 'pago'
-        AND created_at >= make_timestamptz($1, 1, 1, 0, 0, 0, 'America/Sao_Paulo')
-        AND created_at < make_timestamptz($1 + 1, 1, 1, 0, 0, 0, 'America/Sao_Paulo')
+        AND EXTRACT(YEAR FROM COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') = $1
       `;
 
       if (role === "modelo") {
@@ -1221,7 +1211,7 @@ router.get("/transacoes/resumo-anual", auth, requireRole("admin", "modelo"), asy
       const result = await db.query(
         `
         SELECT
-          DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo') AS mes,
+          DATE_TRUNC('month', COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') AS mes,
 
           COALESCE(SUM(valor_bruto), 0) AS total_bruto,
           COALESCE(SUM(taxa_gateway), 0) AS total_taxas,
@@ -1415,6 +1405,8 @@ router.get("/modelo/chargebacks", authModelo, async (req, res) => {
       LEFT JOIN users u            ON u.id  = c.user_id
       LEFT JOIN clientes_dados cd  ON cd.cliente_id = cb.cliente_id
       WHERE cb.modelo_id = $1
+        AND EXTRACT(YEAR  FROM cb.criado_em AT TIME ZONE 'America/Sao_Paulo') = EXTRACT(YEAR  FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
+        AND EXTRACT(MONTH FROM cb.criado_em AT TIME ZONE 'America/Sao_Paulo') = EXTRACT(MONTH FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
       ORDER BY cb.criado_em DESC
     `, [modelo_id]);
 
