@@ -4038,9 +4038,16 @@ pageLoaders.chargebacks = async function () {
     select.addEventListener('change', () => pageLoaders.chargebacks());
     select.dataset.bound = '1';
   }
+  const modeloSelect = $('chargebacksModelo');
+  if (modeloSelect && !modeloSelect.dataset.bound) {
+    await carregarModelosSelect('chargebacksModelo');
+    modeloSelect.addEventListener('change', () => pageLoaders.chargebacks());
+    modeloSelect.dataset.bound = '1';
+  }
   try {
     const mes = $('chargebacksMes')?.value || '';
-    const data = await fetchJSON(`/admin/dashboard/chargebacks-list?mes=${encodeURIComponent(mes)}`);
+    const modeloId = $('chargebacksModelo')?.value || '';
+    const data = await fetchJSON(`/admin/dashboard/chargebacks-list?mes=${encodeURIComponent(mes)}&modelo_id=${encodeURIComponent(modeloId)}`);
     _chargebacksData = data;
     renderChargebacks(data);
   } catch (err) {
@@ -4052,7 +4059,7 @@ pageLoaders.chargebacks = async function () {
 function renderChargebacks(chargebacks) {
   const tbody = document.querySelector('#tableChargebacks tbody');
   if (!chargebacks || chargebacks.length === 0) {
-    tbody.innerHTML = emptyRow(8);
+    tbody.innerHTML = emptyRow(9);
     return;
   }
 
@@ -4065,6 +4072,7 @@ function renderChargebacks(chargebacks) {
     <tr>
       <td>${i + 1}</td>
       <td><strong>${{safe2pay:'Safe2Pay',stripe:'Stripe',pluggy:'Pluggy',pagarme:'Pagarme'}[cb.plataforma] || cb.plataforma || '—'}</strong></td>
+      <td>${cb.modelo_nome || (cb.modelo_id ? '#' + cb.modelo_id : '—')}</td>
       <td>${money(cb.valor)}</td>
       <td style="color:var(--text-muted);font-size:12px;">${fmtDate(cb.data)}</td>
       <td style="font-weight:600;">${cb.criado_em ? fmtDate(cb.criado_em) : '—'}</td>
@@ -4465,18 +4473,43 @@ async function desconectarEmail() {
   }
 }
 
+let modoAssinaturaHtml = false;
+
 async function carregarAssinatura() {
   try {
     const data = await fetchJSON('/api/admin/email/assinatura');
     document.getElementById('assinaturaEditor').innerHTML = data.assinatura || '';
+    document.getElementById('assinaturaHtml').value = data.assinatura || '';
   } catch (err) {
     console.error('Erro ao carregar assinatura:', err);
   }
 }
 
+function alternarModoAssinatura() {
+  const editorVisual = document.getElementById('assinaturaEditor');
+  const editorHtml = document.getElementById('assinaturaHtml');
+  const btn = document.getElementById('btnModoAssinatura');
+
+  modoAssinaturaHtml = !modoAssinaturaHtml;
+
+  if (modoAssinaturaHtml) {
+    editorHtml.value = editorVisual.innerHTML;
+    editorVisual.style.display = 'none';
+    editorHtml.style.display = 'block';
+    btn.textContent = 'Editar visualmente';
+  } else {
+    editorVisual.innerHTML = editorHtml.value;
+    editorHtml.style.display = 'none';
+    editorVisual.style.display = 'block';
+    btn.textContent = 'Editar como HTML';
+  }
+}
+
 async function salvarAssinatura() {
   try {
-    const assinatura = document.getElementById('assinaturaEditor').innerHTML;
+    const assinatura = modoAssinaturaHtml
+      ? document.getElementById('assinaturaHtml').value
+      : document.getElementById('assinaturaEditor').innerHTML;
     await putJSON('/api/admin/email/assinatura', { assinatura });
     toast('Assinatura salva!', 'success');
   } catch (err) {

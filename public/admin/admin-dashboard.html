@@ -1031,11 +1031,12 @@
   <div class="page-actions">
     <button class="btn btn-primary" onclick="openModal('modalChargeback')">+ Novo Chargeback</button>
     <select id="chargebacksMes" class="input-select"></select>
+    <select id="chargebacksModelo" class="input-select"></select>
   </div>
   <div class="card">
     <h3>Registros de Chargebacks</h3>
     <table class="table" id="tableChargebacks">
-      <thead><tr><th>#</th><th>Plataforma</th><th>Valor</th><th>Data compra</th><th>Registro</th><th>Motivo</th><th>Comprovante</th><th>Ações</th></tr></thead>
+      <thead><tr><th>#</th><th>Plataforma</th><th>Modelo</th><th>Valor</th><th>Data compra</th><th>Registro</th><th>Motivo</th><th>Comprovante</th><th>Ações</th></tr></thead>
       <tbody></tbody>
     </table>
   </div>
@@ -1713,7 +1714,7 @@
 
           <div class="form-group">
             <label>Servidor IMAP *</label>
-            <input type="text" id="configImap" name="imap_host" placeholder="imap.seudominio.com" value="mail.seudominio.com" required>
+            <input type="text" id="configImap" name="imap_host" placeholder="imap.hostinger.com" value="imap.hostinger.com" required>
           </div>
 
           <div class="form-group">
@@ -1723,12 +1724,12 @@
 
           <div class="form-group">
             <label>Servidor SMTP *</label>
-            <input type="text" id="configSmtp" name="smtp_host" placeholder="smtp.seudominio.com" value="mail.seudominio.com" required>
+            <input type="text" id="configSmtp" name="smtp_host" placeholder="smtp.hostinger.com" value="smtp.hostinger.com" required>
           </div>
 
           <div class="form-group">
             <label>Porta SMTP *</label>
-            <input type="number" id="configSmtpPort" name="smtp_port" placeholder="587" value="587" required>
+            <input type="number" id="configSmtpPort" name="smtp_port" placeholder="465" value="465" required>
           </div>
 
           <div class="form-group">
@@ -1753,7 +1754,11 @@
         <h3>Assinatura</h3>
         <p style="color:#666; font-size:13px; margin-bottom:10px;">Inserida automaticamente ao compor ou responder (você pode editá-la antes de enviar).</p>
         <div id="assinaturaEditor" contenteditable="true" style="min-height:100px; border:1px solid #ddd; border-radius:6px; padding:10px; margin-bottom:10px;"></div>
-        <button class="btn btn-primary" onclick="salvarAssinatura()">Salvar assinatura</button>
+        <textarea id="assinaturaHtml" placeholder="<div>seu HTML aqui</div>" style="display:none; width:100%; min-height:150px; font-family:monospace; font-size:13px; border:1px solid #ddd; border-radius:6px; padding:10px; margin-bottom:10px;"></textarea>
+        <div style="display:flex; gap:10px;">
+          <button class="btn" type="button" onclick="alternarModoAssinatura()" id="btnModoAssinatura">Editar como HTML</button>
+          <button class="btn btn-primary" onclick="salvarAssinatura()">Salvar assinatura</button>
+        </div>
       </div>
     </div>
   </div>

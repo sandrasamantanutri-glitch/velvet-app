@@ -4732,8 +4732,14 @@ router.get("/chargebacks-list", async (req, res) => {
     let where = "1=1";
 
     if (m) {
-      where += " AND EXTRACT(YEAR FROM cb.data) = $1 AND EXTRACT(MONTH FROM cb.data) = $2";
+      where += ` AND EXTRACT(YEAR FROM cb.data) = $${params.length + 1} AND EXTRACT(MONTH FROM cb.data) = $${params.length + 2}`;
       params.push(m.ano, m.mes);
+    }
+
+    const modeloId = Number(req.query.modelo_id);
+    if (modeloId) {
+      where += ` AND cb.modelo_id = $${params.length + 1}`;
+      params.push(modeloId);
     }
 
     const { rows } = await db.query(`
