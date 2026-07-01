@@ -3658,13 +3658,13 @@ async function carregarSaldoPagModelo() {
 function atualizarTotalPagModelo() {
   const midias      = Number($('pagamentoTotalMidias').value || 0);
   const assinaturas = Number($('pagamentoTotalAssinaturas').value || 0);
-  const chargebacks = Number($('pagChargebacks').value || 0);
   const bonus       = Number($('pagBonus').value || 0);
   const bonusTipo   = document.querySelector('input[name="bonus_tipo"]:checked')?.value || 'saldo';
 
-  // Total a pagar = bruto - chargebacks + bônus do saldo (bônus extra da Velvet não entra no total do saldo)
+  // Chargebacks já estão excluídos de transacoes_agency (status='chargeback'), não deduzir novamente
+  // Bônus extra da Velvet não entra no total do saldo
   const bonusNoTotal = bonusTipo === 'saldo' ? bonus : 0;
-  const total = Math.max(0, midias + assinaturas - chargebacks + bonusNoTotal);
+  const total = Math.max(0, midias + assinaturas + bonusNoTotal);
   $('pagamentoTotalGeral').value = total.toFixed(2);
 }
 
