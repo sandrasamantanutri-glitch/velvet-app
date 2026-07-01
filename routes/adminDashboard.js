@@ -3845,13 +3845,15 @@ router.post("/modelo-pagamentos", authAdmin, upload.single("recibo"), async (req
     const modeloDadosRes = await db.query(`
       SELECT
         m.nome AS modelo_nome, m.nome_exibicao,
-        md.nome_completo, md.endereco, md.cidade, md.estado, md.titular_documento,
+        md.nome_completo, md.endereco, md.cidade, md.estado,
+        mdb.titular_documento,
         u.email AS modelo_email,
         COALESCE(ag.percentual_plataforma, 0.20) AS pct_plataforma,
         COALESCE(ag.percentual_agencia, 0) AS pct_agencia,
         ag.nome AS agencia_nome
       FROM modelos m
       LEFT JOIN modelos_dados md ON md.modelo_id = m.id
+      LEFT JOIN modelos_dados_bancarios mdb ON mdb.modelo_id = m.id
       LEFT JOIN users u ON u.id = m.user_id
       LEFT JOIN agencias ag ON ag.id = m.agencia_id
       WHERE m.id = $1
