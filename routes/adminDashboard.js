@@ -4719,7 +4719,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f0f0;padding:20px;col
   <!-- Bloco único: breakdown do pagamento -->
   <div class="sec">
     <div class="sec-title">Composição do pagamento — ${mesRefLabel}</div>
-    <div class="row"><span class="lbl" style="font-weight:600;">Saldo Bruto</span><span class="val" style="font-weight:600;">${fmtBRL(midias_bruto + assinaturas_bruto)}</span></div>
+    <div class="row"><span class="lbl" style="font-weight:600;">Saldo Bruto</span><span class="val" style="font-weight:600;">${fmtBRL(saldoLiquido + cbMostrar)}</span></div>
     <div class="row sub"><span class="lbl">Mídias</span><span class="val">${fmtBRL(midias_liq)}</span></div>
     <div class="row sub"><span class="lbl">Assinaturas</span><span class="val">${fmtBRL(assinaturas_liq)}</span></div>
     ${cbMostrar > 0 ? `<div class="row sub cb"><span class="lbl">Chargebacks / estornos</span><span class="val">− ${fmtBRL(cbMostrar)}</span></div>` : ''}

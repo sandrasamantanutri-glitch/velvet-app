@@ -201,16 +201,14 @@ async function carregarPagamentos() {
   lista.innerHTML = t("relatorio.carregando_pagamentos");
 
   const token = localStorage.getItem("token");
-if (!token) {
-  lista.innerText = t("relatorio.nao_autenticada");
-  return;
-}
+  if (!token) {
+    lista.innerText = t("relatorio.nao_autenticada");
+    return;
+  }
 
   try {
     const res = await fetch("/api/modelo/pagamentos", {
-      headers: {
-        Authorization: "Bearer " + token
-      }
+      headers: { Authorization: "Bearer " + token }
     });
 
     const dados = await res.json();
@@ -227,44 +225,68 @@ if (!token) {
       fim.setMonth(fim.getMonth() + 1);
       fim.setDate(fim.getDate() - 1);
 
-      const statusTexto = p.status === "pago"
-  ? t("relatorio.status_pago")
-  : t("relatorio.status_pendente");
+      const statusTexto = p.status === "pago" ? "Pago" : "Pendente";
+      const statusCor   = p.status === "pago" ? "#22c55e" : "#f59e0b";
 
-const pagoEm = p.pago_em
-  ? new Date(p.pago_em).toLocaleDateString("pt-BR")
-  : t("relatorio.nao_aplicavel");
+      const pagoEm = p.pago_em
+        ? new Date(p.pago_em).toLocaleDateString("pt-BR")
+        : "—";
 
-lista.innerHTML += `
-  <div class="transacao">
-    <div class="linha">
-      <strong>${t("relatorio.periodo")}:</strong>
-      ${inicio.toLocaleDateString("pt-BR")}
-      ${t("relatorio.ate")}
-      ${fim.toLocaleDateString("pt-BR")}
-    </div>
+      const midias       = Number(p.total_midias      || 0);
+      const assinaturas  = Number(p.total_assinaturas || 0);
+      const chargebacks  = Number(p.chargebacks       || 0);
+      const bonus        = Number(p.bonus             || 0);
+      const saldoBruto   = midias + assinaturas + chargebacks;
+      const pagoLiquido  = Number(p.total_geral       || 0);
 
-    <div class="linha">
-      <strong>${t("relatorio.status")}:</strong> ${statusTexto}
-    </div>
+      const pdfBtn = p.recibo_pdf_signed_url
+        ? `<a href="${p.recibo_pdf_signed_url}" target="_blank" rel="noopener"
+              style="display:inline-block;margin-top:12px;padding:8px 16px;
+                     background:#7c3aed;color:#fff;border-radius:8px;
+                     font-size:13px;font-weight:600;text-decoration:none;">
+             📄 Ver Recibo PDF
+           </a>`
+        : '';
 
-    <div class="linha">
-      <strong>${t("relatorio.pago_em")}:</strong> ${pagoEm}
-    </div>
+      lista.innerHTML += `
+        <div class="transacao" style="padding:16px;margin-bottom:12px;border-radius:12px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <strong style="font-size:15px;">
+              ${inicio.toLocaleDateString("pt-BR")} até ${fim.toLocaleDateString("pt-BR")}
+            </strong>
+            <span style="font-size:12px;font-weight:700;color:${statusCor};background:${statusCor}18;padding:3px 10px;border-radius:20px;">
+              ${statusTexto}${pagoEm !== "—" ? " · " + pagoEm : ""}
+            </span>
+          </div>
 
-    <div class="linha">
-      <strong>${t("relatorio.midias")}:</strong> R$ ${Number(p.total_midias).toFixed(2)}
-    </div>
+          <div style="font-size:14px;line-height:2;">
+            <div style="display:flex;justify-content:space-between;">
+              <span style="font-weight:600;">Saldo Bruto</span>
+              <span style="font-weight:600;">${emReais(saldoBruto)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding-left:12px;color:#555;">
+              <span>Mídias</span><span>${emReais(midias)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding-left:12px;color:#555;">
+              <span>Assinaturas</span><span>${emReais(assinaturas)}</span>
+            </div>
+            ${chargebacks > 0 ? `
+            <div style="display:flex;justify-content:space-between;padding-left:12px;color:#e53e3e;">
+              <span>Chargebacks</span><span>− ${emReais(chargebacks)}</span>
+            </div>` : ''}
+            <hr style="border:none;border-top:1px solid #eee;margin:6px 0;">
+            ${bonus > 0 ? `
+            <div style="display:flex;justify-content:space-between;color:#7c3aed;">
+              <span>Bônus</span><span>+ ${emReais(bonus)}</span>
+            </div>` : ''}
+            <div style="display:flex;justify-content:space-between;font-weight:700;font-size:15px;margin-top:4px;">
+              <span>Pago Líquido</span><span style="color:#22c55e;">${emReais(pagoLiquido)}</span>
+            </div>
+          </div>
 
-    <div class="linha">
-      <strong>${t("relatorio.assinaturas")}:</strong> R$ ${Number(p.total_assinaturas).toFixed(2)}
-    </div>
-
-    <div class="linha">
-      <strong>${t("relatorio.total")}:</strong> R$ ${Number(p.total_geral).toFixed(2)}
-    </div>
-  </div>
-`;
+          ${pdfBtn}
+        </div>
+      `;
     });
 
   } catch (err) {

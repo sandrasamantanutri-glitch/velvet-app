@@ -1429,12 +1429,17 @@ const modelo_id = modeloRes.rows[0].id;
     const result = await db.query(
       `
       SELECT
+        id,
         mes,
         total_midias,
         total_assinaturas,
         total_geral,
+        chargebacks,
+        bonus,
+        bonus_tipo,
         status,
-        pago_em
+        pago_em,
+        recibo_pdf_url
       FROM modelo_pagamentos
       WHERE modelo_id = $1
       ORDER BY mes DESC
@@ -1442,7 +1447,18 @@ const modelo_id = modeloRes.rows[0].id;
       [modelo_id]
     );
 
-    res.json(result.rows);
+    const rows = result.rows.map(p => {
+      const pdf_url = p.recibo_pdf_url
+        ? s3Privado.getSignedUrl('getObject', {
+            Bucket: process.env.R2_BUCKET_PRIVATE,
+            Key: p.recibo_pdf_url,
+            Expires: 3600
+          })
+        : null;
+      return { ...p, recibo_pdf_signed_url: pdf_url };
+    });
+
+    res.json(rows);
 
   } catch (err) {
     console.error("ERRO PAGAMENTOS:", err);
