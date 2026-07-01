@@ -187,6 +187,26 @@ function renderizarPaginacaoTransacoes(totalPaginas) {
 }
 
 
+async function abrirReciboModelo(id) {
+  const win = window.open('', '_blank');
+  if (!win) { alert('Permita pop-ups neste site para ver o recibo'); return; }
+  win.document.write('<html><body style="font-family:sans-serif;padding:40px;color:#555">A carregar recibo...</body></html>');
+  try {
+    const res = await fetch(`/api/modelo/pagamentos/${id}/recibo`, {
+      headers: { Authorization: 'Bearer ' + localStorage.getItem('token') }
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const html = await res.text();
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+  } catch (err) {
+    win.document.open();
+    win.document.write('<html><body style="padding:40px"><h2>Erro ao gerar recibo</h2><p>' + err.message + '</p></body></html>');
+    win.document.close();
+  }
+}
+
 function emReais(valor) {
   return Number(valor).toLocaleString("pt-BR", {
     style: "currency",
@@ -239,13 +259,13 @@ async function carregarPagamentos() {
       const saldoBruto   = midias + assinaturas + chargebacks;
       const pagoLiquido  = Number(p.total_geral       || 0);
 
-      const pdfBtn = p.recibo_pdf_signed_url
-        ? `<a href="${p.recibo_pdf_signed_url}" target="_blank" rel="noopener"
+      const pdfBtn = p.status === 'pago'
+        ? `<button onclick="abrirReciboModelo(${p.id})"
               style="display:inline-block;margin-top:12px;padding:8px 16px;
                      background:#7c3aed;color:#fff;border-radius:8px;
-                     font-size:13px;font-weight:600;text-decoration:none;">
-             📄 Ver Recibo PDF
-           </a>`
+                     font-size:13px;font-weight:600;cursor:pointer;border:none;">
+             🖨️ Ver / Imprimir Recibo
+           </button>`
         : '';
 
       lista.innerHTML += `
