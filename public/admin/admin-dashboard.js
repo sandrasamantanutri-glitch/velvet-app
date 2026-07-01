@@ -3890,12 +3890,18 @@ async function salvarPagModelo(e) {
       formData.set('total_geral', total);
     }
 
-    // Bônus extra da Velvet não vem do saldo — só validamos o total_geral (que já exclui bônus Velvet)
+    // Valida saldo — mostra aviso com confirmação se exceder (permite override admin)
     const resSaldo = await fetchJSON(`/admin/dashboard/modelo-pagamentos/saldo/${modeloId}`);
+    const saldoDisp = Number(resSaldo.saldo || 0);
 
-    if (total > Number(resSaldo.saldo || 0) + 0.01) {
-      toast(`Saldo insuficiente. Disponível: ${money(resSaldo.saldo)}`, 'error');
-      return;
+    if (total > saldoDisp + 0.01) {
+      const diff = (total - saldoDisp).toFixed(2);
+      const ok = confirm(
+        `Atenção: o valor a pagar (${money(total)}) excede o saldo calculado em R$ ${diff}.\n\n` +
+        `Isso pode ocorrer por discrepâncias de conciliação ou ajustes manuais.\n\n` +
+        `Deseja registrar o pagamento mesmo assim?`
+      );
+      if (!ok) return;
     }
 
     // Se há bônus extra da Velvet, incluir no total final (acima do saldo)

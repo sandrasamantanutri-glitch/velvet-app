@@ -959,8 +959,8 @@ router.get("/transacoes", authModelo, async (req, res) => {
       values.push(ano, mesNum);
 
       monthFilter = `
-        AND EXTRACT(YEAR  FROM COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') = $2
-        AND EXTRACT(MONTH FROM COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') = $3
+        AND EXTRACT(YEAR  FROM CASE WHEN disponivel_em IS NOT NULL THEN disponivel_em ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) = $2
+        AND EXTRACT(MONTH FROM CASE WHEN disponivel_em IS NOT NULL THEN disponivel_em ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) = $3
       `;
     }
 
@@ -1066,8 +1066,8 @@ router.get("/transacoes/diario", auth, requireRole("admin", "modelo", "agente"),
       let values = [ano, mesNum];
       let where = `
         status = 'pago'
-        AND EXTRACT(YEAR  FROM COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') = $1
-        AND EXTRACT(MONTH FROM COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') = $2
+        AND EXTRACT(YEAR  FROM CASE WHEN disponivel_em IS NOT NULL THEN disponivel_em ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) = $1
+        AND EXTRACT(MONTH FROM CASE WHEN disponivel_em IS NOT NULL THEN disponivel_em ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) = $2
       `;
 
       if (role === "modelo") {
@@ -1088,7 +1088,7 @@ router.get("/transacoes/diario", auth, requireRole("admin", "modelo", "agente"),
       const result = await db.query(
         `
         SELECT
-          DATE(COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') AS dia,
+          DATE(CASE WHEN disponivel_em IS NOT NULL THEN disponivel_em ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) AS dia,
 
           COALESCE(SUM(
             CASE WHEN tipo = 'midia' THEN valor_modelo END
@@ -1130,8 +1130,8 @@ router.get("/transacoes/resumo-mensal", auth, requireRole("admin", "modelo", "ag
       let values = [ano, mesNum];
       let where = `
         status = 'pago'
-        AND EXTRACT(YEAR  FROM COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') = $1
-        AND EXTRACT(MONTH FROM COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') = $2
+        AND EXTRACT(YEAR  FROM CASE WHEN disponivel_em IS NOT NULL THEN disponivel_em ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) = $1
+        AND EXTRACT(MONTH FROM CASE WHEN disponivel_em IS NOT NULL THEN disponivel_em ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) = $2
       `;
 
       if (role === "modelo") {
@@ -1190,7 +1190,7 @@ router.get("/transacoes/resumo-anual", auth, requireRole("admin", "modelo"), asy
       let values = [anoNum];
       let where = `
         status = 'pago'
-        AND EXTRACT(YEAR FROM COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') = $1
+        AND EXTRACT(YEAR FROM CASE WHEN disponivel_em IS NOT NULL THEN disponivel_em ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) = $1
       `;
 
       if (role === "modelo") {
@@ -1211,7 +1211,7 @@ router.get("/transacoes/resumo-anual", auth, requireRole("admin", "modelo"), asy
       const result = await db.query(
         `
         SELECT
-          DATE_TRUNC('month', COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') AS mes,
+          DATE_TRUNC('month', CASE WHEN disponivel_em IS NOT NULL THEN DATE(disponivel_em)::timestamp ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) AS mes,
 
           COALESCE(SUM(valor_bruto), 0) AS total_bruto,
           COALESCE(SUM(taxa_gateway), 0) AS total_taxas,
@@ -1272,7 +1272,7 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
         COALESCE(SUM(CASE
           WHEN tipo IN ('midia', 'conteudo')
            AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
-           AND DATE(COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo')
+           AND (CASE WHEN disponivel_em IS NOT NULL THEN DATE(disponivel_em) ELSE DATE(created_at AT TIME ZONE 'America/Sao_Paulo') END)
                = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
           THEN valor_modelo
         END), 0) AS hoje_midias,
@@ -1280,7 +1280,7 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
         COALESCE(SUM(CASE
           WHEN tipo = 'assinatura'
            AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
-           AND DATE(COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo')
+           AND (CASE WHEN disponivel_em IS NOT NULL THEN DATE(disponivel_em) ELSE DATE(created_at AT TIME ZONE 'America/Sao_Paulo') END)
                = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
           THEN valor_modelo
         END), 0) AS hoje_assinaturas,
@@ -1288,7 +1288,7 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
         COALESCE(SUM(CASE
           WHEN tipo IN ('midia', 'conteudo')
            AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
-           AND DATE_TRUNC('month', COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo')
+           AND DATE_TRUNC('month', CASE WHEN disponivel_em IS NOT NULL THEN DATE(disponivel_em)::timestamp ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END)
                = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
           THEN valor_modelo
         END), 0) AS mes_midias,
@@ -1296,7 +1296,7 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
         COALESCE(SUM(CASE
           WHEN tipo = 'assinatura'
            AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
-           AND DATE_TRUNC('month', COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo')
+           AND DATE_TRUNC('month', CASE WHEN disponivel_em IS NOT NULL THEN DATE(disponivel_em)::timestamp ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END)
                = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
           THEN valor_modelo
         END), 0) AS mes_assinaturas,
@@ -1304,7 +1304,7 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
         COALESCE(SUM(CASE
           WHEN tipo IN ('midia', 'conteudo')
            AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
-           AND DATE_TRUNC('month', COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo')
+           AND DATE_TRUNC('month', CASE WHEN disponivel_em IS NOT NULL THEN DATE(disponivel_em)::timestamp ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END)
                = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '1 month'
           THEN valor_modelo
         END), 0) AS mes_anterior_midias,
@@ -1312,14 +1312,14 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
         COALESCE(SUM(CASE
           WHEN tipo = 'assinatura'
            AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
-           AND DATE_TRUNC('month', COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo')
+           AND DATE_TRUNC('month', CASE WHEN disponivel_em IS NOT NULL THEN DATE(disponivel_em)::timestamp ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END)
                = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '1 month'
           THEN valor_modelo
         END), 0) AS mes_anterior_assinaturas,
 
         COALESCE(SUM(CASE
           WHEN (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
-           AND EXTRACT(YEAR FROM COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo')
+           AND EXTRACT(YEAR FROM CASE WHEN disponivel_em IS NOT NULL THEN disponivel_em ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END)
                = EXTRACT(YEAR FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
           THEN valor_modelo
         END), 0) AS acumulado_ano_atual,
