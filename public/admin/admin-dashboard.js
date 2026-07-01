@@ -3359,27 +3359,81 @@ async function carregarTransacoes(page) {
     const mes = $('transacoesMes').value;
     const data = await fetchJSON(`/admin/dashboard/transacoes-agency?page=${page}&limit=31&modelo_id=${modelo}&mes=${mes}`);
 
-    $('kpi-bruto').textContent = money(data.totais?.bruto);
-    $('kpi-modelo').textContent = money(data.totais?.modelo);
-    $('kpi-velvet').textContent = money(data.totais?.velvet);
-    $('kpi-agency').textContent = money(data.totais?.agency);
-    $('kpi-gateway').textContent = money(data.totais?.gateway);
-    $('kpi-chargebacks').textContent = money(data.totais?.chargebacks);
+    $('kpi-bruto').textContent         = money(data.totais?.bruto);
+    $('kpi-modelo').textContent         = money(data.totais?.modelo);
+    $('kpi-velvet').textContent         = money(data.totais?.velvet);
+    $('kpi-agency').textContent         = money(data.totais?.agency);
+    $('kpi-gateway').textContent        = money(data.totais?.gateway);
+    $('kpi-chargebacks').textContent    = money(data.totais?.chargebacks);
     $('kpi-bruto-pendente').textContent = money(data.totais?.bruto_pendente);
+    if ($('kpi-modelo-pendente')) $('kpi-modelo-pendente').textContent = money(data.totais?.modelo_pendente);
 
+    // Tabela principal — agrupada por dia de compra (created_at)
     const tbody = $('tableTransacoes').querySelector('tbody');
-    tbody.innerHTML = (data.rows || []).map(r => `
-      <tr>
-        <td>${fmtDate(r.dia)}</td>
-        <td>${modeloNome}</td>
-        <td>${money(r.ganhos_dia)}</td>
-        <td>${money(r.ganhos_modelo)}</td>
-        <td>${money(r.ganhos_velvet)}</td>
-        <td>${money(r.ganhos_agencia)}</td>
-        <td>${money(r.ganhos_gateway)}</td>
-        <td>${Number(r.ganhos_pendente) > 0 ? `<span class="badge badge-warning">${money(r.ganhos_pendente)}</span>` : '—'}</td>
-      </tr>
-    `).join('') || emptyRow(8);
+    tbody.innerHTML = (data.rows || []).map(r => {
+      const temPendente = Number(r.ganhos_pendente) > 0;
+      const rowStyle = temPendente ? 'background:linear-gradient(90deg,#fff 70%,#fffbeb 100%);' : '';
+      return `
+        <tr style="${rowStyle}">
+          <td>${fmtDate(r.dia)}</td>
+          <td>${modeloNome}</td>
+          <td>${money(r.ganhos_dia)}</td>
+          <td>${money(r.ganhos_modelo)}</td>
+          <td>${money(r.ganhos_velvet)}</td>
+          <td>${money(r.ganhos_agencia)}</td>
+          <td>${money(r.ganhos_gateway)}</td>
+          <td>${temPendente ? `<span class="badge badge-warning">${money(r.ganhos_pendente)}</span>` : '—'}</td>
+          <td>${Number(r.modelo_pendente) > 0 ? `<span class="badge badge-warning">${money(r.modelo_pendente)}</span>` : '—'}</td>
+        </tr>`;
+    }).join('') || emptyRow(9);
+
+    // Seção Liberações Stripe: compras de outros meses liberadas neste período
+    const libPanel = $('liberacoesStripePanel');
+    if (libPanel) {
+      const libs = data.liberacoes || [];
+      if (libs.length && mes) {
+        const libLinhas = libs.map(l => `
+          <tr>
+            <td style="padding:7px 12px;font-weight:600;">${fmtDate(l.dia_liberacao)}</td>
+            <td style="padding:7px 12px;color:#6b7280;font-size:12px;">compra em ${fmtDate(l.dia_compra)}</td>
+            <td style="padding:7px 12px;">${money(l.valor_bruto)}</td>
+            <td style="padding:7px 12px;">${money(l.valor_modelo)}</td>
+            <td style="padding:7px 12px;">${money(l.velvet_fee)}</td>
+            <td style="padding:7px 12px;">${money(l.agency_fee)}</td>
+            <td style="padding:7px 12px;">${money(l.taxa_gateway)}</td>
+            <td style="padding:7px 12px;color:#888;font-size:12px;">${l.qtd} transação(ões)</td>
+          </tr>`).join('');
+
+        libPanel.style.display = 'block';
+        libPanel.innerHTML = `
+          <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:14px 16px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+              <span style="font-size:16px;">⚡</span>
+              <strong style="color:#166534;">Liberações Stripe neste período</strong>
+              <span style="color:#666;font-size:12px;">— compras de meses anteriores liberadas agora</span>
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:13px;">
+              <thead>
+                <tr style="background:#dcfce7;color:#14532d;text-align:left;">
+                  <th style="padding:7px 12px;">Dia da Liberação</th>
+                  <th style="padding:7px 12px;">Origem</th>
+                  <th style="padding:7px 12px;">Bruto</th>
+                  <th style="padding:7px 12px;">Modelo</th>
+                  <th style="padding:7px 12px;">Velvet</th>
+                  <th style="padding:7px 12px;">Agência</th>
+                  <th style="padding:7px 12px;">Gateway</th>
+                  <th style="padding:7px 12px;">Qtd</th>
+                </tr>
+              </thead>
+              <tbody>${libLinhas}</tbody>
+            </table>
+          </div>`;
+      } else {
+        libPanel.style.display = 'none';
+        libPanel.innerHTML = '';
+      }
+    }
+
     buildPagination('paginationTransacoes', page, data.totalPages || 1, 'carregarTransacoes');
   } catch (err) { console.error('Erro transações:', err); }
 }
@@ -3528,7 +3582,10 @@ async function carregarConciliacao() {
   }
 
   try {
-    const dados = await fetchJSON(`/admin/dashboard/conciliacao-modelo/${modeloId}`);
+    const [dados, justMap] = await Promise.all([
+      fetchJSON(`/admin/dashboard/conciliacao-modelo/${modeloId}`),
+      fetchJSON(`/admin/dashboard/conciliacao-justificativas/${modeloId}`)
+    ]);
     const divergencias = dados.filter(d => !d.ok);
 
     if (!divergencias.length) {
@@ -3538,15 +3595,39 @@ async function carregarConciliacao() {
     }
 
     const linhas = divergencias.map(d => {
-      const mes = new Date(d.mes).toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric', timeZone: 'UTC' });
+      const mesKey = d.mes.slice(0, 7); // 'YYYY-MM'
+      const mesLabel = new Date(d.mes).toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric', timeZone: 'UTC' });
       const cor = Math.abs(d.diferenca) > 100 ? '#dc2626' : '#d97706';
+      const just = justMap[mesKey];
+      const justHtml = just
+        ? `<div style="margin-top:6px;padding:6px 10px;background:#f0fdf4;border:1px solid #86efac;border-radius:6px;font-size:12px;color:#166534;">
+             <strong>Justificativa:</strong> ${just.justificativa}
+             <button onclick="editarJustificativa('${mesKey}',${modeloId})" style="margin-left:8px;background:none;border:none;cursor:pointer;color:#6b7280;font-size:11px;text-decoration:underline;">editar</button>
+           </div>`
+        : `<div style="margin-top:6px;">
+             <button onclick="editarJustificativa('${mesKey}',${modeloId})" style="font-size:12px;background:none;border:1px solid #d97706;color:#d97706;border-radius:4px;padding:2px 8px;cursor:pointer;">+ Justificar</button>
+           </div>`;
+
       return `
-        <tr style="border-bottom:1px solid #fca5a5;">
-          <td style="padding:8px 12px;font-weight:600;">${mes}</td>
+        <tr style="border-bottom:1px solid #fca5a5;vertical-align:top;">
+          <td style="padding:8px 12px;font-weight:600;white-space:nowrap;">${mesLabel}</td>
           <td style="padding:8px 12px;">${money(d.total_transacoes)}</td>
           <td style="padding:8px 12px;">${money(d.pago)}</td>
-          <td style="padding:8px 12px;font-weight:700;color:${cor};">${d.diferenca > 0 ? '+' : ''}${money(d.diferenca)}</td>
-          <td style="padding:8px 12px;color:#888;font-size:12px;">${d.diferenca > 0 ? 'BD mostra mais do que foi pago' : 'BD mostra menos do que foi pago'}</td>
+          <td style="padding:8px 12px;font-weight:700;color:${cor};white-space:nowrap;">${d.diferenca > 0 ? '+' : ''}${money(d.diferenca)}</td>
+          <td style="padding:8px 12px;">${justHtml}</td>
+        </tr>
+        <tr id="just-form-${mesKey.replace('-','_')}" style="display:none;background:#fffbeb;">
+          <td colspan="5" style="padding:8px 12px;">
+            <div style="display:flex;gap:8px;align-items:flex-start;">
+              <textarea id="just-text-${mesKey.replace('-','_')}" rows="2"
+                style="flex:1;border:1px solid #fbbf24;border-radius:6px;padding:6px 10px;font-size:13px;resize:vertical;"
+                placeholder="Ex: pagamento retroativo pois modelo demorou a fornecer dados bancários">${just ? just.justificativa : ''}</textarea>
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <button onclick="salvarJustificativa('${mesKey}',${modeloId})" class="btn btn-sm btn-primary">Salvar</button>
+                <button onclick="fecharJustificativa('${mesKey}')" class="btn btn-sm btn-ghost">Cancelar</button>
+              </div>
+            </div>
+          </td>
         </tr>`;
     }).join('');
 
@@ -3565,7 +3646,7 @@ async function carregarConciliacao() {
               <th style="padding:8px 12px;">Transações (BD)</th>
               <th style="padding:8px 12px;">Pago</th>
               <th style="padding:8px 12px;">Diferença</th>
-              <th style="padding:8px 12px;">Observação</th>
+              <th style="padding:8px 12px;">Justificativa</th>
             </tr>
           </thead>
           <tbody>${linhas}</tbody>
@@ -3573,6 +3654,35 @@ async function carregarConciliacao() {
       </div>`;
   } catch (err) {
     console.error('Erro conciliação:', err);
+  }
+}
+
+function editarJustificativa(mesKey, modeloId) {
+  const formId = 'just-form-' + mesKey.replace('-', '_');
+  const row = document.getElementById(formId);
+  if (row) row.style.display = row.style.display === 'none' ? '' : 'none';
+}
+
+function fecharJustificativa(mesKey) {
+  const row = document.getElementById('just-form-' + mesKey.replace('-', '_'));
+  if (row) row.style.display = 'none';
+}
+
+async function salvarJustificativa(mesKey, modeloId) {
+  const textEl = document.getElementById('just-text-' + mesKey.replace('-', '_'));
+  const justificativa = textEl?.value?.trim();
+  if (!justificativa) { toast('Escreva uma justificativa', 'error'); return; }
+
+  try {
+    await authFetch('/admin/dashboard/conciliacao-justificativas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ modelo_id: modeloId, mes: mesKey, justificativa })
+    });
+    toast('Justificativa salva', 'success');
+    carregarConciliacao();
+  } catch (err) {
+    toast('Erro ao salvar: ' + err.message, 'error');
   }
 }
 

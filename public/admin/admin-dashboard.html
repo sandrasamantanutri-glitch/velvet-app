@@ -837,11 +837,16 @@
       <div class="kpi-card orange"><span>Agencias</span><strong id="kpi-agency">--</strong></div>
       <div class="kpi-card red"><span>Gateway</span><strong id="kpi-gateway">--</strong></div>
       <div class="kpi-card red"><span>Chargebacks</span><strong id="kpi-chargebacks">--</strong></div>
-      <div class="kpi-card muted" title="Pagamentos via cartão ainda represados pelo Stripe (não disponível para saque)"><span>Pendente (cartão)</span><strong id="kpi-bruto-pendente">--</strong></div>
+      <div class="kpi-card muted" title="Valor bruto de compras via cartão ainda represadas pelo Stripe"><span>Pendente Bruto (cartão)</span><strong id="kpi-bruto-pendente">--</strong></div>
+      <div class="kpi-card muted" title="Parcela da modelo nas compras via cartão ainda represadas pelo Stripe"><span>Pendente Modelo (cartão)</span><strong id="kpi-modelo-pendente">--</strong></div>
     </div>
+
+    <!-- Seção: Liberações Stripe do período (compras de meses anteriores liberadas neste mês) -->
+    <div id="liberacoesStripePanel" style="display:none;margin-bottom:16px;"></div>
+
     <div class="card">
       <table class="table" id="tableTransacoes">
-        <thead><tr><th>Dia</th><th>Modelo</th><th>Ganhos do Dia</th><th>Ganhos Modelo</th><th>Ganhos Velvet</th><th>Ganhos Agência</th><th>Ganhos Gateway</th><th>Pendente</th></tr></thead>
+        <thead><tr><th>Dia da Compra</th><th>Modelo</th><th>Ganhos do Dia</th><th>Ganhos Modelo</th><th>Velvet</th><th>Agência</th><th>Gateway</th><th title="Cartão ainda não liberado pelo Stripe neste dia">Pendente Bruto</th><th title="Parcela da modelo ainda pendente">Pendente Modelo</th></tr></thead>
         <tbody></tbody>
       </table>
       <div class="pagination" id="paginationTransacoes"></div>

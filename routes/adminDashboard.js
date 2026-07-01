@@ -3304,6 +3304,8 @@ router.get("/transacoes-agency", async (req, res) => {
     const modelo_id = req.query.modelo_id;
     const m = parseMes(req.query.mes);
 
+    // WHERE base para listagem — filtra por created_at (data da compra)
+    // Pending Stripe aparecem no mês/dia em que o cliente comprou
     let where = "m.verificada = true AND m.ativo = true";
     const params = [];
     let paramIdx = 1;
@@ -3315,42 +3317,37 @@ router.get("/transacoes-agency", async (req, res) => {
     }
 
     if (m) {
-      // Filtra pelo mês de disponibilidade: Stripe usa disponivel_em (data de liberação),
-      // outros usam created_at. Pagamentos Stripe pendentes ficam fora do filtro de mês
-      // e só entram no mês em que o Stripe os libera.
-      where += ` AND EXTRACT(YEAR  FROM COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo') = $${paramIdx}
-                 AND EXTRACT(MONTH FROM COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo') = $${paramIdx + 1}`;
+      where += ` AND EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${paramIdx}
+                 AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${paramIdx + 1}`;
       params.push(m.ano, m.mes);
       paramIdx += 2;
     }
 
-    // Copiar params para countParams
     const countParams = [...params];
 
-    // Totais financeiros (só status='pago' E disponível para saque — PIX é sempre disponível, cartão depende do disponivel_em)
+    // DISPONIVEL: Stripe só conta quando liberado; outros gateways sempre disponíveis
     const DISPONIVEL = "(t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))";
+
+    // Totais financeiros (por created_at do período, separando disponível de pendente)
     const totaisQ = await db.query(`
       SELECT
-        COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISPONIVEL} THEN t.valor_bruto ELSE 0 END), 0) AS bruto,
+        COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISPONIVEL} THEN t.valor_bruto  ELSE 0 END), 0) AS bruto,
         COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISPONIVEL} THEN t.valor_modelo ELSE 0 END), 0) AS modelo,
-        COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISPONIVEL} THEN t.velvet_fee ELSE 0 END), 0) AS velvet,
-        COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISPONIVEL} THEN t.agency_fee ELSE 0 END), 0) AS agency,
+        COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISPONIVEL} THEN t.velvet_fee   ELSE 0 END), 0) AS velvet,
+        COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISPONIVEL} THEN t.agency_fee   ELSE 0 END), 0) AS agency,
         COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISPONIVEL} THEN t.taxa_gateway ELSE 0 END), 0) AS gateway,
-        COALESCE(SUM(CASE WHEN t.status='pago' AND NOT ${DISPONIVEL} THEN t.valor_bruto ELSE 0 END), 0) AS bruto_pendente
+        COALESCE(SUM(CASE WHEN t.status='pago' AND NOT ${DISPONIVEL} THEN t.valor_bruto  ELSE 0 END), 0) AS bruto_pendente,
+        COALESCE(SUM(CASE WHEN t.status='pago' AND NOT ${DISPONIVEL} THEN t.valor_modelo ELSE 0 END), 0) AS modelo_pendente
       FROM transacoes_agency t
       INNER JOIN modelos m ON m.id = t.modelo_id
-      WHERE ${where}
+      WHERE ${where} AND t.status IN ('pago','chargeback')
     `, countParams);
 
-    // Chargebacks separado: usa tabela chargebacks filtrada por criado_em (data de registro)
+    // Chargebacks do período (por criado_em)
     const cbWhere = ['1=1'];
     const cbParams = [];
     let cbIdx = 1;
-    if (modelo_id) {
-      cbWhere.push(`modelo_id = $${cbIdx}`);
-      cbParams.push(modelo_id);
-      cbIdx++;
-    }
+    if (modelo_id) { cbWhere.push(`modelo_id = $${cbIdx}`); cbParams.push(modelo_id); cbIdx++; }
     if (m) {
       cbWhere.push(`EXTRACT(YEAR  FROM criado_em AT TIME ZONE 'America/Sao_Paulo') = $${cbIdx}`);
       cbWhere.push(`EXTRACT(MONTH FROM criado_em AT TIME ZONE 'America/Sao_Paulo') = $${cbIdx + 1}`);
@@ -3362,40 +3359,84 @@ router.get("/transacoes-agency", async (req, res) => {
       cbParams
     );
 
+    // Contagem de dias distintos (por created_at)
     const countDiasQ = await db.query(`
-      SELECT COUNT(DISTINCT DATE(COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo')) AS count
+      SELECT COUNT(DISTINCT DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo')) AS count
       FROM transacoes_agency t
       INNER JOIN modelos m ON m.id = t.modelo_id
-      WHERE ${where}
+      WHERE ${where} AND t.status IN ('pago','chargeback')
     `, countParams);
     const totalDias = Number(countDiasQ.rows[0]?.count || 0);
 
-    // Ganhos agrupados por dia da venda; ganhos_* só soma o que já está disponível
-    // para saque, ganhos_pendente mostra o que ainda está represado pelo Stripe.
+    // Listagem agrupada por dia de compra (created_at)
+    // ganhos_* = já liberado; ganhos_pendente = ainda represado pelo Stripe
     const rowsParams = [...params, limit, offset];
-
     const { rows } = await db.query(`
       SELECT
-        DATE(COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo') AS dia,
+        DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo') AS dia,
         COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISPONIVEL} THEN t.valor_bruto  ELSE 0 END), 0) AS ganhos_dia,
         COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISPONIVEL} THEN t.valor_modelo ELSE 0 END), 0) AS ganhos_modelo,
-        COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISPONIVEL} THEN t.velvet_fee  ELSE 0 END), 0) AS ganhos_velvet,
-        COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISPONIVEL} THEN t.agency_fee  ELSE 0 END), 0) AS ganhos_agencia,
+        COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISPONIVEL} THEN t.velvet_fee   ELSE 0 END), 0) AS ganhos_velvet,
+        COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISPONIVEL} THEN t.agency_fee   ELSE 0 END), 0) AS ganhos_agencia,
         COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISPONIVEL} THEN t.taxa_gateway ELSE 0 END), 0) AS ganhos_gateway,
-        COALESCE(SUM(CASE WHEN t.status='pago' AND NOT ${DISPONIVEL} THEN t.valor_bruto ELSE 0 END), 0) AS ganhos_pendente
+        COALESCE(SUM(CASE WHEN t.status='pago' AND NOT ${DISPONIVEL} THEN t.valor_bruto  ELSE 0 END), 0) AS ganhos_pendente,
+        COALESCE(SUM(CASE WHEN t.status='pago' AND NOT ${DISPONIVEL} THEN t.valor_modelo ELSE 0 END), 0) AS modelo_pendente
       FROM transacoes_agency t
       INNER JOIN modelos m ON m.id = t.modelo_id
-      WHERE ${where}
-      GROUP BY DATE(COALESCE(t.disponivel_em, t.created_at) AT TIME ZONE 'America/Sao_Paulo')
+      WHERE ${where} AND t.status IN ('pago','chargeback')
+      GROUP BY DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo')
       ORDER BY dia DESC
       LIMIT $${paramIdx} OFFSET $${paramIdx + 1}
     `, rowsParams);
+
+    // Liberações Stripe do período: transações compradas em OUTRO mês mas liberadas neste
+    // (disponivel_em cai no mês filtrado mas created_at é de mês diferente)
+    let liberacoes = [];
+    if (m) {
+      const libParams = [];
+      let libIdx = 1;
+      let libWhere = `t.gateway = 'stripe'
+        AND t.status = 'pago'
+        AND t.disponivel_em IS NOT NULL
+        AND t.disponivel_em <= NOW()
+        AND EXTRACT(YEAR  FROM t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') = $${libIdx}
+        AND EXTRACT(MONTH FROM t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') = $${libIdx + 1}
+        AND (
+          EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') != $${libIdx}
+          OR EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') != $${libIdx + 1}
+        )`;
+      libParams.push(m.ano, m.mes);
+      libIdx += 2;
+      if (modelo_id) {
+        libWhere += ` AND t.modelo_id = $${libIdx}`;
+        libParams.push(modelo_id);
+        libIdx++;
+      }
+      const libQ = await db.query(`
+        SELECT
+          DATE(t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') AS dia_liberacao,
+          DATE(t.created_at   AT TIME ZONE 'America/Sao_Paulo') AS dia_compra,
+          COALESCE(SUM(t.valor_bruto),  0) AS valor_bruto,
+          COALESCE(SUM(t.valor_modelo), 0) AS valor_modelo,
+          COALESCE(SUM(t.velvet_fee),   0) AS velvet_fee,
+          COALESCE(SUM(t.agency_fee),   0) AS agency_fee,
+          COALESCE(SUM(t.taxa_gateway), 0) AS taxa_gateway,
+          COUNT(*) AS qtd
+        FROM transacoes_agency t
+        INNER JOIN modelos m ON m.id = t.modelo_id
+        WHERE m.verificada = true AND m.ativo = true AND ${libWhere}
+        GROUP BY dia_liberacao, dia_compra
+        ORDER BY dia_liberacao DESC, dia_compra DESC
+      `, libParams);
+      liberacoes = libQ.rows;
+    }
 
     res.json({
       rows,
       totalPages: Math.ceil(totalDias / limit),
       page,
-      totais: { ...totaisQ.rows[0], chargebacks: cbTotaisQ.rows[0].chargebacks }
+      totais: { ...totaisQ.rows[0], chargebacks: cbTotaisQ.rows[0].chargebacks },
+      liberacoes
     });
   } catch (err) {
     console.error("Erro transações:", err);
@@ -3926,6 +3967,44 @@ router.get("/conciliacao-modelo/:modelo_id", authAdmin, async (req, res) => {
     res.json(resultados);
   } catch (err) {
     console.error("Erro conciliacao-modelo:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// ── Justificativas de divergência de conciliação ─────────────────────────────
+router.get("/conciliacao-justificativas/:modelo_id", authAdmin, async (req, res) => {
+  try {
+    const modelo_id = Number(req.params.modelo_id);
+    if (!modelo_id) return res.status(400).json({ erro: "modelo_id inválido" });
+    const { rows } = await db.query(
+      `SELECT mes, justificativa, updated_at FROM conciliacao_justificativas WHERE modelo_id = $1`,
+      [modelo_id]
+    );
+    // Retorna objeto keyed por mes para fácil lookup
+    const map = {};
+    for (const r of rows) map[r.mes] = { justificativa: r.justificativa, updated_at: r.updated_at };
+    res.json(map);
+  } catch (err) {
+    console.error("Erro buscar justificativas:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.post("/conciliacao-justificativas", authAdmin, async (req, res) => {
+  try {
+    const { modelo_id, mes, justificativa } = req.body;
+    if (!modelo_id || !mes || !justificativa?.trim())
+      return res.status(400).json({ erro: "modelo_id, mes e justificativa são obrigatórios" });
+    const { rows } = await db.query(`
+      INSERT INTO conciliacao_justificativas (modelo_id, mes, justificativa, updated_at)
+      VALUES ($1, $2, $3, NOW())
+      ON CONFLICT (modelo_id, mes) DO UPDATE
+        SET justificativa = EXCLUDED.justificativa, updated_at = NOW()
+      RETURNING *
+    `, [Number(modelo_id), mes, justificativa.trim()]);
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Erro salvar justificativa:", err);
     res.status(500).json({ erro: "Erro interno" });
   }
 });
