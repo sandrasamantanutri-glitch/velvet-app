@@ -3432,11 +3432,34 @@ router.get("/transacoes-agency", async (req, res) => {
       liberacoes = libQ.rows;
     }
 
+    // Soma liberações Stripe no totais do período:
+    // são valores já disponíveis de meses anteriores que entram no saldo do mês filtrado
+    const libSum = liberacoes.reduce((acc, r) => {
+      acc.bruto   += Number(r.valor_bruto  || 0);
+      acc.modelo  += Number(r.valor_modelo || 0);
+      acc.velvet  += Number(r.velvet_fee   || 0);
+      acc.agency  += Number(r.agency_fee   || 0);
+      acc.gateway += Number(r.taxa_gateway || 0);
+      return acc;
+    }, { bruto: 0, modelo: 0, velvet: 0, agency: 0, gateway: 0 });
+
+    const t0 = totaisQ.rows[0];
+    const totais = {
+      bruto:          Number(t0.bruto)          + libSum.bruto,
+      modelo:         Number(t0.modelo)         + libSum.modelo,
+      velvet:         Number(t0.velvet)         + libSum.velvet,
+      agency:         Number(t0.agency)         + libSum.agency,
+      gateway:        Number(t0.gateway)        + libSum.gateway,
+      bruto_pendente: Number(t0.bruto_pendente),
+      modelo_pendente:Number(t0.modelo_pendente),
+      chargebacks:    Number(cbTotaisQ.rows[0].chargebacks || 0),
+    };
+
     res.json({
       rows,
       totalPages: Math.ceil(totalDias / limit),
       page,
-      totais: { ...totaisQ.rows[0], chargebacks: cbTotaisQ.rows[0].chargebacks },
+      totais,
       liberacoes
     });
   } catch (err) {
