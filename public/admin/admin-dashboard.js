@@ -3855,12 +3855,10 @@ function atualizarTotalPagModelo() {
   const midias      = Number($('pagamentoTotalMidias').value || 0);
   const assinaturas = Number($('pagamentoTotalAssinaturas').value || 0);
   const bonus       = Number($('pagBonus').value || 0);
-  const bonusTipo   = document.querySelector('input[name="bonus_tipo"]:checked')?.value || 'saldo';
 
-  // Chargebacks já estão excluídos de transacoes_agency (status='chargeback'), não deduzir novamente
-  // Bônus extra da Velvet não entra no total do saldo
-  const bonusNoTotal = bonusTipo === 'saldo' ? bonus : 0;
-  const total = Math.max(0, midias + assinaturas + bonusNoTotal);
+  // Sempre soma o bônus no total exibido, independente do tipo
+  // A validação de saldo (no save) trata o tipo separadamente
+  const total = Math.max(0, midias + assinaturas + bonus);
   $('pagamentoTotalGeral').value = total.toFixed(2);
 }
 
@@ -3890,23 +3888,21 @@ async function salvarPagModelo(e) {
       formData.set('total_geral', total);
     }
 
-    // Valida saldo — mostra aviso com confirmação se exceder (permite override admin)
+    // Valida saldo — oferece duas opções se exceder
     const resSaldo = await fetchJSON(`/admin/dashboard/modelo-pagamentos/saldo/${modeloId}`);
     const saldoDisp = Number(resSaldo.saldo || 0);
 
     if (total > saldoDisp + 0.01) {
       const diff = (total - saldoDisp).toFixed(2);
-      const ok = confirm(
-        `Atenção: o valor a pagar (${money(total)}) excede o saldo calculado em R$ ${diff}.\n\n` +
-        `Isso pode ocorrer por discrepâncias de conciliação ou ajustes manuais.\n\n` +
-        `Deseja registrar o pagamento mesmo assim?`
+      const deixarNegativo = confirm(
+        `O valor a pagar (${money(total)}) excede o saldo em R$ ${diff}.\n\n` +
+        `OK → Pagar ${money(total)} e deixar saldo negativo (R$ ${(saldoDisp - total).toFixed(2)} no próximo mês)\n` +
+        `Cancelar → Ajustar para ${money(saldoDisp)} (apenas o saldo disponível)`
       );
-      if (!ok) return;
-    }
-
-    // Se há bônus extra da Velvet, incluir no total final (acima do saldo)
-    if (bonusTipo === 'velvet' && bonus > 0) {
-      formData.set('total_geral', (total + bonus).toFixed(2));
+      if (!deixarNegativo) {
+        total = saldoDisp;
+        formData.set('total_geral', saldoDisp.toFixed(2));
+      }
     }
 
     const res = await authFetch('/admin/dashboard/modelo-pagamentos', {
