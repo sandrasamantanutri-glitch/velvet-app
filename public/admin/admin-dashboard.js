@@ -3894,12 +3894,26 @@ async function salvarPagModelo(e) {
 
     if (total > saldoDisp + 0.01) {
       const diff = (total - saldoDisp).toFixed(2);
-      const deixarNegativo = confirm(
-        `O valor a pagar (${money(total)}) excede o saldo em R$ ${diff}.\n\n` +
-        `OK → Pagar ${money(total)} e deixar saldo negativo (R$ ${(saldoDisp - total).toFixed(2)} no próximo mês)\n` +
-        `Cancelar → Ajustar para ${money(saldoDisp)} (apenas o saldo disponível)`
+
+      // 1ª pergunta: confirmar que quer pagar esse valor mesmo excedendo o saldo
+      const confirmar = confirm(
+        `O valor a pagar (${money(total)}) excede o saldo calculado em R$ ${diff}.\n\n` +
+        `Deseja registrar o pagamento com este valor?`
       );
-      if (!deixarNegativo) {
+      if (!confirmar) return;
+
+      // 2ª pergunta: deixar saldo negativo ou ajustar para o saldo disponível?
+      const deixarNegativo = confirm(
+        `Deseja deixar o saldo negativo?\n\n` +
+        `OK → Registrar ${money(total)} — saldo ficará em ${money(saldoDisp - total)} no próximo mês\n` +
+        `Cancelar → Registrar apenas ${money(saldoDisp)} (saldo disponível sem negativar)`
+      );
+
+      if (deixarNegativo) {
+        formData.set('force', '1');
+        formData.set('admin_override', '1');
+        formData.set('admin_override_obs', `Admin autorizou pagamento de ${money(total)} com saldo de ${money(saldoDisp)} (diferença: R$ ${diff})`);
+      } else {
         total = saldoDisp;
         formData.set('total_geral', saldoDisp.toFixed(2));
       }
@@ -3916,13 +3930,16 @@ async function salvarPagModelo(e) {
       throw new Error(data.erro || data.message || `HTTP ${res.status}`);
     }
 
-    toast('Pagamento registrado! Abrindo recibo...', 'success');
+    toast('Pagamento registrado!', 'success');
     closeAllModals();
     form.reset();
     $('saldoDisponivelPgModelo').textContent = '—';
     carregarPgtoModelo(1);
 
-    if (data.id) {
+    // Abrir PDF gerado — ou HTML como fallback
+    if (data.recibo_pdf_signed_url) {
+      window.open(data.recibo_pdf_signed_url, '_blank');
+    } else if (data.id) {
       abrirRecibo(data.id);
     }
   } catch (err) {

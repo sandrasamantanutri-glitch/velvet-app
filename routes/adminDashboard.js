@@ -3806,7 +3806,10 @@ router.post("/modelo-pagamentos", authAdmin, upload.single("recibo"), async (req
     const pagos = Number(pagosRes.rows[0].pagos || 0);
     const saldo = ganhosDisponiveis - pagos;
 
-    if (total > saldo) {
+    const force = req.body.force === '1' || req.body.force === true;
+    const adminOverride = req.body.admin_override === '1' || req.body.admin_override === true;
+    const adminOverrideObs = req.body.admin_override_obs || null;
+    if (!force && total > saldo + 0.01) {
       return res.status(400).json({
         erro: `Saldo insuficiente para este pagamento. Saldo disponível: ${saldo.toFixed(2)}`
       });
@@ -3838,39 +3841,82 @@ router.post("/modelo-pagamentos", authAdmin, upload.single("recibo"), async (req
     const bonusVal       = Number(bonus           || 0);
     const bonusTipoVal   = bonus_tipo === 'velvet' ? 'velvet' : 'saldo';
 
+    // Buscar dados da modelo para o PDF
+    const modeloDadosRes = await db.query(`
+      SELECT
+        m.nome AS modelo_nome, m.nome_exibicao,
+        md.nome_completo, md.endereco, md.cidade, md.estado, md.titular_documento,
+        u.email AS modelo_email,
+        COALESCE(ag.percentual_plataforma, 0.20) AS pct_plataforma,
+        COALESCE(ag.percentual_agencia, 0) AS pct_agencia,
+        ag.nome AS agencia_nome
+      FROM modelos m
+      LEFT JOIN modelos_dados md ON md.modelo_id = m.id
+      LEFT JOIN users u ON u.id = m.user_id
+      LEFT JOIN agencias ag ON ag.id = m.agencia_id
+      WHERE m.id = $1
+    `, [modeloIdNum]);
+    const md = modeloDadosRes.rows[0] || {};
+
     const { rows } = await db.query(`
       INSERT INTO modelo_pagamentos
       (
-        modelo_id,
-        mes,
-        total_midias,
-        total_assinaturas,
-        total_geral,
-        status,
-        recibo_url,
-        comissao_velvet,
-        valor_liquido,
-        chargebacks,
-        bonus,
-        bonus_tipo
+        modelo_id, mes, total_midias, total_assinaturas, total_geral,
+        status, recibo_url, comissao_velvet, valor_liquido, chargebacks, bonus, bonus_tipo,
+        admin_override, admin_override_obs
       )
-      VALUES ($1, $2, $3, $4, $5, 'pendente', $6, $7, $8, $9, $10, $11)
+      VALUES ($1, $2, $3, $4, $5, 'pendente', $6, $7, $8, $9, $10, $11, $12, $13)
       RETURNING *
-    `, [
-      modeloIdNum,
-      mesDate,
-      midias,
-      assinaturas,
-      total,
-      recibo_url,
-      comissao,
-      liquido,
-      chargebacksVal,
-      bonusVal,
-      bonusTipoVal
-    ]);
+    `, [modeloIdNum, mesDate, midias, assinaturas, total,
+        recibo_url, comissao, liquido, chargebacksVal, bonusVal, bonusTipoVal,
+        adminOverride, adminOverrideObs]);
 
-    res.json(rows[0]);
+    const novoId = rows[0].id;
+
+    // Gerar PDF do recibo na hora do registro
+    let recibo_pdf_signed_url = null;
+    try {
+      const pctPlataforma = Number(md.pct_plataforma || 0.20);
+      const pctAgencia    = Number(md.pct_agencia    || 0);
+      const pctModelo     = 1 - pctPlataforma - pctAgencia;
+      const valorBruto    = pctModelo > 0 ? total / pctModelo : total;
+
+      const dadosPDF = {
+        ...rows[0],
+        ...md,
+        valor_bruto:     valorBruto,
+        taxa_plataforma: valorBruto * pctPlataforma,
+        taxa_agencia:    valorBruto * pctAgencia,
+        chargebacks:     chargebacksVal,
+        comissao_velvet: valorBruto * pctPlataforma,
+        valor_liquido:   total - chargebacksVal,
+        pago_em:         null
+      };
+      const pdfBuffer = await gerarReciboPDF(dadosPDF);
+      const pdfKey = `recibos/${modeloIdNum}/${novoId}-recibo.pdf`;
+
+      await s3Privado.putObject({
+        Bucket: process.env.R2_BUCKET_PRIVATE,
+        Key: pdfKey,
+        Body: pdfBuffer,
+        ContentType: 'application/pdf'
+      }).promise();
+
+      await db.query(
+        `UPDATE modelo_pagamentos SET recibo_pdf_url = $1 WHERE id = $2`,
+        [pdfKey, novoId]
+      );
+
+      recibo_pdf_signed_url = s3Privado.getSignedUrl('getObject', {
+        Bucket: process.env.R2_BUCKET_PRIVATE,
+        Key: pdfKey,
+        Expires: 300
+      });
+    } catch (pdfErr) {
+      console.warn('Aviso: geração de PDF do recibo falhou:', pdfErr.message);
+    }
+
+    res.json({ ...rows[0], id: novoId, recibo_pdf_signed_url });
   } catch (err) {
     console.error("Erro criar pgto modelo:", err);
     res.status(500).json({ erro: "Erro interno" });
@@ -4378,33 +4424,49 @@ router.post("/modelo-pagamentos/:id/pagar", authAdmin, async (req, res) => {
     const comissao       = taxaPlataforma;                      // alias para compatibilidade
     const liquido        = modeloShare - chargebacksVal;        // valor efectivamente transferido
 
-    // 2. Gerar PDF
-    const dadosPDF = {
-      ...p,
-      valor_bruto:      valorBruto,
-      taxa_plataforma:  taxaPlataforma,
-      taxa_agencia:     taxaAgencia,
-      pct_agencia_pct:  pctAgencia * 100,   // ex: 10 (%)
-      chargebacks:      chargebacksVal,
-      comissao_velvet:  comissao,
-      valor_liquido:    liquido,
-      pago_em:          new Date()
-    };
-    const pdfBuffer = await gerarReciboPDF(dadosPDF);
+    // 2. Usar PDF já gerado no registro — ou gerar agora se não existir (fallback)
+    let pdfBuffer = null;
+    let pdfKey = p.recibo_pdf_url || null;
 
-    // 3. Guardar PDF no R2 privado
-    let pdfKey = null;
-    try {
-      pdfKey = `recibos/${p.modelo_id}/${id}-recibo-${Date.now()}.pdf`;
-      await s3Privado.putObject({
-        Bucket: process.env.R2_BUCKET_PRIVATE,
-        Key: pdfKey,
-        Body: pdfBuffer,
-        ContentType: 'application/pdf'
-      }).promise();
-    } catch (uploadErr) {
-      console.warn('Aviso: upload do PDF falhou:', uploadErr.message);
-      pdfKey = null;
+    if (pdfKey) {
+      // Baixa PDF existente para usar no email
+      try {
+        const obj = await s3Privado.getObject({
+          Bucket: process.env.R2_BUCKET_PRIVATE,
+          Key: pdfKey
+        }).promise();
+        pdfBuffer = obj.Body;
+      } catch (dlErr) {
+        console.warn('Aviso: download do PDF existente falhou, regerando:', dlErr.message);
+        pdfKey = null;
+      }
+    }
+
+    if (!pdfKey) {
+      // Fallback: gera PDF agora (caso o registro não tenha gerado)
+      const dadosPDF = {
+        ...p,
+        valor_bruto:     valorBruto,
+        taxa_plataforma: taxaPlataforma,
+        taxa_agencia:    taxaAgencia,
+        chargebacks:     chargebacksVal,
+        comissao_velvet: comissao,
+        valor_liquido:   liquido,
+        pago_em:         new Date()
+      };
+      pdfBuffer = await gerarReciboPDF(dadosPDF);
+      try {
+        pdfKey = `recibos/${p.modelo_id}/${id}-recibo.pdf`;
+        await s3Privado.putObject({
+          Bucket: process.env.R2_BUCKET_PRIVATE,
+          Key: pdfKey,
+          Body: pdfBuffer,
+          ContentType: 'application/pdf'
+        }).promise();
+      } catch (uploadErr) {
+        console.warn('Aviso: upload do PDF falhou:', uploadErr.message);
+        pdfKey = null;
+      }
     }
 
     // 4. Atualizar DB com todos os campos de compliance
@@ -4652,24 +4714,13 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f0f0;padding:20px;col
     <div><h4>Emissor</h4><p><strong>Empresa:</strong> Velvet Entertainment Ltda<br><strong>CNPJ:</strong> 66.615.892/0001-43<br><strong>Endereço:</strong> R Cel José Eusébio, 95 casa 13<br><strong>Cidade/UF:</strong> São Paulo/SP</p></div>
   </div>
 
-  <!-- Bloco: Receitas geradas no mês (bruto) -->
+  <!-- Bloco único: breakdown do pagamento -->
   <div class="sec">
-    <div class="sec-title">Receitas geradas em ${mesRefLabel}</div>
-    <div class="row">
-      <span class="lbl">Total gerado (bruto)</span>
-      <span class="val">${fmtBRL(total_bruto || (midias_liq + assinaturas_liq + cbMostrar))}</span>
-    </div>
-    ${midias_bruto > 0 ? `<div class="row sub"><span class="lbl">Mídias</span><span class="val">${fmtBRL(midias_bruto)}</span></div>` : ''}
-    ${assinaturas_bruto > 0 ? `<div class="row sub"><span class="lbl">Assinaturas</span><span class="val">${fmtBRL(assinaturas_bruto)}</span></div>` : ''}
+    <div class="sec-title">Composição do pagamento — ${mesRefLabel}</div>
+    <div class="row"><span class="lbl" style="font-weight:600;">Saldo Bruto</span><span class="val" style="font-weight:600;">${fmtBRL(midias_bruto + assinaturas_bruto)}</span></div>
+    <div class="row sub"><span class="lbl">Mídias</span><span class="val">${fmtBRL(midias_liq)}</span></div>
+    <div class="row sub"><span class="lbl">Assinaturas</span><span class="val">${fmtBRL(assinaturas_liq)}</span></div>
     ${cbMostrar > 0 ? `<div class="row sub cb"><span class="lbl">Chargebacks / estornos</span><span class="val">− ${fmtBRL(cbMostrar)}</span></div>` : ''}
-  </div>
-
-  <!-- Bloco: Cálculo do valor a receber -->
-  <div class="sec">
-    <div class="sec-title">Composição do pagamento</div>
-    <div class="row"><span class="lbl">Mídias (recebidas)</span><span class="val">${fmtBRL(midias_liq)}</span></div>
-    <div class="row"><span class="lbl">Assinaturas (recebidas)</span><span class="val">${fmtBRL(assinaturas_liq)}</span></div>
-    ${cbMostrar > 0 ? `<div class="row cb"><span class="lbl">Desconto — Chargebacks</span><span class="val">− ${fmtBRL(cbMostrar)}</span></div>` : ''}
     <hr class="divider">
     <div class="row"><span class="lbl">Saldo líquido</span><span class="val">${fmtBRL(saldoLiquido)}</span></div>
     ${bonusVal > 0 ? `<div class="row bon"><span class="lbl">Bônus</span><span class="val">+ ${fmtBRL(bonusVal)}</span></div>` : ''}
