@@ -4048,7 +4048,7 @@ router.get("/auditoria-stripe", authAdmin, async (req, res) => {
   try {
     const [resumoQ, pendentesQ, orfaosQ, semDisponQ] = await Promise.all([
 
-      // Resumo geral
+      // Resumo geral — somente a partir de 23/06/2026 (data de implementação do Stripe)
       db.query(`
         SELECT
           COUNT(*)  FILTER (WHERE gateway='stripe' AND status='pago')                                                          AS total_stripe,
@@ -4059,9 +4059,10 @@ router.get("/auditoria-stripe", authAdmin, async (req, res) => {
           COALESCE(SUM(valor_modelo) FILTER (WHERE gateway='stripe' AND status='pago' AND (disponivel_em IS NULL OR disponivel_em > NOW())), 0) AS modelo_pendente,
           COALESCE(SUM(valor_bruto)  FILTER (WHERE gateway='stripe' AND status='pago' AND disponivel_em IS NOT NULL AND disponivel_em <= NOW()), 0) AS bruto_liberado
         FROM transacoes_agency
+        WHERE created_at >= '2026-06-23T00:00:00Z'
       `),
 
-      // Pendentes agrupados por modelo
+      // Pendentes agrupados por modelo — somente a partir de 23/06/2026
       db.query(`
         SELECT
           t.modelo_id,
@@ -4076,11 +4077,12 @@ router.get("/auditoria-stripe", authAdmin, async (req, res) => {
         WHERE t.gateway = 'stripe'
           AND t.status = 'pago'
           AND (t.disponivel_em IS NULL OR t.disponivel_em > NOW())
+          AND t.created_at >= '2026-06-23T00:00:00Z'
         GROUP BY t.modelo_id, m.nome_exibicao
         ORDER BY bruto_pendente DESC
       `),
 
-      // Órfãos: pagamentos_cartao aprovados sem transacao_agency correspondente
+      // Órfãos: pagamentos_cartao aprovados sem transacao_agency correspondente — somente a partir de 23/06/2026
       db.query(`
         SELECT
           pc.id,
@@ -4095,15 +4097,17 @@ router.get("/auditoria-stripe", authAdmin, async (req, res) => {
         WHERE pc.gateway = 'stripe'
           AND pc.status = 'pago'
           AND ta.id IS NULL
+          AND pc.created_at >= '2026-06-23T00:00:00Z'
         ORDER BY pc.created_at DESC
         LIMIT 50
       `),
 
-      // Transações Stripe sem disponivel_em (webhook de payout não chegou)
+      // Transações Stripe sem disponivel_em — somente a partir de 23/06/2026
       db.query(`
         SELECT COUNT(*) AS qtd, COALESCE(SUM(valor_bruto), 0) AS bruto
         FROM transacoes_agency
         WHERE gateway = 'stripe' AND status = 'pago' AND disponivel_em IS NULL
+          AND created_at >= '2026-06-23T00:00:00Z'
       `)
     ]);
 

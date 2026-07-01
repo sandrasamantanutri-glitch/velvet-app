@@ -547,6 +547,7 @@ async function calcularFechamentoAgencia(agenciaId, ano, mes) {
     FROM vw_transacoes_agencia t
     WHERE t.agencia_id = $1
       AND t.status = 'pago'
+      AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
       AND EXTRACT(YEAR  FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $2
       AND EXTRACT(MONTH FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $3
   `, [agenciaId, ano, mes]);
@@ -560,6 +561,7 @@ async function calcularFechamentoAgencia(agenciaId, ano, mes) {
     FROM vw_transacoes_agencia t
     WHERE t.agencia_id = $1
       AND t.status = 'pago'
+      AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
       AND EXTRACT(YEAR  FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $2
       AND EXTRACT(MONTH FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $3
     GROUP BY t.modelo_id
@@ -624,7 +626,9 @@ router.get("/fechamentos-agency", authAgencia, async (req, res) => {
            COALESCE(SUM(agency_fee), 0) AS faturamento_agencia,
            COALESCE(SUM(valor_modelo), 0) AS faturamento_modelo
          FROM vw_transacoes_agencia
-         WHERE agencia_id = $1 AND status = 'pago'`,
+         WHERE agencia_id = $1
+           AND status = 'pago'
+           AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))`,
         [agenciaId]
       )
     ]);
