@@ -814,6 +814,79 @@ app.post("/api/webhook/ipag", express.raw({ type: "*/*" }), async (req, res) => 
   const isPaidEvent   = PAID_CODES.includes(statusCode);
   const isFailedEvent = FAILED_CODES.includes(statusCode);
 
+  // Verificação dupla: consulta diretamente a API da iPag para confirmar o status.
+  // Impede que webhooks forjados liberem acesso mesmo sem assinatura válida.
+  if (isPaidEvent) {
+    let statusVerificado = null;
+    let capturedVerificado = 0;
+    let erroVerificacao = null;
+
+    try {
+      const txVerificada = await ipagRequest("GET", `/service/payment/${idTx}`);
+      statusVerificado  = String(txVerificada?.attributes?.status?.code || "");
+      capturedVerificado = Number(txVerificada?.attributes?.captured_amount || 0);
+    } catch (errVerif) {
+      erroVerificacao = errVerif.message;
+    }
+
+    const confirmado = !erroVerificacao && statusVerificado === "8" && capturedVerificado > 0;
+
+    if (!confirmado) {
+      const motivo = erroVerificacao
+        ? `Falha ao consultar API iPag: ${erroVerificacao}`
+        : `Webhook diz CAPTURED mas API retornou status=${statusVerificado} captured=${capturedVerificado}`;
+
+      console.warn(`🚨 Webhook iPag suspeito — tx=${idTx} | ${motivo}`);
+
+      // Tenta descobrir cliente e tipo de pagamento para enriquecer o log
+      let clienteIdSuspeito = null;
+      let modeloIdSuspeito  = null;
+      let tipoPagamento     = "desconhecido";
+      try {
+        const rPrem = await db.query(
+          `SELECT cliente_id, modelo_id FROM premium_unlocks WHERE pagarme_order_id = $1 LIMIT 1`,
+          [idTx]
+        );
+        if (rPrem.rowCount > 0) {
+          clienteIdSuspeito = rPrem.rows[0].cliente_id;
+          modeloIdSuspeito  = rPrem.rows[0].modelo_id;
+          tipoPagamento     = "premium";
+        } else {
+          const rPix = await db.query(
+            `SELECT cliente_id, modelo_id, message_id FROM pagamentos_pix WHERE pagarme_order_id = $1 LIMIT 1`,
+            [idTx]
+          );
+          if (rPix.rowCount > 0) {
+            clienteIdSuspeito = rPix.rows[0].cliente_id;
+            modeloIdSuspeito  = rPix.rows[0].modelo_id;
+            tipoPagamento     = rPix.rows[0].message_id ? "chat" : "assinatura_vip";
+          }
+        }
+      } catch (_) {}
+
+      registrarLog(db, {
+        tipo:       'webhook_suspeito_ipag',
+        cliente_id: clienteIdSuspeito,
+        modelo_id:  modeloIdSuspeito,
+        descricao:  `[${tipoPagamento.toUpperCase()}] tx=${idTx} — ${motivo}`,
+        ip:         req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.ip || null,
+        user_agent: req.headers["user-agent"] || null
+      });
+
+      const io = req.app.get("io");
+      criarNotificacaoAdmin(db, io, {
+        tipo:         'webhook_suspeito_ipag',
+        referencia_id: clienteIdSuspeito,
+        titulo:       `🚨 Webhook iPag suspeito — ${tipoPagamento}`,
+        mensagem:     `tx=${idTx} | ${motivo}`
+      });
+
+      return res.status(200).send("ok");
+    }
+
+    console.log(`✅ iPag API confirmou pagamento: tx=${idTx} status=${statusVerificado} captured=${capturedVerificado}`);
+  }
+
   if (!isPaidEvent && !isFailedEvent) {
     console.log("iPag webhook: status ignorado:", statusCode, statusName);
     return res.status(200).send("ok");

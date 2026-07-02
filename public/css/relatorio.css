@@ -167,6 +167,31 @@ body {
   color: #7B2CFF;
 }
 
+.rel-hero-total-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.3);
+}
+
+.rel-hero-total-lbl {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.rel-hero-sm .rel-hero-total-row {
+  border-top-color: rgba(123,44,255,0.15);
+}
+
+.rel-hero-sm .rel-hero-total-lbl {
+  color: #9b7dff;
+}
+
 /* ===========================
    SEÇÃO LABEL
 =========================== */
@@ -327,6 +352,21 @@ body {
   color: #7B2CFF;
   transition: transform 0.25s ease;
   display: inline-block;
+  flex-shrink: 0;
+}
+
+/* Variante div para ganhos (contém elementos interativos internos) */
+.acord-btn-ganhos {
+  cursor: pointer;
+  user-select: none;
+}
+
+.acord-btn-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  margin-right: 8px;
 }
 
 .acord-item.acord-aberto .acord-chevron {

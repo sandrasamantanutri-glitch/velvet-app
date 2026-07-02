@@ -20,125 +20,132 @@
         <img src="/assets/voltar.png" alt="Voltar" data-i18n-alt="relatorio.voltar">
       </button>
       <h1 class="rel-titulo">Meus ganhos</h1>
-      <div class="rel-acoes">
-        <select id="filtroMes" class="rel-filtro-mes"></select>
-        <button id="btnImprimir" class="rel-btn-print" title="Imprimir relatório" onclick="imprimirRelatorio()">
-          &#x1F5A8;
-        </button>
-      </div>
     </div>
 
-    <!-- HERO: MÊS ATUAL -->
-    <div class="rel-hero">
-      <div class="rel-hero-topo">
-        <div>
-          <span class="rel-hero-label" id="labelMesAtual">Total do mês</span>
-          <strong class="rel-hero-total" id="totalMesAtual">R$ 0,00</strong>
-        </div>
-      </div>
-      <div class="rel-hero-grid">
-        <div>
-          <p class="rel-hero-sublabel" data-i18n="relatorio.mes_midias">Mídias</p>
-          <span class="rel-hero-sub" id="mesMidias">R$ 0,00</span>
-        </div>
-        <div>
-          <p class="rel-hero-sublabel" data-i18n="relatorio.mes_assinaturas">Assinaturas</p>
-          <span class="rel-hero-sub" id="mesAssinaturas">R$ 0,00</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- HOJE -->
-    <div id="secaoHoje">
-      <p class="rel-sec-lbl" data-i18n="relatorio.hoje">Hoje</p>
-      <div class="rel-g2">
-        <div class="rel-st">
-          <p class="rel-st-lbl" data-i18n="relatorio.hoje_midias">Mídias</p>
-          <strong class="rel-st-val" id="hojeMidias">R$ 0,00</strong>
-        </div>
-        <div class="rel-st">
-          <p class="rel-st-lbl" data-i18n="relatorio.hoje_assinaturas">Assinaturas</p>
-          <strong class="rel-st-val" id="hojeAssinaturas">R$ 0,00</strong>
-        </div>
-      </div>
-    </div>
-
-    <!-- ASSINANTES -->
-    <div id="secaoAssinantes" class="rel-assinantes">
-      <div class="rel-ass-info">
-        <i class="rel-ass-icon">&#128101;</i>
-        <div>
-          <p class="rel-ass-lbl" data-i18n="relatorio.assinantes">Assinantes ativos</p>
-          <strong class="rel-ass-num" id="totalAssinantes">0</strong>
-        </div>
-      </div>
-      <span class="rel-badge-ok" id="assinantesHoje">+0 hoje</span>
-    </div>
-
-    <!-- SITUAÇÃO DOS VALORES: MÊS ATUAL -->
-    <div id="secaoStatusMes">
-      <p class="rel-sec-lbl">Situação dos valores</p>
-      <div class="rel-g2">
-        <div class="rel-st ok">
-          <p class="rel-st-lbl">Liberado hoje</p>
-          <strong class="rel-st-val" id="liberadoHoje">R$ 0,00</strong>
-        </div>
-        <div class="rel-st hold">
-          <p class="rel-st-lbl">Bloqueado hoje</p>
-          <strong class="rel-st-val" id="bloqueadoHoje">R$ 0,00</strong>
-        </div>
-      </div>
-      <div class="rel-g2" style="margin-top:8px">
-        <div class="rel-st ok">
-          <p class="rel-st-lbl">Liberado no mês</p>
-          <strong class="rel-st-val" id="liberadoMes">R$ 0,00</strong>
-        </div>
-        <div class="rel-st hold">
-          <p class="rel-st-lbl">Bloqueado no mês</p>
-          <strong class="rel-st-val" id="bloqueadoMes">R$ 0,00</strong>
-        </div>
-      </div>
-    </div>
-
-    <!-- MÊS ANTERIOR -->
-    <div id="secaoMesAnterior">
-      <hr class="separator">
-      <p class="rel-sec-lbl" id="labelMesAnterior">Mês anterior</p>
-
-      <div class="rel-hero rel-hero-sm">
-        <div style="margin-bottom:12px">
-          <p class="rel-hero-sublabel">Total bruto</p>
-          <strong class="rel-hero-total" style="font-size:22px" id="totalMesAnterior">R$ 0,00</strong>
-        </div>
-        <div class="rel-hero-grid">
-          <div>
-            <p class="rel-hero-sublabel">Mídias</p>
-            <span class="rel-hero-sub" id="mesAnteriorMidias">R$ 0,00</span>
-          </div>
-          <div>
-            <p class="rel-hero-sublabel">Assinaturas</p>
-            <span class="rel-hero-sub" id="mesAnteriorAssinaturas">R$ 0,00</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="rel-g2" style="margin-top:8px">
-        <div class="rel-st ok">
-          <p class="rel-st-lbl">Liberado</p>
-          <strong class="rel-st-val" id="liberadoMesAnterior">R$ 0,00</strong>
-        </div>
-        <div class="rel-st hold">
-          <p class="rel-st-lbl">Bloqueado</p>
-          <strong class="rel-st-val" id="bloqueadoMesAnterior">R$ 0,00</strong>
-        </div>
-      </div>
-    </div>
-
-    <hr class="separator">
-
-    <!-- ACCORDION: SEÇÕES EXPANDÍVEIS -->
     <div class="acord-lista">
 
+      <!-- GANHOS — aberto por padrão -->
+      <div class="acord-item acord-aberto" id="acordGanhos">
+        <div class="acord-btn acord-btn-ganhos" id="toggleGanhos">
+          <span id="labelMesAtual">Total do mês</span>
+          <div class="acord-btn-right" onclick="event.stopPropagation()">
+            <select id="filtroMes" class="rel-filtro-mes"></select>
+            <button id="btnImprimir" class="rel-btn-print" title="Imprimir relatório" onclick="imprimirRelatorio()">
+              &#x1F5A8;
+            </button>
+          </div>
+          <span class="acord-chevron">&#8964;</span>
+        </div>
+        <div class="acord-corpo" id="corpo-ganhos">
+
+          <!-- HERO: MÊS ATUAL -->
+          <div class="rel-hero">
+            <div class="rel-hero-grid">
+              <div>
+                <p class="rel-hero-sublabel" data-i18n="relatorio.mes_midias">Mídias</p>
+                <span class="rel-hero-sub" id="mesMidias">R$ 0,00</span>
+              </div>
+              <div>
+                <p class="rel-hero-sublabel" data-i18n="relatorio.mes_assinaturas">Assinaturas</p>
+                <span class="rel-hero-sub" id="mesAssinaturas">R$ 0,00</span>
+              </div>
+            </div>
+            <div class="rel-hero-total-row">
+              <span class="rel-hero-total-lbl">Total</span>
+              <strong class="rel-hero-total" id="totalMesAtual">R$ 0,00</strong>
+            </div>
+          </div>
+
+          <!-- HOJE -->
+          <div id="secaoHoje">
+            <p class="rel-sec-lbl" data-i18n="relatorio.hoje">Hoje</p>
+            <div class="rel-g2">
+              <div class="rel-st">
+                <p class="rel-st-lbl" data-i18n="relatorio.hoje_midias">Mídias</p>
+                <strong class="rel-st-val" id="hojeMidias">R$ 0,00</strong>
+              </div>
+              <div class="rel-st">
+                <p class="rel-st-lbl" data-i18n="relatorio.hoje_assinaturas">Assinaturas</p>
+                <strong class="rel-st-val" id="hojeAssinaturas">R$ 0,00</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- ASSINANTES -->
+          <div id="secaoAssinantes" class="rel-assinantes">
+            <div class="rel-ass-info">
+              <i class="rel-ass-icon">&#128101;</i>
+              <div>
+                <p class="rel-ass-lbl" data-i18n="relatorio.assinantes">Assinantes ativos</p>
+                <strong class="rel-ass-num" id="totalAssinantes">0</strong>
+              </div>
+            </div>
+            <span class="rel-badge-ok" id="assinantesHoje">+0 hoje</span>
+          </div>
+
+          <!-- SITUAÇÃO DOS VALORES -->
+          <div id="secaoStatusMes">
+            <p class="rel-sec-lbl">Situação dos valores</p>
+            <div class="rel-g2">
+              <div class="rel-st ok">
+                <p class="rel-st-lbl">Liberado hoje</p>
+                <strong class="rel-st-val" id="liberadoHoje">R$ 0,00</strong>
+              </div>
+              <div class="rel-st hold">
+                <p class="rel-st-lbl">Bloqueado hoje</p>
+                <strong class="rel-st-val" id="bloqueadoHoje">R$ 0,00</strong>
+              </div>
+            </div>
+            <div class="rel-g2" style="margin-top:8px">
+              <div class="rel-st ok">
+                <p class="rel-st-lbl">Liberado no mês</p>
+                <strong class="rel-st-val" id="liberadoMes">R$ 0,00</strong>
+              </div>
+              <div class="rel-st hold">
+                <p class="rel-st-lbl">Bloqueado no mês</p>
+                <strong class="rel-st-val" id="bloqueadoMes">R$ 0,00</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- MÊS ANTERIOR -->
+          <div id="secaoMesAnterior">
+            <hr class="separator">
+            <p class="rel-sec-lbl" id="labelMesAnterior">Mês anterior</p>
+
+            <div class="rel-hero rel-hero-sm">
+              <div class="rel-hero-grid">
+                <div>
+                  <p class="rel-hero-sublabel">Mídias</p>
+                  <span class="rel-hero-sub" id="mesAnteriorMidias">R$ 0,00</span>
+                </div>
+                <div>
+                  <p class="rel-hero-sublabel">Assinaturas</p>
+                  <span class="rel-hero-sub" id="mesAnteriorAssinaturas">R$ 0,00</span>
+                </div>
+              </div>
+              <div class="rel-hero-total-row">
+                <span class="rel-hero-total-lbl">Total bruto</span>
+                <strong class="rel-hero-total" style="font-size:20px" id="totalMesAnterior">R$ 0,00</strong>
+              </div>
+            </div>
+
+            <div class="rel-g2" style="margin-top:8px">
+              <div class="rel-st ok">
+                <p class="rel-st-lbl">Liberado</p>
+                <strong class="rel-st-val" id="liberadoMesAnterior">R$ 0,00</strong>
+              </div>
+              <div class="rel-st hold">
+                <p class="rel-st-lbl">Bloqueado</p>
+                <strong class="rel-st-val" id="bloqueadoMesAnterior">R$ 0,00</strong>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- TRANSAÇÕES -->
       <div class="acord-item">
         <button class="acord-btn" data-target="tab-transacoes">
           <span data-i18n="relatorio.tab_transacoes">Transações</span>
@@ -151,6 +158,7 @@
         </div>
       </div>
 
+      <!-- PAGAMENTOS -->
       <div class="acord-item">
         <button class="acord-btn" data-target="tab-pagamentos">
           <span data-i18n="relatorio.tab_pagamentos">Pagamentos</span>
@@ -161,6 +169,7 @@
         </div>
       </div>
 
+      <!-- CHARGEBACKS -->
       <div class="acord-item">
         <button class="acord-btn" data-target="tab-chargebacks">
           <span>Chargebacks</span>
@@ -172,6 +181,7 @@
         </div>
       </div>
 
+      <!-- DADOS BANCÁRIOS -->
       <div class="acord-item">
         <button class="acord-btn" data-target="tab-dados-bancarios">
           <span data-i18n="relatorio.tab_dados_bancarios">Dados Bancários</span>

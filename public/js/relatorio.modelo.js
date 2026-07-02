@@ -570,7 +570,18 @@ function imprimirRelatorio() {
 const _carregado = {};
 
 function inicializarAccordion() {
-  document.querySelectorAll(".acord-btn").forEach(btn => {
+  // Ganhos usa <div> para poder ter elementos interativos internos
+  const toggleGanhos = document.getElementById("toggleGanhos");
+  if (toggleGanhos) {
+    _carregado["corpo-ganhos"] = true; // já carregado por carregarResumoModelo
+    toggleGanhos.addEventListener("click", () => {
+      const item = document.getElementById("acordGanhos");
+      item.classList.toggle("acord-aberto");
+    });
+  }
+
+  // Demais accordions usam <button>
+  document.querySelectorAll("button.acord-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       const item = btn.closest(".acord-item");
       const target = btn.dataset.target;
@@ -585,9 +596,9 @@ function inicializarAccordion() {
         // lazy-load na primeira abertura
         if (!_carregado[target]) {
           _carregado[target] = true;
-          if (target === "tab-transacoes")     carregarTransacoes(1);
-          if (target === "tab-pagamentos")     carregarPagamentos();
-          if (target === "tab-chargebacks")    carregarChargebacks();
+          if (target === "tab-transacoes")      carregarTransacoes(1);
+          if (target === "tab-pagamentos")      carregarPagamentos();
+          if (target === "tab-chargebacks")     carregarChargebacks();
           if (target === "tab-dados-bancarios") carregarDadosBancarios();
         }
       }
