@@ -5477,7 +5477,10 @@ router.get("/newsletter/clientes/resumo", authAdmin, async (req, res) => {
       SELECT COUNT(*) AS total
       FROM clientes c
       JOIN users u ON u.id = c.user_id
-      WHERE c.ativo = true AND u.email IS NOT NULL AND TRIM(u.email) != ''
+      WHERE c.ativo = true
+        AND (c.bloqueado IS NULL OR c.bloqueado = false)
+        AND c.desativado_em IS NULL
+        AND u.email IS NOT NULL AND TRIM(u.email) != ''
     `);
     res.json({ total: Number(rows[0].total) });
   } catch (err) {
@@ -5534,6 +5537,8 @@ router.post("/newsletter/enviar", authAdmin, async (req, res) => {
         FROM clientes c
         JOIN users u ON u.id = c.user_id
         WHERE c.ativo = true
+          AND (c.bloqueado IS NULL OR c.bloqueado = false)
+          AND c.desativado_em IS NULL
           AND u.email IS NOT NULL
           AND TRIM(u.email) != ''
       `);
