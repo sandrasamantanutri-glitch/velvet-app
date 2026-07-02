@@ -5470,6 +5470,20 @@ router.get("/newsletter/resumo", authAdmin, async (req, res) => {
   }
 });
 
+router.get("/newsletter/clientes/resumo", authAdmin, async (req, res) => {
+  try {
+    const { rows } = await db.query(`
+      SELECT COUNT(*) AS total
+      FROM clientes c
+      JOIN users u ON u.id = c.user_id
+      WHERE c.ativo = true AND u.email IS NOT NULL AND TRIM(u.email) != ''
+    `);
+    res.json({ total: Number(rows[0].total) });
+  } catch (err) {
+    res.status(500).json({ erro: err.message });
+  }
+});
+
 router.get("/newsletter/modelos", authAdmin, async (req, res) => {
   try {
     const { rows } = await db.query(`
@@ -5500,44 +5514,65 @@ router.get("/newsletter/historico", authAdmin, async (req, res) => {
 });
 
 router.post("/newsletter/enviar", authAdmin, async (req, res) => {
-  const { assunto, mensagem, modelo_ids } = req.body;
+  const { assunto, mensagem, tipo = "modelos", modelo_ids, emails_extras } = req.body;
   if (!assunto || !mensagem) {
     return res.status(400).json({ erro: "Assunto e mensagem são obrigatórios." });
   }
+  if (!["modelos", "clientes"].includes(tipo)) {
+    return res.status(400).json({ erro: "Tipo inválido." });
+  }
+
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   try {
-    let rows;
-    if (Array.isArray(modelo_ids) && modelo_ids.length > 0) {
+    let rows = [];
+
+    if (tipo === "clientes") {
       const result = await db.query(`
         SELECT u.email
-        FROM modelos m
-        JOIN users u ON u.id = m.user_id
-        WHERE m.id = ANY($1)
-          AND u.email IS NOT NULL
-          AND TRIM(u.email) != ''
-      `, [modelo_ids]);
-      rows = result.rows;
-    } else {
-      const result = await db.query(`
-        SELECT u.email
-        FROM modelos m
-        JOIN users u ON u.id = m.user_id
-        WHERE m.verificada = true AND m.ativo = true
+        FROM clientes c
+        JOIN users u ON u.id = c.user_id
+        WHERE c.ativo = true
           AND u.email IS NOT NULL
           AND TRIM(u.email) != ''
       `);
       rows = result.rows;
+    } else {
+      if (Array.isArray(modelo_ids) && modelo_ids.length > 0) {
+        const result = await db.query(`
+          SELECT u.email
+          FROM modelos m
+          JOIN users u ON u.id = m.user_id
+          WHERE m.id = ANY($1)
+            AND u.email IS NOT NULL
+            AND TRIM(u.email) != ''
+        `, [modelo_ids]);
+        rows = result.rows;
+      } else {
+        const result = await db.query(`
+          SELECT u.email
+          FROM modelos m
+          JOIN users u ON u.id = m.user_id
+          WHERE m.verificada = true AND m.ativo = true
+            AND u.email IS NOT NULL
+            AND TRIM(u.email) != ''
+        `);
+        rows = result.rows;
+      }
     }
 
-    if (rows.length === 0) {
-      return res.status(400).json({ erro: "Nenhuma modelo encontrada para envio." });
+    // Merge emails da lista + extras (deduplicados)
+    const extrasValidados = Array.isArray(emails_extras)
+      ? emails_extras.map(e => e.trim().toLowerCase()).filter(e => EMAIL_REGEX.test(e))
+      : [];
+
+    const emailsLista = rows.map(r => r.email.trim().toLowerCase()).filter(e => EMAIL_REGEX.test(e));
+    const emails = [...new Set([...emailsLista, ...extrasValidados])];
+
+    if (emails.length === 0) {
+      return res.status(400).json({ erro: "Nenhum email válido encontrado para envio." });
     }
 
-    // Validação extra: filtrar emails com formato inválido antes de enviar ao Resend
-    const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const emails = rows
-      .map(r => r.email.trim())
-      .filter(e => EMAIL_REGEX.test(e));
     const html = `
       <div style="font-family: Arial, Helvetica, sans-serif; background:#f6f3fb; padding:24px; color:#2d1f3d;">
         <div style="max-width:600px; margin:0 auto; background:#ffffff; padding:32px; border-radius:12px;">
@@ -5560,11 +5595,7 @@ router.post("/newsletter/enviar", authAdmin, async (req, res) => {
       </div>
     `;
 
-    if (emails.length === 0) {
-      return res.status(400).json({ erro: "Nenhum email válido encontrado para envio." });
-    }
-
-    // Envia em lotes de 100 via Resend Batch API (uma chamada por lote, sem rate limit)
+    // Envia em lotes de 100 via Resend Batch API
     const LOTE = 100;
     let enviados = 0;
     for (let i = 0; i < emails.length; i += LOTE) {
@@ -5581,16 +5612,16 @@ router.post("/newsletter/enviar", authAdmin, async (req, res) => {
     }
 
     await db.query(
-      `INSERT INTO newsletter_envios (assunto, mensagem, total_enviados, admin_id) VALUES ($1, $2, $3, $4)`,
-      [assunto, mensagem, enviados, req.user.id]
+      `INSERT INTO newsletter_envios (assunto, mensagem, total_enviados, tipo, admin_id) VALUES ($1, $2, $3, $4, $5)`,
+      [assunto, mensagem, enviados, tipo, req.user.id]
     );
 
-    res.json({ ok: true, total: enviados });
+    res.json({ ok: true, total: enviados, extras: extrasValidados.length });
   } catch (err) {
     console.error("Erro newsletter:", err);
     await db.query(
-      `INSERT INTO newsletter_envios (assunto, mensagem, total_enviados, erro, admin_id) VALUES ($1, $2, 0, $3, $4)`,
-      [assunto, mensagem, err.message, req.user?.id]
+      `INSERT INTO newsletter_envios (assunto, mensagem, total_enviados, erro, tipo, admin_id) VALUES ($1, $2, 0, $3, $4, $5)`,
+      [assunto, mensagem, err.message, tipo, req.user?.id]
     ).catch(() => {});
     res.status(500).json({ erro: "Erro ao enviar newsletter." });
   }

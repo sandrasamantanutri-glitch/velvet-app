@@ -205,11 +205,30 @@ const pageLoaders = {};
 let _nlTodosModelos = [];
 let _nlSelecionadas = new Set();
 let _nlModoEspecifico = false;
+let _nlAbaAtiva = 'modelos';
+
+function nlMudarAba(aba) {
+  _nlAbaAtiva = aba;
+  document.getElementById('nlTabModelos').style.display = aba === 'modelos' ? '' : 'none';
+  document.getElementById('nlTabClientes').style.display = aba === 'clientes' ? '' : 'none';
+
+  const btnM = document.getElementById('nlTabBtnModelos');
+  const btnC = document.getElementById('nlTabBtnClientes');
+  btnM.style.borderBottomColor = aba === 'modelos' ? '#6f42c1' : 'transparent';
+  btnM.style.color = aba === 'modelos' ? '#6f42c1' : '#888';
+  btnC.style.borderBottomColor = aba === 'clientes' ? '#6f42c1' : 'transparent';
+  btnC.style.color = aba === 'clientes' ? '#6f42c1' : '#888';
+
+  if (aba === 'clientes') carregarResumoClientes();
+}
 
 pageLoaders.newsletter = async function () {
   _nlSelecionadas.clear();
   _nlModoEspecifico = false;
   _nlTodosModelos = [];
+  _nlAbaAtiva = 'modelos';
+  nlMudarAba('modelos');
+
   const radio = document.querySelector('input[name="nlDestinatarias"][value="todas"]');
   if (radio) radio.checked = true;
   const painel = document.getElementById('nl-selecao-painel');
@@ -226,6 +245,16 @@ pageLoaders.newsletter = async function () {
   }
   carregarHistoricoNewsletter();
 };
+
+async function carregarResumoClientes() {
+  const el = document.getElementById('newsletter-resumo-clientes');
+  try {
+    const data = await fetchJSON('/admin/dashboard/newsletter/clientes/resumo');
+    el.innerHTML = `📬 <strong>${data.total}</strong> clientes ativos receberão o email.`;
+  } catch {
+    el.textContent = 'Erro ao carregar total de clientes.';
+  }
+}
 
 async function alternarDestinatarias(modo) {
   _nlModoEspecifico = (modo === 'especificas');
@@ -309,7 +338,6 @@ function limparSelecaoModelos() {
 
 function renderizarChips() {
   const container = document.getElementById('nl-selecionadas-chips');
-  const vazio = document.getElementById('nl-chips-vazio');
   if (_nlSelecionadas.size === 0) {
     container.innerHTML = '<span style="font-size:12px; color:#aaa;" id="nl-chips-vazio">Nenhuma selecionada</span>';
     return;
@@ -335,6 +363,11 @@ function atualizarBotaoEnviar() {
   }
 }
 
+function _nlParseExtras(textareaId) {
+  const val = document.getElementById(textareaId)?.value || '';
+  return val.split(/[\n,;]+/).map(e => e.trim()).filter(e => e.includes('@'));
+}
+
 async function carregarHistoricoNewsletter() {
   const el = document.getElementById('newsletter-historico-lista');
   try {
@@ -342,9 +375,10 @@ async function carregarHistoricoNewsletter() {
     if (!data.length) { el.textContent = 'Nenhum envio registado ainda.'; return; }
     el.innerHTML = data.map(n => `
       <div style="padding:10px 0; border-bottom:1px solid #eee;">
+        <span style="font-size:11px; background:${n.tipo === 'clientes' ? '#e3f2fd' : '#f3e5f5'}; color:${n.tipo === 'clientes' ? '#1565c0' : '#6a1b9a'}; border-radius:10px; padding:2px 8px; margin-right:8px;">${n.tipo === 'clientes' ? 'Clientes' : 'Modelos'}</span>
         <strong>${escapeHtml(n.assunto)}</strong>
         <span style="color:#aaa; margin-left:8px; font-size:12px;">${new Date(n.criado_em).toLocaleString('pt-BR')}</span><br>
-        <span style="color:#6f42c1;">${n.total_enviados} destinatárias</span>
+        <span style="color:#6f42c1;">${n.total_enviados} destinatário(s)</span>
         ${n.erro ? `<span style="color:#e53e3e; margin-left:8px;">${escapeHtml(n.erro)}</span>` : ''}
       </div>`).join('');
   } catch {
@@ -356,20 +390,21 @@ async function enviarNewsletter(e) {
   e.preventDefault();
   const assunto = document.getElementById('nlAssunto').value.trim();
   const mensagem = document.getElementById('nlMensagem').value.trim();
+  const extras = _nlParseExtras('nlExtrasModelos');
   const btn = document.getElementById('btnEnviarNewsletter');
   const status = document.getElementById('newsletter-status');
 
-  if (_nlModoEspecifico && _nlSelecionadas.size === 0) {
-    toast('Seleciona pelo menos uma modelo.', 'error');
+  if (_nlModoEspecifico && _nlSelecionadas.size === 0 && extras.length === 0) {
+    toast('Seleciona pelo menos uma modelo ou adiciona um email.', 'error');
     return;
   }
 
   const confirmMsg = _nlModoEspecifico
-    ? `Confirma o envio para ${_nlSelecionadas.size} modelo(s) selecionada(s)?`
-    : `Confirma o envio para todas as modelos verificadas?`;
+    ? `Confirma o envio para ${_nlSelecionadas.size} modelo(s)${extras.length ? ` + ${extras.length} email(s) extra(s)` : ''}?`
+    : `Confirma o envio para todas as modelos verificadas${extras.length ? ` + ${extras.length} email(s) extra(s)` : ''}?`;
   if (!confirm(confirmMsg)) return;
 
-  const payload = { assunto, mensagem };
+  const payload = { assunto, mensagem, tipo: 'modelos', emails_extras: extras };
   if (_nlModoEspecifico) payload.modelo_ids = [..._nlSelecionadas];
 
   const textoOriginal = btn.textContent;
@@ -379,8 +414,8 @@ async function enviarNewsletter(e) {
 
   try {
     const res = await postJSON('/admin/dashboard/newsletter/enviar', payload);
-    toast(`Newsletter enviada para ${res.total} modelo(s)!`, 'success');
-    status.textContent = `✓ Enviado para ${res.total} modelo(s)`;
+    toast(`Newsletter enviada para ${res.total} destinatário(s)!`, 'success');
+    status.textContent = `✓ Enviado para ${res.total} destinatário(s)`;
     document.getElementById('formNewsletter').reset();
     _nlSelecionadas.clear();
     renderizarChips();
@@ -394,26 +429,63 @@ async function enviarNewsletter(e) {
   }
 }
 
-function preVisualizarNewsletter() {
-  const assunto = document.getElementById('nlAssunto').value.trim();
-  const mensagem = document.getElementById('nlMensagem').value.trim();
+async function enviarNewsletterClientes(e) {
+  e.preventDefault();
+  const assunto = document.getElementById('nlAssuntoClientes').value.trim();
+  const mensagem = document.getElementById('nlMensagemClientes').value.trim();
+  const extras = _nlParseExtras('nlExtrasClientes');
+  const btn = document.getElementById('btnEnviarNewsletterClientes');
+  const status = document.getElementById('newsletter-status-clientes');
 
-  if (!mensagem) {
-    toast('Escreva o conteúdo do email antes de pré-visualizar.', 'error');
-    return;
+  if (!confirm(`Confirma o envio para todos os clientes ativos${extras.length ? ` + ${extras.length} email(s) extra(s)` : ''}?`)) return;
+
+  const textoOriginal = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'A enviar…';
+  status.textContent = '';
+
+  try {
+    const res = await postJSON('/admin/dashboard/newsletter/enviar', {
+      assunto, mensagem, tipo: 'clientes', emails_extras: extras
+    });
+    toast(`Newsletter enviada para ${res.total} cliente(s)!`, 'success');
+    status.textContent = `✓ Enviado para ${res.total} cliente(s)`;
+    document.getElementById('formNewsletterClientes').reset();
+    carregarHistoricoNewsletter();
+  } catch (err) {
+    toast('Erro ao enviar newsletter: ' + err.message, 'error');
+    status.textContent = '✗ Falha no envio';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
   }
+}
 
-  // Se o conteúdo parece ser HTML completo, usa direto; senão envolve num wrapper simples
+function _nlPreviewHtml(assuntoId, mensagemId) {
+  const assunto = document.getElementById(assuntoId)?.value.trim() || '';
+  const mensagem = document.getElementById(mensagemId)?.value.trim() || '';
+  if (!mensagem) { toast('Escreva o conteúdo do email antes de pré-visualizar.', 'error'); return null; }
   const isHtml = /^\s*<!DOCTYPE|^\s*<html/i.test(mensagem);
   const html = isHtml
     ? mensagem
     : `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="font-family:Arial,sans-serif;padding:16px;">${mensagem}</body></html>`;
+  return { assunto, html };
+}
 
-  document.getElementById('nlPreviewAssunto').textContent = assunto ? `Assunto: ${assunto}` : '';
-  document.getElementById('nlPreviewFrame').srcdoc = html;
+function preVisualizarNewsletter() {
+  const r = _nlPreviewHtml('nlAssunto', 'nlMensagem');
+  if (!r) return;
+  document.getElementById('nlPreviewAssunto').textContent = r.assunto ? `Assunto: ${r.assunto}` : '';
+  document.getElementById('nlPreviewFrame').srcdoc = r.html;
+  document.getElementById('modalPreviewNewsletter').style.display = 'flex';
+}
 
-  const modal = document.getElementById('modalPreviewNewsletter');
-  modal.style.display = 'flex';
+function preVisualizarNewsletterClientes() {
+  const r = _nlPreviewHtml('nlAssuntoClientes', 'nlMensagemClientes');
+  if (!r) return;
+  document.getElementById('nlPreviewAssunto').textContent = r.assunto ? `Assunto: ${r.assunto}` : '';
+  document.getElementById('nlPreviewFrame').srcdoc = r.html;
+  document.getElementById('modalPreviewNewsletter').style.display = 'flex';
 }
 
 function fecharPreviewNewsletter() {

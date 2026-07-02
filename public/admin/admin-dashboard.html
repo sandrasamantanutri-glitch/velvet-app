@@ -1921,69 +1921,128 @@
 
 <!-- Newsletter -->
 <section class="page" id="page-newsletter">
-  <div class="card" style="max-width:700px;">
-    <h2 style="margin:0 0 6px;">Newsletter — Modelos</h2>
-    <p style="margin:0 0 24px; color:#888; font-size:14px;">Envie um email para todas as modelos verificadas ou selecione destinatárias específicas.</p>
+  <div class="card" style="max-width:740px;">
+    <h2 style="margin:0 0 16px;">Newsletter</h2>
 
-    <div id="newsletter-resumo" style="background:#f8f4ff; border-radius:8px; padding:12px 16px; margin-bottom:20px; font-size:14px; color:#4b2a7b;">
-      A carregar total de destinatárias…
+    <!-- Abas -->
+    <div style="display:flex; border-bottom:2px solid #e5d9ff; margin-bottom:24px; gap:0;">
+      <button id="nlTabBtnModelos" onclick="nlMudarAba('modelos')"
+        style="padding:10px 22px; font-size:14px; font-weight:600; border:none; background:none; cursor:pointer; border-bottom:3px solid #6f42c1; color:#6f42c1; margin-bottom:-2px;">
+        📋 Para Modelos
+      </button>
+      <button id="nlTabBtnClientes" onclick="nlMudarAba('clientes')"
+        style="padding:10px 22px; font-size:14px; font-weight:600; border:none; background:none; cursor:pointer; border-bottom:3px solid transparent; color:#888; margin-bottom:-2px;">
+        👥 Para Clientes
+      </button>
     </div>
 
-    <form id="formNewsletter" onsubmit="enviarNewsletter(event)">
+    <!-- ABA MODELOS -->
+    <div id="nlTabModelos">
+      <div id="newsletter-resumo" style="background:#f8f4ff; border-radius:8px; padding:12px 16px; margin-bottom:20px; font-size:14px; color:#4b2a7b;">
+        A carregar total de destinatárias…
+      </div>
 
-      <!-- Destinatárias -->
-      <div class="form-group" style="margin-bottom:20px;">
-        <label style="display:block; font-weight:600; margin-bottom:10px;">Destinatárias *</label>
-        <div style="display:flex; gap:12px; flex-wrap:wrap;">
-          <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:14px;">
-            <input type="radio" name="nlDestinatarias" value="todas" checked onchange="alternarDestinatarias('todas')">
-            Todas as modelos verificadas
-          </label>
-          <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:14px;">
-            <input type="radio" name="nlDestinatarias" value="especificas" onchange="alternarDestinatarias('especificas')">
-            Selecionar específicas
-          </label>
+      <form id="formNewsletter" onsubmit="enviarNewsletter(event)">
+        <!-- Destinatárias -->
+        <div class="form-group" style="margin-bottom:20px;">
+          <label style="display:block; font-weight:600; margin-bottom:10px;">Destinatárias *</label>
+          <div style="display:flex; gap:12px; flex-wrap:wrap;">
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:14px;">
+              <input type="radio" name="nlDestinatarias" value="todas" checked onchange="alternarDestinatarias('todas')">
+              Todas as modelos verificadas
+            </label>
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:14px;">
+              <input type="radio" name="nlDestinatarias" value="especificas" onchange="alternarDestinatarias('especificas')">
+              Selecionar específicas
+            </label>
+          </div>
+
+          <!-- Painel de seleção -->
+          <div id="nl-selecao-painel" style="display:none; margin-top:14px; border:1px solid #ddd; border-radius:8px; overflow:hidden;">
+            <div style="padding:10px 12px; background:#f9f9f9; border-bottom:1px solid #eee; display:flex; gap:8px; align-items:center;">
+              <input type="text" id="nl-busca-modelo" placeholder="Pesquisar por nome ou email…"
+                oninput="filtrarModelosNewsletter()"
+                style="flex:1; padding:7px 10px; border:1px solid #ddd; border-radius:6px; font-size:13px;">
+              <button type="button" onclick="selecionarTodasVisiveis()" style="font-size:12px; padding:6px 10px; background:#6f42c1; color:#fff; border:none; border-radius:6px; cursor:pointer; white-space:nowrap;">Selec. todas</button>
+              <button type="button" onclick="limparSelecaoModelos()" style="font-size:12px; padding:6px 10px; background:#eee; color:#555; border:none; border-radius:6px; cursor:pointer;">Limpar</button>
+            </div>
+            <div id="nl-lista-modelos" style="max-height:220px; overflow-y:auto; padding:8px 0; font-size:13px;">
+              <div style="padding:12px; color:#aaa; text-align:center;">A carregar modelos…</div>
+            </div>
+            <div id="nl-selecionadas-chips" style="padding:8px 12px; border-top:1px solid #eee; min-height:36px; display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
+              <span style="font-size:12px; color:#aaa;" id="nl-chips-vazio">Nenhuma selecionada</span>
+            </div>
+          </div>
         </div>
 
-        <!-- Painel de seleção -->
-        <div id="nl-selecao-painel" style="display:none; margin-top:14px; border:1px solid #ddd; border-radius:8px; overflow:hidden;">
-          <div style="padding:10px 12px; background:#f9f9f9; border-bottom:1px solid #eee; display:flex; gap:8px; align-items:center;">
-            <input type="text" id="nl-busca-modelo" placeholder="Pesquisar por nome ou email…"
-              oninput="filtrarModelosNewsletter()"
-              style="flex:1; padding:7px 10px; border:1px solid #ddd; border-radius:6px; font-size:13px;">
-            <button type="button" onclick="selecionarTodasVisiveis()" style="font-size:12px; padding:6px 10px; background:#6f42c1; color:#fff; border:none; border-radius:6px; cursor:pointer; white-space:nowrap;">Selec. todas</button>
-            <button type="button" onclick="limparSelecaoModelos()" style="font-size:12px; padding:6px 10px; background:#eee; color:#555; border:none; border-radius:6px; cursor:pointer;">Limpar</button>
-          </div>
-          <div id="nl-lista-modelos" style="max-height:220px; overflow-y:auto; padding:8px 0; font-size:13px;">
-            <div style="padding:12px; color:#aaa; text-align:center;">A carregar modelos…</div>
-          </div>
-          <div id="nl-selecionadas-chips" style="padding:8px 12px; border-top:1px solid #eee; min-height:36px; display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
-            <span style="font-size:12px; color:#aaa;" id="nl-chips-vazio">Nenhuma selecionada</span>
-          </div>
+        <!-- Emails extras -->
+        <div class="form-group" style="margin-bottom:16px;">
+          <label style="display:block; font-weight:600; margin-bottom:6px;">Emails adicionais <span style="font-weight:400; color:#888; font-size:13px;">(agentes, parceiros… separados por vírgula ou linha)</span></label>
+          <textarea id="nlExtrasModelos" rows="2"
+            style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-size:13px; font-family:sans-serif; resize:vertical; box-sizing:border-box;"
+            placeholder="ex: agente@email.com, parceiro@email.com"></textarea>
         </div>
+
+        <div class="form-group" style="margin-bottom:16px;">
+          <label style="display:block; font-weight:600; margin-bottom:6px;">Assunto *</label>
+          <input type="text" id="nlAssunto" required maxlength="150"
+            style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-size:14px; box-sizing:border-box;"
+            placeholder="Ex: Novidades da plataforma — Maio 2026">
+        </div>
+
+        <div class="form-group" style="margin-bottom:16px;">
+          <label style="display:block; font-weight:600; margin-bottom:6px;">Mensagem *</label>
+          <textarea id="nlMensagem" required rows="10"
+            style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-size:14px; font-family:sans-serif; resize:vertical; box-sizing:border-box;"
+            placeholder="Escreva o conteúdo do email. Pode usar HTML básico (negrito, links, parágrafos)."></textarea>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+          <button type="button" class="btn btn-secondary" onclick="preVisualizarNewsletter()">👁 Pré-visualizar</button>
+          <button type="submit" class="btn btn-primary" id="btnEnviarNewsletter">Enviar para todas</button>
+          <span id="newsletter-status" style="font-size:13px; color:#888;"></span>
+        </div>
+      </form>
+    </div>
+
+    <!-- ABA CLIENTES -->
+    <div id="nlTabClientes" style="display:none;">
+      <div id="newsletter-resumo-clientes" style="background:#f8f4ff; border-radius:8px; padding:12px 16px; margin-bottom:20px; font-size:14px; color:#4b2a7b;">
+        A carregar total de clientes…
       </div>
 
-      <div class="form-group" style="margin-bottom:16px;">
-        <label style="display:block; font-weight:600; margin-bottom:6px;">Assunto *</label>
-        <input type="text" id="nlAssunto" required maxlength="150"
-          style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-size:14px; box-sizing:border-box;"
-          placeholder="Ex: Novidades da plataforma — Maio 2026">
-      </div>
+      <form id="formNewsletterClientes" onsubmit="enviarNewsletterClientes(event)">
+        <!-- Emails extras -->
+        <div class="form-group" style="margin-bottom:16px;">
+          <label style="display:block; font-weight:600; margin-bottom:6px;">Emails adicionais <span style="font-weight:400; color:#888; font-size:13px;">(separados por vírgula ou linha)</span></label>
+          <textarea id="nlExtrasClientes" rows="2"
+            style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-size:13px; font-family:sans-serif; resize:vertical; box-sizing:border-box;"
+            placeholder="ex: parceiro@email.com, outro@email.com"></textarea>
+        </div>
 
-      <div class="form-group" style="margin-bottom:16px;">
-        <label style="display:block; font-weight:600; margin-bottom:6px;">Mensagem *</label>
-        <textarea id="nlMensagem" required rows="10"
-          style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-size:14px; font-family:sans-serif; resize:vertical; box-sizing:border-box;"
-          placeholder="Escreva o conteúdo do email. Pode usar HTML básico (negrito, links, parágrafos)."></textarea>
-      </div>
+        <div class="form-group" style="margin-bottom:16px;">
+          <label style="display:block; font-weight:600; margin-bottom:6px;">Assunto *</label>
+          <input type="text" id="nlAssuntoClientes" required maxlength="150"
+            style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-size:14px; box-sizing:border-box;"
+            placeholder="Ex: Novidades da plataforma — Maio 2026">
+        </div>
 
-      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-        <button type="button" class="btn btn-secondary" onclick="preVisualizarNewsletter()">👁 Pré-visualizar</button>
-        <button type="submit" class="btn btn-primary" id="btnEnviarNewsletter">Enviar para todas</button>
-        <span id="newsletter-status" style="font-size:13px; color:#888;"></span>
-      </div>
-    </form>
+        <div class="form-group" style="margin-bottom:16px;">
+          <label style="display:block; font-weight:600; margin-bottom:6px;">Mensagem *</label>
+          <textarea id="nlMensagemClientes" required rows="10"
+            style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-size:14px; font-family:sans-serif; resize:vertical; box-sizing:border-box;"
+            placeholder="Escreva o conteúdo do email. Pode usar HTML básico (negrito, links, parágrafos)."></textarea>
+        </div>
 
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+          <button type="button" class="btn btn-secondary" onclick="preVisualizarNewsletterClientes()">👁 Pré-visualizar</button>
+          <button type="submit" class="btn btn-primary" id="btnEnviarNewsletterClientes">Enviar para todos os clientes</button>
+          <span id="newsletter-status-clientes" style="font-size:13px; color:#888;"></span>
+        </div>
+      </form>
+    </div>
+
+    <!-- Histórico compartilhado -->
     <div id="newsletter-historico" style="margin-top:32px;">
       <h3 style="font-size:15px; margin:0 0 12px;">Últimos envios</h3>
       <div id="newsletter-historico-lista" style="font-size:13px; color:#888;">A carregar…</div>
