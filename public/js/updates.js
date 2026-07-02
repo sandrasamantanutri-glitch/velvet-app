@@ -24,11 +24,13 @@ function tempoRelativo(dataIso) {
 }
 
 function gridMidias(thumbs, locked) {
+  if (locked) {
+    return `<div class="update-midias-locked-placeholder"></div>`;
+  }
   const lista = (thumbs || []).filter(Boolean).slice(0, 4);
   if (!lista.length) return "";
-
   return `
-    <div class="update-midias ${locked ? "update-midias--locked" : ""}">
+    <div class="update-midias">
       ${lista.map(src => `<img src="${src}" alt="">`).join("")}
     </div>
   `;

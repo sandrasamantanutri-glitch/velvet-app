@@ -5657,7 +5657,7 @@ app.get("/api/modelo/publico/:id/feed", async (req, res) => {
     preco:         r.preco,
     descricao:     r.descricao,
     url:           podeVer ? r.url           : null,
-    thumbnail_url: podeVer ? r.thumbnail_url : getPreviewUrl(r.url, r.thumbnail_url),
+    thumbnail_url: podeVer ? r.thumbnail_url : null,
   })));
 });
 
@@ -6053,7 +6053,16 @@ app.get("/api/updates", auth, async (req, res) => {
       ? eventos.filter(e => new Date(e.evento_em) > new Date(ultimaVisita)).length
       : eventos.length;
 
-    res.json({ eventos: eventos.slice(0, 60), naoVistos, ultimaVisita });
+    // Remove thumbnails de eventos bloqueados — nunca expõe URL para não-VIP
+    const eventosSeguros = eventos.slice(0, 60).map(e => {
+      if (!e.is_vip) {
+        const { thumbs, ...resto } = e;
+        return resto;
+      }
+      return e;
+    });
+
+    res.json({ eventos: eventosSeguros, naoVistos, ultimaVisita });
   } catch (err) {
     console.error("Erro ao buscar updates:", err);
     res.status(500).json({ eventos: [], naoVistos: 0 });
