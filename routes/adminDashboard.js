@@ -143,6 +143,7 @@ router.get("/overview", auth, authAdmin, async (req, res) => {
         SELECT COUNT(*) AS total
         FROM clientes
         WHERE ativo = true
+          AND (bloqueado IS NULL OR bloqueado = false)
       `),
 
       db.query(`
