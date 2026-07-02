@@ -572,13 +572,13 @@ const cardLiberado =
  <div class="midia-item lazy-midia ${
           midiaLiberada ? "midia-livre" : "midia-bloqueada"
         }"
-          data-thumb="${m.thumbnail_url || m.url}"
-          data-full="${m.url}"
+          data-thumb="${m.thumbnail_url || ""}"
+          data-full="${midiaLiberada ? (m.url || "") : ""}"
           data-index="${index}"
           data-conteudo-id="${m.conteudo_id || ""}"
           data-ja-possuia="${m.ja_possuia === true ? "true" : "false"}"
           data-liberado="${midiaLiberada ? "true" : "false"}"
-          style="background-image:url('${m.thumbnail_url || m.url}')">
+          style="${m.thumbnail_url ? `background-image:url('${m.thumbnail_url}')` : ""}">
         </div>
       `;
     }).join("")}
@@ -1034,12 +1034,13 @@ div.innerHTML = `
        <div class="midia-item lazy-midia ${
   midiaLiberada ? "midia-livre" : "midia-bloqueada"
 }"
-  data-thumb="${m.thumbnail_url || m.url}"
-  data-full="${m.url}"
+  data-thumb="${m.thumbnail_url || ""}"
+  data-full="${midiaLiberada ? (m.url || "") : ""}"
   data-index="${index}"
   data-conteudo-id="${m.conteudo_id || ""}"
   data-ja-possuia="${m.ja_possuia === true ? "true" : "false"}"
-  data-liberado="${midiaLiberada ? "true" : "false"}">
+  data-liberado="${midiaLiberada ? "true" : "false"}"
+  style="${m.thumbnail_url ? `background-image:url('${m.thumbnail_url}')` : ""}">
 </div>
       `;
     }).join("")}
@@ -1129,10 +1130,10 @@ async function liberarConteudo(messageId) {
             <div
               class="midia-item ${liberado ? "midia-livre" : "midia-bloqueada"}"
               data-index="${index}"
-              data-full="${m.url || ""}"
-              data-thumb="${m.thumbnail_url || m.url || ""}"
+              data-full="${liberado ? (m.url || "") : ""}"
+              data-thumb="${m.thumbnail_url || ""}"
               data-liberado="${liberado ? "true" : "false"}"
-              style="${!liberado ? `background-image:url('${m.thumbnail_url || m.url || ""}')` : ""}"
+              style="${!liberado && m.thumbnail_url ? `background-image:url('${m.thumbnail_url}')` : ""}"
             >
               ${
                 liberado
@@ -1142,7 +1143,7 @@ async function liberarConteudo(messageId) {
                         : `<img src="${m.url}" alt="">`
                     )
                   : `
-                    <div class="midia-preview" style="background-image:url('${m.thumbnail_url || m.url || ""}')"></div>
+                    <div class="midia-preview" style="${m.thumbnail_url ? `background-image:url('${m.thumbnail_url}')` : ""}"></div>
                     <div class="midia-lock">🔒</div>
                   `
               }

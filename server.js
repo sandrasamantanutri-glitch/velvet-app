@@ -4646,12 +4646,16 @@ socket.on("getHistory", async ({ cliente_id, modelo_id, offset = 0, limit = 20 }
           const jaPossuia = ehPPVMass
             ? conteudosPossuidosSet.has(Number(midia.conteudo_id))
             : false;
+          const liberado = pago || jaPossuia;
 
           return {
-            ...midia,
-            ja_possuia: jaPossuia,
-            liberado: pago || jaPossuia,
-            bloqueado: !(pago || jaPossuia)
+            conteudo_id:   midia.conteudo_id,
+            tipo_media:    midia.tipo_media,
+            thumbnail_url: midia.thumbnail_url,
+            url:           liberado ? midia.url : null, // nunca expõe URL antes do pagamento
+            ja_possuia:    jaPossuia,
+            liberado,
+            bloqueado:     !liberado
           };
         });
 
@@ -6560,13 +6564,13 @@ app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
       const jaPossuia = conteudosPossuidosSet.has(conteudoId);
 
       return {
-        conteudo_id: conteudoId,
-        url: row.url,
-        tipo_media: row.tipo_media,
+        conteudo_id:   conteudoId,
+        url:           jaPossuia ? row.url : null, // nunca expõe URL antes do pagamento
+        tipo_media:    row.tipo_media,
         thumbnail_url: row.thumbnail_url,
-        ja_possuia: jaPossuia,
-        liberado: jaPossuia,
-        bloqueado: !jaPossuia
+        ja_possuia:    jaPossuia,
+        liberado:      jaPossuia,
+        bloqueado:     !jaPossuia
       };
     });
 
