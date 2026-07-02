@@ -3818,13 +3818,14 @@ async function criarPixSafe2Pay({ valorTotal, nome, email, cpf, telefone, endere
 // Deriva URL de preview (variant pequena) para conteúdo bloqueado.
 // Para imagens CF Images: troca /public → /thumbnail (ou CF_PREVIEW_VARIANT).
 // Para vídeos CF Stream: já tem thumbnail próprio — retorna null (sem preview de vídeo).
-function getPreviewUrl(url) {
-  if (!url) return null;
-  if (url.includes("imagedelivery.net")) {
-    const variant = process.env.CF_PREVIEW_VARIANT || "thumbnail";
-    return url.replace(/\/[^/]+$/, "/" + variant);
+// Retorna a URL de preview para conteúdo bloqueado.
+// Usa o thumbnail_url do banco (imagem 40x40 gerada pelo sharp) quando diferente da url original.
+// Nunca gera URLs com variantes CF Images que podem não existir.
+function getPreviewUrl(fullUrl, thumbUrl) {
+  if (thumbUrl && thumbUrl !== fullUrl && !thumbUrl.endsWith("/thumbnail")) {
+    return thumbUrl;
   }
-  return null; // vídeo: não expõe thumbnail
+  return null;
 }
 
 // ── iPag PIX ──────────────────────────────────────────────────────────────────
@@ -4663,7 +4664,7 @@ socket.on("getHistory", async ({ cliente_id, modelo_id, offset = 0, limit = 20 }
           return {
             conteudo_id:   midia.conteudo_id,
             tipo_media:    midia.tipo_media,
-            thumbnail_url: liberado ? midia.thumbnail_url : getPreviewUrl(midia.url),
+            thumbnail_url: liberado ? midia.thumbnail_url : getPreviewUrl(midia.url, midia.thumbnail_url),
             url:           liberado ? midia.url : null,
             ja_possuia:    jaPossuia,
             liberado,
@@ -4830,7 +4831,7 @@ socket.on("sendConteudo", async ({
 
     // Cliente recebe preview borrado enquanto não pagar — URL real só após confirmação
     const midiasParaCliente = precoNum > 0
-      ? midias.map(m => ({ conteudo_id: m.conteudo_id, thumbnail_url: getPreviewUrl(m.url), tipo_media: m.tipo_media, url: null }))
+      ? midias.map(m => ({ conteudo_id: m.conteudo_id, thumbnail_url: getPreviewUrl(m.url, m.thumbnail_url), tipo_media: m.tipo_media, url: null }))
       : midias;
     socket.to(sala).emit("newMessage", { ...payloadBase, midias: midiasParaCliente });
 
@@ -5652,7 +5653,7 @@ app.get("/api/modelo/publico/:id/feed", async (req, res) => {
     preco:         r.preco,
     descricao:     r.descricao,
     url:           podeVer ? r.url           : null,
-    thumbnail_url: podeVer ? r.thumbnail_url : getPreviewUrl(r.url),
+    thumbnail_url: podeVer ? r.thumbnail_url : getPreviewUrl(r.url, r.thumbnail_url),
   })));
 });
 
@@ -6635,7 +6636,7 @@ app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
         conteudo_id:   conteudoId,
         url:           jaPossuia ? row.url : null,
         tipo_media:    row.tipo_media,
-        thumbnail_url: jaPossuia ? row.thumbnail_url : getPreviewUrl(row.url),
+        thumbnail_url: jaPossuia ? row.thumbnail_url : getPreviewUrl(row.url, row.thumbnail_url),
         ja_possuia:    jaPossuia,
         liberado:      jaPossuia,
         bloqueado:     !jaPossuia

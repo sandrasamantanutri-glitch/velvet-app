@@ -81,13 +81,20 @@ async function uploadThumbToCF(buffer, filename) {
 }
 
 async function main() {
-  // Busca imagens onde thumbnail_url é igual à url (sem thumbnail real) ou null
+  // Busca imagens sem thumbnail real:
+  // - thumbnail_url NULL
+  // - thumbnail_url igual à url original
+  // - thumbnail_url terminando em /thumbnail (variante CF que não existe)
   const { rows } = await db.query(`
     SELECT id, url, thumbnail_url
     FROM conteudos
     WHERE tipo = 'imagem'
       AND url IS NOT NULL
-      AND (thumbnail_url IS NULL OR thumbnail_url = url)
+      AND (
+        thumbnail_url IS NULL
+        OR thumbnail_url = url
+        OR thumbnail_url LIKE '%/thumbnail'
+      )
     ORDER BY id ASC
   `);
 

@@ -537,18 +537,16 @@ function imprimirRelatorio() {
   const assNum       = parseReais(assEl);
   const bloqueadoNum = parseReais(bloqueadoEl);
 
+  // Liberado mês anterior = Stripe do mês passado liberado AGORA → conta neste mês
   const mesAtual = obterMesAtualSP();
   let libAntNum = 0;
-  let libAntHTML = "";
   if (mes === mesAtual) {
-    const libAntEl = document.getElementById("liberadoMesAnterior");
-    libAntNum = parseReais(libAntEl);
-    if (libAntNum > 0) {
-      libAntHTML = `<div class="print-linha sub"><span>Liberado mês anterior </span><span>${libAntEl?.textContent || emReais(libAntNum)}</span></div>`;
-    }
+    libAntNum = parseReais(document.getElementById("liberadoMesAnterior"));
   }
 
-  const liquidoNum = midiasNum + assNum + libAntNum - cbTotal;
+  // Ganhos Totais = o que efetivamente entrou neste mês (pendentes Stripe NÃO entram)
+  const ganhosTotal = midiasNum + assNum + libAntNum;
+  const liquidoNum  = ganhosTotal - cbTotal;
 
   const nomeModelo = window._modeloNome || "—";
   const modeloId   = window._modeloId   || "—";
@@ -559,14 +557,18 @@ function imprimirRelatorio() {
     <div class="print-modelo">Modelo: <strong>${nomeModelo}</strong> &nbsp;·&nbsp; ID: <strong>#${modeloId}</strong></div>
 
     <div class="print-sec">Ganhos do mês</div>
-    <div class="print-linha"><span>Ganhos Totais:</span><span>${total}</span></div>
-    <div class="print-linha sub"><span>Assinaturas: </span><span>${ass}</span></div>
-    <div class="print-linha sub"><span>Mídias: </span><span>${midias}</span></div>
+    <div class="print-linha"><span>Ganhos Totais</span><span>${emReais(ganhosTotal)}</span></div>
+    <div class="print-linha sub"><span>Assinaturas</span><span>${ass}</span></div>
+    <div class="print-linha sub"><span>Mídias</span><span>${midias}</span></div>
+    ${libAntNum > 0 ? `<div class="print-linha sub"><span>Liberado mês anterior (Stripe)</span><span>${emReais(libAntNum)}</span></div>` : ""}
     ${cbTotal > 0 ? `<div class="print-linha sub neg"><span>Chargebacks</span><span>− ${emReais(cbTotal)}</span></div>` : ""}
-    ${bloqueadoNum > 0 ? `<div class="print-linha sub hold"><span>Pendentes de Liberação </span><span>${emReais(bloqueadoNum)}</span></div>` : ""}
-    ${libAntHTML}
 
     <div class="print-linha total"><span>Ganhos Líquidos</span><span>${emReais(liquidoNum)}</span></div>
+
+    ${bloqueadoNum > 0 ? `
+    <div class="print-sec" style="margin-top:20px;">Retenção Stripe — libera no próximo mês</div>
+    <div class="print-linha hold"><span>Pendentes de Liberação</span><span>${emReais(bloqueadoNum)}</span></div>
+    ` : ""}
   `;
 
   window.print();
