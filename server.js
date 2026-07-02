@@ -8666,7 +8666,7 @@ app.post("/api/register", authLimiter, async (req, res) => {
 
     if (bloqueadoRes.rowCount > 0) {
       return res.status(403).json({
-        erro: "Identificamos que não cumpre os requisito necessarios para utilizar a plataforma, qualquer duvida contacte: contato@velvet.lat e leia nossos termos de utilização."
+        erro: "Identificamos que não cumpre os requisito necessarios para utilizar a plataforma, qualquer dúvida contacte: contato@velvet.lat e leia nossos Termos e Condições de Uso."
       });
     }
     // ────────────────────────────────────────────────────────────────────────

@@ -1263,6 +1263,39 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
 
     const modelo_id = modeloRes.rows[0].id;
 
+    const mesFiltroParam = req.query.mes;
+    if (mesFiltroParam && /^\d{4}-(0[1-9]|1[0-2])$/.test(mesFiltroParam)) {
+      const [ano, mesNum] = mesFiltroParam.split('-').map(Number);
+      const fr = await db.query(`
+        SELECT
+          COALESCE(SUM(CASE
+            WHEN tipo IN ('midia','conteudo')
+             AND NOT (gateway = 'stripe' AND (disponivel_em IS NULL OR disponivel_em > NOW()))
+            THEN valor_modelo END), 0) AS mes_midias,
+          COALESCE(SUM(CASE
+            WHEN tipo = 'assinatura'
+             AND NOT (gateway = 'stripe' AND (disponivel_em IS NULL OR disponivel_em > NOW()))
+            THEN valor_modelo END), 0) AS mes_assinaturas,
+          COALESCE(SUM(CASE
+            WHEN gateway = 'stripe' AND (disponivel_em IS NULL OR disponivel_em > NOW())
+            THEN valor_modelo END), 0) AS bloqueado_mes
+        FROM transacoes_agency
+        WHERE modelo_id = $1
+          AND status = 'pago'
+          AND EXTRACT(YEAR  FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $2
+          AND EXTRACT(MONTH FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $3
+      `, [modelo_id, ano, mesNum]);
+
+      const row = fr.rows[0];
+      const mesMidias     = Number(row.mes_midias     || 0);
+      const mesAssinaturas = Number(row.mes_assinaturas || 0);
+      return res.json({
+        filtroMes: mesFiltroParam,
+        mes: { midias: mesMidias, assinaturas: mesAssinaturas },
+        bloqueado: { mes: Number(row.bloqueado_mes || 0) }
+      });
+    }
+
     // Competência: cartão (Stripe) só conta no mês/dia em que o Stripe libera o
     // valor para saque (disponivel_em); PIX é sempre imediato (disponivel_em = created_at).
     // Por isso agrupamos por COALESCE(disponivel_em, created_at), não por created_at puro.
@@ -1338,7 +1371,28 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
            AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
                = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
           THEN cliente_id
-        END) AS assinantes_hoje
+        END) AS assinantes_hoje,
+
+        COALESCE(SUM(CASE
+          WHEN gateway = 'stripe' AND (disponivel_em IS NULL OR disponivel_em > NOW())
+           AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
+               = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+          THEN valor_modelo
+        END), 0) AS bloqueado_hoje,
+
+        COALESCE(SUM(CASE
+          WHEN gateway = 'stripe' AND (disponivel_em IS NULL OR disponivel_em > NOW())
+           AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
+               = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+          THEN valor_modelo
+        END), 0) AS bloqueado_mes,
+
+        COALESCE(SUM(CASE
+          WHEN gateway = 'stripe' AND (disponivel_em IS NULL OR disponivel_em > NOW())
+           AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
+               = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '1 month'
+          THEN valor_modelo
+        END), 0) AS bloqueado_mes_anterior
 
       FROM transacoes_agency
       WHERE modelo_id = $1
@@ -1368,6 +1422,11 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
       assinantes: {
         total: Number(r.assinantes_total || 0),
         hoje: Number(r.assinantes_hoje || 0)
+      },
+      bloqueado: {
+        hoje: Number(r.bloqueado_hoje || 0),
+        mes: Number(r.bloqueado_mes || 0),
+        mesAnterior: Number(r.bloqueado_mes_anterior || 0)
       }
     });
   } catch (err) {

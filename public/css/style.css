@@ -636,6 +636,34 @@ body.modal-open {
   text-align: center;
 }
 
+/* ── Botão limpar input (X) ─────────────────────────────────────────── */
+.input-wrap {
+  position: relative;
+  width: 100%;
+}
+.input-wrap input {
+  padding-right: 36px !important;
+}
+.input-clear {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 4px 6px;
+  cursor: pointer;
+  color: #aaa;
+  font-size: 14px;
+  line-height: 1;
+  display: none;
+  z-index: 2;
+}
+.input-clear:hover {
+  color: #7B2CFF;
+}
+/* ───────────────────────────────────────────────────────────────────── */
+
 .btn-secondary {
   background: linear-gradient(135deg, #ebebeb, #c7c7c7);
   color: #555;

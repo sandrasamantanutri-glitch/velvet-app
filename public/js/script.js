@@ -106,10 +106,40 @@ window.startRegister = function () {
   openAgeGate("register");
 };
 
+function setupInputClear(container) {
+  const inputs = container.querySelectorAll('input[type="text"], input[type="email"], input[type="password"], input[type="date"]');
+  inputs.forEach(input => {
+    // skip OTP (center-aligned numeric)
+    if (input.id === "registerOtp" || input.id === "registerNascimento") return;
+    if (input.closest(".input-wrap")) return;
+
+    const wrap = document.createElement("div");
+    wrap.className = "input-wrap";
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "input-clear";
+    btn.setAttribute("aria-label", "Limpar");
+    btn.textContent = "✕";
+    wrap.appendChild(btn);
+
+    const update = () => { btn.style.display = input.value ? "block" : "none"; };
+    input.addEventListener("input", update);
+    input.addEventListener("focus", update);
+    input.addEventListener("blur", () => { setTimeout(() => { btn.style.display = "none"; }, 150); });
+    btn.addEventListener("mousedown", e => { e.preventDefault(); input.value = ""; input.focus(); btn.style.display = "none"; input.dispatchEvent(new Event("input")); });
+    update();
+  });
+}
+
 function openLoginModal() {
   modalMode = "login";
   updateModal();
-  document.getElementById("loginModal")?.classList.remove("hidden");
+  const modal = document.getElementById("loginModal");
+  modal?.classList.remove("hidden");
+  setupInputClear(modal);
 }
 
 window.closeLoginModal = function () {
