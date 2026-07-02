@@ -9928,19 +9928,21 @@ if (Number.isNaN(dataAceite.getTime())) {
     ========================= */
 
     const pixConfigVipRes = await client.query(
-      `SELECT pix_vip FROM modelos_pix_config WHERE modelo_id = $1 LIMIT 1`,
+      `SELECT pix_vip, pix_vip_primeira_vez FROM modelos_pix_config WHERE modelo_id = $1 LIMIT 1`,
       [modeloIdNum]
     );
 
-    if (pixConfigVipRes.rowCount > 0 && pixConfigVipRes.rows[0].pix_vip === false) {
+    const pixConfig = pixConfigVipRes.rows[0] || {};
+
+    if (pixConfigVipRes.rowCount > 0 && pixConfig.pix_vip === false) {
       await client.query("ROLLBACK");
       return res.status(403).json({ error: "Pagamento via PIX não disponível. Solicite autorização ao suporte." });
     }
 
     /* =========================
        BLOQUEAR PRIMEIRA ASSINATURA VIP VIA PIX
-       PIX só permitido para renovação (cliente já assinou antes)
-       ou para emails cadastrados em usuarios_confiaveis
+       PIX só permitido para renovação (cliente já assinou antes),
+       para emails em usuarios_confiaveis, ou se a modelo tem pix_vip_primeira_vez = true
     ========================= */
 
     const vipAnteriorRes = await client.query(
@@ -9948,7 +9950,7 @@ if (Number.isNaN(dataAceite.getTime())) {
       [cliente_id, modeloIdNum]
     );
 
-    if (vipAnteriorRes.rowCount === 0) {
+    if (vipAnteriorRes.rowCount === 0 && !pixConfig.pix_vip_primeira_vez) {
       const confiavelRes = await client.query(
         `SELECT 1 FROM usuarios_confiaveis WHERE email = $1 LIMIT 1`,
         [emailFinal.toLowerCase()]

@@ -1177,7 +1177,8 @@
       <input type="number" name="modelo_id" id="pixModeloIdInput" required oninput="buscarNomeModeloPix()">
     </label>
     <div id="pixModeloNomePreview" style="font-size:13px;margin:-8px 0 8px;"></div>
-    <label class="checkbox-label"><input type="checkbox" name="pix_vip" checked> PIX para VIP</label>
+    <label class="checkbox-label"><input type="checkbox" name="pix_vip" checked onchange="togglePixVipPrimeiraVez(this)"> PIX para VIP</label>
+    <label class="checkbox-label" id="labelPixVipPrimeiraVez" style="margin-left:20px;"><input type="checkbox" name="pix_vip_primeira_vez"> Permitir 1ª assinatura via PIX</label>
     <label class="checkbox-label"><input type="checkbox" name="pix_chat" checked> PIX para Chat (mídia)</label>
     <label class="checkbox-label"><input type="checkbox" name="pix_premium" checked> PIX para Premium</label>
     <div class="modal-actions">

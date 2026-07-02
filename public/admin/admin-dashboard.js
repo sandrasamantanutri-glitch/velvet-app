@@ -802,7 +802,7 @@ pageLoaders['pix-modelos'] = async function () {
       <tr>
         <td>${c.modelo_id}</td>
         <td>${c.nome_exibicao || c.nome}</td>
-        <td>${c.pix_vip ? '<span class="badge badge-success">Sim</span>' : '<span class="badge badge-danger">Não</span>'}</td>
+        <td>${c.pix_vip ? '<span class="badge badge-success">Sim</span>' : '<span class="badge badge-danger">Não</span>'}${c.pix_vip && c.pix_vip_primeira_vez ? ' <span class="badge badge-warning" title="1ª assinatura via PIX liberada">1ª</span>' : ''}</td>
         <td>${c.pix_chat ? '<span class="badge badge-success">Sim</span>' : '<span class="badge badge-danger">Não</span>'}</td>
         <td>${c.pix_premium ? '<span class="badge badge-success">Sim</span>' : '<span class="badge badge-danger">Não</span>'}</td>
         <td>${fmtDateTime(c.atualizado_em)}</td>
@@ -816,6 +816,20 @@ pageLoaders['pix-modelos'] = async function () {
     console.error('Erro pix-modelos:', err);
   }
 };
+
+function togglePixVipPrimeiraVez(checkbox) {
+  const label = $('labelPixVipPrimeiraVez');
+  if (!label) return;
+  const input = label.querySelector('input');
+  if (!checkbox.checked) {
+    label.style.opacity = '0.4';
+    label.style.pointerEvents = 'none';
+    input.checked = false;
+  } else {
+    label.style.opacity = '';
+    label.style.pointerEvents = '';
+  }
+}
 
 function abrirModalPixModelo() {
   _pixModeloEditando = null;
@@ -835,8 +849,10 @@ async function editarPixModelo(modelo_id) {
     form.querySelector('[name="modelo_id"]').value = modelo_id;
     form.querySelector('[name="modelo_id"]').disabled = true;
     form.querySelector('[name="pix_vip"]').checked = !!data.config.pix_vip;
+    form.querySelector('[name="pix_vip_primeira_vez"]').checked = !!data.config.pix_vip_primeira_vez;
     form.querySelector('[name="pix_chat"]').checked = !!data.config.pix_chat;
     form.querySelector('[name="pix_premium"]').checked = !!data.config.pix_premium;
+    togglePixVipPrimeiraVez(form.querySelector('[name="pix_vip"]'));
     const preview = $('pixModeloNomePreview');
     preview.textContent = '✓ ' + (data.modelo.nome_exibicao || data.modelo.nome);
     preview.style.color = '#2e7d32';
@@ -877,6 +893,7 @@ async function salvarPixModelo(e) {
   try {
     await putJSON('/api/admin/modelos-pix-config/' + modelo_id, {
       pix_vip: e.target.querySelector('[name="pix_vip"]').checked,
+      pix_vip_primeira_vez: e.target.querySelector('[name="pix_vip_primeira_vez"]').checked,
       pix_chat: e.target.querySelector('[name="pix_chat"]').checked,
       pix_premium: e.target.querySelector('[name="pix_premium"]').checked
     });

@@ -7,7 +7,7 @@ router.get('/', async (req, res) => {
   try {
     const result = await db.query(
       `SELECT c.modelo_id, m.nome, m.nome_exibicao,
-              c.pix_vip, c.pix_chat, c.pix_premium, c.atualizado_em
+              c.pix_vip, c.pix_vip_primeira_vez, c.pix_chat, c.pix_premium, c.atualizado_em
        FROM modelos_pix_config c
        JOIN modelos m ON m.id = c.modelo_id
        ORDER BY c.atualizado_em DESC`
@@ -36,13 +36,13 @@ router.get('/buscar-modelo/:modelo_id', async (req, res) => {
     }
 
     const configRes = await db.query(
-      `SELECT pix_vip, pix_chat, pix_premium FROM modelos_pix_config WHERE modelo_id = $1 LIMIT 1`,
+      `SELECT pix_vip, pix_vip_primeira_vez, pix_chat, pix_premium FROM modelos_pix_config WHERE modelo_id = $1 LIMIT 1`,
       [modelo_id]
     );
 
     res.json({
       modelo: modeloRes.rows[0],
-      config: configRes.rows[0] || { pix_vip: true, pix_chat: true, pix_premium: true }
+      config: configRes.rows[0] || { pix_vip: true, pix_vip_primeira_vez: false, pix_chat: true, pix_premium: true }
     });
   } catch (err) {
     console.error('Erro ao buscar modelo para config de PIX:', err);
@@ -59,6 +59,7 @@ router.put('/:modelo_id', async (req, res) => {
     }
 
     const pix_vip = req.body?.pix_vip !== false;
+    const pix_vip_primeira_vez = pix_vip ? req.body?.pix_vip_primeira_vez === true : false;
     const pix_chat = req.body?.pix_chat !== false;
     const pix_premium = req.body?.pix_premium !== false;
 
@@ -68,16 +69,17 @@ router.put('/:modelo_id', async (req, res) => {
     }
 
     const result = await db.query(
-      `INSERT INTO modelos_pix_config (modelo_id, pix_vip, pix_chat, pix_premium, atualizado_por, atualizado_em)
-       VALUES ($1, $2, $3, $4, $5, NOW())
+      `INSERT INTO modelos_pix_config (modelo_id, pix_vip, pix_vip_primeira_vez, pix_chat, pix_premium, atualizado_por, atualizado_em)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW())
        ON CONFLICT (modelo_id) DO UPDATE SET
          pix_vip = EXCLUDED.pix_vip,
+         pix_vip_primeira_vez = EXCLUDED.pix_vip_primeira_vez,
          pix_chat = EXCLUDED.pix_chat,
          pix_premium = EXCLUDED.pix_premium,
          atualizado_por = EXCLUDED.atualizado_por,
          atualizado_em = NOW()
-       RETURNING modelo_id, pix_vip, pix_chat, pix_premium, atualizado_em`,
-      [modelo_id, pix_vip, pix_chat, pix_premium, req.user.id]
+       RETURNING modelo_id, pix_vip, pix_vip_primeira_vez, pix_chat, pix_premium, atualizado_em`,
+      [modelo_id, pix_vip, pix_vip_primeira_vez, pix_chat, pix_premium, req.user.id]
     );
 
     res.json({ sucesso: true, config: result.rows[0] });
