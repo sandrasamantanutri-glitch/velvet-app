@@ -8526,7 +8526,8 @@ app.post("/api/register", authLimiter, async (req, res) => {
       ageConfirmed,
       preToken,
       ref,
-      src
+      src,
+      fingerprint
     } = req.body;
 
     const emailNormalizado = email?.trim().toLowerCase();
@@ -8623,6 +8624,50 @@ app.post("/api/register", authLimiter, async (req, res) => {
         `UPDATE users SET email = $1 WHERE id = $2`,
         [`deleted_${existing.id}@velvet.lat`, existing.id]
       );
+    }
+    // ────────────────────────────────────────────────────────────────────────
+
+    // ── Verificação de bloqueio de cadastro ──────────────────────────────────
+    const ipReq = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.ip || null;
+    const fpReq = fingerprint || null;
+
+    const bloqueadoRes = await db.query(
+      `SELECT 1 FROM clientes_bloqueados_cadastro
+       WHERE ativo = true AND bloqueado = true
+         AND (
+           LOWER(email) = LOWER($1)
+           OR (LOWER(nome_completo) = LOWER($2) AND data_nascimento = $3)
+           OR (bloqueio_ip = true AND ip = $4 AND $4 IS NOT NULL)
+           OR (bloqueio_fingerprint = true AND fingerprint = $5 AND $5 IS NOT NULL)
+         )
+       LIMIT 1`,
+      [emailNormalizado, nome_completo, data_nascimento, ipReq, fpReq]
+    );
+
+    if (bloqueadoRes.rowCount === 0 && ipReq) {
+      const ipBloq = await db.query(
+        `SELECT 1 FROM ips_bloqueados
+         WHERE ip = $1 AND (expires_at IS NULL OR expires_at > NOW())
+         LIMIT 1`,
+        [ipReq]
+      );
+      if (ipBloq.rowCount > 0) bloqueadoRes.rowCount = 1;
+    }
+
+    if (bloqueadoRes.rowCount === 0 && fpReq) {
+      const fpBloq = await db.query(
+        `SELECT 1 FROM fingerprint_bloqueados
+         WHERE fingerprint = $1 AND (expires_at IS NULL OR expires_at > NOW())
+         LIMIT 1`,
+        [fpReq]
+      );
+      if (fpBloq.rowCount > 0) bloqueadoRes.rowCount = 1;
+    }
+
+    if (bloqueadoRes.rowCount > 0) {
+      return res.status(403).json({
+        erro: "Identificamos que não cumpre os requisito necessarios para utilizar a plataforma, qualquer duvida contacte: contato@velvet.lat e leia nossos termos de utilização."
+      });
     }
     // ────────────────────────────────────────────────────────────────────────
 

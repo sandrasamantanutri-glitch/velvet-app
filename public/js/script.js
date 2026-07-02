@@ -436,6 +436,10 @@ async function verificarOTP() {
   }
 }
 
+function gerarFingerprint() {
+  return btoa(navigator.userAgent + screen.width + screen.height + new Date().getTimezoneOffset());
+}
+
 // ── Etapa 3: criar conta ──────────────────────────────────────────────────────
 async function register() {
   clearModalError();
@@ -490,7 +494,8 @@ async function register() {
         ageConfirmed: true,
         preToken: otpPreToken,
         ref,
-        src
+        src,
+        fingerprint: gerarFingerprint()
       })
     });
     const data = await res.json();
