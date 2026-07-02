@@ -17,6 +17,7 @@ const { Pool } = require("pg");
 const axios = require("axios");
 const FormData = require("form-data");
 const sharp = require("sharp");
+const AWS = require("aws-sdk");
 
 const db = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -26,6 +27,35 @@ const db = new Pool({
 const CF_ACCOUNT_ID = process.env.CF_ACCOUNT_ID;
 const CF_IMAGES_TOKEN = process.env.CF_IMAGES_TOKEN;
 const CF_ACCOUNT_HASH = process.env.CF_ACCOUNT_HASH;
+
+// R2 client (mesmo do servidor — bucket velvet-media migrou do Backblaze para cá)
+const r2 = new AWS.S3({
+  endpoint: new AWS.Endpoint(process.env.R2_ENDPOINT),
+  accessKeyId: process.env.R2_ACCESS_KEY_ID,
+  secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+  region: "auto",
+  signatureVersion: "v4",
+  s3ForcePathStyle: true,
+});
+
+async function downloadImage(url) {
+  // URLs do Backblaze antigo: baixa via R2 pelo mesmo key
+  if (url.includes("backblazeb2.com")) {
+    // ex: https://s3.us-east-005.backblazeb2.com/velvet-media/velvet/modelos/42/file.png
+    const parts = url.split("backblazeb2.com/");
+    const rest = parts[1]; // "velvet-media/velvet/modelos/42/file.png"
+    const slashIdx = rest.indexOf("/");
+    const bucket = rest.substring(0, slashIdx);   // "velvet-media"
+    const key = rest.substring(slashIdx + 1);     // "velvet/modelos/42/file.png"
+
+    const obj = await r2.getObject({ Bucket: bucket, Key: key }).promise();
+    return obj.Body;
+  }
+
+  // URLs do CF Images: baixa diretamente
+  const res = await axios.get(url, { responseType: "arraybuffer", timeout: 20000 });
+  return Buffer.from(res.data);
+}
 
 async function uploadThumbToCF(buffer, filename) {
   const form = new FormData();
@@ -70,9 +100,7 @@ async function main() {
     try {
       process.stdout.write(`[${row.id}] Baixando imagem... `);
 
-      // Baixa imagem original do CF Images
-      const imgRes = await axios.get(row.url, { responseType: "arraybuffer", timeout: 20000 });
-      const originalBuffer = Buffer.from(imgRes.data);
+      const originalBuffer = Buffer.from(await downloadImage(row.url));
 
       // Redimensiona para 40x40
       const thumbBuffer = await sharp(originalBuffer)
