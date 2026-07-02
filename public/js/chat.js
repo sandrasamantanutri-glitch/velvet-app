@@ -523,7 +523,7 @@ function renderMensagem(msg) {
         ${(msg.midias || []).map((m, index) => `
           <div class="midia-item lazy-midia"
             data-thumb="${m.thumbnail_url || ""}"
-            data-full="${bloqueado ? "" : (m.url || "")}"
+            data-full="${(role === 'modelo' || !bloqueado) ? (m.url || '') : ''}"
             data-index="${index}"
             style="${m.thumbnail_url ? `background-image:url('${m.thumbnail_url}')` : ""}">
           </div>
@@ -1316,7 +1316,7 @@ function criarMensagemElemento(msg) {
           ${(msg.midias || []).map((m, index) => `
             <div class="midia-item lazy-midia"
               data-thumb="${m.thumbnail_url || ""}"
-              data-full="${bloqueado ? "" : (m.url || "")}"
+              data-full="${(role === 'modelo' || !bloqueado) ? (m.url || '') : ''}"
               data-index="${index}"
               style="${m.thumbnail_url ? `background-image:url('${m.thumbnail_url}')` : ""}">
             </div>
