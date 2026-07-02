@@ -8197,48 +8197,6 @@ app.post("/api/upload", auth, authModelo, uploadLimiter, uploadB2.array("file", 
         );
       }
 
-      // Auto-campanha feed para assinantes VIP (fire-and-forget)
-      ;(async () => {
-        try {
-          const mRes = await db.query(`SELECT nome_exibicao FROM modelos WHERE id = $1`, [modelo_id]);
-          const nome_modelo = mRes.rows[0]?.nome_exibicao || "a criadora";
-          const audience_id = await obterOuCriarAudienceVIP(db, modelo_id, nome_modelo);
-          if (!audience_id) return;
-          const linkPerfil = `https://velvet.lat/perfil.html?modelo_id=${modelo_id}`;
-          await enviarCampanhaVIP({
-            audience_id,
-            subject: `✨ ${nome_modelo} publicou novidades no feed`,
-            nome_campanha: `feed_${modelo_id}_${Date.now()}`,
-            html: `<div style="font-family:Arial,sans-serif;background:#f0ebfa;padding:32px 16px;color:#2d1f3d;">
-              <div style="max-width:600px;margin:0 auto;">
-                <div style="background:#ffffff;border-radius:14px 14px 0 0;padding:20px 32px;text-align:center;border-bottom:1px solid #e5d9ff;">
-                  <img src="https://www.velvet.lat/assets/velvet.png" alt="Velvet" width="116" height="32" style="display:inline-block;">
-                </div>
-                <div style="background:#fff;padding:32px;border-radius:0 0 14px 14px;border:1px solid #e5d9ff;border-top:none;">
-                  <h2 style="color:#6f42c1;text-align:center;margin:0 0 8px;">Nova atualização no feed!</h2>
-                  <p style="text-align:center;color:#7a6a9a;margin:0 0 24px;">${nome_modelo} acabou de publicar conteúdo no feed para você.</p>
-                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:24px auto;">
-                    <tr>
-                      <td bgcolor="#7B2CFF" style="border-radius:10px;">
-                        <a href="${linkPerfil}" style="display:inline-block;padding:15px 32px;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:10px;">
-                          Ver agora
-                        </a>
-                      </td>
-                    </tr>
-                  </table>
-                  <p style="text-align:center;font-size:12px;color:#9b87b8;margin-top:24px;">
-                    Você recebe este e-mail por ser assinante VIP.<br><br>
-                    <a href="https://www.velvet.lat/api/email/desinscrever?token={{contact.UNSUB_TOKEN}}" target="_blank" style="color:#7B2CFF; font-size:8px">Clique aqui se não deseja mais receber e-mails desse tipo</a>
-                  </p>
-                </div>
-              </div>
-            </div>`
-          });
-        } catch (e) {
-          console.error("Campanha feed erro:", e.message);
-        }
-      })();
-
       res.json({ success: true });
 
     } catch (err) {
@@ -8347,51 +8305,6 @@ RETURNING *
         dataFim
       ]
     );
-
-    // Auto-campanha promoção para assinantes VIP (fire-and-forget)
-    ;(async () => {
-      try {
-        const mRes = await db.query(`SELECT nome_exibicao FROM modelos WHERE id = $1`, [modeloId]);
-        const nome_modelo = mRes.rows[0]?.nome_exibicao || "a criadora";
-        const audience_id = await obterOuCriarAudienceVIP(db, modeloId, nome_modelo);
-        if (!audience_id) return;
-        const linkPerfil = `https://velvet.lat/perfil.html?modelo_id=${modeloId}`;
-        await enviarCampanhaVIP({
-          audience_id,
-          subject: `💜 ${nome_modelo} está com promoção especial`,
-          nome_campanha: `oferta_${modeloId}_${Date.now()}`,
-          html: `<div style="font-family:Arial,sans-serif;background:#f0ebfa;padding:32px 16px;color:#2d1f3d;">
-            <div style="max-width:600px;margin:0 auto;">
-              <div style="background:#ffffff;border-radius:14px 14px 0 0;padding:20px 32px;text-align:center;border-bottom:1px solid #e5d9ff;">
-                <img src="https://www.velvet.lat/assets/velvet.png" alt="Velvet" width="116" height="32" style="display:inline-block;">
-              </div>
-              <div style="background:#fff;padding:32px;border-radius:0 0 14px 14px;border:1px solid #e5d9ff;border-top:none;">
-                <h2 style="color:#6f42c1;text-align:center;margin:0 0 8px;">Promoção especial disponível!</h2>
-                <p style="text-align:center;color:#7a6a9a;margin:0 0 24px;">${nome_modelo} criou uma oferta com desconto exclusivo para renovar sua assinatura VIP.</p>
-                <div style="background:#f8f4ff;border-left:4px solid #7B2CFF;border-radius:0 10px 10px 0;padding:14px 18px;margin:0 0 24px;">
-                  <p style="margin:0;font-weight:bold;color:#6f42c1;">🎁 Aproveite antes que acabe!</p>
-                </div>
-                <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:24px auto;">
-                  <tr>
-                    <td bgcolor="#7B2CFF" style="border-radius:10px;">
-                      <a href="${linkPerfil}" style="display:inline-block;padding:15px 32px;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:10px;">
-                        Ver oferta agora
-                      </a>
-                    </td>
-                  </tr>
-                </table>
-                <p style="text-align:center;font-size:12px;color:#9b87b8;margin-top:24px;">
-                  Você recebe este e-mail por ser assinante VIP.<br>
-                  <a href="https://www.velvet.lat/api/email/desinscrever?token={{contact.UNSUB_TOKEN}}" target="_blank" style="color:#7B2CFF; font-size:8px">Clique aqui se não deseja mais receber e-mails desse tipo</a>
-                </p>
-              </div>
-            </div>
-          </div>`
-        });
-      } catch (e) {
-        console.error("Campanha oferta erro:", e.message);
-      }
-    })();
 
     res.json(result.rows[0]);
 
@@ -14212,51 +14125,6 @@ app.post("/api/premium", auth, authModelo, uploadLimiter, uploadB2.array("files"
 
     await client.query("COMMIT");
 
-    // Auto-campanha premium para assinantes VIP (fire-and-forget)
-    ;(async () => {
-      try {
-        const mRes = await db.query(`SELECT nome_exibicao FROM modelos WHERE id = $1`, [modelo_id]);
-        const nome_modelo = mRes.rows[0]?.nome_exibicao || "a criadora";
-        const audience_id = await obterOuCriarAudienceVIP(db, modelo_id, nome_modelo);
-        if (!audience_id) return;
-        const linkPerfil = `https://velvet.lat/perfil.html?modelo_id=${modelo_id}`;
-        await enviarCampanhaVIP({
-          audience_id,
-          subject: `🔥 ${nome_modelo} publicou novo conteúdo premium`,
-          nome_campanha: `premium_${modelo_id}_${Date.now()}`,
-          html: `<div style="font-family:Arial,sans-serif;background:#f0ebfa;padding:32px 16px;color:#2d1f3d;">
-            <div style="max-width:600px;margin:0 auto;">
-              <div style="background:#ffffff;border-radius:14px 14px 0 0;padding:20px 32px;text-align:center;border-bottom:1px solid #e5d9ff;">
-                <img src="https://www.velvet.lat/assets/velvet.png" alt="Velvet" width="116" height="32" style="display:inline-block;">
-              </div>
-              <div style="background:#fff;padding:32px;border-radius:0 0 14px 14px;border:1px solid #e5d9ff;border-top:none;">
-                <h2 style="color:#6f42c1;text-align:center;margin:0 0 8px;">Novo conteúdo premium disponível!</h2>
-                <p style="text-align:center;color:#7a6a9a;margin:0 0 24px;">${nome_modelo} acabou de lançar uma nova mídia premium para você.</p>
-                <div style="background:#f8f4ff;border-left:4px solid #7B2CFF;border-radius:0 10px 10px 0;padding:14px 18px;margin:0 0 24px;">
-                  <p style="margin:0;font-weight:bold;color:#6f42c1;">🔒 Disponível apenas para assinantes VIP</p>
-                </div>
-                <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:24px auto;">
-                  <tr>
-                    <td bgcolor="#7B2CFF" style="border-radius:10px;">
-                      <a href="${linkPerfil}" style="display:inline-block;padding:15px 32px;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:10px;">
-                        Acessar agora
-                      </a>
-                    </td>
-                  </tr>
-                </table>
-                <p style="text-align:center;font-size:12px;color:#9b87b8;margin-top:24px;">
-                  Você recebe este e-mail por ser assinante VIP.<br>
-                  <a href="https://www.velvet.lat/api/email/desinscrever?token={{contact.UNSUB_TOKEN}}" target="_blank" style="color:#7B2CFF; font-size:8px">Clique aqui se não deseja mais receber e-mails desse tipo</a>
-                </p>
-              </div>
-            </div>
-          </div>`
-        });
-      } catch (e) {
-        console.error("Campanha premium erro:", e.message);
-      }
-    })();
-
     return res.json({
       ...postRes.rows[0],
       url: primeiraMidia?.url || null,
@@ -14392,6 +14260,7 @@ const {
   enviarCampanhaNovidadePremium,
   enviarCampanhaNovidadeChat,
   enviarCampanhaNovidadeOferta,
+  enviarCampanhaDigestDiario,
   obterOuCriarAudienceNaoAssinantes,
   enviarCampanhaNovidadesSemanais,
   removerContatoAudienceVIP
@@ -14517,102 +14386,110 @@ async function notificarModeloPorEmail(modelo_id, enviarFn) {
 }
 
 async function processarNovidadesParaEmail() {
-  console.log("📣 [Novidades Cron] Verificando conteúdo novo para notificar VIPs...");
+  console.log("📣 [Digest Diário] Agregando novidades do dia para envio às VIPs...");
 
   try {
-    // FEED VIP — conteudos tipo 'feed'
-    const feedPendente = await db.query(`
-      SELECT modelo_id, COUNT(*) AS qtd, array_agg(id) AS ids
-      FROM conteudos
-      WHERE tipo_conteudo = 'feed' AND ativo = true AND email_novidade_enviado = false
-      GROUP BY modelo_id
-    `);
+    // Coleta todos os modelos com qualquer tipo de conteúdo pendente
+    const [feedRes, chatRes, premiumRes, ofertaRes] = await Promise.all([
+      db.query(`
+        SELECT modelo_id, COUNT(*) AS qtd, array_agg(id) AS ids
+        FROM conteudos
+        WHERE tipo_conteudo = 'feed' AND ativo = true AND email_novidade_enviado = false
+        GROUP BY modelo_id
+      `),
+      db.query(`
+        SELECT modelo_id, COUNT(*) AS qtd, array_agg(id) AS ids
+        FROM conteudos
+        WHERE tipo_conteudo = 'venda' AND ativo = true AND email_novidade_enviado = false
+        GROUP BY modelo_id
+      `),
+      db.query(`
+        SELECT id, modelo_id, descricao, preco
+        FROM premium_posts
+        WHERE ativo = true AND email_novidade_enviado = false
+      `),
+      db.query(`
+        SELECT id, modelo_id, desconto_percentual, mensagem, data_fim
+        FROM ofertas
+        WHERE ativa = true AND data_fim > NOW() AND email_novidade_enviado = false
+      `)
+    ]);
 
-    for (const row of feedPendente.rows) {
-      try {
-        await notificarModeloPorEmail(row.modelo_id, (audience_id, nome_modelo) =>
-          enviarCampanhaNovidadeFeed({ audience_id, nome_modelo, modelo_id: row.modelo_id, qtd: row.qtd })
-        );
-        await db.query(`UPDATE conteudos SET email_novidade_enviado = true WHERE id = ANY($1)`, [row.ids]);
-        console.log(`[Novidades Cron] Feed → modelo ${row.modelo_id} (${row.qtd} itens)`);
-      } catch (err) {
-        console.error(`[Novidades Cron] Erro feed modelo ${row.modelo_id}:`, err.message);
+    // Agrupa tudo por modelo_id
+    const porModelo = {};
+
+    for (const row of feedRes.rows) {
+      const m = porModelo[row.modelo_id] ||= { feed_qtd: 0, feed_ids: [], chat_qtd: 0, chat_ids: [], premiums: [], premium_ids: [], oferta: null, oferta_id: null };
+      m.feed_qtd = Number(row.qtd);
+      m.feed_ids = row.ids;
+    }
+
+    for (const row of chatRes.rows) {
+      const m = porModelo[row.modelo_id] ||= { feed_qtd: 0, feed_ids: [], chat_qtd: 0, chat_ids: [], premiums: [], premium_ids: [], oferta: null, oferta_id: null };
+      m.chat_qtd = Number(row.qtd);
+      m.chat_ids = row.ids;
+    }
+
+    for (const row of premiumRes.rows) {
+      const m = porModelo[row.modelo_id] ||= { feed_qtd: 0, feed_ids: [], chat_qtd: 0, chat_ids: [], premiums: [], premium_ids: [], oferta: null, oferta_id: null };
+      m.premiums.push({ preco: row.preco, descricao: row.descricao });
+      m.premium_ids.push(row.id);
+    }
+
+    for (const row of ofertaRes.rows) {
+      const m = porModelo[row.modelo_id] ||= { feed_qtd: 0, feed_ids: [], chat_qtd: 0, chat_ids: [], premiums: [], premium_ids: [], oferta: null, oferta_id: null };
+      // Fica com a oferta de maior desconto caso haja mais de uma
+      if (!m.oferta || row.desconto_percentual > m.oferta.desconto_percentual) {
+        m.oferta = { desconto_percentual: row.desconto_percentual, mensagem: row.mensagem, data_fim: row.data_fim };
+        m.oferta_id = row.id;
       }
     }
 
-    // CHAT — conteudos tipo 'venda' (mídia para desbloqueio em conversa)
-    const chatPendente = await db.query(`
-      SELECT modelo_id, COUNT(*) AS qtd, array_agg(id) AS ids
-      FROM conteudos
-      WHERE tipo_conteudo = 'venda' AND ativo = true AND email_novidade_enviado = false
-      GROUP BY modelo_id
-    `);
+    const modeloIds = Object.keys(porModelo);
+    if (!modeloIds.length) {
+      console.log("✅ [Digest Diário] Nenhuma novidade pendente.");
+      return;
+    }
 
-    for (const row of chatPendente.rows) {
+    // Envia UM digest por modelo e marca tudo como enviado
+    for (const modelo_id of modeloIds) {
+      const dados = porModelo[modelo_id];
       try {
-        await notificarModeloPorEmail(row.modelo_id, (audience_id, nome_modelo) =>
-          enviarCampanhaNovidadeChat({ audience_id, nome_modelo, modelo_id: row.modelo_id, qtd: row.qtd })
-        );
-        await db.query(`UPDATE conteudos SET email_novidade_enviado = true WHERE id = ANY($1)`, [row.ids]);
-        console.log(`[Novidades Cron] Chat → modelo ${row.modelo_id} (${row.qtd} itens)`);
+        const modeloRes = await db.query("SELECT nome_exibicao FROM modelos WHERE id = $1", [modelo_id]);
+        if (!modeloRes.rowCount) continue;
+        const nome_modelo = modeloRes.rows[0].nome_exibicao;
+        const audience_id = await obterOuCriarAudienceVIP(db, Number(modelo_id), nome_modelo);
+
+        await enviarCampanhaDigestDiario({
+          audience_id,
+          nome_modelo,
+          modelo_id: Number(modelo_id),
+          feed_qtd: dados.feed_qtd,
+          chat_qtd: dados.chat_qtd,
+          premiums: dados.premiums,
+          oferta: dados.oferta
+        });
+
+        // Marca como enviado
+        if (dados.feed_ids.length)    await db.query(`UPDATE conteudos SET email_novidade_enviado = true WHERE id = ANY($1)`, [dados.feed_ids]);
+        if (dados.chat_ids.length)    await db.query(`UPDATE conteudos SET email_novidade_enviado = true WHERE id = ANY($1)`, [dados.chat_ids]);
+        if (dados.premium_ids.length) await db.query(`UPDATE premium_posts SET email_novidade_enviado = true WHERE id = ANY($1)`, [dados.premium_ids]);
+        if (dados.oferta_id)          await db.query(`UPDATE ofertas SET email_novidade_enviado = true WHERE id = $1`, [dados.oferta_id]);
+
+        console.log(`[Digest Diário] Enviado → modelo ${modelo_id} (feed:${dados.feed_qtd} chat:${dados.chat_qtd} premium:${dados.premium_ids.length} oferta:${dados.oferta_id ? 1 : 0})`);
       } catch (err) {
-        console.error(`[Novidades Cron] Erro chat modelo ${row.modelo_id}:`, err.message);
+        console.error(`[Digest Diário] Erro modelo ${modelo_id}:`, err.message);
       }
     }
 
-    // PREMIUM — premium_posts
-    const premiumPendente = await db.query(`
-      SELECT p.id, p.modelo_id, p.descricao, p.preco,
-        (SELECT COUNT(*) FROM premium_post_midias pm WHERE pm.premium_post_id = p.id AND pm.ativo = true) AS qtd
-      FROM premium_posts p
-      WHERE p.ativo = true AND p.email_novidade_enviado = false
-    `);
-
-    for (const row of premiumPendente.rows) {
-      try {
-        await notificarModeloPorEmail(row.modelo_id, (audience_id, nome_modelo) =>
-          enviarCampanhaNovidadePremium({
-            audience_id, nome_modelo, modelo_id: row.modelo_id,
-            qtd: row.qtd, preco: row.preco, descricao: row.descricao
-          })
-        );
-        await db.query(`UPDATE premium_posts SET email_novidade_enviado = true WHERE id = $1`, [row.id]);
-        console.log(`[Novidades Cron] Premium → modelo ${row.modelo_id} (post #${row.id})`);
-      } catch (err) {
-        console.error(`[Novidades Cron] Erro premium post ${row.id}:`, err.message);
-      }
-    }
-
-    // OFERTA — descontos na assinatura VIP
-    const ofertaPendente = await db.query(`
-      SELECT id, modelo_id, desconto_percentual, mensagem, data_fim
-      FROM ofertas
-      WHERE ativa = true AND data_fim > NOW() AND email_novidade_enviado = false
-    `);
-
-    for (const row of ofertaPendente.rows) {
-      try {
-        await notificarModeloPorEmail(row.modelo_id, (audience_id, nome_modelo) =>
-          enviarCampanhaNovidadeOferta({
-            audience_id, nome_modelo, modelo_id: row.modelo_id,
-            desconto_percentual: row.desconto_percentual, mensagem: row.mensagem, data_fim: row.data_fim
-          })
-        );
-        await db.query(`UPDATE ofertas SET email_novidade_enviado = true WHERE id = $1`, [row.id]);
-        console.log(`[Novidades Cron] Oferta → modelo ${row.modelo_id} (oferta #${row.id})`);
-      } catch (err) {
-        console.error(`[Novidades Cron] Erro oferta ${row.id}:`, err.message);
-      }
-    }
-
-    console.log("✅ [Novidades Cron] Processamento concluído.");
+    console.log("✅ [Digest Diário] Processamento concluído.");
   } catch (err) {
-    console.error("🔥 [Novidades Cron] Erro geral:", err.message);
+    console.error("🔥 [Digest Diário] Erro geral:", err.message);
   }
 }
 
-// Executa a cada 6 horas (00h, 06h, 12h, 18h)
-cron.schedule("0 */6 * * *", processarNovidadesParaEmail);
+// Executa uma vez por dia às 21h (horário do servidor)
+cron.schedule("0 21 * * *", processarNovidadesParaEmail);
 
 // ===========================
 // DIGEST SEMANAL → NÃO ASSINANTES

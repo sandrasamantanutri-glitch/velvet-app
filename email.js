@@ -3,7 +3,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 const HEADER = `
   <div style="background:#ffffff;border-radius:14px 14px 0 0;padding:20px 32px;text-align:center;border-bottom:1px solid #e5d9ff;">
-    <img src="https://www.velvet.lat/assets/velvet.png" alt="Velvet" width="116" height="32" style="display:inline-block;">
+     <p style="margin:0;font-weight:bold;color:#7B2CFF;font-size:15px;">Velvet</p>
   </div>
 `;
 
@@ -930,6 +930,68 @@ async function enviarCampanhaNovidadeOferta({ audience_id, nome_modelo, modelo_i
 }
 
 // ─────────────────────────────────────────────────────────────
+// DIGEST DIÁRIO — todas as novidades do dia em 1 email por modelo
+// ─────────────────────────────────────────────────────────────
+
+async function enviarCampanhaDigestDiario({ audience_id, nome_modelo, modelo_id, feed_qtd, chat_qtd, premiums, oferta }) {
+  const secoes = [];
+
+  if (feed_qtd > 0) {
+    const plural = feed_qtd === 1 ? "foto nova" : "fotos novas";
+    secoes.push(`
+      <div style="background:#f8f4ff;border-left:4px solid #7B2CFF;border-radius:0 10px 10px 0;padding:14px 18px;margin:0 0 14px;">
+        <p style="margin:0;color:#4b2a7b;">📸 <strong>${feed_qtd} ${plural}</strong> no feed VIP exclusivo</p>
+      </div>
+    `);
+  }
+
+  if (chat_qtd > 0) {
+    const plural = chat_qtd === 1 ? "mídia nova" : "mídias novas";
+    secoes.push(`
+      <div style="background:#f8f4ff;border-left:4px solid #7B2CFF;border-radius:0 10px 10px 0;padding:14px 18px;margin:0 0 14px;">
+        <p style="margin:0;color:#4b2a7b;">🔥 <strong>${chat_qtd} ${plural}</strong> disponíveis para desbloqueio no chat</p>
+      </div>
+    `);
+  }
+
+  for (const p of premiums || []) {
+    const precoFmt = Number(p.preco || 0).toFixed(2).replace(".", ",");
+    secoes.push(`
+      <div style="background:#fff7fb;border-left:4px solid #c2185b;border-radius:0 10px 10px 0;padding:14px 18px;margin:0 0 14px;">
+        <p style="margin:0;color:#7a1f52;">💎 <strong>Conteúdo Premium:</strong> ${p.descricao || "nova mídia exclusiva"} — R$ ${precoFmt}</p>
+      </div>
+    `);
+  }
+
+  if (oferta) {
+    const dataFmt = new Date(oferta.data_fim).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+    secoes.push(`
+      <div style="background:#fff7fb;border-left:4px solid #c2185b;border-radius:0 10px 10px 0;padding:14px 18px;margin:0 0 14px;">
+        <p style="margin:0;color:#7a1f52;">🎉 <strong>${oferta.desconto_percentual}% de desconto</strong> na assinatura VIP${oferta.mensagem ? ` — ${oferta.mensagem}` : ""} (válido até ${dataFmt})</p>
+      </div>
+    `);
+  }
+
+  if (!secoes.length) return null;
+
+  const html = wrapEmail(`
+    <h2 style="color:#7B2CFF;text-align:center;margin:0 0 6px;">✨ Novidades de hoje de ${nome_modelo}</h2>
+    <p style="text-align:center;color:#6b5a7d;margin:0 0 24px;">
+      Confira tudo que foi publicado hoje só para você, assinante VIP.
+    </p>
+    ${secoes.join("")}
+    ${btnPrimary(`https://velvet.lat/perfil.html?modelo_id=${modelo_id}`, "Ver no perfil")}
+  `);
+
+  return enviarCampanhaVIP({
+    audience_id,
+    subject: `✨ ${nome_modelo} tem novidades hoje para você`,
+    html,
+    nome_campanha: `Digest diário — ${nome_modelo} — ${new Date().toLocaleDateString("pt-BR")}`
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
 // AUDIENCE GLOBAL — clientes que ainda não são VIP de ninguém
 // ─────────────────────────────────────────────────────────────
 
@@ -1032,6 +1094,7 @@ module.exports = {
   enviarCampanhaNovidadePremium,
   enviarCampanhaNovidadeChat,
   enviarCampanhaNovidadeOferta,
+  enviarCampanhaDigestDiario,
   obterOuCriarAudienceNaoAssinantes,
   enviarCampanhaNovidadesSemanais
 };
