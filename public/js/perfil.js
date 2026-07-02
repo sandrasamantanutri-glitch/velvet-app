@@ -1289,24 +1289,11 @@ async function carregarPremium() {
         return `
           <div class="carousel-item">
             ${
-              ehVideo
-                ? `
-                  <video
-                    src="${url}"
-                    poster="${thumb}"
-                    muted
-                    playsinline
-                    preload="none"
-                  ></video>
-                `
-                : `
-                  <img
-                    src="${thumb}"
-                    alt="Post premium"
-                    loading="eager"
-                    onerror="this.onerror=null;this.src='/assets/premium-locked.jpg';"
-                  >
-                `
+              m.__somenteThumb
+                ? `<div class="feed-placeholder-locked"></div>`
+                : ehVideo
+                  ? `<video src="${url}" poster="${thumb}" muted playsinline preload="none"></video>`
+                  : `<img src="${thumb}" alt="Post premium" loading="eager">`
             }
           </div>
         `;
@@ -1935,7 +1922,7 @@ function getThumbPremium(media = {}, item = {}) {
     }
   }
 
-  return "/assets/premium-locked.jpg";
+  return "";
 }
 
 // ===============================
