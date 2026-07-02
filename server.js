@@ -4650,6 +4650,9 @@ socket.on("getHistory", async ({ cliente_id, modelo_id, offset = 0, limit = 20 }
         modelo_id: modeloIdNum
       });
 
+      // Modelo dona do chat sempre vê suas próprias mídias sem restrição
+      const ehModeloLogada = socket.user.role === "modelo";
+
       for (const msg of mensagensConteudo) {
         const midias = mapaMidias[msg.id] || [];
         const pago = Number(msg.preco) > 0 ? pagosSet.has(Number(msg.id)) : true;
@@ -4659,12 +4662,12 @@ socket.on("getHistory", async ({ cliente_id, modelo_id, offset = 0, limit = 20 }
           const jaPossuia = ehPPVMass
             ? conteudosPossuidosSet.has(Number(midia.conteudo_id))
             : false;
-          const liberado = pago || jaPossuia;
+          const liberado = ehModeloLogada || pago || jaPossuia;
 
           return {
             conteudo_id:   midia.conteudo_id,
             tipo_media:    midia.tipo_media,
-            thumbnail_url: liberado ? midia.thumbnail_url : getPreviewUrl(midia.url, midia.thumbnail_url),
+            thumbnail_url: midia.thumbnail_url,
             url:           liberado ? midia.url : null,
             ja_possuia:    jaPossuia,
             liberado,
@@ -4675,8 +4678,8 @@ socket.on("getHistory", async ({ cliente_id, modelo_id, offset = 0, limit = 20 }
         msg.quantidade = msg.midias.length;
 
         if (Number(msg.preco) > 0) {
-          msg.liberado = pago;
-          msg.bloqueado = !pago;
+          msg.liberado = ehModeloLogada || pago;
+          msg.bloqueado = !msg.liberado;
           msg.tem_parcial_liberado = msg.midias.some(m => m.liberado);
           msg.tem_parcial_bloqueado = msg.midias.some(m => m.bloqueado);
         } else {
