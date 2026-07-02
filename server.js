@@ -769,6 +769,8 @@ app.post("/api/webhook/ipag", express.raw({ type: "*/*" }), async (req, res) => 
 
   const rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.from(JSON.stringify(req.body || {}));
 
+  // Verificação de assinatura HMAC — quando configurada, é suficiente para autenticar o webhook.
+  let hmacVerificado = false;
   if (process.env.IPAG_API_KEY) {
     const assinaturaRecebida = String(req.headers["x-ipag-signature"] || "");
     const assinaturaCalculada = crypto
@@ -789,6 +791,9 @@ app.post("/api/webhook/ipag", express.raw({ type: "*/*" }), async (req, res) => 
       console.warn("🚨 Webhook iPag: assinatura inválida");
       return res.status(400).send("invalid signature");
     }
+
+    hmacVerificado = true;
+    console.log("✅ Webhook iPag: assinatura HMAC válida");
   }
 
   let body;
@@ -814,9 +819,9 @@ app.post("/api/webhook/ipag", express.raw({ type: "*/*" }), async (req, res) => 
   const isPaidEvent   = PAID_CODES.includes(statusCode);
   const isFailedEvent = FAILED_CODES.includes(statusCode);
 
-  // Verificação dupla: consulta diretamente a API da iPag para confirmar o status.
-  // Impede que webhooks forjados liberem acesso mesmo sem assinatura válida.
-  if (isPaidEvent) {
+  // Verificação dupla via API iPag — só necessária quando não há HMAC configurado.
+  // Quando HMAC foi verificado acima, o webhook já é autêntico e não precisamos consultar a API.
+  if (isPaidEvent && !hmacVerificado) {
     let statusVerificado = null;
     let capturedVerificado = 0;
     let erroVerificacao = null;
@@ -838,7 +843,6 @@ app.post("/api/webhook/ipag", express.raw({ type: "*/*" }), async (req, res) => 
 
       console.warn(`🚨 Webhook iPag suspeito — tx=${idTx} | ${motivo}`);
 
-      // Tenta descobrir cliente e tipo de pagamento para enriquecer o log
       let clienteIdSuspeito = null;
       let modeloIdSuspeito  = null;
       let tipoPagamento     = "desconhecido";
