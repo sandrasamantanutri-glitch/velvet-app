@@ -4651,8 +4651,8 @@ socket.on("getHistory", async ({ cliente_id, modelo_id, offset = 0, limit = 20 }
           return {
             conteudo_id:   midia.conteudo_id,
             tipo_media:    midia.tipo_media,
-            thumbnail_url: midia.thumbnail_url,
-            url:           liberado ? midia.url : null, // nunca expõe URL antes do pagamento
+            thumbnail_url: liberado ? midia.thumbnail_url : null, // nunca expõe URL antes do pagamento
+            url:           liberado ? midia.url : null,
             ja_possuia:    jaPossuia,
             liberado,
             bloqueado:     !liberado
@@ -4818,7 +4818,7 @@ socket.on("sendConteudo", async ({
 
     // Cliente recebe sem URL enquanto não pagar — busca via /api/chat/conteudo após pagamento
     const midiasParaCliente = precoNum > 0
-      ? midias.map(m => ({ conteudo_id: m.conteudo_id, thumbnail_url: m.thumbnail_url, tipo_media: m.tipo_media, url: null }))
+      ? midias.map(m => ({ conteudo_id: m.conteudo_id, thumbnail_url: null, tipo_media: m.tipo_media, url: null }))
       : midias;
     socket.to(sala).emit("newMessage", { ...payloadBase, midias: midiasParaCliente });
 
@@ -5577,6 +5577,42 @@ app.get("/api/me", auth, async (req, res) => {
 app.get("/api/modelo/publico/:id/feed", async (req, res) => {
   const modeloId = Number(req.params.id);
 
+  // Verifica se o visitante tem VIP ativo para este modelo
+  let podeVer = false;
+  const authHeader = req.headers.authorization || "";
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const uid = Number(decoded?.id || 0);
+      const role = decoded?.role || null;
+
+      if (role === "cliente" && uid) {
+        const clienteRes = await db.query(
+          `SELECT id FROM clientes WHERE user_id = $1 LIMIT 1`, [uid]
+        );
+        const cId = clienteRes.rows[0]?.id;
+        if (cId) {
+          const vipRes = await db.query(
+            `SELECT 1 FROM vip_subscriptions
+             WHERE cliente_id = $1 AND modelo_id = $2
+               AND ativo = true AND expiration_at > NOW()
+             LIMIT 1`,
+            [cId, modeloId]
+          );
+          podeVer = vipRes.rowCount > 0;
+        }
+      } else if (role === "modelo" && uid) {
+        // Modelo sempre vê o próprio feed
+        const mRes = await db.query(
+          `SELECT id FROM modelos WHERE user_id = $1 LIMIT 1`, [uid]
+        );
+        podeVer = Number(mRes.rows[0]?.id) === modeloId;
+      }
+    } catch (_) {}
+  }
+
   const { rows } = await db.query(
     `
     SELECT c.id, c.url, c.thumbnail_url, c.tipo, c.tipo_conteudo, c.preco, c.descricao
@@ -5593,7 +5629,16 @@ app.get("/api/modelo/publico/:id/feed", async (req, res) => {
     [modeloId]
   );
 
-  res.json(rows);
+  // Entrega URLs apenas para quem tem VIP ativo — não-VIP recebe só metadados
+  res.json(rows.map(r => ({
+    id:           r.id,
+    tipo:         r.tipo,
+    tipo_conteudo: r.tipo_conteudo,
+    preco:        r.preco,
+    descricao:    r.descricao,
+    url:          podeVer ? r.url          : null,
+    thumbnail_url: podeVer ? r.thumbnail_url : null,
+  })));
 });
 
 // ===========================
@@ -6573,9 +6618,9 @@ app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
 
       return {
         conteudo_id:   conteudoId,
-        url:           jaPossuia ? row.url : null, // nunca expõe URL antes do pagamento
+        url:           jaPossuia ? row.url : null,
         tipo_media:    row.tipo_media,
-        thumbnail_url: row.thumbnail_url,
+        thumbnail_url: jaPossuia ? row.thumbnail_url : null, // nunca expõe URL antes do pagamento
         ja_possuia:    jaPossuia,
         liberado:      jaPossuia,
         bloqueado:     !jaPossuia
@@ -7320,7 +7365,17 @@ app.get("/api/modelo/publico/:modelo_id/premium", async (req, res) => {
                 ) THEN pm.url
                 ELSE NULL
               END,
-              'thumb_url', pm.thumb_url,
+              'thumb_url', CASE
+                WHEN $2 = true THEN pm.thumb_url
+                WHEN $3::bigint IS NOT NULL AND EXISTS (
+                  SELECT 1
+                  FROM premium_unlocks pu
+                  WHERE pu.premium_post_id = p.id
+                    AND pu.cliente_id = $3
+                    AND pu.status = 'pago'
+                ) THEN pm.thumb_url
+                ELSE NULL
+              END,
               'tipo', pm.tipo,
               'ordem', pm.ordem
             )

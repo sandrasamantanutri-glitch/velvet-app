@@ -1085,34 +1085,31 @@ async function carregarFeed() {
       }
 
       const url = item.url || "";
-      const thumb = item.thumbnail_url || url;
+      const thumb = item.thumbnail_url || "";
 
-      const ehVideo =
-        url.includes(".mp4") ||
-        url.includes(".webm") ||
-        url.includes(".mov") ||
-        url.includes("videodelivery.net");
-
-      if (ehVideo) {
-        let thumbnail = thumb;
-
-        if (url.includes("videodelivery.net")) {
-
-          const videoId = url.split("videodelivery.net/")[1];
-
-          thumbnail = `https://videodelivery.net/${videoId}/thumbnails/thumbnail.jpg`;
-
-        }
-
-        div.innerHTML = `
-          <img src="${thumbnail}">
-          <span class="video-icon">▶</span>
-        `;
-
+      // Backend só entrega URLs para VIP — se null, mostra placeholder CSS puro
+      if (!url && !thumb) {
+        div.innerHTML = `<div class="feed-placeholder-locked"></div>`;
       } else {
+        const ehVideo =
+          url.includes(".mp4") ||
+          url.includes(".webm") ||
+          url.includes(".mov") ||
+          url.includes("videodelivery.net");
 
-        div.innerHTML = `<img src="${thumb}">`;
-
+        if (ehVideo) {
+          let thumbnail = thumb;
+          if (url.includes("videodelivery.net")) {
+            const videoId = url.split("videodelivery.net/")[1];
+            thumbnail = `https://videodelivery.net/${videoId}/thumbnails/thumbnail.jpg`;
+          }
+          div.innerHTML = `
+            <img src="${thumbnail}">
+            <span class="video-icon">▶</span>
+          `;
+        } else {
+          div.innerHTML = `<img src="${thumb || url}">`;
+        }
       }
 
       div.onclick = () => {
