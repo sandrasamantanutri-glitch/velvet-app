@@ -868,24 +868,25 @@ app.post("/api/webhook/ipag", express.raw({ type: "*/*" }), async (req, res) => 
         }
       } catch (_) {}
 
+      // Loga e notifica para investigação — mas NÃO bloqueia a liberação.
+      // Cliente já pagou: melhor liberar e investigar depois do que punir quem pagou.
       registrarLog(db, {
         tipo:       'webhook_suspeito_ipag',
         cliente_id: clienteIdSuspeito,
         modelo_id:  modeloIdSuspeito,
-        descricao:  `[${tipoPagamento.toUpperCase()}] tx=${idTx} — ${motivo}`,
+        descricao:  `[${tipoPagamento.toUpperCase()}] tx=${idTx} — ${motivo} (conteúdo liberado mesmo assim)`,
         ip:         req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.ip || null,
         user_agent: req.headers["user-agent"] || null
       });
 
-      const io = req.app.get("io");
-      criarNotificacaoAdmin(db, io, {
+      const ioSusp = req.app.get("io");
+      criarNotificacaoAdmin(db, ioSusp, {
         tipo:         'webhook_suspeito_ipag',
         referencia_id: clienteIdSuspeito,
-        titulo:       `🚨 Webhook iPag suspeito — ${tipoPagamento}`,
-        mensagem:     `tx=${idTx} | ${motivo}`
+        titulo:       `⚠️ Webhook iPag suspeito (liberado) — ${tipoPagamento}`,
+        mensagem:     `tx=${idTx} | ${motivo} | Conteúdo liberado — verifique depois`
       });
-
-      return res.status(200).send("ok");
+      // Continua para liberar o conteúdo normalmente
     }
 
     console.log(`✅ iPag API confirmou pagamento: tx=${idTx} status=${statusVerificado} captured=${capturedVerificado}`);
