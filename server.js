@@ -8633,7 +8633,7 @@ app.post("/api/register", authLimiter, async (req, res) => {
 
     const bloqueadoRes = await db.query(
       `SELECT 1 FROM clientes_bloqueados_cadastro
-       WHERE ativo = true AND bloqueado = true
+       WHERE bloqueado = true
          AND (
            LOWER(email) = LOWER($1)
            OR (LOWER(nome_completo) = LOWER($2) AND data_nascimento = $3)
