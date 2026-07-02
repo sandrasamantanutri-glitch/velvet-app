@@ -1093,9 +1093,10 @@ async function carregarFeed() {
         // Sem preview disponível — placeholder CSS puro
         div.innerHTML = `<div class="feed-placeholder-locked"></div>`;
       } else if (!url && thumb) {
-        // Preview borrado (variant thumbnail do CF Images) para não-VIP
+        // Preview borrado para não-VIP (thumbnail 40x40 com blur CSS)
         div.innerHTML = `<img src="${thumb}" class="feed-preview-borrado">`;
       } else {
+        // VIP / modelo: usa a URL original (qualidade total)
         const ehVideo =
           url.includes(".mp4") ||
           url.includes(".webm") ||
@@ -1113,7 +1114,7 @@ async function carregarFeed() {
             <span class="video-icon">▶</span>
           `;
         } else {
-          div.innerHTML = `<img src="${thumb || url}">`;
+          div.innerHTML = `<img src="${url}">`;
         }
       }
 

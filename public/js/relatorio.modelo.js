@@ -544,7 +544,7 @@ function imprimirRelatorio() {
     const libAntEl = document.getElementById("liberadoMesAnterior");
     libAntNum = parseReais(libAntEl);
     if (libAntNum > 0) {
-      libAntHTML = `<div class="print-linha sub"><span>Liberado mês anterior</span><span>${libAntEl?.textContent || emReais(libAntNum)}</span></div>`;
+      libAntHTML = `<div class="print-linha sub"><span>Liberado mês anterior </span><span>${libAntEl?.textContent || emReais(libAntNum)}</span></div>`;
     }
   }
 
@@ -559,11 +559,11 @@ function imprimirRelatorio() {
     <div class="print-modelo">Modelo: <strong>${nomeModelo}</strong> &nbsp;·&nbsp; ID: <strong>#${modeloId}</strong></div>
 
     <div class="print-sec">Ganhos do mês</div>
-    <div class="print-linha"><span>Ganhos Totais</span><span>${total}</span></div>
-    <div class="print-linha sub"><span>Assinaturas</span><span>${ass}</span></div>
-    <div class="print-linha sub"><span>Mídias</span><span>${midias}</span></div>
+    <div class="print-linha"><span>Ganhos Totais:</span><span>${total}</span></div>
+    <div class="print-linha sub"><span>Assinaturas: </span><span>${ass}</span></div>
+    <div class="print-linha sub"><span>Mídias: </span><span>${midias}</span></div>
     ${cbTotal > 0 ? `<div class="print-linha sub neg"><span>Chargebacks</span><span>− ${emReais(cbTotal)}</span></div>` : ""}
-    ${bloqueadoNum > 0 ? `<div class="print-linha sub hold"><span>Pendentes de Liberação</span><span>${emReais(bloqueadoNum)}</span></div>` : ""}
+    ${bloqueadoNum > 0 ? `<div class="print-linha sub hold"><span>Pendentes de Liberação </span><span>${emReais(bloqueadoNum)}</span></div>` : ""}
     ${libAntHTML}
 
     <div class="print-linha total"><span>Ganhos Líquidos</span><span>${emReais(liquidoNum)}</span></div>

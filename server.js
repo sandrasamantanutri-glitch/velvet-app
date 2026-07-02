@@ -5616,13 +5616,16 @@ app.get("/api/modelo/publico/:id/feed", async (req, res) => {
           podeVer = vipRes.rowCount > 0;
         }
       } else if (role === "modelo" && uid) {
-        // Modelo sempre vê o próprio feed
+        // Modelo logada vê o próprio feed
         const mRes = await db.query(
           `SELECT id FROM modelos WHERE user_id = $1 LIMIT 1`, [uid]
         );
-        podeVer = Number(mRes.rows[0]?.id) === modeloId;
+        const mId = Number(mRes.rows[0]?.id || 0);
+        podeVer = mId > 0 && mId === modeloId;
       }
-    } catch (_) {}
+    } catch (err) {
+      console.error("[feed/podeVer] erro ao verificar acesso:", err.message);
+    }
   }
 
   const { rows } = await db.query(
