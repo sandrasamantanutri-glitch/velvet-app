@@ -1270,11 +1270,12 @@ async function carregarPremium() {
         ? mediasBase
         : mediasBase.map(m => ({
             ...m,
+            url: null,          // nunca expõe URL antes do pagamento
             __somenteThumb: true
           }));
 
       const mediaHTML = medias.map((m, i) => {
-        const url = m.url || "";
+        const url = m.__somenteThumb ? "" : (m.url || "");
         const thumb = getThumbPremium(m, item);
         const ehVideo = !m.__somenteThumb && ehVideoUrl(url);
 

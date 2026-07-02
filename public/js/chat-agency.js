@@ -615,10 +615,10 @@ function renderMensagem(msg) {
         <div class="pacote-grid">
           ${(msg.midias || []).map((m, index) => `
             <div class="midia-item lazy-midia"
-              data-thumb="${m.thumbnail_url || m.url}"
-              data-full="${m.url}"
+              data-thumb="${m.thumbnail_url || ""}"
+              data-full="${bloqueado ? "" : (m.url || "")}"
               data-index="${index}"
-              style="background-image:url('${m.thumbnail_url || m.url}')">
+              style="${m.thumbnail_url ? `background-image:url('${m.thumbnail_url}')` : ""}">
             </div>
           `).join("")}
         </div>
@@ -699,10 +699,10 @@ function criarMensagemElemento(msg) {
         <div class="pacote-grid">
           ${(msg.midias || []).map((m, index) => `
             <div class="midia-item lazy-midia"
-              data-thumb="${m.thumbnail_url || m.url}"
-              data-full="${m.url}"
+              data-thumb="${m.thumbnail_url || ""}"
+              data-full="${bloqueado ? "" : (m.url || "")}"
               data-index="${index}"
-              style="background-image:url('${m.thumbnail_url || m.url}')">
+              style="${m.thumbnail_url ? `background-image:url('${m.thumbnail_url}')` : ""}">
             </div>
           `).join("")}
         </div>

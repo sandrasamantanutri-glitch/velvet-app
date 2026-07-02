@@ -4800,7 +4800,7 @@ socket.on("sendConteudo", async ({
     );
 
     // 🔥 CHAT
-    io.to(sala).emit("newMessage", {
+    const payloadBase = {
       id: message.id,
       cliente_id: clienteIdNum,
       modelo_id: modeloIdNum,
@@ -4809,10 +4809,18 @@ socket.on("sendConteudo", async ({
       preco: precoNum,
       visto: false,
       quantidade: midias.length,
-      midias,
       bloqueado: precoNum > 0,
       created_at: message.created_at
-    });
+    };
+
+    // Modelo (remetente) recebe URLs completas — é dono do conteúdo
+    socket.emit("newMessage", { ...payloadBase, midias });
+
+    // Cliente recebe sem URL enquanto não pagar — busca via /api/chat/conteudo após pagamento
+    const midiasParaCliente = precoNum > 0
+      ? midias.map(m => ({ conteudo_id: m.conteudo_id, thumbnail_url: m.thumbnail_url, tipo_media: m.tipo_media, url: null }))
+      : midias;
+    socket.to(sala).emit("newMessage", { ...payloadBase, midias: midiasParaCliente });
 
     // 🔔 INBOX MODELO
     io.to(`inbox_modelo_${modeloIdNum}`).emit("inboxMessage", {
