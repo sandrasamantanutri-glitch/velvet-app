@@ -1253,7 +1253,7 @@ router.get("/content/transacoes", (req, res) => {
 router.get("/modelo/financeiro", authModelo, async (req, res) => {
   try {
     const modeloRes = await db.query(
-      "SELECT id FROM modelos WHERE user_id = $1",
+      "SELECT id, nome_exibicao, nome FROM modelos WHERE user_id = $1",
       [req.user.id]
     );
 
@@ -1261,7 +1261,8 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
       return res.status(404).json({ error: "Modelo não encontrada" });
     }
 
-    const modelo_id = modeloRes.rows[0].id;
+    const modelo_id  = modeloRes.rows[0].id;
+    const modeloNome = modeloRes.rows[0].nome_exibicao || modeloRes.rows[0].nome || `Modelo #${modelo_id}`;
 
     const mesFiltroParam = req.query.mes;
     if (mesFiltroParam && /^\d{4}-(0[1-9]|1[0-2])$/.test(mesFiltroParam)) {
@@ -1292,7 +1293,8 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
       return res.json({
         filtroMes: mesFiltroParam,
         mes: { midias: mesMidias, assinaturas: mesAssinaturas },
-        bloqueado: { mes: Number(row.bloqueado_mes || 0) }
+        bloqueado: { mes: Number(row.bloqueado_mes || 0) },
+        modelo: { id: modelo_id, nome: modeloNome }
       });
     }
 
@@ -1427,7 +1429,8 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
         hoje: Number(r.bloqueado_hoje || 0),
         mes: Number(r.bloqueado_mes || 0),
         mesAnterior: Number(r.bloqueado_mes_anterior || 0)
-      }
+      },
+      modelo: { id: modelo_id, nome: modeloNome }
     });
   } catch (err) {
     console.error("Erro /modelo/financeiro:", err);

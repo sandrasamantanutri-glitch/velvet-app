@@ -80,6 +80,11 @@ async function carregarResumoModelo(mes = null) {
     if (!res.ok) return;
     const data = await res.json();
 
+    if (data.modelo) {
+      window._modeloNome = data.modelo.nome;
+      window._modeloId   = data.modelo.id;
+    }
+
     const midias       = Number(data.mes?.midias      || 0);
     const assinaturas  = Number(data.mes?.assinaturas || 0);
     const bloqueadoMes = Number(data.bloqueado?.mes   || 0);
@@ -511,54 +516,57 @@ async function carregarDadosBancarios() {
 function imprimirRelatorio() {
   const sel = document.getElementById("filtroMes");
   const mes = sel ? sel.value : obterMesAtualSP();
-
   const mesNome = nomeMes(mes);
 
-  const totalEl = document.getElementById("totalMesAtual");
-  const midiasEl = document.getElementById("mesMidias");
-  const assEl = document.getElementById("mesAssinaturas");
+  const totalEl     = document.getElementById("totalMesAtual");
+  const midiasEl    = document.getElementById("mesMidias");
+  const assEl       = document.getElementById("mesAssinaturas");
+  const bloqueadoEl = document.getElementById("bloqueadoMes");
 
-  const total = totalEl?.textContent || "R$ 0,00";
+  const total  = totalEl?.textContent  || "R$ 0,00";
   const midias = midiasEl?.textContent || "R$ 0,00";
-  const ass = assEl?.textContent || "R$ 0,00";
-
+  const ass    = assEl?.textContent    || "R$ 0,00";
   const cbTotal = window.cbTotalMes || 0;
 
-  // Liberado mês anterior (só mostra se for mês atual)
-  const mesAtual = obterMesAtualSP();
-  let libAntHTML = "";
-  if (mes === mesAtual) {
-    const libAntEl = document.getElementById("liberadoMesAnterior");
-    const libAnt = libAntEl?.textContent || "R$ 0,00";
-    const libAntNum = parseFloat(libAntEl?.textContent?.replace(/[R$\s.]/g, "").replace(",", ".") || "0");
-    if (libAntNum > 0) {
-      libAntHTML = `<div class="print-linha"><span>Liberado mês anterior</span><span>${libAnt}</span></div>`;
-    }
-  }
-
-  // Calcular líquido a partir dos valores do DOM
   function parseReais(el) {
     if (!el) return 0;
     return parseFloat(el.textContent.replace(/[R$\s]/g, "").replace(/\./g, "").replace(",", ".")) || 0;
   }
 
-  const midiasNum = parseReais(midiasEl);
-  const assNum    = parseReais(assEl);
-  const libAntNum = mes === mesAtual ? parseReais(document.getElementById("liberadoMesAnterior")) : 0;
+  const midiasNum    = parseReais(midiasEl);
+  const assNum       = parseReais(assEl);
+  const bloqueadoNum = parseReais(bloqueadoEl);
+
+  const mesAtual = obterMesAtualSP();
+  let libAntNum = 0;
+  let libAntHTML = "";
+  if (mes === mesAtual) {
+    const libAntEl = document.getElementById("liberadoMesAnterior");
+    libAntNum = parseReais(libAntEl);
+    if (libAntNum > 0) {
+      libAntHTML = `<div class="print-linha sub"><span>Liberado mês anterior</span><span>${libAntEl?.textContent || emReais(libAntNum)}</span></div>`;
+    }
+  }
+
   const liquidoNum = midiasNum + assNum + libAntNum - cbTotal;
+
+  const nomeModelo = window._modeloNome || "—";
+  const modeloId   = window._modeloId   || "—";
 
   document.getElementById("printConteudo").innerHTML = `
     <div class="print-titulo">Relatório de Ganhos</div>
     <div class="print-sub">${mesNome}</div>
+    <div class="print-modelo">Modelo: <strong>${nomeModelo}</strong> &nbsp;·&nbsp; ID: <strong>#${modeloId}</strong></div>
 
     <div class="print-sec">Ganhos do mês</div>
-    <div class="print-linha"><span>Total bruto (pago + chargebacks)</span><span>${total}</span></div>
-    <div class="print-linha"><span>Mídias pagas</span><span>${midias}</span></div>
-    <div class="print-linha"><span>Assinaturas pagas</span><span>${ass}</span></div>
+    <div class="print-linha"><span>Ganhos Totais</span><span>${total}</span></div>
+    <div class="print-linha sub"><span>Assinaturas</span><span>${ass}</span></div>
+    <div class="print-linha sub"><span>Mídias</span><span>${midias}</span></div>
+    ${cbTotal > 0 ? `<div class="print-linha sub neg"><span>Chargebacks</span><span>− ${emReais(cbTotal)}</span></div>` : ""}
+    ${bloqueadoNum > 0 ? `<div class="print-linha sub hold"><span>Pendentes de Liberação</span><span>${emReais(bloqueadoNum)}</span></div>` : ""}
     ${libAntHTML}
-    ${cbTotal > 0 ? `<div class="print-linha neg"><span>Chargebacks</span><span>− ${emReais(cbTotal)}</span></div>` : ""}
 
-    <div class="print-linha total"><span>Líquido</span><span>${emReais(liquidoNum)}</span></div>
+    <div class="print-linha total"><span>Ganhos Líquidos</span><span>${emReais(liquidoNum)}</span></div>
   `;
 
   window.print();

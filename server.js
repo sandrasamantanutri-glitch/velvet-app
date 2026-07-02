@@ -3815,6 +3815,18 @@ async function criarPixSafe2Pay({ valorTotal, nome, email, cpf, telefone, endere
 }
 */
 
+// Deriva URL de preview (variant pequena) para conteúdo bloqueado.
+// Para imagens CF Images: troca /public → /thumbnail (ou CF_PREVIEW_VARIANT).
+// Para vídeos CF Stream: já tem thumbnail próprio — retorna null (sem preview de vídeo).
+function getPreviewUrl(url) {
+  if (!url) return null;
+  if (url.includes("imagedelivery.net")) {
+    const variant = process.env.CF_PREVIEW_VARIANT || "thumbnail";
+    return url.replace(/\/[^/]+$/, "/" + variant);
+  }
+  return null; // vídeo: não expõe thumbnail
+}
+
 // ── iPag PIX ──────────────────────────────────────────────────────────────────
 const IPAG_BASE = process.env.IPAG_BASE_URL || "https://api.ipag.com.br";
 
@@ -4651,7 +4663,7 @@ socket.on("getHistory", async ({ cliente_id, modelo_id, offset = 0, limit = 20 }
           return {
             conteudo_id:   midia.conteudo_id,
             tipo_media:    midia.tipo_media,
-            thumbnail_url: liberado ? midia.thumbnail_url : null, // nunca expõe URL antes do pagamento
+            thumbnail_url: liberado ? midia.thumbnail_url : getPreviewUrl(midia.url),
             url:           liberado ? midia.url : null,
             ja_possuia:    jaPossuia,
             liberado,
@@ -4816,9 +4828,9 @@ socket.on("sendConteudo", async ({
     // Modelo (remetente) recebe URLs completas — é dono do conteúdo
     socket.emit("newMessage", { ...payloadBase, midias });
 
-    // Cliente recebe sem URL enquanto não pagar — busca via /api/chat/conteudo após pagamento
+    // Cliente recebe preview borrado enquanto não pagar — URL real só após confirmação
     const midiasParaCliente = precoNum > 0
-      ? midias.map(m => ({ conteudo_id: m.conteudo_id, thumbnail_url: null, tipo_media: m.tipo_media, url: null }))
+      ? midias.map(m => ({ conteudo_id: m.conteudo_id, thumbnail_url: getPreviewUrl(m.url), tipo_media: m.tipo_media, url: null }))
       : midias;
     socket.to(sala).emit("newMessage", { ...payloadBase, midias: midiasParaCliente });
 
@@ -5629,15 +5641,15 @@ app.get("/api/modelo/publico/:id/feed", async (req, res) => {
     [modeloId]
   );
 
-  // Entrega URLs apenas para quem tem VIP ativo — não-VIP recebe só metadados
+  // VIP vê URLs reais; não-VIP recebe preview borrado (variant pequena do CF Images)
   res.json(rows.map(r => ({
-    id:           r.id,
-    tipo:         r.tipo,
+    id:            r.id,
+    tipo:          r.tipo,
     tipo_conteudo: r.tipo_conteudo,
-    preco:        r.preco,
-    descricao:    r.descricao,
-    url:          podeVer ? r.url          : null,
-    thumbnail_url: podeVer ? r.thumbnail_url : null,
+    preco:         r.preco,
+    descricao:     r.descricao,
+    url:           podeVer ? r.url           : null,
+    thumbnail_url: podeVer ? r.thumbnail_url : getPreviewUrl(r.url),
   })));
 });
 
@@ -6620,7 +6632,7 @@ app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
         conteudo_id:   conteudoId,
         url:           jaPossuia ? row.url : null,
         tipo_media:    row.tipo_media,
-        thumbnail_url: jaPossuia ? row.thumbnail_url : null, // nunca expõe URL antes do pagamento
+        thumbnail_url: jaPossuia ? row.thumbnail_url : getPreviewUrl(row.url),
         ja_possuia:    jaPossuia,
         liberado:      jaPossuia,
         bloqueado:     !jaPossuia
@@ -8263,6 +8275,7 @@ app.post("/api/upload", auth, authModelo, uploadLimiter, uploadB2.array("file", 
 
         if (tipo === "imagem") {
 
+          // Upload da imagem original
           const form = new FormData();
           form.append("file", file.buffer, file.originalname);
 
@@ -8282,11 +8295,39 @@ app.post("/api/upload", auth, authModelo, uploadLimiter, uploadB2.array("file", 
           }
 
           const imageId = response.data.result.id;
+          publicUrl = `https://imagedelivery.net/${process.env.CF_ACCOUNT_HASH}/${imageId}/public`;
 
-          publicUrl =
-            `https://imagedelivery.net/${process.env.CF_ACCOUNT_HASH}/${imageId}/public`;
+          // Gera thumbnail 40x40 com sharp e faz upload separado como preview borrado
+          try {
+            const sharp = require("sharp");
+            const thumbBuffer = await sharp(file.buffer)
+              .resize(40, 40, { fit: "cover" })
+              .jpeg({ quality: 60 })
+              .toBuffer();
 
-            thumbnailUrl = publicUrl;
+            const thumbFilename = `thumb_${Date.now()}.jpg`;
+            const formThumb = new FormData();
+            formThumb.append("file", thumbBuffer, thumbFilename);
+
+            const thumbResponse = await axios.post(
+              `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT_ID}/images/v1`,
+              formThumb,
+              {
+                headers: {
+                  Authorization: `Bearer ${process.env.CF_IMAGES_TOKEN}`,
+                  ...formThumb.getHeaders()
+                }
+              }
+            );
+
+            if (thumbResponse.data && thumbResponse.data.success) {
+              const thumbId = thumbResponse.data.result.id;
+              thumbnailUrl = `https://imagedelivery.net/${process.env.CF_ACCOUNT_HASH}/${thumbId}/public`;
+            }
+          } catch (thumbErr) {
+            console.error("Erro ao gerar thumbnail:", thumbErr.message);
+            // fallback: sem thumbnail (conteúdo bloqueado não terá preview)
+          }
         }
 
         if (tipo === "video") {

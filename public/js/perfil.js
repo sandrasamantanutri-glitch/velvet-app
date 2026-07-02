@@ -1062,7 +1062,9 @@ async function carregarFeed() {
 
   try {
 
-    const res = await fetch(`/api/modelo/publico/${modelo_id}/feed`);
+    const feedToken = localStorage.getItem("token");
+    const feedHeaders = feedToken ? { Authorization: "Bearer " + feedToken } : {};
+    const res = await fetch(`/api/modelo/publico/${modelo_id}/feed`, { headers: feedHeaders });
     if (!res.ok) return;
 
     const midias = await res.json();
@@ -1087,9 +1089,12 @@ async function carregarFeed() {
       const url = item.url || "";
       const thumb = item.thumbnail_url || "";
 
-      // Backend só entrega URLs para VIP — se null, mostra placeholder CSS puro
       if (!url && !thumb) {
+        // Sem preview disponível — placeholder CSS puro
         div.innerHTML = `<div class="feed-placeholder-locked"></div>`;
+      } else if (!url && thumb) {
+        // Preview borrado (variant thumbnail do CF Images) para não-VIP
+        div.innerHTML = `<img src="${thumb}" class="feed-preview-borrado">`;
       } else {
         const ehVideo =
           url.includes(".mp4") ||

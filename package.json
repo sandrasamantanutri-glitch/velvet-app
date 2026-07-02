@@ -16,8 +16,7 @@
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
-    "@capacitor/cli": "^6.0.0",
-    "sharp": "^0.34.5"
+    "@capacitor/cli": "^6.0.0"
   },
   "dependencies": {
     "@capacitor/android": "^6.0.0",
@@ -59,6 +58,7 @@
     "resend": "^6.9.3",
     "socket.io": "^4.7.5",
     "stripe": "^20.1.0",
+    "sharp": "^0.34.5",
     "web-push": "^3.6.7"
   }
 }
