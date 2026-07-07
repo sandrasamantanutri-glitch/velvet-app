@@ -10027,6 +10027,15 @@ if (Number.isNaN(dataAceite.getTime())) {
       return res.status(403).json({ error: "Conta bloqueada." });
     }
 
+    const riscoVipPix = await client.query(
+      `SELECT 1 FROM cliente_risco WHERE cliente_id = $1 AND ativo = true LIMIT 1`,
+      [cliente_id]
+    );
+    if (riscoVipPix.rowCount > 0) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ error: "Compras temporariamente bloqueadas para esta conta." });
+    }
+
     const nomeFinal = String(nome || "").trim() || "Cliente Velvet";
     const emailFinal = String(email || "").trim();
 
@@ -10384,6 +10393,15 @@ if (Number.isNaN(dataAceite.getTime())) {
       return res.status(403).json({ error: "Conta bloqueada." });
     }
 
+    const riscoMidiaPix = await client.query(
+      `SELECT 1 FROM cliente_risco WHERE cliente_id = $1 AND ativo = true LIMIT 1`,
+      [cliente_id]
+    );
+    if (riscoMidiaPix.rowCount > 0) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ error: "Compras temporariamente bloqueadas para esta conta." });
+    }
+
     // Log de aceite de termos antes do pagamento mídia PIX
     registrarLog(db, {
       tipo: 'aceite_termos',
@@ -10727,6 +10745,15 @@ if (Number.isNaN(dataAceite.getTime())) {
     if (bloqueado) {
       await client.query("ROLLBACK");
       return res.status(403).json({ error: "Conta bloqueada." });
+    }
+
+    const riscoPremiumPix = await client.query(
+      `SELECT 1 FROM cliente_risco WHERE cliente_id = $1 AND ativo = true LIMIT 1`,
+      [cliente_id]
+    );
+    if (riscoPremiumPix.rowCount > 0) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ error: "Compras temporariamente bloqueadas para esta conta." });
     }
 
     const nomeFinal = String(nome || "").trim() || "Cliente Velvet";
@@ -11243,6 +11270,15 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
     if (clienteRes.rows[0].bloqueado) {
       await client.query("ROLLBACK");
       return res.status(403).json({ error: "Conta bloqueada." });
+    }
+
+    const riscoVipCartao = await client.query(
+      `SELECT 1 FROM cliente_risco WHERE cliente_id = $1 AND ativo = true LIMIT 1`,
+      [cliente_id]
+    );
+    if (riscoVipCartao.rowCount > 0) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ error: "Compras temporariamente bloqueadas para esta conta." });
     }
 
     if (!emailCliente || !emailCliente.includes("@")) {
@@ -11773,6 +11809,15 @@ app.post("/api/pagamento/midia/cartao", auth, async (req, res) => {
       return res.status(403).json({ error: "Conta bloqueada." });
     }
 
+    const riscoMidiaCartao = await client.query(
+      `SELECT 1 FROM cliente_risco WHERE cliente_id = $1 AND ativo = true LIMIT 1`,
+      [cliente_id]
+    );
+    if (riscoMidiaCartao.rowCount > 0) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ error: "Compras temporariamente bloqueadas para esta conta." });
+    }
+
     const nomeCompleto = String(nome || "").trim();
     if (!nomeCompleto || nomeCompleto.length < 3) {
       await client.query("ROLLBACK");
@@ -12250,6 +12295,15 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
     if (bloqueado) {
       await client.query("ROLLBACK");
       return res.status(403).json({ error: "Conta bloqueada." });
+    }
+
+    const riscoPremiumCartao = await client.query(
+      `SELECT 1 FROM cliente_risco WHERE cliente_id = $1 AND ativo = true LIMIT 1`,
+      [cliente_id]
+    );
+    if (riscoPremiumCartao.rowCount > 0) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ error: "Compras temporariamente bloqueadas para esta conta." });
     }
 
     const nomeCompleto = String(nome || "").trim();
