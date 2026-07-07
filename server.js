@@ -11232,7 +11232,7 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
 
     if (ipBloqueado.rowCount > 0) {
       await client.query("ROLLBACK");
-      return res.status(403).json({ error: "IP bloqueado." });
+      return res.status(403).json({ error: "Conta temporariamente bloqueada para transações." });
     }
 
     /* =====================================================
