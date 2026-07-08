@@ -233,87 +233,13 @@
   }
 
   // ─── AUTO-RESPOSTA ───────────────────────────────────────────────────────────
-  const RESPOSTAS = [
-    {
-      palavras: ["reembolso", "dinheiro de volta", "estorno", "não devolveu", "reembolsar"],
-      texto: "Olá! As solicitações de reembolso, são avaliadas individualmente e conforme nossos Termos de Uso. Indicamos que leia novamente os termos: <a href=\"/terms.html\" target=\"_blank\">Termos de Uso</a>, e verifique se seu pedido se enquadra nas situações elegiveis. Caso acredite que sim, pode dar andamento a seu pedido.\n\nPara isso, envie um e-mail para contato@velvet.lat com:\n• E-mail utilizado na compra(login)\n• Data da cobrança\n• Motivo do pedido\n• Prints que comprovam sua elegibilidade ao reembolso e/ou comprovantes de pagamento.\n\nO prazo de resposta é de 24 a 48 horas úteis!💜"
-    },
-     {
-      palavras: ["golpe", "engano", "não condiz", "nao condiz", "comprei por engano", "propaganda enganosa", "propaganda enganosa", "fui enganado", "fui enganada"],
-      texto: "Olá! A Velvet é uma plataforma que permite a conexão entre criadores e seus fãs, e não somos responsáveis pelas ações de usuários, mas para manter a integridade do nosso circulo social, sua reclamação é considerada e avaliada individualmente.\n\nCaso acredite que a situação deve ser reportada: \n\nEnvie um e-mail para contato@velvet.lat com:\n• E-mail utilizado(login)\n• Motivo do pedido\n• Prints que comprovam seu relato.\n\nO prazo de resposta é de 24 a 48 horas úteis!💜"
-    },
-    {
-      palavras: ["desejo excluir permanente","excluir conta", "apagar conta", "deletar conta", "exclusão de conta", "exclusao de conta", "excluir minha conta", "cancelar conta", "eliminar conta"],
-      texto: "Para excluir sua conta, siga os passos:\n1. Acesse a área do usuário\n2. Vá em Configurações da conta\n3. Role até o final da página\n4. Clique em \"Excluir conta permanentemente\"\n\nSe tiver dificuldades, envie um e-mail para contato@velvet.lat."
-    },
-    {
-      palavras: ["não liberou", "nao liberou", "não ativou", "nao ativou", "paguei e não", "paguei e nao", "vip não ativou", "vip nao ativou", "pagamento não liberou", "pagamento nao liberou", "liberação", "liberacao"],
-      texto: "Lamentamos o transtorno! Para resolver, envie um e-mail para contato@velvet.lat com:\n• Comprovante do pagamento\n• Nome da modelo\n• E-mail da sua conta\n\nNossa equipe verificará e ativará o acesso o mais rápido possível."
-    },
-    {
-      palavras: ["esqueci senha", "esqueci a senha", "recuperar senha", "não consigo entrar", "nao consigo entrar", "esqueci minha senha", "resetar senha"],
-      texto: "Para recuperar sua senha:\n1. Acesse velvet.lat\n2. Clique em \"Esqueci minha senha\"\n3. Digite o e-mail cadastrado\n4. Verifique também a pasta de spam\n\nSe não receber o e-mail, entre em contato pelo contato@velvet.lat."
-    },
-      {
-      palavras: ["minha assinatura", "assinei e não liberou", "assinatura desativada", "meu VIP", "meu vip", "minha assinatura expirou antes"],
-      texto: "Lamentamos o transtorno! Para resolver, envie um e-mail para contato@velvet.lat com:\n• Comprovante do pagamento\n• Nome da modelo\n• E-mail da sua conta\n\nNossa equipe irá solucionar o mais rápido possível."
-    },
-     {
-      palavras: ["tipo de conteudo", "tem previas"],
-      texto: "Olá! Aqui é o suporte da plataforma, para ter acesso ao chat da modelo deve assinar o VIP!💜"
-    },
-     {
-      palavras: ["Nao consigo pagar", "Não consigo pagar", "problema no pagamento", "problema para pagar", "erro no pagamento"],
-      texto: "Lamentamos o ocorrido. Para analisarmos o problema, envie um e-mail para contato@velvet.lat com:\n• Print do erro\n• Nome da modelo\n• E-mail da sua conta\n\nNossa equipe verificará e resolverá o issue o mais rápido possível."
-    },
-    {
-      palavras: ["cancelar assinatura", "cancelar minha assinatura", "como cancelo", "quero cancelar", "cancelamento de assinatura", "desativar assinatura"],
-      texto: "Olá! Para cancelar sua assinatura basta ir em Assinaturas e Pagamentos e clicar em cancelar na assinatura que deseja."
-    },
-    {
-      palavras: ["pagamento via pix", "pagar com pix", "não tenho cartão", "poder pagar com pix", "liberar pix", "pix"],
-      texto: "Olá! Devido ao elevado número de contestações e fraudes em pagamentos via Pix, a primeira assinatura é realizada apenas por cartão de crédito. No entanto, dependendo da situação, poderemos analisar uma exceção para pagamento via Pix. Para isso, poderia explicar melhor o que procura na plataforma e informar qual o nome da modelo que deseja assinar? Envie seu email de cadastro também, a liberação ocorre em até 24 horas, e você será avisado por aqui!"
-    }
-
-  ];
-
-  const RESPOSTA_FALLBACK = "Olá! No momento não temos uma resposta automática para essa dúvida.\n\nEntre em contato por email em: <a href=\"/contato.html\" target=\"_blank\">página de contato</a>, ou aguarde uma resposta aqui no chat.\n\nO prazo é de 24 a 48 horas úteis.";
-
-  function detectarResposta(texto) {
-    const t = texto.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-    for (const r of RESPOSTAS) {
-      const match = r.palavras.some(p => {
-        const pn = p.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-        return t.includes(pn);
-      });
-      if (match) return r.texto;
-    }
+  // Detectada e salva pelo servidor em POST /conversa/:id/mensagem
+  function detectarResposta(_texto) {
     return null;
   }
 
-  function mostrarAutoResposta(texto) {
-    typingEl.style.display = "block";
-    scrollBaixo();
-    setTimeout(async () => {
-      typingEl.style.display = "none";
-      const agora = new Date().toISOString();
-      const msg = { remetente: "admin", texto, criado_em: agora };
-      adicionarMensagem(msg);
-      scrollBaixo();
-      if (!aberto) {
-        const n = parseInt(badge.textContent || "0") + 1;
-        badge.textContent = n;
-        badge.style.display = "flex";
-      }
-      // salva no banco para persistir após reload
-      try {
-        await fetch(`${API}/api/suporte/conversa/${conversaId}/auto-resposta`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ texto })
-        });
-      } catch (_) {}
-    }, 1200);
+  function mostrarAutoResposta(_texto) {
+    // Auto-resposta agora é enviada pelo servidor via suporte:resposta (socket)
   }
 
   // ─── ENVIAR MENSAGEM ─────────────────────────────────────────────────────────
@@ -335,9 +261,6 @@
         body: JSON.stringify({ texto })
       });
     } catch (_) {}
-
-    const autoResp = detectarResposta(texto) || RESPOSTA_FALLBACK;
-    mostrarAutoResposta(autoResp);
 
     sendBtn.disabled = false;
     inputEl.focus();
