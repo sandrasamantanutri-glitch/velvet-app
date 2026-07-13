@@ -39,53 +39,53 @@
       padding: 40px 20px 80px;
     }
 
- .topbar {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  margin-bottom: 20px;
-}
+    .topbar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      margin-bottom: 20px;
+    }
 
-.language-switcher {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
+    .language-switcher {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
 
-.lang-btn {
-  min-width: 52px;
-  padding: 10px 16px;
-  border: 1px solid #cfc8dd;
-  background: #f3eff5;
-  color: #1e1b2e;
-  border-radius: 14px;
-  font-family: 'Poppins', Arial, Helvetica, sans-serif;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: 0.2s ease;
-}
+    .lang-btn {
+      min-width: 52px;
+      padding: 10px 16px;
+      border: 1px solid #cfc8dd;
+      background: #f3eff5;
+      color: #1e1b2e;
+      border-radius: 14px;
+      font-family: 'Poppins', Arial, Helvetica, sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
 
-.lang-btn:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-}
+    .lang-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
 
-.lang-btn.active {
-  border-color: var(--primary);
-  color: var(--primary);
-  background: #f7f3ff;
-}
+    .lang-btn.active {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: #f7f3ff;
+    }
 
-@media (max-width: 768px) {
-  .topbar {
-    justify-content: center;
-  }
+    @media (max-width: 768px) {
+      .topbar {
+        justify-content: center;
+      }
 
-  .language-switcher {
-    justify-content: center;
-  }
-}
+      .language-switcher {
+        justify-content: center;
+      }
+    }
 
     .page-title {
       font-size: 2.2rem;
@@ -161,6 +161,13 @@
       margin: 22px 0 8px;
     }
 
+    .sub-item-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-soft);
+      margin: 18px 0 6px;
+    }
+
     p {
       margin: 0 0 14px;
       color: var(--text);
@@ -196,6 +203,16 @@
       font-size: 1rem;
       line-height: 1.5;
       text-align: center;
+    }
+
+    .info-box {
+      background: #f0ebff;
+      border-left: 4px solid var(--primary);
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin: 16px 0 20px;
+      font-size: 1rem;
+      color: var(--text);
     }
 
     .footer {
@@ -257,19 +274,19 @@
 <body>
   <main class="container">
 
-<div class="topbar">
-  <div class="language-switcher" aria-label="Selecionar idioma">
-    <button type="button" class="lang-btn" data-lang="pt">PT</button>
-    <button type="button" class="lang-btn" data-lang="en">EN</button>
-    <button type="button" class="lang-btn" data-lang="es">ESP</button>
-  </div>
-</div>
+    <div class="topbar">
+      <div class="language-switcher" aria-label="Selecionar idioma">
+        <button type="button" class="lang-btn" data-lang="pt">PT</button>
+        <button type="button" class="lang-btn" data-lang="en">EN</button>
+        <button type="button" class="lang-btn" data-lang="es">ESP</button>
+      </div>
+    </div>
 
     <h1 class="page-title" data-i18n="pageTitle">Políticas de Utilização</h1>
 
     <div class="last-updated">
       <strong data-i18n="lastUpdatedLabel">Última atualização:</strong>
-      <span data-i18n="lastUpdatedDate">06/04/2026</span>
+      <span data-i18n="lastUpdatedDate">13/07/2026</span>
     </div>
 
     <p class="intro" data-i18n="intro">
@@ -294,6 +311,7 @@
 
     <hr class="divider" />
 
+    <!-- SEÇÃO 1 -->
     <section id="secao-1">
       <h2 class="section-title" data-i18n="sections.s1.title">1. Política de Verificação de Idade e Identidade (KYC)</h2>
 
@@ -345,115 +363,160 @@
 
     <hr class="divider" />
 
+    <!-- SEÇÃO 2 -->
     <section id="secao-2">
       <h2 class="section-title" data-i18n="sections.s2.title">2. Política de Pagamentos, Assinaturas, Diamantes e Reembolsos</h2>
 
+      <!-- 2.1 -->
       <h3 class="item-title" data-i18n="sections.s2.i1">2.1 Disposições Gerais</h3>
       <ul>
-        <li data-i18n="sections.s2.l1">Pagamentos são processados por terceiros;</li>
-        <li data-i18n="sections.s2.l2">A Velvet não armazena dados completos de cartão;</li>
-        <li data-i18n="sections.s2.l3">O usuário é responsável pelas informações fornecidas.</li>
+        <li data-i18n="sections.s2.l1">Pagamentos são processados por terceiros certificados;</li>
+        <li data-i18n="sections.s2.l2">A Velvet não armazena dados completos de cartão de crédito ou débito;</li>
+        <li data-i18n="sections.s2.l3">O usuário é responsável pela veracidade das informações fornecidas;</li>
+        <li data-i18n="sections.s2.l4">Os preços são exibidos em reais (BRL) e incluem todos os tributos aplicáveis, conforme exigido pela legislação brasileira.</li>
       </ul>
 
+      <!-- 2.2 -->
       <h3 class="item-title" data-i18n="sections.s2.i2">2.2 Assinaturas</h3>
+
+      <h4 class="sub-item-title" data-i18n="sections.s2.i2a">Acesso e Conteúdo</h4>
       <ul>
-        <li data-i18n="sections.s2.l4">
-          Concedem acesso ao perfil da criadora, incluindo conteúdo do feed e interação via chat,
-          conforme definido pela criadora;
-        </li>
-        <li data-i18n="sections.s2.l5">
-          O conteúdo do feed é de responsabilidade exclusiva da criadora, podendo variar conforme seu
-          nicho, estilo e proposta, podendo incluir conteúdo adulto ou não, exclusivo ou não exclusivo;
-        </li>
-        <li data-i18n="sections.s2.l6">A Velvet não garante frequência, tipo ou padrão de conteúdo;</li>
-        <li data-i18n="sections.s2.l7">
-          As assinaturas não incluem conteúdos pagos adicionais, salvo quando expressamente indicado.
-        </li>
+        <li data-i18n="sections.s2.l5">Concedem acesso ao perfil da criadora, incluindo conteúdo do feed e interação via chat, conforme definido pela criadora;</li>
+        <li data-i18n="sections.s2.l6">O conteúdo do feed é de responsabilidade exclusiva da criadora, podendo variar conforme seu nicho, estilo e proposta, podendo incluir conteúdo adulto ou não, exclusivo ou não exclusivo;</li>
+        <li data-i18n="sections.s2.l7">A Velvet não garante frequência, tipo ou padrão de conteúdo;</li>
+        <li data-i18n="sections.s2.l8">As assinaturas não incluem conteúdos pagos adicionais, salvo quando expressamente indicado.</li>
       </ul>
 
+      <h4 class="sub-item-title" data-i18n="sections.s2.i2b">Renovação Automática</h4>
+      <p data-i18n="sections.s2.p2b">As assinaturas são renovadas automaticamente ao final de cada período de faturamento, salvo cancelamento prévio pelo usuário. Em conformidade com o art. 46 do Código de Defesa do Consumidor (CDC), o usuário será informado com antecedência sobre o valor e a data da próxima renovação. Alterações de preço afetam apenas novas assinaturas, exceto quando a legislação dispuser de forma diversa.</p>
+
+      <h4 class="sub-item-title" data-i18n="sections.s2.i2c">Cancelamento pelo Usuário</h4>
+      <ul>
+        <li data-i18n="sections.s2.l9">O usuário pode cancelar sua assinatura a qualquer momento nas configurações da conta;</li>
+        <li data-i18n="sections.s2.l10">O cancelamento entra em vigor ao final do período de faturamento em curso;</li>
+        <li data-i18n="sections.s2.l11">O acesso é mantido até o encerramento do período já pago;</li>
+        <li data-i18n="sections.s2.l12">Não são concedidos reembolsos proporcionais por período não utilizado, salvo os casos previstos na seção 2.7.</li>
+      </ul>
+
+      <!-- 2.3 -->
       <h3 class="item-title" data-i18n="sections.s2.i3">2.3 Diamantes (Moeda Virtual)</h3>
       <ul>
-        <li data-i18n="sections.s2.l8">Uso exclusivo dentro da Plataforma;</li>
-        <li data-i18n="sections.s2.l9">Não possuem valor monetário fora da Velvet;</li>
-        <li data-i18n="sections.s2.l10">Não são transferíveis nem resgatáveis;</li>
-        <li data-i18n="sections.s2.l11">Não são reembolsáveis, salvo obrigação legal.</li>
+        <li data-i18n="sections.s2.l13">Uso exclusivo dentro da Plataforma;</li>
+        <li data-i18n="sections.s2.l14">Não possuem valor monetário fora da Velvet;</li>
+        <li data-i18n="sections.s2.l15">Não são transferíveis nem resgatáveis em dinheiro;</li>
+        <li data-i18n="sections.s2.l16">Não são reembolsáveis, salvo obrigação legal expressa.</li>
       </ul>
 
+      <!-- 2.4 -->
       <h3 class="item-title" data-i18n="sections.s2.i4">2.4 Conteúdos Pagos (Premium ou Pay-Per-View no Chat)</h3>
       <ul>
-        <li data-i18n="sections.s2.l12">Conteúdos pagos são liberados mediante pagamento adicional;</li>
-        <li data-i18n="sections.s2.l13">Após o desbloqueio, o conteúdo é considerado entregue e consumido;</li>
-        <li data-i18n="sections.s2.l14">Não há reembolso por insatisfação subjetiva;</li>
-        <li data-i18n="sections.s2.l15">
-          O conteúdo é de responsabilidade exclusiva da criadora, podendo variar conforme seu nicho
-          e proposta, podendo incluir conteúdo adulto ou não, exclusivo ou não exclusivo;
-        </li>
-        <li data-i18n="sections.s2.l16">
-          A Velvet não garante expectativa ou resultado em relação ao conteúdo adquirido.
-        </li>
+        <li data-i18n="sections.s2.l17">Conteúdos pagos são liberados mediante pagamento adicional;</li>
+        <li data-i18n="sections.s2.l18">Após o desbloqueio, o conteúdo é considerado entregue e consumido;</li>
+        <li data-i18n="sections.s2.l19">Não há reembolso por insatisfação subjetiva com o conteúdo;</li>
+        <li data-i18n="sections.s2.l20">O conteúdo é de responsabilidade exclusiva da criadora, podendo variar conforme seu nicho e proposta;</li>
+        <li data-i18n="sections.s2.l21">A Velvet não garante expectativa ou resultado em relação ao conteúdo adquirido.</li>
       </ul>
 
-      <h3 class="item-title" data-i18n="sections.s2.i5">2.5 Chargebacks</h3>
+      <!-- 2.5 -->
+      <h3 class="item-title" data-i18n="sections.s2.i5">2.5 Natureza do Conteúdo Digital</h3>
+      <p data-i18n="sections.s2.p5">A Velvet disponibiliza acesso a conteúdo digital entregue imediatamente após a confirmação do pagamento, seja pela ativação de uma assinatura ou pela conclusão de uma compra pay-per-view. Em razão da natureza imediata e não restituível do conteúdo digital, as regras de reembolso aplicáveis diferem das previstas para bens físicos, nos termos da legislação brasileira vigente.</p>
+
+      <!-- 2.6 -->
+      <h3 class="item-title" data-i18n="sections.s2.i6">2.6 Direito de Arrependimento</h3>
+      <p data-i18n="sections.s2.p6a">O art. 49 do Código de Defesa do Consumidor (Lei n.º 8.078/1990) assegura ao consumidor o direito de arrependimento no prazo de 7 (sete) dias corridos, a contar da contratação, nos contratos celebrados fora do estabelecimento comercial, incluindo os realizados pela internet.</p>
+
+      <h4 class="sub-item-title" data-i18n="sections.s2.i6b">Exceção para Conteúdo Digital com Entrega Imediata</h4>
+      <p data-i18n="sections.s2.p6b">Nos termos das orientações do SENACON e da interpretação consolidada do CDC para serviços digitais, o direito de arrependimento pode não ser aplicável quando, cumulativamente:</p>
       <ul>
-        <li data-i18n="sections.s2.l17">Chargebacks indevidos poderão resultar em suspensão ou encerramento da conta;</li>
-        <li data-i18n="sections.s2.l18">A Velvet poderá apresentar evidências às operadoras;</li>
-        <li data-i18n="sections.s2.l19">O usuário poderá ser responsabilizado por fraude.</li>
+        <li data-i18n="sections.s2.l22">O usuário solicitar expressamente o início imediato do acesso ao conteúdo digital;</li>
+        <li data-i18n="sections.s2.l23">For previamente informado de que perderá o direito de arrependimento após o acesso ser concedido; e</li>
+        <li data-i18n="sections.s2.l24">Manifestar concordância expressa com essas condições antes de concluir a compra.</li>
       </ul>
-
-      <h3 class="item-title" data-i18n="sections.s2.i6">2.6 Prevenção à Fraude</h3>
-      <p data-i18n="sections.s2.p1">A Plataforma utiliza sistemas automatizados para:</p>
+      <p data-i18n="sections.s2.p6c">Essa confirmação é obtida no momento do pagamento. O usuário será informado de forma clara e destacada sobre:</p>
       <ul>
-        <li data-i18n="sections.s2.l20">Detectar atividades suspeitas;</li>
-        <li data-i18n="sections.s2.l21">Reduzir riscos financeiros;</li>
-        <li data-i18n="sections.s2.l22">Proteger transações.</li>
+        <li data-i18n="sections.s2.l25">A liberação imediata do conteúdo após o pagamento;</li>
+        <li data-i18n="sections.s2.l26">A natureza digital e não restituível do serviço;</li>
+        <li data-i18n="sections.s2.l27">A possível perda do direito de arrependimento.</li>
       </ul>
+      <div class="info-box">
+        <span data-i18n="sections.s2.p6d">Caso o usuário não tenha ainda acessado o conteúdo digital adquirido, poderá exercer o direito de arrependimento dentro do prazo legal de 7 dias, mediante contato com o suporte em contato@velvet.lat.</span>
+      </div>
 
+      <!-- 2.7 -->
       <h3 class="item-title" data-i18n="sections.s2.i7">2.7 Política de Reembolso</h3>
-      <ul>
-        <li data-i18n="sections.s2.l23">
-          Assinaturas, Diamantes e conteúdos pagos não são reembolsáveis, exceto quando exigido por lei
-          ou nos casos previstos abaixo;
-        </li>
-        <li data-i18n="sections.s2.l24">
-          O usuário é informado previamente sobre as condições da compra e deve concordar com os Termos
-          antes de concluir a transação;
-        </li>
-        <li data-i18n="sections.s2.l25">O reembolso poderá ocorrer exclusivamente em casos de:</li>
-      </ul>
-      <ul>
-        <li data-i18n="sections.s2.l26">Cobrança em duplicidade;</li>
-        <li data-i18n="sections.s2.l27">Erro técnico comprovado;</li>
-        <li data-i18n="sections.s2.l28">Falha no sistema;</li>
-        <li data-i18n="sections.s2.l29">Não disponibilização do serviço após pagamento.</li>
-      </ul>
-      <p data-i18n="sections.s2.p2">
-        A Velvet poderá solicitar comprovação para análise.
-      </p>
 
-      <h3 class="item-title" data-i18n="sections.s2.i8">2.8 Direito de Arrependimento</h3>
+      <h4 class="sub-item-title" data-i18n="sections.s2.i7a">2.7.1 Reembolso por Determinação Legal</h4>
+      <p data-i18n="sections.s2.p7a">A Velvet realizará o reembolso integral independentemente de avaliação discricionária nos seguintes casos:</p>
       <ul>
-        <li data-i18n="sections.s2.l30">
-          O usuário reconhece que os serviços e conteúdos digitais da Plataforma são disponibilizados
-          de forma imediata após a confirmação do pagamento;
-        </li>
-        <li data-i18n="sections.s2.l31">
-          Ao concluir a compra, o usuário declara ciência e concordância com a execução imediata do serviço;
-        </li>
-        <li data-i18n="sections.s2.l32">
-          Dessa forma, o usuário concorda que o direito de arrependimento previsto no artigo 49 do
-          Código de Defesa do Consumidor poderá não ser aplicável;
-        </li>
-        <li data-i18n="sections.s2.l33">O usuário será previamente informado sobre:</li>
+        <li data-i18n="sections.s2.l28">Cobrança em duplicidade comprovada;</li>
+        <li data-i18n="sections.s2.l29">Erro técnico ou falha no sistema que impediu o acesso ao serviço contratado;</li>
+        <li data-i18n="sections.s2.l30">Não disponibilização do serviço após a confirmação do pagamento;</li>
+        <li data-i18n="sections.s2.l31">Exercício tempestivo do direito de arrependimento, nos termos do art. 49 do CDC, quando aplicável.</li>
       </ul>
+
+      <h4 class="sub-item-title" data-i18n="sections.s2.i7b">2.7.2 Reembolsos Discricionários</h4>
+      <p data-i18n="sections.s2.p7b">A Velvet poderá, a seu exclusivo critério, conceder reembolsos ou créditos após análise pela equipe de suporte, sem que isso implique direito automático ou garantido, nos seguintes casos:</p>
       <ul>
-        <li data-i18n="sections.s2.l34">liberação imediata do conteúdo;</li>
-        <li data-i18n="sections.s2.l35">natureza digital do serviço;</li>
-        <li data-i18n="sections.s2.l36">possível perda do direito de arrependimento.</li>
+        <li data-i18n="sections.s2.l32">Problema técnico que impediu parcialmente o acesso ao conteúdo adquirido;</li>
+        <li data-i18n="sections.s2.l33">Erro de processamento ou renovação não intencional, contestada imediatamente após a cobrança;</li>
+        <li data-i18n="sections.s2.l34">O conteúdo adquirido diferiu materialmente da sua descrição ou foi apresentado de forma enganosa pela Criadora;</li>
+        <li data-i18n="sections.s2.l35">O acesso foi removido por ação de moderação logo após a compra, sem culpa do usuário;</li>
+        <li data-i18n="sections.s2.l36">Outras circunstâncias avaliadas caso a caso pela equipe de suporte.</li>
+      </ul>
+      <p data-i18n="sections.s2.p7b2">As decisões sobre reembolsos discricionários consideram: as circunstâncias da transação, o momento da solicitação, o histórico da conta e as obrigações de proteção ao consumidor aplicáveis. Nada nesta Política cria direito automático, incondicional ou garantido a reembolso.</p>
+
+      <h4 class="sub-item-title" data-i18n="sections.s2.i7c">2.7.3 Método e Prazo de Reembolso</h4>
+      <ul>
+        <li data-i18n="sections.s2.l37">Os reembolsos aprovados são creditados no mesmo meio de pagamento utilizado na transação original;</li>
+        <li data-i18n="sections.s2.l38">O prazo de estorno depende da operadora de cartão ou instituição financeira, podendo levar até 2 (duas) faturas;</li>
+        <li data-i18n="sections.s2.l39">Eventuais taxas de processamento poderão não ser reembolsadas, nos casos permitidos pela legislação.</li>
+      </ul>
+
+      <h4 class="sub-item-title" data-i18n="sections.s2.i7d">2.7.4 Casos Sem Direito a Reembolso</h4>
+      <p data-i18n="sections.s2.p7d">Não serão concedidos reembolsos nos seguintes casos:</p>
+      <ul>
+        <li data-i18n="sections.s2.l40">Insatisfação subjetiva com o conteúdo da criadora;</li>
+        <li data-i18n="sections.s2.l41">Conteúdo acessado integralmente sem nenhum problema técnico comprovado;</li>
+        <li data-i18n="sections.s2.l42">Solicitações fraudulentas, abusivas ou reincidentes sem fundamento;</li>
+        <li data-i18n="sections.s2.l43">Violação dos Termos de Uso ou das políticas aplicáveis pelo usuário.</li>
+      </ul>
+
+      <!-- 2.8 -->
+      <h3 class="item-title" data-i18n="sections.s2.i8">2.8 Chargebacks e Contestações de Pagamento</h3>
+
+      <h4 class="sub-item-title" data-i18n="sections.s2.i8a">Contate o Suporte Primeiro</h4>
+      <p data-i18n="sections.s2.p8a">Caso o usuário acredite que uma cobrança está incorreta, não autorizada ou deseja contestá-la, deverá entrar em contato com o suporte da Velvet em <strong>contato@velvet.lat</strong> antes de acionar a operadora de cartão ou instituição financeira. A maioria dos problemas — incluindo disputas sobre assinaturas, renovações e questões relacionadas ao conteúdo — pode ser resolvida com agilidade por meio do nosso suporte.</p>
+
+      <h4 class="sub-item-title" data-i18n="sections.s2.i8b">Consequências do Chargeback Indevido</h4>
+      <p data-i18n="sections.s2.p8b">A abertura de chargebacks sem contato prévio com o suporte, ou de forma abusiva, poderá resultar em:</p>
+      <ul>
+        <li data-i18n="sections.s2.l44">Revisão ou restrições na conta;</li>
+        <li data-i18n="sections.s2.l45">Suspensão ou encerramento em casos de abuso;</li>
+        <li data-i18n="sections.s2.l46">Perda de acesso à Plataforma;</li>
+        <li data-i18n="sections.s2.l47">Adoção de medidas legais cabíveis, inclusive nos termos do art. 71 do CDC e da legislação penal aplicável.</li>
+      </ul>
+
+      <h4 class="sub-item-title" data-i18n="sections.s2.i8c">Prevenção e Resolução</h4>
+      <p data-i18n="sections.s2.p8c">A Velvet atua ativamente para evitar chargebacks desnecessários por meio de:</p>
+      <ul>
+        <li data-i18n="sections.s2.l48">Suporte ao cliente acessível e responsivo;</li>
+        <li data-i18n="sections.s2.l49">Análise ágil de pedidos de reembolso;</li>
+        <li data-i18n="sections.s2.l50">Resolução interna de disputas, inclusive por reembolsos discricionários ou ajustes de cobrança.</li>
+      </ul>
+
+      <!-- 2.9 -->
+      <h3 class="item-title" data-i18n="sections.s2.i9">2.9 Prevenção à Fraude</h3>
+      <p data-i18n="sections.s2.p9">A Plataforma utiliza sistemas automatizados para:</p>
+      <ul>
+        <li data-i18n="sections.s2.l51">Detectar atividades suspeitas;</li>
+        <li data-i18n="sections.s2.l52">Reduzir riscos financeiros;</li>
+        <li data-i18n="sections.s2.l53">Proteger transações e usuários.</li>
       </ul>
     </section>
 
     <hr class="divider" />
 
+    <!-- SEÇÃO 3 -->
     <section id="secao-3">
       <h2 class="section-title" data-i18n="sections.s3.title">3. Política de Conteúdo</h2>
 
@@ -492,6 +555,7 @@
 
     <hr class="divider" />
 
+    <!-- SEÇÃO 4 -->
     <section id="secao-4">
       <h2 class="section-title" data-i18n="sections.s4.title">4. Política de Conduta e Uso da Plataforma</h2>
       <p data-i18n="sections.s4.p1">O usuário compromete-se a:</p>
@@ -512,6 +576,7 @@
 
     <hr class="divider" />
 
+    <!-- SEÇÃO 5 -->
     <section id="secao-5">
       <h2 class="section-title" data-i18n="sections.s5.title">5. Política de Propriedade Intelectual</h2>
       <ul>
@@ -523,6 +588,7 @@
 
     <hr class="divider" />
 
+    <!-- SEÇÃO 6 -->
     <section id="secao-6">
       <h2 class="section-title" data-i18n="sections.s6.title">6. Política de Moderação e Sanções</h2>
       <p data-i18n="sections.s6.p1">A Velvet poderá:</p>
@@ -547,6 +613,7 @@
 
     <hr class="divider" />
 
+    <!-- SEÇÃO 7 -->
     <section id="secao-7">
       <h2 class="section-title" data-i18n="sections.s7.title">7. Contato</h2>
       <p>
@@ -556,6 +623,7 @@
 
     <hr class="divider" />
 
+    <!-- SEÇÃO 8 -->
     <section id="secao-8">
       <h2 class="section-title" data-i18n="sections.s8.title">8. Disposições Finais</h2>
       <p data-i18n="sections.s8.p1">
@@ -583,7 +651,7 @@
         metaTitle: "Políticas de Utilização | Velvet",
         pageTitle: "Políticas de Utilização",
         lastUpdatedLabel: "Última atualização:",
-        lastUpdatedDate: "06/04/2026",
+        lastUpdatedDate: "13/07/2026",
         intro: "Este documento reúne as políticas que regulam o uso da plataforma Velvet, sendo parte integrante dos Termos de Uso. Ao acessar ou utilizar a Plataforma, o usuário declara que leu, compreendeu e concorda integralmente com estas Políticas.",
         tocTitle: "Índice",
         toc: [
@@ -629,51 +697,92 @@
           s2: {
             title: "2. Política de Pagamentos, Assinaturas, Diamantes e Reembolsos",
             i1: "2.1 Disposições Gerais",
-            l1: "Pagamentos são processados por terceiros;",
-            l2: "A Velvet não armazena dados completos de cartão;",
-            l3: "O usuário é responsável pelas informações fornecidas.",
+            l1: "Pagamentos são processados por terceiros certificados;",
+            l2: "A Velvet não armazena dados completos de cartão de crédito ou débito;",
+            l3: "O usuário é responsável pela veracidade das informações fornecidas;",
+            l4: "Os preços são exibidos em reais (BRL) e incluem todos os tributos aplicáveis, conforme exigido pela legislação brasileira.",
             i2: "2.2 Assinaturas",
-            l4: "Concedem acesso ao perfil da criadora, incluindo conteúdo do feed e interação via chat, conforme definido pela criadora;",
-            l5: "O conteúdo do feed é de responsabilidade exclusiva da criadora, podendo variar conforme seu nicho, estilo e proposta, podendo incluir conteúdo adulto ou não, exclusivo ou não exclusivo;",
-            l6: "A Velvet não garante frequência, tipo ou padrão de conteúdo;",
-            l7: "As assinaturas não incluem conteúdos pagos adicionais, salvo quando expressamente indicado.",
+            i2a: "Acesso e Conteúdo",
+            l5: "Concedem acesso ao perfil da criadora, incluindo conteúdo do feed e interação via chat, conforme definido pela criadora;",
+            l6: "O conteúdo do feed é de responsabilidade exclusiva da criadora, podendo variar conforme seu nicho, estilo e proposta, podendo incluir conteúdo adulto ou não, exclusivo ou não exclusivo;",
+            l7: "A Velvet não garante frequência, tipo ou padrão de conteúdo;",
+            l8: "As assinaturas não incluem conteúdos pagos adicionais, salvo quando expressamente indicado.",
+            i2b: "Renovação Automática",
+            p2b: "As assinaturas são renovadas automaticamente ao final de cada período de faturamento, salvo cancelamento prévio pelo usuário. Em conformidade com o art. 46 do Código de Defesa do Consumidor (CDC), o usuário será informado com antecedência sobre o valor e a data da próxima renovação. Alterações de preço afetam apenas novas assinaturas, exceto quando a legislação dispuser de forma diversa.",
+            i2c: "Cancelamento pelo Usuário",
+            l9: "O usuário pode cancelar sua assinatura a qualquer momento nas configurações da conta;",
+            l10: "O cancelamento entra em vigor ao final do período de faturamento em curso;",
+            l11: "O acesso é mantido até o encerramento do período já pago;",
+            l12: "Não são concedidos reembolsos proporcionais por período não utilizado, salvo os casos previstos na seção 2.7.",
             i3: "2.3 Diamantes (Moeda Virtual)",
-            l8: "Uso exclusivo dentro da Plataforma;",
-            l9: "Não possuem valor monetário fora da Velvet;",
-            l10: "Não são transferíveis nem resgatáveis;",
-            l11: "Não são reembolsáveis, salvo obrigação legal.",
+            l13: "Uso exclusivo dentro da Plataforma;",
+            l14: "Não possuem valor monetário fora da Velvet;",
+            l15: "Não são transferíveis nem resgatáveis em dinheiro;",
+            l16: "Não são reembolsáveis, salvo obrigação legal expressa.",
             i4: "2.4 Conteúdos Pagos (Premium ou Pay-Per-View no Chat)",
-            l12: "Conteúdos pagos são liberados mediante pagamento adicional;",
-            l13: "Após o desbloqueio, o conteúdo é considerado entregue e consumido;",
-            l14: "Não há reembolso por insatisfação subjetiva;",
-            l15: "O conteúdo é de responsabilidade exclusiva da criadora, podendo variar conforme seu nicho e proposta, podendo incluir conteúdo adulto ou não, exclusivo ou não exclusivo;",
-            l16: "A Velvet não garante expectativa ou resultado em relação ao conteúdo adquirido.",
-            i5: "2.5 Chargebacks",
-            l17: "Chargebacks indevidos poderão resultar em suspensão ou encerramento da conta;",
-            l18: "A Velvet poderá apresentar evidências às operadoras;",
-            l19: "O usuário poderá ser responsabilizado por fraude.",
-            i6: "2.6 Prevenção à Fraude",
-            p1: "A Plataforma utiliza sistemas automatizados para:",
-            l20: "Detectar atividades suspeitas;",
-            l21: "Reduzir riscos financeiros;",
-            l22: "Proteger transações.",
+            l17: "Conteúdos pagos são liberados mediante pagamento adicional;",
+            l18: "Após o desbloqueio, o conteúdo é considerado entregue e consumido;",
+            l19: "Não há reembolso por insatisfação subjetiva com o conteúdo;",
+            l20: "O conteúdo é de responsabilidade exclusiva da criadora, podendo variar conforme seu nicho e proposta;",
+            l21: "A Velvet não garante expectativa ou resultado em relação ao conteúdo adquirido.",
+            i5: "2.5 Natureza do Conteúdo Digital",
+            p5: "A Velvet disponibiliza acesso a conteúdo digital entregue imediatamente após a confirmação do pagamento, seja pela ativação de uma assinatura ou pela conclusão de uma compra pay-per-view. Em razão da natureza imediata e não restituível do conteúdo digital, as regras de reembolso aplicáveis diferem das previstas para bens físicos, nos termos da legislação brasileira vigente.",
+            i6: "2.6 Direito de Arrependimento",
+            p6a: "O art. 49 do Código de Defesa do Consumidor (Lei n.º 8.078/1990) assegura ao consumidor o direito de arrependimento no prazo de 7 (sete) dias corridos, a contar da contratação, nos contratos celebrados fora do estabelecimento comercial, incluindo os realizados pela internet.",
+            i6b: "Exceção para Conteúdo Digital com Entrega Imediata",
+            p6b: "Nos termos das orientações do SENACON e da interpretação consolidada do CDC para serviços digitais, o direito de arrependimento pode não ser aplicável quando, cumulativamente:",
+            l22: "O usuário solicitar expressamente o início imediato do acesso ao conteúdo digital;",
+            l23: "For previamente informado de que perderá o direito de arrependimento após o acesso ser concedido; e",
+            l24: "Manifestar concordância expressa com essas condições antes de concluir a compra.",
+            p6c: "Essa confirmação é obtida no momento do pagamento. O usuário será informado de forma clara e destacada sobre:",
+            l25: "A liberação imediata do conteúdo após o pagamento;",
+            l26: "A natureza digital e não restituível do serviço;",
+            l27: "A possível perda do direito de arrependimento.",
+            p6d: "Caso o usuário não tenha ainda acessado o conteúdo digital adquirido, poderá exercer o direito de arrependimento dentro do prazo legal de 7 dias, mediante contato com o suporte em contato@velvet.lat.",
             i7: "2.7 Política de Reembolso",
-            l23: "Assinaturas, Diamantes e conteúdos pagos não são reembolsáveis, exceto quando exigido por lei ou nos casos previstos abaixo;",
-            l24: "O usuário é informado previamente sobre as condições da compra e deve concordar com os Termos antes de concluir a transação;",
-            l25: "O reembolso poderá ocorrer exclusivamente em casos de:",
-            l26: "Cobrança em duplicidade;",
-            l27: "Erro técnico comprovado;",
-            l28: "Falha no sistema;",
-            l29: "Não disponibilização do serviço após pagamento.",
-            p2: "A Velvet poderá solicitar comprovação para análise.",
-            i8: "2.8 Direito de Arrependimento",
-            l30: "O usuário reconhece que os serviços e conteúdos digitais da Plataforma são disponibilizados de forma imediata após a confirmação do pagamento;",
-            l31: "Ao concluir a compra, o usuário declara ciência e concordância com a execução imediata do serviço;",
-            l32: "Dessa forma, o usuário concorda que o direito de arrependimento previsto no artigo 49 do Código de Defesa do Consumidor poderá não ser aplicável;",
-            l33: "O usuário será previamente informado sobre:",
-            l34: "liberação imediata do conteúdo;",
-            l35: "natureza digital do serviço;",
-            l36: "possível perda do direito de arrependimento."
+            i7a: "2.7.1 Reembolso por Determinação Legal",
+            p7a: "A Velvet realizará o reembolso integral independentemente de avaliação discricionária nos seguintes casos:",
+            l28: "Cobrança em duplicidade comprovada;",
+            l29: "Erro técnico ou falha no sistema que impediu o acesso ao serviço contratado;",
+            l30: "Não disponibilização do serviço após a confirmação do pagamento;",
+            l31: "Exercício tempestivo do direito de arrependimento, nos termos do art. 49 do CDC, quando aplicável.",
+            i7b: "2.7.2 Reembolsos Discricionários",
+            p7b: "A Velvet poderá, a seu exclusivo critério, conceder reembolsos ou créditos após análise pela equipe de suporte, sem que isso implique direito automático ou garantido, nos seguintes casos:",
+            l32: "Problema técnico que impediu parcialmente o acesso ao conteúdo adquirido;",
+            l33: "Erro de processamento ou renovação não intencional, contestada imediatamente após a cobrança;",
+            l34: "O conteúdo adquirido diferiu materialmente da sua descrição ou foi apresentado de forma enganosa pela Criadora;",
+            l35: "O acesso foi removido por ação de moderação logo após a compra, sem culpa do usuário;",
+            l36: "Outras circunstâncias avaliadas caso a caso pela equipe de suporte.",
+            p7b2: "As decisões sobre reembolsos discricionários consideram: as circunstâncias da transação, o momento da solicitação, o histórico da conta e as obrigações de proteção ao consumidor aplicáveis. Nada nesta Política cria direito automático, incondicional ou garantido a reembolso.",
+            i7c: "2.7.3 Método e Prazo de Reembolso",
+            l37: "Os reembolsos aprovados são creditados no mesmo meio de pagamento utilizado na transação original;",
+            l38: "O prazo de estorno depende da operadora de cartão ou instituição financeira, podendo levar até 2 (duas) faturas;",
+            l39: "Eventuais taxas de processamento poderão não ser reembolsadas, nos casos permitidos pela legislação.",
+            i7d: "2.7.4 Casos Sem Direito a Reembolso",
+            p7d: "Não serão concedidos reembolsos nos seguintes casos:",
+            l40: "Insatisfação subjetiva com o conteúdo da criadora;",
+            l41: "Conteúdo acessado integralmente sem nenhum problema técnico comprovado;",
+            l42: "Solicitações fraudulentas, abusivas ou reincidentes sem fundamento;",
+            l43: "Violação dos Termos de Uso ou das políticas aplicáveis pelo usuário.",
+            i8: "2.8 Chargebacks e Contestações de Pagamento",
+            i8a: "Contate o Suporte Primeiro",
+            p8a: "Caso o usuário acredite que uma cobrança está incorreta, não autorizada ou deseja contestá-la, deverá entrar em contato com o suporte da Velvet em contato@velvet.lat antes de acionar a operadora de cartão ou instituição financeira. A maioria dos problemas — incluindo disputas sobre assinaturas, renovações e questões relacionadas ao conteúdo — pode ser resolvida com agilidade por meio do nosso suporte.",
+            i8b: "Consequências do Chargeback Indevido",
+            p8b: "A abertura de chargebacks sem contato prévio com o suporte, ou de forma abusiva, poderá resultar em:",
+            l44: "Revisão ou restrições na conta;",
+            l45: "Suspensão ou encerramento em casos de abuso;",
+            l46: "Perda de acesso à Plataforma;",
+            l47: "Adoção de medidas legais cabíveis, inclusive nos termos do art. 71 do CDC e da legislação penal aplicável.",
+            i8c: "Prevenção e Resolução",
+            p8c: "A Velvet atua ativamente para evitar chargebacks desnecessários por meio de:",
+            l48: "Suporte ao cliente acessível e responsivo;",
+            l49: "Análise ágil de pedidos de reembolso;",
+            l50: "Resolução interna de disputas, inclusive por reembolsos discricionários ou ajustes de cobrança.",
+            i9: "2.9 Prevenção à Fraude",
+            p9: "A Plataforma utiliza sistemas automatizados para:",
+            l51: "Detectar atividades suspeitas;",
+            l52: "Reduzir riscos financeiros;",
+            l53: "Proteger transações e usuários."
           },
           s3: {
             title: "3. Política de Conteúdo",
@@ -729,9 +838,7 @@
             l6: "Fraudes;",
             l7: "Crimes digitais."
           },
-          s7: {
-            title: "7. Contato"
-          },
+          s7: { title: "7. Contato" },
           s8: {
             title: "8. Disposições Finais",
             p1: "Estas Políticas devem ser interpretadas em conjunto com os Termos de Uso e a Política de Privacidade."
@@ -749,7 +856,7 @@
         metaTitle: "Usage Policies | Velvet",
         pageTitle: "Usage Policies",
         lastUpdatedLabel: "Last updated:",
-        lastUpdatedDate: "04/06/2026",
+        lastUpdatedDate: "07/13/2026",
         intro: "This document sets out the policies governing the use of the Velvet platform and forms an integral part of the Terms of Use. By accessing or using the Platform, the user declares that they have read, understood, and fully agree to these Policies.",
         tocTitle: "Contents",
         toc: [
@@ -795,51 +902,92 @@
           s2: {
             title: "2. Payments, Subscriptions, Diamonds, and Refunds Policy",
             i1: "2.1 General Provisions",
-            l1: "Payments are processed by third parties;",
-            l2: "Velvet does not store full card data;",
-            l3: "The user is responsible for the information provided.",
+            l1: "Payments are processed by certified third parties;",
+            l2: "Velvet does not store full credit or debit card data;",
+            l3: "The user is responsible for the accuracy of the information provided;",
+            l4: "Prices are displayed in Brazilian Reals (BRL) and include all applicable taxes as required by Brazilian law.",
             i2: "2.2 Subscriptions",
-            l4: "Subscriptions grant access to the creator's profile, including feed content and chat interaction, as defined by the creator;",
-            l5: "Feed content is the sole responsibility of the creator and may vary according to their niche, style, and proposal, and may include adult or non-adult content, exclusive or non-exclusive;",
-            l6: "Velvet does not guarantee frequency, type, or standard of content;",
-            l7: "Subscriptions do not include additional paid content unless expressly stated.",
+            i2a: "Access and Content",
+            l5: "Subscriptions grant access to the creator's profile, including feed content and chat interaction, as defined by the creator;",
+            l6: "Feed content is the sole responsibility of the creator and may vary according to their niche, style, and proposal, and may include adult or non-adult content, exclusive or non-exclusive;",
+            l7: "Velvet does not guarantee frequency, type, or standard of content;",
+            l8: "Subscriptions do not include additional paid content unless expressly stated.",
+            i2b: "Automatic Renewal",
+            p2b: "Subscriptions are automatically renewed at the end of each billing period unless cancelled by the user beforehand. Users will be notified in advance of the renewal amount and date. Price changes apply only to new subscriptions, except where otherwise required by law.",
+            i2c: "Cancellation by the User",
+            l9: "The user may cancel their subscription at any time through the account settings;",
+            l10: "Cancellation takes effect at the end of the current billing period;",
+            l11: "Access is maintained until the end of the paid period;",
+            l12: "No proportional refunds are granted for unused time, except in the cases provided in section 2.7.",
             i3: "2.3 Diamonds (Virtual Currency)",
-            l8: "Exclusive use within the Platform;",
-            l9: "They have no monetary value outside Velvet;",
-            l10: "They are non-transferable and non-redeemable;",
-            l11: "They are non-refundable, except where legally required.",
+            l13: "Exclusive use within the Platform;",
+            l14: "They have no monetary value outside Velvet;",
+            l15: "They are non-transferable and non-redeemable for cash;",
+            l16: "They are non-refundable, except where expressly required by law.",
             i4: "2.4 Paid Content (Premium or Pay-Per-View in Chat)",
-            l12: "Paid content is unlocked upon additional payment;",
-            l13: "After unlocking, the content is considered delivered and consumed;",
-            l14: "There is no refund for subjective dissatisfaction;",
-            l15: "The content is the sole responsibility of the creator and may vary according to their niche and proposal, and may include adult or non-adult content, exclusive or non-exclusive;",
-            l16: "Velvet does not guarantee expectations or outcomes regarding the acquired content.",
-            i5: "2.5 Chargebacks",
-            l17: "Improper chargebacks may result in suspension or termination of the account;",
-            l18: "Velvet may present evidence to payment operators;",
-            l19: "The user may be held liable for fraud.",
-            i6: "2.6 Fraud Prevention",
-            p1: "The Platform uses automated systems to:",
-            l20: "Detect suspicious activities;",
-            l21: "Reduce financial risks;",
-            l22: "Protect transactions.",
+            l17: "Paid content is unlocked upon additional payment;",
+            l18: "After unlocking, the content is considered delivered and consumed;",
+            l19: "There is no refund for subjective dissatisfaction with the content;",
+            l20: "The content is the sole responsibility of the creator and may vary according to their niche and proposal;",
+            l21: "Velvet does not guarantee expectations or outcomes regarding the acquired content.",
+            i5: "2.5 Nature of Digital Content",
+            p5: "Velvet provides access to digital content delivered immediately upon payment confirmation, either through subscription activation or completion of a pay-per-view purchase. Due to the immediate and non-returnable nature of digital content, applicable refund rules differ from those for physical goods.",
+            i6: "2.6 Right of Withdrawal",
+            p6a: "Under Brazilian Consumer Protection Code (CDC, Law No. 8,078/1990), consumers have a 7-day right of withdrawal from the date of contracting for purchases made outside a physical establishment, including online purchases.",
+            i6b: "Exception for Immediately Delivered Digital Content",
+            p6b: "In accordance with SENACON guidelines and consolidated CDC interpretation for digital services, the right of withdrawal may not apply when all of the following conditions are met:",
+            l22: "The user expressly requests immediate access to the digital content;",
+            l23: "The user is informed in advance that they will lose the right of withdrawal once access is granted; and",
+            l24: "The user expressly agrees to these conditions before completing the purchase.",
+            p6c: "This confirmation is obtained at the time of payment. The user will be clearly informed about:",
+            l25: "Immediate release of content after payment;",
+            l26: "The digital and non-returnable nature of the service;",
+            l27: "The possible loss of the right of withdrawal.",
+            p6d: "If the user has not yet accessed the purchased digital content, they may exercise the 7-day right of withdrawal by contacting support at contato@velvet.lat.",
             i7: "2.7 Refund Policy",
-            l23: "Subscriptions, Diamonds, and paid content are non-refundable, except where required by law or in the cases provided below;",
-            l24: "The user is informed in advance about the purchase conditions and must agree to the Terms before completing the transaction;",
-            l25: "Refunds may occur exclusively in the following cases:",
-            l26: "Duplicate charge;",
-            l27: "Proven technical error;",
-            l28: "System failure;",
-            l29: "Service not made available after payment.",
-            p2: "Velvet may request proof for analysis.",
-            i8: "2.8 Right of Withdrawal",
-            l30: "The user acknowledges that the services and digital content of the Platform are made available immediately after payment confirmation;",
-            l31: "By completing the purchase, the user declares awareness of and agreement with the immediate execution of the service;",
-            l32: "Accordingly, the user agrees that the right of withdrawal may not apply, to the extent permitted by applicable law, when immediate execution of digital content or services has begun;",
-            l33: "The user will be informed in advance about:",
-            l34: "immediate release of the content;",
-            l35: "the digital nature of the service;",
-            l36: "possible loss of the right of withdrawal, where legally applicable."
+            i7a: "2.7.1 Legally Mandated Refunds",
+            p7a: "Velvet will issue a full refund regardless of discretionary review in the following cases:",
+            l28: "Proven duplicate charge;",
+            l29: "Technical error or system failure that prevented access to the contracted service;",
+            l30: "Service not made available after payment confirmation;",
+            l31: "Timely exercise of the right of withdrawal under the CDC, where applicable.",
+            i7b: "2.7.2 Discretionary Refunds",
+            p7b: "Velvet may, at its sole discretion, grant refunds or credits after review by the support team, without creating any automatic or guaranteed entitlement, in the following cases:",
+            l32: "Technical issue that partially prevented access to purchased content;",
+            l33: "Processing error or unintentional renewal, disputed immediately after the charge;",
+            l34: "The purchased content materially differed from its description or was misleadingly presented by the Creator;",
+            l35: "Access was removed due to a moderation action shortly after purchase, through no fault of the user;",
+            l36: "Other circumstances evaluated case by case by the support team.",
+            p7b2: "Discretionary refund decisions take into account: the circumstances of the transaction, the timing of the request, account history, and applicable consumer protection obligations. Nothing in this Policy creates an automatic, unconditional, or guaranteed right to a refund.",
+            i7c: "2.7.3 Refund Method and Timeline",
+            l37: "Approved refunds are credited to the same payment method used in the original transaction;",
+            l38: "The reversal timeline depends on the card operator or financial institution and may take up to 2 (two) billing cycles;",
+            l39: "Processing fees may not be refunded, to the extent permitted by law.",
+            i7d: "2.7.4 Cases Without Refund Entitlement",
+            p7d: "Refunds will not be granted in the following cases:",
+            l40: "Subjective dissatisfaction with the creator's content;",
+            l41: "Content fully accessed with no proven technical issue;",
+            l42: "Fraudulent, abusive, or repeated unfounded requests;",
+            l43: "User violation of the Terms of Use or applicable policies.",
+            i8: "2.8 Chargebacks and Payment Disputes",
+            i8a: "Contact Support First",
+            p8a: "If the user believes a charge is incorrect, unauthorized, or wishes to dispute it, they must contact Velvet support at contato@velvet.lat before initiating a chargeback with their card operator or financial institution. Most issues — including subscription disputes, renewals, and content-related matters — can be resolved promptly through our support team.",
+            i8b: "Consequences of Improper Chargebacks",
+            p8b: "Opening chargebacks without prior contact with support, or doing so abusively, may result in:",
+            l44: "Review or restrictions on the account;",
+            l45: "Suspension or termination in cases of abuse;",
+            l46: "Loss of access to the Platform;",
+            l47: "Legal measures as applicable under Brazilian law.",
+            i8c: "Prevention and Resolution",
+            p8c: "Velvet actively works to prevent unnecessary chargebacks by:",
+            l48: "Providing accessible and responsive customer support;",
+            l49: "Promptly reviewing refund requests;",
+            l50: "Resolving disputes internally, including through discretionary refunds or billing adjustments.",
+            i9: "2.9 Fraud Prevention",
+            p9: "The Platform uses automated systems to:",
+            l51: "Detect suspicious activities;",
+            l52: "Reduce financial risks;",
+            l53: "Protect transactions and users."
           },
           s3: {
             title: "3. Content Policy",
@@ -895,9 +1043,7 @@
             l6: "Fraud;",
             l7: "Cybercrimes."
           },
-          s7: {
-            title: "7. Contact"
-          },
+          s7: { title: "7. Contact" },
           s8: {
             title: "8. Final Provisions",
             p1: "These Policies must be interpreted together with the Terms of Use and the Privacy Policy."
@@ -915,7 +1061,7 @@
         metaTitle: "Políticas de Uso | Velvet",
         pageTitle: "Políticas de Uso",
         lastUpdatedLabel: "Última actualización:",
-        lastUpdatedDate: "06/04/2026",
+        lastUpdatedDate: "13/07/2026",
         intro: "Este documento reúne las políticas que regulan el uso de la plataforma Velvet y forma parte integrante de los Términos de Uso. Al acceder o utilizar la Plataforma, el usuario declara que ha leído, comprendido y acepta íntegramente estas Políticas.",
         tocTitle: "Índice",
         toc: [
@@ -961,51 +1107,92 @@
           s2: {
             title: "2. Política de Pagos, Suscripciones, Diamantes y Reembolsos",
             i1: "2.1 Disposiciones Generales",
-            l1: "Los pagos son procesados por terceros;",
-            l2: "Velvet no almacena datos completos de tarjeta;",
-            l3: "El usuario es responsable de la información proporcionada.",
+            l1: "Los pagos son procesados por terceros certificados;",
+            l2: "Velvet no almacena datos completos de tarjeta de crédito o débito;",
+            l3: "El usuario es responsable de la veracidad de la información proporcionada;",
+            l4: "Los precios se muestran en reales brasileños (BRL) e incluyen todos los impuestos aplicables conforme a la legislación brasileña.",
             i2: "2.2 Suscripciones",
-            l4: "Otorgan acceso al perfil de la creadora, incluyendo contenido del feed e interacción por chat, según lo definido por la creadora;",
-            l5: "El contenido del feed es responsabilidad exclusiva de la creadora y puede variar según su nicho, estilo y propuesta, pudiendo incluir contenido adulto o no adulto, exclusivo o no exclusivo;",
-            l6: "Velvet no garantiza frecuencia, tipo ni estándar de contenido;",
-            l7: "Las suscripciones no incluyen contenidos pagos adicionales, salvo indicación expresa.",
+            i2a: "Acceso y Contenido",
+            l5: "Otorgan acceso al perfil de la creadora, incluyendo contenido del feed e interacción por chat, según lo definido por la creadora;",
+            l6: "El contenido del feed es responsabilidad exclusiva de la creadora y puede variar según su nicho, estilo y propuesta, pudiendo incluir contenido adulto o no adulto, exclusivo o no exclusivo;",
+            l7: "Velvet no garantiza frecuencia, tipo ni estándar de contenido;",
+            l8: "Las suscripciones no incluyen contenidos pagos adicionales, salvo indicación expresa.",
+            i2b: "Renovación Automática",
+            p2b: "Las suscripciones se renuevan automáticamente al final de cada período de facturación, salvo cancelación previa por parte del usuario. El usuario será notificado con anticipación sobre el monto y la fecha de la próxima renovación. Los cambios de precio solo afectan nuevas suscripciones, salvo que la ley disponga lo contrario.",
+            i2c: "Cancelación por el Usuario",
+            l9: "El usuario puede cancelar su suscripción en cualquier momento desde la configuración de la cuenta;",
+            l10: "La cancelación entra en vigor al final del período de facturación en curso;",
+            l11: "El acceso se mantiene hasta el fin del período ya pagado;",
+            l12: "No se otorgan reembolsos proporcionales por tiempo no utilizado, salvo los casos previstos en la sección 2.7.",
             i3: "2.3 Diamantes (Moneda Virtual)",
-            l8: "Uso exclusivo dentro de la Plataforma;",
-            l9: "No tienen valor monetario fuera de Velvet;",
-            l10: "No son transferibles ni canjeables;",
-            l11: "No son reembolsables, salvo obligación legal.",
+            l13: "Uso exclusivo dentro de la Plataforma;",
+            l14: "No tienen valor monetario fuera de Velvet;",
+            l15: "No son transferibles ni canjeables por dinero;",
+            l16: "No son reembolsables, salvo obligación legal expresa.",
             i4: "2.4 Contenidos Pagos (Premium o Pay-Per-View en el Chat)",
-            l12: "Los contenidos pagos se liberan mediante pago adicional;",
-            l13: "Después del desbloqueo, el contenido se considera entregado y consumido;",
-            l14: "No hay reembolso por insatisfacción subjetiva;",
-            l15: "El contenido es responsabilidad exclusiva de la creadora y puede variar según su nicho y propuesta, pudiendo incluir contenido adulto o no adulto, exclusivo o no exclusivo;",
-            l16: "Velvet no garantiza expectativas ni resultados respecto del contenido adquirido.",
-            i5: "2.5 Chargebacks",
-            l17: "Los chargebacks indebidos podrán resultar en suspensión o cierre de la cuenta;",
-            l18: "Velvet podrá presentar evidencias a los operadores de pago;",
-            l19: "El usuario podrá ser responsabilizado por fraude.",
-            i6: "2.6 Prevención de Fraude",
-            p1: "La Plataforma utiliza sistemas automatizados para:",
-            l20: "Detectar actividades sospechosas;",
-            l21: "Reducir riesgos financieros;",
-            l22: "Proteger transacciones.",
+            l17: "Los contenidos pagos se liberan mediante pago adicional;",
+            l18: "Después del desbloqueo, el contenido se considera entregado y consumido;",
+            l19: "No hay reembolso por insatisfacción subjetiva con el contenido;",
+            l20: "El contenido es responsabilidad exclusiva de la creadora y puede variar según su nicho y propuesta;",
+            l21: "Velvet no garantiza expectativas ni resultados respecto del contenido adquirido.",
+            i5: "2.5 Naturaleza del Contenido Digital",
+            p5: "Velvet proporciona acceso a contenido digital entregado inmediatamente tras la confirmación del pago, ya sea por activación de suscripción o por la conclusión de una compra pay-per-view. Debido a la naturaleza inmediata y no restituible del contenido digital, las reglas de reembolso aplicables difieren de las previstas para bienes físicos.",
+            i6: "2.6 Derecho de Desistimiento",
+            p6a: "De conformidad con el Código de Defensa del Consumidor de Brasil (CDC, Ley n.º 8.078/1990), los consumidores tienen un derecho de desistimiento de 7 días corridos a partir de la contratación, en contratos celebrados fuera del establecimiento comercial, incluidos los realizados por internet.",
+            i6b: "Excepción para Contenido Digital con Entrega Inmediata",
+            p6b: "Conforme a las directrices del SENACON y la interpretación consolidada del CDC para servicios digitales, el derecho de desistimiento puede no ser aplicable cuando, de forma acumulativa:",
+            l22: "El usuario solicite expresamente el inicio inmediato del acceso al contenido digital;",
+            l23: "Sea informado previamente de que perderá el derecho de desistimiento una vez concedido el acceso; y",
+            l24: "Manifieste su acuerdo expreso con estas condiciones antes de completar la compra.",
+            p6c: "Esta confirmación se obtiene en el momento del pago. El usuario será informado de forma clara y destacada sobre:",
+            l25: "La liberación inmediata del contenido tras el pago;",
+            l26: "La naturaleza digital y no restituible del servicio;",
+            l27: "La posible pérdida del derecho de desistimiento.",
+            p6d: "Si el usuario aún no ha accedido al contenido digital adquirido, podrá ejercer el derecho de desistimiento dentro del plazo legal de 7 días contactando al soporte en contato@velvet.lat.",
             i7: "2.7 Política de Reembolso",
-            l23: "Las suscripciones, Diamantes y contenidos pagos no son reembolsables, salvo cuando la ley lo exija o en los casos previstos a continuación;",
-            l24: "El usuario es informado previamente sobre las condiciones de la compra y debe aceptar los Términos antes de completar la transacción;",
-            l25: "El reembolso podrá ocurrir exclusivamente en los siguientes casos:",
-            l26: "Cobro duplicado;",
-            l27: "Error técnico comprobado;",
-            l28: "Falla del sistema;",
-            l29: "No disponibilidad del servicio después del pago.",
-            p2: "Velvet podrá solicitar comprobación para su análisis.",
-            i8: "2.8 Derecho de Desistimiento",
-            l30: "El usuario reconoce que los servicios y contenidos digitales de la Plataforma se ponen a disposición de forma inmediata tras la confirmación del pago;",
-            l31: "Al completar la compra, el usuario declara conocer y aceptar la ejecución inmediata del servicio;",
-            l32: "En consecuencia, el usuario acepta que el derecho de desistimiento podrá no ser aplicable, en la medida permitida por la legislación aplicable, cuando haya comenzado la ejecución inmediata de contenidos o servicios digitales;",
-            l33: "El usuario será informado previamente sobre:",
-            l34: "liberación inmediata del contenido;",
-            l35: "naturaleza digital del servicio;",
-            l36: "posible pérdida del derecho de desistimiento, cuando sea legalmente aplicable."
+            i7a: "2.7.1 Reembolso por Determinación Legal",
+            p7a: "Velvet realizará el reembolso íntegro independientemente de evaluación discrecional en los siguientes casos:",
+            l28: "Cargo duplicado comprobado;",
+            l29: "Error técnico o falla del sistema que impidió el acceso al servicio contratado;",
+            l30: "No disponibilidad del servicio tras la confirmación del pago;",
+            l31: "Ejercicio oportuno del derecho de desistimiento conforme al CDC, cuando corresponda.",
+            i7b: "2.7.2 Reembolsos Discrecionales",
+            p7b: "Velvet podrá, a su exclusivo criterio, conceder reembolsos o créditos tras análisis del equipo de soporte, sin que ello implique derecho automático o garantizado, en los siguientes casos:",
+            l32: "Problema técnico que impidió parcialmente el acceso al contenido adquirido;",
+            l33: "Error de procesamiento o renovación no intencional, disputada inmediatamente después del cargo;",
+            l34: "El contenido adquirido difirió materialmente de su descripción o fue presentado de forma engañosa por la Creadora;",
+            l35: "El acceso fue removido por una acción de moderación poco después de la compra, sin culpa del usuario;",
+            l36: "Otras circunstancias evaluadas caso a caso por el equipo de soporte.",
+            p7b2: "Las decisiones sobre reembolsos discrecionales consideran: las circunstancias de la transacción, el momento de la solicitud, el historial de la cuenta y las obligaciones de protección al consumidor aplicables. Nada en esta Política crea un derecho automático, incondicional o garantizado al reembolso.",
+            i7c: "2.7.3 Método y Plazo de Reembolso",
+            l37: "Los reembolsos aprobados se acreditan en el mismo medio de pago utilizado en la transacción original;",
+            l38: "El plazo de reversión depende del operador de tarjeta o institución financiera y puede tardar hasta 2 (dos) ciclos de facturación;",
+            l39: "Las tarifas de procesamiento pueden no ser reembolsadas, en los casos permitidos por la ley.",
+            i7d: "2.7.4 Casos Sin Derecho a Reembolso",
+            p7d: "No se concederán reembolsos en los siguientes casos:",
+            l40: "Insatisfacción subjetiva con el contenido de la creadora;",
+            l41: "Contenido accedido íntegramente sin ningún problema técnico comprobado;",
+            l42: "Solicitudes fraudulentas, abusivas o reincidentes sin fundamento;",
+            l43: "Violación de los Términos de Uso o de las políticas aplicables por parte del usuario.",
+            i8: "2.8 Chargebacks y Disputas de Pago",
+            i8a: "Contacte el Soporte Primero",
+            p8a: "Si el usuario cree que un cargo es incorrecto, no autorizado o desea disputarlo, debe ponerse en contacto con el soporte de Velvet en contato@velvet.lat antes de iniciar una disputa con el operador de tarjeta o institución financiera. La mayoría de los problemas — incluidas disputas sobre suscripciones, renovaciones y cuestiones relacionadas con el contenido — pueden resolverse con agilidad a través de nuestro soporte.",
+            i8b: "Consecuencias del Chargeback Indebido",
+            p8b: "Abrir chargebacks sin contacto previo con el soporte, o de forma abusiva, podrá resultar en:",
+            l44: "Revisión o restricciones en la cuenta;",
+            l45: "Suspensión o cierre en casos de abuso;",
+            l46: "Pérdida de acceso a la Plataforma;",
+            l47: "Adopción de medidas legales conforme a la legislación aplicable.",
+            i8c: "Prevención y Resolución",
+            p8c: "Velvet trabaja activamente para evitar chargebacks innecesarios mediante:",
+            l48: "Soporte al cliente accesible y receptivo;",
+            l49: "Análisis ágil de solicitudes de reembolso;",
+            l50: "Resolución interna de disputas, incluso a través de reembolsos discrecionales o ajustes de facturación.",
+            i9: "2.9 Prevención de Fraude",
+            p9: "La Plataforma utiliza sistemas automatizados para:",
+            l51: "Detectar actividades sospechosas;",
+            l52: "Reducir riesgos financieros;",
+            l53: "Proteger transacciones y usuarios."
           },
           s3: {
             title: "3. Política de Contenido",
@@ -1061,9 +1248,7 @@
             l6: "Fraudes;",
             l7: "Delitos digitales."
           },
-          s7: {
-            title: "7. Contacto"
-          },
+          s7: { title: "7. Contacto" },
           s8: {
             title: "8. Disposiciones Finales",
             p1: "Estas Políticas deben interpretarse conjuntamente con los Términos de Uso y la Política de Privacidad."
@@ -1078,55 +1263,52 @@
       }
     };
 
-   function getNestedValue(obj, path) {
-  return path.split(".").reduce((acc, part) => {
-    if (acc === undefined || acc === null) return undefined;
-    if (Array.isArray(acc)) return acc[Number(part)];
-    return acc[part];
-  }, obj);
-}
-
-function updateLanguageButtons(lang) {
-  document.querySelectorAll(".lang-btn").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.lang === lang);
-  });
-}
-
-function setLanguage(lang) {
-  const dict = i18n[lang] || i18n.pt;
-
-  document.documentElement.lang =
-    lang === "pt" ? "pt-BR" :
-    lang === "en" ? "en" :
-    "es";
-
-  document.title = dict.metaTitle;
-
-  document.querySelectorAll("[data-i18n]").forEach((el) => {
-    const key = el.getAttribute("data-i18n");
-    const value = getNestedValue(dict, key);
-
-    if (typeof value !== "undefined") {
-      el.textContent = value;
+    function getNestedValue(obj, path) {
+      return path.split(".").reduce((acc, part) => {
+        if (acc === undefined || acc === null) return undefined;
+        if (Array.isArray(acc)) return acc[Number(part)];
+        return acc[part];
+      }, obj);
     }
-  });
 
-  localStorage.setItem("velvet_language", lang);
-  updateLanguageButtons(lang);
-}
+    function updateLanguageButtons(lang) {
+      document.querySelectorAll(".lang-btn").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.lang === lang);
+      });
+    }
 
-document.addEventListener("DOMContentLoaded", () => {
-  const savedLang = localStorage.getItem("velvet_language") || "pt";
+    function setLanguage(lang) {
+      const dict = i18n[lang] || i18n.pt;
 
-  setLanguage(savedLang);
+      document.documentElement.lang =
+        lang === "pt" ? "pt-BR" :
+        lang === "en" ? "en" :
+        "es";
 
-  document.querySelectorAll(".lang-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      setLanguage(btn.dataset.lang);
+      document.title = dict.metaTitle;
+
+      document.querySelectorAll("[data-i18n]").forEach((el) => {
+        const key = el.getAttribute("data-i18n");
+        const value = getNestedValue(dict, key);
+        if (typeof value !== "undefined") {
+          el.textContent = value;
+        }
+      });
+
+      localStorage.setItem("velvet_language", lang);
+      updateLanguageButtons(lang);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const savedLang = localStorage.getItem("velvet_language") || "pt";
+      setLanguage(savedLang);
+
+      document.querySelectorAll(".lang-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          setLanguage(btn.dataset.lang);
+        });
+      });
     });
-  });
-});
-
   </script>
 </body>
 </html>

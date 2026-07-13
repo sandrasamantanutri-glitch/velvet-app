@@ -11,6 +11,75 @@
   <link rel="stylesheet" href="/css/pag.css">
 
    <script src="/i18n.js"></script>
+  <style>
+    /* ===== TABS ===== */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #e5d9ff;
+      padding-bottom: 0;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      padding: 10px 20px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #9b87b8;
+      cursor: pointer;
+      font-family: inherit;
+      margin-bottom: -2px;
+      transition: .2s;
+    }
+    .tab-btn.ativa {
+      color: #6f3cff;
+      border-bottom-color: #6f3cff;
+    }
+    .tab-content { display: none; }
+    .tab-content.ativa { display: block; }
+
+    /* ===== FILTROS ===== */
+    .filtros { margin-bottom: 16px; }
+    .filtros select {
+      border: 1.5px solid #ddd8e6;
+      border-radius: 10px;
+      padding: 9px 14px;
+      font-size: 14px;
+      color: #1e1b2e;
+      background: #fff;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    /* ===== PAGINAÇÃO ===== */
+    .paginacao {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+    .paginacao button {
+      background: #f3eff5;
+      border: 1.5px solid #ddd8e6;
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      color: #1e1b2e;
+      font-family: inherit;
+      transition: .15s;
+    }
+    .paginacao button.ativa,
+    .paginacao button:hover {
+      background: #6f3cff;
+      color: #fff;
+      border-color: #6f3cff;
+    }
+  </style>
 </head>
 
 <body>

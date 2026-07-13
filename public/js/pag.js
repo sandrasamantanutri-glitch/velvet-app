@@ -104,17 +104,24 @@ function validarDadosIniciaisPagamento() {
 
 function obterAceitesPagamento() {
   const aceitouTermos = !!document.getElementById("aceiteTermosPagamento")?.checked;
+  const aceitouPoliticas = !!document.getElementById("aceitePoliticasUtilizacao")?.checked;
 
   if (!aceitouTermos) {
     alert(t("pag.aceite_termos_obrigatorio"));
     return null;
   }
 
+  if (!aceitouPoliticas) {
+    alert(t("pag.aceite_politicas_obrigatorio"));
+    return null;
+  }
+
   return {
     aceitou_termos: aceitouTermos,
+    aceitou_politicas: aceitouPoliticas,
     aceitou_execucao_imediata: true,
     aceite_timestamp: new Date().toISOString(),
-    versao_termos: "2026-06-07"
+    versao_termos: "2026-07-13"
   };
 }
 
@@ -978,6 +985,7 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
     if (!aceites) return;
 
     const aceitou_termos = aceites.aceitou_termos;
+    const aceitou_politicas = aceites.aceitou_politicas;
     const aceitou_execucao_imediata = aceites.aceitou_execucao_imediata;
     const aceite_timestamp = aceites.aceite_timestamp;
     const versao_termos = aceites.versao_termos;
@@ -1001,7 +1009,7 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
 
       url = "/api/pagamento/vip/pix";
       body = { tipo: "vip", modelo_id: modeloIdFinal, cpf, telefone, endereco,
-               aceitou_termos, aceitou_execucao_imediata, aceite_timestamp, versao_termos,
+               aceitou_termos, aceitou_politicas, aceitou_execucao_imediata, aceite_timestamp, versao_termos,
                fingerprint: gerarFingerprint() };
     }
 
@@ -1015,7 +1023,7 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
 
       url = "/api/pagamento/premium/pix";
       body = { tipo: "premium", premium_post_id, cpf, telefone, endereco,
-               aceitou_termos, aceitou_execucao_imediata, aceite_timestamp, versao_termos,
+               aceitou_termos, aceitou_politicas, aceitou_execucao_imediata, aceite_timestamp, versao_termos,
                fingerprint: gerarFingerprint() };
     }
 
@@ -1029,7 +1037,7 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
 
       url = "/api/pagamento/midia/pix";
       body = { tipo: "midia", conteudo_id, cpf, telefone, endereco,
-               aceitou_termos, aceitou_execucao_imediata, aceite_timestamp, versao_termos,
+               aceitou_termos, aceitou_politicas, aceitou_execucao_imediata, aceite_timestamp, versao_termos,
                fingerprint: gerarFingerprint() };
     }
 

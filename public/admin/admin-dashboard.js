@@ -1134,7 +1134,7 @@ function renderContestacao(data) {
       <td>${p.cpf || p.documento || '—'}</td>
       <td>${p.telefone || '—'}</td>
       <td>${p.aceitou_termos ? `Sim (v${p.versao_termos || '?'} em ${fmtDateTime(p.aceite_timestamp)})` : 'Não'}</td>
-      <td>${p.aceitou_execucao_imediata ? 'Sim' : 'Não'}</td>
+      <td>${p.aceitou_politicas ? 'Sim' : (p.aceitou_execucao_imediata ? 'Sim (legado)' : 'Não')}</td>
       <td style="word-break:break-all;">${p.stripe_payment_intent_id || p.stripe_charge_id || '—'}</td>
     </tr>
   `).join('') || emptyRow(14);
@@ -1152,7 +1152,7 @@ function renderContestacao(data) {
       <td>${p.cpf || '—'}</td>
       <td>${p.telefone || '—'}</td>
       <td>${p.aceitou_termos ? `Sim (v${p.versao_termos || '?'} em ${fmtDateTime(p.aceite_timestamp)})` : 'Não'}</td>
-      <td>${p.aceitou_execucao_imediata ? 'Sim' : 'Não'}</td>
+      <td>${p.aceitou_politicas ? 'Sim' : (p.aceitou_execucao_imediata ? 'Sim (legado)' : 'Não')}</td>
       <td style="word-break:break-all;">${p.pagarme_order_id || p.gateway_order_id || '—'}</td>
     </tr>
   `).join('') || emptyRow(13);
@@ -1161,14 +1161,14 @@ function renderContestacao(data) {
     <div class="card contestacao-print">
       <h3>3. Pagamentos com Cartão</h3>
       <table class="table">
-        <thead><tr><th>Modelo ID</th><th>Tipo</th><th>Status</th><th>Valor</th><th>Cartão</th><th>Nome no cartão</th><th>Pago em</th><th>IP</th><th>Fingerprint</th><th>CPF</th><th>Telefone</th><th>Aceite Termos</th><th>Execução Imediata</th><th>Order ID</th></tr></thead>
+        <thead><tr><th>Modelo ID</th><th>Tipo</th><th>Status</th><th>Valor</th><th>Cartão</th><th>Nome no cartão</th><th>Pago em</th><th>IP</th><th>Fingerprint</th><th>CPF</th><th>Telefone</th><th>Aceite Termos de Uso</th><th>Aceite Políticas de Utilização</th><th>Order ID</th></tr></thead>
         <tbody>${cartaoRows}</tbody>
       </table>
     </div>
     <div class="card contestacao-print">
       <h3>3.1 Pagamentos via PIX</h3>
       <table class="table">
-        <thead><tr><th>Modelo ID</th><th>Tipo</th><th>Status</th><th>Valor</th><th>Gateway</th><th>Pago em</th><th>IP</th><th>Fingerprint</th><th>CPF</th><th>Telefone</th><th>Aceite Termos</th><th>Execução Imediata</th><th>Order ID</th></tr></thead>
+        <thead><tr><th>Modelo ID</th><th>Tipo</th><th>Status</th><th>Valor</th><th>Gateway</th><th>Pago em</th><th>IP</th><th>Fingerprint</th><th>CPF</th><th>Telefone</th><th>Aceite Termos de Uso</th><th>Aceite Políticas de Utilização</th><th>Order ID</th></tr></thead>
         <tbody>${pixRows}</tbody>
       </table>
     </div>
@@ -3262,6 +3262,26 @@ pageLoaders.financeiro = function () {
     select.dataset.bound = '1';
   }
 
+  const inputCliente = document.getElementById('finClienteId');
+  const btnBuscar = document.getElementById('btnBuscarFinCliente');
+  const btnLimpar = document.getElementById('btnLimparFinCliente');
+
+  if (btnBuscar && !btnBuscar.dataset.bound) {
+    btnBuscar.addEventListener('click', recarregarAbaFinanceiroAtual);
+    btnBuscar.dataset.bound = '1';
+  }
+  if (btnLimpar && !btnLimpar.dataset.bound) {
+    btnLimpar.addEventListener('click', () => {
+      if (inputCliente) inputCliente.value = '';
+      recarregarAbaFinanceiroAtual();
+    });
+    btnLimpar.dataset.bound = '1';
+  }
+  if (inputCliente && !inputCliente.dataset.bound) {
+    inputCliente.addEventListener('keydown', e => { if (e.key === 'Enter') recarregarAbaFinanceiroAtual(); });
+    inputCliente.dataset.bound = '1';
+  }
+
   carregarCartao(1);
 };
 
@@ -3269,8 +3289,10 @@ function makeFinLoader(endpoint, tableId, paginationId, mapper, fnName) {
   window[fnName] = async function (page) {
     try {
       const mes = document.getElementById('selectMesFinanceiro')?.value || '';
+      const clienteId = (document.getElementById('finClienteId')?.value || '').trim();
       let url = `/admin/dashboard/${endpoint}?page=${page}&limit=20`;
       if (mes) url += `&mes=${encodeURIComponent(mes)}`;
+      if (clienteId) url += `&cliente_id=${encodeURIComponent(clienteId)}`;
 
       const data = await fetchJSON(url);
       const tbody = document.getElementById(tableId).querySelector('tbody');

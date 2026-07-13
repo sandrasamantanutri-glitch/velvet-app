@@ -3089,25 +3089,30 @@ function makeGenericList(table, orderBy = "id DESC", dateColumn = null) {
       );
 
       const m = parseMes(req.query.mes);
+      const clienteId = req.query.cliente_id ? parseInt(req.query.cliente_id, 10) : null;
 
-      let where = "1=1";
+      const params = [];
+      const conds = [];
+
       if (dateColumn && m && Number.isInteger(m.mes) && Number.isInteger(m.ano)) {
-        where = `EXTRACT(MONTH FROM ${dateColumn}) = ${m.mes} AND EXTRACT(YEAR FROM ${dateColumn}) = ${m.ano}`;
+        conds.push(`EXTRACT(MONTH FROM ${dateColumn}) = ${m.mes} AND EXTRACT(YEAR FROM ${dateColumn}) = ${m.ano}`);
+      }
+      if (clienteId && !isNaN(clienteId)) {
+        params.push(clienteId);
+        conds.push(`cliente_id = $${params.length}`);
       }
 
-      const countQ = await db.query(`SELECT COUNT(*) FROM ${table} WHERE ${where}`);
+      const where = conds.length ? conds.join(" AND ") : "1=1";
+
+      const countQ = await db.query(`SELECT COUNT(*) FROM ${table} WHERE ${where}`, params);
       const total = Number(countQ.rows[0].count);
 
       const { rows } = await db.query(
-        `SELECT * FROM ${table} WHERE ${where} ORDER BY ${orderBy} LIMIT $1 OFFSET $2`,
-        [limit, offset]
+        `SELECT * FROM ${table} WHERE ${where} ORDER BY ${orderBy} LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+        [...params, limit, offset]
       );
 
-      res.json({
-        rows,
-        totalPages: Math.ceil(total / limit),
-        page
-      });
+      res.json({ rows, totalPages: Math.ceil(total / limit), page });
     } catch (err) {
       console.error(`Erro ${table}:`, err);
       res.status(500).json({ erro: "Erro interno" });
@@ -3132,13 +3137,22 @@ function makeGenericListComDisponibilidade(table, orderBy, dateColumn, joinColum
       );
 
       const m = parseMes(req.query.mes);
+      const clienteId = req.query.cliente_id ? parseInt(req.query.cliente_id, 10) : null;
 
-      let where = "1=1";
+      const params = [];
+      const conds = [];
+
       if (dateColumn && m && Number.isInteger(m.mes) && Number.isInteger(m.ano)) {
-        where = `EXTRACT(MONTH FROM t.${dateColumn}) = ${m.mes} AND EXTRACT(YEAR FROM t.${dateColumn}) = ${m.ano}`;
+        conds.push(`EXTRACT(MONTH FROM t.${dateColumn}) = ${m.mes} AND EXTRACT(YEAR FROM t.${dateColumn}) = ${m.ano}`);
+      }
+      if (clienteId && !isNaN(clienteId)) {
+        params.push(clienteId);
+        conds.push(`t.cliente_id = $${params.length}`);
       }
 
-      const countQ = await db.query(`SELECT COUNT(*) FROM ${table} t WHERE ${where}`);
+      const where = conds.length ? conds.join(" AND ") : "1=1";
+
+      const countQ = await db.query(`SELECT COUNT(*) FROM ${table} t WHERE ${where}`, params);
       const total = Number(countQ.rows[0].count);
 
       const { rows } = await db.query(
@@ -3154,15 +3168,11 @@ function makeGenericListComDisponibilidade(table, orderBy, dateColumn, joinColum
            AND ta.gateway = 'stripe'
          WHERE ${where}
          ORDER BY ${orderBy}
-         LIMIT $1 OFFSET $2`,
-        [limit, offset]
+         LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+        [...params, limit, offset]
       );
 
-      res.json({
-        rows,
-        totalPages: Math.ceil(total / limit),
-        page
-      });
+      res.json({ rows, totalPages: Math.ceil(total / limit), page });
     } catch (err) {
       console.error(`Erro ${table}:`, err);
       res.status(500).json({ erro: "Erro interno" });

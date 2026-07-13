@@ -8126,53 +8126,162 @@ app.put("/api/cliente/dados", authCliente, async (req, res) => {
 
 app.put("/api/cliente/subscricoes/:id/cancelar", auth, async (req, res) => {
   try {
-
     const subscriptionId = req.params.id;
 
     const clienteRes = await db.query(
       "SELECT id FROM clientes WHERE user_id = $1",
       [req.user.id]
     );
-
-    if (!clienteRes.rowCount) {
-      return res.status(404).json({ error: "Cliente não encontrado." });
-    }
-
+    if (!clienteRes.rowCount) return res.status(404).json({ error: "Cliente não encontrado." });
     const clienteId = clienteRes.rows[0].id;
 
     const subRes = await db.query(
-      `SELECT id, ativo 
+      `SELECT id, ativo, modelo_id, expiration_at, cancelado_em
        FROM vip_subscriptions
        WHERE id = $1 AND cliente_id = $2`,
       [subscriptionId, clienteId]
     );
+    if (!subRes.rowCount) return res.status(403).json({ error: "Subscrição inválida." });
 
-    if (!subRes.rowCount) {
-      return res.status(403).json({ error: "Subscrição inválida." });
-    }
+    const sub = subRes.rows[0];
+    if (sub.cancelado_em) return res.status(400).json({ error: "Esta subscrição já foi cancelada." });
 
-    if (!subRes.rows[0].ativo) {
-      return res.status(400).json({ error: "Esta subscrição já está cancelada." });
-    }
-
+    // Mantém ativa até expirar, apenas registra cancelamento
     await db.query(
-      `UPDATE vip_subscriptions
-       SET recorrente = false,
-           ativo = false
-       WHERE id = $1`,
+      `UPDATE vip_subscriptions SET recorrente = false, cancelado_em = NOW() WHERE id = $1`,
       [subscriptionId]
     );
 
+    // Log para dashboard admin
+    await db.query(
+      `INSERT INTO logs_cancelamentos (cliente_id, modelo_id, subscricao_id, valida_ate)
+       VALUES ($1, $2, $3, $4)`,
+      [clienteId, sub.modelo_id, subscriptionId, sub.expiration_at]
+    ).catch(() => {});
+
     return res.status(200).json({
       success: true,
-      message: "Subscrição cancelada com sucesso."
+      message: "Cancelamento registrado.",
+      valida_ate: sub.expiration_at
     });
-
   } catch (err) {
     console.error("Erro ao cancelar:", err);
-    return res.status(500).json({
-      error: "Erro interno ao cancelar subscrição."
-    });
+    return res.status(500).json({ error: "Erro interno ao cancelar subscrição." });
+  }
+});
+
+// =============================
+// OCORRÊNCIA DO CLIENTE (antifraude / suporte avançado)
+// =============================
+app.post("/api/cliente/ocorrencia", auth, async (req, res) => {
+  try {
+    const { tipo, subtipo, nome_completo, nascimento, email, data_pagamento,
+            modelo_nome, midia_id, descricao, anexo_base64, anexo_filename } = req.body;
+
+    if (!tipo || !nome_completo || !email) {
+      return res.status(400).json({ error: "Campos obrigatórios ausentes." });
+    }
+
+    const clienteRes = await db.query(
+      "SELECT id FROM clientes WHERE user_id = $1", [req.user.id]
+    );
+    const clienteId = clienteRes.rows[0]?.id || null;
+
+    await db.query(
+      `INSERT INTO logs_ocorrencias
+         (cliente_id, tipo, subtipo, nome_completo, nascimento, email,
+          data_pagamento, modelo_nome, midia_id, descricao, anexo_base64, anexo_filename)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+      [clienteId, tipo, subtipo || null, nome_completo,
+       nascimento || null, email, data_pagamento || null,
+       modelo_nome || null, midia_id || null, descricao || null,
+       anexo_base64 || null, anexo_filename || null]
+    );
+
+    // Envia email interno para a equipe Velvet
+    try {
+      const { Resend } = require("resend");
+      const r = new Resend(process.env.RESEND_API_KEY);
+      const attachments = [];
+      if (anexo_base64 && anexo_filename) {
+        attachments.push({ filename: anexo_filename, content: anexo_base64 });
+      }
+      const tipoLabel = {
+        vip_nao_liberou: "VIP não liberou",
+        propaganda: "Propaganda enganosa / Golpe",
+        arrependimento: "Arrependimento",
+        modelo_errada: "Assinei modelo errada",
+        midia_nao_desbloqueou: "Mídia não desbloqueou",
+        midia_errada: "Desbloqueio de mídia errada",
+        cancelamento_vip: "Cancelamento VIP",
+      }[tipo] || tipo;
+      await r.emails.send({
+        from: "Velvet Suporte <contato@velvet.lat>",
+        to: "contato@velvet.lat",
+        subject: `[Ocorrência] ${tipoLabel} — ${nome_completo}`,
+        html: `
+          <h2 style="color:#7B2CFF;">[${tipoLabel}]</h2>
+          <table style="border-collapse:collapse;width:100%;font-family:sans-serif;font-size:14px;">
+            <tr><td style="padding:6px 10px;background:#f3eff5;font-weight:bold;">Cliente ID</td><td style="padding:6px 10px;">${clienteId || "—"}</td></tr>
+            <tr><td style="padding:6px 10px;background:#f3eff5;font-weight:bold;">Nome completo</td><td style="padding:6px 10px;">${nome_completo}</td></tr>
+            <tr><td style="padding:6px 10px;background:#f3eff5;font-weight:bold;">Nascimento</td><td style="padding:6px 10px;">${nascimento || "—"}</td></tr>
+            <tr><td style="padding:6px 10px;background:#f3eff5;font-weight:bold;">Email</td><td style="padding:6px 10px;">${email}</td></tr>
+            <tr><td style="padding:6px 10px;background:#f3eff5;font-weight:bold;">Data do pagamento</td><td style="padding:6px 10px;">${data_pagamento || "—"}</td></tr>
+            <tr><td style="padding:6px 10px;background:#f3eff5;font-weight:bold;">Modelo/Criadora</td><td style="padding:6px 10px;">${modelo_nome || "—"}</td></tr>
+            <tr><td style="padding:6px 10px;background:#f3eff5;font-weight:bold;">Tipo de mídia</td><td style="padding:6px 10px;">${subtipo || "—"}</td></tr>
+            <tr><td style="padding:6px 10px;background:#f3eff5;font-weight:bold;">Mídia ID</td><td style="padding:6px 10px;">${midia_id || "—"}</td></tr>
+            <tr><td style="padding:6px 10px;background:#f3eff5;font-weight:bold;">Descrição</td><td style="padding:6px 10px;">${descricao || "—"}</td></tr>
+          </table>`,
+        attachments
+      });
+    } catch (emailErr) {
+      console.warn("Aviso: email de ocorrência não enviado:", emailErr.message);
+    }
+
+    // Confirmação para o cliente
+    if (email) {
+      try {
+        const { Resend } = require("resend");
+        const r = new Resend(process.env.RESEND_API_KEY);
+        await r.emails.send({
+          from: "Velvet Suporte <contato@velvet.lat>",
+          to: email,
+          subject: "Recebemos o seu report — Velvet",
+          html: `
+            <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;">
+              <img src="https://velvet.lat/assets/logo.png" alt="Velvet" style="height:36px;margin-bottom:24px;" />
+              <h2 style="color:#7B2CFF;margin:0 0 16px;">Report recebido com sucesso ✅</h2>
+              <p style="color:#1e1b2e;font-size:15px;line-height:1.7;margin:0 0 14px;">
+                Olá, <strong>${nome_completo || "cliente"}</strong>!
+              </p>
+              <p style="color:#1e1b2e;font-size:15px;line-height:1.7;margin:0 0 14px;">
+                Recebemos o seu report e nossa equipe já está analisando o seu caso.
+                Em breve você receberá nosso retorno — o prazo é de até <strong>24 a 48 horas úteis</strong>.
+              </p>
+              <p style="color:#1e1b2e;font-size:15px;line-height:1.7;margin:0 0 24px;">
+                Se tiver mais alguma dúvida, pode responder este email ou entrar em contato pelo
+                <a href="mailto:contato@velvet.lat" style="color:#7B2CFF;font-weight:600;">contato@velvet.lat</a>.
+              </p>
+              <p style="color:#1e1b2e;font-size:15px;line-height:1.7;margin:0;">
+                Obrigada pela confiança! 💜<br/>
+                <strong>Equipe Velvet</strong>
+              </p>
+              <hr style="border:none;border-top:1px solid #e5d9ff;margin:32px 0 16px;" />
+              <p style="color:#9b87b8;font-size:12px;margin:0;">
+                Este é um email automático de confirmação. Não é necessário respondê-lo.
+              </p>
+            </div>
+          `
+        });
+      } catch (emailConfirmErr) {
+        console.warn("Aviso: email de confirmação ao cliente não enviado:", emailConfirmErr.message);
+      }
+    }
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error("Erro ocorrencia:", err);
+    return res.status(500).json({ error: "Erro interno." });
   }
 });
 
