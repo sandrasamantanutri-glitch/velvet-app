@@ -1,0 +1,26 @@
+name: Mirror para Repositório de Backup
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    # Roda todo dia às 06:30 UTC = 03:30 horário de Brasília
+    - cron: '30 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  mirror:
+    name: Espelhar código para backup privado
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout completo do repositório
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fazer push para repositório de backup
+        run: |
+          git remote add backup https://x-access-token:${{ secrets.BACKUP_TOKEN }}@github.com/sandrasamantanutri-glitch/velvet-app-backup.git
+          git push backup main --force
