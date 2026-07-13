@@ -5694,4 +5694,103 @@ router.post("/notificacoes/marcar-todas-lidas", auth, authAdmin, async (req, res
   }
 });
 
+// ========================================
+// OCORRÊNCIAS — ADMIN
+// ========================================
+
+router.get("/ocorrencias", authAdmin, async (req, res) => {
+  try {
+    const { status, search, page: pageQ, limit: limitQ } = req.query;
+    const pageNum = Math.max(1, Number(pageQ) || 1);
+    const perPage = Math.min(100, Number(limitQ) || 30);
+    const offset  = (pageNum - 1) * perPage;
+
+    const params = [];
+    const conditions = [];
+
+    if (status && status !== "todas") {
+      params.push(status);
+      conditions.push(`o.status = $${params.length}`);
+    }
+    if (search) {
+      params.push(`%${search}%`);
+      conditions.push(`(o.email ILIKE $${params.length} OR o.nome_completo ILIKE $${params.length} OR o.modelo_nome ILIKE $${params.length})`);
+    }
+
+    const where = conditions.length ? "WHERE " + conditions.join(" AND ") : "";
+
+    const countRes = await db.query(
+      `SELECT COUNT(*) FROM logs_ocorrencias o ${where}`,
+      params
+    );
+    const total = Number(countRes.rows[0].count);
+
+    params.push(perPage, offset);
+    const { rows } = await db.query(
+      `SELECT o.id, o.cliente_id, o.tipo, o.subtipo, o.nome_completo, o.email,
+              o.modelo_nome, o.descricao, o.status, o.resposta, o.resposta_at,
+              o.resposta_admin, o.anexo_filename, o.anexo_resposta_filename,
+              o.criado_em AS created_at,
+              u.email AS cliente_email
+         FROM logs_ocorrencias o
+         LEFT JOIN clientes c ON c.id = o.cliente_id
+         LEFT JOIN users u ON u.id = c.user_id
+         ${where}
+         ORDER BY o.criado_em DESC
+         LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params
+    );
+
+    res.json({ total, page: pageNum, per_page: perPage, rows });
+  } catch (err) {
+    console.error("Erro GET /admin/dashboard/ocorrencias:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.patch("/ocorrencias/:id", authAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, resposta, anexo_resposta_base64, anexo_resposta_filename } = req.body;
+
+    const adminEmail = req.admin?.email || req.user?.email || "admin";
+
+    const fields = [];
+    const params = [];
+
+    if (status) {
+      params.push(status);
+      fields.push(`status = $${params.length}`);
+    }
+    if (resposta !== undefined) {
+      params.push(resposta || null);
+      fields.push(`resposta = $${params.length}`);
+      params.push(new Date());
+      fields.push(`resposta_at = $${params.length}`);
+      params.push(adminEmail);
+      fields.push(`resposta_admin = $${params.length}`);
+    }
+    if (anexo_resposta_base64 !== undefined) {
+      params.push(anexo_resposta_base64 || null);
+      fields.push(`anexo_resposta_base64 = $${params.length}`);
+      params.push(anexo_resposta_filename || null);
+      fields.push(`anexo_resposta_filename = $${params.length}`);
+    }
+
+    if (!fields.length) return res.status(400).json({ erro: "Nada para atualizar" });
+
+    params.push(id);
+    const { rows } = await db.query(
+      `UPDATE logs_ocorrencias SET ${fields.join(", ")} WHERE id = $${params.length} RETURNING *`,
+      params
+    );
+    if (!rows.length) return res.status(404).json({ erro: "Ocorrência não encontrada" });
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Erro PATCH /admin/dashboard/ocorrencias/:id:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
 module.exports = router;

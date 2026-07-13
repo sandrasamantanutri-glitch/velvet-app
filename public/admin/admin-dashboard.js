@@ -1284,6 +1284,36 @@ function renderContestacao(data) {
     </div>
   `;
 
+  const OC_TIPO_LABEL = {
+    vip_nao_liberou: "VIP não liberou", propaganda: "Propaganda enganosa",
+    arrependimento: "Arrependimento", modelo_errada: "Influencer errada",
+    midia_nao_desbloqueou: "Mídia não desbloqueou", midia_errada: "Mídia errada",
+  };
+  const OC_STATUS_BADGE = { aberta: '#e67e22', pendente: '#2c5fe6', fechada: '#1a7a40' };
+  const ocorrenciasBlocos = (data.ocorrencias || []).map(oc => `
+    <div style="margin-bottom:10px;padding:10px 14px;border:1.5px solid #e5d9ff;border-radius:10px;background:#faf8ff;">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
+        <strong>${OC_TIPO_LABEL[oc.tipo] || oc.tipo}</strong>
+        <span style="background:${OC_STATUS_BADGE[oc.status] || '#999'};color:#fff;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:700;">
+          ${oc.status}
+        </span>
+        <span style="color:#9b87b8;font-size:12px;margin-left:auto;">${fmtDateTime(oc.criado_em)}</span>
+      </div>
+      ${oc.modelo_nome ? `<div style="font-size:13px;color:#5e5873;">Influencer: <strong>${oc.modelo_nome}</strong></div>` : ''}
+      ${oc.descricao   ? `<div style="font-size:13px;color:#5e5873;margin-top:4px;">${oc.descricao}</div>` : ''}
+      ${oc.resposta    ? `<div style="margin-top:8px;padding:8px 12px;background:#f3eff5;border-left:3px solid #6f3cff;border-radius:0 6px 6px 0;font-size:13px;">
+        <strong style="color:#6f3cff;">Resposta (${fmtDateTime(oc.resposta_at)}):</strong><br>${oc.resposta}
+      </div>` : ''}
+    </div>
+  `).join('') || '<p>Nenhuma ocorrência de suporte registrada.</p>';
+
+  const ocorrencias = `
+    <div class="card contestacao-print">
+      <h3>8.5 Ocorrências de Suporte</h3>
+      ${ocorrenciasBlocos}
+    </div>
+  `;
+
   const riscoRows = (data.risco || []).map(r => `
     <tr>
       <td>${r.nivel || '—'}</td>
@@ -1340,10 +1370,158 @@ function renderContestacao(data) {
     ${midias}
     ${visitas}
     ${suporte}
+    ${ocorrencias}
     ${risco}
     ${autoexclusao}
   `;
 }
+
+// ========== OCORRÊNCIAS DE SUPORTE ==========
+
+const OC_TIPO_MAP = {
+  vip_nao_liberou: "VIP não liberou", propaganda: "Propaganda enganosa",
+  arrependimento: "Arrependimento", modelo_errada: "Influencer errada",
+  midia_nao_desbloqueou: "Mídia não desbloqueou", midia_errada: "Mídia errada",
+};
+
+let _ocDebounce;
+function debounceOcorrencias() {
+  clearTimeout(_ocDebounce);
+  _ocDebounce = setTimeout(() => carregarOcorrenciasAdmin(1), 400);
+}
+
+async function carregarOcorrenciasAdmin(page = 1) {
+  const lista = $('ocLista');
+  const pag   = $('ocPaginacao');
+  if (!lista) return;
+
+  const search = ($('ocFiltroSearch')?.value || '').trim();
+  const status = $('ocFiltroStatus')?.value || 'todas';
+
+  lista.innerHTML = '<p>Carregando...</p>';
+  pag.innerHTML = '';
+
+  try {
+    const params = new URLSearchParams({ page, status });
+    if (search) params.set('search', search);
+    const data = await fetchJSON('/admin/dashboard/ocorrencias?' + params);
+
+    if (!data.rows.length) {
+      lista.innerHTML = '<p>Nenhuma ocorrência encontrada.</p>';
+      return;
+    }
+
+    lista.innerHTML = data.rows.map(oc => {
+      const statusBg = { aberta: '#fff0e8', pendente: '#e8f0ff', fechada: '#e6f9ee' }[oc.status] || '#f3f3f3';
+      const statusColor = { aberta: '#e67e22', pendente: '#2c5fe6', fechada: '#1a7a40' }[oc.status] || '#666';
+      return `
+        <div class="card" style="margin-bottom:10px;">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+            <strong>${OC_TIPO_MAP[oc.tipo] || oc.tipo}</strong>
+            <span style="background:${statusBg};color:${statusColor};padding:2px 10px;border-radius:20px;font-size:12px;font-weight:700;">${oc.status}</span>
+            <span style="color:#9b87b8;font-size:12px;">${fmtDateTime(oc.created_at)}</span>
+            <span style="margin-left:auto;font-size:13px;color:#5e5873;">#${oc.id} — ${oc.email || oc.cliente_email || '—'}</span>
+          </div>
+          ${oc.modelo_nome ? `<div style="font-size:13px;color:#5e5873;margin-bottom:4px;">Influencer: <strong>${oc.modelo_nome}</strong></div>` : ''}
+          ${oc.nome_completo ? `<div style="font-size:13px;color:#5e5873;margin-bottom:4px;">Cliente: ${oc.nome_completo}</div>` : ''}
+          ${oc.descricao ? `<div style="font-size:13px;color:#1e1b2e;margin-bottom:8px;">${oc.descricao}</div>` : ''}
+          ${oc.anexo_filename ? `<div style="font-size:12px;color:#9b87b8;margin-bottom:6px;">📎 Anexo cliente: ${oc.anexo_filename}</div>` : ''}
+          ${oc.resposta ? `
+            <div style="padding:8px 12px;background:#f3eff5;border-left:3px solid #6f3cff;border-radius:0 6px 6px 0;font-size:13px;margin-bottom:8px;">
+              <strong style="color:#6f3cff;">Resposta (${fmtDateTime(oc.resposta_at)}) — ${oc.resposta_admin || ''}:</strong><br>${oc.resposta}
+              ${oc.anexo_resposta_filename ? `<br><span style="font-size:12px;">📎 ${oc.anexo_resposta_filename}</span>` : ''}
+            </div>
+          ` : ''}
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+            ${oc.status !== 'pendente' ? `<button class="btn btn-sm" onclick="atualizarOcorrencia(${oc.id},'pendente')">Marcar Em Análise</button>` : ''}
+            ${oc.status !== 'fechada'  ? `<button class="btn btn-sm btn-primary" onclick="abrirRespostaOcorrencia(${oc.id})">Responder / Fechar</button>` : ''}
+            ${oc.status === 'fechada'  ? `<span style="font-size:13px;color:#1a7a40;font-weight:600;">✓ Encerrada</span>` : ''}
+          </div>
+          <div id="oc-form-${oc.id}" style="display:none;margin-top:10px;"></div>
+        </div>
+      `;
+    }).join('');
+
+    // paginação
+    const total = Math.ceil(data.total / data.per_page);
+    if (total > 1) {
+      for (let i = 1; i <= total; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-sm' + (i === page ? ' btn-primary' : '');
+        btn.textContent = i;
+        btn.onclick = () => carregarOcorrenciasAdmin(i);
+        pag.appendChild(btn);
+      }
+    }
+  } catch (err) {
+    lista.innerHTML = `<p style="color:red;">Erro: ${err.message}</p>`;
+  }
+}
+
+function abrirRespostaOcorrencia(id) {
+  const form = $(`oc-form-${id}`);
+  if (!form) return;
+  form.style.display = 'block';
+  form.innerHTML = `
+    <textarea id="oc-resposta-${id}" rows="4" placeholder="Resposta para o cliente..."
+      style="width:100%;box-sizing:border-box;border:1.5px solid #ddd8e6;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;resize:vertical;"></textarea>
+    <input type="file" id="oc-anexo-${id}" accept="image/*,application/pdf" style="margin:8px 0;font-size:12px;">
+    <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">
+      <button class="btn btn-sm btn-primary" onclick="enviarRespostaOcorrencia(${id},'pendente')">Salvar rascunho</button>
+      <button class="btn btn-sm" style="background:#1a7a40;color:#fff;" onclick="enviarRespostaOcorrencia(${id},'fechada')">Responder e Fechar</button>
+      <button class="btn btn-sm" onclick="document.getElementById('oc-form-${id}').style.display='none'">Cancelar</button>
+    </div>
+  `;
+}
+
+async function enviarRespostaOcorrencia(id, novoStatus) {
+  const resposta = $(`oc-resposta-${id}`)?.value?.trim();
+  const fileInput = $(`oc-anexo-${id}`);
+  const file = fileInput?.files?.[0];
+
+  let anexo_base64 = null, anexo_filename = null;
+  if (file) {
+    anexo_base64 = await new Promise(resolve => {
+      const r = new FileReader();
+      r.onload = e => resolve(e.target.result.split(',')[1]);
+      r.readAsDataURL(file);
+    });
+    anexo_filename = file.name;
+  }
+
+  try {
+    const res = await authFetch(`/admin/dashboard/ocorrencias/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: novoStatus, resposta,
+        anexo_resposta_base64: anexo_base64, anexo_resposta_filename: anexo_filename })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    toast('Ocorrência atualizada!', 'success');
+    carregarOcorrenciasAdmin(1);
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  }
+}
+
+async function atualizarOcorrencia(id, status) {
+  try {
+    const res = await authFetch(`/admin/dashboard/ocorrencias/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    toast('Status atualizado!', 'success');
+    carregarOcorrenciasAdmin(1);
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  }
+}
+
+pageLoaders.ocorrencias = function () {
+  carregarOcorrenciasAdmin(1);
+};
 
 // ========== 4. SEGURANÇA ==========
 

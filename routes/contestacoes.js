@@ -86,7 +86,8 @@ router.get('/:identificador', async (req, res) => {
       visitasRes,
       suporteRes,
       riscoRes,
-      autoexclusaoRes
+      autoexclusaoRes,
+      ocorrenciasRes
     ] = await Promise.all([
       db.query(
         `SELECT tipo, descricao, ip, user_agent, created_at
@@ -235,6 +236,15 @@ router.get('/:identificador', async (req, res) => {
          WHERE cliente_id = $1
          ORDER BY solicitado_em DESC`,
         [clienteId]
+      ),
+      db.query(
+        `SELECT id, tipo, subtipo, nome_completo, email, modelo_nome, descricao,
+                status, resposta, resposta_at, resposta_admin,
+                anexo_filename, anexo_resposta_filename, criado_em
+         FROM logs_ocorrencias
+         WHERE cliente_id = $1
+         ORDER BY criado_em DESC`,
+        [clienteId]
       )
     ]);
 
@@ -299,7 +309,8 @@ router.get('/:identificador', async (req, res) => {
       visitas_perfil: visitasRes.rows,
       suporte: suporteRes.rows,
       risco: riscoRes.rows,
-      autoexclusao: autoexclusaoRes.rows
+      autoexclusao: autoexclusaoRes.rows,
+      ocorrencias: ocorrenciasRes.rows
     });
   } catch (err) {
     console.error('Erro ao gerar relatório de contestação:', err);

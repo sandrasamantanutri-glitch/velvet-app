@@ -8153,12 +8153,20 @@ app.put("/api/cliente/subscricoes/:id/cancelar", auth, async (req, res) => {
       [subscriptionId]
     );
 
-    // Log para dashboard admin
     await db.query(
       `INSERT INTO logs_cancelamentos (cliente_id, modelo_id, subscricao_id, valida_ate)
        VALUES ($1, $2, $3, $4)`,
       [clienteId, sub.modelo_id, subscriptionId, sub.expiration_at]
     ).catch(() => {});
+
+    registrarLog(db, {
+      tipo: 'cancelamento_assinatura',
+      cliente_id: clienteId,
+      modelo_id: sub.modelo_id,
+      descricao: `Assinatura #${subscriptionId} cancelada pelo cliente — acesso até ${sub.expiration_at ? new Date(sub.expiration_at).toLocaleDateString('pt-BR') : '—'}`,
+      ip: req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.ip || null,
+      user_agent: req.headers["user-agent"] || null
+    });
 
     return res.status(200).json({
       success: true,
@@ -8382,6 +8390,32 @@ app.post("/api/cliente/ocorrencia", auth, async (req, res) => {
     return res.json({ ok: true });
   } catch (err) {
     console.error("Erro ocorrencia:", err);
+    return res.status(500).json({ error: "Erro interno." });
+  }
+});
+
+// =============================
+// OCORRÊNCIAS DO CLIENTE (listagem)
+// =============================
+app.get("/api/cliente/ocorrencias", auth, async (req, res) => {
+  try {
+    const clienteRes = await db.query(
+      "SELECT id FROM clientes WHERE user_id = $1", [req.user.id]
+    );
+    if (!clienteRes.rowCount) return res.status(404).json({ error: "Cliente não encontrado." });
+    const clienteId = clienteRes.rows[0].id;
+
+    const { rows } = await db.query(
+      `SELECT id, tipo, subtipo, modelo_nome, descricao, status,
+              resposta, resposta_at, anexo_filename, anexo_resposta_filename, criado_em
+         FROM logs_ocorrencias
+        WHERE cliente_id = $1
+        ORDER BY criado_em DESC`,
+      [clienteId]
+    );
+    return res.json(rows);
+  } catch (err) {
+    console.error("Erro GET /api/cliente/ocorrencias:", err);
     return res.status(500).json({ error: "Erro interno." });
   }
 });

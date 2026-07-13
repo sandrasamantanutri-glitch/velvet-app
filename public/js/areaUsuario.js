@@ -173,34 +173,13 @@ function irParaFeed() {
 }
 
 function bloquearPaginaValidacaoCliente() {
-  const formDadosPessoais = document.getElementById("formDadosPessoais");
-  const formDocumentos = document.getElementById("formDocumentos");
+  ["secaoTermos", "secaoContrato", "secaoDocumentos"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = "none";
+  });
 
-  if (formDadosPessoais) {
-    formDadosPessoais.querySelectorAll("input, select, textarea, button").forEach(el => {
-      el.disabled = true;
-    });
-    formDadosPessoais.style.pointerEvents = "none";
-    formDadosPessoais.style.opacity = "0.6";
-  }
-
-  if (formDocumentos) {
-    formDocumentos.querySelectorAll("input, select, textarea, button").forEach(el => {
-      el.disabled = true;
-    });
-    formDocumentos.style.pointerEvents = "none";
-    formDocumentos.style.opacity = "0.6";
-  }
-
-  abrirModalContaCliente();
-}
-
-function abrirModalContaCliente() {
-  document.getElementById("modalContaCliente")?.classList.remove("hidden");
-}
-
-function fecharModalContaCliente() {
-  document.getElementById("modalContaCliente")?.classList.add("hidden");
+  const steps = document.querySelector("#secaoDadosPessoais .verificacao-steps");
+  if (steps) steps.style.display = "none";
 }
 
 

@@ -4,8 +4,9 @@
     {
       "name": "static-preview",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["serve", "-l", "4173", "public"],
-      "port": 4173
+      "runtimeArgs": ["serve", "public"],
+      "port": 4173,
+      "autoPort": true
     }
   ]
 }

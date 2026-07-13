@@ -677,6 +677,10 @@ function aplicarFiltros() {
     transacoesFiltradas = [...todasTransacoes];
   } else if (tipo === "vip") {
     transacoesFiltradas = todasTransacoes.filter(t => t.tipo === "vip" || t.tipo === "assinatura");
+  } else if (tipo === "midia_premium") {
+    transacoesFiltradas = todasTransacoes.filter(t => t.tipo === "midia_premium" || t.tipo === "midia");
+  } else if (tipo === "midia_chat") {
+    transacoesFiltradas = todasTransacoes.filter(t => t.tipo === "midia_chat" || t.tipo === "conteudo");
   } else {
     transacoesFiltradas = todasTransacoes.filter(t => t.tipo === tipo);
   }
@@ -721,6 +725,77 @@ async function carregarSubscricoes() {
 
 window.carregarSubscricoes = carregarSubscricoes;
 window.renovarSubscricao = id => { window.location.href = `/perfil.html?id=${id}`; };
+
+// ================================================
+// OCORRÊNCIAS DO CLIENTE
+// ================================================
+const OC_TIPO_LABEL = {
+  vip_nao_liberou:       "VIP não liberou",
+  propaganda:            "Propaganda enganosa",
+  arrependimento:        "Arrependimento",
+  modelo_errada:         "Influencer errada",
+  midia_nao_desbloqueou: "Mídia não desbloqueou",
+  midia_errada:          "Mídia errada",
+  cancelamento_vip:      "Cancelamento VIP",
+};
+
+const OC_STATUS_LABEL = {
+  aberta:   "Aberta",
+  pendente: "Em análise",
+  fechada:  "Encerrada",
+};
+
+function renderOcorrencias(ocorrencias) {
+  const lista = document.getElementById("listaOcorrencias");
+  if (!lista) return;
+  lista.innerHTML = "";
+
+  if (!Array.isArray(ocorrencias) || !ocorrencias.length) {
+    lista.innerHTML = `<div class="estado-vazio">Nenhuma ocorrência encontrada.</div>`;
+    return;
+  }
+
+  ocorrencias.forEach(oc => {
+    const statusClass = { aberta: "oc-aberta", pendente: "oc-pendente", fechada: "oc-fechada" }[oc.status] || "oc-aberta";
+    const card = document.createElement("div");
+    card.className = "oc-card";
+    card.innerHTML = `
+      <div class="oc-header">
+        <span class="oc-tipo">${OC_TIPO_LABEL[oc.tipo] || oc.tipo}</span>
+        <span class="oc-badge ${statusClass}">${OC_STATUS_LABEL[oc.status] || oc.status}</span>
+        <span class="oc-data">${formatarData(oc.criado_em)}</span>
+      </div>
+      ${oc.modelo_nome ? `<div class="oc-meta">Influencer: <strong>${oc.modelo_nome}</strong></div>` : ""}
+      ${oc.descricao    ? `<div class="oc-desc">${oc.descricao}</div>` : ""}
+      ${oc.anexo_filename ? `<div class="oc-meta">📎 Anexo enviado: ${oc.anexo_filename}</div>` : ""}
+      ${oc.resposta ? `
+        <div class="oc-resposta">
+          <div class="oc-resposta-label">📋 Resposta do suporte${oc.resposta_at ? ` — ${formatarData(oc.resposta_at)}` : ""}:</div>
+          <div class="oc-resposta-texto">${oc.resposta}</div>
+          ${oc.anexo_resposta_filename ? `<div style="margin-top:6px;font-size:12px;">📎 ${oc.anexo_resposta_filename}</div>` : ""}
+        </div>
+      ` : (oc.status !== "fechada" ? `<div class="oc-aguardando">⏳ Aguardando análise — prazo: 24–48 horas úteis</div>` : "")}
+    `;
+    lista.appendChild(card);
+  });
+}
+
+async function carregarOcorrencias() {
+  const lista = document.getElementById("listaOcorrencias");
+  if (!lista) return;
+  lista.innerHTML = `<div class="estado-vazio">Carregando…</div>`;
+  try {
+    const res = await fetch("/api/cliente/ocorrencias", {
+      headers: { Authorization: "Bearer " + getToken() }
+    });
+    if (!res.ok) { lista.innerHTML = `<div class="estado-vazio">Erro ao carregar ocorrências.</div>`; return; }
+    renderOcorrencias(await res.json());
+  } catch {
+    lista.innerHTML = `<div class="estado-vazio">Erro ao carregar ocorrências.</div>`;
+  }
+}
+
+window.carregarOcorrencias = carregarOcorrencias;
 
 // ================================================
 // CSS dinâmico
@@ -791,6 +866,32 @@ function injectCSS() {
     .btn-renovar:hover { background:#6f3cff;color:#fff; }
 
     .estado-vazio { text-align:center;padding:32px;color:#9b87b8;font-size:15px; }
+
+    /* ---- ocorrências ---- */
+    .oc-card {
+      background:#fff;border:1.5px solid #e5d9ff;border-radius:14px;
+      padding:16px 18px;margin-bottom:10px;
+    }
+    .oc-header {
+      display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:8px;
+    }
+    .oc-tipo { font-weight:700;color:#1e1b2e;font-size:14px; }
+    .oc-data { font-size:13px;color:#9b87b8;margin-left:auto; }
+    .oc-meta { font-size:13px;color:#5e5873;margin-bottom:4px; }
+    .oc-desc { font-size:13px;color:#5e5873;margin-bottom:6px;line-height:1.5; }
+    .oc-badge {
+      display:inline-block;padding:3px 11px;border-radius:20px;font-size:12px;font-weight:700;
+    }
+    .oc-aberta   { background:#fff0e8;color:#e67e22; }
+    .oc-pendente { background:#e8f0ff;color:#2c5fe6; }
+    .oc-fechada  { background:#e6f9ee;color:#1a7a40; }
+    .oc-resposta {
+      background:#f7f3ff;border-left:4px solid #6f3cff;border-radius:0 8px 8px 0;
+      padding:10px 14px;margin-top:10px;font-size:13px;color:#1e1b2e;
+    }
+    .oc-resposta-label { font-weight:700;margin-bottom:4px;color:#6f3cff; }
+    .oc-resposta-texto { line-height:1.6; }
+    .oc-aguardando { font-size:12px;color:#9b87b8;margin-top:8px; }
   `;
   document.head.appendChild(s);
 }
@@ -815,6 +916,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       document.getElementById("tab-" + tab)?.classList.add("ativa");
       if (tab === "subscricoes") await carregarSubscricoes();
       if (tab === "transacoes")  aplicarFiltros();
+      if (tab === "ocorrencias") await carregarOcorrencias();
     });
   });
 
