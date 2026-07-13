@@ -4003,8 +4003,24 @@ io.on("connection", (socket) => {
   }
 
   // ─── SUPORTE AO CLIENTE ──────────────────────────────────────────────────
-  socket.on("suporte:entrar", ({ conversa_id }) => {
-    if (conversa_id) socket.join(`suporte_${conversa_id}`);
+  socket.on("suporte:entrar", async ({ conversa_id }) => {
+    if (!conversa_id) return;
+    // Admin entra em qualquer sala
+    if (socket.user?.role === "admin") {
+      socket.join(`suporte_${conversa_id}`);
+      return;
+    }
+    // Clientes logados só entram na sala da própria conversa
+    try {
+      const { rows } = await db.query(
+        `SELECT sc.id FROM suporte_conversas sc
+         LEFT JOIN clientes c ON c.id = sc.cliente_id
+         WHERE sc.id = $1
+           AND (sc.cliente_id IS NULL OR c.user_id = $2)`,
+        [conversa_id, socket.user.id]
+      );
+      if (rows.length) socket.join(`suporte_${conversa_id}`);
+    } catch (_) {}
   });
 
   socket.on("suporte:admin_entrar", () => {

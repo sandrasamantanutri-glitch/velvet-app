@@ -121,7 +121,7 @@
     </div>
     <div id="sp-form-nome">
       <input id="sp-nome" placeholder="Seu nome" maxlength="60" />
-      <input id="sp-email" placeholder="Seu e-mail (opcional)" maxlength="120" />
+      <input id="sp-email" type="email" placeholder="Seu e-mail *" maxlength="120" required />
       <button id="sp-iniciar">Iniciar conversa</button>
     </div>
     <div id="sp-msgs" style="display:none"></div>
@@ -166,6 +166,9 @@
   iniciarBtn.addEventListener("click", async () => {
     const nome = nomeEl.value.trim();
     if (!nome) { nomeEl.focus(); return; }
+    const email = emailEl.value.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { emailEl.focus(); emailEl.style.borderColor = "#e53e3e"; return; }
+    emailEl.style.borderColor = "";
 
     iniciarBtn.disabled = true;
     iniciarBtn.textContent = "Aguarde…";

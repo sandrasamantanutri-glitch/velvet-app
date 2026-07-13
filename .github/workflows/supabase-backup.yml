@@ -1,0 +1,42 @@
+name: Supabase Database Backup
+
+on:
+  schedule:
+    # Roda todo dia às 06:00 UTC = 03:00 horário de Brasília
+    - cron: '0 6 * * *'
+  workflow_dispatch: # permite rodar manualmente pelo GitHub
+
+jobs:
+  backup:
+    name: Dump & Upload Backup
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Instalar cliente PostgreSQL
+        run: sudo apt-get install -y postgresql-client
+
+      - name: Gerar nome do arquivo
+        id: filename
+        run: echo "FILE=backup_$(date +%Y%m%d_%H%M%S).sql" >> $GITHUB_OUTPUT
+
+      - name: Fazer dump do banco de dados
+        env:
+          PGPASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          pg_dump \
+            -h ${{ secrets.DB_HOST }} \
+            -U postgres \
+            -d postgres \
+            --no-owner \
+            --no-acl \
+            -f ${{ steps.filename.outputs.FILE }}
+
+      - name: Comprimir backup
+        run: gzip ${{ steps.filename.outputs.FILE }}
+
+      - name: Fazer upload do backup como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.filename.outputs.FILE }}
+          path: ${{ steps.filename.outputs.FILE }}.gz
+          retention-days: 30

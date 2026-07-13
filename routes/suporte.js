@@ -50,7 +50,7 @@ const RESPOSTAS_AUTO = [
   }
 ];
 
-const RESPOSTA_FALLBACK = "Olá! No momento não temos uma resposta automática para essa dúvida.\n\nEntre em contato por email em: <a href=\"/contato.html\" target=\"_blank\">página de contato</a>, ou aguarde uma resposta aqui no chat.\n\nO prazo é de 24 a 48 horas úteis.";
+const RESPOSTA_FALLBACK = "Recebemos seu pedido de suporte, e vamos responder entre 24 a 48 horas.";
 
 function detectarAutoResposta(texto) {
   const t = texto.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -201,9 +201,19 @@ router.post("/conversa/:id/mensagem", async (req, res) => {
 });
 
 // ─── CLIENTE: lista mensagens da conversa ────────────────────────────────────
+// Requer o token da conversa (conversa_id gerado no POST /conversa) — sem ele não retorna nada
 router.get("/conversa/:id/mensagens", async (req, res) => {
   try {
     const conversa_id = parseInt(req.params.id);
+    if (!conversa_id || isNaN(conversa_id)) return res.status(400).json({ error: "ID inválido" });
+
+    // Verifica se a conversa existe antes de retornar mensagens
+    const { rows: conv } = await db.query(
+      "SELECT id FROM suporte_conversas WHERE id = $1",
+      [conversa_id]
+    );
+    if (!conv.length) return res.status(404).json({ error: "Não encontrada" });
+
     const { rows } = await db.query(
       "SELECT * FROM suporte_mensagens WHERE conversa_id = $1 ORDER BY criado_em ASC",
       [conversa_id]

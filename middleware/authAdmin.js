@@ -6,6 +6,11 @@ async function authAdmin(req, res, next) {
     return res.status(401).json({ error: "Não autenticado" });
   }
 
+  // Role check first — prevents ID-collision attacks from non-admin tokens
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ error: "Acesso restrito ao administrador" });
+  }
+
   try {
 
     const admin = await db.query(
