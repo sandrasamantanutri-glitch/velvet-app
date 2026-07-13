@@ -5,7 +5,6 @@ on:
     branches:
       - main
   schedule:
-    # Roda todo dia às 06:30 UTC = 03:30 horário de Brasília
     - cron: '30 6 * * *'
   workflow_dispatch:
 
@@ -19,8 +18,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          submodules: false
+
+      - name: Configurar credenciais git
+        run: |
+          git config --global credential.helper store
+          echo "https://sandrasamantanutri-glitch:${{ secrets.BACKUP_TOKEN }}@github.com" > ~/.git-credentials
 
       - name: Fazer push para repositório de backup
         run: |
-          git remote add backup https://sandrasamantanutri-glitch:${{ secrets.BACKUP_TOKEN }}@github.com/sandrasamantanutri-glitch/velvet-app-backup.git
+          git remote add backup https://github.com/sandrasamantanutri-glitch/velvet-app-backup.git
           git push backup main --force
