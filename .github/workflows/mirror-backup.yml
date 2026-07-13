@@ -22,5 +22,5 @@ jobs:
 
       - name: Fazer push para repositório de backup
         run: |
-          git remote add backup https://x-access-token:${{ secrets.BACKUP_TOKEN }}@github.com/sandrasamantanutri-glitch/velvet-app-backup.git
+          git remote add backup https://sandrasamantanutri-glitch:${{ secrets.BACKUP_TOKEN }}@github.com/sandrasamantanutri-glitch/velvet-app-backup.git
           git push backup main --force
