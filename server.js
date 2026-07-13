@@ -8171,6 +8171,108 @@ app.put("/api/cliente/subscricoes/:id/cancelar", auth, async (req, res) => {
 });
 
 // =============================
+// ASSINATURAS VIP DO CLIENTE
+// =============================
+app.get("/api/cliente/subscricoes", auth, async (req, res) => {
+  try {
+    const clienteRes = await db.query(
+      "SELECT id FROM clientes WHERE user_id = $1",
+      [req.user.id]
+    );
+    if (!clienteRes.rowCount) return res.status(404).json({ error: "Cliente não encontrado." });
+    const clienteId = clienteRes.rows[0].id;
+
+    const { rows } = await db.query(
+      `SELECT v.id, v.modelo_id, v.ativo, v.recorrente, v.expiration_at,
+              v.cancelado_em, v.updated_at, v.created_at,
+              v.aceite_timestamp, v.aceite_ip,
+              m.nome_exibicao AS modelo
+         FROM vip_subscriptions v
+         LEFT JOIN modelos m ON m.id = v.modelo_id
+        WHERE v.cliente_id = $1
+        ORDER BY v.updated_at DESC`,
+      [clienteId]
+    );
+    return res.json(rows);
+  } catch (err) {
+    console.error("Erro GET /api/cliente/subscricoes:", err);
+    return res.status(500).json({ error: "Erro interno." });
+  }
+});
+
+// =============================
+// TRANSAÇÕES DO CLIENTE
+// =============================
+app.get("/api/cliente/transacoes", auth, async (req, res) => {
+  try {
+    const clienteRes = await db.query(
+      "SELECT id FROM clientes WHERE user_id = $1",
+      [req.user.id]
+    );
+    if (!clienteRes.rowCount) return res.status(404).json({ error: "Cliente não encontrado." });
+    const clienteId = clienteRes.rows[0].id;
+
+    // Cartão + PIX (assinaturas e mídias em geral)
+    const { rows: cartao } = await db.query(
+      `SELECT p.id, p.tipo, p.valor, p.status, p.created_at AS criado_em,
+              p.aceitou_termos, p.aceitou_politicas, p.aceite_timestamp, p.aceite_ip,
+              m.nome_exibicao AS modelo_nome
+         FROM pagamentos_cartao p
+         LEFT JOIN modelos m ON m.id = p.modelo_id
+        WHERE p.cliente_id = $1
+        ORDER BY p.created_at DESC`,
+      [clienteId]
+    );
+
+    const { rows: pix } = await db.query(
+      `SELECT p.id, p.tipo, p.valor, p.status, p.criado_em,
+              NULL AS aceitou_termos, NULL AS aceitou_politicas,
+              NULL AS aceite_timestamp, NULL AS aceite_ip,
+              m.nome_exibicao AS modelo_nome
+         FROM pagamentos_pix p
+         LEFT JOIN modelos m ON m.id = p.modelo_id
+        WHERE p.cliente_id = $1
+        ORDER BY p.criado_em DESC`,
+      [clienteId]
+    );
+
+    // Mídias premium e de chat separadas
+    const { rows: premium } = await db.query(
+      `SELECT pu.id, 'midia_premium' AS tipo, pu.valor_base AS valor, pu.status,
+              pu.created_at AS criado_em,
+              pu.aceitou_termos, pu.aceitou_politicas, pu.aceite_timestamp, pu.aceite_ip,
+              m.nome_exibicao AS modelo_nome
+         FROM premium_unlocks pu
+         LEFT JOIN modelos m ON m.id = pu.modelo_id
+        WHERE pu.cliente_id = $1
+        ORDER BY pu.created_at DESC`,
+      [clienteId]
+    );
+
+    const { rows: chat } = await db.query(
+      `SELECT cp.id, 'midia_chat' AS tipo, cp.preco AS valor, cp.status,
+              cp.criado_em,
+              NULL AS aceitou_termos, NULL AS aceitou_politicas,
+              NULL AS aceite_timestamp, NULL AS aceite_ip,
+              m.nome_exibicao AS modelo_nome
+         FROM conteudo_pacotes cp
+         LEFT JOIN modelos m ON m.id = cp.modelo_id
+        WHERE cp.cliente_id = $1
+        ORDER BY cp.criado_em DESC`,
+      [clienteId]
+    );
+
+    const todas = [...cartao, ...pix, ...premium, ...chat]
+      .sort((a, b) => new Date(b.criado_em || b.created_at) - new Date(a.criado_em || a.created_at));
+
+    return res.json(todas);
+  } catch (err) {
+    console.error("Erro GET /api/cliente/transacoes:", err);
+    return res.status(500).json({ error: "Erro interno." });
+  }
+});
+
+// =============================
 // OCORRÊNCIA DO CLIENTE (antifraude / suporte avançado)
 // =============================
 app.post("/api/cliente/ocorrencia", auth, async (req, res) => {

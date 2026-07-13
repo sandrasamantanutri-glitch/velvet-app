@@ -18,7 +18,7 @@ function getLocaleAtual() {
 function formatarData(data) {
   if (!data) return "—";
   const d = new Date(data);
-  return isNaN(d) ? "—" : d.toLocaleString(getLocaleAtual());
+  return isNaN(d) ? "—" : d.toLocaleDateString(getLocaleAtual(), { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
 function formatarValor(valor) {
@@ -26,17 +26,21 @@ function formatarValor(valor) {
   return isNaN(n) ? "R$ 0,00" : n.toLocaleString(getLocaleAtual(), { style: "currency", currency: "BRL" });
 }
 
+function diasRestantes(dataStr) {
+  if (!dataStr) return null;
+  const diff = new Date(dataStr) - new Date();
+  return Math.ceil(diff / 86400000);
+}
+
 // ================================================
 // MODAL SYSTEM
 // ================================================
-let _resolveModal = null;
-
 function abrirModal(html, opts = {}) {
   fecharModal();
   const overlay = document.createElement("div");
   overlay.id = "modal-ocorrencia";
   overlay.style.cssText = `
-    position:fixed;inset:0;z-index:9999;background:rgba(20,12,40,.7);
+    position:fixed;inset:0;z-index:9999;background:rgba(20,12,40,.72);
     display:flex;align-items:center;justify-content:center;padding:16px;
     animation:fadeInModal .18s ease;
   `;
@@ -56,121 +60,165 @@ function abrirModal(html, opts = {}) {
   overlay.appendChild(box);
   document.body.appendChild(overlay);
   if (!opts.noClose) overlay.addEventListener("click", e => { if (e.target === overlay) fecharModal(); });
-  box.querySelector("[data-autofocus]")?.focus();
 }
 
 function fecharModal() {
   document.getElementById("modal-ocorrencia")?.remove();
-  document.querySelectorAll(".dropdown-menu-oc").forEach(d => d.remove());
+  fecharDropdowns();
 }
-
 window.fecharModal = fecharModal;
 
 // ================================================
-// DROPDOWN ⁞
+// DROPDOWN ⁞ — dois níveis
 // ================================================
-function toggleDropdown(e, itemsHtml) {
+function fecharDropdowns() {
+  document.querySelectorAll(".dd-oc").forEach(d => d.remove());
+}
+
+function abrirDropdown(e, items) {
   e.stopPropagation();
-  document.querySelectorAll(".dropdown-menu-oc").forEach(d => d.remove());
+  fecharDropdowns();
   const btn = e.currentTarget;
   const rect = btn.getBoundingClientRect();
-  const menu = document.createElement("div");
-  menu.className = "dropdown-menu-oc";
-  menu.style.cssText = `
-    position:fixed;z-index:9998;background:#fff;border-radius:12px;
-    box-shadow:0 4px 24px rgba(111,60,255,.18);padding:6px 0;min-width:230px;
-    top:${rect.bottom + 6}px;right:${window.innerWidth - rect.right}px;
-    animation:fadeInModal .14s ease;
-  `;
-  menu.innerHTML = itemsHtml;
+  const menu = criarMenuDD(items);
+  menu.style.top  = rect.bottom + 6 + "px";
+  menu.style.right = window.innerWidth - rect.right + "px";
   document.body.appendChild(menu);
   setTimeout(() => document.addEventListener("click", fecharDropdowns, { once: true }), 10);
 }
 
-function fecharDropdowns() {
-  document.querySelectorAll(".dropdown-menu-oc").forEach(d => d.remove());
-}
-
-function dropItem(label, icon, onclick, danger = false) {
-  return `<button onclick="${onclick}" style="
-    display:flex;align-items:center;gap:10px;width:100%;border:none;background:none;
-    padding:11px 18px;font-size:14px;cursor:pointer;text-align:left;
-    color:${danger ? "#c0392b" : "#1e1b2e"};font-family:inherit;
-    transition:.15s;
-  " onmouseover="this.style.background='#f7f3ff'" onmouseout="this.style.background='none'">
-    <span>${icon}</span><span>${label}</span>
-  </button>`;
-}
-
-// ================================================
-// FORMULÁRIO GENÉRICO (envio de ocorrência)
-// ================================================
-function campoAnexo(label = "Print / Comprovante") {
-  return `
-    <label style="display:block;margin-bottom:6px;font-size:13px;font-weight:600;color:#5e5873;">${label}</label>
-    <input type="file" id="oc-anexo" accept="image/*,application/pdf"
-      style="width:100%;font-size:13px;margin-bottom:16px;" />
+function criarMenuDD(items) {
+  const menu = document.createElement("div");
+  menu.className = "dd-oc";
+  menu.style.cssText = `
+    position:fixed;z-index:9998;background:#fff;border-radius:14px;
+    box-shadow:0 4px 28px rgba(111,60,255,.16);padding:6px 0;min-width:220px;
+    animation:fadeInModal .14s ease;
   `;
+  items.forEach(item => {
+    if (item.separator) {
+      const sep = document.createElement("div");
+      sep.style.cssText = "border-top:1px solid #f0eaf9;margin:4px 0;";
+      menu.appendChild(sep);
+      return;
+    }
+    const btn = document.createElement("button");
+    btn.style.cssText = `
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      width:100%;border:none;background:none;padding:11px 16px;
+      font-size:14px;cursor:pointer;text-align:left;font-family:inherit;
+      color:${item.danger ? "#c0392b" : "#1e1b2e"};transition:.13s;
+    `;
+    btn.innerHTML = `<span style="display:flex;align-items:center;gap:9px;">${item.icon ? `<span>${item.icon}</span>` : ""}<span>${item.label}</span></span>${item.sub ? '<span style="color:#bbb;font-size:12px;">›</span>' : ""}`;
+    btn.addEventListener("mouseover", () => btn.style.background = "#f7f3ff");
+    btn.addEventListener("mouseout",  () => btn.style.background = "none");
+
+    if (item.sub) {
+      // Submenu inline — expande abaixo ao clicar
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        const existing = menu.querySelector(".dd-sub");
+        if (existing) { existing.remove(); return; }
+        menu.querySelectorAll(".dd-sub").forEach(s => s.remove());
+        const sub = criarSubDD(item.sub);
+        btn.insertAdjacentElement("afterend", sub);
+      });
+    } else if (item.action) {
+      btn.addEventListener("click", e => { e.stopPropagation(); fecharDropdowns(); item.action(); });
+    }
+    menu.appendChild(btn);
+  });
+  return menu;
+}
+
+function criarSubDD(items) {
+  const sub = document.createElement("div");
+  sub.className = "dd-sub";
+  sub.style.cssText = `
+    background:#f7f3ff;border-radius:0 0 10px 10px;
+    padding:4px 0 4px 0;border-top:1px solid #ede8ff;
+  `;
+  items.forEach(item => {
+    const btn = document.createElement("button");
+    btn.style.cssText = `
+      display:flex;align-items:center;gap:9px;width:100%;border:none;
+      background:none;padding:10px 20px 10px 28px;font-size:13px;
+      cursor:pointer;text-align:left;font-family:inherit;
+      color:${item.danger ? "#c0392b" : "#5e5873"};transition:.13s;
+    `;
+    btn.innerHTML = `${item.icon ? `<span>${item.icon}</span>` : ""}<span>${item.label}</span>`;
+    btn.addEventListener("mouseover", () => btn.style.background = "#ede8ff");
+    btn.addEventListener("mouseout",  () => btn.style.background = "none");
+    btn.addEventListener("click", e => { e.stopPropagation(); fecharDropdowns(); item.action(); });
+    sub.appendChild(btn);
+  });
+  return sub;
+}
+
+// ================================================
+// HELPERS DE FORMULÁRIO
+// ================================================
+function styleInput() {
+  return `width:100%;box-sizing:border-box;border:1.5px solid #ddd8e6;border-radius:10px;
+    padding:10px 12px;font-size:14px;margin-bottom:14px;font-family:inherit;outline:none;`;
 }
 
 function camposBase(extra = "") {
   return `
-    <label style="display:block;margin-bottom:6px;font-size:13px;font-weight:600;color:#5e5873;">Nome completo *</label>
+    <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">Nome completo *</label>
     <input id="oc-nome" type="text" placeholder="Seu nome completo" style="${styleInput()}" />
 
-    <label style="display:block;margin-bottom:6px;font-size:13px;font-weight:600;color:#5e5873;">Data de nascimento *</label>
+    <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">Data de nascimento *</label>
     <input id="oc-nasc" type="date" style="${styleInput()}" />
 
-    <label style="display:block;margin-bottom:6px;font-size:13px;font-weight:600;color:#5e5873;">E-mail da conta *</label>
+    <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">E-mail da conta *</label>
     <input id="oc-email" type="email" placeholder="email@exemplo.com" style="${styleInput()}" />
 
-    <label style="display:block;margin-bottom:6px;font-size:13px;font-weight:600;color:#5e5873;">Data e hora do pagamento *</label>
+    <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">Data e hora do pagamento *</label>
     <input id="oc-dtpag" type="datetime-local" style="${styleInput()}" />
 
     ${extra}
   `;
 }
 
-function styleInput() {
-  return `width:100%;box-sizing:border-box;border:1.5px solid #ddd8e6;border-radius:10px;
-    padding:10px 12px;font-size:14px;margin-bottom:16px;font-family:inherit;outline:none;`;
+function campoAnexo(label = "Print / Comprovante") {
+  return `
+    <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">${label}</label>
+    <input type="file" id="oc-anexo" accept="image/*,application/pdf" style="width:100%;font-size:13px;margin-bottom:14px;" />
+  `;
 }
 
-function btnEnviar(onclick) {
-  return `<button onclick="${onclick}" style="
+function btnEnviar(fn) {
+  return `<button data-send onclick="${fn}" style="
     width:100%;background:#6f3cff;color:#fff;border:none;border-radius:12px;
-    padding:13px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px;
-  ">Enviar ocorrência</button>`;
+    padding:13px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px;">
+    Enviar ocorrência
+  </button>
+  <p style="font-size:12px;color:#9b87b8;margin-top:10px;text-align:center;">⏰ Prazo de resposta: 24 a 48 horas úteis.</p>`;
 }
 
-function avisoResposta() {
-  return `<p style="font-size:12px;color:#9b87b8;margin-top:12px;text-align:center;">
-    ⏰ Prazo de resposta: 24 a 48 horas úteis.
-  </p>`;
+function valoresBase() {
+  return {
+    nome:  document.getElementById("oc-nome")?.value?.trim(),
+    nasc:  document.getElementById("oc-nasc")?.value,
+    email: document.getElementById("oc-email")?.value?.trim(),
+    dtpag: document.getElementById("oc-dtpag")?.value,
+  };
 }
 
 async function lerAnexo() {
   const file = document.getElementById("oc-anexo")?.files?.[0];
   if (!file) return { base64: null, filename: null };
   return new Promise(resolve => {
-    const reader = new FileReader();
-    reader.onload = e => resolve({ base64: e.target.result.split(",")[1], filename: file.name });
-    reader.onerror = () => resolve({ base64: null, filename: null });
-    reader.readAsDataURL(file);
+    const r = new FileReader();
+    r.onload  = e => resolve({ base64: e.target.result.split(",")[1], filename: file.name });
+    r.onerror = () => resolve({ base64: null, filename: null });
+    r.readAsDataURL(file);
   });
 }
 
-function valoresBase() {
-  return {
-    nome: document.getElementById("oc-nome")?.value?.trim(),
-    nasc: document.getElementById("oc-nasc")?.value,
-    email: document.getElementById("oc-email")?.value?.trim(),
-    dtpag: document.getElementById("oc-dtpag")?.value,
-  };
-}
-
 async function enviarOcorrencia(payload) {
-  const btn = document.querySelector("#modal-ocorrencia button[data-send]");
+  const btn = document.querySelector("#modal-ocorrencia [data-send]");
   if (btn) { btn.disabled = true; btn.textContent = "Enviando…"; }
   try {
     const res = await fetch("/api/cliente/ocorrencia", {
@@ -193,31 +241,73 @@ async function enviarOcorrencia(payload) {
     `);
   } catch {
     if (btn) { btn.disabled = false; btn.textContent = "Enviar ocorrência"; }
-    alert("Erro ao enviar. Tente novamente ou contate contato@velvet.lat.");
+    alert("Erro ao enviar. Tente novamente ou contacte contato@velvet.lat.");
   }
 }
 
 // ================================================
-// MODAIS — ASSINATURA VIP
+// MODAL ARREPENDIMENTO (igual para VIP e Mídia)
+// ================================================
+function modalArrependimento(aceiteTimestamp, aceiteIp) {
+  abrirModal(`
+    <h3 style="color:#6f3cff;margin:0 0 12px;">Direito de Arrependimento</h3>
+
+    <div style="background:#f3eff5;border-radius:12px;padding:16px 18px;margin-bottom:14px;">
+      <p style="margin:0 0 8px;font-weight:700;color:#1e1b2e;font-size:14px;">📋 Políticas de Utilização da Velvet</p>
+      <p style="margin:0;font-size:13px;color:#5e5873;line-height:1.7;">
+        <em>"O art. 49 do CDC garante o direito de arrependimento em 7 dias para contratos celebrados online.
+        No entanto, ao adquirir conteúdo digital com entrega imediata, o usuário solicita expressamente o
+        início imediato do acesso e é informado de que, com isso,
+        <strong>pode perder o direito de arrependimento</strong>."</em>
+      </p>
+      <a href="/policies.html#secao-2" target="_blank"
+        style="display:inline-block;margin-top:10px;font-size:13px;color:#6f3cff;font-weight:600;">
+        Ver Políticas completas →
+      </a>
+    </div>
+
+    <div style="background:#fff0e8;border-left:4px solid #e67e22;border-radius:8px;padding:12px 16px;margin-bottom:14px;">
+      <p style="margin:0 0 6px;font-weight:700;color:#e67e22;font-size:13px;">🔒 Registramos seu aceite:</p>
+      <ul style="margin:0;padding-left:18px;font-size:13px;color:#5e5873;line-height:1.9;">
+        <li><strong>Horário:</strong> ${aceiteTimestamp ? formatarData(aceiteTimestamp) : "registrado no sistema"}</li>
+        <li><strong>IP:</strong> ${aceiteIp || "registrado no sistema"}</li>
+        <li>Você marcou a caixa <em>"Li e aceito as Políticas de Utilização, incluindo a Política de Reembolso"</em></li>
+        <li>Você marcou a caixa <em>"Li e aceito os Termos de Uso"</em></li>
+      </ul>
+    </div>
+
+    <div style="background:#fff5f5;border-left:4px solid #e74c3c;border-radius:8px;padding:12px 16px;margin-bottom:18px;">
+      <p style="margin:0;font-size:13px;color:#c0392b;line-height:1.7;">
+        ⚠️ <strong>Atenção:</strong> Contestações (chargeback) frequentes, infundadas ou fraudulentas
+        podem resultar em <strong>suspensão ou bloqueio permanente da conta</strong> e encaminhamento
+        às autoridades competentes (Lei n.º 8.137/1990 e Código Penal).
+      </p>
+    </div>
+
+    <p style="font-size:13px;color:#9b87b8;margin:0 0 16px;">
+      Dúvidas: <a href="mailto:contato@velvet.lat" style="color:#6f3cff;font-weight:600;">contato@velvet.lat</a>
+    </p>
+    <button onclick="fecharModal()" style="
+      width:100%;background:#6f3cff;color:#fff;border:none;border-radius:12px;
+      padding:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">
+      Entendido
+    </button>
+  `);
+}
+
+// ================================================
+// MODAIS — REEMBOLSO VIP
 // ================================================
 window.modalCancelar = function(id, validaAte) {
-  fecharDropdowns();
   const dtLabel = validaAte ? formatarData(validaAte) : "o fim do período atual";
   abrirModal(`
     <h3 style="color:#c0392b;margin:0 0 14px;">⚠️ Cancelar assinatura</h3>
-    <p style="color:#1e1b2e;line-height:1.7;margin:0 0 10px;">
-      Tem certeza que deseja cancelar sua assinatura VIP?
-    </p>
     <div style="background:#fff5f5;border-left:4px solid #e74c3c;border-radius:8px;padding:12px 16px;margin-bottom:16px;">
       <p style="margin:0 0 6px;font-weight:700;color:#c0392b;">O cancelamento <u>não gera reembolso</u>.</p>
       <p style="margin:0;color:#5e5873;font-size:13px;line-height:1.6;">
-        O valor pago pelos dias restantes <strong>não será devolvido</strong>.
         Seu acesso permanece ativo até <strong>${dtLabel}</strong> e não será renovado após essa data.
       </p>
     </div>
-    <p style="font-size:13px;color:#9b87b8;margin-bottom:20px;">
-      Se tiver dúvidas sobre reembolso, use a opção <em>"Problema com minha assinatura"</em> neste menu.
-    </p>
     <div style="display:flex;gap:12px;">
       <button onclick="fecharModal()" style="
         flex:1;background:#f3eff5;color:#1e1b2e;border:none;border-radius:10px;
@@ -234,7 +324,7 @@ window.modalCancelar = function(id, validaAte) {
 };
 
 window.confirmarCancelamento = async function(id) {
-  const btn = document.querySelector("#modal-ocorrencia button[onclick^='confirmarCancelamento']");
+  const btn = event?.target;
   if (btn) { btn.disabled = true; btn.textContent = "Cancelando…"; }
   try {
     const res = await fetch(`/api/cliente/subscricoes/${id}/cancelar`, {
@@ -248,8 +338,8 @@ window.confirmarCancelamento = async function(id) {
         <div style="font-size:44px;margin-bottom:12px;">📋</div>
         <h3 style="color:#6f3cff;margin:0 0 8px;">Cancelamento registrado</h3>
         <p style="color:#5e5873;line-height:1.6;">
-          Sua assinatura permanece <strong>ativa até ${ate}</strong>.<br>
-          Após essa data, o acesso será encerrado automaticamente e não será renovado.
+          Seu acesso permanece <strong>ativo até ${ate}</strong>.<br>
+          Não será renovado após essa data.
         </p>
         <button onclick="fecharModal();carregarSubscricoes();" style="
           margin-top:20px;background:#6f3cff;color:#fff;border:none;border-radius:10px;
@@ -261,21 +351,18 @@ window.confirmarCancelamento = async function(id) {
   } catch { alert("Erro inesperado."); fecharModal(); }
 };
 
-window.modalVipNaoLiberou = function(modeloNome) {
-  fecharDropdowns();
+function modalVipNaoLiberou(modeloNome) {
   abrirModal(`
-    <h3 style="color:#6f3cff;margin:0 0 4px;">Paguei e o VIP não liberou</h3>
-    <p style="color:#9b87b8;font-size:13px;margin:0 0 18px;">Preencha os dados abaixo para nossa equipe analisar e ativar seu acesso.</p>
+    <h3 style="color:#6f3cff;margin:0 0 4px;">VIP não liberou após pagamento</h3>
+    <p style="color:#9b87b8;font-size:13px;margin:0 0 16px;">Nossa equipe verificará e ativará seu acesso.</p>
     ${camposBase(`
-      <label style="display:block;margin-bottom:6px;font-size:13px;font-weight:600;color:#5e5873;">Nome da criadora</label>
+      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">Nome da criadora</label>
       <input id="oc-modelo" type="text" value="${modeloNome || ""}" placeholder="Nome da criadora" style="${styleInput()}" />
-      ${campoAnexo("Print do perfil bloqueado / comprovante de pagamento")}
+      ${campoAnexo("Print do perfil bloqueado / comprovante")}
     `)}
     ${btnEnviar("enviarVipNaoLiberou()")}
-    ${avisoResposta()}
   `);
-};
-
+}
 window.enviarVipNaoLiberou = async function() {
   const { nome, nasc, email, dtpag } = valoresBase();
   if (!nome || !email || !dtpag) return alert("Preencha todos os campos obrigatórios (*).");
@@ -289,29 +376,26 @@ window.enviarVipNaoLiberou = async function() {
   });
 };
 
-window.modalPropagandaVip = function(modeloNome) {
-  fecharDropdowns();
+function modalPropaganda(modeloNome, subtipo) {
   abrirModal(`
     <h3 style="color:#6f3cff;margin:0 0 4px;">Propaganda enganosa / Golpe</h3>
-    <p style="color:#9b87b8;font-size:13px;margin:0 0 18px;">Descreva o que aconteceu. Nossa equipe analisará e tomará as medidas cabíveis.</p>
+    <p style="color:#9b87b8;font-size:13px;margin:0 0 16px;">Descreva o que aconteceu com evidências.</p>
     ${camposBase(`
-      <label style="display:block;margin-bottom:6px;font-size:13px;font-weight:600;color:#5e5873;">Nome da criadora</label>
+      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">Nome da criadora</label>
       <input id="oc-modelo" type="text" value="${modeloNome || ""}" placeholder="Nome da criadora" style="${styleInput()}" />
-      <label style="display:block;margin-bottom:6px;font-size:13px;font-weight:600;color:#5e5873;">Descreva o que aconteceu</label>
+      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">Descreva o ocorrido</label>
       <textarea id="oc-desc" rows="3" placeholder="Ex: o perfil prometia X mas entregou Y..." style="${styleInput()}resize:vertical;"></textarea>
       ${campoAnexo("Print da propaganda / evidência")}
     `)}
-    ${btnEnviar("enviarPropagandaVip()")}
-    ${avisoResposta()}
+    ${btnEnviar(`enviarPropaganda("${subtipo || "assinatura"}")`)}
   `);
-};
-
-window.enviarPropagandaVip = async function() {
+}
+window.enviarPropaganda = async function(subtipo) {
   const { nome, nasc, email, dtpag } = valoresBase();
   if (!nome || !email) return alert("Preencha todos os campos obrigatórios (*).");
   const { base64, filename } = await lerAnexo();
   await enviarOcorrencia({
-    tipo: "propaganda", subtipo: "assinatura",
+    tipo: "propaganda", subtipo,
     nome_completo: nome, nascimento: nasc, email, data_pagamento: dtpag,
     modelo_nome: document.getElementById("oc-modelo")?.value?.trim(),
     descricao: document.getElementById("oc-desc")?.value?.trim(),
@@ -319,78 +403,25 @@ window.enviarPropagandaVip = async function() {
   });
 };
 
-window.modalArrependimentoVip = function(aceiteTimestamp, aceiteIp) {
-  fecharDropdowns();
-  abrirModal(`
-    <h3 style="color:#6f3cff;margin:0 0 12px;">Direito de Arrependimento</h3>
-
-    <div style="background:#f3eff5;border-radius:12px;padding:16px 18px;margin-bottom:14px;">
-      <p style="margin:0 0 10px;font-weight:700;color:#1e1b2e;font-size:14px;">📋 Trecho das Políticas de Utilização da Velvet</p>
-      <p style="margin:0;font-size:13px;color:#5e5873;line-height:1.7;">
-        <em>"O art. 49 do CDC garante o direito de arrependimento em 7 dias para contratos celebrados online.
-        No entanto, ao adquirir conteúdo digital com entrega imediata, o usuário solicita expressamente o
-        início imediato do acesso e é informado de que, com isso, <strong>pode perder o direito de arrependimento</strong>."</em>
-      </p>
-      <a href="/policies.html#secao-2" target="_blank"
-        style="display:inline-block;margin-top:10px;font-size:13px;color:#6f3cff;font-weight:600;">
-        Ver Políticas completas →
-      </a>
-    </div>
-
-    <div style="background:#fff0e8;border-left:4px solid #e67e22;border-radius:8px;padding:12px 16px;margin-bottom:14px;">
-      <p style="margin:0 0 6px;font-weight:700;color:#e67e22;font-size:13px;">🔒 Registramos seu aceite com as seguintes informações:</p>
-      <ul style="margin:0;padding-left:18px;font-size:13px;color:#5e5873;line-height:1.9;">
-        <li><strong>Horário do aceite:</strong> ${aceiteTimestamp ? formatarData(aceiteTimestamp) : "registrado no sistema"}</li>
-        <li><strong>IP de origem:</strong> ${aceiteIp || "registrado no sistema"}</li>
-        <li>Você marcou a caixa <em>"Li e aceito as Políticas de Utilização, incluindo a Política de Reembolso"</em></li>
-        <li>Você marcou a caixa <em>"Li e aceito os Termos de Uso"</em></li>
-      </ul>
-    </div>
-
-    <div style="background:#fff5f5;border-left:4px solid #e74c3c;border-radius:8px;padding:12px 16px;margin-bottom:18px;">
-      <p style="margin:0;font-size:13px;color:#c0392b;line-height:1.7;">
-        ⚠️ <strong>Atenção:</strong> Pedidos de contestação (chargeback) frequentes, infundados ou fraudulentos
-        podem resultar em <strong>suspensão ou bloqueio permanente da conta</strong>, identificação como fraude
-        e encaminhamento de denúncia para as autoridades competentes, nos termos da legislação brasileira
-        (Lei n.º 8.137/1990 e Código Penal).
-      </p>
-    </div>
-
-    <p style="font-size:13px;color:#9b87b8;margin:0 0 16px;">
-      Se ainda tiver dúvidas, entre em contato:
-      <a href="mailto:contato@velvet.lat" style="color:#6f3cff;font-weight:600;">contato@velvet.lat</a>
-    </p>
-
-    <button onclick="fecharModal()" style="
-      width:100%;background:#6f3cff;color:#fff;border:none;border-radius:12px;
-      padding:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">
-      Entendido
-    </button>
-  `);
-};
-
-window.modalModeloErrada = function() {
-  fecharDropdowns();
+function modalModeloErrada() {
   abrirModal(`
     <h3 style="color:#6f3cff;margin:0 0 4px;">Assinei a criadora errada</h3>
-    <p style="color:#9b87b8;font-size:13px;margin:0 0 18px;">Vamos analisar o caso para tentar trocar sua assinatura. Preencha os dados abaixo.</p>
+    <p style="color:#9b87b8;font-size:13px;margin:0 0 16px;">Vamos analisar para tentar trocar sua assinatura.</p>
     ${camposBase(`
-      <label style="display:block;margin-bottom:6px;font-size:13px;font-weight:600;color:#5e5873;">Nome da criadora que assinou por engano</label>
+      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">Criadora assinada por engano</label>
       <input id="oc-modelo-engano" type="text" placeholder="Nome da criadora" style="${styleInput()}" />
-      <label style="display:block;margin-bottom:6px;font-size:13px;font-weight:600;color:#5e5873;">Nome da criadora que queria assinar</label>
+      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">Criadora que queria assinar</label>
       <input id="oc-modelo-certa" type="text" placeholder="Nome da criadora correta" style="${styleInput()}" />
       ${campoAnexo("Comprovante de pagamento (opcional)")}
     `)}
     ${btnEnviar("enviarModeloErrada()")}
-    ${avisoResposta()}
   `);
-};
-
+}
 window.enviarModeloErrada = async function() {
   const { nome, nasc, email, dtpag } = valoresBase();
   if (!nome || !email || !dtpag) return alert("Preencha todos os campos obrigatórios (*).");
   const engano = document.getElementById("oc-modelo-engano")?.value?.trim();
-  const certa = document.getElementById("oc-modelo-certa")?.value?.trim();
+  const certa  = document.getElementById("oc-modelo-certa")?.value?.trim();
   const { base64, filename } = await lerAnexo();
   await enviarOcorrencia({
     tipo: "modelo_errada", subtipo: "assinatura",
@@ -402,35 +433,26 @@ window.enviarModeloErrada = async function() {
 };
 
 // ================================================
-// MODAIS — MÍDIAS
+// MODAIS — REEMBOLSO MÍDIA
 // ================================================
-window.modalMidiaNaoDesbloqueou = function(midiaId, modeloNome) {
-  fecharDropdowns();
+function modalMidiaNaoDesbloqueou(midiaId, modeloNome, subtipo) {
   abrirModal(`
     <h3 style="color:#6f3cff;margin:0 0 4px;">Mídia não desbloqueou</h3>
-    <p style="color:#9b87b8;font-size:13px;margin:0 0 18px;">Preencha os dados para nossa equipe verificar e liberar seu acesso.</p>
+    <p style="color:#9b87b8;font-size:13px;margin:0 0 16px;">Nossa equipe verificará e liberará seu acesso.</p>
     ${camposBase(`
-      <label style="display:block;margin-bottom:6px;font-size:13px;font-weight:600;color:#5e5873;">Nome da criadora</label>
+      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">Nome da criadora</label>
       <input id="oc-modelo" type="text" value="${modeloNome || ""}" placeholder="Nome da criadora" style="${styleInput()}" />
-      <label style="display:block;margin-bottom:6px;font-size:13px;font-weight:600;color:#5e5873;">Tipo de conteúdo</label>
-      <select id="oc-subtipo" style="${styleInput()}">
-        <option value="premium">Premium (post pago)</option>
-        <option value="chat">Chat (mídia no chat)</option>
-      </select>
       ${campoAnexo("Print da mídia ainda bloqueada")}
     `)}
-    ${btnEnviar("enviarMidiaNaoDesbloqueou(" + (midiaId || "null") + ")")}
-    ${avisoResposta()}
+    ${btnEnviar(`enviarMidiaNaoDesbloqueou(${midiaId || "null"}, "${subtipo || "midia"}")`)}
   `);
-};
-
-window.enviarMidiaNaoDesbloqueou = async function(midiaId) {
+}
+window.enviarMidiaNaoDesbloqueou = async function(midiaId, subtipo) {
   const { nome, nasc, email, dtpag } = valoresBase();
   if (!nome || !email || !dtpag) return alert("Preencha todos os campos obrigatórios (*).");
   const { base64, filename } = await lerAnexo();
   await enviarOcorrencia({
-    tipo: "midia_nao_desbloqueou",
-    subtipo: document.getElementById("oc-subtipo")?.value,
+    tipo: "midia_nao_desbloqueou", subtipo,
     nome_completo: nome, nascimento: nasc, email, data_pagamento: dtpag,
     modelo_nome: document.getElementById("oc-modelo")?.value?.trim(),
     midia_id: midiaId || null,
@@ -439,57 +461,20 @@ window.enviarMidiaNaoDesbloqueou = async function(midiaId) {
   });
 };
 
-window.modalPropagandaMidia = function(modeloNome) {
-  fecharDropdowns();
+function modalMidiaErrada(midiaId, modeloNome) {
   abrirModal(`
-    <h3 style="color:#6f3cff;margin:0 0 4px;">Propaganda enganosa / Golpe</h3>
-    <p style="color:#9b87b8;font-size:13px;margin:0 0 18px;">Descreva o que aconteceu com evidências para analisarmos.</p>
+    <h3 style="color:#6f3cff;margin:0 0 4px;">Desbloqueei a mídia errada</h3>
+    <p style="color:#9b87b8;font-size:13px;margin:0 0 16px;">Vamos analisar para desbloquear a mídia correta.</p>
     ${camposBase(`
-      <label style="display:block;margin-bottom:6px;font-size:13px;font-weight:600;color:#5e5873;">Nome da criadora</label>
+      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">Nome da criadora</label>
       <input id="oc-modelo" type="text" value="${modeloNome || ""}" placeholder="Nome da criadora" style="${styleInput()}" />
-      <label style="display:block;margin-bottom:6px;font-size:13px;font-weight:600;color:#5e5873;">Descreva o ocorrido</label>
-      <textarea id="oc-desc" rows="3" placeholder="Ex: a prévia mostrava X mas o conteúdo era Y..." style="${styleInput()}resize:vertical;"></textarea>
-      ${campoAnexo("Print da propaganda / evidência")}
+      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">Qual mídia queria desbloquear?</label>
+      <textarea id="oc-desc" rows="3" placeholder="Ex: vídeo do dia 10/04 no feed" style="${styleInput()}resize:vertical;"></textarea>
+      ${campoAnexo("Print da mídia paga")}
     `)}
-    ${btnEnviar("enviarPropagandaMidia()")}
-    ${avisoResposta()}
+    ${btnEnviar(`enviarMidiaErrada(${midiaId || "null"})`)}
   `);
-};
-
-window.enviarPropagandaMidia = async function() {
-  const { nome, nasc, email, dtpag } = valoresBase();
-  if (!nome || !email) return alert("Preencha todos os campos obrigatórios (*).");
-  const { base64, filename } = await lerAnexo();
-  await enviarOcorrencia({
-    tipo: "propaganda", subtipo: "midia",
-    nome_completo: nome, nascimento: nasc, email, data_pagamento: dtpag,
-    modelo_nome: document.getElementById("oc-modelo")?.value?.trim(),
-    descricao: document.getElementById("oc-desc")?.value?.trim(),
-    anexo_base64: base64, anexo_filename: filename
-  });
-};
-
-window.modalArrependimentoMidia = function(aceiteTimestamp, aceiteIp) {
-  modalArrependimentoVip(aceiteTimestamp, aceiteIp);
-};
-
-window.modalMidiaErrada = function(midiaId, modeloNome) {
-  fecharDropdowns();
-  abrirModal(`
-    <h3 style="color:#6f3cff;margin:0 0 4px;">Desbloqueio de mídia errada</h3>
-    <p style="color:#9b87b8;font-size:13px;margin:0 0 18px;">Vamos analisar e, se possível, desbloquear a mídia correta. Preencha os dados.</p>
-    ${camposBase(`
-      <label style="display:block;margin-bottom:6px;font-size:13px;font-weight:600;color:#5e5873;">Nome da criadora</label>
-      <input id="oc-modelo" type="text" value="${modeloNome || ""}" placeholder="Nome da criadora" style="${styleInput()}" />
-      <label style="display:block;margin-bottom:6px;font-size:13px;font-weight:600;color:#5e5873;">Detalhes da mídia que queria desbloquear</label>
-      <textarea id="oc-desc" rows="3" placeholder="Descreva a mídia que você queria (ex: vídeo do dia 10/04 no feed)" style="${styleInput()}resize:vertical;"></textarea>
-      ${campoAnexo("Print da mídia paga (bloqueada ou desbloqueada por engano)")}
-    `)}
-    ${btnEnviar("enviarMidiaErrada(" + (midiaId || "null") + ")")}
-    ${avisoResposta()}
-  `);
-};
-
+}
 window.enviarMidiaErrada = async function(midiaId) {
   const { nome, nasc, email, dtpag } = valoresBase();
   if (!nome || !email || !dtpag) return alert("Preencha todos os campos obrigatórios (*).");
@@ -505,7 +490,7 @@ window.enviarMidiaErrada = async function(midiaId) {
 };
 
 // ================================================
-// RENDER SUBSCRIÇÕES
+// RENDER SUBSCRIÇÕES — layout em linha
 // ================================================
 function renderSubscricoes(subscricoes) {
   const lista = document.getElementById("listaSubscricoes");
@@ -518,54 +503,83 @@ function renderSubscricoes(subscricoes) {
   }
 
   subscricoes.forEach(v => {
-    const ativa = Boolean(v.ativo) && new Date(v.expiration_at) > new Date() && !v.cancelado_em;
+    const ativa    = Boolean(v.ativo) && new Date(v.expiration_at) > new Date() && !v.cancelado_em;
     const cancelada = Boolean(v.cancelado_em);
-    const expirada = !v.ativo || new Date(v.expiration_at) <= new Date();
+    const dias     = diasRestantes(v.expiration_at);
+    const expiraLabel = v.expiration_at ? `Expira em ${formatarData(v.expiration_at)}${dias !== null && dias >= 0 ? ` (${dias}d)` : ""}` : "—";
 
-    let badge, acoes;
+    let badgeHtml, acoesHtml;
 
     if (ativa) {
-      badge = `<span class="badge-status badge-ativa">Ativa</span>`;
-      acoes = `
-        <button class="btn-menu-oc" onclick='toggleDropdown(event, \`
-          ${dropItem("Cancelar assinatura", "🚫", `modalCancelar(${v.id}, "${v.expiration_at}")`, true)}
-          ${dropItem("VIP não liberou após pagamento", "⚠️", `modalVipNaoLiberou("${v.modelo || ""}")`)}
-          ${dropItem("Propaganda enganosa / Golpe", "🚨", `modalPropagandaVip("${v.modelo || ""}")`)}
-          ${dropItem("Direito de arrependimento", "📋", `modalArrependimentoVip("${v.aceite_timestamp || ""}", "${v.aceite_ip || ""}")`)}
-          ${dropItem("Assinei a criadora errada", "🔄", `modalModeloErrada()`)}
-        \`)'>⁞</button>
-      `;
+      badgeHtml = `<span class="sub-badge sub-ativa">Ativa</span>`;
+      acoesHtml = `<button class="btn-opcoes" id="btn-sub-${v.id}">⁞</button>`;
     } else if (cancelada) {
-      badge = `<span class="badge-status badge-cancelada">Cancelada</span>`;
-      acoes = `<button class="btn-renovar" onclick="renovarSubscricao(${v.modelo_id})">Renovar</button>`;
+      badgeHtml = `<span class="sub-badge sub-cancelada">Cancelada</span>`;
+      acoesHtml = `<button class="btn-renovar" onclick="renovarSubscricao(${v.modelo_id})">Renovar</button>`;
     } else {
-      badge = `<span class="badge-status badge-expirada">Expirada</span>`;
-      acoes = `<button class="btn-renovar" onclick="renovarSubscricao(${v.modelo_id})">Renovar</button>`;
+      badgeHtml = `<span class="sub-badge sub-expirada">Expirada</span>`;
+      acoesHtml = `<button class="btn-renovar" onclick="renovarSubscricao(${v.modelo_id})">Renovar</button>`;
     }
 
-    const card = document.createElement("div");
-    card.className = "sub-vip-card";
-    card.innerHTML = `
-      <div class="sub-vip-header">
-        ${badge}
-        <div class="sub-vip-acoes">${acoes}</div>
+    const row = document.createElement("div");
+    row.className = "sub-row";
+    row.innerHTML = `
+      <div class="sub-row-info">
+        <span class="sub-modelo">${v.modelo || "—"}</span>
+        ${badgeHtml}
+        <span class="sub-expira">${expiraLabel}</span>
+        ${cancelada ? `<span class="sub-aviso">Acesso mantido até ${formatarData(v.expiration_at)}</span>` : ""}
       </div>
-      <div class="sub-vip-info">
-        <div class="transacao-tipo">Subscrição VIP</div>
-        <div><strong>Criadora:</strong> ${v.modelo || "—"}</div>
-        <div><strong>Assinada em:</strong> ${formatarData(v.updated_at || v.created_at)}</div>
-        <div><strong>Válida até:</strong> ${formatarData(v.expiration_at)}</div>
-        ${cancelada ? `<div style="color:#e67e22;font-size:13px;font-weight:600;">⚠️ Cancelada em ${formatarData(v.cancelado_em)} — acesso mantido até a data acima.</div>` : ""}
-        <div><strong>Renovação automática:</strong> ${v.recorrente ? "Sim" : "Não"}</div>
-      </div>
+      <div class="sub-row-acao">${acoesHtml}</div>
     `;
-    lista.appendChild(card);
+    lista.appendChild(row);
+
+    if (ativa) {
+      const btn = row.querySelector(`#btn-sub-${v.id}`);
+      btn.addEventListener("click", e => {
+        abrirDropdown(e, [
+          {
+            label: "Cancelar assinatura", icon: "🚫", danger: true,
+            action: () => window.modalCancelar(v.id, v.expiration_at)
+          },
+          { separator: true },
+          {
+            label: "Reembolso", icon: "💬",
+            sub: [
+              { label: "VIP não liberou após pagamento", icon: "⚠️", action: () => modalVipNaoLiberou(v.modelo) },
+              { label: "Propaganda enganosa / Golpe",    icon: "🚨", action: () => modalPropaganda(v.modelo, "assinatura") },
+              { label: "Direito de arrependimento",      icon: "📋", action: () => modalArrependimento(v.aceite_timestamp, v.aceite_ip) },
+              { label: "Assinei a criadora errada",      icon: "🔄", action: () => modalModeloErrada() },
+            ]
+          },
+        ]);
+      });
+    }
   });
 }
 
 // ================================================
-// RENDER TRANSAÇÕES
+// RENDER TRANSAÇÕES — layout em linha
 // ================================================
+function tipoLabel(tipo) {
+  const map = {
+    vip: "Assinatura VIP",
+    assinatura: "Assinatura VIP",
+    midia_premium: "Mídia Premium",
+    midia_chat: "Mídia Chat",
+    midia: "Mídia",
+    conteudo: "Conteúdo",
+  };
+  return map[tipo] || tipo || "—";
+}
+
+function tipoClasse(tipo) {
+  if (tipo === "vip" || tipo === "assinatura") return "tipo-vip";
+  if (tipo === "midia_premium") return "tipo-premium";
+  if (tipo === "midia_chat") return "tipo-chat";
+  return "tipo-outro";
+}
+
 function renderTransacoes(transacoes) {
   const lista = document.getElementById("listaTransacoes");
   const paginacao = document.getElementById("paginacao");
@@ -579,49 +593,62 @@ function renderTransacoes(transacoes) {
 
   const totalPaginas = Math.ceil(transacoes.length / itensPorPagina);
   if (paginaAtual > totalPaginas) paginaAtual = totalPaginas;
-  const inicio = (paginaAtual - 1) * itensPorPagina;
-  const pagina = transacoes.slice(inicio, inicio + itensPorPagina);
+  const slice = transacoes.slice((paginaAtual - 1) * itensPorPagina, paginaAtual * itensPorPagina);
 
   lista.innerHTML = "";
 
-  pagina.forEach(tr => {
-    const isMidia = tr.tipo === "midia" || tr.tipo === "conteudo";
-    const isVip = tr.tipo === "assinatura" || tr.tipo === "vip";
-    const tipoLabel = isVip ? "Assinatura VIP" : isMidia ? "Conteúdo / Mídia" : (tr.tipo || "—");
-    const tipoClasse = isVip ? "tipo-assinatura" : "tipo-conteudo";
+  slice.forEach((tr, idx) => {
+    const isVip   = tr.tipo === "vip" || tr.tipo === "assinatura";
+    const isMidia = tr.tipo === "midia_premium" || tr.tipo === "midia_chat" || tr.tipo === "midia" || tr.tipo === "conteudo";
+    const subtipoMidia = tr.tipo === "midia_chat" ? "midia_chat" : "midia_premium";
 
-    let menuItems = "";
-    if (isVip) {
-      menuItems = `
-        ${dropItem("VIP não liberou após pagamento", "⚠️", `modalVipNaoLiberou("${tr.modelo_nome || tr.modelo || ""}")`)}
-        ${dropItem("Propaganda enganosa / Golpe", "🚨", `modalPropagandaVip("${tr.modelo_nome || tr.modelo || ""}")`)}
-        ${dropItem("Direito de arrependimento", "📋", `modalArrependimentoVip("${tr.aceite_timestamp || ""}", "${tr.aceite_ip || ""}")`)}
-        ${dropItem("Assinei a criadora errada", "🔄", `modalModeloErrada()`)}
-      `;
-    } else if (isMidia) {
-      menuItems = `
-        ${dropItem("Mídia não desbloqueou", "⚠️", `modalMidiaNaoDesbloqueou(${tr.id || "null"}, "${tr.modelo_nome || tr.modelo || ""}")`)}
-        ${dropItem("Propaganda enganosa / Golpe", "🚨", `modalPropagandaMidia("${tr.modelo_nome || tr.modelo || ""}")`)}
-        ${dropItem("Direito de arrependimento", "📋", `modalArrependimentoMidia("${tr.aceite_timestamp || ""}", "${tr.aceite_ip || ""}")`)}
-        ${dropItem("Desbloqueio de mídia errada", "🔄", `modalMidiaErrada(${tr.id || "null"}, "${tr.modelo_nome || tr.modelo || ""}")`)}
-      `;
-    }
-
-    const card = document.createElement("div");
-    card.className = "transacao-card";
-    card.innerHTML = `
-      <div class="transacao-header">
-        <span class="tipo-badge ${tipoClasse}">${tipoLabel}</span>
-        ${menuItems ? `<button class="btn-menu-oc" onclick='toggleDropdown(event, \`${menuItems}\`)'>⁞</button>` : ""}
+    const row = document.createElement("div");
+    row.className = "tr-row";
+    row.id = `tr-row-${idx}`;
+    row.innerHTML = `
+      <div class="tr-row-info">
+        <span class="tipo-badge ${tipoClasse(tr.tipo)}">${tipoLabel(tr.tipo)}</span>
+        ${tr.modelo_nome ? `<span class="tr-modelo">${tr.modelo_nome}</span>` : ""}
+        <span class="tr-data">${formatarData(tr.criado_em || tr.created_at)}</span>
+        <span class="tr-valor">${formatarValor(tr.valor)}</span>
+        <span class="tr-status status-${(tr.status || "").toLowerCase()}">${tr.status || "—"}</span>
       </div>
-      <div class="transacao-body">
-        ${tr.modelo || tr.modelo_nome ? `<div><strong>Criadora:</strong> ${tr.modelo || tr.modelo_nome}</div>` : ""}
-        <div><strong>Data:</strong> ${formatarData(tr.created_at)}</div>
-        <div><strong>Valor:</strong> ${formatarValor(tr.valor)}</div>
-        <div><strong>Status:</strong> <span class="status-badge status-${(tr.status || "").toLowerCase()}">${tr.status || "—"}</span></div>
-      </div>
+      ${isVip || isMidia ? `<button class="btn-opcoes" id="btn-tr-${idx}">⁞</button>` : ""}
     `;
-    lista.appendChild(card);
+    lista.appendChild(row);
+
+    const btn = row.querySelector(`#btn-tr-${idx}`);
+    if (!btn) return;
+
+    if (isVip) {
+      btn.addEventListener("click", e => {
+        abrirDropdown(e, [
+          {
+            label: "Reembolso", icon: "💬",
+            sub: [
+              { label: "VIP não liberou após pagamento", icon: "⚠️", action: () => modalVipNaoLiberou(tr.modelo_nome) },
+              { label: "Propaganda enganosa / Golpe",    icon: "🚨", action: () => modalPropaganda(tr.modelo_nome, "assinatura") },
+              { label: "Direito de arrependimento",      icon: "📋", action: () => modalArrependimento(tr.aceite_timestamp, tr.aceite_ip) },
+              { label: "Assinei a criadora errada",      icon: "🔄", action: () => modalModeloErrada() },
+            ]
+          }
+        ]);
+      });
+    } else if (isMidia) {
+      btn.addEventListener("click", e => {
+        abrirDropdown(e, [
+          {
+            label: "Reembolso", icon: "💬",
+            sub: [
+              { label: "Mídia não desbloqueou",       icon: "⚠️", action: () => modalMidiaNaoDesbloqueou(tr.id, tr.modelo_nome, subtipoMidia) },
+              { label: "Propaganda enganosa / Golpe", icon: "🚨", action: () => modalPropaganda(tr.modelo_nome, subtipoMidia) },
+              { label: "Direito de arrependimento",   icon: "📋", action: () => modalArrependimento(tr.aceite_timestamp, tr.aceite_ip) },
+              { label: "Desbloqueei a mídia errada",  icon: "🔄", action: () => modalMidiaErrada(tr.id, tr.modelo_nome) },
+            ]
+          }
+        ]);
+      });
+    }
   });
 
   gerarPaginacao(transacoes);
@@ -631,9 +658,9 @@ function gerarPaginacao(transacoes) {
   const paginacao = document.getElementById("paginacao");
   if (!paginacao) return;
   paginacao.innerHTML = "";
-  const totalPaginas = Math.ceil(transacoes.length / itensPorPagina);
-  if (totalPaginas <= 1) return;
-  for (let i = 1; i <= totalPaginas; i++) {
+  const total = Math.ceil(transacoes.length / itensPorPagina);
+  if (total <= 1) return;
+  for (let i = 1; i <= total; i++) {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.textContent = i;
@@ -644,30 +671,32 @@ function gerarPaginacao(transacoes) {
 }
 
 function aplicarFiltros() {
-  const filtro = document.getElementById("filtroTipo");
-  const tipoSelecionado = filtro ? filtro.value : "";
+  const tipo = document.getElementById("filtroTipo")?.value || "";
   paginaAtual = 1;
-  transacoesFiltradas = !tipoSelecionado
-    ? [...todasTransacoes]
-    : todasTransacoes.filter(tr => tr.tipo === tipoSelecionado);
+  if (!tipo) {
+    transacoesFiltradas = [...todasTransacoes];
+  } else if (tipo === "vip") {
+    transacoesFiltradas = todasTransacoes.filter(t => t.tipo === "vip" || t.tipo === "assinatura");
+  } else {
+    transacoesFiltradas = todasTransacoes.filter(t => t.tipo === tipo);
+  }
   renderTransacoes(transacoesFiltradas);
 }
 
 // ================================================
-// CARREGAMENTO DE DADOS
+// CARREGAMENTO
 // ================================================
 async function carregarTransacoes() {
   const lista = document.getElementById("listaTransacoes");
-  const token = getToken();
   if (!lista) return;
+  lista.innerHTML = `<div class="estado-vazio">Carregando…</div>`;
   try {
     const res = await fetch("/api/cliente/transacoes", {
-      headers: { Authorization: "Bearer " + token }
+      headers: { Authorization: "Bearer " + getToken() }
     });
     if (!res.ok) { lista.innerHTML = `<div class="estado-vazio">Erro ao carregar transações.</div>`; return; }
-    const data = await res.json();
-    todasTransacoes = Array.isArray(data) ? data : [];
-    paginaAtual = 1;
+    todasTransacoes = await res.json();
+    if (!Array.isArray(todasTransacoes)) todasTransacoes = [];
     aplicarFiltros();
   } catch {
     lista.innerHTML = `<div class="estado-vazio">Erro ao carregar transações.</div>`;
@@ -676,12 +705,11 @@ async function carregarTransacoes() {
 
 async function carregarSubscricoes() {
   const lista = document.getElementById("listaSubscricoes");
-  const token = getToken();
   if (!lista) return;
   lista.innerHTML = `<div class="estado-vazio">Carregando…</div>`;
   try {
     const res = await fetch("/api/cliente/subscricoes", {
-      headers: { Authorization: "Bearer " + token }
+      headers: { Authorization: "Bearer " + getToken() }
     });
     if (!res.ok) { lista.innerHTML = `<div class="estado-vazio">Erro ao carregar assinaturas.</div>`; return; }
     const data = await res.json();
@@ -692,7 +720,80 @@ async function carregarSubscricoes() {
 }
 
 window.carregarSubscricoes = carregarSubscricoes;
-window.renovarSubscricao = (modeloId) => { window.location.href = `/perfil.html?id=${modeloId}`; };
+window.renovarSubscricao = id => { window.location.href = `/perfil.html?id=${id}`; };
+
+// ================================================
+// CSS dinâmico
+// ================================================
+function injectCSS() {
+  const s = document.createElement("style");
+  s.textContent = `
+    @keyframes fadeInModal { from{opacity:0;transform:scale(.97)} to{opacity:1;transform:scale(1)} }
+
+    /* ---- linha subscrição ---- */
+    .sub-row {
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      background:#f7f3ff;border:1.5px solid #e5d9ff;border-radius:14px;
+      padding:14px 18px;margin-bottom:10px;
+    }
+    .sub-row-info {
+      display:flex;align-items:center;flex-wrap:wrap;gap:10px;flex:1;min-width:0;
+    }
+    .sub-row-acao { flex-shrink:0; }
+    .sub-modelo { font-weight:700;color:#1e1b2e;font-size:14px; }
+    .sub-expira { font-size:13px;color:#5e5873; }
+    .sub-aviso  { font-size:12px;color:#e67e22;font-weight:600; }
+
+    .sub-badge {
+      display:inline-block;padding:3px 11px;border-radius:20px;font-size:12px;font-weight:700;
+    }
+    .sub-ativa    { background:#e6f9ee;color:#1a7a40; }
+    .sub-cancelada{ background:#fff0e8;color:#e67e22; }
+    .sub-expirada { background:#ffeee8;color:#c0392b; }
+
+    /* ---- linha transação ---- */
+    .tr-row {
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      background:#fff;border:1.5px solid #e5d9ff;border-radius:14px;
+      padding:13px 18px;margin-bottom:8px;
+    }
+    .tr-row-info {
+      display:flex;align-items:center;flex-wrap:wrap;gap:10px;flex:1;min-width:0;
+    }
+    .tr-modelo { font-size:14px;font-weight:600;color:#1e1b2e; }
+    .tr-data   { font-size:13px;color:#9b87b8; }
+    .tr-valor  { font-size:14px;font-weight:700;color:#1e1b2e; }
+    .tr-status { font-size:12px;font-weight:600; }
+    .status-paid,.status-pago,.status-ativo { color:#1a7a40; }
+    .status-pending,.status-pendente { color:#e67e22; }
+    .status-failed,.status-cancelado,.status-falhou { color:#c0392b; }
+
+    /* ---- badges tipo ---- */
+    .tipo-badge { display:inline-block;padding:3px 10px;border-radius:16px;font-size:12px;font-weight:600; }
+    .tipo-vip     { background:#ede9ff;color:#6f3cff; }
+    .tipo-premium { background:#e8f4ff;color:#2980b9; }
+    .tipo-chat    { background:#fff0f8;color:#c0392b; }
+    .tipo-outro   { background:#f3f3f3;color:#666; }
+
+    /* ---- botões ---- */
+    .btn-opcoes {
+      background:none;border:1.5px solid #ddd8e6;border-radius:8px;
+      padding:5px 11px;font-size:18px;line-height:1;font-weight:700;
+      cursor:pointer;color:#6f3cff;transition:.14s;flex-shrink:0;
+    }
+    .btn-opcoes:hover { background:#f3eff5;border-color:#6f3cff; }
+
+    .btn-renovar {
+      background:none;border:1.5px solid #6f3cff;color:#6f3cff;border-radius:10px;
+      padding:7px 16px;font-size:13px;font-weight:600;cursor:pointer;
+      font-family:inherit;transition:.14s;flex-shrink:0;
+    }
+    .btn-renovar:hover { background:#6f3cff;color:#fff; }
+
+    .estado-vazio { text-align:center;padding:32px;color:#9b87b8;font-size:15px; }
+  `;
+  document.head.appendChild(s);
+}
 
 // ================================================
 // INIT
@@ -700,8 +801,9 @@ window.renovarSubscricao = (modeloId) => { window.location.href = `/perfil.html?
 document.addEventListener("DOMContentLoaded", async () => {
   await whenI18nReady();
 
-  const token = getToken();
-  if (!token) { window.location.href = "/index.html"; return; }
+  if (!getToken()) { window.location.href = "/index.html"; return; }
+
+  injectCSS();
 
   // Tabs
   document.querySelectorAll(".tab-btn").forEach(btn => {
@@ -712,80 +814,18 @@ document.addEventListener("DOMContentLoaded", async () => {
       const tab = btn.dataset.tab;
       document.getElementById("tab-" + tab)?.classList.add("ativa");
       if (tab === "subscricoes") await carregarSubscricoes();
-      if (tab === "transacoes") aplicarFiltros();
+      if (tab === "transacoes")  aplicarFiltros();
     });
   });
 
-  // Filtro
-  const filtroTipo = document.getElementById("filtroTipo");
-  if (filtroTipo) filtroTipo.addEventListener("change", aplicarFiltros);
+  document.getElementById("filtroTipo")?.addEventListener("change", aplicarFiltros);
 
-  // Fechar dropdown ao clicar fora
+  // Fechar dropdowns ao clicar fora
   document.addEventListener("click", e => {
-    if (!e.target.closest(".btn-menu-oc") && !e.target.closest(".dropdown-menu-oc")) {
-      fecharDropdowns();
-    }
+    if (!e.target.closest(".btn-opcoes") && !e.target.closest(".dd-oc")) fecharDropdowns();
   });
 
-  // Carregamento inicial
+  // Carga inicial — a aba ativa por padrão é "subscricoes"
+  await carregarSubscricoes();
   await carregarTransacoes();
-  const abaAtiva = document.querySelector(".tab-btn.ativa");
-  if (abaAtiva?.dataset.tab === "subscricoes") await carregarSubscricoes();
-
-  // CSS dinâmico
-  const style = document.createElement("style");
-  style.textContent = `
-    @keyframes fadeInModal { from { opacity:0; transform:scale(.97); } to { opacity:1; transform:scale(1); } }
-
-    .sub-vip-card {
-      background:#f7f3ff;border-radius:14px;padding:18px;margin-bottom:14px;
-      border:1.5px solid #e5d9ff;
-    }
-    .sub-vip-header {
-      display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;
-    }
-    .sub-vip-acoes { display:flex;gap:8px;align-items:center; }
-    .sub-vip-info > div { margin-bottom:5px;font-size:14px;color:#1e1b2e; }
-
-    .transacao-card {
-      background:#fff;border-radius:14px;padding:16px 18px;margin-bottom:12px;
-      border:1.5px solid #e5d9ff;
-    }
-    .transacao-header {
-      display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;
-    }
-    .transacao-body > div { margin-bottom:4px;font-size:14px;color:#1e1b2e; }
-
-    .badge-status {
-      display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;
-    }
-    .badge-ativa { background:#e6f9ee;color:#1a7a40; }
-    .badge-expirada { background:#ffeee8;color:#c0392b; }
-    .badge-cancelada { background:#fff0e8;color:#e67e22; }
-
-    .tipo-badge { display:inline-block;padding:3px 10px;border-radius:16px;font-size:12px;font-weight:600; }
-    .tipo-assinatura { background:#ede9ff;color:#6f3cff; }
-    .tipo-conteudo { background:#e8f4ff;color:#2980b9; }
-
-    .status-badge { font-size:13px;font-weight:600; }
-    .status-paid,.status-pago { color:#1a7a40; }
-    .status-pending,.status-pendente { color:#e67e22; }
-    .status-failed,.status-cancelado { color:#c0392b; }
-
-    .btn-menu-oc {
-      background:none;border:1.5px solid #ddd8e6;border-radius:8px;
-      padding:4px 10px;font-size:18px;cursor:pointer;color:#6f3cff;
-      line-height:1;font-weight:700;transition:.15s;
-    }
-    .btn-menu-oc:hover { background:#f3eff5;border-color:#6f3cff; }
-
-    .btn-renovar {
-      background:none;border:1.5px solid #6f3cff;color:#6f3cff;border-radius:10px;
-      padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s;
-    }
-    .btn-renovar:hover { background:#6f3cff;color:#fff; }
-
-    .estado-vazio { text-align:center;padding:32px;color:#9b87b8;font-size:15px; }
-  `;
-  document.head.appendChild(style);
 });
