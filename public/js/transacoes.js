@@ -189,7 +189,7 @@ function campoAnexo(label = "Print / Comprovante") {
 }
 
 function btnEnviar(fn) {
-  return `<button data-send onclick="${fn}" style="
+  return `<button data-send onclick='${fn}' style="
     width:100%;background:#6f3cff;color:#fff;border:none;border-radius:12px;
     padding:13px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px;">
     Enviar ocorrência
@@ -261,7 +261,7 @@ function modalArrependimento(aceiteTimestamp, aceiteIp) {
         <strong>pode perder o direito de arrependimento</strong>."</em>
       </p>
       <a href="/policies.html#secao-2" target="_blank"
-        style="display:inline-block;margin-top:10px;font-size:13px;color:#6f3cff;font-weight:600;">
+        style="display:inline-block;margin-top:10px;font-size:13px;color:#6f3cff; font-weight:600;">
         Ver Políticas completas →
       </a>
     </div>
