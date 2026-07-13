@@ -3239,7 +3239,8 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
 // ROTAS GLOBAIS
 // ===============================
 
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 const { router: servercontentRouter, calcularValores } = require('./servercontent');
 app.use("/api", servercontentRouter);
 app.set("calcularValores", calcularValores);
@@ -8183,9 +8184,7 @@ app.get("/api/cliente/subscricoes", auth, async (req, res) => {
     const clienteId = clienteRes.rows[0].id;
 
     const { rows } = await db.query(
-      `SELECT v.id, v.modelo_id, v.ativo, v.recorrente, v.expiration_at,
-              v.cancelado_em, v.updated_at, v.created_at,
-              v.aceite_timestamp, v.aceite_ip,
+      `SELECT v.*,
               m.nome_exibicao AS modelo
          FROM vip_subscriptions v
          LEFT JOIN modelos m ON m.id = v.modelo_id

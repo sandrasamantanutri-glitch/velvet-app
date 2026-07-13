@@ -874,16 +874,12 @@ body {
 }
 
 .btn-voltar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   gap: 8px;
   min-width: 110px;
   height: 42px;
   padding: 0 16px;
   border: none;
   border-radius: 14px;
-  background: #f3ecff;
   color: #6d28d9;
   font-size: 15px;
   font-weight: 600;

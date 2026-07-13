@@ -378,10 +378,10 @@ window.enviarVipNaoLiberou = async function() {
 
 function modalPropaganda(modeloNome, subtipo) {
   abrirModal(`
-    <h3 style="color:#6f3cff;margin:0 0 4px;">Propaganda enganosa / Golpe</h3>
+    <h3 style="color:#6f3cff;margin:0 0 4px;">Propaganda enganosa</h3>
     <p style="color:#9b87b8;font-size:13px;margin:0 0 16px;">Descreva o que aconteceu com evidências.</p>
     ${camposBase(`
-      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">Nome da criadora</label>
+      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">Nome da influencer</label>
       <input id="oc-modelo" type="text" value="${modeloNome || ""}" placeholder="Nome da criadora" style="${styleInput()}" />
       <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">Descreva o ocorrido</label>
       <textarea id="oc-desc" rows="3" placeholder="Ex: o perfil prometia X mas entregou Y..." style="${styleInput()}resize:vertical;"></textarea>
@@ -405,12 +405,12 @@ window.enviarPropaganda = async function(subtipo) {
 
 function modalModeloErrada() {
   abrirModal(`
-    <h3 style="color:#6f3cff;margin:0 0 4px;">Assinei a criadora errada</h3>
+    <h3 style="color:#6f3cff;margin:0 0 4px;">Assinei a influencer errada</h3>
     <p style="color:#9b87b8;font-size:13px;margin:0 0 16px;">Vamos analisar para tentar trocar sua assinatura.</p>
     ${camposBase(`
-      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">Criadora assinada por engano</label>
+      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">influencer assinada por engano</label>
       <input id="oc-modelo-engano" type="text" placeholder="Nome da criadora" style="${styleInput()}" />
-      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">Criadora que queria assinar</label>
+      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">influencer que queria assinar</label>
       <input id="oc-modelo-certa" type="text" placeholder="Nome da criadora correta" style="${styleInput()}" />
       ${campoAnexo("Comprovante de pagamento (opcional)")}
     `)}
@@ -440,7 +440,7 @@ function modalMidiaNaoDesbloqueou(midiaId, modeloNome, subtipo) {
     <h3 style="color:#6f3cff;margin:0 0 4px;">Mídia não desbloqueou</h3>
     <p style="color:#9b87b8;font-size:13px;margin:0 0 16px;">Nossa equipe verificará e liberará seu acesso.</p>
     ${camposBase(`
-      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">Nome da criadora</label>
+      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">Nome da Influencer</label>
       <input id="oc-modelo" type="text" value="${modeloNome || ""}" placeholder="Nome da criadora" style="${styleInput()}" />
       ${campoAnexo("Print da mídia ainda bloqueada")}
     `)}
@@ -547,9 +547,9 @@ function renderSubscricoes(subscricoes) {
             label: "Reembolso", icon: "💬",
             sub: [
               { label: "VIP não liberou após pagamento", icon: "⚠️", action: () => modalVipNaoLiberou(v.modelo) },
-              { label: "Propaganda enganosa / Golpe",    icon: "🚨", action: () => modalPropaganda(v.modelo, "assinatura") },
-              { label: "Direito de arrependimento",      icon: "📋", action: () => modalArrependimento(v.aceite_timestamp, v.aceite_ip) },
-              { label: "Assinei a criadora errada",      icon: "🔄", action: () => modalModeloErrada() },
+              { label: "Propaganda enganosa",    icon: "🚨", action: () => modalPropaganda(v.modelo, "assinatura") },
+              { label: "Arrependimento",      icon: "📋", action: () => modalArrependimento(v.aceite_timestamp, v.aceite_ip) },
+              { label: "Assinei a influencer errada",      icon: "🔄", action: () => modalModeloErrada() },
             ]
           },
         ]);
@@ -627,9 +627,9 @@ function renderTransacoes(transacoes) {
             label: "Reembolso", icon: "💬",
             sub: [
               { label: "VIP não liberou após pagamento", icon: "⚠️", action: () => modalVipNaoLiberou(tr.modelo_nome) },
-              { label: "Propaganda enganosa / Golpe",    icon: "🚨", action: () => modalPropaganda(tr.modelo_nome, "assinatura") },
-              { label: "Direito de arrependimento",      icon: "📋", action: () => modalArrependimento(tr.aceite_timestamp, tr.aceite_ip) },
-              { label: "Assinei a criadora errada",      icon: "🔄", action: () => modalModeloErrada() },
+              { label: "Propaganda enganosa",    icon: "🚨", action: () => modalPropaganda(tr.modelo_nome, "assinatura") },
+              { label: "Arrependimento",      icon: "📋", action: () => modalArrependimento(tr.aceite_timestamp, tr.aceite_ip) },
+              { label: "Assinei influencer errada",      icon: "🔄", action: () => modalModeloErrada() },
             ]
           }
         ]);
@@ -641,8 +641,8 @@ function renderTransacoes(transacoes) {
             label: "Reembolso", icon: "💬",
             sub: [
               { label: "Mídia não desbloqueou",       icon: "⚠️", action: () => modalMidiaNaoDesbloqueou(tr.id, tr.modelo_nome, subtipoMidia) },
-              { label: "Propaganda enganosa / Golpe", icon: "🚨", action: () => modalPropaganda(tr.modelo_nome, subtipoMidia) },
-              { label: "Direito de arrependimento",   icon: "📋", action: () => modalArrependimento(tr.aceite_timestamp, tr.aceite_ip) },
+              { label: "Propaganda enganosa", icon: "🚨", action: () => modalPropaganda(tr.modelo_nome, subtipoMidia) },
+              { label: "Arrependimento",   icon: "📋", action: () => modalArrependimento(tr.aceite_timestamp, tr.aceite_ip) },
               { label: "Desbloqueei a mídia errada",  icon: "🔄", action: () => modalMidiaErrada(tr.id, tr.modelo_nome) },
             ]
           }
