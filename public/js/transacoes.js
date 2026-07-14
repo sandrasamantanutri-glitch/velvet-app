@@ -300,7 +300,7 @@ function modalArrependimento(aceiteTimestamp, aceiteIp) {
       </p>
 
       <ul style="margin:0;padding-left:18px;font-size:13px;color:#5e5873;line-height:1.8;">
-        <li><strong>Data e horário:</strong> ${aceiteTimestamp ? formatarData(aceiteTimestamp) : "registrados no sistema"}</li>
+        <li><strong>Data e horário:</strong> ${aceiteTimestamp ? new Date(aceiteTimestamp).toLocaleString(getLocaleAtual(), { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit", second:"2-digit" }) : "registrados no sistema"}</li>
         <li><strong>Endereço IP:</strong> ${aceiteIp || "registrado no sistema"}</li>
         <li>Você aceitou os <strong>Termos de Uso</strong>.</li>
         <li>Você aceitou as <strong>Políticas de Utilização e Política de Reembolso</strong>.</li>

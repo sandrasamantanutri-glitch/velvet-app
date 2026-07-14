@@ -8326,8 +8326,8 @@ app.get("/api/cliente/transacoes", auth, async (req, res) => {
 
     const { rows: pix } = await db.query(
       `SELECT p.id, p.tipo, p.valor, p.status, p.criado_em,
-              NULL AS aceitou_termos, NULL AS aceitou_politicas,
-              NULL AS aceite_timestamp, NULL AS aceite_ip,
+              p.aceitou_termos, NULL AS aceitou_politicas,
+              p.aceite_timestamp, p.aceite_ip,
               m.nome_exibicao AS modelo_nome
          FROM pagamentos_pix p
          LEFT JOIN modelos m ON m.id = p.modelo_id
@@ -14070,8 +14070,8 @@ app.post("/api/verificacao", auth, uploadVerificacaoLimiter, uploadVerificacao.f
             true,
             true,
             true,
-            versao_privacidade || "2026-06-07",
-            versao_termos_criador || "2026-06-07",
+            versao_privacidade || "2026-04-06",
+            versao_termos_criador || "2026-07-13",
             ip,
             contrato_pdf_url || null
           ]
@@ -14155,8 +14155,8 @@ app.post("/api/verificacao", auth, uploadVerificacaoLimiter, uploadVerificacao.f
             true,
             true,
             true,
-            versao_privacidade || "2026-06-07",
-            versao_termos_criador || "2026-06-07",
+            versao_privacidade || "2026-04-06",
+            versao_termos_criador || "2026-07-13",
             ip
           ]
         );
@@ -14183,7 +14183,7 @@ app.post("/api/verificacao", auth, uploadVerificacaoLimiter, uploadVerificacao.f
 // ACEITE DE TERMOS (MODELO)
 // ===========================
 
-const VERSAO_TERMOS_ATUAL = "2026-05";
+const VERSAO_TERMOS_ATUAL = "2026-07-13";
 
 // GET /api/modelo/aceite-termos/status
 // Verifica se a modelo já aceitou a versão atual dos termos
