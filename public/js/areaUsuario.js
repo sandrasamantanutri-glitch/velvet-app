@@ -743,6 +743,57 @@ formPessoais?.addEventListener("submit", async (e) => {
   }
 });
 
+async function carregarPreferenciasEmail() {
+  const token = localStorage.getItem("token");
+  if (!token) return;
+
+  try {
+    const res = await fetch("/api/cliente/preferencias-email", {
+      headers: { Authorization: "Bearer " + token }
+    });
+    if (!res.ok) return;
+
+    const prefs = await res.json();
+    ["pref_novidades_plataforma", "pref_novidades_criadoras", "pref_ofertas"].forEach(campo => {
+      const el = document.getElementById(campo);
+      if (el) el.checked = prefs[campo] !== false;
+    });
+  } catch (err) {
+    console.error("Erro ao carregar preferências de email:", err);
+  }
+}
+
+async function salvarPrefEmail(campo, valor) {
+  const token = localStorage.getItem("token");
+  if (!token) return;
+
+  const feedback = document.getElementById("prefEmailFeedback");
+
+  try {
+    const res = await fetch("/api/cliente/preferencias-email", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token
+      },
+      body: JSON.stringify({ campo, valor })
+    });
+
+    if (!res.ok) {
+      await carregarPreferenciasEmail();
+      return;
+    }
+
+    if (feedback) {
+      feedback.classList.remove("hidden");
+      setTimeout(() => feedback.classList.add("hidden"), 2500);
+    }
+  } catch (err) {
+    console.error("Erro ao salvar preferência de email:", err);
+    await carregarPreferenciasEmail();
+  }
+}
+
 const formModelo = document.getElementById("formDadosUsuario");
 
 formModelo?.addEventListener("submit", async (e) => {
