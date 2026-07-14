@@ -1,42 +1,68 @@
-name: Supabase Database Backup
+name: Backup Diário do Banco
 
 on:
   schedule:
-    # Roda todo dia às 06:00 UTC = 03:00 horário de Brasília
     - cron: '0 6 * * *'
-  workflow_dispatch: # permite rodar manualmente pelo GitHub
+  workflow_dispatch:
 
 jobs:
   backup:
-    name: Dump & Upload Backup
     runs-on: ubuntu-latest
 
     steps:
-      - name: Instalar cliente PostgreSQL
-        run: sudo apt-get install -y postgresql-client
+      - name: Instalar PostgreSQL Client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
 
-      - name: Gerar nome do arquivo
-        id: filename
-        run: echo "FILE=backup_$(date +%Y%m%d_%H%M%S).sql" >> $GITHUB_OUTPUT
+      - name: Gerar nome do backup
+        id: vars
+        run: |
+          echo "DATE=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_OUTPUT
 
-      - name: Fazer dump do banco de dados
+      - name: Fazer dump do banco
         env:
-          PGPASSWORD: ${{ secrets.DB_PASSWORD }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           pg_dump \
-            -h ${{ secrets.DB_HOST }} \
-            -U postgres \
-            -d postgres \
+            "$DATABASE_URL" \
             --no-owner \
             --no-acl \
-            -f ${{ steps.filename.outputs.FILE }}
+            --format=plain \
+            --encoding=UTF8 \
+            > backup_${{ steps.vars.outputs.DATE }}.sql
 
-      - name: Comprimir backup
-        run: gzip ${{ steps.filename.outputs.FILE }}
+      - name: Compactar backup
+        run: |
+          gzip backup_${{ steps.vars.outputs.DATE }}.sql
 
-      - name: Fazer upload do backup como artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.filename.outputs.FILE }}
-          path: ${{ steps.filename.outputs.FILE }}.gz
-          retention-days: 30
+      - name: Clonar repositório de backup
+        env:
+          TOKEN: ${{ secrets.BACKUP_VELVET }}
+        run: |
+          git clone https://sandrasamantanutri-glitch:${TOKEN}@github.com/sandrasamantanutri-glitch/velvet-db-backup.git
+
+      - name: Copiar backup
+        run: |
+          cp backup_${{ steps.vars.outputs.DATE }}.sql.gz velvet-db-backup/
+
+      - name: Manter apenas os últimos 90 backups
+        run: |
+          cd velvet-db-backup
+          ls -1tr *.sql.gz 2>/dev/null | head -n -90 | xargs -r rm
+
+      - name: Commit e Push
+        env:
+          TOKEN: ${{ secrets.BACKUP_VELVET }}
+        run: |
+          cd velvet-db-backup
+
+          git config user.name "GitHub Actions"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add .
+
+          if ! git diff --cached --quiet; then
+            git commit -m "Backup banco $(date '+%Y-%m-%d %H:%M:%S')"
+            git push origin main
+          fi
