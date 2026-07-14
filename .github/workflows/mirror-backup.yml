@@ -13,19 +13,24 @@ jobs:
     name: Espelhar código para backup privado
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+
     steps:
       - name: Checkout completo do repositório
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          submodules: false
 
-      - name: Configurar credenciais git
+      - name: Configurar Git
         run: |
-          git config --global credential.helper store
-          echo "https://sandrasamantanutri-glitch:${{ secrets.BACKUP_TOKEN }}@github.com" > ~/.git-credentials
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Fazer push para repositório de backup
+      - name: Adicionar repositório de backup
         run: |
-          git remote add backup https://github.com/sandrasamantanutri-glitch/velvet-app-backup.git
-          git push backup main --force
+          git remote add backup https://sandrasamantanutri-glitch:${{ secrets.BACKUP_TOKEN }}@github.com/sandrasamantanutri-glitch/velvet-app-backup.git
+
+      - name: Enviar para o repositório de backup
+        run: |
+          git push --force backup main

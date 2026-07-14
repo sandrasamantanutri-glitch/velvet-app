@@ -1080,45 +1080,114 @@ function renderContestacao(data) {
     </div>
   `;
 
-  const termosCompletos = `
-    <div class="card contestacao-print">
-      <h3>2.1 Termos Aceitos — Texto Completo (Política de Pagamentos, Reembolso e Cancelamento)</h3>
-      <p style="font-size:12px;color:#666;margin-bottom:8px;">
-        Texto vigente referente às versões dos termos aceitas pelo cliente (ver tabela acima).
-        Documentos completos: <a href="/terms.html" target="_blank">Termos de Uso</a> ·
-        <a href="/policies.html" target="_blank">Política de Utilização</a>
+const termosCompletos = `
+  <div class="card contestacao-print">
+    <h3>2.1 Termos Aceitos — Texto Completo (Política de Pagamentos, Assinaturas, Diamantes e Reembolsos)</h3>
+    <p style="font-size:12px;color:#666;margin-bottom:8px;">
+      Texto vigente referente às versões dos termos aceitas pelo cliente (ver tabela acima).
+      Documentos completos:
+      <a href="/terms.html" target="_blank">Termos de Uso</a> ·
+      <a href="/policies.html" target="_blank">Políticas de Utilização</a>
+    </p>
+
+    <div class="termos-completos-box" style="font-size:12px;line-height:1.6;background:#f9f9f9;padding:12px;border-radius:8px;">
+
+      <h4>2. Política de Pagamentos, Assinaturas, Diamantes e Reembolsos</h4>
+
+      <h4>2.1 Disposições Gerais</h4>
+      <ul>
+        <li>Pagamentos são processados por terceiros certificados;</li>
+        <li>A Velvet não armazena dados completos de cartão de crédito ou débito;</li>
+        <li>O usuário é responsável pela veracidade das informações fornecidas;</li>
+        <li>Os preços são exibidos em reais (BRL) e incluem todos os tributos aplicáveis, conforme exigido pela legislação brasileira.</li>
+      </ul>
+
+      <h4>2.2 Assinaturas</h4>
+
+      <strong>Acesso e Conteúdo</strong>
+      <ul>
+        <li>Concedem acesso ao perfil da criadora, incluindo conteúdo do feed e interação via chat, conforme definido pela criadora;</li>
+        <li>O conteúdo do feed é de responsabilidade exclusiva da criadora, podendo variar conforme seu nicho, estilo e proposta, podendo incluir conteúdo adulto ou não, exclusivo ou não exclusivo;</li>
+        <li>A Velvet não garante frequência, tipo ou padrão de conteúdo;</li>
+        <li>As assinaturas não incluem conteúdos pagos adicionais, salvo quando expressamente indicado.</li>
+      </ul>
+
+      <strong>Renovação Automática</strong>
+      <p>
+        As assinaturas são renovadas automaticamente ao final de cada período de faturamento,
+        salvo cancelamento prévio pelo usuário. Em conformidade com o art. 46 do Código de Defesa
+        do Consumidor (CDC), o usuário será informado com antecedência sobre o valor e a data da
+        próxima renovação. Alterações de preço afetam apenas novas assinaturas, exceto quando a
+        legislação dispuser de forma diversa.
       </p>
-      <div class="termos-completos-box" style="font-size:12px;line-height:1.6;background:#f9f9f9;padding:12px;border-radius:8px;">
-        <h4>25.1 Política de Reembolso</h4>
-        <ul>
-          <li>Assinaturas, Diamantes e conteúdos pagos não são reembolsáveis, exceto quando exigido por lei ou nos casos previstos abaixo;</li>
-          <li>O usuário é informado previamente sobre as condições da compra e deve concordar com os Termos antes de concluir a transação;</li>
-          <li>O reembolso poderá ocorrer exclusivamente em casos de:</li>
-        </ul>
-        <ul>
-          <li>cobrança em duplicidade;</li>
-          <li>erro técnico comprovado;</li>
-          <li>falha no sistema;</li>
-          <li>não disponibilização do serviço após pagamento.</li>
-        </ul>
-        <p>A Velvet poderá solicitar comprovação para análise.</p>
-        <h4>25.2 Conteúdos Pagos (Pay-Per-View e Chat)</h4>
-        <ul>
-          <li>Conteúdos pagos são liberados mediante pagamento adicional;</li>
-          <li>Após o desbloqueio, o conteúdo é considerado entregue e consumido;</li>
-          <li>Não há reembolso por insatisfação subjetiva;</li>
-          <li>A Velvet não garante expectativa ou resultado em relação ao conteúdo adquirido.</li>
-        </ul>
-        <h4>25.3 Direito de Arrependimento</h4>
-        <ul>
-          <li>O usuário reconhece que os serviços e conteúdos digitais da Plataforma são disponibilizados de forma imediata após a confirmação do pagamento;</li>
-          <li>Ao concluir a compra, o usuário declara ciência e concordância com a execução imediata do serviço;</li>
-          <li>Dessa forma, o usuário concorda que o direito de arrependimento previsto no artigo 49 do Código de Defesa do Consumidor poderá não ser aplicável;</li>
-          <li>O usuário será previamente informado sobre: liberação imediata do conteúdo; natureza digital do serviço; possível perda do direito de arrependimento.</li>
-        </ul>
-      </div>
+
+      <strong>Cancelamento pelo Usuário</strong>
+      <ul>
+        <li>O usuário pode cancelar sua assinatura a qualquer momento nas configurações da conta;</li>
+        <li>O cancelamento entra em vigor ao final do período de faturamento em curso;</li>
+        <li>O acesso é mantido até o encerramento do período já pago;</li>
+        <li>Não são concedidos reembolsos proporcionais por período não utilizado, salvo os casos previstos na seção 2.7 das Políticas de Utilização.</li>
+      </ul>
+
+      <h4>2.3 Diamantes (Moeda Virtual)</h4>
+      <ul>
+        <li>Uso exclusivo dentro da Plataforma;</li>
+        <li>Não possuem valor monetário fora da Velvet;</li>
+        <li>Não são transferíveis nem resgatáveis em dinheiro;</li>
+        <li>Não são reembolsáveis, salvo obrigação legal expressa.</li>
+      </ul>
+
+      <h4>2.4 Conteúdos Pagos (Premium ou Pay-Per-View no Chat)</h4>
+      <ul>
+        <li>Conteúdos pagos são liberados mediante pagamento adicional;</li>
+        <li>Após o desbloqueio, o conteúdo é considerado entregue e consumido;</li>
+        <li>Não há reembolso por insatisfação subjetiva com o conteúdo;</li>
+        <li>O conteúdo é de responsabilidade exclusiva da criadora, podendo variar conforme seu nicho e proposta;</li>
+        <li>A Velvet não garante expectativa ou resultado em relação ao conteúdo adquirido.</li>
+      </ul>
+
+      <h4>2.5 Natureza do Conteúdo Digital</h4>
+      <p>
+        A Velvet disponibiliza acesso a conteúdo digital entregue imediatamente após a confirmação
+        do pagamento, seja pela ativação de uma assinatura ou pela conclusão de uma compra
+        pay-per-view. Em razão da natureza imediata e não restituível do conteúdo digital, as regras
+        de reembolso aplicáveis diferem das previstas para bens físicos, nos termos da legislação
+        brasileira vigente.
+      </p>
+
+      <h4>2.6 Direito de Arrependimento</h4>
+      <p>
+        O art. 49 do Código de Defesa do Consumidor (Lei nº 8.078/1990) assegura ao consumidor o
+        direito de arrependimento no prazo de 7 (sete) dias corridos, a contar da contratação, nos
+        contratos celebrados fora do estabelecimento comercial, incluindo os realizados pela internet.
+      </p>
+
+      <strong>Exceção para Conteúdo Digital com Entrega Imediata</strong>
+      <p>
+        Nos termos das orientações do SENACON e da interpretação consolidada do CDC para serviços
+        digitais, o direito de arrependimento pode não ser aplicável quando, cumulativamente:
+      </p>
+
+      <ul>
+        <li>O usuário solicitar expressamente o início imediato do acesso ao conteúdo digital;</li>
+        <li>For previamente informado de que perderá o direito de arrependimento após o acesso ser concedido; e</li>
+        <li>Manifestar concordância expressa com essas condições antes de concluir a compra.</li>
+      </ul>
+
+      <p>
+        Essa confirmação é obtida no momento do pagamento. O usuário será informado de forma clara
+        e destacada sobre:
+      </p>
+
+      <ul>
+        <li>A liberação imediata do conteúdo após o pagamento;</li>
+        <li>A natureza digital e não restituível do serviço;</li>
+        <li>A possível perda do direito de arrependimento.</li>
+      </ul>
+
     </div>
-  `;
+  </div>
+`;
 
   const cartaoRows = (data.pagamentos_cartao || []).map(p => `
     <tr>

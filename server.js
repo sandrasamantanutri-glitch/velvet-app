@@ -73,6 +73,7 @@ const { Resend } = require("resend");
 const resend = new Resend(process.env.RESEND_API_KEY);
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const { enviarEmailValidacao, enviarEmailBoasVindasCliente, enviarEmailBoasVindasModelo, enviarEmailContratoModelos, enviarEmailNotificacaoContratoAssinado, enviarEmailVerificacao, enviarEmailOTP, enviarFaturaVIP, enviarFaturaConteudo, enviarFaturaPremium, obterOuCriarAudienceVIP, adicionarContatoAudienceVIP, enviarCampanhaVIP } = require("./email");
+const brevo = require("./brevo");
 const rateLimit = require("express-rate-limit");
 const compression = require('compression');
 
