@@ -294,15 +294,15 @@ function modalArrependimento(aceiteTimestamp, aceiteIp) {
       </a>
     </div>
 
-    <div style="background:#fff7ec;border-left:4px solid #f39c12;border-radius:8px;padding:12px 16px;margin-bottom:14px;">
-        <li>Você aceitou os <strong>Termos de Uso</strong>, as <strong>Políticas de Utilização e Reembolso</strong>. </li>
-        <li>Você autorizou o início imediato do acesso ao conteúdo digital.</li>
+    <p style="background:#fff7ec;border-left:4px solid #f39c12;border-radius:8px;padding:12px 16px;margin-bottom:14px;">
+        Você aceitou os <strong>Termos de Uso</strong>, e as <strong>Políticas de Utilização e Reembolso</strong>.<br>
+        Você autorizou o início imediato do acesso ao conteúdo digital.</p>
 
        <p style="margin:0 0 8px;font-weight:700;color:#d68910;font-size:13px;">
-        ✅Seu aceite foi registrado, alem de:</p>
+        ✅Seu aceite foi registrado em sistema, asim como:</p>
        <ul style="margin:0;padding-left:18px;font-size:13px;color:#5e5873;line-height:1.8;">
-        <li><strong>Data e horário e </strong><strong>Endereço IP</strong></li>
-       </ul>
+        <strong>Data e horário de aceite e seu </strong><strong>Endereço IP</strong></ul>
+        </p>
       </div>
 
     <div style="background:#eef8ff;border-left:4px solid #3498db;border-radius:8px;padding:12px 16px;margin-bottom:14px;">
