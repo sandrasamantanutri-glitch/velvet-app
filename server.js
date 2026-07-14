@@ -8292,12 +8292,21 @@ app.get("/api/cliente/subscricoes", auth, async (req, res) => {
     const { rows } = await db.query(
       `SELECT v.*,
               m.nome_exibicao AS modelo,
-              COALESCE(pp.aceite_ip, pc.aceite_ip) AS aceite_ip,
-              COALESCE(pp.aceite_timestamp, pc.aceite_timestamp) AS aceite_timestamp
+              sl.ip           AS aceite_ip,
+              sl.created_at   AS aceite_timestamp
          FROM vip_subscriptions v
          LEFT JOIN modelos m ON m.id = v.modelo_id
-         LEFT JOIN pagamentos_pix pp ON pp.pagarme_order_id = v.gateway_subscription_id
-         LEFT JOIN pagamentos_cartao pc ON pc.stripe_payment_intent_id = v.gateway_subscription_id
+         LEFT JOIN LATERAL (
+           SELECT ip, created_at
+             FROM security_logs
+            WHERE tipo = 'aceite_termos'
+              AND cliente_id = v.cliente_id
+              AND modelo_id  = v.modelo_id
+              AND created_at <= v.updated_at
+              AND created_at >= v.updated_at - interval '3 hours'
+            ORDER BY created_at DESC
+            LIMIT 1
+         ) sl ON true
         WHERE v.cliente_id = $1
         ORDER BY v.updated_at DESC`,
       [clienteId]
