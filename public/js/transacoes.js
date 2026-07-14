@@ -295,18 +295,15 @@ function modalArrependimento(aceiteTimestamp, aceiteIp) {
     </div>
 
     <div style="background:#fff7ec;border-left:4px solid #f39c12;border-radius:8px;padding:12px 16px;margin-bottom:14px;">
-      <p style="margin:0 0 8px;font-weight:700;color:#d68910;font-size:13px;">
-        ✅ Seu aceite foi registrado
-      </p>
-
-      <ul style="margin:0;padding-left:18px;font-size:13px;color:#5e5873;line-height:1.8;">
-        <li><strong>Data e horário:</strong> ${aceiteTimestamp ? new Date(aceiteTimestamp).toLocaleString(getLocaleAtual(), { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit", second:"2-digit" }) : "registrados no sistema"}</li>
-        <li><strong>Endereço IP:</strong> ${aceiteIp || "registrado no sistema"}</li>
-        <li>Você aceitou os <strong>Termos de Uso</strong>.</li>
-        <li>Você aceitou as <strong>Políticas de Utilização e Política de Reembolso</strong>.</li>
+        <li>Você aceitou os <strong>Termos de Uso</strong>, as <strong>Políticas de Utilização e Reembolso</strong>. </li>
         <li>Você autorizou o início imediato do acesso ao conteúdo digital.</li>
-      </ul>
-    </div>
+
+       <p style="margin:0 0 8px;font-weight:700;color:#d68910;font-size:13px;">
+        ✅Seu aceite foi registrado, alem de:</p>
+       <ul style="margin:0;padding-left:18px;font-size:13px;color:#5e5873;line-height:1.8;">
+        <li><strong>Data e horário e </strong><strong>Endereço IP</strong></li>
+       </ul>
+      </div>
 
     <div style="background:#eef8ff;border-left:4px solid #3498db;border-radius:8px;padding:12px 16px;margin-bottom:14px;">
       <p style="margin:0;font-size:13px;color:#2c3e50;line-height:1.75;">
