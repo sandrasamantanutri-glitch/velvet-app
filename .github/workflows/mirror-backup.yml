@@ -27,15 +27,21 @@ jobs:
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
+
       - name: Testar acesso ao repositório
         run: |
-         git ls-remote https://sandrasamantanutri-glitch:${{ secrets.BACKUP_VELVET }}@github.com/sandrasamantanutri-glitch/velvet-app-backup.git
+          git ls-remote https://sandrasamantanutri-glitch:${{ secrets.BACKUP_VELVET }}@github.com/sandrasamantanutri-glitch/velvet-app-backup.git
 
       - name: Adicionar repositório de backup
+        env:
+          BACKUP_TOKEN: ${{ secrets.BACKUP_VELVET }}
         run: |
           git remote remove backup || true
-          git remote add backup https://sandrasamantanutri-glitch:${{ secrets.BACKUP_VELVET }}@github.com/sandrasamantanutri-glitch/velvet-app-backup.git
+          git remote add backup https://sandrasamantanutri-glitch:${BACKUP_VELVET}@github.com/sandrasamantanutri-glitch/velvet-app-backup.git
+
+      - name: Verificar URL do remote
+        run: |
+          git remote -v
 
       - name: Enviar para o repositório de backup
         run: |
