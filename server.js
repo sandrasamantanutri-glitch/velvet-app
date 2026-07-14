@@ -1158,21 +1158,24 @@ app.post("/api/webhook/ipag", express.raw({ type: "*/*" }), async (req, res) => 
           tipo: 'assinatura_vip',
           cliente_id: dadosParaEmitir.cliente_id,
           modelo_id:  dadosParaEmitir.modelo_id,
-          descricao:  `Assinatura VIP confirmada via PIX (iPag) — modelo_id ${dadosParaEmitir.modelo_id}`
+          descricao:  `Assinatura VIP confirmada via PIX (iPag) — modelo_id ${dadosParaEmitir.modelo_id}`,
+          ip:         row.aceite_ip || null
         });
       } else if (dadosParaEmitir.tipo === "conteudo") {
         registrarLog(db, {
           tipo: 'compra_midia_chat',
           cliente_id: dadosParaEmitir.cliente_id,
           modelo_id:  dadosParaEmitir.modelo_id,
-          descricao:  `Mídia do chat desbloqueada via PIX (iPag) — message_id ${dadosParaEmitir.message_id}`
+          descricao:  `Mídia do chat desbloqueada via PIX (iPag) — message_id ${dadosParaEmitir.message_id}`,
+          ip:         row.aceite_ip || null
         });
       } else if (dadosParaEmitir.tipo === "premium") {
         registrarLog(db, {
           tipo: 'compra_premium',
           cliente_id: dadosParaEmitir.cliente_id,
           modelo_id:  dadosParaEmitir.modelo_id,
-          descricao:  `Premium desbloqueado via PIX (iPag) — premium_post_id ${dadosParaEmitir.premium_post_id}`
+          descricao:  `Premium desbloqueado via PIX (iPag) — premium_post_id ${dadosParaEmitir.premium_post_id}`,
+          ip:         row.aceite_ip || null
         });
       }
     }
@@ -7548,7 +7551,9 @@ app.get("/api/modelo/publico/:modelo_id/premium", async (req, res) => {
         tipo: 'visualizacao_premium',
         cliente_id,
         modelo_id,
-        descricao: `Feed premium acessado — ${rows.filter(r => r.liberado).length} post(s) desbloqueado(s) — modelo_id ${modelo_id}`
+        descricao: `Feed premium acessado — ${rows.filter(r => r.liberado).length} post(s) desbloqueado(s) — modelo_id ${modelo_id}`,
+        ip:         req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket?.remoteAddress || null,
+        user_agent: req.headers["user-agent"] || null
       });
     }
 
@@ -8286,9 +8291,13 @@ app.get("/api/cliente/subscricoes", auth, async (req, res) => {
 
     const { rows } = await db.query(
       `SELECT v.*,
-              m.nome_exibicao AS modelo
+              m.nome_exibicao AS modelo,
+              COALESCE(pp.aceite_ip, pc.aceite_ip) AS aceite_ip,
+              COALESCE(pp.aceite_timestamp, pc.aceite_timestamp) AS aceite_timestamp
          FROM vip_subscriptions v
          LEFT JOIN modelos m ON m.id = v.modelo_id
+         LEFT JOIN pagamentos_pix pp ON pp.pagarme_order_id = v.gateway_subscription_id
+         LEFT JOIN pagamentos_cartao pc ON pc.stripe_payment_intent_id = v.gateway_subscription_id
         WHERE v.cliente_id = $1
         ORDER BY v.updated_at DESC`,
       [clienteId]
