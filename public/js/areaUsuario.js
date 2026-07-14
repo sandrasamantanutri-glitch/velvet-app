@@ -133,6 +133,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     // CLIENTE NÃO PODE VALIDAR PERFIL
     if (user.role === "cliente") {
       bloquearPaginaValidacaoCliente();
+      document.getElementById("secaoPreferenciasEmail")?.classList.remove("hidden");
+      carregarPreferenciasEmail();
     }
 
     if (user.role === "modelo") {
