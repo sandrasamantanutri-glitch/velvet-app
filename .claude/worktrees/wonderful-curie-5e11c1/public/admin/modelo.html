@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Admin - Detalhes Modelo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="admin.css">
+</head>
+
+<body>
+
+<header class="topbar">
+  <div class="topbar-left">
+    <img src="/assets/velvet.png" class="logo-small">
+<nav>
+  <a href="/admin/dashboard.html">Dashboard</a>
+  <a href="/admin/modelo.html" class="active">Ganhos Modelos</a>
+  <a href="/admin/validar.html">Validar Perfis</a>
+  <a href="/admin/gestao-modelo.html">Gestão Modelos</a>
+</nav>
+  </div>
+  </div>
+
+  <div class="topbar-right filtros">
+  <select id="mesSelect" onchange="alterarMes()">
+    <option value="">Selecionar Mês</option>
+  </select>
+    <select id="modeloSelect" onchange="irModelo()">
+    <option value="">Selecionar Modelo</option>
+  </select>
+
+  <button class="logout-btn" onclick="logoutAdmin()">
+    Sair
+  </button>
+
+</div>
+</header>
+
+<div class="main">
+
+<h1 id="tituloModelo"></h1>
+
+<div class="dashboard-grid">
+
+  <div class="periodo-card hoje">
+    <h2>HOJE</h2>
+    <div class="linha"><span>Modelo</span><strong id="modeloDia"></strong></div>
+    <div class="linha"><span>Agência</span><strong id="agenciaDia"></strong></div>
+    <div class="linha"><span>Velvet</span><strong id="velvetDia"></strong></div>
+    <div class="linha"><span>Gateway</span><strong id="gatewayDia"></strong></div>
+  </div>
+
+  <div class="periodo-card mes">
+    <h2>MÊS</h2>
+    <div class="linha"><span>Modelo</span><strong id="modeloMes"></strong></div>
+    <div class="linha"><span>Agência</span><strong id="agenciaMes"></strong></div>
+    <div class="linha"><span>Velvet</span><strong id="velvetMes"></strong></div>
+    <div class="linha"><span>Gateway</span><strong id="gatewayMes"></strong></div>
+  </div>
+
+  <div class="periodo-card ano">
+    <h2>ANO</h2>
+    <div class="linha"><span>Modelo</span><strong id="modeloAno"></strong></div>
+    <div class="linha"><span>Agência</span><strong id="agenciaAno"></strong></div>
+    <div class="linha"><span>Velvet</span><strong id="velvetAno"></strong></div>
+    <div class="linha"><span>Gateway</span><strong id="gatewayAno"></strong></div>
+  </div>
+
+</div>
+
+</div>
+
+<script>
+  const token = localStorage.getItem("token_admin");
+
+if (!token) {
+  window.location.href = "/admin/login.html";
+  throw new Error("Sem token admin");
+}
+const params = new URLSearchParams(window.location.search);
+const id = params.get("id");
+
+async function carregar(){
+    if(!id){
+    return; 
+  }
+
+  const mes = document.getElementById("mesSelect").value;
+
+  let url = "/api/admin/modelo/" + id;
+
+  if(mes){
+    url += "?mes=" + mes;
+  }
+
+  const res = await fetch(url,{
+    headers:{ Authorization:"Bearer "+token }
+  });
+
+  if(res.status === 401 || res.status === 403){
+    localStorage.removeItem("token_admin");
+    window.location.href="/admin/login.html";
+    return;
+  }
+
+  if(!res.ok){
+    alert("Erro ao carregar modelo");
+    return;
+  }
+
+  const d = await res.json();
+
+  document.getElementById("tituloModelo").innerText =
+    "Modelo: "+d.nome+" | ID: "+id;
+
+  const set=(i,v)=>document.getElementById(i).innerText=
+    "R$ "+Number(v||0).toFixed(2);
+
+  set("modeloDia",d.modelo_dia);
+  set("agenciaDia",d.agencia_dia);
+  set("velvetDia",d.velvet_dia);
+  set("gatewayDia",d.gateway_dia);
+
+  set("modeloMes",d.modelo_mes);
+  set("agenciaMes",d.agencia_mes);
+  set("velvetMes",d.velvet_mes);
+  set("gatewayMes",d.gateway_mes);
+
+  set("modeloAno",d.modelo_ano);
+  set("agenciaAno",d.agencia_ano);
+  set("velvetAno",d.velvet_ano);
+  set("gatewayAno",d.gateway_ano);
+}
+
+function irModelo(){
+  const id = document.getElementById("modeloSelect").value;
+  if(id) window.location.href="modelo.html?id="+id;
+}
+
+function alterarMes(){
+  carregar(); 
+}
+
+function carregarMeses(){
+  const select = document.getElementById("mesSelect");
+
+  const meses = [
+    "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+    "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
+  ];
+
+  const hoje = new Date();
+  const anoAtual = hoje.getFullYear();
+  const mesAtual = String(hoje.getMonth()+1).padStart(2,"0");
+  const valorAtual = `${anoAtual}-${mesAtual}`;
+
+  meses.forEach((mes, index)=>{
+    const valor = `${anoAtual}-${String(index+1).padStart(2,"0")}`;
+    select.innerHTML += `<option value="${valor}">${mes} ${anoAtual}</option>`;
+  });
+
+  select.value = valorAtual;
+}
+
+async function carregarModelos(){
+
+  const res = await fetch("/api/admin/modelos", {
+    headers:{ Authorization:"Bearer "+token }
+  });
+
+  if(!res.ok) return;
+
+  const lista = await res.json();
+
+  const select = document.getElementById("modeloSelect");
+
+  lista.forEach(m=>{
+    select.innerHTML +=
+      `<option value="${m.id}">${m.nome}</option>`;
+  });
+
+  // marca modelo atual
+  if(id){
+    select.value = id;
+  }
+}
+
+function logoutAdmin(){
+  localStorage.removeItem("token_admin");
+  window.location.href = "/admin/login.html";
+}
+
+async function iniciar(){
+  carregarMeses();
+  await carregarModelos();
+
+  if(id){
+    await carregar();
+  }
+}
+
+iniciar();
+
+</script>
+
+</body>
+</html>
