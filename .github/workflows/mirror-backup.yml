@@ -28,33 +28,12 @@ jobs:
           git config --global user.name "GitHub Actions"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Verificar se o secret existe
-        env:
-          TOKEN: ${{ secrets.BACKUP_VELVET }}
-        run: |
-          if [ -z "$TOKEN" ]; then
-            echo "TOKEN VAZIO"
-            exit 1
-          fi
-          echo "Token encontrado."
-          echo "Tamanho: ${#TOKEN}"
-
-      - name: Testar acesso ao repositório
-        env:
-          BACKUP_TOKEN: ${{ secrets.BACKUP_VELVET }}
-        run: |
-          git ls-remote https://sandrasamantanutri-glitch:${BACKUP_TOKEN}@github.com/sandrasamantanutri-glitch/velvet-app-backup.git
-
       - name: Adicionar repositório de backup
         env:
           BACKUP_TOKEN: ${{ secrets.BACKUP_VELVET }}
         run: |
           git remote remove backup || true
           git remote add backup https://sandrasamantanutri-glitch:${BACKUP_TOKEN}@github.com/sandrasamantanutri-glitch/velvet-app-backup.git
-
-      - name: Verificar URL do remote
-        run: |
-          git remote -v
 
       - name: Enviar para o repositório de backup
         run: |
