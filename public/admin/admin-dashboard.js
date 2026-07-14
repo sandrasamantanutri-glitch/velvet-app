@@ -1090,7 +1090,7 @@ const termosCompletos = `
       <a href="/policies.html" target="_blank">Políticas de Utilização</a>
     </p>
 
-    <div class="termos-completos-box" style="font-size:12px;line-height:1.6;background:#f9f9f9;padding:12px;border-radius:8px;">
+    <div class="termos-completos-box" style="font-size:12px;line-height:1.6;background:#f9f9f9;padding:22px;border-radius:8px;">
 
       <h4>2. Política de Pagamentos, Assinaturas, Diamantes e Reembolsos</h4>
 
