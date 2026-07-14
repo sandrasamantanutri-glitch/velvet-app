@@ -281,7 +281,7 @@
   "titulo_dados_pessoais": "Dados Pessoais",
   "step1": "1. Dados pessoais",
   "step2": "2. Documentos",
-  "info_confidencial": "🔒 Essas informações são confidenciais, usadas apenas para verificação de identidade e processamento de pagamentos. Seu perfil de criador só será liberado após a aprovação dos seus dados e documentos.",
+  "info_confidencial": "🔒 Essas informações são confidenciais, usadas apenas para verificação de identidade, e em caso de influencers também processamento de pagamentos e liberação do perfil de criador(a).",
   "label_nome": "Nome completo*",
   "placeholder_nome": "Nome e Sobrenome",
   "label_nascimento": "Data de nascimento*",

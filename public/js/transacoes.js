@@ -253,43 +253,97 @@ function modalArrependimento(aceiteTimestamp, aceiteIp) {
     <h3 style="color:#6f3cff;margin:0 0 12px;">Direito de Arrependimento</h3>
 
     <div style="background:#f3eff5;border-radius:12px;padding:16px 18px;margin-bottom:14px;">
-      <p style="margin:0 0 8px;font-weight:700;color:#1e1b2e;font-size:14px;">📋 Políticas de Utilização da Velvet</p>
-      <p style="margin:0;font-size:13px;color:#5e5873;line-height:1.7;">
-        <em>"O art. 49 do CDC garante o direito de arrependimento em 7 dias para contratos celebrados online.
-        No entanto, ao adquirir conteúdo digital com entrega imediata, o usuário solicita expressamente o
-        início imediato do acesso e é informado de que, com isso,
-        <strong>pode perder o direito de arrependimento</strong>."</em>
+      <p style="margin:0 0 8px;font-weight:700;color:#1e1b2e;font-size:14px;">
+        📋 Entenda como funciona
       </p>
+
+      <p style="margin:0;font-size:13px;color:#5e5873;line-height:1.75;">
+        O <strong>art. 49 do Código de Defesa do Consumidor (CDC)</strong>
+        garante, em regra, o direito de desistir de compras realizadas pela internet
+        no prazo de até <strong>7 dias</strong>.
+      </p>
+
+      <p style="margin:10px 0 0;font-size:13px;color:#5e5873;line-height:1.75;">
+        <strong>Entretanto, conteúdos e serviços digitais possuem regras específicas.</strong>
+        Na Velvet, o acesso à assinatura ou à mídia é liberado
+        <strong>imediatamente após a confirmação do pagamento</strong>.
+      </p>
+
+      <p style="margin:10px 0 0;font-size:13px;color:#5e5873;line-height:1.75;">
+        Antes de concluir a compra, você concordou com nossos
+        <strong>Termos de Uso</strong> e com a
+        <strong>Política de Utilização e Reembolso</strong>, autorizando
+        expressamente o início imediato da prestação do serviço.
+      </p>
+
+      <p style="margin:10px 0 0;font-size:13px;color:#5e5873;line-height:1.75;">
+        <strong>Por esse motivo, após a liberação do acesso ao conteúdo, o direito de arrependimento pode não ser aplicável</strong>,
+        não sendo devido reembolso apenas porque houve mudança de ideia,
+        arrependimento ou desistência após o acesso ao serviço.
+      </p>
+
+      <p style="margin:10px 0 0;font-size:13px;color:#5e5873;line-height:1.75;">
+        <strong>Isso não impede a análise de casos legítimos</strong>, como cobrança em duplicidade,
+        erro comprovado no processamento do pagamento ou impossibilidade técnica de fornecer
+        o serviço, que continuam sendo tratados conforme nossa Política de Reembolso.
+      </p>
+
       <a href="/policies.html#secao-2" target="_blank"
-        style="display:inline-block;margin-top:10px;font-size:13px;color:#6f3cff; font-weight:600;">
-        Ver Políticas completas →
+        style="display:inline-block;margin-top:12px;font-size:13px;color:#6f3cff;font-weight:700;">
+        Ler as Políticas completas →
       </a>
     </div>
 
-    <div style="background:#fff0e8;border-left:4px solid #e67e22;border-radius:8px;padding:12px 16px;margin-bottom:14px;">
-      <p style="margin:0 0 6px;font-weight:700;color:#e67e22;font-size:13px;">🔒 Registramos seu aceite:</p>
-      <ul style="margin:0;padding-left:18px;font-size:13px;color:#5e5873;line-height:1.9;">
-        <li><strong>Horário:</strong> ${aceiteTimestamp ? formatarData(aceiteTimestamp) : "registrado no sistema"}</li>
-        <li><strong>IP:</strong> ${aceiteIp || "registrado no sistema"}</li>
-        <li>Você marcou a caixa <em>"Li e aceito as Políticas de Utilização, incluindo a Política de Reembolso"</em></li>
-        <li>Você marcou a caixa <em>"Li e aceito os Termos de Uso"</em></li>
+    <div style="background:#fff7ec;border-left:4px solid #f39c12;border-radius:8px;padding:12px 16px;margin-bottom:14px;">
+      <p style="margin:0 0 8px;font-weight:700;color:#d68910;font-size:13px;">
+        ✅ Seu aceite foi registrado
+      </p>
+
+      <ul style="margin:0;padding-left:18px;font-size:13px;color:#5e5873;line-height:1.8;">
+        <li><strong>Data e horário:</strong> ${aceiteTimestamp ? formatarData(aceiteTimestamp) : "registrados no sistema"}</li>
+        <li><strong>Endereço IP:</strong> ${aceiteIp || "registrado no sistema"}</li>
+        <li>Você aceitou os <strong>Termos de Uso</strong>.</li>
+        <li>Você aceitou as <strong>Políticas de Utilização e Política de Reembolso</strong>.</li>
+        <li>Você autorizou o início imediato do acesso ao conteúdo digital.</li>
       </ul>
     </div>
 
+    <div style="background:#eef8ff;border-left:4px solid #3498db;border-radius:8px;padding:12px 16px;margin-bottom:14px;">
+      <p style="margin:0;font-size:13px;color:#2c3e50;line-height:1.75;">
+        💬 <strong>Teve algum problema com a compra?</strong><br>
+        Antes de solicitar uma contestação (chargeback) junto ao banco ou à operadora do cartão,
+        entre em contato conosco. A maioria dos problemas pode ser resolvida rapidamente pelo suporte.
+      </p>
+    </div>
+
     <div style="background:#fff5f5;border-left:4px solid #e74c3c;border-radius:8px;padding:12px 16px;margin-bottom:18px;">
-      <p style="margin:0;font-size:13px;color:#c0392b;line-height:1.7;">
-        ⚠️ <strong>Atenção:</strong> Contestações (chargeback) frequentes, infundadas ou fraudulentas
-        podem resultar em <strong>suspensão ou bloqueio permanente da conta</strong> e encaminhamento
-        às autoridades competentes (Lei n.º 8.137/1990 e Código Penal).
+      <p style="margin:0;font-size:13px;color:#c0392b;line-height:1.75;">
+        ⚠️ <strong>Importante:</strong> Contestações (chargebacks) realizadas após a utilização do serviço,
+        ou de forma falsa, abusiva ou fraudulenta, poderão resultar na
+        <strong>suspensão ou encerramento permanente da conta</strong>,
+        cancelamento dos acessos e adoção das medidas administrativas e judiciais cabíveis,
+        nos termos da legislação brasileira.
       </p>
     </div>
 
     <p style="font-size:13px;color:#9b87b8;margin:0 0 16px;">
-      Dúvidas: <a href="mailto:contato@velvet.lat" style="color:#6f3cff;font-weight:600;">contato@velvet.lat</a>
+      Dúvidas? Entre em contato pelo e-mail
+      <a href="mailto:contato@velvet.lat" style="color:#6f3cff;font-weight:700;">
+        contato@velvet.lat
+      </a>
     </p>
+
     <button onclick="fecharModal()" style="
-      width:100%;background:#6f3cff;color:#fff;border:none;border-radius:12px;
-      padding:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">
+      width:100%;
+      background:#6f3cff;
+      color:#fff;
+      border:none;
+      border-radius:12px;
+      padding:12px;
+      font-size:15px;
+      font-weight:700;
+      cursor:pointer;
+      font-family:inherit;">
       Entendido
     </button>
   `);

@@ -15199,6 +15199,9 @@ async function sincronizarDisponibilidadeStripe() {
 
 cron.schedule("0 4 * * *", sincronizarDisponibilidadeStripe);
 
+// Backup diário Cloudflare R2 → Backblaze B2
+require("./scripts/cron-backup");
+
 // Migração: coluna de controle do aviso de expiração
 db.query("ALTER TABLE ofertas ADD COLUMN IF NOT EXISTS aviso_expiracao_enviado BOOLEAN DEFAULT false")
   .catch(err => console.error("Migração aviso_expiracao_enviado:", err.message));
