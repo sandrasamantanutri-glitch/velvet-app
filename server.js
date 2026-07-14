@@ -6323,6 +6323,82 @@ app.get("/api/cliente/me", authCliente, async (req, res) => {
 });
 
 // ===========================
+// PREFERÊNCIAS DE EMAIL (CLIENTE)
+// ===========================
+
+app.get("/api/cliente/preferencias-email", authCliente, async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT pref_novidades_plataforma, pref_novidades_criadoras, pref_ofertas
+       FROM clientes WHERE id = $1 AND ativo = true`,
+      [req.cliente_id]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: "Cliente não encontrado" });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Erro GET /api/cliente/preferencias-email:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+app.patch("/api/cliente/preferencias-email", authCliente, async (req, res) => {
+  const colunasValidas = {
+    pref_novidades_plataforma: "pref_novidades_plataforma",
+    pref_novidades_criadoras: "pref_novidades_criadoras",
+    pref_ofertas: "pref_ofertas"
+  };
+
+  const { campo, valor } = req.body;
+  const coluna = colunasValidas[campo];
+  if (!coluna || typeof valor !== "boolean") {
+    return res.status(400).json({ error: "Parâmetros inválidos" });
+  }
+
+  try {
+    await db.query(
+      `UPDATE clientes SET ${coluna} = $1 WHERE id = $2 AND ativo = true`,
+      [valor, req.cliente_id]
+    );
+
+    const emailRes = await db.query(
+      `SELECT u.email, c.nome FROM clientes c JOIN users u ON u.id = c.user_id WHERE c.id = $1`,
+      [req.cliente_id]
+    );
+
+    if (emailRes.rows.length) {
+      const { email, nome } = emailRes.rows[0];
+
+      if (coluna === "pref_novidades_criadoras") {
+        const vips = await db.query(
+          `SELECT m.brevo_list_id FROM vip_subscriptions v
+           JOIN modelos m ON m.id = v.modelo_id
+           WHERE v.cliente_id = $1 AND v.ativo = true AND m.brevo_list_id IS NOT NULL`,
+          [req.cliente_id]
+        );
+        for (const row of vips.rows) {
+          if (!valor) {
+            try { await brevo.removerContatoLista(row.brevo_list_id, email); } catch (e) { /* ignora */ }
+          } else {
+            try { await brevo.adicionarContatoLista(row.brevo_list_id, email, nome, "novidades_criadoras"); } catch (e) { /* ignora */ }
+          }
+        }
+      } else if (coluna === "pref_novidades_plataforma") {
+        if (!valor) {
+          try { await brevo.removerContatoLista(brevo.GENERAL_LIST_ID, email); } catch (e) { /* ignora */ }
+        } else {
+          try { await brevo.adicionarContatoLista(brevo.GENERAL_LIST_ID, email, nome, "novidades_plataforma"); } catch (e) { /* ignora */ }
+        }
+      }
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Erro PATCH /api/cliente/preferencias-email:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+// ===========================
 // LISTA VIPS
 // ===========================
 

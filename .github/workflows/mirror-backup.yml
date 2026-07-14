@@ -29,7 +29,7 @@ jobs:
 
       - name: Adicionar repositório de backup
         run: |
-          git remote add backup https://sandrasamantanutri-glitch:${{ secrets.BACKUP_VELVET }}@github.com/sandrasamantanutri-glitch/velvet-app-backup.git
+          git remote add backup https://sandrasamantanutri-glitch:${{ secrets.BACKUP_VELVET }}@github.com/sandrasamantanutri-glitch/velvet-app-backup
 
       - name: Enviar para o repositório de backup
         run: |
