@@ -87,7 +87,9 @@ router.get('/:identificador', async (req, res) => {
       suporteRes,
       riscoRes,
       autoexclusaoRes,
-      ocorrenciasRes
+      ocorrenciasRes,
+      bloqueadoCadastroRes,
+      historicoSegurancaRes
     ] = await Promise.all([
       db.query(
         `SELECT tipo, descricao, ip, user_agent, created_at
@@ -245,6 +247,23 @@ router.get('/:identificador', async (req, res) => {
          WHERE cliente_id = $1
          ORDER BY criado_em DESC`,
         [clienteId]
+      ),
+      db.query(
+        `SELECT nivel, motivo, ip, fingerprint, cpf,
+                bloqueio_ip, bloqueio_cpf, bloqueio_fingerprint,
+                ativo, bloqueado, criado_em, desativado_em, admin
+         FROM clientes_bloqueados_cadastro
+         WHERE cliente_id = $1
+         ORDER BY criado_em DESC`,
+        [clienteId]
+      ),
+      db.query(
+        `SELECT h.acao, h.motivo, h.data, a.email AS admin_email
+         FROM admin_seguranca_historico h
+         LEFT JOIN admin a ON a.id = h.admin_id
+         WHERE h.user_id = $1 AND h.tipo_user = 'cliente'
+         ORDER BY h.data DESC`,
+        [clienteId]
       )
     ]);
 
@@ -310,7 +329,9 @@ router.get('/:identificador', async (req, res) => {
       suporte: suporteRes.rows,
       risco: riscoRes.rows,
       autoexclusao: autoexclusaoRes.rows,
-      ocorrencias: ocorrenciasRes.rows
+      ocorrencias: ocorrenciasRes.rows,
+      bloqueado_cadastro: bloqueadoCadastroRes.rows,
+      historico_seguranca: historicoSegurancaRes.rows
     });
   } catch (err) {
     console.error('Erro ao gerar relatório de contestação:', err);

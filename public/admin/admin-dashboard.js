@@ -1425,6 +1425,61 @@ const termosCompletos = `
     </div>
   `;
 
+  const bloqueadoRows = (data.bloqueado_cadastro || []).map(b => `
+    <tr>
+      <td>${b.bloqueado ? '<span style="color:#c0392b;font-weight:bold;">Bloqueado</span>' : '<span style="color:#27ae60;">Ativo</span>'}</td>
+      <td>${b.nivel || '—'}</td>
+      <td>${b.motivo || '—'}</td>
+      <td>${b.ip || '—'}</td>
+      <td>${b.cpf || '—'}</td>
+      <td style="max-width:160px;word-break:break-all;">${b.fingerprint || '—'}</td>
+      <td>${b.bloqueio_ip ? 'Sim' : 'Não'}</td>
+      <td>${b.bloqueio_cpf ? 'Sim' : 'Não'}</td>
+      <td>${b.bloqueio_fingerprint ? 'Sim' : 'Não'}</td>
+      <td>${fmtDateTime(b.criado_em)}</td>
+      <td>${fmtDateTime(b.desativado_em)}</td>
+      <td>${b.admin || '—'}</td>
+    </tr>
+  `).join('') || emptyRow(12);
+
+  const bloqueadoCadastro = `
+    <div class="card contestacao-print">
+      <h3>11. Histórico de Bloqueio de Cadastro</h3>
+      <table class="table">
+        <thead><tr><th>Status</th><th>Nível</th><th>Motivo</th><th>IP</th><th>CPF</th><th>Fingerprint</th><th>Blq IP</th><th>Blq CPF</th><th>Blq FP</th><th>Registrado em</th><th>Desativado em</th><th>Admin</th></tr></thead>
+        <tbody>${bloqueadoRows}</tbody>
+      </table>
+    </div>
+  `;
+
+  const ACAO_LABEL = {
+    marcar_cliente_risco: 'Marcado como Risco',
+    editar_cliente_risco: 'Risco Atualizado',
+    remover_cliente_risco: 'Risco Removido',
+    atualizar_bloqueio: 'Bloqueio Atualizado',
+    inserir_bloqueio: 'Bloqueio Inserido',
+    remover_bloqueio: 'Bloqueio Removido',
+  };
+
+  const historicoRows = (data.historico_seguranca || []).map(h => `
+    <tr>
+      <td>${ACAO_LABEL[h.acao] || h.acao || '—'}</td>
+      <td style="max-width:400px;">${h.motivo || '—'}</td>
+      <td>${fmtDateTime(h.data)}</td>
+      <td>${h.admin_email || '—'}</td>
+    </tr>
+  `).join('') || emptyRow(4);
+
+  const historicoSeguranca = `
+    <div class="card contestacao-print">
+      <h3>12. Histórico de Ações de Segurança (Admin)</h3>
+      <table class="table">
+        <thead><tr><th>Ação</th><th>Descrição</th><th>Data</th><th>Admin</th></tr></thead>
+        <tbody>${historicoRows}</tbody>
+      </table>
+    </div>
+  `;
+
   return `
     <div class="contestacao-header" style="margin:12px 0;">
       <h2>Relatório de Contestação — ${c.nome || c.email} (Cliente #${c.cliente_id})</h2>
@@ -1442,6 +1497,8 @@ const termosCompletos = `
     ${ocorrencias}
     ${risco}
     ${autoexclusao}
+    ${bloqueadoCadastro}
+    ${historicoSeguranca}
   `;
 }
 
