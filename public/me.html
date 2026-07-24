@@ -31,18 +31,18 @@
     }
 
     body {
-      background: #F5F5F5;
+      background: #ffffff;
       overflow-x: hidden;
     }
 
     .page-wrapper {
       min-height: 100vh;
-      background: #F5F5F5;
+      background: #ffffff;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 0;
+      padding: 40px 16px;
     }
 
     /* Esconde a capa em todas as telas */
@@ -55,7 +55,7 @@
       width: 100%;
       max-width: 420px;
       height: auto;
-      min-height: 100svh;
+      min-height: unset;
       flex-direction: column;
       align-items: stretch;
     }
@@ -63,33 +63,48 @@
     .landing-login {
       width: 100%;
       max-width: 420px;
-      min-height: 100svh;
+      min-height: unset;
       background: #F5F5F5;
       margin: 0;
-      padding: 80px 32px 36px;
-      border-radius: 0;
+      padding: 48px 36px 40px;
+      border-radius: 20px;
       display: flex;
       flex-direction: column;
-      justify-content: flex-start;
+      justify-content: center;
       align-items: center;
       text-align: center;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.08);
     }
 
-    .landing-login .logo {
-      margin-bottom: 48px;
+    .main-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+
+    .main-content .logo {
+      margin-bottom: 40px;
     }
 
     .login-box {
+      width: 100%;
       margin-bottom: 0;
     }
 
     .footer-linksC {
       margin-top: 20px !important;
+      margin-bottom: 0 !important;
     }
 
     .footer-links {
-      margin-top: auto !important;
-      padding-top: 40px;
+      margin-top: 48px !important;
+      padding-top: 0;
+      text-align: center;
+    }
+
+    .footer-links a {
+      font-size: 11px !important;
     }
 
     /* Seletor de idioma no canto superior direito (fixo) */
@@ -227,15 +242,17 @@
         </select>
       </div>
 
-      <img src="assets/velvet.webp" class="logo" alt="Velvet" width="250" height="75">
+      <div class="main-content">
+        <img src="assets/velvet.webp" class="logo" alt="Velvet" width="250" height="75">
 
-      <div class="login-box">
-        <button class="btn btn-Login" onclick="selectRole()" data-i18n="index.enter">ENTRAR</button>
-        <button class="btn btn-cadastro" onclick="startRegister()" data-i18n="index.createAccount">Criar Conta</button>
-      </div>
+        <div class="login-box">
+          <button class="btn btn-Login" onclick="selectRole()" data-i18n="index.enter">ENTRAR</button>
+          <button class="btn btn-cadastro" onclick="startRegister()" data-i18n="index.createAccount">Criar Conta</button>
+        </div>
 
-      <div class="footer-linksC">
-        <a href="#" onclick="openForgot(); return false;" data-i18n="index.forgotPassword">Esqueci minha senha</a><br>
+        <div class="footer-linksC">
+          <a href="#" onclick="openForgot(); return false;" data-i18n="index.forgotPassword">Esqueci minha senha</a><br>
+        </div>
       </div>
 
       <div class="footer-links">

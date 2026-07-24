@@ -313,7 +313,6 @@
       margin: 0 auto;
     }
     .squiggle {
-      position: absolute;
       width: 220px;
       opacity: 0.9;
     }
@@ -601,7 +600,50 @@
       padding: 4px 8px;
     }
     .footer-links a:hover { color: var(--text); }
+    .footer-sep { font-size: 13px; color: var(--muted); user-select: none; }
     .footer-copy { font-size: 13px; color: var(--muted); }
+
+    /* ─── NAV LANG SWITCHER ─── */
+    .lang-pill-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+    .lang-pill-wrap::after {
+      content: '';
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 0; height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 5px solid var(--muted);
+      pointer-events: none;
+    }
+    .lang-pill-select {
+      appearance: none;
+      -webkit-appearance: none;
+      background: transparent;
+      border: 1.5px solid rgba(124, 58, 237, 0.45);
+      border-radius: 100px;
+      padding: 7px 36px 7px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      color: var(--muted);
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .lang-pill-select:hover,
+    .lang-pill-select:focus {
+      border-color: var(--purple);
+      color: var(--text);
+    }
+    @media (max-width: 768px) {
+      .lang-pill-wrap { display: none; }
+    }
 
     /* ─── SCROLL REVEAL ─── */
     .reveal {
@@ -709,11 +751,13 @@
     </ul>
 
     <div class="nav-right">
-      <select id="lang-switcher" class="lang-switcher" aria-label="Language">
-        <option value="pt">PT</option>
-        <option value="en">EN</option>
-        <option value="es">ES</option>
-      </select>
+      <div class="lang-pill-wrap">
+        <select id="lang-switcher" class="lang-pill-select" aria-label="Language">
+          <option value="pt">🇧🇷 Português</option>
+          <option value="en">🇺🇸 English</option>
+          <option value="es">🇪🇸 Español</option>
+        </select>
+      </div>
       <a class="btn btn-primary" href="me.html" data-i18n="nav.access">Acessar</a>
       <button class="hamburger" id="hamburger" aria-label="Menu">
         <span></span><span></span><span></span>
@@ -943,10 +987,13 @@
   <!-- FOOTER -->
   <footer>
     <ul class="footer-links">
-      <a href="https://www.velvet.lat/terms.html">| Termos de Uso | </a>
-      <a href="https://www.velvet.lat/privacy.html"> | Políticas de Privacidade | </a>
-      <a href="https://www.velvet.lat/policies.html">| Políticas de Utilização | </a>
-      <a href="contato.html">| Contato |</a>
+      <a href="https://www.velvet.lat/terms.html">Termos de Uso</a>
+      <span class="footer-sep">·</span>
+      <a href="https://www.velvet.lat/privacy.html">Privacidade</a>
+      <span class="footer-sep">·</span>
+      <a href="https://www.velvet.lat/policies.html">Políticas</a>
+      <span class="footer-sep">·</span>
+      <a href="contato.html">Contato</a>
     </ul>
     <p class="footer-copy" data-i18n="footer.copy">© 2026 Velvet. Todos os direitos reservados.</p>
   </footer>
