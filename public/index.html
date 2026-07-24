@@ -645,6 +645,16 @@
       .lang-pill-wrap { display: none; }
     }
 
+    .mobile-lang-row {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(0,0,0,0.06);
+      display: flex;
+    }
+    .mobile-lang-row .lang-pill-wrap {
+      display: inline-flex;
+    }
+
     /* ─── SCROLL REVEAL ─── */
     .reveal {
       opacity: 0;
@@ -773,6 +783,15 @@
       <li><a href="#faq" onclick="closeMobileMenu()">FAQ</a></li>
       <li><a href="contato.html" onclick="closeMobileMenu()" data-i18n="nav.help">Ajuda</a></li>
     </ul>
+    <div class="mobile-lang-row">
+      <div class="lang-pill-wrap">
+        <select class="lang-pill-select" id="lang-switcher-mobile">
+          <option value="pt">🇧🇷 Português</option>
+          <option value="en">🇺🇸 English</option>
+          <option value="es">🇪🇸 Español</option>
+        </select>
+      </div>
+    </div>
   </div>
 
   <!-- HERO -->
@@ -1002,11 +1021,21 @@
     // Hamburger menu
     const hamburger = document.getElementById('hamburger');
     const mobileMenu = document.getElementById('mobile-menu');
+    const mainLang = document.getElementById('lang-switcher');
+    const mobileLang = document.getElementById('lang-switcher-mobile');
 
     hamburger.addEventListener('click', () => {
       const isOpen = mobileMenu.classList.toggle('open');
       hamburger.classList.toggle('open', isOpen);
+      if (isOpen && mainLang && mobileLang) mobileLang.value = mainLang.value;
     });
+
+    if (mobileLang && mainLang) {
+      mobileLang.addEventListener('change', () => {
+        mainLang.value = mobileLang.value;
+        mainLang.dispatchEvent(new Event('change'));
+      });
+    }
 
     function closeMobileMenu() {
       mobileMenu.classList.remove('open');
