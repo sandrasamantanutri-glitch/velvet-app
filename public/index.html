@@ -1,285 +1,1000 @@
 <!DOCTYPE html>
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="preload" as="image" href="assets/cap2.webp" fetchpriority="high">
-  <meta name="theme-color" content="#111111">
+  <title>Velvet — Conecte-se com seus criadores favoritos</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  <title>Velvet — Conecta com os teus criadores favoritos</title>
-  <meta name="description" content="Velvet é uma plataforma social para criadores partilharem as suas mídias com os seus fãs.">
-  <meta name="robots" content="index, follow">
+    :root {
+      --purple: #7c3aed;
+      --purple-light: #a855f7;
+      --purple-dim: rgba(124, 58, 237, 0.15);
+      --bg: #E1E1E1;
+      --bg2: #d0d0d0;
+      --text: #0d0d0d;
+      --muted: #555566;
+      --card-w: 380px;
+      --card-gap: 20px;
+    }
 
-  <!-- OPEN GRAPH -->
-  <meta property="og:title" content="Velvet — Plataforma Social para Criadores">
-  <meta property="og:description" content="Conecta-te com os teus criadores favoritos e acede às mídias do criador.">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://www.velvet.lat">
-  <meta property="og:image" content="https://www.velvet.lat/assets/og-cover.png">
+    html { scroll-behavior: smooth; }
 
-  <!-- TWITTER CARD -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Velvet — Plataforma Social para Criadores">
-  <meta name="twitter:description" content="Conecta-te com os teus criadores favoritos.">
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Poppins', Segoe UI, system-ui, -apple-system, sans-serif;
+      overflow-x: hidden;
+    }
 
-  <link rel="stylesheet" href="/css/style.css">
+    /* ─── NAVBAR ─── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 48px;
+      background: rgba(225, 225, 225, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    nav::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(to right, transparent 0%, rgba(124,58,237,0.8) 30%, rgba(168,85,247,1) 50%, rgba(124,58,237,0.8) 70%, transparent 100%);
+      box-shadow: 0 0 12px 2px rgba(168,85,247,0.35);
+    }
 
-  <link rel="icon" href="/assets/favicon.ico" sizes="any">
-  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
-  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
-  <link rel="manifest" href="/manifest.json">
+    .nav-logo-img img {
+      height: 44px;
+      width: auto;
+      display: block;
+    }
 
-  <script src="/i18n.js"></script>
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      list-style: none;
+    }
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
 
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "WebApplication",
-  "name": "Velvet",
-  "description": "Plataforma social para criadores de conteúdo",
-  "applicationCategory": "SocialNetworkingApplication",
-  "url": "https://www.velvet.lat"
-}
-</script>
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
 
+    /* ─── HAMBURGER ─── */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      gap: 5px;
+      width: 36px;
+      height: 36px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+    }
+    .hamburger span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: var(--text);
+      border-radius: 2px;
+      transition: transform 0.3s, opacity 0.3s;
+    }
+    .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* ─── MOBILE MENU ─── */
+    .mobile-menu {
+      display: none;
+      position: fixed;
+      top: 68px; left: 0; right: 0;
+      z-index: 150;
+      background: rgba(225, 225, 225, 0.97);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 16px 24px 24px;
+      border-bottom: 1px solid rgba(124,58,237,0.2);
+      transform: translateY(-8px);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.25s ease, opacity 0.25s ease;
+    }
+    .mobile-menu.open {
+      display: block;
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .mobile-menu ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .mobile-menu ul li a {
+      display: block;
+      padding: 12px 8px;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+    .mobile-menu ul li:last-child a { border-bottom: none; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 24px;
+      border-radius: 100px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      border: none;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: var(--purple);
+      color: #fff;
+    }
+    .btn-primary:hover { background: var(--purple-light); transform: translateY(-1px); }
+    .btn-outline {
+      background: transparent;
+      color: var(--text);
+      border: 1.5px solid rgba(124,58,237,0.5);
+    }
+    .btn-outline:hover { border-color: var(--purple); background: var(--purple-dim); }
+
+    /* ─── HERO ─── */
+    .hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 140px 24px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -200px; left: 50%; transform: translateX(-50%);
+      width: 800px; height: 800px;
+      background: radial-gradient(circle, rgba(124,58,237,0.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero h1 {
+      font-size: clamp(36px, 7vw, 60px);
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -2px;
+      margin-bottom: 24px;
+      max-width: 720px;
+    }
+    .hero h1 em {
+      font-style: normal;
+      color: var(--purple-light);
+    }
+
+    .hero p {
+      font-size: clamp(15px, 2vw, 19px);
+      color: var(--muted);
+      max-width: 600px;
+      line-height: 1.6;
+      margin-bottom: 40px;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .hero-actions .btn-primary { padding: 14px 32px; font-size: 15px; }
+    .hero-actions .btn-outline { padding: 14px 28px; font-size: 15px; }
+
+    /* ─── CAROUSEL SECTION ─── */
+    .carousel-section {
+      padding: 10px 0;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    .section-label {
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--purple-light);
+      margin-bottom: 16px;
+    }
+    .section-title {
+      text-align: center;
+      font-size: clamp(26px, 4vw, 48px);
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 12px;
+    }
+    .section-sub {
+      text-align: center;
+      color: var(--muted);
+      font-size: 16px;
+      margin-bottom: 52px;
+    }
+
+    .carousel-track-wrap {
+      overflow: hidden;
+      position: relative;
+      mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+    }
+    .carousel-track-wrap + .carousel-track-wrap { margin-top: 16px; }
+
+    .carousel-track {
+      display: flex;
+      gap: var(--card-gap);
+      width: max-content;
+    }
+    .carousel-track.row1 { animation: scrollLeft 38s linear infinite; }
+    .carousel-track.row2 { animation: scrollRight 34s linear infinite; }
+
+    @keyframes scrollLeft {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(calc(-50%)); }
+    }
+    @keyframes scrollRight {
+      0%   { transform: translateX(calc(-50%)); }
+      100% { transform: translateX(0); }
+    }
+
+    .carousel-track-wrap:hover .carousel-track { animation-play-state: paused; }
+
+    .card {
+      width: var(--card-w);
+      border-radius: 18px;
+      overflow: hidden;
+      flex-shrink: 0;
+      cursor: pointer;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+    .card:hover {
+      transform: scale(1.04) translateY(-4px);
+      box-shadow: 0 16px 48px rgba(124,58,237,0.25);
+    }
+    .card img {
+      width: 100%;
+      display: block;
+      object-fit: cover;
+    }
+
+    /* ─── TAGLINE SECTION ─── */
+    .tagline-section {
+      position: relative;
+      padding: 60px 48px;
+      text-align: center;
+      background: var(--bg);
+      overflow: hidden;
+    }
+    .tagline-text {
+      font-size: clamp(28px, 5vw, 64px);
+      font-weight: 800;
+      letter-spacing: -2px;
+      line-height: 1.1;
+      color: #0d0d0d;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .squiggle {
+      position: absolute;
+      width: 220px;
+      opacity: 0.9;
+    }
+    .squiggle-left  { bottom: 12px; left: 32px; }
+    .squiggle-right { bottom: 0px; right: 32px; }
+
+    /* ─── PHONE SECTION ─── */
+    .phone-section {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 60px 48px;
+      display: flex;
+      align-items: center;
+      gap: 64px;
+      background: linear-gradient(to right, transparent 0%, rgb(183 159 226 / 44%) 30%, rgb(187 150 223 / 4%) 50%, rgba(89,74,116,0.247) 70%, transparent 100%);
+    }
+
+    .phone-text { flex: 1; min-width: 0; }
+    .phone-text h2 {
+      font-size: clamp(28px, 4vw, 56px);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -1.5px;
+      margin: 12px 0 20px;
+    }
+    .phone-text h2 em {
+      font-style: normal;
+      color: var(--purple-light);
+    }
+    .phone-text p {
+      font-size: 17px;
+      color: var(--muted);
+      line-height: 1.6;
+      max-width: 420px;
+      margin-bottom: 28px;
+    }
+
+    .phone-mockup-wrap {
+      flex: 0 0 auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* iPhone frame */
+    .iphone {
+      position: relative;
+      width: 260px;
+      height: 532px;
+      background: #1a1a1a;
+      border-radius: 46px;
+      box-shadow:
+        0 0 0 2px #3a3a3a,
+        0 0 0 4px #111,
+        0 40px 100px rgba(0,0,0,0.35),
+        inset 0 0 0 2px #2e2e2e;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 14px 10px 18px;
+    }
+
+    /* Volume buttons left */
+    .iphone::before {
+      content: '';
+      position: absolute;
+      left: -6px; top: 100px;
+      width: 4px; height: 32px;
+      background: #2a2a2a;
+      border-radius: 3px 0 0 3px;
+      box-shadow: 0 44px 0 #2a2a2a, 0 80px 0 #2a2a2a;
+    }
+    /* Power button right */
+    .iphone::after {
+      content: '';
+      position: absolute;
+      right: -6px; top: 130px;
+      width: 4px; height: 56px;
+      background: #2a2a2a;
+      border-radius: 0 3px 3px 0;
+    }
+
+    .iphone-status {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      height: 28px;
+      flex-shrink: 0;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .iphone-status .time { font-size: 13px; font-weight: 700; }
+    .iphone-status .icons { display: flex; gap: 5px; align-items: center; }
+    .iphone-status svg { width: 14px; height: 14px; fill: #fff; }
+
+    .iphone-island {
+      width: 90px; height: 28px;
+      background: #000;
+      border-radius: 20px;
+      margin-bottom: 6px;
+      flex-shrink: 0;
+    }
+
+    .iphone-screen {
+      flex: 1;
+      width: 100%;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .iphone-screen img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+    }
+
+    .iphone-home {
+      width: 100px; height: 4px;
+      background: rgba(255,255,255,0.35);
+      border-radius: 4px;
+      margin-top: 10px;
+      flex-shrink: 0;
+    }
+
+    /* ─── FEATURES ─── */
+    .features {
+      padding: 100px 48px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-top: 52px;
+    }
+
+    .feature-card {
+      background: var(--bg2);
+      border: 1px solid rgba(124,58,237,0.15);
+      border-radius: 20px;
+      padding: 32px;
+      transition: border-color 0.3s, transform 0.3s;
+    }
+    .feature-card:hover {
+      border-color: rgba(124,58,237,0.5);
+      transform: translateY(-4px);
+    }
+    .feature-icon {
+      width: 48px; height: 48px;
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 40px;
+      margin-bottom: 20px;
+    }
+    .feature-card h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .feature-card p {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* ─── FAQ ─── */
+    .faq {
+      padding: 80px 48px 100px;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .faq-list { margin-top: 48px; }
+
+    .faq-item {
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+    }
+    .faq-question {
+      width: 100%;
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 16px;
+      font-weight: 600;
+      text-align: left;
+      padding: 22px 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .faq-question .icon {
+      flex-shrink: 0;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--purple-dim);
+      border: 1px solid rgba(124,58,237,0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      color: var(--purple-light);
+      transition: transform 0.3s;
+    }
+    .faq-item.open .faq-question .icon { transform: rotate(45deg); }
+    .faq-answer {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.7;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease, padding 0.3s;
+    }
+    .faq-item.open .faq-answer {
+      max-height: 300px;
+      padding-bottom: 20px;
+    }
+
+    /* ─── CTA SECTION ─── */
+    .cta-section {
+      padding: 80px 24px 120px;
+      text-align: center;
+    }
+    .cta-box {
+      max-width: 700px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, rgba(124,58,237,0.12), rgba(168,85,247,0.06));
+      border: 1px solid rgba(124,58,237,0.3);
+      border-radius: 28px;
+      padding: 64px 48px;
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-box::before {
+      content: '';
+      position: absolute;
+      top: -100px; left: 50%; transform: translateX(-50%);
+      width: 400px; height: 300px;
+      background: radial-gradient(circle, rgba(124,58,237,0.2) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .cta-box h2 {
+      font-size: clamp(26px, 4vw, 44px);
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 16px;
+      color: #0d0d0d;
+    }
+    .cta-box p {
+      font-size: 16px;
+      color: var(--muted);
+      margin-bottom: 36px;
+      line-height: 1.6;
+    }
+    .cta-box .btn-primary { padding: 15px 36px; font-size: 16px; }
+
+    /* ─── FOOTER ─── */
+    footer {
+      padding: 40px 48px;
+      border-top: 1px solid rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      text-align: center;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 4px 0;
+      list-style: none;
+    }
+    .footer-links a {
+      font-size: 13px;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.2s;
+      padding: 4px 8px;
+    }
+    .footer-links a:hover { color: var(--text); }
+    .footer-copy { font-size: 13px; color: var(--muted); }
+
+    /* ─── SCROLL REVEAL ─── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    .reveal-left {
+      opacity: 0;
+      transform: translateX(-48px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal-left.visible { opacity: 1; transform: translateX(0); }
+
+    .reveal-right {
+      opacity: 0;
+      transform: translateX(48px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal-right.visible { opacity: 1; transform: translateX(0); }
+
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+    .reveal-delay-4 { transition-delay: 0.4s; }
+    .reveal-delay-5 { transition-delay: 0.5s; }
+
+    /* ─── TABLET (769px – 1024px) ─── */
+    @media (max-width: 1024px) {
+      nav { padding: 14px 32px; }
+      .phone-section { padding: 48px 32px; gap: 40px; }
+      .features { padding: 80px 32px; }
+      .features-grid { grid-template-columns: repeat(2, 1fr); }
+      .faq { padding: 60px 32px 80px; }
+      .cta-box { padding: 48px 36px; }
+      footer { padding: 36px 32px; }
+      .squiggle { width: 160px; }
+    }
+
+    /* ─── MOBILE (≤768px) ─── */
+    @media (max-width: 768px) {
+      nav { padding: 12px 20px; }
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+      .mobile-menu { display: block; }
+
+      .hero { padding: 110px 20px 60px; }
+      .hero h1 { letter-spacing: -1px; }
+
+      .carousel-section { padding: 8px 0; }
+      :root { --card-w: 200px; --card-gap: 12px; }
+
+      .tagline-section { padding: 48px 20px; }
+      .squiggle { width: 100px; }
+      .squiggle-left { left: 8px; }
+      .squiggle-right { right: 8px; }
+
+      .phone-section {
+        flex-direction: column;
+        padding: 48px 20px;
+        gap: 40px;
+        text-align: center;
+        background: none;
+      }
+      .phone-text p { max-width: 100%; }
+      .phone-text .section-label { text-align: center !important; }
+      .phone-mockup-wrap { width: 100%; }
+      .iphone { width: 220px; height: 450px; border-radius: 40px; }
+
+      .features { padding: 60px 20px; }
+      .features-grid { grid-template-columns: 1fr; gap: 16px; }
+
+      .faq { padding: 48px 20px 64px; }
+
+      .cta-section { padding: 48px 20px 80px; }
+      .cta-box { padding: 36px 24px; }
+
+      footer { padding: 32px 20px; }
+      .footer-links { flex-direction: column; gap: 8px; align-items: center; }
+      .footer-links a { padding: 2px 0; }
+    }
+
+    /* ─── VERY SMALL (≤400px) ─── */
+    @media (max-width: 400px) {
+      .iphone { width: 190px; height: 390px; border-radius: 34px; }
+      .nav-right .btn { padding: 9px 16px; font-size: 13px; }
+    }
+  </style>
 </head>
-
 <body>
 
-<div class="page-wrapper">
-  <main class="landing">
+  <!-- NAVBAR -->
+  <nav>
+    <a class="nav-logo" href="#">
+      <span class="nav-logo-img"><img src="assets/velvet.webp" alt="Velvet"></span>
+    </a>
 
-    <!-- CAPA -->
-    <div class="landing-cover">
-      <img src="/assets/cap2.webp" alt="Velvet" fetchpriority="high" width="696" height="562">
-  
-    <!-- COMO FUNCIONA -->
-      <div class="how-section">
-        <p class="how-title" data-i18n="index.howItWorks">Como funciona</p>
-        <div class="how-steps">
-          <div class="how-step">
-            <div class="how-icon">👤</div>
-            <span data-i18n="index.stepCreateAccount">Cria a tua conta</span>
-          </div>
-          <div class="how-step">
-            <div class="how-icon">🔍</div>
-            <span data-i18n="index.stepDiscover">Descobre criadores</span>
-          </div>
-          <div class="how-step">
-            <div class="how-icon">💬</div>
-            <span data-i18n="index.stepConnect">Conecta e interage</span>
-          </div>
-          <div class="how-step">
-            <div class="how-icon">⭐</div>
-            <span data-i18n="index.stepMedia">Acede às mídias do criador</span>
+    <ul class="nav-links" id="nav-links">
+      <li><a href="#criadores" data-i18n="nav.creators">Criadores</a></li>
+      <li><a href="#como-funciona" data-i18n="nav.howItWorks">Como Funciona</a></li>
+      <li><a href="#faq">FAQ</a></li>
+      <li><a href="contato.html" data-i18n="nav.help">Ajuda</a></li>
+    </ul>
+
+    <div class="nav-right">
+      <select id="lang-switcher" class="lang-switcher" aria-label="Language">
+        <option value="pt">PT</option>
+        <option value="en">EN</option>
+        <option value="es">ES</option>
+      </select>
+      <a class="btn btn-primary" href="me.html" data-i18n="nav.access">Acessar</a>
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- MOBILE MENU -->
+  <div class="mobile-menu" id="mobile-menu">
+    <ul>
+      <li><a href="#criadores" onclick="closeMobileMenu()" data-i18n="nav.creators">Criadores</a></li>
+      <li><a href="#como-funciona" onclick="closeMobileMenu()" data-i18n="nav.howItWorks">Como Funciona</a></li>
+      <li><a href="#faq" onclick="closeMobileMenu()">FAQ</a></li>
+      <li><a href="contato.html" onclick="closeMobileMenu()" data-i18n="nav.help">Ajuda</a></li>
+    </ul>
+  </div>
+
+  <!-- HERO -->
+  <section class="hero">
+    <h1 class="reveal" data-i18n="hero.title">Conecte-se com seus<br><em>criadores favoritos</em></h1>
+    <p class="reveal reveal-delay-1" data-i18n="hero.subtitle">Assine e desbloqueie mídias, envie mensagens privadas e tenha uma experiência muito mais próxima de quem você admira.</p>
+    <a class="btn btn-primary reveal reveal-delay-2" href="me.html" data-i18n="hero.cta">Acessar</a>
+  </section>
+
+  <!-- CAROUSEL -->
+  <section class="carousel-section" id="criadores">
+    <!-- Row 1 — scrolls left -->
+    <div class="carousel-track-wrap">
+      <div class="carousel-track row1">
+        <!-- set 1 -->
+        <div class="card"><img src="entrada/1.png"  alt="Criador 1" /></div>
+        <div class="card"><img src="entrada/2.png"  alt="Criador 2" /></div>
+        <div class="card"><img src="entrada/3.png"  alt="Criador 3" /></div>
+        <div class="card"><img src="entrada/4.png"  alt="Criador 4" /></div>
+        <div class="card"><img src="entrada/5.png"  alt="Criador 5" /></div>
+        <div class="card"><img src="entrada/6.png"  alt="Criador 6" /></div>
+        <!-- set 2 (loop duplicate) -->
+        <div class="card"><img src="entrada/1.png"  alt="Criador 1" /></div>
+        <div class="card"><img src="entrada/2.png"  alt="Criador 2" /></div>
+        <div class="card"><img src="entrada/3.png"  alt="Criador 3" /></div>
+        <div class="card"><img src="entrada/4.png"  alt="Criador 4" /></div>
+        <div class="card"><img src="entrada/5.png"  alt="Criador 5" /></div>
+        <div class="card"><img src="entrada/6.png"  alt="Criador 6" /></div>
+      </div>
+    </div>
+
+    <!-- Row 2 — scrolls right -->
+    <div class="carousel-track-wrap">
+      <div class="carousel-track row2">
+        <!-- set 1 -->
+        <div class="card"><img src="entrada/7.png"  alt="Criador 7"  /></div>
+        <div class="card"><img src="entrada/8.png"  alt="Criador 8"  /></div>
+        <div class="card"><img src="entrada/9.png"  alt="Criador 9"  /></div>
+        <div class="card"><img src="entrada/10.png" alt="Criador 10" /></div>
+        <div class="card"><img src="entrada/11.png" alt="Criador 11" /></div>
+        <div class="card"><img src="entrada/12.png" alt="Criador 12" /></div>
+        <!-- set 2 (loop duplicate) -->
+        <div class="card"><img src="entrada/7.png"  alt="Criador 7"  /></div>
+        <div class="card"><img src="entrada/8.png"  alt="Criador 8"  /></div>
+        <div class="card"><img src="entrada/9.png"  alt="Criador 9"  /></div>
+        <div class="card"><img src="entrada/10.png" alt="Criador 10" /></div>
+        <div class="card"><img src="entrada/11.png" alt="Criador 11" /></div>
+        <div class="card"><img src="entrada/12.png" alt="Criador 12" /></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PHONE MOCKUP SECTION -->
+  <section class="phone-section">
+    <div class="phone-text reveal-left">
+      <div class="section-label" style="text-align:left;" data-i18n="phone1.label">Comunidade Premium</div>
+      <h2 data-i18n="phone1.title">Entre no universo dos<br><em>seus criadores favoritos</em></h2>
+      <p data-i18n="phone1.desc">Tenha acesso a conteúdos, bastidores, atualizações e experiências reservadas para assinantes.</p>
+      <a class="btn btn-primary" href="me.html" style="margin-top:8px;" data-i18n="phone1.cta">Começar agora</a>
+    </div>
+    <div class="phone-mockup-wrap reveal-right">
+      <div class="iphone">
+        <div class="iphone-status">
+          <span class="time">18:30</span>
+          <div class="iphone-island"></div>
+          <div class="icons">
+            <svg viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
           </div>
         </div>
+        <div class="iphone-screen">
+          <img src="assets/3.png" alt="Perfil no Velvet" />
+        </div>
+        <div class="iphone-home"></div>
       </div>
     </div>
+  </section>
 
-    <!-- LOGIN -->
-    <div class="landing-login">
+  <!-- TAGLINE SECTION -->
+  <section class="tagline-section">
+    <h2 class="tagline-text reveal" data-i18n="tagline">Acompanhe seus criadores<br>além das redes sociais.</h2>
 
-      <!-- SELETOR DE LÍNGUAS -->
-      <div class="language-switcher">
-        <select id="languageSwitcher" aria-label="Selecionar idioma">
-          <option value="pt">Português</option>
-          <option value="en">English</option>
-          <option value="es">Español</option>
-        </select>
+    <svg class="squiggle squiggle-right" viewBox="0 0 200 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="sg2" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#1E1E26"/>
+          <stop offset="50%" stop-color="#7B2CFF"/>
+          <stop offset="100%" stop-color="#9E6BFF"/>
+        </linearGradient>
+      </defs>
+      <path d="M20 45 Q50 10 80 40 Q110 70 140 30 Q165 5 190 35" stroke="url(#sg2)" stroke-width="5" stroke-linecap="round" fill="none"/>
+      <path d="M70 62 Q95 38 120 58 Q145 76 175 50" stroke="url(#sg2)" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.6"/>
+    </svg>
+  </section>
+
+   <!-- CHAT SECTION -->
+  <section class="phone-section chat-section">
+    <div class="phone-mockup-wrap reveal-left">
+      <div class="iphone">
+        <div class="iphone-status">
+          <span class="time">20:00</span>
+          <div class="iphone-island"></div>
+          <div class="icons">
+            <svg viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+          </div>
+        </div>
+        <div class="iphone-screen">
+          <img src="assets/05.png" alt="Chat no Velvet" />
+        </div>
+        <div class="iphone-home"></div>
       </div>
+    </div>
+    <div class="phone-text reveal-right">
+      <h2 data-i18n="chat.title">Converse com seus<br><em>criadores favoritos</em></h2>
+      <p data-i18n="chat.desc">Obtenha uma conexão mais pessoal com seus criadores.</p>
+      <a class="btn btn-primary" href="me.html" data-i18n="chat.cta">Explorar agora</a>
+    </div>
+  </section>
 
-      <img src="assets/velvet.webp" class="logo" alt="Velvet" width="250" height="75">
+  <!-- FEATURES -->
+  <section class="features" id="como-funciona">
+    <h2 class="section-title" data-i18n="features.title">Tudo que você precisa<br>em um só lugar</h2>
+    <p class="section-sub" data-i18n="features.sub">Uma experiência premium para fãs e criadores</p>
 
-      <div class="login-box">
-        <button class="btn btn-Login" onclick="selectRole()" data-i18n="index.enter">ENTRAR</button>
-        <button class="btn btn-cadastro" onclick="startRegister()" data-i18n="index.createAccount">Criar Conta</button>
+    <div class="features-grid">
+      <div class="feature-card reveal reveal-delay-1">
+        <div class="feature-icon">🔒</div>
+        <h3 data-i18n="f1.title">Mídias</h3>
+        <p data-i18n="f1.desc">Acesse fotos, vídeos e publicações disponíveis para assinantes.</p>
       </div>
-
-      <div class="footer-linksC">
-        <a href="#" onclick="openForgot(); return false;" data-i18n="index.forgotPassword">Esqueci minha senha</a><br>
+      <div class="feature-card reveal reveal-delay-2">
+        <div class="feature-icon">💬</div>
+        <h3 data-i18n="f2.title">Chat Direto</h3>
+        <p data-i18n="f2.desc">Converse diretamente com seus criadores favoritos. Uma conexão real, longe dos algoritmos.</p>
       </div>
-
-      <div class="footer-links">
-        <a href="/about.html" target="_blank" rel="noopener noreferrer" data-i18n="index.footerAbout">Sobre Nós</a>
-        <a href="/contato.html" target="_blank" rel="noopener noreferrer" data-i18n="index.contact">Contato</a>
-        <a href="/terms.html" target="_blank" rel="noopener noreferrer" data-i18n="index.termsOfUse">Termos de Uso</a>
-        <a href="/policies.html" target="_blank" rel="noopener noreferrer" data-i18n="index.usagePolicies">Políticas de Utilização</a>
-        <a href="/privacy.html" target="_blank" rel="noopener noreferrer" data-i18n="index.privacyPolicies">Políticas de Privacidade</a>
+      <div class="feature-card reveal reveal-delay-3">
+        <div class="feature-icon">⚡</div>
+        <h3 data-i18n="f3.title">Atualizações em Tempo Real</h3>
+        <p data-i18n="f3.desc">Seja o primeiro a ver cada novo post. Notificações instantâneas para nunca perder nada.</p>
       </div>
-
-
+      <div class="feature-card reveal reveal-delay-1">
+        <div class="feature-icon">🏆</div>
+        <h3 data-i18n="f4.title">Status Especial</h3>
+        <p data-i18n="f4.desc">Assinantes top ganham status VIP e benefícios exclusivos dentro da plataforma.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-2">
+        <div class="feature-icon">💜</div>
+        <h3 data-i18n="f5.title">Comunidade</h3>
+        <p data-i18n="f5.desc">Faça parte de uma comunidade de fãs que compartilham os mesmos interesses que você.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-3">
+        <div class="feature-icon">🔐</div>
+        <h3 data-i18n="f6.title">Pagamento Seguro</h3>
+        <p data-i18n="f6.desc">Pagamentos processados com total segurança. PIX, cartão de crédito e mais opções.</p>
+      </div>
     </div>
-  </main>
-</div>
+  </section>
 
-<!-- MODAL ESQUECI SENHA -->
-<div id="forgotModal" class="modal hidden">
-  <div class="modal-overlay" onclick="closeForgotModal()"></div>
-  <div class="modal-box velvet">
-    <h2 id="forgotTitle" data-i18n="index.forgotTitle">Recuperar senha</h2>
-    <div id="forgotStepEmail">
-      <input id="forgotEmail" type="email" placeholder="Seu email cadastrado" data-i18n-placeholder="index.registeredEmailPlaceholder"/>
-      <button class="btn btn-primary" onclick="sendResetCode()" data-i18n="index.sendCode">Enviar código</button>
-      <p id="forgotSpamHint" class="modal-switch hidden" data-i18n="index.spamHint">
-        Se não encontrar o email, verifique o lixo eletrônico ou spam.
-      </p>
-      <p class="modal-switch">
-        <span data-i18n="index.rememberedPassword">Lembrou da senha?</span>
-        <span onclick="closeForgotModal()" data-i18n="index.backToLogin">Voltar ao login</span>
-      </p>
+  <!-- FAQ -->
+  <section class="faq" id="faq">
+    <h2 class="section-title" data-i18n="faq.title">Perguntas Frequentes</h2>
+
+    <div class="faq-list">
+      <div class="faq-item">
+        <button class="faq-question">
+          <span data-i18n="faq1.q">Como entro na Velvet?</span>
+          <span class="icon">+</span>
+        </button>
+        <div class="faq-answer" data-i18n="faq1.a">Clique em qualquer botão "Acessar" ou "Começar Agora" para criar sua conta gratuitamente em segundos, ou fazer seu login</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question">
+          <span data-i18n="faq2.q">Quanto custa assinar um criador?</span>
+          <span class="icon">+</span>
+        </button>
+        <div class="faq-answer" data-i18n="faq2.a">Cada criador define o valor da sua assinatura mensal. Você pode encontrar criadores com diferentes faixas de preço para todo tipo de orçamento.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question">
+          <span data-i18n="faq3.q">Como funciona o chat com criadores?</span>
+          <span class="icon">+</span>
+        </button>
+        <div class="faq-answer" data-i18n="faq3.a">Após assinar um criador, você tem acesso VIP ao chat direto no perfil dele. É uma conversa privada, sem filtros de algoritmo.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question">
+          <span data-i18n="faq4.q">Que tipo de conteúdo é permitido?</span>
+          <span class="icon">+</span>
+        </button>
+        <div class="faq-answer" data-i18n="faq4.a">Conteúdo de lifestyle, bastidores, dicas, entretenimento, +18 e muito mais. Atenção que conteudo +18 não é o mesmo que explícito, e conteúdo explícito não é permitido na plataforma.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question">
+          <span data-i18n="faq5.q">Qual a idade mínima para usar o Velvet?</span>
+          <span class="icon">+</span>
+        </button>
+        <div class="faq-answer" data-i18n="faq5.a">É necessário ter 18 anos ou mais para criar uma conta e assinar criadores na Velvet.</div>
+      </div>
     </div>
-    <div id="forgotStepCode" class="hidden">
-      <input id="forgotCode" type="text" placeholder="Código de 6 dígitos" data-i18n-placeholder="index.codePlaceholder"/>
-      <input id="forgotNewPassword" type="password" placeholder="Nova senha" data-i18n-placeholder="index.newPasswordPlaceholder"/>
-      <input id="forgotConfirmPassword" type="password" placeholder="Confirmar nova senha" data-i18n-placeholder="index.confirmNewPasswordPlaceholder"/>
-      <button class="btn btn-primary" onclick="confirmReset()" data-i18n="index.changePassword">Alterar senha</button>
+  </section>
+
+  <!-- CTA SECTION -->
+  <section class="cta-section">
+    <div class="cta-box reveal">
+      <h2 data-i18n="cta.title">Pronto para ingressar<br>na Velvet?</h2>
+      <p data-i18n="cta.desc">Junte-se a milhares de fãs que já estão mais perto de seus criadores favoritos.</p>
+      <a class="btn btn-primary" href="me.html" data-i18n="cta.btn">Criar Conta Grátis</a>
     </div>
-    <button class="modal-close" onclick="closeForgotModal()">✕</button>
-  </div>
-</div>
+  </section>
 
-<!-- MODAL LEGAL -->
-<div id="legalModal" class="modal hidden">
-  <div class="modal-overlay" onclick="closeLegalModal()"></div>
-  <div class="modal-box">
-    <button class="legal-close" onclick="closeLegalModal()">×</button>
-    <iframe id="modalFrame"></iframe>
-  </div>
-</div>
+  <!-- FOOTER -->
+  <footer>
+    <ul class="footer-links">
+      <a href="https://www.velvet.lat/terms.html">| Termos de Uso | </a>
+      <a href="https://www.velvet.lat/privacy.html"> | Políticas de Privacidade | </a>
+      <a href="https://www.velvet.lat/policies.html">| Políticas de Utilização | </a>
+      <a href="contato.html">| Contato |</a>
+    </ul>
+    <p class="footer-copy" data-i18n="footer.copy">© 2026 Velvet. Todos os direitos reservados.</p>
+  </footer>
 
-<!-- LOGIN / REGISTER MODAL -->
-<div id="loginModal" class="modal hidden">
-  <div class="modal-overlay" onclick="closeLoginModal()"></div>
-  <div class="modal-box">
-    <h2 id="modalTitle" data-i18n="index.loginTitle">Entrar</h2>
+  <script>
+    // Hamburger menu
+    const hamburger = document.getElementById('hamburger');
+    const mobileMenu = document.getElementById('mobile-menu');
 
-    <!-- Email (sempre visível) -->
-    <label for="loginEmail" data-i18n="index.email">Email</label>
-    <input id="loginEmail" type="email" placeholder="Email" autocomplete="email" data-i18n-placeholder="index.emailPlaceholder">
+    hamburger.addEventListener('click', () => {
+      const isOpen = mobileMenu.classList.toggle('open');
+      hamburger.classList.toggle('open', isOpen);
+    });
 
-    <!-- Etapa 2: verificação OTP -->
-    <div class="field hidden" id="fieldOtp">
-      <p id="otpInfo" style="font-size:13px;color:#7a6a9a;margin:0 0 10px;line-height:1.5;"></p>
-      <label for="registerOtp">Código de verificação</label>
-      <input id="registerOtp" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6"
-             placeholder="000000" autocomplete="one-time-code"
-             style="letter-spacing:8px;font-size:22px;text-align:center;font-weight:700;">
-      <p id="otpReenviar" style="font-size:12px;color:#9b87b8;margin-top:8px;text-align:right;display:none;">
-        Não recebeu? <span onclick="enviarOTP()" style="color:#7B2CFF;cursor:pointer;font-weight:600;">Reenviar código</span>
-      </p>
-    </div>
+    function closeMobileMenu() {
+      mobileMenu.classList.remove('open');
+      hamburger.classList.remove('open');
+    }
 
-    <!-- Senha (login + etapa 3 registo) -->
-    <div id="fieldSenhaComum" class="field">
-      <label for="loginSenha" data-i18n="index.password">Senha</label>
-      <input id="loginSenha" type="password" placeholder="Senha" autocomplete="current-password" data-i18n-placeholder="index.passwordPlaceholder">
-    </div>
+    // Close mobile menu when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!hamburger.contains(e.target) && !mobileMenu.contains(e.target)) {
+        closeMobileMenu();
+      }
+    });
 
-    <!-- Campos apenas na etapa 3 do registo -->
-    <div class="field hidden" id="fieldSenha">
-      <label for="registerSenhaConfirm" data-i18n="index.repeatPassword">Repita a sua senha</label>
-      <input id="registerSenhaConfirm" type="password" autocomplete="new-password" data-i18n-placeholder="index.registerRepeatPasswordPlaceholder">
-    </div>
+    // Scroll reveal
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          observer.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12 });
 
-    <div class="field hidden" id="fieldNome">
-      <label for="registerNome" data-i18n="index.fullName">Nome Completo</label>
-      <input id="registerNome" type="text" autocomplete="name" data-i18n-placeholder="index.fullNamePlaceholder">
-    </div>
+    document.querySelectorAll('.reveal, .reveal-left, .reveal-right').forEach(el => observer.observe(el));
 
-    <div class="field hidden" id="fieldNascimento">
-      <label for="registerNascimento" data-i18n="index.birthDate">Data de Nascimento</label>
-      <input id="registerNascimento" type="date">
-    </div>
-
-    <div class="field hidden" id="fieldPerfil">
-      <label for="registerRole" data-i18n="index.accountType">Tipo de conta</label>
-      <select id="registerRole">
-        <option value="cliente" data-i18n="index.wantMember">Quero ser membro</option>
-        <option value="modelo" data-i18n="index.wantCreator">Quero ser criador</option>
-      </select>
-    </div>
-
-    <!-- Erro inline -->
-    <div id="modalError" style="display:none;background:#fff0f0;border:1px solid #ffb3b3;border-radius:8px;padding:10px 14px;font-size:13px;color:#c0392b;margin-bottom:4px;"></div>
-
-    <!-- Confirmação de idade + termos (etapa 3) -->
-    <div id="registerLegal" class="hidden" style="margin-top:8px;margin-bottom:4px;">
-      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;" onclick="toggleAgeConfirm(event)">
-        <input type="checkbox" id="registerAgeConfirm" style="display:none;">
-        <span id="registerAgeConfirmBox" style="
-          width:18px;height:18px;min-width:18px;margin-top:2px;
-          border:2px solid #7B2CFF;border-radius:4px;
-          display:flex;align-items:center;justify-content:center;
-          font-size:13px;font-weight:bold;color:#7B2CFF;
-          background:#fff;flex-shrink:0;
-        "></span>
-        <span style="font-size:12px;color:#666;line-height:1.6;">
-          Confirmo que tenho mais de <strong style="color:#333;">18 anos</strong> e concordo com os
-          <a href="/terms.html" target="_blank" style="color:#7B2CFF;font-weight:600;white-space:nowrap;">Termos e Condições de Uso</a>.
-        </span>
-      </label>
-    </div>
-
-    <button id="modalSubmit" class="btn btn-primary" data-i18n="index.loginAction">Entrar</button>
-
-    <p class="modal-switch hidden" id="switchToLogin">
-      <span data-i18n="index.alreadyHaveAccount">Já tem conta?</span>
-      <span onclick="switchToLogin()" data-i18n="index.loginAction">Entrar</span>
-    </p>
-    <p class="modal-switch hidden" id="switchToRegister">
-      <span data-i18n="index.noAccount">Não tem conta?</span>
-      <span onclick="startRegister()" data-i18n="index.registerAction">Criar conta</span>
-    </p>
-
-    <button class="modal-close" onclick="closeLoginModal()">✕</button>
-  </div>
-</div>
-
-<div id="ageModal" class="modal hidden">
-  <div class="modal-overlay" onclick="confirmAge(false)"></div>
-  <div class="modal-box" id="ageModalBox"></div>
-</div>
-
-<script>
-  document.getElementById("ageModalBox").innerHTML = `
-    <h2 data-i18n="index.ageGateTitle">Confirmar idade</h2>
-    <p data-i18n="index.ageGateText" style="margin-top:10px;">Esta plataforma é destinada a utilizadores com idade legal no seu país de residência. Confirmas que tens essa idade?</p>
-    <div style="display:flex; gap:12px; margin-top:20px;">
-      <button class="btn btn-primary" onclick="confirmAge(true)" data-i18n="index.ageGateConfirm">Sim, confirmo</button>
-      <button class="btn btn-secondary" onclick="confirmAge(false)" data-i18n="index.ageGateDeny">Não</button>
-    </div>
-  `;
-</script>
-
-<script>
-  const params = new URLSearchParams(window.location.search);
-  const ref = params.get("ref");
-  const src = params.get("src");
-
-  if (ref) localStorage.setItem("ref_modelo", ref);
-  if (src) localStorage.setItem("origem_trafego", src);
-
-  if (ref || src) {
-    fetch("/api/track-acesso", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ref, src, page: "index" })
-    }).catch(() => {});
-  }
-</script>
-
-<script src="/js/script.js" defer></script>
-
-<script>
-  function toggleAgeConfirm(e) {
-    if (e.target.tagName === 'A') return;
-    const cb = document.getElementById('registerAgeConfirm');
-    const box = document.getElementById('registerAgeConfirmBox');
-    cb.checked = !cb.checked;
-    box.textContent = cb.checked ? 'X' : '';
-    box.style.background = cb.checked ? '#f3ecff' : '#fff';
-  }
-</script>
+    // FAQ accordion
+    document.querySelectorAll('.faq-question').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const item = btn.closest('.faq-item');
+        const isOpen = item.classList.contains('open');
+        document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+        if (!isOpen) item.classList.add('open');
+      });
+    });
+  </script>
+  <script src="i18n-landing.js"></script>
 </body>
 </html>

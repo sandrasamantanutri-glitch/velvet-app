@@ -5,9 +5,9 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
     signingConfigs {
         release {
-            storeFile file('../../velvet-release.keystore')
+            storeFile file('C:/Users/sandr/Documents/Velvet/velvet-keystore/velvet-keystore.jks')
             storePassword '1908Leo@lic&'
-            keyAlias 'velvet'
+            keyAlias 'key0'
             keyPassword '1908Leo@lic&'
         }
     }
@@ -41,6 +41,7 @@ repositories {
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.activity:activity:$androidxActivityVersion"
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
