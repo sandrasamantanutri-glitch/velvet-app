@@ -23,6 +23,144 @@
 
   <link rel="stylesheet" href="css/style.css">
 
+  <style>
+    /* ===== OVERRIDES ESPECÍFICOS DO ME.HTML ===== */
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      background: #F5F5F5;
+      overflow-x: hidden;
+    }
+
+    .page-wrapper {
+      min-height: 100vh;
+      background: #F5F5F5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+
+    /* Esconde a capa em todas as telas */
+    .landing-cover {
+      display: none !important;
+    }
+
+    /* Layout centralizado como mobile */
+    .landing {
+      width: 100%;
+      max-width: 420px;
+      height: auto;
+      min-height: 100svh;
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .landing-login {
+      width: 100%;
+      max-width: 420px;
+      min-height: 100svh;
+      background: #F5F5F5;
+      margin: 0;
+      padding: 80px 32px 36px;
+      border-radius: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
+      text-align: center;
+    }
+
+    .landing-login .logo {
+      margin-bottom: 48px;
+    }
+
+    .login-box {
+      margin-bottom: 0;
+    }
+
+    .footer-linksC {
+      margin-top: 20px !important;
+    }
+
+    .footer-links {
+      margin-top: auto !important;
+      padding-top: 40px;
+    }
+
+    /* Seletor de idioma no canto superior direito (fixo) */
+    .language-switcher {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 100;
+      margin-bottom: 0;
+      justify-content: flex-end;
+    }
+
+    .language-switcher select {
+      background: #fff;
+      color: #7B2CFF;
+      border: 1px solid #7B2CFF;
+      border-radius: 10px;
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    /* Botões roxos com texto branco */
+    .btn-Login {
+      background: #7B2CFF;
+      color: #fff !important;
+      border: none;
+      box-shadow: 0 4px 14px rgba(123,44,255,0.25);
+    }
+
+    .btn-Login:hover {
+      background: #6a1fe0;
+    }
+
+    .btn-cadastro {
+      background: #fff;
+      color: #7B2CFF !important;
+      border: 2px solid #7B2CFF;
+      box-shadow: none;
+    }
+
+    .btn-cadastro:hover {
+      background: #f3ebff;
+    }
+
+    /* Texto roxo nos links */
+    .footer-linksC a,
+    .footer-links a {
+      color: #7B2CFF;
+      display: block;
+    }
+
+    .footer-linksC {
+      margin-top: 0;
+    }
+
+    .footer-links {
+      margin-top: 0;
+    }
+
+    .login-box {
+      width: 100%;
+    }
+
+    .btn {
+      border-radius: 14px;
+      font-size: 16px;
+      padding: 16px;
+    }
+  </style>
+
   <link rel="icon" href="/assets/favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
