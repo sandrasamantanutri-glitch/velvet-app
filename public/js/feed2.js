@@ -61,8 +61,8 @@ function criarCard(modelo) {
   const card = document.createElement("div");
   card.className = "modelo-card";
 
-  // Foto principal = capa/avatar da Velvet
-  const foto = modelo.capa || modelo.avatar || "/assets/avatar.png";
+  // Foto principal = avatar da Velvet (foto de perfil), capa como fallback
+  const foto = modelo.avatar || modelo.capa || "/assets/avatar.png";
 
   const classif = getClassificacao(modelo);
   const cl      = CLASSIF[classif];
