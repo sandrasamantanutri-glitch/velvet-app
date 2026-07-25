@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Velvet</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/css/header.css">
+  <link rel="stylesheet" href="/css/feed2.css">
+  <script src="/i18n.js"></script>
+</head>
+<body>
+<div id="header-container"></div>
+<div class="container">
+  <div class="feed-filtros">
+    <div class="feed-filtros-interesses">
+      <span class="feed-filtros-label">Interesses</span>
+      <div class="feed-chips" id="feedChipsGenero">
+        <button type="button" class="feed-chip feed-chip--ativo" data-genero="">Todos</button>
+        <button type="button" class="feed-chip" data-genero="mulher">Mulheres</button>
+        <button type="button" class="feed-chip" data-genero="homem">Homens</button>
+        <button type="button" class="feed-chip" data-genero="nao_binario">Não binários</button>
+      </div>
+    </div>
+    <div class="feed-busca">
+      <input type="text" id="feedBuscaNome" placeholder="Buscar por nome..." autocomplete="off">
+    </div>
+  </div>
+  <div id="listaModelos"></div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/header.js"></script>
+<script src="/js/feed2.js"></script>
+</body>
+</html>

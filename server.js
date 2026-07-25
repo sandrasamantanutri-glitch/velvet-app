@@ -5763,6 +5763,8 @@ app.get("/api/modelos", auth, async (req, res) => {
         m.capa,
         m.bio,
         md2.genero,
+        md2.instagram,
+        md2.tiktok,
 
         COALESCE(r.ganhos_mes, 0) AS ganhos_total,
 
