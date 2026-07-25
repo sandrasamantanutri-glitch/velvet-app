@@ -84,20 +84,13 @@ function criarCard(modelo) {
     redeAtiva = "tiktok";
   }
 
-  // Foto de perfil da rede social:
-  // 1º usa a foto salva no BD pelo sync (TikTok CDN, renovada a cada sync)
-  // 2º fallback: unavatar.io (funciona bem para Instagram)
-  // 3º último recurso: avatar da Velvet
+  // Foto de perfil da rede social via proxy do servidor (não expira, sem CORS)
   let avatarSocial = modelo.avatar || "/assets/avatar.png";
-  if (redeAtiva === "instagram") {
-    avatarSocial = modelo.foto_instagram
-      || (modelo.instagram ? `https://unavatar.io/instagram/${encodeURIComponent(modelo.instagram)}` : null)
-      || modelo.avatar || "/assets/avatar.png";
-  } else if (redeAtiva === "tiktok") {
+  if (redeAtiva === "instagram" && modelo.instagram) {
+    avatarSocial = `/api/social-photo?p=instagram&h=${encodeURIComponent(modelo.instagram)}`;
+  } else if (redeAtiva === "tiktok" && modelo.tiktok) {
     const ttHandle = (modelo.tiktok || "").replace(/^@/, "");
-    avatarSocial = modelo.foto_tiktok
-      || (ttHandle ? `https://unavatar.io/tiktok/${encodeURIComponent(ttHandle)}` : null)
-      || modelo.avatar || "/assets/avatar.png";
+    avatarSocial = `/api/social-photo?p=tiktok&h=${encodeURIComponent(ttHandle)}`;
   }
 
   // Seguidores da rede ativa

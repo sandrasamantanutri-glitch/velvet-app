@@ -5905,6 +5905,59 @@ async function syncSocialData(modeloId) {
   }
 }
 
+// Proxy de foto de perfil social — GET /api/social-photo?p=instagram|tiktok&h=handle
+// Cache em memória por 6h; evita depender de URLs externas que expiram
+const _socialPhotoCache = new Map(); // key → { buf, ct, ts }
+const _SOCIAL_PHOTO_TTL = 6 * 60 * 60 * 1000;
+
+app.get("/api/social-photo", async (req, res) => {
+  const platform = req.query.p;
+  const handle   = (req.query.h || "").replace(/^@/, "").trim();
+  if (!platform || !handle) return res.redirect("/assets/avatar.png");
+
+  const key = `${platform}:${handle}`;
+  const hit = _socialPhotoCache.get(key);
+  if (hit && Date.now() - hit.ts < _SOCIAL_PHOTO_TTL) {
+    res.set("Content-Type", hit.ct);
+    res.set("Cache-Control", "public, max-age=21600");
+    return res.send(hit.buf);
+  }
+
+  try {
+    const axios = require("axios");
+    let photoUrl = null;
+
+    if (platform === "instagram") {
+      const d = await fetchInstagramData(handle);
+      photoUrl = d?.foto || null;
+      // fallback: unavatar.io conhece bem o Instagram
+      if (!photoUrl) photoUrl = `https://unavatar.io/instagram/${encodeURIComponent(handle)}`;
+    } else if (platform === "tiktok") {
+      const d = await fetchTikTokData(handle);
+      photoUrl = d?.foto || null;
+    }
+
+    if (!photoUrl) return res.redirect("/assets/avatar.png");
+
+    const imgRes = await axios.get(photoUrl, {
+      responseType: "arraybuffer",
+      timeout: 8000,
+      headers: { "User-Agent": "Mozilla/5.0" },
+    });
+
+    const buf = Buffer.from(imgRes.data);
+    const ct  = imgRes.headers["content-type"] || "image/jpeg";
+    _socialPhotoCache.set(key, { buf, ct, ts: Date.now() });
+
+    res.set("Content-Type", ct);
+    res.set("Cache-Control", "public, max-age=21600");
+    res.send(buf);
+  } catch (e) {
+    console.warn("[SocialPhoto] falhou:", key, e.message);
+    res.redirect("/assets/avatar.png");
+  }
+});
+
 // Endpoint admin: POST /api/admin/sync-social  (body: { modelo_id } ou sem body → todos)
 app.post("/api/admin/sync-social", auth, async (req, res) => {
   if (req.user.role !== "admin") return res.status(403).json({ error: "forbidden" });
@@ -5918,7 +5971,7 @@ app.post("/api/admin/sync-social", auth, async (req, res) => {
       `SELECT modelo_id FROM modelos_dados
        WHERE ativo = true
          AND (instagram IS NOT NULL OR tiktok IS NOT NULL)
-         AND (social_sync_em IS NULL OR social_sync_em < NOW() - INTERVAL '24 hours')
+         AND (social_sync_em IS NULL OR social_sync_em < NOW() - INTERVAL '30 days')
        LIMIT 100`
     );
     const ids = todos.rows.map(r => r.modelo_id);
@@ -8002,17 +8055,31 @@ app.put("/api/modelo/me", authModelo, async (req, res) => {
     );
 
     // 🔥 Atualiza tabela modelos_dados usando modelo_id
+    // Verifica se os handles mudaram para resetar o sync
+    const prevRow = await db.query(
+      "SELECT instagram, tiktok FROM modelos_dados WHERE modelo_id = $1 AND ativo = true LIMIT 1",
+      [req.modelo_id]
+    );
+    const prev = prevRow.rows[0] || {};
+    const handlesAlterados = prev.instagram !== instaFinal || prev.tiktok !== tiktokFinal;
+
     await db.query(
       `
-      INSERT INTO modelos_dados (modelo_id, instagram, tiktok)
-      VALUES ($1, $2, $3)
+      INSERT INTO modelos_dados (modelo_id, instagram, tiktok${handlesAlterados ? ", social_sync_em" : ""})
+      VALUES ($1, $2, $3${handlesAlterados ? ", NULL" : ""})
       ON CONFLICT (modelo_id)
       DO UPDATE SET
         instagram = EXCLUDED.instagram,
         tiktok = EXCLUDED.tiktok
+        ${handlesAlterados ? ", social_sync_em = NULL, seguidores_instagram = 0, seguidores_tiktok = 0, foto_instagram = NULL, foto_tiktok = NULL" : ""}
       `,
       [req.modelo_id, instaFinal, tiktokFinal]
     );
+
+    // Dispara sync em background se handles mudaram
+    if (handlesAlterados && (instaFinal || tiktokFinal)) {
+      setImmediate(() => syncSocialData(req.modelo_id));
+    }
 
     res.json({ sucesso: true });
 
@@ -15090,6 +15157,29 @@ const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log("🚀 Servidor rodando na porta", PORT);
+
+  // Job automático: sync social a cada 6h
+  // Processa até 5 modelos por rodada (novos ou com >30 dias sem sync)
+  // Espera 2 min após startup para não atrasar o boot
+  setTimeout(function runSocialSyncJob() {
+    db.query(
+      `SELECT modelo_id FROM modelos_dados
+       WHERE ativo = true
+         AND (instagram IS NOT NULL AND instagram <> '' OR tiktok IS NOT NULL AND tiktok <> '')
+         AND (social_sync_em IS NULL OR social_sync_em < NOW() - INTERVAL '30 days')
+       ORDER BY social_sync_em ASC NULLS FIRST
+       LIMIT 5`
+    ).then(async (r) => {
+      if (r.rows.length) {
+        console.log(`[SyncSocial Auto] ${r.rows.length} modelo(s) para sincronizar`);
+        for (const row of r.rows) {
+          await syncSocialData(row.modelo_id);
+          await new Promise(res => setTimeout(res, 3000));
+        }
+      }
+    }).catch(e => console.error("[SyncSocial Auto] erro:", e.message))
+      .finally(() => setTimeout(runSocialSyncJob, 6 * 60 * 60 * 1000)); // próxima rodada em 6h
+  }, 10 * 60 * 1000); // aguarda 10 min após boot
 });
 
 // Garante coluna para Resend Audience (idempotente)
