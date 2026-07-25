@@ -2936,11 +2936,10 @@ router.put("/modelos/:id", authAdmin, async (req, res) => {
     if (Object.prototype.hasOwnProperty.call(fields, "classificacao_conteudo")) {
       const classif = fields.classificacao_conteudo || null;
       await db.query(`
-        INSERT INTO modelos_dados (modelo_id, classificacao_conteudo)
-        VALUES ($1, $2)
-        ON CONFLICT (modelo_id)
-        DO UPDATE SET classificacao_conteudo = EXCLUDED.classificacao_conteudo, atualizado_em = NOW()
-      `, [modeloId, classif]);
+        UPDATE modelos_dados
+        SET classificacao_conteudo = $1, atualizado_em = NOW()
+        WHERE modelo_id = $2
+      `, [classif, modeloId]);
     }
 
     res.json(depois);
