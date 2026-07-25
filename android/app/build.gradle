@@ -5,18 +5,21 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
     signingConfigs {
         release {
-            storeFile file('C:/Users/sandr/Documents/Velvet/velvet-keystore/velvet-keystore.jks')
-            storePassword '1908Leo@lic&'
-            keyAlias 'key0'
-            keyPassword '1908Leo@lic&'
+            def props = new Properties()
+            def propsFile = rootProject.file('local.properties')
+            if (propsFile.exists()) props.load(new FileInputStream(propsFile))
+            storeFile file(props['KEYSTORE_PATH'] ?: 'C:/Users/sandr/Documents/Velvet/velvet-keystore/velvet-keystore.jks')
+            storePassword props['KEYSTORE_PASSWORD'] ?: ''
+            keyAlias props['KEY_ALIAS'] ?: 'key0'
+            keyPassword props['KEY_PASSWORD'] ?: ''
         }
     }
     defaultConfig {
         applicationId "velvet.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 3
-        versionName "1.0.1"
+        versionCode 4
+        versionName "1.1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~:!*.apk'
