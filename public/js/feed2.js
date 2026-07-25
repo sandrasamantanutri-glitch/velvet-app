@@ -68,25 +68,34 @@ function criarCard(modelo) {
   const cl      = CLASSIF[classif];
   const badge   = getBadge(modelo);
 
-  // Determina qual rede social usar (Instagram preferido)
-  const redeAtiva = modelo.instagram ? "instagram" : (modelo.tiktok ? "tiktok" : null);
+  // Determina qual rede usar: prefere a que tem dados reais (seguidores > 0)
+  const igSeg = Number(modelo.seguidores_instagram) || 0;
+  const ttSeg = Number(modelo.seguidores_tiktok)    || 0;
+  let redeAtiva = null;
+  if (igSeg > 0 && ttSeg > 0) {
+    redeAtiva = "instagram"; // ambas com dados: prefere Instagram
+  } else if (igSeg > 0) {
+    redeAtiva = "instagram";
+  } else if (ttSeg > 0) {
+    redeAtiva = "tiktok";
+  } else if (modelo.instagram) {
+    redeAtiva = "instagram"; // sem sync ainda: usa handle disponível
+  } else if (modelo.tiktok) {
+    redeAtiva = "tiktok";
+  }
 
-  // Foto de perfil da rede social (BD ou fallback unavatar.io)
+  // Foto do perfil social via unavatar.io (não usa URL do BD pois expira)
   let avatarSocial = modelo.avatar || "/assets/avatar.png";
-  if (redeAtiva === "instagram") {
-    avatarSocial = modelo.foto_instagram
-      || `https://unavatar.io/instagram/${encodeURIComponent(modelo.instagram)}`;
-  } else if (redeAtiva === "tiktok") {
+  if (redeAtiva === "instagram" && modelo.instagram) {
+    avatarSocial = `https://unavatar.io/instagram/${encodeURIComponent(modelo.instagram)}`;
+  } else if (redeAtiva === "tiktok" && modelo.tiktok) {
     const ttHandle = (modelo.tiktok || "").replace(/^@/, "");
-    avatarSocial = modelo.foto_tiktok
-      || `https://unavatar.io/tiktok/${encodeURIComponent(ttHandle)}`;
+    avatarSocial = `https://unavatar.io/tiktok/${encodeURIComponent(ttHandle)}`;
   }
 
   // Seguidores da rede ativa
-  const seguidoresNum = redeAtiva === "instagram"
-    ? modelo.seguidores_instagram
-    : modelo.seguidores_tiktok;
-  const seguidoresStr = formatarSeguidores(Number(seguidoresNum) || 0);
+  const seguidoresNum = redeAtiva === "instagram" ? igSeg : ttSeg;
+  const seguidoresStr = formatarSeguidores(seguidoresNum);
 
   const redeIconSocial = redeAtiva === "instagram" ? INSTA_SVG : (redeAtiva === "tiktok" ? TIKTOK_SVG : "");
   const redeIconAvatar = redeIconSocial;
