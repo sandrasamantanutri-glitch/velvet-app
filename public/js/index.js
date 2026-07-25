@@ -170,6 +170,7 @@ function updateModal() {
   const fieldNome       = document.getElementById("fieldNome");
   const fieldNascimento = document.getElementById("fieldNascimento");
   const fieldPerfil     = document.getElementById("fieldPerfil");
+  const fieldGenero     = document.getElementById("fieldGenero");
   const fieldOtp        = document.getElementById("fieldOtp");
   const otpInfo         = document.getElementById("otpInfo");
   const otpReenviar     = document.getElementById("otpReenviar");
@@ -189,6 +190,7 @@ function updateModal() {
     fieldNome?.classList.add("hidden");
     fieldNascimento?.classList.add("hidden");
     fieldPerfil?.classList.add("hidden");
+    fieldGenero?.classList.add("hidden");
     fieldOtp?.classList.add("hidden");
     registerLegal?.classList.add("hidden");
     switchReg?.classList.remove("hidden");
@@ -212,6 +214,7 @@ function updateModal() {
       fieldNome?.classList.add("hidden");
       fieldNascimento?.classList.add("hidden");
       fieldPerfil?.classList.add("hidden");
+      fieldGenero?.classList.add("hidden");
       fieldOtp?.classList.add("hidden");
       registerLegal?.classList.add("hidden");
       emailInput?.removeAttribute("readonly");
@@ -228,6 +231,7 @@ function updateModal() {
       fieldNome?.classList.add("hidden");
       fieldNascimento?.classList.add("hidden");
       fieldPerfil?.classList.add("hidden");
+      fieldGenero?.classList.add("hidden");
       fieldOtp?.classList.remove("hidden");
       registerLegal?.classList.add("hidden");
       emailInput?.setAttribute("readonly", "true");
@@ -251,6 +255,7 @@ function updateModal() {
       fieldNome?.classList.remove("hidden");
       fieldNascimento?.classList.remove("hidden");
       fieldPerfil?.classList.remove("hidden");
+      fieldGenero?.classList.remove("hidden");
       fieldOtp?.classList.add("hidden");
       registerLegal?.classList.remove("hidden");
       emailInput?.setAttribute("readonly", "true");
@@ -419,6 +424,7 @@ async function register() {
   const nome_completo   = document.getElementById("registerNome").value.trim();
   const data_nascimento = document.getElementById("registerNascimento").value;
   const role            = document.getElementById("registerRole").value;
+  const genero          = document.getElementById("registerGenero")?.value || "";
 
   if (!email || !senha || !nome_completo || !data_nascimento || !role) {
     showModalError("Preenche todos os campos obrigatórios.");
@@ -456,6 +462,7 @@ async function register() {
         role,
         nome_completo,
         data_nascimento,
+        genero,
         ageConfirmed: true,
         preToken: otpPreToken,
         ref,

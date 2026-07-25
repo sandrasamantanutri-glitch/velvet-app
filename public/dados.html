@@ -17,7 +17,7 @@
 
  <section class="area-card">
 
-    <div class="perfil-capa">
+    <div class="perfil-capa only-modelo">
       <img id="profileCapa" src="/assets/capa.png" data-i18n-alt="dados.alt_capa">
       <button class="btn-camera capa" id="btnCapa" data-i18n-title="dados.title_capa"><img src="/assets/download.png" alt="Alterar capa"></button>
       <input type="file" id="inputCapa" accept="image/*" hidden>
@@ -35,7 +35,7 @@
 
     <h3 data-i18n="dados.titulo">Meus Dados de Usuário</h3>
 
-    <div class="perfil-completo-wrapper">
+    <div class="perfil-completo-wrapper only-modelo">
       <a href="#" class="btn-perfil-completo" data-i18n="dados.ver_perfil">✨ Ver Perfil Completo</a>
     </div>
     
@@ -61,7 +61,7 @@
           <input type="text" name="local" data-i18n-placeholder="dados.placeholder_local" placeholder="Estado - Cidade">
         </div>
 
-        <div class="form-group full">
+        <div class="form-group full only-modelo">
           <label data-i18n="dados.label_bio">Sua Bio*</label>
           <textarea name="bio" rows="4" data-i18n-placeholder="dados.placeholder_bio" placeholder="Escreva sua biografia aqui!"></textarea>
           <small data-i18n="dados.obrigatorios">*Informações obrigatórias</small>
@@ -72,12 +72,115 @@
     </form>
   </section>
 
+  <!-- Preferências de Email — só para cliente -->
+  <section class="area-card only-cliente" id="secaoPreferenciasEmail">
+    <h3>Preferências de Email</h3>
+    <p class="form-info" style="margin-bottom:20px;">
+      Escolha quais tipos de email deseja receber da Velvet. Você pode alterar isso a qualquer momento.
+    </p>
+
+    <div id="prefEmailFeedback" class="termos-aceitos-banner hidden" style="margin-bottom:16px;">
+      <span class="termos-aceitos-icon">✅</span>
+      <div><strong>Preferências salvas</strong></div>
+    </div>
+
+    <div class="prefs-email-lista">
+      <div class="pref-email-item">
+        <div class="pref-email-info">
+          <span class="pref-email-titulo">Novidades da plataforma</span>
+          <span class="pref-email-desc">Lançamentos, atualizações e novidades gerais da Velvet</span>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="pref_novidades_plataforma" onchange="salvarPrefEmail('pref_novidades_plataforma', this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="pref-email-item">
+        <div class="pref-email-info">
+          <span class="pref-email-titulo">Novidades das criadoras</span>
+          <span class="pref-email-desc">Novos conteúdos, posts e atualizações das criadoras que você assina</span>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="pref_novidades_criadoras" onchange="salvarPrefEmail('pref_novidades_criadoras', this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="pref-email-item">
+        <div class="pref-email-info">
+          <span class="pref-email-titulo">Ofertas e descontos</span>
+          <span class="pref-email-desc">Promoções exclusivas e descontos especiais das criadoras</span>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="pref_ofertas" onchange="salvarPrefEmail('pref_ofertas', this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <!-- Excluir Conta — só para cliente -->
+  <section class="area-card only-cliente">
+    <div class="danger-zone">
+      <h3 data-i18n="conta.excluir_titulo">Excluir minha Conta</h3>
+      <button class="btn-danger" onclick="abrirConfirmacaoExclusao()" data-i18n="conta.btn_excluir">
+        Excluir conta permanentemente
+      </button>
+    </div>
+  </section>
+
+  <!-- Modal Excluir Conta -->
+  <div id="modalExcluirConta" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-box">
+      <h3 data-i18n="conta.modal_excluir_titulo">Excluir conta permanentemente</h3>
+      <p data-i18n="conta.modal_excluir_aviso">
+        Esta ação é irreversível. Todos os seus dados, conteúdos, mensagens e histórico serão apagados permanentemente.
+      </p>
+      <label class="label-danger" data-i18n="conta.modal_excluir_label">Digite sua senha para confirmar</label>
+      <input type="password" id="senhaConfirmacao" data-i18n-placeholder="conta.modal_excluir_placeholder" placeholder="Digite sua senha" class="input-danger">
+      <p id="erroExclusao" class="erro-danger hidden" data-i18n="conta.modal_excluir_erro">Senha incorreta.</p>
+      <div class="modal-actions">
+        <button class="btn-cancelar" onclick="fecharModalExclusao()" data-i18n="conta.btn_cancelar">Cancelar</button>
+        <button class="btn-confirmar" onclick="confirmarExclusaoConta()" data-i18n="conta.btn_confirmar_exclusao">
+          Sim, excluir minha conta
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .prefs-email-lista { display: flex; flex-direction: column; gap: 0; }
+    .pref-email-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 0; border-bottom: 1px solid rgba(0,0,0,0.07);
+    }
+    .pref-email-item:last-child { border-bottom: none; }
+    .pref-email-info { display: flex; flex-direction: column; gap: 3px; flex: 1; padding-right: 16px; }
+    .pref-email-titulo { font-size: 15px; font-weight: 600; }
+    .pref-email-desc { font-size: 13px; color: var(--text-sub, #555); }
+    .toggle-switch { position: relative; display: inline-block; width: 48px; height: 26px; flex-shrink: 0; cursor: pointer; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; inset: 0; border-radius: 26px;
+      background: #ccc; transition: background 0.2s;
+    }
+    .toggle-slider::before {
+      content: ""; position: absolute; width: 20px; height: 20px; border-radius: 50%;
+      left: 3px; top: 3px; background: #fff; transition: transform 0.2s;
+    }
+    .toggle-switch input:checked + .toggle-slider { background: #9b59b6; }
+    .toggle-switch input:checked + .toggle-slider::before { transform: translateX(22px); }
+  </style>
+
   <div id="footer-container"></div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/js/header.js"></script>
 <script src="/js/dados.js"></script>
 <script src="/js/areaUsuario.js"></script>
+<script src="/js/verificacaoDocumentos.js"></script>
 <script src="/js/footer-shared.js"></script>
 
 </body>

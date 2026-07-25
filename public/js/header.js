@@ -73,10 +73,14 @@ async function initUsuario() {
     localStorage.setItem("nome", user.nome);
 
     if (user.avatar_url) {
-  localStorage.setItem("avatar_url", user.avatar_url);
-} else if (user.avatar) {
-  localStorage.setItem("avatar_url", user.avatar);
-}
+      localStorage.setItem("avatar_url", user.avatar_url);
+    } else if (user.avatar) {
+      localStorage.setItem("avatar_url", user.avatar);
+    } else {
+      localStorage.removeItem("avatar_url");
+    }
+
+    atualizarAvatarHeader(user);
 
     // limpa flag pós-registro sem afetar lógica
     if (localStorage.getItem("post_register_action") === "just_registered") {

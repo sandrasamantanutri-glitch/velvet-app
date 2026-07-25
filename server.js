@@ -5587,10 +5587,11 @@ app.get("/api/me", auth, async (req, res) => {
     if (req.user.role === "cliente") {
       const clienteRes = await db.query(
         `
-        SELECT id
-        FROM clientes
-        WHERE user_id = $1
-          AND ativo = true
+        SELECT c.id, c.nome, cd.avatar, cd.nome_exibicao
+        FROM clientes c
+        LEFT JOIN clientes_dados cd ON cd.cliente_id = c.id
+        WHERE c.user_id = $1
+          AND c.ativo = true
         LIMIT 1
         `,
         [req.user.id]
@@ -5599,6 +5600,14 @@ app.get("/api/me", auth, async (req, res) => {
       if (!clienteRes.rows.length) {
         return res.status(403).json({ error: "Conta desativada" });
       }
+
+      const c = clienteRes.rows[0];
+      return res.json({
+        user_id: req.user.id,
+        role: "cliente",
+        nome: c.nome_exibicao || c.nome || "Membro",
+        avatar: c.avatar || null
+      });
     }
 
     return res.json({
@@ -9081,6 +9090,7 @@ app.post("/api/register", authLimiter, async (req, res) => {
       role,
       nome_completo,
       data_nascimento,
+      genero,
       ageConfirmed,
       preToken,
       ref,
@@ -9270,11 +9280,11 @@ app.post("/api/register", authLimiter, async (req, res) => {
       await db.query(
         `
         INSERT INTO public.modelos_dados
-          (modelo_id, nome_completo, data_nascimento, criado_em, atualizado_em)
+          (modelo_id, nome_completo, data_nascimento, genero, criado_em, atualizado_em)
         VALUES
-          ($1, $2, $3, NOW(), NOW())
+          ($1, $2, $3, $4, NOW(), NOW())
         `,
-        [modeloId, nome_completo, data_nascimento]
+        [modeloId, nome_completo, data_nascimento, genero || null]
       );
 
       console.log("📩 Tentando enviar email para:", emailNormalizado);
@@ -9306,16 +9316,17 @@ app.post("/api/register", authLimiter, async (req, res) => {
       await db.query(
         `
         INSERT INTO public.clientes_dados
-          (cliente_id, username, nome_completo, data_nascimento, pais, criado_em, atualizado_em)
+          (cliente_id, username, nome_completo, data_nascimento, pais, genero, criado_em, atualizado_em)
         VALUES
-          ($1, $2, $3, $4, $5, NOW(), NOW())
+          ($1, $2, $3, $4, $5, $6, NOW(), NOW())
         `,
         [
           clienteId,
           nomePublico,
           nome_completo,
           data_nascimento,
-          'Brasil'
+          'Brasil',
+          genero || null
         ]
       );
 

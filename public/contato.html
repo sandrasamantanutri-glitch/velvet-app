@@ -9,14 +9,142 @@
   <link rel="stylesheet" href="/css/area.css">
   <link rel="stylesheet" href="/css/contato.css">
 
-<script src="/i18n.js"></script>
+  <script src="/i18n.js"></script>
+
+  <style>
+    /* ─── FAQ inline ─── */
+    .faq-contato {
+      max-width: 720px;
+      margin: 40px auto 0;
+      padding: 0 16px;
+    }
+    .faq-contato h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #7B2CFF;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+    .faq-item {
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+    }
+    .faq-question {
+      width: 100%;
+      background: none;
+      border: none;
+      font-size: 15px;
+      font-weight: 600;
+      text-align: left;
+      padding: 18px 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      color: inherit;
+    }
+    .faq-question .icon {
+      flex-shrink: 0;
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: rgba(123,44,255,0.08);
+      border: 1px solid rgba(124,58,237,0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+      color: #7B2CFF;
+      transition: transform 0.3s;
+    }
+    .faq-item.open .faq-question .icon { transform: rotate(45deg); }
+    .faq-answer {
+      font-size: 14px;
+      line-height: 1.7;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease, padding 0.3s;
+      color: #555;
+    }
+    .faq-item.open .faq-answer {
+      max-height: 300px;
+      padding-bottom: 16px;
+    }
+    .faq-bridge {
+      max-width: 720px;
+      margin: 36px auto 0;
+      padding: 0 16px;
+      text-align: center;
+      font-size: 15px;
+      color: #555;
+    }
+    .faq-bridge strong {
+      display: block;
+      font-size: 17px;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 4px;
+    }
+    @media (prefers-color-scheme: dark) {
+      .faq-answer { color: #aaa; }
+      .faq-bridge { color: #aaa; }
+      .faq-bridge strong { color: #eee; }
+    }
+  </style>
 </head>
 
 <body>
   <div id="header-container"></div>
 
   <main>
-    <section class="area-card">
+
+    <!-- ── PERGUNTAS FREQUENTES ── -->
+    <section class="faq-contato">
+      <h2 data-i18n="faq.title">Perguntas Frequentes</h2>
+      <div class="faq-list">
+        <div class="faq-item">
+          <button class="faq-question">
+            <span data-i18n="faq1.q">Como entro na Velvet?</span>
+            <span class="icon">+</span>
+          </button>
+          <div class="faq-answer" data-i18n="faq1.a">Clique em qualquer botão "Acessar" ou "Começar Agora" para criar sua conta gratuitamente em segundos, ou fazer seu login.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question">
+            <span data-i18n="faq2.q">Quanto custa assinar um criador?</span>
+            <span class="icon">+</span>
+          </button>
+          <div class="faq-answer" data-i18n="faq2.a">Cada criador define o valor da sua assinatura mensal. Você pode encontrar criadores com diferentes faixas de preço para todo tipo de orçamento.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question">
+            <span data-i18n="faq3.q">Como funciona o chat com criadores?</span>
+            <span class="icon">+</span>
+          </button>
+          <div class="faq-answer" data-i18n="faq3.a">Após assinar um criador, você tem acesso VIP ao chat direto no perfil dele. É uma conversa privada, sem filtros de algoritmo.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question">
+            <span data-i18n="faq4.q">Que tipo de conteúdo é permitido?</span>
+            <span class="icon">+</span>
+          </button>
+          <div class="faq-answer" data-i18n="faq4.a">Conteúdo de lifestyle, bastidores, dicas, entretenimento, +18 e muito mais. Atenção que conteúdo +18 não é o mesmo que explícito, e conteúdo explícito não é permitido na plataforma.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question">
+            <span data-i18n="faq5.q">Qual a idade mínima para usar o Velvet?</span>
+            <span class="icon">+</span>
+          </button>
+          <div class="faq-answer" data-i18n="faq5.a">É necessário ter 18 anos ou mais para criar uma conta e assinar criadores na Velvet.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── BRIDGE ── -->
+    <div class="faq-bridge">
+      <strong>Não encontrou resposta para sua dúvida?</strong>
+      Entre em contato conosco e responderemos o mais breve possível.
+    </div>
+
+    <!-- ── FORMULÁRIO DE CONTATO ── -->
+    <section class="area-card" style="margin-top:24px;">
       <button type="button" class="btn-voltar" onclick="history.back()">
         <img src="/assets/voltar.png" alt="Voltar" data-i18n-alt="contato.back">
       </button>
@@ -54,24 +182,52 @@
 
         <div class="field">
           <label data-i18n="contato.subject">Assunto</label>
-          <select name="assunto" required>
+          <select name="assunto" id="selectAssunto" required>
             <option value="" data-i18n="contato.select">Selecione</option>
             <option value="duvida" data-i18n="contato.question">Dúvida</option>
             <option value="suporte" data-i18n="contato.support">Suporte</option>
             <option value="pagamento" data-i18n="contato.payments">Pagamentos</option>
             <option value="sugestao" data-i18n="contato.suggestion">Sugestão</option>
+            <option value="denuncia">Denunciar conta</option>
             <option value="outro" data-i18n="contato.other">Outro</option>
           </select>
         </div>
 
-        <div class="field campo-pagamento" id="campo-telefone" style="display:none">
-          <label data-i18n="contato.phone">Telefone</label>
+        <!-- Print do erro — só aparece para Suporte (obrigatório) -->
+        <div class="field" id="campo-suporte-anexo" style="display:none">
+          <label>Print do erro <span style="color:#e74c3c">*</span></label>
           <input
-            type="tel"
-            name="telefone"
-            placeholder="(00) 00000-0000"
-            data-i18n-placeholder="contato.your_phone"
+            type="file"
+            name="documento"
+            id="inputSuporteAnexo"
+            accept="image/*,application/pdf"
           />
+          <p class="subtitle">Anexe uma captura de tela do erro que está enfrentando. Obrigatório para suporte técnico.</p>
+        </div>
+
+        <!-- Campos Denúncia — só aparecem para Denunciar conta (obrigatórios) -->
+        <div id="campos-denuncia" style="display:none">
+          <div class="field">
+            <label>Print da conta denunciada <span style="color:#e74c3c">*</span></label>
+            <input
+              type="file"
+              name="print_conta"
+              id="inputPrintConta"
+              accept="image/*,application/pdf"
+            />
+            <p class="subtitle">Captura de tela do perfil ou conta que deseja denunciar.</p>
+          </div>
+
+          <div class="field">
+            <label>Print do motivo <span style="color:#e74c3c">*</span></label>
+            <input
+              type="file"
+              name="print_motivo"
+              id="inputPrintMotivo"
+              accept="image/*,application/pdf"
+            />
+            <p class="subtitle">Captura de tela que evidencia o comportamento denunciado.</p>
+          </div>
         </div>
 
         <div class="field">
@@ -83,18 +239,6 @@
             data-i18n-placeholder="contato.write_your_message_here"
             required
           ></textarea>
-        </div>
-
-        <div class="field campo-pagamento" id="campo-documento" style="display:none">
-          <label data-i18n="contato.document">Documento de identidade (frente)</label>
-          <input
-            type="file"
-            name="documento"
-            accept="image/*,application/pdf"
-          />
-          <p class="subtitle" data-i18n="contato.document_hint">
-            Para pedidos de pagamento/reembolso, anexe um documento oficial com foto do titular do cartão utilizado na compra.
-          </p>
         </div>
 
         <button type="submit" class="btn" data-i18n="contato.send_message">
@@ -112,15 +256,9 @@
 
   <footer class="footer">
     <div class="footer-links">
-      <a href="/terms.html" target="_blank" rel="noopener noreferrer" data-i18n="contato.terms_of_use">
-        Termos de Uso
-      </a>
-      <a href="/privacy.html" target="_blank" rel="noopener noreferrer" data-i18n="contato.privacy_policy">
-        Política de Privacidade
-      </a>
-      <a href="/policies.html" target="_blank" rel="noopener noreferrer" data-i18n="contato.usage_policy">
-        Política de Utilização
-      </a>
+      <a href="/terms.html" target="_blank" rel="noopener noreferrer" data-i18n="contato.terms_of_use">Termos de Uso</a>
+      <a href="/privacy.html" target="_blank" rel="noopener noreferrer" data-i18n="contato.privacy_policy">Política de Privacidade</a>
+      <a href="/policies.html" target="_blank" rel="noopener noreferrer" data-i18n="contato.usage_policy">Política de Utilização</a>
     </div>
     <div class="footer-copy" data-i18n="contato.footer_copy">
       © 2026 Velvet. Todos os direitos reservados.
@@ -128,17 +266,44 @@
   </footer>
 
   <script>
+    // FAQ accordion
+    document.querySelectorAll('.faq-question').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const item = btn.closest('.faq-item');
+        const isOpen = item.classList.contains('open');
+        document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+        if (!isOpen) item.classList.add('open');
+      });
+    });
+
+    // Lógica do select de assunto
     (function () {
-      const select = document.querySelector('select[name="assunto"]');
-      const campos = document.querySelectorAll('.campo-pagamento');
-      function atualizarCampos() {
-        const exibir = select.value === 'pagamento';
-        campos.forEach(c => c.style.display = exibir ? '' : 'none');
-      }
-      select.addEventListener('change', atualizarCampos);
-      atualizarCampos();
+      const select        = document.getElementById('selectAssunto');
+      const campoAnexo    = document.getElementById('campo-suporte-anexo');
+      const inputAnexo    = document.getElementById('inputSuporteAnexo');
+      const camposDen     = document.getElementById('campos-denuncia');
+      const inputConta    = document.getElementById('inputPrintConta');
+      const inputMotivo   = document.getElementById('inputPrintMotivo');
+
+      select.addEventListener('change', function () {
+        if (select.value === 'pagamento') {
+          window.location.href = '/transacoes.html';
+          return;
+        }
+
+        const isSuporte  = select.value === 'suporte';
+        const isDenuncia = select.value === 'denuncia';
+
+        campoAnexo.style.display  = isSuporte  ? '' : 'none';
+        inputAnexo.required       = isSuporte;
+
+        camposDen.style.display   = isDenuncia ? '' : 'none';
+        inputConta.required       = isDenuncia;
+        inputMotivo.required      = isDenuncia;
+      });
     })();
   </script>
+
   <script src="/js/header.js"></script>
   <script src="/js/contato.js"></script>
   <script src="/socket.io/socket.io.js"></script>

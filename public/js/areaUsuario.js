@@ -182,6 +182,26 @@ function bloquearPaginaValidacaoCliente() {
 
   const steps = document.querySelector("#secaoDadosPessoais .verificacao-steps");
   if (steps) steps.style.display = "none";
+
+  // Tornar formulário de dados pessoais somente leitura para cliente
+  const form = document.getElementById("formDadosPessoais");
+  if (form) {
+    form.querySelectorAll("input, select, textarea").forEach(el => {
+      el.disabled = true;
+    });
+
+    const btnSalvar = form.querySelector(".btn-salvar");
+    if (btnSalvar) btnSalvar.style.display = "none";
+
+    const infoAposSalvar = document.getElementById("infoDados");
+    if (infoAposSalvar) infoAposSalvar.style.display = "none";
+
+    const aviso = document.createElement("p");
+    aviso.className = "form-info";
+    aviso.style.marginTop = "16px";
+    aviso.textContent = "🔒 Estes dados são preenchidos automaticamente ao criar conta e ao realizar pagamentos. Não é possível alterá-los manualmente, apenas criadores podem preencher os dados para solicitar verificação de conta.";
+    form.appendChild(aviso);
+  }
 }
 
 

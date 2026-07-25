@@ -989,3 +989,11 @@ select {
   .copy-field { flex-direction: column; }
   .copy-field button { width: 100%; text-align: center; }
 }
+
+
+/* Role visibility helpers */
+.only-modelo { display: none; }
+body.role-modelo .only-modelo { display: block; }
+
+.only-cliente { display: none; }
+body.role-cliente .only-cliente { display: block; }
