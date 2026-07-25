@@ -5,34 +5,32 @@
   <title>Velvet</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="/css/header.css">
-  <link rel="stylesheet" href="/css/feed.css">
-
+  <link rel="stylesheet" href="/css/feed2.css">
   <script src="/i18n.js"></script>
 </head>
-
 <body>
 <div id="header-container"></div>
 <div class="container">
-<div class="feed-filtros">
-  <div class="feed-filtros-interesses">
-    <span class="feed-filtros-label" data-i18n="feed.filtro_interesses">Interesses</span>
-    <div class="feed-chips" id="feedChipsGenero">
-      <button type="button" class="feed-chip feed-chip--ativo" data-genero="" data-i18n="feed.filtro_todos">Todos</button>
-      <button type="button" class="feed-chip" data-genero="mulher" data-i18n="feed.filtro_mulheres">Mulheres</button>
-      <button type="button" class="feed-chip" data-genero="homem" data-i18n="feed.filtro_homens">Homens</button>
-      <button type="button" class="feed-chip" data-genero="nao_binario" data-i18n="feed.filtro_nao_binarios">Não binários</button>
+  <div class="feed-filtros">
+    <div class="feed-filtros-interesses">
+      <span class="feed-filtros-label" data-i18n="feed.filtro_interesses">Interesses</span>
+      <div class="feed-chips" id="feedChipsGenero">
+        <button type="button" class="feed-chip feed-chip--ativo" data-genero="" data-i18n="feed.filtro_todos">Todos</button>
+        <button type="button" class="feed-chip" data-genero="mulher" data-i18n="feed.filtro_mulheres">Mulheres</button>
+        <button type="button" class="feed-chip" data-genero="homem" data-i18n="feed.filtro_homens">Homens</button>
+        <button type="button" class="feed-chip" data-genero="nao_binario" data-i18n="feed.filtro_nao_binarios">Não binários</button>
+      </div>
+    </div>
+    <div class="feed-busca">
+      <input type="text" id="feedBuscaNome" data-i18n-placeholder="feed.busca_placeholder" placeholder="Buscar por nome..." autocomplete="off">
     </div>
   </div>
-  <div class="feed-busca">
-    <input type="text" id="feedBuscaNome" data-i18n-placeholder="feed.busca_placeholder" placeholder="Buscar por nome..." autocomplete="off">
-  </div>
-</div>
-<div id="listaModelos"></div>
+  <div class="feed-dica">💡 Passe o mouse sobre o perfil para identificar o tipo de conteúdo</div>
+  <div id="listaModelos"></div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/js/header.js"></script>
-<script src="/js/feed.js"></script>
-
+<script src="/js/feed2.js"></script>
 </body>
 </html>

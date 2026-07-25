@@ -21,8 +21,8 @@ const CLASSIF = {
     desc: "Conteúdo mais sensual, como ensaios de biquíni, lingerie, cosplay e outras publicações com maior apelo visual, sem nudez ou conteúdo explícito."
   },
   adulto: {
-    emoji: "🔞", label: "18+",
-    desc: "Conteúdo destinado exclusivamente a maiores de 18 anos VERIFICADOS, que pode incluir nudez ou conteúdo sexual explícito."
+    emoji: "🔒", label: "Privado",
+    desc: "Conteúdo reservado para adultos, disponível mediante validação da identidade do utilizador."
   }
 };
 

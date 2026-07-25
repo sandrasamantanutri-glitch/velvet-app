@@ -3443,7 +3443,7 @@ async function editarModelo(id) {
           { value: '', label: 'Não definido' },
           { value: 'social', label: '🌍 Social' },
           { value: 'premium', label: '🔥 Premium' },
-          { value: 'adulto', label: '🔞 18+' }
+          { value: 'adulto', label: '🔒 Privado' }
         ]
       },
 
