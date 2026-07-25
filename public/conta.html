@@ -173,9 +173,6 @@
     </div>
 
     <form id="formDadosPessoais" class="form-area">
-      <span class="form-info" id="infoDadosPessoais" data-i18n="conta.info_confidencial">
-       🔒 Essas informações são confidenciais, e os dados são preenchidos automaticamente ao criar conta e ao realizar pagamentos. Não é possível alterá-los manualmente, apenas criadores podem preencher os dados para solicitar verificação de conta.
-
       <div class="form-grid">
         <div class="form-group full">
           <label data-i18n="conta.label_nome">Nome completo*</label>
@@ -399,22 +396,22 @@
   <!-- PREFERÊNCIAS DE EMAIL — só visível para CLIENTE          -->
   <!-- ========================================================== -->
   <section class="area-card hidden" id="secaoPreferenciasEmail">
-    <h3>Preferências de Email</h3>
-    <p class="form-info" style="margin-bottom:20px;">
+    <h3 data-i18n="email_pref.title">Preferências de Email</h3>
+    <p class="form-info" style="margin-bottom:20px;" data-i18n="email_pref.intro">
       Escolha quais tipos de email deseja receber da Velvet. Você pode alterar isso a qualquer momento.
     </p>
 
     <div id="prefEmailFeedback" class="termos-aceitos-banner hidden" style="margin-bottom:16px;">
       <span class="termos-aceitos-icon">✅</span>
-      <div><strong>Preferências salvas</strong></div>
+      <div><strong data-i18n="email_pref.saved">Preferências salvas</strong></div>
     </div>
 
     <div class="prefs-email-lista">
 
       <div class="pref-email-item">
         <div class="pref-email-info">
-          <span class="pref-email-titulo">Novidades da plataforma</span>
-          <span class="pref-email-desc">Lançamentos, atualizações e novidades gerais da Velvet</span>
+          <span class="pref-email-titulo" data-i18n="email_pref.pref1_titulo">Novidades da plataforma</span>
+          <span class="pref-email-desc" data-i18n="email_pref.pref1_desc">Lançamentos, atualizações e novidades gerais da Velvet</span>
         </div>
         <label class="toggle-switch">
           <input type="checkbox" id="pref_novidades_plataforma" onchange="salvarPrefEmail('pref_novidades_plataforma', this.checked)">
@@ -424,8 +421,8 @@
 
       <div class="pref-email-item">
         <div class="pref-email-info">
-          <span class="pref-email-titulo">Novidades das criadoras</span>
-          <span class="pref-email-desc">Novos conteúdos, posts e atualizações das criadoras que você assina</span>
+          <span class="pref-email-titulo" data-i18n="email_pref.pref2_titulo">Novidades das criadoras</span>
+          <span class="pref-email-desc" data-i18n="email_pref.pref2_desc">Novos conteúdos, posts e atualizações das criadoras que você assina</span>
         </div>
         <label class="toggle-switch">
           <input type="checkbox" id="pref_novidades_criadoras" onchange="salvarPrefEmail('pref_novidades_criadoras', this.checked)">
@@ -435,8 +432,8 @@
 
       <div class="pref-email-item">
         <div class="pref-email-info">
-          <span class="pref-email-titulo">Ofertas e descontos</span>
-          <span class="pref-email-desc">Promoções exclusivas e descontos especiais das criadoras</span>
+          <span class="pref-email-titulo" data-i18n="email_pref.pref3_titulo">Ofertas e descontos</span>
+          <span class="pref-email-desc" data-i18n="email_pref.pref3_desc">Promoções exclusivas e descontos especiais das criadoras</span>
         </div>
         <label class="toggle-switch">
           <input type="checkbox" id="pref_ofertas" onchange="salvarPrefEmail('pref_ofertas', this.checked)">

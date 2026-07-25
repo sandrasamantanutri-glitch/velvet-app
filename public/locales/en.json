@@ -1,4 +1,4 @@
-{
+﻿{
   "index": {
   "enter": "Sign in",
   "createAccount": "Create account",
@@ -815,6 +815,33 @@
   "time_yesterday": "yesterday",
   "time_days": "{n} days ago",
   "acesso_imediato": "Immediate access after payment"
-}
+},
 
+  "faq": { "title": "Frequently Asked Questions" },
+  "faq1": { "q": "How do I join Velvet?", "a": "Click any Access or Get Started button to create your account for free in seconds, or log in." },
+  "faq2": { "q": "How much does it cost to subscribe to a creator?", "a": "Each creator sets their own monthly subscription price. You can find creators at various price points to fit any budget." },
+  "faq3": { "q": "How does the chat with creators work?", "a": "After subscribing, you get VIP access to direct chat on their profile. It is a private conversation, free from algorithm filters." },
+  "faq4": { "q": "What type of content is allowed?", "a": "Lifestyle, behind-the-scenes, tips, entertainment, +18 and more. Explicit content is not allowed on the platform." },
+  "faq5": { "q": "What is the minimum age to use Velvet?", "a": "You must be 18 or older to create an account and subscribe to creators on Velvet." },
+  "faq_bridge": { "heading": "Didn't find what you were looking for?", "sub": "Contact us and we'll get back to you as soon as possible." },
+  "email_pref": {
+    "title": "Email Preferences",
+    "intro": "Choose which types of emails you want to receive from Velvet. You can change this at any time.",
+    "saved": "Preferences saved",
+    "pref1_titulo": "Platform news",
+    "pref1_desc": "Launches, updates and general news from Velvet",
+    "pref2_titulo": "Creator updates",
+    "pref2_desc": "New content, posts and updates from creators you subscribe to",
+    "pref3_titulo": "Offers and discounts",
+    "pref3_desc": "Exclusive promotions and special discounts from creators"
+  },
+  "contato_extra": {
+    "denuncia": "Report account",
+    "suporte_print_label": "Screenshot of the error",
+    "suporte_print_hint": "Attach a screenshot of the error you are experiencing. Required for technical support.",
+    "denuncia_conta_label": "Screenshot of reported account",
+    "denuncia_conta_hint": "Screenshot of the profile or account you want to report.",
+    "denuncia_motivo_label": "Screenshot of the reason",
+    "denuncia_motivo_hint": "Screenshot that evidences the reported behavior."
+  }
 }

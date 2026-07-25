@@ -1,4 +1,4 @@
-{
+﻿{
   "index": {
   "enter": "Entrar",
   "createAccount": "Crear cuenta",
@@ -811,6 +811,33 @@
   "time_yesterday": "ayer",
   "time_days": "hace {n} días",
   "acesso_imediato": "Acceso inmediato tras el pago"
-  }
+  },
 
+  "faq": { "title": "Preguntas Frecuentes" },
+  "faq1": { "q": "Como entro en Velvet?", "a": "Haz clic en cualquier boton Acceder o Comenzar Ahora para crear tu cuenta gratis en segundos, o inicia sesion." },
+  "faq2": { "q": "Cuanto cuesta suscribirse a un creador?", "a": "Cada creador define el valor de su suscripcion mensual. Puedes encontrar creadores con diferentes rangos de precio para todo tipo de presupuesto." },
+  "faq3": { "q": "Como funciona el chat con creadores?", "a": "Tras suscribirte, tienes acceso VIP al chat directo en su perfil. Es una conversacion privada, sin filtros de algoritmo." },
+  "faq4": { "q": "Que tipo de contenido esta permitido?", "a": "Lifestyle, bastidores, consejos, entretenimiento, +18 y mas. El contenido explicito no esta permitido." },
+  "faq5": { "q": "Cual es la edad minima para usar Velvet?", "a": "Es necesario tener 18 anos o mas para crear una cuenta y suscribirse a creadores en Velvet." },
+  "faq_bridge": { "heading": "No encontraste respuesta a tu pregunta?", "sub": "Contactanos y te responderemos lo antes posible." },
+  "email_pref": {
+    "title": "Preferencias de correo",
+    "intro": "Elige que tipos de correos deseas recibir de Velvet. Puedes cambiar esto en cualquier momento.",
+    "saved": "Preferencias guardadas",
+    "pref1_titulo": "Novedades de la plataforma",
+    "pref1_desc": "Lanzamientos, actualizaciones y noticias generales de Velvet",
+    "pref2_titulo": "Novedades de las creadoras",
+    "pref2_desc": "Nuevos contenidos, publicaciones y actualizaciones de las creadoras que sigues",
+    "pref3_titulo": "Ofertas y descuentos",
+    "pref3_desc": "Promociones exclusivas y descuentos especiales de las creadoras"
+  },
+  "contato_extra": {
+    "denuncia": "Denunciar cuenta",
+    "suporte_print_label": "Captura de pantalla del error",
+    "suporte_print_hint": "Adjunta una captura de pantalla del error que estas experimentando. Obligatorio para soporte tecnico.",
+    "denuncia_conta_label": "Captura de la cuenta denunciada",
+    "denuncia_conta_hint": "Captura de pantalla del perfil o cuenta que deseas denunciar.",
+    "denuncia_motivo_label": "Captura del motivo",
+    "denuncia_motivo_hint": "Captura de pantalla que evidencia el comportamiento denunciado."
+  }
 }
