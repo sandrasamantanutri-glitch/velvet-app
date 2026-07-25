@@ -84,13 +84,20 @@ function criarCard(modelo) {
     redeAtiva = "tiktok";
   }
 
-  // Foto de perfil da rede social via proxy do servidor (não expira, sem CORS)
+  // Foto de perfil da rede social:
+  // 1º prioridade: URL salva no BD (preenchida manualmente ou pelo sync)
+  // 2º fallback: proxy do servidor (busca em tempo real)
+  // 3º último recurso: avatar da Velvet
   let avatarSocial = modelo.avatar || "/assets/avatar.png";
-  if (redeAtiva === "instagram" && modelo.instagram) {
-    avatarSocial = `/api/social-photo?p=instagram&h=${encodeURIComponent(modelo.instagram)}`;
-  } else if (redeAtiva === "tiktok" && modelo.tiktok) {
+  if (redeAtiva === "instagram") {
+    avatarSocial = modelo.foto_instagram
+      || (modelo.instagram ? `/api/social-photo?p=instagram&h=${encodeURIComponent(modelo.instagram)}` : null)
+      || modelo.avatar || "/assets/avatar.png";
+  } else if (redeAtiva === "tiktok") {
     const ttHandle = (modelo.tiktok || "").replace(/^@/, "");
-    avatarSocial = `/api/social-photo?p=tiktok&h=${encodeURIComponent(ttHandle)}`;
+    avatarSocial = modelo.foto_tiktok
+      || (ttHandle ? `/api/social-photo?p=tiktok&h=${encodeURIComponent(ttHandle)}` : null)
+      || modelo.avatar || "/assets/avatar.png";
   }
 
   // Seguidores da rede ativa
