@@ -100,7 +100,7 @@
     <div class="tabs">
       <button class="tab-btn ativa" data-tab="subscricoes" data-i18n="transacoes.tab_subscricoes">Subscrições</button>
       <button class="tab-btn" data-tab="transacoes" data-i18n="transacoes.tab_transacoes">Transações</button>
-      <button class="tab-btn" data-tab="ocorrencias">Ocorrências</button>
+      <button class="tab-btn" data-tab="ocorrencias" data-i18n="transacoes.tab_ocorrencias">Ocorrências</button>
     </div>
 
     <div id="tab-subscricoes" class="tab-content ativa">
@@ -108,15 +108,15 @@
       <p class="transacoes-descricao" data-i18n="transacoes.desc_subscricoes">
 Aqui pode gerir as suas assinaturas VIP ativas, consultar as suas compras na plataforma e abrir ocorrências relacionadas com pagamentos. Para isso, basta clicar em [⁞]. 
       </p>
-      <div id="listaSubscricoes" class="lista-transacoes">
+      <div id="listaSubscricoes" class="lista-transacoes" data-i18n="transacoes.carregando_subscricoes">
         Carregando subscrições...
       </div>
     </div>
 
     <div id="tab-ocorrencias" class="tab-content">
-      <h3>Ocorrências</h3>
-      <p class="transacoes-descricao">Acompanhe o status das suas ocorrências abertas com o suporte Velvet.</p>
-      <div id="listaOcorrencias" class="lista-transacoes">Carregando...</div>
+      <h3 data-i18n="transacoes.titulo_ocorrencias">Ocorrências</h3>
+      <p class="transacoes-descricao" data-i18n="transacoes.desc_ocorrencias">Acompanhe o status das suas ocorrências abertas com o suporte Velvet.</p>
+      <div id="listaOcorrencias" class="lista-transacoes" data-i18n="transacoes.carregando_ocorrencias">Carregando...</div>
     </div>
 
     <div id="tab-transacoes" class="tab-content">
@@ -127,14 +127,14 @@ Aqui pode gerir as suas assinaturas VIP ativas, consultar as suas compras na pla
 
       <div class="filtros">
         <select id="filtroTipo">
-          <option value="">Todos</option>
-          <option value="vip">Assinatura VIP</option>
-          <option value="midia_premium">Mídias Premium</option>
-          <option value="midia_chat">Mídias Chat</option>
+          <option value="" data-i18n="transacoes.filtro_todos">Todos</option>
+          <option value="vip" data-i18n="transacoes.filtro_assinaturas">Assinatura VIP</option>
+          <option value="midia_premium" data-i18n="transacoes.filtro_midia_premium">Mídias Premium</option>
+          <option value="midia_chat" data-i18n="transacoes.filtro_midia_chat">Mídias Chat</option>
         </select>
       </div>
 
-      <div id="listaTransacoes" class="lista-transacoes">
+      <div id="listaTransacoes" class="lista-transacoes" data-i18n="transacoes.carregando_transacoes">
         Carregando transações...
       </div>
       <div id="paginacao" class="paginacao"></div>
