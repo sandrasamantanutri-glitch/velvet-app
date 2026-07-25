@@ -6043,6 +6043,7 @@ app.get("/api/modelos", auth, async (req, res) => {
         md2.foto_tiktok,
         md2.seguidores_instagram,
         md2.seguidores_tiktok,
+        md2.classificacao_conteudo,
 
         COALESCE(r.ganhos_mes, 0) AS ganhos_total,
 
@@ -6182,7 +6183,7 @@ app.get("/api/modelos", auth, async (req, res) => {
       if (i === 2) m.top3 = true;
     });
 
-    // Secção "Descubra mais": modelos que não aparecem em nenhuma outra secção
+    // Secção "Descubra mais": modelos sem nenhum badge de destaque
     const idsDestaque = new Set([
       ...online.map(m => m.modelo_id),
       ...novas.map(m => m.modelo_id),
@@ -6190,7 +6191,12 @@ app.get("/api/modelos", auth, async (req, res) => {
       ...recomendadas.map(m => m.modelo_id)
     ]);
     const descubraMais = modelos
-      .filter(m => !idsDestaque.has(m.modelo_id))
+      .filter(m =>
+        !idsDestaque.has(m.modelo_id) &&
+        !m.online &&
+        !m.ativa_conteudo &&
+        !m.is_new
+      )
       .sort((a, b) => (a.nome_exibicao || "").localeCompare(b.nome_exibicao || "", "pt-BR"));
 
     res.json({ online, novas, emAlta, recomendadas, descubraMais });

@@ -252,11 +252,92 @@ body {
 .feed-sem-resultados { text-align: center; padding: 60px 0; color: #999; font-size: 15px; }
 
 /* ── RESPONSIVE ── */
+
+/* Tablet grande (até 1024px) */
+@media (max-width: 1024px) {
+  .feed-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+}
+
+/* Tablet (até 768px) */
+@media (max-width: 768px) {
+  .feed-filtros {
+    padding: 80px 14px 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .feed-busca { flex: none; max-width: none; }
+  .feed-grid  { grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .feed-secao-titulo { font-size: 16px; }
+}
+
+/* Mobile (até 600px) */
 @media (max-width: 600px) {
-  .feed-filtros { padding: 80px 12px 0; flex-direction: column; align-items: stretch; }
-  .feed-busca   { flex: none; max-width: none; }
-  .feed-grid    { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-  .feed-secao-titulo { font-size: 15px; }
-  .card-nome { max-width: 100px; }
-  .card-classif-hint { left: 0; right: 0; }
+  #listaModelos { padding: 14px 10px 60px; }
+
+  .feed-filtros {
+    padding: 70px 10px 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .feed-filtros-interesses { flex-direction: column; align-items: flex-start; gap: 8px; }
+
+  /* chips rolam horizontalmente em vez de quebrar linha */
+  .feed-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+  }
+  .feed-chips::-webkit-scrollbar { display: none; }
+  .feed-chip { flex-shrink: 0; }
+
+  .feed-busca { flex: none; max-width: none; }
+  .feed-grid  { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .feed-secao { margin-bottom: 28px; }
+  .feed-secao-titulo { font-size: 15px; margin-bottom: 12px; }
+
+  /* card interior */
+  .card-info { padding: 10px 10px 12px; gap: 8px; }
+  .card-right { gap: 6px; }
+
+  .card-nome { font-size: 13px; max-width: 95px; }
+  .card-bio  { font-size: 11px; -webkit-line-clamp: 2; }
+
+  .card-avatar { width: 48px; height: 48px; }
+  .card-avatar-rede { width: 18px; height: 18px; padding: 2px; }
+  .card-avatar-rede svg { width: 13px; height: 13px; }
+
+  .card-classif { font-size: 10px; }
+  .card-badge   { font-size: 11px; }
+
+  .card-social-icon     { width: 15px; height: 15px; }
+  .card-social-icon svg { width: 15px; height: 15px; }
+  .card-social-count    { font-size: 12px; }
+  .card-social-label    { font-size: 9px; }
+}
+
+/* Celular pequeno (até 420px) */
+@media (max-width: 420px) {
+  .feed-grid { gap: 8px; }
+  .card-avatar { width: 42px; height: 42px; }
+  .card-nome   { font-size: 12px; max-width: 80px; }
+  .card-bio    { display: none; }
+  .card-badge  { font-size: 10px; }
+  .card-badge-row { margin-bottom: 6px; min-height: 14px; }
+}
+
+/* Celular muito pequeno (até 360px) */
+@media (max-width: 360px) {
+  .feed-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .card-avatar { width: 38px; height: 38px; }
+  .card-nome   { font-size: 11px; max-width: 70px; }
+}
+
+/* Touch: tooltip no hover não funciona — usa o badge de classificação que já aparece no card */
+@media (hover: none) {
+  .card-classif-hint { display: none; }
+  .modelo-card:hover { transform: none; box-shadow: 0 4px 20px rgba(0,0,0,0.14); }
 }

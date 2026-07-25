@@ -212,22 +212,16 @@ window.renderFeed = async function () {
     const secDesc   = (typeof t === "function") ? t("feed.sec_descubra")     : "🌎 Descubra mais";
 
     wrapper.innerHTML = `
-      ${online.length ? `
       <section class="feed-secao">
-        <h2 class="feed-secao-titulo">${secOnline}</h2>
-        <div class="feed-grid" id="sec-online"></div>
-      </section>` : ""}
+        <h2 class="feed-secao-titulo">${secAlta}</h2>
+        <div class="feed-grid" id="sec-emalta"></div>
+      </section>
 
       ${recomendadas.length ? `
       <section class="feed-secao">
         <h2 class="feed-secao-titulo">${secRec}</h2>
         <div class="feed-grid" id="sec-recomendadas"></div>
       </section>` : ""}
-
-      <section class="feed-secao">
-        <h2 class="feed-secao-titulo">${secAlta}</h2>
-        <div class="feed-grid" id="sec-emalta"></div>
-      </section>
 
       ${novas.length ? `
       <section class="feed-secao">
@@ -242,9 +236,8 @@ window.renderFeed = async function () {
       </section>` : ""}
     `;
 
-    renderSecao("sec-online",       online);
-    renderSecao("sec-recomendadas", recomendadas);
     renderSecao("sec-emalta",       emAlta);
+    renderSecao("sec-recomendadas", recomendadas);
     renderSecao("sec-novas",        novas);
     renderSecao("sec-descubra",     descubraMais || []);
 
