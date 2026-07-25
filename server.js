@@ -5740,6 +5740,140 @@ app.get("/api/modelo/me", authModelo, async (req, res) => {
 });
 
 // ===========================
+// SYNC SOCIAL (Instagram / TikTok)
+// ===========================
+
+async function fetchInstagramData(username) {
+  try {
+    const axios = require("axios");
+    const res = await axios.get(
+      `https://www.instagram.com/api/v1/users/web_profile_info/?username=${encodeURIComponent(username)}`,
+      {
+        headers: {
+          "x-ig-app-id": "936619743392459",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "*/*",
+          "Accept-Language": "pt-BR,pt;q=0.9",
+          "Referer": "https://www.instagram.com/",
+        },
+        timeout: 8000,
+      }
+    );
+    const user = res.data?.data?.user;
+    if (!user) return null;
+    return {
+      foto: user.profile_pic_url_hd || user.profile_pic_url || null,
+      seguidores: user.edge_followed_by?.count || 0,
+    };
+  } catch (e) {
+    console.warn("[SyncSocial] Instagram fetch falhou para", username, e?.response?.status || e.message);
+    return null;
+  }
+}
+
+async function fetchTikTokData(username) {
+  try {
+    const axios = require("axios");
+    const handle = username.startsWith("@") ? username.slice(1) : username;
+    const res = await axios.get(
+      `https://www.tiktok.com/@${encodeURIComponent(handle)}`,
+      {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept-Language": "pt-BR,pt;q=0.9",
+        },
+        timeout: 10000,
+      }
+    );
+    const html = res.data;
+    // extrai __UNIVERSAL_DATA_FOR_REHYDRATION__
+    const match = html.match(/<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/);
+    if (!match) return null;
+    const json = JSON.parse(match[1]);
+    const userData =
+      json?.["__DEFAULT_SCOPE__"]?.["webapp.user-detail"]?.userInfo?.user;
+    const statsData =
+      json?.["__DEFAULT_SCOPE__"]?.["webapp.user-detail"]?.userInfo?.stats;
+    if (!userData) return null;
+    return {
+      foto: userData.avatarLarger || userData.avatarMedium || null,
+      seguidores: statsData?.followerCount || 0,
+    };
+  } catch (e) {
+    console.warn("[SyncSocial] TikTok fetch falhou para", username, e?.response?.status || e.message);
+    return null;
+  }
+}
+
+async function syncSocialData(modeloId) {
+  try {
+    const row = await db.query(
+      "SELECT instagram, tiktok FROM modelos_dados WHERE modelo_id = $1 AND ativo = true LIMIT 1",
+      [modeloId]
+    );
+    if (!row.rows.length) return;
+    const { instagram, tiktok } = row.rows[0];
+
+    let igData = null;
+    let ttData = null;
+    if (instagram) igData = await fetchInstagramData(instagram);
+    if (tiktok)    ttData = await fetchTikTokData(tiktok);
+
+    await db.query(
+      `UPDATE modelos_dados SET
+        foto_instagram       = COALESCE($1, foto_instagram),
+        seguidores_instagram = COALESCE($2, seguidores_instagram),
+        foto_tiktok          = COALESCE($3, foto_tiktok),
+        seguidores_tiktok    = COALESCE($4, seguidores_tiktok),
+        social_sync_em       = NOW()
+       WHERE modelo_id = $5 AND ativo = true`,
+      [
+        igData?.foto        ?? null,
+        igData?.seguidores  ?? null,
+        ttData?.foto        ?? null,
+        ttData?.seguidores  ?? null,
+        modeloId,
+      ]
+    );
+    console.log("[SyncSocial] modelo", modeloId, "sincronizado —",
+      igData ? `IG ${igData.seguidores} seg` : "sem IG",
+      ttData ? `TT ${ttData.seguidores} seg` : "sem TT"
+    );
+  } catch (e) {
+    console.error("[SyncSocial] erro modelo", modeloId, e.message);
+  }
+}
+
+// Endpoint admin: POST /api/admin/sync-social  (body: { modelo_id } ou sem body → todos)
+app.post("/api/admin/sync-social", auth, async (req, res) => {
+  if (req.user.role !== "admin") return res.status(403).json({ error: "forbidden" });
+  try {
+    if (req.body?.modelo_id) {
+      await syncSocialData(Number(req.body.modelo_id));
+      return res.json({ ok: true });
+    }
+    // Sync de todos que têm instagram ou tiktok e não foram sincronizados nas últimas 24h
+    const todos = await db.query(
+      `SELECT modelo_id FROM modelos_dados
+       WHERE ativo = true
+         AND (instagram IS NOT NULL OR tiktok IS NOT NULL)
+         AND (social_sync_em IS NULL OR social_sync_em < NOW() - INTERVAL '24 hours')
+       LIMIT 100`
+    );
+    const ids = todos.rows.map(r => r.modelo_id);
+    // Processa em background para não bloquear a resposta
+    res.json({ ok: true, total: ids.length });
+    for (const id of ids) {
+      await syncSocialData(id);
+      await new Promise(r => setTimeout(r, 1500)); // throttle gentil
+    }
+  } catch (e) {
+    console.error("[SyncSocial] endpoint erro:", e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ===========================
 // FEED.HTML
 // ===========================
 
@@ -5765,6 +5899,10 @@ app.get("/api/modelos", auth, async (req, res) => {
         md2.genero,
         md2.instagram,
         md2.tiktok,
+        md2.foto_instagram,
+        md2.foto_tiktok,
+        md2.seguidores_instagram,
+        md2.seguidores_tiktok,
 
         COALESCE(r.ganhos_mes, 0) AS ganhos_total,
 
