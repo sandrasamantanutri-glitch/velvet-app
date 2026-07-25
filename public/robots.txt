@@ -1,6 +1,11 @@
 User-agent: *
-Disallow: /perfil.html
 Disallow: /feed.html
 Disallow: /chat.html
-Allow: /
-Allow: /about.html
+Disallow: /dashboard/
+Disallow: /agencias/
+Disallow: /admin/
+
+Sitemap: https://www.velvet.lat/sitemap.xml
+allow: /
+allow: /index.html
+allow: /me.html
