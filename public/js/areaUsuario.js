@@ -572,6 +572,7 @@ async function carregarDadosUsuario() {
   if (form.tiktok) form.tiktok.value = dados.tiktok || "";
   if (form.local) form.local.value = dados.local || "";
   if (form.bio) form.bio.value = dados.bio || "";
+  if (form.classificacao_conteudo) form.classificacao_conteudo.value = dados.classificacao_conteudo || "";
 }
 
 async function carregarDadosPessoais() {
@@ -844,7 +845,8 @@ formModelo?.addEventListener("submit", async (e) => {
       instagram: normalizarInstagram(formData.get("instagram") || ""),
       tiktok: formData.get("tiktok")?.trim() || "",
       local: formData.get("local")?.trim() || "",
-      bio: formData.get("bio")?.trim() || ""
+      bio: formData.get("bio")?.trim() || "",
+      classificacao_conteudo: formData.get("classificacao_conteudo") || null
     };
 
   } else {

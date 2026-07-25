@@ -72,16 +72,16 @@ function criarCard(modelo) {
   const igSeg = Number(modelo.seguidores_instagram) || 0;
   const ttSeg = Number(modelo.seguidores_tiktok)    || 0;
   let redeAtiva = null;
-  if (igSeg > 0 && ttSeg > 0) {
-    redeAtiva = "instagram"; // ambas com dados: prefere Instagram
-  } else if (igSeg > 0) {
-    redeAtiva = "instagram";
+  if (ttSeg > 0 && igSeg > 0) {
+    redeAtiva = "tiktok"; // ambas com dados: prefere TikTok
   } else if (ttSeg > 0) {
     redeAtiva = "tiktok";
-  } else if (modelo.instagram) {
-    redeAtiva = "instagram"; // sem sync ainda: usa handle disponível
+  } else if (igSeg > 0) {
+    redeAtiva = "instagram";
   } else if (modelo.tiktok) {
-    redeAtiva = "tiktok";
+    redeAtiva = "tiktok"; // sem sync ainda: usa handle disponível
+  } else if (modelo.instagram) {
+    redeAtiva = "instagram";
   }
 
   // Proxy cuida de tudo: 1) rede social ao vivo  2) BD  3) avatar Velvet

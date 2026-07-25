@@ -2932,6 +2932,17 @@ router.put("/modelos/:id", authAdmin, async (req, res) => {
       ]);
     }
 
+    // salvar classificacao_conteudo em modelos_dados quando presente
+    if (Object.prototype.hasOwnProperty.call(fields, "classificacao_conteudo")) {
+      const classif = fields.classificacao_conteudo || null;
+      await db.query(`
+        INSERT INTO modelos_dados (modelo_id, classificacao_conteudo)
+        VALUES ($1, $2)
+        ON CONFLICT (modelo_id)
+        DO UPDATE SET classificacao_conteudo = EXCLUDED.classificacao_conteudo, atualizado_em = NOW()
+      `, [modeloId, classif]);
+    }
+
     res.json(depois);
   } catch (err) {
     console.error("Erro atualizar modelo:", err);
@@ -2967,7 +2978,8 @@ router.put("/modelos-dados/:id", authAdmin, async (req, res) => {
       "cidade",
       "instagram",
       "tiktok",
-      "vip_preco"
+      "vip_preco",
+      "classificacao_conteudo"
     ];
 
     const antesQ = await db.query(`

@@ -215,19 +215,19 @@ body {
 
 /* ══════════════════════════════════════════
    TOOLTIP de classificação — aparece no
-   hover do CARD, acima do card
+   centro do próprio card no hover
 ══════════════════════════════════════════ */
 .card-classif-hint {
   position: absolute;
-  bottom: calc(100% + 8px);
-  left: 0; right: 0;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -44%) scale(0.97);
+  width: calc(100% - 24px);
   background: #2a1060;
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 14px;
   padding: 12px 14px;
   display: flex; align-items: flex-start; gap: 10px;
   opacity: 0; pointer-events: none;
-  transform: translateY(6px);
   transition: opacity 0.18s, transform 0.18s;
   z-index: 100;
   box-shadow: 0 10px 30px rgba(0,0,0,0.50);
@@ -235,7 +235,7 @@ body {
 
 .modelo-card:hover .card-classif-hint {
   opacity: 1;
-  transform: translateY(0);
+  transform: translate(-50%, -50%) scale(1);
 }
 
 .hint-emoji { font-size: 18px; flex-shrink: 0; margin-top: 1px; }

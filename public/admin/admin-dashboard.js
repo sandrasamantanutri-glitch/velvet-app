@@ -3406,9 +3406,10 @@ async function carregarModelos(page) {
 
 async function editarModelo(id) {
   try {
-    const [data, agencias] = await Promise.all([
+    const [data, agencias, dadosExtra] = await Promise.all([
       fetchJSON('/admin/dashboard/modelos/' + id),
-      fetchJSON('/admin/dashboard/agencias')
+      fetchJSON('/admin/dashboard/agencias'),
+      fetchJSON('/admin/dashboard/modelos-dados/' + id).catch(() => ({}))
     ]);
 
     openEditModal('Editar Modelo #' + id, '/admin/dashboard/modelos/' + id, 'PUT', [
@@ -3430,6 +3431,19 @@ async function editarModelo(id) {
             value: ag.id,
             label: ag.nome
           }))
+        ]
+      },
+
+      {
+        name: 'classificacao_conteudo',
+        label: 'Tipo de Conteúdo',
+        type: 'select',
+        value: dadosExtra.classificacao_conteudo || '',
+        options: [
+          { value: '', label: 'Não definido' },
+          { value: 'social', label: '🌍 Social' },
+          { value: 'premium', label: '🔥 Premium' },
+          { value: 'adulto', label: '🔞 18+' }
         ]
       },
 

@@ -5286,7 +5286,8 @@ app.get("/api/usuario/perfil", auth, async (req, res) => {
           m.local,
           m.bio,
           md.instagram,
-          md.tiktok
+          md.tiktok,
+          md.classificacao_conteudo
         FROM modelos m
         LEFT JOIN modelos_dados md
           ON md.modelo_id = m.id
@@ -8182,7 +8183,8 @@ app.put("/api/usuario/perfil", auth, async (req, res) => {
       instagram,
       tiktok,
       local,
-      bio
+      bio,
+      classificacao_conteudo
     } = req.body;
 
 
@@ -8276,14 +8278,16 @@ if (existeDados.rows.length > 0) {
     `
     UPDATE modelos_dados
     SET
-      instagram     = COALESCE($1, instagram),
-      tiktok        = COALESCE($2, tiktok),
-      atualizado_em = NOW()
-    WHERE modelo_id = $3
+      instagram              = COALESCE($1, instagram),
+      tiktok                 = COALESCE($2, tiktok),
+      classificacao_conteudo = COALESCE($3, classificacao_conteudo),
+      atualizado_em          = NOW()
+    WHERE modelo_id = $4
     `,
     [
       instagram ?? null,
       tiktok ?? null,
+      classificacao_conteudo ?? null,
       modeloId
     ]
   );
@@ -8292,13 +8296,14 @@ if (existeDados.rows.length > 0) {
 
   await db.query(
     `
-    INSERT INTO modelos_dados (modelo_id, instagram, tiktok)
-    VALUES ($1, $2, $3)
+    INSERT INTO modelos_dados (modelo_id, instagram, tiktok, classificacao_conteudo)
+    VALUES ($1, $2, $3, $4)
     `,
     [
       modeloId,
       instagram ?? null,
-      tiktok ?? null
+      tiktok ?? null,
+      classificacao_conteudo ?? null
     ]
   );
 }
