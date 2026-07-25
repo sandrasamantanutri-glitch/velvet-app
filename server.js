@@ -5744,65 +5744,126 @@ app.get("/api/modelo/me", authModelo, async (req, res) => {
 // ===========================
 
 async function fetchInstagramData(username) {
+  const axios = require("axios");
+  const handle = username.replace(/^@/, "").trim();
+  if (!handle) return null;
+
+  // Tentativa 1: endpoint web com app-id
   try {
-    const axios = require("axios");
     const res = await axios.get(
-      `https://www.instagram.com/api/v1/users/web_profile_info/?username=${encodeURIComponent(username)}`,
+      `https://www.instagram.com/api/v1/users/web_profile_info/?username=${encodeURIComponent(handle)}`,
       {
         headers: {
           "x-ig-app-id": "936619743392459",
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          "Accept": "*/*",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+          "Accept": "application/json",
           "Accept-Language": "pt-BR,pt;q=0.9",
           "Referer": "https://www.instagram.com/",
+          "Origin": "https://www.instagram.com",
+          "Sec-Fetch-Site": "same-origin",
         },
         timeout: 8000,
       }
     );
     const user = res.data?.data?.user;
-    if (!user) return null;
-    return {
-      foto: user.profile_pic_url_hd || user.profile_pic_url || null,
-      seguidores: user.edge_followed_by?.count || 0,
-    };
+    if (user) {
+      return {
+        foto: user.profile_pic_url_hd || user.profile_pic_url || null,
+        seguidores: user.edge_followed_by?.count || 0,
+      };
+    }
   } catch (e) {
-    console.warn("[SyncSocial] Instagram fetch falhou para", username, e?.response?.status || e.message);
-    return null;
+    console.warn("[SyncSocial] IG tentativa 1 falhou:", handle, e?.response?.status || e.message);
   }
+
+  // Tentativa 2: página pública com scraping do JSON embutido
+  try {
+    const res = await axios.get(`https://www.instagram.com/${encodeURIComponent(handle)}/`, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 11; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept-Language": "pt-BR,pt;q=0.9",
+      },
+      timeout: 10000,
+    });
+    const html = res.data;
+    // tenta capturar follower count do JSON embutido
+    const m = html.match(/"edge_followed_by":\{"count":(\d+)\}/);
+    if (m) {
+      const picM = html.match(/"profile_pic_url_hd":"([^"]+)"/);
+      return {
+        foto: picM ? picM[1].replace(/\\u0026/g, "&") : null,
+        seguidores: parseInt(m[1], 10),
+      };
+    }
+  } catch (e) {
+    console.warn("[SyncSocial] IG tentativa 2 falhou:", handle, e?.response?.status || e.message);
+  }
+
+  return null;
 }
 
 async function fetchTikTokData(username) {
+  const axios = require("axios");
+  const handle = username.replace(/^@/, "").trim();
+  if (!handle) return null;
+
+  const headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Accept-Language": "pt-BR,pt;q=0.9",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Referer": "https://www.tiktok.com/",
+  };
+
+  // Tentativa 1: API interna do TikTok Web
   try {
-    const axios = require("axios");
-    const handle = username.startsWith("@") ? username.slice(1) : username;
     const res = await axios.get(
-      `https://www.tiktok.com/@${encodeURIComponent(handle)}`,
-      {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          "Accept-Language": "pt-BR,pt;q=0.9",
-        },
-        timeout: 10000,
-      }
+      `https://www.tiktok.com/api/user/detail/?uniqueId=${encodeURIComponent(handle)}&aid=1988&app_name=tiktok_web&device_platform=web_pc`,
+      { headers, timeout: 10000 }
     );
-    const html = res.data;
-    // extrai __UNIVERSAL_DATA_FOR_REHYDRATION__
-    const match = html.match(/<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/);
-    if (!match) return null;
-    const json = JSON.parse(match[1]);
-    const userData =
-      json?.["__DEFAULT_SCOPE__"]?.["webapp.user-detail"]?.userInfo?.user;
-    const statsData =
-      json?.["__DEFAULT_SCOPE__"]?.["webapp.user-detail"]?.userInfo?.stats;
-    if (!userData) return null;
-    return {
-      foto: userData.avatarLarger || userData.avatarMedium || null,
-      seguidores: statsData?.followerCount || 0,
-    };
+    const user  = res.data?.userInfo?.user;
+    const stats = res.data?.userInfo?.stats;
+    if (user) {
+      return {
+        foto: user.avatarLarger || user.avatarMedium || null,
+        seguidores: stats?.followerCount || 0,
+      };
+    }
   } catch (e) {
-    console.warn("[SyncSocial] TikTok fetch falhou para", username, e?.response?.status || e.message);
-    return null;
+    console.warn("[SyncSocial] TT tentativa 1 falhou:", handle, e?.response?.status || e.message);
   }
+
+  // Tentativa 2: scrape HTML com __UNIVERSAL_DATA_FOR_REHYDRATION__
+  try {
+    const res = await axios.get(`https://www.tiktok.com/@${encodeURIComponent(handle)}`, {
+      headers, timeout: 12000,
+    });
+    const html = res.data;
+    const match = html.match(/<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/);
+    if (match) {
+      const json = JSON.parse(match[1]);
+      const userData  = json?.["__DEFAULT_SCOPE__"]?.["webapp.user-detail"]?.userInfo?.user;
+      const statsData = json?.["__DEFAULT_SCOPE__"]?.["webapp.user-detail"]?.userInfo?.stats;
+      if (userData) {
+        return {
+          foto: userData.avatarLarger || userData.avatarMedium || null,
+          seguidores: statsData?.followerCount || 0,
+        };
+      }
+    }
+    // Tentativa 3: regex direta no HTML
+    const segM = html.match(/"followerCount":(\d+)/);
+    const picM = html.match(/"avatarLarger":"([^"]+)"/);
+    if (segM) {
+      return {
+        foto: picM ? picM[1].replace(/\\u002F/g, "/").replace(/\\u0026/g, "&") : null,
+        seguidores: parseInt(segM[1], 10),
+      };
+    }
+  } catch (e) {
+    console.warn("[SyncSocial] TT tentativa 2/3 falhou:", handle, e?.response?.status || e.message);
+  }
+
+  return null;
 }
 
 async function syncSocialData(modeloId) {

@@ -110,10 +110,10 @@ function criarCard(modelo) {
   const seguidoresHtml = redeAtiva
     ? `<div class="card-social">
         <span class="card-social-icon">${redeIconSocial}</span>
-        <div class="card-social-info">
-          ${seguidoresStr ? `<div class="card-social-count">${seguidoresStr}</div>` : ""}
-          <div class="card-social-label">${seguidoresStr ? "Seguidores" : modelo.instagram || modelo.tiktok || ""}</div>
-        </div>
+        ${seguidoresStr ? `<div class="card-social-info">
+          <div class="card-social-count">${seguidoresStr}</div>
+          <div class="card-social-label">Seguidores</div>
+        </div>` : ""}
        </div>`
     : "";
 
