@@ -5910,9 +5910,13 @@ async function syncSocialData(modeloId) {
 const _socialPhotoCache = new Map(); // key → { buf, ct, ts }
 const _SOCIAL_PHOTO_TTL = 6 * 60 * 60 * 1000;
 
+// GET /api/social-photo?p=instagram|tiktok&h=handle&mid=modelo_id
+// Prioridade: 1) rede social ao vivo  2) BD (preenchido manualmente)  3) avatar Velvet
 app.get("/api/social-photo", async (req, res) => {
-  const platform = req.query.p;
-  const handle   = (req.query.h || "").replace(/^@/, "").trim();
+  const platform  = req.query.p;
+  const handle    = (req.query.h || "").replace(/^@/, "").trim();
+  const modeloId  = Number(req.query.mid) || null;
+
   if (!platform || !handle) return res.redirect("/assets/avatar.png");
 
   const key = `${platform}:${handle}`;
@@ -5923,39 +5927,60 @@ app.get("/api/social-photo", async (req, res) => {
     return res.send(hit.buf);
   }
 
-  try {
-    const axios = require("axios");
-    let photoUrl = null;
+  const axios = require("axios");
 
-    if (platform === "instagram") {
-      const d = await fetchInstagramData(handle);
-      photoUrl = d?.foto || null;
-      // fallback: unavatar.io conhece bem o Instagram
-      if (!photoUrl) photoUrl = `https://unavatar.io/instagram/${encodeURIComponent(handle)}`;
-    } else if (platform === "tiktok") {
-      const d = await fetchTikTokData(handle);
-      photoUrl = d?.foto || null;
-    }
-
-    if (!photoUrl) return res.redirect("/assets/avatar.png");
-
+  async function serveUrl(photoUrl) {
     const imgRes = await axios.get(photoUrl, {
       responseType: "arraybuffer",
       timeout: 8000,
       headers: { "User-Agent": "Mozilla/5.0" },
     });
-
     const buf = Buffer.from(imgRes.data);
     const ct  = imgRes.headers["content-type"] || "image/jpeg";
     _socialPhotoCache.set(key, { buf, ct, ts: Date.now() });
-
     res.set("Content-Type", ct);
     res.set("Cache-Control", "public, max-age=21600");
-    res.send(buf);
-  } catch (e) {
-    console.warn("[SocialPhoto] falhou:", key, e.message);
-    res.redirect("/assets/avatar.png");
+    return res.send(buf);
   }
+
+  // 1) Busca ao vivo na rede social
+  try {
+    let photoUrl = null;
+    if (platform === "instagram") {
+      const d = await fetchInstagramData(handle);
+      photoUrl = d?.foto || null;
+    } else if (platform === "tiktok") {
+      const d = await fetchTikTokData(handle);
+      photoUrl = d?.foto || null;
+    }
+    if (photoUrl) return await serveUrl(photoUrl);
+  } catch (e) {
+    console.warn("[SocialPhoto] rede social falhou:", key, e.message);
+  }
+
+  // 2) Fallback: foto salva no BD (preenchida manualmente)
+  if (modeloId) {
+    try {
+      const dbRow = await db.query(
+        `SELECT foto_instagram, foto_tiktok, avatar
+         FROM modelos m
+         JOIN modelos_dados md ON md.modelo_id = m.id AND md.ativo = true
+         WHERE m.id = $1 LIMIT 1`,
+        [modeloId]
+      );
+      const row = dbRow.rows[0];
+      if (row) {
+        const dbFoto = platform === "instagram" ? row.foto_instagram : row.foto_tiktok;
+        if (dbFoto) return await serveUrl(dbFoto);
+        // 3) Avatar da Velvet
+        if (row.avatar) return await serveUrl(row.avatar);
+      }
+    } catch (e) {
+      console.warn("[SocialPhoto] BD fallback falhou:", e.message);
+    }
+  }
+
+  res.redirect("/assets/avatar.png");
 });
 
 // Endpoint admin: POST /api/admin/sync-social  (body: { modelo_id } ou sem body → todos)

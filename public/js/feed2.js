@@ -84,20 +84,14 @@ function criarCard(modelo) {
     redeAtiva = "tiktok";
   }
 
-  // Foto de perfil da rede social:
-  // 1º prioridade: URL salva no BD (preenchida manualmente ou pelo sync)
-  // 2º fallback: proxy do servidor (busca em tempo real)
-  // 3º último recurso: avatar da Velvet
+  // Proxy cuida de tudo: 1) rede social ao vivo  2) BD  3) avatar Velvet
   let avatarSocial = modelo.avatar || "/assets/avatar.png";
-  if (redeAtiva === "instagram") {
-    avatarSocial = modelo.foto_instagram
-      || (modelo.instagram ? `/api/social-photo?p=instagram&h=${encodeURIComponent(modelo.instagram)}` : null)
-      || modelo.avatar || "/assets/avatar.png";
-  } else if (redeAtiva === "tiktok") {
+  const mid = modelo.modelo_id || "";
+  if (redeAtiva === "instagram" && modelo.instagram) {
+    avatarSocial = `/api/social-photo?p=instagram&h=${encodeURIComponent(modelo.instagram)}&mid=${mid}`;
+  } else if (redeAtiva === "tiktok" && modelo.tiktok) {
     const ttHandle = (modelo.tiktok || "").replace(/^@/, "");
-    avatarSocial = modelo.foto_tiktok
-      || (ttHandle ? `/api/social-photo?p=tiktok&h=${encodeURIComponent(ttHandle)}` : null)
-      || modelo.avatar || "/assets/avatar.png";
+    avatarSocial = `/api/social-photo?p=tiktok&h=${encodeURIComponent(ttHandle)}&mid=${mid}`;
   }
 
   // Seguidores da rede ativa
@@ -150,7 +144,7 @@ function criarCard(modelo) {
       </div>
       <div class="card-right">
         <div class="card-avatar-wrap">
-          <img class="card-avatar" src="${avatarSocial}" alt="${modelo.nome_exibicao || ""}" onerror="this.src='${modelo.avatar || '/assets/avatar.png'}'">
+          <img class="card-avatar" src="${avatarSocial}" alt="${modelo.nome_exibicao || ""}">
           ${avatarRedeHtml}
         </div>
         <div class="card-classif">${cl.emoji} ${cl.label}</div>
