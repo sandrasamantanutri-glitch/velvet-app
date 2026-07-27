@@ -176,9 +176,20 @@
       const r = await fetch("/api/suporte/admin/conversas", {
         headers: { Authorization: `Bearer ${token}` }
       });
-      todasConversas = await r.json();
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}));
+        document.getElementById("conversas-lista").innerHTML =
+          `<div style="padding:20px;color:#d32f2f;font-size:13px;text-align:center">Erro ao carregar (${r.status}): ${err.error || r.statusText}</div>`;
+        return;
+      }
+      const data = await r.json();
+      todasConversas = Array.isArray(data) ? data : [];
       renderLista();
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+      document.getElementById("conversas-lista").innerHTML =
+        `<div style="padding:20px;color:#d32f2f;font-size:13px;text-align:center">Erro de conexão</div>`;
+    }
   }
 
   function renderLista() {
@@ -369,6 +380,9 @@
       socket.on("suporte:nova_mensagem", ({ conversa_id, mensagem }) => {
         carregarLista();
         if (conversaAtiva === conversa_id) adicionarMsg(mensagem);
+      });
+      socket.on("suporte:nova_conversa", () => {
+        carregarLista();
       });
     }
     carregarLista();

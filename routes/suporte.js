@@ -108,6 +108,11 @@ router.post("/conversa", async (req, res) => {
       mensagem: `${nome || email || "Visitante"} abriu um novo chat de suporte.`
     });
 
+    const io = req.app.get("io");
+    if (io) {
+      io.to("suporte_admin").emit("suporte:nova_conversa", { conversa_id: rows[0].id });
+    }
+
     res.json({ conversa_id: rows[0].id, status: "aberta" });
   } catch (err) {
     console.error("Erro ao criar conversa de suporte:", err);
