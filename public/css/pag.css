@@ -1304,7 +1304,6 @@ body {
 .vip-confirm-cat-box { margin-bottom: 20px; }
 
 .vip-confirm-cat-card {
-  display: flex;
   align-items: flex-start;
   gap: 12px;
   background: #f7f3ff;

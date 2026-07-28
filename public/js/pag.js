@@ -972,8 +972,13 @@ function atualizarBotaoBuscarCep() {
   const isBR = selPais?.value === "BR";
   btn.style.display = isBR ? "" : "none";
   if (cepInput) {
-    cepInput.placeholder = isBR ? "00000-000" : (typeof t === "function" ? t("pagamento.codigo_postal_label") : "Postal Code");
-    cepInput.maxLength   = isBR ? 9 : 20;
+    cepInput.maxLength = isBR ? 9 : 20;
+    if (isBR) {
+      cepInput.placeholder = "00000-000";
+    } else {
+      (typeof whenI18nReady === "function" ? whenI18nReady() : Promise.resolve())
+        .then(() => { cepInput.placeholder = t("pagamento.codigo_postal_label"); });
+    }
   }
 }
 
@@ -1724,7 +1729,7 @@ function renderCategoriaVIP(categoria) {
     }
   };
   const cat = defs[categoria] || defs.social;
-  return `<div class="vip-confirm-cat-card"><span class="vip-confirm-cat-icon">${cat.icon}</span><div><strong>${cat.nome}</strong><p>${cat.desc}</p></div></div>`;
+  return `<div class="vip-confirm-cat-card"><div><strong>${cat.nome}</strong><p>${cat.desc}</p></div></div>`;
 }
 
 function abrirConfirmacaoVIP(metodo) {
