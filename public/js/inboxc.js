@@ -4,14 +4,14 @@
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
 
-function logout() {
+function redirecionarLogin() {
   localStorage.removeItem("token");
   localStorage.removeItem("role");
   window.location.href = "/me.html";
 }
 
 if (!token || role !== "cliente") {
-  logout();
+  redirecionarLogin();
 }
 
 const LIMITE_INICIAL = 30;
@@ -104,7 +104,7 @@ async function initClienteInbox() {
     headers: { Authorization: "Bearer " + token }
   });
 
-  if (!res.ok) return logout();
+  if (!res.ok) return redirecionarLogin();
 
   const me = await res.json();
   clienteId = me.id;
