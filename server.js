@@ -3881,9 +3881,9 @@ async function criarPixIpag({ valorTotal, nome, email, cpf, telefone, endereco, 
       phone: telefone,
       billing_address: {
         street:     endereco.rua,
-        number:     endereco.numero,
-        complement: endereco.complemento || "",
-        district:   endereco.bairro,
+        number:     endereco.numero     || endereco.endereco2 || "s/n",
+        complement: endereco.endereco2  || "",
+        district:   endereco.bairro     || "",
         city:       endereco.cidade,
         state:      endereco.estado,
         zipcode:    endereco.cep,
@@ -3894,19 +3894,20 @@ async function criarPixIpag({ valorTotal, nome, email, cpf, telefone, endereco, 
 }
 
 async function salvarEnderecoClientePix(dbClient, { cliente_id, telefone, endereco }) {
-  const enderecoStr = [endereco.rua, endereco.numero, endereco.complemento, endereco.bairro]
+  const enderecoStr = [endereco.rua, endereco.endereco2]
     .filter(Boolean).join(", ");
+  const paisStr = endereco.pais || "BR";
   await dbClient.query(`
     INSERT INTO clientes_dados (cliente_id, telefone, endereco, cidade, estado, pais, atualizado_em)
-    VALUES ($1, $2, $3, $4, $5, 'Brasil', NOW())
+    VALUES ($1, $2, $3, $4, $5, $6, NOW())
     ON CONFLICT (cliente_id) DO UPDATE SET
       telefone   = COALESCE(EXCLUDED.telefone, clientes_dados.telefone),
       endereco   = EXCLUDED.endereco,
       cidade     = EXCLUDED.cidade,
       estado     = EXCLUDED.estado,
-      pais       = 'Brasil',
+      pais       = EXCLUDED.pais,
       atualizado_em = NOW()
-  `, [cliente_id, telefone || null, enderecoStr, endereco.cidade, endereco.estado]);
+  `, [cliente_id, telefone || null, enderecoStr, endereco.cidade, endereco.estado, paisStr]);
 }
 
 async function buscarDadosEmailPagamento(dbPool, { cliente_id, modelo_id }) {
