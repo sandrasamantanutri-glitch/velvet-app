@@ -455,10 +455,10 @@ async function renderFormCartao() {
       el.textContent = "Calculando…";
       try {
         if (!_fxCache[moeda]) {
-          const r = await fetch(`https://api.frankfurter.app/latest?from=BRL&to=${moeda}`);
+          const r = await fetch(`/api/cambio?para=${moeda}`);
           if (!r.ok) throw new Error("HTTP " + r.status);
           const d = await r.json();
-          _fxCache[moeda] = d.rates?.[moeda] ?? null;
+          _fxCache[moeda] = d.taxa ?? null;
         }
         const taxa = _fxCache[moeda];
         if (!taxa) { el.textContent = "Taxa não disponível"; return; }

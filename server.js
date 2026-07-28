@@ -13425,6 +13425,21 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
 // O webhook /api/webhook/stripe processa payment_intent.succeeded.
 // ============================================================
 
+// ── Taxa de câmbio (proxy Frankfurter p/ evitar CSP no cliente) ──────────────
+app.get("/api/cambio", async (req, res) => {
+  const para = String(req.query.para || "").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3);
+  if (para.length !== 3) return res.status(400).json({ error: "Moeda inválida" });
+  try {
+    const r = await fetch(`https://api.frankfurter.app/latest?from=BRL&to=${para}`);
+    const d = await r.json();
+    const taxa = d.rates?.[para];
+    if (!taxa) return res.status(404).json({ error: "Taxa não disponível" });
+    return res.json({ de: "BRL", para, taxa });
+  } catch {
+    return res.status(502).json({ error: "Serviço de câmbio indisponível" });
+  }
+});
+
 // Converte valor para centavos respeitando moedas zero-decimal
 function stripeAmountFromValue(valor, currency) {
   const zeroDecimal = ["bif","clp","gnf","jpy","kmf","krw","mga","pyg","rwf","ugx","vnd","xaf","xof"];
