@@ -906,16 +906,22 @@
 
     if (op.action === "redirect") {
       mostrarTyping(() => {
-        adicionarMsgBot("Redirecionando… 👉");
-        setTimeout(() => { window.location.href = op.url; }, 800);
+        window.open(op.url, "_blank", "noopener");
+        adicionarMsgBot("Abrindo em nova aba! 🔗\n\nPosso ajudar com mais alguma coisa?");
+        mostrarOpcoes([
+          { label: "🏠 Voltar ao Início", next: "inicio" },
+        ]);
       }, 500);
       return;
     }
 
     if (op.action === "contato") {
       mostrarTyping(() => {
-        adicionarMsgBot("Vou te encaminhar para o nosso formulário de contato! Nossa equipe responde em até 48h. 💜");
-        setTimeout(() => { window.location.href = "/contato.html"; }, 1200);
+        window.open("/contato.html", "_blank", "noopener");
+        adicionarMsgBot("Formulário de contato aberto em nova aba! 💜\n\nNossa equipe responde em até 48h.\n\nPosso ajudar com mais alguma coisa?");
+        mostrarOpcoes([
+          { label: "🏠 Voltar ao Início", next: "inicio" },
+        ]);
       }, 500);
       return;
     }
