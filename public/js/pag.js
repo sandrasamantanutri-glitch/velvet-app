@@ -1755,6 +1755,8 @@ function fecharConfirmacaoVIP() {
 }
 
 function confirmarVIPEContinuar() {
+  const checkbox = document.getElementById("aceiteTermosPagamento");
+  if (checkbox) checkbox.checked = true;
   const metodo = _metodoVIPPendente;
   _metodoVIPPendente = null;
   document.getElementById("popupConfirmacaoVIP")?.classList.add("hidden");
