@@ -281,6 +281,7 @@ body {
   padding: 16px;
   border-radius: 16px;
   overflow-y: auto;
+  margin-top: 20px;
   -webkit-overflow-scrolling: touch;
 }
 

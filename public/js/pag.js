@@ -376,8 +376,95 @@ async function renderFormCartao() {
       layout: { type: "tabs", defaultCollapsed: false }
     });
 
+    // Resumo de valor + conversor de moeda
+    const valorBrlDisplay = data.valor_brl || 0;
+    const wrapper = document.createElement("div");
+    wrapper.id = "stripe-resumo-wrapper";
+    wrapper.innerHTML = `
+      <div id="stripe-resumo-preco" style="
+        background:#f8f5ff;border:1.5px solid #e9d5ff;border-radius:12px;
+        padding:12px 16px;margin-bottom:14px;font-size:0.93rem;
+      ">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <span style="color:#6b7280;font-weight:600;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.05em;">Total cobrado</span>
+          <strong id="stripe-valor-principal" style="color:#8b5cf6;font-size:1.1rem;">
+            R$ ${valorBrlDisplay.toFixed(2).replace(".", ",")}
+          </strong>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;">
+          <label style="font-size:0.78rem;color:#6b7280;white-space:nowrap;">Ver no meu país:</label>
+          <select id="stripe-select-pais" style="
+            flex:1;min-width:160px;border:1.5px solid #e5e7eb;border-radius:8px;
+            padding:5px 10px;font-size:0.85rem;color:#1e1e26;background:#fff;
+            cursor:pointer;outline:none;
+          ">
+            <option value="">— seleciona —</option>
+            <option value="PT|EUR">🇵🇹 Portugal (EUR)</option>
+            <option value="BR|BRL">🇧🇷 Brasil (BRL)</option>
+            <option value="US|USD">🇺🇸 EUA (USD)</option>
+            <option value="GB|GBP">🇬🇧 Reino Unido (GBP)</option>
+            <option value="CO|COP">🇨🇴 Colômbia (COP)</option>
+            <option value="VE|USD">🇻🇪 Venezuela (USD)</option>
+            <option value="MX|MXN">🇲🇽 México (MXN)</option>
+            <option value="AR|ARS">🇦🇷 Argentina (ARS)</option>
+            <option value="CL|CLP">🇨🇱 Chile (CLP)</option>
+            <option value="PE|PEN">🇵🇪 Peru (PEN)</option>
+            <option value="UY|UYU">🇺🇾 Uruguai (UYU)</option>
+            <option value="DE|EUR">🇩🇪 Alemanha (EUR)</option>
+            <option value="FR|EUR">🇫🇷 França (EUR)</option>
+            <option value="NL|EUR">🇳🇱 Holanda (EUR)</option>
+            <option value="ES|EUR">🇪🇸 Espanha (EUR)</option>
+            <option value="IT|EUR">🇮🇹 Itália (EUR)</option>
+            <option value="CH|CHF">🇨🇭 Suíça (CHF)</option>
+            <option value="SE|SEK">🇸🇪 Suécia (SEK)</option>
+            <option value="NO|NOK">🇳🇴 Noruega (NOK)</option>
+            <option value="DK|DKK">🇩🇰 Dinamarca (DKK)</option>
+            <option value="AU|AUD">🇦🇺 Austrália (AUD)</option>
+            <option value="CA|CAD">🇨🇦 Canadá (CAD)</option>
+            <option value="JP|JPY">🇯🇵 Japão (JPY)</option>
+            <option value="AE|AED">🇦🇪 Emirados (AED)</option>
+            <option value="SG|SGD">🇸🇬 Singapura (SGD)</option>
+          </select>
+        </div>
+        <div id="stripe-preco-convertido" style="margin-top:8px;font-size:0.85rem;color:#6b7280;min-height:20px;"></div>
+      </div>
+    `;
+
     container.innerHTML = "";
-    stripePaymentElement.mount(container);
+    container.appendChild(wrapper);
+
+    const mountDiv = document.createElement("div");
+    mountDiv.id = "stripe-payment-element-mount";
+    container.appendChild(mountDiv);
+    stripePaymentElement.mount(mountDiv);
+
+    // Conversor de moeda em tempo real
+    const _fxCache = {};
+    document.getElementById("stripe-select-pais")?.addEventListener("change", async (e) => {
+      const [, moeda] = (e.target.value || "").split("|");
+      const el = document.getElementById("stripe-preco-convertido");
+      if (!el) return;
+
+      if (!moeda || moeda === "BRL") {
+        el.textContent = "";
+        return;
+      }
+
+      el.textContent = "Calculando…";
+      try {
+        if (!_fxCache[moeda]) {
+          const r = await fetch(`https://api.frankfurter.app/latest?from=BRL&to=${moeda}`);
+          const d = await r.json();
+          _fxCache[moeda] = d.rates?.[moeda] || null;
+        }
+        const taxa = _fxCache[moeda];
+        if (!taxa) { el.textContent = ""; return; }
+        const convertido = (valorBrlDisplay * taxa).toFixed(2);
+        el.innerHTML = `≈ <strong>${moeda} ${Number(convertido).toLocaleString("en", { minimumFractionDigits: 2 })}</strong> <span style="opacity:0.5;font-size:0.78rem;">(taxa indicativa)</span>`;
+      } catch {
+        el.textContent = "";
+      }
+    });
 
   } catch (err) {
     console.error("Erro ao montar Payment Element:", err);
