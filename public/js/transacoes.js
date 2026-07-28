@@ -951,7 +951,11 @@ function injectCSS() {
 // INIT
 // ================================================
 document.addEventListener("DOMContentLoaded", async () => {
-  await whenI18nReady();
+  const i18nTimeout = new Promise(resolve => setTimeout(resolve, 3000));
+  await Promise.race([
+    typeof whenI18nReady === "function" ? whenI18nReady() : Promise.resolve(),
+    i18nTimeout
+  ]);
 
   if (!getToken()) { window.location.href = "/index.html"; return; }
 

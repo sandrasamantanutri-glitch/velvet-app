@@ -1,10 +1,18 @@
 (function () {
   const API = "";
-  const STORAGE_KEY = "vw_suporte_sessao";
+  const SESSION_KEY = "vw_suporte_sessao";
+  const STATE_KEY   = "vw_chat_ui";
 
-  let sessaoId = localStorage.getItem(STORAGE_KEY) || null;
-  let aberto = false;
+  let sessaoId = localStorage.getItem(SESSION_KEY) || null;
+  let aberto   = false;
   let etapaAtual = "inicio";
+
+  // ─── Restaurar estado salvo ──────────────────────────────────────────────────
+  let estadoSalvo = null;
+  try {
+    const raw = localStorage.getItem(STATE_KEY);
+    if (raw) estadoSalvo = JSON.parse(raw);
+  } catch (_) {}
 
   // ─── Árvore de conteúdo ─────────────────────────────────────────────────────
   const ARVORE = {
@@ -30,7 +38,7 @@
       ]
     },
 
-    // ── 1. VELVET ──────────────────────────────────────────────────────────────
+    // 1. VELVET
     c1_velvet: {
       bot: "Sobre a Velvet, o que deseja saber?",
       opcoes: [
@@ -54,7 +62,7 @@
       ]
     },
 
-    // ── 2. PERFIL / CONTA ──────────────────────────────────────────────────────
+    // 2. PERFIL / CONTA
     c2_perfil: {
       bot: "Sobre o seu perfil/conta, o que deseja saber?",
       opcoes: [
@@ -69,7 +77,7 @@
       ]
     },
     c2_1: {
-      bot: "Para validar sua conta basta preencher passo a passo todas as informações na página de dados pessoais e enviar para análise.\n\nVou te redirecionar para lá agora! 👇",
+      bot: "Para validar sua conta basta preencher passo a passo todas as informações na página de dados pessoais e enviar para análise.\n\nVou te direcionar para lá agora! 👇",
       opcoes: [
         { label: "📋 Ir para Dados Pessoais", action: "redirect", url: "/conta.html" },
         { label: "← Voltar",                  next: "c2_perfil" },
@@ -118,7 +126,7 @@
       ]
     },
 
-    // ── 3. AGENCIAMENTO ────────────────────────────────────────────────────────
+    // 3. AGENCIAMENTO
     c3_agencia: {
       bot: "Sobre agenciamento, o que deseja saber?",
       opcoes: [
@@ -135,14 +143,14 @@
       ]
     },
     c3_2: {
-      bot: "Para entrar para uma agência, selecione a opção OUTRO no formulário de contato, informe que deseja ser agenciada, informe seu WhatsApp e/ou email.\n\nIremos solicitar que a contactem e você terá liberdade de escolha sobre qual se identifica melhor! 💜",
+      bot: "Para entrar para uma agência, selecione a opção OUTRO no formulário de contato, informe que deseja ser agenciada e informe seu WhatsApp e/ou email.\n\nIremos solicitar que a contactem e você terá liberdade de escolha! 💜",
       opcoes: [
         { label: "📬 Ir para Contato", action: "redirect", url: "/contato.html" },
         { label: "← Voltar",           next: "c3_agencia" },
       ]
     },
 
-    // ── 4. PAGAMENTOS ──────────────────────────────────────────────────────────
+    // 4. PAGAMENTOS
     c4_pagamentos: {
       bot: "Sobre pagamentos e ganhos, o que deseja saber?",
       opcoes: [
@@ -177,7 +185,7 @@
       ]
     },
     c4_4: {
-      bot: "São valores pagos pelo cliente via cartão de crédito. Dependemos da operadora avaliar o pagamento, descartar fraude e liberar o valor — o que pode levar de 3 a 30 dias.\n\nNão se preocupe! A própria plataforma trata de atualizar os ganhos pendentes para liberados automaticamente. ✅",
+      bot: "São valores pagos pelo cliente via cartão de crédito. Dependemos da operadora avaliar o pagamento, descartar fraude e liberar o valor — o que pode levar de 3 a 30 dias.\n\nNão se preocupe! A própria plataforma atualiza os ganhos pendentes para liberados automaticamente. ✅",
       opcoes: [
         { label: "← Voltar",        next: "c4_pagamentos" },
         { label: "🏠 Menu Criadora", next: "criadora"      },
@@ -198,7 +206,7 @@
       ]
     },
 
-    // ── 5. MÍDIAS ──────────────────────────────────────────────────────────────
+    // 5. MÍDIAS
     c5_midias: {
       bot: "Sobre mídias e conteúdos, o que deseja saber?",
       opcoes: [
@@ -277,38 +285,38 @@
       ]
     },
 
-    // ── CLIENTE 1: PLATAFORMA ─────────────────────────────────────────────────
+    // CL1: PLATAFORMA
     cl1_plataforma: {
       bot: "Sobre a plataforma e app, o que deseja saber?",
       opcoes: [
-        { label: "1.1 O que é e como funciona a Velvet?",       next: "cl1_1" },
-        { label: "1.2 Que tipo de conteúdo posso encontrar?",   next: "cl1_2" },
-        { label: "← Voltar",                                     next: "cliente" },
+        { label: "1.1 O que é e como funciona a Velvet?",     next: "cl1_1" },
+        { label: "1.2 Que tipo de conteúdo posso encontrar?", next: "cl1_2" },
+        { label: "← Voltar",                                   next: "cliente" },
       ]
     },
     cl1_1: {
-      bot: "A Velvet foi criada para proporcionar aos fãs uma forma simples, segura e próxima de apoiar e acompanhar os seus criadores favoritos.\n\nNossa missão é aproximar criadores e comunidade, oferecendo um espaço onde pode descobrir conteúdo, interagir diretamente com seus criadores favoritos e apoiar o trabalho deles de forma transparente.\n\nAcreditamos que a melhor experiência acontece quando existe uma ligação autêntica entre fãs e criadores. Por isso, desenvolvemos uma plataforma que privilegia a segurança, a privacidade e uma experiência intuitiva.",
+      bot: "A Velvet foi criada para proporcionar aos fãs uma forma simples, segura e próxima de apoiar e acompanhar os seus criadores favoritos.\n\nNossa missão é aproximar criadores e comunidade, oferecendo um espaço onde pode descobrir conteúdo, interagir diretamente com seus criadores favoritos e apoiar o trabalho deles de forma transparente.\n\nAcreditamos que a melhor experiência acontece quando existe uma ligação autêntica entre fãs e criadores.",
       opcoes: [
         { label: "← Voltar",       next: "cl1_plataforma" },
         { label: "🏠 Menu Cliente", next: "cliente"        },
       ]
     },
     cl1_2: {
-      bot: "Pode encontrar conteúdo de lifestyle, bastidores, dicas, entretenimento, privados e muito mais.\n\nAntes de assinar qualquer perfil, pode consultar a categoria ao passar o mouse sobre o perfil no feed:\n\n🌍 Social — Fotos, vídeos, viagens, lifestyle, gaming, fitness, moda e muito mais.\n\n🔥 Premium — Conteúdo mais exclusivo e sensual (biquíni, lingerie, cosplay) sem nudez explícita.\n\n🔒 Privado — Conteúdo adulto, disponível mediante validação de identidade.",
+      bot: "Pode encontrar conteúdo de lifestyle, bastidores, dicas, entretenimento, privados e muito mais.\n\nAntes de assinar, consulte a categoria ao passar o mouse sobre o perfil no feed:\n\n🌍 Social — Fotos, vídeos, viagens, lifestyle, gaming, fitness, moda e muito mais.\n\n🔥 Premium — Conteúdo sensual (biquíni, lingerie, cosplay) sem nudez explícita.\n\n🔒 Privado — Conteúdo adulto, disponível mediante validação de identidade.",
       opcoes: [
         { label: "← Voltar",       next: "cl1_plataforma" },
         { label: "🏠 Menu Cliente", next: "cliente"        },
       ]
     },
 
-    // ── CLIENTE 2: MINHA CONTA ────────────────────────────────────────────────
+    // CL2: MINHA CONTA
     cl2_conta: {
       bot: "Sobre sua conta, o que deseja fazer?",
       opcoes: [
-        { label: "2.1 Quero excluir minha conta",       next: "cl2_1" },
+        { label: "2.1 Quero excluir minha conta",          next: "cl2_1" },
         { label: "2.2 Quero alterar dados da minha conta", next: "cl2_2" },
-        { label: "2.3 Posso colocar foto no perfil?",   next: "cl2_3" },
-        { label: "← Voltar",                             next: "cliente" },
+        { label: "2.3 Posso colocar foto no perfil?",      next: "cl2_3" },
+        { label: "← Voltar",                                next: "cliente" },
       ]
     },
     cl2_1: {
@@ -319,7 +327,7 @@
       ]
     },
     cl2_2: {
-      bot: "Por motivos de segurança os dados não podem ser alterados.\n\nCaso alguma informação esteja realmente incorreta, envie um documento que comprove e iremos fazer a correção.\n\nSelecione a opção SUPORTE no formulário de contato.",
+      bot: "Por motivos de segurança os dados não podem ser alterados.\n\nCaso alguma informação esteja incorreta, envie um documento que comprove e iremos fazer a correção.\n\nSelecione a opção SUPORTE no formulário de contato.",
       opcoes: [
         { label: "📬 Ir para Contato", action: "redirect", url: "/contato.html" },
         { label: "← Voltar",           next: "cl2_conta" },
@@ -333,20 +341,20 @@
       ]
     },
 
-    // ── CLIENTE 3: ASSINATURAS VIP ────────────────────────────────────────────
+    // CL3: ASSINATURAS VIP
     cl3_vip: {
       bot: "Sobre assinaturas VIP, o que deseja saber?",
       opcoes: [
-        { label: "3.1 Como funciona a assinatura VIP?",      next: "cl3_1" },
-        { label: "3.2 Quero assinar um perfil",              next: "cl3_2" },
-        { label: "3.3 Quero renovar uma assinatura",         next: "cl3_3" },
-        { label: "3.4 Quero cancelar uma assinatura",        next: "cl3_4" },
-        { label: "3.5 Assinei VIP da criadora errada",       next: "cl3_5" },
-        { label: "3.6 Problemas com o pagamento VIP",        next: "cl3_6" },
-        { label: "3.7 Assinei VIP mas não liberou",          next: "cl3_7" },
-        { label: "3.8 Renovei VIP mas continuo sem acesso",  next: "cl3_8" },
+        { label: "3.1 Como funciona a assinatura VIP?",         next: "cl3_1" },
+        { label: "3.2 Quero assinar um perfil",                 next: "cl3_2" },
+        { label: "3.3 Quero renovar uma assinatura",            next: "cl3_3" },
+        { label: "3.4 Quero cancelar uma assinatura",           next: "cl3_4" },
+        { label: "3.5 Assinei VIP da criadora errada",          next: "cl3_5" },
+        { label: "3.6 Problemas com o pagamento VIP",           next: "cl3_6" },
+        { label: "3.7 Assinei VIP mas não liberou",             next: "cl3_7" },
+        { label: "3.8 Renovei VIP mas continuo sem acesso",     next: "cl3_8" },
         { label: "3.9 Quero pagar com PIX minha 1ª assinatura", next: "cl3_9" },
-        { label: "← Voltar",                                 next: "cliente" },
+        { label: "← Voltar",                                    next: "cliente" },
       ]
     },
     cl3_1: {
@@ -413,7 +421,7 @@
       ]
     },
 
-    // ── CLIENTE 4: CONTEÚDOS/MÍDIAS ──────────────────────────────────────────
+    // CL4: CONTEÚDOS/MÍDIAS
     cl4_midias: {
       bot: "Sobre conteúdos e mídias, o que deseja resolver?",
       opcoes: [
@@ -426,7 +434,6 @@
         { label: "← Voltar",                                  next: "cliente"       },
       ]
     },
-
     cl4_1_intro: {
       bot: "Antes de prosseguir, vamos alinhar o que significa propaganda enganosa/golpe:\n\n📌 Propaganda enganosa — Anunciam algo que não corresponde ao que é entregue.\nExemplos: prometeu conteúdo explícito e entregou outro; disse que o vídeo tem 30min e tem 5; anunciou \"10 fotos\" e entregou 3.\n\n📌 Golpe (fraude) — Intenção de enganar para obter dinheiro.\nExemplos: recebeu pagamento e entregou nada; fingiu ser outra pessoa; criou oferta sabendo que nunca cumpriria.\n\n⚠️ O que NÃO é propaganda enganosa:\n• Achar que o conteúdo seria diferente, sem que ninguém prometeu isso\n• Não gostar do conteúdo recebido\n• Arrependimento da compra\n\nAinda assim, acredita que foi vítima de propaganda enganosa ou golpe?",
       opcoes: [
@@ -441,9 +448,8 @@
         { label: "← Voltar",              next: "cl4_midias" },
       ]
     },
-
     cl4_2_intro: {
-      bot: "Antes de prosseguir, entenda o Direito de Arrependimento em plataformas digitais:\n\nCompras pela internet podem ter direito ao arrependimento em até 7 dias. Porém, na Velvet o acesso ao conteúdo digital é liberado imediatamente após a confirmação do pagamento.\n\nAo concluir a compra, você aceitou os Termos de Uso e autorizou o acesso imediato. Por isso, após o conteúdo ser disponibilizado, não é possível solicitar reembolso por arrependimento ou porque o conteúdo não correspondeu às expectativas.\n\nFicam registados:\n• Data e hora da aceitação\n• Endereço IP\n• Aceite dos Termos de Uso\n\nMesmo assim, deseja continuar com o pedido de reembolso por arrependimento?",
+      bot: "Antes de prosseguir, entenda o Direito de Arrependimento em plataformas digitais:\n\nCompras pela internet podem ter direito ao arrependimento em até 7 dias. Porém, na Velvet o acesso ao conteúdo digital é liberado imediatamente após a confirmação do pagamento.\n\nAo concluir a compra, você aceitou os Termos de Uso e autorizou o acesso imediato. Por isso, após o conteúdo ser disponibilizado, não é possível solicitar reembolso por arrependimento.\n\nFicam registados:\n• Data e hora da aceitação\n• Endereço IP\n• Aceite dos Termos de Uso\n\nMesmo assim, deseja continuar com o pedido de reembolso por arrependimento?",
       opcoes: [
         { label: "✅ Sim, quero continuar", next: "cl4_2_sim" },
         { label: "❌ Não, entendi",          next: "inicio"    },
@@ -456,7 +462,6 @@
         { label: "← Voltar",              next: "cl4_midias" },
       ]
     },
-
     cl4_3: {
       bot: "Para resolver isso, selecione a opção SUPORTE e informe que mesmo após o pagamento a mídia do chat continua bloqueada.\n\n⚠️ São obrigatórios:\n• Print do comprovante de pagamento\n• Print da mídia bloqueada",
       opcoes: [
@@ -486,13 +491,13 @@
       ]
     },
 
-    // ── CLIENTE 5: DENÚNCIAS ─────────────────────────────────────────────────
+    // CL5: DENÚNCIAS
     cl5_denuncias: {
       bot: "Sobre denúncias, o que deseja fazer?",
       opcoes: [
-        { label: "5.1 Quero denunciar um Perfil",   next: "cl5_1" },
-        { label: "5.2 Quero fazer outra denúncia",  next: "cl5_2" },
-        { label: "← Voltar",                         next: "cliente" },
+        { label: "5.1 Quero denunciar um Perfil",  next: "cl5_1" },
+        { label: "5.2 Quero fazer outra denúncia", next: "cl5_2" },
+        { label: "← Voltar",                        next: "cliente" },
       ]
     },
     cl5_1: {
@@ -503,14 +508,14 @@
       ]
     },
     cl5_2: {
-      bot: "Para fazer outra denúncia, selecione a opção OUTRO no formulário, informe o motivo detalhadamente.\n\n⚠️ O envio do printscreen referente ao motivo da denúncia é obrigatório para análise.",
+      bot: "Para fazer outra denúncia, selecione a opção OUTRO no formulário e informe o motivo detalhadamente.\n\n⚠️ O envio do printscreen referente ao motivo da denúncia é obrigatório para análise.",
       opcoes: [
         { label: "📬 Ir para Contato", action: "redirect", url: "/contato.html" },
         { label: "← Voltar",           next: "cl5_denuncias" },
       ]
     },
 
-    // ── CLIENTE 6: TIPOS DE PAGAMENTO ─────────────────────────────────────────
+    // CL6: TIPOS DE PAGAMENTO
     cl6_pagamentos: {
       bot: "Sobre tipos de pagamento, o que deseja saber?",
       opcoes: [
@@ -553,12 +558,8 @@
       box-shadow: 0 10px 40px rgba(0,0,0,.18);
       display: none; flex-direction: column;
       overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      transition: opacity .2s, transform .2s;
-      transform: translateY(8px); opacity: 0;
     }
-    #vw-sp-box.aberto { display: flex; transform: translateY(0); opacity: 1; }
-
-    /* Header */
+    #vw-sp-box.aberto { display: flex; }
     #vw-sp-header {
       background: linear-gradient(135deg, #7b2cff 0%, #5a1ebb 100%);
       padding: 14px 16px;
@@ -568,9 +569,8 @@
     #vw-sp-header-left { display: flex; align-items: center; gap: 10px; }
     #vw-sp-avatar {
       width: 36px; height: 36px; border-radius: 50%;
-      background: rgba(255,255,255,.2);
       display: flex; align-items: center; justify-content: center;
-      font-size: 18px; flex-shrink: 0;
+      font-size: 20px; flex-shrink: 0;
     }
     #vw-sp-header-info { display: flex; flex-direction: column; }
     #vw-sp-header-title { color: #fff; font-weight: 700; font-size: 14px; line-height: 1.2; }
@@ -582,15 +582,11 @@
       transition: background .2s; flex-shrink: 0;
     }
     #vw-sp-fechar:hover { background: rgba(255,255,255,.25); }
-
-    /* Form de email (antes de iniciar) */
     #vw-sp-form-email {
       padding: 20px 16px; display: flex; flex-direction: column; gap: 10px;
       background: #fff;
     }
-    #vw-sp-form-email p {
-      font-size: 13px; color: #555; line-height: 1.5; margin: 0;
-    }
+    #vw-sp-form-email p { font-size: 13px; color: #555; line-height: 1.5; margin: 0; }
     #vw-sp-form-email input {
       background: #f6f6f9; border: 1.5px solid #e0e0e0; border-radius: 10px;
       color: #222; padding: 10px 12px; font-size: 13px; outline: none;
@@ -604,8 +600,6 @@
     }
     #vw-sp-btn-iniciar:hover { background: #6a22e8; }
     #vw-sp-btn-iniciar:disabled { opacity: .6; cursor: default; }
-
-    /* Mensagens */
     #vw-sp-msgs {
       flex: 1; overflow-y: auto; padding: 14px 12px;
       display: flex; flex-direction: column; gap: 10px;
@@ -613,18 +607,13 @@
     }
     #vw-sp-msgs::-webkit-scrollbar { width: 4px; }
     #vw-sp-msgs::-webkit-scrollbar-thumb { background: #d0c0f0; border-radius: 4px; }
-
-    .vw-msg-row {
-      display: flex; gap: 8px; align-items: flex-end;
-    }
+    .vw-msg-row { display: flex; gap: 8px; align-items: flex-end; }
     .vw-msg-row.bot  { justify-content: flex-start; }
     .vw-msg-row.user { justify-content: flex-end; }
-
     .vw-msg-icon {
       width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
-      background: linear-gradient(135deg, #7b2cff, #5a1ebb);
       display: flex; align-items: center; justify-content: center;
-      font-size: 14px; align-self: flex-end;
+      font-size: 18px; align-self: flex-end;
     }
     .vw-bubble {
       max-width: 82%; padding: 10px 13px; border-radius: 14px;
@@ -638,16 +627,11 @@
     }
     .vw-bubble.user {
       background: linear-gradient(135deg, #7b2cff, #5a1ebb);
-      color: #fff;
-      border-bottom-right-radius: 4px;
+      color: #fff; border-bottom-right-radius: 4px;
     }
-    .vw-msg-hora {
-      font-size: 10px; opacity: .5; margin-top: 4px; text-align: right;
-    }
-
-    /* Typing indicator */
     #vw-sp-typing {
       display: none; padding: 4px 12px 8px; align-items: center; gap: 6px;
+      background: #f8f7fc;
     }
     .vw-typing-dots {
       display: flex; gap: 4px; align-items: center;
@@ -665,8 +649,6 @@
       0%, 60%, 100% { transform: translateY(0); }
       30%            { transform: translateY(-5px); }
     }
-
-    /* Opções */
     #vw-sp-opcoes {
       padding: 8px 12px 12px; display: flex; flex-direction: column; gap: 7px;
       background: #f8f7fc; flex-shrink: 0; max-height: 200px; overflow-y: auto;
@@ -678,13 +660,10 @@
       color: #5a1ebb; font-size: 12.5px; font-weight: 500;
       padding: 9px 12px; cursor: pointer; text-align: left;
       transition: background .15s, border-color .15s, color .15s;
-      line-height: 1.3;
+      line-height: 1.3; font-family: inherit;
     }
-    .vw-opcao-btn:hover {
-      background: #f0e8ff; border-color: #7b2cff; color: #7b2cff;
-    }
+    .vw-opcao-btn:hover { background: #f0e8ff; border-color: #7b2cff; color: #7b2cff; }
     .vw-opcao-btn:active { background: #e8d8ff; }
-
     @media (max-width: 420px) {
       #vw-sp-box { width: calc(100vw - 32px); right: 16px; bottom: 80px; }
     }
@@ -694,8 +673,8 @@
       #vw-sp-form-email p { color: #bbb; }
       #vw-sp-form-email input { background: #252540; border-color: #3a3a6a; color: #eee; }
       #vw-sp-msgs { background: #141428; }
-      .vw-bubble.bot { background: #252540; color: #eee; box-shadow: none; }
       #vw-sp-typing { background: #141428; }
+      .vw-bubble.bot { background: #252540; color: #eee; box-shadow: none; }
       .vw-typing-dots { background: #252540; box-shadow: none; }
       #vw-sp-opcoes { background: #141428; }
       .vw-opcao-btn { background: #252540; border-color: #3a3a6a; color: #c4a8ff; }
@@ -716,7 +695,6 @@
   const box = document.createElement("div");
   box.id = "vw-sp-box";
   box.setAttribute("role", "dialog");
-  box.setAttribute("aria-label", "Suporte Velvet");
   box.innerHTML = `
     <div id="vw-sp-header">
       <div id="vw-sp-header-left">
@@ -728,13 +706,11 @@
       </div>
       <button id="vw-sp-fechar" aria-label="Fechar suporte">✕</button>
     </div>
-
     <div id="vw-sp-form-email">
       <p>Para te ajudar melhor, informe seu e-mail:</p>
       <input id="vw-sp-email-input" type="email" placeholder="seu@email.com" maxlength="120" autocomplete="email" />
       <button id="vw-sp-btn-iniciar">Iniciar atendimento</button>
     </div>
-
     <div id="vw-sp-msgs" style="display:none"></div>
     <div id="vw-sp-typing" style="display:none">
       <div class="vw-typing-dots"><span></span><span></span><span></span></div>
@@ -746,7 +722,6 @@
   document.body.appendChild(box);
 
   // ─── REFS ────────────────────────────────────────────────────────────────────
-  const badge      = document.getElementById("vw-sp-badge");
   const formEmail  = document.getElementById("vw-sp-form-email");
   const emailInput = document.getElementById("vw-sp-email-input");
   const btnIniciar = document.getElementById("vw-sp-btn-iniciar");
@@ -757,72 +732,81 @@
   // ─── TOGGLE ──────────────────────────────────────────────────────────────────
   btn.addEventListener("click", () => {
     aberto = !aberto;
-    if (aberto) {
-      box.classList.add("aberto");
-      badge.style.display = "none";
-      badge.textContent = "";
-      if (!sessaoId) {
-        preencherEmailDoStorage();
-      }
-    } else {
-      box.classList.remove("aberto");
-    }
+    box.classList.toggle("aberto", aberto);
   });
   document.getElementById("vw-sp-fechar").addEventListener("click", () => {
     aberto = false;
     box.classList.remove("aberto");
   });
 
+  // ─── PERSISTÊNCIA DE ESTADO ──────────────────────────────────────────────────
+  function salvarEstado(opcoes) {
+    const msgs = [];
+    msgsEl.querySelectorAll(".vw-msg-row").forEach(row => {
+      const bubble = row.querySelector(".vw-bubble");
+      if (!bubble) return;
+      msgs.push({ type: bubble.classList.contains("bot") ? "bot" : "user", text: bubble.textContent });
+    });
+    try {
+      localStorage.setItem(STATE_KEY, JSON.stringify({ msgs, opcoes: opcoes || [] }));
+    } catch (_) {}
+  }
+
+  function restaurarEstado() {
+    if (!estadoSalvo) return false;
+    formEmail.style.display = "none";
+    msgsEl.style.display    = "flex";
+    typingEl.style.display  = "none";
+    opcoesEl.style.display  = "flex";
+    (estadoSalvo.msgs || []).forEach(m => {
+      if (m.type === "bot") adicionarMsgBot(m.text, true);
+      else adicionarMsgUsuario(m.text);
+    });
+    mostrarOpcoes(estadoSalvo.opcoes || [], true);
+    return true;
+  }
+
   // ─── PRÉ-PREENCHER EMAIL ─────────────────────────────────────────────────────
   function preencherEmailDoStorage() {
-    const emailSalvo = localStorage.getItem("email") || localStorage.getItem("userEmail") || "";
-    if (emailSalvo) emailInput.value = emailSalvo;
+    const email = localStorage.getItem("email") || localStorage.getItem("userEmail") || "";
+    if (email) emailInput.value = email;
   }
 
   // ─── INICIAR SESSÃO ──────────────────────────────────────────────────────────
   btnIniciar.addEventListener("click", iniciarSessao);
-  emailInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") iniciarSessao();
-  });
+  emailInput.addEventListener("keydown", e => { if (e.key === "Enter") iniciarSessao(); });
 
   async function iniciarSessao() {
     const email = emailInput.value.trim();
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      emailInput.focus();
-      emailInput.style.borderColor = "#e53e3e";
-      return;
+      emailInput.focus(); emailInput.style.borderColor = "#e53e3e"; return;
     }
     emailInput.style.borderColor = "";
     btnIniciar.disabled = true;
     btnIniciar.textContent = "Aguarde…";
 
-    const token    = localStorage.getItem("token") || sessionStorage.getItem("token") || "";
+    const token     = localStorage.getItem("token") || sessionStorage.getItem("token") || "";
     const clienteId = localStorage.getItem("clienteId") || localStorage.getItem("userId") || "";
-    const nome     = localStorage.getItem("nome") || localStorage.getItem("name") || "";
+    const nome      = localStorage.getItem("nome") || localStorage.getItem("name") || "";
 
     try {
       const headers = { "Content-Type": "application/json" };
       if (token) headers.Authorization = `Bearer ${token}`;
-
       const r = await fetch(`${API}/api/suporte/conversa`, {
-        method: "POST",
-        headers,
+        method: "POST", headers,
         body: JSON.stringify({ nome: nome || email, email, cliente_id: clienteId || undefined })
       });
       if (r.ok) {
         const data = await r.json();
         sessaoId = data.conversa_id;
-        localStorage.setItem(STORAGE_KEY, sessaoId);
+        localStorage.setItem(SESSION_KEY, sessaoId);
       }
-    } catch (_) {
-      // falha silenciosa — o chatbot funciona sem sessão gravada
-    }
+    } catch (_) {}
 
-    formEmail.style.display  = "none";
+    formEmail.style.display = "none";
     msgsEl.style.display    = "flex";
     typingEl.style.display  = "flex";
     opcoesEl.style.display  = "flex";
-
     irParaEtapa("inicio");
   }
 
@@ -831,10 +815,8 @@
     etapaAtual = id;
     const etapa = ARVORE[id];
     if (!etapa) return;
-
     opcoesEl.innerHTML = "";
     opcoesEl.style.display = "none";
-
     mostrarTyping(() => {
       adicionarMsgBot(etapa.bot);
       mostrarOpcoes(etapa.opcoes);
@@ -844,58 +826,49 @@
   function mostrarTyping(cb, delay = 700) {
     typingEl.style.display = "flex";
     scrollBaixo();
-    setTimeout(() => {
-      typingEl.style.display = "none";
-      cb();
-    }, delay);
+    setTimeout(() => { typingEl.style.display = "none"; cb(); }, delay);
   }
 
-  // ─── MENSAGEM DO BOT ─────────────────────────────────────────────────────────
-  function adicionarMsgBot(texto) {
+  // ─── MENSAGENS ───────────────────────────────────────────────────────────────
+  function adicionarMsgBot(texto, silencioso = false) {
     const row = document.createElement("div");
     row.className = "vw-msg-row bot";
-
     const icon = document.createElement("div");
     icon.className = "vw-msg-icon";
     icon.textContent = "💜";
-
     const bubble = document.createElement("div");
     bubble.className = "vw-bubble bot";
     bubble.textContent = texto;
-
     row.appendChild(icon);
     row.appendChild(bubble);
     msgsEl.appendChild(row);
-    scrollBaixo();
+    if (!silencioso) scrollBaixo();
   }
 
-  // ─── MENSAGEM DO USUÁRIO (escolha) ───────────────────────────────────────────
   function adicionarMsgUsuario(texto) {
     const row = document.createElement("div");
     row.className = "vw-msg-row user";
-
     const bubble = document.createElement("div");
     bubble.className = "vw-bubble user";
     bubble.textContent = texto;
-
     row.appendChild(bubble);
     msgsEl.appendChild(row);
     scrollBaixo();
   }
 
-  // ─── MOSTRAR OPÇÕES ──────────────────────────────────────────────────────────
-  function mostrarOpcoes(opcoes) {
+  // ─── OPÇÕES ──────────────────────────────────────────────────────────────────
+  function mostrarOpcoes(opcoes, silencioso = false) {
     opcoesEl.innerHTML = "";
     opcoesEl.style.display = "flex";
-
     opcoes.forEach(op => {
-      const btn = document.createElement("button");
-      btn.className = "vw-opcao-btn";
-      btn.textContent = op.label;
-      btn.addEventListener("click", () => executarOpcao(op));
-      opcoesEl.appendChild(btn);
+      const b = document.createElement("button");
+      b.className = "vw-opcao-btn";
+      b.textContent = op.label;
+      b.addEventListener("click", () => executarOpcao(op));
+      opcoesEl.appendChild(b);
     });
-    scrollBaixo();
+    salvarEstado(opcoes);
+    if (!silencioso) scrollBaixo();
   }
 
   // ─── EXECUTAR AÇÃO ───────────────────────────────────────────────────────────
@@ -906,29 +879,23 @@
 
     if (op.action === "redirect") {
       mostrarTyping(() => {
-        window.open(op.url, "_blank", "noopener");
-        adicionarMsgBot("Abrindo em nova aba! 🔗\n\nPosso ajudar com mais alguma coisa?");
-        mostrarOpcoes([
-          { label: "🏠 Voltar ao Início", next: "inicio" },
-        ]);
-      }, 500);
+        adicionarMsgBot("Ok! Vou te levar lá agora. Quando voltar o chat estará aqui para continuar. 👇");
+        salvarEstado([op]); // salva o botão de redirect para aparecer ao voltar
+        setTimeout(() => { window.location.href = op.url; }, 1000);
+      }, 400);
       return;
     }
 
     if (op.action === "contato") {
       mostrarTyping(() => {
-        window.open("/contato.html", "_blank", "noopener");
-        adicionarMsgBot("Formulário de contato aberto em nova aba! 💜\n\nNossa equipe responde em até 48h.\n\nPosso ajudar com mais alguma coisa?");
-        mostrarOpcoes([
-          { label: "🏠 Voltar ao Início", next: "inicio" },
-        ]);
-      }, 500);
+        adicionarMsgBot("Vou te encaminhar para o nosso formulário de contato! Nossa equipe responde em até 48h. 💜\n\nQuando voltar o chat estará aqui para continuar.");
+        salvarEstado([{ label: "📬 Ir para Contato", action: "redirect", url: "/contato.html" }]);
+        setTimeout(() => { window.location.href = "/contato.html"; }, 1200);
+      }, 400);
       return;
     }
 
-    if (op.next) {
-      irParaEtapa(op.next);
-    }
+    if (op.next) irParaEtapa(op.next);
   }
 
   // ─── UTILITÁRIOS ─────────────────────────────────────────────────────────────
@@ -937,15 +904,18 @@
     opcoesEl.scrollTop = 0;
   }
 
-  // ─── INIT: se já tem sessão, pula o form de email ────────────────────────────
-  if (sessaoId) {
-    formEmail.style.display  = "none";
-    msgsEl.style.display    = "flex";
-    typingEl.style.display  = "none";
-    opcoesEl.style.display  = "flex";
-    // Vai direto para início sem typing ao reabrir
-    const etapa = ARVORE["inicio"];
-    adicionarMsgBot(etapa.bot);
-    mostrarOpcoes(etapa.opcoes);
+  // ─── INIT ────────────────────────────────────────────────────────────────────
+  const restaurado = restaurarEstado();
+  if (!restaurado) {
+    preencherEmailDoStorage();
+    // Se já tem sessão mas não tem estado salvo, pula o form e vai para início
+    if (sessaoId) {
+      formEmail.style.display = "none";
+      msgsEl.style.display    = "flex";
+      typingEl.style.display  = "none";
+      opcoesEl.style.display  = "flex";
+      adicionarMsgBot(ARVORE["inicio"].bot, true);
+      mostrarOpcoes(ARVORE["inicio"].opcoes, true);
+    }
   }
 })();

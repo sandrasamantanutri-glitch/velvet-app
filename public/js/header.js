@@ -679,6 +679,30 @@ async function desativarNotificacoes() {
   }
 }
 
+// ── Auto-carrega widget de suporte em todas as páginas elegíveis ─────────────
+(function () {
+  const EXCLUIDOS = new Set([
+    "/", "/index.html", "/me.html",
+    "/inbox.html", "/inboxc.html",
+    "/chat.html", "/chatcliente.html", "/chatmodelo.html",
+    "/chat-app.html", "/chatc.html", "/paginaChat.html", "/allmessage.html",
+    "/terms.html", "/privacy.html", "/policies.html", "/creatorterms.html", "/about.html",
+  ]);
+
+  const path = window.location.pathname.replace(/\/+$/, "") || "/";
+  if (
+    EXCLUIDOS.has(path) ||
+    path.startsWith("/admin") ||
+    path.startsWith("/agencias") ||
+    document.querySelector('script[src*="suporte-widget"]')
+  ) return;
+
+  const s = document.createElement("script");
+  s.src = "/app/js/suporte-widget.js";
+  document.body.appendChild(s);
+})();
+// ─────────────────────────────────────────────────────────────────────────────
+
 async function carregarVapidPublicKey() {
   try {
     const jaExiste =
