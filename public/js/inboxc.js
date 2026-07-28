@@ -69,8 +69,6 @@ function entrarInbox() {
 
 socket.on("connect", () => {
   console.log("🟢 Inbox cliente conectado:", socket.id);
-  // ✅ CORRIGIDO: sempre chama entrarInbox no connect — o servidor autentica pelo token
-  // clienteId pode ainda ser null aqui, mas o servidor usa socket.user (do token JWT)
   entrarInbox();
 });
 
@@ -110,9 +108,6 @@ async function initClienteInbox() {
 
   const me = await res.json();
   clienteId = me.id;
-
-  // ✅ CORRIGIDO: se o socket já conectou antes do clienteId ser definido,
-  // chama entrarInbox novamente agora que temos o id (o servidor vai fazer join na sala certa)
   if (socket.connected) {
     entrarInbox();
   }
@@ -217,7 +212,7 @@ async function logout() {
     try { await fetch("/api/logout", { method: "POST", headers: { Authorization: "Bearer " + token } }); } catch (_) {}
   }
   localStorage.clear();
-  location.href = "/index.html";
+  location.href = "/me.html";
 }
 
 function atualizarChatLocal(dados) {

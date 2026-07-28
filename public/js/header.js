@@ -96,7 +96,7 @@ async function initUsuario() {
     localStorage.clear();
 
     if (!window.location.pathname.includes("index")) {
-      window.location.href = "/index.html";
+      window.location.href = "/me.html";
     }
   }
 }
@@ -366,7 +366,7 @@ document.addEventListener("click", (e) => {
 
   localStorage.clear();
 
-  window.location.href = "/index.html";
+  window.location.href = "/me.html";
 });
 
 // =========================================================
@@ -409,7 +409,7 @@ document.addEventListener("click", async (e) => {
 async function irParaInbox() {
   const token = localStorage.getItem("token");
   if (!token) {
-    window.location.href = "/index.html";
+    window.location.href = "/me.html";
     return;
   }
 
@@ -684,7 +684,7 @@ async function desativarNotificacoes() {
   const EXCLUIDOS = new Set([
     "/", "/index.html", "/me.html",
     "/inbox.html", "/inboxc.html",
-    "/chat.html", "/chatcliente.html", "/chatmodelo.html",
+    "/chat.html", "/chatc.html", "/chat.html",
     "/chat-app.html", "/chatc.html", "/paginaChat.html", "/allmessage.html",
     "/terms.html", "/privacy.html", "/policies.html", "/creatorterms.html", "/about.html",
   ]);
