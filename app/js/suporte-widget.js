@@ -771,6 +771,16 @@
     if (email) emailInput.value = email;
   }
 
+  // ─── LOG DE INTERAÇÕES (fire-and-forget p/ o admin ver o trail) ─────────────
+  function logInteracao(texto, remetente) {
+    if (!sessaoId) return;
+    fetch(`${API}/api/suporte/conversa/${sessaoId}/log`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ texto, remetente })
+    }).catch(() => {});
+  }
+
   // ─── INICIAR SESSÃO ──────────────────────────────────────────────────────────
   btnIniciar.addEventListener("click", iniciarSessao);
   emailInput.addEventListener("keydown", e => { if (e.key === "Enter") iniciarSessao(); });
@@ -841,7 +851,10 @@
     row.appendChild(icon);
     row.appendChild(bubble);
     msgsEl.appendChild(row);
-    if (!silencioso) scrollBaixo();
+    if (!silencioso) {
+      scrollBaixo();
+      logInteracao(texto, "admin");
+    }
   }
 
   function adicionarMsgUsuario(texto) {
@@ -853,6 +866,7 @@
     row.appendChild(bubble);
     msgsEl.appendChild(row);
     scrollBaixo();
+    logInteracao(texto, "cliente");
   }
 
   // ─── OPÇÕES ──────────────────────────────────────────────────────────────────

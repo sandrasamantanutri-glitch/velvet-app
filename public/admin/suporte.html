@@ -234,12 +234,29 @@
       const r = await fetch(`/api/suporte/admin/conversa/${id}/mensagens`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const msgs = await r.json();
       const el = document.getElementById("msgs");
       el.innerHTML = "";
+      if (!r.ok) {
+        el.innerHTML = `<div style="padding:20px;color:#d32f2f;font-size:13px;text-align:center;">Erro ao carregar mensagens (${r.status})</div>`;
+        return;
+      }
+      const msgs = await r.json();
+      if (!Array.isArray(msgs) || msgs.length === 0) {
+        const conv = todasConversas.find(c => c.id === id);
+        el.innerHTML = `<div style="padding:24px 20px;color:#888;font-size:13px;text-align:center;line-height:1.6;">
+          <div style="font-size:28px;margin-bottom:8px;">💬</div>
+          <strong>Nenhuma mensagem ainda</strong><br>
+          <span style="font-size:12px;">O cliente abriu o suporte mas ainda não navegou pelos menus.</span>
+          ${conv?.email_visitante ? `<br><span style="font-size:11px;color:#aaa;margin-top:6px;display:block;">E-mail: ${escHtml(conv.email_visitante)}</span>` : ""}
+        </div>`;
+        return;
+      }
       msgs.forEach(adicionarMsg);
       el.scrollTop = el.scrollHeight;
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+      document.getElementById("msgs").innerHTML = `<div style="padding:20px;color:#d32f2f;font-size:13px;text-align:center;">Erro de conexão</div>`;
+    }
 
     if (socket) {
       socket.emit("suporte:admin_entrar_conversa", { conversa_id: id });

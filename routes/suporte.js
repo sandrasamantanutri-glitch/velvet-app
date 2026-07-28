@@ -205,6 +205,45 @@ router.post("/conversa/:id/mensagem", async (req, res) => {
   }
 });
 
+// ─── CLIENTE: registra interações do bot-tree (sem auto-resposta) ────────────
+router.post("/conversa/:id/log", async (req, res) => {
+  try {
+    const conversa_id = parseInt(req.params.id);
+    if (!conversa_id || isNaN(conversa_id)) return res.status(400).json({ error: "ID inválido" });
+    const { texto, remetente } = req.body;
+    if (!texto?.trim() || !["cliente", "admin"].includes(remetente)) {
+      return res.status(400).json({ error: "Dados inválidos" });
+    }
+    const { rows: conv } = await db.query(
+      "SELECT id FROM suporte_conversas WHERE id = $1",
+      [conversa_id]
+    );
+    if (!conv.length) return res.status(404).json({ error: "Não encontrada" });
+
+    await db.query(
+      `INSERT INTO suporte_mensagens (conversa_id, remetente, texto) VALUES ($1, $2, $3)`,
+      [conversa_id, remetente, texto.trim()]
+    );
+    await db.query(
+      "UPDATE suporte_conversas SET updated_at = NOW() WHERE id = $1",
+      [conversa_id]
+    );
+
+    const io = req.app.get("io");
+    if (io) {
+      io.to("suporte_admin").emit("suporte:nova_mensagem", {
+        conversa_id,
+        mensagem: { conversa_id, remetente, texto: texto.trim(), criado_em: new Date() }
+      });
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Erro ao logar interação suporte:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
 // ─── CLIENTE: lista mensagens da conversa ────────────────────────────────────
 // Requer o token da conversa (conversa_id gerado no POST /conversa) — sem ele não retorna nada
 router.get("/conversa/:id/mensagens", async (req, res) => {

@@ -453,20 +453,28 @@ async function renderFormCartao() {
       }
 
       el.textContent = "Calculando…";
+      const buscarTaxa = async (cod) => {
+        if (_fxCache[cod] != null) return _fxCache[cod];
+        const r = await fetch(`/api/cambio?para=${cod}`);
+        if (!r.ok) throw new Error("sem cotação");
+        const d = await r.json();
+        if (!d.taxa) throw new Error("sem cotação");
+        _fxCache[cod] = d.taxa;
+        return d.taxa;
+      };
       try {
-        if (!_fxCache[moeda]) {
-          const r = await fetch(`/api/cambio?para=${moeda}`);
-          if (!r.ok) throw new Error("HTTP " + r.status);
-          const d = await r.json();
-          _fxCache[moeda] = d.taxa ?? null;
-        }
-        const taxa = _fxCache[moeda];
-        if (!taxa) { el.textContent = "Taxa não disponível"; return; }
-        const convertido = valorBrlDisplay * taxa;
-        const fmt = convertido.toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const taxa = await buscarTaxa(moeda);
+        const fmt = (valorBrlDisplay * taxa).toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         el.innerHTML = `≈ <strong>${moeda} ${fmt}</strong> <span style="opacity:0.5;font-size:0.78rem;">(taxa indicativa)</span>`;
       } catch {
-        el.textContent = "Conversão não disponível agora";
+        // Moeda não suportada pelo serviço de câmbio — fallback para USD
+        try {
+          const taxaUsd = await buscarTaxa("USD");
+          const fmt = (valorBrlDisplay * taxaUsd).toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          el.innerHTML = `≈ <strong>USD ${fmt}</strong> <span style="opacity:0.5;font-size:0.78rem;">(cotação ${moeda} indisponível)</span>`;
+        } catch {
+          el.textContent = "Conversão não disponível agora";
+        }
       }
     });
 
