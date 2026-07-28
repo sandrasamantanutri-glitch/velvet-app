@@ -698,10 +698,9 @@
   box.innerHTML = `
     <div id="vw-sp-header">
       <div id="vw-sp-header-left">
-        <div id="vw-sp-avatar">💜</div>
         <div id="vw-sp-header-info">
           <div id="vw-sp-header-title">Suporte Velvet</div>
-          <div id="vw-sp-header-sub">● Online</div>
+          <div id="vw-sp-header-sub">🟢 Online</div>
         </div>
       </div>
       <button id="vw-sp-fechar" aria-label="Fechar suporte">✕</button>
@@ -873,23 +872,36 @@
 
   // ─── EXECUTAR AÇÃO ───────────────────────────────────────────────────────────
   function executarOpcao(op) {
+    // navigate: usado pelos botões de retorno — navega direto sem mensagem nova
+    if (op.action === "navigate") {
+      window.location.href = op.url;
+      return;
+    }
+
     adicionarMsgUsuario(op.label);
     opcoesEl.style.display = "none";
     opcoesEl.innerHTML = "";
 
     if (op.action === "redirect") {
       mostrarTyping(() => {
-        adicionarMsgBot("Ok! Vou te levar lá agora. Quando voltar o chat estará aqui para continuar. 👇");
-        salvarEstado([op]); // salva o botão de redirect para aparecer ao voltar
-        setTimeout(() => { window.location.href = op.url; }, 1000);
+        adicionarMsgBot("Ok! Vou te levar lá agora. 👇\n\nQuando voltar, use os botões abaixo para continuar ou resolver outra dúvida.");
+        // salva com botão de ir novamente + opção de novo assunto
+        mostrarOpcoes([
+          { label: op.label, action: "navigate", url: op.url },
+          { label: "🏠 Resolver outra dúvida", next: "inicio" },
+        ]);
+        setTimeout(() => { window.location.href = op.url; }, 1200);
       }, 400);
       return;
     }
 
     if (op.action === "contato") {
       mostrarTyping(() => {
-        adicionarMsgBot("Vou te encaminhar para o nosso formulário de contato! Nossa equipe responde em até 48h. 💜\n\nQuando voltar o chat estará aqui para continuar.");
-        salvarEstado([{ label: "📬 Ir para Contato", action: "redirect", url: "/contato.html" }]);
+        adicionarMsgBot("Vou te encaminhar para o formulário de contato! Nossa equipe responde em até 48h. 💜\n\nQuando voltar, use os botões abaixo.");
+        mostrarOpcoes([
+          { label: "📬 Ir para Contato", action: "navigate", url: "/contato.html" },
+          { label: "🏠 Resolver outra dúvida", next: "inicio" },
+        ]);
         setTimeout(() => { window.location.href = "/contato.html"; }, 1200);
       }, 400);
       return;

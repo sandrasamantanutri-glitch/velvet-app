@@ -744,6 +744,7 @@ function aplicarFiltros() {
 async function carregarTransacoes() {
   const lista = document.getElementById("listaTransacoes");
   if (!lista) return;
+  lista.removeAttribute("data-i18n");
   lista.innerHTML = `<div class="estado-vazio">Carregando…</div>`;
   try {
     const res = await fetch("/api/cliente/transacoes", {
@@ -761,6 +762,7 @@ async function carregarTransacoes() {
 async function carregarSubscricoes() {
   const lista = document.getElementById("listaSubscricoes");
   if (!lista) return;
+  lista.removeAttribute("data-i18n");
   lista.innerHTML = `<div class="estado-vazio">Carregando…</div>`;
   try {
     const res = await fetch("/api/cliente/subscricoes", {
@@ -834,6 +836,7 @@ function renderOcorrencias(ocorrencias) {
 async function carregarOcorrencias() {
   const lista = document.getElementById("listaOcorrencias");
   if (!lista) return;
+  lista.removeAttribute("data-i18n");
   lista.innerHTML = `<div class="estado-vazio">Carregando…</div>`;
   try {
     const res = await fetch("/api/cliente/ocorrencias", {
