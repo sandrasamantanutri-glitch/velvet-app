@@ -3889,7 +3889,7 @@ async function criarPixIpag({ valorTotal, nome, email, cpf, telefone, endereco, 
       phone: telefoneIpag,
       billing_address: {
         street:     endereco.rua,
-        number:     endereco.numero     || endereco.endereco2 || "s/n",
+        number:     (endereco.numero || endereco.endereco2 || "s/n").slice(0, 10),
         complement: endereco.endereco2  || "",
         district:   endereco.bairro     || "",
         city:       endereco.cidade,
