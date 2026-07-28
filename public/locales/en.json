@@ -877,6 +877,21 @@
     "pref3_titulo": "Offers and discounts",
     "pref3_desc": "Exclusive promotions and special discounts from creators"
   },
+  "vip_confirm": {
+    "titulo": "Subscription Confirmation",
+    "atencao": "Attention",
+    "intro": "Before proceeding, please confirm that this profile matches the type of content you are looking for.",
+    "criador_label": "Creator:",
+    "categoria_label": "What you will find in this subscription:",
+    "btn_aceitar": "I agree and want to continue",
+    "btn_cancelar": "Cancel",
+    "cat_social_nome": "Social",
+    "cat_social_desc": "Day-to-day content including photos, videos, travel, lifestyle, gaming, fitness, fashion and other entertainment content.",
+    "cat_premium_nome": "Premium",
+    "cat_premium_desc": "More sensual content such as bikini shoots, lingerie, cosplay and other visually appealing productions, without nudity or explicit content.",
+    "cat_adulto_nome": "Private",
+    "cat_adulto_desc": "Adult content reserved for verified users."
+  },
   "contato_extra": {
     "denuncia": "Report account",
     "suporte_print_label": "Screenshot of the error",

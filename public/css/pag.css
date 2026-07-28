@@ -1274,39 +1274,64 @@ body {
 }
 
 /* ── Popup confirmação VIP ── */
-.vip-confirmacao-body {
+.vip-confirm-intro {
   font-size: 0.875rem;
   color: #3a3a5c;
-  line-height: 1.6;
-  margin: 12px 0 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  line-height: 1.5;
+  margin: 8px 0 12px;
 }
 
-.vip-confirmacao-intro {
-  font-weight: 700;
-  color: #1e1e26;
+.vip-confirm-intro p { margin: 0 0 4px; }
+
+.vip-confirm-criador {
   font-size: 0.9rem;
+  color: #1e1e26;
+  margin-bottom: 14px;
+}
+
+.vip-confirm-criador span { color: #888; margin-right: 4px; }
+.vip-confirm-criador strong { color: #7B2CFF; }
+
+.vip-confirm-cat-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin: 0 0 8px;
+}
+
+.vip-confirm-cat-box { margin-bottom: 20px; }
+
+.vip-confirm-cat-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #f7f3ff;
+  border: 1px solid #e0d5ff;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.vip-confirm-cat-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.vip-confirm-cat-card strong {
+  display: block;
+  font-size: 0.95rem;
+  color: #1e1e26;
+  margin-bottom: 4px;
+}
+
+.vip-confirm-cat-card p {
   margin: 0;
-}
-
-.vip-confirmacao-body p {
-  margin: 0;
-}
-
-.vip-confirmacao-body a {
-  color: #7B2CFF;
-  text-decoration: underline;
-}
-
-.vip-confirmacao-excecao {
-  background: #f0fdf4;
-  border-left: 3px solid #22c55e;
-  border-radius: 6px;
-  padding: 10px 12px;
-  color: #166534;
-  font-size: 0.82rem;
+  font-size: 0.83rem;
+  color: #4a4a6a;
+  line-height: 1.5;
 }
 
 .vip-confirmacao-acoes {

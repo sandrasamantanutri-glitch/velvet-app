@@ -877,6 +877,21 @@
     "pref3_titulo": "Ofertas e descontos",
     "pref3_desc": "Promocoes exclusivas e descontos especiais das criadoras"
   },
+  "vip_confirm": {
+    "titulo": "Confirmação da Assinatura",
+    "atencao": "Atenção",
+    "intro": "Antes de prosseguir, confirme que este perfil corresponde ao tipo de conteúdo que procura.",
+    "criador_label": "Criador(a):",
+    "categoria_label": "O que encontrará nesta assinatura:",
+    "btn_aceitar": "Aceito e quero continuar",
+    "btn_cancelar": "Cancelar",
+    "cat_social_nome": "Social",
+    "cat_social_desc": "Conteúdos do dia a dia, incluindo fotografias, vídeos, viagens, lifestyle, gaming, fitness, moda e outros conteúdos de entretenimento.",
+    "cat_premium_nome": "Premium",
+    "cat_premium_desc": "Conteúdo mais sensual, como ensaios em biquíni, lingerie, cosplay e outras produções com maior apelo visual, sem nudez ou conteúdo explícito.",
+    "cat_adulto_nome": "Privado",
+    "cat_adulto_desc": "Conteúdo reservado para adultos, disponível mediante validação da identidade do utilizador."
+  },
   "contato_extra": {
     "denuncia": "Denunciar conta",
     "suporte_print_label": "Print do erro",

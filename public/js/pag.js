@@ -1708,6 +1708,28 @@ function atualizarResumoCartaoComDadosServidor(data) {
 // ── Confirmação VIP (anti-chargeback) ────────────────────────────────────────
 let _metodoVIPPendente = null;
 
+function renderCategoriaVIP(categoria) {
+  const defs = {
+    social: {
+      icon: "🌍",
+      nome: t("vip_confirm.cat_social_nome"),
+      desc: t("vip_confirm.cat_social_desc")
+    },
+    premium: {
+      icon: "🔥",
+      nome: t("vip_confirm.cat_premium_nome"),
+      desc: t("vip_confirm.cat_premium_desc")
+    },
+    adulto: {
+      icon: "🔒",
+      nome: t("vip_confirm.cat_adulto_nome"),
+      desc: t("vip_confirm.cat_adulto_desc")
+    }
+  };
+  const cat = defs[categoria] || defs.social;
+  return `<div class="vip-confirm-cat-card"><span class="vip-confirm-cat-icon">${cat.icon}</span><div><strong>${cat.nome}</strong><p>${cat.desc}</p></div></div>`;
+}
+
 function abrirConfirmacaoVIP(metodo) {
   if (window.PAGAMENTO_TIPO_ATUAL !== "vip") {
     mostrarMetodo(metodo);
@@ -1715,6 +1737,13 @@ function abrirConfirmacaoVIP(metodo) {
   }
   _metodoVIPPendente = metodo;
   document.getElementById("popupPagamentoVelvet")?.classList.add("hidden");
+
+  const nomeEl = document.getElementById("vipConfirmNome");
+  if (nomeEl) nomeEl.textContent = document.getElementById("profileName")?.textContent?.trim() || "";
+
+  const box = document.getElementById("vipConfirmCategoriaBox");
+  if (box) box.innerHTML = renderCategoriaVIP(window.MODELO_CATEGORIA_ATUAL || "social");
+
   const popup = document.getElementById("popupConfirmacaoVIP");
   if (popup) popup.classList.remove("hidden");
 }

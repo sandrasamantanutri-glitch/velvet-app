@@ -224,7 +224,7 @@
     </p>
     <label class="termos-check-linha" for="aceiteTermosPagamento">
       <input type="checkbox" id="aceiteTermosPagamento" required />
-      <span>Li e aceito os <a href="/terms.html" target="_blank" rel="noopener noreferrer" style="color:inherit;font-weight:600;">Termos de Uso</a> e as <a href="/policies.html" target="_blank" rel="noopener noreferrer" style="color:inherit;font-weight:600;">Políticas de Utilização</a>, incluindo a Política de Reembolso. Estou ciente de que o serviço digital é disponibilizado imediatamente após o pagamento.</span>
+      <span>Li e aceito os <a href="/terms.html" target="_blank" rel="noopener noreferrer" style="color:inherit;font-weight:600;">Termos de Uso</a> e as <a href="/policies.html" target="_blank" rel="noopener noreferrer" style="color:inherit;font-weight:600;">Políticas de Utilização</a>, estou ciente de que o serviço digital é disponibilizado imediatamente após o pagamento.</span>
     </label>
   </div>
 
@@ -320,28 +320,29 @@
   <div class="velvet-box">
     <button class="velvet-close" type="button" onclick="fecharConfirmacaoVIP()">×</button>
 
-    <h2 class="velvet-title">Confirmação de Assinatura VIP</h2>
+    <h2 class="velvet-title" data-i18n="vip_confirm.titulo">Confirmação da Assinatura</h2>
 
-    <div class="vip-confirmacao-body">
-      <p class="vip-confirmacao-intro">Leia com atenção antes de prosseguir:</p>
-
-      <p>A assinatura VIP libera <strong>acesso imediato</strong> a todo o conteúdo exclusivo da criadora — mensagens no chat, fotos e vídeos do feed. O acesso é concedido no instante em que o pagamento é confirmado.</p>
-
-      <p>Por se tratar de um <strong>serviço digital com entrega imediata e irreversível</strong>, o valor pago <strong>não é reembolsado</strong> após a liberação do acesso. Isso inclui casos em que você já visualizou conteúdos ou iniciou conversa com a criadora, conforme previsto em nossos <a href="/terms.html" target="_blank" rel="noopener">Termos de Uso</a>.</p>
-
-      <p>Contestações de pagamento (chargebacks) serão analisadas com base nos registros de acesso e uso da plataforma, e poderão ser contestadas junto à operadora com as evidências disponíveis.</p>
-
-      <p class="vip-confirmacao-excecao">Se identificar um erro técnico real na plataforma, entre em contato com o nosso suporte <strong>antes</strong> de acionar sua operadora de cartão.</p>
+    <div class="vip-confirm-intro">
+      <p><strong data-i18n="vip_confirm.atencao">Atenção</strong></p>
+      <p data-i18n="vip_confirm.intro">Antes de prosseguir, confirme que este perfil corresponde ao tipo de conteúdo que procura.</p>
     </div>
 
-    <div class="vip-confirmacao-acoes">
-<button type="button" class="btn-principal" onclick="confirmarVIPEContinuar()">
-    <span data-i18n="perfil.continuar_vip"></span>
-</button>
+    <div class="vip-confirm-criador">
+      <span data-i18n="vip_confirm.criador_label">Criador(a):</span>
+      <strong id="vipConfirmNome"></strong>
+    </div>
 
-<button type="button" class="btn-secundario" onclick="fecharConfirmacaoVIP()">
-    <span data-i18n="perfil.cancelar_vip"></span>
-</button>
+    <p class="vip-confirm-cat-label" data-i18n="vip_confirm.categoria_label">O que encontrará nesta assinatura:</p>
+
+    <div id="vipConfirmCategoriaBox" class="vip-confirm-cat-box"></div>
+
+    <div class="vip-confirmacao-acoes">
+      <button type="button" class="btn-principal" onclick="confirmarVIPEContinuar()">
+        <span data-i18n="vip_confirm.btn_aceitar">Aceito e quero continuar</span>
+      </button>
+      <button type="button" class="btn-secundario" onclick="fecharConfirmacaoVIP()">
+        <span data-i18n="vip_confirm.btn_cancelar">Cancelar</span>
+      </button>
     </div>
   </div>
 </div>

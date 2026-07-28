@@ -6451,6 +6451,7 @@ app.get("/api/modelo/publico/:modelo_id", async (req, res) => {
         m.avatar,
         m.capa,
         m.local,
+        COALESCE(md.classificacao_conteudo, 'social') AS classificacao_conteudo,
         COALESCE(
           NULLIF(mp.valor_mensal, 0),
           NULLIF(md.vip_preco, 0),
@@ -15258,6 +15259,7 @@ server.listen(PORT, "0.0.0.0", () => {
 // Garante coluna para Resend Audience (idempotente)
 db.query("ALTER TABLE modelos ADD COLUMN IF NOT EXISTS resend_audience_id TEXT")
   .catch(err => console.error("Migração resend_audience_id:", err.message));
+
 
 // Chargebacks: campos de vínculo com cliente/modelo
 db.query(`

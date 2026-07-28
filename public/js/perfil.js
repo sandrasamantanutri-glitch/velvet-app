@@ -526,6 +526,8 @@ async function carregarPerfil(){
     document.getElementById("profileName").textContent =
       modelo.nome_exibicao || "";
 
+    window.MODELO_CATEGORIA_ATUAL = modelo.classificacao_conteudo || "social";
+
     document.getElementById("profileBio").textContent =
       modelo.bio || "";
 
