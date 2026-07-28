@@ -4,6 +4,11 @@
 const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
 
+function logout() {
+  localStorage.clear();
+  window.location.href = "/index.html";
+}
+
 if (!token || role !== "cliente") {
   logout();
 }
