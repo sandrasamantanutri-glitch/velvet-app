@@ -931,8 +931,7 @@ body {
   cursor: not-allowed;
 }
 
-/* ── Campos CPF / Telefone ── */
-#campoCpf,
+/* ── Campo Telefone ── */
 #campoTelefone {
   display: flex;
   flex-direction: column;
@@ -942,7 +941,6 @@ body {
   box-sizing: border-box;
 }
 
-#campoCpf label,
 #campoTelefone label {
   display: block;
   font-size: 13px;
@@ -952,25 +950,38 @@ body {
   margin: 0;
 }
 
-#campoCpf input,
-#campoTelefone input {
-  width: 100%;
-  height: 44px;
-  padding: 0 12px;
-  border: 1px solid #d5d5d5;
-  border-radius: 10px;
-  font-size: 16px;
-  box-sizing: border-box;
-  outline: none;
-  background: #fff;
-  color: #1e1e26;
-  display: block;
+/* Row DDI + número */
+.telefone-pag-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
-#campoCpf input:focus,
-#campoTelefone input:focus {
+.select-ddi-pag {
+  flex: 0 0 auto;
+  height: 44px;
+  padding: 0 8px;
+  border: 1px solid #d5d5d5;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #fff;
+  color: #1e1e26;
+  cursor: pointer;
+  outline: none;
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.select-ddi-pag:focus {
   border-color: #b38cff;
   box-shadow: 0 0 0 3px rgba(122, 44, 255, 0.08);
+}
+
+.campo-phone {
+  flex: 1;
+  min-width: 0;
 }
 
 /* ── Bloco de valores (VIP e Mídia) ── */

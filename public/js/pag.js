@@ -60,11 +60,8 @@ function selecionarMoeda(moeda) {
     btnPix.title = window.CURRENCY_ATUAL === "usd" ? "Pix disponível apenas em Real (R$)" : "";
   }
 
-  // CPF, telefone e endereço só visíveis em BRL
   const isUsd = window.CURRENCY_ATUAL === "usd";
-  document.getElementById("campoCpf")?.classList.toggle("hidden", isUsd);
   document.getElementById("campoTelefone")?.classList.toggle("hidden", isUsd);
-  document.getElementById("blocoEndereco")?.classList.toggle("hidden", true); // endereço mostrado apenas via prepararPagamento
 }
 
 function abrirPopupPagamento() {
@@ -139,9 +136,7 @@ function voltarEtapaPagamento() {
   resetarEstadoPix();
   resetarEstadoCartao();
 
-  // Restaura campos conforme moeda — escondidos apenas em USD
   const isUsd = window.CURRENCY_ATUAL === "usd";
-  document.getElementById("campoCpf")?.classList.toggle("hidden", isUsd);
   document.getElementById("campoTelefone")?.classList.toggle("hidden", isUsd);
 
   document.getElementById("etapaPagamentoPix")?.classList.add("hidden");
@@ -298,20 +293,20 @@ async function renderFormCartao() {
       </div>
       <div class="stripe-form-grid">
         <div class="stripe-campo">
-          <label class="stripe-label">Nome no cartão</label>
-          <input type="text" id="stripe-holder-name" class="stripe-input" placeholder="Como está no cartão" autocomplete="cc-name" />
+          <label class="stripe-label">${t("pagamento.card_holder_label")}</label>
+          <input type="text" id="stripe-holder-name" class="stripe-input" placeholder="${t("pagamento.card_holder_placeholder")}" autocomplete="cc-name" />
         </div>
         <div class="stripe-campo">
-          <label class="stripe-label">Número do cartão</label>
+          <label class="stripe-label">${t("pagamento.card_number_label")}</label>
           <div id="stripe-card-number" class="stripe-element-box"></div>
         </div>
         <div class="stripe-linha">
           <div class="stripe-campo">
-            <label class="stripe-label">Validade</label>
+            <label class="stripe-label">${t("pagamento.card_expiry_label")}</label>
             <div id="stripe-card-expiry" class="stripe-element-box"></div>
           </div>
           <div class="stripe-campo">
-            <label class="stripe-label">CVV</label>
+            <label class="stripe-label">${t("pagamento.card_cvv_label")}</label>
             <div id="stripe-card-cvc" class="stripe-element-box"></div>
           </div>
         </div>
@@ -319,7 +314,7 @@ async function renderFormCartao() {
       </div>
       <div class="stripe-secure-footer">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        Pagamento processado com segurança pela Stripe
+        ${t("pagamento.card_secure_footer")}
       </div>
     `;
 
@@ -357,7 +352,7 @@ async function renderFormCartao() {
 
   } catch (err) {
     console.error("Erro ao montar Stripe Elements:", err);
-    if (container) container.innerHTML = `<p style="color:#fa755a;">Erro ao carregar formulário de cartão. Recarregue a página.</p>`;
+    if (container) container.innerHTML = `<p style="color:#fa755a;">${t("pagamento.card_form_error")}</p>`;
   }
 }
 
@@ -387,7 +382,7 @@ async function confirmarPagamentoCartao() {
       document.getElementById("cartaoLoading")?.classList.add("hidden");
       document.getElementById("formStripePagamento")?.classList.remove("hidden");
       atualizarStatusCartao(t("pagamento.btn_confirmar_stripe") || "Confirmar pagamento");
-      alert("Informe o nome como está no cartão.");
+      alert(t("pagamento.card_holder_required"));
       pagamentoEmProcesso = false;
       return { sucesso: false };
     }
@@ -416,21 +411,18 @@ async function confirmarPagamentoCartao() {
 
     if (tipo === "vip") {
       payload.modelo_id = pagamentoAtual.modelo_id;
-      payload.cpf = obterCpfValido();
       payload.telefone = obterTelefoneValido();
       payload.endereco = obterEnderecoValido();
     }
     if (tipo === "midia") {
       payload.conteudo_id = pagamentoAtual.conteudo_id;
       payload.modelo_id = pagamentoAtual.modelo_id;
-      payload.cpf = obterCpfValido();
       payload.telefone = obterTelefoneValido();
       payload.endereco = obterEnderecoValido();
     }
     if (tipo === "premium") {
       payload.premium_post_id = pagamentoAtual.premium_post_id;
       payload.modelo_id = pagamentoAtual.modelo_id;
-      payload.cpf = obterCpfValido();
       payload.telefone = obterTelefoneValido();
       payload.endereco = obterEnderecoValido();
     }
@@ -676,8 +668,6 @@ function prepararPagamento() {
     });
 
     document.querySelector(".vip-detalhes")?.classList.remove("hidden");
-    // VIP: mostra CPF, telefone e endereço (obrigatórios para PIX)
-    document.getElementById("campoCpf")?.classList.remove("hidden");
     document.getElementById("campoTelefone")?.classList.remove("hidden");
     document.getElementById("blocoEndereco")?.classList.remove("hidden");
     return;
@@ -697,7 +687,6 @@ function prepararPagamento() {
     });
 
     document.querySelector(".midia-detalhes")?.classList.remove("hidden");
-    document.getElementById("campoCpf")?.classList.remove("hidden");
     document.getElementById("campoTelefone")?.classList.remove("hidden");
     document.getElementById("blocoEndereco")?.classList.remove("hidden");
     return;
@@ -717,7 +706,6 @@ function prepararPagamento() {
     });
 
     document.querySelector(".midia-detalhes")?.classList.remove("hidden");
-    document.getElementById("campoCpf")?.classList.remove("hidden");
     document.getElementById("campoTelefone")?.classList.remove("hidden");
     document.getElementById("blocoEndereco")?.classList.remove("hidden");
     return;
@@ -773,10 +761,10 @@ function preencherResumoMidia({ valor = 0, desconto = 0, descricao = "" }) {
     const extras = descricao ? `<li>✓ ${descricao}</li>` : "";
     boxMidia.innerHTML = `
       <div class="beneficios-card">
-        <span class="beneficios-titulo">Benefícios</span>
+        <span class="beneficios-titulo">${t("pagamento.midia_beneficios_titulo")}</span>
         <ul class="beneficios-lista">
-          <li>✓ Acesso imediato à mídia enviada</li>
-          <li>✓ Conteúdo disponível no chat após confirmação</li>
+          <li>✓ ${t("pagamento.midia_beneficio1")}</li>
+          <li>✓ ${t("pagamento.midia_beneficio2")}</li>
           ${extras}
         </ul>
       </div>
@@ -840,19 +828,19 @@ async function buscarCepPagamento() {
 
   const cep = String(cepInput.value).replace(/\D/g, "");
   if (cep.length !== 8) {
-    alert("CEP deve ter 8 dígitos.");
+    alert(t("pag.cep_digitos"));
     cepInput.focus();
     return;
   }
 
-  if (feedback) { feedback.textContent = "Buscando CEP..."; feedback.classList.remove("hidden"); }
+  if (feedback) { feedback.textContent = t("pag.cep_buscando"); feedback.classList.remove("hidden"); }
 
   try {
     const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
     const data = await res.json();
 
     if (data.erro) {
-      if (feedback) feedback.textContent = "CEP não encontrado.";
+      if (feedback) feedback.textContent = t("pag.cep_nao_encontrado");
       return;
     }
 
@@ -864,28 +852,25 @@ async function buscarCepPagamento() {
     if (feedback) { feedback.textContent = ""; feedback.classList.add("hidden"); }
     document.getElementById("numeroPagamento")?.focus();
   } catch {
-    if (feedback) feedback.textContent = "Erro ao buscar CEP. Verifique sua conexão.";
+    if (feedback) feedback.textContent = t("pag.cep_erro_conexao");
   }
 }
 
 function obterEnderecoValido() {
-  const pais        = String(document.getElementById("paisPagamento")?.value        || "").trim();
-  const estado      = String(document.getElementById("estadoPagamento")?.value      || "").trim();
-  const cidade      = String(document.getElementById("cidadePagamento")?.value      || "").trim();
-  const rua         = String(document.getElementById("enderecoPagamento")?.value    || "").trim();
-  const numero      = String(document.getElementById("numeroPagamento")?.value      || "").trim();
-  const complemento = String(document.getElementById("complementoPagamento")?.value || "").trim();
-  const cep         = String(document.getElementById("cepPagamento")?.value         || "").trim();
-  const endereco2   = [numero, complemento].filter(Boolean).join(", ");
+  const pais      = String(document.getElementById("paisPagamento")?.value     || "").trim();
+  const estado    = String(document.getElementById("estadoPagamento")?.value   || "").trim();
+  const cidade    = String(document.getElementById("cidadePagamento")?.value   || "").trim();
+  const rua       = String(document.getElementById("enderecoPagamento")?.value || "").trim();
+  const endereco2 = String(document.getElementById("endereco2Pagamento")?.value || "").trim();
+  const cep       = String(document.getElementById("cepPagamento")?.value      || "").trim();
 
-  if (!pais)    { alert("Selecione o país.");         document.getElementById("paisPagamento")?.focus();     return null; }
-  if (!estado)  { alert("Preencha o estado/região."); document.getElementById("estadoPagamento")?.focus();   return null; }
-  if (!cidade)  { alert("Preencha a cidade.");         document.getElementById("cidadePagamento")?.focus();   return null; }
-  if (!rua)     { alert("Preencha o endereço.");       document.getElementById("enderecoPagamento")?.focus(); return null; }
-  if (!numero)  { alert("Preencha o número.");         document.getElementById("numeroPagamento")?.focus();   return null; }
-  if (!cep)     { alert("Preencha o código postal.");  document.getElementById("cepPagamento")?.focus();      return null; }
+  if (!pais)   { alert(t("pag.endereco_pais_obrigatorio"));   document.getElementById("paisPagamento")?.focus();     return null; }
+  if (!estado) { alert(t("pag.endereco_estado_obrigatorio")); document.getElementById("estadoPagamento")?.focus();   return null; }
+  if (!cidade) { alert(t("pag.endereco_cidade_obrigatoria")); document.getElementById("cidadePagamento")?.focus();   return null; }
+  if (!rua)    { alert(t("pag.endereco_rua_obrigatoria"));    document.getElementById("enderecoPagamento")?.focus(); return null; }
+  if (!cep)    { alert(t("pag.endereco_cep_obrigatorio"));    document.getElementById("cepPagamento")?.focus();      return null; }
 
-  return { pais, estado, cidade, rua, numero, complemento, endereco2, cep };
+  return { pais, estado, cidade, rua, endereco2, cep };
 }
 
 // ── PAÍSES E DDI ─────────────────────────────────────────────────────────────
@@ -987,7 +972,7 @@ function atualizarBotaoBuscarCep() {
   const isBR = selPais?.value === "BR";
   btn.style.display = isBR ? "" : "none";
   if (cepInput) {
-    cepInput.placeholder = isBR ? "00000-000" : "Código Postal";
+    cepInput.placeholder = isBR ? "00000-000" : (typeof t === "function" ? t("pagamento.codigo_postal_label") : "Postal Code");
     cepInput.maxLength   = isBR ? 9 : 20;
   }
 }
@@ -1052,47 +1037,38 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
 
     if (tipo === "vip") {
       const modeloIdFinal = Number(modelo_id || window.MODELO_ID_ATUAL);
-      if (!modeloIdFinal) {
-        alert(t("pag.modelo_nao_identificado"));
-        return;
-      }
-      const cpf = obterCpfValido();
-      if (!cpf) return;
+      if (!modeloIdFinal) { alert(t("pag.modelo_nao_identificado")); return; }
       const telefone = obterTelefoneValido();
       if (!telefone) return;
       const endereco = obterEnderecoValido();
       if (!endereco) return;
 
       url = "/api/pagamento/vip/pix";
-      body = { tipo: "vip", modelo_id: modeloIdFinal, cpf, telefone, endereco,
+      body = { tipo: "vip", modelo_id: modeloIdFinal, telefone, endereco,
                aceitou_termos, aceitou_politicas, aceitou_execucao_imediata, aceite_timestamp, versao_termos,
                fingerprint: gerarFingerprint() };
     }
 
     if (tipo === "premium") {
-      const cpf = obterCpfValido();
-      if (!cpf) return;
       const telefone = obterTelefoneValido();
       if (!telefone) return;
       const endereco = obterEnderecoValido();
       if (!endereco) return;
 
       url = "/api/pagamento/premium/pix";
-      body = { tipo: "premium", premium_post_id, cpf, telefone, endereco,
+      body = { tipo: "premium", premium_post_id, telefone, endereco,
                aceitou_termos, aceitou_politicas, aceitou_execucao_imediata, aceite_timestamp, versao_termos,
                fingerprint: gerarFingerprint() };
     }
 
     if (tipo === "midia") {
-      const cpf = obterCpfValido();
-      if (!cpf) return;
       const telefone = obterTelefoneValido();
       if (!telefone) return;
       const endereco = obterEnderecoValido();
       if (!endereco) return;
 
       url = "/api/pagamento/midia/pix";
-      body = { tipo: "midia", conteudo_id, cpf, telefone, endereco,
+      body = { tipo: "midia", conteudo_id, telefone, endereco,
                aceitou_termos, aceitou_politicas, aceitou_execucao_imediata, aceite_timestamp, versao_termos,
                fingerprint: gerarFingerprint() };
     }
@@ -1696,7 +1672,6 @@ async function lerErroResposta(res) {
 function alternarCamposPorMetodo(tipo) {
   if (tipo === "cartao") {
     document.getElementById("blocoEndereco")?.classList.add("hidden");
-    document.getElementById("campoCpf")?.classList.add("hidden");
     document.getElementById("campoTelefone")?.classList.add("hidden");
   }
 }

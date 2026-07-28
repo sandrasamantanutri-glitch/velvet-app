@@ -176,11 +176,6 @@
 <!-- DADOS OBRIGATÓRIOS -->
 <div class="dados-pagamento-box">
 
-  <div id="campoCpf">
-    <label for="cpfPagamento" class="campo-label"><strong data-i18n="pagamento.cpf_label">CPF</strong></label>
-    <input type="text" id="cpfPagamento" class="campo-input" data-i18n-placeholder="pagamento.cpf_placeholder" placeholder="000.000.000-00" maxlength="14"/>
-  </div>
-
   <div id="campoTelefone">
     <label class="campo-label"><strong data-i18n="pagamento.telefone_label">Telefone</strong></label>
     <div class="telefone-pag-row">
@@ -191,37 +186,31 @@
 
   <div id="blocoEndereco" class="hidden">
     <div>
-      <label for="paisPagamento" class="campo-label"><strong>País</strong></label>
+      <label for="paisPagamento" class="campo-label"><strong data-i18n="pagamento.pais_label">País</strong></label>
       <select id="paisPagamento" class="campo-input"></select>
     </div>
     <div>
-      <label for="estadoPagamento" class="campo-label"><strong>Estado / Província / Região</strong></label>
+      <label for="estadoPagamento" class="campo-label"><strong data-i18n="pagamento.estado_label">Estado / Província / Região</strong></label>
       <input type="text" id="estadoPagamento" class="campo-input" placeholder="Estado / Província / Região"/>
     </div>
     <div>
-      <label for="cidadePagamento" class="campo-label"><strong>Cidade</strong></label>
+      <label for="cidadePagamento" class="campo-label"><strong data-i18n="pagamento.cidade_label">Cidade</strong></label>
       <input type="text" id="cidadePagamento" class="campo-input" placeholder="Cidade"/>
     </div>
     <div>
-      <label for="enderecoPagamento" class="campo-label"><strong>Endereço</strong></label>
+      <label for="enderecoPagamento" class="campo-label"><strong data-i18n="pagamento.endereco_label">Endereço</strong></label>
       <input type="text" id="enderecoPagamento" class="campo-input" placeholder="Rua / Avenida / Travessa..."/>
     </div>
-    <div class="campo-row-duplo">
-      <div>
-        <label for="numeroPagamento" class="campo-label"><strong>Número</strong></label>
-        <input type="text" id="numeroPagamento" class="campo-input" placeholder="Nº"/>
-      </div>
-      <div>
-        <label for="complementoPagamento" class="campo-label"><strong>Complemento</strong> <span style="font-weight:normal;font-size:0.85em">(opcional)</span></label>
-        <input type="text" id="complementoPagamento" class="campo-input" placeholder="Apto, Bloco..."/>
-      </div>
+    <div>
+      <label for="endereco2Pagamento" class="campo-label"><strong data-i18n="pagamento.numero_complemento_label">Número e Complemento</strong></label>
+      <input type="text" id="endereco2Pagamento" class="campo-input" placeholder="Nº, Apto, Bloco..."/>
     </div>
     <div class="campo-cep-row">
       <div style="flex:1">
-        <label for="cepPagamento" class="campo-label"><strong>Código Postal</strong></label>
+        <label for="cepPagamento" class="campo-label"><strong data-i18n="pagamento.codigo_postal_label">Código Postal</strong></label>
         <input type="text" id="cepPagamento" class="campo-input" placeholder="Código Postal" maxlength="20"/>
       </div>
-      <button type="button" id="btnBuscarCepPag" class="btn-buscar-cep" onclick="buscarCepPagamento()" style="display:none">Buscar</button>
+      <button type="button" id="btnBuscarCepPag" class="btn-buscar-cep" onclick="buscarCepPagamento()" style="display:none" data-i18n="pagamento.btn_buscar_cep">Buscar</button>
     </div>
     <div id="campoCepFeedback" class="cep-feedback hidden"></div>
   </div>
