@@ -64,7 +64,18 @@ async function initUsuario() {
       }
     });
 
-    if (!res.ok) throw new Error("não autenticado");
+    if (res.status === 401) {
+      localStorage.clear();
+      if (!window.location.pathname.includes("index")) {
+        window.location.href = "/me.html";
+      }
+      return;
+    }
+
+    if (!res.ok) {
+      console.warn("Sessão não verificável no header:", res.status);
+      return;
+    }
 
     const user = await res.json();
 
@@ -89,15 +100,8 @@ async function initUsuario() {
       }, 1000);
     }
 
-
   } catch (e) {
-    console.warn("Sessão inválida no header");
-
-    localStorage.clear();
-
-    if (!window.location.pathname.includes("index")) {
-      window.location.href = "/me.html";
-    }
+    console.warn("Erro de rede no header:", e.message);
   }
 }
 

@@ -32,7 +32,8 @@ module.exports = async function auth(req, res, next) {
       return res.status(401).json({ error: "Token inválido" });
     }
 
-    if (decoded.tv !== result.rows[0].token_version) {
+    const tv = decoded.tv ?? 0;
+    if (tv !== result.rows[0].token_version) {
       return res.status(401).json({ error: "Sessão expirada. Faça login novamente." });
     }
 

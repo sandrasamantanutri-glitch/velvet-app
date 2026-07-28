@@ -6603,7 +6603,6 @@ app.get("/api/cliente/me", authCliente, async (req, res) => {
         c.nome,
         cd.username,
         cd.avatar,
-        cd.capa,
         cd.instagram,
         cd.tiktok,
         cd.local,
