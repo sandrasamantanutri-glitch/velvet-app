@@ -144,7 +144,8 @@ app.use(helmet({
         "https://res.cloudinary.com",
         "https://*.r2.dev",
         "https://cdn.jsdelivr.net",
-        "https://app.zapsign.com.br"
+        "https://app.zapsign.com.br",
+        "https://api.frankfurter.app"
       ],
       frameSrc: [
         "'self'",
@@ -3863,9 +3864,13 @@ async function ipagRequest(method, path, body) {
 }
 
 function formatarTelefoneIpag(tel) {
-  const digits = String(tel || "").replace(/\D/g, "");
-  // iPag only accepts Brazilian numbers: 55 + DDD (2) + number (8-9) = 12-13 digits
-  if (digits.startsWith("55") && digits.length >= 12 && digits.length <= 13) return digits;
+  let digits = String(tel || "").replace(/\D/g, "");
+  // Remove o código do país Brasil (55) se vier junto — o iPag rejeita o 55 na frente
+  if (digits.startsWith("55") && digits.length >= 12) {
+    digits = digits.slice(2);
+  }
+  // iPag espera DDD (2) + número (8-9 dígitos) = 10-11 dígitos
+  if (digits.length >= 10 && digits.length <= 11) return digits;
   return "";
 }
 

@@ -377,7 +377,8 @@ async function renderFormCartao() {
     });
 
     // Resumo de valor + conversor de moeda
-    const valorBrlDisplay = data.valor_brl || 0;
+    // valor_total = total com taxas (15%) e descontos já aplicados — o que a Stripe cobra de facto
+    const valorBrlDisplay = Number(data.valor_total || data.valor_brl || 0);
     const wrapper = document.createElement("div");
     wrapper.id = "stripe-resumo-wrapper";
     wrapper.innerHTML = `
@@ -392,7 +393,7 @@ async function renderFormCartao() {
           </strong>
         </div>
         <div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;">
-          <label style="font-size:0.78rem;color:#6b7280;white-space:nowrap;">Ver no meu país:</label>
+          <label style="font-size:0.78rem;color:#6b7280;white-space:nowrap;">Ver na minha moeda:</label>
           <select id="stripe-select-pais" style="
             flex:1;min-width:160px;border:1.5px solid #e5e7eb;border-radius:8px;
             padding:5px 10px;font-size:0.85rem;color:#1e1e26;background:#fff;
@@ -438,11 +439,12 @@ async function renderFormCartao() {
     container.appendChild(mountDiv);
     stripePaymentElement.mount(mountDiv);
 
-    // Conversor de moeda em tempo real
+    // Conversor de moeda em tempo real (Frankfurter API)
     const _fxCache = {};
-    document.getElementById("stripe-select-pais")?.addEventListener("change", async (e) => {
+    const selectPais = wrapper.querySelector("#stripe-select-pais");
+    selectPais?.addEventListener("change", async (e) => {
       const [, moeda] = (e.target.value || "").split("|");
-      const el = document.getElementById("stripe-preco-convertido");
+      const el = wrapper.querySelector("#stripe-preco-convertido");
       if (!el) return;
 
       if (!moeda || moeda === "BRL") {
@@ -454,15 +456,17 @@ async function renderFormCartao() {
       try {
         if (!_fxCache[moeda]) {
           const r = await fetch(`https://api.frankfurter.app/latest?from=BRL&to=${moeda}`);
+          if (!r.ok) throw new Error("HTTP " + r.status);
           const d = await r.json();
-          _fxCache[moeda] = d.rates?.[moeda] || null;
+          _fxCache[moeda] = d.rates?.[moeda] ?? null;
         }
         const taxa = _fxCache[moeda];
-        if (!taxa) { el.textContent = ""; return; }
-        const convertido = (valorBrlDisplay * taxa).toFixed(2);
-        el.innerHTML = `≈ <strong>${moeda} ${Number(convertido).toLocaleString("en", { minimumFractionDigits: 2 })}</strong> <span style="opacity:0.5;font-size:0.78rem;">(taxa indicativa)</span>`;
+        if (!taxa) { el.textContent = "Taxa não disponível"; return; }
+        const convertido = valorBrlDisplay * taxa;
+        const fmt = convertido.toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        el.innerHTML = `≈ <strong>${moeda} ${fmt}</strong> <span style="opacity:0.5;font-size:0.78rem;">(taxa indicativa)</span>`;
       } catch {
-        el.textContent = "";
+        el.textContent = "Conversão não disponível agora";
       }
     });
 
