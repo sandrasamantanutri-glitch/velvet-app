@@ -91,56 +91,54 @@
         <div class="midia-beneficios"></div>
       </div>
 
-      <div id="blocoCpfTelefone">
-        <div class="campo-cpf" id="campoCpf">
-          <label for="cpfPagamento" data-i18n="chatc.label_cpf">CPF</label>
-          <input id="cpfPagamento" type="text" maxlength="14">
-        </div>
-        <div class="campo-cpf" id="campoTelefone">
-          <label for="phonePagamento" data-i18n="chatc.label_phone">Telefone</label>
-          <input id="phonePagamento" type="text" maxlength="16">
+      <div id="campoCpf">
+        <label for="cpfPagamento" data-i18n="chatc.label_cpf">CPF</label>
+        <input id="cpfPagamento" type="text" maxlength="14" placeholder="000.000.000-00">
+      </div>
+
+      <div id="campoTelefone">
+        <label data-i18n="chatc.label_phone">Telefone</label>
+        <div class="telefone-pag-row">
+          <select id="ddiPagamento" class="select-ddi-pag"></select>
+          <input id="phonePagamento" type="text" class="campo-phone" placeholder="912 345 678"/>
         </div>
       </div>
 
       <div id="blocoEndereco" class="hidden">
+        <div>
+          <label for="paisPagamento">País</label>
+          <select id="paisPagamento" class="campo-input"></select>
+        </div>
+        <div>
+          <label for="estadoPagamento">Estado / Província / Região</label>
+          <input type="text" id="estadoPagamento" class="campo-input" placeholder="Estado / Província / Região"/>
+        </div>
+        <div>
+          <label for="cidadePagamento">Cidade</label>
+          <input type="text" id="cidadePagamento" class="campo-input" placeholder="Cidade"/>
+        </div>
+        <div>
+          <label for="enderecoPagamento">Endereço</label>
+          <input type="text" id="enderecoPagamento" class="campo-input" placeholder="Rua / Avenida / Travessa..."/>
+        </div>
+        <div class="campo-row-duplo">
+          <div>
+            <label for="numeroPagamento">Número</label>
+            <input type="text" id="numeroPagamento" class="campo-input" placeholder="Nº"/>
+          </div>
+          <div>
+            <label for="complementoPagamento">Complemento <span style="font-weight:normal;font-size:0.85em">(opcional)</span></label>
+            <input type="text" id="complementoPagamento" class="campo-input" placeholder="Apto, Bloco..."/>
+          </div>
+        </div>
         <div class="campo-cep-row">
           <div style="flex:1">
-            <label for="cepPagamento">CEP</label>
-            <input type="text" id="cepPagamento" class="campo-input" placeholder="00000-000" maxlength="9"/>
+            <label for="cepPagamento">Código Postal</label>
+            <input type="text" id="cepPagamento" class="campo-input" placeholder="Código Postal" maxlength="20"/>
           </div>
-          <button type="button" class="btn-buscar-cep" onclick="buscarCepPagamento()">Buscar</button>
+          <button type="button" id="btnBuscarCepPag" class="btn-buscar-cep" onclick="buscarCepPagamento()" style="display:none">Buscar</button>
         </div>
         <div id="campoCepFeedback" class="cep-feedback hidden"></div>
-        <div id="camposEnderecoCompleto">
-          <div>
-            <label for="ruaPagamento">Rua</label>
-            <input type="text" id="ruaPagamento" class="campo-input" placeholder="Rua / Avenida"/>
-          </div>
-          <div class="campo-row-duplo">
-            <div>
-              <label for="numeroPagamento">Número</label>
-              <input type="text" id="numeroPagamento" class="campo-input" placeholder="Nº"/>
-            </div>
-            <div>
-              <label for="complementoPagamento">Complemento <span style="font-weight:normal;font-size:0.85em">(opcional)</span></label>
-              <input type="text" id="complementoPagamento" class="campo-input" placeholder="Apto, Bloco..."/>
-            </div>
-          </div>
-          <div>
-            <label for="bairroPagamento">Bairro</label>
-            <input type="text" id="bairroPagamento" class="campo-input" placeholder="Bairro"/>
-          </div>
-          <div class="campo-row-duplo">
-            <div>
-              <label for="cidadePagamento">Cidade</label>
-              <input type="text" id="cidadePagamento" class="campo-input" placeholder="Cidade"/>
-            </div>
-            <div>
-              <label for="estadoPagamento">Estado</label>
-              <input type="text" id="estadoPagamento" class="campo-input" placeholder="UF" maxlength="2"/>
-            </div>
-          </div>
-        </div>
       </div>
 
       <div class="termos-pagamento">
@@ -150,15 +148,9 @@
           <span data-i18n="chatc.terms_and">e com as</span>
           <a href="/policies.html" target="_blank" rel="noopener noreferrer" data-i18n="chatc.terms_link2">Políticas de Utilização</a>.
         </p>
-
         <label class="termos-check-linha" for="aceiteTermosPagamento">
           <input type="checkbox" id="aceiteTermosPagamento" required />
-          <span data-i18n="chatc.terms_accept">Li e aceito os <a href="/terms.html" target="_blank" rel="noopener noreferrer" style="color:inherit;font-weight:600;">Termos de Uso</a> da plataforma.</span>
-        </label>
-
-        <label class="termos-check-linha" for="aceitePoliticasUtilizacao">
-          <input type="checkbox" id="aceitePoliticasUtilizacao" required />
-          <span data-i18n="chatc.terms_policies">Li e aceito as <a href="/policies.html" target="_blank" rel="noopener noreferrer" style="color:inherit;font-weight:600;">Políticas de Utilização</a>, incluindo a Política de Reembolso. Estou ciente de que o acesso à mídia ou serviço digital é imediato após o pagamento e que, com isso, posso perder o direito de arrependimento.</span>
+          <span>Li e aceito os <a href="/terms.html" target="_blank" rel="noopener noreferrer" style="color:inherit;font-weight:600;">Termos de Uso</a> e as <a href="/policies.html" target="_blank" rel="noopener noreferrer" style="color:inherit;font-weight:600;">Políticas de Utilização</a>, incluindo a Política de Reembolso. Estou ciente de que o serviço digital é disponibilizado imediatamente após o pagamento.</span>
         </label>
       </div>
 

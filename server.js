@@ -8533,6 +8533,43 @@ app.put("/api/cliente/dados", authCliente, async (req, res) => {
 });
 
 // ===========================
+// SALVAR ENDEREÇO / TELEFONE DO CLIENTE (modal de pagamento)
+// ===========================
+app.patch("/api/cliente/endereco", authCliente, async (req, res) => {
+  try {
+    const { pais, estado, cidade, endereco, endereco2, cep, telefone } = req.body;
+
+    await db.query(`
+      INSERT INTO clientes_dados (cliente_id, pais, estado, cidade, endereco, endereco2, cep, telefone, criado_em, atualizado_em)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW(),NOW())
+      ON CONFLICT (cliente_id) DO UPDATE SET
+        pais       = COALESCE(EXCLUDED.pais,      clientes_dados.pais),
+        estado     = COALESCE(EXCLUDED.estado,    clientes_dados.estado),
+        cidade     = COALESCE(EXCLUDED.cidade,    clientes_dados.cidade),
+        endereco   = COALESCE(EXCLUDED.endereco,  clientes_dados.endereco),
+        endereco2  = COALESCE(EXCLUDED.endereco2, clientes_dados.endereco2),
+        cep        = COALESCE(EXCLUDED.cep,       clientes_dados.cep),
+        telefone   = COALESCE(EXCLUDED.telefone,  clientes_dados.telefone),
+        atualizado_em = NOW()
+    `, [
+      req.cliente_id,
+      pais     || null,
+      estado   || null,
+      cidade   || null,
+      endereco || null,
+      endereco2 || null,
+      cep      || null,
+      telefone || null
+    ]);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Erro ao salvar endereço cliente:", err);
+    res.status(500).json({ error: "Erro interno." });
+  }
+});
+
+// ===========================
 // CANCELAR VIP
 // ===========================
 

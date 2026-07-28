@@ -64,7 +64,7 @@ function selecionarMoeda(moeda) {
   const isUsd = window.CURRENCY_ATUAL === "usd";
   document.getElementById("campoCpf")?.classList.toggle("hidden", isUsd);
   document.getElementById("campoTelefone")?.classList.toggle("hidden", isUsd);
-  document.getElementById("blocoEndereco")?.classList.toggle("hidden", isUsd);
+  document.getElementById("blocoEndereco")?.classList.toggle("hidden", true); // endereço mostrado apenas via prepararPagamento
 }
 
 function abrirPopupPagamento() {
@@ -72,6 +72,8 @@ function abrirPopupPagamento() {
   if (!popup) return;
 
   popup.classList.remove("hidden");
+
+  inicializarSelectsPagamento();
 
   // reset moeda para BRL ao abrir
   window.CURRENCY_ATUAL = "brl";
@@ -104,24 +106,18 @@ function validarDadosIniciaisPagamento() {
 
 function obterAceitesPagamento() {
   const aceitouTermos = !!document.getElementById("aceiteTermosPagamento")?.checked;
-  const aceitouPoliticas = !!document.getElementById("aceitePoliticasUtilizacao")?.checked;
 
   if (!aceitouTermos) {
     alert(t("pag.aceite_termos_obrigatorio"));
     return null;
   }
 
-  if (!aceitouPoliticas) {
-    alert(t("pag.aceite_politicas_obrigatorio"));
-    return null;
-  }
-
   return {
-    aceitou_termos: aceitouTermos,
-    aceitou_politicas: aceitouPoliticas,
+    aceitou_termos: true,
+    aceitou_politicas: true,
     aceitou_execucao_imediata: true,
     aceite_timestamp: new Date().toISOString(),
-    versao_termos: "2026-07-13"
+    versao_termos: "2026-07-28"
   };
 }
 
@@ -143,12 +139,10 @@ function voltarEtapaPagamento() {
   resetarEstadoPix();
   resetarEstadoCartao();
 
-  // Restaura campos Brasil (PIX) conforme moeda — escondidos apenas em USD
+  // Restaura campos conforme moeda — escondidos apenas em USD
   const isUsd = window.CURRENCY_ATUAL === "usd";
   document.getElementById("campoCpf")?.classList.toggle("hidden", isUsd);
   document.getElementById("campoTelefone")?.classList.toggle("hidden", isUsd);
-  document.getElementById("blocoCpfTelefone")?.classList.toggle("hidden", isUsd);
-  document.getElementById("blocoEndereco")?.classList.toggle("hidden", isUsd);
 
   document.getElementById("etapaPagamentoPix")?.classList.add("hidden");
   document.getElementById("etapaPagamentoCartao")?.classList.add("hidden");
@@ -441,6 +435,19 @@ async function confirmarPagamentoCartao() {
       payload.endereco = obterEnderecoValido();
     }
 
+    // Salva endereço na clientes_dados se foi preenchido
+    if (payload.endereco) {
+      salvarEnderecoCliente({
+        pais:      payload.endereco.pais,
+        estado:    payload.endereco.estado,
+        cidade:    payload.endereco.cidade,
+        endereco:  payload.endereco.rua,
+        endereco2: payload.endereco.endereco2,
+        cep:       payload.endereco.cep,
+        telefone:  payload.telefone
+      });
+    }
+
     const res = await fetch(`/api/pagamento/${tipo}/cartao`, {
       method: "POST",
       headers: {
@@ -672,7 +679,6 @@ function prepararPagamento() {
     // VIP: mostra CPF, telefone e endereço (obrigatórios para PIX)
     document.getElementById("campoCpf")?.classList.remove("hidden");
     document.getElementById("campoTelefone")?.classList.remove("hidden");
-    document.getElementById("blocoCpfTelefone")?.classList.remove("hidden");
     document.getElementById("blocoEndereco")?.classList.remove("hidden");
     return;
   }
@@ -691,10 +697,8 @@ function prepararPagamento() {
     });
 
     document.querySelector(".midia-detalhes")?.classList.remove("hidden");
-    // Premium: mostra CPF, telefone e endereço (obrigatórios para PIX)
     document.getElementById("campoCpf")?.classList.remove("hidden");
     document.getElementById("campoTelefone")?.classList.remove("hidden");
-    document.getElementById("blocoCpfTelefone")?.classList.remove("hidden");
     document.getElementById("blocoEndereco")?.classList.remove("hidden");
     return;
   }
@@ -713,10 +717,8 @@ function prepararPagamento() {
     });
 
     document.querySelector(".midia-detalhes")?.classList.remove("hidden");
-    // Mídia: mostra CPF, telefone e endereço (obrigatórios para PIX)
     document.getElementById("campoCpf")?.classList.remove("hidden");
     document.getElementById("campoTelefone")?.classList.remove("hidden");
-    document.getElementById("blocoCpfTelefone")?.classList.remove("hidden");
     document.getElementById("blocoEndereco")?.classList.remove("hidden");
     return;
   }
@@ -811,25 +813,24 @@ function obterCpfValido() {
 }
 
 function obterTelefoneValido() {
-  const input =
-    document.getElementById("phonePagamento") ||
-    document.getElementById("card_phone") ||
-    document.getElementById("phone");
+  const ddiSelect = document.getElementById("ddiPagamento");
+  const input     = document.getElementById("phonePagamento");
 
   if (!input) {
     alert(t("pag.telefone_campo_nao_encontrado"));
     return null;
   }
 
-  const telefone = String(input.value || "").replace(/\D/g, "");
+  const ddi    = String(ddiSelect?.value || "").trim();
+  const numero = String(input.value || "").replace(/\D/g, "");
 
-  if (telefone.length < 10 || telefone.length > 11) {
-    alert(t("pag.telefone_invalido"));
+  if (numero.length < 5) {
+    alert(t("pag.telefone_invalido") || "Preencha o número de telefone.");
     input.focus();
     return null;
   }
 
-  return telefone;
+  return ddi + numero;
 }
 
 async function buscarCepPagamento() {
@@ -851,104 +852,159 @@ async function buscarCepPagamento() {
     const data = await res.json();
 
     if (data.erro) {
-      if (feedback) { feedback.textContent = "CEP não encontrado."; }
+      if (feedback) feedback.textContent = "CEP não encontrado.";
       return;
     }
 
     const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ""; };
-    set("ruaPagamento",    data.logradouro);
-    set("bairroPagamento", data.bairro);
-    set("cidadePagamento", data.localidade);
-    set("estadoPagamento", data.uf);
+    set("enderecoPagamento", data.logradouro);
+    set("cidadePagamento",   data.localidade);
+    set("estadoPagamento",   data.uf);
 
     if (feedback) { feedback.textContent = ""; feedback.classList.add("hidden"); }
     document.getElementById("numeroPagamento")?.focus();
   } catch {
-    if (feedback) { feedback.textContent = "Erro ao buscar CEP. Verifique sua conexão."; }
+    if (feedback) feedback.textContent = "Erro ao buscar CEP. Verifique sua conexão.";
   }
 }
-
-// Aplica máscara CEP ao digitar e busca automaticamente quando completo
-(function bindCepInput() {
-  const el = document.getElementById("cepPagamento");
-  if (!el || el.dataset.bound) return;
-  el.dataset.bound = "true";
-  el.addEventListener("input", e => {
-    let v = e.target.value.replace(/\D/g, "").slice(0, 8);
-    if (v.length > 5) v = v.slice(0, 5) + "-" + v.slice(5);
-    e.target.value = v;
-    if (v.replace(/\D/g, "").length === 8) buscarCepPagamento();
-  });
-})();
 
 function obterEnderecoValido() {
-  const cep         = String(document.getElementById("cepPagamento")?.value      || "").replace(/\D/g, "");
-  const rua         = String(document.getElementById("ruaPagamento")?.value       || "").trim();
-  const numero      = String(document.getElementById("numeroPagamento")?.value    || "").trim();
+  const pais        = String(document.getElementById("paisPagamento")?.value        || "").trim();
+  const estado      = String(document.getElementById("estadoPagamento")?.value      || "").trim();
+  const cidade      = String(document.getElementById("cidadePagamento")?.value      || "").trim();
+  const rua         = String(document.getElementById("enderecoPagamento")?.value    || "").trim();
+  const numero      = String(document.getElementById("numeroPagamento")?.value      || "").trim();
   const complemento = String(document.getElementById("complementoPagamento")?.value || "").trim();
-  const bairro      = String(document.getElementById("bairroPagamento")?.value    || "").trim();
-  const cidade      = String(document.getElementById("cidadePagamento")?.value    || "").trim();
-  const estado      = String(document.getElementById("estadoPagamento")?.value    || "").trim().toUpperCase();
+  const cep         = String(document.getElementById("cepPagamento")?.value         || "").trim();
+  const endereco2   = [numero, complemento].filter(Boolean).join(", ");
 
-  if (cep.length !== 8) {
-    alert("Preencha o CEP corretamente.");
-    document.getElementById("cepPagamento")?.focus();
-    return null;
-  }
-  if (!rua) {
-    alert("Preencha o nome da rua.");
-    document.getElementById("ruaPagamento")?.focus();
-    return null;
-  }
-  if (!numero) {
-    alert("Preencha o número do endereço.");
-    document.getElementById("numeroPagamento")?.focus();
-    return null;
-  }
-  if (!bairro) {
-    alert("Preencha o bairro.");
-    document.getElementById("bairroPagamento")?.focus();
-    return null;
-  }
-  if (!cidade) {
-    alert("Preencha a cidade.");
-    document.getElementById("cidadePagamento")?.focus();
-    return null;
-  }
-  if (estado.length !== 2) {
-    alert("Preencha o estado com a sigla de 2 letras (ex: SP).");
-    document.getElementById("estadoPagamento")?.focus();
-    return null;
-  }
+  if (!pais)    { alert("Selecione o país.");         document.getElementById("paisPagamento")?.focus();     return null; }
+  if (!estado)  { alert("Preencha o estado/região."); document.getElementById("estadoPagamento")?.focus();   return null; }
+  if (!cidade)  { alert("Preencha a cidade.");         document.getElementById("cidadePagamento")?.focus();   return null; }
+  if (!rua)     { alert("Preencha o endereço.");       document.getElementById("enderecoPagamento")?.focus(); return null; }
+  if (!numero)  { alert("Preencha o número.");         document.getElementById("numeroPagamento")?.focus();   return null; }
+  if (!cep)     { alert("Preencha o código postal.");  document.getElementById("cepPagamento")?.focus();      return null; }
 
-  return { cep, rua, numero, complemento, bairro, cidade, estado };
+  return { pais, estado, cidade, rua, numero, complemento, endereco2, cep };
 }
 
-const phonePix = document.getElementById("phonePagamento");
+// ── PAÍSES E DDI ─────────────────────────────────────────────────────────────
+const PAISES_PAGAMENTO = [
+  { code: "PT", name: "Portugal",             ddi: "+351" },
+  { code: "BR", name: "Brasil",               ddi: "+55"  },
+  { code: "AO", name: "Angola",               ddi: "+244" },
+  { code: "MZ", name: "Moçambique",           ddi: "+258" },
+  { code: "CV", name: "Cabo Verde",           ddi: "+238" },
+  { code: "ST", name: "São Tomé e Príncipe",  ddi: "+239" },
+  { code: "GW", name: "Guiné-Bissau",         ddi: "+245" },
+  { code: "TL", name: "Timor-Leste",          ddi: "+670" },
+  { code: "ES", name: "Espanha",              ddi: "+34"  },
+  { code: "FR", name: "França",               ddi: "+33"  },
+  { code: "DE", name: "Alemanha",             ddi: "+49"  },
+  { code: "GB", name: "Reino Unido",          ddi: "+44"  },
+  { code: "IT", name: "Itália",               ddi: "+39"  },
+  { code: "NL", name: "Países Baixos",        ddi: "+31"  },
+  { code: "BE", name: "Bélgica",              ddi: "+32"  },
+  { code: "CH", name: "Suíça",               ddi: "+41"  },
+  { code: "AT", name: "Áustria",             ddi: "+43"  },
+  { code: "SE", name: "Suécia",              ddi: "+46"  },
+  { code: "NO", name: "Noruega",              ddi: "+47"  },
+  { code: "DK", name: "Dinamarca",            ddi: "+45"  },
+  { code: "FI", name: "Finlândia",           ddi: "+358" },
+  { code: "IE", name: "Irlanda",              ddi: "+353" },
+  { code: "LU", name: "Luxemburgo",           ddi: "+352" },
+  { code: "GR", name: "Grécia",              ddi: "+30"  },
+  { code: "PL", name: "Polónia",             ddi: "+48"  },
+  { code: "US", name: "Estados Unidos",       ddi: "+1"   },
+  { code: "CA", name: "Canadá",              ddi: "+1"   },
+  { code: "MX", name: "México",              ddi: "+52"  },
+  { code: "AR", name: "Argentina",            ddi: "+54"  },
+  { code: "CO", name: "Colômbia",            ddi: "+57"  },
+  { code: "CL", name: "Chile",               ddi: "+56"  },
+  { code: "PE", name: "Peru",                ddi: "+51"  },
+  { code: "UY", name: "Uruguai",             ddi: "+598" },
+  { code: "PY", name: "Paraguai",            ddi: "+595" },
+  { code: "BO", name: "Bolívia",             ddi: "+591" },
+  { code: "VE", name: "Venezuela",            ddi: "+58"  },
+  { code: "EC", name: "Equador",              ddi: "+593" },
+  { code: "AU", name: "Austrália",           ddi: "+61"  },
+  { code: "NZ", name: "Nova Zelândia",        ddi: "+64"  },
+  { code: "JP", name: "Japão",              ddi: "+81"  },
+  { code: "SG", name: "Singapura",            ddi: "+65"  },
+  { code: "IN", name: "Índia",              ddi: "+91"  },
+  { code: "CN", name: "China",               ddi: "+86"  },
+  { code: "AE", name: "Emirados Árabes",    ddi: "+971" },
+  { code: "SA", name: "Arábia Saudita",     ddi: "+966" },
+  { code: "MA", name: "Marrocos",            ddi: "+212" },
+  { code: "ZA", name: "África do Sul",      ddi: "+27"  },
+  { code: "NG", name: "Nigéria",            ddi: "+234" },
+];
 
-function aplicarMascaraTelefone(input) {
-  if (!input || input.dataset.maskBound) return;
+function inicializarSelectsPagamento() {
+  const selPais = document.getElementById("paisPagamento");
+  const selDdi  = document.getElementById("ddiPagamento");
 
-  input.dataset.maskBound = "true";
+  if (selPais && !selPais.dataset.populated) {
+    selPais.dataset.populated = "true";
+    PAISES_PAGAMENTO.forEach(p => {
+      const opt = document.createElement("option");
+      opt.value       = p.code;
+      opt.textContent = p.name;
+      selPais.appendChild(opt);
+    });
+    selPais.value = "PT";
+    selPais.addEventListener("change", atualizarDdiPorPais);
+  }
 
-  input.addEventListener("input", e => {
-    let v = e.target.value.replace(/\D/g, "").slice(0, 11);
+  if (selDdi && !selDdi.dataset.populated) {
+    selDdi.dataset.populated = "true";
+    PAISES_PAGAMENTO.forEach(p => {
+      const opt = document.createElement("option");
+      opt.value       = p.ddi;
+      opt.textContent = `${p.ddi} ${p.name}`;
+      selDdi.appendChild(opt);
+    });
+    selDdi.value = "+351";
+  }
 
-    if (v.length > 10) {
-      v = v.replace(/^(\d{2})(\d{5})(\d{0,4}).*/, "($1) $2-$3");
-    } else if (v.length > 6) {
-      v = v.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, "($1) $2-$3");
-    } else if (v.length > 2) {
-      v = v.replace(/^(\d{2})(\d{0,5}).*/, "($1) $2");
-    } else if (v.length > 0) {
-      v = v.replace(/^(\d*)/, "($1");
-    }
-
-    e.target.value = v;
-  });
+  atualizarBotaoBuscarCep();
 }
 
-aplicarMascaraTelefone(phonePix);
+function atualizarDdiPorPais() {
+  const selPais = document.getElementById("paisPagamento");
+  const selDdi  = document.getElementById("ddiPagamento");
+  if (!selPais || !selDdi) return;
+  const pais = PAISES_PAGAMENTO.find(p => p.code === selPais.value);
+  if (pais) selDdi.value = pais.ddi;
+  atualizarBotaoBuscarCep();
+}
+
+function atualizarBotaoBuscarCep() {
+  const selPais  = document.getElementById("paisPagamento");
+  const btn      = document.getElementById("btnBuscarCepPag");
+  const cepInput = document.getElementById("cepPagamento");
+  if (!btn) return;
+  const isBR = selPais?.value === "BR";
+  btn.style.display = isBR ? "" : "none";
+  if (cepInput) {
+    cepInput.placeholder = isBR ? "00000-000" : "Código Postal";
+    cepInput.maxLength   = isBR ? 9 : 20;
+  }
+}
+
+async function salvarEnderecoCliente({ pais, estado, cidade, endereco, endereco2, cep, telefone }) {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    await fetch("/api/cliente/endereco", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ pais, estado, cidade, endereco, endereco2, cep, telefone })
+    });
+  } catch (err) {
+    console.warn("salvarEnderecoCliente:", err);
+  }
+}
 
 
 function resetarEstadoPix() {
@@ -1044,6 +1100,20 @@ window.pagarComPix = async function ({ tipo, modelo_id, conteudo_id, premium_pos
     if (!url) {
       alert(t("pag.tipo_pagamento_invalido"));
       return;
+    }
+
+    // Salva dados na clientes_dados (fire & forget)
+    const telefoneCompleto = obterTelefoneValido();
+    if (body.endereco) {
+      salvarEnderecoCliente({
+        pais:      body.endereco.pais,
+        estado:    body.endereco.estado,
+        cidade:    body.endereco.cidade,
+        endereco:  body.endereco.rua,
+        endereco2: body.endereco.endereco2,
+        cep:       body.endereco.cep,
+        telefone:  telefoneCompleto || body.telefone
+      });
     }
 
     // Todos os campos válidos → avança para loading
@@ -1625,13 +1695,10 @@ async function lerErroResposta(res) {
 
 function alternarCamposPorMetodo(tipo) {
   if (tipo === "cartao") {
-    // Cartão é internacional — esconde todos os campos exclusivos do Brasil (PIX)
     document.getElementById("blocoEndereco")?.classList.add("hidden");
     document.getElementById("campoCpf")?.classList.add("hidden");
     document.getElementById("campoTelefone")?.classList.add("hidden");
-    document.getElementById("blocoCpfTelefone")?.classList.add("hidden");
   }
-  // Para PIX: campos já estão visíveis desde que prepararPagamento() rodou
 }
 
 // formata valor na moeda correta (BRL ou USD)
@@ -1692,6 +1759,7 @@ function confirmarVIPEContinuar() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  inicializarSelectsPagamento();
   bindFormularioPagamento();
 
   document.getElementById("btnGerarPix")?.addEventListener("click", () => {

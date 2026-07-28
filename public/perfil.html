@@ -182,49 +182,48 @@
   </div>
 
   <div id="campoTelefone">
-    <label for="phonePagamento" class="campo-label"><strong data-i18n="pagamento.telefone_label">Telefone</strong></label>
-    <input type="text" id="phonePagamento" class="campo-input" data-i18n-placeholder="pagamento.telefone_placeholder" placeholder="(11) 99999-9999"/>
+    <label class="campo-label"><strong data-i18n="pagamento.telefone_label">Telefone</strong></label>
+    <div class="telefone-pag-row">
+      <select id="ddiPagamento" class="select-ddi-pag"></select>
+      <input type="text" id="phonePagamento" class="campo-input campo-phone" placeholder="912 345 678"/>
+    </div>
   </div>
 
   <div id="blocoEndereco" class="hidden">
+    <div>
+      <label for="paisPagamento" class="campo-label"><strong>País</strong></label>
+      <select id="paisPagamento" class="campo-input"></select>
+    </div>
+    <div>
+      <label for="estadoPagamento" class="campo-label"><strong>Estado / Província / Região</strong></label>
+      <input type="text" id="estadoPagamento" class="campo-input" placeholder="Estado / Província / Região"/>
+    </div>
+    <div>
+      <label for="cidadePagamento" class="campo-label"><strong>Cidade</strong></label>
+      <input type="text" id="cidadePagamento" class="campo-input" placeholder="Cidade"/>
+    </div>
+    <div>
+      <label for="enderecoPagamento" class="campo-label"><strong>Endereço</strong></label>
+      <input type="text" id="enderecoPagamento" class="campo-input" placeholder="Rua / Avenida / Travessa..."/>
+    </div>
+    <div class="campo-row-duplo">
+      <div>
+        <label for="numeroPagamento" class="campo-label"><strong>Número</strong></label>
+        <input type="text" id="numeroPagamento" class="campo-input" placeholder="Nº"/>
+      </div>
+      <div>
+        <label for="complementoPagamento" class="campo-label"><strong>Complemento</strong> <span style="font-weight:normal;font-size:0.85em">(opcional)</span></label>
+        <input type="text" id="complementoPagamento" class="campo-input" placeholder="Apto, Bloco..."/>
+      </div>
+    </div>
     <div class="campo-cep-row">
       <div style="flex:1">
-        <label for="cepPagamento" class="campo-label"><strong>CEP</strong></label>
-        <input type="text" id="cepPagamento" class="campo-input" placeholder="00000-000" maxlength="9"/>
+        <label for="cepPagamento" class="campo-label"><strong>Código Postal</strong></label>
+        <input type="text" id="cepPagamento" class="campo-input" placeholder="Código Postal" maxlength="20"/>
       </div>
-      <button type="button" class="btn-buscar-cep" onclick="buscarCepPagamento()">Buscar</button>
+      <button type="button" id="btnBuscarCepPag" class="btn-buscar-cep" onclick="buscarCepPagamento()" style="display:none">Buscar</button>
     </div>
     <div id="campoCepFeedback" class="cep-feedback hidden"></div>
-    <div id="camposEnderecoCompleto">
-      <div>
-        <label for="ruaPagamento" class="campo-label"><strong>Rua</strong></label>
-        <input type="text" id="ruaPagamento" class="campo-input" placeholder="Rua / Avenida"/>
-      </div>
-      <div class="campo-row-duplo">
-        <div>
-          <label for="numeroPagamento" class="campo-label"><strong>Número</strong></label>
-          <input type="text" id="numeroPagamento" class="campo-input" placeholder="Nº"/>
-        </div>
-        <div>
-          <label for="complementoPagamento" class="campo-label"><strong>Complemento</strong> <span style="font-weight:normal;font-size:0.85em">(opcional)</span></label>
-          <input type="text" id="complementoPagamento" class="campo-input" placeholder="Apto, Bloco..."/>
-        </div>
-      </div>
-      <div>
-        <label for="bairroPagamento" class="campo-label"><strong>Bairro</strong></label>
-        <input type="text" id="bairroPagamento" class="campo-input" placeholder="Bairro"/>
-      </div>
-      <div class="campo-row-duplo">
-        <div>
-          <label for="cidadePagamento" class="campo-label"><strong>Cidade</strong></label>
-          <input type="text" id="cidadePagamento" class="campo-input" placeholder="Cidade"/>
-        </div>
-        <div>
-          <label for="estadoPagamento" class="campo-label"><strong>Estado</strong></label>
-          <input type="text" id="estadoPagamento" class="campo-input" placeholder="UF" maxlength="2"/>
-        </div>
-      </div>
-    </div>
   </div>
 
   <div class="termos-pagamento">
@@ -234,18 +233,12 @@
       <span data-i18n="pagamento.termos_e">e com as</span>
       <a href="/policies.html" target="_blank" rel="noopener noreferrer" data-i18n="pagamento.termos_link2">Políticas de Utilização</a>.
     </p>
-
     <label class="termos-check-linha" for="aceiteTermosPagamento">
       <input type="checkbox" id="aceiteTermosPagamento" required />
-      <span data-i18n="pagamento.aceite_termos">Li e aceito os <a href="/terms.html" target="_blank" rel="noopener noreferrer" style="color:inherit;font-weight:600;">Termos de Uso</a> da plataforma.</span>
+      <span>Li e aceito os <a href="/terms.html" target="_blank" rel="noopener noreferrer" style="color:inherit;font-weight:600;">Termos de Uso</a> e as <a href="/policies.html" target="_blank" rel="noopener noreferrer" style="color:inherit;font-weight:600;">Políticas de Utilização</a>, incluindo a Política de Reembolso. Estou ciente de que o serviço digital é disponibilizado imediatamente após o pagamento.</span>
     </label>
-
-    <label class="termos-check-linha" for="aceitePoliticasUtilizacao">
-      <input type="checkbox" id="aceitePoliticasUtilizacao" required />
-      <span data-i18n="pagamento.aceite_politicas">Li e aceito as <a href="/policies.html" target="_blank" rel="noopener noreferrer" style="color:inherit;font-weight:600;">Políticas de Utilização</a>, incluindo a Política de Reembolso. Estou ciente de que a assinatura não garante acesso a conteúdo explícito ou exclusivo, e que o serviço digital é disponibilizado imediatamente após o pagamento.</span>
-    </label>
-
   </div>
+
 </div>
 
 
