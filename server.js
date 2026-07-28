@@ -13505,16 +13505,23 @@ app.post("/api/pagamento/vip/criar-intent", authCliente, async (req, res) => {
     }
 
     const modeloRes = await client.query(
-      `SELECT m.id, p.preco AS valor_mensal
-       FROM modelos m LEFT JOIN planos p ON p.modelo_id = m.id AND p.ativo = true
-       WHERE m.id = $1 LIMIT 1`,
+      `SELECT 1 FROM modelos WHERE id = $1 LIMIT 1`,
       [modeloIdNum]
     );
     if (!modeloRes.rowCount) {
       await client.query("ROLLBACK");
       return res.status(404).json({ error: "Modelo não encontrado" });
     }
-    const valorBasePlano = Number(modeloRes.rows[0].valor_mensal || 0);
+
+    const planoRes = await client.query(
+      `SELECT valor_mensal FROM modelos_planos WHERE modelo_id = $1 LIMIT 1`,
+      [modeloIdNum]
+    );
+    if (!planoRes.rowCount) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Plano VIP não definido" });
+    }
+    const valorBasePlano = Number(planoRes.rows[0].valor_mensal || 0);
     if (!valorBasePlano || valorBasePlano <= 0) {
       await client.query("ROLLBACK");
       return res.status(400).json({ error: "Modelo sem plano ativo." });
