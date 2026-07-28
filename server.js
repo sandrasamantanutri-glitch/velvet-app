@@ -10643,7 +10643,7 @@ app.post("/api/pagamento/vip/pix", authCliente, async (req, res) => {
     const cpfVip = String(cpf || "").replace(/\D/g, "") || null;
     const telefoneVip = String(telefone || "").replace(/\D/g, "") || null;
 
-    if (!endereco || !endereco.cep || !endereco.rua || !endereco.numero || !endereco.bairro || !endereco.cidade || !endereco.estado) {
+    if (!endereco || !endereco.cep || !endereco.rua || !endereco.cidade || !endereco.estado) {
       return res.status(400).json({ error: "Endereço completo obrigatório para pagamento PIX." });
     }
 
@@ -11041,7 +11041,7 @@ app.post("/api/pagamento/midia/pix", authCliente, async (req, res) => {
    const { conteudo_id, cpf, telefone, endereco, aceitou_termos, aceitou_execucao_imediata, aceite_timestamp, versao_termos, fingerprint } = req.body;
     const userId = req.user.id;
 
-    if (!endereco || !endereco.cep || !endereco.rua || !endereco.numero || !endereco.bairro || !endereco.cidade || !endereco.estado) {
+    if (!endereco || !endereco.cep || !endereco.rua || !endereco.cidade || !endereco.estado) {
       return res.status(400).json({ error: "Endereço completo obrigatório para pagamento PIX." });
     }
 
@@ -11363,7 +11363,7 @@ const {
     const cpfPremium = String(cpf || "").replace(/\D/g, "") || null;
     const telefonePremium = String(telefone || "").replace(/\D/g, "") || null;
 
-    if (!endereco || !endereco.cep || !endereco.rua || !endereco.numero || !endereco.bairro || !endereco.cidade || !endereco.estado) {
+    if (!endereco || !endereco.cep || !endereco.rua || !endereco.cidade || !endereco.estado) {
       return res.status(400).json({ error: "Endereço completo obrigatório para pagamento PIX." });
     }
 

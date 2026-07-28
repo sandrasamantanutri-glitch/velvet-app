@@ -885,11 +885,11 @@
     "categoria_label": "O que encontrará nesta assinatura:",
     "btn_aceitar": "Aceito e quero continuar",
     "btn_cancelar": "Cancelar",
-    "cat_social_nome": "Social",
+    "cat_social_nome": "🌍 Social",
     "cat_social_desc": "Conteúdos do dia a dia, incluindo fotografias, vídeos, viagens, lifestyle, gaming, fitness, moda e outros conteúdos de entretenimento.",
-    "cat_premium_nome": "Premium",
-    "cat_premium_desc": "Conteúdo mais sensual, como ensaios em biquíni, lingerie, cosplay e outras produções com maior apelo visual, sem nudez ou conteúdo explícito.",
-    "cat_adulto_nome": "Privado",
+    "cat_premium_nome": "🔥 Premium",
+    "cat_premium_desc": "Conteúdo mais sensual, como ensaios em biquíni, lingerie, cosplay e outras produções com maior apelo visual, SEM NUDEZ OU CONTEÚDO EXPLICÍTO.",
+    "cat_adulto_nome": "🔒 Privado",
     "cat_adulto_desc": "Conteúdo reservado para adultos, disponível mediante validação da identidade do utilizador."
   },
   "contato_extra": {

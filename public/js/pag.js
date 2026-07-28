@@ -1711,17 +1711,14 @@ let _metodoVIPPendente = null;
 function renderCategoriaVIP(categoria) {
   const defs = {
     social: {
-      icon: "🌍",
       nome: t("vip_confirm.cat_social_nome"),
       desc: t("vip_confirm.cat_social_desc")
     },
     premium: {
-      icon: "🔥",
       nome: t("vip_confirm.cat_premium_nome"),
       desc: t("vip_confirm.cat_premium_desc")
     },
     adulto: {
-      icon: "🔒",
       nome: t("vip_confirm.cat_adulto_nome"),
       desc: t("vip_confirm.cat_adulto_desc")
     }
