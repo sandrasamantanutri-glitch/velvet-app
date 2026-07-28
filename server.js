@@ -13414,6 +13414,539 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
   }
 });
 
+// ============================================================
+// PAYMENT ELEMENT — criar PaymentIntent (confirmação no cliente)
+// Estes endpoints substituem o confirm server-side.
+// O webhook /api/webhook/stripe processa payment_intent.succeeded.
+// ============================================================
+
+// Converte valor para centavos respeitando moedas zero-decimal
+function stripeAmountFromValue(valor, currency) {
+  const zeroDecimal = ["bif","clp","gnf","jpy","kmf","krw","mga","pyg","rwf","ugx","vnd","xaf","xof"];
+  return zeroDecimal.includes(String(currency).toLowerCase())
+    ? Math.round(valor)
+    : Math.round(valor * 100);
+}
+
+// ── VIP criar-intent ────────────────────────────────────────
+app.post("/api/pagamento/vip/criar-intent", authCliente, async (req, res) => {
+  const client = await db.connect();
+  let cliente_id = null;
+  try {
+    await client.query("BEGIN");
+
+    const {
+      modelo_id, aceitou_termos, aceitou_execucao_imediata,
+      aceite_timestamp, versao_termos, fingerprint,
+      cpf, telefone, currency: currencyParam, taxa_cambio: taxaCambioParam
+    } = req.body || {};
+
+    const currency   = String(currencyParam || "brl").toLowerCase();
+    const taxa_cambio = taxaCambioParam ? Number(taxaCambioParam) : null;
+    const cpfVip     = String(cpf || "").replace(/\D/g, "") || null;
+    const telefoneVip = String(telefone || "").replace(/\D/g, "") || null;
+    const userId     = Number(req.user?.id || 0);
+
+    if (!Number.isInteger(userId) || userId <= 0) {
+      await client.query("ROLLBACK");
+      return res.status(401).json({ error: "Usuário inválido." });
+    }
+    const modeloIdNum = Number(modelo_id);
+    if (!Number.isInteger(modeloIdNum) || modeloIdNum <= 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "modelo_id inválido" });
+    }
+    if (!fingerprint) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Fingerprint obrigatório." });
+    }
+    if (!aceitou_termos) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Você precisa aceitar os termos." });
+    }
+    if (!aceitou_execucao_imediata) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Aceite de execução imediata obrigatório." });
+    }
+    if (!aceite_timestamp || Number.isNaN(new Date(aceite_timestamp).getTime())) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Data de aceite inválida." });
+    }
+
+    const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket.remoteAddress || null;
+
+    const ipBloq = await client.query(`SELECT 1 FROM ips_bloqueados WHERE ip = $1 LIMIT 1`, [ip]);
+    if (ipBloq.rowCount > 0) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ error: "Conta temporariamente bloqueada." });
+    }
+
+    const clienteRes = await client.query(
+      `SELECT c.id, c.nome, c.bloqueado, u.email
+       FROM clientes c JOIN users u ON u.id = c.user_id
+       WHERE c.user_id = $1 LIMIT 1`,
+      [userId]
+    );
+    if (!clienteRes.rowCount) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Cliente não encontrado" });
+    }
+    cliente_id = Number(clienteRes.rows[0].id);
+    const { bloqueado, email } = clienteRes.rows[0];
+    if (bloqueado) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ error: "Conta bloqueada." });
+    }
+
+    const risco = await client.query(`SELECT 1 FROM cliente_risco WHERE cliente_id = $1 AND ativo = true LIMIT 1`, [cliente_id]);
+    if (risco.rowCount > 0) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ error: "Compras temporariamente bloqueadas para esta conta." });
+    }
+
+    const modeloRes = await client.query(
+      `SELECT m.id, p.preco AS valor_mensal
+       FROM modelos m LEFT JOIN planos p ON p.modelo_id = m.id AND p.ativo = true
+       WHERE m.id = $1 LIMIT 1`,
+      [modeloIdNum]
+    );
+    if (!modeloRes.rowCount) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Modelo não encontrado" });
+    }
+    const valorBasePlano = Number(modeloRes.rows[0].valor_mensal || 0);
+    if (!valorBasePlano || valorBasePlano <= 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Modelo sem plano ativo." });
+    }
+
+    const ofertaRes = await client.query(
+      `SELECT id, desconto_percentual, valor_promocional
+       FROM ofertas WHERE modelo_id = $1 AND ativa = true
+       AND (data_inicio IS NULL OR data_inicio <= NOW())
+       AND (data_fim IS NULL OR data_fim >= NOW())
+       ORDER BY created_at DESC LIMIT 1`,
+      [modeloIdNum]
+    );
+    let valorAssinatura = valorBasePlano;
+    let oferta_id = null;
+    if (ofertaRes.rowCount) {
+      oferta_id = ofertaRes.rows[0].id;
+      if (ofertaRes.rows[0].valor_promocional) {
+        valorAssinatura = Number(ofertaRes.rows[0].valor_promocional);
+      } else if (ofertaRes.rows[0].desconto_percentual) {
+        const desc = Number(ofertaRes.rows[0].desconto_percentual);
+        valorAssinatura = valorBasePlano - (valorBasePlano * desc / 100);
+      }
+    }
+    valorAssinatura = Number(valorAssinatura.toFixed(2));
+    if (!valorAssinatura || valorAssinatura <= 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Valor inválido" });
+    }
+
+    const { taxaTransacao, taxaPlataforma, valorTotal } = calcTaxaStripe(valorAssinatura);
+
+    // Converter para moeda alvo quando taxa_cambio é fornecida
+    const valorTotalFinal = (taxa_cambio && currency !== "brl")
+      ? Number((valorTotal * taxa_cambio).toFixed(2))
+      : valorTotal;
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: stripeAmountFromValue(valorTotalFinal, currency),
+      currency,
+      automatic_payment_methods: { enabled: true },
+      payment_method_options: {
+        card: { request_three_d_secure: "any" }
+      },
+      description: "Assinatura VIP Velvet",
+      receipt_email: String(email).trim().toLowerCase(),
+      metadata: {
+        tipo: "vip",
+        cliente_id: String(cliente_id),
+        modelo_id: String(modeloIdNum),
+        valor_assinatura: String(valorAssinatura),
+        valor_base_brl: String(valorTotal),
+        taxa_transacao: String(taxaTransacao),
+        taxa_plataforma: String(taxaPlataforma),
+        oferta_id: oferta_id ? String(oferta_id) : "",
+        taxa_cambio: taxa_cambio ? String(taxa_cambio) : ""
+      }
+    });
+
+    await client.query(
+      `INSERT INTO pagamentos_cartao
+       (cliente_id, modelo_id, gateway, gateway_payment_id, stripe_payment_intent_id,
+        valor, tipo, currency, status, aceite_ip,
+        aceitou_termos, aceitou_execucao_imediata, aceite_timestamp, versao_termos,
+        fingerprint, valor_brl, taxa_cambio, cpf, telefone, created_at, updated_at)
+       VALUES ($1,$2,'stripe',$3,$3,$4,'vip',$5,'pendente',$6,
+               $7,$8,$9,$10,$11,$12,$13,$14,$15,NOW(),NOW())`,
+      [
+        cliente_id, modeloIdNum, paymentIntent.id,
+        valorTotal,
+        currency, ip,
+        !!aceitou_termos, !!aceitou_execucao_imediata,
+        aceite_timestamp, versao_termos || "2026-07-28",
+        fingerprint || null,
+        valorAssinatura,
+        taxa_cambio,
+        cpfVip || null, telefoneVip || null
+      ]
+    );
+
+    await client.query("COMMIT");
+
+    return res.json({
+      client_secret: paymentIntent.client_secret,
+      payment_id: paymentIntent.id,
+      currency,
+      valor_brl: valorAssinatura,
+      valor_total: valorTotalFinal
+    });
+
+  } catch (err) {
+    try { await client.query("ROLLBACK"); } catch (_) {}
+    console.error("Erro /api/pagamento/vip/criar-intent:", err.message);
+    return res.status(500).json({ error: "Erro ao criar pagamento", detalhe: err.message });
+  } finally {
+    try { client.release(); } catch (_) {}
+  }
+});
+
+// ── MÍDIA criar-intent ──────────────────────────────────────
+app.post("/api/pagamento/midia/criar-intent", auth, async (req, res) => {
+  const client = await db.connect();
+  let cliente_id = null;
+  try {
+    await client.query("BEGIN");
+
+    const {
+      conteudo_id, fingerprint, aceitou_termos, aceitou_execucao_imediata,
+      aceite_timestamp, versao_termos, currency: currencyParam, taxa_cambio: taxaCambioParam
+    } = req.body || {};
+
+    const currency    = String(currencyParam || "brl").toLowerCase();
+    const taxa_cambio = taxaCambioParam ? Number(taxaCambioParam) : null;
+    const userId      = Number(req.user?.id || 0);
+
+    if (!Number.isInteger(userId) || userId <= 0) {
+      await client.query("ROLLBACK");
+      return res.status(401).json({ error: "Usuário não autenticado" });
+    }
+    if (!conteudo_id || !Number.isInteger(Number(conteudo_id))) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "conteudo_id inválido" });
+    }
+    const conteudoId = Number(conteudo_id);
+
+    if (!fingerprint) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Fingerprint obrigatório." });
+    }
+    if (!aceitou_termos) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Você precisa aceitar os termos." });
+    }
+    if (!aceitou_execucao_imediata) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Aceite de execução imediata obrigatório." });
+    }
+    if (!aceite_timestamp || Number.isNaN(new Date(aceite_timestamp).getTime())) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Data de aceite inválida." });
+    }
+
+    const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket?.remoteAddress || null;
+
+    const clienteRes = await client.query(
+      `SELECT c.id, c.bloqueado, u.email
+       FROM clientes c JOIN users u ON u.id = c.user_id
+       WHERE c.user_id = $1 LIMIT 1`,
+      [userId]
+    );
+    if (!clienteRes.rowCount) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Cliente não encontrado" });
+    }
+    cliente_id = Number(clienteRes.rows[0].id);
+    const { bloqueado, email } = clienteRes.rows[0];
+    if (bloqueado) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ error: "Conta bloqueada." });
+    }
+
+    const risco = await client.query(`SELECT 1 FROM cliente_risco WHERE cliente_id = $1 AND ativo = true LIMIT 1`, [cliente_id]);
+    if (risco.rowCount > 0) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ error: "Compras temporariamente bloqueadas para esta conta." });
+    }
+
+    const messageRes = await client.query(
+      `SELECT preco, modelo_id FROM messages WHERE id = $1 AND cliente_id = $2 LIMIT 1`,
+      [conteudoId, cliente_id]
+    );
+    if (!messageRes.rowCount) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Conteúdo não encontrado" });
+    }
+    const { preco, modelo_id } = messageRes.rows[0];
+    if (!preco || Number(preco) <= 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Conteúdo não está à venda." });
+    }
+
+    const jaComprado = await client.query(
+      `SELECT 1 FROM conteudo_pacotes WHERE message_id = $1 AND cliente_id = $2 AND status = 'pago' LIMIT 1`,
+      [conteudoId, cliente_id]
+    );
+    if (jaComprado.rowCount > 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Conteúdo já adquirido." });
+    }
+
+    const valorBase = Number(Number(preco).toFixed(2));
+    const { taxaTransacao, taxaPlataforma, valorTotal } = calcTaxaStripe(valorBase);
+
+    const valorTotalFinal = (taxa_cambio && currency !== "brl")
+      ? Number((valorTotal * taxa_cambio).toFixed(2))
+      : valorTotal;
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: stripeAmountFromValue(valorTotalFinal, currency),
+      currency,
+      automatic_payment_methods: { enabled: true },
+      payment_method_options: {
+        card: { request_three_d_secure: "any" }
+      },
+      description: "Mídia Premium Velvet",
+      receipt_email: String(email).trim().toLowerCase(),
+      metadata: {
+        tipo: "conteudo",
+        cliente_id: String(cliente_id),
+        modelo_id: String(modelo_id),
+        message_id: String(conteudoId),
+        valor_base_brl: String(valorTotal),
+        taxa_transacao: String(taxaTransacao),
+        taxa_plataforma: String(taxaPlataforma),
+        taxa_cambio: taxa_cambio ? String(taxa_cambio) : ""
+      }
+    });
+
+    await client.query(
+      `INSERT INTO pagamentos_cartao
+       (cliente_id, modelo_id, conteudo_id, gateway, gateway_payment_id, stripe_payment_intent_id,
+        valor, tipo, currency, status, aceite_ip,
+        aceitou_termos, aceitou_execucao_imediata, aceite_timestamp, versao_termos,
+        fingerprint, valor_brl, taxa_cambio, created_at, updated_at)
+       VALUES ($1,$2,$3,'stripe',$4,$4,$5,'midia',$6,'pendente',$7,
+               $8,$9,$10,$11,$12,$13,$14,NOW(),NOW())`,
+      [
+        cliente_id, modelo_id, conteudoId, paymentIntent.id,
+        valorTotal,
+        currency, ip,
+        !!aceitou_termos, !!aceitou_execucao_imediata,
+        aceite_timestamp, versao_termos || "2026-07-28",
+        fingerprint || null,
+        valorBase,
+        taxa_cambio
+      ]
+    );
+
+    await client.query("COMMIT");
+
+    return res.json({
+      client_secret: paymentIntent.client_secret,
+      payment_id: paymentIntent.id,
+      currency,
+      valor_brl: valorBase,
+      valor_total: valorTotalFinal
+    });
+
+  } catch (err) {
+    try { await client.query("ROLLBACK"); } catch (_) {}
+    console.error("Erro /api/pagamento/midia/criar-intent:", err.message);
+    return res.status(500).json({ error: "Erro ao criar pagamento", detalhe: err.message });
+  } finally {
+    try { client.release(); } catch (_) {}
+  }
+});
+
+// ── PREMIUM criar-intent ─────────────────────────────────────
+app.post("/api/pagamento/premium/criar-intent", authCliente, async (req, res) => {
+  const client = await db.connect();
+  let cliente_id = null;
+  try {
+    await client.query("BEGIN");
+
+    const {
+      premium_post_id, fingerprint, aceitou_termos, aceitou_execucao_imediata,
+      aceite_timestamp, versao_termos, currency: currencyParam, taxa_cambio: taxaCambioParam
+    } = req.body || {};
+
+    const currency    = String(currencyParam || "brl").toLowerCase();
+    const taxa_cambio = taxaCambioParam ? Number(taxaCambioParam) : null;
+    const userId      = Number(req.user?.id || 0);
+
+    if (!Number.isInteger(userId) || userId <= 0) {
+      await client.query("ROLLBACK");
+      return res.status(401).json({ error: "Usuário inválido." });
+    }
+    if (!premium_post_id) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "premium_post_id obrigatório." });
+    }
+    const premium_id = Number(premium_post_id);
+    if (!Number.isInteger(premium_id) || premium_id <= 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "premium_post_id inválido." });
+    }
+    if (!fingerprint) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Fingerprint obrigatório." });
+    }
+    if (!aceitou_termos) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Você precisa aceitar os termos." });
+    }
+    if (!aceitou_execucao_imediata) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Aceite de execução imediata obrigatório." });
+    }
+    if (!aceite_timestamp || Number.isNaN(new Date(aceite_timestamp).getTime())) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Data de aceite inválida." });
+    }
+
+    const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket?.remoteAddress || null;
+
+    const clienteRes = await client.query(
+      `SELECT c.id, c.bloqueado, u.email
+       FROM clientes c JOIN users u ON u.id = c.user_id
+       WHERE c.user_id = $1 LIMIT 1`,
+      [userId]
+    );
+    if (!clienteRes.rowCount) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Cliente não encontrado" });
+    }
+    cliente_id = Number(clienteRes.rows[0].id);
+    const { bloqueado, email } = clienteRes.rows[0];
+    if (bloqueado) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ error: "Conta bloqueada." });
+    }
+
+    const risco = await client.query(`SELECT 1 FROM cliente_risco WHERE cliente_id = $1 AND ativo = true LIMIT 1`, [cliente_id]);
+    if (risco.rowCount > 0) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ error: "Compras temporariamente bloqueadas para esta conta." });
+    }
+
+    const postRes = await client.query(
+      `SELECT pp.id, pp.preco, pp.descricao, pp.modelo_id
+       FROM premium_posts pp
+       WHERE pp.id = $1 LIMIT 1`,
+      [premium_id]
+    );
+    if (!postRes.rowCount) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Conteúdo premium não encontrado." });
+    }
+    const { preco, descricao, modelo_id } = postRes.rows[0];
+
+    const jaComprado = await client.query(
+      `SELECT 1 FROM premium_unlocks WHERE premium_post_id = $1 AND cliente_id = $2 AND status = 'pago' LIMIT 1`,
+      [premium_id, cliente_id]
+    );
+    if (jaComprado.rowCount > 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Conteúdo premium já adquirido." });
+    }
+
+    const valorBase = Number(Number(preco).toFixed(2));
+    if (!valorBase || valorBase <= 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Valor do pagamento inválido." });
+    }
+    const { taxaTransacao, taxaPlataforma, valorTotal } = calcTaxaStripe(valorBase);
+
+    const valorTotalFinal = (taxa_cambio && currency !== "brl")
+      ? Number((valorTotal * taxa_cambio).toFixed(2))
+      : valorTotal;
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: stripeAmountFromValue(valorTotalFinal, currency),
+      currency,
+      automatic_payment_methods: { enabled: true },
+      payment_method_options: {
+        card: { request_three_d_secure: "any" }
+      },
+      description: descricao || `Premium Velvet #${premium_id}`,
+      receipt_email: String(email).trim().toLowerCase(),
+      metadata: {
+        tipo: "premium",
+        cliente_id: String(cliente_id),
+        modelo_id: String(modelo_id),
+        premium_post_id: String(premium_id),
+        valor_base_brl: String(valorTotal),
+        taxa_transacao: String(taxaTransacao),
+        taxa_plataforma: String(taxaPlataforma),
+        taxa_cambio: taxa_cambio ? String(taxa_cambio) : ""
+      }
+    });
+
+    // Insere em premium_unlocks (o webhook busca nesta tabela para tipo=premium)
+    await client.query(
+      `INSERT INTO premium_unlocks
+       (premium_post_id, cliente_id, modelo_id, status, metodo_pagamento,
+        valor_base, taxa_transacao, taxa_plataforma, valor_total,
+        gateway, stripe_payment_intent_id, pagarme_order_id, pacote_ref,
+        aceite_ip, aceitou_termos, aceitou_execucao_imediata,
+        aceite_timestamp, versao_termos, fingerprint,
+        valor_cobrado, taxa_cambio, created_at, updated_at)
+       VALUES ($1,$2,$3,'pendente','cartao',$4,$5,$6,$7,
+               'stripe',$8,$8,$9,$10,$11,$12,$13,$14,$15,$7,$16,NOW(),NOW())
+       ON CONFLICT (premium_post_id, cliente_id) DO UPDATE SET
+         status = 'pendente',
+         stripe_payment_intent_id = EXCLUDED.stripe_payment_intent_id,
+         pagarme_order_id         = EXCLUDED.pagarme_order_id,
+         valor_base               = EXCLUDED.valor_base,
+         valor_total              = EXCLUDED.valor_total,
+         taxa_cambio              = EXCLUDED.taxa_cambio,
+         updated_at               = NOW()`,
+      [
+        premium_id, cliente_id, modelo_id,
+        valorBase, taxaTransacao, taxaPlataforma, valorTotal,
+        paymentIntent.id,
+        `premium_${premium_id}_${cliente_id}`,
+        ip || null,
+        !!aceitou_termos, !!aceitou_execucao_imediata,
+        aceite_timestamp, versao_termos || "2026-07-28",
+        fingerprint || null,
+        taxa_cambio
+      ]
+    );
+
+    await client.query("COMMIT");
+
+    return res.json({
+      client_secret: paymentIntent.client_secret,
+      payment_id: paymentIntent.id,
+      currency,
+      valor_brl: valorBase,
+      valor_total: valorTotalFinal
+    });
+
+  } catch (err) {
+    try { await client.query("ROLLBACK"); } catch (_) {}
+    console.error("Erro /api/pagamento/premium/criar-intent:", err.message);
+    return res.status(500).json({ error: "Erro ao criar pagamento", detalhe: err.message });
+  } finally {
+    try { client.release(); } catch (_) {}
+  }
+});
+
 // ===========================
 // CANCELAR VIP??
 // ===========================

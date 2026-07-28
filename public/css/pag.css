@@ -759,6 +759,7 @@ body {
   flex-direction: column;
   gap: 8px;
   margin-top: 4px;
+  text-align: left;
 }
 
 #blocoEndereco label {

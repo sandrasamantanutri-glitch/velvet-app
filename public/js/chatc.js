@@ -431,6 +431,11 @@ function carregarMensagensAntigas(){
   });
 }
 
+socket.on("conteudoLiberado", ({ message_id }) => {
+  if (!message_id) return;
+  liberarConteudo(message_id);
+});
+
 socket.on("conteudoVisto", async ({ message_id, cliente_id: cid }) => {
   console.log("📩 conteudoVisto recebido:", { message_id, cid, cliente_id });
 
@@ -549,7 +554,8 @@ if (msg.tipo === "conteudo" || msg.tipo === "conteudo_ppv_mass") {
 
 const cardLiberado =
   Number(msg.preco) === 0 ||
-  msg.liberado === true;
+  msg.liberado === true ||
+  conteudosLiberados.has(Number(msg.id));
 
  div.innerHTML = `
   <div class="msg-conteudo-wrap ${
@@ -1012,7 +1018,8 @@ if (msg.tipo === "conteudo" || msg.tipo === "conteudo_ppv_mass") {
 
 const cardLiberado =
   Number(msg.preco) === 0 ||
-  msg.liberado === true;
+  msg.liberado === true ||
+  conteudosLiberados.has(Number(msg.id));
 
 div.innerHTML = `
   <div class="msg-conteudo-wrap ${
@@ -1094,6 +1101,12 @@ async function liberarConteudo(messageId) {
   const el = document.querySelector(`.chat-conteudo[data-id="${messageId}"]`);
   if (!el) return;
 
+  // Atualização otimista: pagamento já foi confirmado, desbloqueia imediatamente
+  el.classList.remove("bloqueado");
+  el.classList.remove("visto");
+  el.classList.add("livre");
+  conteudosLiberados.add(Number(messageId));
+
   try {
     const res = await fetch(`/api/chat/conteudo/${messageId}`, {
       headers: {
@@ -1106,15 +1119,9 @@ async function liberarConteudo(messageId) {
     const midias = await res.json();
     const todasLiberadas = midias.every(m => m.liberado !== false);
 
-    // marca estado do card
-    el.classList.remove("bloqueado");
-    el.classList.remove("visto");
-
-    if (todasLiberadas) {
-      conteudosLiberados.add(Number(messageId));
-      el.classList.add("livre");
-    } else {
+    if (!todasLiberadas) {
       el.classList.remove("livre");
+      conteudosLiberados.delete(Number(messageId));
     }
 
     const precoAtual = Number(el.dataset.preco || 0);
