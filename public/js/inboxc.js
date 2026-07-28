@@ -104,7 +104,8 @@ async function initClienteInbox() {
     headers: { Authorization: "Bearer " + token }
   });
 
-  if (!res.ok) return redirecionarLogin();
+  if (res.status === 401 || res.status === 403) return redirecionarLogin();
+  if (!res.ok) return;
 
   const me = await res.json();
   clienteId = me.id;

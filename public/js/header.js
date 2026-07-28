@@ -64,14 +64,6 @@ async function initUsuario() {
       }
     });
 
-    if (res.status === 401) {
-      localStorage.clear();
-      if (!window.location.pathname.includes("index")) {
-        window.location.href = "/me.html";
-      }
-      return;
-    }
-
     if (!res.ok) {
       console.warn("Sessão não verificável no header:", res.status);
       return;

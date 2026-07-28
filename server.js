@@ -6605,8 +6605,7 @@ app.get("/api/cliente/me", authCliente, async (req, res) => {
         cd.avatar,
         cd.instagram,
         cd.tiktok,
-        cd.local,
-        cd.bio
+        cd.local
       FROM clientes c
       LEFT JOIN clientes_dados cd
         ON cd.cliente_id = c.id
