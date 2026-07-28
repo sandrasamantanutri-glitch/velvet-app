@@ -201,8 +201,7 @@
     "termos_link1": "Términos de uso",
     "termos_e": "y con las",
     "termos_link2": "Políticas de uso",
-    "aceite_termos": "He leído y acepto los Términos de Uso de la plataforma.",
-    "aceite_politicas": "He leído y acepto las Políticas de Uso, incluida la Política de Reembolso. Soy consciente de que la suscripción no garantiza acceso a contenido explícito o exclusivo, y que los servicios digitales se ponen a disposición de forma inmediata tras el pago.",
+    "aceite_termos": "He leído y acepto los Términos de Uso y las Políticas de Uso, incluida la Política de Reembolso. Soy consciente de que los servicios digitales se ponen a disposición de forma inmediata tras el pago.",
     "aceite_execucao": "Declaro que soy consciente de que el acceso al contenido/servicio digital es inmediato tras el pago y que, por ello, puedo perder el derecho de desistimiento.",
     "btn_pix": "⚡ Desbloquear con Pix",
     "btn_cartao": "💳 Desbloquear con tarjeta",
@@ -223,8 +222,7 @@
     "acesso_imediato": "Acceso inmediato tras el pago"
   },
   "pag": {
-    "aceite_termos_obrigatorio": "Debes aceptar los Términos de Uso de la plataforma para continuar.",
-    "aceite_politicas_obrigatorio": "Debes aceptar las Políticas de Uso (incluida la Política de Reembolso) para continuar.",
+    "aceite_termos_obrigatorio": "Debes aceptar los Términos de Uso y las Políticas de Uso para continuar.",
     "aceite_execucao_obrigatorio": "Debes declarar que conoces la liberación inmediata del contenido/servicio digital para continuar.",
     "tipo_pagamento_nao_identificado": "Tipo de pago no identificado.",
     "modelo_invalido": "Modelo inválido.",

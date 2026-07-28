@@ -201,8 +201,7 @@
     "termos_link1": "Terms of use",
     "termos_e": "and the",
     "termos_link2": "Usage Policies",
-    "aceite_termos": "I have read and accept the Terms of Use of the platform.",
-    "aceite_politicas": "I have read and accept the Usage Policies, including the Refund Policy. I acknowledge that a subscription does not guarantee access to explicit or exclusive content, and that digital services are made available immediately after payment.",
+    "aceite_termos": "I have read and accept the Terms of Use and the Usage Policies, including the Refund Policy. I acknowledge that digital services are made available immediately after payment.",
     "aceite_execucao": "I acknowledge that access to the digital media/service is immediate after payment and that I may therefore waive my right of withdrawal.",
     "btn_pix": "⚡ Unlock with Pix",
     "btn_cartao": "💳 Unlock with card",
@@ -223,8 +222,7 @@
     "acesso_imediato": "Immediate access after payment"
   },
   "pag": {
-    "aceite_termos_obrigatorio": "You must accept the Terms of Use to continue.",
-    "aceite_politicas_obrigatorio": "You must accept the Usage Policies (including the Refund Policy) to continue.",
+    "aceite_termos_obrigatorio": "You must accept the Terms of Use and Usage Policies to continue.",
     "aceite_execucao_obrigatorio": "You must acknowledge the immediate release of the digital media/service to continue.",
     "tipo_pagamento_nao_identificado": "Payment type not identified.",
     "modelo_invalido": "Invalid model.",
