@@ -5,8 +5,9 @@ const token = localStorage.getItem("token");
 const role  = localStorage.getItem("role");
 
 function logout() {
-  localStorage.clear();
-  window.location.href = "/index.html";
+  localStorage.removeItem("token");
+  localStorage.removeItem("role");
+  window.location.href = "/me.html";
 }
 
 if (!token || role !== "cliente") {

@@ -39,7 +39,8 @@ module.exports = async function authCliente(req, res, next) {
       return res.status(403).json({ error: "Conta bloqueada" });
     }
 
-    if (decoded.tv !== token_version) {
+    const tv = decoded.tv ?? 0;
+    if (tv !== token_version) {
       return res.status(401).json({ error: "Sessão expirada. Faça login novamente." });
     }
 
