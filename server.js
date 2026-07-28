@@ -3862,9 +3862,17 @@ async function ipagRequest(method, path, body) {
   return data;
 }
 
+function formatarTelefoneIpag(tel) {
+  const digits = String(tel || "").replace(/\D/g, "");
+  // iPag only accepts Brazilian numbers: 55 + DDD (2) + number (8-9) = 12-13 digits
+  if (digits.startsWith("55") && digits.length >= 12 && digits.length <= 13) return digits;
+  return "";
+}
+
 async function criarPixIpag({ valorTotal, nome, email, cpf, telefone, endereco, referencia }) {
   const appUrl = process.env.APP_URL || "https://velvet-app.onrender.com";
   const orderId = String(referencia || Date.now()).replace(/\D/g, "").slice(-16) || String(Date.now()).slice(-16);
+  const telefoneIpag = formatarTelefoneIpag(telefone);
   return ipagRequest("POST", "/service/payment", {
     amount: Number(valorTotal),
     order_id: orderId,
@@ -3878,7 +3886,7 @@ async function criarPixIpag({ valorTotal, nome, email, cpf, telefone, endereco, 
       name: nome,
       email: email,
       cpf_cnpj: cpf,
-      phone: telefone,
+      phone: telefoneIpag,
       billing_address: {
         street:     endereco.rua,
         number:     endereco.numero     || endereco.endereco2 || "s/n",
