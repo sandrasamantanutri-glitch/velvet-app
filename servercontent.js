@@ -605,7 +605,7 @@ router.post("/agencia/login", async (req, res) => {
 
   try {
     const result = await db.query(
-      "SELECT id, email, nome, senha, token_version FROM agencias WHERE email = $1 LIMIT 1",
+      "SELECT id, email, nome, senha FROM agencias WHERE email = $1 LIMIT 1",
       [email.trim().toLowerCase()]
     );
 
@@ -618,7 +618,15 @@ router.post("/agencia/login", async (req, res) => {
       return res.status(401).json({ erro: "Credenciais inválidas" });
     }
 
-    const tv = agencia.token_version ?? 0;
+    // token_version existe após a migration add_token_version_to_agencias.sql
+    let tv = 0;
+    try {
+      const tvRes = await db.query(
+        "SELECT token_version FROM agencias WHERE id = $1 LIMIT 1",
+        [agencia.id]
+      );
+      tv = tvRes.rows[0]?.token_version ?? 0;
+    } catch (_) { /* coluna ainda não existe — aguardando migration */ }
 
     const token = jwt.sign(
       { id: agencia.id, email: agencia.email, role: "agencia", tv },

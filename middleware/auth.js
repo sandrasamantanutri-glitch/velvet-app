@@ -24,16 +24,21 @@ module.exports = async function auth(req, res, next) {
 
     // Agência: verifica token_version para permitir revogação
     if (decoded.role === "agencia") {
-      const agRes = await db.query(
-        "SELECT token_version FROM agencias WHERE id = $1 LIMIT 1",
-        [decoded.id]
-      );
-      if (!agRes.rows.length) {
-        return res.status(401).json({ error: "Token inválido" });
-      }
-      const tv = decoded.tv ?? 0;
-      if (tv !== (agRes.rows[0].token_version ?? 0)) {
-        return res.status(401).json({ error: "Sessão expirada. Faça login novamente." });
+      try {
+        const agRes = await db.query(
+          "SELECT token_version FROM agencias WHERE id = $1 LIMIT 1",
+          [decoded.id]
+        );
+        if (!agRes.rows.length) {
+          return res.status(401).json({ error: "Token inválido" });
+        }
+        const tv = decoded.tv ?? 0;
+        if (tv !== (agRes.rows[0].token_version ?? 0)) {
+          return res.status(401).json({ error: "Sessão expirada. Faça login novamente." });
+        }
+      } catch (colErr) {
+        // Coluna token_version ainda não existe — migration pendente, permite passar
+        if (colErr.code !== "42703") throw colErr;
       }
       req.user = decoded;
       return next();
