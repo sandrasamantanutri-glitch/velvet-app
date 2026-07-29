@@ -126,7 +126,7 @@ body {
   display: block;
   font-size: 30px;
   font-weight: 800;
-  color: #1E1E26;;
+  color: #1e1e269e;
   line-height: 1.1;
 }
 
@@ -148,7 +148,7 @@ body {
 .rel-hero-sub {
   font-size: 16px;
   font-weight: 700;
-  color: #1E1E26;;
+  color:#1e1e269e;
 }
 
 .rel-hero-sm {
@@ -243,11 +243,21 @@ body {
 .rel-st-val {
   font-size: 16px;
   font-weight: 700;
-  color: #1E1E26;
+  color: #1e1e269e;
 }
 
 .rel-st.ok .rel-st-val  { color: #15803d; }
 .rel-st.hold .rel-st-val { color: #b45309; }
+
+.pendentes {
+  font-size: 11px;
+  font-weight: 600;
+  color: #1e1e269e;
+  margin: 0 0 4px;
+  letter-spacing: 0.4px;
+  margin: 15px 0 8px;
+
+}
 
 /* ===========================
    ASSINANTES
