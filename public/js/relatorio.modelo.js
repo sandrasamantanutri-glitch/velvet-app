@@ -93,7 +93,7 @@ async function carregarResumoModelo(mes = null) {
     const assinaturas  = Number(data.mes?.assinaturas || 0);
     const bloqueadoMes = Number(data.bloqueado?.mes   || 0);
     const liberadoMes  = midias + assinaturas;
-    const totalMes     = liberadoMes + bloqueadoMes;
+    const totalMes     = liberadoMes;
 
     // Label hero
     const label = document.getElementById("labelMesAtual");
@@ -140,7 +140,7 @@ async function carregarResumoModelo(mes = null) {
       const amAssinaturas = Number(data.mesAnterior?.assinaturas || 0);
       const amBloqueado   = Number(data.bloqueado?.mesAnterior   || 0);
       const amLiberado    = amMidias + amAssinaturas;
-      const amTotal       = amLiberado + amBloqueado;
+      const amTotal       = amLiberado;
 
       set("totalMesAnterior",       emReais(amTotal));
       set("mesAnteriorMidias",      emReais(amMidias));
