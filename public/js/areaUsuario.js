@@ -634,9 +634,13 @@ btnAvatar?.addEventListener("click", () => inputAvatar.click());
 inputCapa?.addEventListener("change", async () => {
   const file = inputCapa.files[0];
   if (!file) return;
+  inputCapa.value = "";
+
+  const blob = await openCapaEditor(file);
+  if (!blob) return;
 
   const fd = new FormData();
-  fd.append("capa", file);
+  fd.append("capa", blob, "capa.jpg");
 
   const res = await fetch("/uploadCapa", {
     method: "POST",

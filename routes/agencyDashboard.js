@@ -1021,15 +1021,16 @@ router.get("/modelos/:id", authAgencia, async (req, res) => {
     const agenciaId = req.agencia.id;
     
     const { rows } = await db.query(`
-      SELECT * 
-      FROM modelos 
-      WHERE id = $1 AND agencia_id = $2
+      SELECT m.*, md.genero
+      FROM modelos m
+      LEFT JOIN modelos_dados md ON md.modelo_id = m.id AND md.ativo = true
+      WHERE m.id = $1 AND m.agencia_id = $2
     `, [req.params.id, agenciaId]);
-    
+
     if (!rows.length) {
       return res.status(404).json({ erro: "Não encontrado" });
     }
-    
+
     res.json(rows[0]);
   } catch (err) { 
     console.error("Erro ao buscar modelo:", err);
@@ -1055,6 +1056,8 @@ router.put("/modelos/:id", authAgencia, async (req, res) => {
       "local",
       "ativo"
     ];
+
+    const genero = fields.genero !== undefined ? (fields.genero || null) : undefined;
 
     // Verifica se o modelo pertence à agência logada
     const antesQ = await db.query(`
@@ -1100,6 +1103,14 @@ router.put("/modelos/:id", authAgencia, async (req, res) => {
     `, vals);
 
     const depois = rows[0];
+
+    // Atualiza genero em modelos_dados se enviado
+    if (genero !== undefined) {
+      await db.query(`
+        UPDATE modelos_dados SET genero = $1, atualizado_em = NOW()
+        WHERE modelo_id = $2 AND ativo = true
+      `, [genero, modeloId]);
+    }
 
     // log de desativação / reativação
     if (String(antes.ativo) !== String(depois.ativo)) {

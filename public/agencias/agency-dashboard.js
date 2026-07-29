@@ -839,6 +839,13 @@ async function editarModelo(id) {
       { name: 'nome_exibicao', label: 'Nome Exibição', value: data.nome_exibicao || '' },
       { name: 'bio', label: 'Bio', type: 'textarea', value: data.bio || '' },
       { name: 'local', label: 'Local', value: data.local || '' },
+      { name: 'genero', label: 'Gênero', type: 'select', value: data.genero || '', options: [
+          { value: '', label: 'Selecione...' },
+          { value: 'mulher', label: 'Mulher' },
+          { value: 'homem', label: 'Homem' },
+          { value: 'nao_binario', label: 'Não binário' }
+        ]
+      },
       { name: 'created_at_view', label: 'Criado em', value: fmtDateTime(data.created_at), disabled: true},
       { name: 'ativo', label: 'Ativo', type: 'checkbox', value: !!data.ativo }
     ], () => carregarModelos(1));
