@@ -1,4 +1,4 @@
-// Capa crop editor — drag to pan, scroll/pinch/slider to zoom
+// Capa crop editor — drag to pan, scroll/pinch/slider to zoom in AND out
 (function () {
   const OUTPUT_W = 1500;
   const OUTPUT_H = 500;
@@ -8,11 +8,22 @@
   let lastMouseX, lastMouseY;
   let imgX = 0, imgY = 0;
   let scale = 1;
-  let minScale = 1;
+  let coverScale = 1; // scale where image fills the frame
+  let absMin = 0.1;   // minimum allowed scale (fit * 0.5)
+  let absMax = 4;     // maximum allowed scale (cover * 4)
   let imgNaturalW = 0, imgNaturalH = 0;
   let previewW = 0, previewH = 0;
   let imgEl = null;
   let viewportEl = null;
+  let zoomInputEl = null;
+
+  // Logarithmic slider mapping: slider 0–200, midpoint 100 = coverScale
+  function scaleToSlider(s) {
+    return Math.round(200 * Math.log(s / absMin) / Math.log(absMax / absMin));
+  }
+  function sliderToScale(v) {
+    return absMin * Math.pow(absMax / absMin, v / 200);
+  }
 
   function openCapaEditor(file) {
     return new Promise((resolve) => {
@@ -54,7 +65,7 @@
           cursor: grab;
           touch-action: none;
           user-select: none;
-          background: #111;
+          background: #1a1a1a;
         }
         #capa-editor-viewport.dragging { cursor: grabbing; }
         #capa-editor-img {
@@ -75,7 +86,7 @@
         #capa-zoom-input {
           -webkit-appearance: none; appearance: none;
           height: 4px; background: rgba(255,255,255,0.3);
-          border-radius: 2px; outline: none; width: 160px;
+          border-radius: 2px; outline: none; width: 180px;
           cursor: pointer;
         }
         #capa-zoom-input::-webkit-slider-thumb {
@@ -91,23 +102,19 @@
           font-size: 14px; font-weight: 600; cursor: pointer;
           border: none; outline: none; font-family: inherit;
         }
-        .capa-editor-btn.confirm {
-          background: #6f3cff; color: #fff;
-        }
+        .capa-editor-btn.confirm { background: #6f3cff; color: #fff; }
         .capa-editor-btn.confirm:hover { background: #5a2ee0; }
-        .capa-editor-btn.cancel {
-          background: rgba(255,255,255,0.12); color: #fff;
-        }
+        .capa-editor-btn.cancel { background: rgba(255,255,255,0.12); color: #fff; }
         .capa-editor-btn.cancel:hover { background: rgba(255,255,255,0.2); }
       </style>
       <div id="capa-editor-title">Posicionar capa</div>
-      <div id="capa-editor-hint">Arraste para reposicionar &nbsp;·&nbsp; Use o slider ou pinça para dar zoom</div>
+      <div id="capa-editor-hint">Arraste para reposicionar &nbsp;·&nbsp; − + ou slider para aumentar/diminuir &nbsp;·&nbsp; Pinça no celular</div>
       <div id="capa-editor-viewport">
         <img id="capa-editor-img" draggable="false" alt="">
       </div>
       <div id="capa-zoom-bar">
         <button id="capa-zoom-out" type="button">−</button>
-        <input type="range" id="capa-zoom-input" min="100" max="400" value="100" step="1">
+        <input type="range" id="capa-zoom-input" min="0" max="200" value="100" step="1">
         <button id="capa-zoom-in" type="button">+</button>
       </div>
       <div id="capa-editor-actions">
@@ -119,7 +126,7 @@
 
     viewportEl = overlay.querySelector("#capa-editor-viewport");
     imgEl = overlay.querySelector("#capa-editor-img");
-    const zoomInput = overlay.querySelector("#capa-zoom-input");
+    zoomInputEl = overlay.querySelector("#capa-zoom-input");
     const btnZoomIn = overlay.querySelector("#capa-zoom-in");
     const btnZoomOut = overlay.querySelector("#capa-zoom-out");
     const btnConfirm = overlay.querySelector("#capa-editor-confirm");
@@ -136,32 +143,42 @@
 
       const scaleW = previewW / imgNaturalW;
       const scaleH = previewH / imgNaturalH;
-      minScale = Math.max(scaleW, scaleH);
-      scale = minScale;
+      coverScale = Math.max(scaleW, scaleH);
+      const fitScale  = Math.min(scaleW, scaleH);
+
+      absMin = fitScale * 0.5;   // zoom out to half of fit-in-box
+      absMax = coverScale * 4;   // zoom in to 4× cover
+
+      scale = coverScale;        // start filling the frame
       imgX = 0;
       imgY = 0;
 
+      zoomInputEl.value = scaleToSlider(scale);
       applyTransform();
     };
 
     function applyTransform() {
       const dispW = imgNaturalW * scale;
       const dispH = imgNaturalH * scale;
-      const maxX = Math.max(0, (dispW - previewW) / 2);
-      const maxY = Math.max(0, (dispH - previewH) / 2);
+
+      // When image covers: clamp so no gap appears at edges
+      // When image fits inside: clamp so image stays within viewport
+      const maxX = Math.abs(dispW - previewW) / 2;
+      const maxY = Math.abs(dispH - previewH) / 2;
       imgX = Math.max(-maxX, Math.min(maxX, imgX));
       imgY = Math.max(-maxY, Math.min(maxY, imgY));
+
       const left = (previewW - dispW) / 2 + imgX;
-      const top = (previewH - dispH) / 2 + imgY;
-      imgEl.style.width = dispW + "px";
+      const top  = (previewH - dispH) / 2 + imgY;
+      imgEl.style.width  = dispW + "px";
       imgEl.style.height = dispH + "px";
-      imgEl.style.left = left + "px";
-      imgEl.style.top = top + "px";
+      imgEl.style.left   = left + "px";
+      imgEl.style.top    = top  + "px";
     }
 
     function setScale(newScale) {
-      scale = Math.max(minScale, Math.min(minScale * 4, newScale));
-      zoomInput.value = Math.round((scale / minScale) * 100);
+      scale = Math.max(absMin, Math.min(absMax, newScale));
+      zoomInputEl.value = scaleToSlider(scale);
       applyTransform();
     }
 
@@ -205,9 +222,7 @@
           ? Math.hypot(lastTouches[0].clientX - lastTouches[1].clientX, lastTouches[0].clientY - lastTouches[1].clientY)
           : 0;
         const newDist = Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
-        if (prevDist > 0) {
-          setScale(scale * (newDist / prevDist));
-        }
+        if (prevDist > 0) setScale(scale * (newDist / prevDist));
       }
       lastTouches = touches;
     }, { passive: false });
@@ -218,13 +233,13 @@
       setScale(scale * (e.deltaY > 0 ? 0.92 : 1.08));
     }, { passive: false });
 
-    // Slider zoom
-    zoomInput.addEventListener("input", () => {
-      scale = minScale * (zoomInput.value / 100);
+    // Slider zoom (logarithmic)
+    zoomInputEl.addEventListener("input", () => {
+      scale = Math.max(absMin, Math.min(absMax, sliderToScale(Number(zoomInputEl.value))));
       applyTransform();
     });
 
-    btnZoomIn.addEventListener("click", () => setScale(scale * 1.15));
+    btnZoomIn.addEventListener("click",  () => setScale(scale * 1.15));
     btnZoomOut.addEventListener("click", () => setScale(scale / 1.15));
 
     // Cancel
@@ -234,30 +249,49 @@
       _resolve(null);
     });
 
-    // Confirm — draw to canvas and return blob
+    // Confirm — draw to canvas with proper clipping and black fill
     btnConfirm.addEventListener("click", () => {
       previewW = viewportEl.clientWidth;
       previewH = viewportEl.clientHeight;
 
       const dispW = imgNaturalW * scale;
       const dispH = imgNaturalH * scale;
-      const maxX = Math.max(0, (dispW - previewW) / 2);
-      const maxY = Math.max(0, (dispH - previewH) / 2);
+      const maxX = Math.abs(dispW - previewW) / 2;
+      const maxY = Math.abs(dispH - previewH) / 2;
       const clX = Math.max(-maxX, Math.min(maxX, imgX));
       const clY = Math.max(-maxY, Math.min(maxY, imgY));
-      const left = (previewW - dispW) / 2 + clX;
-      const top = (previewH - dispH) / 2 + clY;
+      const imgLeft = (previewW - dispW) / 2 + clX;
+      const imgTop  = (previewH - dispH) / 2 + clY;
 
-      // map viewport rect → source image rect
-      const sx = (-left / dispW) * imgNaturalW;
-      const sy = (-top / dispH) * imgNaturalH;
-      const sw = (previewW / dispW) * imgNaturalW;
-      const sh = (previewH / dispH) * imgNaturalH;
+      // Intersection of viewport and image (handles zoom-out where image doesn't fill)
+      const clipL = Math.max(0, imgLeft);
+      const clipT = Math.max(0, imgTop);
+      const clipR = Math.min(previewW, imgLeft + dispW);
+      const clipB = Math.min(previewH, imgTop + dispH);
 
       const canvas = document.createElement("canvas");
-      canvas.width = OUTPUT_W;
+      canvas.width  = OUTPUT_W;
       canvas.height = OUTPUT_H;
-      canvas.getContext("2d").drawImage(imgEl, sx, sy, sw, sh, 0, 0, OUTPUT_W, OUTPUT_H);
+      const ctx = canvas.getContext("2d");
+
+      // Black background for any empty areas (when zoomed out)
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(0, 0, OUTPUT_W, OUTPUT_H);
+
+      if (clipR > clipL && clipB > clipT) {
+        const ratio = OUTPUT_W / previewW;
+        // Source in original image pixels
+        const sx = ((clipL - imgLeft) / dispW) * imgNaturalW;
+        const sy = ((clipT - imgTop)  / dispH) * imgNaturalH;
+        const sw = ((clipR - clipL)   / dispW) * imgNaturalW;
+        const sh = ((clipB - clipT)   / dispH) * imgNaturalH;
+        // Destination in canvas pixels
+        const dx = clipL * ratio;
+        const dy = clipT * ratio;
+        const dw = (clipR - clipL) * ratio;
+        const dh = (clipB - clipT) * ratio;
+        ctx.drawImage(imgEl, sx, sy, sw, sh, dx, dy, dw, dh);
+      }
 
       canvas.toBlob((blob) => {
         URL.revokeObjectURL(objectUrl);
