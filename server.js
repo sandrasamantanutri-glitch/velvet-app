@@ -5729,7 +5729,8 @@ app.get("/api/modelo/me", authModelo, async (req, res) => {
         m.local,
         m.verificada,
         md.instagram,
-        md.tiktok
+        md.tiktok,
+        md.classificacao_conteudo
       FROM modelos m
       LEFT JOIN modelos_dados md
         ON md.modelo_id = m.id
@@ -10568,31 +10569,17 @@ app.delete("/api/chat/pacote/:message_id", authModelo, async (req, res) => {
 // ===========================
 
 app.delete("/api/premium/:id", auth, authModelo, async (req, res) => {
+  const client = await db.connect();
   try {
     const premiumId = Number(req.params.id);
-    const userId = Number(req.user?.id || 0);
+    const modelo_id = Number(req.modelo_id);
 
     if (!Number.isInteger(premiumId) || premiumId <= 0) {
+      client.release();
       return res.status(400).json({ error: "ID inválido" });
     }
 
-    const modeloRes = await db.query(
-      `
-      SELECT id
-      FROM modelos
-      WHERE user_id = $1
-      LIMIT 1
-      `,
-      [userId]
-    );
-
-    if (!modeloRes.rowCount) {
-      return res.status(404).json({ error: "Modelo não encontrada" });
-    }
-
-    const modelo_id = Number(modeloRes.rows[0].id);
-
-    const premiumRes = await db.query(
+    const premiumRes = await client.query(
       `
       SELECT id, modelo_id
       FROM premium_posts
@@ -10604,35 +10591,34 @@ app.delete("/api/premium/:id", auth, authModelo, async (req, res) => {
     );
 
     if (!premiumRes.rowCount) {
+      client.release();
       return res.status(404).json({ error: "Postagem premium não encontrada" });
     }
 
-    const premium = premiumRes.rows[0];
-
-    if (Number(premium.modelo_id) !== modelo_id) {
+    if (Number(premiumRes.rows[0].modelo_id) !== modelo_id) {
+      client.release();
       return res.status(403).json({ error: "Sem permissão para excluir esta postagem" });
     }
 
-    await db.query(
-      `
-      UPDATE premium_posts
-      SET ativo = false
-      WHERE id = $1
-      `,
+    await client.query("BEGIN");
+
+    await client.query(
+      `UPDATE premium_posts SET ativo = false WHERE id = $1`,
       [premiumId]
     );
 
-    await db.query(
-  `
-  UPDATE premium_post_midias
-  SET ativo = false
-  WHERE premium_post_id = $1
-  `,
-  [premiumId]
-);
+    await client.query(
+      `UPDATE premium_post_midias SET ativo = false WHERE premium_post_id = $1`,
+      [premiumId]
+    );
+
+    await client.query("COMMIT");
+    client.release();
 
     return res.json({ ok: true });
   } catch (err) {
+    await client.query("ROLLBACK").catch(() => {});
+    client.release();
     console.error("Erro ao excluir premium:", err);
     return res.status(500).json({ error: "Erro ao excluir premium" });
   }
