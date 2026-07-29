@@ -964,6 +964,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   injectCSS();
 
+  if (localStorage.getItem("role") === "modelo") {
+    document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("ativa"));
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("ativa"));
+    const aviso = document.createElement("div");
+    aviso.style.cssText = "text-align:center;padding:32px 16px;color:#555;line-height:1.7;font-size:15px;";
+    aviso.innerHTML = `
+      <p>Aqui ficam apenas pagamentos feitos quando o perfil é de cliente.</p>
+      <p>Modelos ainda não podem assinar ou comprar mídias de outras modelos.</p>
+      <p>Suas transações podem ser vistas em <a href="/relatorio.html" style="color:#6f3cff;font-weight:600;">Ganhos</a>.</p>
+    `;
+    document.querySelector(".tabs")?.after(aviso);
+    return;
+  }
+
   // Tabs
   document.querySelectorAll(".tab-btn").forEach(btn => {
     btn.addEventListener("click", async () => {

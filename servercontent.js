@@ -1359,21 +1359,6 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
           THEN valor_modelo
         END), 0) AS acumulado_ano_atual,
 
-        COUNT(DISTINCT CASE
-          WHEN tipo = 'assinatura'
-           AND status = 'pago'
-           AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
-               = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
-          THEN cliente_id
-        END) AS assinantes_total,
-
-        COUNT(DISTINCT CASE
-          WHEN tipo = 'assinatura'
-           AND status = 'pago'
-           AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
-               = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
-          THEN cliente_id
-        END) AS assinantes_hoje,
 
         COALESCE(SUM(CASE
           WHEN gateway = 'stripe' AND (disponivel_em IS NULL OR disponivel_em > NOW())
@@ -1405,6 +1390,21 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
 
     const r = result.rows[0];
 
+    const vipRes = await db.query(
+      `SELECT
+        COUNT(*) FILTER (WHERE ativo = true AND expiration_at > NOW()) AS total,
+        COUNT(*) FILTER (
+          WHERE ativo = true
+            AND expiration_at > NOW()
+            AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo')
+                = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+        ) AS hoje
+      FROM vip_subscriptions
+      WHERE modelo_id = $1`,
+      [modelo_id]
+    );
+    const vr = vipRes.rows[0];
+
     res.json({
       hoje: {
         midias: Number(r.hoje_midias || 0),
@@ -1422,8 +1422,8 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
         acumulado_ano_atual: Number(r.acumulado_ano_atual || 0)
       },
       assinantes: {
-        total: Number(r.assinantes_total || 0),
-        hoje: Number(r.assinantes_hoje || 0)
+        total: Number(vr.total || 0),
+        hoje: Number(vr.hoje || 0)
       },
       bloqueado: {
         hoje: Number(r.bloqueado_hoje || 0),

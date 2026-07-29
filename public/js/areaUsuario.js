@@ -312,9 +312,7 @@ function renderizarPagina() {
     const badgeDisponibilidade =
       disponibilidade === 'pendente'
         ? `<span class="status-pendente">${t("relatorio.status_pendente")}</span>`
-        : disponibilidade === 'liberado'
-          ? `<span class="status-liberado">${t("relatorio.status_liberado")}</span>`
-          : '—';
+        : `<span style="color:#27ae60;font-weight:600;">OK</span>`;
 
     tbody.innerHTML += `
       <tr>

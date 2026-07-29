@@ -101,7 +101,7 @@ body {
    HERO CARD
 =========================== */
 .rel-hero {
-  background: linear-gradient(135deg, #b79cff, #cabcf3);
+  background: transparent;
   border-radius: 20px;
   padding: 22px 20px 18px;
   margin-bottom: 16px;
@@ -118,7 +118,7 @@ body {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  color: rgba(255,255,255,0.85);
+  color: #7b2cff;
   margin-bottom: 4px;
 }
 
@@ -126,7 +126,7 @@ body {
   display: block;
   font-size: 30px;
   font-weight: 800;
-  color: #fff;
+  color: #1E1E26;;
   line-height: 1.1;
 }
 
@@ -139,7 +139,7 @@ body {
 .rel-hero-sublabel {
   font-size: 11px;
   font-weight: 600;
-  color: rgba(255,255,255,0.75);
+  color:#7b2cff;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin: 0 0 2px;
@@ -148,11 +148,10 @@ body {
 .rel-hero-sub {
   font-size: 16px;
   font-weight: 700;
-  color: #fff;
+  color: #1E1E26;;
 }
 
 .rel-hero-sm {
-  background: #f7f4ff;
   box-shadow: 0 4px 14px rgba(123, 44, 255, 0.08);
   margin-bottom: 0;
 }
@@ -173,13 +172,13 @@ body {
   justify-content: space-between;
   margin-top: 14px;
   padding-top: 12px;
-  border-top: 1px solid rgba(255,255,255,0.3);
+  border-top: 3px solid #d1c0ff;
 }
 
 .rel-hero-total-lbl {
   font-size: 12px;
   font-weight: 600;
-  color: rgba(255,255,255,0.8);
+  color:#7b2cff;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -235,7 +234,7 @@ body {
 .rel-st-lbl {
   font-size: 11px;
   font-weight: 600;
-  color: #888;
+  color: #1E1E26;
   margin: 0 0 4px;
   text-transform: uppercase;
   letter-spacing: 0.4px;
