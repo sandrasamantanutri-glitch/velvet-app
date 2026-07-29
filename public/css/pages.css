@@ -207,6 +207,16 @@ body {
   text-align: center;
 }
 
+.pendentes {
+  font-size: 11px;
+  font-weight: 600;
+  color: #1E1E26;
+  margin: 0 0 4px;
+  letter-spacing: 0.4px;
+  margin: 15px 0 8px;
+
+}
+
 /* ===== TEXTO INFORMATIVO ===== */
 .form-info,
 .info-text {
