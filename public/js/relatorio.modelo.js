@@ -164,8 +164,31 @@ async function carregarResumoModelo(mes = null) {
 // ===============================
 // TRANSAÇÕES
 // ===============================
+
+function obterMesAnteriorSP() {
+  const [ano, mes] = obterMesAtualSP().split("-").map(Number);
+  const d = new Date(ano, mes - 2, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function renderTransacoes(dados) {
+  return dados.map(tr => {
+    const pendente = tr.disponibilidade === "pendente";
+    return `
+      <div class="transacao">
+        <strong>#${tr.codigo}</strong> · ${tr.tipo}<br>
+        ${formatarDataHoraSP(tr.created_at)}<br>
+        ${t("relatorio.valor")}: ${emReais(tr.valor)}<br>
+        <span class="${pendente ? 'status-pendente' : 'status-liberado'}">
+          ${pendente ? t("relatorio.status_pendente") : t("relatorio.status_liberado")}
+        </span>
+      </div>
+    `;
+  }).join("");
+}
+
 async function carregarTransacoes(pagina = 1) {
-  const lista    = document.getElementById("listaTransacoes");
+  const lista     = document.getElementById("listaTransacoes");
   const paginacao = document.getElementById("paginacaoTransacoes");
   if (!lista) return;
 
@@ -176,42 +199,53 @@ async function carregarTransacoes(pagina = 1) {
   if (!token) { lista.innerText = t("relatorio.nao_autenticada"); return; }
 
   try {
-    const mesAtual = obterMesAtualSP();
-    const res = await fetch(`/api/transacoes?mes=${mesAtual}&page=${pagina}`, {
-      headers: { Authorization: "Bearer " + token }
-    });
-    if (!res.ok) { lista.innerText = t("relatorio.erro_transacoes"); return; }
+    const mesAtual    = obterMesAtualSP();
+    const mesAnterior = obterMesAnteriorSP();
+    const headers     = { Authorization: "Bearer " + token };
 
-    const data = await res.json();
-    const dados = data.registros || [];
+    const [resAtual, resAnterior] = await Promise.all([
+      fetch(`/api/transacoes?mes=${mesAtual}&page=${pagina}`,    { headers }),
+      fetch(`/api/transacoes?mes=${mesAnterior}&page=1`,         { headers })
+    ]);
+
+    if (!resAtual.ok) { lista.innerText = t("relatorio.erro_transacoes"); return; }
+
+    const dataAtual    = await resAtual.json();
+    const dataAnterior = resAnterior.ok ? await resAnterior.json() : { registros: [], totalLiberado: 0, totalPendente: 0 };
+
+    const totalLiberado = (dataAtual.totalLiberado || 0) + (dataAnterior.totalLiberado || 0);
+    const totalPendente = (dataAtual.totalPendente || 0) + (dataAnterior.totalPendente || 0);
 
     const resumoEl = document.getElementById("resumoDisponibilidadeTransacoes");
     if (resumoEl) {
       resumoEl.innerHTML = `
-        <span class="resumo-liberado">${t("relatorio.transacoes_liberadas")}: ${emReais(data.totalLiberado || 0)}</span>
-        <span class="resumo-pendente">${t("relatorio.transacoes_pendentes")}: ${emReais(data.totalPendente || 0)}</span>
+        <span class="resumo-liberado">${t("relatorio.transacoes_liberadas")}: ${emReais(totalLiberado)}</span>
+        <span class="resumo-pendente">${t("relatorio.transacoes_pendentes")}: ${emReais(totalPendente)}</span>
       `;
     }
 
+    const dadosAtual    = dataAtual.registros    || [];
+    const dadosAnterior = dataAnterior.registros || [];
+
     lista.innerHTML = "";
-    if (!dados.length) { lista.innerText = t("relatorio.sem_transacoes"); return; }
 
-    paginaAtualTransacoes = data.paginaAtual;
-    dados.forEach(tr => {
-      const pendente = tr.disponibilidade === "pendente";
-      lista.innerHTML += `
-        <div class="transacao">
-          <strong>#${tr.codigo}</strong> · ${tr.tipo}<br>
-          ${formatarDataHoraSP(tr.created_at)}<br>
-          ${t("relatorio.valor")}: ${emReais(tr.valor)}<br>
-          <span class="${pendente ? 'status-pendente' : 'status-liberado'}">
-            ${pendente ? t("relatorio.status_pendente") : t("relatorio.status_liberado")}
-          </span>
-        </div>
-      `;
-    });
+    if (!dadosAtual.length && !dadosAnterior.length) {
+      lista.innerText = t("relatorio.sem_transacoes");
+      return;
+    }
 
-    if (paginacao && data.totalPaginas > 1) renderizarPaginacaoTransacoes(data.totalPaginas);
+    if (dadosAtual.length) {
+      lista.innerHTML += `<p class="rel-sec-lbl" style="margin:8px 0 4px">${nomeMes(mesAtual)}</p>`;
+      lista.innerHTML += renderTransacoes(dadosAtual);
+    }
+
+    if (dadosAnterior.length) {
+      lista.innerHTML += `<p class="rel-sec-lbl" style="margin:16px 0 4px">${nomeMes(mesAnterior)}</p>`;
+      lista.innerHTML += renderTransacoes(dadosAnterior);
+    }
+
+    paginaAtualTransacoes = dataAtual.paginaAtual || 1;
+    if (paginacao && (dataAtual.totalPaginas || 1) > 1) renderizarPaginacaoTransacoes(dataAtual.totalPaginas);
 
   } catch (err) {
     console.error(err);
@@ -334,6 +368,39 @@ async function carregarPagamentos() {
 // ===============================
 // CHARGEBACKS
 // ===============================
+function renderChargebackCards(dados, lista, emptyMsg) {
+  const valorModeloOf = r => Number(r.valor_modelo ?? r.valor ?? 0);
+  const tipoLabel     = { assinatura: "Assinatura VIP", midia: "Mídia", conteudo: "Mídia", premium: "Premium" };
+  const gatewayLabel  = { cartao: "💳 Cartão", pix: "🏦 PIX" };
+
+  if (!dados.length) {
+    lista.innerHTML = `<p style="color:#888;text-align:center;padding:16px;">${emptyMsg}</p>`;
+    return 0;
+  }
+
+  lista.innerHTML = "";
+  dados.forEach(r => {
+    const val  = valorModeloOf(r);
+    const tipo = tipoLabel[r.tipo]    || r.tipo    || "—";
+    const gw   = gatewayLabel[r.gateway] || r.gateway || "—";
+    lista.innerHTML += `
+      <div class="rel-cb-card">
+        <div class="rel-cb-row">
+          <strong class="rel-cb-valor">− ${emReais(val)}</strong>
+          <span class="rel-cb-tipo">${tipo}</span>
+        </div>
+        <div class="rel-cb-meta">
+          <span>📅 Compra: ${r.data_compra_fmt || "—"}</span>
+          <span>⚠️ Contestação: ${r.data_fmt || "—"}</span><br>
+          <span>Cliente: ${r.cliente_id || "—"}</span>
+          <span>${gw}</span>
+        </div>
+      </div>
+    `;
+  });
+  return dados.reduce((s, r) => s + valorModeloOf(r), 0);
+}
+
 async function carregarChargebacks() {
   const lista  = document.getElementById("listaChargebacks");
   const resumo = document.getElementById("resumoChargebacks");
@@ -341,17 +408,24 @@ async function carregarChargebacks() {
 
   lista.innerHTML = "Carregando chargebacks...";
 
-  try {
-    const res = await fetch("/api/modelo/chargebacks", {
-      headers: { Authorization: "Bearer " + localStorage.getItem("token") }
-    });
-    if (!res.ok) { lista.innerHTML = "Erro ao carregar chargebacks."; return; }
+  const token   = localStorage.getItem("token");
+  const headers = { Authorization: "Bearer " + token };
+  const mesAnt  = obterMesAnteriorSP();
 
-    const dados = await res.json();
+  try {
+    const [resAtual, resAnt] = await Promise.all([
+      fetch("/api/modelo/chargebacks",             { headers }),
+      fetch(`/api/modelo/chargebacks?mes=${mesAnt}`, { headers })
+    ]);
+
+    if (!resAtual.ok) { lista.innerHTML = "Erro ao carregar chargebacks."; return; }
+
+    const dados    = await resAtual.json();
+    const dadosAnt = resAnt.ok ? await resAnt.json() : [];
 
     const valorModeloOf = r => Number(r.valor_modelo ?? r.valor ?? 0);
-    const totalValorMes = dados.reduce((s, r) => s + valorModeloOf(r), 0);
-    window.cbTotalMes = totalValorMes;
+    const totalMes = dados.reduce((s, r) => s + valorModeloOf(r), 0);
+    window.cbTotalMes = totalMes;
 
     if (resumo) {
       resumo.innerHTML = `
@@ -361,48 +435,38 @@ async function carregarChargebacks() {
         </div>
         <div class="rel-cb-res-card">
           <p>Valor este mês</p>
-          <strong>${emReais(totalValorMes)}</strong>
+          <strong>${emReais(totalMes)}</strong>
         </div>
       `;
     }
 
-    if (!dados.length) {
-      lista.innerHTML = '<p style="color:#888;text-align:center;padding:24px;">Nenhum chargeback este mês.</p>';
-      return;
+    renderChargebackCards(dados, lista, "Nenhum chargeback este mês.");
+
+    // Mês anterior
+    const secaoAnt = document.getElementById("secaoChargebacksAnterior");
+    if (secaoAnt) {
+      secaoAnt.style.display = "";
+      const labelAnt = document.getElementById("labelChargebacksAnterior");
+      if (labelAnt) labelAnt.textContent = nomeMes(mesAnt);
+
+      const totalAnt = dadosAnt.reduce((s, r) => s + valorModeloOf(r), 0);
+      const resumoAnt = document.getElementById("resumoChargebacksAnterior");
+      if (resumoAnt) {
+        resumoAnt.innerHTML = `
+          <div class="rel-cb-res-card">
+            <p>Qtd. mês anterior</p>
+            <strong>${dadosAnt.length}</strong>
+          </div>
+          <div class="rel-cb-res-card">
+            <p>Valor mês anterior</p>
+            <strong>${emReais(totalAnt)}</strong>
+          </div>
+        `;
+      }
+
+      const listaAnt = document.getElementById("listaChargebacksAnterior");
+      if (listaAnt) renderChargebackCards(dadosAnt, listaAnt, "Nenhum chargeback no mês anterior.");
     }
-
-    const tipoLabel = {
-      assinatura: "Assinatura VIP",
-      midia: "Mídia",
-      conteudo: "Mídia",
-      premium: "Premium"
-    };
-    const gatewayLabel = { cartao: "💳 Cartão", pix: "🏦 PIX" };
-
-    lista.innerHTML = "";
-    dados.forEach(r => {
-      const val = valorModeloOf(r);
-      const tipo = tipoLabel[r.tipo] || r.tipo || "—";
-      const gw   = gatewayLabel[r.gateway] || r.gateway || "—";
-      const cliente = r.cliente_id || "—";
-      const dataCompra = r.data_compra_fmt || "—";
-      const dataContest = r.data_fmt || "—";
-
-      lista.innerHTML += `
-        <div class="rel-cb-card">
-          <div class="rel-cb-row">
-            <strong class="rel-cb-valor">− ${emReais(val)}</strong>
-            <span class="rel-cb-tipo">${tipo}</span>
-          </div>
-          <div class="rel-cb-meta">
-            <span>📅 Compra: ${dataCompra}</span>
-            <span>⚠️ Contestação: ${dataContest}</span><br>
-            <span>Cliente: ${cliente}</span>
-            <span>${gw}</span>
-          </div>
-        </div>
-      `;
-    });
 
   } catch (err) {
     console.error("Erro chargebacks:", err);

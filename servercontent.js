@@ -1447,6 +1447,21 @@ router.get("/modelo/chargebacks", authModelo, async (req, res) => {
     if (!modeloRes.rows.length) return res.status(404).json({ error: "Modelo não encontrada" });
     const modelo_id = modeloRes.rows[0].id;
 
+    const mesFiltro = req.query.mes;
+    let anoFiltro, mesFiltroNum, filtroMesClause;
+    if (mesFiltro && /^\d{4}-(0[1-9]|1[0-2])$/.test(mesFiltro)) {
+      [anoFiltro, mesFiltroNum] = mesFiltro.split('-').map(Number);
+      filtroMesClause = `
+        AND EXTRACT(YEAR  FROM cb.criado_em AT TIME ZONE 'America/Sao_Paulo') = ${anoFiltro}
+        AND EXTRACT(MONTH FROM cb.criado_em AT TIME ZONE 'America/Sao_Paulo') = ${mesFiltroNum}
+      `;
+    } else {
+      filtroMesClause = `
+        AND EXTRACT(YEAR  FROM cb.criado_em AT TIME ZONE 'America/Sao_Paulo') = EXTRACT(YEAR  FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
+        AND EXTRACT(MONTH FROM cb.criado_em AT TIME ZONE 'America/Sao_Paulo') = EXTRACT(MONTH FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
+      `;
+    }
+
     const { rows } = await db.query(`
       SELECT
         cb.id,
@@ -1467,8 +1482,7 @@ router.get("/modelo/chargebacks", authModelo, async (req, res) => {
       LEFT JOIN users u            ON u.id  = c.user_id
       LEFT JOIN clientes_dados cd  ON cd.cliente_id = cb.cliente_id
       WHERE cb.modelo_id = $1
-        AND EXTRACT(YEAR  FROM cb.criado_em AT TIME ZONE 'America/Sao_Paulo') = EXTRACT(YEAR  FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
-        AND EXTRACT(MONTH FROM cb.criado_em AT TIME ZONE 'America/Sao_Paulo') = EXTRACT(MONTH FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
+        ${filtroMesClause}
       ORDER BY cb.criado_em DESC
     `, [modelo_id]);
 
