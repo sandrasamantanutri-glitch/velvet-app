@@ -1516,6 +1516,7 @@ async function carregarPerfilAgency() {
     form.nome_exibicao.value = data.nome_exibicao || '';
     form.local.value = data.local || '';
     form.bio.value = data.bio || '';
+    form.classificacao_conteudo.value = data.classificacao_conteudo || '';
     form.instagram.value = data.instagram || '';
     form.tiktok.value = data.tiktok || '';
   } catch (err) {
@@ -1534,6 +1535,7 @@ async function salvarPerfilAgency(e) {
       nome_exibicao: form.get('nome_exibicao'),
       local: form.get('local'),
       bio: form.get('bio'),
+      classificacao_conteudo: form.get('classificacao_conteudo') || null,
       instagram: form.get('instagram'),
       tiktok: form.get('tiktok')
     });

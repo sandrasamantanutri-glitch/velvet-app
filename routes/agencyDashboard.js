@@ -1975,7 +1975,7 @@ router.get("/perfil", authAgencia, async (req, res) => {
 
     const { rows } = await db.query(`
       SELECT m.id AS modelo_id, m.nome_exibicao, m.bio, m.avatar, m.capa, m.local,
-             md.instagram, md.tiktok
+             md.instagram, md.tiktok, md.classificacao_conteudo
       FROM modelos m
       LEFT JOIN modelos_dados md ON md.modelo_id = m.id AND md.ativo = true
       WHERE m.id = $1
@@ -2003,7 +2003,8 @@ const {
   instagram,
   tiktok,
   local,
-  bio
+  bio,
+  classificacao_conteudo
 } = req.body;
 
 if (!nome_exibicao || !nome_exibicao.trim()) {
@@ -2029,11 +2030,13 @@ const result = await db.query(
   `UPDATE modelos_dados
    SET instagram = $1,
        tiktok = $2,
+       classificacao_conteudo = $3,
        atualizado_em = NOW()
-   WHERE modelo_id = $3`,
+   WHERE modelo_id = $4`,
   [
     instagram?.trim() || null,
     tiktok?.trim() || null,
+    classificacao_conteudo || null,
     modeloId
   ]
 );
