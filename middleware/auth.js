@@ -16,9 +16,25 @@ module.exports = async function auth(req, res, next) {
       return res.status(401).json({ error: "Token inválido" });
     }
 
-    // Tokens de admin/agencia não têm tv/email e decoded.id refere-se
-    // a admin.id / agencias.id, não users.id.
-    if (decoded.role === "admin" || decoded.role === "agencia") {
+    // Agência: sem token_version, passa direto
+    if (decoded.role === "agencia") {
+      req.user = decoded;
+      return next();
+    }
+
+    // Admin: verifica token_version para permitir revogação imediata
+    if (decoded.role === "admin") {
+      const adminRes = await db.query(
+        "SELECT token_version FROM admin WHERE id = $1 LIMIT 1",
+        [decoded.id]
+      );
+      if (!adminRes.rows.length) {
+        return res.status(401).json({ error: "Token inválido" });
+      }
+      const tv = decoded.tv ?? 0;
+      if (tv !== (adminRes.rows[0].token_version ?? 0)) {
+        return res.status(401).json({ error: "Sessão expirada. Faça login novamente." });
+      }
       req.user = decoded;
       return next();
     }

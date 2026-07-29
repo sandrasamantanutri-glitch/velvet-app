@@ -493,6 +493,25 @@ router.get("/acessos-origem", authAdmin, async (req, res) => {
 
 // ========== 3. ADMINS ==========
 
+// Revoga todas as sessões do admin logado incrementando token_version
+router.post("/revogar-sessoes", authAdmin, async (req, res) => {
+  try {
+    await db.query(
+      "UPDATE admin SET token_version = COALESCE(token_version, 0) + 1 WHERE id = $1",
+      [req.admin.id]
+    );
+    await db.query(
+      `INSERT INTO admin_seguranca_historico (admin_id, acao, motivo, data)
+       VALUES ($1, 'revogar_sessoes', 'Admin revogou todas as sessões ativas', NOW())`,
+      [req.admin.id]
+    );
+    res.json({ ok: true, message: "Todas as sessões foram revogadas." });
+  } catch (err) {
+    console.error("Erro revogar sessoes:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
 router.get("/admins", async (req, res) => {
   try {
     const { rows } = await db.query("SELECT id, email, created_at FROM admin ORDER BY id");

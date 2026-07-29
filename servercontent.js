@@ -16,6 +16,15 @@ const { enviarEmailRejeicao } = require("./email");
 const { criarNotificacaoAdmin } = require("./utils/notificacoesAdmin");
 const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });
+const rateLimit = require("express-rate-limit");
+
+const adminLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Muitas tentativas de login. Tente novamente em 15 minutos." }
+});
 
 const router = express.Router();   //PRIMEIRO SEMPRE
 
@@ -634,33 +643,52 @@ router.post("/agencia/login", async (req, res) => {
 });
 
 
-router.post("/admin/login", async (req, res) => {
+router.post("/admin/login", adminLoginLimiter, async (req, res) => {
 
   const { email, senha } = req.body;
 
+  if (!email || !senha) {
+    return res.status(401).json({ error: "Credenciais inválidas" });
+  }
+
+  const ip = req.headers["cf-connecting-ip"] ||
+    req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+    req.ip;
+
   try {
-    const admin = await db.query(
-      "SELECT * FROM admin WHERE email = $1",
-      [email]
+    const adminRes = await db.query(
+      "SELECT id, email, senha, token_version FROM admin WHERE email = $1 LIMIT 1",
+      [email.trim().toLowerCase()]
     );
 
-    if (!admin.rowCount) {
-      return res.status(400).json({ error: "Admin não encontrado" });
+    const adminData = adminRes.rows[0];
+
+    const senhaValida = adminData
+      ? await bcrypt.compare(senha, adminData.senha)
+      : false;
+
+    if (!adminData || !senhaValida) {
+      await db.query(
+        `INSERT INTO admin_seguranca_historico (admin_id, acao, motivo, data)
+         VALUES (NULL, 'login_falhou', $1, NOW())`,
+        [`Tentativa de login falhou. Email: ${email.trim().toLowerCase()} | IP: ${ip}`]
+      ).catch(() => {});
+      return res.status(401).json({ error: "Credenciais inválidas" });
     }
 
-    const adminData = admin.rows[0];
-
-    const senhaValida = await bcrypt.compare(senha, adminData.senha);
-
-    if (!senhaValida) {
-      return res.status(400).json({ error: "Senha inválida" });
-    }
+    const tv = adminData.token_version ?? 0;
 
     const token = jwt.sign(
-      { id: adminData.id, role: "admin" },
+      { id: adminData.id, role: "admin", tv },
       process.env.JWT_SECRET,
       { expiresIn: "12h" }
     );
+
+    await db.query(
+      `INSERT INTO admin_seguranca_historico (admin_id, acao, motivo, data)
+       VALUES ($1, 'login_sucesso', $2, NOW())`,
+      [adminData.id, `Login bem-sucedido | IP: ${ip}`]
+    ).catch(() => {});
 
     res.json({ token });
 
