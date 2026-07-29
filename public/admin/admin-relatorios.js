@@ -22,17 +22,10 @@ function formatMoney(valor) {
 }
 
 
-const token = localStorage.getItem('token');
-
 async function fetchJSON(url) {
-  const res = await fetch(url, {
-    headers: {
-      'Authorization': 'Bearer ' + token
-    }
-  });
+  const res = await fetch(url, { credentials: 'same-origin' });
 
   if (!res.ok) {
-    // sessão inválida ou não-admin
     console.error('Erro ao aceder:', res.status);
     throw new Error('Unauthorized');
   }

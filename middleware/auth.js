@@ -3,11 +3,17 @@ const db = require("../db");
 module.exports = async function auth(req, res, next) {
   const authHeader = req.headers.authorization;
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ error: "Token não fornecido" });
+  // Aceita Bearer header (API clients) ou cookie httpOnly (admin web)
+  let token = null;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    token = authHeader.split(" ")[1];
+  } else if (req.cookies?.admin_session) {
+    token = req.cookies.admin_session;
   }
 
-  const token = authHeader.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ error: "Token não fornecido" });
+  }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -16,8 +22,19 @@ module.exports = async function auth(req, res, next) {
       return res.status(401).json({ error: "Token inválido" });
     }
 
-    // Agência: sem token_version, passa direto
+    // Agência: verifica token_version para permitir revogação
     if (decoded.role === "agencia") {
+      const agRes = await db.query(
+        "SELECT token_version FROM agencias WHERE id = $1 LIMIT 1",
+        [decoded.id]
+      );
+      if (!agRes.rows.length) {
+        return res.status(401).json({ error: "Token inválido" });
+      }
+      const tv = decoded.tv ?? 0;
+      if (tv !== (agRes.rows[0].token_version ?? 0)) {
+        return res.status(401).json({ error: "Sessão expirada. Faça login novamente." });
+      }
       req.user = decoded;
       return next();
     }

@@ -1,7 +1,5 @@
 function authFetch(url) {
-  return fetch(url, {
-    headers: { Authorization: "Bearer " + localStorage.getItem("token") }
-  });
+  return fetch(url, { credentials: "same-origin" });
 }
 
 const filtroPeriodo = document.getElementById("filtroPeriodo");

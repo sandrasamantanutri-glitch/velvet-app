@@ -487,28 +487,13 @@
 </div>
 
 <script>
-  let token = '';
+  // Autenticação via cookie httpOnly (enviado automaticamente em requests same-origin)
   let modeloSelecionado = null;
   let paginaAtual = 1;
   let totalPaginas = 1;
 
-  // Pega token do parent window (admin-dashboard) ou da URL
-  function getToken() {
-    try {
-      const p = window.parent;
-      if (p && p !== window) {
-        const t = p.localStorage.getItem('token_admin') || p.localStorage.getItem('token');
-        if (t) return t;
-      }
-    } catch (_) {}
-    const params = new URLSearchParams(window.location.search);
-    return params.get('t') || localStorage.getItem('token_admin') || localStorage.getItem('token') || '';
-  }
-
   async function fetchAdmin(path) {
-    const res = await fetch('/admin/dashboard' + path, {
-      headers: { Authorization: 'Bearer ' + token }
-    });
+    const res = await fetch('/admin/dashboard' + path, { credentials: 'same-origin' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     return res.json();
   }
@@ -695,7 +680,7 @@
     try {
       const res = await fetch('/admin/dashboard/midias-admin/' + id, {
         method: 'DELETE',
-        headers: { Authorization: 'Bearer ' + token }
+        credentials: 'same-origin'
       });
       if (!res.ok) throw new Error('HTTP ' + res.status);
 
@@ -733,7 +718,6 @@
   }
 
   // Init
-  token = getToken();
   carregarModelos();
   carregarMidias(1);
 </script>

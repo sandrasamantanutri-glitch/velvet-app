@@ -76,6 +76,8 @@ const { enviarEmailValidacao, enviarEmailBoasVindasCliente, enviarEmailBoasVinda
 const brevo = require("./brevo");
 const rateLimit = require("express-rate-limit");
 const compression = require('compression');
+const cookieParser = require("cookie-parser");
+const cookie = require("cookie");
 
 
 app.set("trust proxy", 1);
@@ -3246,6 +3248,7 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(cookieParser());
 const { router: servercontentRouter, calcularValores } = require('./servercontent');
 app.use("/api", servercontentRouter);
 app.set("calcularValores", calcularValores);
@@ -3987,7 +3990,12 @@ async function buscarDadosEmailPagamento(dbPool, { cliente_id, modelo_id }) {
 
 io.use((socket, next) => {
   try {
-    const token = socket.handshake.auth?.token;
+    // Aceita token via auth (usuários/agências) ou via cookie httpOnly (admin)
+    let token = socket.handshake.auth?.token;
+    if (!token) {
+      const cookies = cookie.parse(socket.handshake.headers.cookie || "");
+      token = cookies.admin_session;
+    }
 
     if (!token) {
       return next(new Error("Sem token"));

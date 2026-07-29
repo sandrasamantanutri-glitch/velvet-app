@@ -2,21 +2,22 @@
    VELVET ADMIN DASHBOARD — JS
    ======================================== */
 
-  const token = localStorage.getItem("token_admin");
-
-if (!token) {
+// Verifica sessão via cookie indicador (sem ler o token httpOnly)
+if (!document.cookie.split(';').some(c => c.trim().startsWith('admin_li='))) {
   window.location.href = "/admin/login.html";
-  throw new Error("Sem token admin");
+  throw new Error("Sem sessão admin");
 }
+// Limpar token legado do localStorage
+localStorage.removeItem('token_admin');
 
 async function authFetch(url, options = {}) {
-  return fetch(url, {
-    ...options,
-    headers: {
-      ...(options.headers || {}),
-      Authorization: token ? `Bearer ${token}` : ""
-    }
-  });
+  // Cookie httpOnly é enviado automaticamente pelo browser (same-origin)
+  const res = await fetch(url, { ...options, credentials: "same-origin" });
+  if (res.status === 401) {
+    window.location.href = "/admin/login.html";
+    throw new Error("Sessão expirada");
+  }
+  return res;
 }
 
 async function fetchJSON(url) {
@@ -502,16 +503,14 @@ document.getElementById('modalPreviewNewsletter')?.addEventListener('click', fun
 pageLoaders.suporte = function () {
   const iframe = document.getElementById('suporte-iframe');
   if (!iframe.src || iframe.src === window.location.href) {
-    const tok = localStorage.getItem('token_admin') || localStorage.getItem('token') || '';
-    iframe.src = '/admin/suporte.html?t=' + encodeURIComponent(tok);
+    iframe.src = '/admin/suporte.html';
   }
 };
 
 pageLoaders.midias = function () {
   const iframe = document.getElementById('midias-iframe');
   if (!iframe.src || iframe.src === window.location.href) {
-    const tok = localStorage.getItem('token_admin') || localStorage.getItem('token') || '';
-    iframe.src = '/admin/midias.html?t=' + encodeURIComponent(tok);
+    iframe.src = '/admin/midias.html';
   }
 };
 
@@ -585,17 +584,15 @@ function closeAllModals() {
   if (overlay) overlay.classList.remove('active');
 }
 
-function logout() {
-  localStorage.removeItem('token');
+async function logout() {
+  try {
+    await fetch('/api/admin/logout', { method: 'POST', credentials: 'same-origin' });
+  } catch (_) {}
   window.location.href = '/admin/login.html';
 }
 
 async function carregarAdmin() {
-  const res = await fetch("/admin/dashboard/name-admin", {
-    headers: {
-      Authorization: "Bearer " + localStorage.getItem("token_admin")
-    }
-  });
+  const res = await authFetch("/admin/dashboard/name-admin");
 
   const data = await res.json();
 
@@ -4397,12 +4394,11 @@ let _pagamentoIdPendente = null;
 function marcarPgtoModeloPago(id) {
   _pagamentoIdPendente = id;
 
-  // Carregar pré-visualização no iframe — token via query param porque iframes não enviam headers
+  // Cookie httpOnly é enviado automaticamente pelo browser no carregamento do iframe
   const iframe = document.getElementById('iframePreviewRecibo');
   const btn    = document.getElementById('btnConfirmarPagamento');
 
-  const tk = localStorage.getItem('token_admin') || '';
-  if (iframe) iframe.src = `/admin/dashboard/modelo-pagamentos/${id}/recibo?token=${encodeURIComponent(tk)}`;
+  if (iframe) iframe.src = `/admin/dashboard/modelo-pagamentos/${id}/recibo`;
   if (btn)    btn.disabled = false;
 
   openModal('modalPreviewRecibo');

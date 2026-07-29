@@ -436,8 +436,15 @@
     const errorMessage = document.getElementById('errorMessage');
     const rememberCheckbox = document.getElementById('remember');
 
-    // Carregar email salvo se houver
+    // Se já tem sessão ativa (cookie indicador), vai direto ao dashboard
     window.addEventListener('load', () => {
+      if (document.cookie.split(';').some(c => c.trim().startsWith('admin_li='))) {
+        window.location.href = '/admin/admin-dashboard.html';
+        return;
+      }
+      // Limpar token legado do localStorage
+      localStorage.removeItem('token_admin');
+
       const savedEmail = localStorage.getItem('admin_email_saved');
       if (savedEmail) {
         emailInput.value = savedEmail;
@@ -471,7 +478,7 @@
 
         const data = await res.json();
 
-        if (res.ok && data.token) {
+        if (res.ok && data.ok) {
           // Salvar email se checkbox marcado
           if (rememberCheckbox.checked) {
             localStorage.setItem('admin_email_saved', email);
@@ -479,10 +486,7 @@
             localStorage.removeItem('admin_email_saved');
           }
 
-          // Salvar token
-          localStorage.setItem('token_admin', data.token);
-
-          // Redirecionar
+          // Token armazenado em cookie httpOnly pelo servidor — sem localStorage
           window.location.href = '/admin/admin-dashboard.html';
         } else {
           showError(data.error || data.message || 'Erro ao fazer login. Verifique suas credenciais.');

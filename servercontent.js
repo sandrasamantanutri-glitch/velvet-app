@@ -597,37 +597,36 @@ router.post("/allmessage", auth, requireRole("admin", "modelo"),
 // ===========================
 
 router.post("/agencia/login", async (req, res) => {
-  try {
-    const { email, senha } = req.body;
+  const { email, senha } = req.body;
 
+  if (!email || !senha) {
+    return res.status(401).json({ erro: "Credenciais inválidas" });
+  }
+
+  try {
     const result = await db.query(
-      "SELECT * FROM agencias WHERE email = $1",
-      [email]
+      "SELECT id, email, nome, senha, token_version FROM agencias WHERE email = $1 LIMIT 1",
+      [email.trim().toLowerCase()]
     );
 
-    if (!result.rowCount) {
-      return res.status(401).json({ erro: "Agência não encontrada" });
-    }
-
     const agencia = result.rows[0];
+    const senhaValida = agencia
+      ? await bcrypt.compare(senha, agencia.senha)
+      : false;
 
-    const senhaValida = await bcrypt.compare(senha, agencia.senha);
-
-    if (!senhaValida) {
-      return res.status(401).json({ erro: "Senha inválida" });
+    if (!agencia || !senhaValida) {
+      return res.status(401).json({ erro: "Credenciais inválidas" });
     }
+
+    const tv = agencia.token_version ?? 0;
 
     const token = jwt.sign(
-      { 
-        id: agencia.id, 
-        email: agencia.email,  // ✅ Adicionar email
-        role: "agencia" 
-      },
+      { id: agencia.id, email: agencia.email, role: "agencia", tv },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
-    res.json({ 
+    res.json({
       token,
       agencia: {
         id: agencia.id,
@@ -690,12 +689,32 @@ router.post("/admin/login", adminLoginLimiter, async (req, res) => {
       [adminData.id, `Login bem-sucedido | IP: ${ip}`]
     ).catch(() => {});
 
-    res.json({ token });
+    const isProd = process.env.NODE_ENV === "production";
+    const cookieOpts = {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: "strict",
+      path: "/",
+      maxAge: 12 * 60 * 60 * 1000
+    };
+
+    res.cookie("admin_session", token, cookieOpts);
+    // Indicador não-httpOnly para que o JS saiba que existe uma sessão ativa
+    res.cookie("admin_li", "1", { ...cookieOpts, httpOnly: false });
+
+    res.json({ ok: true });
 
   } catch (err) {
     console.error("Erro login admin:", err);
     res.status(500).json({ error: "Erro interno" });
   }
+});
+
+router.post("/admin/logout", auth, authAdmin, async (req, res) => {
+  const isProd = process.env.NODE_ENV === "production";
+  res.clearCookie("admin_session", { path: "/", secure: isProd, sameSite: "strict" });
+  res.clearCookie("admin_li",      { path: "/", secure: isProd, sameSite: "strict" });
+  res.json({ ok: true });
 });
 
 router.get("/admin/modelo/:id/historico-bancario", auth, authAdmin, async (req,res)=>{
