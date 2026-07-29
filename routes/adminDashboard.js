@@ -155,7 +155,7 @@ router.get("/overview", auth, authAdmin, async (req, res) => {
       db.query(`
         SELECT COALESCE(SUM(t.velvet_fee), 0) AS total
         FROM transacoes_agency t
-        WHERE (CASE WHEN t.disponivel_em IS NOT NULL THEN DATE(t.disponivel_em) ELSE DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo') END) = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+        WHERE (CASE WHEN t.disponivel_em IS NOT NULL THEN DATE(t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') ELSE DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo') END) = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND t.status = 'pago'
           AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
       `),
@@ -163,7 +163,7 @@ router.get("/overview", auth, authAdmin, async (req, res) => {
       db.query(`
         SELECT COALESCE(SUM(t.taxa_gateway), 0) AS total
         FROM transacoes_agency t
-        WHERE (CASE WHEN t.disponivel_em IS NOT NULL THEN DATE(t.disponivel_em) ELSE DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo') END) = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+        WHERE (CASE WHEN t.disponivel_em IS NOT NULL THEN DATE(t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') ELSE DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo') END) = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND t.status = 'pago'
           AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
       `),
@@ -178,7 +178,7 @@ router.get("/overview", auth, authAdmin, async (req, res) => {
           INTERVAL '1 month'
         ) AS meses(mes)
         LEFT JOIN transacoes_agency t
-          ON DATE_TRUNC('month', CASE WHEN t.disponivel_em IS NOT NULL THEN DATE(t.disponivel_em)::timestamp ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = meses.mes
+          ON DATE_TRUNC('month', CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = meses.mes
           AND t.status = 'pago'
           AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
         GROUP BY meses.mes
@@ -229,7 +229,7 @@ ORDER BY total DESC;
         FROM transacoes_agency t
         LEFT JOIN modelos m ON m.id = t.modelo_id
         WHERE t.modelo_id IS NOT NULL
-          AND DATE_TRUNC('month', CASE WHEN t.disponivel_em IS NOT NULL THEN DATE(t.disponivel_em)::timestamp ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+          AND DATE_TRUNC('month', CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND t.status = 'pago'
           AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
         GROUP BY t.modelo_id, m.nome
@@ -3054,13 +3054,13 @@ router.get("/ranking", authAdmin, async (req, res) => {
       }
       params.push(Number(match[1]), Number(match[2]));
       whereMes = `
-        EXTRACT(YEAR  FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $1
-        AND EXTRACT(MONTH FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $2
+        EXTRACT(YEAR  FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $1
+        AND EXTRACT(MONTH FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $2
       `;
     } else {
       whereMes = `
-        EXTRACT(YEAR  FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = EXTRACT(YEAR  FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
-        AND EXTRACT(MONTH FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = EXTRACT(MONTH FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
+        EXTRACT(YEAR  FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = EXTRACT(YEAR  FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
+        AND EXTRACT(MONTH FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = EXTRACT(MONTH FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
       `;
     }
 
@@ -3417,13 +3417,13 @@ router.get("/transacoes-agency", async (req, res) => {
     if (m) {
       const libParams = [];
       let libIdx = 1;
-      // disponivel_em é sempre meia-noite UTC (data de calendário do Stripe) — sem conversão de fuso
+      // Usa fuso SP para disponivel_em, garantindo consistência com financeiro da modelo
       let libWhere = `t.gateway = 'stripe'
         AND t.status = 'pago'
         AND t.disponivel_em IS NOT NULL
         AND t.disponivel_em <= NOW()
-        AND EXTRACT(YEAR  FROM t.disponivel_em) = $${libIdx}
-        AND EXTRACT(MONTH FROM t.disponivel_em) = $${libIdx + 1}
+        AND EXTRACT(YEAR  FROM t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') = $${libIdx}
+        AND EXTRACT(MONTH FROM t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') = $${libIdx + 1}
         AND (
           EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') != $${libIdx}
           OR EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') != $${libIdx + 1}
@@ -4039,8 +4039,8 @@ router.get("/conciliacao-modelo/:modelo_id", authAdmin, async (req, res) => {
                 THEN valor_modelo ELSE 0 END), 0)::numeric, 2) AS total_transacoes
         FROM transacoes_agency
         WHERE modelo_id = $1
-          AND EXTRACT(YEAR  FROM CASE WHEN disponivel_em IS NOT NULL THEN disponivel_em ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) = $2
-          AND EXTRACT(MONTH FROM CASE WHEN disponivel_em IS NOT NULL THEN disponivel_em ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) = $3
+          AND EXTRACT(YEAR  FROM CASE WHEN disponivel_em IS NOT NULL THEN disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) = $2
+          AND EXTRACT(MONTH FROM CASE WHEN disponivel_em IS NOT NULL THEN disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) = $3
       `, [modelo_id, ano, mes]);
 
       const total_transacoes = Number(rows[0].total_transacoes);

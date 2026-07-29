@@ -953,8 +953,13 @@ router.get("/transacoes", authModelo, async (req, res) => {
     let values = [modelo_id];
     let monthFilter = "";
 
+    // dataInicio: início do período exibido — usado para filtrar pendentes no resumo
+    const nowSP = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+    let dataInicio = new Date(nowSP.getFullYear(), nowSP.getMonth(), 1).toISOString().split("T")[0];
+
     if (mes && /^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) {
       const [ano, mesNum] = mes.split("-").map(Number);
+      dataInicio = new Date(ano, mesNum - 1, 1).toISOString().split("T")[0];
 
       values.push(ano, mesNum);
 
@@ -964,7 +969,7 @@ router.get("/transacoes", authModelo, async (req, res) => {
       `;
     } else if (desde && /^\d{4}-(0[1-9]|1[0-2])$/.test(desde)) {
       const [ano, mesNum] = desde.split("-").map(Number);
-      const dataInicio = new Date(ano, mesNum - 1, 1).toISOString().split("T")[0];
+      dataInicio = new Date(ano, mesNum - 1, 1).toISOString().split("T")[0];
       values.push(dataInicio);
       monthFilter = `
         AND COALESCE(disponivel_em, created_at AT TIME ZONE 'America/Sao_Paulo') >= $2::date
@@ -1026,13 +1031,12 @@ router.get("/transacoes", authModelo, async (req, res) => {
         ${monthFilter}
     `;
 
-    // Totais do mês atual: liberado por disponivel_em (Stripe, apenas >= 2026-06-24) ou created_at; pendente por created_at
+    // Totais do mês atual: liberado por disponivel_em (Stripe, apenas >= 2026-06-24) ou created_at; pendente por created_at >= dataInicio
     const resumoMesAtualSql = `
       SELECT
         COALESCE(SUM(CASE
           WHEN gateway = 'stripe' AND (disponivel_em IS NULL OR disponivel_em > NOW())
-           AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
-               = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+           AND created_at AT TIME ZONE 'America/Sao_Paulo' >= $2::date
           THEN valor_modelo ELSE 0 END), 0) AS total_pendente,
         COALESCE(SUM(CASE
           WHEN (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
@@ -1051,7 +1055,7 @@ router.get("/transacoes", authModelo, async (req, res) => {
       db.query(sql, dataValues),
       db.query(countSql, values),
       db.query(resumoSql, values),
-      db.query(resumoMesAtualSql, [modelo_id])
+      db.query(resumoMesAtualSql, [modelo_id, dataInicio])
     ]);
 
     const totalRegistros = parseInt(total.rows[0].count, 10);
