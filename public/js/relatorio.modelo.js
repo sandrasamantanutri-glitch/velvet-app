@@ -199,53 +199,35 @@ async function carregarTransacoes(pagina = 1) {
   if (!token) { lista.innerText = t("relatorio.nao_autenticada"); return; }
 
   try {
-    const mesAtual    = obterMesAtualSP();
-    const mesAnterior = obterMesAnteriorSP();
-    const headers     = { Authorization: "Bearer " + token };
+    const desde = obterMesAnteriorSP();
+    const res   = await fetch(`/api/transacoes?desde=${desde}&page=${pagina}`, {
+      headers: { Authorization: "Bearer " + token }
+    });
 
-    const [resAtual, resAnterior] = await Promise.all([
-      fetch(`/api/transacoes?mes=${mesAtual}&page=${pagina}`,    { headers }),
-      fetch(`/api/transacoes?mes=${mesAnterior}&page=1`,         { headers })
-    ]);
+    if (!res.ok) { lista.innerText = t("relatorio.erro_transacoes"); return; }
 
-    if (!resAtual.ok) { lista.innerText = t("relatorio.erro_transacoes"); return; }
-
-    const dataAtual    = await resAtual.json();
-    const dataAnterior = resAnterior.ok ? await resAnterior.json() : { registros: [], totalLiberado: 0, totalPendente: 0 };
-
-    const totalLiberado = (dataAtual.totalLiberado || 0) + (dataAnterior.totalLiberado || 0);
-    const totalPendente = (dataAtual.totalPendente || 0) + (dataAnterior.totalPendente || 0);
+    const data  = await res.json();
+    const dados = data.registros || [];
 
     const resumoEl = document.getElementById("resumoDisponibilidadeTransacoes");
     if (resumoEl) {
       resumoEl.innerHTML = `
-        <span class="resumo-liberado">${t("relatorio.transacoes_liberadas")}: ${emReais(totalLiberado)}</span>
-        <span class="resumo-pendente">${t("relatorio.transacoes_pendentes")}: ${emReais(totalPendente)}</span>
+        <span class="resumo-liberado">${t("relatorio.transacoes_liberadas")}: ${emReais(data.totalLiberadoMesAtual || 0)}</span>
+        <span class="resumo-pendente">${t("relatorio.transacoes_pendentes")}: ${emReais(data.totalPendenteMesAtual || 0)}</span>
       `;
     }
 
-    const dadosAtual    = dataAtual.registros    || [];
-    const dadosAnterior = dataAnterior.registros || [];
-
     lista.innerHTML = "";
 
-    if (!dadosAtual.length && !dadosAnterior.length) {
+    if (!dados.length) {
       lista.innerText = t("relatorio.sem_transacoes");
       return;
     }
 
-    if (dadosAtual.length) {
-      lista.innerHTML += `<p class="rel-sec-lbl" style="margin:8px 0 4px">${nomeMes(mesAtual)}</p>`;
-      lista.innerHTML += renderTransacoes(dadosAtual);
-    }
+    lista.innerHTML = renderTransacoes(dados);
 
-    if (dadosAnterior.length) {
-      lista.innerHTML += `<p class="rel-sec-lbl" style="margin:16px 0 4px">${nomeMes(mesAnterior)}</p>`;
-      lista.innerHTML += renderTransacoes(dadosAnterior);
-    }
-
-    paginaAtualTransacoes = dataAtual.paginaAtual || 1;
-    if (paginacao && (dataAtual.totalPaginas || 1) > 1) renderizarPaginacaoTransacoes(dataAtual.totalPaginas);
+    paginaAtualTransacoes = data.paginaAtual || 1;
+    if (paginacao && (data.totalPaginas || 1) > 1) renderizarPaginacaoTransacoes(data.totalPaginas);
 
   } catch (err) {
     console.error(err);
@@ -589,63 +571,6 @@ async function carregarDadosBancarios() {
 // IMPRESSÃO / PDF
 // ===============================
 function imprimirRelatorio() {
-  const sel = document.getElementById("filtroMes");
-  const mes = sel ? sel.value : obterMesAtualSP();
-  const mesNome = nomeMes(mes);
-
-  const totalEl     = document.getElementById("totalMesAtual");
-  const midiasEl    = document.getElementById("mesMidias");
-  const assEl       = document.getElementById("mesAssinaturas");
-  const bloqueadoEl = document.getElementById("bloqueadoMes");
-
-  const total  = totalEl?.textContent  || "R$ 0,00";
-  const midias = midiasEl?.textContent || "R$ 0,00";
-  const ass    = assEl?.textContent    || "R$ 0,00";
-  const cbTotal = window.cbTotalMes || 0;
-
-  function parseReais(el) {
-    if (!el) return 0;
-    return parseFloat(el.textContent.replace(/[R$\s]/g, "").replace(/\./g, "").replace(",", ".")) || 0;
-  }
-
-  const midiasNum    = parseReais(midiasEl);
-  const assNum       = parseReais(assEl);
-  const bloqueadoNum = parseReais(bloqueadoEl);
-
-  // Liberado mês anterior = Stripe do mês passado liberado AGORA → conta neste mês
-  const mesAtual = obterMesAtualSP();
-  let libAntNum = 0;
-  if (mes === mesAtual) {
-    libAntNum = parseReais(document.getElementById("liberadoMesAnterior"));
-  }
-
-  // Ganhos Totais = o que efetivamente entrou neste mês (pendentes Stripe NÃO entram)
-  const ganhosTotal = midiasNum + assNum + libAntNum;
-  const liquidoNum  = ganhosTotal - cbTotal;
-
-  const nomeModelo = window._modeloNome || "—";
-  const modeloId   = window._modeloId   || "—";
-
-  document.getElementById("printConteudo").innerHTML = `
-    <div class="print-titulo">Relatório de Ganhos</div>
-    <div class="print-sub">${mesNome}</div>
-    <div class="print-modelo">Modelo: <strong>${nomeModelo}</strong> &nbsp;·&nbsp; ID: <strong>#${modeloId}</strong></div>
-
-    <div class="print-sec">Ganhos do mês</div>
-    <div class="print-linha"><span>Ganhos Totais</span><span>${emReais(ganhosTotal)}</span></div>
-    <div class="print-linha sub"><span>Assinaturas</span><span>${ass}</span></div>
-    <div class="print-linha sub"><span>Mídias</span><span>${midias}</span></div>
-    ${libAntNum > 0 ? `<div class="print-linha sub"><span>Liberado mês anterior (Stripe)</span><span>${emReais(libAntNum)}</span></div>` : ""}
-    ${cbTotal > 0 ? `<div class="print-linha sub neg"><span>Chargebacks</span><span>− ${emReais(cbTotal)}</span></div>` : ""}
-
-    <div class="print-linha total"><span>Ganhos Líquidos</span><span>${emReais(liquidoNum)}</span></div>
-
-    ${bloqueadoNum > 0 ? `
-    <div class="print-sec" style="margin-top:20px;">Retenção Stripe — libera no próximo mês</div>
-    <div class="print-linha hold"><span>Pendentes de Liberação</span><span>${emReais(bloqueadoNum)}</span></div>
-    ` : ""}
-  `;
-
   window.print();
 }
 

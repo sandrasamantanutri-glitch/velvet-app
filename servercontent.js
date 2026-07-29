@@ -948,7 +948,7 @@ router.get("/transacoes", authModelo, async (req, res) => {
     const limit = 10;
     const offset = (page - 1) * limit;
 
-    const { mes } = req.query;
+    const { mes, desde } = req.query;
 
     let values = [modelo_id];
     let monthFilter = "";
@@ -961,6 +961,13 @@ router.get("/transacoes", authModelo, async (req, res) => {
       monthFilter = `
         AND EXTRACT(YEAR  FROM CASE WHEN disponivel_em IS NOT NULL THEN disponivel_em ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) = $2
         AND EXTRACT(MONTH FROM CASE WHEN disponivel_em IS NOT NULL THEN disponivel_em ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) = $3
+      `;
+    } else if (desde && /^\d{4}-(0[1-9]|1[0-2])$/.test(desde)) {
+      const [ano, mesNum] = desde.split("-").map(Number);
+      const dataInicio = new Date(ano, mesNum - 1, 1).toISOString().split("T")[0];
+      values.push(dataInicio);
+      monthFilter = `
+        AND COALESCE(disponivel_em, created_at AT TIME ZONE 'America/Sao_Paulo') >= $2::date
       `;
     }
 
@@ -1019,10 +1026,25 @@ router.get("/transacoes", authModelo, async (req, res) => {
         ${monthFilter}
     `;
 
-    const [dados, total, resumo] = await Promise.all([
+    // Totais do mês atual usando created_at (igual ao financeiro) para exibição correta
+    const resumoMesAtualSql = `
+      SELECT
+        COALESCE(SUM(CASE WHEN gateway = 'stripe' AND (disponivel_em IS NULL OR disponivel_em > NOW())
+                          THEN valor_modelo ELSE 0 END), 0) AS total_pendente,
+        COALESCE(SUM(CASE WHEN NOT (gateway = 'stripe' AND (disponivel_em IS NULL OR disponivel_em > NOW()))
+                          THEN valor_modelo ELSE 0 END), 0) AS total_liberado
+      FROM transacoes_agency
+      WHERE modelo_id = $1
+        AND status = 'pago'
+        AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo')
+            = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+    `;
+
+    const [dados, total, resumo, resumoMesAtual] = await Promise.all([
       db.query(sql, dataValues),
       db.query(countSql, values),
-      db.query(resumoSql, values)
+      db.query(resumoSql, values),
+      db.query(resumoMesAtualSql, [modelo_id])
     ]);
 
     const totalRegistros = parseInt(total.rows[0].count, 10);
@@ -1034,7 +1056,9 @@ router.get("/transacoes", authModelo, async (req, res) => {
       totalPaginas,
       totalRegistros,
       totalLiberado: Number(resumo.rows[0]?.total_liberado || 0),
-      totalPendente: Number(resumo.rows[0]?.total_pendente || 0)
+      totalPendente: Number(resumo.rows[0]?.total_pendente || 0),
+      totalLiberadoMesAtual: Number(resumoMesAtual.rows[0]?.total_liberado || 0),
+      totalPendenteMesAtual: Number(resumoMesAtual.rows[0]?.total_pendente || 0)
     });
 
   } catch (err) {

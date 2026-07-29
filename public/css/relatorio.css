@@ -622,91 +622,51 @@ body {
 }
 
 /* ===========================
-   PRINT / PDF
+   PRINT / PDF — imprime a tela como está
 =========================== */
 @media print {
-  body * {
-    visibility: hidden;
-  }
-
+  /* Esconde tudo exceto o conteúdo de ganhos */
+  #header-container,
+  #footer-container,
+  .btn-voltar,
+  .acord-btn-ganhos .acord-btn-right,
+  .acord-chevron,
   #secaoPrint,
-  #secaoPrint * {
-    visibility: visible;
+  .acord-item:not(#acordGanhos) {
+    display: none !important;
   }
 
-  #secaoPrint {
+  /* Remove sombra e padding do card na impressão */
+  .area-card {
+    box-shadow: none !important;
+    padding: 16px !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    max-width: 100% !important;
+  }
+
+  /* Garante que o accordion de ganhos fica totalmente aberto */
+  #corpo-ganhos {
     display: block !important;
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    padding: 32px;
-    box-sizing: border-box;
+    max-height: none !important;
+    overflow: visible !important;
   }
 
-  #printConteudo {
-    font-family: Arial, sans-serif;
-    color: #1E1E26;
+  /* Mantém as cores nas impressões */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
-  .print-titulo {
-    font-size: 20px;
-    font-weight: 700;
-    color: #7B2CFF;
-    margin-bottom: 4px;
+  /* Oculta select de mês e botão imprimir dentro do header do accordion */
+  #filtroMes,
+  #btnImprimir {
+    display: none !important;
   }
 
-  .print-sub {
-    font-size: 13px;
-    color: #555;
-    margin-bottom: 24px;
+  body {
+    background: #fff !important;
   }
-
-  .print-linha {
-    display: flex;
-    justify-content: space-between;
-    font-size: 14px;
-    padding: 8px 0;
-    border-bottom: 1px solid #eee;
-  }
-
-  .print-linha.neg { color: #dc2626; }
-  .print-linha.total {
-    font-size: 16px;
-    font-weight: 700;
-    color: #7B2CFF;
-    border-top: 2px solid #7B2CFF;
-    border-bottom: none;
-    margin-top: 4px;
-    padding-top: 12px;
-  }
-
-  .print-sec {
-    margin-top: 24px;
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    color: #888;
-    margin-bottom: 6px;
-  }
-
-  .print-modelo {
-    font-size: 13px;
-    color: #333;
-    margin-bottom: 20px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid #ddd;
-  }
-
-  .print-linha.sub {
-    padding-left: 20px;
-    font-size: 13px;
-    color: #555;
-    border-bottom-color: #f5f5f5;
-  }
-
-  .print-linha.hold { color: #b45309; }
 }
 
 /* ===========================
